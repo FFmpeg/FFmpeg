@@ -455,6 +455,17 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
     s->current_picture->pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
     if ((res = decode_header(s)) < 0)
         return res;
+
+    if (!s->mconly_picture->data[0]) {
+        res = ff_get_buffer(avctx, s->mconly_picture, AV_GET_BUFFER_FLAG_REF);
+        if (res < 0)
+            return res;
+    }
+    if (s->mconly_picture->format != avctx->pix_fmt) {
+        av_log(avctx, AV_LOG_ERROR, "pixel format changed\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((res=ff_snow_common_init_after_header(avctx)) < 0)
         return res;
 

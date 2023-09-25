@@ -21,7 +21,6 @@
 #include "libavutil/log.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
-#include "decode.h"
 #include "snow_dwt.h"
 #include "snow.h"
 #include "snowdata.h"
@@ -476,25 +475,13 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
 int ff_snow_common_init_after_header(AVCodecContext *avctx) {
     SnowContext *s = avctx->priv_data;
     int plane_index, level, orientation;
-    int ret, emu_buf_size;
 
     if(!s->scratchbuf) {
-        if (av_codec_is_decoder(avctx->codec)) {
-            if ((ret = ff_get_buffer(s->avctx, s->mconly_picture,
-                                     AV_GET_BUFFER_FLAG_REF)) < 0)
-                return ret;
-        }
-
+        int emu_buf_size;
         emu_buf_size = FFMAX(s->mconly_picture->linesize[0], 2*avctx->width+256) * (2 * MB_SIZE + HTAPS_MAX - 1);
         if (!FF_ALLOCZ_TYPED_ARRAY(s->scratchbuf,      FFMAX(s->mconly_picture->linesize[0], 2*avctx->width+256) * 7 * MB_SIZE) ||
             !FF_ALLOCZ_TYPED_ARRAY(s->emu_edge_buffer, emu_buf_size))
             return AVERROR(ENOMEM);
-    }
-
-    if (av_codec_is_decoder(avctx->codec) &&
-        s->mconly_picture->format != avctx->pix_fmt) {
-        av_log(avctx, AV_LOG_ERROR, "pixel format changed\n");
-        return AVERROR_INVALIDDATA;
     }
 
     for(plane_index=0; plane_index < s->nb_planes; plane_index++){
