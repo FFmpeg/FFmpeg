@@ -32,6 +32,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
+#include "refstruct.h"
 #include "v4l2_context.h"
 #include "v4l2_fmt.h"
 #include "v4l2_m2m.h"
@@ -247,9 +248,9 @@ int ff_v4l2_m2m_codec_reinit(V4L2m2mContext *s)
     return 0;
 }
 
-static void v4l2_m2m_destroy_context(void *opaque, uint8_t *context)
+static void v4l2_m2m_destroy_context(FFRefStructOpaque unused, void *context)
 {
-    V4L2m2mContext *s = (V4L2m2mContext*)context;
+    V4L2m2mContext *s = context;
 
     ff_v4l2_context_release(&s->capture);
     sem_destroy(&s->refsync);
@@ -258,8 +259,6 @@ static void v4l2_m2m_destroy_context(void *opaque, uint8_t *context)
         close(s->fd);
     av_frame_free(&s->frame);
     av_packet_unref(&s->buf_pkt);
-
-    av_free(s);
 }
 
 int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
@@ -283,7 +282,7 @@ int ff_v4l2_m2m_codec_end(V4L2m2mPriv *priv)
     ff_v4l2_context_release(&s->output);
 
     s->self_ref = NULL;
-    av_buffer_unref(&priv->context_ref);
+    ff_refstruct_unref(&priv->context);
 
     return 0;
 }
@@ -328,16 +327,10 @@ int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
 
 int ff_v4l2_m2m_create_context(V4L2m2mPriv *priv, V4L2m2mContext **s)
 {
-    *s = av_mallocz(sizeof(V4L2m2mContext));
+    *s = ff_refstruct_alloc_ext(sizeof(**s), 0, NULL,
+                                &v4l2_m2m_destroy_context);
     if (!*s)
         return AVERROR(ENOMEM);
-
-    priv->context_ref = av_buffer_create((uint8_t *) *s, sizeof(V4L2m2mContext),
-                                         &v4l2_m2m_destroy_context, NULL, 0);
-    if (!priv->context_ref) {
-        av_freep(s);
-        return AVERROR(ENOMEM);
-    }
 
     /* assign the context */
     priv->context = *s;
@@ -346,13 +339,13 @@ int ff_v4l2_m2m_create_context(V4L2m2mPriv *priv, V4L2m2mContext **s)
     /* populate it */
     priv->context->capture.num_buffers = priv->num_capture_buffers;
     priv->context->output.num_buffers  = priv->num_output_buffers;
-    priv->context->self_ref = priv->context_ref;
+    priv->context->self_ref = priv->context;
     priv->context->fd = -1;
 
     priv->context->frame = av_frame_alloc();
     if (!priv->context->frame) {
-        av_buffer_unref(&priv->context_ref);
-        *s = NULL; /* freed when unreferencing context_ref */
+        ff_refstruct_unref(&priv->context);
+        *s = NULL; /* freed when unreferencing context */
         return AVERROR(ENOMEM);
     }
 
