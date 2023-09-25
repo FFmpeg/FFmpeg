@@ -634,7 +634,6 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
         }
     }
 
-    fh_obu->obu_size_byte_len = priv->attr_ext2.bits.obu_size_bytes_minus1 + 1;
     ret = vaapi_encode_av1_add_obu(avctx, obu, AV1_OBU_FRAME_HEADER, &priv->fh);
     if (ret < 0)
         goto end;
@@ -838,6 +837,9 @@ static av_cold int vaapi_encode_av1_init(AVCodecContext *avctx)
     } else {
         priv->attr_ext2.value = attr.value;
     }
+
+    av_opt_set_int(priv->cbc->priv_data, "fixed_obu_size_length",
+                   priv->attr_ext2.bits.obu_size_bytes_minus1 + 1, 0);
 
     ret = vaapi_encode_av1_set_tile(avctx);
     if (ret < 0)
