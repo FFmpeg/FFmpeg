@@ -16928,6 +16928,32 @@ ffmpeg -i distorted.mpg -i reference.mkv -lavfi "[0:v]settb=AVTB,setpts=PTS-STAR
 @end example
 @end itemize
 
+@section libvmaf_cuda
+
+This is the CUDA variant of the @ref{libvmaf} filter. It only accepts CUDA frames.
+
+It requires Netflix's vmaf library (libvmaf) as a pre-requisite.
+After installing the library it can be enabled using:
+@code{./configure --enable-nonfree --enable-ffnvcodec --enable-libvmaf}.
+
+@subsection Examples
+@itemize
+
+@item
+Basic usage showing CUVID hardware decoding and CUDA scaling with @ref{scale_cuda}:
+@example
+ffmpeg \
+    -hwaccel cuda -hwaccel_output_format cuda -codec:v av1_cuvid -i dis.obu \
+    -hwaccel cuda -hwaccel_output_format cuda -codec:v av1_cuvid -i ref.obu \
+    -filter_complex "
+        [0:v]scale_cuda=format=yuv420p[ref]; \
+        [1:v]scale_cuda=format=yuv420p[dis]; \
+        [dis][ref]libvmaf_cuda=log_fmt=json:log_path=output.json
+    " \
+    -f null -
+@end example
+@end itemize
+
 @section limitdiff
 Apply limited difference filter using second and optionally third video stream.
 
