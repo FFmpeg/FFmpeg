@@ -19,6 +19,9 @@
 #ifndef AVFILTER_BWDIFDSP_H
 #define AVFILTER_BWDIFDSP_H
 
+#include <stdint.h>
+#include <string.h>
+
 typedef struct BWDIFDSPContext {
     void (*filter_intra)(void *dst1, const void *cur1, int w, int prefs, int mrefs,
                          int prefs3, int mrefs3, int parity, int clip_max);
@@ -50,8 +53,33 @@ void ff_bwdif_filter_line_c(void *dst1, const void *prev1, const void *cur1, con
                             int prefs3, int mrefs3, int prefs4, int mrefs4,
                             int parity, int clip_max);
 
+static inline
 void ff_bwdif_filter_line3_c(void * dst1, int d_stride,
                              const void * prev1, const void * cur1, const void * next1, int s_stride,
-                             int w, int parity, int clip_max);
+                             int w, int parity, int clip_max)
+{
+    const int prefs = s_stride;
+    uint8_t * dst  = dst1;
+    const uint8_t * prev = prev1;
+    const uint8_t * cur  = cur1;
+    const uint8_t * next = next1;
+
+    ff_bwdif_filter_line_c(dst, prev, cur, next, w,
+                           prefs, -prefs, prefs * 2, - prefs * 2, prefs * 3, -prefs * 3, prefs * 4, -prefs * 4, parity, clip_max);
+#define NEXT_LINE()\
+    dst += d_stride; \
+    prev += prefs; \
+    cur  += prefs; \
+    next += prefs;
+
+    NEXT_LINE();
+    memcpy(dst, cur, w);
+    NEXT_LINE();
+#undef NEXT_LINE
+    ff_bwdif_filter_line_c(dst, prev, cur, next, w,
+                           prefs, -prefs, prefs * 2, - prefs * 2, prefs * 3, -prefs * 3, prefs * 4, -prefs * 4, parity, clip_max);
+}
+
+
 
 #endif /* AVFILTER_BWDIFDSP_H */

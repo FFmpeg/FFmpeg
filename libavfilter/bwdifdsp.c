@@ -143,31 +143,6 @@ void ff_bwdif_filter_line_c(void *dst1, const void *prev1, const void *cur1, con
     FILTER2()
 }
 
-#define NEXT_LINE()\
-    dst += d_stride; \
-    prev += prefs; \
-    cur  += prefs; \
-    next += prefs;
-
-void ff_bwdif_filter_line3_c(void * dst1, int d_stride,
-                             const void * prev1, const void * cur1, const void * next1, int s_stride,
-                             int w, int parity, int clip_max)
-{
-    const int prefs = s_stride;
-    uint8_t * dst  = dst1;
-    const uint8_t * prev = prev1;
-    const uint8_t * cur  = cur1;
-    const uint8_t * next = next1;
-
-    ff_bwdif_filter_line_c(dst, prev, cur, next, w,
-                           prefs, -prefs, prefs * 2, - prefs * 2, prefs * 3, -prefs * 3, prefs * 4, -prefs * 4, parity, clip_max);
-    NEXT_LINE();
-    memcpy(dst, cur, w);
-    NEXT_LINE();
-    ff_bwdif_filter_line_c(dst, prev, cur, next, w,
-                           prefs, -prefs, prefs * 2, - prefs * 2, prefs * 3, -prefs * 3, prefs * 4, -prefs * 4, parity, clip_max);
-}
-
 void ff_bwdif_filter_edge_c(void *dst1, const void *prev1, const void *cur1, const void *next1,
                             int w, int prefs, int mrefs, int prefs2, int mrefs2,
                             int parity, int clip_max, int spat)
