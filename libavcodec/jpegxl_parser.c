@@ -223,11 +223,6 @@ static av_always_inline uint32_t jxl_u32(GetBitContext *gb,
     return ret;
 }
 
-static av_always_inline uint32_t jxl_enum(GetBitContext *gb)
-{
-    return jxl_u32(gb, 0, 1, 2, 18, 0, 0, 4, 6);
-}
-
 /* read a U64() */
 static uint64_t jxl_u64(GetBitContext *gb)
 {
