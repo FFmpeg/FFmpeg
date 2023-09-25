@@ -22,7 +22,6 @@
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "decode.h"
-#include "encode.h"
 #include "snow_dwt.h"
 #include "snow.h"
 #include "snowdata.h"
@@ -59,36 +58,6 @@ void ff_snow_inner_add_yblock(const uint8_t *obmc, const int obmc_stride, uint8_
             }
         }
     }
-}
-
-int ff_snow_get_buffer(SnowContext *s, AVFrame *frame)
-{
-    int ret, i;
-    int edges_needed = av_codec_is_encoder(s->avctx->codec);
-
-    frame->width  = s->avctx->width ;
-    frame->height = s->avctx->height;
-    if (edges_needed) {
-        frame->width  += 2 * EDGE_WIDTH;
-        frame->height += 2 * EDGE_WIDTH;
-
-        ret = ff_encode_alloc_frame(s->avctx, frame);
-    } else
-        ret = ff_get_buffer(s->avctx, frame, AV_GET_BUFFER_FLAG_REF);
-    if (ret < 0)
-        return ret;
-    if (edges_needed) {
-        for (i = 0; frame->data[i]; i++) {
-            int offset = (EDGE_WIDTH >> (i ? s->chroma_v_shift : 0)) *
-                            frame->linesize[i] +
-                            (EDGE_WIDTH >> (i ? s->chroma_h_shift : 0));
-            frame->data[i] += offset;
-        }
-        frame->width  = s->avctx->width;
-        frame->height = s->avctx->height;
-    }
-
-    return 0;
 }
 
 void ff_snow_reset_contexts(SnowContext *s){ //FIXME better initial contexts
@@ -589,20 +558,21 @@ void ff_snow_release_buffer(AVCodecContext *avctx)
     }
 }
 
-int ff_snow_frame_start(SnowContext *s){
+int ff_snow_frames_prepare(SnowContext *s)
+{
    AVFrame *tmp;
-   int i, ret;
 
     ff_snow_release_buffer(s->avctx);
 
     tmp= s->last_picture[s->max_ref_frames-1];
-    for(i=s->max_ref_frames-1; i>0; i--)
+    for (int i = s->max_ref_frames - 1; i > 0; i--)
         s->last_picture[i] = s->last_picture[i-1];
     s->last_picture[0] = s->current_picture;
     s->current_picture = tmp;
 
     if(s->keyframe){
         s->ref_frames= 0;
+        s->current_picture->flags |= AV_FRAME_FLAG_KEY;
     }else{
         int i;
         for(i=0; i<s->max_ref_frames && s->last_picture[i]->data[0]; i++)
@@ -613,14 +583,8 @@ int ff_snow_frame_start(SnowContext *s){
             av_log(s->avctx,AV_LOG_ERROR, "No reference frames\n");
             return AVERROR_INVALIDDATA;
         }
-    }
-    if ((ret = ff_snow_get_buffer(s, s->current_picture)) < 0)
-        return ret;
-
-    if (s->keyframe)
-        s->current_picture->flags |= AV_FRAME_FLAG_KEY;
-    else
         s->current_picture->flags &= ~AV_FRAME_FLAG_KEY;
+    }
 
     return 0;
 }

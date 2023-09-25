@@ -39,6 +39,28 @@
 #include "mpegvideo.h"
 #include "h263enc.h"
 
+static int get_encode_buffer(SnowContext *s, AVFrame *frame)
+{
+    int ret;
+
+    frame->width  = s->avctx->width  + 2 * EDGE_WIDTH;
+    frame->height = s->avctx->height + 2 * EDGE_WIDTH;
+
+    ret = ff_encode_alloc_frame(s->avctx, frame);
+    if (ret < 0)
+        return ret;
+    for (int i = 0; frame->data[i]; i++) {
+        int offset = (EDGE_WIDTH >> (i ? s->chroma_v_shift : 0)) *
+                        frame->linesize[i] +
+                        (EDGE_WIDTH >> (i ? s->chroma_h_shift : 0));
+        frame->data[i] += offset;
+    }
+    frame->width  = s->avctx->width;
+    frame->height = s->avctx->height;
+
+    return 0;
+}
+
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
@@ -140,7 +162,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (!s->input_picture)
         return AVERROR(ENOMEM);
 
-    if ((ret = ff_snow_get_buffer(s, s->input_picture)) < 0)
+    if ((ret = get_encode_buffer(s, s->input_picture)) < 0)
         return ret;
 
     if(s->motion_est == FF_ME_ITER){
@@ -1659,7 +1681,10 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         emms_c();
     }
 
-    ff_snow_frame_start(s);
+    ff_snow_frames_prepare(s);
+    ret = get_encode_buffer(s, s->current_picture);
+    if (ret < 0)
+        return ret;
 
     s->m.current_picture_ptr= &s->m.current_picture;
     s->m.current_picture.f = s->current_picture;

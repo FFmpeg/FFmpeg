@@ -245,11 +245,10 @@ void ff_snow_common_end(SnowContext *s);
 void ff_snow_release_buffer(AVCodecContext *avctx);
 void ff_snow_reset_contexts(SnowContext *s);
 int ff_snow_alloc_blocks(SnowContext *s);
-int ff_snow_frame_start(SnowContext *s);
+int ff_snow_frames_prepare(SnowContext *s);
 void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, ptrdiff_t stride,
                      int sx, int sy, int b_w, int b_h, const BlockNode *block,
                      int plane_index, int w, int h);
-int ff_snow_get_buffer(SnowContext *s, AVFrame *frame);
 /* common inline functions */
 //XXX doublecheck all of them should stay inlined
 

@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "decode.h"
 #include "snow_dwt.h"
 #include "snow.h"
 
@@ -475,7 +476,13 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     ff_snow_alloc_blocks(s);
 
-    if((res = ff_snow_frame_start(s)) < 0)
+    if ((res = ff_snow_frames_prepare(s)) < 0)
+        return res;
+
+    s->current_picture->width  = s->avctx->width;
+    s->current_picture->height = s->avctx->height;
+    res = ff_get_buffer(s->avctx, s->current_picture, AV_GET_BUFFER_FLAG_REF);
+    if (res < 0)
         return res;
 
     s->current_picture->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
