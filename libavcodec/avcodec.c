@@ -37,6 +37,7 @@
 #include "avcodec.h"
 #include "avcodec_internal.h"
 #include "bsf.h"
+#include "codec_desc.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "encode.h"

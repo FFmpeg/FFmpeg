@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "avcodec_internal.h"
+#include "codec_desc.h"
 #include "codec_internal.h"
 #include "encode.h"
 #include "frame_thread_encoder.h"

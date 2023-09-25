@@ -23,6 +23,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "codec_desc.h"
 #include "decode.h"
 #include "internal.h"
 #include "vaapi_decode.h"

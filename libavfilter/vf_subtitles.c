@@ -33,6 +33,7 @@
 #include "config_components.h"
 #if CONFIG_SUBTITLES_FILTER
 # include "libavcodec/avcodec.h"
+# include "libavcodec/codec_desc.h"
 # include "libavformat/avformat.h"
 #endif
 #include "libavutil/avstring.h"

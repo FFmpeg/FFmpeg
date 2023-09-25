@@ -31,6 +31,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avutil.h"
 #include "libavutil/buffer.h"
+#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
@@ -38,8 +39,6 @@
 #include "libavutil/rational.h"
 
 #include "codec.h"
-#include "codec_desc.h"
-#include "codec_par.h"
 #include "codec_id.h"
 #include "defs.h"
 #include "packet.h"
@@ -49,7 +48,12 @@
  * to avoid unnecessary rebuilds. When included externally, keep including
  * the full version information. */
 #include "version.h"
+
+#include "codec_desc.h"
+#include "codec_par.h"
 #endif
+
+struct AVCodecParameters;
 
 /**
  * @defgroup libavc libavcodec
@@ -1815,7 +1819,7 @@ typedef struct AVCodecContext {
      * - encoding: unused.
      * - decoding: set by libavcodec.
      */
-    const AVCodecDescriptor *codec_descriptor;
+    const struct AVCodecDescriptor *codec_descriptor;
 
     /**
      * Current statistics for PTS correction.
@@ -2328,7 +2332,7 @@ const AVClass *avcodec_get_subtitle_rect_class(void);
  *
  * @return >= 0 on success, a negative AVERROR code on failure
  */
-int avcodec_parameters_from_context(AVCodecParameters *par,
+int avcodec_parameters_from_context(struct AVCodecParameters *par,
                                     const AVCodecContext *codec);
 
 /**
@@ -2340,7 +2344,7 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
  * @return >= 0 on success, a negative AVERROR code on failure.
  */
 int avcodec_parameters_to_context(AVCodecContext *codec,
-                                  const AVCodecParameters *par);
+                                  const struct AVCodecParameters *par);
 
 /**
  * Initialize the AVCodecContext to use the given AVCodec. Prior to using this

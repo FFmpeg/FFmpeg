@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/mathematics.h"
 #include "atsc_a53.h"
+#include "codec_desc.h"
 #include "encode.h"
 #include "internal.h"
 #include "packet_internal.h"
