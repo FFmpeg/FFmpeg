@@ -393,7 +393,7 @@ static void guess_mv(ERContext *s)
     const ptrdiff_t mb_stride = s->mb_stride;
     const int mb_width  = s->mb_width;
     int mb_height = s->mb_height;
-    int i, depth, num_avail;
+    int i, num_avail;
     int mb_x, mb_y;
     ptrdiff_t mot_step, mot_stride;
     int blocklist_length, next_blocklist_length;
@@ -469,7 +469,7 @@ static void guess_mv(ERContext *s)
         }
     }
 
-    for (depth = 0; ; depth++) {
+    for (;;) {
         int changed, pass, none_left;
         int blocklist_index;
 
