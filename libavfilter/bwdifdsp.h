@@ -20,13 +20,13 @@
 #define AVFILTER_BWDIFDSP_H
 
 typedef struct BWDIFDSPContext {
-    void (*filter_intra)(void *dst1, void *cur1, int w, int prefs, int mrefs,
+    void (*filter_intra)(void *dst1, const void *cur1, int w, int prefs, int mrefs,
                          int prefs3, int mrefs3, int parity, int clip_max);
-    void (*filter_line)(void *dst, void *prev, void *cur, void *next,
+    void (*filter_line)(void *dst, const void *prev, const void *cur, const void *next,
                         int w, int prefs, int mrefs, int prefs2, int mrefs2,
                         int prefs3, int mrefs3, int prefs4, int mrefs4,
                         int parity, int clip_max);
-    void (*filter_edge)(void *dst, void *prev, void *cur, void *next,
+    void (*filter_edge)(void *dst, const void *prev, const void *cur, const void *next,
                         int w, int prefs, int mrefs, int prefs2, int mrefs2,
                         int parity, int clip_max, int spat);
     void (*filter_line3)(void *dst, int dstride,
@@ -38,14 +38,14 @@ void ff_bwdif_init_filter_line(BWDIFDSPContext *bwdif, int bit_depth);
 void ff_bwdif_init_x86(BWDIFDSPContext *bwdif, int bit_depth);
 void ff_bwdif_init_aarch64(BWDIFDSPContext *bwdif, int bit_depth);
 
-void ff_bwdif_filter_edge_c(void *dst1, void *prev1, void *cur1, void *next1,
+void ff_bwdif_filter_edge_c(void *dst1, const void *prev1, const void *cur1, const void *next1,
                             int w, int prefs, int mrefs, int prefs2, int mrefs2,
                             int parity, int clip_max, int spat);
 
-void ff_bwdif_filter_intra_c(void *dst1, void *cur1, int w, int prefs, int mrefs,
+void ff_bwdif_filter_intra_c(void *dst1, const void *cur1, int w, int prefs, int mrefs,
                              int prefs3, int mrefs3, int parity, int clip_max);
 
-void ff_bwdif_filter_line_c(void *dst1, void *prev1, void *cur1, void *next1,
+void ff_bwdif_filter_line_c(void *dst1, const void *prev1, const void *cur1, const void *next1,
                             int w, int prefs, int mrefs, int prefs2, int mrefs2,
                             int prefs3, int mrefs3, int prefs4, int mrefs4,
                             int parity, int clip_max);

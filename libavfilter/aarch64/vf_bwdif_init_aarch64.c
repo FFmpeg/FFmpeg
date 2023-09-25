@@ -24,14 +24,14 @@
 #include "libavfilter/bwdifdsp.h"
 #include "libavutil/aarch64/cpu.h"
 
-void ff_bwdif_filter_edge_neon(void *dst1, void *prev1, void *cur1, void *next1,
+void ff_bwdif_filter_edge_neon(void *dst1, const void *prev1, const void *cur1, const void *next1,
                                int w, int prefs, int mrefs, int prefs2, int mrefs2,
                                int parity, int clip_max, int spat);
 
-void ff_bwdif_filter_intra_neon(void *dst1, void *cur1, int w, int prefs, int mrefs,
+void ff_bwdif_filter_intra_neon(void *dst1, const void *cur1, int w, int prefs, int mrefs,
                                 int prefs3, int mrefs3, int parity, int clip_max);
 
-void ff_bwdif_filter_line_neon(void *dst1, void *prev1, void *cur1, void *next1,
+void ff_bwdif_filter_line_neon(void *dst1, const void *prev1, const void *cur1, const void *next1,
                                int w, int prefs, int mrefs, int prefs2, int mrefs2,
                                int prefs3, int mrefs3, int prefs4, int mrefs4,
                                int parity, int clip_max);
@@ -64,7 +64,7 @@ static void filter_line3_helper(void * dst1, int d_stride,
                                 w - w0, parity, clip_max);
 }
 
-static void filter_line_helper(void *dst1, void *prev1, void *cur1, void *next1,
+static void filter_line_helper(void *dst1, const void *prev1, const void *cur1, const void *next1,
                                int w, int prefs, int mrefs, int prefs2, int mrefs2,
                                int prefs3, int mrefs3, int prefs4, int mrefs4,
                                int parity, int clip_max)
@@ -79,7 +79,7 @@ static void filter_line_helper(void *dst1, void *prev1, void *cur1, void *next1,
                                w - w0, prefs, mrefs, prefs2, mrefs2, prefs3, mrefs3, prefs4, mrefs4, parity, clip_max);
 }
 
-static void filter_edge_helper(void *dst1, void *prev1, void *cur1, void *next1,
+static void filter_edge_helper(void *dst1, const void *prev1, const void *cur1, const void *next1,
                                int w, int prefs, int mrefs, int prefs2, int mrefs2,
                                int parity, int clip_max, int spat)
 {
@@ -94,7 +94,7 @@ static void filter_edge_helper(void *dst1, void *prev1, void *cur1, void *next1,
                                parity, clip_max, spat);
 }
 
-static void filter_intra_helper(void *dst1, void *cur1, int w, int prefs, int mrefs,
+static void filter_intra_helper(void *dst1, const void *cur1, int w, int prefs, int mrefs,
                                 int prefs3, int mrefs3, int parity, int clip_max)
 {
     const int w0 = clip_max != 255 ? 0 : w & ~15;

@@ -115,27 +115,27 @@ static const uint16_t coef_sp[2] = { 5077, 981 };
         next2++; \
     }
 
-void ff_bwdif_filter_intra_c(void *dst1, void *cur1, int w, int prefs, int mrefs,
+void ff_bwdif_filter_intra_c(void *dst1, const void *cur1, int w, int prefs, int mrefs,
                              int prefs3, int mrefs3, int parity, int clip_max)
 {
     uint8_t *dst = dst1;
-    uint8_t *cur = cur1;
+    const uint8_t *cur = cur1;
     int interpol, x;
 
     FILTER_INTRA()
 }
 
-void ff_bwdif_filter_line_c(void *dst1, void *prev1, void *cur1, void *next1,
+void ff_bwdif_filter_line_c(void *dst1, const void *prev1, const void *cur1, const void *next1,
                             int w, int prefs, int mrefs, int prefs2, int mrefs2,
                             int prefs3, int mrefs3, int prefs4, int mrefs4,
                             int parity, int clip_max)
 {
     uint8_t *dst   = dst1;
-    uint8_t *prev  = prev1;
-    uint8_t *cur   = cur1;
-    uint8_t *next  = next1;
-    uint8_t *prev2 = parity ? prev : cur ;
-    uint8_t *next2 = parity ? cur  : next;
+    const uint8_t *prev  = prev1;
+    const uint8_t *cur   = cur1;
+    const uint8_t *next  = next1;
+    const uint8_t *prev2 = parity ? prev : cur ;
+    const uint8_t *next2 = parity ? cur  : next;
     int interpol, x;
 
     FILTER1()
@@ -159,25 +159,25 @@ void ff_bwdif_filter_line3_c(void * dst1, int d_stride,
     const uint8_t * cur  = cur1;
     const uint8_t * next = next1;
 
-    ff_bwdif_filter_line_c(dst, (void*)prev, (void*)cur, (void*)next, w,
+    ff_bwdif_filter_line_c(dst, prev, cur, next, w,
                            prefs, -prefs, prefs * 2, - prefs * 2, prefs * 3, -prefs * 3, prefs * 4, -prefs * 4, parity, clip_max);
     NEXT_LINE();
     memcpy(dst, cur, w);
     NEXT_LINE();
-    ff_bwdif_filter_line_c(dst, (void*)prev, (void*)cur, (void*)next, w,
+    ff_bwdif_filter_line_c(dst, prev, cur, next, w,
                            prefs, -prefs, prefs * 2, - prefs * 2, prefs * 3, -prefs * 3, prefs * 4, -prefs * 4, parity, clip_max);
 }
 
-void ff_bwdif_filter_edge_c(void *dst1, void *prev1, void *cur1, void *next1,
+void ff_bwdif_filter_edge_c(void *dst1, const void *prev1, const void *cur1, const void *next1,
                             int w, int prefs, int mrefs, int prefs2, int mrefs2,
                             int parity, int clip_max, int spat)
 {
     uint8_t *dst   = dst1;
-    uint8_t *prev  = prev1;
-    uint8_t *cur   = cur1;
-    uint8_t *next  = next1;
-    uint8_t *prev2 = parity ? prev : cur ;
-    uint8_t *next2 = parity ? cur  : next;
+    const uint8_t *prev  = prev1;
+    const uint8_t *cur   = cur1;
+    const uint8_t *next  = next1;
+    const uint8_t *prev2 = parity ? prev : cur ;
+    const uint8_t *next2 = parity ? cur  : next;
     int interpol, x;
 
     FILTER1()
@@ -185,27 +185,27 @@ void ff_bwdif_filter_edge_c(void *dst1, void *prev1, void *cur1, void *next1,
     FILTER2()
 }
 
-static void filter_intra_16bit(void *dst1, void *cur1, int w, int prefs, int mrefs,
+static void filter_intra_16bit(void *dst1, const void *cur1, int w, int prefs, int mrefs,
                                int prefs3, int mrefs3, int parity, int clip_max)
 {
     uint16_t *dst = dst1;
-    uint16_t *cur = cur1;
+    const uint16_t *cur = cur1;
     int interpol, x;
 
     FILTER_INTRA()
 }
 
-static void filter_line_c_16bit(void *dst1, void *prev1, void *cur1, void *next1,
+static void filter_line_c_16bit(void *dst1, const void *prev1, const void *cur1, const void *next1,
                                 int w, int prefs, int mrefs, int prefs2, int mrefs2,
                                 int prefs3, int mrefs3, int prefs4, int mrefs4,
                                 int parity, int clip_max)
 {
     uint16_t *dst   = dst1;
-    uint16_t *prev  = prev1;
-    uint16_t *cur   = cur1;
-    uint16_t *next  = next1;
-    uint16_t *prev2 = parity ? prev : cur ;
-    uint16_t *next2 = parity ? cur  : next;
+    const uint16_t *prev  = prev1;
+    const uint16_t *cur   = cur1;
+    const uint16_t *next  = next1;
+    const uint16_t *prev2 = parity ? prev : cur ;
+    const uint16_t *next2 = parity ? cur  : next;
     int interpol, x;
 
     FILTER1()
@@ -213,16 +213,16 @@ static void filter_line_c_16bit(void *dst1, void *prev1, void *cur1, void *next1
     FILTER2()
 }
 
-static void filter_edge_16bit(void *dst1, void *prev1, void *cur1, void *next1,
+static void filter_edge_16bit(void *dst1, const void *prev1, const void *cur1, const void *next1,
                               int w, int prefs, int mrefs, int prefs2, int mrefs2,
                               int parity, int clip_max, int spat)
 {
     uint16_t *dst   = dst1;
-    uint16_t *prev  = prev1;
-    uint16_t *cur   = cur1;
-    uint16_t *next  = next1;
-    uint16_t *prev2 = parity ? prev : cur ;
-    uint16_t *next2 = parity ? cur  : next;
+    const uint16_t *prev  = prev1;
+    const uint16_t *cur   = cur1;
+    const uint16_t *next  = next1;
+    const uint16_t *prev2 = parity ? prev : cur ;
+    const uint16_t *next2 = parity ? cur  : next;
     int interpol, x;
 
     FILTER1()
