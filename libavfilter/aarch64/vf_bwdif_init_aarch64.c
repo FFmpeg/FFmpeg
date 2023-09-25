@@ -21,7 +21,7 @@
  */
 
 #include "libavutil/common.h"
-#include "libavfilter/bwdif.h"
+#include "libavfilter/bwdifdsp.h"
 #include "libavutil/aarch64/cpu.h"
 
 void ff_bwdif_filter_edge_neon(void *dst1, void *prev1, void *cur1, void *next1,
@@ -107,7 +107,7 @@ static void filter_intra_helper(void *dst1, void *cur1, int w, int prefs, int mr
 }
 
 void
-ff_bwdif_init_aarch64(BWDIFContext *s, int bit_depth)
+ff_bwdif_init_aarch64(BWDIFDSPContext *s, int bit_depth)
 {
     const int cpu_flags = av_get_cpu_flags();
 

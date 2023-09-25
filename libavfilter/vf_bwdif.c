@@ -32,8 +32,10 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "bwdifdsp.h"
+#include "ccfifo.h"
 #include "internal.h"
-#include "bwdif.h"
+#include "yadif.h"
 
 /*
  * Filter coefficients coef_lf and coef_hf taken from BBC PH-2071 (Weston 3 Field Deinterlacer).
@@ -44,6 +46,11 @@
 static const uint16_t coef_lf[2] = { 4309, 213 };
 static const uint16_t coef_hf[3] = { 5570, 3801, 1016 };
 static const uint16_t coef_sp[2] = { 5077, 981 };
+
+typedef struct BWDIFContext {
+    YADIFContext yadif;
+    BWDIFDSPContext dsp;
+} BWDIFContext;
 
 typedef struct ThreadData {
     AVFrame *frame;
@@ -261,25 +268,25 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             uint8_t *next = &yadif->next->data[td->plane][y * linesize];
             uint8_t *dst  = &td->frame->data[td->plane][y * td->frame->linesize[td->plane]];
             if (yadif->current_field == YADIF_FIELD_END) {
-                s->filter_intra(dst, cur, td->w, (y + df) < td->h ? refs : -refs,
+                s->dsp.filter_intra(dst, cur, td->w, (y + df) < td->h ? refs : -refs,
                                 y > (df - 1) ? -refs : refs,
                                 (y + 3*df) < td->h ? 3 * refs : -refs,
                                 y > (3*df - 1) ? -3 * refs : refs,
                                 td->parity ^ td->tff, clip_max);
             } else if ((y < 4) || ((y + 5) > td->h)) {
-                s->filter_edge(dst, prev, cur, next, td->w,
+                s->dsp.filter_edge(dst, prev, cur, next, td->w,
                                (y + df) < td->h ? refs : -refs,
                                y > (df - 1) ? -refs : refs,
                                refs << 1, -(refs << 1),
                                td->parity ^ td->tff, clip_max,
                                (y < 2) || ((y + 3) > td->h) ? 0 : 1);
-            } else if (s->filter_line3 && y + 2 < slice_end && y + 6 < td->h) {
-                s->filter_line3(dst, td->frame->linesize[td->plane],
+            } else if (s->dsp.filter_line3 && y + 2 < slice_end && y + 6 < td->h) {
+                s->dsp.filter_line3(dst, td->frame->linesize[td->plane],
                                 prev, cur, next, linesize, td->w,
                                 td->parity ^ td->tff, clip_max);
                 y += 2;
             } else {
-                s->filter_line(dst, prev, cur, next, td->w,
+                s->dsp.filter_line(dst, prev, cur, next, td->w,
                                refs, -refs, refs << 1, -(refs << 1),
                                3 * refs, -3 * refs, refs << 2, -(refs << 2),
                                td->parity ^ td->tff, clip_max);
@@ -382,12 +389,12 @@ static int config_props(AVFilterLink *link)
 
     yadif->csp = av_pix_fmt_desc_get(link->format);
     yadif->filter = filter;
-    ff_bwdif_init_filter_line(s, yadif->csp->comp[0].depth);
+    ff_bwdif_init_filter_line(&s->dsp, yadif->csp->comp[0].depth);
 
     return 0;
 }
 
-av_cold void ff_bwdif_init_filter_line(BWDIFContext *s, int bit_depth)
+av_cold void ff_bwdif_init_filter_line(BWDIFDSPContext *s, int bit_depth)
 {
     s->filter_line3 = 0;
     if (bit_depth > 8) {

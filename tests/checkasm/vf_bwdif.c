@@ -18,8 +18,7 @@
 
 #include <string.h>
 #include "checkasm.h"
-#include "libavcodec/internal.h"
-#include "libavfilter/bwdif.h"
+#include "libavfilter/bwdifdsp.h"
 #include "libavutil/mem_internal.h"
 
 #define WIDTH 256
@@ -72,7 +71,7 @@
 
 void checkasm_check_vf_bwdif(void)
 {
-    BWDIFContext ctx_8, ctx_10;
+    BWDIFDSPContext ctx_8, ctx_10;
 
     ff_bwdif_init_filter_line(&ctx_8, 8);
     ff_bwdif_init_filter_line(&ctx_10, 10);

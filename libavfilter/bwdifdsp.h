@@ -16,16 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_BWDIF_H
-#define AVFILTER_BWDIF_H
+#ifndef AVFILTER_BWDIFDSP_H
+#define AVFILTER_BWDIFDSP_H
 
-#include "libavutil/pixdesc.h"
-#include "avfilter.h"
-#include "yadif.h"
-
-typedef struct BWDIFContext {
-    YADIFContext yadif;
-
+typedef struct BWDIFDSPContext {
     void (*filter_intra)(void *dst1, void *cur1, int w, int prefs, int mrefs,
                          int prefs3, int mrefs3, int parity, int clip_max);
     void (*filter_line)(void *dst, void *prev, void *cur, void *next,
@@ -38,11 +32,11 @@ typedef struct BWDIFContext {
     void (*filter_line3)(void *dst, int dstride,
                          const void *prev, const void *cur, const void *next, int prefs,
                          int w, int parity, int clip_max);
-} BWDIFContext;
+} BWDIFDSPContext;
 
-void ff_bwdif_init_filter_line(BWDIFContext *bwdif, int bit_depth);
-void ff_bwdif_init_x86(BWDIFContext *bwdif, int bit_depth);
-void ff_bwdif_init_aarch64(BWDIFContext *bwdif, int bit_depth);
+void ff_bwdif_init_filter_line(BWDIFDSPContext *bwdif, int bit_depth);
+void ff_bwdif_init_x86(BWDIFDSPContext *bwdif, int bit_depth);
+void ff_bwdif_init_aarch64(BWDIFDSPContext *bwdif, int bit_depth);
 
 void ff_bwdif_filter_edge_c(void *dst1, void *prev1, void *cur1, void *next1,
                             int w, int prefs, int mrefs, int prefs2, int mrefs2,
@@ -60,4 +54,4 @@ void ff_bwdif_filter_line3_c(void * dst1, int d_stride,
                              const void * prev1, const void * cur1, const void * next1, int s_stride,
                              int w, int parity, int clip_max);
 
-#endif /* AVFILTER_BWDIF_H */
+#endif /* AVFILTER_BWDIFDSP_H */

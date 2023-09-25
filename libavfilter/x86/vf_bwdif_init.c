@@ -22,7 +22,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavfilter/bwdif.h"
+#include "libavfilter/bwdifdsp.h"
 
 void ff_bwdif_filter_line_sse2(void *dst, void *prev, void *cur, void *next,
                                int w, int prefs, int mrefs, int prefs2,
@@ -50,7 +50,7 @@ void ff_bwdif_filter_line_12bit_avx2(void *dst, void *prev, void *cur, void *nex
                                      int mrefs2, int prefs3, int mrefs3, int prefs4,
                                      int mrefs4, int parity, int clip_max);
 
-av_cold void ff_bwdif_init_x86(BWDIFContext *bwdif, int bit_depth)
+av_cold void ff_bwdif_init_x86(BWDIFDSPContext *bwdif, int bit_depth)
 {
     int cpu_flags = av_get_cpu_flags();
 
