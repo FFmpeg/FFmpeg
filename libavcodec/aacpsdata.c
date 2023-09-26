@@ -89,9 +89,9 @@ static const uint8_t aacps_huff_tabs[][2] = {
 };
 
 static const int8_t huff_offset[] = {
-    30, 30,
-    14, 14,
-    7, 7,
+    -30, -30,
+    -14, -14,
+    -7,  -7,
     0, 0,
     0, 0,
 };

@@ -60,7 +60,7 @@ static const int huff_iid[] = {
 
 static const VLCElem *vlc_ps[10];
 
-#define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION, NB_BITS, MAX_DEPTH) \
+#define READ_PAR_DATA(PAR, MASK, ERR_CONDITION, NB_BITS, MAX_DEPTH) \
 /** \
  * Read Inter-channel Intensity Difference/Inter-Channel Coherence/ \
  * Inter-channel Phase Difference/Overall Phase Difference parameters from the \
@@ -82,7 +82,7 @@ static int read_ ## PAR ## _data(void *logctx, GetBitContext *gb, PSCommonContex
         int e_prev = e ? e - 1 : ps->num_env_old - 1; \
         e_prev = FFMAX(e_prev, 0); \
         for (b = 0; b < num; b++) { \
-            int val = PAR[e_prev][b] + get_vlc2(gb, vlc_table, NB_BITS, MAX_DEPTH) - OFFSET; \
+            int val = PAR[e_prev][b] + get_vlc2(gb, vlc_table, NB_BITS, MAX_DEPTH); \
             if (MASK) val &= MASK; \
             PAR[e][b] = val; \
             if (ERR_CONDITION) \
@@ -91,7 +91,7 @@ static int read_ ## PAR ## _data(void *logctx, GetBitContext *gb, PSCommonContex
     } else { \
         int val = 0; \
         for (b = 0; b < num; b++) { \
-            val += get_vlc2(gb, vlc_table, NB_BITS, MAX_DEPTH) - OFFSET; \
+            val += get_vlc2(gb, vlc_table, NB_BITS, MAX_DEPTH); \
             if (MASK) val &= MASK; \
             PAR[e][b] = val; \
             if (ERR_CONDITION) \
@@ -104,9 +104,9 @@ err: \
     return AVERROR_INVALIDDATA; \
 }
 
-READ_PAR_DATA(iid,    huff_offset[table_idx],    0, FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant, 9, 3)
-READ_PAR_DATA(icc,    huff_offset[table_idx],    0, ps->icc_par[e][b] > 7U, 9, 2)
-READ_PAR_DATA(ipdopd,                      0, 0x07, 0, 5, 1)
+READ_PAR_DATA(iid,       0, FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant, 9, 3)
+READ_PAR_DATA(icc,       0, ps->icc_par[e][b] > 7U, 9, 2)
+READ_PAR_DATA(ipdopd, 0x07, 0, 5, 1)
 
 static int ps_read_extension_data(GetBitContext *gb, PSCommonContext *ps,
                                   int ps_extension_id)
@@ -300,7 +300,7 @@ av_cold void ff_ps_init_common(void)
             ff_vlc_init_tables_from_lengths(&state, i <= 5 ? 9 : 5, huff_sizes[i],
                                             &tab[0][1], 2,
                                             &tab[0][0], 2, 1,
-                                            0, 0);
+                                            huff_offset[i], 0);
         tab += huff_sizes[i];
     }
 }
