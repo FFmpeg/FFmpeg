@@ -185,47 +185,6 @@ void ff_vlc_free(VLC *vlc);
 #define VLC_INIT_OUTPUT_LE      8
 #define VLC_INIT_LE             (VLC_INIT_INPUT_LE | VLC_INIT_OUTPUT_LE)
 
-#define VLC_INIT_CUSTOM_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,      \
-                                      h, i, j, flags, static_size)         \
-    do {                                                                   \
-        static VLCElem table[static_size];                                 \
-        (vlc)->table           = table;                                    \
-        (vlc)->table_allocated = static_size;                              \
-        ff_vlc_init_sparse(vlc, bits, a, b, c, d, e, f, g, h, i, j,        \
-                           flags | VLC_INIT_USE_STATIC);                   \
-    } while (0)
-
-#define VLC_INIT_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, h, i, j, static_size) \
-    VLC_INIT_CUSTOM_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,          \
-                                  h, i, j, 0, static_size)
-
-#define VLC_INIT_LE_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, h, i, j, static_size) \
-    VLC_INIT_CUSTOM_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,          \
-                                  h, i, j, VLC_INIT_LE, static_size)
-
-#define VLC_INIT_CUSTOM_STATIC(vlc, bits, a, b, c, d, e, f, g, flags, static_size) \
-    VLC_INIT_CUSTOM_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g,          \
-                                  NULL, 0, 0, flags, static_size)
-
-#define VLC_INIT_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size)       \
-    VLC_INIT_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
-
-#define VLC_INIT_LE_STATIC(vlc, bits, a, b, c, d, e, f, g, static_size) \
-    VLC_INIT_LE_SPARSE_STATIC(vlc, bits, a, b, c, d, e, f, g, NULL, 0, 0, static_size)
-
-#define VLC_INIT_STATIC_FROM_LENGTHS(vlc, bits, nb_codes, lens, len_wrap,  \
-                                     symbols, symbols_wrap, symbols_size,  \
-                                     offset, flags, static_size)           \
-    do {                                                                   \
-        static VLCElem table[static_size];                                 \
-        (vlc)->table           = table;                                    \
-        (vlc)->table_allocated = static_size;                              \
-        ff_vlc_init_from_lengths(vlc, bits, nb_codes, lens, len_wrap,      \
-                                 symbols, symbols_wrap, symbols_size,      \
-                                 offset, flags | VLC_INIT_USE_STATIC,      \
-                                 NULL);                                    \
-    } while (0)
-
 /**
  * For static VLCs, the number of bits can often be hardcoded
  * at each get_vlc2() callsite. Then using a full VLC would be uneconomical,
