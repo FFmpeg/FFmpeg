@@ -247,7 +247,7 @@ static AVBufferRef *d3d12va_pool_alloc(void *opaque, size_t size)
         .Format           = hwctx->format,
         .SampleDesc       = {.Count = 1, .Quality = 0 },
         .Layout           = D3D12_TEXTURE_LAYOUT_UNKNOWN,
-        .Flags            = D3D12_RESOURCE_FLAG_NONE,
+        .Flags            = hwctx->flags,
     };
 
     frame = av_mallocz(sizeof(AVD3D12VAFrame));
