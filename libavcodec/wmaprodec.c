@@ -132,12 +132,12 @@
 #define SCALEMAXDEPTH   ((HUFF_SCALE_MAXBITS+SCALEVLCBITS-1)/SCALEVLCBITS)
 #define SCALERLMAXDEPTH ((HUFF_SCALE_RL_MAXBITS+VLCBITS-1)/VLCBITS)
 
-static VLC              sf_vlc;           ///< scale factor DPCM vlc
-static VLC              sf_rl_vlc;        ///< scale factor run length vlc
-static VLC              vec4_vlc;         ///< 4 coefficients per symbol
-static VLC              vec2_vlc;         ///< 2 coefficients per symbol
-static VLC              vec1_vlc;         ///< 1 coefficient per symbol
-static VLC              coef_vlc[2];      ///< coefficient run length vlc codes
+static VLCElem          sf_vlc[616];      ///< scale factor DPCM vlc
+static VLCElem          sf_rl_vlc[1406];  ///< scale factor run length vlc
+static VLCElem          vec4_vlc[604];    ///< 4 coefficients per symbol
+static VLCElem          vec2_vlc[562];    ///< 2 coefficients per symbol
+static VLCElem          vec1_vlc[562];    ///< 1 coefficient per symbol
+static const VLCElem   *coef_vlc[2];      ///< coefficient run length vlc codes
 static float            sin64[33];        ///< sine table for decorrelation
 
 /**
@@ -320,27 +320,32 @@ static av_cold int get_rate(AVCodecContext *avctx)
 
 static av_cold void decode_init_static(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
-                                 &scale_table[0][1], 2,
-                                 &scale_table[0][0], 2, 1, -60, 0, 616);
-    VLC_INIT_STATIC_FROM_LENGTHS(&sf_rl_vlc, VLCBITS, HUFF_SCALE_RL_SIZE,
-                                 &scale_rl_table[0][1], 2,
-                                 &scale_rl_table[0][0], 2, 1, 0, 0, 1406);
-    VLC_INIT_STATIC_FROM_LENGTHS(&coef_vlc[0], VLCBITS, HUFF_COEF0_SIZE,
-                                 coef0_lens, 1,
-                                 coef0_syms, 2, 2, 0, 0, 2108);
-    VLC_INIT_STATIC_FROM_LENGTHS(&coef_vlc[1], VLCBITS, HUFF_COEF1_SIZE,
+    static VLCElem vlc_buf[2108 + 3912];
+    VLCInitState state = VLC_INIT_STATE(vlc_buf);
+
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
+                                       &scale_table[0][1], 2,
+                                       &scale_table[0][0], 2, 1, -60, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(sf_rl_vlc, VLCBITS, HUFF_SCALE_RL_SIZE,
+                                       &scale_rl_table[0][1], 2,
+                                       &scale_rl_table[0][0], 2, 1, 0, 0);
+    coef_vlc[0] =
+        ff_vlc_init_tables_from_lengths(&state, VLCBITS, HUFF_COEF0_SIZE,
+                                        coef0_lens, 1,
+                                        coef0_syms, 2, 2, 0, 0);
+    coef_vlc[1] =
+        ff_vlc_init_tables_from_lengths(&state, VLCBITS, HUFF_COEF1_SIZE,
                                  &coef1_table[0][1], 2,
-                                 &coef1_table[0][0], 2, 1, 0, 0, 3912);
-    VLC_INIT_STATIC_FROM_LENGTHS(&vec4_vlc, VLCBITS, HUFF_VEC4_SIZE,
-                                 vec4_lens, 1,
-                                 vec4_syms, 2, 2, -1, 0, 604);
-    VLC_INIT_STATIC_FROM_LENGTHS(&vec2_vlc, VLCBITS, HUFF_VEC2_SIZE,
-                                 &vec2_table[0][1], 2,
-                                 &vec2_table[0][0], 2, 1, -1, 0, 562);
-    VLC_INIT_STATIC_FROM_LENGTHS(&vec1_vlc, VLCBITS, HUFF_VEC1_SIZE,
-                                 &vec1_table[0][1], 2,
-                                 &vec1_table[0][0], 2, 1, 0, 0, 562);
+                                 &coef1_table[0][0], 2, 1, 0, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(vec4_vlc, VLCBITS, HUFF_VEC4_SIZE,
+                                       vec4_lens, 1,
+                                       vec4_syms, 2, 2, -1, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(vec2_vlc, VLCBITS, HUFF_VEC2_SIZE,
+                                       &vec2_table[0][1], 2,
+                                       &vec2_table[0][0], 2, 1, -1, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(vec1_vlc, VLCBITS, HUFF_VEC1_SIZE,
+                                       &vec1_table[0][1], 2,
+                                       &vec1_table[0][0], 2, 1, 0, 0);
 
     /** calculate sine values for the decorrelation matrix */
     for (int i = 0; i < 33; i++)
@@ -929,7 +934,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
         0x41400000, 0x41500000, 0x41600000, 0x41700000,
     };
     int vlctable;
-    VLC* vlc;
+    const VLCElem *vlc;
     WMAProChannelCtx* ci = &s->channel[c];
     int rl_mode = 0;
     int cur_coeff = 0;
@@ -940,7 +945,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
     ff_dlog(s->avctx, "decode coefficients for channel %i\n", c);
 
     vlctable = get_bits1(&s->gb);
-    vlc = &coef_vlc[vlctable];
+    vlc = coef_vlc[vlctable];
 
     if (vlctable) {
         run = coef1_run;
@@ -958,17 +963,17 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
         int i;
         unsigned int idx;
 
-        idx = get_vlc2(&s->gb, vec4_vlc.table, VLCBITS, VEC4MAXDEPTH);
+        idx = get_vlc2(&s->gb, vec4_vlc, VLCBITS, VEC4MAXDEPTH);
 
         if ((int)idx < 0) {
             for (i = 0; i < 4; i += 2) {
-                idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
+                idx = get_vlc2(&s->gb, vec2_vlc, VLCBITS, VEC2MAXDEPTH);
                 if ((int)idx < 0) {
                     uint32_t v0, v1;
-                    v0 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                    v0 = get_vlc2(&s->gb, vec1_vlc, VLCBITS, VEC1MAXDEPTH);
                     if (v0 == HUFF_VEC1_SIZE - 1)
                         v0 += ff_wma_get_large_val(&s->gb);
-                    v1 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
+                    v1 = get_vlc2(&s->gb, vec1_vlc, VLCBITS, VEC1MAXDEPTH);
                     if (v1 == HUFF_VEC1_SIZE - 1)
                         v1 += ff_wma_get_large_val(&s->gb);
                     vals[i  ] = av_float2int(v0);
@@ -1059,7 +1064,7 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
                 s->channel[c].scale_factor_step = get_bits(&s->gb, 2) + 1;
                 val = 45 / s->channel[c].scale_factor_step;
                 for (sf = s->channel[c].scale_factors; sf < sf_end; sf++) {
-                    val += get_vlc2(&s->gb, sf_vlc.table, SCALEVLCBITS, SCALEMAXDEPTH);
+                    val += get_vlc2(&s->gb, sf_vlc, SCALEVLCBITS, SCALEMAXDEPTH);
                     *sf = val;
                 }
             } else {
@@ -1071,7 +1076,7 @@ static int decode_scale_factors(WMAProDecodeCtx* s)
                     int val;
                     int sign;
 
-                    idx = get_vlc2(&s->gb, sf_rl_vlc.table, VLCBITS, SCALERLMAXDEPTH);
+                    idx = get_vlc2(&s->gb, sf_rl_vlc, VLCBITS, SCALERLMAXDEPTH);
 
                     if (!idx) {
                         uint32_t code = get_bits(&s->gb, 14);

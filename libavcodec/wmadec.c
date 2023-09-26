@@ -616,7 +616,7 @@ static int wma_decode_block(WMACodecContext *s)
              * there is potentially less energy there */
             tindex = (ch == 1 && s->ms_stereo);
             memset(ptr, 0, s->block_len * sizeof(WMACoef));
-            ret = ff_wma_run_level_decode(s->avctx, &s->gb, &s->coef_vlc[tindex],
+            ret = ff_wma_run_level_decode(s->avctx, &s->gb, s->coef_vlc[tindex].table,
                                           s->level_table[tindex], s->run_table[tindex],
                                           0, ptr, 0, nb_coefs[ch],
                                           s->block_len, s->frame_len_bits, coef_nb_bits);
