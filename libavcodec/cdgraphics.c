@@ -249,11 +249,11 @@ static void cdg_scroll(CDGraphicsContext *cc, uint8_t *data,
     if (vinc > 0)
         cdg_fill_wrapper(0, 0, out,
                          0, CDG_FULL_HEIGHT - vinc, in, color,
-                         stride, vinc, stride, roll_over);
+                         FFABS(stride), vinc, stride, roll_over);
     else if (vinc < 0)
         cdg_fill_wrapper(0, CDG_FULL_HEIGHT + vinc, out,
                          0, 0, in, color,
-                         stride, -1 * vinc, stride, roll_over);
+                         FFABS(stride), -1 * vinc, stride, roll_over);
 
     if (hinc > 0)
         cdg_fill_wrapper(0, 0, out,
