@@ -137,20 +137,20 @@ void ff_hevc_put_hevc_qpel_bi_h16_8_neon(uint8_t *_dst, ptrdiff_t _dststride, co
     void ff_hevc_put_hevc_##fn##24_8_neon##ext args; \
     void ff_hevc_put_hevc_##fn##32_8_neon##ext args; \
     void ff_hevc_put_hevc_##fn##48_8_neon##ext args; \
-    void ff_hevc_put_hevc_##fn##64_8_neon##ext args; \
+    void ff_hevc_put_hevc_##fn##64_8_neon##ext args
 
 #define NEON8_FNPROTO_PARTIAL_4(fn, args, ext) \
     void ff_hevc_put_hevc_##fn##4_8_neon##ext args; \
     void ff_hevc_put_hevc_##fn##8_8_neon##ext args; \
     void ff_hevc_put_hevc_##fn##16_8_neon##ext args; \
-    void ff_hevc_put_hevc_##fn##64_8_neon##ext args; \
+    void ff_hevc_put_hevc_##fn##64_8_neon##ext args
 
 #define NEON8_FNPROTO_PARTIAL_5(fn, args, ext) \
     void ff_hevc_put_hevc_##fn##4_8_neon##ext args; \
     void ff_hevc_put_hevc_##fn##8_8_neon##ext args; \
     void ff_hevc_put_hevc_##fn##16_8_neon##ext args; \
     void ff_hevc_put_hevc_##fn##32_8_neon##ext args; \
-    void ff_hevc_put_hevc_##fn##64_8_neon##ext args; \
+    void ff_hevc_put_hevc_##fn##64_8_neon##ext args
 
 NEON8_FNPROTO(pel_uni_pixels, (uint8_t *_dst, ptrdiff_t _dststride,
         const uint8_t *_src, ptrdiff_t _srcstride,
