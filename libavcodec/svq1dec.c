@@ -190,7 +190,7 @@ static int svq1_decode_block_intra(GetBitContext *bitbuf, uint8_t *pixels,
         height = 1 << ((3 + level) / 2);
 
         /* get number of stages (-1 skips vector, 0 for mean only) */
-        stages = get_vlc2(bitbuf, svq1_intra_multistage[level], 3, 3) - 1;
+        stages = get_vlc2(bitbuf, svq1_intra_multistage[level], 4, 2) - 1;
 
         if (stages == -1) {
             for (y = 0; y < height; y++)
@@ -779,7 +779,7 @@ static int svq1_decode_frame(AVCodecContext *avctx, AVFrame *cur,
 
 static av_cold void svq1_static_init(void)
 {
-    static VLCElem table[168];
+    static VLCElem table[196];
     VLCInitState state = VLC_INIT_STATE(table);
 
     VLC_INIT_STATIC_TABLE(svq1_block_type, SVQ1_BLOCK_TYPE_VLC_BITS, 4,
@@ -792,7 +792,7 @@ static av_cold void svq1_static_init(void)
 
     for (int i = 0; i < 6; i++) {
         svq1_intra_multistage[i] =
-            ff_vlc_init_tables(&state, 3, 8,
+            ff_vlc_init_tables(&state, 4, 8,
                                &ff_svq1_intra_multistage_vlc[i][0][1], 2, 1,
                                &ff_svq1_intra_multistage_vlc[i][0][0], 2, 1, 0);
         svq1_inter_multistage[i] =
