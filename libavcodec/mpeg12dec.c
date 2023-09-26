@@ -117,7 +117,7 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
 {
     int code, sign, val, shift;
 
-    code = get_vlc2(&s->gb, ff_mv_vlc.table, MV_VLC_BITS, 2);
+    code = get_vlc2(&s->gb, ff_mv_vlc, MV_VLC_BITS, 2);
     if (code == 0)
         return pred;
     if (code < 0)
@@ -470,7 +470,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         }
         break;
     case AV_PICTURE_TYPE_P:
-        mb_type = get_vlc2(&s->gb, ff_mb_ptype_vlc.table, MB_PTYPE_VLC_BITS, 1);
+        mb_type = get_vlc2(&s->gb, ff_mb_ptype_vlc, MB_PTYPE_VLC_BITS, 1);
         if (mb_type < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Invalid mb type in P-frame at %d %d\n", s->mb_x, s->mb_y);
@@ -479,7 +479,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         mb_type = ptype2mb_type[mb_type];
         break;
     case AV_PICTURE_TYPE_B:
-        mb_type = get_vlc2(&s->gb, ff_mb_btype_vlc.table, MB_BTYPE_VLC_BITS, 1);
+        mb_type = get_vlc2(&s->gb, ff_mb_btype_vlc, MB_BTYPE_VLC_BITS, 1);
         if (mb_type < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Invalid mb type in B-frame at %d %d\n", s->mb_x, s->mb_y);
@@ -736,7 +736,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         if (HAS_CBP(mb_type)) {
             s->bdsp.clear_blocks(s->block[0]);
 
-            cbp = get_vlc2(&s->gb, ff_mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
+            cbp = get_vlc2(&s->gb, ff_mb_pat_vlc, MB_PAT_VLC_BITS, 1);
             if (mb_block_count > 6) {
                 cbp *= 1 << mb_block_count - 6;
                 cbp  |= get_bits(&s->gb, mb_block_count - 6);
@@ -1422,7 +1422,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
         skip_bits1(&s->gb);
     } else {
         while (get_bits_left(&s->gb) > 0) {
-            int code = get_vlc2(&s->gb, ff_mbincr_vlc.table,
+            int code = get_vlc2(&s->gb, ff_mbincr_vlc,
                                 MBINCR_VLC_BITS, 2);
             if (code < 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "first mb_incr damaged\n");
@@ -1591,7 +1591,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
             /* read increment again */
             s->mb_skip_run = 0;
             for (;;) {
-                int code = get_vlc2(&s->gb, ff_mbincr_vlc.table,
+                int code = get_vlc2(&s->gb, ff_mbincr_vlc,
                                     MBINCR_VLC_BITS, 2);
                 if (code < 0) {
                     av_log(s->avctx, AV_LOG_ERROR, "mb incr damaged\n");
