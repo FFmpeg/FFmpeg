@@ -64,7 +64,7 @@ const uint8_t ff_lsf_nsf_table[6][3][4] = {
 };
 
 /* mpegaudio layer 3 huffman tables */
-VLC ff_huff_vlc[16];
+const VLCElem *ff_huff_vlc[16];
 static VLCElem huff_vlc_tables[128 + 128 + 128 + 130 + 128 + 154 + 166 + 142 +
                                204 + 190 + 170 + 542 + 460 + 662 + 414];
 VLC ff_huff_quad_vlc[2];
@@ -401,6 +401,7 @@ const uint8_t ff_mpa_pretab[2][22] = {
 
 static av_cold void mpegaudiodec_common_init_static(void)
 {
+    VLCInitState state = VLC_INIT_STATE(huff_vlc_tables);
     const uint8_t *huff_sym = mpa_huffsymbols, *huff_lens = mpa_hufflens;
     int offset;
 
@@ -414,7 +415,6 @@ static av_cold void mpegaudiodec_common_init_static(void)
     }
 
     /* huffman decode tables */
-    offset = 0;
     for (int i = 0; i < 15;) {
         uint16_t tmp_symbols[256];
         int nb_codes_minus_one = mpa_huff_sizes_minus_one[i];
@@ -426,16 +426,14 @@ static av_cold void mpegaudiodec_common_init_static(void)
             tmp_symbols[j] = high << 1 | ((high && low) << 4) | low;
         }
 
-        ff_huff_vlc[++i].table         = huff_vlc_tables + offset;
-        ff_huff_vlc[i].table_allocated = FF_ARRAY_ELEMS(huff_vlc_tables) - offset;
-        ff_vlc_init_from_lengths(&ff_huff_vlc[i], 7, j,
-                                 huff_lens, 1, tmp_symbols, 2, 2,
-                                 0, VLC_INIT_STATIC_OVERLONG, NULL);
-        offset    += ff_huff_vlc[i].table_size;
+        ff_huff_vlc[++i] = ff_vlc_init_tables_from_lengths(&state, 7, j,
+                                                           huff_lens, 1,
+                                                           tmp_symbols, 2, 2,
+                                                           0, 0);
         huff_lens += j;
         huff_sym  += j;
     }
-    av_assert0(offset == FF_ARRAY_ELEMS(huff_vlc_tables));
+    av_assert1(state.size == 0);
 
     offset = 0;
     for (int i = 0; i < 2; i++) {

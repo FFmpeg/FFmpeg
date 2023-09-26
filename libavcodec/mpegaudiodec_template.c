@@ -760,6 +760,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     /* low frequencies (called big values) */
     s_index = 0;
     for (i = 0; i < 3; i++) {
+        const VLCElem *vlctab;
         int j, k, l, linbits;
         j = g->region_size[i];
         if (j == 0)
@@ -768,13 +769,13 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
         k       = g->table_select[i];
         l       = ff_mpa_huff_data[k][0];
         linbits = ff_mpa_huff_data[k][1];
-        vlc     = &ff_huff_vlc[l];
 
         if (!l) {
             memset(&g->sb_hybrid[s_index], 0, sizeof(*g->sb_hybrid) * 2 * j);
             s_index += 2 * j;
             continue;
         }
+        vlctab  = ff_huff_vlc[l];
 
         /* read huffcode and compute each couple */
         for (; j > 0; j--) {
@@ -787,7 +788,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 if (pos >= end_pos)
                     break;
             }
-            y = get_vlc2(&s->gb, vlc->table, 7, 3);
+            y = get_vlc2(&s->gb, vlctab, 7, 3);
 
             if (!y) {
                 g->sb_hybrid[s_index    ] =
