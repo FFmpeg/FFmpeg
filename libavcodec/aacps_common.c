@@ -288,36 +288,19 @@ err:
     return bits_left;
 }
 
-#define PS_VLC_ROW(name) \
-    { name ## _tab, FF_ARRAY_ELEMS(name ## _tab) }
-
 av_cold void ff_ps_init_common(void)
 {
     static VLCElem vlc_buf[(1544 + 832 + 1024 + 1036) +
                            (544 + 544) + (32 + 32 + 32 + 32)];
     VLCInitState state = VLC_INIT_STATE(vlc_buf);
-    // Syntax initialization
-    static const struct {
-        const uint8_t (*vlc_tab)[2];
-        const unsigned int table_elems;
-    } ps_tmp[] = {
-        PS_VLC_ROW(huff_iid_df1),
-        PS_VLC_ROW(huff_iid_dt1),
-        PS_VLC_ROW(huff_iid_df0),
-        PS_VLC_ROW(huff_iid_dt0),
-        PS_VLC_ROW(huff_icc_df),
-        PS_VLC_ROW(huff_icc_dt),
-        PS_VLC_ROW(huff_ipd_df),
-        PS_VLC_ROW(huff_ipd_dt),
-        PS_VLC_ROW(huff_opd_df),
-        PS_VLC_ROW(huff_opd_dt),
-    };
+    const uint8_t (*tab)[2] = aacps_huff_tabs;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(vlc_ps); i++) {
         vlc_ps[i] =
-            ff_vlc_init_tables_from_lengths(&state, i <= 5 ? 9 : 5, ps_tmp[i].table_elems,
-                                            &ps_tmp[i].vlc_tab[0][1], 2,
-                                            &ps_tmp[i].vlc_tab[0][0], 2, 1,
+            ff_vlc_init_tables_from_lengths(&state, i <= 5 ? 9 : 5, huff_sizes[i],
+                                            &tab[0][1], 2,
+                                            &tab[0][0], 2, 1,
                                             0, 0);
+        tab += huff_sizes[i];
     }
 }
