@@ -2488,33 +2488,33 @@ static av_cold int vp3_decode_init(AVCodecContext *avctx)
 
         s->coeff_vlc = vlcs;
 
-    if (!s->theora_tables) {
-        const uint8_t (*bias_tabs)[32][2];
+        if (!s->theora_tables) {
+            const uint8_t (*bias_tabs)[32][2];
 
-        /* init VLC tables */
-        bias_tabs = CONFIG_VP4_DECODER && s->version >= 2 ? vp4_bias : vp3_bias;
-        for (int i = 0; i < FF_ARRAY_ELEMS(vlcs->vlcs); i++) {
-            ret = ff_vlc_init_from_lengths(&vlcs->vlcs[i], 11, 32,
-                                           &bias_tabs[i][0][1], 2,
-                                           &bias_tabs[i][0][0], 2, 1,
-                                           0, 0, avctx);
-            if (ret < 0)
-                return ret;
-            vlcs->vlc_tabs[i] = vlcs->vlcs[i].table;
-        }
-    } else {
-        for (int i = 0; i < FF_ARRAY_ELEMS(vlcs->vlcs); i++) {
-            const HuffTable *tab = &s->huffman_table[i];
+            /* init VLC tables */
+            bias_tabs = CONFIG_VP4_DECODER && s->version >= 2 ? vp4_bias : vp3_bias;
+            for (int i = 0; i < FF_ARRAY_ELEMS(vlcs->vlcs); i++) {
+                ret = ff_vlc_init_from_lengths(&vlcs->vlcs[i], 11, 32,
+                                               &bias_tabs[i][0][1], 2,
+                                               &bias_tabs[i][0][0], 2, 1,
+                                               0, 0, avctx);
+                if (ret < 0)
+                    return ret;
+                vlcs->vlc_tabs[i] = vlcs->vlcs[i].table;
+            }
+        } else {
+            for (int i = 0; i < FF_ARRAY_ELEMS(vlcs->vlcs); i++) {
+                const HuffTable *tab = &s->huffman_table[i];
 
-            ret = ff_vlc_init_from_lengths(&vlcs->vlcs[i], 11, tab->nb_entries,
-                                           &tab->entries[0].len, sizeof(*tab->entries),
-                                           &tab->entries[0].sym, sizeof(*tab->entries), 1,
-                                           0, 0, avctx);
-            if (ret < 0)
-                return ret;
-            vlcs->vlc_tabs[i] = vlcs->vlcs[i].table;
+                ret = ff_vlc_init_from_lengths(&vlcs->vlcs[i], 11, tab->nb_entries,
+                                               &tab->entries[0].len, sizeof(*tab->entries),
+                                               &tab->entries[0].sym, sizeof(*tab->entries), 1,
+                                               0, 0, avctx);
+                if (ret < 0)
+                    return ret;
+                vlcs->vlc_tabs[i] = vlcs->vlcs[i].table;
+            }
         }
-    }
     }
 
     ff_thread_once(&init_static_once, init_tables_once);
