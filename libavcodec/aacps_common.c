@@ -288,13 +288,8 @@ err:
     return bits_left;
 }
 
-#define PS_INIT_VLC_STATIC(num, nb_bits, size)                          \
-    vlc_ps[num] = ff_vlc_init_tables(&state, nb_bits, ps_tmp[num].table_size / ps_tmp[num].elem_size,    \
-                                     ps_tmp[num].ps_bits, 1, 1,                                          \
-                                     ps_tmp[num].ps_codes, ps_tmp[num].elem_size, ps_tmp[num].elem_size, 0);
-
 #define PS_VLC_ROW(name) \
-    { name ## _codes, name ## _bits, sizeof(name ## _codes), sizeof(name ## _codes[0]) }
+    { name ## _tab, FF_ARRAY_ELEMS(name ## _tab) }
 
 av_cold void ff_ps_init_common(void)
 {
@@ -303,8 +298,8 @@ av_cold void ff_ps_init_common(void)
     VLCInitState state = VLC_INIT_STATE(vlc_buf);
     // Syntax initialization
     static const struct {
-        const void *ps_codes, *ps_bits;
-        const unsigned int table_size, elem_size;
+        const uint8_t (*vlc_tab)[2];
+        const unsigned int table_elems;
     } ps_tmp[] = {
         PS_VLC_ROW(huff_iid_df1),
         PS_VLC_ROW(huff_iid_dt1),
@@ -318,14 +313,11 @@ av_cold void ff_ps_init_common(void)
         PS_VLC_ROW(huff_opd_dt),
     };
 
-    PS_INIT_VLC_STATIC(0, 9, 1544);
-    PS_INIT_VLC_STATIC(1, 9,  832);
-    PS_INIT_VLC_STATIC(2, 9, 1024);
-    PS_INIT_VLC_STATIC(3, 9, 1036);
-    PS_INIT_VLC_STATIC(4, 9,  544);
-    PS_INIT_VLC_STATIC(5, 9,  544);
-    PS_INIT_VLC_STATIC(6, 5,   32);
-    PS_INIT_VLC_STATIC(7, 5,   32);
-    PS_INIT_VLC_STATIC(8, 5,   32);
-    PS_INIT_VLC_STATIC(9, 5,   32);
+    for (int i = 0; i < FF_ARRAY_ELEMS(vlc_ps); i++) {
+        vlc_ps[i] =
+            ff_vlc_init_tables_from_lengths(&state, i <= 5 ? 9 : 5, ps_tmp[i].table_elems,
+                                            &ps_tmp[i].vlc_tab[0][1], 2,
+                                            &ps_tmp[i].vlc_tab[0][0], 2, 1,
+                                            0, 0);
+    }
 }
