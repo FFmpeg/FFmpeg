@@ -2223,6 +2223,34 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_BE,
     },
+    [AV_PIX_FMT_GBRAP14LE] = {
+        .name = "gbrap14le",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 0, 14 },       /* R */
+            { 0, 2, 0, 0, 14 },       /* G */
+            { 1, 2, 0, 0, 14 },       /* B */
+            { 3, 2, 0, 0, 14 },       /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB |
+                 AV_PIX_FMT_FLAG_ALPHA,
+    },
+    [AV_PIX_FMT_GBRAP14BE] = {
+        .name = "gbrap14be",
+        .nb_components = 4,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 2, 2, 0, 0, 14 },       /* R */
+            { 0, 2, 0, 0, 14 },       /* G */
+            { 1, 2, 0, 0, 14 },       /* B */
+            { 3, 2, 0, 0, 14 },       /* A */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_PLANAR |
+                 AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
+    },
     [AV_PIX_FMT_GBRAP12LE] = {
         .name = "gbrap12le",
         .nb_components = 4,
