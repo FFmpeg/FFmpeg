@@ -201,6 +201,57 @@ static av_always_inline void XYZ_xy(cmsCIEXYZ XYZ, AVCIExy *xy)
     xy->y = av_d2q(k * XYZ.Y, 100000);
 }
 
+static av_always_inline AVRational abs_sub_q(AVRational r1, AVRational r2)
+{
+    AVRational diff = av_sub_q(r1, r2);
+    /* denominator assumed to be positive */
+    return av_make_q(abs(diff.num), diff.den);
+}
+
+static const AVCIExy wp_d50 = { {3457, 10000}, {3585, 10000} }; /* CIE D50 */
+
+int ff_icc_profile_sanitize(FFIccContext *s, cmsHPROFILE profile)
+{
+    cmsCIEXYZ *white, fixed;
+    AVCIExy wpxy;
+    AVRational diff, z;
+    if (!profile)
+        return 0;
+
+    if (cmsGetEncodedICCversion(profile) >= 0x4000000) { // ICC v4
+        switch (cmsGetHeaderRenderingIntent(profile)) {
+        case INTENT_RELATIVE_COLORIMETRIC:
+        case INTENT_ABSOLUTE_COLORIMETRIC: ;
+            /* ICC v4 colorimetric profiles are specified to always use D50
+             * media white point, anything else is a violation of the spec.
+             * Sadly, such profiles are incredibly common (Apple...), so make
+             * an effort to fix them. */
+            if (!(white = cmsReadTag(profile, cmsSigMediaWhitePointTag)))
+                return AVERROR_INVALIDDATA;
+            XYZ_xy(*white, &wpxy);
+            diff = av_add_q(abs_sub_q(wpxy.x, wp_d50.x), abs_sub_q(wpxy.y, wp_d50.y));
+            if (av_cmp_q(diff, av_make_q(1, 1000)) > 0) {
+                av_log(s->avctx, AV_LOG_WARNING, "Invalid colorimetric ICCv4 "
+                       "profile media white point tag (expected %.4f %.4f, "
+                       "got %.4f %.4f)\n",
+                       av_q2d(wp_d50.x), av_q2d(wp_d50.y),
+                       av_q2d(wpxy.x), av_q2d(wpxy.y));
+                /* x+y+z = 1 */
+                z = av_sub_q(av_sub_q(av_make_q(1, 1), wp_d50.x), wp_d50.y);
+                fixed.X = av_q2d(av_div_q(wp_d50.x, wp_d50.y)) * white->Y;
+                fixed.Y = white->Y;
+                fixed.Z = av_q2d(av_div_q(z, wp_d50.y)) * white->Y;
+                if (!cmsWriteTag(profile, cmsSigMediaWhitePointTag, &fixed))
+                    return AVERROR_EXTERNAL;
+            }
+            break;
+        default: break;
+        }
+    }
+
+    return 0;
+}
+
 int ff_icc_profile_read_primaries(FFIccContext *s, cmsHPROFILE profile,
                                   AVColorPrimariesDesc *out_primaries)
 {

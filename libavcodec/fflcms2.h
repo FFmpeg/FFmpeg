@@ -66,6 +66,13 @@ int ff_icc_profile_generate(FFIccContext *s,
 int ff_icc_profile_attach(FFIccContext *s, cmsHPROFILE profile, AVFrame *frame);
 
 /**
+ * Sanitize an ICC profile to try and fix badly broken values.
+ *
+ * Returns 0 on success, or a negative error code.
+ */
+int ff_icc_profile_sanitize(FFIccContext *s, cmsHPROFILE profile);
+
+/**
  * Read the color primaries and white point coefficients encoded by an ICC
  * profile, and return the raw values in `out_primaries`.
  *
