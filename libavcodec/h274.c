@@ -259,11 +259,11 @@ int ff_h274_apply_film_grain(AVFrame *out_frame, const AVFrame *in_frame,
         // only advanced in 16x16 blocks, so use a nested loop
         for (int y = 0; y < height; y += 16) {
             for (int x = 0; x < width; x += 16) {
-                uint16_t y_offset = (seed >> 16) % 52;
-                uint16_t x_offset = (seed & 0xFFFF) % 56;
+                uint16_t x_offset = (seed >> 16) % 52;
+                uint16_t y_offset = (seed & 0xFFFF) % 56;
                 const int invert = (seed & 0x1);
-                y_offset &= 0xFFFC;
-                x_offset &= 0xFFF8;
+                x_offset &= 0xFFFC;
+                y_offset &= 0xFFF8;
                 prng_shift(&seed);
 
                 for (int yy = 0; yy < 16 && y+yy < height; yy += 8) {
