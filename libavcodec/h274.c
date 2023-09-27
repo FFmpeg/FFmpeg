@@ -110,7 +110,7 @@ static void init_slice(H274FilmGrainDatabase *database, uint8_t h, uint8_t v)
     init_slice_c(database->db[h][v], h, v, database->slice_tmp);
 }
 
-// Computes the average of an 8x8 block, right-shifted by 6
+// Computes the average of an 8x8 block
 static uint16_t avg_8x8_c(const uint8_t *in, int in_stride)
 {
     uint16_t avg[8] = {0}; // summing over an array vectorizes better
