@@ -368,7 +368,7 @@ static void add_level(VLC_MULTI_ELEM *table, const int nb_elems,
             uint32_t code;
 
             sym = buf[t].symbol;
-            if (l > curlimit)
+            if (l >= curlimit)
                 return;
             code = curcode + (buf[t].code >> curlen);
             newlimit = curlimit - l;
@@ -401,7 +401,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
 {
     int minbits, maxbits, max = nb_codes-1;
     unsigned count[VLC_MULTI_MAX_SYMBOLS-1] = { 0, };
-    VLC_MULTI_ELEM info = { { 0, }, 0, };
+    VLC_MULTI_ELEM info = { { 0, }, 0, 0, };
 
     minbits = buf[0].bits;
     maxbits = buf[0].bits;
