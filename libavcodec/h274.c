@@ -38,7 +38,7 @@ static void prng_shift(uint32_t *state)
 {
     // Primitive polynomial x^31 + x^3 + 1 (modulo 2)
     uint32_t x = *state;
-    uint8_t feedback = (x >> 2) ^ (x >> 30);
+    uint8_t feedback = 1u ^ (x >> 2) ^ (x >> 30);
     *state = (x << 1) | (feedback & 1u);
 }
 
