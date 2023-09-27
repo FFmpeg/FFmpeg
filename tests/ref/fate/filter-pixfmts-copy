@@ -23,6 +23,8 @@ gbrap10be           edcffb185e44b6dae5c2ead5505b7125
 gbrap10le           2a7392e14b21b1f9457526a071236a6d
 gbrap12be           0c4c1f8af361571265ca259d5f70f026
 gbrap12le           5f1d8c663d4c28863e687192433b34a4
+gbrap14be           25694ddb34dceabec5143a7677c8072d
+gbrap14le           0eba343fc6f713d310db3d67f7d5a06b
 gbrap16be           e4edca4361d643794034e5aa9ef290b1
 gbrap16le           9a95b389d2bf556179e8f4b27fb550ab
 gbrapf32be          d908f0950d3735863fe6f0793fa24f76

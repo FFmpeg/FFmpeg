@@ -1149,6 +1149,7 @@ rgb9plus_planar_funcs(16)
 
 rgb9plus_planar_transparency_funcs(10)
 rgb9plus_planar_transparency_funcs(12)
+rgb9plus_planar_transparency_funcs(14)
 rgb9plus_planar_transparency_funcs(16)
 
 #define rgbf32_planar_funcs_endian(endian_name, endian)                                             \
@@ -1326,6 +1327,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP12LE:
         c->readChrPlanar = planar_rgb12le_to_uv;
         break;
+    case AV_PIX_FMT_GBRAP14LE:
     case AV_PIX_FMT_GBRP14LE:
         c->readChrPlanar = planar_rgb14le_to_uv;
         break;
@@ -1348,6 +1350,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP12BE:
         c->readChrPlanar = planar_rgb12be_to_uv;
         break;
+    case AV_PIX_FMT_GBRAP14BE:
     case AV_PIX_FMT_GBRP14BE:
         c->readChrPlanar = planar_rgb14be_to_uv;
         break;
@@ -1686,6 +1689,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP12LE:
         c->readLumPlanar = planar_rgb12le_to_y;
         break;
+    case AV_PIX_FMT_GBRAP14LE:
+        c->readAlpPlanar = planar_rgb14le_to_a;
     case AV_PIX_FMT_GBRP14LE:
         c->readLumPlanar = planar_rgb14le_to_y;
         break;
@@ -1712,6 +1717,8 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GBRP12BE:
         c->readLumPlanar = planar_rgb12be_to_y;
         break;
+    case AV_PIX_FMT_GBRAP14BE:
+        c->readAlpPlanar = planar_rgb14be_to_a;
     case AV_PIX_FMT_GBRP14BE:
         c->readLumPlanar = planar_rgb14be_to_y;
         break;

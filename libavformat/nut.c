@@ -184,6 +184,8 @@ const AVCodecTag ff_nut_video_tags[] = {
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(10 , 00 , '4', 'G') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4', 00 , 12 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(12 , 00 , '4', 'G') },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4', 00 , 14 ) },
+    { AV_CODEC_ID_RAWVIDEO,         MKTAG(14 , 00 , '4', 'G') },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG('G', '4', 00 , 16 ) },
     { AV_CODEC_ID_RAWVIDEO,         MKTAG(16 , 00 , '4', 'G') },
 
