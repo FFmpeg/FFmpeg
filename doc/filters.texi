@@ -16837,6 +16837,7 @@ ffmpeg -init_hw_device vulkan -hwaccel vaapi -hwaccel_output_format vaapi ... -v
 @end example
 @end itemize
 
+@anchor{libvmaf}
 @section libvmaf
 
 Calulate the VMAF (Video Multi-Method Assessment Fusion) score for a
@@ -20895,6 +20896,7 @@ If the specified expression is not valid, it is kept at its current
 value.
 @end table
 
+@anchor{scale_cuda}
 @section scale_cuda
 
 Scale (resize) and convert (pixel format) the input video, using accelerated CUDA kernels.
