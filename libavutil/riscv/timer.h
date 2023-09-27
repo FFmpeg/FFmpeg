@@ -29,13 +29,13 @@ static inline uint64_t ff_read_time(void)
 #if (__riscv_xlen >= 64)
     uintptr_t cycles;
 
-    __asm__ ("rdtime  %0" : "=r" (cycles));
+    __asm__ volatile ("rdtime  %0" : "=r" (cycles));
 
 #else
     uint64_t cycles;
     uint32_t hi, lo, check;
 
-    __asm__ (
+    __asm__ volatile (
         "1: rdtimeh %0\n"
         "   rdtime  %1\n"
         "   rdtimeh %2\n"
