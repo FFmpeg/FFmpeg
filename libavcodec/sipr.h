@@ -24,7 +24,6 @@
 #ifndef AVCODEC_SIPR_H
 #define AVCODEC_SIPR_H
 
-#include "avcodec.h"
 #include "acelp_pitch_delay.h"
 #include "libavutil/mem_internal.h"
 
@@ -63,8 +62,6 @@ typedef struct SiprParameters {
 } SiprParameters;
 
 typedef struct SiprContext {
-    AVCodecContext *avctx;
-
     SiprMode mode;
 
     float past_pitch_gain;

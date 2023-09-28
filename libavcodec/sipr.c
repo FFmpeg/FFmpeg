@@ -532,7 +532,6 @@ static int sipr_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     int subframe_size = ctx->mode == MODE_16k ? L_SUBFR_16k : SUBFR_SIZE;
     int i, ret;
 
-    ctx->avctx = avctx;
     if (avpkt->size < (mode_par->bits_per_frame >> 3)) {
         av_log(avctx, AV_LOG_ERROR,
                "Error processing packet: packet size (%d) too small\n",
