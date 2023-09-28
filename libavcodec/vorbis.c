@@ -27,8 +27,10 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/error.h"
+#include "libavutil/log.h"
+#include "libavutil/macros.h"
 
-#include "avcodec.h"
 #include "vorbis.h"
 #include "vorbis_data.h"
 
@@ -104,7 +106,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
     return 0;
 }
 
-int ff_vorbis_ready_floor1_list(AVCodecContext *avctx,
+int ff_vorbis_ready_floor1_list(void *logctx,
                                 vorbis_floor1_entry *list, int values)
 {
     int i;
@@ -130,7 +132,7 @@ int ff_vorbis_ready_floor1_list(AVCodecContext *avctx,
         int j;
         for (j = i + 1; j < values; j++) {
             if (list[i].x == list[j].x) {
-                av_log(avctx, AV_LOG_ERROR,
+                av_log(logctx, AV_LOG_ERROR,
                        "Duplicate value found in floor 1 X coordinates\n");
                 return AVERROR_INVALIDDATA;
             }
