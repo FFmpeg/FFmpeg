@@ -585,8 +585,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case AV_PIX_FMT_YUV440P12:
     case AV_PIX_FMT_YUV420P12:
     case AV_PIX_FMT_YUV422P12:
+    case AV_PIX_FMT_YUVA444P12:
+    case AV_PIX_FMT_YUVA422P12:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 12;
+    case AV_PIX_FMT_GRAY14:
     case AV_PIX_FMT_YUV444P14:
     case AV_PIX_FMT_YUV420P14:
     case AV_PIX_FMT_YUV422P14:
@@ -667,6 +670,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 12;
     case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRAP14:
         if (!avctx->bits_per_raw_sample && !s->bits_per_raw_sample)
             s->bits_per_raw_sample = 14;
     case AV_PIX_FMT_GBRP16:
@@ -1284,13 +1288,14 @@ const FFCodec ff_ffv1_encoder = {
         AV_PIX_FMT_YUV420P9,  AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
         AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12,
         AV_PIX_FMT_YUVA444P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA420P16,
+        AV_PIX_FMT_YUVA444P12, AV_PIX_FMT_YUVA422P12,
         AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA420P10,
         AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA420P9,
         AV_PIX_FMT_GRAY16,    AV_PIX_FMT_GRAY8,     AV_PIX_FMT_GBRP9,     AV_PIX_FMT_GBRP10,
-        AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP12,    AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRAP14,
         AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12,
         AV_PIX_FMT_YA8,
-        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
         AV_PIX_FMT_GBRP16, AV_PIX_FMT_RGB48,
         AV_PIX_FMT_GBRAP16, AV_PIX_FMT_RGBA64,
         AV_PIX_FMT_GRAY9,
