@@ -1,9 +1,6 @@
 # subsystems
 OBJS-$(CONFIG_AUDIODSP)                += ppc/audiodsp.o
 OBJS-$(CONFIG_BLOCKDSP)                += ppc/blockdsp.o
-OBJS-$(CONFIG_FFT)                     += ppc/fft_init.o                \
-                                          ppc/fft_altivec.o             \
-                                          ppc/fft_vsx.o
 OBJS-$(CONFIG_FDCTDSP)                 += ppc/fdctdsp.o
 OBJS-$(CONFIG_FMTCONVERT)              += ppc/fmtconvert_altivec.o
 OBJS-$(CONFIG_H264CHROMA)              += ppc/h264chroma_init.o

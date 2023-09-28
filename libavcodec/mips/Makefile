@@ -13,7 +13,6 @@ MIPSFPU-OBJS-$(CONFIG_AMRWB_DECODER)      += mips/acelp_filters_mips.o     \
                                              mips/acelp_vectors_mips.o
 MIPSFPU-OBJS-$(CONFIG_MPEGAUDIODSP)       += mips/mpegaudiodsp_mips_float.o
 MIPSDSP-OBJS-$(CONFIG_MPEGAUDIODSP)       += mips/mpegaudiodsp_mips_fixed.o
-MIPSFPU-OBJS-$(CONFIG_FFT)                += mips/fft_mips.o
 MIPSFPU-OBJS-$(CONFIG_FMTCONVERT)         += mips/fmtconvert_mips.o
 OBJS-$(CONFIG_AC3DSP)                     += mips/ac3dsp_mips.o
 OBJS-$(CONFIG_AAC_DECODER)                += mips/aacdec_mips.o            \

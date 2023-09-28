@@ -136,13 +136,9 @@ Component options:
   --disable-w32threads     disable Win32 threads [autodetect]
   --disable-os2threads     disable OS/2 threads [autodetect]
   --disable-network        disable network support [no]
-  --disable-dct            disable DCT code
   --disable-dwt            disable DWT code
   --disable-error-resilience disable error resilience code
   --disable-lsp            disable LSP code
-  --disable-mdct           disable MDCT code
-  --disable-rdft           disable RDFT code
-  --disable-fft            disable FFT code
   --disable-faan           disable floating point AAN (I)DCT code
   --disable-pixelutils     disable pixel utils in libavutil
 
@@ -2004,17 +2000,13 @@ PROGRAM_LIST="
 "
 
 SUBSYSTEM_LIST="
-    dct
     dwt
     error_resilience
     faan
     fast_unaligned
-    fft
     lsp
-    mdct
     pixelutils
     network
-    rdft
 "
 
 # COMPONENT_LIST needs to come last to ensure correct dependency checking
@@ -2766,7 +2758,6 @@ cbs_h266_select="cbs"
 cbs_jpeg_select="cbs"
 cbs_mpeg2_select="cbs"
 cbs_vp9_select="cbs"
-dct_select="rdft"
 deflate_wrapper_deps="zlib"
 dirac_parse_select="golomb"
 dovi_rpu_select="golomb"
@@ -2786,7 +2777,6 @@ frame_thread_encoder_deps="encoders threads"
 inflate_wrapper_deps="zlib"
 intrax8_select="blockdsp wmv2dsp"
 iso_media_select="mpeg4audio"
-mdct_select="fft"
 me_cmp_select="idctdsp"
 mpeg_er_select="error_resilience"
 mpegaudio_select="mpegaudiodsp mpegaudioheader"
@@ -2796,7 +2786,6 @@ mpegvideoenc_select="aandcttables fdctdsp me_cmp mpegvideo pixblockdsp"
 msmpeg4dec_select="h263_decoder"
 msmpeg4enc_select="h263_encoder"
 vc1dsp_select="h264chroma qpeldsp startcode"
-rdft_select="fft"
 
 # decoders / encoders
 aac_decoder_select="adts_header mpeg4audio sinewin"

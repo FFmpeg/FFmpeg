@@ -32,6 +32,7 @@ OBJS = ac3_parser.o                                                     \
        allcodecs.o                                                      \
        avcodec.o                                                        \
        avdct.o                                                          \
+       avfft.o                                                          \
        avpacket.o                                                       \
        bitstream.o                                                      \
        bitstream_filters.o                                              \
@@ -81,7 +82,6 @@ OBJS-$(CONFIG_CBS_JPEG)                += cbs_jpeg.o
 OBJS-$(CONFIG_CBS_MPEG2)               += cbs_mpeg2.o
 OBJS-$(CONFIG_CBS_VP9)                 += cbs_vp9.o
 OBJS-$(CONFIG_CRYSTALHD)               += crystalhd.o
-OBJS-$(CONFIG_DCT)                     += dct.o dct32_fixed.o dct32_float.o
 OBJS-$(CONFIG_DEFLATE_WRAPPER)         += zlib_wrapper.o
 OBJS-$(CONFIG_DOVI_RPU)                += dovi_rpu.o
 OBJS-$(CONFIG_ERROR_RESILIENCE)        += error_resilience.o
@@ -90,9 +90,6 @@ OBJS-$(CONFIG_EXIF)                    += exif.o tiff_common.o
 OBJS-$(CONFIG_FAANDCT)                 += faandct.o
 OBJS-$(CONFIG_FAANIDCT)                += faanidct.o
 OBJS-$(CONFIG_FDCTDSP)                 += fdctdsp.o jfdctfst.o jfdctint.o
-FFT-OBJS-$(CONFIG_HARDCODED_TABLES)    += cos_tables.o
-OBJS-$(CONFIG_FFT)                     += avfft.o fft_float.o fft_fixed_32.o \
-                                          fft_init_table.o $(FFT-OBJS-yes)
 OBJS-$(CONFIG_FMTCONVERT)              += fmtconvert.o
 OBJS-$(CONFIG_GOLOMB)                  += golomb.o
 OBJS-$(CONFIG_H263DSP)                 += h263dsp.o
@@ -125,7 +122,6 @@ OBJS-$(CONFIG_LLVIDENCDSP)             += lossless_videoencdsp.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
 OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_LZF)                     += lzf.o
-OBJS-$(CONFIG_MDCT)                    += mdct_float.o mdct_fixed_32.o
 OBJS-$(CONFIG_ME_CMP)                  += me_cmp.o
 OBJS-$(CONFIG_MEDIACODEC)              += mediacodecdec_common.o mediacodec_surface.o mediacodec_wrapper.o mediacodec_sw_buffer.o
 OBJS-$(CONFIG_MPEG_ER)                 += mpeg_er.o
@@ -157,7 +153,6 @@ OBJS-$(CONFIG_QSV)                     += qsv.o
 OBJS-$(CONFIG_QSVDEC)                  += qsvdec.o
 OBJS-$(CONFIG_QSVENC)                  += qsvenc.o
 OBJS-$(CONFIG_RANGECODER)              += rangecoder.o
-OBJS-$(CONFIG_RDFT)                    += rdft.o
 OBJS-$(CONFIG_RV34DSP)                 += rv34dsp.o
 OBJS-$(CONFIG_SINEWIN)                 += sinewin.o
 OBJS-$(CONFIG_SNAPPY)                  += snappy.o
@@ -1326,8 +1321,6 @@ TESTPROGS = avcodec                                                     \
 
 TESTPROGS-$(CONFIG_AV1_VAAPI_ENCODER)     += av1_levels
 TESTPROGS-$(CONFIG_CABAC)                 += cabac
-TESTPROGS-$(CONFIG_DCT)                   += avfft
-TESTPROGS-$(CONFIG_FFT)                   += fft fft-fixed32
 TESTPROGS-$(CONFIG_GOLOMB)                += golomb
 TESTPROGS-$(CONFIG_IDCTDSP)               += dct
 TESTPROGS-$(CONFIG_IIRFILTER)             += iirfilter
@@ -1347,7 +1340,6 @@ HOSTPROGS = aacps_tablegen                                              \
             aacps_fixed_tablegen                                        \
             cbrt_tablegen                                               \
             cbrt_fixed_tablegen                                         \
-            cos_tablegen                                                \
             dv_tablegen                                                 \
             motionpixels_tablegen                                       \
             mpegaudio_tablegen                                          \
@@ -1361,12 +1353,6 @@ CLEANFILES = *_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 
 $(SUBDIR)tests/dct$(EXESUF): $(SUBDIR)dctref.o $(SUBDIR)aandcttab.o
 $(SUBDIR)dv_tablegen$(HOSTEXESUF): $(SUBDIR)dvdata_host.o
-
-TRIG_TABLES  = cos cos_fixed sin
-TRIG_TABLES := $(TRIG_TABLES:%=$(SUBDIR)%_tables.c)
-
-$(TRIG_TABLES): $(SUBDIR)%_tables.c: $(SUBDIR)cos_tablegen$(HOSTEXESUF)
-	$(M)./$< $* > $@
 
 ifdef CONFIG_SMALL
 $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=1

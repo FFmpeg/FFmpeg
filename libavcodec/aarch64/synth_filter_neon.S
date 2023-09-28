@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "asm-offsets.h"
-
 #include "libavutil/aarch64/asm.S"
 
 .macro inner_loop

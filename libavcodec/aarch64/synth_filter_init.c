@@ -23,14 +23,7 @@
 #include "libavutil/aarch64/cpu.h"
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
-#include "libavcodec/fft.h"
 #include "libavcodec/synth_filter.h"
-
-#include "asm-offsets.h"
-
-#if HAVE_NEON
-AV_CHECK_OFFSET(FFTContext, imdct_half, IMDCT_HALF);
-#endif
 
 void ff_synth_filter_float_neon(AVTXContext *imdct,
                                 float *synth_buf_ptr, int *synth_buf_offset,

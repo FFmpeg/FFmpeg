@@ -1,6 +1,5 @@
 /av1_levels
 /avcodec
-/avfft
 /avpacket
 /bitstream_be
 /bitstream_le
@@ -8,8 +7,6 @@
 /celp_math
 /codec_desc
 /dct
-/fft
-/fft-fixed32
 /golomb
 /h264_levels
 /h265_levels
