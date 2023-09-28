@@ -59,13 +59,13 @@ static void init_slice_c(int8_t out[64][64], uint8_t h, uint8_t v,
     //
     // Note: To make the subsequent matrix multiplication cache friendlier, we
     // store each *column* of the starting image in a *row* of `out`
-    for (int y = 0; y <= freq_v; y++) {
-        for (int x = 0; x <= freq_h; x += 4) {
+    for (int l = 0; l <= freq_v; l++) {
+        for (int k = 0; k <= freq_h; k += 4) {
             uint16_t offset = seed % 2048;
-            out[x + 0][y] = Gaussian_LUT[offset + 0];
-            out[x + 1][y] = Gaussian_LUT[offset + 1];
-            out[x + 2][y] = Gaussian_LUT[offset + 2];
-            out[x + 3][y] = Gaussian_LUT[offset + 3];
+            out[l][k + 0] = Gaussian_LUT[offset + 0];
+            out[l][k + 1] = Gaussian_LUT[offset + 1];
+            out[l][k + 2] = Gaussian_LUT[offset + 2];
+            out[l][k + 3] = Gaussian_LUT[offset + 3];
             prng_shift(&seed);
         }
     }
@@ -74,9 +74,9 @@ static void init_slice_c(int8_t out[64][64], uint8_t h, uint8_t v,
 
     // 64x64 inverse integer transform
     for (int y = 0; y < 64; y++) {
-        for (int x = 0; x <= freq_h; x++) {
+        for (int x = 0; x <= freq_v; x++) {
             int32_t sum = 0;
-            for (int p = 0; p <= freq_v; p++)
+            for (int p = 0; p <= freq_h; p++)
                 sum += R64T[y][p] * out[x][p];
             tmp[y][x] = (sum + 128) >> 8;
         }
@@ -85,8 +85,8 @@ static void init_slice_c(int8_t out[64][64], uint8_t h, uint8_t v,
     for (int y = 0; y < 64; y++) {
         for (int x = 0; x < 64; x++) {
             int32_t sum = 0;
-            for (int p = 0; p <= freq_h; p++)
-                sum += tmp[y][p] * R64T[x][p]; // R64T^T = R64
+            for (int p = 0; p <= freq_v; p++)
+                sum += tmp[x][p] * R64T[y][p]; // R64T^T = R64
             // Renormalize and clip to [-127, 127]
             out[y][x] = av_clip((sum + 128) >> 8, -127, 127);
         }
