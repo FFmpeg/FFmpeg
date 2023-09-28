@@ -23,7 +23,6 @@
 #ifndef AVCODEC_OPUS_SILK_H
 #define AVCODEC_OPUS_SILK_H
 
-#include "avcodec.h"
 #include "opus.h"
 #include "opus_rc.h"
 
@@ -32,7 +31,7 @@
 
 typedef struct SilkContext SilkContext;
 
-int ff_silk_init(AVCodecContext *avctx, SilkContext **ps, int output_channels);
+int ff_silk_init(void *logctx, SilkContext **ps, int output_channels);
 void ff_silk_free(SilkContext **ps);
 void ff_silk_flush(SilkContext *s);
 

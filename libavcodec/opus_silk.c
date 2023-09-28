@@ -48,7 +48,7 @@ typedef struct SilkFrame {
 } SilkFrame;
 
 struct SilkContext {
-    AVCodecContext *avctx;
+    void *logctx;
     int output_channels;
 
     int midonly;
@@ -799,7 +799,7 @@ int ff_silk_decode_superframe(SilkContext *s, OpusRangeCoder *rc,
 
     if (bandwidth > OPUS_BANDWIDTH_WIDEBAND ||
         coded_channels > 2 || duration_ms > 60) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid parameters passed "
+        av_log(s->logctx, AV_LOG_ERROR, "Invalid parameters passed "
                "to the SILK decoder.\n");
         return AVERROR(EINVAL);
     }
@@ -879,12 +879,12 @@ void ff_silk_flush(SilkContext *s)
     memset(s->prev_stereo_weights, 0, sizeof(s->prev_stereo_weights));
 }
 
-int ff_silk_init(AVCodecContext *avctx, SilkContext **ps, int output_channels)
+int ff_silk_init(void *logctx, SilkContext **ps, int output_channels)
 {
     SilkContext *s;
 
     if (output_channels != 1 && output_channels != 2) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid number of output channels: %d\n",
+        av_log(logctx, AV_LOG_ERROR, "Invalid number of output channels: %d\n",
                output_channels);
         return AVERROR(EINVAL);
     }
@@ -893,7 +893,7 @@ int ff_silk_init(AVCodecContext *avctx, SilkContext **ps, int output_channels)
     if (!s)
         return AVERROR(ENOMEM);
 
-    s->avctx           = avctx;
+    s->logctx          = logctx;
     s->output_channels = output_channels;
 
     ff_silk_flush(s);
