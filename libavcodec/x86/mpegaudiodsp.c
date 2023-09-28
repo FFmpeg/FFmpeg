@@ -45,6 +45,9 @@ void ff_four_imdct36_float_sse(float *out, float *buf, float *in, float *win,
 void ff_four_imdct36_float_avx(float *out, float *buf, float *in, float *win,
                                float *tmpbuf);
 
+void ff_dct32_float_sse2(float *out, const float *in);
+void ff_dct32_float_avx (float *out, const float *in);
+
 DECLARE_ALIGNED(16, static float, mdct_win_sse)[2][4][4*40];
 
 #if HAVE_6REGS && HAVE_SSE_INLINE
@@ -267,6 +270,7 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
 #if HAVE_SSE
     if (EXTERNAL_SSE2(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse2;
+        s->dct32_float          = ff_dct32_float_sse2;
     }
     if (EXTERNAL_SSE3(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_sse3;
@@ -279,6 +283,8 @@ av_cold void ff_mpadsp_init_x86(MPADSPContext *s)
     if (EXTERNAL_AVX(cpu_flags)) {
         s->imdct36_blocks_float = imdct36_blocks_avx;
     }
+    if (EXTERNAL_AVX_FAST(cpu_flags))
+        s->dct32_float          = ff_dct32_float_avx;
 #endif
 #endif /* HAVE_X86ASM */
 }
