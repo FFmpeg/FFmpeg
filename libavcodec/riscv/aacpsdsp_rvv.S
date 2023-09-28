@@ -203,12 +203,12 @@ func ff_ps_hybrid_synthesis_deint_rvv, zve32x
         mv          t4, a4
         addi        a2, a2, 1
 2:
-        vsetvli     t5, t3, e32, m1, ta, ma
+        vsetvli     t5, t3, e32, m4, ta, ma
         vlseg2e32.v v16, (t1)
         sub         t3, t3, t5
         vsse32.v    v16, (t0), t6
         mul         t2, t5, t6
-        vsse32.v    v17, (t4), t6
+        vsse32.v    v20, (t4), t6
         sh3add      t1, t5, t1
         add         t0, t0, t2
         add         t4, t4, t2
