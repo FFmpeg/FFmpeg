@@ -168,10 +168,10 @@ func ff_ps_hybrid_analysis_ileave_rvv, zve32x /* no needs for zve32f here */
         mv          t4, a4
         addi        a2, a2, 1
 2:
-        vsetvli     t5, t3, e32, m1, ta, ma
+        vsetvli     t5, t3, e32, m4, ta, ma
         vlse32.v    v16, (t1), t6
         sub         t3, t3, t5
-        vlse32.v    v17, (t4), t6
+        vlse32.v    v20, (t4), t6
         mul         t2, t5, t6
         vsseg2e32.v v16, (t0)
         sh3add      t0, t5, t0
