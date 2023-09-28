@@ -166,17 +166,17 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
     /* Read probabilities from bitstream */
     for (i = 1; i < 257; i++) {
         if (lag_decode_prob(gb, &rac->prob[i]) < 0) {
-            av_log(rac->avctx, AV_LOG_ERROR, "Invalid probability encountered.\n");
+            av_log(rac->logctx, AV_LOG_ERROR, "Invalid probability encountered.\n");
             return AVERROR_INVALIDDATA;
         }
         if ((uint64_t)cumul_prob + rac->prob[i] > UINT_MAX) {
-            av_log(rac->avctx, AV_LOG_ERROR, "Integer overflow encountered in cumulative probability calculation.\n");
+            av_log(rac->logctx, AV_LOG_ERROR, "Integer overflow encountered in cumulative probability calculation.\n");
             return AVERROR_INVALIDDATA;
         }
         cumul_prob += rac->prob[i];
         if (!rac->prob[i]) {
             if (lag_decode_prob(gb, &prob)) {
-                av_log(rac->avctx, AV_LOG_ERROR, "Invalid probability run encountered.\n");
+                av_log(rac->logctx, AV_LOG_ERROR, "Invalid probability run encountered.\n");
                 return AVERROR_INVALIDDATA;
             }
             if (prob > 256 - i)
@@ -189,7 +189,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
     }
 
     if (!cumul_prob) {
-        av_log(rac->avctx, AV_LOG_ERROR, "All probabilities are 0!\n");
+        av_log(rac->logctx, AV_LOG_ERROR, "All probabilities are 0!\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -207,7 +207,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
             scaled_cumul_prob += rac->prob[i];
         }
         if (scaled_cumul_prob <= 0) {
-            av_log(rac->avctx, AV_LOG_ERROR, "Scaled probabilities invalid\n");
+            av_log(rac->logctx, AV_LOG_ERROR, "Scaled probabilities invalid\n");
             return AVERROR_INVALIDDATA;
         }
         for (; i < 257; i++) {
@@ -221,7 +221,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
         cumulative_target = 1U << scale_factor;
 
         if (scaled_cumul_prob > cumulative_target) {
-            av_log(rac->avctx, AV_LOG_ERROR,
+            av_log(rac->logctx, AV_LOG_ERROR,
                    "Scaled probabilities are larger than target!\n");
             return AVERROR_INVALIDDATA;
         }
@@ -463,7 +463,7 @@ static int lag_decode_arith_plane(LagarithContext *l, uint8_t *dst,
     const uint8_t *src_end = src + src_size;
     int ret;
 
-    rac.avctx = l->avctx;
+    rac.logctx = l->avctx;
     l->zeros = 0;
 
     if(src_size < 2)
