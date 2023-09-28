@@ -33,10 +33,27 @@
 #include "encode.h"
 #include "bswapdsp.h"
 #include "bytestream.h"
+#include "lossless_videoencdsp.h"
 #include "put_bits.h"
 #include "mathops.h"
 #include "utvideo.h"
 #include "huffman.h"
+
+typedef struct UtvideoContext {
+    const AVClass *class;
+    BswapDSPContext bdsp;
+    LLVidEncDSPContext llvidencdsp;
+
+    uint32_t frame_info_size, flags;
+    int      planes;
+    int      slices;
+    int      compression;
+    int      frame_pred;
+
+    ptrdiff_t slice_stride;
+    uint8_t  *slice_bits, *slice_buffer[4];
+    int       slice_bits_size;
+} UtvideoContext;
 
 typedef struct HuffEntry {
     uint16_t sym;
@@ -76,7 +93,6 @@ static av_cold int utvideo_encode_init(AVCodecContext *avctx)
     int i, subsampled_height;
     uint32_t original_format;
 
-    c->avctx           = avctx;
     c->frame_info_size = 4;
     c->slice_stride    = FFALIGN(avctx->width, 32);
 
