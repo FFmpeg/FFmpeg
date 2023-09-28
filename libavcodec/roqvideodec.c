@@ -72,7 +72,7 @@ static void roqvideo_decode_frame(RoqContext *ri, GetByteContext *gb)
     xpos = ypos = 0;
 
     if (chunk_size > bytestream2_get_bytes_left(gb)) {
-        av_log(ri->avctx, AV_LOG_ERROR, "Chunk does not fit in input buffer\n");
+        av_log(ri->logctx, AV_LOG_ERROR, "Chunk does not fit in input buffer\n");
         chunk_size = bytestream2_get_bytes_left(gb);
     }
 
@@ -80,7 +80,7 @@ static void roqvideo_decode_frame(RoqContext *ri, GetByteContext *gb)
         for (yp = ypos; yp < ypos + 16; yp += 8)
             for (xp = xpos; xp < xpos + 16; xp += 8) {
                 if (bytestream2_tell(gb) >= chunk_start + chunk_size) {
-                    av_log(ri->avctx, AV_LOG_VERBOSE, "Chunk is too short\n");
+                    av_log(ri->logctx, AV_LOG_VERBOSE, "Chunk is too short\n");
                     return;
                 }
                 if (vqflg_pos < 0) {
@@ -114,7 +114,7 @@ static void roqvideo_decode_frame(RoqContext *ri, GetByteContext *gb)
                         if(k & 0x02) y += 4;
 
                         if (bytestream2_tell(gb) >= chunk_start + chunk_size) {
-                            av_log(ri->avctx, AV_LOG_VERBOSE, "Chunk is too short\n");
+                            av_log(ri->logctx, AV_LOG_VERBOSE, "Chunk is too short\n");
                             return;
                         }
                         if (vqflg_pos < 0) {
@@ -169,7 +169,7 @@ static av_cold int roq_decode_init(AVCodecContext *avctx)
 {
     RoqContext *s = avctx->priv_data;
 
-    s->avctx = avctx;
+    s->logctx = avctx;
 
     if (avctx->width % 16 || avctx->height % 16) {
         avpriv_request_sample(avctx, "Dimensions not being a multiple of 16");
