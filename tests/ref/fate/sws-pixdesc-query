@@ -43,6 +43,8 @@ isNBPS:
   gbrap10le
   gbrap12be
   gbrap12le
+  gbrap14be
+  gbrap14le
   gbrp10be
   gbrp10le
   gbrp12be
@@ -145,6 +147,7 @@ isBE:
   bgra64be
   gbrap10be
   gbrap12be
+  gbrap14be
   gbrap16be
   gbrapf32be
   gbrp10be
@@ -493,6 +496,8 @@ isRGB:
   gbrap10le
   gbrap12be
   gbrap12le
+  gbrap14be
+  gbrap14le
   gbrap16be
   gbrap16le
   gbrapf32be
@@ -647,6 +652,8 @@ AnyRGB:
   gbrap10le
   gbrap12be
   gbrap12le
+  gbrap14be
+  gbrap14le
   gbrap16be
   gbrap16le
   gbrapf32be
@@ -706,6 +713,8 @@ ALPHA:
   gbrap10le
   gbrap12be
   gbrap12le
+  gbrap14be
+  gbrap14le
   gbrap16be
   gbrap16le
   gbrapf32be
@@ -839,6 +848,8 @@ Planar:
   gbrap10le
   gbrap12be
   gbrap12le
+  gbrap14be
+  gbrap14le
   gbrap16be
   gbrap16le
   gbrapf32be
@@ -1018,6 +1029,8 @@ PlanarRGB:
   gbrap10le
   gbrap12be
   gbrap12le
+  gbrap14be
+  gbrap14le
   gbrap16be
   gbrap16le
   gbrapf32be

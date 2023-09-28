@@ -266,3 +266,5 @@ p212be          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  6144 
 p212le          planes: 2, linesizes: 128 128   0   0, plane_sizes:  6144  6144     0     0, plane_offsets:  6144     0     0, total_size: 12288
 p412be          planes: 2, linesizes: 128 256   0   0, plane_sizes:  6144 12288     0     0, plane_offsets:  6144     0     0, total_size: 18432
 p412le          planes: 2, linesizes: 128 256   0   0, plane_sizes:  6144 12288     0     0, plane_offsets:  6144     0     0, total_size: 18432
+gbrap14be       planes: 4, linesizes: 128 128 128 128, plane_sizes:  6144  6144  6144  6144, plane_offsets:  6144  6144  6144, total_size: 24576
+gbrap14le       planes: 4, linesizes: 128 128 128 128, plane_sizes:  6144  6144  6144  6144, plane_offsets:  6144  6144  6144, total_size: 24576
