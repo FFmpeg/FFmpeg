@@ -457,7 +457,7 @@ static uint8_t *bgmc_lut_getp(uint8_t *lut, int *lut_status, int delta)
 
 
 /** Initialize the lookup table arrays */
-av_cold int ff_bgmc_init(AVCodecContext *avctx,
+av_cold int ff_bgmc_init(void *logctx,
                          uint8_t **cf_lut, int **cf_lut_status)
 {
     *cf_lut        = av_malloc(sizeof(**cf_lut)        * LUT_BUFF * 16 * LUT_SIZE);
@@ -465,7 +465,7 @@ av_cold int ff_bgmc_init(AVCodecContext *avctx,
 
     if (!*cf_lut || !*cf_lut_status) {
         ff_bgmc_end(cf_lut, cf_lut_status);
-        av_log(avctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
+        av_log(logctx, AV_LOG_ERROR, "Allocating buffer memory failed.\n");
         return AVERROR(ENOMEM);
     } else {
         // initialize lut_status buffer to a value never used to compare against
