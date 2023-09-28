@@ -48,14 +48,14 @@ static int64_t get_utf8(GetBitContext *gb)
     return val;
 }
 
-int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
+int ff_flac_decode_frame_header(void *logctx, GetBitContext *gb,
                                 FLACFrameInfo *fi, int log_level_offset)
 {
     int bs_code, sr_code, bps_code;
 
     /* frame sync code */
     if ((get_bits(gb, 15) & 0x7FFF) != 0x7FFC) {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset, "invalid sync code\n");
+        av_log(logctx, AV_LOG_ERROR + log_level_offset, "invalid sync code\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -75,7 +75,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
         fi->channels = 2;
         fi->ch_mode -= FLAC_MAX_CHANNELS - 1;
     } else {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset,
+        av_log(logctx, AV_LOG_ERROR + log_level_offset,
                "invalid channel mode: %d\n", fi->ch_mode);
         return AVERROR_INVALIDDATA;
     }
@@ -83,7 +83,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     /* bits per sample */
     bps_code = get_bits(gb, 3);
     if (bps_code == 3) {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset,
+        av_log(logctx, AV_LOG_ERROR + log_level_offset,
                "invalid sample size code (%d)\n",
                bps_code);
         return AVERROR_INVALIDDATA;
@@ -92,7 +92,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
 
     /* reserved bit */
     if (get_bits1(gb)) {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset,
+        av_log(logctx, AV_LOG_ERROR + log_level_offset,
                "broken stream, invalid padding\n");
         return AVERROR_INVALIDDATA;
     }
@@ -100,14 +100,14 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     /* sample or frame count */
     fi->frame_or_sample_num = get_utf8(gb);
     if (fi->frame_or_sample_num < 0) {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset,
+        av_log(logctx, AV_LOG_ERROR + log_level_offset,
                "sample/frame number invalid; utf8 fscked\n");
         return AVERROR_INVALIDDATA;
     }
 
     /* blocksize */
     if (bs_code == 0) {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset,
+        av_log(logctx, AV_LOG_ERROR + log_level_offset,
                "reserved blocksize code: 0\n");
         return AVERROR_INVALIDDATA;
     } else if (bs_code == 6) {
@@ -128,7 +128,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     } else if (sr_code == 14) {
         fi->samplerate = get_bits(gb, 16) * 10;
     } else {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset,
+        av_log(logctx, AV_LOG_ERROR + log_level_offset,
                "illegal sample rate code %d\n",
                sr_code);
         return AVERROR_INVALIDDATA;
@@ -138,7 +138,7 @@ int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
     skip_bits(gb, 8);
     if (av_crc(av_crc_get_table(AV_CRC_8_ATM), 0, gb->buffer,
                get_bits_count(gb)/8)) {
-        av_log(avctx, AV_LOG_ERROR + log_level_offset,
+        av_log(logctx, AV_LOG_ERROR + log_level_offset,
                "header crc mismatch\n");
         return AVERROR_INVALIDDATA;
     }

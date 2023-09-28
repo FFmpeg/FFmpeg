@@ -75,13 +75,13 @@ int ff_flac_is_extradata_valid(AVCodecContext *avctx,
 
 /**
  * Validate and decode a frame header.
- * @param      avctx AVCodecContext to use as av_log() context
+ * @param      logctx context for logging
  * @param      gb    GetBitContext from which to read frame header
  * @param[out] fi    frame information
  * @param      log_level_offset  log level offset. can be used to silence error messages.
  * @return non-zero on error, 0 if ok
  */
-int ff_flac_decode_frame_header(AVCodecContext *avctx, GetBitContext *gb,
+int ff_flac_decode_frame_header(void *logctx, GetBitContext *gb,
                                 FLACFrameInfo *fi, int log_level_offset);
 
 void ff_flac_set_channel_layout(AVCodecContext *avctx, int channels);
