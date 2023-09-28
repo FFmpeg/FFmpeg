@@ -42,7 +42,7 @@ endfunc
 
 func ff_vector_clip_int32_rvv, zve32x
 1:
-        vsetvli t0, a4, e32, m1, ta, ma
+        vsetvli t0, a4, e32, m8, ta, ma
         vle32.v v8, (a1)
         sub     a4, a4, t0
         vmax.vx v8, v8, a2
@@ -59,7 +59,7 @@ func ff_vector_clipf_rvv, zve32f
 NOHWF   fmv.w.x  fa0, a3
 NOHWF   fmv.w.x  fa1, a4
 1:
-        vsetvli  t0, a2, e32, m1, ta, ma
+        vsetvli  t0, a2, e32, m8, ta, ma
         vle32.v  v8, (a1)
         sub      a2, a2, t0
         vfmax.vf v8, v8, fa0
