@@ -285,7 +285,7 @@ const AVInputFormat ff_gif_demuxer = {
     .read_probe     = gif_probe,
     .read_header    = gif_read_header,
     .read_packet    = gif_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
+    .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "gif",
     .priv_class     = &demuxer_class,
 };
