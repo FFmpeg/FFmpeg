@@ -901,14 +901,22 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             int x, y;
             if (odesc->flags & AV_PIX_FMT_FLAG_FLOAT) {
                 for (y = 0; y < out->height; y++) {
+                    const ptrdiff_t row =  y * out->linesize[3];
                     for (x = 0; x < out->width; x++) {
-                        AV_WN32(out->data[3] + x * odesc->comp[3].step + y * out->linesize[3],
+                        AV_WN32(out->data[3] + x * odesc->comp[3].step + row,
                                 av_float2int(1.0f));
                     }
                 }
-            } else {
+            } else if (s->dst_format.depth == 8) {
                 for (y = 0; y < outlink->h; y++)
                     memset(out->data[3] + y * out->linesize[3], 0xff, outlink->w);
+            } else {
+                const uint16_t max = (1 << s->dst_format.depth) - 1;
+                for (y = 0; y < outlink->h; y++) {
+                    const ptrdiff_t row =  y * out->linesize[3];
+                    for (x = 0; x < out->width; x++)
+                        AV_WN16(out->data[3] + x * odesc->comp[3].step + row, max);
+                }
             }
         }
     } else {
