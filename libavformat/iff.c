@@ -217,7 +217,7 @@ static int parse_dsd_diin(AVFormatContext *s, AVStream *st, uint64_t eof)
 {
     AVIOContext *pb = s->pb;
 
-    while (avio_tell(pb) + 12 <= eof && !avio_feof(pb)) {
+    while (av_sat_add64(avio_tell(pb), 12) <= eof && !avio_feof(pb)) {
         uint32_t tag      = avio_rl32(pb);
         uint64_t size     = avio_rb64(pb);
         uint64_t orig_pos = avio_tell(pb);
@@ -254,7 +254,7 @@ static int parse_dsd_prop(AVFormatContext *s, AVStream *st, uint64_t eof)
     int dsd_layout[6];
     ID3v2ExtraMeta *id3v2_extra_meta;
 
-    while (avio_tell(pb) + 12 <= eof && !avio_feof(pb)) {
+    while (av_sat_add64(avio_tell(pb), 12) <= eof && !avio_feof(pb)) {
         uint32_t tag      = avio_rl32(pb);
         uint64_t size     = avio_rb64(pb);
         uint64_t orig_pos = avio_tell(pb);
