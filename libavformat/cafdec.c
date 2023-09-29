@@ -265,7 +265,7 @@ static int read_pakt_chunk(AVFormatContext *s, int64_t size)
         }
     }
 
-    if (avio_tell(pb) - ccount > size) {
+    if (avio_tell(pb) - ccount > size || size > INT64_MAX - ccount) {
         av_log(s, AV_LOG_ERROR, "error reading packet table\n");
         return AVERROR_INVALIDDATA;
     }
