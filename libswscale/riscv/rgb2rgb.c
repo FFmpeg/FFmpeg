@@ -55,10 +55,8 @@ av_cold void rgb2rgb_init_riscv(void)
         shuffle_bytes_1230 = ff_shuffle_bytes_1230_rvv;
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_rvv;
         interleaveBytes = ff_interleave_bytes_rvv;
-#if (__riscv_xlen == 64)
         uyvytoyuv422 = ff_uyvytoyuv422_rvv;
         yuyvtoyuv422 = ff_yuyvtoyuv422_rvv;
-#endif
     }
 #endif
 }

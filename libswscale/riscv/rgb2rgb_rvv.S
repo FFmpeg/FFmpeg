@@ -100,12 +100,9 @@ func ff_interleave_bytes_rvv, zve32x
         ret
 endfunc
 
-#if (__riscv_xlen == 64)
 .macro yuy2_to_i422p y_shift
-        addi    sp, sp, -16
-        sd      s0,   (sp)
         addi    a4, a4, 1
-        lw      s0, 16(sp)
+        lw      t6, (sp)
         srai    a4, a4, 1 // pixel width -> chroma width
 1:
         mv      t4, a4
@@ -131,14 +128,12 @@ endfunc
         add        t2, t5, t2
         bnez       t4, 2b
 
-        add     a3, a3, s0
+        add     a3, a3, t6
         add     a0, a0, a6
         add     a1, a1, a7
         add     a2, a2, a7
         bnez    a5, 1b
 
-        ld      s0,   (sp)
-        addi    sp, sp, 16
         ret
 .endm
 
@@ -149,4 +144,3 @@ endfunc
 func ff_yuyvtoyuv422_rvv, zve32x
         yuy2_to_i422p 0
 endfunc
-#endif
