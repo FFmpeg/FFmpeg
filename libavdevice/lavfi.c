@@ -365,7 +365,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     LavfiContext *lavfi = avctx->priv_data;
     double min_pts = DBL_MAX;
     int stream_idx, min_pts_sink_idx = 0;
-    AVFrame *frame;
+    AVFrame *frame, *frame_to_free;
     AVDictionary *frame_metadata;
     int ret, i;
     AVStream *st;
@@ -378,6 +378,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     frame = av_frame_alloc();
     if (!frame)
         return AVERROR(ENOMEM);
+    frame_to_free = frame;
 
     /* iterate through all the graph sinks. Select the sink with the
      * minimum PTS */
@@ -423,6 +424,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+        frame_to_free = NULL;
 
         pkt->data   = pkt->buf->data;
         pkt->size   = pkt->buf->size;
@@ -463,12 +465,11 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
-        av_frame_free(&frame);
+    av_frame_free(&frame_to_free);
 
     return pkt->size;
 fail:
-    av_frame_free(&frame);
+    av_frame_free(&frame_to_free);
     return ret;
 
 }
