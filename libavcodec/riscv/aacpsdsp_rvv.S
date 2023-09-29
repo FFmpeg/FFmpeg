@@ -223,7 +223,7 @@ func ff_ps_hybrid_synthesis_deint_rvv, zve32x
 endfunc
 
 func ff_ps_stereo_interpolate_rvv, zve32f
-        vsetvli      t0, zero, e32, m1, ta, ma
+        vsetvli      t0, zero, e32, m2, ta, ma
         vid.v        v24
         flw          ft0,   (a2)
         vadd.vi      v24, v24, 1   // v24[i] = i + 1
@@ -232,43 +232,43 @@ func ff_ps_stereo_interpolate_rvv, zve32f
         flw          ft2,  8(a2)
         vfmv.v.f     v16, ft0
         flw          ft3, 12(a2)
-        vfmv.v.f     v17, ft1
+        vfmv.v.f     v18, ft1
         flw          ft0,   (a3)
-        vfmv.v.f     v18, ft2
+        vfmv.v.f     v20, ft2
         flw          ft1,  4(a3)
-        vfmv.v.f     v19, ft3
+        vfmv.v.f     v22, ft3
         flw          ft2,  8(a3)
         flw          ft3, 12(a3)
         fcvt.s.wu    ft4, t0       // (float)(vlenb / sizeof (float))
         vfmacc.vf    v16, ft0, v24 // h0 += (i + 1) * h0_step
         fmul.s       ft0, ft0, ft4
-        vfmacc.vf    v17, ft1, v24
+        vfmacc.vf    v18, ft1, v24
         fmul.s       ft1, ft1, ft4
-        vfmacc.vf    v18, ft2, v24
+        vfmacc.vf    v20, ft2, v24
         fmul.s       ft2, ft2, ft4
-        vfmacc.vf    v19, ft3, v24
+        vfmacc.vf    v22, ft3, v24
         fmul.s       ft3, ft3, ft4
 1:
-        vsetvli   t0, a4, e32, m1, ta, ma
-        vlseg2e32.v v8, (a0)     // v8:l_re, v9:l_im
+        vsetvli   t0, a4, e32, m2, ta, ma
+        vlseg2e32.v v0, (a0)     // v0:l_re, v2:l_im
         sub       a4, a4, t0
-        vlseg2e32.v v10, (a1)    // v10:r_re, v11:r_im
-        vfmul.vv  v12, v8, v16
-        vfmul.vv  v13, v9, v16
-        vfmul.vv  v14, v8, v17
-        vfmul.vv  v15, v9, v17
-        vfmacc.vv v12, v10, v18
-        vfmacc.vv v13, v11, v18
-        vfmacc.vv v14, v10, v19
-        vfmacc.vv v15, v11, v19
-        vsseg2e32.v v12, (a0)
+        vlseg2e32.v v4, (a1)    // v4:r_re, v6:r_im
+        vfmul.vv  v8, v0, v16
+        vfmul.vv  v10, v2, v16
+        vfmul.vv  v12, v0, v18
+        vfmul.vv  v14, v2, v18
+        vfmacc.vv v8, v4, v20
+        vfmacc.vv v10, v6, v20
+        vfmacc.vv v12, v4, v22
+        vfmacc.vv v14, v6, v22
+        vsseg2e32.v v8, (a0)
         sh3add    a0, t0, a0
-        vsseg2e32.v v14, (a1)
+        vsseg2e32.v v12, (a1)
         sh3add    a1, t0, a1
         vfadd.vf  v16, v16, ft0 // h0 += (vlenb / sizeof (float)) * h0_step
-        vfadd.vf  v17, v17, ft1
-        vfadd.vf  v18, v18, ft2
-        vfadd.vf  v19, v19, ft3
+        vfadd.vf  v18, v18, ft1
+        vfadd.vf  v20, v20, ft2
+        vfadd.vf  v22, v22, ft3
         bnez      a4, 1b
 
         ret
