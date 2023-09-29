@@ -343,6 +343,9 @@ static int read_header(AVFormatContext *s)
             avio_skip(pb, 4); /* edit count */
             caf->data_start = avio_tell(pb);
             caf->data_size  = size < 0 ? -1 : size - 4;
+            if (caf->data_start < 0 || caf->data_size > INT64_MAX - caf->data_start)
+                return AVERROR_INVALIDDATA;
+
             if (caf->data_size > 0 && (pb->seekable & AVIO_SEEKABLE_NORMAL))
                 avio_skip(pb, caf->data_size);
             found_data = 1;
