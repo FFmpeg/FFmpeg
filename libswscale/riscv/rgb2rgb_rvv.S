@@ -112,14 +112,14 @@ endfunc
         mv      t2, a2
         addi    a5, a5, -1
 2:
-        vsetvli    t5, t4, e8, m1, ta, ma
+        vsetvli    t5, t4, e8, m2, ta, ma
         vlseg2e16.v v16, (t3)
         sub        t4, t4, t5
         vnsrl.wi   v24, v16, \y_shift // Y0
         sh2add     t3, t5, t3
-        vnsrl.wi   v25, v18, \y_shift // Y1
+        vnsrl.wi   v26, v20, \y_shift // Y1
         vnsrl.wi   v28, v16, 8 - \y_shift // U
-        vnsrl.wi   v30, v18, 8 - \y_shift // V
+        vnsrl.wi   v30, v20, 8 - \y_shift // V
         vsseg2e8.v v24, (t0)
         sh1add     t0, t5, t0
         vse8.v     v28, (t1)
