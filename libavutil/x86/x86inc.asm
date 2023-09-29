@@ -232,6 +232,16 @@ DECLARE_REG_TMP_SIZE 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14
     %define gprsize 4
 %endif
 
+; Repeats an instruction/operation for multiple arguments.
+; Example usage: "REPX {psrlw x, 8}, m0, m1, m2, m3"
+%macro REPX 2-* ; operation, args
+    %xdefine %%f(x) %1
+    %rep %0 - 1
+        %rotate 1
+        %%f(%1)
+    %endrep
+%endmacro
+
 %macro PUSH 1
     push %1
     %ifidn rstk, rsp
