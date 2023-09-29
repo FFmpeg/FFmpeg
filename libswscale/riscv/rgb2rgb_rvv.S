@@ -101,34 +101,33 @@ func ff_interleave_bytes_rvv, zve32x
 endfunc
 
 #if (__riscv_xlen == 64)
-.macro yuy2_to_i422p v_y0, v_y1, v_u, v_v
+.macro yuy2_to_i422p y_shift
         addi    sp, sp, -16
         sd      s0,   (sp)
-        sd      s1,  8(sp)
         addi    a4, a4, 1
         lw      s0, 16(sp)
         srai    a4, a4, 1 // pixel width -> chroma width
-        li      s1, 2
 1:
         mv      t4, a4
         mv      t3, a3
         mv      t0, a0
-        addi    t6, a0, 1
         mv      t1, a1
         mv      t2, a2
         addi    a5, a5, -1
 2:
         vsetvli    t5, t4, e8, m1, ta, ma
+        vlseg2e16.v v16, (t3)
         sub        t4, t4, t5
-        vlseg4e8.v v8, (t3)
+        vnsrl.wi   v24, v16, \y_shift // Y0
         sh2add     t3, t5, t3
-        vsse8.v    \v_y0, (t0), s1
+        vnsrl.wi   v25, v18, \y_shift // Y1
+        vnsrl.wi   v28, v16, 8 - \y_shift // U
+        vnsrl.wi   v30, v18, 8 - \y_shift // V
+        vsseg2e8.v v24, (t0)
         sh1add     t0, t5, t0
-        vsse8.v    \v_y1, (t6), s1
-        sh1add     t6, t5, t6
-        vse8.v     \v_u, (t1)
+        vse8.v     v28, (t1)
         add        t1, t5, t1
-        vse8.v     \v_v, (t2)
+        vse8.v     v30, (t2)
         add        t2, t5, t2
         bnez       t4, 2b
 
@@ -138,17 +137,16 @@ endfunc
         add     a2, a2, a7
         bnez    a5, 1b
 
-        ld      s1,  8(sp)
         ld      s0,   (sp)
         addi    sp, sp, 16
         ret
 .endm
 
 func ff_uyvytoyuv422_rvv, zve32x
-        yuy2_to_i422p v9, v11, v8, v10
+        yuy2_to_i422p 8
 endfunc
 
 func ff_yuyvtoyuv422_rvv, zve32x
-        yuy2_to_i422p v8, v10, v9, v11
+        yuy2_to_i422p 0
 endfunc
 #endif
