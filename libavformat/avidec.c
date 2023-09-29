@@ -27,6 +27,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
+#include "libavutil/integer.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
@@ -476,7 +477,7 @@ static int calculate_bitrate(AVFormatContext *s)
         AVStream *st = s->streams[i];
         FFStream *const sti = ffstream(st);
         int64_t duration;
-        int64_t bitrate;
+        AVInteger bitrate_i, den_i, num_i;
 
         for (j = 0; j < sti->nb_index_entries; j++)
             len += sti->index_entries[j].size;
@@ -484,9 +485,14 @@ static int calculate_bitrate(AVFormatContext *s)
         if (sti->nb_index_entries < 2 || st->codecpar->bit_rate > 0)
             continue;
         duration = sti->index_entries[j-1].timestamp - sti->index_entries[0].timestamp;
-        bitrate = av_rescale(8*len, st->time_base.den, duration * st->time_base.num);
-        if (bitrate > 0) {
-            st->codecpar->bit_rate = bitrate;
+        den_i = av_mul_i(av_int2i(duration), av_int2i(st->time_base.num));
+        num_i = av_add_i(av_mul_i(av_int2i(8*len), av_int2i(st->time_base.den)), av_shr_i(den_i, 1));
+        bitrate_i = av_div_i(num_i, den_i);
+        if (av_cmp_i(bitrate_i, av_int2i(INT64_MAX)) <= 0) {
+            int64_t bitrate = av_i2int(bitrate_i);
+            if (bitrate > 0) {
+                st->codecpar->bit_rate = bitrate;
+            }
         }
     }
     return 1;
