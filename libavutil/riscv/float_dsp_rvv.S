@@ -75,32 +75,37 @@ endfunc
 
 func ff_vector_fmul_window_rvv, zve32f
         // a0: dst, a1: src0, a2: src1, a3: window, a4: length
-        addi       t0, a4, -1
-        add        t1, t0, a4
-        sh2add     a2, t0, a2
-        sh2add     t0, t1, a0
-        sh2add     t3, t1, a3
-        li         t1, -4 // byte stride
+        vsetvli    t0, zero, e16, m4, ta, ma
+        sh2add     a2, a4, a2
+        vid.v      v0
+        sh3add     t3, a4, a3
+        vadd.vi    v0, v0, 1
+        sh3add     t0, a4, a0
 1:
-        vsetvli    t2, a4, e32, m4, ta, ma
-        vle32.v    v16, (a1)
+        vsetvli    t2, a4, e16, m2, ta, ma
         slli       t4, t2, 2
-        vlse32.v   v20, (a2), t1
-        sub        a4, a4, t2
-        vle32.v    v24, (a3)
-        add        a1, a1, t4
-        vlse32.v   v28, (t3), t1
-        sub        a2, a2, t4
-        vfmul.vv   v0, v16, v28
-        add        a3, a3, t4
-        vfmul.vv   v8, v16, v24
+        vrsub.vx   v2, v0, t2
         sub        t3, t3, t4
-        vfnmsac.vv v0, v20, v24
-        vfmacc.vv  v8, v20, v28
-        vse32.v    v0, (a0)
-        add        a0, a0, t4
-        vsse32.v   v8, (t0), t1
+        vsetvli    zero, zero, e32, m4, ta, ma
+        sub        a2, a2, t4
+        vle32.v    v8, (t3)
         sub        t0, t0, t4
+        vle32.v    v4, (a2)
+        sub        a4, a4, t2
+        vrgatherei16.vv v28, v8, v2
+        vle32.v    v16, (a1)
+        add        a1, a1, t4
+        vrgatherei16.vv v20, v4, v2
+        vle32.v    v24, (a3)
+        add        a3, a3, t4
+        vfmul.vv   v12, v16, v28
+        vfmul.vv   v16, v16, v24
+        vfnmsac.vv v12, v20, v24
+        vfmacc.vv  v16, v20, v28
+        vrgatherei16.vv v8, v16, v2
+        vse32.v    v12, (a0)
+        add        a0, a0, t4
+        vse32.v    v8, (t0)
         bnez       a4, 1b
 
         ret
