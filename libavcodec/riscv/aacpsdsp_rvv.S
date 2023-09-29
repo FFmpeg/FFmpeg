@@ -238,20 +238,16 @@ func ff_ps_stereo_interpolate_rvv, zve32f
         flw          ft1,  4(a3)
         vfmv.v.f     v19, ft3
         flw          ft2,  8(a3)
-        vfmv.v.f     v20, ft0
         flw          ft3, 12(a3)
-        vfmv.v.f     v21, ft1
         fcvt.s.wu    ft4, t0       // (float)(vlenb / sizeof (float))
-        vfmv.v.f     v22, ft2
+        vfmacc.vf    v16, ft0, v24 // h0 += (i + 1) * h0_step
         fmul.s       ft0, ft0, ft4
-        vfmv.v.f     v23, ft3
+        vfmacc.vf    v17, ft1, v24
         fmul.s       ft1, ft1, ft4
-        vfmacc.vv    v16, v24, v20 // h0 += (i + 1) * h0_step
+        vfmacc.vf    v18, ft2, v24
         fmul.s       ft2, ft2, ft4
-        vfmacc.vv    v17, v24, v21
+        vfmacc.vf    v19, ft3, v24
         fmul.s       ft3, ft3, ft4
-        vfmacc.vv    v18, v24, v22
-        vfmacc.vv    v19, v24, v23
 1:
         vsetvli   t0, a4, e32, m1, ta, ma
         vlseg2e32.v v8, (a0)     // v8:l_re, v9:l_im
