@@ -290,7 +290,7 @@ static void cuda_device_uninit(AVHWDeviceContext *device_ctx)
         if (hwctx->internal->is_allocated && hwctx->cuda_ctx) {
             if (hwctx->internal->flags & AV_CUDA_USE_PRIMARY_CONTEXT)
                 CHECK_CU(cu->cuDevicePrimaryCtxRelease(hwctx->internal->cuda_device));
-            else
+            else if (!(hwctx->internal->flags & AV_CUDA_USE_CURRENT_CONTEXT))
                 CHECK_CU(cu->cuCtxDestroy(hwctx->cuda_ctx));
 
             hwctx->cuda_ctx = NULL;
