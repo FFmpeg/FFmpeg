@@ -1,5 +1,5 @@
-156c5c615bee0c55e76275df8d84e505 *tests/data/fate/matroska-encoding-delay.matroska
-961238 tests/data/fate/matroska-encoding-delay.matroska
+604531e6d08cb35b2f3eec838ac45b80 *tests/data/fate/matroska-encoding-delay.matroska
+961252 tests/data/fate/matroska-encoding-delay.matroska
 #extradata 0:       22, 0x32ea0490
 #tb 0: 1/1000
 #media_type 0: video
@@ -32,7 +32,7 @@ dts_time=-0.010000
 duration=24
 duration_time=0.024000
 size=1152
-pos=1255
+pos=1263
 flags=K__
 [/PACKET]
 [PACKET]
@@ -45,7 +45,7 @@ dts_time=0.000000
 duration=40
 duration_time=0.040000
 size=237628
-pos=2415
+pos=2423
 flags=K__
 [/PACKET]
 [PACKET]
@@ -58,7 +58,7 @@ dts_time=0.014000
 duration=24
 duration_time=0.024000
 size=1152
-pos=240050
+pos=240058
 flags=K__
 [/PACKET]
 [PACKET]
@@ -71,7 +71,7 @@ dts_time=0.038000
 duration=24
 duration_time=0.024000
 size=1152
-pos=241225
+pos=241233
 flags=K__
 [/PACKET]
 [PACKET]
@@ -84,7 +84,7 @@ dts_time=0.040000
 duration=40
 duration_time=0.040000
 size=238066
-pos=242385
+pos=242393
 flags=K__
 [/PACKET]
 [STREAM]

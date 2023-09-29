@@ -61,6 +61,7 @@
 #include "libavcodec/av1.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/codec_desc.h"
+#include "libavcodec/codec_par.h"
 #include "libavcodec/defs.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
@@ -1926,6 +1927,8 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
     switch (par->codec_type) {
         AVRational frame_rate;
+        int audio_frame_samples;
+
     case AVMEDIA_TYPE_VIDEO:
         mkv->have_video = 1;
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
@@ -1991,6 +1994,10 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_AUDIO);
 
+        audio_frame_samples = av_get_audio_frame_duration2(par, 0);
+        if (audio_frame_samples)
+            mkv_write_default_duration(track, pb, (AVRational){ audio_frame_samples,
+                                                                par->sample_rate });
         if (!native_id)
             // no mkv-specific ID, use ACM mode
             put_ebml_string(pb, MATROSKA_ID_CODECID, "A_MS/ACM");
