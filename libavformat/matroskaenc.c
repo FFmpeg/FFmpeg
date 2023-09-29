@@ -195,6 +195,8 @@ typedef struct mkv_track {
     int             codecpriv_offset;
     unsigned        codecpriv_size;     ///< size reserved for CodecPrivate excluding header+length field
     int64_t         ts_offset;
+    uint64_t        default_duration_low;
+    uint64_t        default_duration_high;
     /* This callback will be called twice: First with a NULL AVIOContext
      * to return the size of the (Simple)Block's data via size
      * and a second time with the AVIOContext set when the data
@@ -1805,6 +1807,16 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
     return ebml_writer_write(&writer, pb);
 }
 
+static void mkv_write_default_duration(mkv_track *track, AVIOContext *pb,
+                                       AVRational duration)
+{
+    put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION,
+                  1000000000LL * duration.num / duration.den);
+    track->default_duration_low  = 1000LL * duration.num / duration.den;
+    track->default_duration_high = track->default_duration_low +
+                                    !!(1000LL * duration.num % duration.den);
+}
+
 static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                            AVStream *st, mkv_track *track, AVIOContext *pb,
                            int is_default)
@@ -1913,16 +1925,19 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
 
     switch (par->codec_type) {
+        AVRational frame_rate;
     case AVMEDIA_TYPE_VIDEO:
         mkv->have_video = 1;
         put_ebml_uint(pb, MATROSKA_ID_TRACKTYPE, MATROSKA_TRACK_TYPE_VIDEO);
 
-        if(   st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0
-           && av_cmp_q(av_inv_q(st->avg_frame_rate), st->time_base) > 0)
-            put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1000000000LL * st->avg_frame_rate.den / st->avg_frame_rate.num);
-        else if(   st->r_frame_rate.num > 0 && st->r_frame_rate.den > 0
-                && av_cmp_q(av_inv_q(st->r_frame_rate), st->time_base) > 0)
-            put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1000000000LL * st->r_frame_rate.den / st->r_frame_rate.num);
+        frame_rate = (AVRational){ 0, 1 };
+        if (st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0)
+            frame_rate = st->avg_frame_rate;
+        else if (st->r_frame_rate.num > 0 && st->r_frame_rate.den > 0)
+            frame_rate = st->r_frame_rate;
+
+        if (frame_rate.num > 0)
+            mkv_write_default_duration(track, pb, av_inv_q(frame_rate));
 
         if (CONFIG_MATROSKA_MUXER && !native_id &&
             ff_codec_get_tag(ff_codec_movvideo_tags, par->codec_id) &&
@@ -2739,7 +2754,12 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
     ebml_writer_open_master(&writer, MATROSKA_ID_BLOCKGROUP);
     ebml_writer_add_block(&writer, mkv);
 
-    if (duration)
+    if (duration > 0 && (par->codec_type == AVMEDIA_TYPE_SUBTITLE ||
+        /* If the packet's duration is inconsistent with the default duration,
+         * add an explicit duration element. */
+        track->default_duration_high > 0 &&
+        duration != track->default_duration_high &&
+        duration != track->default_duration_low))
         ebml_writer_add_uint(&writer, MATROSKA_ID_BLOCKDURATION, duration);
 
     av_log(logctx, AV_LOG_DEBUG,
@@ -2917,7 +2937,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
     /* All subtitle blocks are considered to be keyframes. */
     int keyframe            = is_sub || !!(pkt->flags & AV_PKT_FLAG_KEY);
     int64_t duration        = FFMAX(pkt->duration, 0);
-    int64_t write_duration  = is_sub ? duration : 0;
+    int64_t cue_duration    = is_sub ? duration : 0;
     int ret;
     int64_t ts = track->write_dts ? pkt->dts : pkt->pts;
     int64_t relative_packet_pos;
@@ -2958,7 +2978,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
     /* The WebM spec requires WebVTT to be muxed in BlockGroups;
      * so we force it even for packets without duration. */
     ret = mkv_write_block(s, mkv, pb, par, track, pkt,
-                          keyframe, ts, write_duration,
+                          keyframe, ts, duration,
                           par->codec_id == AV_CODEC_ID_WEBVTT,
                           relative_packet_pos);
     if (ret < 0)
@@ -2969,7 +2989,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
          !mkv->have_video && !track->has_cue)) {
         ret = mkv_add_cuepoint(mkv, pkt->stream_index, ts,
                                mkv->cluster_pos, relative_packet_pos,
-                               write_duration);
+                               cue_duration);
         if (ret < 0)
             return ret;
         track->has_cue = 1;
