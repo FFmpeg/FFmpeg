@@ -24,7 +24,7 @@ func ff_int32_to_float_fmul_scalar_rvv, zve32f
 NOHWF   fmv.w.x     fa0, a2
 NOHWF   mv          a2, a3
 1:
-        vsetvli     t0, a2, e32, m1, ta, ma
+        vsetvli     t0, a2, e32, m8, ta, ma
         vle32.v     v24, (a1)
         sub         a2, a2, t0
         vfcvt.f.x.v v24, v24
