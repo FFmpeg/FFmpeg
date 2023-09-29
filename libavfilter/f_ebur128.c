@@ -1059,6 +1059,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         ebur128->lra_high -= ebur128->pan_law;
     }
 
+    if (ebur128->nb_channels > 0) {
     av_log(ctx, AV_LOG_INFO, "Summary:\n\n"
            "  Integrated loudness:\n"
            "    I:         %5.1f LUFS\n"
@@ -1082,6 +1083,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     PRINT_PEAK_SUMMARY("Sample", ebur128->sample_peak, SAMPLES);
     PRINT_PEAK_SUMMARY("True",   ebur128->true_peak,   TRUE);
     av_log(ctx, AV_LOG_INFO, "\n");
+    }
 
     av_freep(&ebur128->y_line_ref);
     av_freep(&ebur128->x);
