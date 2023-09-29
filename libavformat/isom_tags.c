@@ -285,6 +285,8 @@ const AVCodecTag ff_codec_movvideo_tags[] = {
     { AV_CODEC_ID_MEDIA100, MKTAG('d', 't', 'p', 'a') },
     { AV_CODEC_ID_MEDIA100, MKTAG('d', 't', 'P', 'A') },
 
+    { AV_CODEC_ID_CFHD, MKTAG('C', 'F', 'H', 'D') },
+
     { AV_CODEC_ID_NONE, 0 },
 };
 
