@@ -245,12 +245,12 @@ static int alloc_picture(MpegEncContext *s, Picture *pic)
                             &s->linesize, &s->uvlinesize);
 }
 
-static void gray_frame(AVFrame *frame)
+static void color_frame(AVFrame *frame, int luma)
 {
     int h_chroma_shift, v_chroma_shift;
 
     for (int i = 0; i < frame->height; i++)
-        memset(frame->data[0] + frame->linesize[0] * i, 0x80, frame->width);
+        memset(frame->data[0] + frame->linesize[0] * i, luma, frame->width);
 
     if (!frame->data[1])
         return;
@@ -365,9 +365,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if ((!s->last_picture_ptr || !s->last_picture_ptr->f->buf[0]) &&
         (s->pict_type != AV_PICTURE_TYPE_I)) {
-        int h_chroma_shift, v_chroma_shift;
-        av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
-                                         &h_chroma_shift, &v_chroma_shift);
         if (s->pict_type == AV_PICTURE_TYPE_B && s->next_picture_ptr && s->next_picture_ptr->f->buf[0])
             av_log(avctx, AV_LOG_DEBUG,
                    "allocating dummy last picture for B frame\n");
@@ -393,23 +390,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
 
         if (!avctx->hwaccel) {
-            for (int i = 0; i < avctx->height; i++)
-                memset(s->last_picture_ptr->f->data[0] + s->last_picture_ptr->f->linesize[0]*i,
-                       0x80, avctx->width);
-            if (s->last_picture_ptr->f->data[2]) {
-                for (int i = 0; i < AV_CEIL_RSHIFT(avctx->height, v_chroma_shift); i++) {
-                    memset(s->last_picture_ptr->f->data[1] + s->last_picture_ptr->f->linesize[1]*i,
-                        0x80, AV_CEIL_RSHIFT(avctx->width, h_chroma_shift));
-                    memset(s->last_picture_ptr->f->data[2] + s->last_picture_ptr->f->linesize[2]*i,
-                        0x80, AV_CEIL_RSHIFT(avctx->width, h_chroma_shift));
-                }
-            }
-
-            if (s->codec_id == AV_CODEC_ID_FLV1 || s->codec_id == AV_CODEC_ID_H263) {
-                for (int i = 0; i < avctx->height; i++)
-                    memset(s->last_picture_ptr->f->data[0] + s->last_picture_ptr->f->linesize[0] * i,
-                           16, avctx->width);
-            }
+            int luma_val = s->codec_id == AV_CODEC_ID_FLV1 || s->codec_id == AV_CODEC_ID_H263 ? 16 : 0x80;
+            color_frame(s->last_picture_ptr->f, luma_val);
         }
 
         ff_thread_report_progress(&s->last_picture_ptr->tf, INT_MAX, 0);
@@ -480,7 +462,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (s->avctx->debug & FF_DEBUG_NOMC)
-        gray_frame(s->current_picture_ptr->f);
+        color_frame(s->current_picture_ptr->f, 0x80);
 
     return 0;
 }
