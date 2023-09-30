@@ -24,20 +24,17 @@
 
 #include "libavutil/motion_vector.h"
 
+#include "avcodec.h"
 #include "hpeldsp.h"
-#include "me_cmp.h"
-#include "qpeldsp.h"
 #include "snow_dwt.h"
 
 #include "rangecoder.h"
 #include "mathops.h"
 
-#include "mpegvideo.h"
 #include "h264qpel.h"
+#include "videodsp.h"
 
 #define SNOW_MAX_PLANES 4
-
-#define FF_ME_ITER 3
 
 #define MID_STATE 128
 
@@ -117,12 +114,9 @@ typedef struct SnowContext{
     AVClass *class;
     AVCodecContext *avctx;
     RangeCoder c;
-    MECmpContext mecc;
     HpelDSPContext hdsp;
-    QpelDSPContext qdsp;
     VideoDSPContext vdsp;
     H264QpelContext h264qpel;
-    MpegvideoEncDSPContext mpvencdsp;
     SnowDWTContext dwt;
     AVFrame *input_picture;              ///< new_picture with the internal linesizes
     AVFrame *current_picture;
@@ -155,9 +149,6 @@ typedef struct SnowContext{
     int spatial_scalability;
     int qlog;
     int last_qlog;
-    int lambda;
-    int lambda2;
-    int pass1_rc;
     int mv_scale;
     int last_mv_scale;
     int qbias;
@@ -170,18 +161,7 @@ typedef struct SnowContext{
     int nb_planes;
     Plane plane[MAX_PLANES];
     BlockNode *block;
-#define ME_CACHE_SIZE 1024
-    unsigned me_cache[ME_CACHE_SIZE];
-    unsigned me_cache_generation;
     slice_buffer sb;
-    int memc_only;
-    int no_bitstream;
-    int intra_penalty;
-    int motion_est;
-    int iterative_dia_size;
-    int scenechange_threshold;
-
-    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
     uint8_t *scratchbuf;
     uint8_t *emu_edge_buffer;
@@ -189,9 +169,6 @@ typedef struct SnowContext{
     AVMotionVector *avmv;
     unsigned avmv_size;
     int avmv_index;
-    uint64_t encoding_error[SNOW_MAX_PLANES];
-
-    int pred;
 }SnowContext;
 
 /* Tables */
