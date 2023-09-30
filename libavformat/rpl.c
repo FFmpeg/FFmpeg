@@ -268,6 +268,9 @@ static int rpl_read_header(AVFormatContext *s)
                "Video stream will be broken!\n", av_fourcc2str(vst->codecpar->codec_tag));
 
     number_of_chunks = read_line_and_int(pb, &error);  // number of chunks in the file
+    if (number_of_chunks == INT_MAX)
+        return AVERROR_INVALIDDATA;
+
     // The number in the header is actually the index of the last chunk.
     number_of_chunks++;
 
