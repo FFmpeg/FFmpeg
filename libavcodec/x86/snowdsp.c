@@ -24,7 +24,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/x86/asm.h"
-#include "libavcodec/snow.h"
 #include "libavcodec/snow_dwt.h"
 
 #if HAVE_INLINE_ASM

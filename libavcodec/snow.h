@@ -176,44 +176,6 @@ extern const uint8_t * const ff_obmc_tab[4];
 extern const uint8_t ff_qexp[QROOT];
 extern int ff_scale_mv_ref[MAX_REF_FRAMES][MAX_REF_FRAMES];
 
-/* C bits used by mmx/sse2/altivec */
-
-static av_always_inline void snow_interleave_line_header(int * i, int width, IDWTELEM * low, IDWTELEM * high){
-    (*i) = (width) - 2;
-
-    if (width & 1){
-        low[(*i)+1] = low[((*i)+1)>>1];
-        (*i)--;
-    }
-}
-
-static av_always_inline void snow_interleave_line_footer(int * i, IDWTELEM * low, IDWTELEM * high){
-    for (; (*i)>=0; (*i)-=2){
-        low[(*i)+1] = high[(*i)>>1];
-        low[*i] = low[(*i)>>1];
-    }
-}
-
-static av_always_inline void snow_horizontal_compose_lift_lead_out(int i, IDWTELEM * dst, IDWTELEM * src, IDWTELEM * ref, int width, int w, int lift_high, int mul, int add, int shift){
-    for(; i<w; i++){
-        dst[i] = src[i] - ((mul * (ref[i] + ref[i + 1]) + add) >> shift);
-    }
-
-    if((width^lift_high)&1){
-        dst[w] = src[w] - ((mul * 2 * ref[w] + add) >> shift);
-    }
-}
-
-static av_always_inline void snow_horizontal_compose_liftS_lead_out(int i, IDWTELEM * dst, IDWTELEM * src, IDWTELEM * ref, int width, int w){
-        for(; i<w; i++){
-            dst[i] = src[i] + ((ref[i] + ref[(i+1)]+W_BO + 4 * src[i]) >> W_BS);
-        }
-
-        if(width&1){
-            dst[w] = src[w] + ((2 * ref[w] + W_BO + 4 * src[w]) >> W_BS);
-        }
-}
-
 /* common code */
 
 int ff_snow_common_init(AVCodecContext *avctx);
