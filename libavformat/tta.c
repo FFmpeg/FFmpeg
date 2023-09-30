@@ -91,7 +91,7 @@ static int tta_read_header(AVFormatContext *s)
     c->totalframes = nb_samples / c->frame_size + (c->last_frame_size < c->frame_size);
     c->currentframe = 0;
 
-    if(c->totalframes >= UINT_MAX/sizeof(uint32_t) || c->totalframes <= 0){
+    if(c->totalframes >= (INT_MAX - 4)/sizeof(uint32_t) || c->totalframes <= 0){
         av_log(s, AV_LOG_ERROR, "totalframes %d invalid\n", c->totalframes);
         return AVERROR_INVALIDDATA;
     }
