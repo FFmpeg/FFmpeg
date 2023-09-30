@@ -404,10 +404,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         memcpy(h->block_offset, h1->block_offset, sizeof(h->block_offset));
     }
 
-    h->avctx->coded_height  = h1->avctx->coded_height;
-    h->avctx->coded_width   = h1->avctx->coded_width;
-    h->avctx->width         = h1->avctx->width;
-    h->avctx->height        = h1->avctx->height;
     h->width_from_caller    = h1->width_from_caller;
     h->height_from_caller   = h1->height_from_caller;
     h->coded_picture_number = h1->coded_picture_number;
