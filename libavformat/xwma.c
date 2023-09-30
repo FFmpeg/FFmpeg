@@ -151,7 +151,7 @@ static int xwma_read_header(AVFormatContext *s)
                st->codecpar->channels);
         return AVERROR_INVALIDDATA;
     }
-    if (!st->codecpar->bits_per_coded_sample) {
+    if (!st->codecpar->bits_per_coded_sample || st->codecpar->bits_per_coded_sample > 64) {
         av_log(s, AV_LOG_WARNING, "Invalid bits_per_coded_sample: %d\n",
                st->codecpar->bits_per_coded_sample);
         return AVERROR_INVALIDDATA;
