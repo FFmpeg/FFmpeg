@@ -70,6 +70,7 @@ typedef struct HEVCHeaderSet {
 
 static int alloc_hevc_header_structs(FFVulkanDecodeContext *s,
                                      int nb_vps,
+                                     const int vps_list_idx[HEVC_MAX_VPS_COUNT],
                                      AVBufferRef * const vps_list[HEVC_MAX_VPS_COUNT])
 {
     uint8_t *data_ptr;
@@ -77,7 +78,7 @@ static int alloc_hevc_header_structs(FFVulkanDecodeContext *s,
 
     size_t buf_size = sizeof(HEVCHeaderSet) + nb_vps*sizeof(HEVCHeaderVPS);
     for (int i = 0; i < nb_vps; i++) {
-        const HEVCVPS *vps = (const HEVCVPS *)vps_list[i]->data;
+        const HEVCVPS *vps = (const HEVCVPS *)vps_list[vps_list_idx[i]]->data;
         buf_size += sizeof(HEVCHeaderVPSSet)*vps->vps_num_hrd_parameters;
     }
 
@@ -96,7 +97,7 @@ static int alloc_hevc_header_structs(FFVulkanDecodeContext *s,
     hdr->hvps = (HEVCHeaderVPS *)(data_ptr + sizeof(HEVCHeaderSet));
     data_ptr += sizeof(HEVCHeaderSet) + nb_vps*sizeof(HEVCHeaderVPS);
     for (int i = 0; i < nb_vps; i++) {
-        const HEVCVPS *vps = (const HEVCVPS *)vps_list[i]->data;
+        const HEVCVPS *vps = (const HEVCVPS *)vps_list[vps_list_idx[i]]->data;
         hdr->hvps[i].sls = (HEVCHeaderVPSSet *)data_ptr;
         data_ptr += sizeof(HEVCHeaderVPSSet)*vps->vps_num_hrd_parameters;
     }
@@ -655,13 +656,15 @@ static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
         .videoSessionParametersTemplate = NULL,
     };
 
-    int nb_vps = 0;
     HEVCHeaderSet *hdr;
+    int nb_vps = 0;
+    int vps_list_idx[HEVC_MAX_VPS_COUNT];
 
-    for (int i = 0; h->ps.vps_list[i]; i++)
-        nb_vps++;
+    for (int i = 0; i < HEVC_MAX_VPS_COUNT; i++)
+        if (h->ps.vps_list[i])
+            vps_list_idx[nb_vps++] = i;
 
-    err = alloc_hevc_header_structs(dec, nb_vps, h->ps.vps_list);
+    err = alloc_hevc_header_structs(dec, nb_vps, vps_list_idx, h->ps.vps_list);
     if (err < 0)
         return err;
 
@@ -672,26 +675,31 @@ static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
     h265_params_info.pStdVPSs = hdr->vps;
 
     /* SPS list */
-    for (int i = 0; h->ps.sps_list[i]; i++) {
-        const HEVCSPS *sps_l = (const HEVCSPS *)h->ps.sps_list[i]->data;
-        set_sps(sps_l, i, &hdr->hsps[i].scaling, &hdr->hsps[i].vui_header,
-                &hdr->hsps[i].vui, &hdr->sps[i], hdr->hsps[i].nal_hdr,
-                hdr->hsps[i].vcl_hdr, &hdr->hsps[i].ptl, &hdr->hsps[i].dpbm,
-                &hdr->hsps[i].pal, hdr->hsps[i].str, &hdr->hsps[i].ltr);
-        h265_params_info.stdSPSCount++;
+    for (int i = 0; i < HEVC_MAX_SPS_COUNT; i++) {
+        if (h->ps.sps_list[i]) {
+            const HEVCSPS *sps_l = (const HEVCSPS *)h->ps.sps_list[i]->data;
+            int idx = h265_params_info.stdSPSCount++;
+            set_sps(sps_l, i, &hdr->hsps[idx].scaling, &hdr->hsps[idx].vui_header,
+                    &hdr->hsps[idx].vui, &hdr->sps[idx], hdr->hsps[idx].nal_hdr,
+                    hdr->hsps[idx].vcl_hdr, &hdr->hsps[idx].ptl, &hdr->hsps[idx].dpbm,
+                    &hdr->hsps[idx].pal, hdr->hsps[idx].str, &hdr->hsps[idx].ltr);
+        }
     }
 
     /* PPS list */
-    for (int i = 0; h->ps.pps_list[i]; i++) {
-        const HEVCPPS *pps_l = (const HEVCPPS *)h->ps.pps_list[i]->data;
-        const HEVCSPS *sps_l = (const HEVCSPS *)h->ps.sps_list[pps_l->sps_id]->data;
-        set_pps(pps_l, sps_l, &hdr->hpps[i].scaling, &hdr->pps[i], &hdr->hpps[i].pal);
-        h265_params_info.stdPPSCount++;
+    for (int i = 0; i < HEVC_MAX_PPS_COUNT; i++) {
+        if (h->ps.pps_list[i]) {
+            const HEVCPPS *pps_l = (const HEVCPPS *)h->ps.pps_list[i]->data;
+            const HEVCSPS *sps_l = (const HEVCSPS *)h->ps.sps_list[pps_l->sps_id]->data;
+            int idx = h265_params_info.stdPPSCount++;
+            set_pps(pps_l, sps_l, &hdr->hpps[idx].scaling,
+                    &hdr->pps[idx], &hdr->hpps[idx].pal);
+        }
     }
 
     /* VPS list */
     for (int i = 0; i < nb_vps; i++) {
-        const HEVCVPS *vps_l = (const HEVCVPS *)h->ps.vps_list[i]->data;
+        const HEVCVPS *vps_l = (const HEVCVPS *)h->ps.vps_list[vps_list_idx[i]]->data;
         set_vps(vps_l, &hdr->vps[i], &hdr->hvps[i].ptl, &hdr->hvps[i].dpbm,
                 hdr->hvps[i].hdr, hdr->hvps[i].sls);
         h265_params_info.stdVPSCount++;
