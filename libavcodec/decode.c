@@ -1476,10 +1476,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
-    const AVPacket *pkt = avctx->internal->last_pkt_props;
     int ret;
 
     if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
+        const AVPacket *pkt = avctx->internal->last_pkt_props;
+
         ret = ff_decode_frame_props_from_pkt(avctx, frame, pkt);
         if (ret < 0)
             return ret;
