@@ -1272,7 +1272,10 @@ static int generate_intervals(void *log, struct sbg_script *s, int sample_rate,
     /* SBaGen handles the time before and after the extremal events,
        and the corresponding transitions, as if the sequence were cyclic
        with a 24-hours period. */
-    period = s->events[s->nb_events - 1].ts - s->events[0].ts;
+    period = s->events[s->nb_events - 1].ts - (uint64_t)s->events[0].ts;
+    if (period < 0)
+        return AVERROR_INVALIDDATA;
+
     period = (period + (DAY_TS - 1)) / DAY_TS * DAY_TS;
     period = FFMAX(period, DAY_TS);
 
