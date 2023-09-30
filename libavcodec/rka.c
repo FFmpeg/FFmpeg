@@ -165,8 +165,12 @@ static av_cold int rka_decode_init(AVCodecContext *avctx)
         qfactor = -qfactor;
 
     s->ch[0].qfactor = s->ch[1].qfactor = qfactor < 0 ? 2 : qfactor;
-    s->ch[0].vrq = qfactor < 0 ? FFABS(qfactor) : 0;
-    s->ch[1].vrq = qfactor < 0 ? FFABS(qfactor) : 0;
+    s->ch[0].vrq = qfactor < 0 ? -qfactor : 0;
+    s->ch[1].vrq = qfactor < 0 ? -qfactor : 0;
+    if (qfactor < 0) {
+        s->ch[0].vrq = av_clip(s->ch[0].vrq, 1, 8);
+        s->ch[1].vrq = av_clip(s->ch[1].vrq, 1, 8);
+    }
     av_log(avctx, AV_LOG_DEBUG, "qfactor: %d\n", qfactor);
 
     return 0;
@@ -665,16 +669,14 @@ static int mdl64_decode(ACoder *ac, Model64 *ctx, int *dst)
     return 0;
 }
 
-static const uint8_t tab[16] = {
-    0, 3, 3, 2, 2, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0
-};
+static const uint8_t vrq_qfactors[8] = { 3, 3, 2, 2, 1, 1, 1, 1 };
 
 static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, unsigned size)
 {
     FiltCoeffs filt;
     Model64 *mdl64;
-    int m = 0, split, val, last_val = 0, ret;
-    unsigned idx = 3, bits = 0;
+    int split, val, last_val = 0, ret;
+    unsigned rsize, idx = 3, bits = 0, m = 0;
 
     if (ctx->qfactor == 0) {
         if (amdl_decode_int(&ctx->fshift, ac, &bits, 15) < 0)
@@ -698,10 +700,12 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
         if (amdl_decode_int(&ctx->position, ac, &idx, 10) < 0)
             return -1;
 
+        m = 0;
         idx = (ctx->pos_idx + idx) % 11;
         ctx->pos_idx = idx;
 
-        for (int y = 0; y < FFMIN(split, size - x); y++, off++) {
+        rsize = FFMIN(split, size - x);
+        for (int y = 0; y < rsize; y++, off++) {
             int midx, shift = idx, *src, sum = 16;
 
             if (off >= FF_ARRAY_ELEMS(ctx->buf0))
@@ -750,10 +754,10 @@ static int decode_filter(RKAContext *s, ChContext *ctx, ACoder *ac, int off, uns
         }
         if (ctx->vrq != 0) {
             int sum = 0;
-            for (int i = (signed)((unsigned)m << 6) / split; i > 0; i = i >> 1)
+            for (unsigned i = (m << 6) / rsize; i > 0; i = i >> 1)
                 sum++;
-            sum = sum - (ctx->vrq + 7);
-            ctx->qfactor = FFMAX(sum, tab[ctx->vrq]);
+            sum -= (ctx->vrq + 7);
+            ctx->qfactor = FFMAX(sum, vrq_qfactors[ctx->vrq - 1]);
         }
 
         x += split;
