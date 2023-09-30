@@ -82,11 +82,11 @@ func ff_interleave_bytes_rvv, zve32x
         mv      t3, a3
         addi    a4, a4, -1
 2:
-        vsetvli    t4, t3, e8, m1, ta, ma
+        vsetvli    t4, t3, e8, m4, ta, ma
         sub        t3, t3, t4
         vle8.v     v8, (t0)
         add        t0, t4, t0
-        vle8.v     v9, (t1)
+        vle8.v     v12, (t1)
         add        t1, t4, t1
         vsseg2e8.v v8, (t2)
         sh1add     t2, t4, t2
