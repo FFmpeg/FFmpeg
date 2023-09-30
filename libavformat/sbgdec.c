@@ -1447,6 +1447,13 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     st->duration      = script.end_ts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
                         av_rescale(script.end_ts - script.start_ts,
                                    sbg->sample_rate, AV_TIME_BASE);
+
+    if (st->duration != AV_NOPTS_VALUE && (
+        st->duration < 0 || st->start_time > INT64_MAX - st->duration)) {
+        r = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     sti->cur_dts      = st->start_time;
     r = encode_intervals(&script, st->codecpar, &inter);
     if (r < 0)
