@@ -124,7 +124,7 @@ shift_and_ret:
     return buf + len;
 }
 
-static int get_shift(int timeres, const char *buf)
+static int get_shift(unsigned timeres, const char *buf)
 {
     int sign = 1;
     int a = 0, b = 0, c = 0, d = 0;
@@ -148,7 +148,11 @@ static int get_shift(int timeres, const char *buf)
     case 3: d = c; c = b; b = a; a = 0;
     }
 
-    ret = sign * (((int64_t)a*3600 + (int64_t)b*60 + c) * timeres + d);
+    ret = (int64_t)a*3600 + (int64_t)b*60 + c;
+    if (FFABS(ret) > (INT64_MAX - FFABS(d)) / timeres)
+        return 0;
+    ret = sign * (ret * timeres + d);
+
     if ((int)ret != ret)
         ret = 0;
 
