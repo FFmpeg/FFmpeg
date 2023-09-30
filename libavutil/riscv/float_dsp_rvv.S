@@ -125,20 +125,25 @@ func ff_vector_fmul_add_rvv, zve32f
         ret
 endfunc
 
+// TODO factor vrsub, separate last iteration?
 // (a0) = (a1) * reverse(a2) [0..a3-1]
 func ff_vector_fmul_reverse_rvv, zve32f
+        vsetvli  t0, zero, e16, m4, ta, ma
         sh2add   a2, a3, a2
-        li       t2, -4 // byte stride
-        addi     a2, a2, -4
+        vid.v    v0
+        vadd.vi  v0, v0, 1
 1:
-        vsetvli  t0, a3, e32, m8, ta, ma
+        vsetvli  t0, a3, e16, m4, ta, ma
         slli     t1, t0, 2
-        vle32.v  v16, (a1)
-        sub      a3, a3, t0
-        vlse32.v v24, (a2), t2
-        add      a1, a1, t1
-        vfmul.vv v16, v16, v24
+        vrsub.vx v4, v0, t0 // v4[i] = [VL-1, VL-2... 1, 0]
         sub      a2, a2, t1
+        vsetvli  zero, zero, e32, m8, ta, ma
+        vle32.v  v8, (a2)
+        sub      a3, a3, t0
+        vle32.v  v16, (a1)
+        add      a1, a1, t1
+        vrgatherei16.vv v24, v8, v4 // v24 = reverse(v8)
+        vfmul.vv v16, v16, v24
         vse32.v  v16, (a0)
         add      a0, a0, t1
         bnez     a3, 1b
