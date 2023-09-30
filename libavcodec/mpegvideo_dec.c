@@ -435,10 +435,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         ff_thread_report_progress(&s->next_picture_ptr->tf, INT_MAX, 1);
     }
 
-#if 0 // BUFREF-FIXME
-    memset(s->last_picture.f->data, 0, sizeof(s->last_picture.f->data));
-    memset(s->next_picture.f->data, 0, sizeof(s->next_picture.f->data));
-#endif
     if (s->last_picture_ptr) {
         if (s->last_picture_ptr->f->buf[0] &&
             (ret = ff_mpeg_ref_picture(s->avctx, &s->last_picture,
