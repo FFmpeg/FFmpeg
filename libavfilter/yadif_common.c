@@ -151,6 +151,7 @@ int ff_yadif_filter_frame(AVFilterLink *link, AVFrame *frame)
         av_frame_free(&yadif->prev);
         if (yadif->out->pts != AV_NOPTS_VALUE)
             yadif->out->pts *= 2;
+        yadif->out->duration *= 2;
         return ff_filter_frame(ctx->outputs[0], yadif->out);
     }
 
@@ -168,6 +169,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (yadif->out->pts != AV_NOPTS_VALUE)
         yadif->out->pts *= 2;
+    if (!(yadif->mode & 1))
+        yadif->out->duration *= 2;
 
     return return_frame(ctx, 0);
 }
