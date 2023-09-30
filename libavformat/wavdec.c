@@ -767,6 +767,8 @@ smv_out:
                 goto smv_retry;
             return AVERROR_EOF;
         }
+        if (INT64_MAX - left < avio_tell(s->pb))
+            return AVERROR_INVALIDDATA;
         wav->data_end = avio_tell(s->pb) + left;
     }
 
