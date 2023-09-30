@@ -4191,12 +4191,16 @@ static int64_t webm_dash_manifest_compute_bandwidth(AVFormatContext *s, int64_t 
         int64_t prebuffer_ns = 1000000000;
         int64_t time_ns = sti->index_entries[i].timestamp * matroska->time_scale;
         double nano_seconds_per_second = 1000000000.0;
-        int64_t prebuffered_ns = time_ns + prebuffer_ns;
+        int64_t prebuffered_ns;
         double prebuffer_bytes = 0.0;
         int64_t temp_prebuffer_ns = prebuffer_ns;
         int64_t pre_bytes, pre_ns;
         double pre_sec, prebuffer, bits_per_second;
         CueDesc desc_beg = get_cue_desc(s, time_ns, cues_start);
+
+        if (time_ns > INT64_MAX - prebuffer_ns)
+            return -1;
+        prebuffered_ns = time_ns + prebuffer_ns;
 
         // Start with the first Cue.
         CueDesc desc_end = desc_beg;
