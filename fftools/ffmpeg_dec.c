@@ -540,8 +540,9 @@ static int send_filter_eof(InputStream *ist)
     return 0;
 }
 
-static int packet_decode(InputStream *ist, const AVPacket *pkt, AVFrame *frame)
+static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 {
+    const InputFile *ifile = input_files[ist->file_index];
     Decoder *d = ist->decoder;
     AVCodecContext *dec = ist->dec_ctx;
     const char *type_desc = av_get_media_type_string(dec->codec_type);
@@ -555,6 +556,11 @@ static int packet_decode(InputStream *ist, const AVPacket *pkt, AVFrame *frame)
     // skip the packet.
     if (pkt && pkt->size == 0)
         return 0;
+
+    if (pkt && ifile->format_nots) {
+        pkt->pts = AV_NOPTS_VALUE;
+        pkt->dts = AV_NOPTS_VALUE;
+    }
 
     ret = avcodec_send_packet(dec, pkt);
     if (ret < 0 && !(ret == AVERROR_EOF && !pkt)) {
