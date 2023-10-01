@@ -1259,13 +1259,13 @@ static void input_to_sample_buffer(MLPEncodeContext *ctx)
  ****************************************************************************/
 
 /** Counts the number of trailing zeroes in a value */
-static int number_trailing_zeroes(int32_t sample)
+static int number_trailing_zeroes(int32_t sample, const int wordlength)
 {
     int bits = ff_ctz(sample);
 
     /* All samples are 0. TODO Return previous quant_step_size to avoid
      * writing a new header. */
-    if (bits >= 24)
+    if (bits >= wordlength)
         return 0;
 
     return bits;
@@ -1279,6 +1279,7 @@ static void determine_quant_step_size(MLPEncodeContext *ctx)
     DecodingParams *dp = ctx->cur_decoding_params;
     RestartHeader  *rh = ctx->cur_restart_header;
     MatrixParams *mp = &dp->matrix_params;
+    const int wordlength = ctx->wordlength;
     int32_t *sample_buffer = ctx->sample_buffer;
     int32_t sample_mask[MAX_CHANNELS];
 
@@ -1292,7 +1293,7 @@ static void determine_quant_step_size(MLPEncodeContext *ctx)
     }
 
     for (unsigned int channel = 0; channel <= rh->max_channel; channel++)
-        dp->quant_step_size[channel] = number_trailing_zeroes(sample_mask[channel]) - mp->shift[channel];
+        dp->quant_step_size[channel] = number_trailing_zeroes(sample_mask[channel], wordlength) - mp->shift[channel];
 }
 
 /** Determines the smallest number of bits needed to encode the filter
