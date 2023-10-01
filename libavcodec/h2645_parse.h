@@ -122,7 +122,7 @@ static inline int get_nalsize(int nal_length_size, const uint8_t *buf,
 
     if (*buf_index >= buf_size - nal_length_size) {
         // the end of the buffer is reached, refill it
-        return AVERROR(EAGAIN);
+        return AVERROR_INVALIDDATA;
     }
 
     for (i = 0; i < nal_length_size; i++)
