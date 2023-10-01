@@ -3141,9 +3141,6 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
 
         av_log(s->avctx, AV_LOG_WARNING,
                "time_increment_bits set to %d bits, based on bitstream analysis\n", ctx->time_increment_bits);
-        if (s->avctx->framerate.num && 4*s->avctx->framerate.num < 1<<ctx->time_increment_bits) {
-            s->avctx->framerate.num = 1<<ctx->time_increment_bits;
-        }
     }
 
     if (IS_3IV1)
