@@ -76,6 +76,8 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
         int err;
         memcpy(s, s1, sizeof(*s));
 
+        s->context_initialized   = 0;
+        s->context_reinit        = 0;
         s->avctx                 = dst;
         s->private_ctx           = private_ctx;
         s->bitstream_buffer      = NULL;
@@ -83,13 +85,8 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 
         if (s1->context_initialized) {
             ff_mpv_idct_init(s);
-            if ((err = ff_mpv_common_init(s)) < 0) {
-                memset(s, 0, sizeof(*s));
-                s->avctx = dst;
-                s->private_ctx = private_ctx;
-                memcpy(&s->h264chroma, &s1->h264chroma, sizeof(s->h264chroma));
+            if ((err = ff_mpv_common_init(s)) < 0)
                 return err;
-            }
         }
     }
 
