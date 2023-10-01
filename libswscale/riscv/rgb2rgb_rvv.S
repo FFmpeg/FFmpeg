@@ -100,6 +100,32 @@ func ff_interleave_bytes_rvv, zve32x
         ret
 endfunc
 
+func ff_deinterleave_bytes_rvv, zve32x
+1:
+        mv      t0, a0
+        mv      t1, a1
+        mv      t2, a2
+        mv      t3, a3
+        addi    a4, a4, -1
+2:
+        vsetvli    t4, t3, e8, m4, ta, ma
+        sub        t3, t3, t4
+        vlseg2e8.v v8, (t0)
+        sh1add     t0, t4, t0
+        vse8.v     v8, (t1)
+        add        t1, t4, t1
+        vse8.v     v12, (t2)
+        add        t2, t4, t2
+        bnez       t3, 2b
+
+        add     a0, a0, a5
+        add     a1, a1, a6
+        add     a2, a2, a7
+        bnez    a4, 1b
+
+        ret
+endfunc
+
 .macro yuy2_to_i422p y_shift
         addi    a4, a4, 1
         lw      t6, (sp)
