@@ -1498,7 +1498,6 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     avctx->has_b_frames = 1;
     s->low_delay = 0;
 
-    ff_mpv_idct_init(s);
     if ((ret = ff_mpv_common_init(s)) < 0)
         return ret;
 

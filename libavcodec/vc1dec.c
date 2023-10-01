@@ -431,7 +431,6 @@ av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
         return ret;
 
     ff_mpv_decode_init(s, avctx);
-    ff_mpv_idct_init(s);
 
     avctx->pix_fmt = vc1_get_format(avctx);
 

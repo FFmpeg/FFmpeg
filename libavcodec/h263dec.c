@@ -128,7 +128,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         avctx->codec->id != AV_CODEC_ID_H263P &&
         avctx->codec->id != AV_CODEC_ID_MPEG4) {
         avctx->pix_fmt = h263_get_format(avctx);
-        ff_mpv_idct_init(s);
         if ((ret = ff_mpv_common_init(s)) < 0)
             return ret;
     }
@@ -458,10 +457,6 @@ retry:
     s->bitstream_buffer_size = 0;
     if (ret < 0)
         return ret;
-
-    if (!s->context_initialized)
-        // we need the idct permutation for reading a custom matrix
-        ff_mpv_idct_init(s);
 
     /* let's go :-) */
     if (CONFIG_WMV2_DECODER && s->msmpeg4_version == 5) {

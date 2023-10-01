@@ -94,7 +94,6 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     h->gob_start_code_skipped = 0;
-    ff_mpv_idct_init(s);
 
     ff_thread_once(&init_static_once, h261_decode_init_static);
 
