@@ -1086,7 +1086,7 @@ static uint8_t *write_substr(MLPEncodeContext *ctx, uint8_t *buf, int buf_size,
             put_bits(&pb, 16, END_OF_STREAM & 0xFFFF);
             put_bits(&pb, 16, (ctx->shorten_by & 0x1FFF) | 0x2000);
         } else {
-            put_bits(&pb, 32, END_OF_STREAM);
+            put_bits32(&pb, END_OF_STREAM);
         }
     }
 
