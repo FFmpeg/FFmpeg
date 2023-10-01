@@ -90,7 +90,7 @@ func ff_interleave_bytes_rvv, zve32x
         add        t1, t4, t1
         vsseg2e8.v v8, (t2)
         sh1add     t2, t4, t2
-        bnez       t4, 2b
+        bnez       t3, 2b
 
         add     a0, a0, a5
         add     a1, a1, a6
