@@ -519,6 +519,10 @@ typedef struct H264Context {
  * so all the following frames in presentation order are correct.
  */
 #define FRAME_RECOVERED_SEI  (1 << 1)
+/**
+ * Recovery point detected by heuristic
+ */
+#define FRAME_RECOVERED_HEURISTIC  (1 << 2)
 
     int frame_recovered;    ///< Initial frame has been completely recovered
 

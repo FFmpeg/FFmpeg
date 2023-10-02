@@ -822,9 +822,9 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
             || pps_ref_count[0] <= 1 + (h->picture_structure != PICT_FRAME) && pps_ref_count[1] <= 1)
         && pps_ref_count[0]<=2 + (h->picture_structure != PICT_FRAME) + (2*!h->has_recovery_point)
         && h->cur_pic_ptr->f->pict_type == AV_PICTURE_TYPE_I){
-        h->cur_pic_ptr->recovered |= FRAME_RECOVERED_IDR;
+        h->cur_pic_ptr->recovered |= FRAME_RECOVERED_HEURISTIC;
         if(!h->avctx->has_b_frames)
-            h->frame_recovered |= FRAME_RECOVERED_SEI;
+            h->frame_recovered |= FRAME_RECOVERED_HEURISTIC;
     }
 
 out:
