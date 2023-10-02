@@ -41,7 +41,7 @@
 
 #define MLP_MIN_LPC_ORDER      1
 #define MLP_MAX_LPC_ORDER      8
-#define MLP_MIN_LPC_SHIFT      8
+#define MLP_MIN_LPC_SHIFT      0
 #define MLP_MAX_LPC_SHIFT     15
 
 typedef struct {
@@ -1334,13 +1334,12 @@ static void set_filter_params(MLPEncodeContext *ctx,
     } else if (filter == IIR) {
         fp->order = 0;
     } else if (filter == FIR) {
-        const int max_order = (ctx->substream_info & SUBSTREAM_INFO_HIGH_RATE)
-                              ? 4 : MLP_MAX_LPC_ORDER;
+        const int max_order = MAX_FIR_ORDER;
         int32_t *sample_buffer = ctx->sample_buffer + channel;
         int32_t coefs[MAX_LPC_ORDER][MAX_LPC_ORDER];
         int32_t *lpc_samples = ctx->lpc_sample_buffer;
         int32_t *fcoeff = ctx->cur_channel_params[channel].coeff[filter];
-        int shift[MLP_MAX_LPC_ORDER];
+        int shift[MAX_LPC_ORDER];
         int order;
 
         for (unsigned int i = 0; i < ctx->number_of_samples; i++) {
