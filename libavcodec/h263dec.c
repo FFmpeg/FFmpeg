@@ -464,13 +464,6 @@ retry:
     } else if (CONFIG_MSMPEG4DEC && s->msmpeg4_version) {
         ret = ff_msmpeg4_decode_picture_header(s);
     } else if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
-        if (s->avctx->extradata_size && !s->extradata_parsed) {
-            GetBitContext gb;
-
-            if (init_get_bits8(&gb, s->avctx->extradata, s->avctx->extradata_size) >= 0 )
-                ff_mpeg4_decode_picture_header(avctx->priv_data, &gb, 1, 0);
-            s->extradata_parsed = 1;
-        }
         ret = ff_mpeg4_decode_picture_header(avctx->priv_data, &s->gb, 0, 0);
         s->skipped_last_frame = (ret == FRAME_SKIPPED);
     } else if (CONFIG_H263I_DECODER && s->codec_id == AV_CODEC_ID_H263I) {

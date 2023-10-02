@@ -42,6 +42,7 @@
 #include "h263.h"
 #include "h263data.h"
 #include "h263dec.h"
+#include "internal.h"
 #include "profiles.h"
 #include "qpeldsp.h"
 #include "threadframe.h"
@@ -3827,6 +3828,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ff_mpeg4videodsp_init(&ctx->mdsp);
 
     ff_thread_once(&init_static_once, mpeg4_init_static);
+
+    /* Must be after initializing the MPEG-4 static tables */
+    if (avctx->extradata_size && !avctx->internal->is_copy) {
+        GetBitContext gb;
+
+        if (init_get_bits8(&gb, avctx->extradata, avctx->extradata_size) >= 0)
+            ff_mpeg4_decode_picture_header(ctx, &gb, 1, 0);
+    }
 
     return 0;
 }
