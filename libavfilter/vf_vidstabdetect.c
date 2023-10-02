@@ -176,7 +176,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     if (vsMotionDetection(md, &localmotions, &frame) != VS_OK) {
         av_log(ctx, AV_LOG_ERROR, "motion detection failed");
-        return AVERROR(AVERROR_EXTERNAL);
+        return AVERROR_EXTERNAL;
     } else {
         if (vsWriteToFile(md, s->f, &localmotions) != VS_OK) {
             int ret = AVERROR(errno);
