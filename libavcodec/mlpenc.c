@@ -32,6 +32,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intmath.h"
+#include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/thread.h"
 #include "mlp.h"
@@ -108,7 +109,12 @@ typedef struct BestOffset {
 #define NUM_CODEBOOKS       4
 
 typedef struct MLPEncodeContext {
+    AVClass        *class;
     AVCodecContext *avctx;
+
+    int             lpc_type;
+    int             lpc_passes;
+    int             prediction_order;
 
     int             num_substreams;         ///< Number of substreams contained within this stream.
 
@@ -573,8 +579,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     ctx->min_restart_interval = MAJOR_HEADER_INTERVAL;
     ctx->restart_intervals = ctx->max_restart_interval / ctx->min_restart_interval;
 
-    /* TODO Let user pass parameters for LPC filter. */
-
     size = avctx->frame_size * ctx->max_restart_interval;
     ctx->lpc_sample_buffer = av_calloc(size, sizeof(*ctx->lpc_sample_buffer));
     if (!ctx->lpc_sample_buffer)
@@ -682,7 +686,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     rh->max_matrix_channel = rh->max_channel;
 
     if ((ret = ff_lpc_init(&ctx->lpc_ctx, ctx->number_of_samples,
-                    MLP_MAX_LPC_ORDER, FF_LPC_TYPE_LEVINSON)) < 0)
+                           MLP_MAX_LPC_ORDER, ctx->lpc_type)) < 0)
         return ret;
 
     for (int i = 0; i < NUM_FILTERS; i++) {
@@ -1349,8 +1353,8 @@ static void set_filter_params(MLPEncodeContext *ctx,
 
         order = ff_lpc_calc_coefs(&ctx->lpc_ctx, ctx->lpc_sample_buffer,
                                   ctx->number_of_samples, MLP_MIN_LPC_ORDER,
-                                  max_order, 11, coefs, shift, FF_LPC_TYPE_LEVINSON, 0,
-                                  ORDER_METHOD_EST, MLP_MIN_LPC_SHIFT,
+                                  max_order, 11, coefs, shift, ctx->lpc_type, ctx->lpc_passes,
+                                  ctx->prediction_order, MLP_MIN_LPC_SHIFT,
                                   MLP_MAX_LPC_SHIFT, MLP_MIN_LPC_SHIFT);
 
         fp->order = order;
@@ -2230,6 +2234,26 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+#define FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+#define OFFSET(x) offsetof(MLPEncodeContext, x)
+static const AVOption mlp_options[] = {
+{ "lpc_type", "LPC algorithm", OFFSET(lpc_type), AV_OPT_TYPE_INT, {.i64 = FF_LPC_TYPE_LEVINSON }, FF_LPC_TYPE_LEVINSON, FF_LPC_TYPE_CHOLESKY, FLAGS, "lpc_type" },
+{ "levinson", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LPC_TYPE_LEVINSON }, 0, 0, FLAGS, "lpc_type" },
+{ "cholesky", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LPC_TYPE_CHOLESKY }, 0, 0, FLAGS, "lpc_type" },
+{ "lpc_passes", "Number of passes to use for Cholesky factorization during LPC analysis", OFFSET(lpc_passes),  AV_OPT_TYPE_INT, {.i64 = 2 }, 1, INT_MAX, FLAGS },
+{ "prediction_order", "Search method for selecting prediction order", OFFSET(prediction_order), AV_OPT_TYPE_INT, {.i64 = ORDER_METHOD_EST }, ORDER_METHOD_EST, ORDER_METHOD_SEARCH, FLAGS, "predm" },
+{ "estimation", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = ORDER_METHOD_EST },    0, 0, FLAGS, "predm" },
+{ "search",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = ORDER_METHOD_SEARCH }, 0, 0, FLAGS, "predm" },
+{ NULL },
+};
+
+static const AVClass mlp_class = {
+    .class_name = "mlpenc",
+    .item_name  = av_default_item_name,
+    .option     = mlp_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 #if CONFIG_MLP_ENCODER
 const FFCodec ff_mlp_encoder = {
     .p.name                 ="mlp",
@@ -2242,6 +2266,7 @@ const FFCodec ff_mlp_encoder = {
     .init                   = mlp_encode_init,
     FF_CODEC_ENCODE_CB(mlp_encode_frame),
     .close                  = mlp_encode_close,
+    .p.priv_class           = &mlp_class,
     .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE},
     .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(ff_mlp_channel_layouts)
@@ -2262,6 +2287,7 @@ const FFCodec ff_truehd_encoder = {
     .init                   = mlp_encode_init,
     FF_CODEC_ENCODE_CB(mlp_encode_frame),
     .close                  = mlp_encode_close,
+    .p.priv_class           = &mlp_class,
     .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_S32, AV_SAMPLE_FMT_NONE},
     .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
     CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1)
