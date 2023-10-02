@@ -109,6 +109,7 @@ void ff_ac3dsp_init    (AC3DSPContext *c);
 void ff_ac3dsp_init_arm(AC3DSPContext *c);
 void ff_ac3dsp_init_x86(AC3DSPContext *c);
 void ff_ac3dsp_init_mips(AC3DSPContext *c);
+void ff_ac3dsp_init_riscv(AC3DSPContext *c);
 
 void ff_ac3dsp_downmix(AC3DSPContext *c, float **samples, float **matrix,
                        int out_ch, int in_ch, int len);

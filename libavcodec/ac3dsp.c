@@ -395,5 +395,7 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c)
     ff_ac3dsp_init_x86(c);
 #elif ARCH_MIPS
     ff_ac3dsp_init_mips(c);
+#elif ARCH_RISCV
+    ff_ac3dsp_init_riscv(c);
 #endif
 }
