@@ -6719,7 +6719,7 @@ enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -li
 enabled libjxl            && require_pkg_config libjxl "libjxl >= 0.7.0" jxl/decode.h JxlDecoderVersion &&
                              require_pkg_config libjxl_threads "libjxl_threads >= 0.7.0" jxl/thread_parallel_runner.h JxlThreadParallelRunner
 enabled libklvanc         && require libklvanc libklvanc/vanc.h klvanc_context_create -lklvanc
-enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
+enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 2.0.0" kvazaar.h kvz_api_get
 enabled liblensfun        && require_pkg_config liblensfun lensfun lensfun.h lf_db_new
 
 if enabled libmfx && enabled libvpl; then
