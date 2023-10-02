@@ -833,7 +833,7 @@ static int vaapi_encode_output(AVCodecContext *avctx,
 
         if (pic->tail_size) {
             if (ctx->tail_pkt->size) {
-                err = AVERROR(AVERROR_BUG);
+                err = AVERROR_BUG;
                 goto end;
             }
 
