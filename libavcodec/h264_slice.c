@@ -1356,12 +1356,11 @@ static int h264_select_output_frame(H264Context *h)
         } else
             h->next_outputed_poc = out->poc;
 
-        if (out->recovered) {
-            // We have reached an recovery point and all frames after it in
-            // display order are "recovered".
-            h->frame_recovered |= FRAME_RECOVERED_SEI;
-        }
-        out->recovered |= !!(h->frame_recovered & FRAME_RECOVERED_SEI);
+        // We have reached an recovery point and all frames after it in
+        // display order are "recovered".
+        h->frame_recovered |= out->recovered;
+
+        out->recovered |= h->frame_recovered & FRAME_RECOVERED_SEI;
 
         if (!out->recovered) {
             if (!(h->avctx->flags & AV_CODEC_FLAG_OUTPUT_CORRUPT) &&
@@ -1643,15 +1642,18 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
 
     h->cur_pic_ptr->f->flags |= AV_FRAME_FLAG_KEY * !!(nal->type == H264_NAL_IDR_SLICE);
 
-    if (nal->type == H264_NAL_IDR_SLICE ||
-        (h->recovery_frame == h->poc.frame_num && nal->ref_idc)) {
-        h->recovery_frame         = -1;
-        h->cur_pic_ptr->recovered = 1;
-    }
-    // If we have an IDR, all frames after it in decoded order are
-    // "recovered".
-    if (nal->type == H264_NAL_IDR_SLICE)
+    if (nal->type == H264_NAL_IDR_SLICE) {
+        h->cur_pic_ptr->recovered |= FRAME_RECOVERED_IDR;
+        // If we have an IDR, all frames after it in decoded order are
+        // "recovered".
         h->frame_recovered |= FRAME_RECOVERED_IDR;
+    }
+
+    if (h->recovery_frame == h->poc.frame_num && nal->ref_idc) {
+        h->recovery_frame = -1;
+        h->cur_pic_ptr->recovered |= FRAME_RECOVERED_SEI;
+    }
+
 #if 1
     h->cur_pic_ptr->recovered |= h->frame_recovered;
 #else
