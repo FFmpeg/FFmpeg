@@ -524,7 +524,17 @@ typedef struct H264Context {
  */
 #define FRAME_RECOVERED_HEURISTIC  (1 << 2)
 
-    int frame_recovered;    ///< Initial frame has been completely recovered
+    /**
+     * Initial frame has been completely recovered.
+     *
+     * Once this is set, all following decoded as well as displayed frames will be marked as recovered
+     * If a frame is marked as recovered frame_recovered will be set once this frame is output and thus
+     * all subsequently output fraames are also marked as recovered
+     *
+     * In effect, if you want all subsequent DECODED frames marked as recovered, set frame_recovered
+     * If you want all subsequent DISPAYED frames marked as recovered, set the frame->recovered
+     */
+    int frame_recovered;
 
     int has_recovery_point;
 
