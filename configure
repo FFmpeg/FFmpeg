@@ -7523,6 +7523,12 @@ check_deps $CONFIG_LIST       \
 
 enabled threads && ! enabled pthreads && ! enabled atomics_native && die "non pthread threading without atomics not supported, try adding --enable-pthreads or --cpu=i486 or higher if you are on x86"
 
+enabled threads || warn \
+    "Threading support was disabled or is not available on the target platform." \
+    "This means that not only is this build not multi-threaded, but also"    \
+    "that the libraries from this build MUST NOT be used in a multi-threaded"\
+    "environment."
+
 case $target_os in
 haiku)
     disable memalign
