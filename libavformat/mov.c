@@ -4903,6 +4903,8 @@ static int avif_add_stream(MOVContext *c, int item_id)
 {
     MOVStreamContext *sc;
     AVStream *st;
+    if (c->fc->nb_streams)
+        return AVERROR_INVALIDDATA;
     int item_index = -1;
     for (int i = 0; i < c->avif_info_size; i++)
         if (c->avif_info[i].item_id == item_id) {
