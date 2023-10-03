@@ -176,9 +176,6 @@ static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
     case 3:
         s->pict_type = AV_PICTURE_TYPE_B;
         break;
-    default:
-        av_log(s->avctx, AV_LOG_ERROR, "unknown frame type\n");
-        return AVERROR_INVALIDDATA;
     }
 
     if (s->low_delay && s->pict_type == AV_PICTURE_TYPE_B) {
