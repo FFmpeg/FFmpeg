@@ -253,8 +253,13 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     // In order for SVT-AV1 to force keyframes by setting pic_type to
     // EB_AV1_KEY_PICTURE on any frame, force_key_frames has to be set. Note
     // that this does not force all frames to be keyframes (it only forces a
-    // keyframe with pic_type is set to EB_AV1_KEY_PICTURE).
-    param->force_key_frames = 1;
+    // keyframe with pic_type is set to EB_AV1_KEY_PICTURE). As of now, SVT-AV1
+    // does not support arbitrary keyframe requests by setting pic_type to
+    // EB_AV1_KEY_PICTURE, so it is done only when gop_size == 1.
+    // FIXME: When SVT-AV1 supports arbitrary keyframe requests, this code needs
+    // to be updated to set force_key_frames accordingly.
+    if (avctx->gop_size == 1)
+        param->force_key_frames = 1;
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         param->frame_rate_numerator   = avctx->framerate.num;
