@@ -25,6 +25,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/fixed_dsp.h"
 
+void ff_vector_fmul_add_fixed_rvv(int *dst, const int *src0, const int *src1,
+                                  const int *src2, int len);
 int ff_scalarproduct_fixed_rvv(const int *v1, const int *v2, int len);
 void ff_butterflies_fixed_rvv(int *v1, int *v2, int len);
 
@@ -34,8 +36,11 @@ av_cold void ff_fixed_dsp_init_riscv(AVFixedDSPContext *fdsp)
     int flags = av_get_cpu_flags();
 
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+        fdsp->vector_fmul_add = ff_vector_fmul_add_fixed_rvv;
+
         if (flags & AV_CPU_FLAG_RVV_I64)
             fdsp->scalarproduct_fixed = ff_scalarproduct_fixed_rvv;
+
         fdsp->butterflies_fixed = ff_butterflies_fixed_rvv;
     }
 #endif

@@ -20,6 +20,27 @@
 
 #include "asm.S"
 
+
+func ff_vector_fmul_add_fixed_rvv, zve32x
+        csrwi   vxrm, 0
+1:
+        vsetvli t0, a4, e32, m8, ta, ma
+        vle32.v v16, (a1)
+        sub     a4, a4, t0
+        vle32.v v24, (a2)
+        sh2add  a1, t0, a1
+        vsmul.vv v8, v16, v24
+        sh2add  a2, t0, a2
+        vle32.v v0,(a3)
+        sh2add  a3, t0, a3
+        vadd.vv v8, v8, v0
+        vse32.v v8, (a0)
+        sh2add  a0, t0, a0
+        bnez    a4, 1b
+
+        ret
+endfunc
+
 func ff_scalarproduct_fixed_rvv, zve64x
         li      t1, 1 << 30
         vsetvli t0, zero, e64, m8, ta, ma
