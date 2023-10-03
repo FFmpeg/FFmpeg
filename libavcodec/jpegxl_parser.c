@@ -1044,34 +1044,60 @@ static int skip_icc_profile(void *avctx, JXLParseContext *ctx, GetBitContext *gb
 {
     int64_t ret;
     uint32_t last = 0, last2 = 0;
-    JXLEntropyDecoder dec;
+    JXLEntropyDecoder dec = { 0 };
     uint64_t enc_size = jxl_u64(gb);
+    uint64_t output_size = 0;
+    int out_size_shift = 0;
 
-    if (!enc_size)
+    if (!enc_size || enc_size > (1 << 22))
         return AVERROR_INVALIDDATA;
 
     ret = entropy_decoder_init(avctx, gb, &dec, 41);
     if (ret < 0)
-        return ret;
+        goto end;
 
     if (get_bits_left(gb) < 0) {
-        entropy_decoder_close(&dec);
-        return AVERROR_BUFFER_TOO_SMALL;
+        ret = AVERROR_BUFFER_TOO_SMALL;
+        goto end;
     }
 
     for (uint64_t read = 0; read < enc_size; read++) {
         ret = entropy_decoder_read_symbol(gb, &dec, icc_context(read, last, last2));
-        if (ret < 0 || get_bits_left(gb) < 0) {
-            entropy_decoder_close(&dec);
-            return ret < 0 ? ret : AVERROR_BUFFER_TOO_SMALL;
+        if (ret < 0)
+            goto end;
+        if (ret > 255) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
+        if (get_bits_left(gb) < 0) {
+            ret = AVERROR_BUFFER_TOO_SMALL;
+            goto end;
         }
         last2 = last;
         last = ret;
+        if (out_size_shift < 63) {
+            output_size += (ret & UINT64_C(0x7F)) << out_size_shift;
+            if (!(ret & 0x80)) {
+                out_size_shift = 63;
+            } else {
+                out_size_shift += 7;
+                if (out_size_shift > 56) {
+                    ret = AVERROR_INVALIDDATA;
+                    goto end;
+                }
+            }
+        } else if (output_size < 132) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
     }
 
+    ret = 0;
+
+end:
     entropy_decoder_close(&dec);
 
-    return 0;
+    return ret;
 }
 
 static int skip_extensions(GetBitContext *gb)
