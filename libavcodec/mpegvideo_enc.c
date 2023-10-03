@@ -821,7 +821,8 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix16, 32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_inter_matrix16,        32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->input_picture,           MAX_PICTURE_COUNT) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_PICTURE_COUNT))
+        !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_PICTURE_COUNT) ||
+        !(s->new_picture = av_frame_alloc()))
         return AVERROR(ENOMEM);
 
     /* Allocate MV tables; the MV and MB tables will be copied

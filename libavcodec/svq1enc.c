@@ -570,6 +570,7 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
 
     av_frame_free(&s->current_picture);
     av_frame_free(&s->last_picture);
+    av_frame_free(&s->m.new_picture);
 
     return 0;
 }
@@ -632,10 +633,11 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
     s->dummy               = av_mallocz((s->y_block_width + 1) *
                                         s->y_block_height * sizeof(int32_t));
     s->m.me.map            = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->m.me.map));
+    s->m.new_picture       = av_frame_alloc();
     s->svq1encdsp.ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 
-    if (!s->m.me.temp || !s->m.me.scratchpad || !s->m.me.map ||
-        !s->mb_type || !s->dummy)
+    if (!s->m.me.scratchpad || !s->m.me.map ||
+        !s->mb_type || !s->dummy || !s->m.new_picture)
         return AVERROR(ENOMEM);
     s->m.me.score_map = s->m.me.map + ME_MAP_SIZE;
 
