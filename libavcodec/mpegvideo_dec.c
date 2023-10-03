@@ -242,6 +242,8 @@ static int alloc_picture(MpegEncContext *s, Picture *pic)
 
     pic->tf.f = pic->f;
 
+    /* WM Image / Screen codecs allocate internal buffers with different
+     * dimensions / colorspaces; ignore user-defined callbacks for these. */
     if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
         avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
         avctx->codec_id != AV_CODEC_ID_MSS2) {
