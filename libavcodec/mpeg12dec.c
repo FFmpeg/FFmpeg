@@ -1326,11 +1326,6 @@ static int mpeg1_decode_picture(AVCodecContext *avctx, const uint8_t *buf,
         s->mpeg_f_code[1][0] = f_code;
         s->mpeg_f_code[1][1] = f_code;
     }
-    s->current_picture.f->pict_type = s->pict_type;
-    if (s->pict_type == AV_PICTURE_TYPE_I)
-        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
-    else
-        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
 
     if (avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(avctx, AV_LOG_DEBUG,
@@ -1504,11 +1499,6 @@ static int mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
                 s->pict_type = AV_PICTURE_TYPE_P;
         } else
             s->pict_type = AV_PICTURE_TYPE_B;
-        s->current_picture.f->pict_type = s->pict_type;
-        if (s->pict_type == AV_PICTURE_TYPE_I)
-            s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
-        else
-            s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
     }
 
     s->intra_dc_precision         = get_bits(&s->gb, 2);

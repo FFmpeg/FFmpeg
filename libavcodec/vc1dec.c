@@ -1058,13 +1058,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         goto err;
     }
 
-    // for skipping the frame
-    s->current_picture.f->pict_type = s->pict_type;
-    if (s->pict_type == AV_PICTURE_TYPE_I)
-        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
-    else
-        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
-
     /* skip B-frames if we don't have reference frames */
     if (!s->last_picture_ptr && s->pict_type == AV_PICTURE_TYPE_B) {
         av_log(v->s.avctx, AV_LOG_DEBUG, "Skipping B frame without reference frames\n");
