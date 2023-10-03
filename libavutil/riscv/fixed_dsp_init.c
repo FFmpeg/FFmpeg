@@ -25,6 +25,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/fixed_dsp.h"
 
+int ff_scalarproduct_fixed_rvv(const int *v1, const int *v2, int len);
 void ff_butterflies_fixed_rvv(int *v1, int *v2, int len);
 
 av_cold void ff_fixed_dsp_init_riscv(AVFixedDSPContext *fdsp)
@@ -32,7 +33,10 @@ av_cold void ff_fixed_dsp_init_riscv(AVFixedDSPContext *fdsp)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR))
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+        if (flags & AV_CPU_FLAG_RVV_I64)
+            fdsp->scalarproduct_fixed = ff_scalarproduct_fixed_rvv;
         fdsp->butterflies_fixed = ff_butterflies_fixed_rvv;
+    }
 #endif
 }
