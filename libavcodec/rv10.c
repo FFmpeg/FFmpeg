@@ -158,25 +158,14 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 
 static int rv20_decode_picture_header(RVDecContext *rv, int whole_size)
 {
+    static const enum AVPictureType pict_types[] =
+        { AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_I /* hmm ... */,
+          AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B };
     MpegEncContext *s = &rv->m;
-    int seq, mb_pos, i, ret;
+    int seq, mb_pos, ret;
     int rpr_max;
 
-    i = get_bits(&s->gb, 2);
-    switch (i) {
-    case 0:
-        s->pict_type = AV_PICTURE_TYPE_I;
-        break;
-    case 1:
-        s->pict_type = AV_PICTURE_TYPE_I;
-        break;                                  // hmm ...
-    case 2:
-        s->pict_type = AV_PICTURE_TYPE_P;
-        break;
-    case 3:
-        s->pict_type = AV_PICTURE_TYPE_B;
-        break;
-    }
+    s->pict_type = pict_types[get_bits(&s->gb, 2)];
 
     if (s->low_delay && s->pict_type == AV_PICTURE_TYPE_B) {
         av_log(s->avctx, AV_LOG_ERROR, "low delay B\n");
