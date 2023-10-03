@@ -26,8 +26,6 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
-#include "encode.h"
-#include "decode.h"
 #include "motion_est.h"
 #include "mpegpicture.h"
 #include "mpegutils.h"
@@ -124,56 +122,13 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
 }
 
 /**
- * Allocate a frame buffer
+ * Check the pic's linesize and allocate linesize dependent scratch buffers
  */
-static int alloc_frame_buffer(AVCodecContext *avctx,  Picture *pic,
-                              MotionEstContext *me, ScratchpadContext *sc,
-                              int chroma_x_shift, int chroma_y_shift,
-                              int linesize, int uvlinesize)
+static int handle_pic_linesizes(AVCodecContext *avctx, Picture *pic,
+                                MotionEstContext *me, ScratchpadContext *sc,
+                                int linesize, int uvlinesize)
 {
-    int edges_needed = av_codec_is_encoder(avctx->codec);
-    int r, ret;
-
-    pic->tf.f = pic->f;
-
-    if (edges_needed) {
-        pic->f->width  = avctx->width  + 2 * EDGE_WIDTH;
-        pic->f->height = avctx->height + 2 * EDGE_WIDTH;
-
-        r = ff_encode_alloc_frame(avctx, pic->f);
-    } else if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
-               avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
-               avctx->codec_id != AV_CODEC_ID_MSS2) {
-        r = ff_thread_get_ext_buffer(avctx, &pic->tf,
-                                     pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
-    } else {
-        pic->f->width  = avctx->width;
-        pic->f->height = avctx->height;
-        pic->f->format = avctx->pix_fmt;
-        r = avcodec_default_get_buffer2(avctx, pic->f, 0);
-    }
-
-    if (r < 0 || !pic->f->buf[0]) {
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed (%d %p)\n",
-               r, pic->f->data[0]);
-        return -1;
-    }
-
-    if (edges_needed) {
-        int i;
-        for (i = 0; pic->f->data[i]; i++) {
-            int offset = (EDGE_WIDTH >> (i ? chroma_y_shift : 0)) *
-                         pic->f->linesize[i] +
-                         (EDGE_WIDTH >> (i ? chroma_x_shift : 0));
-            pic->f->data[i] += offset;
-        }
-        pic->f->width  = avctx->width;
-        pic->f->height = avctx->height;
-    }
-
-    ret = ff_hwaccel_frame_priv_alloc(avctx, &pic->hwaccel_picture_private);
-    if (ret < 0)
-        return ret;
+    int ret;
 
     if ((linesize   &&   linesize != pic->f->linesize[0]) ||
         (uvlinesize && uvlinesize != pic->f->linesize[1])) {
@@ -246,8 +201,7 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
  * The pixels are allocated/set by calling get_buffer() if shared = 0
  */
 int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
-                     ScratchpadContext *sc, int encoding,
-                     int chroma_x_shift, int chroma_y_shift, int out_format,
+                     ScratchpadContext *sc, int encoding, int out_format,
                      int mb_stride, int mb_width, int mb_height, int b8_stride,
                      ptrdiff_t *linesize, ptrdiff_t *uvlinesize)
 {
@@ -258,14 +212,12 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
             || pic->alloc_mb_height != mb_height)
             free_picture_tables(pic);
 
-        av_assert0(!pic->f->buf[0]);
-        if (alloc_frame_buffer(avctx, pic, me, sc,
-                               chroma_x_shift, chroma_y_shift,
-                               *linesize, *uvlinesize) < 0)
-            return -1;
+    if (handle_pic_linesizes(avctx, pic, me, sc,
+                             *linesize, *uvlinesize) < 0)
+        return -1;
 
-        *linesize   = pic->f->linesize[0];
-        *uvlinesize = pic->f->linesize[1];
+    *linesize   = pic->f->linesize[0];
+    *uvlinesize = pic->f->linesize[1];
 
     if (!pic->qscale_table_buf)
         ret = alloc_picture_tables(avctx, pic, encoding, out_format,

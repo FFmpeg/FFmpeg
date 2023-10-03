@@ -1093,8 +1093,26 @@ static int get_intra_count(MpegEncContext *s, const uint8_t *src,
 
 static int alloc_picture(MpegEncContext *s, Picture *pic)
 {
-    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, 1,
-                            s->chroma_x_shift, s->chroma_y_shift, s->out_format,
+    AVCodecContext *avctx = s->avctx;
+    int ret;
+
+    pic->f->width  = avctx->width  + 2 * EDGE_WIDTH;
+    pic->f->height = avctx->height + 2 * EDGE_WIDTH;
+
+    ret = ff_encode_alloc_frame(avctx, pic->f);
+    if (ret < 0)
+        return ret;
+
+    for (int i = 0; pic->f->data[i]; i++) {
+        int offset = (EDGE_WIDTH >> (i ? s->chroma_y_shift : 0)) *
+                     pic->f->linesize[i] +
+                     (EDGE_WIDTH >> (i ? s->chroma_x_shift : 0));
+        pic->f->data[i] += offset;
+    }
+    pic->f->width  = avctx->width;
+    pic->f->height = avctx->height;
+
+    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, 1, s->out_format,
                             s->mb_stride, s->mb_width, s->mb_height, s->b8_stride,
                             &s->linesize, &s->uvlinesize);
 }

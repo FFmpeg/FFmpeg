@@ -31,6 +31,7 @@
 #include "libavutil/video_enc_params.h"
 
 #include "avcodec.h"
+#include "decode.h"
 #include "h264chroma.h"
 #include "internal.h"
 #include "mpegutils.h"
@@ -236,10 +237,35 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 
 static int alloc_picture(MpegEncContext *s, Picture *pic)
 {
-    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, 0,
-                            s->chroma_x_shift, s->chroma_y_shift, s->out_format,
+    AVCodecContext *avctx = s->avctx;
+    int ret;
+
+    pic->tf.f = pic->f;
+
+    if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
+        avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
+        avctx->codec_id != AV_CODEC_ID_MSS2) {
+        ret = ff_thread_get_ext_buffer(avctx, &pic->tf,
+                                       pic->reference ? AV_GET_BUFFER_FLAG_REF : 0);
+    } else {
+        pic->f->width  = avctx->width;
+        pic->f->height = avctx->height;
+        pic->f->format = avctx->pix_fmt;
+        ret = avcodec_default_get_buffer2(avctx, pic->f, 0);
+    }
+    if (ret < 0)
+        goto fail;
+
+    ret = ff_hwaccel_frame_priv_alloc(avctx, &pic->hwaccel_picture_private);
+    if (ret < 0)
+        goto fail;
+
+    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, 0, s->out_format,
                             s->mb_stride, s->mb_width, s->mb_height, s->b8_stride,
                             &s->linesize, &s->uvlinesize);
+fail:
+    ff_mpeg_unref_picture(avctx, pic);
+    return ret;
 }
 
 static void color_frame(AVFrame *frame, int luma)
