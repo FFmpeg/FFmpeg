@@ -40,7 +40,6 @@
 #include "libavutil/intmath.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/mem_internal.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
@@ -1171,16 +1170,11 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             return ret;
 
         if (!direct) {
-            int h_chroma_shift, v_chroma_shift;
-            av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
-                                             &h_chroma_shift,
-                                             &v_chroma_shift);
-
             for (int i = 0; i < 3; i++) {
                 int src_stride = pic_arg->linesize[i];
                 int dst_stride = i ? s->uvlinesize : s->linesize;
-                int h_shift = i ? h_chroma_shift : 0;
-                int v_shift = i ? v_chroma_shift : 0;
+                int h_shift = i ? s->chroma_x_shift : 0;
+                int v_shift = i ? s->chroma_y_shift : 0;
                 int w = s->width  >> h_shift;
                 int h = s->height >> v_shift;
                 const uint8_t *src = pic_arg->data[i];
@@ -1641,9 +1635,8 @@ static void frame_end(MpegEncContext *s)
     if (s->unrestricted_mv &&
         s->current_picture.reference &&
         !s->intra_only) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(s->avctx->pix_fmt);
-        int hshift = desc->log2_chroma_w;
-        int vshift = desc->log2_chroma_h;
+        int hshift = s->chroma_x_shift;
+        int vshift = s->chroma_y_shift;
         s->mpvencdsp.draw_edges(s->current_picture.f->data[0],
                                 s->current_picture.f->linesize[0],
                                 s->h_edge_pos, s->v_edge_pos,
