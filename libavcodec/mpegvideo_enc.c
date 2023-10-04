@@ -819,8 +819,8 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix16,        32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_chroma_intra_matrix16, 32) ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_inter_matrix16,        32) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->input_picture,           MAX_PICTURE_COUNT) ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_PICTURE_COUNT) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->input_picture,           MAX_B_FRAMES + 1) ||
+        !FF_ALLOCZ_TYPED_ARRAY(s->reordered_input_picture, MAX_B_FRAMES + 1) ||
         !(s->new_picture = av_frame_alloc()))
         return AVERROR(ENOMEM);
 
@@ -1232,7 +1232,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
     }
 
     /* shift buffer entries */
-    for (i = flush_offset; i < MAX_PICTURE_COUNT /*s->encoding_delay + 1*/; i++)
+    for (int i = flush_offset; i <= MAX_B_FRAMES; i++)
         s->input_picture[i - flush_offset] = s->input_picture[i];
 
     s->input_picture[encoding_delay] = pic;
@@ -1451,9 +1451,9 @@ static int select_input_picture(MpegEncContext *s)
 {
     int i, ret;
 
-    for (i = 1; i < MAX_PICTURE_COUNT; i++)
+    for (int i = 1; i <= MAX_B_FRAMES; i++)
         s->reordered_input_picture[i - 1] = s->reordered_input_picture[i];
-    s->reordered_input_picture[MAX_PICTURE_COUNT - 1] = NULL;
+    s->reordered_input_picture[MAX_B_FRAMES] = NULL;
 
     /* set next picture type & ordering */
     if (!s->reordered_input_picture[0] && s->input_picture[0]) {
