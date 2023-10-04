@@ -1834,9 +1834,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    mpv->current_picture_ptr    = &mpv->current_picture;
-    mpv->current_picture.f      = s->current_picture;
-    mpv->current_picture.f->pts = pict->pts;
+    mpv->cur_pic_ptr    = &mpv->cur_pic;
+    mpv->cur_pic.f      = s->current_picture;
+    mpv->cur_pic.f->pts = pict->pts;
     if(pic->pict_type == AV_PICTURE_TYPE_P){
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
@@ -1846,9 +1846,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_assert0(s->last_picture[0]->data[0]);
 
         mpv->avctx = s->avctx;
-        mpv->last_picture.f   = s->last_picture[0];
-        mpv-> new_picture     = s->input_picture;
-        mpv->last_picture_ptr = &mpv->last_picture;
+        mpv->last_pic.f   = s->last_picture[0];
+        mpv-> new_pic     = s->input_picture;
+        mpv->last_pic_ptr = &mpv->last_pic;
         mpv->linesize   = stride;
         mpv->uvlinesize = s->current_picture->linesize[1];
         mpv->width      = width;
@@ -2043,9 +2043,9 @@ redo_frame:
     mpv->frame_bits = 8 * (s->c.bytestream - s->c.bytestream_start);
     mpv->p_tex_bits = mpv->frame_bits - mpv->misc_bits - mpv->mv_bits;
     mpv->total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
-    mpv->current_picture.display_picture_number =
-    mpv->current_picture.coded_picture_number   = avctx->frame_num;
-    mpv->current_picture.f->quality             = pic->quality;
+    mpv->cur_pic.display_picture_number =
+    mpv->cur_pic.coded_picture_number   = avctx->frame_num;
+    mpv->cur_pic.f->quality             = pic->quality;
     if (enc->pass1_rc)
         if (ff_rate_estimate_qscale(mpv, 0) < 0)
             return -1;

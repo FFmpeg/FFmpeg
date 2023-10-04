@@ -93,8 +93,8 @@ void mpeg_motion_internal(MpegEncContext *s,
     ptrdiff_t uvlinesize, linesize;
 
     v_edge_pos = s->v_edge_pos >> field_based;
-    linesize   = s->current_picture.f->linesize[0] << field_based;
-    uvlinesize = s->current_picture.f->linesize[1] << field_based;
+    linesize   = s->cur_pic.f->linesize[0] << field_based;
+    uvlinesize = s->cur_pic.f->linesize[1] << field_based;
     block_y_half = (field_based | is_16x8);
 
     dxy   = ((motion_y & 1) << 1) | (motion_x & 1);
@@ -514,7 +514,7 @@ static inline void apply_obmc(MpegEncContext *s,
                               op_pixels_func (*pix_op)[4])
 {
     LOCAL_ALIGNED_8(int16_t, mv_cache, [4], [4][2]);
-    const Picture *cur_frame = &s->current_picture;
+    const Picture *cur_frame = &s->cur_pic;
     int mb_x = s->mb_x;
     int mb_y = s->mb_y;
     const int xy         = mb_x + mb_y * s->mb_stride;
@@ -749,7 +749,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
             av_assert2(s->out_format == FMT_MPEG1);
             if (s->picture_structure != s->field_select[dir][0] + 1 &&
                 s->pict_type != AV_PICTURE_TYPE_B && !s->first_field) {
-                ref_picture = s->current_picture_ptr->f->data;
+                ref_picture = s->cur_pic_ptr->f->data;
             }
 
             mpeg_motion(s, dest_y, dest_cb, dest_cr,
@@ -767,7 +767,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                     s->pict_type == AV_PICTURE_TYPE_B || s->first_field) {
                     ref2picture = ref_picture;
                 } else {
-                    ref2picture = s->current_picture_ptr->f->data;
+                    ref2picture = s->cur_pic_ptr->f->data;
                 }
 
                 mpeg_motion(s, dest_y, dest_cb, dest_cr,
@@ -807,7 +807,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                     /* opposite parity is always in the same frame if this is
                      * second field */
                     if (!s->first_field)
-                        ref_picture = s->current_picture_ptr->f->data;
+                        ref_picture = s->cur_pic_ptr->f->data;
                 }
             }
             break;

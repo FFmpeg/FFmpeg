@@ -39,7 +39,7 @@ static int nvdec_mpeg12_start_frame(AVCodecContext *avctx, const uint8_t *buffer
     CUVIDMPEG2PICPARAMS *ppc = &pp->CodecSpecific.mpeg2;
     FrameDecodeData *fdd;
     NVDECFrame *cf;
-    AVFrame *cur_frame = s->current_picture.f;
+    AVFrame *cur_frame = s->cur_pic.f;
 
     int ret, i;
 
@@ -64,8 +64,8 @@ static int nvdec_mpeg12_start_frame(AVCodecContext *avctx, const uint8_t *buffer
                              s->pict_type == AV_PICTURE_TYPE_P,
 
         .CodecSpecific.mpeg2 = {
-            .ForwardRefIdx     = ff_nvdec_get_ref_idx(s->last_picture.f),
-            .BackwardRefIdx    = ff_nvdec_get_ref_idx(s->next_picture.f),
+            .ForwardRefIdx     = ff_nvdec_get_ref_idx(s->last_pic.f),
+            .BackwardRefIdx    = ff_nvdec_get_ref_idx(s->next_pic.f),
 
             .picture_coding_type        = s->pict_type,
             .full_pel_forward_vector    = s->full_pel[0],

@@ -678,9 +678,9 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
 static void clear_context(MpegEncContext *s)
 {
     memset(&s->buffer_pools, 0, sizeof(s->buffer_pools));
-    memset(&s->next_picture, 0, sizeof(s->next_picture));
-    memset(&s->last_picture, 0, sizeof(s->last_picture));
-    memset(&s->current_picture, 0, sizeof(s->current_picture));
+    memset(&s->next_pic, 0, sizeof(s->next_pic));
+    memset(&s->last_pic, 0, sizeof(s->last_pic));
+    memset(&s->cur_pic,  0, sizeof(s->cur_pic));
 
     memset(s->thread_context, 0, sizeof(s->thread_context));
 
@@ -763,9 +763,9 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
             goto fail_nomem;
     }
 
-    if (!(s->next_picture.f    = av_frame_alloc()) ||
-        !(s->last_picture.f    = av_frame_alloc()) ||
-        !(s->current_picture.f = av_frame_alloc()))
+    if (!(s->next_pic.f = av_frame_alloc()) ||
+        !(s->last_pic.f = av_frame_alloc()) ||
+        !(s->cur_pic.f  = av_frame_alloc()))
         goto fail_nomem;
 
     if ((ret = ff_mpv_init_context_frame(s)))
@@ -840,15 +840,15 @@ void ff_mpv_common_end(MpegEncContext *s)
             ff_mpv_picture_free(&s->picture[i]);
     }
     av_freep(&s->picture);
-    ff_mpv_picture_free(&s->last_picture);
-    ff_mpv_picture_free(&s->current_picture);
-    ff_mpv_picture_free(&s->next_picture);
+    ff_mpv_picture_free(&s->last_pic);
+    ff_mpv_picture_free(&s->cur_pic);
+    ff_mpv_picture_free(&s->next_pic);
 
     s->context_initialized      = 0;
     s->context_reinit           = 0;
-    s->last_picture_ptr         =
-    s->next_picture_ptr         =
-    s->current_picture_ptr      = NULL;
+    s->last_pic_ptr =
+    s->next_pic_ptr =
+    s->cur_pic_ptr  = NULL;
     s->linesize = s->uvlinesize = 0;
 }
 
@@ -881,8 +881,8 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
 }
 
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
-    const int linesize   = s->current_picture.f->linesize[0]; //not s->linesize as this would be wrong for field pics
-    const int uvlinesize = s->current_picture.f->linesize[1];
+    const int linesize   = s->cur_pic.f->linesize[0]; //not s->linesize as this would be wrong for field pics
+    const int uvlinesize = s->cur_pic.f->linesize[1];
     const int width_of_mb = (4 + (s->avctx->bits_per_raw_sample > 8)) - s->avctx->lowres;
     const int height_of_mb = 4 - s->avctx->lowres;
 
@@ -894,9 +894,9 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x - 1;
     //block_index is not used by mpeg2, so it is not affected by chroma_format
 
-    s->dest[0] = s->current_picture.f->data[0] + (int)((s->mb_x - 1U) <<  width_of_mb);
-    s->dest[1] = s->current_picture.f->data[1] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
-    s->dest[2] = s->current_picture.f->data[2] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
+    s->dest[0] = s->cur_pic.f->data[0] + (int)((s->mb_x - 1U) <<  width_of_mb);
+    s->dest[1] = s->cur_pic.f->data[1] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
+    s->dest[2] = s->cur_pic.f->data[2] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
 
     if (s->picture_structure == PICT_FRAME) {
         s->dest[0] += s->mb_y *   linesize << height_of_mb;

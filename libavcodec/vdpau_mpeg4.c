@@ -34,7 +34,7 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
 {
     Mpeg4DecContext *ctx = avctx->priv_data;
     MpegEncContext * const s = &ctx->m;
-    Picture *pic             = s->current_picture_ptr;
+    Picture *pic             = s->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpPictureInfoMPEG4Part2 *info = &pic_ctx->info.mpeg4;
     VdpVideoSurface ref;
@@ -47,13 +47,13 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
 
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_B:
-        ref = ff_vdpau_get_surface_id(s->next_picture.f);
+        ref = ff_vdpau_get_surface_id(s->next_pic.f);
         assert(ref != VDP_INVALID_HANDLE);
         info->backward_reference = ref;
         info->vop_coding_type    = 2;
         /* fall-through */
     case AV_PICTURE_TYPE_P:
-        ref = ff_vdpau_get_surface_id(s->last_picture.f);
+        ref = ff_vdpau_get_surface_id(s->last_pic.f);
         assert(ref != VDP_INVALID_HANDLE);
         info->forward_reference  = ref;
     }

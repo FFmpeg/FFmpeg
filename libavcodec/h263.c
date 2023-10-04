@@ -73,21 +73,21 @@ void ff_h263_update_motion_val(MpegEncContext * s){
                 s->p_field_mv_table[i][0][mb_xy][0]= s->mv[0][i][0];
                 s->p_field_mv_table[i][0][mb_xy][1]= s->mv[0][i][1];
             }
-            s->current_picture.ref_index[0][4*mb_xy    ] =
-            s->current_picture.ref_index[0][4*mb_xy + 1] = s->field_select[0][0];
-            s->current_picture.ref_index[0][4*mb_xy + 2] =
-            s->current_picture.ref_index[0][4*mb_xy + 3] = s->field_select[0][1];
+            s->cur_pic.ref_index[0][4*mb_xy    ] =
+            s->cur_pic.ref_index[0][4*mb_xy + 1] = s->field_select[0][0];
+            s->cur_pic.ref_index[0][4*mb_xy + 2] =
+            s->cur_pic.ref_index[0][4*mb_xy + 3] = s->field_select[0][1];
         }
 
         /* no update if 8X8 because it has been done during parsing */
-        s->current_picture.motion_val[0][xy][0]            = motion_x;
-        s->current_picture.motion_val[0][xy][1]            = motion_y;
-        s->current_picture.motion_val[0][xy + 1][0]        = motion_x;
-        s->current_picture.motion_val[0][xy + 1][1]        = motion_y;
-        s->current_picture.motion_val[0][xy + wrap][0]     = motion_x;
-        s->current_picture.motion_val[0][xy + wrap][1]     = motion_y;
-        s->current_picture.motion_val[0][xy + 1 + wrap][0] = motion_x;
-        s->current_picture.motion_val[0][xy + 1 + wrap][1] = motion_y;
+        s->cur_pic.motion_val[0][xy][0]            = motion_x;
+        s->cur_pic.motion_val[0][xy][1]            = motion_y;
+        s->cur_pic.motion_val[0][xy + 1][0]        = motion_x;
+        s->cur_pic.motion_val[0][xy + 1][1]        = motion_y;
+        s->cur_pic.motion_val[0][xy + wrap][0]     = motion_x;
+        s->cur_pic.motion_val[0][xy + wrap][1]     = motion_y;
+        s->cur_pic.motion_val[0][xy + 1 + wrap][0] = motion_x;
+        s->cur_pic.motion_val[0][xy + 1 + wrap][1] = motion_y;
     }
 }
 
@@ -104,7 +104,7 @@ void ff_h263_loop_filter(MpegEncContext * s){
        Diag Top
        Left Center
     */
-    if (!IS_SKIP(s->current_picture.mb_type[xy])) {
+    if (!IS_SKIP(s->cur_pic.mb_type[xy])) {
         qp_c= s->qscale;
         s->h263dsp.h263_v_loop_filter(dest_y + 8 * linesize,     linesize, qp_c);
         s->h263dsp.h263_v_loop_filter(dest_y + 8 * linesize + 8, linesize, qp_c);
@@ -114,10 +114,10 @@ void ff_h263_loop_filter(MpegEncContext * s){
     if(s->mb_y){
         int qp_dt, qp_tt, qp_tc;
 
-        if (IS_SKIP(s->current_picture.mb_type[xy - s->mb_stride]))
+        if (IS_SKIP(s->cur_pic.mb_type[xy - s->mb_stride]))
             qp_tt=0;
         else
-            qp_tt = s->current_picture.qscale_table[xy - s->mb_stride];
+            qp_tt = s->cur_pic.qscale_table[xy - s->mb_stride];
 
         if(qp_c)
             qp_tc= qp_c;
@@ -137,10 +137,10 @@ void ff_h263_loop_filter(MpegEncContext * s){
             s->h263dsp.h263_h_loop_filter(dest_y - 8 * linesize + 8, linesize, qp_tt);
 
         if(s->mb_x){
-            if (qp_tt || IS_SKIP(s->current_picture.mb_type[xy - 1 - s->mb_stride]))
+            if (qp_tt || IS_SKIP(s->cur_pic.mb_type[xy - 1 - s->mb_stride]))
                 qp_dt= qp_tt;
             else
-                qp_dt = s->current_picture.qscale_table[xy - 1 - s->mb_stride];
+                qp_dt = s->cur_pic.qscale_table[xy - 1 - s->mb_stride];
 
             if(qp_dt){
                 const int chroma_qp= s->chroma_qscale_table[qp_dt];
@@ -159,10 +159,10 @@ void ff_h263_loop_filter(MpegEncContext * s){
 
     if(s->mb_x){
         int qp_lc;
-        if (qp_c || IS_SKIP(s->current_picture.mb_type[xy - 1]))
+        if (qp_c || IS_SKIP(s->cur_pic.mb_type[xy - 1]))
             qp_lc= qp_c;
         else
-            qp_lc = s->current_picture.qscale_table[xy - 1];
+            qp_lc = s->cur_pic.qscale_table[xy - 1];
 
         if(qp_lc){
             s->h263dsp.h263_h_loop_filter(dest_y, linesize, qp_lc);
@@ -184,7 +184,7 @@ int16_t *ff_h263_pred_motion(MpegEncContext * s, int block, int dir,
     static const int off[4]= {2, 1, 1, -1};
 
     wrap = s->b8_stride;
-    mot_val = s->current_picture.motion_val[dir] + s->block_index[block];
+    mot_val = s->cur_pic.motion_val[dir] + s->block_index[block];
 
     A = mot_val[ - 1];
     /* special case for first (slice) line */

@@ -1108,7 +1108,7 @@ static int videotoolbox_mpeg_decode_slice(AVCodecContext *avctx,
 static int videotoolbox_mpeg_end_frame(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    AVFrame *frame = s->current_picture_ptr->f;
+    AVFrame *frame = s->cur_pic_ptr->f;
 
     return ff_videotoolbox_common_end_frame(avctx, frame);
 }

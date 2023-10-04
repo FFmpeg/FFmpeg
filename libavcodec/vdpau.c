@@ -370,7 +370,7 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    Picture *pic = s->current_picture_ptr;
+    Picture *pic = s->cur_pic_ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 

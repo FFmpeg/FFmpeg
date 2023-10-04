@@ -235,15 +235,15 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
                            v->sprite_output_frame->linesize[plane] * row;
 
             for (sprite = 0; sprite <= v->two_sprites; sprite++) {
-                uint8_t *iplane = s->current_picture.f->data[plane];
-                int      iline  = s->current_picture.f->linesize[plane];
+                uint8_t *iplane = s->cur_pic.f->data[plane];
+                int      iline  = s->cur_pic.f->linesize[plane];
                 int      ycoord = yoff[sprite] + yadv[sprite] * row;
                 int      yline  = ycoord >> 16;
                 int      next_line;
                 ysub[sprite] = ycoord & 0xFFFF;
                 if (sprite) {
-                    iplane = s->last_picture.f->data[plane];
-                    iline  = s->last_picture.f->linesize[plane];
+                    iplane = s->last_pic.f->data[plane];
+                    iline  = s->last_pic.f->linesize[plane];
                 }
                 next_line = FFMIN(yline + 1, (v->sprite_height >> !!plane) - 1) * iline;
                 if (!(xoff[sprite] & 0xFFFF) && xadv[sprite] == 1 << 16) {
@@ -317,12 +317,12 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
     if (ret < 0)
         return ret;
 
-    if (!s->current_picture.f || !s->current_picture.f->data[0]) {
+    if (!s->cur_pic.f || !s->cur_pic.f->data[0]) {
         av_log(avctx, AV_LOG_ERROR, "Got no sprites\n");
         return AVERROR_UNKNOWN;
     }
 
-    if (v->two_sprites && (!s->last_picture_ptr || !s->last_picture.f->data[0])) {
+    if (v->two_sprites && (!s->last_pic_ptr || !s->last_pic.f->data[0])) {
         av_log(avctx, AV_LOG_WARNING, "Need two sprites, only got one\n");
         v->two_sprites = 0;
     }
@@ -340,7 +340,7 @@ static void vc1_sprite_flush(AVCodecContext *avctx)
 {
     VC1Context *v     = avctx->priv_data;
     MpegEncContext *s = &v->s;
-    AVFrame *f = s->current_picture.f;
+    AVFrame *f = s->cur_pic.f;
     int plane, i;
 
     /* Windows Media Image codecs have a convergence interval of two keyframes.
@@ -837,10 +837,10 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     /* no supplementary picture */
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == VC1_CODE_ENDOFSEQ)) {
         /* special case for last picture */
-        if (s->low_delay == 0 && s->next_picture_ptr) {
-            if ((ret = av_frame_ref(pict, s->next_picture_ptr->f)) < 0)
+        if (s->low_delay == 0 && s->next_pic_ptr) {
+            if ((ret = av_frame_ref(pict, s->next_pic_ptr->f)) < 0)
                 return ret;
-            s->next_picture_ptr = NULL;
+            s->next_pic_ptr = NULL;
 
             *got_frame = 1;
         }
@@ -1047,7 +1047,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     }
 
     /* skip B-frames if we don't have reference frames */
-    if (!s->last_picture_ptr && s->pict_type == AV_PICTURE_TYPE_B) {
+    if (!s->last_pic_ptr && s->pict_type == AV_PICTURE_TYPE_B) {
         av_log(v->s.avctx, AV_LOG_DEBUG, "Skipping B frame without reference frames\n");
         goto end;
     }
@@ -1061,19 +1061,19 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         goto err;
     }
 
-    v->s.current_picture_ptr->field_picture = v->field_mode;
-    v->s.current_picture_ptr->f->flags |= AV_FRAME_FLAG_INTERLACED * (v->fcm != PROGRESSIVE);
-    v->s.current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * !!v->tff;
+    v->s.cur_pic_ptr->field_picture = v->field_mode;
+    v->s.cur_pic_ptr->f->flags |= AV_FRAME_FLAG_INTERLACED * (v->fcm != PROGRESSIVE);
+    v->s.cur_pic_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * !!v->tff;
 
     // process pulldown flags
-    s->current_picture_ptr->f->repeat_pict = 0;
+    s->cur_pic_ptr->f->repeat_pict = 0;
     // Pulldown flags are only valid when 'broadcast' has been set.
     if (v->rff) {
         // repeat field
-        s->current_picture_ptr->f->repeat_pict = 1;
+        s->cur_pic_ptr->f->repeat_pict = 1;
     } else if (v->rptfrm) {
         // repeat frames
-        s->current_picture_ptr->f->repeat_pict = v->rptfrm * 2;
+        s->cur_pic_ptr->f->repeat_pict = v->rptfrm * 2;
     }
 
     if (avctx->hwaccel) {
@@ -1135,7 +1135,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 ret = AVERROR_INVALIDDATA;
                 goto err;
             }
-            v->s.current_picture_ptr->f->pict_type = v->s.pict_type;
+            v->s.cur_pic_ptr->f->pict_type = v->s.pict_type;
 
             ret = hwaccel->start_frame(avctx, buf_start_second_field,
                                        (buf + buf_size) - buf_start_second_field);
@@ -1230,9 +1230,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
         v->end_mb_x = s->mb_width;
         if (v->field_mode) {
-            s->current_picture.f->linesize[0] <<= 1;
-            s->current_picture.f->linesize[1] <<= 1;
-            s->current_picture.f->linesize[2] <<= 1;
+            s->cur_pic.f->linesize[0] <<= 1;
+            s->cur_pic.f->linesize[1] <<= 1;
+            s->cur_pic.f->linesize[2] <<= 1;
             s->linesize                      <<= 1;
             s->uvlinesize                    <<= 1;
         }
@@ -1307,9 +1307,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         }
         if (v->field_mode) {
             v->second_field = 0;
-            s->current_picture.f->linesize[0] >>= 1;
-            s->current_picture.f->linesize[1] >>= 1;
-            s->current_picture.f->linesize[2] >>= 1;
+            s->cur_pic.f->linesize[0] >>= 1;
+            s->cur_pic.f->linesize[1] >>= 1;
+            s->cur_pic.f->linesize[2] >>= 1;
             s->linesize                      >>= 1;
             s->uvlinesize                    >>= 1;
             if (v->s.pict_type != AV_PICTURE_TYPE_BI && v->s.pict_type != AV_PICTURE_TYPE_B) {
@@ -1353,16 +1353,16 @@ image:
         *got_frame = 1;
     } else {
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            if ((ret = av_frame_ref(pict, s->current_picture_ptr->f)) < 0)
+            if ((ret = av_frame_ref(pict, s->cur_pic_ptr->f)) < 0)
                 goto err;
             if (!v->field_mode)
-                ff_print_debug_info(s, s->current_picture_ptr, pict);
+                ff_print_debug_info(s, s->cur_pic_ptr, pict);
             *got_frame = 1;
-        } else if (s->last_picture_ptr) {
-            if ((ret = av_frame_ref(pict, s->last_picture_ptr->f)) < 0)
+        } else if (s->last_pic_ptr) {
+            if ((ret = av_frame_ref(pict, s->last_pic_ptr->f)) < 0)
                 goto err;
             if (!v->field_mode)
-                ff_print_debug_info(s, s->last_picture_ptr, pict);
+                ff_print_debug_info(s, s->last_pic_ptr, pict);
             *got_frame = 1;
         }
     }

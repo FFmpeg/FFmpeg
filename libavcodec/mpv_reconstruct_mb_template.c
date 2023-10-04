@@ -59,7 +59,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
 #define IS_MPEG12(s) (is_mpeg12 == MAY_BE_MPEG12 ? ((s)->out_format == FMT_MPEG1) : is_mpeg12)
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
-    s->current_picture.qscale_table[mb_xy] = s->qscale;
+    s->cur_pic.qscale_table[mb_xy] = s->qscale;
 
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
@@ -82,8 +82,8 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
     {
         uint8_t *dest_y, *dest_cb, *dest_cr;
         int dct_linesize, dct_offset;
-        const int linesize   = s->current_picture.f->linesize[0]; //not s->linesize as this would be wrong for field pics
-        const int uvlinesize = s->current_picture.f->linesize[1];
+        const int linesize   = s->cur_pic.f->linesize[0]; //not s->linesize as this would be wrong for field pics
+        const int uvlinesize = s->cur_pic.f->linesize[1];
         const int readable   = IS_ENCODER || lowres_flag || s->pict_type != AV_PICTURE_TYPE_B;
         const int block_size = lowres_flag ? 8 >> s->avctx->lowres : 8;
 
@@ -96,7 +96,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 s->mb_skipped = 0;
                 av_assert2(s->pict_type!=AV_PICTURE_TYPE_I);
                 *mbskip_ptr = 1;
-            } else if(!s->current_picture.reference) {
+            } else if (!s->cur_pic.reference) {
                 *mbskip_ptr = 1;
             } else{
                 *mbskip_ptr = 0; /* not skipped */
@@ -124,11 +124,11 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
             if (HAVE_THREADS && is_mpeg12 != DEFINITELY_MPEG12 &&
                 s->avctx->active_thread_type & FF_THREAD_FRAME) {
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    ff_thread_await_progress(&s->last_picture_ptr->tf,
+                    ff_thread_await_progress(&s->last_pic_ptr->tf,
                                              lowest_referenced_row(s, 0), 0);
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    ff_thread_await_progress(&s->next_picture_ptr->tf,
+                    ff_thread_await_progress(&s->next_pic_ptr->tf,
                                              lowest_referenced_row(s, 1), 0);
                 }
             }
@@ -137,11 +137,11 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 const h264_chroma_mc_func *op_pix = s->h264chroma.put_h264_chroma_pixels_tab;
 
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f->data, op_pix);
+                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 0, s->last_pic.f->data, op_pix);
                     op_pix = s->h264chroma.avg_h264_chroma_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f->data, op_pix);
+                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 1, s->next_pic.f->data, op_pix);
                 }
             } else {
                 op_pixels_func (*op_pix)[4];
@@ -155,12 +155,12 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                     op_qpix = s->qdsp.put_no_rnd_qpel_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.f->data, op_pix, op_qpix);
+                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_pic.f->data, op_pix, op_qpix);
                     op_pix  = s->hdsp.avg_pixels_tab;
                     op_qpix = s->qdsp.avg_qpel_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.f->data, op_pix, op_qpix);
+                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_pic.f->data, op_pix, op_qpix);
                 }
             }
 

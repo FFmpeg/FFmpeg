@@ -42,12 +42,12 @@ static inline int mpeg2_get_is_frame_start(const MpegEncContext *s)
 static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_t *buffer, av_unused uint32_t size)
 {
     const MpegEncContext *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->current_picture_ptr->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->cur_pic_ptr->hwaccel_picture_private;
     VAPictureParameterBufferMPEG2 pic_param;
     VAIQMatrixBufferMPEG2 iq_matrix;
     int i, err;
 
-    pic->output_surface = ff_vaapi_get_surface_id(s->current_picture_ptr->f);
+    pic->output_surface = ff_vaapi_get_surface_id(s->cur_pic_ptr->f);
 
     pic_param = (VAPictureParameterBufferMPEG2) {
         .horizontal_size                 = s->width,
@@ -73,10 +73,10 @@ static int vaapi_mpeg2_start_frame(AVCodecContext *avctx, av_unused const uint8_
 
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_B:
-        pic_param.backward_reference_picture = ff_vaapi_get_surface_id(s->next_picture.f);
+        pic_param.backward_reference_picture = ff_vaapi_get_surface_id(s->next_pic.f);
         // fall-through
     case AV_PICTURE_TYPE_P:
-        pic_param.forward_reference_picture = ff_vaapi_get_surface_id(s->last_picture.f);
+        pic_param.forward_reference_picture = ff_vaapi_get_surface_id(s->last_pic.f);
         break;
     }
 
@@ -115,7 +115,7 @@ fail:
 static int vaapi_mpeg2_end_frame(AVCodecContext *avctx)
 {
     MpegEncContext     *s   = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->current_picture_ptr->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->cur_pic_ptr->hwaccel_picture_private;
     int ret;
 
     ret = ff_vaapi_decode_issue(avctx, pic);
@@ -131,7 +131,7 @@ fail:
 static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     const MpegEncContext *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->current_picture_ptr->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->cur_pic_ptr->hwaccel_picture_private;
     VASliceParameterBufferMPEG2 slice_param;
     GetBitContext gb;
     uint32_t quantiser_scale_code, intra_slice_flag, macroblock_offset;

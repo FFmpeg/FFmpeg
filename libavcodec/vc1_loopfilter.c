@@ -500,7 +500,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] - 4 * s->b8_stride - 2 + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] - 4 * s->b8_stride - 2 + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] - 2 * s->mb_stride - 1 + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] - 4 * s->b8_stride - 2 + v->blocks_off],
                                     ttblk,
@@ -520,7 +520,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] - 4 * s->b8_stride + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] - 4 * s->b8_stride + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] - 2 * s->mb_stride + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] - 4 * s->b8_stride + v->blocks_off],
                                     ttblk,
@@ -543,7 +543,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                         cbp,
                                         is_intra,
                                         i > 3 ? uvmv :
-                                                &s->current_picture.motion_val[0][s->block_index[i] - 2 * s->b8_stride - 2 + v->blocks_off],
+                                                &s->cur_pic.motion_val[0][s->block_index[i] - 2 * s->b8_stride - 2 + v->blocks_off],
                                         i > 3 ? &v->mv_f[0][s->block_index[i] - s->mb_stride - 1 + v->mb_off] :
                                                 &v->mv_f[0][s->block_index[i] - 2 * s->b8_stride - 2 + v->blocks_off],
                                         ttblk,
@@ -562,7 +562,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] - 2 + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] - 2 + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] - 1 + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] - 2 + v->blocks_off],
                                     ttblk,
@@ -583,7 +583,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                         cbp,
                                         is_intra,
                                         i > 3 ? uvmv :
-                                                &s->current_picture.motion_val[0][s->block_index[i] - 2 * s->b8_stride + v->blocks_off],
+                                                &s->cur_pic.motion_val[0][s->block_index[i] - 2 * s->b8_stride + v->blocks_off],
                                         i > 3 ? &v->mv_f[0][s->block_index[i] - s->mb_stride + v->mb_off] :
                                                 &v->mv_f[0][s->block_index[i] - 2 * s->b8_stride + v->blocks_off],
                                         ttblk,
@@ -602,7 +602,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] + v->blocks_off],
                                     ttblk,
@@ -625,7 +625,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] - 4 * s->b8_stride - 4 + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] - 4 * s->b8_stride - 4 + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] - 2 * s->mb_stride - 2 + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] - 4 * s->b8_stride - 4 + v->blocks_off],
                                     ttblk,
@@ -646,7 +646,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                             cbp,
                                             is_intra,
                                             i > 3 ? uvmv :
-                                                    &s->current_picture.motion_val[0][s->block_index[i] - 4 * s->b8_stride - 2 + v->blocks_off],
+                                                    &s->cur_pic.motion_val[0][s->block_index[i] - 4 * s->b8_stride - 2 + v->blocks_off],
                                             i > 3 ? &v->mv_f[0][s->block_index[i] - 2 * s->mb_stride - 1 + v->mb_off] :
                                                     &v->mv_f[0][s->block_index[i] - 4 * s->b8_stride - 2 + v->blocks_off],
                                             ttblk,
@@ -665,7 +665,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] - 4 * s->b8_stride + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] - 4 * s->b8_stride + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] - 2 * s->mb_stride + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] - 4 * s->b8_stride + v->blocks_off],
                                     ttblk,
@@ -688,7 +688,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                         cbp,
                                         is_intra,
                                         i > 3 ? uvmv :
-                                                &s->current_picture.motion_val[0][s->block_index[i] - 2 * s->b8_stride - 4 + v->blocks_off],
+                                                &s->cur_pic.motion_val[0][s->block_index[i] - 2 * s->b8_stride - 4 + v->blocks_off],
                                         i > 3 ? &v->mv_f[0][s->block_index[i] - s->mb_stride - 2 + v->mb_off] :
                                                 &v->mv_f[0][s->block_index[i] - 2 * s->b8_stride - 4 + v->blocks_off],
                                         ttblk,
@@ -709,7 +709,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                                 cbp,
                                                 is_intra,
                                                 i > 3 ? uvmv :
-                                                        &s->current_picture.motion_val[0][s->block_index[i] - 2 * s->b8_stride - 2 + v->blocks_off],
+                                                        &s->cur_pic.motion_val[0][s->block_index[i] - 2 * s->b8_stride - 2 + v->blocks_off],
                                                 i > 3 ? &v->mv_f[0][s->block_index[i] - s->mb_stride - 1 + v->mb_off] :
                                                         &v->mv_f[0][s->block_index[i] - 2 * s->b8_stride - 2 + v->blocks_off],
                                                 ttblk,
@@ -728,7 +728,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                         cbp,
                                         is_intra,
                                         i > 3 ? uvmv :
-                                                &s->current_picture.motion_val[0][s->block_index[i] - 2 * s->b8_stride + v->blocks_off],
+                                                &s->cur_pic.motion_val[0][s->block_index[i] - 2 * s->b8_stride + v->blocks_off],
                                         i > 3 ? &v->mv_f[0][s->block_index[i] - s->mb_stride + v->mb_off] :
                                                 &v->mv_f[0][s->block_index[i] - 2 * s->b8_stride + v->blocks_off],
                                         ttblk,
@@ -749,7 +749,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] - 4 + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] - 4 + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] - 2 + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] - 4 + v->blocks_off],
                                     ttblk,
@@ -770,7 +770,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                         cbp,
                                         is_intra,
                                         i > 3 ? uvmv :
-                                                &s->current_picture.motion_val[0][s->block_index[i] - 2 + v->blocks_off],
+                                                &s->cur_pic.motion_val[0][s->block_index[i] - 2 + v->blocks_off],
                                         i > 3 ? &v->mv_f[0][s->block_index[i] - 1 + v->mb_off] :
                                                 &v->mv_f[0][s->block_index[i] - 2 + v->blocks_off],
                                         ttblk,
@@ -789,7 +789,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
                                     cbp,
                                     is_intra,
                                     i > 3 ? uvmv :
-                                            &s->current_picture.motion_val[0][s->block_index[i] + v->blocks_off],
+                                            &s->cur_pic.motion_val[0][s->block_index[i] + v->blocks_off],
                                     i > 3 ? &v->mv_f[0][s->block_index[i] + v->mb_off] :
                                             &v->mv_f[0][s->block_index[i] + v->blocks_off],
                                     ttblk,

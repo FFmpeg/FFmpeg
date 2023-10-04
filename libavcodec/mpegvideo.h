@@ -156,29 +156,29 @@ typedef struct MpegEncContext {
      * copy of the previous picture structure.
      * note, linesize & data, might not match the previous picture (for field pictures)
      */
-    Picture last_picture;
+    Picture last_pic;
 
     /**
      * copy of the next picture structure.
      * note, linesize & data, might not match the next picture (for field pictures)
      */
-    Picture next_picture;
+    Picture next_pic;
 
     /**
      * Reference to the source picture for encoding.
      * note, linesize & data, might not match the source picture (for field pictures)
      */
-    AVFrame *new_picture;
+    AVFrame *new_pic;
 
     /**
      * copy of the current picture structure.
      * note, linesize & data, might not match the current picture (for field pictures)
      */
-    Picture current_picture;    ///< buffer to store the decompressed current picture
+    Picture cur_pic;               ///< buffer to store the decompressed current picture
 
-    Picture *last_picture_ptr;     ///< pointer to the previous picture.
-    Picture *next_picture_ptr;     ///< pointer to the next picture (for bidir pred)
-    Picture *current_picture_ptr;  ///< pointer to the current picture
+    Picture *last_pic_ptr;         ///< pointer to the previous picture.
+    Picture *next_pic_ptr;         ///< pointer to the next picture (for bidir pred)
+    Picture *cur_pic_ptr;          ///< pointer to the current picture
     int skipped_last_frame;
     int last_dc[3];                ///< last DC values for MPEG-1
     int16_t *dc_val_base;

@@ -49,11 +49,11 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
 {
     Mpeg4DecContext *ctx = avctx->priv_data;
     MpegEncContext *s = &ctx->m;
-    VAAPIDecodePicture *pic = s->current_picture_ptr->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->cur_pic_ptr->hwaccel_picture_private;
     VAPictureParameterBufferMPEG4 pic_param;
     int i, err;
 
-    pic->output_surface = ff_vaapi_get_surface_id(s->current_picture_ptr->f);
+    pic->output_surface = ff_vaapi_get_surface_id(s->cur_pic_ptr->f);
 
     pic_param = (VAPictureParameterBufferMPEG4) {
         .vop_width                        = s->width,
@@ -78,7 +78,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
         .vop_fields.bits = {
             .vop_coding_type              = s->pict_type - AV_PICTURE_TYPE_I,
             .backward_reference_vop_coding_type =
-                s->pict_type == AV_PICTURE_TYPE_B ? s->next_picture.f->pict_type - AV_PICTURE_TYPE_I : 0,
+                s->pict_type == AV_PICTURE_TYPE_B ? s->next_pic.f->pict_type - AV_PICTURE_TYPE_I : 0,
             .vop_rounding_type            = s->no_rounding,
             .intra_dc_vlc_thr             = mpeg4_get_intra_dc_vlc_thr(ctx),
             .top_field_first              = s->top_field_first,
@@ -100,9 +100,9 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_B)
-        pic_param.backward_reference_picture = ff_vaapi_get_surface_id(s->next_picture.f);
+        pic_param.backward_reference_picture = ff_vaapi_get_surface_id(s->next_pic.f);
     if (s->pict_type != AV_PICTURE_TYPE_I)
-        pic_param.forward_reference_picture  = ff_vaapi_get_surface_id(s->last_picture.f);
+        pic_param.forward_reference_picture  = ff_vaapi_get_surface_id(s->last_pic.f);
 
     err = ff_vaapi_decode_make_param_buffer(avctx, pic,
                                             VAPictureParameterBufferType,
@@ -139,7 +139,7 @@ fail:
 static int vaapi_mpeg4_end_frame(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->current_picture_ptr->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->cur_pic_ptr->hwaccel_picture_private;
     int ret;
 
     ret = ff_vaapi_decode_issue(avctx, pic);
@@ -155,7 +155,7 @@ fail:
 static int vaapi_mpeg4_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     MpegEncContext *s = avctx->priv_data;
-    VAAPIDecodePicture *pic = s->current_picture_ptr->hwaccel_picture_private;
+    VAAPIDecodePicture *pic = s->cur_pic_ptr->hwaccel_picture_private;
     VASliceParameterBufferMPEG4 slice_param;
     int err;
 

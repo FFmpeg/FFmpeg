@@ -271,7 +271,7 @@ void ff_h263_encode_gob_header(MpegEncContext * s, int mb_line)
  */
 void ff_clean_h263_qscales(MpegEncContext *s){
     int i;
-    int8_t * const qscale_table = s->current_picture.qscale_table;
+    int8_t * const qscale_table = s->cur_pic.qscale_table;
 
     ff_init_qscale_tab(s);
 
@@ -565,8 +565,8 @@ void ff_h263_encode_mb(MpegEncContext * s,
                 /* motion vectors: 8x8 mode*/
                 ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
 
-                motion_x = s->current_picture.motion_val[0][s->block_index[i]][0];
-                motion_y = s->current_picture.motion_val[0][s->block_index[i]][1];
+                motion_x = s->cur_pic.motion_val[0][s->block_index[i]][0];
+                motion_y = s->cur_pic.motion_val[0][s->block_index[i]][1];
                 if (!s->umvplus) {
                     ff_h263_encode_motion_vector(s, motion_x - pred_x,
                                                     motion_y - pred_y, 1);
@@ -692,15 +692,15 @@ void ff_h263_update_mb(MpegEncContext *s)
 {
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
-    if (s->current_picture.mbskip_table)
-        s->current_picture.mbskip_table[mb_xy] = s->mb_skipped;
+    if (s->cur_pic.mbskip_table)
+        s->cur_pic.mbskip_table[mb_xy] = s->mb_skipped;
 
     if (s->mv_type == MV_TYPE_8X8)
-        s->current_picture.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_8x8;
+        s->cur_pic.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_8x8;
     else if(s->mb_intra)
-        s->current_picture.mb_type[mb_xy] = MB_TYPE_INTRA;
+        s->cur_pic.mb_type[mb_xy] = MB_TYPE_INTRA;
     else
-        s->current_picture.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_16x16;
+        s->cur_pic.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_16x16;
 
     ff_h263_update_motion_val(s);
 }
