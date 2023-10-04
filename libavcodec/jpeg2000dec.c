@@ -238,6 +238,11 @@ static int get_siz(Jpeg2000DecoderContext *s)
         return AVERROR_INVALIDDATA;
     }
 
+    if (s->image_offset_x >= s->width || s->image_offset_y >= s->height) {
+        av_log(s->avctx, AV_LOG_ERROR, "image offsets outside image");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (s->reduction_factor && (s->image_offset_x || s->image_offset_y) ){
         av_log(s->avctx, AV_LOG_ERROR, "reduction factor with image offsets is not fully implemented");
         return AVERROR_PATCHWELCOME;
