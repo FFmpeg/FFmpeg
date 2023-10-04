@@ -27,7 +27,7 @@
 #include "motion_est.h"
 #include "threadframe.h"
 
-#define MPEGVIDEO_MAX_PLANES 4
+#define MPV_MAX_PLANES 3
 #define MAX_PICTURE_COUNT 36
 #define EDGE_WIDTH 16
 

@@ -1634,7 +1634,7 @@ no_output_pic:
         } else {
             // input is not a shared pix -> reuse buffer for current_pix
             s->cur_pic_ptr = s->reordered_input_picture[0];
-            for (i = 0; i < 4; i++) {
+            for (int i = 0; i < MPV_MAX_PLANES; i++) {
                 if (s->new_pic->data[i])
                     s->new_pic->data[i] += INPLACE_OFFSET;
             }
@@ -1861,12 +1861,11 @@ vbv_retry:
         if (avctx->flags & AV_CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
 
-        for (i = 0; i < 4; i++) {
+        for (int i = 0; i < MPV_MAX_PLANES; i++)
             avctx->error[i] += s->encoding_error[i];
-        }
         ff_side_data_set_encoder_stats(pkt, s->cur_pic.f->quality,
                                        s->encoding_error,
-                                       (avctx->flags&AV_CODEC_FLAG_PSNR) ? MPEGVIDEO_MAX_PLANES : 0,
+                                       (avctx->flags&AV_CODEC_FLAG_PSNR) ? MPV_MAX_PLANES : 0,
                                        s->pict_type);
 
         if (avctx->flags & AV_CODEC_FLAG_PASS1)

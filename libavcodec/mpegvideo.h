@@ -256,7 +256,7 @@ typedef struct MpegEncContext {
     uint8_t *mb_mean;           ///< Table for MB luminance
     int64_t mb_var_sum;         ///< sum of MB variance for current frame
     int64_t mc_mb_var_sum;      ///< motion compensated MB variance for current frame
-    uint64_t encoding_error[MPEGVIDEO_MAX_PLANES];
+    uint64_t encoding_error[MPV_MAX_PLANES];
 
     int motion_est;                      ///< ME algorithm
     int me_penalty_compensation;
