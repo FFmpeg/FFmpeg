@@ -1233,7 +1233,8 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
     av_dict_set(&c->fc->metadata, "major_brand", type, 0);
-    c->is_still_picture_avif = !strncmp(type, "avif", 4);
+    c->is_still_picture_avif = !strncmp(type, "avif", 4) ||
+                               !strncmp(type, "mif1", 4);
     minor_ver = avio_rb32(pb); /* minor version */
     av_dict_set_int(&c->fc->metadata, "minor_version", minor_ver, 0);
 
@@ -4940,6 +4941,19 @@ static int avif_add_stream(MOVContext *c, int item_id)
     st->priv_data = sc;
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = AV_CODEC_ID_AV1;
+    if (c->hvcC_offset >= 0) {
+        int ret;
+        int64_t pos = avio_tell(c->fc->pb);
+        st->codecpar->codec_id = AV_CODEC_ID_HEVC;
+        if (avio_seek(c->fc->pb, c->hvcC_offset, SEEK_SET) != c->hvcC_offset) {
+            av_log(c->fc, AV_LOG_ERROR, "Failed to seek to hvcC data.\n");
+            return AVERROR_UNKNOWN;
+        }
+        ret = ff_get_extradata(c->fc, st->codecpar, c->fc->pb, c->hvcC_size);
+        if (ret < 0)
+            return ret;
+        avio_seek(c->fc->pb, pos, SEEK_SET);
+    }
     sc->ffindex = st->index;
     c->trak_index = st->index;
     st->avg_frame_rate.num = st->avg_frame_rate.den = 1;
@@ -4982,6 +4996,8 @@ static int avif_add_stream(MOVContext *c, int item_id)
 
 static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
+    c->hvcC_offset = -1;
+    c->hvcC_size = 0;
     while (atom.size > 8) {
         uint32_t tag;
         if (avio_feof(pb))
@@ -7859,6 +7875,28 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return atom.size;
 }
 
+static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    int size = avio_rb32(pb);
+    if (avio_rl32(pb) != MKTAG('i','p','c','o'))
+        return AVERROR_INVALIDDATA;
+    size -= 8;
+    while (size > 0) {
+        int sub_size, sub_type;
+        sub_size = avio_rb32(pb);
+        sub_type = avio_rl32(pb);
+        sub_size -= 8;
+        size -= sub_size + 8;
+        if (sub_type == MKTAG('h','v','c','C')) {
+            c->hvcC_offset = avio_tell(pb);
+            c->hvcC_size = sub_size;
+            break;
+        }
+        avio_skip(pb, sub_size);
+    }
+    return atom.size;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -7966,6 +8004,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('p','c','m','C'), mov_read_pcmc }, /* PCM configuration box */
 { MKTAG('p','i','t','m'), mov_read_pitm },
 { MKTAG('e','v','c','C'), mov_read_glbl },
+{ MKTAG('i','p','r','p'), mov_read_iprp },
 { 0, NULL }
 };
 
@@ -9335,7 +9374,7 @@ const AVInputFormat ff_mov_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("QuickTime / MOV"),
     .priv_class     = &mov_class,
     .priv_data_size = sizeof(MOVContext),
-    .extensions     = "mov,mp4,m4a,3gp,3g2,mj2,psp,m4b,ism,ismv,isma,f4v,avif",
+    .extensions     = "mov,mp4,m4a,3gp,3g2,mj2,psp,m4b,ism,ismv,isma,f4v,avif,heic,heif",
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mov_probe,
     .read_header    = mov_read_header,

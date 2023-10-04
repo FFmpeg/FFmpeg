@@ -20,6 +20,8 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-pcm-remux \
            fate-mov-avif-demux-still-image-1-item \
            fate-mov-avif-demux-still-image-multiple-items \
+           fate-mov-heic-demux-still-image-1-item \
+           fate-mov-heic-demux-still-image-multiple-items \
 
 FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-neg-firstpts-discard-vorbis \
@@ -147,6 +149,10 @@ fate-mov-avif-demux-still-image-1-item: CMD = framemd5 -i $(TARGET_SAMPLES)/avif
 # avif demuxing - still image with multiple items. only the primary item will be
 # parsed.
 fate-mov-avif-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/avif/still_image_exif.avif -c:v copy
+
+fate-mov-heic-demux-still-image-1-item: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C002.heic -c:v copy
+
+fate-mov-heic-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C003.heic -c:v copy
 
 # Resulting remux should have:
 # 1. first audio stream with AV_DISPOSITION_HEARING_IMPAIRED
