@@ -174,6 +174,9 @@ int ff_evc_derive_poc(const EVCParamSets *ps, const EVCParserSliceHeader *sh,
         } else {
             int SubGopLength = 1 << sps->log2_sub_gop_length;
 
+            if (tid > (SubGopLength > 1 ? 1 + av_log2(SubGopLength - 1) : 0))
+                return AVERROR_INVALIDDATA;
+
             if (tid == 0) {
                 poc->PicOrderCntVal = poc->prevPicOrderCntVal + SubGopLength;
                 poc->DocOffset = 0;
