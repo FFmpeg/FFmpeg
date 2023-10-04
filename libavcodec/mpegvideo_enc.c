@@ -1172,50 +1172,50 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             return ret;
 
         if (!direct) {
-                int h_chroma_shift, v_chroma_shift;
-                av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
-                                                 &h_chroma_shift,
-                                                 &v_chroma_shift);
+            int h_chroma_shift, v_chroma_shift;
+            av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
+                                             &h_chroma_shift,
+                                             &v_chroma_shift);
 
-                for (i = 0; i < 3; i++) {
-                    int src_stride = pic_arg->linesize[i];
-                    int dst_stride = i ? s->uvlinesize : s->linesize;
-                    int h_shift = i ? h_chroma_shift : 0;
-                    int v_shift = i ? v_chroma_shift : 0;
-                    int w = s->width  >> h_shift;
-                    int h = s->height >> v_shift;
-                    const uint8_t *src = pic_arg->data[i];
-                    uint8_t *dst = pic->f->data[i];
-                    int vpad = 16;
+            for (int i = 0; i < 3; i++) {
+                int src_stride = pic_arg->linesize[i];
+                int dst_stride = i ? s->uvlinesize : s->linesize;
+                int h_shift = i ? h_chroma_shift : 0;
+                int v_shift = i ? v_chroma_shift : 0;
+                int w = s->width  >> h_shift;
+                int h = s->height >> v_shift;
+                const uint8_t *src = pic_arg->data[i];
+                uint8_t *dst = pic->f->data[i];
+                int vpad = 16;
 
-                    if (   s->codec_id == AV_CODEC_ID_MPEG2VIDEO
-                        && !s->progressive_sequence
-                        && FFALIGN(s->height, 32) - s->height > 16)
-                        vpad = 32;
+                if (   s->codec_id == AV_CODEC_ID_MPEG2VIDEO
+                    && !s->progressive_sequence
+                    && FFALIGN(s->height, 32) - s->height > 16)
+                    vpad = 32;
 
-                    if (!s->avctx->rc_buffer_size)
-                        dst += INPLACE_OFFSET;
+                if (!s->avctx->rc_buffer_size)
+                    dst += INPLACE_OFFSET;
 
-                    if (src_stride == dst_stride)
-                        memcpy(dst, src, src_stride * h);
-                    else {
-                        int h2 = h;
-                        uint8_t *dst2 = dst;
-                        while (h2--) {
-                            memcpy(dst2, src, w);
-                            dst2 += dst_stride;
-                            src += src_stride;
-                        }
-                    }
-                    if ((s->width & 15) || (s->height & (vpad-1))) {
-                        s->mpvencdsp.draw_edges(dst, dst_stride,
-                                                w, h,
-                                                16 >> h_shift,
-                                                vpad >> v_shift,
-                                                EDGE_BOTTOM);
+                if (src_stride == dst_stride)
+                    memcpy(dst, src, src_stride * h);
+                else {
+                    int h2 = h;
+                    uint8_t *dst2 = dst;
+                    while (h2--) {
+                        memcpy(dst2, src, w);
+                        dst2 += dst_stride;
+                        src += src_stride;
                     }
                 }
-                emms_c();
+                if ((s->width & 15) || (s->height & (vpad-1))) {
+                    s->mpvencdsp.draw_edges(dst, dst_stride,
+                                            w, h,
+                                            16 >> h_shift,
+                                            vpad >> v_shift,
+                                            EDGE_BOTTOM);
+                }
+            }
+            emms_c();
         }
         ret = av_frame_copy_props(pic->f, pic_arg);
         if (ret < 0) {
