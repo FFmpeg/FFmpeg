@@ -66,7 +66,7 @@ static av_always_inline int scaleforsame_x(const VC1Context *v, int n /* MV */, 
     return av_clip(scaledvalue, -v->range_x, v->range_x - 1);
 }
 
-static av_always_inline int scaleforsame_y(const VC1Context *v, int i, int n /* MV */, int dir)
+static av_always_inline int scaleforsame_y(const VC1Context *v, int n /* MV */, int dir)
 {
     int scaledvalue, refdist;
     int scalesame1, scalesame2;
@@ -161,7 +161,7 @@ static av_always_inline int scaleforopp_y(const VC1Context *v, int n /* MV */, i
     }
 }
 
-static av_always_inline int scaleforsame(const VC1Context *v, int i, int n /* MV */,
+static av_always_inline int scaleforsame(const VC1Context *v, int n /* MV */,
                                          int dim, int dir)
 {
     int brfd, scalesame;
@@ -170,7 +170,7 @@ static av_always_inline int scaleforsame(const VC1Context *v, int i, int n /* MV
     n >>= hpel;
     if (v->s.pict_type != AV_PICTURE_TYPE_B || v->second_field || !dir) {
         if (dim)
-            n = scaleforsame_y(v, i, n, dir) * (1 << hpel);
+            n = scaleforsame_y(v, n, dir) * (1 << hpel);
         else
             n = scaleforsame_x(v, n, dir) * (1 << hpel);
         return n;
@@ -365,16 +365,16 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         v->mv_f[dir][xy + v->blocks_off] = 0;
         v->ref_field_type[dir] = v->cur_field_type;
         if (a_valid && a_f) {
-            field_predA[0] = scaleforsame(v, n, field_predA[0], 0, dir);
-            field_predA[1] = scaleforsame(v, n, field_predA[1], 1, dir);
+            field_predA[0] = scaleforsame(v, field_predA[0], 0, dir);
+            field_predA[1] = scaleforsame(v, field_predA[1], 1, dir);
         }
         if (b_valid && b_f) {
-            field_predB[0] = scaleforsame(v, n, field_predB[0], 0, dir);
-            field_predB[1] = scaleforsame(v, n, field_predB[1], 1, dir);
+            field_predB[0] = scaleforsame(v, field_predB[0], 0, dir);
+            field_predB[1] = scaleforsame(v, field_predB[1], 1, dir);
         }
         if (c_valid && c_f) {
-            field_predC[0] = scaleforsame(v, n, field_predC[0], 0, dir);
-            field_predC[1] = scaleforsame(v, n, field_predC[1], 1, dir);
+            field_predC[0] = scaleforsame(v, field_predC[0], 0, dir);
+            field_predC[1] = scaleforsame(v, field_predC[1], 1, dir);
         }
     }
 
