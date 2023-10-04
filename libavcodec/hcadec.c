@@ -65,6 +65,7 @@ typedef struct HCAContext {
     uint8_t stereo_band_count;
     uint8_t bands_per_hfr_group;
 
+    // Set during init() and freed on close(). Untouched on flush()
     av_tx_fn           tx_fn;
     AVTXContext       *tx_ctx;
     AVFloatDSPContext *fdsp;
@@ -196,6 +197,13 @@ static inline unsigned ceil2(unsigned a, unsigned b)
     return (b > 0) ? (a / b + ((a % b) ? 1 : 0)) : 0;
 }
 
+static av_cold void decode_flush(AVCodecContext *avctx)
+{
+    HCAContext *c = avctx->priv_data;
+
+    memset(c, 0, offsetof(HCAContext, tx_fn));
+}
+
 static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
                     const int extradata_size)
 {
@@ -204,6 +212,8 @@ static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
     int8_t r[16] = { 0 };
     unsigned b, chunk;
     int version, ret;
+
+    decode_flush(avctx);
 
     if (extradata_size < 36)
         return AVERROR_INVALIDDATA;
@@ -340,6 +350,9 @@ static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
             return AVERROR_INVALIDDATA;
     }
 
+    // Done last to signal init() finished
+    c->crc_table = av_crc_get_table(AV_CRC_16_ANSI);
+
     return 0;
 }
 
@@ -350,7 +363,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int ret;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-    c->crc_table = av_crc_get_table(AV_CRC_16_ANSI);
 
     if (avctx->ch_layout.nb_channels <= 0 || avctx->ch_layout.nb_channels > FF_ARRAY_ELEMS(c->ch))
         return AVERROR(EINVAL);
@@ -534,6 +546,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
         }
     }
 
+    if (!c->crc_table)
+        return AVERROR_INVALIDDATA;
+
     if (c->key || c->subkey) {
         uint8_t *data, *cipher = c->cipher;
 
@@ -602,6 +617,7 @@ const FFCodec ff_hca_decoder = {
     .priv_data_size = sizeof(HCAContext),
     .init           = decode_init,
     FF_CODEC_DECODE_CB(decode_frame),
+    .flush          = decode_flush,
     .close          = decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
