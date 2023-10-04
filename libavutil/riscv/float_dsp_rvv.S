@@ -75,7 +75,7 @@ endfunc
 
 func ff_vector_fmul_window_rvv, zve32f
         // a0: dst, a1: src0, a2: src1, a3: window, a4: length
-        vsetvli    t0, zero, e16, m4, ta, ma
+        vsetvli    t0, zero, e16, m2, ta, ma
         sh2add     a2, a4, a2
         vid.v      v0
         sh3add     t3, a4, a3
