@@ -20,6 +20,54 @@
 
 #include "asm.S"
 
+func ff_vector_fmul_window_scaled_rvv, zve64x
+        csrwi   vxrm, 0
+        vsetvli t0, zero, e16, m1, ta, ma
+        sh2add  a2, a4, a2
+        vid.v   v0
+        sh3add  t3, a4, a3
+        vadd.vi v0, v0, 1
+        sh2add  t0, a4, a0
+1:
+        vsetvli t2, a4, e16, m1, ta, ma
+        slli    t4, t2, 2
+        slli    t1, t2, 1
+        vrsub.vx v2, v0, t2
+        sub     t3, t3, t4
+        vsetvli zero, zero, e32, m2, ta, ma
+        sub     a2, a2, t4
+        vle32.v v8, (t3)
+        sub     t0, t0, t1
+        vle32.v v4, (a2)
+        sub     a4, a4, t2
+        vrgatherei16.vv v28, v8, v2
+        vle32.v v16, (a1)
+        add     a1, a1, t4
+        vrgatherei16.vv v20, v4, v2
+        vle32.v v24, (a3)
+        add     a3, a3, t4
+        vwmul.vv v12, v16, v28
+        vwmul.vv v8, v16, v24
+        // vwnmsac.vv does _not_ exist so multiply & subtract separately
+        vwmul.vv v4, v20, v24
+        vwmacc.vv v8, v20, v28
+        vsetvli zero, zero, e64, m4, ta, ma
+        vsub.vv v12, v12, v4
+        vsetvli zero, zero, e32, m2, ta, ma
+        vnclip.wi v16, v8, 31
+        vnclip.wi v20, v12, 31
+        vsetvli zero, zero, e16, m1, ta, ma
+        vnclip.wx v8, v16, a5
+        vnclip.wx v12, v20, a5
+        vrgatherei16.vv v16, v8, v2
+        vse16.v v12, (a0)
+        add     a0, a0, t1
+        vse16.v v16, (t0)
+        bnez    a4, 1b
+
+        ret
+endfunc
+
 func ff_vector_fmul_window_fixed_rvv, zve64x
         csrwi   vxrm, 0
         vsetvli t0, zero, e16, m1, ta, ma

@@ -25,6 +25,9 @@
 #include "libavutil/cpu.h"
 #include "libavutil/fixed_dsp.h"
 
+void ff_vector_fmul_window_scaled_rvv(int16_t *dst, const int32_t *src0,
+                                      const int32_t *src1, const int32_t *win,
+                                      int len, uint8_t bits);
 void ff_vector_fmul_window_fixed_rvv(int32_t *dst, const int32_t *src0,
                                      const int32_t *src1, const int32_t *win,
                                      int len);
@@ -43,8 +46,10 @@ av_cold void ff_fixed_dsp_init_riscv(AVFixedDSPContext *fdsp)
     int flags = av_get_cpu_flags();
 
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
-        if (flags & AV_CPU_FLAG_RVV_I64)
+        if (flags & AV_CPU_FLAG_RVV_I64) {
+            fdsp->vector_fmul_window_scaled = ff_vector_fmul_window_scaled_rvv;
             fdsp->vector_fmul_window = ff_vector_fmul_window_fixed_rvv;
+        }
 
         fdsp->vector_fmul = ff_vector_fmul_fixed_rvv;
         fdsp->vector_fmul_reverse = ff_vector_fmul_reverse_fixed_rvv;
