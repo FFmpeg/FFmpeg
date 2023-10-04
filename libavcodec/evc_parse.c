@@ -58,8 +58,12 @@ int ff_evc_parse_slice_header(GetBitContext *gb, EVCParserSliceHeader *sh,
         if (!sh->arbitrary_slice_flag)
             sh->last_tile_id = get_bits(gb, pps->tile_id_len_minus1 + 1);
         else {
-            sh->num_remaining_tiles_in_slice_minus1 = get_ue_golomb_long(gb);
-            num_tiles_in_slice = sh->num_remaining_tiles_in_slice_minus1 + 2;
+            unsigned num_remaining_tiles_in_slice_minus1 = get_ue_golomb_long(gb);
+            if (num_remaining_tiles_in_slice_minus1 > EVC_MAX_TILE_ROWS * EVC_MAX_TILE_COLUMNS - 2)
+                return AVERROR_INVALIDDATA;
+
+            num_tiles_in_slice = num_remaining_tiles_in_slice_minus1 + 2;
+            sh->num_remaining_tiles_in_slice_minus1 = num_remaining_tiles_in_slice_minus1;
             for (int i = 0; i < num_tiles_in_slice - 1; ++i)
                 sh->delta_tile_id_minus1[i] = get_ue_golomb_long(gb);
         }
