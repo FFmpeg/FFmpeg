@@ -2943,7 +2943,7 @@ static void vc1_decode_skip_blocks(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
 
-    if (!v->s.last_pic.f->data[0])
+    if (!v->s.last_pic.data[0])
         return;
 
     ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_width - 1, s->end_mb_y - 1, ER_MB_END);
@@ -2952,9 +2952,9 @@ static void vc1_decode_skip_blocks(VC1Context *v)
         s->mb_x = 0;
         init_block_index(v);
         update_block_index(s);
-        memcpy(s->dest[0], s->last_pic.f->data[0] + s->mb_y * 16 * s->linesize,   s->linesize   * 16);
-        memcpy(s->dest[1], s->last_pic.f->data[1] + s->mb_y *  8 * s->uvlinesize, s->uvlinesize *  8);
-        memcpy(s->dest[2], s->last_pic.f->data[2] + s->mb_y *  8 * s->uvlinesize, s->uvlinesize *  8);
+        memcpy(s->dest[0], s->last_pic.data[0] + s->mb_y * 16 * s->linesize,   s->linesize   * 16);
+        memcpy(s->dest[1], s->last_pic.data[1] + s->mb_y *  8 * s->uvlinesize, s->uvlinesize *  8);
+        memcpy(s->dest[2], s->last_pic.data[2] + s->mb_y *  8 * s->uvlinesize, s->uvlinesize *  8);
         s->first_slice_line = 0;
     }
 }

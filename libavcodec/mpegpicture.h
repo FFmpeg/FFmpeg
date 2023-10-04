@@ -21,6 +21,7 @@
 #ifndef AVCODEC_MPEGPICTURE_H
 #define AVCODEC_MPEGPICTURE_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "avcodec.h"
@@ -56,6 +57,9 @@ typedef struct BufferPoolContext {
 typedef struct Picture {
     struct AVFrame *f;
     ThreadFrame tf;
+
+    uint8_t  *data[MPV_MAX_PLANES];
+    ptrdiff_t linesize[MPV_MAX_PLANES];
 
     int8_t *qscale_table_base;
     int8_t *qscale_table;

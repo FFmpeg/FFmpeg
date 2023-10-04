@@ -328,11 +328,11 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.avctx                         = s->avctx;
         s->m.cur_pic_ptr                   = &s->m.cur_pic;
         s->m.last_pic_ptr              = &s->m.last_pic;
-        s->m.last_pic.f->data[0]        = ref_plane;
+        s->m.last_pic.data[0]        = ref_plane;
         s->m.linesize                      =
-        s->m.last_pic.f->linesize[0]    =
+        s->m.last_pic.linesize[0]    =
         s->m.new_pic->linesize[0]      =
-        s->m.cur_pic.f->linesize[0] = stride;
+        s->m.cur_pic.linesize[0] = stride;
         s->m.width                         = width;
         s->m.height                        = height;
         s->m.mb_width                      = block_width;

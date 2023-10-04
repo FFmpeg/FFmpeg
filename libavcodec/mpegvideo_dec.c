@@ -613,8 +613,8 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     const int h_edge_pos = s->h_edge_pos >> lowres;
     const int v_edge_pos = s->v_edge_pos >> lowres;
     int hc = s->chroma_y_shift ? (h+1-bottom_field)>>1 : h;
-    linesize   = s->cur_pic.f->linesize[0] << field_based;
-    uvlinesize = s->cur_pic.f->linesize[1] << field_based;
+    linesize   = s->cur_pic.linesize[0] << field_based;
+    uvlinesize = s->cur_pic.linesize[1] << field_based;
 
     // FIXME obviously not perfect but qpel will not work in lowres anyway
     if (s->quarter_sample) {

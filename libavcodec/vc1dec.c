@@ -235,15 +235,15 @@ static void vc1_draw_sprites(VC1Context *v, SpriteData* sd)
                            v->sprite_output_frame->linesize[plane] * row;
 
             for (sprite = 0; sprite <= v->two_sprites; sprite++) {
-                uint8_t *iplane = s->cur_pic.f->data[plane];
-                int      iline  = s->cur_pic.f->linesize[plane];
+                uint8_t *iplane = s->cur_pic.data[plane];
+                int      iline  = s->cur_pic.linesize[plane];
                 int      ycoord = yoff[sprite] + yadv[sprite] * row;
                 int      yline  = ycoord >> 16;
                 int      next_line;
                 ysub[sprite] = ycoord & 0xFFFF;
                 if (sprite) {
-                    iplane = s->last_pic.f->data[plane];
-                    iline  = s->last_pic.f->linesize[plane];
+                    iplane = s->last_pic.data[plane];
+                    iline  = s->last_pic.linesize[plane];
                 }
                 next_line = FFMIN(yline + 1, (v->sprite_height >> !!plane) - 1) * iline;
                 if (!(xoff[sprite] & 0xFFFF) && xadv[sprite] == 1 << 16) {
@@ -317,12 +317,12 @@ static int vc1_decode_sprites(VC1Context *v, GetBitContext* gb)
     if (ret < 0)
         return ret;
 
-    if (!s->cur_pic.f || !s->cur_pic.f->data[0]) {
+    if (!s->cur_pic.data[0]) {
         av_log(avctx, AV_LOG_ERROR, "Got no sprites\n");
         return AVERROR_UNKNOWN;
     }
 
-    if (v->two_sprites && (!s->last_pic_ptr || !s->last_pic.f->data[0])) {
+    if (v->two_sprites && (!s->last_pic_ptr || !s->last_pic.data[0])) {
         av_log(avctx, AV_LOG_WARNING, "Need two sprites, only got one\n");
         v->two_sprites = 0;
     }
@@ -340,14 +340,14 @@ static void vc1_sprite_flush(AVCodecContext *avctx)
 {
     VC1Context *v     = avctx->priv_data;
     MpegEncContext *s = &v->s;
-    AVFrame *f = s->cur_pic.f;
+    Picture *f = &s->cur_pic;
     int plane, i;
 
     /* Windows Media Image codecs have a convergence interval of two keyframes.
        Since we can't enforce it, clear to black the missing sprite. This is
        wrong but it looks better than doing nothing. */
 
-    if (f && f->data[0])
+    if (f->data[0])
         for (plane = 0; plane < (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY ? 1 : 3); plane++)
             for (i = 0; i < v->sprite_height>>!!plane; i++)
                 memset(f->data[plane] + i * f->linesize[plane],
@@ -1230,9 +1230,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
         v->end_mb_x = s->mb_width;
         if (v->field_mode) {
-            s->cur_pic.f->linesize[0] <<= 1;
-            s->cur_pic.f->linesize[1] <<= 1;
-            s->cur_pic.f->linesize[2] <<= 1;
+            s->cur_pic.linesize[0] <<= 1;
+            s->cur_pic.linesize[1] <<= 1;
+            s->cur_pic.linesize[2] <<= 1;
             s->linesize                      <<= 1;
             s->uvlinesize                    <<= 1;
         }
@@ -1307,9 +1307,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         }
         if (v->field_mode) {
             v->second_field = 0;
-            s->cur_pic.f->linesize[0] >>= 1;
-            s->cur_pic.f->linesize[1] >>= 1;
-            s->cur_pic.f->linesize[2] >>= 1;
+            s->cur_pic.linesize[0] >>= 1;
+            s->cur_pic.linesize[1] >>= 1;
+            s->cur_pic.linesize[2] >>= 1;
             s->linesize                      >>= 1;
             s->uvlinesize                    >>= 1;
             if (v->s.pict_type != AV_PICTURE_TYPE_BI && v->s.pict_type != AV_PICTURE_TYPE_B) {

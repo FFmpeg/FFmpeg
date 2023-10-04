@@ -93,8 +93,8 @@ void mpeg_motion_internal(MpegEncContext *s,
     ptrdiff_t uvlinesize, linesize;
 
     v_edge_pos = s->v_edge_pos >> field_based;
-    linesize   = s->cur_pic.f->linesize[0] << field_based;
-    uvlinesize = s->cur_pic.f->linesize[1] << field_based;
+    linesize   = s->cur_pic.linesize[0] << field_based;
+    uvlinesize = s->cur_pic.linesize[1] << field_based;
     block_y_half = (field_based | is_16x8);
 
     dxy   = ((motion_y & 1) << 1) | (motion_x & 1);

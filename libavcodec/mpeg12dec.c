@@ -1297,12 +1297,12 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
             for (int i = 0; i < 3; i++) {
                 if (s->picture_structure == PICT_BOTTOM_FIELD) {
-                    s->cur_pic.f->data[i] = FF_PTR_ADD(s->cur_pic.f->data[i],
-                                                       s->cur_pic.f->linesize[i]);
+                    s->cur_pic.data[i] = FF_PTR_ADD(s->cur_pic.data[i],
+                                                    s->cur_pic.linesize[i]);
                 }
-                s->cur_pic.f->linesize[i]  *= 2;
-                s->last_pic.f->linesize[i] *= 2;
-                s->next_pic.f->linesize[i] *= 2;
+                s->cur_pic.linesize[i]  *= 2;
+                s->last_pic.linesize[i] *= 2;
+                s->next_pic.linesize[i] *= 2;
             }
         }
 
@@ -1377,9 +1377,9 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             return ret;
 
         for (int i = 0; i < 3; i++) {
-            s->cur_pic.f->data[i] = s->cur_pic_ptr->f->data[i];
+            s->cur_pic.data[i] = s->cur_pic_ptr->f->data[i];
             if (s->picture_structure == PICT_BOTTOM_FIELD)
-                s->cur_pic.f->data[i] +=
+                s->cur_pic.data[i] +=
                     s->cur_pic_ptr->f->linesize[i];
         }
     }

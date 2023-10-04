@@ -82,8 +82,8 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
     {
         uint8_t *dest_y, *dest_cb, *dest_cr;
         int dct_linesize, dct_offset;
-        const int linesize   = s->cur_pic.f->linesize[0]; //not s->linesize as this would be wrong for field pics
-        const int uvlinesize = s->cur_pic.f->linesize[1];
+        const int linesize   = s->cur_pic.linesize[0]; //not s->linesize as this would be wrong for field pics
+        const int uvlinesize = s->cur_pic.linesize[1];
         const int readable   = IS_ENCODER || lowres_flag || s->pict_type != AV_PICTURE_TYPE_B;
         const int block_size = lowres_flag ? 8 >> s->avctx->lowres : 8;
 
@@ -137,11 +137,11 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 const h264_chroma_mc_func *op_pix = s->h264chroma.put_h264_chroma_pixels_tab;
 
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 0, s->last_pic.f->data, op_pix);
+                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 0, s->last_pic.data, op_pix);
                     op_pix = s->h264chroma.avg_h264_chroma_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 1, s->next_pic.f->data, op_pix);
+                    MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 1, s->next_pic.data, op_pix);
                 }
             } else {
                 op_pixels_func (*op_pix)[4];
@@ -155,12 +155,12 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                     op_qpix = s->qdsp.put_no_rnd_qpel_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_pic.f->data, op_pix, op_qpix);
+                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_pic.data, op_pix, op_qpix);
                     op_pix  = s->hdsp.avg_pixels_tab;
                     op_qpix = s->qdsp.avg_qpel_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_pic.f->data, op_pix, op_qpix);
+                    ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_pic.data, op_pix, op_qpix);
                 }
             }
 

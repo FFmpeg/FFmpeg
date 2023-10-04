@@ -1655,20 +1655,20 @@ static void frame_end(MpegEncContext *s)
         !s->intra_only) {
         int hshift = s->chroma_x_shift;
         int vshift = s->chroma_y_shift;
-        s->mpvencdsp.draw_edges(s->cur_pic.f->data[0],
-                                s->cur_pic.f->linesize[0],
+        s->mpvencdsp.draw_edges(s->cur_pic.data[0],
+                                s->cur_pic.linesize[0],
                                 s->h_edge_pos, s->v_edge_pos,
                                 EDGE_WIDTH, EDGE_WIDTH,
                                 EDGE_TOP | EDGE_BOTTOM);
-        s->mpvencdsp.draw_edges(s->cur_pic.f->data[1],
-                                s->cur_pic.f->linesize[1],
+        s->mpvencdsp.draw_edges(s->cur_pic.data[1],
+                                s->cur_pic.linesize[1],
                                 s->h_edge_pos >> hshift,
                                 s->v_edge_pos >> vshift,
                                 EDGE_WIDTH >> hshift,
                                 EDGE_WIDTH >> vshift,
                                 EDGE_TOP | EDGE_BOTTOM);
-        s->mpvencdsp.draw_edges(s->cur_pic.f->data[2],
-                                s->cur_pic.f->linesize[2],
+        s->mpvencdsp.draw_edges(s->cur_pic.data[2],
+                                s->cur_pic.linesize[2],
                                 s->h_edge_pos >> hshift,
                                 s->v_edge_pos >> vshift,
                                 EDGE_WIDTH >> hshift,
@@ -2268,14 +2268,14 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
 
         if (s->mv_dir & MV_DIR_FORWARD) {
             ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 0,
-                          s->last_pic.f->data,
+                          s->last_pic.data,
                           op_pix, op_qpix);
             op_pix  = s->hdsp.avg_pixels_tab;
             op_qpix = s->qdsp.avg_qpel_pixels_tab;
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
             ff_mpv_motion(s, dest_y, dest_cb, dest_cr, 1,
-                          s->next_pic.f->data,
+                          s->next_pic.data,
                           op_pix, op_qpix);
         }
 

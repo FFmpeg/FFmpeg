@@ -881,8 +881,8 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
 }
 
 void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
-    const int linesize   = s->cur_pic.f->linesize[0]; //not s->linesize as this would be wrong for field pics
-    const int uvlinesize = s->cur_pic.f->linesize[1];
+    const int linesize   = s->cur_pic.linesize[0]; //not s->linesize as this would be wrong for field pics
+    const int uvlinesize = s->cur_pic.linesize[1];
     const int width_of_mb = (4 + (s->avctx->bits_per_raw_sample > 8)) - s->avctx->lowres;
     const int height_of_mb = 4 - s->avctx->lowres;
 
@@ -894,9 +894,9 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x - 1;
     //block_index is not used by mpeg2, so it is not affected by chroma_format
 
-    s->dest[0] = s->cur_pic.f->data[0] + (int)((s->mb_x - 1U) <<  width_of_mb);
-    s->dest[1] = s->cur_pic.f->data[1] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
-    s->dest[2] = s->cur_pic.f->data[2] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
+    s->dest[0] = s->cur_pic.data[0] + (int)((s->mb_x - 1U) <<  width_of_mb);
+    s->dest[1] = s->cur_pic.data[1] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
+    s->dest[2] = s->cur_pic.data[2] + (int)((s->mb_x - 1U) << (width_of_mb - s->chroma_x_shift));
 
     if (s->picture_structure == PICT_FRAME) {
         s->dest[0] += s->mb_y *   linesize << height_of_mb;
