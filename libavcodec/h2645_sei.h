@@ -23,7 +23,9 @@
 
 #include "libavutil/buffer.h"
 #include "libavutil/frame.h"
+#include "libavutil/film_grain_params.h"
 
+#include "aom_film_grain.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_id.h"
@@ -132,6 +134,7 @@ typedef struct H2645SEI {
     H2645SEIAmbientViewingEnvironment ambient_viewing_environment;
     H2645SEIMasteringDisplay mastering_display;
     H2645SEIContentLight content_light;
+    AVFilmGrainAFGS1Params aom_film_grain;
 } H2645SEI;
 
 enum {

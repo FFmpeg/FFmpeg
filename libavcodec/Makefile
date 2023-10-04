@@ -105,7 +105,7 @@ OBJS-$(CONFIG_H264_SEI)                += h264_sei.o h2645_sei.o
 OBJS-$(CONFIG_HEVCPARSE)               += hevc_parse.o hevc_ps.o hevc_data.o \
                                           h2645data.o h2645_parse.o h2645_vui.o
 OBJS-$(CONFIG_HEVC_SEI)                += hevc_sei.o h2645_sei.o \
-                                          dynamic_hdr_vivid.o
+                                          dynamic_hdr_vivid.o aom_film_grain.o
 OBJS-$(CONFIG_HPELDSP)                 += hpeldsp.o
 OBJS-$(CONFIG_HUFFMAN)                 += huffman.o
 OBJS-$(CONFIG_HUFFYUVDSP)              += huffyuvdsp.o

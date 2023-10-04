@@ -211,6 +211,24 @@ static int decode_registered_user_data(H2645SEI *h, GetByteContext *gb,
         }
         break;
     }
+    case 0x5890: { // aom_provider_code
+        const uint16_t aom_grain_provider_oriented_code = 0x0001;
+        uint16_t provider_oriented_code;
+
+        if (!IS_HEVC(codec_id))
+            goto unsupported_provider_code;
+
+        if (bytestream2_get_bytes_left(gb) < 2)
+            return AVERROR_INVALIDDATA;
+
+        provider_oriented_code = bytestream2_get_byteu(gb);
+        if (provider_oriented_code == aom_grain_provider_oriented_code) {
+            return ff_aom_parse_film_grain_sets(&h->aom_film_grain,
+                                                gb->buffer,
+                                                bytestream2_get_bytes_left(gb));
+        }
+        break;
+    }
     unsupported_provider_code:
 #endif
     default:
@@ -704,6 +722,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
             avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
     }
 
+#if CONFIG_HEVC_SEI
+    ret = ff_aom_attach_film_grain_sets(&sei->aom_film_grain, frame);
+    if (ret < 0)
+        return ret;
+#endif
+
     if (sei->ambient_viewing_environment.present) {
         H2645SEIAmbientViewingEnvironment *env =
             &sei->ambient_viewing_environment;
@@ -800,4 +824,5 @@ void ff_h2645_sei_reset(H2645SEI *s)
     s->ambient_viewing_environment.present = 0;
     s->mastering_display.present = 0;
     s->content_light.present = 0;
+    s->aom_film_grain.enable = 0;
 }
