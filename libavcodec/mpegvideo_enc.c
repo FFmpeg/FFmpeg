@@ -1172,11 +1172,6 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             return ret;
 
         if (!direct) {
-            if (pic->f->data[0] + INPLACE_OFFSET == pic_arg->data[0] &&
-                pic->f->data[1] + INPLACE_OFFSET == pic_arg->data[1] &&
-                pic->f->data[2] + INPLACE_OFFSET == pic_arg->data[2]) {
-                // empty
-            } else {
                 int h_chroma_shift, v_chroma_shift;
                 av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
                                                  &h_chroma_shift,
@@ -1221,7 +1216,6 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                     }
                 }
                 emms_c();
-            }
         }
         ret = av_frame_copy_props(pic->f, pic_arg);
         if (ret < 0) {
