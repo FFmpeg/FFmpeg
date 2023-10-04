@@ -305,7 +305,7 @@ static const int dquant_code[5]= {1,0,9,2,3};
 static void h263_encode_block(MpegEncContext * s, int16_t * block, int n)
 {
     int level, run, last, i, j, last_index, last_non_zero, sign, slevel, code;
-    RLTable *rl;
+    const RLTable *rl;
 
     rl = &ff_h263_rl_inter;
     if (s->mb_intra && !s->h263_aic) {

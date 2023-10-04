@@ -681,7 +681,8 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
                           h264_chroma_mc_func (*chroma_mc))
 {
     MpegEncContext *s = &r->s;
-    uint8_t *Y, *U, *V, *srcY, *srcU, *srcV;
+    uint8_t *Y, *U, *V;
+    const uint8_t *srcY, *srcU, *srcV;
     int dxy, mx, my, umx, umy, lx, ly, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride + mv_off;
     int is16x16 = 1;

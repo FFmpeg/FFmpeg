@@ -281,7 +281,7 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
 {
     MpegEncContext *const s = &h->s;
     int level, i, j, run;
-    RLTable *rl = &ff_h261_rl_tcoeff;
+    const RLTable *rl = &ff_h261_rl_tcoeff;
     const uint8_t *scan_table;
 
     /* For the variable length encoding there are two code tables, one being

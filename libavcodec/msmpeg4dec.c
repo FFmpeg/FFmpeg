@@ -627,8 +627,8 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
 {
     int level, i, last, run, run_diff;
     int av_uninit(dc_pred_dir);
-    RLTable *rl;
-    RL_VLC_ELEM *rl_vlc;
+    const RLTable *rl;
+    const RL_VLC_ELEM *rl_vlc;
     int qmul, qadd;
 
     if (s->mb_intra) {
@@ -811,7 +811,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
 
 void ff_msmpeg4_decode_motion(MpegEncContext *s, int *mx_ptr, int *my_ptr)
 {
-    MVTable *mv;
+    const MVTable *mv;
     int code, mx, my;
 
     mv = &ff_mv_tables[s->mv_table_index];

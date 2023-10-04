@@ -33,7 +33,7 @@
 #include "vc1_pred.h"
 #include "vc1data.h"
 
-static av_always_inline int scaleforsame_x(VC1Context *v, int n /* MV */, int dir)
+static av_always_inline int scaleforsame_x(const VC1Context *v, int n /* MV */, int dir)
 {
     int scaledvalue, refdist;
     int scalesame1, scalesame2;
@@ -66,7 +66,7 @@ static av_always_inline int scaleforsame_x(VC1Context *v, int n /* MV */, int di
     return av_clip(scaledvalue, -v->range_x, v->range_x - 1);
 }
 
-static av_always_inline int scaleforsame_y(VC1Context *v, int i, int n /* MV */, int dir)
+static av_always_inline int scaleforsame_y(const VC1Context *v, int i, int n /* MV */, int dir)
 {
     int scaledvalue, refdist;
     int scalesame1, scalesame2;
@@ -103,7 +103,7 @@ static av_always_inline int scaleforsame_y(VC1Context *v, int i, int n /* MV */,
         return av_clip(scaledvalue, -v->range_y / 2, v->range_y / 2 - 1);
 }
 
-static av_always_inline int scaleforopp_x(VC1Context *v, int n /* MV */)
+static av_always_inline int scaleforopp_x(const VC1Context *v, int n /* MV */)
 {
     int scalezone1_x, zone1offset_x;
     int scaleopp1, scaleopp2, brfd;
@@ -130,7 +130,7 @@ static av_always_inline int scaleforopp_x(VC1Context *v, int n /* MV */)
     return av_clip(scaledvalue, -v->range_x, v->range_x - 1);
 }
 
-static av_always_inline int scaleforopp_y(VC1Context *v, int n /* MV */, int dir)
+static av_always_inline int scaleforopp_y(const VC1Context *v, int n /* MV */, int dir)
 {
     int scalezone1_y, zone1offset_y;
     int scaleopp1, scaleopp2, brfd;
@@ -161,7 +161,7 @@ static av_always_inline int scaleforopp_y(VC1Context *v, int n /* MV */, int dir
     }
 }
 
-static av_always_inline int scaleforsame(VC1Context *v, int i, int n /* MV */,
+static av_always_inline int scaleforsame(const VC1Context *v, int i, int n /* MV */,
                                          int dim, int dir)
 {
     int brfd, scalesame;
@@ -182,7 +182,7 @@ static av_always_inline int scaleforsame(VC1Context *v, int i, int n /* MV */,
     return n;
 }
 
-static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
+static av_always_inline int scaleforopp(const VC1Context *v, int n /* MV */,
                                         int dim, int dir)
 {
     int refdist, scaleopp;
@@ -215,7 +215,6 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
 {
     MpegEncContext *s = &v->s;
     int xy, wrap, off = 0;
-    int16_t *A, *B, *C;
     int px, py;
     int sum;
     int mixedmv_pic, num_samefield = 0, num_oppfield = 0;
@@ -301,7 +300,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     }
 
     if (a_valid) {
-        A = s->cur_pic.motion_val[dir][xy - wrap + v->blocks_off];
+        const int16_t *A = s->cur_pic.motion_val[dir][xy - wrap + v->blocks_off];
         a_f = v->mv_f[dir][xy - wrap + v->blocks_off];
         num_oppfield  += a_f;
         num_samefield += 1 - a_f;
@@ -312,7 +311,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         a_f = 0;
     }
     if (b_valid) {
-        B = s->cur_pic.motion_val[dir][xy - wrap + off + v->blocks_off];
+        const int16_t *B = s->cur_pic.motion_val[dir][xy - wrap + off + v->blocks_off];
         b_f = v->mv_f[dir][xy - wrap + off + v->blocks_off];
         num_oppfield  += b_f;
         num_samefield += 1 - b_f;
@@ -323,7 +322,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         b_f = 0;
     }
     if (c_valid) {
-        C = s->cur_pic.motion_val[dir][xy - 1 + v->blocks_off];
+        const int16_t *C = s->cur_pic.motion_val[dir][xy - 1 + v->blocks_off];
         c_f = v->mv_f[dir][xy - 1 + v->blocks_off];
         num_oppfield  += c_f;
         num_samefield += 1 - c_f;
@@ -692,8 +691,7 @@ void ff_vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
                       int direct, int mvtype)
 {
     MpegEncContext *s = &v->s;
-    int xy, wrap, off = 0;
-    int16_t *A, *B, *C;
+    int xy, wrap;
     int px, py;
     int sum;
     int r_x, r_y;
@@ -743,10 +741,10 @@ void ff_vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
     }
 
     if ((mvtype == BMV_TYPE_FORWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
-        C   = s->cur_pic.motion_val[0][xy - 2];
-        A   = s->cur_pic.motion_val[0][xy - wrap * 2];
-        off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
-        B   = s->cur_pic.motion_val[0][xy - wrap * 2 + off];
+        int16_t       *C = s->cur_pic.motion_val[0][xy - 2];
+        const int16_t *A = s->cur_pic.motion_val[0][xy - wrap * 2];
+        int off          = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
+        const int16_t *B = s->cur_pic.motion_val[0][xy - wrap * 2 + off];
 
         if (!s->mb_x) C[0] = C[1] = 0;
         if (!s->first_slice_line) { // predictor A is not out of bounds
@@ -812,10 +810,10 @@ void ff_vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         s->mv[0][0][1] = ((py + dmv_y[0] + r_y) & ((r_y << 1) - 1)) - r_y;
     }
     if ((mvtype == BMV_TYPE_BACKWARD) || (mvtype == BMV_TYPE_INTERPOLATED)) {
-        C   = s->cur_pic.motion_val[1][xy - 2];
-        A   = s->cur_pic.motion_val[1][xy - wrap * 2];
-        off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
-        B   = s->cur_pic.motion_val[1][xy - wrap * 2 + off];
+        int16_t       *C = s->cur_pic.motion_val[1][xy - 2];
+        const int16_t *A = s->cur_pic.motion_val[1][xy - wrap * 2];
+        int off          = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
+        const int16_t *B = s->cur_pic.motion_val[1][xy - wrap * 2 + off];
 
         if (!s->mb_x)
             C[0] = C[1] = 0;

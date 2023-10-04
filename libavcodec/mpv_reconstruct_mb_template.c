@@ -144,8 +144,8 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                     MPV_motion_lowres(s, dest_y, dest_cb, dest_cr, 1, s->next_pic.data, op_pix);
                 }
             } else {
-                op_pixels_func (*op_pix)[4];
-                qpel_mc_func (*op_qpix)[16];
+                const op_pixels_func (*op_pix)[4];
+                const qpel_mc_func (*op_qpix)[16];
 
                 if ((is_mpeg12 == DEFINITELY_MPEG12 || !s->no_rounding) || s->pict_type == AV_PICTURE_TYPE_B) {
                     op_pix = s->hdsp.put_pixels_tab;

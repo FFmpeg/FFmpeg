@@ -595,8 +595,8 @@ void ff_mpv_motion(MpegEncContext *s,
                    uint8_t *dest_y, uint8_t *dest_cb,
                    uint8_t *dest_cr, int dir,
                    uint8_t *const *ref_picture,
-                   op_pixels_func (*pix_op)[4],
-                   qpel_mc_func (*qpix_op)[16]);
+                   const op_pixels_func (*pix_op)[4],
+                   const qpel_mc_func (*qpix_op)[16]);
 
 static inline void ff_update_block_index(MpegEncContext *s, int bits_per_raw_sample,
                                          int lowres, int chroma_x_shift)

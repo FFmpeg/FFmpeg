@@ -58,7 +58,7 @@ static av_always_inline void vc1_scale_chroma(uint8_t *srcU, uint8_t *srcV,
 }
 
 static av_always_inline void vc1_lut_scale_luma(uint8_t *srcY,
-                                                uint8_t *lut1, uint8_t *lut2,
+                                                const uint8_t *lut1, const uint8_t *lut2,
                                                 int k, int linesize)
 {
     int i, j;
@@ -78,7 +78,7 @@ static av_always_inline void vc1_lut_scale_luma(uint8_t *srcY,
 }
 
 static av_always_inline void vc1_lut_scale_chroma(uint8_t *srcU, uint8_t *srcV,
-                                                  uint8_t *lut1, uint8_t *lut2,
+                                                  const uint8_t *lut1, const uint8_t *lut2,
                                                   int k, int uvlinesize)
 {
     int i, j;
@@ -177,7 +177,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     int i;
-    uint8_t (*luty)[256], (*lutuv)[256];
+    const uint8_t (*luty)[256], (*lutuv)[256];
     int use_ic;
     int interlace;
     int linesize, uvlinesize;
@@ -457,7 +457,7 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     int off;
     int fieldmv = (v->fcm == ILACE_FRAME) ? v->blk_mv_type[s->block_index[n]] : 0;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
-    uint8_t (*luty)[256];
+    const uint8_t (*luty)[256];
     int use_ic;
     int interlace;
     int linesize;
@@ -640,7 +640,7 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
     int16_t tx, ty;
     int chroma_ref_type;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
-    uint8_t (*lutuv)[256];
+    const uint8_t (*lutuv)[256];
     int use_ic;
     int interlace;
     int uvlinesize;
@@ -851,7 +851,7 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
     int use_ic;
     int interlace;
     int uvlinesize;
-    uint8_t (*lutuv)[256];
+    const uint8_t (*lutuv)[256];
 
     if (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
@@ -1191,8 +1191,8 @@ void ff_vc1_interp_mc(VC1Context *v)
         }
 
         if (use_ic) {
-            uint8_t (*luty )[256] = v->next_luty;
-            uint8_t (*lutuv)[256] = v->next_lutuv;
+            const uint8_t (*luty )[256] = v->next_luty;
+            const uint8_t (*lutuv)[256] = v->next_lutuv;
             vc1_lut_scale_luma(srcY,
                                luty[v->field_mode ? v->ref_field_type[1] : ((0+src_y - s->mspel) & 1)],
                                luty[v->field_mode ? v->ref_field_type[1] : ((1+src_y - s->mspel) & 1)],

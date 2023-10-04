@@ -470,7 +470,7 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s)
 void ff_mpeg1_encode_picture_header(MpegEncContext *s)
 {
     MPEG12EncContext *const mpeg12 = (MPEG12EncContext*)s;
-    AVFrameSideData *side_data;
+    const AVFrameSideData *side_data;
     mpeg1_encode_sequence_header(s);
 
     /* MPEG-1 picture header */
@@ -557,7 +557,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
     side_data = av_frame_get_side_data(s->cur_pic_ptr->f,
                                        AV_FRAME_DATA_STEREO3D);
     if (side_data) {
-        AVStereo3D *stereo = (AVStereo3D *)side_data->data;
+        const AVStereo3D *stereo = (AVStereo3D *)side_data->data;
         uint8_t fpa_type;
 
         switch (stereo->type) {
@@ -711,7 +711,7 @@ static inline void encode_dc(MpegEncContext *s, int diff, int component)
     }
 }
 
-static void mpeg1_encode_block(MpegEncContext *s, int16_t *block, int n)
+static void mpeg1_encode_block(MpegEncContext *s, const int16_t *block, int n)
 {
     int alevel, level, last_non_zero, dc, diff, i, j, run, last_index, sign;
     int code, component;
@@ -793,7 +793,7 @@ next_coef:
 }
 
 static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
-                                                      int16_t block[8][64],
+                                                      const int16_t block[8][64],
                                                       int motion_x, int motion_y,
                                                       int mb_block_count,
                                                       int chroma_y_shift)

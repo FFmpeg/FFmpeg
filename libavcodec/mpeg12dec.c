@@ -160,7 +160,7 @@ static inline int mpeg1_decode_block_inter(MpegEncContext *s,
                                            int16_t *block, int n)
 {
     int level, i, j, run;
-    uint8_t *const scantable     = s->intra_scantable.permutated;
+    const uint8_t *const scantable = s->intra_scantable.permutated;
     const uint16_t *quant_matrix = s->inter_matrix;
     const int qscale             = s->qscale;
 
@@ -244,7 +244,7 @@ static inline int mpeg2_decode_block_non_intra(MpegEncContext *s,
                                                int16_t *block, int n)
 {
     int level, i, j, run;
-    uint8_t *const scantable = s->intra_scantable.permutated;
+    const uint8_t *const scantable = s->intra_scantable.permutated;
     const uint16_t *quant_matrix;
     const int qscale = s->qscale;
     int mismatch;
@@ -331,7 +331,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     int level, dc, diff, i, j, run;
     int component;
     const RL_VLC_ELEM *rl_vlc;
-    uint8_t *const scantable = s->intra_scantable.permutated;
+    const uint8_t *const scantable = s->intra_scantable.permutated;
     const uint16_t *quant_matrix;
     const int qscale = s->qscale;
     int mismatch;

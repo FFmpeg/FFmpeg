@@ -71,7 +71,7 @@ static uint8_t  uni_mpeg4_inter_rl_len[64 * 64 * 2 * 2];
  * @param[in]  block_last_index last index in scantable order that refers to a non zero element in block.
  */
 static inline int get_block_rate(MpegEncContext *s, int16_t block[64],
-                                 int block_last_index, uint8_t scantable[64])
+                                 int block_last_index, const uint8_t scantable[64])
 {
     int last = 0;
     int j;
@@ -106,7 +106,7 @@ static inline int get_block_rate(MpegEncContext *s, int16_t block[64],
  * @param[in] zigzag_last_index index referring to the last non zero coefficient in zigzag order
  */
 static inline void restore_ac_coeffs(MpegEncContext *s, int16_t block[6][64],
-                                     const int dir[6], uint8_t *st[6],
+                                     const int dir[6], const uint8_t *st[6],
                                      const int zigzag_last_index[6])
 {
     int i, n;
@@ -137,12 +137,12 @@ static inline void restore_ac_coeffs(MpegEncContext *s, int16_t block[6][64],
  * @param[out] zigzag_last_index index referring to the last non zero coefficient in zigzag order
  */
 static inline int decide_ac_pred(MpegEncContext *s, int16_t block[6][64],
-                                 const int dir[6], uint8_t *st[6],
+                                 const int dir[6], const uint8_t *st[6],
                                  int zigzag_last_index[6])
 {
     int score = 0;
     int i, n;
-    int8_t *const qscale_table = s->cur_pic.qscale_table;
+    const int8_t *const qscale_table = s->cur_pic.qscale_table;
 
     memcpy(zigzag_last_index, s->block_last_index, sizeof(int) * 6);
 
@@ -288,14 +288,14 @@ static inline int mpeg4_get_dc_length(int level, int n)
  * Encode an 8x8 block.
  * @param n block index (0-3 are luma, 4-5 are chroma)
  */
-static inline void mpeg4_encode_block(MpegEncContext *s,
-                                      int16_t *block, int n, int intra_dc,
-                                      uint8_t *scan_table, PutBitContext *dc_pb,
+static inline void mpeg4_encode_block(const MpegEncContext *s,
+                                      const int16_t *block, int n, int intra_dc,
+                                      const uint8_t *scan_table, PutBitContext *dc_pb,
                                       PutBitContext *ac_pb)
 {
     int i, last_non_zero;
-    uint32_t *bits_tab;
-    uint8_t *len_tab;
+    const uint32_t *bits_tab;
+    const uint8_t *len_tab;
     const int last_index = s->block_last_index[n];
 
     if (s->mb_intra) {  // Note gcc (3.2.1 at least) will optimize this away
@@ -350,11 +350,11 @@ static inline void mpeg4_encode_block(MpegEncContext *s,
 }
 
 static int mpeg4_get_block_length(MpegEncContext *s,
-                                  int16_t *block, int n,
-                                  int intra_dc, uint8_t *scan_table)
+                                  const int16_t *block, int n,
+                                  int intra_dc, const uint8_t *scan_table)
 {
     int i, last_non_zero;
-    uint8_t *len_tab;
+    const uint8_t *len_tab;
     const int last_index = s->block_last_index[n];
     int len = 0;
 
@@ -403,8 +403,10 @@ static int mpeg4_get_block_length(MpegEncContext *s,
     return len;
 }
 
-static inline void mpeg4_encode_blocks(MpegEncContext *s, int16_t block[6][64],
-                                       int intra_dc[6], uint8_t **scan_table,
+static inline void mpeg4_encode_blocks(MpegEncContext *s,
+                                       const int16_t block[6][64],
+                                       const int intra_dc[6],
+                                       const uint8_t * const *scan_table,
                                        PutBitContext *dc_pb,
                                        PutBitContext *ac_pb)
 {
@@ -796,7 +798,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
         int dc_diff[6];  // dc values with the dc prediction subtracted
         int dir[6];      // prediction direction
         int zigzag_last_index[6];
-        uint8_t *scan_table[6];
+        const uint8_t *scan_table[6];
         int i;
 
         for (i = 0; i < 6; i++)

@@ -4219,8 +4219,8 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
     int prev_run=0;
     int prev_level=0;
     int qmul, qadd, start_i, last_non_zero, i, dc;
-    uint8_t * length;
-    uint8_t * last_length;
+    const uint8_t *length;
+    const uint8_t *last_length;
     int lambda;
     int rle_index, run, q = 1, sum; //q is only used when s->mb_intra is true
 
@@ -4533,7 +4533,7 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
  *                  permutation up, the block is not (inverse) permutated
  *                  to scantable order!
  */
-void ff_block_permute(int16_t *block, uint8_t *permutation,
+void ff_block_permute(int16_t *block, const uint8_t *permutation,
                       const uint8_t *scantable, int last)
 {
     int i;

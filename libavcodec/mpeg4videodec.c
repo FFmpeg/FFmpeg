@@ -1294,8 +1294,8 @@ static inline int mpeg4_decode_block(Mpeg4DecContext *ctx, int16_t *block,
     MpegEncContext *s = &ctx->m;
     int level, i, last, run, qmul, qadd;
     int av_uninit(dc_pred_dir);
-    RLTable *rl;
-    RL_VLC_ELEM *rl_vlc;
+    const RLTable *rl;
+    const RL_VLC_ELEM *rl_vlc;
     const uint8_t *scan_table;
 
     // Note intra & rvlc should be optimized away if this is inlined
@@ -1653,7 +1653,6 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
 {
     Mpeg4DecContext *ctx = s->avctx->priv_data;
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
-    int16_t *mot_val;
     static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
     const int xy = s->mb_x + s->mb_y * s->mb_stride;
     int next;
@@ -1784,7 +1783,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
             s->cur_pic.mb_type[xy] = MB_TYPE_8x8 | MB_TYPE_L0;
             s->mv_type                     = MV_TYPE_8X8;
             for (i = 0; i < 4; i++) {
-                mot_val = ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
+                int16_t *mot_val = ff_h263_pred_motion(s, i, 0, &pred_x, &pred_y);
                 mx      = ff_h263_decode_motion(s, pred_x, s->f_code);
                 if (mx >= 0xffff)
                     return AVERROR_INVALIDDATA;
@@ -2077,7 +2076,7 @@ static int mpeg4_decode_studio_block(MpegEncContext *s, int32_t block[64], int n
     int cc, dct_dc_size, dct_diff, code, j, idx = 1, group = 0, run = 0,
         additional_code_len, sign, mismatch;
     const VLCElem *cur_vlc = studio_intra_tab[0];
-    uint8_t *const scantable = s->intra_scantable.permutated;
+    const uint8_t *const scantable = s->intra_scantable.permutated;
     const uint16_t *quant_matrix;
     uint32_t flc;
     const int min = -1 *  (1 << (s->avctx->bits_per_raw_sample + 6));

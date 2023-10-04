@@ -167,7 +167,7 @@ static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
 {
     MpegEncContext *const s = &h->s;
     int level, run, i, j, last_index, last_non_zero, sign, slevel, code;
-    RLTable *rl;
+    const RLTable *rl;
 
     rl = &ff_h261_rl_tcoeff;
     if (s->mb_intra) {
