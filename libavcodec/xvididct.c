@@ -56,13 +56,13 @@ static const int TAB35[] = { 26722, 25172, 22654, 19266, 15137, 10426, 5315 };
 
 static int idct_row(short *in, const int *const tab, int rnd)
 {
-    const int c1 = tab[0];
-    const int c2 = tab[1];
-    const int c3 = tab[2];
-    const int c4 = tab[3];
-    const int c5 = tab[4];
-    const int c6 = tab[5];
-    const int c7 = tab[6];
+    const unsigned c1 = tab[0];
+    const unsigned c2 = tab[1];
+    const unsigned c3 = tab[2];
+    const unsigned c4 = tab[3];
+    const unsigned c5 = tab[4];
+    const unsigned c6 = tab[5];
+    const unsigned c7 = tab[6];
 
     const int right = in[5] | in[6] | in[7];
     const int left  = in[1] | in[2] | in[3];
@@ -102,8 +102,8 @@ static int idct_row(short *in, const int *const tab, int rnd)
                 return 0;
         }
     } else if (!(left | right)) {
-        const int a0 = (rnd + c4 * (in[0] + in[4])) >> ROW_SHIFT;
-        const int a1 = (rnd + c4 * (in[0] - in[4])) >> ROW_SHIFT;
+        const int a0 = (int)(rnd + c4 * (in[0] + in[4])) >> ROW_SHIFT;
+        const int a1 = (int)(rnd + c4 * (in[0] - in[4])) >> ROW_SHIFT;
 
         in[0] = a0;
         in[3] = a0;
