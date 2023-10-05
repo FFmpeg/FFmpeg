@@ -270,7 +270,7 @@ static inline int shift(int a, int b)
 
 static int predictor_calc_error(int *k, int *state, int order, int error)
 {
-    int i, x = error - shift_down(k[order-1] * (unsigned)state[order-1], LATTICE_SHIFT);
+    int i, x = error - (unsigned)shift_down(k[order-1] * (unsigned)state[order-1], LATTICE_SHIFT);
     int *k_ptr = &(k[order-2]),
         *state_ptr = &(state[order-2]);
 
