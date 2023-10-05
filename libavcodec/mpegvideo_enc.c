@@ -1725,19 +1725,6 @@ static int frame_start(MpegEncContext *s)
             return ret;
     }
 
-    if (s->picture_structure!= PICT_FRAME) {
-        int i;
-        for (i = 0; i < 4; i++) {
-            if (s->picture_structure == PICT_BOTTOM_FIELD) {
-                s->current_picture.f->data[i] +=
-                    s->current_picture.f->linesize[i];
-            }
-            s->current_picture.f->linesize[i] *= 2;
-            s->last_picture.f->linesize[i]    *= 2;
-            s->next_picture.f->linesize[i]    *= 2;
-        }
-    }
-
     if (s->dct_error_sum) {
         av_assert2(s->noise_reduction && s->encoding);
         update_noise_reduction(s);
