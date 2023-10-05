@@ -1224,8 +1224,10 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             }
         }
         ret = av_frame_copy_props(pic->f, pic_arg);
-        if (ret < 0)
+        if (ret < 0) {
+            ff_mpeg_unref_picture(s->avctx, pic);
             return ret;
+        }
 
         pic->display_picture_number = display_picture_number;
         pic->f->pts = pts; // we set this here to avoid modifying pic_arg
@@ -1536,8 +1538,10 @@ static int select_input_picture(MpegEncContext *s)
                 }
             } else if (s->b_frame_strategy == 2) {
                 b_frames = estimate_best_b_count(s);
-                if (b_frames < 0)
+                if (b_frames < 0) {
+                    ff_mpeg_unref_picture(s->avctx, s->input_picture[0]);
                     return b_frames;
+                }
             }
 
             emms_c();
@@ -1592,7 +1596,7 @@ no_output_pic:
 
         if ((ret = av_frame_ref(s->new_picture,
                                 s->reordered_input_picture[0]->f)))
-            return ret;
+            goto fail;
 
         if (s->reordered_input_picture[0]->shared || s->avctx->rc_buffer_size) {
             // input is a shared pix, so we can't modify it -> allocate a new
@@ -1605,13 +1609,15 @@ no_output_pic:
             pic = &s->picture[i];
 
             pic->reference = s->reordered_input_picture[0]->reference;
-            if (alloc_picture(s, pic, 0) < 0) {
-                return -1;
-            }
+            ret = alloc_picture(s, pic, 0);
+            if (ret < 0)
+                goto fail;
 
             ret = av_frame_copy_props(pic->f, s->reordered_input_picture[0]->f);
-            if (ret < 0)
-                return ret;
+            if (ret < 0) {
+                ff_mpeg_unref_picture(s->avctx, pic);
+                goto fail;
+            }
             pic->coded_picture_number = s->reordered_input_picture[0]->coded_picture_number;
             pic->display_picture_number = s->reordered_input_picture[0]->display_picture_number;
 
@@ -1632,6 +1638,9 @@ no_output_pic:
 
     }
     return 0;
+fail:
+    ff_mpeg_unref_picture(s->avctx, s->reordered_input_picture[0]);
+    return ret;
 }
 
 static void frame_end(MpegEncContext *s)
