@@ -94,7 +94,7 @@ static int cbs_read_se_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
 
     max_length = FFMIN(get_bits_left(gbc), 32);
 
-    leading_bits = show_bits_long(gbc, max_length);
+    leading_bits = max_length ? show_bits_long(gbc, max_length) : 0;
     if (leading_bits == 0) {
         if (max_length >= 32) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid se-golomb code at "
