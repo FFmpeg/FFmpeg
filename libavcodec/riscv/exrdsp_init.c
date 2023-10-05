@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2023 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,19 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_EXRDSP_H
-#define AVCODEC_EXRDSP_H
-
-#include <stddef.h>
 #include <stdint.h>
 
-typedef struct ExrDSPContext {
-    void (*reorder_pixels)(uint8_t *dst, const uint8_t *src, ptrdiff_t size);
-    void (*predictor)(uint8_t *src, ptrdiff_t size);
-} ExrDSPContext;
+#include "libavutil/cpu.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/exrdsp.h"
 
-void ff_exrdsp_init(ExrDSPContext *c);
-void ff_exrdsp_init_riscv(ExrDSPContext *c);
-void ff_exrdsp_init_x86(ExrDSPContext *c);
+void ff_reorder_pixels_rvv(uint8_t *dst, const uint8_t *src, ptrdiff_t size);
 
-#endif /* AVCODEC_EXRDSP_H */
+av_cold void ff_exrdsp_init_riscv(ExrDSPContext *c)
+{
+#if HAVE_RVV
+    int flags = av_get_cpu_flags();
+
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+        c->reorder_pixels = ff_reorder_pixels_rvv;
+    }
+#endif
+}

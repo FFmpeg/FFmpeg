@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2023 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,19 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_EXRDSP_H
-#define AVCODEC_EXRDSP_H
+#include "libavutil/riscv/asm.S"
 
-#include <stddef.h>
-#include <stdint.h>
+func ff_reorder_pixels_rvv, zve32x
+        srai    a2, a2, 1
+        add     t1, a1, a2
+1:
+        vsetvli t0, a2, e8, m4, ta, ma
+        vle8.v  v0, (a1)
+        sub     a2, a2, t0
+        vle8.v  v4, (t1)
+        add     a1, t0, a1
+        vsseg2e8.v v0, (a0)
+        add     t1, t0, t1
+        sh1add  a0, t0, a0
+        bnez    a2, 1b
 
-typedef struct ExrDSPContext {
-    void (*reorder_pixels)(uint8_t *dst, const uint8_t *src, ptrdiff_t size);
-    void (*predictor)(uint8_t *src, ptrdiff_t size);
-} ExrDSPContext;
-
-void ff_exrdsp_init(ExrDSPContext *c);
-void ff_exrdsp_init_riscv(ExrDSPContext *c);
-void ff_exrdsp_init_x86(ExrDSPContext *c);
-
-#endif /* AVCODEC_EXRDSP_H */
+        ret
+endfunc
