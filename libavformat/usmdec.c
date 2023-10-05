@@ -361,7 +361,7 @@ static int64_t parse_chunk(AVFormatContext *s, AVIOContext *pb,
     ret = avio_skip(pb, FFMAX(0, chunk_size - (ret - chunk_start)));
     if (ret < 0)
         return ret;
-    return 0;
+    return FFERROR_REDO;
 }
 
 static int usm_read_packet(AVFormatContext *s, AVPacket *pkt)
