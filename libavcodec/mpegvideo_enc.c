@@ -1699,10 +1699,6 @@ static int frame_start(MpegEncContext *s)
     }
 
     s->current_picture_ptr->f->pict_type = s->pict_type;
-    if (s->pict_type == AV_PICTURE_TYPE_I)
-        s->current_picture.f->flags |= AV_FRAME_FLAG_KEY;
-    else
-        s->current_picture.f->flags &= ~AV_FRAME_FLAG_KEY;
 
     ff_mpeg_unref_picture(s->avctx, &s->current_picture);
     if ((ret = ff_mpeg_ref_picture(s->avctx, &s->current_picture,
