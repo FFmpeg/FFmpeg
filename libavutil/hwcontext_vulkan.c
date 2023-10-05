@@ -282,9 +282,11 @@ FN_MAP_TO(VkImageUsageFlags, usage, VkFormatFeatureFlagBits2, feats)
 
 static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                               VkImageTiling tiling,
-                              VkFormat fmts[AV_NUM_DATA_POINTERS],
-                              int *nb_images, VkImageAspectFlags *aspect,
-                              VkImageUsageFlags *supported_usage, int disable_multiplane)
+                              VkFormat fmts[AV_NUM_DATA_POINTERS], /* Output format list */
+                              int *nb_images,                      /* Output number of images */
+                              VkImageAspectFlags *aspect,          /* Output aspect */
+                              VkImageUsageFlags *supported_usage,  /* Output supported usage */
+                              int disable_multiplane, int need_storage)
 {
     AVVulkanDeviceContext *hwctx = dev_ctx->hwctx;
     VulkanDevicePriv *priv = dev_ctx->internal->priv;
@@ -301,6 +303,7 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
             };
             VkFormatFeatureFlagBits2 feats_primary, feats_secondary;
             int basics_primary = 0, basics_secondary = 0;
+            int storage_primary = 0, storage_secondary = 0;
 
             vk->GetPhysicalDeviceFormatProperties2(hwctx->phys_dev,
                                                    vk_formats_list[i].vkf,
@@ -310,6 +313,7 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                              prop.formatProperties.linearTilingFeatures :
                              prop.formatProperties.optimalTilingFeatures;
             basics_primary = (feats_primary & basic_flags) == basic_flags;
+            storage_primary = !!(feats_primary & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT);
 
             if (vk_formats_list[i].vkf != vk_formats_list[i].fallback[0]) {
                 vk->GetPhysicalDeviceFormatProperties2(hwctx->phys_dev,
@@ -319,11 +323,15 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                                   prop.formatProperties.linearTilingFeatures :
                                   prop.formatProperties.optimalTilingFeatures;
                 basics_secondary = (feats_secondary & basic_flags) == basic_flags;
+                storage_secondary = !!(feats_secondary & VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT);
             } else {
                 basics_secondary = basics_primary;
+                storage_secondary = storage_primary;
             }
 
-            if (basics_primary && !(disable_multiplane && vk_formats_list[i].vk_planes > 1)) {
+            if (basics_primary &&
+                !(disable_multiplane && vk_formats_list[i].vk_planes > 1) &&
+                (!need_storage || (need_storage && (storage_primary | storage_secondary)))) {
                 if (fmts)
                     fmts[0] = vk_formats_list[i].vkf;
                 if (nb_images)
@@ -331,9 +339,12 @@ static int vkfmt_from_pixfmt2(AVHWDeviceContext *dev_ctx, enum AVPixelFormat p,
                 if (aspect)
                     *aspect = vk_formats_list[i].aspect;
                 if (supported_usage)
-                    *supported_usage = map_feats_to_usage(feats_primary);
+                    *supported_usage = map_feats_to_usage(feats_primary) |
+                                       ((need_storage && (storage_primary | storage_secondary)) ?
+                                        VK_IMAGE_USAGE_STORAGE_BIT : 0);
                 return 0;
-            } else if (basics_secondary) {
+            } else if (basics_secondary &&
+                       (!need_storage || (need_storage && storage_secondary))) {
                 if (fmts) {
                     for (int j = 0; j < vk_formats_list[i].nb_images_fallback; j++)
                         fmts[j] = vk_formats_list[i].fallback[j];
@@ -1640,7 +1651,7 @@ static int vulkan_frames_get_constraints(AVHWDeviceContext *ctx,
         count += vkfmt_from_pixfmt2(ctx, vk_formats_list[i].pixfmt,
                                     p->use_linear_images ? VK_IMAGE_TILING_LINEAR :
                                                            VK_IMAGE_TILING_OPTIMAL,
-                                    NULL, NULL, NULL, NULL, 0) >= 0;
+                                    NULL, NULL, NULL, NULL, 0, 0) >= 0;
     }
 
 #if CONFIG_CUDA
@@ -1658,7 +1669,7 @@ static int vulkan_frames_get_constraints(AVHWDeviceContext *ctx,
         if (vkfmt_from_pixfmt2(ctx, vk_formats_list[i].pixfmt,
                                p->use_linear_images ? VK_IMAGE_TILING_LINEAR :
                                                       VK_IMAGE_TILING_OPTIMAL,
-                               NULL, NULL, NULL, NULL, 0) >= 0) {
+                               NULL, NULL, NULL, NULL, 0, 0) >= 0) {
             constraints->valid_sw_formats[count++] = vk_formats_list[i].pixfmt;
         }
     }
@@ -2294,7 +2305,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
         /* Check if the sw_format itself is supported */
         err = vkfmt_from_pixfmt2(hwfc->device_ctx, hwfc->sw_format,
                                  hwctx->tiling, NULL,
-                                 NULL, NULL, &supported_usage, 0);
+                                 NULL, NULL, &supported_usage, 0,
+                                 hwctx->usage & VK_IMAGE_USAGE_STORAGE_BIT);
         if (err < 0) {
             av_log(hwfc, AV_LOG_ERROR, "Unsupported sw format: %s!\n",
                    av_get_pix_fmt_name(hwfc->sw_format));
@@ -2304,7 +2316,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
         err = vkfmt_from_pixfmt2(hwfc->device_ctx, hwfc->sw_format,
                                  hwctx->tiling, hwctx->format, NULL,
                                  NULL, &supported_usage,
-                                 disable_multiplane);
+                                 disable_multiplane,
+                                 hwctx->usage & VK_IMAGE_USAGE_STORAGE_BIT);
         if (err < 0)
             return err;
     }
@@ -2314,8 +2327,7 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
         hwctx->usage = supported_usage & (VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                           VK_IMAGE_USAGE_STORAGE_BIT       |
-                                          VK_IMAGE_USAGE_SAMPLED_BIT       |
-                                          VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR);
+                                          VK_IMAGE_USAGE_SAMPLED_BIT);
     }
 
     /* Image creation flags.

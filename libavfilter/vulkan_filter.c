@@ -42,18 +42,23 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
         vk_frames = frames_ctx->hwctx;
         vk_dev = device_ctx->hwctx;
 
-        /* Basic format validation */
+        /* Width and height mismatch */
         if (width != frames_ctx->width ||
-            height != frames_ctx->height ||
-            sw_format != frames_ctx->sw_format ||
-            (vk_frames->tiling != VK_IMAGE_TILING_LINEAR &&
-             vk_frames->tiling != VK_IMAGE_TILING_OPTIMAL) ||
-            !(vk_frames->usage & VK_IMAGE_USAGE_SAMPLED_BIT)) {
+            height != frames_ctx->height)
             goto skip;
-        }
 
-        if (vk_frames->usage & VK_IMAGE_USAGE_STORAGE_BIT)
-            goto accept;
+        /* Format mismatch */
+        if (sw_format != frames_ctx->sw_format)
+            goto skip;
+
+        /* Unusual tiling mismatch. Don't let linear through either. */
+        if (vk_frames->tiling != VK_IMAGE_TILING_OPTIMAL)
+            goto skip;
+
+        /* Usage mismatch */
+        if ((vk_frames->usage & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT)) !=
+                                (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT))
+            goto skip;
 
         s->extensions = ff_vk_extensions_to_mask(vk_dev->enabled_dev_extensions,
                                                  vk_dev->nb_enabled_dev_extensions);
@@ -110,6 +115,7 @@ accept:
         vk_frames = frames_ctx->hwctx;
         vk_frames->tiling = VK_IMAGE_TILING_OPTIMAL;
         vk_frames->usage  = VK_IMAGE_USAGE_SAMPLED_BIT |
+                            VK_IMAGE_USAGE_STORAGE_BIT |
                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
                             VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
