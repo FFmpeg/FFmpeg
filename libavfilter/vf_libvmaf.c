@@ -76,18 +76,11 @@ typedef struct LIBVMAFContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption libvmaf_options[] = {
-    {"model_path",  "use model='path=...'.",                                            OFFSET(model_path), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS|AV_OPT_FLAG_DEPRECATED},
     {"log_path",  "Set the file path to be used to write log.",                         OFFSET(log_path), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS},
     {"log_fmt",  "Set the format of the log (csv, json, xml, or sub).",                 OFFSET(log_fmt), AV_OPT_TYPE_STRING, {.str="xml"}, 0, 1, FLAGS},
-    {"enable_transform",  "use model='enable_transform=true'.",                         OFFSET(enable_transform), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS|AV_OPT_FLAG_DEPRECATED},
-    {"phone_model",  "use model='enable_transform=true'.",                              OFFSET(phone_model), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS|AV_OPT_FLAG_DEPRECATED},
-    {"psnr",  "use feature='name=psnr'.",                                               OFFSET(psnr), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS|AV_OPT_FLAG_DEPRECATED},
-    {"ssim",  "use feature='name=float_ssim'.",                                         OFFSET(ssim), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS|AV_OPT_FLAG_DEPRECATED},
-    {"ms_ssim",  "use feature='name=float_ms_ssim'.",                                   OFFSET(ms_ssim), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS|AV_OPT_FLAG_DEPRECATED},
     {"pool",  "Set the pool method to be used for computing vmaf.",                     OFFSET(pool), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS},
     {"n_threads", "Set number of threads to be used when computing vmaf.",              OFFSET(n_threads), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT_MAX, FLAGS},
     {"n_subsample", "Set interval for frame subsampling used when computing vmaf.",     OFFSET(n_subsample), AV_OPT_TYPE_INT, {.i64=1}, 1, UINT_MAX, FLAGS},
-    {"enable_conf_interval",  "model='enable_conf_interval=true'.",                     OFFSET(enable_conf_interval), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS|AV_OPT_FLAG_DEPRECATED},
     {"model",  "Set the model to be used for computing vmaf.",                          OFFSET(model_cfg), AV_OPT_TYPE_STRING, {.str="version=vmaf_v0.6.1"}, 0, 1, FLAGS},
     {"feature",  "Set the feature to be used for computing vmaf.",                      OFFSET(feature_cfg), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS},
     { NULL }
@@ -440,92 +433,6 @@ static enum VmafLogLevel log_level_map(int log_level)
     }
 }
 
-static int parse_deprecated_options(AVFilterContext *ctx)
-{
-    LIBVMAFContext *s = ctx->priv;
-    VmafModel *model = NULL;
-    VmafModelCollection *model_collection = NULL;
-    enum VmafModelFlags flags = VMAF_MODEL_FLAGS_DEFAULT;
-    int err = 0;
-
-    VmafModelConfig model_cfg = {
-        .name = "vmaf",
-        .flags = flags,
-    };
-
-    if (s->enable_transform || s->phone_model)
-        flags |= VMAF_MODEL_FLAG_ENABLE_TRANSFORM;
-
-    if (!s->model_path)
-        goto extra_metrics_only;
-
-    if (s->enable_conf_interval) {
-        err = vmaf_model_collection_load_from_path(&model, &model_collection,
-                                                   &model_cfg, s->model_path);
-        if (err) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "problem loading model file: %s\n", s->model_path);
-            goto exit;
-        }
-
-        err = vmaf_use_features_from_model_collection(s->vmaf, model_collection);
-        if (err) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "problem loading feature extractors from model file: %s\n",
-                   s->model_path);
-            goto exit;
-        }
-    } else {
-        err = vmaf_model_load_from_path(&model, &model_cfg, s->model_path);
-        if (err) {
-                av_log(ctx, AV_LOG_ERROR,
-                      "problem loading model file: %s\n", s->model_path);
-            goto exit;
-        }
-        err = vmaf_use_features_from_model(s->vmaf, model);
-        if (err) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "problem loading feature extractors from model file: %s\n",
-                   s->model_path);
-            goto exit;
-        }
-    }
-
-extra_metrics_only:
-    if (s->psnr) {
-        VmafFeatureDictionary *d = NULL;
-        vmaf_feature_dictionary_set(&d, "enable_chroma", "false");
-
-        err = vmaf_use_feature(s->vmaf, "psnr", d);
-        if (err) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "problem loading feature extractor: psnr\n");
-            goto exit;
-        }
-    }
-
-    if (s->ssim) {
-        err = vmaf_use_feature(s->vmaf, "float_ssim", NULL);
-        if (err) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "problem loading feature extractor: ssim\n");
-            goto exit;
-        }
-    }
-
-    if (s->ms_ssim) {
-        err = vmaf_use_feature(s->vmaf, "float_ms_ssim", NULL);
-        if (err) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "problem loading feature extractor: ms_ssim\n");
-            goto exit;
-        }
-    }
-
-exit:
-    return err;
-}
-
 static av_cold int init(AVFilterContext *ctx)
 {
     LIBVMAFContext *s = ctx->priv;
@@ -540,10 +447,6 @@ static av_cold int init(AVFilterContext *ctx)
     err = vmaf_init(&s->vmaf, cfg);
     if (err)
         return AVERROR(EINVAL);
-
-    err = parse_deprecated_options(ctx);
-    if (err)
-        return err;
 
     err = parse_models(ctx);
     if (err)

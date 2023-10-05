@@ -16858,29 +16858,8 @@ The filter has following options:
 A `|` delimited list of vmaf models. Each model can be configured with a number of parameters.
 Default value: @code{"version=vmaf_v0.6.1"}
 
-@item model_path
-Deprecated, use model='path=...'.
-
-@item enable_transform
-Deprecated, use model='enable_transform=true'.
-
-@item phone_model
-Deprecated, use model='enable_transform=true'.
-
-@item enable_conf_interval
-Deprecated, use model='enable_conf_interval=true'.
-
 @item feature
 A `|` delimited list of features. Each feature can be configured with a number of parameters.
-
-@item psnr
-Deprecated, use feature='name=psnr'.
-
-@item ssim
-Deprecated, use feature='name=ssim'.
-
-@item ms_ssim
-Deprecated, use feature='name=ms_ssim'.
 
 @item log_path
 Set the file path to be used to store log files.
