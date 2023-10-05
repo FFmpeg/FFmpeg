@@ -1169,6 +1169,11 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             ret = alloc_picture(s, pic);
             if (ret < 0)
                 return ret;
+            ret = av_frame_copy_props(pic->f, pic_arg);
+            if (ret < 0) {
+                ff_mpeg_unref_picture(s->avctx, pic);
+                return ret;
+            }
 
             for (int i = 0; i < 3; i++) {
                 int src_stride = pic_arg->linesize[i];
@@ -1209,11 +1214,6 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                 }
             }
             emms_c();
-        }
-        ret = av_frame_copy_props(pic->f, pic_arg);
-        if (ret < 0) {
-            ff_mpeg_unref_picture(s->avctx, pic);
-            return ret;
         }
 
         pic->display_picture_number = display_picture_number;
