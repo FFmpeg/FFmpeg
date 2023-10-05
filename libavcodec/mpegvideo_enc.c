@@ -1141,8 +1141,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
             }
         }
 
-        if (!pic_arg->buf[0] ||
-            pic_arg->linesize[0] != s->linesize ||
+        if (pic_arg->linesize[0] != s->linesize ||
             pic_arg->linesize[1] != s->uvlinesize ||
             pic_arg->linesize[2] != s->uvlinesize)
             direct = 0;
