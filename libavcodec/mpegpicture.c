@@ -246,7 +246,7 @@ static int alloc_picture_tables(AVCodecContext *avctx, Picture *pic, int encodin
  * The pixels are allocated/set by calling get_buffer() if shared = 0
  */
 int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
-                     ScratchpadContext *sc, int shared, int encoding,
+                     ScratchpadContext *sc, int encoding,
                      int chroma_x_shift, int chroma_y_shift, int out_format,
                      int mb_stride, int mb_width, int mb_height, int b8_stride,
                      ptrdiff_t *linesize, ptrdiff_t *uvlinesize)
@@ -258,10 +258,6 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
             || pic->alloc_mb_height != mb_height)
             free_picture_tables(pic);
 
-    if (shared) {
-        av_assert0(pic->f->data[0]);
-        pic->shared = 1;
-    } else {
         av_assert0(!pic->f->buf[0]);
         if (alloc_frame_buffer(avctx, pic, me, sc,
                                chroma_x_shift, chroma_y_shift,
@@ -270,7 +266,6 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
 
         *linesize   = pic->f->linesize[0];
         *uvlinesize = pic->f->linesize[1];
-    }
 
     if (!pic->qscale_table_buf)
         ret = alloc_picture_tables(avctx, pic, encoding, out_format,

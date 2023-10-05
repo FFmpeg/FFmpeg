@@ -1091,9 +1091,9 @@ static int get_intra_count(MpegEncContext *s, const uint8_t *src,
     return acc;
 }
 
-static int alloc_picture(MpegEncContext *s, Picture *pic, int shared)
+static int alloc_picture(MpegEncContext *s, Picture *pic)
 {
-    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, shared, 1,
+    return ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, 1,
                             s->chroma_x_shift, s->chroma_y_shift, s->out_format,
                             s->mb_stride, s->mb_width, s->mb_height, s->b8_stride,
                             &s->linesize, &s->uvlinesize);
@@ -1164,12 +1164,12 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
         if (direct) {
             if ((ret = av_frame_ref(pic->f, pic_arg)) < 0)
                 return ret;
-        }
-        ret = alloc_picture(s, pic, direct);
-        if (ret < 0)
-            return ret;
+            pic->shared = 1;
+        } else {
+            ret = alloc_picture(s, pic);
+            if (ret < 0)
+                return ret;
 
-        if (!direct) {
             for (int i = 0; i < 3; i++) {
                 int src_stride = pic_arg->linesize[i];
                 int dst_stride = i ? s->uvlinesize : s->linesize;
@@ -1596,7 +1596,7 @@ no_output_pic:
             pic = &s->picture[i];
 
             pic->reference = s->reordered_input_picture[0]->reference;
-            ret = alloc_picture(s, pic, 0);
+            ret = alloc_picture(s, pic);
             if (ret < 0)
                 goto fail;
 

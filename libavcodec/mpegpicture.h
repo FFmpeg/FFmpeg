@@ -86,7 +86,7 @@ typedef struct Picture {
  * The pixels are allocated/set by calling get_buffer() if shared = 0.
  */
 int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
-                     ScratchpadContext *sc, int shared, int encoding,
+                     ScratchpadContext *sc, int encoding,
                      int chroma_x_shift, int chroma_y_shift, int out_format,
                      int mb_stride, int mb_width, int mb_height, int b8_stride,
                      ptrdiff_t *linesize, ptrdiff_t *uvlinesize);
