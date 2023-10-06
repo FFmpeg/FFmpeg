@@ -527,16 +527,10 @@ static int h261_decode_picture_header(H261DecContext *h)
     if (format == 0) { // QCIF
         s->width     = 176;
         s->height    = 144;
-        s->mb_width  = 11;
-        s->mb_height = 9;
     } else { // CIF
         s->width     = 352;
         s->height    = 288;
-        s->mb_width  = 22;
-        s->mb_height = 18;
     }
-
-    s->mb_num = s->mb_width * s->mb_height;
 
     skip_bits1(&s->gb); /* still image mode off */
     skip_bits1(&s->gb); /* Reserved */
