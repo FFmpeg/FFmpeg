@@ -1042,9 +1042,6 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     char *codec_tag = NULL;
     char *next;
     char *discard_str = NULL;
-    const AVClass *cc = avcodec_get_class();
-    const AVOption *discard_opt = av_opt_find(&cc, "skip_frame", NULL,
-                                              0, AV_OPT_SEARCH_FAKE_OBJ);
     int ret;
 
     ds  = demux_stream_alloc(d, st);
@@ -1176,17 +1173,19 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         (o->data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA))
             ist->user_set_discard = AVDISCARD_ALL;
 
+    ist->dec_ctx = avcodec_alloc_context3(ist->dec);
+    if (!ist->dec_ctx)
+        return AVERROR(ENOMEM);
+
     if (discard_str) {
-        ret = av_opt_eval_int(&cc, discard_opt, discard_str, &ist->user_set_discard);
+        const AVOption *discard_opt = av_opt_find(ist->dec_ctx, "skip_frame",
+                                                  NULL, 0, 0);
+        ret = av_opt_eval_int(ist->dec_ctx, discard_opt, discard_str, &ist->user_set_discard);
         if (ret  < 0) {
             av_log(ist, AV_LOG_ERROR, "Error parsing discard %s.\n", discard_str);
             return ret;
         }
     }
-
-    ist->dec_ctx = avcodec_alloc_context3(ist->dec);
-    if (!ist->dec_ctx)
-        return AVERROR(ENOMEM);
 
     ret = avcodec_parameters_to_context(ist->dec_ctx, par);
     if (ret < 0) {
