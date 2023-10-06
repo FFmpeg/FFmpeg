@@ -614,7 +614,6 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     h->gob_start_code_skipped = 0;
 
-retry:
     init_get_bits(&s->gb, buf, buf_size * 8);
 
     ret = h261_decode_picture_header(h);
@@ -636,8 +635,6 @@ retry:
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;
-
-        goto retry;
     }
 
     if ((avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B) ||
