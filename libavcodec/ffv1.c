@@ -144,6 +144,8 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
         sc->slice_height = sye - sys;
         sc->slice_x      = sxs;
         sc->slice_y      = sys;
+        sc->sx           = sx;
+        sc->sy           = sy;
 
         sc->sample_buffer = av_malloc_array((f->width + 6), 3 * MAX_PLANES *
                                             sizeof(*sc->sample_buffer));

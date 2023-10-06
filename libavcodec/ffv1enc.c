@@ -923,8 +923,8 @@ static void encode_slice_header(FFV1Context *f, FFV1SliceContext *sc)
     int j;
     memset(state, 128, sizeof(state));
 
-    put_symbol(c, state, (sc->slice_x     +1)*f->num_h_slices / f->width   , 0);
-    put_symbol(c, state, (sc->slice_y     +1)*f->num_v_slices / f->height  , 0);
+    put_symbol(c, state, sc->sx, 0);
+    put_symbol(c, state, sc->sy, 0);
     put_symbol(c, state, 0, 0);
     put_symbol(c, state, 0, 0);
     for (j=0; j<f->plane_count; j++) {
