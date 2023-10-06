@@ -925,8 +925,8 @@ static void encode_slice_header(FFV1Context *f, FFV1SliceContext *sc)
 
     put_symbol(c, state, (sc->slice_x     +1)*f->num_h_slices / f->width   , 0);
     put_symbol(c, state, (sc->slice_y     +1)*f->num_v_slices / f->height  , 0);
-    put_symbol(c, state, (sc->slice_width +1)*f->num_h_slices / f->width -1, 0);
-    put_symbol(c, state, (sc->slice_height+1)*f->num_v_slices / f->height-1, 0);
+    put_symbol(c, state, 0, 0);
+    put_symbol(c, state, 0, 0);
     for (j=0; j<f->plane_count; j++) {
         put_symbol(c, state, sc->plane[j].quant_table_index, 0);
         av_assert0(sc->plane[j].quant_table_index == f->context_model);
