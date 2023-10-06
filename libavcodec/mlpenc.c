@@ -172,10 +172,13 @@ typedef struct MLPEncodeContext {
     uint16_t        input_timing;           ///< Decoding timestamp of current access unit.
 
     uint8_t         channel_arrangement;    ///< channel arrangement for MLP streams
+    uint8_t         channel_arrangement8;   ///< 8 channel arrangement for THD streams
 
-    uint8_t         ch_modifier_thd0;       ///< channel modifier for TrueHD stream 0
-    uint8_t         ch_modifier_thd1;       ///< channel modifier for TrueHD stream 1
-    uint8_t         ch_modifier_thd2;       ///< channel modifier for TrueHD stream 2
+    uint8_t         multichannel_type6ch;   ///< channel modifier for TrueHD stream 0
+    uint8_t         multichannel_type8ch;   ///< channel modifier for TrueHD stream 0
+    uint8_t         ch2_presentation_mod;   ///< channel modifier for TrueHD stream 0
+    uint8_t         ch6_presentation_mod;   ///< channel modifier for TrueHD stream 1
+    uint8_t         ch8_presentation_mod;   ///< channel modifier for TrueHD stream 2
     RestartHeader   restart_header;
 
     MLPBlock        b[MAJOR_HEADER_INTERVAL + 1];
@@ -525,12 +528,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     /* TODO Keep count of bitrate and calculate real value. */
     ctx->coded_peak_bitrate = mlp_peak_bitrate(9600000, avctx->sample_rate);
 
-    /* TODO support more channels. */
-    if (avctx->ch_layout.nb_channels > 2) {
-        av_log(avctx, AV_LOG_WARNING,
-               "Only mono and stereo are supported at the moment.\n");
-    }
-
     ctx->substream_info |= SUBSTREAM_INFO_ALWAYS_SET;
     if (avctx->ch_layout.nb_channels <= 2)
         ctx->substream_info |= SUBSTREAM_INFO_MAX_2_CHAN;
@@ -602,28 +599,32 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     } else {
         /* TrueHD */
         if (channels_present == AV_CH_LAYOUT_MONO) {
-            ctx->ch_modifier_thd0    = 3;
-            ctx->ch_modifier_thd1    = 3;
-            ctx->ch_modifier_thd2    = 3;
+            ctx->ch2_presentation_mod= 3;
+            ctx->ch6_presentation_mod= 3;
+            ctx->ch8_presentation_mod= 3;
             ctx->channel_arrangement = 2;
+            ctx->channel_arrangement8= 2;
             ctx->thd_substream_info  = 0x14;
         } else if (channels_present == AV_CH_LAYOUT_STEREO) {
-            ctx->ch_modifier_thd0    = 1;
-            ctx->ch_modifier_thd1    = 1;
-            ctx->ch_modifier_thd2    = 1;
+            ctx->ch2_presentation_mod= 1;
+            ctx->ch6_presentation_mod= 1;
+            ctx->ch8_presentation_mod= 1;
             ctx->channel_arrangement = 1;
+            ctx->channel_arrangement8= 1;
             ctx->thd_substream_info  = 0x14;
         } else if (channels_present == AV_CH_LAYOUT_5POINT0) {
-            ctx->ch_modifier_thd0    = 1;
-            ctx->ch_modifier_thd1    = 1;
-            ctx->ch_modifier_thd2    = 1;
+            ctx->ch2_presentation_mod= 1;
+            ctx->ch6_presentation_mod= 1;
+            ctx->ch8_presentation_mod= 1;
             ctx->channel_arrangement = 11;
+            ctx->channel_arrangement8= 11;
             ctx->thd_substream_info  = 0x104;
         } else if (channels_present == AV_CH_LAYOUT_5POINT1) {
-            ctx->ch_modifier_thd0    = 2;
-            ctx->ch_modifier_thd1    = 1;
-            ctx->ch_modifier_thd2    = 2;
+            ctx->ch2_presentation_mod= 2;
+            ctx->ch6_presentation_mod= 1;
+            ctx->ch8_presentation_mod= 2;
             ctx->channel_arrangement = 15;
+            ctx->channel_arrangement8= 15;
             ctx->thd_substream_info  = 0x104;
         } else {
             av_assert1(!"AVCodec.ch_layouts needs to be updated");
@@ -681,14 +682,14 @@ static void write_major_sync(MLPEncodeContext *ctx, uint8_t *buf, int buf_size)
     } else if (ctx->avctx->codec_id == AV_CODEC_ID_TRUEHD) {
         put_bits(&pb,  8, SYNC_TRUEHD              );
         put_bits(&pb,  4, ctx->coded_sample_rate[0]);
-        put_bits(&pb,  1, 0                        ); /* 6ch multichannel type */
-        put_bits(&pb,  1, 0                        ); /* 8ch multichannel type */
+        put_bits(&pb,  1, ctx->multichannel_type6ch);
+        put_bits(&pb,  1, ctx->multichannel_type8ch);
         put_bits(&pb,  2, 0                        ); /* ignored */
-        put_bits(&pb,  2, ctx->ch_modifier_thd0    );
-        put_bits(&pb,  2, ctx->ch_modifier_thd1    );
+        put_bits(&pb,  2, ctx->ch2_presentation_mod);
+        put_bits(&pb,  2, ctx->ch6_presentation_mod);
         put_bits(&pb,  5, ctx->channel_arrangement );
-        put_bits(&pb,  2, ctx->ch_modifier_thd2    );
-        put_bits(&pb, 13, ctx->channel_arrangement );
+        put_bits(&pb,  2, ctx->ch8_presentation_mod);
+        put_bits(&pb, 13, ctx->channel_arrangement8);
     }
 
     put_bits(&pb, 16, MAJOR_SYNC_INFO_SIGNATURE);
