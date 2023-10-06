@@ -512,10 +512,7 @@ static int h261_decode_picture_header(H261DecContext *h)
     }
 
     /* temporal reference */
-    i = get_bits(&s->gb, 5); /* picture timestamp */
-    if (i < (s->picture_number & 31))
-        i += 32;
-    s->picture_number = (s->picture_number & ~31) + i;
+    skip_bits(&s->gb, 5); /* picture timestamp */
 
     s->avctx->framerate = (AVRational) { 30000, 1001 };
 
