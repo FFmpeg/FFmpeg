@@ -90,7 +90,6 @@ skip:
             device_ref = frames_ctx->device_ref;
             frames_ref = NULL;
         } else {
-accept:
             frames_ref = av_buffer_ref(frames_ref);
             if (!frames_ref)
                 return AVERROR(ENOMEM);
