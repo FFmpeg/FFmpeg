@@ -391,6 +391,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
     m->access_unit_size_pow2 = mh.access_unit_size_pow2;
 
     m->num_substreams        = mh.num_substreams;
+    m->extended_substream_info = mh.extended_substream_info;
     m->substream_info        = mh.substream_info;
 
     /*  If there is a 4th substream and the MSB of substream_info is set,
