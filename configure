@@ -6740,8 +6740,7 @@ elif enabled libmfx; then
       { require libmfx "mfxvideo.h mfxdefs.h" MFXInit "-llibmfx $advapi32_extralibs" &&
         { test_cpp_condition mfxdefs.h "MFX_VERSION >= 1028 && MFX_VERSION < 2000" || die "ERROR: libmfx version must be >= 1.28 and < 2.0"; }  &&
         warn "using libmfx without pkg-config"; } } &&
-    warn "build FFmpeg against libmfx 1.x, obsolete features of libmfx such as OPAQUE memory,\n"\
-         "multi-frame encode, user plugins and LA_EXT rate control mode are enabled"
+    warn "libmfx is deprecated. Please run configure with --enable-libvpl to use libvpl instead."
 elif enabled libvpl; then
 # Consider pkg-config only. The name of libmfx is still passed to check_pkg_config function for --enable-libvpl option
 # because QSV has dependency on libmfx, we can use the same dependency if using libmfx in this check. The package name
