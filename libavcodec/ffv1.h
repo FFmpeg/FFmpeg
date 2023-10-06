@@ -75,6 +75,7 @@ typedef struct FFV1SliceContext {
     int slice_height;
     int slice_x;
     int slice_y;
+    int sx, sy;
 
     int run_index;
     int slice_coding_mode;
