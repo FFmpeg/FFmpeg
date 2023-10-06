@@ -1462,8 +1462,10 @@ int ifile_open(const OptionsContext *o, const char *filename)
     if (data_codec_name)
         ret = err_merge(ret, find_codec(NULL, data_codec_name    , AVMEDIA_TYPE_DATA,     0,
                                         &ic->data_codec));
-    if (ret < 0)
+    if (ret < 0) {
+        avformat_free_context(ic);
         return ret;
+    }
 
     ic->video_codec_id     = video_codec_name    ? ic->video_codec->id    : AV_CODEC_ID_NONE;
     ic->audio_codec_id     = audio_codec_name    ? ic->audio_codec->id    : AV_CODEC_ID_NONE;
@@ -1488,6 +1490,7 @@ int ifile_open(const OptionsContext *o, const char *filename)
             av_log(d, AV_LOG_ERROR, "Did you mean file:%s?\n", filename);
         return err;
     }
+    f->ctx = ic;
 
     av_strlcat(d->log_name, "/",               sizeof(d->log_name));
     av_strlcat(d->log_name, ic->iformat->name, sizeof(d->log_name));
@@ -1527,10 +1530,8 @@ int ifile_open(const OptionsContext *o, const char *filename)
 
         if (ret < 0) {
             av_log(d, AV_LOG_FATAL, "could not find codec parameters\n");
-            if (ic->nb_streams == 0) {
-                avformat_close_input(&ic);
+            if (ic->nb_streams == 0)
                 return ret;
-            }
         }
     }
 
@@ -1582,7 +1583,6 @@ int ifile_open(const OptionsContext *o, const char *filename)
         }
     }
 
-    f->ctx        = ic;
     f->start_time = start_time;
     f->recording_time = recording_time;
     f->input_sync_ref = o->input_sync_ref;
