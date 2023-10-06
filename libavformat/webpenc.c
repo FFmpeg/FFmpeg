@@ -177,8 +177,8 @@ static int webp_write_trailer(AVFormatContext *s)
 
     if (w->using_webp_anim_encoder) {
         if (w->loop) {  // Write loop count.
-            avio_seek(s->pb, 42, SEEK_SET);
-            avio_wl16(s->pb, w->loop);
+            if (avio_seek(s->pb, 42, SEEK_SET) == 42)
+                avio_wl16(s->pb, w->loop);
         }
     } else {
         int ret;
@@ -186,10 +186,11 @@ static int webp_write_trailer(AVFormatContext *s)
             return ret;
 
         filesize = avio_tell(s->pb);
-        avio_seek(s->pb, 4, SEEK_SET);
-        avio_wl32(s->pb, filesize - 8);
-        // Note: without the following, avio only writes 8 bytes to the file.
-        avio_seek(s->pb, filesize, SEEK_SET);
+        if (avio_seek(s->pb, 4, SEEK_SET) == 4) {
+            avio_wl32(s->pb, filesize - 8);
+            // Note: without the following, avio only writes 8 bytes to the file.
+            avio_seek(s->pb, filesize, SEEK_SET);
+        }
     }
 
     return 0;
