@@ -102,20 +102,19 @@ static int handle_pic_linesizes(AVCodecContext *avctx, Picture *pic,
 
     if ((linesize   &&   linesize != pic->f->linesize[0]) ||
         (uvlinesize && uvlinesize != pic->f->linesize[1])) {
-        av_log(avctx, AV_LOG_ERROR,
-               "get_buffer() failed (stride changed: linesize=%d/%d uvlinesize=%d/%d)\n",
+        av_log(avctx, AV_LOG_ERROR, "Stride change unsupported: "
+               "linesize=%d/%d uvlinesize=%d/%d)\n",
                linesize,   pic->f->linesize[0],
                uvlinesize, pic->f->linesize[1]);
         ff_mpeg_unref_picture(pic);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     if (av_pix_fmt_count_planes(pic->f->format) > 2 &&
         pic->f->linesize[1] != pic->f->linesize[2]) {
-        av_log(avctx, AV_LOG_ERROR,
-               "get_buffer() failed (uv stride mismatch)\n");
+        av_log(avctx, AV_LOG_ERROR, "uv stride mismatch unsupported\n");
         ff_mpeg_unref_picture(pic);
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     ret = ff_mpeg_framesize_alloc(avctx, me, sc,
