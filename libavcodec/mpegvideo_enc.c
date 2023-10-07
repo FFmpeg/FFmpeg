@@ -1091,7 +1091,11 @@ static int get_intra_count(MpegEncContext *s, const uint8_t *src,
     return acc;
 }
 
-static int alloc_picture(MpegEncContext *s, AVFrame *f)
+/**
+ * Allocates new buffers for an AVFrame and copies the properties
+ * from another AVFrame.
+ */
+static int prepare_picture(MpegEncContext *s, AVFrame *f, const AVFrame *props_frame)
 {
     AVCodecContext *avctx = s->avctx;
     int ret;
@@ -1115,6 +1119,10 @@ static int alloc_picture(MpegEncContext *s, AVFrame *f)
     }
     f->width  = avctx->width;
     f->height = avctx->height;
+
+    ret = av_frame_copy_props(f, props_frame);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
@@ -1186,14 +1194,9 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                 return ret;
             pic->shared = 1;
         } else {
-            ret = alloc_picture(s, pic->f);
+            ret = prepare_picture(s, pic->f, pic_arg);
             if (ret < 0)
                 goto fail;
-            ret = av_frame_copy_props(pic->f, pic_arg);
-            if (ret < 0) {
-                ff_mpeg_unref_picture(pic);
-                return ret;
-            }
 
             for (int i = 0; i < 3; i++) {
                 ptrdiff_t src_stride = pic_arg->linesize[i];
@@ -1607,11 +1610,8 @@ no_output_pic:
             // input is a shared pix, so we can't modify it -> allocate a new
             // one & ensure that the shared one is reuseable
             av_frame_move_ref(s->new_pic, s->reordered_input_picture[0]->f);
-            ret = alloc_picture(s, s->reordered_input_picture[0]->f);
-            if (ret < 0)
-                goto fail;
 
-            ret = av_frame_copy_props(s->reordered_input_picture[0]->f, s->new_pic);
+            ret = prepare_picture(s, s->reordered_input_picture[0]->f, s->new_pic);
             if (ret < 0)
                 goto fail;
         } else {
