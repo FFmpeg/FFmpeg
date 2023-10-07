@@ -89,7 +89,6 @@ static int mpeg4_decode_header(AVCodecParserContext *s1, AVCodecContext *avctx,
     int ret;
 
     s->avctx               = avctx;
-    s->current_picture_ptr = &s->current_picture;
 
     if (avctx->extradata_size && pc->first_picture) {
         init_get_bits(gb, avctx->extradata, avctx->extradata_size * 8);
