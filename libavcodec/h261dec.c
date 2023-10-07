@@ -637,7 +637,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     if ((avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B) ||
         (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I) ||
          avctx->skip_frame >= AVDISCARD_ALL)
-        return get_consumed_bytes(s, buf_size);
+        return buf_size;
 
     if (ff_mpv_frame_start(s, avctx) < 0)
         return -1;
