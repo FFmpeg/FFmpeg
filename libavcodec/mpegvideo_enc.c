@@ -1091,30 +1091,30 @@ static int get_intra_count(MpegEncContext *s, const uint8_t *src,
     return acc;
 }
 
-static int alloc_picture(MpegEncContext *s, Picture *pic)
+static int alloc_picture(MpegEncContext *s, AVFrame *f)
 {
     AVCodecContext *avctx = s->avctx;
     int ret;
 
-    pic->f->width  = avctx->width  + 2 * EDGE_WIDTH;
-    pic->f->height = avctx->height + 2 * EDGE_WIDTH;
+    f->width  = avctx->width  + 2 * EDGE_WIDTH;
+    f->height = avctx->height + 2 * EDGE_WIDTH;
 
-    ret = ff_encode_alloc_frame(avctx, pic->f);
+    ret = ff_encode_alloc_frame(avctx, f);
     if (ret < 0)
         return ret;
 
-    ret = ff_mpv_pic_check_linesize(avctx, pic->f, &s->linesize, &s->uvlinesize);
+    ret = ff_mpv_pic_check_linesize(avctx, f, &s->linesize, &s->uvlinesize);
     if (ret < 0)
         return ret;
 
-    for (int i = 0; pic->f->data[i]; i++) {
+    for (int i = 0; f->data[i]; i++) {
         int offset = (EDGE_WIDTH >> (i ? s->chroma_y_shift : 0)) *
-                     pic->f->linesize[i] +
+                     f->linesize[i] +
                      (EDGE_WIDTH >> (i ? s->chroma_x_shift : 0));
-        pic->f->data[i] += offset;
+        f->data[i] += offset;
     }
-    pic->f->width  = avctx->width;
-    pic->f->height = avctx->height;
+    f->width  = avctx->width;
+    f->height = avctx->height;
 
     return 0;
 }
@@ -1186,7 +1186,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                 return ret;
             pic->shared = 1;
         } else {
-            ret = alloc_picture(s, pic);
+            ret = alloc_picture(s, pic->f);
             if (ret < 0)
                 goto fail;
             ret = av_frame_copy_props(pic->f, pic_arg);
@@ -1607,7 +1607,7 @@ no_output_pic:
             // input is a shared pix, so we can't modify it -> allocate a new
             // one & ensure that the shared one is reuseable
             av_frame_move_ref(s->new_pic, s->reordered_input_picture[0]->f);
-            ret = alloc_picture(s, s->reordered_input_picture[0]);
+            ret = alloc_picture(s, s->reordered_input_picture[0]->f);
             if (ret < 0)
                 goto fail;
 
