@@ -348,14 +348,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         return -1;
 
     s->current_picture_ptr = pic;
-    // FIXME use only the vars from current_pic
     s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * !!s->top_field_first;
-    if (s->codec_id == AV_CODEC_ID_MPEG1VIDEO ||
-        s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-        if (s->picture_structure != PICT_FRAME)
-            s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST *
-                ((s->picture_structure == PICT_TOP_FIELD) == s->first_field);
-    }
     s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_INTERLACED * (!s->progressive_frame &&
                                                                     !s->progressive_sequence);
     s->current_picture_ptr->field_picture      =  s->picture_structure != PICT_FRAME;
@@ -453,18 +446,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
     av_assert0(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
                                                  s->last_picture_ptr->f->buf[0]));
-
-    if (s->picture_structure != PICT_FRAME) {
-        for (int i = 0; i < 4; i++) {
-            if (s->picture_structure == PICT_BOTTOM_FIELD) {
-                s->current_picture.f->data[i] = FF_PTR_ADD(s->current_picture.f->data[i],
-                                                           s->current_picture.f->linesize[i]);
-            }
-            s->current_picture.f->linesize[i] *= 2;
-            s->last_picture.f->linesize[i]    *= 2;
-            s->next_picture.f->linesize[i]    *= 2;
-        }
-    }
 
     /* set dequantizer, we can't do it during init as
      * it might change for MPEG-4 and we can't do it in the header

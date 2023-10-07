@@ -1299,6 +1299,21 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
             return ret;
 
+        if (s->picture_structure != PICT_FRAME) {
+            s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST *
+                ((s->picture_structure == PICT_TOP_FIELD) == s->first_field);
+
+            for (int i = 0; i < 4; i++) {
+                if (s->picture_structure == PICT_BOTTOM_FIELD) {
+                    s->current_picture.f->data[i] = FF_PTR_ADD(s->current_picture.f->data[i],
+                                                               s->current_picture.f->linesize[i]);
+                }
+                s->current_picture.f->linesize[i] *= 2;
+                s->last_picture.f->linesize[i]    *= 2;
+                s->next_picture.f->linesize[i]    *= 2;
+            }
+        }
+
         ff_mpeg_er_frame_start(s);
 
         /* first check if we must repeat the frame */
