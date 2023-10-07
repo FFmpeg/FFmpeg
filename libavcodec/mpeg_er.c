@@ -22,7 +22,7 @@
 #include "mpegvideodec.h"
 #include "mpeg_er.h"
 
-static void set_erpic(ERPicture *dst, const Picture *src)
+static void set_erpic(ERPicture *dst, const MPVPicture *src)
 {
     int i;
 

@@ -340,7 +340,7 @@ static void vc1_sprite_flush(AVCodecContext *avctx)
 {
     VC1Context *v     = avctx->priv_data;
     MpegEncContext *s = &v->s;
-    Picture *f = &s->cur_pic;
+    MPVPicture *f = &s->cur_pic;
     int plane, i;
 
     /* Windows Media Image codecs have a convergence interval of two keyframes.

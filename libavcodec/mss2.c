@@ -382,7 +382,7 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
     MSS12Context *c   = &ctx->c;
     VC1Context *v     = avctx->priv_data;
     MpegEncContext *s = &v->s;
-    Picture *f;
+    MPVPicture *f;
     int ret;
 
     ff_mpeg_flush(avctx);

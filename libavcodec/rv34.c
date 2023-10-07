@@ -567,7 +567,7 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     int has_A = 0, has_B = 0, has_C = 0;
     int mx, my;
     int i, j;
-    Picture *cur_pic = &s->cur_pic;
+    MPVPicture *cur_pic = &s->cur_pic;
     const int mask = dir ? MB_TYPE_L1 : MB_TYPE_L0;
     int type = cur_pic->mb_type[mb_pos];
 

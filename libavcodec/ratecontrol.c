@@ -929,7 +929,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         rce         = &rcc->entry[picture_number];
         wanted_bits = rce->expected_bits;
     } else {
-        const Picture *dts_pic;
+        const MPVPicture *dts_pic;
         rce = &local_rce;
 
         /* FIXME add a dts field to AVFrame and ensure it is set and use it

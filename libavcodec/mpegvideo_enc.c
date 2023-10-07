@@ -1129,7 +1129,7 @@ static int prepare_picture(MpegEncContext *s, AVFrame *f, const AVFrame *props_f
 
 static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
 {
-    Picture *pic = NULL;
+    MPVPicture *pic = NULL;
     int64_t pts;
     int i, display_picture_number = 0, ret;
     int encoding_delay = s->max_b_frames ? s->max_b_frames
@@ -1266,7 +1266,7 @@ fail:
     return ret;
 }
 
-static int skip_check(MpegEncContext *s, const Picture *p, const Picture *ref)
+static int skip_check(MpegEncContext *s, const MPVPicture *p, const MPVPicture *ref)
 {
     int x, y, plane;
     int score = 0;
@@ -1355,7 +1355,7 @@ static int estimate_best_b_count(MpegEncContext *s)
                FF_LAMBDA_SHIFT;
 
     for (i = 0; i < s->max_b_frames + 2; i++) {
-        const Picture *pre_input_ptr = i ? s->input_picture[i - 1] :
+        const MPVPicture *pre_input_ptr = i ? s->input_picture[i - 1] :
                                            s->next_pic_ptr;
 
         if (pre_input_ptr) {

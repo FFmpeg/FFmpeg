@@ -514,7 +514,7 @@ static inline void apply_obmc(MpegEncContext *s,
                               const op_pixels_func (*pix_op)[4])
 {
     LOCAL_ALIGNED_8(int16_t, mv_cache, [4], [4][2]);
-    const Picture *cur_frame = &s->cur_pic;
+    const MPVPicture *cur_frame = &s->cur_pic;
     int mb_x = s->mb_x;
     int mb_y = s->mb_y;
     const int xy         = mb_x + mb_y * s->mb_stride;

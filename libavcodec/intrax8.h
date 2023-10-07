@@ -106,7 +106,7 @@ void ff_intrax8_common_end(IntraX8Context *w);
  * @param quant_offset offset away from zero
  * @param loopfilter enable filter after decoding a block
  */
-int ff_intrax8_decode_picture(IntraX8Context *w, Picture *pict,
+int ff_intrax8_decode_picture(IntraX8Context *w, MPVPicture *pict,
                               GetBitContext *gb, int *mb_x, int *mb_y,
                               int quant, int halfpq,
                               int loopfilter, int lowdelay);

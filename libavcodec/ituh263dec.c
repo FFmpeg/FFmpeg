@@ -719,7 +719,7 @@ static int h263_get_modb(GetBitContext *gb, int pb_frame, int *cbpb)
 
 #define tab_size ((signed)FF_ARRAY_ELEMS(s->direct_scale_mv[0]))
 #define tab_bias (tab_size / 2)
-static inline void set_one_direct_mv(MpegEncContext *s, const Picture *p, int i)
+static inline void set_one_direct_mv(MpegEncContext *s, const MPVPicture *p, int i)
 {
     int xy           = s->block_index[i];
     uint16_t time_pp = s->pp_time;
@@ -750,7 +750,7 @@ static inline void set_one_direct_mv(MpegEncContext *s, const Picture *p, int i)
 static int set_direct_mv(MpegEncContext *s)
 {
     const int mb_index = s->mb_x + s->mb_y * s->mb_stride;
-    const Picture *p = &s->next_pic;
+    const MPVPicture *p = &s->next_pic;
     int colocated_mb_type = p->mb_type[mb_index];
     int i;
 

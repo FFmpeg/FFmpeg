@@ -128,9 +128,9 @@ typedef struct MpegEncContext {
     int mb_num;                ///< number of MBs of a picture
     ptrdiff_t linesize;        ///< line size, in bytes, may be different from width
     ptrdiff_t uvlinesize;      ///< line size, for chroma in bytes, may be different from width
-    Picture *picture;          ///< main picture buffer
-    Picture **input_picture;   ///< next pictures on display order for encoding
-    Picture **reordered_input_picture; ///< pointer to the next pictures in coded order for encoding
+    MPVPicture *picture;       ///< main picture buffer
+    MPVPicture **input_picture;///< next pictures on display order for encoding
+    MPVPicture **reordered_input_picture; ///< pointer to the next pictures in coded order for encoding
 
     BufferPoolContext buffer_pools;
 
@@ -156,13 +156,13 @@ typedef struct MpegEncContext {
      * copy of the previous picture structure.
      * note, linesize & data, might not match the previous picture (for field pictures)
      */
-    Picture last_pic;
+    MPVPicture last_pic;
 
     /**
      * copy of the next picture structure.
      * note, linesize & data, might not match the next picture (for field pictures)
      */
-    Picture next_pic;
+    MPVPicture next_pic;
 
     /**
      * Reference to the source picture for encoding.
@@ -174,11 +174,11 @@ typedef struct MpegEncContext {
      * copy of the current picture structure.
      * note, linesize & data, might not match the current picture (for field pictures)
      */
-    Picture cur_pic;               ///< buffer to store the decompressed current picture
+    MPVPicture cur_pic;
 
-    Picture *last_pic_ptr;         ///< pointer to the previous picture.
-    Picture *next_pic_ptr;         ///< pointer to the next picture (for bidir pred)
-    Picture *cur_pic_ptr;          ///< pointer to the current picture
+    MPVPicture *last_pic_ptr;      ///< pointer to the previous picture.
+    MPVPicture *next_pic_ptr;      ///< pointer to the next picture (for bidir pred)
+    MPVPicture *cur_pic_ptr;       ///< pointer to the current picture
     int skipped_last_frame;
     int last_dc[3];                ///< last DC values for MPEG-1
     int16_t *dc_val_base;

@@ -652,7 +652,7 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                     for (i = 0; i < s->max_b_frames; i++) {
                         const uint8_t *b_pic;
                         int diff;
-                        Picture *pic = s->reordered_input_picture[i + 1];
+                        const MPVPicture *pic = s->reordered_input_picture[i + 1];
 
                         if (!pic || pic->f->pict_type != AV_PICTURE_TYPE_B)
                             break;
