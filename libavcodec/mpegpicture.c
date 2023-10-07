@@ -91,40 +91,27 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     return 0;
 }
 
-/**
- * Check the pic's linesize and allocate linesize dependent scratch buffers
- */
-static int handle_pic_linesizes(AVCodecContext *avctx, Picture *pic,
-                                MotionEstContext *me, ScratchpadContext *sc,
-                                int linesize, int uvlinesize)
+int ff_mpv_pic_check_linesize(void *logctx, const AVFrame *f,
+                              ptrdiff_t *linesizep, ptrdiff_t *uvlinesizep)
 {
-    int ret;
+    ptrdiff_t linesize = *linesizep, uvlinesize = *uvlinesizep;
 
-    if ((linesize   &&   linesize != pic->f->linesize[0]) ||
-        (uvlinesize && uvlinesize != pic->f->linesize[1])) {
-        av_log(avctx, AV_LOG_ERROR, "Stride change unsupported: "
-               "linesize=%d/%d uvlinesize=%d/%d)\n",
-               linesize,   pic->f->linesize[0],
-               uvlinesize, pic->f->linesize[1]);
-        ff_mpeg_unref_picture(pic);
+    if ((linesize   &&   linesize != f->linesize[0]) ||
+        (uvlinesize && uvlinesize != f->linesize[1])) {
+        av_log(logctx, AV_LOG_ERROR, "Stride change unsupported: "
+               "linesize=%"PTRDIFF_SPECIFIER"/%d uvlinesize=%"PTRDIFF_SPECIFIER"/%d)\n",
+               linesize,   f->linesize[0],
+               uvlinesize, f->linesize[1]);
         return AVERROR_PATCHWELCOME;
     }
 
-    if (av_pix_fmt_count_planes(pic->f->format) > 2 &&
-        pic->f->linesize[1] != pic->f->linesize[2]) {
-        av_log(avctx, AV_LOG_ERROR, "uv stride mismatch unsupported\n");
-        ff_mpeg_unref_picture(pic);
+    if (av_pix_fmt_count_planes(f->format) > 2 &&
+        f->linesize[1] != f->linesize[2]) {
+        av_log(logctx, AV_LOG_ERROR, "uv stride mismatch unsupported\n");
         return AVERROR_PATCHWELCOME;
     }
-
-    ret = ff_mpeg_framesize_alloc(avctx, me, sc,
-                                  pic->f->linesize[0]);
-    if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR,
-               "get_buffer() failed to allocate context scratch buffers.\n");
-        ff_mpeg_unref_picture(pic);
-        return ret;
-    }
+    *linesizep   = f->linesize[0];
+    *uvlinesizep = f->linesize[1];
 
     return 0;
 }
@@ -156,27 +143,21 @@ static int alloc_picture_tables(BufferPoolContext *pools, Picture *pic,
     return 0;
 }
 
-/**
- * Allocate a Picture.
- * The pixels are allocated/set by calling get_buffer() if shared = 0
- */
-int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
-                     ScratchpadContext *sc, BufferPoolContext *pools,
-                     int mb_height, ptrdiff_t *linesize, ptrdiff_t *uvlinesize)
+int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, Picture *pic,
+                                 MotionEstContext *me, ScratchpadContext *sc,
+                                 BufferPoolContext *pools, int mb_height)
 {
     int ret;
-
-    if (handle_pic_linesizes(avctx, pic, me, sc,
-                             *linesize, *uvlinesize) < 0)
-        return -1;
-
-    *linesize   = pic->f->linesize[0];
-    *uvlinesize = pic->f->linesize[1];
 
     for (int i = 0; i < MPV_MAX_PLANES; i++) {
         pic->data[i]     = pic->f->data[i];
         pic->linesize[i] = pic->f->linesize[i];
     }
+
+    ret = ff_mpeg_framesize_alloc(avctx, me, sc,
+                                  pic->f->linesize[0]);
+    if (ret < 0)
+        goto fail;
 
     ret = alloc_picture_tables(pools, pic, mb_height);
     if (ret < 0)
@@ -192,9 +173,8 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
 
     return 0;
 fail:
-    av_log(avctx, AV_LOG_ERROR, "Error allocating a picture.\n");
-    ff_mpeg_unref_picture(pic);
-    return AVERROR(ENOMEM);
+    av_log(avctx, AV_LOG_ERROR, "Error allocating picture accessories.\n");
+    return ret;
 }
 
 /**

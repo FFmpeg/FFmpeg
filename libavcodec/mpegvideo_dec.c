@@ -259,6 +259,10 @@ static int alloc_picture(MpegEncContext *s, Picture **picp, int reference)
     if (ret < 0)
         goto fail;
 
+    ret = ff_mpv_pic_check_linesize(avctx, pic->f, &s->linesize, &s->uvlinesize);
+    if (ret < 0)
+        goto fail;
+
     ret = ff_hwaccel_frame_priv_alloc(avctx, &pic->hwaccel_picture_private);
     if (ret < 0)
         goto fail;
@@ -267,8 +271,8 @@ static int alloc_picture(MpegEncContext *s, Picture **picp, int reference)
     av_assert1(s->mb_height == s->buffer_pools.alloc_mb_height ||
                FFALIGN(s->mb_height, 2) == s->buffer_pools.alloc_mb_height);
     av_assert1(s->mb_stride == s->buffer_pools.alloc_mb_stride);
-    ret = ff_alloc_picture(s->avctx, pic, &s->me, &s->sc, &s->buffer_pools,
-                           s->mb_height, &s->linesize, &s->uvlinesize);
+    ret = ff_mpv_alloc_pic_accessories(s->avctx, pic, &s->me, &s->sc,
+                                       &s->buffer_pools, s->mb_height);
     if (ret < 0)
         goto fail;
     *picp = pic;

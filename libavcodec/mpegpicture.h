@@ -96,9 +96,18 @@ typedef struct Picture {
 /**
  * Allocate a Picture's accessories, but not the AVFrame's buffer itself.
  */
-int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
-                     ScratchpadContext *sc, BufferPoolContext *pools,
-                     int mb_height, ptrdiff_t *linesize, ptrdiff_t *uvlinesize);
+int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, Picture *pic,
+                                 MotionEstContext *me, ScratchpadContext *sc,
+                                 BufferPoolContext *pools, int mb_height);
+
+/**
+ * Check that the linesizes of an AVFrame are consistent with the requirements
+ * of mpegvideo.
+ * FIXME: There should be no need for this function. mpegvideo should be made
+ *        to work with changing linesizes.
+ */
+int ff_mpv_pic_check_linesize(void *logctx, const struct AVFrame *f,
+                              ptrdiff_t *linesizep, ptrdiff_t *uvlinesizep);
 
 int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize);
