@@ -1482,8 +1482,11 @@ static int set_bframe_chain_length(MpegEncContext *s)
 {
     int i;
 
+    /* Either nothing to do or can't do anything */
+    if (s->reordered_input_picture[0] || !s->input_picture[0])
+        return 0;
+
     /* set next picture type & ordering */
-    if (!s->reordered_input_picture[0] && s->input_picture[0]) {
         if (s->frame_skip_threshold || s->frame_skip_factor) {
             if (s->picture_in_gop_number < s->gop_size &&
                 s->next_pic.ptr &&
@@ -1599,7 +1602,6 @@ static int set_bframe_chain_length(MpegEncContext *s)
                     s->coded_picture_number++;
             }
         }
-    }
 
     return 0;
 }
