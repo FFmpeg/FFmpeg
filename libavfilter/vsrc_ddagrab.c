@@ -68,7 +68,9 @@ typedef struct DdagrabContext {
 
     int mouse_x, mouse_y;
     ID3D11Texture2D *mouse_texture;
-    ID3D11ShaderResourceView* mouse_resource_view ;
+    ID3D11ShaderResourceView* mouse_resource_view;
+    ID3D11Texture2D *mouse_xor_texture;
+    ID3D11ShaderResourceView* mouse_xor_resource_view;
 
     AVRational time_base;
     int64_t time_frame;
@@ -87,6 +89,7 @@ typedef struct DdagrabContext {
     ID3D11Buffer *const_buffer;
     ID3D11SamplerState *sampler_state;
     ID3D11BlendState *blend_state;
+    ID3D11BlendState *blend_state_xor;
 
     int        output_idx;
     int        draw_mouse;
@@ -140,6 +143,7 @@ static av_cold void ddagrab_uninit(AVFilterContext *avctx)
     DdagrabContext *dda = avctx->priv;
 
     release_resource(&dda->blend_state);
+    release_resource(&dda->blend_state_xor);
     release_resource(&dda->sampler_state);
     release_resource(&dda->pixel_shader);
     release_resource(&dda->input_layout);
@@ -151,6 +155,8 @@ static av_cold void ddagrab_uninit(AVFilterContext *avctx)
     release_resource(&dda->dxgi_outdupl);
     release_resource(&dda->mouse_resource_view);
     release_resource(&dda->mouse_texture);
+    release_resource(&dda->mouse_xor_resource_view);
+    release_resource(&dda->mouse_xor_texture);
 
     av_frame_free(&dda->last_frame);
     av_buffer_unref(&dda->frames_ref);
@@ -412,6 +418,16 @@ static av_cold int init_render_resources(AVFilterContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
+    blend_desc.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_DEST_COLOR;
+    blend_desc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
+    hr = ID3D11Device_CreateBlendState(dev,
+        &blend_desc,
+        &dda->blend_state_xor);
+    if (FAILED(hr)) {
+        av_log(avctx, AV_LOG_ERROR, "CreateBlendState (xor) failed: %lx\n", hr);
+        return AVERROR_EXTERNAL;
+    }
+
     return 0;
 }
 
@@ -482,50 +498,102 @@ static int create_d3d11_pointer_tex(AVFilterContext *avctx,
     return 0;
 }
 
-static uint8_t *convert_mono_buffer(uint8_t *input, int *_width, int *_height, int *_pitch)
+static int convert_mono_buffer(uint8_t *input, uint8_t **rgba_out, uint8_t **xor_out, int *_width, int *_height, int *_pitch)
 {
     int width = *_width, height = *_height, pitch = *_pitch;
     int real_height = height / 2;
+    int size = real_height * pitch;
+
     uint8_t *output = av_malloc(real_height * width * 4);
+    uint8_t *output_xor = av_malloc(real_height * width * 4);
+
     int y, x;
 
-    if (!output)
-        return NULL;
+    if (!output || !output_xor) {
+        av_free(output);
+        av_free(output_xor);
+        return AVERROR(ENOMEM);
+    }
 
-    // This simulates drawing the cursor on a full black surface
-    // i.e. ignore the AND mask, turn XOR mask into all 4 color channels
     for (y = 0; y < real_height; y++) {
         for (x = 0; x < width; x++) {
-            int v = input[(real_height + y) * pitch + (x / 8)];
-            v = (v >> (7 - (x % 8))) & 1;
-            memset(&output[4 * ((y*width) + x)], v ? 0xFF : 0, 4);
+            int in_pos = (y * pitch) + (x / 8);
+            int out_pos = 4 * ((y * width) + x);
+            int and_val = (input[in_pos] >> (7 - (x % 8))) & 1;
+            int xor_val = (input[in_pos + size] >> (7 - (x % 8))) & 1;
+
+            if (!and_val && !xor_val) {
+                // solid black
+                memset(&output[out_pos], 0, 4);
+                output[out_pos + 3] = 0xFF;
+
+                // transparent
+                memset(&output_xor[out_pos], 0, 4);
+            } else if (and_val && !xor_val) {
+                // transparent
+                memset(&output[out_pos], 0, 4);
+
+                // transparent
+                memset(&output_xor[out_pos], 0, 4);
+            } else if (!and_val && xor_val) {
+                // solid white
+                memset(&output[out_pos], 0xFF, 4);
+
+                // transparent
+                memset(&output_xor[out_pos], 0, 4);
+            } else if (and_val && xor_val) {
+                // transparent
+                memset(&output[out_pos], 0, 4);
+
+                // solid white -> invert color
+                memset(&output_xor[out_pos], 0xFF, 4);
+            }
         }
     }
 
     *_pitch = width * 4;
     *_height = real_height;
+    *rgba_out = output;
+    *xor_out = output_xor;
 
-    return output;
+    return 0;
 }
 
-static void fixup_color_mask(uint8_t *buf, int width, int height, int pitch)
+static int fixup_color_mask(uint8_t *input, uint8_t **rgba_out, uint8_t **xor_out, int width, int height, int pitch)
 {
+    int size = height * pitch;
+    uint8_t *output = av_malloc(size);
+    uint8_t *output_xor = av_malloc(size);
     int x, y;
-    // There is no good way to replicate XOR'ig parts of the texture with the screen
-    // best effort is rendering the non-masked parts, and make the rest transparent
+
+    if (!output || !output_xor) {
+        av_free(output);
+        av_free(output_xor);
+        return AVERROR(ENOMEM);
+    }
+
+    memcpy(output, input, size);
+    memcpy(output_xor, input, size);
+
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
             int pos = (y*pitch) + (4*x) + 3;
-            buf[pos] = buf[pos] ? 0 : 0xFF;
+            output[pos] = input[pos] ? 0 : 0xFF;
+            output_xor[pos] = input[pos] ? 0xFF : 0;
         }
     }
+
+    *rgba_out = output;
+    *xor_out = output_xor;
+
+    return 0;
 }
 
 static int update_mouse_pointer(AVFilterContext *avctx, DXGI_OUTDUPL_FRAME_INFO *frame_info)
 {
     DdagrabContext *dda = avctx->priv;
     HRESULT hr;
-    int ret;
+    int ret, ret2;
 
     if (frame_info->LastMouseUpdateTime.QuadPart == 0)
         return 0;
@@ -555,6 +623,7 @@ static int update_mouse_pointer(AVFilterContext *avctx, DXGI_OUTDUPL_FRAME_INFO 
     if (frame_info->PointerShapeBufferSize) {
         UINT size = frame_info->PointerShapeBufferSize;
         DXGI_OUTDUPL_POINTER_SHAPE_INFO shape_info;
+        uint8_t *rgba_buf = NULL, *rgb_xor_buf = NULL;
         uint8_t *buf = av_malloc(size);
         if (!buf)
             return AVERROR(ENOMEM);
@@ -571,26 +640,37 @@ static int update_mouse_pointer(AVFilterContext *avctx, DXGI_OUTDUPL_FRAME_INFO 
         }
 
         if (shape_info.Type == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME) {
-            uint8_t *new_buf = convert_mono_buffer(buf, &shape_info.Width, &shape_info.Height, &shape_info.Pitch);
-            av_free(buf);
-            if (!new_buf)
-                return AVERROR(ENOMEM);
-            buf = new_buf;
+            ret = convert_mono_buffer(buf, &rgba_buf, &rgb_xor_buf, &shape_info.Width, &shape_info.Height, &shape_info.Pitch);
+            av_freep(&buf);
+            if (ret < 0)
+                return ret;
         } else if (shape_info.Type == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MASKED_COLOR) {
-            fixup_color_mask(buf, shape_info.Width, shape_info.Height, shape_info.Pitch);
-        } else if (shape_info.Type != DXGI_OUTDUPL_POINTER_SHAPE_TYPE_COLOR) {
+            ret = fixup_color_mask(buf, &rgba_buf, &rgb_xor_buf, shape_info.Width, shape_info.Height, shape_info.Pitch);
+            av_freep(&buf);
+            if (ret < 0)
+                return ret;
+        } else if (shape_info.Type == DXGI_OUTDUPL_POINTER_SHAPE_TYPE_COLOR) {
+            rgba_buf = buf;
+            buf = NULL;
+        } else {
             av_log(avctx, AV_LOG_WARNING, "Unsupported pointer shape type: %d\n", (int)shape_info.Type);
-            av_free(buf);
+            av_freep(&buf);
             return 0;
         }
 
         release_resource(&dda->mouse_resource_view);
         release_resource(&dda->mouse_texture);
+        release_resource(&dda->mouse_xor_resource_view);
+        release_resource(&dda->mouse_xor_texture);
 
-        ret = create_d3d11_pointer_tex(avctx, buf, &shape_info, &dda->mouse_texture, &dda->mouse_resource_view);
-        av_freep(&buf);
+        ret = create_d3d11_pointer_tex(avctx, rgba_buf, &shape_info, &dda->mouse_texture, &dda->mouse_resource_view);
+        ret2 = rgb_xor_buf ? create_d3d11_pointer_tex(avctx, rgb_xor_buf, &shape_info, &dda->mouse_xor_texture, &dda->mouse_xor_resource_view) : 0;
+        av_freep(&rgba_buf);
+        av_freep(&rgb_xor_buf);
         if (ret < 0)
             return ret;
+        if (ret2 < 0)
+            return ret2;
 
         av_log(avctx, AV_LOG_VERBOSE, "Updated pointer shape texture\n");
     }
@@ -933,6 +1013,13 @@ static int draw_mouse_pointer(AVFilterContext *avctx, AVFrame *frame)
     ID3D11DeviceContext_OMSetRenderTargets(devctx, 1, &target_view, NULL);
 
     ID3D11DeviceContext_Draw(devctx, num_vertices, 0);
+
+    if (dda->mouse_xor_resource_view) {
+        ID3D11DeviceContext_PSSetShaderResources(devctx, 0, 1, &dda->mouse_xor_resource_view);
+        ID3D11DeviceContext_OMSetBlendState(devctx, dda->blend_state_xor, NULL, 0xFFFFFFFF);
+
+        ID3D11DeviceContext_Draw(devctx, num_vertices, 0);
+    }
 
 end:
     release_resource(&mouse_vertex_buffer);
