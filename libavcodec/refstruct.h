@@ -101,7 +101,11 @@ void *ff_refstruct_alloc_ext(size_t size, unsigned flags, void *opaque,
 /**
  * Equivalent to ff_refstruct_alloc_ext(size, 0, NULL, NULL)
  */
-void *ff_refstruct_allocz(size_t size);
+static inline
+void *ff_refstruct_allocz(size_t size)
+{
+    return ff_refstruct_alloc_ext(size, 0, NULL, NULL);
+}
 
 /**
  * Decrement the reference count of the underlying object and automatically

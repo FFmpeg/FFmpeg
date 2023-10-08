@@ -113,11 +113,6 @@ void *ff_refstruct_alloc_ext_c(size_t size, unsigned flags, FFRefStructOpaque op
     return obj;
 }
 
-void *ff_refstruct_allocz(size_t size)
-{
-    return ff_refstruct_alloc_ext(size, 0, NULL, NULL);
-}
-
 void ff_refstruct_unref(void *objp)
 {
     void *obj;
