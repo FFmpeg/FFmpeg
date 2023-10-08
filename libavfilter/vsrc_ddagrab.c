@@ -470,7 +470,7 @@ static int create_d3d11_pointer_tex(AVFilterContext *avctx,
     }
 
     hr = ID3D11Device_CreateShaderResourceView(dda->device_hwctx->device,
-        (ID3D11Resource*)dda->mouse_texture,
+        (ID3D11Resource*)*out_tex,
         &resource_desc,
         res_view);
     if (FAILED(hr)) {
