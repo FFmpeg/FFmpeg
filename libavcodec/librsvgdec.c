@@ -38,48 +38,75 @@ static int librsvg_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 {
     int ret;
     LibRSVGContext *s = avctx->priv_data;
-
-    RsvgHandle *handle;
-    RsvgDimensionData unscaled_dimensions, dimensions;
-    cairo_surface_t *image;
+    RsvgHandle *handle = NULL;
+    RsvgDimensionData dimensions;
+#if LIBRSVG_MAJOR_VERSION > 2 || LIBRSVG_MAJOR_VERSION == 2 && LIBRSVG_MINOR_VERSION >= 52
+    RsvgRectangle viewport = { 0 };
+#else
+    RsvgDimensionData unscaled_dimensions;
+#endif
+    cairo_surface_t *image = NULL;
     cairo_t *crender = NULL;
     GError *error = NULL;
+    gboolean gret;
 
     *got_frame = 0;
 
     handle = rsvg_handle_new_from_data(pkt->data, pkt->size, &error);
     if (error) {
-        av_log(avctx, AV_LOG_ERROR, "Error parsing svg!\n");
-        g_error_free(error);
-        return AVERROR_INVALIDDATA;
+        av_log(avctx, AV_LOG_ERROR, "Error parsing svg: %s\n", error->message);
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
 
+#if LIBRSVG_MAJOR_VERSION > 2 || LIBRSVG_MAJOR_VERSION == 2 && LIBRSVG_MINOR_VERSION >= 52
+    gret = rsvg_handle_get_intrinsic_size_in_pixels(handle, &viewport.width, &viewport.height);
+    if (!gret) {
+        viewport.width = s->width ? s->width : 100;
+        viewport.height = s->height ? s->height : 100;
+    }
+    dimensions.width = (int)viewport.width;
+    dimensions.height = (int)viewport.height;
+#else
     rsvg_handle_get_dimensions(handle, &dimensions);
     rsvg_handle_get_dimensions(handle, &unscaled_dimensions);
+#endif
     dimensions.width  = s->width  ? s->width  : dimensions.width;
     dimensions.height = s->height ? s->height : dimensions.height;
     if (s->keep_ar && (s->width || s->height)) {
+#if LIBRSVG_MAJOR_VERSION > 2 || LIBRSVG_MAJOR_VERSION == 2 && LIBRSVG_MINOR_VERSION >= 52
+        double default_ar = viewport.width / viewport.height;
+#else
         double default_ar = unscaled_dimensions.width/(double)unscaled_dimensions.height;
+#endif
         if (!s->width)
             dimensions.width  = lrintf(dimensions.height * default_ar);
         else
             dimensions.height = lrintf(dimensions.width  / default_ar);
     }
 
-    if ((ret = ff_set_dimensions(avctx, dimensions.width, dimensions.height)))
-        return ret;
-    avctx->pix_fmt = AV_PIX_FMT_RGB32;
+    ret = ff_set_dimensions(avctx, dimensions.width, dimensions.height);
+    if (ret < 0)
+        goto end;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)))
-        return ret;
+    avctx->pix_fmt = AV_PIX_FMT_RGB32;
+    viewport.width = dimensions.width;
+    viewport.height = dimensions.height;
+
+    ret = ff_get_buffer(avctx, frame, 0);
+    if (ret < 0)
+        goto end;
+
     frame->pict_type = AV_PICTURE_TYPE_I;
     frame->flags |= AV_FRAME_FLAG_KEY;
 
     image = cairo_image_surface_create_for_data(frame->data[0], CAIRO_FORMAT_ARGB32,
                                                 frame->width, frame->height,
                                                 frame->linesize[0]);
-    if (cairo_surface_status(image) != CAIRO_STATUS_SUCCESS)
-        return AVERROR_INVALIDDATA;
+    if (cairo_surface_status(image) != CAIRO_STATUS_SUCCESS) {
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
 
     crender = cairo_create(image);
 
@@ -88,18 +115,34 @@ static int librsvg_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     cairo_paint(crender);
     cairo_restore(crender);
 
+#if LIBRSVG_MAJOR_VERSION > 2 || LIBRSVG_MAJOR_VERSION == 2 && LIBRSVG_MINOR_VERSION >= 52
+    gret = rsvg_handle_render_document(handle, crender, &viewport, &error);
+#else
     cairo_scale(crender, dimensions.width / (double)unscaled_dimensions.width,
                 dimensions.height / (double)unscaled_dimensions.height);
+    gret = rsvg_handle_render_cairo(handle, crender);
+#endif
 
-    rsvg_handle_render_cairo(handle, crender);
-
-    cairo_destroy(crender);
-    cairo_surface_destroy(image);
-    g_object_unref(handle);
+    if (!gret) {
+        av_log(avctx, AV_LOG_ERROR, "Error rendering svg: %s\n", error ? error->message : "unknown error");
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
 
     *got_frame = 1;
+    ret = 0;
 
-    return 0;
+end:
+    if (error)
+        g_error_free(error);
+    if (handle)
+        g_object_unref(handle);
+    if (crender)
+        cairo_destroy(crender);
+    if (image)
+        cairo_surface_destroy(image);
+
+    return ret;
 }
 
 #define OFFSET(x) offsetof(LibRSVGContext, x)
