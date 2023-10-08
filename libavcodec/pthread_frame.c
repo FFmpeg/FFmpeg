@@ -1013,3 +1013,23 @@ void ff_thread_release_ext_buffer(ThreadFrame *f)
     if (f->f)
         av_frame_unref(f->f);
 }
+
+enum ThreadingStatus ff_thread_sync_ref(AVCodecContext *avctx, size_t offset)
+{
+    PerThreadContext *p;
+    const void *ref;
+
+    if (!avctx->internal->is_copy)
+        return avctx->active_thread_type & FF_THREAD_FRAME ?
+                  FF_THREAD_IS_FIRST_THREAD : FF_THREAD_NO_FRAME_THREADING;
+
+    p = avctx->internal->thread_ctx;
+
+    av_assert1(memcpy(&ref, (char*)avctx->priv_data + offset, sizeof(ref)) && ref == NULL);
+
+    memcpy(&ref, (const char*)p->parent->threads[0].avctx->priv_data + offset, sizeof(ref));
+    av_assert1(ref);
+    ff_refstruct_replace((char*)avctx->priv_data + offset, ref);
+
+    return FF_THREAD_IS_COPY;
+}

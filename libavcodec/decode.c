@@ -1747,6 +1747,13 @@ void ff_progress_frame_await(const ProgressFrame *f, int n)
     ff_thread_progress_await(&f->progress->progress, n);
 }
 
+#if !HAVE_THREADS
+enum ThreadingStatus ff_thread_sync_ref(AVCodecContext *avctx, size_t offset)
+{
+    return FF_THREAD_NO_FRAME_THREADING;
+}
+#endif /* !HAVE_THREADS */
+
 static av_cold int progress_frame_pool_init_cb(FFRefStructOpaque opaque, void *obj)
 {
     const AVCodecContext *avctx = opaque.nc;

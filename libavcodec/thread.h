@@ -84,4 +84,34 @@ int ff_slice_thread_init_progress(AVCodecContext *avctx);
 void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, int n);
 void ff_thread_await_progress2(AVCodecContext *avctx,  int field, int thread, int shift);
 
+enum ThreadingStatus {
+    FF_THREAD_IS_COPY,
+    FF_THREAD_IS_FIRST_THREAD,
+    FF_THREAD_NO_FRAME_THREADING,
+};
+
+/**
+ * Allows to synchronize objects whose lifetime is the whole decoding
+ * process among all frame threads.
+ *
+ * When called from a non-copy thread, do nothing.
+ * When called from another thread, place a new RefStruct reference
+ * at the given offset in the calling thread's private data from
+ * the RefStruct reference in the private data of the first decoding thread.
+ * The first thread must have a valid RefStruct reference at the given
+ * offset in its private data; the calling thread must not have
+ * a reference at this offset in its private data (must be NULL).
+ *
+ * @param avctx  an AVCodecContext
+ * @param offset offset of the RefStruct reference in avctx's private data
+ *
+ * @retval FF_THREAD_IS_COPY if frame-threading is in use and the
+ *         calling thread is a copy; in this case, the RefStruct reference
+ *         will be set.
+ * @retval FF_THREAD_IS_MAIN_THREAD if frame-threading is in use
+ *         and the calling thread is the main thread.
+ * @retval FF_THREAD_NO_FRAME_THREADING if frame-threading is not in use.
+ */
+enum ThreadingStatus ff_thread_sync_ref(AVCodecContext *avctx, size_t offset);
+
 #endif /* AVCODEC_THREAD_H */
