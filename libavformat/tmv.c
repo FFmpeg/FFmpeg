@@ -103,6 +103,10 @@ static int tmv_read_header(AVFormatContext *s)
     char_cols = avio_r8(pb);
     char_rows = avio_r8(pb);
     tmv->video_chunk_size = char_cols * char_rows * 2;
+    if (!tmv->video_chunk_size) {
+        av_log(s, AV_LOG_ERROR, "invalid video chunk size\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     features  = avio_r8(pb);
     if (features & ~(TMV_PADDING | TMV_STEREO)) {
