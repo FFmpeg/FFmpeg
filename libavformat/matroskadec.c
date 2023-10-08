@@ -4197,13 +4197,12 @@ static int64_t webm_dash_manifest_compute_bandwidth(AVFormatContext *s, int64_t 
         int64_t pre_bytes, pre_ns;
         double pre_sec, prebuffer, bits_per_second;
         CueDesc desc_beg = get_cue_desc(s, time_ns, cues_start);
+        // Start with the first Cue.
+        CueDesc desc_end = desc_beg;
 
         if (time_ns > INT64_MAX - prebuffer_ns)
             return -1;
         prebuffered_ns = time_ns + prebuffer_ns;
-
-        // Start with the first Cue.
-        CueDesc desc_end = desc_beg;
 
         // Figure out how much data we have downloaded for the prebuffer. This will
         // be used later to adjust the bits per sample to try.
