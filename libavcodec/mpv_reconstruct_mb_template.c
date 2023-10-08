@@ -124,11 +124,11 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
             if (HAVE_THREADS && is_mpeg12 != DEFINITELY_MPEG12 &&
                 s->avctx->active_thread_type & FF_THREAD_FRAME) {
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    ff_thread_await_progress(&s->last_pic_ptr->tf,
+                    ff_thread_await_progress(&s->last_pic.ptr->tf,
                                              lowest_referenced_row(s, 0), 0);
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    ff_thread_await_progress(&s->next_pic_ptr->tf,
+                    ff_thread_await_progress(&s->next_pic.ptr->tf,
                                              lowest_referenced_row(s, 1), 0);
                 }
             }

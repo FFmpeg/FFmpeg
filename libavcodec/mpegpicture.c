@@ -45,6 +45,45 @@ static void av_noinline free_picture_tables(MPVPicture *pic)
     pic->mb_height = 0;
 }
 
+void ff_mpv_unref_picture(MPVWorkPicture *pic)
+{
+    if (pic->ptr)
+        ff_mpeg_unref_picture(pic->ptr);
+    memset(pic, 0, sizeof(*pic));
+}
+
+static void set_workpic_from_pic(MPVWorkPicture *wpic, const MPVPicture *pic)
+{
+    for (int i = 0; i < MPV_MAX_PLANES; i++) {
+        wpic->data[i]     = pic->f->data[i];
+        wpic->linesize[i] = pic->f->linesize[i];
+    }
+    wpic->qscale_table = pic->qscale_table;
+    wpic->mb_type      = pic->mb_type;
+    wpic->mbskip_table = pic->mbskip_table;
+
+    for (int i = 0; i < 2; i++) {
+        wpic->motion_val[i] = pic->motion_val[i];
+        wpic->ref_index[i]  = pic->ref_index[i];
+    }
+    wpic->reference  = pic->reference;
+}
+
+void ff_mpv_replace_picture(MPVWorkPicture *dst, const MPVWorkPicture *src)
+{
+    memcpy(dst, src, sizeof(*dst));
+}
+
+void ff_mpv_workpic_from_pic(MPVWorkPicture *wpic, MPVPicture *pic)
+{
+    if (!pic) {
+        memset(wpic, 0, sizeof(*wpic));
+        return;
+    }
+    wpic->ptr = pic;
+    set_workpic_from_pic(wpic, pic);
+}
+
 int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize)
 {
@@ -143,16 +182,12 @@ static int alloc_picture_tables(BufferPoolContext *pools, MPVPicture *pic,
     return 0;
 }
 
-int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVPicture *pic,
+int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVWorkPicture *wpic,
                                  MotionEstContext *me, ScratchpadContext *sc,
                                  BufferPoolContext *pools, int mb_height)
 {
+    MPVPicture *pic = wpic->ptr;
     int ret;
-
-    for (int i = 0; i < MPV_MAX_PLANES; i++) {
-        pic->data[i]     = pic->f->data[i];
-        pic->linesize[i] = pic->f->linesize[i];
-    }
 
     ret = ff_mpeg_framesize_alloc(avctx, me, sc,
                                   pic->f->linesize[0]);
@@ -170,6 +205,7 @@ int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVPicture *pic,
         for (int i = 0; i < 2; i++)
             pic->motion_val[i] = pic->motion_val_base[i] + 4;
     }
+    set_workpic_from_pic(wpic, pic);
 
     return 0;
 fail:
@@ -189,9 +225,6 @@ void ff_mpeg_unref_picture(MPVPicture *pic)
     ff_refstruct_unref(&pic->hwaccel_picture_private);
 
     free_picture_tables(pic);
-
-    memset(pic->data,     0, sizeof(pic->data));
-    memset(pic->linesize, 0, sizeof(pic->linesize));
 
     pic->dummy         = 0;
 
@@ -235,11 +268,6 @@ int ff_mpeg_ref_picture(MPVPicture *dst, MPVPicture *src)
     ret = ff_thread_ref_frame(&dst->tf, &src->tf);
     if (ret < 0)
         goto fail;
-
-    for (int i = 0; i < MPV_MAX_PLANES; i++) {
-        dst->data[i]     = src->data[i];
-        dst->linesize[i] = src->linesize[i];
-    }
 
     update_picture_tables(dst, src);
 

@@ -38,7 +38,7 @@ static int nvdec_mpeg4_start_frame(AVCodecContext *avctx, const uint8_t *buffer,
     CUVIDMPEG4PICPARAMS *ppc = &pp->CodecSpecific.mpeg4;
     FrameDecodeData *fdd;
     NVDECFrame *cf;
-    AVFrame *cur_frame = s->cur_pic.f;
+    AVFrame *cur_frame = s->cur_pic.ptr->f;
 
     int ret, i;
 
@@ -60,8 +60,8 @@ static int nvdec_mpeg4_start_frame(AVCodecContext *avctx, const uint8_t *buffer,
                              s->pict_type == AV_PICTURE_TYPE_S,
 
         .CodecSpecific.mpeg4 = {
-            .ForwardRefIdx                = ff_nvdec_get_ref_idx(s->last_pic.f),
-            .BackwardRefIdx               = ff_nvdec_get_ref_idx(s->next_pic.f),
+            .ForwardRefIdx                = ff_nvdec_get_ref_idx(s->last_pic.ptr ? s->last_pic.ptr->f : NULL),
+            .BackwardRefIdx               = ff_nvdec_get_ref_idx(s->next_pic.ptr ? s->next_pic.ptr->f : NULL),
 
             .video_object_layer_width     = s->width,
             .video_object_layer_height    = s->height,

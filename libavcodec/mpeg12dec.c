@@ -1292,7 +1292,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             return ret;
 
         if (s->picture_structure != PICT_FRAME) {
-            s->cur_pic_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST *
+            s->cur_pic.ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST *
                                         (s->picture_structure == PICT_TOP_FIELD);
 
             for (int i = 0; i < 3; i++) {
@@ -1309,19 +1309,19 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         ff_mpeg_er_frame_start(s);
 
         /* first check if we must repeat the frame */
-        s->cur_pic_ptr->f->repeat_pict = 0;
+        s->cur_pic.ptr->f->repeat_pict = 0;
         if (s->repeat_first_field) {
             if (s->progressive_sequence) {
                 if (s->top_field_first)
-                    s->cur_pic_ptr->f->repeat_pict = 4;
+                    s->cur_pic.ptr->f->repeat_pict = 4;
                 else
-                    s->cur_pic_ptr->f->repeat_pict = 2;
+                    s->cur_pic.ptr->f->repeat_pict = 2;
             } else if (s->progressive_frame) {
-                s->cur_pic_ptr->f->repeat_pict = 1;
+                s->cur_pic.ptr->f->repeat_pict = 1;
             }
         }
 
-        ret = ff_frame_new_side_data(s->avctx, s->cur_pic_ptr->f,
+        ret = ff_frame_new_side_data(s->avctx, s->cur_pic.ptr->f,
                                      AV_FRAME_DATA_PANSCAN, sizeof(s1->pan_scan),
                                      &pan_scan);
         if (ret < 0)
@@ -1331,14 +1331,14 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (s1->a53_buf_ref) {
             ret = ff_frame_new_side_data_from_buf(
-                s->avctx, s->cur_pic_ptr->f, AV_FRAME_DATA_A53_CC,
+                s->avctx, s->cur_pic.ptr->f, AV_FRAME_DATA_A53_CC,
                 &s1->a53_buf_ref, NULL);
             if (ret < 0)
                 return ret;
         }
 
         if (s1->has_stereo3d) {
-            AVStereo3D *stereo = av_stereo3d_create_side_data(s->cur_pic_ptr->f);
+            AVStereo3D *stereo = av_stereo3d_create_side_data(s->cur_pic.ptr->f);
             if (!stereo)
                 return AVERROR(ENOMEM);
 
@@ -1348,7 +1348,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (s1->has_afd) {
             AVFrameSideData *sd;
-            ret = ff_frame_new_side_data(s->avctx, s->cur_pic_ptr->f,
+            ret = ff_frame_new_side_data(s->avctx, s->cur_pic.ptr->f,
                                          AV_FRAME_DATA_AFD, 1, &sd);
             if (ret < 0)
                 return ret;
@@ -1360,7 +1360,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     } else { // second field
-        if (!s->cur_pic_ptr) {
+        if (!s->cur_pic.ptr) {
             av_log(s->avctx, AV_LOG_ERROR, "first field missing\n");
             return AVERROR_INVALIDDATA;
         }
@@ -1377,10 +1377,10 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             return ret;
 
         for (int i = 0; i < 3; i++) {
-            s->cur_pic.data[i] = s->cur_pic_ptr->f->data[i];
+            s->cur_pic.data[i] = s->cur_pic.ptr->f->data[i];
             if (s->picture_structure == PICT_BOTTOM_FIELD)
                 s->cur_pic.data[i] +=
-                    s->cur_pic_ptr->f->linesize[i];
+                    s->cur_pic.ptr->f->linesize[i];
         }
     }
 
@@ -1735,7 +1735,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict, int *got_output)
     Mpeg1Context *s1  = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
-    if (!s->context_initialized || !s->cur_pic_ptr)
+    if (!s->context_initialized || !s->cur_pic.ptr)
         return 0;
 
     if (s->avctx->hwaccel) {
@@ -1756,20 +1756,20 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict, int *got_output)
         ff_mpv_frame_end(s);
 
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            int ret = av_frame_ref(pict, s->cur_pic_ptr->f);
+            int ret = av_frame_ref(pict, s->cur_pic.ptr->f);
             if (ret < 0)
                 return ret;
-            ff_print_debug_info(s, s->cur_pic_ptr, pict);
-            ff_mpv_export_qp_table(s, pict, s->cur_pic_ptr, FF_MPV_QSCALE_TYPE_MPEG2);
+            ff_print_debug_info(s, s->cur_pic.ptr, pict);
+            ff_mpv_export_qp_table(s, pict, s->cur_pic.ptr, FF_MPV_QSCALE_TYPE_MPEG2);
             *got_output = 1;
         } else {
             /* latency of 1 frame for I- and P-frames */
-            if (s->last_pic_ptr && !s->last_pic_ptr->dummy) {
-                int ret = av_frame_ref(pict, s->last_pic_ptr->f);
+            if (s->last_pic.ptr && !s->last_pic.ptr->dummy) {
+                int ret = av_frame_ref(pict, s->last_pic.ptr->f);
                 if (ret < 0)
                     return ret;
-                ff_print_debug_info(s, s->last_pic_ptr, pict);
-                ff_mpv_export_qp_table(s, pict, s->last_pic_ptr, FF_MPV_QSCALE_TYPE_MPEG2);
+                ff_print_debug_info(s, s->last_pic.ptr, pict);
+                ff_mpv_export_qp_table(s, pict, s->last_pic.ptr, FF_MPV_QSCALE_TYPE_MPEG2);
                 *got_output = 1;
             }
         }
@@ -2405,7 +2405,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     return AVERROR_INVALIDDATA;
                 }
 
-                if (!s2->last_pic_ptr) {
+                if (!s2->last_pic.ptr) {
                     /* Skip B-frames if we do not have reference frames and
                      * GOP is not closed. */
                     if (s2->pict_type == AV_PICTURE_TYPE_B) {
@@ -2419,7 +2419,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                 }
                 if (s2->pict_type == AV_PICTURE_TYPE_I || (s2->avctx->flags2 & AV_CODEC_FLAG2_SHOW_ALL))
                     s->sync = 1;
-                if (!s2->next_pic_ptr) {
+                if (!s2->next_pic.ptr) {
                     /* Skip P-frames if we do not have a reference frame or
                      * we have an invalid header. */
                     if (s2->pict_type == AV_PICTURE_TYPE_P && !s->sync) {
@@ -2460,7 +2460,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                     if ((ret = mpeg_field_start(s2, buf, buf_size)) < 0)
                         return ret;
                 }
-                if (!s2->cur_pic_ptr) {
+                if (!s2->cur_pic.ptr) {
                     av_log(avctx, AV_LOG_ERROR,
                            "current_picture not initialized\n");
                     return AVERROR_INVALIDDATA;
@@ -2524,12 +2524,12 @@ static int mpeg_decode_frame(AVCodecContext *avctx, AVFrame *picture,
 
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == SEQ_END_CODE)) {
         /* special case for last picture */
-        if (s2->low_delay == 0 && s2->next_pic_ptr) {
-            int ret = av_frame_ref(picture, s2->next_pic_ptr->f);
+        if (s2->low_delay == 0 && s2->next_pic.ptr) {
+            int ret = av_frame_ref(picture, s2->next_pic.ptr->f);
             if (ret < 0)
                 return ret;
 
-            s2->next_pic_ptr = NULL;
+            s2->next_pic.ptr = NULL;
 
             *got_output = 1;
         }
@@ -2552,14 +2552,14 @@ static int mpeg_decode_frame(AVCodecContext *avctx, AVFrame *picture,
         }
         s->extradata_decoded = 1;
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE)) {
-            s2->cur_pic_ptr = NULL;
+            s2->cur_pic.ptr = NULL;
             return ret;
         }
     }
 
     ret = decode_chunks(avctx, picture, got_output, buf, buf_size);
     if (ret<0 || *got_output) {
-        s2->cur_pic_ptr = NULL;
+        s2->cur_pic.ptr = NULL;
 
         if (s->timecode_frame_start != -1 && *got_output) {
             char tcbuf[AV_TIMECODE_STR_SIZE];

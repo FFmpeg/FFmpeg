@@ -45,17 +45,17 @@ void ff_dxva2_mpeg2_fill_picture_parameters(AVCodecContext *avctx,
                                     DXVA_PictureParameters *pp)
 {
     const struct MpegEncContext *s = avctx->priv_data;
-    const MPVPicture *current_picture = s->cur_pic_ptr;
+    const MPVPicture *current_picture = s->cur_pic.ptr;
     int is_field = s->picture_structure != PICT_FRAME;
 
     memset(pp, 0, sizeof(*pp));
     pp->wDeblockedPictureIndex       = 0;
     if (s->pict_type != AV_PICTURE_TYPE_I)
-        pp->wForwardRefPictureIndex  = ff_dxva2_get_surface_index(avctx, ctx, s->last_pic.f, 0);
+        pp->wForwardRefPictureIndex  = ff_dxva2_get_surface_index(avctx, ctx, s->last_pic.ptr->f, 0);
     else
         pp->wForwardRefPictureIndex  = 0xffff;
     if (s->pict_type == AV_PICTURE_TYPE_B)
-        pp->wBackwardRefPictureIndex = ff_dxva2_get_surface_index(avctx, ctx, s->next_pic.f, 0);
+        pp->wBackwardRefPictureIndex = ff_dxva2_get_surface_index(avctx, ctx, s->next_pic.ptr->f, 0);
     else
         pp->wBackwardRefPictureIndex = 0xffff;
     pp->wDecodedPictureIndex         = ff_dxva2_get_surface_index(avctx, ctx, current_picture->f, 1);
@@ -157,7 +157,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const struct MpegEncContext *s = avctx->priv_data;
     AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     struct dxva2_picture_context *ctx_pic =
-        s->cur_pic_ptr->hwaccel_picture_private;
+        s->cur_pic.ptr->hwaccel_picture_private;
     const int is_field = s->picture_structure != PICT_FRAME;
     const unsigned mb_count = s->mb_width * (s->mb_height >> is_field);
     void     *dxva_data_ptr;
@@ -260,7 +260,7 @@ static int dxva2_mpeg2_start_frame(AVCodecContext *avctx,
     const struct MpegEncContext *s = avctx->priv_data;
     AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     struct dxva2_picture_context *ctx_pic =
-        s->cur_pic_ptr->hwaccel_picture_private;
+        s->cur_pic.ptr->hwaccel_picture_private;
 
     if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
@@ -280,7 +280,7 @@ static int dxva2_mpeg2_decode_slice(AVCodecContext *avctx,
 {
     const struct MpegEncContext *s = avctx->priv_data;
     struct dxva2_picture_context *ctx_pic =
-        s->cur_pic_ptr->hwaccel_picture_private;
+        s->cur_pic.ptr->hwaccel_picture_private;
     unsigned position;
 
     if (ctx_pic->slice_count >= MAX_SLICES) {
@@ -302,12 +302,12 @@ static int dxva2_mpeg2_end_frame(AVCodecContext *avctx)
 {
     struct MpegEncContext *s = avctx->priv_data;
     struct dxva2_picture_context *ctx_pic =
-        s->cur_pic_ptr->hwaccel_picture_private;
+        s->cur_pic.ptr->hwaccel_picture_private;
     int ret;
 
     if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
         return -1;
-    ret = ff_dxva2_common_end_frame(avctx, s->cur_pic_ptr->f,
+    ret = ff_dxva2_common_end_frame(avctx, s->cur_pic.ptr->f,
                                     &ctx_pic->pp, sizeof(ctx_pic->pp),
                                     &ctx_pic->qm, sizeof(ctx_pic->qm),
                                     commit_bitstream_and_slice_buffer);

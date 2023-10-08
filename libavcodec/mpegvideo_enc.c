@@ -1356,7 +1356,7 @@ static int estimate_best_b_count(MpegEncContext *s)
 
     for (i = 0; i < s->max_b_frames + 2; i++) {
         const MPVPicture *pre_input_ptr = i ? s->input_picture[i - 1] :
-                                           s->next_pic_ptr;
+                                           s->next_pic.ptr;
 
         if (pre_input_ptr) {
             const uint8_t *data[4];
@@ -1484,8 +1484,8 @@ static int select_input_picture(MpegEncContext *s)
     if (!s->reordered_input_picture[0] && s->input_picture[0]) {
         if (s->frame_skip_threshold || s->frame_skip_factor) {
             if (s->picture_in_gop_number < s->gop_size &&
-                s->next_pic_ptr &&
-                skip_check(s, s->input_picture[0], s->next_pic_ptr)) {
+                s->next_pic.ptr &&
+                skip_check(s, s->input_picture[0], s->next_pic.ptr)) {
                 // FIXME check that the gop check above is +-1 correct
                 ff_mpeg_unref_picture(s->input_picture[0]);
 
@@ -1496,7 +1496,7 @@ static int select_input_picture(MpegEncContext *s)
         }
 
         if (/*s->picture_in_gop_number >= s->gop_size ||*/
-            !s->next_pic_ptr || s->intra_only) {
+            !s->next_pic.ptr || s->intra_only) {
             s->reordered_input_picture[0] = s->input_picture[0];
             s->reordered_input_picture[0]->f->pict_type = AV_PICTURE_TYPE_I;
             s->reordered_input_picture[0]->coded_picture_number =
@@ -1624,17 +1624,17 @@ no_output_pic:
                     s->new_pic->data[i] += INPLACE_OFFSET;
             }
         }
-        s->cur_pic_ptr = s->reordered_input_picture[0];
+        s->cur_pic.ptr = s->reordered_input_picture[0];
         av_assert1(s->mb_width  == s->buffer_pools.alloc_mb_width);
         av_assert1(s->mb_height == s->buffer_pools.alloc_mb_height);
         av_assert1(s->mb_stride == s->buffer_pools.alloc_mb_stride);
-        ret = ff_mpv_alloc_pic_accessories(s->avctx, s->cur_pic_ptr, &s->me,
+        ret = ff_mpv_alloc_pic_accessories(s->avctx, &s->cur_pic, &s->me,
                                            &s->sc, &s->buffer_pools, s->mb_height);
         if (ret < 0) {
-            ff_mpeg_unref_picture(s->cur_pic_ptr);
+            ff_mpv_unref_picture(&s->cur_pic);
             return ret;
         }
-        s->picture_number = s->cur_pic_ptr->display_picture_number;
+        s->picture_number = s->cur_pic.ptr->display_picture_number;
 
     }
     return 0;
@@ -1674,7 +1674,7 @@ static void frame_end(MpegEncContext *s)
     emms_c();
 
     s->last_pict_type                 = s->pict_type;
-    s->last_lambda_for [s->pict_type] = s->cur_pic_ptr->f->quality;
+    s->last_lambda_for [s->pict_type] = s->cur_pic.ptr->f->quality;
     if (s->pict_type!= AV_PICTURE_TYPE_B)
         s->last_non_b_pict_type = s->pict_type;
 }
@@ -1700,47 +1700,26 @@ static void update_noise_reduction(MpegEncContext *s)
     }
 }
 
-static int frame_start(MpegEncContext *s)
+static void frame_start(MpegEncContext *s)
 {
-    int ret;
-
     /* mark & release old frames */
-    if (s->pict_type != AV_PICTURE_TYPE_B && s->last_pic_ptr &&
-        s->last_pic_ptr != s->next_pic_ptr &&
-        s->last_pic_ptr->f->buf[0]) {
-        ff_mpeg_unref_picture(s->last_pic_ptr);
+    if (s->pict_type != AV_PICTURE_TYPE_B && s->last_pic.ptr &&
+        s->last_pic.ptr != s->next_pic.ptr &&
+        s->last_pic.ptr->f->buf[0]) {
+        ff_mpv_unref_picture(&s->last_pic);
     }
 
-    s->cur_pic_ptr->f->pict_type = s->pict_type;
-
-    ff_mpeg_unref_picture(&s->cur_pic);
-    if ((ret = ff_mpeg_ref_picture(&s->cur_pic, s->cur_pic_ptr)) < 0)
-        return ret;
+    s->cur_pic.ptr->f->pict_type = s->pict_type;
 
     if (s->pict_type != AV_PICTURE_TYPE_B) {
-        s->last_pic_ptr = s->next_pic_ptr;
-        s->next_pic_ptr = s->cur_pic_ptr;
-    }
-
-    if (s->last_pic_ptr) {
-        ff_mpeg_unref_picture(&s->last_pic);
-        if (s->last_pic_ptr->f->buf[0] &&
-            (ret = ff_mpeg_ref_picture(&s->last_pic, s->last_pic_ptr)) < 0)
-            return ret;
-    }
-    if (s->next_pic_ptr) {
-        ff_mpeg_unref_picture(&s->next_pic);
-        if (s->next_pic_ptr->f->buf[0] &&
-            (ret = ff_mpeg_ref_picture(&s->next_pic, s->next_pic_ptr)) < 0)
-            return ret;
+        ff_mpv_replace_picture(&s->last_pic, &s->next_pic);
+        ff_mpv_replace_picture(&s->next_pic, &s->cur_pic);
     }
 
     if (s->dct_error_sum) {
         av_assert2(s->noise_reduction && s->encoding);
         update_noise_reduction(s);
     }
-
-    return 0;
 }
 
 int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
@@ -1793,9 +1772,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
 
         s->pict_type = s->new_pic->pict_type;
         //emms_c();
-        ret = frame_start(s);
-        if (ret < 0)
-            return ret;
+        frame_start(s);
 vbv_retry:
         ret = encode_picture(s);
         if (growing_buffer) {
@@ -1858,7 +1835,7 @@ vbv_retry:
 
         for (int i = 0; i < MPV_MAX_PLANES; i++)
             avctx->error[i] += s->encoding_error[i];
-        ff_side_data_set_encoder_stats(pkt, s->cur_pic.f->quality,
+        ff_side_data_set_encoder_stats(pkt, s->cur_pic.ptr->f->quality,
                                        s->encoding_error,
                                        (avctx->flags&AV_CODEC_FLAG_PSNR) ? MPV_MAX_PLANES : 0,
                                        s->pict_type);
@@ -1952,10 +1929,10 @@ vbv_retry:
         }
         s->total_bits     += s->frame_bits;
 
-        pkt->pts = s->cur_pic.f->pts;
-        pkt->duration = s->cur_pic.f->duration;
+        pkt->pts = s->cur_pic.ptr->f->pts;
+        pkt->duration = s->cur_pic.ptr->f->duration;
         if (!s->low_delay && s->pict_type != AV_PICTURE_TYPE_B) {
-            if (!s->cur_pic.coded_picture_number)
+            if (!s->cur_pic.ptr->coded_picture_number)
                 pkt->dts = pkt->pts - s->dts_delta;
             else
                 pkt->dts = s->reordered_pts;
@@ -1965,12 +1942,12 @@ vbv_retry:
 
         // the no-delay case is handled in generic code
         if (avctx->codec->capabilities & AV_CODEC_CAP_DELAY) {
-            ret = ff_encode_reordered_opaque(avctx, pkt, s->cur_pic.f);
+            ret = ff_encode_reordered_opaque(avctx, pkt, s->cur_pic.ptr->f);
             if (ret < 0)
                 return ret;
         }
 
-        if (s->cur_pic.f->flags & AV_FRAME_FLAG_KEY)
+        if (s->cur_pic.ptr->f->flags & AV_FRAME_FLAG_KEY)
             pkt->flags |= AV_PKT_FLAG_KEY;
         if (s->mb_info)
             av_packet_shrink_side_data(pkt, AV_PKT_DATA_H263_MB_INFO, s->mb_info_size);
@@ -3512,14 +3489,12 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
 
 static int estimate_qp(MpegEncContext *s, int dry_run){
     if (s->next_lambda){
-        s->cur_pic_ptr->f->quality =
-        s->cur_pic.f->quality = s->next_lambda;
+        s->cur_pic.ptr->f->quality = s->next_lambda;
         if(!dry_run) s->next_lambda= 0;
     } else if (!s->fixed_qscale) {
         int quality = ff_rate_estimate_qscale(s, dry_run);
-        s->cur_pic_ptr->f->quality =
-        s->cur_pic.f->quality = quality;
-        if (s->cur_pic.f->quality < 0)
+        s->cur_pic.ptr->f->quality = quality;
+        if (s->cur_pic.ptr->f->quality < 0)
             return -1;
     }
 
@@ -3542,15 +3517,15 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
         s->lambda= s->lambda_table[0];
         //FIXME broken
     }else
-        s->lambda = s->cur_pic.f->quality;
+        s->lambda = s->cur_pic.ptr->f->quality;
     update_qscale(s);
     return 0;
 }
 
 /* must be called before writing the header */
 static void set_frame_distances(MpegEncContext * s){
-    av_assert1(s->cur_pic_ptr->f->pts != AV_NOPTS_VALUE);
-    s->time = s->cur_pic_ptr->f->pts * s->avctx->time_base.num;
+    av_assert1(s->cur_pic.ptr->f->pts != AV_NOPTS_VALUE);
+    s->time = s->cur_pic.ptr->f->pts * s->avctx->time_base.num;
 
     if(s->pict_type==AV_PICTURE_TYPE_B){
         s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
@@ -3581,7 +3556,7 @@ static int encode_picture(MpegEncContext *s)
 
     s->me.scene_change_score=0;
 
-//    s->lambda= s->cur_pic_ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
+//    s->lambda= s->cur_pic.ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
 
     if(s->pict_type==AV_PICTURE_TYPE_I){
         if(s->msmpeg4_version >= 3) s->no_rounding=1;
@@ -3769,18 +3744,14 @@ static int encode_picture(MpegEncContext *s)
         }
     }
 
-    //FIXME var duplication
     if (s->pict_type == AV_PICTURE_TYPE_I) {
-        s->cur_pic_ptr->f->flags |= AV_FRAME_FLAG_KEY; //FIXME pic_ptr
-        s->cur_pic.f->flags |= AV_FRAME_FLAG_KEY;
+        s->cur_pic.ptr->f->flags |= AV_FRAME_FLAG_KEY;
     } else {
-        s->cur_pic_ptr->f->flags &= ~AV_FRAME_FLAG_KEY; //FIXME pic_ptr
-        s->cur_pic.f->flags &= ~AV_FRAME_FLAG_KEY;
+        s->cur_pic.ptr->f->flags &= ~AV_FRAME_FLAG_KEY;
     }
-    s->cur_pic_ptr->f->pict_type =
-    s->cur_pic.f->pict_type = s->pict_type;
+    s->cur_pic.ptr->f->pict_type = s->pict_type;
 
-    if (s->cur_pic.f->flags & AV_FRAME_FLAG_KEY)
+    if (s->cur_pic.ptr->f->flags & AV_FRAME_FLAG_KEY)
         s->picture_in_gop_number=0;
 
     s->mb_x = s->mb_y = 0;

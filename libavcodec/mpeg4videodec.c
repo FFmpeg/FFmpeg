@@ -1813,7 +1813,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 s->last_mv[i][1][1] = 0;
             }
 
-            ff_thread_await_progress(&s->next_pic_ptr->tf, s->mb_y, 0);
+            ff_thread_await_progress(&s->next_pic.ptr->tf, s->mb_y, 0);
         }
 
         /* if we skipped it in the future P-frame than skip it now too */
@@ -2018,7 +2018,7 @@ end:
 
         if (s->pict_type == AV_PICTURE_TYPE_B) {
             const int delta = s->mb_x + 1 == s->mb_width ? 2 : 1;
-            ff_thread_await_progress(&s->next_pic_ptr->tf,
+            ff_thread_await_progress(&s->next_pic.ptr->tf,
                                         (s->mb_x + delta >= s->mb_width)
                                         ? FFMIN(s->mb_y + 1, s->mb_height - 1)
                                         : s->mb_y, 0);

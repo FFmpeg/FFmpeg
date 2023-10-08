@@ -40,10 +40,10 @@ void ff_write_pass1_stats(MpegEncContext *s)
     snprintf(s->avctx->stats_out, 256,
              "in:%d out:%d type:%d q:%d itex:%d ptex:%d mv:%d misc:%d "
              "fcode:%d bcode:%d mc-var:%"PRId64" var:%"PRId64" icount:%d hbits:%d;\n",
-             s->cur_pic_ptr->display_picture_number,
-             s->cur_pic_ptr->coded_picture_number,
+             s->cur_pic.ptr->display_picture_number,
+             s->cur_pic.ptr->coded_picture_number,
              s->pict_type,
-             s->cur_pic.f->quality,
+             s->cur_pic.ptr->f->quality,
              s->i_tex_bits,
              s->p_tex_bits,
              s->mv_bits,
@@ -936,9 +936,9 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
          * here instead of reordering but the reordering is simpler for now
          * until H.264 B-pyramid must be handled. */
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay)
-            dts_pic = s->cur_pic_ptr;
+            dts_pic = s->cur_pic.ptr;
         else
-            dts_pic = s->last_pic_ptr;
+            dts_pic = s->last_pic.ptr;
 
         if (!dts_pic || dts_pic->f->pts == AV_NOPTS_VALUE)
             wanted_bits = (uint64_t)(s->bit_rate * (double)picture_number / fps);

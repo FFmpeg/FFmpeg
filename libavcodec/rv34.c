@@ -567,7 +567,7 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     int has_A = 0, has_B = 0, has_C = 0;
     int mx, my;
     int i, j;
-    MPVPicture *cur_pic = &s->cur_pic;
+    MPVWorkPicture *cur_pic = &s->cur_pic;
     const int mask = dir ? MB_TYPE_L1 : MB_TYPE_L0;
     int type = cur_pic->mb_type[mb_pos];
 
@@ -721,7 +721,7 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
         /* wait for the referenced mb row to be finished */
         int mb_row = s->mb_y + ((yoff + my + 5 + 8 * height) >> 4);
-        const ThreadFrame *f = dir ? &s->next_pic_ptr->tf : &s->last_pic_ptr->tf;
+        const ThreadFrame *f = dir ? &s->next_pic.ptr->tf : &s->last_pic.ptr->tf;
         ff_thread_await_progress(f, mb_row, 0);
     }
 
@@ -901,7 +901,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         //surprisingly, it uses motion scheme from next reference frame
         /* wait for the current mb row to be finished */
         if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-            ff_thread_await_progress(&s->next_pic_ptr->tf, FFMAX(0, s->mb_y-1), 0);
+            ff_thread_await_progress(&s->next_pic.ptr->tf, FFMAX(0, s->mb_y-1), 0);
 
         next_bt = s->next_pic.mb_type[s->mb_x + s->mb_y * s->mb_stride];
         if(IS_INTRA(next_bt) || IS_SKIP(next_bt)){
@@ -1485,7 +1485,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
                 r->loop_filter(r, s->mb_y - 2);
 
             if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-                ff_thread_report_progress(&s->cur_pic_ptr->tf,
+                ff_thread_report_progress(&s->cur_pic.ptr->tf,
                                           s->mb_y - 2, 0);
 
         }
@@ -1583,19 +1583,19 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
     s->mb_num_left = 0;
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-        ff_thread_report_progress(&s->cur_pic_ptr->tf, INT_MAX, 0);
+        ff_thread_report_progress(&s->cur_pic.ptr->tf, INT_MAX, 0);
 
     if (s->pict_type == AV_PICTURE_TYPE_B) {
-        if ((ret = av_frame_ref(pict, s->cur_pic_ptr->f)) < 0)
+        if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
             return ret;
-        ff_print_debug_info(s, s->cur_pic_ptr, pict);
-        ff_mpv_export_qp_table(s, pict, s->cur_pic_ptr, FF_MPV_QSCALE_TYPE_MPEG1);
+        ff_print_debug_info(s, s->cur_pic.ptr, pict);
+        ff_mpv_export_qp_table(s, pict, s->cur_pic.ptr, FF_MPV_QSCALE_TYPE_MPEG1);
         got_picture = 1;
-    } else if (s->last_pic_ptr) {
-        if ((ret = av_frame_ref(pict, s->last_pic_ptr->f)) < 0)
+    } else if (s->last_pic.ptr) {
+        if ((ret = av_frame_ref(pict, s->last_pic.ptr->f)) < 0)
             return ret;
-        ff_print_debug_info(s, s->last_pic_ptr, pict);
-        ff_mpv_export_qp_table(s, pict, s->last_pic_ptr, FF_MPV_QSCALE_TYPE_MPEG1);
+        ff_print_debug_info(s, s->last_pic.ptr, pict);
+        ff_mpv_export_qp_table(s, pict, s->last_pic.ptr, FF_MPV_QSCALE_TYPE_MPEG1);
         got_picture = 1;
     }
 
@@ -1630,10 +1630,10 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     /* no supplementary picture */
     if (buf_size == 0) {
         /* special case for last picture */
-        if (s->next_pic_ptr) {
-            if ((ret = av_frame_ref(pict, s->next_pic_ptr->f)) < 0)
+        if (s->next_pic.ptr) {
+            if ((ret = av_frame_ref(pict, s->next_pic.ptr->f)) < 0)
                 return ret;
-            s->next_pic_ptr = NULL;
+            s->next_pic.ptr = NULL;
 
             *got_picture_ptr = 1;
         }
@@ -1656,7 +1656,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return AVERROR_INVALIDDATA;
     }
-    if ((!s->last_pic_ptr || !s->last_pic_ptr->f->data[0]) &&
+    if ((!s->last_pic.ptr || !s->last_pic.ptr->f->data[0]) &&
         si.type == AV_PICTURE_TYPE_B) {
         av_log(avctx, AV_LOG_ERROR, "Invalid decoder state: B-frame without "
                "reference data.\n");
@@ -1669,7 +1669,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     /* first slice */
     if (si.start == 0) {
-        if (s->mb_num_left > 0 && s->cur_pic_ptr) {
+        if (s->mb_num_left > 0 && s->cur_pic.ptr) {
             av_log(avctx, AV_LOG_ERROR, "New frame but still %d MB left.\n",
                    s->mb_num_left);
             if (!s->context_reinit)
@@ -1794,7 +1794,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             break;
     }
 
-    if (s->cur_pic_ptr) {
+    if (s->cur_pic.ptr) {
         if (last) {
             if(r->loop_filter)
                 r->loop_filter(r, s->mb_height - 1);
@@ -1811,7 +1811,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             ff_er_frame_end(&s->er, NULL);
             ff_mpv_frame_end(s);
             s->mb_num_left = 0;
-            ff_thread_report_progress(&s->cur_pic_ptr->tf, INT_MAX, 0);
+            ff_thread_report_progress(&s->cur_pic.ptr->tf, INT_MAX, 0);
             return AVERROR_INVALIDDATA;
         }
     }

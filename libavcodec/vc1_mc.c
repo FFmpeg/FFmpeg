@@ -187,8 +187,8 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
         !v->s.last_pic.data[0])
         return;
 
-    linesize   = s->cur_pic_ptr->f->linesize[0];
-    uvlinesize = s->cur_pic_ptr->f->linesize[1];
+    linesize   = s->cur_pic.ptr->f->linesize[0];
+    uvlinesize = s->cur_pic.ptr->f->linesize[1];
 
     mx = s->mv[dir][0][0];
     my = s->mv[dir][0][1];
@@ -467,7 +467,7 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
         !v->s.last_pic.data[0])
         return;
 
-    linesize = s->cur_pic_ptr->f->linesize[0];
+    linesize = s->cur_pic.ptr->f->linesize[0];
 
     mx = s->mv[dir][n][0];
     my = s->mv[dir][n][1];
@@ -669,7 +669,7 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
     s->cur_pic.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
     s->cur_pic.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
 
-    uvlinesize = s->cur_pic_ptr->f->linesize[1];
+    uvlinesize = s->cur_pic.ptr->f->linesize[1];
 
     uvmx = (tx + ((tx & 3) == 3)) >> 1;
     uvmy = (ty + ((ty & 3) == 3)) >> 1;
@@ -856,7 +856,7 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
     if (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
 
-    uvlinesize = s->cur_pic_ptr->f->linesize[1];
+    uvlinesize = s->cur_pic.ptr->f->linesize[1];
 
     for (i = 0; i < 4; i++) {
         int d = i < 2 ? dir: dir2;
@@ -1015,8 +1015,8 @@ void ff_vc1_interp_mc(VC1Context *v)
     if (!v->field_mode && !v->s.next_pic.data[0])
         return;
 
-    linesize   = s->cur_pic_ptr->f->linesize[0];
-    uvlinesize = s->cur_pic_ptr->f->linesize[1];
+    linesize   = s->cur_pic.ptr->f->linesize[0];
+    uvlinesize = s->cur_pic.ptr->f->linesize[1];
 
     mx   = s->mv[1][0][0];
     my   = s->mv[1][0][1];

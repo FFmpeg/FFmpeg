@@ -58,9 +58,6 @@ typedef struct MPVPicture {
     struct AVFrame *f;
     ThreadFrame tf;
 
-    uint8_t  *data[MPV_MAX_PLANES];
-    ptrdiff_t linesize[MPV_MAX_PLANES];
-
     int8_t *qscale_table_base;
     int8_t *qscale_table;
 
@@ -93,10 +90,30 @@ typedef struct MPVPicture {
     int coded_picture_number;
 } MPVPicture;
 
+typedef struct MPVWorkPicture {
+    uint8_t  *data[MPV_MAX_PLANES];
+    ptrdiff_t linesize[MPV_MAX_PLANES];
+
+    MPVPicture *ptr;
+
+    int8_t *qscale_table;
+
+    int16_t (*motion_val[2])[2];
+
+    uint32_t *mb_type;          ///< types and macros are defined in mpegutils.h
+
+    uint8_t *mbskip_table;
+
+    int8_t *ref_index[2];
+
+    int reference;
+} MPVWorkPicture;
+
 /**
- * Allocate an MPVPicture's accessories, but not the AVFrame's buffer itself.
+ * Allocate an MPVPicture's accessories (but not the AVFrame's buffer itself)
+ * and set the MPVWorkPicture's fields.
  */
-int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVPicture *pic,
+int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVWorkPicture *pic,
                                  MotionEstContext *me, ScratchpadContext *sc,
                                  BufferPoolContext *pools, int mb_height);
 
@@ -113,6 +130,9 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize);
 
 int ff_mpeg_ref_picture(MPVPicture *dst, MPVPicture *src);
+void ff_mpv_unref_picture(MPVWorkPicture *pic);
+void ff_mpv_workpic_from_pic(MPVWorkPicture *wpic, MPVPicture *pic);
+void ff_mpv_replace_picture(MPVWorkPicture *dst, const MPVWorkPicture *src);
 void ff_mpeg_unref_picture(MPVPicture *picture);
 
 void ff_mpv_picture_free(MPVPicture *pic);

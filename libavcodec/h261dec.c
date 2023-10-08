@@ -649,12 +649,11 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     }
     ff_mpv_frame_end(s);
 
-    av_assert0(s->cur_pic.f->pict_type == s->cur_pic_ptr->f->pict_type);
-    av_assert0(s->cur_pic.f->pict_type == s->pict_type);
+    av_assert0(s->pict_type == s->cur_pic.ptr->f->pict_type);
 
-    if ((ret = av_frame_ref(pict, s->cur_pic_ptr->f)) < 0)
+    if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
         return ret;
-    ff_print_debug_info(s, s->cur_pic_ptr, pict);
+    ff_print_debug_info(s, s->cur_pic.ptr, pict);
 
     *got_frame = 1;
 

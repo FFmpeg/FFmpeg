@@ -719,7 +719,7 @@ void ff_vc1_pred_b_mv(VC1Context *v, int dmv_x[2], int dmv_y[2],
         s->cur_pic.motion_val[1][xy][1] = 0;
         return;
     }
-        if (direct && s->next_pic_ptr->field_picture)
+        if (direct && s->next_pic.ptr->field_picture)
             av_log(s->avctx, AV_LOG_WARNING, "Mixed frame/field direct mode not supported\n");
 
         s->mv[0][0][0] = scale_mv(s->next_pic.motion_val[1][xy][0], v->bfraction, 0, s->quarter_sample);

@@ -290,7 +290,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     AVRational aspect_ratio = s->avctx->sample_aspect_ratio;
     int aspect_ratio_info;
 
-    if (!(s->cur_pic.f->flags & AV_FRAME_FLAG_KEY))
+    if (!(s->cur_pic.ptr->f->flags & AV_FRAME_FLAG_KEY))
         return;
 
     if (aspect_ratio.num == 0 || aspect_ratio.den == 0)
@@ -382,7 +382,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         put_bits(&s->pb, 2, mpeg12->frame_rate_ext.num-1); // frame_rate_ext_n
         put_bits(&s->pb, 5, mpeg12->frame_rate_ext.den-1); // frame_rate_ext_d
 
-        side_data = av_frame_get_side_data(s->cur_pic_ptr->f, AV_FRAME_DATA_PANSCAN);
+        side_data = av_frame_get_side_data(s->cur_pic.ptr->f, AV_FRAME_DATA_PANSCAN);
         if (side_data) {
             const AVPanScan *pan_scan = (AVPanScan *)side_data->data;
             if (pan_scan->width && pan_scan->height) {
@@ -419,10 +419,10 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     /* time code: we must convert from the real frame rate to a
      * fake MPEG frame rate in case of low frame rate */
     fps       = (framerate.num + framerate.den / 2) / framerate.den;
-    time_code = s->cur_pic_ptr->coded_picture_number +
+    time_code = s->cur_pic.ptr->coded_picture_number +
                 mpeg12->timecode_frame_start;
 
-    mpeg12->gop_picture_number = s->cur_pic_ptr->coded_picture_number;
+    mpeg12->gop_picture_number = s->cur_pic.ptr->coded_picture_number;
 
     av_assert0(mpeg12->drop_frame_timecode == !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
     if (mpeg12->drop_frame_timecode)
@@ -530,7 +530,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
         if (s->progressive_sequence)
             put_bits(&s->pb, 1, 0);             /* no repeat */
         else
-            put_bits(&s->pb, 1, !!(s->cur_pic_ptr->f->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST));
+            put_bits(&s->pb, 1, !!(s->cur_pic.ptr->f->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST));
         /* XXX: optimize the generation of this flag with entropy measures */
         s->frame_pred_frame_dct = s->progressive_sequence;
 
@@ -554,7 +554,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
         for (i = 0; i < sizeof(svcd_scan_offset_placeholder); i++)
             put_bits(&s->pb, 8, svcd_scan_offset_placeholder[i]);
     }
-    side_data = av_frame_get_side_data(s->cur_pic_ptr->f,
+    side_data = av_frame_get_side_data(s->cur_pic.ptr->f,
                                        AV_FRAME_DATA_STEREO3D);
     if (side_data) {
         const AVStereo3D *stereo = (AVStereo3D *)side_data->data;
@@ -594,7 +594,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s)
     }
 
     if (CONFIG_MPEG2VIDEO_ENCODER && mpeg12->a53_cc) {
-        side_data = av_frame_get_side_data(s->cur_pic_ptr->f,
+        side_data = av_frame_get_side_data(s->cur_pic.ptr->f,
             AV_FRAME_DATA_A53_CC);
         if (side_data) {
             if (side_data->size <= A53_MAX_CC_COUNT * 3 && side_data->size % 3 == 0) {

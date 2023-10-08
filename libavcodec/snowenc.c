@@ -62,6 +62,7 @@ typedef struct SnowEncContext {
 
     MECmpContext mecc;
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
+    MPVPicture cur_pic, last_pic;
 #define ME_CACHE_SIZE 1024
     unsigned me_cache[ME_CACHE_SIZE];
     unsigned me_cache_generation;
@@ -1834,9 +1835,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    mpv->cur_pic_ptr    = &mpv->cur_pic;
-    mpv->cur_pic.f      = s->current_picture;
-    mpv->cur_pic.f->pts = pict->pts;
+    mpv->cur_pic.ptr         = &enc->cur_pic;
+    mpv->cur_pic.ptr->f      = s->current_picture;
+    mpv->cur_pic.ptr->f->pts = pict->pts;
     if(pic->pict_type == AV_PICTURE_TYPE_P){
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
@@ -1846,9 +1847,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         av_assert0(s->last_picture[0]->data[0]);
 
         mpv->avctx = s->avctx;
-        mpv->last_pic.f   = s->last_picture[0];
+        mpv->last_pic.ptr    = &enc->last_pic;
+        mpv->last_pic.ptr->f = s->last_picture[0];
         mpv-> new_pic     = s->input_picture;
-        mpv->last_pic_ptr = &mpv->last_pic;
         mpv->linesize   = stride;
         mpv->uvlinesize = s->current_picture->linesize[1];
         mpv->width      = width;
@@ -2043,9 +2044,9 @@ redo_frame:
     mpv->frame_bits = 8 * (s->c.bytestream - s->c.bytestream_start);
     mpv->p_tex_bits = mpv->frame_bits - mpv->misc_bits - mpv->mv_bits;
     mpv->total_bits += 8*(s->c.bytestream - s->c.bytestream_start);
-    mpv->cur_pic.display_picture_number =
-    mpv->cur_pic.coded_picture_number   = avctx->frame_num;
-    mpv->cur_pic.f->quality             = pic->quality;
+    enc->cur_pic.display_picture_number =
+    enc->cur_pic.coded_picture_number   = avctx->frame_num;
+    enc->cur_pic.f->quality             = pic->quality;
     if (enc->pass1_rc)
         if (ff_rate_estimate_qscale(mpv, 0) < 0)
             return -1;

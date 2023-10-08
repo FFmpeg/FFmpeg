@@ -49,9 +49,9 @@ void ff_mpeg_er_frame_start(MpegEncContext *s)
 {
     ERContext *er = &s->er;
 
-    set_erpic(&er->cur_pic,  s->cur_pic_ptr);
-    set_erpic(&er->next_pic, s->next_pic_ptr);
-    set_erpic(&er->last_pic, s->last_pic_ptr);
+    set_erpic(&er->cur_pic,  s->cur_pic.ptr);
+    set_erpic(&er->next_pic, s->next_pic.ptr);
+    set_erpic(&er->last_pic, s->last_pic.ptr);
 
     er->pp_time           = s->pp_time;
     er->pb_time           = s->pb_time;

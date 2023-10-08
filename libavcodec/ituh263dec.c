@@ -750,12 +750,12 @@ static inline void set_one_direct_mv(MpegEncContext *s, const MPVPicture *p, int
 static int set_direct_mv(MpegEncContext *s)
 {
     const int mb_index = s->mb_x + s->mb_y * s->mb_stride;
-    const MPVPicture *p = &s->next_pic;
+    const MPVPicture *p = s->next_pic.ptr;
     int colocated_mb_type = p->mb_type[mb_index];
     int i;
 
     if (s->codec_tag == AV_RL32("U263") && p->f->pict_type == AV_PICTURE_TYPE_I) {
-        p = &s->last_pic;
+        p = s->last_pic.ptr;
         colocated_mb_type = p->mb_type[mb_index];
     }
 

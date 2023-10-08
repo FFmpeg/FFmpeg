@@ -59,9 +59,9 @@ static inline void init_block_index(VC1Context *v)
     MpegEncContext *s = &v->s;
     ff_init_block_index(s);
     if (v->field_mode && !(v->second_field ^ v->tff)) {
-        s->dest[0] += s->cur_pic_ptr->f->linesize[0];
-        s->dest[1] += s->cur_pic_ptr->f->linesize[1];
-        s->dest[2] += s->cur_pic_ptr->f->linesize[2];
+        s->dest[0] += s->cur_pic.ptr->f->linesize[0];
+        s->dest[1] += s->cur_pic.ptr->f->linesize[1];
+        s->dest[2] += s->cur_pic.ptr->f->linesize[2];
     }
 }
 
@@ -2101,7 +2101,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
             if (bmvtype == BMV_TYPE_DIRECT) {
                 dmv_x[0] = dmv_y[0] = pred_flag[0] = 0;
                 dmv_x[1] = dmv_y[1] = pred_flag[0] = 0;
-                if (!s->next_pic_ptr->field_picture) {
+                if (!s->next_pic.ptr->field_picture) {
                     av_log(s->avctx, AV_LOG_ERROR, "Mixed field/frame direct mode not supported\n");
                     return AVERROR_INVALIDDATA;
                 }
@@ -2267,7 +2267,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
             direct = v->direct_mb_plane[mb_pos];
 
         if (direct) {
-            if (s->next_pic_ptr->field_picture)
+            if (s->next_pic.ptr->field_picture)
                 av_log(s->avctx, AV_LOG_WARNING, "Mixed frame/field direct mode not supported\n");
             s->mv[0][0][0] = s->cur_pic.motion_val[0][s->block_index[0]][0] = scale_mv(s->next_pic.motion_val[1][s->block_index[0]][0], v->bfraction, 0, s->quarter_sample);
             s->mv[0][0][1] = s->cur_pic.motion_val[0][s->block_index[0]][1] = scale_mv(s->next_pic.motion_val[1][s->block_index[0]][1], v->bfraction, 0, s->quarter_sample);
@@ -2964,7 +2964,7 @@ void ff_vc1_decode_blocks(VC1Context *v)
 
     v->s.esc3_level_length = 0;
     if (v->x8_type) {
-        ff_intrax8_decode_picture(&v->x8, &v->s.cur_pic,
+        ff_intrax8_decode_picture(&v->x8, v->s.cur_pic.ptr,
                                   &v->s.gb, &v->s.mb_x, &v->s.mb_y,
                                   2 * v->pq + v->halfpq, v->pq * !v->pquantizer,
                                   v->s.loop_filter, v->s.low_delay);

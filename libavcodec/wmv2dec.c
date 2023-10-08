@@ -330,7 +330,7 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
     s->esc3_run_length   = 0;
 
     if (w->j_type) {
-        ff_intrax8_decode_picture(&w->x8, &s->cur_pic,
+        ff_intrax8_decode_picture(&w->x8, s->cur_pic.ptr,
                                   &s->gb, &s->mb_x, &s->mb_y,
                                   2 * s->qscale, (s->qscale - 1) | 1,
                                   s->loop_filter, s->low_delay);

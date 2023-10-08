@@ -432,22 +432,22 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     /* no supplementary picture */
     if (buf_size == 0) {
         /* special case for last picture */
-        if (s->low_delay == 0 && s->next_pic_ptr) {
-            if ((ret = av_frame_ref(pict, s->next_pic_ptr->f)) < 0)
+        if (s->low_delay == 0 && s->next_pic.ptr) {
+            if ((ret = av_frame_ref(pict, s->next_pic.ptr->f)) < 0)
                 return ret;
-            s->next_pic_ptr = NULL;
+            s->next_pic.ptr = NULL;
 
             *got_frame = 1;
-        } else if (s->skipped_last_frame && s->cur_pic_ptr) {
+        } else if (s->skipped_last_frame && s->cur_pic.ptr) {
             /* Output the last picture we decoded again if the stream ended with
              * an NVOP */
-            if ((ret = av_frame_ref(pict, s->cur_pic_ptr->f)) < 0)
+            if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
                 return ret;
             /* Copy props from the last input packet. Otherwise, props from the last
              * returned picture would be reused */
             if ((ret = ff_decode_frame_props(avctx, pict)) < 0)
                 return ret;
-            s->cur_pic_ptr = NULL;
+            s->cur_pic.ptr = NULL;
 
             *got_frame = 1;
         }
@@ -561,7 +561,7 @@ retry:
         s->gob_index = H263_GOB_HEIGHT(s->height);
 
     /* skip B-frames if we don't have reference frames */
-    if (!s->last_pic_ptr &&
+    if (!s->last_pic.ptr &&
         (s->pict_type == AV_PICTURE_TYPE_B || s->droppable))
         return get_consumed_bytes(s, buf_size);
     if ((avctx->skip_frame >= AVDISCARD_NONREF &&
@@ -647,21 +647,20 @@ frame_end:
     if (!s->divx_packed && avctx->hwaccel)
         ff_thread_finish_setup(avctx);
 
-    av_assert1(s->cur_pic.f->pict_type == s->cur_pic_ptr->f->pict_type);
-    av_assert1(s->cur_pic.f->pict_type == s->pict_type);
+    av_assert1(s->pict_type == s->cur_pic.ptr->f->pict_type);
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-        if ((ret = av_frame_ref(pict, s->cur_pic_ptr->f)) < 0)
+        if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
             return ret;
-        ff_print_debug_info(s, s->cur_pic_ptr, pict);
-        ff_mpv_export_qp_table(s, pict, s->cur_pic_ptr, FF_MPV_QSCALE_TYPE_MPEG1);
-    } else if (s->last_pic_ptr) {
-        if ((ret = av_frame_ref(pict, s->last_pic_ptr->f)) < 0)
+        ff_print_debug_info(s, s->cur_pic.ptr, pict);
+        ff_mpv_export_qp_table(s, pict, s->cur_pic.ptr, FF_MPV_QSCALE_TYPE_MPEG1);
+    } else if (s->last_pic.ptr) {
+        if ((ret = av_frame_ref(pict, s->last_pic.ptr->f)) < 0)
             return ret;
-        ff_print_debug_info(s, s->last_pic_ptr, pict);
-        ff_mpv_export_qp_table(s, pict, s->last_pic_ptr, FF_MPV_QSCALE_TYPE_MPEG1);
+        ff_print_debug_info(s, s->last_pic.ptr, pict);
+        ff_mpv_export_qp_table(s, pict, s->last_pic.ptr, FF_MPV_QSCALE_TYPE_MPEG1);
     }
 
-    if (s->last_pic_ptr || s->low_delay) {
+    if (s->last_pic.ptr || s->low_delay) {
         if (   pict->format == AV_PIX_FMT_YUV420P
             && (s->codec_tag == AV_RL32("GEOV") || s->codec_tag == AV_RL32("GEOX"))) {
             for (int p = 0; p < 3; p++) {

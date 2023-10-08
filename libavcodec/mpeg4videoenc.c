@@ -888,7 +888,7 @@ static void mpeg4_encode_gop_header(MpegEncContext *s)
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, GOP_STARTCODE);
 
-    time = s->cur_pic_ptr->f->pts;
+    time = s->cur_pic.ptr->f->pts;
     if (s->reordered_input_picture[1])
         time = FFMIN(time, s->reordered_input_picture[1]->f->pts);
     time = time * s->avctx->time_base.num;
@@ -1100,7 +1100,7 @@ int ff_mpeg4_encode_picture_header(MpegEncContext *s)
     }
     put_bits(&s->pb, 3, 0);     /* intra dc VLC threshold */
     if (!s->progressive_sequence) {
-        put_bits(&s->pb, 1, !!(s->cur_pic_ptr->f->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST));
+        put_bits(&s->pb, 1, !!(s->cur_pic.ptr->f->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST));
         put_bits(&s->pb, 1, s->alternate_scan);
     }
     // FIXME sprite stuff

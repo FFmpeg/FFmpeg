@@ -36,7 +36,7 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
 {
     VC1Context * const v  = avctx->priv_data;
     MpegEncContext * const s = &v->s;
-    MPVPicture *pic          = s->cur_pic_ptr;
+    MPVPicture *pic          = s->cur_pic.ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     VdpPictureInfoVC1 *info = &pic_ctx->info.vc1;
     VdpVideoSurface ref;
@@ -47,15 +47,15 @@ static int vdpau_vc1_start_frame(AVCodecContext *avctx,
 
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_B:
-        if (s->next_pic_ptr) {
-            ref = ff_vdpau_get_surface_id(s->next_pic.f);
+        if (s->next_pic.ptr) {
+            ref = ff_vdpau_get_surface_id(s->next_pic.ptr->f);
             assert(ref != VDP_INVALID_HANDLE);
             info->backward_reference = ref;
         }
         /* fall-through */
     case AV_PICTURE_TYPE_P:
-        if (s->last_pic_ptr) {
-            ref = ff_vdpau_get_surface_id(s->last_pic.f);
+        if (s->last_pic.ptr) {
+            ref = ff_vdpau_get_surface_id(s->last_pic.ptr->f);
             assert(ref != VDP_INVALID_HANDLE);
             info->forward_reference  = ref;
         }
@@ -104,7 +104,7 @@ static int vdpau_vc1_decode_slice(AVCodecContext *avctx,
 {
     VC1Context * const v  = avctx->priv_data;
     MpegEncContext * const s = &v->s;
-    MPVPicture *pic          = s->cur_pic_ptr;
+    MPVPicture *pic          = s->cur_pic.ptr;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
     int val;
 
