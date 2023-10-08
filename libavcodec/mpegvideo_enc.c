@@ -1472,13 +1472,15 @@ fail:
     return best_b_count;
 }
 
-static int select_input_picture(MpegEncContext *s)
+/**
+ * Determines whether an input picture is discarded or not
+ * and if not determines the length of the next chain of B frames
+ * and puts these pictures (including the P frame) into
+ * reordered_input_picture.
+ */
+static int set_bframe_chain_length(MpegEncContext *s)
 {
-    int i, ret;
-
-    for (int i = 1; i <= MAX_B_FRAMES; i++)
-        s->reordered_input_picture[i - 1] = s->reordered_input_picture[i];
-    s->reordered_input_picture[MAX_B_FRAMES] = NULL;
+    int i;
 
     /* set next picture type & ordering */
     if (!s->reordered_input_picture[0] && s->input_picture[0]) {
@@ -1491,7 +1493,7 @@ static int select_input_picture(MpegEncContext *s)
 
                 ff_vbv_update(s, 0);
 
-                goto no_output_pic;
+                return 0;
             }
         }
 
@@ -1598,7 +1600,22 @@ static int select_input_picture(MpegEncContext *s)
             }
         }
     }
-no_output_pic:
+
+    return 0;
+}
+
+static int select_input_picture(MpegEncContext *s)
+{
+    int ret;
+
+    for (int i = 1; i <= MAX_B_FRAMES; i++)
+        s->reordered_input_picture[i - 1] = s->reordered_input_picture[i];
+    s->reordered_input_picture[MAX_B_FRAMES] = NULL;
+
+    ret = set_bframe_chain_length(s);
+    if (ret < 0)
+        return ret;
+
     av_frame_unref(s->new_pic);
 
     if (s->reordered_input_picture[0]) {
