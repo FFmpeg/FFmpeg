@@ -645,6 +645,8 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     /* FIXME: this works for 1 and 2 channels, but check for more */
     rh->max_matrix_channel = rh->max_channel;
 
+    ctx->number_of_samples = avctx->frame_size * MAJOR_HEADER_INTERVAL;
+
     if ((ret = ff_lpc_init(&ctx->lpc_ctx, ctx->number_of_samples,
                            MLP_MAX_LPC_ORDER, ctx->lpc_type)) < 0)
         return ret;
@@ -1211,9 +1213,9 @@ static void input_to_sample_buffer(MLPEncodeContext *ctx)
  ****************************************************************************/
 
 /** Counts the number of trailing zeroes in a value */
-static int number_trailing_zeroes(int32_t sample)
+static int number_trailing_zeroes(int32_t sample, unsigned int max, unsigned int def)
 {
-    return sample ? FFMIN(15, ff_ctz(sample)) : 0;
+    return sample ? FFMIN(max, ff_ctz(sample)) : def;
 }
 
 /** Determines how many bits are zero at the end of all samples so they can be
@@ -1237,7 +1239,7 @@ static void determine_quant_step_size(MLPEncodeContext *ctx)
     }
 
     for (unsigned int channel = 0; channel <= rh->max_channel; channel++)
-        dp->quant_step_size[channel] = number_trailing_zeroes(sample_mask[channel]) - mp->shift[channel];
+        dp->quant_step_size[channel] = number_trailing_zeroes(sample_mask[channel], 15, 0) - mp->shift[channel];
 }
 
 /** Determines the smallest number of bits needed to encode the filter
@@ -1322,41 +1324,74 @@ static void determine_filters(MLPEncodeContext *ctx)
     }
 }
 
-enum MLPChMode {
-    MLP_CHMODE_LEFT_RIGHT,
-    MLP_CHMODE_LEFT_SIDE,
-    MLP_CHMODE_RIGHT_SIDE,
-    MLP_CHMODE_MID_SIDE,
-};
-
-static enum MLPChMode estimate_stereo_mode(MLPEncodeContext *ctx)
+static int estimate_coeff(MLPEncodeContext *ctx,
+                          MatrixParams *mp,
+                          unsigned int ch0, unsigned int ch1)
 {
-    uint64_t score[4], sum[4] = { 0, 0, 0, 0, };
-    int32_t *right_ch = ctx->sample_buffer + 1;
-    int32_t *left_ch  = ctx->sample_buffer;
-    int i;
-    enum MLPChMode best = 0;
+    const int number_of_samples = ctx->number_of_samples;
+    const int num_channels = ctx->num_channels;
+    int first = 1, x, x0;
+    const int32_t *ch[2];
+    int64_t g = 0, g0 = 0;
 
-    for(i = 2; i < ctx->number_of_samples; i++) {
-        int32_t left  = left_ch [i * ctx->num_channels] - 2 * left_ch [(i - 1) * ctx->num_channels] + left_ch [(i - 2) * ctx->num_channels];
-        int32_t right = right_ch[i * ctx->num_channels] - 2 * right_ch[(i - 1) * ctx->num_channels] + right_ch[(i - 2) * ctx->num_channels];
+    ch[0] = ctx->sample_buffer + ch0;
+    ch[1] = ctx->sample_buffer + ch1;
 
-        sum[0] += FFABS( left        );
-        sum[1] += FFABS(        right);
-        sum[2] += FFABS((left + right) >> 1);
-        sum[3] += FFABS( left - right);
+    for (int n = 0, i = 0; n < number_of_samples; n++) {
+        int64_t c0, c1;
+        int32_t a0, a1;
+
+        c0 = ch[0][i];
+        c1 = ch[1][i];
+
+        if (!c0 && !c1)
+            goto next;
+
+        if (!c0 || !c1) {
+            g0 = 0;
+            break;
+        }
+
+        a0 = FFABS(c0);
+        a1 = FFABS(c1);
+
+        if (a0 >= a1) {
+            g = (c1 * (1 << 14)) / c0;
+            x = ch1;
+        } else if (a0 < a1) {
+            g = (c0 * (1 << 14)) / c1;
+            x = ch0;
+        }
+
+        if (first) {
+            g0 = g;
+            x0 = x;
+            first = 0;
+        } else if (g != g0 || x != x0) {
+            g0 = 0;
+            break;
+        }
+
+next:
+        i += num_channels;
     }
 
-    score[MLP_CHMODE_LEFT_RIGHT] = sum[0] + sum[1];
-    score[MLP_CHMODE_LEFT_SIDE]  = sum[0] + sum[3];
-    score[MLP_CHMODE_RIGHT_SIDE] = sum[1] + sum[3];
-    score[MLP_CHMODE_MID_SIDE]   = sum[2] + sum[3];
+    if (g0) {
+        mp->outch[0] = (x0 == ch0) ? ch0 : ch1;
 
-    for(i = 1; i < 3; i++)
-        if(score[i] < score[best])
-            best = i;
+        mp->coeff[0][ch0] = (x0 == ch1) ? g0 : 0;
+        mp->coeff[0][ch1] = (x0 == ch0) ? g0 : 0;
 
-    return best;
+        mp->forco[0][ch0] = 0;
+        mp->forco[0][ch1] = 0;
+
+        mp->coeff[0][num_channels - 2] = mp->coeff[0][num_channels - 1] = 0;
+        mp->forco[0][num_channels - 2] = mp->forco[0][num_channels - 1] = 0;
+
+        return 1;
+    }
+
+    return 0;
 }
 
 /** Determines how many fractional bits are needed to encode matrix
@@ -1367,16 +1402,12 @@ static void code_matrix_coeffs(MLPEncodeContext *ctx, unsigned int mat)
     DecodingParams *dp = ctx->cur_decoding_params;
     MatrixParams *mp = &dp->matrix_params;
     int32_t coeff_mask = 0;
-    unsigned int bits;
 
     for (unsigned int channel = 0; channel < ctx->num_channels; channel++) {
-        int32_t coeff = mp->coeff[mat][channel];
-        coeff_mask |= coeff;
+        coeff_mask |= mp->coeff[mat][channel];
     }
 
-    for (bits = 0; bits < 14 && !(coeff_mask & (1<<bits)); bits++);
-
-    mp->fbits   [mat] = 14 - bits;
+    mp->fbits[mat] = 14 - number_trailing_zeroes(coeff_mask, 14, 14);
 }
 
 /** Determines best coefficients to use for the lossless matrix. */
@@ -1385,38 +1416,12 @@ static void lossless_matrix_coeffs(MLPEncodeContext *ctx)
     DecodingParams *dp = ctx->cur_decoding_params;
     MatrixParams *mp = &dp->matrix_params;
     unsigned int shift = 0;
-    enum MLPChMode mode;
 
-    if (1 || ctx->num_channels - 2 != 2) {
-        mp->count = 0;
+    mp->count = 0;
+    if (ctx->num_channels - 2 != 2)
         return;
-    }
 
-    mode = estimate_stereo_mode(ctx);
-
-    switch (mode) {
-    /* TODO: add matrix for MID_SIDE */
-    case MLP_CHMODE_MID_SIDE:
-    case MLP_CHMODE_LEFT_RIGHT:
-        mp->count    = 0;
-        break;
-    case MLP_CHMODE_LEFT_SIDE:
-        mp->count    = 1;
-        mp->outch[0] = 1;
-        mp->coeff[0][0] =  1 << 14; mp->coeff[0][1] = -(1 << 14);
-        mp->coeff[0][2] =  0 << 14; mp->coeff[0][2] =   0 << 14;
-        mp->forco[0][0] =  1 << 14; mp->forco[0][1] = -(1 << 14);
-        mp->forco[0][2] =  0 << 14; mp->forco[0][2] =   0 << 14;
-        break;
-    case MLP_CHMODE_RIGHT_SIDE:
-        mp->count    = 1;
-        mp->outch[0] = 0;
-        mp->coeff[0][0] =  1 << 14; mp->coeff[0][1] =   1 << 14;
-        mp->coeff[0][2] =  0 << 14; mp->coeff[0][2] =   0 << 14;
-        mp->forco[0][0] =  1 << 14; mp->forco[0][1] = -(1 << 14);
-        mp->forco[0][2] =  0 << 14; mp->forco[0][2] =   0 << 14;
-        break;
-    }
+    mp->count = estimate_coeff(ctx, mp, 0, 1);
 
     for (int mat = 0; mat < mp->count; mat++)
         code_matrix_coeffs(ctx, mat);
@@ -1775,8 +1780,6 @@ static void rematrix_channels(MLPEncodeContext *ctx)
     unsigned int maxchan = ctx->num_channels;
 
     for (unsigned int mat = 0; mat < mp->count; mat++) {
-        unsigned int msb_mask_bits = (ctx->avctx->sample_fmt == AV_SAMPLE_FMT_S16 ? 8 : 0) - mp->shift[mat];
-        int32_t mask = MSB_MASK(msb_mask_bits);
         unsigned int outch = mp->outch[mat];
 
         sample_buffer = ctx->sample_buffer;
@@ -1787,7 +1790,7 @@ static void rematrix_channels(MLPEncodeContext *ctx)
                 int32_t sample = *(sample_buffer + src_ch);
                 accum += (int64_t) sample * mp->forco[mat][src_ch];
             }
-            sample_buffer[outch] = (accum >> 14) & mask;
+            sample_buffer[outch] = accum >> 14;
 
             sample_buffer += ctx->num_channels;
         }
