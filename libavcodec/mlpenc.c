@@ -1043,7 +1043,7 @@ static uint8_t *write_substr(MLPEncodeContext *ctx, uint8_t *buf, int buf_size,
     if (ctx->last_frames == 0 && ctx->shorten_by) {
         if (ctx->avctx->codec_id == AV_CODEC_ID_TRUEHD) {
             put_bits(&pb, 16, END_OF_STREAM & 0xFFFF);
-            put_bits(&pb, 16, (ctx->shorten_by & 0x1FFF) | 0x2000);
+            put_bits(&pb, 16, (ctx->shorten_by & 0x1FFF) | 0xE000);
         } else {
             put_bits32(&pb, END_OF_STREAM);
         }
