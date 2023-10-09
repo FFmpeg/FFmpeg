@@ -127,6 +127,7 @@ typedef struct MLPEncodeContext {
     int             lpc_type;
     int             lpc_passes;
     int             prediction_order;
+    int             max_codebook_search;
 
     int             num_substreams;         ///< Number of substreams contained within this stream.
 
@@ -203,8 +204,6 @@ typedef struct MLPEncodeContext {
 
     const ChannelParams  *prev_channel_params;
     const DecodingParams *prev_decoding_params;
-
-    unsigned int    max_codebook_search;
 
     int             shorten_by;
 
@@ -559,7 +558,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     /* TODO Let user pass major header interval as parameter. */
     ctx->max_restart_interval = MAJOR_HEADER_INTERVAL;
 
-    ctx->max_codebook_search = 3;
     ctx->min_restart_interval = MAJOR_HEADER_INTERVAL;
     ctx->restart_intervals = ctx->max_restart_interval / ctx->min_restart_interval;
 
@@ -2166,6 +2164,7 @@ static const AVOption mlp_options[] = {
 { "levinson", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LPC_TYPE_LEVINSON }, 0, 0, FLAGS, "lpc_type" },
 { "cholesky", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LPC_TYPE_CHOLESKY }, 0, 0, FLAGS, "lpc_type" },
 { "lpc_passes", "Number of passes to use for Cholesky factorization during LPC analysis", OFFSET(lpc_passes),  AV_OPT_TYPE_INT, {.i64 = 2 }, 1, INT_MAX, FLAGS },
+{ "codebook_search", "Max number of codebook searches", OFFSET(max_codebook_search),  AV_OPT_TYPE_INT, {.i64 = 3 }, 1, 100, FLAGS },
 { "prediction_order", "Search method for selecting prediction order", OFFSET(prediction_order), AV_OPT_TYPE_INT, {.i64 = ORDER_METHOD_EST }, ORDER_METHOD_EST, ORDER_METHOD_SEARCH, FLAGS, "predm" },
 { "estimation", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = ORDER_METHOD_EST },    0, 0, FLAGS, "predm" },
 { "search",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = ORDER_METHOD_SEARCH }, 0, 0, FLAGS, "predm" },
