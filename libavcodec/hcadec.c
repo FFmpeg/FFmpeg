@@ -65,7 +65,7 @@ typedef struct HCAContext {
     uint8_t stereo_band_count;
     uint8_t bands_per_hfr_group;
 
-    // Set during init() and freed on close(). Untouched on flush()
+    // Set during init() and freed on close(). Untouched on init_flush()
     av_tx_fn           tx_fn;
     AVTXContext       *tx_ctx;
     AVFloatDSPContext *fdsp;
@@ -197,7 +197,7 @@ static inline unsigned ceil2(unsigned a, unsigned b)
     return (b > 0) ? (a / b + ((a % b) ? 1 : 0)) : 0;
 }
 
-static av_cold void decode_flush(AVCodecContext *avctx)
+static av_cold void init_flush(AVCodecContext *avctx)
 {
     HCAContext *c = avctx->priv_data;
 
@@ -213,7 +213,7 @@ static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
     unsigned b, chunk;
     int version, ret;
 
-    decode_flush(avctx);
+    init_flush(avctx);
 
     if (extradata_size < 36)
         return AVERROR_INVALIDDATA;
@@ -607,6 +607,14 @@ static av_cold int decode_close(AVCodecContext *avctx)
     av_tx_uninit(&c->tx_ctx);
 
     return 0;
+}
+
+static av_cold void decode_flush(AVCodecContext *avctx)
+{
+    HCAContext *c = avctx->priv_data;
+
+    for (int ch = 0; ch < MAX_CHANNELS; ch++)
+        memset(c->ch[ch].imdct_prev, 0, sizeof(c->ch[ch].imdct_prev));
 }
 
 const FFCodec ff_hca_decoder = {
