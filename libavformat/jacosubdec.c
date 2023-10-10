@@ -128,28 +128,28 @@ shift_and_ret:
 static int get_shift(unsigned timeres, const char *buf)
 {
     int sign = 1;
-    int a = 0, b = 0, c = 0, d = 0;
+    int h = 0, m = 0, s = 0, d = 0;
     int64_t ret;
 #define SSEP "%*1[.:]"
-    int n = sscanf(buf, "%d"SSEP"%d"SSEP"%d"SSEP"%d", &a, &b, &c, &d);
+    int n = sscanf(buf, "%d"SSEP"%d"SSEP"%d"SSEP"%d", &h, &m, &s, &d);
 #undef SSEP
 
-    if (a == INT_MIN)
+    if (h == INT_MIN)
         return 0;
 
-    if (*buf == '-' || a < 0) {
+    if (*buf == '-' || h < 0) {
         sign = -1;
-        a = FFABS(a);
+        h = FFABS(h);
     }
 
     ret = 0;
     switch (n) {
-    case 1:                      a = 0;
-    case 2:        c = b; b = a; a = 0;
-    case 3: d = c; c = b; b = a; a = 0;
+    case 1:        h = 0;                   //clear all in case of a single parameter
+    case 2: s = m; m = h; h = 0;            //shift into second subsecondd
+    case 3: d = s; s = m; m = h; h = 0;     //shift into minute second subsecond
     }
 
-    ret = (int64_t)a*3600 + (int64_t)b*60 + c;
+    ret = (int64_t)h*3600 + (int64_t)m*60 + s;
     if (FFABS(ret) > (INT64_MAX - FFABS(d)) / timeres)
         return 0;
     ret = sign * (ret * timeres + d);
