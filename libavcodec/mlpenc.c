@@ -127,6 +127,7 @@ typedef struct MLPEncodeContext {
 
     int             max_restart_interval;   ///< Max interval of access units in between two major frames.
     int             min_restart_interval;   ///< Min interval of access units in between two major frames.
+    int             lpc_coeff_precision;
     int             lpc_type;
     int             lpc_passes;
     int             prediction_order;
@@ -243,7 +244,7 @@ static int compare_filter_params(const ChannelParams *prev_cp, const ChannelPara
     if (prev->order != fp->order)
         return 1;
 
-    if (!prev->order)
+    if (!fp->order)
         return 0;
 
     if (prev->shift != fp->shift)
@@ -266,7 +267,7 @@ static int compare_matrix_params(MLPEncodeContext *ctx, const MatrixParams *prev
     if (prev->count != mp->count)
         return 1;
 
-    if (!prev->count)
+    if (!mp->count)
         return 0;
 
     for (unsigned int channel = rh->min_channel; channel <= rh->max_channel; channel++)
@@ -1293,7 +1294,7 @@ static void set_filter_params(MLPEncodeContext *ctx,
 
         order = ff_lpc_calc_coefs(&ctx->lpc_ctx, ctx->lpc_sample_buffer,
                                   ctx->number_of_samples, MLP_MIN_LPC_ORDER,
-                                  max_order, 11, coefs, shift, ctx->lpc_type, ctx->lpc_passes,
+                                  max_order, ctx->lpc_coeff_precision, coefs, shift, ctx->lpc_type, ctx->lpc_passes,
                                   ctx->prediction_order, MLP_MIN_LPC_SHIFT,
                                   MLP_MAX_LPC_SHIFT, MLP_MIN_LPC_SHIFT);
 
@@ -2160,6 +2161,7 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(MLPEncodeContext, x)
 static const AVOption mlp_options[] = {
 { "max_interval", "Max number of frames between each new header", OFFSET(max_restart_interval),  AV_OPT_TYPE_INT, {.i64 = 16 }, MIN_HEADER_INTERVAL, MAX_HEADER_INTERVAL, FLAGS },
+{ "lpc_coeff_precision", "LPC coefficient precision", OFFSET(lpc_coeff_precision), AV_OPT_TYPE_INT, {.i64 = 15 }, 0, 15, FLAGS },
 { "lpc_type", "LPC algorithm", OFFSET(lpc_type), AV_OPT_TYPE_INT, {.i64 = FF_LPC_TYPE_LEVINSON }, FF_LPC_TYPE_LEVINSON, FF_LPC_TYPE_CHOLESKY, FLAGS, "lpc_type" },
 { "levinson", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LPC_TYPE_LEVINSON }, 0, 0, FLAGS, "lpc_type" },
 { "cholesky", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_LPC_TYPE_CHOLESKY }, 0, 0, FLAGS, "lpc_type" },
