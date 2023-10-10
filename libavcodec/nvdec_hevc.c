@@ -305,6 +305,15 @@ static int nvdec_hevc_frame_params(AVCodecContext *avctx,
 static int nvdec_hevc_decode_init(AVCodecContext *avctx) {
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
     ctx->supports_444 = 1;
+
+    if (avctx->profile != FF_PROFILE_HEVC_MAIN &&
+        avctx->profile != FF_PROFILE_HEVC_MAIN_10 &&
+        avctx->profile != FF_PROFILE_HEVC_MAIN_STILL_PICTURE &&
+        avctx->profile != FF_PROFILE_HEVC_REXT) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported HEVC profile: %d\n", avctx->profile);
+        return AVERROR(ENOTSUP);
+    }
+
     return ff_nvdec_decode_init(avctx);
 }
 
