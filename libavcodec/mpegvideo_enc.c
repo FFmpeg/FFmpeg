@@ -2145,7 +2145,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         update_qscale(s);
 
         if (!(s->mpv_flags & FF_MPV_FLAG_QP_RD)) {
-            s->qscale = s->cur_pic_ptr->qscale_table[mb_xy];
+            s->qscale = s->cur_pic.qscale_table[mb_xy];
             s->dquant = s->qscale - last_qp;
 
             if (s->out_format == FMT_H263) {

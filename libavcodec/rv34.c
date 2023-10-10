@@ -369,7 +369,7 @@ static int rv34_decode_intra_mb_header(RV34DecContext *r, int8_t *intra_types)
 
     r->is16 = get_bits1(gb);
     if(r->is16){
-        s->cur_pic_ptr->mb_type[mb_pos] = MB_TYPE_INTRA16x16;
+        s->cur_pic.mb_type[mb_pos] = MB_TYPE_INTRA16x16;
         r->block_type = RV34_MB_TYPE_INTRA16x16;
         t = get_bits(gb, 2);
         fill_rectangle(intra_types, 4, 4, r->intra_types_stride, t, sizeof(intra_types[0]));
@@ -379,7 +379,7 @@ static int rv34_decode_intra_mb_header(RV34DecContext *r, int8_t *intra_types)
             if(!get_bits1(gb))
                 av_log(s->avctx, AV_LOG_ERROR, "Need DQUANT\n");
         }
-        s->cur_pic_ptr->mb_type[mb_pos] = MB_TYPE_INTRA;
+        s->cur_pic.mb_type[mb_pos] = MB_TYPE_INTRA;
         r->block_type = RV34_MB_TYPE_INTRA;
         if(r->decode_intra_types(r, gb, intra_types) < 0)
             return -1;
@@ -405,7 +405,7 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
     r->block_type = r->decode_mb_info(r);
     if(r->block_type == -1)
         return -1;
-    s->cur_pic_ptr->mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
+    s->cur_pic.mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
     r->mb_type[mb_pos] = r->block_type;
     if(r->block_type == RV34_MB_SKIP){
         if(s->pict_type == AV_PICTURE_TYPE_P)
@@ -413,7 +413,7 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
         if(s->pict_type == AV_PICTURE_TYPE_B)
             r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
     }
-    r->is16 = !!IS_INTRA16x16(s->cur_pic_ptr->mb_type[mb_pos]);
+    r->is16 = !!IS_INTRA16x16(s->cur_pic.mb_type[mb_pos]);
     if (rv34_decode_mv(r, r->block_type) < 0)
         return -1;
     if(r->block_type == RV34_MB_SKIP){
@@ -423,7 +423,7 @@ static int rv34_decode_inter_mb_header(RV34DecContext *r, int8_t *intra_types)
     r->chroma_vlc = 1;
     r->luma_vlc   = 0;
 
-    if(IS_INTRA(s->cur_pic_ptr->mb_type[mb_pos])){
+    if (IS_INTRA(s->cur_pic.mb_type[mb_pos])) {
         if(r->is16){
             t = get_bits(gb, 2);
             fill_rectangle(intra_types, 4, 4, r->intra_types_stride, t, sizeof(intra_types[0]));
@@ -482,33 +482,34 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
     int mx, my;
     int* avail = r->avail_cache + avail_indexes[subblock_no];
     int c_off = part_sizes_w[block_type];
+    int16_t (*motion_val)[2] = s->cur_pic.motion_val[0];
 
     mv_pos += (subblock_no & 1) + (subblock_no >> 1)*s->b8_stride;
     if(subblock_no == 3)
         c_off = -1;
 
     if(avail[-1]){
-        A[0] = s->cur_pic_ptr->motion_val[0][mv_pos-1][0];
-        A[1] = s->cur_pic_ptr->motion_val[0][mv_pos-1][1];
+        A[0] = motion_val[mv_pos-1][0];
+        A[1] = motion_val[mv_pos-1][1];
     }
     if(avail[-4]){
-        B[0] = s->cur_pic_ptr->motion_val[0][mv_pos-s->b8_stride][0];
-        B[1] = s->cur_pic_ptr->motion_val[0][mv_pos-s->b8_stride][1];
+        B[0] = motion_val[mv_pos-s->b8_stride][0];
+        B[1] = motion_val[mv_pos-s->b8_stride][1];
     }else{
         B[0] = A[0];
         B[1] = A[1];
     }
     if(!avail[c_off-4]){
         if(avail[-4] && (avail[-1] || r->rv30)){
-            C[0] = s->cur_pic_ptr->motion_val[0][mv_pos-s->b8_stride-1][0];
-            C[1] = s->cur_pic_ptr->motion_val[0][mv_pos-s->b8_stride-1][1];
+            C[0] = motion_val[mv_pos-s->b8_stride-1][0];
+            C[1] = motion_val[mv_pos-s->b8_stride-1][1];
         }else{
             C[0] = A[0];
             C[1] = A[1];
         }
     }else{
-        C[0] = s->cur_pic_ptr->motion_val[0][mv_pos-s->b8_stride+c_off][0];
-        C[1] = s->cur_pic_ptr->motion_val[0][mv_pos-s->b8_stride+c_off][1];
+        C[0] = motion_val[mv_pos-s->b8_stride+c_off][0];
+        C[1] = motion_val[mv_pos-s->b8_stride+c_off][1];
     }
     mx = mid_pred(A[0], B[0], C[0]);
     my = mid_pred(A[1], B[1], C[1]);
@@ -516,8 +517,8 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
     my += r->dmv[dmv_no][1];
     for(j = 0; j < part_sizes_h[block_type]; j++){
         for(i = 0; i < part_sizes_w[block_type]; i++){
-            s->cur_pic_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][0] = mx;
-            s->cur_pic_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][1] = my;
+            motion_val[mv_pos + i + j*s->b8_stride][0] = mx;
+            motion_val[mv_pos + i + j*s->b8_stride][1] = my;
         }
     }
 }
@@ -566,7 +567,7 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     int has_A = 0, has_B = 0, has_C = 0;
     int mx, my;
     int i, j;
-    Picture *cur_pic = s->cur_pic_ptr;
+    Picture *cur_pic = &s->cur_pic;
     const int mask = dir ? MB_TYPE_L1 : MB_TYPE_L0;
     int type = cur_pic->mb_type[mb_pos];
 
@@ -619,27 +620,27 @@ static void rv34_pred_mv_rv3(RV34DecContext *r, int block_type, int dir)
     int* avail = r->avail_cache + avail_indexes[0];
 
     if(avail[-1]){
-        A[0] = s->cur_pic_ptr->motion_val[0][mv_pos - 1][0];
-        A[1] = s->cur_pic_ptr->motion_val[0][mv_pos - 1][1];
+        A[0] = s->cur_pic.motion_val[0][mv_pos - 1][0];
+        A[1] = s->cur_pic.motion_val[0][mv_pos - 1][1];
     }
     if(avail[-4]){
-        B[0] = s->cur_pic_ptr->motion_val[0][mv_pos - s->b8_stride][0];
-        B[1] = s->cur_pic_ptr->motion_val[0][mv_pos - s->b8_stride][1];
+        B[0] = s->cur_pic.motion_val[0][mv_pos - s->b8_stride][0];
+        B[1] = s->cur_pic.motion_val[0][mv_pos - s->b8_stride][1];
     }else{
         B[0] = A[0];
         B[1] = A[1];
     }
     if(!avail[-4 + 2]){
         if(avail[-4] && (avail[-1])){
-            C[0] = s->cur_pic_ptr->motion_val[0][mv_pos - s->b8_stride - 1][0];
-            C[1] = s->cur_pic_ptr->motion_val[0][mv_pos - s->b8_stride - 1][1];
+            C[0] = s->cur_pic.motion_val[0][mv_pos - s->b8_stride - 1][0];
+            C[1] = s->cur_pic.motion_val[0][mv_pos - s->b8_stride - 1][1];
         }else{
             C[0] = A[0];
             C[1] = A[1];
         }
     }else{
-        C[0] = s->cur_pic_ptr->motion_val[0][mv_pos - s->b8_stride + 2][0];
-        C[1] = s->cur_pic_ptr->motion_val[0][mv_pos - s->b8_stride + 2][1];
+        C[0] = s->cur_pic.motion_val[0][mv_pos - s->b8_stride + 2][0];
+        C[1] = s->cur_pic.motion_val[0][mv_pos - s->b8_stride + 2][1];
     }
     mx = mid_pred(A[0], B[0], C[0]);
     my = mid_pred(A[1], B[1], C[1]);
@@ -648,8 +649,8 @@ static void rv34_pred_mv_rv3(RV34DecContext *r, int block_type, int dir)
     for(j = 0; j < 2; j++){
         for(i = 0; i < 2; i++){
             for(k = 0; k < 2; k++){
-                s->cur_pic_ptr->motion_val[k][mv_pos + i + j*s->b8_stride][0] = mx;
-                s->cur_pic_ptr->motion_val[k][mv_pos + i + j*s->b8_stride][1] = my;
+                s->cur_pic.motion_val[k][mv_pos + i + j*s->b8_stride][0] = mx;
+                s->cur_pic.motion_val[k][mv_pos + i + j*s->b8_stride][1] = my;
             }
         }
     }
@@ -685,27 +686,28 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     int mv_pos = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride + mv_off;
     int is16x16 = 1;
     int emu = 0;
+    int16_t *motion_val = s->cur_pic.motion_val[dir][mv_pos];
 
     if(thirdpel){
         int chroma_mx, chroma_my;
-        mx = (s->cur_pic_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) / 3 - (1 << 24);
-        my = (s->cur_pic_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) / 3 - (1 << 24);
-        lx = (s->cur_pic_ptr->motion_val[dir][mv_pos][0] + (3 << 24)) % 3;
-        ly = (s->cur_pic_ptr->motion_val[dir][mv_pos][1] + (3 << 24)) % 3;
-        chroma_mx = s->cur_pic_ptr->motion_val[dir][mv_pos][0] / 2;
-        chroma_my = s->cur_pic_ptr->motion_val[dir][mv_pos][1] / 2;
+        mx = (motion_val[0] + (3 << 24)) / 3 - (1 << 24);
+        my = (motion_val[1] + (3 << 24)) / 3 - (1 << 24);
+        lx = (motion_val[0] + (3 << 24)) % 3;
+        ly = (motion_val[1] + (3 << 24)) % 3;
+        chroma_mx = motion_val[0] / 2;
+        chroma_my = motion_val[1] / 2;
         umx = (chroma_mx + (3 << 24)) / 3 - (1 << 24);
         umy = (chroma_my + (3 << 24)) / 3 - (1 << 24);
         uvmx = chroma_coeffs[(chroma_mx + (3 << 24)) % 3];
         uvmy = chroma_coeffs[(chroma_my + (3 << 24)) % 3];
     }else{
         int cx, cy;
-        mx = s->cur_pic_ptr->motion_val[dir][mv_pos][0] >> 2;
-        my = s->cur_pic_ptr->motion_val[dir][mv_pos][1] >> 2;
-        lx = s->cur_pic_ptr->motion_val[dir][mv_pos][0] & 3;
-        ly = s->cur_pic_ptr->motion_val[dir][mv_pos][1] & 3;
-        cx = s->cur_pic_ptr->motion_val[dir][mv_pos][0] / 2;
-        cy = s->cur_pic_ptr->motion_val[dir][mv_pos][1] / 2;
+        mx = motion_val[0] >> 2;
+        my = motion_val[1] >> 2;
+        lx = motion_val[0] & 3;
+        ly = motion_val[1] & 3;
+        cx = motion_val[0] / 2;
+        cy = motion_val[1] / 2;
         umx = cx >> 2;
         umy = cy >> 2;
         uvmx = (cx & 3) << 1;
@@ -723,9 +725,9 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     }
 
     dxy = ly*4 + lx;
-    srcY = dir ? s->next_pic_ptr->f->data[0] : s->last_pic_ptr->f->data[0];
-    srcU = dir ? s->next_pic_ptr->f->data[1] : s->last_pic_ptr->f->data[1];
-    srcV = dir ? s->next_pic_ptr->f->data[2] : s->last_pic_ptr->f->data[2];
+    srcY = dir ? s->next_pic.data[0] : s->last_pic.data[0];
+    srcU = dir ? s->next_pic.data[1] : s->last_pic.data[1];
+    srcV = dir ? s->next_pic.data[2] : s->last_pic.data[2];
     src_x = s->mb_x * 16 + xoff + mx;
     src_y = s->mb_y * 16 + yoff + my;
     uvsrc_x = s->mb_x * 8 + (xoff >> 1) + umx;
@@ -886,11 +888,11 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
     switch(block_type){
     case RV34_MB_TYPE_INTRA:
     case RV34_MB_TYPE_INTRA16x16:
-        ZERO8x2(s->cur_pic_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+        ZERO8x2(s->cur_pic.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         return 0;
     case RV34_MB_SKIP:
         if(s->pict_type == AV_PICTURE_TYPE_P){
-            ZERO8x2(s->cur_pic_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+            ZERO8x2(s->cur_pic.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
             rv34_mc_1mv (r, block_type, 0, 0, 0, 2, 2, 0);
             break;
         }
@@ -900,21 +902,21 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_await_progress(&s->next_pic_ptr->tf, FFMAX(0, s->mb_y-1), 0);
 
-        next_bt = s->next_pic_ptr->mb_type[s->mb_x + s->mb_y * s->mb_stride];
+        next_bt = s->next_pic.mb_type[s->mb_x + s->mb_y * s->mb_stride];
         if(IS_INTRA(next_bt) || IS_SKIP(next_bt)){
-            ZERO8x2(s->cur_pic_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
-            ZERO8x2(s->cur_pic_ptr->motion_val[1][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+            ZERO8x2(s->cur_pic.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+            ZERO8x2(s->cur_pic.motion_val[1][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         }else
             for(j = 0; j < 2; j++)
                 for(i = 0; i < 2; i++)
                     for(k = 0; k < 2; k++)
                         for(l = 0; l < 2; l++)
-                            s->cur_pic_ptr->motion_val[l][mv_pos + i + j*s->b8_stride][k] = calc_add_mv(r, l, s->next_pic_ptr->motion_val[0][mv_pos + i + j*s->b8_stride][k]);
+                            s->cur_pic.motion_val[l][mv_pos + i + j*s->b8_stride][k] = calc_add_mv(r, l, s->next_pic.motion_val[0][mv_pos + i + j*s->b8_stride][k]);
         if(!(IS_16X8(next_bt) || IS_8X16(next_bt) || IS_8X8(next_bt))) //we can use whole macroblock MC
             rv34_mc_2mv(r, block_type);
         else
             rv34_mc_2mv_skip(r);
-        ZERO8x2(s->cur_pic_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
+        ZERO8x2(s->cur_pic.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         break;
     case RV34_MB_P_16x16:
     case RV34_MB_P_MIX16x16:
@@ -1182,7 +1184,7 @@ static int rv34_set_deblock_coef(RV34DecContext *r)
     MpegEncContext *s = &r->s;
     int hmvmask = 0, vmvmask = 0, i, j;
     int midx = s->mb_x * 2 + s->mb_y * 2 * s->b8_stride;
-    int16_t (*motion_val)[2] = &s->cur_pic_ptr->motion_val[0][midx];
+    int16_t (*motion_val)[2] = &s->cur_pic.motion_val[0][midx];
     for(j = 0; j < 16; j += 8){
         for(i = 0; i < 2; i++){
             if(is_mv_diff_gt_3(motion_val + i, 1))
@@ -1225,26 +1227,26 @@ static int rv34_decode_inter_macroblock(RV34DecContext *r, int8_t *intra_types)
     dist = (s->mb_x - s->resync_mb_x) + (s->mb_y - s->resync_mb_y) * s->mb_width;
     if(s->mb_x && dist)
         r->avail_cache[5] =
-        r->avail_cache[9] = s->cur_pic_ptr->mb_type[mb_pos - 1];
+        r->avail_cache[9] = s->cur_pic.mb_type[mb_pos - 1];
     if(dist >= s->mb_width)
         r->avail_cache[2] =
-        r->avail_cache[3] = s->cur_pic_ptr->mb_type[mb_pos - s->mb_stride];
+        r->avail_cache[3] = s->cur_pic.mb_type[mb_pos - s->mb_stride];
     if(((s->mb_x+1) < s->mb_width) && dist >= s->mb_width - 1)
-        r->avail_cache[4] = s->cur_pic_ptr->mb_type[mb_pos - s->mb_stride + 1];
+        r->avail_cache[4] = s->cur_pic.mb_type[mb_pos - s->mb_stride + 1];
     if(s->mb_x && dist > s->mb_width)
-        r->avail_cache[1] = s->cur_pic_ptr->mb_type[mb_pos - s->mb_stride - 1];
+        r->avail_cache[1] = s->cur_pic.mb_type[mb_pos - s->mb_stride - 1];
 
     s->qscale = r->si.quant;
     cbp = cbp2 = rv34_decode_inter_mb_header(r, intra_types);
     r->cbp_luma  [mb_pos] = cbp;
     r->cbp_chroma[mb_pos] = cbp >> 16;
     r->deblock_coefs[mb_pos] = rv34_set_deblock_coef(r) | r->cbp_luma[mb_pos];
-    s->cur_pic_ptr->qscale_table[mb_pos] = s->qscale;
+    s->cur_pic.qscale_table[mb_pos] = s->qscale;
 
     if(cbp == -1)
         return -1;
 
-    if (IS_INTRA(s->cur_pic_ptr->mb_type[mb_pos])){
+    if (IS_INTRA(s->cur_pic.mb_type[mb_pos])) {
         if(r->is16) rv34_output_i16x16(r, intra_types, cbp);
         else        rv34_output_intra(r, intra_types, cbp);
         return 0;
@@ -1327,21 +1329,21 @@ static int rv34_decode_intra_macroblock(RV34DecContext *r, int8_t *intra_types)
     dist = (s->mb_x - s->resync_mb_x) + (s->mb_y - s->resync_mb_y) * s->mb_width;
     if(s->mb_x && dist)
         r->avail_cache[5] =
-        r->avail_cache[9] = s->cur_pic_ptr->mb_type[mb_pos - 1];
+        r->avail_cache[9] = s->cur_pic.mb_type[mb_pos - 1];
     if(dist >= s->mb_width)
         r->avail_cache[2] =
-        r->avail_cache[3] = s->cur_pic_ptr->mb_type[mb_pos - s->mb_stride];
+        r->avail_cache[3] = s->cur_pic.mb_type[mb_pos - s->mb_stride];
     if(((s->mb_x+1) < s->mb_width) && dist >= s->mb_width - 1)
-        r->avail_cache[4] = s->cur_pic_ptr->mb_type[mb_pos - s->mb_stride + 1];
+        r->avail_cache[4] = s->cur_pic.mb_type[mb_pos - s->mb_stride + 1];
     if(s->mb_x && dist > s->mb_width)
-        r->avail_cache[1] = s->cur_pic_ptr->mb_type[mb_pos - s->mb_stride - 1];
+        r->avail_cache[1] = s->cur_pic.mb_type[mb_pos - s->mb_stride - 1];
 
     s->qscale = r->si.quant;
     cbp = rv34_decode_intra_mb_header(r, intra_types);
     r->cbp_luma  [mb_pos] = cbp;
     r->cbp_chroma[mb_pos] = cbp >> 16;
     r->deblock_coefs[mb_pos] = 0xFFFF;
-    s->cur_pic_ptr->qscale_table[mb_pos] = s->qscale;
+    s->cur_pic.qscale_table[mb_pos] = s->qscale;
 
     if(cbp == -1)
         return -1;

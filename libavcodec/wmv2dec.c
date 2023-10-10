@@ -103,7 +103,7 @@ static int parse_mb_skip(WMV2DecContext *w)
     int mb_x, mb_y;
     int coded_mb_count = 0;
     MpegEncContext *const s = &w->s;
-    uint32_t *const mb_type = s->cur_pic_ptr->mb_type;
+    uint32_t *const mb_type = s->cur_pic.mb_type;
 
     w->skip_type = get_bits(&s->gb, 2);
     switch (w->skip_type) {
@@ -238,9 +238,8 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         /* Is filling with zeroes really the right thing to do? */
-        memset(s->cur_pic_ptr->mb_type, 0,
-               sizeof(*s->cur_pic_ptr->mb_type) *
-               s->mb_height * s->mb_stride);
+        memset(s->cur_pic.mb_type, 0,
+               sizeof(*s->cur_pic.mb_type) * s->mb_height * s->mb_stride);
         if (w->j_type_bit)
             w->j_type = get_bits1(&s->gb);
         else
