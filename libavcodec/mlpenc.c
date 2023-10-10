@@ -452,7 +452,7 @@ static void default_decoding_params(MLPEncodeContext *ctx, DecodingParams *decod
  */
 static int inline number_sbits(int32_t n)
 {
-    return 33 - ff_clz(FFABS(n)|1);
+    return 33 - ff_clz(FFABS(n)|1) - !n;
 }
 
 enum InputBitDepth {
