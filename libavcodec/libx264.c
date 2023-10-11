@@ -1634,6 +1634,7 @@ const FFCodec ff_libx264_encoder = {
     .close            = X264_close,
     .defaults         = x264_defaults,
     .p.pix_fmts       = pix_fmts_all,
+    .color_ranges     = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS
 #if X264_BUILD < 158
                       | FF_CODEC_CAP_NOT_INIT_THREADSAFE
@@ -1691,6 +1692,7 @@ const FFCodec ff_libx262_encoder = {
                         AV_CODEC_CAP_OTHER_THREADS |
                         AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .p.pix_fmts       = pix_fmts_8bit,
+    .color_ranges     = AVCOL_RANGE_MPEG,
     .p.priv_class     = &X262_class,
     .p.wrapper_name   = "libx264",
     .priv_data_size   = sizeof(X264Context),

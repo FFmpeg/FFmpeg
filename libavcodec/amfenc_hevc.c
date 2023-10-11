@@ -536,6 +536,7 @@ const FFCodec ff_hevc_amf_encoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .p.pix_fmts     = ff_amf_pix_fmts,
+    .color_ranges   = AVCOL_RANGE_MPEG, /* FIXME: implement tagging */
     .p.wrapper_name = "amf",
     .hw_configs     = ff_amfenc_hw_configs,
 };

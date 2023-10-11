@@ -367,6 +367,7 @@ const FFCodec ff_asv1_encoder = {
     FF_CODEC_ENCODE_CB(encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
+    .color_ranges   = AVCOL_RANGE_MPEG,
 };
 #endif
 
@@ -382,5 +383,6 @@ const FFCodec ff_asv2_encoder = {
     FF_CODEC_ENCODE_CB(encode_frame),
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
+    .color_ranges   = AVCOL_RANGE_MPEG,
 };
 #endif

@@ -2146,6 +2146,7 @@ const FFCodec ff_snow_encoder = {
         AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     },
+    .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &snowenc_class,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

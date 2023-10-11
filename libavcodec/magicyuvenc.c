@@ -696,5 +696,6 @@ const FFCodec ff_magicyuv_encoder = {
                           AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P, AV_PIX_FMT_GRAY8,
                           AV_PIX_FMT_NONE
                       },
+    .color_ranges     = AVCOL_RANGE_MPEG, /* FIXME: implement tagging */
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };

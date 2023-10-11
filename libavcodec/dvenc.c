@@ -1251,5 +1251,6 @@ const FFCodec ff_dvvideo_encoder = {
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
     },
+    .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &dvvideo_encode_class,
 };

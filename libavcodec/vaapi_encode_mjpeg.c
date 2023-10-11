@@ -586,6 +586,7 @@ const FFCodec ff_mjpeg_vaapi_encoder = {
         AV_PIX_FMT_VAAPI,
         AV_PIX_FMT_NONE,
     },
+    .color_ranges   = AVCOL_RANGE_MPEG, /* FIXME: implement tagging */
     .hw_configs     = ff_vaapi_encode_hw_configs,
     .p.wrapper_name = "vaapi",
 };

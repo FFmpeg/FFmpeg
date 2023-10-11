@@ -334,6 +334,7 @@ const FFCodec ff_libkvazaar_encoder = {
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                         AV_CODEC_CAP_OTHER_THREADS,
     .p.pix_fmts       = pix_fmts,
+    .color_ranges     = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
 
     .p.priv_class     = &class,
     .priv_data_size   = sizeof(LibkvazaarContext),

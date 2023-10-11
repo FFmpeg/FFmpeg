@@ -445,6 +445,7 @@ const FFCodec ff_libopenh264_encoder = {
     .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV420P,
                                                     AV_PIX_FMT_YUVJ420P,
                                                     AV_PIX_FMT_NONE },
+    .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .defaults       = svc_enc_defaults,
     .p.priv_class   = &class,
     .p.wrapper_name = "libopenh264",

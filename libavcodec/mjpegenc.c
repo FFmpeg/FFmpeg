@@ -657,6 +657,7 @@ const FFCodec ff_mjpeg_encoder = {
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_NONE
     },
+    .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.priv_class   = &mjpeg_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
 };
@@ -683,6 +684,7 @@ const FFCodec ff_amv_encoder = {
     .p.pix_fmts     = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE
     },
+    .color_ranges   = AVCOL_RANGE_JPEG,
     .p.priv_class   = &amv_class,
     .p.capabilities = AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
 };

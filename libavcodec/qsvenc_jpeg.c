@@ -93,6 +93,7 @@ const FFCodec ff_mjpeg_qsv_encoder = {
                                                     AV_PIX_FMT_BGRA,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
+    .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.priv_class   = &class,
     .defaults       = qsv_enc_defaults,
     .p.wrapper_name = "qsv",

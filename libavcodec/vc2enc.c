@@ -1244,5 +1244,6 @@ const FFCodec ff_vc2_encoder = {
     FF_CODEC_ENCODE_CB(vc2_encode_frame),
     .p.priv_class   = &vc2enc_class,
     .defaults       = vc2enc_defaults,
-    .p.pix_fmts     = allowed_pix_fmts
+    .p.pix_fmts     = allowed_pix_fmts,
+    .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
 };

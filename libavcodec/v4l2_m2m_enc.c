@@ -433,6 +433,7 @@ static const FFCodecDefault v4l2_m2m_defaults[] = {
         .close          = v4l2_encode_close, \
         .defaults       = v4l2_m2m_defaults, \
         .p.capabilities = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
+        .color_ranges   = AVCOL_RANGE_MPEG, \
         .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE | \
                           FF_CODEC_CAP_INIT_CLEANUP, \
         .p.wrapper_name = "v4l2m2m", \

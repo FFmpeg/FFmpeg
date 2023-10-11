@@ -202,6 +202,7 @@ const FFCodec ff_av1_nvenc_encoder = {
     .p.priv_class   = &av1_nvenc_class,
     .defaults       = defaults,
     .p.pix_fmts     = ff_nvenc_pix_fmts,
+    .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |
                       AV_CODEC_CAP_ENCODER_FLUSH | AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,

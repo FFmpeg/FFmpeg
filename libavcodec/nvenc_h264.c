@@ -265,6 +265,7 @@ const FFCodec ff_h264_nvenc_encoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
     .p.pix_fmts     = ff_nvenc_pix_fmts,
+    .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.wrapper_name = "nvenc",
     .hw_configs     = ff_nvenc_hw_configs,
 };

@@ -1367,6 +1367,7 @@ const FFCodec ff_dnxhd_encoder = {
         AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_NONE
     },
+    .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &dnxhd_class,
     .defaults       = dnxhd_defaults,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),

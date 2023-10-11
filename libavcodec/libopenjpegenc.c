@@ -785,6 +785,7 @@ const FFCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_XYZ12,
         AV_PIX_FMT_NONE
     },
+    .color_ranges   = AVCOL_RANGE_MPEG,
     .p.priv_class   = &openjpeg_class,
     .p.wrapper_name = "libopenjpeg",
 };

@@ -1128,6 +1128,7 @@ const FFCodec ff_roq_encoder = {
     .close                = roq_encode_end,
     .p.pix_fmts           = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUVJ444P,
                                                         AV_PIX_FMT_NONE },
+    .color_ranges         = AVCOL_RANGE_JPEG,
     .p.priv_class   = &roq_class,
     .caps_internal        = FF_CODEC_CAP_INIT_CLEANUP,
 };
