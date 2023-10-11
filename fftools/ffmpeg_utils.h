@@ -23,8 +23,14 @@
 
 #include "libavutil/common.h"
 #include "libavutil/frame.h"
+#include "libavutil/rational.h"
 
 #include "libavcodec/packet.h"
+
+typedef struct Timestamp {
+    int64_t    ts;
+    AVRational tb;
+} Timestamp;
 
 /**
  * Merge two return codes - return one of the error codes if at least one of

@@ -347,8 +347,6 @@ typedef struct InputStream {
 
     AVRational framerate_guessed;
 
-    int64_t nb_samples; /* number of samples in the last decoded audio frame before looping */
-
     AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
 #if FFMPEG_OPT_TOP
@@ -391,11 +389,6 @@ typedef struct InputStream {
     uint64_t decode_errors;
 } InputStream;
 
-typedef struct LastFrameDuration {
-    int     stream_idx;
-    int64_t duration;
-} LastFrameDuration;
-
 typedef struct InputFile {
     const AVClass *class;
 
@@ -427,9 +420,9 @@ typedef struct InputFile {
     int accurate_seek;
 
     /* when looping the input file, this queue is used by decoders to report
-     * the last frame duration back to the demuxer thread */
-    AVThreadMessageQueue *audio_duration_queue;
-    int                   audio_duration_queue_size;
+     * the last frame timestamp back to the demuxer thread */
+    AVThreadMessageQueue *audio_ts_queue;
+    int                   audio_ts_queue_size;
 } InputFile;
 
 enum forced_keyframes_const {

@@ -632,7 +632,6 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 
         if (dec->codec_type == AVMEDIA_TYPE_AUDIO) {
             ist->samples_decoded += frame->nb_samples;
-            ist->nb_samples       = frame->nb_samples;
 
             audio_ts_process(ist, ist->decoder, frame);
         } else {
@@ -724,14 +723,9 @@ static void *decoder_thread(void *arg)
 
             /* report last frame duration to the demuxer thread */
             if (ist->dec->type == AVMEDIA_TYPE_AUDIO) {
-                LastFrameDuration dur;
-
-                dur.stream_idx = ist->index;
-                dur.duration   = av_rescale_q(ist->nb_samples,
-                                              (AVRational){ 1, ist->dec_ctx->sample_rate},
-                                              ist->st->time_base);
-
-                av_thread_message_queue_send(ifile->audio_duration_queue, &dur, 0);
+                Timestamp ts = { .ts = d->last_frame_pts + d->last_frame_duration_est,
+                                 .tb = d->last_frame_tb };
+                av_thread_message_queue_send(ifile->audio_ts_queue, &ts, 0);
             }
 
             avcodec_flush_buffers(ist->dec_ctx);
@@ -760,8 +754,8 @@ finish:
 
     // make sure the demuxer does not get stuck waiting for audio durations
     // that will never arrive
-    if (ifile->audio_duration_queue && ist->dec->type == AVMEDIA_TYPE_AUDIO)
-        av_thread_message_queue_set_err_recv(ifile->audio_duration_queue, AVERROR_EOF);
+    if (ifile->audio_ts_queue && ist->dec->type == AVMEDIA_TYPE_AUDIO)
+        av_thread_message_queue_set_err_recv(ifile->audio_ts_queue, AVERROR_EOF);
 
     dec_thread_uninit(&dt);
 
