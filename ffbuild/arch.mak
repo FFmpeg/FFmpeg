@@ -3,6 +3,8 @@ OBJS-$(HAVE_ARMV6)   += $(ARMV6-OBJS)   $(ARMV6-OBJS-yes)
 OBJS-$(HAVE_ARMV8)   += $(ARMV8-OBJS)   $(ARMV8-OBJS-yes)
 OBJS-$(HAVE_VFP)     += $(VFP-OBJS)     $(VFP-OBJS-yes)
 OBJS-$(HAVE_NEON)    += $(NEON-OBJS)    $(NEON-OBJS-yes)
+OBJS-$(HAVE_SVE)     += $(SVE-OBJS)     $(SVE-OBJS-yes)
+OBJS-$(HAVE_SVE2)    += $(SVE2-OBJS)    $(SVE2-OBJS-yes)
 
 OBJS-$(HAVE_MIPSFPU)   += $(MIPSFPU-OBJS)    $(MIPSFPU-OBJS-yes)
 OBJS-$(HAVE_MIPSDSP)   += $(MIPSDSP-OBJS)    $(MIPSDSP-OBJS-yes)
