@@ -894,17 +894,35 @@ static bool get_vt_hevc_profile_level(AVCodecContext *avctx,
 {
     VTEncContext *vtctx = avctx->priv_data;
     int profile = vtctx->profile;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(
+            avctx->pix_fmt == AV_PIX_FMT_VIDEOTOOLBOX ? avctx->sw_pix_fmt
+                                                      : avctx->pix_fmt);
+    int bit_depth = desc ? desc->comp[0].depth : 0;
 
     *profile_level_val = NULL;
 
     switch (profile) {
         case AV_PROFILE_UNKNOWN:
+            // Set profile automatically if user don't specify
+            if (bit_depth == 10) {
+                *profile_level_val =
+                        compat_keys.kVTProfileLevel_HEVC_Main10_AutoLevel;
+                break;
+            }
             return true;
         case AV_PROFILE_HEVC_MAIN:
+            if (bit_depth > 0 && bit_depth != 8)
+                av_log(avctx, AV_LOG_WARNING,
+                       "main profile with %d bit input\n", bit_depth);
             *profile_level_val =
                 compat_keys.kVTProfileLevel_HEVC_Main_AutoLevel;
             break;
         case AV_PROFILE_HEVC_MAIN_10:
+            if (bit_depth > 0 && bit_depth != 10) {
+                av_log(avctx, AV_LOG_ERROR,
+                       "Invalid main10 profile with %d bit input\n", bit_depth);
+                return false;
+            }
             *profile_level_val =
                 compat_keys.kVTProfileLevel_HEVC_Main10_AutoLevel;
             break;
