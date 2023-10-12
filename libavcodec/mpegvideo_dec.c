@@ -380,7 +380,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         if (s->pict_type == AV_PICTURE_TYPE_B && s->next_picture_ptr && s->next_picture_ptr->f->buf[0])
             av_log(avctx, AV_LOG_DEBUG,
                    "allocating dummy last picture for B frame\n");
-        else if (s->pict_type != AV_PICTURE_TYPE_I)
+        else if (s->codec_id != AV_CODEC_ID_H261)
             av_log(avctx, AV_LOG_ERROR,
                    "warning: first frame is no keyframe\n");
 
