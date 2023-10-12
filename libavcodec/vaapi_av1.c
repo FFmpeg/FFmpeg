@@ -75,19 +75,13 @@ static int vaapi_av1_decode_init(AVCodecContext *avctx)
     VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
 
     ctx->tmp_frame = av_frame_alloc();
-    if (!ctx->tmp_frame) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Failed to allocate frame.\n");
+    if (!ctx->tmp_frame)
         return AVERROR(ENOMEM);
-    }
 
     for (int i = 0; i < FF_ARRAY_ELEMS(ctx->ref_tab); i++) {
         ctx->ref_tab[i].frame = av_frame_alloc();
-        if (!ctx->ref_tab[i].frame) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Failed to allocate reference table frame %d.\n", i);
+        if (!ctx->ref_tab[i].frame)
             return AVERROR(ENOMEM);
-        }
         ctx->ref_tab[i].valid = 0;
     }
 

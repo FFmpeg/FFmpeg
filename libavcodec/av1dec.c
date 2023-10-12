@@ -819,19 +819,13 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++) {
         s->ref[i].f = av_frame_alloc();
-        if (!s->ref[i].f) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Failed to allocate reference frame buffer %d.\n", i);
+        if (!s->ref[i].f)
             return AVERROR(ENOMEM);
-        }
     }
 
     s->cur_frame.f = av_frame_alloc();
-    if (!s->cur_frame.f) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Failed to allocate current frame buffer.\n");
+    if (!s->cur_frame.f)
         return AVERROR(ENOMEM);
-    }
 
     ret = ff_cbs_init(&s->cbc, AV_CODEC_ID_AV1, avctx);
     if (ret < 0)
