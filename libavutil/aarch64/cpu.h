@@ -27,5 +27,7 @@
 #define have_vfp(flags)  CPUEXT(flags, VFP)
 #define have_dotprod(flags) CPUEXT(flags, DOTPROD)
 #define have_i8mm(flags)    CPUEXT(flags, I8MM)
+#define have_sve(flags)     CPUEXT(flags, SVE)
+#define have_sve2(flags)    CPUEXT(flags, SVE2)
 
 #endif /* AVUTIL_AARCH64_CPU_H */

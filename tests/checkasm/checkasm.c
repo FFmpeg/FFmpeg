@@ -305,6 +305,8 @@ static const struct {
     { "NEON",     "neon",     AV_CPU_FLAG_NEON },
     { "DOTPROD",  "dotprod",  AV_CPU_FLAG_DOTPROD },
     { "I8MM",     "i8mm",     AV_CPU_FLAG_I8MM },
+    { "SVE",      "sve",      AV_CPU_FLAG_SVE },
+    { "SVE2",     "sve2",     AV_CPU_FLAG_SVE2 },
 #elif ARCH_ARM
     { "ARMV5TE",  "armv5te",  AV_CPU_FLAG_ARMV5TE },
     { "ARMV6",    "armv6",    AV_CPU_FLAG_ARMV6 },

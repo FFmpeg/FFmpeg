@@ -40,6 +40,8 @@ static const struct {
     { AV_CPU_FLAG_VFP,       "vfp"        },
     { AV_CPU_FLAG_DOTPROD,   "dotprod"    },
     { AV_CPU_FLAG_I8MM,      "i8mm"       },
+    { AV_CPU_FLAG_SVE,       "sve"        },
+    { AV_CPU_FLAG_SVE2,      "sve2"       },
 #elif ARCH_ARM
     { AV_CPU_FLAG_ARMV5TE,   "armv5te"    },
     { AV_CPU_FLAG_ARMV6,     "armv6"      },

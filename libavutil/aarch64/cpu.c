@@ -25,6 +25,8 @@
 #include <sys/auxv.h>
 
 #define HWCAP_AARCH64_ASIMDDP (1 << 20)
+#define HWCAP_AARCH64_SVE     (1 << 22)
+#define HWCAP2_AARCH64_SVE2   (1 << 1)
 #define HWCAP2_AARCH64_I8MM   (1 << 13)
 
 static int detect_flags(void)
@@ -36,6 +38,10 @@ static int detect_flags(void)
 
     if (hwcap & HWCAP_AARCH64_ASIMDDP)
         flags |= AV_CPU_FLAG_DOTPROD;
+    if (hwcap & HWCAP_AARCH64_SVE)
+        flags |= AV_CPU_FLAG_SVE;
+    if (hwcap2 & HWCAP2_AARCH64_SVE2)
+        flags |= AV_CPU_FLAG_SVE2;
     if (hwcap2 & HWCAP2_AARCH64_I8MM)
         flags |= AV_CPU_FLAG_I8MM;
 
@@ -120,6 +126,14 @@ static int detect_flags(void)
     if (IsProcessorFeaturePresent(PF_ARM_SVE_I8MM_INSTRUCTIONS_AVAILABLE))
         flags |= AV_CPU_FLAG_I8MM;
 #endif
+#ifdef PF_ARM_SVE_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_SVE;
+#endif
+#ifdef PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE
+    if (IsProcessorFeaturePresent(PF_ARM_SVE2_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_SVE2;
+#endif
     return flags;
 }
 #else
@@ -141,6 +155,12 @@ int ff_get_cpu_flags_aarch64(void)
 #endif
 #ifdef __ARM_FEATURE_MATMUL_INT8
     flags |= AV_CPU_FLAG_I8MM;
+#endif
+#ifdef __ARM_FEATURE_SVE
+    flags |= AV_CPU_FLAG_SVE;
+#endif
+#ifdef __ARM_FEATURE_SVE2
+    flags |= AV_CPU_FLAG_SVE2;
 #endif
 
     flags |= detect_flags();
