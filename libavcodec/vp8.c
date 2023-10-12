@@ -116,23 +116,23 @@ static int vp8_alloc_frame(VP8Context *s, VP8Frame *f, int ref)
 
 fail:
     ff_refstruct_unref(&f->seg_map);
-    ff_thread_release_ext_buffer(s->avctx, &f->tf);
+    ff_thread_release_ext_buffer(&f->tf);
     return ret;
 }
 
-static void vp8_release_frame(VP8Context *s, VP8Frame *f)
+static void vp8_release_frame(VP8Frame *f)
 {
     ff_refstruct_unref(&f->seg_map);
     ff_refstruct_unref(&f->hwaccel_picture_private);
-    ff_thread_release_ext_buffer(s->avctx, &f->tf);
+    ff_thread_release_ext_buffer(&f->tf);
 }
 
 #if CONFIG_VP8_DECODER
-static int vp8_ref_frame(VP8Context *s, VP8Frame *dst, const VP8Frame *src)
+static int vp8_ref_frame(VP8Frame *dst, const VP8Frame *src)
 {
     int ret;
 
-    vp8_release_frame(s, dst);
+    vp8_release_frame(dst);
 
     if ((ret = ff_thread_ref_frame(&dst->tf, &src->tf)) < 0)
         return ret;
@@ -150,7 +150,7 @@ static void vp8_decode_flush_impl(AVCodecContext *avctx, int free_mem)
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->frames); i++)
-        vp8_release_frame(s, &s->frames[i]);
+        vp8_release_frame(&s->frames[i]);
     memset(s->framep, 0, sizeof(s->framep));
 
     if (free_mem)
@@ -184,7 +184,7 @@ static VP8Frame *vp8_find_free_buffer(VP8Context *s)
         abort();
     }
     if (frame->tf.f->buf[0])
-        vp8_release_frame(s, frame);
+        vp8_release_frame(frame);
 
     return frame;
 }
@@ -2699,7 +2699,7 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
             &s->frames[i] != s->framep[VP8_FRAME_PREVIOUS] &&
             &s->frames[i] != s->framep[VP8_FRAME_GOLDEN]   &&
             &s->frames[i] != s->framep[VP8_FRAME_ALTREF])
-            vp8_release_frame(s, &s->frames[i]);
+            vp8_release_frame(&s->frames[i]);
 
     curframe = s->framep[VP8_FRAME_CURRENT] = vp8_find_free_buffer(s);
 
@@ -2950,7 +2950,7 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 
     for (i = 0; i < FF_ARRAY_ELEMS(s_src->frames); i++) {
         if (s_src->frames[i].tf.f->buf[0]) {
-            int ret = vp8_ref_frame(s, &s->frames[i], &s_src->frames[i]);
+            int ret = vp8_ref_frame(&s->frames[i], &s_src->frames[i]);
             if (ret < 0)
                 return ret;
         }

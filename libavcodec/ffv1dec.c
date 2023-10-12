@@ -885,7 +885,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     AVFrame *p;
 
     if (f->last_picture.f)
-        ff_thread_release_ext_buffer(avctx, &f->last_picture);
+        ff_thread_release_ext_buffer(&f->last_picture);
     FFSWAP(ThreadFrame, f->picture, f->last_picture);
 
     f->cur = p = f->picture.f;
@@ -1025,7 +1025,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     ff_thread_report_progress(&f->picture, INT_MAX, 0);
 
     if (f->last_picture.f)
-        ff_thread_release_ext_buffer(avctx, &f->last_picture);
+        ff_thread_release_ext_buffer(&f->last_picture);
     if ((ret = av_frame_ref(rframe, f->picture.f)) < 0)
         return ret;
 
@@ -1089,7 +1089,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
 
-    ff_thread_release_ext_buffer(dst, &fdst->picture);
+    ff_thread_release_ext_buffer(&fdst->picture);
     if (fsrc->picture.f->data[0]) {
         if ((ret = ff_thread_ref_frame(&fdst->picture, &fsrc->picture)) < 0)
             return ret;
@@ -1106,12 +1106,12 @@ static av_cold int ffv1_decode_close(AVCodecContext *avctx)
     FFV1Context *const s = avctx->priv_data;
 
     if (s->picture.f) {
-        ff_thread_release_ext_buffer(avctx, &s->picture);
+        ff_thread_release_ext_buffer(&s->picture);
         av_frame_free(&s->picture.f);
     }
 
     if (s->last_picture.f) {
-        ff_thread_release_ext_buffer(avctx, &s->last_picture);
+        ff_thread_release_ext_buffer(&s->last_picture);
         av_frame_free(&s->last_picture.f);
     }
     return ff_ffv1_close(avctx);

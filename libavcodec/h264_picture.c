@@ -36,7 +36,7 @@
 #include "thread.h"
 #include "threadframe.h"
 
-void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
+void ff_h264_unref_picture(H264Picture *pic)
 {
     int off = offsetof(H264Picture, f_grain) + sizeof(pic->f_grain);
     int i;
@@ -44,8 +44,8 @@ void ff_h264_unref_picture(H264Context *h, H264Picture *pic)
     if (!pic->f || !pic->f->buf[0])
         return;
 
-    ff_thread_release_ext_buffer(h->avctx, &pic->tf);
-    ff_thread_release_buffer(h->avctx, pic->f_grain);
+    ff_thread_release_ext_buffer(&pic->tf);
+    av_frame_unref(pic->f_grain);
     ff_refstruct_unref(&pic->hwaccel_picture_private);
 
     av_buffer_unref(&pic->qscale_table_buf);
@@ -94,7 +94,7 @@ static void h264_copy_picture_params(H264Picture *dst, const H264Picture *src)
     dst->needs_fg      = src->needs_fg;
 }
 
-int ff_h264_ref_picture(H264Context *h, H264Picture *dst, const H264Picture *src)
+int ff_h264_ref_picture(H264Picture *dst, const H264Picture *src)
 {
     int ret, i;
 
@@ -140,28 +140,28 @@ int ff_h264_ref_picture(H264Context *h, H264Picture *dst, const H264Picture *src
 
     return 0;
 fail:
-    ff_h264_unref_picture(h, dst);
+    ff_h264_unref_picture(dst);
     return ret;
 }
 
-int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture *src)
+int ff_h264_replace_picture(H264Picture *dst, const H264Picture *src)
 {
     int ret, i;
 
     if (!src->f || !src->f->buf[0]) {
-        ff_h264_unref_picture(h, dst);
+        ff_h264_unref_picture(dst);
         return 0;
     }
 
     av_assert0(src->tf.f == src->f);
 
     dst->tf.f = dst->f;
-    ret = ff_thread_replace_frame(h->avctx, &dst->tf, &src->tf);
+    ret = ff_thread_replace_frame(&dst->tf, &src->tf);
     if (ret < 0)
         goto fail;
 
     if (src->needs_fg) {
-        ff_thread_release_buffer(h->avctx, dst->f_grain);
+        av_frame_unref(dst->f_grain);
         ret = av_frame_ref(dst->f_grain, src->f_grain);
         if (ret < 0)
             goto fail;
@@ -190,7 +190,7 @@ int ff_h264_replace_picture(H264Context *h, H264Picture *dst, const H264Picture 
 
     return 0;
 fail:
-    ff_h264_unref_picture(h, dst);
+    ff_h264_unref_picture(dst);
     return ret;
 }
 

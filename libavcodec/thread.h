@@ -74,14 +74,6 @@ void ff_thread_finish_setup(AVCodecContext *avctx);
  */
 int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f, int flags);
 
-/**
- * Wrapper around av_frame_unref() for frame-threaded codecs.
- *
- * @param avctx The current context.
- * @param f The picture being released.
- */
-void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f);
-
 int ff_thread_init(AVCodecContext *s);
 int ff_slice_thread_execute_with_mainfunc(AVCodecContext *avctx,
         int (*action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr),

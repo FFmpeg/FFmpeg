@@ -223,7 +223,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
         p->result = codec->cb.decode(avctx, p->frame, &p->got_frame, p->avpkt);
 
         if ((p->result < 0 || !p->got_frame) && p->frame->buf[0])
-            ff_thread_release_buffer(avctx, p->frame);
+            av_frame_unref(p->frame);
 
         if (atomic_load(&p->state) == STATE_SETTING_UP)
             ff_thread_finish_setup(avctx);
@@ -1009,20 +1009,10 @@ int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     return ret;
 }
 
-void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
-{
-    if (!f)
-        return;
-
-    if (avctx->debug & FF_DEBUG_BUFFERS)
-        av_log(avctx, AV_LOG_DEBUG, "thread_release_buffer called on pic %p\n", f);
-
-    av_frame_unref(f);
-}
-
-void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f)
+void ff_thread_release_ext_buffer(ThreadFrame *f)
 {
     ff_refstruct_unref(&f->progress);
     f->owner[0] = f->owner[1] = NULL;
-    ff_thread_release_buffer(avctx, f->f);
+    if (f->f)
+        av_frame_unref(f->f);
 }

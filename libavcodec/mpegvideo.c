@@ -793,12 +793,12 @@ void ff_mpv_common_end(MpegEncContext *s)
 
     if (s->picture) {
         for (int i = 0; i < MAX_PICTURE_COUNT; i++)
-            ff_mpv_picture_free(s->avctx, &s->picture[i]);
+            ff_mpv_picture_free(&s->picture[i]);
     }
     av_freep(&s->picture);
-    ff_mpv_picture_free(s->avctx, &s->last_picture);
-    ff_mpv_picture_free(s->avctx, &s->current_picture);
-    ff_mpv_picture_free(s->avctx, &s->next_picture);
+    ff_mpv_picture_free(&s->last_picture);
+    ff_mpv_picture_free(&s->current_picture);
+    ff_mpv_picture_free(&s->next_picture);
 
     s->context_initialized      = 0;
     s->context_reinit           = 0;

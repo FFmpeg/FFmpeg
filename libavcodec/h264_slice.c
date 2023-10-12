@@ -121,7 +121,7 @@ static void release_unused_pictures(H264Context *h, int remove_current)
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
         if (h->DPB[i].f->buf[0] && !h->DPB[i].reference &&
             (remove_current || &h->DPB[i] != h->cur_pic_ptr)) {
-            ff_h264_unref_picture(h, &h->DPB[i]);
+            ff_h264_unref_picture(&h->DPB[i]);
         }
     }
 }
@@ -262,7 +262,7 @@ static int alloc_picture(H264Context *h, H264Picture *pic)
 
     return 0;
 fail:
-    ff_h264_unref_picture(h, pic);
+    ff_h264_unref_picture(pic);
     return (ret < 0) ? ret : AVERROR(ENOMEM);
 }
 
@@ -396,13 +396,13 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
     h->droppable            = h1->droppable;
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++) {
-        ret = ff_h264_replace_picture(h, &h->DPB[i], &h1->DPB[i]);
+        ret = ff_h264_replace_picture(&h->DPB[i], &h1->DPB[i]);
         if (ret < 0)
             return ret;
     }
 
     h->cur_pic_ptr = REBASE_PICTURE(h1->cur_pic_ptr, h, h1);
-    ret = ff_h264_replace_picture(h, &h->cur_pic, &h1->cur_pic);
+    ret = ff_h264_replace_picture(&h->cur_pic, &h1->cur_pic);
     if (ret < 0)
         return ret;
 
@@ -529,12 +529,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return ret;
 
     h->cur_pic_ptr = pic;
-    ff_h264_unref_picture(h, &h->cur_pic);
+    ff_h264_unref_picture(&h->cur_pic);
     if (CONFIG_ERROR_RESILIENCE) {
         ff_h264_set_erpic(&h->er.cur_pic, NULL);
     }
 
-    if ((ret = ff_h264_ref_picture(h, &h->cur_pic, h->cur_pic_ptr)) < 0)
+    if ((ret = ff_h264_ref_picture(&h->cur_pic, h->cur_pic_ptr)) < 0)
         return ret;
 
     for (i = 0; i < h->nb_slice_ctx; i++) {
@@ -1541,7 +1541,7 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
                 ff_thread_await_progress(&prev->tf, INT_MAX, 0);
                 if (prev->field_picture)
                     ff_thread_await_progress(&prev->tf, INT_MAX, 1);
-                ff_thread_release_ext_buffer(h->avctx, &h->short_ref[0]->tf);
+                ff_thread_release_ext_buffer(&h->short_ref[0]->tf);
                 h->short_ref[0]->tf.f = h->short_ref[0]->f;
                 ret = ff_thread_ref_frame(&h->short_ref[0]->tf, &prev->tf);
                 if (ret < 0)

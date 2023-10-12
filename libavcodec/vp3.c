@@ -337,11 +337,11 @@ static void vp3_decode_flush(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
 
     if (s->golden_frame.f)
-        ff_thread_release_ext_buffer(avctx, &s->golden_frame);
+        ff_thread_release_ext_buffer(&s->golden_frame);
     if (s->last_frame.f)
-        ff_thread_release_ext_buffer(avctx, &s->last_frame);
+        ff_thread_release_ext_buffer(&s->last_frame);
     if (s->current_frame.f)
-        ff_thread_release_ext_buffer(avctx, &s->current_frame);
+        ff_thread_release_ext_buffer(&s->current_frame);
 }
 
 static av_cold int vp3_decode_end(AVCodecContext *avctx)
@@ -2499,20 +2499,20 @@ static int update_frames(AVCodecContext *avctx)
     int ret = 0;
 
     if (s->keyframe) {
-        ff_thread_release_ext_buffer(avctx, &s->golden_frame);
+        ff_thread_release_ext_buffer(&s->golden_frame);
         ret = ff_thread_ref_frame(&s->golden_frame, &s->current_frame);
     }
     /* shuffle frames */
-    ff_thread_release_ext_buffer(avctx, &s->last_frame);
+    ff_thread_release_ext_buffer(&s->last_frame);
     FFSWAP(ThreadFrame, s->last_frame, s->current_frame);
 
     return ret;
 }
 
 #if HAVE_THREADS
-static int ref_frame(Vp3DecodeContext *s, ThreadFrame *dst, const ThreadFrame *src)
+static int ref_frame(ThreadFrame *dst, const ThreadFrame *src)
 {
-    ff_thread_release_ext_buffer(s->avctx, dst);
+    ff_thread_release_ext_buffer(dst);
     if (src->f->data[0])
         return ff_thread_ref_frame(dst, src);
     return 0;
@@ -2521,9 +2521,9 @@ static int ref_frame(Vp3DecodeContext *s, ThreadFrame *dst, const ThreadFrame *s
 static int ref_frames(Vp3DecodeContext *dst, const Vp3DecodeContext *src)
 {
     int ret;
-    if ((ret = ref_frame(dst, &dst->current_frame, &src->current_frame)) < 0 ||
-        (ret = ref_frame(dst, &dst->golden_frame,  &src->golden_frame)) < 0  ||
-        (ret = ref_frame(dst, &dst->last_frame,    &src->last_frame)) < 0)
+    if ((ret = ref_frame(&dst->current_frame, &src->current_frame)) < 0 ||
+        (ret = ref_frame(&dst->golden_frame,  &src->golden_frame)) < 0  ||
+        (ret = ref_frame(&dst->last_frame,    &src->last_frame)) < 0)
         return ret;
     return 0;
 }
@@ -2732,7 +2732,7 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             if ((ret = ff_thread_get_ext_buffer(avctx, &s->golden_frame,
                                                 AV_GET_BUFFER_FLAG_REF)) < 0)
                 goto error;
-            ff_thread_release_ext_buffer(avctx, &s->last_frame);
+            ff_thread_release_ext_buffer(&s->last_frame);
             if ((ret = ff_thread_ref_frame(&s->last_frame,
                                            &s->golden_frame)) < 0)
                 goto error;

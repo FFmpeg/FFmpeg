@@ -887,8 +887,7 @@ int ff_thread_ref_frame(ThreadFrame *dst, const ThreadFrame *src)
     return 0;
 }
 
-int ff_thread_replace_frame(AVCodecContext *avctx, ThreadFrame *dst,
-                            const ThreadFrame *src)
+int ff_thread_replace_frame(ThreadFrame *dst, const ThreadFrame *src)
 {
     int ret;
 
@@ -917,13 +916,7 @@ int ff_thread_get_ext_buffer(AVCodecContext *avctx, ThreadFrame *f, int flags)
     return ff_get_buffer(avctx, f->f, flags);
 }
 
-void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
-{
-    if (f)
-        av_frame_unref(f);
-}
-
-void ff_thread_release_ext_buffer(AVCodecContext *avctx, ThreadFrame *f)
+void ff_thread_release_ext_buffer(ThreadFrame *f)
 {
     f->owner[0] = f->owner[1] = NULL;
     if (f->f)

@@ -136,7 +136,7 @@ static int handle_pic_linesizes(AVCodecContext *avctx, Picture *pic,
                "get_buffer() failed (stride changed: linesize=%d/%d uvlinesize=%d/%d)\n",
                linesize,   pic->f->linesize[0],
                uvlinesize, pic->f->linesize[1]);
-        ff_mpeg_unref_picture(avctx, pic);
+        ff_mpeg_unref_picture(pic);
         return -1;
     }
 
@@ -144,7 +144,7 @@ static int handle_pic_linesizes(AVCodecContext *avctx, Picture *pic,
         pic->f->linesize[1] != pic->f->linesize[2]) {
         av_log(avctx, AV_LOG_ERROR,
                "get_buffer() failed (uv stride mismatch)\n");
-        ff_mpeg_unref_picture(avctx, pic);
+        ff_mpeg_unref_picture(pic);
         return -1;
     }
 
@@ -153,7 +153,7 @@ static int handle_pic_linesizes(AVCodecContext *avctx, Picture *pic,
                                        pic->f->linesize[0])) < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "get_buffer() failed to allocate context scratch buffers.\n");
-        ff_mpeg_unref_picture(avctx, pic);
+        ff_mpeg_unref_picture(pic);
         return ret;
     }
 
@@ -241,7 +241,7 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
     return 0;
 fail:
     av_log(avctx, AV_LOG_ERROR, "Error allocating a picture.\n");
-    ff_mpeg_unref_picture(avctx, pic);
+    ff_mpeg_unref_picture(pic);
     free_picture_tables(pic);
     return AVERROR(ENOMEM);
 }
@@ -250,15 +250,10 @@ fail:
  * Deallocate a picture; frees the picture tables in case they
  * need to be reallocated anyway.
  */
-void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *pic)
+void ff_mpeg_unref_picture(Picture *pic)
 {
     pic->tf.f = pic->f;
-    if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
-        avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
-        avctx->codec_id != AV_CODEC_ID_MSS2)
-        ff_thread_release_ext_buffer(avctx, &pic->tf);
-    else if (pic->f)
-        av_frame_unref(pic->f);
+    ff_thread_release_ext_buffer(&pic->tf);
 
     ff_refstruct_unref(&pic->hwaccel_picture_private);
 
@@ -306,7 +301,7 @@ int ff_update_picture_tables(Picture *dst, const Picture *src)
     return 0;
 }
 
-int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
+int ff_mpeg_ref_picture(Picture *dst, Picture *src)
 {
     int ret;
 
@@ -336,7 +331,7 @@ int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src)
 
     return 0;
 fail:
-    ff_mpeg_unref_picture(avctx, dst);
+    ff_mpeg_unref_picture(dst);
     return ret;
 }
 
@@ -388,15 +383,15 @@ int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared)
 
     if (ret >= 0 && ret < MAX_PICTURE_COUNT) {
         if (picture[ret].needs_realloc) {
-            ff_mpeg_unref_picture(avctx, &picture[ret]);
+            ff_mpeg_unref_picture(&picture[ret]);
         }
     }
     return ret;
 }
 
-void av_cold ff_mpv_picture_free(AVCodecContext *avctx, Picture *pic)
+void av_cold ff_mpv_picture_free(Picture *pic)
 {
     free_picture_tables(pic);
-    ff_mpeg_unref_picture(avctx, pic);
+    ff_mpeg_unref_picture(pic);
     av_frame_free(&pic->f);
 }

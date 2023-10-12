@@ -690,7 +690,7 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
 
 void ff_hevc_bump_frame(HEVCContext *s);
 
-void ff_hevc_unref_frame(HEVCContext *s, HEVCFrame *frame, int flags);
+void ff_hevc_unref_frame(HEVCFrame *frame, int flags);
 
 void ff_hevc_set_neighbour_available(HEVCLocalContext *lc, int x0, int y0,
                                      int nPbW, int nPbH);

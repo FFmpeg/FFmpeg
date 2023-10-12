@@ -339,7 +339,7 @@ static int h264_init_context(AVCodecContext *avctx, H264Context *h)
 
 static void h264_free_pic(H264Context *h, H264Picture *pic)
 {
-    ff_h264_unref_picture(h, pic);
+    ff_h264_unref_picture(pic);
     av_frame_free(&pic->f);
     av_frame_free(&pic->f_grain);
 }
@@ -466,7 +466,7 @@ void ff_h264_flush_change(H264Context *h)
                 h->delayed_pic[j++] = h->delayed_pic[i];
         h->delayed_pic[j] = NULL;
     }
-    ff_h264_unref_picture(h, &h->last_pic_for_ec);
+    ff_h264_unref_picture(&h->last_pic_for_ec);
 
     h->first_field = 0;
     h->recovery_frame = -1;
@@ -486,9 +486,9 @@ static void h264_decode_flush(AVCodecContext *avctx)
     ff_h264_sei_uninit(&h->sei);
 
     for (i = 0; i < H264_MAX_PICTURE_COUNT; i++)
-        ff_h264_unref_picture(h, &h->DPB[i]);
+        ff_h264_unref_picture(&h->DPB[i]);
     h->cur_pic_ptr = NULL;
-    ff_h264_unref_picture(h, &h->cur_pic);
+    ff_h264_unref_picture(&h->cur_pic);
 
     h->mb_y = 0;
 
@@ -1024,7 +1024,7 @@ static int h264_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     h->setup_finished = 0;
     h->nb_slice_ctx_queued = 0;
 
-    ff_h264_unref_picture(h, &h->last_pic_for_ec);
+    ff_h264_unref_picture(&h->last_pic_for_ec);
 
     /* end of stream, output what is still in the buffers */
     if (buf_size == 0)
@@ -1076,7 +1076,7 @@ static int h264_decode_frame(AVCodecContext *avctx, AVFrame *pict,
 
     av_assert0(pict->buf[0] || !*got_frame);
 
-    ff_h264_unref_picture(h, &h->last_pic_for_ec);
+    ff_h264_unref_picture(&h->last_pic_for_ec);
 
     return get_consumed_bytes(buf_index, buf_size);
 }

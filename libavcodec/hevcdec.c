@@ -2919,7 +2919,7 @@ static int hevc_frame_start(HEVCContext *s)
 
 fail:
     if (s->ref)
-        ff_hevc_unref_frame(s, s->ref, ~0);
+        ff_hevc_unref_frame(s->ref, ~0);
     s->ref = NULL;
     return ret;
 }
@@ -3360,7 +3360,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         if (s->ref && (ret = FF_HW_SIMPLE_CALL(avctx, end_frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
-            ff_hevc_unref_frame(s, s->ref, ~0);
+            ff_hevc_unref_frame(s->ref, ~0);
             return ret;
         }
     } else {
@@ -3369,7 +3369,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             s->sei.picture_hash.is_md5) {
             ret = verify_md5(s, s->ref->frame);
             if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
-                ff_hevc_unref_frame(s, s->ref, ~0);
+                ff_hevc_unref_frame(s->ref, ~0);
                 return ret;
             }
         }
@@ -3389,7 +3389,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     return avpkt->size;
 }
 
-static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
+static int hevc_ref_frame(HEVCFrame *dst, HEVCFrame *src)
 {
     int ret;
 
@@ -3427,7 +3427,7 @@ static int hevc_ref_frame(HEVCContext *s, HEVCFrame *dst, HEVCFrame *src)
 
     return 0;
 fail:
-    ff_hevc_unref_frame(s, dst, ~0);
+    ff_hevc_unref_frame(dst, ~0);
     return AVERROR(ENOMEM);
 }
 
@@ -3450,7 +3450,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_frame_free(&s->output_frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame(s, &s->DPB[i], ~0);
+        ff_hevc_unref_frame(&s->DPB[i], ~0);
         av_frame_free(&s->DPB[i].frame);
         av_frame_free(&s->DPB[i].frame_grain);
     }
@@ -3532,9 +3532,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     int i, ret;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame(s, &s->DPB[i], ~0);
+        ff_hevc_unref_frame(&s->DPB[i], ~0);
         if (s0->DPB[i].frame->buf[0]) {
-            ret = hevc_ref_frame(s, &s->DPB[i], &s0->DPB[i]);
+            ret = hevc_ref_frame(&s->DPB[i], &s0->DPB[i]);
             if (ret < 0)
                 return ret;
         }

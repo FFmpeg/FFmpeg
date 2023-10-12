@@ -92,10 +92,10 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
 int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize);
 
-int ff_mpeg_ref_picture(AVCodecContext *avctx, Picture *dst, Picture *src);
-void ff_mpeg_unref_picture(AVCodecContext *avctx, Picture *picture);
+int ff_mpeg_ref_picture(Picture *dst, Picture *src);
+void ff_mpeg_unref_picture(Picture *picture);
 
-void ff_mpv_picture_free(AVCodecContext *avctx, Picture *pic);
+void ff_mpv_picture_free(Picture *pic);
 int ff_update_picture_tables(Picture *dst, const Picture *src);
 
 int ff_find_unused_picture(AVCodecContext *avctx, Picture *picture, int shared);

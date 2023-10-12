@@ -636,9 +636,9 @@ static int get_pixel_format(AVCodecContext *avctx)
     return 0;
 }
 
-static void av1_frame_unref(AVCodecContext *avctx, AV1Frame *f)
+static void av1_frame_unref(AV1Frame *f)
 {
-    ff_thread_release_buffer(avctx, f->f);
+    av_frame_unref(f->f);
     ff_refstruct_unref(&f->hwaccel_picture_private);
     ff_refstruct_unref(&f->header_ref);
     f->raw_frame_header = NULL;
@@ -689,7 +689,7 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
     return 0;
 
 fail:
-    av1_frame_unref(avctx, dst);
+    av1_frame_unref(dst);
     return AVERROR(ENOMEM);
 }
 
@@ -699,12 +699,15 @@ static av_cold int av1_decode_free(AVCodecContext *avctx)
     AV1RawMetadataITUTT35 itut_t35;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++) {
-        av1_frame_unref(avctx, &s->ref[i]);
-        av_frame_free(&s->ref[i].f);
+        if (s->ref[i].f) {
+            av1_frame_unref(&s->ref[i]);
+            av_frame_free(&s->ref[i].f);
+        }
     }
-    av1_frame_unref(avctx, &s->cur_frame);
-    av_frame_free(&s->cur_frame.f);
-
+    if (s->cur_frame.f) {
+        av1_frame_unref(&s->cur_frame);
+        av_frame_free(&s->cur_frame.f);
+    }
     ff_refstruct_unref(&s->seq_ref);
     ff_refstruct_unref(&s->header_ref);
     ff_refstruct_unref(&s->cll_ref);
@@ -916,7 +919,7 @@ static int av1_frame_alloc(AVCodecContext *avctx, AV1Frame *f)
     return 0;
 
 fail:
-    av1_frame_unref(avctx, f);
+    av1_frame_unref(f);
     return ret;
 }
 
@@ -1134,7 +1137,7 @@ static int update_reference_list(AVCodecContext *avctx)
 
     for (int i = 0; i < AV1_NUM_REF_FRAMES; i++) {
         if (header->refresh_frame_flags & (1 << i)) {
-            av1_frame_unref(avctx, &s->ref[i]);
+            av1_frame_unref(&s->ref[i]);
             if ((ret = av1_frame_ref(avctx, &s->ref[i], &s->cur_frame)) < 0) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Failed to update frame %d in reference list\n", i);
@@ -1150,7 +1153,7 @@ static int get_current_frame(AVCodecContext *avctx)
     AV1DecContext *s = avctx->priv_data;
     int ret;
 
-    av1_frame_unref(avctx, &s->cur_frame);
+    av1_frame_unref(&s->cur_frame);
 
     s->cur_frame.header_ref = ff_refstruct_ref(s->header_ref);
 
@@ -1257,7 +1260,7 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
                 s->raw_frame_header = &obu->obu.frame_header;
 
             if (s->raw_frame_header->show_existing_frame) {
-                av1_frame_unref(avctx, &s->cur_frame);
+                av1_frame_unref(&s->cur_frame);
 
                 ret = av1_frame_ref(avctx, &s->cur_frame,
                                     &s->ref[s->raw_frame_header->frame_to_show_map_idx]);
@@ -1452,9 +1455,9 @@ static void av1_decode_flush(AVCodecContext *avctx)
     AV1RawMetadataITUTT35 itut_t35;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ref); i++)
-        av1_frame_unref(avctx, &s->ref[i]);
+        av1_frame_unref(&s->ref[i]);
 
-    av1_frame_unref(avctx, &s->cur_frame);
+    av1_frame_unref(&s->cur_frame);
     s->operating_point_idc = 0;
     s->nb_unit = 0;
     s->raw_frame_header = NULL;
