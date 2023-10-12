@@ -37,6 +37,7 @@
 #include "encode.h"
 #include "h264.h"
 #include "h264_sei.h"
+#include "hwconfig.h"
 #include <dlfcn.h>
 
 #if !HAVE_KCMVIDEOCODECTYPE_HEVC
@@ -2830,6 +2831,11 @@ static const enum AVPixelFormat prores_pix_fmts[] = {
         "Sets the maximum number of reference frames. This only has an effect when the value is less than the maximum allowed by the profile/level.", \
         OFFSET(max_ref_frames), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
 
+static const AVCodecHWConfigInternal *const vt_encode_hw_configs[] = {
+        HW_CONFIG_ENCODER_FRAMES(VIDEOTOOLBOX, VIDEOTOOLBOX),
+        NULL,
+};
+
 #define OFFSET(x) offsetof(VTEncContext, x)
 static const AVOption h264_options[] = {
     { "profile", "Profile", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, INT_MAX, VE, "profile" },
@@ -2886,6 +2892,7 @@ const FFCodec ff_h264_videotoolbox_encoder = {
     .close            = vtenc_close,
     .p.priv_class     = &h264_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
+    .hw_configs       = vt_encode_hw_configs,
 };
 
 static const AVOption hevc_options[] = {
@@ -2923,6 +2930,7 @@ const FFCodec ff_hevc_videotoolbox_encoder = {
     .p.priv_class     = &hevc_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
     .p.wrapper_name   = "videotoolbox",
+    .hw_configs       = vt_encode_hw_configs,
 };
 
 static const AVOption prores_options[] = {
@@ -2961,4 +2969,5 @@ const FFCodec ff_prores_videotoolbox_encoder = {
     .p.priv_class     = &prores_videotoolbox_class,
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
     .p.wrapper_name   = "videotoolbox",
+    .hw_configs       = vt_encode_hw_configs,
 };
