@@ -406,10 +406,14 @@ static int vk_h264_start_frame(AVCodecContext          *avctx,
     }
 
     /* Fill in long-term refs */
-    for (int r = 0, i = h->short_ref_count; i < h->short_ref_count + h->long_ref_count; i++, r++) {
+    for (int r = 0, i = h->short_ref_count; r < H264_MAX_DPB_FRAMES &&
+         i < h->short_ref_count + h->long_ref_count; r++) {
+        if (!h->long_ref[r])
+            continue;
+
         dpb_slot_index = 0;
-        for (unsigned slot = 0; slot < H264_MAX_PICTURE_COUNT; slot++) {
-            if (h->long_ref[i] == &h->DPB[slot]) {
+        for (unsigned slot = 0; slot < 16; slot++) {
+            if (h->long_ref[r] == &h->DPB[slot]) {
                 dpb_slot_index = slot;
                 break;
             }
@@ -422,6 +426,7 @@ static int vk_h264_start_frame(AVCodecContext          *avctx,
                                 dpb_slot_index);
         if (err < 0)
             return err;
+        i++;
     }
 
     hp->h264pic = (StdVideoDecodeH264PictureInfo) {
