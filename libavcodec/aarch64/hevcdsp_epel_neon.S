@@ -339,6 +339,7 @@ function ff_hevc_put_hevc_epel_uni_v64_8_neon, export=1
 endfunc
 
 #if HAVE_I8MM
+ENABLE_I8MM
 
 .macro EPEL_H_HEADER
         movrel          x5, epel_filters
@@ -1963,7 +1964,7 @@ function ff_hevc_put_hevc_epel_uni_w_hv64_8_neon_i8mm, export=1
         ret
 endfunc
 
-
+DISABLE_I8MM
 #endif
 
 

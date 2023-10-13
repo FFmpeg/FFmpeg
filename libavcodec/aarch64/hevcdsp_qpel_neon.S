@@ -1558,6 +1558,7 @@ function ff_hevc_put_hevc_qpel_uni_w_v64_8_neon, export=1
 endfunc
 
 #if HAVE_I8MM
+ENABLE_I8MM
 
 .macro calc_all2
         calc            v30, v31, v16, v18, v20, v22, v24, v26, v28, v30, v17, v19, v21, v23, v25, v27, v29, v31
@@ -3395,4 +3396,5 @@ function ff_hevc_put_hevc_qpel_uni_w_hv64_8_neon_i8mm, export=1
         ret
 endfunc
 
+DISABLE_I8MM
 #endif // HAVE_I8MM
