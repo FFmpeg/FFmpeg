@@ -35,6 +35,8 @@ version <next>:
 - CRI USM demuxer
 - ffmpeg CLI '-top' option deprecated in favor of the setfield filter
 - VAAPI AV1 encoder
+- ffprobe XML output schema changed to account for multiple
+  variable-fields elements within the same parent element
 
 
 version 6.0:

@@ -43,9 +43,15 @@
         </xsd:choice>
     </xsd:complexType>
 
-    <xsd:complexType name="packetType">
+    <xsd:complexType name="tagsType">
       <xsd:sequence>
         <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="packetType">
+      <xsd:sequence>
+        <xsd:element name="tags" type="ffprobe:tagsType" minOccurs="0" maxOccurs="1"/>
         <xsd:element name="side_data_list" type="ffprobe:packetSideDataListType"   minOccurs="0" maxOccurs="1" />
       </xsd:sequence>
 
@@ -69,14 +75,23 @@
             <xsd:element name="side_data" type="ffprobe:packetSideDataType" minOccurs="1" maxOccurs="unbounded"/>
         </xsd:sequence>
     </xsd:complexType>
+
     <xsd:complexType name="packetSideDataType">
-        <xsd:attribute name="side_data_type"              type="xsd:string"/>
-        <xsd:attribute name="side_data_size"              type="xsd:int"   />
+        <xsd:sequence>
+            <xsd:element name="side_datum" type="ffprobe:packetSideDatumType" minOccurs="1" maxOccurs="unbounded"/>
+        </xsd:sequence>
+
+        <xsd:attribute name="type" type="xsd:string"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="packetSideDatumType">
+        <xsd:attribute name="key"   type="xsd:string"/>
+        <xsd:attribute name="value" type="xsd:string"/>
     </xsd:complexType>
 
     <xsd:complexType name="frameType">
       <xsd:sequence>
-            <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="tags" type="ffprobe:tagsType" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="logs" type="ffprobe:logsType" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="side_data_list" type="ffprobe:frameSideDataListType"   minOccurs="0" maxOccurs="1" />
       </xsd:sequence>
@@ -209,7 +224,7 @@
     <xsd:complexType name="streamType">
       <xsd:sequence>
         <xsd:element name="disposition" type="ffprobe:streamDispositionType" minOccurs="0" maxOccurs="1"/>
-        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+        <xsd:element name="tags" type="ffprobe:tagsType" minOccurs="0" maxOccurs="1"/>
         <xsd:element name="side_data_list" type="ffprobe:packetSideDataListType"   minOccurs="0" maxOccurs="1" />
       </xsd:sequence>
 
@@ -270,7 +285,7 @@
 
     <xsd:complexType name="programType">
       <xsd:sequence>
-        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+        <xsd:element name="tags" type="ffprobe:tagsType" minOccurs="0" maxOccurs="1"/>
         <xsd:element name="streams" type="ffprobe:streamsType" minOccurs="0" maxOccurs="1"/>
       </xsd:sequence>
 
@@ -283,7 +298,7 @@
 
     <xsd:complexType name="formatType">
       <xsd:sequence>
-        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+        <xsd:element name="tags" type="ffprobe:tagsType" minOccurs="0" maxOccurs="1"/>
       </xsd:sequence>
 
       <xsd:attribute name="filename"         type="xsd:string" use="required"/>
@@ -325,7 +340,7 @@
 
     <xsd:complexType name="chapterType">
       <xsd:sequence>
-        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+        <xsd:element name="tags" type="ffprobe:tagsType" minOccurs="0" maxOccurs="unbounded"/>
       </xsd:sequence>
 
       <xsd:attribute name="id"         type="xsd:int" use="required"/>
