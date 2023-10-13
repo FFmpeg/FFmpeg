@@ -518,6 +518,7 @@ static int config_props(AVFilterLink *outlink)
                             outlink->src->inputs[0];
     enum AVPixelFormat outfmt = outlink->format;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const AVPixFmtDescriptor *outdesc = av_pix_fmt_desc_get(outfmt);
     ScaleContext *scale = ctx->priv;
     uint8_t *flags_val = NULL;
     int ret;
@@ -588,14 +589,15 @@ static int config_props(AVFilterLink *outlink)
                 av_opt_set_int(s, "dst_range",
                                scale->out_range == AVCOL_RANGE_JPEG, 0);
 
-            /* Override YUV420P default settings to have the correct (MPEG-2) chroma positions
-             * MPEG-2 chroma positions are used by convention
-             * XXX: support other 4:2:0 pixel formats */
-            if (inlink0->format == AV_PIX_FMT_YUV420P && scale->in_v_chr_pos == -513) {
+            /* Override chroma location default settings to have the correct
+             * chroma positions. MPEG chroma positions are used by convention.
+             * Note that this works for both MPEG-1/JPEG and MPEG-2/4 chroma
+             * locations, since they share a vertical alignment */
+            if (desc->log2_chroma_h == 1 && scale->in_v_chr_pos == -513) {
                 in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
-            if (outlink->format == AV_PIX_FMT_YUV420P && scale->out_v_chr_pos == -513) {
+            if (outdesc->log2_chroma_h == 1 && scale->out_v_chr_pos == -513) {
                 out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
