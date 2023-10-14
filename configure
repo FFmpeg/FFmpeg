@@ -7154,6 +7154,10 @@ if enabled vulkan; then
         check_cpp_condition vulkan "vulkan/vulkan.h" "defined(VK_VERSION_1_4) || (defined(VK_VERSION_1_3) && VK_HEADER_VERSION >= 255)"
 fi
 
+if disabled vulkan; then
+    disable libglslang libshaderc spirv_compiler
+fi
+
 if enabled x86; then
     case $target_os in
         mingw32*|mingw64*|win32|win64|linux|cygwin*)
