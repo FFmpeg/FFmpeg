@@ -524,7 +524,6 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
     }
     ctx->coded_sample_rate[1] = -1 & 0xf;
 
-    /* TODO Keep count of bitrate and calculate real value. */
     ctx->coded_peak_bitrate = mlp_peak_bitrate(9600000, avctx->sample_rate);
 
     ctx->substream_info |= SUBSTREAM_INFO_ALWAYS_SET;
