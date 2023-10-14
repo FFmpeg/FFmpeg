@@ -387,7 +387,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->last_picture_ptr = &s->picture[idx];
 
         s->last_picture_ptr->reference    = 3;
-        s->last_picture_ptr->f->flags &= ~AV_FRAME_FLAG_KEY;
         s->last_picture_ptr->f->pict_type = AV_PICTURE_TYPE_P;
 
         if (alloc_picture(s, s->last_picture_ptr) < 0) {
@@ -414,7 +413,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->next_picture_ptr = &s->picture[idx];
 
         s->next_picture_ptr->reference   = 3;
-        s->next_picture_ptr->f->flags &= ~AV_FRAME_FLAG_KEY;
         s->next_picture_ptr->f->pict_type = AV_PICTURE_TYPE_P;
 
         if (alloc_picture(s, s->next_picture_ptr) < 0) {
