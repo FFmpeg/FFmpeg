@@ -325,18 +325,12 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     ff_mpeg_unref_picture(&s->last_picture);
     ff_mpeg_unref_picture(&s->next_picture);
 
-    if (s->current_picture_ptr && !s->current_picture_ptr->f->buf[0]) {
-        // we already have an unused image
-        // (maybe it was set before reading the header)
-        pic = s->current_picture_ptr;
-    } else {
         idx = ff_find_unused_picture(s->avctx, s->picture, 0);
         if (idx < 0) {
             av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
             return idx;
         }
         pic = &s->picture[idx];
-    }
 
     pic->reference = 0;
     if (!s->droppable) {
