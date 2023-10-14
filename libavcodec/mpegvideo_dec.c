@@ -270,6 +270,32 @@ fail:
     return ret;
 }
 
+static int av_cold alloc_dummy_frame(MpegEncContext *s, Picture **picp)
+{
+    int idx = ff_find_unused_picture(s->avctx, s->picture, 0);
+    Picture *pic;
+    int ret;
+
+    if (idx < 0)
+        return idx;
+
+    pic = &s->picture[idx];
+
+    pic->reference    = 3;
+    pic->f->pict_type = AV_PICTURE_TYPE_P;
+
+    ret = alloc_picture(s, pic);
+    if (ret < 0)
+        return ret;
+
+    ff_thread_report_progress(&pic->tf, INT_MAX, 0);
+    ff_thread_report_progress(&pic->tf, INT_MAX, 1);
+
+    *picp = pic;
+
+    return 0;
+}
+
 static void color_frame(AVFrame *frame, int luma)
 {
     int h_chroma_shift, v_chroma_shift;
@@ -379,48 +405,22 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                    "warning: first frame is no keyframe\n");
 
         /* Allocate a dummy frame */
-        idx = ff_find_unused_picture(s->avctx, s->picture, 0);
-        if (idx < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
-            return idx;
-        }
-        s->last_picture_ptr = &s->picture[idx];
-
-        s->last_picture_ptr->reference    = 3;
-        s->last_picture_ptr->f->pict_type = AV_PICTURE_TYPE_P;
-
-        if (alloc_picture(s, s->last_picture_ptr) < 0) {
-            s->last_picture_ptr = NULL;
-            return -1;
-        }
+        ret = alloc_dummy_frame(s, &s->last_picture_ptr);
+        if (ret < 0)
+            return ret;
 
         if (!avctx->hwaccel) {
             int luma_val = s->codec_id == AV_CODEC_ID_FLV1 || s->codec_id == AV_CODEC_ID_H263 ? 16 : 0x80;
             color_frame(s->last_picture_ptr->f, luma_val);
         }
 
-        ff_thread_report_progress(&s->last_picture_ptr->tf, INT_MAX, 0);
-        ff_thread_report_progress(&s->last_picture_ptr->tf, INT_MAX, 1);
     }
     if ((!s->next_picture_ptr || !s->next_picture_ptr->f->buf[0]) &&
         s->pict_type == AV_PICTURE_TYPE_B) {
         /* Allocate a dummy frame */
-        idx = ff_find_unused_picture(s->avctx, s->picture, 0);
-        if (idx < 0) {
-            av_log(s->avctx, AV_LOG_ERROR, "no frame buffer available\n");
-            return idx;
-        }
-        s->next_picture_ptr = &s->picture[idx];
-
-        s->next_picture_ptr->reference   = 3;
-        s->next_picture_ptr->f->pict_type = AV_PICTURE_TYPE_P;
-
-        if (alloc_picture(s, s->next_picture_ptr) < 0) {
-            s->next_picture_ptr = NULL;
-            return -1;
-        }
-        ff_thread_report_progress(&s->next_picture_ptr->tf, INT_MAX, 0);
-        ff_thread_report_progress(&s->next_picture_ptr->tf, INT_MAX, 1);
+        ret = alloc_dummy_frame(s, &s->next_picture_ptr);
+        if (ret < 0)
+            return ret;
     }
 
     if (s->last_picture_ptr) {
