@@ -32,7 +32,6 @@
 
 #include "avcodec.h"
 #include "ratecontrol.h"
-#include "mpegutils.h"
 #include "mpegvideoenc.h"
 #include "libavutil/eval.h"
 

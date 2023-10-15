@@ -34,6 +34,25 @@
 #include "mpegvideo.h"
 
 #define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
+#define INPLACE_OFFSET 16
+
+/* MB types for encoding */
+#define CANDIDATE_MB_TYPE_INTRA      (1 <<  0)
+#define CANDIDATE_MB_TYPE_INTER      (1 <<  1)
+#define CANDIDATE_MB_TYPE_INTER4V    (1 <<  2)
+#define CANDIDATE_MB_TYPE_SKIPPED    (1 <<  3)
+
+#define CANDIDATE_MB_TYPE_DIRECT     (1 <<  4)
+#define CANDIDATE_MB_TYPE_FORWARD    (1 <<  5)
+#define CANDIDATE_MB_TYPE_BACKWARD   (1 <<  6)
+#define CANDIDATE_MB_TYPE_BIDIR      (1 <<  7)
+
+#define CANDIDATE_MB_TYPE_INTER_I    (1 <<  8)
+#define CANDIDATE_MB_TYPE_FORWARD_I  (1 <<  9)
+#define CANDIDATE_MB_TYPE_BACKWARD_I (1 << 10)
+#define CANDIDATE_MB_TYPE_BIDIR_I    (1 << 11)
+
+#define CANDIDATE_MB_TYPE_DIRECT0    (1 << 12)
 
 /* mpegvideo_enc common options */
 #define FF_MPV_FLAG_SKIP_RD      0x0001

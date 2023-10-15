@@ -25,6 +25,7 @@
 #include "avcodec.h"
 #include "hwaccel_internal.h"
 #include "internal.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "nvdec.h"
 #include "decode.h"

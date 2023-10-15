@@ -42,7 +42,6 @@
 #include "mpeg4video.h"
 #include "mpeg4videodec.h"
 #include "mpeg4videodefs.h"
-#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "msmpeg4dec.h"

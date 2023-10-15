@@ -27,11 +27,6 @@
 
 #include "avcodec.h"
 
-/**
- * Return value for header parsers if frame is not coded.
- * */
-#define FRAME_SKIPPED 100
-
 /* picture type */
 #define PICT_TOP_FIELD     1
 #define PICT_BOTTOM_FIELD  2
@@ -92,35 +87,6 @@
 #define USES_LIST(a, list) ((a) & ((MB_TYPE_P0L0 | MB_TYPE_P1L0) << (2 * (list))))
 
 #define HAS_CBP(a)       ((a) & MB_TYPE_CBP)
-
-/* MB types for encoding */
-#define CANDIDATE_MB_TYPE_INTRA      (1 <<  0)
-#define CANDIDATE_MB_TYPE_INTER      (1 <<  1)
-#define CANDIDATE_MB_TYPE_INTER4V    (1 <<  2)
-#define CANDIDATE_MB_TYPE_SKIPPED    (1 <<  3)
-
-#define CANDIDATE_MB_TYPE_DIRECT     (1 <<  4)
-#define CANDIDATE_MB_TYPE_FORWARD    (1 <<  5)
-#define CANDIDATE_MB_TYPE_BACKWARD   (1 <<  6)
-#define CANDIDATE_MB_TYPE_BIDIR      (1 <<  7)
-
-#define CANDIDATE_MB_TYPE_INTER_I    (1 <<  8)
-#define CANDIDATE_MB_TYPE_FORWARD_I  (1 <<  9)
-#define CANDIDATE_MB_TYPE_BACKWARD_I (1 << 10)
-#define CANDIDATE_MB_TYPE_BIDIR_I    (1 << 11)
-
-#define CANDIDATE_MB_TYPE_DIRECT0    (1 << 12)
-
-#define INPLACE_OFFSET 16
-
-enum OutputFormat {
-    FMT_MPEG1,
-    FMT_H261,
-    FMT_H263,
-    FMT_MJPEG,
-    FMT_SPEEDHQ,
-};
-
 
 /**
  * Draw a horizontal band if supported.

@@ -28,7 +28,6 @@
 #ifndef AVCODEC_MPEGVIDEO_H
 #define AVCODEC_MPEGVIDEO_H
 
-#include "avcodec.h"
 #include "blockdsp.h"
 #include "error_resilience.h"
 #include "fdctdsp.h"
@@ -44,7 +43,6 @@
 #include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
-#include "mpegutils.h"
 #include "qpeldsp.h"
 #include "videodsp.h"
 
@@ -60,6 +58,14 @@ typedef struct ScanTable {
     uint8_t permutated[64];
     uint8_t raster_end[64];
 } ScanTable;
+
+enum OutputFormat {
+    FMT_MPEG1,
+    FMT_H261,
+    FMT_H263,
+    FMT_MJPEG,
+    FMT_SPEEDHQ,
+};
 
 /**
  * MpegEncContext.
@@ -283,7 +289,7 @@ typedef struct MpegEncContext {
     int mb_x, mb_y;
     int mb_skip_run;
     int mb_intra;
-    uint16_t *mb_type;  ///< Table for candidate MB types for encoding (defines in mpegutils.h)
+    uint16_t *mb_type;  ///< Table for candidate MB types for encoding (defines in mpegvideoenc.h)
 
     int block_index[6]; ///< index to current MB in block based arrays with edges
     int block_wrap[6];

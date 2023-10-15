@@ -38,7 +38,6 @@
 #include "h263data.h"
 #include "h263dec.h"
 #include "mpeg_er.h"
-#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "mpeg4video.h"

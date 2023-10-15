@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "motion_est.h"
 #include "mpegpicture.h"
-#include "mpegutils.h"
+#include "mpegvideo.h"
 #include "refstruct.h"
 #include "threadframe.h"
 

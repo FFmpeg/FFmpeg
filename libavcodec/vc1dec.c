@@ -36,6 +36,7 @@
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "mpeg_er.h"
+#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "msmpeg4_vc1_data.h"

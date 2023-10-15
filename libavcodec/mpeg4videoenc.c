@@ -26,7 +26,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "codec_internal.h"
-#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "h263.h"
 #include "h263enc.h"

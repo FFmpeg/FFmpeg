@@ -23,6 +23,11 @@
 #include "mpegvideo.h"
 #include "vlc.h"
 
+/**
+ * Return value for header parsers if frame is not coded.
+ * */
+#define FRAME_SKIPPED 100
+
 // The defines below define the number of bits that are read at once for
 // reading vlc values. Changing these may improve speed and data cache needs
 // be aware though that decreasing them may need the number of stages that is

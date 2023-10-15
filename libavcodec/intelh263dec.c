@@ -19,12 +19,10 @@
  */
 
 #include "codec_internal.h"
-#include "mpegutils.h"
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "h263data.h"
 #include "h263dec.h"
-#include "mpegvideodata.h"
 
 /* don't understand why they choose a different header ! */
 int ff_intel_h263_decode_picture_header(MpegEncContext *s)
