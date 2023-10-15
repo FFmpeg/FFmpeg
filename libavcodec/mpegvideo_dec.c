@@ -38,11 +38,12 @@
 #include "mpegvideo.h"
 #include "mpegvideodec.h"
 #include "mpeg4videodec.h"
+#include "refstruct.h"
 #include "thread.h"
 #include "threadframe.h"
 #include "wmv2dec.h"
 
-void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
+int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 {
     ff_mpv_common_defaults(s);
 
@@ -57,6 +58,14 @@ void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 
     ff_mpv_idct_init(s);
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
+
+    if (!s->picture_pool && // VC-1 can call this multiple times
+        ff_thread_sync_ref(avctx, offsetof(MpegEncContext, picture_pool))) {
+        s->picture_pool = ff_mpv_alloc_pic_pool();
+        if (!s->picture_pool)
+            return AVERROR(ENOMEM);
+    }
+    return 0;
 }
 
 int ff_mpeg_update_thread_context(AVCodecContext *dst,
@@ -103,26 +112,9 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     s->coded_picture_number = s1->coded_picture_number;
     s->picture_number       = s1->picture_number;
 
-    av_assert0(!s->picture || s->picture != s1->picture);
-    if (s->picture)
-        for (int i = 0; i < MAX_PICTURE_COUNT; i++) {
-            ff_mpeg_unref_picture(&s->picture[i]);
-            if (s1->picture && s1->picture[i].f->buf[0] &&
-                (ret = ff_mpeg_ref_picture(&s->picture[i], &s1->picture[i])) < 0)
-                return ret;
-        }
-
-#define UPDATE_PICTURE(pic)\
-do {\
-    if (s->picture && s1->picture && s1->pic.ptr && s1->pic.ptr->f->buf[0]) {\
-        ff_mpv_workpic_from_pic(&s->pic, &s->picture[s1->pic.ptr - s1->picture]);\
-    } else\
-        ff_mpv_unref_picture(&s->pic);\
-} while (0)
-
-    UPDATE_PICTURE(cur_pic);
-    UPDATE_PICTURE(last_pic);
-    UPDATE_PICTURE(next_pic);
+    ff_mpv_replace_picture(&s->cur_pic,  &s1->cur_pic);
+    ff_mpv_replace_picture(&s->last_pic, &s1->last_pic);
+    ff_mpv_replace_picture(&s->next_pic, &s1->next_pic);
 
     s->linesize   = s1->linesize;
     s->uvlinesize = s1->uvlinesize;
@@ -177,6 +169,7 @@ int ff_mpv_decode_close(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
 
+    ff_refstruct_pool_uninit(&s->picture_pool);
     ff_mpv_common_end(s);
     return 0;
 }
@@ -190,9 +183,9 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 
     ff_mpv_free_context_frame(s);
 
-    s->last_pic.ptr =
-    s->next_pic.ptr =
-    s->cur_pic.ptr  = NULL;
+    ff_mpv_unref_picture(&s->last_pic);
+    ff_mpv_unref_picture(&s->next_pic);
+    ff_mpv_unref_picture(&s->cur_pic);
 
     if ((s->width || s->height) &&
         (err = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
@@ -228,14 +221,12 @@ int ff_mpv_common_frame_size_change(MpegEncContext *s)
 static int alloc_picture(MpegEncContext *s, MPVWorkPicture *dst, int reference)
 {
     AVCodecContext *avctx = s->avctx;
-    int idx = ff_find_unused_picture(s->avctx, s->picture, 0);
-    MPVPicture *pic;
+    MPVPicture *pic = ff_refstruct_pool_get(s->picture_pool);
     int ret;
 
-    if (idx < 0)
-        return idx;
+    if (!pic)
+        return AVERROR(ENOMEM);
 
-    pic = &s->picture[idx];
     dst->ptr = pic;
 
     pic->tf.f = pic->f;
@@ -368,22 +359,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    /* mark & release old frames */
-    if (s->pict_type != AV_PICTURE_TYPE_B && s->last_pic.ptr &&
-        s->last_pic.ptr != s->next_pic.ptr &&
-        s->last_pic.ptr->f->buf[0]) {
-        ff_mpeg_unref_picture(s->last_pic.ptr);
-    }
-
-    /* release non reference/forgotten frames */
-    for (int i = 0; i < MAX_PICTURE_COUNT; i++) {
-        if (!s->picture[i].reference ||
-            (&s->picture[i] != s->last_pic.ptr &&
-             &s->picture[i] != s->next_pic.ptr)) {
-            ff_mpeg_unref_picture(&s->picture[i]);
-        }
-    }
-
+    ff_mpv_unref_picture(&s->cur_pic);
     ret = alloc_picture(s, &s->cur_pic,
                         s->pict_type != AV_PICTURE_TYPE_B && !s->droppable);
     if (ret < 0)
@@ -494,12 +470,6 @@ void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h)
 void ff_mpeg_flush(AVCodecContext *avctx)
 {
     MpegEncContext *const s = avctx->priv_data;
-
-    if (!s->picture)
-        return;
-
-    for (int i = 0; i < MAX_PICTURE_COUNT; i++)
-        ff_mpeg_unref_picture(&s->picture[i]);
 
     ff_mpv_unref_picture(&s->cur_pic);
     ff_mpv_unref_picture(&s->last_pic);

@@ -701,7 +701,6 @@ static void clear_context(MpegEncContext *s)
 
     s->bitstream_buffer = NULL;
     s->allocated_bitstream_buffer_size = 0;
-    s->picture          = NULL;
     s->p_field_mv_table_base = NULL;
     for (int i = 0; i < 2; i++)
         for (int j = 0; j < 2; j++)
@@ -726,10 +725,10 @@ static void clear_context(MpegEncContext *s)
  */
 av_cold int ff_mpv_common_init(MpegEncContext *s)
 {
-    int i, ret;
     int nb_slices = (HAVE_THREADS &&
                      s->avctx->active_thread_type & FF_THREAD_SLICE) ?
                     s->avctx->thread_count : 1;
+    int ret;
 
     clear_context(s);
 
@@ -754,14 +753,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
                                            &s->chroma_y_shift);
     if (ret)
         return ret;
-
-    if (!FF_ALLOCZ_TYPED_ARRAY(s->picture, MAX_PICTURE_COUNT))
-        return AVERROR(ENOMEM);
-    for (i = 0; i < MAX_PICTURE_COUNT; i++) {
-        s->picture[i].f = av_frame_alloc();
-        if (!s->picture[i].f)
-            goto fail_nomem;
-    }
 
     if ((ret = ff_mpv_init_context_frame(s)))
         goto fail;
@@ -789,8 +780,6 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
 //     }
 
     return 0;
- fail_nomem:
-    ret = AVERROR(ENOMEM);
  fail:
     ff_mpv_common_end(s);
     return ret;
@@ -830,11 +819,9 @@ void ff_mpv_common_end(MpegEncContext *s)
     av_freep(&s->bitstream_buffer);
     s->allocated_bitstream_buffer_size = 0;
 
-    if (s->picture) {
-        for (int i = 0; i < MAX_PICTURE_COUNT; i++)
-            ff_mpv_picture_free(&s->picture[i]);
-    }
-    av_freep(&s->picture);
+    ff_mpv_unref_picture(&s->last_pic);
+    ff_mpv_unref_picture(&s->cur_pic);
+    ff_mpv_unref_picture(&s->next_pic);
 
     s->context_initialized      = 0;
     s->context_reinit           = 0;

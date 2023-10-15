@@ -364,7 +364,9 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
                                    avctx->coded_height, 0, avctx)) < 0)
         return ret;
 
-    ff_mpv_decode_init(s, avctx);
+    ret = ff_mpv_decode_init(s, avctx);
+    if (ret < 0)
+        return ret;
 
     s->out_format  = FMT_H263;
 
@@ -645,7 +647,7 @@ static int rv10_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         }
 
         // so we can detect if frame_end was not called (find some nicer solution...)
-        s->cur_pic.ptr = NULL;
+        ff_mpv_unref_picture(&s->cur_pic);
     }
 
     return avpkt->size;
@@ -662,6 +664,7 @@ const FFCodec ff_rv10_decoder = {
     .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 const FFCodec ff_rv20_decoder = {
@@ -676,4 +679,5 @@ const FFCodec ff_rv20_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
     .p.max_lowres   = 3,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -3866,7 +3866,8 @@ const FFCodec ff_mpeg4_decoder = {
     .close                 = ff_mpv_decode_close,
     .p.capabilities        = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_FRAME_THREADS,
-    .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP |
+                             FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush                 = ff_mpeg_flush,
     .p.max_lowres          = 3,
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),

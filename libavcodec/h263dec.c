@@ -95,7 +95,9 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->out_format      = FMT_H263;
 
     // set defaults
-    ff_mpv_decode_init(s, avctx);
+    ret = ff_mpv_decode_init(s, avctx);
+    if (ret < 0)
+        return ret;
 
     s->quant_precision = 5;
     s->decode_mb       = ff_h263_decode_mb;
@@ -427,7 +429,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         if (s->low_delay == 0 && s->next_pic.ptr) {
             if ((ret = av_frame_ref(pict, s->next_pic.ptr->f)) < 0)
                 return ret;
-            s->next_pic.ptr = NULL;
+            ff_mpv_unref_picture(&s->next_pic);
 
             *got_frame = 1;
         } else if (s->skipped_last_frame && s->cur_pic.ptr) {
@@ -439,7 +441,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
              * returned picture would be reused */
             if ((ret = ff_decode_frame_props(avctx, pict)) < 0)
                 return ret;
-            s->cur_pic.ptr = NULL;
+            ff_mpv_unref_picture(&s->cur_pic);
 
             *got_frame = 1;
         }
@@ -698,7 +700,8 @@ const FFCodec ff_h263_decoder = {
     .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_DELAY,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = ff_mpeg_flush,
     .p.max_lowres   = 3,
     .hw_configs     = h263_hw_config_list,
@@ -715,7 +718,8 @@ const FFCodec ff_h263p_decoder = {
     .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_DELAY,
-    .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP |
+                      FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = ff_mpeg_flush,
     .p.max_lowres   = 3,
     .hw_configs     = h263_hw_config_list,

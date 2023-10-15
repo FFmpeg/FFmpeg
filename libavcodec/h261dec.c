@@ -84,10 +84,13 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
     static AVOnce init_static_once = AV_ONCE_INIT;
     H261DecContext *const h = avctx->priv_data;
     MpegEncContext *const s = &h->s;
+    int ret;
 
     s->private_ctx = &h->common;
     // set defaults
-    ff_mpv_decode_init(s, avctx);
+    ret = ff_mpv_decode_init(s, avctx);
+    if (ret < 0)
+        return ret;
 
     s->out_format  = FMT_H261;
     s->low_delay   = 1;

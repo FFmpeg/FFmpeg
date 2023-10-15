@@ -30,8 +30,14 @@
 #include "refstruct.h"
 #include "threadframe.h"
 
-static void av_noinline free_picture_tables(MPVPicture *pic)
+static void mpv_pic_reset(FFRefStructOpaque unused, void *obj)
 {
+    MPVPicture *pic = obj;
+
+    ff_thread_release_ext_buffer(&pic->tf);
+
+    ff_refstruct_unref(&pic->hwaccel_picture_private);
+
     ff_refstruct_unref(&pic->mbskip_table);
     ff_refstruct_unref(&pic->qscale_table_base);
     ff_refstruct_unref(&pic->mb_type_base);
@@ -39,16 +45,53 @@ static void av_noinline free_picture_tables(MPVPicture *pic)
     for (int i = 0; i < 2; i++) {
         ff_refstruct_unref(&pic->motion_val_base[i]);
         ff_refstruct_unref(&pic->ref_index[i]);
+
+        pic->motion_val[i] = NULL;
     }
 
+    pic->mb_type                = NULL;
+    pic->qscale_table           = NULL;
+
+    pic->mb_stride =
     pic->mb_width  =
     pic->mb_height = 0;
+
+    pic->dummy                  = 0;
+    pic->field_picture          = 0;
+    pic->b_frame_score          = 0;
+    pic->reference              = 0;
+    pic->shared                 = 0;
+    pic->display_picture_number = 0;
+    pic->coded_picture_number   = 0;
+}
+
+static int av_cold mpv_pic_init(FFRefStructOpaque unused, void *obj)
+{
+    MPVPicture *pic = obj;
+
+    pic->f = av_frame_alloc();
+    if (!pic->f)
+        return AVERROR(ENOMEM);
+    pic->tf.f = pic->f;
+    return 0;
+}
+
+static void av_cold mpv_pic_free(FFRefStructOpaque unused, void *obj)
+{
+    MPVPicture *pic = obj;
+
+    av_frame_free(&pic->f);
+}
+
+av_cold FFRefStructPool *ff_mpv_alloc_pic_pool(void)
+{
+    return ff_refstruct_pool_alloc_ext(sizeof(MPVPicture), 0, NULL,
+                                       mpv_pic_init, mpv_pic_reset, mpv_pic_free, NULL);
 }
 
 void ff_mpv_unref_picture(MPVWorkPicture *pic)
 {
-    if (pic->ptr)
-        ff_mpeg_unref_picture(pic->ptr);
+    ff_refstruct_unref(&pic->ptr);
     memset(pic, 0, sizeof(*pic));
 }
 
@@ -71,16 +114,18 @@ static void set_workpic_from_pic(MPVWorkPicture *wpic, const MPVPicture *pic)
 
 void ff_mpv_replace_picture(MPVWorkPicture *dst, const MPVWorkPicture *src)
 {
+    av_assert1(dst != src);
+    ff_refstruct_replace(&dst->ptr, src->ptr);
     memcpy(dst, src, sizeof(*dst));
 }
 
 void ff_mpv_workpic_from_pic(MPVWorkPicture *wpic, MPVPicture *pic)
 {
+    ff_refstruct_replace(&wpic->ptr, pic);
     if (!pic) {
         memset(wpic, 0, sizeof(*wpic));
         return;
     }
-    wpic->ptr = pic;
     set_workpic_from_pic(wpic, pic);
 }
 
@@ -211,108 +256,4 @@ int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVWorkPicture *wpic,
 fail:
     av_log(avctx, AV_LOG_ERROR, "Error allocating picture accessories.\n");
     return ret;
-}
-
-/**
- * Deallocate a picture; frees the picture tables in case they
- * need to be reallocated anyway.
- */
-void ff_mpeg_unref_picture(MPVPicture *pic)
-{
-    pic->tf.f = pic->f;
-    ff_thread_release_ext_buffer(&pic->tf);
-
-    ff_refstruct_unref(&pic->hwaccel_picture_private);
-
-    free_picture_tables(pic);
-
-    pic->dummy         = 0;
-
-    pic->field_picture = 0;
-    pic->b_frame_score = 0;
-    pic->reference     = 0;
-    pic->shared        = 0;
-    pic->display_picture_number = 0;
-    pic->coded_picture_number   = 0;
-}
-
-static void update_picture_tables(MPVPicture *dst, const MPVPicture *src)
-{
-    ff_refstruct_replace(&dst->mbskip_table, src->mbskip_table);
-    ff_refstruct_replace(&dst->qscale_table_base, src->qscale_table_base);
-    ff_refstruct_replace(&dst->mb_type_base,      src->mb_type_base);
-    for (int i = 0; i < 2; i++) {
-        ff_refstruct_replace(&dst->motion_val_base[i], src->motion_val_base[i]);
-        ff_refstruct_replace(&dst->ref_index[i],  src->ref_index[i]);
-    }
-
-    dst->qscale_table  = src->qscale_table;
-    dst->mb_type       = src->mb_type;
-    for (int i = 0; i < 2; i++)
-        dst->motion_val[i] = src->motion_val[i];
-
-    dst->mb_width  = src->mb_width;
-    dst->mb_height = src->mb_height;
-    dst->mb_stride = src->mb_stride;
-}
-
-int ff_mpeg_ref_picture(MPVPicture *dst, MPVPicture *src)
-{
-    int ret;
-
-    av_assert0(!dst->f->buf[0]);
-    av_assert0(src->f->buf[0]);
-
-    src->tf.f = src->f;
-    dst->tf.f = dst->f;
-    ret = ff_thread_ref_frame(&dst->tf, &src->tf);
-    if (ret < 0)
-        goto fail;
-
-    update_picture_tables(dst, src);
-
-    ff_refstruct_replace(&dst->hwaccel_picture_private,
-                          src->hwaccel_picture_private);
-
-    dst->dummy                   = src->dummy;
-    dst->field_picture           = src->field_picture;
-    dst->b_frame_score           = src->b_frame_score;
-    dst->reference               = src->reference;
-    dst->shared                  = src->shared;
-    dst->display_picture_number  = src->display_picture_number;
-    dst->coded_picture_number    = src->coded_picture_number;
-
-    return 0;
-fail:
-    ff_mpeg_unref_picture(dst);
-    return ret;
-}
-
-int ff_find_unused_picture(AVCodecContext *avctx, MPVPicture *picture, int shared)
-{
-    for (int i = 0; i < MAX_PICTURE_COUNT; i++)
-        if (!picture[i].f->buf[0])
-            return i;
-
-    av_log(avctx, AV_LOG_FATAL,
-           "Internal error, picture buffer overflow\n");
-    /* We could return -1, but the codec would crash trying to draw into a
-     * non-existing frame anyway. This is safer than waiting for a random crash.
-     * Also the return of this is never useful, an encoder must only allocate
-     * as much as allowed in the specification. This has no relationship to how
-     * much libavcodec could allocate (and MAX_PICTURE_COUNT is always large
-     * enough for such valid streams).
-     * Plus, a decoder has to check stream validity and remove frames if too
-     * many reference frames are around. Waiting for "OOM" is not correct at
-     * all. Similarly, missing reference frames have to be replaced by
-     * interpolated/MC frames, anything else is a bug in the codec ...
-     */
-    abort();
-    return -1;
-}
-
-void av_cold ff_mpv_picture_free(MPVPicture *pic)
-{
-    ff_mpeg_unref_picture(pic);
-    av_frame_free(&pic->f);
 }

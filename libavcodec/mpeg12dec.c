@@ -793,13 +793,16 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s    = avctx->priv_data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
+    int ret;
 
     s2->out_format = FMT_MPEG1;
 
     if (   avctx->codec_tag != AV_RL32("VCR2")
         && avctx->codec_tag != AV_RL32("BW10"))
         avctx->coded_width = avctx->coded_height = 0; // do not trust dimensions from input
-    ff_mpv_decode_init(s2, avctx);
+    ret = ff_mpv_decode_init(s2, avctx);
+    if (ret < 0)
+        return ret;
 
     ff_mpeg12_init_vlcs();
 
@@ -2529,7 +2532,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx, AVFrame *picture,
             if (ret < 0)
                 return ret;
 
-            s2->next_pic.ptr = NULL;
+            ff_mpv_unref_picture(&s2->next_pic);
 
             *got_output = 1;
         }
@@ -2552,14 +2555,14 @@ static int mpeg_decode_frame(AVCodecContext *avctx, AVFrame *picture,
         }
         s->extradata_decoded = 1;
         if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE)) {
-            s2->cur_pic.ptr = NULL;
+            ff_mpv_unref_picture(&s2->cur_pic);
             return ret;
         }
     }
 
     ret = decode_chunks(avctx, picture, got_output, buf, buf_size);
     if (ret<0 || *got_output) {
-        s2->cur_pic.ptr = NULL;
+        ff_mpv_unref_picture(&s2->cur_pic);
 
         if (s->timecode_frame_start != -1 && *got_output) {
             char tcbuf[AV_TIMECODE_STR_SIZE];

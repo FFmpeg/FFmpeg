@@ -461,7 +461,9 @@ av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ff_mpv_decode_init(s, avctx);
+    ret = ff_mpv_decode_init(s, avctx);
+    if (ret < 0)
+        return ret;
 
     avctx->pix_fmt = vc1_get_format(avctx);
 
@@ -846,7 +848,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         if (s->low_delay == 0 && s->next_pic.ptr) {
             if ((ret = av_frame_ref(pict, s->next_pic.ptr->f)) < 0)
                 return ret;
-            s->next_pic.ptr = NULL;
+            ff_mpv_unref_picture(&s->next_pic);
 
             *got_frame = 1;
         }
@@ -997,7 +999,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     if (s->context_initialized &&
         (s->width  != avctx->coded_width ||
          s->height != avctx->coded_height)) {
-        ff_vc1_decode_end(avctx);
+        vc1_decode_reset(avctx);
     }
 
     if (!s->context_initialized) {

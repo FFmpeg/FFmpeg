@@ -1510,7 +1510,9 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = &r->s;
     int ret;
 
-    ff_mpv_decode_init(s, avctx);
+    ret = ff_mpv_decode_init(s, avctx);
+    if (ret < 0)
+        return ret;
     s->out_format = FMT_H263;
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
@@ -1632,7 +1634,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         if (s->next_pic.ptr) {
             if ((ret = av_frame_ref(pict, s->next_pic.ptr->f)) < 0)
                 return ret;
-            s->next_pic.ptr = NULL;
+            ff_mpv_unref_picture(&s->next_pic);
 
             *got_picture_ptr = 1;
         }

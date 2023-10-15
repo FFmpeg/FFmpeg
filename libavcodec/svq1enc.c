@@ -60,7 +60,6 @@ typedef struct SVQ1EncContext {
      * else, the idea is to make the motion estimation eventually independent
      * of MpegEncContext, so this will be removed then. */
     MpegEncContext m;
-    MPVPicture cur_pic, last_pic;
     AVCodecContext *avctx;
     MECmpContext mecc;
     HpelDSPContext hdsp;
@@ -327,8 +326,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
 
     if (s->pict_type == AV_PICTURE_TYPE_P) {
         s->m.avctx                         = s->avctx;
-        s->m.cur_pic.ptr                   = &s->cur_pic;
-        s->m.last_pic.ptr                  = &s->last_pic;
         s->m.last_pic.data[0]        = ref_plane;
         s->m.linesize                      =
         s->m.last_pic.linesize[0]    =

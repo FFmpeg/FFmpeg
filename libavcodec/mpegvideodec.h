@@ -44,8 +44,10 @@
  * Initialize the given MpegEncContext for decoding.
  * the changed fields will not depend upon
  * the prior state of the MpegEncContext.
+ *
+ * Also initialize the picture pool.
  */
-void ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx);
+int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx);
 
 int ff_mpv_common_frame_size_change(MpegEncContext *s);
 

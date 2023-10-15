@@ -29,7 +29,6 @@
 #include "threadframe.h"
 
 #define MPV_MAX_PLANES 3
-#define MAX_PICTURE_COUNT 36
 #define EDGE_WIDTH 16
 
 typedef struct ScratchpadContext {
@@ -94,7 +93,7 @@ typedef struct MPVWorkPicture {
     uint8_t  *data[MPV_MAX_PLANES];
     ptrdiff_t linesize[MPV_MAX_PLANES];
 
-    MPVPicture *ptr;
+    MPVPicture *ptr;            ///< RefStruct reference
 
     int8_t *qscale_table;
 
@@ -108,6 +107,11 @@ typedef struct MPVWorkPicture {
 
     int reference;
 } MPVWorkPicture;
+
+/**
+ * Allocate a pool of MPVPictures.
+ */
+struct FFRefStructPool *ff_mpv_alloc_pic_pool(void);
 
 /**
  * Allocate an MPVPicture's accessories (but not the AVFrame's buffer itself)
@@ -129,14 +133,8 @@ int ff_mpv_pic_check_linesize(void *logctx, const struct AVFrame *f,
 int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize);
 
-int ff_mpeg_ref_picture(MPVPicture *dst, MPVPicture *src);
 void ff_mpv_unref_picture(MPVWorkPicture *pic);
 void ff_mpv_workpic_from_pic(MPVWorkPicture *wpic, MPVPicture *pic);
 void ff_mpv_replace_picture(MPVWorkPicture *dst, const MPVWorkPicture *src);
-void ff_mpeg_unref_picture(MPVPicture *picture);
-
-void ff_mpv_picture_free(MPVPicture *pic);
-
-int ff_find_unused_picture(AVCodecContext *avctx, MPVPicture *picture, int shared);
 
 #endif /* AVCODEC_MPEGPICTURE_H */
