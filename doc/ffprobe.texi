@@ -41,7 +41,7 @@ ffprobe will show it.
 
 ffprobe output is designed to be easily parsable by a textual filter,
 and consists of one or more sections of a form defined by the selected
-writer, which is specified by the @option{print_format} option.
+writer, which is specified by the @option{output_format} option.
 
 Sections may contain other nested sections, and are identified by a
 name (which may be shared by other sections), and an unique
@@ -83,7 +83,7 @@ Use sexagesimal format HH:MM:SS.MICROSECONDS for time values.
 Prettify the format of the displayed values, it corresponds to the
 options "-unit -prefix -byte_binary_prefix -sexagesimal".
 
-@item -of, -print_format @var{writer_name}[=@var{writer_options}]
+@item -output_format, -of, -print_format @var{writer_name}[=@var{writer_options}]
 Set the output printing format.
 
 @var{writer_name} specifies the name of the writer, and
@@ -91,7 +91,7 @@ Set the output printing format.
 
 For example for printing the output in JSON format, specify:
 @example
--print_format json
+-output_format json
 @end example
 
 For more details on the available output printing formats, see the

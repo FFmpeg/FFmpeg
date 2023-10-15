@@ -37,6 +37,7 @@ version <next>:
 - VAAPI AV1 encoder
 - ffprobe XML output schema changed to account for multiple
   variable-fields elements within the same parent element
+- ffprobe -output_format option added as an alias of -of
 
 
 version 6.0:

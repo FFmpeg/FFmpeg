@@ -140,7 +140,7 @@ static int show_private_data            = 1;
 #define SHOW_OPTIONAL_FIELDS_ALWAYS      1
 static int show_optional_fields = SHOW_OPTIONAL_FIELDS_AUTO;
 
-static char *print_format;
+static char *output_format;
 static char *stream_specifier;
 static char *show_data_hash;
 
@@ -4086,9 +4086,10 @@ static const OptionDef real_options[] = {
       "use sexagesimal format HOURS:MM:SS.MICROSECONDS for time units" },
     { "pretty", 0, {.func_arg = opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
-    { "print_format", OPT_STRING | HAS_ARG, { &print_format },
+    { "output_format", OPT_STRING | HAS_ARG, { &output_format },
       "set the output printing format (available formats are: default, compact, csv, flat, ini, json, xml)", "format" },
-    { "of", OPT_STRING | HAS_ARG, { &print_format }, "alias for -print_format", "format" },
+    { "print_format", OPT_STRING | HAS_ARG, { &output_format }, "alias for -output_format (deprecated)" },
+    { "of", OPT_STRING | HAS_ARG, { &output_format }, "alias for -output_format", "format" },
     { "select_streams", OPT_STRING | HAS_ARG, { &stream_specifier }, "select the specified streams", "stream_specifier" },
     { "sections", OPT_EXIT, {.func_arg = opt_sections}, "print sections structure and section information, and exit" },
     { "show_data",    OPT_BOOL, { &do_show_data }, "show packets data" },
@@ -4209,13 +4210,13 @@ int main(int argc, char **argv)
 
     writer_register_all();
 
-    if (!print_format)
-        print_format = av_strdup("default");
-    if (!print_format) {
+    if (!output_format)
+        output_format = av_strdup("default");
+    if (!output_format) {
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    w_name = av_strtok(print_format, "=", &buf);
+    w_name = av_strtok(output_format, "=", &buf);
     if (!w_name) {
         av_log(NULL, AV_LOG_ERROR,
                "No name specified for the output format\n");
@@ -4284,7 +4285,7 @@ int main(int argc, char **argv)
     }
 
 end:
-    av_freep(&print_format);
+    av_freep(&output_format);
     av_freep(&read_intervals);
     av_hash_freep(&hash);
 
