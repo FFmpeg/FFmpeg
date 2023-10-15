@@ -40,11 +40,13 @@
 #include "mpeg4videodec.h"
 #include "refstruct.h"
 #include "thread.h"
-#include "threadframe.h"
+#include "threadprogress.h"
 #include "wmv2dec.h"
 
 int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 {
+    enum ThreadingStatus thread_status;
+
     ff_mpv_common_defaults(s);
 
     s->avctx           = avctx;
@@ -59,9 +61,12 @@ int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
     ff_mpv_idct_init(s);
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
 
-    if (!s->picture_pool && // VC-1 can call this multiple times
-        ff_thread_sync_ref(avctx, offsetof(MpegEncContext, picture_pool))) {
-        s->picture_pool = ff_mpv_alloc_pic_pool();
+    if (s->picture_pool)  // VC-1 can call this multiple times
+        return 0;
+
+    thread_status = ff_thread_sync_ref(avctx, offsetof(MpegEncContext, picture_pool));
+    if (thread_status != FF_THREAD_IS_COPY) {
+        s->picture_pool = ff_mpv_alloc_pic_pool(thread_status != FF_THREAD_NO_FRAME_THREADING);
         if (!s->picture_pool)
             return AVERROR(ENOMEM);
     }
@@ -229,7 +234,6 @@ static int alloc_picture(MpegEncContext *s, MPVWorkPicture *dst, int reference)
 
     dst->ptr = pic;
 
-    pic->tf.f = pic->f;
     pic->reference = reference;
 
     /* WM Image / Screen codecs allocate internal buffers with different
@@ -237,8 +241,8 @@ static int alloc_picture(MpegEncContext *s, MPVWorkPicture *dst, int reference)
     if (avctx->codec_id != AV_CODEC_ID_WMV3IMAGE &&
         avctx->codec_id != AV_CODEC_ID_VC1IMAGE  &&
         avctx->codec_id != AV_CODEC_ID_MSS2) {
-        ret = ff_thread_get_ext_buffer(avctx, &pic->tf,
-                                       reference ? AV_GET_BUFFER_FLAG_REF : 0);
+        ret = ff_thread_get_buffer(avctx, pic->f,
+                                   reference ? AV_GET_BUFFER_FLAG_REF : 0);
     } else {
         pic->f->width  = avctx->width;
         pic->f->height = avctx->height;
@@ -281,8 +285,7 @@ static int av_cold alloc_dummy_frame(MpegEncContext *s, MPVWorkPicture *dst)
     pic = dst->ptr;
     pic->dummy = 1;
 
-    ff_thread_report_progress(&pic->tf, INT_MAX, 0);
-    ff_thread_report_progress(&pic->tf, INT_MAX, 1);
+    ff_thread_progress_report(&pic->progress, INT_MAX);
 
     return 0;
 }
@@ -418,7 +421,7 @@ void ff_mpv_frame_end(MpegEncContext *s)
     emms_c();
 
     if (s->cur_pic.reference)
-        ff_thread_report_progress(&s->cur_pic.ptr->tf, INT_MAX, 0);
+        ff_thread_progress_report(&s->cur_pic.ptr->progress, INT_MAX);
 }
 
 void ff_print_debug_info(const MpegEncContext *s, const MPVPicture *p, AVFrame *pict)
@@ -484,7 +487,7 @@ void ff_mpeg_flush(AVCodecContext *avctx)
 void ff_mpv_report_decode_progress(MpegEncContext *s)
 {
     if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->er.error_occurred)
-        ff_thread_report_progress(&s->cur_pic.ptr->tf, s->mb_y, 0);
+        ff_thread_progress_report(&s->cur_pic.ptr->progress, s->mb_y);
 }
 
 

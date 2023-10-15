@@ -28,13 +28,13 @@
 #include "motion_est.h"
 #include "mpegpicture.h"
 #include "refstruct.h"
-#include "threadframe.h"
 
 static void mpv_pic_reset(FFRefStructOpaque unused, void *obj)
 {
     MPVPicture *pic = obj;
 
-    ff_thread_release_ext_buffer(&pic->tf);
+    av_frame_unref(pic->f);
+    ff_thread_progress_reset(&pic->progress);
 
     ff_refstruct_unref(&pic->hwaccel_picture_private);
 
@@ -65,14 +65,18 @@ static void mpv_pic_reset(FFRefStructOpaque unused, void *obj)
     pic->coded_picture_number   = 0;
 }
 
-static int av_cold mpv_pic_init(FFRefStructOpaque unused, void *obj)
+static int av_cold mpv_pic_init(FFRefStructOpaque opaque, void *obj)
 {
     MPVPicture *pic = obj;
+    int ret, init_progress = (uintptr_t)opaque.nc;
+
+    ret = ff_thread_progress_init(&pic->progress, init_progress);
+    if (ret < 0)
+        return ret;
 
     pic->f = av_frame_alloc();
     if (!pic->f)
         return AVERROR(ENOMEM);
-    pic->tf.f = pic->f;
     return 0;
 }
 
@@ -80,12 +84,15 @@ static void av_cold mpv_pic_free(FFRefStructOpaque unused, void *obj)
 {
     MPVPicture *pic = obj;
 
+    ff_thread_progress_destroy(&pic->progress);
     av_frame_free(&pic->f);
 }
 
-av_cold FFRefStructPool *ff_mpv_alloc_pic_pool(void)
+av_cold FFRefStructPool *ff_mpv_alloc_pic_pool(int init_progress)
 {
-    return ff_refstruct_pool_alloc_ext(sizeof(MPVPicture), 0, NULL,
+    return ff_refstruct_pool_alloc_ext(sizeof(MPVPicture),
+                                       FF_REFSTRUCT_POOL_FLAG_FREE_ON_INIT_ERROR,
+                                       (void*)(uintptr_t)init_progress,
                                        mpv_pic_init, mpv_pic_reset, mpv_pic_free, NULL);
 }
 

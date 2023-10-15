@@ -43,7 +43,7 @@
 #include "qpeldsp.h"
 #include "rectangle.h"
 #include "thread.h"
-#include "threadframe.h"
+#include "threadprogress.h"
 
 #include "rv34vlc.h"
 #include "rv34data.h"
@@ -721,8 +721,8 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
         /* wait for the referenced mb row to be finished */
         int mb_row = s->mb_y + ((yoff + my + 5 + 8 * height) >> 4);
-        const ThreadFrame *f = dir ? &s->next_pic.ptr->tf : &s->last_pic.ptr->tf;
-        ff_thread_await_progress(f, mb_row, 0);
+        const ThreadProgress *p = dir ? &s->next_pic.ptr->progress : &s->last_pic.ptr->progress;
+        ff_thread_progress_await(p, mb_row);
     }
 
     dxy = ly*4 + lx;
@@ -901,7 +901,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         //surprisingly, it uses motion scheme from next reference frame
         /* wait for the current mb row to be finished */
         if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-            ff_thread_await_progress(&s->next_pic.ptr->tf, FFMAX(0, s->mb_y-1), 0);
+            ff_thread_progress_await(&s->next_pic.ptr->progress, FFMAX(0, s->mb_y-1));
 
         next_bt = s->next_pic.mb_type[s->mb_x + s->mb_y * s->mb_stride];
         if(IS_INTRA(next_bt) || IS_SKIP(next_bt)){
@@ -1485,8 +1485,8 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
                 r->loop_filter(r, s->mb_y - 2);
 
             if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-                ff_thread_report_progress(&s->cur_pic.ptr->tf,
-                                          s->mb_y - 2, 0);
+                ff_thread_progress_report(&s->cur_pic.ptr->progress,
+                                          s->mb_y - 2);
 
         }
         if(s->mb_x == s->resync_mb_x)
@@ -1584,7 +1584,7 @@ static int finish_frame(AVCodecContext *avctx, AVFrame *pict)
     s->mb_num_left = 0;
 
     if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
-        ff_thread_report_progress(&s->cur_pic.ptr->tf, INT_MAX, 0);
+        ff_thread_progress_report(&s->cur_pic.ptr->progress, INT_MAX);
 
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
@@ -1812,7 +1812,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             ff_er_frame_end(&s->er, NULL);
             ff_mpv_frame_end(s);
             s->mb_num_left = 0;
-            ff_thread_report_progress(&s->cur_pic.ptr->tf, INT_MAX, 0);
+            ff_thread_progress_report(&s->cur_pic.ptr->progress, INT_MAX);
             return AVERROR_INVALIDDATA;
         }
     }

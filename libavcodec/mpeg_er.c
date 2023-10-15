@@ -34,7 +34,7 @@ static void set_erpic(ERPicture *dst, const MPVPicture *src)
     }
 
     dst->f = src->f;
-    dst->tf = &src->tf;
+    dst->progress = &src->progress;
 
     for (i = 0; i < 2; i++) {
         dst->motion_val[i] = src->motion_val[i];

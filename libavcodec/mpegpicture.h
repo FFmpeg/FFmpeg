@@ -26,7 +26,7 @@
 
 #include "avcodec.h"
 #include "motion_est.h"
-#include "threadframe.h"
+#include "threadprogress.h"
 
 #define MPV_MAX_PLANES 3
 #define EDGE_WIDTH 16
@@ -55,7 +55,6 @@ typedef struct BufferPoolContext {
  */
 typedef struct MPVPicture {
     struct AVFrame *f;
-    ThreadFrame tf;
 
     int8_t *qscale_table_base;
     int8_t *qscale_table;
@@ -87,6 +86,8 @@ typedef struct MPVPicture {
 
     int display_picture_number;
     int coded_picture_number;
+
+    ThreadProgress progress;
 } MPVPicture;
 
 typedef struct MPVWorkPicture {
@@ -111,7 +112,7 @@ typedef struct MPVWorkPicture {
 /**
  * Allocate a pool of MPVPictures.
  */
-struct FFRefStructPool *ff_mpv_alloc_pic_pool(void);
+struct FFRefStructPool *ff_mpv_alloc_pic_pool(int init_progress);
 
 /**
  * Allocate an MPVPicture's accessories (but not the AVFrame's buffer itself)

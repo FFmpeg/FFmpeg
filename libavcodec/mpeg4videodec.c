@@ -45,7 +45,7 @@
 #include "internal.h"
 #include "profiles.h"
 #include "qpeldsp.h"
-#include "threadframe.h"
+#include "threadprogress.h"
 #include "xvididct.h"
 #include "unary.h"
 
@@ -1813,7 +1813,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 s->last_mv[i][1][1] = 0;
             }
 
-            ff_thread_await_progress(&s->next_pic.ptr->tf, s->mb_y, 0);
+            ff_thread_progress_await(&s->next_pic.ptr->progress, s->mb_y);
         }
 
         /* if we skipped it in the future P-frame than skip it now too */
@@ -2018,10 +2018,10 @@ end:
 
         if (s->pict_type == AV_PICTURE_TYPE_B) {
             const int delta = s->mb_x + 1 == s->mb_width ? 2 : 1;
-            ff_thread_await_progress(&s->next_pic.ptr->tf,
+            ff_thread_progress_await(&s->next_pic.ptr->progress,
                                         (s->mb_x + delta >= s->mb_width)
                                         ? FFMIN(s->mb_y + 1, s->mb_height - 1)
-                                        : s->mb_y, 0);
+                                        : s->mb_y);
             if (s->next_pic.mbskip_table[xy + delta])
                 return SLICE_OK;
         }
