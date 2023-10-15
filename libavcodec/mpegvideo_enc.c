@@ -251,7 +251,6 @@ static void update_duplicate_context_after_me(MpegEncContext *dst,
 {
 #define COPY(a) dst->a= src->a
     COPY(pict_type);
-    COPY(current_picture);
     COPY(f_code);
     COPY(b_code);
     COPY(qscale);
