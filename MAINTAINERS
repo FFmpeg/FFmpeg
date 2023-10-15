@@ -181,6 +181,7 @@ Codecs:
   interplayvideo.c                      Mike Melanson
   jni*, ffjni*                          Matthieu Bouron
   jpeg2000*                             Nicolas Bertrand
+  jpegxl*                               Leo Izen
   jvdec.c                               Peter Ross
   lcl*.c                                Roberto Togni, Reimar Doeffinger
   libcelt_dec.c                         Nicolas George
@@ -434,8 +435,7 @@ Muxers/Demuxers:
   ipmovie.c                             Mike Melanson
   ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
-  jpegxl_anim_dec.c                     Leo Izen
-  jpegxl_probe.*                        Leo Izen
+  jpegxl*                               Leo Izen
   jvdec.c                               Peter Ross
   kvag.c                                Zane van Iperen
   libmodplug.c                          Clément Bœsch
