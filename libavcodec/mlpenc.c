@@ -135,6 +135,7 @@ typedef struct MLPEncodeContext {
     int             min_restart_interval;   ///< Min interval of access units in between two major frames.
     int             cur_restart_interval;
     int             lpc_coeff_precision;
+    int             rematrix_precision;
     int             lpc_type;
     int             lpc_passes;
     int             prediction_order;
@@ -263,8 +264,8 @@ static int compare_matrix_params(MLPEncodeContext *ctx, const MatrixParams *prev
     if (!mp->count)
         return 0;
 
-    for (unsigned int channel = rh->min_channel; channel <= rh->max_channel; channel++)
-        if (prev->fbits[channel] != mp->fbits[channel])
+    for (unsigned int ch = rh->min_channel; ch <= rh->max_channel; ch++)
+        if (prev->fbits[ch] != mp->fbits[ch])
             return 1;
 
     for (unsigned int mat = 0; mat < mp->count; mat++) {
@@ -274,8 +275,8 @@ static int compare_matrix_params(MLPEncodeContext *ctx, const MatrixParams *prev
         if (prev->lsb_bypass[mat] != mp->lsb_bypass[mat])
             return 1;
 
-        for (unsigned int channel = 0; channel < ctx->num_channels; channel++)
-            if (prev->coeff[mat][channel] != mp->coeff[mat][channel])
+        for (unsigned int ch = 0; ch <= rh->max_matrix_channel; ch++)
+            if (prev->coeff[mat][ch] != mp->coeff[mat][ch])
                 return 1;
     }
 
@@ -1143,8 +1144,7 @@ static int write_access_unit(MLPEncodeContext *ctx, uint8_t *buf,
  *  lossless_check_data that will be written to the restart header.
  */
 static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
-                                int nb_samples,
-                                int is24)
+                                int nb_samples, int is24)
 {
     int32_t *lossless_check_data = &ctx->b[ctx->frame_index].lossless_check_data;
     const int32_t *samples_32 = (const int32_t *) samples;
@@ -1164,6 +1164,14 @@ static void input_data_internal(MLPEncodeContext *ctx, const uint8_t *samples,
 
             temp_lossless_check_data ^= (sample & 0x00ffffff) << ch;
             sample_buffer[i] = sample;
+        }
+    }
+
+    for (int i = nb_samples; i < ctx->avctx->frame_size; i++) {
+        for (unsigned int ch = 0; ch <= rh->max_channel; ch++) {
+            int32_t *sample_buffer = ctx->b[ctx->frame_index].inout_buffer[ch];
+
+            sample_buffer[i] = 0;
         }
     }
 
@@ -1330,8 +1338,11 @@ static int estimate_coeff(MLPEncodeContext *ctx,
                           MatrixParams *mp,
                           unsigned int ch0, unsigned int ch1)
 {
-    int first = 1, x, x0;
-    int64_t g = 0, g0 = 0;
+    int32_t maxl = INT32_MIN, maxr = INT32_MIN, minl = INT32_MAX, minr = INT32_MAX;
+    int64_t summ = 0, sums = 0, suml = 0, sumr = 0, enl = 0, enr = 0;
+    const int shift = 14 - ctx->rematrix_precision;
+    int32_t cf0, cf1, e[4], d[4], ml, mr;
+    int i, count = 0;
 
     for (int j = 0; j <= ctx->cur_restart_interval; j++) {
         DecodingParams *dp = &ctx->b[j].decoding_params;
@@ -1341,56 +1352,63 @@ static int estimate_coeff(MLPEncodeContext *ctx,
         ch[1] = dp->sample_buffer[ch1];
 
         for (int i = 0; i < dp->blocksize; i++) {
-            int64_t c0, c1;
-            int32_t a0, a1;
+            int32_t lm = ch[0][i], rm = ch[1][i];
 
-            c0 = ch[0][i];
-            c1 = ch[1][i];
+            enl  += FFABS(lm);
+            enr  += FFABS(rm);
 
-            if (!c0 && !c1)
-                continue;
+            summ += FFABS(lm + rm);
+            sums += FFABS(lm - rm);
 
-            if (!c0 || !c1) {
-                g0 = 0;
-                goto end;
-            }
+            suml += lm;
+            sumr += rm;
 
-            a0 = FFABS(c0);
-            a1 = FFABS(c1);
+            maxl = FFMAX(maxl, lm);
+            maxr = FFMAX(maxr, rm);
 
-            if (a0 >= a1) {
-                g = (c1 * (1 << 14)) / c0;
-                x = ch1;
-            } else if (a0 < a1) {
-                g = (c0 * (1 << 14)) / c1;
-                x = ch0;
-            }
-
-            if (first) {
-                g0 = g;
-                x0 = x;
-                first = 0;
-            } else if (g != g0 || x != x0) {
-                g0 = 0;
-                goto end;
-            }
+            minl = FFMIN(minl, lm);
+            minr = FFMIN(minr, rm);
         }
     }
-end:
 
-    if (g0) {
-        mp->outch[0] = (x0 == ch0) ? ch0 : ch1;
+    summ -= FFABS(suml + sumr);
+    sums -= FFABS(suml - sumr);
 
-        mp->coeff[0][ch0] = (x0 == ch1) ? g0 : 0;
-        mp->coeff[0][ch1] = (x0 == ch0) ? g0 : 0;
+    ml = maxl - minl;
+    mr = maxr - minr;
 
-        mp->forco[0][ch0] = 0;
-        mp->forco[0][ch1] = 0;
+    if (!summ && !sums)
+        return 0;
 
-        return 1;
-    }
+    if (!ml || !mr)
+        return 0;
 
-    return 0;
+    if ((FFABS(ml) + FFABS(mr)) >= (1 << 24))
+        return 0;
+
+    cf0 = (FFMIN(FFABS(mr), FFABS(ml)) * (1LL << 14)) / FFMAX(FFABS(ml), FFABS(mr));
+    cf0 = (cf0 >> shift) << shift;
+    cf1 = -cf0;
+
+    if (sums > summ)
+        FFSWAP(int32_t, cf0, cf1);
+
+    count = 1;
+    i = enl < enr;
+    mp->outch[0] = i;
+
+    d[!i] = cf0;
+    d[ i] = 1 << 14;
+    e[!i] = cf1;
+    e[ i] = 1 << 14;
+
+    mp->coeff[0][ch0] = av_clip_intp2(d[0], 15);
+    mp->coeff[0][ch1] = av_clip_intp2(d[1], 15);
+
+    mp->forco[0][ch0] = av_clip_intp2(e[0], 15);
+    mp->forco[0][ch1] = av_clip_intp2(e[1], 15);
+
+    return count;
 }
 
 /** Determines how many fractional bits are needed to encode matrix
@@ -1400,10 +1418,11 @@ static void code_matrix_coeffs(MLPEncodeContext *ctx,
                                DecodingParams *dp,
                                unsigned int mat)
 {
+    RestartHeader *rh = ctx->cur_restart_header;
     MatrixParams *mp = &dp->matrix_params;
     int32_t coeff_mask = 0;
 
-    for (unsigned int channel = 0; channel < ctx->num_channels; channel++) {
+    for (unsigned int channel = 0; channel <= rh->max_matrix_channel; channel++) {
         coeff_mask |= mp->coeff[mat][channel];
     }
 
@@ -1787,10 +1806,12 @@ static void generate_2_noise_channels(MLPEncodeContext *ctx)
 /** Rematrixes all channels using chosen coefficients. */
 static void rematrix_channels(MLPEncodeContext *ctx)
 {
+    RestartHeader *rh = ctx->cur_restart_header;
     DecodingParams *dp1 = &ctx->b[1].decoding_params;
     MatrixParams *mp1 = &dp1->matrix_params;
-    unsigned int maxchan = ctx->num_channels;
-    int32_t input_samples[MAX_NCHANNELS];
+    unsigned int maxchan = rh->max_matrix_channel;
+    int32_t orig_samples[MAX_NCHANNELS];
+    int32_t rematrix_samples[MAX_NCHANNELS];
     uint8_t lsb_bypass[MAX_MATRICES] = { 0 };
 
     for (unsigned int j = 0; j <= ctx->cur_restart_interval; j++) {
@@ -1798,21 +1819,24 @@ static void rematrix_channels(MLPEncodeContext *ctx)
         MatrixParams *mp = &dp->matrix_params;
 
         for (unsigned int i = 0; i < dp->blocksize; i++) {
-            for (unsigned int ch = 0; ch < maxchan; ch++)
-                input_samples[ch] = dp->sample_buffer[ch][i];
+            for (unsigned int ch = 0; ch <= maxchan; ch++)
+                orig_samples[ch] = rematrix_samples[ch] = dp->sample_buffer[ch][i];
 
-            for (unsigned int mat = 0; mat < mp1->count; mat++) {
+            for (int mat = 0; mat < mp1->count; mat++) {
                 unsigned int outch = mp1->outch[mat];
                 int64_t accum = 0;
 
-                for (unsigned int ch = 0; ch < maxchan; ch++) {
-                    int32_t sample = input_samples[ch];
+                for (int ch = 0; ch <= maxchan; ch++) {
+                    int32_t sample = rematrix_samples[ch];
 
                     accum += (int64_t)sample * mp1->forco[mat][ch];
                 }
 
-                dp->sample_buffer[outch][i] = accum >> 14;
+                rematrix_samples[outch] = accum >> 14;
             }
+
+            for (unsigned int ch = 0; ch <= maxchan; ch++)
+                dp->sample_buffer[ch][i] = rematrix_samples[ch];
 
             for (unsigned int mat = 0; mat < mp1->count; mat++) {
                 int8_t *bypassed_lsbs = mp->bypassed_lsbs[mat];
@@ -1820,13 +1844,14 @@ static void rematrix_channels(MLPEncodeContext *ctx)
                 int64_t accum = 0;
                 int8_t bit;
 
-                for (unsigned int ch = 0; ch < maxchan; ch++) {
-                    int32_t sample = dp->sample_buffer[ch][i];
+                for (unsigned int ch = 0; ch <= maxchan; ch++) {
+                    int32_t sample = rematrix_samples[ch];
 
                     accum += (int64_t)sample * mp1->coeff[mat][ch];
                 }
 
-                bit = (accum >> 14) != input_samples[outch];
+                rematrix_samples[outch] = accum >> 14;
+                bit = rematrix_samples[outch] != orig_samples[outch];
 
                 bypassed_lsbs[i] = bit;
                 lsb_bypass[mat] |= bit;
@@ -2170,6 +2195,7 @@ static const AVOption mlp_options[] = {
 { "prediction_order", "Search method for selecting prediction order", OFFSET(prediction_order), AV_OPT_TYPE_INT, {.i64 = ORDER_METHOD_EST }, ORDER_METHOD_EST, ORDER_METHOD_SEARCH, FLAGS, "predm" },
 { "estimation", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = ORDER_METHOD_EST },    0, 0, FLAGS, "predm" },
 { "search",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = ORDER_METHOD_SEARCH }, 0, 0, FLAGS, "predm" },
+{ "rematrix_precision", "Rematrix coefficient precision", OFFSET(rematrix_precision), AV_OPT_TYPE_INT, {.i64 = 1 }, 0, 14, FLAGS },
 { NULL },
 };
 
