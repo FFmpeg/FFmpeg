@@ -492,6 +492,7 @@ static void h264_decode_flush(AVCodecContext *avctx)
     ff_h264_unref_picture(&h->cur_pic);
 
     h->mb_y = 0;
+    h->non_gray = 0;
 
     ff_h264_free_tables(h);
     h->context_initialized = 0;
