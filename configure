@@ -2202,7 +2202,6 @@ HAVE_LIST_PUB="
 
 HEADERS_LIST="
     arpa_inet_h
-    asm_hwcap_h
     asm_types_h
     cdio_paranoia_h
     cdio_paranoia_paranoia_h
@@ -6453,7 +6452,6 @@ check_headers io.h
 enabled libdrm &&
     check_headers linux/dma-buf.h
 
-check_headers asm/hwcap.h
 check_headers linux/perf_event.h
 check_headers libcrystalhd/libcrystalhd_if.h
 check_headers malloc.h

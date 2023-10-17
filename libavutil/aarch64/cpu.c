@@ -20,9 +20,8 @@
 #include "libavutil/cpu_internal.h"
 #include "config.h"
 
-#if (defined(__linux__) || defined(__ANDROID__)) && HAVE_GETAUXVAL && HAVE_ASM_HWCAP_H
+#if (defined(__linux__) || defined(__ANDROID__)) && HAVE_GETAUXVAL
 #include <stdint.h>
-#include <asm/hwcap.h>
 #include <sys/auxv.h>
 
 #define get_cpu_feature_reg(reg, val) \
