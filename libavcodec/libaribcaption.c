@@ -70,12 +70,12 @@ typedef struct ARIBCaptionContext {
     int encoding_scheme;
     int ass_single_rect;
     char *font;
-    int replace_fullwidth_ascii;
     int force_stroke_text;
     int ignore_background;
     int ignore_ruby;
     float stroke_width;
     int replace_drcs;
+    int replace_msz_ascii;
     int replace_msz_japanese;
     int replace_msz_glyph;
 
@@ -1006,7 +1006,7 @@ static int aribcaption_init(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
     aribcc_decoder_set_replace_msz_fullwidth_ascii(ctx->decoder,
-                                                   ctx->replace_fullwidth_ascii);
+                                                   ctx->replace_msz_ascii);
     aribcc_decoder_set_replace_msz_fullwidth_japanese(ctx->decoder,
                                                       ctx->replace_msz_japanese);
 
@@ -1138,8 +1138,6 @@ static const AVOption options[] = {
       OFFSET(ass_single_rect), AV_OPT_TYPE_BOOL, { .i64 = ASS_SINGLE_RECT }, 0, 1, SD },
     { "font", "comma-separated font family [ass, bitmap]",
       OFFSET(font), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SD },
-    { "replace_fullwidth_ascii", "replace MSZ fullwidth alphanumerics with halfwidth alphanumerics [ass, bitmap]",
-      OFFSET(replace_fullwidth_ascii), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
     { "force_outline_text", "always render characters with outline [(ass), bitmap]",
       OFFSET(force_stroke_text), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, SD },
     { "ignore_background", "ignore rendering caption background [(ass), bitmap]",
@@ -1150,6 +1148,8 @@ static const AVOption options[] = {
       OFFSET(stroke_width), AV_OPT_TYPE_FLOAT, { .dbl = 1.5 }, 0.0, 3.0, SD },
     { "replace_drcs", "replace known DRCS [bitmap]",
       OFFSET(replace_drcs), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
+    { "replace_msz_ascii", "replace MSZ fullwidth alphanumerics with halfwidth alphanumerics [ass, bitmap]",
+      OFFSET(replace_msz_ascii), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
     { "replace_msz_japanese", "replace MSZ fullwidth Japanese with halfwidth [ass, bitmap]",
       OFFSET(replace_msz_japanese), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
     { "replace_msz_glyph", "replace MSZ characters with halfwidth glyphs [bitmap]",

@@ -427,12 +427,6 @@ If your player cannot handle AVSubtitles with multiple ASS rectangles properly,
 set this option to @var{true} or define @env{ASS_SINGLE_RECT=1} to change
 default behavior at compilation.
 
-@item -replace_fullwidth_ascii @var{boolean}
-Specify whether to replace MSZ (Middle Size, half width) fullwidth
-alphanumerics with halfwidth alphanumerics.
-
-The default is @var{true}.
-
 @item -force_outline_text @var{boolean}
 Specify whether always render outline text for all characters regardless of
 the indication by charactor style.
@@ -456,6 +450,12 @@ The default is @var{false}.
 
 @item -replace_drcs @var{boolean}
 Specify whether to render replaced DRCS characters as Unicode characters.
+
+The default is @var{true}.
+
+@item -replace_msz_ascii @var{boolean}
+Specify whether to replace MSZ (Middle Size; half width) fullwidth
+alphanumerics with halfwidth alphanumerics.
 
 The default is @var{true}.
 
