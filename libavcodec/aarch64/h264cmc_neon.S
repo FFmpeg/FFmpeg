@@ -38,7 +38,7 @@ function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         lsl             w9,  w9,  #3
         lsl             w10, w10, #1
         add             w9,  w9,  w10
-        add             x6,  x6,  w9, UXTW
+        add             x6,  x6,  w9, uxtw
         ld1r            {v22.8h}, [x6]
   .endif
   .ifc \codec,vc1
@@ -208,7 +208,7 @@ function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         lsl             w9,  w9,  #3
         lsl             w10, w10, #1
         add             w9,  w9,  w10
-        add             x6,  x6,  w9, UXTW
+        add             x6,  x6,  w9, uxtw
         ld1r            {v22.8h}, [x6]
   .endif
   .ifc \codec,vc1

@@ -385,7 +385,7 @@ function ff_h264_idct8_add4_neon, export=1
         movrel          x14, .L_ff_h264_idct8_add_neon
 1:      ldrb            w9,  [x7], #4
         ldrsw           x0,  [x5], #16
-        ldrb            w9,  [x4, w9, UXTW]
+        ldrb            w9,  [x4, w9, uxtw]
         subs            w9,  w9,  #1
         b.lt            2f
         ldrsh           w11,  [x1]

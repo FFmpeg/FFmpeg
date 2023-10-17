@@ -186,13 +186,13 @@ function ff_bwdif_filter_line3_neon, export=1
         mov             w10, w6                         // w10 = loop count
         neg             w9,  w5                         // w9  = mref
         lsl             w8,  w9,  #1                    // w8 =  mref2
-        add             w7,  w9,  w9, LSL #1            // w7  = mref3
+        add             w7,  w9,  w9, lsl #1            // w7  = mref3
         lsl             w6,  w9,  #2                    // w6  = mref4
         mov             w11, w5                         // w11 = pref
         lsl             w12, w5,  #1                    // w12 = pref2
-        add             w13, w5,  w5, LSL #1            // w13 = pref3
+        add             w13, w5,  w5, lsl #1            // w13 = pref3
         lsl             w14, w5,  #2                    // w14 = pref4
-        add             w15, w5,  w5, LSL #2            // w15 = pref5
+        add             w15, w5,  w5, lsl #2            // w15 = pref5
         add             w16, w14, w12                   // w16 = pref6
 
         lsl             w5,  w1,  #1                    // w5 = d_stride * 2

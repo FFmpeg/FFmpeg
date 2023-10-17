@@ -35,10 +35,10 @@
 
 function ff_compute_safe_ssd_integral_image_neon, export=1
         movi            v26.4s, #0                                      // used as zero for the "rotations" in acc_sum_store
-        sub             x3, x3, w6, UXTW                                // s1 padding (s1_linesize - w)
-        sub             x5, x5, w6, UXTW                                // s2 padding (s2_linesize - w)
-        sub             x9, x0, w1, UXTW #2                             // dst_top
-        sub             x1, x1, w6, UXTW                                // dst padding (dst_linesize_32 - w)
+        sub             x3, x3, w6, uxtw                                // s1 padding (s1_linesize - w)
+        sub             x5, x5, w6, uxtw                                // s2 padding (s2_linesize - w)
+        sub             x9, x0, w1, uxtw #2                             // dst_top
+        sub             x1, x1, w6, uxtw                                // dst padding (dst_linesize_32 - w)
         lsl             x1, x1, #2                                      // dst padding expressed in bytes
 1:      mov             w10, w6                                         // width copy for each line
         sub             x0, x0, #16                                     // beginning of the dst line minus 4 sums

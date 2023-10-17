@@ -54,10 +54,10 @@ function ff_hscale8to15_X8_neon, export=1
         movi                v1.2d, #0                   // val sum part 2 (for dst[1])
         movi                v2.2d, #0                   // val sum part 3 (for dst[2])
         movi                v3.2d, #0                   // val sum part 4 (for dst[3])
-        add                 x17, x3, w8, UXTW           // srcp + filterPos[0]
-        add                 x8,  x3, w0, UXTW           // srcp + filterPos[1]
-        add                 x0, x3, w11, UXTW           // srcp + filterPos[2]
-        add                 x11, x3, w9, UXTW           // srcp + filterPos[3]
+        add                 x17, x3, w8, uxtw           // srcp + filterPos[0]
+        add                 x8,  x3, w0, uxtw           // srcp + filterPos[1]
+        add                 x0, x3, w11, uxtw           // srcp + filterPos[2]
+        add                 x11, x3, w9, uxtw           // srcp + filterPos[3]
         mov                 w15, w6                     // filterSize counter
 2:      ld1                 {v4.8b}, [x17], #8          // srcp[filterPos[0] + {0..7}]
         ld1                 {v5.8h}, [x16], #16         // load 8x16-bit filter values, part 1
@@ -231,14 +231,14 @@ function ff_hscale8to15_4_neon, export=1
         add                 x5, x5, #32                 // advance filterPos
 
         // gather random access data from src into contiguous memory
-        ldr                 w8, [x3, w8, UXTW]          // src[filterPos[idx + 0]][0..3]
-        ldr                 w9, [x3, w9, UXTW]          // src[filterPos[idx + 1]][0..3]
-        ldr                 w10, [x3, w10, UXTW]        // src[filterPos[idx + 2]][0..3]
-        ldr                 w11, [x3, w11, UXTW]        // src[filterPos[idx + 3]][0..3]
-        ldr                 w12, [x3, w12, UXTW]        // src[filterPos[idx + 4]][0..3]
-        ldr                 w13, [x3, w13, UXTW]        // src[filterPos[idx + 5]][0..3]
-        ldr                 w14, [x3, w14, UXTW]        // src[filterPos[idx + 6]][0..3]
-        ldr                 w15, [x3, w15, UXTW]        // src[filterPos[idx + 7]][0..3]
+        ldr                 w8, [x3, w8, uxtw]          // src[filterPos[idx + 0]][0..3]
+        ldr                 w9, [x3, w9, uxtw]          // src[filterPos[idx + 1]][0..3]
+        ldr                 w10, [x3, w10, uxtw]        // src[filterPos[idx + 2]][0..3]
+        ldr                 w11, [x3, w11, uxtw]        // src[filterPos[idx + 3]][0..3]
+        ldr                 w12, [x3, w12, uxtw]        // src[filterPos[idx + 4]][0..3]
+        ldr                 w13, [x3, w13, uxtw]        // src[filterPos[idx + 5]][0..3]
+        ldr                 w14, [x3, w14, uxtw]        // src[filterPos[idx + 6]][0..3]
+        ldr                 w15, [x3, w15, uxtw]        // src[filterPos[idx + 7]][0..3]
         stp                 w8, w9, [sp]                // *scratch_mem = { src[filterPos[idx + 0]][0..3], src[filterPos[idx + 1]][0..3] }
         stp                 w10, w11, [sp, #8]          // *scratch_mem = { src[filterPos[idx + 2]][0..3], src[filterPos[idx + 3]][0..3] }
         stp                 w12, w13, [sp, #16]         // *scratch_mem = { src[filterPos[idx + 4]][0..3], src[filterPos[idx + 5]][0..3] }
@@ -263,21 +263,21 @@ function ff_hscale8to15_4_neon, export=1
         // interleaved SIMD and prefetching intended to keep ld/st and vector pipelines busy
         uxtl                v16.8h, v16.8b              // unsigned extend long, covert src data to 16-bit
         uxtl                v17.8h, v17.8b              // unsigned extend long, covert src data to 16-bit
-        ldr                 w8, [x3, w8, UXTW]          // src[filterPos[idx + 0]], next iteration
-        ldr                 w9, [x3, w9, UXTW]          // src[filterPos[idx + 1]], next iteration
+        ldr                 w8, [x3, w8, uxtw]          // src[filterPos[idx + 0]], next iteration
+        ldr                 w9, [x3, w9, uxtw]          // src[filterPos[idx + 1]], next iteration
         uxtl                v18.8h, v18.8b              // unsigned extend long, covert src data to 16-bit
         uxtl                v19.8h, v19.8b              // unsigned extend long, covert src data to 16-bit
-        ldr                 w10, [x3, w10, UXTW]        // src[filterPos[idx + 2]], next iteration
-        ldr                 w11, [x3, w11, UXTW]        // src[filterPos[idx + 3]], next iteration
+        ldr                 w10, [x3, w10, uxtw]        // src[filterPos[idx + 2]], next iteration
+        ldr                 w11, [x3, w11, uxtw]        // src[filterPos[idx + 3]], next iteration
 
         smlal               v0.4s, v1.4h, v16.4h        // multiply accumulate inner loop j = 0, idx = 0..3
         smlal               v0.4s, v2.4h, v17.4h        // multiply accumulate inner loop j = 1, idx = 0..3
-        ldr                 w12, [x3, w12, UXTW]        // src[filterPos[idx + 4]], next iteration
-        ldr                 w13, [x3, w13, UXTW]        // src[filterPos[idx + 5]], next iteration
+        ldr                 w12, [x3, w12, uxtw]        // src[filterPos[idx + 4]], next iteration
+        ldr                 w13, [x3, w13, uxtw]        // src[filterPos[idx + 5]], next iteration
         smlal               v0.4s, v3.4h, v18.4h        // multiply accumulate inner loop j = 2, idx = 0..3
         smlal               v0.4s, v4.4h, v19.4h        // multiply accumulate inner loop j = 3, idx = 0..3
-        ldr                 w14, [x3, w14, UXTW]        // src[filterPos[idx + 6]], next iteration
-        ldr                 w15, [x3, w15, UXTW]        // src[filterPos[idx + 7]], next iteration
+        ldr                 w14, [x3, w14, uxtw]        // src[filterPos[idx + 6]], next iteration
+        ldr                 w15, [x3, w15, uxtw]        // src[filterPos[idx + 7]], next iteration
 
         smlal2              v5.4s, v1.8h, v16.8h        // multiply accumulate inner loop j = 0, idx = 4..7
         smlal2              v5.4s, v2.8h, v17.8h        // multiply accumulate inner loop j = 1, idx = 4..7
@@ -331,7 +331,7 @@ function ff_hscale8to15_4_neon, export=1
 2:
         // load src
         ldr                 w8, [x5], #4                // filterPos[i]
-        add                 x9, x3, w8, UXTW            // calculate the address for src load
+        add                 x9, x3, w8, uxtw            // calculate the address for src load
         ld1                 {v5.s}[0], [x9]             // src[filterPos[i] + 0..3]
         // load filter
         ld1                 {v6.4h}, [x4], #8           // filter[filterSize * i + 0..3]
@@ -372,14 +372,14 @@ function ff_hscale8to19_4_neon, export=1
         add                 x5, x5, #32
 
         // load data from
-        ldr                 w8, [x3, w8, UXTW]
-        ldr                 w9, [x3, w9, UXTW]
-        ldr                 w10, [x3, w10, UXTW]
-        ldr                 w11, [x3, w11, UXTW]
-        ldr                 w12, [x3, w12, UXTW]
-        ldr                 w13, [x3, w13, UXTW]
-        ldr                 w14, [x3, w14, UXTW]
-        ldr                 w15, [x3, w15, UXTW]
+        ldr                 w8, [x3, w8, uxtw]
+        ldr                 w9, [x3, w9, uxtw]
+        ldr                 w10, [x3, w10, uxtw]
+        ldr                 w11, [x3, w11, uxtw]
+        ldr                 w12, [x3, w12, uxtw]
+        ldr                 w13, [x3, w13, uxtw]
+        ldr                 w14, [x3, w14, uxtw]
+        ldr                 w15, [x3, w15, uxtw]
 
         sub                 sp, sp, #32
 
@@ -399,30 +399,30 @@ function ff_hscale8to19_4_neon, export=1
         ldp                 w14, w15, [x5, #24]         // filterPos[6], filterPos[7]
         add                 x5, x5, #32
         uxtl                v0.8h, v0.8b
-        ldr                 w8, [x3, w8, UXTW]
+        ldr                 w8, [x3, w8, uxtw]
         smull               v5.4s, v0.4h, v28.4h        // multiply first column of src
-        ldr                 w9, [x3, w9, UXTW]
+        ldr                 w9, [x3, w9, uxtw]
         smull2              v6.4s, v0.8h, v28.8h
         stp                 w8, w9, [sp]
 
         uxtl                v1.8h, v1.8b
-        ldr                 w10, [x3, w10, UXTW]
+        ldr                 w10, [x3, w10, uxtw]
         smlal               v5.4s, v1.4h, v29.4h        // multiply second column of src
-        ldr                 w11, [x3, w11, UXTW]
+        ldr                 w11, [x3, w11, uxtw]
         smlal2              v6.4s, v1.8h, v29.8h
         stp                 w10, w11, [sp, #8]
 
         uxtl                v2.8h, v2.8b
-        ldr                 w12, [x3, w12, UXTW]
+        ldr                 w12, [x3, w12, uxtw]
         smlal               v5.4s, v2.4h, v30.4h        // multiply third column of src
-        ldr                 w13, [x3, w13, UXTW]
+        ldr                 w13, [x3, w13, uxtw]
         smlal2              v6.4s, v2.8h, v30.8h
         stp                 w12, w13, [sp, #16]
 
         uxtl                v3.8h, v3.8b
-        ldr                 w14, [x3, w14, UXTW]
+        ldr                 w14, [x3, w14, uxtw]
         smlal               v5.4s, v3.4h, v31.4h        // multiply fourth column of src
-        ldr                 w15, [x3, w15, UXTW]
+        ldr                 w15, [x3, w15, uxtw]
         smlal2              v6.4s, v3.8h, v31.8h
         stp                 w14, w15, [sp, #24]
 
@@ -468,7 +468,7 @@ function ff_hscale8to19_4_neon, export=1
 
 2:
         ldr                 w8, [x5], #4 // load filterPos
-        add                 x9, x3, w8, UXTW // src + filterPos
+        add                 x9, x3, w8, uxtw // src + filterPos
         ld1                 {v0.s}[0], [x9] // load 4 * uint8_t* into one single
         ld1                 {v31.4h}, [x4], #8
         uxtl                v0.8h, v0.8b
@@ -503,10 +503,10 @@ function ff_hscale8to19_X8_neon, export=1
         movi                v1.2d, #0                   // val sum part 2 (for dst[1])
         movi                v2.2d, #0                   // val sum part 3 (for dst[2])
         movi                v3.2d, #0                   // val sum part 4 (for dst[3])
-        add                 x17, x3, w8, UXTW           // srcp + filterPos[0]
-        add                 x8,  x3, w0, UXTW           // srcp + filterPos[1]
-        add                 x0, x3, w11, UXTW           // srcp + filterPos[2]
-        add                 x11, x3, w9, UXTW           // srcp + filterPos[3]
+        add                 x17, x3, w8, uxtw           // srcp + filterPos[0]
+        add                 x8,  x3, w0, uxtw           // srcp + filterPos[1]
+        add                 x0, x3, w11, uxtw           // srcp + filterPos[2]
+        add                 x11, x3, w9, uxtw           // srcp + filterPos[3]
         mov                 w15, w6                     // filterSize counter
 2:      ld1                 {v4.8b}, [x17], #8          // srcp[filterPos[0] + {0..7}]
         ld1                 {v5.8h}, [x16], #16         // load 8x16-bit filter values, part 1
@@ -567,13 +567,13 @@ function ff_hscale8to19_X4_neon, export=1
 
         mov                 x12, x4                     // filter + 0
         add                 x13, x4, x7                 // filter + 1
-        add                 x8, x3, w8, UXTW            // srcp + filterPos 0
+        add                 x8, x3, w8, uxtw            // srcp + filterPos 0
         add                 x14, x13, x7                // filter + 2
-        add                 x9, x3, w9, UXTW            // srcp + filterPos 1
+        add                 x9, x3, w9, uxtw            // srcp + filterPos 1
         add                 x15, x14, x7                // filter + 3
-        add                 x10, x3, w10, UXTW          // srcp + filterPos 2
+        add                 x10, x3, w10, uxtw          // srcp + filterPos 2
         mov                 w0, w6                      // save the filterSize to temporary variable
-        add                 x11, x3, w11, UXTW          // srcp + filterPos 3
+        add                 x11, x3, w11, uxtw          // srcp + filterPos 3
         add                 x5, x5, #16                 // advance filter position
         mov                 x16, xzr                    // clear the register x16 used for offsetting the filter values
 
@@ -674,14 +674,14 @@ function ff_hscale16to15_4_neon_asm, export=1
         lsl                 x15, x15, #1
 
         // load src with given offset
-        ldr                 x8,  [x3, w8,  UXTW]
-        ldr                 x9,  [x3, w9,  UXTW]
-        ldr                 x10, [x3, w10, UXTW]
-        ldr                 x11, [x3, w11, UXTW]
-        ldr                 x12, [x3, w12, UXTW]
-        ldr                 x13, [x3, w13, UXTW]
-        ldr                 x14, [x3, w14, UXTW]
-        ldr                 x15, [x3, w15, UXTW]
+        ldr                 x8,  [x3, w8,  uxtw]
+        ldr                 x9,  [x3, w9,  uxtw]
+        ldr                 x10, [x3, w10, uxtw]
+        ldr                 x11, [x3, w11, uxtw]
+        ldr                 x12, [x3, w12, uxtw]
+        ldr                 x13, [x3, w13, uxtw]
+        ldr                 x14, [x3, w14, uxtw]
+        ldr                 x15, [x3, w15, uxtw]
 
         sub                 sp, sp, #64
         // push src on stack so it can be loaded into vectors later
@@ -754,14 +754,14 @@ function ff_hscale16to15_4_neon_asm, export=1
         lsl                 x14, x14, #1
         lsl                 x15, x15, #1
 
-        ldr                 x8,  [x3, w8,  UXTW]
-        ldr                 x9,  [x3, w9,  UXTW]
-        ldr                 x10, [x3, w10, UXTW]
-        ldr                 x11, [x3, w11, UXTW]
-        ldr                 x12, [x3, w12, UXTW]
-        ldr                 x13, [x3, w13, UXTW]
-        ldr                 x14, [x3, w14, UXTW]
-        ldr                 x15, [x3, w15, UXTW]
+        ldr                 x8,  [x3, w8,  uxtw]
+        ldr                 x9,  [x3, w9,  uxtw]
+        ldr                 x10, [x3, w10, uxtw]
+        ldr                 x11, [x3, w11, uxtw]
+        ldr                 x12, [x3, w12, uxtw]
+        ldr                 x13, [x3, w13, uxtw]
+        ldr                 x14, [x3, w14, uxtw]
+        ldr                 x15, [x3, w15, uxtw]
 
         stp                 x8, x9, [sp]
         stp                 x10, x11, [sp, #16]
@@ -819,7 +819,7 @@ function ff_hscale16to15_4_neon_asm, export=1
 2:
         ldr                 w8, [x5], #4                // load filterPos
         lsl                 w8, w8, #1
-        add                 x9, x3, w8, UXTW            // src + filterPos
+        add                 x9, x3, w8, uxtw            // src + filterPos
         ld1                 {v0.4h}, [x9]               // load 4 * uint16_t
         ld1                 {v31.4h}, [x4], #8
 
@@ -869,10 +869,10 @@ function ff_hscale16to15_X8_neon_asm, export=1
         movi                v1.2d, #0                   // val sum part 2 (for dst[1])
         movi                v2.2d, #0                   // val sum part 3 (for dst[2])
         movi                v3.2d, #0                   // val sum part 4 (for dst[3])
-        add                 x17, x3, w8, UXTW           // srcp + filterPos[0]
-        add                 x8,  x3, w10, UXTW          // srcp + filterPos[1]
-        add                 x10, x3, w11, UXTW          // srcp + filterPos[2]
-        add                 x11, x3, w9, UXTW           // srcp + filterPos[3]
+        add                 x17, x3, w8, uxtw           // srcp + filterPos[0]
+        add                 x8,  x3, w10, uxtw          // srcp + filterPos[1]
+        add                 x10, x3, w11, uxtw          // srcp + filterPos[2]
+        add                 x11, x3, w9, uxtw           // srcp + filterPos[3]
         mov                 w15, w6                     // filterSize counter
 2:      ld1                 {v4.8h}, [x17], #16         // srcp[filterPos[0] + {0..7}]
         ld1                 {v5.8h}, [x16], #16         // load 8x16-bit filter values, part 1
@@ -1082,14 +1082,14 @@ function ff_hscale16to19_4_neon_asm, export=1
         lsl                 x15, x15, #1
 
         // load src with given offset
-        ldr                 x8,  [x3, w8,  UXTW]
-        ldr                 x9,  [x3, w9,  UXTW]
-        ldr                 x10, [x3, w10, UXTW]
-        ldr                 x11, [x3, w11, UXTW]
-        ldr                 x12, [x3, w12, UXTW]
-        ldr                 x13, [x3, w13, UXTW]
-        ldr                 x14, [x3, w14, UXTW]
-        ldr                 x15, [x3, w15, UXTW]
+        ldr                 x8,  [x3, w8,  uxtw]
+        ldr                 x9,  [x3, w9,  uxtw]
+        ldr                 x10, [x3, w10, uxtw]
+        ldr                 x11, [x3, w11, uxtw]
+        ldr                 x12, [x3, w12, uxtw]
+        ldr                 x13, [x3, w13, uxtw]
+        ldr                 x14, [x3, w14, uxtw]
+        ldr                 x15, [x3, w15, uxtw]
 
         sub                 sp, sp, #64
         // push src on stack so it can be loaded into vectors later
@@ -1160,14 +1160,14 @@ function ff_hscale16to19_4_neon_asm, export=1
         lsl                 x14, x14, #1
         lsl                 x15, x15, #1
 
-        ldr                 x8,  [x3, w8,  UXTW]
-        ldr                 x9,  [x3, w9,  UXTW]
-        ldr                 x10, [x3, w10, UXTW]
-        ldr                 x11, [x3, w11, UXTW]
-        ldr                 x12, [x3, w12, UXTW]
-        ldr                 x13, [x3, w13, UXTW]
-        ldr                 x14, [x3, w14, UXTW]
-        ldr                 x15, [x3, w15, UXTW]
+        ldr                 x8,  [x3, w8,  uxtw]
+        ldr                 x9,  [x3, w9,  uxtw]
+        ldr                 x10, [x3, w10, uxtw]
+        ldr                 x11, [x3, w11, uxtw]
+        ldr                 x12, [x3, w12, uxtw]
+        ldr                 x13, [x3, w13, uxtw]
+        ldr                 x14, [x3, w14, uxtw]
+        ldr                 x15, [x3, w15, uxtw]
 
         stp                 x8, x9, [sp]
         stp                 x10, x11, [sp, #16]
@@ -1224,7 +1224,7 @@ function ff_hscale16to19_4_neon_asm, export=1
 2:
         ldr                 w8, [x5], #4                // load filterPos
         lsl                 w8, w8, #1
-        add                 x9, x3, w8, UXTW            // src + filterPos
+        add                 x9, x3, w8, uxtw            // src + filterPos
         ld1                 {v0.4h}, [x9]               // load 4 * uint16_t
         ld1                 {v31.4h}, [x4], #8
 
@@ -1274,10 +1274,10 @@ function ff_hscale16to19_X8_neon_asm, export=1
         movi                v1.2d, #0                   // val sum part 2 (for dst[1])
         movi                v2.2d, #0                   // val sum part 3 (for dst[2])
         movi                v3.2d, #0                   // val sum part 4 (for dst[3])
-        add                 x17, x3, w8, UXTW           // srcp + filterPos[0]
-        add                 x8,  x3, w10, UXTW          // srcp + filterPos[1]
-        add                 x10, x3, w11, UXTW          // srcp + filterPos[2]
-        add                 x11, x3, w9, UXTW           // srcp + filterPos[3]
+        add                 x17, x3, w8, uxtw           // srcp + filterPos[0]
+        add                 x8,  x3, w10, uxtw          // srcp + filterPos[1]
+        add                 x10, x3, w11, uxtw          // srcp + filterPos[2]
+        add                 x11, x3, w9, uxtw           // srcp + filterPos[3]
         mov                 w15, w6                     // filterSize counter
 2:      ld1                 {v4.8h}, [x17], #16         // srcp[filterPos[0] + {0..7}]
         ld1                 {v5.8h}, [x16], #16         // load 8x16-bit filter values, part 1

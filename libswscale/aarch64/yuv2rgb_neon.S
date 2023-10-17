@@ -102,7 +102,7 @@
 .macro increment_nv12
     ands                w15, w1, #1
     csel                w16, w7, w11, ne                                // incC = (h & 1) ? paddincC : -width
-    add                 x6,  x6, w16, SXTW                              // srcC += incC
+    add                 x6,  x6, w16, sxtw                              // srcC += incC
 .endm
 
 .macro increment_nv21
@@ -113,13 +113,13 @@
     ands                w15, w1, #1
     csel                w16,  w7, w11, ne                               // incU = (h & 1) ? paddincU : -width/2
     csel                w17, w14, w11, ne                               // incV = (h & 1) ? paddincV : -width/2
-    add                 x6,  x6,  w16, SXTW                             // srcU += incU
-    add                 x13, x13, w17, SXTW                             // srcV += incV
+    add                 x6,  x6,  w16, sxtw                             // srcU += incU
+    add                 x13, x13, w17, sxtw                             // srcV += incV
 .endm
 
 .macro increment_yuv422p
-    add                 x6,  x6,  w7, SXTW                              // srcU += incU
-    add                 x13, x13, w14, SXTW                             // srcV += incV
+    add                 x6,  x6,  w7, sxtw                              // srcU += incU
+    add                 x13, x13, w14, sxtw                             // srcV += incV
 .endm
 
 .macro compute_rgba r1 g1 b1 a1 r2 g2 b2 a2
@@ -189,8 +189,8 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
     st4                 {v16.8b,v17.8b,v18.8b,v19.8b}, [x2], #32
     subs                w8, w8, #16                                     // width -= 16
     b.gt                2b
-    add                 x2, x2, w3, SXTW                                // dst  += padding
-    add                 x4, x4, w5, SXTW                                // srcY += paddingY
+    add                 x2, x2, w3, sxtw                                // dst  += padding
+    add                 x4, x4, w5, sxtw                                // srcY += paddingY
     increment_\ifmt
     subs                w1, w1, #1                                      // height -= 1
     b.gt                1b
