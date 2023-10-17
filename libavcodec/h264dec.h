@@ -571,6 +571,7 @@ typedef struct H264Context {
     int ref2frm[MAX_SLICES][2][64];     ///< reference to frame number lists, used in the loop filter, the first 2 are for -2,-1
 
     int non_gray;                       ///< Did we encounter a intra frame after a gray gap frame
+    int noref_gray;
 } H264Context;
 
 extern const uint16_t ff_h264_mb_sizes[4];
