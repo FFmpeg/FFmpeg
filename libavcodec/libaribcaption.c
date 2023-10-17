@@ -68,14 +68,14 @@ typedef struct ARIBCaptionContext {
 
     int subtitle_type;
     int encoding_scheme;
-    bool ass_single_rect;
+    int ass_single_rect;
     char *font;
-    bool replace_fullwidth_ascii;
-    bool force_stroke_text;
-    bool ignore_background;
-    bool ignore_ruby;
+    int replace_fullwidth_ascii;
+    int force_stroke_text;
+    int ignore_background;
+    int ignore_ruby;
     float stroke_width;
-    bool replace_drcs;
+    int replace_drcs;
 
     int64_t pts;
     AVRational time_base;
