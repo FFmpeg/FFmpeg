@@ -76,6 +76,8 @@ typedef struct ARIBCaptionContext {
     int ignore_ruby;
     float stroke_width;
     int replace_drcs;
+    int replace_msz_japanese;
+    int replace_msz_glyph;
 
     int64_t pts;
     AVRational time_base;
@@ -1005,6 +1007,8 @@ static int aribcaption_init(AVCodecContext *avctx)
     }
     aribcc_decoder_set_replace_msz_fullwidth_ascii(ctx->decoder,
                                                    ctx->replace_fullwidth_ascii);
+    aribcc_decoder_set_replace_msz_fullwidth_japanese(ctx->decoder,
+                                                      ctx->replace_msz_japanese);
 
     /* Similar behavior as ffmpeg tool to set canvas size */
     if (ctx->canvas_width > 0 && ctx->canvas_height > 0 &&
@@ -1057,6 +1061,8 @@ static int aribcaption_init(AVCodecContext *avctx)
         aribcc_renderer_set_force_no_background(ctx->renderer, ctx->ignore_background);
         aribcc_renderer_set_force_no_ruby(ctx->renderer, ctx->ignore_ruby);
         aribcc_renderer_set_stroke_width(ctx->renderer, ctx->stroke_width);
+        aribcc_renderer_set_replace_msz_halfwidth_glyph(ctx->renderer,
+                                                        ctx->replace_msz_glyph);
         if (ctx->font) {
             int is_nomem = 0;
             size_t count = 0;
@@ -1144,6 +1150,10 @@ static const AVOption options[] = {
       OFFSET(stroke_width), AV_OPT_TYPE_FLOAT, { .dbl = 1.5 }, 0.0, 3.0, SD },
     { "replace_drcs", "replace known DRCS [bitmap]",
       OFFSET(replace_drcs), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
+    { "replace_msz_japanese", "replace MSZ fullwidth Japanese with halfwidth [ass, bitmap]",
+      OFFSET(replace_msz_japanese), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
+    { "replace_msz_glyph", "replace MSZ characters with halfwidth glyphs [bitmap]",
+      OFFSET(replace_msz_glyph), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
     {"canvas_size", "set input video size (WxH or abbreviation) [bitmap]",
       OFFSET(canvas_width), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, INT_MAX, SD },
     { NULL }

@@ -459,6 +459,22 @@ Specify whether to render replaced DRCS characters as Unicode characters.
 
 The default is @var{true}.
 
+@item -replace_msz_japanese @var{boolean}
+Specify whether to replace some MSZ (Middle Size; half width) fullwidth
+japanese special characters with halfwidth ones.
+
+The default is @var{true}.
+
+@item -replace_msz_glyph @var{boolean}
+Specify whether to replace MSZ (Middle Size; half width) characters
+with halfwidth glyphs if the fonts supports it.
+This option works under FreeType or DirectWrite renderer
+with Adobe-Japan1 compliant fonts.
+e.g., IBM Plex Sans JP, Morisawa BIZ UDGothic, Morisawa BIZ UDMincho,
+Yu Gothic, Yu Mincho, and Meiryo.
+
+The default is @var{true}.
+
 @item -canvas_size @var{image_size}
 Specify the resolution of the canvas to render subtitles to; usually, this
 should be frame size of input video.
