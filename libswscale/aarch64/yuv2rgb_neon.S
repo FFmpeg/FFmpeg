@@ -33,9 +33,9 @@
 .macro load_args_nv12
     ldr                 x8,  [sp]                                       // table
     load_yoff_ycoeff    8, 16                                           // y_offset, y_coeff
-    ld1                 {v1.1D}, [x8]
-    dup                 v0.8H, w10
-    dup                 v3.8H, w9
+    ld1                 {v1.1d}, [x8]
+    dup                 v0.8h, w10
+    dup                 v3.8h, w9
     sub                 w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
     sub                 w5, w5, w0                                      // w5 = linesizeY - width     (paddingY)
     sub                 w7, w7, w0                                      // w7 = linesizeC - width     (paddingC)
@@ -51,9 +51,9 @@
     ldr                 w14, [sp, #8]                                   // linesizeV
     ldr                 x8,  [sp, #16]                                  // table
     load_yoff_ycoeff    24, 32                                          // y_offset, y_coeff
-    ld1                 {v1.1D}, [x8]
-    dup                 v0.8H, w10
-    dup                 v3.8H, w9
+    ld1                 {v1.1d}, [x8]
+    dup                 v0.8h, w10
+    dup                 v3.8h, w9
     sub                 w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
     sub                 w5, w5, w0                                      // w5 = linesizeY - width     (paddingY)
     sub                 w7,  w7,  w0, lsr #1                            // w7  = linesizeU - width / 2 (paddingU)
@@ -67,9 +67,9 @@
     ldr                 w14, [sp, #8]                                   // linesizeV
     ldr                 x8,  [sp, #16]                                  // table
     load_yoff_ycoeff    24, 32                                          // y_offset, y_coeff
-    ld1                 {v1.1D}, [x8]
-    dup                 v0.8H, w10
-    dup                 v3.8H, w9
+    ld1                 {v1.1d}, [x8]
+    dup                 v0.8h, w10
+    dup                 v3.8h, w9
     sub                 w3, w3, w0, lsl #2                              // w3 = linesize  - width * 4 (padding)
     sub                 w5, w5, w0                                      // w5 = linesizeY - width     (paddingY)
     sub                 w7,  w7,  w0, lsr #1                            // w7  = linesizeU - width / 2 (paddingU)
@@ -77,22 +77,22 @@
 .endm
 
 .macro load_chroma_nv12
-    ld2                 {v16.8B, v17.8B}, [x6], #16
-    ushll               v18.8H, v16.8B, #3
-    ushll               v19.8H, v17.8B, #3
+    ld2                 {v16.8b, v17.8b}, [x6], #16
+    ushll               v18.8h, v16.8b, #3
+    ushll               v19.8h, v17.8b, #3
 .endm
 
 .macro load_chroma_nv21
-    ld2                 {v16.8B, v17.8B}, [x6], #16
-    ushll               v19.8H, v16.8B, #3
-    ushll               v18.8H, v17.8B, #3
+    ld2                 {v16.8b, v17.8b}, [x6], #16
+    ushll               v19.8h, v16.8b, #3
+    ushll               v18.8h, v17.8b, #3
 .endm
 
 .macro load_chroma_yuv420p
-    ld1                 {v16.8B}, [ x6], #8
-    ld1                 {v17.8B}, [x13], #8
-    ushll               v18.8H, v16.8B, #3
-    ushll               v19.8H, v17.8B, #3
+    ld1                 {v16.8b}, [ x6], #8
+    ld1                 {v17.8b}, [x13], #8
+    ushll               v18.8h, v16.8b, #3
+    ushll               v19.8h, v17.8b, #3
 .endm
 
 .macro load_chroma_yuv422p
@@ -123,18 +123,18 @@
 .endm
 
 .macro compute_rgba r1 g1 b1 a1 r2 g2 b2 a2
-    add                 v20.8H, v26.8H, v20.8H                          // Y1 + R1
-    add                 v21.8H, v27.8H, v21.8H                          // Y2 + R2
-    add                 v22.8H, v26.8H, v22.8H                          // Y1 + G1
-    add                 v23.8H, v27.8H, v23.8H                          // Y2 + G2
-    add                 v24.8H, v26.8H, v24.8H                          // Y1 + B1
-    add                 v25.8H, v27.8H, v25.8H                          // Y2 + B2
-    sqrshrun            \r1, v20.8H, #1                                 // clip_u8((Y1 + R1) >> 1)
-    sqrshrun            \r2, v21.8H, #1                                 // clip_u8((Y2 + R1) >> 1)
-    sqrshrun            \g1, v22.8H, #1                                 // clip_u8((Y1 + G1) >> 1)
-    sqrshrun            \g2, v23.8H, #1                                 // clip_u8((Y2 + G1) >> 1)
-    sqrshrun            \b1, v24.8H, #1                                 // clip_u8((Y1 + B1) >> 1)
-    sqrshrun            \b2, v25.8H, #1                                 // clip_u8((Y2 + B1) >> 1)
+    add                 v20.8h, v26.8h, v20.8h                          // Y1 + R1
+    add                 v21.8h, v27.8h, v21.8h                          // Y2 + R2
+    add                 v22.8h, v26.8h, v22.8h                          // Y1 + G1
+    add                 v23.8h, v27.8h, v23.8h                          // Y2 + G2
+    add                 v24.8h, v26.8h, v24.8h                          // Y1 + B1
+    add                 v25.8h, v27.8h, v25.8h                          // Y2 + B2
+    sqrshrun            \r1, v20.8h, #1                                 // clip_u8((Y1 + R1) >> 1)
+    sqrshrun            \r2, v21.8h, #1                                 // clip_u8((Y2 + R1) >> 1)
+    sqrshrun            \g1, v22.8h, #1                                 // clip_u8((Y1 + G1) >> 1)
+    sqrshrun            \g2, v23.8h, #1                                 // clip_u8((Y2 + G1) >> 1)
+    sqrshrun            \b1, v24.8h, #1                                 // clip_u8((Y1 + B1) >> 1)
+    sqrshrun            \b2, v25.8h, #1                                 // clip_u8((Y2 + B1) >> 1)
     movi                \a1, #255
     movi                \a2, #255
 .endm
@@ -146,47 +146,47 @@ function ff_\ifmt\()_to_\ofmt\()_neon, export=1
 1:
     mov                 w8, w0                                          // w8 = width
 2:
-    movi                v5.8H, #4, lsl #8                               // 128 * (1<<3)
+    movi                v5.8h, #4, lsl #8                               // 128 * (1<<3)
     load_chroma_\ifmt
-    sub                 v18.8H, v18.8H, v5.8H                           // U*(1<<3) - 128*(1<<3)
-    sub                 v19.8H, v19.8H, v5.8H                           // V*(1<<3) - 128*(1<<3)
-    sqdmulh             v20.8H, v19.8H, v1.H[0]                         // V * v2r            (R)
-    sqdmulh             v22.8H, v18.8H, v1.H[1]                         // U * u2g
-    sqdmulh             v19.8H, v19.8H, v1.H[2]                         //           V * v2g
-    add                 v22.8H, v22.8H, v19.8H                          // U * u2g + V * v2g  (G)
-    sqdmulh             v24.8H, v18.8H, v1.H[3]                         // U * u2b            (B)
-    zip2                v21.8H, v20.8H, v20.8H                          // R2
-    zip1                v20.8H, v20.8H, v20.8H                          // R1
-    zip2                v23.8H, v22.8H, v22.8H                          // G2
-    zip1                v22.8H, v22.8H, v22.8H                          // G1
-    zip2                v25.8H, v24.8H, v24.8H                          // B2
-    zip1                v24.8H, v24.8H, v24.8H                          // B1
-    ld1                 {v2.16B}, [x4], #16                             // load luma
-    ushll               v26.8H, v2.8B,  #3                              // Y1*(1<<3)
-    ushll2              v27.8H, v2.16B, #3                              // Y2*(1<<3)
-    sub                 v26.8H, v26.8H, v3.8H                           // Y1*(1<<3) - y_offset
-    sub                 v27.8H, v27.8H, v3.8H                           // Y2*(1<<3) - y_offset
-    sqdmulh             v26.8H, v26.8H, v0.8H                           // ((Y1*(1<<3) - y_offset) * y_coeff) >> 15
-    sqdmulh             v27.8H, v27.8H, v0.8H                           // ((Y2*(1<<3) - y_offset) * y_coeff) >> 15
+    sub                 v18.8h, v18.8h, v5.8h                           // U*(1<<3) - 128*(1<<3)
+    sub                 v19.8h, v19.8h, v5.8h                           // V*(1<<3) - 128*(1<<3)
+    sqdmulh             v20.8h, v19.8h, v1.h[0]                         // V * v2r            (R)
+    sqdmulh             v22.8h, v18.8h, v1.h[1]                         // U * u2g
+    sqdmulh             v19.8h, v19.8h, v1.h[2]                         //           V * v2g
+    add                 v22.8h, v22.8h, v19.8h                          // U * u2g + V * v2g  (G)
+    sqdmulh             v24.8h, v18.8h, v1.h[3]                         // U * u2b            (B)
+    zip2                v21.8h, v20.8h, v20.8h                          // R2
+    zip1                v20.8h, v20.8h, v20.8h                          // R1
+    zip2                v23.8h, v22.8h, v22.8h                          // G2
+    zip1                v22.8h, v22.8h, v22.8h                          // G1
+    zip2                v25.8h, v24.8h, v24.8h                          // B2
+    zip1                v24.8h, v24.8h, v24.8h                          // B1
+    ld1                 {v2.16b}, [x4], #16                             // load luma
+    ushll               v26.8h, v2.8b,  #3                              // Y1*(1<<3)
+    ushll2              v27.8h, v2.16b, #3                              // Y2*(1<<3)
+    sub                 v26.8h, v26.8h, v3.8h                           // Y1*(1<<3) - y_offset
+    sub                 v27.8h, v27.8h, v3.8h                           // Y2*(1<<3) - y_offset
+    sqdmulh             v26.8h, v26.8h, v0.8h                           // ((Y1*(1<<3) - y_offset) * y_coeff) >> 15
+    sqdmulh             v27.8h, v27.8h, v0.8h                           // ((Y2*(1<<3) - y_offset) * y_coeff) >> 15
 
 .ifc \ofmt,argb // 1 2 3 0
-    compute_rgba        v5.8B,v6.8B,v7.8B,v4.8B, v17.8B,v18.8B,v19.8B,v16.8B
+    compute_rgba        v5.8b,v6.8b,v7.8b,v4.8b, v17.8b,v18.8b,v19.8b,v16.8b
 .endif
 
 .ifc \ofmt,rgba // 0 1 2 3
-    compute_rgba        v4.8B,v5.8B,v6.8B,v7.8B, v16.8B,v17.8B,v18.8B,v19.8B
+    compute_rgba        v4.8b,v5.8b,v6.8b,v7.8b, v16.8b,v17.8b,v18.8b,v19.8b
 .endif
 
 .ifc \ofmt,abgr // 3 2 1 0
-    compute_rgba        v7.8B,v6.8B,v5.8B,v4.8B, v19.8B,v18.8B,v17.8B,v16.8B
+    compute_rgba        v7.8b,v6.8b,v5.8b,v4.8b, v19.8b,v18.8b,v17.8b,v16.8b
 .endif
 
 .ifc \ofmt,bgra // 2 1 0 3
-    compute_rgba        v6.8B,v5.8B,v4.8B,v7.8B, v18.8B,v17.8B,v16.8B,v19.8B
+    compute_rgba        v6.8b,v5.8b,v4.8b,v7.8b, v18.8b,v17.8b,v16.8b,v19.8b
 .endif
 
-    st4                 { v4.8B, v5.8B, v6.8B, v7.8B}, [x2], #32
-    st4                 {v16.8B,v17.8B,v18.8B,v19.8B}, [x2], #32
+    st4                 { v4.8b, v5.8b, v6.8b, v7.8b}, [x2], #32
+    st4                 {v16.8b,v17.8b,v18.8b,v19.8b}, [x2], #32
     subs                w8, w8, #16                                     // width -= 16
     b.gt                2b
     add                 x2, x2, w3, SXTW                                // dst  += padding
