@@ -6045,7 +6045,26 @@ check_inline_asm inline_asm_nonlocal_labels '"Label:\n"'
 if enabled aarch64; then
     as_arch_level="armv8-a"
     check_as as_arch_directive ".arch $as_arch_level"
-    enabled as_arch_directive && check_arch_level armv8.2-a
+    if enabled as_arch_directive; then
+        # Check for higher .arch levels. We only need armv8.2-a in order to
+        # enable the extensions we want below - we primarily want to control
+        # them via .arch_extension. However:
+        #
+        # Clang before version 17 (Xcode versions up to and including 15.0)
+        # didn't support controlling the dotprod/i8mm extensions via
+        # .arch_extension; thus try to enable them via the .arch level as well.
+        for level in armv8.2-a armv8.4-a armv8.6-a; do
+            check_arch_level $level
+        done
+        # Clang before version 17 (Xcode versions up to and including 15.0)
+        # also had a bug (https://github.com/llvm/llvm-project/issues/32220)
+        # causing a plain ".arch <level>" to not have any effect unless it
+        # had an extra "+<feature>" included - but it was activate on the next
+        # ".arch_extension" directive. Check if we can include "+crc" as dummy
+        # feature to make the .arch directive behave as expected and take
+        # effect right away.
+        check_arch_level "${as_arch_level}+crc"
+    fi
 
     enabled armv8 && check_insn armv8 'prfm   pldl1strm, [x0]'
     # internal assembler in clang 3.3 does not support this instruction
