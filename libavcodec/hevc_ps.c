@@ -417,12 +417,13 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
             hdr->flags.low_delay_hrd_flag = get_bits1(gb);
 
         if (!hdr->flags.low_delay_hrd_flag) {
-            hdr->cpb_cnt_minus1[i] = get_ue_golomb_long(gb);
-            if (hdr->cpb_cnt_minus1[i] > 31) {
+            unsigned cpb_cnt_minus1 = get_ue_golomb_long(gb);
+            if (cpb_cnt_minus1 > 31) {
                 av_log(NULL, AV_LOG_ERROR, "nb_cpb %d invalid\n",
-                       hdr->cpb_cnt_minus1[i]);
+                       cpb_cnt_minus1);
                 return AVERROR_INVALIDDATA;
             }
+            hdr->cpb_cnt_minus1[i] = cpb_cnt_minus1;
         }
 
         if (hdr->flags.nal_hrd_parameters_present_flag)
