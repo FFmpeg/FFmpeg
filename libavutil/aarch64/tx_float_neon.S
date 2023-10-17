@@ -733,12 +733,12 @@ FFT16_FN ns_float, 1
         add             x11, x1, x21, lsl #1
         add             x12, x1, x22
 
-        ldp              q0,  q1, [x1,  #((0 + \part)*32 + \off)]
-        ldp              q4,  q5, [x1,  #((2 + \part)*32 + \off)]
-        ldp              q2,  q3, [x10, #((0 + \part)*32 + \off)]
-        ldp              q6,  q7, [x10, #((2 + \part)*32 + \off)]
+        ldp             q0,  q1,  [x1,  #((0 + \part)*32 + \off)]
+        ldp             q4,  q5,  [x1,  #((2 + \part)*32 + \off)]
+        ldp             q2,  q3,  [x10, #((0 + \part)*32 + \off)]
+        ldp             q6,  q7,  [x10, #((2 + \part)*32 + \off)]
 
-        ldp              q8,  q9, [x11, #((0 + \part)*32 + \off)]
+        ldp             q8,  q9,  [x11, #((0 + \part)*32 + \off)]
         ldp             q10, q11, [x11, #((2 + \part)*32 + \off)]
         ldp             q12, q13, [x12, #((0 + \part)*32 + \off)]
         ldp             q14, q15, [x12, #((2 + \part)*32 + \off)]
@@ -747,12 +747,12 @@ FFT16_FN ns_float, 1
                         v8,  v9, v10, v11, v12, v13, v14, v15, \
                         x7,  x8, x9, 0
 
-        stp              q0,  q1, [x1,  #((0 + \part)*32 + \off)]
-        stp              q4,  q5, [x1,  #((2 + \part)*32 + \off)]
-        stp              q2,  q3, [x10, #((0 + \part)*32 + \off)]
-        stp              q6,  q7, [x10, #((2 + \part)*32 + \off)]
+        stp             q0,  q1,  [x1,  #((0 + \part)*32 + \off)]
+        stp             q4,  q5,  [x1,  #((2 + \part)*32 + \off)]
+        stp             q2,  q3,  [x10, #((0 + \part)*32 + \off)]
+        stp             q6,  q7,  [x10, #((2 + \part)*32 + \off)]
 
-        stp              q8,  q9, [x11, #((0 + \part)*32 + \off)]
+        stp             q8,  q9,  [x11, #((0 + \part)*32 + \off)]
         stp             q12, q13, [x11, #((2 + \part)*32 + \off)]
         stp             q10, q11, [x12, #((0 + \part)*32 + \off)]
         stp             q14, q15, [x12, #((2 + \part)*32 + \off)]
@@ -775,12 +775,12 @@ FFT16_FN ns_float, 1
         add             x12, x15, #((\part)*32 + \off)
         add             x13, x16, #((\part)*32 + \off)
 
-        ldp              q0,  q1, [x10]
-        ldp              q4,  q5, [x10, #(2*32)]
-        ldp              q2,  q3, [x11]
-        ldp              q6,  q7, [x11, #(2*32)]
+        ldp             q0,  q1,  [x10]
+        ldp             q4,  q5,  [x10, #(2*32)]
+        ldp             q2,  q3,  [x11]
+        ldp             q6,  q7,  [x11, #(2*32)]
 
-        ldp              q8,  q9, [x12]
+        ldp             q8,  q9,  [x12]
         ldp             q10, q11, [x12, #(2*32)]
         ldp             q12, q13, [x13]
         ldp             q14, q15, [x13, #(2*32)]
@@ -800,10 +800,10 @@ FFT16_FN ns_float, 1
         zip1            v22.2d, v3.2d, v7.2d
         zip2            v23.2d, v3.2d, v7.2d
 
-        ldp              q0,  q1, [x10, #(1*32)]
-        ldp              q4,  q5, [x10, #(3*32)]
-        ldp              q2,  q3, [x11, #(1*32)]
-        ldp              q6,  q7, [x11, #(3*32)]
+        ldp             q0,  q1,  [x10, #(1*32)]
+        ldp             q4,  q5,  [x10, #(3*32)]
+        ldp             q2,  q3,  [x11, #(1*32)]
+        ldp             q6,  q7,  [x11, #(3*32)]
 
         st1             { v16.4s, v17.4s, v18.4s, v19.4s }, [x10], #64
         st1             { v20.4s, v21.4s, v22.4s, v23.4s }, [x11], #64
@@ -817,7 +817,7 @@ FFT16_FN ns_float, 1
         zip1            v26.2d, v11.2d, v15.2d
         zip2            v27.2d, v11.2d, v15.2d
 
-        ldp              q8,  q9, [x12, #(1*32)]
+        ldp             q8,  q9,  [x12, #(1*32)]
         ldp             q10, q11, [x12, #(3*32)]
         ldp             q12, q13, [x13, #(1*32)]
         ldp             q14, q15, [x13, #(3*32)]
@@ -875,9 +875,9 @@ function ff_tx_fft32_\name\()_neon, export=1
         SETUP_SR_RECOMB 32, x7, x8, x9
 
         SETUP_LUT       \no_perm
-        LOAD_INPUT       0,  1,  2,  3, x2, \no_perm
-        LOAD_INPUT       4,  5,  6,  7, x2, \no_perm
-        LOAD_INPUT       8,  9, 10, 11, x2, \no_perm
+        LOAD_INPUT      0,  1,  2,  3,  x2, \no_perm
+        LOAD_INPUT      4,  5,  6,  7,  x2, \no_perm
+        LOAD_INPUT      8,  9,  10, 11, x2, \no_perm
         LOAD_INPUT      12, 13, 14, 15, x2, \no_perm
 
         FFT8_X2         v8, v9, v10, v11, v12, v13, v14, v15
@@ -982,37 +982,37 @@ function ff_tx_fft_sr_\name\()_neon, export=1
 32:
         SETUP_SR_RECOMB 32, x7, x8, x9
 
-        LOAD_INPUT       0,  1,  2,  3, x2, \no_perm
-        LOAD_INPUT       4,  6,  5,  7, x2, \no_perm, 1
-        LOAD_INPUT       8,  9, 10, 11, x2, \no_perm
+        LOAD_INPUT      0,  1,  2,  3,  x2, \no_perm
+        LOAD_INPUT      4,  6,  5,  7,  x2, \no_perm, 1
+        LOAD_INPUT      8,  9,  10, 11, x2, \no_perm
         LOAD_INPUT      12, 13, 14, 15, x2, \no_perm
 
         FFT8_X2         v8, v9, v10, v11, v12, v13, v14, v15
         FFT16           v0, v1, v2, v3, v4, v6, v5, v7
 
-        SR_COMBINE      v0,  v1,  v2,  v3,  v4,  v6,  v5,  v7, \
-                        v8,  v9, v10, v11, v12, v13, v14, v15, \
-                        x7, x8, x9, 0
+        SR_COMBINE      v0,  v1,  v2,  v3,  v4,  v6,  v5,  v7,  \
+                        v8,  v9,  v10, v11, v12, v13, v14, v15, \
+                        x7,  x8,  x9,  0
 
-        stp              q2,  q3, [x1, #32*1]
-        stp              q6,  q7, [x1, #32*3]
+        stp             q2,  q3,  [x1, #32*1]
+        stp             q6,  q7,  [x1, #32*3]
         stp             q10, q11, [x1, #32*5]
         stp             q14, q15, [x1, #32*7]
 
         cmp             w20, #32
         b.gt            64f
 
-        stp              q0,  q1, [x1, #32*0]
-        stp              q4,  q5, [x1, #32*2]
-        stp              q8,  q9, [x1, #32*4]
+        stp             q0,  q1,  [x1, #32*0]
+        stp             q4,  q5,  [x1, #32*2]
+        stp             q8,  q9,  [x1, #32*4]
         stp             q12, q13, [x1, #32*6]
 
         ret
 64:
         SETUP_SR_RECOMB 64, x7, x8, x9
 
-        LOAD_INPUT       2,  3, 10, 11, x2, \no_perm, 1
-        LOAD_INPUT       6,  14, 7, 15, x2, \no_perm, 1
+        LOAD_INPUT      2,  3,  10, 11, x2, \no_perm, 1
+        LOAD_INPUT      6,  14, 7,  15, x2, \no_perm, 1
 
         FFT16           v2, v3, v10, v11, v6, v14, v7, v15
 
@@ -1033,38 +1033,38 @@ function ff_tx_fft_sr_\name\()_neon, export=1
 
         // TODO: investigate doing the 2 combines like in deinterleave
         // TODO: experiment with spilling to gprs and converting to HALF or full
-        SR_COMBINE_LITE  v0,  v1,  v8,  v9, \
-                         v2,  v3, v16, v17, \
+        SR_COMBINE_LITE v0,  v1,  v8,  v9,  \
+                        v2,  v3,  v16, v17, \
                         v24, v25, v26, v27, \
                         v28, v29, v30, 0
 
-        stp              q0,  q1, [x1, #32* 0]
-        stp              q8,  q9, [x1, #32* 4]
-        stp              q2,  q3, [x1, #32* 8]
+        stp             q0,  q1,  [x1, #32* 0]
+        stp             q8,  q9,  [x1, #32* 4]
+        stp             q2,  q3,  [x1, #32* 8]
         stp             q16, q17, [x1, #32*12]
 
-        SR_COMBINE_HALF  v4,  v5, v12, v13, \
-                         v6,  v7, v20, v21, \
+        SR_COMBINE_HALF v4,  v5,  v12, v13, \
+                        v6,  v7,  v20, v21, \
                         v24, v25, v26, v27, \
                         v28, v29, v30, v0, v1, v8, 1
 
-        stp              q4, q20, [x1, #32* 2]
+        stp             q4,  q20, [x1, #32* 2]
         stp             q12, q21, [x1, #32* 6]
-        stp              q6,  q5, [x1, #32*10]
-        stp              q7, q13, [x1, #32*14]
+        stp             q6,  q5,  [x1, #32*10]
+        stp             q7,  q13, [x1, #32*14]
 
-        ldp              q2,  q3, [x1, #32*1]
-        ldp              q6,  q7, [x1, #32*3]
+        ldp             q2,  q3,  [x1, #32*1]
+        ldp             q6,  q7,  [x1, #32*3]
         ldp             q12, q13, [x1, #32*5]
         ldp             q16, q17, [x1, #32*7]
 
-        SR_COMBINE       v2,  v3, v12, v13,  v6, v16,  v7, v17, \
+        SR_COMBINE      v2,  v3,  v12, v13, v6,  v16, v7,  v17, \
                         v10, v11, v14, v15, v18, v19, v22, v23, \
-                        x7, x8, x9, 0, \
+                        x7,  x8,  x9,  0, \
                         v24, v25, v26, v27, v28, v29, v30, v8, v0, v1, v4, v5
 
-        stp              q2,  q3, [x1, #32* 1]
-        stp              q6,  q7, [x1, #32* 3]
+        stp             q2,  q3,  [x1, #32* 1]
+        stp             q6,  q7,  [x1, #32* 3]
         stp             q12, q13, [x1, #32* 5]
         stp             q16, q17, [x1, #32* 7]
 
@@ -1198,13 +1198,13 @@ SR_TRANSFORM_DEF        131072
         mov             x10, v23.d[0]
         mov             x11, v23.d[1]
 
-        SR_COMBINE_LITE  v0,  v1,  v8,  v9, \
-                         v2,  v3, v16, v17, \
+        SR_COMBINE_LITE v0,  v1,  v8,  v9,  \
+                        v2,  v3,  v16, v17, \
                         v24, v25, v26, v27, \
                         v28, v29, v30, 0
 
-        SR_COMBINE_HALF  v4,  v5, v12, v13, \
-                         v6,  v7, v20, v21, \
+        SR_COMBINE_HALF v4,  v5,  v12, v13, \
+                        v6,  v7,  v20, v21, \
                         v24, v25, v26, v27, \
                         v28, v29, v30, v23, v24, v26, 1
 
@@ -1236,7 +1236,7 @@ SR_TRANSFORM_DEF        131072
         zip2            v3.2d, v17.2d, v13.2d
 
         // stp is faster by a little on A53, but this is faster on M1s (theory)
-        ldp              q8,  q9, [x1, #32*1]
+        ldp             q8,  q9, [x1, #32*1]
         ldp             q12, q13, [x1, #32*5]
 
         st1             { v23.4s, v24.4s, v25.4s, v26.4s }, [x12], #64  // 32* 0...1
@@ -1247,12 +1247,12 @@ SR_TRANSFORM_DEF        131072
         mov             v23.d[0], x10
         mov             v23.d[1], x11
 
-        ldp              q6,  q7, [x1, #32*3]
+        ldp             q6,  q7, [x1, #32*3]
         ldp             q16, q17, [x1, #32*7]
 
-        SR_COMBINE       v8,  v9, v12, v13,  v6, v16,  v7, v17, \
+        SR_COMBINE      v8,  v9,  v12, v13, v6,  v16, v7,  v17, \
                         v10, v11, v14, v15, v18, v19, v22, v23, \
-                        x7, x8, x9, 0, \
+                        x7,  x8,  x9,  0, \
                         v24, v25, v26, v27, v28, v29, v30, v4, v0, v1, v5, v20
 
         zip1            v0.2d, v8.2d, v6.2d
