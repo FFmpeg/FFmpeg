@@ -34,13 +34,13 @@ endconst
 
 function ff_opus_deemphasis_neon, export=1
         movrel  x4, tab_st
-        ld1    {v4.4s}, [x4]
+        ld1     {v4.4s}, [x4]
         movrel  x4, tab_x0
-        ld1    {v5.4s}, [x4]
+        ld1     {v5.4s}, [x4]
         movrel  x4, tab_x1
-        ld1    {v6.4s}, [x4]
+        ld1     {v6.4s}, [x4]
         movrel  x4, tab_x2
-        ld1    {v7.4s}, [x4]
+        ld1     {v7.4s}, [x4]
 
         fmul v0.4s, v4.4s, v0.s[0]
 

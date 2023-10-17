@@ -330,32 +330,32 @@ endfunc
         //   v17: hev
 
         // convert to signed value:
-        eor            v3.16b, v3.16b, v21.16b           // PS0 = P0 ^ 0x80
-        eor            v4.16b, v4.16b, v21.16b           // QS0 = Q0 ^ 0x80
+        eor             v3.16b, v3.16b, v21.16b           // PS0 = P0 ^ 0x80
+        eor             v4.16b, v4.16b, v21.16b           // QS0 = Q0 ^ 0x80
 
-        movi           v20.8h, #3
-        ssubl          v18.8h, v4.8b,  v3.8b             // QS0 - PS0
-        ssubl2         v19.8h, v4.16b, v3.16b            //   (widened to 16bit)
-        eor            v2.16b, v2.16b, v21.16b           // PS1 = P1 ^ 0x80
-        eor            v5.16b, v5.16b, v21.16b           // QS1 = Q1 ^ 0x80
-        mul            v18.8h, v18.8h, v20.8h            // w = 3 * (QS0 - PS0)
-        mul            v19.8h, v19.8h, v20.8h
+        movi            v20.8h, #3
+        ssubl           v18.8h, v4.8b,  v3.8b             // QS0 - PS0
+        ssubl2          v19.8h, v4.16b, v3.16b            //   (widened to 16bit)
+        eor             v2.16b, v2.16b, v21.16b           // PS1 = P1 ^ 0x80
+        eor             v5.16b, v5.16b, v21.16b           // QS1 = Q1 ^ 0x80
+        mul             v18.8h, v18.8h, v20.8h            // w = 3 * (QS0 - PS0)
+        mul             v19.8h, v19.8h, v20.8h
 
-        sqsub          v20.16b, v2.16b, v5.16b           // clamp(PS1-QS1)
-        movi           v22.16b, #4
-        movi           v23.16b, #3
+        sqsub           v20.16b, v2.16b, v5.16b           // clamp(PS1-QS1)
+        movi            v22.16b, #4
+        movi            v23.16b, #3
     .if \inner
-        and            v20.16b, v20.16b, v17.16b         // if(hev) w += clamp(PS1-QS1)
+        and             v20.16b, v20.16b, v17.16b         // if(hev) w += clamp(PS1-QS1)
     .endif
-        saddw          v18.8h,  v18.8h, v20.8b           // w += clamp(PS1-QS1)
-        saddw2         v19.8h,  v19.8h, v20.16b
-        sqxtn          v18.8b,  v18.8h                   // narrow result back into v18
-        sqxtn2         v18.16b, v19.8h
+        saddw           v18.8h,  v18.8h, v20.8b           // w += clamp(PS1-QS1)
+        saddw2          v19.8h,  v19.8h, v20.16b
+        sqxtn           v18.8b,  v18.8h                   // narrow result back into v18
+        sqxtn2          v18.16b, v19.8h
     .if !\inner && !\simple
-        eor            v1.16b,  v1.16b,  v21.16b         // PS2 = P2 ^ 0x80
-        eor            v6.16b,  v6.16b,  v21.16b         // QS2 = Q2 ^ 0x80
+        eor             v1.16b,  v1.16b,  v21.16b         // PS2 = P2 ^ 0x80
+        eor             v6.16b,  v6.16b,  v21.16b         // QS2 = Q2 ^ 0x80
     .endif
-        and            v18.16b, v18.16b, v16.16b         // w &= normal_limit
+        and             v18.16b, v18.16b, v16.16b         // w &= normal_limit
 
         // registers used at this point..
         //   v0 -> P3  (don't corrupt)
@@ -375,44 +375,44 @@ endfunc
         //   P0 = s2u(PS0 + c2);
 
     .if \simple
-        sqadd          v19.16b, v18.16b, v22.16b           // c1 = clamp((w&hev)+4)
-        sqadd          v20.16b, v18.16b, v23.16b           // c2 = clamp((w&hev)+3)
-        sshr           v19.16b, v19.16b, #3                // c1 >>= 3
-        sshr           v20.16b, v20.16b, #3                // c2 >>= 3
-        sqsub          v4.16b,  v4.16b,  v19.16b           // QS0 = clamp(QS0-c1)
-        sqadd          v3.16b,  v3.16b,  v20.16b           // PS0 = clamp(PS0+c2)
-        eor            v4.16b,  v4.16b,  v21.16b           // Q0 = QS0 ^ 0x80
-        eor            v3.16b,  v3.16b,  v21.16b           // P0 = PS0 ^ 0x80
-        eor            v5.16b,  v5.16b,  v21.16b           // Q1 = QS1 ^ 0x80
-        eor            v2.16b,  v2.16b,  v21.16b           // P1 = PS1 ^ 0x80
+        sqadd           v19.16b, v18.16b, v22.16b           // c1 = clamp((w&hev)+4)
+        sqadd           v20.16b, v18.16b, v23.16b           // c2 = clamp((w&hev)+3)
+        sshr            v19.16b, v19.16b, #3                // c1 >>= 3
+        sshr            v20.16b, v20.16b, #3                // c2 >>= 3
+        sqsub           v4.16b,  v4.16b,  v19.16b           // QS0 = clamp(QS0-c1)
+        sqadd           v3.16b,  v3.16b,  v20.16b           // PS0 = clamp(PS0+c2)
+        eor             v4.16b,  v4.16b,  v21.16b           // Q0 = QS0 ^ 0x80
+        eor             v3.16b,  v3.16b,  v21.16b           // P0 = PS0 ^ 0x80
+        eor             v5.16b,  v5.16b,  v21.16b           // Q1 = QS1 ^ 0x80
+        eor             v2.16b,  v2.16b,  v21.16b           // P1 = PS1 ^ 0x80
     .elseif \inner
         // the !is4tap case of filter_common, only used for inner blocks
         //   c3 = ((c1&~hev) + 1) >> 1;
         //   Q1 = s2u(QS1 - c3);
         //   P1 = s2u(PS1 + c3);
-        sqadd          v19.16b, v18.16b, v22.16b           // c1 = clamp((w&hev)+4)
-        sqadd          v20.16b, v18.16b, v23.16b           // c2 = clamp((w&hev)+3)
-        sshr           v19.16b, v19.16b, #3                // c1 >>= 3
-        sshr           v20.16b, v20.16b, #3                // c2 >>= 3
-        sqsub          v4.16b,  v4.16b,  v19.16b           // QS0 = clamp(QS0-c1)
-        sqadd          v3.16b,  v3.16b,  v20.16b           // PS0 = clamp(PS0+c2)
-        bic            v19.16b, v19.16b, v17.16b           // c1 & ~hev
-        eor            v4.16b,  v4.16b,  v21.16b           // Q0 = QS0 ^ 0x80
-        srshr          v19.16b, v19.16b, #1                // c3 >>= 1
-        eor            v3.16b,  v3.16b,  v21.16b           // P0 = PS0 ^ 0x80
-        sqsub          v5.16b,  v5.16b,  v19.16b           // QS1 = clamp(QS1-c3)
-        sqadd          v2.16b,  v2.16b,  v19.16b           // PS1 = clamp(PS1+c3)
-        eor            v5.16b,  v5.16b,  v21.16b           // Q1 = QS1 ^ 0x80
-        eor            v2.16b,  v2.16b,  v21.16b           // P1 = PS1 ^ 0x80
+        sqadd           v19.16b, v18.16b, v22.16b           // c1 = clamp((w&hev)+4)
+        sqadd           v20.16b, v18.16b, v23.16b           // c2 = clamp((w&hev)+3)
+        sshr            v19.16b, v19.16b, #3                // c1 >>= 3
+        sshr            v20.16b, v20.16b, #3                // c2 >>= 3
+        sqsub           v4.16b,  v4.16b,  v19.16b           // QS0 = clamp(QS0-c1)
+        sqadd           v3.16b,  v3.16b,  v20.16b           // PS0 = clamp(PS0+c2)
+        bic             v19.16b, v19.16b, v17.16b           // c1 & ~hev
+        eor             v4.16b,  v4.16b,  v21.16b           // Q0 = QS0 ^ 0x80
+        srshr           v19.16b, v19.16b, #1                // c3 >>= 1
+        eor             v3.16b,  v3.16b,  v21.16b           // P0 = PS0 ^ 0x80
+        sqsub           v5.16b,  v5.16b,  v19.16b           // QS1 = clamp(QS1-c3)
+        sqadd           v2.16b,  v2.16b,  v19.16b           // PS1 = clamp(PS1+c3)
+        eor             v5.16b,  v5.16b,  v21.16b           // Q1 = QS1 ^ 0x80
+        eor             v2.16b,  v2.16b,  v21.16b           // P1 = PS1 ^ 0x80
     .else
-        and            v20.16b, v18.16b, v17.16b           // w & hev
-        sqadd          v19.16b, v20.16b, v22.16b           // c1 = clamp((w&hev)+4)
-        sqadd          v20.16b, v20.16b, v23.16b           // c2 = clamp((w&hev)+3)
-        sshr           v19.16b, v19.16b, #3                // c1 >>= 3
-        sshr           v20.16b, v20.16b, #3                // c2 >>= 3
-        bic            v18.16b, v18.16b, v17.16b           // w &= ~hev
-        sqsub          v4.16b,  v4.16b,  v19.16b           // QS0 = clamp(QS0-c1)
-        sqadd          v3.16b,  v3.16b,  v20.16b           // PS0 = clamp(PS0+c2)
+        and             v20.16b, v18.16b, v17.16b           // w & hev
+        sqadd           v19.16b, v20.16b, v22.16b           // c1 = clamp((w&hev)+4)
+        sqadd           v20.16b, v20.16b, v23.16b           // c2 = clamp((w&hev)+3)
+        sshr            v19.16b, v19.16b, #3                // c1 >>= 3
+        sshr            v20.16b, v20.16b, #3                // c2 >>= 3
+        bic             v18.16b, v18.16b, v17.16b           // w &= ~hev
+        sqsub           v4.16b,  v4.16b,  v19.16b           // QS0 = clamp(QS0-c1)
+        sqadd           v3.16b,  v3.16b,  v20.16b           // PS0 = clamp(PS0+c2)
 
         // filter_mbedge:
         //   a = clamp((27*w + 63) >> 7);
@@ -424,35 +424,35 @@ endfunc
         //   a = clamp((9*w + 63) >> 7);
         //   Q2 = s2u(QS2 - a);
         //   P2 = s2u(PS2 + a);
-        movi           v17.8h,  #63
-        sshll          v22.8h,  v18.8b, #3
-        sshll2         v23.8h,  v18.16b, #3
-        saddw          v22.8h,  v22.8h, v18.8b
-        saddw2         v23.8h,  v23.8h, v18.16b
-        add            v16.8h,  v17.8h, v22.8h
-        add            v17.8h,  v17.8h, v23.8h           //  9*w + 63
-        add            v19.8h,  v16.8h, v22.8h
-        add            v20.8h,  v17.8h, v23.8h           // 18*w + 63
-        add            v22.8h,  v19.8h, v22.8h
-        add            v23.8h,  v20.8h, v23.8h           // 27*w + 63
-        sqshrn         v16.8b,  v16.8h,  #7
-        sqshrn2        v16.16b, v17.8h, #7              // clamp(( 9*w + 63)>>7)
-        sqshrn         v19.8b,  v19.8h, #7
-        sqshrn2        v19.16b, v20.8h, #7              // clamp((18*w + 63)>>7)
-        sqshrn         v22.8b,  v22.8h, #7
-        sqshrn2        v22.16b, v23.8h, #7              // clamp((27*w + 63)>>7)
-        sqadd          v1.16b,  v1.16b,  v16.16b        // PS2 = clamp(PS2+a)
-        sqsub          v6.16b,  v6.16b,  v16.16b        // QS2 = clamp(QS2-a)
-        sqadd          v2.16b,  v2.16b,  v19.16b        // PS1 = clamp(PS1+a)
-        sqsub          v5.16b,  v5.16b,  v19.16b        // QS1 = clamp(QS1-a)
-        sqadd          v3.16b,  v3.16b,  v22.16b        // PS0 = clamp(PS0+a)
-        sqsub          v4.16b,  v4.16b,  v22.16b        // QS0 = clamp(QS0-a)
-        eor            v3.16b,  v3.16b,  v21.16b        // P0 = PS0 ^ 0x80
-        eor            v4.16b,  v4.16b,  v21.16b        // Q0 = QS0 ^ 0x80
-        eor            v2.16b,  v2.16b,  v21.16b        // P1 = PS1 ^ 0x80
-        eor            v5.16b,  v5.16b,  v21.16b        // Q1 = QS1 ^ 0x80
-        eor            v1.16b,  v1.16b,  v21.16b        // P2 = PS2 ^ 0x80
-        eor            v6.16b,  v6.16b,  v21.16b        // Q2 = QS2 ^ 0x80
+        movi            v17.8h,  #63
+        sshll           v22.8h,  v18.8b, #3
+        sshll2          v23.8h,  v18.16b, #3
+        saddw           v22.8h,  v22.8h, v18.8b
+        saddw2          v23.8h,  v23.8h, v18.16b
+        add             v16.8h,  v17.8h, v22.8h
+        add             v17.8h,  v17.8h, v23.8h           //  9*w + 63
+        add             v19.8h,  v16.8h, v22.8h
+        add             v20.8h,  v17.8h, v23.8h           // 18*w + 63
+        add             v22.8h,  v19.8h, v22.8h
+        add             v23.8h,  v20.8h, v23.8h           // 27*w + 63
+        sqshrn          v16.8b,  v16.8h,  #7
+        sqshrn2         v16.16b, v17.8h, #7              // clamp(( 9*w + 63)>>7)
+        sqshrn          v19.8b,  v19.8h, #7
+        sqshrn2         v19.16b, v20.8h, #7              // clamp((18*w + 63)>>7)
+        sqshrn          v22.8b,  v22.8h, #7
+        sqshrn2         v22.16b, v23.8h, #7              // clamp((27*w + 63)>>7)
+        sqadd           v1.16b,  v1.16b,  v16.16b        // PS2 = clamp(PS2+a)
+        sqsub           v6.16b,  v6.16b,  v16.16b        // QS2 = clamp(QS2-a)
+        sqadd           v2.16b,  v2.16b,  v19.16b        // PS1 = clamp(PS1+a)
+        sqsub           v5.16b,  v5.16b,  v19.16b        // QS1 = clamp(QS1-a)
+        sqadd           v3.16b,  v3.16b,  v22.16b        // PS0 = clamp(PS0+a)
+        sqsub           v4.16b,  v4.16b,  v22.16b        // QS0 = clamp(QS0-a)
+        eor             v3.16b,  v3.16b,  v21.16b        // P0 = PS0 ^ 0x80
+        eor             v4.16b,  v4.16b,  v21.16b        // Q0 = QS0 ^ 0x80
+        eor             v2.16b,  v2.16b,  v21.16b        // P1 = PS1 ^ 0x80
+        eor             v5.16b,  v5.16b,  v21.16b        // Q1 = QS1 ^ 0x80
+        eor             v1.16b,  v1.16b,  v21.16b        // P2 = PS2 ^ 0x80
+        eor             v6.16b,  v6.16b,  v21.16b        // Q2 = QS2 ^ 0x80
     .endif
 .endm
 
@@ -507,48 +507,48 @@ function ff_vp8_v_loop_filter8uv\name\()_neon, export=1
         sub             x0,  x0,  x2,  lsl #2
         sub             x1,  x1,  x2,  lsl #2
         // Load pixels:
-        ld1          {v0.d}[0],     [x0], x2  // P3
-        ld1          {v0.d}[1],     [x1], x2  // P3
-        ld1          {v1.d}[0],     [x0], x2  // P2
-        ld1          {v1.d}[1],     [x1], x2  // P2
-        ld1          {v2.d}[0],     [x0], x2  // P1
-        ld1          {v2.d}[1],     [x1], x2  // P1
-        ld1          {v3.d}[0],     [x0], x2  // P0
-        ld1          {v3.d}[1],     [x1], x2  // P0
-        ld1          {v4.d}[0],     [x0], x2  // Q0
-        ld1          {v4.d}[1],     [x1], x2  // Q0
-        ld1          {v5.d}[0],     [x0], x2  // Q1
-        ld1          {v5.d}[1],     [x1], x2  // Q1
-        ld1          {v6.d}[0],     [x0], x2  // Q2
-        ld1          {v6.d}[1],     [x1], x2  // Q2
-        ld1          {v7.d}[0],     [x0]      // Q3
-        ld1          {v7.d}[1],     [x1]      // Q3
+        ld1             {v0.d}[0],     [x0], x2  // P3
+        ld1             {v0.d}[1],     [x1], x2  // P3
+        ld1             {v1.d}[0],     [x0], x2  // P2
+        ld1             {v1.d}[1],     [x1], x2  // P2
+        ld1             {v2.d}[0],     [x0], x2  // P1
+        ld1             {v2.d}[1],     [x1], x2  // P1
+        ld1             {v3.d}[0],     [x0], x2  // P0
+        ld1             {v3.d}[1],     [x1], x2  // P0
+        ld1             {v4.d}[0],     [x0], x2  // Q0
+        ld1             {v4.d}[1],     [x1], x2  // Q0
+        ld1             {v5.d}[0],     [x0], x2  // Q1
+        ld1             {v5.d}[1],     [x1], x2  // Q1
+        ld1             {v6.d}[0],     [x0], x2  // Q2
+        ld1             {v6.d}[1],     [x1], x2  // Q2
+        ld1             {v7.d}[0],     [x0]      // Q3
+        ld1             {v7.d}[1],     [x1]      // Q3
 
-        dup          v22.16b, w3                 // flim_E
-        dup          v23.16b, w4                 // flim_I
+        dup             v22.16b, w3                 // flim_E
+        dup             v23.16b, w4                 // flim_I
 
         vp8_loop_filter inner=\inner, hev_thresh=w5
 
         // back up to P2:  u,v -= stride * 6
-        sub          x0,  x0,  x2,  lsl #2
-        sub          x1,  x1,  x2,  lsl #2
-        sub          x0,  x0,  x2,  lsl #1
-        sub          x1,  x1,  x2,  lsl #1
+        sub             x0,  x0,  x2,  lsl #2
+        sub             x1,  x1,  x2,  lsl #2
+        sub             x0,  x0,  x2,  lsl #1
+        sub             x1,  x1,  x2,  lsl #1
 
         // Store pixels:
 
-        st1          {v1.d}[0],     [x0], x2  // P2
-        st1          {v1.d}[1],     [x1], x2  // P2
-        st1          {v2.d}[0],     [x0], x2  // P1
-        st1          {v2.d}[1],     [x1], x2  // P1
-        st1          {v3.d}[0],     [x0], x2  // P0
-        st1          {v3.d}[1],     [x1], x2  // P0
-        st1          {v4.d}[0],     [x0], x2  // Q0
-        st1          {v4.d}[1],     [x1], x2  // Q0
-        st1          {v5.d}[0],     [x0], x2  // Q1
-        st1          {v5.d}[1],     [x1], x2  // Q1
-        st1          {v6.d}[0],     [x0]      // Q2
-        st1          {v6.d}[1],     [x1]      // Q2
+        st1             {v1.d}[0],     [x0], x2  // P2
+        st1             {v1.d}[1],     [x1], x2  // P2
+        st1             {v2.d}[0],     [x0], x2  // P1
+        st1             {v2.d}[1],     [x1], x2  // P1
+        st1             {v3.d}[0],     [x0], x2  // P0
+        st1             {v3.d}[1],     [x1], x2  // P0
+        st1             {v4.d}[0],     [x0], x2  // Q0
+        st1             {v4.d}[1],     [x1], x2  // Q0
+        st1             {v5.d}[0],     [x0], x2  // Q1
+        st1             {v5.d}[1],     [x1], x2  // Q1
+        st1             {v6.d}[0],     [x0]      // Q2
+        st1             {v6.d}[1],     [x1]      // Q2
 
         ret
 endfunc
@@ -579,7 +579,7 @@ function ff_vp8_h_loop_filter16\name\()_neon, export=1
         ld1             {v6.d}[1], [x0], x1
         ld1             {v7.d}[1], [x0], x1
 
-        transpose_8x16B   v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
+        transpose_8x16B v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
 
         dup             v22.16b, w2                 // flim_E
     .if !\simple
@@ -590,7 +590,7 @@ function ff_vp8_h_loop_filter16\name\()_neon, export=1
 
         sub             x0,  x0,  x1, lsl #4    // backup 16 rows
 
-        transpose_8x16B   v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
+        transpose_8x16B v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
 
         // Store pixels:
         st1             {v0.d}[0], [x0], x1
@@ -624,24 +624,24 @@ function ff_vp8_h_loop_filter8uv\name\()_neon, export=1
         sub             x1,  x1,  #4
 
         // Load pixels:
-        ld1          {v0.d}[0],     [x0], x2 // load u
-        ld1          {v0.d}[1],     [x1], x2 // load v
-        ld1          {v1.d}[0],     [x0], x2
-        ld1          {v1.d}[1],     [x1], x2
-        ld1          {v2.d}[0],     [x0], x2
-        ld1          {v2.d}[1],     [x1], x2
-        ld1          {v3.d}[0],     [x0], x2
-        ld1          {v3.d}[1],     [x1], x2
-        ld1          {v4.d}[0],     [x0], x2
-        ld1          {v4.d}[1],     [x1], x2
-        ld1          {v5.d}[0],     [x0], x2
-        ld1          {v5.d}[1],     [x1], x2
-        ld1          {v6.d}[0],     [x0], x2
-        ld1          {v6.d}[1],     [x1], x2
-        ld1          {v7.d}[0],     [x0], x2
-        ld1          {v7.d}[1],     [x1], x2
+        ld1             {v0.d}[0],     [x0], x2 // load u
+        ld1             {v0.d}[1],     [x1], x2 // load v
+        ld1             {v1.d}[0],     [x0], x2
+        ld1             {v1.d}[1],     [x1], x2
+        ld1             {v2.d}[0],     [x0], x2
+        ld1             {v2.d}[1],     [x1], x2
+        ld1             {v3.d}[0],     [x0], x2
+        ld1             {v3.d}[1],     [x1], x2
+        ld1             {v4.d}[0],     [x0], x2
+        ld1             {v4.d}[1],     [x1], x2
+        ld1             {v5.d}[0],     [x0], x2
+        ld1             {v5.d}[1],     [x1], x2
+        ld1             {v6.d}[0],     [x0], x2
+        ld1             {v6.d}[1],     [x1], x2
+        ld1             {v7.d}[0],     [x0], x2
+        ld1             {v7.d}[1],     [x1], x2
 
-        transpose_8x16B   v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
+        transpose_8x16B v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
 
         dup             v22.16b, w3                 // flim_E
         dup             v23.16b, w4                 // flim_I
@@ -651,25 +651,25 @@ function ff_vp8_h_loop_filter8uv\name\()_neon, export=1
         sub             x0,  x0,  x2, lsl #3    // backup u 8 rows
         sub             x1,  x1,  x2, lsl #3    // backup v 8 rows
 
-        transpose_8x16B   v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
+        transpose_8x16B v0,  v1,  v2,  v3,  v4,  v5,  v6,  v7, v30, v31
 
         // Store pixels:
-        st1          {v0.d}[0],     [x0], x2 // load u
-        st1          {v0.d}[1],     [x1], x2 // load v
-        st1          {v1.d}[0],     [x0], x2
-        st1          {v1.d}[1],     [x1], x2
-        st1          {v2.d}[0],     [x0], x2
-        st1          {v2.d}[1],     [x1], x2
-        st1          {v3.d}[0],     [x0], x2
-        st1          {v3.d}[1],     [x1], x2
-        st1          {v4.d}[0],     [x0], x2
-        st1          {v4.d}[1],     [x1], x2
-        st1          {v5.d}[0],     [x0], x2
-        st1          {v5.d}[1],     [x1], x2
-        st1          {v6.d}[0],     [x0], x2
-        st1          {v6.d}[1],     [x1], x2
-        st1          {v7.d}[0],     [x0]
-        st1          {v7.d}[1],     [x1]
+        st1             {v0.d}[0],     [x0], x2 // load u
+        st1             {v0.d}[1],     [x1], x2 // load v
+        st1             {v1.d}[0],     [x0], x2
+        st1             {v1.d}[1],     [x1], x2
+        st1             {v2.d}[0],     [x0], x2
+        st1             {v2.d}[1],     [x1], x2
+        st1             {v3.d}[0],     [x0], x2
+        st1             {v3.d}[1],     [x1], x2
+        st1             {v4.d}[0],     [x0], x2
+        st1             {v4.d}[1],     [x1], x2
+        st1             {v5.d}[0],     [x0], x2
+        st1             {v5.d}[1],     [x1], x2
+        st1             {v6.d}[0],     [x0], x2
+        st1             {v6.d}[1],     [x1], x2
+        st1             {v7.d}[0],     [x0]
+        st1             {v7.d}[1],     [x1]
 
         ret
 

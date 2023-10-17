@@ -580,8 +580,8 @@ function \type\()_h264_qpel16_hv_lowpass_l2_neon
 endfunc
 .endm
 
-        h264_qpel16_hv put
-        h264_qpel16_hv avg
+        h264_qpel16_hv  put
+        h264_qpel16_hv  avg
 
 .macro  h264_qpel8      type
 function ff_\type\()_h264_qpel8_mc10_neon, export=1
@@ -759,8 +759,8 @@ function ff_\type\()_h264_qpel8_mc33_neon, export=1
 endfunc
 .endm
 
-        h264_qpel8 put
-        h264_qpel8 avg
+        h264_qpel8      put
+        h264_qpel8      avg
 
 .macro  h264_qpel16     type
 function ff_\type\()_h264_qpel16_mc10_neon, export=1
@@ -931,5 +931,5 @@ function ff_\type\()_h264_qpel16_mc33_neon, export=1
 endfunc
 .endm
 
-        h264_qpel16 put
-        h264_qpel16 avg
+        h264_qpel16     put
+        h264_qpel16     avg

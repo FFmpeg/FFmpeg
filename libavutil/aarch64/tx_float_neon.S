@@ -729,9 +729,9 @@ FFT16_FN ns_float, 1
 .endm
 
 .macro SR_COMBINE_4 len, part, off
-        add              x10, x1, x21
-        add              x11, x1, x21, lsl #1
-        add              x12, x1, x22
+        add             x10, x1, x21
+        add             x11, x1, x21, lsl #1
+        add             x12, x1, x22
 
         ldp              q0,  q1, [x1,  #((0 + \part)*32 + \off)]
         ldp              q4,  q5, [x1,  #((2 + \part)*32 + \off)]
@@ -759,9 +759,9 @@ FFT16_FN ns_float, 1
 .endm
 
 .macro SR_COMBINE_FULL len, off=0
-        add              x10, x1, x21
-        add              x11, x1, x21, lsl #1
-        add              x12, x1, x22
+        add             x10, x1, x21
+        add             x11, x1, x21, lsl #1
+        add             x12, x1, x22
 
         SR_COMBINE_4    \len, 0, \off
         SR_COMBINE_4    \len, 1, \off

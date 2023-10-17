@@ -840,19 +840,19 @@ function ff_hevc_put_hevc_qpel_uni_v16_8_neon, export=1
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v24_8_neon, export=1
-        b X(ff_hevc_put_hevc_qpel_uni_v12_8_neon)
+        b               X(ff_hevc_put_hevc_qpel_uni_v12_8_neon)
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v32_8_neon, export=1
-        b X(ff_hevc_put_hevc_qpel_uni_v16_8_neon)
+        b               X(ff_hevc_put_hevc_qpel_uni_v16_8_neon)
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v48_8_neon, export=1
-        b X(ff_hevc_put_hevc_qpel_uni_v16_8_neon)
+        b               X(ff_hevc_put_hevc_qpel_uni_v16_8_neon)
 endfunc
 
 function ff_hevc_put_hevc_qpel_uni_v64_8_neon, export=1
-        b X(ff_hevc_put_hevc_qpel_uni_v16_8_neon)
+        b               X(ff_hevc_put_hevc_qpel_uni_v16_8_neon)
 endfunc
 
 function ff_hevc_put_hevc_pel_uni_w_pixels4_8_neon, export=1
@@ -1560,21 +1560,21 @@ endfunc
 #if HAVE_I8MM
 
 .macro calc_all2
-        calc v30, v31, v16, v18, v20, v22, v24, v26, v28, v30, v17, v19, v21, v23, v25, v27, v29, v31
+        calc            v30, v31, v16, v18, v20, v22, v24, v26, v28, v30, v17, v19, v21, v23, v25, v27, v29, v31
         b.eq            2f
-        calc v16, v17, v18, v20, v22, v24, v26, v28, v30, v16, v19, v21, v23, v25, v27, v29, v31, v17
+        calc            v16, v17, v18, v20, v22, v24, v26, v28, v30, v16, v19, v21, v23, v25, v27, v29, v31, v17
         b.eq            2f
-        calc v18, v19, v20, v22, v24, v26, v28, v30, v16, v18, v21, v23, v25, v27, v29, v31, v17, v19
+        calc            v18, v19, v20, v22, v24, v26, v28, v30, v16, v18, v21, v23, v25, v27, v29, v31, v17, v19
         b.eq            2f
-        calc v20, v21, v22, v24, v26, v28, v30, v16, v18, v20, v23, v25, v27, v29, v31, v17, v19, v21
+        calc            v20, v21, v22, v24, v26, v28, v30, v16, v18, v20, v23, v25, v27, v29, v31, v17, v19, v21
         b.eq            2f
-        calc v22, v23, v24, v26, v28, v30, v16, v18, v20, v22, v25, v27, v29, v31, v17, v19, v21, v23
+        calc            v22, v23, v24, v26, v28, v30, v16, v18, v20, v22, v25, v27, v29, v31, v17, v19, v21, v23
         b.eq            2f
-        calc v24, v25, v26, v28, v30, v16, v18, v20, v22, v24, v27, v29, v31, v17, v19, v21, v23, v25
+        calc            v24, v25, v26, v28, v30, v16, v18, v20, v22, v24, v27, v29, v31, v17, v19, v21, v23, v25
         b.eq            2f
-        calc v26, v27, v28, v30, v16, v18, v20, v22, v24, v26, v29, v31, v17, v19, v21, v23, v25, v27
+        calc            v26, v27, v28, v30, v16, v18, v20, v22, v24, v26, v29, v31, v17, v19, v21, v23, v25, v27
         b.eq            2f
-        calc v28, v29, v30, v16, v18, v20, v22, v24, v26, v28, v31, v17, v19, v21, v23, v25, v27, v29
+        calc            v28, v29, v30, v16, v18, v20, v22, v24, v26, v28, v31, v17, v19, v21, v23, v25, v27, v29
         b.hi            1b
 .endm
 
