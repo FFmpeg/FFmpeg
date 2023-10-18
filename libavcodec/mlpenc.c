@@ -77,18 +77,8 @@ typedef struct MatrixParams {
     int8_t          bypassed_lsbs[MAX_MATRICES][MAX_BLOCKSIZE];
 } MatrixParams;
 
-enum ParamFlags {
-    PARAMS_DEFAULT       = 0xff,
-    PARAM_PRESENCE_FLAGS = 1 << 8,
-    PARAM_BLOCKSIZE      = 1 << 7,
-    PARAM_MATRIX         = 1 << 6,
-    PARAM_OUTSHIFT       = 1 << 5,
-    PARAM_QUANTSTEP      = 1 << 4,
-    PARAM_FIR            = 1 << 3,
-    PARAM_IIR            = 1 << 2,
-    PARAM_HUFFOFFSET     = 1 << 1,
-    PARAM_PRESENT        = 1 << 0,
-};
+#define PARAMS_DEFAULT (0xff)
+#define PARAM_PRESENCE_FLAGS (1 << 8)
 
 typedef struct DecodingParams {
     uint16_t        blocksize;                  ///< number of PCM samples in current audio block
@@ -334,7 +324,7 @@ static int compare_decoding_params(MLPEncodeContext *ctx,
 
         if (prev_cp->codebook    != cp->codebook  ||
             prev_cp->huff_lsbs   != cp->huff_lsbs  )
-            retval |= PARAM_PRESENT;
+            retval |= PARAM_PRESENCE;
     }
 
     return retval;
@@ -441,7 +431,7 @@ static void default_decoding_params(MLPEncodeContext *ctx, DecodingParams *dp)
     param_presence_flags |= PARAM_FIR;
     param_presence_flags |= PARAM_IIR;
     param_presence_flags |= PARAM_HUFFOFFSET;
-    param_presence_flags |= PARAM_PRESENT;
+    param_presence_flags |= PARAM_PRESENCE;
 
     dp->param_presence_flags = param_presence_flags;
 }

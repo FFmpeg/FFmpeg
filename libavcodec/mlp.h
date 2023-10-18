@@ -70,6 +70,15 @@
 /** Code that signals end of a stream. */
 #define END_OF_STREAM       0xd234d234
 
+#define PARAM_BLOCKSIZE     (1 << 7)
+#define PARAM_MATRIX        (1 << 6)
+#define PARAM_OUTSHIFT      (1 << 5)
+#define PARAM_QUANTSTEP     (1 << 4)
+#define PARAM_FIR           (1 << 3)
+#define PARAM_IIR           (1 << 2)
+#define PARAM_HUFFOFFSET    (1 << 1)
+#define PARAM_PRESENCE      (1 << 0)
+
 #define FIR 0
 #define IIR 1
 
