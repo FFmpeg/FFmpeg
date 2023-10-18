@@ -45,7 +45,7 @@
 
 #define MLP_MIN_LPC_ORDER      1
 #define MLP_MAX_LPC_ORDER      8
-#define MLP_MIN_LPC_SHIFT      8
+#define MLP_MIN_LPC_SHIFT      0
 #define MLP_MAX_LPC_SHIFT     15
 
 typedef struct RestartHeader {
@@ -1308,7 +1308,7 @@ static void set_filter_params(MLPEncodeContext *ctx,
                                   ctx->lpc_coeff_precision,
                                   coefs, shift, ctx->lpc_type, ctx->lpc_passes,
                                   ctx->prediction_order, MLP_MIN_LPC_SHIFT,
-                                  MLP_MAX_LPC_SHIFT, MLP_MIN_LPC_SHIFT);
+                                  MLP_MAX_LPC_SHIFT, 0);
 
         fp->order = order;
         fp->shift = shift[order-1];
