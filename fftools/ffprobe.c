@@ -1819,26 +1819,26 @@ static void xml_print_section_header(WriterContext *wctx, void *data)
         writer_put_str(wctx, ">\n");
     }
 
-        if (parent_section && (parent_section->flags & SECTION_FLAG_IS_WRAPPER) &&
-            wctx->level && wctx->nb_item[wctx->level-1])
-            writer_w8(wctx, '\n');
-        xml->indent_level++;
+    if (parent_section && (parent_section->flags & SECTION_FLAG_IS_WRAPPER) &&
+        wctx->level && wctx->nb_item[wctx->level-1])
+        writer_w8(wctx, '\n');
+    xml->indent_level++;
 
-        if (section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_HAS_VARIABLE_FIELDS)) {
-            XML_INDENT(); writer_printf(wctx, "<%s", section->name);
+    if (section->flags & (SECTION_FLAG_IS_ARRAY|SECTION_FLAG_HAS_VARIABLE_FIELDS)) {
+        XML_INDENT(); writer_printf(wctx, "<%s", section->name);
 
-            if (section->flags & SECTION_FLAG_HAS_TYPE) {
-                AVBPrint buf;
-                av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-                av_bprint_escape(&buf, section->get_type(data), NULL,
-                                 AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
-                writer_printf(wctx, " type=\"%s\"", buf.str);
-            }
-            writer_printf(wctx, ">\n", section->name);
-        } else {
-            XML_INDENT(); writer_printf(wctx, "<%s ", section->name);
-            xml->within_tag = 1;
+        if (section->flags & SECTION_FLAG_HAS_TYPE) {
+            AVBPrint buf;
+            av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+            av_bprint_escape(&buf, section->get_type(data), NULL,
+                             AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+            writer_printf(wctx, " type=\"%s\"", buf.str);
         }
+        writer_printf(wctx, ">\n", section->name);
+    } else {
+        XML_INDENT(); writer_printf(wctx, "<%s ", section->name);
+        xml->within_tag = 1;
+    }
 }
 
 static void xml_print_section_footer(WriterContext *wctx)
