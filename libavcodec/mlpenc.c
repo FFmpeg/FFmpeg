@@ -439,7 +439,7 @@ static void default_decoding_params(MLPEncodeContext *ctx, DecodingParams *dp)
     param_presence_flags |= PARAM_OUTSHIFT;
     param_presence_flags |= PARAM_QUANTSTEP;
     param_presence_flags |= PARAM_FIR;
-  /*param_presence_flags |= PARAM_IIR; */
+    param_presence_flags |= PARAM_IIR;
     param_presence_flags |= PARAM_HUFFOFFSET;
     param_presence_flags |= PARAM_PRESENT;
 
@@ -1251,7 +1251,7 @@ static void determine_quant_step_size(MLPEncodeContext *ctx)
  *  coefficients, and if it's possible to right-shift their values without
  *  losing any precision.
  */
-static void code_filter_coeffs(MLPEncodeContext *ctx, FilterParams *fp, int32_t *fcoeff)
+static void code_filter_coeffs(MLPEncodeContext *ctx, FilterParams *fp, const int32_t *fcoeff)
 {
     uint32_t coeff_mask = 0;
     int bits = 0, shift;
@@ -1272,24 +1272,20 @@ static void code_filter_coeffs(MLPEncodeContext *ctx, FilterParams *fp, int32_t 
 
 /** Determines the best filter parameters for the given data and writes the
  *  necessary information to the context.
- *  TODO Add IIR filter predictor!
  */
-static void set_filter_params(MLPEncodeContext *ctx,
-                              unsigned int channel, unsigned int filter,
-                              int clear_filter)
+static void set_filter(MLPEncodeContext *ctx,
+                       int channel, int clear_filter)
 {
     ChannelParams *cp = &ctx->b[1].channel_params[channel];
-    FilterParams *fp = &cp->filter_params[filter];
+    FilterParams *fp = &cp->filter_params[FIR];
 
     if (clear_filter) {
         fp->order = 0;
-    } else if (filter == IIR) {
-        fp->order = 0;
-    } else if (filter == FIR) {
+    } else {
         const int max_order = MAX_FIR_ORDER;
         int32_t coefs[MAX_LPC_ORDER][MAX_LPC_ORDER];
         int32_t *lpc_samples = ctx->lpc_sample_buffer;
-        int32_t *fcoeff = cp->coeff[filter];
+        int32_t *fcoeff = cp->coeff[FIR];
         int shift[MAX_LPC_ORDER];
         int order;
 
@@ -1328,10 +1324,8 @@ static void determine_filters(MLPEncodeContext *ctx)
 {
     RestartHeader *rh = ctx->cur_restart_header;
 
-    for (int channel = rh->min_channel; channel <= rh->max_channel; channel++) {
-        for (int filter = 0; filter < NUM_FILTERS; filter++)
-            set_filter_params(ctx, channel, filter, 0);
-    }
+    for (int ch = rh->min_channel; ch <= rh->max_channel; ch++)
+        set_filter(ctx, ch, 0);
 }
 
 static int estimate_coeff(MLPEncodeContext *ctx,
@@ -1769,13 +1763,12 @@ static void apply_filters(MLPEncodeContext *ctx)
 {
     RestartHeader *rh = ctx->cur_restart_header;
 
-    for (int channel = rh->min_channel; channel <= rh->max_channel; channel++) {
-        if (apply_filter(ctx, channel) < 0) {
+    for (int ch = rh->min_channel; ch <= rh->max_channel; ch++) {
+        if (apply_filter(ctx, ch) < 0) {
             /* Filter is horribly wrong.
-             * Clear filter params and update state. */
-            set_filter_params(ctx, channel, FIR, 1);
-            set_filter_params(ctx, channel, IIR, 1);
-            apply_filter(ctx, channel);
+             * Clear filter parameters and update state. */
+            set_filter(ctx, ch, 1);
+            apply_filter(ctx, ch);
         }
     }
 }
