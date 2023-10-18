@@ -1858,7 +1858,7 @@ static void xml_print_section_footer(WriterContext *wctx)
     }
 }
 
-static void xml_print_str(WriterContext *wctx, const char *key, const char *value)
+static void xml_print_value(WriterContext *wctx, const char *key, const void *value, const int is_int)
 {
     AVBPrint buf;
     XMLContext *xml = wctx->priv;
@@ -1875,44 +1875,36 @@ static void xml_print_str(WriterContext *wctx, const char *key, const char *valu
                       section->element_name, buf.str);
         av_bprint_clear(&buf);
 
-        av_bprint_escape(&buf, value, NULL,
-                         AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
-        writer_printf(wctx, " value=\"%s\"/>\n", buf.str);
+        if (is_int) {
+            writer_printf(wctx, " value=\"%lld\"/>\n", *(long long int *)value);
+        } else {
+            av_bprint_escape(&buf, (const char *)value, NULL,
+                             AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+            writer_printf(wctx, " value=\"%s\"/>\n", buf.str);
+        }
         xml->indent_level--;
     } else {
         if (wctx->nb_item[wctx->level])
             writer_w8(wctx, ' ');
 
-        av_bprint_escape(&buf, value, NULL,
-                         AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
-        writer_printf(wctx, "%s=\"%s\"", key, buf.str);
+        if (is_int) {
+            writer_printf(wctx, "%s=\"%lld\"", key, *(long long int *)value);
+        } else {
+            av_bprint_escape(&buf, (const char *)value, NULL,
+                             AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
+            writer_printf(wctx, "%s=\"%s\"", key, buf.str);
+        }
     }
 
     av_bprint_finalize(&buf, NULL);
 }
 
-static void xml_print_int(WriterContext *wctx, const char *key, long long int value)
-{
-    XMLContext *xml = wctx->priv;
-    const struct section *section = wctx->section[wctx->level];
+static inline void xml_print_str(WriterContext *wctx, const char *key, const char *value) {
+    xml_print_value(wctx, key, (const void *)value, 0);
+}
 
-    if (section->flags & SECTION_FLAG_HAS_VARIABLE_FIELDS) {
-        AVBPrint buf;
-        av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-
-        xml->indent_level++;
-        XML_INDENT();
-        av_bprint_escape(&buf, key, NULL,
-                         AV_ESCAPE_MODE_XML, AV_ESCAPE_FLAG_XML_DOUBLE_QUOTES);
-        writer_printf(wctx, "<%s key=\"%s\"",
-                      section->element_name, buf.str);
-        writer_printf(wctx, " value=\"%lld\"/>\n", value);
-        xml->indent_level--;
-    } else {
-        if (wctx->nb_item[wctx->level])
-            writer_w8(wctx, ' ');
-        writer_printf(wctx, "%s=\"%lld\"", key, value);
-    }
+static inline void xml_print_int(WriterContext *wctx, const char *key, long long int value) {
+    xml_print_value(wctx, key, (const void *)&value, 1);
 }
 
 static Writer xml_writer = {
