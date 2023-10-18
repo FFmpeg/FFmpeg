@@ -177,7 +177,7 @@ static int receive_locked(ThreadQueue *tq, int *stream_idx,
     }
 
     for (unsigned int i = 0; i < tq->nb_streams; i++) {
-        if (!(tq->finished[i] & FINISHED_SEND))
+        if (!tq->finished[i])
             continue;
 
         /* return EOF to the consumer at most once for each stream */
