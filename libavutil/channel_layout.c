@@ -205,6 +205,7 @@ static const struct channel_layout_name channel_layout_map[] = {
     { "cube",           AV_CHANNEL_LAYOUT_CUBE                },
     { "5.1.4",          AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK  },
     { "7.1.2",          AV_CHANNEL_LAYOUT_7POINT1POINT2       },
+    { "7.1.4",          AV_CHANNEL_LAYOUT_7POINT1POINT4_BACK  },
     { "hexadecagonal",  AV_CHANNEL_LAYOUT_HEXADECAGONAL       },
     { "downmix",        AV_CHANNEL_LAYOUT_STEREO_DOWNMIX,     },
     { "22.2",           AV_CHANNEL_LAYOUT_22POINT2,           },
