@@ -667,7 +667,7 @@ static void write_major_sync(MLPEncodeContext *ctx, uint8_t *buf, int buf_size)
     put_bits(&pb, 16, 0                        ); /* ignored */
     put_bits(&pb,  1, 1                        ); /* is_vbr */
     put_bits(&pb, 15, ctx->coded_peak_bitrate  );
-    put_bits(&pb,  4, 1                        ); /* num_substreams */
+    put_bits(&pb,  4, ctx->num_substreams      );
     put_bits(&pb,  2, 0                        ); /* ignored */
     put_bits(&pb,  2, 0                        ); /* extended substream info */
 
