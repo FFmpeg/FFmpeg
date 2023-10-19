@@ -35,6 +35,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/thread.h"
+#include "mlp_parse.h"
 #include "mlp.h"
 #include "lpc.h"
 
@@ -577,29 +578,21 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
             ctx->ch2_presentation_mod= 3;
             ctx->ch6_presentation_mod= 3;
             ctx->ch8_presentation_mod= 3;
-            ctx->channel_arrangement = 2;
-            ctx->channel_arrangement8= 2;
             ctx->thd_substream_info  = 0x14;
         } else if (channels_present == AV_CH_LAYOUT_STEREO) {
             ctx->ch2_presentation_mod= 1;
             ctx->ch6_presentation_mod= 1;
             ctx->ch8_presentation_mod= 1;
-            ctx->channel_arrangement = 1;
-            ctx->channel_arrangement8= 1;
             ctx->thd_substream_info  = 0x14;
         } else if (channels_present == AV_CH_LAYOUT_5POINT0) {
             ctx->ch2_presentation_mod= 1;
             ctx->ch6_presentation_mod= 1;
             ctx->ch8_presentation_mod= 1;
-            ctx->channel_arrangement = 11;
-            ctx->channel_arrangement8= 11;
             ctx->thd_substream_info  = 0x104;
         } else if (channels_present == AV_CH_LAYOUT_5POINT1) {
             ctx->ch2_presentation_mod= 2;
             ctx->ch6_presentation_mod= 1;
             ctx->ch8_presentation_mod= 2;
-            ctx->channel_arrangement = 15;
-            ctx->channel_arrangement8= 15;
             ctx->thd_substream_info  = 0x104;
         } else {
             av_assert1(!"AVCodec.ch_layouts needs to be updated");
@@ -607,6 +600,8 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
         ctx->flags = 0;
         ctx->channel_occupancy = 0;
         ctx->summary_info = 0;
+        ctx->channel_arrangement =
+        ctx->channel_arrangement8 = layout_truehd(channels_present);
     }
 
     for (unsigned int index = 0; index < ctx->restart_intervals; index++)

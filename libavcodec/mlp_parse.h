@@ -113,6 +113,18 @@ static inline uint64_t truehd_layout(int chanmap)
     return layout;
 }
 
+static inline int layout_truehd(uint64_t layout)
+{
+    int chanmap = 0;
+
+    for (int i = 0; i < 13; i++) {
+        if ((layout & thd_layout[i]) == thd_layout[i])
+            chanmap |= 1 << i;
+    }
+
+    return chanmap;
+}
+
 int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb);
 
 #endif /* AVCODEC_MLP_PARSE_H */
