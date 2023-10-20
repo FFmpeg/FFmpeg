@@ -157,7 +157,7 @@ static inline uint64_t get_ue_coef(GetBitContext *gb, const AVDOVIRpuDataHeader 
 
     case RPU_COEFF_FLOAT:
         fpart.u32 = get_bits_long(gb, 32);
-        return fpart.f32 * (1 << hdr->coef_log2_denom);
+        return fpart.f32 * (1LL << hdr->coef_log2_denom);
     }
 
     return 0; /* unreachable */
@@ -176,7 +176,7 @@ static inline int64_t get_se_coef(GetBitContext *gb, const AVDOVIRpuDataHeader *
 
     case RPU_COEFF_FLOAT:
         fpart.u32 = get_bits_long(gb, 32);
-        return fpart.f32 * (1 << hdr->coef_log2_denom);
+        return fpart.f32 * (1LL << hdr->coef_log2_denom);
     }
 
     return 0; /* unreachable */
