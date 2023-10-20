@@ -123,6 +123,12 @@ typedef struct AVBufferSrcParameters {
      * Audio only, the audio channel layout
      */
     AVChannelLayout ch_layout;
+
+    /**
+     * Video only, the YUV colorspace and range.
+     */
+    enum AVColorSpace color_space;
+    enum AVColorRange color_range;
 } AVBufferSrcParameters;
 
 /**

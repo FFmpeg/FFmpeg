@@ -28092,6 +28092,16 @@ Specify the timebase assumed by the timestamps of the buffered frames.
 @item frame_rate
 Specify the frame rate expected for the video stream.
 
+@item colorspace
+A string representing the color space of the buffered video frames.
+It may be a number corresponding to a color space, or a color space
+name.
+
+@item range
+A string representing the color range of the buffered video frames.
+It may be a number corresponding to a color range, or a color range
+name.
+
 @item pixel_aspect, sar
 The sample (pixel) aspect ratio of the input video.
 
