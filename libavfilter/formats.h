@@ -198,6 +198,10 @@ void ff_channel_layouts_unref(AVFilterChannelLayouts **ref);
 void ff_channel_layouts_changeref(AVFilterChannelLayouts **oldref,
                                   AVFilterChannelLayouts **newref);
 
+/**
+ * Sets all remaining unset filter lists for all inputs/outputs to their
+ * corresponding `ff_all_*()` lists.
+ */
 av_warn_unused_result
 int ff_default_query_formats(AVFilterContext *ctx);
 
