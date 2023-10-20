@@ -185,10 +185,9 @@ static av_always_inline void fft3(TXComplex *out, TXComplex *in,
     BF(tmp[1].re, tmp[2].im, in[1].im, in[2].im);
     BF(tmp[1].im, tmp[2].re, in[1].re, in[2].re);
 
-    out[0*stride].re = tmp[0].re + tmp[2].re;
-    out[0*stride].im = tmp[0].im + tmp[2].im;
-
 #ifdef TX_INT32
+    out[0*stride].re = (int64_t)tmp[0].re + tmp[2].re;
+    out[0*stride].im = (int64_t)tmp[0].im + tmp[2].im;
     mtmp[0] = (int64_t)tab[ 8] * tmp[1].re;
     mtmp[1] = (int64_t)tab[ 9] * tmp[1].im;
     mtmp[2] = (int64_t)tab[10] * tmp[2].re;
@@ -198,6 +197,8 @@ static av_always_inline void fft3(TXComplex *out, TXComplex *in,
     out[2*stride].re = tmp[0].re - (mtmp[2] - mtmp[0] + 0x40000000 >> 31);
     out[2*stride].im = tmp[0].im - (mtmp[3] + mtmp[1] + 0x40000000 >> 31);
 #else
+    out[0*stride].re = tmp[0].re + tmp[2].re;
+    out[0*stride].im = tmp[0].im + tmp[2].im;
     tmp[1].re = tab[ 8] * tmp[1].re;
     tmp[1].im = tab[ 9] * tmp[1].im;
     tmp[2].re = tab[10] * tmp[2].re;
