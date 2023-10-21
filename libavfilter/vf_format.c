@@ -41,25 +41,48 @@ typedef struct FormatContext {
     const AVClass *class;
     char *pix_fmts;
 
-    /**
-     * pix_fmts parsed into AVPixelFormats and terminated with
-     * AV_PIX_FMT_NONE
-     */
-    enum AVPixelFormat *formats;
+    AVFilterFormats *formats; ///< parsed from `pix_fmts`
 } FormatContext;
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     FormatContext *s = ctx->priv;
-    av_freep(&s->formats);
+    ff_formats_unref(&s->formats);
+}
+
+static av_cold int invert_formats(AVFilterFormats **fmts,
+                                  AVFilterFormats *allfmts)
+{
+    if (!allfmts)
+        return AVERROR(ENOMEM);
+    if (!*fmts) {
+        /* empty fmt list means no restriction, regardless of filter type */
+        ff_formats_unref(&allfmts);
+        return 0;
+    }
+
+    for (int i = 0; i < allfmts->nb_formats; i++) {
+        for (int j = 0; j < (*fmts)->nb_formats; j++) {
+            if (allfmts->formats[i] == (*fmts)->formats[j]) {
+                /* format is forbidden, remove it from allfmts list */
+                memmove(&allfmts->formats[i], &allfmts->formats[i+1],
+                        (allfmts->nb_formats - (i+1)) * sizeof(*allfmts->formats));
+                allfmts->nb_formats--;
+                i--; /* repeat loop with same idx */
+                break;
+            }
+        }
+    }
+
+    ff_formats_unref(fmts);
+    *fmts = allfmts;
+    return 0;
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
     FormatContext *s = ctx->priv;
-    char *cur, *sep;
-    int nb_formats = 1;
-    int i;
+    enum AVPixelFormat pix_fmt;
     int ret;
 
     if (!s->pix_fmts) {
@@ -67,63 +90,23 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    /* count the formats */
-    cur = s->pix_fmts;
-    while ((cur = strchr(cur, '|'))) {
-        nb_formats++;
-        if (*cur)
-            cur++;
-    }
-
-    s->formats = av_malloc_array(nb_formats + 1, sizeof(*s->formats));
-    if (!s->formats)
-        return AVERROR(ENOMEM);
-
-    /* parse the list of formats */
-    cur = s->pix_fmts;
-    for (i = 0; i < nb_formats; i++) {
+    for (char *sep, *cur = s->pix_fmts; cur; cur = sep) {
         sep = strchr(cur, '|');
-        if (sep)
+        if (sep && *sep)
             *sep++ = 0;
-
-        if ((ret = ff_parse_pixel_format(&s->formats[i], cur, ctx)) < 0)
+        if ((ret = ff_parse_pixel_format(&pix_fmt, cur, ctx)) < 0 ||
+            (ret = ff_add_format(&s->formats, pix_fmt)) < 0)
             return ret;
-
-        cur = sep;
     }
-    s->formats[nb_formats] = AV_PIX_FMT_NONE;
 
     if (!strcmp(ctx->filter->name, "noformat")) {
-        const AVPixFmtDescriptor *desc = NULL;
-        enum AVPixelFormat *formats_allowed;
-        int nb_formats_lavu = 0, nb_formats_allowed = 0;
-
-        /* count the formats known to lavu */
-        while ((desc = av_pix_fmt_desc_next(desc)))
-            nb_formats_lavu++;
-
-        formats_allowed = av_malloc_array(nb_formats_lavu + 1, sizeof(*formats_allowed));
-        if (!formats_allowed)
-            return AVERROR(ENOMEM);
-
-        /* for each format known to lavu, check if it's in the list of
-         * forbidden formats */
-        while ((desc = av_pix_fmt_desc_next(desc))) {
-            enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(desc);
-
-            for (i = 0; i < nb_formats; i++) {
-                if (s->formats[i] == pix_fmt)
-                    break;
-            }
-            if (i < nb_formats)
-                continue;
-
-            formats_allowed[nb_formats_allowed++] = pix_fmt;
-        }
-        formats_allowed[nb_formats_allowed] = AV_PIX_FMT_NONE;
-        av_freep(&s->formats);
-        s->formats = formats_allowed;
+        if ((ret = invert_formats(&s->formats, ff_all_formats(AVMEDIA_TYPE_VIDEO))) < 0)
+            return ret;
     }
+
+    /* hold on to a ref for the lifetime of the filter */
+    if ((ret = ff_formats_ref(s->formats, &s->formats)) < 0)
+        return ret;
 
     return 0;
 }
@@ -132,7 +115,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     FormatContext *s = ctx->priv;
 
-    return ff_set_common_formats_from_list(ctx, s->formats);
+    return ff_set_common_formats(ctx, s->formats);
 }
 
 
