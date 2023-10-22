@@ -1475,11 +1475,11 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
 
     av_free(qf);
 
-    graph_index = hwctx->queue_family_index;
-    comp_index  = hwctx->queue_family_comp_index;
-    tx_index    = hwctx->queue_family_tx_index;
-    enc_index   = hwctx->queue_family_encode_index;
-    dec_index   = hwctx->queue_family_decode_index;
+    graph_index = hwctx->nb_graphics_queues ? hwctx->queue_family_index : -1;
+    comp_index  = hwctx->nb_comp_queues ? hwctx->queue_family_comp_index : -1;
+    tx_index    = hwctx->nb_tx_queues ? hwctx->queue_family_tx_index : -1;
+    dec_index   = hwctx->nb_decode_queues ? hwctx->queue_family_decode_index : -1;
+    enc_index   = hwctx->nb_encode_queues ? hwctx->queue_family_encode_index : -1;
 
 #define CHECK_QUEUE(type, required, fidx, ctx_qf, qc)                                           \
     do {                                                                                        \
@@ -1512,10 +1512,10 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     } while (0)
 
     CHECK_QUEUE("graphics", 0, graph_index, hwctx->queue_family_index,        hwctx->nb_graphics_queues);
-    CHECK_QUEUE("upload",   1, tx_index,    hwctx->queue_family_tx_index,     hwctx->nb_tx_queues);
     CHECK_QUEUE("compute",  1, comp_index,  hwctx->queue_family_comp_index,   hwctx->nb_comp_queues);
-    CHECK_QUEUE("encode",   0, enc_index,   hwctx->queue_family_encode_index, hwctx->nb_encode_queues);
+    CHECK_QUEUE("upload",   1, tx_index,    hwctx->queue_family_tx_index,     hwctx->nb_tx_queues);
     CHECK_QUEUE("decode",   0, dec_index,   hwctx->queue_family_decode_index, hwctx->nb_decode_queues);
+    CHECK_QUEUE("encode",   0, enc_index,   hwctx->queue_family_encode_index, hwctx->nb_encode_queues);
 
 #undef CHECK_QUEUE
 
