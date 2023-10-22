@@ -308,7 +308,7 @@ static int read_key(void)
         return n;
     }
 #elif HAVE_KBHIT
-#    if HAVE_PEEKNAMEDPIPE
+#    if HAVE_PEEKNAMEDPIPE && HAVE_GETSTDHANDLE
     static int is_pipe;
     static HANDLE input_handle;
     DWORD dw, nchars;
