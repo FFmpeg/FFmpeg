@@ -2043,9 +2043,12 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
                 }
                 if (i < current->pps_num_slices_in_pic_minus1) {
                     if (current->pps_tile_idx_delta_present_flag) {
+                        // Two conditions must be met:
+                        // 1. −NumTilesInPic + 1 <= pps_tile_idx_delta_val[i] <= NumTilesInPic − 1
+                        // 2. 0 <= tile_idx + pps_tile_idx_delta_val[i] <= NumTilesInPic − 1
+                        // Combining these conditions yields: -tile_idx <= pps_tile_idx_delta_val[i] <= NumTilesInPic - 1 - tile_idx
                         ses(pps_tile_idx_delta_val[i],
-                            -current->num_tiles_in_pic + 1,
-                            current->num_tiles_in_pic - 1, 1, i);
+                            -tile_idx, current->num_tiles_in_pic - 1 - tile_idx, 1, i);
                         if (current->pps_tile_idx_delta_val[i] == 0) {
                             av_log(ctx->log_ctx, AV_LOG_ERROR,
                                    "pps_tile_idx_delta_val[i] shall not be equal to 0.\n");
