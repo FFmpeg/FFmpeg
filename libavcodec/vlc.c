@@ -427,7 +427,7 @@ static void add_level(VLC_MULTI_ELEM *table, const int is16bit,
                       unsigned* levelcnt, VLC_MULTI_ELEM *info)
 {
     int max_symbols = VLC_MULTI_MAX_SYMBOLS >> is16bit;
-    for (int i = num-1; i > max; i--) {
+    for (int i = num-1; i >= max; i--) {
         for (int j = 0; j < 2; j++) {
             int newlimit, sym;
             int t = j ? i-1 : i;
@@ -466,7 +466,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
                          const int is16bit, const int nb_codes, const int numbits,
                          VLCcode *buf, void *logctx)
 {
-    int minbits, maxbits, max = nb_codes-1;
+    int minbits, maxbits, max;
     unsigned count[VLC_MULTI_MAX_SYMBOLS-1] = { 0, };
     VLC_MULTI_ELEM info = { { 0, }, 0, 0, };
     int count0 = 0;
@@ -487,10 +487,13 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
     }
     av_assert0(maxbits <= numbits);
 
-    while (max >= nb_codes/2) {
-        if (buf[max].bits+minbits > maxbits)
+    for (max = nb_codes; max > nb_codes - count0; max--) {
+        // We can only add a code that fits with the shortest other code into the table
+        // We assume the table is sorted by bits and we skip subtables which from our
+        // point of view are basically random corrupted entries
+        // If we have not a single useable vlc we end with max = nb_codes
+        if (buf[max - 1].bits+minbits > numbits)
             break;
-        max--;
     }
 
     for (int j = 0; j < 1<<numbits; j++) {
