@@ -40,6 +40,7 @@ typedef struct StabData {
     VSMotionDetectConfig conf;
 
     char *result;
+    int fileformat;
     FILE *f;
 } StabData;
 
@@ -58,6 +59,11 @@ static const AVOption vidstabdetect_options[] = {
     {"show",        "0: draw nothing; 1,2: show fields and transforms",              OFFSETC(show),              AV_OPT_TYPE_INT,    {.i64 = 0},      0,   2, FLAGS},
     {"tripod",      "virtual tripod mode (if >0): motion is compared to a reference"
                     " reference frame (frame # is the value)",                       OFFSETC(virtualTripod),     AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, FLAGS},
+#ifdef LIBVIDSTAB_FILE_FORMAT_VERSION
+    { "fileformat",   "transforms data file format",  OFFSET(fileformat),  AV_OPT_TYPE_INT,  {.i64 = BINARY_SERIALIZATION_MODE},  ASCII_SERIALIZATION_MODE,  BINARY_SERIALIZATION_MODE,  FLAGS,  "file_format"},
+    { "ascii",        "ASCII text",  0,  AV_OPT_TYPE_CONST,  {.i64 = ASCII_SERIALIZATION_MODE },  0,  0,  FLAGS,  "file_format"},
+    { "binary",       "binary",      0,  AV_OPT_TYPE_CONST,  {.i64 = BINARY_SERIALIZATION_MODE},  0,  0,  FLAGS,  "file_format"},
+#endif
     {NULL}
 };
 
@@ -94,6 +100,13 @@ static int config_input(AVFilterLink *inlink)
     VSFrameInfo fi;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int is_planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
+    const char *file_mode = "w";
+
+#ifdef LIBVIDSTAB_FILE_FORMAT_VERSION
+    md->serializationMode = s->fileformat;
+    if (s->fileformat == BINARY_SERIALIZATION_MODE)
+        file_mode = "wb";
+#endif
 
     vsFrameInfoInit(&fi, inlink->w, inlink->h,
                     ff_av2vs_pixfmt(ctx, inlink->format));
@@ -129,7 +142,7 @@ static int config_input(AVFilterLink *inlink)
     av_log(ctx, AV_LOG_INFO, "          show = %d\n", s->conf.show);
     av_log(ctx, AV_LOG_INFO, "        result = %s\n", s->result);
 
-    s->f = avpriv_fopen_utf8(s->result, "w");
+    s->f = avpriv_fopen_utf8(s->result, file_mode);
     if (s->f == NULL) {
         av_log(ctx, AV_LOG_ERROR, "cannot open transform file %s\n", s->result);
         return AVERROR(EINVAL);

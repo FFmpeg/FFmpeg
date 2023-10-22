@@ -24618,6 +24618,19 @@ If set to 0, it is disabled. The frames are counted starting from 1.
 Show fields and transforms in the resulting frames. It accepts an
 integer in the range 0-2. Default value is 0, which disables any
 visualization.
+
+@item fileformat
+Format for the transforms data file to be written.
+Acceptable values are
+
+@table @samp
+@item ascii
+Human-readable plain text
+
+@item binary
+Binary format, roughly 40% smaller than @code{ascii}. (@emph{default})
+@end table
+
 @end table
 
 @subsection Examples
