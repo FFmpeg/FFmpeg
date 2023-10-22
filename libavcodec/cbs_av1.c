@@ -36,7 +36,7 @@ static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,
     CBS_TRACE_READ_START();
 
     zeroes = 0;
-    while (1) {
+    while (zeroes < 32) {
         if (get_bits_left(gbc) < 1) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid uvlc code at "
                    "%s: bitstream ended.\n", name);
@@ -49,10 +49,18 @@ static int cbs_av1_read_uvlc(CodedBitstreamContext *ctx, GetBitContext *gbc,
     }
 
     if (zeroes >= 32) {
-        // Note that the spec allows an arbitrarily large number of
-        // zero bits followed by a one bit in this case, but the
-        // libaom implementation does not support it.
-        value = MAX_UINT_BITS(32);
+        // The spec allows at least thirty-two zero bits followed by a
+        // one to mean 2^32-1, with no constraint on the number of
+        // zeroes.  The libaom reference decoder does not match this,
+        // instead reading thirty-two zeroes but not the following one
+        // to mean 2^32-1.  These two interpretations are incompatible
+        // and other implementations may follow one or the other.
+        // Therefore we reject thirty-two zeroes because the intended
+        // behaviour is not clear.
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Thirty-two zero bits in "
+               "%s uvlc code: considered invalid due to conflicting "
+               "standard and reference decoder behaviour.\n", name);
+        return AVERROR_INVALIDDATA;
     } else {
         if (get_bits_left(gbc) < zeroes) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid uvlc code at "
