@@ -469,15 +469,23 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
     int minbits, maxbits, max = nb_codes-1;
     unsigned count[VLC_MULTI_MAX_SYMBOLS-1] = { 0, };
     VLC_MULTI_ELEM info = { { 0, }, 0, 0, };
+    int count0 = 0;
 
-    minbits = buf[0].bits;
-    maxbits = buf[0].bits;
+    for (int j = 0; j < 1<<numbits; j++) {
+        if (single->table[j].len > 0) {
+            count0 ++;
+            j += (1 << (numbits - single->table[j].len)) - 1;
+        }
+    }
 
-    for (int n = 1; n < nb_codes; n++) {
+    minbits = 32;
+    maxbits = 0;
+
+    for (int n = nb_codes - count0; n < nb_codes; n++) {
         minbits = FFMIN(minbits, buf[n].bits);
         maxbits = FFMAX(maxbits, buf[n].bits);
     }
-    maxbits = FFMIN(maxbits, numbits);
+    av_assert0(maxbits <= numbits);
 
     while (max >= nb_codes/2) {
         if (buf[max].bits+minbits > maxbits)
