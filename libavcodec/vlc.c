@@ -424,7 +424,7 @@ static void add_level(VLC_MULTI_ELEM *table, const int is16bit,
                       uint32_t curcode, int curlen,
                       int curlimit, int curlevel,
                       const int minlen, const int max,
-                      unsigned* levelcnt, VLC_MULTI_ELEM *info)
+                      unsigned* levelcnt, VLC_MULTI_ELEM info)
 {
     int max_symbols = VLC_MULTI_MAX_SYMBOLS >> is16bit;
     for (int i = num-1; i >= max; i--) {
@@ -440,16 +440,16 @@ static void add_level(VLC_MULTI_ELEM *table, const int is16bit,
             code = curcode + (buf[t].code >> curlen);
             newlimit = curlimit - l;
             l  += curlen;
-            if (is16bit) AV_WN16(info->val+2*curlevel, sym);
-            else info->val[curlevel] = sym&0xFF;
+            if (is16bit) AV_WN16(info.val+2*curlevel, sym);
+            else info.val[curlevel] = sym&0xFF;
 
             if (curlevel) { // let's not add single entries
                 uint32_t val = code >> (32 - numbits);
                 uint32_t  nb = val + (1U << (numbits - l));
-                info->len = l;
-                info->num = curlevel+1;
+                info.len = l;
+                info.num = curlevel+1;
                 for (; val < nb; val++)
-                    AV_COPY64(table+val, info);
+                    AV_COPY64(table+val, &info);
                 levelcnt[curlevel-1]++;
             }
 
@@ -503,7 +503,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
     }
 
     add_level(table, is16bit, nb_codes, numbits, buf,
-              0, 0, FFMIN(maxbits, numbits), 0, minbits, max, count, &info);
+              0, 0, FFMIN(maxbits, numbits), 0, minbits, max, count, info);
 
     av_log(logctx, AV_LOG_DEBUG, "Joint: %d/%d/%d/%d/%d codes min=%ubits max=%u\n",
            count[0], count[1], count[2], count[3], count[4], minbits, max);
