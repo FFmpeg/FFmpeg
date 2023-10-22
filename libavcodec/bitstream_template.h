@@ -520,7 +520,20 @@ static inline int BS_FUNC(read_vlc)(BSCTX *bc, const VLCElem *table,
     return code;
 }
 
-static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t *dst,
+/**
+ * Parse a vlc / vlc_multi code.
+ * @param bits is the number of bits which will be read at once, must be
+ *             identical to nb_bits in vlc_init()
+ * @param max_depth is the number of times bits bits must be read to completely
+ *                  read the longest vlc code
+ *                  = (max_vlc_length + bits - 1) / bits
+ * @param dst the parsed symbol(s) will be stored here. Up to 8 bytes are written
+ * @returns number of symbols parsed
+ * If the vlc code is invalid and max_depth=1, then no bits will be removed.
+ * If the vlc code is invalid and max_depth>1, then the number of bits removed
+ * is undefined.
+ */
+static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t dst[8],
                                           const VLC_MULTI_ELEM *const Jtable,
                                           const VLCElem *const table,
                                           const int bits, const int max_depth)
