@@ -299,7 +299,7 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
                 return ret;
 
             for (k = 0; k < height; k++)
-                READ_PLANE(dst, i, 1, 5)
+                READ_PLANE(dst, i, 1, 7)
         }
 
         switch (pred) {
