@@ -350,7 +350,7 @@ fail:
     return AVERROR_INVALIDDATA;
 }
 
-static void add_level(VLC_MULTI_ELEM *table, const int nb_elems,
+static void add_level(VLC_MULTI_ELEM *table, const int is16bit,
                       const int num, const int numbits,
                       const VLCcode *buf,
                       uint32_t curcode, int curlen,
@@ -358,7 +358,6 @@ static void add_level(VLC_MULTI_ELEM *table, const int nb_elems,
                       const int minlen, const int max,
                       unsigned* levelcnt, VLC_MULTI_ELEM *info)
 {
-    int is16bit = nb_elems>256;
     int max_symbols = VLC_MULTI_MAX_SYMBOLS >> is16bit;
     for (int i = num-1; i > max; i--) {
         for (int j = 0; j < 2; j++) {
@@ -387,7 +386,7 @@ static void add_level(VLC_MULTI_ELEM *table, const int nb_elems,
             }
 
             if (curlevel+1 < max_symbols && newlimit >= minlen) {
-                add_level(table, nb_elems, num, numbits, buf,
+                add_level(table, is16bit, num, numbits, buf,
                           code, l, newlimit, curlevel+1,
                           minlen, max, levelcnt, info);
             }
@@ -396,7 +395,7 @@ static void add_level(VLC_MULTI_ELEM *table, const int nb_elems,
 }
 
 static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
-                         const int nb_elems, const int nb_codes, const int numbits,
+                         const int is16bit, const int nb_codes, const int numbits,
                          VLCcode *buf, void *logctx)
 {
     int minbits, maxbits, max = nb_codes-1;
@@ -424,7 +423,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
         AV_WN16(table[j].val, single->table[j].sym);
     }
 
-    add_level(table, nb_elems, nb_codes, numbits, buf,
+    add_level(table, is16bit, nb_codes, numbits, buf,
               0, 0, FFMIN(maxbits, numbits), 0, minbits, max, count, &info);
 
     av_log(logctx, AV_LOG_DEBUG, "Joint: %d/%d/%d/%d/%d codes min=%ubits max=%u\n",
@@ -480,7 +479,7 @@ int ff_vlc_init_multi_from_lengths(VLC *vlc, VLC_MULTI *multi, int nb_bits, int 
     ret = vlc_common_end(vlc, nb_bits, j, buf, flags, buf);
     if (ret < 0)
         goto fail;
-    ret = vlc_multi_gen(multi->table, vlc, nb_elems, j, nb_bits, buf, logctx);
+    ret = vlc_multi_gen(multi->table, vlc, nb_elems > 256, j, nb_bits, buf, logctx);
     if (buf != localbuf)
         av_free(buf);
     return ret;
