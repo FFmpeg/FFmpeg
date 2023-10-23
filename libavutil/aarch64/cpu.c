@@ -30,11 +30,9 @@
 static int detect_flags(void)
 {
     int flags = 0;
-    unsigned long hwcap;
-
-    hwcap = getauxval(AT_HWCAP);
 
 #if defined(HWCAP_CPUID)
+    unsigned long hwcap = getauxval(AT_HWCAP);
     // We can check for DOTPROD and I8MM using HWCAP_ASIMDDP and
     // HWCAP2_I8MM too, avoiding to read the CPUID registers (which triggers
     // a trap, handled by the kernel). However the HWCAP_* defines for these
@@ -53,8 +51,6 @@ static int detect_flags(void)
         if (((tmp >> 52) & 0xf) == 0x1)
             flags |= AV_CPU_FLAG_I8MM;
     }
-#else
-    (void)hwcap;
 #endif
 
     return flags;
