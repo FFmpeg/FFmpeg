@@ -713,7 +713,7 @@ FL+FR+FC+LFE+BL+BR+SL+SR
 FL+FR+FC+LFE+BL+BR+FLC+FRC
 @item 7.1(wide-side)
 FL+FR+FC+LFE+FLC+FRC+SL+SR
-@item 7.1(top)
+@item 5.1.2
 FL+FR+FC+LFE+BL+BR+TFL+TFR
 @item octagonal
 FL+FR+FC+BL+BR+BC+SL+SR
