@@ -872,10 +872,10 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                " separate_references" : "");
 
     /* Check if decoding is possible with the given parameters */
-    if (avctx->width  < caps->minCodedExtent.width   ||
-        avctx->height < caps->minCodedExtent.height  ||
-        avctx->width  > caps->maxCodedExtent.width   ||
-        avctx->height > caps->maxCodedExtent.height)
+    if (avctx->coded_width  < caps->minCodedExtent.width   ||
+        avctx->coded_height < caps->minCodedExtent.height  ||
+        avctx->coded_width  > caps->maxCodedExtent.width   ||
+        avctx->coded_height > caps->maxCodedExtent.height)
         return AVERROR(EINVAL);
 
     if (!(avctx->hwaccel_flags & AV_HWACCEL_FLAG_IGNORE_LEVEL) &&
@@ -1027,8 +1027,8 @@ int ff_vk_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
     frames_ctx->user_opaque = prof;
     frames_ctx->free        = free_profile_data;
 
-    frames_ctx->width  = avctx->width;
-    frames_ctx->height = avctx->height;
+    frames_ctx->width  = avctx->coded_width;
+    frames_ctx->height = avctx->coded_height;
     frames_ctx->format = AV_PIX_FMT_VULKAN;
 
     hwfc->format[0]    = vkfmt;
@@ -1224,8 +1224,8 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         dpb_frames = (AVHWFramesContext *)ctx->dpb_hwfc_ref->data;
         dpb_frames->format    = s->frames->format;
         dpb_frames->sw_format = s->frames->sw_format;
-        dpb_frames->width     = s->frames->width;
-        dpb_frames->height    = s->frames->height;
+        dpb_frames->width     = avctx->coded_width;
+        dpb_frames->height    = avctx->coded_height;
 
         dpb_hwfc = dpb_frames->hwctx;
         dpb_hwfc->create_pnext = (void *)ff_vk_find_struct(ctx->s.hwfc->create_pnext,
