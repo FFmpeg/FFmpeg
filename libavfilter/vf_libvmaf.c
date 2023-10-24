@@ -704,10 +704,6 @@ static int config_props_cuda(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    err = parse_deprecated_options(ctx);
-    if (err)
-        return err;
-
     err = parse_models(ctx);
     if (err)
         return err;
