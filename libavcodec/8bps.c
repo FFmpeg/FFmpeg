@@ -43,6 +43,8 @@ typedef struct EightBpsContext {
 
     uint8_t planes;
     uint8_t planemap[4];
+
+    uint32_t pal[256];
 } EightBpsContext;
 
 static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
@@ -116,10 +118,12 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 FF_DISABLE_DEPRECATION_WARNINGS
         frame->palette_has_changed =
 #endif
-        ff_copy_palette(frame->data[1], avpkt, avctx);
+        ff_copy_palette(c->pal, avpkt, avctx);
 #if FF_API_PALETTE_HAS_CHANGED
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+
+        memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }
 
     *got_frame = 1;
