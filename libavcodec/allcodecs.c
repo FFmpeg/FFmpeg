@@ -815,6 +815,8 @@ extern const FFCodec ff_libshine_encoder;
 extern const FFCodec ff_libspeex_encoder;
 extern const FFCodec ff_libspeex_decoder;
 extern const FFCodec ff_libsvtav1_encoder;
+extern const FFCodec ff_libsvtjpegxs_encoder;
+extern const FFCodec ff_libsvtjpegxs_decoder;
 extern const FFCodec ff_libtheora_encoder;
 extern const FFCodec ff_libtwolame_encoder;
 extern const FFCodec ff_libuavs3d_decoder;

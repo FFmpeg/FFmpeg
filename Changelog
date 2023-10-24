@@ -16,6 +16,7 @@ version <next>:
 - Rockchip H.264/HEVC hardware encoder
 - Add vf_scale_d3d12 filter
 - JPEG-XS parser
+- JPEG-XS decoder and encoder through libsvtjpegxs
 
 
 version 8.0:
