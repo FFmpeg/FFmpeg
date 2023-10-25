@@ -97,10 +97,12 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
     } else if (s->type==1 || s->type==4) {
         avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
     } else if (s->type==2 || s->type==5) {
-        if (avctx->codec_id == AV_CODEC_ID_PGMYUV)
+        if (avctx->codec_id == AV_CODEC_ID_PGMYUV) {
             avctx->pix_fmt = AV_PIX_FMT_YUV420P;
-        else
+            avctx->color_range = AVCOL_RANGE_MPEG;
+        } else {
             avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+        }
     } else if (s->type==3 || s->type==6) {
         avctx->pix_fmt = AV_PIX_FMT_RGB24;
     } else if (s->type==7) {
