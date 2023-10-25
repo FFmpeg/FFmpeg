@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "ffmpeg.h"
+#include "ffmpeg_utils.h"
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"

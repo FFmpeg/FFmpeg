@@ -30,6 +30,7 @@
 #include "libavfilter/buffersrc.h"
 
 #include "ffmpeg.h"
+#include "ffmpeg_utils.h"
 #include "thread_queue.h"
 
 struct Decoder {

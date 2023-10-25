@@ -22,6 +22,7 @@
 
 #include "ffmpeg.h"
 #include "ffmpeg_mux.h"
+#include "ffmpeg_utils.h"
 #include "objpool.h"
 #include "sync_queue.h"
 #include "thread_queue.h"

@@ -880,17 +880,6 @@ int trigger_fix_sub_duration_heartbeat(OutputStream *ost, const AVPacket *pkt);
 int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts);
 void update_benchmark(const char *fmt, ...);
 
-/**
- * Merge two return codes - return one of the error codes if at least one of
- * them was negative, 0 otherwise.
- * Currently just picks the first one, eventually we might want to do something
- * more sophisticated, like sorting them by priority.
- */
-static inline int err_merge(int err0, int err1)
-{
-    return (err0 < 0) ? err0 : FFMIN(err1, 0);
-}
-
 #define SPECIFIER_OPT_FMT_str  "%s"
 #define SPECIFIER_OPT_FMT_i    "%i"
 #define SPECIFIER_OPT_FMT_i64  "%"PRId64
@@ -941,15 +930,5 @@ extern const char * const opt_name_frame_rates[];
 #if FFMPEG_OPT_TOP
 extern const char * const opt_name_top_field_first[];
 #endif
-
-static inline void pkt_move(void *dst, void *src)
-{
-    av_packet_move_ref(dst, src);
-}
-
-static inline void frame_move(void *dst, void *src)
-{
-    av_frame_move_ref(dst, src);
-}
 
 #endif /* FFTOOLS_FFMPEG_H */

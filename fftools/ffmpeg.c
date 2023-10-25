@@ -99,6 +99,7 @@
 
 #include "cmdutils.h"
 #include "ffmpeg.h"
+#include "ffmpeg_utils.h"
 #include "sync_queue.h"
 
 const char program_name[] = "ffmpeg";
