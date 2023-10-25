@@ -452,7 +452,10 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
             else
                 m->substream[2].mask = mh.channel_layout_thd_stream1;
         if (m->avctx->ch_layout.nb_channels > 2)
-            m->substream[mh.num_substreams > 1].mask = mh.channel_layout_thd_stream1;
+            if (mh.num_substreams > 2)
+                m->substream[1].mask = mh.channel_layout_thd_stream1;
+            else
+                m->substream[mh.num_substreams > 1].mask = mh.channel_layout_thd_stream2;
     }
 
     m->needs_reordering = mh.channel_arrangement >= 18 && mh.channel_arrangement <= 20;
