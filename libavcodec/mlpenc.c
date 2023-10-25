@@ -86,6 +86,7 @@ typedef struct DecodingParams {
     uint16_t        blocksize;                  ///< number of PCM samples in current audio block
     uint8_t         quant_step_size[MAX_CHANNELS];  ///< left shift to apply to Huffman-decoded residuals
     int8_t          output_shift[MAX_CHANNELS]; ///< Left shift to apply to decoded PCM values to get final 24-bit output.
+    uint8_t         max_order[MAX_CHANNELS];
 
     MatrixParams    matrix_params;
 
@@ -126,6 +127,7 @@ typedef struct MLPSubstream {
     MLPBlock        b[MAX_HEADER_INTERVAL + 1];
     unsigned int    major_cur_subblock_index;
     unsigned int    major_filter_state_subblock;
+    int32_t         coefs[MAX_CHANNELS][MAX_LPC_ORDER][MAX_LPC_ORDER];
 } MLPSubstream;
 
 typedef struct MLPEncodeContext {
@@ -411,6 +413,7 @@ static void clear_decoding_params(DecodingParams *decoding_params)
     memset(dp->quant_step_size, 0, sizeof(dp->quant_step_size));
     memset(dp->sample_buffer,   0, sizeof(dp->sample_buffer  ));
     memset(dp->output_shift,    0, sizeof(dp->output_shift   ));
+    memset(dp->max_order, MAX_FIR_ORDER, sizeof(dp->max_order));
 }
 
 /** Clears a ChannelParams struct the way it should be after a restart header. */
@@ -1348,16 +1351,18 @@ static void code_filter_coeffs(MLPEncodeContext *ctx, FilterParams *fp, const in
  *  necessary information to the context.
  */
 static void set_filter(MLPEncodeContext *ctx, MLPSubstream *s,
-                       int channel, int clear_filter)
+                       int channel, int retry_filter)
 {
     ChannelParams *cp = &s->b[1].channel_params[channel];
+    DecodingParams *dp1 = &s->b[1].decoding_params;
     FilterParams *fp = &cp->filter_params[FIR];
 
-    if (clear_filter) {
+    if (retry_filter)
+        dp1->max_order[channel]--;
+
+    if (dp1->max_order[channel] == 0) {
         fp->order = 0;
     } else {
-        const int max_order = MAX_FIR_ORDER;
-        int32_t coefs[MAX_LPC_ORDER][MAX_LPC_ORDER];
         int32_t *lpc_samples = ctx->lpc_sample_buffer;
         int32_t *fcoeff = cp->coeff[FIR];
         int shift[MAX_LPC_ORDER];
@@ -1374,9 +1379,9 @@ static void set_filter(MLPEncodeContext *ctx, MLPSubstream *s,
 
         order = ff_lpc_calc_coefs(&ctx->lpc_ctx, ctx->lpc_sample_buffer,
                                   lpc_samples - ctx->lpc_sample_buffer,
-                                  MLP_MIN_LPC_ORDER, max_order,
+                                  MLP_MIN_LPC_ORDER, dp1->max_order[channel],
                                   ctx->lpc_coeff_precision,
-                                  coefs, shift, ctx->lpc_type, ctx->lpc_passes,
+                                  s->coefs[channel], shift, ctx->lpc_type, ctx->lpc_passes,
                                   ctx->prediction_order, MLP_MIN_LPC_SHIFT,
                                   MLP_MAX_LPC_SHIFT, 0);
 
@@ -1384,7 +1389,7 @@ static void set_filter(MLPEncodeContext *ctx, MLPSubstream *s,
         fp->shift = order ? shift[order-1] : 0;
 
         for (unsigned int i = 0; i < order; i++)
-            fcoeff[i] = coefs[order-1][i];
+            fcoeff[i] = s->coefs[channel][order-1][i];
 
         code_filter_coeffs(ctx, fp, fcoeff);
     }
@@ -1839,11 +1844,9 @@ static void apply_filters(MLPEncodeContext *ctx, MLPSubstream *s)
     RestartHeader *rh = s->cur_restart_header;
 
     for (int ch = rh->min_channel; ch <= rh->max_channel; ch++) {
-        if (apply_filter(ctx, s, ch) < 0) {
-            /* Filter is horribly wrong.
-             * Clear filter parameters and update state. */
+        while (apply_filter(ctx, s, ch) < 0) {
+            /* Filter is horribly wrong. Retry. */
             set_filter(ctx, s, ch, 1);
-            apply_filter(ctx, s, ch);
         }
     }
 }
