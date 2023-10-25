@@ -14323,6 +14323,14 @@ It accepts the following parameters:
 A '|'-separated list of pixel format names, such as
 "pix_fmts=yuv420p|monow|rgb24".
 
+@item color_spaces
+A '|'-separated list of color space names, such as
+"color_spaces=bt709|bt470bg|bt2020nc".
+
+@item color_ranges
+A '|'-separated list of color range names, such as
+"color_spaces=tv|pc".
+
 @end table
 
 @subsection Examples
