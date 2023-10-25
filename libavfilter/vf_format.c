@@ -91,11 +91,6 @@ static av_cold int init(AVFilterContext *ctx)
     enum AVPixelFormat pix_fmt;
     int ret;
 
-    if (!s->pix_fmts) {
-        av_log(ctx, AV_LOG_ERROR, "Empty output format string.\n");
-        return AVERROR(EINVAL);
-    }
-
     for (char *sep, *cur = s->pix_fmts; cur; cur = sep) {
         sep = strchr(cur, '|');
         if (sep && *sep)
@@ -131,7 +126,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     /* hold on to a ref for the lifetime of the filter */
-    if ((ret = ff_formats_ref(s->formats, &s->formats)) < 0 ||
+    if (s->formats      && (ret = ff_formats_ref(s->formats,      &s->formats)) < 0 ||
         s->color_spaces && (ret = ff_formats_ref(s->color_spaces, &s->color_spaces)) < 0 ||
         s->color_ranges && (ret = ff_formats_ref(s->color_ranges, &s->color_ranges)) < 0)
         return ret;
@@ -144,7 +139,7 @@ static int query_formats(AVFilterContext *ctx)
     FormatContext *s = ctx->priv;
     int ret;
 
-    if ((ret = ff_set_common_formats(ctx, s->formats)) < 0 ||
+    if (s->formats      && (ret = ff_set_common_formats(ctx,      s->formats)) < 0 ||
         s->color_spaces && (ret = ff_set_common_color_spaces(ctx, s->color_spaces)) < 0 ||
         s->color_ranges && (ret = ff_set_common_color_ranges(ctx, s->color_ranges)) < 0)
         return ret;
