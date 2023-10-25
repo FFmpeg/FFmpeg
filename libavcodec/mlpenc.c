@@ -599,6 +599,7 @@ static av_cold int mlp_encode_init(AVCodecContext *avctx)
             break;
         case AV_CH_LAYOUT_2POINT1:
         case AV_CH_LAYOUT_SURROUND:
+        case AV_CH_LAYOUT_3POINT1:
         case AV_CH_LAYOUT_5POINT0:
         case AV_CH_LAYOUT_5POINT1:
             ctx->ch2_presentation_mod= 0;
@@ -2324,12 +2325,13 @@ const FFCodec ff_truehd_encoder = {
     .p.priv_class           = &mlp_class,
     .p.sample_fmts          = (const enum AVSampleFormat[]) {AV_SAMPLE_FMT_S16P, AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE},
     .p.supported_samplerates = (const int[]) {44100, 48000, 88200, 96000, 176400, 192000, 0},
-    CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_2POINT1, AV_CH_LAYOUT_SURROUND, AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1)
+    CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_2POINT1, AV_CH_LAYOUT_SURROUND, AV_CH_LAYOUT_3POINT1, AV_CH_LAYOUT_5POINT0, AV_CH_LAYOUT_5POINT1)
     .p.ch_layouts           = (const AVChannelLayout[]) {
                                   AV_CHANNEL_LAYOUT_MONO,
                                   AV_CHANNEL_LAYOUT_STEREO,
                                   AV_CHANNEL_LAYOUT_2POINT1,
                                   AV_CHANNEL_LAYOUT_SURROUND,
+                                  AV_CHANNEL_LAYOUT_3POINT1,
                                   AV_CHANNEL_LAYOUT_5POINT0,
                                   AV_CHANNEL_LAYOUT_5POINT1,
                                   { 0 }
