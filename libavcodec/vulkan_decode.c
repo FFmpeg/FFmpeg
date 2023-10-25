@@ -449,7 +449,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         .srcAccessMask = VK_ACCESS_2_NONE,
         .dstAccessMask = VK_ACCESS_2_VIDEO_DECODE_WRITE_BIT_KHR,
         .oldLayout = vkf->layout[0],
-        .newLayout = (dec->layered_dpb && vp->dpb_frame) ?
+        .newLayout = (dec->layered_dpb || vp->dpb_frame) ?
                      VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR :
                      VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR, /* Spec, 07252 utter madness */
         .srcQueueFamilyIndex = vkf->queue_family[0],
