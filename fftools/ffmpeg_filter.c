@@ -364,35 +364,6 @@ static void sub2video_update(InputFilterPriv *ifp, int64_t heartbeat_pts,
     ifp->sub2video.initialize = 0;
 }
 
-/* *dst may return be set to NULL (no pixel format found), a static string or a
- * string backed by the bprint. Nothing has been written to the AVBPrint in case
- * NULL is returned. The AVBPrint provided should be clean. */
-static int choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint,
-                           const char **dst)
-{
-    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
-
-    *dst = NULL;
-
-    if (ofp->flags & OFILTER_FLAG_DISABLE_CONVERT || ofp->format != AV_PIX_FMT_NONE) {
-        *dst = ofp->format == AV_PIX_FMT_NONE ? NULL :
-               av_get_pix_fmt_name(ofp->format);
-    } else if (ofp->formats) {
-        const enum AVPixelFormat *p = ofp->formats;
-
-        for (; *p != AV_PIX_FMT_NONE; p++) {
-            const char *name = av_get_pix_fmt_name(*p);
-            av_bprintf(bprint, "%s%c", name, p[1] == AV_PIX_FMT_NONE ? '\0' : '|');
-        }
-        if (!av_bprint_is_complete(bprint))
-            return AVERROR(ENOMEM);
-
-        *dst = bprint->str;
-    }
-
-    return 0;
-}
-
 /* Define a function for appending a list of allowed formats
  * to an AVBPrint. If nonempty, the list will have a header. */
 #define DEF_CHOOSE_FORMAT(name, type, var, supported_list, none, printf_format, get_name) \
@@ -415,8 +386,8 @@ static void choose_ ## name (OutputFilterPriv *ofp, AVBPrint *bprint)          \
     av_bprint_chars(bprint, ':', 1);                                           \
 }
 
-//DEF_CHOOSE_FORMAT(pix_fmts, enum AVPixelFormat, format, formats, AV_PIX_FMT_NONE,
-//                  av_get_pix_fmt_name)
+DEF_CHOOSE_FORMAT(pix_fmts, enum AVPixelFormat, format, formats,
+                  AV_PIX_FMT_NONE, "%s", av_get_pix_fmt_name)
 
 DEF_CHOOSE_FORMAT(sample_fmts, enum AVSampleFormat, format, formats,
                   AV_SAMPLE_FMT_NONE, "%s", av_get_sample_fmt_name)
@@ -850,7 +821,8 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
             ofp->format = opts->format;
         } else if (opts->pix_fmts)
             ofp->formats = opts->pix_fmts;
-        else if (opts->enc)
+        else if (opts->enc &&
+                 !(ofp->flags & OFILTER_FLAG_DISABLE_CONVERT))
             ofp->formats = opts->enc->pix_fmts;
 
         fgp->disable_conversions |= !!(ofp->flags & OFILTER_FLAG_DISABLE_CONVERT);
@@ -1481,7 +1453,6 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     AVBPrint bprint;
     int pad_idx = out->pad_idx;
     int ret;
-    const char *pix_fmts;
     char name[255];
 
     snprintf(name, sizeof(name), "out_%s", ofp->name);
@@ -1515,17 +1486,19 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
         pad_idx = 0;
     }
 
+    av_assert0(!(ofp->flags & OFILTER_FLAG_DISABLE_CONVERT) ||
+               ofp->format != AV_PIX_FMT_NONE || !ofp->formats);
     av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
-    ret = choose_pix_fmts(ofilter, &bprint, &pix_fmts);
-    if (ret < 0)
-        return ret;
+    choose_pix_fmts(ofp, &bprint);
+    if (!av_bprint_is_complete(&bprint))
+        return AVERROR(ENOMEM);
 
-    if (pix_fmts) {
+    if (bprint.len) {
         AVFilterContext *filter;
 
         ret = avfilter_graph_create_filter(&filter,
                                            avfilter_get_by_name("format"),
-                                           "format", pix_fmts, NULL, graph);
+                                           "format", bprint.str, NULL, graph);
         av_bprint_finalize(&bprint, NULL);
         if (ret < 0)
             return ret;
