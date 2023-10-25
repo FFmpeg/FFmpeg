@@ -154,6 +154,7 @@ typedef struct FFVkExecContext {
     uint32_t idx;
     const struct FFVkExecPool *parent;
     pthread_mutex_t lock;
+    int had_submission;
 
     /* Queue for the execution context */
     VkQueue queue;

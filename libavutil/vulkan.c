@@ -456,6 +456,9 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
     int64_t res = 0;
     VkQueryResultFlags qf = 0;
 
+    if (!e->had_submission)
+        return VK_NOT_READY;
+
     qf |= pool->query_64bit ?
           VK_QUERY_RESULT_64_BIT : 0x0;
     qf |= pool->query_statuses ?
@@ -778,6 +781,8 @@ int ff_vk_exec_submit(FFVulkanContext *s, FFVkExecContext *e)
             e->frame_locked[j] = 0;
         }
     }
+
+    e->had_submission = 1;
 
     return 0;
 }
