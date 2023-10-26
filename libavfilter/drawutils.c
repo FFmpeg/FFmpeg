@@ -22,7 +22,6 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/avutil.h"
 #include "libavutil/csp.h"
 #include "libavutil/intreadwrite.h"
@@ -93,8 +92,6 @@ int ff_draw_init2(FFDrawContext *draw, enum AVPixelFormat format, enum AVColorSp
     if (desc->flags & AV_PIX_FMT_FLAG_BE)
         return AVERROR(ENOSYS);
     if (desc->flags & ~(AV_PIX_FMT_FLAG_PLANAR | AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA))
-        return AVERROR(ENOSYS);
-    if (av_strstart(desc->name, "xyz", NULL))
         return AVERROR(ENOSYS);
     if (csp == AVCOL_SPC_UNSPECIFIED)
         csp = (desc->flags & AV_PIX_FMT_FLAG_RGB) ? AVCOL_SPC_RGB : AVCOL_SPC_SMPTE170M;
