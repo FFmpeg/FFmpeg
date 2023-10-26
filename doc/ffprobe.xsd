@@ -214,6 +214,7 @@
     <xsd:attribute name="clean_effects"    type="xsd:int" use="required" />
     <xsd:attribute name="attached_pic"     type="xsd:int" use="required" />
     <xsd:attribute name="timed_thumbnails" type="xsd:int" use="required" />
+    <xsd:attribute name="non_diegetic"     type="xsd:int" use="required" />
     <xsd:attribute name="captions"         type="xsd:int" use="required" />
     <xsd:attribute name="descriptions"     type="xsd:int" use="required" />
     <xsd:attribute name="metadata"         type="xsd:int" use="required" />
