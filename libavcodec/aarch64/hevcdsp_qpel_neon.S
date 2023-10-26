@@ -112,6 +112,44 @@ endconst
 .endif
 .endm
 
+.macro calc_all
+        calc            v23, v16, v17, v18, v19, v20, v21, v22, v23
+        b.eq            2f
+        calc            v16, v17, v18, v19, v20, v21, v22, v23, v16
+        b.eq            2f
+        calc            v17, v18, v19, v20, v21, v22, v23, v16, v17
+        b.eq            2f
+        calc            v18, v19, v20, v21, v22, v23, v16, v17, v18
+        b.eq            2f
+        calc            v19, v20, v21, v22, v23, v16, v17, v18, v19
+        b.eq            2f
+        calc            v20, v21, v22, v23, v16, v17, v18, v19, v20
+        b.eq            2f
+        calc            v21, v22, v23, v16, v17, v18, v19, v20, v21
+        b.eq            2f
+        calc            v22, v23, v16, v17, v18, v19, v20, v21, v22
+        b.hi            1b
+.endm
+
+.macro calc_all2
+        calc            v30, v31, v16, v18, v20, v22, v24, v26, v28, v30, v17, v19, v21, v23, v25, v27, v29, v31
+        b.eq            2f
+        calc            v16, v17, v18, v20, v22, v24, v26, v28, v30, v16, v19, v21, v23, v25, v27, v29, v31, v17
+        b.eq            2f
+        calc            v18, v19, v20, v22, v24, v26, v28, v30, v16, v18, v21, v23, v25, v27, v29, v31, v17, v19
+        b.eq            2f
+        calc            v20, v21, v22, v24, v26, v28, v30, v16, v18, v20, v23, v25, v27, v29, v31, v17, v19, v21
+        b.eq            2f
+        calc            v22, v23, v24, v26, v28, v30, v16, v18, v20, v22, v25, v27, v29, v31, v17, v19, v21, v23
+        b.eq            2f
+        calc            v24, v25, v26, v28, v30, v16, v18, v20, v22, v24, v27, v29, v31, v17, v19, v21, v23, v25
+        b.eq            2f
+        calc            v26, v27, v28, v30, v16, v18, v20, v22, v24, v26, v29, v31, v17, v19, v21, v23, v25, v27
+        b.eq            2f
+        calc            v28, v29, v30, v16, v18, v20, v22, v24, v26, v28, v31, v17, v19, v21, v23, v25, v27, v29
+        b.hi            1b
+.endm
+
 .macro put_hevc type
 .ifc \type, qpel
         // void put_hevc_qpel_h(int16_t *dst,
@@ -558,6 +596,276 @@ put_hevc qpel
 put_hevc qpel_uni
 put_hevc qpel_bi
 
+function ff_hevc_put_hevc_qpel_v4_8_neon, export=1
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        mov             x9, #(MAX_PB_SIZE * 2)
+        sub             x1, x1, x2
+        ldr             s16, [x1]
+        ldr             s17, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             s18, [x1]
+        ldr             s19, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             s20, [x1]
+        ldr             s21, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             s22, [x1]
+        add             x1, x1, x2
+.macro calc tmp, src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\tmp\().s}[0], [x1], x2
+        movi            v24.8h, #0
+        calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
+        st1             {v24.4h}, [x0], x9
+        subs            w3, w3, #1
+        b.eq            2f
+.endm
+1:      calc_all
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_v6_8_neon, export=1
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        mov             x9, #(MAX_PB_SIZE * 2 - 8)
+        sub             x1, x1, x2
+        ldr             d16, [x1]
+        ldr             d17, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             d18, [x1]
+        ldr             d19, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             d20, [x1]
+        ldr             d21, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             d22, [x1]
+        add             x1, x1, x2
+.macro calc tmp, src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\tmp\().8b}, [x1], x2
+        movi            v24.8h, #0
+        calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
+        st1             {v24.4h}, [x0], #8
+        st1             {v24.s}[2], [x0], x9
+        subs            w3, w3, #1
+.endm
+1:      calc_all
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_v8_8_neon, export=1
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        mov             x9, #(MAX_PB_SIZE * 2)
+        sub             x1, x1, x2
+        ldr             d16, [x1]
+        ldr             d17, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             d18, [x1]
+        ldr             d19, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             d20, [x1]
+        ldr             d21, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             d22, [x1]
+        add             x1, x1, x2
+.macro calc tmp, src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\tmp\().8b}, [x1], x2
+        movi            v24.8h, #0
+        calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
+        st1             {v24.8h}, [x0], x9
+        subs            w3, w3, #1
+.endm
+1:      calc_all
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_v12_8_neon, export=1
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        mov             x9, #(MAX_PB_SIZE * 2 - 16)
+        sub             x1, x1, x2
+        ldr             q16, [x1]
+        ldr             q17, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             q18, [x1]
+        ldr             q19, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             q20, [x1]
+        ldr             q21, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             q22, [x1]
+        add             x1, x1, x2
+.macro calc tmp, src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\tmp\().16b}, [x1], x2
+        movi            v24.8h, #0
+        movi            v25.8h, #0
+        calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
+        calc_qpelb2     v25, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
+        st1             {v24.8h}, [x0], #16
+        subs            w3, w3, #1
+        st1             {v25.4h}, [x0], x9
+.endm
+1:      calc_all
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_v16_8_neon, export=1
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        mov             x9, #(MAX_PB_SIZE * 2)
+        sub             x1, x1, x2
+        ldr             q16, [x1]
+        ldr             q17, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             q18, [x1]
+        ldr             q19, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             q20, [x1]
+        ldr             q21, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             q22, [x1]
+        add             x1, x1, x2
+.macro calc tmp, src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\tmp\().16b}, [x1], x2
+        movi            v24.8h, #0
+        movi            v25.8h, #0
+        calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
+        calc_qpelb2     v25, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
+        subs            w3, w3, #1
+        st1             {v24.8h, v25.8h}, [x0], x9
+.endm
+1:      calc_all
+.purgem calc
+2:      ret
+endfunc
+
+// todo: reads #32 bytes
+function ff_hevc_put_hevc_qpel_v24_8_neon, export=1
+        sub             sp, sp, #32
+        st1             {v8.8b, v9.8b, v10.8b}, [sp]
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        sub             x1, x1, x2
+        mov             x9, #(MAX_PB_SIZE * 2)
+        ld1             {v16.16b, v17.16b}, [x1], x2
+        ld1             {v18.16b, v19.16b}, [x1], x2
+        ld1             {v20.16b, v21.16b}, [x1], x2
+        ld1             {v22.16b, v23.16b}, [x1], x2
+        ld1             {v24.16b, v25.16b}, [x1], x2
+        ld1             {v26.16b, v27.16b}, [x1], x2
+        ld1             {v28.16b, v29.16b}, [x1], x2
+.macro calc tmp0, tmp1, src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
+        ld1             {\tmp0\().16b, \tmp1\().16b}, [x1], x2
+        movi            v8.8h, #0
+        movi            v9.8h, #0
+        movi            v10.8h, #0
+        calc_qpelb      v8,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
+        calc_qpelb2     v9,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
+        calc_qpelb      v10, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
+        subs            w3, w3, #1
+        st1             {v8.8h, v9.8h, v10.8h}, [x0], x9
+.endm
+1:      calc_all2
+.purgem calc
+2:      ld1             {v8.8b, v9.8b, v10.8b}, [sp]
+        add             sp, sp, #32
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_v32_8_neon, export=1
+        sub             sp, sp, #32
+        st1             {v8.8b-v11.8b}, [sp]
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        mov             x9, #(MAX_PB_SIZE * 2)
+        sub             x1, x1, x2
+        ld1             {v16.16b, v17.16b}, [x1], x2
+        ld1             {v18.16b, v19.16b}, [x1], x2
+        ld1             {v20.16b, v21.16b}, [x1], x2
+        ld1             {v22.16b, v23.16b}, [x1], x2
+        ld1             {v24.16b, v25.16b}, [x1], x2
+        ld1             {v26.16b, v27.16b}, [x1], x2
+        ld1             {v28.16b, v29.16b}, [x1], x2
+.macro calc tmp0, tmp1, src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
+        ld1             {\tmp0\().16b, \tmp1\().16b}, [x1], x2
+        movi            v8.8h, #0
+        movi            v9.8h, #0
+        movi            v10.8h, #0
+        movi            v11.8h, #0
+        calc_qpelb      v8,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
+        calc_qpelb2     v9,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
+        calc_qpelb      v10, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
+        calc_qpelb2     v11, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
+        subs            w3, w3, #1
+        st1             {v8.8h-v11.8h}, [x0], x9
+.endm
+1:      calc_all2
+.purgem calc
+2:      ld1             {v8.8b-v11.8b}, [sp], #32
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_v48_8_neon, export=1
+        stp             x2, x3, [sp, #-48]!
+        stp             x0, x1, [sp, #16]
+        stp             x5, x30, [sp, #32]
+        bl              X(ff_hevc_put_hevc_qpel_v24_8_neon)
+        ldr             x5, [sp, #32]
+        ldp             x0, x1, [sp, #16]
+        ldp             x2, x3, [sp], #32
+        add             x0, x0, #48
+        add             x1, x1, #24
+        bl              X(ff_hevc_put_hevc_qpel_v24_8_neon)
+        ldr             x30, [sp, #8]
+        add             sp, sp, #16
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_v64_8_neon, export=1
+        sub             sp, sp, #32
+        st1             {v8.8b-v11.8b}, [sp]
+        load_qpel_filterb x5, x4
+        sub             x1, x1, x2, lsl #1
+        sub             x1, x1, x2
+        mov             x9, #(MAX_PB_SIZE * 2)
+0:      mov             x8, x1          // src
+        ld1             {v16.16b, v17.16b}, [x8], x2
+        mov             w11, w3         // height
+        ld1             {v18.16b, v19.16b}, [x8], x2
+        mov             x10, x0         // dst
+        ld1             {v20.16b, v21.16b}, [x8], x2
+        ld1             {v22.16b, v23.16b}, [x8], x2
+        ld1             {v24.16b, v25.16b}, [x8], x2
+        ld1             {v26.16b, v27.16b}, [x8], x2
+        ld1             {v28.16b, v29.16b}, [x8], x2
+.macro calc tmp0, tmp1, src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11, src12, src13, src14, src15
+        ld1             {\tmp0\().16b, \tmp1\().16b}, [x8], x2
+        movi            v8.8h, #0
+        movi            v9.8h, #0
+        movi            v10.8h, #0
+        movi            v11.8h, #0
+        calc_qpelb      v8,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
+        calc_qpelb2     v9,  \src0, \src1, \src2,  \src3,  \src4,  \src5,  \src6,  \src7
+        calc_qpelb      v10, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
+        calc_qpelb2     v11, \src8, \src9, \src10, \src11, \src12, \src13, \src14, \src15
+        subs            x11, x11, #1
+        st1             {v8.8h-v11.8h}, [x10], x9
+.endm
+1:      calc_all2
+.purgem calc
+2:      add             x0, x0, #64
+        add             x1, x1, #32
+        subs            w6, w6, #32
+        b.hi            0b
+        ld1             {v8.8b-v11.8b}, [sp], #32
+        ret
+endfunc
+
+
 function ff_hevc_put_hevc_pel_uni_pixels4_8_neon, export=1
 1:
         ldr             s0, [x2]
@@ -662,25 +970,6 @@ function ff_hevc_put_hevc_pel_uni_pixels64_8_neon, export=1
         b.hi            1b
         ret
 endfunc
-
-.macro calc_all
-        calc            v23, v16, v17, v18, v19, v20, v21, v22, v23
-        b.eq            2f
-        calc            v16, v17, v18, v19, v20, v21, v22, v23, v16
-        b.eq            2f
-        calc            v17, v18, v19, v20, v21, v22, v23, v16, v17
-        b.eq            2f
-        calc            v18, v19, v20, v21, v22, v23, v16, v17, v18
-        b.eq            2f
-        calc            v19, v20, v21, v22, v23, v16, v17, v18, v19
-        b.eq            2f
-        calc            v20, v21, v22, v23, v16, v17, v18, v19, v20
-        b.eq            2f
-        calc            v21, v22, v23, v16, v17, v18, v19, v20, v21
-        b.eq            2f
-        calc            v22, v23, v16, v17, v18, v19, v20, v21, v22
-        b.hi            1b
-.endm
 
 function ff_hevc_put_hevc_qpel_uni_v4_8_neon, export=1
         load_qpel_filterb x6, x5
@@ -1559,25 +1848,6 @@ endfunc
 
 #if HAVE_I8MM
 ENABLE_I8MM
-
-.macro calc_all2
-        calc            v30, v31, v16, v18, v20, v22, v24, v26, v28, v30, v17, v19, v21, v23, v25, v27, v29, v31
-        b.eq            2f
-        calc            v16, v17, v18, v20, v22, v24, v26, v28, v30, v16, v19, v21, v23, v25, v27, v29, v31, v17
-        b.eq            2f
-        calc            v18, v19, v20, v22, v24, v26, v28, v30, v16, v18, v21, v23, v25, v27, v29, v31, v17, v19
-        b.eq            2f
-        calc            v20, v21, v22, v24, v26, v28, v30, v16, v18, v20, v23, v25, v27, v29, v31, v17, v19, v21
-        b.eq            2f
-        calc            v22, v23, v24, v26, v28, v30, v16, v18, v20, v22, v25, v27, v29, v31, v17, v19, v21, v23
-        b.eq            2f
-        calc            v24, v25, v26, v28, v30, v16, v18, v20, v22, v24, v27, v29, v31, v17, v19, v21, v23, v25
-        b.eq            2f
-        calc            v26, v27, v28, v30, v16, v18, v20, v22, v24, v26, v29, v31, v17, v19, v21, v23, v25, v27
-        b.eq            2f
-        calc            v28, v29, v30, v16, v18, v20, v22, v24, v26, v28, v31, v17, v19, v21, v23, v25, v27, v29
-        b.hi            1b
-.endm
 
 function ff_hevc_put_hevc_qpel_uni_hv4_8_neon_i8mm, export=1
         add             w10, w4, #7
