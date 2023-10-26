@@ -67,7 +67,7 @@ int ff_get_cpu_flags_riscv(void)
 #endif
 
     /* If RV-V is enabled statically at compile-time, check the details. */
-#ifdef __riscv_vectors
+#ifdef __riscv_vector
     ret |= AV_CPU_FLAG_RVV_I32;
 #if __riscv_v_elen >= 64
     ret |= AV_CPU_FLAG_RVV_I64;
