@@ -131,6 +131,118 @@ endconst
         b.ne            1b
 .endm
 
+function ff_hevc_put_hevc_pel_pixels4_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.s}[0], [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        subs            w3, w3, #1
+        st1             {v4.d}[0], [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels6_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE * 2 - 8)
+1:      ld1             {v0.8b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        st1             {v4.d}[0], [x0], #8
+        subs            w3, w3, #1
+        st1             {v4.s}[2], [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels8_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.8b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        subs            w3, w3, #1
+        st1             {v4.8h}, [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels12_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE * 2 - 16)
+1:      ld1             {v0.8b, v1.8b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        st1             {v4.8h}, [x0], #16
+        ushll           v5.8h, v1.8b, #6
+        subs            w3, w3, #1
+        st1             {v5.d}[0], [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels16_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.8b, v1.8b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        ushll           v5.8h, v1.8b, #6
+        subs            w3, w3, #1
+        st1             {v4.8h, v5.8h}, [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels24_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.8b-v2.8b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        ushll           v5.8h, v1.8b, #6
+        ushll           v6.8h, v2.8b, #6
+        subs            w3, w3, #1
+        st1             {v4.8h-v6.8h}, [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels32_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.8b-v3.8b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        ushll           v5.8h, v1.8b, #6
+        ushll           v6.8h, v2.8b, #6
+        ushll           v7.8h, v3.8b, #6
+        subs            w3, w3, #1
+        st1             {v4.8h-v7.8h}, [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels48_8_neon, export=1
+        mov             x7, #(MAX_PB_SIZE)
+1:      ld1             {v0.16b-v2.16b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        ushll2          v5.8h, v0.16b, #6
+        ushll           v6.8h, v1.8b, #6
+        ushll2          v7.8h, v1.16b, #6
+        st1             {v4.8h-v7.8h}, [x0], #64
+        ushll           v16.8h, v2.8b, #6
+        ushll2          v17.8h, v2.16b, #6
+        subs            w3, w3, #1
+        st1             {v16.8h-v17.8h}, [x0], x7
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_pixels64_8_neon, export=1
+1:      ld1             {v0.16b-v3.16b}, [x1], x2
+        ushll           v4.8h, v0.8b, #6
+        ushll2          v5.8h, v0.16b, #6
+        ushll           v6.8h, v1.8b, #6
+        ushll2          v7.8h, v1.16b, #6
+        st1             {v4.8h-v7.8h}, [x0], #(MAX_PB_SIZE)
+        ushll           v16.8h, v2.8b, #6
+        ushll2          v17.8h, v2.16b, #6
+        ushll           v18.8h, v3.8b, #6
+        ushll2          v19.8h, v3.16b, #6
+        subs            w3, w3, #1
+        st1             {v16.8h-v19.8h}, [x0], #(MAX_PB_SIZE)
+        b.ne            1b
+        ret
+endfunc
+
 function ff_hevc_put_hevc_epel_uni_v4_8_neon, export=1
         load_epel_filterb x6, x5
         sub             x2, x2, x3
