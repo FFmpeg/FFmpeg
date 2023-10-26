@@ -3055,13 +3055,13 @@ static int get_color_type(const AVPixFmtDescriptor *desc) {
     if (desc->name) {
         if (av_strstart(desc->name, "yuvj", NULL))
             return FF_COLOR_YUV_JPEG;
-
-        if (av_strstart(desc->name, "xyz", NULL))
-            return FF_COLOR_XYZ;
     }
 
     if(desc->flags & AV_PIX_FMT_FLAG_RGB)
-        return  FF_COLOR_RGB;
+        return FF_COLOR_RGB;
+
+    if(desc->flags & AV_PIX_FMT_FLAG_XYZ)
+        return FF_COLOR_XYZ;
 
     if(desc->nb_components == 0)
         return FF_COLOR_NA;
