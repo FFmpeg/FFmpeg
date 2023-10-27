@@ -998,7 +998,7 @@ static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls
                                              't',  (int64_t)round(duration * HLS_MICROSECOND_UNIT)) < 1) {
                 av_log(hls, AV_LOG_ERROR,
                        "Invalid second level segment filename template '%s', "
-                       "you can try to remove second_level_segment_time flag\n",
+                       "you can try to remove second_level_segment_duration flag\n",
                        vs->avf->url);
                 av_freep(&filename);
                 return AVERROR(EINVAL);
@@ -1091,7 +1091,7 @@ static int sls_flag_use_localtime_filename(AVFormatContext *oc, HLSContext *c, V
             char *filename = NULL;
             if (replace_int_data_in_filename(&filename, oc->url, 't', 0) < 1) {
                 av_log(c, AV_LOG_ERROR, "Invalid second level segment filename template '%s', "
-                        "you can try to remove second_level_segment_time flag\n",
+                        "you can try to remove second_level_segment_duration flag\n",
                        oc->url);
                 av_freep(&filename);
                 return AVERROR(EINVAL);
