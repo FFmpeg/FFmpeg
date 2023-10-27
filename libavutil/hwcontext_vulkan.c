@@ -1664,11 +1664,6 @@ static int vulkan_frames_get_constraints(AVHWDeviceContext *ctx,
                                     NULL, NULL, NULL, NULL, 0, 0) >= 0;
     }
 
-#if CONFIG_CUDA
-    if (p->dev_is_nvidia)
-        count++;
-#endif
-
     constraints->valid_sw_formats = av_malloc_array(count + 1,
                                                     sizeof(enum AVPixelFormat));
     if (!constraints->valid_sw_formats)
@@ -1684,10 +1679,6 @@ static int vulkan_frames_get_constraints(AVHWDeviceContext *ctx,
         }
     }
 
-#if CONFIG_CUDA
-    if (p->dev_is_nvidia)
-        constraints->valid_sw_formats[count++] = AV_PIX_FMT_CUDA;
-#endif
     constraints->valid_sw_formats[count++] = AV_PIX_FMT_NONE;
 
     constraints->min_width  = 1;
@@ -2416,12 +2407,22 @@ static int vulkan_transfer_get_formats(AVHWFramesContext *hwfc,
                                        enum AVHWFrameTransferDirection dir,
                                        enum AVPixelFormat **formats)
 {
-    enum AVPixelFormat *fmts = av_malloc_array(2, sizeof(*fmts));
+    enum AVPixelFormat *fmts;
+    int n = 2;
+
+#if CONFIG_CUDA
+    n++;
+#endif
+    fmts = av_malloc_array(n, sizeof(*fmts));
     if (!fmts)
         return AVERROR(ENOMEM);
 
-    fmts[0] = hwfc->sw_format;
-    fmts[1] = AV_PIX_FMT_NONE;
+    n = 0;
+    fmts[n++] = hwfc->sw_format;
+#if CONFIG_CUDA
+    fmts[n++] = AV_PIX_FMT_CUDA;
+#endif
+    fmts[n++] = AV_PIX_FMT_NONE;
 
     *formats = fmts;
     return 0;
