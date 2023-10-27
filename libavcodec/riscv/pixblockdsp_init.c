@@ -32,10 +32,14 @@ void ff_get_pixels_8_rvi(int16_t *block, const uint8_t *pixels,
 void ff_get_pixels_16_rvi(int16_t *block, const uint8_t *pixels,
                           ptrdiff_t stride);
 
+void ff_get_pixels_8_rvv(int16_t *block, const uint8_t *pixels,
+                         ptrdiff_t stride);
 void ff_get_pixels_unaligned_8_rvv(int16_t *block, const uint8_t *pixels,
                                    ptrdiff_t stride);
 void ff_get_pixels_unaligned_16_rvv(int16_t *block, const uint8_t *pixels,
                                     ptrdiff_t stride);
+void ff_diff_pixels_rvv(int16_t *block, const uint8_t *s1,
+                        const uint8_t *s2, ptrdiff_t stride);
 void ff_diff_pixels_unaligned_rvv(int16_t *block, const uint8_t *s1,
                                   const uint8_t *s2, ptrdiff_t stride);
 
@@ -64,6 +68,13 @@ av_cold void ff_pixblockdsp_init_riscv(PixblockDSPContext *c,
 
         c->diff_pixels = ff_diff_pixels_unaligned_rvv;
         c->diff_pixels_unaligned = ff_diff_pixels_unaligned_rvv;
+
+        if (cpu_flags & AV_CPU_FLAG_RVV_I64) {
+            if (!high_bit_depth)
+                c->get_pixels = ff_get_pixels_8_rvv;
+
+            c->diff_pixels = ff_diff_pixels_rvv;
+        }
     }
 #endif
 }
