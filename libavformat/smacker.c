@@ -34,6 +34,8 @@
 
 #define SMACKER_PAL 0x01
 #define SMACKER_FLAG_RING_FRAME 0x01
+#define SMACKER_FLAG_Y_INTERLACE (1 << 1)
+#define SMACKER_FLAG_Y_DOUBLE    (1 << 2)
 
 enum SAudFlags {
     SMK_AUD_PACKED  = 0x80,
@@ -143,6 +145,9 @@ static int smacker_read_header(AVFormatContext *s)
     av_reduce(&tbase, &pts_inc, tbase, pts_inc, (1UL << 31) - 1);
     avpriv_set_pts_info(st, 33, pts_inc, tbase);
     st->duration = smk->frames;
+
+    st->sample_aspect_ratio = (AVRational){ 1, 1 +
+        !!(flags & (SMACKER_FLAG_Y_INTERLACE | SMACKER_FLAG_Y_DOUBLE)) };
 
     /* init video codec */
     par = st->codecpar;
