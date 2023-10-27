@@ -1284,7 +1284,8 @@ static int write_manifest(AVFormatContext *s, int final)
                     continue;
                 get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
                 ff_hls_write_audio_rendition(c->m3u8_out, audio_group,
-                                             playlist_file, NULL, i, is_default);
+                                             playlist_file, NULL, i, is_default,
+                                             s->streams[i]->codecpar->ch_layout.nb_channels);
                 max_audio_bitrate = FFMAX(st->codecpar->bit_rate +
                                           os->muxer_overhead, max_audio_bitrate);
                 if (!av_strnstr(audio_codec_str, os->codec_str, sizeof(audio_codec_str))) {

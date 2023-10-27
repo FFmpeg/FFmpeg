@@ -38,7 +38,7 @@ typedef enum {
 void ff_hls_write_playlist_version(AVIOContext *out, int version);
 void ff_hls_write_audio_rendition(AVIOContext *out, const char *agroup,
                                   const char *filename, const char *language,
-                                  int name_id, int is_default);
+                                  int name_id, int is_default, int nb_channels);
 void ff_hls_write_subtitle_rendition(AVIOContext *out, const char *sgroup,
                                      const char *filename, const char *language,
                                      int name_id, int is_default);

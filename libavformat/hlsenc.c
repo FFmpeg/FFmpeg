@@ -1386,6 +1386,7 @@ static int create_master_playlist(AVFormatContext *s,
     int is_file_proto = proto && !strcmp(proto, "file");
     int use_temp_file = is_file_proto && ((hls->flags & HLS_TEMP_FILE) || hls->master_publish_rate);
     char temp_filename[MAX_URL_SIZE];
+    int nb_channels;
 
     input_vs->m3u8_created = 1;
     if (!hls->master_m3u8_created) {
@@ -1434,8 +1435,13 @@ static int create_master_playlist(AVFormatContext *s,
             av_log(s, AV_LOG_ERROR, "Unable to find relative URL\n");
             goto fail;
         }
+        nb_channels = 0;
+        for (j = 0; j < vs->nb_streams; j++)
+            if (vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+                if (vs->streams[j]->codecpar->ch_layout.nb_channels > nb_channels)
+                    nb_channels = vs->streams[j]->codecpar->ch_layout.nb_channels;
 
-        ff_hls_write_audio_rendition(hls->m3u8_out, vs->agroup, m3u8_rel_name, vs->language, i, hls->has_default_key ? vs->is_default : 1);
+        ff_hls_write_audio_rendition(hls->m3u8_out, vs->agroup, m3u8_rel_name, vs->language, i, hls->has_default_key ? vs->is_default : 1, nb_channels);
     }
 
     /* For variant streams with video add #EXT-X-STREAM-INF tag with attributes*/
