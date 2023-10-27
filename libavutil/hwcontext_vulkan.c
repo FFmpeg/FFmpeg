@@ -1164,6 +1164,11 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     return 0;
 }
 
+/* Only resources created by vulkan_device_create should be released here,
+ * resources created by vulkan_device_init should be released by
+ * vulkan_device_uninit, to make sure we don't free user provided resources,
+ * and there is no leak.
+ */
 static void vulkan_device_free(AVHWDeviceContext *ctx)
 {
     VulkanDevicePriv *p = ctx->internal->priv;
@@ -1183,14 +1188,19 @@ static void vulkan_device_free(AVHWDeviceContext *ctx)
     if (p->libvulkan)
         dlclose(p->libvulkan);
 
+    RELEASE_PROPS(hwctx->enabled_inst_extensions, hwctx->nb_enabled_inst_extensions);
+    RELEASE_PROPS(hwctx->enabled_dev_extensions, hwctx->nb_enabled_dev_extensions);
+}
+
+static void vulkan_device_uninit(AVHWDeviceContext *ctx)
+{
+    VulkanDevicePriv *p = ctx->internal->priv;
+
     for (uint32_t i = 0; i < p->nb_tot_qfs; i++) {
         pthread_mutex_destroy(p->qf_mutex[i]);
         av_freep(&p->qf_mutex[i]);
     }
     av_freep(&p->qf_mutex);
-
-    RELEASE_PROPS(hwctx->enabled_inst_extensions, hwctx->nb_enabled_inst_extensions);
-    RELEASE_PROPS(hwctx->enabled_dev_extensions, hwctx->nb_enabled_dev_extensions);
 
     ff_vk_uninit(&p->vkctx);
 }
@@ -3702,6 +3712,7 @@ const HWContextType ff_hwcontext_type_vulkan = {
     .frames_priv_size       = sizeof(VulkanFramesPriv),
 
     .device_init            = &vulkan_device_init,
+    .device_uninit          = &vulkan_device_uninit,
     .device_create          = &vulkan_device_create,
     .device_derive          = &vulkan_device_derive,
 
