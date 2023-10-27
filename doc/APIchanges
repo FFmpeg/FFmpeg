@@ -2,6 +2,13 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-10-27 - xxxxxxxxxx - lavu 58.28.100 - channel_layout.h
+  Add AV_CH_LAYOUT_3POINT1POINT2 and AV_CHANNEL_LAYOUT_3POINT1POINT2.
+  Add AV_CH_LAYOUT_5POINT1POINT2_BACK and AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK.
+  Add AV_CH_LAYOUT_5POINT1POINT4_BACK and AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK.
+  Add AV_CH_LAYOUT_7POINT1POINT2 and AV_CHANNEL_LAYOUT_7POINT1POINT2.
+  Add AV_CH_LAYOUT_7POINT1POINT4_BACK and AV_CHANNEL_LAYOUT_7POINT1POINT4_BACK.
+
 2023-10-06 - xxxxxxxxxx - lavc 60.30.101 - avcodec.h
   AVCodecContext.coded_side_data may now be used during decoding, to be set
   by user before calling avcodec_open2() for initialization.
