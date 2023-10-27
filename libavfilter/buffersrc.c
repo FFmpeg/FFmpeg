@@ -36,6 +36,7 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "buffersrc.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -194,7 +195,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!frame)
         return av_buffersrc_close(ctx, s->last_pts, flags);
     if (s->eof)
-        return AVERROR(EINVAL);
+        return AVERROR_EOF;
 
     s->last_pts = frame->pts + frame->duration;
 
@@ -484,21 +485,28 @@ static int config_props(AVFilterLink *link)
     return 0;
 }
 
-static int request_frame(AVFilterLink *link)
+static int activate(AVFilterContext *ctx)
 {
-    BufferSourceContext *c = link->src->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    BufferSourceContext *c = ctx->priv;
 
-    if (c->eof)
-        return AVERROR_EOF;
+    if (!c->eof && ff_outlink_get_status(outlink)) {
+        c->eof = 1;
+        return 0;
+    }
+
+    if (c->eof) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, c->last_pts);
+        return 0;
+    }
     c->nb_failed_requests++;
-    return AVERROR(EAGAIN);
+    return FFERROR_NOT_READY;
 }
 
 static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_props,
     },
 };
@@ -507,7 +515,7 @@ const AVFilter ff_vsrc_buffer = {
     .name      = "buffer",
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them accessible to the filterchain."),
     .priv_size = sizeof(BufferSourceContext),
-
+    .activate  = activate,
     .init      = init_video,
     .uninit    = uninit,
 
@@ -521,7 +529,6 @@ static const AVFilterPad avfilter_asrc_abuffer_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .request_frame = request_frame,
         .config_props  = config_props,
     },
 };
@@ -530,7 +537,7 @@ const AVFilter ff_asrc_abuffer = {
     .name          = "abuffer",
     .description   = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them accessible to the filterchain."),
     .priv_size     = sizeof(BufferSourceContext),
-
+    .activate  = activate,
     .init      = init_audio,
     .uninit    = uninit,
 
