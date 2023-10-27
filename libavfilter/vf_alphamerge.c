@@ -60,6 +60,12 @@ static int do_alphamerge(FFFrameSync *fs)
     if (!alpha_buf)
         return ff_filter_frame(ctx->outputs[0], main_buf);
 
+    if (alpha_buf->color_range == AVCOL_RANGE_MPEG) {
+        av_log(ctx, AV_LOG_WARNING, "alpha plane color range tagged as %s, "
+               "output will be wrong!\n",
+               av_color_range_name(alpha_buf->color_range));
+    }
+
     if (s->is_packed_rgb) {
         int x, y;
         uint8_t *pin, *pout;
