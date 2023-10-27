@@ -695,6 +695,8 @@ FL+FR+FC+LFE+SL+SR
 FL+FR+FC+BC+SL+SR
 @item 6.0(front)
 FL+FR+FLC+FRC+SL+SR
+@item 3.1.2
+FL+FR+FC+LFE+TFL+TFR
 @item hexagonal
 FL+FR+FC+BL+BR+BC
 @item 6.1

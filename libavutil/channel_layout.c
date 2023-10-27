@@ -191,6 +191,7 @@ static const struct channel_layout_name channel_layout_map[] = {
     { "5.1(side)",      AV_CHANNEL_LAYOUT_5POINT1             },
     { "6.0",            AV_CHANNEL_LAYOUT_6POINT0             },
     { "6.0(front)",     AV_CHANNEL_LAYOUT_6POINT0_FRONT       },
+    { "3.1.2",          AV_CHANNEL_LAYOUT_3POINT1POINT2       },
     { "hexagonal",      AV_CHANNEL_LAYOUT_HEXAGONAL           },
     { "6.1",            AV_CHANNEL_LAYOUT_6POINT1             },
     { "6.1(back)",      AV_CHANNEL_LAYOUT_6POINT1_BACK        },

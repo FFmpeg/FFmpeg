@@ -15,6 +15,7 @@ quad(side)     FL+FR+SL+SR
 5.1(side)      FL+FR+FC+LFE+SL+SR
 6.0            FL+FR+FC+BC+SL+SR
 6.0(front)     FL+FR+FLC+FRC+SL+SR
+3.1.2          FL+FR+FC+LFE+TFL+TFR
 hexagonal      FL+FR+FC+BL+BR+BC
 6.1            FL+FR+FC+LFE+BC+SL+SR
 6.1(back)      FL+FR+FC+LFE+BL+BR+BC
