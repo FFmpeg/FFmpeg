@@ -20,24 +20,17 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_put_pixels_clamped_rvv, zve32x
-        vsetivli    zero, 8, e16, m1, ta, ma
-        vlseg8e16.v v24, (a0)
+func ff_put_pixels_clamped_rvv, zve64x
+        li      t0, 8 * 8
+        vsetvli zero, t0, e16, m8, ta, ma
+        vle16.v v24, (a0)
         /* RVV only has signed-signed and unsigned-unsigned clipping.
          * We need two steps for signed-to-unsigned clipping. */
-        vsetvli     t0, zero, e16, m8, ta, ma
-        vmax.vx     v24, v24, zero
-
-        vsetivli    zero, 8, e8, mf2, ta, ma
-        vnclipu.wi  v16, v24, 0
-        vnclipu.wi  v17, v25, 0
-        vnclipu.wi  v18, v26, 0
-        vnclipu.wi  v19, v27, 0
-        vnclipu.wi  v20, v28, 0
-        vnclipu.wi  v21, v29, 0
-        vnclipu.wi  v22, v30, 0
-        vnclipu.wi  v23, v31, 0
-        vssseg8e8.v v16, (a1), a2
+        vmax.vx v24, v24, zero
+        vsetvli zero, zero, e8, m4, ta, ma
+        vnclipu.wi v16, v24, 0
+        vsetivli zero, 8, e8, mf2, ta, ma
+        vsse64.v v16, (a1), a2
         ret
 endfunc
 
