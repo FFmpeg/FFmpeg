@@ -312,6 +312,8 @@ static int extract_plane(AVFilterLink *outlink, AVFrame *frame)
     if (!out)
         return AVERROR(ENOMEM);
     av_frame_copy_props(out, frame);
+    if (idx == 3 /* alpha */)
+        out->color_range = AVCOL_RANGE_JPEG;
 
     if (s->is_packed) {
         extract_from_packed(out->data[0], out->linesize[0],
