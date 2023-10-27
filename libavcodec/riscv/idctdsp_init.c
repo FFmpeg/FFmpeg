@@ -39,7 +39,7 @@ av_cold void ff_idctdsp_init_riscv(IDCTDSPContext *c, AVCodecContext *avctx,
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && ff_get_rv_vlenb() >= 16) {
+    if ((flags & AV_CPU_FLAG_RVV_I64) && ff_get_rv_vlenb() >= 16) {
         c->put_pixels_clamped = ff_put_pixels_clamped_rvv;
         c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_rvv;
         c->add_pixels_clamped = ff_add_pixels_clamped_rvv;
