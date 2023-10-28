@@ -26,7 +26,7 @@
 
 /* Inverse ICT parameters in float and integer.
  * int value = (float value) * (1<<16) */
-static const float f_ict_params[4] = {
+const float ff_jpeg2000_f_ict_params[4] = {
     1.402f,
     0.34413f,
     0.71414f,
@@ -42,6 +42,7 @@ static const int i_ict_params[4] = {
 
 static void ict_float(void *_src0, void *_src1, void *_src2, int csize)
 {
+    const float *const f_ict_params = ff_jpeg2000_f_ict_params;
     float *src0 = _src0, *src1 = _src1, *src2 = _src2;
     float i0f, i1f, i2f;
     int i;
