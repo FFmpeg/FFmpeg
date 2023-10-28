@@ -47,3 +47,26 @@ func ff_ict_float_rvv, zve32f
 
         ret
 endfunc
+
+func ff_rct_int_rvv, zve32x
+1:
+        vsetvli t0, a3, e32, m8, ta, ma
+        vle32.v v16, (a1)
+        sub     a3, a3, t0
+        vle32.v v24, (a2)
+        vle32.v v8, (a0)
+        vadd.vv v0, v16, v24
+        vsra.vi v0, v0, 2
+        vsub.vv v0, v8, v0
+        vadd.vv v8, v0, v24
+        vadd.vv v24, v0, v16
+        vse32.v v8, (a0)
+        sh2add  a0, t0, a0
+        vse32.v v0, (a1)
+        sh2add  a1, t0, a1
+        vse32.v v24, (a2)
+        sh2add  a2, t0, a2
+        bnez    a3, 1b
+
+        ret
+endfunc
