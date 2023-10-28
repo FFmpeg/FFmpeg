@@ -25,5 +25,7 @@ RVV-OBJS-$(CONFIG_OPUS_DECODER) += riscv/opusdsp_rvv.o
 OBJS-$(CONFIG_PIXBLOCKDSP) += riscv/pixblockdsp_init.o \
                               riscv/pixblockdsp_rvi.o
 RVV-OBJS-$(CONFIG_PIXBLOCKDSP) += riscv/pixblockdsp_rvv.o
+OBJS-$(CONFIG_UTVIDEO_DECODER) += riscv/utvideodsp_init.o
+RVV-OBJS-$(CONFIG_UTVIDEO_DECODER) += riscv/utvideodsp_rvv.o
 OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_init.o
 RVV-OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_rvv.o
