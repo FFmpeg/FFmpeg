@@ -26,13 +26,20 @@
 void ff_restore_rgb_planes_rvv(uint8_t *r, uint8_t *g, uint8_t *b,
                                ptrdiff_t linesize_r, ptrdiff_t linesize_g,
                                ptrdiff_t linesize_b, int width, int height);
+void ff_restore_rgb_planes10_rvv(uint16_t *r, uint16_t *g, uint16_t *b,
+                                 ptrdiff_t linesize_r, ptrdiff_t linesize_g,
+                                 ptrdiff_t linesize_b, int width, int height);
 
 av_cold void ff_utvideodsp_init_riscv(UTVideoDSPContext *c)
 {
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_I32)
+    if (flags & AV_CPU_FLAG_RVV_I32) {
         c->restore_rgb_planes = ff_restore_rgb_planes_rvv;
+
+        if (flags & AV_CPU_FLAG_RVB_ADDR)
+            c->restore_rgb_planes10 = ff_restore_rgb_planes10_rvv;
+   }
 #endif
 }

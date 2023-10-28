@@ -51,3 +51,38 @@ func ff_restore_rgb_planes_rvv, zve32x
 
         ret
 endfunc
+
+func ff_restore_rgb_planes10_rvv, zve32x
+        li      t1, -0x200
+        li      t2, 0x3FF
+        sub     a3, a3, a6
+        sub     a4, a4, a6
+        sub     a5, a5, a6
+1:
+        mv      t6, a6
+        addi    a7, a7, -1
+2:
+        vsetvli t0, t6, e16, m8, ta, ma
+        vle16.v v16, (a1)
+        sub     t6, t6, t0
+        vle16.v v8, (a0)
+        vadd.vx v16, v16, t1
+        sh1add  a1, t0, a1
+        vle16.v v24, (a2)
+        vadd.vv v8, v8, v16
+        vadd.vv v24, v24, v16
+        vand.vx v8, v8, t2
+        vand.vx v24, v24, t2
+        vse16.v v8, (a0)
+        sh1add  a0, t0, a0
+        vse16.v v24, (a2)
+        sh1add  a2, t0, a2
+        bnez    t6, 2b
+
+        sh1add  a0, a3, a0
+        sh1add  a1, a4, a1
+        sh1add  a2, a5, a2
+        bnez    a7, 1b
+
+        ret
+endfunc
