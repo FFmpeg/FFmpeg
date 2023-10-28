@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 2.8.22:
+ avformat/rtsp: Use rtsp_st->stream_index
+ avcodec/jpeg2000dec: Check image offset
+ Update for FFmpeg 2.8.22
  avcodec/xvididct: Make c* unsigned to avoid undefined overflows
  avformat/tmv: Check video chunk size
  avformat/matroskadec: Check prebuffered_ns for overflow
