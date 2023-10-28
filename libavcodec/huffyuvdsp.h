@@ -34,6 +34,8 @@ typedef struct HuffYUVDSPContext {
 } HuffYUVDSPContext;
 
 void ff_huffyuvdsp_init(HuffYUVDSPContext *c, enum AVPixelFormat pix_fmt);
+void ff_huffyuvdsp_init_riscv(HuffYUVDSPContext *c,
+                              enum AVPixelFormat pix_fmt);
 void ff_huffyuvdsp_init_x86(HuffYUVDSPContext *c, enum AVPixelFormat pix_fmt);
 
 #endif /* AVCODEC_HUFFYUVDSP_H */
