@@ -1049,9 +1049,7 @@ int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
     c->srcRange   = srcRange;
     c->dstRange   = dstRange;
 
-    //The srcBpc check is possibly wrong but we seem to lack a definitive reference to test this
-    //and what we have in ticket 2939 looks better with this check
-    if (need_reinit && (c->srcBpc == 8 || !isYUV(c->srcFormat)))
+    if (need_reinit)
         ff_sws_init_range_convert(c);
 
     c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
