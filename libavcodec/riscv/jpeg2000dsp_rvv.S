@@ -1,7 +1,5 @@
 /*
- * JPEG 2000 DSP functions
- * Copyright (c) 2007 Kamil Nowosad
- * Copyright (c) 2013 Nicolas Bertrand <nicoinattendu@gmail.com>
+ * Copyright © 2023 Rémi Denis-Courmont.
  *
  * This file is part of FFmpeg.
  *
@@ -20,20 +18,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_JPEG2000DSP_H
-#define AVCODEC_JPEG2000DSP_H
+#include "libavutil/riscv/asm.S"
 
-#include <stdint.h>
-#include "jpeg2000dwt.h"
+func ff_ict_float_rvv, zve32f
+        lla     t0, ff_jpeg2000_f_ict_params
+        flw     ft0,  0(t0)
+        flw     ft1,  4(t0)
+        flw     ft2,  8(t0)
+        flw     ft3, 12(t0)
+1:
+        vsetvli t0, a3, e32, m8, ta, ma
+        vle32.v v8, (a0)
+        sub     a3, a3, t0
+        vle32.v v16, (a1)
+        vle32.v v24, (a2)
+        vfmul.vf v0, v16, ft1
+        vfmadd.vf v16, ft3, v8
+        vfsub.vv v0, v8, v0
+        vfmacc.vf v8, ft0, v24
+        vfnmsac.vf v0, ft2, v24
+        vse32.v v8, (a0)
+        sh2add  a0, t0, a0
+        vse32.v v0, (a1)
+        sh2add  a1, t0, a1
+        vse32.v v16, (a2)
+        sh2add  a2, t0, a2
+        bnez    a3, 1b
 
-typedef struct Jpeg2000DSPContext {
-    void (*mct_decode[FF_DWT_NB])(void *src0, void *src1, void *src2, int csize);
-} Jpeg2000DSPContext;
-
-extern const float ff_jpeg2000_f_ict_params[4];
-
-void ff_jpeg2000dsp_init(Jpeg2000DSPContext *c);
-void ff_jpeg2000dsp_init_riscv(Jpeg2000DSPContext *c);
-void ff_jpeg2000dsp_init_x86(Jpeg2000DSPContext *c);
-
-#endif /* AVCODEC_JPEG2000DSP_H */
+        ret
+endfunc

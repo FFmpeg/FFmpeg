@@ -1,7 +1,5 @@
 /*
- * JPEG 2000 DSP functions
- * Copyright (c) 2007 Kamil Nowosad
- * Copyright (c) 2013 Nicolas Bertrand <nicoinattendu@gmail.com>
+ * Copyright © 2023 Rémi Denis-Courmont.
  *
  * This file is part of FFmpeg.
  *
@@ -20,20 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_JPEG2000DSP_H
-#define AVCODEC_JPEG2000DSP_H
+#include "config.h"
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavcodec/jpeg2000dsp.h"
 
-#include <stdint.h>
-#include "jpeg2000dwt.h"
+void ff_ict_float_rvv(void *src0, void *src1, void *src2, int csize);
 
-typedef struct Jpeg2000DSPContext {
-    void (*mct_decode[FF_DWT_NB])(void *src0, void *src1, void *src2, int csize);
-} Jpeg2000DSPContext;
+av_cold void ff_jpeg2000dsp_init_riscv(Jpeg2000DSPContext *c)
+{
+#if HAVE_RVV
+    int flags = av_get_cpu_flags();
 
-extern const float ff_jpeg2000_f_ict_params[4];
-
-void ff_jpeg2000dsp_init(Jpeg2000DSPContext *c);
-void ff_jpeg2000dsp_init_riscv(Jpeg2000DSPContext *c);
-void ff_jpeg2000dsp_init_x86(Jpeg2000DSPContext *c);
-
-#endif /* AVCODEC_JPEG2000DSP_H */
+    if ((flags & AV_CPU_FLAG_RVV_F32) && (flags & AV_CPU_FLAG_RVB_ADDR))
+        c->mct_decode[FF_DWT97] = ff_ict_float_rvv;
+#endif
+}
