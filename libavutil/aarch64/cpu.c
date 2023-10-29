@@ -31,7 +31,7 @@ static int detect_flags(void)
 {
     int flags = 0;
 
-#if defined(HWCAP_CPUID)
+#if defined(HWCAP_CPUID) && HAVE_INLINE_ASM
     unsigned long hwcap = getauxval(AT_HWCAP);
     // We can check for DOTPROD and I8MM using HWCAP_ASIMDDP and
     // HWCAP2_I8MM too, avoiding to read the CPUID registers (which triggers
