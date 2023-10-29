@@ -5984,7 +5984,7 @@ for restrict_keyword in restrict __restrict__ __restrict ""; do
     test_code cc "" "char * $restrict_keyword p" && break
 done
 
-check_cc pragma_deprecated "" '_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
+check_cc pragma_deprecated "" '_Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
 
 # The global variable ensures the bits appear unchanged in the object file.
 test_cc <<EOF || die "endian test failed"
