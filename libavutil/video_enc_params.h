@@ -136,8 +136,8 @@ typedef struct AVVideoBlockParams {
     int32_t delta_qp;
 } AVVideoBlockParams;
 
-/*
- * Get the block at the specified {@code idx}. Must be between 0 and nb_blocks.
+/**
+ * Get the block at the specified {@code idx}. Must be between 0 and nb_blocks - 1.
  */
 static av_always_inline AVVideoBlockParams*
 av_video_enc_params_block(AVVideoEncParams *par, unsigned int idx)
