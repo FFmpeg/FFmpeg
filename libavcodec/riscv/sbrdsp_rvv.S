@@ -67,3 +67,20 @@ func ff_sbr_sum_square_rvv, zve32f
 NOHWF   fmv.x.w  a0, fa0
         ret
 endfunc
+
+#if __riscv_xlen >= 64
+func ff_sbr_neg_odd_64_rvv, zve64x
+        li      a1, 32
+        li      t1, 1 << 63
+1:
+        vsetvli t0, a1, e64, m8, ta, ma
+        vle64.v v8, (a0)
+        sub     a1, a1, t0
+        vxor.vx v8, v8, t1
+        vse64.v v8, (a0)
+        sh3add  a0, t0, a0
+        bnez    t0, 1b
+
+        ret
+endfunc
+#endif
