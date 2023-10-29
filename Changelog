@@ -1,7 +1,7 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
-version <next>:
+version 6.1:
 - libaribcaption decoder
 - Playdate video decoder and demuxer
 - Extend VAAPI support for libva-win32 on Windows
