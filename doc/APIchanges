@@ -2,6 +2,8 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+-------- 8< --------- FFmpeg 6.1 was cut here -------- 8< ---------
+
 2023-10-27 - xxxxxxxxxx - lavu 58.28.100 - channel_layout.h
   Add AV_CH_LAYOUT_3POINT1POINT2 and AV_CHANNEL_LAYOUT_3POINT1POINT2.
   Add AV_CH_LAYOUT_5POINT1POINT2_BACK and AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK.
