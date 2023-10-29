@@ -325,8 +325,8 @@ static int bwdif_vulkan_config_input(AVFilterLink *inlink)
 
     /* Defaults */
     vkctx->output_format = input_frames->sw_format;
-    vkctx->output_width  = input_frames->width;
-    vkctx->output_height = input_frames->height;
+    vkctx->output_width  = inlink->w;
+    vkctx->output_height = inlink->h;
 
     return 0;
 }
