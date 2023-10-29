@@ -24,6 +24,7 @@
 #include "libavcodec/sbrdsp.h"
 
 void ff_sbr_sum64x5_rvv(float *z);
+float ff_sbr_sum_square_rvv(float (*x)[2], int n);
 
 av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
 {
@@ -32,6 +33,7 @@ av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
 
     if ((flags & AV_CPU_FLAG_RVV_F32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         c->sum64x5 = ff_sbr_sum64x5_rvv;
+        c->sum_square = ff_sbr_sum_square_rvv;
     }
 #endif
 }
