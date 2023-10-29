@@ -45,13 +45,6 @@ func ff_get_pixels_unaligned_8_rvv, zve32x
         ret
 endfunc
 
-func ff_get_pixels_unaligned_16_rvv, zve32x
-        vsetivli     zero, 8, e16, m1, ta, ma
-        vlsseg8e16.v v0, (a1), a2
-        vsseg8e16.v  v0, (a0)
-        ret
-endfunc
-
 func ff_diff_pixels_rvv, zve64x
         vsetivli zero, 8, e8, mf2, ta, ma
         li      t0, 8 * 8
