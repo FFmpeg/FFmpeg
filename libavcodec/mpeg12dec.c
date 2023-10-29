@@ -527,9 +527,9 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         s->mb_intra = 1;
 
         if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-                for (i = 0; i < mb_block_count; i++)
-                    if ((ret = mpeg2_decode_block_intra(s, *s->pblocks[i], i)) < 0)
-                        return ret;
+            for (i = 0; i < mb_block_count; i++)
+                if ((ret = mpeg2_decode_block_intra(s, *s->pblocks[i], i)) < 0)
+                    return ret;
         } else {
             for (i = 0; i < 6; i++) {
                 ret = ff_mpeg1_decode_block_intra(&s->gb,
@@ -749,27 +749,27 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             }
 
             if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-                    cbp <<= 12 - mb_block_count;
+                cbp <<= 12 - mb_block_count;
 
-                    for (i = 0; i < mb_block_count; i++) {
-                        if (cbp & (1 << 11)) {
-                            if ((ret = mpeg2_decode_block_non_intra(s, *s->pblocks[i], i)) < 0)
-                                return ret;
-                        } else {
-                            s->block_last_index[i] = -1;
-                        }
-                        cbp += cbp;
+                for (i = 0; i < mb_block_count; i++) {
+                    if (cbp & (1 << 11)) {
+                        if ((ret = mpeg2_decode_block_non_intra(s, *s->pblocks[i], i)) < 0)
+                            return ret;
+                    } else {
+                        s->block_last_index[i] = -1;
                     }
+                    cbp += cbp;
+                }
             } else {
-                    for (i = 0; i < 6; i++) {
-                        if (cbp & 32) {
-                            if ((ret = mpeg1_decode_block_inter(s, *s->pblocks[i], i)) < 0)
-                                return ret;
-                        } else {
-                            s->block_last_index[i] = -1;
-                        }
-                        cbp += cbp;
+                for (i = 0; i < 6; i++) {
+                    if (cbp & 32) {
+                        if ((ret = mpeg1_decode_block_inter(s, *s->pblocks[i], i)) < 0)
+                            return ret;
+                    } else {
+                        s->block_last_index[i] = -1;
                     }
+                    cbp += cbp;
+                }
             }
         } else {
             for (i = 0; i < 12; i++)
