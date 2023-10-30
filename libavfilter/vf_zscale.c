@@ -132,12 +132,6 @@ typedef struct ZScaleContext {
     zimg_graph_builder_params alpha_params, params;
     zimg_graph_builder_params alpha_params_tmp, params_tmp;
     zimg_filter_graph *alpha_graph[MAX_THREADS], *graph[MAX_THREADS];
-
-    enum AVColorSpace in_colorspace, out_colorspace;
-    enum AVColorTransferCharacteristic in_trc, out_trc;
-    enum AVColorPrimaries in_primaries, out_primaries;
-    enum AVColorRange in_range, out_range;
-    enum AVChromaLocation in_chromal, out_chromal;
 } ZScaleContext;
 
 typedef struct ThreadData {
@@ -816,15 +810,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         link->dst->inputs[0]->h      = in->height;
 
         s->nb_threads = av_clip(FFMIN(ff_filter_get_nb_threads(ctx), FFMIN(link->h, outlink->h) / MIN_TILESIZE), 1, MAX_THREADS);
-        s->in_colorspace = in->colorspace;
-        s->in_trc = in->color_trc;
-        s->in_primaries = in->color_primaries;
-        s->in_range = in->color_range;
-        s->out_colorspace = out->colorspace;
-        s->out_trc = out->color_trc;
-        s->out_primaries = out->color_primaries;
-        s->out_range = out->color_range;
-
         slice_params(s, out->height, in->height);
 
         zimg_image_format_default(&s->src_format, ZIMG_API_VERSION);
