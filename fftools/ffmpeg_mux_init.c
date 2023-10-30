@@ -2182,11 +2182,11 @@ static int copy_metadata(Muxer *mux, AVFormatContext *ic,
     if (ret < 0)
         return ret;
 
-    if (type_in == 'g' || type_out == 'g' || !*outspec)
+    if (type_in == 'g' || type_out == 'g' || (!*outspec && !ic))
         *metadata_global_manual = 1;
-    if (type_in == 's' || type_out == 's' || !*outspec)
+    if (type_in == 's' || type_out == 's' || (!*outspec && !ic))
         *metadata_streams_manual = 1;
-    if (type_in == 'c' || type_out == 'c' || !*outspec)
+    if (type_in == 'c' || type_out == 'c' || (!*outspec && !ic))
         *metadata_chapters_manual = 1;
 
     /* ic is NULL when just disabling automatic mappings */
