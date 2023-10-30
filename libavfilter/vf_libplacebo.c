@@ -888,7 +888,6 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     if (s->apply_dovi && av_frame_get_side_data(ref, AV_FRAME_DATA_DOVI_METADATA)) {
         /* Output of dovi reshaping is always BT.2020+PQ, so infer the correct
          * output colorspace defaults */
-        out->colorspace = AVCOL_SPC_BT2020_NCL;
         out->color_primaries = AVCOL_PRI_BT2020;
         out->color_trc = AVCOL_TRC_SMPTE2084;
     }
