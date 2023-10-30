@@ -882,6 +882,8 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     out->pts = pts;
     out->width = outlink->w;
     out->height = outlink->h;
+    out->colorspace = outlink->colorspace;
+    out->color_range = outlink->color_range;
     if (s->fps.num)
         out->duration = 1;
 
@@ -892,21 +894,10 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
         out->color_trc = AVCOL_TRC_SMPTE2084;
     }
 
-    if (s->colorspace >= 0)
-        out->colorspace = s->colorspace;
-    if (s->color_range >= 0)
-        out->color_range = s->color_range;
     if (s->color_trc >= 0)
         out->color_trc = s->color_trc;
     if (s->color_primaries >= 0)
         out->color_primaries = s->color_primaries;
-
-    /* Sanity colorspace overrides */
-    if (outdesc->flags & AV_PIX_FMT_FLAG_RGB) {
-        out->colorspace = AVCOL_SPC_RGB;
-    } else if (out->colorspace == AVCOL_SPC_RGB) {
-        out->colorspace = AVCOL_SPC_UNSPECIFIED;
-    }
 
     changed_csp = ref->colorspace      != out->colorspace     ||
                   ref->color_range     != out->color_range    ||
@@ -1203,6 +1194,18 @@ static int libplacebo_query_format(AVFilterContext *ctx)
     for (int i = 0; i < s->nb_inputs; i++)
         RET(ff_formats_ref(infmts, &ctx->inputs[i]->outcfg.formats));
     RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.formats));
+
+    /* Set colorspace properties */
+    RET(ff_formats_ref(ff_all_color_spaces(), &ctx->inputs[0]->outcfg.color_spaces));
+    RET(ff_formats_ref(ff_all_color_ranges(), &ctx->inputs[0]->outcfg.color_ranges));
+
+    outfmts = s->colorspace > 0 ? ff_make_formats_list_singleton(s->colorspace)
+                                : ff_all_color_spaces();
+    RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.color_spaces));
+
+    outfmts = s->color_range > 0 ? ff_make_formats_list_singleton(s->color_range)
+                                 : ff_all_color_ranges();
+    RET(ff_formats_ref(outfmts, &ctx->outputs[0]->incfg.color_ranges));
     return 0;
 
 fail:
