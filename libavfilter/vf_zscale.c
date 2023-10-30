@@ -187,8 +187,12 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static enum AVColorRange convert_range_from_zimg(enum zimg_pixel_range_e color_range);
+
 static int query_formats(AVFilterContext *ctx)
 {
+    ZScaleContext *s = ctx->priv;
+    AVFilterFormats *formats;
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
@@ -217,7 +221,27 @@ static int query_formats(AVFilterContext *ctx)
     ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &ctx->inputs[0]->outcfg.formats);
     if (ret < 0)
         return ret;
-    return ff_formats_ref(ff_make_format_list(pixel_fmts), &ctx->outputs[0]->incfg.formats);
+    ret = ff_formats_ref(ff_make_format_list(pixel_fmts), &ctx->outputs[0]->incfg.formats);
+    if (ret < 0)
+        return ret;
+
+    if ((ret = ff_formats_ref(ff_all_color_spaces(), &ctx->inputs[0]->outcfg.formats)) < 0 ||
+        (ret = ff_formats_ref(ff_all_color_ranges(), &ctx->inputs[0]->outcfg.formats)) < 0)
+        return ret;
+
+    formats = s->colorspace != ZIMG_MATRIX_UNSPECIFIED && s->colorspace > 0
+        ? ff_make_formats_list_singleton(s->colorspace)
+        : ff_all_color_spaces();
+    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
+        return ret;
+
+    formats = s->range != -1
+        ? ff_make_formats_list_singleton(convert_range_from_zimg(s->range))
+        : ff_all_color_ranges();
+    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
+        return ret;
+
+    return 0;
 }
 
 static void slice_params(ZScaleContext *s, int out_h, int in_h)
@@ -678,14 +702,8 @@ fail:
 
 static void update_output_color_information(ZScaleContext *s, AVFrame *frame)
 {
-    if (s->colorspace != -1)
-        frame->colorspace = (int)s->dst_format.matrix_coefficients;
-
     if (s->primaries != -1)
         frame->color_primaries = (int)s->dst_format.color_primaries;
-
-    if (s->range != -1)
-        frame->color_range = convert_range_from_zimg(s->dst_format.pixel_range);
 
     if (s->trc != -1)
         frame->color_trc = (int)s->dst_format.transfer_characteristics;
@@ -775,6 +793,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if ((link->format != outlink->format) ||
         (link->w != outlink->w) ||
         (link->h != outlink->h) ||
+        (link->colorspace != outlink->colorspace) ||
+        (link->color_range != outlink->color_range) ||
         s->first_time ||
         (s->src_format.chroma_location != s->dst_format.chroma_location) ||
         (s->src_format.color_family !=s->dst_format.color_family) ||
@@ -796,6 +816,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             goto fail;
 
         av_frame_copy_props(out, in);
+        out->colorspace = outlink->colorspace;
+        out->color_range = outlink->color_range;
 
         if ((ret = realign_frame(desc, &in, 1)) < 0)
             goto fail;
@@ -805,9 +827,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         snprintf(buf, sizeof(buf)-1, "%d", outlink->h);
         av_opt_set(s, "h", buf, 0);
 
-        link->dst->inputs[0]->format = in->format;
-        link->dst->inputs[0]->w      = in->width;
-        link->dst->inputs[0]->h      = in->height;
+        link->dst->inputs[0]->format      = in->format;
+        link->dst->inputs[0]->w           = in->width;
+        link->dst->inputs[0]->h           = in->height;
+        link->dst->inputs[0]->colorspace  = in->colorspace;
+        link->dst->inputs[0]->color_range = in->color_range;
 
         s->nb_threads = av_clip(FFMIN(ff_filter_get_nb_threads(ctx), FFMIN(link->h, outlink->h) / MIN_TILESIZE), 1, MAX_THREADS);
         slice_params(s, out->height, in->height);
