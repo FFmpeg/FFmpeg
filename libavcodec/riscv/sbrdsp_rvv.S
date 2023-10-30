@@ -84,3 +84,23 @@ func ff_sbr_neg_odd_64_rvv, zve64x
         ret
 endfunc
 #endif
+
+func ff_sbr_hf_g_filt_rvv, zve32f
+        li      t1, 40 * 2 * 4
+        sh3add  a1, a4, a1
+1:
+        vsetvli t0, a3, e32, m4, ta, ma
+        vlsseg2e32.v v16, (a1), t1
+        mul     t2, t0, t1
+        vle32.v v8, (a2)
+        sub     a3, a3, t0
+        vfmul.vv v16, v16, v8
+        add     a1, t2, a1
+        vfmul.vv v20, v20, v8
+        sh2add  a2, t0, a2
+        vsseg2e32.v v16, (a0)
+        sh3add  a0, t0, a0
+        bnez    a3, 1b
+
+        ret
+endfunc

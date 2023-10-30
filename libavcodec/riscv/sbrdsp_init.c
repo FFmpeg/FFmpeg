@@ -26,6 +26,8 @@
 void ff_sbr_sum64x5_rvv(float *z);
 float ff_sbr_sum_square_rvv(float (*x)[2], int n);
 void ff_sbr_neg_odd_64_rvv(float *x);
+void ff_sbr_hf_g_filt_rvv(float (*Y)[2], const float (*X_high)[40][2],
+                          const float *g_filt, int m_max, intptr_t ixh);
 
 av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
 {
@@ -35,6 +37,7 @@ av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
     if ((flags & AV_CPU_FLAG_RVV_F32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         c->sum64x5 = ff_sbr_sum64x5_rvv;
         c->sum_square = ff_sbr_sum_square_rvv;
+        c->hf_g_filt = ff_sbr_hf_g_filt_rvv;
     }
 #if __riscv_xlen >= 64
     if ((flags & AV_CPU_FLAG_RVV_I64) && (flags & AV_CPU_FLAG_RVB_ADDR))
