@@ -995,7 +995,7 @@ int ff_interleave_packet_per_dts(AVFormatContext *s, AVPacket *pkt,
             const PacketListEntry *const last = sti->last_in_packet_buffer;
             int64_t last_dts;
 
-            if (!last)
+            if (!last || st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
                 continue;
 
             last_dts = av_rescale_q(last->pkt.dts,
