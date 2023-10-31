@@ -158,6 +158,11 @@ typedef struct AVPixFmtDescriptor {
 #define AV_PIX_FMT_FLAG_FLOAT        (1 << 9)
 
 /**
+ * The pixel format contains XYZ-like data (as opposed to YUV/RGB/grayscale).
+ */
+#define AV_PIX_FMT_FLAG_XYZ          (1 << 10)
+
+/**
  * Return the number of bits per pixel used by the pixel format
  * described by pixdesc. Note that this is not the same as the number
  * of bits per sample.
