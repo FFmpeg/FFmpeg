@@ -391,7 +391,7 @@ Specifies the encoding scheme of input subtitle text.
 
 @table @samp
 @item auto
-Automatically detect text encoding.
+Automatically detect text encoding (default).
 @item jis
 8bit-char JIS encoding defined in ARIB STD B24.
 This encoding used in Japan for ISDB captions.
@@ -402,9 +402,6 @@ This encoding is used in Philippines for ISDB-T captions.
 Latin character encoding defined in ABNT NBR 15606-1.
 This encoding is used in South America for SBTVD / ISDB-Tb captions.
 @end table
-
-The default is @dfn{ass} as same as @dfn{libaribb24} decoder.
-Some present players (e.g., @dfn{mpv}) expect ASS format for ARIB caption.
 
 @item -font @var{font_name[,font_name2,...]}
 Specify comma-separated list of font family names to be used for @dfn{bitmap}
