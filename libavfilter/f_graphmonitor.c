@@ -568,8 +568,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 AVFILTER_DEFINE_CLASS_EXT(graphmonitor, "(a)graphmonitor", graphmonitor_options);
 
-#if CONFIG_GRAPHMONITOR_FILTER
-
 static const AVFilterPad graphmonitor_outputs[] = {
     {
         .name         = "default",
@@ -577,6 +575,8 @@ static const AVFilterPad graphmonitor_outputs[] = {
         .config_props = config_output,
     },
 };
+
+#if CONFIG_GRAPHMONITOR_FILTER
 
 const AVFilter ff_vf_graphmonitor = {
     .name          = "graphmonitor",
@@ -596,14 +596,6 @@ const AVFilter ff_vf_graphmonitor = {
 
 #if CONFIG_AGRAPHMONITOR_FILTER
 
-static const AVFilterPad agraphmonitor_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
-    },
-};
-
 const AVFilter ff_avf_agraphmonitor = {
     .name          = "agraphmonitor",
     .description   = NULL_IF_CONFIG_SMALL("Show various filtergraph stats."),
@@ -613,7 +605,7 @@ const AVFilter ff_avf_agraphmonitor = {
     .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(ff_audio_default_filterpad),
-    FILTER_OUTPUTS(agraphmonitor_outputs),
+    FILTER_OUTPUTS(graphmonitor_outputs),
     FILTER_QUERY_FUNC(query_formats),
     .process_command = ff_filter_process_command,
 };
