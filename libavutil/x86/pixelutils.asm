@@ -43,6 +43,7 @@ cglobal pixelutils_sad_8x8, 4,4,0, src1, stride1, src2, stride2
     lea         src2q, [src2q + 2*stride2q]
 %endrep
     movd        eax, m2
+    emms
     RET
 
 ;-------------------------------------------------------------------------------
