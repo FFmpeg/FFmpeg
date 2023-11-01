@@ -955,13 +955,7 @@ static const AVFilterPad xcorrelate_inputs[] = {
     },
 };
 
-static const AVFilterPad xcorrelate_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_output,
-    },
-};
+#define xcorrelate_outputs convolve_outputs
 
 const AVFilter ff_vf_xcorrelate = {
     .name          = "xcorrelate",
