@@ -378,6 +378,14 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return config_params(ctx);
 }
 
+static const AVFilterPad blend_outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_output,
+    },
+};
+
 #if CONFIG_BLEND_FILTER
 
 static int activate(AVFilterContext *ctx)
@@ -393,14 +401,6 @@ static const AVFilterPad blend_inputs[] = {
     },{
         .name          = "bottom",
         .type          = AVMEDIA_TYPE_VIDEO,
-    },
-};
-
-static const AVFilterPad blend_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_output,
     },
 };
 
@@ -455,14 +455,6 @@ static const AVFilterPad tblend_inputs[] = {
     },
 };
 
-static const AVFilterPad tblend_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_output,
-    },
-};
-
 const AVFilter ff_vf_tblend = {
     .name          = "tblend",
     .description   = NULL_IF_CONFIG_SMALL("Blend successive frames."),
@@ -471,7 +463,7 @@ const AVFilter ff_vf_tblend = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(tblend_inputs),
-    FILTER_OUTPUTS(tblend_outputs),
+    FILTER_OUTPUTS(blend_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
