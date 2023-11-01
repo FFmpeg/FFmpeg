@@ -454,6 +454,15 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->values[3]);
 }
 
+static const AVFilterPad drawgraph_outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output,
+        .request_frame = request_frame,
+    },
+};
+
 #if CONFIG_DRAWGRAPH_FILTER
 
 static const AVFilterPad drawgraph_inputs[] = {
@@ -461,15 +470,6 @@ static const AVFilterPad drawgraph_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-    },
-};
-
-static const AVFilterPad drawgraph_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
-        .request_frame = request_frame,
     },
 };
 
@@ -497,15 +497,6 @@ static const AVFilterPad adrawgraph_inputs[] = {
     },
 };
 
-static const AVFilterPad adrawgraph_outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
-        .request_frame = request_frame,
-    },
-};
-
 const AVFilter ff_avf_adrawgraph = {
     .name          = "adrawgraph",
     .description   = NULL_IF_CONFIG_SMALL("Draw a graph using input audio metadata."),
@@ -514,7 +505,7 @@ const AVFilter ff_avf_adrawgraph = {
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(adrawgraph_inputs),
-    FILTER_OUTPUTS(adrawgraph_outputs),
+    FILTER_OUTPUTS(drawgraph_outputs),
     FILTER_QUERY_FUNC(query_formats),
 };
 #endif // CONFIG_ADRAWGRAPH_FILTER
