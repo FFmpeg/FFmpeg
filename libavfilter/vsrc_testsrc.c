@@ -160,6 +160,14 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 }
 
+static const AVFilterPad outputs[] = {
+    {
+        .name          = "default",
+        .type          = AVMEDIA_TYPE_VIDEO,
+        .config_props  = config_props,
+    },
+};
+
 static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *outlink = ctx->outputs[0];
@@ -465,14 +473,6 @@ static av_cold int nullsrc_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-static const AVFilterPad nullsrc_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_props,
-    },
-};
-
 const AVFilter ff_vsrc_nullsrc = {
     .name        = "nullsrc",
     .description = NULL_IF_CONFIG_SMALL("Null video source, return unprocessed video frames."),
@@ -482,7 +482,7 @@ const AVFilter ff_vsrc_nullsrc = {
     .activate    = activate,
     .priv_size   = sizeof(TestSourceContext),
     .inputs      = NULL,
-    FILTER_OUTPUTS(nullsrc_outputs),
+    FILTER_OUTPUTS(outputs),
 };
 
 #endif /* CONFIG_NULLSRC_FILTER */
@@ -688,14 +688,6 @@ static av_cold int test_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-static const AVFilterPad avfilter_vsrc_testsrc_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_props,
-    },
-};
-
 const AVFilter ff_vsrc_testsrc = {
     .name          = "testsrc",
     .description   = NULL_IF_CONFIG_SMALL("Generate test pattern."),
@@ -705,7 +697,7 @@ const AVFilter ff_vsrc_testsrc = {
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
-    FILTER_OUTPUTS(avfilter_vsrc_testsrc_outputs),
+    FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_RGB24),
 };
 
@@ -1424,14 +1416,6 @@ static const enum AVPixelFormat smptebars_pix_fmts[] = {
     AV_PIX_FMT_NONE,
 };
 
-static const AVFilterPad smptebars_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_props,
-    },
-};
-
 AVFILTER_DEFINE_CLASS_EXT(palbars, "pal(75|100)bars", options);
 
 #if CONFIG_PAL75BARS_FILTER
@@ -1474,7 +1458,7 @@ const AVFilter ff_vsrc_pal75bars = {
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
-    FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
 };
 
@@ -1518,7 +1502,7 @@ const AVFilter ff_vsrc_pal100bars = {
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
-    FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
 };
 
@@ -1585,7 +1569,7 @@ const AVFilter ff_vsrc_smptebars = {
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
-    FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
 };
 
@@ -1688,7 +1672,7 @@ const AVFilter ff_vsrc_smptehdbars = {
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
-    FILTER_OUTPUTS(smptebars_outputs),
+    FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
 };
 
@@ -1735,14 +1719,6 @@ static av_cold int allyuv_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-static const AVFilterPad avfilter_vsrc_allyuv_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_props,
-    },
-};
-
 const AVFilter ff_vsrc_allyuv = {
     .name          = "allyuv",
     .description   = NULL_IF_CONFIG_SMALL("Generate all yuv colors."),
@@ -1752,7 +1728,7 @@ const AVFilter ff_vsrc_allyuv = {
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
-    FILTER_OUTPUTS(avfilter_vsrc_allyuv_outputs),
+    FILTER_OUTPUTS(outputs),
     FILTER_PIXFMTS(AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP),
 };
 
@@ -1885,14 +1861,6 @@ static av_cold int colorspectrum_init(AVFilterContext *ctx)
     return init(ctx);
 }
 
-static const AVFilterPad avfilter_vsrc_colorspectrum_outputs[] = {
-    {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .config_props  = config_props,
-    },
-};
-
 const AVFilter ff_vsrc_colorspectrum = {
     .name          = "colorspectrum",
     .description   = NULL_IF_CONFIG_SMALL("Generate colors spectrum."),
@@ -1902,7 +1870,7 @@ const AVFilter ff_vsrc_colorspectrum = {
     .uninit        = uninit,
     .activate      = activate,
     .inputs        = NULL,
-    FILTER_OUTPUTS(avfilter_vsrc_colorspectrum_outputs),
+    FILTER_OUTPUTS(outputs),
     FILTER_SINGLE_PIXFMT(AV_PIX_FMT_GBRPF32),
 };
 
