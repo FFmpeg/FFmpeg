@@ -24,7 +24,6 @@
  * Rich Felker.
  */
 
-#include "libavutil/emms.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixelutils.h"
@@ -142,13 +141,10 @@ static int decimate_frame(AVFilterContext *ctx,
                         cur->data[plane], cur->linesize[plane],
                         ref->data[plane], ref->linesize[plane],
                         AV_CEIL_RSHIFT(ref->width,  hsub),
-                        AV_CEIL_RSHIFT(ref->height, vsub))) {
-            emms_c();
+                        AV_CEIL_RSHIFT(ref->height, vsub)))
             return 0;
-        }
     }
 
-    emms_c();
     return 1;
 }
 
