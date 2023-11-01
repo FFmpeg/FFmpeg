@@ -127,6 +127,14 @@ static int get_aspect_ratio(AVFilterLink *inlink, AVRational *aspect_ratio)
     return 0;
 }
 
+static const AVFilterPad aspect_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame,
+    },
+};
+
 #if CONFIG_SETDAR_FILTER
 
 static int setdar_config_props(AVFilterLink *outlink)
@@ -171,14 +179,6 @@ static const AVOption setdar_options[] = {
 
 AVFILTER_DEFINE_CLASS(setdar);
 
-static const AVFilterPad avfilter_vf_setdar_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
-    },
-};
-
 static const AVFilterPad avfilter_vf_setdar_outputs[] = {
     {
         .name = "default",
@@ -193,7 +193,7 @@ const AVFilter ff_vf_setdar = {
     .priv_size   = sizeof(AspectContext),
     .priv_class  = &setdar_class,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
-    FILTER_INPUTS(avfilter_vf_setdar_inputs),
+    FILTER_INPUTS(aspect_inputs),
     FILTER_OUTPUTS(avfilter_vf_setdar_outputs),
 };
 
@@ -234,14 +234,6 @@ static const AVOption setsar_options[] = {
 
 AVFILTER_DEFINE_CLASS(setsar);
 
-static const AVFilterPad avfilter_vf_setsar_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
-    },
-};
-
 static const AVFilterPad avfilter_vf_setsar_outputs[] = {
     {
         .name = "default",
@@ -256,7 +248,7 @@ const AVFilter ff_vf_setsar = {
     .priv_size   = sizeof(AspectContext),
     .priv_class  = &setsar_class,
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
-    FILTER_INPUTS(avfilter_vf_setsar_inputs),
+    FILTER_INPUTS(aspect_inputs),
     FILTER_OUTPUTS(avfilter_vf_setsar_outputs),
 };
 
