@@ -53,7 +53,6 @@
 #include "internal.h"
 #include "video.h"
 #include "libavutil/common.h"
-#include "libavutil/emms.h"
 #include "libavutil/file_open.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -178,7 +177,6 @@ static void find_block_motion(DeshakeContext *deshake, uint8_t *src1,
         mv->x = -1;
         mv->y = -1;
     }
-    emms_c();
     //av_log(NULL, AV_LOG_ERROR, "%d\n", smallest);
     //av_log(NULL, AV_LOG_ERROR, "Final: (%d, %d) = %d x %d\n", cx, cy, mv->x, mv->y);
 }
