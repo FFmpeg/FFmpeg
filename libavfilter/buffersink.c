@@ -313,7 +313,7 @@ static int asink_query_formats(AVFilterContext *ctx)
         cleanup_redundant_layouts(ctx);
         for (i = 0; i < NB_ITEMS(buf->channel_layouts); i++)
             if ((ret = av_channel_layout_from_mask(&layout, buf->channel_layouts[i])) < 0 ||
-                (ret = ff_add_channel_layout(&layouts, &layout) < 0))
+                (ret = ff_add_channel_layout(&layouts, &layout)) < 0)
                 return ret;
         for (i = 0; i < NB_ITEMS(buf->channel_counts); i++) {
             layout = FF_COUNT2LAYOUT(buf->channel_counts[i]);
