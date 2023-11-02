@@ -2280,8 +2280,7 @@ void ifilter_sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational t
            or if we need to initialize the system, update the
            overlayed subpicture and its start/end times */
         sub2video_update(ifp, pts2 + 1, NULL);
-
-    if (av_buffersrc_get_nb_failed_requests(ifp->filter))
+    else
         sub2video_push_ref(ifp, pts2);
 }
 
