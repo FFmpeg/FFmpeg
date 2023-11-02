@@ -288,7 +288,7 @@ int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
         if (need_copy) {
             if (!(frame = av_frame_clone(frame)))
                 return AVERROR(ENOMEM);
-            if ((ret = ff_inlink_make_frame_writable(fs->parent->inputs[in], &frame) < 0)) {
+            if ((ret = ff_inlink_make_frame_writable(fs->parent->inputs[in], &frame)) < 0) {
                 av_frame_free(&frame);
                 return ret;
             }
