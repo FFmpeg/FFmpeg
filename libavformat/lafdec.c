@@ -139,7 +139,9 @@ static int laf_read_header(AVFormatContext *ctx)
     s->index = 0;
     s->stored_index = 0;
     s->bpp = bpp;
-    if ((int64_t)bpp * st_count * (int64_t)sample_rate >= INT32_MAX)
+    if ((int64_t)bpp * st_count * (int64_t)sample_rate >= INT32_MAX ||
+        (int64_t)bpp * st_count * (int64_t)sample_rate == 0
+    )
         return AVERROR_INVALIDDATA;
     s->data = av_calloc(st_count * sample_rate, bpp);
     if (!s->data)
