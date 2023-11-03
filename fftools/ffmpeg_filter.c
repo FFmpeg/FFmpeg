@@ -74,6 +74,8 @@ static const FilterGraphPriv *cfgp_from_cfg(const FilterGraph *fg)
 typedef struct InputFilterPriv {
     InputFilter ifilter;
 
+    int              index;
+
     AVFilterContext *filter;
 
     InputStream *ist;
@@ -161,6 +163,8 @@ typedef struct FPSConvContext {
 
 typedef struct OutputFilterPriv {
     OutputFilter        ofilter;
+
+    int                 index;
 
     AVFilterContext    *filter;
 
@@ -594,6 +598,7 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
     ofilter           = &ofp->ofilter;
     ofilter->graph    = fg;
     ofp->format       = -1;
+    ofp->index        = fg->nb_outputs - 1;
     ofilter->last_pts = AV_NOPTS_VALUE;
 
     return ofilter;
@@ -787,6 +792,7 @@ static InputFilter *ifilter_alloc(FilterGraph *fg)
     if (!ifp->frame)
         return NULL;
 
+    ifp->index           = fg->nb_inputs - 1;
     ifp->format          = -1;
     ifp->fallback.format = -1;
 
