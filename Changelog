@@ -2,6 +2,16 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 6.0.1:
+ avformat/lafdec: Check for 0 parameters
+ avfilter/buffersink: fix order of operation with = and <0
+ avfilter/framesync: fix order of operation with = and <0
+ tools/target_dec_fuzzer: Adjust threshold for CSCD
+ avcodec/dovi_rpu: Use 64 bit in get_us/se_coeff()
+ avformat/mov: Check that is_still_picture_avif has no trak based streams
+ avformat/matroskadec: Fix declaration-after-statement warnings
+ Update for FFmpeg 6.0.1
+ fftools/ffmpeg_mux_init: Restrict disabling automatic copying of metadata
+ avformat/rtsp: Use rtsp_st->stream_index
  avformat/rtsp: Use rtsp_st->stream_index
  avutil/tx_template: fix integer ovberflwo in fft3()
  avcodec/jpeg2000dec: Check image offset
