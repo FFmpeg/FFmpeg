@@ -80,66 +80,66 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
 {
     WebpContext *w = s->priv_data;
     AVStream *st = s->streams[0];
-        int skip = 0;
-        unsigned flags = 0;
-        int vp8x = 0;
+    int skip = 0;
+    unsigned flags = 0;
+    int vp8x = 0;
 
     if (!w->last_pkt->size)
         return 0;
 
-        if (AV_RL32(w->last_pkt->data) == AV_RL32("RIFF"))
-            skip = 12;
+    if (AV_RL32(w->last_pkt->data) == AV_RL32("RIFF"))
+        skip = 12;
 
-        if (AV_RL32(w->last_pkt->data + skip) == AV_RL32("VP8X")) {
-            flags |= w->last_pkt->data[skip + 4 + 4];
+    if (AV_RL32(w->last_pkt->data + skip) == AV_RL32("VP8X")) {
+        flags |= w->last_pkt->data[skip + 4 + 4];
+        vp8x = 1;
+        skip += AV_RL32(w->last_pkt->data + skip + 4) + 8;
+    }
+
+    if (!w->wrote_webp_header) {
+        avio_write(s->pb, "RIFF\0\0\0\0WEBP", 12);
+        w->wrote_webp_header = 1;
+        if (w->frame_count > 1)  // first non-empty packet
+            w->frame_count = 1;  // so we don't count previous empty packets.
+    }
+
+    if (w->frame_count == 1) {
+        if (!trailer) {
             vp8x = 1;
-            skip += AV_RL32(w->last_pkt->data + skip + 4) + 8;
+            flags |= 2 + 16;
         }
 
-        if (!w->wrote_webp_header) {
-            avio_write(s->pb, "RIFF\0\0\0\0WEBP", 12);
-            w->wrote_webp_header = 1;
-            if (w->frame_count > 1)  // first non-empty packet
-                w->frame_count = 1;  // so we don't count previous empty packets.
-        }
-
-        if (w->frame_count == 1) {
-            if (!trailer) {
-                vp8x = 1;
-                flags |= 2 + 16;
-            }
-
-            if (vp8x) {
-                avio_write(s->pb, "VP8X", 4);
-                avio_wl32(s->pb, 10);
-                avio_w8(s->pb, flags);
-                avio_wl24(s->pb, 0);
-                avio_wl24(s->pb, st->codecpar->width - 1);
-                avio_wl24(s->pb, st->codecpar->height - 1);
-            }
-            if (!trailer) {
-                avio_write(s->pb, "ANIM", 4);
-                avio_wl32(s->pb, 6);
-                avio_wl32(s->pb, 0xFFFFFFFF);
-                avio_wl16(s->pb, w->loop);
-            }
-        }
-
-        if (w->frame_count > trailer) {
-            avio_write(s->pb, "ANMF", 4);
-            avio_wl32(s->pb, 16 + w->last_pkt->size - skip);
-            avio_wl24(s->pb, 0);
+        if (vp8x) {
+            avio_write(s->pb, "VP8X", 4);
+            avio_wl32(s->pb, 10);
+            avio_w8(s->pb, flags);
             avio_wl24(s->pb, 0);
             avio_wl24(s->pb, st->codecpar->width - 1);
             avio_wl24(s->pb, st->codecpar->height - 1);
-            if (w->last_pkt->pts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE) {
-                avio_wl24(s->pb, pts - w->last_pkt->pts);
-            } else
-                avio_wl24(s->pb, w->last_pkt->duration);
-            avio_w8(s->pb, 0);
         }
-        avio_write(s->pb, w->last_pkt->data + skip, w->last_pkt->size - skip);
-        av_packet_unref(w->last_pkt);
+        if (!trailer) {
+            avio_write(s->pb, "ANIM", 4);
+            avio_wl32(s->pb, 6);
+            avio_wl32(s->pb, 0xFFFFFFFF);
+            avio_wl16(s->pb, w->loop);
+        }
+    }
+
+    if (w->frame_count > trailer) {
+        avio_write(s->pb, "ANMF", 4);
+        avio_wl32(s->pb, 16 + w->last_pkt->size - skip);
+        avio_wl24(s->pb, 0);
+        avio_wl24(s->pb, 0);
+        avio_wl24(s->pb, st->codecpar->width - 1);
+        avio_wl24(s->pb, st->codecpar->height - 1);
+        if (w->last_pkt->pts != AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE) {
+            avio_wl24(s->pb, pts - w->last_pkt->pts);
+        } else
+            avio_wl24(s->pb, w->last_pkt->duration);
+        avio_w8(s->pb, 0);
+    }
+    avio_write(s->pb, w->last_pkt->data + skip, w->last_pkt->size - skip);
+    av_packet_unref(w->last_pkt);
 
     return 0;
 }
