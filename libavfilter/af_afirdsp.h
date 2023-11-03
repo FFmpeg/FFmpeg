@@ -33,6 +33,7 @@ typedef struct AudioFIRDSPContext {
                       ptrdiff_t len);
 } AudioFIRDSPContext;
 
+void ff_afir_init_riscv(AudioFIRDSPContext *s);
 void ff_afir_init_x86(AudioFIRDSPContext *s);
 
 static void fcmul_add_c(float *sum, const float *t, const float *c, ptrdiff_t len)
@@ -74,7 +75,9 @@ static av_unused void ff_afir_init(AudioFIRDSPContext *dsp)
     dsp->fcmul_add = fcmul_add_c;
     dsp->dcmul_add = dcmul_add_c;
 
-#if ARCH_X86
+#if ARCH_RISCV
+    ff_afir_init_riscv(dsp);
+#elif ARCH_X86
     ff_afir_init_x86(dsp);
 #endif
 }
