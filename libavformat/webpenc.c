@@ -80,11 +80,12 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
 {
     WebpContext *w = s->priv_data;
     AVStream *st = s->streams[0];
-
-    if (w->last_pkt->size) {
         int skip = 0;
         unsigned flags = 0;
         int vp8x = 0;
+
+    if (!w->last_pkt->size)
+        return 0;
 
         if (AV_RL32(w->last_pkt->data) == AV_RL32("RIFF"))
             skip = 12;
@@ -139,7 +140,6 @@ static int flush(AVFormatContext *s, int trailer, int64_t pts)
         }
         avio_write(s->pb, w->last_pkt->data + skip, w->last_pkt->size - skip);
         av_packet_unref(w->last_pkt);
-    }
 
     return 0;
 }
