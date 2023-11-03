@@ -2526,17 +2526,17 @@ static int sub2video_frame(InputFilter *ifilter, AVFrame *frame)
         return 0;
     }
 
-        if (!frame) {
-            if (ifp->sub2video.end_pts < INT64_MAX)
-                sub2video_update(ifp, INT64_MAX, NULL);
+    if (!frame) {
+        if (ifp->sub2video.end_pts < INT64_MAX)
+            sub2video_update(ifp, INT64_MAX, NULL);
 
-            return av_buffersrc_add_frame(ifp->filter, NULL);
-        }
+        return av_buffersrc_add_frame(ifp->filter, NULL);
+    }
 
-        ifp->width  = frame->width  ? frame->width  : ifp->width;
-        ifp->height = frame->height ? frame->height : ifp->height;
+    ifp->width  = frame->width  ? frame->width  : ifp->width;
+    ifp->height = frame->height ? frame->height : ifp->height;
 
-        sub2video_update(ifp, INT64_MIN, (const AVSubtitle*)frame->buf[0]->data);
+    sub2video_update(ifp, INT64_MIN, (const AVSubtitle*)frame->buf[0]->data);
 
     return 0;
 }
