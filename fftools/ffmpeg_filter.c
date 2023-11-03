@@ -1769,6 +1769,8 @@ static int graph_is_meta(AVFilterGraph *graph)
     return 1;
 }
 
+static int sub2video_frame(InputFilter *ifilter, AVFrame *frame);
+
 static int configure_filtergraph(FilterGraph *fg, const FilterGraphThread *fgt)
 {
     FilterGraphPriv *fgp = fgp_from_fg(fg);
@@ -1880,7 +1882,7 @@ static int configure_filtergraph(FilterGraph *fg, const FilterGraphThread *fgt)
         AVFrame *tmp;
         while (av_fifo_read(ifp->frame_queue, &tmp, 1) >= 0) {
             if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE) {
-                sub2video_update(ifp, INT64_MIN, (const AVSubtitle*)tmp->buf[0]->data);
+                sub2video_frame(&ifp->ifilter, tmp);
             } else {
                 ret = av_buffersrc_add_frame(ifp->filter, tmp);
             }
@@ -2475,9 +2477,6 @@ static void sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational tb
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     int64_t pts2;
 
-    if (!ifilter->graph->graph)
-        return;
-
     /* subtitles seem to be usually muxed ahead of other streams;
        if not, subtracting a larger time here is necessary */
     pts2 = av_rescale_q(pts, tb, ifp->time_base) - 1;
@@ -2495,10 +2494,31 @@ static void sub2video_heartbeat(InputFilter *ifilter, int64_t pts, AVRational tb
         sub2video_push_ref(ifp, pts2);
 }
 
-static int sub2video_frame(InputFilter *ifilter, const AVFrame *frame)
+static int sub2video_frame(InputFilter *ifilter, AVFrame *frame)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     int ret;
+
+    if (!ifilter->graph->graph) {
+        AVFrame *tmp;
+
+        if (!frame)
+            return 0;
+
+        tmp = av_frame_alloc();
+        if (!tmp)
+            return AVERROR(ENOMEM);
+
+        av_frame_move_ref(tmp, frame);
+
+        ret = av_fifo_write(ifp->frame_queue, &tmp, 1);
+        if (ret < 0) {
+            av_frame_free(&tmp);
+            return ret;
+        }
+
+        return 0;
+    }
 
     // heartbeat frame
     if (frame && !frame->buf[0]) {
@@ -2506,7 +2526,6 @@ static int sub2video_frame(InputFilter *ifilter, const AVFrame *frame)
         return 0;
     }
 
-    if (ifilter->graph->graph) {
         if (!frame) {
             if (ifp->sub2video.end_pts < INT64_MAX)
                 sub2video_update(ifp, INT64_MAX, NULL);
@@ -2518,18 +2537,6 @@ static int sub2video_frame(InputFilter *ifilter, const AVFrame *frame)
         ifp->height = frame->height ? frame->height : ifp->height;
 
         sub2video_update(ifp, INT64_MIN, (const AVSubtitle*)frame->buf[0]->data);
-    } else if (frame) {
-        AVFrame *tmp = av_frame_clone(frame);
-
-        if (!tmp)
-            return AVERROR(ENOMEM);
-
-        ret = av_fifo_write(ifp->frame_queue, &tmp, 1);
-        if (ret < 0) {
-            av_frame_free(&tmp);
-            return ret;
-        }
-    }
 
     return 0;
 }
