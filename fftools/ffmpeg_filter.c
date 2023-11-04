@@ -905,8 +905,14 @@ int fg_create(FilterGraph **pfg, char *graph_desc)
 
     for (AVFilterInOut *cur = inputs; cur; cur = cur->next) {
         InputFilter *const ifilter = ifilter_alloc(fg);
-        InputFilterPriv       *ifp = ifp_from_ifilter(ifilter);
+        InputFilterPriv       *ifp;
 
+        if (!ifilter) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        ifp            = ifp_from_ifilter(ifilter);
         ifp->linklabel = cur->name;
         cur->name      = NULL;
 
