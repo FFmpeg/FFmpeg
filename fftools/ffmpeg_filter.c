@@ -928,8 +928,10 @@ int fg_create(FilterGraph **pfg, char *graph_desc)
     for (AVFilterInOut *cur = outputs; cur; cur = cur->next) {
         OutputFilter *const ofilter = ofilter_alloc(fg);
 
-        if (!ofilter)
+        if (!ofilter) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
 
         ofilter->linklabel = cur->name;
         cur->name          = NULL;
