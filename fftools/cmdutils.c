@@ -665,10 +665,10 @@ static int init_parse_context(OptionParseContext *octx,
 
     memset(octx, 0, sizeof(*octx));
 
-    octx->nb_groups = nb_groups;
-    octx->groups    = av_calloc(octx->nb_groups, sizeof(*octx->groups));
+    octx->groups    = av_calloc(nb_groups, sizeof(*octx->groups));
     if (!octx->groups)
         return AVERROR(ENOMEM);
+    octx->nb_groups = nb_groups;
 
     for (i = 0; i < octx->nb_groups; i++)
         octx->groups[i].group_def = &groups[i];
