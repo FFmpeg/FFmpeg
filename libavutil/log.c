@@ -291,6 +291,11 @@ static const char *get_level_str(int level)
     }
 }
 
+static const char *item_name(void *obj, const AVClass *cls)
+{
+    return (cls->item_name ? cls->item_name : av_default_item_name)(obj);
+}
+
 static void format_line(void *avcl, int level, const char *fmt, va_list vl,
                         AVBPrint part[4], int *print_prefix, int type[2])
 {
@@ -307,12 +312,12 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
                                    avc->parent_log_context_offset);
             if (parent && *parent) {
                 av_bprintf(part+0, "[%s @ %p] ",
-                         (*parent)->item_name(parent), parent);
+                           item_name(parent, *parent), parent);
                 if(type) type[0] = get_category(parent);
             }
         }
         av_bprintf(part+1, "[%s @ %p] ",
-                 avc->item_name(avcl), avcl);
+                   item_name(avcl, avc), avcl);
         if(type) type[1] = get_category(avcl);
     }
 
