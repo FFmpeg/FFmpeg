@@ -23,6 +23,19 @@
 #include "audio.h"
 #include "formats.h"
 
+typedef struct ChannelContext {
+    double fa_double[3], fm_double[3];
+    double dstate_double[2];
+    double fstate_double[2];
+    double gain_double;
+    double threshold_double;
+    float fa_float[3], fm_float[3];
+    float dstate_float[2];
+    float fstate_float[2];
+    float gain_float;
+    float threshold_float;
+} ChannelContext;
+
 typedef struct AudioDynamicEqualizerContext {
     const AVClass *class;
 
@@ -52,7 +65,7 @@ typedef struct AudioDynamicEqualizerContext {
     double da_double[3], dm_double[3];
     float da_float[3], dm_float[3];
 
-    AVFrame *state;
+    ChannelContext *cc;
 } AudioDynamicEqualizerContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -96,8 +109,8 @@ static int config_input(AVFilterLink *inlink)
     AudioDynamicEqualizerContext *s = ctx->priv;
 
     s->format = inlink->format;
-    s->state = ff_get_audio_buffer(inlink, 16);
-    if (!s->state)
+    s->cc = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->cc));
+    if (!s->cc)
         return AVERROR(ENOMEM);
 
     switch (s->format) {
@@ -148,7 +161,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioDynamicEqualizerContext *s = ctx->priv;
 
-    av_frame_free(&s->state);
+    av_freep(&s->cc);
 }
 
 #define OFFSET(x) offsetof(AudioDynamicEqualizerContext, x)

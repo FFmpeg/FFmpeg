@@ -166,25 +166,25 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
     for (int ch = start; ch < end; ch++) {
         const ftype *src = (const ftype *)in->extended_data[ch];
         ftype *dst = (ftype *)out->extended_data[ch];
-        ftype *state = (ftype *)s->state->extended_data[ch];
-        const ftype threshold = detection == 0 ? state[5] : s->threshold;
-        ftype fa[3], fm[3];
+        ChannelContext *cc = &s->cc[ch];
+        const ftype threshold = detection == 0 ? fn(cc->threshold) : s->threshold;
+        ftype *fa = fn(cc->fa), *fm = fn(cc->fm);
+        ftype *fstate = fn(cc->fstate);
+        ftype *dstate = fn(cc->dstate);
+        ftype gain = fn(cc->gain);
 
         if (detection < 0)
-            state[5] = threshold;
-
-        memcpy(fa, state +  8, sizeof(fa));
-        memcpy(fm, state + 11, sizeof(fm));
+            fn(cc->threshold) = threshold;
 
         for (int n = 0; n < out->nb_samples; n++) {
-            ftype detect, gain, v, listen;
+            ftype detect, v, listen;
             ftype k, g;
 
-            detect = listen = fn(get_svf)(src[n], dm, da, state);
+            detect = listen = fn(get_svf)(src[n], dm, da, dstate);
             detect = FABS(detect);
 
             if (detection > 0)
-                state[5] = FMAX(state[5], detect);
+                fn(cc->threshold) = FMAX(fn(cc->threshold), detect);
 
             if (mode >= 0) {
                 if (direction == 0 && detect < threshold) {
@@ -200,17 +200,17 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
                 }
 
                 {
-                    ftype delta = detect - state[4];
+                    ftype delta = detect - gain;
 
                     if (delta > EPSILON)
-                        detect = state[4] + attack * delta;
+                        detect = gain + attack * delta;
                     else if (delta < -EPSILON)
-                        detect = state[4] + release * delta;
+                        detect = gain + release * delta;
                 }
             }
 
-            if (state[4] != detect) {
-                state[4] = gain = detect;
+            if (gain != detect) {
+                gain = detect;
 
                 switch (tftype) {
                 case 0:
@@ -251,13 +251,12 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
                 }
             }
 
-            v = fn(get_svf)(src[n], fm, fa, &state[2]);
+            v = fn(get_svf)(src[n], fm, fa, fstate);
             v = mode == -1 ? listen : v;
             dst[n] = ctx->is_disabled ? src[n] : v;
         }
 
-        memcpy(state +  8, fa, sizeof(fa));
-        memcpy(state + 11, fm, sizeof(fm));
+        fn(cc->gain) = gain;
     }
 
     return 0;
