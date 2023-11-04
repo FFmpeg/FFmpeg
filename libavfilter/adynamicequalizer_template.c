@@ -157,7 +157,6 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int start = (in->ch_layout.nb_channels * jobnr) / nb_jobs;
     const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
     const int detection = s->detection;
-    const int direction = s->direction;
     const int tftype = s->tftype;
     const int mode = s->mode;
     const ftype *da = fn(s->da);
@@ -177,7 +176,7 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
             fn(cc->threshold) = threshold;
 
         for (int n = 0; n < out->nb_samples; n++) {
-            ftype detect, v, listen;
+            ftype detect, v, listen, new_gain = ONE;
             ftype k, g;
 
             detect = listen = fn(get_svf)(src[n], dm, da, dstate);
@@ -186,31 +185,38 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
             if (detection > 0)
                 fn(cc->threshold) = FMAX(fn(cc->threshold), detect);
 
-            if (mode >= 0) {
-                if (direction == 0 && detect < threshold) {
-                    detect = CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
-                    if (!mode)
-                        detect = ONE / detect;
-                } else if (direction == 1 && detect > threshold) {
-                    detect = CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
-                    if (!mode)
-                        detect = ONE / detect;
-                } else {
-                    detect = ONE;
-                }
-
-                {
-                    ftype delta = detect - gain;
-
-                    if (delta > EPSILON)
-                        detect = gain + attack * delta;
-                    else if (delta < -EPSILON)
-                        detect = gain + release * delta;
-                }
+            switch (mode) {
+            case LISTEN:
+                break;
+            case CUT_BELOW:
+                if (detect < threshold)
+                    new_gain = ONE / CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
+                break;
+            case CUT_ABOVE:
+                if (detect > threshold)
+                    new_gain = ONE / CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
+                break;
+            case BOOST_BELOW:
+                if (detect < threshold)
+                    new_gain = CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
+                break;
+            case BOOST_ABOVE:
+                if (detect > threshold)
+                    new_gain = CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
+                break;
             }
 
-            if (gain != detect) {
-                gain = detect;
+            if (mode > LISTEN) {
+                ftype delta = new_gain - gain;
+
+                if (delta > EPSILON)
+                    new_gain = gain + attack * delta;
+                else if (delta < -EPSILON)
+                    new_gain = gain + release * delta;
+            }
+
+            if (gain != new_gain) {
+                gain = new_gain;
 
                 switch (tftype) {
                 case 0:

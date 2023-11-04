@@ -1054,12 +1054,16 @@ Set the mode of filter operation, can be one of the following:
 @table @samp
 @item listen
 Output only isolated detection signal.
-@item cut
+@item cutbelow
+Cut frequencies below detection threshold.
+@item cutabove
 Cut frequencies above detection threshold.
-@item boost
-Boost frequencies bellow detection threshold.
+@item boostbelow
+Boost frequencies below detection threshold.
+@item boostabove
+Boost frequencies above detection threshold.
 @end table
-Default mode is @samp{cut}.
+Default mode is @samp{cutbelow}.
 
 @item dftype
 Set the type of detection filter, can be one of the following:
@@ -1081,16 +1085,6 @@ Set the type of target filter, can be one of the following:
 @item highshelf
 @end table
 Default type is @samp{bell}.
-
-@item direction
-Set processing direction relative to threshold.
-@table @samp
-@item downward
-Boost/Cut if threshold is higher/lower than detected volume.
-@item upward
-Boost/Cut if threshold is lower/higher than detected volume.
-@end table
-Default direction is @samp{downward}.
 
 @item auto
 Automatically gather threshold from detection filter. By default
