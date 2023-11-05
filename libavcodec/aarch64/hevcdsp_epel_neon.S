@@ -244,6 +244,185 @@ function ff_hevc_put_hevc_pel_pixels64_8_neon, export=1
 endfunc
 
 
+function ff_hevc_put_hevc_pel_bi_pixels4_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.s}[0], [x2], x3 // src
+        ushll           v16.8h, v0.8b, #6
+        ld1             {v20.4h}, [x4], x10 // src2
+        sqadd           v16.8h, v16.8h, v20.8h
+        sqrshrun        v0.8b,  v16.8h, #7
+        st1             {v0.s}[0], [x0], x1
+        subs            w5, w5, #1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels6_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE * 2)
+        sub             x1, x1, #4
+1:      ld1             {v0.8b}, [x2], x3
+        ushll           v16.8h, v0.8b, #6
+        ld1             {v20.8h}, [x4], x10
+        sqadd           v16.8h, v16.8h, v20.8h
+        sqrshrun        v0.8b,  v16.8h, #7
+        st1             {v0.s}[0], [x0], #4
+        st1             {v0.h}[2], [x0], x1
+        subs            w5, w5, #1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels8_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.8b}, [x2], x3    // src
+        ushll           v16.8h, v0.8b, #6
+        ld1             {v20.8h}, [x4], x10  // src2
+        sqadd           v16.8h, v16.8h, v20.8h
+        sqrshrun        v0.8b,  v16.8h, #7
+        subs            w5, w5, #1
+        st1             {v0.8b}, [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels12_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE * 2)
+        sub             x1, x1, #8
+1:      ld1             {v0.16b}, [x2], x3
+        ushll           v16.8h, v0.8b, #6
+        ushll2          v17.8h, v0.16b, #6
+        ld1             {v20.8h, v21.8h}, [x4], x10
+        sqadd           v16.8h, v16.8h, v20.8h
+        sqadd           v17.8h, v17.8h, v21.8h
+        sqrshrun        v0.8b,  v16.8h, #7
+        sqrshrun2       v0.16b, v17.8h, #7
+        st1             {v0.8b}, [x0], #8
+        subs            w5, w5, #1
+        st1             {v0.s}[2], [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels16_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.16b}, [x2], x3 // src
+        ushll           v16.8h, v0.8b, #6
+        ushll2          v17.8h, v0.16b, #6
+        ld1             {v20.8h, v21.8h}, [x4], x10  // src2
+        sqadd           v16.8h, v16.8h, v20.8h
+        sqadd           v17.8h, v17.8h, v21.8h
+        sqrshrun        v0.8b,  v16.8h, #7
+        sqrshrun2       v0.16b, v17.8h, #7
+        subs            w5, w5, #1
+        st1             {v0.16b}, [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels24_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.8b-v2.8b}, [x2], x3 // src
+        ushll           v16.8h, v0.8b, #6
+        ushll           v17.8h, v1.8b, #6
+        ushll           v18.8h, v2.8b, #6
+        ld1             {v20.8h-v22.8h}, [x4], x10  // src2
+        sqadd           v16.8h, v16.8h, v20.8h
+        sqadd           v17.8h, v17.8h, v21.8h
+        sqadd           v18.8h, v18.8h, v22.8h
+        sqrshrun        v0.8b, v16.8h, #7
+        sqrshrun        v1.8b, v17.8h, #7
+        sqrshrun        v2.8b, v18.8h, #7
+        subs            w5, w5, #1
+        st1             {v0.8b-v2.8b}, [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels32_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE * 2)
+1:      ld1             {v0.16b-v1.16b}, [x2], x3 // src
+        ushll           v16.8h, v0.8b, #6
+        ushll2          v17.8h, v0.16b, #6
+        ushll           v18.8h, v1.8b, #6
+        ushll2          v19.8h, v1.16b, #6
+        ld1             {v20.8h-v23.8h}, [x4], x10  // src2
+        sqadd           v16.8h, v16.8h, v20.8h
+        sqadd           v17.8h, v17.8h, v21.8h
+        sqadd           v18.8h, v18.8h, v22.8h
+        sqadd           v19.8h, v19.8h, v23.8h
+        sqrshrun        v0.8b,  v16.8h, #7
+        sqrshrun2       v0.16b, v17.8h, #7
+        sqrshrun        v1.8b,  v18.8h, #7
+        sqrshrun2       v1.16b, v19.8h, #7
+        st1             {v0.16b-v1.16b}, [x0], x1
+        subs            w5, w5, #1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels48_8_neon, export=1
+        mov             x10, #(MAX_PB_SIZE)
+1:      ld1             {v0.16b-v2.16b}, [x2], x3 // src
+        ushll           v16.8h, v0.8b, #6
+        ushll2          v17.8h, v0.16b, #6
+        ushll           v18.8h, v1.8b, #6
+        ushll2          v19.8h, v1.16b, #6
+        ushll           v20.8h, v2.8b, #6
+        ushll2          v21.8h, v2.16b, #6
+        ld1             {v24.8h-v27.8h}, [x4], #(MAX_PB_SIZE) // src2
+        sqadd           v16.8h, v16.8h, v24.8h
+        sqadd           v17.8h, v17.8h, v25.8h
+        sqadd           v18.8h, v18.8h, v26.8h
+        sqadd           v19.8h, v19.8h, v27.8h
+        ld1             {v24.8h-v25.8h}, [x4], x10
+        sqadd           v20.8h, v20.8h, v24.8h
+        sqadd           v21.8h, v21.8h, v25.8h
+        sqrshrun        v0.8b, v16.8h, #7
+        sqrshrun2       v0.16b, v17.8h, #7
+        sqrshrun        v1.8b, v18.8h, #7
+        sqrshrun2       v1.16b, v19.8h, #7
+        sqrshrun        v2.8b, v20.8h, #7
+        sqrshrun2       v2.16b, v21.8h, #7
+        subs            w5, w5, #1
+        st1             {v0.16b-v2.16b}, [x0], x1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_pel_bi_pixels64_8_neon, export=1
+1:      ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], x3 // src
+        ushll           v16.8h, v0.8b, #6
+        ushll2          v17.8h, v0.16b, #6
+        ushll           v18.8h, v1.8b, #6
+        ushll2          v19.8h, v1.16b, #6
+        ushll           v20.8h, v2.8b, #6
+        ushll2          v21.8h, v2.16b, #6
+        ushll           v22.8h, v3.8b, #6
+        ushll2          v23.8h, v3.16b, #6
+        ld1             {v24.8h, v25.8h, v26.8h, v27.8h}, [x4], #(MAX_PB_SIZE) // src2
+        sqadd           v16.8h, v16.8h, v24.8h
+        sqadd           v17.8h, v17.8h, v25.8h
+        sqadd           v18.8h, v18.8h, v26.8h
+        sqadd           v19.8h, v19.8h, v27.8h
+        ld1             {v24.8h, v25.8h, v26.8h, v27.8h}, [x4], #(MAX_PB_SIZE)
+        sqadd           v20.8h, v20.8h, v24.8h
+        sqadd           v21.8h, v21.8h, v25.8h
+        sqadd           v22.8h, v22.8h, v26.8h
+        sqadd           v23.8h, v23.8h, v27.8h
+        sqrshrun        v0.8b, v16.8h, #7
+        sqrshrun2       v0.16b, v17.8h, #7
+        sqrshrun        v1.8b, v18.8h, #7
+        sqrshrun2       v1.16b, v19.8h, #7
+        sqrshrun        v2.8b, v20.8h, #7
+        sqrshrun2       v2.16b, v21.8h, #7
+        sqrshrun        v3.8b, v22.8h, #7
+        sqrshrun2       v3.16b, v23.8h, #7
+        st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], x1
+        subs            w5, w5, #1
+        b.ne            1b
+        ret
+endfunc
+
 function ff_hevc_put_hevc_epel_v4_8_neon, export=1
         load_epel_filterb x5, x4
         sub             x1, x1, x2
