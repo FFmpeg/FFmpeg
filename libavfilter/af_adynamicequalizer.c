@@ -18,10 +18,19 @@
 
 #include <float.h>
 
+#include "libavutil/ffmath.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
+
+enum DetectionModes {
+    DET_UNSET = 0,
+    DET_DISABLED,
+    DET_OFF,
+    DET_ON,
+    NB_DMODES,
+};
 
 enum FilterModes {
     LISTEN = -1,
@@ -29,7 +38,7 @@ enum FilterModes {
     CUT_ABOVE,
     BOOST_BELOW,
     BOOST_ABOVE,
-    NB_MODES,
+    NB_FMODES,
 };
 
 typedef struct ChannelContext {
@@ -37,14 +46,19 @@ typedef struct ChannelContext {
     double dstate_double[2];
     double fstate_double[2];
     double tstate_double[2];
-    double gain_double;
-    double threshold_double;
+    double lin_gain_double;
+    double detect_double;
+    double threshold_log_double;
+    double new_threshold_log_double;
     float fa_float[3], fm_float[3];
     float dstate_float[2];
     float fstate_float[2];
     float tstate_float[2];
-    float gain_float;
-    float threshold_float;
+    float lin_gain_float;
+    float detect_float;
+    float threshold_log_float;
+    float new_threshold_log_float;
+    int detection;
     int init;
 } ChannelContext;
 
@@ -52,6 +66,7 @@ typedef struct AudioDynamicEqualizerContext {
     const AVClass *class;
 
     double threshold;
+    double threshold_log;
     double dfrequency;
     double dqfactor;
     double tfrequency;
@@ -59,10 +74,12 @@ typedef struct AudioDynamicEqualizerContext {
     double ratio;
     double range;
     double makeup;
-    double attack;
-    double release;
-    double attack_coef;
-    double release_coef;
+    double dattack;
+    double drelease;
+    double dattack_coef;
+    double drelease_coef;
+    double gattack_coef;
+    double grelease_coef;
     int mode;
     int detection;
     int tftype;
@@ -100,7 +117,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static double get_coef(double x, double sr)
 {
-    return 1.0 - exp(-1000. / (x * sr));
+    return 1.0 - exp(-1.0 / (0.001 * x * sr));
 }
 
 typedef struct ThreadData {
@@ -133,12 +150,6 @@ static int config_input(AVFilterLink *inlink)
         s->filter_prepare  = filter_prepare_float;
         s->filter_channels = filter_channels_float;
         break;
-    }
-
-    for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
-        ChannelContext *cc = &s->cc[ch];
-        cc->gain_float = 1.f;
-        cc->gain_double = 1.0;
     }
 
     return 0;
@@ -191,12 +202,12 @@ static const AVOption adynamicequalizer_options[] = {
     { "dqfactor",   "set detection Q factor",  OFFSET(dqfactor),   AV_OPT_TYPE_DOUBLE, {.dbl=1},    0.001, 1000,    FLAGS },
     { "tfrequency", "set target frequency",    OFFSET(tfrequency), AV_OPT_TYPE_DOUBLE, {.dbl=1000},     2, 1000000, FLAGS },
     { "tqfactor",   "set target Q factor",     OFFSET(tqfactor),   AV_OPT_TYPE_DOUBLE, {.dbl=1},    0.001, 1000,    FLAGS },
-    { "attack",     "set attack duration",     OFFSET(attack),     AV_OPT_TYPE_DOUBLE, {.dbl=20},       1, 2000,    FLAGS },
-    { "release",    "set release duration",    OFFSET(release),    AV_OPT_TYPE_DOUBLE, {.dbl=200},      1, 2000,    FLAGS },
+    { "attack", "set detection attack duration", OFFSET(dattack),  AV_OPT_TYPE_DOUBLE, {.dbl=20},    0.01, 2000,    FLAGS },
+    { "release","set detection release duration",OFFSET(drelease), AV_OPT_TYPE_DOUBLE, {.dbl=200},   0.01, 2000,    FLAGS },
     { "ratio",      "set ratio factor",        OFFSET(ratio),      AV_OPT_TYPE_DOUBLE, {.dbl=1},        0, 30,      FLAGS },
-    { "makeup",     "set makeup gain",         OFFSET(makeup),     AV_OPT_TYPE_DOUBLE, {.dbl=0},        0, 100,     FLAGS },
-    { "range",      "set max gain",            OFFSET(range),      AV_OPT_TYPE_DOUBLE, {.dbl=50},       1, 200,     FLAGS },
-    { "mode",       "set mode",                OFFSET(mode),       AV_OPT_TYPE_INT,    {.i64=0},  LISTEN,NB_MODES-1,FLAGS, "mode" },
+    { "makeup",     "set makeup gain",         OFFSET(makeup),     AV_OPT_TYPE_DOUBLE, {.dbl=0},        0, 1000,    FLAGS },
+    { "range",      "set max gain",            OFFSET(range),      AV_OPT_TYPE_DOUBLE, {.dbl=50},       1, 2000,    FLAGS },
+    { "mode",       "set mode",                OFFSET(mode),       AV_OPT_TYPE_INT,    {.i64=0},  LISTEN,NB_FMODES-1,FLAGS, "mode" },
     {   "listen",   0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=LISTEN},   0, 0,       FLAGS, "mode" },
     {   "cutbelow", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=CUT_BELOW},0, 0,       FLAGS, "mode" },
     {   "cutabove", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=CUT_ABOVE},0, 0,       FLAGS, "mode" },
@@ -211,10 +222,10 @@ static const AVOption adynamicequalizer_options[] = {
     {   "bell",     0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "tftype" },
     {   "lowshelf", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "tftype" },
     {   "highshelf",0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=2},        0, 0,       FLAGS, "tftype" },
-    { "auto",       "set auto threshold",      OFFSET(detection),  AV_OPT_TYPE_INT,    {.i64=-1},      -1, 1,       FLAGS, "auto" },
-    {   "disabled", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=-1},       0, 0,       FLAGS, "auto" },
-    {   "off",      0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=0},        0, 0,       FLAGS, "auto" },
-    {   "on",       0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=1},        0, 0,       FLAGS, "auto" },
+    { "auto",       "set auto threshold",      OFFSET(detection),  AV_OPT_TYPE_INT,    {.i64=DET_OFF},DET_DISABLED,NB_DMODES-1,FLAGS, "auto" },
+    {   "disabled", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=DET_DISABLED}, 0, 0,   FLAGS, "auto" },
+    {   "off",      0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=DET_OFF},      0, 0,   FLAGS, "auto" },
+    {   "on",       0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=DET_ON},       0, 0,   FLAGS, "auto" },
     { "precision", "set processing precision", OFFSET(precision),  AV_OPT_TYPE_INT,    {.i64=0},        0, 2,       AF, "precision" },
     {   "auto",  "set auto processing precision",                  0, AV_OPT_TYPE_CONST, {.i64=0},      0, 0,       AF, "precision" },
     {   "float", "set single-floating point processing precision", 0, AV_OPT_TYPE_CONST, {.i64=1},      0, 0,       AF, "precision" },
