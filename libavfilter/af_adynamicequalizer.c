@@ -43,6 +43,7 @@ typedef struct ChannelContext {
     float fstate_float[2];
     float gain_float;
     float threshold_float;
+    int init;
 } ChannelContext;
 
 typedef struct AudioDynamicEqualizerContext {
@@ -130,6 +131,12 @@ static int config_input(AVFilterLink *inlink)
         s->filter_prepare  = filter_prepare_float;
         s->filter_channels = filter_channels_float;
         break;
+    }
+
+    for (int ch = 0; ch < inlink->ch_layout.nb_channels; ch++) {
+        ChannelContext *cc = &s->cc[ch];
+        cc->gain_float = 1.f;
+        cc->gain_double = 1.0;
     }
 
     return 0;

@@ -149,6 +149,8 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
     const ftype ratio = s->ratio;
     const ftype range = s->range;
     const ftype tfrequency = FMIN(s->tfrequency, sample_rate * 0.5);
+    const int mode = s->mode;
+    const int power = (mode == CUT_BELOW || mode == CUT_ABOVE) ? -1 : 1;
     const ftype release = s->release_coef;
     const ftype attack = s->attack_coef;
     const ftype tqfactor = s->tqfactor;
@@ -158,7 +160,6 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
     const int end = (in->ch_layout.nb_channels * (jobnr+1)) / nb_jobs;
     const int detection = s->detection;
     const int tftype = s->tftype;
-    const int mode = s->mode;
     const ftype *da = fn(s->da);
     const ftype *dm = fn(s->dm);
 
@@ -171,6 +172,7 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
         ftype *fstate = fn(cc->fstate);
         ftype *dstate = fn(cc->dstate);
         ftype gain = fn(cc->gain);
+        const int init = cc->init;
 
         if (detection < 0)
             fn(cc->threshold) = threshold;
@@ -189,22 +191,19 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
             case LISTEN:
                 break;
             case CUT_BELOW:
-                if (detect < threshold)
-                    new_gain = ONE / CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
-                break;
-            case CUT_ABOVE:
-                if (detect > threshold)
-                    new_gain = ONE / CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
-                break;
             case BOOST_BELOW:
                 if (detect < threshold)
                     new_gain = CLIP(ONE + makeup + (threshold - detect) * ratio, ONE, range);
                 break;
+            case CUT_ABOVE:
             case BOOST_ABOVE:
                 if (detect > threshold)
                     new_gain = CLIP(ONE + makeup + (detect - threshold) * ratio, ONE, range);
                 break;
             }
+
+            if (power < 0)
+                new_gain = ONE / new_gain;
 
             if (mode > LISTEN) {
                 ftype delta = new_gain - gain;
@@ -215,7 +214,7 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
                     new_gain = gain + release * delta;
             }
 
-            if (gain != new_gain) {
+            if (gain != new_gain || !init) {
                 gain = new_gain;
 
                 switch (tftype) {
@@ -263,6 +262,7 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
         }
 
         fn(cc->gain) = gain;
+        cc->init = 1;
     }
 
     return 0;
