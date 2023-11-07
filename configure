@@ -3904,7 +3904,7 @@ ffmpeg_select="aformat_filter anull_filter atrim_filter format_filter
 ffmpeg_suggest="ole32 psapi shell32"
 ffplay_deps="avcodec avformat avfilter swscale swresample sdl2"
 ffplay_select="crop_filter transpose_filter hflip_filter vflip_filter rotate_filter"
-ffplay_suggest="shell32"
+ffplay_suggest="shell32 libplacebo vulkan"
 ffprobe_deps="avcodec avformat"
 ffprobe_suggest="shell32"
 

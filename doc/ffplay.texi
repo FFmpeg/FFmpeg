@@ -196,6 +196,18 @@ will produce a thread pool with this many threads available for parallel
 processing. The default is 0 which means that the thread count will be
 determined by the number of available CPUs.
 
+@item -enable_vulkan
+Use vulkan renderer rather than SDL builtin renderer. Depends on libplacebo.
+
+@item -vulkan_params
+
+Vulkan configuration using a list of @var{key}=@var{value} pairs separated by
+":".
+
+@item -hwaccel
+Use HW accelerated decoding. Enable this option will enable vulkan renderer
+automatically.
+
 @end table
 
 @section While playing
