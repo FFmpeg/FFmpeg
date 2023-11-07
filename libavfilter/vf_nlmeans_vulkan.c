@@ -94,7 +94,7 @@ static void insert_horizontal_pass(FFVkSPIRVShader *shd, int nb_rows, int first,
     GLSLC(2,     #pragma unroll(1)                                                );
     GLSLF(2,     for (r = 0; r < %i; r++) {                                       ,nb_rows);
     GLSLC(3,         prefix_sum = DTYPE(0);                                       );
-    GLSLC(3,         offset = uint64_t(int_stride)*(pos.y + r)*T_ALIGN;           );
+    GLSLC(3,         offset = int_stride * uint64_t(pos.y + r);                   );
     GLSLC(3,         dst = DataBuffer(uint64_t(integral_data) + offset);          );
     GLSLC(0,                                                                      );
     GLSLF(3,         for (pos.x = 0; pos.x < width[%i]; pos.x++) {                ,plane);
@@ -122,7 +122,7 @@ static void insert_vertical_pass(FFVkSPIRVShader *shd, int nb_rows, int first, i
     GLSLC(0,                                                                      );
     GLSLF(1, if (pos.x < width[%i]) {                                             ,plane);
     GLSLF(2,     for (pos.y = 0; pos.y < height[%i]; pos.y++) {                   ,plane);
-    GLSLC(3,         offset = uint64_t(int_stride)*pos.y*T_ALIGN;                 );
+    GLSLC(3,         offset = int_stride * uint64_t(pos.y);                       );
     GLSLC(3,         dst = DataBuffer(uint64_t(integral_data) + offset);          );
     GLSLC(0,                                                                      );
     GLSLC(3,         #pragma unroll(1)                                            );
@@ -167,40 +167,26 @@ static void insert_weights_pass(FFVkSPIRVShader *shd, int nb_rows, int vert,
     GLSLC(0,                                                                  );
     GLSLC(3,         lt = ((pos.x - p) < 0) || ((pos.y - p) < 0);             );
     GLSLC(0,                                                                  );
-    if (TYPE_ELEMS == 4) {
-        GLSLF(3,         src[0] = texture(input_img[%i], pos + offs[0])[%i];   ,plane, comp);
-        GLSLF(3,         src[1] = texture(input_img[%i], pos + offs[1])[%i];   ,plane, comp);
-        GLSLF(3,         src[2] = texture(input_img[%i], pos + offs[2])[%i];   ,plane, comp);
-        GLSLF(3,         src[3] = texture(input_img[%i], pos + offs[3])[%i];   ,plane, comp);
-    } else {
-        for (int i = 0; i < 16; i++)
-            GLSLF(3, src[%i][%i] = texture(input_img[%i], pos + offs[%i])[%i];
-                  ,i / 4, i % 4, plane, i, comp);
-
-    }
+    GLSLF(3,         src[0] = texture(input_img[%i], pos + offs[0])[%i];      ,plane, comp);
+    GLSLF(3,         src[1] = texture(input_img[%i], pos + offs[1])[%i];      ,plane, comp);
+    GLSLF(3,         src[2] = texture(input_img[%i], pos + offs[2])[%i];      ,plane, comp);
+    GLSLF(3,         src[3] = texture(input_img[%i], pos + offs[3])[%i];      ,plane, comp);
     GLSLC(0,                                                                  );
     GLSLC(3,         if (lt == false) {                                       );
-    GLSLC(4,             a = integral_data.v[(pos.y - p)*int_stride + pos.x - p];     );
-    GLSLC(4,             c = integral_data.v[(pos.y - p)*int_stride + pos.x + p];     );
-    GLSLC(4,             b = integral_data.v[(pos.y + p)*int_stride + pos.x - p];     );
-    GLSLC(4,             d = integral_data.v[(pos.y + p)*int_stride + pos.x + p];     );
+    GLSLC(3,             offset = int_stride * uint64_t(pos.y - p);           );
+    GLSLC(3,             dst = DataBuffer(uint64_t(integral_data) + offset);  );
+    GLSLC(4,             a = dst.v[pos.x - p];                                );
+    GLSLC(4,             c = dst.v[pos.x + p];                                );
+    GLSLC(3,             offset = int_stride * uint64_t(pos.y + p);           );
+    GLSLC(3,             dst = DataBuffer(uint64_t(integral_data) + offset);  );
+    GLSLC(4,             b = dst.v[pos.x - p];                                );
+    GLSLC(4,             d = dst.v[pos.x + p];                                );
     GLSLC(3,         }                                                        );
     GLSLC(0,                                                                  );
     GLSLC(3,         patch_diff = d + a - b - c;                              );
-    if (TYPE_ELEMS == 4) {
-        GLSLF(3,         w = exp(patch_diff * strength[%i]);                  ,dst_comp);
-        GLSLC(3,         w_sum = w[0] + w[1] + w[2] + w[3];                   );
-        GLSLC(3,         sum = dot(w, src*255);                               );
-    } else {
-        for (int i = 0; i < 4; i++)
-            GLSLF(3,    w[%i] = exp(patch_diff[%i] * strength[%i]);           ,i,i,dst_comp);
-        for (int i = 0; i < 4; i++)
-            GLSLF(3,     w_sum %s w[%i][0] + w[%i][1] + w[%i][2] + w[%i][3];
-                  ,!i ? "=" : "+=", i, i, i, i);
-        for (int i = 0; i < 4; i++)
-            GLSLF(3,     sum %s dot(w[%i], src[%i]*255);
-                  ,!i ? "=" : "+=", i, i);
-    }
+    GLSLF(3,         w = exp(patch_diff * strength[%i]);                      ,dst_comp);
+    GLSLC(3,         w_sum = w[0] + w[1] + w[2] + w[3];                       );
+    GLSLC(3,         sum = dot(w, src*255);                                   );
     GLSLC(0,                                                                  );
     if (t > 1) {
         GLSLF(3,         atomicAdd(weights_%i[pos.y*ws_stride[%i] + pos.x], w_sum);   ,dst_comp, dst_comp);
@@ -220,8 +206,8 @@ typedef struct HorizontalPushData {
     int32_t  patch_size[4];
     float    strength[4];
     VkDeviceAddress integral_base;
-    uint32_t integral_size;
-    uint32_t int_stride;
+    uint64_t integral_size;
+    uint64_t int_stride;
     uint32_t xyoffs_start;
 } HorizontalPushData;
 
@@ -275,8 +261,8 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLC(1,     ivec4 patch_size;                                            );
     GLSLC(1,     vec4 strength;                                               );
     GLSLC(1,     DataBuffer integral_base;                                    );
-    GLSLC(1,     uint integral_size;                                          );
-    GLSLC(1,     uint int_stride;                                             );
+    GLSLC(1,     uint64_t integral_size;                                      );
+    GLSLC(1,     uint64_t int_stride;                                         );
     GLSLC(1,     uint xyoffs_start;                                           );
     GLSLC(0, };                                                               );
     GLSLC(0,                                                                  );
@@ -371,13 +357,11 @@ static av_cold int init_weights_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
     GLSLF(1,     ivec2 offs[%i];                                                 ,TYPE_ELEMS);
     GLSLC(0,                                                                     );
     GLSLC(1,     int invoc_idx = int(gl_WorkGroupID.z);                          );
-
-    GLSLC(1,     offset = uint64_t(integral_size)*invoc_idx;                     );
-    GLSLC(1,     dst = DataBuffer(uint64_t(integral_data) + offset);             );
-
+    GLSLC(0,                                                                     );
+    GLSLC(1,     offset = integral_size * invoc_idx;                             );
     GLSLC(1,     integral_data = DataBuffer(uint64_t(integral_base) + offset);   );
-    for (int i = 0; i < TYPE_ELEMS*2; i += 2)
-        GLSLF(1, offs[%i] = xyoffsets[xyoffs_start + 2*%i*invoc_idx + %i];       ,i/2,TYPE_ELEMS,i);
+    for (int i = 0; i < TYPE_ELEMS; i++)
+        GLSLF(1, offs[%i] = xyoffsets[xyoffs_start + %i*invoc_idx + %i];         ,i,TYPE_ELEMS,i);
     GLSLC(0,                                                                     );
     GLSLC(1,     DTYPE a;                                                        );
     GLSLC(1,     DTYPE b;                                                        );
@@ -759,7 +743,7 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     /* Integral */
     AVBufferRef *integral_buf = NULL;
     FFVkBuffer *integral_vk;
-    uint32_t int_stride;
+    size_t int_stride;
     size_t int_size;
 
     /* Weights/sums */
@@ -787,8 +771,8 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         return AVERROR(EINVAL);
 
     /* Integral image */
-    int_stride = s->pl_weights.wg_size[0]*s->pl_weights_rows;
-    int_size = int_stride * int_stride * TYPE_SIZE;
+    int_stride = s->pl_weights.wg_size[0]*s->pl_weights_rows*TYPE_SIZE;
+    int_size = s->pl_weights.wg_size[0]*s->pl_weights_rows*int_stride;
 
     /* Plane dimensions */
     for (int i = 0; i < desc->nb_components; i++) {
@@ -982,9 +966,9 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             { s->patch[0], s->patch[1], s->patch[2], s->patch[3] },
             { s->strength[0], s->strength[1], s->strength[2], s->strength[2], },
             integral_vk->address,
-            int_size,
-            int_stride,
-            offsets_dispatched * 2,
+            (uint64_t)int_size,
+            (uint64_t)int_stride,
+            offsets_dispatched,
         };
 
         if (offsets_dispatched) {
