@@ -405,7 +405,6 @@ typedef struct VulkanOptExtension {
 } VulkanOptExtension;
 
 static const VulkanOptExtension optional_instance_exts[] = {
-    /* Pointless, here avoid zero-sized structs */
     { VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,          FF_VK_EXT_NO_FLAG                },
 };
 
@@ -783,6 +782,16 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
         validation_features.enabledValidationFeatureCount = FF_ARRAY_ELEMS(feat_list);
         inst_props.pNext = &validation_features;
     }
+
+#ifdef __APPLE__
+    for (int i = 0; i < inst_props.enabledExtensionCount; i++) {
+        if (!strcmp(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+                    inst_props.ppEnabledExtensionNames[i])) {
+            inst_props.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+            break;
+        }
+    }
+#endif
 
     /* Try to create the instance */
     ret = vk->CreateInstance(&inst_props, hwctx->alloc, &hwctx->inst);
