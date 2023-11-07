@@ -190,38 +190,41 @@ func ff_ps_hybrid_analysis_ileave_rvv, zve32x /* no needs for zve32f here */
         ret
 endfunc
 
-func ff_ps_hybrid_synthesis_deint_rvv, zve32x
-        slli        t1, a2, 5 + 1 + 2
-        sh2add      a0, a2, a0
-        add         a1, a1, t1
-        addi        a2, a2, -64
-        li          t1, 38 * 64 * 4
-        li          t6, 64 * 4
-        add         a4, a0, t1
-        beqz        a2, 3f
+func ff_ps_hybrid_synthesis_deint_rvv, zve64x
+        slli    t0, a2, 5 + 1 + 2
+        sh2add  a0, a2, a0
+        add     a1, a1, t0
+        addi    t2, a2, -64
+        li      t0, 38 * 64
+        li      t1, 32 * 2 * 4
+        li      t4, 8 - 16384 // offset from in[64][n][0] to in[0][n + 1][0]
+        slli    t5, a2, 5 + 1 + 2 // and from in[0][n+1][0] to in[0][n+1][s]
+        neg     t2, t2
+        li      t3, 32
+        add     a4, t4, t5
+        sh2add  t0, t0, a0
 1:
-        mv          t0, a0
-        mv          t1, a1
-        mv          t3, a3
-        mv          t4, a4
-        addi        a2, a2, 1
+        mv      t4, t2
+        addi    a3, a3, -1
 2:
-        vsetvli     t5, t3, e32, m4, ta, ma
-        vlseg2e32.v v16, (t1)
-        sub         t3, t3, t5
-        vsse32.v    v16, (t0), t6
-        mul         t2, t5, t6
-        vsse32.v    v20, (t4), t6
-        sh3add      t1, t5, t1
-        add         t0, t0, t2
-        add         t4, t4, t2
-        bnez        t3, 2b
+        vsetvli t5, t4, e32, m4, ta, ma
+        vlse64.v v16, (a1), t1 /* sizeof (float[32][2]) */
+        sub     t4, t4, t5
+        vnsrl.wx v24, v16, zero
+        slli    t6, t5, 5 + 1 + 2
+        vnsrl.wx v28, v16, t3 /* 32 */
+        add     a1, a1, t6
+        vse32.v v24, (a0)
+        sh2add  a0, t5, a0
+        vse32.v v28, (t0)
+        sh2add  t0, t5, t0
+        bnez    t4, 2b
 
-        add         a0, a0, 4
-        add         a1, a1, 32 * 2 * 4
-        add         a4, a4, 4
-        bnez        a2, 1b
-3:
+        add     a1, a1, a4
+        sh2add  a0, a2, a0
+        sh2add  t0, a2, t0
+        bnez    a3, 1b
+
         ret
 endfunc
 
