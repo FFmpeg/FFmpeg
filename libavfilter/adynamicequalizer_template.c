@@ -27,7 +27,11 @@
 #undef CLIP
 #undef SAMPLE_FORMAT
 #undef FABS
+#undef FLOG
+#undef FEXP
+#undef FLOG2
 #undef FLOG10
+#undef FEXP2
 #undef FEXP10
 #undef EPSILON
 #if DEPTH == 32
@@ -41,7 +45,11 @@
 #define FMAX fmaxf
 #define CLIP av_clipf
 #define FABS fabsf
+#define FLOG logf
+#define FEXP expf
+#define FLOG2 log2f
 #define FLOG10 log10f
+#define FEXP2 exp2f
 #define FEXP10 ff_exp10f
 #define EPSILON (1.f / (1 << 23))
 #define ftype float
@@ -56,7 +64,11 @@
 #define FMAX fmax
 #define CLIP av_clipd
 #define FABS fabs
+#define FLOG log
+#define FEXP exp
+#define FLOG2 log2
 #define FLOG10 log10
+#define FEXP2 exp2
 #define FEXP10 ff_exp10
 #define EPSILON (1.0 / (1LL << 53))
 #define ftype double
@@ -150,6 +162,92 @@ static int fn(filter_prepare)(AVFilterContext *ctx)
     return 0;
 }
 
+#define PEAKS(empty_value,op,sample, psample)\
+    if (!empty && psample == ss[front]) {    \
+        ss[front] = empty_value;             \
+        if (back != front) {                 \
+            front--;                         \
+            if (front < 0)                   \
+                front = n - 1;               \
+        }                                    \
+        empty = front == back;               \
+    }                                        \
+                                             \
+    if (!empty && sample op ss[front]) {     \
+        while (1) {                          \
+            ss[front] = empty_value;         \
+            if (back == front) {             \
+                empty = 1;                   \
+                break;                       \
+            }                                \
+            front--;                         \
+            if (front < 0)                   \
+                front = n - 1;               \
+        }                                    \
+    }                                        \
+                                             \
+    while (!empty && sample op ss[back]) {   \
+        ss[back] = empty_value;              \
+        if (back == front) {                 \
+            empty = 1;                       \
+            break;                           \
+        }                                    \
+        back++;                              \
+        if (back >= n)                       \
+            back = 0;                        \
+    }                                        \
+                                             \
+    if (!empty) {                            \
+        back--;                              \
+        if (back < 0)                        \
+            back = n - 1;                    \
+    }
+
+static void fn(queue_sample)(ChannelContext *cc,
+                             const ftype x,
+                             const int nb_samples)
+{
+    ftype *ss = cc->dqueue;
+    ftype *qq = cc->queue;
+    int front = cc->front;
+    int back = cc->back;
+    int empty, n, pos = cc->position;
+    ftype px = qq[pos];
+
+    fn(cc->sum) += x;
+    fn(cc->log_sum) += FLOG2(x);
+    if (cc->size >= nb_samples) {
+        fn(cc->sum) -= px;
+        fn(cc->log_sum) -= FLOG2(px);
+    }
+
+    qq[pos] = x;
+    pos++;
+    if (pos >= nb_samples)
+        pos = 0;
+    cc->position = pos;
+
+    if (cc->size < nb_samples)
+        cc->size++;
+    n = cc->size;
+
+    empty = (front == back) && (ss[front] == ZERO);
+    PEAKS(ZERO, >, x, px)
+
+    ss[back] = x;
+
+    cc->front = front;
+    cc->back = back;
+}
+
+static ftype fn(get_peak)(ChannelContext *cc, ftype *score)
+{
+    ftype s, *ss = cc->dqueue;
+    s = FEXP2(fn(cc->log_sum) / cc->size) / (fn(cc->sum) / cc->size);
+    *score = LIN2LOG(s);
+    return ss[cc->front];
+}
+
 static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     AudioDynamicEqualizerContext *s = ctx->priv;
@@ -157,6 +255,7 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
     AVFrame *in = td->in;
     AVFrame *out = td->out;
     const ftype sample_rate = in->sample_rate;
+    const int isample_rate = in->sample_rate;
     const ftype makeup = s->makeup;
     const ftype ratio = s->ratio;
     const ftype range = s->range;
@@ -196,6 +295,27 @@ static int fn(filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int n
             }
 
             fn(cc->new_threshold_log) = FMAX(fn(cc->new_threshold_log), LIN2LOG(new_threshold));
+        }
+    } else if (detection == DET_ADAPTIVE) {
+        for (int ch = start; ch < end; ch++) {
+            const ftype *src = (const ftype *)in->extended_data[ch];
+            ChannelContext *cc = &s->cc[ch];
+            ftype *tstate = fn(cc->tstate);
+            ftype score, peak;
+
+            for (int n = 0; n < in->nb_samples; n++) {
+                ftype detect = FMAX(FABS(fn(get_svf)(src[n], dm, da, tstate)), EPSILON);
+                fn(queue_sample)(cc, detect, isample_rate);
+            }
+
+            peak = fn(get_peak)(cc, &score);
+
+            if (score >= -3.5) {
+                fn(cc->threshold_log) = LIN2LOG(peak);
+            } else if (cc->detection == DET_UNSET) {
+                fn(cc->threshold_log) = s->threshold_log;
+            }
+            cc->detection = detection;
         }
     } else if (detection == DET_DISABLED) {
         for (int ch = start; ch < end; ch++) {

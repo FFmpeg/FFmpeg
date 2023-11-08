@@ -29,6 +29,7 @@ enum DetectionModes {
     DET_DISABLED,
     DET_OFF,
     DET_ON,
+    DET_ADAPTIVE,
     NB_DMODES,
 };
 
@@ -50,6 +51,8 @@ typedef struct ChannelContext {
     double detect_double;
     double threshold_log_double;
     double new_threshold_log_double;
+    double log_sum_double;
+    double sum_double;
     float fa_float[3], fm_float[3];
     float dstate_float[2];
     float fstate_float[2];
@@ -58,6 +61,14 @@ typedef struct ChannelContext {
     float detect_float;
     float threshold_log_float;
     float new_threshold_log_float;
+    float log_sum_float;
+    float sum_float;
+    void *dqueue;
+    void *queue;
+    int position;
+    int size;
+    int front;
+    int back;
     int detection;
     int init;
 } ChannelContext;
@@ -86,6 +97,7 @@ typedef struct AudioDynamicEqualizerContext {
     int dftype;
     int precision;
     int format;
+    int nb_channels;
 
     int (*filter_prepare)(AVFilterContext *ctx);
     int (*filter_channels)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
@@ -140,6 +152,7 @@ static int config_input(AVFilterLink *inlink)
     s->cc = av_calloc(inlink->ch_layout.nb_channels, sizeof(*s->cc));
     if (!s->cc)
         return AVERROR(ENOMEM);
+    s->nb_channels = inlink->ch_layout.nb_channels;
 
     switch (s->format) {
     case AV_SAMPLE_FMT_DBLP:
@@ -150,6 +163,14 @@ static int config_input(AVFilterLink *inlink)
         s->filter_prepare  = filter_prepare_float;
         s->filter_channels = filter_channels_float;
         break;
+    }
+
+    for (int ch = 0; ch < s->nb_channels; ch++) {
+        ChannelContext *cc = &s->cc[ch];
+        cc->queue = av_calloc(inlink->sample_rate, sizeof(double));
+        cc->dqueue = av_calloc(inlink->sample_rate, sizeof(double));
+        if (!cc->queue || !cc->dqueue)
+            return AVERROR(ENOMEM);
     }
 
     return 0;
@@ -189,6 +210,11 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioDynamicEqualizerContext *s = ctx->priv;
 
+    for (int ch = 0; ch < s->nb_channels; ch++) {
+        ChannelContext *cc = &s->cc[ch];
+        av_freep(&cc->queue);
+        av_freep(&cc->dqueue);
+    }
     av_freep(&s->cc);
 }
 
@@ -226,6 +252,7 @@ static const AVOption adynamicequalizer_options[] = {
     {   "disabled", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=DET_DISABLED}, 0, 0,   FLAGS, "auto" },
     {   "off",      0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=DET_OFF},      0, 0,   FLAGS, "auto" },
     {   "on",       0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=DET_ON},       0, 0,   FLAGS, "auto" },
+    {   "adaptive", 0,                         0,                  AV_OPT_TYPE_CONST,  {.i64=DET_ADAPTIVE}, 0, 0,   FLAGS, "auto" },
     { "precision", "set processing precision", OFFSET(precision),  AV_OPT_TYPE_INT,    {.i64=0},        0, 2,       AF, "precision" },
     {   "auto",  "set auto processing precision",                  0, AV_OPT_TYPE_CONST, {.i64=0},      0, 0,       AF, "precision" },
     {   "float", "set single-floating point processing precision", 0, AV_OPT_TYPE_CONST, {.i64=1},      0, 0,       AF, "precision" },

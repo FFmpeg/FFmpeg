@@ -1100,6 +1100,8 @@ Disable using automatically gathered threshold value.
 Stop picking threshold value.
 @item on
 Start picking threshold value.
+@item adaptive
+Adaptively pick threshold value, by calculating sliding window entropy.
 @end table
 
 @item precision
