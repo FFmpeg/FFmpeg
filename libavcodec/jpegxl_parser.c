@@ -708,6 +708,10 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
     level1_codecounts[0] = hskip;
     for (int i = hskip; i < 18; i++) {
         len = level1_lens[prefix_codelen_map[i]] = get_vlc2(gb, level0_table, 4, 1);
+        if (len < 0) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         level1_codecounts[len]++;
         if (len) {
             total_code += (32 >> len);
@@ -753,6 +757,10 @@ static int read_vlc_prefix(GetBitContext *gb, JXLEntropyDecoder *dec, JXLSymbolD
     total_code = 0;
     for (int i = 0; i < dist->alphabet_size; i++) {
         len = get_vlc2(gb, level1_vlc.table, 5, 1);
+        if (len < 0) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         if (get_bits_left(gb) < 0) {
             ret = AVERROR_BUFFER_TOO_SMALL;
             goto end;
