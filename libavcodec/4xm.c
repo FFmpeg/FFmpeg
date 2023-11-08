@@ -886,6 +886,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         }
 
         if (i >= CFRAME_BUFFER_COUNT) {
+            if (free_index < 0)
+                return AVERROR_INVALIDDATA;
             i             = free_index;
             f->cfrm[i].id = id;
         }
