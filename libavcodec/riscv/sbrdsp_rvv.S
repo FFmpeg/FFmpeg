@@ -85,6 +85,95 @@ func ff_sbr_neg_odd_64_rvv, zve64x
 endfunc
 #endif
 
+func ff_sbr_autocorrelate_rvv, zve32f
+        vsetvli t0, zero, e32, m4, ta, ma
+        vmv.v.x v0, zero
+        flw     fa0,   (a0)
+        vmv.v.x v4, zero
+        flw     fa1,  4(a0)
+        vmv.v.x v8, zero
+        flw     fa2,  8(a0)
+        li      a2, 37
+        flw     fa3, 12(a0)
+        fmul.s  ft10, fa0, fa0
+        flw     fa4, 16(a0)
+        fmul.s  ft6, fa0, fa2
+        flw     fa5, 20(a0)
+        addi    a0, a0, 38 * 8
+        fmul.s  ft7, fa0, fa3
+        fmul.s  ft2, fa0, fa4
+        fmul.s  ft3, fa0, fa5
+        flw     fa0,   (a0)
+        fmadd.s ft10, fa1, fa1, ft10
+        fmadd.s ft6, fa1, fa3, ft6
+        flw     fa3, 12(a0)
+        fnmsub.s ft7, fa1, fa2, ft7
+        flw     fa2,  8(a0)
+        fmadd.s ft2, fa1, fa5, ft2
+        fnmsub.s ft3, fa1, fa4, ft3
+        flw     fa1,  4(a0)
+        fmul.s  ft4, fa0, fa0
+        fmul.s  ft0, fa0, fa2
+        fmul.s  ft1, fa0, fa3
+        fmadd.s ft4, fa1, fa1, ft4
+        fmadd.s ft0, fa1, fa3, ft0
+        fnmsub.s ft1, fa1, fa2, ft1
+1:
+        vsetvli t0, a2, e32, m2, tu, ma
+        slli    t1, t0, 3
+        sub     a0, a0, t1
+        vlseg2e32.v v16, (a0)
+        sub     a2, a2, t0
+        vfmacc.vv v0, v16, v16
+        vfslide1down.vf v20, v16, fa0
+        vfmacc.vv v4, v16, v20
+        vfslide1down.vf v22, v18, fa1
+        vfmacc.vv v0, v18, v18
+        vfslide1down.vf v24, v20, fa2
+        vfmacc.vv v4, v18, v22
+        vfslide1down.vf v26, v22, fa3
+        vfmacc.vv v6, v16, v22
+        vfmv.f.s fa0, v16
+        vfmacc.vv v8, v16, v24
+        vfmv.f.s fa1, v18
+        vfmacc.vv v10, v16, v26
+        vfmv.f.s fa2, v20
+        vfnmsac.vv v6, v18, v20
+        vfmv.f.s fa3, v22
+        vfmacc.vv v8, v18, v26
+        vfnmsac.vv v10, v18, v24
+        bnez    a2, 1b
+
+        vsetvli t0, zero, e32, m2, ta, ma
+        vfredusum.vs v0, v0, v2
+        vfredusum.vs v4, v4, v2
+        vfmv.f.s fa0, v0
+        vfredusum.vs v6, v6, v2
+        vfmv.f.s fa2, v4
+        fadd.s   ft4, ft4, fa0
+        vfredusum.vs v8, v8, v2
+        vfmv.f.s fa3, v6
+        fadd.s   ft0, ft0, fa2
+        vfredusum.vs v10, v10, v2
+        vfmv.f.s fa4, v8
+        fadd.s   ft1, ft1, fa3
+        vfmv.f.s fa5, v10
+        fsw     ft0,   (a1)
+        fadd.s  ft2, ft2, fa4
+        fsw     ft1,  4(a1)
+        fadd.s  ft3, ft3, fa5
+        fsw     ft2,  8(a1)
+        fadd.s  ft6, ft6, fa2
+        fsw     ft3, 12(a1)
+        fadd.s  ft7, ft7, fa3
+        fsw     ft4, 16(a1)
+        fadd.s  ft10, ft10, fa0
+        fsw     ft6, 24(a1)
+        fsw     ft7, 28(a1)
+        fsw     ft10, 40(a1)
+        ret
+endfunc
+
 func ff_sbr_hf_g_filt_rvv, zve32f
         li      t1, 40 * 2 * 4
         sh3add  a1, a4, a1
