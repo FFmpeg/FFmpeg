@@ -1131,6 +1131,8 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int ret = ffio_read_size(pb, type, 4);
     if (ret < 0)
         return ret;
+    if (c->fc->nb_streams)
+        return AVERROR_INVALIDDATA;
 
     if (strcmp(type, "qt  "))
         c->isom = 1;
