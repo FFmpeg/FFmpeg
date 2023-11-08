@@ -250,6 +250,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     if (avctx->gop_size > 1)
         param->intra_period_length  = avctx->gop_size - 1;
 
+#if SVT_AV1_CHECK_VERSION(1, 1, 0)
     // In order for SVT-AV1 to force keyframes by setting pic_type to
     // EB_AV1_KEY_PICTURE on any frame, force_key_frames has to be set. Note
     // that this does not force all frames to be keyframes (it only forces a
@@ -260,6 +261,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
     // to be updated to set force_key_frames accordingly.
     if (avctx->gop_size == 1)
         param->force_key_frames = 1;
+#endif
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         param->frame_rate_numerator   = avctx->framerate.num;
