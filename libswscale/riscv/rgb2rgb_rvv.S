@@ -127,31 +127,30 @@ func ff_deinterleave_bytes_rvv, zve32x
 endfunc
 
 .macro yuy2_to_i422p y_shift
-        addi    a4, a4, 1
+        slli    t4, a4, 1 // pixel width -> (source) byte width
         lw      t6, (sp)
+        sub     a6, a6, a4
         srai    a4, a4, 1 // pixel width -> chroma width
+        sub     a7, a7, a4
+        sub     t6, t6, t4
 1:
         mv      t4, a4
-        mv      t3, a3
-        mv      t0, a0
-        mv      t1, a1
-        mv      t2, a2
         addi    a5, a5, -1
 2:
         vsetvli    t5, t4, e8, m2, ta, ma
-        vlseg2e16.v v16, (t3)
+        vlseg2e16.v v16, (a3)
         sub        t4, t4, t5
         vnsrl.wi   v24, v16, \y_shift // Y0
-        sh2add     t3, t5, t3
+        sh2add     a3, t5, a3
         vnsrl.wi   v26, v20, \y_shift // Y1
         vnsrl.wi   v28, v16, 8 - \y_shift // U
         vnsrl.wi   v30, v20, 8 - \y_shift // V
-        vsseg2e8.v v24, (t0)
-        sh1add     t0, t5, t0
-        vse8.v     v28, (t1)
-        add        t1, t5, t1
-        vse8.v     v30, (t2)
-        add        t2, t5, t2
+        vsseg2e8.v v24, (a0)
+        sh1add     a0, t5, a0
+        vse8.v     v28, (a1)
+        add        a1, t5, a1
+        vse8.v     v30, (a2)
+        add        a2, t5, a2
         bnez       t4, 2b
 
         add     a3, a3, t6
