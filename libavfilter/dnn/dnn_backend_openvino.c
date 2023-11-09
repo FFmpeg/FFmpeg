@@ -204,7 +204,6 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
     ov_tensor_t* tensor = NULL;
     ov_shape_t input_shape = {0};
     ov_element_type_e precision;
-    void *input_data_ptr = NULL;
 #else
     dimensions_t dims;
     precision_e precision;
@@ -249,12 +248,6 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
     input.width = dims[2];
     input.channels = dims[3];
     input.dt = precision_to_datatype(precision);
-    input.data = av_malloc(input.height * input.width * input.channels * get_datatype_size(input.dt));
-    if (!input.data) {
-        ov_shape_free(&input_shape);
-        return AVERROR(ENOMEM);
-    }
-    input_data_ptr = input.data;
 #else
     status = ie_infer_request_get_blob(request->infer_request, task->input_name, &input_blob);
     if (status != OK) {
@@ -297,6 +290,26 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
         request->lltasks[i] = lltask;
         request->lltask_count = i + 1;
         task = lltask->task;
+#if HAVE_OPENVINO2
+        if (tensor)
+            ov_tensor_free(tensor);
+        status = ov_tensor_create(precision, input_shape, &tensor);
+        ov_shape_free(&input_shape);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to create tensor from host prt.\n");
+            return ov2_map_error(status, NULL);
+        }
+        status = ov_tensor_data(tensor, &input.data);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get input data.\n");
+            return ov2_map_error(status, NULL);
+        }
+        status = ov_infer_request_set_input_tensor(request->infer_request, tensor);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to Set an input tensor for the model.\n");
+            return ov2_map_error(status, NULL);
+        }
+#endif
         switch (ov_model->model->func_type) {
         case DFT_PROCESS_FRAME:
             if (task->do_ioproc) {
@@ -317,24 +330,11 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
             av_assert0(!"should not reach here");
             break;
         }
-#if HAVE_OPENVINO2
-        status = ov_tensor_create_from_host_ptr(precision, input_shape, input.data, &tensor);
-        ov_shape_free(&input_shape);
-        if (status != OK) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to create tensor from host prt.\n");
-            return ov2_map_error(status, NULL);
-        }
-        status = ov_infer_request_set_input_tensor(request->infer_request, tensor);
-        if (status != OK) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to Set an input tensor for the model.\n");
-            return ov2_map_error(status, NULL);
-        }
-#endif
         input.data = (uint8_t *)input.data
                      + input.width * input.height * input.channels * get_datatype_size(input.dt);
     }
 #if HAVE_OPENVINO2
-    av_freep(&input_data_ptr);
+    ov_tensor_free(tensor);
 #else
     ie_blob_free(&input_blob);
 #endif
