@@ -174,6 +174,56 @@ func ff_sbr_autocorrelate_rvv, zve32f
         ret
 endfunc
 
+func ff_sbr_hf_gen_rvv, zve32f
+NOHWF   fmv.w.x fa0, a4
+NOHWF   mv      a4, a5
+NOHWF   mv      a5, a6
+        flw     ft2, 0(a2)
+        fmul.s  fa1, fa0, fa0 // bw * bw
+        sh3add  a1, a5, a1
+        flw     ft3, 4(a2)
+        fmul.s  fa2, ft2, fa0 // alpha[2]
+        sh3add  a0, a5, a0
+        flw     ft0, 0(a3)
+        fmul.s  fa3, ft3, fa0 // alpha[3]
+        sub     a5, a5, a4
+        flw     ft1, 4(a3)
+        fmul.s  fa0, ft0, fa1 // alpha[0]
+        flw     ft0, -16(a1)  // X_low[end - 2][0]
+        fmul.s  fa1, ft1, fa1 // alpha[1]
+        flw     ft1, -12(a1)  // X_low[end - 2][1]
+        flw     ft2,  -8(a1)  // X_low[end - 1][0]
+        flw     ft3,  -4(a1)  // X_low[end - 1][1]
+        addi    a1, a1, -16
+1:
+        vsetvli t0, a5, e32, m4, ta, ma
+        slli    t1, t0, 3
+        sub     a1, a1, t1
+        vlseg2e32.v v0, (a1)          // X_low[i - 2]
+        sub     a0, a0, t1
+        vfslide1down.vf v8, v0, ft0   // X_low[i - 1][0]
+        sub     a5, a5, t0
+        vfslide1down.vf v12, v4, ft1  // X_low[i - 1][1]
+        vfslide1down.vf v16, v8, ft2  // X_low[i    ][0]
+        vfslide1down.vf v20, v12, ft3 // X_low[i    ][1]
+        vfmacc.vf v16, fa0, v0
+        vfmacc.vf v20, fa0, v4
+        vfmv.f.s ft0, v0
+        vfnmsac.vf v16, fa1, v4
+        vfmacc.vf v20, fa1, v0
+        vfmv.f.s ft1, v4
+        vfmacc.vf v16, fa2, v8
+        vfmacc.vf v20, fa2, v12
+        vfmv.f.s ft2, v8
+        vfnmsac.vf v16, fa3, v12
+        vfmacc.vf v20, fa3, v8
+        vfmv.f.s ft3, v12
+        vsseg2e32.v v16, (a0)
+        bnez    a5, 1b
+
+        ret
+endfunc
+
 func ff_sbr_hf_g_filt_rvv, zve32f
         li      t1, 40 * 2 * 4
         sh3add  a1, a4, a1
