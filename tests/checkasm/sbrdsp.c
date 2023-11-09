@@ -190,8 +190,8 @@ static void test_hf_gen(void)
     for (i = 2; i < 64; i += 2) {
         memset(dst0, 0, 128 * 2 * sizeof(INTFLOAT));
         memset(dst1, 0, 128 * 2 * sizeof(INTFLOAT));
-        call_ref(dst0, low, alpha0, alpha1, 0.0, i, 128);
-        call_new(dst1, low, alpha0, alpha1, 0.0, i, 128);
+        call_ref(dst0, low, alpha0, alpha1, bw, i, 128);
+        call_new(dst1, low, alpha0, alpha1, bw, i, 128);
         if (!float_near_abs_eps_array((INTFLOAT *)dst0, (INTFLOAT *)dst1, EPS, 128 * 2))
             fail();
         bench_new(dst1, low, alpha0, alpha1, bw, i, 128);
