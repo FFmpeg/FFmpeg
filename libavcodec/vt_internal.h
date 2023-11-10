@@ -56,6 +56,9 @@ int ff_videotoolbox_frame_params(AVCodecContext *avctx,
 int ff_videotoolbox_buffer_copy(VTContext *vtctx,
                                 const uint8_t *buffer,
                                 uint32_t size);
+int ff_videotoolbox_buffer_append(VTContext *vtctx,
+                                  const uint8_t *buffer,
+                                  uint32_t size);
 int ff_videotoolbox_uninit(AVCodecContext *avctx);
 int ff_videotoolbox_h264_start_frame(AVCodecContext *avctx,
                                      const uint8_t *buffer,
@@ -64,6 +67,7 @@ int ff_videotoolbox_h264_decode_slice(AVCodecContext *avctx,
                                       const uint8_t *buffer,
                                       uint32_t size);
 int ff_videotoolbox_common_end_frame(AVCodecContext *avctx, AVFrame *frame);
+CFDataRef ff_videotoolbox_av1c_extradata_create(AVCodecContext *avctx);
 CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx);
 CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx);
 CFDataRef ff_videotoolbox_vpcc_extradata_create(AVCodecContext *avctx);

@@ -114,7 +114,8 @@ typedef struct AV1DecContext {
     AV1Frame ref[AV1_NUM_REF_FRAMES];
     AV1Frame cur_frame;
 
-    int nb_unit;
+    int nb_unit;           ///< The index of the next OBU to be processed.
+    int start_unit;        ///< The index of the first OBU of the current frame.
 
     // AVOptions
     int operating_point;
