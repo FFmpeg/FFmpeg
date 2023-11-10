@@ -3072,7 +3072,7 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
 
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
-    av_log(hwfc, AV_LOG_VERBOSE, "Transfered CUDA image to Vulkan!\n");
+    av_log(hwfc, AV_LOG_VERBOSE, "Transferred CUDA image to Vulkan!\n");
 
     return err = prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 
@@ -3648,7 +3648,7 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
 
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
-    av_log(hwfc, AV_LOG_VERBOSE, "Transfered Vulkan image to CUDA!\n");
+    av_log(hwfc, AV_LOG_VERBOSE, "Transferred Vulkan image to CUDA!\n");
 
     return prepare_frame(hwfc, &fp->upload_exec, dst_f, PREP_MODE_EXTERNAL_IMPORT);
 

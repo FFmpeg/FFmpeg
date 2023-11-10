@@ -504,7 +504,7 @@ static av_cold int pulse_write_header(AVFormatContext *h)
         pulse_map_channels_to_pulse(&st->codecpar->ch_layout, &channel_map);
         /* Unknown channel is present in channel_layout, let PulseAudio use its default. */
         if (channel_map.channels != sample_spec.channels) {
-            av_log(s, AV_LOG_WARNING, "Unknown channel. Using defaul channel map.\n");
+            av_log(s, AV_LOG_WARNING, "Unknown channel. Using default channel map.\n");
             channel_map.channels = 0;
         }
     } else

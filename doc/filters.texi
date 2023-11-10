@@ -2306,7 +2306,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -3678,7 +3678,7 @@ Set order of tilt filter.
 
 @item level
 Set input volume level. Allowed range is from 0 to 4.
-Defalt is 1.
+Default is 1.
 @end table
 
 @subsection Commands
@@ -3846,7 +3846,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -3943,7 +3943,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -4050,7 +4050,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -4142,7 +4142,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -4583,7 +4583,7 @@ This filter supports the all above options as @ref{commands}.
 @section crystalizer
 Simple algorithm for audio noise sharpening.
 
-This filter linearly increases differences betweeen each audio sample.
+This filter linearly increases differences between each audio sample.
 
 The filter accepts the following options:
 
@@ -4978,7 +4978,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -5489,7 +5489,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -5849,7 +5849,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -7206,7 +7206,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -7296,7 +7296,7 @@ Set transform type of IIR filter.
 @end table
 
 @item precision, r
-Set precison of filtering.
+Set precision of filtering.
 @table @option
 @item auto
 Pick automatic sample format depending on surround filters.
@@ -7765,7 +7765,7 @@ Set the sample rate, default is 44100.
 Set the number of samples per each frame. Default is 1024.
 
 @item taps, t
-Set the number of filter coefficents in output audio stream.
+Set the number of filter coefficients in output audio stream.
 Default value is 0.
 
 @item channel_layout, c
@@ -7821,7 +7821,7 @@ Bands are separated by white spaces and each band represent frequency in Hz.
 Default is @code{25 40 63 100 160 250 400 630 1000 1600 2500 4000 6300 10000 16000 24000}.
 
 @item taps, t
-Set number of filter coefficents in output audio stream.
+Set number of filter coefficients in output audio stream.
 Default value is @code{4096}.
 
 @item sample_rate, r
@@ -7848,7 +7848,7 @@ The filter accepts the following options:
 
 @table @option
 @item taps, t
-Set number of filter coefficents in output audio stream.
+Set number of filter coefficients in output audio stream.
 Default value is 1025.
 
 @item frequency, f
@@ -16833,7 +16833,7 @@ ffmpeg -init_hw_device vulkan -hwaccel vaapi -hwaccel_output_format vaapi ... -v
 @anchor{libvmaf}
 @section libvmaf
 
-Calulate the VMAF (Video Multi-Method Assessment Fusion) score for a
+Calculate the VMAF (Video Multi-Method Assessment Fusion) score for a
 reference/distorted pair of input videos.
 
 The first input is the distorted video, and the second input is the reference video.
@@ -16889,7 +16889,7 @@ ffmpeg -i distorted.mpg -i reference.mpg -lavfi libvmaf='model=version=vmaf_v0.6
 @end example
 
 @item
-Example with multiple addtional features:
+Example with multiple additional features:
 @example
 ffmpeg -i distorted.mpg -i reference.mpg -lavfi libvmaf='feature=name=psnr|name=ciede' -f null -
 @end example
@@ -20911,7 +20911,7 @@ pixel format is used.
 The filter does not support converting between YUV and RGB pixel formats.
 
 @item passthrough
-If set to 0, every frame is processed, even if no conversion is neccesary.
+If set to 0, every frame is processed, even if no conversion is necessary.
 This mode can be useful to use the filter as a buffer for a downstream
 frame-consumer that exhausts the limited decoder frame pool.
 
@@ -23041,7 +23041,7 @@ The filter accepts the following options:
 @table @option
 
 @item layout
-Set the grid size in the form @code{COLUMNSxROWS}. Range is upto UINT_MAX cells.
+Set the grid size in the form @code{COLUMNSxROWS}. Range is up to UINT_MAX cells.
 Default is @code{6x5}.
 
 @item nb_frames
@@ -27339,7 +27339,7 @@ Stack input videos horizontally.
 
 This is the VA-API variant of the @ref{hstack} filter, each input stream may
 have different height, this filter will scale down/up each input stream while
-keeping the orignal aspect.
+keeping the original aspect.
 
 It accepts the following options:
 
@@ -27360,7 +27360,7 @@ Stack input videos vertically.
 
 This is the VA-API variant of the @ref{vstack} filter, each input stream may
 have different width, this filter will scale down/up each input stream while
-keeping the orignal aspect.
+keeping the original aspect.
 
 It accepts the following options:
 
@@ -27821,7 +27821,7 @@ Stack input videos horizontally.
 
 This is the QSV variant of the @ref{hstack} filter, each input stream may
 have different height, this filter will scale down/up each input stream while
-keeping the orignal aspect.
+keeping the original aspect.
 
 It accepts the following options:
 
@@ -27842,7 +27842,7 @@ Stack input videos vertically.
 
 This is the QSV variant of the @ref{vstack} filter, each input stream may
 have different width, this filter will scale down/up each input stream while
-keeping the orignal aspect.
+keeping the original aspect.
 
 It accepts the following options:
 
@@ -28190,7 +28190,7 @@ It accepts the following values:
 Passes all supported output formats to DDA and returns what DDA decides to use.
 @item 8bit
 @item bgra
-8 Bit formats always work, and DDA will convert to them if neccesary.
+8 Bit formats always work, and DDA will convert to them if necessary.
 @item 10bit
 @item x2bgr10
 Filter initialization will fail if 10 bit format is requested but unavailable.

@@ -111,12 +111,12 @@ static int dedotcrawl##name(AVFilterContext *ctx, void *arg,     \
     for (int y = slice_start; y < slice_end; y++) {              \
         for (int x = 1; x < s->planewidth[0] - 1; x++) {         \
             int above = src[x - src_linesize];                   \
-            int bellow = src[x + src_linesize];                  \
+            int below = src[x + src_linesize];                   \
             int cur = src[x];                                    \
             int left = src[x - 1];                               \
             int right = src[x + 1];                              \
                                                                  \
-            if (FFABS(above + bellow - 2 * cur) <= luma2d &&     \
+            if (FFABS(above + below - 2 * cur) <= luma2d &&      \
                 FFABS(left + right - 2 * cur) <= luma2d)         \
                 continue;                                        \
                                                                  \

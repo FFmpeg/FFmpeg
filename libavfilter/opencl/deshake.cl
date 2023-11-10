@@ -231,7 +231,7 @@ __kernel void harris_response(
         {-1, -2, -1}
     };
 
-    // 8 x 8 local work + 3 pixels around each side (needed to accomodate for the
+    // 8 x 8 local work + 3 pixels around each side (needed to accommodate for the
     // block size radius of 2)
     __local float grayscale_data[196];
 

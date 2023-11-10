@@ -1454,7 +1454,7 @@ static int dash_init(AVFormatContext *s)
     }
 
     if (av_cmp_q(c->max_playback_rate, c->min_playback_rate) < 0) {
-        av_log(s, AV_LOG_WARNING, "Minimum playback rate value is higer than the Maximum. Both will be ignored\n");
+        av_log(s, AV_LOG_WARNING, "Minimum playback rate value is higher than the Maximum. Both will be ignored\n");
         c->min_playback_rate = c->max_playback_rate = (AVRational) {1, 1};
     }
 

@@ -98,7 +98,7 @@ enum {
     // Pass this element through unchanged.
     BSF_ELEMENT_PASS,
     // Insert this element, replacing any existing instances of it.
-    // Associated values may be provided explicitly (as addtional options)
+    // Associated values may be provided explicitly (as additional options)
     // or implicitly (either as side data or deduced from other parts of
     // the stream).
     BSF_ELEMENT_INSERT,

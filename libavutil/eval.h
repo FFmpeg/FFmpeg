@@ -105,7 +105,7 @@ int av_expr_count_vars(AVExpr *e, unsigned *counter, int size);
  * @param e the AVExpr to track user provided functions in
  * @param counter a zero-initialized array where the count of each function will be stored
  *                if you passed 5 functions with 2 arguments to av_expr_parse()
- *                then for arg=2 this will use upto 5 entries.
+ *                then for arg=2 this will use up to 5 entries.
  * @param size size of array
  * @param arg number of arguments the counted functions have
  * @return 0 on success, a negative value indicates that no expression or array was passed

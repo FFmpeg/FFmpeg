@@ -297,7 +297,7 @@ int main(int argc, char **argv)
         return 1;
     }
     if (!(enc->capabilities & AV_CODEC_CAP_ENCODER_RECON_FRAME)) {
-        fprintf(stderr, "Encoder '%s' cannot ouput reconstructed frames\n",
+        fprintf(stderr, "Encoder '%s' cannot output reconstructed frames\n",
                 enc->name);
         return 1;
     }

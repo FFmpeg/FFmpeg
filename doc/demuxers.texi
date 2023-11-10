@@ -777,7 +777,7 @@ error or used to store a negative value for dts correction when treated as signe
 the user set an upper limit, beyond which the delta is clamped to 1. Values greater than the limit if negative when
 cast to int32 are used to adjust onward dts.
 
-Unit is the track time scale. Range is 0 to UINT_MAX. Default is @code{UINT_MAX - 48000*10} which allows upto
+Unit is the track time scale. Range is 0 to UINT_MAX. Default is @code{UINT_MAX - 48000*10} which allows up to
 a 10 second dts correction for 48 kHz audio streams while accommodating 99.9% of @code{uint32} range.
 
 @item interleaved_read

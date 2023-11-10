@@ -187,7 +187,7 @@ static int scd_read_track(AVFormatContext *s, SCDTrackHeader *track, int index)
 
     /* Not sure what to do with these, it seems to be fine to ignore them. */
     if (track->aux_count != 0)
-        av_log(s, AV_LOG_DEBUG, "[%d] Track has %u auxillary chunk(s).\n", index, track->aux_count);
+        av_log(s, AV_LOG_DEBUG, "[%d] Track has %u auxiliary chunk(s).\n", index, track->aux_count);
 
     if ((st = avformat_new_stream(s, NULL)) == NULL)
         return AVERROR(ENOMEM);

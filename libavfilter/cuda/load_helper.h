@@ -20,7 +20,7 @@
 #define AVFILTER_CUDA_LOAD_HELPER_H
 
 /**
- * Loads a CUDA module and applies any decompression, if neccesary.
+ * Loads a CUDA module and applies any decompression, if necessary.
  */
 int ff_cuda_load_module(void *avctx, AVCUDADeviceContext *hwctx, CUmodule *cu_module,
                         const unsigned char *data, const unsigned int length);

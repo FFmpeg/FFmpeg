@@ -300,7 +300,7 @@ static int npptranspose_rotate(AVFilterContext *ctx, NPPTransposeStageContext *s
 
         // nppRotate uses 0,0 as the rotation point
         // need to shift the image accordingly after rotation
-        // need to substract 1 to get the correct coordinates
+        // need to subtract 1 to get the correct coordinates
         double angle = s->dir == NPP_TRANSPOSE_CLOCK ? -90.0 : s->dir == NPP_TRANSPOSE_CCLOCK ? 90.0 : 180.0;
         int shiftw = (s->dir == NPP_TRANSPOSE_CLOCK  || s->dir == NPP_TRANSPOSE_CLOCK_FLIP) ? ow - 1 : 0;
         int shifth = (s->dir == NPP_TRANSPOSE_CCLOCK || s->dir == NPP_TRANSPOSE_CLOCK_FLIP) ? oh - 1 : 0;
