@@ -233,7 +233,10 @@ static void test_hf_apply_noise(const SBRDSPContext *sbrdsp)
                        int kx, int m_max);
 
     randomize((INTFLOAT *)ref, 128 * 2);
-    randomize((INTFLOAT *)s_m, 128);
+
+    for (int i = 0; i < 128; i++)
+        s_m[i] = (rnd() & 1) ? ((INTFLOAT)rnd() / UINT_MAX) : (INTFLOAT)0;
+
     randomize((INTFLOAT *)q_filt, 128);
 
     for (i = 0; i < 4; i++) {
