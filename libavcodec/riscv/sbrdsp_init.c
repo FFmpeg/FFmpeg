@@ -21,6 +21,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
 #include "libavcodec/sbrdsp.h"
 
 void ff_sbr_sum64x5_rvv(float *z);
@@ -32,6 +33,14 @@ void ff_sbr_hf_gen_rvv(float (*X_high)[2], const float (*X_low)[2],
                        float bw, int start, int end);
 void ff_sbr_hf_g_filt_rvv(float (*Y)[2], const float (*X_high)[40][2],
                           const float *g_filt, int m_max, intptr_t ixh);
+void ff_sbr_hf_apply_noise_0_rvv(float (*Y)[2], const float *s,
+                                 const float *f, int n, int kx, int max);
+void ff_sbr_hf_apply_noise_1_rvv(float (*Y)[2], const float *s,
+                                 const float *f, int n, int kx, int max);
+void ff_sbr_hf_apply_noise_2_rvv(float (*Y)[2], const float *s,
+                                 const float *f, int n, int kx, int max);
+void ff_sbr_hf_apply_noise_3_rvv(float (*Y)[2], const float *s,
+                                 const float *f, int n, int kx, int max);
 
 av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
 {
@@ -44,6 +53,14 @@ av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
             c->sum_square = ff_sbr_sum_square_rvv;
             c->hf_gen = ff_sbr_hf_gen_rvv;
             c->hf_g_filt = ff_sbr_hf_g_filt_rvv;
+            if (ff_get_rv_vlenb() <= 16) {
+                c->hf_apply_noise[0] = ff_sbr_hf_apply_noise_0_rvv;
+                c->hf_apply_noise[2] = ff_sbr_hf_apply_noise_2_rvv;
+                if (flags & AV_CPU_FLAG_RVB_BASIC) {
+                    c->hf_apply_noise[1] = ff_sbr_hf_apply_noise_1_rvv;
+                    c->hf_apply_noise[3] = ff_sbr_hf_apply_noise_3_rvv;
+                }
+            }
         }
         c->autocorrelate = ff_sbr_autocorrelate_rvv;
     }

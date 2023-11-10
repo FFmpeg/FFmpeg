@@ -243,3 +243,70 @@ func ff_sbr_hf_g_filt_rvv, zve32f
 
         ret
 endfunc
+
+.macro hf_apply_noise n
+        lla     a6, ff_sbr_noise_table
+        fmv.s.x ft0, zero
+        addi    a6, a6, 8
+1:
+.if \n & 1
+        min     t0, t0, a5 // preserve parity of t0 for v4 sign injector
+        vsetvli zero, t0, e32, m4, ta, mu
+.else
+        vsetvli t0, a5, e32, m4, ta, mu
+.endif
+        sh3add  t6, a3, a6
+        vle32.v v8, (a1)      // s_m
+        sub     a5, a5, t0
+        vle32.v v12, (a2)     // q_filt
+        sh2add  a1, t0, a1
+        vmfeq.vf v0, v8, ft0  // s_m == 0.f
+        vlseg2e32.v v24, (t6) // ff_sbr_noise_table
+        sh2add  a2, t0, a2
+.if \n == 2
+        vfneg.v v8, v8
+.endif
+.if \n & 1
+        vfsgnjx.vv v8, v8, v4 // could equivalent use vxor.vv
+.endif
+        add     a3, t0, a3
+        vlseg2e32.v v16, (a0) // Y
+        andi    a3, a3, 0x1ff
+.if \n & 1
+        vfmul.vv v28, v12, v28
+        vfmacc.vv v16, v12, v24, v0.t
+        vmerge.vvm v28, v8, v28, v0
+        vfadd.vv v20, v20, v28
+.else
+        vfmul.vv v24, v12, v24
+        vfmacc.vv v20, v12, v28, v0.t
+        vmerge.vvm v24, v8, v24, v0
+        vfadd.vv v16, v16, v24
+.endif
+        vsseg2e32.v v16, (a0)
+        sh3add  a0, t0, a0
+        bnez    a5, 1b
+
+        ret
+.endm
+
+func ff_sbr_hf_apply_noise_0_rvv, zve32f
+        hf_apply_noise 0
+endfunc
+
+func ff_sbr_hf_apply_noise_3_rvv, zve32f
+       not     a4, a4 // invert parity of kx
+       // fall through
+endfunc
+
+func ff_sbr_hf_apply_noise_1_rvv, zve32f
+        vsetvli t0, zero, e32, m4, ta, ma
+        vid.v   v4
+        vxor.vx v4, v4, a4
+        vsll.vi v4, v4, 31 // v4[i] = (kx & 1) ? -0.f : +0.f
+        hf_apply_noise 1
+endfunc
+
+func ff_sbr_hf_apply_noise_2_rvv, zve32f
+        hf_apply_noise 2
+endfunc
