@@ -2,183 +2,183 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
-2023-11-08 - xxxxxxxxxx - lavu 58.32.100 - channel_layout.h
+2023-11-08 - b82957a66a7 - lavu 58.32.100 - channel_layout.h
   Add AV_CH_LAYOUT_7POINT2POINT3 and AV_CHANNEL_LAYOUT_7POINT2POINT3.
   Add AV_CH_LAYOUT_9POINT1POINT4_BACK and AV_CHANNEL_LAYOUT_9POINT1POINT4_BACK.
 
-2023-10-31 - xxxxxxxxxx - lavu 58.31.100 - pixdesc.h
+2023-10-31 - 57c16323f26 - lavu 58.31.100 - pixdesc.h
   Add AV_PIX_FMT_FLAG_XYZ.
 
 -------- 8< --------- FFmpeg 6.1 was cut here -------- 8< ---------
 
-2023-10-27 - xxxxxxxxxx - lavu 58.28.100 - channel_layout.h
+2023-10-27 - 52a97642604 - lavu 58.28.100 - channel_layout.h
   Add AV_CH_LAYOUT_3POINT1POINT2 and AV_CHANNEL_LAYOUT_3POINT1POINT2.
   Add AV_CH_LAYOUT_5POINT1POINT2_BACK and AV_CHANNEL_LAYOUT_5POINT1POINT2_BACK.
   Add AV_CH_LAYOUT_5POINT1POINT4_BACK and AV_CHANNEL_LAYOUT_5POINT1POINT4_BACK.
   Add AV_CH_LAYOUT_7POINT1POINT2 and AV_CHANNEL_LAYOUT_7POINT1POINT2.
   Add AV_CH_LAYOUT_7POINT1POINT4_BACK and AV_CHANNEL_LAYOUT_7POINT1POINT4_BACK.
 
-2023-10-06 - xxxxxxxxxx - lavc 60.30.101 - avcodec.h
+2023-10-06 - 804be7f9e3c - lavc 60.30.101 - avcodec.h
   AVCodecContext.coded_side_data may now be used during decoding, to be set
   by user before calling avcodec_open2() for initialization.
 
-2023-10-06 - xxxxxxxxxx - lavc 60.15.100 - avformat.h
+2023-10-06 - 5432d2aacad - lavc 60.15.100 - avformat.h
   Deprecate AVFormatContext.{nb_,}side_data, av_stream_add_side_data(),
   av_stream_new_side_data(), and av_stream_get_side_data(). Side data fields
   from AVFormatContext.codecpar should be used from now on.
 
-2023-10-06 - xxxxxxxxxx - lavc 60.30.100 - codec_par.h
+2023-10-06 - 21d7cc6fa9a - lavc 60.30.100 - codec_par.h
   Added {nb_,}coded_side_data to AVCodecParameters.
   The AVCodecParameters helpers will copy it to and from its AVCodecContext
   namesake.
 
-2023-10-06 - xxxxxxxxxx - lavc 60.29.100 - packet.h
+2023-10-06 - 74279227dd2 - lavc 60.29.100 - packet.h
   Added av_packet_side_data_new(), av_packet_side_data_add(),
   av_packet_side_data_get(), av_packet_side_data_remove, and
   av_packet_side_data_free().
 
-2023-10-03 - xxxxxxxxxx - lavc 60.28.100 - codec_par.h defs.h
+2023-10-03 - ea14e8bc302 - lavc 60.28.100 - codec_par.h defs.h
   Move the definition of enum AVFieldOrder from codec_par.h to defs.h.
 
-2023-10-03 - xxxxxxxxxx - lavf 60.14.100 - avformat.h
+2023-10-03 - dd48e49d547 - lavf 60.14.100 - avformat.h
   Deprecate AVFMT_ALLOW_FLUSH without replacement. Users can always
   flush any muxer by sending a NULL packet.
 
-2023-09-28 - xxxxxxxxxx - lavu 58.27.100 - pixfmt.h
+2023-09-28 - 8e1ef7c38f6 - lavu 58.27.100 - pixfmt.h
   Add AV_PIX_FMT_GBRAP14BE, AV_PIX_FMT_GBRAP14LE pixel formats.
 
-2023-09-28 - xxxxxxxxxx - lavu 58.26.100 - hwcontext_cuda.h
+2023-09-28 - 05f8b2ca0f7 - lavu 58.26.100 - hwcontext_cuda.h
   Add AV_CUDA_USE_CURRENT_CONTEXT.
 
-2023-09-19 - xxxxxxxxxx - lavu 58.25.100 - avutil.h
+2023-09-19 - ba9cd06c763 - lavu 58.25.100 - avutil.h
   Make AV_TIME_BASE_Q compatible with C++.
 
-2023-09-xx - xxxxxxxxxx - lavf 60 - avformat.h
+2023-09-18 - 85e075587dc - lavf 60 - avformat.h
   Deprecate AVFMT_FLAG_SHORTEST without replacement.
 
-2023-09-07 - xxxxxxxxxx - lavu 58.24.100 - imgutils.h
+2023-09-07 - 423b6a7e493 - lavu 58.24.100 - imgutils.h
   Add av_image_copy2(), a wrapper around the av_image_copy()
   to overcome limitations of automatic conversions.
 
-2023-09-07 - xxxxxxxxxx - lavu 58.23.100 - fifo.h
+2023-09-07 - 5094d1f429e - lavu 58.23.100 - fifo.h
   Constify the AVFifo pointees in av_fifo_peek() and av_fifo_peek_to_cb().
 
-2023-09-07 - xxxxxxxxxx - lavu 58.22.100 - audio_fifo.h
+2023-09-07 - fa4bf5793a0 - lavu 58.22.100 - audio_fifo.h
   Constify some pointees in av_audio_fifo_write(), av_audio_fifo_read(),
   av_audio_fifo_peek() and av_audio_fifo_peek_at().
 
-2023-09-07 - xxxxxxxxxx - lavu 58.21.100 - samplefmt.h
+2023-09-07 - 9bf31f60960 - lavu 58.21.100 - samplefmt.h
   Constify some pointees in av_samples_copy() and av_samples_set_silence().
 
-2023-09-07 - xxxxxxxxxx - lavu 58.20.100 - imgutils.h
+2023-09-07 - 41285890e03 - lavu 58.20.100 - imgutils.h
   Constify some pointees in av_image_copy(), av_image_copy_uc_from() and
   av_image_fill_black().
 
-2023-09-07 - xxxxxxxxxx - lavf 60.12.100 - avio.h
+2023-09-07 - 2a68d945cd7 - lavf 60.12.100 - avio.h
   Constify the buffer pointees in the write_packet and write_data_type
   callbacks of AVIOContext on the next major bump.
 
-2023-09-07 - xxxxxxxxxx - lavc 60.26.100 - defs.h
+2023-09-07 - 8238bc0b5e3 - lavc 60.26.100 - defs.h
   Add AV_PROFILE_* and AV_LEVEL_* replacements in defs.h for the
   defines from avcodec.h. The latter are deprecated.
 
-2023-09-06 - xxxxxxxxxx - lavc 60.25.101 - avcodec.h
+2023-09-06 - b6627a57f41 - lavc 60.25.101 - avcodec.h
   AVCodecContext.rc_buffer_size may now be set by decoders.
 
-2023-09-02 - xxxxxxxxxx - lavu 58.19.100 - executor.h
+2023-09-02 - 25ecc94d58f - lavu 58.19.100 - executor.h
   Add AVExecutor API
 
-2023-09-xx - xxxxxxxxxx - lavc 60.25.100 - avfft.h
+2023-09-01 - 139e54911c8 - lavc 60.25.100 - avfft.h
   The entire header will be deprecated and removed in two major bumps.
   For a replacement to av_dct, av_rdft, av_fft and av_mdct, use
   the new API from libavutil/tx.h.
 
-2023-07-xx - xxxxxxxxxx - lavu 58.18.100 - tx.h
+2023-09-01 - 11e22730e1e - lavu 58.18.100 - tx.h
   Add AV_TX_REAL_TO_REAL and AV_TX_REAL_TO_IMAGINARY
 
-2023-08-18 - xxxxxxxxxx - lavu 58.17.100 - channel_layout.h
+2023-08-18 - ff094f5ebbd - lavu 58.17.100 - channel_layout.h
   All AV_CHANNEL_LAYOUT_* macros are now compatible with C++ 17 and older.
 
-2023-08-08 - xxxxxxxxxx - lavu 58.15.100 - video_hint.h
+2023-08-08 - 5012b4ab4ca - lavu 58.15.100 - video_hint.h
   Add AVVideoHint API.
 
-2023-07-xx - xxxxxxxxxx - lavc 60 - avcodec.h
+2023-08-08 - 5012b4ab4ca - lavc 60 - avcodec.h
   Deprecate AV_CODEC_FLAG_DROPCHANGED without replacement.
 
-2023-07-05 - xxxxxxxxxx - lavu 58.14.100 - random_seed.h
+2023-07-05 - d694c25b44c - lavu 58.14.100 - random_seed.h
   Add av_random_bytes()
 
-2023-05-29 - xxxxxxxxxx - lavc 60.16.100 - avcodec.h codec_id.h
+2023-05-29 - 637afea88ed - lavc 60.16.100 - avcodec.h codec_id.h
   Add AV_CODEC_ID_EVC, FF_PROFILE_EVC_BASELINE, and FF_PROFILE_EVC_MAIN.
 
-2023-05-29 - xxxxxxxxxx - lavu 58.12.100 - mathematics.h
+2023-05-29 - 75918016ab1 - lavu 58.12.100 - mathematics.h
   Add av_bessel_i0()
 
-2023-05-xx - xxxxxxxxxx - lavc 60.15.100 - avcodec.h
+2023-05-29 - f3795e18574 - lavc 60.15.100 - avcodec.h
   Add AVHWAccel.update_thread_context, AVHWAccel.free_frame_priv,
   AVHWAccel.flush.
 
-2023-05-xx - xxxxxxxxxx - lavu 58.11.100 - hwcontext_vulkan.h
+2023-05-29 - db1d0227812 - lavu 58.11.100 - hwcontext_vulkan.h
   Add AVVulkanDeviceContext.lock_queue, AVVulkanDeviceContext.unlock_queue,
   AVVulkanFramesContext.format, AVVulkanFramesContext.lock_frame,
   AVVulkanFramesContext.unlock_frame, AVVkFrame.queue_family.
   Deprecate AV_VK_FRAME_FLAG_CONTIGUOUS_MEMORY (use multiplane images instead).
 
-2023-05-xx - xxxxxxxxxx - lavu 58.10.100 - pixfmt.h
+2023-05-29 - bef86ba86cc - lavu 58.10.100 - pixfmt.h
   Add AV_PIX_FMT_P212BE, AV_PIX_FMT_P212LE, AV_PIX_FMT_P412BE,
   AV_PIX_FMT_P412LE.
 
-2023-05-xx - xxxxxxxxxx - lavu 58.8.100 - frame.h
+2023-05-18 - 01d444c077e - lavu 58.8.100 - frame.h
   Add av_frame_replace().
 
-2023-05-xx - xxxxxxxxxx - lavu 58 - frame.h
+2023-05-18 - 63767b79a57 - lavu 58 - frame.h
   Deprecate AVFrame.palette_has_changed without replacement.
 
-2023-05-xx - xxxxxxxxxx - lavc 60 - avcodec.h
+2023-05-15 - 7d1d61cc5f5 - lavc 60 - avcodec.h
   Depreate AVCodecContext.ticks_per_frame in favor of
   AVCodecContext.framerate (encoding) and
   AV_CODEC_PROP_FIELDS (decoding).
 
-2023-05-xx - xxxxxxxxxx - lavc 60.12.100 - codec_desc.h
+2023-05-15 - 70433abf7fb - lavc 60.12.100 - codec_desc.h
   Add AV_CODEC_PROP_FIELDS.
 
-2023-05-xx - xxxxxxxxxx - lavc 60 - codec.h
+2023-05-15 - 8b20d0dcb5c - lavc 60 - codec.h
   Depreate AV_CODEC_CAP_SUBFRAMES without replacement.
 
-2023-05-xx - xxxxxxxxxx - lavc 60.11.100 - codec_par.h
+2023-05-07 - c2ae8e30b7f - lavc 60.11.100 - codec_par.h
   Add AVCodecParameters.framerate.
 
-2023-05-04 - xxxxxxxxxx - lavu 58.7.100 - frame.h
+2023-05-04 - 0fc9c1f6828 - lavu 58.7.100 - frame.h
   Deprecate AVFrame.interlaced_frame, AVFrame.top_field_first, and
   AVFrame.key_frame.
   Add AV_FRAME_FLAG_INTERLACED, AV_FRAME_FLAG_TOP_FIELD_FIRST, and
   AV_FRAME_FLAG_KEY flags as replacement.
 
-2023-04-10 - xxxxxxxxxx - lavu 58.6.100 - frame.h
+2023-04-10 - 4eaaa38d3df - lavu 58.6.100 - frame.h
   av_frame_get_plane_buffer() now accepts const AVFrame*.
 
-2023-04-04 - xxxxxxxxxx - lavu 58.6.100 - hdr_dynamic_metadata.h
+2023-04-04 - 61b27b15fc9 - lavu 58.6.100 - hdr_dynamic_metadata.h
   Add AV_HDR_PLUS_MAX_PAYLOAD_SIZE.
   av_dynamic_hdr_plus_create_side_data() now accepts a user provided
   buffer.
 
-2023-03-xx - xxxxxxxxxx - lavfi 9.5.100 - avfilter.h
+2023-03-24 - 632c3499319 - lavfi 9.5.100 - avfilter.h
   Add AVFILTER_FLAG_HWDEVICE.
 
-2023-03-21 - xxxxxxxxxx - lavu 58.5.100 - hdr_dynamic_metadata.h
+2023-03-21 - 0a3ce5f7384 - lavu 58.5.100 - hdr_dynamic_metadata.h
   Add av_dynamic_hdr_plus_from_t35() and av_dynamic_hdr_plus_to_t35()
   functions to convert between raw T.35 payloads containing dynamic
   HDR10+ metadata and their parsed representations as AVDynamicHDRPlus.
 
-2023-03-17 - xxxxxxxxxx - lavu 58.4.100 - hdr_dynamic_vivid_metadata.h
+2023-03-17 - 3be46ee7672 - lavu 58.4.100 - hdr_dynamic_vivid_metadata.h
   Add two group of three spline params.
   Deprecate previous define which only supports one group of params.
 
-2023-03-02 - xxxxxxxxxx - lavc 60.6.100 - avcodec.h
+2023-03-02 - 373ef1c4fae - lavc 60.6.100 - avcodec.h
   Add FF_PROFILE_EAC3_DDP_ATMOS, FF_PROFILE_TRUEHD_ATMOS,
   FF_PROFILE_DTS_HD_MA_X and FF_PROFILE_DTS_HD_MA_X_IMAX.
 
-2023-02-25 - xxxxxxxxxx - lavc 60.5.100 - avcodec.h
+2023-02-25 - f4593775436 - lavc 60.5.100 - avcodec.h
   Add FF_PROFILE_HEVC_SCC.
 
 -------- 8< --------- FFmpeg 6.0 was cut here -------- 8< ---------
