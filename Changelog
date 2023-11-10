@@ -2,6 +2,12 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 6.0.1:
+ avcodec/4xm: Check for cfrm exhaustion
+ avformat/mov: Disallow FTYP after streams
+ doc/html: fix styling issue with Texinfo 7.0
+ doc/html: support texinfo 7.0
+ Changelog: update
+ avformat/lafdec: Check for 0 parameters
  avformat/lafdec: Check for 0 parameters
  avfilter/buffersink: fix order of operation with = and <0
  avfilter/framesync: fix order of operation with = and <0
