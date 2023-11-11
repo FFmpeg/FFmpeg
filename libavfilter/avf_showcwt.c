@@ -123,6 +123,7 @@ typedef struct ShowCWTContext {
     float deviation;
     float bar_ratio;
     int bar_size;
+    int sono_size;
     float rotation;
 
     AVFloatDSPContext *fdsp;
@@ -174,7 +175,7 @@ static const AVOption showcwt_options[] = {
     {  "rl", "right to left", 0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_RL}, 0, 0, FLAGS, "direction" },
     {  "ud", "up to down",    0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_UD}, 0, 0, FLAGS, "direction" },
     {  "du", "down to up",    0, AV_OPT_TYPE_CONST,{.i64=DIRECTION_DU}, 0, 0, FLAGS, "direction" },
-    { "bar", "set bar ratio", OFFSET(bar_ratio), AV_OPT_TYPE_FLOAT, {.dbl = 0.}, 0, 1, FLAGS },
+    { "bar", "set bargraph ratio", OFFSET(bar_ratio), AV_OPT_TYPE_FLOAT, {.dbl = 0.}, 0, 1, FLAGS },
     { "rotation", "set color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
     { NULL }
 };
@@ -394,55 +395,56 @@ static void draw_bar(ShowCWTContext *s, int y,
     const ptrdiff_t ulinesize = s->outpicref->linesize[1];
     const ptrdiff_t vlinesize = s->outpicref->linesize[2];
     const int direction = s->direction;
+    const int sono_size = s->sono_size;
     const int bar_size = s->bar_size;
     const float rcp_bar_h = 1.f / bar_size;
     uint8_t *dstY, *dstU, *dstV;
-    const int w_1 = s->w - 1;
+    const int w = s->w;
 
     bh[0] = 1.f / (Y + 0.0001f);
     switch (direction) {
-        case DIRECTION_LR:
-            dstY = s->outpicref->data[0] + y * ylinesize;
-            dstU = s->outpicref->data[1] + y * ulinesize;
-            dstV = s->outpicref->data[2] + y * vlinesize;
-            for (int x = 0; x < bar_size; x++) {
-                float ht = (bar_size - x) * rcp_bar_h;
-                DRAW_BAR_COLOR(x);
-            }
-            break;
-        case DIRECTION_RL:
-            dstY = s->outpicref->data[0] + y * ylinesize;
-            dstU = s->outpicref->data[1] + y * ulinesize;
-            dstV = s->outpicref->data[2] + y * vlinesize;
-            for (int x = 0; x < bar_size; x++) {
-                float ht = x * rcp_bar_h;
-                DRAW_BAR_COLOR(w_1 - bar_size + x);
-            }
-            break;
-        case DIRECTION_UD:
-            dstY = s->outpicref->data[0] + w_1 - y;
-            dstU = s->outpicref->data[1] + w_1 - y;
-            dstV = s->outpicref->data[2] + w_1 - y;
-            for (int x = 0; x < bar_size; x++) {
-                float ht = (bar_size - x) * rcp_bar_h;
-                DRAW_BAR_COLOR(0);
-                dstY += ylinesize;
-                dstU += ulinesize;
-                dstV += vlinesize;
-            }
-            break;
-        case DIRECTION_DU:
-            dstY = s->outpicref->data[0] + w_1 - y + ylinesize * (s->h - 1 - bar_size);
-            dstU = s->outpicref->data[1] + w_1 - y + ulinesize * (s->h - 1 - bar_size);
-            dstV = s->outpicref->data[2] + w_1 - y + vlinesize * (s->h - 1 - bar_size);
-            for (int x = 0; x < bar_size; x++) {
-                float ht = x * rcp_bar_h;
-                DRAW_BAR_COLOR(0);
-                dstY += ylinesize;
-                dstU += ulinesize;
-                dstV += vlinesize;
-            }
-            break;
+    case DIRECTION_LR:
+        dstY = s->outpicref->data[0] + y * ylinesize;
+        dstU = s->outpicref->data[1] + y * ulinesize;
+        dstV = s->outpicref->data[2] + y * vlinesize;
+        for (int x = 0; x < bar_size; x++) {
+            float ht = (bar_size - x) * rcp_bar_h;
+            DRAW_BAR_COLOR(x);
+        }
+        break;
+    case DIRECTION_RL:
+        dstY = s->outpicref->data[0] + y * ylinesize;
+        dstU = s->outpicref->data[1] + y * ulinesize;
+        dstV = s->outpicref->data[2] + y * vlinesize;
+        for (int x = 0; x < bar_size; x++) {
+            float ht = x * rcp_bar_h;
+            DRAW_BAR_COLOR(w - bar_size + x);
+        }
+        break;
+    case DIRECTION_UD:
+        dstY = s->outpicref->data[0] + w - 1 - y;
+        dstU = s->outpicref->data[1] + w - 1 - y;
+        dstV = s->outpicref->data[2] + w - 1 - y;
+        for (int x = 0; x < bar_size; x++) {
+            float ht = (bar_size - x) * rcp_bar_h;
+            DRAW_BAR_COLOR(0);
+            dstY += ylinesize;
+            dstU += ulinesize;
+            dstV += vlinesize;
+        }
+        break;
+    case DIRECTION_DU:
+        dstY = s->outpicref->data[0] + w - 1 - y + ylinesize * sono_size;
+        dstU = s->outpicref->data[1] + w - 1 - y + ulinesize * sono_size;
+        dstV = s->outpicref->data[2] + w - 1 - y + vlinesize * sono_size;
+        for (int x = 0; x < bar_size; x++) {
+            float ht = x * rcp_bar_h;
+            DRAW_BAR_COLOR(0);
+            dstY += ylinesize;
+            dstU += ulinesize;
+            dstV += vlinesize;
+        }
+        break;
     }
 }
 
@@ -464,6 +466,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const float rotation = s->rotation;
     const int direction = s->direction;
     uint8_t *dstY, *dstU, *dstV, *dstA;
+    const int sono_size = s->sono_size;
     const int bar_size = s->bar_size;
     const int mode = s->mode;
     const int w_1 = s->w - 1;
@@ -473,6 +476,9 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     for (int y = start; y < end; y++) {
         const AVComplexFloat *src = ((const AVComplexFloat *)s->ch_out->extended_data[y]) +
                                                     0 * ihop_size + ihop_index;
+
+        if (sono_size <= 0)
+            goto skip;
 
         switch (direction) {
         case DIRECTION_LR:
@@ -524,6 +530,7 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             if (dstA != NULL)
                 dstA += x;
         }
+skip:
 
         switch (mode) {
         case 4:
@@ -549,11 +556,13 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                 U  = 0.5f + 0.5f * z * u;
                 V  = 0.5f + 0.5f * z * v;
 
-                dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
-                dstU[0] = av_clip_uint8(lrintf(U * 255.f));
-                dstV[0] = av_clip_uint8(lrintf(V * 255.f));
-                if (dstA)
-                    dstA[0] = dstY[0];
+                if (sono_size > 0) {
+                    dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+                    dstU[0] = av_clip_uint8(lrintf(U * 255.f));
+                    dstV[0] = av_clip_uint8(lrintf(V * 255.f));
+                    if (dstA)
+                        dstA[0] = dstY[0];
+                }
 
                 if (bar_size > 0)
                     draw_bar(s, y, Y, U, V);
@@ -578,11 +587,13 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                     V += z * yf * cosf(2.f * M_PI * (ch * yf + rotation));
                 }
 
-                dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
-                dstU[0] = av_clip_uint8(lrintf(U * 255.f));
-                dstV[0] = av_clip_uint8(lrintf(V * 255.f));
-                if (dstA)
-                    dstA[0] = dstY[0];
+                if (sono_size > 0) {
+                    dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+                    dstU[0] = av_clip_uint8(lrintf(U * 255.f));
+                    dstV[0] = av_clip_uint8(lrintf(V * 255.f));
+                    if (dstA)
+                        dstA[0] = dstY[0];
+                }
 
                 if (bar_size > 0)
                     draw_bar(s, y, Y, U, V);
@@ -595,11 +606,14 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             U = 0.5f + 0.5f * U * Y / M_PI;
             V = 1.f - U;
 
-            dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
-            dstU[0] = av_clip_uint8(lrintf(U * 255.f));
-            dstV[0] = av_clip_uint8(lrintf(V * 255.f));
-            if (dstA)
-                dstA[0] = dstY[0];
+            if (sono_size > 0) {
+                dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+                dstU[0] = av_clip_uint8(lrintf(U * 255.f));
+                dstV[0] = av_clip_uint8(lrintf(V * 255.f));
+                if (dstA)
+                    dstA[0] = dstY[0];
+            }
+
             if (bar_size > 0)
                 draw_bar(s, y, Y, U, V);
             break;
@@ -607,9 +621,12 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             Y = atan2f(src[0].im, src[0].re);
             Y = 0.5f + 0.5f * Y / M_PI;
 
-            dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
-            if (dstA)
-                dstA[0] = dstY[0];
+            if (sono_size > 0) {
+                dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+                if (dstA)
+                    dstA[0] = dstY[0];
+            }
+
             if (bar_size > 0)
                 draw_bar(s, y, Y, 0.5f, 0.5f);
             break;
@@ -617,9 +634,11 @@ static int draw(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             Y = hypotf(src[0].re, src[0].im);
             Y = remap_log(s, Y, iscale, log_factor);
 
-            dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
-            if (dstA)
-                dstA[0] = dstY[0];
+            if (sono_size > 0) {
+                dstY[0] = av_clip_uint8(lrintf(Y * 255.f));
+                if (dstA)
+                    dstA[0] = dstY[0];
+            }
 
             if (bar_size > 0)
                 draw_bar(s, y, Y, 0.5f, 0.5f);
@@ -817,11 +836,13 @@ static int config_output(AVFilterLink *outlink)
     case DIRECTION_LR:
     case DIRECTION_RL:
         s->bar_size = s->w * s->bar_ratio;
+        s->sono_size = s->w - s->bar_size;
         s->frequency_band_count = s->h;
         break;
     case DIRECTION_UD:
     case DIRECTION_DU:
         s->bar_size = s->h * s->bar_ratio;
+        s->sono_size = s->h - s->bar_size;
         s->frequency_band_count = s->w;
         break;
     }
@@ -996,16 +1017,12 @@ static int config_output(AVFilterLink *outlink)
 
     switch (s->direction) {
     case DIRECTION_LR:
-        s->pos = s->bar_size;
-        break;
-    case DIRECTION_RL:
-        s->pos = FFMAX(0, s->w - 2 - s->bar_size);
-        break;
     case DIRECTION_UD:
         s->pos = s->bar_size;
         break;
+    case DIRECTION_RL:
     case DIRECTION_DU:
-        s->pos = FFMAX(0, s->h - 2 - s->bar_size);
+        s->pos = s->sono_size;
         break;
     }
 
@@ -1051,7 +1068,7 @@ static int output_frame(AVFilterContext *ctx)
             for (int p = 0; p < nb_planes; p++) {
                 ptrdiff_t linesize = s->outpicref->linesize[p];
 
-                for (int y = 0; y < s->h - 2 - s->bar_size; y++) {
+                for (int y = 0; y < s->sono_size; y++) {
                     uint8_t *dst = s->outpicref->data[p] + y * linesize;
 
                     memmove(dst, dst + linesize, s->w);
@@ -1078,7 +1095,7 @@ static int output_frame(AVFilterContext *ctx)
         case DIRECTION_RL:
             s->pos--;
             if (s->pos < 0) {
-                s->pos = FFMAX(0, s->w - 2 - s->bar_size);
+                s->pos = s->sono_size;
                 s->new_frame = 1;
             }
             break;
@@ -1092,7 +1109,7 @@ static int output_frame(AVFilterContext *ctx)
         case DIRECTION_DU:
             s->pos--;
             if (s->pos < 0) {
-                s->pos = FFMAX(0, s->h - 2 - s->bar_size);
+                s->pos = s->sono_size;
                 s->new_frame = 1;
             }
             break;
@@ -1105,10 +1122,8 @@ static int output_frame(AVFilterContext *ctx)
             s->pos = s->bar_size;
             break;
         case DIRECTION_RL:
-            s->pos = FFMAX(0, s->w - 2 - s->bar_size);
-            break;
         case DIRECTION_DU:
-            s->pos = FFMAX(0, s->h - 2 - s->bar_size);
+            s->pos = s->sono_size;
             break;
         }
         break;
