@@ -142,7 +142,7 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
 {
     LeadContext *s = avctx->priv_data;
     const uint8_t * buf = avpkt->data;
-    int ret, format, yuv20p_half = 0, fields = 1, q, size;
+    int ret, format, zero = 0, yuv20p_half = 0, fields = 1, q, size;
     GetBitContext gb;
     int16_t dc_pred[3] = {0, 0, 0};
     uint16_t dequant[2][64];
@@ -152,6 +152,10 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
 
     format = AV_RL16(buf + 4);
     switch(format) {
+    case 0x0:
+        zero = 1;
+        avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        break;
     case 0x8000:
         yuv20p_half = 1;
         // fall-through
@@ -194,7 +198,44 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
 
     init_get_bits8(&gb, s->bitstream_buf, size);
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P && zero) {
+        for (int mb_y = 0; mb_y < avctx->height / 8; mb_y++)
+            for (int mb_x = 0; mb_x < avctx->width / 16; mb_x++)
+                for (int b = 0; b < 4; b++) {
+                    int luma_block = 2;
+                    const VLCElem * dc_vlc = b < luma_block ? luma_dc_vlc : chroma_dc_vlc;
+                    int dc_bits            = b < luma_block ? LUMA_DC_BITS : CHROMA_DC_BITS;
+                    const VLCElem * ac_vlc = b < luma_block ? luma_ac_vlc : chroma_ac_vlc;
+                    int ac_bits            = b < luma_block ? LUMA_AC_BITS : CHROMA_AC_BITS;
+                    int plane              = b < luma_block ? 0 : b - 1;
+                    int x, y, yclip;
+
+                    if (b < luma_block) {
+                        y = 8*mb_y + 8*(b >> 1);
+                        x = 16*mb_x + 8*(b & 1);
+                        yclip = 0;
+                    } else {
+                        y = 4*mb_y;
+                        x = 8*mb_x;
+                        yclip = y + 8 >= avctx->height / 2;
+                    }
+
+                    if (yclip) {
+                        uint8_t tmp[64];
+                        ret = decode_block(s, &gb, dc_vlc, dc_bits, ac_vlc, ac_bits,
+                            dc_pred + plane, dequant[!(b < 4)], tmp, 8);
+                        for (int yy = 0; yy < 8 && y + yy < avctx->height / 2; yy++)
+                            memcpy(frame->data[plane] + (y+yy)*frame->linesize[plane] + x, tmp + yy, 8);
+                    } else {
+                        ret = decode_block(s, &gb, dc_vlc, dc_bits, ac_vlc, ac_bits,
+                            dc_pred + plane, dequant[!(b < 4)],
+                            frame->data[plane] + y*frame->linesize[plane] + x,
+                            frame->linesize[plane]);
+                    }
+                    if (ret < 0)
+                        return ret;
+                }
+    } else if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
         for (int mb_y = 0; mb_y < (avctx->height + 15) / 16; mb_y++)
             for (int mb_x = 0; mb_x < (avctx->width + 15) / 16; mb_x++)
                 for (int b = 0; b < (yuv20p_half ? 4 : 6); b++) {
