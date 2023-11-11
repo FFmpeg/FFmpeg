@@ -672,8 +672,9 @@ static int run_channel_cwt(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
 
         memset(isrc, 0, sizeof(*isrc) * output_padding_size);
         if (offset == 0) {
+            const unsigned *kindex = index + kernel_start;
             for (int i = 0; i < kernel_range; i++) {
-                const unsigned n = index[i + kernel_start];
+                const unsigned n = kindex[i];
 
                 isrc[n].re += dstx[i].re;
                 isrc[n].im += dstx[i].im;
@@ -1247,8 +1248,11 @@ static int activate(AVFilterContext *ctx)
                 ff_filter_execute(ctx, run_channels_cwt_prepare, fin, NULL,
                                   FFMIN(s->nb_threads, s->nb_channels));
                 if (fin) {
-                    if (s->hop_index == 0)
+                    if (s->hop_index == 0) {
                         s->in_pts = fin->pts;
+                        if (s->old_pts == AV_NOPTS_VALUE)
+                            s->old_pts = av_rescale_q(s->in_pts, inlink->time_base, outlink->time_base) - 1;
+                    }
                     s->hop_index += fin->nb_samples;
                     av_frame_free(&fin);
                 } else {
