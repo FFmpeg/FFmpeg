@@ -680,6 +680,218 @@ function ff_hevc_put_hevc_epel_bi_h64_8_neon, export=1
         ret
 endfunc
 
+function ff_hevc_put_hevc_epel_bi_v4_8_neon, export=1
+        load_epel_filterb x7, x6
+        sub             x2, x2, x3
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.s}[0], [x2], x3
+        ld1             {v17.s}[0], [x2], x3
+        ld1             {v18.s}[0], [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().s}[0], [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        ld1             {v24.4h}, [x4], x10
+        sqadd           v4.8h, v4.8h, v24.8h
+        sqrshrun        v4.8b, v4.8h, #7
+        subs            w5, w5, #1
+        st1             {v4.s}[0], [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v6_8_neon, export=1
+        load_epel_filterb x7, x6
+        sub             x2, x2, x3
+        sub             x1, x1, #4
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8b}, [x2], x3
+        ld1             {v17.8b}, [x2], x3
+        ld1             {v18.8b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().8b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        ld1             {v24.8h}, [x4], x10
+        sqadd           v4.8h, v4.8h, v24.8h
+        sqrshrun        v4.8b, v4.8h, #7
+        st1             {v4.s}[0], [x0], #4
+        subs            w5, w5, #1
+        st1             {v4.h}[2], [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v8_8_neon, export=1
+        load_epel_filterb x7, x6
+        sub             x2, x2, x3
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8b}, [x2], x3
+        ld1             {v17.8b}, [x2], x3
+        ld1             {v18.8b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().8b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        ld1             {v24.8h}, [x4], x10
+        sqadd           v4.8h, v4.8h, v24.8h
+        sqrshrun        v4.8b, v4.8h, #7
+        subs            w5, w5, #1
+        st1             {v4.8b}, [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v12_8_neon, export=1
+        load_epel_filterb x7, x6
+        sub             x1, x1, #8
+        sub             x2, x2, x3
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.16b}, [x2], x3
+        ld1             {v17.16b}, [x2], x3
+        ld1             {v18.16b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().16b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        calc_epelb2     v5, \src0, \src1, \src2, \src3
+        ld1             {v24.8h, v25.8h}, [x4], x10
+        sqadd           v4.8h, v4.8h, v24.8h
+        sqadd           v5.8h, v5.8h, v25.8h
+        sqrshrun        v4.8b, v4.8h, #7
+        sqrshrun2       v4.16b, v5.8h, #7
+        st1             {v4.8b}, [x0], #8
+        subs            w5, w5, #1
+        st1             {v4.s}[2], [x0], x1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v16_8_neon, export=1
+        load_epel_filterb x7, x6
+        sub             x2, x2, x3
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.16b}, [x2], x3
+        ld1             {v17.16b}, [x2], x3
+        ld1             {v18.16b}, [x2], x3
+.macro calc src0, src1, src2, src3
+        ld1             {\src3\().16b}, [x2], x3
+        calc_epelb      v4, \src0, \src1, \src2, \src3
+        calc_epelb2     v5, \src0, \src1, \src2, \src3
+        ld1             {v24.8h, v25.8h}, [x4], x10
+        sqadd           v4.8h, v4.8h, v24.8h
+        sqadd           v5.8h, v5.8h, v25.8h
+        sqrshrun        v4.8b, v4.8h, #7
+        sqrshrun2       v4.16b, v5.8h, #7
+        st1             {v4.16b}, [x0], x1
+        subs            w5, w5, #1
+.endm
+1:      calc_all4
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v24_8_neon, export=1
+        load_epel_filterb x7, x6
+        sub             x2, x2, x3
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.8b, v17.8b, v18.8b}, [x2], x3
+        ld1             {v19.8b, v20.8b, v21.8b}, [x2], x3
+        ld1             {v22.8b, v23.8b, v24.8b}, [x2], x3
+.macro calc src0, src1, src2, src3, src4, src5, src6, src7, src8, src9, src10, src11
+        ld1             {\src9\().8b, \src10\().8b, \src11\().8b}, [x2], x3
+        calc_epelb      v4, \src0, \src3, \src6, \src9
+        calc_epelb      v5, \src1, \src4, \src7, \src10
+        calc_epelb      v6, \src2, \src5, \src8, \src11
+        ld1             {v28.8h, v29.8h, v30.8h}, [x4], x10
+        sqadd           v4.8h, v4.8h, v28.8h
+        sqadd           v5.8h, v5.8h, v29.8h
+        sqadd           v6.8h, v6.8h, v30.8h
+        sqrshrun        v4.8b, v4.8h, #7
+        sqrshrun        v5.8b, v5.8h, #7
+        sqrshrun        v6.8b, v6.8h, #7
+        subs            w5, w5, #1
+        st1             {v4.8b, v5.8b, v6.8b}, [x0], x1
+.endm
+1:      calc_all12
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v32_8_neon, export=1
+        load_epel_filterb x7, x6
+        sub             x2, x2, x3
+        mov             x10, #(MAX_PB_SIZE * 2)
+        ld1             {v16.16b, v17.16b}, [x2], x3
+        ld1             {v18.16b, v19.16b}, [x2], x3
+        ld1             {v20.16b, v21.16b}, [x2], x3
+.macro calc src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\src6\().16b, \src7\().16b}, [x2], x3
+        calc_epelb      v4, \src0, \src2, \src4, \src6
+        calc_epelb2     v5, \src0, \src2, \src4, \src6
+        calc_epelb      v6, \src1, \src3, \src5, \src7
+        calc_epelb2     v7, \src1, \src3, \src5, \src7
+        ld1             {v24.8h-v27.8h}, [x4], x10
+        sqadd           v4.8h, v4.8h, v24.8h
+        sqadd           v5.8h, v5.8h, v25.8h
+        sqadd           v6.8h, v6.8h, v26.8h
+        sqadd           v7.8h, v7.8h, v27.8h
+        sqrshrun        v4.8b, v4.8h, #7
+        sqrshrun2       v4.16b, v5.8h, #7
+        sqrshrun        v5.8b, v6.8h, #7
+        sqrshrun2       v5.16b, v7.8h, #7
+        st1             {v4.16b, v5.16b}, [x0], x1
+        subs            w5, w5, #1
+.endm
+1:      calc_all8
+.purgem calc
+2:      ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v48_8_neon, export=1
+        stp             x4, x5, [sp, #-64]!
+        stp             x2, x3, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        stp             x7, x30, [sp, #48]
+        bl              X(ff_hevc_put_hevc_epel_bi_v24_8_neon)
+        ldp             x4, x5, [sp]
+        ldp             x2, x3, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x7, [sp, #48]
+        add             sp, sp, #48
+        add             x0, x0, #24
+        add             x2, x2, #24
+        add             x4, x4, #48
+        bl              X(ff_hevc_put_hevc_epel_bi_v24_8_neon)
+        ldr             x30, [sp, #8]
+        add             sp, sp, #16
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_bi_v64_8_neon, export=1
+        stp             x4, x5, [sp, #-64]!
+        stp             x2, x3, [sp, #16]
+        stp             x0, x1, [sp, #32]
+        stp             x7, x30, [sp, #48]
+        bl              X(ff_hevc_put_hevc_epel_bi_v32_8_neon)
+        ldp             x4, x5, [sp]
+        ldp             x2, x3, [sp, #16]
+        ldp             x0, x1, [sp, #32]
+        ldr             x7, [sp, #48]
+        add             sp, sp, #48
+        add             x0, x0, #32
+        add             x2, x2, #32
+        add             x4, x4, #64
+        bl              X(ff_hevc_put_hevc_epel_bi_v32_8_neon)
+        ldr             x30, [sp, #8]
+        add             sp, sp, #16
+        ret
+endfunc
+
 function ff_hevc_put_hevc_epel_v4_8_neon, export=1
         load_epel_filterb x5, x4
         sub             x1, x1, x2

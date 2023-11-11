@@ -164,6 +164,10 @@ NEON8_FNPROTO(epel_bi_h, (uint8_t *dst, ptrdiff_t dststride,
         const uint8_t *src, ptrdiff_t srcstride, const int16_t *src2,
         int height, intptr_t mx, intptr_t my, int width),);
 
+NEON8_FNPROTO(epel_bi_v, (uint8_t *dst, ptrdiff_t dststride,
+        const uint8_t *src, ptrdiff_t srcstride, const int16_t *src2,
+        int height, intptr_t mx, intptr_t my, int width),);
+
 NEON8_FNPROTO(epel_v, (int16_t *dst,
         const uint8_t *src, ptrdiff_t srcstride,
         int height, intptr_t mx, intptr_t my, int width),);
@@ -334,6 +338,7 @@ av_cold void ff_hevc_dsp_init_aarch64(HEVCDSPContext *c, const int bit_depth)
         NEON8_FNASSIGN(c->put_hevc_qpel, 1, 0, qpel_v,);
         NEON8_FNASSIGN(c->put_hevc_epel_bi, 0, 0, pel_bi_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_bi, 0, 1, epel_bi_h,);
+        NEON8_FNASSIGN(c->put_hevc_epel_bi, 1, 0, epel_bi_v,);
         NEON8_FNASSIGN(c->put_hevc_qpel_bi, 0, 0, pel_bi_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 0, 0, pel_uni_pixels,);
         NEON8_FNASSIGN(c->put_hevc_epel_uni, 1, 0, epel_uni_v,);
