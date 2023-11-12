@@ -24,6 +24,8 @@
 #include "libavcodec/huffyuvdsp.h"
 
 void ff_add_int16_rvv(uint16_t *dst, const uint16_t *src, unsigned m, int w);
+void ff_add_hfyu_left_pred_bgr32_rvv(uint8_t *dst, const uint8_t *src,
+                                     intptr_t w, uint8_t *left);
 
 av_cold void ff_huffyuvdsp_init_riscv(HuffYUVDSPContext *c,
                                       enum AVPixelFormat pix_fmt)
@@ -31,7 +33,9 @@ av_cold void ff_huffyuvdsp_init_riscv(HuffYUVDSPContext *c,
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR))
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         c->add_int16 = ff_add_int16_rvv;
+        c->add_hfyu_left_pred_bgr32 = ff_add_hfyu_left_pred_bgr32_rvv;
+    }
 #endif
 }
