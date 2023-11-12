@@ -63,6 +63,8 @@ av_cold void ff_llauddsp_init(LLAudDSPContext *c)
     ff_llauddsp_init_arm(c);
 #elif ARCH_PPC
     ff_llauddsp_init_ppc(c);
+#elif ARCH_RISCV
+    ff_llauddsp_init_riscv(c);
 #elif ARCH_X86
     ff_llauddsp_init_x86(c);
 #endif
