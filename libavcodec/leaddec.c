@@ -195,8 +195,8 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
     init_get_bits8(&gb, s->bitstream_buf, size);
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
-        for (int mb_y = 0; mb_y < avctx->height / 16; mb_y++)
-            for (int mb_x = 0; mb_x < avctx->width / 16; mb_x++)
+        for (int mb_y = 0; mb_y < (avctx->height + 15) / 16; mb_y++)
+            for (int mb_x = 0; mb_x < (avctx->width + 15) / 16; mb_x++)
                 for (int b = 0; b < (yuv20p_half ? 4 : 6); b++) {
                     int luma_block = yuv20p_half ? 2 : 4;
                     const VLCElem * dc_vlc = b < luma_block ? luma_dc_vlc : chroma_dc_vlc;
@@ -228,8 +228,8 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
                 }
     } else {
         for (int f = 0; f < fields; f++)
-            for (int j = 0; j < avctx->height / fields / 8; j++)
-                for (int i = 0; i < avctx->width / 8; i++)
+            for (int j = 0; j < (avctx->height + 7) / fields / 8; j++)
+                for (int i = 0; i < (avctx->width + 7) / 8; i++)
                     for (int plane = 0; plane < 3; plane++) {
                         const VLCElem * dc_vlc = !plane ? luma_dc_vlc : chroma_dc_vlc;
                         int dc_bits            = !plane ? LUMA_DC_BITS : CHROMA_DC_BITS;
