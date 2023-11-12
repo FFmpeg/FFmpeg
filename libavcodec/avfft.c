@@ -130,6 +130,7 @@ av_cold void av_mdct_end(FFTContext *s)
 {
     if (s) {
         AVTXWrapper *w = (AVTXWrapper *)s;
+        av_tx_uninit(&w->ctx2);
         av_tx_uninit(&w->ctx);
         av_free(w);
     }
