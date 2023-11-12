@@ -27,6 +27,9 @@
 int32_t ff_scalarproduct_and_madd_int16_rvv(int16_t *v1, const int16_t *v2,
                                             const int16_t *v3, int len,
                                             int mul);
+int32_t ff_scalarproduct_and_madd_int32_rvv(int16_t *v1, const int32_t *v2,
+                                            const int16_t *v3, int len,
+                                            int mul);
 
 av_cold void ff_llauddsp_init_riscv(LLAudDSPContext *c)
 {
@@ -35,6 +38,7 @@ av_cold void ff_llauddsp_init_riscv(LLAudDSPContext *c)
 
     if ((flags & AV_CPU_FLAG_RVV_I32)  && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_rvv;
+        c->scalarproduct_and_madd_int32 = ff_scalarproduct_and_madd_int32_rvv;
     }
 #endif
 }

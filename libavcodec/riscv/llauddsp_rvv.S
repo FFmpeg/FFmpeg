@@ -43,3 +43,29 @@ func ff_scalarproduct_and_madd_int16_rvv, zve32x
         vmv.x.s a0, v0
         ret
 endfunc
+
+func ff_scalarproduct_and_madd_int32_rvv, zve32x
+        vsetvli t0, zero, e32, m8, ta, ma
+        vmv.v.x v0, zero
+1:
+        vsetvli t0, a3, e32, m8, tu, ma
+        vle16.v v8, (a0)
+        sub     a3, a3, t0
+        vsext.vf2 v24, v8
+        vle32.v v16, (a1)
+        sh2add  a1, t0, a1
+        vmacc.vv v0, v16, v24
+        vsetvli zero, zero, e16, m4, ta, ma
+        vle16.v v24, (a2)
+        sh1add  a2, t0, a2
+        vmacc.vx v8, a4, v24
+        vse16.v v8, (a0)
+        sh1add  a0, t0, a0
+        bnez    a3, 1b
+
+        vsetvli t0, zero, e32, m8, ta, ma
+        vmv.s.x v8, zero
+        vredsum.vs v0, v0, v8
+        vmv.x.s a0, v0
+        ret
+endfunc
