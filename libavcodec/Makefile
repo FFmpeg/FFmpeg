@@ -81,6 +81,7 @@ OBJS-$(CONFIG_CBS_H265)                += cbs_h2645.o cbs_sei.o h2645_parse.o
 OBJS-$(CONFIG_CBS_H266)                += cbs_h2645.o cbs_sei.o h2645_parse.o
 OBJS-$(CONFIG_CBS_JPEG)                += cbs_jpeg.o
 OBJS-$(CONFIG_CBS_MPEG2)               += cbs_mpeg2.o
+OBJS-$(CONFIG_CBS_VP8)                 += cbs_vp8.o vp8data.o
 OBJS-$(CONFIG_CBS_VP9)                 += cbs_vp9.o
 OBJS-$(CONFIG_CRYSTALHD)               += crystalhd.o
 OBJS-$(CONFIG_DEFLATE_WRAPPER)         += zlib_wrapper.o

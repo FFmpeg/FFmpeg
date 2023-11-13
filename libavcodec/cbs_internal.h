@@ -341,6 +341,7 @@ extern const CodedBitstreamType ff_cbs_type_h265;
 extern const CodedBitstreamType ff_cbs_type_h266;
 extern const CodedBitstreamType ff_cbs_type_jpeg;
 extern const CodedBitstreamType ff_cbs_type_mpeg2;
+extern const CodedBitstreamType ff_cbs_type_vp8;
 extern const CodedBitstreamType ff_cbs_type_vp9;
 
 

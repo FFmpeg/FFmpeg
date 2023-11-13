@@ -2471,6 +2471,7 @@ CONFIG_EXTRA="
     cbs_h266
     cbs_jpeg
     cbs_mpeg2
+    cbs_vp8
     cbs_vp9
     deflate_wrapper
     dirac_parse
@@ -2756,6 +2757,7 @@ cbs_h265_select="cbs"
 cbs_h266_select="cbs"
 cbs_jpeg_select="cbs"
 cbs_mpeg2_select="cbs"
+cbs_vp8_select="cbs"
 cbs_vp9_select="cbs"
 deflate_wrapper_deps="zlib"
 dirac_parse_select="golomb"
@@ -3340,7 +3342,7 @@ h264_redundant_pps_bsf_select="cbs_h264"
 hevc_metadata_bsf_select="cbs_h265"
 mjpeg2jpeg_bsf_select="jpegtables"
 mpeg2_metadata_bsf_select="cbs_mpeg2"
-trace_headers_bsf_select="cbs"
+trace_headers_bsf_select="cbs cbs_vp8"
 vp9_metadata_bsf_select="cbs_vp9"
 vvc_metadata_bsf_select="cbs_h266"
 
