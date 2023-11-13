@@ -219,6 +219,9 @@ typedef struct AVCodecParameters {
 
     /**
      * Additional data associated with the entire stream.
+     *
+     * Should be allocated with av_packet_side_data_new() or
+     * av_packet_side_data_add(), and will be freed by avcodec_parameters_free().
      */
     AVPacketSideData *coded_side_data;
 
