@@ -8,6 +8,9 @@ FATE_MOV-$(call FRAMEMD5, MOV, H264) += fate-mov-3elist \
            fate-mov-3elist-encrypted \
            fate-mov-frag-encrypted \
            fate-mov-tenc-only-encrypted \
+           fate-mov-3elist-encrypted-kid \
+           fate-mov-frag-encrypted-kid \
+           fate-mov-tenc-only-encrypted-kid \
            fate-mov-frag-overlap \
            fate-mov-neg-firstpts-discard-frames \
 
@@ -58,6 +61,15 @@ fate-mov-frag-encrypted: CMD = framemd5 -decryption_key 123456789012345678901234
 
 # Full-sample encryption and constant IV using only tenc atom (no senc/saio/saiz).
 fate-mov-tenc-only-encrypted: CMD = framemd5 -decryption_key 12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-tenc-only-encrypted.mp4
+
+# Edit list with encryption, using the decryption_keys option.
+fate-mov-3elist-encrypted-kid: CMD = framemd5 -decryption_keys 12345678901234567890123456789012=12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-3elist-encrypted.mov
+
+# Fragmented encryption with senc boxes in movie fragments, using the decryption_keys option.
+fate-mov-frag-encrypted-kid: CMD = framemd5 -decryption_keys abba271e8bcf552bbd2e86a434a9a5d9=12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-frag-encrypted.mp4
+
+# Full-sample encryption and constant IV using only tenc atom (no senc/saio/saiz), using the decryption_keys option.
+fate-mov-tenc-only-encrypted-kid: CMD = framemd5 -decryption_keys abba271e8bcf552bbd2e86a434a9a5d9=12345678901234567890123456789012 -i $(TARGET_SAMPLES)/mov/mov-tenc-only-encrypted.mp4
 
 # Makes sure that the CTTS is also modified when we fix avindex in mov.c while parsing edit lists.
 fate-mov-elist-starts-ctts-2ndsample: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-elist-starts-ctts-2ndsample.mov
