@@ -458,7 +458,7 @@ static void vp78_update_probability_tables(VP8Context *s)
         for (j = 0; j < 8; j++)
             for (k = 0; k < 3; k++)
                 for (l = 0; l < NUM_DCT_TOKENS-1; l++)
-                    if (vpx_rac_get_prob_branchy(c, vp8_token_update_probs[i][j][k][l])) {
+                    if (vpx_rac_get_prob_branchy(c, ff_vp8_token_update_probs[i][j][k][l])) {
                         int prob = vp89_rac_get_uint(c, 8);
                         for (m = 0; vp8_coeff_band_indexes[j][m] >= 0; m++)
                             s->prob->token[i][vp8_coeff_band_indexes[j][m]][k][l] = prob;
