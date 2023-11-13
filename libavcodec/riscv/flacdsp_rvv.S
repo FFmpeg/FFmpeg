@@ -69,6 +69,32 @@ func ff_flac_decorrelate_rs_16_rvv, zve32x
         ret
 endfunc
 
+func ff_flac_decorrelate_ms_16_rvv, zve32x
+        ld      a0,  (a0)
+        ld      a2, 8(a1)
+        ld      a1,  (a1)
+1:
+        vsetvli t0, a3, e32, m8, ta, ma
+        vle32.v v8, (a2)
+        sub     a3, a3, t0
+        vle32.v v0, (a1)
+        sh2add  a1, t0, a1
+        vsra.vi v16, v8, 1
+        sh2add  a2, t0, a2
+        vsub.vv v24, v0, v16
+        vadd.vv v16, v24, v8
+        vsll.vx v8, v24, a4
+        vsll.vx v0, v16, a4
+        vsetvli zero, zero, e16, m4, ta, ma
+        vncvt.x.x.w v0, v0
+        vncvt.x.x.w v4, v8
+        vsseg2e16.v v0, (a0)
+        sh2add  a0, t0, a0
+        bnez    a3, 1b
+
+        ret
+endfunc
+
 func ff_flac_decorrelate_ls_32_rvv, zve32x
         ld      a0,  (a0)
         ld      a2, 8(a1)
@@ -104,6 +130,29 @@ func ff_flac_decorrelate_rs_32_rvv, zve32x
         sh2add  a2, t0, a2
         vsll.vx v4, v4, a4
         vadd.vv v0, v0, v4
+        vsseg2e32.v v0, (a0)
+        sh3add  a0, t0, a0
+        bnez    a3, 1b
+
+        ret
+endfunc
+
+func ff_flac_decorrelate_ms_32_rvv, zve32x
+        ld      a0,  (a0)
+        ld      a2, 8(a1)
+        ld      a1,  (a1)
+1:
+        vsetvli t0, a3, e32, m4, ta, ma
+        vle32.v v4, (a2)
+        sub     a3, a3, t0
+        vle32.v v0, (a1)
+        sh2add  a1, t0, a1
+        vsra.vi v8, v4, 1
+        sh2add  a2, t0, a2
+        vsub.vv v12, v0, v8
+        vadd.vv v8, v12, v4
+        vsll.vx v4, v12, a4
+        vsll.vx v0, v8, a4
         vsseg2e32.v v0, (a0)
         sh3add  a0, t0, a0
         bnez    a3, 1b

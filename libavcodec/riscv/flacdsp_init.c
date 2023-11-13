@@ -28,9 +28,13 @@ void ff_flac_decorrelate_ls_16_rvv(uint8_t **out, int32_t **in,
                                    int channels, int len, int shift);
 void ff_flac_decorrelate_rs_16_rvv(uint8_t **out, int32_t **in,
                                    int channels, int len, int shift);
+void ff_flac_decorrelate_ms_16_rvv(uint8_t **out, int32_t **in,
+                                   int channels, int len, int shift);
 void ff_flac_decorrelate_ls_32_rvv(uint8_t **out, int32_t **in,
                                    int channels, int len, int shift);
 void ff_flac_decorrelate_rs_32_rvv(uint8_t **out, int32_t **in,
+                                   int channels, int len, int shift);
+void ff_flac_decorrelate_ms_32_rvv(uint8_t **out, int32_t **in,
                                    int channels, int len, int shift);
 
 av_cold void ff_flacdsp_init_riscv(FLACDSPContext *c, enum AVSampleFormat fmt,
@@ -44,10 +48,12 @@ av_cold void ff_flacdsp_init_riscv(FLACDSPContext *c, enum AVSampleFormat fmt,
         case AV_SAMPLE_FMT_S16:
             c->decorrelate[1] = ff_flac_decorrelate_ls_16_rvv;
             c->decorrelate[2] = ff_flac_decorrelate_rs_16_rvv;
+            c->decorrelate[3] = ff_flac_decorrelate_ms_16_rvv;
             break;
         case AV_SAMPLE_FMT_S32:
             c->decorrelate[1] = ff_flac_decorrelate_ls_32_rvv;
             c->decorrelate[2] = ff_flac_decorrelate_rs_32_rvv;
+            c->decorrelate[3] = ff_flac_decorrelate_ms_32_rvv;
             break;
         }
     }
