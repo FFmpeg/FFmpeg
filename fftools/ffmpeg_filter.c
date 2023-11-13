@@ -1859,9 +1859,9 @@ static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
     FPSConvContext   *fps = &ofp->fps;
     AVRational        tb = (AVRational){ 0, 0 };
     AVRational fr;
-    FrameData *fd;
+    const FrameData *fd;
 
-    fd = frame_data(frame);
+    fd = frame_data_c(frame);
 
     // apply -enc_time_base
     if (ofp->enc_timebase.num == ENC_TIME_BASE_DEMUX &&

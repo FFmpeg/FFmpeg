@@ -726,6 +726,8 @@ int subtitle_wrap_frame(AVFrame *frame, AVSubtitle *subtitle, int copy);
  */
 FrameData *frame_data(AVFrame *frame);
 
+const FrameData *frame_data_c(AVFrame *frame);
+
 int ifilter_send_frame(InputFilter *ifilter, AVFrame *frame, int keep_reference);
 int ifilter_send_eof(InputFilter *ifilter, int64_t pts, AVRational tb);
 int ifilter_sub2video(InputFilter *ifilter, const AVFrame *frame);

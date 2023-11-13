@@ -427,21 +427,34 @@ InputStream *ist_iter(InputStream *prev)
     return NULL;
 }
 
-FrameData *frame_data(AVFrame *frame)
+static int frame_data_ensure(AVFrame *frame, int writable)
 {
     if (!frame->opaque_ref) {
         FrameData *fd;
 
         frame->opaque_ref = av_buffer_allocz(sizeof(*fd));
         if (!frame->opaque_ref)
-            return NULL;
+            return AVERROR(ENOMEM);
         fd = (FrameData*)frame->opaque_ref->data;
 
         fd->dec.frame_num = UINT64_MAX;
         fd->dec.pts       = AV_NOPTS_VALUE;
-    }
+    } else if (writable)
+        return av_buffer_make_writable(&frame->opaque_ref);
 
-    return (FrameData*)frame->opaque_ref->data;
+    return 0;
+}
+
+FrameData *frame_data(AVFrame *frame)
+{
+    int ret = frame_data_ensure(frame, 1);
+    return ret < 0 ? NULL : (FrameData*)frame->opaque_ref->data;
+}
+
+const FrameData *frame_data_c(AVFrame *frame)
+{
+    int ret = frame_data_ensure(frame, 0);
+    return ret < 0 ? NULL : (const FrameData*)frame->opaque_ref->data;
 }
 
 void remove_avoptions(AVDictionary **a, AVDictionary *b)
