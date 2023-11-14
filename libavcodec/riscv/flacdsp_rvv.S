@@ -21,6 +21,163 @@
 #include "libavutil/riscv/asm.S"
 
 #if (__riscv_xlen == 64)
+func ff_flac_decorrelate_indep2_16_rvv, zve32x
+        ld      a0,  (a0)
+        ld      a2, 8(a1)
+        ld      a1,  (a1)
+1:
+        vsetvli t0, a3, e32, m8, ta, ma
+        vle32.v v0, (a1)
+        sub     a3, a3, t0
+        vle32.v v8, (a2)
+        sh2add  a1, t0, a1
+        vsll.vx v0, v0, a4
+        sh2add  a2, t0, a2
+        vsll.vx v8, v8, a4
+        vsetvli zero, zero, e16, m4, ta, ma
+        vncvt.x.x.w v16, v0
+        vncvt.x.x.w v20, v8
+        vsseg2e16.v v16, (a0)
+        sh2add  a0, t0, a0
+        bnez    a3, 1b
+
+        ret
+endfunc
+
+func ff_flac_decorrelate_indep4_16_rvv, zve32x
+        ld      a0,   (a0)
+        ld      a2,  8(a1)
+        ld      t1, 16(a1)
+        ld      t2, 24(a1)
+        ld      a1,   (a1)
+1:
+        vsetvli t0, a3, e32, m4, ta, ma
+        vle32.v v0, (a1)
+        sub     a3, a3, t0
+        vle32.v v4, (a2)
+        sh2add  a1, t0, a1
+        vsll.vx v0, v0, a4
+        sh2add  a2, t0, a2
+        vle32.v v8, (t1)
+        sh2add  t1, t0, t1
+        vsll.vx v4, v4, a4
+        vle32.v v12, (t2)
+        sh2add  t2, t0, t2
+        vsll.vx v8, v8, a4
+        vsll.vx v12, v12, a4
+        vsetvli zero, zero, e16, m2, ta, ma
+        vncvt.x.x.w v16, v0
+        vncvt.x.x.w v18, v4
+        vncvt.x.x.w v20, v8
+        vncvt.x.x.w v22, v12
+        vsseg4e16.v v16, (a0)
+        sh3add  a0, t0, a0
+        bnez    a3, 1b
+
+        ret
+endfunc
+
+func ff_flac_decorrelate_indep6_16_rvv, zve32x
+        ld      a0,   (a0)
+        ld      a2,  8(a1)
+        ld      t1, 16(a1)
+        ld      t2, 24(a1)
+        ld      t3, 32(a1)
+        ld      t4, 40(a1)
+        ld      a1,   (a1)
+1:
+        vsetvli t0, a3, e32, m2, ta, ma
+        vle32.v v0, (a1)
+        sub     a3, a3, t0
+        vle32.v v2, (a2)
+        sh2add  a1, t0, a1
+        vsll.vx v0, v0, a4
+        sh2add  a2, t0, a2
+        vle32.v v4, (t1)
+        sh2add  t1, t0, t1
+        vsll.vx v2, v2, a4
+        vle32.v v6, (t2)
+        sh2add  t2, t0, t2
+        vsll.vx v4, v4, a4
+        vle32.v v8, (t3)
+        sh2add  t3, t0, t3
+        vsll.vx v6, v6, a4
+        vle32.v v10, (t4)
+        sh2add  t4, t0, t4
+        vsll.vx v8, v8, a4
+        slli    t0, t0, 2
+        vsll.vx v10, v10, a4
+        sh1add  t0, t0, t0 // t0 *= 3
+        vsetvli zero, zero, e16, m1, ta, ma
+        vncvt.x.x.w v16, v0
+        vncvt.x.x.w v17, v2
+        vncvt.x.x.w v18, v4
+        vncvt.x.x.w v19, v6
+        vncvt.x.x.w v20, v8
+        vncvt.x.x.w v21, v10
+        vsseg6e16.v v16, (a0)
+        add     a0, t0, a0
+        bnez    a3, 1b
+
+        ret
+endfunc
+
+func ff_flac_decorrelate_indep8_16_rvv, zve32x
+        ld      a0,   (a0)
+        ld      a2,  8(a1)
+        ld      t1, 16(a1)
+        ld      t2, 24(a1)
+        ld      t3, 32(a1)
+        ld      t4, 40(a1)
+        ld      t5, 48(a1)
+        ld      t6, 56(a1)
+        ld      a1,   (a1)
+1:
+        vsetvli t0, a3, e32, m2, ta, ma
+        vle32.v v0, (a1)
+        sub     a3, a3, t0
+        vle32.v v2, (a2)
+        sh2add  a1, t0, a1
+        vsll.vx v0, v0, a4
+        vle32.v v4, (t1)
+        sh2add  a2, t0, a2
+        vsll.vx v2, v2, a4
+        sh2add  t1, t0, t1
+        vle32.v v6, (t2)
+        vsll.vx v4, v4, a4
+        sh2add  t2, t0, t2
+        vle32.v v8, (t3)
+        sh2add  t3, t0, t3
+        vsll.vx v6, v6, a4
+        vle32.v v10, (t4)
+        sh2add  t4, t0, t4
+        vsll.vx v8, v8, a4
+        vle32.v v12, (t5)
+        sh2add  t5, t0, t5
+        vsll.vx v10, v10, a4
+        vle32.v v14, (t6)
+        sh2add  t6, t0, t6
+        vsll.vx v12, v12, a4
+        slli    t0, t0, 4
+        vsll.vx v14, v14, a4
+        vsetvli zero, zero, e16, m1, ta, ma
+        vncvt.x.x.w v16, v0
+        vncvt.x.x.w v17, v2
+        vncvt.x.x.w v18, v4
+        vncvt.x.x.w v19, v6
+        vncvt.x.x.w v20, v8
+        vncvt.x.x.w v21, v10
+        vncvt.x.x.w v22, v12
+        vncvt.x.x.w v23, v14
+        vsseg8e16.v v16, (a0)
+        add     a0, t0, a0
+        bnez    a3, 1b
+
+        ret
+endfunc
+
+
+
 func ff_flac_decorrelate_ls_16_rvv, zve32x
         ld      a0,  (a0)
         ld      a2, 8(a1)
