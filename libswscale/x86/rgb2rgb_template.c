@@ -1823,7 +1823,8 @@ void RENAME(ff_nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
                          const uint8_t *src1,
                          const uint8_t *src2,
                          int w,
-                         uint32_t *unused2);
+                         uint32_t *unused2,
+                         void *opq);
 static void RENAME(deinterleaveBytes)(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
                                       int width, int height, int srcStride,
                                       int dst1Stride, int dst2Stride)
@@ -1831,7 +1832,7 @@ static void RENAME(deinterleaveBytes)(const uint8_t *src, uint8_t *dst1, uint8_t
     int h;
 
     for (h = 0; h < height; h++) {
-        RENAME(ff_nv12ToUV)(dst1, dst2, NULL, src, NULL, width, NULL);
+        RENAME(ff_nv12ToUV)(dst1, dst2, NULL, src, NULL, width, NULL, NULL);
         src  += srcStride;
         dst1 += dst1Stride;
         dst2 += dst2Stride;
