@@ -21,6 +21,63 @@
 #include "libavutil/riscv/asm.S"
 
 #if (__riscv_xlen == 64)
+func ff_flac_lpc32_rvv, zve32x
+        addi    t2, a2, -16
+        ble     t2, zero, ff_flac_lpc32_rvv_simple
+        vsetivli zero, 1, e64, m1, ta, ma
+        vmv.s.x v0, zero
+        vsetvli zero, a2, e32, m8, ta, ma
+        vle32.v v8, (a1)
+        sub     a4, a4, a2
+        vle32.v v16, (a0)
+        sh2add  a0, a2, a0
+1:
+        vsetvli zero, a2, e32, m4, ta, ma
+        vwmul.vv v24, v8, v16
+        vsetvli zero, t2, e32, m4, tu, ma
+        vwmacc.vv v24, v12, v20
+        vsetvli zero, a2, e64, m8, ta, ma
+        vredsum.vs v24, v24, v0
+        lw      t0, (a0)
+        addi    a4, a4, -1
+        vmv.x.s t1, v24
+        vsetvli zero, a2, e32, m8, ta, ma
+        sra     t1, t1, a3
+        add     t0, t0, t1
+        vslide1down.vx v16, v16, t0
+        sw      t0, (a0)
+        addi    a0, a0, 4
+        bnez    a4, 1b
+
+        ret
+endfunc
+
+func ff_flac_lpc32_rvv_simple, zve32x
+        vsetivli zero, 1, e64, m1, ta, ma
+        vmv.s.x v0, zero
+        vsetvli zero, a2, e32, m4, ta, ma
+        vle32.v v8, (a1)
+        sub     a4, a4, a2
+        vle32.v v16, (a0)
+        sh2add  a0, a2, a0
+1:
+        vwmul.vv v24, v8, v16
+        vsetvli zero, zero, e64, m8, ta, ma
+        vredsum.vs v24, v24, v0
+        lw      t0, (a0)
+        addi    a4, a4, -1
+        vmv.x.s t1, v24
+        vsetvli zero, zero, e32, m4, ta, ma
+        sra     t1, t1, a3
+        add     t0, t0, t1
+        vslide1down.vx v16, v16, t0
+        sw      t0, (a0)
+        addi    a0, a0, 4
+        bnez    a4, 1b
+
+        ret
+endfunc
+
 func ff_flac_decorrelate_indep2_16_rvv, zve32x
         ld      a0,  (a0)
         ld      a2, 8(a1)
