@@ -20,6 +20,29 @@
 
 #include "libavutil/riscv/asm.S"
 
+func ff_flac_lpc16_rvv, zve32x
+        vsetvli zero, a2, e32, m8, ta, ma
+        vle32.v v8, (a1)
+        sub     a4, a4, a2
+        vle32.v v16, (a0)
+        sh2add  a0, a2, a0
+        vmv.s.x v0, zero
+1:
+        vmul.vv v24, v8, v16
+        lw      t0, (a0)
+        vredsum.vs v24, v24, v0
+        addi    a4, a4, -1
+        vmv.x.s t1, v24
+        sra     t1, t1, a3
+        add     t0, t0, t1
+        vslide1down.vx v16, v16, t0
+        sw      t0, (a0)
+        addi    a0, a0, 4
+        bnez    a4, 1b
+
+        ret
+endfunc
+
 #if (__riscv_xlen == 64)
 func ff_flac_lpc32_rvv, zve32x
         addi    t2, a2, -16

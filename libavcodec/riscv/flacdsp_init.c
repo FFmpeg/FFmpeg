@@ -25,6 +25,8 @@
 #include "libavutil/riscv/cpu.h"
 #include "libavcodec/flacdsp.h"
 
+void ff_flac_lpc16_rvv(int32_t *decoded, const int coeffs[32],
+                       int pred_order, int qlevel, int len);
 void ff_flac_lpc32_rvv(int32_t *decoded, const int coeffs[32],
                        int pred_order, int qlevel, int len);
 void ff_flac_lpc32_rvv_simple(int32_t *decoded, const int coeffs[32],
@@ -61,16 +63,20 @@ void ff_flac_decorrelate_ms_32_rvv(uint8_t **out, int32_t **in,
 av_cold void ff_flacdsp_init_riscv(FLACDSPContext *c, enum AVSampleFormat fmt,
                                    int channels)
 {
-#if HAVE_RVV && (__riscv_xlen >= 64)
+#if HAVE_RVV
     int flags = av_get_cpu_flags();
 
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         int vlenb = ff_get_rv_vlenb();
 
-        if (vlenb == 16)
-            c->lpc32 = ff_flac_lpc32_rvv;
-        else if (vlenb > 16)
-            c->lpc32 = ff_flac_lpc32_rvv_simple;
+        if (vlenb >= 16) {
+            c->lpc16 = ff_flac_lpc16_rvv;
+# if (__riscv_xlen >= 64)
+            if (vlenb > 16)
+                c->lpc32 = ff_flac_lpc32_rvv_simple;
+            else
+                c->lpc32 = ff_flac_lpc32_rvv;
+        }
 
         switch (fmt) {
         case AV_SAMPLE_FMT_S16:
@@ -111,6 +117,7 @@ av_cold void ff_flacdsp_init_riscv(FLACDSPContext *c, enum AVSampleFormat fmt,
             c->decorrelate[2] = ff_flac_decorrelate_rs_32_rvv;
             c->decorrelate[3] = ff_flac_decorrelate_ms_32_rvv;
             break;
+# endif
         }
     }
 #endif
