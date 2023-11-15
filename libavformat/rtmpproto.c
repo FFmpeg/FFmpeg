@@ -2635,6 +2635,9 @@ static int rtmp_open(URLContext *s, const char *uri, int flags, AVDictionary **o
 
     if (rt->listen_timeout > 0)
         rt->listen = 1;
+    /* Pass rw_timeout to underlying transport protocol */
+    if (s->rw_timeout > 0)
+        av_dict_set_int(opts, "rw_timeout", s->rw_timeout, 0);
 
     rt->is_input = !(flags & AVIO_FLAG_WRITE);
 
