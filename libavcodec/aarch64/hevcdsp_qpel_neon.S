@@ -2180,8 +2180,8 @@ function ff_hevc_put_hevc_qpel_uni_w_h4_8_neon_i8mm, export=1
         ext             v3.16b, v0.16b, v0.16b, #3
         zip1            v0.2d, v0.2d, v1.2d
         zip1            v2.2d, v2.2d, v3.2d
-        movi            v16.2d, #0
-        movi            v17.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
         usdot           v16.4s, v0.16b, v28.16b
         usdot           v17.4s, v2.16b, v28.16b
         addp            v16.4s, v16.4s, v17.4s
@@ -2210,9 +2210,9 @@ function ff_hevc_put_hevc_qpel_uni_w_h6_8_neon_i8mm, export=1
         zip1            v0.2d, v0.2d, v1.2d
         zip1            v2.2d, v2.2d, v3.2d
         zip1            v4.2d, v4.2d, v5.2d
-        movi            v16.2d, #0
-        movi            v17.2d, #0
-        movi            v18.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
         usdot           v16.4s, v0.16b, v28.16b
         usdot           v17.4s, v2.16b, v28.16b
         usdot           v18.4s, v4.16b, v28.16b
@@ -2236,10 +2236,10 @@ endfunc
 
 
 .macro  QPEL_UNI_W_H_CALC s0, s1, s2, s3, d0, d1, d2, d3
-        movi            \d0\().2d, #0
-        movi            \d1\().2d, #0
-        movi            \d2\().2d, #0
-        movi            \d3\().2d, #0
+        movi            \d0\().16b, #0
+        movi            \d1\().16b, #0
+        movi            \d2\().16b, #0
+        movi            \d3\().16b, #0
         usdot           \d0\().4s, \s0\().16b, v28.16b
         usdot           \d1\().4s, \s1\().16b, v28.16b
         usdot           \d2\().4s, \s2\().16b, v28.16b
@@ -2255,8 +2255,8 @@ endfunc
 .endm
 
 .macro  QPEL_UNI_W_H_CALC_HALF s0, s1, d0, d1
-        movi            \d0\().2d, #0
-        movi            \d1\().2d, #0
+        movi            \d0\().16b, #0
+        movi            \d1\().16b, #0
         usdot           \d0\().4s, \s0\().16b, v28.16b
         usdot           \d1\().4s, \s1\().16b, v28.16b
         addp            \d0\().4s, \d0\().4s, \d1\().4s
@@ -2606,8 +2606,8 @@ function ff_hevc_put_hevc_qpel_h4_8_neon_i8mm, export=1
         ext             v3.16b, v0.16b, v0.16b, #3
         zip1            v0.2d, v0.2d, v1.2d
         zip1            v2.2d, v2.2d, v3.2d
-        movi            v16.2d, #0
-        movi            v17.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
         usdot           v16.4s, v0.16b, v31.16b
         usdot           v17.4s, v2.16b, v31.16b
         addp            v16.4s, v16.4s, v17.4s
@@ -2633,9 +2633,9 @@ function ff_hevc_put_hevc_qpel_h6_8_neon_i8mm, export=1
         zip1            v0.2d, v0.2d, v1.2d
         zip1            v2.2d, v2.2d, v3.2d
         zip1            v4.2d, v4.2d, v5.2d
-        movi            v16.2d, #0
-        movi            v17.2d, #0
-        movi            v18.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
         usdot           v16.4s, v0.16b, v31.16b
         usdot           v17.4s, v2.16b, v31.16b
         usdot           v18.4s, v4.16b, v31.16b
@@ -2668,10 +2668,10 @@ function ff_hevc_put_hevc_qpel_h8_8_neon_i8mm, export=1
         zip1            v2.2d, v2.2d, v3.2d
         zip1            v4.2d, v4.2d, v5.2d
         zip1            v6.2d, v6.2d, v7.2d
-        movi            v16.2d, #0
-        movi            v17.2d, #0
-        movi            v18.2d, #0
-        movi            v19.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
+        movi            v19.16b, #0
         usdot           v16.4s, v0.16b, v31.16b
         usdot           v17.4s, v2.16b, v31.16b
         usdot           v18.4s, v4.16b, v31.16b
@@ -2688,10 +2688,10 @@ function ff_hevc_put_hevc_qpel_h8_8_neon_i8mm, export=1
 endfunc
 
 .macro QPEL_H_CALC s0, s1, s2, s3, d0, d1, d2, d3
-        movi            \d0\().2d, #0
-        movi            \d1\().2d, #0
-        movi            \d2\().2d, #0
-        movi            \d3\().2d, #0
+        movi            \d0\().16b, #0
+        movi            \d1\().16b, #0
+        movi            \d2\().16b, #0
+        movi            \d3\().16b, #0
         usdot           \d0\().4s, \s0\().16b, v31.16b
         usdot           \d1\().4s, \s1\().16b, v31.16b
         usdot           \d2\().4s, \s2\().16b, v31.16b
@@ -2716,8 +2716,8 @@ function ff_hevc_put_hevc_qpel_h12_8_neon_i8mm, export=1
         QPEL_H_CALC     v16, v1, v2, v3, v20, v21, v22, v23
         addp            v20.4s, v20.4s, v22.4s
         addp            v21.4s, v21.4s, v23.4s
-        movi            v24.2d, #0
-        movi            v25.2d, #0
+        movi            v24.16b, #0
+        movi            v25.16b, #0
         usdot           v24.4s, v18.16b, v31.16b
         usdot           v25.4s, v19.16b, v31.16b
         addp            v24.4s, v24.4s, v25.4s

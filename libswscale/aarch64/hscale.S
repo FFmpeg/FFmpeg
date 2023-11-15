@@ -50,10 +50,10 @@ function ff_hscale8to15_X8_neon, export=1
         add             x12, x16, x7                // filter1 = filter0 + filterSize*2
         add             x13, x12, x7                // filter2 = filter1 + filterSize*2
         add             x4, x13, x7                 // filter3 = filter2 + filterSize*2
-        movi            v0.2d, #0                   // val sum part 1 (for dst[0])
-        movi            v1.2d, #0                   // val sum part 2 (for dst[1])
-        movi            v2.2d, #0                   // val sum part 3 (for dst[2])
-        movi            v3.2d, #0                   // val sum part 4 (for dst[3])
+        movi            v0.16b, #0                  // val sum part 1 (for dst[0])
+        movi            v1.16b, #0                  // val sum part 2 (for dst[1])
+        movi            v2.16b, #0                  // val sum part 3 (for dst[2])
+        movi            v3.16b, #0                  // val sum part 4 (for dst[3])
         add             x17, x3, w8, uxtw           // srcp + filterPos[0]
         add             x8,  x3, w0, uxtw           // srcp + filterPos[1]
         add             x0, x3, w11, uxtw           // srcp + filterPos[2]
@@ -108,10 +108,10 @@ function ff_hscale8to15_X4_neon, export=1
         ldp             w8, w9,  [x5]               // filterPos[idx + 0], [idx + 1]
         ldp             w10, w11, [x5, #8]          // filterPos[idx + 2], [idx + 3]
 
-        movi            v16.2d, #0                  // initialize accumulator for idx + 0
-        movi            v17.2d, #0                  // initialize accumulator for idx + 1
-        movi            v18.2d, #0                  // initialize accumulator for idx + 2
-        movi            v19.2d, #0                  // initialize accumulator for idx + 3
+        movi            v16.16b, #0                 // initialize accumulator for idx + 0
+        movi            v17.16b, #0                 // initialize accumulator for idx + 1
+        movi            v18.16b, #0                 // initialize accumulator for idx + 2
+        movi            v19.16b, #0                 // initialize accumulator for idx + 3
 
         mov             x12, x4                     // filter pointer for idx + 0
         add             x13, x4, x7                 // filter pointer for idx + 1
@@ -253,8 +253,8 @@ function ff_hscale8to15_4_neon, export=1
         ldp             w12, w13, [x5, #16]         // filterPos[idx + 4][0..3], [idx + 5][0..3], next iteration
         ldp             w14, w15, [x5, #24]         // filterPos[idx + 6][0..3], [idx + 7][0..3], next iteration
 
-        movi            v0.2d, #0                   // Clear madd accumulator for idx 0..3
-        movi            v5.2d, #0                   // Clear madd accumulator for idx 4..7
+        movi            v0.16b, #0                  // Clear madd accumulator for idx 0..3
+        movi            v5.16b, #0                  // Clear madd accumulator for idx 4..7
 
         ld4             {v1.8h, v2.8h, v3.8h, v4.8h}, [x4], #64 // load filter idx + 0..7
 
@@ -299,8 +299,8 @@ function ff_hscale8to15_4_neon, export=1
         ld4             {v16.8b, v17.8b, v18.8b, v19.8b}, [sp]
         ld4             {v1.8h, v2.8h, v3.8h, v4.8h}, [x4], #64 // load filter idx + 0..7
 
-        movi            v0.2d, #0                   // Clear madd accumulator for idx 0..3
-        movi            v5.2d, #0                   // Clear madd accumulator for idx 4..7
+        movi            v0.16b, #0                  // Clear madd accumulator for idx 0..3
+        movi            v5.16b, #0                  // Clear madd accumulator for idx 4..7
 
         uxtl            v16.8h, v16.8b              // unsigned extend long, covert src data to 16-bit
         uxtl            v17.8h, v17.8b              // unsigned extend long, covert src data to 16-bit
@@ -499,10 +499,10 @@ function ff_hscale8to19_X8_neon, export=1
         ldr             w11, [x5], #4               // filterPos[idx + 2]
         add             x4, x13, x7                 // filter3 = filter2 + filterSize*2
         ldr             w9, [x5], #4                // filterPos[idx + 3]
-        movi            v0.2d, #0                   // val sum part 1 (for dst[0])
-        movi            v1.2d, #0                   // val sum part 2 (for dst[1])
-        movi            v2.2d, #0                   // val sum part 3 (for dst[2])
-        movi            v3.2d, #0                   // val sum part 4 (for dst[3])
+        movi            v0.16b, #0                  // val sum part 1 (for dst[0])
+        movi            v1.16b, #0                  // val sum part 2 (for dst[1])
+        movi            v2.16b, #0                  // val sum part 3 (for dst[2])
+        movi            v3.16b, #0                  // val sum part 4 (for dst[3])
         add             x17, x3, w8, uxtw           // srcp + filterPos[0]
         add             x8,  x3, w0, uxtw           // srcp + filterPos[1]
         add             x0, x3, w11, uxtw           // srcp + filterPos[2]
@@ -560,10 +560,10 @@ function ff_hscale8to19_X4_neon, export=1
         ldp             w8, w9, [x5]
         ldp             w10, w11, [x5, #8]
 
-        movi            v16.2d, #0                  // initialize accumulator for idx + 0
-        movi            v17.2d, #0                  // initialize accumulator for idx + 1
-        movi            v18.2d, #0                  // initialize accumulator for idx + 2
-        movi            v19.2d, #0                  // initialize accumulator for idx + 3
+        movi            v16.16b, #0                 // initialize accumulator for idx + 0
+        movi            v17.16b, #0                 // initialize accumulator for idx + 1
+        movi            v18.16b, #0                 // initialize accumulator for idx + 2
+        movi            v19.16b, #0                 // initialize accumulator for idx + 3
 
         mov             x12, x4                     // filter + 0
         add             x13, x4, x7                 // filter + 1
@@ -865,10 +865,10 @@ function ff_hscale16to15_X8_neon_asm, export=1
         add             x12, x16, x7                // filter1 = filter0 + filterSize*2
         add             x13, x12, x7                // filter2 = filter1 + filterSize*2
         add             x4, x13, x7                 // filter3 = filter2 + filterSize*2
-        movi            v0.2d, #0                   // val sum part 1 (for dst[0])
-        movi            v1.2d, #0                   // val sum part 2 (for dst[1])
-        movi            v2.2d, #0                   // val sum part 3 (for dst[2])
-        movi            v3.2d, #0                   // val sum part 4 (for dst[3])
+        movi            v0.16b, #0                  // val sum part 1 (for dst[0])
+        movi            v1.16b, #0                  // val sum part 2 (for dst[1])
+        movi            v2.16b, #0                  // val sum part 3 (for dst[2])
+        movi            v3.16b, #0                  // val sum part 4 (for dst[3])
         add             x17, x3, w8, uxtw           // srcp + filterPos[0]
         add             x8,  x3, w10, uxtw          // srcp + filterPos[1]
         add             x10, x3, w11, uxtw          // srcp + filterPos[2]
@@ -945,10 +945,10 @@ function ff_hscale16to15_X4_neon_asm, export=1
         ldp             w8, w9, [x5]
         ldp             w10, w11, [x5, #8]
 
-        movi            v16.2d, #0                  // initialize accumulator for idx + 0
-        movi            v17.2d, #0                  // initialize accumulator for idx + 1
-        movi            v18.2d, #0                  // initialize accumulator for idx + 2
-        movi            v19.2d, #0                  // initialize accumulator for idx + 3
+        movi            v16.16b, #0                 // initialize accumulator for idx + 0
+        movi            v17.16b, #0                 // initialize accumulator for idx + 1
+        movi            v18.16b, #0                 // initialize accumulator for idx + 2
+        movi            v19.16b, #0                 // initialize accumulator for idx + 3
 
         mov             x12, x4                     // filter + 0
         add             x13, x4, x7                 // filter + 1
@@ -1270,10 +1270,10 @@ function ff_hscale16to19_X8_neon_asm, export=1
         add             x13, x12, x7                // filter2 = filter1 + filterSize*2
         lsl             w10, w10, #1
         add             x4, x13, x7                 // filter3 = filter2 + filterSize*2
-        movi            v0.2d, #0                   // val sum part 1 (for dst[0])
-        movi            v1.2d, #0                   // val sum part 2 (for dst[1])
-        movi            v2.2d, #0                   // val sum part 3 (for dst[2])
-        movi            v3.2d, #0                   // val sum part 4 (for dst[3])
+        movi            v0.16b, #0                  // val sum part 1 (for dst[0])
+        movi            v1.16b, #0                  // val sum part 2 (for dst[1])
+        movi            v2.16b, #0                  // val sum part 3 (for dst[2])
+        movi            v3.16b, #0                  // val sum part 4 (for dst[3])
         add             x17, x3, w8, uxtw           // srcp + filterPos[0]
         add             x8,  x3, w10, uxtw          // srcp + filterPos[1]
         add             x10, x3, w11, uxtw          // srcp + filterPos[2]
@@ -1348,10 +1348,10 @@ function ff_hscale16to19_X4_neon_asm, export=1
         ldp             w8, w9, [x5]
         ldp             w10, w11, [x5, #8]
 
-        movi            v16.2d, #0                  // initialize accumulator for idx + 0
-        movi            v17.2d, #0                  // initialize accumulator for idx + 1
-        movi            v18.2d, #0                  // initialize accumulator for idx + 2
-        movi            v19.2d, #0                  // initialize accumulator for idx + 3
+        movi            v16.16b, #0                 // initialize accumulator for idx + 0
+        movi            v17.16b, #0                 // initialize accumulator for idx + 1
+        movi            v18.16b, #0                 // initialize accumulator for idx + 2
+        movi            v19.16b, #0                 // initialize accumulator for idx + 3
 
         mov             x12, x4                     // filter + 0
         add             x13, x4, x7                 // filter + 1

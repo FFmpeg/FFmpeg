@@ -694,7 +694,7 @@ function ff_hevc_put_hevc_epel_h4_8_neon_i8mm, export=1
         trn1            v4.2s, v4.2s, v5.2s
         trn1            v6.2s, v6.2s, v7.2s
         trn1            v4.2d, v4.2d, v6.2d
-        movi            v16.2d, #0
+        movi            v16.16b, #0
         usdot           v16.4s, v4.16b, v30.16b
         xtn             v16.4h, v16.4s
         st1             {v16.4h}, [x0], x10
@@ -714,8 +714,8 @@ function ff_hevc_put_hevc_epel_h6_8_neon_i8mm, export=1
         trn2            v17.2s, v4.2s, v5.2s
         trn1            v6.2s, v6.2s, v7.2s
         trn1            v16.2d, v16.2d, v6.2d
-        movi            v18.2d, #0
-        movi            v19.2d, #0
+        movi            v18.16b, #0
+        movi            v19.16b, #0
         usdot           v18.4s, v16.16b, v30.16b
         usdot           v19.2s, v17.8b, v30.8b
         xtn             v18.4h, v18.4s
@@ -736,8 +736,8 @@ function ff_hevc_put_hevc_epel_h8_8_neon_i8mm, export=1
         ext             v7.16b, v4.16b, v4.16b, #3
         zip1            v20.4s, v4.4s, v6.4s
         zip1            v21.4s, v5.4s, v7.4s
-        movi            v16.2d, #0
-        movi            v17.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
         usdot           v16.4s, v20.16b, v30.16b
         usdot           v17.4s, v21.16b, v30.16b
         xtn             v16.4h, v16.4s
@@ -761,9 +761,9 @@ function ff_hevc_put_hevc_epel_h12_8_neon_i8mm, export=1
         trn1            v4.4s, v20.4s, v21.4s
         trn2            v5.4s, v20.4s, v21.4s
         trn1            v6.4s, v22.4s, v23.4s
-        movi            v16.2d, #0
-        movi            v17.2d, #0
-        movi            v18.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
         usdot           v16.4s, v4.16b, v30.16b
         usdot           v17.4s, v5.16b, v30.16b
         usdot           v18.4s, v6.16b, v30.16b
@@ -788,10 +788,10 @@ function ff_hevc_put_hevc_epel_h16_8_neon_i8mm, export=1
         zip2            v22.4s, v0.4s, v6.4s
         zip1            v21.4s, v5.4s, v7.4s
         zip2            v23.4s, v5.4s, v7.4s
-        movi            v16.2d, #0
-        movi            v17.2d, #0
-        movi            v18.2d, #0
-        movi            v19.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
+        movi            v19.16b, #0
         usdot           v16.4s, v20.16b, v30.16b
         usdot           v17.4s, v21.16b, v30.16b
         usdot           v18.4s, v22.16b, v30.16b
@@ -815,14 +815,14 @@ function ff_hevc_put_hevc_epel_h24_8_neon_i8mm, export=1
         ext             v26.16b, v1.16b, v1.16b, #1
         ext             v27.16b, v1.16b, v1.16b, #2
         ext             v28.16b, v1.16b, v1.16b, #3
-        movi            v16.2d, #0
-        movi            v17.2d, #0
-        movi            v18.2d, #0
-        movi            v19.2d, #0
-        movi            v20.2d, #0
-        movi            v21.2d, #0
-        movi            v22.2d, #0
-        movi            v23.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
+        movi            v19.16b, #0
+        movi            v20.16b, #0
+        movi            v21.16b, #0
+        movi            v22.16b, #0
+        movi            v23.16b, #0
         usdot           v16.4s, v0.16b, v30.16b
         usdot           v17.4s, v5.16b, v30.16b
         usdot           v18.4s, v6.16b, v30.16b
@@ -861,14 +861,14 @@ function ff_hevc_put_hevc_epel_h32_8_neon_i8mm, export=1
         ext             v26.16b, v1.16b, v2.16b, #1
         ext             v27.16b, v1.16b, v2.16b, #2
         ext             v28.16b, v1.16b, v2.16b, #3
-        movi            v16.2d, #0
-        movi            v17.2d, #0
-        movi            v18.2d, #0
-        movi            v19.2d, #0
-        movi            v20.2d, #0
-        movi            v21.2d, #0
-        movi            v22.2d, #0
-        movi            v23.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
+        movi            v19.16b, #0
+        movi            v20.16b, #0
+        movi            v21.16b, #0
+        movi            v22.16b, #0
+        movi            v23.16b, #0
         usdot           v16.4s, v0.16b, v30.16b
         usdot           v17.4s, v5.16b, v30.16b
         usdot           v18.4s, v6.16b, v30.16b
@@ -900,18 +900,18 @@ function ff_hevc_put_hevc_epel_h48_8_neon_i8mm, export=1
         ext             v16.16b, v1.16b, v2.16b, #1
         ext             v17.16b, v1.16b, v2.16b, #2
         ext             v18.16b, v1.16b, v2.16b, #3
-        movi            v20.2d, #0
-        movi            v21.2d, #0
-        movi            v22.2d, #0
-        movi            v23.2d, #0
+        movi            v20.16b, #0
+        movi            v21.16b, #0
+        movi            v22.16b, #0
+        movi            v23.16b, #0
         usdot           v20.4s, v0.16b, v30.16b
         usdot           v21.4s, v4.16b, v30.16b
         usdot           v22.4s, v5.16b, v30.16b
         usdot           v23.4s, v6.16b, v30.16b
-        movi            v24.2d, #0
-        movi            v25.2d, #0
-        movi            v26.2d, #0
-        movi            v27.2d, #0
+        movi            v24.16b, #0
+        movi            v25.16b, #0
+        movi            v26.16b, #0
+        movi            v27.16b, #0
         usdot           v24.4s, v1.16b, v30.16b
         usdot           v25.4s, v16.16b, v30.16b
         usdot           v26.4s, v17.16b, v30.16b
@@ -928,10 +928,10 @@ function ff_hevc_put_hevc_epel_h48_8_neon_i8mm, export=1
         ext             v4.16b, v2.16b, v3.16b, #1
         ext             v5.16b, v2.16b, v3.16b, #2
         ext             v6.16b, v2.16b, v3.16b, #3
-        movi            v20.2d, #0
-        movi            v21.2d, #0
-        movi            v22.2d, #0
-        movi            v23.2d, #0
+        movi            v20.16b, #0
+        movi            v21.16b, #0
+        movi            v22.16b, #0
+        movi            v23.16b, #0
         usdot           v20.4s, v2.16b, v30.16b
         usdot           v21.4s, v4.16b, v30.16b
         usdot           v22.4s, v5.16b, v30.16b
@@ -957,18 +957,18 @@ function ff_hevc_put_hevc_epel_h64_8_neon_i8mm, export=1
         ext             v16.16b, v1.16b, v2.16b, #1
         ext             v17.16b, v1.16b, v2.16b, #2
         ext             v18.16b, v1.16b, v2.16b, #3
-        movi            v20.2d, #0
-        movi            v21.2d, #0
-        movi            v22.2d, #0
-        movi            v23.2d, #0
+        movi            v20.16b, #0
+        movi            v21.16b, #0
+        movi            v22.16b, #0
+        movi            v23.16b, #0
         usdot           v20.4s, v0.16b, v30.16b
         usdot           v21.4s, v4.16b, v30.16b
         usdot           v22.4s, v5.16b, v30.16b
         usdot           v23.4s, v6.16b, v30.16b
-        movi            v24.2d, #0
-        movi            v25.2d, #0
-        movi            v26.2d, #0
-        movi            v27.2d, #0
+        movi            v24.16b, #0
+        movi            v25.16b, #0
+        movi            v26.16b, #0
+        movi            v27.16b, #0
         usdot           v24.4s, v1.16b, v30.16b
         usdot           v25.4s, v16.16b, v30.16b
         usdot           v26.4s, v17.16b, v30.16b
@@ -989,18 +989,18 @@ function ff_hevc_put_hevc_epel_h64_8_neon_i8mm, export=1
         ext             v16.16b, v3.16b, v7.16b, #1
         ext             v17.16b, v3.16b, v7.16b, #2
         ext             v18.16b, v3.16b, v7.16b, #3
-        movi            v20.2d, #0
-        movi            v21.2d, #0
-        movi            v22.2d, #0
-        movi            v23.2d, #0
+        movi            v20.16b, #0
+        movi            v21.16b, #0
+        movi            v22.16b, #0
+        movi            v23.16b, #0
         usdot           v20.4s, v2.16b, v30.16b
         usdot           v21.4s, v4.16b, v30.16b
         usdot           v22.4s, v5.16b, v30.16b
         usdot           v23.4s, v6.16b, v30.16b
-        movi            v24.2d, #0
-        movi            v25.2d, #0
-        movi            v26.2d, #0
-        movi            v27.2d, #0
+        movi            v24.16b, #0
+        movi            v25.16b, #0
+        movi            v26.16b, #0
+        movi            v27.16b, #0
         usdot           v24.4s, v3.16b, v30.16b
         usdot           v25.4s, v16.16b, v30.16b
         usdot           v26.4s, v17.16b, v30.16b
@@ -1593,7 +1593,7 @@ function ff_hevc_put_hevc_epel_uni_w_h4_8_neon_i8mm, export=1
         trn1            v0.2s, v0.2s, v2.2s
         trn1            v1.2s, v1.2s, v3.2s
         zip1            v0.4s, v0.4s, v1.4s
-        movi            v16.2d, #0
+        movi            v16.16b, #0
         usdot           v16.4s, v0.16b, v28.16b
         mul             v16.4s, v16.4s, v30.4s
         sqrshl          v16.4s, v16.4s, v31.4s
@@ -1620,8 +1620,8 @@ function ff_hevc_put_hevc_epel_uni_w_h6_8_neon_i8mm, export=1
         trn2            v6.2s, v0.2s, v1.2s
         trn1            v5.2s, v2.2s, v3.2s
         zip1            v4.2d, v4.2d, v5.2d
-        movi            v16.2d, #0
-        movi            v17.2d, #0
+        movi            v16.16b, #0
+        movi            v17.16b, #0
         usdot           v16.4s, v4.16b, v28.16b
         usdot           v17.2s, v6.8b, v28.8b
         mul             v16.4s, v16.4s, v30.4s
@@ -1640,8 +1640,8 @@ function ff_hevc_put_hevc_epel_uni_w_h6_8_neon_i8mm, export=1
 endfunc
 
 .macro  EPEL_UNI_W_H_CALC s0, s1, d0, d1
-        movi            \d0\().2d, #0
-        movi            \d1\().2d, #0
+        movi            \d0\().16b, #0
+        movi            \d1\().16b, #0
         usdot           \d0\().4s, \s0\().16b, v28.16b
         usdot           \d1\().4s, \s1\().16b, v28.16b
         mul             \d0\().4s, \d0\().4s, v30.4s
@@ -1687,7 +1687,7 @@ function ff_hevc_put_hevc_epel_uni_w_h12_8_neon_i8mm, export=1
         zip2            v7.4s, v1.4s, v3.4s
         zip1            v6.4s, v6.4s, v7.4s
         EPEL_UNI_W_H_CALC v4, v5, v16, v17
-        movi            v18.2d, #0
+        movi            v18.16b, #0
         usdot           v18.4s, v6.16b, v28.16b
         mul             v18.4s, v18.4s, v30.4s
         sqrshl          v18.4s, v18.4s, v31.4s
@@ -2575,7 +2575,7 @@ DISABLE_I8MM
 .endm
 
 .macro EPEL_UNI_W_V4_CALC d0, s0, s1, s2, s3
-        movi            \d0\().2d, #0
+        movi            \d0\().16b, #0
         umlsl           \d0\().8h, \s0\().8b, v0.8b
         umlal           \d0\().8h, \s1\().8b, v1.8b
         umlal           \d0\().8h, \s2\().8b, v2.8b
@@ -2626,7 +2626,7 @@ function ff_hevc_put_hevc_epel_uni_w_v4_8_neon, export=1
 endfunc
 
 .macro EPEL_UNI_W_V8_CALC d0, s0, s1, s2, s3, t0, t1
-        movi            \d0\().2d, #0
+        movi            \d0\().16b, #0
         umlsl           \d0\().8h, \s0\().8b, v0.8b
         umlal           \d0\().8h, \s1\().8b, v1.8b
         umlal           \d0\().8h, \s2\().8b, v2.8b
@@ -2720,8 +2720,8 @@ function ff_hevc_put_hevc_epel_uni_w_v8_8_neon, export=1
 endfunc
 
 .macro EPEL_UNI_W_V12_CALC d0, d1, s0, s1, s2, s3, t0, t1, t2, t3
-        movi            \d0\().2d, #0
-        movi            \d1\().2d, #0
+        movi            \d0\().16b, #0
+        movi            \d1\().16b, #0
         umlsl           \d0\().8h, \s0\().8b, v0.8b
         umlsl2          \d1\().8h, \s0\().16b, v0.16b
         umlal           \d0\().8h, \s1\().8b, v1.8b
@@ -2793,8 +2793,8 @@ function ff_hevc_put_hevc_epel_uni_w_v12_8_neon, export=1
 endfunc
 
 .macro EPEL_UNI_W_V16_CALC d0, d1, s0, s1, s2, s3, t0, t1, t2, t3
-        movi            \d0\().2d, #0
-        movi            \d1\().2d, #0
+        movi            \d0\().16b, #0
+        movi            \d1\().16b, #0
         umlsl           \d0\().8h, \s0\().8b, v0.8b
         umlsl2          \d1\().8h, \s0\().16b, v0.16b
         umlal           \d0\().8h, \s1\().8b, v1.8b

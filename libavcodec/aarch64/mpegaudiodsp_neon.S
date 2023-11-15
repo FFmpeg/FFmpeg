@@ -56,7 +56,7 @@ function ff_mpadsp_apply_window_\type\()_neon, export=1
 .ifc \type, fixed
         ld1r            {v16.2s}, [x2]          // dither_state
         sxtl            v16.2d, v16.2s
-        movi            v29.2d, #0
+        movi            v29.16b, #0
         movi            v30.2d, #(1<<OUT_SHIFT)-1
         trn1            v31.2d, v29.2d, v30.2d
         trn2            v30.2d, v30.2d, v29.2d
@@ -74,9 +74,9 @@ function ff_mpadsp_apply_window_\type\()_neon, export=1
         add             x11, x6, #(32)<<2      // w  + 32
         add             x12, x7, #(32)<<2      // w2 + 32
         mov             x15, #8
-        movi            v17.2d, #0
-        movi            v18.2d, #0
-        movi            v19.2d, #0
+        movi            v17.16b, #0
+        movi            v18.16b, #0
+        movi            v19.16b, #0
 2:
         subs            x15, x15, #1
         ld1             {v0.4s},  [x8],  x9
