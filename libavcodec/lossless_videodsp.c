@@ -121,6 +121,8 @@ void ff_llviddsp_init(LLVidDSPContext *c)
 
 #if ARCH_PPC
     ff_llviddsp_init_ppc(c);
+#elif ARCH_RISCV
+    ff_llviddsp_init_riscv(c);
 #elif ARCH_X86
     ff_llviddsp_init_x86(c);
 #endif
