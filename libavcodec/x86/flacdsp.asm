@@ -43,6 +43,7 @@ INIT_XMM %1
 cglobal flac_lpc_32, 5,6,5, decoded, coeffs, pred_order, qlevel, len, j
     sub    lend, pred_orderd
     jle .ret
+    movsxdifnidn pred_orderq, pred_orderd
     lea    decodedq, [decodedq+pred_orderq*4-8]
     lea    coeffsq, [coeffsq+pred_orderq*4]
     neg    pred_orderq
