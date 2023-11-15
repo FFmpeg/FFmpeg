@@ -1472,6 +1472,7 @@ static int update_frag_index(MOVContext *c, int64_t offset)
         frag_stream_info[i].index_base = -1;
         frag_stream_info[i].index_entry = -1;
         frag_stream_info[i].encryption_index = NULL;
+        frag_stream_info[i].stsd_id = -1;
     }
 
     if (index < c->frag_index.nb_items)
