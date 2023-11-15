@@ -92,6 +92,11 @@
         shnadd  3, \rd, \rs1, \rs2
         .endm
 #endif
+#if !defined (__riscv_zbb)
+        .macro  min rd, rs1, rs2
+        .insn r OP, 4, 5, \rd, \rs1, \rs2
+        .endm
+#endif
 
         /* Convenience macro to load a Vector type (vtype) as immediate */
         .macro  lvtypei rd, e, m=m1, tp=tu, mp=mu
