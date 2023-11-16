@@ -5413,6 +5413,9 @@ elif enabled riscv; then
     if test_cpp_condition stddef.h "__riscv_zbb"; then
         enable fast_clz
     fi
+    if test_cpp_condition stddef.h "__riscv_zfhmin"; then
+        enable fast_float16
+    fi
 
 elif enabled sparc; then
 
