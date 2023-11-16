@@ -23,10 +23,8 @@
 #include "config.h"
 #include "config_components.h"
 
-#if CONFIG_LINUX_PERF
-# ifndef _GNU_SOURCE
-#  define _GNU_SOURCE // for syscall (performance monitoring API)
-# endif
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE // for syscall (performance monitoring API), strsignal()
 #endif
 
 #include <stdarg.h>
@@ -861,6 +859,15 @@ void checkasm_fail_func(const char *msg, ...)
         state.current_func_ver->ok = 0;
         state.num_failed++;
     }
+}
+
+void checkasm_fail_signal(int signum)
+{
+#ifdef __GLIBC__
+    checkasm_fail_func("fatal signal %d: %s", signum, strsignal(signum));
+#else
+    checkasm_fail_func("fatal signal %d", signum);
+#endif
 }
 
 /* Get the benchmark context of the current function */
