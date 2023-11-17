@@ -395,13 +395,29 @@ skip:
     case AV_SAMPLE_FMT_FLTP:
         for (int ch = 0; ch < s->nb_channels; ch++) {
             const float *tsrc = (const float *)s->ir[selir]->extended_data[!s->one2many * ch];
+
+            s->ch_gain[ch] = ir_gain_float(ctx, s, nb_taps, tsrc);
+        }
+
+        if (s->ir_link) {
+            float gain = +INFINITY;
+
+            for (int ch = 0; ch < s->nb_channels; ch++)
+                gain = fminf(gain, s->ch_gain[ch]);
+
+            for (int ch = 0; ch < s->nb_channels; ch++)
+                s->ch_gain[ch] = gain;
+        }
+
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            const float *tsrc = (const float *)s->ir[selir]->extended_data[!s->one2many * ch];
             float *time = (float *)s->norm_ir[selir]->extended_data[ch];
 
             memcpy(time, tsrc, sizeof(*time) * nb_taps);
             for (int i = FFMAX(1, s->length * nb_taps); i < nb_taps; i++)
                 time[i] = 0;
 
-            get_power_float(ctx, s, nb_taps, ch, time);
+            ir_scale_float(ctx, s, nb_taps, ch, time, s->ch_gain[ch]);
 
             for (int n = 0; n < s->nb_segments[selir]; n++) {
                 AudioFIRSegment *seg = &s->seg[selir][n];
@@ -419,13 +435,30 @@ skip:
     case AV_SAMPLE_FMT_DBLP:
         for (int ch = 0; ch < s->nb_channels; ch++) {
             const double *tsrc = (const double *)s->ir[selir]->extended_data[!s->one2many * ch];
+
+            s->ch_gain[ch] = ir_gain_double(ctx, s, nb_taps, tsrc);
+        }
+
+        if (s->ir_link) {
+            double gain = +INFINITY;
+
+            for (int ch = 0; ch < s->nb_channels; ch++)
+                gain = fmin(gain, s->ch_gain[ch]);
+
+            for (int ch = 0; ch < s->nb_channels; ch++)
+                s->ch_gain[ch] = gain;
+        }
+
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            const double *tsrc = (const double *)s->ir[selir]->extended_data[!s->one2many * ch];
             double *time = (double *)s->norm_ir[selir]->extended_data[ch];
 
             memcpy(time, tsrc, sizeof(*time) * nb_taps);
             for (int i = FFMAX(1, s->length * nb_taps); i < nb_taps; i++)
                 time[i] = 0;
 
-            get_power_double(ctx, s, nb_taps, ch, time);
+            ir_scale_double(ctx, s, nb_taps, ch, time, s->ch_gain[ch]);
+
             for (int n = 0; n < s->nb_segments[selir]; n++) {
                 AudioFIRSegment *seg = &s->seg[selir][n];
 
@@ -627,8 +660,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     s->format = outlink->format;
     s->nb_channels = outlink->ch_layout.nb_channels;
+    s->ch_gain = av_calloc(ctx->inputs[0]->ch_layout.nb_channels, sizeof(*s->ch_gain));
     s->loading = av_calloc(ctx->inputs[0]->ch_layout.nb_channels, sizeof(*s->loading));
-    if (!s->loading)
+    if (!s->loading || !s->ch_gain)
         return AVERROR(ENOMEM);
 
     s->fadein[0] = ff_get_audio_buffer(outlink, s->min_part_size);
@@ -674,6 +708,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     AudioFIRContext *s = ctx->priv;
 
     av_freep(&s->fdsp);
+    av_freep(&s->ch_gain);
     av_freep(&s->loading);
 
     for (int i = 0; i < s->nb_irs; i++) {
@@ -812,13 +847,15 @@ static const AVOption afir_options[] = {
     { "dry",    "set dry gain",      OFFSET(dry_gain),   AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 10, AFR },
     { "wet",    "set wet gain",      OFFSET(wet_gain),   AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 10, AFR },
     { "length", "set IR length",     OFFSET(length),     AV_OPT_TYPE_FLOAT, {.dbl=1},    0,  1, AF },
-    { "gtype",  "set IR auto gain type",OFFSET(gtype),   AV_OPT_TYPE_INT,   {.i64=0},   -1,  4, AF, "gtype" },
-    {  "none",  "without auto gain", 0,                  AV_OPT_TYPE_CONST, {.i64=-1},   0,  0, AF, "gtype" },
-    {  "peak",  "peak gain",         0,                  AV_OPT_TYPE_CONST, {.i64=0},    0,  0, AF, "gtype" },
-    {  "dc",    "DC gain",           0,                  AV_OPT_TYPE_CONST, {.i64=1},    0,  0, AF, "gtype" },
-    {  "gn",    "gain to noise",     0,                  AV_OPT_TYPE_CONST, {.i64=2},    0,  0, AF, "gtype" },
-    {  "ac",    "AC gain",           0,                  AV_OPT_TYPE_CONST, {.i64=3},    0,  0, AF, "gtype" },
-    {  "rms",   "RMS gain",          0,                  AV_OPT_TYPE_CONST, {.i64=4},    0,  0, AF, "gtype" },
+    { "gtype",  "set IR auto gain type",OFFSET(gtype),   AV_OPT_TYPE_INT,   {.i64=0},   -1,  4, AF|AV_OPT_FLAG_DEPRECATED, "gtype" },
+    {  "none",  "without auto gain", 0,                  AV_OPT_TYPE_CONST, {.i64=-1},   0,  0, AF|AV_OPT_FLAG_DEPRECATED, "gtype" },
+    {  "peak",  "peak gain",         0,                  AV_OPT_TYPE_CONST, {.i64=0},    0,  0, AF|AV_OPT_FLAG_DEPRECATED, "gtype" },
+    {  "dc",    "DC gain",           0,                  AV_OPT_TYPE_CONST, {.i64=1},    0,  0, AF|AV_OPT_FLAG_DEPRECATED, "gtype" },
+    {  "gn",    "gain to noise",     0,                  AV_OPT_TYPE_CONST, {.i64=2},    0,  0, AF|AV_OPT_FLAG_DEPRECATED, "gtype" },
+    {  "ac",    "AC gain",           0,                  AV_OPT_TYPE_CONST, {.i64=3},    0,  0, AF|AV_OPT_FLAG_DEPRECATED, "gtype" },
+    {  "rms",   "RMS gain",          0,                  AV_OPT_TYPE_CONST, {.i64=4},    0,  0, AF|AV_OPT_FLAG_DEPRECATED, "gtype" },
+    { "irnorm", "set IR norm",       OFFSET(ir_norm),    AV_OPT_TYPE_FLOAT, {.dbl=1},   -1,  2, AF },
+    { "irlink", "set IR link",       OFFSET(ir_link),    AV_OPT_TYPE_BOOL,  {.i64=1},    0,  1, AF },
     { "irgain", "set IR gain",       OFFSET(ir_gain),    AV_OPT_TYPE_FLOAT, {.dbl=1},    0,  1, AF },
     { "irfmt",  "set IR format",     OFFSET(ir_format),  AV_OPT_TYPE_INT,   {.i64=1},    0,  1, AF, "irfmt" },
     {  "mono",  "single channel",    0,                  AV_OPT_TYPE_CONST, {.i64=0},    0,  0, AF, "irfmt" },

@@ -29,6 +29,8 @@
 #undef HYPOT
 #undef SAMPLE_FORMAT
 #undef TX_TYPE
+#undef FABS
+#undef POW
 #if DEPTH == 32
 #define SAMPLE_FORMAT float
 #define SQRT sqrtf
@@ -36,6 +38,8 @@
 #define ctype AVComplexFloat
 #define ftype float
 #define TX_TYPE AV_TX_FLOAT_RDFT
+#define FABS fabsf
+#define POW powf
 #else
 #define SAMPLE_FORMAT double
 #define SQRT sqrt
@@ -43,6 +47,8 @@
 #define ctype AVComplexDouble
 #define ftype double
 #define TX_TYPE AV_TX_DOUBLE_RDFT
+#define FABS fabs
+#define POW pow
 #endif
 
 #define fn3(a,b)   a##_##b
@@ -139,95 +145,32 @@ end:
     av_free(mag);
 }
 
-static int fn(get_power)(AVFilterContext *ctx, AudioFIRContext *s,
-                         int cur_nb_taps, int ch,
-                         ftype *time)
+static ftype fn(ir_gain)(AVFilterContext *ctx, AudioFIRContext *s,
+                         int cur_nb_taps, const ftype *time)
 {
-    ftype ch_gain = 1;
+    ftype ch_gain, sum = 0;
 
-    switch (s->gtype) {
-    case -1:
+    if (s->ir_norm < 0.f) {
         ch_gain = 1;
-        break;
-    case 0:
-        {
-            ftype sum = 0;
+    } else if (s->ir_norm == 0.f) {
+        for (int i = 0; i < cur_nb_taps; i++)
+            sum += time[i];
+        ch_gain = 1. / sum;
+    } else {
+        ftype ir_norm = s->ir_norm;
 
-            for (int i = 0; i < cur_nb_taps; i++)
-                sum += FFABS(time[i]);
-            ch_gain = 1. / sum;
-        }
-        break;
-    case 1:
-        {
-            ftype sum = 0;
-
-            for (int i = 0; i < cur_nb_taps; i++)
-                sum += time[i];
-            ch_gain = 1. / sum;
-        }
-        break;
-    case 2:
-        {
-            ftype sum = 0;
-
-            for (int i = 0; i < cur_nb_taps; i++)
-                sum += time[i] * time[i];
-            ch_gain = 1. / SQRT(sum);
-        }
-        break;
-    case 3:
-    case 4:
-        {
-            ftype *inc, *outc, scale, power;
-            AVTXContext *tx;
-            av_tx_fn tx_fn;
-            int ret, size;
-
-            size = 1 << av_ceil_log2_c(cur_nb_taps);
-            inc = av_calloc(size + 2, sizeof(SAMPLE_FORMAT));
-            outc = av_calloc(size + 2, sizeof(SAMPLE_FORMAT));
-            if (!inc || !outc) {
-                av_free(outc);
-                av_free(inc);
-                break;
-            }
-
-            scale = 1.;
-            ret = av_tx_init(&tx, &tx_fn, TX_TYPE, 0, size, &scale, 0);
-            if (ret < 0) {
-                av_free(outc);
-                av_free(inc);
-                break;
-            }
-
-            {
-                memcpy(inc, time, cur_nb_taps * sizeof(SAMPLE_FORMAT));
-                tx_fn(tx, outc, inc, sizeof(SAMPLE_FORMAT));
-
-                power = 0;
-                if (s->gtype == 3) {
-                    for (int i = 0; i < size / 2 + 1; i++)
-                        power = FFMAX(power, HYPOT(outc[i * 2], outc[i * 2 + 1]));
-                } else {
-                    ftype sum = 0;
-                    for (int i = 0; i < size / 2 + 1; i++)
-                        sum += HYPOT(outc[i * 2], outc[i * 2 + 1]);
-                    power = SQRT(sum / (size / 2 + 1));
-                }
-
-                ch_gain = 1. / power;
-            }
-
-            av_tx_uninit(&tx);
-            av_free(outc);
-            av_free(inc);
-        }
-        break;
-    default:
-        return AVERROR_BUG;
+        for (int i = 0; i < cur_nb_taps; i++)
+            sum += POW(FABS(time[i]), ir_norm);
+        ch_gain = 1. / POW(sum, 1. / ir_norm);
     }
 
+    return ch_gain;
+}
+
+static void fn(ir_scale)(AVFilterContext *ctx, AudioFIRContext *s,
+                         int cur_nb_taps, int ch,
+                         ftype *time, ftype ch_gain)
+{
     if (ch_gain != 1. || s->ir_gain != 1.) {
         ftype gain = ch_gain * s->ir_gain;
 
@@ -238,8 +181,6 @@ static int fn(get_power)(AVFilterContext *ctx, AudioFIRContext *s,
         s->fdsp->vector_dmul_scalar(time, time, gain, FFALIGN(cur_nb_taps, 8));
 #endif
     }
-
-    return 0;
 }
 
 static void fn(convert_channel)(AVFilterContext *ctx, AudioFIRContext *s, int ch,

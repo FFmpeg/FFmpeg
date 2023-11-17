@@ -63,6 +63,8 @@ typedef struct AudioFIRContext {
     float dry_gain;
     float length;
     int gtype;
+    float ir_norm;
+    float ir_link;
     float ir_gain;
     int ir_format;
     int ir_load;
@@ -87,6 +89,7 @@ typedef struct AudioFIRContext {
     int nb_channels;
     int one2many;
     int *loading;
+    double *ch_gain;
 
     AudioFIRSegment seg[MAX_IR_STREAMS][1024];
 
