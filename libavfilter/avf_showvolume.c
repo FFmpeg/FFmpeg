@@ -379,13 +379,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
             }
 
-            if (s->h >= 8 && s->draw_text) {
-                int ret = av_channel_name(channel_name, sizeof(channel_name), av_channel_layout_channel_from_index(&insamples->ch_layout, c));
-                if (ret < 0)
-                    continue;
-                drawtext(s->out, c * (s->h + s->b) + (s->h - 10) / 2, outlink->h - 35, channel_name, 1);
-            }
-
             if (s->draw_persistent_duration > 0.) {
                 calc_persistent_max(s, max, c);
                 max_draw = FFMAX(0, calc_max_draw(s, outlink, s->max_persistent[c]) - 1);
@@ -415,13 +408,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
             }
 
-            if (s->h >= 8 && s->draw_text) {
-                int ret = av_channel_name(channel_name, sizeof(channel_name), av_channel_layout_channel_from_index(&insamples->ch_layout, c));
-                if (ret < 0)
-                    continue;
-                drawtext(s->out, 2, c * (s->h + s->b) + (s->h - 8) / 2, channel_name, 0);
-            }
-
             if (s->draw_persistent_duration > 0.) {
                 calc_persistent_max(s, max, c);
                 max_draw = FFMAX(0, calc_max_draw(s, outlink, s->max_persistent[c]) - 1);
@@ -438,6 +424,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     if (ret < 0) {
         av_frame_free(&out);
         return ret;
+    }
+
+    /* draw channel names */
+    for (c = 0; c < inlink->ch_layout.nb_channels && s->h >= 10 && s->draw_text; c++) {
+        if (s->orientation) { /* vertical */
+            int ret = av_channel_name(channel_name, sizeof(channel_name), av_channel_layout_channel_from_index(&inlink->ch_layout, c));
+            if (ret < 0)
+                continue;
+            drawtext(out, c * (s->h + s->b) + (s->h - 10) / 2, outlink->h - 35, channel_name, 1);
+        } else { /* horizontal */
+            int ret = av_channel_name(channel_name, sizeof(channel_name), av_channel_layout_channel_from_index(&inlink->ch_layout, c));
+            if (ret < 0)
+                continue;
+            drawtext(out, 2, c * (s->h + s->b) + (s->h - 8) / 2, channel_name, 0);
+        }
     }
 
     /* draw volume level */
