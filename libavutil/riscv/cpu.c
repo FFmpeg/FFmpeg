@@ -18,8 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define _GNU_SOURCE
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
+#include "libavutil/macros.h"
 #include "libavutil/log.h"
 #include "config.h"
 
@@ -27,10 +29,33 @@
 #include <sys/auxv.h>
 #define HWCAP_RV(letter) (1ul << ((letter) - 'A'))
 #endif
+#ifdef HAVE_SYS_HWPROBE_H
+#include <sys/hwprobe.h>
+#endif
 
 int ff_get_cpu_flags_riscv(void)
 {
     int ret = 0;
+#ifdef HAVE_SYS_HWPROBE_H
+    struct riscv_hwprobe pairs[] = {
+        { RISCV_HWPROBE_KEY_BASE_BEHAVIOR, 0 },
+        { RISCV_HWPROBE_KEY_IMA_EXT_0, 0 },
+    };
+
+    if (__riscv_hwprobe(pairs, FF_ARRAY_ELEMS(pairs), 0, NULL, 0) == 0) {
+        if (pairs[0].value & RISCV_HWPROBE_BASE_BEHAVIOR_IMA)
+            ret |= AV_CPU_FLAG_RVI;
+        if (pairs[1].value & RISCV_HWPROBE_IMA_FD)
+            ret |= AV_CPU_FLAG_RVF | AV_CPU_FLAG_RVD;
+        if (pairs[1].value & RISCV_HWPROBE_IMA_V)
+            ret |= AV_CPU_FLAG_RVV_I32 | AV_CPU_FLAG_RVV_I64
+                 | AV_CPU_FLAG_RVV_F32 | AV_CPU_FLAG_RVV_F64;
+        if (pairs[1].value & RISCV_HWPROBE_EXT_ZBA)
+            ret |= AV_CPU_FLAG_RVB_ADDR;
+        if (pairs[1].value & RISCV_HWPROBE_EXT_ZBB)
+            ret |= AV_CPU_FLAG_RVB_BASIC;
+    } else
+#endif
 #if HAVE_GETAUXVAL
     {
         const unsigned long hwcap = getauxval(AT_HWCAP);

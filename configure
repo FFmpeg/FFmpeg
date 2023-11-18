@@ -2298,6 +2298,7 @@ HEADERS_LIST="
     OpenGL_gl3_h
     poll_h
     pthread_np_h
+    sys_hwprobe_h
     sys_param_h
     sys_resource_h
     sys_select_h
@@ -5536,6 +5537,8 @@ elif enabled ppc; then
     esac
 
 elif enabled riscv; then
+
+    check_headers sys/hwprobe.h
 
     if test_cpp_condition stddef.h "__riscv_zbb"; then
         enable fast_clz
