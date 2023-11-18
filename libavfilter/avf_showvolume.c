@@ -370,13 +370,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             max = av_clipf(max, 0, 1);
             max_draw = calc_max_draw(s, outlink, max);
 
-            for (j = max_draw; j < s->w; j++) {
+            for (j = s->w - 1; j >= max_draw; j--) {
                 uint8_t *dst = s->out->data[0] + j * s->out->linesize[0] + c * (s->b + s->h) * 4;
                 for (k = 0; k < s->h; k++) {
                     AV_WN32A(&dst[k * 4], lut[s->w - j - 1]);
-                    if (j & step)
-                        j += step;
                 }
+                if (j & step)
+                    j -= step;
             }
 
             if (s->draw_persistent_duration > 0.) {
