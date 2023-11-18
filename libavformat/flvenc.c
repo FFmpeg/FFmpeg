@@ -1072,6 +1072,8 @@ static int flv_check_bitstream(AVFormatContext *s, AVStream *st,
     }
     if (!st->codecpar->extradata_size &&
             (st->codecpar->codec_id == AV_CODEC_ID_H264 ||
+             st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
+             st->codecpar->codec_id == AV_CODEC_ID_AV1 ||
              st->codecpar->codec_id == AV_CODEC_ID_MPEG4))
         return ff_stream_add_bitstream_filter(st, "extract_extradata", NULL);
     return 1;
