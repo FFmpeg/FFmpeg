@@ -32,21 +32,23 @@ int ff_get_cpu_flags_riscv(void)
 {
     int ret = 0;
 #if HAVE_GETAUXVAL
-    const unsigned long hwcap = getauxval(AT_HWCAP);
+    {
+        const unsigned long hwcap = getauxval(AT_HWCAP);
 
-    if (hwcap & HWCAP_RV('I'))
-        ret |= AV_CPU_FLAG_RVI;
-    if (hwcap & HWCAP_RV('F'))
-        ret |= AV_CPU_FLAG_RVF;
-    if (hwcap & HWCAP_RV('D'))
-        ret |= AV_CPU_FLAG_RVD;
-    if (hwcap & HWCAP_RV('B'))
-        ret |= AV_CPU_FLAG_RVB_ADDR | AV_CPU_FLAG_RVB_BASIC;
+        if (hwcap & HWCAP_RV('I'))
+            ret |= AV_CPU_FLAG_RVI;
+        if (hwcap & HWCAP_RV('F'))
+            ret |= AV_CPU_FLAG_RVF;
+        if (hwcap & HWCAP_RV('D'))
+            ret |= AV_CPU_FLAG_RVD;
+        if (hwcap & HWCAP_RV('B'))
+            ret |= AV_CPU_FLAG_RVB_ADDR | AV_CPU_FLAG_RVB_BASIC;
 
-    /* The V extension implies all Zve* functional subsets */
-    if (hwcap & HWCAP_RV('V'))
-        ret |= AV_CPU_FLAG_RVV_I32 | AV_CPU_FLAG_RVV_I64
-             | AV_CPU_FLAG_RVV_F32 | AV_CPU_FLAG_RVV_F64;
+        /* The V extension implies all Zve* functional subsets */
+        if (hwcap & HWCAP_RV('V'))
+             ret |= AV_CPU_FLAG_RVV_I32 | AV_CPU_FLAG_RVV_I64
+                  | AV_CPU_FLAG_RVV_F32 | AV_CPU_FLAG_RVV_F64;
+    }
 #endif
 
 #ifdef __riscv_i
