@@ -48,7 +48,6 @@ typedef struct JoinContext {
 
     int inputs;
     char *map;
-    char    *channel_layout_str;
     AVChannelLayout ch_layout;
 
     int64_t  eof_pts;
@@ -73,7 +72,7 @@ typedef struct JoinContext {
 static const AVOption join_options[] = {
     { "inputs",         "Number of input streams.", OFFSET(inputs),             AV_OPT_TYPE_INT,    { .i64 = 2 }, 1, INT_MAX,       A|F },
     { "channel_layout", "Channel layout of the "
-                        "output stream.",           OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0, A|F },
+                        "output stream.",           OFFSET(ch_layout),          AV_OPT_TYPE_CHLAYOUT, {.str = "stereo"}, 0, 0, A|F },
     { "map",            "A comma-separated list of channels maps in the format "
                         "'input_stream.input_channel-output_channel.",
                                                     OFFSET(map),                AV_OPT_TYPE_STRING,                 .flags = A|F },
@@ -156,26 +155,6 @@ static av_cold int join_init(AVFilterContext *ctx)
 {
     JoinContext *s = ctx->priv;
     int ret, i;
-
-    ret = av_channel_layout_from_string(&s->ch_layout, s->channel_layout_str);
-    if (ret < 0) {
-#if FF_API_OLD_CHANNEL_LAYOUT
-        uint64_t mask;
-FF_DISABLE_DEPRECATION_WARNINGS
-        mask = av_get_channel_layout(s->channel_layout_str);
-        if (!mask) {
-#endif
-            av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout '%s'.\n",
-                   s->channel_layout_str);
-            return AVERROR(EINVAL);
-#if FF_API_OLD_CHANNEL_LAYOUT
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-        av_log(ctx, AV_LOG_WARNING, "Channel layout '%s' uses a deprecated syntax.\n",
-               s->channel_layout_str);
-        av_channel_layout_from_mask(&s->ch_layout, mask);
-#endif
-    }
 
     s->channels     = av_calloc(s->ch_layout.nb_channels, sizeof(*s->channels));
     s->buffers      = av_calloc(s->ch_layout.nb_channels, sizeof(*s->buffers));

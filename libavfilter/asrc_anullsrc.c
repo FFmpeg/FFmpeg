@@ -38,9 +38,7 @@
 
 typedef struct ANullContext {
     const AVClass *class;
-    char   *channel_layout_str;
     AVChannelLayout ch_layout;
-    char   *sample_rate_str;
     int     sample_rate;
     int64_t duration;
     int nb_samples;             ///< number of samples per requested frame
@@ -51,10 +49,10 @@ typedef struct ANullContext {
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption anullsrc_options[]= {
-    { "channel_layout", "set channel_layout", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0, FLAGS },
-    { "cl",             "set channel_layout", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0, FLAGS },
-    { "sample_rate",    "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0, FLAGS },
-    { "r",              "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0, FLAGS },
+    { "channel_layout", "set channel_layout", OFFSET(ch_layout), AV_OPT_TYPE_CHLAYOUT, {.str = "stereo"}, 0, 0, FLAGS },
+    { "cl",             "set channel_layout", OFFSET(ch_layout), AV_OPT_TYPE_CHLAYOUT, {.str = "stereo"}, 0, 0, FLAGS },
+    { "sample_rate",    "set sample rate",    OFFSET(sample_rate)   , AV_OPT_TYPE_INT, {.i64 = 44100}, 0, 0, FLAGS },
+    { "r",              "set sample rate",    OFFSET(sample_rate)   , AV_OPT_TYPE_INT, {.i64 = 44100}, 0, 0, FLAGS },
     { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 1, UINT16_MAX, FLAGS },
     { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.i64 = 1024}, 1, UINT16_MAX, FLAGS },
     { "duration",       "set the audio duration",                        OFFSET(duration),   AV_OPT_TYPE_DURATION, {.i64 = -1}, -1, INT64_MAX, FLAGS },
@@ -63,22 +61,6 @@ static const AVOption anullsrc_options[]= {
 };
 
 AVFILTER_DEFINE_CLASS(anullsrc);
-
-static av_cold int init(AVFilterContext *ctx)
-{
-    ANullContext *null = ctx->priv;
-    int ret;
-
-    if ((ret = ff_parse_sample_rate(&null->sample_rate,
-                                     null->sample_rate_str, ctx)) < 0)
-        return ret;
-
-    if ((ret = ff_parse_channel_layout(&null->ch_layout, NULL,
-                                        null->channel_layout_str, ctx)) < 0)
-        return ret;
-
-    return 0;
-}
 
 static int query_formats(AVFilterContext *ctx)
 {
@@ -129,12 +111,6 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    ANullContext *s = ctx->priv;
-    av_channel_layout_uninit(&s->ch_layout);
-}
-
 static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
     {
         .name          = "default",
@@ -146,8 +122,6 @@ static const AVFilterPad avfilter_asrc_anullsrc_outputs[] = {
 const AVFilter ff_asrc_anullsrc = {
     .name          = "anullsrc",
     .description   = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
-    .init          = init,
-    .uninit        = uninit,
     .priv_size     = sizeof(ANullContext),
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_asrc_anullsrc_outputs),

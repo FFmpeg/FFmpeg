@@ -36,22 +36,9 @@ typedef struct AFDelaySrcContext {
     int nb_samples;
     int nb_taps;
     AVChannelLayout chlayout;
-    char *chlayout_str;
 
     int64_t pts;
 } AFDelaySrcContext;
-
-static av_cold int init(AVFilterContext *ctx)
-{
-    AFDelaySrcContext *s = ctx->priv;
-    int ret;
-
-    ret = ff_parse_channel_layout(&s->chlayout, NULL, s->chlayout_str, ctx);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
 
 static float sincf(float x)
 {
@@ -134,13 +121,6 @@ static const AVFilterPad afdelaysrc_outputs[] = {
     },
 };
 
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    AFDelaySrcContext *s = ctx->priv;
-
-    av_channel_layout_uninit(&s->chlayout);
-}
-
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 #define OFFSET(x) offsetof(AFDelaySrcContext, x)
 
@@ -153,8 +133,8 @@ static const AVOption afdelaysrc_options[] = {
     { "n",           "set the number of samples per requested frame", OFFSET(nb_samples),  AV_OPT_TYPE_INT,   {.i64=1024},   1, INT_MAX,   AF },
     { "taps",        "set number of taps for delay filter",           OFFSET(nb_taps),     AV_OPT_TYPE_INT,   {.i64=0},      0,   32768,   AF },
     { "t",           "set number of taps for delay filter",           OFFSET(nb_taps),     AV_OPT_TYPE_INT,   {.i64=0},      0,   32768,   AF },
-    { "channel_layout", "set channel layout",                         OFFSET(chlayout_str),AV_OPT_TYPE_STRING,{.str="stereo"},0,      0,   AF },
-    { "c",              "set channel layout",                         OFFSET(chlayout_str),AV_OPT_TYPE_STRING,{.str="stereo"},0,      0,   AF },
+    { "channel_layout", "set channel layout",                         OFFSET(chlayout),    AV_OPT_TYPE_CHLAYOUT,{.str="stereo"},0,      0,   AF },
+    { "c",              "set channel layout",                         OFFSET(chlayout),    AV_OPT_TYPE_CHLAYOUT,{.str="stereo"},0,      0,   AF },
     { NULL }
 };
 
@@ -165,9 +145,7 @@ const AVFilter ff_asrc_afdelaysrc = {
     .description   = NULL_IF_CONFIG_SMALL("Generate a Fractional delay FIR coefficients."),
     .priv_size     = sizeof(AFDelaySrcContext),
     .priv_class    = &afdelaysrc_class,
-    .init          = init,
     .activate      = activate,
-    .uninit        = uninit,
     .inputs        = NULL,
     FILTER_OUTPUTS(afdelaysrc_outputs),
     FILTER_QUERY_FUNC(query_formats),

@@ -61,8 +61,8 @@ static const int sc_map[16] = {
 typedef struct AudioSurroundContext {
     const AVClass *class;
 
-    char *out_channel_layout_str;
-    char *in_channel_layout_str;
+    AVChannelLayout out_ch_layout;
+    AVChannelLayout in_ch_layout;
 
     float level_in;
     float level_out;
@@ -93,8 +93,6 @@ typedef struct AudioSurroundContext {
     float lowcut;
     float highcut;
 
-    AVChannelLayout out_ch_layout;
-    AVChannelLayout in_ch_layout;
     int nb_in_channels;
     int nb_out_channels;
 
@@ -1107,20 +1105,8 @@ static av_cold int init(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
     int64_t in_channel_layout, out_channel_layout;
+    char in_name[128], out_name[128];
     float overlap;
-    int ret;
-
-    if ((ret = av_channel_layout_from_string(&s->out_ch_layout, s->out_channel_layout_str)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing output channel layout '%s'.\n",
-               s->out_channel_layout_str);
-        return ret;
-    }
-
-    if ((ret = av_channel_layout_from_string(&s->in_ch_layout, s->in_channel_layout_str)) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Error parsing input channel layout '%s'.\n",
-               s->in_channel_layout_str);
-        return AVERROR(EINVAL);
-    }
 
     if (s->lowcutf >= s->highcutf) {
         av_log(ctx, AV_LOG_ERROR, "Low cut-off '%d' should be less than high cut-off '%d'.\n",
@@ -1181,8 +1167,10 @@ static av_cold int init(AVFilterContext *ctx)
         break;
     default:
 fail:
+        av_channel_layout_describe(&s->out_ch_layout, out_name, sizeof(out_name));
+        av_channel_layout_describe(&s->in_ch_layout, in_name, sizeof(in_name));
         av_log(ctx, AV_LOG_ERROR, "Unsupported upmix: '%s' -> '%s'.\n",
-               s->in_channel_layout_str, s->out_channel_layout_str);
+               in_name, out_name);
         return AVERROR(EINVAL);
     }
 
@@ -1417,8 +1405,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 #define TFLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption surround_options[] = {
-    { "chl_out",   "set output channel layout", OFFSET(out_channel_layout_str), AV_OPT_TYPE_STRING, {.str="5.1"}, 0,   0, FLAGS },
-    { "chl_in",    "set input channel layout",  OFFSET(in_channel_layout_str),  AV_OPT_TYPE_STRING, {.str="stereo"},0, 0, FLAGS },
+    { "chl_out",   "set output channel layout", OFFSET(out_ch_layout),          AV_OPT_TYPE_CHLAYOUT, {.str="5.1"}, 0,   0, FLAGS },
+    { "chl_in",    "set input channel layout",  OFFSET(in_ch_layout),           AV_OPT_TYPE_CHLAYOUT, {.str="stereo"},0, 0, FLAGS },
     { "level_in",  "set input level",           OFFSET(level_in),               AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
     { "level_out", "set output level",          OFFSET(level_out),              AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, TFLAGS },
     { "lfe",       "output LFE",                OFFSET(output_lfe),             AV_OPT_TYPE_BOOL,   {.i64=1},     0,   1, TFLAGS },
