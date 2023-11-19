@@ -83,16 +83,17 @@ endfunc
 
 func ff_vector_fmul_reverse_fixed_rvv, zve32x
         csrwi   vxrm, 0
-        vsetvli t0, zero, e16, m4, ta, ma
+        // e16/m4 and e32/m8 are possible but slow the gathers down.
+        vsetvli t0, zero, e16, m1, ta, ma
         sh2add  a2, a3, a2
         vid.v   v0
         vadd.vi v0, v0, 1
 1:
-        vsetvli t0, a3, e16, m4, ta, ma
+        vsetvli t0, a3, e16, m1, ta, ma
         slli    t1, t0, 2
         vrsub.vx v4, v0, t0 // v4[i] = [VL-1, VL-2... 1, 0]
         sub     a2, a2, t1
-        vsetvli zero, zero, e32, m8, ta, ma
+        vsetvli zero, zero, e32, m2, ta, ma
         vle32.v v8, (a2)
         sub     a3, a3, t0
         vle32.v v16, (a1)
