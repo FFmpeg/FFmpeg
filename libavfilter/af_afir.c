@@ -63,7 +63,28 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
     for (int offset = 0; offset < out->nb_samples; offset += min_part_size) {
         switch (s->format) {
         case AV_SAMPLE_FMT_FLTP:
-            if (prev_selir != selir && s->loading[ch] != 0) {
+            if (ctx->is_disabled || s->prev_is_disabled) {
+                const float *in = (const float *)s->in->extended_data[ch] + offset;
+                const float *xfade0 = (const float *)s->xfade[0]->extended_data[ch];
+                const float *xfade1 = (const float *)s->xfade[1]->extended_data[ch];
+                float *src0 = (float *)s->fadein[0]->extended_data[ch];
+                float *src1 = (float *)s->fadein[1]->extended_data[ch];
+                float *dst = ((float *)out->extended_data[ch]) + offset;
+
+                if (ctx->is_disabled && !s->prev_is_disabled) {
+                    memset(src0, 0, min_part_size * sizeof(float));
+                    fir_quantum_float(ctx, s->fadein[0], ch, offset, 0, selir);
+                    for (int n = 0; n < min_part_size; n++)
+                        dst[n] = xfade1[n] * src0[n] + xfade0[n] * in[n];
+                } else if (!ctx->is_disabled && s->prev_is_disabled) {
+                    memset(src1, 0, min_part_size * sizeof(float));
+                    fir_quantum_float(ctx, s->fadein[1], ch, offset, 0, selir);
+                    for (int n = 0; n < min_part_size; n++)
+                        dst[n] = xfade1[n] * in[n] + xfade0[n] * src1[n];
+                } else {
+                    memcpy(dst, in, sizeof(float) * min_part_size);
+                }
+            } else if (prev_selir != selir && s->loading[ch] != 0) {
                 const float *xfade0 = (const float *)s->xfade[0]->extended_data[ch];
                 const float *xfade1 = (const float *)s->xfade[1]->extended_data[ch];
                 float *src0 = (float *)s->fadein[0]->extended_data[ch];
@@ -88,7 +109,28 @@ static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
             }
             break;
         case AV_SAMPLE_FMT_DBLP:
-            if (prev_selir != selir && s->loading[ch] != 0) {
+            if (ctx->is_disabled || s->prev_is_disabled) {
+                const double *in = (const double *)s->in->extended_data[ch] + offset;
+                const double *xfade0 = (const double *)s->xfade[0]->extended_data[ch];
+                const double *xfade1 = (const double *)s->xfade[1]->extended_data[ch];
+                double *src0 = (double *)s->fadein[0]->extended_data[ch];
+                double *src1 = (double *)s->fadein[1]->extended_data[ch];
+                double *dst = ((double *)out->extended_data[ch]) + offset;
+
+                if (ctx->is_disabled && !s->prev_is_disabled) {
+                    memset(src0, 0, min_part_size * sizeof(double));
+                    fir_quantum_double(ctx, s->fadein[0], ch, offset, 0, selir);
+                    for (int n = 0; n < min_part_size; n++)
+                        dst[n] = xfade1[n] * src0[n] + xfade0[n] * in[n];
+                } else if (!ctx->is_disabled && s->prev_is_disabled) {
+                    memset(src1, 0, min_part_size * sizeof(double));
+                    fir_quantum_double(ctx, s->fadein[1], ch, offset, 0, selir);
+                    for (int n = 0; n < min_part_size; n++)
+                        dst[n] = xfade1[n] * in[n] + xfade0[n] * src1[n];
+                } else {
+                    memcpy(dst, in, sizeof(double) * min_part_size);
+                }
+            } else if (prev_selir != selir && s->loading[ch] != 0) {
                 const double *xfade0 = (const double *)s->xfade[0]->extended_data[ch];
                 const double *xfade1 = (const double *)s->xfade[1]->extended_data[ch];
                 double *src0 = (double *)s->fadein[0]->extended_data[ch];
@@ -149,6 +191,7 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
     s->in = in;
     ff_filter_execute(ctx, fir_channels, out, NULL,
                       FFMIN(outlink->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
+    s->prev_is_disabled = ctx->is_disabled;
 
     av_frame_free(&in);
     s->in = NULL;
@@ -762,5 +805,6 @@ const AVFilter ff_af_afir = {
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS  |
                      AVFILTER_FLAG_DYNAMIC_OUTPUTS |
+                     AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
 };

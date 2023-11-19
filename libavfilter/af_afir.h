@@ -88,6 +88,7 @@ typedef struct AudioFIRContext {
     int max_offset[MAX_IR_STREAMS];
     int nb_channels;
     int one2many;
+    int prev_is_disabled;
     int *loading;
     double *ch_gain;
 
