@@ -1804,7 +1804,7 @@ For negative values, no norm is calculated, and IR coefficients are not modified
 Default is @var{1}.
 
 @item irlink
-For multichannel IR if this option is set to @var{true}. All IR channels will be
+For multichannel IR if this option is set to @var{true}, all IR channels will be
 normalized with maximal measured gain of all IR channels coefficients as set by @code{irnorm} option.
 When disabled, all IR coefficients in each IR channel will be normalized independently.
 Default is @var{true}.
@@ -1888,9 +1888,15 @@ ffmpeg -i input.wav -i middle_tunnel_1way_mono.wav -lavfi afir output.wav
 
 @item
 Apply true stereo processing given input stereo stream, and two stereo impulse responses for left and right channel,
-the impulse response files are files with names l_ir.wav and r_ir.wav:
+the impulse response files are files with names l_ir.wav and r_ir.wav, and setting irnorm option value:
 @example
-"pan=4C|c0=FL|c1=FL|c2=FR|c3=FR[a];amovie=l_ir.wav[LIR];amovie=r_ir.wav[RIR];[LIR][RIR]amerge[ir];[a][ir]afir=irfmt=input:irgain=-5dB,pan=stereo|FL<c0+c2|FR<c1+c3"
+"pan=4C|c0=FL|c1=FL|c2=FR|c3=FR[a];amovie=l_ir.wav[LIR];amovie=r_ir.wav[RIR];[LIR][RIR]amerge[ir];[a][ir]afir=irfmt=input:irnorm=1.2,pan=stereo|FL<c0+c2|FR<c1+c3"
+@end example
+
+@item
+Similar to above example, but with @code{irgain} explicitly set to estimated value and with @code{irnorm} disabled:
+@example
+"pan=4C|c0=FL|c1=FL|c2=FR|c3=FR[a];amovie=l_ir.wav[LIR];amovie=r_ir.wav[RIR];[LIR][RIR]amerge[ir];[a][ir]afir=irfmt=input:irgain=-5dB:irnom=-1,pan=stereo|FL<c0+c2|FR<c1+c3"
 @end example
 @end itemize
 
