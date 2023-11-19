@@ -28713,10 +28713,10 @@ it'll always be captured.
 @item framerate
 Maximum framerate at which the desktop will be captured - the interval between
 successive frames will not be smaller than the inverse of the framerate. When
-the desktop is not being updated often enough, the filter will duplicate
-a previous frame. Note that there is no background buffering going on, so when
-the filter is not polled often enough then the actual inter-frame interval may
-be significantly larger.
+@var{dup_frames} is true (the default) and the desktop is not being updated
+often enough, the filter will duplicate a previous frame. Note that there is no
+background buffering going on, so when the filter is not polled often enough
+then the actual inter-frame interval may be significantly larger.
 
 Defaults to 30 FPS.
 
@@ -28748,6 +28748,13 @@ Passes all supported output formats to DDA and returns what DDA decides to use.
 @item x2bgr10
 Filter initialization will fail if 10 bit format is requested but unavailable.
 @end table
+
+@item dup_frames
+When this option is set to true (the default), the filter will duplicate frames
+when the desktop has not been updated in order to maintain approximately
+constant target framerate. When this option is set to false, the filter will
+wait for the desktop to be updated (inter-frame intervals may vary significantly
+in this case).
 
 @end table
 

@@ -101,6 +101,7 @@ typedef struct DdagrabContext {
     int        out_fmt;
     int        allow_fallback;
     int        force_fmt;
+    int        dup_frames;
 } DdagrabContext;
 
 #define OFFSET(x) offsetof(DdagrabContext, x)
@@ -124,6 +125,8 @@ static const AVOption ddagrab_options[] = {
                                                    OFFSET(allow_fallback), AV_OPT_TYPE_BOOL,   { .i64 = 0    },       0,       1, FLAGS },
     { "force_fmt",  "exclude BGRA from format list (experimental, discouraged by Microsoft)",
                                                    OFFSET(force_fmt),  AV_OPT_TYPE_BOOL,       { .i64 = 0    },       0,       1, FLAGS },
+    { "dup_frames", "duplicate frames to maintain framerate",
+                                                   OFFSET(dup_frames), AV_OPT_TYPE_BOOL,       { .i64 = 1    },       0,       1, FLAGS },
     { NULL }
 };
 
@@ -1067,7 +1070,9 @@ static int ddagrab_request_frame(AVFilterLink *outlink)
     now -= dda->first_pts;
 
     if (!dda->probed_texture) {
-        ret = next_frame_internal(avctx, &cur_texture, 0);
+        do {
+            ret = next_frame_internal(avctx, &cur_texture, 0);
+        } while (ret == AVERROR(EAGAIN) && !dda->dup_frames);
     } else {
         cur_texture = dda->probed_texture;
         dda->probed_texture = NULL;
