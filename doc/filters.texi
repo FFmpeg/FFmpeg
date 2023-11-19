@@ -1822,18 +1822,16 @@ Set max allowed Impulse Response filter duration in seconds. Default is 30 secon
 Allowed range is 0.1 to 60 seconds.
 
 @item response
-Show IR frequency response, magnitude(magenta), phase(green) and group delay(yellow) in additional video stream.
-By default it is disabled.
+This option is deprecated, and does nothing.
 
 @item channel
-Set for which IR channel to display frequency response. By default is first channel
-displayed. This option is used only when @var{response} is enabled.
+This option is deprecated, and does nothing.
 
 @item size
-Set video stream size. This option is used only when @var{response} is enabled.
+This option is deprecated, and does nothing.
 
 @item rate
-Set video stream frame rate. This option is used only when @var{response} is enabled.
+This option is deprecated, and does nothing.
 
 @item minp
 Set minimal partition size used for convolution. Default is @var{8192}.

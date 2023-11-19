@@ -36,7 +36,6 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/rational.h"
-#include "libavutil/xga_font_data.h"
 
 #include "audio.h"
 #include "avfilter.h"
@@ -46,55 +45,6 @@
 #include "af_afir.h"
 #include "af_afirdsp.h"
 #include "video.h"
-
-static void drawtext(AVFrame *pic, int x, int y, const char *txt, uint32_t color)
-{
-    const uint8_t *font;
-    int font_height;
-    int i;
-
-    font = avpriv_cga_font, font_height = 8;
-
-    for (i = 0; txt[i]; i++) {
-        int char_y, mask;
-
-        uint8_t *p = pic->data[0] + y * pic->linesize[0] + (x + i * 8) * 4;
-        for (char_y = 0; char_y < font_height; char_y++) {
-            for (mask = 0x80; mask; mask >>= 1) {
-                if (font[txt[i] * font_height + char_y] & mask)
-                    AV_WL32(p, color);
-                p += 4;
-            }
-            p += pic->linesize[0] - 8 * 4;
-        }
-    }
-}
-
-static void draw_line(AVFrame *out, int x0, int y0, int x1, int y1, uint32_t color)
-{
-    int dx = FFABS(x1-x0);
-    int dy = FFABS(y1-y0), sy = y0 < y1 ? 1 : -1;
-    int err = (dx>dy ? dx : -dy) / 2, e2;
-
-    for (;;) {
-        AV_WL32(out->data[0] + y0 * out->linesize[0] + x0 * 4, color);
-
-        if (x0 == x1 && y0 == y1)
-            break;
-
-        e2 = err;
-
-        if (e2 >-dx) {
-            err -= dy;
-            x0--;
-        }
-
-        if (e2 < dy) {
-            err += dx;
-            y0 += sy;
-        }
-    }
-}
 
 #define DEPTH 32
 #include "afir_template.c"
@@ -367,17 +317,6 @@ skip:
             return AVERROR_BUG;
     }
 
-    if (s->response) {
-        switch (s->format) {
-        case AV_SAMPLE_FMT_FLTP:
-            draw_response_float(ctx, s->video);
-            break;
-        case AV_SAMPLE_FMT_DBLP:
-            draw_response_double(ctx, s->video);
-            break;
-        }
-    }
-
     cur_nb_taps  = s->ir[selir]->nb_samples;
     nb_taps      = cur_nb_taps;
 
@@ -507,8 +446,6 @@ static int activate(AVFilterContext *ctx)
     int64_t pts;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
-    if (s->response)
-        FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[1], ctx);
 
     for (int i = 0; i < s->nb_irs; i++) {
         const int selir = i;
@@ -523,8 +460,6 @@ static int activate(AVFilterContext *ctx)
 
             if (!s->eof_coeffs[selir]) {
                 if (ff_outlink_frame_wanted(ctx->outputs[0]))
-                    ff_inlink_request_frame(ctx->inputs[1 + selir]);
-                else if (s->response && ff_outlink_frame_wanted(ctx->outputs[1]))
                     ff_inlink_request_frame(ctx->inputs[1 + selir]);
                 return 0;
             }
@@ -549,20 +484,6 @@ static int activate(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    if (s->response && s->have_coeffs[s->selir]) {
-        int64_t old_pts = s->video->pts;
-        int64_t new_pts = av_rescale_q(s->pts, ctx->inputs[0]->time_base, ctx->outputs[1]->time_base);
-
-        if (ff_outlink_frame_wanted(ctx->outputs[1]) && old_pts < new_pts) {
-            AVFrame *clone;
-            s->video->pts = new_pts;
-            clone = av_frame_clone(s->video);
-            if (!clone)
-                return AVERROR(ENOMEM);
-            return ff_filter_frame(ctx->outputs[1], clone);
-        }
-    }
-
     if (ff_inlink_queued_samples(ctx->inputs[0]) >= s->min_part_size) {
         ff_filter_set_ready(ctx, 10);
         return 0;
@@ -571,19 +492,11 @@ static int activate(AVFilterContext *ctx)
     if (ff_inlink_acknowledge_status(ctx->inputs[0], &status, &pts)) {
         if (status == AVERROR_EOF) {
             ff_outlink_set_status(ctx->outputs[0], status, pts);
-            if (s->response)
-                ff_outlink_set_status(ctx->outputs[1], status, pts);
             return 0;
         }
     }
 
     if (ff_outlink_frame_wanted(ctx->outputs[0])) {
-        ff_inlink_request_frame(ctx->inputs[0]);
-        return 0;
-    }
-
-    if (s->response &&
-        ff_outlink_frame_wanted(ctx->outputs[1])) {
         ff_inlink_request_frame(ctx->inputs[0]);
         return 0;
     }
@@ -599,18 +512,7 @@ static int query_formats(AVFilterContext *ctx)
         { AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE },
         { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE },
     };
-    static const enum AVPixelFormat pix_fmts[] = {
-        AV_PIX_FMT_RGB0,
-        AV_PIX_FMT_NONE
-    };
     int ret;
-
-    if (s->response) {
-        AVFilterLink *videolink = ctx->outputs[1];
-        AVFilterFormats *formats = ff_make_format_list(pix_fmts);
-        if ((ret = ff_formats_ref(formats, &videolink->incfg.formats)) < 0)
-            return ret;
-    }
 
     if (s->ir_format) {
         ret = ff_set_common_all_channel_counts(ctx);
@@ -724,33 +626,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_frame_free(&s->xfade[0]);
     av_frame_free(&s->xfade[1]);
-
-    av_frame_free(&s->video);
-}
-
-static int config_video(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    AudioFIRContext *s = ctx->priv;
-
-    outlink->sample_aspect_ratio = (AVRational){1,1};
-    outlink->w = s->w;
-    outlink->h = s->h;
-    outlink->frame_rate = s->frame_rate;
-    outlink->time_base = av_inv_q(outlink->frame_rate);
-
-    av_frame_free(&s->video);
-    s->video = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!s->video)
-        return AVERROR(ENOMEM);
-
-    return 0;
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
-    AVFilterPad pad, vpad;
+    AVFilterPad pad;
     int ret;
 
     s->prev_selir = FFMIN(s->nb_irs - 1, s->selir);
@@ -787,18 +668,6 @@ static av_cold int init(AVFilterContext *ctx)
     ret = ff_append_outpad(ctx, &pad);
     if (ret < 0)
         return ret;
-
-    if (s->response) {
-        vpad = (AVFilterPad){
-            .name         = "filter_response",
-            .type         = AVMEDIA_TYPE_VIDEO,
-            .config_props = config_video,
-        };
-
-        ret = ff_append_outpad(ctx, &vpad);
-        if (ret < 0)
-            return ret;
-    }
 
     s->fdsp = avpriv_float_dsp_alloc(0);
     if (!s->fdsp)
@@ -861,10 +730,10 @@ static const AVOption afir_options[] = {
     {  "mono",  "single channel",    0,                  AV_OPT_TYPE_CONST, {.i64=0},    0,  0, AF, "irfmt" },
     {  "input", "same as input",     0,                  AV_OPT_TYPE_CONST, {.i64=1},    0,  0, AF, "irfmt" },
     { "maxir",  "set max IR length", OFFSET(max_ir_len), AV_OPT_TYPE_FLOAT, {.dbl=30}, 0.1, 60, AF },
-    { "response", "show IR frequency response", OFFSET(response), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, VF },
-    { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
-    { "size",   "set video size",    OFFSET(w),          AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },
-    { "rate",   "set video rate",    OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
+    { "response", "show IR frequency response", OFFSET(response), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, VF|AV_OPT_FLAG_DEPRECATED },
+    { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF|AV_OPT_FLAG_DEPRECATED },
+    { "size",   "set video size",    OFFSET(w),          AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF|AV_OPT_FLAG_DEPRECATED },
+    { "rate",   "set video rate",    OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF|AV_OPT_FLAG_DEPRECATED },
     { "minp",   "set min partition size", OFFSET(minp),  AV_OPT_TYPE_INT,   {.i64=8192}, 1, 65536, AF },
     { "maxp",   "set max partition size", OFFSET(maxp),  AV_OPT_TYPE_INT,   {.i64=8192}, 8, 65536, AF },
     { "nbirs",  "set number of input IRs",OFFSET(nb_irs),AV_OPT_TYPE_INT,   {.i64=1},    1,    32, AF },
