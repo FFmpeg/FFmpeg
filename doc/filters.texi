@@ -28256,7 +28256,12 @@ Only affects hardware cursors. If a game or application renders its own cursor,
 it'll always be captured.
 
 @item framerate
-Framerate at which the desktop will be captured.
+Maximum framerate at which the desktop will be captured - the interval between
+successive frames will not be smaller than the inverse of the framerate. When
+the desktop is not being updated often enough, the filter will duplicate
+a previous frame. Note that there is no background buffering going on, so when
+the filter is not polled often enough then the actual inter-frame interval may
+be significantly larger.
 
 Defaults to 30 FPS.
 
