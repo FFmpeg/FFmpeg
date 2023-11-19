@@ -717,7 +717,6 @@ const AVFilter ff_af_afir = {
     .uninit        = uninit,
     .process_command = process_command,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS  |
-                     AVFILTER_FLAG_DYNAMIC_OUTPUTS |
                      AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
 };
