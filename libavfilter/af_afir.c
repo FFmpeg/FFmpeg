@@ -616,16 +616,6 @@ static av_cold int init(AVFilterContext *ctx)
             return ret;
     }
 
-    pad = (AVFilterPad) {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_AUDIO,
-        .config_props  = config_output,
-    };
-
-    ret = ff_append_outpad(ctx, &pad);
-    if (ret < 0)
-        return ret;
-
     s->fdsp = avpriv_float_dsp_alloc(0);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
@@ -707,12 +697,21 @@ static const AVOption afir_options[] = {
 
 AVFILTER_DEFINE_CLASS(afir);
 
+static const AVFilterPad outputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output,
+    },
+};
+
 const AVFilter ff_af_afir = {
     .name          = "afir",
     .description   = NULL_IF_CONFIG_SMALL("Apply Finite Impulse Response filter with supplied coefficients in additional stream(s)."),
     .priv_size     = sizeof(AudioFIRContext),
     .priv_class    = &afir_class,
     FILTER_QUERY_FUNC(query_formats),
+    FILTER_OUTPUTS(outputs),
     .init          = init,
     .activate      = activate,
     .uninit        = uninit,
