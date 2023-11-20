@@ -3,6 +3,8 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - LEAD MCMP decoder
+- EVC decoding using external library libxevd
+- EVC encoding using external library libxeve
 
 version 6.1:
 - libaribcaption decoder
