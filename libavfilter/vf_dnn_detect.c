@@ -31,6 +31,10 @@
 #include "libavutil/avstring.h"
 #include "libavutil/detection_bbox.h"
 
+typedef enum {
+    DDMT_SSD
+} DNNDetectionModelType;
+
 typedef struct DnnDetectContext {
     const AVClass *class;
     DnnContext dnnctx;
@@ -38,6 +42,7 @@ typedef struct DnnDetectContext {
     char *labels_filename;
     char **labels;
     int label_count;
+    DNNDetectionModelType model_type;
 } DnnDetectContext;
 
 #define OFFSET(x) offsetof(DnnDetectContext, dnnctx.x)
@@ -54,12 +59,14 @@ static const AVOption dnn_detect_options[] = {
     DNN_COMMON_OPTIONS
     { "confidence",  "threshold of confidence",    OFFSET2(confidence),      AV_OPT_TYPE_FLOAT,     { .dbl = 0.5 },  0, 1, FLAGS},
     { "labels",      "path to labels file",        OFFSET2(labels_filename), AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
+    { "model_type",  "DNN detection model type",   OFFSET2(model_type),      AV_OPT_TYPE_INT,       { .i64 = DDMT_SSD },    INT_MIN, INT_MAX, FLAGS, "model_type" },
+        { "ssd",     "output shape [1, 1, N, 7]",  0,                        AV_OPT_TYPE_CONST,       { .i64 = DDMT_SSD },    0, 0, FLAGS, "model_type" },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(dnn_detect);
 
-static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, AVFilterContext *filter_ctx)
+static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, AVFilterContext *filter_ctx)
 {
     DnnDetectContext *ctx = filter_ctx->priv;
     float conf_threshold = ctx->confidence;
@@ -67,14 +74,12 @@ static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, AVFilterCont
     int detect_size = output->width;
     float *detections = output->data;
     int nb_bboxes = 0;
-    AVFrameSideData *sd;
-    AVDetectionBBox *bbox;
     AVDetectionBBoxHeader *header;
+    AVDetectionBBox *bbox;
 
-    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
-    if (sd) {
-        av_log(filter_ctx, AV_LOG_ERROR, "already have bounding boxes in side data.\n");
-        return -1;
+    if (output->width != 7) {
+        av_log(filter_ctx, AV_LOG_ERROR, "Model output shape doesn't match ssd requirement.\n");
+        return AVERROR(EINVAL);
     }
 
     for (int i = 0; i < proposal_count; ++i) {
@@ -130,6 +135,29 @@ static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, AVFilterCont
         if (nb_bboxes == 0) {
             break;
         }
+    }
+
+    return 0;
+}
+
+static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, AVFilterContext *filter_ctx)
+{
+    AVFrameSideData *sd;
+    DnnDetectContext *ctx = filter_ctx->priv;
+    int ret = 0;
+
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
+    if (sd) {
+        av_log(filter_ctx, AV_LOG_ERROR, "already have bounding boxes in side data.\n");
+        return -1;
+    }
+
+    switch (ctx->model_type) {
+    case DDMT_SSD:
+        ret = dnn_detect_post_proc_ssd(frame, output, filter_ctx);
+        if (ret < 0)
+            return ret;
+        break;
     }
 
     return 0;
