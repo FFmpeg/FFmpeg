@@ -386,9 +386,9 @@ static void infer_completion_callback(void *args)
         ov_shape_free(&output_shape);
         return;
     }
-    output.channels = dims[1];
-    output.height   = dims[2];
-    output.width    = dims[3];
+    output.channels = output_shape.rank > 2 ? dims[output_shape.rank - 3] : 1;
+    output.height   = output_shape.rank > 1 ? dims[output_shape.rank - 2] : 1;
+    output.width    = output_shape.rank > 0 ? dims[output_shape.rank - 1] : 1;
     av_assert0(request->lltask_count <= dims[0]);
     ov_shape_free(&output_shape);
 #else
