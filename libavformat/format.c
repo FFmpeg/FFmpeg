@@ -212,10 +212,10 @@ const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
                 score = AVPROBE_SCORE_EXTENSION;
         }
         if (av_match_name(lpd.mime_type, fmt1->mime_type)) {
-            if (AVPROBE_SCORE_MIME > score) {
-                av_log(NULL, AV_LOG_DEBUG, "Probing %s score:%d increased to %d due to MIME type\n", fmt1->name, score, AVPROBE_SCORE_MIME);
-                score = AVPROBE_SCORE_MIME;
-            }
+            int old_score = score;
+            score += AVPROBE_SCORE_MIME_BONUS;
+            if (score > AVPROBE_SCORE_MAX) score = AVPROBE_SCORE_MAX;
+            av_log(NULL, AV_LOG_DEBUG, "Probing %s score:%d increased to %d due to MIME type\n", fmt1->name, old_score, score);
         }
         if (score > score_max) {
             score_max = score;

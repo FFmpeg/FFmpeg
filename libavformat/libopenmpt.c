@@ -244,7 +244,7 @@ static int read_probe_openmpt(const AVProbeData *p)
              * AVPROBE_SCORE_MAX in order to reduce the impact in the rare
              * cases of false positives.
              */
-            return AVPROBE_SCORE_MIME + 1;
+            return (AVPROBE_SCORE_MAX * 3) / 4 + 1;
         } else if (probe_result == OPENMPT_PROBE_FILE_HEADER_RESULT_WANTMOREDATA) {
             if (probe_openmpt_extension(p) > 0) {
                 return AVPROBE_SCORE_RETRY;

@@ -459,7 +459,7 @@ typedef struct AVProbeData {
 #define AVPROBE_SCORE_STREAM_RETRY (AVPROBE_SCORE_MAX/4-1)
 
 #define AVPROBE_SCORE_EXTENSION  50 ///< score for file extension
-#define AVPROBE_SCORE_MIME       75 ///< score for file mime type
+#define AVPROBE_SCORE_MIME_BONUS 30 ///< score added for matching mime type
 #define AVPROBE_SCORE_MAX       100 ///< maximum score
 
 #define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
