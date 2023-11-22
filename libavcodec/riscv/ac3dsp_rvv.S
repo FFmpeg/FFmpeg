@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023 Rémi Denis-Courmont.
+ * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
  *
  * This file is part of FFmpeg.
  *
@@ -18,25 +18,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include "config.h"
-#include "libavutil/attributes.h"
-#include "libavutil/cpu.h"
-#include "libavcodec/ac3dsp.h"
+#include "libavutil/riscv/asm.S"
 
-void ff_extract_exponents_rvb(uint8_t *exp, int32_t *coef, int nb_coefs);
-void ff_float_to_fixed24_rvv(int32_t *dst, const float *src, size_t len);
+func ff_float_to_fixed24_rvv, zve32f
+        li            t1, 1 << 24
+        fcvt.s.w      f0, t1
+1:
+        vsetvli       t0, a2, e32, m8, ta, ma
+        sub           a2, a2, t0
+        vle32.v       v0, (a1)
+        vfmul.vf      v0, v0, f0
+        vfcvt.x.f.v   v0, v0
+        sh2add        a1, t0, a1
+        vse32.v       v0, (a0)
+        sh2add        a0, t0, a0
+        bnez          a2, 1b
 
-av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
-{
-    int flags = av_get_cpu_flags();
-
-    if (flags & AV_CPU_FLAG_RVB_ADDR) {
-        if (flags & AV_CPU_FLAG_RVB_BASIC)
-            c->extract_exponents = ff_extract_exponents_rvb;
-        if (flags & AV_CPU_FLAG_RVV_F32)
-            c->float_to_fixed24 = ff_float_to_fixed24_rvv;
-    }
-}
+        ret
+endfunc
