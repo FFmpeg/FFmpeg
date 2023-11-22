@@ -77,6 +77,9 @@ static const struct {
         { "aacpsdsp", checkasm_check_aacpsdsp },
         { "sbrdsp",   checkasm_check_sbrdsp },
     #endif
+    #if CONFIG_AC3DSP
+        { "ac3dsp", checkasm_check_ac3dsp },
+    #endif
     #if CONFIG_ALAC_DECODER
         { "alacdsp", checkasm_check_alacdsp },
     #endif

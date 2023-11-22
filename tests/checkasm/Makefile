@@ -1,5 +1,6 @@
 # libavcodec tests
 # subsystems
+AVCODECOBJS-$(CONFIG_AC3DSP)            += ac3dsp.o
 AVCODECOBJS-$(CONFIG_AUDIODSP)          += audiodsp.o
 AVCODECOBJS-$(CONFIG_BLOCKDSP)          += blockdsp.o
 AVCODECOBJS-$(CONFIG_BSWAPDSP)          += bswapdsp.o

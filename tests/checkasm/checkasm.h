@@ -44,6 +44,7 @@
 #include "libavutil/timer.h"
 
 void checkasm_check_aacpsdsp(void);
+void checkasm_check_ac3dsp(void);
 void checkasm_check_afir(void);
 void checkasm_check_alacdsp(void);
 void checkasm_check_audiodsp(void);
