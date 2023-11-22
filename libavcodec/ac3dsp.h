@@ -53,7 +53,7 @@ typedef struct AC3DSPContext {
      * @param len number of elements to convert.
      *            constraints: multiple of 32 greater than zero
      */
-    void (*float_to_fixed24)(int32_t *dst, const float *src, unsigned int len);
+    void (*float_to_fixed24)(int32_t *dst, const float *src, size_t len);
 
     /**
      * Calculate bit allocation pointers.

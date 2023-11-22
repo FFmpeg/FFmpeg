@@ -26,7 +26,7 @@
 #include "config.h"
 
 void ff_ac3_exponent_min_neon(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
-void ff_float_to_fixed24_neon(int32_t *dst, const float *src, unsigned int len);
+void ff_float_to_fixed24_neon(int32_t *dst, const float *src, size_t len);
 void ff_ac3_extract_exponents_neon(uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_ac3_sum_square_butterfly_int32_neon(int64_t sum[4],
                                             const int32_t *coef0,
