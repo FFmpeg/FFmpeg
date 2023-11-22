@@ -26,7 +26,7 @@ SECTION .text
 ;                                     int order, int mul)
 INIT_XMM sse2
 cglobal scalarproduct_and_madd_int16, 4,4,8, v1, v2, v3, order, mul
-    shl orderq, 1
+    shl orderd, 1
     movd    m7, mulm
     pshuflw m7, m7, 0
     punpcklqdq m7, m7
@@ -62,7 +62,7 @@ INIT_XMM sse4
 ; int ff_scalarproduct_and_madd_int32(int16_t *v1, int32_t *v2, int16_t *v3,
 ;                                     int order, int mul)
 cglobal scalarproduct_and_madd_int32, 4,4,8, v1, v2, v3, order, mul
-    shl orderq, 1
+    shl orderd, 1
     movd    m7, mulm
     SPLATW  m7, m7
     pxor    m6, m6
@@ -140,7 +140,7 @@ align 16
 ;                                     int order, int mul)
 INIT_XMM ssse3
 cglobal scalarproduct_and_madd_int16, 4,5,10, v1, v2, v3, order, mul
-    shl orderq, 1
+    shl orderd, 1
     movd    m7, mulm
     pshuflw m7, m7, 0
     punpcklqdq m7, m7
