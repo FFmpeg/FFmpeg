@@ -47,9 +47,9 @@ typedef struct AC3DSPContext {
      * [-(1<<24),(1<<24)]
      *
      * @param dst destination array of int32_t.
-     *            constraints: 16-byte aligned
+     *            constraints: 32-byte aligned
      * @param src source array of float.
-     *            constraints: 16-byte aligned
+     *            constraints: 32-byte aligned
      * @param len number of elements to convert.
      *            constraints: multiple of 32 greater than zero
      */

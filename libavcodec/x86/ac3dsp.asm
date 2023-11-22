@@ -128,6 +128,30 @@ cglobal float_to_fixed24, 3, 3, 9, dst, src, len
     jl .loop
     RET
 
+INIT_YMM avx
+cglobal float_to_fixed24, 3, 3, 5, dst, src, len
+    vbroadcastf128 m0, [pf_1_24]
+    shl      lenq, 2
+    add      srcq, lenq
+    add      dstq, lenq
+    neg      lenq
+.loop:
+    mulps      m1, m0, [srcq+lenq+mmsize*0]
+    mulps      m2, m0, [srcq+lenq+mmsize*1]
+    mulps      m3, m0, [srcq+lenq+mmsize*2]
+    mulps      m4, m0, [srcq+lenq+mmsize*3]
+    cvtps2dq   m1, m1
+    cvtps2dq   m2, m2
+    cvtps2dq   m3, m3
+    cvtps2dq   m4, m4
+    mova  [dstq+lenq+mmsize*0], m1
+    mova  [dstq+lenq+mmsize*1], m2
+    mova  [dstq+lenq+mmsize*2], m3
+    mova  [dstq+lenq+mmsize*3], m4
+    add      lenq, mmsize*4
+    jl .loop
+    RET
+
 ;------------------------------------------------------------------------------
 ; int ff_ac3_compute_mantissa_size(uint16_t mant_cnt[6][16])
 ;------------------------------------------------------------------------------
