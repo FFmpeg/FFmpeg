@@ -13,6 +13,12 @@ use utf8;
 use DateTime;
 use DateTime::Format::ISO8601;
 
+my @extra_members = (
+    # entries should be of the format
+    # [   <name>,   <email>, <date elected> ],
+    # ['Foo Bar', 'foo@bar', DateTime->new(year => 8613, month => 5, day => 22)],
+);
+
 sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
 
 sub print_help {
@@ -29,7 +35,7 @@ sub print_help {
 my $print_full = 1;
 my $print_names = 0;
 my $print_emails = 0;
-my $date         = DateTime->now()->iso8601;
+my $date_str     = DateTime->now()->iso8601;
 my $help = 0;
 
 GetOptions(
@@ -37,7 +43,7 @@ GetOptions(
     "names" => \$print_names,
     "emails" => \$print_emails,
     "help" => \$help,
-    "date=s" => \$date,
+    "date=s" => \$date_str,
     "h" => \$help,
 );
 
@@ -76,7 +82,8 @@ sub get_date_range {
     return ($date_since, $date_until);
 }
 
-my ($since, $until) = get_date_range(DateTime::Format::ISO8601->parse_datetime($date));
+my $date = DateTime::Format::ISO8601->parse_datetime($date_str);
+my ($since, $until) = get_date_range($date);
 
 my @shortlog = split /\n/, decode('UTF-8',
     `git log --pretty=format:"%aN <%aE>" --since="$since" --until="$until" | sort | uniq -c | sort -r`,
@@ -106,6 +113,13 @@ foreach my $line (@shortlog) {
     }
 
     $assembly{$name} = $email;
+}
+
+foreach my $entry (@extra_members) {
+    my $elected = $entry->[2];
+    if ($date->is_between($elected, $elected->clone()->set_year($elected->year + 2))) {
+        $assembly{$entry->[0]} = $entry->[1];
+    }
 }
 
 # generate the output string
