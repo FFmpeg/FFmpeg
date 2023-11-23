@@ -540,11 +540,16 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
     }
 
     if (info->assoc_language[0]) {
-        int langlen = strlen(rend->language);
+        size_t langlen = strlen(rend->language);
         if (langlen < sizeof(rend->language) - 3) {
+            size_t assoc_len;
             rend->language[langlen] = ',';
-            strncpy(rend->language + langlen + 1, info->assoc_language,
-                    sizeof(rend->language) - langlen - 2);
+            assoc_len = av_strlcpy(rend->language + langlen + 1,
+                                   info->assoc_language,
+                                   sizeof(rend->language) - langlen - 1);
+            if (langlen + assoc_len + 2 > sizeof(rend->language)) // truncation occurred
+                av_log(c->ctx, AV_LOG_WARNING, "Truncated rendition language: %s\n",
+                       info->assoc_language);
         }
     }
 
