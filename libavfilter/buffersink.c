@@ -164,6 +164,13 @@ static av_cold int common_init(AVFilterContext *ctx)
     return 0;
 }
 
+static void uninit(AVFilterContext *ctx)
+{
+    BufferSinkContext *buf = ctx->priv;
+
+    av_frame_free(&buf->peeked_frame);
+}
+
 static int activate(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
@@ -385,6 +392,7 @@ const AVFilter ff_vsink_buffer = {
     .priv_size     = sizeof(BufferSinkContext),
     .priv_class    = &buffersink_class,
     .init          = common_init,
+    .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(ff_video_default_filterpad),
     .outputs       = NULL,
@@ -397,6 +405,7 @@ const AVFilter ff_asink_abuffer = {
     .priv_class    = &abuffersink_class,
     .priv_size     = sizeof(BufferSinkContext),
     .init          = common_init,
+    .uninit        = uninit,
     .activate      = activate,
     FILTER_INPUTS(ff_audio_default_filterpad),
     .outputs       = NULL,
