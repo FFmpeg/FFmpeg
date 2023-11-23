@@ -139,5 +139,7 @@ foreach my $name (sort keys %assembly) {
 my $out_str = join("\n", @out_lines) . "\n";
 utf8::encode($out_str);
 
-printf("# GA for $since/$until; %d people; SHA256:%s\n%s",
-       scalar @out_lines, Digest::SHA::sha256_hex($out_str), $out_str);
+printf("# GA for $since/$until; %d people; SHA256:%s; HEAD:%s%s",
+       scalar @out_lines, Digest::SHA::sha256_hex($out_str),
+       decode('UTF-8', `git rev-parse HEAD`, Encode::FB_CROAK),
+       $out_str);
