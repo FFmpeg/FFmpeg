@@ -480,7 +480,7 @@ static av_cold int config_eq_output(AVFilterLink *outlink)
         if (ret < 0)
             return ret;
 
-        s->magnitude = av_calloc(s->nb_magnitude, sizeof(*s->magnitude));
+        s->magnitude = av_calloc(s->nb_magnitude + 1, sizeof(*s->magnitude));
         if (!s->magnitude)
             return AVERROR(ENOMEM);
         memcpy(s->magnitude, eq_presets[s->preset].gains, sizeof(*s->magnitude) * s->nb_magnitude);
