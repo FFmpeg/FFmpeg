@@ -271,7 +271,7 @@ static void ts_discontinuity_process(Demuxer *d, InputStream *ist,
         ts_discontinuity_detect(d, ist, pkt);
 }
 
-static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
+static int ist_dts_update(DemuxStream *ds, AVPacket *pkt, FrameData *fd)
 {
     InputStream *ist = &ds->ist;
     const AVCodecParameters *par = ist->par;
@@ -326,21 +326,12 @@ static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
         break;
     }
 
-    av_assert0(!pkt->opaque_ref);
-    if (ds->streamcopy_needed) {
-        FrameData *fd;
-
-        fd = packet_data(pkt);
-        if (!fd)
-            return AVERROR(ENOMEM);
-
-        fd->dts_est = ds->dts;
-    }
+    fd->dts_est = ds->dts;
 
     return 0;
 }
 
-static int ts_fixup(Demuxer *d, AVPacket *pkt)
+static int ts_fixup(Demuxer *d, AVPacket *pkt, FrameData *fd)
 {
     InputFile *ifile = &d->f;
     InputStream *ist = ifile->streams[pkt->stream_index];
@@ -424,7 +415,7 @@ static int ts_fixup(Demuxer *d, AVPacket *pkt)
     ts_discontinuity_process(d, ist, pkt);
 
     // update estimated/predicted dts
-    ret = ist_dts_update(ds, pkt);
+    ret = ist_dts_update(ds, pkt, fd);
     if (ret < 0)
         return ret;
 
@@ -436,9 +427,14 @@ static int input_packet_process(Demuxer *d, AVPacket *pkt, unsigned *send_flags)
     InputFile     *f = &d->f;
     InputStream *ist = f->streams[pkt->stream_index];
     DemuxStream  *ds = ds_from_ist(ist);
+    FrameData *fd;
     int ret = 0;
 
-    ret = ts_fixup(d, pkt);
+    fd = packet_data(pkt);
+    if (!fd)
+        return AVERROR(ENOMEM);
+
+    ret = ts_fixup(d, pkt, fd);
     if (ret < 0)
         return ret;
 
@@ -454,6 +450,8 @@ static int input_packet_process(Demuxer *d, AVPacket *pkt, unsigned *send_flags)
 
     ds->data_size += pkt->size;
     ds->nb_packets++;
+
+    fd->wallclock[LATENCY_PROBE_DEMUX] = av_gettime_relative();
 
     if (debug_ts) {
         av_log(NULL, AV_LOG_INFO, "demuxer+ffmpeg -> ist_index:%d:%d type:%s pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s off:%s off_time:%s\n",

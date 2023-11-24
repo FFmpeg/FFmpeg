@@ -36,6 +36,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
 // FIXME private header, used for mid_pred()
@@ -2364,6 +2365,8 @@ static int fg_output_step(OutputFilterPriv *ofp, FilterGraphThread *fgt,
         return AVERROR(ENOMEM);
     }
 
+    fd->wallclock[LATENCY_PROBE_FILTER_POST] = av_gettime_relative();
+
     // only use bits_per_raw_sample passed through from the decoder
     // if the filtergraph did not touch the frame data
     if (!fgp->is_meta)
@@ -2576,6 +2579,7 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
                       InputFilter *ifilter, AVFrame *frame)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
+    FrameData       *fd;
     AVFrameSideData *sd;
     int need_reinit, ret;
 
@@ -2650,6 +2654,11 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
     frame->pkt_duration = frame->duration;
     )
 #endif
+
+    fd = frame_data(frame);
+    if (!fd)
+        return AVERROR(ENOMEM);
+    fd->wallclock[LATENCY_PROBE_FILTER_PRE] = av_gettime_relative();
 
     ret = av_buffersrc_add_frame_flags(ifp->filter, frame,
                                        AV_BUFFERSRC_FLAG_PUSH);

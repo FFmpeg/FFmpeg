@@ -22,6 +22,7 @@
 #include "libavutil/log.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
+#include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
 #include "libavcodec/avcodec.h"
@@ -475,6 +476,13 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         pkt->dts = AV_NOPTS_VALUE;
     }
 
+    if (pkt) {
+        FrameData *fd = packet_data(pkt);
+        if (!fd)
+            return AVERROR(ENOMEM);
+        fd->wallclock[LATENCY_PROBE_DEC_PRE] = av_gettime_relative();
+    }
+
     ret = avcodec_send_packet(dec, pkt);
     if (ret < 0 && !(ret == AVERROR_EOF && !pkt)) {
         // In particular, we don't expect AVERROR(EAGAIN), because we read all
@@ -528,8 +536,6 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
                 return AVERROR_INVALIDDATA;
         }
 
-
-        av_assert0(!frame->opaque_ref);
         fd      = frame_data(frame);
         if (!fd) {
             av_frame_unref(frame);
@@ -539,6 +545,8 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         fd->dec.tb                  = dec->pkt_timebase;
         fd->dec.frame_num           = dec->frame_num - 1;
         fd->bits_per_raw_sample     = dec->bits_per_raw_sample;
+
+        fd->wallclock[LATENCY_PROBE_DEC_POST] = av_gettime_relative();
 
         frame->time_base = dec->pkt_timebase;
 
@@ -931,6 +939,8 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
     /* Attached pics are sparse, therefore we would not want to delay their decoding till EOF. */
     if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
         av_dict_set(&ist->decoder_opts, "threads", "1", 0);
+
+    av_dict_set(&ist->decoder_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
 
     ret = hw_device_setup_for_decode(ist);
     if (ret < 0) {

@@ -34,6 +34,7 @@
 #include "libavutil/log.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/rational.h"
+#include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
 #include "libavcodec/avcodec.h"
@@ -615,6 +616,14 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
     int ret;
 
     if (frame) {
+        FrameData *fd = frame_data(frame);
+
+        fd = frame_data(frame);
+        if (!fd)
+            return AVERROR(ENOMEM);
+
+        fd->wallclock[LATENCY_PROBE_ENC_PRE] = av_gettime_relative();
+
         if (ost->enc_stats_pre.io)
             enc_stats_write(ost, &ost->enc_stats_pre, frame, NULL,
                             ost->frames_encoded);
@@ -644,6 +653,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
     }
 
     while (1) {
+        FrameData *fd;
+
         av_packet_unref(pkt);
 
         ret = avcodec_receive_packet(enc, pkt);
@@ -664,6 +675,11 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
                 av_log(ost, AV_LOG_ERROR, "%s encoding failed\n", type_desc);
             return ret;
         }
+
+        fd = packet_data(pkt);
+        if (!fd)
+            return AVERROR(ENOMEM);
+        fd->wallclock[LATENCY_PROBE_ENC_POST] = av_gettime_relative();
 
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             ret = update_video_stats(ost, pkt, !!vstats_filename);

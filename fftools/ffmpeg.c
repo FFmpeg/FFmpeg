@@ -416,6 +416,9 @@ static int frame_data_ensure(AVBufferRef **dst, int writable)
 
         fd->dec.frame_num = UINT64_MAX;
         fd->dec.pts       = AV_NOPTS_VALUE;
+
+        for (unsigned i = 0; i < FF_ARRAY_ELEMS(fd->wallclock); i++)
+            fd->wallclock[i] = INT64_MIN;
     } else if (writable)
         return av_buffer_make_writable(dst);
 

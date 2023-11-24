@@ -94,6 +94,17 @@ enum PacketOpaque {
     PKT_OPAQUE_FIX_SUB_DURATION,
 };
 
+enum LatencyProbe {
+    LATENCY_PROBE_DEMUX,
+    LATENCY_PROBE_DEC_PRE,
+    LATENCY_PROBE_DEC_POST,
+    LATENCY_PROBE_FILTER_PRE,
+    LATENCY_PROBE_FILTER_POST,
+    LATENCY_PROBE_ENC_PRE,
+    LATENCY_PROBE_ENC_POST,
+    LATENCY_PROBE_NB,
+};
+
 typedef struct HWDevice {
     const char *name;
     enum AVHWDeviceType type;
@@ -631,6 +642,8 @@ typedef struct FrameData {
     AVRational frame_rate_filter;
 
     int        bits_per_raw_sample;
+
+    int64_t wallclock[LATENCY_PROBE_NB];
 } FrameData;
 
 extern InputFile   **input_files;
