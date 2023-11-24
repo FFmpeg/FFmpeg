@@ -230,7 +230,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
     s->nch           = map_entries;
     if (out_ch_mask)
         av_channel_layout_from_mask(&s->output_layout, out_ch_mask);
-    else if (map_entries)
+    else if (map_entries && s->output_layout.nb_channels == 0)
         av_channel_layout_default(&s->output_layout, map_entries);
 
     if (mode == MAP_NONE) {
