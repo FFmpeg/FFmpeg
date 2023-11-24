@@ -53,6 +53,8 @@
  * Reference: libavcodec/ac3dsp.c
  */
 
+#include <stddef.h>
+
 #include "config.h"
 #include "libavcodec/ac3dsp.h"
 #include "libavcodec/ac3.h"
