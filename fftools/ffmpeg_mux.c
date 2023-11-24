@@ -25,10 +25,12 @@
 #include "ffmpeg_utils.h"
 #include "sync_queue.h"
 
+#include "libavutil/avstring.h"
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
 #include "libavcodec/packet.h"
@@ -57,6 +59,80 @@ static int64_t filesize(AVIOContext *pb)
     }
 
     return ret;
+}
+
+static void mux_log_debug_ts(OutputStream *ost, const AVPacket *pkt)
+{
+    static const char *desc[] = {
+        [LATENCY_PROBE_DEMUX]       = "demux",
+        [LATENCY_PROBE_DEC_PRE]     = "decode",
+        [LATENCY_PROBE_DEC_POST]    = "decode",
+        [LATENCY_PROBE_FILTER_PRE]  = "filter",
+        [LATENCY_PROBE_FILTER_POST] = "filter",
+        [LATENCY_PROBE_ENC_PRE]     = "encode",
+        [LATENCY_PROBE_ENC_POST]    = "encode",
+        [LATENCY_PROBE_NB]          = "mux",
+    };
+
+    char latency[512];
+
+    *latency = 0;
+    if (pkt->opaque_ref) {
+        const FrameData *fd = (FrameData*)pkt->opaque_ref->data;
+        int64_t         now = av_gettime_relative();
+        int64_t       total = INT64_MIN;
+
+        int next;
+
+        for (unsigned i = 0; i < FF_ARRAY_ELEMS(fd->wallclock); i = next) {
+            int64_t val = fd->wallclock[i];
+
+            next = i + 1;
+
+            if (val == INT64_MIN)
+                continue;
+
+            if (total == INT64_MIN) {
+                total = now - val;
+                snprintf(latency, sizeof(latency), "total:%gms", total / 1e3);
+            }
+
+            // find the next valid entry
+            for (; next <= FF_ARRAY_ELEMS(fd->wallclock); next++) {
+                int64_t val_next = (next == FF_ARRAY_ELEMS(fd->wallclock)) ?
+                                   now : fd->wallclock[next];
+                int64_t diff;
+
+                if (val_next == INT64_MIN)
+                    continue;
+                diff = val_next - val;
+
+                // print those stages that take at least 5% of total
+                if (100. * diff > 5. * total) {
+                    av_strlcat(latency, ", ", sizeof(latency));
+
+                    if (!strcmp(desc[i], desc[next]))
+                        av_strlcat(latency, desc[i], sizeof(latency));
+                    else
+                        av_strlcatf(latency, sizeof(latency), "%s-%s:",
+                                    desc[i], desc[next]);
+
+                    av_strlcatf(latency, sizeof(latency), " %gms/%d%%",
+                                diff / 1e3, (int)(100. * diff / total));
+                }
+
+                break;
+            }
+
+        }
+    }
+
+    av_log(ost, AV_LOG_INFO, "muxer <- pts:%s pts_time:%s dts:%s dts_time:%s "
+           "duration:%s duration_time:%s size:%d latency(%s)\n",
+           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
+           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
+           av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ost->st->time_base),
+           pkt->size, *latency ? latency : "N/A");
 }
 
 static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
@@ -140,16 +216,8 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
 
     pkt->stream_index = ost->index;
 
-    if (debug_ts) {
-        av_log(ost, AV_LOG_INFO, "muxer <- type:%s "
-                "pkt_pts:%s pkt_pts_time:%s pkt_dts:%s pkt_dts_time:%s duration:%s duration_time:%s size:%d\n",
-                av_get_media_type_string(ost->type),
-                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ost->st->time_base),
-                av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ost->st->time_base),
-                av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &ost->st->time_base),
-                pkt->size
-              );
-    }
+    if (debug_ts)
+        mux_log_debug_ts(ost, pkt);
 
     if (ms->stats.io)
         enc_stats_write(ost, &ms->stats, NULL, pkt, frame_num);

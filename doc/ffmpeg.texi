@@ -830,7 +830,7 @@ be achieved with @code{ffmpeg ... < /dev/null} but it requires a
 shell.
 
 @item -debug_ts (@emph{global})
-Print timestamp information. It is off by default. This option is
+Print timestamp/latency information. It is off by default. This option is
 mostly useful for testing and debugging purposes, and the output
 format may change from one version to another, so it should not be
 employed by portable scripts.
