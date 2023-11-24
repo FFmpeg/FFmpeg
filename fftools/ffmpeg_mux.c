@@ -381,8 +381,8 @@ static int of_streamcopy(OutputStream *ost, AVPacket *pkt)
 {
     OutputFile *of = output_files[ost->file_index];
     MuxStream  *ms = ms_from_ost(ost);
-    DemuxPktData *pd = pkt->opaque_ref ? (DemuxPktData*)pkt->opaque_ref->data : NULL;
-    int64_t      dts = pd ? pd->dts_est : AV_NOPTS_VALUE;
+    FrameData  *fd = pkt->opaque_ref ? (FrameData*)pkt->opaque_ref->data : NULL;
+    int64_t      dts = fd ? fd->dts_est : AV_NOPTS_VALUE;
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ts_offset;
 

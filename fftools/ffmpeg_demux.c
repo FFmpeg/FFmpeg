@@ -328,14 +328,13 @@ static int ist_dts_update(DemuxStream *ds, AVPacket *pkt)
 
     av_assert0(!pkt->opaque_ref);
     if (ds->streamcopy_needed) {
-        DemuxPktData *pd;
+        FrameData *fd;
 
-        pkt->opaque_ref = av_buffer_allocz(sizeof(*pd));
-        if (!pkt->opaque_ref)
+        fd = packet_data(pkt);
+        if (!fd)
             return AVERROR(ENOMEM);
-        pd = (DemuxPktData*)pkt->opaque_ref->data;
 
-        pd->dts_est = ds->dts;
+        fd->dts_est = ds->dts;
     }
 
     return 0;

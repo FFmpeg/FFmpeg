@@ -115,12 +115,6 @@ typedef struct {
 } AudioChannelMap;
 #endif
 
-typedef struct DemuxPktData {
-    // estimated dts in AV_TIME_BASE_Q,
-    // to be used when real dts is missing
-    int64_t dts_est;
-} DemuxPktData;
-
 typedef struct OptionsContext {
     OptionGroup *g;
 
@@ -622,6 +616,10 @@ typedef struct OutputFile {
 
 // optionally attached as opaque_ref to decoded AVFrames
 typedef struct FrameData {
+    // demuxer-estimated dts in AV_TIME_BASE_Q,
+    // to be used when real dts is missing
+    int64_t dts_est;
+
     // properties that come from the decoder
     struct {
         uint64_t   frame_num;
@@ -722,6 +720,9 @@ int subtitle_wrap_frame(AVFrame *frame, AVSubtitle *subtitle, int copy);
 FrameData *frame_data(AVFrame *frame);
 
 const FrameData *frame_data_c(AVFrame *frame);
+
+FrameData       *packet_data  (AVPacket *pkt);
+const FrameData *packet_data_c(AVPacket *pkt);
 
 /**
  * Set up fallback filtering parameters from a decoder context. They will only
