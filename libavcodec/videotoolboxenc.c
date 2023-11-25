@@ -119,6 +119,7 @@ static struct{
     CFStringRef kVTCompressionPropertyKey_TargetQualityForAlpha;
     CFStringRef kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality;
     CFStringRef kVTCompressionPropertyKey_ConstantBitRate;
+    CFStringRef kVTCompressionPropertyKey_EncoderID;
 
     CFStringRef kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder;
     CFStringRef kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder;
@@ -191,6 +192,7 @@ static void loadVTEncSymbols(void){
     GET_SYM(kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality,
             "PrioritizeEncodingSpeedOverQuality");
     GET_SYM(kVTCompressionPropertyKey_ConstantBitRate, "ConstantBitRate");
+    GET_SYM(kVTCompressionPropertyKey_EncoderID, "EncoderID");
 
     GET_SYM(kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
             "EnableHardwareAcceleratedVideoEncoder");
@@ -1178,7 +1180,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
     {
         CFStringRef encoderID = NULL;
         status = VTSessionCopyProperty(vtctx->session,
-                                       kVTCompressionPropertyKey_EncoderID,
+                                       compat_keys.kVTCompressionPropertyKey_EncoderID,
                                        kCFAllocatorDefault,
                                        &encoderID);
         if (status == noErr) {
