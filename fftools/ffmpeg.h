@@ -284,6 +284,8 @@ typedef struct OptionsContext {
     int        nb_disposition;
     SpecifierOpt *program;
     int        nb_program;
+    SpecifierOpt *stream_groups;
+    int        nb_stream_groups;
     SpecifierOpt *time_bases;
     int        nb_time_bases;
     SpecifierOpt *enc_time_bases;

@@ -40,6 +40,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/display.h"
 #include "libavutil/getenv_utf8.h"
+#include "libavutil/iamf.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -2014,6 +2015,343 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
     return 0;
 }
 
+static int of_parse_iamf_audio_element_layers(Muxer *mux, AVStreamGroup *stg, char *ptr)
+{
+    AVIAMFAudioElement *audio_element = stg->params.iamf_audio_element;
+    AVDictionary *dict = NULL;
+    const char *token;
+    int ret = 0;
+
+    audio_element->demixing_info =
+        av_iamf_param_definition_alloc(AV_IAMF_PARAMETER_DEFINITION_DEMIXING, 1, NULL);
+    audio_element->recon_gain_info =
+        av_iamf_param_definition_alloc(AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN, 1, NULL);
+
+    if (!audio_element->demixing_info ||
+        !audio_element->recon_gain_info)
+        return AVERROR(ENOMEM);
+
+    /* process manually set layers and parameters */
+    token = av_strtok(NULL, ",", &ptr);
+    while (token) {
+        const AVDictionaryEntry *e;
+        int demixing = 0, recon_gain = 0;
+        int layer = 0;
+
+        if (av_strstart(token, "layer=", &token))
+            layer = 1;
+        else if (av_strstart(token, "demixing=", &token))
+            demixing = 1;
+        else if (av_strstart(token, "recon_gain=", &token))
+            recon_gain = 1;
+
+        av_dict_free(&dict);
+        ret = av_dict_parse_string(&dict, token, "=", ":", 0);
+        if (ret < 0) {
+            av_log(mux, AV_LOG_ERROR, "Error parsing audio element specification %s\n", token);
+            goto fail;
+        }
+
+        if (layer) {
+            AVIAMFLayer *audio_layer = av_iamf_audio_element_add_layer(audio_element);
+            if (!audio_layer) {
+                av_log(mux, AV_LOG_ERROR, "Error adding layer to stream group %d\n", stg->index);
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+            av_opt_set_dict(audio_layer, &dict);
+        } else if (demixing || recon_gain) {
+            AVIAMFParamDefinition *param = demixing ? audio_element->demixing_info
+                                                    : audio_element->recon_gain_info;
+            void *subblock = av_iamf_param_definition_get_subblock(param, 0);
+
+            av_opt_set_dict(param, &dict);
+            av_opt_set_dict(subblock, &dict);
+        }
+
+        // make sure that no entries are left in the dict
+        e = NULL;
+        if (e = av_dict_iterate(dict, e)) {
+            av_log(mux, AV_LOG_FATAL, "Unknown layer key %s.\n", e->key);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+        token = av_strtok(NULL, ",", &ptr);
+    }
+
+fail:
+    av_dict_free(&dict);
+    if (!ret && !audio_element->nb_layers) {
+        av_log(mux, AV_LOG_ERROR, "No layer in audio element specification\n");
+        ret = AVERROR(EINVAL);
+    }
+
+    return ret;
+}
+
+static int of_parse_iamf_submixes(Muxer *mux, AVStreamGroup *stg, char *ptr)
+{
+    AVFormatContext *oc = mux->fc;
+    AVIAMFMixPresentation *mix = stg->params.iamf_mix_presentation;
+    AVDictionary *dict = NULL;
+    const char *token;
+    char *submix_str = NULL;
+    int ret = 0;
+
+    /* process manually set submixes */
+    token = av_strtok(NULL, ",", &ptr);
+    while (token) {
+        AVIAMFSubmix *submix = NULL;
+        const char *subtoken;
+        char *subptr = NULL;
+
+        if (!av_strstart(token, "submix=", &token)) {
+            av_log(mux, AV_LOG_ERROR, "No submix in mix presentation specification \"%s\"\n", token);
+            goto fail;
+        }
+
+        submix_str = av_strdup(token);
+        if (!submix_str)
+            goto fail;
+
+        submix = av_iamf_mix_presentation_add_submix(mix);
+        if (!submix) {
+            av_log(mux, AV_LOG_ERROR, "Error adding submix to stream group %d\n", stg->index);
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        submix->output_mix_config =
+            av_iamf_param_definition_alloc(AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN, 0, NULL);
+        if (!submix->output_mix_config) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        subptr = NULL;
+        subtoken = av_strtok(submix_str, "|", &subptr);
+        while (subtoken) {
+            const AVDictionaryEntry *e;
+            int element = 0, layout = 0;
+
+            if (av_strstart(subtoken, "element=", &subtoken))
+                element = 1;
+            else if (av_strstart(subtoken, "layout=", &subtoken))
+                layout = 1;
+
+            av_dict_free(&dict);
+            ret = av_dict_parse_string(&dict, subtoken, "=", ":", 0);
+            if (ret < 0) {
+                av_log(mux, AV_LOG_ERROR, "Error parsing submix specification \"%s\"\n", subtoken);
+                goto fail;
+            }
+
+            if (element) {
+                AVIAMFSubmixElement *submix_element;
+                int64_t idx = -1;
+
+                if (e = av_dict_get(dict, "stg", NULL, 0))
+                    idx = strtol(e->value, NULL, 0);
+                av_dict_set(&dict, "stg", NULL, 0);
+                if (idx < 0 || idx >= oc->nb_stream_groups - 1 ||
+                    oc->stream_groups[idx]->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT) {
+                    av_log(mux, AV_LOG_ERROR, "Invalid or missing stream group index in "
+                                              "submix element specification \"%s\"\n", subtoken);
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+                submix_element = av_iamf_submix_add_element(submix);
+                if (!submix_element) {
+                    av_log(mux, AV_LOG_ERROR, "Error adding element to submix\n");
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+
+                submix_element->audio_element_id = oc->stream_groups[idx]->id;
+
+                submix_element->element_mix_config =
+                    av_iamf_param_definition_alloc(AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN, 0, NULL);
+                if (!submix_element->element_mix_config)
+                    ret = AVERROR(ENOMEM);
+                av_opt_set_dict2(submix_element, &dict, AV_OPT_SEARCH_CHILDREN);
+            } else if (layout) {
+                AVIAMFSubmixLayout *submix_layout = av_iamf_submix_add_layout(submix);
+                if (!submix_layout) {
+                    av_log(mux, AV_LOG_ERROR, "Error adding layout to submix\n");
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+                av_opt_set_dict(submix_layout, &dict);
+            } else
+                av_opt_set_dict2(submix, &dict, AV_OPT_SEARCH_CHILDREN);
+
+            if (ret < 0) {
+                goto fail;
+            }
+
+            // make sure that no entries are left in the dict
+            e = NULL;
+            while (e = av_dict_iterate(dict, e)) {
+                av_log(mux, AV_LOG_FATAL, "Unknown submix key %s.\n", e->key);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            subtoken = av_strtok(NULL, "|", &subptr);
+        }
+        av_freep(&submix_str);
+
+        if (!submix->nb_elements) {
+            av_log(mux, AV_LOG_ERROR, "No audio elements in submix specification \"%s\"\n", token);
+            ret = AVERROR(EINVAL);
+        }
+        token = av_strtok(NULL, ",", &ptr);
+    }
+
+fail:
+    av_dict_free(&dict);
+    av_free(submix_str);
+
+    return ret;
+}
+
+static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
+{
+    AVFormatContext *oc = mux->fc;
+    AVStreamGroup *stg;
+    AVDictionary *dict = NULL, *tmp = NULL;
+    const AVDictionaryEntry *e;
+    const AVOption opts[] = {
+        { "type", "Set group type", offsetof(AVStreamGroup, type), AV_OPT_TYPE_INT,
+                { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "type" },
+            { "iamf_audio_element",    NULL, 0, AV_OPT_TYPE_CONST,
+                { .i64 = AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT },    .unit = "type" },
+            { "iamf_mix_presentation", NULL, 0, AV_OPT_TYPE_CONST,
+                { .i64 = AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION }, .unit = "type" },
+        { NULL },
+    };
+    const AVClass class = {
+        .class_name = "StreamGroupType",
+        .item_name  = av_default_item_name,
+        .option     = opts,
+        .version    = LIBAVUTIL_VERSION_INT,
+    };
+    const AVClass *pclass = &class;
+    int type, ret;
+
+    ret = av_dict_parse_string(&dict, token, "=", ":", AV_DICT_MULTIKEY);
+    if (ret < 0) {
+        av_log(mux, AV_LOG_ERROR, "Error parsing group specification %s\n", token);
+        return ret;
+    }
+
+    // "type" is not a user settable AVOption in AVStreamGroup, so handle it here
+    e = av_dict_get(dict, "type", NULL, 0);
+    if (!e) {
+        av_log(mux, AV_LOG_ERROR, "No type specified for Stream Group in \"%s\"\n", token);
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+
+    ret = av_opt_eval_int(&pclass, opts, e->value, &type);
+    if (!ret && type == AV_STREAM_GROUP_PARAMS_NONE)
+        ret = AVERROR(EINVAL);
+    if (ret < 0) {
+        av_log(mux, AV_LOG_ERROR, "Invalid group type \"%s\"\n", e->value);
+        goto end;
+    }
+
+    av_dict_copy(&tmp, dict, 0);
+    stg = avformat_stream_group_create(oc, type, &tmp);
+    if (!stg) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    e = NULL;
+    while (e = av_dict_get(dict, "st", e, 0)) {
+        int64_t idx = strtol(e->value, NULL, 0);
+        if (idx < 0 || idx >= oc->nb_streams) {
+            av_log(mux, AV_LOG_ERROR, "Invalid stream index %"PRId64"\n", idx);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+        ret = avformat_stream_group_add_stream(stg, oc->streams[idx]);
+        if (ret < 0)
+            goto end;
+    }
+    while (e = av_dict_get(dict, "stg", e, 0)) {
+        int64_t idx = strtol(e->value, NULL, 0);
+        if (idx < 0 || idx >= oc->nb_stream_groups - 1) {
+            av_log(mux, AV_LOG_ERROR, "Invalid stream group index %"PRId64"\n", idx);
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+        for (unsigned i = 0; i < oc->stream_groups[idx]->nb_streams; i++) {
+            ret = avformat_stream_group_add_stream(stg, oc->stream_groups[idx]->streams[i]);
+            if (ret < 0)
+                goto end;
+        }
+    }
+
+    switch(type) {
+    case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
+        ret = of_parse_iamf_audio_element_layers(mux, stg, ptr);
+        break;
+    case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION:
+        ret = of_parse_iamf_submixes(mux, stg, ptr);
+        break;
+    default:
+        av_log(mux, AV_LOG_FATAL, "Unknown group type %d.\n", type);
+        ret = AVERROR(EINVAL);
+        break;
+    }
+
+    if (ret < 0)
+        goto end;
+
+    // make sure that nothing but "st" and "stg" entries are left in the dict
+    e = NULL;
+    av_dict_set(&tmp, "type", NULL, 0);
+    while (e = av_dict_iterate(tmp, e)) {
+        if (!strcmp(e->key, "st") || !strcmp(e->key, "stg"))
+            continue;
+
+        av_log(mux, AV_LOG_FATAL, "Unknown group key %s.\n", e->key);
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+
+    ret = 0;
+end:
+    av_dict_free(&dict);
+    av_dict_free(&tmp);
+
+    return ret;
+}
+
+static int of_add_groups(Muxer *mux, const OptionsContext *o)
+{
+    /* process manually set groups */
+    for (int i = 0; i < o->nb_stream_groups; i++) {
+        const char *token;
+        char *str, *ptr = NULL;
+        int ret = 0;
+
+        str = av_strdup(o->stream_groups[i].u.str);
+        if (!str)
+            return ret;
+
+        token = av_strtok(str, ",", &ptr);
+        if (token)
+            ret = of_parse_group_token(mux, token, ptr);
+
+        av_free(str);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 static int of_add_programs(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
@@ -2796,6 +3134,10 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 
     /* copy metadata and chapters from input files */
     err = copy_meta(mux, o);
+    if (err < 0)
+        return err;
+
+    err = of_add_groups(mux, o);
     if (err < 0)
         return err;
 

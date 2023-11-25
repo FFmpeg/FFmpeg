@@ -1498,6 +1498,8 @@ const OptionDef options[] = {
         "add metadata", "string=string" },
     { "program",        HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(program) },
         "add program with specified streams", "title=string:st=number..." },
+    { "stream_group",        HAS_ARG | OPT_STRING | OPT_SPEC | OPT_OUTPUT, { .off = OFFSET(stream_groups) },
+        "add stream group with specified streams and group type-specific arguments", "id=number:st=number..." },
     { "dframes",        HAS_ARG | OPT_PERFILE | OPT_EXPERT |
                         OPT_OUTPUT,                                  { .func_arg = opt_data_frames },
         "set the number of data frames to output", "number" },

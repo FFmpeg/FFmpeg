@@ -623,6 +623,206 @@ Not all muxers support embedded thumbnails, and those who do, only support a few
 Creates a program with the specified @var{title}, @var{program_num} and adds the specified
 @var{stream}(s) to it.
 
+@item -stream_group type=@var{type}:st=@var{stream}[:st=@var{stream}][:stg=@var{stream_group}][:id=@var{stream_group_id}...] (@emph{output})
+
+Creates a stream group of the specified @var{type}, @var{stream_group_id} and adds the specified
+@var{stream}(s) and/or previously defined @var{stream_group}(s) to it.
+
+@var{type} can be one of the following:
+@table @option
+
+@item iamf_audio_element
+Groups @var{stream}s that belong to the same IAMF Audio Element
+
+For this group @var{type}, the following options are available
+@table @option
+@item audio_element_type
+The Audio Element type. The following values are supported:
+
+@table @option
+@item channel
+Scalable channel audio representation
+@item scene
+Ambisonics representation
+@end table
+
+@item demixing
+Demixing information used to reconstruct a scalable channel audio representation.
+This option must be separated from the rest with a ',', and takes the following
+key=value options
+
+@table @option
+@item parameter_id
+An identifier parameters blocks in frames may refer to
+@item dmixp_mode
+A pre-defined combination of demixing parameters
+@end table
+
+@item recon_gain
+Recon gain information used to reconstruct a scalable channel audio representation.
+This option must be separated from the rest with a ',', and takes the following
+key=value options
+
+@table @option
+@item parameter_id
+An identifier parameters blocks in frames may refer to
+@end table
+
+@item layer
+A layer defining a Channel Layout in the Audio Element.
+This option must be separated from the rest with a ','. Several ',' separated entries
+can be defined, and at least one must be set.
+
+It takes the following ":"-separated key=value options
+
+@table @option
+@item ch_layout
+The layer's channel layout
+@item flags
+The following flags are available:
+
+@table @option
+@item recon_gain
+Wether to signal if recon_gain is present as metadata in parameter blocks within frames
+@end table
+
+@item output_gain
+@item output_gain_flags
+Which channels output_gain applies to. The following flags are available:
+
+@table @option
+@item FL
+@item FR
+@item BL
+@item BR
+@item TFL
+@item TFR
+@end table
+
+@item ambisonics_mode
+The ambisonics mode. This has no effect if audio_element_type is set to channel.
+
+The following values are supported:
+
+@table @option
+@item mono
+Each ambisonics channel is coded as an individual mono stream in the group
+@end table
+
+@end table
+
+@item default_w
+Default weight value
+
+@end table
+
+@item iamf_mix_presentation
+Groups @var{stream}s that belong to all IAMF Audio Element the same
+IAMF Mix Presentation references
+
+For this group @var{type}, the following options are available
+
+@table @option
+@item submix
+A sub-mix within the Mix Presentation.
+This option must be separated from the rest with a ','. Several ',' separated entries
+can be defined, and at least one must be set.
+
+It takes the following ":"-separated key=value options
+
+@table @option
+@item parameter_id
+An identifier parameters blocks in frames may refer to, for post-processing the mixed
+audio signal to generate the audio signal for playback
+@item parameter_rate
+The sample rate duration fields in parameters blocks in frames that refer to this
+@var{parameter_id} are expressed as
+@item default_mix_gain
+Default mix gain value to apply when there are no parameter blocks sharing the same
+@var{parameter_id} for a given frame
+
+@item element
+References an Audio Element used in this Mix Presentation to generate the final output
+audio signal for playback.
+This option must be separated from the rest with a '|'. Several '|' separated entries
+can be defined, and at least one must be set.
+
+It takes the following ":"-separated key=value options:
+
+@table @option
+@item stg
+The @var{stream_group_id} for an Audio Element which this sub-mix refers to
+@item parameter_id
+An identifier parameters blocks in frames may refer to, for applying any processing to
+the referenced and rendered Audio Element before being summed with other processed Audio
+Elements
+@item parameter_rate
+The sample rate duration fields in parameters blocks in frames that refer to this
+@var{parameter_id} are expressed as
+@item default_mix_gain
+Default mix gain value to apply when there are no parameter blocks sharing the same
+@var{parameter_id} for a given frame
+@item annotations
+A key=value string describing the sub-mix element where "key" is a string conforming to
+BCP-47 that specifies the language for the "value" string. "key" must be the same as the
+one in the mix's @var{annotations}
+@item headphones_rendering_mode
+Indicates whether the input channel-based Audio Element is rendered to stereo loudspeakers
+or spatialized with a binaural renderer when played back on headphones.
+This has no effect if the referenced Audio Element's @var{audio_element_type} is set to
+channel.
+
+The following values are supported:
+
+@table @option
+@item stereo
+@item binaural
+@end table
+
+@end table
+
+@item layout
+Specifies the layouts for this sub-mix on which the loudness information was measured.
+This option must be separated from the rest with a '|'. Several '|' separated entries
+can be defined, and at least one must be set.
+
+It takes the following ":"-separated key=value options:
+
+@table @option
+@item layout_type
+
+@table @option
+@item loudspeakers
+The layout follows the loudspeaker sound system convention of ITU-2051-3.
+@item binaural
+The layout is binaural.
+@end table
+
+@item sound_system
+Channel layout matching one of Sound Systems A to J of ITU-2051-3, plus 7.1.2 and 3.1.2
+This has no effect if @var{layout_type} is set to binaural.
+@item integrated_loudness
+The program integrated loudness information, as defined in ITU-1770-4.
+@item digital_peak
+The digital (sampled) peak value of the audio signal, as defined in ITU-1770-4.
+@item true_peak
+The true peak of the audio signal, as defined in ITU-1770-4.
+@item dialog_anchored_loudness
+The Dialogue loudness information, as defined in ITU-1770-4.
+@item album_anchored_loudness
+The Album loudness information, as defined in ITU-1770-4.
+@end table
+
+@end table
+
+@item annotations
+A key=value string string describing the mix where "key" is a string conforming to BCP-47
+that specifies the language for the "value" string. "key" must be the same as the ones in
+all sub-mix element's @var{annotations}s
+@end table
+
+@end table
+
 @item -target @var{type} (@emph{output})
 Specify target file type (@code{vcd}, @code{svcd}, @code{dvd}, @code{dv},
 @code{dv50}). @var{type} may be prefixed with @code{pal-}, @code{ntsc-} or
