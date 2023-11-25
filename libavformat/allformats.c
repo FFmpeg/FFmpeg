@@ -212,6 +212,7 @@ extern const FFOutputFormat ff_hevc_muxer;
 extern const AVInputFormat  ff_hls_demuxer;
 extern const FFOutputFormat ff_hls_muxer;
 extern const AVInputFormat  ff_hnm_demuxer;
+extern const AVInputFormat  ff_iamf_demuxer;
 extern const AVInputFormat  ff_ico_demuxer;
 extern const FFOutputFormat ff_ico_muxer;
 extern const AVInputFormat  ff_idcin_demuxer;
