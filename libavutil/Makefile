@@ -51,6 +51,7 @@ HEADERS = adler32.h                                                     \
           hwcontext_videotoolbox.h                                      \
           hwcontext_vdpau.h                                             \
           hwcontext_vulkan.h                                            \
+          iamf.h                                                        \
           imgutils.h                                                    \
           intfloat.h                                                    \
           intreadwrite.h                                                \
@@ -140,6 +141,7 @@ OBJS = adler32.o                                                        \
        hdr_dynamic_vivid_metadata.o                                     \
        hmac.o                                                           \
        hwcontext.o                                                      \
+       iamf.o                                                           \
        imgutils.o                                                       \
        integer.o                                                        \
        intmath.o                                                        \
