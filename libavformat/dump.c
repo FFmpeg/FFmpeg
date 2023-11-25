@@ -24,6 +24,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
+#include "libavutil/iamf.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/mastering_display_metadata.h"
@@ -134,28 +135,36 @@ static void print_fps(double d, const char *postfix)
         av_log(NULL, AV_LOG_INFO, "%1.0fk %s", d / 1000, postfix);
 }
 
+static void dump_dictionary(void *ctx, const AVDictionary *m,
+                            const char *name, const char *indent)
+{
+    const AVDictionaryEntry *tag = NULL;
+
+    if (!m)
+        return;
+
+    av_log(ctx, AV_LOG_INFO, "%s%s:\n", indent, name);
+    while ((tag = av_dict_iterate(m, tag)))
+        if (strcmp("language", tag->key)) {
+            const char *p = tag->value;
+            av_log(ctx, AV_LOG_INFO,
+                   "%s  %-16s: ", indent, tag->key);
+            while (*p) {
+                size_t len = strcspn(p, "\x8\xa\xb\xc\xd");
+                av_log(ctx, AV_LOG_INFO, "%.*s", (int)(FFMIN(255, len)), p);
+                p += len;
+                if (*p == 0xd) av_log(ctx, AV_LOG_INFO, " ");
+                if (*p == 0xa) av_log(ctx, AV_LOG_INFO, "\n%s  %-16s: ", indent, "");
+                if (*p) p++;
+            }
+            av_log(ctx, AV_LOG_INFO, "\n");
+        }
+}
+
 static void dump_metadata(void *ctx, const AVDictionary *m, const char *indent)
 {
-    if (m && !(av_dict_count(m) == 1 && av_dict_get(m, "language", NULL, 0))) {
-        const AVDictionaryEntry *tag = NULL;
-
-        av_log(ctx, AV_LOG_INFO, "%sMetadata:\n", indent);
-        while ((tag = av_dict_iterate(m, tag)))
-            if (strcmp("language", tag->key)) {
-                const char *p = tag->value;
-                av_log(ctx, AV_LOG_INFO,
-                       "%s  %-16s: ", indent, tag->key);
-                while (*p) {
-                    size_t len = strcspn(p, "\x8\xa\xb\xc\xd");
-                    av_log(ctx, AV_LOG_INFO, "%.*s", (int)(FFMIN(255, len)), p);
-                    p += len;
-                    if (*p == 0xd) av_log(ctx, AV_LOG_INFO, " ");
-                    if (*p == 0xa) av_log(ctx, AV_LOG_INFO, "\n%s  %-16s: ", indent, "");
-                    if (*p) p++;
-                }
-                av_log(ctx, AV_LOG_INFO, "\n");
-            }
-    }
+    if (m && !(av_dict_count(m) == 1 && av_dict_get(m, "language", NULL, 0)))
+        dump_dictionary(ctx, m, "Metadata", indent);
 }
 
 /* param change side data*/
@@ -509,7 +518,7 @@ static void dump_sidedata(void *ctx, const AVStream *st, const char *indent)
 
 /* "user interface" functions */
 static void dump_stream_format(const AVFormatContext *ic, int i,
-                               int index, int is_output)
+                               int group_index, int index, int is_output)
 {
     char buf[256];
     int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
@@ -517,6 +526,8 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
     const FFStream *const sti = cffstream(st);
     const AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL, 0);
     const char *separator = ic->dump_separator;
+    const char *group_indent = group_index >= 0 ? "    " : "";
+    const char *extra_indent = group_index >= 0 ? "        " : "      ";
     AVCodecContext *avctx;
     int ret;
 
@@ -543,7 +554,8 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
     avcodec_string(buf, sizeof(buf), avctx, is_output);
     avcodec_free_context(&avctx);
 
-    av_log(NULL, AV_LOG_INFO, "  Stream #%d:%d", index, i);
+    av_log(NULL, AV_LOG_INFO, "%s  Stream #%d", group_indent, index);
+    av_log(NULL, AV_LOG_INFO, ":%d", i);
 
     /* the pid is an important information, so we display it */
     /* XXX: add a generic system */
@@ -621,9 +633,89 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
         av_log(NULL, AV_LOG_INFO, " (non-diegetic)");
     av_log(NULL, AV_LOG_INFO, "\n");
 
-    dump_metadata(NULL, st->metadata, "    ");
+    dump_metadata(NULL, st->metadata, extra_indent);
 
-    dump_sidedata(NULL, st, "    ");
+    dump_sidedata(NULL, st, extra_indent);
+}
+
+static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
+                              int i, int index, int is_output)
+{
+    const AVStreamGroup *stg = ic->stream_groups[i];
+    int flags = (is_output ? ic->oformat->flags : ic->iformat->flags);
+    char buf[512];
+    int ret;
+
+    av_log(NULL, AV_LOG_INFO, "  Stream group #%d:%d", index, i);
+    if (flags & AVFMT_SHOW_IDS)
+        av_log(NULL, AV_LOG_INFO, "[0x%"PRIx64"]", stg->id);
+    av_log(NULL, AV_LOG_INFO, ":");
+
+    switch (stg->type) {
+    case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT: {
+        const AVIAMFAudioElement *audio_element = stg->params.iamf_audio_element;
+        av_log(NULL, AV_LOG_INFO, " IAMF Audio Element\n");
+        dump_metadata(NULL, stg->metadata, "    ");
+        for (int j = 0; j < audio_element->nb_layers; j++) {
+            const AVIAMFLayer *layer = audio_element->layers[j];
+            int channel_count = layer->ch_layout.nb_channels;
+            av_log(NULL, AV_LOG_INFO, "    Layer %d:", j);
+            ret = av_channel_layout_describe(&layer->ch_layout, buf, sizeof(buf));
+            if (ret >= 0)
+                av_log(NULL, AV_LOG_INFO, " %s", buf);
+            av_log(NULL, AV_LOG_INFO, "\n");
+            for (int k = 0; channel_count > 0 && k < stg->nb_streams; k++) {
+                AVStream *st = stg->streams[k];
+                dump_stream_format(ic, st->index, i, index, is_output);
+                printed[st->index] = 1;
+                channel_count -= st->codecpar->ch_layout.nb_channels;
+            }
+        }
+        break;
+    }
+    case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION: {
+        const AVIAMFMixPresentation *mix_presentation = stg->params.iamf_mix_presentation;
+        av_log(NULL, AV_LOG_INFO, " IAMF Mix Presentation\n");
+        dump_metadata(NULL, stg->metadata, "    ");
+        dump_dictionary(NULL, mix_presentation->annotations, "Annotations", "    ");
+        for (int j = 0; j < mix_presentation->nb_submixes; j++) {
+            AVIAMFSubmix *sub_mix = mix_presentation->submixes[j];
+            av_log(NULL, AV_LOG_INFO, "    Submix %d:\n", j);
+            for (int k = 0; k < sub_mix->nb_elements; k++) {
+                const AVIAMFSubmixElement *submix_element = sub_mix->elements[k];
+                const AVStreamGroup *audio_element = NULL;
+                for (int l = 0; l < ic->nb_stream_groups; l++)
+                    if (ic->stream_groups[l]->type == AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT &&
+                        ic->stream_groups[l]->id   == submix_element->audio_element_id) {
+                        audio_element = ic->stream_groups[l];
+                        break;
+                    }
+                if (audio_element) {
+                    av_log(NULL, AV_LOG_INFO, "      IAMF Audio Element #%d:%d",
+                           index, audio_element->index);
+                    if (flags & AVFMT_SHOW_IDS)
+                        av_log(NULL, AV_LOG_INFO, "[0x%"PRIx64"]", audio_element->id);
+                    av_log(NULL, AV_LOG_INFO, "\n");
+                    dump_dictionary(NULL, submix_element->annotations, "Annotations", "        ");
+                }
+            }
+            for (int k = 0; k < sub_mix->nb_layouts; k++) {
+                const AVIAMFSubmixLayout *submix_layout = sub_mix->layouts[k];
+                av_log(NULL, AV_LOG_INFO, "      Layout #%d:", k);
+                if (submix_layout->layout_type == 2) {
+                    ret = av_channel_layout_describe(&submix_layout->sound_system, buf, sizeof(buf));
+                    if (ret >= 0)
+                        av_log(NULL, AV_LOG_INFO, " %s", buf);
+                } else if (submix_layout->layout_type == 3)
+                    av_log(NULL, AV_LOG_INFO, " Binaural");
+                av_log(NULL, AV_LOG_INFO, "\n");
+            }
+        }
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 void av_dump_format(AVFormatContext *ic, int index,
@@ -699,7 +791,7 @@ void av_dump_format(AVFormatContext *ic, int index,
             dump_metadata(NULL, program->metadata, "    ");
             for (k = 0; k < program->nb_stream_indexes; k++) {
                 dump_stream_format(ic, program->stream_index[k],
-                                   index, is_output);
+                                   -1, index, is_output);
                 printed[program->stream_index[k]] = 1;
             }
             total += program->nb_stream_indexes;
@@ -708,9 +800,12 @@ void av_dump_format(AVFormatContext *ic, int index,
             av_log(NULL, AV_LOG_INFO, "  No Program\n");
     }
 
+    for (i = 0; i < ic->nb_stream_groups; i++)
+         dump_stream_group(ic, printed, i, index, is_output);
+
     for (i = 0; i < ic->nb_streams; i++)
         if (!printed[i])
-            dump_stream_format(ic, i, index, is_output);
+            dump_stream_format(ic, i, -1, index, is_output);
 
     av_free(printed);
 }

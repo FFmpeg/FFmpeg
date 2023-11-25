@@ -202,6 +202,7 @@ typedef struct FFStream {
      */
     AVStream pub;
 
+    AVFormatContext *fmtctx;
     /**
      * Set to 1 if the codec allows reordering, so pts can be different
      * from dts.
@@ -427,6 +428,26 @@ static av_always_inline const FFStream *cffstream(const AVStream *st)
     return (const FFStream*)st;
 }
 
+typedef struct FFStreamGroup {
+    /**
+     * The public context.
+     */
+    AVStreamGroup pub;
+
+    AVFormatContext *fmtctx;
+} FFStreamGroup;
+
+
+static av_always_inline FFStreamGroup *ffstreamgroup(AVStreamGroup *stg)
+{
+    return (FFStreamGroup*)stg;
+}
+
+static av_always_inline const FFStreamGroup *cffstreamgroup(const AVStreamGroup *stg)
+{
+    return (const FFStreamGroup*)stg;
+}
+
 #ifdef __GNUC__
 #define dynarray_add(tab, nb_ptr, elem)\
 do {\
@@ -607,6 +628,18 @@ void ff_free_stream(AVStream **st);
  * The stream must be the last stream of the AVFormatContext.
  */
 void ff_remove_stream(AVFormatContext *s, AVStream *st);
+
+/**
+ * Frees a stream group without modifying the corresponding AVFormatContext.
+ * Must only be called if the latter doesn't matter or if the stream
+ * is not yet attached to an AVFormatContext.
+ */
+void ff_free_stream_group(AVStreamGroup **pstg);
+/**
+ * Remove a stream group from its AVFormatContext and free it.
+ * The group must be the last stream of the AVFormatContext.
+ */
+void ff_remove_stream_group(AVFormatContext *s, AVStreamGroup *stg);
 
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
 

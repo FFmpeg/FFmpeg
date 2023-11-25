@@ -26,6 +26,7 @@
 #include "libavcodec/codec_par.h"
 
 #include "libavutil/avassert.h"
+#include "libavutil/iamf.h"
 #include "libavutil/internal.h"
 #include "libavutil/intmath.h"
 #include "libavutil/opt.h"
@@ -271,6 +272,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
     if (!st->codecpar)
         goto fail;
 
+    sti->fmtctx = s;
     sti->avctx = avcodec_alloc_context3(NULL);
     if (!sti->avctx)
         goto fail;
@@ -323,6 +325,143 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
 fail:
     ff_free_stream(&st);
     return NULL;
+}
+
+static void *stream_group_child_next(void *obj, void *prev)
+{
+    AVStreamGroup *stg = obj;
+    if (!prev) {
+        switch(stg->type) {
+        case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
+            return stg->params.iamf_audio_element;
+        case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION:
+            return stg->params.iamf_mix_presentation;
+        default:
+            break;
+        }
+    }
+    return NULL;
+}
+
+static const AVClass *stream_group_child_iterate(void **opaque)
+{
+    uintptr_t i = (uintptr_t)*opaque;
+    const AVClass *ret = NULL;
+
+    switch(i) {
+    case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
+        ret = av_iamf_audio_element_get_class();
+        break;
+    case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION:
+        ret = av_iamf_mix_presentation_get_class();
+        break;
+    default:
+        break;
+    }
+
+    if (ret)
+        *opaque = (void*)(i + 1);
+    return ret;
+}
+
+static const AVOption stream_group_options[] = {
+    {"id", "Set group id", offsetof(AVStreamGroup, id), AV_OPT_TYPE_INT64, {.i64 = 0}, 0, INT64_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass stream_group_class = {
+    .class_name     = "AVStreamGroup",
+    .item_name      = av_default_item_name,
+    .version        = LIBAVUTIL_VERSION_INT,
+    .option         = stream_group_options,
+    .child_next     = stream_group_child_next,
+    .child_class_iterate = stream_group_child_iterate,
+};
+
+const AVClass *av_stream_group_get_class(void)
+{
+    return &stream_group_class;
+}
+
+AVStreamGroup *avformat_stream_group_create(AVFormatContext *s,
+                                            enum AVStreamGroupParamsType type,
+                                            AVDictionary **options)
+{
+    AVStreamGroup **stream_groups;
+    AVStreamGroup *stg;
+    FFStreamGroup *stgi;
+
+    stream_groups = av_realloc_array(s->stream_groups, s->nb_stream_groups + 1,
+                                     sizeof(*stream_groups));
+    if (!stream_groups)
+        return NULL;
+    s->stream_groups = stream_groups;
+
+    stgi = av_mallocz(sizeof(*stgi));
+    if (!stgi)
+        return NULL;
+    stg = &stgi->pub;
+
+    stg->av_class = &stream_group_class;
+    av_opt_set_defaults(stg);
+    stg->type = type;
+    switch (type) {
+    case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
+        stg->params.iamf_audio_element = av_iamf_audio_element_alloc();
+        if (!stg->params.iamf_audio_element)
+            goto fail;
+        break;
+    case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION:
+        stg->params.iamf_mix_presentation = av_iamf_mix_presentation_alloc();
+        if (!stg->params.iamf_mix_presentation)
+            goto fail;
+        break;
+    default:
+        goto fail;
+    }
+
+    if (options) {
+        if (av_opt_set_dict2(stg, options, AV_OPT_SEARCH_CHILDREN))
+            goto fail;
+    }
+
+    stgi->fmtctx = s;
+    stg->index   = s->nb_stream_groups;
+
+    s->stream_groups[s->nb_stream_groups++] = stg;
+
+    return stg;
+fail:
+    ff_free_stream_group(&stg);
+    return NULL;
+}
+
+static int stream_group_add_stream(AVStreamGroup *stg, AVStream *st)
+{
+    AVStream **streams = av_realloc_array(stg->streams, stg->nb_streams + 1,
+                                          sizeof(*stg->streams));
+    if (!streams)
+        return AVERROR(ENOMEM);
+
+    stg->streams = streams;
+    stg->streams[stg->nb_streams++] = st;
+
+    return 0;
+}
+
+int avformat_stream_group_add_stream(AVStreamGroup *stg, AVStream *st)
+{
+    const FFStreamGroup *stgi = cffstreamgroup(stg);
+    const FFStream *sti = cffstream(st);
+
+    if (stgi->fmtctx != sti->fmtctx)
+        return AVERROR(EINVAL);
+
+    for (int i = 0; i < stg->nb_streams; i++)
+        if (stg->streams[i]->index == st->index)
+            return AVERROR(EEXIST);
+
+    return stream_group_add_stream(stg, st);
 }
 
 static int option_is_disposition(const AVOption *opt)
