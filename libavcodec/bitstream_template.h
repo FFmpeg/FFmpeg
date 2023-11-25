@@ -562,6 +562,29 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t dst[8],
     return ret;
 }
 
+/**
+ * Read a unsigned integer coded as a variable number of up to eight
+ * little-endian bytes, where the MSB in a byte signals another byte
+ * must be read.
+ * Values > UINT_MAX are truncated, but all coded bits are read.
+ */
+static inline unsigned BS_FUNC(read_leb)(BSCTX *bc) {
+    int more, i = 0;
+    unsigned leb = 0;
+
+    do {
+        int byte = BS_FUNC(read)(bc, 8);
+        unsigned bits = byte & 0x7f;
+        more = byte & 0x80;
+        if (i <= 4)
+            leb |= bits << (i * 7);
+        if (++i == 8)
+            break;
+    } while (more);
+
+    return leb;
+}
+
 #undef BSCTX
 #undef BS_FUNC
 #undef BS_JOIN3

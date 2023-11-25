@@ -94,6 +94,7 @@ typedef BitstreamContext GetBitContext;
 #define align_get_bits      bits_align
 #define get_vlc2            bits_read_vlc
 #define get_vlc_multi       bits_read_vlc_multi
+#define get_leb             bits_read_leb
 
 #define init_get_bits8_le(s, buffer, byte_size) bits_init8_le((BitstreamContextLE*)s, buffer, byte_size)
 #define get_bits_le(s, n)                       bits_read_le((BitstreamContextLE*)s, n)
@@ -708,6 +709,29 @@ static inline int skip_1stop_8data_bits(GetBitContext *gb)
     }
 
     return 0;
+}
+
+/**
+ * Read a unsigned integer coded as a variable number of up to eight
+ * little-endian bytes, where the MSB in a byte signals another byte
+ * must be read.
+ * All coded bits are read, but values > UINT_MAX are truncated.
+ */
+static inline unsigned get_leb(GetBitContext *s) {
+    int more, i = 0;
+    unsigned leb = 0;
+
+    do {
+        int byte = get_bits(s, 8);
+        unsigned bits = byte & 0x7f;
+        more = byte & 0x80;
+        if (i <= 4)
+            leb |= bits << (i * 7);
+        if (++i == 8)
+            break;
+    } while (more);
+
+    return leb;
 }
 
 #endif // CACHED_BITSTREAM_READER

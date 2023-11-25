@@ -103,6 +103,7 @@
 # define bits_apply_sign    bits_apply_sign_le
 # define bits_read_vlc      bits_read_vlc_le
 # define bits_read_vlc_multi bits_read_vlc_multi_le
+# define bits_read_leb      bits_read_leb_le
 
 #elif defined(BITS_DEFAULT_BE)
 
@@ -132,6 +133,7 @@
 # define bits_apply_sign    bits_apply_sign_be
 # define bits_read_vlc      bits_read_vlc_be
 # define bits_read_vlc_multi bits_read_vlc_multi_be
+# define bits_read_leb      bits_read_leb_be
 
 #endif
 
