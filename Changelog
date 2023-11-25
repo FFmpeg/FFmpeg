@@ -10,7 +10,7 @@ version <next>:
 - demuxing, decoding, filtering, encoding, and muxing in the
   ffmpeg CLI now all run in parallel
 - enable gdigrab device to grab a window using the hwnd=HANDLER syntax
-- IAMF raw demuxer
+- IAMF raw demuxer and muxer
 
 version 6.1:
 - libaribcaption decoder
