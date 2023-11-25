@@ -280,6 +280,41 @@ typedef struct VTEncContext {
     int max_ref_frames;
 } VTEncContext;
 
+static int vt_dump_encoder(AVCodecContext *avctx)
+{
+    VTEncContext *vtctx = avctx->priv_data;
+    CFStringRef encoder_id = NULL;
+    int status;
+    CFIndex length, max_size;
+    char *name;
+
+    status = VTSessionCopyProperty(vtctx->session,
+                                   compat_keys.kVTCompressionPropertyKey_EncoderID,
+                                   kCFAllocatorDefault,
+                                   &encoder_id);
+    // OK if not supported
+    if (status != noErr)
+        return 0;
+
+    length = CFStringGetLength(encoder_id);
+    max_size = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
+    name = av_malloc(max_size);
+    if (!name) {
+        CFRelease(encoder_id);
+        return AVERROR(ENOMEM);
+    }
+
+    CFStringGetCString(encoder_id,
+                       name,
+                       max_size,
+                       kCFStringEncodingUTF8);
+    av_log(avctx, AV_LOG_DEBUG, "Init the encoder: %s\n", name);
+    av_freep(&name);
+    CFRelease(encoder_id);
+
+    return 0;
+}
+
 static int vtenc_populate_extradata(AVCodecContext   *avctx,
                                     CMVideoCodecType codec_type,
                                     CFStringRef      profile_level,
@@ -1176,33 +1211,9 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
     }
 #endif
 
-    // Dump the init encoder
-    {
-        CFStringRef encoderID = NULL;
-        status = VTSessionCopyProperty(vtctx->session,
-                                       compat_keys.kVTCompressionPropertyKey_EncoderID,
-                                       kCFAllocatorDefault,
-                                       &encoderID);
-        if (status == noErr) {
-            CFIndex length   = CFStringGetLength(encoderID);
-            CFIndex max_size = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8);
-            char *name       = av_malloc(max_size);
-            if (!name) {
-                CFRelease(encoderID);
-                return AVERROR(ENOMEM);
-            }
-
-            CFStringGetCString(encoderID,
-                               name,
-                               max_size,
-                               kCFStringEncodingUTF8);
-            av_log(avctx, AV_LOG_DEBUG, "Init the encoder: %s\n", name);
-
-            av_freep(&name);
-        }
-        if (encoderID != NULL)
-            CFRelease(encoderID);
-    }
+    status = vt_dump_encoder(avctx);
+    if (status < 0)
+        return status;
 
     if (avctx->flags & AV_CODEC_FLAG_QSCALE && !vtenc_qscale_enabled()) {
         av_log(avctx, AV_LOG_ERROR, "Error: -q:v qscale not available for encoder. Use -b:v bitrate instead.\n");
