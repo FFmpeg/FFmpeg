@@ -96,12 +96,12 @@ static int config_input(AVFilterLink *inlink)
     if (!s->window)
         return AVERROR(ENOMEM);
 
-    s->in_frame       = ff_get_audio_buffer(inlink, s->fft_size * 4);
-    s->center_frame   = ff_get_audio_buffer(inlink, s->fft_size * 4);
-    s->out_dist_frame = ff_get_audio_buffer(inlink, s->fft_size * 4);
-    s->windowed_frame = ff_get_audio_buffer(inlink, s->fft_size * 4);
-    s->windowed_out   = ff_get_audio_buffer(inlink, s->fft_size * 4);
-    s->windowed_prev  = ff_get_audio_buffer(inlink, s->fft_size * 4);
+    s->in_frame       = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
+    s->center_frame   = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
+    s->out_dist_frame = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
+    s->windowed_frame = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
+    s->windowed_out   = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
+    s->windowed_prev  = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
     if (!s->in_frame || !s->windowed_out || !s->windowed_prev ||
         !s->out_dist_frame || !s->windowed_frame || !s->center_frame)
         return AVERROR(ENOMEM);
@@ -250,6 +250,7 @@ static int de_stereo(AVFilterContext *ctx, AVFrame *out)
     float *right_osamples  = (float *)out->extended_data[1];
     float *center_osamples = (float *)out->extended_data[2];
     const int offset = s->fft_size - s->overlap;
+    const int nb_samples = FFMIN(s->overlap, s->in->nb_samples);
     float vad;
 
     // shift in/out buffers
@@ -258,8 +259,8 @@ static int de_stereo(AVFilterContext *ctx, AVFrame *out)
     memmove(left_out, &left_out[s->overlap], offset * sizeof(float));
     memmove(right_out, &right_out[s->overlap], offset * sizeof(float));
 
-    memcpy(&left_in[offset], left_samples, s->overlap * sizeof(float));
-    memcpy(&right_in[offset], right_samples, s->overlap * sizeof(float));
+    memcpy(&left_in[offset], left_samples, nb_samples * sizeof(float));
+    memcpy(&right_in[offset], right_samples, nb_samples * sizeof(float));
     memset(&left_out[offset], 0, s->overlap * sizeof(float));
     memset(&right_out[offset], 0, s->overlap * sizeof(float));
 
