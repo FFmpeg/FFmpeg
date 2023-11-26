@@ -28260,9 +28260,18 @@ supposed to be generated forever.
 Set speed of gradients rotation.
 
 @item type, t
-Set type of gradients, can be @code{linear} or @code{radial} or @code{circular} or @code{spiral}.
+Set type of gradients.
+Available values are:
+@table @samp
+@item linear
+@item radial
+@item circular
+@item spiral
+@item square
 @end table
 
+Default type is @var{linear}.
+@end table
 
 @section mandelbrot
 
