@@ -75,7 +75,7 @@ static const AVOption gradients_options[] = {
     {"seed",      "set the seed",   OFFSET(seed),          AV_OPT_TYPE_INT64,      {.i64=-1},        -1, UINT32_MAX, FLAGS },
     {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
     {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
-    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01}, 0.00001, 1, FLAGS },
+    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01},       0, 1, FLAGS },
     {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 4, FLAGS, "type" },
     {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 4, FLAGS, "type" },
     { "linear",   "set linear gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=0},          0, 0, FLAGS, "type" },
@@ -391,7 +391,7 @@ static int activate(AVFilterContext *ctx)
 
     if (ff_outlink_frame_wanted(outlink)) {
         AVFrame *frame = ff_get_video_buffer(outlink, s->w, s->h);
-        float angle = fmodf(s->pts * s->speed, 2.f * M_PI);
+        float angle = (s->speed > 0.f) ? fmodf(s->pts * s->speed, 2.f * M_PI) : 1.f;
         const float w2 = s->w / 2.f;
         const float h2 = s->h / 2.f;
 
