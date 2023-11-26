@@ -306,6 +306,23 @@ FF_DISABLE_DEPRECATION_WARNINGS
     }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+
+    if (m->downmix_layout.nb_channels) {
+        if (!av_channel_layout_compare(&m->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO) ||
+            !av_channel_layout_compare(&m->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO_DOWNMIX)) {
+            av_channel_layout_uninit(&avctx->ch_layout);
+            avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+        } else if (!av_channel_layout_compare(&m->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0)) {
+            av_channel_layout_uninit(&avctx->ch_layout);
+            avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0;
+        } else if (!av_channel_layout_compare(&m->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1)) {
+            av_channel_layout_uninit(&avctx->ch_layout);
+            avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1;
+        }
+        else
+          av_log(avctx, AV_LOG_WARNING, "Invalid downmix layout\n");
+    }
+
     ff_thread_once(&init_static_once, init_static);
 
     return 0;
