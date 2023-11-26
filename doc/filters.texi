@@ -16864,6 +16864,10 @@ Set the file path to be used to store log files.
 @item log_fmt
 Set the format of the log file (xml, json, csv, or sub).
 
+@item pool
+Set the pool method to be used for computing vmaf.
+Options are @code{min}, @code{harmonic_mean} or @code{mean} (default).
+
 @item n_threads
 Set number of threads to be used when initializing libvmaf.
 Default value: @code{0}, no threads.
