@@ -366,12 +366,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (s->downmix_layout.nb_channels) {
         if (!av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO) ||
-            !av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO_DOWNMIX))
+            !av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO_DOWNMIX)) {
             s->request_channel_layout = DCA_SPEAKER_LAYOUT_STEREO;
-        else if (!av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0))
+            av_channel_layout_uninit(&avctx->ch_layout);
+            avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+        } else if (!av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0)) {
             s->request_channel_layout = DCA_SPEAKER_LAYOUT_5POINT0;
-        else if (!av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1))
+            av_channel_layout_uninit(&avctx->ch_layout);
+            avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0;
+        } else if (!av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1)) {
             s->request_channel_layout = DCA_SPEAKER_LAYOUT_5POINT1;
+            av_channel_layout_uninit(&avctx->ch_layout);
+            avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1;
+        }
         else
             av_log(avctx, AV_LOG_WARNING, "Invalid downmix layout\n");
     }
