@@ -821,7 +821,7 @@ static int qsv_va_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
         impl_value.Type = MFX_VARIANT_TYPE_U16;
         impl_value.Data.U16 = (attr.value & 0xFFFF);
         sts = MFXSetConfigFilterProperty(cfg,
-                                         (const mfxU8 *)"mfxExtendedDeviceId.DeviceID", impl_value);
+                                         (const mfxU8 *)"mfxImplDescription.mfxDeviceDescription.DeviceID", impl_value);
         if (sts != MFX_ERR_NONE) {
             av_log(ctx, AV_LOG_ERROR, "Error adding a MFX configuration"
                    "DeviceID property: %d.\n", sts);
@@ -893,10 +893,10 @@ static int qsv_new_mfx_loader(void *ctx,
         goto fail;
     }
 
-    impl_value.Type = MFX_VARIANT_TYPE_U16;
-    impl_value.Data.U16 = 0x8086; // Intel device only
+    impl_value.Type = MFX_VARIANT_TYPE_U32;
+    impl_value.Data.U32 = 0x8086; // Intel device only
     sts = MFXSetConfigFilterProperty(cfg,
-                                     (const mfxU8 *)"mfxExtendedDeviceId.VendorID", impl_value);
+                                     (const mfxU8 *)"mfxImplDescription.VendorID", impl_value);
     if (sts != MFX_ERR_NONE) {
         av_log(ctx, AV_LOG_ERROR, "Error adding a MFX configuration"
                "VendorID property: %d.\n", sts);
