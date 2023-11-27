@@ -354,7 +354,10 @@ static int consume_from_fifos(FFFrameSync *fs)
 
 int ff_framesync_activate(FFFrameSync *fs)
 {
+    AVFilterContext *ctx = fs->parent;
     int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
 
     ret = framesync_advance(fs);
     if (ret < 0)
