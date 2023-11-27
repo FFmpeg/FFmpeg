@@ -498,6 +498,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     ColorCorrectContext *s = ctx->priv;
 
     av_freep(&s->analyzeret);
+    av_freep(&s->uhistogram);
+    av_freep(&s->vhistogram);
 }
 
 static const AVFilterPad colorcorrect_inputs[] = {
