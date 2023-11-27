@@ -75,7 +75,7 @@ compile()(
 fate()(
     test "$build_only" = "yes" && return
     cd ${build} || return
-    ${make} ${makeopts_fate-${makeopts}} -k fate
+    ${make} ${makeopts_fate-${makeopts}} -k ${fate_targets}
 )
 
 clean(){
@@ -103,6 +103,7 @@ cd ${workdir}       || die "cd ${workdir} failed"
 src=${workdir}/src
 : ${build:=${workdir}/build}
 : ${inst:=${workdir}/install}
+: ${fate_targets:=fate}
 
 test -d "$src" && update || checkout || die "Error fetching source"
 

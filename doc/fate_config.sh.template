@@ -31,3 +31,5 @@ makeopts=       # extra options passed to 'make'
                 # defaulting to makeopts above if this is not set
 #tar=           # command to create a tar archive from its arguments on stdout,
                 # defaults to 'tar c'
+#fate_targets=  # targets to make when running fate; defaults to "fate",
+                # can be set to run a subset of tests, e.g. "fate-checkasm".
