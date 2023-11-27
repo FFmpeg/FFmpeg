@@ -1454,15 +1454,21 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 {
     JXLParseContext *ctx = s->priv_data;
     int next = END_NOT_FOUND, ret;
+    const uint8_t *pbuf = ctx->pc.buffer;
+    int pindex = ctx->pc.index;
 
     *poutbuf_size = 0;
     *poutbuf = NULL;
 
-    if (!ctx->pc.index)
-        goto flush;
+    if (!ctx->pc.index) {
+        if (ctx->pc.overread)
+            goto flush;
+        pbuf = buf;
+        pindex = buf_size;
+    }
 
     if ((!ctx->container || !ctx->codestream_length) && !ctx->next) {
-        ret = try_parse(s, avctx, ctx, ctx->pc.buffer, ctx->pc.index);
+        ret = try_parse(s, avctx, ctx, pbuf, pindex);
         if (ret < 0)
             goto flush;
         ctx->next = ret;
@@ -1471,7 +1477,7 @@ static int jpegxl_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     }
 
     if (ctx->container && ctx->next >= 0) {
-        ret = skip_boxes(ctx, ctx->pc.buffer, ctx->pc.index);
+        ret = skip_boxes(ctx, pbuf, pindex);
         if (ret < 0) {
             if (ret == AVERROR_INVALIDDATA)
                 ctx->next = -1;
