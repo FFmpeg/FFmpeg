@@ -408,6 +408,7 @@ typedef struct AudioFWTDNContext {
 
     uint64_t sn;
     int64_t eof_pts;
+    int eof;
 
     int wavelet_type;
     int channels;
@@ -1069,7 +1070,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->drop_samples = 0;
     } else {
         if (s->padd_samples < 0 && eof) {
-            out->nb_samples += s->padd_samples;
+            out->nb_samples = FFMAX(0, out->nb_samples + s->padd_samples);
             s->padd_samples = 0;
         }
         if (!eof)
@@ -1208,23 +1209,26 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    ret = ff_inlink_consume_samples(inlink, s->nb_samples, s->nb_samples, &in);
-    if (ret < 0)
-        return ret;
-    if (ret > 0)
-        return filter_frame(inlink, in);
+    if (!s->eof) {
+        ret = ff_inlink_consume_samples(inlink, s->nb_samples, s->nb_samples, &in);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
+            return filter_frame(inlink, in);
+    }
 
     if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-        if (status == AVERROR_EOF) {
-            while (s->padd_samples != 0) {
-                ret = filter_frame(inlink, NULL);
-                if (ret < 0)
-                    return ret;
-            }
-            ff_outlink_set_status(outlink, status, pts);
-            return ret;
-        }
+        if (status == AVERROR_EOF)
+            s->eof = 1;
     }
+
+    if (s->eof && s->padd_samples != 0) {
+        return filter_frame(inlink, NULL);
+    } else if (s->eof) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->eof_pts);
+        return 0;
+    }
+
     FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
     return FFERROR_NOT_READY;
