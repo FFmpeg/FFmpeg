@@ -917,7 +917,7 @@ static int qsv_process_data(AVCodecContext *avctx, QSVContext *q,
         ret = qsv_decode_header(avctx, q, pkt, pix_fmt, &param);
         if (ret < 0) {
             if (ret == AVERROR(EAGAIN))
-                av_log(avctx, AV_LOG_INFO, "More data is required to decode header\n");
+                av_log(avctx, AV_LOG_VERBOSE, "More data is required to decode header\n");
             else
                 av_log(avctx, AV_LOG_ERROR, "Error decoding header\n");
             goto reinit_fail;
