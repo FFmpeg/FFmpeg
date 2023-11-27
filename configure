@@ -6776,6 +6776,7 @@ elif enabled libvpl; then
 # is extracted from "vpl >= 2.6"
     check_pkg_config libmfx "vpl >= 2.6" "mfxvideo.h mfxdispatcher.h" MFXLoad || \
             die "ERROR: libvpl >= 2.6 not found"
+    add_cflags -DMFX_DEPRECATED_OFF
 fi
 
 if enabled libmfx; then
