@@ -14,3 +14,11 @@ FATE_JPEGXL_ANIM_DEMUX += $(FATE_JPEGXL_ANIM_DEMUX-yes)
 
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, JPEGXL_ANIM) += $(FATE_JPEGXL_ANIM_DEMUX)
 fate-jxl-anim-demux: $(FATE_JPEGXL_ANIM_DEMUX)
+
+# parser tests
+FATE_JPEGXL_PARSE += fate-jxl-small-ext-box
+fate-jxl-small-ext-box: CMD = framecrc -i $(TARGET_SAMPLES)/jxl/l.jxl -c copy
+
+FATE_JPEGXL_PARSE += $(FATE_JPEGXL_PARSE-yes)
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, IMAGE_JPEGXL_PIPE, , JPEGXL_PARSER) += $(FATE_JPEGXL_PARSE)
+fate-jxl-parse: $(FATE_JPEGXL_PARSE)
