@@ -48,18 +48,11 @@
 typedef struct LIBVMAFContext {
     const AVClass *class;
     FFFrameSync fs;
-    char *model_path;
     char *log_path;
     char *log_fmt;
-    int enable_transform;
-    int phone_model;
-    int psnr;
-    int ssim;
-    int ms_ssim;
     char *pool;
     int n_threads;
     int n_subsample;
-    int enable_conf_interval;
     char *model_cfg;
     char *feature_cfg;
     VmafContext *vmaf;
@@ -174,7 +167,6 @@ static int do_vmaf(FFFrameSync *fs)
 
     return ff_filter_frame(ctx->outputs[0], dist);
 }
-
 
 static AVDictionary **delimited_dict_parse(char *str, unsigned *cnt)
 {
@@ -606,7 +598,8 @@ static const AVFilterPad libvmaf_inputs[] = {
     {
         .name         = "main",
         .type         = AVMEDIA_TYPE_VIDEO,
-    },{
+    },
+    {
         .name         = "reference",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input_ref,
