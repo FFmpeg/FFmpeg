@@ -17,6 +17,12 @@ my @extra_members = (
     # entries should be of the format
     # [   <name>,   <email>, <date elected> ],
     # ['Foo Bar', 'foo@bar', DateTime->new(year => 8613, month => 5, day => 22)],
+    ['Ronald Bultje',       'rsbultje@gmail.com',           DateTime->new(year => 2023, month => 11, day => 28)],
+    ['Hendrik Leppkes',     'h.leppkes@gmail.com',          DateTime->new(year => 2023, month => 11, day => 28)],
+    ['Reimar Döffinger',    'Reimar.Doeffinger@gmx.de',     DateTime->new(year => 2023, month => 11, day => 28)],
+    ['Alexander Strasser',  'eclipse7@gmx.net',             DateTime->new(year => 2023, month => 11, day => 28)],
+    ['Baptiste Coudurier',  'baptiste.coudurier@gmail.com', DateTime->new(year => 2023, month => 11, day => 28)],
+    ['Shiyou Yin',          'yinshiyou-hf@loongson.cn',     DateTime->new(year => 2023, month => 11, day => 28)],
 );
 
 sub trim { my $s = shift; $s =~ s/^\s+|\s+$//g; return $s };
