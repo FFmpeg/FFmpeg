@@ -20096,6 +20096,302 @@ qp=2+2*sin(PI*qp)
 @end example
 @end itemize
 
+@section qrencode
+Generate a QR code using the libqrencode library (see
+@url{https://fukuchi.org/works/qrencode/}), and overlay it on top of the current
+frame.
+
+To enable the compilation of this filter, you need to configure FFmpeg with with
+@code{--enable-libqrencode}.
+
+The QR code is generated from the provided text or text pattern. The
+corresponding QR code is scaled and overlayed into the video output according to
+the specified options.
+
+In case no text is specified, no QR code is overlaied.
+
+This filter accepts the following options:
+
+@table @option
+
+@item qrcode_width, q
+@item padded_qrcode_width, Q
+Specify an expression for the width of the rendered QR code, with and without
+padding. The @var{qrcode_width} expression can reference the value set by the
+@var{padded_qrcode_width} expression, and vice versa.
+By default @var{padded_qrcode_width} is set to @var{qrcode_width}, meaning that
+there is no padding.
+
+These expressions are evaluated for each new frame.
+
+See the @ref{qrencode_expressions,,qrencode Expressions} section for details.
+
+@item x
+@item y
+Specify an expression for positioning the padded QR code top-left corner.  The
+@var{x} expression can reference the value set by the @var{y} expression, and
+vice.
+
+By default @var{x} and @var{y} are set set to @var{0}, meaning that the QR code
+is placed in the top left corner of the input.
+
+These expressions are evaluated for each new frame.
+
+See the @ref{qrencode_expressions,,qrencode Expressions} section for details.
+
+@item case_sensitive, cs
+Instruct libqrencode to use case sensitive encoding. This is enabled by
+default. This can be disabled to reduce the QR encoding size.
+
+@item level, l
+Specify the QR encoding error correction level. With an higher correction level,
+the encoding size will increase but the code will be more robust to corruption.
+Lower level is @var{L}.
+
+It accepts the following values:
+@table @samp
+@item L
+@item M
+@item Q
+@item H
+@end table
+
+@item expansion
+Select how the input text is expanded. Can be either @code{none}, or
+@code{normal} (default). See the @ref{qrencode_text_expansion,,qrencode Text expansion}
+section below for details.
+
+@item text
+@item textfile
+Define the text to be rendered. In case neither is specified, no QR is encoded
+(just an empty colored frame).
+
+In case expansion is enabled, the text is treated as a text template, using the
+qrencode expansion mechanism. See the @ref{qrencode_text_expansion,,qrencode
+Text expansion} section below for details.
+
+@item background_color, bc
+@item foreground_color, fc
+Set the QR code and background color. The default value of
+@var{foreground_color} is "black", the default value of @var{background_color}
+is "white".
+
+For the syntax of the color options, check the @ref{color syntax,,"Color"
+section in the ffmpeg-utils manual,ffmpeg-utils}.
+@end table
+
+@anchor{qrencode_expressions}
+@subsection qrencode Expressions
+
+The expressions set by the options contain the following constants and functions.
+
+@table @option
+@item dar
+input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
+
+@item duration
+the current frame's duration, in seconds
+
+@item hsub
+@item vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+
+@item main_h, H
+the input height
+
+@item main_w, W
+the input width
+
+@item n
+the number of input frame, starting from 0
+
+@item pict_type
+a number representing the picture type
+
+@item qr_w, w
+the width of the encoded QR code
+
+@item rendered_qr_w, q
+@item rendered_padded_qr_w, Q
+the width of the rendered QR code, without and without padding.
+
+These parameters allow the @var{q} and @var{Q} expressions to refer to each
+other, so you can for example specify @code{q=3/4*Q}.
+
+@item rand(min, max)
+return a random number included between @var{min} and @var{max}
+
+@item sar
+the input sample aspect ratio
+
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
+
+@item x
+@item y
+the x and y offset coordinates where the text is drawn.
+
+These parameters allow the @var{x} and @var{y} expressions to refer to each
+other, so you can for example specify @code{y=x/dar}.
+@end table
+
+@anchor{qrencode_text_expansion}
+@subsection qrencode Text expansion
+
+If @option{expansion} is set to @code{none}, the text is printed verbatim.
+
+If @option{expansion} is set to @code{normal} (which is the default),
+the following expansion mechanism is used.
+
+The backslash character @samp{\}, followed by any character, always expands to
+the second character.
+
+Sequences of the form @code{%@{...@}} are expanded. The text between the
+braces is a function name, possibly followed by arguments separated by ':'.
+If the arguments contain special characters or delimiters (':' or '@}'),
+they should be escaped.
+
+Note that they probably must also be escaped as the value for the @option{text}
+option in the filter argument string and as the filter argument in the
+filtergraph description, and possibly also for the shell, that makes up to four
+levels of escaping; using a text file with the @option{textfile} option avoids
+these problems.
+
+The following functions are available:
+
+@table @command
+@item n, frame_num
+return the frame number
+
+@item pts
+Return the presentation timestamp of the current frame.
+
+It can take up to two arguments.
+
+The first argument is the format of the timestamp; it defaults to @code{flt} for
+seconds as a decimal number with microsecond accuracy; @code{hms} stands for a
+formatted @var{[-]HH:MM:SS.mmm} timestamp with millisecond accuracy.
+@code{gmtime} stands for the timestamp of the frame formatted as UTC time;
+@code{localtime} stands for the timestamp of the frame formatted as local time
+zone time. If the format is set to @code{hms24hh}, the time is formatted in 24h
+format (00-23).
+
+The second argument is an offset added to the timestamp.
+
+If the format is set to @code{localtime} or @code{gmtime}, a third argument may
+be supplied: a @code{strftime} C function format string. By default,
+@var{YYYY-MM-DD HH:MM:SS} format will be used.
+
+@item expr, e
+Evaluate the expression's value and output as a double.
+
+It must take one argument specifying the expression to be evaluated, accepting
+the constants and functions defined in @ref{qrencode_expressions}.
+
+@item expr_formatted, ef
+Evaluate the expression's value and output as a formatted string.
+
+The first argument is the expression to be evaluated, just as for the @var{expr} function.
+The second argument specifies the output format. Allowed values are @samp{x},
+@samp{X}, @samp{d} and @samp{u}. They are treated exactly as in the
+@code{printf} function.
+The third parameter is optional and sets the number of positions taken by the output.
+It can be used to add padding with zeros from the left.
+
+@item gmtime
+The time at which the filter is running, expressed in UTC.
+It can accept an argument: a @code{strftime} C function format string.
+The format string is extended to support the variable @var{%[1-6]N}
+which prints fractions of the second with optionally specified number of digits.
+
+@item localtime
+The time at which the filter is running, expressed in the local time zone.
+It can accept an argument: a @code{strftime} C function format string.
+The format string is extended to support the variable @var{%[1-6]N}
+which prints fractions of the second with optionally specified number of digits.
+
+@item metadata
+Frame metadata. Takes one or two arguments.
+
+The first argument is mandatory and specifies the metadata key.
+
+The second argument is optional and specifies a default value, used when the
+metadata key is not found or empty.
+
+Available metadata can be identified by inspecting entries starting with TAG
+included within each frame section printed by running @code{ffprobe
+-show_frames}.
+
+String metadata generated in filters leading to the qrencode filter are also
+available.
+
+@item rand(min, max)
+return a random number included between @var{min} and @var{max}
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Generate a QR code encoding the specified text with the default size, overalaid
+in the top left corner of the input video, with the default size:
+@example
+qrencode=text=www.ffmpeg.org
+@end example
+
+@item
+Same as below, but select blue on pink colors:
+@example
+qrencode=text=www.ffmpeg.org:bc=pink@@0.5:fc=blue
+@end example
+
+@item
+Place the QR code in the bottom right corner of the input video:
+@example
+qrencode=text=www.ffmpeg.org:x=W-Q:y=H-Q
+@end example
+
+@item
+Generate a QR code with width of 200 pixels and padding, making the padded width
+4/3 of the QR code width:
+@example
+qrencode=text=www.ffmpeg.org:q=200:Q=4/3*q
+@end example
+
+@item
+Generate a QR code with padded width of 200 pixels and padding, making the QR
+code width 3/4 of the padded width:
+@example
+qrencode=text=www.ffmpeg.org:Q=200:q=3/4*Q
+@end example
+
+@item
+Make the QR code a fraction of the input video width:
+@example
+qrencode=text=www.ffmpeg.org:q=W/5
+@end example
+
+@item
+Generate a QR code encoding the frame number:
+@example
+qrencode=text=%@{n@}
+@end example
+
+@item
+Generate a QR code encoding the GMT timestamp:
+@example
+qrencode=text=%@{gmtime@}
+@end example
+
+@item
+Generate a QR code encoding the timestamp expressed as a float:
+@example
+qrencode=text=%@{pts@}
+@end example
+
+@end itemize
+
 @section random
 
 Flush video frames from internal cache of frames into a random order.
@@ -28747,6 +29043,137 @@ Full example with slow death effect (mold) using @command{ffplay}:
 @example
 ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_color=#00ff00,scale=1200:800:flags=16
 @end example
+@end itemize
+
+@section qrencodesrc
+
+Generate a QR code using the libqrencode library (see
+@url{https://fukuchi.org/works/qrencode/}).
+
+To enable the compilation of this source, you need to configure FFmpeg with with
+@code{--enable-libqrencode}.
+
+The QR code is generated from the provided text or text pattern. The
+corresponding QR code is scaled and put in the video output according to the
+specified output size options.
+
+In case no text is specified, the QR code is not generated, but an empty colored
+output is returned instead.
+
+This source accepts the following options:
+
+@table @option
+
+@item qrcode_width, q
+@item padded_qrcode_width, Q
+Specify an expression for the width of the rendered QR code, with and without
+padding. The @var{qrcode_width} expression can reference the value set by the
+@var{padded_qrcode_width} expression, and vice versa.
+By default @var{padded_qrcode_width} is set to @var{qrcode_width}, meaning that
+there is no padding.
+
+These expressions are evaluated only once, when initializing the source.
+See the @ref{qrencode_expressions,,qrencode Expressions} section for details.
+
+Note that some of the constants are missing for the source (for example the
+@var{x} or @var{t} or ¸@var{n}), since they only makes sense when evaluating the
+expression for each frame rather than at initialization time.
+
+@item rate, r
+Specify the frame rate of the sourced video, as the number of frames
+generated per second. It has to be a string in the format
+@var{frame_rate_num}/@var{frame_rate_den}, an integer number, a floating point
+number or a valid video frame rate abbreviation. The default value is
+"25".
+
+@item case_sensitive, cs
+Instruct libqrencode to use case sensitive encoding. This is enabled by
+default. This can be disabled to reduce the QR encoding size.
+
+@item level, l
+Specify the QR encoding error correction level. With an higher correction level,
+the encoding size will increase but the code will be more robust to corruption.
+Lower level is @var{L}.
+
+It accepts the following values:
+@table @samp
+@item L
+@item M
+@item Q
+@item H
+@end table
+
+@item expansion
+Select how the input text is expanded. Can be either @code{none}, or
+@code{normal} (default). See the @ref{qrencode_text_expansion,,qrencode Text expansion}
+section for details.
+
+@item text
+@item textfile
+Define the text to be rendered. In case neither is specified, no QR is encoded
+(just an empty colored frame).
+
+In case expansion is enabled, the text is treated as a text template, using the
+qrencode expansion mechanism. See the @ref{qrencode_text_expansion,,qrencode
+Text expansion} section for details.
+
+@item background_color, bc
+@item foreground_color, fc
+Set the QR code and background color. The default value of
+@var{foreground_color} is "black", the default value of @var{background_color}
+is "white".
+
+For the syntax of the color options, check the @ref{color syntax,,"Color"
+section in the ffmpeg-utils manual,ffmpeg-utils}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Generate a QR code encoding the specified text with the default size:
+@example
+qrencodesrc=text=www.ffmpeg.org
+@end example
+
+@item
+Same as below, but select blue on pink colors:
+@example
+qrencodesrc=text=www.ffmpeg.org:bc=pink:fc=blue
+@end example
+
+@item
+Generate a QR code with width of 200 pixels and padding, making the padded width
+4/3 of the QR code width:
+@example
+qrencodesrc=text=www.ffmpeg.org:q=200:Q=4/3*q
+@end example
+
+@item
+Generate a QR code with padded width of 200 pixels and padding, making the QR
+code width 3/4 of the padded width:
+@example
+qrencodesrc=text=www.ffmpeg.org:Q=200:q=3/4*Q
+@end example
+
+@item
+Generate a QR code encoding the frame number:
+@example
+qrencodesrc=text=%@{n@}
+@end example
+
+@item
+Generate a QR code encoding the GMT timestamp:
+@example
+qrencodesrc=text=%@{gmtime@}
+@end example
+
+@item
+Generate a QR code encoding the timestamp expressed as a float:
+@example
+qrencodesrc=text=%@{pts@}
+@end example
+
 @end itemize
 
 @anchor{allrgb}
