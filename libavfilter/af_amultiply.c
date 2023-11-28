@@ -74,6 +74,7 @@ static int activate(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
 
         out->pts = s->frames[0]->pts;
+        out->duration = s->frames[0]->duration;
 
         if (av_get_packed_sample_fmt(ctx->inputs[0]->format) == AV_SAMPLE_FMT_FLT) {
             for (i = 0; i < s->planes; i++) {
