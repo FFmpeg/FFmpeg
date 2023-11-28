@@ -139,6 +139,7 @@ static int activate(AVFilterContext *ctx)
                           FFMIN(ctx->outputs[0]->ch_layout.nb_channels, ff_filter_get_nb_threads(ctx)));
 
         out->pts = s->frame[0]->pts;
+        out->duration = s->frame[0]->duration;
 
         av_frame_free(&s->frame[0]);
         av_frame_free(&s->frame[1]);
