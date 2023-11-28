@@ -1,4 +1,5 @@
-FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
+FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
+                fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-ac3dsp                                    \
                 fate-checkasm-af_afir                                   \
                 fate-checkasm-alacdsp                                   \

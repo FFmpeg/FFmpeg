@@ -43,6 +43,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/timer.h"
 
+void checkasm_check_aacencdsp(void);
 void checkasm_check_aacpsdsp(void);
 void checkasm_check_ac3dsp(void);
 void checkasm_check_afir(void);
