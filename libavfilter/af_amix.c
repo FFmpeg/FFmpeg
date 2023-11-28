@@ -379,6 +379,9 @@ static int output_frame(AVFilterLink *outlink)
     av_frame_free(&in_buf);
 
     out_buf->pts = s->next_pts;
+    out_buf->duration = av_rescale_q(out_buf->nb_samples, av_make_q(1, outlink->sample_rate),
+                                     outlink->time_base);
+
     if (s->next_pts != AV_NOPTS_VALUE)
         s->next_pts += nb_samples;
 
