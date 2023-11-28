@@ -2200,6 +2200,12 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
 #endif
 #if CONFIG_D3D11VA
     case AV_HWDEVICE_TYPE_D3D11VA:
+        {
+            // Make sure the hardware vendor is Intel when multiple devices are
+            // available, it will be ignored if user specifies the child device
+            // explicitly
+            av_dict_set(&child_device_opts, "vendor_id",        "0x8086",  0);
+        }
         break;
 #endif
 #if CONFIG_DXVA2
