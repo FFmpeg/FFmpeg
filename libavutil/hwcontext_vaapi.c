@@ -1733,8 +1733,19 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                          "/dev/dri/renderD%d", 128 + n);
                 priv->drm_fd = open(path, O_RDWR);
                 if (priv->drm_fd < 0) {
-                    av_log(ctx, AV_LOG_VERBOSE, "Cannot open "
-                           "DRM render node for device %d.\n", n);
+                    if (errno == ENOENT) {
+                        if (n != max_devices - 1) {
+                            av_log(ctx, AV_LOG_VERBOSE,
+                                   "No render device %s, try next device for "
+                                   "DRM render node.\n", path);
+                            continue;
+                        }
+
+                        av_log(ctx, AV_LOG_VERBOSE, "No available render device "
+                               "for DRM render node.\n");
+                    } else
+                        av_log(ctx, AV_LOG_VERBOSE, "Cannot open "
+                               "DRM render node for device %d.\n", n);
                     break;
                 }
 #if CONFIG_LIBDRM
