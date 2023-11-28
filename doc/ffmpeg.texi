@@ -1165,6 +1165,21 @@ Choose the first device and use the primary device context.
 
 @item d3d11va
 @var{device} is the number of the Direct3D 11 display adapter.
+If not specified, it will attempt to use the default Direct3D 11 display adapter
+or the first Direct3D 11 display adapter whose hardware VendorId is specified
+by @samp{vendor_id}.
+
+Examples:
+@table @emph
+@item -init_hw_device d3d11va
+Create a d3d11va device on the default Direct3D 11 display adapter.
+
+@item -init_hw_device d3d11va:1
+Create a d3d11va device on the Direct3D 11 display adapter specified by index 1.
+
+@item -init_hw_device d3d11va:,vendor_id=0x8086
+Create a d3d11va device on the first Direct3D 11 display adapter whose hardware VendorId is 0x8086.
+@end table
 
 @item vaapi
 @var{device} is either an X11 display name, a DRM render node or a DirectX adapter index.
