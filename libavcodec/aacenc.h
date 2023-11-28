@@ -155,6 +155,7 @@ typedef struct AACEncContext {
 } AACEncContext;
 
 void ff_aac_dsp_init(AACEncContext *s);
+void ff_aac_dsp_init_riscv(AACEncContext *s);
 void ff_aac_dsp_init_x86(AACEncContext *s);
 void ff_aac_coder_init_mips(AACEncContext *c);
 void ff_quantize_band_cost_cache_init(struct AACEncContext *s);

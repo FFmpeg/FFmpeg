@@ -1440,7 +1440,9 @@ void ff_aac_dsp_init(AACEncContext *s){
     s->abs_pow34   = abs_pow34_v;
     s->quant_bands = quantize_bands;
 
-#if ARCH_X86
+#if ARCH_RISCV
+    ff_aac_dsp_init_riscv(s);
+#elif ARCH_X86
     ff_aac_dsp_init_x86(s);
 #endif
 
