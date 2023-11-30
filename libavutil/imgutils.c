@@ -590,35 +590,18 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
     uint8_t clear_block[4][MAX_BLOCK_SIZE] = {{0}}; // clear padding with 0
     int clear_block_size[4] = {0};
     ptrdiff_t plane_line_bytes[4] = {0};
-    int rgb, limited;
+    int rgb, xyz, pal, limited, alpha, bitstream;
     int plane, c;
 
     if (!desc || nb_planes < 1 || nb_planes > 4 || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return AVERROR(EINVAL);
 
     rgb = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
-    limited = !rgb && range != AVCOL_RANGE_JPEG;
-
-    if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM) {
-        ptrdiff_t bytewidth = av_image_get_linesize(pix_fmt, width, 0);
-        uint8_t *data;
-        int mono = pix_fmt == AV_PIX_FMT_MONOWHITE || pix_fmt == AV_PIX_FMT_MONOBLACK;
-        int fill = pix_fmt == AV_PIX_FMT_MONOWHITE ? 0xFF : 0;
-        if (nb_planes != 1 || !(rgb || mono) || bytewidth < 1)
-            return AVERROR(EINVAL);
-
-        if (!dst_data)
-            return 0;
-
-        data = dst_data[0];
-
-        // (Bitstream + alpha will be handled incorrectly - it'll remain transparent.)
-        for (;height > 0; height--) {
-            memset(data, fill, bytewidth);
-            data += dst_linesize[0];
-        }
-        return 0;
-    }
+    xyz = !!(desc->flags & AV_PIX_FMT_FLAG_XYZ);
+    pal = !!(desc->flags & AV_PIX_FMT_FLAG_PAL);
+    limited = !rgb && !xyz && !pal && range != AVCOL_RANGE_JPEG;
+    alpha = !pal && !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    bitstream = !!(desc->flags & AV_PIX_FMT_FLAG_BITSTREAM);
 
     for (c = 0; c < desc->nb_components; c++) {
         const AVComponentDescriptor comp = desc->comp[c];
@@ -635,7 +618,7 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
     for (c = 0; c < desc->nb_components; c++) {
         const AVComponentDescriptor comp = desc->comp[c];
         // (Multiple pixels happen e.g. with AV_PIX_FMT_UYVY422.)
-        int w = clear_block_size[comp.plane] / comp.step;
+        int w = (bitstream ? 8 : 1) * clear_block_size[comp.plane] / comp.step;
         uint8_t *c_data[4];
         const int c_linesize[4] = {0};
         uint16_t src_array[MAX_BLOCK_SIZE];
@@ -644,18 +627,22 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
 
         if (comp.depth > 16)
             return AVERROR(EINVAL);
-        if (!rgb && comp.depth < 8)
-            return AVERROR(EINVAL);
         if (w < 1)
             return AVERROR(EINVAL);
 
-        if (c == 0 && limited) {
-            src = 16 << (comp.depth - 8);
-        } else if ((c == 1 || c == 2) && !rgb) {
-            src = 128 << (comp.depth - 8);
-        } else if (c == 3) {
+        if (pix_fmt == AV_PIX_FMT_MONOWHITE) {
+            src = 1;
+        } else if (c + 1 == desc->nb_components && alpha) {
             // (Assume even limited YUV uses full range alpha.)
             src = (1 << comp.depth) - 1;
+        } else if (c == 0 && limited && comp.depth > 1) {
+            if (comp.depth < 8)
+                return AVERROR(EINVAL);
+            src = 16 << (comp.depth - 8);
+        } else if ((c == 1 || c == 2) && !rgb && !xyz) {
+            if (comp.depth < 8)
+                return AVERROR(EINVAL);
+            src = 128 << (comp.depth - 8);
         }
 
         for (x = 0; x < w; x++)
