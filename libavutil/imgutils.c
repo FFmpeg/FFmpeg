@@ -590,7 +590,7 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
     uint8_t clear_block[4][MAX_BLOCK_SIZE] = {{0}}; // clear padding with 0
     int clear_block_size[4] = {0};
     ptrdiff_t plane_line_bytes[4] = {0};
-    int rgb, xyz, pal, limited, alpha, bitstream;
+    int rgb, xyz, pal, limited, alpha, bitstream, fltp;
     int plane, c;
 
     if (!desc || nb_planes < 1 || nb_planes > 4 || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
@@ -602,6 +602,7 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
     limited = !rgb && !xyz && !pal && range != AVCOL_RANGE_JPEG;
     alpha = !pal && !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
     bitstream = !!(desc->flags & AV_PIX_FMT_FLAG_BITSTREAM);
+    fltp = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
 
     for (c = 0; c < desc->nb_components; c++) {
         const AVComponentDescriptor comp = desc->comp[c];
@@ -621,11 +622,11 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
         int w = (bitstream ? 8 : 1) * clear_block_size[comp.plane] / comp.step;
         uint8_t *c_data[4];
         const int c_linesize[4] = {0};
-        uint16_t src_array[MAX_BLOCK_SIZE];
-        uint16_t src = 0;
+        uint32_t src_array[MAX_BLOCK_SIZE];
+        uint32_t src = 0;
         int x;
 
-        if (comp.depth > 16)
+        if (comp.depth > 32)
             return AVERROR(EINVAL);
         if (w < 1)
             return AVERROR(EINVAL);
@@ -634,15 +635,27 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
             src = 1;
         } else if (c + 1 == desc->nb_components && alpha) {
             // (Assume even limited YUV uses full range alpha.)
-            src = (1 << comp.depth) - 1;
+            if (fltp) {
+                if (comp.depth != 16 && comp.depth != 32)
+                    return AVERROR(EINVAL);
+                src = (comp.depth == 16 ? 0x3C00 : 0x3F800000); // 1.0
+             } else {
+                src = (comp.depth == 32 ? 0 : (1 << comp.depth)) - 1;
+             }
         } else if (c == 0 && limited && comp.depth > 1) {
-            if (comp.depth < 8)
+            if (comp.depth < 8 || (fltp && comp.depth != 16 && comp.depth != 32))
                 return AVERROR(EINVAL);
-            src = 16 << (comp.depth - 8);
+            if (fltp)
+                src = (comp.depth == 16 ? 0x3000 : 0x3D800000); // 0.0625
+            else
+                src = 16 << (comp.depth - 8);
         } else if ((c == 1 || c == 2) && !rgb && !xyz) {
-            if (comp.depth < 8)
+            if (comp.depth < 8 || fltp && comp.depth != 16 && comp.depth != 32)
                 return AVERROR(EINVAL);
-            src = 128 << (comp.depth - 8);
+            if (fltp)
+                src = (comp.depth == 16 ? 0x3800 : 0x3F000000); // 0.5
+            else
+                src = 128 << (comp.depth - 8);
         }
 
         for (x = 0; x < w; x++)
@@ -651,7 +664,7 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
         for (x = 0; x < 4; x++)
             c_data[x] = &clear_block[x][0];
 
-        av_write_image_line(src_array, c_data, c_linesize, desc, 0, 0, c, w);
+        av_write_image_line2(src_array, c_data, c_linesize, desc, 0, 0, c, w, 4);
     }
 
     for (plane = 0; plane < nb_planes; plane++) {
