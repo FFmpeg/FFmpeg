@@ -196,7 +196,7 @@ static int open_output_file(const char *filename)
             /* Third parameter can be used to pass settings to encoder */
             ret = avcodec_open2(enc_ctx, encoder, NULL);
             if (ret < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Cannot open video encoder for stream #%u\n", i);
+                av_log(NULL, AV_LOG_ERROR, "Cannot open %s encoder for stream #%u\n", encoder->name, i);
                 return ret;
             }
             ret = avcodec_parameters_from_context(out_stream->codecpar, enc_ctx);
