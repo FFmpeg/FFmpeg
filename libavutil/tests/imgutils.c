@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/imgutils.c"
+#include "libavutil/crc.h"
 
 #undef printf
 static int check_image_fill(enum AVPixelFormat pix_fmt, int w, int h) {
@@ -55,9 +56,44 @@ static int check_image_fill(enum AVPixelFormat pix_fmt, int w, int h) {
     return 0;
 }
 
+static int check_image_fill_black(const AVPixFmtDescriptor *desc, enum AVPixelFormat pix_fmt, int w, int h)
+{
+    uint8_t *data[4];
+    ptrdiff_t linesizes1[4];
+    int ret, total_size, linesizes[4];
+
+    ret = av_image_fill_linesizes(linesizes, pix_fmt, w);
+    if (ret < 0)
+        return ret;
+    total_size = av_image_alloc(data, linesizes, w, h, pix_fmt, 4);
+    if (total_size < 0) {
+        printf("alloc failure");
+        return total_size;
+    }
+    printf("total_size: %6d", total_size);
+    if (desc->flags & AV_PIX_FMT_FLAG_PAL)
+        total_size -= 256 * 4;
+    // Make it non-black by default...
+    memset(data[0], 0xA3, total_size);
+    for (int i = 0; i < 4; i++)
+        linesizes1[i] = linesizes[i];
+    for (enum AVColorRange range = 0; range < AVCOL_RANGE_NB; range++) {
+        ret = av_image_fill_black(data, linesizes1, pix_fmt, range, w, h);
+        printf(",  black_%s_crc: ", av_color_range_name(range));
+        if (ret < 0) {
+            printf("----------");
+        } else {
+            const AVCRC *crc = av_crc_get_table(AV_CRC_32_IEEE_LE);
+            printf("0x%08"PRIx32, av_crc(crc, 0, data[0], total_size));
+        }
+    }
+    av_freep(&data[0]);
+
+    return 0;
+}
+
 int main(void)
 {
-    const AVPixFmtDescriptor *desc = NULL;
     int64_t x, y;
 
     for (y = -1; y<UINT_MAX; y+= y/2 + 1) {
@@ -69,15 +105,22 @@ int main(void)
     }
     printf("\n");
 
-    while (desc = av_pix_fmt_desc_next(desc)) {
-        int w = 64, h = 48;
-        enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(desc);
+    for (int i = 0; i < 2; i++) {
+        printf(i ? "\nimage_fill_black tests\n" : "image_fill tests\n");
+        for (const AVPixFmtDescriptor *desc = NULL; desc = av_pix_fmt_desc_next(desc);) {
+            int w = 64, h = 48;
+            enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(desc);
 
-        if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
-            continue;
-        printf("%-16s", desc->name);
-        check_image_fill(pix_fmt, w, h);
-        printf("\n");
+            if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
+                continue;
+
+            printf("%-16s", desc->name);
+            if (i == 0)
+                check_image_fill(pix_fmt, w, h);
+            else
+                check_image_fill_black(desc, pix_fmt, w, h);
+            printf("\n");
+        }
     }
 
     return 0;
