@@ -158,7 +158,7 @@ static int distance ## _slice##name(AVFilterContext *ctx, void *arg,            
                         su += U;                                                       \
                         sv += V;                                                       \
                         cn++;                                                          \
-                    } else if (fun(cyY, cuU, cvV) < thres) {                           \
+                    } else if (!extra && fun(cyY, cuU, cvV) < thres) {                 \
                         su += U;                                                       \
                         sv += V;                                                       \
                         cn++;                                                          \
@@ -210,7 +210,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->thres_u = s->threshold_u * (1 << (s->depth - 8));
     s->thres_v = s->threshold_v * (1 << (s->depth - 8));
 
-    if (s->thres_y < 200.f || s->thres_u < 200.f || s->thres_v < 200.f) {
+    if (s->threshold_y < 200.f || s->threshold_u < 200.f || s->threshold_v < 200.f) {
         switch (s->distance) {
         case 0:
             s->filter_slice = s->depth <= 8 ? manhattan_e_slice8 : manhattan_e_slice16;
