@@ -89,6 +89,7 @@ void ff_vc1dsp_init(VC1DSPContext* c);
 void ff_vc1dsp_init_aarch64(VC1DSPContext* dsp);
 void ff_vc1dsp_init_arm(VC1DSPContext* dsp);
 void ff_vc1dsp_init_ppc(VC1DSPContext *c);
+void ff_vc1dsp_init_riscv(VC1DSPContext *c);
 void ff_vc1dsp_init_x86(VC1DSPContext* dsp);
 void ff_vc1dsp_init_mips(VC1DSPContext* dsp);
 void ff_vc1dsp_init_loongarch(VC1DSPContext* dsp);
