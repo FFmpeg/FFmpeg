@@ -19,6 +19,41 @@
 #include "libavutil/imgutils.c"
 
 #undef printf
+static int check_image_fill(enum AVPixelFormat pix_fmt, int w, int h) {
+    uint8_t *data[4];
+    size_t sizes[4];
+    ptrdiff_t linesizes1[4], offsets[3] = { 0 };
+    int i, total_size, linesizes[4];
+
+    if (av_image_fill_linesizes(linesizes, pix_fmt, w) < 0)
+        return -1;
+    for (i = 0; i < 4; i++)
+        linesizes1[i] = linesizes[i];
+    if (av_image_fill_plane_sizes(sizes, pix_fmt, h, linesizes1) < 0)
+        return -1;
+    total_size = av_image_fill_pointers(data, pix_fmt, h, (void *)1, linesizes);
+    if (total_size < 0)
+        return -1;
+    for (i = 0; i < 4 && data[i]; i++);
+    printf("planes: %d", i);
+    // Test the output of av_image_fill_linesizes()
+    printf(", linesizes:");
+    for (i = 0; i < 4; i++)
+        printf(" %3d", linesizes[i]);
+    // Test the output of av_image_fill_plane_sizes()
+    printf(", plane_sizes:");
+    for (i = 0; i < 4; i++)
+        printf(" %5"SIZE_SPECIFIER, sizes[i]);
+    // Test the output of av_image_fill_pointers()
+    for (i = 0; i < 3 && data[i + 1]; i++)
+        offsets[i] = data[i + 1] - data[i];
+    printf(", plane_offsets:");
+    for (i = 0; i < 3; i++)
+        printf(" %5"PTRDIFF_SPECIFIER, offsets[i]);
+    printf(", total_size: %d", total_size);
+
+    return 0;
+}
 
 int main(void)
 {
@@ -35,39 +70,14 @@ int main(void)
     printf("\n");
 
     while (desc = av_pix_fmt_desc_next(desc)) {
-        uint8_t *data[4];
-        size_t sizes[4];
-        ptrdiff_t linesizes1[4], offsets[3] = { 0 };
-        int i, total_size, w = 64, h = 48, linesizes[4];
+        int w = 64, h = 48;
         enum AVPixelFormat pix_fmt = av_pix_fmt_desc_get_id(desc);
 
-        if (av_image_fill_linesizes(linesizes, pix_fmt, w) < 0)
-            continue;
-        for (i = 0; i < 4; i++)
-            linesizes1[i] = linesizes[i];
-        if (av_image_fill_plane_sizes(sizes, pix_fmt, h, linesizes1) < 0)
-            continue;
-        total_size = av_image_fill_pointers(data, pix_fmt, h, (void *)1, linesizes);
-        if (total_size < 0)
+        if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
             continue;
         printf("%-16s", desc->name);
-        for (i = 0; i < 4 && data[i]; i++);
-        printf("planes: %d", i);
-        // Test the output of av_image_fill_linesizes()
-        printf(", linesizes:");
-        for (i = 0; i < 4; i++)
-            printf(" %3d", linesizes[i]);
-        // Test the output of av_image_fill_plane_sizes()
-        printf(", plane_sizes:");
-        for (i = 0; i < 4; i++)
-            printf(" %5"SIZE_SPECIFIER, sizes[i]);
-        // Test the output of av_image_fill_pointers()
-        for (i = 0; i < 3 && data[i + 1]; i++)
-            offsets[i] = data[i + 1] - data[i];
-        printf(", plane_offsets:");
-        for (i = 0; i < 3; i++)
-            printf(" %5"PTRDIFF_SPECIFIER, offsets[i]);
-        printf(", total_size: %d\n", total_size);
+        check_image_fill(pix_fmt, w, h);
+        printf("\n");
     }
 
     return 0;
