@@ -1167,6 +1167,16 @@ static int ff_filter_activate_default(AVFilterContext *filter)
 {
     unsigned i;
 
+    for (i = 0; i < filter->nb_outputs; i++) {
+        int ret = filter->outputs[i]->status_in;
+
+        if (ret) {
+            for (int j = 0; j < filter->nb_inputs; j++)
+                ff_inlink_set_status(filter->inputs[j], ret);
+            return 0;
+        }
+    }
+
     for (i = 0; i < filter->nb_inputs; i++) {
         if (samples_ready(filter->inputs[i], filter->inputs[i]->min_samples)) {
             return ff_filter_frame_to_filter(filter->inputs[i]);
