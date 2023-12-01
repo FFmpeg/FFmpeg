@@ -243,7 +243,7 @@ static int parse_features(AVFilterContext *ctx)
         const AVDictionaryEntry *e = NULL;
 
         while (e = av_dict_iterate(dict[i], e)) {
-            if (av_stristr(e->key, "name")) {
+            if (!strcmp(e->key, "name")) {
                 feature_name = e->value;
                 continue;
             }
@@ -304,29 +304,29 @@ static int parse_models(AVFilterContext *ctx)
         char  *path = NULL;
 
         while (e = av_dict_iterate(dict[i], e)) {
-            if (av_stristr(e->key, "disable_clip")) {
-                model_cfg.flags |= av_stristr(e->value, "true") ?
+            if (!strcmp(e->key, "disable_clip")) {
+                model_cfg.flags |= !strcmp(e->value, "true") ?
                     VMAF_MODEL_FLAG_DISABLE_CLIP : 0;
                 continue;
             }
 
-            if (av_stristr(e->key, "enable_transform")) {
-                model_cfg.flags |= av_stristr(e->value, "true") ?
+            if (!strcmp(e->key, "enable_transform")) {
+                model_cfg.flags |= !strcmp(e->value, "true") ?
                     VMAF_MODEL_FLAG_ENABLE_TRANSFORM : 0;
                 continue;
             }
 
-            if (av_stristr(e->key, "name")) {
+            if (!strcmp(e->key, "name")) {
                 model_cfg.name = e->value;
                 continue;
             }
 
-            if (av_stristr(e->key, "version")) {
+            if (!strcmp(e->key, "version")) {
                 version = e->value;
                 continue;
             }
 
-            if (av_stristr(e->key, "path")) {
+            if (!strcmp(e->key, "path")) {
                 path = e->value;
                 continue;
             }
@@ -521,13 +521,13 @@ static int activate(AVFilterContext *ctx)
 static enum VmafOutputFormat log_fmt_map(const char *log_fmt)
 {
     if (log_fmt) {
-        if (av_stristr(log_fmt, "xml"))
+        if (!strcmp(log_fmt, "xml"))
             return VMAF_OUTPUT_FORMAT_XML;
-        if (av_stristr(log_fmt, "json"))
+        if (!strcmp(log_fmt, "json"))
             return VMAF_OUTPUT_FORMAT_JSON;
-        if (av_stristr(log_fmt, "csv"))
+        if (!strcmp(log_fmt, "csv"))
             return VMAF_OUTPUT_FORMAT_CSV;
-        if (av_stristr(log_fmt, "sub"))
+        if (!strcmp(log_fmt, "sub"))
             return VMAF_OUTPUT_FORMAT_SUB;
     }
 
@@ -537,11 +537,11 @@ static enum VmafOutputFormat log_fmt_map(const char *log_fmt)
 static enum VmafPoolingMethod pool_method_map(const char *pool_method)
 {
     if (pool_method) {
-        if (av_stristr(pool_method, "min"))
+        if (!strcmp(pool_method, "min"))
             return VMAF_POOL_METHOD_MIN;
-        if (av_stristr(pool_method, "mean"))
+        if (!strcmp(pool_method, "mean"))
             return VMAF_POOL_METHOD_MEAN;
-        if (av_stristr(pool_method, "harmonic_mean"))
+        if (!strcmp(pool_method, "harmonic_mean"))
             return VMAF_POOL_METHOD_HARMONIC_MEAN;
     }
 
