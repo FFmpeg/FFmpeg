@@ -22,6 +22,7 @@
 #ifndef AVCODEC_AC3DSP_H
 #define AVCODEC_AC3DSP_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 /**
