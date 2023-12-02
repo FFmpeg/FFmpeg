@@ -40,7 +40,7 @@ static void check_float_to_fixed24(AC3DSPContext *c) {
 #define BUF_SIZE 1024
     LOCAL_ALIGNED_32(float, src, [BUF_SIZE]);
 
-    declare_func(void, int32_t *, const float *, unsigned int);
+    declare_func(void, int32_t *, const float *, size_t);
 
     randomize_float(src, BUF_SIZE);
 
