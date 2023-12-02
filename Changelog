@@ -17,6 +17,7 @@ version <next>:
 - quirc filter
 - lavu/eval: introduce randomi() function in expressions
 - VVC decoder
+- fsync filter
 
 version 6.1:
 - libaribcaption decoder

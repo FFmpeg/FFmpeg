@@ -343,6 +343,7 @@ Filters:
   vf_delogo.c                           Jean Delvare (CC <jdelvare@suse.com>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
   vf_extractplanes.c                    Paul B Mahol
+  vf_fsync.c                            Thilo Borgmann
   vf_histogram.c                        Paul B Mahol
   vf_hqx.c                              Clément Bœsch
   vf_idet.c                             Pascal Massimino
