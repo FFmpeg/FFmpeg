@@ -579,9 +579,9 @@ static void memset_bytes(uint8_t *dst, size_t dst_size, uint8_t *clear,
 // if it's a subsampled packed format).
 #define MAX_BLOCK_SIZE 32
 
-static int image_fill_color(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
+int av_image_fill_color(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
                         enum AVPixelFormat pix_fmt, const uint32_t color[4],
-                        int width, int height)
+                        int width, int height, int flags)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int nb_planes = av_pix_fmt_count_planes(pix_fmt);
@@ -713,5 +713,5 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
         colors[c] = color;
     }
 
-    return image_fill_color(dst_data, dst_linesize, pix_fmt, colors, width, height);
+    return av_image_fill_color(dst_data, dst_linesize, pix_fmt, colors, width, height, 0);
 }

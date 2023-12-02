@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-12-xx - xxxxxxxxxxx - lavu 58.33.100 - imgutils.h
+  Add av_image_fill_color().
+
 2023-11-08 - b82957a66a7 - lavu 58.32.100 - channel_layout.h
   Add AV_CH_LAYOUT_7POINT2POINT3 and AV_CHANNEL_LAYOUT_7POINT2POINT3.
   Add AV_CH_LAYOUT_9POINT1POINT4_BACK and AV_CHANNEL_LAYOUT_9POINT1POINT4_BACK.

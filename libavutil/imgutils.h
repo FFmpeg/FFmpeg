@@ -340,6 +340,36 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
                         int width, int height);
 
 /**
+ * Overwrite the image data with a color. This is suitable for filling a
+ * sub-rectangle of an image, meaning the padding between the right most pixel
+ * and the left most pixel on the next line will not be overwritten. For some
+ * formats, the image size might be rounded up due to inherent alignment.
+ *
+ * If the pixel format has alpha, it is also replaced. Color component values
+ * are interpreted as native integers (or intfloats) regardless of actual pixel
+ * format endianness.
+ *
+ * This can return an error if the pixel format is not supported. Normally, all
+ * non-hwaccel pixel formats should be supported.
+ *
+ * Passing NULL for dst_data is allowed. Then the function returns whether the
+ * operation would have succeeded. (It can return an error if the pix_fmt is
+ * not supported.)
+ *
+ * @param dst_data      data pointers to destination image
+ * @param dst_linesize  linesizes for the destination image
+ * @param pix_fmt       the pixel format of the image
+ * @param color         the color components to be used for the fill
+ * @param width         the width of the image in pixels
+ * @param height        the height of the image in pixels
+ * @param flags         currently unused
+ * @return 0 if the image data was filled, a negative AVERROR code otherwise
+ */
+int av_image_fill_color(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
+                        enum AVPixelFormat pix_fmt, const uint32_t color[4],
+                        int width, int height, int flags);
+
+/**
  * @}
  */
 
