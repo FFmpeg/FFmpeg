@@ -34,7 +34,7 @@ typedef struct QOAChannel {
 } QOAChannel;
 
 typedef struct QOAContext {
-    QOAChannel *ch;
+    QOAChannel ch[256];
 } QOAContext;
 
 static const int16_t qoa_dequant_tab[16][8] = {
@@ -58,13 +58,7 @@ static const int16_t qoa_dequant_tab[16][8] = {
 
 static av_cold int qoa_decode_init(AVCodecContext *avctx)
 {
-    QOAContext *s = avctx->priv_data;
-
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-
-    s->ch = av_calloc(avctx->ch_layout.nb_channels, sizeof(*s->ch));
-    if (!s->ch)
-        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -91,17 +85,26 @@ static int qoa_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
     QOAContext *s = avctx->priv_data;
-    int ret, frame_size, nb_channels;
+    int ret, frame_size, nb_channels, sample_rate;
     GetByteContext gb;
     int16_t *samples;
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 
     nb_channels = bytestream2_get_byte(&gb);
-    if (avctx->ch_layout.nb_channels != nb_channels)
+    sample_rate = bytestream2_get_be24(&gb);
+    if (!sample_rate || !nb_channels)
         return AVERROR_INVALIDDATA;
 
-    avctx->sample_rate = bytestream2_get_be24(&gb);
+    if (nb_channels != avctx->ch_layout.nb_channels) {
+        av_channel_layout_uninit(&avctx->ch_layout);
+        av_channel_layout_default(&avctx->ch_layout, nb_channels);
+        if ((ret = av_channel_layout_copy(&frame->ch_layout, &avctx->ch_layout)) < 0)
+            return ret;
+    }
+
+    frame->sample_rate = avctx->sample_rate = sample_rate;
+
     frame->nb_samples = bytestream2_get_be16(&gb);
     frame_size = bytestream2_get_be16(&gb);
     if (frame_size > avpkt->size)
@@ -152,13 +155,6 @@ static int qoa_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return avpkt->size;
 }
 
-static av_cold int qoa_decode_end(AVCodecContext *avctx)
-{
-    QOAContext *s = avctx->priv_data;
-    av_freep(&s->ch);
-    return 0;
-}
-
 const FFCodec ff_qoa_decoder = {
     .p.name         = "qoa",
     CODEC_LONG_NAME("QOA (Quite OK Audio)"),
@@ -167,7 +163,6 @@ const FFCodec ff_qoa_decoder = {
     .priv_data_size = sizeof(QOAContext),
     .init           = qoa_decode_init,
     FF_CODEC_DECODE_CB(qoa_decode_frame),
-    .close          = qoa_decode_end,
     .p.capabilities = AV_CODEC_CAP_CHANNEL_CONF |
                       AV_CODEC_CAP_DR1,
     .p.sample_fmts  = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
