@@ -579,30 +579,24 @@ static void memset_bytes(uint8_t *dst, size_t dst_size, uint8_t *clear,
 // if it's a subsampled packed format).
 #define MAX_BLOCK_SIZE 32
 
-int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
-                        enum AVPixelFormat pix_fmt, enum AVColorRange range,
+static int image_fill_color(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
+                        enum AVPixelFormat pix_fmt, const uint32_t color[4],
                         int width, int height)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     int nb_planes = av_pix_fmt_count_planes(pix_fmt);
-    // A pixel or a group of pixels on each plane, with a value that represents black.
+    // A pixel or a group of pixels on each plane, with a value that represents the color.
     // Consider e.g. AV_PIX_FMT_UYVY422 for non-trivial cases.
     uint8_t clear_block[4][MAX_BLOCK_SIZE] = {{0}}; // clear padding with 0
     int clear_block_size[4] = {0};
     ptrdiff_t plane_line_bytes[4] = {0};
-    int rgb, xyz, pal, limited, alpha, bitstream, fltp;
+    int bitstream;
     int plane, c;
 
     if (!desc || nb_planes < 1 || nb_planes > 4 || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
         return AVERROR(EINVAL);
 
-    rgb = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
-    xyz = !!(desc->flags & AV_PIX_FMT_FLAG_XYZ);
-    pal = !!(desc->flags & AV_PIX_FMT_FLAG_PAL);
-    limited = !rgb && !xyz && !pal && range != AVCOL_RANGE_JPEG;
-    alpha = !pal && !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
     bitstream = !!(desc->flags & AV_PIX_FMT_FLAG_BITSTREAM);
-    fltp = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
 
     for (c = 0; c < desc->nb_components; c++) {
         const AVComponentDescriptor comp = desc->comp[c];
@@ -623,7 +617,6 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
         uint8_t *c_data[4];
         const int c_linesize[4] = {0};
         uint32_t src_array[MAX_BLOCK_SIZE];
-        uint32_t src = 0;
         int x;
 
         if (comp.depth > 32)
@@ -631,35 +624,8 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
         if (w < 1)
             return AVERROR(EINVAL);
 
-        if (pix_fmt == AV_PIX_FMT_MONOWHITE) {
-            src = 1;
-        } else if (c + 1 == desc->nb_components && alpha) {
-            // (Assume even limited YUV uses full range alpha.)
-            if (fltp) {
-                if (comp.depth != 16 && comp.depth != 32)
-                    return AVERROR(EINVAL);
-                src = (comp.depth == 16 ? 0x3C00 : 0x3F800000); // 1.0
-             } else {
-                src = (comp.depth == 32 ? 0 : (1 << comp.depth)) - 1;
-             }
-        } else if (c == 0 && limited && comp.depth > 1) {
-            if (comp.depth < 8 || (fltp && comp.depth != 16 && comp.depth != 32))
-                return AVERROR(EINVAL);
-            if (fltp)
-                src = (comp.depth == 16 ? 0x3000 : 0x3D800000); // 0.0625
-            else
-                src = 16 << (comp.depth - 8);
-        } else if ((c == 1 || c == 2) && !rgb && !xyz) {
-            if (comp.depth < 8 || fltp && comp.depth != 16 && comp.depth != 32)
-                return AVERROR(EINVAL);
-            if (fltp)
-                src = (comp.depth == 16 ? 0x3800 : 0x3F000000); // 0.5
-            else
-                src = 128 << (comp.depth - 8);
-        }
-
         for (x = 0; x < w; x++)
-            src_array[x] = src;
+            src_array[x] = color[c];
 
         for (x = 0; x < 4; x++)
             c_data[x] = &clear_block[x][0];
@@ -689,4 +655,63 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
     }
 
     return 0;
+}
+
+int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesize[4],
+                        enum AVPixelFormat pix_fmt, enum AVColorRange range,
+                        int width, int height)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    int nb_planes = av_pix_fmt_count_planes(pix_fmt);
+    int rgb, xyz, pal, limited, alpha, fltp;
+    uint32_t colors[4] = {0};
+
+    if (!desc || nb_planes < 1 || nb_planes > 4 || desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
+        return AVERROR(EINVAL);
+
+    rgb = !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
+    xyz = !!(desc->flags & AV_PIX_FMT_FLAG_XYZ);
+    pal = !!(desc->flags & AV_PIX_FMT_FLAG_PAL);
+    limited = !rgb && !xyz && !pal && range != AVCOL_RANGE_JPEG;
+    alpha = !pal && !!(desc->flags & AV_PIX_FMT_FLAG_ALPHA);
+    fltp = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
+
+    for (int c = 0; c < desc->nb_components; c++) {
+        const AVComponentDescriptor comp = desc->comp[c];
+        uint32_t color = 0;
+
+        if (comp.depth > 32)
+            return AVERROR(EINVAL);
+
+        if (pix_fmt == AV_PIX_FMT_MONOWHITE) {
+            color = 1;
+        } else if (c + 1 == desc->nb_components && alpha) {
+            // (Assume even limited YUV uses full range alpha.)
+            if (fltp) {
+                if (comp.depth != 16 && comp.depth != 32)
+                    return AVERROR(EINVAL);
+                color = (comp.depth == 16 ? 0x3C00 : 0x3F800000); // 1.0
+             } else {
+                color = (comp.depth == 32 ? 0 : (1 << comp.depth)) - 1;
+             }
+        } else if (c == 0 && limited && comp.depth > 1) {
+            if (comp.depth < 8 || (fltp && comp.depth != 16 && comp.depth != 32))
+                return AVERROR(EINVAL);
+            if (fltp)
+                color = (comp.depth == 16 ? 0x3000 : 0x3D800000); // 0.0625
+            else
+                color = 16 << (comp.depth - 8);
+        } else if ((c == 1 || c == 2) && !rgb && !xyz) {
+            if (comp.depth < 8 || fltp && comp.depth != 16 && comp.depth != 32)
+                return AVERROR(EINVAL);
+            if (fltp)
+                color = (comp.depth == 16 ? 0x3800 : 0x3F000000); // 0.5
+            else
+                color = 128 << (comp.depth - 8);
+        }
+
+        colors[c] = color;
+    }
+
+    return image_fill_color(dst_data, dst_linesize, pix_fmt, colors, width, height);
 }
