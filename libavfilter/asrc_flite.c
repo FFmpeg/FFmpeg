@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "audio.h"
 #include "formats.h"
 #include "internal.h"
@@ -256,14 +257,20 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFrame *samplesref;
-    FliteContext *flite = outlink->src->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    FliteContext *flite = ctx->priv;
     int nb_samples = FFMIN(flite->wave_nb_samples, flite->frame_nb_samples);
+    AVFrame *samplesref;
 
-    if (!nb_samples)
-        return AVERROR_EOF;
+    if (!ff_outlink_frame_wanted(outlink))
+        return FFERROR_NOT_READY;
+
+    if (!nb_samples) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, flite->pts);
+        return 0;
+    }
 
     samplesref = ff_get_audio_buffer(outlink, nb_samples);
     if (!samplesref)
@@ -272,11 +279,6 @@ static int request_frame(AVFilterLink *outlink)
     memcpy(samplesref->data[0], flite->wave_samples,
            nb_samples * flite->wave->num_channels * 2);
     samplesref->pts = flite->pts;
-#if FF_API_FRAME_PKT
-FF_DISABLE_DEPRECATION_WARNINGS
-    samplesref->pkt_pos = -1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     samplesref->sample_rate = flite->wave->sample_rate;
     flite->pts += nb_samples;
     flite->wave_samples += nb_samples * flite->wave->num_channels;
@@ -290,7 +292,6 @@ static const AVFilterPad flite_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_props,
-        .request_frame = request_frame,
     },
 };
 
@@ -300,6 +301,7 @@ const AVFilter ff_asrc_flite = {
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(FliteContext),
+    .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(flite_outputs),
     FILTER_QUERY_FUNC(query_formats),
