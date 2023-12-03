@@ -37,6 +37,7 @@ typedef struct GradientsContext {
     int64_t pts;
     int64_t duration;           ///< duration expressed in microseconds
     float speed;
+    float angle;
 
     uint8_t color_rgba[8][4];
     float  color_rgbaf[8][4];
@@ -392,9 +393,11 @@ static int activate(AVFilterContext *ctx)
 
     if (ff_outlink_frame_wanted(outlink)) {
         AVFrame *frame = ff_get_video_buffer(outlink, s->w, s->h);
-        float angle = (s->speed > 0.f) ? fmodf(s->pts * s->speed, 2.f * M_PI) : 1.f;
+        float angle = fmodf(s->angle, 2.f * M_PI);
         const float w2 = s->w / 2.f;
         const float h2 = s->h / 2.f;
+
+        s->angle = angle + s->speed;
 
         s->fx0 = (s->x0 - w2) * cosf(angle) - (s->y0 - h2) * sinf(angle) + w2;
         s->fy0 = (s->x0 - w2) * sinf(angle) + (s->y0 - h2) * cosf(angle) + h2;
