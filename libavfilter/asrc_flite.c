@@ -24,6 +24,8 @@
  */
 
 #include <flite/flite.h>
+#include "libavutil/audio_fifo.h"
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
@@ -39,11 +41,14 @@ typedef struct FliteContext {
     char *voice_str;
     char *textfile;
     char *text;
-    cst_wave *wave;
-    int16_t *wave_samples;
-    int      wave_nb_samples;
+    char *text_p;
+    char *text_saveptr;
+    int nb_channels;
+    int sample_rate;
+    AVAudioFifo *fifo;
     int list_voices;
     cst_voice *voice;
+    cst_audio_streaming_info *asi;
     struct voice_entry *voice_entry;
     int64_t pts;
     int frame_nb_samples; ///< number of samples per frame
@@ -140,10 +145,30 @@ static int select_voice(struct voice_entry **entry_ret, const char *voice_name, 
     return AVERROR(EINVAL);
 }
 
+static int audio_stream_chunk_by_word(const cst_wave *wave, int start, int size,
+                                      int last, cst_audio_streaming_info *asi)
+{
+    FliteContext *flite = asi->userdata;
+    void *const ptr[8] = { &wave->samples[start] };
+
+    flite->nb_channels = wave->num_channels;
+    flite->sample_rate = wave->sample_rate;
+    if (!flite->fifo) {
+        flite->fifo = av_audio_fifo_alloc(AV_SAMPLE_FMT_S16, flite->nb_channels, size);
+        if (!flite->fifo)
+            return CST_AUDIO_STREAM_STOP;
+    }
+
+    av_audio_fifo_write(flite->fifo, ptr, size);
+
+    return CST_AUDIO_STREAM_CONT;
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     FliteContext *flite = ctx->priv;
     int ret = 0;
+    char *text;
 
     if (flite->list_voices) {
         list_voices(ctx, "\n");
@@ -197,10 +222,21 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    /* synth all the file data in block */
-    flite->wave = flite_text_to_wave(flite->text, flite->voice);
-    flite->wave_samples    = flite->wave->samples;
-    flite->wave_nb_samples = flite->wave->num_samples;
+    flite->asi = new_audio_streaming_info();
+    if (!flite->asi)
+        return AVERROR_BUG;
+
+    flite->asi->asc = audio_stream_chunk_by_word;
+    flite->asi->userdata = flite;
+    feat_set(flite->voice->features, "streaming_info", audio_streaming_info_val(flite->asi));
+
+    flite->text_p = flite->text;
+    if (!(text = av_strtok(flite->text_p, "\n", &flite->text_saveptr)))
+        return AVERROR(EINVAL);
+    flite->text_p = NULL;
+
+    flite_text_to_speech(text, flite->voice, "none");
+
     return 0;
 }
 
@@ -216,8 +252,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         }
         pthread_mutex_unlock(&flite_mutex);
     }
-    delete_wave(flite->wave);
-    flite->wave = NULL;
+    av_audio_fifo_free(flite->fifo);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -230,13 +265,13 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *sample_rates = NULL;
     AVChannelLayout chlayout = { 0 };
 
-    av_channel_layout_default(&chlayout, flite->wave->num_channels);
+    av_channel_layout_default(&chlayout, flite->nb_channels);
 
     if ((ret = ff_add_channel_layout         (&chlayouts     , &chlayout               )) < 0 ||
         (ret = ff_set_common_channel_layouts (ctx            , chlayouts               )) < 0 ||
         (ret = ff_add_format                 (&sample_formats, AV_SAMPLE_FMT_S16       )) < 0 ||
         (ret = ff_set_common_formats         (ctx            , sample_formats          )) < 0 ||
-        (ret = ff_add_format                 (&sample_rates  , flite->wave->sample_rate)) < 0 ||
+        (ret = ff_add_format                 (&sample_rates  , flite->sample_rate      )) < 0 ||
         (ret = ff_set_common_samplerates     (ctx            , sample_rates            )) < 0)
         return ret;
 
@@ -248,12 +283,13 @@ static int config_props(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     FliteContext *flite = ctx->priv;
 
-    outlink->sample_rate = flite->wave->sample_rate;
-    outlink->time_base = (AVRational){1, flite->wave->sample_rate};
+    outlink->sample_rate = flite->sample_rate;
+    outlink->time_base = (AVRational){1, flite->sample_rate};
 
     av_log(ctx, AV_LOG_VERBOSE, "voice:%s fmt:%s sample_rate:%d\n",
            flite->voice_str,
            av_get_sample_fmt_name(outlink->format), outlink->sample_rate);
+
     return 0;
 }
 
@@ -261,14 +297,23 @@ static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *outlink = ctx->outputs[0];
     FliteContext *flite = ctx->priv;
-    int nb_samples = FFMIN(flite->wave_nb_samples, flite->frame_nb_samples);
     AVFrame *samplesref;
+    int nb_samples;
 
     if (!ff_outlink_frame_wanted(outlink))
         return FFERROR_NOT_READY;
 
+    nb_samples = FFMIN(av_audio_fifo_size(flite->fifo), flite->frame_nb_samples);
     if (!nb_samples) {
-        ff_outlink_set_status(outlink, AVERROR_EOF, flite->pts);
+        char *text;
+
+        if (!(text = av_strtok(flite->text_p, "\n", &flite->text_saveptr))) {
+            ff_outlink_set_status(outlink, AVERROR_EOF, flite->pts);
+            return 0;
+        }
+
+        flite_text_to_speech(text, flite->voice, "none");
+        ff_filter_set_ready(ctx, 100);
         return 0;
     }
 
@@ -276,13 +321,12 @@ static int activate(AVFilterContext *ctx)
     if (!samplesref)
         return AVERROR(ENOMEM);
 
-    memcpy(samplesref->data[0], flite->wave_samples,
-           nb_samples * flite->wave->num_channels * 2);
+    av_audio_fifo_read(flite->fifo, (void **)samplesref->extended_data,
+                       nb_samples);
+
     samplesref->pts = flite->pts;
-    samplesref->sample_rate = flite->wave->sample_rate;
+    samplesref->sample_rate = flite->sample_rate;
     flite->pts += nb_samples;
-    flite->wave_samples += nb_samples * flite->wave->num_channels;
-    flite->wave_nb_samples -= nb_samples;
 
     return ff_filter_frame(outlink, samplesref);
 }
