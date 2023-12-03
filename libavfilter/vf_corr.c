@@ -29,21 +29,39 @@
 #include "framesync.h"
 #include "internal.h"
 
+typedef struct Sums {
+    uint64_t s[2];
+} Sums;
+
+typedef struct QSums {
+    float s[3];
+} QSums;
+
 typedef struct CorrContext {
     const AVClass *class;
     FFFrameSync fs;
     double score, min_score, max_score, score_comp[4];
     uint64_t nb_frames;
+    int nb_threads;
     int is_rgb;
     uint8_t rgba_map[4];
     int max[4];
     char comps[4];
+    float mean[4][2];
+    Sums *sums;
+    QSums *qsums;
     int nb_components;
     int planewidth[4];
     int planeheight[4];
-    int (*filter_slice)(AVFilterContext *ctx, void *arg,
-                        int jobnr, int nb_jobs);
+    int (*sum_slice)(AVFilterContext *ctx, void *arg,
+                     int jobnr, int nb_jobs);
+    int (*corr_slice)(AVFilterContext *ctx, void *arg,
+                      int jobnr, int nb_jobs);
 } CorrContext;
+
+typedef struct ThreadData {
+    AVFrame *master, *ref;
+} ThreadData;
 
 #define OFFSET(x) offsetof(CorrContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -66,11 +84,58 @@ static void set_meta(AVFilterContext *ctx,
     }
 }
 
-#define CORR(type, name)                                     \
-static void f##name(AVFilterContext *ctx, AVFrame *master,   \
-                   AVFrame *ref, double *comp_score)         \
+#define SUM(type, name)                                      \
+static int sum_##name(AVFilterContext *ctx, void *arg,       \
+                      int jobnr, int nb_jobs)                \
 {                                                            \
     CorrContext *s = ctx->priv;                              \
+    ThreadData *td = arg;                                    \
+    AVFrame *master = td->master;                            \
+    AVFrame *ref = td->ref;                                  \
+                                                             \
+    for (int c = 0; c < s->nb_components; c++) {             \
+        const ptrdiff_t linesize1 = master->linesize[c] /    \
+                                    sizeof(type);            \
+        const ptrdiff_t linesize2 = ref->linesize[c] /       \
+                                    sizeof(type);            \
+        const int h = s->planeheight[c];                     \
+        const int w = s->planewidth[c];                      \
+        const int slice_start = (h * jobnr) / nb_jobs;       \
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;     \
+        const type *src1 = (const type *)master->data[c] +   \
+                            linesize1 * slice_start;         \
+        const type *src2 = (const type *)ref->data[c] +      \
+                            linesize2 * slice_start;         \
+        uint64_t sum1 = 0, sum2 = 0;                         \
+                                                             \
+        for (int y = slice_start; y < slice_end; y++) {      \
+            for (int x = 0; x < w; x++) {                    \
+                sum1 += src1[x];                             \
+                sum2 += src2[x];                             \
+            }                                                \
+                                                             \
+            src1 += linesize1;                               \
+            src2 += linesize2;                               \
+        }                                                    \
+                                                             \
+        s->sums[jobnr * s->nb_components + c].s[0] = sum1;   \
+        s->sums[jobnr * s->nb_components + c].s[1] = sum2;   \
+    }                                                        \
+                                                             \
+    return 0;                                                \
+}
+
+SUM(uint8_t, slice8)
+SUM(uint16_t, slice16)
+
+#define CORR(type, name)                                     \
+static int corr_##name(AVFilterContext *ctx, void *arg,      \
+                       int jobnr, int nb_jobs)               \
+{                                                            \
+    CorrContext *s = ctx->priv;                              \
+    ThreadData *td = arg;                                    \
+    AVFrame *master = td->master;                            \
+    AVFrame *ref = td->ref;                                  \
                                                              \
     for (int c = 0; c < s->nb_components; c++) {             \
         const ptrdiff_t linesize1 = master->linesize[c] /    \
@@ -81,32 +146,19 @@ static void f##name(AVFilterContext *ctx, AVFrame *master,   \
         const type *src2 = (const type *)ref->data[c];       \
         const int h = s->planeheight[c];                     \
         const int w = s->planewidth[c];                      \
+        const int slice_start = (h * jobnr) / nb_jobs;       \
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;     \
         const float scale = 1.f / s->max[c];                 \
-        uint64_t sum1 = 0, sum2 = 0;                         \
-        float sum12, sum1q, sum2q;                           \
-        float sumq, mean1, mean2;                            \
+        const float mean1 = s->mean[c][0];                   \
+        const float mean2 = s->mean[c][1];                   \
+        float sum12 = 0.f, sum1q = 0.f, sum2q = 0.f;         \
                                                              \
-        for (int y = 0; y < h; y++) {                        \
-            for (int x = 0; x < w; x++) {                    \
-                sum1 += src1[x];                             \
-                sum2 += src2[x];                             \
-            }                                                \
+        src1 = (const type *)master->data[c] +               \
+                     slice_start * linesize1;                \
+        src2 = (const type *)ref->data[c] +                  \
+                     slice_start * linesize2;                \
                                                              \
-            src1 += linesize1;                               \
-            src2 += linesize2;                               \
-        }                                                    \
-                                                             \
-        mean1 = scale * (sum1 /(double)(w * h));             \
-        mean2 = scale * (sum2 /(double)(w * h));             \
-                                                             \
-        src1 = (const type *)master->data[c];                \
-        src2 = (const type *)ref->data[c];                   \
-                                                             \
-        sum12 = 0.f;                                         \
-        sum1q = 0.f;                                         \
-        sum2q = 0.f;                                         \
-                                                             \
-        for (int y = 0; y < h; y++) {                        \
+        for (int y = slice_start; y < slice_end; y++) {      \
             for (int x = 0; x < w; x++) {                    \
                 const float f1 = scale * src1[x] - mean1;    \
                 const float f2 = scale * src2[x] - mean2;    \
@@ -120,17 +172,16 @@ static void f##name(AVFilterContext *ctx, AVFrame *master,   \
             src2 += linesize2;                               \
         }                                                    \
                                                              \
-        sumq = sqrtf(sum1q * sum2q);                         \
-        if (sumq > 0.f) {                                    \
-            comp_score[c] = av_clipf(sum12 / sumq,-1.f,1.f); \
-        } else {                                             \
-            comp_score[c] = sum1q == sum2q ? 1.f : 0.f;      \
-        }                                                    \
+        s->qsums[jobnr * s->nb_components + c].s[0] = sum12; \
+        s->qsums[jobnr * s->nb_components + c].s[1] = sum1q; \
+        s->qsums[jobnr * s->nb_components + c].s[2] = sum2q; \
     }                                                        \
+                                                             \
+    return 0;                                                \
 }
 
-CORR(uint8_t, corr8)
-CORR(uint16_t, corr16)
+CORR(uint8_t, slice8)
+CORR(uint16_t, slice16)
 
 static int do_corr(FFFrameSync *fs)
 {
@@ -139,6 +190,7 @@ static int do_corr(FFFrameSync *fs)
     AVFrame *master, *ref;
     double comp_score[4], score = 0.;
     AVDictionary **metadata;
+    ThreadData td;
     int ret;
 
     ret = ff_framesync_dualinput_get(fs, &master, &ref);
@@ -148,10 +200,42 @@ static int do_corr(FFFrameSync *fs)
         return ff_filter_frame(ctx->outputs[0], master);
     metadata = &master->metadata;
 
-    if (s->max[0] > 255) {
-        fcorr16(ctx, master, ref, comp_score);
-    } else {
-        fcorr8(ctx, master, ref, comp_score);
+    td.master = master;
+    td.ref = ref;
+    ff_filter_execute(ctx, s->sum_slice, &td, NULL,
+                      FFMIN(s->planeheight[1], s->nb_threads));
+
+    for (int c = 0; c < s->nb_components; c++) {
+        const double scale = 1.f / s->max[c];
+        uint64_t sum1 = 0, sum2 = 0;
+
+        for (int n = 0; n < s->nb_threads; n++) {
+            sum1 += s->sums[n * s->nb_components + c].s[0];
+            sum2 += s->sums[n * s->nb_components + c].s[1];
+        }
+
+        s->mean[c][0] = scale * (sum1 /(double)(s->planewidth[c] * s->planeheight[c]));
+        s->mean[c][1] = scale * (sum2 /(double)(s->planewidth[c] * s->planeheight[c]));
+    }
+
+    ff_filter_execute(ctx, s->corr_slice, &td, NULL,
+                      FFMIN(s->planeheight[1], s->nb_threads));
+
+    for (int c = 0; c < s->nb_components; c++) {
+        double sumq, sum12 = 0.0, sum1q = 0.0, sum2q = 0.0;
+
+        for (int n = 0; n < s->nb_threads; n++) {
+            sum12 += s->qsums[n * s->nb_components + c].s[0];
+            sum1q += s->qsums[n * s->nb_components + c].s[1];
+            sum2q += s->qsums[n * s->nb_components + c].s[2];
+        }
+
+        sumq = sqrt(sum1q * sum2q);
+        if (sumq > 0.0) {
+            comp_score[c] = av_clipd(sum12 / sumq,-1.0,1.0);
+        } else {
+            comp_score[c] = sum1q == sum2q ? 1.f : 0.f;
+        }
     }
 
     for (int c = 0; c < s->nb_components; c++)
@@ -205,6 +289,7 @@ static int config_input_ref(AVFilterLink *inlink)
     AVFilterContext *ctx  = inlink->dst;
     CorrContext *s = ctx->priv;
 
+    s->nb_threads = ff_filter_get_nb_threads(ctx);
     s->nb_components = desc->nb_components;
     if (ctx->inputs[0]->w != ctx->inputs[1]->w ||
         ctx->inputs[0]->h != ctx->inputs[1]->h) {
@@ -223,6 +308,11 @@ static int config_input_ref(AVFilterLink *inlink)
     s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
+    s->sums = av_calloc(s->nb_threads * s->nb_components, sizeof(*s->sums));
+    s->qsums = av_calloc(s->nb_threads * s->nb_components, sizeof(*s->qsums));
+    if (!s->qsums || !s->sums)
+        return AVERROR(ENOMEM);
+
     s->min_score = +INFINITY;
     s->max_score = -INFINITY;
 
@@ -230,6 +320,9 @@ static int config_input_ref(AVFilterLink *inlink)
     s->max[1] = (1 << desc->comp[1].depth) - 1;
     s->max[2] = (1 << desc->comp[2].depth) - 1;
     s->max[3] = (1 << desc->comp[3].depth) - 1;
+
+    s->sum_slice = desc->comp[0].depth > 8 ? sum_slice16 : sum_slice8;
+    s->corr_slice = desc->comp[0].depth > 8 ? corr_slice16 : corr_slice8;
 
     return 0;
 }
@@ -291,6 +384,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 
     ff_framesync_uninit(&s->fs);
+    av_freep(&s->qsums);
+    av_freep(&s->sums);
 }
 
 static const AVFilterPad corr_inputs[] = {
@@ -332,5 +427,6 @@ const AVFilter ff_vf_corr = {
     FILTER_OUTPUTS(corr_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS             |
                      AVFILTER_FLAG_METADATA_ONLY,
 };
