@@ -62,7 +62,13 @@ void  free(void *ptr);
 
 #endif /* MALLOC_PREFIX */
 
-#define ALIGN (HAVE_AVX512 ? 64 : (HAVE_AVX ? 32 : 16))
+#if defined(_MSC_VER)
+/* MSVC does not support conditionally limiting alignment.
+   Set minimum value here to maximum used throughout the codebase. */
+#define ALIGN (HAVE_SIMD_ALIGN_64 ? 64 : 32)
+#else
+#define ALIGN (HAVE_SIMD_ALIGN_64 ? 64 : (HAVE_SIMD_ALIGN_32 ? 32 : 16))
+#endif
 
 /* NOTE: if you want to override these functions with your own
  * implementations (not recommended) you have to link libav* as
