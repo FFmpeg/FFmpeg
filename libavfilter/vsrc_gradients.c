@@ -52,6 +52,7 @@ typedef struct GradientsContext {
 
 #define OFFSET(x) offsetof(GradientsContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define VFT AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption gradients_options[] = {
     {"size",      "set frame size", OFFSET(w),             AV_OPT_TYPE_IMAGE_SIZE, {.str="640x480"},  0, 0, FLAGS },
@@ -75,14 +76,14 @@ static const AVOption gradients_options[] = {
     {"seed",      "set the seed",   OFFSET(seed),          AV_OPT_TYPE_INT64,      {.i64=-1},        -1, UINT32_MAX, FLAGS },
     {"duration",  "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
     {"d",         "set video duration", OFFSET(duration),  AV_OPT_TYPE_DURATION,   {.i64=-1},        -1, INT64_MAX, FLAGS },
-    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01},       0, 1, FLAGS },
-    {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 4, FLAGS, "type" },
-    {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 4, FLAGS, "type" },
-    { "linear",   "set linear gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=0},          0, 0, FLAGS, "type" },
-    { "radial",   "set radial gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=1},          0, 0, FLAGS, "type" },
-    { "circular", "set circular gradient",        0,       AV_OPT_TYPE_CONST,      {.i64=2},          0, 0, FLAGS, "type" },
-    { "spiral",   "set spiral gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=3},          0, 0, FLAGS, "type" },
-    { "square",   "set square gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=4},          0, 0, FLAGS, "type" },
+    {"speed",     "set gradients rotation speed", OFFSET(speed), AV_OPT_TYPE_FLOAT,{.dbl=0.01},       0, 1, VFT },
+    {"type",      "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 4, VFT, "type" },
+    {"t",         "set gradient type", OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},          0, 4, VFT, "type" },
+    { "linear",   "set linear gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=0},          0, 0, VFT, "type" },
+    { "radial",   "set radial gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=1},          0, 0, VFT, "type" },
+    { "circular", "set circular gradient",        0,       AV_OPT_TYPE_CONST,      {.i64=2},          0, 0, VFT, "type" },
+    { "spiral",   "set spiral gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=3},          0, 0, VFT, "type" },
+    { "square",   "set square gradient",          0,       AV_OPT_TYPE_CONST,      {.i64=4},          0, 0, VFT, "type" },
     {NULL},
 };
 
@@ -449,4 +450,5 @@ const AVFilter ff_vsrc_gradients = {
     FILTER_PIXFMTS(AV_PIX_FMT_RGBA, AV_PIX_FMT_RGBA64, AV_PIX_FMT_GBRAPF32),
     .activate      = activate,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };

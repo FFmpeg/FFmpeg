@@ -28367,6 +28367,10 @@ Available values are:
 Default type is @var{linear}.
 @end table
 
+@subsection Commands
+
+This source supports the some above options as @ref{commands}.
+
 @section mandelbrot
 
 Generate a Mandelbrot set fractal, and progressively zoom towards the
