@@ -234,7 +234,7 @@ static int do_corr(FFFrameSync *fs)
         if (sumq > 0.0) {
             comp_score[c] = av_clipd(sum12 / sumq,-1.0,1.0);
         } else {
-            comp_score[c] = sum1q == sum2q ? 1.f : 0.f;
+            comp_score[c] = 0.f;
         }
     }
 
