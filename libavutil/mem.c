@@ -62,7 +62,7 @@ void  free(void *ptr);
 
 #endif /* MALLOC_PREFIX */
 
-#define ALIGN (HAVE_AVX512 ? 64 : (HAVE_AVX ? 32 : 16))
+#define ALIGN (HAVE_SIMD_ALIGN_64 ? 64 : (HAVE_SIMD_ALIGN_32 ? 32 : 16))
 
 /* NOTE: if you want to override these functions with your own
  * implementations (not recommended) you have to link libav* as

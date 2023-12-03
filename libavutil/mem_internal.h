@@ -76,26 +76,49 @@
  */
 
 #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
-    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ALIGNED_T(n,t,v)    t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_ALIGNED(n,t,v)  t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
 #elif defined(__DJGPP__)
-    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (FFMIN(n, 16)))) v
+    #define DECLARE_ALIGNED_T(n,t,v)    t __attribute__ ((aligned (FFMIN(n, 16)))) v
     #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
     #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
 #elif defined(__GNUC__) || defined(__clang__)
-    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ALIGNED_T(n,t,v)    t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (n))) v
 #elif defined(_MSC_VER)
-    #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
+    #define DECLARE_ALIGNED_T(n,t,v)    __declspec(align(n)) t v
     #define DECLARE_ASM_ALIGNED(n,t,v)  __declspec(align(n)) t v
     #define DECLARE_ASM_CONST(n,t,v)    __declspec(align(n)) static const t v
 #else
-    #define DECLARE_ALIGNED(n,t,v)      t v
+    #define DECLARE_ALIGNED_T(n,t,v)    t v
     #define DECLARE_ASM_ALIGNED(n,t,v)  t v
     #define DECLARE_ASM_CONST(n,t,v)    static const t v
 #endif
+
+#if HAVE_SIMD_ALIGN_64
+    #define ALIGN_64 64
+    #define ALIGN_32 32
+#elif HAVE_SIMD_ALIGN_32
+    #define ALIGN_64 32
+    #define ALIGN_32 32
+#else
+    #define ALIGN_64 16
+    #define ALIGN_32 16
+#endif
+
+#define DECLARE_ALIGNED(n,t,v) DECLARE_ALIGNED_V(n,t,v)
+
+// Macro needs to be double-wrapped in order to expand
+// possible other macros being passed for n.
+#define DECLARE_ALIGNED_V(n,t,v) DECLARE_ALIGNED_##n(t,v)
+
+#define DECLARE_ALIGNED_4(t,v)  DECLARE_ALIGNED_T(       4, t, v)
+#define DECLARE_ALIGNED_8(t,v)  DECLARE_ALIGNED_T(       8, t, v)
+#define DECLARE_ALIGNED_16(t,v) DECLARE_ALIGNED_T(      16, t, v)
+#define DECLARE_ALIGNED_32(t,v) DECLARE_ALIGNED_T(ALIGN_32, t, v)
+#define DECLARE_ALIGNED_64(t,v) DECLARE_ALIGNED_T(ALIGN_64, t, v)
 
 // Some broken preprocessors need a second expansion
 // to be forced to tokenize __VA_ARGS__
