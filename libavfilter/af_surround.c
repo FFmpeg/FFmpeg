@@ -1213,15 +1213,17 @@ static int fft_channel(AVFilterContext *ctx, AVFrame *in, int ch)
     AudioSurroundContext *s = ctx->priv;
     float *src = (float *)s->input_in->extended_data[ch];
     float *win = (float *)s->window->extended_data[ch];
+    const float *window_func_lut = s->window_func_lut;
     const int offset = s->win_size - s->hop_size;
     const float level_in = s->input_levels[ch];
+    const int win_size = s->win_size;
 
     memmove(src, &src[s->hop_size], offset * sizeof(float));
     memcpy(&src[offset], in->extended_data[ch], in->nb_samples * sizeof(float));
     memset(&src[offset + in->nb_samples], 0, (s->hop_size - in->nb_samples) * sizeof(float));
 
-    for (int n = 0; n < s->win_size; n++)
-        win[n] = src[n] * s->window_func_lut[n] * level_in;
+    for (int n = 0; n < win_size; n++)
+        win[n] = src[n] * window_func_lut[n] * level_in;
 
     s->tx_fn(s->rdft[ch], (float *)s->input->extended_data[ch], win, sizeof(float));
 
@@ -1244,6 +1246,8 @@ static int ifft_channel(AVFilterContext *ctx, AVFrame *out, int ch)
 {
     AudioSurroundContext *s = ctx->priv;
     const float level_out = s->output_levels[ch] * s->win_gain;
+    const float *window_func_lut = s->window_func_lut;
+    const int win_size = s->win_size;
     float *dst, *ptr;
 
     dst = (float *)s->output_out->extended_data[ch];
@@ -1256,8 +1260,8 @@ static int ifft_channel(AVFilterContext *ctx, AVFrame *out, int ch)
     memset(s->overlap_buffer->extended_data[ch] + s->win_size * sizeof(float),
            0, s->hop_size * sizeof(float));
 
-    for (int n = 0; n < s->win_size; n++)
-        ptr[n] += dst[n] * s->window_func_lut[n] * level_out;
+    for (int n = 0; n < win_size; n++)
+        ptr[n] += dst[n] * window_func_lut[n] * level_out;
 
     ptr = (float *)s->overlap_buffer->extended_data[ch];
     dst = (float *)out->extended_data[ch];
