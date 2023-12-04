@@ -26,7 +26,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "internal.h"
-#include "window_func.h"
 
 #include <float.h>
 
@@ -38,8 +37,11 @@ typedef struct AudioDialogueEnhancementContext {
     int fft_size;
     int overlap;
 
-    float *window;
-    float prev_vad;
+    void *window;
+    float *window_float;
+    double *window_double;
+    float prev_vad_float;
+    double prev_vad_double;
 
     AVFrame *in;
     AVFrame *in_frame;
@@ -48,6 +50,8 @@ typedef struct AudioDialogueEnhancementContext {
     AVFrame *windowed_out;
     AVFrame *windowed_prev;
     AVFrame *center_frame;
+
+    int (*de_stereo)(AVFilterContext *ctx, AVFrame *out);
 
     AVTXContext *tx_ctx[2], *itx_ctx;
     av_tx_fn tx_fn, itx_fn;
@@ -72,6 +76,7 @@ static int query_formats(AVFilterContext *ctx)
     int ret;
 
     if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_FLTP )) < 0 ||
+        (ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_DBLP )) < 0 ||
         (ret = ff_set_common_formats         (ctx     , formats            )) < 0 ||
         (ret = ff_add_channel_layout         (&in_layout , &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) < 0 ||
         (ret = ff_channel_layouts_ref(in_layout, &ctx->inputs[0]->outcfg.channel_layouts)) < 0 ||
@@ -82,19 +87,21 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_all_samplerates(ctx);
 }
 
+#define DEPTH 32
+#include "dialoguenhance_template.c"
+
+#undef DEPTH
+#define DEPTH 64
+#include "dialoguenhance_template.c"
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AudioDialogueEnhanceContext *s = ctx->priv;
-    float scale = 1.f, iscale, overlap;
     int ret;
 
     s->fft_size = inlink->sample_rate > 100000 ? 8192 : inlink->sample_rate > 50000 ? 4096 : 2048;
     s->overlap = s->fft_size / 4;
-
-    s->window = av_calloc(s->fft_size, sizeof(*s->window));
-    if (!s->window)
-        return AVERROR(ENOMEM);
 
     s->in_frame       = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
     s->center_frame   = ff_get_audio_buffer(inlink, (s->fft_size + 2) * 2);
@@ -106,202 +113,18 @@ static int config_input(AVFilterLink *inlink)
         !s->out_dist_frame || !s->windowed_frame || !s->center_frame)
         return AVERROR(ENOMEM);
 
-    generate_window_func(s->window, s->fft_size, WFUNC_SINE, &overlap);
-
-    iscale = 1.f / (s->fft_size * 1.5f);
-
-    ret = av_tx_init(&s->tx_ctx[0], &s->tx_fn, AV_TX_FLOAT_RDFT, 0, s->fft_size, &scale, 0);
-    if (ret < 0)
-        return ret;
-
-    ret = av_tx_init(&s->tx_ctx[1], &s->tx_fn, AV_TX_FLOAT_RDFT, 0, s->fft_size, &scale, 0);
-    if (ret < 0)
-        return ret;
-
-    ret = av_tx_init(&s->itx_ctx, &s->itx_fn, AV_TX_FLOAT_RDFT, 1, s->fft_size, &iscale, 0);
-    if (ret < 0)
-        return ret;
-
-    return 0;
-}
-
-static void apply_window(AudioDialogueEnhanceContext *s,
-                         const float *in_frame, float *out_frame, const int add_to_out_frame)
-{
-    const float *window = s->window;
-
-    if (add_to_out_frame) {
-        for (int i = 0; i < s->fft_size; i++)
-            out_frame[i] += in_frame[i] * window[i];
-    } else {
-        for (int i = 0; i < s->fft_size; i++)
-            out_frame[i] = in_frame[i] * window[i];
-    }
-}
-
-static float sqrf(float x)
-{
-    return x * x;
-}
-
-static void get_centere(AVComplexFloat *left, AVComplexFloat *right,
-                        AVComplexFloat *center, int N)
-{
-    for (int i = 0; i < N; i++) {
-        const float l_re = left[i].re;
-        const float l_im = left[i].im;
-        const float r_re = right[i].re;
-        const float r_im = right[i].im;
-        const float a = 0.5f * (1.f - sqrtf((sqrf(l_re - r_re) + sqrf(l_im - r_im))/
-                                            (sqrf(l_re + r_re) + sqrf(l_im + r_im) + FLT_EPSILON)));
-
-        center[i].re = a * (l_re + r_re);
-        center[i].im = a * (l_im + r_im);
-    }
-}
-
-static float flux(float *curf, float *prevf, int N)
-{
-    AVComplexFloat *cur  = (AVComplexFloat *)curf;
-    AVComplexFloat *prev = (AVComplexFloat *)prevf;
-    float sum = 0.f;
-
-    for (int i = 0; i < N; i++) {
-        float c_re = cur[i].re;
-        float c_im = cur[i].im;
-        float p_re = prev[i].re;
-        float p_im = prev[i].im;
-
-        sum += sqrf(hypotf(c_re, c_im) - hypotf(p_re, p_im));
+    switch (inlink->format) {
+    case AV_SAMPLE_FMT_FLTP:
+        s->de_stereo = de_stereo_float;
+        ret = de_tx_init_float(ctx);
+        break;
+    case AV_SAMPLE_FMT_DBLP:
+        s->de_stereo = de_stereo_double;
+        ret = de_tx_init_double(ctx);
+        break;
     }
 
-    return sum;
-}
-
-static float fluxlr(float *lf, float *lpf,
-                    float *rf, float *rpf,
-                    int N)
-{
-    AVComplexFloat *l  = (AVComplexFloat *)lf;
-    AVComplexFloat *lp = (AVComplexFloat *)lpf;
-    AVComplexFloat *r  = (AVComplexFloat *)rf;
-    AVComplexFloat *rp = (AVComplexFloat *)rpf;
-    float sum = 0.f;
-
-    for (int i = 0; i < N; i++) {
-        float c_re = l[i].re - r[i].re;
-        float c_im = l[i].im - r[i].im;
-        float p_re = lp[i].re - rp[i].re;
-        float p_im = lp[i].im - rp[i].im;
-
-        sum += sqrf(hypotf(c_re, c_im) - hypotf(p_re, p_im));
-    }
-
-    return sum;
-}
-
-static float calc_vad(float fc, float flr, float a)
-{
-    const float vad = a * (fc / (fc + flr) - 0.5f);
-
-    return av_clipf(vad, 0.f, 1.f);
-}
-
-static void get_final(float *c, float *l,
-                      float *r, float vad, int N,
-                      float original, float enhance)
-{
-    AVComplexFloat *center = (AVComplexFloat *)c;
-    AVComplexFloat *left   = (AVComplexFloat *)l;
-    AVComplexFloat *right  = (AVComplexFloat *)r;
-
-    for (int i = 0; i < N; i++) {
-        float cP = sqrf(center[i].re) + sqrf(center[i].im);
-        float lrP = sqrf(left[i].re - right[i].re) + sqrf(left[i].im - right[i].im);
-        float G = cP / (cP + lrP + FLT_EPSILON);
-        float re, im;
-
-        re = center[i].re * (original + vad * G * enhance);
-        im = center[i].im * (original + vad * G * enhance);
-
-        center[i].re = re;
-        center[i].im = im;
-    }
-}
-
-static int de_stereo(AVFilterContext *ctx, AVFrame *out)
-{
-    AudioDialogueEnhanceContext *s = ctx->priv;
-    float *center          = (float *)s->center_frame->extended_data[0];
-    float *center_prev     = (float *)s->center_frame->extended_data[1];
-    float *left_in         = (float *)s->in_frame->extended_data[0];
-    float *right_in        = (float *)s->in_frame->extended_data[1];
-    float *left_out        = (float *)s->out_dist_frame->extended_data[0];
-    float *right_out       = (float *)s->out_dist_frame->extended_data[1];
-    float *left_samples    = (float *)s->in->extended_data[0];
-    float *right_samples   = (float *)s->in->extended_data[1];
-    float *windowed_left   = (float *)s->windowed_frame->extended_data[0];
-    float *windowed_right  = (float *)s->windowed_frame->extended_data[1];
-    float *windowed_oleft  = (float *)s->windowed_out->extended_data[0];
-    float *windowed_oright = (float *)s->windowed_out->extended_data[1];
-    float *windowed_pleft  = (float *)s->windowed_prev->extended_data[0];
-    float *windowed_pright = (float *)s->windowed_prev->extended_data[1];
-    float *left_osamples   = (float *)out->extended_data[0];
-    float *right_osamples  = (float *)out->extended_data[1];
-    float *center_osamples = (float *)out->extended_data[2];
-    const int overlap = s->overlap;
-    const int offset = s->fft_size - overlap;
-    const int nb_samples = FFMIN(overlap, s->in->nb_samples);
-    float vad;
-
-    // shift in/out buffers
-    memmove(left_in, &left_in[overlap], offset * sizeof(float));
-    memmove(right_in, &right_in[overlap], offset * sizeof(float));
-    memmove(left_out, &left_out[overlap], offset * sizeof(float));
-    memmove(right_out, &right_out[overlap], offset * sizeof(float));
-
-    memcpy(&left_in[offset], left_samples, nb_samples * sizeof(float));
-    memcpy(&right_in[offset], right_samples, nb_samples * sizeof(float));
-    memset(&left_out[offset], 0, overlap * sizeof(float));
-    memset(&right_out[offset], 0, overlap * sizeof(float));
-
-    apply_window(s, left_in,  windowed_left,  0);
-    apply_window(s, right_in, windowed_right, 0);
-
-    s->tx_fn(s->tx_ctx[0], windowed_oleft,  windowed_left,  sizeof(float));
-    s->tx_fn(s->tx_ctx[1], windowed_oright, windowed_right, sizeof(float));
-
-    get_centere((AVComplexFloat *)windowed_oleft,
-                (AVComplexFloat *)windowed_oright,
-                (AVComplexFloat *)center,
-                s->fft_size / 2 + 1);
-
-    vad = calc_vad(flux(center, center_prev, s->fft_size / 2 + 1),
-                   fluxlr(windowed_oleft, windowed_pleft,
-                          windowed_oright, windowed_pright, s->fft_size / 2 + 1), s->voice);
-    vad = vad * 0.1 + 0.9 * s->prev_vad;
-    s->prev_vad = vad;
-
-    memcpy(center_prev,     center,          s->fft_size * sizeof(float));
-    memcpy(windowed_pleft,  windowed_oleft,  s->fft_size * sizeof(float));
-    memcpy(windowed_pright, windowed_oright, s->fft_size * sizeof(float));
-
-    get_final(center, windowed_oleft, windowed_oright, vad, s->fft_size / 2 + 1,
-              s->original, s->enhance);
-
-    s->itx_fn(s->itx_ctx, windowed_oleft, center, sizeof(AVComplexFloat));
-
-    apply_window(s, windowed_oleft, left_out,  1);
-
-    memcpy(left_osamples, left_in, overlap * sizeof(float));
-    memcpy(right_osamples, right_in, overlap * sizeof(float));
-
-    if (ctx->is_disabled)
-        memset(center_osamples, 0, overlap * sizeof(float));
-    else
-        memcpy(center_osamples, left_out, overlap * sizeof(float));
-
-    return 0;
+    return ret;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
@@ -319,7 +142,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     s->in = in;
-    de_stereo(ctx, out);
+    s->de_stereo(ctx, out);
 
     av_frame_copy_props(out, in);
     out->nb_samples = in->nb_samples;
