@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2023 Martin Storsjo
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,22 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVUTIL_AARCH64_CPU_H
-#define AVUTIL_AARCH64_CPU_H
+#include "config.h"
+#include "asm.S"
 
-#include "libavutil/cpu.h"
-#include "libavutil/cpu_internal.h"
+ENABLE_SVE
 
-#define have_armv8(flags) CPUEXT(flags, ARMV8)
-#define have_neon(flags) CPUEXT(flags, NEON)
-#define have_vfp(flags)  CPUEXT(flags, VFP)
-#define have_dotprod(flags) CPUEXT(flags, DOTPROD)
-#define have_i8mm(flags)    CPUEXT(flags, I8MM)
-#define have_sve(flags)     CPUEXT(flags, SVE)
-#define have_sve2(flags)    CPUEXT(flags, SVE2)
-
-#if HAVE_SVE
-int ff_aarch64_sve_length(void);
-#endif
-
-#endif /* AVUTIL_AARCH64_CPU_H */
+function ff_aarch64_sve_length, export=1
+        cntb            x0
+        ret
+endfunc
