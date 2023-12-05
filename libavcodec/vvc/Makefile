@@ -1,7 +1,8 @@
 clean::
 	$(RM) $(CLEANSUFFIXES:%=libavcodec/vvc/%)
 
-OBJS-$(CONFIG_VVC_DECODER)          +=  vvc/vvc_cabac.o         \
+OBJS-$(CONFIG_VVC_DECODER)          +=  vvc/vvcdsp.o            \
+                                        vvc/vvc_cabac.o         \
                                         vvc/vvc_ctu.o           \
                                         vvc/vvc_data.o          \
                                         vvc/vvc_filter.o        \
