@@ -45,9 +45,6 @@
  * @{
  */
 
-#define FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG 1 ///< Work around for Direct3D11 and old UVD/UVD+ ATI video cards
-#define FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO    2 ///< Work around for Direct3D11 and old Intel GPUs with ClearVideo interface
-
 /**
  * This structure is used to provides the necessary configurations and data
  * to the Direct3D11 FFmpeg HWAccel implementation.

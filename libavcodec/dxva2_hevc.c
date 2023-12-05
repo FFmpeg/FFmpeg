@@ -79,7 +79,7 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
                                       (0                                  << 14) |
                                       (0                                  << 15);
 
-    fill_picture_entry(&pp->CurrPic, ff_dxva2_get_surface_index(avctx, ctx, current_picture->frame), 0);
+    fill_picture_entry(&pp->CurrPic, ff_dxva2_get_surface_index(avctx, ctx, current_picture->frame, 1), 0);
 
     pp->sps_max_dec_pic_buffering_minus1         = sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering - 1;
     pp->log2_min_luma_coding_block_size_minus3   = sps->log2_min_cb_size - 3;
@@ -171,7 +171,7 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
         }
 
         if (frame) {
-            fill_picture_entry(&pp->RefPicList[i], ff_dxva2_get_surface_index(avctx, ctx, frame->frame), !!(frame->flags & HEVC_FRAME_FLAG_LONG_REF));
+            fill_picture_entry(&pp->RefPicList[i], ff_dxva2_get_surface_index(avctx, ctx, frame->frame, 0), !!(frame->flags & HEVC_FRAME_FLAG_LONG_REF));
             pp->PicOrderCntValList[i] = frame->poc;
         } else {
             pp->RefPicList[i].bPicEntry = 0xff;
@@ -186,7 +186,7 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
             while (!frame && j < rpl->nb_refs) \
                 frame = rpl->ref[j++]; \
             if (frame && frame->flags & (HEVC_FRAME_FLAG_LONG_REF | HEVC_FRAME_FLAG_SHORT_REF)) \
-                pp->ref_list[i] = get_refpic_index(pp, ff_dxva2_get_surface_index(avctx, ctx, frame->frame)); \
+                pp->ref_list[i] = get_refpic_index(pp, ff_dxva2_get_surface_index(avctx, ctx, frame->frame, 0)); \
             else \
                 pp->ref_list[i] = 0xff; \
         } \

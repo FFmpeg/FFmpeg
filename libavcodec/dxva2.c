@@ -768,12 +768,17 @@ static void *get_surface(const AVCodecContext *avctx, const AVFrame *frame)
 }
 
 unsigned ff_dxva2_get_surface_index(const AVCodecContext *avctx,
-                                    const AVDXVAContext *ctx,
-                                    const AVFrame *frame)
+                                    AVDXVAContext *ctx, const AVFrame *frame,
+                                    int curr)
 {
     void *surface = get_surface(avctx, frame);
     unsigned i;
 
+#if CONFIG_D3D12VA
+    if (avctx->pix_fmt == AV_PIX_FMT_D3D12) {
+        return ff_d3d12va_get_surface_index(avctx, (D3D12VADecodeContext *)ctx, frame, curr);
+    }
+#endif
 #if CONFIG_D3D11VA
     if (avctx->pix_fmt == AV_PIX_FMT_D3D11)
         return (intptr_t)frame->data[1];
@@ -1055,4 +1060,24 @@ int ff_dxva2_is_d3d11(const AVCodecContext *avctx)
                avctx->pix_fmt == AV_PIX_FMT_D3D11;
     else
         return 0;
+}
+
+unsigned *ff_dxva2_get_report_id(const AVCodecContext *avctx, AVDXVAContext *ctx)
+{
+    unsigned *report_id = NULL;
+
+#if CONFIG_D3D12VA
+    if (avctx->pix_fmt == AV_PIX_FMT_D3D12)
+        report_id = &ctx->d3d12va.report_id;
+#endif
+#if CONFIG_D3D11VA
+    if (ff_dxva2_is_d3d11(avctx))
+        report_id = &ctx->d3d11va.report_id;
+#endif
+#if CONFIG_DXVA2
+    if (avctx->pix_fmt == AV_PIX_FMT_DXVA2_VLD)
+        report_id = &ctx->dxva2.report_id;
+#endif
+
+    return report_id;
 }

@@ -48,19 +48,16 @@ static void fill_picture_entry(DXVA_PicEntry_H264 *pic,
     pic->bPicEntry = index | (flag << 7);
 }
 
-static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx, const H264Context *h,
+void ff_dxva2_h264_fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx,
                                     DXVA_PicParams_H264 *pp)
 {
+    const H264Context *h               = avctx->priv_data;
     const H264Picture *current_picture = h->cur_pic_ptr;
     const SPS *sps = h->ps.sps;
     const PPS *pps = h->ps.pps;
     int i, j;
 
     memset(pp, 0, sizeof(*pp));
-    /* Configure current picture */
-    fill_picture_entry(&pp->CurrPic,
-                       ff_dxva2_get_surface_index(avctx, ctx, current_picture->f),
-                       h->picture_structure == PICT_BOTTOM_FIELD);
     /* Configure the set of references */
     pp->UsedForReferenceFlags  = 0;
     pp->NonExistingFrameFlags  = 0;
@@ -75,7 +72,7 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
         }
         if (r) {
             fill_picture_entry(&pp->RefFrameList[i],
-                               ff_dxva2_get_surface_index(avctx, ctx, r->f),
+                               ff_dxva2_get_surface_index(avctx, ctx, r->f, 0),
                                r->long_ref != 0);
 
             if ((r->reference & PICT_TOP_FIELD) && r->field_poc[0] != INT_MAX)
@@ -95,6 +92,10 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
             pp->FrameNumList[i]           = 0;
         }
     }
+    /* Configure current picture */
+    fill_picture_entry(&pp->CurrPic,
+                       ff_dxva2_get_surface_index(avctx, ctx, current_picture->f, 1),
+                       h->picture_structure == PICT_BOTTOM_FIELD);
 
     pp->wFrameWidthInMbsMinus1        = h->mb_width  - 1;
     pp->wFrameHeightInMbsMinus1       = h->mb_height - 1;
@@ -164,9 +165,10 @@ static void fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *
     //pp->SliceGroupMap[810];               /* XXX not implemented by FFmpeg */
 }
 
-static void fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, const H264Context *h, DXVA_Qmatrix_H264 *qm)
+void ff_dxva2_h264_fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_Qmatrix_H264 *qm)
 {
-    const PPS *pps = h->ps.pps;
+    const H264Context *h   = avctx->priv_data;
+    const PPS         *pps = h->ps.pps;
     unsigned i, j;
     memset(qm, 0, sizeof(*qm));
     if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG) {
@@ -253,9 +255,9 @@ static void fill_slice_long(AVCodecContext *avctx, DXVA_Slice_H264_Long *slice,
                 unsigned plane;
                 unsigned index;
                 if (DXVA_CONTEXT_WORKAROUND(avctx, ctx) & FF_DXVA2_WORKAROUND_INTEL_CLEARVIDEO)
-                    index = ff_dxva2_get_surface_index(avctx, ctx, r->f);
+                    index = ff_dxva2_get_surface_index(avctx, ctx, r->f, 0);
                 else
-                    index = get_refpic_index(pp, ff_dxva2_get_surface_index(avctx, ctx, r->f));
+                    index = get_refpic_index(pp, ff_dxva2_get_surface_index(avctx, ctx, r->f, 0));
                 fill_picture_entry(&slice->RefPicList[list][i], index,
                                    sl->ref_list[list][i].reference == PICT_BOTTOM_FIELD);
                 for (plane = 0; plane < 3; plane++) {
@@ -454,10 +456,10 @@ static int dxva2_h264_start_frame(AVCodecContext *avctx,
     assert(ctx_pic);
 
     /* Fill up DXVA_PicParams_H264 */
-    fill_picture_parameters(avctx, ctx, h, &ctx_pic->pp);
+    ff_dxva2_h264_fill_picture_parameters(avctx, ctx, &ctx_pic->pp);
 
     /* Fill up DXVA_Qmatrix_H264 */
-    fill_scaling_lists(avctx, ctx, h, &ctx_pic->qm);
+    ff_dxva2_h264_fill_scaling_lists(avctx, ctx, &ctx_pic->qm);
 
     ctx_pic->slice_count    = 0;
     ctx_pic->bitstream_size = 0;
