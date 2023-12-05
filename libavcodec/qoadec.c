@@ -110,8 +110,8 @@ static int qoa_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (frame_size > avpkt->size)
         return AVERROR_INVALIDDATA;
 
-    if (frame_size < 8 + QOA_LMS_LEN * 4 * nb_channels +
-        8LL * frame->nb_samples * nb_channels / QOA_SLICE_LEN)
+    if (avpkt->size < 8 + QOA_LMS_LEN * 4 * nb_channels +
+        8LL * ((frame->nb_samples + QOA_SLICE_LEN - 1) / QOA_SLICE_LEN) * nb_channels)
         return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
@@ -127,7 +127,7 @@ static int qoa_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             qch->weights[n] = sign_extend(bytestream2_get_be16u(&gb), 16);
     }
 
-    for (int sample_index = 0; sample_index < frame->nb_samples * nb_channels;
+    for (int sample_index = 0; sample_index < frame->nb_samples;
          sample_index += QOA_SLICE_LEN) {
         for (int ch = 0; ch < nb_channels; ch++) {
             QOAChannel *lms = &s->ch[ch];
