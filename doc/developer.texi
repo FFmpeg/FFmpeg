@@ -99,7 +99,7 @@ The specific syntax used for writing assembly is:
 NASM on x86;
 
 @item
-GAS on ARM.
+GAS on ARM and RISC-V.
 @end itemize
 
 A unit testing framework for assembly called @code{checkasm} lives under
