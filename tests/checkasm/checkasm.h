@@ -217,7 +217,7 @@ void checkasm_set_function(void *, sigjmp_buf);
 void *checkasm_get_wrapper(void);
 void checkasm_handle_signal(int signum);
 
-#if (__riscv_xlen == 64) && defined (__riscv_d)
+#if HAVE_RV && (__riscv_xlen == 64) && defined (__riscv_d)
 #define declare_new(ret, ...) \
     int checked_call_signum = 0; \
     sigjmp_buf checked_call_jb; \
@@ -227,6 +227,9 @@ void checkasm_handle_signal(int signum);
      (checked_call_signum = sigsetjmp(checked_call_jb, 1)) == 0 \
         ? checked_call(__VA_ARGS__) \
         : (checkasm_fail_signal(checked_call_signum), 0))
+#else
+#define declare_new(ret, ...)
+#define call_new(...) ((func_type *)func_new)(__VA_ARGS__)
 #endif
 #else
 #define declare_new(ret, ...)

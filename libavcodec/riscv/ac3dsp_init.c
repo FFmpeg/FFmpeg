@@ -31,6 +31,7 @@ void ff_float_to_fixed24_rvv(int32_t *dst, const float *src, size_t len);
 
 av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
 {
+#if HAVE_RV
     int flags = av_get_cpu_flags();
 
     if (flags & AV_CPU_FLAG_RVB_ADDR) {
@@ -39,4 +40,5 @@ av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
         if (flags & AV_CPU_FLAG_RVV_F32)
             c->float_to_fixed24 = ff_float_to_fixed24_rvv;
     }
+#endif
 }

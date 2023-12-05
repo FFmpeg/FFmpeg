@@ -738,7 +738,7 @@ int main(int argc, char *argv[])
     if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
         checkasm_checked_call = checkasm_checked_call_vfp;
 #endif
-#if ARCH_RISCV
+#if ARCH_RISCV && HAVE_RV
     struct sigaction act = {
         .sa_handler = checkasm_handle_signal,
         .sa_flags = 0,

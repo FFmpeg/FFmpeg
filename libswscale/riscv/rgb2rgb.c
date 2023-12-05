@@ -42,6 +42,7 @@ void ff_yuyvtoyuv422_rvv(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 
 av_cold void rgb2rgb_init_riscv(void)
 {
+#if HAVE_RV
     int flags = av_get_cpu_flags();
 
 #if (__riscv_xlen == 64)
@@ -60,5 +61,6 @@ av_cold void rgb2rgb_init_riscv(void)
             yuyvtoyuv422 = ff_yuyvtoyuv422_rvv;
         }
     }
+#endif
 #endif
 }

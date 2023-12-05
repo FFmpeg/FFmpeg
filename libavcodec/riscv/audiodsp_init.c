@@ -33,6 +33,7 @@ void ff_vector_clipf_rvv(float *dst, const float *src, int len, float min, float
 
 av_cold void ff_audiodsp_init_riscv(AudioDSPContext *c)
 {
+#if HAVE_RV
     int flags = av_get_cpu_flags();
 
     if (flags & AV_CPU_FLAG_RVF)
@@ -46,5 +47,6 @@ av_cold void ff_audiodsp_init_riscv(AudioDSPContext *c)
         if (flags & AV_CPU_FLAG_RVV_F32)
             c->vector_clipf = ff_vector_clipf_rvv;
     }
+#endif
 #endif
 }

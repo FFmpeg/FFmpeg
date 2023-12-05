@@ -2154,6 +2154,7 @@ ARCH_EXT_LIST_PPC="
 "
 
 ARCH_EXT_LIST_RISCV="
+    rv
     rvv
 "
 
@@ -2679,7 +2680,8 @@ ppc4xx_deps="ppc"
 vsx_deps="altivec"
 power8_deps="vsx"
 
-rvv_deps="riscv"
+rv_deps="riscv"
+rvv_deps="rv"
 
 loongson2_deps="mips"
 loongson3_deps="mips"
@@ -6243,6 +6245,7 @@ elif enabled ppc; then
 
 elif enabled riscv; then
 
+    enabled rv && check_inline_asm rv '".option arch, +zbb\nrev8 t0, t1"'
     enabled rvv && check_inline_asm rvv '".option arch, +v\nvsetivli zero, 0, e8, m1, ta, ma"'
 
 elif enabled x86; then
