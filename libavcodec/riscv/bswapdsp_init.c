@@ -31,6 +31,7 @@ void ff_bswap16_buf_rvv(uint16_t *dst, const uint16_t *src, int len);
 
 av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
 {
+#if HAVE_RV
     int cpu_flags = av_get_cpu_flags();
 
 #if (__riscv_xlen >= 64)
@@ -42,5 +43,6 @@ av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
         c->bswap_buf = ff_bswap32_buf_rvv;
         c->bswap16_buf = ff_bswap16_buf_rvv;
     }
+#endif
 #endif
 }
