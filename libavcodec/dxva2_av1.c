@@ -56,10 +56,11 @@ static int get_bit_depth_from_seq(const AV1RawSequenceHeader *seq)
         return 8;
 }
 
-static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx, const AV1DecContext *h,
+int ff_dxva2_av1_fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx,
                                     DXVA_PicParams_AV1 *pp)
 {
     int i,j, uses_lr;
+    const AV1DecContext *h = avctx->priv_data;
     const AV1RawSequenceHeader *seq = h->raw_seq;
     const AV1RawFrameHeader *frame_header = h->raw_frame_header;
     const AV1RawFilmGrainParams *film_grain = &h->cur_frame.film_grain;
@@ -75,7 +76,6 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
     pp->max_width  = seq->max_frame_width_minus_1 + 1;
     pp->max_height = seq->max_frame_height_minus_1 + 1;
 
-    pp->CurrPicTextureIndex = ff_dxva2_get_surface_index(avctx, ctx, h->cur_frame.f, 1);
     pp->superres_denom      = frame_header->use_superres ? frame_header->coded_denom + AV1_SUPERRES_DENOM_MIN : AV1_SUPERRES_NUM;
     pp->bitdepth            = get_bit_depth_from_seq(seq);
     pp->seq_profile         = seq->seq_profile;
@@ -153,6 +153,8 @@ static int fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *c
         if (ref_frame->buf[0])
             pp->RefFrameMapTextureIndex[i] = ff_dxva2_get_surface_index(avctx, ctx, ref_frame, 0);
     }
+
+    pp->CurrPicTextureIndex = ff_dxva2_get_surface_index(avctx, ctx, h->cur_frame.f, 1);
 
     /* Loop filter parameters */
     pp->loop_filter.filter_level[0]        = frame_header->loop_filter_level[0];
@@ -281,7 +283,7 @@ static int dxva2_av1_start_frame(AVCodecContext *avctx,
     av_assert0(ctx_pic);
 
     /* Fill up DXVA_PicParams_AV1 */
-    if (fill_picture_parameters(avctx, ctx, h, &ctx_pic->pp) < 0)
+    if (ff_dxva2_av1_fill_picture_parameters(avctx, ctx, &ctx_pic->pp) < 0)
         return -1;
 
     ctx_pic->bitstream_size = 0;
