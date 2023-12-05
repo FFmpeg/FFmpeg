@@ -24,9 +24,11 @@
 #ifndef AVCODEC_VVC_VVCDEC_H
 #define AVCODEC_VVC_VVCDEC_H
 
+#include "libavcodec/videodsp.h"
 #include "libavcodec/vvc.h"
 
 #include "vvc_ps.h"
+#include "vvcdsp.h"
 
 #define LUMA                    0
 #define CHROMA                  1
@@ -103,6 +105,9 @@ typedef struct VVCFrameContext {
     int nb_slices_allocated;
 
     VVCFrame *ref;
+
+    VVCDSPContext vvcdsp;
+    VideoDSPContext vdsp;
 
     struct VVCFrameThread *ft;
 
