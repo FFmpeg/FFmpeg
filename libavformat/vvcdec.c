@@ -24,6 +24,22 @@
 #include "avformat.h"
 #include "rawdec.h"
 
+static int check_temporal_id(uint8_t nuh_temporal_id_plus1, int type)
+{
+    if (nuh_temporal_id_plus1 == 0)
+        return 0;
+
+    if (nuh_temporal_id_plus1 != 1) {
+        if (type >= VVC_IDR_W_RADL && type <= VVC_RSV_IRAP_11
+                || type == VVC_DCI_NUT || type == VVC_OPI_NUT
+                || type == VVC_VPS_NUT || type == VVC_SPS_NUT
+                || type == VVC_EOS_NUT || type == VVC_EOB_NUT)
+            return 0;
+    }
+
+    return 1;
+}
+
 static int vvc_probe(const AVProbeData *p)
 {
     uint32_t code = -1;
@@ -39,7 +55,7 @@ static int vvc_probe(const AVProbeData *p)
             if (code & 0x80) // forbidden_zero_bit
                 return 0;
 
-            if ((nal2 & 0x7) == 0) // nuh_temporal_id_plus1
+            if (!check_temporal_id(nal2 & 0x7, type))
                 return 0;
 
             switch (type) {
