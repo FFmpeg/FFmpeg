@@ -40,10 +40,11 @@ struct dxva2_picture_context {
     unsigned               bitstream_size;
 };
 
-static void fill_picture_parameters(AVCodecContext *avctx,
-                                    AVDXVAContext *ctx, const VC1Context *v,
+void ff_dxva2_vc1_fill_picture_parameters(AVCodecContext *avctx,
+                                    AVDXVAContext *ctx,
                                     DXVA_PictureParameters *pp)
 {
+    const VC1Context *v = avctx->priv_data;
     const MpegEncContext *s = &v->s;
     const Picture *current_picture = s->current_picture_ptr;
     int intcomp = 0;
@@ -57,8 +58,6 @@ static void fill_picture_parameters(AVCodecContext *avctx,
     }
 
     memset(pp, 0, sizeof(*pp));
-    pp->wDecodedPictureIndex    =
-    pp->wDeblockedPictureIndex  = ff_dxva2_get_surface_index(avctx, ctx, current_picture->f, 1);
     if (s->pict_type != AV_PICTURE_TYPE_I && !v->bi_type)
         pp->wForwardRefPictureIndex = ff_dxva2_get_surface_index(avctx, ctx, s->last_picture.f, 0);
     else
@@ -67,6 +66,8 @@ static void fill_picture_parameters(AVCodecContext *avctx,
         pp->wBackwardRefPictureIndex = ff_dxva2_get_surface_index(avctx, ctx, s->next_picture.f, 0);
     else
         pp->wBackwardRefPictureIndex = 0xffff;
+    pp->wDecodedPictureIndex    =
+    pp->wDeblockedPictureIndex  = ff_dxva2_get_surface_index(avctx, ctx, current_picture->f, 1);
     if (v->profile == PROFILE_ADVANCED) {
         /* It is the cropped width/height -1 of the frame */
         pp->wPicWidthInMBminus1 = avctx->width  - 1;
@@ -163,7 +164,7 @@ static void fill_picture_parameters(AVCodecContext *avctx,
     pp->bBitstreamConcealmentMethod = 0;
 }
 
-static void fill_slice(AVCodecContext *avctx, DXVA_SliceInfo *slice,
+void ff_dxva2_vc1_fill_slice(AVCodecContext *avctx, DXVA_SliceInfo *slice,
                        unsigned position, unsigned size)
 {
     const VC1Context *v = avctx->priv_data;
@@ -322,7 +323,7 @@ static int dxva2_vc1_start_frame(AVCodecContext *avctx,
         return -1;
     assert(ctx_pic);
 
-    fill_picture_parameters(avctx, ctx, v, &ctx_pic->pp);
+    ff_dxva2_vc1_fill_picture_parameters(avctx, ctx, &ctx_pic->pp);
 
     ctx_pic->slice_count    = 0;
     ctx_pic->bitstream_size = 0;
@@ -356,7 +357,7 @@ static int dxva2_vc1_decode_slice(AVCodecContext *avctx,
     ctx_pic->bitstream_size += size;
 
     position = buffer - ctx_pic->bitstream;
-    fill_slice(avctx, &ctx_pic->slice[ctx_pic->slice_count++], position, size);
+    ff_dxva2_vc1_fill_slice(avctx, &ctx_pic->slice[ctx_pic->slice_count++], position, size);
     return 0;
 }
 

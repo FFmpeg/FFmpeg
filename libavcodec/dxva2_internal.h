@@ -187,4 +187,8 @@ void ff_dxva2_mpeg2_fill_quantization_matrices(AVCodecContext *avctx, AVDXVACont
 
 void ff_dxva2_mpeg2_fill_slice(AVCodecContext *avctx, DXVA_SliceInfo *slice,  unsigned position, const uint8_t *buffer, unsigned size);
 
+void ff_dxva2_vc1_fill_picture_parameters(AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_PictureParameters *pp);
+
+void ff_dxva2_vc1_fill_slice(AVCodecContext *avctx, DXVA_SliceInfo *slice, unsigned position, unsigned size);
+
 #endif /* AVCODEC_DXVA2_INTERNAL_H */
