@@ -176,8 +176,13 @@ static int d3d12va_hevc_decode_init(AVCodecContext *avctx)
         break;
 
     case FF_PROFILE_HEVC_MAIN_STILL_PICTURE:
-        av_log(avctx, AV_LOG_ERROR, "D3D12 doesn't support PROFILE_HEVC_MAIN_STILL_PICTURE!\n");
-        return AVERROR(EINVAL);
+        if (avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH) {
+            ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_HEVC_MAIN;
+            break;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "D3D12 doesn't support PROFILE_HEVC_MAIN_STILL_PICTURE!\n");
+            return AVERROR(EINVAL);
+        }
 
     case FF_PROFILE_HEVC_MAIN:
     default:
