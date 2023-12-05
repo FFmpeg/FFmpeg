@@ -429,6 +429,13 @@ enum AVPixelFormat {
     AV_PIX_FMT_GBRAP14BE,  ///< planar GBR 4:4:4:4 56bpp, big-endian
     AV_PIX_FMT_GBRAP14LE,  ///< planar GBR 4:4:4:4 56bpp, little-endian
 
+    /**
+     * Hardware surfaces for Direct3D 12.
+     *
+     * data[0] points to an AVD3D12VAFrame
+     */
+    AV_PIX_FMT_D3D12,
+
     AV_PIX_FMT_NB         ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 

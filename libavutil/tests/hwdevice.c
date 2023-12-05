@@ -137,6 +137,8 @@ static const struct {
       { "0", "1", "2" } },
     { AV_HWDEVICE_TYPE_D3D11VA,
       { "0", "1", "2" } },
+    { AV_HWDEVICE_TYPE_D3D12VA,
+      { "0", "1", "2" } },
     { AV_HWDEVICE_TYPE_OPENCL,
       { "0.0", "0.1", "1.0", "1.1" } },
     { AV_HWDEVICE_TYPE_VAAPI,

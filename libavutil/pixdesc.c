@@ -2311,6 +2311,10 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name = "d3d11",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_D3D12] = {
+        .name = "d3d12",
+        .flags = AV_PIX_FMT_FLAG_HWACCEL,
+    },
     [AV_PIX_FMT_GBRPF32BE] = {
         .name = "gbrpf32be",
         .nb_components = 3,

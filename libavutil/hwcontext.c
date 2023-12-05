@@ -36,6 +36,9 @@ static const HWContextType * const hw_table[] = {
 #if CONFIG_D3D11VA
     &ff_hwcontext_type_d3d11va,
 #endif
+#if CONFIG_D3D12VA
+    &ff_hwcontext_type_d3d12va,
+#endif
 #if CONFIG_LIBDRM
     &ff_hwcontext_type_drm,
 #endif
@@ -71,6 +74,7 @@ static const char *const hw_type_names[] = {
     [AV_HWDEVICE_TYPE_DRM]    = "drm",
     [AV_HWDEVICE_TYPE_DXVA2]  = "dxva2",
     [AV_HWDEVICE_TYPE_D3D11VA] = "d3d11va",
+    [AV_HWDEVICE_TYPE_D3D12VA] = "d3d12va",
     [AV_HWDEVICE_TYPE_OPENCL] = "opencl",
     [AV_HWDEVICE_TYPE_QSV]    = "qsv",
     [AV_HWDEVICE_TYPE_VAAPI]  = "vaapi",

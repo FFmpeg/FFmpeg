@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2023-12-xx - xxxxxxxxxx - lavu 58.36.100 - pixfmt.h hwcontext.h hwcontext_d3d12va.h
+  Add AV_HWDEVICE_TYPE_D3D12VA and AV_PIX_FMT_D3D12.
+  Add AVD3D12VADeviceContext, AVD3D12VASyncContext, AVD3D12VAFrame and
+  AVD3D12VAFramesContext.
+
 2023-12-18 - 74279227dd2 - lavc 60.36.100 - packet.h
   Add AV_PKT_DATA_IAMF_MIX_GAIN_PARAM, AV_PKT_DATA_IAMF_DEMIXING_INFO_PARAM
   and AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM.

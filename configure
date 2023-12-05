@@ -336,6 +336,7 @@ External library support:
   --disable-cuda-llvm      disable CUDA compilation using clang [autodetect]
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
+  --disable-d3d12va        disable Microsoft Direct3D 12 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
   --disable-ffnvcodec      disable dynamically linked Nvidia code [autodetect]
   --enable-libdrm          enable DRM code (Linux) [no]
@@ -1926,6 +1927,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     cuda_llvm
     cuvid
     d3d11va
+    d3d12va
     dxva2
     ffnvcodec
     nvdec
@@ -3050,6 +3052,7 @@ crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 cuda_deps="ffnvcodec"
 cuvid_deps="ffnvcodec"
 d3d11va_deps="dxva_h ID3D11VideoDecoder ID3D11VideoContext"
+d3d12va_deps="dxva_h ID3D12Device ID3D12VideoDecoder"
 dxva2_deps="dxva2api_h DXVA2_ConfigPictureDecode ole32 user32"
 ffnvcodec_deps_any="libdl LoadLibrary"
 mediacodec_deps="android"
@@ -6579,6 +6582,8 @@ check_type "windows.h dxgi1_2.h" "IDXGIOutput1"
 check_type "windows.h dxgi1_5.h" "IDXGIOutput5"
 check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "windows.h d3d11.h" "ID3D11VideoContext"
+check_type "windows.h d3d12.h" "ID3D12Device"
+check_type "windows.h d3d12video.h" "ID3D12VideoDecoder"
 check_type "windows.h" "DPI_AWARENESS_CONTEXT" -D_WIN32_WINNT=0x0A00
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 check_func_headers mfapi.h MFCreateAlignedMemoryBuffer -lmfplat

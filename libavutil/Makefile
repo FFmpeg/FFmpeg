@@ -42,6 +42,7 @@ HEADERS = adler32.h                                                     \
           hwcontext.h                                                   \
           hwcontext_cuda.h                                              \
           hwcontext_d3d11va.h                                           \
+          hwcontext_d3d12va.h                                           \
           hwcontext_drm.h                                               \
           hwcontext_dxva2.h                                             \
           hwcontext_qsv.h                                               \
@@ -192,6 +193,7 @@ OBJS = adler32.o                                                        \
 
 OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o
+OBJS-$(CONFIG_D3D12VA)                  += hwcontext_d3d12va.o
 OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
 OBJS-$(CONFIG_LIBDRM)                   += hwcontext_drm.o
 OBJS-$(CONFIG_MACOS_KPERF)              += macos_kperf.o
@@ -215,6 +217,7 @@ SKIPHEADERS-$(HAVE_CUDA_H)             += hwcontext_cuda.h
 SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda_internal.h     \
                                           cuda_check.h
 SKIPHEADERS-$(CONFIG_D3D11VA)          += hwcontext_d3d11va.h
+SKIPHEADERS-$(CONFIG_D3D12VA)          += hwcontext_d3d12va.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
 SKIPHEADERS-$(CONFIG_QSV)              += hwcontext_qsv.h
 SKIPHEADERS-$(CONFIG_OPENCL)           += hwcontext_opencl.h
