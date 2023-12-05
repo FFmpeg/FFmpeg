@@ -459,6 +459,8 @@ typedef struct ALFParams {
     uint8_t applied[3];
 } ALFParams;
 
+//utils
+void ff_vvc_set_neighbour_available(VVCLocalContext *lc, int x0, int y0, int w, int h);
 void ff_vvc_ep_init_stat_coeff(EntryPoint *ep, int bit_depth, int persistent_rice_adaptation_enabled_flag);
 
 #endif // AVCODEC_VVC_VVC_CTU_H
