@@ -29,10 +29,12 @@ void ff_extract_exponents_rvb(uint8_t *exp, int32_t *coef, int nb_coefs);
 
 av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
 {
+#if HAVE_RV
     int flags = av_get_cpu_flags();
 
     if (flags & AV_CPU_FLAG_RVB_ADDR) {
         if (flags & AV_CPU_FLAG_RVB_BASIC)
             c->extract_exponents = ff_extract_exponents_rvb;
     }
+#endif
 }

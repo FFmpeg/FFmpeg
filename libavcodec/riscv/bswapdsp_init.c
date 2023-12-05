@@ -30,6 +30,7 @@ void ff_bswap16_buf_rvv(uint16_t *dst, const uint16_t *src, int len);
 
 av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
 {
+#if HAVE_RV
     int flags = av_get_cpu_flags();
 
     if (flags & AV_CPU_FLAG_RVB_ADDR) {
@@ -42,4 +43,5 @@ av_cold void ff_bswapdsp_init_riscv(BswapDSPContext *c)
             c->bswap16_buf = ff_bswap16_buf_rvv;
 #endif
     }
+#endif
 }
