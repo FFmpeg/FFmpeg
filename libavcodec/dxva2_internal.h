@@ -175,4 +175,6 @@ void ff_dxva2_hevc_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACo
 
 void ff_dxva2_hevc_fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_Qmatrix_HEVC *qm);
 
+int ff_dxva2_vp9_fill_picture_parameters(const AVCodecContext *avctx, AVDXVAContext *ctx, DXVA_PicParams_VP9 *pp);
+
 #endif /* AVCODEC_DXVA2_INTERNAL_H */
