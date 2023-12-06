@@ -362,14 +362,13 @@ static int bwdif_vulkan_config_output(AVFilterLink *outlink)
         outlink->frame_rate = av_mul_q(avctx->inputs[0]->frame_rate,
                                        (AVRational){2, 1});
 
-    if (outlink->w < 4 || outlink->h < 4) {
-        av_log(avctx, AV_LOG_ERROR, "Video of less than 4 columns or lines is not "
-               "supported\n");
-        return AVERROR(EINVAL);
-    }
-
     y->csp = av_pix_fmt_desc_get(vkctx->frames->sw_format);
     y->filter = bwdif_vulkan_filter_frame;
+
+    if (AV_CEIL_RSHIFT(outlink->w, y->csp->log2_chroma_w) < 4 || AV_CEIL_RSHIFT(outlink->h, y->csp->log2_chroma_h) < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Video with planes less than 4 columns or lines is not supported\n");
+        return AVERROR(EINVAL);
+    }
 
     return init_filter(avctx);
 }
