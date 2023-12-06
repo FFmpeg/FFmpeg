@@ -535,6 +535,15 @@ fate-filter-thumbnail: CMD = video_filter "scale,thumbnail=10"
 FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_TILE_FILTER) += fate-filter-tile
 fate-filter-tile: CMD = video_filter "tile=3x3:nb_frames=5:padding=7:margin=2"
 
+FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_PIXELIZE_FILTER) += fate-filter-pixelize-avg
+fate-filter-pixelize-avg: CMD = video_filter "pixelize=mode=avg"
+
+FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_PIXELIZE_FILTER) += fate-filter-pixelize-min
+fate-filter-pixelize-min: CMD = video_filter "pixelize=mode=min"
+
+FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_PIXELIZE_FILTER) += fate-filter-pixelize-max
+fate-filter-pixelize-max: CMD = video_filter "pixelize=mode=max"
+
 
 tests/pixfmts.mak: TAG = GEN
 tests/pixfmts.mak: ffmpeg$(PROGSSUF)$(EXESUF) | tests
