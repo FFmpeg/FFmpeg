@@ -333,13 +333,14 @@ static int config_props(AVFilterLink *link)
     if(yadif->mode&1)
         link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
 
-    if (link->w < 3 || link->h < 4) {
-        av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or 4 lines is not supported\n");
+    yadif->csp = av_pix_fmt_desc_get(link->format);
+    yadif->filter = filter;
+
+    if (AV_CEIL_RSHIFT(link->w, yadif->csp->log2_chroma_w) < 3 || AV_CEIL_RSHIFT(link->h, yadif->csp->log2_chroma_h) < 4) {
+        av_log(ctx, AV_LOG_ERROR, "Video with planes less than 3 columns or 4 lines is not supported\n");
         return AVERROR(EINVAL);
     }
 
-    yadif->csp = av_pix_fmt_desc_get(link->format);
-    yadif->filter = filter;
     if (yadif->csp->comp[0].depth > 8) {
         s->filter_intra = filter_intra_16bit;
         s->filter_line  = filter_line_c_16bit;
