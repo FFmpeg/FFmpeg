@@ -296,14 +296,15 @@ static int config_output(AVFilterLink *link)
         link->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
                                     (AVRational){2, 1});
 
-    if (link->w < 3 || link->h < 3) {
-        av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
-        ret = AVERROR(EINVAL);
-        goto exit;
-    }
 
     y->csp = av_pix_fmt_desc_get(output_frames->sw_format);
     y->filter = filter;
+
+    if (AV_CEIL_RSHIFT(link->w, y->csp->log2_chroma_w) < 3 || AV_CEIL_RSHIFT(link->h, y->csp->log2_chroma_h) < 3) {
+        av_log(ctx, AV_LOG_ERROR, "Video with planes less than 3 columns or lines is not supported\n");
+        ret = AVERROR(EINVAL);
+        goto exit;
+    }
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
     if (ret < 0)
