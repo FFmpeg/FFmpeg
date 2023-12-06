@@ -395,6 +395,12 @@ FATE_FILTER_SAMPLES-$(call FILTERDEMDEC, FPS SCALE, MOV, QTRLE) += fate-filter-f
 fate-filter-fps-cfr: CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -r 30 -fps_mode cfr -pix_fmt yuv420p
 fate-filter-fps:     CMD = framecrc -auto_conversion_filters -i $(TARGET_SAMPLES)/qtrle/apple-animation-variable-fps-bug.mov -vf fps=30 -pix_fmt yuv420p
 
+FATE_FILTER_SAMPLES-$(call FILTERFRAMECRC, TESTSRC2 FSYNC, FILE_PROTOCOL) += fate-filter-fsync-up fate-filter-fsync-down
+fate-filter-fsync-up: tests/data/maps/fsync-up
+fate-filter-fsync-up: CMD = framecrc -lavfi testsrc2=r=25:d=1,fsync=f=tests/data/maps/fsync-up
+fate-filter-fsync-down: tests/data/maps/fsync-down
+fate-filter-fsync-down: CMD = framecrc -lavfi testsrc2=r=25:d=1,fsync=f=tests/data/maps/fsync-down
+
 FATE_FILTER_ALPHAEXTRACT_ALPHAMERGE := $(addprefix fate-filter-alphaextract_alphamerge_, rgb yuv)
 FATE_FILTER_VSYNTH_PGMYUV-$(call ALLYES, SCALE_FILTER FORMAT_FILTER SPLIT_FILTER ALPHAEXTRACT_FILTER ALPHAMERGE_FILTER) += $(FATE_FILTER_ALPHAEXTRACT_ALPHAMERGE)
 $(FATE_FILTER_ALPHAEXTRACT_ALPHAMERGE): fate-filter-alphaextract_alphamerge_%: tests/data/filtergraphs/alphamerge_alphaextract_%
