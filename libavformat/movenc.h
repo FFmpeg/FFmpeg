@@ -188,7 +188,7 @@ typedef struct MOVMuxContext {
     const AVClass *av_class;
     int     mode;
     int64_t time;
-    int     nb_streams;
+    int     nb_tracks;
     int     nb_meta_tmcd;  ///< number of new created tmcd track based on metadata (aka not data copy)
     int     chapter_track; ///< qt chapter track number
     int64_t mdat_pos;
