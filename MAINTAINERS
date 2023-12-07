@@ -144,7 +144,6 @@ Codecs:
   bgmc.c, bgmc.h                        Thilo Borgmann
   binkaudio.c                           Peter Ross
   cavs*                                 Stefan Gehrer
-  cdxl.c                                Paul B Mahol
   celp_filters.*                        Vitor Sessak
   cinepak.c                             Roberto Togni
   cinepakenc.c                          Rl / Aetey G.T. AB
@@ -163,7 +162,6 @@ Codecs:
   dv.c                                  Roman Shaposhnik
   dvbsubdec.c                           Anshul Maheshwari
   eacmv*, eaidct*, eat*                 Peter Ross
-  evrc*                                 Paul B Mahol
   exif.c, exif.h                        Thilo Borgmann
   ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
@@ -217,7 +215,6 @@ Codecs:
   nvdec*, nvenc*                        Timo Rothenpieler
   omx.c                                 Martin Storsjo, Aman Gupta
   opus*                                 Rostislav Pehlivanov
-  paf.*                                 Paul B Mahol
   pcx.c                                 Ivo van Poorten
   pgssubdec.c                           Reimar Doeffinger
   ptx.c                                 Ivo van Poorten
@@ -238,16 +235,13 @@ Codecs:
   srt*                                  Aurelien Jacobs
   sunrast.c                             Ivo van Poorten
   svq3.c                                Michael Niedermayer
-  tak*                                  Paul B Mahol
   truemotion1*                          Mike Melanson
   tta.c                                 Alex Beregszaszi, Jaikrishnan Menon
-  ttaenc.c                              Paul B Mahol
   txd.c                                 Ivo van Poorten
   v4l2_*                                Jorge Ramirez-Ortiz
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
   videotoolboxenc.c                     Rick Kern, Aman Gupta
-  vima.c                                Paul B Mahol
   vorbisdec.c                           Denes Balatoni, David Conrad
   vorbisenc.c                           Oded Shimon
   vp3*                                  Mike Melanson
@@ -261,9 +255,7 @@ Codecs:
   wmavoice.c                            Ronald S. Bultje
   wmv2.c                                Michael Niedermayer
   xan.c                                 Mike Melanson
-  xbm*                                  Paul B Mahol
   xface                                 Stefano Sabatini
-  xwd*                                  Paul B Mahol
 
 Hardware acceleration:
   dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
@@ -307,65 +299,34 @@ Generic parts:
   motion_estimation.c                   Davinder Singh
 
 Filters:
-  f_drawgraph.c                         Paul B Mahol
-  af_adelay.c                           Paul B Mahol
-  af_aecho.c                            Paul B Mahol
-  af_afade.c                            Paul B Mahol
   af_amerge.c                           Nicolas George
-  af_aphaser.c                          Paul B Mahol
   af_aresample.c                        Michael Niedermayer
-  af_astats.c                           Paul B Mahol
   af_atempo.c                           Pavel Koshevoy
-  af_biquads.c                          Paul B Mahol
-  af_chorus.c                           Paul B Mahol
-  af_compand.c                          Paul B Mahol
   af_firequalizer.c                     Muhammad Faiz
   af_hdcd.c                             Burt P.
-  af_ladspa.c                           Paul B Mahol
   af_loudnorm.c                         Kyle Swanson
   af_pan.c                              Nicolas George
-  af_sidechaincompress.c                Paul B Mahol
-  af_silenceremove.c                    Paul B Mahol
-  avf_aphasemeter.c                     Paul B Mahol
-  avf_avectorscope.c                    Paul B Mahol
   avf_showcqt.c                         Muhammad Faiz
-  vf_blend.c                            Paul B Mahol
   vf_bwdif                              Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_chromakey.c                        Timo Rothenpieler
-  vf_colorchannelmixer.c                Paul B Mahol
   vf_colorconstancy.c                   Mina Sami    (CC <minas.gorgy@gmail.com>)
-  vf_colorbalance.c                     Paul B Mahol
   vf_colorkey.c                         Timo Rothenpieler
-  vf_colorlevels.c                      Paul B Mahol
   vf_coreimage.m                        Thilo Borgmann
-  vf_deband.c                           Paul B Mahol
   vf_dejudder.c                         Nicholas Robbins
   vf_delogo.c                           Jean Delvare (CC <jdelvare@suse.com>)
   vf_drawbox.c/drawgrid                 Andrey Utkin
-  vf_extractplanes.c                    Paul B Mahol
   vf_fsync.c                            Thilo Borgmann
-  vf_histogram.c                        Paul B Mahol
   vf_hqx.c                              Clément Bœsch
   vf_idet.c                             Pascal Massimino
-  vf_il.c                               Paul B Mahol
   vf_(t)interlace                       Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_lenscorrection.c                   Daniel Oberhoff
   vf_libplacebo.c                       Niklas Haas
-  vf_mergeplanes.c                      Paul B Mahol
   vf_mestimate.c                        Davinder Singh
   vf_minterpolate.c                     Davinder Singh
-  vf_neighbor.c                         Paul B Mahol
-  vf_psnr.c                             Paul B Mahol
-  vf_random.c                           Paul B Mahol
   vf_readvitc.c                         Tobias Rapp (CC t.rapp at noa-archive dot com)
   vf_scale.c                            Michael Niedermayer
-  vf_separatefields.c                   Paul B Mahol
-  vf_ssim.c                             Paul B Mahol
-  vf_stereo3d.c                         Paul B Mahol
-  vf_telecine.c                         Paul B Mahol
   vf_tonemap_opencl.c                   Ruiling Song
   vf_yadif.c                            Michael Niedermayer
-  vf_zoompan.c                          Paul B Mahol
 
 Sources:
   vsrc_mandelbrot.c                     Michael Niedermayer
@@ -387,7 +348,6 @@ Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   aadec.c                               Vesselin Bontchev (vesselin.bontchev at yandex dot com)
   adtsenc.c                             Robert Swain
-  afc.c                                 Paul B Mahol
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
   aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
   alp.c                                 Zane van Iperen
@@ -398,16 +358,12 @@ Muxers/Demuxers:
   argo_brp.c                            Zane van Iperen
   argo_cvg.c                            Zane van Iperen
   ass*                                  Aurelien Jacobs
-  astdec.c                              Paul B Mahol
   astenc.c                              James Almer
   avi*                                  Michael Niedermayer
   avisynth.c                            Stephen Hutchinson
-  avr.c                                 Paul B Mahol
   bink.c                                Peter Ross
   boadec.c                              Michael Niedermayer
-  brstm.c                               Paul B Mahol
   caf*                                  Peter Ross
-  cdxl.c                                Paul B Mahol
   codec2.c                              Tomas Härdin
   crc.c                                 Michael Niedermayer
   dashdec.c                             Steven Liu
@@ -416,10 +372,8 @@ Muxers/Demuxers:
   dfpwmdec.c                            Jack Bruienne
   dss.c                                 Oleksij Rempel
   dtsdec.c                              foo86
-  dtshddec.c                            Paul B Mahol
   dv.c                                  Roman Shaposhnik
   electronicarts.c                      Peter Ross
-  epafdec.c                             Paul B Mahol
   evc*                                  Samsung (Dawid Kozinski)
   ffm*                                  Baptiste Coudurier
   flic.c                                Mike Melanson
@@ -434,7 +388,6 @@ Muxers/Demuxers:
   imf*                                  Pierre-Anthony Lemieux
   img2*.c                               Michael Niedermayer
   ipmovie.c                             Mike Melanson
-  ircam*                                Paul B Mahol
   iss.c                                 Stefan Gehrer
   jpegxl*                               Leo Izen
   jvdec.c                               Peter Ross
@@ -442,14 +395,12 @@ Muxers/Demuxers:
   libmodplug.c                          Clément Bœsch
   libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
-  lvfdec.c                              Paul B Mahol
   lxfdec.c                              Tomas Härdin
   matroska.c                            Aurelien Jacobs, Andreas Rheinhardt
   matroskadec.c                         Aurelien Jacobs, Andreas Rheinhardt
   matroskaenc.c                         David Conrad, Andreas Rheinhardt
   matroska subtitles (matroskaenc.c)    John Peebles
   metadata*                             Aurelien Jacobs
-  mgsts.c                               Paul B Mahol
   microdvd*                             Aurelien Jacobs
   mm.c                                  Peter Ross
   mov.c                                 Baptiste Coudurier
@@ -462,7 +413,6 @@ Muxers/Demuxers:
   msnwc_tcp.c                           Ramiro Polla
   mtv.c                                 Reynaldo H. Verdejo Pinochet
   mxf*                                  Baptiste Coudurier, Tomas Härdin
-  nistspheredec.c                       Paul B Mahol
   nsvdec.c                              Francois Revol
   nut*                                  Michael Niedermayer
   nuv.c                                 Reimar Doeffinger
@@ -470,11 +420,9 @@ Muxers/Demuxers:
   oggenc.c                              Baptiste Coudurier
   oggparse*.c                           David Conrad
   oma.c                                 Maxim Poliakovski
-  paf.c                                 Paul B Mahol
   pp_bnk.c                              Zane van Iperen
   psxstr.c                              Mike Melanson
   pva.c                                 Ivo van Poorten
-  pvfdec.c                              Paul B Mahol
   r3d.c                                 Baptiste Coudurier
   raw.c                                 Michael Niedermayer
   rdt.c                                 Ronald S. Bultje
@@ -495,11 +443,9 @@ Muxers/Demuxers:
   sdp.c                                 Martin Storsjo
   segafilm.c                            Mike Melanson
   segment.c                             Stefano Sabatini
-  smjpeg*                               Paul B Mahol
   spdif*                                Anssi Hannula
   srtdec.c                              Aurelien Jacobs
   swf.c                                 Baptiste Coudurier
-  takdec.c                              Paul B Mahol
   tta.c                                 Alex Beregszaszi
   txd.c                                 Ivo van Poorten
   voc.c                                 Aurelien Jacobs
@@ -509,7 +455,6 @@ Muxers/Demuxers:
   webvtt*                               Matthew J Heaney
   westwood.c                            Mike Melanson
   wtv.c                                 Peter Ross
-  wvenc.c                               Paul B Mahol
 
 Protocols:
   async.c                               Zhang Rui
