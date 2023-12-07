@@ -72,7 +72,7 @@ sub get_date_range {
     # date when the regular update rule is first applied
     my $date_first_regular = DateTime->new(year => 2024);
 
-    if ($now->is_between($date_ga_rule, $date_first_regular)) {
+    if ($now > $date_ga_rule && $now < $date_first_regular) {
         return ($date_ga_rule->clone()->set_year($date_ga_rule->year - 3), $date_ga_rule);
     }
 
@@ -123,7 +123,7 @@ foreach my $line (@shortlog) {
 
 foreach my $entry (@extra_members) {
     my $elected = $entry->[2];
-    if ($date->is_between($elected, $elected->clone()->set_year($elected->year + 2))) {
+    if ($date > $elected && $date < $elected->clone()->set_year($elected->year + 2)) {
         $assembly{$entry->[0]} = $entry->[1];
     }
 }
