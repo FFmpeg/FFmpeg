@@ -85,4 +85,33 @@ func ff_lpc_apply_welch_window_rvv, zve64d
 
         ret
 endfunc
+
+func ff_lpc_compute_autocorr_rvv, zve64d
+        li        t0, 1
+        vsetvli   zero, a2, e64, m8, ta, ma
+        fcvt.d.l  ft0, t0
+        vle64.v   v0, (a0)
+        sh3add    a0, a2, a0   # data += lag
+        vfmv.v.f  v16, ft0
+        bge       a2, a1, 2f
+1:
+        vfmv.f.s  ft0, v0
+        fld       ft1, (a0)    # ft1 = data[lag + i]
+        vfmacc.vf v16, ft0, v0 # v16[j] += data[i] * data[i + j]
+        addi      a1, a1, -1
+        vfslide1down.vf v0, v0, ft1
+        addi      a0, a0, 8
+        bgt       a1, a2, 1b   # while (len > lag);
+2:
+        vfmv.f.s  ft0, v0
+        vsetvli   zero, a1, e64, m8, tu, ma
+        vfmacc.vf v16, ft0, v0
+        addi      a1, a1, -1
+        vslide1down.vx v0, v0, zero
+        bnez      a1, 2b       # while (len > 0);
+
+        vsetvli   zero, a2, e64, m8, ta, ma
+        vse64.v   v16, (a3)
+        ret
+endfunc
 #endif
