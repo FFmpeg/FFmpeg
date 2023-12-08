@@ -33,3 +33,23 @@ makeopts=       # extra options passed to 'make'
                 # defaults to 'tar c'
 #fate_targets=  # targets to make when running fate; defaults to "fate",
                 # can be set to run a subset of tests, e.g. "fate-checkasm".
+
+#fate_environments=  # a list of names of configurations to run tests for;
+                     # each round is run with variables from ${${name}_env} set.
+
+# One example of using fate_environments:
+
+# target_exec="qemu-aarch64-static"
+# fate_targets="fate-checkasm fate-cpu"
+# fate_environments="sve128 sve256"
+# sve128_env="QEMU_CPU=max,sve128=on"
+# sve256_env="QEMU_CPU=max,sve256=on"
+
+# The variables set by fate_environments can also be used explicitly
+# by target_exec, e.g. like this:
+
+# target_exec="qemu-aarch64-static -cpu \$(MY_CPU)"
+# fate_targets="fate-checkasm fate-cpu"
+# fate_environments="sve128 sve256"
+# sve128_env="MY_CPU=max,sve128=on"
+# sve256_env="MY_CPU=max,sve256=on"

@@ -305,8 +305,8 @@ $(FATE): export PROGSUF = $(PROGSSUF)
 $(FATE): export EXECSUF = $(EXESUF)
 $(FATE): export HOSTEXECSUF = $(HOSTEXESUF)
 $(FATE): $(FATE_UTILS:%=tests/%$(HOSTEXESUF)) | $(FATE_OUTDIRS)
-	@echo "TEST    $(@:fate-%=%)"
-	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(TARGET_SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)' '$(CPUFLAGS)' '$(CMP_SHIFT)' '$(CMP_TARGET)' '$(SIZE_TOLERANCE)' '$(CMP_UNIT)' '$(GEN)' '$(HWACCEL)' '$(REPORT)' '$(KEEP_FILES)'
+	@echo "TEST    $(@:fate-%=%)$(FATE_SUFFIX)"
+	$(Q)$(SRC_PATH)/tests/fate-run.sh $@$(FATE_SUFFIX) "$(TARGET_SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)' '$(CPUFLAGS)' '$(CMP_SHIFT)' '$(CMP_TARGET)' '$(SIZE_TOLERANCE)' '$(CMP_UNIT)' '$(GEN)' '$(HWACCEL)' '$(REPORT)' '$(KEEP_FILES)'
 
 fate-list:
 	@printf '%s\n' $(sort $(FATE))
