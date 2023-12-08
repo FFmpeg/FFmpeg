@@ -55,6 +55,7 @@ enum MXFMetadataSetType {
     SoundfieldGroupLabelSubDescriptor,
     GroupOfSoundfieldGroupsLabelSubDescriptor,
     FFV1SubDescriptor,
+    JPEG2000SubDescriptor,
 };
 
 enum MXFFrameLayout {
