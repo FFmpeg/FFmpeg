@@ -109,6 +109,7 @@ double ff_lpc_calc_ref_coefs_f(LPCContext *s, const float *samples, int len,
  */
 int ff_lpc_init(LPCContext *s, int blocksize, int max_order,
                 enum FFLPCType lpc_type);
+void ff_lpc_init_riscv(LPCContext *s);
 void ff_lpc_init_x86(LPCContext *s);
 
 /**
