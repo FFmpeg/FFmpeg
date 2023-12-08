@@ -233,6 +233,7 @@ static int config_input(AVFilterLink *inlink)
 
     select->var_values[VAR_TB] = av_q2d(inlink->time_base);
 
+    select->var_values[VAR_PREV_SELECTED_N]   = NAN;
     select->var_values[VAR_PREV_PTS]          = NAN;
     select->var_values[VAR_PREV_SELECTED_PTS] = NAN;
     select->var_values[VAR_PREV_SELECTED_T]   = NAN;
