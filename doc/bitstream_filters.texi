@@ -882,6 +882,11 @@ The sample rate of stream packet belongs.
 The AV_NOPTS_VALUE constant.
 @end table
 
+For example, to set PTS equal to DTS (not recommended if B-frames are involved):
+@example
+ffmpeg -i INPUT -c:a copy -bsf:a setts=pts=DTS out.mkv
+@end example
+
 @anchor{text2movsub}
 @section text2movsub
 
