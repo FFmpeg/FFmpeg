@@ -52,12 +52,8 @@ static av_cold int svc_decode_init(AVCodecContext *avctx)
 {
     SVCContext *s = avctx->priv_data;
     SDecodingParam param = { 0 };
-    int err;
     int log_level;
     WelsTraceCallback callback_function;
-
-    if ((err = ff_libopenh264_check_version(avctx)) < 0)
-        return AVERROR_DECODER_NOT_FOUND;
 
     if (WelsCreateDecoder(&s->decoder)) {
         av_log(avctx, AV_LOG_ERROR, "Unable to create decoder\n");

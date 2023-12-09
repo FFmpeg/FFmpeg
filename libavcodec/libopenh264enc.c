@@ -110,13 +110,9 @@ static av_cold int svc_encode_init(AVCodecContext *avctx)
 {
     SVCContext *s = avctx->priv_data;
     SEncParamExt param = { 0 };
-    int err;
     int log_level;
     WelsTraceCallback callback_function;
     AVCPBProperties *props;
-
-    if ((err = ff_libopenh264_check_version(avctx)) < 0)
-        return AVERROR_ENCODER_NOT_FOUND;
 
     if (WelsCreateSVCEncoder(&s->encoder)) {
         av_log(avctx, AV_LOG_ERROR, "Unable to create encoder\n");

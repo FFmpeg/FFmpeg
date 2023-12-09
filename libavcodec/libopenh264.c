@@ -46,18 +46,3 @@ void ff_libopenh264_trace_callback(void *ctx, int level, const char *msg)
     int equiv_ffmpeg_log_level = libopenh264_to_ffmpeg_log_level(level);
     av_log(ctx, equiv_ffmpeg_log_level, "%s\n", msg);
 }
-
-int ff_libopenh264_check_version(void *logctx)
-{
-    // Mingw GCC < 4.7 on x86_32 uses an incorrect/buggy ABI for the WelsGetCodecVersion
-    // function (for functions returning larger structs), thus skip the check in those
-    // configurations.
-#if !defined(_WIN32) || !defined(__GNUC__) || !ARCH_X86_32 || AV_GCC_VERSION_AT_LEAST(4, 7)
-    OpenH264Version libver = WelsGetCodecVersion();
-    if (memcmp(&libver, &g_stCodecVersion, sizeof(libver))) {
-        av_log(logctx, AV_LOG_ERROR, "Incorrect library version loaded\n");
-        return AVERROR(EINVAL);
-    }
-#endif
-    return 0;
-}

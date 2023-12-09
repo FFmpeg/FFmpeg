@@ -34,6 +34,4 @@
 
 void ff_libopenh264_trace_callback(void *ctx, int level, const char *msg);
 
-int ff_libopenh264_check_version(void *logctx);
-
 #endif /* AVCODEC_LIBOPENH264_H */
