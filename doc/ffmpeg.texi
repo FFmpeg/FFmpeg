@@ -1860,7 +1860,7 @@ of seconds.
 
 The timestamp discontinuity correction enabled by this option is only
 applied to input formats accepting timestamp discontinuity (for which
-the @code{AV_FMT_DISCONT} flag is enabled), e.g. MPEG-TS and HLS, and
+the @code{AVFMT_TS_DISCONT} flag is enabled), e.g. MPEG-TS and HLS, and
 is automatically disabled when employing the @code{-copy_ts} option
 (unless wrapping is detected).
 
@@ -1877,7 +1877,7 @@ seconds.
 
 The timestamp correction enabled by this option is only applied to
 input formats not accepting timestamp discontinuity (for which the
-@code{AV_FMT_DISCONT} flag is not enabled).
+@code{AVFMT_TS_DISCONT} flag is not enabled).
 
 If a timestamp discontinuity is detected whose absolute value is
 greater than @var{threshold}, ffmpeg will drop the PTS/DTS timestamp
