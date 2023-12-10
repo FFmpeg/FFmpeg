@@ -429,7 +429,7 @@ static inline void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int
 }
 
 #define GET_SIGN(x)  ((x) >> 31)
-#define MAKE_CODE(x) ((((x)) * 2) ^ GET_SIGN(x))
+#define MAKE_CODE(x) (((x) * 2) ^ GET_SIGN(x))
 
 static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int scale)
