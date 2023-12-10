@@ -459,7 +459,6 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
 
 static void encode_acs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice,
-                       int plane_size_factor,
                        const uint8_t *scan, const int16_t *qmat)
 {
     int idx, i;
@@ -494,14 +493,13 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
 static void encode_slice_plane(ProresContext *ctx, PutBitContext *pb,
                               const uint16_t *src, ptrdiff_t linesize,
                               int mbs_per_slice, int16_t *blocks,
-                              int blocks_per_mb, int plane_size_factor,
+                              int blocks_per_mb,
                               const int16_t *qmat)
 {
     int blocks_per_slice = mbs_per_slice * blocks_per_mb;
 
     encode_dcs(pb, blocks, blocks_per_slice, qmat[0]);
-    encode_acs(pb, blocks, blocks_per_slice, plane_size_factor,
-               ctx->scantable, qmat);
+    encode_acs(pb, blocks, blocks_per_slice, ctx->scantable, qmat);
 }
 
 static void put_alpha_diff(PutBitContext *pb, int cur, int prev, int abits)
@@ -574,10 +572,9 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
     int i, xp, yp;
     int total_size = 0;
     const uint16_t *src;
-    int slice_width_factor = av_log2(mbs_per_slice);
     int num_cblocks, pwidth, line_add;
     ptrdiff_t linesize;
-    int plane_factor, is_chroma;
+    int is_chroma;
     uint16_t *qmat;
     uint16_t *qmat_chroma;
 
@@ -603,9 +600,6 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
 
     for (i = 0; i < ctx->num_planes; i++) {
         is_chroma    = (i == 1 || i == 2);
-        plane_factor = slice_width_factor + 2;
-        if (is_chroma)
-            plane_factor += ctx->chroma_factor - 3;
         if (!is_chroma || ctx->chroma_factor == CFACTOR_Y444) {
             xp          = x << 4;
             yp          = y << 4;
@@ -630,11 +624,11 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
             if (!is_chroma) {/* luma quant */
                 encode_slice_plane(ctx, pb, src, linesize,
                                    mbs_per_slice, ctx->blocks[0],
-                                   num_cblocks, plane_factor, qmat);
+                                   num_cblocks, qmat);
             } else { /* chroma plane */
                 encode_slice_plane(ctx, pb, src, linesize,
                                    mbs_per_slice, ctx->blocks[0],
-                                   num_cblocks, plane_factor, qmat_chroma);
+                                   num_cblocks, qmat_chroma);
             }
         } else {
             get_alpha_data(ctx, src, linesize, xp, yp,
@@ -703,7 +697,6 @@ static int estimate_dcs(int *error, int16_t *blocks, int blocks_per_slice,
 }
 
 static int estimate_acs(int *error, int16_t *blocks, int blocks_per_slice,
-                        int plane_size_factor,
                         const uint8_t *scan, const int16_t *qmat)
 {
     int idx, i;
@@ -741,7 +734,7 @@ static int estimate_acs(int *error, int16_t *blocks, int blocks_per_slice,
 static int estimate_slice_plane(ProresContext *ctx, int *error, int plane,
                                 const uint16_t *src, ptrdiff_t linesize,
                                 int mbs_per_slice,
-                                int blocks_per_mb, int plane_size_factor,
+                                int blocks_per_mb,
                                 const int16_t *qmat, ProresThreadData *td)
 {
     int blocks_per_slice;
@@ -750,8 +743,7 @@ static int estimate_slice_plane(ProresContext *ctx, int *error, int plane,
     blocks_per_slice = mbs_per_slice * blocks_per_mb;
 
     bits  = estimate_dcs(error, td->blocks[plane], blocks_per_slice, qmat[0]);
-    bits += estimate_acs(error, td->blocks[plane], blocks_per_slice,
-                         plane_size_factor, ctx->scantable, qmat);
+    bits += estimate_acs(error, td->blocks[plane], blocks_per_slice, ctx->scantable, qmat);
 
     return FFALIGN(bits, 8);
 }
@@ -820,9 +812,8 @@ static int find_slice_quant(AVCodecContext *avctx,
     ProresContext *ctx = avctx->priv_data;
     int i, q, pq, xp, yp;
     const uint16_t *src;
-    int slice_width_factor = av_log2(mbs_per_slice);
     int num_cblocks[MAX_PLANES], pwidth;
-    int plane_factor[MAX_PLANES], is_chroma[MAX_PLANES];
+    int is_chroma[MAX_PLANES];
     const int min_quant = ctx->profile_info->min_quant;
     const int max_quant = ctx->profile_info->max_quant;
     int error, bits, bits_limit;
@@ -842,9 +833,6 @@ static int find_slice_quant(AVCodecContext *avctx,
 
     for (i = 0; i < ctx->num_planes; i++) {
         is_chroma[i]    = (i == 1 || i == 2);
-        plane_factor[i] = slice_width_factor + 2;
-        if (is_chroma[i])
-            plane_factor[i] += ctx->chroma_factor - 3;
         if (!is_chroma[i] || ctx->chroma_factor == CFACTOR_Y444) {
             xp             = x << 4;
             yp             = y << 4;
@@ -888,13 +876,13 @@ static int find_slice_quant(AVCodecContext *avctx,
         bits += estimate_slice_plane(ctx, &error, 0,
                                      src, linesize[0],
                                      mbs_per_slice,
-                                     num_cblocks[0], plane_factor[0],
+                                     num_cblocks[0],
                                      ctx->quants[q], td); /* estimate luma plane */
         for (i = 1; i < ctx->num_planes - !!ctx->alpha_bits; i++) { /* estimate chroma plane */
             bits += estimate_slice_plane(ctx, &error, i,
                                          src, linesize[i],
                                          mbs_per_slice,
-                                         num_cblocks[i], plane_factor[i],
+                                         num_cblocks[i],
                                          ctx->quants_chroma[q], td);
         }
         if (bits > 65000 * 8)
@@ -925,13 +913,13 @@ static int find_slice_quant(AVCodecContext *avctx,
             bits += estimate_slice_plane(ctx, &error, 0,
                                          src, linesize[0],
                                          mbs_per_slice,
-                                         num_cblocks[0], plane_factor[0],
+                                         num_cblocks[0],
                                          qmat, td);/* estimate luma plane */
             for (i = 1; i < ctx->num_planes - !!ctx->alpha_bits; i++) { /* estimate chroma plane */
                 bits += estimate_slice_plane(ctx, &error, i,
                                              src, linesize[i],
                                              mbs_per_slice,
-                                             num_cblocks[i], plane_factor[i],
+                                             num_cblocks[i],
                                              qmat_chroma, td);
             }
             if (bits <= ctx->bits_per_mb * mbs_per_slice)
