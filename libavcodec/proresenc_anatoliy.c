@@ -285,9 +285,9 @@ static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
         diff_sign = DIFF_SIGN(delta, sign);
         code      = TO_GOLOMB2(get_level(delta), diff_sign);
 
-        encode_vlc_codeword(pb, ff_prores_dc_codebook[FFMIN(codebook, 6)], code);
+        encode_vlc_codeword(pb, ff_prores_dc_codebook[codebook], code);
 
-        codebook  = code;
+        codebook  = FFMIN(code, 6);
         sign      = delta >> 31;
         prev_dc   = new_dc;
     }
