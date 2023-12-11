@@ -257,7 +257,6 @@ static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
 
 #define GET_SIGN(x)  ((x) >> 31)
 #define MAKE_CODE(x) (((x) * 2) ^ GET_SIGN(x))
-#define TO_GOLOMB2(val,sign) ((val)==0 ? 0 : ((val) << 1) + (sign))
 
 static av_always_inline int get_level(int val)
 {
@@ -271,7 +270,6 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
 {
     int i;
     int codebook = 5, code, dc, prev_dc, delta, sign, new_sign;
-    int diff_sign;
 
     prev_dc = (blocks[0] - 0x4000) / scale;
     encode_vlc_codeword(pb, FIRST_DC_CB, MAKE_CODE(prev_dc));
@@ -282,8 +280,8 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
         dc        = (blocks[0] - 0x4000) / scale;
         delta     = dc - prev_dc;
         new_sign  = GET_SIGN(delta);
-        diff_sign = new_sign ^ sign;
-        code      = TO_GOLOMB2(get_level(delta), diff_sign);
+        delta     = (delta ^ sign) - sign;
+        code      = MAKE_CODE(delta);
 
         encode_vlc_codeword(pb, ff_prores_dc_codebook[codebook], code);
 
