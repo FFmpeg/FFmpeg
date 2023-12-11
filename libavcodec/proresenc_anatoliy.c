@@ -284,14 +284,14 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
 
 static void encode_acs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice,
-                       int *qmat, const uint8_t ff_prores_scan[64])
+                       int *qmat, const uint8_t *scan)
 {
     int prev_run = 4;
     int prev_level = 2;
 
     int run = 0, level, code, i, j;
     for (i = 1; i < 64; i++) {
-        int indp = ff_prores_scan[i];
+        int indp = scan[i];
         for (j = 0; j < blocks_per_slice; j++) {
             int val = (blocks[(j << 6) + indp]) / qmat[indp];
             if (val) {
@@ -370,7 +370,7 @@ static void calc_plane_dct(FDCTDSPContext *fdsp, const uint8_t *src, int16_t * b
 }
 
 static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsigned buf_size, int *qmat, int sub_sample_chroma,
-                              const uint8_t ff_prores_scan[64])
+                              const uint8_t *scan)
 {
     int blocks_per_slice;
     PutBitContext pb;
@@ -379,7 +379,7 @@ static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsig
     init_put_bits(&pb, buf, buf_size);
 
     encode_dcs(&pb, blocks, blocks_per_slice, qmat[0]);
-    encode_acs(&pb, blocks, blocks_per_slice, qmat, ff_prores_scan);
+    encode_acs(&pb, blocks, blocks_per_slice, qmat, scan);
 
     flush_put_bits(&pb);
     return put_bits_ptr(&pb) - pb.buf;
