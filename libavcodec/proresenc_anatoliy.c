@@ -298,18 +298,18 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
         for (idx = scan[i]; idx < max_coeffs; idx += 64) {
             int val = blocks[idx] / qmat[scan[i]];
             if (val) {
-                encode_vlc_codeword(pb, ff_prores_run_to_cb[FFMIN(prev_run, 15)], run);
+                encode_vlc_codeword(pb, ff_prores_run_to_cb[prev_run], run);
 
-                prev_run   = run;
-                run        = 0;
                 level      = FFABS(val);
                 code       = level - 1;
 
-                encode_vlc_codeword(pb, ff_prores_level_to_cb[FFMIN(prev_level, 9)], code);
-
-                prev_level = level;
+                encode_vlc_codeword(pb, ff_prores_level_to_cb[prev_level], code);
 
                 put_sbits(pb, 1, GET_SIGN(val));
+
+                prev_run   = FFMIN(run, 15);
+                prev_level = FFMIN(level, 9);
+                run        = 0;
             } else {
                 ++run;
             }
