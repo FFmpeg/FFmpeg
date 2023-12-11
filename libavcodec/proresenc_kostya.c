@@ -437,11 +437,10 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
     int idx, i;
     int prev_run = 4;
     int prev_level = 2;
-    int run, level;
+    int run = 0, level;
     int max_coeffs, abs_level;
 
     max_coeffs = blocks_per_slice << 6;
-    run        = 0;
 
     for (i = 1; i < 64; i++) {
         for (idx = scan[i]; idx < max_coeffs; idx += 64) {
@@ -449,13 +448,12 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
             if (level) {
                 abs_level = FFABS(level);
                 encode_vlc_codeword(pb, ff_prores_run_to_cb[prev_run], run);
-                encode_vlc_codeword(pb, ff_prores_level_to_cb[prev_level],
-                                    abs_level - 1);
+                encode_vlc_codeword(pb, ff_prores_level_to_cb[prev_level], abs_level - 1);
                 put_sbits(pb, 1, GET_SIGN(level));
 
                 prev_run   = FFMIN(run, 15);
                 prev_level = FFMIN(abs_level, 9);
-                run    = 0;
+                run        = 0;
             } else {
                 run++;
             }
