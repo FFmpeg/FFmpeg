@@ -1018,7 +1018,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             bytestream_put_byte(&buf, ctx->quant_mat[i]);
         // chroma quantisation matrix
         for (i = 0; i < 64; i++)
-            bytestream_put_byte(&buf, ctx->quant_mat[i]);
+            bytestream_put_byte(&buf, ctx->quant_chroma_mat[i]);
     } else {
         bytestream_put_byte  (&buf, 0x00);      // matrix flags - default matrices are used
     }
