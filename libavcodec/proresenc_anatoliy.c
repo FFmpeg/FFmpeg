@@ -255,7 +255,6 @@ static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
     }
 }
 
-#define QSCALE(qmat,ind,val) ((val) / ((qmat)[ind]))
 #define TO_GOLOMB(val) (((val) * 2) ^ ((val) >> 31))
 #define DIFF_SIGN(val, sign) (((val) >> 31) ^ (sign))
 #define IS_NEGATIVE(val) ((((val) >> 31) ^ -1) + 1)
@@ -275,13 +274,13 @@ static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
     int i, sign, idx;
     int new_dc, delta, diff_sign, new_code;
 
-    prev_dc = QSCALE(qmat, 0, in[0] - 16384);
+    prev_dc = (in[0] - 0x4000) / qmat[0];
     code = TO_GOLOMB(prev_dc);
     encode_vlc_codeword(pb, FIRST_DC_CB, code);
 
     code = 5; sign = 0; idx = 64;
     for (i = 1; i < blocks_per_slice; i++, idx += 64) {
-        new_dc    = QSCALE(qmat, 0, in[idx] - 16384);
+        new_dc    = (in[idx] - 0x4000) / qmat[0];
         delta     = new_dc - prev_dc;
         diff_sign = DIFF_SIGN(delta, sign);
         new_code  = TO_GOLOMB2(get_level(delta), diff_sign);
@@ -304,7 +303,7 @@ static void encode_ac_coeffs(PutBitContext *pb,
     for (i = 1; i < 64; i++) {
         int indp = ff_prores_scan[i];
         for (j = 0; j < blocks_per_slice; j++) {
-            int val = QSCALE(qmat, indp, in[(j << 6) + indp]);
+            int val = (in[(j << 6) + indp]) / qmat[indp];
             if (val) {
                 encode_vlc_codeword(pb, ff_prores_run_to_cb[FFMIN(prev_run, 15)], run);
 
