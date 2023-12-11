@@ -796,7 +796,7 @@ static NSArray* getDevicesWithMediaType(AVMediaType mediaType) {
     } else if (mediaType == AVMediaTypeMuxed) {
         #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 170000 || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000))
             deviceTypes = [NSMutableArray arrayWithArray:@[AVCaptureDeviceTypeExternal]];
-        #elseif (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED < 140000)
+        #elif (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED < 140000)
             deviceTypes = [NSMutableArray arrayWithArray:@[AVCaptureDeviceTypeExternalUnknown]];
         #else
             return nil;
