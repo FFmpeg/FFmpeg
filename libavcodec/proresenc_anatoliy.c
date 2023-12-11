@@ -258,13 +258,6 @@ static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
 #define GET_SIGN(x)  ((x) >> 31)
 #define MAKE_CODE(x) (((x) * 2) ^ GET_SIGN(x))
 
-static av_always_inline int get_level(int val)
-{
-    int sign = (val >> 31);
-    return (val ^ sign) - sign;
-}
-
-
 static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int scale)
 {
@@ -305,7 +298,7 @@ static void encode_ac_coeffs(PutBitContext *pb,
 
                 prev_run   = run;
                 run        = 0;
-                level      = get_level(val);
+                level      = FFABS(val);
                 code       = level - 1;
 
                 encode_vlc_codeword(pb, ff_prores_level_to_cb[FFMIN(prev_level, 9)], code);
