@@ -1861,7 +1861,7 @@ of seconds.
 The timestamp discontinuity correction enabled by this option is only
 applied to input formats accepting timestamp discontinuity (for which
 the @code{AVFMT_TS_DISCONT} flag is enabled), e.g. MPEG-TS and HLS, and
-is automatically disabled when employing the @code{-copy_ts} option
+is automatically disabled when employing the @code{-copyts} option
 (unless wrapping is detected).
 
 If a timestamp discontinuity is detected whose absolute value is
