@@ -226,31 +226,32 @@ static int int_from_list_or_default(void *ctx, const char *val_name, int val,
     return default_value;
 }
 
-static void encode_codeword(PutBitContext *pb, int val, int codebook)
+static void encode_codeword(PutBitContext *pb, int val, unsigned codebook)
 {
-    unsigned int rice_order, exp_order, switch_bits, first_exp, exp, zeros;
+    unsigned int rice_order, exp_order, switch_bits, switch_val;
+    int exponent;
 
-    /* number of bits to switch between rice and exp golomb */
-    switch_bits = codebook & 3;
-    rice_order  = codebook >> 5;
-    exp_order   = (codebook >> 2) & 7;
+    /* number of prefix bits to switch between Rice and expGolomb */
+    switch_bits = (codebook & 3) + 1;
+    rice_order  =  codebook >> 5;       /* rice code order */
+    exp_order   = (codebook >> 2) & 7;  /* exp golomb code order */
 
-    first_exp = ((switch_bits + 1) << rice_order);
+    switch_val  = switch_bits << rice_order;
 
-    if (val >= first_exp) { /* exp golomb */
-        val -= first_exp;
-        val += (1 << exp_order);
-        exp = av_log2(val);
-        zeros = exp - exp_order + switch_bits + 1;
-        put_bits(pb, zeros, 0);
-        put_bits(pb, exp + 1, val);
-    } else if (rice_order) {
-        put_bits(pb, (val >> rice_order), 0);
-        put_bits(pb, 1, 1);
-        put_sbits(pb, rice_order, val);
+    if (val >= switch_val) {
+        val -= switch_val - (1 << exp_order);
+        exponent = av_log2(val);
+
+        put_bits(pb, exponent - exp_order + switch_bits, 0);
+        put_bits(pb, exponent + 1, val);
     } else {
-        put_bits(pb, val, 0);
+        exponent = val >> rice_order;
+
+        if (exponent)
+            put_bits(pb, exponent, 0);
         put_bits(pb, 1, 1);
+        if (rice_order)
+            put_sbits(pb, rice_order, val);
     }
 }
 
