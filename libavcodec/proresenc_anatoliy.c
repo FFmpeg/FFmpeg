@@ -277,17 +277,15 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
     blocks  += 64;
 
     for (i = 1; i < blocks_per_slice; i++, blocks += 64) {
-        dc        = (blocks[0] - 0x4000) / scale;
-        delta     = dc - prev_dc;
-        new_sign  = GET_SIGN(delta);
-        delta     = (delta ^ sign) - sign;
-        code      = MAKE_CODE(delta);
-
+        dc       = (blocks[0] - 0x4000) / scale;
+        delta    = dc - prev_dc;
+        new_sign = GET_SIGN(delta);
+        delta    = (delta ^ sign) - sign;
+        code     = MAKE_CODE(delta);
         encode_vlc_codeword(pb, ff_prores_dc_codebook[codebook], code);
-
-        codebook  = FFMIN(code, 6);
-        sign      = new_sign;
-        prev_dc   = dc;
+        codebook = FFMIN(code, 6);
+        sign     = new_sign;
+        prev_dc  = dc;
     }
 }
 
