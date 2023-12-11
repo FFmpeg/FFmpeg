@@ -267,20 +267,20 @@ static av_always_inline int get_level(int val)
 }
 
 
-static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
-        int blocks_per_slice, int *qmat)
+static void encode_dcs(PutBitContext *pb, int16_t *blocks,
+                       int blocks_per_slice, int *qmat)
 {
     int prev_dc, codebook;
     int i, sign, idx;
     int new_dc, delta, diff_sign, code;
 
-    prev_dc = (in[0] - 0x4000) / qmat[0];
+    prev_dc = (blocks[0] - 0x4000) / qmat[0];
     codebook = TO_GOLOMB(prev_dc);
     encode_vlc_codeword(pb, FIRST_DC_CB, codebook);
 
     codebook = 5; sign = 0; idx = 64;
     for (i = 1; i < blocks_per_slice; i++, idx += 64) {
-        new_dc    = (in[idx] - 0x4000) / qmat[0];
+        new_dc    = (blocks[idx] - 0x4000) / qmat[0];
         delta     = new_dc - prev_dc;
         diff_sign = DIFF_SIGN(delta, sign);
         code      = TO_GOLOMB2(get_level(delta), diff_sign);
@@ -388,7 +388,7 @@ static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsig
     blocks_per_slice = mb_count << (2 - sub_sample_chroma);
     init_put_bits(&pb, buf, buf_size);
 
-    encode_dc_coeffs(&pb, blocks, blocks_per_slice, qmat);
+    encode_dcs(&pb, blocks, blocks_per_slice, qmat);
     encode_ac_coeffs(&pb, blocks, blocks_per_slice, qmat, ff_prores_scan);
 
     flush_put_bits(&pb);
