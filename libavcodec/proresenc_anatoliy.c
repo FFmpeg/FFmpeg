@@ -257,7 +257,6 @@ static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
 
 #define GET_SIGN(x)  ((x) >> 31)
 #define TO_GOLOMB(val) (((val) * 2) ^ GET_SIGN(val))
-#define DIFF_SIGN(val, sign) (GET_SIGN(val) ^ (sign))
 #define IS_NEGATIVE(val) ((GET_SIGN(val) ^ -1) + 1)
 #define TO_GOLOMB2(val,sign) ((val)==0 ? 0 : ((val) << 1) + (sign))
 
@@ -272,7 +271,7 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int *qmat)
 {
     int prev_dc, codebook;
-    int i, sign;
+    int i, sign, new_sign;
     int new_dc, delta, diff_sign, code;
 
     prev_dc = (blocks[0] - 0x4000) / qmat[0];
@@ -284,13 +283,14 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
     for (i = 1; i < blocks_per_slice; i++, blocks += 64) {
         new_dc    = (blocks[0] - 0x4000) / qmat[0];
         delta     = new_dc - prev_dc;
-        diff_sign = DIFF_SIGN(delta, sign);
+        new_sign  = GET_SIGN(delta);
+        diff_sign = new_sign ^ sign;
         code      = TO_GOLOMB2(get_level(delta), diff_sign);
 
         encode_vlc_codeword(pb, ff_prores_dc_codebook[codebook], code);
 
         codebook  = FFMIN(code, 6);
-        sign      = delta >> 31;
+        sign      = new_sign;
         prev_dc   = new_dc;
     }
 }
