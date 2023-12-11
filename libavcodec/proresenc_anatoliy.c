@@ -775,15 +775,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                                       pict->color_trc, valid_trc, 0);
     *buf++ = int_from_list_or_default(avctx, "frame colorspace",
                                       pict->colorspace, valid_colorspace, 0);
-    if (avctx->profile >= AV_PROFILE_PRORES_4444) {
-        if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10) {
-            *buf++ = 0xA0;/* src b64a and no alpha */
-        } else {
-            *buf++ = 0xA2;/* src b64a and 16b alpha */
-        }
-    } else {
-        *buf++ = 32;/* src v210 and no alpha */
-    }
+    *buf++ = ctx->need_alpha ? 0x2 /* 16-bit alpha */ : 0;
     *buf++ = 0; /* reserved */
     *buf++ = 3; /* luma and chroma matrix present */
 
