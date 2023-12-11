@@ -266,7 +266,6 @@ static av_always_inline int get_level(int val)
     return (val ^ sign) - sign;
 }
 
-static const uint8_t dc_codebook[7] = { 0x04, 0x28, 0x28, 0x4D, 0x4D, 0x70, 0x70};
 
 static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
         int blocks_per_slice, int *qmat)
@@ -286,7 +285,7 @@ static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
         diff_sign = DIFF_SIGN(delta, sign);
         new_code  = TO_GOLOMB2(get_level(delta), diff_sign);
 
-        encode_codeword(pb, new_code, dc_codebook[FFMIN(code, 6)]);
+        encode_codeword(pb, new_code, ff_prores_dc_codebook[FFMIN(code, 6)]);
 
         code      = new_code;
         sign      = delta >> 31;

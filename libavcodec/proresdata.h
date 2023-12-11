@@ -29,6 +29,7 @@
 
 extern const uint8_t ff_prores_progressive_scan[64];
 extern const uint8_t ff_prores_interlaced_scan[64];
+extern const uint8_t ff_prores_dc_codebook[7];
 extern const uint8_t ff_prores_run_to_cb[16];
 extern const uint8_t ff_prores_level_to_cb[10];
 
