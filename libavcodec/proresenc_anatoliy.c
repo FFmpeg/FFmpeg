@@ -267,19 +267,19 @@ static av_always_inline int get_level(int val)
 
 
 static void encode_dcs(PutBitContext *pb, int16_t *blocks,
-                       int blocks_per_slice, int *qmat)
+                       int blocks_per_slice, int scale)
 {
     int i;
     int codebook = 5, code, dc, prev_dc, delta, sign, new_sign;
     int diff_sign;
 
-    prev_dc = (blocks[0] - 0x4000) / qmat[0];
+    prev_dc = (blocks[0] - 0x4000) / scale;
     encode_vlc_codeword(pb, FIRST_DC_CB, MAKE_CODE(prev_dc));
     sign     = 0;
     blocks  += 64;
 
     for (i = 1; i < blocks_per_slice; i++, blocks += 64) {
-        dc        = (blocks[0] - 0x4000) / qmat[0];
+        dc        = (blocks[0] - 0x4000) / scale;
         delta     = dc - prev_dc;
         new_sign  = GET_SIGN(delta);
         diff_sign = new_sign ^ sign;
@@ -388,7 +388,7 @@ static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsig
     blocks_per_slice = mb_count << (2 - sub_sample_chroma);
     init_put_bits(&pb, buf, buf_size);
 
-    encode_dcs(&pb, blocks, blocks_per_slice, qmat);
+    encode_dcs(&pb, blocks, blocks_per_slice, qmat[0]);
     encode_ac_coeffs(&pb, blocks, blocks_per_slice, qmat, ff_prores_scan);
 
     flush_put_bits(&pb);
