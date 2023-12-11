@@ -754,7 +754,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     compress_frame_size = 8 + header_size;
 
     bytestream_put_be32(&buf, compress_frame_size);/* frame size will be update after picture(s) encoding */
-    bytestream_put_buffer(&buf, "icpf", 4);
+    bytestream_put_be32(&buf, FRAME_ID);
 
     bytestream_put_be16(&buf, header_size);
     bytestream_put_be16(&buf, 0); /* version */
