@@ -257,7 +257,6 @@ static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
 
 #define GET_SIGN(x)  ((x) >> 31)
 #define TO_GOLOMB(val) (((val) * 2) ^ GET_SIGN(val))
-#define IS_NEGATIVE(val) ((GET_SIGN(val) ^ -1) + 1)
 #define TO_GOLOMB2(val,sign) ((val)==0 ? 0 : ((val) << 1) + (sign))
 
 static av_always_inline int get_level(int val)
@@ -318,7 +317,7 @@ static void encode_ac_coeffs(PutBitContext *pb,
 
                 prev_level = level;
 
-                put_bits(pb, 1, IS_NEGATIVE(val));
+                put_sbits(pb, 1, GET_SIGN(val));
             } else {
                 ++run;
             }
