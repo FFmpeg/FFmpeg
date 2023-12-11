@@ -746,7 +746,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be32(&buf, FRAME_ID);
 
     bytestream_put_be16(&buf, header_size);
-    bytestream_put_be16(&buf, 0); /* version */
+    bytestream_put_be16(&buf, avctx->pix_fmt != AV_PIX_FMT_YUV422P10 || ctx->need_alpha ? 1 : 0); /* version */
     bytestream_put_buffer(&buf, ctx->vendor, 4);
     bytestream_put_be16(&buf, avctx->width);
     bytestream_put_be16(&buf, avctx->height);
