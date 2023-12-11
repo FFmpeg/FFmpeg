@@ -994,7 +994,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     // frame header
     tmp = buf;
     buf += 2;                                   // frame header size will be stored here
-    bytestream_put_be16  (&buf, 0);             // version 1
+    bytestream_put_be16  (&buf, ctx->chroma_factor != CFACTOR_Y422 || ctx->alpha_bits ? 1 : 0);
     bytestream_put_buffer(&buf, ctx->vendor, 4);
     bytestream_put_be16  (&buf, avctx->width);
     bytestream_put_be16  (&buf, avctx->height);
