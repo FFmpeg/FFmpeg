@@ -282,8 +282,9 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
     }
 }
 
-static void encode_ac_coeffs(PutBitContext *pb,
-        int16_t *in, int blocks_per_slice, int *qmat, const uint8_t ff_prores_scan[64])
+static void encode_acs(PutBitContext *pb, int16_t *blocks,
+                       int blocks_per_slice,
+                       int *qmat, const uint8_t ff_prores_scan[64])
 {
     int prev_run = 4;
     int prev_level = 2;
@@ -292,7 +293,7 @@ static void encode_ac_coeffs(PutBitContext *pb,
     for (i = 1; i < 64; i++) {
         int indp = ff_prores_scan[i];
         for (j = 0; j < blocks_per_slice; j++) {
-            int val = (in[(j << 6) + indp]) / qmat[indp];
+            int val = (blocks[(j << 6) + indp]) / qmat[indp];
             if (val) {
                 encode_vlc_codeword(pb, ff_prores_run_to_cb[FFMIN(prev_run, 15)], run);
 
@@ -378,7 +379,7 @@ static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsig
     init_put_bits(&pb, buf, buf_size);
 
     encode_dcs(&pb, blocks, blocks_per_slice, qmat[0]);
-    encode_ac_coeffs(&pb, blocks, blocks_per_slice, qmat, ff_prores_scan);
+    encode_acs(&pb, blocks, blocks_per_slice, qmat, ff_prores_scan);
 
     flush_put_bits(&pb);
     return put_bits_ptr(&pb) - pb.buf;
