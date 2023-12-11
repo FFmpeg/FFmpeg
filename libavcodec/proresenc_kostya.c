@@ -1013,12 +1013,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_byte  (&buf, 0);             // reserved
     if (ctx->quant_sel != QUANT_MAT_DEFAULT) {
         bytestream_put_byte  (&buf, 0x03);      // matrix flags - both matrices are present
-        // luma quantisation matrix
-        for (i = 0; i < 64; i++)
-            bytestream_put_byte(&buf, ctx->quant_mat[i]);
-        // chroma quantisation matrix
-        for (i = 0; i < 64; i++)
-            bytestream_put_byte(&buf, ctx->quant_chroma_mat[i]);
+        bytestream_put_buffer(&buf, ctx->quant_mat, 64);        // luma quantisation matrix
+        bytestream_put_buffer(&buf, ctx->quant_chroma_mat, 64); // chroma quantisation matrix
     } else {
         bytestream_put_byte  (&buf, 0x00);      // matrix flags - default matrices are used
     }
