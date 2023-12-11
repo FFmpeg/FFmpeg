@@ -286,14 +286,17 @@ static void encode_acs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice,
                        int *qmat, const uint8_t *scan)
 {
+    int idx;
     int prev_run = 4;
     int prev_level = 2;
+    int max_coeffs;
+    int run = 0, level, code, i;
 
-    int run = 0, level, code, i, j;
+    max_coeffs = blocks_per_slice << 6;
+
     for (i = 1; i < 64; i++) {
-        int indp = scan[i];
-        for (j = 0; j < blocks_per_slice; j++) {
-            int val = (blocks[(j << 6) + indp]) / qmat[indp];
+        for (idx = scan[i]; idx < max_coeffs; idx += 64) {
+            int val = blocks[idx] / qmat[scan[i]];
             if (val) {
                 encode_vlc_codeword(pb, ff_prores_run_to_cb[FFMIN(prev_run, 15)], run);
 
