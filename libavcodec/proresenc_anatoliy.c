@@ -270,24 +270,24 @@ static av_always_inline int get_level(int val)
 static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
         int blocks_per_slice, int *qmat)
 {
-    int prev_dc, code;
+    int prev_dc, codebook;
     int i, sign, idx;
-    int new_dc, delta, diff_sign, new_code;
+    int new_dc, delta, diff_sign, code;
 
     prev_dc = (in[0] - 0x4000) / qmat[0];
-    code = TO_GOLOMB(prev_dc);
-    encode_vlc_codeword(pb, FIRST_DC_CB, code);
+    codebook = TO_GOLOMB(prev_dc);
+    encode_vlc_codeword(pb, FIRST_DC_CB, codebook);
 
-    code = 5; sign = 0; idx = 64;
+    codebook = 5; sign = 0; idx = 64;
     for (i = 1; i < blocks_per_slice; i++, idx += 64) {
         new_dc    = (in[idx] - 0x4000) / qmat[0];
         delta     = new_dc - prev_dc;
         diff_sign = DIFF_SIGN(delta, sign);
-        new_code  = TO_GOLOMB2(get_level(delta), diff_sign);
+        code      = TO_GOLOMB2(get_level(delta), diff_sign);
 
-        encode_vlc_codeword(pb, ff_prores_dc_codebook[FFMIN(code, 6)], new_code);
+        encode_vlc_codeword(pb, ff_prores_dc_codebook[FFMIN(codebook, 6)], code);
 
-        code      = new_code;
+        codebook  = code;
         sign      = delta >> 31;
         prev_dc   = new_dc;
     }
