@@ -272,7 +272,7 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
 {
     int prev_dc, codebook;
     int i, sign, new_sign;
-    int new_dc, delta, diff_sign, code;
+    int dc, delta, diff_sign, code;
 
     prev_dc = (blocks[0] - 0x4000) / qmat[0];
     codebook = TO_GOLOMB(prev_dc);
@@ -281,8 +281,8 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
 
     codebook = 5; sign = 0;
     for (i = 1; i < blocks_per_slice; i++, blocks += 64) {
-        new_dc    = (blocks[0] - 0x4000) / qmat[0];
-        delta     = new_dc - prev_dc;
+        dc        = (blocks[0] - 0x4000) / qmat[0];
+        delta     = dc - prev_dc;
         new_sign  = GET_SIGN(delta);
         diff_sign = new_sign ^ sign;
         code      = TO_GOLOMB2(get_level(delta), diff_sign);
@@ -291,7 +291,7 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
 
         codebook  = FFMIN(code, 6);
         sign      = new_sign;
-        prev_dc   = new_dc;
+        prev_dc   = dc;
     }
 }
 
