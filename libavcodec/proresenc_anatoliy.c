@@ -226,7 +226,7 @@ static int int_from_list_or_default(void *ctx, const char *val_name, int val,
     return default_value;
 }
 
-static void encode_codeword(PutBitContext *pb, int val, unsigned codebook)
+static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
 {
     unsigned int rice_order, exp_order, switch_bits, switch_val;
     int exponent;
@@ -277,7 +277,7 @@ static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
 
     prev_dc = QSCALE(qmat, 0, in[0] - 16384);
     code = TO_GOLOMB(prev_dc);
-    encode_codeword(pb, code, FIRST_DC_CB);
+    encode_vlc_codeword(pb, FIRST_DC_CB, code);
 
     code = 5; sign = 0; idx = 64;
     for (i = 1; i < blocks_per_slice; i++, idx += 64) {
@@ -286,7 +286,7 @@ static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
         diff_sign = DIFF_SIGN(delta, sign);
         new_code  = TO_GOLOMB2(get_level(delta), diff_sign);
 
-        encode_codeword(pb, new_code, ff_prores_dc_codebook[FFMIN(code, 6)]);
+        encode_vlc_codeword(pb, ff_prores_dc_codebook[FFMIN(code, 6)], new_code);
 
         code      = new_code;
         sign      = delta >> 31;
@@ -306,14 +306,14 @@ static void encode_ac_coeffs(PutBitContext *pb,
         for (j = 0; j < blocks_per_slice; j++) {
             int val = QSCALE(qmat, indp, in[(j << 6) + indp]);
             if (val) {
-                encode_codeword(pb, run, ff_prores_run_to_cb[FFMIN(prev_run, 15)]);
+                encode_vlc_codeword(pb, ff_prores_run_to_cb[FFMIN(prev_run, 15)], run);
 
                 prev_run   = run;
                 run        = 0;
                 level      = get_level(val);
                 code       = level - 1;
 
-                encode_codeword(pb, code, ff_prores_level_to_cb[FFMIN(prev_level, 9)]);
+                encode_vlc_codeword(pb, ff_prores_level_to_cb[FFMIN(prev_level, 9)], code);
 
                 prev_level = level;
 
