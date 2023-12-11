@@ -492,6 +492,7 @@ const FFCodec ff_libjxl_encoder = {
     .p.pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
         AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64,
+        AV_PIX_FMT_RGBF32, AV_PIX_FMT_RGBAF32,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_YA8,
         AV_PIX_FMT_GRAY16, AV_PIX_FMT_YA16,
         AV_PIX_FMT_GRAYF32,
