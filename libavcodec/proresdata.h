@@ -29,6 +29,8 @@
 
 extern const uint8_t ff_prores_progressive_scan[64];
 extern const uint8_t ff_prores_interlaced_scan[64];
+extern const uint8_t ff_prores_run_to_cb[16];
+extern const uint8_t ff_prores_level_to_cb[10];
 
 #define FIRST_DC_CB 0xB8 // rice_order = 5, exp_golomb_order = 6, switch_bits = 0
 

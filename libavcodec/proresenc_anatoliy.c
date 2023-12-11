@@ -296,11 +296,6 @@ static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
     }
 }
 
-static const uint8_t run_to_cb[16] = { 0x06, 0x06, 0x05, 0x05, 0x04, 0x29,
-        0x29, 0x29, 0x29, 0x28, 0x28, 0x28, 0x28, 0x28, 0x28, 0x4C };
-static const uint8_t lev_to_cb[10] = { 0x04, 0x0A, 0x05, 0x06, 0x04, 0x28,
-        0x28, 0x28, 0x28, 0x4C };
-
 static void encode_ac_coeffs(PutBitContext *pb,
         int16_t *in, int blocks_per_slice, int *qmat, const uint8_t ff_prores_scan[64])
 {
@@ -313,14 +308,14 @@ static void encode_ac_coeffs(PutBitContext *pb,
         for (j = 0; j < blocks_per_slice; j++) {
             int val = QSCALE(qmat, indp, in[(j << 6) + indp]);
             if (val) {
-                encode_codeword(pb, run, run_to_cb[FFMIN(prev_run, 15)]);
+                encode_codeword(pb, run, ff_prores_run_to_cb[FFMIN(prev_run, 15)]);
 
                 prev_run   = run;
                 run        = 0;
                 level      = get_level(val);
                 code       = level - 1;
 
-                encode_codeword(pb, code, lev_to_cb[FFMIN(prev_level, 9)]);
+                encode_codeword(pb, code, ff_prores_level_to_cb[FFMIN(prev_level, 9)]);
 
                 prev_level = level;
 
