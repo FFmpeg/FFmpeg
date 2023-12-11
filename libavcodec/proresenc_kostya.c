@@ -1,6 +1,7 @@
 /*
  * Apple ProRes encoder
  *
+ * Copyright (c) 2011 Anatoliy Wasserman
  * Copyright (c) 2012 Konstantin Shishkov
  *
  * This encoder appears to be based on Anatoliy Wassermans considering
