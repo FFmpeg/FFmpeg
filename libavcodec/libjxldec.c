@@ -130,10 +130,11 @@ static enum AVPixelFormat libjxl_get_pix_fmt(AVCodecContext *avctx, LibJxlDecode
             return basic_info->alpha_bits ? AV_PIX_FMT_YA8 : AV_PIX_FMT_GRAY8;
         }
         if (basic_info->exponent_bits_per_sample || basic_info->bits_per_sample > 16) {
-            if (basic_info->alpha_bits)
-                return AV_PIX_FMT_NONE;
-            format->data_type = JXL_TYPE_FLOAT;
-            return AV_PIX_FMT_GRAYF32;
+            if (!basic_info->alpha_bits) {
+                format->data_type = JXL_TYPE_FLOAT;
+                return AV_PIX_FMT_GRAYF32;
+            }
+            av_log(avctx, AV_LOG_WARNING, "Downsampling gray+alpha float to 16-bit integer via libjxl\n");
         }
         format->data_type = JXL_TYPE_UINT16;
         return basic_info->alpha_bits ? AV_PIX_FMT_YA16 : AV_PIX_FMT_GRAY16;
@@ -145,10 +146,10 @@ static enum AVPixelFormat libjxl_get_pix_fmt(AVCodecContext *avctx, LibJxlDecode
             format->data_type = JXL_TYPE_UINT8;
             return basic_info->alpha_bits ? AV_PIX_FMT_RGBA : AV_PIX_FMT_RGB24;
         }
-        if (basic_info->exponent_bits_per_sample)
-            av_log(avctx, AV_LOG_WARNING, "Downsampling float to 16-bit integer via libjxl\n");
-        else if (basic_info->bits_per_sample > 16)
-            av_log(avctx, AV_LOG_WARNING, "Downsampling larger integer to 16-bit via libjxl\n");
+        if (basic_info->exponent_bits_per_sample || basic_info->bits_per_sample > 16) {
+            format->data_type = JXL_TYPE_FLOAT;
+            return basic_info->alpha_bits ? AV_PIX_FMT_RGBAF32 : AV_PIX_FMT_RGBF32;
+        }
         format->data_type = JXL_TYPE_UINT16;
         return basic_info->alpha_bits ? AV_PIX_FMT_RGBA64 : AV_PIX_FMT_RGB48;
     }
