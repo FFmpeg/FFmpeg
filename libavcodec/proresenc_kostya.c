@@ -1008,7 +1008,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_byte  (&buf, pic->color_primaries);
     bytestream_put_byte  (&buf, pic->color_trc);
     bytestream_put_byte  (&buf, pic->colorspace);
-    bytestream_put_byte  (&buf, 0x40 | (ctx->alpha_bits >> 3));
+    bytestream_put_byte  (&buf, ctx->alpha_bits >> 3);
     bytestream_put_byte  (&buf, 0);             // reserved
     if (ctx->quant_sel != QUANT_MAT_DEFAULT) {
         bytestream_put_byte  (&buf, 0x03);      // matrix flags - both matrices are present
