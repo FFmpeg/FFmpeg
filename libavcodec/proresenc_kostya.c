@@ -135,13 +135,6 @@ static const uint8_t prores_quant_matrices[][64] = {
     },
 };
 
-static const uint8_t prores_dc_codebook[4] = {
-    0x04, // rice_order = 0, exp_golomb_order = 1, switch_bits = 0
-    0x28, // rice_order = 1, exp_golomb_order = 2, switch_bits = 0
-    0x4D, // rice_order = 2, exp_golomb_order = 3, switch_bits = 1
-    0x70  // rice_order = 3, exp_golomb_order = 4, switch_bits = 0
-};
-
 #define NUM_MB_LIMITS 4
 static const int prores_mb_limits[NUM_MB_LIMITS] = {
     1620, // up to 720x576
@@ -416,7 +409,7 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int scale)
 {
     int i;
-    int codebook = 3, code, dc, prev_dc, delta, sign, new_sign;
+    int codebook = 5, code, dc, prev_dc, delta, sign, new_sign;
 
     prev_dc = (blocks[0] - 0x4000) / scale;
     encode_vlc_codeword(pb, FIRST_DC_CB, MAKE_CODE(prev_dc));
@@ -429,9 +422,8 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
         new_sign = GET_SIGN(delta);
         delta    = (delta ^ sign) - sign;
         code     = MAKE_CODE(delta);
-        encode_vlc_codeword(pb, prores_dc_codebook[codebook], code);
-        codebook = (code + (code & 1)) >> 1;
-        codebook = FFMIN(codebook, 3);
+        encode_vlc_codeword(pb, ff_prores_dc_codebook[codebook], code);
+        codebook = FFMIN(code, 6);
         sign     = new_sign;
         prev_dc  = dc;
     }
@@ -649,7 +641,7 @@ static int estimate_dcs(int *error, int16_t *blocks, int blocks_per_slice,
                         int scale)
 {
     int i;
-    int codebook = 3, code, dc, prev_dc, delta, sign, new_sign;
+    int codebook = 5, code, dc, prev_dc, delta, sign, new_sign;
     int bits;
 
     prev_dc  = (blocks[0] - 0x4000) / scale;
@@ -665,9 +657,8 @@ static int estimate_dcs(int *error, int16_t *blocks, int blocks_per_slice,
         new_sign = GET_SIGN(delta);
         delta    = (delta ^ sign) - sign;
         code     = MAKE_CODE(delta);
-        bits    += estimate_vlc(prores_dc_codebook[codebook], code);
-        codebook = (code + (code & 1)) >> 1;
-        codebook = FFMIN(codebook, 3);
+        bits    += estimate_vlc(ff_prores_dc_codebook[codebook], code);
+        codebook = FFMIN(code, 6);
         sign     = new_sign;
         prev_dc  = dc;
     }
