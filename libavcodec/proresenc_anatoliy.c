@@ -271,16 +271,17 @@ static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int *qmat)
 {
     int prev_dc, codebook;
-    int i, sign, idx;
+    int i, sign;
     int new_dc, delta, diff_sign, code;
 
     prev_dc = (blocks[0] - 0x4000) / qmat[0];
     codebook = TO_GOLOMB(prev_dc);
     encode_vlc_codeword(pb, FIRST_DC_CB, codebook);
+    blocks  += 64;
 
-    codebook = 5; sign = 0; idx = 64;
-    for (i = 1; i < blocks_per_slice; i++, idx += 64) {
-        new_dc    = (blocks[idx] - 0x4000) / qmat[0];
+    codebook = 5; sign = 0;
+    for (i = 1; i < blocks_per_slice; i++, blocks += 64) {
+        new_dc    = (blocks[0] - 0x4000) / qmat[0];
         delta     = new_dc - prev_dc;
         diff_sign = DIFF_SIGN(delta, sign);
         code      = TO_GOLOMB2(get_level(delta), diff_sign);
