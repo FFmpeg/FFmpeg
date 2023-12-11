@@ -255,9 +255,10 @@ static void encode_vlc_codeword(PutBitContext *pb, unsigned codebook, int val)
     }
 }
 
-#define TO_GOLOMB(val) (((val) * 2) ^ ((val) >> 31))
-#define DIFF_SIGN(val, sign) (((val) >> 31) ^ (sign))
-#define IS_NEGATIVE(val) ((((val) >> 31) ^ -1) + 1)
+#define GET_SIGN(x)  ((x) >> 31)
+#define TO_GOLOMB(val) (((val) * 2) ^ GET_SIGN(val))
+#define DIFF_SIGN(val, sign) (GET_SIGN(val) ^ (sign))
+#define IS_NEGATIVE(val) ((GET_SIGN(val) ^ -1) + 1)
 #define TO_GOLOMB2(val,sign) ((val)==0 ? 0 : ((val) << 1) + (sign))
 
 static av_always_inline int get_level(int val)
