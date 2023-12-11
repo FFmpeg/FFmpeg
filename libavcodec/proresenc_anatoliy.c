@@ -269,16 +269,15 @@ static av_always_inline int get_level(int val)
 static void encode_dcs(PutBitContext *pb, int16_t *blocks,
                        int blocks_per_slice, int *qmat)
 {
-    int prev_dc, codebook;
-    int i, sign, new_sign;
-    int dc, delta, diff_sign, code;
+    int i;
+    int codebook = 5, code, dc, prev_dc, delta, sign, new_sign;
+    int diff_sign;
 
     prev_dc = (blocks[0] - 0x4000) / qmat[0];
-    codebook = MAKE_CODE(prev_dc);
-    encode_vlc_codeword(pb, FIRST_DC_CB, codebook);
+    encode_vlc_codeword(pb, FIRST_DC_CB, MAKE_CODE(prev_dc));
+    sign     = 0;
     blocks  += 64;
 
-    codebook = 5; sign = 0;
     for (i = 1; i < blocks_per_slice; i++, blocks += 64) {
         dc        = (blocks[0] - 0x4000) / qmat[0];
         delta     = dc - prev_dc;
