@@ -266,8 +266,6 @@ static av_always_inline int get_level(int val)
     return (val ^ sign) - sign;
 }
 
-#define FIRST_DC_CB 0xB8
-
 static const uint8_t dc_codebook[7] = { 0x04, 0x28, 0x28, 0x4D, 0x4D, 0x70, 0x70};
 
 static void encode_dc_coeffs(PutBitContext *pb, int16_t *in,
