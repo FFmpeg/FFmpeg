@@ -35,6 +35,7 @@
 typedef enum {
     DDMT_SSD,
     DDMT_YOLOV1V2,
+    DDMT_YOLOV3
 } DNNDetectionModelType;
 
 typedef struct DnnDetectContext {
@@ -73,6 +74,7 @@ static const AVOption dnn_detect_options[] = {
     { "model_type",  "DNN detection model type",   OFFSET2(model_type),      AV_OPT_TYPE_INT,       { .i64 = DDMT_SSD },    INT_MIN, INT_MAX, FLAGS, "model_type" },
         { "ssd",     "output shape [1, 1, N, 7]",  0,                        AV_OPT_TYPE_CONST,       { .i64 = DDMT_SSD },    0, 0, FLAGS, "model_type" },
         { "yolo",    "output shape [1, N*Cx*Cy*DetectionBox]",  0,           AV_OPT_TYPE_CONST,       { .i64 = DDMT_YOLOV1V2 },    0, 0, FLAGS, "model_type" },
+        { "yolov3",  "outputs shape [1, N*D, Cx, Cy]",  0,                   AV_OPT_TYPE_CONST,       { .i64 = DDMT_YOLOV3 },      0, 0, FLAGS, "model_type" },
     { "cell_w",      "cell width",                 OFFSET2(cell_w),          AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
     { "cell_h",      "cell height",                OFFSET2(cell_h),          AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
     { "nb_classes",  "The number of class",        OFFSET2(nb_classes),      AV_OPT_TYPE_INT,       { .i64 = 0 },    0, INTMAX_MAX, FLAGS },
@@ -151,6 +153,11 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
         cell_h = ctx->cell_h;
         scale_w = cell_w;
         scale_h = cell_h;
+    } else {
+        cell_w = output[output_index].width;
+        cell_h = output[output_index].height;
+        scale_w = ctx->scale_width;
+        scale_h = ctx->scale_height;
     }
     box_size = nb_classes + 5;
 
@@ -178,6 +185,7 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
                       output[output_index].height *
                       output[output_index].width / box_size / cell_w / cell_h;
 
+    anchors = anchors + (detection_boxes * output_index * 2);
     /**
      * find all candidate bbox
      * yolo output can be reshaped to [B, N*D, Cx, Cy]
@@ -290,6 +298,21 @@ static int dnn_detect_post_proc_yolo(AVFrame *frame, DNNData *output, AVFilterCo
     return 0;
 }
 
+static int dnn_detect_post_proc_yolov3(AVFrame *frame, DNNData *output,
+                                       AVFilterContext *filter_ctx, int nb_outputs)
+{
+    int ret = 0;
+    for (int i = 0; i < nb_outputs; i++) {
+        ret = dnn_detect_parse_yolo_output(frame, output, i, filter_ctx);
+        if (ret < 0)
+            return ret;
+    }
+    ret = dnn_detect_fill_side_data(frame, filter_ctx);
+    if (ret < 0)
+        return ret;
+    return 0;
+}
+
 static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, AVFilterContext *filter_ctx)
 {
     DnnDetectContext *ctx = filter_ctx->priv;
@@ -386,8 +409,11 @@ static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, int nb_outpu
         ret = dnn_detect_post_proc_yolo(frame, output, filter_ctx);
         if (ret < 0)
             return ret;
+    case DDMT_YOLOV3:
+        ret = dnn_detect_post_proc_yolov3(frame, output, filter_ctx, nb_outputs);
+        if (ret < 0)
+            return ret;
     }
-
     return 0;
 }
 
