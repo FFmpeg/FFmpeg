@@ -1073,9 +1073,15 @@ static int get_input_ov(void *model, DNNData *input, const char *input_name)
         return AVERROR(ENOSYS);
     }
 
-    input->channels = dims[1];
-    input->height   = input_resizable ? -1 : dims[2];
-    input->width    = input_resizable ? -1 : dims[3];
+    if (dims[1] <= 3) { // NCHW
+        input->channels = dims[1];
+        input->height   = input_resizable ? -1 : dims[2];
+        input->width    = input_resizable ? -1 : dims[3];
+    } else { // NHWC
+        input->height   = input_resizable ? -1 : dims[1];
+        input->width    = input_resizable ? -1 : dims[2];
+        input->channels = dims[3];
+    }
     input->dt       = precision_to_datatype(precision);
 
     return 0;
@@ -1105,9 +1111,15 @@ static int get_input_ov(void *model, DNNData *input, const char *input_name)
                 return DNN_GENERIC_ERROR;
             }
 
-            input->channels = dims.dims[1];
-            input->height   = input_resizable ? -1 : dims.dims[2];
-            input->width    = input_resizable ? -1 : dims.dims[3];
+            if (dims[1] <= 3) { // NCHW
+                input->channels = dims[1];
+                input->height   = input_resizable ? -1 : dims[2];
+                input->width    = input_resizable ? -1 : dims[3];
+            } else { // NHWC
+                input->height   = input_resizable ? -1 : dims[1];
+                input->width    = input_resizable ? -1 : dims[2];
+                input->channels = dims[3];
+            }
             input->dt       = precision_to_datatype(precision);
             return 0;
         }

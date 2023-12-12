@@ -705,13 +705,39 @@ static av_cold void dnn_detect_uninit(AVFilterContext *context)
     free_detect_labels(ctx);
 }
 
+static int config_input(AVFilterLink *inlink)
+{
+    AVFilterContext *context     = inlink->dst;
+    DnnDetectContext *ctx = context->priv;
+    DNNData model_input;
+    int ret;
+
+    ret = ff_dnn_get_input(&ctx->dnnctx, &model_input);
+    if (ret != 0) {
+        av_log(ctx, AV_LOG_ERROR, "could not get input from the model\n");
+        return ret;
+    }
+    ctx->scale_width = model_input.width == -1 ? inlink->w : model_input.width;
+    ctx->scale_height = model_input.height ==  -1 ? inlink->h : model_input.height;
+
+    return 0;
+}
+
+static const AVFilterPad dnn_detect_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_input,
+    },
+};
+
 const AVFilter ff_vf_dnn_detect = {
     .name          = "dnn_detect",
     .description   = NULL_IF_CONFIG_SMALL("Apply DNN detect filter to the input."),
     .priv_size     = sizeof(DnnDetectContext),
     .init          = dnn_detect_init,
     .uninit        = dnn_detect_uninit,
-    FILTER_INPUTS(ff_video_default_filterpad),
+    FILTER_INPUTS(dnn_detect_inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
     FILTER_PIXFMTS_ARRAY(pix_fmts),
     .priv_class    = &dnn_detect_class,
