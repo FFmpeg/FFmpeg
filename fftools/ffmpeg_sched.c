@@ -1187,7 +1187,7 @@ static int64_t trailing_dts(const Scheduler *sch)
 static void schedule_update_locked(Scheduler *sch)
 {
     int64_t dts;
-    int have_unchoked;
+    int have_unchoked = 0;
 
     // on termination request all waiters are choked,
     // we are not to unchoke them
