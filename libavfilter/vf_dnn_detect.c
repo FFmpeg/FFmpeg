@@ -360,11 +360,11 @@ static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, AVFilterCon
             break;
         }
     }
-
     return 0;
 }
 
-static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, AVFilterContext *filter_ctx)
+static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, int nb_outputs,
+                                   AVFilterContext *filter_ctx)
 {
     AVFrameSideData *sd;
     DnnDetectContext *ctx = filter_ctx->priv;
@@ -472,7 +472,7 @@ static int dnn_detect_post_proc(AVFrame *frame, DNNData *output, uint32_t nb, AV
     DnnContext *dnn_ctx = &ctx->dnnctx;
     switch (dnn_ctx->backend_type) {
     case DNN_OV:
-        return dnn_detect_post_proc_ov(frame, output, filter_ctx);
+        return dnn_detect_post_proc_ov(frame, output, nb, filter_ctx);
     case DNN_TF:
         return dnn_detect_post_proc_tf(frame, output, filter_ctx);
     default:
@@ -559,11 +559,6 @@ static int check_output_nb(DnnDetectContext *ctx, DNNBackendType backend_type, i
         }
         return 0;
     case DNN_OV:
-        if (output_nb != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Dnn detect filter with openvino backend needs 1 output only, \
-                                       but get %d instead\n", output_nb);
-            return AVERROR(EINVAL);
-        }
         return 0;
     default:
         avpriv_report_missing_feature(ctx, "Dnn detect filter does not support current backend\n");
