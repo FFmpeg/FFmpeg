@@ -34,7 +34,7 @@ SECTION .text
 INIT_XMM sse
 cglobal abs_pow34, 3, 3, 3, out, in, size
     mova   m2, [float_abs_mask]
-    shl    sizeq, 2
+    shl    sized, 2
     add    inq, sizeq
     add    outq, sizeq
     neg    sizeq
