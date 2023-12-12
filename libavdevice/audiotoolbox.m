@@ -85,7 +85,7 @@ static av_cold int at_write_header(AVFormatContext *avctx)
     AudioObjectPropertyAddress prop;
     prop.mSelector = kAudioHardwarePropertyDevices;
     prop.mScope    = kAudioObjectPropertyScopeGlobal;
-#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1200
+#if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 120000
     prop.mElement  = kAudioObjectPropertyElementMain;
 #else
     prop.mElement  = kAudioObjectPropertyElementMaster;
