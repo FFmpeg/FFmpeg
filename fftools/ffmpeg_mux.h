@@ -50,6 +50,8 @@ typedef struct MuxStream {
     int sch_idx_enc;
     int sch_idx_src;
 
+    int sq_idx_mux;
+
     int64_t max_frames;
 
     // timestamp from which the streamcopied streams should start,

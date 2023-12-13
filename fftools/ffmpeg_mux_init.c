@@ -1923,7 +1923,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
         MuxStream     *ms = ms_from_ost(ost);
         enum AVMediaType type = ost->type;
 
-        ost->sq_idx_mux    = -1;
+        ms->sq_idx_mux  = -1;
 
         nb_interleaved += IS_INTERLEAVED(type);
         nb_av_enc      += IS_AV_ENC(ost, type);
@@ -1992,13 +1992,13 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
             if (!IS_INTERLEAVED(type))
                 continue;
 
-            ost->sq_idx_mux = sq_add_stream(mux->sq_mux,
-                                            of->shortest || ms->max_frames < INT64_MAX);
-            if (ost->sq_idx_mux < 0)
-                return ost->sq_idx_mux;
+            ms->sq_idx_mux = sq_add_stream(mux->sq_mux,
+                                           of->shortest || ms->max_frames < INT64_MAX);
+            if (ms->sq_idx_mux < 0)
+                return ms->sq_idx_mux;
 
             if (ms->max_frames != INT64_MAX)
-                sq_limit_frames(mux->sq_mux, ost->sq_idx_mux, ms->max_frames);
+                sq_limit_frames(mux->sq_mux, ms->sq_idx_mux, ms->max_frames);
         }
     }
 

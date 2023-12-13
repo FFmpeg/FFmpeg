@@ -591,8 +591,6 @@ typedef struct OutputStream {
     /* packet quality factor */
     atomic_int quality;
 
-    int sq_idx_mux;
-
     EncStats enc_stats_pre;
     EncStats enc_stats_post;
 

@@ -236,12 +236,12 @@ fail:
     return ret;
 }
 
-static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt, int *stream_eof)
+static int sync_queue_process(Muxer *mux, MuxStream *ms, AVPacket *pkt, int *stream_eof)
 {
     OutputFile *of = &mux->of;
 
-    if (ost->sq_idx_mux >= 0) {
-        int ret = sq_send(mux->sq_mux, ost->sq_idx_mux, SQPKT(pkt));
+    if (ms->sq_idx_mux >= 0) {
+        int ret = sq_send(mux->sq_mux, ms->sq_idx_mux, SQPKT(pkt));
         if (ret < 0) {
             if (ret == AVERROR_EOF)
                 *stream_eof = 1;
@@ -266,7 +266,7 @@ static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt, int 
                 return ret;
         }
     } else if (pkt)
-        return write_packet(mux, ost, pkt);
+        return write_packet(mux, &ms->ost, pkt);
 
     return 0;
 }
@@ -336,14 +336,14 @@ static int mux_packet_filter(Muxer *mux, MuxThreadContext *mt,
             if (!bsf_eof)
                 ms->bsf_pkt->time_base = ms->bsf_ctx->time_base_out;
 
-            ret = sync_queue_process(mux, ost, bsf_eof ? NULL : ms->bsf_pkt, stream_eof);
+            ret = sync_queue_process(mux, ms, bsf_eof ? NULL : ms->bsf_pkt, stream_eof);
             if (ret < 0)
                 goto mux_fail;
         }
         *stream_eof = 1;
         return AVERROR_EOF;
     } else {
-        ret = sync_queue_process(mux, ost, pkt, stream_eof);
+        ret = sync_queue_process(mux, ms, pkt, stream_eof);
         if (ret < 0)
             goto mux_fail;
     }
