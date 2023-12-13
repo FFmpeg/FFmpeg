@@ -194,7 +194,7 @@ static void audio_ts_process(void *logctx, Decoder *d, AVFrame *frame)
 static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
 {
     const Decoder         *d = ist->decoder;
-    const InputFile   *ifile = input_files[ist->file_index];
+    const InputFile   *ifile = ist->file;
     int64_t codec_duration = 0;
 
     // XXX lavf currently makes up frame durations when they are not provided by
@@ -456,7 +456,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
 
 static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 {
-    const InputFile *ifile = input_files[ist->file_index];
+    const InputFile *ifile = ist->file;
     Decoder *d = ist->decoder;
     AVCodecContext *dec = ist->dec_ctx;
     const char *type_desc = av_get_media_type_string(dec->codec_type);
@@ -512,7 +512,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         update_benchmark(NULL);
         ret = avcodec_receive_frame(dec, frame);
         update_benchmark("decode_%s %d.%d", type_desc,
-                         ist->file_index, ist->index);
+                         ifile->index, ist->index);
 
         if (ret == AVERROR(EAGAIN)) {
             av_assert0(pkt); // should never happen during flushing
@@ -558,7 +558,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
             ret = video_frame_process(ist, frame);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
-                       "data for stream #%d:%d\n", ist->file_index, ist->index);
+                       "data for stream #%d:%d\n", ifile->index, ist->index);
                 return ret;
             }
         }
@@ -576,7 +576,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 static void dec_thread_set_name(const InputStream *ist)
 {
     char name[16];
-    snprintf(name, sizeof(name), "dec%d:%d:%s", ist->file_index, ist->index,
+    snprintf(name, sizeof(name), "dec%d:%d:%s", ist->file->index, ist->index,
              ist->dec_ctx->codec->name);
     ff_thread_setname(name);
 }

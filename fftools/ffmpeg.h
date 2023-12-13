@@ -338,7 +338,9 @@ typedef struct Decoder Decoder;
 typedef struct InputStream {
     const AVClass *class;
 
-    int file_index;
+    /* parent source */
+    struct InputFile *file;
+
     int index;
 
     AVStream *st;

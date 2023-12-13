@@ -1457,7 +1457,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     const AVFilter *buffer_filt = avfilter_get_by_name("buffer");
     const AVPixFmtDescriptor *desc;
     InputStream *ist = ifp->ist;
-    InputFile     *f = input_files[ist->file_index];
+    InputFile     *f = ist->file;
     AVRational fr = ist->framerate;
     AVRational sar;
     AVBPrint args;
@@ -1498,7 +1498,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     if (fr.num && fr.den)
         av_bprintf(&args, ":frame_rate=%d/%d", fr.num, fr.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
-             ist->file_index, ist->index);
+             f->index, ist->index);
 
 
     if ((ret = avfilter_graph_create_filter(&ifp->filter, buffer_filt, name,
@@ -1557,7 +1557,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     }
 
     snprintf(name, sizeof(name), "trim_in_%d_%d",
-             ist->file_index, ist->index);
+             f->index, ist->index);
     if (copy_ts) {
         tsoffset = f->start_time == AV_NOPTS_VALUE ? 0 : f->start_time;
         if (!start_at_zero && f->ctx->start_time != AV_NOPTS_VALUE)
@@ -1585,7 +1585,7 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     AVFilterContext *last_filter;
     const AVFilter *abuffer_filt = avfilter_get_by_name("abuffer");
     InputStream *ist = ifp->ist;
-    InputFile     *f = input_files[ist->file_index];
+    InputFile     *f = ist->file;
     AVBPrint args;
     char name[255];
     int ret, pad_idx = 0;
@@ -1610,7 +1610,7 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     } else
         av_bprintf(&args, ":channels=%d", ifp->ch_layout.nb_channels);
     snprintf(name, sizeof(name), "graph_%d_in_%d_%d", fg->index,
-             ist->file_index, ist->index);
+             f->index, ist->index);
 
     if ((ret = avfilter_graph_create_filter(&ifp->filter, abuffer_filt,
                                             name, args.str, NULL,
@@ -1619,7 +1619,7 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     last_filter = ifp->filter;
 
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
-             ist->file_index, ist->index);
+             f->index, ist->index);
     if (copy_ts) {
         tsoffset = f->start_time == AV_NOPTS_VALUE ? 0 : f->start_time;
         if (!start_at_zero && f->ctx->start_time != AV_NOPTS_VALUE)
@@ -2572,7 +2572,7 @@ static int send_eof(FilterGraphThread *fgt, InputFilter *ifilter,
         if (ifp->format < 0) {
             av_log(NULL, AV_LOG_ERROR,
                    "Cannot determine format of input stream %d:%d after EOF\n",
-                   ifp->ist->file_index, ifp->ist->index);
+                   ifp->ist->file->index, ifp->ist->index);
             return AVERROR_INVALIDDATA;
         }
     }

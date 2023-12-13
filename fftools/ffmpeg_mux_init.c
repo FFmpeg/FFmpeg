@@ -819,7 +819,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             }
 
             if (ost->ist && ost->vsync_method == VSYNC_CFR) {
-                const InputFile *ifile = input_files[ost->ist->file_index];
+                const InputFile *ifile = ost->ist->file;
 
                 if (ifile->nb_streams == 1 && ifile->input_ts_offset == 0)
                     ost->vsync_method = VSYNC_VSCFR;
@@ -907,7 +907,7 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
                     ist = ost->ist;
                 }
 
-                if (!ist || (ist->file_index == map->file_idx && ist->index == map->stream_idx)) {
+                if (!ist || (ist->file->index == map->file_idx && ist->index == map->stream_idx)) {
                     ret = av_reallocp_array(&ost->audio_channels_map,
                                             ost->audio_channels_mapped + 1,
                                             sizeof(*ost->audio_channels_map));
@@ -970,7 +970,7 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
     MuxStream           *ms         = ms_from_ost(ost);
 
     const InputStream   *ist        = ost->ist;
-    const InputFile     *ifile      = input_files[ist->file_index];
+    const InputFile     *ifile      = ist->file;
 
     AVCodecParameters   *par        = ost->par_in;
     uint32_t             codec_tag  = par->codec_tag;
@@ -1208,7 +1208,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
            av_get_media_type_string(type));
     if (ist)
         av_log(ost, AV_LOG_VERBOSE, "input stream %d:%d",
-               ist->file_index, ist->index);
+               ist->file->index, ist->index);
     else if (ofilter)
         av_log(ost, AV_LOG_VERBOSE, "complex filtergraph %d:[%s]\n",
                ofilter->graph->index, ofilter->name);
@@ -1480,7 +1480,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             if (ret < 0)
                 return ret;
         } else {
-            ret = sch_connect(mux->sch, SCH_DSTREAM(ost->ist->file_index, sched_idx),
+            ret = sch_connect(mux->sch, SCH_DSTREAM(ost->ist->file->index, sched_idx),
                                         SCH_MSTREAM(ost->file_index, ms->sch_idx));
             if (ret < 0)
                 return ret;

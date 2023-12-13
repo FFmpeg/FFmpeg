@@ -390,7 +390,7 @@ OutputStream *ost_iter(OutputStream *prev)
 
 InputStream *ist_iter(InputStream *prev)
 {
-    int if_idx  = prev ? prev->file_index : 0;
+    int if_idx  = prev ? prev->file->index : 0;
     int ist_idx = prev ? prev->index + 1  : 0;
 
     for (; if_idx < nb_input_files; if_idx++) {
@@ -767,7 +767,7 @@ static void print_stream_maps(void)
         for (int j = 0; j < ist->nb_filters; j++) {
             if (!filtergraph_is_simple(ist->filters[j]->graph)) {
                 av_log(NULL, AV_LOG_INFO, "  Stream #%d:%d (%s) -> %s",
-                       ist->file_index, ist->index, ist->dec ? ist->dec->name : "?",
+                       ist->file->index, ist->index, ist->dec ? ist->dec->name : "?",
                        ist->filters[j]->name);
                 if (nb_filtergraphs > 1)
                     av_log(NULL, AV_LOG_INFO, " (graph %d)", ist->filters[j]->graph->index);
@@ -796,7 +796,7 @@ static void print_stream_maps(void)
         }
 
         av_log(NULL, AV_LOG_INFO, "  Stream #%d:%d -> #%d:%d",
-               ost->ist->file_index,
+               ost->ist->file->index,
                ost->ist->index,
                ost->file_index,
                ost->index);

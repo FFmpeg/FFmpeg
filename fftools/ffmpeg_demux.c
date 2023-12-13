@@ -460,8 +460,7 @@ static int input_packet_process(Demuxer *d, AVPacket *pkt, unsigned *send_flags)
                av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &pkt->time_base),
                av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &pkt->time_base),
                av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, &pkt->time_base),
-               av_ts2str(input_files[ist->file_index]->ts_offset),
-               av_ts2timestr(input_files[ist->file_index]->ts_offset, &AV_TIME_BASE_Q));
+               av_ts2str(f->ts_offset),  av_ts2timestr(f->ts_offset, &AV_TIME_BASE_Q));
     }
 
     pkt->stream_index = ds->sch_idx_stream;
@@ -758,7 +757,7 @@ void ifile_close(InputFile **pf)
 
 static int ist_use(InputStream *ist, int decoding_needed)
 {
-    Demuxer      *d = demuxer_from_ifile(input_files[ist->file_index]);
+    Demuxer      *d = demuxer_from_ifile(ist->file);
     DemuxStream *ds = ds_from_ist(ist);
     int ret;
 
@@ -827,7 +826,7 @@ int ist_output_add(InputStream *ist, OutputStream *ost)
 
 int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
 {
-    Demuxer      *d = demuxer_from_ifile(input_files[ist->file_index]);
+    Demuxer      *d = demuxer_from_ifile(ist->file);
     DemuxStream *ds = ds_from_ist(ist);
     int ret;
 
@@ -991,7 +990,7 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
     ds->sch_idx_dec    = -1;
 
     ds->ist.st         = st;
-    ds->ist.file_index = f->index;
+    ds->ist.file       = f;
     ds->ist.index      = st->index;
     ds->ist.class      = &input_stream_class;
 
