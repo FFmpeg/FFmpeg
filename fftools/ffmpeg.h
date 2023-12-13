@@ -327,8 +327,6 @@ typedef struct FilterGraph {
     const AVClass *class;
     int            index;
 
-    AVFilterGraph *graph;
-
     InputFilter   **inputs;
     int          nb_inputs;
     OutputFilter **outputs;
