@@ -344,7 +344,6 @@ typedef struct InputStream {
     int index;
 
     AVStream *st;
-    int discard;             /* true if stream data should be discarded */
     int user_set_discard;
     int decoding_needed;     /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
 #define DECODING_FOR_OST    1

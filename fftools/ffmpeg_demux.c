@@ -63,6 +63,9 @@ typedef struct DemuxStream {
 
     double ts_scale;
 
+    /* true if stream data should be discarded */
+    int discard;
+
     // scheduler returned EOF for this stream
     int finished;
 
@@ -136,7 +139,8 @@ static Demuxer *demuxer_from_ifile(InputFile *f)
 InputStream *ist_find_unused(enum AVMediaType type)
 {
     for (InputStream *ist = ist_iter(NULL); ist; ist = ist_iter(ist)) {
-        if (ist->par->codec_type == type && ist->discard &&
+        DemuxStream *ds = ds_from_ist(ist);
+        if (ist->par->codec_type == type && ds->discard &&
             ist->user_set_discard != AVDISCARD_ALL)
             return ist;
     }
@@ -553,11 +557,14 @@ static void discard_unused_programs(InputFile *ifile)
         AVProgram *p = ifile->ctx->programs[j];
         int discard  = AVDISCARD_ALL;
 
-        for (int k = 0; k < p->nb_stream_indexes; k++)
-            if (!ifile->streams[p->stream_index[k]]->discard) {
+        for (int k = 0; k < p->nb_stream_indexes; k++) {
+            DemuxStream *ds = ds_from_ist(ifile->streams[p->stream_index[k]]);
+
+            if (!ds->discard) {
                 discard = AVDISCARD_DEFAULT;
                 break;
             }
+        }
         p->discard = discard;
     }
 }
@@ -634,7 +641,7 @@ static void *input_thread(void *arg)
            dynamically in stream : we ignore them */
         ds = pkt->stream_index < f->nb_streams ?
              ds_from_ist(f->streams[pkt->stream_index]) : NULL;
-        if (!ds || ds->ist.discard || ds->finished) {
+        if (!ds || ds->discard || ds->finished) {
             report_new_stream(d, pkt);
             av_packet_unref(pkt);
             continue;
@@ -686,7 +693,7 @@ static void demux_final_stats(Demuxer *d)
         DemuxStream  *ds = ds_from_ist(ist);
         enum AVMediaType type = ist->par->codec_type;
 
-        if (ist->discard || type == AVMEDIA_TYPE_ATTACHMENT)
+        if (ds->discard || type == AVMEDIA_TYPE_ATTACHMENT)
             continue;
 
         total_size    += ds->data_size;
@@ -774,8 +781,8 @@ static int ist_use(InputStream *ist, int decoding_needed)
         ds->sch_idx_stream = ret;
     }
 
-    if (ist->discard) {
-        ist->discard = 0;
+    if (ds->discard) {
+        ds->discard = 0;
         d->nb_streams_used++;
     }
 
@@ -1021,7 +1028,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 
     ist = &ds->ist;
 
-    ist->discard = 1;
+    ds->discard     = 1;
     st->discard  = AVDISCARD_ALL;
     ds->first_dts   = AV_NOPTS_VALUE;
     ds->next_dts    = AV_NOPTS_VALUE;
