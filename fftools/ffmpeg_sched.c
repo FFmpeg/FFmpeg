@@ -423,6 +423,28 @@ static void task_init(Scheduler *sch, SchTask *task, enum SchedulerNodeType type
     task->func_arg  = func_arg;
 }
 
+static int64_t trailing_dts(const Scheduler *sch)
+{
+    int64_t min_dts = INT64_MAX;
+
+    for (unsigned i = 0; i < sch->nb_mux; i++) {
+        const SchMux *mux = &sch->mux[i];
+
+        for (unsigned j = 0; j < mux->nb_streams; j++) {
+            const SchMuxStream *ms = &mux->streams[j];
+
+            if (ms->source_finished)
+                continue;
+            if (ms->last_dts == AV_NOPTS_VALUE)
+                return AV_NOPTS_VALUE;
+
+            min_dts = FFMIN(min_dts, ms->last_dts);
+        }
+    }
+
+    return min_dts == INT64_MAX ? AV_NOPTS_VALUE : min_dts;
+}
+
 int sch_stop(Scheduler *sch)
 {
     int ret = 0, err;
@@ -1166,28 +1188,6 @@ int sch_mux_sub_heartbeat_add(Scheduler *sch, unsigned mux_idx, unsigned stream_
     }
 
     return 0;
-}
-
-static int64_t trailing_dts(const Scheduler *sch)
-{
-    int64_t min_dts = INT64_MAX;
-
-    for (unsigned i = 0; i < sch->nb_mux; i++) {
-        const SchMux *mux = &sch->mux[i];
-
-        for (unsigned j = 0; j < mux->nb_streams; j++) {
-            const SchMuxStream *ms = &mux->streams[j];
-
-            if (ms->source_finished)
-                continue;
-            if (ms->last_dts == AV_NOPTS_VALUE)
-                return AV_NOPTS_VALUE;
-
-            min_dts = FFMIN(min_dts, ms->last_dts);
-        }
-    }
-
-    return min_dts == INT64_MAX ? AV_NOPTS_VALUE : min_dts;
 }
 
 static void schedule_update_locked(Scheduler *sch)
