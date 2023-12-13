@@ -19,6 +19,7 @@ version <next>:
 - VVC decoder
 - fsync filter
 - Raw Captions with Time (RCWT) closed caption muxer
+- ffmpeg CLI -bsf option may now be used for input as well as output
 
 version 6.1:
 - libaribcaption decoder

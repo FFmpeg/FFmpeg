@@ -256,3 +256,8 @@ FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MPEGVIDEO, MPEG2VIDEO) += fate-ffmpeg-input
 fate-ffmpeg-error-rate-fail: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/h264_tta_undecodable.mkv -c:v copy -f null -; test $$? -eq 69
 fate-ffmpeg-error-rate-pass: CMD = ffmpeg -i $(TARGET_SAMPLES)/mkv/h264_tta_undecodable.mkv -c:v copy -f null - -max_error_rate 1
 FATE_SAMPLES_FFMPEG-$(call ENCDEC, PCM_S16LE TTA, NULL MATROSKA) += fate-ffmpeg-error-rate-fail fate-ffmpeg-error-rate-pass
+
+# test input -bsf
+# use -stream_loop, because it tests flushing bsfs
+fate-ffmpeg-bsf-input: CMD = framecrc -stream_loop 2 -bsf setts=PTS*2 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -c copy
+FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, , SETTS_BSF) += fate-ffmpeg-bsf-input

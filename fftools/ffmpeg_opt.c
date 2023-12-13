@@ -1919,7 +1919,7 @@ const OptionDef options[] = {
         "0 = use frame rate (video) or sample rate (audio),"
         "-1 = match source time base", "ratio" },
 
-    { "bsf", OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT,
+    { "bsf", OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_INPUT,
         { .off = OFFSET(bitstream_filters) },
         "A comma-separated list of bitstream filters", "bitstream_filters", },
 
