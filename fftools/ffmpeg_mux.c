@@ -845,7 +845,6 @@ void of_free(OutputFile **pof)
         return;
     mux = mux_from_of(of);
 
-    sq_free(&of->sq_encode);
     sq_free(&mux->sq_mux);
 
     for (int i = 0; i < of->nb_streams; i++)
