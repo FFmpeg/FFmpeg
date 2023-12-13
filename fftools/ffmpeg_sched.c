@@ -192,7 +192,7 @@ typedef struct SchMuxStream {
     ////////////////////////////////////////////////////////////
     // The following are protected by Scheduler.schedule_lock //
 
-    /* dts of the last packet sent to this stream
+    /* dts+duration of the last packet sent to this stream
        in AV_TIME_BASE_Q */
     int64_t             last_dts;
     // this stream no longer accepts input
@@ -1625,8 +1625,8 @@ static int send_to_mux(Scheduler *sch, SchMux *mux, unsigned stream_idx,
                        AVPacket *pkt)
 {
     SchMuxStream *ms = &mux->streams[stream_idx];
-    int64_t dts = (pkt && pkt->dts != AV_NOPTS_VALUE)                    ?
-                  av_rescale_q(pkt->dts, pkt->time_base, AV_TIME_BASE_Q) :
+    int64_t dts = (pkt && pkt->dts != AV_NOPTS_VALUE)                                    ?
+                  av_rescale_q(pkt->dts + pkt->duration, pkt->time_base, AV_TIME_BASE_Q) :
                   AV_NOPTS_VALUE;
 
     // queue the packet if the muxer cannot be started yet
