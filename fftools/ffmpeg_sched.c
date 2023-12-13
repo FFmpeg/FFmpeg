@@ -423,7 +423,7 @@ static void task_init(Scheduler *sch, SchTask *task, enum SchedulerNodeType type
     task->func_arg  = func_arg;
 }
 
-static int64_t trailing_dts(const Scheduler *sch)
+static int64_t trailing_dts(const Scheduler *sch, int count_finished)
 {
     int64_t min_dts = INT64_MAX;
 
@@ -433,7 +433,7 @@ static int64_t trailing_dts(const Scheduler *sch)
         for (unsigned j = 0; j < mux->nb_streams; j++) {
             const SchMuxStream *ms = &mux->streams[j];
 
-            if (ms->source_finished)
+            if (ms->source_finished && !count_finished)
                 continue;
             if (ms->last_dts == AV_NOPTS_VALUE)
                 return AV_NOPTS_VALUE;
@@ -445,7 +445,7 @@ static int64_t trailing_dts(const Scheduler *sch)
     return min_dts == INT64_MAX ? AV_NOPTS_VALUE : min_dts;
 }
 
-int sch_stop(Scheduler *sch)
+int sch_stop(Scheduler *sch, int64_t *finish_ts)
 {
     int ret = 0, err;
 
@@ -492,6 +492,9 @@ int sch_stop(Scheduler *sch)
         ret = err_merge(ret, err);
     }
 
+    if (finish_ts)
+        *finish_ts = trailing_dts(sch, 1);
+
     return ret;
 }
 
@@ -502,7 +505,7 @@ void sch_free(Scheduler **psch)
     if (!sch)
         return;
 
-    sch_stop(sch);
+    sch_stop(sch, NULL);
 
     for (unsigned i = 0; i < sch->nb_demux; i++) {
         SchDemux *d = &sch->demux[i];
@@ -1200,7 +1203,7 @@ static void schedule_update_locked(Scheduler *sch)
     if (atomic_load(&sch->terminate))
         return;
 
-    dts = trailing_dts(sch);
+    dts = trailing_dts(sch, 0);
 
     atomic_store(&sch->last_dts, dts);
 

@@ -941,7 +941,7 @@ static int transcode(Scheduler *sch)
         print_report(0, timer_start, cur_time, transcode_ts);
     }
 
-    ret = sch_stop(sch);
+    ret = sch_stop(sch, &transcode_ts);
 
     /* write the trailer if needed */
     for (i = 0; i < nb_output_files; i++) {

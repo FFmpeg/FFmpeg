@@ -127,7 +127,7 @@ Scheduler *sch_alloc(void);
 void sch_free(Scheduler **sch);
 
 int sch_start(Scheduler *sch);
-int sch_stop(Scheduler *sch);
+int sch_stop(Scheduler *sch, int64_t *finish_ts);
 
 /**
  * Wait until transcoding terminates or the specified timeout elapses.
