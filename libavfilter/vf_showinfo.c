@@ -22,6 +22,7 @@
  * filter for showing textual video frame information
  */
 
+#include <ctype.h>
 #include <inttypes.h>
 
 #include "libavutil/bswap.h"
@@ -52,6 +53,7 @@
 typedef struct ShowInfoContext {
     const AVClass *class;
     int calculate_checksums;
+    int udu_sei_as_ascii;
 } ShowInfoContext;
 
 #define OFFSET(x) offsetof(ShowInfoContext, x)
@@ -59,6 +61,8 @@ typedef struct ShowInfoContext {
 
 static const AVOption showinfo_options[] = {
     { "checksum", "calculate checksums", OFFSET(calculate_checksums), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, VF },
+    { "udu_sei_as_ascii", "try to print user data unregistered SEI as ascii character when possible",
+        OFFSET(udu_sei_as_ascii), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VF },
     { NULL }
 };
 
@@ -418,6 +422,7 @@ static void dump_video_enc_params(AVFilterContext *ctx, const AVFrameSideData *s
 static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSideData *sd)
 {
     const uint8_t *user_data = sd->data;
+    ShowInfoContext *s = ctx->priv;
 
     if (sd->size < AV_UUID_LEN) {
         av_log(ctx, AV_LOG_ERROR, "invalid data(%"SIZE_SPECIFIER" < "
@@ -428,8 +433,13 @@ static void dump_sei_unregistered_metadata(AVFilterContext *ctx, const AVFrameSi
     av_log(ctx, AV_LOG_INFO, "UUID=" AV_PRI_UUID "\n", AV_UUID_ARG(user_data));
 
     av_log(ctx, AV_LOG_INFO, "User Data=");
-    for (size_t i = 16; i < sd->size; i++)
-        av_log(ctx, AV_LOG_INFO, "%02x", user_data[i]);
+    for (size_t i = 16; i < sd->size; i++) {
+        const char *format = "%02x";
+
+        if (s->udu_sei_as_ascii)
+            format = isprint(user_data[i]) ? "%c" : "\\x%02x";
+        av_log(ctx, AV_LOG_INFO, format, user_data[i]);
+    }
     av_log(ctx, AV_LOG_INFO, "\n");
 }
 

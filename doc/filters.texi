@@ -21796,6 +21796,10 @@ This filter supports the following options:
 @table @option
 @item checksum
 Calculate checksums of each plane. By default enabled.
+
+@item udu_sei_as_ascii
+Try to print user data unregistered SEI as ascii character when possible,
+in hex format otherwise.
 @end table
 
 The shown line contains a sequence of key/value pairs of the form
