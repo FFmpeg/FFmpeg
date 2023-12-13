@@ -412,7 +412,6 @@ typedef struct InputFile {
     int format_nots;
 
     AVFormatContext *ctx;
-    int eof_reached;      /* true if eof reached */
     int64_t input_ts_offset;
     int input_sync_ref;
     /**
