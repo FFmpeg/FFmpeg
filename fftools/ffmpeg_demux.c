@@ -83,6 +83,8 @@ typedef struct DemuxStream {
     ///< dts of the last packet read for this stream (in AV_TIME_BASE units)
     int64_t       dts;
 
+    const AVCodecDescriptor *codec_desc;
+
     /* number of packets successfully read for this stream */
     uint64_t nb_packets;
     // combined size of all the packets read
@@ -320,8 +322,8 @@ static int ist_dts_update(DemuxStream *ds, AVPacket *pkt, FrameData *fd)
                                              (AVRational){ 2, 1 });
             int fields = 2;
 
-            if (ist->codec_desc                                 &&
-                (ist->codec_desc->props & AV_CODEC_PROP_FIELDS) &&
+            if (ds->codec_desc                                 &&
+                (ds->codec_desc->props & AV_CODEC_PROP_FIELDS) &&
                 av_stream_get_parser(ist->st))
                 fields = 1 + av_stream_get_parser(ist->st)->repeat_pict;
 
@@ -1249,7 +1251,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         return ret;
     }
 
-    ist->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
+    ds->codec_desc = avcodec_descriptor_get(ist->par->codec_id);
 
     return 0;
 }
