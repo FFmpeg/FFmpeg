@@ -721,7 +721,7 @@ static int set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
 int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
                      unsigned sched_idx_enc)
 {
-    const OutputFile  *of = output_files[ost->file_index];
+    const OutputFile  *of = ost->file;
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     FilterGraph  *fg = ofilter->graph;
     FilterGraphPriv *fgp = fgp_from_fg(fg);
@@ -1041,7 +1041,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
 
     snprintf(fgp->log_name, sizeof(fgp->log_name), "%cf#%d:%d",
              av_get_media_type_string(ost->type)[0],
-             ost->file_index, ost->index);
+             ost->file->index, ost->index);
 
     if (fg->nb_inputs != 1 || fg->nb_outputs != 1) {
         av_log(fg, AV_LOG_ERROR, "Simple filtergraph '%s' was expected "
@@ -1220,7 +1220,7 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     OutputStream *ost = ofilter->ost;
-    OutputFile    *of = output_files[ost->file_index];
+    OutputFile    *of = ost->file;
     AVFilterContext *last_filter = out->filter_ctx;
     AVBPrint bprint;
     int pad_idx = out->pad_idx;
@@ -1228,7 +1228,7 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     const char *pix_fmts;
     char name[255];
 
-    snprintf(name, sizeof(name), "out_%d_%d", ost->file_index, ost->index);
+    snprintf(name, sizeof(name), "out_%d_%d", ost->file->index, ost->index);
     ret = avfilter_graph_create_filter(&ofp->filter,
                                        avfilter_get_by_name("buffersink"),
                                        name, NULL, NULL, graph);
@@ -1249,7 +1249,7 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
         }
 
         snprintf(name, sizeof(name), "scaler_out_%d_%d",
-                 ost->file_index, ost->index);
+                 ost->file->index, ost->index);
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 name, args, NULL, graph)) < 0)
             return ret;
@@ -1282,7 +1282,7 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     }
 
     snprintf(name, sizeof(name), "trim_out_%d_%d",
-             ost->file_index, ost->index);
+             ost->file->index, ost->index);
     ret = insert_trim(of->start_time, of->recording_time,
                       &last_filter, &pad_idx, name);
     if (ret < 0)
@@ -1300,14 +1300,14 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     OutputStream *ost = ofilter->ost;
-    OutputFile    *of = output_files[ost->file_index];
+    OutputFile    *of = ost->file;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
     AVBPrint args;
     char name[255];
     int ret;
 
-    snprintf(name, sizeof(name), "out_%d_%d", ost->file_index, ost->index);
+    snprintf(name, sizeof(name), "out_%d_%d", ost->file->index, ost->index);
     ret = avfilter_graph_create_filter(&ofp->filter,
                                        avfilter_get_by_name("abuffersink"),
                                        name, NULL, NULL, graph);
@@ -1362,7 +1362,7 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
         AVFilterContext *format;
 
         snprintf(name, sizeof(name), "format_out_%d_%d",
-                 ost->file_index, ost->index);
+                 ost->file->index, ost->index);
         ret = avfilter_graph_create_filter(&format,
                                            avfilter_get_by_name("aformat"),
                                            name, args.str, NULL, graph);
@@ -1390,7 +1390,7 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     }
 
     snprintf(name, sizeof(name), "trim for output stream %d:%d",
-             ost->file_index, ost->index);
+             ost->file->index, ost->index);
     ret = insert_trim(of->start_time, of->recording_time,
                       &last_filter, &pad_idx, name);
     if (ret < 0)
@@ -2684,7 +2684,7 @@ static void fg_thread_set_name(const FilterGraph *fg)
         OutputStream *ost = fg->outputs[0]->ost;
         snprintf(name, sizeof(name), "%cf#%d:%d",
                  av_get_media_type_string(ost->type)[0],
-                 ost->file_index, ost->index);
+                 ost->file->index, ost->index);
     } else {
         snprintf(name, sizeof(name), "fc%d", fg->index);
     }

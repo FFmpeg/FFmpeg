@@ -519,7 +519,9 @@ typedef struct OutputStream {
 
     enum AVMediaType type;
 
-    int file_index;          /* file index */
+    /* parent muxer */
+    struct OutputFile *file;
+
     int index;               /* stream index in the output file */
 
     /**

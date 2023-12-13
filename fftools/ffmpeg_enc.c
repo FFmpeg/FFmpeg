@@ -173,7 +173,7 @@ int enc_open(void *opaque, const AVFrame *frame)
     AVCodecContext *enc_ctx = ost->enc_ctx;
     AVCodecContext *dec_ctx = NULL;
     const AVCodec      *enc = enc_ctx->codec;
-    OutputFile      *of = output_files[ost->file_index];
+    OutputFile          *of = ost->file;
     FrameData *fd;
     int frame_samples = 0;
     int ret;
@@ -189,7 +189,7 @@ int enc_open(void *opaque, const AVFrame *frame)
         fd = (FrameData*)frame->opaque_ref->data;
     }
 
-    ret = set_encoder_id(output_files[ost->file_index], ost);
+    ret = set_encoder_id(of, ost);
     if (ret < 0)
         return ret;
 
@@ -375,7 +375,7 @@ int enc_open(void *opaque, const AVFrame *frame)
 
 static int check_recording_time(OutputStream *ost, int64_t ts, AVRational tb)
 {
-    OutputFile *of = output_files[ost->file_index];
+    OutputFile *of = ost->file;
 
     if (of->recording_time != INT64_MAX &&
         av_compare_ts(ts, tb, of->recording_time, AV_TIME_BASE_Q) >= 0) {
@@ -414,8 +414,8 @@ static int do_subtitle_out(OutputFile *of, OutputStream *ost, const AVSubtitle *
 
     /* shift timestamp to honor -ss and make check_recording_time() work with -t */
     pts = sub->pts;
-    if (output_files[ost->file_index]->start_time != AV_NOPTS_VALUE)
-        pts -= output_files[ost->file_index]->start_time;
+    if (of->start_time != AV_NOPTS_VALUE)
+        pts -= of->start_time;
     for (i = 0; i < nb; i++) {
         AVSubtitle local_sub = *sub;
 
@@ -496,7 +496,7 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
 
         switch (c->type) {
         case ENC_STATS_LITERAL:         avio_write (io, c->str,     c->str_len);                    continue;
-        case ENC_STATS_FILE_IDX:        avio_printf(io, "%d",       ost->file_index);               continue;
+        case ENC_STATS_FILE_IDX:        avio_printf(io, "%d",       ost->file->index);              continue;
         case ENC_STATS_STREAM_IDX:      avio_printf(io, "%d",       ost->index);                    continue;
         case ENC_STATS_TIMEBASE:        avio_printf(io, "%d/%d",    tb.num, tb.den);                continue;
         case ENC_STATS_TIMEBASE_IN:     avio_printf(io, "%d/%d",    tbi.num, tbi.den);              continue;
@@ -584,7 +584,8 @@ static int update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_
         fprintf(vstats_file, "frame= %5"PRId64" q= %2.1f ", frame_number,
                 quality / (float)FF_QP2LAMBDA);
     } else  {
-        fprintf(vstats_file, "out= %2d st= %2d frame= %5"PRId64" q= %2.1f ", ost->file_index, ost->index, frame_number,
+        fprintf(vstats_file, "out= %2d st= %2d frame= %5"PRId64" q= %2.1f ",
+                ost->file->index, ost->index, frame_number,
                 quality / (float)FF_QP2LAMBDA);
     }
 
@@ -659,7 +660,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
 
         ret = avcodec_receive_packet(enc, pkt);
         update_benchmark("%s_%s %d.%d", action, type_desc,
-                         ost->file_index, ost->index);
+                         of->index, ost->index);
 
         pkt->time_base = enc->time_base;
 
@@ -803,7 +804,7 @@ static int do_video_out(OutputFile *of, OutputStream *ost,
 
 static int frame_encode(OutputStream *ost, AVFrame *frame, AVPacket *pkt)
 {
-    OutputFile *of = output_files[ost->file_index];
+    OutputFile *of = ost->file;
     enum AVMediaType type = ost->type;
 
     if (type == AVMEDIA_TYPE_SUBTITLE) {
@@ -826,7 +827,7 @@ static int frame_encode(OutputStream *ost, AVFrame *frame, AVPacket *pkt)
 static void enc_thread_set_name(const OutputStream *ost)
 {
     char name[16];
-    snprintf(name, sizeof(name), "enc%d:%d:%s", ost->file_index, ost->index,
+    snprintf(name, sizeof(name), "enc%d:%d:%s", ost->file->index, ost->index,
              ost->enc_ctx->codec->name);
     ff_thread_setname(name);
 }

@@ -178,7 +178,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
             pkt->dts > pkt->pts) {
             av_log(s, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64" in output stream %d:%d, replacing by guess\n",
                    pkt->dts, pkt->pts,
-                   ost->file_index, ost->st->index);
+                   mux->of.index, ost->st->index);
             pkt->pts =
             pkt->dts = pkt->pts + pkt->dts + ms->last_mux_dts + 1
                      - FFMIN3(pkt->pts, pkt->dts, ms->last_mux_dts + 1)
@@ -194,7 +194,7 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
                     loglevel = AV_LOG_ERROR;
                 av_log(s, loglevel, "Non-monotonic DTS in output stream "
                        "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
-                       ost->file_index, ost->st->index, ms->last_mux_dts, pkt->dts);
+                       mux->of.index, ost->st->index, ms->last_mux_dts, pkt->dts);
                 if (exit_on_error) {
                     ret = AVERROR(EINVAL);
                     goto fail;
@@ -271,7 +271,7 @@ static int sync_queue_process(Muxer *mux, OutputStream *ost, AVPacket *pkt, int 
     return 0;
 }
 
-static int of_streamcopy(OutputStream *ost, AVPacket *pkt);
+static int of_streamcopy(OutputFile *of, OutputStream *ost, AVPacket *pkt);
 
 /* apply the output bitstream filters */
 static int mux_packet_filter(Muxer *mux, MuxThreadContext *mt,
@@ -282,7 +282,7 @@ static int mux_packet_filter(Muxer *mux, MuxThreadContext *mt,
     int ret = 0;
 
     if (pkt && !ost->enc) {
-        ret = of_streamcopy(ost, pkt);
+        ret = of_streamcopy(&mux->of, ost, pkt);
         if (ret == AVERROR(EAGAIN))
             return 0;
         else if (ret == AVERROR_EOF) {
@@ -445,9 +445,8 @@ finish:
     return (void*)(intptr_t)ret;
 }
 
-static int of_streamcopy(OutputStream *ost, AVPacket *pkt)
+static int of_streamcopy(OutputFile *of, OutputStream *ost, AVPacket *pkt)
 {
-    OutputFile *of = output_files[ost->file_index];
     MuxStream  *ms = ms_from_ost(ost);
     FrameData  *fd = pkt->opaque_ref ? (FrameData*)pkt->opaque_ref->data : NULL;
     int64_t      dts = fd ? fd->dts_est : AV_NOPTS_VALUE;

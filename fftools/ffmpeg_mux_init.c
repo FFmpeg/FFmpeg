@@ -431,7 +431,7 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
     if (!ms)
         return NULL;
 
-    ms->ost.file_index = mux->of.index;
+    ms->ost.file       = &mux->of;
     ms->ost.index      = mux->of.nb_streams - 1;
     ms->ost.type       = type;
 
@@ -748,7 +748,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             FILE *f;
 
             /* compute this stream's global index */
-            for (int i = 0; i <= ost->file_index; i++)
+            for (int i = 0; i <= ost->file->index; i++)
                 ost_idx += output_files[i]->nb_streams;
 
             snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
@@ -793,7 +793,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
         ost->vsync_method = video_sync_method;
         MATCH_PER_STREAM_OPT(fps_mode, str, fps_mode, oc, st);
         if (fps_mode) {
-            ret = parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file_index, ost->index, 0);
+            ret = parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file->index, ost->index, 0);
             if (ret < 0)
                 return ret;
         }
@@ -893,7 +893,7 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
         /* check for channel mapping for this audio stream */
         for (int n = 0; n < o->nb_audio_channel_maps; n++) {
             AudioChannelMap *map = &o->audio_channel_maps[n];
-            if ((map->ofile_idx   == -1 || ost->file_index == map->ofile_idx) &&
+            if ((map->ofile_idx   == -1 || ost->file->index == map->ofile_idx) &&
                 (map->ostream_idx == -1 || ost->st->index  == map->ostream_idx)) {
                 InputStream *ist;
 
@@ -901,7 +901,7 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
                     ist = NULL;
                 } else if (!ost->ist) {
                     av_log(ost, AV_LOG_FATAL, "Cannot determine input stream for channel mapping %d.%d\n",
-                           ost->file_index, ost->st->index);
+                           ost->file->index, ost->st->index);
                     continue;
                 } else {
                     ist = ost->ist;
@@ -1481,7 +1481,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                 return ret;
         } else {
             ret = sch_connect(mux->sch, SCH_DSTREAM(ost->ist->file->index, sched_idx),
-                                        SCH_MSTREAM(ost->file_index, ms->sch_idx));
+                                        SCH_MSTREAM(ost->file->index, ms->sch_idx));
             if (ret < 0)
                 return ret;
         }
