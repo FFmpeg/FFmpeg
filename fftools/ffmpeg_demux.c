@@ -117,6 +117,7 @@ typedef struct Demuxer {
     /* number of streams that the user was warned of */
     int nb_streams_warn;
 
+    float  readrate;
     double readrate_initial_burst;
 
     Scheduler            *sch;
@@ -488,7 +489,7 @@ static void readrate_sleep(Demuxer *d)
         int64_t stream_ts_offset, pts, now;
         stream_ts_offset = FFMAX(ds->first_dts != AV_NOPTS_VALUE ? ds->first_dts : 0, file_start);
         pts = av_rescale(ds->dts, 1000000, AV_TIME_BASE);
-        now = (av_gettime_relative() - d->wallclock_start) * f->readrate + stream_ts_offset;
+        now = (av_gettime_relative() - d->wallclock_start) * d->readrate + stream_ts_offset;
         if (pts - burst_until > now)
             av_usleep(pts - burst_until - now);
     }
@@ -664,7 +665,7 @@ static void *input_thread(void *arg)
         if (ret < 0)
             break;
 
-        if (f->readrate)
+        if (d->readrate)
             readrate_sleep(d);
 
         ret = demux_send(d, ds, pkt, send_flags);
@@ -1579,19 +1580,19 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 
     f->format_nots = !!(ic->iformat->flags & AVFMT_NOTIMESTAMPS);
 
-    f->readrate = o->readrate ? o->readrate : 0.0;
-    if (f->readrate < 0.0f) {
-        av_log(d, AV_LOG_ERROR, "Option -readrate is %0.3f; it must be non-negative.\n", f->readrate);
+    d->readrate = o->readrate ? o->readrate : 0.0;
+    if (d->readrate < 0.0f) {
+        av_log(d, AV_LOG_ERROR, "Option -readrate is %0.3f; it must be non-negative.\n", d->readrate);
         return AVERROR(EINVAL);
     }
     if (o->rate_emu) {
-        if (f->readrate) {
-            av_log(d, AV_LOG_WARNING, "Both -readrate and -re set. Using -readrate %0.3f.\n", f->readrate);
+        if (d->readrate) {
+            av_log(d, AV_LOG_WARNING, "Both -readrate and -re set. Using -readrate %0.3f.\n", d->readrate);
         } else
-            f->readrate = 1.0f;
+            d->readrate = 1.0f;
     }
 
-    if (f->readrate) {
+    if (d->readrate) {
         d->readrate_initial_burst = o->readrate_initial_burst ? o->readrate_initial_burst : 0.5;
         if (d->readrate_initial_burst < 0.0) {
             av_log(d, AV_LOG_ERROR,
