@@ -808,16 +808,17 @@ int ff_default_query_formats(AVFilterContext *ctx)
     /* Intended fallthrough */
     case FF_FILTER_FORMATS_PASSTHROUGH:
     case FF_FILTER_FORMATS_QUERY_FUNC:
-        type    = ctx->nb_inputs  ? ctx->inputs [0]->type :
-                  ctx->nb_outputs ? ctx->outputs[0]->type : AVMEDIA_TYPE_VIDEO;
-        formats = ff_all_formats(type);
+        type = AVMEDIA_TYPE_UNKNOWN;
+        formats = ff_all_formats(ctx->nb_inputs  ? ctx->inputs [0]->type :
+                                 ctx->nb_outputs ? ctx->outputs[0]->type :
+                                 AVMEDIA_TYPE_VIDEO);
         break;
     }
 
     ret = ff_set_common_formats(ctx, formats);
     if (ret < 0)
         return ret;
-    if (type == AVMEDIA_TYPE_AUDIO) {
+    if (type != AVMEDIA_TYPE_VIDEO) {
         ret = ff_set_common_all_channel_counts(ctx);
         if (ret < 0)
             return ret;
