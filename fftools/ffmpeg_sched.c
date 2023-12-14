@@ -565,6 +565,8 @@ void sch_free(Scheduler **psch)
 
     av_freep(&sch->sdp_filename);
 
+    pthread_mutex_destroy(&sch->schedule_lock);
+
     pthread_mutex_destroy(&sch->mux_ready_lock);
 
     pthread_mutex_destroy(&sch->mux_done_lock);
@@ -589,6 +591,10 @@ Scheduler *sch_alloc(void)
 
     sch->class    = &scheduler_class;
     sch->sdp_auto = 1;
+
+    ret = pthread_mutex_init(&sch->schedule_lock, NULL);
+    if (ret)
+        goto fail;
 
     ret = pthread_mutex_init(&sch->mux_ready_lock, NULL);
     if (ret)
