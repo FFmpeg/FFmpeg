@@ -773,6 +773,13 @@ int of_write_trailer(OutputFile *of)
     return mux_result;
 }
 
+static void enc_stats_uninit(EncStats *es)
+{
+    for (int i = 0; i < es->nb_components; i++)
+        av_freep(&es->components[i].str);
+    av_freep(&es->components);
+}
+
 static void ost_free(OutputStream **post)
 {
     OutputStream *ost = *post;
@@ -818,17 +825,9 @@ static void ost_free(OutputStream **post)
         av_freep(&ost->enc_ctx->stats_in);
     avcodec_free_context(&ost->enc_ctx);
 
-    for (int i = 0; i < ost->enc_stats_pre.nb_components; i++)
-        av_freep(&ost->enc_stats_pre.components[i].str);
-    av_freep(&ost->enc_stats_pre.components);
-
-    for (int i = 0; i < ost->enc_stats_post.nb_components; i++)
-        av_freep(&ost->enc_stats_post.components[i].str);
-    av_freep(&ost->enc_stats_post.components);
-
-    for (int i = 0; i < ms->stats.nb_components; i++)
-        av_freep(&ms->stats.components[i].str);
-    av_freep(&ms->stats.components);
+    enc_stats_uninit(&ost->enc_stats_pre);
+    enc_stats_uninit(&ost->enc_stats_post);
+    enc_stats_uninit(&ms->stats);
 
     av_freep(post);
 }
