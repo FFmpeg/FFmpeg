@@ -309,6 +309,7 @@ static int enc_stats_init(OutputStream *ost, EncStats *es, int pre,
         { ENC_STATS_PKT_SIZE,       "size",     0, 1            },
         { ENC_STATS_BITRATE,        "br",       0, 1            },
         { ENC_STATS_AVG_BITRATE,    "abr",      0, 1            },
+        { ENC_STATS_KEYFRAME,       "key",      0, 1            },
     };
     const char *next = fmt_spec;
 

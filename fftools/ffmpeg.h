@@ -465,6 +465,7 @@ enum EncStatsType {
     ENC_STATS_PKT_SIZE,
     ENC_STATS_BITRATE,
     ENC_STATS_AVG_BITRATE,
+    ENC_STATS_KEYFRAME,
 };
 
 typedef struct EncStatsComponent {
