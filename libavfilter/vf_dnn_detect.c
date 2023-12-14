@@ -139,7 +139,8 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
 {
     DnnDetectContext *ctx = filter_ctx->priv;
     float conf_threshold = ctx->confidence;
-    int detection_boxes, box_size, cell_w, cell_h, scale_w, scale_h;
+    int detection_boxes, box_size;
+    int cell_w = 0, cell_h = 0, scale_w = 0, scale_h = 0;
     int nb_classes = ctx->nb_classes;
     float *output_data = output[output_index].data;
     float *anchors = ctx->anchors;
