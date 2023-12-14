@@ -223,6 +223,7 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
                     av_freep(&bbox);
                     return AVERROR(ENOMEM);
                 }
+                bbox = NULL;
             }
     }
     return 0;
