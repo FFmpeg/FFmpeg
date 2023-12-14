@@ -176,9 +176,8 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
         if (pkt->dts != AV_NOPTS_VALUE &&
             pkt->pts != AV_NOPTS_VALUE &&
             pkt->dts > pkt->pts) {
-            av_log(s, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64" in output stream %d:%d, replacing by guess\n",
-                   pkt->dts, pkt->pts,
-                   mux->of.index, ost->st->index);
+            av_log(ost, AV_LOG_WARNING, "Invalid DTS: %"PRId64" PTS: %"PRId64", replacing by guess\n",
+                   pkt->dts, pkt->pts);
             pkt->pts =
             pkt->dts = pkt->pts + pkt->dts + ms->last_mux_dts + 1
                      - FFMIN3(pkt->pts, pkt->dts, ms->last_mux_dts + 1)
@@ -192,15 +191,15 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
                 int loglevel = max - pkt->dts > 2 || ost->type == AVMEDIA_TYPE_VIDEO ? AV_LOG_WARNING : AV_LOG_DEBUG;
                 if (exit_on_error)
                     loglevel = AV_LOG_ERROR;
-                av_log(s, loglevel, "Non-monotonic DTS in output stream "
-                       "%d:%d; previous: %"PRId64", current: %"PRId64"; ",
-                       mux->of.index, ost->st->index, ms->last_mux_dts, pkt->dts);
+                av_log(ost, loglevel, "Non-monotonic DTS; "
+                       "previous: %"PRId64", current: %"PRId64"; ",
+                       ms->last_mux_dts, pkt->dts);
                 if (exit_on_error) {
                     ret = AVERROR(EINVAL);
                     goto fail;
                 }
 
-                av_log(s, loglevel, "changing to %"PRId64". This may result "
+                av_log(ost, loglevel, "changing to %"PRId64". This may result "
                        "in incorrect timestamps in the output file.\n",
                        max);
                 if (pkt->pts >= pkt->dts)
