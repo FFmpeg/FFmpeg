@@ -112,6 +112,10 @@ static int dnn_detect_parse_anchors(char *anchors_str, float **anchors)
     }
     for (int i = 0; i < nb_anchor; i++) {
         token = av_strtok(anchors_str, "&", &saveptr);
+        if (!token) {
+            av_freep(&anchors_buf);
+            return 0;
+        }
         anchors_buf[i] = strtof(token, NULL);
         anchors_str = NULL;
     }
