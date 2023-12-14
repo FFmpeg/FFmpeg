@@ -150,8 +150,10 @@ static int write_packet(Muxer *mux, OutputStream *ost, AVPacket *pkt)
         goto fail;
     }
 
+#if FFMPEG_OPT_VSYNC_DROP
     if (ost->type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP)
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
+#endif
 
     // rescale timestamps to the stream timebase
     if (ost->type == AVMEDIA_TYPE_AUDIO && !ost->enc) {

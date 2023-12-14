@@ -188,7 +188,12 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
     if      (!av_strcasecmp(arg, "cfr"))         *vsync_var = VSYNC_CFR;
     else if (!av_strcasecmp(arg, "vfr"))         *vsync_var = VSYNC_VFR;
     else if (!av_strcasecmp(arg, "passthrough")) *vsync_var = VSYNC_PASSTHROUGH;
-    else if (!av_strcasecmp(arg, "drop"))        *vsync_var = VSYNC_DROP;
+#if FFMPEG_OPT_VSYNC_DROP
+    else if (!av_strcasecmp(arg, "drop")) {
+        av_log(NULL, AV_LOG_WARNING, "-vsync/fps_mode drop is deprecated\n");
+        *vsync_var = VSYNC_DROP;
+    }
+#endif
     else if (!is_global && !av_strcasecmp(arg, "auto"))  *vsync_var = VSYNC_AUTO;
     else if (!is_global) {
         av_log(NULL, AV_LOG_FATAL, "Invalid value %s specified for fps_mode of #%d:%d.\n", arg, file_idx, st_idx);

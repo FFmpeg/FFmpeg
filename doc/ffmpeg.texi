@@ -1742,9 +1742,6 @@ constant frame rate.
 @item vfr (2)
 Frames are passed through with their timestamp or dropped so as to
 prevent 2 frames from having the same timestamp.
-@item drop
-As passthrough but destroys all timestamps, making the muxer generate
-fresh timestamps based on frame-rate.
 @item auto (-1)
 Chooses between cfr and vfr depending on muxer capabilities. This is the
 default method.

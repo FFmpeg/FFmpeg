@@ -60,6 +60,7 @@
 #define FFMPEG_OPT_ENC_TIME_BASE_NUM 1
 #define FFMPEG_OPT_TOP 1
 #define FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP 1
+#define FFMPEG_OPT_VSYNC_DROP 1
 
 #define FFMPEG_ERROR_RATE_EXCEEDED FFERRTAG('E', 'R', 'E', 'D')
 
@@ -69,7 +70,9 @@ enum VideoSyncMethod {
     VSYNC_CFR,
     VSYNC_VFR,
     VSYNC_VSCFR,
+#if FFMPEG_OPT_VSYNC_DROP
     VSYNC_DROP,
+#endif
 };
 
 enum EncTimeBase {
