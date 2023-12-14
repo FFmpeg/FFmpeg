@@ -106,7 +106,7 @@ static int dnn_detect_parse_anchors(char *anchors_str, float **anchors)
         i++;
     }
     nb_anchor++;
-    anchors_buf = av_mallocz(nb_anchor * sizeof(*anchors));
+    anchors_buf = av_mallocz(nb_anchor * sizeof(**anchors));
     if (!anchors_buf) {
         return 0;
     }
