@@ -778,6 +778,10 @@ static void enc_stats_uninit(EncStats *es)
     for (int i = 0; i < es->nb_components; i++)
         av_freep(&es->components[i].str);
     av_freep(&es->components);
+
+    if (es->lock_initialized)
+        pthread_mutex_destroy(&es->lock);
+    es->lock_initialized = 0;
 }
 
 static void ost_free(OutputStream **post)

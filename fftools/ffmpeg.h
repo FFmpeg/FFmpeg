@@ -480,6 +480,9 @@ typedef struct EncStats {
     int              nb_components;
 
     AVIOContext        *io;
+
+    pthread_mutex_t     lock;
+    int                 lock_initialized;
 } EncStats;
 
 extern const char *const forced_keyframes_const_names[];

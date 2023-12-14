@@ -491,6 +491,8 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
         ptsi = fd->dec.pts;
     }
 
+    pthread_mutex_lock(&es->lock);
+
     for (size_t i = 0; i < es->nb_components; i++) {
         const EncStatsComponent *c = &es->components[i];
 
@@ -538,6 +540,8 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
     }
     avio_w8(io, '\n');
     avio_flush(io);
+
+    pthread_mutex_unlock(&es->lock);
 }
 
 static inline double psnr(double d)
