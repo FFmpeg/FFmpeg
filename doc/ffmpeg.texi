@@ -2202,11 +2202,11 @@ Number of audio samples in the frame.
 Size of the encoded packet in bytes.
 
 @item br (@emph{packet})
-Current bitrate in bits per second. Post-encoding only.
+Current bitrate in bits per second.
 
 @item abr (@emph{packet})
 Average bitrate for the whole stream so far, in bits per second, -1 if it cannot
-be determined at this point. Post-encoding only.
+be determined at this point.
 
 @item key (@emph{packet})
 Character 'K' if the packet contains a keyframe, character 'N' otherwise.
