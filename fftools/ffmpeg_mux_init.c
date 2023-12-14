@@ -288,9 +288,9 @@ static int enc_stats_init(OutputStream *ost, EncStats *es, int pre,
     static const struct {
         enum EncStatsType  type;
         const char        *str;
-        int                pre_only:1;
-        int                post_only:1;
-        int                need_input_data:1;
+        unsigned           pre_only:1;
+        unsigned           post_only:1;
+        unsigned           need_input_data:1;
     } fmt_specs[] = {
         { ENC_STATS_FILE_IDX,       "fidx"                      },
         { ENC_STATS_STREAM_IDX,     "sidx"                      },
