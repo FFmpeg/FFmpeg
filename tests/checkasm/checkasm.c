@@ -42,6 +42,11 @@
 #include <io.h>
 #endif
 
+#if defined(_WIN32) && !defined(SIGBUS)
+/* non-standard, use the same value as mingw-w64 */
+#define SIGBUS 10
+#endif
+
 #if HAVE_SETCONSOLETEXTATTRIBUTE && HAVE_GETSTDHANDLE
 #include <windows.h>
 #define COLOR_RED    FOREGROUND_RED
@@ -329,6 +334,7 @@ static struct {
     const char *cpu_flag_name;
     const char *test_name;
     int verbose;
+    volatile sig_atomic_t catch_signals;
 } state;
 
 /* PRNG state */
@@ -630,6 +636,61 @@ static CheckasmFunc *get_func(CheckasmFunc **root, const char *name)
     return f;
 }
 
+checkasm_context checkasm_context_buf;
+
+/* Crash handling: attempt to catch crashes and handle them
+ * gracefully instead of just aborting abruptly. */
+#ifdef _WIN32
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+static LONG NTAPI signal_handler(EXCEPTION_POINTERS *e) {
+    int s;
+
+    if (!state.catch_signals)
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    switch (e->ExceptionRecord->ExceptionCode) {
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:
+        s = SIGFPE;
+        break;
+    case EXCEPTION_ILLEGAL_INSTRUCTION:
+    case EXCEPTION_PRIV_INSTRUCTION:
+        s = SIGILL;
+        break;
+    case EXCEPTION_ACCESS_VIOLATION:
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+    case EXCEPTION_DATATYPE_MISALIGNMENT:
+    case EXCEPTION_STACK_OVERFLOW:
+        s = SIGSEGV;
+        break;
+    case EXCEPTION_IN_PAGE_ERROR:
+        s = SIGBUS;
+        break;
+    default:
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    state.catch_signals = 0;
+    checkasm_load_context(s);
+    return EXCEPTION_CONTINUE_EXECUTION; /* never reached, but shuts up gcc */
+}
+#endif
+#else
+static void signal_handler(int s);
+
+static const struct sigaction signal_handler_act = {
+    .sa_handler = signal_handler,
+    .sa_flags = SA_RESETHAND,
+};
+
+static void signal_handler(int s) {
+    if (state.catch_signals) {
+        state.catch_signals = 0;
+        sigaction(s, &signal_handler_act, NULL);
+        checkasm_load_context(s);
+    }
+}
+#endif
+
 /* Perform tests and benchmarks for the specified cpu flag if supported by the host */
 static void check_cpu_flag(const char *name, int flag)
 {
@@ -740,17 +801,19 @@ int main(int argc, char *argv[])
     unsigned int seed = av_get_random_seed();
     int i, ret = 0;
 
+#ifdef _WIN32
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+    AddVectoredExceptionHandler(0, signal_handler);
+#endif
+#else
+    sigaction(SIGBUS,  &signal_handler_act, NULL);
+    sigaction(SIGFPE,  &signal_handler_act, NULL);
+    sigaction(SIGILL,  &signal_handler_act, NULL);
+    sigaction(SIGSEGV, &signal_handler_act, NULL);
+#endif
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
     if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
         checkasm_checked_call = checkasm_checked_call_vfp;
-#endif
-#if ARCH_RISCV && HAVE_RV
-    struct sigaction act = {
-        .sa_handler = checkasm_handle_signal,
-        .sa_flags = 0,
-    };
-
-    sigaction(SIGILL, &act, NULL);
 #endif
 
     if (!tests[0].func || !cpus[0].flag) {
@@ -879,13 +942,22 @@ void checkasm_fail_func(const char *msg, ...)
     }
 }
 
-void checkasm_fail_signal(int signum)
-{
+void checkasm_set_signal_handler_state(int enabled) {
+    state.catch_signals = enabled;
+}
+
+int checkasm_handle_signal(int s) {
+    if (s) {
 #ifdef __GLIBC__
-    checkasm_fail_func("fatal signal %d: %s", signum, strsignal(signum));
+        checkasm_fail_func("fatal signal %d: %s", s, strsignal(s));
 #else
-    checkasm_fail_func("fatal signal %d", signum);
+        checkasm_fail_func(s == SIGFPE ? "fatal arithmetic error" :
+                           s == SIGILL ? "illegal instruction" :
+                           s == SIGBUS ? "bus error" :
+                                         "segmentation fault");
 #endif
+    }
+    return s;
 }
 
 /* Get the benchmark context of the current function */
