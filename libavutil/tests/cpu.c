@@ -84,6 +84,16 @@ static const struct {
 #elif ARCH_LOONGARCH
     { AV_CPU_FLAG_LSX,       "lsx"        },
     { AV_CPU_FLAG_LASX,      "lasx"       },
+#elif ARCH_RISCV
+    { AV_CPU_FLAG_RVI,       "rvi"        },
+    { AV_CPU_FLAG_RVF,       "rvf"        },
+    { AV_CPU_FLAG_RVD,       "rvd"        },
+    { AV_CPU_FLAG_RVB_ADDR,  "zba"        },
+    { AV_CPU_FLAG_RVB_BASIC, "zbb"        },
+    { AV_CPU_FLAG_RVV_I32,   "zve32x"     },
+    { AV_CPU_FLAG_RVV_F32,   "zve32f"     },
+    { AV_CPU_FLAG_RVV_I64,   "zve64x"     },
+    { AV_CPU_FLAG_RVV_F64,   "zve64d"     },
 #endif
     { 0 }
 };
