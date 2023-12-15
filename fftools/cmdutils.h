@@ -77,6 +77,17 @@ int opt_default(void *optctx, const char *opt, const char *arg);
  */
 int opt_timelimit(void *optctx, const char *opt, const char *arg);
 
+enum OptionType {
+    OPT_TYPE_FUNC,
+    OPT_TYPE_BOOL,
+    OPT_TYPE_STRING,
+    OPT_TYPE_INT,
+    OPT_TYPE_INT64,
+    OPT_TYPE_FLOAT,
+    OPT_TYPE_DOUBLE,
+    OPT_TYPE_TIME,
+};
+
 /**
  * Parse a string and return its corresponding value as a double.
  *
@@ -88,7 +99,7 @@ int opt_timelimit(void *optctx, const char *opt, const char *arg);
  * @param min the minimum valid accepted value
  * @param max the maximum valid accepted value
  */
-int parse_number(const char *context, const char *numstr, int type,
+int parse_number(const char *context, const char *numstr, enum OptionType type,
                  double min, double max, double *dst);
 
 typedef struct SpecifierOpt {
@@ -105,17 +116,13 @@ typedef struct SpecifierOpt {
 
 typedef struct OptionDef {
     const char *name;
+    enum OptionType type;
     int flags;
 #define HAS_ARG         (1 << 0)
-#define OPT_BOOL        (1 << 1)
 #define OPT_EXPERT      (1 << 2)
-#define OPT_STRING      (1 << 3)
 #define OPT_VIDEO       (1 << 4)
 #define OPT_AUDIO       (1 << 5)
-#define OPT_INT         (1 << 6)
-#define OPT_FLOAT       (1 << 7)
 #define OPT_SUBTITLE    (1 << 8)
-#define OPT_INT64       (1 << 9)
 #define OPT_EXIT        (1 << 10)
 #define OPT_DATA        (1 << 11)
 /* The option is per-file (currently ffmpeg-only).
@@ -127,8 +134,6 @@ typedef struct OptionDef {
    Next element after the offset is an int containing element count in the
    array. */
 #define OPT_SPEC        (1 << 14)
-#define OPT_TIME        (1 << 15)
-#define OPT_DOUBLE      (1 << 16)
 #define OPT_INPUT       (1 << 17)
 #define OPT_OUTPUT      (1 << 18)
      union {

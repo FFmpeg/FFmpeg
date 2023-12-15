@@ -83,7 +83,7 @@ void init_dynload(void)
 #endif
 }
 
-int parse_number(const char *context, const char *numstr, int type,
+int parse_number(const char *context, const char *numstr, enum OptionType type,
                  double min, double max, double *dst)
 {
     char *tail;
@@ -93,9 +93,9 @@ int parse_number(const char *context, const char *numstr, int type,
         error = "Expected number for %s but found: %s\n";
     else if (d < min || d > max)
         error = "The value for %s was %s which is not within %f - %f\n";
-    else if (type == OPT_INT64 && (int64_t)d != d)
+    else if (type == OPT_TYPE_INT64 && (int64_t)d != d)
         error = "Expected int64 for %s but found %s\n";
-    else if (type == OPT_INT && (int)d != d)
+    else if (type == OPT_TYPE_INT && (int)d != d)
         error = "Expected int for %s but found %s\n";
     else {
         *dst = d;
@@ -225,13 +225,11 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 
 static int opt_has_arg(const OptionDef *o)
 {
-    if (o->flags & OPT_BOOL)
+    if (o->type == OPT_TYPE_BOOL)
         return 0;
-    if (o->flags &
-        (OPT_STRING | OPT_INT  | OPT_FLOAT  | OPT_INT64 |
-         OPT_SPEC   | OPT_TIME | OPT_DOUBLE))
-        return 1;
-    return !!(o->flags & HAS_ARG);
+    if (o->type == OPT_TYPE_FUNC)
+        return !!(o->flags & HAS_ARG);
+    return 1;
 }
 
 static int write_option(void *optctx, const OptionDef *po, const char *opt,
@@ -262,46 +260,50 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
         dst = &(*so)[*dstcount - 1].u;
     }
 
-    if (po->flags & OPT_STRING) {
+    if (po->type == OPT_TYPE_STRING) {
         char *str;
         str = av_strdup(arg);
         av_freep(dst);
         if (!str)
             return AVERROR(ENOMEM);
         *(char **)dst = str;
-    } else if (po->flags & OPT_BOOL || po->flags & OPT_INT) {
-        ret = parse_number(opt, arg, OPT_INT64, INT_MIN, INT_MAX, &num);
+    } else if (po->type == OPT_TYPE_BOOL || po->type == OPT_TYPE_INT) {
+        ret = parse_number(opt, arg, OPT_TYPE_INT64, INT_MIN, INT_MAX, &num);
         if (ret < 0)
             return ret;
 
         *(int *)dst = num;
-    } else if (po->flags & OPT_INT64) {
-        ret = parse_number(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX, &num);
+    } else if (po->type == OPT_TYPE_INT64) {
+        ret = parse_number(opt, arg, OPT_TYPE_INT64, INT64_MIN, INT64_MAX, &num);
         if (ret < 0)
             return ret;
 
         *(int64_t *)dst = num;
-    } else if (po->flags & OPT_TIME) {
+    } else if (po->type == OPT_TYPE_TIME) {
         ret = av_parse_time(dst, arg, 1);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Invalid duration for option %s: %s\n",
                    opt, arg);
             return ret;
         }
-    } else if (po->flags & OPT_FLOAT) {
-        ret = parse_number(opt, arg, OPT_FLOAT, -INFINITY, INFINITY, &num);
+    } else if (po->type == OPT_TYPE_FLOAT) {
+        ret = parse_number(opt, arg, OPT_TYPE_FLOAT, -INFINITY, INFINITY, &num);
         if (ret < 0)
             return ret;
 
         *(float *)dst = num;
-    } else if (po->flags & OPT_DOUBLE) {
-        ret = parse_number(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY, &num);
+    } else if (po->type == OPT_TYPE_DOUBLE) {
+        ret = parse_number(opt, arg, OPT_TYPE_DOUBLE, -INFINITY, INFINITY, &num);
         if (ret < 0)
             return ret;
 
         *(double *)dst = num;
-    } else if (po->u.func_arg) {
-        int ret = po->u.func_arg(optctx, opt, arg);
+    } else {
+        int ret;
+
+        av_assert0(po->type == OPT_TYPE_FUNC && po->u.func_arg);
+
+        ret = po->u.func_arg(optctx, opt, arg);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR,
                    "Failed to set value '%s' for option '%s': %s\n",
@@ -320,6 +322,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
 {
     static const OptionDef opt_avoptions = {
         .name       = "AVOption passthrough",
+        .type       = OPT_TYPE_FUNC,
         .flags      = HAS_ARG,
         .u.func_arg = opt_default,
     };
@@ -331,9 +334,9 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     if (!po->name && opt[0] == 'n' && opt[1] == 'o') {
         /* handle 'no' bool option */
         po = find_option(options, opt + 2);
-        if ((po->name && (po->flags & OPT_BOOL)))
+        if ((po->name && po->type == OPT_TYPE_BOOL))
             arg = "0";
-    } else if (po->flags & OPT_BOOL)
+    } else if (po->type == OPT_TYPE_BOOL)
         arg = "1";
 
     if (!po->name)
@@ -814,7 +817,7 @@ do {                                                                           \
         /* boolean -nofoo options */
         if (opt[0] == 'n' && opt[1] == 'o' &&
             (po = find_option(options, opt + 2)) &&
-            po->name && po->flags & OPT_BOOL) {
+            po->name && po->type == OPT_TYPE_BOOL) {
             ret = add_opt(octx, po, opt, "0");
             if (ret < 0)
                 return ret;

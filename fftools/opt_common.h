@@ -41,9 +41,9 @@ int show_sources(void *optctx, const char *opt, const char *arg);
 
 #if CONFIG_AVDEVICE
 #define CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                \
-    { "sources"    , OPT_EXIT | HAS_ARG, { .func_arg = show_sources },                                                  \
+    { "sources"    , OPT_TYPE_FUNC, OPT_EXIT | HAS_ARG, { .func_arg = show_sources },                                   \
       "list sources of the input device", "device" },                                                                   \
-    { "sinks"      , OPT_EXIT | HAS_ARG, { .func_arg = show_sinks },                                                    \
+    { "sinks"      , OPT_TYPE_FUNC, OPT_EXIT | HAS_ARG, { .func_arg = show_sinks },                                     \
       "list sinks of the output device", "device" },                                                                    \
 
 #else
@@ -197,35 +197,35 @@ int opt_cpuflags(void *optctx, const char *opt, const char *arg);
 int opt_cpucount(void *optctx, const char *opt, const char *arg);
 
 #define CMDUTILS_COMMON_OPTIONS                                                                                         \
-    { "L",           OPT_EXIT,             { .func_arg = show_license },     "show license" },                          \
-    { "h",           OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
-    { "?",           OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
-    { "help",        OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
-    { "-help",       OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
-    { "version",     OPT_EXIT,             { .func_arg = show_version },     "show version" },                          \
-    { "buildconf",   OPT_EXIT,             { .func_arg = show_buildconf },   "show build configuration" },              \
-    { "formats",     OPT_EXIT,             { .func_arg = show_formats },     "show available formats" },                \
-    { "muxers",      OPT_EXIT,             { .func_arg = show_muxers },      "show available muxers" },                 \
-    { "demuxers",    OPT_EXIT,             { .func_arg = show_demuxers },    "show available demuxers" },               \
-    { "devices",     OPT_EXIT,             { .func_arg = show_devices },     "show available devices" },                \
-    { "codecs",      OPT_EXIT,             { .func_arg = show_codecs },      "show available codecs" },                 \
-    { "decoders",    OPT_EXIT,             { .func_arg = show_decoders },    "show available decoders" },               \
-    { "encoders",    OPT_EXIT,             { .func_arg = show_encoders },    "show available encoders" },               \
-    { "bsfs",        OPT_EXIT,             { .func_arg = show_bsfs },        "show available bit stream filters" },     \
-    { "protocols",   OPT_EXIT,             { .func_arg = show_protocols },   "show available protocols" },              \
-    { "filters",     OPT_EXIT,             { .func_arg = show_filters },     "show available filters" },                \
-    { "pix_fmts",    OPT_EXIT,             { .func_arg = show_pix_fmts },    "show available pixel formats" },          \
-    { "layouts",     OPT_EXIT,             { .func_arg = show_layouts },     "show standard channel layouts" },         \
-    { "sample_fmts", OPT_EXIT,             { .func_arg = show_sample_fmts }, "show available audio sample formats" },   \
-    { "dispositions", OPT_EXIT,            { .func_arg = show_dispositions}, "show available stream dispositions" },    \
-    { "colors",      OPT_EXIT,             { .func_arg = show_colors },      "show available color names" },            \
-    { "loglevel",    HAS_ARG,              { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
-    { "v",           HAS_ARG,              { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
-    { "report",      0,                    { .func_arg = opt_report },       "generate a report" },                     \
-    { "max_alloc",   HAS_ARG,              { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
-    { "cpuflags",    HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags },     "force specific cpu flags", "flags" },     \
-    { "cpucount",    HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpucount },     "force specific cpu count", "count" },     \
-    { "hide_banner", OPT_BOOL | OPT_EXPERT, {&hide_banner},     "do not show program banner", "hide_banner" },          \
+    { "L",            OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_license },     "show license" },                          \
+    { "h",            OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_help },        "show help", "topic" },                    \
+    { "?",            OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_help },        "show help", "topic" },                    \
+    { "help",         OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_help },        "show help", "topic" },                    \
+    { "-help",        OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_help },        "show help", "topic" },                    \
+    { "version",      OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_version },     "show version" },                          \
+    { "buildconf",    OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_buildconf },   "show build configuration" },              \
+    { "formats",      OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_formats },     "show available formats" },                \
+    { "muxers",       OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_muxers },      "show available muxers" },                 \
+    { "demuxers",     OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_demuxers },    "show available demuxers" },               \
+    { "devices",      OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_devices },     "show available devices" },                \
+    { "codecs",       OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_codecs },      "show available codecs" },                 \
+    { "decoders",     OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_decoders },    "show available decoders" },               \
+    { "encoders",     OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_encoders },    "show available encoders" },               \
+    { "bsfs",         OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_bsfs },        "show available bit stream filters" },     \
+    { "protocols",    OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_protocols },   "show available protocols" },              \
+    { "filters",      OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_filters },     "show available filters" },                \
+    { "pix_fmts",     OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_pix_fmts },    "show available pixel formats" },          \
+    { "layouts",      OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_layouts },     "show standard channel layouts" },         \
+    { "sample_fmts",  OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_sample_fmts }, "show available audio sample formats" },   \
+    { "dispositions", OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_dispositions}, "show available stream dispositions" },    \
+    { "colors",       OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_colors },      "show available color names" },            \
+    { "loglevel",     OPT_TYPE_FUNC, HAS_ARG,               { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
+    { "v",            OPT_TYPE_FUNC, HAS_ARG,               { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
+    { "report",       OPT_TYPE_FUNC, 0,                     { .func_arg = opt_report },       "generate a report" },                     \
+    { "max_alloc",    OPT_TYPE_FUNC, HAS_ARG,               { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
+    { "cpuflags",     OPT_TYPE_FUNC, HAS_ARG | OPT_EXPERT,  { .func_arg = opt_cpuflags },     "force specific cpu flags", "flags" },     \
+    { "cpucount",     OPT_TYPE_FUNC, HAS_ARG | OPT_EXPERT,  { .func_arg = opt_cpucount },     "force specific cpu count", "count" },     \
+    { "hide_banner",  OPT_TYPE_BOOL, OPT_EXPERT,            {&hide_banner},                   "do not show program banner", "hide_banner" }, \
     CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                    \
 
 #endif /* FFTOOLS_OPT_COMMON_H */
