@@ -104,6 +104,9 @@ static int decode_block(LeadContext * s, GetBitContext * gb,
 
     s->bdsp.clear_block(block);
 
+    if (get_bits_left(gb) <= 0)
+        return AVERROR_INVALIDDATA;
+
     size = get_vlc2(gb, dc_table, dc_bits, 1);
     if (size < 0)
         return AVERROR_INVALIDDATA;
