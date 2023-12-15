@@ -2242,8 +2242,13 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         for (i = 0; i < entries && !pb->eof_reached; i++)
             sc->chunk_offsets[i] = avio_rb32(pb);
     else if (atom.type == MKTAG('c','o','6','4'))
-        for (i = 0; i < entries && !pb->eof_reached; i++)
+        for (i = 0; i < entries && !pb->eof_reached; i++) {
             sc->chunk_offsets[i] = avio_rb64(pb);
+            if (sc->chunk_offsets[i] < 0) {
+                av_log(c->fc, AV_LOG_WARNING, "Impossible chunk_offset\n");
+                sc->chunk_offsets[i] = 0;
+            }
+        }
     else
         return AVERROR_INVALIDDATA;
 
