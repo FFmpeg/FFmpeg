@@ -375,8 +375,9 @@ av_cold int swr_init(struct SwrContext *s){
     if (s->firstpts_in_samples != AV_NOPTS_VALUE) {
         if (!s->async && s->min_compensation >= FLT_MAX/2)
             s->async = 1;
-        s->firstpts =
-        s->outpts   = s->firstpts_in_samples * s->out_sample_rate;
+        if (s->firstpts == AV_NOPTS_VALUE)
+            s->firstpts =
+            s->outpts   = s->firstpts_in_samples * s->out_sample_rate;
     } else
         s->firstpts = AV_NOPTS_VALUE;
 

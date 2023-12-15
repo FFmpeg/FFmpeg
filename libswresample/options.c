@@ -171,6 +171,7 @@ av_cold struct SwrContext *swr_alloc(void){
     if(s){
         s->av_class= &av_class;
         av_opt_set_defaults(s);
+        s->firstpts = AV_NOPTS_VALUE;
     }
     return s;
 }
