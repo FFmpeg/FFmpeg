@@ -133,13 +133,18 @@ endif
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(OBJS-$*) $(FF_EXTRALIBS)
 
 VERSION_SH  = $(SRC_PATH)/ffbuild/version.sh
+ifeq ($(VERSION_TRACKING),yes)
 GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
+endif
 
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) ffbuild/config.mak
 .version: M=@
 
+ifneq ($(VERSION_TRACKING),yes)
+libavutil/ffversion.h .version: REVISION=unknown
+endif
 libavutil/ffversion.h .version:
-	$(M)$(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)
+	$(M)revision=$(REVISION) $(VERSION_SH) $(SRC_PATH) libavutil/ffversion.h $(EXTRA_VERSION)
 	$(Q)touch .version
 
 # force version.sh to run whenever version might have changed

@@ -505,6 +505,7 @@ Developer options (useful when working on FFmpeg itself):
   --enable-macos-kperf     enable macOS kperf (private) API
   --disable-large-tests    disable tests that use a large amount of memory
   --disable-ptx-compression don't compress CUDA PTX code even when possible
+  --disable-version-tracking don't include the git/release version in the build
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -2578,6 +2579,7 @@ CMDLINE_SELECT="
     optimizations
     rpath
     stripping
+    version_tracking
 "
 
 PATHS_LIST="
@@ -3996,6 +3998,7 @@ enable $DOCUMENT_LIST
 enable $EXAMPLE_LIST
 enable $LIBRARY_LIST
 enable stripping
+enable version_tracking
 
 enable asm
 enable debug
@@ -8032,6 +8035,7 @@ SAMPLES:=${samples:-\$(FATE_SAMPLES)}
 NOREDZONE_FLAGS=$noredzone_flags
 LIBFUZZER_PATH=$libfuzzer_path
 IGNORE_TESTS=$ignore_tests
+VERSION_TRACKING=$version_tracking
 EOF
 
 map 'eval echo "${v}_FFLIBS=\$${v}_deps" >> ffbuild/config.mak' $LIBRARY_LIST
