@@ -933,10 +933,10 @@ void checkasm_report(const char *name, ...)
 }
 
 #define DEF_CHECKASM_CHECK_FUNC(type, fmt) \
-int checkasm_check_##type(const char *const file, const int line, \
+int checkasm_check_##type(const char *file, int line, \
                           const type *buf1, ptrdiff_t stride1, \
                           const type *buf2, ptrdiff_t stride2, \
-                          const int w, int h, const char *const name) \
+                          int w, int h, const char *name) \
 { \
     int y = 0; \
     stride1 /= sizeof(*buf1); \
