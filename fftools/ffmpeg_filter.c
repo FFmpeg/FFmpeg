@@ -2017,9 +2017,9 @@ static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
     if (!(tb.num > 0 && tb.den > 0))
         tb = frame->time_base;
 
+    fps->framerate     = fr;
 finish:
     ofp->tb_out        = tb;
-    fps->framerate     = fr;
     ofp->tb_out_locked = 1;
 
     return 0;
