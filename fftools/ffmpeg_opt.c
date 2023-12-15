@@ -1452,10 +1452,6 @@ const OptionDef options[] = {
                         OPT_OUTPUT,                                  { .func_arg = opt_map },
         "set input stream mapping",
         "[-]input_file_id[:stream_specifier][,sync_file_id[:stream_specifier]]" },
-#if FFMPEG_OPT_MAP_CHANNEL
-    { "map_channel",    HAS_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT, { .func_arg = opt_map_channel },
-        "map an audio channel from one stream to another (deprecated)", "file.stream.channel[:syncfile.syncstream]" },
-#endif
     { "map_metadata",   OPT_STRING | OPT_SPEC |
                         OPT_OUTPUT,                                  { .off       = OFFSET(metadata_map) },
         "set metadata information of outfile from infile",
@@ -1533,10 +1529,6 @@ const OptionDef options[] = {
         "set video sync method globally; deprecated, use -fps_mode", "" },
     { "frame_drop_threshold", OPT_FLOAT | OPT_EXPERT,      { &frame_drop_threshold },
         "frame drop threshold", "" },
-#if FFMPEG_OPT_ADRIFT_THRESHOLD
-    { "adrift_threshold", HAS_ARG | OPT_EXPERT,                      { .func_arg = opt_adrift_threshold },
-        "deprecated, does nothing", "threshold" },
-#endif
     { "copyts",         OPT_BOOL | OPT_EXPERT,                       { &copy_ts },
         "copy timestamps" },
     { "start_at_zero",  OPT_BOOL | OPT_EXPERT,                       { &start_at_zero },
@@ -1685,10 +1677,6 @@ const OptionDef options[] = {
     { "passlogfile",  OPT_VIDEO | OPT_STRING | OPT_EXPERT | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(passlogfiles) },
         "select two pass log file name prefix", "prefix" },
-#if FFMPEG_OPT_PSNR
-    { "psnr",         OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &do_psnr },
-        "calculate PSNR of compressed frames (deprecated, use -flags +psnr)" },
-#endif
     { "vstats",       OPT_VIDEO | OPT_EXPERT ,                                   { .func_arg = opt_vstats },
         "dump video coding statistics to file" },
     { "vstats_file",  OPT_VIDEO | HAS_ARG | OPT_EXPERT ,                         { .func_arg = opt_vstats_file },
@@ -1706,18 +1694,9 @@ const OptionDef options[] = {
     { "chroma_intra_matrix", OPT_VIDEO | OPT_EXPERT  | OPT_STRING | OPT_SPEC |
                       OPT_OUTPUT,                                                { .off = OFFSET(chroma_intra_matrices) },
         "specify intra matrix coeffs", "matrix" },
-#if FFMPEG_OPT_TOP
-    { "top",          OPT_VIDEO | OPT_EXPERT  | OPT_INT| OPT_SPEC |
-                      OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(top_field_first) },
-        "deprecated, use the setfield video filter", "" },
-#endif
     { "vtag",         OPT_VIDEO | HAS_ARG | OPT_EXPERT  | OPT_PERFILE |
                       OPT_INPUT | OPT_OUTPUT,                                    { .func_arg = opt_old2new },
         "force video tag/fourcc", "fourcc/tag" },
-#if FFMPEG_OPT_QPHIST
-    { "qphist",       OPT_VIDEO | OPT_EXPERT ,                        { .func_arg = opt_qphist },
-        "deprecated, does nothing" },
-#endif
     { "fps_mode",     OPT_VIDEO | OPT_STRING | OPT_EXPERT |
                       OPT_SPEC | OPT_OUTPUT,                                     { .off = OFFSET(fps_mode) },
         "set framerate mode for matching video streams; overrides vsync" },
@@ -1857,6 +1836,29 @@ const OptionDef options[] = {
         "initialise hardware device", "args" },
     { "filter_hw_device", HAS_ARG | OPT_EXPERT, { .func_arg = opt_filter_hw_device },
         "set hardware device used when filtering", "device" },
+
+    // deprecated options
+#if FFMPEG_OPT_MAP_CHANNEL
+    { "map_channel",    HAS_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT, { .func_arg = opt_map_channel },
+        "map an audio channel from one stream to another (deprecated)", "file.stream.channel[:syncfile.syncstream]" },
+#endif
+#if FFMPEG_OPT_ADRIFT_THRESHOLD
+    { "adrift_threshold", HAS_ARG | OPT_EXPERT,                      { .func_arg = opt_adrift_threshold },
+        "deprecated, does nothing", "threshold" },
+#endif
+#if FFMPEG_OPT_PSNR
+    { "psnr",         OPT_VIDEO | OPT_BOOL | OPT_EXPERT,                         { &do_psnr },
+        "calculate PSNR of compressed frames (deprecated, use -flags +psnr)" },
+#endif
+#if FFMPEG_OPT_TOP
+    { "top",          OPT_VIDEO | OPT_EXPERT  | OPT_INT| OPT_SPEC |
+                      OPT_INPUT | OPT_OUTPUT,                                    { .off = OFFSET(top_field_first) },
+        "deprecated, use the setfield video filter", "" },
+#endif
+#if FFMPEG_OPT_QPHIST
+    { "qphist",       OPT_VIDEO | OPT_EXPERT ,                        { .func_arg = opt_qphist },
+        "deprecated, does nothing" },
+#endif
 
     { NULL, },
 };
