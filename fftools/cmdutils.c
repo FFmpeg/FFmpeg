@@ -223,6 +223,17 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 }
 #endif /* HAVE_COMMANDLINETOARGVW */
 
+static int opt_has_arg(const OptionDef *o)
+{
+    if (o->flags & OPT_BOOL)
+        return 0;
+    if (o->flags &
+        (OPT_STRING | OPT_INT  | OPT_FLOAT  | OPT_INT64 |
+         OPT_SPEC   | OPT_TIME | OPT_DOUBLE))
+        return 1;
+    return !!(o->flags & HAS_ARG);
+}
+
 static int write_option(void *optctx, const OptionDef *po, const char *opt,
                         const char *arg)
 {
@@ -331,7 +342,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
         av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
         return AVERROR(EINVAL);
     }
-    if (po->flags & HAS_ARG && !arg) {
+    if (opt_has_arg(po) && !arg) {
         av_log(NULL, AV_LOG_ERROR, "Missing argument for option '%s'\n", opt);
         return AVERROR(EINVAL);
     }
@@ -340,7 +351,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     if (ret < 0)
         return ret;
 
-    return !!(po->flags & HAS_ARG);
+    return opt_has_arg(po);
 }
 
 int parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
@@ -432,7 +443,7 @@ int locate_option(int argc, char **argv, const OptionDef *options,
              (po->name && !strcmp(optname, po->name)))
             return i;
 
-        if (!po->name || po->flags & HAS_ARG)
+        if (!po->name || opt_has_arg(po))
             i++;
     }
     return 0;
@@ -770,7 +781,7 @@ do {                                                                           \
             if (po->flags & OPT_EXIT) {
                 /* optional argument, e.g. -h */
                 arg = argv[optindex++];
-            } else if (po->flags & HAS_ARG) {
+            } else if (opt_has_arg(po)) {
                 GET_ARG(arg);
             } else {
                 arg = "1";
