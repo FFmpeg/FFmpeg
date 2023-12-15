@@ -162,7 +162,7 @@ typedef struct JXLParseContext {
     int skipped_icc;
     int next;
 
-    uint8_t cs_buffer[4096];
+    uint8_t cs_buffer[4096 + AV_INPUT_BUFFER_PADDING_SIZE];
 } JXLParseContext;
 
 /* used for reading brotli prefixes */
@@ -1401,7 +1401,7 @@ static int try_parse(AVCodecParserContext *s, AVCodecContext *avctx, JXLParseCon
     if (ctx->container || AV_RL64(buf) == FF_JPEGXL_CONTAINER_SIGNATURE_LE) {
         ctx->container = 1;
         ret = ff_jpegxl_collect_codestream_header(buf, buf_size, ctx->cs_buffer,
-                                                  sizeof(ctx->cs_buffer), &ctx->copied);
+                                                  sizeof(ctx->cs_buffer) - AV_INPUT_BUFFER_PADDING_SIZE, &ctx->copied);
         if (ret < 0)
             return ret;
         ctx->collected_size = ret;
@@ -1410,7 +1410,7 @@ static int try_parse(AVCodecParserContext *s, AVCodecContext *avctx, JXLParseCon
             return AVERROR_BUFFER_TOO_SMALL;
         }
         cs_buffer = ctx->cs_buffer;
-        cs_buflen = FFMIN(sizeof(ctx->cs_buffer), ctx->copied);
+        cs_buflen = FFMIN(sizeof(ctx->cs_buffer) - AV_INPUT_BUFFER_PADDING_SIZE, ctx->copied);
     } else {
         cs_buffer = buf;
         cs_buflen = buf_size;
