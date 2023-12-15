@@ -1743,11 +1743,9 @@ const OptionDef options[] = {
         "select output format used with HW accelerated decoding", "format" },
     { "hwaccels",         OPT_EXIT,                                              { .func_arg = show_hwaccels },
         "show available HW acceleration methods" },
-    { "autorotate",       HAS_ARG | OPT_BOOL | OPT_SPEC |
-                          OPT_EXPERT | OPT_INPUT,                                { .off = OFFSET(autorotate) },
+    { "autorotate",       OPT_BOOL | OPT_SPEC | OPT_EXPERT | OPT_INPUT,          { .off = OFFSET(autorotate) },
         "automatically insert correct rotate filters" },
-    { "autoscale",        HAS_ARG | OPT_BOOL | OPT_SPEC |
-                          OPT_EXPERT | OPT_OUTPUT,                               { .off = OFFSET(autoscale) },
+    { "autoscale",        OPT_BOOL | OPT_SPEC | OPT_EXPERT | OPT_OUTPUT,         { .off = OFFSET(autoscale) },
         "automatically insert a scale filter at the end of the filter graph" },
     { "fix_sub_duration_heartbeat", OPT_VIDEO | OPT_BOOL | OPT_EXPERT |
                                     OPT_SPEC | OPT_OUTPUT,                       { .off = OFFSET(fix_sub_duration_heartbeat) },
