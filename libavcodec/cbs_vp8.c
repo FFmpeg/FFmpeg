@@ -307,7 +307,7 @@ static int cbs_vp8_read_unit(CodedBitstreamContext *ctx,
     frame = unit->content;
 
     // Create GetBitContext for uncompressed header.
-    err = init_get_bits8_le(&gbc, unit->data, 8 * unit->data_size);
+    err = init_get_bits8_le(&gbc, unit->data, unit->data_size);
     if (err < 0)
         return err;
 
