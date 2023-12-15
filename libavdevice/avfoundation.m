@@ -762,41 +762,41 @@ static int get_audio_config(AVFormatContext *s)
 }
 
 static NSArray* getDevicesWithMediaType(AVMediaType mediaType) {
-#if ((TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000) || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 101500))
+#if ((TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 100000) || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101500))
     NSMutableArray *deviceTypes = nil;
     if (mediaType == AVMediaTypeVideo) {
         deviceTypes = [NSMutableArray arrayWithArray:@[AVCaptureDeviceTypeBuiltInWideAngleCamera]];
-        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000)
+        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 100000)
             [deviceTypes addObject: AVCaptureDeviceTypeBuiltInDualCamera];
             [deviceTypes addObject: AVCaptureDeviceTypeBuiltInTelephotoCamera];
         #endif
-        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110100)
+        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 110100)
             [deviceTypes addObject: AVCaptureDeviceTypeBuiltInTrueDepthCamera];
         #endif
-        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000)
+        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 130000)
             [deviceTypes addObject: AVCaptureDeviceTypeBuiltInTripleCamera];
             [deviceTypes addObject: AVCaptureDeviceTypeBuiltInDualWideCamera];
             [deviceTypes addObject: AVCaptureDeviceTypeBuiltInUltraWideCamera];
         #endif
-        #if (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 130000)
+        #if (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 130000)
             [deviceTypes addObject: AVCaptureDeviceTypeDeskViewCamera];
         #endif
-        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150400)
+        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 150400)
             [deviceTypes addObject: AVCaptureDeviceTypeBuiltInLiDARDepthCamera];
         #endif
-        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 170000 || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000))
+        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 170000 || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 140000))
             [deviceTypes addObject: AVCaptureDeviceTypeContinuityCamera];
         #endif
     } else if (mediaType == AVMediaTypeAudio) {
-        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 170000 || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000))
+        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 170000 || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 140000))
             deviceTypes = [NSMutableArray arrayWithArray:@[AVCaptureDeviceTypeMicrophone]];
         #else
             deviceTypes = [NSMutableArray arrayWithArray:@[AVCaptureDeviceTypeBuiltInMicrophone]];
         #endif
     } else if (mediaType == AVMediaTypeMuxed) {
-        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MAX_ALLOWED >= 170000 || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000))
+        #if (TARGET_OS_IPHONE && __IPHONE_OS_VERSION_MIN_REQUIRED >= 170000 || (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED >= 140000))
             deviceTypes = [NSMutableArray arrayWithArray:@[AVCaptureDeviceTypeExternal]];
-        #elif (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED < 140000)
+        #elif (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED < 140000)
             deviceTypes = [NSMutableArray arrayWithArray:@[AVCaptureDeviceTypeExternalUnknown]];
         #else
             return nil;
