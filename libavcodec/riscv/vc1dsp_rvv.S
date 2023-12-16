@@ -68,7 +68,7 @@ endfunc
 
 func ff_vc1_inv_trans_8x4_dc_rvv, zve64x
         lh            t2, (a2)
-        vsetivli      zero, 8, e8, mf2, ta, ma
+        vsetivli      zero, 4, e8, mf4, ta, ma
         vlse64.v      v0, (a0), a1
         sh1add        t2, t2, t2
         addi          t2, t2, 1
@@ -84,14 +84,14 @@ func ff_vc1_inv_trans_8x4_dc_rvv, zve64x
         vmax.vx       v4, v4, zero
         vsetvli       zero, zero, e8, m2, ta, ma
         vnclipu.wi    v0, v4, 0
-        vsetivli      zero, 8, e8, mf2, ta, ma
+        vsetivli      zero, 4, e8, mf4, ta, ma
         vsse64.v      v0, (a0), a1
         ret
 endfunc
 
 func ff_vc1_inv_trans_4x4_dc_rvv, zve32x
         lh            t2, (a2)
-        vsetivli      zero, 4, e8, mf2, ta, ma
+        vsetivli      zero, 4, e8, mf4, ta, ma
         vlse32.v      v0, (a0), a1
         slli          t1, t2, 4
         add           t2, t2, t1
@@ -107,7 +107,7 @@ func ff_vc1_inv_trans_4x4_dc_rvv, zve32x
         vmax.vx       v2, v2, zero
         vsetvli       zero, zero, e8, m1, ta, ma
         vnclipu.wi    v0, v2, 0
-        vsetivli      zero, 4, e8, mf2, ta, ma
+        vsetivli      zero, 4, e8, mf4, ta, ma
         vsse32.v      v0, (a0), a1
         ret
 endfunc
