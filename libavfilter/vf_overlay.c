@@ -690,213 +690,59 @@ static av_always_inline void blend_slice_planar_rgb(AVFilterContext *ctx,
         alpha_composite_8_8bits(src, dst, src_w, src_h, dst_w, dst_h, x, y, jobnr, nb_jobs);
 }
 
-static int blend_slice_yuv420(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 1, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
+#define DEFINE_BLEND_SLICE_PLANAR_FMT(format_, blend_slice_fn_suffix_, hsub_, vsub_, main_has_alpha_, direct_) \
+static int blend_slice_##format_(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)           \
+{                                                                       \
+    OverlayContext *s = ctx->priv;                                      \
+    ThreadData *td = arg;                                               \
+    blend_slice_##blend_slice_fn_suffix_(ctx, td->dst, td->src,         \
+                                         hsub_, vsub_, main_has_alpha_, \
+                                         s->x, s->y, direct_,           \
+                                         jobnr, nb_jobs);               \
+    return 0;                                                           \
 }
 
-static int blend_slice_yuva420(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 1, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
+//                            FMT          FN             H  V  A  D
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420,      yuv_8_8bits,   1, 1, 0, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva420,     yuv_8_8bits,   1, 1, 1, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420p10,   yuv_16_10bits, 1, 1, 0, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva420p10,  yuv_16_10bits, 1, 1, 1, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422p10,   yuv_16_10bits, 1, 0, 0, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva422p10,  yuv_16_10bits, 1, 0, 1, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422,      yuv_8_8bits,   1, 0, 0, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva422,     yuv_8_8bits,   1, 0, 1, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444,      yuv_8_8bits,   0, 0, 0, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva444,     yuv_8_8bits,   0, 0, 1, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444p10,   yuv_16_10bits, 0, 0, 0, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva444p10,  yuv_16_10bits, 0, 0, 1, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(gbrp,        planar_rgb,    0, 0, 0, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(gbrap,       planar_rgb,    0, 0, 1, 1);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv420_pm,   yuv_8_8bits,   1, 1, 0, 0);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva420_pm,  yuv_8_8bits,   1, 1, 1, 0);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv422_pm,   yuv_8_8bits,   1, 0, 0, 0);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva422_pm,  yuv_8_8bits,   1, 0, 1, 0);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuv444_pm,   yuv_8_8bits,   0, 0, 0, 0);
+DEFINE_BLEND_SLICE_PLANAR_FMT(yuva444_pm,  yuv_8_8bits,   0, 0, 1, 0);
+DEFINE_BLEND_SLICE_PLANAR_FMT(gbrp_pm,     planar_rgb,    0, 0, 0, 0);
+DEFINE_BLEND_SLICE_PLANAR_FMT(gbrap_pm,    planar_rgb,    0, 0, 1, 0);
+
+#define DEFINE_BLEND_SLICE_PACKED_FMT(format_, blend_slice_fn_suffix_, main_has_alpha_, direct_) \
+static int blend_slice_##format_(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)        \
+{                                                                       \
+    OverlayContext *s = ctx->priv;                                      \
+    ThreadData *td = arg;                                               \
+    blend_slice_packed_##blend_slice_fn_suffix_(ctx, td->dst, td->src,  \
+                                                main_has_alpha_,        \
+                                                s->x, s->y, direct_,    \
+                                                jobnr, nb_jobs);        \
+    return 0;                                                           \
 }
 
-static int blend_slice_yuv420p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 1, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva420p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 1, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuv422p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 0, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva422p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 1, 0, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuv422(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 0, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva422(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 0, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuv444(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 0, 0, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva444(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 0, 0, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuv444p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 0, 0, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva444p10(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_16_10bits(ctx, td->dst, td->src, 0, 0, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_gbrp(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_planar_rgb(ctx, td->dst, td->src, 0, 0, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_gbrap(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_planar_rgb(ctx, td->dst, td->src, 0, 0, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuv420_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 1, 0, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva420_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 1, 1, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuv422_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 0, 0, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva422_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 1, 0, 1, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuv444_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 0, 0, 0, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_yuva444_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_yuv_8_8bits(ctx, td->dst, td->src, 0, 0, 1, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_gbrp_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_planar_rgb(ctx, td->dst, td->src, 0, 0, 0, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_gbrap_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_planar_rgb(ctx, td->dst, td->src, 0, 0, 1, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_rgb(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_packed_rgb(ctx, td->dst, td->src, 0, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_rgba(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_packed_rgb(ctx, td->dst, td->src, 1, s->x, s->y, 1, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_rgb_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_packed_rgb(ctx, td->dst, td->src, 0, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
-
-static int blend_slice_rgba_pm(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    OverlayContext *s = ctx->priv;
-    ThreadData *td = arg;
-    blend_slice_packed_rgb(ctx, td->dst, td->src, 1, s->x, s->y, 0, jobnr, nb_jobs);
-    return 0;
-}
+//                            FMT      FN   A  D
+DEFINE_BLEND_SLICE_PACKED_FMT(rgb,     rgb, 0, 1);
+DEFINE_BLEND_SLICE_PACKED_FMT(rgba,    rgb, 1, 1);
+DEFINE_BLEND_SLICE_PACKED_FMT(rgb_pm,  rgb, 0, 0);
+DEFINE_BLEND_SLICE_PACKED_FMT(rgba_pm, rgb, 1, 0);
 
 static int config_input_main(AVFilterLink *inlink)
 {
