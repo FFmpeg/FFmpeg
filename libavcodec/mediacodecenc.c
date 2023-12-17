@@ -268,8 +268,11 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
 
     if (avctx->bit_rate)
         ff_AMediaFormat_setInt32(format, "bitrate", avctx->bit_rate);
-    if (s->bitrate_mode >= 0)
+    if (s->bitrate_mode >= 0) {
         ff_AMediaFormat_setInt32(format, "bitrate-mode", s->bitrate_mode);
+        if (s->bitrate_mode == BITRATE_MODE_CQ && avctx->global_quality > 0)
+            ff_AMediaFormat_setInt32(format, "quality", avctx->global_quality);
+    }
     // frame-rate and i-frame-interval are required to configure codec
     if (avctx->framerate.num >= avctx->framerate.den && avctx->framerate.den > 0) {
         s->fps = avctx->framerate.num / avctx->framerate.den;
