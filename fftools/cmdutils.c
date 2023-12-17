@@ -233,7 +233,7 @@ static int opt_has_arg(const OptionDef *o)
 }
 
 static int write_option(void *optctx, const OptionDef *po, const char *opt,
-                        const char *arg)
+                        const char *arg, const OptionDef *defs)
 {
     /* new-style options contain an offset into optctx, old-style address of
      * a global var*/
@@ -313,8 +313,11 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     if (po->flags & OPT_EXIT)
         return AVERROR_EXIT;
 
-    if (sol)
+    if (sol) {
         sol->type = po->type;
+        sol->opt_canon = (po->flags & OPT_HAS_CANON) ?
+                         find_option(defs, po->u1.name_canon) : po;
+    }
 
     return 0;
 }
@@ -352,7 +355,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
         return AVERROR(EINVAL);
     }
 
-    ret = write_option(optctx, po, opt, arg);
+    ret = write_option(optctx, po, opt, arg, options);
     if (ret < 0)
         return ret;
 
@@ -395,7 +398,7 @@ int parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
     return 0;
 }
 
-int parse_optgroup(void *optctx, OptionGroup *g)
+int parse_optgroup(void *optctx, OptionGroup *g, const OptionDef *defs)
 {
     int i, ret;
 
@@ -418,7 +421,7 @@ int parse_optgroup(void *optctx, OptionGroup *g)
         av_log(NULL, AV_LOG_DEBUG, "Applying option %s (%s) with argument %s.\n",
                o->key, o->opt->help, o->val);
 
-        ret = write_option(optctx, o->opt, o->key, o->val);
+        ret = write_option(optctx, o->opt, o->key, o->val, defs);
         if (ret < 0)
             return ret;
     }

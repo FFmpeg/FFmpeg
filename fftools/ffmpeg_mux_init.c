@@ -50,47 +50,6 @@
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
-static const char *const opt_name_apad[]                      = {"apad", NULL};
-static const char *const opt_name_autoscale[]                 = {"autoscale", NULL};
-static const char *const opt_name_bits_per_raw_sample[]       = {"bits_per_raw_sample", NULL};
-static const char *const opt_name_bitstream_filters[]         = {"bsf", "absf", "vbsf", NULL};
-static const char *const opt_name_copy_initial_nonkeyframes[] = {"copyinkf", NULL};
-static const char *const opt_name_copy_prior_start[]          = {"copypriorss", NULL};
-static const char *const opt_name_disposition[]               = {"disposition", NULL};
-static const char *const opt_name_enc_time_bases[]            = {"enc_time_base", NULL};
-static const char *const opt_name_enc_stats_pre[]             = {"enc_stats_pre", NULL};
-static const char *const opt_name_enc_stats_post[]            = {"enc_stats_post", NULL};
-static const char *const opt_name_mux_stats[]                 = {"mux_stats", NULL};
-static const char *const opt_name_enc_stats_pre_fmt[]         = {"enc_stats_pre_fmt", NULL};
-static const char *const opt_name_enc_stats_post_fmt[]        = {"enc_stats_post_fmt", NULL};
-static const char *const opt_name_mux_stats_fmt[]             = {"mux_stats_fmt", NULL};
-static const char *const opt_name_filters[]                   = {"filter", "af", "vf", NULL};
-static const char *const opt_name_filter_scripts[]            = {"filter_script", NULL};
-static const char *const opt_name_fix_sub_duration_heartbeat[] = {"fix_sub_duration_heartbeat", NULL};
-static const char *const opt_name_fps_mode[]                  = {"fps_mode", NULL};
-static const char *const opt_name_force_fps[]                 = {"force_fps", NULL};
-static const char *const opt_name_forced_key_frames[]         = {"forced_key_frames", NULL};
-static const char *const opt_name_frame_aspect_ratios[]       = {"aspect", NULL};
-static const char *const opt_name_intra_matrices[]            = {"intra_matrix", NULL};
-static const char *const opt_name_inter_matrices[]            = {"inter_matrix", NULL};
-static const char *const opt_name_chroma_intra_matrices[]     = {"chroma_intra_matrix", NULL};
-static const char *const opt_name_max_frame_rates[]           = {"fpsmax", NULL};
-static const char *const opt_name_max_frames[]                = {"frames", "aframes", "vframes", "dframes", NULL};
-static const char *const opt_name_max_muxing_queue_size[]     = {"max_muxing_queue_size", NULL};
-static const char *const opt_name_muxing_queue_data_threshold[] = {"muxing_queue_data_threshold", NULL};
-static const char *const opt_name_pass[]                      = {"pass", NULL};
-static const char *const opt_name_passlogfiles[]              = {"passlogfile", NULL};
-static const char *const opt_name_presets[]                   = {"pre", "apre", "vpre", "spre", NULL};
-static const char *const opt_name_qscale[]                    = {"q", "qscale", NULL};
-static const char *const opt_name_rc_overrides[]              = {"rc_override", NULL};
-static const char *const opt_name_time_bases[]                = {"time_base", NULL};
-static const char *const opt_name_audio_channels[]            = {"ac", NULL};
-static const char *const opt_name_audio_ch_layouts[]          = {"channel_layout", "ch_layout", NULL};
-static const char *const opt_name_audio_sample_rate[]         = {"ar", NULL};
-static const char *const opt_name_frame_sizes[]               = {"s", NULL};
-static const char *const opt_name_frame_pix_fmts[]            = {"pix_fmt", NULL};
-static const char *const opt_name_sample_fmts[]               = {"sample_fmt", NULL};
-
 static int check_opt_bitexact(void *ctx, const AVDictionary *opts,
                               const char *opt_name, int flag)
 {

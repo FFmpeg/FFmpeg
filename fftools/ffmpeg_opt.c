@@ -54,13 +54,6 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 
-const char *const opt_name_codec_names[]                      = {"c", "codec", "acodec", "vcodec", "scodec", "dcodec", NULL};
-const char *const opt_name_frame_rates[]                      = {"r", NULL};
-const char *const opt_name_codec_tags[]                       = {"tag", "atag", "vtag", "stag", NULL};
-#if FFMPEG_OPT_TOP
-const char *const opt_name_top_field_first[]                  = {"top", NULL};
-#endif
-
 HWDevice *filter_hw_device;
 
 char *vstats_filename;
@@ -1289,7 +1282,7 @@ static int open_files(OptionGroupList *l, const char *inout, Scheduler *sch,
         init_options(&o);
         o.g = g;
 
-        ret = parse_optgroup(&o, g);
+        ret = parse_optgroup(&o, g, options);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error parsing options for %s file "
                    "%s.\n", inout, g->arg);
@@ -1328,7 +1321,7 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
     }
 
     /* apply global options */
-    ret = parse_optgroup(sch, &octx.global_opts);
+    ret = parse_optgroup(sch, &octx.global_opts, options);
     if (ret < 0) {
         errmsg = "parsing global options";
         goto fail;
@@ -1430,6 +1423,15 @@ static int opt_adrift_threshold(void *optctx, const char *opt, const char *arg)
 }
 #endif
 
+static const char *const alt_bsf[]            = { "absf", "vbsf", NULL };
+static const char *const alt_channel_layout[] = { "ch_layout", NULL};
+static const char *const alt_codec[]          = { "c", "acodec", "vcodec", "scodec", "dcodec", NULL };
+static const char *const alt_filter[]         = { "af", "vf", NULL };
+static const char *const alt_frames[]         = { "aframes", "vframes", "dframes", NULL };
+static const char *const alt_pre[]            = { "apre", "vpre", "spre", NULL};
+static const char *const alt_qscale[]         = { "q", NULL};
+static const char *const alt_tag[]            = { "atag", "vtag", "stag", NULL };
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 const OptionDef options[] = {
     /* main options */
@@ -1452,15 +1454,18 @@ const OptionDef options[] = {
     { "recast_media",           OPT_TYPE_BOOL, OPT_EXPERT,
         {              &recast_media },
         "allow recasting stream type in order to force a decoder of different media type" },
-    { "c",                      OPT_TYPE_STRING, OPT_SPEC | OPT_INPUT | OPT_OUTPUT,
+    { "c",                      OPT_TYPE_STRING, OPT_SPEC | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
         { .off       = OFFSET(codec_names) },
-        "codec name", "codec" },
-    { "codec",                  OPT_TYPE_STRING, OPT_SPEC | OPT_INPUT | OPT_OUTPUT,
+        "codec name", "codec",
+        .u1.name_canon = "codec", },
+    { "codec",                  OPT_TYPE_STRING, OPT_SPEC | OPT_INPUT | OPT_OUTPUT | OPT_HAS_ALT,
         { .off       = OFFSET(codec_names) },
-        "codec name", "codec" },
-    { "pre",                    OPT_TYPE_STRING, OPT_SPEC | OPT_OUTPUT,
+        "codec name", "codec",
+        .u1.names_alt = alt_codec, },
+    { "pre",                    OPT_TYPE_STRING, OPT_SPEC | OPT_OUTPUT | OPT_HAS_ALT,
         { .off       = OFFSET(presets) },
-        "preset name", "preset" },
+        "preset name", "preset",
+        .u1.names_alt = alt_pre, },
     { "map",                    OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT,
         { .func_arg = opt_map },
         "set input stream mapping",
@@ -1515,9 +1520,10 @@ const OptionDef options[] = {
     { "stream_group",           OPT_TYPE_STRING, OPT_SPEC | OPT_OUTPUT,
         { .off = OFFSET(stream_groups) },
         "add stream group with specified streams and group type-specific arguments", "id=number:st=number..." },
-    { "dframes",                OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_PERFILE | OPT_EXPERT | OPT_OUTPUT,
+    { "dframes",                OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_PERFILE | OPT_EXPERT | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_data_frames },
-        "set the number of data frames to output", "number" },
+        "set the number of data frames to output", "number",
+        .u1.name_canon = "frames" },
     { "benchmark",              OPT_TYPE_BOOL, OPT_EXPERT,
         { &do_benchmark },
         "add timings for benchmarking" },
@@ -1597,24 +1603,29 @@ const OptionDef options[] = {
     { "copypriorss",            OPT_TYPE_INT, OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,
         { .off = OFFSET(copy_prior_start) },
         "copy or discard frames before start time" },
-    { "frames",                 OPT_TYPE_INT64, OPT_SPEC | OPT_OUTPUT,
+    { "frames",                 OPT_TYPE_INT64, OPT_SPEC | OPT_OUTPUT | OPT_HAS_ALT,
         { .off = OFFSET(max_frames) },
-        "set the number of frames to output", "number" },
-    { "tag",                    OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_INPUT,
+        "set the number of frames to output", "number",
+        .u1.names_alt = alt_frames, },
+    { "tag",                    OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_INPUT | OPT_HAS_ALT,
         { .off = OFFSET(codec_tags) },
-        "force codec tag/fourcc", "fourcc/tag" },
-    { "q",                      OPT_TYPE_DOUBLE, OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,
+        "force codec tag/fourcc", "fourcc/tag",
+        .u1.names_alt = alt_tag, },
+    { "q",                      OPT_TYPE_DOUBLE, OPT_EXPERT | OPT_SPEC | OPT_OUTPUT | OPT_HAS_CANON,
         { .off = OFFSET(qscale) },
-        "use fixed quality scale (VBR)", "q" },
-    { "qscale",                 OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT,
+        "use fixed quality scale (VBR)", "q",
+        .u1.name_canon = "qscale", },
+    { "qscale",                 OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT | OPT_HAS_ALT,
         { .func_arg = opt_qscale },
-        "use fixed quality scale (VBR)", "q" },
+        "use fixed quality scale (VBR)", "q",
+        .u1.names_alt = alt_qscale, },
     { "profile",                OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT,
         { .func_arg = opt_profile },
         "set profile", "profile" },
-    { "filter",                 OPT_TYPE_STRING, OPT_SPEC | OPT_OUTPUT,
+    { "filter",                 OPT_TYPE_STRING, OPT_SPEC | OPT_OUTPUT | OPT_HAS_ALT,
         { .off = OFFSET(filters) },
-        "set stream filtergraph", "filter_graph" },
+        "set stream filtergraph", "filter_graph",
+        .u1.names_alt = alt_filter, },
     { "filter_threads",         OPT_TYPE_FUNC, OPT_FUNC_ARG,
         { .func_arg = opt_filter_threads },
         "number of non-complex filter threads" },
@@ -1695,9 +1706,10 @@ const OptionDef options[] = {
         "format of the stats written with -stats_mux_pre" },
 
     /* video options */
-    { "vframes",                    OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_OUTPUT,
+    { "vframes",                    OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_video_frames },
-        "set the number of video frames to output", "number" },
+        "set the number of video frames to output", "number",
+        .u1.name_canon = "frames", },
     { "r",                          OPT_TYPE_STRING, OPT_VIDEO | OPT_SPEC | OPT_INPUT | OPT_OUTPUT,
         { .off = OFFSET(frame_rates) },
         "set frame rate (Hz value, fraction or abbreviation)", "rate" },
@@ -1731,9 +1743,10 @@ const OptionDef options[] = {
     { "rc_override",                OPT_TYPE_STRING, OPT_VIDEO | OPT_EXPERT  | OPT_SPEC | OPT_OUTPUT,
         { .off = OFFSET(rc_overrides) },
         "rate control override for specific intervals", "override" },
-    { "vcodec",                     OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT,
+    { "vcodec",                     OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_video_codec },
-        "force video codec ('copy' to copy stream)", "codec" },
+        "force video codec ('copy' to copy stream)", "codec",
+        .u1.name_canon = "codec", },
     { "timecode",                   OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_PERFILE | OPT_OUTPUT,
         { .func_arg = opt_timecode },
         "set initial TimeCode value.", "hh:mm:ss[:;.]ff" },
@@ -1752,9 +1765,10 @@ const OptionDef options[] = {
     { "vstats_version",             OPT_TYPE_INT,    OPT_VIDEO | OPT_EXPERT,
         { &vstats_version },
         "Version of the vstats format to use."},
-    { "vf",                         OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_PERFILE | OPT_OUTPUT,
+    { "vf",                         OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_video_filters },
-        "set video filters", "filter_graph" },
+        "set video filters", "filter_graph",
+        .u1.name_canon = "filter", },
     { "intra_matrix",               OPT_TYPE_STRING, OPT_VIDEO | OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,
         { .off = OFFSET(intra_matrices) },
         "specify intra matrix coeffs", "matrix" },
@@ -1764,9 +1778,10 @@ const OptionDef options[] = {
     { "chroma_intra_matrix",        OPT_TYPE_STRING, OPT_VIDEO | OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,
         { .off = OFFSET(chroma_intra_matrices) },
         "specify intra matrix coeffs", "matrix" },
-    { "vtag",                       OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_EXPERT  | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT,
+    { "vtag",                       OPT_TYPE_FUNC,   OPT_VIDEO | OPT_FUNC_ARG | OPT_EXPERT  | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_old2new },
-        "force video tag/fourcc", "fourcc/tag" },
+        "force video tag/fourcc", "fourcc/tag",
+        .u1.name_canon = "tag", },
     { "fps_mode",                   OPT_TYPE_STRING, OPT_VIDEO | OPT_EXPERT | OPT_SPEC | OPT_OUTPUT,
         { .off = OFFSET(fps_mode) },
         "set framerate mode for matching video streams; overrides vsync" },
@@ -1807,9 +1822,10 @@ const OptionDef options[] = {
         "random access points" },
 
     /* audio options */
-    { "aframes",          OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_OUTPUT,
+    { "aframes",          OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_audio_frames },
-        "set the number of audio frames to output", "number" },
+        "set the number of audio frames to output", "number",
+        .u1.name_canon = "frames", },
     { "aq",               OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_OUTPUT,
         { .func_arg = opt_audio_qscale },
         "set audio quality (codec-specific)", "quality", },
@@ -1822,27 +1838,32 @@ const OptionDef options[] = {
     { "an",               OPT_TYPE_BOOL,    OPT_AUDIO | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,
         { .off = OFFSET(audio_disable) },
         "disable audio" },
-    { "acodec",           OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT,
+    { "acodec",           OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_audio_codec },
-        "force audio codec ('copy' to copy stream)", "codec" },
+        "force audio codec ('copy' to copy stream)", "codec",
+        .u1.name_canon = "codec", },
     { "ab",               OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG | OPT_PERFILE | OPT_OUTPUT,
         { .func_arg = opt_bitrate },
         "audio bitrate (please use -b:a)", "bitrate" },
-    { "atag",             OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT,
+    { "atag",             OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_old2new },
-        "force audio tag/fourcc", "fourcc/tag" },
+        "force audio tag/fourcc", "fourcc/tag",
+        .u1.name_canon = "tag", },
     { "sample_fmt",       OPT_TYPE_STRING,  OPT_AUDIO | OPT_EXPERT | OPT_SPEC | OPT_INPUT | OPT_OUTPUT,
         { .off = OFFSET(sample_fmts) },
         "set sample format", "format" },
-    { "channel_layout",   OPT_TYPE_STRING,  OPT_AUDIO | OPT_EXPERT | OPT_SPEC | OPT_INPUT | OPT_OUTPUT,
+    { "channel_layout",   OPT_TYPE_STRING,  OPT_AUDIO | OPT_EXPERT | OPT_SPEC | OPT_INPUT | OPT_OUTPUT | OPT_HAS_ALT,
         { .off = OFFSET(audio_ch_layouts) },
-        "set channel layout", "layout" },
-    { "ch_layout",        OPT_TYPE_STRING,  OPT_AUDIO | OPT_EXPERT | OPT_SPEC | OPT_INPUT | OPT_OUTPUT,
+        "set channel layout", "layout",
+        .u1.names_alt = alt_channel_layout, },
+    { "ch_layout",        OPT_TYPE_STRING,  OPT_AUDIO | OPT_EXPERT | OPT_SPEC | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
         { .off = OFFSET(audio_ch_layouts) },
-        "set channel layout", "layout" },
-    { "af",               OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_OUTPUT,
+        "set channel layout", "layout",
+        .u1.name_canon = "channel_layout", },
+    { "af",               OPT_TYPE_FUNC,    OPT_AUDIO | OPT_FUNC_ARG  | OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_audio_filters },
-        "set audio filters", "filter_graph" },
+        "set audio filters", "filter_graph",
+        .u1.name_canon = "filter", },
     { "guess_layout_max", OPT_TYPE_INT,     OPT_AUDIO | OPT_SPEC | OPT_EXPERT | OPT_INPUT,
         { .off = OFFSET(guess_layout_max) },
       "set the maximum number of channels to try to guess the channel layout" },
@@ -1851,12 +1872,14 @@ const OptionDef options[] = {
     { "sn",     OPT_TYPE_BOOL, OPT_SUBTITLE | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,
         { .off = OFFSET(subtitle_disable) },
         "disable subtitle" },
-    { "scodec", OPT_TYPE_FUNC, OPT_SUBTITLE | OPT_FUNC_ARG  | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT,
+    { "scodec", OPT_TYPE_FUNC, OPT_SUBTITLE | OPT_FUNC_ARG  | OPT_PERFILE | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_subtitle_codec },
-        "force subtitle codec ('copy' to copy stream)", "codec" },
-    { "stag",   OPT_TYPE_FUNC, OPT_SUBTITLE | OPT_FUNC_ARG  | OPT_EXPERT  | OPT_PERFILE | OPT_OUTPUT,
+        "force subtitle codec ('copy' to copy stream)", "codec",
+        .u1.name_canon = "codec", },
+    { "stag",   OPT_TYPE_FUNC, OPT_SUBTITLE | OPT_FUNC_ARG  | OPT_EXPERT  | OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_old2new }
-        , "force subtitle tag/fourcc", "fourcc/tag" },
+        , "force subtitle tag/fourcc", "fourcc/tag",
+        .u1.name_canon = "tag" },
     { "fix_sub_duration", OPT_TYPE_BOOL, OPT_EXPERT | OPT_SUBTITLE | OPT_SPEC | OPT_INPUT,
         { .off = OFFSET(fix_sub_duration) },
         "fix subtitles duration" },
@@ -1885,28 +1908,35 @@ const OptionDef options[] = {
         "0 = use frame rate (video) or sample rate (audio),"
         "-1 = match source time base", "ratio" },
 
-    { "bsf", OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT,
+    { "bsf", OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_HAS_ALT,
         { .off = OFFSET(bitstream_filters) },
-        "A comma-separated list of bitstream filters", "bitstream_filters" },
-    { "absf", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT,
+        "A comma-separated list of bitstream filters", "bitstream_filters",
+        .u1.names_alt = alt_bsf, },
+    { "absf", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_old2new },
-        "deprecated", "audio bitstream_filters" },
-    { "vbsf", OPT_TYPE_FUNC, OPT_VIDEO | OPT_FUNC_ARG | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT,
+        "deprecated", "audio bitstream_filters",
+        .u1.name_canon = "bsf", },
+    { "vbsf", OPT_TYPE_FUNC, OPT_VIDEO | OPT_FUNC_ARG | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_old2new },
-        "deprecated", "video bitstream_filters" },
+        "deprecated", "video bitstream_filters",
+        .u1.name_canon = "bsf", },
 
-    { "apre", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT,
+    { "apre", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_preset },
-        "set the audio options to the indicated preset", "preset" },
-    { "vpre", OPT_TYPE_FUNC, OPT_VIDEO | OPT_FUNC_ARG | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT,
+        "set the audio options to the indicated preset", "preset",
+        .u1.name_canon = "pre", },
+    { "vpre", OPT_TYPE_FUNC, OPT_VIDEO | OPT_FUNC_ARG | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_preset },
-        "set the video options to the indicated preset", "preset" },
-    { "spre", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_SUBTITLE | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT,
+        "set the video options to the indicated preset", "preset",
+        .u1.name_canon = "pre", },
+    { "spre", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_SUBTITLE | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_preset },
-        "set the subtitle options to the indicated preset", "preset" },
-    { "fpre", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT,
+        "set the subtitle options to the indicated preset", "preset",
+        .u1.name_canon = "pre", },
+    { "fpre", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_preset },
-        "set options from indicated preset file", "filename" },
+        "set options from indicated preset file", "filename",
+        .u1.name_canon = "pre", },
 
     { "max_muxing_queue_size", OPT_TYPE_INT, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT,
         { .off = OFFSET(max_muxing_queue_size) },
@@ -1916,9 +1946,10 @@ const OptionDef options[] = {
         "set the threshold after which max_muxing_queue_size is taken into account", "bytes" },
 
     /* data codec support */
-    { "dcodec", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_DATA | OPT_PERFILE | OPT_EXPERT | OPT_INPUT | OPT_OUTPUT,
+    { "dcodec", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_DATA | OPT_PERFILE | OPT_EXPERT | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_data_codec },
-        "force data codec ('copy' to copy stream)", "codec" },
+        "force data codec ('copy' to copy stream)", "codec",
+        .u1.name_canon = "codec", },
     { "dn", OPT_TYPE_BOOL, OPT_VIDEO | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,
         { .off = OFFSET(data_disable) }, "disable data" },
 

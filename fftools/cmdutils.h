@@ -118,6 +118,8 @@ typedef struct SpecifierOptList {
     SpecifierOpt    *opt;
     int           nb_opt;
 
+    /* Canonical option definition that was parsed into this list. */
+    const struct OptionDef *opt_canon;
     enum OptionType type;
 } SpecifierOptList;
 
@@ -160,6 +162,14 @@ typedef struct OptionDef {
  * output, or both. */
 #define OPT_INPUT       (1 << 10)
 #define OPT_OUTPUT      (1 << 11)
+
+/* This option is a "canonical" form, to which one or more alternatives
+ * exist. These alternatives are listed in u1.names_alt. */
+#define OPT_HAS_ALT     (1 << 12)
+/* This option is an alternative form of some other option, whose
+ * name is stored in u1.name_canon */
+#define OPT_HAS_CANON   (1 << 13)
+
      union {
         void *dst_ptr;
         int (*func_arg)(void *, const char *, const char *);
@@ -167,6 +177,15 @@ typedef struct OptionDef {
     } u;
     const char *help;
     const char *argname;
+
+    union {
+        /* Name of the canonical form of this option.
+         * Is valid when OPT_HAS_CANON is set. */
+        const char *name_canon;
+        /* A NULL-terminated list of alternate forms of this option.
+         * Is valid when OPT_HAS_ALT is set. */
+        const char * const *names_alt;
+    } u1;
 } OptionDef;
 
 /**
@@ -281,7 +300,7 @@ typedef struct OptionParseContext {
  *
  * @param optctx an app-specific options context. NULL for global options group
  */
-int parse_optgroup(void *optctx, OptionGroup *g);
+int parse_optgroup(void *optctx, OptionGroup *g, const OptionDef *defs);
 
 /**
  * Split the commandline into an intermediate form convenient for further

@@ -776,42 +776,39 @@ void update_benchmark(const char *fmt, ...);
 #define SPECIFIER_OPT_FMT_f    "%f"
 #define SPECIFIER_OPT_FMT_dbl  "%lf"
 
-#define WARN_MULTIPLE_OPT_USAGE(name, type, so, st)\
+#define WARN_MULTIPLE_OPT_USAGE(optname, type, idx, st)\
 {\
     char namestr[128] = "";\
+    const SpecifierOpt *so = &o->optname.opt[idx];\
     const char *spec = so->specifier && so->specifier[0] ? so->specifier : "";\
-    for (int _i = 0; opt_name_##name[_i]; _i++)\
-        av_strlcatf(namestr, sizeof(namestr), "-%s%s", opt_name_##name[_i], opt_name_##name[_i+1] ? (opt_name_##name[_i+2] ? ", " : " or ") : "");\
+    snprintf(namestr, sizeof(namestr), "-%s", o->optname.opt_canon->name);\
+    if (o->optname.opt_canon->flags & OPT_HAS_ALT) {\
+        const char * const *names_alt = o->optname.opt_canon->u1.names_alt;\
+        for (int _i = 0; names_alt[_i]; _i++)\
+            av_strlcatf(namestr, sizeof(namestr), "/-%s", names_alt[_i]);\
+    }\
     av_log(NULL, AV_LOG_WARNING, "Multiple %s options specified for stream %d, only the last option '-%s%s%s "SPECIFIER_OPT_FMT_##type"' will be used.\n",\
-           namestr, st->index, opt_name_##name[0], spec[0] ? ":" : "", spec, so->u.type);\
+           namestr, st->index, o->optname.opt_canon->name, spec[0] ? ":" : "", spec, so->u.type);\
 }
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
 {\
-    int _ret, _matches = 0;\
-    SpecifierOpt *so;\
+    int _ret, _matches = 0, _match_idx;\
     for (int _i = 0; _i < o->name.nb_opt; _i++) {\
         char *spec = o->name.opt[_i].specifier;\
         if ((_ret = check_stream_specifier(fmtctx, st, spec)) > 0) {\
             outvar = o->name.opt[_i].u.type;\
-            so = &o->name.opt[_i];\
+            _match_idx = _i;\
             _matches++;\
         } else if (_ret < 0)\
             return _ret;\
     }\
-    if (_matches > 1)\
-       WARN_MULTIPLE_OPT_USAGE(name, type, so, st);\
+    if (_matches > 1 && o->name.opt_canon)\
+       WARN_MULTIPLE_OPT_USAGE(name, type, _match_idx, st);\
 }
 
 const char *opt_match_per_type_str(const SpecifierOptList *sol,
                                    char mediatype);
-
-extern const char * const opt_name_codec_names[];
-extern const char * const opt_name_codec_tags[];
-extern const char * const opt_name_frame_rates[];
-#if FFMPEG_OPT_TOP
-extern const char * const opt_name_top_field_first[];
-#endif
 
 void *muxer_thread(void *arg);
 void *decoder_thread(void *arg);

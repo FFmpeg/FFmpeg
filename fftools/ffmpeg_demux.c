@@ -38,20 +38,6 @@
 
 #include "libavformat/avformat.h"
 
-static const char *const opt_name_discard[]                   = {"discard", NULL};
-static const char *const opt_name_reinit_filters[]            = {"reinit_filter", NULL};
-static const char *const opt_name_fix_sub_duration[]          = {"fix_sub_duration", NULL};
-static const char *const opt_name_canvas_sizes[]              = {"canvas_size", NULL};
-static const char *const opt_name_guess_layout_max[]          = {"guess_layout_max", NULL};
-static const char *const opt_name_ts_scale[]                  = {"itsscale", NULL};
-static const char *const opt_name_hwaccels[]                  = {"hwaccel", NULL};
-static const char *const opt_name_hwaccel_devices[]           = {"hwaccel_device", NULL};
-static const char *const opt_name_hwaccel_output_formats[]    = {"hwaccel_output_format", NULL};
-static const char *const opt_name_autorotate[]                = {"autorotate", NULL};
-static const char *const opt_name_display_rotations[]         = {"display_rotation", NULL};
-static const char *const opt_name_display_hflips[]            = {"display_hflip", NULL};
-static const char *const opt_name_display_vflips[]            = {"display_vflip", NULL};
-
 typedef struct DemuxStream {
     InputStream ist;
 
