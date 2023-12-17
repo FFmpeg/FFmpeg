@@ -41,9 +41,9 @@ int show_sources(void *optctx, const char *opt, const char *arg);
 
 #if CONFIG_AVDEVICE
 #define CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                \
-    { "sources"    , OPT_TYPE_FUNC, OPT_EXIT | HAS_ARG, { .func_arg = show_sources },                                   \
+    { "sources"    , OPT_TYPE_FUNC, OPT_EXIT | OPT_FUNC_ARG, { .func_arg = show_sources },                              \
       "list sources of the input device", "device" },                                                                   \
-    { "sinks"      , OPT_TYPE_FUNC, OPT_EXIT | HAS_ARG, { .func_arg = show_sinks },                                     \
+    { "sinks"      , OPT_TYPE_FUNC, OPT_EXIT | OPT_FUNC_ARG, { .func_arg = show_sinks },                                \
       "list sinks of the output device", "device" },                                                                    \
 
 #else
@@ -219,12 +219,12 @@ int opt_cpucount(void *optctx, const char *opt, const char *arg);
     { "sample_fmts",  OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_sample_fmts }, "show available audio sample formats" },   \
     { "dispositions", OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_dispositions}, "show available stream dispositions" },    \
     { "colors",       OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_colors },      "show available color names" },            \
-    { "loglevel",     OPT_TYPE_FUNC, HAS_ARG,               { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
-    { "v",            OPT_TYPE_FUNC, HAS_ARG,               { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
+    { "loglevel",     OPT_TYPE_FUNC, OPT_FUNC_ARG,          { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
+    { "v",            OPT_TYPE_FUNC, OPT_FUNC_ARG,          { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
     { "report",       OPT_TYPE_FUNC, 0,                     { .func_arg = opt_report },       "generate a report" },                     \
-    { "max_alloc",    OPT_TYPE_FUNC, HAS_ARG,               { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
-    { "cpuflags",     OPT_TYPE_FUNC, HAS_ARG | OPT_EXPERT,  { .func_arg = opt_cpuflags },     "force specific cpu flags", "flags" },     \
-    { "cpucount",     OPT_TYPE_FUNC, HAS_ARG | OPT_EXPERT,  { .func_arg = opt_cpucount },     "force specific cpu count", "count" },     \
+    { "max_alloc",    OPT_TYPE_FUNC, OPT_FUNC_ARG,          { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
+    { "cpuflags",     OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags },     "force specific cpu flags", "flags" },     \
+    { "cpucount",     OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = opt_cpucount },     "force specific cpu count", "count" },     \
     { "hide_banner",  OPT_TYPE_BOOL, OPT_EXPERT,            {&hide_banner},                   "do not show program banner", "hide_banner" }, \
     CMDUTILS_COMMON_OPTIONS_AVDEVICE                                                                                    \
 

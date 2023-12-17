@@ -4078,7 +4078,7 @@ DEFINE_OPT_SHOW_SECTION(programs,         PROGRAMS)
 
 static const OptionDef real_options[] = {
     CMDUTILS_COMMON_OPTIONS
-    { "f",                     OPT_TYPE_FUNC,  HAS_ARG, {.func_arg = opt_format}, "force format", "format" },
+    { "f",                     OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_format}, "force format", "format" },
     { "unit",                  OPT_TYPE_BOOL,        0, {&show_value_unit}, "show unit of the displayed values" },
     { "prefix",                OPT_TYPE_BOOL,        0, {&use_value_prefix}, "use SI prefixes for the displayed values" },
     { "byte_binary_prefix",    OPT_TYPE_BOOL,        0, {&use_byte_value_binary_prefix},
@@ -4098,7 +4098,7 @@ static const OptionDef real_options[] = {
     { "show_error",            OPT_TYPE_FUNC,        0, { .func_arg = &opt_show_error },  "show probing error" },
     { "show_format",           OPT_TYPE_FUNC,        0, { .func_arg = &opt_show_format }, "show format/container info" },
     { "show_frames",           OPT_TYPE_FUNC,        0, { .func_arg = &opt_show_frames }, "show frames info" },
-    { "show_entries",          OPT_TYPE_FUNC,  HAS_ARG, {.func_arg = opt_show_entries},
+    { "show_entries",          OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_show_entries},
       "show a set of specified entries", "entry_list" },
 #if HAVE_THREADS
     { "show_log",              OPT_TYPE_INT,         0, { &do_show_log }, "show log" },
@@ -4113,14 +4113,14 @@ static const OptionDef real_options[] = {
     { "show_library_versions", OPT_TYPE_FUNC,        0, { .func_arg = &opt_show_library_versions }, "show library versions" },
     { "show_versions",         OPT_TYPE_FUNC,        0, { .func_arg = &opt_show_versions }, "show program and library versions" },
     { "show_pixel_formats",    OPT_TYPE_FUNC,        0, { .func_arg = &opt_show_pixel_formats }, "show pixel format descriptions" },
-    { "show_optional_fields",  OPT_TYPE_FUNC,  HAS_ARG, { .func_arg = &opt_show_optional_fields }, "show optional fields" },
+    { "show_optional_fields",  OPT_TYPE_FUNC, OPT_FUNC_ARG, { .func_arg = &opt_show_optional_fields }, "show optional fields" },
     { "show_private_data",     OPT_TYPE_BOOL,        0, { &show_private_data }, "show private data" },
     { "private",               OPT_TYPE_BOOL,        0, { &show_private_data }, "same as show_private_data" },
     { "bitexact",              OPT_TYPE_BOOL,        0, {&do_bitexact}, "force bitexact output" },
-    { "read_intervals",        OPT_TYPE_FUNC,  HAS_ARG, {.func_arg = opt_read_intervals}, "set read intervals", "read_intervals" },
-    { "i",                     OPT_TYPE_FUNC,  HAS_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
-    { "o",                     OPT_TYPE_FUNC,  HAS_ARG, {.func_arg = opt_output_file_o}, "write to specified output", "output_file"},
-    { "print_filename",        OPT_TYPE_FUNC,  HAS_ARG, {.func_arg = opt_print_filename}, "override the printed input filename", "print_file"},
+    { "read_intervals",        OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_read_intervals}, "set read intervals", "read_intervals" },
+    { "i",                     OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_input_file_i}, "read specified file", "input_file"},
+    { "o",                     OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_output_file_o}, "write to specified output", "output_file"},
+    { "print_filename",        OPT_TYPE_FUNC, OPT_FUNC_ARG, {.func_arg = opt_print_filename}, "override the printed input filename", "print_file"},
     { "find_stream_info",      OPT_TYPE_BOOL, OPT_INPUT | OPT_EXPERT, { &find_stream_info },
         "read and decode the streams to fill missing information with heuristics" },
     { NULL, },

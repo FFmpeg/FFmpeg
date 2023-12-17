@@ -228,7 +228,7 @@ static int opt_has_arg(const OptionDef *o)
     if (o->type == OPT_TYPE_BOOL)
         return 0;
     if (o->type == OPT_TYPE_FUNC)
-        return !!(o->flags & HAS_ARG);
+        return !!(o->flags & OPT_FUNC_ARG);
     return 1;
 }
 
@@ -323,7 +323,7 @@ int parse_option(void *optctx, const char *opt, const char *arg,
     static const OptionDef opt_avoptions = {
         .name       = "AVOption passthrough",
         .type       = OPT_TYPE_FUNC,
-        .flags      = HAS_ARG,
+        .flags      = OPT_FUNC_ARG,
         .u.func_arg = opt_default,
     };
 
@@ -481,6 +481,10 @@ static void check_options(const OptionDef *po)
     while (po->name) {
         if (po->flags & OPT_PERFILE)
             av_assert0(po->flags & (OPT_INPUT | OPT_OUTPUT));
+
+        // OPT_FUNC_ARG can only be ser for OPT_TYPE_FUNC
+        av_assert0((po->type == OPT_TYPE_FUNC) || !(po->flags & OPT_FUNC_ARG));
+
         po++;
     }
 }

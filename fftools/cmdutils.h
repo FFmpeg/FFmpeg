@@ -118,7 +118,13 @@ typedef struct OptionDef {
     const char *name;
     enum OptionType type;
     int flags;
-#define HAS_ARG         (1 << 0)
+
+/* The OPT_TYPE_FUNC option takes an argument.
+ * Must not be used with other option types, as for those it holds:
+ * - OPT_TYPE_BOOL do not take an argument
+ * - all other types do
+ */
+#define OPT_FUNC_ARG    (1 << 0)
 #define OPT_EXPERT      (1 << 2)
 #define OPT_VIDEO       (1 << 4)
 #define OPT_AUDIO       (1 << 5)
