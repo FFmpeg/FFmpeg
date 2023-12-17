@@ -1333,10 +1333,10 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     int64_t timestamp;
     AVDictionary *unused_opts = NULL;
     const AVDictionaryEntry *e = NULL;
-    char *   video_codec_name = NULL;
-    char *   audio_codec_name = NULL;
-    char *subtitle_codec_name = NULL;
-    char *    data_codec_name = NULL;
+    const char*    video_codec_name = NULL;
+    const char*    audio_codec_name = NULL;
+    const char* subtitle_codec_name = NULL;
+    const char*     data_codec_name = NULL;
     int scan_all_pmts_set = 0;
 
     int64_t start_time     = o->start_time;
@@ -1426,10 +1426,10 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     if (o->frame_pix_fmts.nb_opt)
         av_dict_set(&o->g->format_opts, "pixel_format", o->frame_pix_fmts.opt[o->frame_pix_fmts.nb_opt - 1].u.str, 0);
 
-    MATCH_PER_TYPE_OPT(codec_names, str,    video_codec_name, ic, "v");
-    MATCH_PER_TYPE_OPT(codec_names, str,    audio_codec_name, ic, "a");
-    MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, ic, "s");
-    MATCH_PER_TYPE_OPT(codec_names, str,     data_codec_name, ic, "d");
+    video_codec_name    = opt_match_per_type_str(&o->codec_names, 'v');
+    audio_codec_name    = opt_match_per_type_str(&o->codec_names, 'a');
+    subtitle_codec_name = opt_match_per_type_str(&o->codec_names, 's');
+    data_codec_name     = opt_match_per_type_str(&o->codec_names, 'd');
 
     if (video_codec_name)
         ret = err_merge(ret, find_codec(NULL, video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0,

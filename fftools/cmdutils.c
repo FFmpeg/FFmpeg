@@ -239,14 +239,15 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
      * a global var*/
     void *dst = po->flags & OPT_FLAG_OFFSET ?
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
+    SpecifierOptList *sol = NULL;
     double num;
     int ret;
 
     if (po->flags & OPT_FLAG_SPEC) {
-        SpecifierOptList *sol = dst;
         char *p = strchr(opt, ':');
         char *str;
 
+        sol = dst;
         ret = GROW_ARRAY(sol->opt, sol->nb_opt);
         if (ret < 0)
             return ret;
@@ -311,6 +312,9 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     }
     if (po->flags & OPT_EXIT)
         return AVERROR_EXIT;
+
+    if (sol)
+        sol->type = po->type;
 
     return 0;
 }

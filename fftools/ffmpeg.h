@@ -803,15 +803,8 @@ void update_benchmark(const char *fmt, ...);
        WARN_MULTIPLE_OPT_USAGE(name, type, so, st);\
 }
 
-#define MATCH_PER_TYPE_OPT(name, type, outvar, fmtctx, mediatype)\
-{\
-    int i;\
-    for (i = 0; i < o->name.nb_opt; i++) {\
-        char *spec = o->name.opt[i].specifier;\
-        if (!strcmp(spec, mediatype))\
-            outvar = o->name.opt[i].u.type;\
-    }\
-}
+const char *opt_match_per_type_str(const SpecifierOptList *sol,
+                                   char mediatype);
 
 extern const char * const opt_name_codec_names[];
 extern const char * const opt_name_codec_tags[];

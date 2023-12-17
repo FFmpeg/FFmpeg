@@ -117,6 +117,8 @@ typedef struct SpecifierOpt {
 typedef struct SpecifierOptList {
     SpecifierOpt    *opt;
     int           nb_opt;
+
+    enum OptionType type;
 } SpecifierOptList;
 
 typedef struct OptionDef {

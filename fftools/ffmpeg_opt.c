@@ -182,6 +182,19 @@ AVDictionary *strip_specifiers(const AVDictionary *dict)
     return ret;
 }
 
+const char *opt_match_per_type_str(const SpecifierOptList *sol,
+                                   char mediatype)
+{
+    av_assert0(!sol->nb_opt || sol->type == OPT_TYPE_STRING);
+
+    for (int i = 0; i < sol->nb_opt; i++) {
+        const char *spec = sol->opt[i].specifier;
+        if (spec[0] == mediatype && !spec[1])
+            return sol->opt[i].u.str;
+    }
+    return NULL;
+}
+
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global)
 {
     if      (!av_strcasecmp(arg, "cfr"))         *vsync_var = VSYNC_CFR;
@@ -1019,9 +1032,7 @@ static int opt_preset(void *optctx, const char *opt, const char *arg)
     const char *codec_name = NULL;
     int ret = 0;
 
-    tmp_line[0] = *opt;
-    tmp_line[1] = 0;
-    MATCH_PER_TYPE_OPT(codec_names, str, codec_name, NULL, tmp_line);
+    codec_name = opt_match_per_type_str(&o->codec_names, *opt);
 
     if (!(f = get_preset_file(filename, sizeof(filename), arg, *opt == 'f', codec_name))) {
         if(!strncmp(arg, "libx264-lossless", strlen("libx264-lossless"))){

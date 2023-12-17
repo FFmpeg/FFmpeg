@@ -1612,10 +1612,10 @@ static int map_auto_audio(Muxer *mux, const OptionsContext *o)
 static int map_auto_subtitle(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
-    char *subtitle_codec_name = NULL;
+    const char *subtitle_codec_name = NULL;
 
         /* subtitles: pick first */
-    MATCH_PER_TYPE_OPT(codec_names, str, subtitle_codec_name, oc, "s");
+    subtitle_codec_name = opt_match_per_type_str(&o->codec_names, 's');
     if (!avcodec_find_encoder(oc->oformat->subtitle_codec) && !subtitle_codec_name)
         return 0;
 
