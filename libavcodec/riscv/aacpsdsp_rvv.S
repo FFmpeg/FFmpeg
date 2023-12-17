@@ -234,7 +234,8 @@ func ff_ps_stereo_interpolate_rvv, zve32f
         vfmacc.vf    v22, ft3, v24
         fmul.s       ft3, ft3, ft4
 1:
-        vsetvli   t0, a4, e32, m2, ta, ma
+        min       t0, t0, a4
+        vsetvli   zero, t0, e32, m2, ta, ma
         vlseg2e32.v v0, (a0)     // v0:l_re, v2:l_im
         sub       a4, a4, t0
         vlseg2e32.v v4, (a1)    // v4:r_re, v6:r_im
