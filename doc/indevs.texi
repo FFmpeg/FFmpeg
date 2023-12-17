@@ -722,7 +722,7 @@ Win32 GDI-based screen capture device.
 
 This device allows you to capture a region of the display on Windows.
 
-There are two options for the input filename:
+Amongst options for the imput filenames are such elements as:
 @example
 desktop
 @end example
@@ -730,9 +730,13 @@ or
 @example
 title=@var{window_title}
 @end example
+or
+@example
+hwnd=@var{window_hwnd}
+@end example
 
 The first option will capture the entire desktop, or a fixed region of the
-desktop. The second option will instead capture the contents of a single
+desktop. The second and third options will instead capture the contents of a single
 window, regardless of its position on the screen.
 
 For example, to grab the entire desktop using @command{ffmpeg}:

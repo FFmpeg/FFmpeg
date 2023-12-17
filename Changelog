@@ -9,6 +9,7 @@ version <next>:
 - aap filter
 - demuxing, decoding, filtering, encoding, and muxing in the
   ffmpeg CLI now all run in parallel
+- enable gdigrab device to grab a window using the hwnd=HANDLER syntax
 
 version 6.1:
 - libaribcaption decoder
