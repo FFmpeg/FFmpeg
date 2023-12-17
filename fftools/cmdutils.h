@@ -135,17 +135,22 @@ typedef struct OptionDef {
 #define OPT_AUDIO       (1 << 4)
 #define OPT_SUBTITLE    (1 << 5)
 #define OPT_DATA        (1 << 6)
-/* The option is per-file (currently ffmpeg-only). Implied by OPT_OFFSET or
- * OPT_SPEC. At least one of OPT_INPUT or OPT_OUTPUT must be set when this flag
- * is in use.
+/* The option is per-file (currently ffmpeg-only). At least one of OPT_INPUT or
+ * OPT_OUTPUT must be set when this flag is in use.
    */
 #define OPT_PERFILE     (1 << 7)
-/* Option is specified as an offset in a passed optctx */
-#define OPT_OFFSET      (1 << 8)
-/* Option is to be stored in an array of SpecifierOpt. Implies OPT_OFFSET.
+
+/* Option is specified as an offset in a passed optctx.
+ * Always use as OPT_OFFSET in option definitions. */
+#define OPT_FLAG_OFFSET (1 << 8)
+#define OPT_OFFSET      (OPT_FLAG_OFFSET | OPT_PERFILE)
+
+/* Option is to be stored in an array of SpecifierOpt.
    Next element after the offset is an int containing element count in the
-   array. */
-#define OPT_SPEC        (1 << 9)
+   array.
+   Always use as OPT_SPEC in option definitions. */
+#define OPT_FLAG_SPEC   (1 << 9)
+#define OPT_SPEC        (OPT_FLAG_SPEC | OPT_OFFSET)
 /* ffmpeg-only - specifies whether an OPT_PERFILE option applies to input,
  * output, or both. */
 #define OPT_INPUT       (1 << 10)

@@ -109,7 +109,7 @@ static void uninit_options(OptionsContext *o)
     while (po->name) {
         void *dst = (uint8_t*)o + po->u.off;
 
-        if (po->flags & OPT_SPEC) {
+        if (po->flags & OPT_FLAG_SPEC) {
             SpecifierOpt **so = dst;
             int i, *count = (int*)(so + 1);
             for (i = 0; i < *count; i++) {
@@ -119,7 +119,7 @@ static void uninit_options(OptionsContext *o)
             }
             av_freep(so);
             *count = 0;
-        } else if (po->flags & OPT_OFFSET && po->type == OPT_TYPE_STRING)
+        } else if (po->flags & OPT_FLAG_OFFSET && po->type == OPT_TYPE_STRING)
             av_freep(dst);
         po++;
     }
@@ -1181,8 +1181,6 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
 
 void show_help_default(const char *opt, const char *arg)
 {
-    /* per-file options have at least one of those set */
-    const int per_file = OPT_SPEC | OPT_OFFSET | OPT_PERFILE;
     int show_advanced = 0, show_avoptions = 0;
 
     if (opt && *opt) {
@@ -1209,17 +1207,17 @@ void show_help_default(const char *opt, const char *arg)
 
     show_help_options(options, "Global options (affect whole program "
                       "instead of just one file):",
-                      0, per_file | OPT_EXIT | OPT_EXPERT, 0);
+                      0, OPT_PERFILE | OPT_EXIT | OPT_EXPERT, 0);
     if (show_advanced)
         show_help_options(options, "Advanced global options:", OPT_EXPERT,
-                          per_file | OPT_EXIT, 0);
+                          OPT_PERFILE | OPT_EXIT, 0);
 
     show_help_options(options, "Per-file main options:", 0,
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE |
-                      OPT_EXIT, per_file);
+                      OPT_EXIT, OPT_PERFILE);
     if (show_advanced)
         show_help_options(options, "Advanced per-file options:",
-                          OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, per_file);
+                          OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, OPT_PERFILE);
 
     show_help_options(options, "Video options:",
                       OPT_VIDEO, OPT_EXPERT | OPT_AUDIO, 0);

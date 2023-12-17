@@ -237,13 +237,13 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
 {
     /* new-style options contain an offset into optctx, old-style address of
      * a global var*/
-    void *dst = po->flags & (OPT_OFFSET | OPT_SPEC) ?
+    void *dst = po->flags & OPT_FLAG_OFFSET ?
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
     int *dstcount;
     double num;
     int ret;
 
-    if (po->flags & OPT_SPEC) {
+    if (po->flags & OPT_FLAG_SPEC) {
         SpecifierOpt **so = dst;
         char *p = strchr(opt, ':');
         char *str;
@@ -660,7 +660,7 @@ static int finish_group(OptionParseContext *octx, int group_idx,
 static int add_opt(OptionParseContext *octx, const OptionDef *opt,
                    const char *key, const char *val)
 {
-    int global = !(opt->flags & (OPT_PERFILE | OPT_SPEC | OPT_OFFSET));
+    int global = !(opt->flags & OPT_PERFILE);
     OptionGroup *g = global ? &octx->global_opts : &octx->cur_group;
     int ret;
 
