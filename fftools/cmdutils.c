@@ -482,6 +482,9 @@ static void check_options(const OptionDef *po)
         if (po->flags & OPT_PERFILE)
             av_assert0(po->flags & (OPT_INPUT | OPT_OUTPUT));
 
+        if (po->type == OPT_TYPE_FUNC)
+            av_assert0(!(po->flags & (OPT_FLAG_OFFSET | OPT_FLAG_SPEC)));
+
         // OPT_FUNC_ARG can only be ser for OPT_TYPE_FUNC
         av_assert0((po->type == OPT_TYPE_FUNC) || !(po->flags & OPT_FUNC_ARG));
 
