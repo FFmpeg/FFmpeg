@@ -125,23 +125,31 @@ typedef struct OptionDef {
  * - all other types do
  */
 #define OPT_FUNC_ARG    (1 << 0)
+/* Program will immediately exit after processing this option */
+#define OPT_EXIT        (1 << 1)
+/* Option is intended for advanced users. Only affects
+ * help output.
+ */
 #define OPT_EXPERT      (1 << 2)
-#define OPT_VIDEO       (1 << 4)
-#define OPT_AUDIO       (1 << 5)
-#define OPT_SUBTITLE    (1 << 8)
-#define OPT_EXIT        (1 << 10)
-#define OPT_DATA        (1 << 11)
-/* The option is per-file (currently ffmpeg-only).
-   implied by OPT_OFFSET or OPT_SPEC */
-#define OPT_PERFILE     (1 << 12)
+#define OPT_VIDEO       (1 << 3)
+#define OPT_AUDIO       (1 << 4)
+#define OPT_SUBTITLE    (1 << 5)
+#define OPT_DATA        (1 << 6)
+/* The option is per-file (currently ffmpeg-only). Implied by OPT_OFFSET or
+ * OPT_SPEC. At least one of OPT_INPUT or OPT_OUTPUT must be set when this flag
+ * is in use.
+   */
+#define OPT_PERFILE     (1 << 7)
 /* Option is specified as an offset in a passed optctx */
-#define OPT_OFFSET      (1 << 13)
+#define OPT_OFFSET      (1 << 8)
 /* Option is to be stored in an array of SpecifierOpt. Implies OPT_OFFSET.
    Next element after the offset is an int containing element count in the
    array. */
-#define OPT_SPEC        (1 << 14)
-#define OPT_INPUT       (1 << 17)
-#define OPT_OUTPUT      (1 << 18)
+#define OPT_SPEC        (1 << 9)
+/* ffmpeg-only - specifies whether an OPT_PERFILE option applies to input,
+ * output, or both. */
+#define OPT_INPUT       (1 << 10)
+#define OPT_OUTPUT      (1 << 11)
      union {
         void *dst_ptr;
         int (*func_arg)(void *, const char *, const char *);
