@@ -110,15 +110,14 @@ static void uninit_options(OptionsContext *o)
         void *dst = (uint8_t*)o + po->u.off;
 
         if (po->flags & OPT_FLAG_SPEC) {
-            SpecifierOpt **so = dst;
-            int i, *count = (int*)(so + 1);
-            for (i = 0; i < *count; i++) {
-                av_freep(&(*so)[i].specifier);
+            SpecifierOptList *so = dst;
+            for (int i = 0; i < so->nb_opt; i++) {
+                av_freep(&so->opt[i].specifier);
                 if (po->type == OPT_TYPE_STRING)
-                    av_freep(&(*so)[i].u.str);
+                    av_freep(&so->opt[i].u.str);
             }
-            av_freep(so);
-            *count = 0;
+            av_freep(&so->opt);
+            so->nb_opt = 0;
         } else if (po->flags & OPT_FLAG_OFFSET && po->type == OPT_TYPE_STRING)
             av_freep(dst);
         po++;

@@ -239,25 +239,23 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
      * a global var*/
     void *dst = po->flags & OPT_FLAG_OFFSET ?
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
-    int *dstcount;
     double num;
     int ret;
 
     if (po->flags & OPT_FLAG_SPEC) {
-        SpecifierOpt **so = dst;
+        SpecifierOptList *sol = dst;
         char *p = strchr(opt, ':');
         char *str;
 
-        dstcount = (int *)(so + 1);
-        ret = grow_array((void**)so, sizeof(**so), dstcount, *dstcount + 1);
+        ret = GROW_ARRAY(sol->opt, sol->nb_opt);
         if (ret < 0)
             return ret;
 
         str = av_strdup(p ? p + 1 : "");
         if (!str)
             return AVERROR(ENOMEM);
-        (*so)[*dstcount - 1].specifier = str;
-        dst = &(*so)[*dstcount - 1].u;
+        sol->opt[sol->nb_opt - 1].specifier = str;
+        dst = &sol->opt[sol->nb_opt - 1].u;
     }
 
     if (po->type == OPT_TYPE_STRING) {

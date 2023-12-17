@@ -114,6 +114,11 @@ typedef struct SpecifierOpt {
     } u;
 } SpecifierOpt;
 
+typedef struct SpecifierOptList {
+    SpecifierOpt    *opt;
+    int           nb_opt;
+} SpecifierOptList;
+
 typedef struct OptionDef {
     const char *name;
     enum OptionType type;
@@ -145,9 +150,7 @@ typedef struct OptionDef {
 #define OPT_FLAG_OFFSET (1 << 8)
 #define OPT_OFFSET      (OPT_FLAG_OFFSET | OPT_PERFILE)
 
-/* Option is to be stored in an array of SpecifierOpt.
-   Next element after the offset is an int containing element count in the
-   array.
+/* Option is to be stored in a SpecifierOptList.
    Always use as OPT_SPEC in option definitions. */
 #define OPT_FLAG_SPEC   (1 << 9)
 #define OPT_SPEC        (OPT_FLAG_SPEC | OPT_OFFSET)

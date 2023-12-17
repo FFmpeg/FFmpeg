@@ -1363,8 +1363,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     ms->max_frames = INT64_MAX;
     MATCH_PER_STREAM_OPT(max_frames, i64, ms->max_frames, oc, st);
-    for (i = 0; i<o->nb_max_frames; i++) {
-        char *p = o->max_frames[i].specifier;
+    for (i = 0; i < o->max_frames.nb_opt; i++) {
+        char *p = o->max_frames.opt[i].specifier;
         if (!*p && type != AVMEDIA_TYPE_VIDEO) {
             av_log(ost, AV_LOG_WARNING, "Applying unspecific -frames to non video streams, maybe you meant -vframes ?\n");
             break;
@@ -2334,12 +2334,12 @@ end:
 static int of_add_groups(Muxer *mux, const OptionsContext *o)
 {
     /* process manually set groups */
-    for (int i = 0; i < o->nb_stream_groups; i++) {
+    for (int i = 0; i < o->stream_groups.nb_opt; i++) {
         const char *token;
         char *str, *ptr = NULL;
         int ret = 0;
 
-        str = av_strdup(o->stream_groups[i].u.str);
+        str = av_strdup(o->stream_groups.opt[i].u.str);
         if (!str)
             return ret;
 
@@ -2359,17 +2359,17 @@ static int of_add_programs(Muxer *mux, const OptionsContext *o)
 {
     AVFormatContext *oc = mux->fc;
     /* process manually set programs */
-    for (int i = 0; i < o->nb_program; i++) {
+    for (int i = 0; i < o->program.nb_opt; i++) {
         AVDictionary *dict = NULL;
         const AVDictionaryEntry *e;
         AVProgram *program;
         int ret, progid = i + 1;
 
-        ret = av_dict_parse_string(&dict, o->program[i].u.str, "=", ":",
+        ret = av_dict_parse_string(&dict, o->program.opt[i].u.str, "=", ":",
                                    AV_DICT_MULTIKEY);
         if (ret < 0) {
             av_log(mux, AV_LOG_ERROR, "Error parsing program specification %s\n",
-                   o->program[i].u.str);
+                   o->program.opt[i].u.str);
             return ret;
         }
 
@@ -2457,21 +2457,21 @@ static int parse_meta_type(void *logctx, const char *arg,
 static int of_add_metadata(OutputFile *of, AVFormatContext *oc,
                            const OptionsContext *o)
 {
-    for (int i = 0; i < o->nb_metadata; i++) {
+    for (int i = 0; i < o->metadata.nb_opt; i++) {
         AVDictionary **m;
         char type, *val;
         const char *stream_spec;
         int index = 0, ret = 0;
 
-        val = strchr(o->metadata[i].u.str, '=');
+        val = strchr(o->metadata.opt[i].u.str, '=');
         if (!val) {
             av_log(of, AV_LOG_FATAL, "No '=' character in metadata string %s.\n",
-                   o->metadata[i].u.str);
+                   o->metadata.opt[i].u.str);
             return AVERROR(EINVAL);
         }
         *val++ = 0;
 
-        ret = parse_meta_type(of, o->metadata[i].specifier, &type, &index, &stream_spec);
+        ret = parse_meta_type(of, o->metadata.opt[i].specifier, &type, &index, &stream_spec);
         if (ret < 0)
             return ret;
 
@@ -2480,7 +2480,7 @@ static int of_add_metadata(OutputFile *of, AVFormatContext *oc,
                 OutputStream *ost = of->streams[j];
                 if ((ret = check_stream_specifier(oc, oc->streams[j], stream_spec)) > 0) {
 #if FFMPEG_ROTATION_METADATA
-                    if (!strcmp(o->metadata[i].u.str, "rotate")) {
+                    if (!strcmp(o->metadata.opt[i].u.str, "rotate")) {
                         char *tail;
                         double theta = av_strtod(val, &tail);
                         if (!*tail) {
@@ -2495,7 +2495,7 @@ static int of_add_metadata(OutputFile *of, AVFormatContext *oc,
                                "instead.");
                     } else {
 #endif
-                        av_dict_set(&oc->streams[j]->metadata, o->metadata[i].u.str, *val ? val : NULL, 0);
+                        av_dict_set(&oc->streams[j]->metadata, o->metadata.opt[i].u.str, *val ? val : NULL, 0);
 #if FFMPEG_ROTATION_METADATA
                     }
 #endif
@@ -2522,10 +2522,10 @@ static int of_add_metadata(OutputFile *of, AVFormatContext *oc,
                 m = &oc->programs[index]->metadata;
                 break;
             default:
-                av_log(of, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
+                av_log(of, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata.opt[i].specifier);
                 return AVERROR(EINVAL);
             }
-            av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
+            av_dict_set(m, o->metadata.opt[i].u.str, *val ? val : NULL, 0);
         }
     }
 
@@ -2673,9 +2673,9 @@ static int copy_meta(Muxer *mux, const OptionsContext *o)
     int ret;
 
     /* copy metadata */
-    for (int i = 0; i < o->nb_metadata_map; i++) {
+    for (int i = 0; i < o->metadata_map.nb_opt; i++) {
         char *p;
-        int in_file_index = strtol(o->metadata_map[i].u.str, &p, 0);
+        int in_file_index = strtol(o->metadata_map.opt[i].u.str, &p, 0);
 
         if (in_file_index >= nb_input_files) {
             av_log(mux, AV_LOG_FATAL, "Invalid input file index %d while "
@@ -2684,7 +2684,7 @@ static int copy_meta(Muxer *mux, const OptionsContext *o)
         }
         ret = copy_metadata(mux,
                             in_file_index >= 0 ? input_files[in_file_index]->ctx : NULL,
-                            o->metadata_map[i].specifier, *p ? p + 1 : p,
+                            o->metadata_map.opt[i].specifier, *p ? p + 1 : p,
                             &metadata_global_manual, &metadata_streams_manual,
                             &metadata_chapters_manual);
         if (ret < 0)

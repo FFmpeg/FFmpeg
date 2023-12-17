@@ -138,22 +138,14 @@ typedef struct OptionsContext {
     int seek_timestamp;
     const char *format;
 
-    SpecifierOpt *codec_names;
-    int        nb_codec_names;
-    SpecifierOpt *audio_ch_layouts;
-    int        nb_audio_ch_layouts;
-    SpecifierOpt *audio_channels;
-    int        nb_audio_channels;
-    SpecifierOpt *audio_sample_rate;
-    int        nb_audio_sample_rate;
-    SpecifierOpt *frame_rates;
-    int        nb_frame_rates;
-    SpecifierOpt *max_frame_rates;
-    int        nb_max_frame_rates;
-    SpecifierOpt *frame_sizes;
-    int        nb_frame_sizes;
-    SpecifierOpt *frame_pix_fmts;
-    int        nb_frame_pix_fmts;
+    SpecifierOptList codec_names;
+    SpecifierOptList audio_ch_layouts;
+    SpecifierOptList audio_channels;
+    SpecifierOptList audio_sample_rate;
+    SpecifierOptList frame_rates;
+    SpecifierOptList max_frame_rates;
+    SpecifierOptList frame_sizes;
+    SpecifierOptList frame_pix_fmts;
 
     /* input options */
     int64_t input_ts_offset;
@@ -166,18 +158,12 @@ typedef struct OptionsContext {
     int input_sync_ref;
     int find_stream_info;
 
-    SpecifierOpt *ts_scale;
-    int        nb_ts_scale;
-    SpecifierOpt *dump_attachment;
-    int        nb_dump_attachment;
-    SpecifierOpt *hwaccels;
-    int        nb_hwaccels;
-    SpecifierOpt *hwaccel_devices;
-    int        nb_hwaccel_devices;
-    SpecifierOpt *hwaccel_output_formats;
-    int        nb_hwaccel_output_formats;
-    SpecifierOpt *autorotate;
-    int        nb_autorotate;
+    SpecifierOptList ts_scale;
+    SpecifierOptList dump_attachment;
+    SpecifierOptList hwaccels;
+    SpecifierOptList hwaccel_devices;
+    SpecifierOptList hwaccel_output_formats;
+    SpecifierOptList autorotate;
 
     /* output options */
     StreamMap *stream_maps;
@@ -208,104 +194,56 @@ typedef struct OptionsContext {
     // keys are stream indices
     AVDictionary *streamid;
 
-    SpecifierOpt *metadata;
-    int        nb_metadata;
-    SpecifierOpt *max_frames;
-    int        nb_max_frames;
-    SpecifierOpt *bitstream_filters;
-    int        nb_bitstream_filters;
-    SpecifierOpt *codec_tags;
-    int        nb_codec_tags;
-    SpecifierOpt *sample_fmts;
-    int        nb_sample_fmts;
-    SpecifierOpt *qscale;
-    int        nb_qscale;
-    SpecifierOpt *forced_key_frames;
-    int        nb_forced_key_frames;
-    SpecifierOpt *fps_mode;
-    int        nb_fps_mode;
-    SpecifierOpt *force_fps;
-    int        nb_force_fps;
-    SpecifierOpt *frame_aspect_ratios;
-    int        nb_frame_aspect_ratios;
-    SpecifierOpt *display_rotations;
-    int        nb_display_rotations;
-    SpecifierOpt *display_hflips;
-    int        nb_display_hflips;
-    SpecifierOpt *display_vflips;
-    int        nb_display_vflips;
-    SpecifierOpt *rc_overrides;
-    int        nb_rc_overrides;
-    SpecifierOpt *intra_matrices;
-    int        nb_intra_matrices;
-    SpecifierOpt *inter_matrices;
-    int        nb_inter_matrices;
-    SpecifierOpt *chroma_intra_matrices;
-    int        nb_chroma_intra_matrices;
+    SpecifierOptList metadata;
+    SpecifierOptList max_frames;
+    SpecifierOptList bitstream_filters;
+    SpecifierOptList codec_tags;
+    SpecifierOptList sample_fmts;
+    SpecifierOptList qscale;
+    SpecifierOptList forced_key_frames;
+    SpecifierOptList fps_mode;
+    SpecifierOptList force_fps;
+    SpecifierOptList frame_aspect_ratios;
+    SpecifierOptList display_rotations;
+    SpecifierOptList display_hflips;
+    SpecifierOptList display_vflips;
+    SpecifierOptList rc_overrides;
+    SpecifierOptList intra_matrices;
+    SpecifierOptList inter_matrices;
+    SpecifierOptList chroma_intra_matrices;
 #if FFMPEG_OPT_TOP
-    SpecifierOpt *top_field_first;
-    int        nb_top_field_first;
+    SpecifierOptList top_field_first;
 #endif
-    SpecifierOpt *metadata_map;
-    int        nb_metadata_map;
-    SpecifierOpt *presets;
-    int        nb_presets;
-    SpecifierOpt *copy_initial_nonkeyframes;
-    int        nb_copy_initial_nonkeyframes;
-    SpecifierOpt *copy_prior_start;
-    int        nb_copy_prior_start;
-    SpecifierOpt *filters;
-    int        nb_filters;
-    SpecifierOpt *filter_scripts;
-    int        nb_filter_scripts;
-    SpecifierOpt *reinit_filters;
-    int        nb_reinit_filters;
-    SpecifierOpt *fix_sub_duration;
-    int        nb_fix_sub_duration;
-    SpecifierOpt *fix_sub_duration_heartbeat;
-    int        nb_fix_sub_duration_heartbeat;
-    SpecifierOpt *canvas_sizes;
-    int        nb_canvas_sizes;
-    SpecifierOpt *pass;
-    int        nb_pass;
-    SpecifierOpt *passlogfiles;
-    int        nb_passlogfiles;
-    SpecifierOpt *max_muxing_queue_size;
-    int        nb_max_muxing_queue_size;
-    SpecifierOpt *muxing_queue_data_threshold;
-    int        nb_muxing_queue_data_threshold;
-    SpecifierOpt *guess_layout_max;
-    int        nb_guess_layout_max;
-    SpecifierOpt *apad;
-    int        nb_apad;
-    SpecifierOpt *discard;
-    int        nb_discard;
-    SpecifierOpt *disposition;
-    int        nb_disposition;
-    SpecifierOpt *program;
-    int        nb_program;
-    SpecifierOpt *stream_groups;
-    int        nb_stream_groups;
-    SpecifierOpt *time_bases;
-    int        nb_time_bases;
-    SpecifierOpt *enc_time_bases;
-    int        nb_enc_time_bases;
-    SpecifierOpt *autoscale;
-    int        nb_autoscale;
-    SpecifierOpt *bits_per_raw_sample;
-    int        nb_bits_per_raw_sample;
-    SpecifierOpt *enc_stats_pre;
-    int        nb_enc_stats_pre;
-    SpecifierOpt *enc_stats_post;
-    int        nb_enc_stats_post;
-    SpecifierOpt *mux_stats;
-    int        nb_mux_stats;
-    SpecifierOpt *enc_stats_pre_fmt;
-    int        nb_enc_stats_pre_fmt;
-    SpecifierOpt *enc_stats_post_fmt;
-    int        nb_enc_stats_post_fmt;
-    SpecifierOpt *mux_stats_fmt;
-    int        nb_mux_stats_fmt;
+    SpecifierOptList metadata_map;
+    SpecifierOptList presets;
+    SpecifierOptList copy_initial_nonkeyframes;
+    SpecifierOptList copy_prior_start;
+    SpecifierOptList filters;
+    SpecifierOptList filter_scripts;
+    SpecifierOptList reinit_filters;
+    SpecifierOptList fix_sub_duration;
+    SpecifierOptList fix_sub_duration_heartbeat;
+    SpecifierOptList canvas_sizes;
+    SpecifierOptList pass;
+    SpecifierOptList passlogfiles;
+    SpecifierOptList max_muxing_queue_size;
+    SpecifierOptList muxing_queue_data_threshold;
+    SpecifierOptList guess_layout_max;
+    SpecifierOptList apad;
+    SpecifierOptList discard;
+    SpecifierOptList disposition;
+    SpecifierOptList program;
+    SpecifierOptList stream_groups;
+    SpecifierOptList time_bases;
+    SpecifierOptList enc_time_bases;
+    SpecifierOptList autoscale;
+    SpecifierOptList bits_per_raw_sample;
+    SpecifierOptList enc_stats_pre;
+    SpecifierOptList enc_stats_post;
+    SpecifierOptList mux_stats;
+    SpecifierOptList enc_stats_pre_fmt;
+    SpecifierOptList enc_stats_post_fmt;
+    SpecifierOptList mux_stats_fmt;
 } OptionsContext;
 
 typedef struct InputFilter {
@@ -852,11 +790,11 @@ void update_benchmark(const char *fmt, ...);
 {\
     int _ret, _matches = 0;\
     SpecifierOpt *so;\
-    for (int _i = 0; _i < o->nb_ ## name; _i++) {\
-        char *spec = o->name[_i].specifier;\
+    for (int _i = 0; _i < o->name.nb_opt; _i++) {\
+        char *spec = o->name.opt[_i].specifier;\
         if ((_ret = check_stream_specifier(fmtctx, st, spec)) > 0) {\
-            outvar = o->name[_i].u.type;\
-            so = &o->name[_i];\
+            outvar = o->name.opt[_i].u.type;\
+            so = &o->name.opt[_i];\
             _matches++;\
         } else if (_ret < 0)\
             return _ret;\
@@ -868,10 +806,10 @@ void update_benchmark(const char *fmt, ...);
 #define MATCH_PER_TYPE_OPT(name, type, outvar, fmtctx, mediatype)\
 {\
     int i;\
-    for (i = 0; i < o->nb_ ## name; i++) {\
-        char *spec = o->name[i].specifier;\
+    for (i = 0; i < o->name.nb_opt; i++) {\
+        char *spec = o->name.opt[i].specifier;\
         if (!strcmp(spec, mediatype))\
-            outvar = o->name[i].u.type;\
+            outvar = o->name.opt[i].u.type;\
     }\
 }
 
