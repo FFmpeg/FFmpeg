@@ -159,6 +159,9 @@ static const struct {
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
     #endif
+    #if CONFIG_TAK_DECODER
+        { "takdsp", checkasm_check_takdsp },
+    #endif
     #if CONFIG_UTVIDEO_DECODER
         { "utvideodsp", checkasm_check_utvideodsp },
     #endif

@@ -37,6 +37,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-sw_gbrp                                   \
                 fate-checkasm-sw_rgb                                    \
                 fate-checkasm-sw_scale                                  \
+                fate-checkasm-takdsp                                    \
                 fate-checkasm-utvideodsp                                \
                 fate-checkasm-v210dec                                   \
                 fate-checkasm-v210enc                                   \
