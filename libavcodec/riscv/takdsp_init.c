@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +18,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_TAKDSP_H
-#define AVCODEC_TAKDSP_H
-
 #include <stdint.h>
 
-typedef struct TAKDSPContext {
-    void (*decorrelate_ls)(int32_t *p1, int32_t *p2, int length);
-    void (*decorrelate_sr)(int32_t *p1, int32_t *p2, int length);
-    void (*decorrelate_sm)(int32_t *p1, int32_t *p2, int length);
-    void (*decorrelate_sf)(int32_t *p1, int32_t *p2, int length, int dshift, int dfactor);
-} TAKDSPContext;
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
+#include "libavcodec/takdsp.h"
 
-void ff_takdsp_init(TAKDSPContext *c);
-void ff_takdsp_init_riscv(TAKDSPContext *c);
-void ff_takdsp_init_x86(TAKDSPContext *c);
+void ff_decorrelate_ls_rvv(int32_t *p1, int32_t *p2, int length);
 
-#endif /* AVCODEC_TAKDSP_H */
+av_cold void ff_takdsp_init_riscv(TAKDSPContext *dsp)
+{
+#if HAVE_RVV
+    int flags = av_get_cpu_flags();
+
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+        dsp->decorrelate_ls = ff_decorrelate_ls_rvv;
+    }
+#endif
+}

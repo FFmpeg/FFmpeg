@@ -1,4 +1,6 @@
 /*
+ * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,20 +18,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_TAKDSP_H
-#define AVCODEC_TAKDSP_H
+#include "libavutil/riscv/asm.S"
 
-#include <stdint.h>
-
-typedef struct TAKDSPContext {
-    void (*decorrelate_ls)(int32_t *p1, int32_t *p2, int length);
-    void (*decorrelate_sr)(int32_t *p1, int32_t *p2, int length);
-    void (*decorrelate_sm)(int32_t *p1, int32_t *p2, int length);
-    void (*decorrelate_sf)(int32_t *p1, int32_t *p2, int length, int dshift, int dfactor);
-} TAKDSPContext;
-
-void ff_takdsp_init(TAKDSPContext *c);
-void ff_takdsp_init_riscv(TAKDSPContext *c);
-void ff_takdsp_init_x86(TAKDSPContext *c);
-
-#endif /* AVCODEC_TAKDSP_H */
+func ff_decorrelate_ls_rvv, zve32x
+1:
+        vsetvli  t0, a2, e32, m8, ta, ma
+        sub      a2, a2, t0
+        vle32.v  v0, (a0)
+        sh2add   a0, t0, a0
+        vle32.v  v8, (a1)
+        vadd.vv  v16, v0, v8
+        vse32.v  v16, (a1)
+        sh2add   a1, t0, a1
+        bnez a2, 1b
+        ret
+endfunc
