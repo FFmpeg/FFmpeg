@@ -85,6 +85,34 @@ static void test_decorrelate_sr(TAKDSPContext *s) {
     report("decorrelate_sr");
 }
 
+static void test_decorrelate_sm(TAKDSPContext *s) {
+#define BUF_SIZE 1024
+    declare_func(void, int32_t *, int32_t *, int);
+
+    if (check_func(s->decorrelate_sm, "decorrelate_sm")) {
+        LOCAL_ALIGNED_32(int32_t, p1, [BUF_SIZE]);
+        LOCAL_ALIGNED_32(int32_t, p1_2, [BUF_SIZE]);
+        LOCAL_ALIGNED_32(int32_t, p2, [BUF_SIZE]);
+        LOCAL_ALIGNED_32(int32_t, p2_2, [BUF_SIZE]);
+
+        randomize(p1, BUF_SIZE);
+        memcpy(p1, p1_2, BUF_SIZE);
+        randomize(p2, BUF_SIZE);
+        memcpy(p2_2, p2, BUF_SIZE);
+
+        call_ref(p1, p2, BUF_SIZE);
+        call_new(p1_2, p2_2, BUF_SIZE);
+
+        if (memcmp(p2, p2_2, BUF_SIZE) != 0){
+            fail();
+        }
+
+        bench_new(p1, p2, BUF_SIZE);
+    }
+
+    report("decorrelate_sm");
+}
+
 void checkasm_check_takdsp(void)
 {
     TAKDSPContext s = { 0 };
@@ -92,4 +120,5 @@ void checkasm_check_takdsp(void)
 
     test_decorrelate_ls(&s);
     test_decorrelate_sr(&s);
+    test_decorrelate_sm(&s);
 }
