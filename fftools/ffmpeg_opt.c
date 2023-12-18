@@ -1958,7 +1958,7 @@ const OptionDef options[] = {
         { .func_arg = opt_data_codec },
         "force data codec ('copy' to copy stream)", "codec",
         .u1.name_canon = "codec", },
-    { "dn", OPT_TYPE_BOOL, OPT_VIDEO | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,
+    { "dn", OPT_TYPE_BOOL, OPT_DATA | OPT_OFFSET | OPT_INPUT | OPT_OUTPUT,
         { .off = OFFSET(data_disable) }, "disable data" },
 
 #if CONFIG_VAAPI
