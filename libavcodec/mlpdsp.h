@@ -66,14 +66,6 @@ typedef struct MLPDSPContext {
                                         int8_t *output_shift,
                                         uint8_t max_matrix_channel,
                                         int is32))(int32_t, uint16_t, int32_t (*)[], void *, uint8_t*, int8_t *, uint8_t, int);
-    int32_t (*mlp_pack_output)(int32_t lossless_check_data,
-                               uint16_t blockpos,
-                               int32_t (*sample_buffer)[MAX_CHANNELS],
-                               void *data,
-                               uint8_t *ch_assign,
-                               int8_t *output_shift,
-                               uint8_t max_matrix_channel,
-                               int is32);
 } MLPDSPContext;
 
 void ff_mlpdsp_init(MLPDSPContext *c);

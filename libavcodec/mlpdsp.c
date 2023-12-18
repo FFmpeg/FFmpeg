@@ -130,7 +130,6 @@ av_cold void ff_mlpdsp_init(MLPDSPContext *c)
     c->mlp_filter_channel = mlp_filter_channel;
     c->mlp_rematrix_channel = ff_mlp_rematrix_channel;
     c->mlp_select_pack_output = mlp_select_pack_output;
-    c->mlp_pack_output = ff_mlp_pack_output;
 #if ARCH_ARM
     ff_mlpdsp_init_arm(c);
 #elif ARCH_X86

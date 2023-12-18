@@ -173,6 +173,14 @@ typedef struct MLPDecodeContext {
     DECLARE_ALIGNED(32, int32_t, sample_buffer)[MAX_BLOCKSIZE][MAX_CHANNELS];
 
     MLPDSPContext dsp;
+    int32_t (*pack_output)(int32_t lossless_check_data,
+                           uint16_t blockpos,
+                           int32_t (*sample_buffer)[MAX_CHANNELS],
+                           void *data,
+                           uint8_t *ch_assign,
+                           int8_t *output_shift,
+                           uint8_t max_matrix_channel,
+                           int is32);
 } MLPDecodeContext;
 
 static const enum AVChannel thd_channel_order[] = {
@@ -422,10 +430,10 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         m->avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     else
         m->avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(m->substream[m->max_decoded_substream].ch_assign,
-                                                           m->substream[m->max_decoded_substream].output_shift,
-                                                           m->substream[m->max_decoded_substream].max_matrix_channel,
-                                                           m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
+    m->pack_output = m->dsp.mlp_select_pack_output(m->substream[m->max_decoded_substream].ch_assign,
+                                                   m->substream[m->max_decoded_substream].output_shift,
+                                                   m->substream[m->max_decoded_substream].max_matrix_channel,
+                                                   m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
     m->params_valid = 1;
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
@@ -663,10 +671,10 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     if (substr == m->max_decoded_substream) {
         av_channel_layout_uninit(&m->avctx->ch_layout);
         av_channel_layout_from_mask(&m->avctx->ch_layout, s->mask);
-        m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
-                                                               s->output_shift,
-                                                               s->max_matrix_channel,
-                                                               m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
+        m->pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
+                                                       s->output_shift,
+                                                       s->max_matrix_channel,
+                                                       m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
         if (m->avctx->codec_id == AV_CODEC_ID_MLP && m->needs_reordering) {
             if (s->mask == (AV_CH_LAYOUT_QUAD|AV_CH_LOW_FREQUENCY) ||
@@ -925,10 +933,10 @@ static int read_decoding_params(MLPDecodeContext *m, GetBitContext *gbp,
                 }
             }
             if (substr == m->max_decoded_substream)
-                m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
-                                                                       s->output_shift,
-                                                                       s->max_matrix_channel,
-                                                                       m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
+                m->pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
+                                                               s->output_shift,
+                                                               s->max_matrix_channel,
+                                                               m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
         }
 
     if (s->param_presence_flags & PARAM_QUANTSTEP)
@@ -1155,14 +1163,14 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
     frame->nb_samples = s->blockpos;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    s->lossless_check_data = m->dsp.mlp_pack_output(s->lossless_check_data,
-                                                    s->blockpos,
-                                                    m->sample_buffer,
-                                                    frame->data[0],
-                                                    s->ch_assign,
-                                                    s->output_shift,
-                                                    s->max_matrix_channel,
-                                                    is32);
+    s->lossless_check_data = m->pack_output(s->lossless_check_data,
+                                            s->blockpos,
+                                            m->sample_buffer,
+                                            frame->data[0],
+                                            s->ch_assign,
+                                            s->output_shift,
+                                            s->max_matrix_channel,
+                                            is32);
 
     /* Update matrix encoding side data */
     if (s->matrix_encoding != s->prev_matrix_encoding) {
