@@ -1920,18 +1920,9 @@ const OptionDef options[] = {
         "0 = use frame rate (video) or sample rate (audio),"
         "-1 = match source time base", "ratio" },
 
-    { "bsf", OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT | OPT_HAS_ALT,
+    { "bsf", OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT,
         { .off = OFFSET(bitstream_filters) },
-        "A comma-separated list of bitstream filters", "bitstream_filters",
-        .u1.names_alt = alt_bsf, },
-    { "absf", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
-        { .func_arg = opt_old2new },
-        "deprecated", "audio bitstream_filters",
-        .u1.name_canon = "bsf", },
-    { "vbsf", OPT_TYPE_FUNC, OPT_VIDEO | OPT_FUNC_ARG | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
-        { .func_arg = opt_old2new },
-        "deprecated", "video bitstream_filters",
-        .u1.name_canon = "bsf", },
+        "A comma-separated list of bitstream filters", "bitstream_filters", },
 
     { "apre", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_AUDIO | OPT_EXPERT| OPT_PERFILE | OPT_OUTPUT | OPT_HAS_CANON,
         { .func_arg = opt_preset },

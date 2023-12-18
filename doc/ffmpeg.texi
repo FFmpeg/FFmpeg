@@ -1254,8 +1254,6 @@ Specify which version of the vstats format to use. Default is @code{2}. See the
 
 @item -vtag @var{fourcc/tag} (@emph{output})
 Force video tag/fourcc. This is an alias for @code{-tag:v}.
-@item -vbsf @var{bitstream_filter}
-Deprecated see -bsf
 
 @item -force_key_frames[:@var{stream_specifier}] @var{time}[,@var{time}...] (@emph{output,per-stream})
 @item -force_key_frames[:@var{stream_specifier}] expr:@var{expr} (@emph{output,per-stream})
@@ -1624,8 +1622,6 @@ This is an alias for @code{-filter:a}, see the @ref{filter_option,,-filter optio
 @table @option
 @item -atag @var{fourcc/tag} (@emph{output})
 Force audio tag/fourcc. This is an alias for @code{-tag:a}.
-@item -absf @var{bitstream_filter}
-Deprecated, see -bsf
 @item -guess_layout_max @var{channels} (@emph{input,per-stream})
 If some input channel layout is not known, try to guess only if it
 corresponds to at most the specified number of channels. For example, 2
