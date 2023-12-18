@@ -219,10 +219,10 @@ int opt_cpucount(void *optctx, const char *opt, const char *arg);
     { "sample_fmts",  OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_sample_fmts }, "show available audio sample formats" },   \
     { "dispositions", OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_dispositions}, "show available stream dispositions" },    \
     { "colors",       OPT_TYPE_FUNC, OPT_EXIT,              { .func_arg = show_colors },      "show available color names" },            \
-    { "loglevel",     OPT_TYPE_FUNC, OPT_FUNC_ARG,          { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
+    { "loglevel",     OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
     { "v",            OPT_TYPE_FUNC, OPT_FUNC_ARG,          { .func_arg = opt_loglevel },     "set logging level", "loglevel" },         \
-    { "report",       OPT_TYPE_FUNC, 0,                     { .func_arg = opt_report },       "generate a report" },                     \
-    { "max_alloc",    OPT_TYPE_FUNC, OPT_FUNC_ARG,          { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
+    { "report",       OPT_TYPE_FUNC, OPT_EXPERT,            { .func_arg = opt_report },       "generate a report" },                     \
+    { "max_alloc",    OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = opt_max_alloc },    "set maximum size of a single allocated block", "bytes" }, \
     { "cpuflags",     OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags },     "force specific cpu flags", "flags" },     \
     { "cpucount",     OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT, { .func_arg = opt_cpucount },     "force specific cpu count", "count" },     \
     { "hide_banner",  OPT_TYPE_BOOL, OPT_EXPERT,            {&hide_banner},                   "do not show program banner", "hide_banner" }, \
