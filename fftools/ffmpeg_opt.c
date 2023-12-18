@@ -1216,25 +1216,29 @@ void show_help_default(const char *opt, const char *arg)
                           OPT_PERFILE | OPT_EXIT, 0);
 
     show_help_options(options, "Per-file main options:", 0,
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE |
+                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_DATA |
                       OPT_EXIT, OPT_PERFILE);
     if (show_advanced)
         show_help_options(options, "Advanced per-file options:",
                           OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, OPT_PERFILE);
 
     show_help_options(options, "Video options:",
-                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO, 0);
+                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA, 0);
     if (show_advanced)
         show_help_options(options, "Advanced Video options:",
-                          OPT_EXPERT | OPT_VIDEO, OPT_AUDIO, 0);
+                          OPT_EXPERT | OPT_VIDEO, OPT_AUDIO | OPT_SUBTITLE | OPT_DATA, 0);
 
     show_help_options(options, "Audio options:",
-                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO, 0);
+                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO | OPT_SUBTITLE | OPT_DATA, 0);
     if (show_advanced)
         show_help_options(options, "Advanced Audio options:",
-                          OPT_EXPERT | OPT_AUDIO, OPT_VIDEO, 0);
+                          OPT_EXPERT | OPT_AUDIO, OPT_VIDEO | OPT_SUBTITLE | OPT_DATA, 0);
+
     show_help_options(options, "Subtitle options:",
-                      OPT_SUBTITLE, 0, 0);
+                      OPT_SUBTITLE, OPT_EXPERT | OPT_VIDEO | OPT_AUDIO | OPT_DATA, 0);
+    if (show_advanced)
+        show_help_options(options, "Advanced Subtitle options:",
+                          OPT_EXPERT | OPT_SUBTITLE, OPT_VIDEO | OPT_AUDIO | OPT_DATA, 0);
     printf("\n");
 
     if (show_avoptions) {
