@@ -229,6 +229,16 @@ static const AVOption stream_options[] = {
         { "metadata",           .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_METADATA          },    .unit = "disposition" },
         { "dependent",          .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_DEPENDENT         },    .unit = "disposition" },
         { "still_image",        .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_STILL_IMAGE       },    .unit = "disposition" },
+
+    { "discard", NULL, offsetof(AVStream, discard), AV_OPT_TYPE_INT, { .i64 = AVDISCARD_DEFAULT }, INT_MIN, INT_MAX,
+        .flags = AV_OPT_FLAG_DECODING_PARAM, .unit = "avdiscard" },
+        { "none",               .type = AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONE     }, .unit = "avdiscard" },
+        { "default",            .type = AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_DEFAULT  }, .unit = "avdiscard" },
+        { "noref",              .type = AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONREF   }, .unit = "avdiscard" },
+        { "bidir",              .type = AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_BIDIR    }, .unit = "avdiscard" },
+        { "nointra",            .type = AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONINTRA }, .unit = "avdiscard" },
+        { "nokey",              .type = AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_NONKEY   }, .unit = "avdiscard" },
+        { "all",                .type = AV_OPT_TYPE_CONST, {.i64 = AVDISCARD_ALL      }, .unit = "avdiscard" },
     { NULL }
 };
 
