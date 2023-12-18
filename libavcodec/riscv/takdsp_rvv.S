@@ -47,3 +47,21 @@ func ff_decorrelate_sr_rvv, zve32x
         bnez     a2, 1b
         ret
 endfunc
+
+func ff_decorrelate_sm_rvv, zve32x
+1:
+        vsetvli  t0, a2, e32, m8, ta, ma
+        vle32.v  v8, (a1)
+        sub      a2, a2, t0
+        vle32.v  v0, (a0)
+        vsra.vi  v16, v8, 1
+        vsub.vv  v0, v0, v16
+        vse32.v  v0, (a0)
+        sh2add   a0, t0, a0
+        vadd.vv  v8, v0, v8
+        vse32.v  v8, (a1)
+        sh2add   a1, t0, a1
+        bnez     a2, 1b
+
+        ret
+endfunc
