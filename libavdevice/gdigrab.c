@@ -274,10 +274,10 @@ gdigrab_read_header(AVFormatContext *s1)
     } else if (!strcmp(filename, "desktop")) {
         hwnd = NULL;
     } else if (!strncmp(filename, "hwnd=", 5)) {
-        name = filename + 5;
         char *p;
+        name = filename + 5;
 
-        hwnd = strtol(name, &p, 0);
+        hwnd = (HWND) strtoull(name, &p, 0);
 
         if (p == NULL || p == name || p[0] == '\0')
         {
