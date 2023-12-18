@@ -756,7 +756,11 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             av_log(ost, AV_LOG_WARNING, "-top is deprecated, use the setfield filter instead\n");
 #endif
 
+#if FFMPEG_OPT_VSYNC
         ost->vsync_method = video_sync_method;
+#else
+        ost->vsync_method = VSYNC_AUTO;
+#endif
         MATCH_PER_STREAM_OPT(fps_mode, str, fps_mode, oc, st);
         if (fps_mode) {
             ret = parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file->index, ost->index, 0);

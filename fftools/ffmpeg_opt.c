@@ -62,7 +62,9 @@ float audio_drift_threshold = 0.1;
 float dts_delta_threshold   = 10;
 float dts_error_threshold   = 3600*30;
 
+#if FFMPEG_OPT_VSYNC
 enum VideoSyncMethod video_sync_method = VSYNC_AUTO;
+#endif
 float frame_drop_threshold = 0;
 int do_benchmark      = 0;
 int do_benchmark_all  = 0;
@@ -205,6 +207,7 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
         return AVERROR(EINVAL);
     }
 
+#if FFMPEG_OPT_VSYNC
     if (is_global && *vsync_var == VSYNC_AUTO) {
         int ret;
         double num;
@@ -217,6 +220,8 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
         av_log(NULL, AV_LOG_WARNING, "Passing a number to -vsync is deprecated,"
                " use a string argument as described in the manual.\n");
     }
+#endif
+
     return 0;
 }
 
@@ -1136,11 +1141,13 @@ static int opt_audio_filters(void *optctx, const char *opt, const char *arg)
     return parse_option(o, "filter:a", arg, options);
 }
 
+#if FFMPEG_OPT_VSYNC
 static int opt_vsync(void *optctx, const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "-vsync is deprecated. Use -fps_mode\n");
     return parse_and_set_vsync(arg, &video_sync_method, -1, -1, 1);
 }
+#endif
 
 static int opt_timecode(void *optctx, const char *opt, const char *arg)
 {
@@ -1566,9 +1573,6 @@ const OptionDef options[] = {
         { .func_arg = opt_target },
         "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\" or \"dv50\" "
         "with optional prefixes \"pal-\", \"ntsc-\" or \"film-\")", "type" },
-    { "vsync",                  OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
-        { .func_arg = opt_vsync },
-        "set video sync method globally; deprecated, use -fps_mode", "" },
     { "frame_drop_threshold",   OPT_TYPE_FLOAT, OPT_EXPERT,
         { &frame_drop_threshold },
         "frame drop threshold", "" },
@@ -2005,6 +2009,11 @@ const OptionDef options[] = {
     { "qphist", OPT_TYPE_FUNC, OPT_VIDEO | OPT_EXPERT,
         { .func_arg = opt_qphist },
         "deprecated, does nothing" },
+#endif
+#if FFMPEG_OPT_VSYNC
+    { "vsync",                  OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
+        { .func_arg = opt_vsync },
+        "set video sync method globally; deprecated, use -fps_mode", "" },
 #endif
 
     { NULL, },
