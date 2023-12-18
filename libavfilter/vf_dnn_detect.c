@@ -455,11 +455,13 @@ static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, int nb_outpu
         ret = dnn_detect_post_proc_yolo(frame, output, filter_ctx);
         if (ret < 0)
             return ret;
+        break;
     case DDMT_YOLOV3:
     case DDMT_YOLOV4:
         ret = dnn_detect_post_proc_yolov3(frame, output, filter_ctx, nb_outputs);
         if (ret < 0)
             return ret;
+        break;
     }
     return 0;
 }
