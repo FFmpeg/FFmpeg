@@ -157,7 +157,7 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
     float *output_data = output[output_index].data;
     float *anchors = ctx->anchors;
     AVDetectionBBox *bbox;
-    float (*post_process_raw_data)(float x);
+    float (*post_process_raw_data)(float x) = linear;
     int is_NHWC = 0;
 
     if (ctx->model_type == DDMT_YOLOV1V2) {
