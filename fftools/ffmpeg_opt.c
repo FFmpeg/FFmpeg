@@ -1239,6 +1239,10 @@ void show_help_default(const char *opt, const char *arg)
     if (show_advanced)
         show_help_options(options, "Advanced Subtitle options:",
                           OPT_EXPERT | OPT_SUBTITLE, OPT_VIDEO | OPT_AUDIO | OPT_DATA, 0);
+
+    if (show_advanced)
+        show_help_options(options, "Data stream options:",
+                          OPT_DATA, OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE, 0);
     printf("\n");
 
     if (show_avoptions) {
