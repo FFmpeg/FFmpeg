@@ -782,6 +782,16 @@ static int ist_use(InputStream *ist, int decoding_needed)
     if (decoding_needed && ds->sch_idx_dec < 0) {
         int is_audio = ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
 
+        ist->dec_ctx = avcodec_alloc_context3(ist->dec);
+        if (!ist->dec_ctx)
+            return AVERROR(ENOMEM);
+
+        ret = avcodec_parameters_to_context(ist->dec_ctx, ist->par);
+        if (ret < 0) {
+            av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+            return ret;
+        }
+
         ret = sch_add_dec(d->sch, decoder_thread, ist, d->loop && is_audio);
         if (ret < 0)
             return ret;
@@ -1215,23 +1225,13 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     default: av_assert0(0);
     }
 
-    ist->dec_ctx = avcodec_alloc_context3(ist->dec);
-    if (!ist->dec_ctx)
-        return AVERROR(ENOMEM);
-
-    ret = avcodec_parameters_to_context(ist->dec_ctx, par);
-    if (ret < 0) {
-        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-        return ret;
-    }
-
     ist->par = avcodec_parameters_alloc();
     if (!ist->par)
         return AVERROR(ENOMEM);
 
-    ret = avcodec_parameters_from_context(ist->par, ist->dec_ctx);
+    ret = avcodec_parameters_copy(ist->par, par);
     if (ret < 0) {
-        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+        av_log(ist, AV_LOG_ERROR, "Error exporting stream parameters.\n");
         return ret;
     }
 
