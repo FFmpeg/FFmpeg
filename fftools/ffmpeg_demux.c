@@ -1156,7 +1156,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     }
 
     if (o->bitexact)
-        ist->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
+        av_dict_set(&ist->decoder_opts, "flags", "+bitexact", AV_DICT_MULTIKEY);
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
