@@ -206,6 +206,9 @@ int enc_open(void *opaque, const AVFrame *frame)
 
     switch (enc_ctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
+        av_assert0(frame->format != AV_SAMPLE_FMT_NONE &&
+                   frame->sample_rate > 0 &&
+                   frame->ch_layout.nb_channels > 0);
         enc_ctx->sample_fmt     = frame->format;
         enc_ctx->sample_rate    = frame->sample_rate;
         ret = av_channel_layout_copy(&enc_ctx->ch_layout, &frame->ch_layout);
@@ -220,6 +223,9 @@ int enc_open(void *opaque, const AVFrame *frame)
         break;
 
     case AVMEDIA_TYPE_VIDEO: {
+        av_assert0(frame->format != AV_PIX_FMT_NONE &&
+                   frame->width > 0 &&
+                   frame->height > 0);
         enc_ctx->width  = frame->width;
         enc_ctx->height = frame->height;
         enc_ctx->sample_aspect_ratio = ost->st->sample_aspect_ratio =
