@@ -2147,12 +2147,13 @@ static int of_parse_iamf_submixes(Muxer *mux, AVStreamGroup *stg, char *ptr)
 
             if (element) {
                 AVIAMFSubmixElement *submix_element;
+                char *endptr = NULL;
                 int64_t idx = -1;
 
                 if (e = av_dict_get(dict, "stg", NULL, 0))
-                    idx = strtol(e->value, NULL, 0);
+                    idx = strtoll(e->value, &endptr, 0);
                 av_dict_set(&dict, "stg", NULL, 0);
-                if (idx < 0 || idx >= oc->nb_stream_groups - 1 ||
+                if (!endptr || *endptr || idx < 0 || idx >= oc->nb_stream_groups - 1 ||
                     oc->stream_groups[idx]->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT) {
                     av_log(mux, AV_LOG_ERROR, "Invalid or missing stream group index in "
                                               "submix element specification \"%s\"\n", subtoken);
@@ -2268,8 +2269,9 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
 
     e = NULL;
     while (e = av_dict_get(dict, "st", e, 0)) {
-        int64_t idx = strtol(e->value, NULL, 0);
-        if (idx < 0 || idx >= oc->nb_streams) {
+        char *endptr;
+        int64_t idx = strtoll(e->value, &endptr, 0);
+        if (*endptr || idx < 0 || idx >= oc->nb_streams) {
             av_log(mux, AV_LOG_ERROR, "Invalid stream index %"PRId64"\n", idx);
             ret = AVERROR(EINVAL);
             goto end;
@@ -2279,8 +2281,9 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
             goto end;
     }
     while (e = av_dict_get(dict, "stg", e, 0)) {
-        int64_t idx = strtol(e->value, NULL, 0);
-        if (idx < 0 || idx >= oc->nb_stream_groups - 1) {
+        char *endptr;
+        int64_t idx = strtoll(e->value, &endptr, 0);
+        if (*endptr || idx < 0 || idx >= oc->nb_stream_groups - 1) {
             av_log(mux, AV_LOG_ERROR, "Invalid stream group index %"PRId64"\n", idx);
             ret = AVERROR(EINVAL);
             goto end;
