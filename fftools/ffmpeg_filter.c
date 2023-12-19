@@ -2459,7 +2459,7 @@ static int read_frames(FilterGraph *fg, FilterGraphThread *fgt,
             }
         }
         did_step = 1;
-    };
+    }
 
     return (fgp->nb_outputs_done == fg->nb_outputs) ? AVERROR_EOF : 0;
 }
