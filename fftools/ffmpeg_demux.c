@@ -899,19 +899,18 @@ static int choose_decoder(const OptionsContext *o, AVFormatContext *s, AVStream 
     }
 }
 
-static int guess_input_channel_layout(InputStream *ist, int guess_layout_max)
+static int guess_input_channel_layout(InputStream *ist, AVCodecParameters *par,
+                                      int guess_layout_max)
 {
-    AVCodecContext *dec = ist->dec_ctx;
-
-    if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
+    if (par->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
         char layout_name[256];
 
-        if (dec->ch_layout.nb_channels > guess_layout_max)
+        if (par->ch_layout.nb_channels > guess_layout_max)
             return 0;
-        av_channel_layout_default(&dec->ch_layout, dec->ch_layout.nb_channels);
-        if (dec->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
+        av_channel_layout_default(&par->ch_layout, par->ch_layout.nb_channels);
+        if (par->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC)
             return 0;
-        av_channel_layout_describe(&dec->ch_layout, layout_name, sizeof(layout_name));
+        av_channel_layout_describe(&par->ch_layout, layout_name, sizeof(layout_name));
         av_log(ist, AV_LOG_WARNING, "Guessed Channel Layout: %s\n", layout_name);
     }
     return 1;
@@ -1145,16 +1144,6 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         ist->user_set_discard = ist->st->discard;
     }
 
-    ist->dec_ctx = avcodec_alloc_context3(ist->dec);
-    if (!ist->dec_ctx)
-        return AVERROR(ENOMEM);
-
-    ret = avcodec_parameters_to_context(ist->dec_ctx, par);
-    if (ret < 0) {
-        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-        return ret;
-    }
-
     if (o->bitexact)
         av_dict_set(&ist->decoder_opts, "flags", "+bitexact", AV_DICT_MULTIKEY);
 
@@ -1181,7 +1170,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     case AVMEDIA_TYPE_AUDIO: {
         int guess_layout_max = INT_MAX;
         MATCH_PER_STREAM_OPT(guess_layout_max, i, guess_layout_max, ic, st);
-        guess_input_channel_layout(ist, guess_layout_max);
+        guess_input_channel_layout(ist, par, guess_layout_max);
         break;
     }
     case AVMEDIA_TYPE_DATA:
@@ -1190,7 +1179,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
         MATCH_PER_STREAM_OPT(canvas_sizes, str, canvas_size, ic, st);
         if (canvas_size) {
-            ret = av_parse_video_size(&ist->dec_ctx->width, &ist->dec_ctx->height,
+            ret = av_parse_video_size(&par->width, &par->height,
                                       canvas_size);
             if (ret < 0) {
                 av_log(ist, AV_LOG_FATAL, "Invalid canvas size: %s.\n", canvas_size);
@@ -1201,8 +1190,8 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         /* Compute the size of the canvas for the subtitles stream.
            If the subtitles codecpar has set a size, use it. Otherwise use the
            maximum dimensions of the video streams in the same file. */
-        ist->sub2video.w = ist->dec_ctx->width;
-        ist->sub2video.h = ist->dec_ctx->height;
+        ist->sub2video.w = par->width;
+        ist->sub2video.h = par->height;
         if (!(ist->sub2video.w && ist->sub2video.h)) {
             for (int j = 0; j < ic->nb_streams; j++) {
                 AVCodecParameters *par1 = ic->streams[j]->codecpar;
@@ -1224,6 +1213,16 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     case AVMEDIA_TYPE_UNKNOWN:
         break;
     default: av_assert0(0);
+    }
+
+    ist->dec_ctx = avcodec_alloc_context3(ist->dec);
+    if (!ist->dec_ctx)
+        return AVERROR(ENOMEM);
+
+    ret = avcodec_parameters_to_context(ist->dec_ctx, par);
+    if (ret < 0) {
+        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+        return ret;
     }
 
     ist->par = avcodec_parameters_alloc();
