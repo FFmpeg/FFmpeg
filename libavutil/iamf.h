@@ -385,6 +385,12 @@ AVIAMFAudioElement *av_iamf_audio_element_alloc(void);
  */
 AVIAMFLayer *av_iamf_audio_element_add_layer(AVIAMFAudioElement *audio_element);
 
+/**
+ * Free an AVIAMFAudioElement and all its contents.
+ *
+ * @param audio_element pointer to pointer to an allocated AVIAMFAudioElement.
+ *                      upon return, *audio_element will be set to NULL.
+ */
 void av_iamf_audio_element_free(AVIAMFAudioElement **audio_element);
 
 /**
@@ -617,6 +623,12 @@ AVIAMFSubmixElement *av_iamf_submix_add_element(AVIAMFSubmix *submix);
  */
 AVIAMFSubmixLayout *av_iamf_submix_add_layout(AVIAMFSubmix *submix);
 
+/**
+ * Free an AVIAMFMixPresentation and all its contents.
+ *
+ * @param mix_presentation pointer to pointer to an allocated AVIAMFMixPresentation.
+ *                         upon return, *mix_presentation will be set to NULL.
+ */
 void av_iamf_mix_presentation_free(AVIAMFMixPresentation **mix_presentation);
 /**
  * @}
