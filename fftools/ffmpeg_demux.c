@@ -1223,8 +1223,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     case AVMEDIA_TYPE_ATTACHMENT:
     case AVMEDIA_TYPE_UNKNOWN:
         break;
-    default:
-        abort();
+    default: av_assert0(0);
     }
 
     ist->par = avcodec_parameters_alloc();
