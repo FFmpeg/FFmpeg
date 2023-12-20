@@ -111,6 +111,7 @@ typedef struct DNXHDEncContext {
                                const uint8_t *pixels, ptrdiff_t line_size);
 } DNXHDEncContext;
 
+void ff_dnxhdenc_init(DNXHDEncContext *ctx);
 void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx);
 
 #endif /* AVCODEC_DNXHDENC_H */

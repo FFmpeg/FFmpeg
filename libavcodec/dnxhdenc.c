@@ -445,9 +445,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
         ctx->block_width_l2     = 3;
     }
 
-#if ARCH_X86
-    ff_dnxhdenc_init_x86(ctx);
-#endif
+    ff_dnxhdenc_init(ctx);
 
     ctx->m.mb_height = (avctx->height + 15) / 16;
     ctx->m.mb_width  = (avctx->width  + 15) / 16;
@@ -1377,3 +1375,10 @@ const FFCodec ff_dnxhd_encoder = {
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_dnxhd_profiles),
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
+
+void ff_dnxhdenc_init(DNXHDEncContext *ctx)
+{
+#if ARCH_X86
+    ff_dnxhdenc_init_x86(ctx);
+#endif
+}
