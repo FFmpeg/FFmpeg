@@ -115,14 +115,6 @@ void ff_remove_stream(AVFormatContext *s, AVStream *st)
     ff_free_stream(&s->streams[ --s->nb_streams ]);
 }
 
-void ff_remove_stream_group(AVFormatContext *s, AVStreamGroup *stg)
-{
-    av_assert0(s->nb_stream_groups > 0);
-    av_assert0(s->stream_groups[ s->nb_stream_groups - 1 ] == stg);
-
-    ff_free_stream_group(&s->stream_groups[ --s->nb_stream_groups ]);
-}
-
 /* XXX: suppress the packet queue */
 void ff_flush_packet_queue(AVFormatContext *s)
 {
