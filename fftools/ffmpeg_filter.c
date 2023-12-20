@@ -2835,7 +2835,7 @@ read_frames:
     for (unsigned i = 0; i < fg->nb_outputs; i++) {
         OutputFilterPriv *ofp = ofp_from_ofilter(fg->outputs[i]);
 
-        if (fgt.eof_out[i])
+        if (fgt.eof_out[i] || !fgt.graph)
             continue;
 
         ret = fg_output_frame(ofp, &fgt, NULL);
