@@ -349,6 +349,9 @@ static const AVClass *stream_group_child_iterate(void **opaque)
     const AVClass *ret = NULL;
 
     switch(i) {
+    case AV_STREAM_GROUP_PARAMS_NONE:
+        i++;
+    // fall-through
     case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
         ret = av_iamf_audio_element_get_class();
         break;
