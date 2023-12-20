@@ -7399,6 +7399,16 @@ if [ -n "$lto" ]; then
     check_cflags  $lto
     check_ldflags $lto $cpuflags
     disable inline_asm_direct_symbol_refs
+    if test "$cc_type" = "clang"; then
+        # Clang's LTO fails on Windows, when there are references outside
+        # of inline assembly to nonlocal labels defined within inline assembly,
+        # see https://github.com/llvm/llvm-project/issues/76046.
+        case $target_os in
+        mingw32|win32)
+            disable inline_asm_nonlocal_labels
+            ;;
+        esac
+    fi
 fi
 
 enabled ftrapv && check_cflags -ftrapv
