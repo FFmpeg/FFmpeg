@@ -188,9 +188,9 @@ int ff_vk_decode_prepare_frame(FFVulkanDecodeContext *dec, AVFrame *pic,
         return 0;
 
     vkpic->dpb_frame     = NULL;
-    vkpic->img_view_ref  = NULL;
-    vkpic->img_view_out  = NULL;
-    vkpic->img_view_dest = NULL;
+    vkpic->img_view_ref  = VK_NULL_HANDLE;
+    vkpic->img_view_out  = VK_NULL_HANDLE;
+    vkpic->img_view_dest = VK_NULL_HANDLE;
 
     vkpic->destroy_image_view = vk->DestroyImageView;
     vkpic->wait_semaphores = vk->WaitSemaphores;

@@ -180,7 +180,7 @@ static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf)
         .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
         .pNext = &av1_params,
         .videoSession = ctx->common.session,
-        .videoSessionParametersTemplate = NULL,
+        .videoSessionParametersTemplate = VK_NULL_HANDLE,
     };
 
     err = ff_vk_decode_create_params(buf, avctx, ctx, &session_params_create);

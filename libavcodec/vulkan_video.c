@@ -287,7 +287,7 @@ av_cold void ff_vk_video_common_uninit(FFVulkanContext *s,
     if (common->session) {
         vk->DestroyVideoSessionKHR(s->hwctx->act_dev, common->session,
                                    s->hwctx->alloc);
-        common->session = NULL;
+        common->session = VK_NULL_HANDLE;
     }
 
     if (common->nb_mem && common->mem)

@@ -653,7 +653,7 @@ static int vk_hevc_create_params(AVCodecContext *avctx, AVBufferRef **buf)
         .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
         .pNext = &h265_params,
         .videoSession = ctx->common.session,
-        .videoSessionParametersTemplate = NULL,
+        .videoSessionParametersTemplate = VK_NULL_HANDLE,
     };
 
     HEVCHeaderSet *hdr;
