@@ -931,7 +931,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
             }
 
             submix_layout->layout_type = byte >> 6;
-            if (submix_layout->layout_type < AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS &&
+            if (submix_layout->layout_type < AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS ||
                 submix_layout->layout_type > AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL) {
                 av_log(s, AV_LOG_ERROR, "Invalid Layout type %u in a submix from Mix Presentation %u\n",
                        submix_layout->layout_type, mix_presentation_id);
