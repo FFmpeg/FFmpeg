@@ -71,15 +71,6 @@ static void d3d12va_default_unlock(void *ctx)
     ReleaseMutex(ctx);
 }
 
-DXGI_FORMAT av_d3d12va_map_sw_to_hw_format(enum AVPixelFormat pix_fmt)
-{
-    switch (pix_fmt) {
-    case AV_PIX_FMT_NV12:return DXGI_FORMAT_NV12;
-    case AV_PIX_FMT_P010:return DXGI_FORMAT_P010;
-    default:             return DXGI_FORMAT_UNKNOWN;
-    }
-}
-
 static int d3d12va_fence_completion(AVD3D12VASyncContext *psync_ctx)
 {
     uint64_t completion = ID3D12Fence_GetCompletedValue(psync_ctx->fence);
