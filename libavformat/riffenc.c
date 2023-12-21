@@ -81,7 +81,7 @@ int ff_put_wav_header(AVFormatContext *s, AVIOContext *pb,
                             av_channel_layout_compare(&par->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) ||
                            par->sample_rate > 48000 ||
                            par->codec_id == AV_CODEC_ID_EAC3 || par->codec_id == AV_CODEC_ID_DFPWM ||
-                           av_get_bits_per_sample(par->codec_id) > 16;
+                           (av_get_bits_per_sample(par->codec_id) > 16 && par->codec_tag != 0x0003);
 
     if (waveformatextensible)
         avio_wl16(pb, 0xfffe);

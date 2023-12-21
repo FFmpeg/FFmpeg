@@ -1,4 +1,4 @@
-48b4cd378f47a50dc902aa03cc8280ed *tests/data/fate/acodec-pcm-f64le.wav
-4233680 tests/data/fate/acodec-pcm-f64le.wav
+69ffdb079600c53a00c5b0119b586a98 *tests/data/fate/acodec-pcm-f64le.wav
+4233658 tests/data/fate/acodec-pcm-f64le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-f64le.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
