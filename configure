@@ -7102,9 +7102,8 @@ fi
 
 check_func_headers "windows.h" CreateDIBSection "$gdigrab_indev_extralibs"
 
-# d3d11va requires linking directly to dxgi and d3d11 if not building for
-# the desktop api partition
-test_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
+# check if building for desktop or uwp
+test_cpp <<EOF && enable uwp
 #ifdef WINAPI_FAMILY
 #include <winapifamily.h>
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -7117,23 +7116,16 @@ test_cpp <<EOF && enable uwp && d3d11va_extralibs="-ldxgi -ld3d11"
 #endif
 EOF
 
-# vaapi_win32 requires linking directly to dxgi if not building for
-# the desktop api partition
-test_cpp <<EOF && enable uwp && vaapi_win32_extralibs="-ldxgi"
-#ifdef WINAPI_FAMILY
-#include <winapifamily.h>
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#error desktop, not uwp
-#else
-// WINAPI_FAMILY_APP, WINAPI_FAMILY_PHONE_APP => UWP
-#endif
-#else
-#error no family set
-#endif
-EOF
+mediafoundation_extralibs="-lmfuuid -lole32 -lstrmiids"
 
-# mediafoundation requires linking directly to mfplat if building for uwp target
-enabled uwp && mediafoundation_extralibs="-lmfplat -lmfuuid -lole32 -lstrmiids" || mediafoundation_extralibs="-lmfuuid -lole32 -lstrmiids"
+if enabled uwp; then
+    # In UWP mode, we can't use LoadLibrary+GetProcAddress to conditionally
+    # try to load these APIs at runtime, like we do in regular desktop mode -
+    # therefore, we need to link directly against these APIs.
+    d3d11va_extralibs="-ldxgi -ld3d11"
+    vaapi_win32_extralibs="-ldxgi"
+    mediafoundation_extralibs="-lmfplat $mediafoundation_extralibs"
+fi
 
 enabled libdrm &&
     check_pkg_config libdrm_getfb2 libdrm "xf86drmMode.h" drmModeGetFB2
