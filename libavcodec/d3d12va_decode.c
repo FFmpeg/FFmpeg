@@ -33,6 +33,7 @@
 #include "avcodec.h"
 #include "decode.h"
 #include "d3d12va_decode.h"
+#include "dxva2_internal.h"
 
 typedef struct HelperObjects {
     ID3D12CommandAllocator *command_allocator;
