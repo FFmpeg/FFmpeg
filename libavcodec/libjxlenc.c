@@ -85,8 +85,8 @@ static float quality_to_distance(float quality)
 }
 
 /**
- * Initalize the decoder on a per-frame basis. All of these need to be set
- * once each time the decoder is reset, which it must be each frame to make
+ * Initalize the encoder on a per-frame basis. All of these need to be set
+ * once each time the encoder is reset, which it must be each frame to make
  * the image2 muxer work.
  *
  * @return       0 upon success, negative on failure.
@@ -104,7 +104,7 @@ static int libjxl_init_jxl_encoder(AVCodecContext *avctx)
         return AVERROR_EXTERNAL;
     }
 
-    /* This needs to be set each time the decoder is reset */
+    /* This needs to be set each time the encoder is reset */
     if (JxlEncoderSetParallelRunner(ctx->encoder, JxlThreadParallelRunner, ctx->runner)
             != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to set JxlThreadParallelRunner\n");
@@ -446,7 +446,7 @@ static av_cold int libjxl_encode_close(AVCodecContext *avctx)
     ctx->runner = NULL;
 
     /*
-     * destroying the decoder also frees
+     * destroying the encoder also frees
      * ctx->options so we don't need to
      */
     if (ctx->encoder)
