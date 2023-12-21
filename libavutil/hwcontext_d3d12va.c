@@ -401,35 +401,35 @@ static int d3d12va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         linesizes[i] = FFALIGN(frame->width * (frames_hwctx->format == DXGI_FORMAT_P010 ? 2 : 1),
                                D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
 
-        staging_y_location = (D3D12_TEXTURE_COPY_LOCATION) {
-            .Type      = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-            .PlacedFootprint = {
-                .Offset = 0,
-                .Footprint = {
-                    .Format   = frames_hwctx->format == DXGI_FORMAT_P010 ?
-                                                        DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM,
-                    .Width    = ctx->width,
-                    .Height   = ctx->height,
-                    .Depth    = 1,
-                    .RowPitch = linesizes[0],
-                },
+    staging_y_location = (D3D12_TEXTURE_COPY_LOCATION) {
+        .Type      = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+        .PlacedFootprint = {
+            .Offset = 0,
+            .Footprint = {
+                .Format   = frames_hwctx->format == DXGI_FORMAT_P010 ?
+                                                    DXGI_FORMAT_R16_UNORM : DXGI_FORMAT_R8_UNORM,
+                .Width    = ctx->width,
+                .Height   = ctx->height,
+                .Depth    = 1,
+                .RowPitch = linesizes[0],
             },
-        };
+        },
+    };
 
-        staging_uv_location = (D3D12_TEXTURE_COPY_LOCATION) {
-            .Type      = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-            .PlacedFootprint = {
-                .Offset = s->luma_component_size,
-                .Footprint = {
-                    .Format   = frames_hwctx->format == DXGI_FORMAT_P010 ?
-                                                        DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R8G8_UNORM,
-                    .Width    = ctx->width  >> 1,
-                    .Height   = ctx->height >> 1,
-                    .Depth    = 1,
-                    .RowPitch = linesizes[0],
-                },
+    staging_uv_location = (D3D12_TEXTURE_COPY_LOCATION) {
+        .Type      = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+        .PlacedFootprint = {
+            .Offset = s->luma_component_size,
+            .Footprint = {
+                .Format   = frames_hwctx->format == DXGI_FORMAT_P010 ?
+                                                    DXGI_FORMAT_R16G16_UNORM : DXGI_FORMAT_R8G8_UNORM,
+                .Width    = ctx->width  >> 1,
+                .Height   = ctx->height >> 1,
+                .Depth    = 1,
+                .RowPitch = linesizes[0],
             },
-        };
+        },
+    };
 
     DX_CHECK(ID3D12CommandAllocator_Reset(s->command_allocator));
 
