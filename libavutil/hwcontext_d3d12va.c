@@ -164,8 +164,7 @@ fail:
 
 static void d3d12va_frames_uninit(AVHWFramesContext *ctx)
 {
-    AVD3D12VAFramesContext *frames_hwctx = ctx->hwctx;
-    D3D12VAFramesContext   *s            = ctx->internal->priv;
+    D3D12VAFramesContext *s = ctx->internal->priv;
 
     D3D12_OBJECT_RELEASE(s->sync_ctx.fence);
     if (s->sync_ctx.event)
@@ -271,9 +270,7 @@ fail:
 
 static int d3d12va_frames_init(AVHWFramesContext *ctx)
 {
-    AVD3D12VAFramesContext *hwctx        = ctx->hwctx;
-    AVD3D12VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    D3D12VAFramesContext   *s            = ctx->internal->priv;
+    AVD3D12VAFramesContext *hwctx = ctx->hwctx;
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++) {
@@ -326,7 +323,6 @@ static int d3d12va_transfer_get_formats(AVHWFramesContext *ctx,
                                         enum AVHWFrameTransferDirection dir,
                                         enum AVPixelFormat **formats)
 {
-    D3D12VAFramesContext *s = ctx->internal->priv;
     enum AVPixelFormat *fmts;
 
     fmts = av_malloc_array(2, sizeof(*fmts));
