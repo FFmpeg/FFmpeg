@@ -136,7 +136,7 @@ static int flac_decoder_config(IAMFCodecConfig *codec_config,
 static int ipcm_decoder_config(IAMFCodecConfig *codec_config,
                                AVIOContext *pb, int len)
 {
-    static const enum AVSampleFormat sample_fmt[2][3] = {
+    static const enum AVCodecID sample_fmt[2][3] = {
         { AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S24BE, AV_CODEC_ID_PCM_S32BE },
         { AV_CODEC_ID_PCM_S16LE, AV_CODEC_ID_PCM_S24LE, AV_CODEC_ID_PCM_S32LE },
     };
