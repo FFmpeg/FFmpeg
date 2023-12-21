@@ -4711,6 +4711,7 @@ msvc_common_flags(){
             -fPIC)                ;;
             -mthumb)              ;;
             -march=*)             ;;
+            -mfp16-format=*)      ;;
             -lz)                  echo zlib.lib ;;
             -lx264)               echo libx264.lib ;;
             -lstdc++)             ;;
