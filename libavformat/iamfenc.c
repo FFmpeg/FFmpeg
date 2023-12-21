@@ -88,7 +88,7 @@ static int iamf_init(AVFormatContext *s)
         if (stg->type == AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION)
             nb_mix_presentations++;
     }
-    if ((nb_audio_elements < 1 && nb_audio_elements > 2) || nb_mix_presentations < 1) {
+    if ((nb_audio_elements < 1 || nb_audio_elements > 2) || nb_mix_presentations < 1) {
         av_log(s, AV_LOG_ERROR, "There must be >= 1 and <= 2 IAMF_AUDIO_ELEMENT and at least "
                                 "one IAMF_MIX_PRESENTATION stream groups\n");
         return AVERROR(EINVAL);
