@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
@@ -178,6 +179,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     x2[0] = x2[3] = x2[0];
     y2[1] = y2[2] = FF_CEIL_RSHIFT(y2[0], s->desc->log2_chroma_h);
     y2[0] = y2[3] = y2[0];
+
+
+    av_assert0(FFMAX(x1[1], x2[1]) + pw[1] <= lw[1]);
+    av_assert0(FFMAX(y1[1], y2[1]) + ph[1] <= lh[1]);
 
     for (p = 0; p < s->nb_planes; p++) {
         if (ph[p] == ah[p] && pw[p] == aw[p]) {
