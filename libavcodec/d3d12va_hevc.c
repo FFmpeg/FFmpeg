@@ -171,11 +171,11 @@ static int d3d12va_hevc_decode_init(AVCodecContext *avctx)
     DXVA_PicParams_HEVC pp;
 
     switch (avctx->profile) {
-    case FF_PROFILE_HEVC_MAIN_10:
+    case AV_PROFILE_HEVC_MAIN_10:
         ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_HEVC_MAIN10;
         break;
 
-    case FF_PROFILE_HEVC_MAIN_STILL_PICTURE:
+    case AV_PROFILE_HEVC_MAIN_STILL_PICTURE:
         if (avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH) {
             ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_HEVC_MAIN;
             break;
@@ -184,7 +184,7 @@ static int d3d12va_hevc_decode_init(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
 
-    case FF_PROFILE_HEVC_MAIN:
+    case AV_PROFILE_HEVC_MAIN:
     default:
         ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_HEVC_MAIN;
         break;

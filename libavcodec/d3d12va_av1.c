@@ -164,7 +164,7 @@ static int d3d12va_av1_decode_init(AVCodecContext *avctx)
 
     int ret;
 
-    if (avctx->profile != FF_PROFILE_AV1_MAIN)
+    if (avctx->profile != AV_PROFILE_AV1_MAIN)
         return AVERROR(EINVAL);
 
     ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_AV1_PROFILE0;

@@ -136,13 +136,13 @@ static int d3d12va_vp9_decode_init(AVCodecContext *avctx)
     DXVA_PicParams_VP9 pp;
 
     switch (avctx->profile) {
-    case FF_PROFILE_VP9_2:
-    case FF_PROFILE_VP9_3:
+    case AV_PROFILE_VP9_2:
+    case AV_PROFILE_VP9_3:
         ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_VP9_10BIT_PROFILE2;
         break;
 
-    case FF_PROFILE_VP9_0:
-    case FF_PROFILE_VP9_1:
+    case AV_PROFILE_VP9_0:
+    case AV_PROFILE_VP9_1:
     default:
         ctx->cfg.DecodeProfile = D3D12_VIDEO_DECODE_PROFILE_VP9;
         break;
