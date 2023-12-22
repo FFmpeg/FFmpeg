@@ -28,6 +28,7 @@
 void ff_decorrelate_ls_rvv(const int32_t *p1, int32_t *p2, int length);
 void ff_decorrelate_sr_rvv(int32_t *p1, const int32_t *p2, int length);
 void ff_decorrelate_sm_rvv(int32_t *p1, int32_t *p2, int length);
+void ff_decorrelate_sf_rvv(int32_t *p1, const int32_t *p2, int len, int, int);
 
 av_cold void ff_takdsp_init_riscv(TAKDSPContext *dsp)
 {
@@ -38,6 +39,7 @@ av_cold void ff_takdsp_init_riscv(TAKDSPContext *dsp)
         dsp->decorrelate_ls = ff_decorrelate_ls_rvv;
         dsp->decorrelate_sr = ff_decorrelate_sr_rvv;
         dsp->decorrelate_sm = ff_decorrelate_sm_rvv;
+        dsp->decorrelate_sf = ff_decorrelate_sf_rvv;
     }
 #endif
 }

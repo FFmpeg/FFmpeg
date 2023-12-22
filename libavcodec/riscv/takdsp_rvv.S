@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ * Copyright (c) 2023 Rémi Denis-Courmont
  *
  * This file is part of FFmpeg.
  *
@@ -61,6 +62,26 @@ func ff_decorrelate_sm_rvv, zve32x
         vadd.vv  v8, v0, v8
         vse32.v  v8, (a1)
         sh2add   a1, t0, a1
+        bnez     a2, 1b
+
+        ret
+endfunc
+
+func ff_decorrelate_sf_rvv, zve32x
+        csrwi    vxrm, 0
+1:
+        vsetvli  t0, a2, e32, m8, ta, ma
+        vle32.v  v8, (a1)
+        sub      a2, a2, t0
+        vsra.vx  v8, v8, a3
+        sh2add   a1, t0, a1
+        vle32.v  v0, (a0)
+        vmul.vx  v8, v8, a4
+        vssra.vi v8, v8, 8
+        vsll.vx  v8, v8, a3
+        vsub.vv  v0, v8, v0
+        vse32.v  v0, (a0)
+        sh2add   a0, t0, a0
         bnez     a2, 1b
 
         ret
