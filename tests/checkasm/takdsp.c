@@ -44,12 +44,12 @@ static void test_decorrelate_ls(TAKDSPContext *s) {
 
         randomize(p1, BUF_SIZE);
         randomize(p2, BUF_SIZE);
-        memcpy(p2_2, p2, BUF_SIZE);
+        memcpy(p2_2, p2, BUF_SIZE * sizeof(*p2));
 
         call_ref(p1, p2, BUF_SIZE);
         call_new(p1, p2_2, BUF_SIZE);
 
-        if (memcmp(p2, p2_2, BUF_SIZE) != 0){
+        if (memcmp(p2, p2_2, BUF_SIZE * sizeof(*p2)) != 0) {
             fail();
         }
 
@@ -65,17 +65,17 @@ static void test_decorrelate_sr(TAKDSPContext *s) {
 
     if (check_func(s->decorrelate_sr, "decorrelate_sr")) {
         LOCAL_ALIGNED_32(int32_t, p1, [BUF_SIZE]);
+        LOCAL_ALIGNED_32(int32_t, p1_2, [BUF_SIZE]);
         LOCAL_ALIGNED_32(int32_t, p2, [BUF_SIZE]);
-        LOCAL_ALIGNED_32(int32_t, p2_2, [BUF_SIZE]);
 
         randomize(p1, BUF_SIZE);
+        memcpy(p1_2, p1, BUF_SIZE * sizeof(*p1));
         randomize(p2, BUF_SIZE);
-        memcpy(p2_2, p2, BUF_SIZE);
 
         call_ref(p1, p2, BUF_SIZE);
-        call_new(p1, p2_2, BUF_SIZE);
+        call_new(p1_2, p2, BUF_SIZE);
 
-        if (memcmp(p2, p2_2, BUF_SIZE) != 0){
+        if (memcmp(p1, p1_2, BUF_SIZE * sizeof(*p1)) != 0) {
             fail();
         }
 
@@ -96,14 +96,15 @@ static void test_decorrelate_sm(TAKDSPContext *s) {
         LOCAL_ALIGNED_32(int32_t, p2_2, [BUF_SIZE]);
 
         randomize(p1, BUF_SIZE);
-        memcpy(p1, p1_2, BUF_SIZE);
+        memcpy(p1_2, p1, BUF_SIZE * sizeof(*p1));
         randomize(p2, BUF_SIZE);
-        memcpy(p2_2, p2, BUF_SIZE);
+        memcpy(p2_2, p2, BUF_SIZE * sizeof(*p2));
 
         call_ref(p1, p2, BUF_SIZE);
         call_new(p1_2, p2_2, BUF_SIZE);
 
-        if (memcmp(p2, p2_2, BUF_SIZE) != 0){
+        if (memcmp(p1, p1_2, BUF_SIZE * sizeof(*p1)) != 0 ||
+            memcmp(p2, p2_2, BUF_SIZE * sizeof(*p2)) != 0) {
             fail();
         }
 
