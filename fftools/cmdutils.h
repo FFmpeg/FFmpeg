@@ -158,17 +158,22 @@ typedef struct OptionDef {
    Always use as OPT_SPEC in option definitions. */
 #define OPT_FLAG_SPEC   (1 << 9)
 #define OPT_SPEC        (OPT_FLAG_SPEC | OPT_OFFSET)
+
+/* Option applies per-stream (implies OPT_SPEC). */
+#define OPT_FLAG_PERSTREAM  (1 << 10)
+#define OPT_PERSTREAM   (OPT_FLAG_PERSTREAM | OPT_SPEC)
+
 /* ffmpeg-only - specifies whether an OPT_PERFILE option applies to input,
  * output, or both. */
-#define OPT_INPUT       (1 << 10)
-#define OPT_OUTPUT      (1 << 11)
+#define OPT_INPUT       (1 << 11)
+#define OPT_OUTPUT      (1 << 12)
 
 /* This option is a "canonical" form, to which one or more alternatives
  * exist. These alternatives are listed in u1.names_alt. */
-#define OPT_HAS_ALT     (1 << 12)
+#define OPT_HAS_ALT     (1 << 13)
 /* This option is an alternative form of some other option, whose
  * name is stored in u1.name_canon */
-#define OPT_HAS_CANON   (1 << 13)
+#define OPT_HAS_CANON   (1 << 14)
 
      union {
         void *dst_ptr;
