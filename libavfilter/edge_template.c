@@ -74,6 +74,7 @@ void fn(gaussian_blur)(int w, int h,
                        uint8_t *dst, int dst_linesize,
                        const uint8_t *src, int src_linesize, int src_stride)
 {
+    int j;
     pixel *srcp = (pixel *)src;
     pixel *dstp = (pixel *)dst;
 
@@ -81,12 +82,17 @@ void fn(gaussian_blur)(int w, int h,
     src_linesize /= sizeof(pixel);
     dst_linesize /= sizeof(pixel);
 
-    memcpy(dstp, srcp, w*sizeof(pixel)); dstp += dst_linesize; srcp += src_linesize;
-    memcpy(dstp, srcp, w*sizeof(pixel)); dstp += dst_linesize; srcp += src_linesize;
-    for (int j = 2; j < h - 2; j++) {
-        dstp[0] = srcp[(0)*src_stride];
-        dstp[1] = srcp[(1)*src_stride];
-        for (int i = 2; i < w - 2; i++) {
+    for (j = 0; j < FFMIN(h, 2); j++) {
+        memcpy(dstp, srcp, w*sizeof(pixel));
+        dstp += dst_linesize;
+        srcp += src_linesize;
+    }
+
+    for (; j < h - 2; j++) {
+        int i;
+        for (i = 0; i < FFMIN(w, 2); i++)
+            dstp[i] = srcp[i*src_stride];
+        for (; i < w - 2; i++) {
             /* Gaussian mask of size 5x5 with sigma = 1.4 */
             dstp[i] = ((srcp[-2*src_linesize + (i-2)*src_stride] + srcp[2*src_linesize + (i-2)*src_stride]) * 2
                      + (srcp[-2*src_linesize + (i-1)*src_stride] + srcp[2*src_linesize + (i-1)*src_stride]) * 4
@@ -106,12 +112,15 @@ void fn(gaussian_blur)(int w, int h,
                      + srcp[(i+1)*src_stride] * 12
                      + srcp[(i+2)*src_stride] *  5) / 159;
         }
-        dstp[w - 2] = srcp[(w - 2)*src_stride];
-        dstp[w - 1] = srcp[(w - 1)*src_stride];
+        for (; i < w; i++)
+            dstp[i] = srcp[i*src_stride];
 
         dstp += dst_linesize;
         srcp += src_linesize;
     }
-    memcpy(dstp, srcp, w*sizeof(pixel)); dstp += dst_linesize; srcp += src_linesize;
-    memcpy(dstp, srcp, w*sizeof(pixel));
+    for (; j < h; j++) {
+        memcpy(dstp, srcp, w*sizeof(pixel));
+        dstp += dst_linesize;
+        srcp += src_linesize;
+    }
 }
