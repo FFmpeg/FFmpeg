@@ -24,6 +24,7 @@
 #include "libavutil/mem_internal.h"
 
 #include "libavcodec/takdsp.h"
+#include "libavcodec/mathops.h"
 
 #include "checkasm.h"
 
@@ -33,8 +34,9 @@
             buf[i] = rnd(); \
     } while (0)
 
-static void test_decorrelate_ls(TAKDSPContext *s) {
 #define BUF_SIZE 1024
+
+static void test_decorrelate_ls(TAKDSPContext *s) {
     declare_func(void, int32_t *, int32_t *, int);
 
     if (check_func(s->decorrelate_ls, "decorrelate_ls")) {
@@ -60,7 +62,6 @@ static void test_decorrelate_ls(TAKDSPContext *s) {
 }
 
 static void test_decorrelate_sr(TAKDSPContext *s) {
-#define BUF_SIZE 1024
     declare_func(void, int32_t *, int32_t *, int);
 
     if (check_func(s->decorrelate_sr, "decorrelate_sr")) {
@@ -86,7 +87,6 @@ static void test_decorrelate_sr(TAKDSPContext *s) {
 }
 
 static void test_decorrelate_sm(TAKDSPContext *s) {
-#define BUF_SIZE 1024
     declare_func(void, int32_t *, int32_t *, int);
 
     if (check_func(s->decorrelate_sm, "decorrelate_sm")) {
@@ -114,6 +114,34 @@ static void test_decorrelate_sm(TAKDSPContext *s) {
     report("decorrelate_sm");
 }
 
+static void test_decorrelate_sf(TAKDSPContext *s) {
+    declare_func(void, int32_t *, int32_t *, int, int, int);
+
+    if (check_func(s->decorrelate_sf, "decorrelate_sf")) {
+        LOCAL_ALIGNED_32(int32_t, p1, [BUF_SIZE]);
+        LOCAL_ALIGNED_32(int32_t, p1_2, [BUF_SIZE]);
+        LOCAL_ALIGNED_32(int32_t, p2, [BUF_SIZE]);
+        int dshift, dfactor;
+
+        randomize(p1, BUF_SIZE);
+        memcpy(p1_2, p1, BUF_SIZE * sizeof(*p1));
+        randomize(p2, BUF_SIZE);
+        dshift = (rnd() & 0xF) + 1;
+        dfactor = sign_extend(rnd(), 10);
+
+        call_ref(p1, p2, BUF_SIZE, dshift, dfactor);
+        call_new(p1_2, p2, BUF_SIZE, dshift, dfactor);
+
+        if (memcmp(p1, p1_2, BUF_SIZE * sizeof(*p1)) != 0) {
+            fail();
+        }
+
+        bench_new(p1, p2, BUF_SIZE, dshift, dfactor);
+    }
+
+    report("decorrelate_sf");
+}
+
 void checkasm_check_takdsp(void)
 {
     TAKDSPContext s = { 0 };
@@ -122,4 +150,5 @@ void checkasm_check_takdsp(void)
     test_decorrelate_ls(&s);
     test_decorrelate_sr(&s);
     test_decorrelate_sm(&s);
+    test_decorrelate_sf(&s);
 }
