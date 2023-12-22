@@ -37,7 +37,7 @@
 #define BUF_SIZE 1024
 
 static void test_decorrelate_ls(TAKDSPContext *s) {
-    declare_func(void, int32_t *, int32_t *, int);
+    declare_func(void, const int32_t *, int32_t *, int);
 
     if (check_func(s->decorrelate_ls, "decorrelate_ls")) {
         LOCAL_ALIGNED_32(int32_t, p1, [BUF_SIZE]);
@@ -62,7 +62,7 @@ static void test_decorrelate_ls(TAKDSPContext *s) {
 }
 
 static void test_decorrelate_sr(TAKDSPContext *s) {
-    declare_func(void, int32_t *, int32_t *, int);
+    declare_func(void, int32_t *, const int32_t *, int);
 
     if (check_func(s->decorrelate_sr, "decorrelate_sr")) {
         LOCAL_ALIGNED_32(int32_t, p1, [BUF_SIZE]);
@@ -115,7 +115,7 @@ static void test_decorrelate_sm(TAKDSPContext *s) {
 }
 
 static void test_decorrelate_sf(TAKDSPContext *s) {
-    declare_func(void, int32_t *, int32_t *, int, int, int);
+    declare_func(void, int32_t *, const int32_t *, int, int, int);
 
     if (check_func(s->decorrelate_sf, "decorrelate_sf")) {
         LOCAL_ALIGNED_32(int32_t, p1, [BUF_SIZE]);

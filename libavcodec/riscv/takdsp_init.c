@@ -25,8 +25,8 @@
 #include "libavutil/riscv/cpu.h"
 #include "libavcodec/takdsp.h"
 
-void ff_decorrelate_ls_rvv(int32_t *p1, int32_t *p2, int length);
-void ff_decorrelate_sr_rvv(int32_t *p1, int32_t *p2, int length);
+void ff_decorrelate_ls_rvv(const int32_t *p1, int32_t *p2, int length);
+void ff_decorrelate_sr_rvv(int32_t *p1, const int32_t *p2, int length);
 
 av_cold void ff_takdsp_init_riscv(TAKDSPContext *dsp)
 {

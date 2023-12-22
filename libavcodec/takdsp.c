@@ -23,7 +23,7 @@
 #include "takdsp.h"
 #include "config.h"
 
-static void decorrelate_ls(int32_t *p1, int32_t *p2, int length)
+static void decorrelate_ls(const int32_t *p1, int32_t *p2, int length)
 {
     int i;
 
@@ -34,7 +34,7 @@ static void decorrelate_ls(int32_t *p1, int32_t *p2, int length)
     }
 }
 
-static void decorrelate_sr(int32_t *p1, int32_t *p2, int length)
+static void decorrelate_sr(int32_t *p1, const int32_t *p2, int length)
 {
     int i;
 
@@ -58,7 +58,7 @@ static void decorrelate_sm(int32_t *p1, int32_t *p2, int length)
     }
 }
 
-static void decorrelate_sf(int32_t *p1, int32_t *p2, int length, int dshift, int dfactor)
+static void decorrelate_sf(int32_t *p1, const int32_t *p2, int length, int dshift, int dfactor)
 {
     int i;
 
