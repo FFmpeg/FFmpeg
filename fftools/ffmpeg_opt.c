@@ -1198,7 +1198,10 @@ void show_help_default(const char *opt, const char *arg)
            "\n", program_name);
 
     show_help_options(options, "Print help / information / capabilities:",
-                      OPT_EXIT, 0, 0);
+                      OPT_EXIT, OPT_EXPERT, 0);
+    if (show_advanced)
+        show_help_options(options, "Advanced information / capabilities:",
+                          OPT_EXIT | OPT_EXPERT, 0, 0);
 
     show_help_options(options, "Global options (affect whole program "
                       "instead of just one file):",
@@ -1807,7 +1810,7 @@ const OptionDef options[] = {
     { "hwaccel_output_format",      OPT_TYPE_STRING, OPT_VIDEO | OPT_EXPERT | OPT_SPEC | OPT_INPUT,
         { .off = OFFSET(hwaccel_output_formats) },
         "select output format used with HW accelerated decoding", "format" },
-    { "hwaccels",                   OPT_TYPE_FUNC,   OPT_EXIT,
+    { "hwaccels",                   OPT_TYPE_FUNC,   OPT_EXIT | OPT_EXPERT,
         { .func_arg = show_hwaccels },
         "show available HW acceleration methods" },
     { "autorotate",                 OPT_TYPE_BOOL,   OPT_SPEC | OPT_EXPERT | OPT_INPUT,
