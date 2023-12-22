@@ -469,8 +469,8 @@ static int d3d12va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         DX_CHECK(ID3D12Resource_Map(s->staging_download_buffer, 0, NULL, (void **)&mapped_data));
         av_image_fill_pointers(data, ctx->sw_format, ctx->height, mapped_data, linesizes);
 
-        av_image_copy(dst->data, dst->linesize,  (const uint8_t **)data, linesizes,
-                      ctx->sw_format, ctx->width, ctx->height);
+        av_image_copy2(dst->data, dst->linesize, data, linesizes,
+                       ctx->sw_format, ctx->width, ctx->height);
 
         ID3D12Resource_Unmap(s->staging_download_buffer, 0, NULL);
     } else {
@@ -487,8 +487,8 @@ static int d3d12va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
         DX_CHECK(ID3D12Resource_Map(s->staging_upload_buffer, 0, NULL, (void **)&mapped_data));
         av_image_fill_pointers(data, ctx->sw_format, ctx->height, mapped_data, linesizes);
 
-        av_image_copy(data, linesizes,  (const uint8_t **)src->data, src->linesize,
-                      ctx->sw_format, ctx->width, ctx->height);
+        av_image_copy2(data, linesizes, src->data, src->linesize,
+                       ctx->sw_format, ctx->width, ctx->height);
 
         ID3D12Resource_Unmap(s->staging_upload_buffer, 0, NULL);
 
