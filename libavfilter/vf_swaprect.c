@@ -150,10 +150,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     w = dw; h = dh; x1[0] = dx1; y1[0] = dy1; x2[0] = dx2; y2[0] = dy2;
 
     x1[0] = av_clip(x1[0], 0, inlink->w - 1);
-    y1[0] = av_clip(y1[0], 0, inlink->w - 1);
+    y1[0] = av_clip(y1[0], 0, inlink->h - 1);
 
     x2[0] = av_clip(x2[0], 0, inlink->w - 1);
-    y2[0] = av_clip(y2[0], 0, inlink->w - 1);
+    y2[0] = av_clip(y2[0], 0, inlink->h - 1);
 
     ah[1] = ah[2] = AV_CEIL_RSHIFT(h, s->desc->log2_chroma_h);
     ah[0] = ah[3] = h;
