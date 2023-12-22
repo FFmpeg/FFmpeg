@@ -195,9 +195,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                     int j = i % buffer_size;
                     double ppeak = 0, pdelta;
 
-                    for (c = 0; c < channels; c++) {
-                        ppeak = FFMAX(ppeak, fabs(buffer[nextpos[j] + c]));
-                    }
+                    if (nextpos[j] >= 0)
+                        for (c = 0; c < channels; c++) {
+                            ppeak = FFMAX(ppeak, fabs(buffer[nextpos[j] + c]));
+                        }
                     pdelta = (limit / peak - limit / ppeak) / (((buffer_size - nextpos[j] + s->pos) % buffer_size) / channels);
                     if (pdelta < nextdelta[j]) {
                         nextdelta[j] = pdelta;
