@@ -176,10 +176,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             } else {
                 for (i = s->nextiter; i < s->nextiter + s->nextlen; i++) {
                     int j = i % buffer_size;
-                    double ppeak, pdelta;
+                    double ppeak = 0, pdelta;
 
-                    ppeak = fabs(buffer[nextpos[j]]) > fabs(buffer[nextpos[j] + 1]) ?
-                            fabs(buffer[nextpos[j]]) : fabs(buffer[nextpos[j] + 1]);
+                    if (nextpos[j] >= 0)
+                        ppeak = fabs(buffer[nextpos[j]]) > fabs(buffer[nextpos[j] + 1]) ?
+                                fabs(buffer[nextpos[j]]) : fabs(buffer[nextpos[j] + 1]);
                     pdelta = (limit / peak - limit / ppeak) / (((buffer_size - nextpos[j] + s->pos) % buffer_size) / channels);
                     if (pdelta < nextdelta[j]) {
                         nextdelta[j] = pdelta;
