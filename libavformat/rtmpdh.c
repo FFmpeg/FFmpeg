@@ -113,15 +113,18 @@ static int bn_modexp(FFBigNum bn, FFBigNum y, FFBigNum q, FFBigNum p)
     return 0;
 }
 #elif CONFIG_GCRYPT
-#define bn_new(bn)                                              \
-    do {                                                        \
-        if (!gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P)) { \
-            if (!gcry_check_version("1.5.4"))                   \
-                return AVERROR(EINVAL);                         \
-            gcry_control(GCRYCTL_DISABLE_SECMEM, 0);            \
-            gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0);   \
-        }                                                       \
-        bn = gcry_mpi_new(1);                                   \
+#define bn_new(bn)                                                \
+    do {                                                          \
+        if (!gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P)) {   \
+            if (gcry_check_version("1.5.4")) {                    \
+                gcry_control(GCRYCTL_DISABLE_SECMEM, 0);          \
+                gcry_control(GCRYCTL_INITIALIZATION_FINISHED, 0); \
+            }                                                     \
+        }                                                         \
+        if (gcry_control(GCRYCTL_INITIALIZATION_FINISHED_P))      \
+            bn = gcry_mpi_new(1);                                 \
+        else                                                      \
+            bn = NULL;                                            \
     } while (0)
 #define bn_free(bn)                 gcry_mpi_release(bn)
 #define bn_set_word(bn, w)          gcry_mpi_set_ui(bn, w)
