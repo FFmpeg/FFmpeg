@@ -1300,7 +1300,6 @@ static const AVOption options[] = {
 
 static const AVClass dolby_e_decoder_class = {
     .class_name = "Dolby E decoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

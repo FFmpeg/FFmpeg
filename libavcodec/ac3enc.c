@@ -130,7 +130,6 @@ const AVOption ff_ac3_enc_options[] = {
 
 const AVClass ff_ac3enc_class = {
     .class_name = "AC-3 Encoder",
-    .item_name  = av_default_item_name,
     .option     = ff_ac3_enc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

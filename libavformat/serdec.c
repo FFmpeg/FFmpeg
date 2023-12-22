@@ -127,7 +127,6 @@ static const AVOption ser_options[] = {
 
 static const AVClass ser_demuxer_class = {
     .class_name = "ser demuxer",
-    .item_name  = av_default_item_name,
     .option     = ser_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

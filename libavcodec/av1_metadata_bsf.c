@@ -211,7 +211,6 @@ static const AVOption av1_metadata_options[] = {
 
 static const AVClass av1_metadata_class = {
     .class_name = "av1_metadata_bsf",
-    .item_name  = av_default_item_name,
     .option     = av1_metadata_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

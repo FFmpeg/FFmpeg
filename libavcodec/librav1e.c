@@ -667,7 +667,6 @@ const enum AVPixelFormat librav1e_pix_fmts[] = {
 
 static const AVClass class = {
     .class_name = "librav1e",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -1462,7 +1462,6 @@ static const FFCodecDefault x264_defaults[] = {
 #if CONFIG_LIBX264_ENCODER
 static const AVClass x264_class = {
     .class_name = "libx264",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -1504,7 +1503,6 @@ FFCodec ff_libx264_encoder = {
 #if CONFIG_LIBX264RGB_ENCODER
 static const AVClass rgbclass = {
     .class_name = "libx264rgb",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -1536,7 +1534,6 @@ const FFCodec ff_libx264rgb_encoder = {
 #if CONFIG_LIBX262_ENCODER
 static const AVClass X262_class = {
     .class_name = "libx262",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

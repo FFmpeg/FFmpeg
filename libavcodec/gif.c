@@ -542,7 +542,6 @@ static const AVOption gif_options[] = {
 
 static const AVClass gif_class = {
     .class_name = "GIF encoder",
-    .item_name  = av_default_item_name,
     .option     = gif_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

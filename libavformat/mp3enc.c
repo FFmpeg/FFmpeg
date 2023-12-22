@@ -515,7 +515,6 @@ static const AVOption options[] = {
 
 static const AVClass mp3_muxer_class = {
     .class_name     = "MP3 muxer",
-    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

@@ -414,7 +414,6 @@ static const FFCodecDefault v4l2_m2m_defaults[] = {
 #define M2MENC_CLASS(NAME, OPTIONS_NAME) \
     static const AVClass v4l2_m2m_ ## NAME ## _enc_class = { \
         .class_name = #NAME "_v4l2m2m_encoder", \
-        .item_name  = av_default_item_name, \
         .option     = OPTIONS_NAME, \
         .version    = LIBAVUTIL_VERSION_INT, \
     };

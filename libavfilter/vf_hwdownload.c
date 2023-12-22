@@ -167,7 +167,6 @@ static av_cold void hwdownload_uninit(AVFilterContext *avctx)
 
 static const AVClass hwdownload_class = {
     .class_name = "hwdownload",
-    .item_name  = av_default_item_name,
     .option     = NULL,
     .version    = LIBAVUTIL_VERSION_INT,
 };

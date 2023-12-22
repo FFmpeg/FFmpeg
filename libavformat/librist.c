@@ -252,7 +252,6 @@ static int librist_write(URLContext *h, const uint8_t *buf, int size)
 
 static const AVClass librist_class = {
     .class_name = "librist",
-    .item_name  = av_default_item_name,
     .option     = librist_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

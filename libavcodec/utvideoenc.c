@@ -654,7 +654,6 @@ static const AVOption options[] = {
 
 static const AVClass utvideo_class = {
     .class_name = "utvideo",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -167,7 +167,6 @@ static const FFCodecDefault defaults[] = {
 
 static const AVClass av1_nvenc_class = {
     .class_name = "av1_nvenc",
-    .item_name = av_default_item_name,
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };

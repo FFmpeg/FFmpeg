@@ -564,7 +564,6 @@ static const AVOption options[] = {
 
 static const AVClass tiffenc_class = {
     .class_name = "TIFF encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

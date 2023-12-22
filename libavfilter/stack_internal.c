@@ -336,7 +336,6 @@ static const AVFilterPad stack_outputs[] = {
 #define DEFINE_STACK_FILTER(category, api, capi, filter_flags)          \
     static const AVClass category##_##api##_class = {                   \
         .class_name = #category "_" #api,                               \
-        .item_name  = av_default_item_name,                             \
         .option     = category##_##api##_options,                       \
         .version    = LIBAVUTIL_VERSION_INT,                            \
     };                                                                  \

@@ -2962,7 +2962,6 @@ static const AVOption options[] = {
 
 static const AVClass wavpack_encoder_class = {
     .class_name = "WavPack encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

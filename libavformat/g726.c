@@ -69,7 +69,6 @@ static const AVOption options[] = {
 
 static const AVClass g726_demuxer_class = {
     .class_name     = "G.726 demuxer",
-    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

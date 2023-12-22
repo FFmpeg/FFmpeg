@@ -2194,7 +2194,6 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
     };
     const AVClass class = {
         .class_name = "StreamGroupType",
-        .item_name  = av_default_item_name,
         .option     = opts,
         .version    = LIBAVUTIL_VERSION_INT,
     };

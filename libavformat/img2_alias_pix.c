@@ -56,7 +56,6 @@ static int alias_pix_read_probe(const AVProbeData *p)
 
 static const AVClass image2_alias_pix_class = {
     .class_name = "alias_pix demuxer",
-    .item_name  = av_default_item_name,
     .option     = ff_img_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

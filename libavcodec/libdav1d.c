@@ -682,7 +682,6 @@ static const AVOption libdav1d_options[] = {
 
 static const AVClass libdav1d_class = {
     .class_name = "libdav1d decoder",
-    .item_name  = av_default_item_name,
     .option     = libdav1d_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -719,7 +719,6 @@ static const AVOption opusenc_options[] = {
 
 static const AVClass opusenc_class = {
     .class_name = "Opus encoder",
-    .item_name  = av_default_item_name,
     .option     = opusenc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -1155,7 +1155,6 @@ static const AVCodecHWConfigInternal *const cuvid_hw_configs[] = {
 #define DEFINE_CUVID_CODEC(x, X, bsf_name) \
     static const AVClass x##_cuvid_class = { \
         .class_name = #x "_cuvid", \
-        .item_name = av_default_item_name, \
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
     }; \

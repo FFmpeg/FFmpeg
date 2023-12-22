@@ -824,7 +824,6 @@ static int wav_read_seek(AVFormatContext *s,
 
 static const AVClass wav_demuxer_class = {
     .class_name = "WAV demuxer",
-    .item_name  = av_default_item_name,
     .option     = demux_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -987,7 +986,6 @@ static int w64_read_header(AVFormatContext *s)
 
 static const AVClass w64_demuxer_class = {
     .class_name = "W64 demuxer",
-    .item_name  = av_default_item_name,
     .option     = &demux_options[W64_DEMUXER_OPTIONS_OFFSET],
     .version    = LIBAVUTIL_VERSION_INT,
 };

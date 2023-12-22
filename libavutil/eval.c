@@ -59,7 +59,6 @@ typedef struct Parser {
 
 static const AVClass eval_class = {
     .class_name                = "Eval",
-    .item_name                 = av_default_item_name,
     .option                    = NULL,
     .version                   = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset   = offsetof(Parser, log_offset),

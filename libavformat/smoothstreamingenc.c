@@ -635,7 +635,6 @@ static const AVOption options[] = {
 
 static const AVClass ism_class = {
     .class_name = "smooth streaming muxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

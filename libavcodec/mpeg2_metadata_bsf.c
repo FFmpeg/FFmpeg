@@ -223,7 +223,6 @@ static const AVOption mpeg2_metadata_options[] = {
 
 static const AVClass mpeg2_metadata_class = {
     .class_name = "mpeg2_metadata_bsf",
-    .item_name  = av_default_item_name,
     .option     = mpeg2_metadata_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -294,7 +294,6 @@ static const FFCodecDefault vaapi_encode_vp9_defaults[] = {
 
 static const AVClass vaapi_encode_vp9_class = {
     .class_name = "vp9_vaapi",
-    .item_name  = av_default_item_name,
     .option     = vaapi_encode_vp9_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

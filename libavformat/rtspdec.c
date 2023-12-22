@@ -987,7 +987,6 @@ static int rtsp_read_seek(AVFormatContext *s, int stream_index,
 
 static const AVClass rtsp_demuxer_class = {
     .class_name     = "RTSP demuxer",
-    .item_name      = av_default_item_name,
     .option         = ff_rtsp_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

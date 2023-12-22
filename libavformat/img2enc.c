@@ -266,7 +266,6 @@ static const AVOption muxoptions[] = {
 #if CONFIG_IMAGE2_MUXER
 static const AVClass img2mux_class = {
     .class_name = "image2 muxer",
-    .item_name  = av_default_item_name,
     .option     = muxoptions,
     .version    = LIBAVUTIL_VERSION_INT,
 };

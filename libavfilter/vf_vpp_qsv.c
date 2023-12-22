@@ -824,7 +824,6 @@ static const AVFilterPad vpp_outputs[] = {
 #define DEFINE_QSV_FILTER(x, sn, ln, fmts) \
 static const AVClass x##_class = { \
     .class_name = #sn "_qsv", \
-    .item_name  = av_default_item_name, \
     .option     = x##_options, \
     .version    = LIBAVUTIL_VERSION_INT, \
 }; \

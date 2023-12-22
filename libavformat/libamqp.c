@@ -306,7 +306,6 @@ static int amqp_proto_close(URLContext *h)
 
 static const AVClass amqp_context_class = {
     .class_name = "amqp",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

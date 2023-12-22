@@ -284,7 +284,6 @@ static const AVOption options[] = {
 #define RTMP_CLASS(flavor)\
 static const AVClass lib ## flavor ## _class = {\
     .class_name = "lib" #flavor " protocol",\
-    .item_name  = av_default_item_name,\
     .option     = options,\
     .version    = LIBAVUTIL_VERSION_INT,\
 };

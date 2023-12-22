@@ -351,7 +351,6 @@ static const AVOption options[] = {
 
 static const AVClass aresample_class = {
     .class_name       = "aresample",
-    .item_name        = av_default_item_name,
     .option           = options,
     .version          = LIBAVUTIL_VERSION_INT,
     .child_class_iterate = resample_child_class_iterate,

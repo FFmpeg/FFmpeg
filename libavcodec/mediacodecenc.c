@@ -607,7 +607,6 @@ static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
 #define MEDIACODEC_ENCODER_CLASS(name)              \
 static const AVClass name ## _mediacodec_class = {  \
     .class_name = #name "_mediacodec",              \
-    .item_name  = av_default_item_name,             \
     .option     = name ## _options,                 \
     .version    = LIBAVUTIL_VERSION_INT,            \
 };                                                  \

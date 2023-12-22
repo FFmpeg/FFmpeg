@@ -1368,7 +1368,6 @@ static const FFCodecDefault vaapi_encode_h264_defaults[] = {
 
 static const AVClass vaapi_encode_h264_class = {
     .class_name = "h264_vaapi",
-    .item_name  = av_default_item_name,
     .option     = vaapi_encode_h264_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

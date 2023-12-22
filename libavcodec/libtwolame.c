@@ -194,7 +194,6 @@ static const AVOption options[] = {
 
 static const AVClass twolame_class = {
     .class_name = "libtwolame encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

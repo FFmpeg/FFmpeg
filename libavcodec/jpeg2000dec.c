@@ -2543,7 +2543,6 @@ static const AVOption options[] = {
 
 static const AVClass jpeg2000_class = {
     .class_name = "jpeg2000",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

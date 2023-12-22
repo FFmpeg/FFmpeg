@@ -124,7 +124,6 @@ static const AVOption pcm_options[] = {
 };
 static const AVClass pcm_demuxer_class = {
     .class_name = "pcm demuxer",
-    .item_name  = av_default_item_name,
     .option     = pcm_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -191,7 +190,6 @@ static const AVOption sln_options[] = {
 
 static const AVClass sln_demuxer_class = {
     .class_name = "sln demuxer",
-    .item_name  = av_default_item_name,
     .option     = sln_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

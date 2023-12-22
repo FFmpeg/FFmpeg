@@ -268,7 +268,6 @@ static const AVOption filter_units_options[] = {
 
 static const AVClass filter_units_class = {
     .class_name = "filter_units",
-    .item_name  = av_default_item_name,
     .option     = filter_units_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

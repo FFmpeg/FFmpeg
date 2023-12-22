@@ -279,7 +279,6 @@ typedef struct ImgUtils {
 
 static const AVClass imgutils_class = {
     .class_name                = "IMGUTILS",
-    .item_name                 = av_default_item_name,
     .option                    = NULL,
     .version                   = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset   = offsetof(ImgUtils, log_offset),

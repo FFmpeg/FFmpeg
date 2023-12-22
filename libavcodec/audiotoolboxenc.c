@@ -610,7 +610,6 @@ static const AVOption options[] = {
 #define FFAT_ENC_CLASS(NAME) \
     static const AVClass ffat_##NAME##_enc_class = { \
         .class_name = "at_" #NAME "_enc", \
-        .item_name  = av_default_item_name, \
         .option     = options, \
         .version    = LIBAVUTIL_VERSION_INT, \
     };

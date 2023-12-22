@@ -1022,7 +1022,6 @@ static const AVOption scale_options[] = {
 
 static const AVClass scale_class = {
     .class_name       = "scale(2ref)",
-    .item_name        = av_default_item_name,
     .option           = scale_options,
     .version          = LIBAVUTIL_VERSION_INT,
     .category         = AV_CLASS_CATEGORY_FILTER,

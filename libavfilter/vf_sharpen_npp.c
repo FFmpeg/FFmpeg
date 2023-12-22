@@ -235,7 +235,6 @@ static const AVOption options[] = {
 
 static const AVClass nppsharpen_class = {
     .class_name = "nppsharpen",
-    .item_name = av_default_item_name,
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };

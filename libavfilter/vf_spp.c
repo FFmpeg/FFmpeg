@@ -75,7 +75,6 @@ static const AVOption spp_options[] = {
 
 static const AVClass spp_class = {
     .class_name       = "spp",
-    .item_name        = av_default_item_name,
     .option           = spp_options,
     .version          = LIBAVUTIL_VERSION_INT,
     .category         = AV_CLASS_CATEGORY_FILTER,

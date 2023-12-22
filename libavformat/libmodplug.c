@@ -375,7 +375,6 @@ static int modplug_probe(const AVProbeData *p)
 
 static const AVClass modplug_class = {
     .class_name = "ModPlug demuxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

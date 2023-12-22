@@ -120,7 +120,6 @@ static const AVOption options[] = {
 
 static const AVClass hapqa_extract_class = {
     .class_name = "hapqa_extract_bsf",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

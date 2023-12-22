@@ -1110,7 +1110,6 @@ static void qsv_decode_flush(AVCodecContext *avctx)
 #define DEFINE_QSV_DECODER_WITH_OPTION(x, X, bsf_name, opt) \
 static const AVClass x##_qsv_class = { \
     .class_name = #x "_qsv", \
-    .item_name  = av_default_item_name, \
     .option     = opt, \
     .version    = LIBAVUTIL_VERSION_INT, \
 }; \

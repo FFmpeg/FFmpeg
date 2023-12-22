@@ -225,7 +225,6 @@ static const AVOption libopusdec_options[] = {
 
 static const AVClass libopusdec_class = {
     .class_name = "libopusdec",
-    .item_name  = av_default_item_name,
     .option     = libopusdec_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

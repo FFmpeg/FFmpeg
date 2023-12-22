@@ -682,7 +682,6 @@ static const FFCodecDefault vaapi_encode_mpeg2_defaults[] = {
 
 static const AVClass vaapi_encode_mpeg2_class = {
     .class_name = "mpeg2_vaapi",
-    .item_name  = av_default_item_name,
     .option     = vaapi_encode_mpeg2_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -268,7 +268,6 @@ static const AVOption ffrtmphttp_options[] = {
 
 static const AVClass ffrtmphttp_class = {
     .class_name = "ffrtmphttp",
-    .item_name  = av_default_item_name,
     .option     = ffrtmphttp_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

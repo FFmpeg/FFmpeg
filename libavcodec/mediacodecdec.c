@@ -558,7 +558,6 @@ static const AVOption ff_mediacodec_vdec_options[] = {
 #define DECLARE_MEDIACODEC_VCLASS(short_name)                   \
 static const AVClass ff_##short_name##_mediacodec_dec_class = { \
     .class_name = #short_name "_mediacodec",                    \
-    .item_name  = av_default_item_name,                         \
     .option     = ff_mediacodec_vdec_options,                   \
     .version    = LIBAVUTIL_VERSION_INT,                        \
 };

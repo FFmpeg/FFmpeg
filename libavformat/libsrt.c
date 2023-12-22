@@ -727,7 +727,6 @@ static int libsrt_close(URLContext *h)
 
 static const AVClass libsrt_class = {
     .class_name = "libsrt",
-    .item_name  = av_default_item_name,
     .option     = libsrt_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

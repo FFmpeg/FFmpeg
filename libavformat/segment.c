@@ -1084,7 +1084,6 @@ static const AVOption options[] = {
 
 static const AVClass seg_class = {
     .class_name = "(stream) segment muxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

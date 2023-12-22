@@ -409,7 +409,6 @@ static const AVOption flacenc_options[] = {
 
 static const AVClass flac_muxer_class = {
     .class_name = "flac muxer",
-    .item_name  = av_default_item_name,
     .option     = flacenc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

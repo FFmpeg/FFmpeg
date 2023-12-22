@@ -161,7 +161,6 @@ static const AVOption options[] = {
 
 static const AVClass prores_metadata_class = {
     .class_name = "prores_metadata_bsf",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

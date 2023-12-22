@@ -51,7 +51,6 @@ static const AVOption options[] = {
 
 static const AVClass bluray_context_class = {
     .class_name     = "bluray",
-    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

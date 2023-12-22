@@ -2905,7 +2905,6 @@ static const AVOption h264_options[] = {
 
 static const AVClass h264_videotoolbox_class = {
     .class_name = "h264_videotoolbox",
-    .item_name  = av_default_item_name,
     .option     = h264_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -2941,7 +2940,6 @@ static const AVOption hevc_options[] = {
 
 static const AVClass hevc_videotoolbox_class = {
     .class_name = "hevc_videotoolbox",
-    .item_name  = av_default_item_name,
     .option     = hevc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -2980,7 +2978,6 @@ static const AVOption prores_options[] = {
 
 static const AVClass prores_videotoolbox_class = {
     .class_name = "prores_videotoolbox",
-    .item_name  = av_default_item_name,
     .option     = prores_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

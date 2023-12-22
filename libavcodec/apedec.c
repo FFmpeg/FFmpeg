@@ -1744,7 +1744,6 @@ static const AVOption options[] = {
 
 static const AVClass ape_decoder_class = {
     .class_name = "APE decoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

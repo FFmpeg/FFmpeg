@@ -302,7 +302,6 @@ static const AVOption options[] = {
 
 static const AVClass apng_muxer_class = {
     .class_name = "APNG muxer",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = options,
 };

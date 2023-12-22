@@ -143,7 +143,6 @@ static const AVOption options[] = {
 
 static const AVClass vbnenc_class = {
     .class_name = "VBN encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

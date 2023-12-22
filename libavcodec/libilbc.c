@@ -62,7 +62,6 @@ static const AVOption ilbc_dec_options[] = {
 
 static const AVClass ilbc_dec_class = {
     .class_name = "libilbc",
-    .item_name  = av_default_item_name,
     .option     = ilbc_dec_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -147,7 +146,6 @@ static const AVOption ilbc_enc_options[] = {
 
 static const AVClass ilbc_enc_class = {
     .class_name = "libilbc",
-    .item_name  = av_default_item_name,
     .option     = ilbc_enc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

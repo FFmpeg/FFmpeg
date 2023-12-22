@@ -2350,7 +2350,6 @@ static const AVOption dash_options[] = {
 
 static const AVClass dash_class = {
     .class_name = "dash",
-    .item_name  = av_default_item_name,
     .option     = dash_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

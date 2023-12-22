@@ -67,7 +67,6 @@ static const FFCodecDefault defaults[] = {
 
 static const AVClass vorbis_class = {
     .class_name = "libvorbis",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

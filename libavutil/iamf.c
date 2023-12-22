@@ -75,7 +75,6 @@ static const AVOption mix_gain_options[] = {
 
 static const AVClass mix_gain_class = {
     .class_name     = "AVIAMFSubmixElement",
-    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = mix_gain_options,
 };
@@ -90,7 +89,6 @@ static const AVOption demixing_info_options[] = {
 
 static const AVClass demixing_info_class = {
     .class_name     = "AVIAMFDemixingInfo",
-    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = demixing_info_options,
 };
@@ -104,7 +102,6 @@ static const AVOption recon_gain_options[] = {
 
 static const AVClass recon_gain_class = {
     .class_name     = "AVIAMFReconGain",
-    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = recon_gain_options,
 };
@@ -145,7 +142,6 @@ static const AVClass *param_definition_child_iterate(void **opaque)
 
 static const AVClass param_definition_class = {
     .class_name          = "AVIAMFParamDefinition",
-    .item_name           = av_default_item_name,
     .version             = LIBAVUTIL_VERSION_INT,
     .option              = param_definition_options,
     .child_class_iterate = param_definition_child_iterate,
@@ -274,7 +270,6 @@ static const AVOption layer_options[] = {
 
 static const AVClass layer_class = {
     .class_name     = "AVIAMFLayer",
-    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = layer_options,
 };
@@ -308,7 +303,6 @@ static const AVClass *audio_element_child_iterate(void **opaque)
 
 static const AVClass audio_element_class = {
     .class_name          = "AVIAMFAudioElement",
-    .item_name           = av_default_item_name,
     .version             = LIBAVUTIL_VERSION_INT,
     .option              = audio_element_options,
     .child_class_iterate = audio_element_child_iterate,
@@ -395,7 +389,6 @@ static const AVClass *submix_element_child_iterate(void **opaque)
 
 static const AVClass element_class = {
     .class_name          = "AVIAMFSubmixElement",
-    .item_name           = av_default_item_name,
     .version             = LIBAVUTIL_VERSION_INT,
     .option              = submix_element_options,
     .child_next          = submix_element_child_next,
@@ -425,7 +418,6 @@ static const AVOption submix_layout_options[] = {
 
 static const AVClass layout_class = {
     .class_name     = "AVIAMFSubmixLayout",
-    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = submix_layout_options,
 };
@@ -474,7 +466,6 @@ static const AVClass *submix_presentation_child_iterate(void **opaque)
 
 static const AVClass submix_class = {
     .class_name          = "AVIAMFSubmix",
-    .item_name           = av_default_item_name,
     .version             = LIBAVUTIL_VERSION_INT,
     .option              = submix_presentation_options,
     .child_next          = submix_presentation_child_next,
@@ -506,7 +497,6 @@ static const AVClass *mix_presentation_child_iterate(void **opaque)
 
 static const AVClass mix_presentation_class = {
     .class_name          = "AVIAMFMixPresentation",
-    .item_name           = av_default_item_name,
     .version             = LIBAVUTIL_VERSION_INT,
     .option              = mix_presentation_options,
     .child_class_iterate = mix_presentation_child_iterate,

@@ -200,7 +200,6 @@ static const AVOption options[] = {
 
 static const AVClass gif_muxer_class = {
     .class_name = "GIF muxer",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = options,
 };

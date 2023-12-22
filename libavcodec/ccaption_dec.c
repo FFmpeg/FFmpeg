@@ -934,7 +934,6 @@ static const AVOption options[] = {
 
 static const AVClass ccaption_dec_class = {
     .class_name = "Closed caption Decoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

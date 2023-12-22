@@ -214,7 +214,6 @@ static const AVOption fits_options[] = {
 
 static const AVClass fits_demuxer_class = {
     .class_name = "FITS demuxer",
-    .item_name  = av_default_item_name,
     .option     = fits_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEMUXER,

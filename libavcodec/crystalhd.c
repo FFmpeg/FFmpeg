@@ -778,7 +778,6 @@ static int crystalhd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 #define DEFINE_CRYSTALHD_DECODER(x, X, bsf_name) \
     static const AVClass x##_crystalhd_class = { \
         .class_name = #x "_crystalhd", \
-        .item_name = av_default_item_name, \
         .option = options, \
         .version = LIBAVUTIL_VERSION_INT, \
     }; \

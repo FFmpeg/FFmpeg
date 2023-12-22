@@ -1298,7 +1298,6 @@ static const AVOption options[] = {
 
 static const AVClass mpeg_class = {
     .class_name = "mpeg/(s)vcd/vob/dvd muxer",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = options,
 };

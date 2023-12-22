@@ -1014,7 +1014,6 @@ static const AVOption imf_options[] = {
 
 static const AVClass imf_class = {
     .class_name = "imf",
-    .item_name  = av_default_item_name,
     .option     = imf_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

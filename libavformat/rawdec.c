@@ -126,7 +126,6 @@ static const AVOption rawvideo_options[] = {
 
 const AVClass ff_rawvideo_demuxer_class = {
     .class_name = "generic raw video demuxer",
-    .item_name  = av_default_item_name,
     .option     = rawvideo_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -139,7 +138,6 @@ static const AVOption raw_options[] = {
 
 const AVClass ff_raw_demuxer_class = {
     .class_name = "generic raw demuxer",
-    .item_name  = av_default_item_name,
     .option     = raw_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

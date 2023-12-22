@@ -1407,7 +1407,6 @@ static const AVOption aacenc_options[] = {
 
 static const AVClass aacenc_class = {
     .class_name = "AAC encoder",
-    .item_name  = av_default_item_name,
     .option     = aacenc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

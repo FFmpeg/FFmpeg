@@ -559,7 +559,6 @@ static const FFCodecDefault vaapi_encode_mjpeg_defaults[] = {
 
 static const AVClass vaapi_encode_mjpeg_class = {
     .class_name = "mjpeg_vaapi",
-    .item_name  = av_default_item_name,
     .option     = vaapi_encode_mjpeg_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

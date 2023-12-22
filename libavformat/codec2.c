@@ -279,7 +279,6 @@ static const AVOption codec2raw_options[] = {
 
 static const AVClass codec2_demux_class = {
     .class_name = "codec2 demuxer",
-    .item_name  = av_default_item_name,
     .option     = codec2_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEMUXER,
@@ -287,7 +286,6 @@ static const AVClass codec2_demux_class = {
 
 static const AVClass codec2raw_demux_class = {
     .class_name = "codec2raw demuxer",
-    .item_name  = av_default_item_name,
     .option     = codec2raw_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEMUXER,

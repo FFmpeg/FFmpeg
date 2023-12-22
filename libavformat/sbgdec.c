@@ -1524,7 +1524,6 @@ static const AVOption sbg_options[] = {
 
 static const AVClass sbg_demuxer_class = {
     .class_name = "sbg_demuxer",
-    .item_name  = av_default_item_name,
     .option     = sbg_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -3407,7 +3407,6 @@ static const AVOption mxf_options[] = {
 
 static const AVClass mxf_muxer_class = {
     .class_name     = "MXF muxer",
-    .item_name      = av_default_item_name,
     .option         = mxf_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
@@ -3423,7 +3422,6 @@ static const AVOption d10_options[] = {
 
 static const AVClass mxf_d10_muxer_class = {
     .class_name     = "MXF-D10 muxer",
-    .item_name      = av_default_item_name,
     .option         = d10_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
@@ -3439,7 +3437,6 @@ static const AVOption opatom_options[] = {
 
 static const AVClass mxf_opatom_muxer_class = {
     .class_name     = "MXF-OPAtom muxer",
-    .item_name      = av_default_item_name,
     .option         = opatom_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

@@ -637,7 +637,6 @@ FF_MPV_COMMON_OPTS
 #if CONFIG_MJPEG_ENCODER
 static const AVClass mjpeg_class = {
     .class_name = "mjpeg encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -667,7 +666,6 @@ const FFCodec ff_mjpeg_encoder = {
 #if CONFIG_AMV_ENCODER
 static const AVClass amv_class = {
     .class_name = "amv encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

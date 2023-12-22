@@ -1225,7 +1225,6 @@ static const AVOption mpeg2_options[] = {
 #define mpeg12_class(x)                                 \
 static const AVClass mpeg ## x ## _class = {            \
     .class_name = "mpeg" # x "video encoder",           \
-    .item_name  = av_default_item_name,                 \
     .option     = mpeg ## x ## _options,                \
     .version    = LIBAVUTIL_VERSION_INT,                \
 };

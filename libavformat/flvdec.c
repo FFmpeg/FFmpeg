@@ -1407,7 +1407,6 @@ static const AVOption options[] = {
 
 static const AVClass flv_kux_class = {
     .class_name = "(live) flv/kux demuxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

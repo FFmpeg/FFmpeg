@@ -220,7 +220,6 @@ static const AVOption options[] = {
 
 static const AVClass webp_muxer_class = {
     .class_name = "WebP muxer",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = options,
 };

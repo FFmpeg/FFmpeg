@@ -415,7 +415,6 @@ static const AVOption options[] = {
 
 static const AVClass demuxer_class = {
     .class_name = "APNG demuxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEMUXER,

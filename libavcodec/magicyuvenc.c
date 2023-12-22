@@ -666,7 +666,6 @@ static const AVOption options[] = {
 
 static const AVClass magicyuv_class = {
     .class_name = "magicyuv",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -3161,7 +3161,6 @@ static const AVOption rtmp_options[] = {
 #define RTMP_PROTOCOL_1(flavor)                  \
 static const AVClass flavor##_class = {          \
     .class_name = #flavor,                       \
-    .item_name  = av_default_item_name,          \
     .option     = rtmp_options,                  \
     .version    = LIBAVUTIL_VERSION_INT,         \
 };                                               \

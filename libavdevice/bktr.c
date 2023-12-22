@@ -343,7 +343,6 @@ static const AVOption options[] = {
 
 static const AVClass bktr_class = {
     .class_name = "BKTR grab indev",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,

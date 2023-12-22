@@ -274,7 +274,6 @@ static const AVOption options[] = {
 
 static const AVClass libxavs2 = {
     .class_name = "XAVS2EContext",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

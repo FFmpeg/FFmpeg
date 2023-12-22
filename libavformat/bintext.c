@@ -382,7 +382,6 @@ static const AVOption options[] = {
 #define CLASS(name) \
 (const AVClass[1]){{ \
     .class_name     = name, \
-    .item_name      = av_default_item_name, \
     .option         = options, \
     .version        = LIBAVUTIL_VERSION_INT, \
 }}

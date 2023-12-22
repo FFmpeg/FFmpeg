@@ -2289,7 +2289,6 @@ static const AVOption mlp_options[] = {
 
 static const AVClass mlp_class = {
     .class_name = "mlpenc",
-    .item_name  = av_default_item_name,
     .option     = mlp_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

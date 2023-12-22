@@ -1128,7 +1128,6 @@ static const AVOption options[] = {
 
 static const AVClass v4l2_class = {
     .class_name = "V4L2 indev",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,

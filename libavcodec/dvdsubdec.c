@@ -701,7 +701,6 @@ static const AVOption options[] = {
 };
 static const AVClass dvdsub_class = {
     .class_name = "dvdsubdec",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

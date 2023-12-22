@@ -933,7 +933,6 @@ static const enum AVPixelFormat omx_encoder_pix_fmts[] = {
 
 static const AVClass omx_mpeg4enc_class = {
     .class_name = "mpeg4_omx",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -954,7 +953,6 @@ const FFCodec ff_mpeg4_omx_encoder = {
 
 static const AVClass omx_h264enc_class = {
     .class_name = "h264_omx",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

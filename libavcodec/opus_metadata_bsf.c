@@ -49,7 +49,6 @@ static const AVOption opus_metadata_options[] = {
 
 static const AVClass opus_metadata_class = {
     .class_name = "opus_metadata_bsf",
-    .item_name  = av_default_item_name,
     .option     = opus_metadata_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

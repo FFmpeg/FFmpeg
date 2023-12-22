@@ -103,7 +103,6 @@ static const AVOption options[] = {
 
 static const AVClass spdif_class = {
     .class_name     = "spdif",
-    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

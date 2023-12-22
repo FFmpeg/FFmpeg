@@ -496,7 +496,6 @@ static const AVOption options[] = {
 
 static const AVClass iec61883_class = {
     .class_name = "iec61883 indev",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,

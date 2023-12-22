@@ -221,7 +221,6 @@ static const AVOption s302m_options[] = {
 
 static const AVClass s302m_class = {
     .class_name = "SMPTE 302M Decoder",
-    .item_name  = av_default_item_name,
     .option     = s302m_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

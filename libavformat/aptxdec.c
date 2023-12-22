@@ -95,7 +95,6 @@ static const AVOption aptx_options[] = {
 
 static const AVClass aptx_demuxer_class = {
     .class_name = "aptx (hd) demuxer",
-    .item_name  = av_default_item_name,
     .option     = aptx_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

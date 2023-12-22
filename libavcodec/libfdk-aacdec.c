@@ -105,7 +105,6 @@ static const AVOption fdk_aac_dec_options[] = {
 
 static const AVClass fdk_aac_dec_class = {
     .class_name = "libfdk-aac decoder",
-    .item_name  = av_default_item_name,
     .option     = fdk_aac_dec_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

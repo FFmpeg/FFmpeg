@@ -136,7 +136,6 @@ static const struct FFJniField jni_amediaformat_mapping[] = {
 
 static const AVClass amediaformat_class = {
     .class_name = "amediaformat",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -256,7 +255,6 @@ static const struct FFJniField jni_amediacodec_mapping[] = {
 
 static const AVClass amediacodec_class = {
     .class_name = "amediacodec",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -1989,13 +1987,11 @@ static const FFAMediaCodec media_codec_ndk;
 
 static const AVClass amediaformat_ndk_class = {
     .class_name = "amediaformat_ndk",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const AVClass amediacodec_ndk_class = {
     .class_name = "amediacodec_ndk",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

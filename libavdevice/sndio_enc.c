@@ -82,7 +82,6 @@ static int audio_write_trailer(AVFormatContext *s1)
 
 static const AVClass sndio_muxer_class = {
     .class_name     = "sndio outdev",
-    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };

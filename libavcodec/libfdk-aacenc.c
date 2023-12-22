@@ -86,7 +86,6 @@ static const AVOption aac_enc_options[] = {
 
 static const AVClass aac_enc_class = {
     .class_name = "libfdk_aac",
-    .item_name  = av_default_item_name,
     .option     = aac_enc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

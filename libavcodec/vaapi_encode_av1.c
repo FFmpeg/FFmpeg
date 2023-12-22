@@ -922,7 +922,6 @@ static const FFCodecDefault vaapi_encode_av1_defaults[] = {
 
 static const AVClass vaapi_encode_av1_class = {
     .class_name = "av1_vaapi",
-    .item_name  = av_default_item_name,
     .option     = vaapi_encode_av1_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

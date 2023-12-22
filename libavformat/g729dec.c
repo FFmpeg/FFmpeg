@@ -88,7 +88,6 @@ static const AVOption g729_options[] = {
 
 static const AVClass g729_demuxer_class = {
     .class_name = "g729 demuxer",
-    .item_name  = av_default_item_name,
     .option     = g729_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

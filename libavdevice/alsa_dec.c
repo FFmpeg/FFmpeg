@@ -151,7 +151,6 @@ static const AVOption options[] = {
 
 static const AVClass alsa_demuxer_class = {
     .class_name     = "ALSA indev",
-    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,

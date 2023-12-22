@@ -35,7 +35,6 @@
 
 static const AVClass eac3enc_class = {
     .class_name = "E-AC-3 Encoder",
-    .item_name  = av_default_item_name,
     .option     = &ff_ac3_enc_options[2], /* First two options are AC-3 only. */
     .version    = LIBAVUTIL_VERSION_INT,
 };

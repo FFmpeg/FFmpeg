@@ -1192,7 +1192,6 @@ static const AVOption avisynth_options[] = {
 
 static const AVClass avisynth_demuxer_class = {
     .class_name = "AviSynth demuxer",
-    .item_name  = av_default_item_name,
     .option     = avisynth_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

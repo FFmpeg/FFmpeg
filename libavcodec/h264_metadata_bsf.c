@@ -703,7 +703,6 @@ static const AVOption h264_metadata_options[] = {
 
 static const AVClass h264_metadata_class = {
     .class_name = "h264_metadata_bsf",
-    .item_name  = av_default_item_name,
     .option     = h264_metadata_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

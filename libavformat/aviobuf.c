@@ -66,7 +66,6 @@ static const AVOption ff_avio_options[] = {
 
 const AVClass ff_avio_class = {
     .class_name = "AVIOContext",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = ff_avio_options,
     .child_next = ff_avio_child_next,

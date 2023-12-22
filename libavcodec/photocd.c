@@ -454,7 +454,6 @@ static const AVOption options[] = {
 
 static const AVClass photocd_class = {
     .class_name = "photocd",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

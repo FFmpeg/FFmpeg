@@ -240,7 +240,6 @@ static const AVOption options[] = {
 
 static const AVClass remove_extradata_class = {
     .class_name = "remove_extradata",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -1231,7 +1231,6 @@ static const AVOption dv_options[] = {
 
 static const AVClass dvvideo_encode_class = {
     .class_name = "dvvideo encoder",
-    .item_name  = av_default_item_name,
     .option     = dv_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

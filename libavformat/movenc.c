@@ -125,7 +125,6 @@ static const AVOption options[] = {
 
 static const AVClass mov_isobmff_muxer_class = {
     .class_name = "mov/mp4/tgp/psp/tg2/ipod/ismv/f4v muxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -7924,7 +7923,6 @@ static const AVCodecTag *const codec_avif_tags_list[] = { codec_avif_tags, NULL 
 
 static const AVClass mov_avif_muxer_class = {
     .class_name = "avif muxer",
-    .item_name  = av_default_item_name,
     .option     = avif_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

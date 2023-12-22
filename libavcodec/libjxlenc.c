@@ -471,7 +471,6 @@ static const AVOption libjxl_encode_options[] = {
 
 static const AVClass libjxl_encode_class = {
     .class_name = "libjxl",
-    .item_name  = av_default_item_name,
     .option     = libjxl_encode_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

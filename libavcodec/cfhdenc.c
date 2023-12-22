@@ -849,7 +849,6 @@ static const AVOption options[] = {
 
 static const AVClass cfhd_class = {
     .class_name = "cfhd",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

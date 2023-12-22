@@ -97,7 +97,6 @@ static const AVOption options[] = {
 
 static const AVClass gsm_class = {
     .class_name = "gsm demuxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

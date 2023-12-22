@@ -2479,7 +2479,6 @@ static int sdp_read_close(AVFormatContext *s)
 
 static const AVClass sdp_demuxer_class = {
     .class_name     = "SDP demuxer",
-    .item_name      = av_default_item_name,
     .option         = sdp_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
@@ -2638,7 +2637,6 @@ fail:
 
 static const AVClass rtp_demuxer_class = {
     .class_name     = "RTP demuxer",
-    .item_name      = av_default_item_name,
     .option         = rtp_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

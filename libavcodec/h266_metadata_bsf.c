@@ -130,7 +130,6 @@ static const AVOption h266_metadata_options[] = {
 
 static const AVClass h266_metadata_class = {
     .class_name = "h266_metadata_bsf",
-    .item_name  = av_default_item_name,
     .option     = h266_metadata_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

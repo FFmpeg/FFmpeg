@@ -252,7 +252,6 @@ static const AVOption cdxl_options[] = {
 
 static const AVClass cdxl_demuxer_class = {
     .class_name = "CDXL demuxer",
-    .item_name  = av_default_item_name,
     .option     = cdxl_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

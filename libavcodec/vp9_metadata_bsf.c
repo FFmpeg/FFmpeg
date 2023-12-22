@@ -126,7 +126,6 @@ static const AVOption vp9_metadata_options[] = {
 
 static const AVClass vp9_metadata_class = {
     .class_name = "vp9_metadata_bsf",
-    .item_name  = av_default_item_name,
     .option     = vp9_metadata_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -475,7 +475,6 @@ static av_cold int probe_vs(const AVProbeData *p)
 
 static const AVClass class_vs = {
     .class_name = "VapourSynth demuxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

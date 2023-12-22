@@ -330,7 +330,6 @@ static const AVOption options[] = {
 
 static const AVClass speex_class = {
     .class_name = "libspeex",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

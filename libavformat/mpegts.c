@@ -209,7 +209,6 @@ static const AVOption options[] = {
 
 static const AVClass mpegts_class = {
     .class_name = "mpegts demuxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -228,7 +227,6 @@ static const AVOption raw_options[] = {
 
 static const AVClass mpegtsraw_class = {
     .class_name = "mpegtsraw demuxer",
-    .item_name  = av_default_item_name,
     .option     = raw_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

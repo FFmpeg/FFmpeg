@@ -363,7 +363,6 @@ static const AVOption mpjpeg_options[] = {
 
 static const AVClass mpjpeg_demuxer_class = {
     .class_name     = "MPJPEG demuxer",
-    .item_name      = av_default_item_name,
     .option         = mpjpeg_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

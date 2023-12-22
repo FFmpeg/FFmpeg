@@ -40,7 +40,6 @@ static int brender_read_probe(const AVProbeData *p)
 
 static const AVClass image2_brender_pix_class = {
     .class_name = "brender_pix demuxer",
-    .item_name  = av_default_item_name,
     .option     = ff_img_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

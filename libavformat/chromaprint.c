@@ -172,7 +172,6 @@ static const AVOption options[] = {
 
 static const AVClass chromaprint_class = {
     .class_name = "chromaprint muxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

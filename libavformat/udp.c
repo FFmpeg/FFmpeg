@@ -144,14 +144,12 @@ static const AVOption options[] = {
 
 static const AVClass udp_class = {
     .class_name = "udp",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const AVClass udplite_context_class = {
     .class_name     = "udplite",
-    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

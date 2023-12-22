@@ -262,7 +262,6 @@ static const AVOption options[] = {
 
 static const AVClass setts_class = {
     .class_name = "setts_bsf",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

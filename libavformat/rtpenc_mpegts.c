@@ -183,7 +183,6 @@ static const AVOption options[] = {
 
 static const AVClass rtp_mpegts_class = {
     .class_name = "rtp_mpegts muxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

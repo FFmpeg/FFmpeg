@@ -1207,7 +1207,6 @@ static const AVClass vc2enc_class = {
     .class_name = "SMPTE VC-2 encoder",
     .category = AV_CLASS_CATEGORY_ENCODER,
     .option = vc2enc_options,
-    .item_name = av_default_item_name,
     .version = LIBAVUTIL_VERSION_INT
 };
 

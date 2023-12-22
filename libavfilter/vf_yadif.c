@@ -326,7 +326,6 @@ static int config_output(AVFilterLink *outlink)
 
 static const AVClass yadif_class = {
     .class_name = "yadif",
-    .item_name  = av_default_item_name,
     .option     = ff_yadif_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,

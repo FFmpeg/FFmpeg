@@ -43,7 +43,6 @@ static const AVOption options[] = {
 
 static const AVClass libcodec2_enc_class = {
     .class_name = "libcodec2 encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

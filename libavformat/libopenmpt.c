@@ -273,7 +273,6 @@ static int read_probe_openmpt(const AVProbeData *p)
 
 static const AVClass class_openmpt = {
     .class_name = "libopenmpt",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

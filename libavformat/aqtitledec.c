@@ -130,7 +130,6 @@ static const AVOption aqt_options[] = {
 
 static const AVClass aqt_class = {
     .class_name = "aqtdec",
-    .item_name  = av_default_item_name,
     .option     = aqt_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

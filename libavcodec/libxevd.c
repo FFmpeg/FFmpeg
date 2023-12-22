@@ -517,7 +517,6 @@ static av_cold int libxevd_close(AVCodecContext *avctx)
 
 static const AVClass libxevd_class = {
     .class_name = "libxevd",
-    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

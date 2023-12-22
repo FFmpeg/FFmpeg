@@ -496,7 +496,6 @@ static const AVOption options[] = {
 
 static const AVClass dvdsubenc_class = {
     .class_name = "VOBSUB subtitle encoder",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

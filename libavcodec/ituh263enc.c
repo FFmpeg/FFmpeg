@@ -896,7 +896,6 @@ static const AVOption h263_options[] = {
 
 static const AVClass h263_class = {
     .class_name = "H.263 encoder",
-    .item_name  = av_default_item_name,
     .option     = h263_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -927,7 +926,6 @@ static const AVOption h263p_options[] = {
 };
 static const AVClass h263p_class = {
     .class_name = "H.263p encoder",
-    .item_name  = av_default_item_name,
     .option     = h263p_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

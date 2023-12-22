@@ -133,7 +133,6 @@ static const AVOption options[] = {
 
 static const AVClass failing_muxer_class = {
     .class_name = "Fifo test muxer",
-    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
