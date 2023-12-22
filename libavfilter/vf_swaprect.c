@@ -170,14 +170,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     lw[1] = lw[2] = FF_CEIL_RSHIFT(inlink->w, s->desc->log2_chroma_w);
     lw[0] = lw[3] = inlink->w;
 
-    x1[1] = x1[2] = FF_CEIL_RSHIFT(x1[0], s->desc->log2_chroma_w);
+    x1[1] = x1[2] = (x1[0] >> s->desc->log2_chroma_w);
     x1[0] = x1[3] = x1[0];
-    y1[1] = y1[2] = FF_CEIL_RSHIFT(y1[0], s->desc->log2_chroma_h);
+    y1[1] = y1[2] = (y1[0] >> s->desc->log2_chroma_h);
     y1[0] = y1[3] = y1[0];
 
-    x2[1] = x2[2] = FF_CEIL_RSHIFT(x2[0], s->desc->log2_chroma_w);
+    x2[1] = x2[2] = (x2[0] >> s->desc->log2_chroma_w);
     x2[0] = x2[3] = x2[0];
-    y2[1] = y2[2] = FF_CEIL_RSHIFT(y2[0], s->desc->log2_chroma_h);
+    y2[1] = y2[2] = (y2[0] >> s->desc->log2_chroma_h);
     y2[0] = y2[3] = y2[0];
 
 
