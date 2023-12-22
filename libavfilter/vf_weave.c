@@ -30,6 +30,7 @@ typedef struct WeaveContext {
     int double_weave;
     int nb_planes;
     int planeheight[4];
+    int outheight[4];
     int linesize[4];
 
     AVFrame *prev;
@@ -92,6 +93,9 @@ static int config_props_output(AVFilterLink *outlink)
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
 
+    s->outheight[1] = s->outheight[2] = AV_CEIL_RSHIFT(2*inlink->h, desc->log2_chroma_h);
+    s->outheight[0] = s->outheight[3] = 2*inlink->h;
+
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     return 0;
@@ -124,14 +128,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     field1 = weave ? s->first_field : (!s->first_field);
     field2 = weave ? (!s->first_field) : s->first_field;
     for (i = 0; i < s->nb_planes; i++) {
+        const int compensation = 2*s->planeheight[i] > s->outheight[i];
         av_image_copy_plane(out->data[i] + out->linesize[i] * field1,
                             out->linesize[i] * 2,
                             in->data[i], in->linesize[i],
-                            s->linesize[i], s->planeheight[i]);
+                            s->linesize[i], s->planeheight[i] - compensation * field1);
         av_image_copy_plane(out->data[i] + out->linesize[i] * field2,
                             out->linesize[i] * 2,
                             s->prev->data[i], s->prev->linesize[i],
-                            s->linesize[i], s->planeheight[i]);
+                            s->linesize[i], s->planeheight[i] - compensation * field2);
     }
 
     out->pts = s->double_weave ? s->prev->pts : in->pts / 2;
