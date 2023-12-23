@@ -75,6 +75,8 @@ static int config_input(AVFilterLink *inlink)
 
     s->length = s->delay * inlink->sample_rate / 1000;
     s->length *= 2;
+    if (s->length == 0)
+        return AVERROR(EINVAL);
     s->buffer = av_calloc(s->length, sizeof(*s->buffer));
     if (!s->buffer)
         return AVERROR(ENOMEM);
