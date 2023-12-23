@@ -549,8 +549,7 @@ Linux / PowerPC                         Lauri Kasanen
 RISC-V                                  Rémi Denis-Courmont
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
 Windows Cygwin                          Victor Paesa
-Windows MSVC                            Matthew Oliver, Hendrik Leppkes
-Windows ICL                             Matthew Oliver
+Windows MSVC                            Hendrik Leppkes
 ADI/Blackfin DSP                        Marc Hoffman
 Sparc                                   Roman Shaposhnik
 OS/2                                    KO Myung-Hun
