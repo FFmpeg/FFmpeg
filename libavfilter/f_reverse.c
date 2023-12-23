@@ -266,7 +266,8 @@ static int areverse_request_frame(AVFilterLink *outlink)
         AVFrame *out = s->frames[s->nb_frames - 1];
         out->duration = s->duration[s->flush_idx];
         out->pts     = s->pts[s->flush_idx++] - s->nb_samples;
-        s->nb_samples += s->pts[s->flush_idx] - s->pts[s->flush_idx - 1] - out->nb_samples;
+        if (s->nb_frames > 1)
+            s->nb_samples += s->pts[s->flush_idx] - s->pts[s->flush_idx - 1] - out->nb_samples;
 
         if (av_sample_fmt_is_planar(out->format))
             reverse_samples_planar(out);
