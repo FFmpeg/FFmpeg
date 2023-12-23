@@ -384,11 +384,11 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
     uint32_t total_count = 0;
     uint8_t logcounts[258] = { 0 };
     uint8_t same[258] = { 0 };
+    const int table_size = 1 << log_alphabet_size;
     dist->uniq_pos = -1;
 
     if (get_bits1(gb)) {
         /* simple code */
-        dist->alphabet_size = 256;
         if (get_bits1(gb)) {
             uint8_t v1 = jxl_u8(gb);
             uint8_t v2 = jxl_u8(gb);
@@ -398,17 +398,24 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
             dist->freq[v2] = (1 << 12) - dist->freq[v1];
             if (!dist->freq[v1])
                 dist->uniq_pos = v2;
+            dist->alphabet_size = 1 + FFMAX(v1, v2);
         } else {
             uint8_t x = jxl_u8(gb);
             dist->freq[x] = 1 << 12;
             dist->uniq_pos = x;
+            dist->alphabet_size = 1 + x;
         }
+        if (dist->alphabet_size > table_size)
+            return AVERROR_INVALIDDATA;
+
         return 0;
     }
 
     if (get_bits1(gb)) {
         /* flat code */
         dist->alphabet_size = jxl_u8(gb) + 1;
+        if (dist->alphabet_size > table_size)
+            return AVERROR_INVALIDDATA;
         for (int i = 0; i < dist->alphabet_size; i++)
             dist->freq[i] = (1 << 12) / dist->alphabet_size;
         for (int i = 0; i < (1 << 12) % dist->alphabet_size; i++)
@@ -426,6 +433,9 @@ static int populate_distribution(GetBitContext *gb, JXLSymbolDistribution *dist,
         return AVERROR_INVALIDDATA;
 
     dist->alphabet_size = jxl_u8(gb) + 3;
+    if (dist->alphabet_size > table_size)
+        return AVERROR_INVALIDDATA;
+
     for (int i = 0; i < dist->alphabet_size; i++) {
         logcounts[i] = get_vlc2(gb, dist_prefix_table, 7, 1);
         if (logcounts[i] == 13) {
