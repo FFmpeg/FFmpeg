@@ -1779,7 +1779,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
             int acc_samples = 0;
             int dst_offset = 0;
 
-            while (nb_frame <= s->nb_frames) {
+            while (nb_frame < s->nb_frames) {
                 AVFrame *cur_frame = s->frames[nb_frame];
                 int cur_frame_samples = cur_frame->nb_samples;
                 int nb_samples = 0;
