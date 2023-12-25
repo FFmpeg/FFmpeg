@@ -404,7 +404,8 @@ int ff_d3d12va_decode_uninit(AVCodecContext *avctx)
     return 0;
 }
 
-static inline int d3d12va_update_reference_frames_state(AVCodecContext *avctx, D3D12_RESOURCE_BARRIER *barriers, int state_before, int state_end)
+static inline int d3d12va_update_reference_frames_state(AVCodecContext *avctx, D3D12_RESOURCE_BARRIER *barriers,
+                                                        ID3D12Resource *current_resource, int state_before, int state_end)
 {
     D3D12VADecodeContext   *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
     AVHWFramesContext      *frames_ctx   = D3D12VA_FRAMES_CONTEXT(avctx);
@@ -412,7 +413,7 @@ static inline int d3d12va_update_reference_frames_state(AVCodecContext *avctx, D
 
     int num_barrier = 0;
     for (int i = 0; i < ctx->max_num_ref; i++) {
-        if (((ctx->used_mask >> i) & 0x1) && ctx->ref_resources[i]) {
+        if (((ctx->used_mask >> i) & 0x1) && ctx->ref_resources[i] && ctx->ref_resources[i] != current_resource) {
             barriers[num_barrier].Type  = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
             barriers[num_barrier].Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barriers[num_barrier].Transition = (D3D12_RESOURCE_TRANSITION_BARRIER){
@@ -504,15 +505,14 @@ int ff_d3d12va_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
     DX_CHECK(ID3D12VideoDecodeCommandList_Reset(cmd_list, command_allocator));
 
-    num_barrier += d3d12va_update_reference_frames_state(avctx, &barriers[1], D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_VIDEO_DECODE_READ);
+    num_barrier += d3d12va_update_reference_frames_state(avctx, &barriers[1], resource, D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_VIDEO_DECODE_READ);
 
     ID3D12VideoDecodeCommandList_ResourceBarrier(cmd_list, num_barrier, barriers);
 
     ID3D12VideoDecodeCommandList_DecodeFrame(cmd_list, ctx->decoder, &output_args, &input_args);
 
-    barriers[0].Transition.StateBefore = barriers[0].Transition.StateAfter;
-    barriers[0].Transition.StateAfter  = D3D12_RESOURCE_STATE_COMMON;
-    d3d12va_update_reference_frames_state(avctx, &barriers[1], D3D12_RESOURCE_STATE_VIDEO_DECODE_READ, D3D12_RESOURCE_STATE_COMMON);
+    for (int i = 0; i < num_barrier; i++)
+        FFSWAP(D3D12_RESOURCE_STATES, barriers[i].Transition.StateBefore, barriers[i].Transition.StateAfter);
 
     ID3D12VideoDecodeCommandList_ResourceBarrier(cmd_list, num_barrier, barriers);
 
