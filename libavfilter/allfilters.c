@@ -412,6 +412,7 @@ extern const AVFilter ff_vf_psnr;
 extern const AVFilter ff_vf_pullup;
 extern const AVFilter ff_vf_qp;
 extern const AVFilter ff_vf_qrencode;
+extern const AVFilter ff_vf_quirc;
 extern const AVFilter ff_vf_random;
 extern const AVFilter ff_vf_readeia608;
 extern const AVFilter ff_vf_readvitc;

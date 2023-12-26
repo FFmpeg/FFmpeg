@@ -20392,6 +20392,34 @@ qrencode=text=%@{pts@}
 
 @end itemize
 
+@section quirc
+
+Identify and decode a QR code using the libquirc library (see
+@url{https://github.com/dlbeer/quirc/}), and print the identified QR codes
+positions and payload as metadata.
+
+To enable the compilation of this filter, you need to configure FFmpeg with with
+@code{--enable-libquirc}.
+
+For each found QR code in the input video, some metadata entries are added with
+the prefix @var{lavfi.quirc.N}, where @var{N} is the index, starting from 0,
+associated to the QR code.
+
+A description of each metadata value follows:
+
+@table @option
+@item lavfi.quirc.count
+the number of found QR codes, it is not set in case none was found
+
+@item lavfi.quirc.N.corner.M.x
+@item lavfi.quirc.N.coreer.M.y
+the x/y positions of the four corners of the square containing the QR code,
+where @var{M} is the index of the corner starting from 0
+
+@item lavfi.quirc.N.payload
+the payload of the QR code
+@end table
+
 @section random
 
 Flush video frames from internal cache of frames into a random order.

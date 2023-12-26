@@ -257,6 +257,7 @@ External library support:
   --enable-libplacebo      enable libplacebo library [no]
   --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-libqrencode     enable QR encode generation via libqrencode [no]
+  --enable-libquirc        enable QR decoding via libquirc [no]
   --enable-librabbitmq     enable RabbitMQ library [no]
   --enable-librav1e        enable AV1 encoding via rav1e [no]
   --enable-librist         enable RIST via librist [no]
@@ -1883,6 +1884,7 @@ EXTERNAL_LIBRARY_LIST="
     libplacebo
     libpulse
     libqrencode
+    libquirc
     librabbitmq
     librav1e
     librist
@@ -3793,6 +3795,7 @@ ocv_filter_deps="libopencv"
 openclsrc_filter_deps="opencl"
 qrencode_filter_deps="libqrencode"
 qrencodesrc_filter_deps="libqrencode"
+quirc_filter_deps="libquirc"
 overlay_opencl_filter_deps="opencl"
 overlay_qsv_filter_deps="libmfx"
 overlay_qsv_filter_select="qsvvpp"
@@ -6845,6 +6848,7 @@ enabled libopus           && {
 enabled libplacebo        && require_pkg_config libplacebo "libplacebo >= 4.192.0" libplacebo/vulkan.h pl_vulkan_create
 enabled libpulse          && require_pkg_config libpulse libpulse pulse/pulseaudio.h pa_context_new
 enabled libqrencode       && require_pkg_config libqrencode libqrencode qrencode.h QRcode_encodeString
+enabled libquirc          && require libquirc quirc.h quirc_decode -lquirc
 enabled librabbitmq       && require_pkg_config librabbitmq "librabbitmq >= 0.7.1" amqp.h amqp_new_connection
 enabled librav1e          && require_pkg_config librav1e "rav1e >= 0.5.0" rav1e.h rav1e_context_new
 enabled librist           && require_pkg_config librist "librist >= 0.2.7" librist/librist.h rist_receiver_create
