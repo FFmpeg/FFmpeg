@@ -486,8 +486,7 @@ static av_always_inline int encode_alpha_slice_data(AVCodecContext *avctx, int8_
             run++;
         }
     } while (idx < num_coeffs);
-    if (run)
-        put_alpha_run(&pb, run);
+    put_alpha_run(&pb, run);
     flush_put_bits(&pb);
     *a_data_size = put_bytes_output(&pb);
 

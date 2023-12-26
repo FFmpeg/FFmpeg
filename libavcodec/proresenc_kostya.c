@@ -562,8 +562,7 @@ static void encode_alpha_plane(ProresContext *ctx, PutBitContext *pb,
             run++;
         }
     } while (idx < num_coeffs);
-    if (run)
-        put_alpha_run(pb, run);
+    put_alpha_run(pb, run);
 }
 
 static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
