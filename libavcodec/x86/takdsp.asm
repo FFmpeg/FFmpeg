@@ -90,8 +90,10 @@ cglobal tak_decorrelate_sm, 3, 3, 6, p1, p2, length
 
 INIT_XMM sse2
 TAK_DECORRELATE
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 TAK_DECORRELATE
+%endif
 
 %macro TAK_DECORRELATE_SF 0
 cglobal tak_decorrelate_sf, 3, 3, 5, p1, p2, length, dshift, dfactor
@@ -125,5 +127,7 @@ cglobal tak_decorrelate_sf, 3, 3, 5, p1, p2, length, dshift, dfactor
 
 INIT_XMM sse4
 TAK_DECORRELATE_SF
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 TAK_DECORRELATE_SF
+%endif
