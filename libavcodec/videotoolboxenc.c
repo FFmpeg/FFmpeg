@@ -521,6 +521,8 @@ static CMVideoCodecType get_cm_codec_type(AVCodecContext *avctx,
         }
         return kCMVideoCodecType_HEVC;
     case AV_CODEC_ID_PRORES:
+        if (desc && (desc->flags & AV_PIX_FMT_FLAG_ALPHA))
+            avctx->bits_per_coded_sample = 32;
         switch (profile) {
         case AV_PROFILE_PRORES_PROXY:
             return MKBETAG('a','p','c','o'); // kCMVideoCodecType_AppleProRes422Proxy

@@ -930,6 +930,9 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         }
     }
 
+    if (ctx->need_alpha)
+        avctx->bits_per_coded_sample = 32;
+
     ff_fdctdsp_init(&ctx->fdsp, avctx);
 
     avctx->codec_tag = AV_RL32((const uint8_t*)profiles[avctx->profile].name);
