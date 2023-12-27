@@ -697,7 +697,7 @@ int av_image_fill_black(uint8_t * const dst_data[4], const ptrdiff_t dst_linesiz
             if (comp.depth < 8 || (fltp && comp.depth != 16 && comp.depth != 32))
                 return AVERROR(EINVAL);
             if (fltp)
-                color = (comp.depth == 16 ? 0x3000 : 0x3D800000); // 0.0625
+                color = (comp.depth == 16 ? 0x2C00 : 0x3D800000); // 0.0625
             else
                 color = 16 << (comp.depth - 8);
         } else if ((c == 1 || c == 2) && !rgb && !xyz) {
