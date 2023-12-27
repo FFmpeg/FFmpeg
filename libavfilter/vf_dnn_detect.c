@@ -359,24 +359,48 @@ static int dnn_detect_post_proc_yolov3(AVFrame *frame, DNNData *output,
     return 0;
 }
 
-static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, AVFilterContext *filter_ctx)
+static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, int nb_outputs,
+                                    AVFilterContext *filter_ctx)
 {
     DnnDetectContext *ctx = filter_ctx->priv;
     float conf_threshold = ctx->confidence;
-    int proposal_count = output->height;
-    int detect_size = output->width;
-    float *detections = output->data;
+    int proposal_count = 0;
+    int detect_size = 0;
+    float *detections = NULL, *labels = NULL;
     int nb_bboxes = 0;
     AVDetectionBBoxHeader *header;
     AVDetectionBBox *bbox;
+    int scale_w = ctx->scale_width;
+    int scale_h = ctx->scale_height;
 
-    if (output->width != 7) {
+    if (nb_outputs == 1 && output->width == 7) {
+        proposal_count = output->height;
+        detect_size = output->width;
+        detections = output->data;
+    } else if (nb_outputs == 2 && output[0].width == 5) {
+        proposal_count = output[0].height;
+        detect_size = output[0].width;
+        detections = output[0].data;
+        labels = output[1].data;
+    } else if (nb_outputs == 2 && output[1].width == 5) {
+        proposal_count = output[1].height;
+        detect_size = output[1].width;
+        detections = output[1].data;
+        labels = output[0].data;
+    } else {
         av_log(filter_ctx, AV_LOG_ERROR, "Model output shape doesn't match ssd requirement.\n");
         return AVERROR(EINVAL);
     }
 
+    if (proposal_count == 0)
+        return 0;
+
     for (int i = 0; i < proposal_count; ++i) {
-        float conf = detections[i * detect_size + 2];
+        float conf;
+        if (nb_outputs == 1)
+            conf = detections[i * detect_size + 2];
+        else
+            conf = detections[i * detect_size + 4];
         if (conf < conf_threshold) {
             continue;
         }
@@ -398,12 +422,24 @@ static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, AVFilterCon
 
     for (int i = 0; i < proposal_count; ++i) {
         int av_unused image_id = (int)detections[i * detect_size + 0];
-        int label_id = (int)detections[i * detect_size + 1];
-        float conf   =      detections[i * detect_size + 2];
-        float x0     =      detections[i * detect_size + 3];
-        float y0     =      detections[i * detect_size + 4];
-        float x1     =      detections[i * detect_size + 5];
-        float y1     =      detections[i * detect_size + 6];
+        int label_id;
+        float conf, x0, y0, x1, y1;
+
+        if (nb_outputs == 1) {
+            label_id = (int)detections[i * detect_size + 1];
+            conf = detections[i * detect_size + 2];
+            x0   = detections[i * detect_size + 3];
+            y0   = detections[i * detect_size + 4];
+            x1   = detections[i * detect_size + 5];
+            y1   = detections[i * detect_size + 6];
+        } else {
+            label_id = (int)labels[i];
+            x0     =      detections[i * detect_size] / scale_w;
+            y0     =      detections[i * detect_size + 1] / scale_h;
+            x1     =      detections[i * detect_size + 2] / scale_w;
+            y1     =      detections[i * detect_size + 3] / scale_h;
+            conf   =      detections[i * detect_size + 4];
+        }
 
         if (conf < conf_threshold) {
             continue;
@@ -447,7 +483,7 @@ static int dnn_detect_post_proc_ov(AVFrame *frame, DNNData *output, int nb_outpu
 
     switch (ctx->model_type) {
     case DDMT_SSD:
-        ret = dnn_detect_post_proc_ssd(frame, output, filter_ctx);
+        ret = dnn_detect_post_proc_ssd(frame, output, nb_outputs, filter_ctx);
         if (ret < 0)
             return ret;
         break;
