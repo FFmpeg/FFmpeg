@@ -103,6 +103,9 @@ typedef struct SetPTSContext {
     enum AVMediaType type;
 } SetPTSContext;
 
+#define V(name_) \
+    setpts->var_values[VAR_##name_]
+
 static av_cold int init(AVFilterContext *ctx)
 {
     SetPTSContext *setpts = ctx->priv;
@@ -114,15 +117,15 @@ static av_cold int init(AVFilterContext *ctx)
         return ret;
     }
 
-    setpts->var_values[VAR_N]           = 0.0;
-    setpts->var_values[VAR_S]           = 0.0;
-    setpts->var_values[VAR_PREV_INPTS]  = NAN;
-    setpts->var_values[VAR_PREV_INT]    = NAN;
-    setpts->var_values[VAR_PREV_OUTPTS] = NAN;
-    setpts->var_values[VAR_PREV_OUTT]   = NAN;
-    setpts->var_values[VAR_STARTPTS]    = NAN;
-    setpts->var_values[VAR_STARTT]      = NAN;
-    setpts->var_values[VAR_T_CHANGE]    = NAN;
+    V(N)           = 0.0;
+    V(S)           = 0.0;
+    V(PREV_INPTS)  = NAN;
+    V(PREV_INT)    = NAN;
+    V(PREV_OUTPTS) = NAN;
+    V(PREV_OUTT)   = NAN;
+    V(STARTPTS)    = NAN;
+    V(STARTT)      = NAN;
+    V(T_CHANGE)    = NAN;
     return 0;
 }
 
@@ -132,22 +135,18 @@ static int config_input(AVFilterLink *inlink)
     SetPTSContext *setpts = ctx->priv;
 
     setpts->type = inlink->type;
-    setpts->var_values[VAR_TB] = av_q2d(inlink->time_base);
-    setpts->var_values[VAR_RTCSTART] = av_gettime();
+    V(TB) = av_q2d(inlink->time_base);
+    V(RTCSTART) = av_gettime();
 
-    setpts->var_values[VAR_SR] =
-    setpts->var_values[VAR_SAMPLE_RATE] =
+    V(SR) = V(SAMPLE_RATE) =
         setpts->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
-    setpts->var_values[VAR_FRAME_RATE] =
-    setpts->var_values[VAR_FR] =         inlink->frame_rate.num &&
-                                         inlink->frame_rate.den ?
-                                            av_q2d(inlink->frame_rate) : NAN;
+    V(FRAME_RATE) = V(FR) =
+        inlink->frame_rate.num && inlink->frame_rate.den ?
+        av_q2d(inlink->frame_rate) : NAN;
 
     av_log(inlink->src, AV_LOG_VERBOSE, "TB:%f FRAME_RATE:%f SAMPLE_RATE:%f\n",
-           setpts->var_values[VAR_TB],
-           setpts->var_values[VAR_FRAME_RATE],
-           setpts->var_values[VAR_SAMPLE_RATE]);
+           V(TB), V(FRAME_RATE), V(SAMPLE_RATE));
     return 0;
 }
 
@@ -162,28 +161,28 @@ static inline char *double2int64str(char *buf, double v)
 
 static double eval_pts(SetPTSContext *setpts, AVFilterLink *inlink, AVFrame *frame, int64_t pts)
 {
-    if (isnan(setpts->var_values[VAR_STARTPTS])) {
-        setpts->var_values[VAR_STARTPTS] = TS2D(pts);
-        setpts->var_values[VAR_STARTT  ] = TS2T(pts, inlink->time_base);
+    if (isnan(V(STARTPTS))) {
+        V(STARTPTS) = TS2D(pts);
+        V(STARTT  ) = TS2T(pts, inlink->time_base);
     }
-    if (isnan(setpts->var_values[VAR_T_CHANGE])) {
-        setpts->var_values[VAR_T_CHANGE] = TS2T(pts, inlink->time_base);
+    if (isnan(V(T_CHANGE))) {
+        V(T_CHANGE) = TS2T(pts, inlink->time_base);
     }
-    setpts->var_values[VAR_PTS       ] = TS2D(pts);
-    setpts->var_values[VAR_T         ] = TS2T(pts, inlink->time_base);
+    V(PTS       ) = TS2D(pts);
+    V(T         ) = TS2T(pts, inlink->time_base);
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
-    setpts->var_values[VAR_POS       ] = !frame || frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
+    V(POS       ) = !frame || frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    setpts->var_values[VAR_RTCTIME   ] = av_gettime();
+    V(RTCTIME   ) = av_gettime();
 
     if (frame) {
         if (inlink->type == AVMEDIA_TYPE_VIDEO) {
-            setpts->var_values[VAR_INTERLACED] = !!(frame->flags & AV_FRAME_FLAG_INTERLACED);
+            V(INTERLACED) = !!(frame->flags & AV_FRAME_FLAG_INTERLACED);
         } else if (inlink->type == AVMEDIA_TYPE_AUDIO) {
-            setpts->var_values[VAR_S] = frame->nb_samples;
-            setpts->var_values[VAR_NB_SAMPLES] = frame->nb_samples;
+            V(S) = frame->nb_samples;
+            V(NB_SAMPLES) = frame->nb_samples;
         }
     }
 
@@ -202,34 +201,32 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     av_log(inlink->dst, AV_LOG_TRACE,
             "N:%"PRId64" PTS:%s T:%f",
-            (int64_t)setpts->var_values[VAR_N],
-            d2istr(setpts->var_values[VAR_PTS]),
-            setpts->var_values[VAR_T]);
+           (int64_t)V(N), d2istr(V(PTS)), V(T));
     switch (inlink->type) {
     case AVMEDIA_TYPE_VIDEO:
         av_log(inlink->dst, AV_LOG_TRACE, " INTERLACED:%"PRId64,
-                (int64_t)setpts->var_values[VAR_INTERLACED]);
+                (int64_t)V(INTERLACED));
         break;
     case AVMEDIA_TYPE_AUDIO:
         av_log(inlink->dst, AV_LOG_TRACE, " NB_SAMPLES:%"PRId64" NB_CONSUMED_SAMPLES:%"PRId64,
-                (int64_t)setpts->var_values[VAR_NB_SAMPLES],
-                (int64_t)setpts->var_values[VAR_NB_CONSUMED_SAMPLES]);
+                (int64_t)V(NB_SAMPLES),
+                (int64_t)V(NB_CONSUMED_SAMPLES));
         break;
     }
     av_log(inlink->dst, AV_LOG_TRACE, " -> PTS:%s T:%f\n", d2istr(d), TS2T(d, inlink->time_base));
 
     if (inlink->type == AVMEDIA_TYPE_VIDEO) {
-        setpts->var_values[VAR_N] += 1.0;
+        V(N) += 1.0;
     } else {
-        setpts->var_values[VAR_N] += frame->nb_samples;
+        V(N) += frame->nb_samples;
     }
 
-    setpts->var_values[VAR_PREV_INPTS ] = TS2D(in_pts);
-    setpts->var_values[VAR_PREV_INT   ] = TS2T(in_pts, inlink->time_base);
-    setpts->var_values[VAR_PREV_OUTPTS] = TS2D(frame->pts);
-    setpts->var_values[VAR_PREV_OUTT]   = TS2T(frame->pts, inlink->time_base);
+    V(PREV_INPTS ) = TS2D(in_pts);
+    V(PREV_INT   ) = TS2T(in_pts, inlink->time_base);
+    V(PREV_OUTPTS) = TS2D(frame->pts);
+    V(PREV_OUTT)   = TS2T(frame->pts, inlink->time_base);
     if (setpts->type == AVMEDIA_TYPE_AUDIO) {
-        setpts->var_values[VAR_NB_CONSUMED_SAMPLES] += frame->nb_samples;
+        V(NB_CONSUMED_SAMPLES) += frame->nb_samples;
     }
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
@@ -256,9 +253,7 @@ static int activate(AVFilterContext *ctx)
         double d = eval_pts(setpts, inlink, NULL, pts);
 
         av_log(ctx, AV_LOG_TRACE, "N:EOF PTS:%s T:%f -> PTS:%s T:%f\n",
-               d2istr(setpts->var_values[VAR_PTS]),
-               setpts->var_values[VAR_T],
-               d2istr(d), TS2T(d, inlink->time_base));
+               d2istr(V(PTS)), V(T), d2istr(d), TS2T(d, inlink->time_base));
         ff_outlink_set_status(outlink, status, D2TS(d));
         return 0;
     }
@@ -296,7 +291,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         } else {
             av_expr_free(setpts->expr);
             setpts->expr = new_expr;
-            setpts->var_values[VAR_T_CHANGE] = NAN;
+            V(T_CHANGE) = NAN;
         }
     } else {
         ret = AVERROR(EINVAL);
@@ -304,6 +299,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
     return ret;
 }
+#undef V
 
 #define OFFSET(x) offsetof(SetPTSContext, x)
 #define V AV_OPT_FLAG_VIDEO_PARAM
