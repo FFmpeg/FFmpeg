@@ -157,7 +157,8 @@ static int hevc_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *out)
         nalu_type = (bytestream2_peek_byte(&gb) >> 1) & 0x3f;
 
         /* prepend extradata to IRAP frames */
-        is_irap       = nalu_type >= 16 && nalu_type <= 23;
+        is_irap = nalu_type >= HEVC_NAL_BLA_W_LP &&
+                  nalu_type <= HEVC_NAL_RSV_IRAP_VCL23;
         add_extradata = is_irap && !got_irap;
         extra_size    = add_extradata * ctx->par_out->extradata_size;
         got_irap     |= is_irap;
