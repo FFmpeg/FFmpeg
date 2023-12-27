@@ -278,6 +278,8 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
             (nut >= 41 && nut <= 44) || (nut >= 48 && nut <= 55)) {
             if (pc->frame_start_found) {
                 pc->frame_start_found = 0;
+                if (!((pc->state64 >> 6 * 8) & 0xFF))
+                    return i - 6;
                 return i - 5;
             }
         } else if (nut <= HEVC_NAL_RASL_R ||
@@ -288,6 +290,8 @@ static int hevc_find_frame_end(AVCodecParserContext *s, const uint8_t *buf,
                     pc->frame_start_found = 1;
                 } else { // First slice of next frame found
                     pc->frame_start_found = 0;
+                    if (!((pc->state64 >> 6 * 8) & 0xFF))
+                        return i - 6;
                     return i - 5;
                 }
             }
