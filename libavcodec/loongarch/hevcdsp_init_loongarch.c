@@ -189,6 +189,11 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->idct[1] = ff_hevc_idct_8x8_lsx;
             c->idct[2] = ff_hevc_idct_16x16_lsx;
             c->idct[3] = ff_hevc_idct_32x32_lsx;
+
+            c->add_residual[0] = ff_hevc_add_residual4x4_8_lsx;
+            c->add_residual[1] = ff_hevc_add_residual8x8_8_lsx;
+            c->add_residual[2] = ff_hevc_add_residual16x16_8_lsx;
+            c->add_residual[3] = ff_hevc_add_residual32x32_8_lsx;
         }
     }
 }

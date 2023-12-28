@@ -227,4 +227,9 @@ void ff_hevc_idct_8x8_lsx(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_16x16_lsx(int16_t *coeffs, int col_limit);
 void ff_hevc_idct_32x32_lsx(int16_t *coeffs, int col_limit);
 
+void ff_hevc_add_residual4x4_8_lsx(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
+void ff_hevc_add_residual8x8_8_lsx(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
+void ff_hevc_add_residual16x16_8_lsx(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
+void ff_hevc_add_residual32x32_8_lsx(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
+
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
