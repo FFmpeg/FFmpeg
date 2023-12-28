@@ -321,7 +321,7 @@ static int dxva2_vc1_start_frame(AVCodecContext *avctx,
 
     if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
-    assert(ctx_pic);
+    av_assert0(ctx_pic);
 
     ff_dxva2_vc1_fill_picture_parameters(avctx, ctx, &ctx_pic->pp);
 

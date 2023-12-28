@@ -264,7 +264,7 @@ static int dxva2_mpeg2_start_frame(AVCodecContext *avctx,
 
     if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
-    assert(ctx_pic);
+    av_assert0(ctx_pic);
 
     ff_dxva2_mpeg2_fill_picture_parameters(avctx, ctx, &ctx_pic->pp);
     ff_dxva2_mpeg2_fill_quantization_matrices(avctx, ctx, &ctx_pic->qm);

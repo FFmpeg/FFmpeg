@@ -20,10 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <assert.h>
 #include <string.h>
 #include <initguid.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/log.h"
 #include "libavutil/time.h"
@@ -1012,7 +1012,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 
     /* TODO Film Grain when possible */
 
-    assert(buffer_count == 1 + (qm_size > 0) + 2);
+    av_assert0(buffer_count == 1 + (qm_size > 0) + 2);
 
 #if CONFIG_D3D11VA
     if (ff_dxva2_is_d3d11(avctx))

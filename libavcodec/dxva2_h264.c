@@ -44,7 +44,7 @@ struct dxva2_picture_context {
 static void fill_picture_entry(DXVA_PicEntry_H264 *pic,
                                unsigned index, unsigned flag)
 {
-    assert((index&0x7f) == index && (flag&0x01) == flag);
+    av_assert0((index&0x7f) == index && (flag&0x01) == flag);
     pic->bPicEntry = index | (flag << 7);
 }
 
@@ -194,8 +194,8 @@ void ff_dxva2_h264_fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext
 
 static int is_slice_short(const AVCodecContext *avctx, AVDXVAContext *ctx)
 {
-    assert(DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 1 ||
-           DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 2);
+    av_assert0(DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 1 ||
+               DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 2);
     return DXVA_CONTEXT_CFG_BITSTREAM(avctx, ctx) == 2;
 }
 
@@ -348,10 +348,10 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         static const unsigned start_code_size = sizeof(start_code);
         unsigned position, size;
 
-        assert(offsetof(DXVA_Slice_H264_Short, BSNALunitDataLocation) ==
-               offsetof(DXVA_Slice_H264_Long,  BSNALunitDataLocation));
-        assert(offsetof(DXVA_Slice_H264_Short, SliceBytesInBuffer) ==
-               offsetof(DXVA_Slice_H264_Long,  SliceBytesInBuffer));
+        av_assert0(offsetof(DXVA_Slice_H264_Short, BSNALunitDataLocation) ==
+                   offsetof(DXVA_Slice_H264_Long,  BSNALunitDataLocation));
+        av_assert0(offsetof(DXVA_Slice_H264_Short, SliceBytesInBuffer) ==
+                   offsetof(DXVA_Slice_H264_Long,  SliceBytesInBuffer));
 
         if (is_slice_short(avctx, ctx))
             slice = &ctx_pic->slice_short[i];
@@ -453,7 +453,7 @@ static int dxva2_h264_start_frame(AVCodecContext *avctx,
 
     if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
-    assert(ctx_pic);
+    av_assert0(ctx_pic);
 
     /* Fill up DXVA_PicParams_H264 */
     ff_dxva2_h264_fill_picture_parameters(avctx, ctx, &ctx_pic->pp);
