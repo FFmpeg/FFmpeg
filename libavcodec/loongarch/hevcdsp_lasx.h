@@ -131,4 +131,6 @@ BI_MC(epel, h, 64);
 
 #undef BI_MC
 
+void ff_hevc_idct_32x32_lasx(int16_t *coeffs, int col_limit);
+
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LASX_H
