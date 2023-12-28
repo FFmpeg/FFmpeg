@@ -257,6 +257,26 @@ PEL_UNI_W(pel, pixels, 32);
 PEL_UNI_W(pel, pixels, 48);
 PEL_UNI_W(pel, pixels, 64);
 
+PEL_UNI_W(qpel, v, 4);
+PEL_UNI_W(qpel, v, 6);
+PEL_UNI_W(qpel, v, 8);
+PEL_UNI_W(qpel, v, 12);
+PEL_UNI_W(qpel, v, 16);
+PEL_UNI_W(qpel, v, 24);
+PEL_UNI_W(qpel, v, 32);
+PEL_UNI_W(qpel, v, 48);
+PEL_UNI_W(qpel, v, 64);
+
+PEL_UNI_W(qpel, h, 4);
+PEL_UNI_W(qpel, h, 6);
+PEL_UNI_W(qpel, h, 8);
+PEL_UNI_W(qpel, h, 12);
+PEL_UNI_W(qpel, h, 16);
+PEL_UNI_W(qpel, h, 24);
+PEL_UNI_W(qpel, h, 32);
+PEL_UNI_W(qpel, h, 48);
+PEL_UNI_W(qpel, h, 64);
+
 #undef PEL_UNI_W
 
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
