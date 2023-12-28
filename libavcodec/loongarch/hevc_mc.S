@@ -1784,8 +1784,12 @@ function ff_hevc_put_hevc_qpel_uni_w_h64_8_lasx
 endfunc
 
 const shufb
-    .byte 0,1,2,3, 1,2,3,4 ,2,3,4,5, 3,4,5,6
-    .byte 4,5,6,7, 5,6,7,8 ,6,7,8,9, 7,8,9,10
+    .byte 0,1,2,3, 1,2,3,4 ,2,3,4,5, 3,4,5,6  //mask for epel_uni_w(128-bit)
+    .byte 4,5,6,7, 5,6,7,8 ,6,7,8,9, 7,8,9,10 //mask for epel_uni_w(256-bit)
+    .byte 0,1,2,3, 4,5,6,7 ,1,2,3,4, 5,6,7,8  //mask for qpel_uni_h4
+    .byte 0,1,1,2, 2,3,3,4 ,4,5,5,6, 6,7,7,8  //mask for qpel_uni_h/v6/8...
+    .byte 0,1,2,3, 1,2,3,4 ,2,3,4,5, 3,4,5,6, 4,5,6,7, 5,6,7,8, 6,7,8,9, 7,8,9,10 //epel_uni_w_h16/24/32/48/64
+    .byte 0,1,1,2, 2,3,3,4 ,4,5,5,6, 6,7,7,8, 0,1,1,2, 2,3,3,4 ,4,5,5,6, 6,7,7,8  //mask for bi_epel_h16/24/32/48/64
 endconst
 
 .macro PUT_HEVC_EPEL_UNI_W_HV4_LSX w
@@ -2583,4 +2587,1987 @@ function ff_hevc_put_hevc_epel_uni_w_hv64_8_lasx
     addi.d         a4,     t4,      0
     addi.d         t5,     t5,      -1
     bnez           t5,     .LOOP_HV64_LASX
+endfunc
+
+/*
+ * void FUNC(put_hevc_qpel_uni_h)(uint8_t *_dst, ptrdiff_t _dststride,
+ *                                const uint8_t *_src, ptrdiff_t _srcstride,
+ *                                int height, intptr_t mx, intptr_t my,
+ *                                int width)
+ */
+function ff_hevc_put_hevc_uni_qpel_h4_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr5,    t1,      t0 //filter
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr1,    t1
+    la.local       t1,     shufb
+    vld            vr2,    t1,      32 //mask0 0 1
+    vaddi.bu       vr3,    vr2,     2  //mask1 2 3
+.LOOP_UNI_H4:
+    vld            vr18,   a2,      0
+    vldx           vr19,   a2,      a3
+    alsl.d         a2,     a3,      a2,   1
+    vshuf.b        vr6,    vr18,    vr18,   vr2
+    vshuf.b        vr7,    vr18,    vr18,   vr3
+    vshuf.b        vr8,    vr19,    vr19,   vr2
+    vshuf.b        vr9,    vr19,    vr19,   vr3
+    vdp2.h.bu.b    vr10,   vr6,     vr5
+    vdp2.h.bu.b    vr11,   vr7,     vr5
+    vdp2.h.bu.b    vr12,   vr8,     vr5
+    vdp2.h.bu.b    vr13,   vr9,     vr5
+    vhaddw.d.h     vr10
+    vhaddw.d.h     vr11
+    vhaddw.d.h     vr12
+    vhaddw.d.h     vr13
+    vpickev.w      vr10,   vr11,    vr10
+    vpickev.w      vr11,   vr13,    vr12
+    vpickev.h      vr10,   vr11,    vr10
+    vadd.h         vr10,   vr10,    vr1
+    vsrai.h        vr10,   vr10,    6
+    vssrani.bu.h   vr10,   vr10,    0
+    fst.s          f10,    a0,      0
+    vbsrl.v        vr10,   vr10,    4
+    fstx.s         f10,    a0,      a1
+    alsl.d         a0,     a1,      a0,   1
+    addi.d         a4,     a4,      -2
+    bnez           a4,     .LOOP_UNI_H4
+endfunc
+
+.macro HEVC_UNI_QPEL_H8_LSX in0, out0
+    vshuf.b        vr10,   \in0,    \in0,   vr5
+    vshuf.b        vr11,   \in0,    \in0,   vr6
+    vshuf.b        vr12,   \in0,    \in0,   vr7
+    vshuf.b        vr13,   \in0,    \in0,   vr8
+    vdp2.h.bu.b    \out0,  vr10,    vr0 //(QPEL_FILTER(src, 1)
+    vdp2add.h.bu.b \out0,  vr11,    vr1
+    vdp2add.h.bu.b \out0,  vr12,    vr2
+    vdp2add.h.bu.b \out0,  vr13,    vr3
+    vadd.h         \out0,  \out0,   vr4
+    vsrai.h        \out0,  \out0,   6
+.endm
+
+.macro HEVC_UNI_QPEL_H16_LASX in0, out0
+    xvshuf.b        xr10,   \in0,   \in0,   xr5
+    xvshuf.b        xr11,   \in0,   \in0,   xr6
+    xvshuf.b        xr12,   \in0,   \in0,   xr7
+    xvshuf.b        xr13,   \in0,   \in0,   xr8
+    xvdp2.h.bu.b    \out0,  xr10,   xr0 //(QPEL_FILTER(src, 1)
+    xvdp2add.h.bu.b \out0,  xr11,   xr1
+    xvdp2add.h.bu.b \out0,  xr12,   xr2
+    xvdp2add.h.bu.b \out0,  xr13,   xr3
+    xvadd.h         \out0,  \out0,  xr4
+    xvsrai.h        \out0,  \out0,  6
+.endm
+
+function ff_hevc_put_hevc_uni_qpel_h6_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    vreplvei.h     vr1,    vr0,     1  //cd...
+    vreplvei.h     vr2,    vr0,     2  //ef...
+    vreplvei.h     vr3,    vr0,     3  //gh...
+    vreplvei.h     vr0,    vr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    vaddi.bu       vr6,    vr5,     2
+    vaddi.bu       vr7,    vr5,     4
+    vaddi.bu       vr8,    vr5,     6
+.LOOP_UNI_H6:
+    vld            vr9,    a2,      0
+    add.d          a2,     a2,      a3
+    HEVC_UNI_QPEL_H8_LSX vr9, vr14
+    vssrani.bu.h   vr14,   vr14,    0
+    fst.s          f14,    a0,      0
+    vstelm.h       vr14,   a0,      4,   2
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H6
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h8_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    vreplvei.h     vr1,    vr0,     1  //cd...
+    vreplvei.h     vr2,    vr0,     2  //ef...
+    vreplvei.h     vr3,    vr0,     3  //gh...
+    vreplvei.h     vr0,    vr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    vaddi.bu       vr6,    vr5,     2
+    vaddi.bu       vr7,    vr5,     4
+    vaddi.bu       vr8,    vr5,     6
+.LOOP_UNI_H8:
+    vld            vr9,    a2,      0
+    add.d          a2,     a2,      a3
+    HEVC_UNI_QPEL_H8_LSX vr9, vr14
+    vssrani.bu.h   vr14,   vr14,    0
+    fst.d          f14,    a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H8
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h12_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    vreplvei.h     vr1,    vr0,     1  //cd...
+    vreplvei.h     vr2,    vr0,     2  //ef...
+    vreplvei.h     vr3,    vr0,     3  //gh...
+    vreplvei.h     vr0,    vr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    vaddi.bu       vr6,    vr5,     2
+    vaddi.bu       vr7,    vr5,     4
+    vaddi.bu       vr8,    vr5,     6
+.LOOP_UNI_H12:
+    vld            vr9,    a2,      0
+    HEVC_UNI_QPEL_H8_LSX vr9, vr14
+    vld            vr9,    a2,      8
+    add.d          a2,     a2,      a3
+    HEVC_UNI_QPEL_H8_LSX vr9, vr15
+    vssrani.bu.h   vr15,   vr14,    0
+    fst.d          f15,    a0,      0
+    vstelm.w       vr15,   a0,      8,   2
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H12
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h12_8_lasx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    xvreplve0.q    xr0,    xr0
+    xvrepl128vei.h xr1,    xr0,     1  //cd...
+    xvrepl128vei.h xr2,    xr0,     2  //ef...
+    xvrepl128vei.h xr3,    xr0,     3  //gh...
+    xvrepl128vei.h xr0,    xr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    xvreplgr2vr.h  xr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    xvreplve0.q    xr5,    xr5
+    xvaddi.bu      xr6,    xr5,     2
+    xvaddi.bu      xr7,    xr5,     4
+    xvaddi.bu      xr8,    xr5,     6
+.LOOP_UNI_H12_LASX:
+    xvld           xr9,    a2,      0
+    add.d          a2,     a2,      a3
+    xvpermi.d      xr9,    xr9,     0x94 //rearrange data
+    HEVC_UNI_QPEL_H16_LASX xr9, xr14
+    xvpermi.q      xr15,   xr14,    0x01
+    vssrani.bu.h   vr15,   vr14,    0
+    fst.d          f15,    a0,      0
+    vstelm.w       vr15,   a0,      8,   2
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H12_LASX
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h16_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    vreplvei.h     vr1,    vr0,     1  //cd...
+    vreplvei.h     vr2,    vr0,     2  //ef...
+    vreplvei.h     vr3,    vr0,     3  //gh...
+    vreplvei.h     vr0,    vr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    vaddi.bu       vr6,    vr5,     2
+    vaddi.bu       vr7,    vr5,     4
+    vaddi.bu       vr8,    vr5,     6
+.LOOP_UNI_H16:
+    vld            vr9,    a2,      0
+    HEVC_UNI_QPEL_H8_LSX vr9, vr14
+    vld            vr9,    a2,      8
+    add.d          a2,     a2,      a3
+    HEVC_UNI_QPEL_H8_LSX vr9, vr15
+    vssrani.bu.h   vr15,   vr14,    0
+    vst            vr15,   a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H16
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h16_8_lasx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    xvreplve0.q    xr0,    xr0
+    xvrepl128vei.h xr1,    xr0,     1  //cd...
+    xvrepl128vei.h xr2,    xr0,     2  //ef...
+    xvrepl128vei.h xr3,    xr0,     3  //gh...
+    xvrepl128vei.h xr0,    xr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    xvreplgr2vr.h  xr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    xvreplve0.q    xr5,    xr5
+    xvaddi.bu      xr6,    xr5,     2
+    xvaddi.bu      xr7,    xr5,     4
+    xvaddi.bu      xr8,    xr5,     6
+.LOOP_UNI_H16_LASX:
+    xvld           xr9,    a2,      0
+    add.d          a2,     a2,      a3
+    xvpermi.d      xr9,    xr9,     0x94 //rearrange data
+    HEVC_UNI_QPEL_H16_LASX xr9, xr14
+    xvpermi.q      xr15,   xr14,    0x01
+    vssrani.bu.h   vr15,   vr14,    0
+    vst            vr15,   a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H16_LASX
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h24_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    vreplvei.h     vr1,    vr0,     1  //cd...
+    vreplvei.h     vr2,    vr0,     2  //ef...
+    vreplvei.h     vr3,    vr0,     3  //gh...
+    vreplvei.h     vr0,    vr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    vaddi.bu       vr6,    vr5,     2
+    vaddi.bu       vr7,    vr5,     4
+    vaddi.bu       vr8,    vr5,     6
+.LOOP_UNI_H24:
+    vld            vr9,    a2,      0
+    HEVC_UNI_QPEL_H8_LSX vr9, vr14
+    vld            vr9,    a2,      8
+    HEVC_UNI_QPEL_H8_LSX vr9, vr15
+    vld            vr9,    a2,      16
+    add.d          a2,     a2,      a3
+    HEVC_UNI_QPEL_H8_LSX vr9, vr16
+    vssrani.bu.h   vr15,   vr14,    0
+    vssrani.bu.h   vr16,   vr16,    0
+    vst            vr15,   a0,      0
+    fst.d          f16,    a0,      16
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H24
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h24_8_lasx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    xvreplve0.q    xr0,    xr0
+    xvrepl128vei.h xr1,    xr0,     1  //cd...
+    xvrepl128vei.h xr2,    xr0,     2  //ef...
+    xvrepl128vei.h xr3,    xr0,     3  //gh...
+    xvrepl128vei.h xr0,    xr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    xvreplgr2vr.h  xr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    xvreplve0.q    xr5,    xr5
+    xvaddi.bu      xr6,    xr5,     2
+    xvaddi.bu      xr7,    xr5,     4
+    xvaddi.bu      xr8,    xr5,     6
+.LOOP_UNI_H24_LASX:
+    xvld           xr9,    a2,      0
+    xvpermi.q      xr19,   xr9,     0x01 //16...23
+    add.d          a2,     a2,      a3
+    xvpermi.d      xr9,    xr9,     0x94 //rearrange data
+    HEVC_UNI_QPEL_H16_LASX xr9, xr14
+    xvpermi.q      xr15,   xr14,    0x01
+    vssrani.bu.h   vr15,   vr14,    0
+    vst            vr15,   a0,      0
+    HEVC_UNI_QPEL_H8_LSX vr19, vr16
+    vssrani.bu.h   vr16,   vr16,    0
+    fst.d          f16,    a0,      16
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H24_LASX
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h32_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    vreplvei.h     vr1,    vr0,     1  //cd...
+    vreplvei.h     vr2,    vr0,     2  //ef...
+    vreplvei.h     vr3,    vr0,     3  //gh...
+    vreplvei.h     vr0,    vr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    vaddi.bu       vr6,    vr5,     2
+    vaddi.bu       vr7,    vr5,     4
+    vaddi.bu       vr8,    vr5,     6
+.LOOP_UNI_H32:
+    vld            vr9,    a2,      0
+    HEVC_UNI_QPEL_H8_LSX vr9, vr14
+    vld            vr9,    a2,      8
+    HEVC_UNI_QPEL_H8_LSX vr9, vr15
+    vld            vr9,    a2,      16
+    HEVC_UNI_QPEL_H8_LSX vr9, vr16
+    vld            vr9,    a2,      24
+    add.d          a2,     a2,      a3
+    HEVC_UNI_QPEL_H8_LSX vr9, vr17
+    vssrani.bu.h   vr15,   vr14,    0
+    vssrani.bu.h   vr17,   vr16,    0
+    vst            vr15,   a0,      0
+    vst            vr17,   a0,      16
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H32
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h32_8_lasx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    xvreplve0.q    xr0,    xr0
+    xvrepl128vei.h xr1,    xr0,     1  //cd...
+    xvrepl128vei.h xr2,    xr0,     2  //ef...
+    xvrepl128vei.h xr3,    xr0,     3  //gh...
+    xvrepl128vei.h xr0,    xr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    xvreplgr2vr.h  xr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    xvreplve0.q    xr5,    xr5
+    xvaddi.bu      xr6,    xr5,     2
+    xvaddi.bu      xr7,    xr5,     4
+    xvaddi.bu      xr8,    xr5,     6
+.LOOP_UNI_H32_LASX:
+    xvld           xr9,    a2,      0
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr14
+    xvld           xr9,    a2,      16
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr15
+    add.d          a2,     a2,      a3
+    xvssrani.bu.h  xr15,   xr14,    0
+    xvpermi.d      xr15,   xr15,    0xd8
+    xvst           xr15,   a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H32_LASX
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h48_8_lsx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    vreplvei.h     vr1,    vr0,     1  //cd...
+    vreplvei.h     vr2,    vr0,     2  //ef...
+    vreplvei.h     vr3,    vr0,     3  //gh...
+    vreplvei.h     vr0,    vr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    vreplgr2vr.h   vr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    vaddi.bu       vr6,    vr5,     2
+    vaddi.bu       vr7,    vr5,     4
+    vaddi.bu       vr8,    vr5,     6
+.LOOP_UNI_H48:
+    vld            vr9,    a2,      0
+    HEVC_UNI_QPEL_H8_LSX vr9, vr14
+    vld            vr9,    a2,      8
+    HEVC_UNI_QPEL_H8_LSX vr9, vr15
+    vld            vr9,    a2,      16
+    HEVC_UNI_QPEL_H8_LSX vr9, vr16
+    vld            vr9,    a2,      24
+    HEVC_UNI_QPEL_H8_LSX vr9, vr17
+    vld            vr9,    a2,      32
+    HEVC_UNI_QPEL_H8_LSX vr9, vr18
+    vld            vr9,    a2,      40
+    add.d          a2,     a2,      a3
+    HEVC_UNI_QPEL_H8_LSX vr9, vr19
+    vssrani.bu.h   vr15,   vr14,    0
+    vssrani.bu.h   vr17,   vr16,    0
+    vssrani.bu.h   vr19,   vr18,    0
+    vst            vr15,   a0,      0
+    vst            vr17,   a0,      16
+    vst            vr19,   a0,      32
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H48
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h48_8_lasx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    xvreplve0.q    xr0,    xr0
+    xvrepl128vei.h xr1,    xr0,     1  //cd...
+    xvrepl128vei.h xr2,    xr0,     2  //ef...
+    xvrepl128vei.h xr3,    xr0,     3  //gh...
+    xvrepl128vei.h xr0,    xr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    xvreplgr2vr.h  xr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    xvreplve0.q    xr5,    xr5
+    xvaddi.bu      xr6,    xr5,     2
+    xvaddi.bu      xr7,    xr5,     4
+    xvaddi.bu      xr8,    xr5,     6
+.LOOP_UNI_H48_LASX:
+    xvld           xr9,    a2,      0
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr14
+    xvld           xr9,    a2,      16
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr15
+    xvld           xr9,    a2,      32
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr16
+    add.d          a2,     a2,      a3
+    xvssrani.bu.h  xr15,   xr14,    0
+    xvpermi.d      xr15,   xr15,    0xd8
+    xvst           xr15,   a0,      0
+    xvpermi.q      xr17,   xr16,    0x01
+    vssrani.bu.h   vr17,   vr16,    0
+    vst            vr17,   a0,      32
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H48_LASX
+endfunc
+
+function ff_hevc_put_hevc_uni_qpel_h64_8_lasx
+    addi.d         t0,     a5,      -1
+    slli.w         t0,     t0,      4
+    la.local       t1,     ff_hevc_qpel_filters
+    vldx           vr0,    t1,      t0 //filter abcdefgh
+    xvreplve0.q    xr0,    xr0
+    xvrepl128vei.h xr1,    xr0,     1  //cd...
+    xvrepl128vei.h xr2,    xr0,     2  //ef...
+    xvrepl128vei.h xr3,    xr0,     3  //gh...
+    xvrepl128vei.h xr0,    xr0,     0  //ab...
+    addi.d         a2,     a2,      -3 //src -= 3
+    addi.w         t1,     zero,    32
+    xvreplgr2vr.h  xr4,    t1
+    la.local       t1,     shufb
+    vld            vr5,    t1,      48
+    xvreplve0.q    xr5,    xr5
+    xvaddi.bu      xr6,    xr5,     2
+    xvaddi.bu      xr7,    xr5,     4
+    xvaddi.bu      xr8,    xr5,     6
+.LOOP_UNI_H64_LASX:
+    xvld           xr9,    a2,      0
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr14
+    xvld           xr9,    a2,      16
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr15
+    xvld           xr9,    a2,      32
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr16
+    xvld           xr9,    a2,      48
+    xvpermi.d      xr9,    xr9,     0x94
+    HEVC_UNI_QPEL_H16_LASX xr9, xr17
+    add.d          a2,     a2,      a3
+    xvssrani.bu.h  xr15,   xr14,    0
+    xvpermi.d      xr15,   xr15,    0xd8
+    xvst           xr15,   a0,      0
+    xvssrani.bu.h  xr17,   xr16,    0
+    xvpermi.d      xr17,   xr17,    0xd8
+    xvst           xr17,   a0,      32
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,     -1
+    bnez           a4,     .LOOP_UNI_H64_LASX
+endfunc
+
+/*
+ * void FUNC(put_hevc_epel_uni_w_v)(uint8_t *_dst, ptrdiff_t _dststride,
+ *                                  const uint8_t *_src, ptrdiff_t _srcstride,
+ *                                  int height, int denom, int wx, int ox,
+ *                                  intptr_t mx, intptr_t my, int width)
+ */
+function ff_hevc_put_hevc_epel_uni_w_v4_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    fld.s          f6,     a2,      0  //0
+    fldx.s         f7,     a2,      a3 //1
+    fldx.s         f8,     a2,      t0 //2
+    add.d          a2,     a2,      t1
+    vilvl.b        vr6,    vr7,     vr6
+    vilvl.b        vr7,    vr8,     vr8
+    vilvl.h        vr6,    vr7,     vr6
+    vreplvei.w     vr0,    vr0,     0
+.LOOP_UNI_V4:
+    fld.s          f9,     a2,      0  //3
+    fldx.s         f10,    a2,      a3 //4
+    add.d          a2,     a2,      t0
+    vextrins.b     vr6,    vr9,     0x30 //insert the 3th load
+    vextrins.b     vr6,    vr9,     0x71
+    vextrins.b     vr6,    vr9,     0xb2
+    vextrins.b     vr6,    vr9,     0xf3
+    vbsrl.v        vr7,    vr6,     1
+    vextrins.b     vr7,    vr10,    0x30 //insert the 4th load
+    vextrins.b     vr7,    vr10,    0x71
+    vextrins.b     vr7,    vr10,    0xb2
+    vextrins.b     vr7,    vr10,    0xf3
+    vdp2.h.bu.b    vr8,    vr6,     vr0 //EPEL_FILTER(src, stride)
+    vdp2.h.bu.b    vr9,    vr7,     vr0
+    vhaddw.w.h     vr10,   vr8,     vr8
+    vhaddw.w.h     vr11,   vr9,     vr9
+    vmulwev.w.h    vr10,   vr10,    vr1 //EPEL_FILTER(src, stride) * wx
+    vmulwev.w.h    vr11,   vr11,    vr1
+    vadd.w         vr10,   vr10,    vr2 // + offset
+    vadd.w         vr11,   vr11,    vr2
+    vsra.w         vr10,   vr10,    vr3 // >> shift
+    vsra.w         vr11,   vr11,    vr3
+    vadd.w         vr10,   vr10,    vr4 // + ox
+    vadd.w         vr11,   vr11,    vr4
+    vssrani.h.w    vr11,   vr10,    0
+    vssrani.bu.h   vr10,   vr11,    0
+    vbsrl.v        vr6,    vr7,     1
+    fst.s          f10,    a0,      0
+    vbsrl.v        vr10,   vr10,    4
+    fstx.s         f10,    a0,      a1
+    alsl.d         a0,     a1,      a0,    1
+    addi.d         a4,     a4,      -2
+    bnez           a4,     .LOOP_UNI_V4
+endfunc
+
+.macro CALC_EPEL_FILTER_LSX out0, out1
+    vdp2.h.bu.b    vr12,   vr10,    vr0 //EPEL_FILTER(src, stride)
+    vdp2add.h.bu.b vr12,   vr11,    vr5
+    vexth.w.h      vr13,   vr12
+    vsllwil.w.h    vr12,   vr12,    0
+    vmulwev.w.h    vr12,   vr12,    vr1 //EPEL_FILTER(src, stride) * wx
+    vmulwev.w.h    vr13,   vr13,    vr1 //EPEL_FILTER(src, stride) * wx
+    vadd.w         vr12,   vr12,    vr2 // + offset
+    vadd.w         vr13,   vr13,    vr2
+    vsra.w         vr12,   vr12,    vr3 // >> shift
+    vsra.w         vr13,   vr13,    vr3
+    vadd.w         \out0,  vr12,    vr4 // + ox
+    vadd.w         \out1,  vr13,    vr4
+.endm
+
+.macro CALC_EPEL_FILTER_LASX out0
+    xvdp2.h.bu.b   xr11,   xr12,    xr0 //EPEL_FILTER(src, stride)
+    xvhaddw.w.h    xr12,   xr11,    xr11
+    xvmulwev.w.h   xr12,   xr12,    xr1 //EPEL_FILTER(src, stride) * wx
+    xvadd.w        xr12,   xr12,    xr2 // + offset
+    xvsra.w        xr12,   xr12,    xr3 // >> shift
+    xvadd.w        \out0,  xr12,    xr4 // + ox
+.endm
+
+//w is a label, also can be used as a condition for ".if" statement.
+.macro PUT_HEVC_EPEL_UNI_W_V8_LSX w
+    fld.d          f6,     a2,      0  //0
+    fldx.d         f7,     a2,      a3 //1
+    fldx.d         f8,     a2,      t0 //2
+    add.d          a2,     a2,      t1
+.LOOP_UNI_V8_\w:
+    fld.d          f9,     a2,      0  // 3
+    add.d          a2,     a2,      a3
+    vilvl.b        vr10,   vr7,     vr6
+    vilvl.b        vr11,   vr9,     vr8
+    vaddi.bu       vr6,    vr7,     0  //back up previous value
+    vaddi.bu       vr7,    vr8,     0
+    vaddi.bu       vr8,    vr9,     0
+    CALC_EPEL_FILTER_LSX vr12, vr13
+    vssrani.h.w    vr13,   vr12,    0
+    vssrani.bu.h   vr13,   vr13,    0
+.if \w < 8
+    fst.s          f13,    a0,      0
+    vstelm.h       vr13,   a0,      4,   2
+.else
+    fst.d          f13,    a0,      0
+.endif
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_V8_\w
+.endm
+
+//w is a label, also can be used as a condition for ".if" statement.
+.macro PUT_HEVC_EPEL_UNI_W_V8_LASX w
+    fld.d          f6,     a2,      0  //0
+    fldx.d         f7,     a2,      a3 //1
+    fldx.d         f8,     a2,      t0 //2
+    add.d          a2,     a2,      t1
+.LOOP_UNI_V8_LASX_\w:
+    fld.d          f9,     a2,      0  // 3
+    add.d          a2,     a2,      a3
+    vilvl.b        vr10,   vr7,     vr6
+    vilvl.b        vr11,   vr9,     vr8
+    xvilvl.h       xr12,   xr11,    xr10
+    xvilvh.h       xr13,   xr11,    xr10
+    xvpermi.q      xr12,   xr13,    0x02
+    vaddi.bu       vr6,    vr7,     0  //back up previous value
+    vaddi.bu       vr7,    vr8,     0
+    vaddi.bu       vr8,    vr9,     0
+    CALC_EPEL_FILTER_LASX xr12
+    xvpermi.q      xr13,   xr12,    0x01
+    vssrani.h.w    vr13,   vr12,    0
+    vssrani.bu.h   vr13,   vr13,    0
+.if \w < 8
+    fst.s          f13,    a0,      0
+    vstelm.h       vr13,   a0,      4,   2
+.else
+    fst.d          f13,    a0,      0
+.endif
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_V8_LASX_\w
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_v6_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    PUT_HEVC_EPEL_UNI_W_V8_LSX 6
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v6_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    PUT_HEVC_EPEL_UNI_W_V8_LASX 6
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v8_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    PUT_HEVC_EPEL_UNI_W_V8_LSX 8
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v8_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    PUT_HEVC_EPEL_UNI_W_V8_LASX 8
+endfunc
+
+//w is a label, also can be used as a condition for ".if" statement.
+.macro PUT_HEVC_EPEL_UNI_W_V16_LSX w
+    vld            vr6,    a2,      0  //0
+    vldx           vr7,    a2,      a3 //1
+    vldx           vr8,    a2,      t0 //2
+    add.d          a2,     a2,      t1
+.LOOP_UNI_V16_\w:
+    vld            vr9,    a2,      0  //3
+    add.d          a2,     a2,      a3
+    vilvl.b        vr10,   vr7,     vr6
+    vilvl.b        vr11,   vr9,     vr8
+    CALC_EPEL_FILTER_LSX vr14, vr15
+    vilvh.b        vr10,   vr7,     vr6
+    vilvh.b        vr11,   vr9,     vr8
+    CALC_EPEL_FILTER_LSX vr16, vr17
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.h.w    vr17,   vr16,    0
+    vssrani.bu.h   vr17,   vr15,    0
+    vaddi.bu       vr6,    vr7,     0  //back up previous value
+    vaddi.bu       vr7,    vr8,     0
+    vaddi.bu       vr8,    vr9,     0
+.if \w < 16
+    fst.d          f17,    a0,      0
+    vstelm.w       vr17,   a0,      8,    2
+.else
+    vst            vr17,   a0,      0
+.endif
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_V16_\w
+.endm
+
+//w is a label, also can be used as a condition for ".if" statement.
+.macro PUT_HEVC_EPEL_UNI_W_V16_LASX w
+    vld            vr6,    a2,      0  //0
+    vldx           vr7,    a2,      a3 //1
+    vldx           vr8,    a2,      t0 //2
+    add.d          a2,     a2,      t1
+.LOOP_UNI_V16_LASX_\w:
+    vld            vr9,    a2,      0  //3
+    add.d          a2,     a2,      a3
+    xvilvl.b       xr10,   xr7,     xr6
+    xvilvh.b       xr11,   xr7,     xr6
+    xvpermi.q      xr11,   xr10,    0x20
+    xvilvl.b       xr12,   xr9,     xr8
+    xvilvh.b       xr13,   xr9,     xr8
+    xvpermi.q      xr13,   xr12,    0x20
+    xvdp2.h.bu.b   xr10,   xr11,    xr0 //EPEL_FILTER(src, stride)
+    xvdp2add.h.bu.b xr10,  xr13,    xr5
+    xvexth.w.h     xr11,   xr10
+    xvsllwil.w.h   xr10,   xr10,    0
+    xvmulwev.w.h   xr10,   xr10,    xr1 //EPEL_FILTER(src, stride) * wx
+    xvmulwev.w.h   xr11,   xr11,    xr1
+    xvadd.w        xr10,   xr10,    xr2 // + offset
+    xvadd.w        xr11,   xr11,    xr2
+    xvsra.w        xr10,   xr10,    xr3 // >> shift
+    xvsra.w        xr11,   xr11,    xr3
+    xvadd.w        xr10,   xr10,    xr4 // + wx
+    xvadd.w        xr11,   xr11,    xr4
+    xvssrani.h.w   xr11,   xr10,    0
+    xvpermi.q      xr10,   xr11,    0x01
+    vssrani.bu.h   vr10,   vr11,    0
+    vaddi.bu       vr6,    vr7,     0  //back up previous value
+    vaddi.bu       vr7,    vr8,     0
+    vaddi.bu       vr8,    vr9,     0
+.if \w < 16
+    fst.d          f10,    a0,      0
+    vstelm.w       vr10,   a0,      8,    2
+.else
+    vst            vr10,   a0,      0
+.endif
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_V16_LASX_\w
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_v12_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 12
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v12_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.q    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    xvrepl128vei.h xr5,    xr0,     1
+    xvrepl128vei.h xr0,    xr0,     0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 12
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v16_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 16
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v16_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.q    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    xvrepl128vei.h xr5,    xr0,     1
+    xvrepl128vei.h xr0,    xr0,     0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 16
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v24_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    addi.d         t2,     a0,      0 //save init
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 24
+    addi.d         a0,     t2,      16 //increase step
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V8_LSX 24
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v24_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr20,   xr0         //save xr0
+    xvreplve0.q    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    xvrepl128vei.h xr5,    xr0,     1
+    xvrepl128vei.h xr0,    xr0,     0
+    addi.d         t2,     a0,      0 //save init
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 24
+    addi.d         a0,     t2,      16 //increase step
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    xvaddi.bu      xr0,    xr20,    0
+    PUT_HEVC_EPEL_UNI_W_V8_LASX 24
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v32_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 32
+    addi.d         a0,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 33
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v32_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.q    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    xvrepl128vei.h xr5,    xr0,     1
+    xvrepl128vei.h xr0,    xr0,     0
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 32
+    addi.d         a0,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 33
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v48_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 48
+    addi.d         a0,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 49
+    addi.d         a0,     t2,      32
+    addi.d         a2,     t3,      32
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 50
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v48_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.q    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    xvrepl128vei.h xr5,    xr0,     1
+    xvrepl128vei.h xr0,    xr0,     0
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 48
+    addi.d         a0,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 49
+    addi.d         a0,     t2,      32
+    addi.d         a2,     t3,      32
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 50
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v64_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 64
+    addi.d         a0,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 65
+    addi.d         a0,     t2,      32
+    addi.d         a2,     t3,      32
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 66
+    addi.d         a0,     t2,      48
+    addi.d         a2,     t3,      48
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LSX 67
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_v64_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      8  //my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.q    xr0,    xr0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    sub.d          a2,     a2,      a3 //src -= stride
+    xvrepl128vei.h xr5,    xr0,     1
+    xvrepl128vei.h xr0,    xr0,     0
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 64
+    addi.d         a0,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 65
+    addi.d         a0,     t2,      32
+    addi.d         a2,     t3,      32
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 66
+    addi.d         a0,     t2,      48
+    addi.d         a2,     t3,      48
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_V16_LASX 67
+endfunc
+
+/*
+ * void FUNC(put_hevc_epel_uni_w_h)(uint8_t *_dst, ptrdiff_t _dststride,
+ *                                  const uint8_t *_src, ptrdiff_t _srcstride,
+ *                                  int height, int denom, int wx, int ox,
+ *                                  intptr_t mx, intptr_t my, int width)
+ */
+function ff_hevc_put_hevc_epel_uni_w_h4_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr5,    t1,      0
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H4:
+    fld.d          f6,     a2,      0
+    add.d          a2,     a2,      a3
+    vshuf.b        vr6,    vr6,     vr6,   vr5
+    vdp2.h.bu.b    vr7,    vr6,     vr0
+    vhaddw.w.h     vr7,    vr7,     vr7
+    vmulwev.w.h    vr7,    vr7,     vr1
+    vadd.w         vr7,    vr7,     vr2
+    vsra.w         vr7,    vr7,     vr3
+    vadd.w         vr7,    vr7,     vr4
+    vssrani.h.w    vr7,    vr7,     0
+    vssrani.bu.h   vr7,    vr7,     0
+    fst.s          f7,     a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H4
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h6_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H6:
+    vld            vr8,    a2,      0
+    add.d          a2,     a2,      a3
+    vshuf.b        vr10,   vr8,     vr8,   vr6
+    vshuf.b        vr11,   vr8,     vr8,   vr7
+    CALC_EPEL_FILTER_LSX vr14, vr15
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.bu.h   vr15,   vr15,    0
+    fst.s          f15,    a0,      0
+    vstelm.h       vr15,   a0,      4,   2
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H6
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h6_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H6_LASX:
+    vld            vr8,    a2,      0
+    xvreplve0.q    xr8,    xr8
+    add.d          a2,     a2,      a3
+    xvshuf.b       xr12,   xr8,     xr8,   xr6
+    CALC_EPEL_FILTER_LASX xr14
+    xvpermi.q      xr15,   xr14,    0x01
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.bu.h   vr15,   vr15,    0
+    fst.s          f15,    a0,      0
+    vstelm.h       vr15,   a0,      4,   2
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H6_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h8_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H8:
+    vld            vr8,    a2,      0
+    add.d          a2,     a2,      a3
+    vshuf.b        vr10,   vr8,     vr8,   vr6
+    vshuf.b        vr11,   vr8,     vr8,   vr7
+    CALC_EPEL_FILTER_LSX vr14, vr15
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.bu.h   vr15,   vr15,    0
+    fst.d          f15,    a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H8
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h8_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H8_LASX:
+    vld            vr8,    a2,      0
+    xvreplve0.q    xr8,    xr8
+    add.d          a2,     a2,      a3
+    xvshuf.b       xr12,   xr8,     xr8,   xr6
+    CALC_EPEL_FILTER_LASX xr14
+    xvpermi.q      xr15,   xr14,    0x01
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.bu.h   vr15,   vr15,    0
+    fst.d          f15,    a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H8_LASX
+endfunc
+
+.macro EPEL_UNI_W_H16_LOOP_LSX idx0, idx1, idx2
+    vld            vr8,    a2,      \idx0
+    vshuf.b        vr10,   vr8,     vr8,   vr6
+    vshuf.b        vr11,   vr8,     vr8,   vr7
+    CALC_EPEL_FILTER_LSX vr14, vr15
+    vld            vr8,    a2,      \idx1
+    vshuf.b        vr10,   vr8,     vr8,   vr6
+    vshuf.b        vr11,   vr8,     vr8,   vr7
+    CALC_EPEL_FILTER_LSX vr16, vr17
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.h.w    vr17,   vr16,    0
+    vssrani.bu.h   vr17,   vr15,    0
+    vst            vr17,   a0,     \idx2
+.endm
+
+.macro EPEL_UNI_W_H16_LOOP_LASX idx0, idx2, w
+    xvld           xr8,    a2,      \idx0
+    xvpermi.d      xr9,    xr8,     0x09
+    xvreplve0.q    xr8,    xr8
+    xvshuf.b       xr12,   xr8,     xr8,   xr6
+    CALC_EPEL_FILTER_LASX xr14
+    xvreplve0.q    xr8,    xr9
+    xvshuf.b       xr12,   xr8,     xr8,   xr6
+    CALC_EPEL_FILTER_LASX xr16
+    xvssrani.h.w   xr16,   xr14,    0
+    xvpermi.q      xr17,   xr16,    0x01
+    vssrani.bu.h   vr17,   vr16,    0
+    vpermi.w       vr17,   vr17,    0xd8
+.if \w == 12
+    fst.d          f17,    a0,      0
+    vstelm.w       vr17,   a0,      8,   2
+.else
+    vst            vr17,   a0,      \idx2
+.endif
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_h12_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H12:
+    vld            vr8,    a2,      0
+    vshuf.b        vr10,   vr8,     vr8,   vr6
+    vshuf.b        vr11,   vr8,     vr8,   vr7
+    CALC_EPEL_FILTER_LSX vr14, vr15
+    vld            vr8,    a2,      8
+    vshuf.b        vr10,   vr8,     vr8,   vr6
+    vshuf.b        vr11,   vr8,     vr8,   vr7
+    CALC_EPEL_FILTER_LSX vr16, vr17
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.h.w    vr17,   vr16,    0
+    vssrani.bu.h   vr17,   vr15,    0
+    fst.d          f17,    a0,      0
+    vstelm.w       vr17,   a0,      8,   2
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H12
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h12_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H12_LASX:
+    EPEL_UNI_W_H16_LOOP_LASX 0, 0, 12
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H12_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h16_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H16:
+    EPEL_UNI_W_H16_LOOP_LSX 0, 8, 0
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H16
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h16_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H16_LASX:
+    EPEL_UNI_W_H16_LOOP_LASX 0, 0, 16
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H16_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h24_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H24:
+    EPEL_UNI_W_H16_LOOP_LSX 0, 8, 0
+    vld            vr8,    a2,      16
+    add.d          a2,     a2,      a3
+    vshuf.b        vr10,   vr8,     vr8,   vr6
+    vshuf.b        vr11,   vr8,     vr8,   vr7
+    CALC_EPEL_FILTER_LSX vr18, vr19
+    vssrani.h.w    vr19,   vr18,    0
+    vssrani.bu.h   vr19,   vr19,    0
+    fst.d          f19,    a0,      16
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H24
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h24_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H24_LASX:
+    EPEL_UNI_W_H16_LOOP_LASX 0, 0, 24
+    vld            vr8,    a2,      16
+    add.d          a2,     a2,      a3
+    xvreplve0.q    xr8,    xr8
+    xvshuf.b       xr12,   xr8,     xr8,   xr6
+    CALC_EPEL_FILTER_LASX xr14
+    xvpermi.q      xr15,   xr14,    0x01
+    vssrani.h.w    vr15,   vr14,    0
+    vssrani.bu.h   vr15,   vr15,    0
+    fst.d          f15,    a0,      16
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H24_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h32_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H32:
+    EPEL_UNI_W_H16_LOOP_LSX 0,  8,  0
+    EPEL_UNI_W_H16_LOOP_LSX 16, 24, 16
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H32
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h32_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H32_LASX:
+    EPEL_UNI_W_H16_LOOP_LASX 0,  0,  32
+    EPEL_UNI_W_H16_LOOP_LASX 16, 16, 32
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H32_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h48_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H48:
+    EPEL_UNI_W_H16_LOOP_LSX 0,  8,  0
+    EPEL_UNI_W_H16_LOOP_LSX 16, 24, 16
+    EPEL_UNI_W_H16_LOOP_LSX 32, 40, 32
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H48
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h48_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H48_LASX:
+    EPEL_UNI_W_H16_LOOP_LASX 0,  0,  48
+    EPEL_UNI_W_H16_LOOP_LASX 16, 16, 48
+    EPEL_UNI_W_H16_LOOP_LASX 32, 32, 48
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H48_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h64_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    vreplvei.w     vr0,    vr0,     0
+    la.local       t1,     shufb
+    vld            vr6,    t1,      48
+    vaddi.bu       vr7,   vr6,      2
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+    vreplvei.h     vr5,    vr0,     1
+    vreplvei.h     vr0,    vr0,     0
+.LOOP_UNI_W_H64:
+    EPEL_UNI_W_H16_LOOP_LSX 0,  8,  0
+    EPEL_UNI_W_H16_LOOP_LSX 16, 24, 16
+    EPEL_UNI_W_H16_LOOP_LSX 32, 40, 32
+    EPEL_UNI_W_H16_LOOP_LSX 48, 56, 48
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H64
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_h64_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  //mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr0,    t1,      t0 //filter
+    xvreplve0.w    xr0,    xr0
+    la.local       t1,     shufb
+    xvld           xr6,    t1,      64
+    slli.d         t0,     a3,      1  //stride * 2
+    add.d          t1,     t0,      a3 //stride * 3
+    addi.d         a2,     a2,      -1 //src -= 1
+.LOOP_UNI_W_H64_LASX:
+    EPEL_UNI_W_H16_LOOP_LASX 0,  0,  64
+    EPEL_UNI_W_H16_LOOP_LASX 16, 16, 64
+    EPEL_UNI_W_H16_LOOP_LASX 32, 32, 64
+    EPEL_UNI_W_H16_LOOP_LASX 48, 48, 64
+    add.d          a2,     a2,      a3
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_UNI_W_H64_LASX
+endfunc
+
+/*
+ * void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride,
+ *                               const uint8_t *_src, ptrdiff_t _srcstride,
+ *                               const int16_t *src2, int height, intptr_t mx,
+ *                               intptr_t my, int width)
+ */
+function ff_hevc_put_hevc_bi_epel_h4_8_lsx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   vreplvei.w      vr0,    vr0,     0
+   la.local        t0,     shufb
+   vld             vr1,    t0,      0 // mask
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H4:
+   vld             vr4,    a4,      0 // src2
+   vld             vr5,    a2,      0
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   vshuf.b         vr5,    vr5,     vr5,    vr1
+   vdp2.h.bu.b     vr6,    vr5,     vr0 // EPEL_FILTER(src, 1)
+   vsllwil.w.h     vr4,    vr4,     0
+   vhaddw.w.h      vr6,    vr6,     vr6
+   vadd.w          vr6,    vr6,     vr4 // src2[x]
+   vssrani.h.w     vr6,    vr6,     0
+   vssrarni.bu.h   vr6,    vr6,     7
+   fst.s           f6,     a0,      0
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H4
+endfunc
+
+.macro PUT_HEVC_BI_EPEL_H8_LSX in0, in1, in2, in3, out0
+   vshuf.b         vr6,    \in1,    \in0,   \in2
+   vshuf.b         vr7,    \in1,    \in0,   \in3
+   vdp2.h.bu.b     vr8,    vr6,     vr0 // EPEL_FILTER(src, 1)
+   vdp2add.h.bu.b  vr8,    vr7,     vr1 // EPEL_FILTER(src, 1)
+   vsadd.h         \out0,  vr8,     vr4 // src2[x]
+.endm
+
+.macro PUT_HEVC_BI_EPEL_H16_LASX in0, in1, in2, in3, out0
+   xvshuf.b         xr6,    \in1,    \in0,   \in2
+   xvshuf.b         xr7,    \in1,    \in0,   \in3
+   xvdp2.h.bu.b     xr8,    xr6,     xr0 // EPEL_FILTER(src, 1)
+   xvdp2add.h.bu.b  xr8,    xr7,     xr1 // EPEL_FILTER(src, 1)
+   xvsadd.h         \out0,  xr8,     xr4 // src2[x]
+.endm
+
+function ff_hevc_put_hevc_bi_epel_h6_8_lsx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   vreplvei.h      vr1,    vr0,     1
+   vreplvei.h      vr0,    vr0,     0
+   la.local        t0,     shufb
+   vld             vr2,    t0,      48// mask
+   vaddi.bu        vr3,    vr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H6:
+   vld             vr4,    a4,      0 // src2
+   vld             vr5,    a2,      0
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr7
+   vssrarni.bu.h   vr7,    vr7,     7
+   fst.s           f7,     a0,      0
+   vstelm.h        vr7,    a0,      4,   2
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H6
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h8_8_lsx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   vreplvei.h      vr1,    vr0,     1
+   vreplvei.h      vr0,    vr0,     0
+   la.local        t0,     shufb
+   vld             vr2,    t0,      48// mask
+   vaddi.bu        vr3,    vr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H8:
+   vld             vr4,    a4,      0 // src2
+   vld             vr5,    a2,      0
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr7
+   vssrarni.bu.h   vr7,    vr7,     7
+   fst.d           f7,     a0,      0
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H8
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h12_8_lsx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   vreplvei.h      vr1,    vr0,     1
+   vreplvei.h      vr0,    vr0,     0
+   la.local        t0,     shufb
+   vld             vr2,    t0,      48// mask
+   vaddi.bu        vr3,    vr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H12:
+   vld             vr4,    a4,      0 // src2
+   vld             vr5,    a2,      0
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr11
+   vld             vr5,    a2,      8
+   vld             vr4,    a4,      16
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr12
+   vssrarni.bu.h   vr12,   vr11,    7
+   fst.d           f12,    a0,      0
+   vstelm.w        vr12,   a0,      8,   2
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H12
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h12_8_lasx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   xvreplve0.q     xr0,    xr0
+   xvrepl128vei.h  xr1,    xr0,     1
+   xvrepl128vei.h  xr0,    xr0,     0
+   la.local        t0,     shufb
+   xvld            xr2,    t0,      96// mask
+   xvaddi.bu       xr3,    xr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H12_LASX:
+   xvld            xr4,    a4,      0 // src2
+   xvld            xr5,    a2,      0
+   xvpermi.d       xr5,    xr5,     0x94
+   PUT_HEVC_BI_EPEL_H16_LASX xr5, xr5, xr2, xr3, xr9
+   xvpermi.q       xr10,   xr9,     0x01
+   vssrarni.bu.h   vr10,   vr9,     7
+   fst.d           f10,    a0,      0
+   vstelm.w        vr10,   a0,      8,  2
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H12_LASX
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h16_8_lsx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   vreplvei.h      vr1,    vr0,     1
+   vreplvei.h      vr0,    vr0,     0
+   la.local        t0,     shufb
+   vld             vr2,    t0,      48// mask
+   vaddi.bu        vr3,    vr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H16:
+   vld             vr4,    a4,      0 // src2
+   vld             vr5,    a2,      0
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr11
+   vld             vr5,    a2,      8
+   vld             vr4,    a4,      16
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr12
+   vssrarni.bu.h   vr12,   vr11,    7
+   vst             vr12,   a0,      0
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H16
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h16_8_lasx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   xvreplve0.q     xr0,    xr0
+   xvrepl128vei.h  xr1,    xr0,     1
+   xvrepl128vei.h  xr0,    xr0,     0
+   la.local        t0,     shufb
+   xvld            xr2,    t0,      96// mask
+   xvaddi.bu       xr3,    xr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H16_LASX:
+   xvld            xr4,    a4,      0 // src2
+   xvld            xr5,    a2,      0
+   xvpermi.d       xr5,    xr5,     0x94
+   PUT_HEVC_BI_EPEL_H16_LASX xr5, xr5, xr2, xr3, xr9
+   xvpermi.q       xr10,   xr9,     0x01
+   vssrarni.bu.h   vr10,   vr9,     7
+   vst             vr10,   a0,      0
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H16_LASX
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h32_8_lasx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   xvreplve0.q     xr0,    xr0
+   xvrepl128vei.h  xr1,    xr0,     1
+   xvrepl128vei.h  xr0,    xr0,     0
+   la.local        t0,     shufb
+   xvld            xr2,    t0,      96// mask
+   xvaddi.bu       xr3,    xr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H32_LASX:
+   xvld            xr4,    a4,      0 // src2
+   xvld            xr5,    a2,      0
+   xvpermi.q       xr15,   xr5,     0x01
+   xvpermi.d       xr5,    xr5,     0x94
+   PUT_HEVC_BI_EPEL_H16_LASX xr5, xr5, xr2, xr3, xr9
+   xvld            xr4,    a4,      32
+   xvld            xr15,   a2,      16
+   xvpermi.d       xr15,   xr15,    0x94
+   PUT_HEVC_BI_EPEL_H16_LASX xr15, xr15, xr2, xr3, xr11
+   xvssrarni.bu.h  xr11,   xr9,     7
+   xvpermi.d       xr11,   xr11,    0xd8
+   xvst            xr11,   a0,      0
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H32_LASX
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h48_8_lsx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6// filter
+   vreplvei.h      vr1,    vr0,     1
+   vreplvei.h      vr0,    vr0,     0
+   la.local        t0,     shufb
+   vld             vr2,    t0,      48// mask
+   vaddi.bu        vr3,    vr2,     2
+   vaddi.bu        vr21,   vr2,     8
+   vaddi.bu        vr22,   vr2,     10
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H48:
+   vld             vr4,    a4,      0 // src2
+   vld             vr5,    a2,      0
+   vld             vr9,    a2,      16
+   vld             vr10,   a2,      32
+   vld             vr11,   a2,      48
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr12
+   vld             vr4,    a4,      16
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr9, vr21, vr22, vr13
+   vld             vr4,    a4,      32
+   PUT_HEVC_BI_EPEL_H8_LSX vr9, vr9, vr2, vr3, vr14
+   vld             vr4,    a4,      48
+   PUT_HEVC_BI_EPEL_H8_LSX vr9, vr10, vr21, vr22, vr15
+   vld             vr4,    a4,      64
+   PUT_HEVC_BI_EPEL_H8_LSX vr10, vr10, vr2, vr3, vr16
+   vld             vr4,    a4,      80
+   PUT_HEVC_BI_EPEL_H8_LSX vr10, vr11, vr21, vr22, vr17
+   vssrarni.bu.h   vr13,   vr12,    7
+   vssrarni.bu.h   vr15,   vr14,    7
+   vssrarni.bu.h   vr17,   vr16,    7
+   vst             vr13,   a0,      0
+   vst             vr15,   a0,      16
+   vst             vr17,   a0,      32
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H48
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h48_8_lasx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   xvreplve0.q     xr0,    xr0
+   xvrepl128vei.h  xr1,    xr0,     1
+   xvrepl128vei.h  xr0,    xr0,     0
+   la.local        t0,     shufb
+   xvld            xr2,    t0,      96// mask
+   xvaddi.bu       xr3,    xr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H48_LASX:
+   xvld            xr4,    a4,      0 // src2
+   xvld            xr5,    a2,      0
+   xvld            xr9,    a2,      32
+   xvpermi.d       xr10,   xr9,     0x94
+   xvpermi.q       xr9,    xr5,     0x21
+   xvpermi.d       xr9,    xr9,     0x94
+   xvpermi.d       xr5,    xr5,     0x94
+   PUT_HEVC_BI_EPEL_H16_LASX xr5, xr5, xr2, xr3, xr11
+   xvld            xr4,    a4,      32
+   PUT_HEVC_BI_EPEL_H16_LASX xr9, xr9, xr2, xr3, xr12
+   xvld            xr4,    a4,      64
+   PUT_HEVC_BI_EPEL_H16_LASX xr10, xr10, xr2, xr3, xr13
+   xvssrarni.bu.h  xr12,   xr11,    7
+   xvpermi.d       xr12,   xr12,    0xd8
+   xvpermi.q       xr14,   xr13,    0x01
+   vssrarni.bu.h   vr14,   vr13,    7
+   xvst            xr12,   a0,      0
+   vst             vr14,   a0,      32
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H48_LASX
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h64_8_lsx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6// filter
+   vreplvei.h      vr1,    vr0,     1
+   vreplvei.h      vr0,    vr0,     0
+   la.local        t0,     shufb
+   vld             vr2,    t0,      48// mask
+   vaddi.bu        vr3,    vr2,     2
+   vaddi.bu        vr21,   vr2,     8
+   vaddi.bu        vr22,   vr2,     10
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H64:
+   vld             vr4,    a4,      0 // src2
+   vld             vr5,    a2,      0
+   vld             vr9,    a2,      16
+   vld             vr10,   a2,      32
+   vld             vr11,   a2,      48
+   vld             vr12,   a2,      64
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr5, vr2, vr3, vr13
+   vld             vr4,    a4,      16
+   PUT_HEVC_BI_EPEL_H8_LSX vr5, vr9, vr21, vr22, vr14
+   vld             vr4,    a4,      32
+   PUT_HEVC_BI_EPEL_H8_LSX vr9, vr9, vr2, vr3, vr15
+   vld             vr4,    a4,      48
+   PUT_HEVC_BI_EPEL_H8_LSX vr9, vr10, vr21, vr22, vr16
+   vld             vr4,    a4,      64
+   PUT_HEVC_BI_EPEL_H8_LSX vr10, vr10, vr2, vr3, vr17
+   vld             vr4,    a4,      80
+   PUT_HEVC_BI_EPEL_H8_LSX vr10, vr11, vr21, vr22, vr18
+   vld             vr4,    a4,      96
+   PUT_HEVC_BI_EPEL_H8_LSX vr11, vr11, vr2, vr3, vr19
+   vld             vr4,    a4,      112
+   PUT_HEVC_BI_EPEL_H8_LSX vr11, vr12, vr21, vr22, vr20
+   vssrarni.bu.h   vr14,   vr13,    7
+   vssrarni.bu.h   vr16,   vr15,    7
+   vssrarni.bu.h   vr18,   vr17,    7
+   vssrarni.bu.h   vr20,   vr19,    7
+   vst             vr14,   a0,      0
+   vst             vr16,   a0,      16
+   vst             vr18,   a0,      32
+   vst             vr20,   a0,      48
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H64
+endfunc
+
+function ff_hevc_put_hevc_bi_epel_h64_8_lasx
+   addi.d          a6,     a6,     -1
+   slli.w          a6,     a6,      2
+   la.local        t0,     ff_hevc_epel_filters
+   vldx            vr0,    t0,      a6 // filter
+   xvreplve0.q     xr0,    xr0
+   xvrepl128vei.h  xr1,    xr0,     1
+   xvrepl128vei.h  xr0,    xr0,     0
+   la.local        t0,     shufb
+   xvld            xr2,    t0,      96// mask
+   xvaddi.bu       xr3,    xr2,     2
+   addi.d          a2,     a2,     -1 // src -= 1
+.LOOP_BI_EPEL_H64_LASX:
+   xvld            xr4,    a4,      0 // src2
+   xvld            xr5,    a2,      0
+   xvld            xr9,    a2,      32
+   xvld            xr11,   a2,      48
+   xvpermi.d       xr11,   xr11,    0x94
+   xvpermi.d       xr10,   xr9,     0x94
+   xvpermi.q       xr9,    xr5,     0x21
+   xvpermi.d       xr9,    xr9,     0x94
+   xvpermi.d       xr5,    xr5,     0x94
+   PUT_HEVC_BI_EPEL_H16_LASX xr5, xr5, xr2, xr3, xr12
+   xvld            xr4,    a4,      32
+   PUT_HEVC_BI_EPEL_H16_LASX xr9, xr9, xr2, xr3, xr13
+   xvld            xr4,    a4,      64
+   PUT_HEVC_BI_EPEL_H16_LASX xr10, xr10, xr2, xr3, xr14
+   xvld            xr4,    a4,      96
+   PUT_HEVC_BI_EPEL_H16_LASX xr11, xr11, xr2, xr3, xr15
+   xvssrarni.bu.h  xr13,   xr12,    7
+   xvssrarni.bu.h  xr15,   xr14,    7
+   xvpermi.d       xr13,   xr13,    0xd8
+   xvpermi.d       xr15,   xr15,    0xd8
+   xvst            xr13,   a0,      0
+   xvst            xr15,   a0,      32
+   add.d           a2,     a2,      a3
+   addi.d          a4,     a4,      128
+   add.d           a0,     a0,      a1
+   addi.d          a5,     a5,     -1
+   bnez            a5,     .LOOP_BI_EPEL_H64_LASX
 endfunc
