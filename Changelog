@@ -16,6 +16,7 @@ version <next>:
 - qrencode filter and qrencodesrc source
 - quirc filter
 - lavu/eval: introduce randomi() function in expressions
+- VVC decoder
 
 version 6.1:
 - libaribcaption decoder

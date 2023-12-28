@@ -389,6 +389,7 @@ extern const FFCodec ff_vp9_rkmpp_decoder;
 extern const FFCodec ff_vp9_v4l2m2m_decoder;
 extern const FFCodec ff_vqa_decoder;
 extern const FFCodec ff_vqc_decoder;
+extern const FFCodec ff_vvc_decoder;
 extern const FFCodec ff_wbmp_decoder;
 extern const FFCodec ff_wbmp_encoder;
 extern const FFCodec ff_webp_decoder;
