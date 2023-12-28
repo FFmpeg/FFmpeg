@@ -15,6 +15,7 @@ version <next>:
 - tiltandshift filter
 - qrencode filter and qrencodesrc source
 - quirc filter
+- lavu/eval: introduce randomi() function in expressions
 
 version 6.1:
 - libaribcaption decoder

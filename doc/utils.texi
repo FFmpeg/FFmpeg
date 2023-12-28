@@ -939,9 +939,15 @@ Returns the value of the expression printed.
 
 Prints t with loglevel l
 
-@item random(x)
-Return a pseudo random value between 0.0 and 1.0. @var{x} is the index of the
-internal variable which will be used to save the seed/state.
+@item random(idx)
+Return a pseudo random value between 0.0 and 1.0. @var{idx} is the
+index of the internal variable which will be used to save the
+seed/state.
+
+@item randomi(idx, min, max)
+Return a pseudo random value in the interval between @var{min} and
+@var{max}. @var{idx} is the index of the internal variable which will
+be used to save the seed/state.
 
 @item root(expr, max)
 Find an input value for which the function represented by @var{expr}
