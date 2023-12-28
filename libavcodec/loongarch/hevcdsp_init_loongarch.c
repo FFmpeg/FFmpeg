@@ -22,6 +22,7 @@
 
 #include "libavutil/loongarch/cpu.h"
 #include "hevcdsp_lsx.h"
+#include "hevcdsp_lasx.h"
 
 void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
 {
@@ -160,6 +161,26 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_epel_uni[6][1][1] = ff_hevc_put_hevc_uni_epel_hv24_8_lsx;
             c->put_hevc_epel_uni[7][1][1] = ff_hevc_put_hevc_uni_epel_hv32_8_lsx;
 
+            c->put_hevc_qpel_uni_w[1][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels4_8_lsx;
+            c->put_hevc_qpel_uni_w[2][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels6_8_lsx;
+            c->put_hevc_qpel_uni_w[3][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels8_8_lsx;
+            c->put_hevc_qpel_uni_w[4][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels12_8_lsx;
+            c->put_hevc_qpel_uni_w[5][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels16_8_lsx;
+            c->put_hevc_qpel_uni_w[6][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels24_8_lsx;
+            c->put_hevc_qpel_uni_w[7][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels32_8_lsx;
+            c->put_hevc_qpel_uni_w[8][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels48_8_lsx;
+            c->put_hevc_qpel_uni_w[9][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels64_8_lsx;
+
+            c->put_hevc_epel_uni_w[1][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels4_8_lsx;
+            c->put_hevc_epel_uni_w[2][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels6_8_lsx;
+            c->put_hevc_epel_uni_w[3][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels8_8_lsx;
+            c->put_hevc_epel_uni_w[4][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels12_8_lsx;
+            c->put_hevc_epel_uni_w[5][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels16_8_lsx;
+            c->put_hevc_epel_uni_w[6][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels24_8_lsx;
+            c->put_hevc_epel_uni_w[7][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels32_8_lsx;
+            c->put_hevc_epel_uni_w[8][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels48_8_lsx;
+            c->put_hevc_epel_uni_w[9][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels64_8_lsx;
+
             c->put_hevc_qpel_uni_w[3][1][1] = ff_hevc_put_hevc_uni_w_qpel_hv8_8_lsx;
             c->put_hevc_qpel_uni_w[5][1][1] = ff_hevc_put_hevc_uni_w_qpel_hv16_8_lsx;
             c->put_hevc_qpel_uni_w[6][1][1] = ff_hevc_put_hevc_uni_w_qpel_hv24_8_lsx;
@@ -194,6 +215,28 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->add_residual[1] = ff_hevc_add_residual8x8_8_lsx;
             c->add_residual[2] = ff_hevc_add_residual16x16_8_lsx;
             c->add_residual[3] = ff_hevc_add_residual32x32_8_lsx;
+        }
+    }
+
+    if (have_lasx(cpu_flags)) {
+        if (bit_depth == 8) {
+            c->put_hevc_qpel_uni_w[2][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels6_8_lasx;
+            c->put_hevc_qpel_uni_w[3][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels8_8_lasx;
+            c->put_hevc_qpel_uni_w[4][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels12_8_lasx;
+            c->put_hevc_qpel_uni_w[5][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels16_8_lasx;
+            c->put_hevc_qpel_uni_w[6][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels24_8_lasx;
+            c->put_hevc_qpel_uni_w[7][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels32_8_lasx;
+            c->put_hevc_qpel_uni_w[8][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels48_8_lasx;
+            c->put_hevc_qpel_uni_w[9][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels64_8_lasx;
+
+            c->put_hevc_epel_uni_w[2][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels6_8_lasx;
+            c->put_hevc_epel_uni_w[3][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels8_8_lasx;
+            c->put_hevc_epel_uni_w[4][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels12_8_lasx;
+            c->put_hevc_epel_uni_w[5][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels16_8_lasx;
+            c->put_hevc_epel_uni_w[6][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels24_8_lasx;
+            c->put_hevc_epel_uni_w[7][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels32_8_lasx;
+            c->put_hevc_epel_uni_w[8][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels48_8_lasx;
+            c->put_hevc_epel_uni_w[9][0][0] = ff_hevc_put_hevc_pel_uni_w_pixels64_8_lasx;
         }
     }
 }

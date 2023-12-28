@@ -232,4 +232,31 @@ void ff_hevc_add_residual8x8_8_lsx(uint8_t *dst, const int16_t *res, ptrdiff_t s
 void ff_hevc_add_residual16x16_8_lsx(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 void ff_hevc_add_residual32x32_8_lsx(uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 
+#define PEL_UNI_W(PEL, DIR, WIDTH)                                      \
+void ff_hevc_put_hevc_##PEL##_uni_w_##DIR##WIDTH##_8_lsx(uint8_t *dst,  \
+                                                         ptrdiff_t      \
+                                                         dst_stride,    \
+                                                         const uint8_t *src,  \
+                                                         ptrdiff_t      \
+                                                         src_stride,    \
+                                                         int height,    \
+                                                         int denom,     \
+                                                         int wx,        \
+                                                         int ox,        \
+                                                         intptr_t mx,   \
+                                                         intptr_t my,   \
+                                                         int width)
+
+PEL_UNI_W(pel, pixels, 4);
+PEL_UNI_W(pel, pixels, 6);
+PEL_UNI_W(pel, pixels, 8);
+PEL_UNI_W(pel, pixels, 12);
+PEL_UNI_W(pel, pixels, 16);
+PEL_UNI_W(pel, pixels, 24);
+PEL_UNI_W(pel, pixels, 32);
+PEL_UNI_W(pel, pixels, 48);
+PEL_UNI_W(pel, pixels, 64);
+
+#undef PEL_UNI_W
+
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
