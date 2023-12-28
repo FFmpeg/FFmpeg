@@ -795,7 +795,7 @@ unsigned ff_dxva2_get_surface_index(const AVCodecContext *avctx,
     }
 #endif
 
-    assert(0);
+    av_log(avctx, AV_LOG_WARNING, "Could not get surface index. Using 0 instead.\n");
     return 0;
 }
 

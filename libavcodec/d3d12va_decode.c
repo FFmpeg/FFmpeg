@@ -20,7 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <assert.h>
 #include <string.h>
 #include <initguid.h>
 
@@ -80,7 +79,7 @@ unsigned ff_d3d12va_get_surface_index(const AVCodecContext *avctx,
     }
 
 fail:
-    assert(0);
+    av_log(avctx, AV_LOG_WARNING, "Could not get surface index. Using 0 instead.\n");
     return 0;
 }
 
