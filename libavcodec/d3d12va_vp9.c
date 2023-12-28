@@ -148,7 +148,7 @@ static int d3d12va_vp9_decode_init(AVCodecContext *avctx)
         break;
     };
 
-    ctx->max_num_ref = FF_ARRAY_ELEMS(pp.frame_refs) + 1;
+    ctx->max_num_ref = FF_ARRAY_ELEMS(pp.ref_frame_map) + 1;
 
     return ff_d3d12va_decode_init(avctx);
 }
