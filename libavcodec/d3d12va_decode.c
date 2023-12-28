@@ -324,10 +324,9 @@ int ff_d3d12va_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     ctx->objects_queue = av_fifo_alloc2(D3D12VA_VIDEO_DEC_ASYNC_DEPTH,
-                                          sizeof(HelperObjects), AV_FIFO_FLAG_AUTO_GROW);
+                                        sizeof(HelperObjects), AV_FIFO_FLAG_AUTO_GROW);
     if (!ctx->objects_queue)
         return AVERROR(ENOMEM);
-
 
     DX_CHECK(ID3D12Device_CreateFence(ctx->device_ctx->device, 0, D3D12_FENCE_FLAG_NONE,
                                       &IID_ID3D12Fence, (void **)&ctx->sync_ctx.fence));
