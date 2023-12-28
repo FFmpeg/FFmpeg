@@ -60,7 +60,7 @@ static int d3d12va_h264_start_frame(AVCodecContext *avctx,
     if (!ctx)
         return -1;
 
-    assert(ctx_pic);
+    av_assert0(ctx_pic);
 
     ctx->used_mask = 0;
 
