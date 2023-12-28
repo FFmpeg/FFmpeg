@@ -216,9 +216,6 @@ static void draw_block_rectangle(uint8_t *buf, int sx, int sy, int w, int h, ptr
         buf[sx + w - 1] = color;
         buf += stride;
     }
-
-    for (int x = sx; x < sx + w; x++)
-        buf[x] = color;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
