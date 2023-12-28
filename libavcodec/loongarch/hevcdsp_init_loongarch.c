@@ -167,6 +167,10 @@ void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth)
             c->put_hevc_qpel_uni_w[8][1][1] = ff_hevc_put_hevc_uni_w_qpel_hv48_8_lsx;
             c->put_hevc_qpel_uni_w[9][1][1] = ff_hevc_put_hevc_uni_w_qpel_hv64_8_lsx;
 
+            c->sao_edge_filter[0] = ff_hevc_sao_edge_filter_8_lsx;
+            c->sao_edge_filter[1] = ff_hevc_sao_edge_filter_8_lsx;
+            c->sao_edge_filter[2] = ff_hevc_sao_edge_filter_8_lsx;
+            c->sao_edge_filter[3] = ff_hevc_sao_edge_filter_8_lsx;
             c->sao_edge_filter[4] = ff_hevc_sao_edge_filter_8_lsx;
 
             c->hevc_h_loop_filter_luma = ff_hevc_loop_filter_luma_h_8_lsx;
