@@ -22,6 +22,7 @@
 #include "loongson_asm.S"
 
 .extern ff_hevc_qpel_filters
+.extern ff_hevc_epel_filters
 
 .macro LOAD_VAR bit
     addi.w         t1,     a5,      6  //shift
@@ -206,6 +207,12 @@
 .endif
 .endm
 
+/*
+ * void FUNC(put_hevc_pel_uni_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride,
+ *                                      const uint8_t *_src, ptrdiff_t _srcstride,
+ *                                      int height, int denom, int wx, int ox,
+ *                                      intptr_t mx, intptr_t my, int width)
+ */
 function ff_hevc_put_hevc_pel_uni_w_pixels4_8_lsx
     LOAD_VAR 128
     srli.w         t0,     a4,      1
@@ -482,6 +489,12 @@ endfunc
     xvhaddw.d.w  \in0,  \in0,  \in0
 .endm
 
+/*
+ * void FUNC(put_hevc_qpel_uni_w_v)(uint8_t *_dst,  ptrdiff_t _dststride,
+ *                                  const uint8_t *_src, ptrdiff_t _srcstride,
+ *                                  int height, int denom, int wx, int ox,
+ *                                  intptr_t mx, intptr_t my, int width)
+ */
 function ff_hevc_put_hevc_qpel_uni_w_v4_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
@@ -1253,6 +1266,12 @@ endfunc
     xvssrani.bu.h  \out0,  xr11,    0
 .endm
 
+/*
+ * void FUNC(put_hevc_qpel_uni_w_h)(uint8_t *_dst,  ptrdiff_t _dststride,
+ *                                  const uint8_t *_src, ptrdiff_t _srcstride,
+ *                                  int height, int denom, int wx, int ox,
+ *                                  intptr_t mx, intptr_t my, int width)
+ */
 function ff_hevc_put_hevc_qpel_uni_w_h4_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
@@ -1762,4 +1781,806 @@ function ff_hevc_put_hevc_qpel_uni_w_h64_8_lasx
     add.d          a0,     a0,      a1
     addi.d         a4,     a4,      -1
     bnez           a4,     .LOOP_H64_LASX
+endfunc
+
+const shufb
+    .byte 0,1,2,3, 1,2,3,4 ,2,3,4,5, 3,4,5,6
+    .byte 4,5,6,7, 5,6,7,8 ,6,7,8,9, 7,8,9,10
+endconst
+
+.macro PUT_HEVC_EPEL_UNI_W_HV4_LSX w
+    fld.d          f7,     a2,      0  // start to load src
+    fldx.d         f8,     a2,      a3
+    alsl.d         a2,     a3,      a2,    1
+    fld.d          f9,     a2,      0
+    vshuf.b        vr7,    vr7,     vr7,   vr0 // 0123 1234 2345 3456
+    vshuf.b        vr8,    vr8,     vr8,   vr0
+    vshuf.b        vr9,    vr9,     vr9,   vr0
+    vdp2.h.bu.b    vr10,   vr7,     vr5  // EPEL_FILTER(src, 1)
+    vdp2.h.bu.b    vr11,   vr8,     vr5
+    vdp2.h.bu.b    vr12,   vr9,     vr5
+    vhaddw.w.h     vr10,   vr10,    vr10 // tmp[0/1/2/3]
+    vhaddw.w.h     vr11,   vr11,    vr11 // vr10,vr11,vr12 corresponding to EPEL_EXTRA
+    vhaddw.w.h     vr12,   vr12,    vr12
+.LOOP_HV4_\w:
+    add.d          a2,     a2,      a3
+    fld.d          f14,    a2,      0    // height loop begin
+    vshuf.b        vr14,   vr14,    vr14,  vr0
+    vdp2.h.bu.b    vr13,   vr14,    vr5
+    vhaddw.w.h     vr13,   vr13,    vr13
+    vmul.w         vr14,   vr10,    vr16 // EPEL_FILTER(tmp, MAX_PB_SIZE)
+    vmadd.w        vr14,   vr11,    vr17
+    vmadd.w        vr14,   vr12,    vr18
+    vmadd.w        vr14,   vr13,    vr19
+    vaddi.wu       vr10,   vr11,    0    //back up previous value
+    vaddi.wu       vr11,   vr12,    0
+    vaddi.wu       vr12,   vr13,    0
+    vsrai.w        vr14,   vr14,    6    // >> 6
+    vmul.w         vr14,   vr14,    vr1  // * wx
+    vadd.w         vr14,   vr14,    vr2  // + offset
+    vsra.w         vr14,   vr14,    vr3  // >> shift
+    vadd.w         vr14,   vr14,    vr4  // + ox
+    vssrani.h.w    vr14,   vr14,    0
+    vssrani.bu.h   vr14,   vr14,    0    // clip
+    fst.s          f14,    a0,      0
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_HV4_\w
+.endm
+
+/*
+ * void FUNC(put_hevc_epel_uni_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
+ *                                   const uint8_t *_src, ptrdiff_t _srcstride,
+ *                                   int height, int denom, int wx, int ox,
+ *                                   intptr_t mx, intptr_t my, int width)
+ */
+function ff_hevc_put_hevc_epel_uni_w_hv4_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    PUT_HEVC_EPEL_UNI_W_HV4_LSX 4
+endfunc
+
+.macro PUT_HEVC_EPEL_UNI_W_HV8_LSX w
+    vld            vr7,    a2,      0  // start to load src
+    vldx           vr8,    a2,      a3
+    alsl.d         a2,     a3,      a2,    1
+    vld            vr9,    a2,      0
+    vshuf.b        vr10,   vr7,     vr7,   vr0 // 0123 1234 2345 3456
+    vshuf.b        vr11,   vr8,     vr8,   vr0
+    vshuf.b        vr12,   vr9,     vr9,   vr0
+    vshuf.b        vr7,    vr7,     vr7,   vr22// 4567 5678 6789 78910
+    vshuf.b        vr8,    vr8,     vr8,   vr22
+    vshuf.b        vr9,    vr9,     vr9,   vr22
+    vdp2.h.bu.b    vr13,   vr10,    vr5  // EPEL_FILTER(src, 1)
+    vdp2.h.bu.b    vr14,   vr11,    vr5
+    vdp2.h.bu.b    vr15,   vr12,    vr5
+    vdp2.h.bu.b    vr23,   vr7,     vr5
+    vdp2.h.bu.b    vr20,   vr8,     vr5
+    vdp2.h.bu.b    vr21,   vr9,     vr5
+    vhaddw.w.h     vr7,    vr13,    vr13
+    vhaddw.w.h     vr8,    vr14,    vr14
+    vhaddw.w.h     vr9,    vr15,    vr15
+    vhaddw.w.h     vr10,   vr23,    vr23
+    vhaddw.w.h     vr11,   vr20,    vr20
+    vhaddw.w.h     vr12,   vr21,    vr21
+.LOOP_HV8_HORI_\w:
+    add.d          a2,     a2,      a3
+    vld            vr15,   a2,      0
+    vshuf.b        vr23,   vr15,    vr15,   vr0
+    vshuf.b        vr15,   vr15,    vr15,   vr22
+    vdp2.h.bu.b    vr13,   vr23,    vr5
+    vdp2.h.bu.b    vr14,   vr15,    vr5
+    vhaddw.w.h     vr13,   vr13,    vr13 //789--13
+    vhaddw.w.h     vr14,   vr14,    vr14 //101112--14
+    vmul.w         vr15,   vr7,     vr16 //EPEL_FILTER(tmp, MAX_PB_SIZE)
+    vmadd.w        vr15,   vr8,     vr17
+    vmadd.w        vr15,   vr9,     vr18
+    vmadd.w        vr15,   vr13,    vr19
+    vmul.w         vr20,   vr10,    vr16
+    vmadd.w        vr20,   vr11,    vr17
+    vmadd.w        vr20,   vr12,    vr18
+    vmadd.w        vr20,   vr14,    vr19
+    vaddi.wu       vr7,    vr8,     0    //back up previous value
+    vaddi.wu       vr8,    vr9,     0
+    vaddi.wu       vr9,    vr13,    0
+    vaddi.wu       vr10,   vr11,    0
+    vaddi.wu       vr11,   vr12,    0
+    vaddi.wu       vr12,   vr14,    0
+    vsrai.w        vr15,   vr15,    6    // >> 6
+    vsrai.w        vr20,   vr20,    6
+    vmul.w         vr15,   vr15,    vr1  // * wx
+    vmul.w         vr20,   vr20,    vr1
+    vadd.w         vr15,   vr15,    vr2  // + offset
+    vadd.w         vr20,   vr20,    vr2
+    vsra.w         vr15,   vr15,    vr3  // >> shift
+    vsra.w         vr20,   vr20,    vr3
+    vadd.w         vr15,   vr15,    vr4  // + ox
+    vadd.w         vr20,   vr20,    vr4
+    vssrani.h.w    vr20,   vr15,    0
+    vssrani.bu.h   vr20,   vr20,    0
+.if \w > 6
+    fst.d          f20,    a0,      0
+.else
+    fst.s          f20,    a0,      0
+    vstelm.h       vr20,   a0,      4,   2
+.endif
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_HV8_HORI_\w
+.endm
+
+.macro PUT_HEVC_EPEL_UNI_W_HV8_LASX w
+    vld            vr7,    a2,      0  // start to load src
+    vldx           vr8,    a2,      a3
+    alsl.d         a2,     a3,      a2,    1
+    vld            vr9,    a2,      0
+    xvreplve0.q    xr7,    xr7
+    xvreplve0.q    xr8,    xr8
+    xvreplve0.q    xr9,    xr9
+    xvshuf.b       xr10,   xr7,     xr7,   xr0 // 0123 1234 2345 3456
+    xvshuf.b       xr11,   xr8,     xr8,   xr0
+    xvshuf.b       xr12,   xr9,     xr9,   xr0
+    xvdp2.h.bu.b   xr13,   xr10,    xr5  // EPEL_FILTER(src, 1)
+    xvdp2.h.bu.b   xr14,   xr11,    xr5
+    xvdp2.h.bu.b   xr15,   xr12,    xr5
+    xvhaddw.w.h    xr7,    xr13,    xr13
+    xvhaddw.w.h    xr8,    xr14,    xr14
+    xvhaddw.w.h    xr9,    xr15,    xr15
+.LOOP_HV8_HORI_LASX_\w:
+    add.d          a2,     a2,      a3
+    vld            vr15,   a2,      0
+    xvreplve0.q    xr15,   xr15
+    xvshuf.b       xr23,   xr15,    xr15,   xr0
+    xvdp2.h.bu.b   xr10,   xr23,    xr5
+    xvhaddw.w.h    xr10,   xr10,    xr10
+    xvmul.w        xr15,   xr7,     xr16 //EPEL_FILTER(tmp, MAX_PB_SIZE)
+    xvmadd.w       xr15,   xr8,     xr17
+    xvmadd.w       xr15,   xr9,     xr18
+    xvmadd.w       xr15,   xr10,    xr19
+    xvaddi.wu      xr7,    xr8,     0    //back up previous value
+    xvaddi.wu      xr8,    xr9,     0
+    xvaddi.wu      xr9,    xr10,    0
+    xvsrai.w       xr15,   xr15,    6    // >> 6
+    xvmul.w        xr15,   xr15,    xr1  // * wx
+    xvadd.w        xr15,   xr15,    xr2  // + offset
+    xvsra.w        xr15,   xr15,    xr3  // >> shift
+    xvadd.w        xr15,   xr15,    xr4  // + ox
+    xvpermi.q      xr20,   xr15,    0x01
+    vssrani.h.w    vr20,   vr15,    0
+    vssrani.bu.h   vr20,   vr20,    0
+.if \w > 6
+    fst.d          f20,    a0,      0
+.else
+    fst.s          f20,    a0,      0
+    vstelm.h       vr20,   a0,      4,   2
+.endif
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_HV8_HORI_LASX_\w
+.endm
+
+.macro PUT_HEVC_EPEL_UNI_W_HV16_LASX w
+    xvld           xr7,    a2,      0  // start to load src
+    xvldx          xr8,    a2,      a3
+    alsl.d         a2,     a3,      a2,    1
+    xvld           xr9,    a2,      0
+    xvpermi.d      xr10,   xr7,     0x09 //8..18
+    xvpermi.d      xr11,   xr8,     0x09
+    xvpermi.d      xr12,   xr9,     0x09
+    xvreplve0.q    xr7,    xr7
+    xvreplve0.q    xr8,    xr8
+    xvreplve0.q    xr9,    xr9
+    xvshuf.b       xr13,   xr7,     xr7,   xr0 // 0123 1234 2345 3456
+    xvshuf.b       xr14,   xr8,     xr8,   xr0
+    xvshuf.b       xr15,   xr9,     xr9,   xr0
+    xvdp2.h.bu.b   xr20,   xr13,    xr5  // EPEL_FILTER(src, 1)
+    xvdp2.h.bu.b   xr21,   xr14,    xr5
+    xvdp2.h.bu.b   xr22,   xr15,    xr5
+    xvhaddw.w.h    xr7,    xr20,    xr20
+    xvhaddw.w.h    xr8,    xr21,    xr21
+    xvhaddw.w.h    xr9,    xr22,    xr22
+    xvreplve0.q    xr10,   xr10
+    xvreplve0.q    xr11,   xr11
+    xvreplve0.q    xr12,   xr12
+    xvshuf.b       xr13,   xr10,    xr10,  xr0
+    xvshuf.b       xr14,   xr11,    xr11,  xr0
+    xvshuf.b       xr15,   xr12,    xr12,  xr0
+    xvdp2.h.bu.b   xr20,   xr13,    xr5
+    xvdp2.h.bu.b   xr21,   xr14,    xr5
+    xvdp2.h.bu.b   xr22,   xr15,    xr5
+    xvhaddw.w.h    xr10,   xr20,    xr20
+    xvhaddw.w.h    xr11,   xr21,    xr21
+    xvhaddw.w.h    xr12,   xr22,    xr22
+.LOOP_HV16_HORI_LASX_\w:
+    add.d          a2,     a2,      a3
+    xvld           xr15,   a2,      0
+    xvpermi.d      xr20,   xr15,    0x09 //8...18
+    xvreplve0.q    xr15,   xr15
+    xvreplve0.q    xr20,   xr20
+    xvshuf.b       xr21,   xr15,    xr15,   xr0
+    xvshuf.b       xr22,   xr20,    xr20,   xr0
+    xvdp2.h.bu.b   xr13,   xr21,    xr5
+    xvdp2.h.bu.b   xr14,   xr22,    xr5
+    xvhaddw.w.h    xr13,   xr13,    xr13
+    xvhaddw.w.h    xr14,   xr14,    xr14
+    xvmul.w        xr15,   xr7,     xr16 //EPEL_FILTER(tmp, MAX_PB_SIZE)
+    xvmadd.w       xr15,   xr8,     xr17
+    xvmadd.w       xr15,   xr9,     xr18
+    xvmadd.w       xr15,   xr13,    xr19
+    xvmul.w        xr20,   xr10,    xr16
+    xvmadd.w       xr20,   xr11,    xr17
+    xvmadd.w       xr20,   xr12,    xr18
+    xvmadd.w       xr20,   xr14,    xr19
+    xvaddi.wu      xr7,    xr8,     0    //back up previous value
+    xvaddi.wu      xr8,    xr9,     0
+    xvaddi.wu      xr9,    xr13,    0
+    xvaddi.wu      xr10,   xr11,    0
+    xvaddi.wu      xr11,   xr12,    0
+    xvaddi.wu      xr12,   xr14,    0
+    xvsrai.w       xr15,   xr15,    6    // >> 6
+    xvsrai.w       xr20,   xr20,    6    // >> 6
+    xvmul.w        xr15,   xr15,    xr1  // * wx
+    xvmul.w        xr20,   xr20,    xr1  // * wx
+    xvadd.w        xr15,   xr15,    xr2  // + offset
+    xvadd.w        xr20,   xr20,    xr2  // + offset
+    xvsra.w        xr15,   xr15,    xr3  // >> shift
+    xvsra.w        xr20,   xr20,    xr3  // >> shift
+    xvadd.w        xr15,   xr15,    xr4  // + ox
+    xvadd.w        xr20,   xr20,    xr4  // + ox
+    xvssrani.h.w   xr20,   xr15,    0
+    xvpermi.q      xr21,   xr20,    0x01
+    vssrani.bu.h   vr21,   vr20,    0
+    vpermi.w       vr21,   vr21,    0xd8
+.if \w < 16
+    fst.d          f21,    a0,      0
+    vstelm.w       vr21,   a0,      8,   2
+.else
+    vst            vr21,   a0,      0
+.endif
+    add.d          a0,     a0,      a1
+    addi.d         a4,     a4,      -1
+    bnez           a4,     .LOOP_HV16_HORI_LASX_\w
+.endm
+
+function ff_hevc_put_hevc_epel_uni_w_hv6_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 6
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv6_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    PUT_HEVC_EPEL_UNI_W_HV8_LASX 6
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv8_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 8
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv8_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    PUT_HEVC_EPEL_UNI_W_HV8_LASX 8
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv12_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 12
+    addi.d         a0,     t2,      8
+    addi.d         a2,     t3,      8
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_HV4_LSX 12
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv12_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    PUT_HEVC_EPEL_UNI_W_HV16_LASX 12
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv16_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    2
+.LOOP_HV16:
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 16
+    addi.d         a0,     t2,      8
+    addi.d         a2,     t3,      8
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV16
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv16_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    PUT_HEVC_EPEL_UNI_W_HV16_LASX 16
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv24_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    3
+.LOOP_HV24:
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 24
+    addi.d         a0,     t2,      8
+    addi.d         t2,     t2,      8
+    addi.d         a2,     t3,      8
+    addi.d         t3,     t3,      8
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV24
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv24_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    PUT_HEVC_EPEL_UNI_W_HV16_LASX 24
+    addi.d         a0,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         a4,     t4,      0
+    PUT_HEVC_EPEL_UNI_W_HV8_LASX 24
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv32_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    4
+.LOOP_HV32:
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 32
+    addi.d         a0,     t2,      8
+    addi.d         t2,     t2,      8
+    addi.d         a2,     t3,      8
+    addi.d         t3,     t3,      8
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV32
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv32_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    2
+.LOOP_HV32_LASX:
+    PUT_HEVC_EPEL_UNI_W_HV16_LASX 32
+    addi.d         a0,     t2,      16
+    addi.d         t2,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         t3,     t3,      16
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV32_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv48_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    6
+.LOOP_HV48:
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 48
+    addi.d         a0,     t2,      8
+    addi.d         t2,     t2,      8
+    addi.d         a2,     t3,      8
+    addi.d         t3,     t3,      8
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV48
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv48_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    3
+.LOOP_HV48_LASX:
+    PUT_HEVC_EPEL_UNI_W_HV16_LASX 48
+    addi.d         a0,     t2,      16
+    addi.d         t2,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         t3,     t3,      16
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV48_LASX
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv64_8_lsx
+    LOAD_VAR 128
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vreplvei.w     vr5,    vr5,     0
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    vreplvei.w     vr16,   vr6,     0
+    vreplvei.w     vr17,   vr6,     1
+    vreplvei.w     vr18,   vr6,     2
+    vreplvei.w     vr19,   vr6,     3
+    la.local       t1,     shufb
+    vld            vr0,    t1,      0
+    vaddi.bu       vr22,   vr0,     4  // update shufb to get high part
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    8
+.LOOP_HV64:
+    PUT_HEVC_EPEL_UNI_W_HV8_LSX 64
+    addi.d         a0,     t2,      8
+    addi.d         t2,     t2,      8
+    addi.d         a2,     t3,      8
+    addi.d         t3,     t3,      8
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV64
+endfunc
+
+function ff_hevc_put_hevc_epel_uni_w_hv64_8_lasx
+    LOAD_VAR 256
+    ld.d           t0,     sp,      0  // mx
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    la.local       t1,     ff_hevc_epel_filters
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    xvreplve0.w    xr5,    xr5
+    ld.d           t0,     sp,      8  // my
+    addi.d         t0,     t0,      -1
+    slli.w         t0,     t0,      2
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vsllwil.h.b    vr6,    vr6,     0
+    vsllwil.w.h    vr6,    vr6,     0
+    xvreplve0.q    xr6,    xr6
+    xvrepl128vei.w xr16,   xr6,     0
+    xvrepl128vei.w xr17,   xr6,     1
+    xvrepl128vei.w xr18,   xr6,     2
+    xvrepl128vei.w xr19,   xr6,     3
+    la.local       t1,     shufb
+    xvld           xr0,    t1,      0
+    sub.d          a2,     a2,      a3 // src -= srcstride
+    addi.d         a2,     a2,      -1
+    addi.d         t2,     a0,      0
+    addi.d         t3,     a2,      0
+    addi.d         t4,     a4,      0
+    addi.d         t5,     zero,    4
+.LOOP_HV64_LASX:
+    PUT_HEVC_EPEL_UNI_W_HV16_LASX 64
+    addi.d         a0,     t2,      16
+    addi.d         t2,     t2,      16
+    addi.d         a2,     t3,      16
+    addi.d         t3,     t3,      16
+    addi.d         a4,     t4,      0
+    addi.d         t5,     t5,      -1
+    bnez           t5,     .LOOP_HV64_LASX
 endfunc

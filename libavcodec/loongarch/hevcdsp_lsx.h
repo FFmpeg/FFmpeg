@@ -277,6 +277,16 @@ PEL_UNI_W(qpel, h, 32);
 PEL_UNI_W(qpel, h, 48);
 PEL_UNI_W(qpel, h, 64);
 
+PEL_UNI_W(epel, hv, 4);
+PEL_UNI_W(epel, hv, 6);
+PEL_UNI_W(epel, hv, 8);
+PEL_UNI_W(epel, hv, 12);
+PEL_UNI_W(epel, hv, 16);
+PEL_UNI_W(epel, hv, 24);
+PEL_UNI_W(epel, hv, 32);
+PEL_UNI_W(epel, hv, 48);
+PEL_UNI_W(epel, hv, 64);
+
 #undef PEL_UNI_W
 
 #endif  // #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
