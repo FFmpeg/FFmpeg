@@ -24,8 +24,8 @@ DCADEC_SUITE_LOSSY       = core_51_24_48_768_0        \
 define FATE_DCADEC_LOSSLESS_SUITE
 FATE_DCADEC_LOSSLESS_$(2) += fate-dca-$(1) fate-dca-$(1)-dmix_2 fate-dca-$(1)-dmix_6
 fate-dca-$(1): CMD = framemd5 -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
-fate-dca-$(1)-dmix_2: CMD = framemd5 -request_channel_layout 0x3   -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
-fate-dca-$(1)-dmix_6: CMD = framemd5 -request_channel_layout 0x60f -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
+fate-dca-$(1)-dmix_2: CMD = framemd5 -downmix 0x3   -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
+fate-dca-$(1)-dmix_6: CMD = framemd5 -downmix 0x60f -i $(TARGET_SAMPLES)/dts/dcadec-suite/$(1).dtshd -c:a pcm_$(2) -af aresample
 endef
 
 define FATE_DCADEC_LOSSY_SUITE
@@ -40,21 +40,21 @@ $(foreach N,$(DCADEC_SUITE_LOSSY),$(eval $(call FATE_DCADEC_LOSSY_SUITE,$(N))))
 
 # lossy downmix tests
 FATE_DCADEC_LOSSY += fate-dca-core_51_24_48_768_1-dmix_2
-fate-dca-core_51_24_48_768_1-dmix_2: CMD = ffmpeg -request_channel_layout 0x3 -i $(TARGET_SAMPLES)/dts/dcadec-suite/core_51_24_48_768_1.dtshd -f f32le -af aresample -
+fate-dca-core_51_24_48_768_1-dmix_2: CMD = ffmpeg -downmix stereo -i $(TARGET_SAMPLES)/dts/dcadec-suite/core_51_24_48_768_1.dtshd -f f32le -af aresample -
 fate-dca-core_51_24_48_768_1-dmix_2: REF = $(SAMPLES)/dts/dcadec-suite/core_51_24_48_768_1-dmix_2.f32
 
 FATE_DCADEC_LOSSY += fate-dca-x96_xxch_71_24_96_3840-dmix_2
-fate-dca-x96_xxch_71_24_96_3840-dmix_2: CMD = ffmpeg -request_channel_layout 0x3 -i $(TARGET_SAMPLES)/dts/dcadec-suite/x96_xxch_71_24_96_3840.dtshd -f f32le -af aresample -
+fate-dca-x96_xxch_71_24_96_3840-dmix_2: CMD = ffmpeg -downmix stereo -i $(TARGET_SAMPLES)/dts/dcadec-suite/x96_xxch_71_24_96_3840.dtshd -f f32le -af aresample -
 # intentionally uses the dmix_6 reference because the sample does not contain stereo downmix coefficients
 fate-dca-x96_xxch_71_24_96_3840-dmix_2: REF = $(SAMPLES)/dts/dcadec-suite/x96_xxch_71_24_96_3840-dmix_6.f32
 
 FATE_DCADEC_LOSSY += fate-dca-x96_xxch_71_24_96_3840-dmix_6
 
-fate-dca-x96_xxch_71_24_96_3840-dmix_6: CMD = ffmpeg -request_channel_layout "FL|FR|FC|LFE|SL|SR" -i $(TARGET_SAMPLES)/dts/dcadec-suite/x96_xxch_71_24_96_3840.dtshd -f f32le -af aresample -
+fate-dca-x96_xxch_71_24_96_3840-dmix_6: CMD = ffmpeg -downmix "FL+FR+FC+LFE+SL+SR" -i $(TARGET_SAMPLES)/dts/dcadec-suite/x96_xxch_71_24_96_3840.dtshd -f f32le -af aresample -
 fate-dca-x96_xxch_71_24_96_3840-dmix_6: REF = $(SAMPLES)/dts/dcadec-suite/x96_xxch_71_24_96_3840-dmix_6.f32
 
 FATE_DCADEC_LOSSY += fate-dca-xch_61_24_48_768-dmix_6
-fate-dca-xch_61_24_48_768-dmix_6: CMD = ffmpeg -request_channel_layout "5.1(side)" -i $(TARGET_SAMPLES)/dts/dcadec-suite/xch_61_24_48_768.dtshd -f f32le -af aresample -
+fate-dca-xch_61_24_48_768-dmix_6: CMD = ffmpeg -downmix "5.1(side)" -i $(TARGET_SAMPLES)/dts/dcadec-suite/xch_61_24_48_768.dtshd -f f32le -af aresample -
 fate-dca-xch_61_24_48_768-dmix_6: REF = $(SAMPLES)/dts/dcadec-suite/xch_61_24_48_768-dmix_6.f32
 
 $(FATE_DCADEC_LOSSY): CMP = oneoff
