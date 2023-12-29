@@ -634,18 +634,13 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
                                         s->y_block_height * sizeof(int32_t));
     s->m.me.map            = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->m.me.map));
     s->m.new_picture       = av_frame_alloc();
-    s->svq1encdsp.ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 
     if (!s->m.me.scratchpad || !s->m.me.map ||
         !s->mb_type || !s->dummy || !s->m.new_picture)
         return AVERROR(ENOMEM);
     s->m.me.score_map = s->m.me.map + ME_MAP_SIZE;
 
-#if ARCH_PPC
-    ff_svq1enc_init_ppc(&s->svq1encdsp);
-#elif ARCH_X86
-    ff_svq1enc_init_x86(&s->svq1encdsp);
-#endif
+    ff_svq1enc_init(&s->svq1encdsp);
 
     ff_h263_encode_init(&s->m); // mv_penalty
 
@@ -764,3 +759,14 @@ const FFCodec ff_svq1_encoder = {
                                                      AV_PIX_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
+
+void ff_svq1enc_init(SVQ1EncDSPContext *c)
+{
+    c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
+
+#if ARCH_PPC
+    ff_svq1enc_init_ppc(c);
+#elif ARCH_X86
+    ff_svq1enc_init_x86(c);
+#endif
+}
