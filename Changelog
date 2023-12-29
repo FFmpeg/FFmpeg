@@ -1,6 +1,33 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 6.1.1
+- avfilter/vf_weave: Fix odd height handling
+- avfilter/edge_template: Fix small inputs with gaussian_blur()
+- avfilter/vf_gradfun: Do not overread last line
+- avfilter/avf_showspectrum: fix off by 1 error
+- avcodec/jpegxl_parser: Add padding to cs_buffer
+- avformat/mov: do not set sign bit for chunk_offsets
+- avcodec/jpeglsdec: Check Jpeg-LS LSE
+- avcodec/osq: Implement flush()
+- configure: Enable section_data_rel_ro for FreeBSD and NetBSD aarch64 / arm
+- avcodec/cbs_h266: more restrictive check on pps_tile_idx_delta_val
+- avcodec/jpeg2000htdec: check if block decoding will exceed internal precision
+- tools/target_dec_fuzzer: Adjust threshold for VMIX
+- avcodec/av1dec: Fix resolving zero divisor
+- avformat/mov: Ignore duplicate ftyp
+- avformat/mov: Fix integer overflow in mov_read_packet().
+- lavc/qsvdec: return 0 if more data is required
+- avcodec/jpegxl_parser: check ANS cluster alphabet size vs bundle size
+- libavformat/vvc: Make probe more conservative
+- hwcontext_vulkan: guard unistd.h include
+- lavc/Makefile: build vulkan decode code if vulkan_av1 has been enabled
+- lavc/dvdsubenc: only check canvas size when it is actually set
+- avcodec/decode: validate hw_frames_ctx when AVHWAccel.free_frame_priv is used
+- avcoded/fft: Fix memory leak if ctx2 is used
+- avcodec/fft: Use av_mallocz to avoid invalid free/uninit
+
+
 version 6.1:
 - libaribcaption decoder
 - Playdate video decoder and demuxer
