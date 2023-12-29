@@ -254,12 +254,43 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
         AVBPrint buf;
         char *str = NULL;
         int n;
+        int margin_left;
+        int x_step;
 
         av_log(avctx, AV_LOG_DEBUG, "New frame, type: %c\n",
                av_get_picture_type_char(pict->pict_type));
+
+        margin_left = 2;
+        n = mb_width << 4;
+        while ((n /= 10))
+            margin_left++;
+
+        av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+        av_bprintf(&buf, "%*s", margin_left, " ");
+
+        n = 0;
+        if (avctx->debug & FF_DEBUG_SKIP)
+            n++;
+        if (avctx->debug & FF_DEBUG_QP)
+            n += 2;
+        if (avctx->debug & FF_DEBUG_MB_TYPE)
+            n += 3;
+        x_step = (mb_width * 16 > 999) ? 8 : 4;
+        for (x = 0; x < mb_width; x += x_step)
+            av_bprintf(&buf, "%-*d", n * x_step, x << 4);
+        n = av_bprint_finalize(&buf, &str);
+        if (n < 0) {
+            av_log(avctx, AV_LOG_ERROR, "%s failed, %s\n", __func__, av_err2str(n));
+            return;
+        }
+        av_log(avctx, AV_LOG_DEBUG, "%s\n", str);
+        av_freep(&str);
+
         for (y = 0; y < mb_height; y++) {
             av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
             for (x = 0; x < mb_width; x++) {
+                if (x == 0)
+                    av_bprintf(&buf, "%*d ", margin_left - 1, y << 4);
                 if (avctx->debug & FF_DEBUG_SKIP) {
                     int count = mbskip_table ? mbskip_table[x + y * mb_stride] : 0;
                     if (count > 9)
