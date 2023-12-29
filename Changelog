@@ -2,6 +2,17 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 6.1.1
+- avformat/flacdec: Avoid double AVERRORS
+- avfilter/vf_vidstabdetect: Avoid double AVERRORS
+- avcodec/vaapi_encode: Avoid double AVERRORS
+- avfilter/vf_swaprect: round coordinates down
+- avfilter/vf_swaprect: Use height for vertical variables
+- avfilter/vf_swaprect: assert that rectangles are within memory
+- avfilter/af_alimiter: Check nextpos before use
+- avfilter/f_reverse: Apply PTS compensation only when pts is available
+- avfilter/af_stereowiden: Check length
+- avformat/mov: Fix MSAN issue with stsd_id
+- avcodec/jpegxl_parser: Check get_vlc2()
 - avfilter/vf_weave: Fix odd height handling
 - avfilter/edge_template: Fix small inputs with gaussian_blur()
 - avfilter/vf_gradfun: Do not overread last line
