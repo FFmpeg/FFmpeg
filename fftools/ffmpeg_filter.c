@@ -2622,18 +2622,18 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
         break;
     }
 
-    if (!ifp->ist->reinit_filters && fgt->graph)
-        need_reinit = 0;
-
-    if (!!ifp->hw_frames_ctx != !!frame->hw_frames_ctx ||
-        (ifp->hw_frames_ctx && ifp->hw_frames_ctx->data != frame->hw_frames_ctx->data))
-        need_reinit = 1;
-
     if (sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX)) {
         if (!ifp->displaymatrix_present ||
             memcmp(sd->data, ifp->displaymatrix, sizeof(ifp->displaymatrix)))
             need_reinit = 1;
     } else if (ifp->displaymatrix_present)
+        need_reinit = 1;
+
+    if (!ifp->ist->reinit_filters && fgt->graph)
+        need_reinit = 0;
+
+    if (!!ifp->hw_frames_ctx != !!frame->hw_frames_ctx ||
+        (ifp->hw_frames_ctx && ifp->hw_frames_ctx->data != frame->hw_frames_ctx->data))
         need_reinit = 1;
 
     if (need_reinit) {
