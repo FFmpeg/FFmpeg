@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/bprint.h"
 #include "libavutil/common.h"
 #include "libavutil/emms.h"
 #include "libavutil/frame.h"
@@ -250,31 +251,41 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
 
     if (avctx->debug & (FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)) {
         int x,y;
+        AVBPrint buf;
+        char *str = NULL;
+        int n;
 
         av_log(avctx, AV_LOG_DEBUG, "New frame, type: %c\n",
                av_get_picture_type_char(pict->pict_type));
         for (y = 0; y < mb_height; y++) {
+            av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
             for (x = 0; x < mb_width; x++) {
                 if (avctx->debug & FF_DEBUG_SKIP) {
                     int count = mbskip_table ? mbskip_table[x + y * mb_stride] : 0;
                     if (count > 9)
                         count = 9;
-                    av_log(avctx, AV_LOG_DEBUG, "%1d", count);
+                    av_bprintf(&buf, "%1d", count);
                 }
                 if (avctx->debug & FF_DEBUG_QP) {
-                    av_log(avctx, AV_LOG_DEBUG, "%2d",
-                           qscale_table[x + y * mb_stride]);
+                    av_bprintf(&buf, "%2d", qscale_table[x + y * mb_stride]);
                 }
                 if (avctx->debug & FF_DEBUG_MB_TYPE) {
                     int mb_type = mbtype_table[x + y * mb_stride];
 
-                    av_log(avctx, AV_LOG_DEBUG, "%c%c%c",
+                    av_bprintf(&buf, "%c%c%c",
                            get_type_mv_char(mb_type),
                            get_segmentation_char(mb_type),
                            get_interlacement_char(mb_type));
                 }
             }
-            av_log(avctx, AV_LOG_DEBUG, "\n");
+
+            n = av_bprint_finalize(&buf, &str);
+            if (n < 0) {
+                av_log(avctx, AV_LOG_ERROR, "%s failed, %s\n", __func__, av_err2str(n));
+                return;
+            }
+            av_log(avctx, AV_LOG_DEBUG, "%s\n", str);
+            av_freep(&str);
         }
     }
 }
