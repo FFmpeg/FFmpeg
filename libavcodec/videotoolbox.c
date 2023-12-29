@@ -549,6 +549,7 @@ static int videotoolbox_buffer_create(AVCodecContext *avctx, AVFrame *frame)
         cached_frames->height != height) {
         AVBufferRef *hw_frames_ctx = av_hwframe_ctx_alloc(cached_frames->device_ref);
         AVHWFramesContext *hw_frames;
+        AVVTFramesContext *hw_ctx;
         if (!hw_frames_ctx)
             return AVERROR(ENOMEM);
 
@@ -557,6 +558,8 @@ static int videotoolbox_buffer_create(AVCodecContext *avctx, AVFrame *frame)
         hw_frames->sw_format = sw_format;
         hw_frames->width = width;
         hw_frames->height = height;
+        hw_ctx = hw_frames->hwctx;
+        hw_ctx->color_range = avctx->color_range;
 
         ret = av_hwframe_ctx_init(hw_frames_ctx);
         if (ret < 0) {
@@ -1197,6 +1200,7 @@ int ff_videotoolbox_common_init(AVCodecContext *avctx)
 {
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     AVHWFramesContext *hw_frames;
+    AVVTFramesContext *hw_ctx;
     int err;
     bool full_range;
 
@@ -1232,6 +1236,8 @@ int ff_videotoolbox_common_init(AVCodecContext *avctx)
         hw_frames->sw_format = videotoolbox_best_pixel_format(avctx);
         hw_frames->width = avctx->width;
         hw_frames->height = avctx->height;
+        hw_ctx = hw_frames->hwctx;
+        hw_ctx->color_range = avctx->color_range;
 
         err = av_hwframe_ctx_init(avctx->hw_frames_ctx);
         if (err < 0) {
