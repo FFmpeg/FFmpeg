@@ -164,6 +164,9 @@ static const struct {
     #if CONFIG_PIXBLOCKDSP
         { "pixblockdsp", checkasm_check_pixblockdsp },
     #endif
+    #if CONFIG_SVQ1_ENCODER
+        { "svq1enc", checkasm_check_svq1enc },
+    #endif
     #if CONFIG_TAK_DECODER
         { "takdsp", checkasm_check_takdsp },
     #endif
