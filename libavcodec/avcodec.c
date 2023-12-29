@@ -656,12 +656,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (enc->sample_rate) {
             av_bprintf(&bprint, "%d Hz, ", enc->sample_rate);
         }
-        {
-            char buf[512];
-            int ret = av_channel_layout_describe(&enc->ch_layout, buf, sizeof(buf));
-            if (ret >= 0)
-                av_bprintf(&bprint, "%s", buf);
-        }
+        av_channel_layout_describe_bprint(&enc->ch_layout, &bprint);
         if (enc->sample_fmt != AV_SAMPLE_FMT_NONE &&
             (str = av_get_sample_fmt_name(enc->sample_fmt))) {
             av_bprintf(&bprint, ", %s", str);

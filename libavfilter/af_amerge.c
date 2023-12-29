@@ -153,7 +153,6 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AMergeContext *s = ctx->priv;
     AVBPrint bp;
-    char buf[128];
     int i;
 
     s->bps = av_get_bytes_per_sample(outlink->format);
@@ -162,12 +161,10 @@ static int config_output(AVFilterLink *outlink)
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
     for (i = 0; i < s->nb_inputs; i++) {
         av_bprintf(&bp, "%sin%d:", i ? " + " : "", i);
-        av_channel_layout_describe(&ctx->inputs[i]->ch_layout, buf, sizeof(buf));
-        av_bprintf(&bp, "%s", buf);
+        av_channel_layout_describe_bprint(&ctx->inputs[i]->ch_layout, &bp);
     }
     av_bprintf(&bp, " -> out:");
-    av_channel_layout_describe(&outlink->ch_layout, buf, sizeof(buf));
-    av_bprintf(&bp, "%s", buf);
+    av_channel_layout_describe_bprint(&outlink->ch_layout, &bp);
     av_log(ctx, AV_LOG_VERBOSE, "%s\n", bp.str);
 
     return 0;
