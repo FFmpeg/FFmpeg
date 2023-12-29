@@ -31062,6 +31062,12 @@ setpts=N/(25*TB)
 @end example
 
 @item
+Apply a random jitter effect of +/-100 TB units:
+@example
+setpts=PTS+randomi(0, -100\,100)
+@end example
+
+@item
 Set fixed rate 25 fps with some jitter:
 @example
 setpts='1/(25*TB) * (N + 0.05 * sin(N*2*PI/25))'
