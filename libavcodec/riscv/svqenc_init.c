@@ -1,5 +1,5 @@
 /*
- * SVQ1 encoder DSP
+ * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
  *
  * This file is part of FFmpeg.
  *
@@ -18,19 +18,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_SVQ1ENCDSP_H
-#define AVCODEC_SVQ1ENCDSP_H
+#include "config.h"
 
-#include <stdint.h>
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavcodec/svq1encdsp.h"
 
-typedef struct SVQ1EncDSPContext {
-    int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
-                             intptr_t size);
-} SVQ1EncDSPContext;
+int ff_ssd_int8_vs_int16_rvv(const int8_t *pix1, const int16_t *pix2,
+                              intptr_t size);
 
-void ff_svq1enc_init(SVQ1EncDSPContext *c);
-void ff_svq1enc_init_ppc(SVQ1EncDSPContext *c);
-void ff_svq1enc_init_riscv(SVQ1EncDSPContext *c);
-void ff_svq1enc_init_x86(SVQ1EncDSPContext *c);
+av_cold void ff_svq1enc_init_riscv(SVQ1EncDSPContext *c)
+{
+#if HAVE_RVV
+    int flags = av_get_cpu_flags();
 
-#endif /* AVCODEC_SVQ1ENCDSP_H */
+    if (flags & AV_CPU_FLAG_RVV_I32) {
+        if (flags & AV_CPU_FLAG_RVB_ADDR) {
+            c->ssd_int8_vs_int16 = ff_ssd_int8_vs_int16_rvv;
+        }
+    }
+#endif
+}

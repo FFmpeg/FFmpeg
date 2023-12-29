@@ -766,6 +766,8 @@ void ff_svq1enc_init(SVQ1EncDSPContext *c)
 
 #if ARCH_PPC
     ff_svq1enc_init_ppc(c);
+#elif ARCH_RISCV
+    ff_svq1enc_init_riscv(c);
 #elif ARCH_X86
     ff_svq1enc_init_x86(c);
 #endif
