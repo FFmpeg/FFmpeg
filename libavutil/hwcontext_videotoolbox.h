@@ -39,9 +39,12 @@
  * depending on application usage, so it is preferable to let CoreVideo manage
  * the pool using the default implementation.
  *
- * Currently AVHWDeviceContext.hwctx and AVHWFramesContext.hwctx are always
- * NULL.
+ * Currently AVHWDeviceContext.hwctx are always NULL.
  */
+
+typedef struct AVVTFramesContext {
+    enum AVColorRange color_range;
+} AVVTFramesContext;
 
 /**
  * Convert a VideoToolbox (actually CoreVideo) format to AVPixelFormat.

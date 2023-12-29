@@ -144,6 +144,25 @@ enum AVPixelFormat av_map_videotoolbox_format_to_pixfmt(uint32_t cv_fmt)
     return AV_PIX_FMT_NONE;
 }
 
+static uint32_t vt_format_from_pixfmt(enum AVPixelFormat pix_fmt,
+                                      enum AVColorRange range)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(cv_pix_fmts); i++) {
+        if (cv_pix_fmts[i].pix_fmt == pix_fmt) {
+            int full_range = (range == AVCOL_RANGE_JPEG);
+
+            // Don't care if unspecified
+            if (range == AVCOL_RANGE_UNSPECIFIED)
+                return cv_pix_fmts[i].cv_fmt;
+
+            if (cv_pix_fmts[i].full_range == full_range)
+                return cv_pix_fmts[i].cv_fmt;
+        }
+    }
+
+    return 0;
+}
+
 uint32_t av_map_videotoolbox_format_from_pixfmt(enum AVPixelFormat pix_fmt)
 {
     return av_map_videotoolbox_format_from_pixfmt2(pix_fmt, false);
@@ -151,12 +170,7 @@ uint32_t av_map_videotoolbox_format_from_pixfmt(enum AVPixelFormat pix_fmt)
 
 uint32_t av_map_videotoolbox_format_from_pixfmt2(enum AVPixelFormat pix_fmt, bool full_range)
 {
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(cv_pix_fmts); i++) {
-        if (cv_pix_fmts[i].pix_fmt == pix_fmt && cv_pix_fmts[i].full_range == full_range)
-            return cv_pix_fmts[i].cv_fmt;
-    }
-    return 0;
+    return vt_format_from_pixfmt(pix_fmt, full_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG);
 }
 
 static int vt_pool_alloc(AVHWFramesContext *ctx)
@@ -166,6 +180,7 @@ static int vt_pool_alloc(AVHWFramesContext *ctx)
     CFNumberRef w, h, pixfmt;
     uint32_t cv_pixfmt;
     CFMutableDictionaryRef attributes, iosurface_properties;
+    AVVTFramesContext *hw_ctx = ctx->hwctx;
 
     attributes = CFDictionaryCreateMutable(
         NULL,
@@ -173,7 +188,7 @@ static int vt_pool_alloc(AVHWFramesContext *ctx)
         &kCFTypeDictionaryKeyCallBacks,
         &kCFTypeDictionaryValueCallBacks);
 
-    cv_pixfmt = av_map_videotoolbox_format_from_pixfmt(ctx->sw_format);
+    cv_pixfmt = vt_format_from_pixfmt(ctx->sw_format, hw_ctx->color_range);
     pixfmt = CFNumberCreate(NULL, kCFNumberSInt32Type, &cv_pixfmt);
     CFDictionarySetValue(
         attributes,
@@ -750,6 +765,7 @@ const HWContextType ff_hwcontext_type_videotoolbox = {
     .frames_priv_size     = sizeof(VTFramesContext),
 
     .device_create        = vt_device_create,
+    .frames_hwctx_size    = sizeof(AVVTFramesContext),
     .frames_init          = vt_frames_init,
     .frames_get_buffer    = vt_get_buffer,
     .frames_get_constraints = vt_frames_get_constraints,
