@@ -1087,8 +1087,13 @@ static void interpolate(AVFilterLink *inlink, AVFrame *avf_out)
     pts = av_rescale(avf_out->pts, (int64_t) ALPHA_MAX * outlink->time_base.num * inlink->time_base.den,
                                    (int64_t)             outlink->time_base.den * inlink->time_base.num);
 
-    alpha = (pts - mi_ctx->frames[1].avf->pts * ALPHA_MAX) / (mi_ctx->frames[2].avf->pts - mi_ctx->frames[1].avf->pts);
-    alpha = av_clip(alpha, 0, ALPHA_MAX);
+    if (mi_ctx->frames[2].avf->pts > mi_ctx->frames[1].avf->pts) {
+        alpha = (pts - mi_ctx->frames[1].avf->pts * ALPHA_MAX) / (mi_ctx->frames[2].avf->pts - mi_ctx->frames[1].avf->pts);
+        alpha = av_clip(alpha, 0, ALPHA_MAX);
+    } else {
+        av_log(ctx, AV_LOG_DEBUG, "duplicate input PTS detected\n");
+        alpha = 0;
+    }
 
     if (alpha == 0 || alpha == ALPHA_MAX) {
         av_frame_copy(avf_out, alpha ? mi_ctx->frames[2].avf : mi_ctx->frames[1].avf);
