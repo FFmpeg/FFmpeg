@@ -1330,8 +1330,8 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                                                  &v_chroma_shift);
 
                 for (i = 0; i < 3; i++) {
-                    int src_stride = pic_arg->linesize[i];
-                    int dst_stride = i ? s->uvlinesize : s->linesize;
+                    ptrdiff_t src_stride = pic_arg->linesize[i];
+                    ptrdiff_t dst_stride = i ? s->uvlinesize : s->linesize;
                     int h_shift = i ? h_chroma_shift : 0;
                     int v_shift = i ? v_chroma_shift : 0;
                     int w = s->width  >> h_shift;
