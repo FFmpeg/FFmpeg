@@ -1213,7 +1213,7 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                     dst += INPLACE_OFFSET;
 
                 if (src_stride == dst_stride)
-                    memcpy(dst, src, src_stride * h);
+                    memcpy(dst, src, src_stride * h - src_stride + w);
                 else {
                     int h2 = h;
                     uint8_t *dst2 = dst;
