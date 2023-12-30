@@ -440,6 +440,8 @@ static int config_output(AVFilterLink *outlink)
 
     showwaves->history_nb_samples = av_rescale(showwaves->w * nb_channels * 2,
                                                showwaves->n.num, showwaves->n.den);
+    if (showwaves->history_nb_samples <= 0)
+        return AVERROR(EINVAL);
     showwaves->history = av_calloc(showwaves->history_nb_samples,
                                    sizeof(*showwaves->history));
     if (!showwaves->history)
