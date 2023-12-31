@@ -209,6 +209,8 @@ MAKE_AVFILTERLINK_ACCESSOR(AVRational       , frame_rate         )
 MAKE_AVFILTERLINK_ACCESSOR(int              , w                  )
 MAKE_AVFILTERLINK_ACCESSOR(int              , h                  )
 MAKE_AVFILTERLINK_ACCESSOR(AVRational       , sample_aspect_ratio)
+MAKE_AVFILTERLINK_ACCESSOR(enum AVColorSpace, colorspace)
+MAKE_AVFILTERLINK_ACCESSOR(enum AVColorRange, color_range)
 
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
