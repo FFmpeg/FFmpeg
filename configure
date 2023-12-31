@@ -5633,7 +5633,7 @@ case $target_os in
         oss_outdev_extralibs="-lossaudio"
         enabled gcc || check_ldflags -Wl,-zmuldefs
         ;;
-    openbsd|bitrig)
+    openbsd)
         disable symver
         enable section_data_rel_ro
         striptype=""
