@@ -98,7 +98,7 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
     const unsigned mb_count = s->mb_width * (s->mb_height >> is_field);
 
     int i;
-    uint8_t *mapped_data = NULL;
+    void *mapped_data = NULL;
     D3D12_VIDEO_DECODE_FRAME_ARGUMENT *args = &input_args->FrameArguments[input_args->NumFrameArguments++];
 
     D3D12_RANGE range = {
