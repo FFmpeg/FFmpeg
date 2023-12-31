@@ -185,6 +185,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->type    = src->output_pads[srcpad].type;
     av_assert0(AV_PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
     link->format  = -1;
+    link->colorspace = AVCOL_SPC_UNSPECIFIED;
     ff_framequeue_init(&link->fifo, &src->graph->internal->frame_queues);
 
     return 0;
@@ -286,6 +287,12 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     if (link->outcfg.formats)
         ff_formats_changeref(&link->outcfg.formats,
                              &filt->outputs[filt_dstpad_idx]->outcfg.formats);
+    if (link->outcfg.color_spaces)
+        ff_formats_changeref(&link->outcfg.color_spaces,
+                             &filt->outputs[filt_dstpad_idx]->outcfg.color_spaces);
+    if (link->outcfg.color_ranges)
+        ff_formats_changeref(&link->outcfg.color_ranges,
+                             &filt->outputs[filt_dstpad_idx]->outcfg.color_ranges);
     if (link->outcfg.samplerates)
         ff_formats_changeref(&link->outcfg.samplerates,
                              &filt->outputs[filt_dstpad_idx]->outcfg.samplerates);
@@ -730,6 +737,10 @@ static void free_link(AVFilterLink *link)
 
     ff_formats_unref(&link->incfg.formats);
     ff_formats_unref(&link->outcfg.formats);
+    ff_formats_unref(&link->incfg.color_spaces);
+    ff_formats_unref(&link->outcfg.color_spaces);
+    ff_formats_unref(&link->incfg.color_ranges);
+    ff_formats_unref(&link->outcfg.color_ranges);
     ff_formats_unref(&link->incfg.samplerates);
     ff_formats_unref(&link->outcfg.samplerates);
     ff_channel_layouts_unref(&link->incfg.channel_layouts);
@@ -987,9 +998,9 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
             strcmp(link->dst->filter->name, "idet") &&
             strcmp(link->dst->filter->name, "null") &&
             strcmp(link->dst->filter->name, "scale")) {
-            av_assert1(frame->format                 == link->format);
-            av_assert1(frame->width               == link->w);
-            av_assert1(frame->height               == link->h);
+            av_assert1(frame->format        == link->format);
+            av_assert1(frame->width         == link->w);
+            av_assert1(frame->height        == link->h);
         }
 
         frame->sample_aspect_ratio = link->sample_aspect_ratio;

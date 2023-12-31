@@ -301,6 +301,14 @@ typedef struct AVFilter {
          * @ref AVFilterFormatsConfig.formats "incfg.formats"
          * on every output link to a list of pixel/sample formats that the filter
          * supports on that link.
+         * For video links, this filter may also set
+         * @ref AVFilterFormatsConfig.color_spaces "incfg.color_spaces"
+         *  /
+         * @ref AVFilterFormatsConfig.color_spaces "outcfg.color_spaces"
+         * and @ref AVFilterFormatsConfig.color_ranges "incfg.color_ranges"
+         *  /
+         * @ref AVFilterFormatsConfig.color_ranges "outcfg.color_ranges"
+         * analogously.
          * For audio links, this filter must also set
          * @ref AVFilterFormatsConfig.samplerates "incfg.samplerates"
          *  /
@@ -321,6 +329,10 @@ typedef struct AVFilter {
          * by AV_PIX_FMT_NONE. The generic code will use this list
          * to indicate that this filter supports each of these pixel formats,
          * provided that all inputs and outputs use the same pixel format.
+         *
+         * In addition to that the generic code will mark all inputs
+         * and all outputs as supporting all color spaces and ranges, as
+         * long as all inputs and outputs use the same color space/range.
          *
          * This list must never be NULL if the union is in this state.
          * The type of all inputs and outputs of filters using this must
@@ -514,6 +526,12 @@ typedef struct AVFilterFormatsConfig {
      */
     AVFilterChannelLayouts  *channel_layouts;
 
+    /**
+     * Lists of supported YUV color metadata, only for YUV video.
+     */
+    AVFilterFormats *color_spaces;  ///< AVColorSpace
+    AVFilterFormats *color_ranges;  ///< AVColorRange
+
 } AVFilterFormatsConfig;
 
 /**
@@ -564,6 +582,16 @@ struct AVFilterLink {
     AVRational time_base;
 
     AVChannelLayout ch_layout;  ///< channel layout of current buffer (see libavutil/channel_layout.h)
+
+    /**
+     * For non-YUV links, these are respectively set to fallback values (as
+     * appropriate for that colorspace).
+     *
+     * Note: This includes grayscale formats, as these are currently treated
+     * as forced full range always.
+     */
+    enum AVColorSpace colorspace;   ///< agreed upon YUV color space
+    enum AVColorRange color_range;  ///< agreed upon YUV color range
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They

@@ -131,6 +131,20 @@ av_warn_unused_result
 AVFilterChannelLayouts *ff_make_channel_layout_list(const AVChannelLayout *fmts);
 
 /**
+ * Construct an AVFilterFormats representing all possible color spaces.
+ *
+ * Note: This list does not include AVCOL_SPC_RESERVED.
+ */
+av_warn_unused_result
+AVFilterFormats *ff_all_color_spaces(void);
+
+/**
+ * Construct an AVFilterFormats representing all possible color ranges.
+ */
+av_warn_unused_result
+AVFilterFormats *ff_all_color_ranges(void);
+
+/**
  * Helpers for query_formats() which set all free audio links to the same list
  * of channel layouts/sample rates. If there are no links hooked to this list,
  * the list is freed.
@@ -164,6 +178,38 @@ int ff_set_common_samplerates_from_list(AVFilterContext *ctx,
  */
 av_warn_unused_result
 int ff_set_common_all_samplerates(AVFilterContext *ctx);
+
+av_warn_unused_result
+int ff_set_common_color_spaces(AVFilterContext *ctx,
+                               AVFilterFormats *color_spaces);
+/**
+ * Equivalent to ff_set_common_color_spaces(ctx, ff_make_format_list(color_spaces))
+ */
+av_warn_unused_result
+int ff_set_common_color_spaces_from_list(AVFilterContext *ctx,
+                                         const int *color_spaces);
+
+/**
+ * Equivalent to ff_set_common_color_spaces(ctx, ff_all_color_spaces())
+ */
+av_warn_unused_result
+int ff_set_common_all_color_spaces(AVFilterContext *ctx);
+
+av_warn_unused_result
+int ff_set_common_color_ranges(AVFilterContext *ctx,
+                               AVFilterFormats *color_ranges);
+/**
+ * Equivalent to ff_set_common_color_ranges(ctx, ff_make_format_list(color_ranges))
+ */
+av_warn_unused_result
+int ff_set_common_color_ranges_from_list(AVFilterContext *ctx,
+                                         const int *color_ranges);
+
+/**
+ * Equivalent to ff_set_common_color_ranges(ctx, ff_all_color_ranges())
+ */
+av_warn_unused_result
+int ff_set_common_all_color_ranges(AVFilterContext *ctx);
 
 /**
  * A helper for query_formats() which sets all links to the same list of
@@ -327,6 +373,14 @@ int ff_formats_check_sample_rates(void *log, const AVFilterFormats *fmts);
  * In particular, check for duplicates.
  */
 int ff_formats_check_channel_layouts(void *log, const AVFilterChannelLayouts *fmts);
+
+/**
+ * Check that fmts is a valid formats list for YUV colorspace metadata.
+ *
+ * In particular, check for duplicates.
+ */
+int ff_formats_check_color_spaces(void *log, const AVFilterFormats *fmts);
+int ff_formats_check_color_ranges(void *log, const AVFilterFormats *fmts);
 
 typedef struct AVFilterFormatMerger {
     unsigned offset;

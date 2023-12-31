@@ -96,6 +96,8 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
         return NULL;
 
     frame->sample_aspect_ratio = link->sample_aspect_ratio;
+    frame->colorspace  = link->colorspace;
+    frame->color_range = link->color_range;
 
     return frame;
 }

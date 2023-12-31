@@ -27,6 +27,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -297,7 +298,9 @@ static int filter_link_check_formats(void *log, AVFilterLink *link, AVFilterForm
     switch (link->type) {
 
     case AVMEDIA_TYPE_VIDEO:
-        if ((ret = ff_formats_check_pixel_formats(log, cfg->formats)) < 0)
+        if ((ret = ff_formats_check_pixel_formats(log, cfg->formats)) < 0 ||
+            (ret = ff_formats_check_color_spaces(log, cfg->color_spaces)) < 0 ||
+            (ret = ff_formats_check_color_ranges(log, cfg->color_ranges)) < 0)
             return ret;
         break;
 
@@ -364,6 +367,10 @@ static int formats_declared(AVFilterContext *f)
     for (i = 0; i < f->nb_inputs; i++) {
         if (!f->inputs[i]->outcfg.formats)
             return 0;
+        if (f->inputs[i]->type == AVMEDIA_TYPE_VIDEO &&
+            !(f->inputs[i]->outcfg.color_ranges &&
+              f->inputs[i]->outcfg.color_spaces))
+            return 0;
         if (f->inputs[i]->type == AVMEDIA_TYPE_AUDIO &&
             !(f->inputs[i]->outcfg.samplerates &&
               f->inputs[i]->outcfg.channel_layouts))
@@ -371,6 +378,10 @@ static int formats_declared(AVFilterContext *f)
     }
     for (i = 0; i < f->nb_outputs; i++) {
         if (!f->outputs[i]->incfg.formats)
+            return 0;
+        if (f->outputs[i]->type == AVMEDIA_TYPE_VIDEO &&
+            !(f->outputs[i]->incfg.color_ranges &&
+              f->outputs[i]->incfg.color_spaces))
             return 0;
         if (f->outputs[i]->type == AVMEDIA_TYPE_AUDIO &&
             !(f->outputs[i]->incfg.samplerates &&
@@ -492,7 +503,16 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
                 av_assert0( inlink->outcfg.formats->refcount > 0);
                 av_assert0(outlink->incfg.formats->refcount > 0);
                 av_assert0(outlink->outcfg.formats->refcount > 0);
-                if (outlink->type == AVMEDIA_TYPE_AUDIO) {
+                if (outlink->type == AVMEDIA_TYPE_VIDEO) {
+                    av_assert0( inlink-> incfg.color_spaces->refcount > 0);
+                    av_assert0( inlink->outcfg.color_spaces->refcount > 0);
+                    av_assert0(outlink-> incfg.color_spaces->refcount > 0);
+                    av_assert0(outlink->outcfg.color_spaces->refcount > 0);
+                    av_assert0( inlink-> incfg.color_ranges->refcount > 0);
+                    av_assert0( inlink->outcfg.color_ranges->refcount > 0);
+                    av_assert0(outlink-> incfg.color_ranges->refcount > 0);
+                    av_assert0(outlink->outcfg.color_ranges->refcount > 0);
+                } else if (outlink->type == AVMEDIA_TYPE_AUDIO) {
                     av_assert0( inlink-> incfg.samplerates->refcount > 0);
                     av_assert0( inlink->outcfg.samplerates->refcount > 0);
                     av_assert0(outlink-> incfg.samplerates->refcount > 0);
@@ -582,6 +602,30 @@ static enum AVSampleFormat find_best_sample_fmt_of_2(enum AVSampleFormat dst_fmt
     return score1 < score2 ? dst_fmt1 : dst_fmt2;
 }
 
+int ff_fmt_is_regular_yuv(enum AVPixelFormat fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
+    if (!desc)
+        return 0;
+    if (desc->nb_components < 3)
+        return 0; /* Grayscale is explicitly full-range in swscale */
+    av_assert1(!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL));
+    if (desc->flags & (AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_PAL |
+                       AV_PIX_FMT_FLAG_XYZ | AV_PIX_FMT_FLAG_FLOAT))
+        return 0;
+
+    switch (fmt) {
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUVJ422P:
+    case AV_PIX_FMT_YUVJ444P:
+    case AV_PIX_FMT_YUVJ440P:
+    case AV_PIX_FMT_YUVJ411P:
+        return 0;
+    default:
+        return 1;
+    }
+}
+
 static int pick_format(AVFilterLink *link, AVFilterLink *ref)
 {
     if (!link || !link->incfg.formats)
@@ -620,7 +664,46 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
     link->incfg.formats->nb_formats = 1;
     link->format = link->incfg.formats->formats[0];
 
-    if (link->type == AVMEDIA_TYPE_AUDIO) {
+    if (link->type == AVMEDIA_TYPE_VIDEO) {
+        enum AVPixelFormat swfmt = link->format;
+        if (av_pix_fmt_desc_get(swfmt)->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+            av_assert1(link->hw_frames_ctx);
+            swfmt = ((AVHWFramesContext *) link->hw_frames_ctx->data)->sw_format;
+        }
+
+        if (!ff_fmt_is_regular_yuv(swfmt)) {
+            const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(swfmt);
+            /* These fields are explicitly documented as affecting YUV only,
+             * so set them to sane values for other formats. */
+            if (desc->flags & AV_PIX_FMT_FLAG_FLOAT)
+                link->color_range = AVCOL_RANGE_UNSPECIFIED;
+            else
+                link->color_range = AVCOL_RANGE_JPEG;
+            if (desc->flags & (AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_XYZ)) {
+                link->colorspace = AVCOL_SPC_RGB;
+            } else {
+                link->colorspace = AVCOL_SPC_UNSPECIFIED;
+            }
+        } else {
+            if (!link->incfg.color_spaces->nb_formats) {
+                av_log(link->src, AV_LOG_ERROR, "Cannot select color space for"
+                       " the link between filters %s and %s.\n", link->src->name,
+                       link->dst->name);
+                return AVERROR(EINVAL);
+            }
+            link->incfg.color_spaces->nb_formats = 1;
+            link->colorspace = link->incfg.color_spaces->formats[0];
+
+            if (!link->incfg.color_ranges->nb_formats) {
+                av_log(link->src, AV_LOG_ERROR, "Cannot select color range for"
+                       " the link between filters %s and %s.\n", link->src->name,
+                       link->dst->name);
+                return AVERROR(EINVAL);
+            }
+            link->incfg.color_ranges->nb_formats = 1;
+            link->color_range = link->incfg.color_ranges->formats[0];
+        }
+    } else if (link->type == AVMEDIA_TYPE_AUDIO) {
         int ret;
 
         if (!link->incfg.samplerates->nb_formats) {
@@ -660,6 +743,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_formats_unref(&link->outcfg.samplerates);
     ff_channel_layouts_unref(&link->incfg.channel_layouts);
     ff_channel_layouts_unref(&link->outcfg.channel_layouts);
+    ff_formats_unref(&link->incfg.color_spaces);
+    ff_formats_unref(&link->outcfg.color_spaces);
+    ff_formats_unref(&link->incfg.color_ranges);
+    ff_formats_unref(&link->outcfg.color_ranges);
 
     return 0;
 }
@@ -819,6 +906,82 @@ static void swap_samplerates(AVFilterGraph *graph)
 
     for (i = 0; i < graph->nb_filters; i++)
         swap_samplerates_on_filter(graph->filters[i]);
+}
+
+static void swap_color_spaces_on_filter(AVFilterContext *filter)
+{
+    AVFilterLink *link = NULL;
+    enum AVColorSpace csp;
+    int i;
+
+    for (i = 0; i < filter->nb_inputs; i++) {
+        link = filter->inputs[i];
+        if (link->type == AVMEDIA_TYPE_VIDEO &&
+            link->outcfg.color_spaces->nb_formats == 1)
+            break;
+    }
+    if (i == filter->nb_inputs)
+        return;
+
+    csp = link->outcfg.color_spaces->formats[0];
+
+    for (i = 0; i < filter->nb_outputs; i++) {
+        AVFilterLink *outlink = filter->outputs[i];
+        if (outlink->type != AVMEDIA_TYPE_VIDEO)
+            continue;
+        /* there is no meaningful 'score' between different yuv matrices,
+         * so just prioritize an exact match if it exists */
+        for (int j = 0; j < outlink->incfg.color_spaces->nb_formats; j++) {
+            if (csp == outlink->incfg.color_spaces->formats[j]) {
+                FFSWAP(int, outlink->incfg.color_spaces->formats[0],
+                       outlink->incfg.color_spaces->formats[j]);
+                break;
+            }
+        }
+    }
+}
+
+static void swap_color_spaces(AVFilterGraph *graph)
+{
+    for (int i = 0; i < graph->nb_filters; i++)
+        swap_color_spaces_on_filter(graph->filters[i]);
+}
+
+static void swap_color_ranges_on_filter(AVFilterContext *filter)
+{
+    AVFilterLink *link = NULL;
+    enum AVColorRange range;
+    int i;
+
+    for (i = 0; i < filter->nb_inputs; i++) {
+        link = filter->inputs[i];
+        if (link->type == AVMEDIA_TYPE_VIDEO &&
+            link->outcfg.color_ranges->nb_formats == 1)
+            break;
+    }
+    if (i == filter->nb_inputs)
+        return;
+
+    range = link->outcfg.color_ranges->formats[0];
+
+    for (i = 0; i < filter->nb_outputs; i++) {
+        AVFilterLink *outlink = filter->outputs[i];
+        if (outlink->type != AVMEDIA_TYPE_VIDEO)
+            continue;
+        for (int j = 0; j < outlink->incfg.color_ranges->nb_formats; j++) {
+            if (range == outlink->incfg.color_ranges->formats[j]) {
+                FFSWAP(int, outlink->incfg.color_ranges->formats[0],
+                       outlink->incfg.color_ranges->formats[j]);
+                break;
+            }
+        }
+    }
+}
+
+static void swap_color_ranges(AVFilterGraph *graph)
+{
+    for (int i = 0; i < graph->nb_filters; i++)
+        swap_color_ranges_on_filter(graph->filters[i]);
 }
 
 #define CH_CENTER_PAIR (AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER)
@@ -1096,6 +1259,10 @@ static int graph_config_formats(AVFilterGraph *graph, void *log_ctx)
      * of format conversion inside filters */
     if ((ret = reduce_formats(graph)) < 0)
         return ret;
+
+    /* for video filters, ensure that the best colorspace metadata is selected */
+    swap_color_spaces(graph);
+    swap_color_ranges(graph);
 
     /* for audio filters, ensure the best format, sample rate and channel layout
      * is selected */

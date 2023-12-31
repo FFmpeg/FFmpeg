@@ -38,6 +38,10 @@ int ff_vaapi_vpp_query_formats(AVFilterContext *avctx)
                               &avctx->outputs[0]->incfg.formats)) < 0)
         return err;
 
+    if ((err = ff_set_common_all_color_spaces(avctx)) < 0 ||
+        (err = ff_set_common_all_color_ranges(avctx)) < 0)
+        return err;
+
     return 0;
 }
 
