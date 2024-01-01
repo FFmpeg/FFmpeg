@@ -944,10 +944,22 @@ Return a pseudo random value between 0.0 and 1.0. @var{idx} is the
 index of the internal variable which will be used to save the
 seed/state.
 
+To initialize the seed, you need to store the seed value as a 64-bit
+unsigned integer in the internal variable with index @var{idx}.
+
+For example, to store the seed with value @code{42} in the internal
+variable with index @code{0} and print a few random values:
+@example
+st(0,42); print(random(0)); print(random(0)); print(random(0))
+@end example
+
 @item randomi(idx, min, max)
 Return a pseudo random value in the interval between @var{min} and
 @var{max}. @var{idx} is the index of the internal variable which will
 be used to save the seed/state.
+
+To initialize the seed, you need to store the seed value as a 64-bit
+unsigned integer in the internal variable with index @var{idx}.
 
 @item root(expr, max)
 Find an input value for which the function represented by @var{expr}
