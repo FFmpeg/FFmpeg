@@ -418,8 +418,11 @@ static void write_codec_attr(AVStream *st, VariantStream *vs)
     } else if (st->codecpar->codec_id == AV_CODEC_ID_MP3) {
         snprintf(attr, sizeof(attr), "mp4a.40.34");
     } else if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
-        /* TODO : For HE-AAC, HE-AACv2, the last digit needs to be set to 5 and 29 respectively */
-        snprintf(attr, sizeof(attr), "mp4a.40.2");
+        if (st->codecpar->profile != AV_PROFILE_UNKNOWN)
+            snprintf(attr, sizeof(attr), "mp4a.40.%d", st->codecpar->profile+1);
+        else
+            // This is for backward compatibility with the previous implementation.
+            snprintf(attr, sizeof(attr), "mp4a.40.2");
     } else if (st->codecpar->codec_id == AV_CODEC_ID_AC3) {
         snprintf(attr, sizeof(attr), "ac-3");
     } else if (st->codecpar->codec_id == AV_CODEC_ID_EAC3) {
