@@ -166,8 +166,12 @@ static int str_read_packet(AVFormatContext *s,
     AVStream *st;
 
     while (1) {
+        int read = avio_read(pb, sector, RAW_CD_SECTOR_SIZE);
 
-        if (avio_read(pb, sector, RAW_CD_SECTOR_SIZE) != RAW_CD_SECTOR_SIZE)
+        if (read == AVERROR_EOF)
+            return AVERROR_EOF;
+
+        if (read != RAW_CD_SECTOR_SIZE)
             return AVERROR(EIO);
 
         channel = sector[0x11];
