@@ -12984,7 +12984,7 @@ drawtext="fontfile=FreeSerif.ttf:fontcolor=white:x=100:y=x/dar:enable=lt(mod(t\,
 @item
 Use fontconfig to set the font. Note that the colons need to be escaped.
 @example
-drawtext='fontfile=Linux Libertine O-40\:style=Semibold:text=FFmpeg'
+drawtext='fontfile=Linux Libertine O-40\\:style=Semibold:text=FFmpeg'
 @end example
 
 @item
