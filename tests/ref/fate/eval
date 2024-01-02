@@ -257,7 +257,7 @@ Evaluating 'root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)'
 'root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)' -> 60.965601
 
 Evaluating '7000000B*random(0)'
-'7000000B*random(0)' -> 0.003078
+'7000000B*random(0)' -> 12864914.486611
 
 Evaluating 'squish(2)'
 'squish(2)' -> 0.000335
