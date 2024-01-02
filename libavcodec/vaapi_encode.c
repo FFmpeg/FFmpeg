@@ -878,7 +878,8 @@ static int vaapi_encode_discard(AVCodecContext *avctx,
     return 0;
 }
 
-static VAAPIEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx)
+static VAAPIEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx,
+                                              const AVFrame *frame)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic;
@@ -895,7 +896,7 @@ static VAAPIEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx)
         }
     }
 
-    pic->input_surface = VA_INVALID_ID;
+    pic->input_surface = (VASurfaceID)(uintptr_t)frame->data[3];
     pic->recon_surface = VA_INVALID_ID;
     pic->output_buffer = VA_INVALID_ID;
 
@@ -1332,7 +1333,7 @@ static int vaapi_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
         if (err < 0)
             return err;
 
-        pic = vaapi_encode_alloc(avctx);
+        pic = vaapi_encode_alloc(avctx, frame);
         if (!pic)
             return AVERROR(ENOMEM);
 
@@ -1345,7 +1346,6 @@ static int vaapi_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
         if (ctx->input_order == 0 || frame->pict_type == AV_PICTURE_TYPE_I)
             pic->force_idr = 1;
 
-        pic->input_surface = (VASurfaceID)(uintptr_t)frame->data[3];
         pic->pts = frame->pts;
         pic->duration = frame->duration;
 
