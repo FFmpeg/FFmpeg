@@ -118,7 +118,7 @@ Encoded packets are then passed to the decoder (unless streamcopy is selected
 for the stream, see further for a description). The decoder produces
 uncompressed frames (raw video/PCM audio/...) which can be processed further by
 filtering (see next section). After filtering, the frames are passed to the
-encoder, which encodes them and outputs encoded packets. Finally those are
+encoder, which encodes them and outputs encoded packets. Finally, those are
 passed to the muxer, which writes the encoded packets to the output file.
 
 @section Filtering
