@@ -2304,7 +2304,7 @@ static int get_cv_pixel_info(
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     VTEncContext *vtctx = avctx->priv_data;
     int av_format       = frame->format;
-    int av_color_range  = frame->color_range;
+    int av_color_range  = avctx->color_range;
     int i;
     int range_guessed;
     int status;
