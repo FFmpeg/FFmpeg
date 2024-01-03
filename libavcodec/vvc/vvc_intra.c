@@ -552,6 +552,8 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx,
 
             if (chroma_scale)
                 fc->vvcdsp.intra.lmcs_scale_chroma(lc, temp, tb->coeffs, w, h, cu->x0, cu->y0);
+            // TODO: Address performance issue here by combining transform, lmcs_scale_chroma, and add_residual into one function.
+            // Complete this task before implementing ASM code.
             fc->vvcdsp.itx.add_residual(dst, chroma_scale ? temp : tb->coeffs, w, h, stride);
 
             if (tu->joint_cbcr_residual_flag && tb->c_idx)
