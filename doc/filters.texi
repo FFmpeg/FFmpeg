@@ -20101,7 +20101,7 @@ Generate a QR code using the libqrencode library (see
 @url{https://fukuchi.org/works/qrencode/}), and overlay it on top of the current
 frame.
 
-To enable the compilation of this filter, you need to configure FFmpeg with with
+To enable the compilation of this filter, you need to configure FFmpeg with
 @code{--enable-libqrencode}.
 
 The QR code is generated from the provided text or text pattern. The
@@ -20398,7 +20398,7 @@ Identify and decode a QR code using the libquirc library (see
 @url{https://github.com/dlbeer/quirc/}), and print the identified QR codes
 positions and payload as metadata.
 
-To enable the compilation of this filter, you need to configure FFmpeg with with
+To enable the compilation of this filter, you need to configure FFmpeg with
 @code{--enable-libquirc}.
 
 For each found QR code in the input video, some metadata entries are added with
@@ -29078,7 +29078,7 @@ ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_c
 Generate a QR code using the libqrencode library (see
 @url{https://fukuchi.org/works/qrencode/}).
 
-To enable the compilation of this source, you need to configure FFmpeg with with
+To enable the compilation of this source, you need to configure FFmpeg with
 @code{--enable-libqrencode}.
 
 The QR code is generated from the provided text or text pattern. The
