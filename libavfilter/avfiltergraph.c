@@ -667,8 +667,12 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
     if (link->type == AVMEDIA_TYPE_VIDEO) {
         enum AVPixelFormat swfmt = link->format;
         if (av_pix_fmt_desc_get(swfmt)->flags & AV_PIX_FMT_FLAG_HWACCEL) {
-            av_assert1(link->hw_frames_ctx);
-            swfmt = ((AVHWFramesContext *) link->hw_frames_ctx->data)->sw_format;
+            // FIXME: this is a hack - we'd like to use the sw_format of
+            // link->hw_frames_ctx here, but it is not yet available.
+            // To make this work properly we will need to either reorder
+            // things so that it is available here or somehow negotiate
+            // sw_format separately.
+            swfmt = AV_PIX_FMT_YUV420P;
         }
 
         if (!ff_fmt_is_regular_yuv(swfmt)) {
