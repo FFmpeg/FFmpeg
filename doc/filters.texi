@@ -17895,7 +17895,7 @@ Macroblock size. Default @code{16}.
 Motion estimation search parameter. Default @code{32}.
 
 @item vsbmc
-Enable variable-size block motion compensation. Motion estimation is applied with smaller block sizes at object boundaries in order to make the them less blur. Default is @code{0} (disabled).
+Enable variable-size block motion compensation. Motion estimation is applied with smaller block sizes at object boundaries in order to make them less blurry. Default is @code{0} (disabled).
 @end table
 @end table
 
