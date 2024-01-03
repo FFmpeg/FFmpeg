@@ -2972,7 +2972,7 @@ Set the encoder preset value to determine encoding speed [fast, medium, slow, pl
 Set the encoder tune parameter [psnr, zerolatency]
 
 @item profile (@emph{profile})
-Set the encoder profile [0: baselie; 1: main]
+Set the encoder profile [0: baseline; 1: main]
 
 @item crf (@emph{crf})
 Set the quality for constant quality mode.
