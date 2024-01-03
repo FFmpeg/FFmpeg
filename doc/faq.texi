@@ -450,7 +450,7 @@ work with streams that were detected during the initial scan; streams that
 are detected later are ignored.
 
 The size of the initial scan is controlled by two options: @code{probesize}
-(default ~5 Mo) and @code{analyzeduration} (default 5,000,000 µs = 5 s). For
+(default ~5 Mo) and @code{analyzeduration} (default 5,000,000 µs = 5 s). For
 the subtitle stream to be detected, both values must be large enough.
 
 @section Why was the @command{ffmpeg} @option{-sameq} option removed? What to use instead?
