@@ -1397,7 +1397,7 @@ form @file{img%-1.jpg}, @file{img%-2.jpg}, ..., @file{img%-10.jpg},
 etc.
 
 The image muxer supports the .Y.U.V image file format. This format is
-special in that that each image frame consists of three files, for
+special in that each image frame consists of three files, for
 each of the YUV420P components. To read or write this image file format,
 specify the name of the '.Y' file. The muxer will automatically open the
 '.U' and '.V' files as required.
