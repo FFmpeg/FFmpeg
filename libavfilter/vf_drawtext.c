@@ -684,7 +684,7 @@ static int shape_text(AVFilterContext *ctx)
     fribidi_shape(flags, embedding_levels, len, ar_props, unicodestr);
 
     for (line_end = 0, line_start = 0; line_end < len; line_end++) {
-        if (is_newline(unicodestr[line_end]) || line_end == len - 1) {
+        if (ff_is_newline(unicodestr[line_end]) || line_end == len - 1) {
             if (!fribidi_reorder_line(flags, bidi_types,
                                       line_end - line_start + 1, line_start,
                                       direction, embedding_levels, unicodestr,
