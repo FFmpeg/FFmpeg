@@ -467,7 +467,7 @@ point acceptable for your tastes. The most common options to do that are
 @option{-qscale} and @option{-qmax}, but you should peruse the documentation
 of the encoder you chose.
 
-@section I have a stretched video, why does scaling does not fix it?
+@section I have a stretched video, why does scaling not fix it?
 
 A lot of video codecs and formats can store the @emph{aspect ratio} of the
 video: this is the ratio between the width and the height of either the full
