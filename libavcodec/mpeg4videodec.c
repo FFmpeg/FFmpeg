@@ -735,10 +735,8 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
         header_extension = get_bits1(&s->gb);
 
     if (header_extension) {
-        int time_incr = 0;
-
         while (get_bits1(&s->gb) != 0)
-            time_incr++;
+            ;
 
         check_marker(s->avctx, &s->gb, "before time_increment in video packed header");
         skip_bits(&s->gb, ctx->time_increment_bits);      /* time_increment */
