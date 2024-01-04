@@ -801,6 +801,11 @@ The following binary operators are available: @code{+}, @code{-},
 
 The following unary operators are available: @code{+}, @code{-}.
 
+Some internal variables can be used to store and load intermediary
+results. They can be accessed using the @code{ld} and @code{st}
+functions with an index argument varying from 0 to 9 to specify which
+internal variable to access.
+
 The following functions are available:
 @table @option
 @item abs(x)
@@ -898,9 +903,9 @@ Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
 @item isnan(x)
 Return 1.0 if @var{x} is NAN, 0.0 otherwise.
 
-@item ld(var)
-Load the value of the internal variable with number
-@var{var}, which was previously stored with st(@var{var}, @var{expr}).
+@item ld(idx)
+Load the value of the internal variable with index @var{idx}, which was
+previously stored with st(@var{idx}, @var{expr}).
 The function returns the loaded value.
 
 @item lerp(x, y, z)
@@ -933,16 +938,14 @@ Compute the power of @var{x} elevated @var{y}, it is equivalent to
 
 @item print(t)
 @item print(t, l)
-Print the value of expression @var{t} with loglevel @var{l}. If
-@var{l} is not specified then a default log level is used.
-Returns the value of the expression printed.
-
-Prints t with loglevel l
+Print the value of expression @var{t} with loglevel @var{l}. If @var{l} is not
+specified then a default log level is used.
+Return the value of the expression printed.
 
 @item random(idx)
 Return a pseudo random value between 0.0 and 1.0. @var{idx} is the
-index of the internal variable which will be used to save the
-seed/state.
+index of the internal variable used to save the seed/state, which can be
+previously stored with @code{st(idx)}.
 
 To initialize the seed, you need to store the seed value as a 64-bit
 unsigned integer in the internal variable with index @var{idx}.
@@ -955,8 +958,8 @@ st(0,42); print(random(0)); print(random(0)); print(random(0))
 
 @item randomi(idx, min, max)
 Return a pseudo random value in the interval between @var{min} and
-@var{max}. @var{idx} is the index of the internal variable which will
-be used to save the seed/state.
+@var{max}. @var{idx} is the index of the internal variable which will be used to
+save the seed/state, which can be previously stored with @code{st(idx)}.
 
 To initialize the seed, you need to store the seed value as a 64-bit
 unsigned integer in the internal variable with index @var{idx}.
@@ -968,14 +971,14 @@ with argument @var{ld(0)} is 0 in the interval 0..@var{max}.
 The expression in @var{expr} must denote a continuous function or the
 result is undefined.
 
-@var{ld(0)} is used to represent the function input value, which means
-that the given expression will be evaluated multiple times with
-various input values that the expression can access through
-@code{ld(0)}. When the expression evaluates to 0 then the
-corresponding input value will be returned.
+@var{ld(0)} is used to represent the function input value, which means that the
+given expression will be evaluated multiple times with various input values that
+the expression can access through @code{ld(0)}. When the expression evaluates to
+0 then the corresponding input value will be returned.
 
 @item round(expr)
-Round the value of expression @var{expr} to the nearest integer. For example, "round(1.5)" is "2.0".
+Round the value of expression @var{expr} to the nearest integer. For example,
+"round(1.5)" is "2.0".
 
 @item sgn(x)
 Compute sign of @var{x}.
@@ -993,12 +996,15 @@ Compute the square root of @var{expr}. This is equivalent to
 @item squish(x)
 Compute expression @code{1/(1 + exp(4*x))}.
 
-@item st(var, expr)
+@item st(idx, expr)
 Store the value of the expression @var{expr} in an internal
-variable. @var{var} specifies the number of the variable where to
-store the value, and it is a value ranging from 0 to 9. The function
-returns the value stored in the internal variable.
-Note, Variables are currently not shared between expressions.
+variable. @var{idx} specifies the index of the variable where to store
+the value, and it is a value ranging from 0 to 9. The function returns
+the value stored in the internal variable.
+
+The stored value can be retrieved with @code{ld(var)}.
+
+Note: variables are currently not shared between expressions.
 
 @item tan(x)
 Compute tangent of @var{x}.
@@ -1007,16 +1013,16 @@ Compute tangent of @var{x}.
 Compute hyperbolic tangent of @var{x}.
 
 @item taylor(expr, x)
-@item taylor(expr, x, id)
+@item taylor(expr, x, idx)
 Evaluate a Taylor series at @var{x}, given an expression representing
-the @code{ld(id)}-th derivative of a function at 0.
+the @code{ld(idx)}-th derivative of a function at 0.
 
 When the series does not converge the result is undefined.
 
-@var{ld(id)} is used to represent the derivative order in @var{expr},
+@var{ld(idx)} is used to represent the derivative order in @var{expr},
 which means that the given expression will be evaluated multiple times
 with various input values that the expression can access through
-@code{ld(id)}. If @var{id} is not specified then 0 is assumed.
+@code{ld(idx)}. If @var{idx} is not specified then 0 is assumed.
 
 Note, when you have the derivatives at y instead of 0,
 @code{taylor(expr, x-y)} can be used.
