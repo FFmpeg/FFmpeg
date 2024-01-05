@@ -26597,6 +26597,202 @@ Apply dilation filter with threshold0 set to 30, threshold1 set 40, threshold2 s
 
 Non-local Means denoise filter through OpenCL, this filter accepts same options as @ref{nlmeans}.
 
+@section object_tracker
+
+This filter is designed to identify and follow moving objects using motion vectors. 
+Please note that it only functions with video content containing motion vectors.
+The supported codecs include H.264/AVC and H.265/HEVC (but there are many more). Also dont forget to use "-flags2 +export_mvs" in the ffmpeg command (see at the examples).
+To achieve the most precise results, it is recommended to adjust the filter settings to match specific video properties like screen size, fps, etc. 
+Using codecview filter can further enhance the understanding of these settings.
+
+The following filter includes a tripwire detection feature, capable of identifying objects that cross a predefined line.
+An object can be in one of four states in relation to the tripwire: -2, -1, 1, 2.
+The upper right corner is considered the positive corner. The side of the tripwire where this corner is located will be designated as the positive side.
+If a line crosses the point of reference, the upper side will be preferred as the positive side.
+An object's side will be -2 or 2 if it does not touch the tripwire line, and 1 or -1 if it touches the line from one side of the center.
+In rare cases where the center point aligns precisely with the tripwire line, the side will be considered positive.
+
+In an object trigger the tripwire, the output value for "crossed" will be set to 1 for that frame. It's important to note that a single object cannot trigger multiple crossings.
+The "crossed_direction" will indicate the object's position before the crossing event. Typically, for "tripwire_type" equal to 0, it will be either 2 or -2, and for "tripwire_type" equal to 1, it will be 1 or -1.
+
+When configuring parameters, time is measured in frames, distance is specified in pixels or relative size to the screen (see below), and angles are represented in degrees. In this context, the reference point for angles is as follows: 0 degrees correspond to the right, and positive angles are measured in a counterclockwise direction (North: 90°, West: 180°, South: 270°, East: 0° (360°)).
+@table @option
+
+@item tripwire (default: 1)
+This parameter enables or disables the tripwire detection functionality.
+
+@item tripwire_line_px (default: -1)
+Specifies the X coordinate of the point where the tripwire crosses.
+Between 0 and 1 uses relative position.
+-1 means the middle of the screen.
+
+@item tripwire_line_py (default: -1)
+Specifies the Y coordinate of the point where the tripwire crosses.
+Between 0 and 1 uses relative position.
+-1 means the top of the screen.
+
+@item tripwire_line_angle (default: 90)
+Angle coud be set between 0 to 180.
+Defines the angle of the tripwire. By default, the tripwire is a line from the top to the bottom, through the middle of the frame.
+
+@item tripwire_marker_line (default: 1)
+This parameter controls the visibility of the tripwire.
+
+@item tripwire_type (default: 0)
+If this parameter is 0 the detection event will arrive if the objects touches the tripwire.
+In case of 1, the detection event olny will arrive, if the center point of the object goes over the tripwire.
+
+@item max_mv_distance (default: 50)
+Determines the maximum motion vector (mv) and object distance that allows the mv to be considered part of the object.
+
+@item min_mv_length (default: 15)
+Sets the minimum length of a motion vector.
+
+@item max_angle_diff (default: 45)
+This parameter filters motion vectors, but threre is a parameter to filter objects: angle_filter (see below).
+1. In the initial stage, it filters motion vectors to determine if the object's average angle and the motion vector's angle difference is smaller than this specified angle. (After processing the objects, a merging function will iterate through them, allowing for cases where an object may have a wide range of motion vector directions even when there is a small max_angle_diff)
+2. During the object history search, if the angle difference exceeds 1.5 times the `max_angle_diff`, objects are considered different. The scoring system may penalize pairs, making it less likely for them to be considered the same point. However, they may still be connected if there are no other objects to associate with.
+
+@item crop_x (default: 0)
+The starting position on the x-axis for the cropped area. Values between 0 and 1 represent a percentage of the image width, while values greater than 1 are in pixels.
+
+@item crop_y (default: 0)
+The starting position on the y-axis for the cropped area. Values between 0 and 1 represent a percentage of the image width, while values greater than 1 are in pixels.
+
+@item crop_width (default: 1)
+The width of the cropped area. Values between 0 and 1 represent a percentage of the image width, while values greater than 1 are in pixels.
+
+@item crop_height (default: 1)
+The height of the cropped area. Values between 0 and 1 represent a percentage of the image width, while values greater than 1 are in pixels.
+
+@item resize_to_crop (default: 0)
+If the crop filter is applied before the object tracker, it crops the image but not the motion vector list. This can lead to issues if motion vectors extend beyond the image boundaries. Setting this parameter to 1 repositions all motion vectors to fit within the input image size. Use this parameter if scaling is applied before this filter, and the results need to match the image size.
+
+@item black_filter (default: 1)
+When active, this filter ignores all motion vectors above black pixels. This parameter is particularly useful when combined with the drawbox filter to exclude specific areas.
+
+@item min_mv_num (default: 5)
+Filters objects based on the number of motion vectors.
+
+@item angle_filter (default: 0)
+Turns on and off angle filter for objects.
+This paramter has no effect on motion vectors, its olny filters objects. (For filterin mv-s by angle use max_angle_diff (see above))
+
+@item angle_filter_angle (default: 0) 
+Filters objects based on their angle of motion.
+
+@item angle_filter_range (default: 45)
+Defines the permissible range for the angle filter.
+
+@item object_marker_box (default: 1)
+Controls the visibility of the object marker box.
+
+@item object_rectangle_thickness (default: 2)
+Sets the thickness of rectangles drawn to represent objects.
+
+@item object_marker_box_history (default: 0)
+Enables or disables the visibility of the object marker box history.
+
+@item object_history_draw_length (default: 0)
+Determines the number of previous object positions that should be visible.
+
+@item mask_static_image_parts (default: 0)
+When this parameter is enabled, the video turns black except in areas where motion is detected.
+
+@item mask_i_frames (default: 2)
+This parameter only takes effect on I frames (frames without motion vectors).
+- 2: The I frame will be masked as the previous frame.
+- 1: The frame will be fully masked (resulting in a black image).
+- 0: The frame won't be masked, and the input frame is returned.
+
+@item keep_mask_on_static_image (default: 1)
+This parameter keeps the last mask on the image for the specified number of frames (between 1 and 1000 frames).
+
+@item draw_object_diagonal (default: 0)
+When this parameter is enabled, it will draw the diagonal of the smallest rectangle that can encompass the detected object (without altering the rectangle's orientation).
+
+@item json_output_line_break (default: 0)
+Allows line breaks in the output.
+
+@item print_only_intersect_trigger (default: 0)
+Controls whether to print outputs only when intersections occur and only once per object.
+When this parameter is active, each line of output will have "side" set to 0, and the "direction" field will indicate the direction.
+
+@item print_lite_mode (default: 0)
+When enabled, only critical information is printed.
+
+@item print_rectangle_positions (default: 0)
+Determines whether to print the centers of the rectangles representing objects.
+
+@item url (default: NULL)
+Specifies the URL to which data should be sent. Don't forget to use "\" to escape colons, for example: url='tcp\://localhost\:8000'.
+
+@item std_err_text_output_enable (default: 1)
+If this parameter is 0, the output will be sent to stdout.
+If its 1, Enables the output of logs to standard error (stderr).
+
+@item parameter_summary_row (default: 1)
+Determines whether to print a summary of the parameters.
+
+@item grid_size (default: 32)
+Sets the side length of the rectangles drawn to represent objects.
+
+@item object_survival_time (default: 25)
+After this many frames, old objects without matching points are deleted.
+
+@item max_obj_distance_history (default: 100)
+Determines the maximum distance between two objects on successive frames for them to be considered the same object.
+
+@item select_frames_where_tripwire_detected (default: 0)
+Only returns frames, if an object triggers the tripwire.
+
+@item select_frames_where_object_detected (default: 0)
+- When set to 1, a frame is returned only if an object was detected. I frames, which do not have motion vectors, will be returned if the previous frame showed an object.
+- When set to 2, the difference from the previous case is that I frames are returned every time.
+
+@end table
+
+@subsection Outputs
+
+A typical output text look like this:
+
+"module": "object_tracker", "filter_id": 1, "intersect": 0, "frame": 19, "detected_objects": 2, "obj_id": 1, "obj_avg_angle": 168.05, "obj_center_x": 294, "obj_center_y": 42, "mv_num": 45, "mv_avg_len": 18.24, "obj_x1": 216, "obj_y1": 4, "obj_x2": 396, "obj_y2": 4, "obj_x3": 396, "obj_y3": 72, "obj_x4": 216, "obj_y4": 72, "crossed": 0, "crossed_direction": 0, "stayed_in_side": 0, "side": -2
+
+Explanation:
+
+Module: The name of the filter.
+Filter_id: Indicates the sequence position of this filter in the ffmpeg command chain. If greater than 0, it implies the input image has already passed through a previous filter.
+Frame: Identifies the frame number being analyzed by the filter.
+Detected_objects: The cumulative count of all detected objects since the start of the program.
+Obj_id: Represents the unique identifier of the object. The following details pertain specifically to this object.
+Obj_avg_angle: The average angle of the object's motion vectors. This angle represents the direction of the aggregate motion vector.
+Obj_center_x: The x-coordinate of the object's center, determined by the positions of the motion vectors, (excluding their length).
+Obj_center_y: The y-coordinate of the object's center, determined in the same manner as the x-coordinate, (excluding their length).
+Mv_num: The quantity of motion vectors found within the object's boundaries.
+Mv_avg_len: The average length of the motion vectors contained within the object.
+Object Bounding Rectangle: Defined by the smallest rectangle with sides parallel to the x and y axes that encloses the object. The corners of this rectangle are specified by the following points: (obj_x1, obj_y1), (obj_x2, obj_y2), (obj_x3, obj_y3), (obj_x4, obj_y4).
+Crossed: A binary indicator (1 or 0) signifying whether the object has triggered a tripwire during the current frame. Each object can trigger the tripwire only once. If the 'print_only_intersect_trigger' parameter is active, outputs will be sent only when this value is 1.
+Crossed_direction: Indicates the object's position prior to triggering the tripwire. If 'tripwire_type' is set to the default 0, this will be either 2 or -2. For 'tripwire_type' set to 1, it will typically be 1 or -1. A value of 2 or -2 may indicate that the object is moving too fast for the filter or the sampling time is too low.
+Stayed_in_side: Tracks the number of detections where the object remained on the same side relative to the tripwire. The counter resets to 0 once a new state is reached twice, meaning that this information is reported even if print_only_intersect_trigger is active.
+Side: Describes the object's location in relation to the tripwire. The numerical values correspond to positions defined earlier in the documentation
+
+@subsection Examples
+
+@itemize
+@item
+@example
+ffplay -flags2 +export_mvs -i input.mp4 -vf "codecview=bb+bf+pf, object_tracker=min_mv_num=40:max_mv_distance=100:min_mv_length=5"
+@end example
+@item
+@example
+ffplay -flags2 +export_mvs -i input.mp4 -vf "object_tracker=min_mv_num=120:max_mv_distance=300:min_mv_length=30:grid_size=100:max_angle_diff=110:object_marker_box=1:print_rectangle_positions=0:print_only_intersect_trigger=1:max_obj_distance_history=400:object_marker_box_history=0:json_output_line_break=1:tripwire_marker_line=1:angle_filter=120:angle_filter_range=45:tripwire_line_angle=140:tripwire_line_px=1000:tripwire_line_py=1000"
+@end example
+@item
+@example
+ffmpeg -flags2 +export_mvs -i input.mp4 -vf "object_tracker=min_mv_num=120:max_mv_distance=300:min_mv_length=30:grid_size=100:max_angle_diff=110:object_marker_box=0:print_rectangle_positions=0:print_only_intersect_trigger=0:max_obj_distance_history=400:object_marker_box_history=0:json_output_line_break=1:tripwire_marker_line=0:angle_filter=0:angle_filter_range=45" -f null -
+@end example
+@end itemize
+
 @section overlay_opencl
 
 Overlay one video on top of another.

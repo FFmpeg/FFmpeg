@@ -1,0 +1,61 @@
+2023.11.02 Sz Ramon
+	vf_object_tracker v 2.06.01
+		Tripwire: 
+			Tripwireline szöge 0-tól 180 ig állítható 0-360 helyett.
+			Pozíciómeghatározás bugok javítva.
+			Intersect eventet lehet állítani, hogy akkor jöjjön amikor az object érinti a tripwire-t, vagy mikor a középpontja áthalad rajta.
+		Output:
+			Az állapotok ezentúl lehet -2, -1, 1, 2.
+			A kimenet tartalmazza hány framen keresztül volt az object az adott állapotban.
+			A Crossed változóval jelezzük hogy áthaladás történt-e, ha igen akkor a crossed_direction változó tartalmazza azt hogy honnan érkezett az object.
+			
+
+			
+	
+2023.11.06 Sz Ramon
+	vf_fps2 v 1.0.0
+		fps2 filter létrehozva.
+
+2023.11.07 Sz Ramon
+    vf_object_tracker V 2.06.02
+        print_only_intersect_trigger paraméter
+        parameter_summary_row oda megy ahova a text van beállítva
+    
+    vf_object_tracker V 2.06.03
+        Nem lesz logolva az intersect változó
+        eslő frame nem tért vissza ha print_only_intersect_trigger bevan kapcsolva bug javítva
+    
+    vf_object_tracker V 2.06.04
+        A kis négyzeteket mindig kiszámoljuk.
+        print_rectangle_positions nem írja ki a pozíciükat bug javítva
+
+2023.11.09 Sz Ramon
+    vf_object_tracker V 02.06.05
+        Szögszűrés helye nem volt megfelelő, olyan objektekkel is számultunk amiket szűrni kellet volna
+        Az angle direction pont fordítva mutatott
+    
+    vf_object_tracker V 02.06.06
+        angle_filter: kibekapcsolja a szögszűrést
+        angle_filter_angle: ami eddig angle_filter volt, ezzel állítjuk be a szűrés iránáyt
+
+2023.11.14 Sz Ramon
+    vf_object_tracker V 02.06.07
+        32 biten is jól printeli ki a paraméterlistát
+        black_filter crash javítva 
+        
+2023.11.15 Sz Ramon
+    vf_object_tracker V 02.06.08
+        OUtput json javítva  "version": "x.xx.xx", "release_date": "yyyy.mm.dd"
+
+
+2023.11.17 Sz Ramon
+    vf_object_tracker V 02.06.09
+        Ha az első framenél már hozzáér a tripworehez az object akkor detektáljuk
+
+2023.11.17 Sz Ramon
+    vf_object_tracker V 02.06.10
+         s->tripwire_type paramétert kiírjuk
+         Javított első megjelenésre tripwire cross
+
+2024.01.05 Sz Ramon
+    Ffmpeg 6.1 re átállás
