@@ -1643,8 +1643,6 @@ option to disable streams individually.
 As an output option, disables subtitle recording i.e. automatic selection or
 mapping of any subtitle stream. For full manual control see the @code{-map}
 option.
-@item -sbsf @var{bitstream_filter}
-Deprecated, see -bsf
 @end table
 
 @section Advanced Subtitle options
