@@ -1531,7 +1531,7 @@ const OptionDef options[] = {
     { "program",                OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT,
         { .off = OFFSET(program) },
         "add program with specified streams", "title=string:st=number..." },
-    { "stream_group",           OPT_TYPE_STRING, OPT_SPEC | OPT_OUTPUT,
+    { "stream_group",           OPT_TYPE_STRING, OPT_SPEC | OPT_OUTPUT | OPT_EXPERT,
         { .off = OFFSET(stream_groups) },
         "add stream group with specified streams and group type-specific arguments", "id=number:st=number..." },
     { "dframes",                OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_PERFILE | OPT_EXPERT | OPT_OUTPUT | OPT_HAS_CANON,
