@@ -45,7 +45,7 @@ if [ -z "$2" ]; then
     exit
 fi
 
-NEW_REVISION="#define FFMPEG_VERSION \"$version\""
+NEW_REVISION="#define FFMPEG_VERSION \" ffmpeg version  6.1 Build by https://www.procontrol.hu/ V 02.06.10  Copyright (c) 2000-2023 the FFmpeg developers\""
 OLD_REVISION=$(cat "$2" 2> /dev/null | head -4 | tail -1)
 
 # String used for preprocessor guard
