@@ -115,6 +115,11 @@ typedef struct Demuxer {
     int                   nb_streams_finished;
 } Demuxer;
 
+typedef struct DemuxThreadContext {
+    // packet used for reading from the demuxer
+    AVPacket *pkt_demux;
+} DemuxThreadContext;
+
 static DemuxStream *ds_from_ist(InputStream *ist)
 {
     return (DemuxStream*)ist;
@@ -565,18 +570,36 @@ static void thread_set_name(InputFile *f)
     ff_thread_setname(name);
 }
 
+static void demux_thread_uninit(DemuxThreadContext *dt)
+{
+    av_packet_free(&dt->pkt_demux);
+
+    memset(dt, 0, sizeof(*dt));
+}
+
+static int demux_thread_init(DemuxThreadContext *dt)
+{
+    memset(dt, 0, sizeof(*dt));
+
+    dt->pkt_demux = av_packet_alloc();
+    if (!dt->pkt_demux)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
 static void *input_thread(void *arg)
 {
     Demuxer   *d = arg;
     InputFile *f = &d->f;
-    AVPacket *pkt;
+
+    DemuxThreadContext dt;
+
     int ret = 0;
 
-    pkt = av_packet_alloc();
-    if (!pkt) {
-        ret = AVERROR(ENOMEM);
+    ret = demux_thread_init(&dt);
+    if (ret < 0)
         goto finish;
-    }
 
     thread_set_name(f);
 
@@ -589,7 +612,7 @@ static void *input_thread(void *arg)
         DemuxStream *ds;
         unsigned send_flags = 0;
 
-        ret = av_read_frame(f->ctx, pkt);
+        ret = av_read_frame(f->ctx, dt.pkt_demux);
 
         if (ret == AVERROR(EAGAIN)) {
             av_usleep(10000);
@@ -598,12 +621,12 @@ static void *input_thread(void *arg)
         if (ret < 0) {
             if (d->loop) {
                 /* signal looping to our consumers */
-                pkt->stream_index = -1;
+                dt.pkt_demux->stream_index = -1;
 
-                ret = sch_demux_send(d->sch, f->index, pkt, 0);
+                ret = sch_demux_send(d->sch, f->index, dt.pkt_demux, 0);
                 if (ret >= 0)
-                    ret = seek_to_start(d, (Timestamp){ .ts = pkt->pts,
-                                                        .tb = pkt->time_base });
+                    ret = seek_to_start(d, (Timestamp){ .ts = dt.pkt_demux->pts,
+                                                        .tb = dt.pkt_demux->time_base });
                 if (ret >= 0)
                     continue;
 
@@ -622,39 +645,39 @@ static void *input_thread(void *arg)
         }
 
         if (do_pkt_dump) {
-            av_pkt_dump_log2(NULL, AV_LOG_INFO, pkt, do_hex_dump,
-                             f->ctx->streams[pkt->stream_index]);
+            av_pkt_dump_log2(NULL, AV_LOG_INFO, dt.pkt_demux, do_hex_dump,
+                             f->ctx->streams[dt.pkt_demux->stream_index]);
         }
 
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        ds = pkt->stream_index < f->nb_streams ?
-             ds_from_ist(f->streams[pkt->stream_index]) : NULL;
+        ds = dt.pkt_demux->stream_index < f->nb_streams ?
+             ds_from_ist(f->streams[dt.pkt_demux->stream_index]) : NULL;
         if (!ds || ds->discard || ds->finished) {
-            report_new_stream(d, pkt);
-            av_packet_unref(pkt);
+            report_new_stream(d, dt.pkt_demux);
+            av_packet_unref(dt.pkt_demux);
             continue;
         }
 
-        if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
+        if (dt.pkt_demux->flags & AV_PKT_FLAG_CORRUPT) {
             av_log(d, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
                    "corrupt input packet in stream %d\n",
-                   pkt->stream_index);
+                   dt.pkt_demux->stream_index);
             if (exit_on_error) {
-                av_packet_unref(pkt);
+                av_packet_unref(dt.pkt_demux);
                 ret = AVERROR_INVALIDDATA;
                 break;
             }
         }
 
-        ret = input_packet_process(d, pkt, &send_flags);
+        ret = input_packet_process(d, dt.pkt_demux, &send_flags);
         if (ret < 0)
             break;
 
         if (d->readrate)
             readrate_sleep(d);
 
-        ret = demux_send(d, ds, pkt, send_flags);
+        ret = demux_send(d, ds, dt.pkt_demux, send_flags);
         if (ret < 0)
             break;
     }
@@ -664,7 +687,7 @@ static void *input_thread(void *arg)
         ret = 0;
 
 finish:
-    av_packet_free(&pkt);
+    demux_thread_uninit(&dt);
 
     return (void*)(intptr_t)ret;
 }
