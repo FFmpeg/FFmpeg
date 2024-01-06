@@ -652,6 +652,11 @@ type @code{pcm} else type @code{tun} is set. @var{(default)}
 @end table
 @end table
 
+@section amr
+3GPP AMR (Adaptive Multi-Rate) audio muxer.
+
+It accepts a single audio stream containing an AMR NB stream.
+
 @anchor{asf}
 @section asf
 
