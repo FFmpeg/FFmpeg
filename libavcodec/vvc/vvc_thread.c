@@ -54,7 +54,7 @@ typedef struct VVCTask {
     union {
         struct VVCTask *next;                //for executor debug only
         AVTask task;
-    };
+    } u;
 
     VVCTaskStage stage;
 
@@ -107,7 +107,7 @@ static void add_task(VVCContext *s, VVCTask *t)
 
     atomic_fetch_add(&ft->nb_scheduled_tasks, 1);
 
-    av_executor_execute(s->executor, &t->task);
+    av_executor_execute(s->executor, &t->u.task);
 }
 
 static void task_init(VVCTask *t, VVCTaskStage stage, VVCFrameContext *fc, const int rx, const int ry)
