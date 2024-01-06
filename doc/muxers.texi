@@ -177,6 +177,82 @@ ffplay -video_size 1920x1080 -pixel_format rgb24 -f rawvideo testsrc.rgb
 @end example
 @end itemize
 
+@section RAW PCM muxers
+This section covers raw PCM (Pulse-Code Modulation) audio muxers.
+
+They accept a single stream matching the designated codec. They do not
+store timestamps or metadata. The recognized extension is the same as
+the muxer name.
+
+It comprises the following muxers. The optional additional extension
+used to automatically select the muxer from the output extension is
+also shown in parentheses.
+
+@table @samp
+@item alaw (al)
+PCM A-law
+
+@item f32be
+PCM 32-bit floating-point big-endian
+
+@item f32le
+PCM 32-bit floating-point little-endian
+
+@item f64be
+PCM 64-bit floating-point big-endian
+
+@item f64le
+PCM 64-bit floating-point little-endian
+
+@item mulaw (ul)
+PCM mu-law
+
+@item s16be
+PCM signed 16-bit big-endian
+
+@item s16le
+PCM signed 16-bit little-endian
+
+@item s24be
+PCM signed 24-bit big-endian
+
+@item s24le
+PCM signed 24-bit little-endian
+
+@item s32be
+PCM signed 32-bit big-endian
+
+@item s32le
+PCM signed 32-bit little-endian
+
+@item s8 (sb)
+PCM signed 8-bit
+
+@item u16be
+PCM unsigned 16-bit big-endian
+
+@item u16le
+PCM unsigned 16-bit little-endian
+
+@item u24be
+PCM unsigned 24-bit big-endian
+
+@item u24le
+PCM unsigned 24-bit little-endian
+
+@item u32be
+PCM unsigned 32-bit big-endian
+
+@item u32le
+PCM unsigned 32-bit little-endian
+
+@item u8 (ub)
+PCM unsigned 8-bit
+
+@item vidc
+PCM Archimedes VIDC
+@end table
+
 @section MOV/MPEG-4/ISOMBFF muxers
 
 This section covers formats belonging to the QuickTime / MOV family,
