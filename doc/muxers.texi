@@ -496,8 +496,10 @@ ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe
 
 @anchor{a64}
 @section a64
+A64 Commodore 64 video muxer.
 
-A64 muxer for Commodore 64 video. Accepts a single @code{a64_multi} or @code{a64_multi5} codec video stream.
+This muxer accepts a single @code{a64_multi} or @code{a64_multi5}
+codec video stream.
 
 @anchor{adts}
 @section adts
