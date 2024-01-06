@@ -536,21 +536,16 @@ indicates MPEG-2. Default is 0, which indicates MPEG-4.
 
 @anchor{aiff}
 @section aiff
-
 Audio Interchange File Format muxer.
 
 @subsection Options
-
-It accepts the following options:
-
 @table @option
-@item write_id3v2
+@item write_id3v2 @var{bool}
 Enable ID3v2 tags writing when set to 1. Default is 0 (disabled).
 
-@item id3v2_version
+@item id3v2_version @var{bool}
 Select ID3v2 version to write. Currently only version 3 and 4 (aka.
 ID3v2.3 and ID3v2.4) are supported. The default is version 4.
-
 @end table
 
 @anchor{alp}
