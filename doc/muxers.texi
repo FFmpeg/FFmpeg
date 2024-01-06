@@ -501,6 +501,18 @@ A64 Commodore 64 video muxer.
 This muxer accepts a single @code{a64_multi} or @code{a64_multi5}
 codec video stream.
 
+@section ac4
+Raw AC-4 audio muxer.
+
+This muxer accepts a single @code{ac4} audio stream.
+
+@subsection Options
+@table @option
+@item write_crc @var{bool}
+when enabled, write a CRC checksum for each packet to the output,
+default is @code{false}
+@end table
+
 @anchor{adts}
 @section adts
 
