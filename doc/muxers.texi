@@ -19,6 +19,164 @@ enabled demuxers and muxers.
 
 A description of some of the currently available muxers follows.
 
+@anchor{raw muxers}
+@section Raw muxers
+
+This section covers raw muxers. They accept a single stream matching
+the designated codec. They do not store timestamps or metadata. The
+recognized extension is the same as the muxer name unless indicated
+otherwise.
+
+It comprises the following muxers. The media type and the eventual
+extensions used to automatically selects the muxer from the output
+extensions are also shown.
+
+@table @samp
+@item ac3 @emph{audio}
+Dolby Digital, also known as AC-3.
+
+@item adx @emph{audio}
+CRI Middleware ADX audio.
+
+This muxer will write out the total sample count near the start of the
+first packet when the output is seekable and the count can be stored
+in 32 bits.
+
+@item aptx @emph{audio}
+aptX (Audio Processing Technology for Bluetooth)
+
+@item aptx_hd @emph{audio} (aptxdh)
+aptX HD (Audio Processing Technology for Bluetooth) audio
+
+@item avs2 @emph{video} (avs, avs2)
+AVS2-P2/IEEE1857.4 video.
+
+@item cavsvideo @emph{video} (cavs)
+Chinese AVS (Audio Video Standard)
+
+@item codec2raw @emph{audio}
+Codec 2 audio.
+
+No extension is registered so format name has to be supplied e.g. with
+the ffmpeg CLI tool @code{-f codec2raw}.
+
+@item data @emph{any}
+Generic data muxer.
+
+This muxer accepts a single stream with any codec of any type. The
+input stream has to be selected using the @code{-map} option with the
+@command{ffmpeg} CLI tool.
+
+No extension is registered so format name has to be supplied e.g. with
+the @command{ffmpeg} CLI tool @code{-f data}.
+
+@item dirac @emph{video} (drc, vc2)
+BBC Dirac video.
+
+The Dirac Pro codec is a subset and is standardized as SMPTE VC-2.
+
+@item dnxhd @emph{video} (dnxhd, dnxhr)
+Avid DNxHD video.
+
+It is standardized as SMPTE VC-3. Accepts DNxHR streams.
+
+@item dts @emph{audio}
+DTS Coherent Acoustics (DCA) audio
+
+@item  eac3 @emph{audio}
+Dolby Digital Plus, also known as Enhanced AC-3
+
+@item evc @emph{video} (evc)
+MPEG-5 Essential Video Coding (EVC) / EVC / MPEG-5 Part 1 EVC video
+
+@item g722 @emph{audio}
+ITU-T G.722 audio
+
+@item g723_1 @emph{audio} (tco, rco)
+ITU-T G.723.1 audio
+
+@item g726 @emph{audio}
+ITU-T G.726 big-endian ("left-justified") audio.
+
+No extension is registered so format name has to be supplied e.g. with
+the @command{ffmpeg} CLI tool @code{-f g726}.
+
+@item g726le @emph{audio}
+ITU-T G.726 little-endian ("right-justified") audio.
+
+No extension is registered so format name has to be supplied e.g. with
+the @command{ffmpeg} CLI tool @code{-f g726le}.
+
+@item gsm @emph{audio}
+Global System for Mobile Communications audio
+
+@item h261 @emph{video}
+ITU-T H.261 video
+
+@item h263 @emph{video}
+ITU-T H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2 video
+
+@item h264 @emph{video} (h264, 264)
+ITU-T H.264 / MPEG-4 Part 10 AVC video. Bitstream shall be converted
+to Annex B syntax if it's in length-prefixed mode.
+
+@item hevc @emph{video} (hevc, h265, 265)
+ITU-T H.265 / MPEG-H Part 2 HEVC video. Bitstream shall be converted
+to Annex B syntax if it's in length-prefixed mode.
+
+@item m4v @emph{video}
+MPEG-4 Part 2 video
+
+@item mjpeg @emph{video} (mjpg, mjpeg)
+Motion JPEG video
+
+@item mlp @emph{audio}
+Meridian Lossless Packing, also known as Packed PCM
+
+@item mp2 @emph{audio} (mp2, m2a, mpa)
+MPEG-1 Audio Layer II audio
+
+@item mpeg1video @emph{video} (mpg, mpeg, m1v)
+MPEG-1 Part 2 video.
+
+@item mpeg2video @emph{video} (m2v)
+ITU-T H.262 / MPEG-2 Part 2 video
+
+@item obu @emph{video}
+AV1 low overhead Open Bitstream Units muxer.
+
+Temporal delimiter OBUs will be inserted in all temporal units of the
+stream.
+
+@item rawvideo @emph{video} (yuv, rgb)
+Raw uncompressed video.
+
+@item sbc @emph{audio} (sbc, msbc)
+Bluetooth SIG low-complexity subband codec audio
+
+@item truehd @emph{audio} (thd)
+Dolby TrueHD audio
+
+@item vc1 @emph{video}
+SMPTE 421M / VC-1 video
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Store raw video frames with the @samp{rawvideo} muxer using @command{ffmpeg}:
+@example
+ffmpeg -f lavfi -i testsrc -t 10 -s hd1080p testsrc.yuv
+@end example
+
+Since the rawvideo muxer do not store the information related to size
+and format, this information must be provided when demuxing the file:
+@example
+ffplay -video_size 1920x1080 -pixel_format rgb24 -f rawvideo testsrc.rgb
+@end example
+@end itemize
+
 @section MOV/MPEG-4/ISOMBFF muxers
 
 This section covers formats belonging to the QuickTime / MOV family,
@@ -2219,188 +2377,6 @@ Setting it to different and sufficiently large values ensures that the produced
 ogg files can be safely chained.
 
 @end table
-
-@anchor{raw muxers}
-@section raw muxers
-
-Raw muxers accept a single stream matching the designated codec. They do not store timestamps or metadata.
-The recognized extension is the same as the muxer name unless indicated otherwise.
-
-@subsection ac3
-
-Dolby Digital, also known as AC-3, audio.
-
-@subsection adx
-
-CRI Middleware ADX audio.
-
-This muxer will write out the total sample count near the start of the first packet
-when the output is seekable and the count can be stored in 32 bits.
-
-@subsection aptx
-
-aptX (Audio Processing Technology for Bluetooth) audio.
-
-@subsection aptx_hd
-
-aptX HD (Audio Processing Technology for Bluetooth) audio.
-
-Extensions: aptxhd
-
-@subsection avs2
-
-AVS2-P2/IEEE1857.4 video.
-
-Extensions: avs, avs2
-
-@subsection cavsvideo
-
-Chinese AVS (Audio Video Standard) video.
-
-Extensions: cavs
-
-@subsection codec2raw
-
-Codec 2 audio.
-
-No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f codec2raw}.
-
-@subsection data
-
-Data muxer accepts a single stream with any codec of any type.
-The input stream has to be selected using the @code{-map} option with the ffmpeg CLI tool.
-
-No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f data}.
-
-@subsection dirac
-
-BBC Dirac video. The Dirac Pro codec is a subset and is standardized as SMPTE VC-2.
-
-Extensions: drc, vc2
-
-@subsection dnxhd
-
-Avid DNxHD video. It is standardized as SMPTE VC-3. Accepts DNxHR streams.
-
-Extensions: dnxhd, dnxhr
-
-@subsection dts
-
-DTS Coherent Acoustics (DCA) audio.
-
-@subsection eac3
-
-Dolby Digital Plus, also known as Enhanced AC-3, audio.
-
-@subsection evc
-
-MPEG-5 Essential Video Coding (EVC) / EVC / MPEG-5 Part 1 EVC video.
-
-Extensions: evc
-
-@subsection g722
-
-ITU-T G.722 audio.
-
-@subsection g723_1
-
-ITU-T G.723.1 audio.
-
-Extensions: tco, rco
-
-@subsection g726
-
-ITU-T G.726 big-endian ("left-justified") audio.
-
-No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f g726}.
-
-@subsection g726le
-
-ITU-T G.726 little-endian ("right-justified") audio.
-
-No extension is registered so format name has to be supplied e.g. with the ffmpeg CLI tool @code{-f g726le}.
-
-@subsection gsm
-
-Global System for Mobile Communications audio.
-
-@subsection h261
-
-ITU-T H.261 video.
-
-@subsection h263
-
-ITU-T H.263 / H.263-1996, H.263+ / H.263-1998 / H.263 version 2 video.
-
-@subsection h264
-
-ITU-T H.264 / MPEG-4 Part 10 AVC video. Bitstream shall be converted to Annex B syntax if it's in length-prefixed mode.
-
-Extensions: h264, 264
-
-@subsection hevc
-
-ITU-T H.265 / MPEG-H Part 2 HEVC video. Bitstream shall be converted to Annex B syntax if it's in length-prefixed mode.
-
-Extensions: hevc, h265, 265
-
-@subsection m4v
-
-MPEG-4 Part 2 video.
-
-@subsection mjpeg
-
-Motion JPEG video.
-
-Extensions: mjpg, mjpeg
-
-@subsection mlp
-
-Meridian Lossless Packing, also known as Packed PCM, audio.
-
-@subsection mp2
-
-MPEG-1 Audio Layer II audio.
-
-Extensions: mp2, m2a, mpa
-
-@subsection mpeg1video
-
-MPEG-1 Part 2 video.
-
-Extensions: mpg, mpeg, m1v
-
-@subsection mpeg2video
-
-ITU-T H.262 / MPEG-2 Part 2 video.
-
-Extensions: m2v
-
-@subsection obu
-
-AV1 low overhead Open Bitstream Units muxer. Temporal delimiter OBUs will be inserted in all temporal units of the stream.
-
-@subsection rawvideo
-
-Raw uncompressed video.
-
-Extensions: yuv, rgb
-
-@subsection sbc
-
-Bluetooth SIG low-complexity subband codec audio.
-
-Extensions: sbc, msbc
-
-@subsection truehd
-
-Dolby TrueHD audio.
-
-Extensions: thd
-
-@subsection vc1
-
-SMPTE 421M / VC-1 video.
 
 @anchor{segment}
 @section segment, stream_segment, ssegment
