@@ -665,6 +665,32 @@ Ubisoft Rayman 2 APM audio muxer.
 
 It accepts a single ADPCM IMA APM audio stream.
 
+@section apng
+Animated Portable Network Graphics muxer.
+
+It accepts a single APNG video stream.
+
+@subsection Options
+@table @option
+@item final_delay @var{delay}
+Force a delay expressed in seconds after the last frame of each
+repetition. Default value is @code{0.0}.
+
+@item plays @var{repetitions}
+specify how many times to play the content, @code{0} causes an infinte
+loop, with @code{1} there is no loop
+@end table
+
+@subsection Examples
+@itemize
+@item
+Use @command{ffmpeg} to generate an APNG output with 2 repetitions,
+and with a delay of half a second after the first repetition:
+@example
+ffmpeg -i INPUT -final_delay 0.5 -plays 2 out.apng
+@end example
+@end itemize
+
 @anchor{asf}
 @section asf
 
