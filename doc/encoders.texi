@@ -615,7 +615,7 @@ and slightly improves compression.
 
 Opus encoder.
 
-This is a native FFmpeg encoder for the Opus format. Currently its in development and
+This is a native FFmpeg encoder for the Opus format. Currently, it's in development and
 only implements the CELT part of the codec. Its quality is usually worse and at best
 is equal to the libopus encoder.
 
