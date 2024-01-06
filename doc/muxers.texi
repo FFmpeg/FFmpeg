@@ -19,6 +19,323 @@ enabled demuxers and muxers.
 
 A description of some of the currently available muxers follows.
 
+@section MOV/MPEG-4/ISOMBFF muxers
+
+This section covers formats belonging to the QuickTime / MOV family,
+including the MPEG-4 Part 14 format and ISO base media file format
+(ISOBMFF). These formats share a common structure based on the ISO
+base media file format (ISOBMFF).
+
+The MOV format was originally developed for use with Apple QuickTime.
+It was later used as the basis for the MPEG-4 Part 1 (later Part 14)
+format, also known as ISO/IEC 14496-1. That format was then
+generalized into ISOBMFF, also named MPEG-4 Part 12 format, ISO/IEC
+14496-12, or ISO/IEC 15444-12.
+
+It comprises the following muxers.
+
+@table @samp
+@item 3gp
+Third Generation Partnership Project (3GPP) format for 3G UMTS
+multimedia services
+
+@item 3g2
+Third Generation Partnership Project 2 (3GP2 or 3GPP2) format for 3G
+CDMA2000 multimedia services, similar to @samp{3gp} with extensions
+and limitations
+
+@item f4v
+Adobe Flash Video format
+
+@item ipod
+MPEG-4 audio file format, as MOV/MP4 but limited to contain only audio
+streams, typically played with the Apple ipod device
+
+@item ismv
+Microsoft IIS (Internet Information Services) Smooth Streaming
+Audio/Video (ISMV or ISMA) format. This is based on MPEG-4 Part 14
+format with a few incompatible variants, used to stream media files
+for the Microsoft IIS server.
+
+@item mov
+QuickTime player format identified by the @code{.mov} extension
+
+@item mp4
+MP4 or MPEG-4 Part 14 format
+
+@item psp
+PlayStation Portable MP4/MPEG-4 Part 14 format variant. This is based
+on MPEG-4 Part 14 format with a few incompatible variants, used to
+play files on PlayStation devices.
+@end table
+
+@subsection Fragmentation
+
+The @samp{mov}, @samp{mp4}, and @samp{ismv} muxers support
+fragmentation. Normally, a MOV/MP4 file has all the metadata about all
+packets stored in one location.
+
+This data is usually written at the end of the file, but it can be
+moved to the start for better playback by adding @code{+faststart} to
+the @code{-movflags}, or using the @command{qt-faststart} tool).
+
+A fragmented file consists of a number of fragments, where packets and
+metadata about these packets are stored together. Writing a fragmented
+file has the advantage that the file is decodable even if the writing
+is interrupted (while a normal MOV/MP4 is undecodable if it is not
+properly finished), and it requires less memory when writing very long
+files (since writing normal MOV/MP4 files stores info about every
+single packet in memory until the file is closed). The downside is
+that it is less compatible with other applications.
+
+Fragmentation is enabled by setting one of the options that define
+how to cut the file into fragments:
+@table @option
+@item frag_duration
+@item frag_size
+@item min_frag_duration
+@item movflags +frag_keyframe
+@item movflags +frag_custom
+@end table
+
+If more than one condition is specified, fragments are cut when one of
+the specified conditions is fulfilled. The exception to this is the
+option @option{min_frag_duration}, which has to be fulfilled for any
+of the other conditions to apply.
+
+@subsection Options
+
+@table @option
+
+@item brand @var{brand_string}
+Override major brand.
+
+@item empty_hdlr_name @var{bool}
+Enable to skip writing the name inside a @code{hdlr} box.
+Default is @code{false}.
+
+@item encryption_key @var{key}
+set the media encryption key in hexadecimal format
+
+@item encryption_kid @var{kid}
+set the media encryption key identifier in hexadecimal format
+
+@item encryption_scheme @var{scheme}
+configure the encryption scheme, allowed values are @samp{none}, and
+@samp{cenc-aes-ctr}
+
+@item frag_duration @var{duration}
+Create fragments that are @var{duration} microseconds long.
+
+@item frag_interleave  @var{number}
+Interleave samples within fragments (max number of consecutive
+samples, lower is tighter interleaving, but with more overhead. It is
+set to @code{0} by default.
+
+@item frag_size @var{size}
+create fragments that contain up to @var{size} bytes of payload data
+
+@item iods_audio_profile @var{profile}
+specify iods number for the audio profile atom (from -1 to 255),
+default is @code{-1}
+
+@item iods_video_profile @var{profile}
+specify iods number for the video profile atom (from -1 to 255),
+default is @code{-1}
+
+@item ism_lookahead @var{num_entries}
+specify number of lookahead entries for ISM files (from 0 to 255),
+default is @code{0}
+
+@item min_frag_duration @var{duration}
+do not create fragments that are shorter than @var{duration} microseconds long
+
+@item moov_size @var{bytes}
+Reserves space for the moov atom at the beginning of the file instead of placing the
+moov atom at the end. If the space reserved is insufficient, muxing will fail.
+
+@item mov_gamma @var{gamma}
+specify gamma value for gama atom (as a decimal number from 0 to 10),
+default is @code{0.0}, must be set together with @code{+ movflags}
+
+@item movflags @var{flags}
+Set various muxing switches. The following flags can be used:
+@table @samp
+@item cmaf
+write CMAF (Common Media Application Format) compatible fragmented
+MP4 output
+
+@item dash
+write DASH (Dynamic Adaptive Streaming over HTTP) compatible fragmented
+MP4 output
+
+@item default_base_moof
+Similarly to the @samp{omit_tfhd_offset} flag, this flag avoids
+writing the absolute base_data_offset field in tfhd atoms, but does so
+by using the new default-base-is-moof flag instead. This flag is new
+from 14496-12:2012. This may make the fragments easier to parse in
+certain circumstances (avoiding basing track fragment location
+calculations on the implicit end of the previous track fragment).
+
+@item delay_moov
+delay writing the initial moov until the first fragment is cut, or
+until the first fragment flush
+
+@item disable_chpl
+Disable Nero chapter markers (chpl atom). Normally, both Nero chapters
+and a QuickTime chapter track are written to the file. With this
+option set, only the QuickTime chapter track will be written. Nero
+chapters can cause failures when the file is reprocessed with certain
+tagging programs, like mp3Tag 2.61a and iTunes 11.3, most likely other
+versions are affected as well.
+
+@item faststart
+Run a second pass moving the index (moov atom) to the beginning of the
+file. This operation can take a while, and will not work in various
+situations such as fragmented output, thus it is not enabled by
+default.
+
+@item frag_custom
+Allow the caller to manually choose when to cut fragments, by calling
+@code{av_write_frame(ctx, NULL)} to write a fragment with the packets
+written so far. (This is only useful with other applications
+integrating libavformat, not from @command{ffmpeg}.)
+
+@item frag_discont
+signal that the next fragment is discontinuous from earlier ones
+
+@item frag_every_frame
+fragment at every frame
+
+@item frag_keyframe
+start a new fragment at each video keyframe
+
+@item global_sidx
+write a global sidx index at the start of the file
+
+@item isml
+create a live smooth streaming feed (for pushing to a publishing point)
+
+@item negative_cts_offsets
+Enables utilization of version 1 of the CTTS box, in which the CTS offsets can
+be negative. This enables the initial sample to have DTS/CTS of zero, and
+reduces the need for edit lists for some cases such as video tracks with
+B-frames. Additionally, eases conformance with the DASH-IF interoperability
+guidelines.
+
+This option is implicitly set when writing @samp{ismv} (Smooth
+Streaming) files.
+
+@item omit_tfhd_offset
+Do not write any absolute base_data_offset in tfhd atoms. This avoids
+tying fragments to absolute byte positions in the file/streams.
+
+@item prefer_icc
+If writing colr atom prioritise usage of ICC profile if it exists in
+stream packet side data.
+
+@item rtphint
+add RTP hinting tracks to the output file
+
+@item separate_moof
+Write a separate moof (movie fragment) atom for each track. Normally,
+packets for all tracks are written in a moof atom (which is slightly
+more efficient), but with this option set, the muxer writes one
+moof/mdat pair for each track, making it easier to separate tracks.
+
+@item skip_sidx
+Skip writing of sidx atom. When bitrate overhead due to sidx atom is
+high, this option could be used for cases where sidx atom is not
+mandatory. When the @samp{global_sidx} flag is enabled, this option
+is ignored.
+
+@item skip_trailer
+skip writing the mfra/tfra/mfro trailer for fragmented files
+
+@item use_metadata_tags
+use mdta atom for metadata
+
+@item write_colr
+write colr atom even if the color info is unspecified. This flag is
+experimental, may be renamed or changed, do not use from scripts.
+
+@item write_gama
+write deprecated gama atom
+@end table
+
+@item movie_timescale @var{scale}
+Set the timescale written in the movie header box (@code{mvhd}).
+Range is 1 to INT_MAX. Default is @code{1000}.
+
+@item rtpflags @var{flags}
+Add RTP hinting tracks to the output file.
+
+The following flags can be used:
+@table @samp
+@item h264_mode0
+use mode 0 for H.264 in RTP
+
+@item latm
+use MP4A-LATM packetization instead of MPEG4-GENERIC for AAC
+
+@item rfc2190
+use RFC 2190 packetization instead of RFC 4629 for H.263
+
+@item send_bye
+send RTCP BYE packets when finishing
+
+@item skip_rtcp
+do not send RTCP sender reports
+@end table
+
+@item skip_iods @var{bool}
+skip writing iods atom (default value is @code{true})
+
+@item use_editlist @var{bool}
+use edit list (default value is @code{auto})
+
+@item use_stream_ids_as_track_ids
+use stream ids as track ids (default value is @code{false})
+
+@item video_track_timescale @var{scale}
+Set the timescale used for video tracks. Range is @code{0} to INT_MAX. If
+set to @code{0}, the timescale is automatically set based on the
+native stream time base. Default is @code{0}.
+
+@item write_btrt @var{bool}
+Force or disable writing bitrate box inside stsd box of a track. The
+box contains decoding buffer size (in bytes), maximum bitrate and
+average bitrate for the track. The box will be skipped if none of
+these values can be computed.  Default is @code{-1} or @code{auto},
+which will write the box only in MP4 mode.
+
+@item write_prft @var{option}
+Write producer time reference box (PRFT) with a specified time source for the
+NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
+as wallclock time and @samp{pts} to specify timesource as input packets' PTS
+values.
+
+@item write_tmcd @var{bool}
+Specify @code{on} to force writing a timecode track, @code{off} to disable it
+and @code{auto} to write a timecode track only for mov and mp4 output (default).
+
+Setting value to @samp{pts} is applicable only for a live encoding use case,
+where PTS values are set as as wallclock time at the source. For example, an
+encoding use case with decklink capture source where @option{video_pts} and
+@option{audio_pts} are set to @samp{abs_wallclock}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Push Smooth Streaming content in real time to a publishing point on
+IIS with the @samp{ismv} muxer using @command{ffmpeg}:
+@example
+ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
+@end example
+@end itemize
+
 @anchor{a64}
 @section a64
 
@@ -1622,153 +1939,6 @@ ffmpeg -i INPUT -f md5 -
 @end example
 
 See also the @ref{hash} and @ref{framemd5} muxers.
-
-@section mov, mp4, ismv
-
-MOV/MP4/ISMV (Smooth Streaming) muxer.
-
-The mov/mp4/ismv muxer supports fragmentation. Normally, a MOV/MP4
-file has all the metadata about all packets stored in one location
-(written at the end of the file, it can be moved to the start for
-better playback by adding @code{+faststart} to the @code{-movflags}, or
-using the @command{qt-faststart} tool).
-
-A fragmented
-file consists of a number of fragments, where packets and metadata
-about these packets are stored together. Writing a fragmented
-file has the advantage that the file is decodable even if the
-writing is interrupted (while a normal MOV/MP4 is undecodable if
-it is not properly finished), and it requires less memory when writing
-very long files (since writing normal MOV/MP4 files stores info about
-every single packet in memory until the file is closed). The downside
-is that it is less compatible with other applications.
-
-Fragmentation is enabled by setting one of the options that define
-how to cut the file into fragments: @code{-frag_duration}, @code{-frag_size},
-@code{-min_frag_duration}, @code{-movflags +frag_keyframe} and
-@code{-movflags +frag_custom}. If more than one condition is specified,
-fragments are cut when one of the specified conditions is fulfilled. The
-exception to this is @code{-min_frag_duration}, which has to be fulfilled for
-any of the other conditions to apply.
-
-@subsection Options
-
-@table @option
-@item frag_duration @var{duration}
-Create fragments that are @var{duration} microseconds long.
-@item frag_size @var{size}
-Create fragments that contain up to @var{size} bytes of payload data.
-@item min_frag_duration @var{duration}
-Don't create fragments that are shorter than @var{duration} microseconds long.
-@item movflags @var{flags}
-Set various muxing switches. The following flags can be used:
-@table @samp
-@item frag_keyframe
-Start a new fragment at each video keyframe.
-@item frag_custom
-Allow the caller to manually choose when to cut fragments, by
-calling @code{av_write_frame(ctx, NULL)} to write a fragment with
-the packets written so far. (This is only useful with other
-applications integrating libavformat, not from @command{ffmpeg}.)
-@item empty_moov
-Write an initial moov atom directly at the start of the file, without
-describing any samples in it. Generally, an mdat/moov pair is written
-at the start of the file, as a normal MOV/MP4 file, containing only
-a short portion of the file. With this option set, there is no initial
-mdat atom, and the moov atom only describes the tracks but has
-a zero duration.
-
-This option is implicitly set when writing ismv (Smooth Streaming) files.
-@item separate_moof
-Write a separate moof (movie fragment) atom for each track. Normally,
-packets for all tracks are written in a moof atom (which is slightly
-more efficient), but with this option set, the muxer writes one moof/mdat
-pair for each track, making it easier to separate tracks.
-
-This option is implicitly set when writing ismv (Smooth Streaming) files.
-@item skip_sidx
-Skip writing of sidx atom. When bitrate overhead due to sidx atom is high,
-this option could be used for cases where sidx atom is not mandatory.
-When global_sidx flag is enabled, this option will be ignored.
-@item faststart
-Run a second pass moving the index (moov atom) to the beginning of the file.
-This operation can take a while, and will not work in various situations such
-as fragmented output, thus it is not enabled by default.
-@item rtphint
-Add RTP hinting tracks to the output file.
-@item disable_chpl
-Disable Nero chapter markers (chpl atom).  Normally, both Nero chapters
-and a QuickTime chapter track are written to the file. With this option
-set, only the QuickTime chapter track will be written. Nero chapters can
-cause failures when the file is reprocessed with certain tagging programs, like
-mp3Tag 2.61a and iTunes 11.3, most likely other versions are affected as well.
-@item omit_tfhd_offset
-Do not write any absolute base_data_offset in tfhd atoms. This avoids
-tying fragments to absolute byte positions in the file/streams.
-@item default_base_moof
-Similarly to the omit_tfhd_offset, this flag avoids writing the
-absolute base_data_offset field in tfhd atoms, but does so by using
-the new default-base-is-moof flag instead. This flag is new from
-14496-12:2012. This may make the fragments easier to parse in certain
-circumstances (avoiding basing track fragment location calculations
-on the implicit end of the previous track fragment).
-@item negative_cts_offsets
-Enables utilization of version 1 of the CTTS box, in which the CTS offsets can
-be negative. This enables the initial sample to have DTS/CTS of zero, and
-reduces the need for edit lists for some cases such as video tracks with
-B-frames. Additionally, eases conformance with the DASH-IF interoperability
-guidelines.
-
-This option is implicitly set when writing ismv (Smooth Streaming) files.
-@end table
-
-@item moov_size @var{bytes}
-Reserves space for the moov atom at the beginning of the file instead of placing the
-moov atom at the end. If the space reserved is insufficient, muxing will fail.
-
-@item write_tmcd
-Specify @code{on} to force writing a timecode track, @code{off} to disable it
-and @code{auto} to write a timecode track only for mov and mp4 output (default).
-
-@item write_btrt @var{bool}
-Force or disable writing bitrate box inside stsd box of a track.
-The box contains decoding buffer size (in bytes), maximum bitrate and
-average bitrate for the track. The box will be skipped if none of these values
-can be computed.
-Default is @code{-1} or @code{auto}, which will write the box only in MP4 mode.
-
-@item write_prft
-Write producer time reference box (PRFT) with a specified time source for the
-NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
-as wallclock time and @samp{pts} to specify timesource as input packets' PTS
-values.
-
-Setting value to @samp{pts} is applicable only for a live encoding use case,
-where PTS values are set as as wallclock time at the source. For example, an
-encoding use case with decklink capture source where @option{video_pts} and
-@option{audio_pts} are set to @samp{abs_wallclock}.
-
-@item empty_hdlr_name @var{bool}
-Enable to skip writing the name inside a @code{hdlr} box.
-Default is @code{false}.
-
-@item movie_timescale @var{scale}
-Set the timescale written in the movie header box (@code{mvhd}).
-Range is 1 to INT_MAX. Default is 1000.
-
-@item video_track_timescale @var{scale}
-Set the timescale used for video tracks. Range is 0 to INT_MAX.
-If set to @code{0}, the timescale is automatically set based on
-the native stream time base. Default is 0.
-@end table
-
-@subsection Example
-
-Smooth Streaming content can be pushed in real time to a publishing
-point on IIS with this muxer. Example:
-@example
-ffmpeg -re @var{<normal input/transcoding options>} -movflags isml+frag_keyframe -f ismv http://server/publishingpoint.isml/Streams(Encoder1)
-@end example
 
 @section mp3
 
