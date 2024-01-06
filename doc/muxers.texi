@@ -657,6 +657,9 @@ type @code{pcm} else type @code{tun} is set. @var{(default)}
 
 It accepts a single audio stream containing an AMR NB stream.
 
+@section amv
+AMV (Actions Media Video) format muxer.
+
 @anchor{asf}
 @section asf
 
