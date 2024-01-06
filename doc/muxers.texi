@@ -660,6 +660,11 @@ It accepts a single audio stream containing an AMR NB stream.
 @section amv
 AMV (Actions Media Video) format muxer.
 
+@section apm
+Ubisoft Rayman 2 APM audio muxer.
+
+It accepts a single ADPCM IMA APM audio stream.
+
 @anchor{asf}
 @section asf
 
