@@ -15968,6 +15968,15 @@ further computations. This allows inserting the idet filter as a low computation
 method to clean up the interlaced flag
 @end table
 
+@subsection Examples
+
+Inspect the field order of the first 360 frames in a video, in verbose detail:
+@example
+ffmpeg -i INPUT -filter:v idet,metadata=mode=print -frames:v 360 -an -f null -
+@end example
+The idet filter will add analysis metadata to each frame, which will then be
+discarded. At the end, the filter will also print a final report with statistics.
+
 @section il
 
 Deinterleave or interleave fields.
