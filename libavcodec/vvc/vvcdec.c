@@ -977,6 +977,12 @@ static av_cold int vvc_decode_init(AVCodecContext *avctx)
     if (ret)
         return ret;
 
+    if (avctx->extradata_size > 0 && avctx->extradata) {
+        ret = ff_cbs_read_extradata_from_codec(s->cbc, &s->current_frame, avctx);
+        if (ret < 0)
+            return ret;
+    }
+
     s->nb_fcs = (avctx->flags & AV_CODEC_FLAG_LOW_DELAY) ? 1 : delayed;
     s->fcs = av_calloc(s->nb_fcs, sizeof(*s->fcs));
     if (!s->fcs)
