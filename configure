@@ -2239,6 +2239,7 @@ HEADERS_LIST="
     opencv2_core_core_c_h
     OpenGL_gl3_h
     poll_h
+    pthread_np_h
     sys_param_h
     sys_resource_h
     sys_select_h
@@ -2341,6 +2342,8 @@ SYSTEM_FUNCS="
     posix_memalign
     prctl
     pthread_cancel
+    pthread_set_name_np
+    pthread_setname_np
     sched_getaffinity
     SecItemImport
     SetConsoleTextAttribute
@@ -6524,6 +6527,7 @@ check_headers malloc.h
 check_headers mftransform.h
 check_headers net/udplite.h
 check_headers poll.h
+check_headers pthread_np.h
 check_headers sys/param.h
 check_headers sys/resource.h
 check_headers sys/select.h
@@ -6692,6 +6696,12 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     if enabled pthreads; then
         check_builtin sem_timedwait semaphore.h "sem_t *s; sem_init(s,0,0); sem_timedwait(s,0); sem_destroy(s)" $pthreads_extralibs
         check_func pthread_cancel $pthreads_extralibs
+        hdrs=pthread.h
+        if enabled pthread_np_h; then
+            hdrs="$hdrs pthread_np.h"
+        fi
+        check_lib pthread_set_name_np "$hdrs" pthread_set_name_np -lpthread
+        check_lib pthread_setname_np "$hdrs" pthread_setname_np -lpthread
     fi
 fi
 
