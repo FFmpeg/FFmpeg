@@ -26,6 +26,8 @@
 
 #if HAVE_PRCTL
 #include <sys/prctl.h>
+#elif (HAVE_PTHREAD_SETNAME_NP || HAVE_PTHREAD_SET_NAME_NP) && HAVE_PTHREAD_NP_H
+#include <pthread_np.h>
 #endif
 
 #include "error.h"
@@ -213,11 +215,19 @@ static inline int ff_thread_once(char *control, void (*routine)(void))
 
 static inline int ff_thread_setname(const char *name)
 {
+    int ret = 0;
+
 #if HAVE_PRCTL
-    return AVERROR(prctl(PR_SET_NAME, name));
+    ret = AVERROR(prctl(PR_SET_NAME, name));
+#elif HAVE_PTHREAD_SETNAME_NP
+    ret = AVERROR(pthread_setname_np(pthread_self(), name));
+#elif HAVE_PTHREAD_SET_NAME_NP
+    pthread_set_name_np(pthread_self(), name);
+#else
+    ret = AVERROR(ENOSYS);
 #endif
 
-    return AVERROR(ENOSYS);
+    return ret;
 }
 
 #endif /* AVUTIL_THREAD_H */
