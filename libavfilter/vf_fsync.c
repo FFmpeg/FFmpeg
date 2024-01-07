@@ -207,6 +207,9 @@ static int activate(AVFilterContext *ctx)
     }
 
 end:
+    if (s->last_frame)
+        av_frame_free(&s->last_frame);
+
     ret = ff_inlink_consume_frame(inlink, &s->last_frame);
     if (ret < 0)
         return ret;
