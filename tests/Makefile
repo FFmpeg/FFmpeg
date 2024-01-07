@@ -23,7 +23,7 @@ FFMPEG=ffmpeg$(PROGSSUF)$(EXESUF)
 $(AREF): CMP=
 
 APITESTSDIR := tests/api
-FATE_OUTDIRS = tests/data tests/data/fate tests/data/filtergraphs tests/data/maps tests/data/lavf tests/data/lavf-fate tests/data/pixfmt tests/vsynth1 $(APITESTSDIR)
+FATE_OUTDIRS = tests/data tests/data/fate tests/data/filtergraphs tests/data/maps tests/data/streamgroups tests/data/lavf tests/data/lavf-fate tests/data/pixfmt tests/vsynth1 $(APITESTSDIR)
 OUTDIRS += $(FATE_OUTDIRS)
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
@@ -68,6 +68,10 @@ tests/data/filtergraphs/%: $(SRC_PATH)/tests/filtergraphs/% | tests/data/filterg
 
 tests/data/maps/%: TAG = COPY
 tests/data/maps/%: $(SRC_PATH)/tests/maps/% | tests/data/maps
+	$(M)cp $< $@
+
+tests/data/streamgroups/%: TAG = COPY
+tests/data/streamgroups/%: $(SRC_PATH)/tests/streamgroups/% | tests/data/streamgroups
 	$(M)cp $< $@
 
 RUNNING_FATE := $(filter check fate%,$(filter-out fate-rsync,$(MAKECMDGOALS)))
@@ -199,6 +203,7 @@ include $(SRC_PATH)/tests/fate/hap.mak
 include $(SRC_PATH)/tests/fate/hevc.mak
 include $(SRC_PATH)/tests/fate/hlsenc.mak
 include $(SRC_PATH)/tests/fate/hw.mak
+include $(SRC_PATH)/tests/fate/iamf.mak
 include $(SRC_PATH)/tests/fate/id3v2.mak
 include $(SRC_PATH)/tests/fate/image.mak
 include $(SRC_PATH)/tests/fate/imf.mak

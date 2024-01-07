@@ -1,0 +1,6 @@
+type=iamf_audio_element:id=1:st=0:st=1:st=2:st=3:st=4:st=5:st=6:default_w=10,
+demixing=dmixp_mode=1:parameter_id=998,recon_gain=parameter_id=101,
+layer=ch_layout=stereo,
+layer=ch_layout=3.1.2,
+layer=ch_layout=7.1.2,
+layer=ch_layout=7.1.4,

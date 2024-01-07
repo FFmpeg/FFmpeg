@@ -1,0 +1,2 @@
+type=iamf_mix_presentation:id=2:stg=0:annotations=en-us=Mix_Presentation,
+submix=parameter_id=100:parameter_rate=48000:default_mix_gain=1.0|element=stg=0:parameter_id=100:headphones_rendering_mode=stereo:annotations=en-us=Scalable_Submix|layout=sound_system=stereo:integrated_loudness=1.0|layout=sound_system=3.1.2|layout=sound_system=7.1.2|layout=sound_system=7.1.4,

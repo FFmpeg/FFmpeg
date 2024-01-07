@@ -1,0 +1,6 @@
+[0:a]channelmap=0|1:stereo[FRONT];
+[0:a]channelmap=4|5:stereo[BACK];
+[0:a]channelmap=2:mono[CENTER];
+[0:a]channelmap=3:mono[LFE];
+[0:a]channelmap=6|7:stereo[TOP_FRONT];
+[0:a]channelmap=8|9:stereo[TOP_BACK];
