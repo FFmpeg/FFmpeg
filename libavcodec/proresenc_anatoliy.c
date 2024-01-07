@@ -750,7 +750,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_buffer(&buf, ctx->vendor, 4);
     bytestream_put_be16(&buf, avctx->width);
     bytestream_put_be16(&buf, avctx->height);
-    frame_flags = 0x82; /* 422 not interlaced */
+    frame_flags = 0x80; /* 422 not interlaced */
     if (avctx->profile >= AV_PROFILE_PRORES_4444) /* 4444 or 4444 Xq */
         frame_flags |= 0x40; /* 444 chroma */
     if (ctx->is_interlaced) {
