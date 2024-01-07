@@ -691,6 +691,26 @@ ffmpeg -i INPUT -final_delay 0.5 -plays 2 out.apng
 @end example
 @end itemize
 
+@section argo_asf
+Argonaut Games ASF audio muxer.
+
+It accepts a single ADPCM audio stream.
+
+@subsection Options
+@table @option
+@item version_major @var{version}
+override file major version, specified as an integer, default value is
+@code{2}
+
+@item version_minor @var{version}
+override file minor version, specified as an integer, default value is
+@code{1}
+
+@item name @var{name}
+Embed file name into file, if not specified use the output file
+name. The name is truncated to 8 characters.
+@end table
+
 @anchor{asf}
 @section asf
 
