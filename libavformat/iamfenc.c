@@ -278,6 +278,16 @@ static int iamf_write_packet(AVFormatContext *s, AVPacket *pkt)
     int dyn_size, type = st->id <= 17 ? st->id + IAMF_OBU_IA_AUDIO_FRAME_ID0 : IAMF_OBU_IA_AUDIO_FRAME;
     int ret;
 
+    if (!pkt->size) {
+        uint8_t *new_extradata = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, NULL);
+
+        if (!new_extradata)
+            return AVERROR_INVALIDDATA;
+
+        // TODO: update FLAC Streaminfo on seekable output
+        return 0;
+    }
+
     if (s->nb_stream_groups && st->id == c->first_stream_id) {
         AVIAMFParamDefinition *mix =
             (AVIAMFParamDefinition *)av_packet_get_side_data(pkt, AV_PKT_DATA_IAMF_MIX_GAIN_PARAM, NULL);
