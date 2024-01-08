@@ -711,6 +711,27 @@ Embed file name into file, if not specified use the output file
 name. The name is truncated to 8 characters.
 @end table
 
+@section argo_cvg
+Argonaut Games CVG audio muxer.
+
+It accepts a single one-channel ADPCM 22050Hz audio stream.
+
+The @option{loop} and @option{reverb} options set the corresponding
+flags in the header which can be later retrieved to process the audio
+stream accordingly.
+
+@subsection Options
+@table @option
+@item skip_rate_check @var{bool}
+skip sample rate check (default is @code{false})
+
+@item loop @var{bool}
+set loop flag (default is @code{false})
+
+@item reverb @var{boolean}
+set reverb flag (default is @code{true})
+@end table
+
 @anchor{asf}
 @section asf
 
