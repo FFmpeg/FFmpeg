@@ -750,6 +750,19 @@ source. Default value is @code{3200}, minimum is @code{100}, maximum
 is @code{64Ki}.
 @end table
 
+@section ass
+ASS/SSA (SubStation Alpha) subtitles muxer.
+
+It accepts a single ASS subtitles stream.
+
+@subsection Options
+@table @option
+@item ignore_readorder @var{bool}
+Write dialogue events immediately, even if they are out-of-order,
+default is @code{false}, otherwise they are cached until the expected
+time event is found.
+@end table
+
 @anchor{avi}
 @section avi
 
