@@ -733,23 +733,21 @@ set reverb flag (default is @code{true})
 @end table
 
 @anchor{asf}
-@section asf
+@section asf, asf_stream
+Advanced / Active Systems (or Streaming) Format audio muxer.
 
-Advanced Systems Format muxer.
+The @samp{asf_stream} variant should be selected for streaming.
 
 Note that Windows Media Audio (wma) and Windows Media Video (wmv) use this
 muxer too.
 
 @subsection Options
-
-It accepts the following options:
-
 @table @option
-@item packet_size
-Set the muxer packet size. By tuning this setting you may reduce data
-fragmentation or muxer overhead depending on your source. Default value is
-3200, minimum is 100, maximum is 64k.
-
+@item packet_size @var{size}
+Set the muxer packet size as a number of bytes. By tuning this setting
+you may reduce data fragmentation or muxer overhead depending on your
+source. Default value is @code{3200}, minimum is @code{100}, maximum
+is @code{64Ki}.
 @end table
 
 @anchor{avi}
