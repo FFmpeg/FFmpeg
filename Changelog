@@ -15,7 +15,7 @@ version <next>:
 - removed DEC Alpha DSP and support code
 - VVC encoding support via libvvenc
 - perlin video source
-
+- D3D12VA HEVC encoder
 
 version 7.0:
 - DXV DXT1 encoder
