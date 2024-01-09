@@ -1977,7 +1977,7 @@ static void colorchart_fill_picture(AVFilterContext *ctx, AVFrame *frame)
     const int w = colorchart_presets[preset].w;
     const int h = colorchart_presets[preset].h;
     const int pw = test->pw;
-    const int ph = test->pw;
+    const int ph = test->ph;
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
