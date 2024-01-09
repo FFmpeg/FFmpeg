@@ -209,6 +209,16 @@ static int add_device_extension(const AVDictionary *opt,
     return av_dict_set(dict, dev_ext_key, ext_list, AV_DICT_DONT_STRDUP_VAL);
 }
 
+static const char *select_device(const AVDictionary *opt)
+{
+    const AVDictionaryEntry *entry;
+
+    entry = av_dict_get(opt, "device", NULL, 0);
+    if (entry)
+        return entry->value;
+    return NULL;
+}
+
 static int create_vk_by_hwcontext(VkRenderer *renderer,
                                   const char **ext, unsigned num_ext,
                                   const AVDictionary *opt)
@@ -229,7 +239,7 @@ static int create_vk_by_hwcontext(VkRenderer *renderer,
     }
 
     ret = av_hwdevice_ctx_create(&ctx->hw_device_ref, AV_HWDEVICE_TYPE_VULKAN,
-                           NULL, dict, 0);
+                                 select_device(opt), dict, 0);
     av_dict_free(&dict);
     if (ret < 0)
         return ret;
@@ -367,6 +377,7 @@ static int create_vk_by_placebo(VkRenderer *renderer,
             .opt_extensions = optional_device_exts,
             .num_opt_extensions = FF_ARRAY_ELEMS(optional_device_exts),
             .extra_queues = VK_QUEUE_VIDEO_DECODE_BIT_KHR,
+            .device_name = select_device(opt),
     ));
     if (!ctx->placebo_vulkan)
         return AVERROR_EXTERNAL;
