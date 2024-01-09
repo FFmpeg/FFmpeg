@@ -4916,15 +4916,15 @@ static int mov_read_custom(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return ret;
 }
 
-static int avif_add_stream(MOVContext *c, int item_id)
+static int heif_add_stream(MOVContext *c, int item_id)
 {
     MOVStreamContext *sc;
     AVStream *st;
     int item_index = -1;
     if (c->fc->nb_streams)
         return AVERROR_INVALIDDATA;
-    for (int i = 0; i < c->avif_info_size; i++)
-        if (c->avif_info[i].item_id == item_id) {
+    for (int i = 0; i < c->heif_info_size; i++)
+        if (c->heif_info[i].item_id == item_id) {
             item_index = i;
             break;
         }
@@ -4987,8 +4987,8 @@ static int avif_add_stream(MOVContext *c, int item_id)
     sc->stts_data[0].count = 1;
     // Not used for still images. But needed by mov_build_index.
     sc->stts_data[0].duration = 0;
-    sc->sample_sizes[0] = c->avif_info[item_index].extent_length;
-    sc->chunk_offsets[0] = c->avif_info[item_index].extent_offset;
+    sc->sample_sizes[0] = c->heif_info[item_index].extent_length;
+    sc->chunk_offsets[0] = c->heif_info[item_index].extent_offset;
 
     mov_build_index(c, st);
     return 0;
@@ -5013,7 +5013,7 @@ static int mov_read_meta(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (c->is_still_picture_avif) {
                 int ret;
                 // Add a stream for the YUV planes (primary item).
-                if ((ret = avif_add_stream(c, c->primary_item_id)) < 0)
+                if ((ret = heif_add_stream(c, c->primary_item_id)) < 0)
                     return ret;
                 // For still AVIF images, the meta box contains all the
                 // necessary information that would generally be provided by the
@@ -7820,7 +7820,7 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
 
-    if (c->avif_info) {
+    if (c->heif_info) {
         av_log(c->fc, AV_LOG_INFO, "Duplicate iloc box found\n");
         return 0;
     }
@@ -7841,16 +7841,16 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
     item_count = (version < 2) ? avio_rb16(pb) : avio_rb32(pb);
 
-    c->avif_info = av_malloc_array(item_count, sizeof(*c->avif_info));
-    if (!c->avif_info)
+    c->heif_info = av_malloc_array(item_count, sizeof(*c->heif_info));
+    if (!c->heif_info)
         return AVERROR(ENOMEM);
-    c->avif_info_size = item_count;
+    c->heif_info_size = item_count;
 
     for (int i = 0; i < item_count; i++) {
         int item_id = (version < 2) ? avio_rb16(pb) : avio_rb32(pb);
         if (avio_feof(pb))
             return AVERROR_INVALIDDATA;
-        c->avif_info[i].item_id = item_id;
+        c->heif_info[i].item_id = item_id;
 
         if (version > 0)
             avio_rb16(pb);  // construction_method.
@@ -7867,8 +7867,8 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             if (rb_size(pb, &extent_offset, offset_size) < 0 ||
                 rb_size(pb, &extent_length, length_size) < 0)
                 return AVERROR_INVALIDDATA;
-            c->avif_info[i].extent_length = extent_length;
-            c->avif_info[i].extent_offset = base_offset + extent_offset;
+            c->heif_info[i].extent_length = extent_length;
+            c->heif_info[i].extent_offset = base_offset + extent_offset;
         }
     }
 
@@ -8502,7 +8502,7 @@ static int mov_read_close(AVFormatContext *s)
 
     av_freep(&mov->aes_decrypt);
     av_freep(&mov->chapter_tracks);
-    av_freep(&mov->avif_info);
+    av_freep(&mov->heif_info);
 
     return 0;
 }
