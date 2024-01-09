@@ -262,12 +262,24 @@ typedef struct MOVStreamContext {
     } cenc;
 } MOVStreamContext;
 
+typedef struct HEIFItem {
+    AVStream *st;
+    int item_id;
+    int64_t extent_length;
+    int64_t extent_offset;
+    int64_t size;
+    int width;
+    int height;
+    int type;
+} HEIFItem;
+
 typedef struct MOVContext {
     const AVClass *class; ///< class for private options
     AVFormatContext *fc;
     int time_scale;
     int64_t duration;     ///< duration of the longest track
     int found_moov;       ///< 'moov' atom has been found
+    int found_iloc;       ///< 'iloc' atom has been found
     int found_mdat;       ///< 'mdat' atom has been found
     int found_hdlr_mdta;  ///< 'hdlr' atom with type 'mdta' has been found
     int trak_index;       ///< Index of the current 'trak'
@@ -319,16 +331,10 @@ typedef struct MOVContext {
     int have_read_mfra_size;
     uint32_t mfra_size;
     uint32_t max_stts_delta;
-    int is_still_picture_avif;
     int primary_item_id;
-    struct {
-        int item_id;
-        int extent_length;
-        int64_t extent_offset;
-    } *heif_info;
+    int cur_item_id;
+    HEIFItem *heif_info;
     int heif_info_size;
-    int64_t hvcC_offset;
-    int hvcC_size;
     int interleaved_read;
 } MOVContext;
 
