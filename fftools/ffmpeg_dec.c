@@ -969,5 +969,8 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
     if (ret < 0)
         return ret;
 
+    dp->dec.subtitle_header      = ist->dec_ctx->subtitle_header;
+    dp->dec.subtitle_header_size = ist->dec_ctx->subtitle_header_size;
+
     return 0;
 }

@@ -281,7 +281,8 @@ typedef struct FilterGraph {
 } FilterGraph;
 
 typedef struct Decoder {
-    char dummy;
+    const uint8_t   *subtitle_header;
+    int              subtitle_header_size;
 } Decoder;
 
 typedef struct InputStream {

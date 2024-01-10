@@ -171,7 +171,7 @@ int enc_open(void *opaque, const AVFrame *frame)
     InputStream *ist = ost->ist;
     Encoder              *e = ost->enc;
     AVCodecContext *enc_ctx = ost->enc_ctx;
-    AVCodecContext *dec_ctx = NULL;
+    Decoder            *dec;
     const AVCodec      *enc = enc_ctx->codec;
     OutputFile          *of = ost->file;
     FrameData *fd;
@@ -193,9 +193,8 @@ int enc_open(void *opaque, const AVFrame *frame)
     if (ret < 0)
         return ret;
 
-    if (ist) {
-        dec_ctx = ist->dec_ctx;
-    }
+    if (ist)
+        dec = ist->decoder;
 
     // the timebase is chosen by filtering code
     if (ost->type == AVMEDIA_TYPE_AUDIO || ost->type == AVMEDIA_TYPE_VIDEO) {
@@ -279,14 +278,16 @@ int enc_open(void *opaque, const AVFrame *frame)
             enc_ctx->width     = ost->ist->par->width;
             enc_ctx->height    = ost->ist->par->height;
         }
-        if (dec_ctx && dec_ctx->subtitle_header) {
+
+        av_assert0(dec);
+        if (dec->subtitle_header) {
             /* ASS code assumes this buffer is null terminated so add extra byte. */
-            enc_ctx->subtitle_header = av_mallocz(dec_ctx->subtitle_header_size + 1);
+            enc_ctx->subtitle_header = av_mallocz(dec->subtitle_header_size + 1);
             if (!enc_ctx->subtitle_header)
                 return AVERROR(ENOMEM);
-            memcpy(enc_ctx->subtitle_header, dec_ctx->subtitle_header,
-                   dec_ctx->subtitle_header_size);
-            enc_ctx->subtitle_header_size = dec_ctx->subtitle_header_size;
+            memcpy(enc_ctx->subtitle_header, dec->subtitle_header,
+                   dec->subtitle_header_size);
+            enc_ctx->subtitle_header_size = dec->subtitle_header_size;
         }
 
         break;
