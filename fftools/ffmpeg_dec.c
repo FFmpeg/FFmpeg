@@ -34,7 +34,9 @@
 #include "ffmpeg_utils.h"
 #include "thread_queue.h"
 
-struct Decoder {
+typedef struct DecoderPriv {
+    Decoder          dec;
+
     AVFrame         *frame;
     AVPacket        *pkt;
 
@@ -55,7 +57,12 @@ struct Decoder {
 
     Scheduler      *sch;
     unsigned        sch_idx;
-};
+} DecoderPriv;
+
+static DecoderPriv *dp_from_dec(Decoder *d)
+{
+    return (DecoderPriv*)d;
+}
 
 // data that is local to the decoder thread and not visible outside of it
 typedef struct DecThreadContext {
@@ -66,61 +73,63 @@ typedef struct DecThreadContext {
 void dec_free(Decoder **pdec)
 {
     Decoder *dec = *pdec;
+    DecoderPriv *dp;
 
     if (!dec)
         return;
+    dp = dp_from_dec(dec);
 
-    av_frame_free(&dec->frame);
-    av_packet_free(&dec->pkt);
+    av_frame_free(&dp->frame);
+    av_packet_free(&dp->pkt);
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(dec->sub_prev); i++)
-        av_frame_free(&dec->sub_prev[i]);
-    av_frame_free(&dec->sub_heartbeat);
+    for (int i = 0; i < FF_ARRAY_ELEMS(dp->sub_prev); i++)
+        av_frame_free(&dp->sub_prev[i]);
+    av_frame_free(&dp->sub_heartbeat);
 
     av_freep(pdec);
 }
 
 static int dec_alloc(Decoder **pdec)
 {
-    Decoder *dec;
+    DecoderPriv *dp;
 
     *pdec = NULL;
 
-    dec = av_mallocz(sizeof(*dec));
-    if (!dec)
+    dp = av_mallocz(sizeof(*dp));
+    if (!dp)
         return AVERROR(ENOMEM);
 
-    dec->frame = av_frame_alloc();
-    if (!dec->frame)
+    dp->frame = av_frame_alloc();
+    if (!dp->frame)
         goto fail;
 
-    dec->pkt = av_packet_alloc();
-    if (!dec->pkt)
+    dp->pkt = av_packet_alloc();
+    if (!dp->pkt)
         goto fail;
 
-    dec->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
-    dec->last_frame_pts               = AV_NOPTS_VALUE;
-    dec->last_frame_tb                = (AVRational){ 1, 1 };
-    dec->hwaccel_pix_fmt              = AV_PIX_FMT_NONE;
+    dp->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
+    dp->last_frame_pts               = AV_NOPTS_VALUE;
+    dp->last_frame_tb                = (AVRational){ 1, 1 };
+    dp->hwaccel_pix_fmt              = AV_PIX_FMT_NONE;
 
-    *pdec = dec;
+    *pdec = &dp->dec;
 
     return 0;
 fail:
-    dec_free(&dec);
+    dec_free((Decoder**)&dp);
     return AVERROR(ENOMEM);
 }
 
-static AVRational audio_samplerate_update(void *logctx, Decoder *d,
+static AVRational audio_samplerate_update(void *logctx, DecoderPriv *dp,
                                           const AVFrame *frame)
 {
-    const int prev = d->last_frame_tb.den;
+    const int prev = dp->last_frame_tb.den;
     const int sr   = frame->sample_rate;
 
     AVRational tb_new;
     int64_t gcd;
 
-    if (frame->sample_rate == d->last_frame_sample_rate)
+    if (frame->sample_rate == dp->last_frame_sample_rate)
         goto finish;
 
     gcd  = av_gcd(prev, sr);
@@ -141,20 +150,20 @@ static AVRational audio_samplerate_update(void *logctx, Decoder *d,
         !(frame->time_base.den % tb_new.den))
         tb_new = frame->time_base;
 
-    if (d->last_frame_pts != AV_NOPTS_VALUE)
-        d->last_frame_pts = av_rescale_q(d->last_frame_pts,
-                                         d->last_frame_tb, tb_new);
-    d->last_frame_duration_est = av_rescale_q(d->last_frame_duration_est,
-                                              d->last_frame_tb, tb_new);
+    if (dp->last_frame_pts != AV_NOPTS_VALUE)
+        dp->last_frame_pts = av_rescale_q(dp->last_frame_pts,
+                                          dp->last_frame_tb, tb_new);
+    dp->last_frame_duration_est = av_rescale_q(dp->last_frame_duration_est,
+                                               dp->last_frame_tb, tb_new);
 
-    d->last_frame_tb          = tb_new;
-    d->last_frame_sample_rate = frame->sample_rate;
+    dp->last_frame_tb          = tb_new;
+    dp->last_frame_sample_rate = frame->sample_rate;
 
 finish:
-    return d->last_frame_tb;
+    return dp->last_frame_tb;
 }
 
-static void audio_ts_process(void *logctx, Decoder *d, AVFrame *frame)
+static void audio_ts_process(void *logctx, DecoderPriv *dp, AVFrame *frame)
 {
     AVRational tb_filter = (AVRational){1, frame->sample_rate};
     AVRational tb;
@@ -163,27 +172,27 @@ static void audio_ts_process(void *logctx, Decoder *d, AVFrame *frame)
     // on samplerate change, choose a new internal timebase for timestamp
     // generation that can represent timestamps from all the samplerates
     // seen so far
-    tb = audio_samplerate_update(logctx, d, frame);
-    pts_pred = d->last_frame_pts == AV_NOPTS_VALUE ? 0 :
-               d->last_frame_pts + d->last_frame_duration_est;
+    tb = audio_samplerate_update(logctx, dp, frame);
+    pts_pred = dp->last_frame_pts == AV_NOPTS_VALUE ? 0 :
+               dp->last_frame_pts + dp->last_frame_duration_est;
 
     if (frame->pts == AV_NOPTS_VALUE) {
         frame->pts = pts_pred;
         frame->time_base = tb;
-    } else if (d->last_frame_pts != AV_NOPTS_VALUE &&
+    } else if (dp->last_frame_pts != AV_NOPTS_VALUE &&
                frame->pts > av_rescale_q_rnd(pts_pred, tb, frame->time_base,
                                              AV_ROUND_UP)) {
         // there was a gap in timestamps, reset conversion state
-        d->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
+        dp->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
     }
 
     frame->pts = av_rescale_delta(frame->time_base, frame->pts,
                                   tb, frame->nb_samples,
-                                  &d->last_filter_in_rescale_delta, tb);
+                                  &dp->last_filter_in_rescale_delta, tb);
 
-    d->last_frame_pts          = frame->pts;
-    d->last_frame_duration_est = av_rescale_q(frame->nb_samples,
-                                              tb_filter, tb);
+    dp->last_frame_pts          = frame->pts;
+    dp->last_frame_duration_est = av_rescale_q(frame->nb_samples,
+                                               tb_filter, tb);
 
     // finally convert to filtering timebase
     frame->pts       = av_rescale_q(frame->pts, tb, tb_filter);
@@ -193,7 +202,7 @@ static void audio_ts_process(void *logctx, Decoder *d, AVFrame *frame)
 
 static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
 {
-    const Decoder         *d = ist->decoder;
+    const DecoderPriv    *dp = dp_from_dec(ist->decoder);
     const InputFile   *ifile = ist->file;
     int64_t codec_duration = 0;
 
@@ -221,9 +230,9 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
 
     // when timestamps are available, repeat last frame's actual duration
     // (i.e. pts difference between this and last frame)
-    if (frame->pts != AV_NOPTS_VALUE && d->last_frame_pts != AV_NOPTS_VALUE &&
-        frame->pts > d->last_frame_pts)
-        return frame->pts - d->last_frame_pts;
+    if (frame->pts != AV_NOPTS_VALUE && dp->last_frame_pts != AV_NOPTS_VALUE &&
+        frame->pts > dp->last_frame_pts)
+        return frame->pts - dp->last_frame_pts;
 
     // try frame/codec duration
     if (frame->duration > 0)
@@ -240,12 +249,12 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     }
 
     // last resort is last frame's estimated duration, and 1
-    return FFMAX(d->last_frame_duration_est, 1);
+    return FFMAX(dp->last_frame_duration_est, 1);
 }
 
 static int video_frame_process(InputStream *ist, AVFrame *frame)
 {
-    Decoder *d = ist->decoder;
+    DecoderPriv *dp = dp_from_dec(ist->decoder);
 
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
@@ -281,7 +290,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     }
 #endif
 
-    if (frame->format == d->hwaccel_pix_fmt) {
+    if (frame->format == dp->hwaccel_pix_fmt) {
         int err = hwaccel_retrieve_data(ist->dec_ctx, frame);
         if (err < 0)
             return err;
@@ -298,13 +307,13 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 
     // no timestamp available - extrapolate from previous frame duration
     if (frame->pts == AV_NOPTS_VALUE)
-        frame->pts = d->last_frame_pts == AV_NOPTS_VALUE ? 0 :
-                     d->last_frame_pts + d->last_frame_duration_est;
+        frame->pts = dp->last_frame_pts == AV_NOPTS_VALUE ? 0 :
+                     dp->last_frame_pts + dp->last_frame_duration_est;
 
     // update timestamp history
-    d->last_frame_duration_est = video_duration_estimate(ist, frame);
-    d->last_frame_pts          = frame->pts;
-    d->last_frame_tb           = frame->time_base;
+    dp->last_frame_duration_est = video_duration_estimate(ist, frame);
+    dp->last_frame_pts          = frame->pts;
+    dp->last_frame_tb           = frame->time_base;
 
     if (debug_ts) {
         av_log(ist, AV_LOG_INFO,
@@ -330,13 +339,13 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 
 static int process_subtitle(InputStream *ist, AVFrame *frame)
 {
-    Decoder *d = ist->decoder;
+    DecoderPriv *dp = dp_from_dec(ist->decoder);
     const AVSubtitle *subtitle = (AVSubtitle*)frame->buf[0]->data;
     int ret = 0;
 
     if (ist->fix_sub_duration) {
-        AVSubtitle *sub_prev = d->sub_prev[0]->buf[0] ?
-                               (AVSubtitle*)d->sub_prev[0]->buf[0]->data : NULL;
+        AVSubtitle *sub_prev = dp->sub_prev[0]->buf[0] ?
+                               (AVSubtitle*)dp->sub_prev[0]->buf[0]->data : NULL;
         int end = 1;
         if (sub_prev) {
             end = av_rescale(subtitle->pts - sub_prev->pts,
@@ -350,13 +359,13 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
             }
         }
 
-        av_frame_unref(d->sub_prev[1]);
-        av_frame_move_ref(d->sub_prev[1], frame);
+        av_frame_unref(dp->sub_prev[1]);
+        av_frame_move_ref(dp->sub_prev[1], frame);
 
-        frame    = d->sub_prev[0];
+        frame    = dp->sub_prev[0];
         subtitle = frame->buf[0] ? (AVSubtitle*)frame->buf[0]->data : NULL;
 
-        FFSWAP(AVFrame*, d->sub_prev[0], d->sub_prev[1]);
+        FFSWAP(AVFrame*, dp->sub_prev[0], dp->sub_prev[1]);
 
         if (end <= 0)
             return 0;
@@ -365,7 +374,7 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
     if (!subtitle)
         return 0;
 
-    ret = sch_dec_send(d->sch, d->sch_idx, frame);
+    ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
     if (ret < 0)
         av_frame_unref(frame);
 
@@ -374,31 +383,31 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
 
 static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
 {
-    Decoder *d = ist->decoder;
+    DecoderPriv *dp = dp_from_dec(ist->decoder);
     int ret = AVERROR_BUG;
-    AVSubtitle *prev_subtitle = d->sub_prev[0]->buf[0] ?
-        (AVSubtitle*)d->sub_prev[0]->buf[0]->data : NULL;
+    AVSubtitle *prev_subtitle = dp->sub_prev[0]->buf[0] ?
+        (AVSubtitle*)dp->sub_prev[0]->buf[0]->data : NULL;
     AVSubtitle *subtitle;
 
     if (!ist->fix_sub_duration || !prev_subtitle ||
         !prev_subtitle->num_rects || signal_pts <= prev_subtitle->pts)
         return 0;
 
-    av_frame_unref(d->sub_heartbeat);
-    ret = subtitle_wrap_frame(d->sub_heartbeat, prev_subtitle, 1);
+    av_frame_unref(dp->sub_heartbeat);
+    ret = subtitle_wrap_frame(dp->sub_heartbeat, prev_subtitle, 1);
     if (ret < 0)
         return ret;
 
-    subtitle = (AVSubtitle*)d->sub_heartbeat->buf[0]->data;
+    subtitle = (AVSubtitle*)dp->sub_heartbeat->buf[0]->data;
     subtitle->pts = signal_pts;
 
-    return process_subtitle(ist, d->sub_heartbeat);
+    return process_subtitle(ist, dp->sub_heartbeat);
 }
 
 static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
                                AVFrame *frame)
 {
-    Decoder *d = ist->decoder;
+    DecoderPriv *dp = dp_from_dec(ist->decoder);
     AVPacket *flush_pkt = NULL;
     AVSubtitle subtitle;
     int got_output;
@@ -409,7 +418,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
         frame->time_base = pkt->time_base;
         frame->opaque    = (void*)(intptr_t)FRAME_OPAQUE_SUB_HEARTBEAT;
 
-        ret = sch_dec_send(d->sch, d->sch_idx, frame);
+        ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
         return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
     } else if (pkt && (intptr_t)pkt->opaque == PKT_OPAQUE_FIX_SUB_DURATION) {
         return fix_sub_duration_heartbeat(ist, av_rescale_q(pkt->pts, pkt->time_base,
@@ -457,7 +466,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
 static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 {
     const InputFile *ifile = ist->file;
-    Decoder *d = ist->decoder;
+    DecoderPriv *dp = dp_from_dec(ist->decoder);
     AVCodecContext *dec = ist->dec_ctx;
     const char *type_desc = av_get_media_type_string(dec->codec_type);
     int ret;
@@ -553,7 +562,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         if (dec->codec_type == AVMEDIA_TYPE_AUDIO) {
             ist->samples_decoded += frame->nb_samples;
 
-            audio_ts_process(ist, ist->decoder, frame);
+            audio_ts_process(ist, dp, frame);
         } else {
             ret = video_frame_process(ist, frame);
             if (ret < 0) {
@@ -565,7 +574,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 
         ist->frames_decoded++;
 
-        ret = sch_dec_send(d->sch, d->sch_idx, frame);
+        ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
         if (ret < 0) {
             av_frame_unref(frame);
             return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
@@ -611,7 +620,7 @@ fail:
 void *decoder_thread(void *arg)
 {
     InputStream *ist = arg;
-    Decoder       *d = ist->decoder;
+    DecoderPriv  *dp = dp_from_dec(ist->decoder);
     DecThreadContext dt;
     int ret = 0, input_status = 0;
 
@@ -624,7 +633,7 @@ void *decoder_thread(void *arg)
     while (!input_status) {
         int flush_buffers, have_data;
 
-        input_status  = sch_dec_receive(d->sch, d->sch_idx, dt.pkt);
+        input_status  = sch_dec_receive(dp->sch, dp->sch_idx, dt.pkt);
         have_data     = input_status >= 0 &&
             (dt.pkt->buf || dt.pkt->side_data_elems ||
              (intptr_t)dt.pkt->opaque == PKT_OPAQUE_SUB_HEARTBEAT ||
@@ -656,8 +665,8 @@ void *decoder_thread(void *arg)
 
             /* report last frame duration to the scheduler */
             if (ist->dec->type == AVMEDIA_TYPE_AUDIO) {
-                dt.pkt->pts       = d->last_frame_pts + d->last_frame_duration_est;
-                dt.pkt->time_base = d->last_frame_tb;
+                dt.pkt->pts       = dp->last_frame_pts + dp->last_frame_duration_est;
+                dt.pkt->time_base = dp->last_frame_tb;
             }
 
             avcodec_flush_buffers(ist->dec_ctx);
@@ -679,11 +688,11 @@ void *decoder_thread(void *arg)
         av_frame_unref(dt.frame);
 
         dt.frame->opaque    = (void*)(intptr_t)FRAME_OPAQUE_EOF;
-        dt.frame->pts       = d->last_frame_pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
-                              d->last_frame_pts + d->last_frame_duration_est;
-        dt.frame->time_base = d->last_frame_tb;
+        dt.frame->pts       = dp->last_frame_pts == AV_NOPTS_VALUE ? AV_NOPTS_VALUE :
+                              dp->last_frame_pts + dp->last_frame_duration_est;
+        dt.frame->time_base = dp->last_frame_tb;
 
-        ret = sch_dec_send(d->sch, d->sch_idx, dt.frame);
+        ret = sch_dec_send(dp->sch, dp->sch_idx, dt.frame);
         if (ret < 0 && ret != AVERROR_EOF) {
             av_log(NULL, AV_LOG_FATAL,
                    "Error signalling EOF timestamp: %s\n", av_err2str(ret));
@@ -710,7 +719,7 @@ finish:
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
 {
     InputStream *ist = s->opaque;
-    Decoder       *d = ist->decoder;
+    DecoderPriv  *dp = dp_from_dec(ist->decoder);
     const enum AVPixelFormat *p;
 
     for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
@@ -735,7 +744,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
             }
         }
         if (config && config->device_type == ist->hwaccel_device_type) {
-            d->hwaccel_pix_fmt = *p;
+            dp->hwaccel_pix_fmt = *p;
             break;
         }
     }
@@ -890,7 +899,7 @@ static int hw_device_setup_for_decode(InputStream *ist)
 
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 {
-    Decoder *d;
+    DecoderPriv *dp;
     const AVCodec *codec = ist->dec;
     int ret;
 
@@ -904,19 +913,19 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
     ret = dec_alloc(&ist->decoder);
     if (ret < 0)
         return ret;
-    d = ist->decoder;
+    dp = dp_from_dec(ist->decoder);
 
-    d->sch     = sch;
-    d->sch_idx = sch_idx;
+    dp->sch     = sch;
+    dp->sch_idx = sch_idx;
 
     if (codec->type == AVMEDIA_TYPE_SUBTITLE && ist->fix_sub_duration) {
-        for (int i = 0; i < FF_ARRAY_ELEMS(d->sub_prev); i++) {
-            d->sub_prev[i] = av_frame_alloc();
-            if (!d->sub_prev[i])
+        for (int i = 0; i < FF_ARRAY_ELEMS(dp->sub_prev); i++) {
+            dp->sub_prev[i] = av_frame_alloc();
+            if (!dp->sub_prev[i])
                 return AVERROR(ENOMEM);
         }
-        d->sub_heartbeat = av_frame_alloc();
-        if (!d->sub_heartbeat)
+        dp->sub_heartbeat = av_frame_alloc();
+        if (!dp->sub_heartbeat)
             return AVERROR(ENOMEM);
     }
 

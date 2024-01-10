@@ -280,7 +280,9 @@ typedef struct FilterGraph {
     int         nb_outputs;
 } FilterGraph;
 
-typedef struct Decoder Decoder;
+typedef struct Decoder {
+    char dummy;
+} Decoder;
 
 typedef struct InputStream {
     const AVClass *class;
