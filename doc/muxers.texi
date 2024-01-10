@@ -787,6 +787,11 @@ Specify loop end position expressed in milliseconds, from @code{0} to
 assumes the total stream duration.
 @end table
 
+@section au
+SUN AU audio muxer.
+
+It accepts a single audio stream.
+
 @anchor{avi}
 @section avi
 
