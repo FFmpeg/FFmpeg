@@ -763,6 +763,30 @@ default is @code{false}, otherwise they are cached until the expected
 time event is found.
 @end table
 
+@section ast
+AST (Audio Stream) muxer.
+
+This format is used to play audio on some Nintendo Wii games.
+
+It accepts a single audio stream.
+
+The @option{loopstart} and @option{loopend} options can be used to
+define a section of the file to loop for players honoring such
+options.
+
+@subsection Options
+@table @option
+@item loopstart @var{start}
+Specify loop start position expressesd in milliseconds, from @code{-1}
+to @code{INT_MAX}, in case @code{-1} is set then no loop is specified
+(default -1) and the @option{loopend} value is ignored.
+
+@item loopend @var{end}
+Specify loop end position expressed in milliseconds, from @code{0} to
+@code{INT_MAX}, default is @code{0}, in case @code{0} is set it
+assumes the total stream duration.
+@end table
+
 @anchor{avi}
 @section avi
 
