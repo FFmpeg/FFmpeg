@@ -306,7 +306,6 @@ typedef struct InputStream {
      */
     AVCodecParameters *par;
     Decoder *decoder;
-    AVCodecContext *dec_ctx;
     const AVCodec *dec;
 
     AVRational framerate_guessed;
@@ -732,6 +731,8 @@ int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input);
 
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx);
 void dec_free(Decoder **pdec);
+
+int dec_add_filter(Decoder *dec, InputFilter *ifilter);
 
 int enc_alloc(Encoder **penc, const AVCodec *codec,
               Scheduler *sch, unsigned sch_idx);

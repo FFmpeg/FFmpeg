@@ -825,7 +825,6 @@ static void ist_free(InputStream **pist)
     av_freep(&ist->outputs);
     av_freep(&ist->hwaccel_device);
 
-    avcodec_free_context(&ist->dec_ctx);
     avcodec_parameters_free(&ist->par);
 
     av_bsf_free(&ds->bsf);
@@ -886,16 +885,6 @@ static int ist_use(InputStream *ist, int decoding_needed)
     if (decoding_needed && ds->sch_idx_dec < 0) {
         int is_audio = ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
 
-        ist->dec_ctx = avcodec_alloc_context3(ist->dec);
-        if (!ist->dec_ctx)
-            return AVERROR(ENOMEM);
-
-        ret = avcodec_parameters_to_context(ist->dec_ctx, ist->par);
-        if (ret < 0) {
-            av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-            return ret;
-        }
-
         ret = sch_add_dec(d->sch, decoder_thread, ist, d->loop && is_audio);
         if (ret < 0)
             return ret;
@@ -950,12 +939,11 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
 
     ist->filters[ist->nb_filters - 1] = ifilter;
 
-    // initialize fallback parameters for filtering
-    ret = ifilter_parameters_from_dec(ifilter, ist->dec_ctx);
+    ret = dec_add_filter(ist->decoder, ifilter);
     if (ret < 0)
         return ret;
 
-    if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+    if (ist->par->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         if (!d->pkt_heartbeat) {
             d->pkt_heartbeat = av_packet_alloc();
             if (!d->pkt_heartbeat)

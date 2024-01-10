@@ -37,6 +37,8 @@
 typedef struct DecoderPriv {
     Decoder          dec;
 
+    AVCodecContext  *dec_ctx;
+
     AVFrame         *frame;
     AVPacket        *pkt;
 
@@ -78,6 +80,8 @@ void dec_free(Decoder **pdec)
     if (!dec)
         return;
     dp = dp_from_dec(dec);
+
+    avcodec_free_context(&dp->dec_ctx);
 
     av_frame_free(&dp->frame);
     av_packet_free(&dp->pkt);
@@ -216,9 +220,9 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     if (frame->duration > 0 && (!ifile->format_nots || ist->framerate.num))
         return frame->duration;
 
-    if (ist->dec_ctx->framerate.den && ist->dec_ctx->framerate.num) {
+    if (dp->dec_ctx->framerate.den && dp->dec_ctx->framerate.num) {
         int fields = frame->repeat_pict + 2;
-        AVRational field_rate = av_mul_q(ist->dec_ctx->framerate,
+        AVRational field_rate = av_mul_q(dp->dec_ctx->framerate,
                                          (AVRational){ 2, 1 });
         codec_duration = av_rescale_q(fields, av_inv_q(field_rate),
                                       frame->time_base);
@@ -258,29 +262,29 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 
     // The following line may be required in some cases where there is no parser
     // or the parser does not has_b_frames correctly
-    if (ist->par->video_delay < ist->dec_ctx->has_b_frames) {
-        if (ist->dec_ctx->codec_id == AV_CODEC_ID_H264) {
-            ist->par->video_delay = ist->dec_ctx->has_b_frames;
+    if (ist->par->video_delay < dp->dec_ctx->has_b_frames) {
+        if (dp->dec_ctx->codec_id == AV_CODEC_ID_H264) {
+            ist->par->video_delay = dp->dec_ctx->has_b_frames;
         } else
-            av_log(ist->dec_ctx, AV_LOG_WARNING,
+            av_log(dp->dec_ctx, AV_LOG_WARNING,
                    "video_delay is larger in decoder than demuxer %d > %d.\n"
                    "If you want to help, upload a sample "
                    "of this file to https://streams.videolan.org/upload/ "
                    "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n",
-                   ist->dec_ctx->has_b_frames,
+                   dp->dec_ctx->has_b_frames,
                    ist->par->video_delay);
     }
 
-    if (ist->dec_ctx->width  != frame->width ||
-        ist->dec_ctx->height != frame->height ||
-        ist->dec_ctx->pix_fmt != frame->format) {
+    if (dp->dec_ctx->width  != frame->width ||
+        dp->dec_ctx->height != frame->height ||
+        dp->dec_ctx->pix_fmt != frame->format) {
         av_log(NULL, AV_LOG_DEBUG, "Frame parameters mismatch context %d,%d,%d != %d,%d,%d\n",
             frame->width,
             frame->height,
             frame->format,
-            ist->dec_ctx->width,
-            ist->dec_ctx->height,
-            ist->dec_ctx->pix_fmt);
+            dp->dec_ctx->width,
+            dp->dec_ctx->height,
+            dp->dec_ctx->pix_fmt);
     }
 
 #if FFMPEG_OPT_TOP
@@ -291,7 +295,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 #endif
 
     if (frame->format == dp->hwaccel_pix_fmt) {
-        int err = hwaccel_retrieve_data(ist->dec_ctx, frame);
+        int err = hwaccel_retrieve_data(dp->dec_ctx, frame);
         if (err < 0)
             return err;
     }
@@ -431,7 +435,7 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
             return AVERROR(ENOMEM);
     }
 
-    ret = avcodec_decode_subtitle2(ist->dec_ctx, &subtitle, &got_output,
+    ret = avcodec_decode_subtitle2(dp->dec_ctx, &subtitle, &got_output,
                                    pkt ? pkt : flush_pkt);
     av_packet_free(&flush_pkt);
 
@@ -457,8 +461,8 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
         return ret;
     }
 
-    frame->width  = ist->dec_ctx->width;
-    frame->height = ist->dec_ctx->height;
+    frame->width  = dp->dec_ctx->width;
+    frame->height = dp->dec_ctx->height;
 
     return process_subtitle(ist, frame);
 }
@@ -467,7 +471,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 {
     const InputFile *ifile = ist->file;
     DecoderPriv *dp = dp_from_dec(ist->decoder);
-    AVCodecContext *dec = ist->dec_ctx;
+    AVCodecContext *dec = dp->dec_ctx;
     const char *type_desc = av_get_media_type_string(dec->codec_type);
     int ret;
 
@@ -582,11 +586,11 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
     }
 }
 
-static void dec_thread_set_name(const InputStream *ist)
+static void dec_thread_set_name(const InputStream *ist, const DecoderPriv *dp)
 {
     char name[16];
     snprintf(name, sizeof(name), "dec%d:%d:%s", ist->file->index, ist->index,
-             ist->dec_ctx->codec->name);
+             dp->dec_ctx->codec->name);
     ff_thread_setname(name);
 }
 
@@ -628,7 +632,7 @@ void *decoder_thread(void *arg)
     if (ret < 0)
         goto finish;
 
-    dec_thread_set_name(ist);
+    dec_thread_set_name(ist, dp);
 
     while (!input_status) {
         int flush_buffers, have_data;
@@ -669,7 +673,7 @@ void *decoder_thread(void *arg)
                 dt.pkt->time_base = dp->last_frame_tb;
             }
 
-            avcodec_flush_buffers(ist->dec_ctx);
+            avcodec_flush_buffers(dp->dec_ctx);
         } else if (ret < 0) {
             av_log(ist, AV_LOG_ERROR, "Error processing packet in decoder: %s\n",
                    av_err2str(ret));
@@ -769,7 +773,7 @@ static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
     }
 }
 
-static int hw_device_setup_for_decode(InputStream *ist)
+static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
 {
     const AVCodecHWConfig *config;
     enum AVHWDeviceType type;
@@ -890,8 +894,8 @@ static int hw_device_setup_for_decode(InputStream *ist)
         return err;
     }
 
-    ist->dec_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
-    if (!ist->dec_ctx->hw_device_ctx)
+    dp->dec_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
+    if (!dp->dec_ctx->hw_device_ctx)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -906,7 +910,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
     if (!codec) {
         av_log(ist, AV_LOG_ERROR,
                "Decoding requested, but no decoder found for: %s\n",
-                avcodec_get_name(ist->dec_ctx->codec_id));
+                avcodec_get_name(ist->par->codec_id));
         return AVERROR(EINVAL);
     }
 
@@ -929,10 +933,20 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
             return AVERROR(ENOMEM);
     }
 
-    ist->dec_ctx->opaque                = ist;
-    ist->dec_ctx->get_format            = get_format;
+    dp->dec_ctx = avcodec_alloc_context3(codec);
+    if (!dp->dec_ctx)
+        return AVERROR(ENOMEM);
 
-    if (ist->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
+    ret = avcodec_parameters_to_context(dp->dec_ctx, ist->par);
+    if (ret < 0) {
+        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+        return ret;
+    }
+
+    dp->dec_ctx->opaque                = ist;
+    dp->dec_ctx->get_format            = get_format;
+
+    if (dp->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
        (ist->decoding_needed & DECODING_FOR_OST)) {
         av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
         if (ist->decoding_needed & DECODING_FOR_FILTER)
@@ -941,7 +955,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 
     /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
      * audio, and video decoders such as cuvid or mediacodec */
-    ist->dec_ctx->pkt_timebase = ist->st->time_base;
+    dp->dec_ctx->pkt_timebase = ist->st->time_base;
 
     if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
         av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
@@ -951,7 +965,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 
     av_dict_set(&ist->decoder_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
 
-    ret = hw_device_setup_for_decode(ist);
+    ret = hw_device_setup_for_decode(ist, dp);
     if (ret < 0) {
         av_log(ist, AV_LOG_ERROR,
                "Hardware device setup failed for decoder: %s\n",
@@ -959,7 +973,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
         return ret;
     }
 
-    if ((ret = avcodec_open2(ist->dec_ctx, codec, &ist->decoder_opts)) < 0) {
+    if ((ret = avcodec_open2(dp->dec_ctx, codec, &ist->decoder_opts)) < 0) {
         av_log(ist, AV_LOG_ERROR, "Error while opening decoder: %s\n",
                av_err2str(ret));
         return ret;
@@ -969,8 +983,16 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
     if (ret < 0)
         return ret;
 
-    dp->dec.subtitle_header      = ist->dec_ctx->subtitle_header;
-    dp->dec.subtitle_header_size = ist->dec_ctx->subtitle_header_size;
+    dp->dec.subtitle_header      = dp->dec_ctx->subtitle_header;
+    dp->dec.subtitle_header_size = dp->dec_ctx->subtitle_header_size;
 
     return 0;
+}
+
+int dec_add_filter(Decoder *dec, InputFilter *ifilter)
+{
+    DecoderPriv *dp = dp_from_dec(dec);
+
+    // initialize fallback parameters for filtering
+    return ifilter_parameters_from_dec(ifilter, dp->dec_ctx);
 }
