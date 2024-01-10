@@ -794,15 +794,24 @@ It accepts a single audio stream.
 
 @anchor{avi}
 @section avi
-
 Audio Video Interleaved muxer.
 
+AVI is a proprietary format developed by Microsoft, and later formally specified
+through the Open DML specification.
+
+Because of differences in players implementations, it might be required to set
+some options to make sure that the generated output can be correctly played by
+the target player.
+
 @subsection Options
-
-It accepts the following options:
-
 @table @option
-@item reserve_index_space
+@item flipped_raw_rgb @var{bool}
+If set to @code{true}, store positive height for raw RGB bitmaps, which
+indicates bitmap is stored bottom-up. Note that this option does not flip the
+bitmap which has to be done manually beforehand, e.g. by using the @samp{vflip}
+filter. Default is @code{false} and indicates bitmap is stored top down.
+
+@item reserve_index_space @var{size}
 Reserve the specified amount of bytes for the OpenDML master index of each
 stream within the file header. By default additional master indexes are
 embedded within the data packets if there is no space left in the first master
@@ -815,20 +824,15 @@ The required index space depends on the output file size and should be about 16
 bytes per gigabyte. When this option is omitted or set to zero the necessary
 index space is guessed.
 
-@item write_channel_mask
+Default value is @code{0}.
+
+@item write_channel_mask @var{bool}
 Write the channel layout mask into the audio stream header.
 
 This option is enabled by default. Disabling the channel mask can be useful in
 specific scenarios, e.g. when merging multiple audio streams into one for
 compatibility with software that only supports a single audio stream in AVI
 (see @ref{amerge,,the "amerge" section in the ffmpeg-filters manual,ffmpeg-filters}).
-
-@item flipped_raw_rgb
-If set to true, store positive height for raw RGB bitmaps, which indicates
-bitmap is stored bottom-up. Note that this option does not flip the bitmap
-which has to be done manually beforehand, e.g. by using the vflip filter.
-Default is @var{false} and indicates bitmap is stored top down.
-
 @end table
 
 @anchor{chromaprint}
