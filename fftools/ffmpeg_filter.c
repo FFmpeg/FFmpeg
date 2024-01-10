@@ -663,6 +663,13 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
 
     av_assert0(!ifp->ist);
 
+    if (ifp->type != ist->par->codec_type &&
+        !(ifp->type == AVMEDIA_TYPE_VIDEO && ist->par->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
+        av_log(fgp, AV_LOG_ERROR, "Tried to connect %s stream to %s filtergraph input\n",
+               av_get_media_type_string(ist->par->codec_type), av_get_media_type_string(ifp->type));
+        return AVERROR(EINVAL);
+    }
+
     ifp->ist             = ist;
     ifp->type_src        = ist->st->codecpar->codec_type;
 
@@ -1476,12 +1483,6 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     if (!par)
         return AVERROR(ENOMEM);
 
-    if (ist->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        av_log(fg, AV_LOG_ERROR, "Cannot connect video filter to audio input\n");
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
-
     if (!fr.num)
         fr = ist->framerate_guessed;
 
@@ -1597,11 +1598,6 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     char name[255];
     int ret, pad_idx = 0;
     int64_t tsoffset = 0;
-
-    if (ist->dec_ctx->codec_type != AVMEDIA_TYPE_AUDIO) {
-        av_log(fg, AV_LOG_ERROR, "Cannot connect audio filter to non audio input\n");
-        return AVERROR(EINVAL);
-    }
 
     ifp->time_base = (AVRational){ 1, ifp->sample_rate };
 
