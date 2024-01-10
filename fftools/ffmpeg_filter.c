@@ -1498,11 +1498,10 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args,
              "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:"
-             "pixel_aspect=%d/%d:colorspace=%s:range=%s",
+             "pixel_aspect=%d/%d:colorspace=%d:range=%d",
              ifp->width, ifp->height, ifp->format,
              ifp->time_base.num, ifp->time_base.den, sar.num, sar.den,
-             av_color_space_name(ifp->color_space),
-             av_color_range_name(ifp->color_range));
+             ifp->color_space, ifp->color_range);
     if (fr.num && fr.den)
         av_bprintf(&args, ":frame_rate=%d/%d", fr.num, fr.den);
     snprintf(name, sizeof(name), "graph %d input from stream %d:%d", fg->index,
