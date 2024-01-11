@@ -263,18 +263,6 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 {
     DecoderPriv *dp = dp_from_dec(ist->decoder);
 
-    if (dp->dec_ctx->width  != frame->width ||
-        dp->dec_ctx->height != frame->height ||
-        dp->dec_ctx->pix_fmt != frame->format) {
-        av_log(dp, AV_LOG_DEBUG, "Frame parameters mismatch context %d,%d,%d != %d,%d,%d\n",
-            frame->width,
-            frame->height,
-            frame->format,
-            dp->dec_ctx->width,
-            dp->dec_ctx->height,
-            dp->dec_ctx->pix_fmt);
-    }
-
 #if FFMPEG_OPT_TOP
     if(ist->top_field_first>=0) {
         av_log(dp, AV_LOG_WARNING, "-top is deprecated, use the setfield filter instead\n");
