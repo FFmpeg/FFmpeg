@@ -898,13 +898,6 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     const AVCodec *codec = ist->dec;
     int ret;
 
-    if (!codec) {
-        av_log(ist, AV_LOG_ERROR,
-               "Decoding requested, but no decoder found for: %s\n",
-                avcodec_get_name(ist->par->codec_id));
-        return AVERROR(EINVAL);
-    }
-
     ret = dec_alloc(&ist->decoder);
     if (ret < 0)
         return ret;

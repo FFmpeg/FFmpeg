@@ -866,6 +866,13 @@ static int ist_use(InputStream *ist, int decoding_needed)
         return AVERROR(EINVAL);
     }
 
+    if (decoding_needed && !ist->dec) {
+        av_log(ist, AV_LOG_ERROR,
+               "Decoding requested, but no decoder found for: %s\n",
+                avcodec_get_name(ist->par->codec_id));
+        return AVERROR(EINVAL);
+    }
+
     if (ds->sch_idx_stream < 0) {
         ret = sch_add_demux_stream(d->sch, d->f.index);
         if (ret < 0)
