@@ -62,14 +62,14 @@ unsigned ff_d3d12va_get_surface_index(const AVCodecContext *avctx,
     if (!res)
         goto fail;
 
-    if (!curr) {
-        for (i = 0; i < ctx->max_num_ref; i++) {
-            if (ctx->ref_resources[i] && res == ctx->ref_resources[i]) {
-                ctx->used_mask |= 1 << i;
-                return i;
-            }
+    for (i = 0; i < ctx->max_num_ref; i++) {
+        if (ctx->ref_resources[i] && res == ctx->ref_resources[i]) {
+            ctx->used_mask |= 1 << i;
+            return i;
         }
-    } else {
+    }
+
+    if (curr) {
         for (i = 0; i < ctx->max_num_ref; i++) {
             if (!((ctx->used_mask >> i) & 0x1)) {
                 ctx->ref_resources[i] = res;
