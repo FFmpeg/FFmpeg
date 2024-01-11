@@ -2028,6 +2028,40 @@ typedef struct AVCodecContext {
      *   an error.
      */
     int64_t frame_num;
+
+    /**
+     * Decoding only. May be set by the caller before avcodec_open2() to an
+     * av_malloc()'ed array (or via AVOptions). Owned and freed by the decoder
+     * afterwards.
+     *
+     * Side data attached to decoded frames may come from several sources:
+     * 1. coded_side_data, which the decoder will for certain types translate
+     *    from packet-type to frame-type and attach to frames;
+     * 2. side data attached to an AVPacket sent for decoding (same
+     *    considerations as above);
+     * 3. extracted from the coded bytestream.
+     * The first two cases are supplied by the caller and typically come from a
+     * container.
+     *
+     * This array configures decoder behaviour in cases when side data of the
+     * same type is present both in the coded bytestream and in the
+     * user-supplied side data (items 1. and 2. above). In all cases, at most
+     * one instance of each side data type will be attached to output frames. By
+     * default it will be the bytestream side data. Adding an
+     * AVPacketSideDataType value to this array will flip the preference for
+     * this type, thus making the decoder prefer user-supplied side data over
+     * bytestream. In case side data of the same type is present both in
+     * coded_data and attacked to a packet, the packet instance always has
+     * priority.
+     *
+     * The array may also contain a single -1, in which case the preference is
+     * switched for all side data types.
+     */
+    int        *side_data_prefer_packet;
+    /**
+     * Number of entries in side_data_prefer_packet.
+     */
+    unsigned nb_side_data_prefer_packet;
 } AVCodecContext;
 
 /**

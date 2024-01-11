@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-03-08 - xxxxxxxxxx - lavc 61.1.100 - avcodec.h
+  Add AVCodecContext.[nb_]side_data_prefer_packet.
+
 2024-03-08 - xxxxxxxxxx - lavu 59.1.100 - opt.h
   Add AV_OPT_TYPE_FLAG_ARRAY and AVOptionArrayDef.
 
