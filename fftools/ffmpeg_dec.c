@@ -918,7 +918,8 @@ static const AVClass dec_class = {
     .item_name                 = dec_item_name,
 };
 
-int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
+int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
+             AVDictionary **dec_opts)
 {
     DecoderPriv *dp;
     const AVCodec *codec = ist->dec;
@@ -970,7 +971,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 
     if (dp->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
        (ist->decoding_needed & DECODING_FOR_OST)) {
-        av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
+        av_dict_set(dec_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
         if (ist->decoding_needed & DECODING_FOR_FILTER)
             av_log(dp, AV_LOG_WARNING,
                    "Warning using DVB subtitles for filtering and output at the "
@@ -981,13 +982,13 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
      * audio, and video decoders such as cuvid or mediacodec */
     dp->dec_ctx->pkt_timebase = ist->st->time_base;
 
-    if (!av_dict_get(ist->decoder_opts, "threads", NULL, 0))
-        av_dict_set(&ist->decoder_opts, "threads", "auto", 0);
+    if (!av_dict_get(*dec_opts, "threads", NULL, 0))
+        av_dict_set(dec_opts, "threads", "auto", 0);
     /* Attached pics are sparse, therefore we would not want to delay their decoding till EOF. */
     if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
-        av_dict_set(&ist->decoder_opts, "threads", "1", 0);
+        av_dict_set(dec_opts, "threads", "1", 0);
 
-    av_dict_set(&ist->decoder_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
+    av_dict_set(dec_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
 
     ret = hw_device_setup_for_decode(ist, dp);
     if (ret < 0) {
@@ -997,13 +998,13 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
         return ret;
     }
 
-    if ((ret = avcodec_open2(dp->dec_ctx, codec, &ist->decoder_opts)) < 0) {
+    if ((ret = avcodec_open2(dp->dec_ctx, codec, dec_opts)) < 0) {
         av_log(dp, AV_LOG_ERROR, "Error while opening decoder: %s\n",
                av_err2str(ret));
         return ret;
     }
 
-    ret = check_avoptions(ist->decoder_opts);
+    ret = check_avoptions(*dec_opts);
     if (ret < 0)
         return ret;
 

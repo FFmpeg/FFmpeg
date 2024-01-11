@@ -895,7 +895,8 @@ static int ist_use(InputStream *ist, int decoding_needed)
         if (ret < 0)
             return ret;
 
-        ret = dec_open(ist, d->sch, ds->sch_idx_dec);
+        ret = dec_open(ist, d->sch, ds->sch_idx_dec,
+                       &ist->decoder_opts);
         if (ret < 0)
             return ret;
 

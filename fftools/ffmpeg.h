@@ -731,7 +731,12 @@ AVBufferRef *hw_device_for_filter(void);
 
 int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input);
 
-int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx);
+/**
+ * @param dec_opts Dictionary filled with decoder options. Its ownership
+ *                 is transferred to the decoder.
+ */
+int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
+             AVDictionary **dec_opts);
 void dec_free(Decoder **pdec);
 
 int dec_add_filter(Decoder *dec, InputFilter *ifilter);
