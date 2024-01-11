@@ -263,21 +263,6 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 {
     DecoderPriv *dp = dp_from_dec(ist->decoder);
 
-    // The following line may be required in some cases where there is no parser
-    // or the parser does not has_b_frames correctly
-    if (ist->par->video_delay < dp->dec_ctx->has_b_frames) {
-        if (dp->dec_ctx->codec_id == AV_CODEC_ID_H264) {
-            ist->par->video_delay = dp->dec_ctx->has_b_frames;
-        } else
-            av_log(dp->dec_ctx, AV_LOG_WARNING,
-                   "video_delay is larger in decoder than demuxer %d > %d.\n"
-                   "If you want to help, upload a sample "
-                   "of this file to https://streams.videolan.org/upload/ "
-                   "and contact the ffmpeg-devel mailing list. (ffmpeg-devel@ffmpeg.org)\n",
-                   dp->dec_ctx->has_b_frames,
-                   ist->par->video_delay);
-    }
-
     if (dp->dec_ctx->width  != frame->width ||
         dp->dec_ctx->height != frame->height ||
         dp->dec_ctx->pix_fmt != frame->format) {
