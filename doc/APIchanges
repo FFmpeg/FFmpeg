@@ -2,8 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
-2023-11-xx - xxxxxxxxxx - lavfi 9.16.100 - buffersink.h
+2023-11-xx - xxxxxxxxxx - lavfi 9.16.100 - buffersink.h buffersrc.h
   Add av_buffersink_get_colorspace and av_buffersink_get_color_range.
+  Add AVBufferSrcParameters.color_space and AVBufferSrcParameters.color_range.
 
 2023-11-xx - xxxxxxxxxx - lavfi 9.15.100 - avfilter.h
   Add AVFilterLink.colorspace, AVFilterLink.color_range
