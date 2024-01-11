@@ -59,6 +59,9 @@ typedef struct DecoderPriv {
 
     Scheduler      *sch;
     unsigned        sch_idx;
+
+    void           *log_parent;
+    char            log_name[32];
 } DecoderPriv;
 
 static DecoderPriv *dp_from_dec(Decoder *d)
@@ -124,7 +127,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static AVRational audio_samplerate_update(void *logctx, DecoderPriv *dp,
+static AVRational audio_samplerate_update(DecoderPriv *dp,
                                           const AVFrame *frame)
 {
     const int prev = dp->last_frame_tb.den;
@@ -139,7 +142,7 @@ static AVRational audio_samplerate_update(void *logctx, DecoderPriv *dp,
     gcd  = av_gcd(prev, sr);
 
     if (prev / gcd >= INT_MAX / sr) {
-        av_log(logctx, AV_LOG_WARNING,
+        av_log(dp, AV_LOG_WARNING,
                "Audio timestamps cannot be represented exactly after "
                "sample rate change: %d -> %d\n", prev, sr);
 
@@ -167,7 +170,7 @@ finish:
     return dp->last_frame_tb;
 }
 
-static void audio_ts_process(void *logctx, DecoderPriv *dp, AVFrame *frame)
+static void audio_ts_process(DecoderPriv *dp, AVFrame *frame)
 {
     AVRational tb_filter = (AVRational){1, frame->sample_rate};
     AVRational tb;
@@ -176,7 +179,7 @@ static void audio_ts_process(void *logctx, DecoderPriv *dp, AVFrame *frame)
     // on samplerate change, choose a new internal timebase for timestamp
     // generation that can represent timestamps from all the samplerates
     // seen so far
-    tb = audio_samplerate_update(logctx, dp, frame);
+    tb = audio_samplerate_update(dp, frame);
     pts_pred = dp->last_frame_pts == AV_NOPTS_VALUE ? 0 :
                dp->last_frame_pts + dp->last_frame_duration_est;
 
@@ -278,7 +281,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     if (dp->dec_ctx->width  != frame->width ||
         dp->dec_ctx->height != frame->height ||
         dp->dec_ctx->pix_fmt != frame->format) {
-        av_log(NULL, AV_LOG_DEBUG, "Frame parameters mismatch context %d,%d,%d != %d,%d,%d\n",
+        av_log(dp, AV_LOG_DEBUG, "Frame parameters mismatch context %d,%d,%d != %d,%d,%d\n",
             frame->width,
             frame->height,
             frame->format,
@@ -289,7 +292,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
 
 #if FFMPEG_OPT_TOP
     if(ist->top_field_first>=0) {
-        av_log(ist, AV_LOG_WARNING, "-top is deprecated, use the setfield filter instead\n");
+        av_log(dp, AV_LOG_WARNING, "-top is deprecated, use the setfield filter instead\n");
         frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
 #endif
@@ -320,7 +323,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     dp->last_frame_tb           = frame->time_base;
 
     if (debug_ts) {
-        av_log(ist, AV_LOG_INFO,
+        av_log(dp, AV_LOG_INFO,
                "decoder -> pts:%s pts_time:%s "
                "pkt_dts:%s pkt_dts_time:%s "
                "duration:%s duration_time:%s "
@@ -355,7 +358,7 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
             end = av_rescale(subtitle->pts - sub_prev->pts,
                              1000, AV_TIME_BASE);
             if (end < sub_prev->end_display_time) {
-                av_log(NULL, AV_LOG_DEBUG,
+                av_log(dp, AV_LOG_DEBUG,
                        "Subtitle duration reduced from %"PRId32" to %d%s\n",
                        sub_prev->end_display_time, end,
                        end <= 0 ? ", dropping it" : "");
@@ -440,8 +443,8 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
     av_packet_free(&flush_pkt);
 
     if (ret < 0) {
-        av_log(ist, AV_LOG_ERROR, "Error decoding subtitles: %s\n",
-                av_err2str(ret));
+        av_log(dp, AV_LOG_ERROR, "Error decoding subtitles: %s\n",
+               av_err2str(ret));
         ist->decode_errors++;
         return exit_on_error ? ret : 0;
     }
@@ -501,11 +504,11 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         // In particular, we don't expect AVERROR(EAGAIN), because we read all
         // decoded frames with avcodec_receive_frame() until done.
         if (ret == AVERROR(EAGAIN)) {
-            av_log(ist, AV_LOG_FATAL, "A decoder returned an unexpected error code. "
-                                      "This is a bug, please report it.\n");
+            av_log(dp, AV_LOG_FATAL, "A decoder returned an unexpected error code. "
+                                     "This is a bug, please report it.\n");
             return AVERROR_BUG;
         }
-        av_log(ist, AV_LOG_ERROR, "Error submitting %s to decoder: %s\n",
+        av_log(dp, AV_LOG_ERROR, "Error submitting %s to decoder: %s\n",
                pkt ? "packet" : "EOF", av_err2str(ret));
 
         if (ret != AVERROR_EOF) {
@@ -533,7 +536,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         } else if (ret == AVERROR_EOF) {
             return ret;
         } else if (ret < 0) {
-            av_log(ist, AV_LOG_ERROR, "Decoding error: %s\n", av_err2str(ret));
+            av_log(dp, AV_LOG_ERROR, "Decoding error: %s\n", av_err2str(ret));
             ist->decode_errors++;
 
             if (exit_on_error)
@@ -543,7 +546,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         }
 
         if (frame->decode_error_flags || (frame->flags & AV_FRAME_FLAG_CORRUPT)) {
-            av_log(ist, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
+            av_log(dp, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
                    "corrupt decoded frame\n");
             if (exit_on_error)
                 return AVERROR_INVALIDDATA;
@@ -566,12 +569,12 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         if (dec->codec_type == AVMEDIA_TYPE_AUDIO) {
             ist->samples_decoded += frame->nb_samples;
 
-            audio_ts_process(ist, dp, frame);
+            audio_ts_process(dp, frame);
         } else {
             ret = video_frame_process(ist, frame);
             if (ret < 0) {
-                av_log(NULL, AV_LOG_FATAL, "Error while processing the decoded "
-                       "data for stream #%d:%d\n", ifile->index, ist->index);
+                av_log(dp, AV_LOG_FATAL,
+                       "Error while processing the decoded data\n");
                 return ret;
             }
         }
@@ -644,7 +647,7 @@ void *decoder_thread(void *arg)
              (intptr_t)dt.pkt->opaque == PKT_OPAQUE_FIX_SUB_DURATION);
         flush_buffers = input_status >= 0 && !have_data;
         if (!have_data)
-            av_log(ist, AV_LOG_VERBOSE, "Decoder thread received %s packet\n",
+            av_log(dp, AV_LOG_VERBOSE, "Decoder thread received %s packet\n",
                    flush_buffers ? "flush" : "EOF");
 
         ret = packet_decode(ist, have_data ? dt.pkt : NULL, dt.frame);
@@ -661,7 +664,7 @@ void *decoder_thread(void *arg)
         }
 
         if (ret == AVERROR_EOF) {
-            av_log(ist, AV_LOG_VERBOSE, "Decoder returned EOF, %s\n",
+            av_log(dp, AV_LOG_VERBOSE, "Decoder returned EOF, %s\n",
                    flush_buffers ? "resetting" : "finishing");
 
             if (!flush_buffers)
@@ -675,7 +678,7 @@ void *decoder_thread(void *arg)
 
             avcodec_flush_buffers(dp->dec_ctx);
         } else if (ret < 0) {
-            av_log(ist, AV_LOG_ERROR, "Error processing packet in decoder: %s\n",
+            av_log(dp, AV_LOG_ERROR, "Error processing packet in decoder: %s\n",
                    av_err2str(ret));
             break;
         }
@@ -698,7 +701,7 @@ void *decoder_thread(void *arg)
 
         ret = sch_dec_send(dp->sch, dp->sch_idx, dt.frame);
         if (ret < 0 && ret != AVERROR_EOF) {
-            av_log(NULL, AV_LOG_FATAL,
+            av_log(dp, AV_LOG_FATAL,
                    "Error signalling EOF timestamp: %s\n", av_err2str(ret));
             goto finish;
         }
@@ -707,11 +710,11 @@ void *decoder_thread(void *arg)
         err_rate = (ist->frames_decoded || ist->decode_errors) ?
                    ist->decode_errors / (ist->frames_decoded + ist->decode_errors) : 0.f;
         if (err_rate > max_error_rate) {
-            av_log(ist, AV_LOG_FATAL, "Decode error rate %g exceeds maximum %g\n",
+            av_log(dp, AV_LOG_FATAL, "Decode error rate %g exceeds maximum %g\n",
                    err_rate, max_error_rate);
             ret = FFMPEG_ERROR_RATE_EXCEEDED;
         } else if (err_rate)
-            av_log(ist, AV_LOG_VERBOSE, "Decode error rate %g\n", err_rate);
+            av_log(dp, AV_LOG_VERBOSE, "Decode error rate %g\n", err_rate);
     }
 
 finish:
@@ -798,7 +801,7 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
             if (ist->hwaccel_id == HWACCEL_AUTO) {
                 ist->hwaccel_device_type = dev->type;
             } else if (ist->hwaccel_device_type != dev->type) {
-                av_log(NULL, AV_LOG_ERROR, "Invalid hwaccel device "
+                av_log(dp, AV_LOG_ERROR, "Invalid hwaccel device "
                        "specified for decoder: device %s of type %s is not "
                        "usable with hwaccel %s.\n", dev->name,
                        av_hwdevice_get_type_name(dev->type),
@@ -849,7 +852,7 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
             type = config->device_type;
             dev = hw_device_get_by_type(type);
             if (dev) {
-                av_log(NULL, AV_LOG_INFO, "Using auto "
+                av_log(dp, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with existing device %s.\n",
                        av_hwdevice_get_type_name(type), dev->name);
             }
@@ -867,12 +870,12 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
                 continue;
             }
             if (ist->hwaccel_device) {
-                av_log(NULL, AV_LOG_INFO, "Using auto "
+                av_log(dp, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with new device created "
                        "from %s.\n", av_hwdevice_get_type_name(type),
                        ist->hwaccel_device);
             } else {
-                av_log(NULL, AV_LOG_INFO, "Using auto "
+                av_log(dp, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with new default device.\n",
                        av_hwdevice_get_type_name(type));
             }
@@ -880,7 +883,7 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
         if (dev) {
             ist->hwaccel_device_type = type;
         } else {
-            av_log(NULL, AV_LOG_INFO, "Auto hwaccel "
+            av_log(dp, AV_LOG_INFO, "Auto hwaccel "
                    "disabled: no device found.\n");
             ist->hwaccel_id = HWACCEL_NONE;
             return 0;
@@ -888,7 +891,7 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
     }
 
     if (!dev) {
-        av_log(NULL, AV_LOG_ERROR, "No device available "
+        av_log(dp, AV_LOG_ERROR, "No device available "
                "for decoder: device type %s needed for codec %s.\n",
                av_hwdevice_get_type_name(type), ist->dec->name);
         return err;
@@ -900,6 +903,20 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
 
     return 0;
 }
+
+static const char *dec_item_name(void *obj)
+{
+    const DecoderPriv *dp = obj;
+
+    return dp->log_name;
+}
+
+static const AVClass dec_class = {
+    .class_name                = "Decoder",
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .parent_log_context_offset = offsetof(DecoderPriv, log_parent),
+    .item_name                 = dec_item_name,
+};
 
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 {
@@ -922,6 +939,11 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
     dp->sch     = sch;
     dp->sch_idx = sch_idx;
 
+    dp->dec.class  = &dec_class;
+    dp->log_parent = ist;
+
+    snprintf(dp->log_name, sizeof(dp->log_name), "dec:%s", codec->name);
+
     if (codec->type == AVMEDIA_TYPE_SUBTITLE && ist->fix_sub_duration) {
         for (int i = 0; i < FF_ARRAY_ELEMS(dp->sub_prev); i++) {
             dp->sub_prev[i] = av_frame_alloc();
@@ -939,7 +961,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 
     ret = avcodec_parameters_to_context(dp->dec_ctx, ist->par);
     if (ret < 0) {
-        av_log(ist, AV_LOG_ERROR, "Error initializing the decoder context.\n");
+        av_log(dp, AV_LOG_ERROR, "Error initializing the decoder context.\n");
         return ret;
     }
 
@@ -950,7 +972,9 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
        (ist->decoding_needed & DECODING_FOR_OST)) {
         av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
         if (ist->decoding_needed & DECODING_FOR_FILTER)
-            av_log(NULL, AV_LOG_WARNING, "Warning using DVB subtitles for filtering and output at the same time is not fully supported, also see -compute_edt [0|1]\n");
+            av_log(dp, AV_LOG_WARNING,
+                   "Warning using DVB subtitles for filtering and output at the "
+                   "same time is not fully supported, also see -compute_edt [0|1]\n");
     }
 
     /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
@@ -967,14 +991,14 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx)
 
     ret = hw_device_setup_for_decode(ist, dp);
     if (ret < 0) {
-        av_log(ist, AV_LOG_ERROR,
+        av_log(dp, AV_LOG_ERROR,
                "Hardware device setup failed for decoder: %s\n",
                av_err2str(ret));
         return ret;
     }
 
     if ((ret = avcodec_open2(dp->dec_ctx, codec, &ist->decoder_opts)) < 0) {
-        av_log(ist, AV_LOG_ERROR, "Error while opening decoder: %s\n",
+        av_log(dp, AV_LOG_ERROR, "Error while opening decoder: %s\n",
                av_err2str(ret));
         return ret;
     }

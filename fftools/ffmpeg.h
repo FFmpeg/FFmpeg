@@ -281,6 +281,8 @@ typedef struct FilterGraph {
 } FilterGraph;
 
 typedef struct Decoder {
+    const AVClass   *class;
+
     const uint8_t   *subtitle_header;
     int              subtitle_header_size;
 } Decoder;
