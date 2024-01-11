@@ -33,10 +33,6 @@
 #define MAX_SLICES  1024
 #define INVALID_REF 0xffff
 
-#define REF_RESOURCE(index) if (index != INVALID_REF) { \
-    ctx->ref_resources[index] = frames_hwctx->texture_infos[index].texture; \
-}
-
 typedef struct D3D12DecodePictureContext {
     DXVA_PictureParameters pp;
     unsigned               slice_count;
