@@ -285,6 +285,11 @@ typedef struct Decoder {
 
     const uint8_t   *subtitle_header;
     int              subtitle_header_size;
+
+    // number of frames/samples retrieved from the decoder
+    uint64_t         frames_decoded;
+    uint64_t         samples_decoded;
+    uint64_t         decode_errors;
 } Decoder;
 
 typedef struct InputStream {
@@ -346,12 +351,6 @@ typedef struct InputStream {
     enum AVHWDeviceType hwaccel_device_type;
     char  *hwaccel_device;
     enum AVPixelFormat hwaccel_output_format;
-
-    /* stats */
-    // number of frames/samples retrieved from the decoder
-    uint64_t frames_decoded;
-    uint64_t samples_decoded;
-    uint64_t decode_errors;
 } InputStream;
 
 typedef struct InputFile {

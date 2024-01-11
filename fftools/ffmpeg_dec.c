@@ -445,14 +445,14 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
     if (ret < 0) {
         av_log(dp, AV_LOG_ERROR, "Error decoding subtitles: %s\n",
                av_err2str(ret));
-        ist->decode_errors++;
+        dp->dec.decode_errors++;
         return exit_on_error ? ret : 0;
     }
 
     if (!got_output)
         return pkt ? 0 : AVERROR_EOF;
 
-    ist->frames_decoded++;
+    dp->dec.frames_decoded++;
 
     // XXX the queue for transferring data to consumers runs
     // on AVFrames, so we wrap AVSubtitle in an AVBufferRef and put that
@@ -512,7 +512,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
                pkt ? "packet" : "EOF", av_err2str(ret));
 
         if (ret != AVERROR_EOF) {
-            ist->decode_errors++;
+            dp->dec.decode_errors++;
             if (!exit_on_error)
                 ret = 0;
         }
@@ -537,7 +537,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
             return ret;
         } else if (ret < 0) {
             av_log(dp, AV_LOG_ERROR, "Decoding error: %s\n", av_err2str(ret));
-            ist->decode_errors++;
+            dp->dec.decode_errors++;
 
             if (exit_on_error)
                 return ret;
@@ -567,7 +567,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
         frame->time_base = dec->pkt_timebase;
 
         if (dec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            ist->samples_decoded += frame->nb_samples;
+            dp->dec.samples_decoded += frame->nb_samples;
 
             audio_ts_process(dp, frame);
         } else {
@@ -579,7 +579,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
             }
         }
 
-        ist->frames_decoded++;
+        dp->dec.frames_decoded++;
 
         ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
         if (ret < 0) {
@@ -707,8 +707,8 @@ void *decoder_thread(void *arg)
         }
         ret = 0;
 
-        err_rate = (ist->frames_decoded || ist->decode_errors) ?
-                   ist->decode_errors / (ist->frames_decoded + ist->decode_errors) : 0.f;
+        err_rate = (dp->dec.frames_decoded || dp->dec.decode_errors) ?
+                   dp->dec.decode_errors / (dp->dec.frames_decoded + dp->dec.decode_errors) : 0.f;
         if (err_rate > max_error_rate) {
             av_log(dp, AV_LOG_FATAL, "Decode error rate %g exceeds maximum %g\n",
                    err_rate, max_error_rate);
