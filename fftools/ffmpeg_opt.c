@@ -1625,9 +1625,11 @@ const OptionDef options[] = {
     { "filter_threads",         OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
         { .func_arg = opt_filter_threads },
         "number of non-complex filter threads" },
+#if FFMPEG_OPT_FILTER_SCRIPT
     { "filter_script",          OPT_TYPE_STRING, OPT_SPEC | OPT_EXPERT | OPT_OUTPUT,
         { .off = OFFSET(filter_scripts) },
-        "read stream filtergraph description from a file", "filename" },
+        "deprecated, use -/filter", "filename" },
+#endif
     { "reinit_filter",          OPT_TYPE_INT, OPT_SPEC | OPT_INPUT | OPT_EXPERT,
         { .off = OFFSET(reinit_filters) },
         "reinit filtergraph on input parameter changes", "" },

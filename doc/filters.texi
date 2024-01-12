@@ -307,9 +307,6 @@ For example, in case of the @ref{drawtext,,drawtext filter}, you might prefer to
 use the @option{textfile} option in place of @option{text} to specify the text
 to render.
 
-When using the @command{ffmpeg} tool, you might consider to use the
-@ref{filter_script option,,-filter_script option,ffmpeg}.
-
 @chapter Timeline editing
 
 Some filters support a generic @option{enable} option. For the filters

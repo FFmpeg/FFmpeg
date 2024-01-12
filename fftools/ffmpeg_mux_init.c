@@ -415,36 +415,58 @@ static MuxStream *mux_stream_alloc(Muxer *mux, enum AVMediaType type)
 static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
                            OutputStream *ost, char **dst)
 {
-    const char *filters = NULL, *filters_script = NULL;
+    const char *filters = NULL;
+#if FFMPEG_OPT_FILTER_SCRIPT
+    const char *filters_script = NULL;
 
     MATCH_PER_STREAM_OPT(filter_scripts, str, filters_script, oc, ost->st);
+#endif
     MATCH_PER_STREAM_OPT(filters,        str, filters,        oc, ost->st);
 
     if (!ost->enc) {
-        if (filters_script || filters) {
+        if (
+#if FFMPEG_OPT_FILTER_SCRIPT
+            filters_script ||
+#endif
+            filters) {
             av_log(ost, AV_LOG_ERROR,
                    "%s '%s' was specified, but codec copy was selected. "
                    "Filtering and streamcopy cannot be used together.\n",
+#if FFMPEG_OPT_FILTER_SCRIPT
                    filters ? "Filtergraph" : "Filtergraph script",
-                   filters ? filters : filters_script);
+                   filters ? filters : filters_script
+#else
+                   "Filtergraph", filters
+#endif
+                   );
             return AVERROR(ENOSYS);
         }
         return 0;
     }
 
     if (!ost->ist) {
-        if (filters_script || filters) {
+        if (
+#if FFMPEG_OPT_FILTER_SCRIPT
+            filters_script ||
+#endif
+            filters) {
             av_log(ost, AV_LOG_ERROR,
                    "%s '%s' was specified for a stream fed from a complex "
                    "filtergraph. Simple and complex filtering cannot be used "
                    "together for the same stream.\n",
+#if FFMPEG_OPT_FILTER_SCRIPT
                    filters ? "Filtergraph" : "Filtergraph script",
-                   filters ? filters : filters_script);
+                   filters ? filters : filters_script
+#else
+                   "Filtergraph", filters
+#endif
+                   );
             return AVERROR(EINVAL);
         }
         return 0;
     }
 
+#if FFMPEG_OPT_FILTER_SCRIPT
     if (filters_script && filters) {
         av_log(ost, AV_LOG_ERROR, "Both -filter and -filter_script set\n");
         return AVERROR(EINVAL);
@@ -452,7 +474,9 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
 
     if (filters_script)
         *dst = file_read(filters_script);
-    else if (filters)
+    else
+#endif
+    if (filters)
         *dst = av_strdup(filters);
     else
         *dst = av_strdup(ost->type == AVMEDIA_TYPE_VIDEO ? "null" : "anull");

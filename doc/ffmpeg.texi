@@ -977,12 +977,6 @@ syntax.
 See the @ref{filter_complex_option,,-filter_complex option} if you
 want to create filtergraphs with multiple inputs and/or outputs.
 
-@anchor{filter_script option}
-@item -filter_script[:@var{stream_specifier}] @var{filename} (@emph{output,per-stream})
-This option is similar to @option{-filter}, the only difference is that its
-argument is the name of the file from which a filtergraph description is to be
-read.
-
 @item -reinit_filter[:@var{stream_specifier}] @var{integer} (@emph{input,per-stream})
 This boolean option determines if the filtergraph(s) to which this stream is fed gets
 reinitialized when input frame parameters change mid-stream. This option is enabled by
