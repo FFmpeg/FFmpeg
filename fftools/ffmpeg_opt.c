@@ -1158,6 +1158,7 @@ static int opt_filter_complex(void *optctx, const char *opt, const char *arg)
     return fg_create(NULL, graph_desc, sch);
 }
 
+#if FFMPEG_OPT_FILTER_SCRIPT
 static int opt_filter_complex_script(void *optctx, const char *opt, const char *arg)
 {
     Scheduler *sch = optctx;
@@ -1165,8 +1166,12 @@ static int opt_filter_complex_script(void *optctx, const char *opt, const char *
     if (!graph_desc)
         return AVERROR(EINVAL);
 
+    av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -/filter_complex %s instead\n",
+           opt, arg);
+
     return fg_create(NULL, graph_desc, sch);
 }
+#endif
 
 void show_help_default(const char *opt, const char *arg)
 {
@@ -1635,9 +1640,11 @@ const OptionDef options[] = {
     { "lavfi",               OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
         { .func_arg = opt_filter_complex },
         "create a complex filtergraph", "graph_description" },
+#if FFMPEG_OPT_FILTER_SCRIPT
     { "filter_complex_script", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
         { .func_arg = opt_filter_complex_script },
-        "read complex filtergraph description from a file", "filename" },
+        "deprecated, use -/filter_complex instead", "filename" },
+#endif
     { "auto_conversion_filters", OPT_TYPE_BOOL, OPT_EXPERT,
         { &auto_conversion_filters },
         "enable automatic conversion filters globally" },
