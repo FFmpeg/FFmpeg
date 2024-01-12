@@ -98,8 +98,8 @@ uint32_t av_timecode_get_smpte(AVRational rate, int drop, int hh, int mm, int ss
 /**
  * Load timecode string in buf.
  *
- * @param buf      destination buffer, must be at least AV_TIMECODE_STR_SIZE long
  * @param tc       timecode data correctly initialized
+ * @param buf      destination buffer, must be at least AV_TIMECODE_STR_SIZE long
  * @param framenum frame number
  * @return         the buf parameter
  *
@@ -149,13 +149,13 @@ char *av_timecode_make_mpeg_tc_string(char *buf, uint32_t tc25bit);
 /**
  * Init a timecode struct with the passed parameters.
  *
- * @param log_ctx     a pointer to an arbitrary struct of which the first field
- *                    is a pointer to an AVClass struct (used for av_log)
  * @param tc          pointer to an allocated AVTimecode
  * @param rate        frame rate in rational form
  * @param flags       miscellaneous flags such as drop frame, +24 hours, ...
  *                    (see AVTimecodeFlag)
  * @param frame_start the first frame number
+ * @param log_ctx     a pointer to an arbitrary struct of which the first field
+ *                    is a pointer to an AVClass struct (used for av_log)
  * @return            0 on success, AVERROR otherwise
  */
 int av_timecode_init(AVTimecode *tc, AVRational rate, int flags, int frame_start, void *log_ctx);
@@ -163,8 +163,6 @@ int av_timecode_init(AVTimecode *tc, AVRational rate, int flags, int frame_start
 /**
  * Init a timecode struct from the passed timecode components.
  *
- * @param log_ctx     a pointer to an arbitrary struct of which the first field
- *                    is a pointer to an AVClass struct (used for av_log)
  * @param tc          pointer to an allocated AVTimecode
  * @param rate        frame rate in rational form
  * @param flags       miscellaneous flags such as drop frame, +24 hours, ...
@@ -173,6 +171,8 @@ int av_timecode_init(AVTimecode *tc, AVRational rate, int flags, int frame_start
  * @param mm          minutes
  * @param ss          seconds
  * @param ff          frames
+ * @param log_ctx     a pointer to an arbitrary struct of which the first field
+ *                    is a pointer to an AVClass struct (used for av_log)
  * @return            0 on success, AVERROR otherwise
  */
 int av_timecode_init_from_components(AVTimecode *tc, AVRational rate, int flags, int hh, int mm, int ss, int ff, void *log_ctx);
@@ -180,11 +180,11 @@ int av_timecode_init_from_components(AVTimecode *tc, AVRational rate, int flags,
 /**
  * Parse timecode representation (hh:mm:ss[:;.]ff).
  *
- * @param log_ctx a pointer to an arbitrary struct of which the first field is a
- *                pointer to an AVClass struct (used for av_log).
  * @param tc      pointer to an allocated AVTimecode
  * @param rate    frame rate in rational form
  * @param str     timecode string which will determine the frame start
+ * @param log_ctx a pointer to an arbitrary struct of which the first field is a
+ *                pointer to an AVClass struct (used for av_log).
  * @return        0 on success, AVERROR otherwise
  */
 int av_timecode_init_from_string(AVTimecode *tc, AVRational rate, const char *str, void *log_ctx);
