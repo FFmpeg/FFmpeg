@@ -225,20 +225,20 @@ static int query_formats(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
-    if ((ret = ff_formats_ref(ff_all_color_spaces(), &ctx->inputs[0]->outcfg.formats)) < 0 ||
-        (ret = ff_formats_ref(ff_all_color_ranges(), &ctx->inputs[0]->outcfg.formats)) < 0)
+    if ((ret = ff_formats_ref(ff_all_color_spaces(), &ctx->inputs[0]->outcfg.color_spaces)) < 0 ||
+        (ret = ff_formats_ref(ff_all_color_ranges(), &ctx->inputs[0]->outcfg.color_ranges)) < 0)
         return ret;
 
     formats = s->colorspace != ZIMG_MATRIX_UNSPECIFIED && s->colorspace > 0
         ? ff_make_formats_list_singleton(s->colorspace)
         : ff_all_color_spaces();
-    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
+    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.color_spaces)) < 0)
         return ret;
 
     formats = s->range != -1
         ? ff_make_formats_list_singleton(convert_range_from_zimg(s->range))
         : ff_all_color_ranges();
-    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats)) < 0)
+    if ((ret = ff_formats_ref(formats, &ctx->outputs[0]->incfg.color_ranges)) < 0)
         return ret;
 
     return 0;
