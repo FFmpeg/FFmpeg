@@ -177,7 +177,7 @@ ffplay -video_size 1920x1080 -pixel_format rgb24 -f rawvideo testsrc.rgb
 @end example
 @end itemize
 
-@section RAW PCM muxers
+@section Raw PCM muxers
 This section covers raw PCM (Pulse-Code Modulation) audio muxers.
 
 They accept a single stream matching the designated codec. They do not
