@@ -530,9 +530,9 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .log2_chroma_w = 0,
         .log2_chroma_h = 0,
         .comp = {
-            { 0, 1, 0, 6, 2 },        /* R */
-            { 0, 1, 0, 3, 3 },        /* G */
-            { 0, 1, 0, 0, 3 },        /* B */
+            { 0, 1, 0, 5, 3 },        /* R */
+            { 0, 1, 0, 2, 3 },        /* G */
+            { 0, 1, 0, 0, 2 },        /* B */
         },
         .flags = AV_PIX_FMT_FLAG_RGB,
     },
