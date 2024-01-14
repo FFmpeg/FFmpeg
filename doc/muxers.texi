@@ -2583,6 +2583,28 @@ ogg files can be safely chained.
 
 @end table
 
+@anchor{rcwt}
+@section rcwt
+
+Raw Captions With Time (RCWT) is a format native to ccextractor, a commonly
+used open source tool for processing 608/708 closed caption (CC) sources.
+It can be used to archive the original, raw CC bitstream and to produce
+a source file for later CC processing or conversion. As a result,
+it also allows for interopability with ccextractor for processing CC data
+extracted via ffmpeg. The format is simple to parse and can be used
+to retain all lines and variants of CC.
+
+This muxer implements the specification as of 2024-01-05, which has
+been stable and unchanged for 10 years as of this writing.
+
+This muxer will have some nuances from the way that ccextractor muxes RCWT.
+No compatibility issues when processing the output with ccextractor
+have been observed as a result of this so far, but mileage may vary
+and outputs will not be a bit-exact match.
+
+A free specification of RCWT can be found here:
+@url{https://github.com/CCExtractor/ccextractor/blob/master/docs/BINARY_FILE_FORMAT.TXT}
+
 @anchor{segment}
 @section segment, stream_segment, ssegment
 

@@ -389,6 +389,7 @@ extern const AVInputFormat  ff_qoa_demuxer;
 extern const AVInputFormat  ff_r3d_demuxer;
 extern const AVInputFormat  ff_rawvideo_demuxer;
 extern const FFOutputFormat ff_rawvideo_muxer;
+extern const FFOutputFormat ff_rcwt_muxer;
 extern const AVInputFormat  ff_realtext_demuxer;
 extern const AVInputFormat  ff_redspark_demuxer;
 extern const AVInputFormat  ff_rka_demuxer;

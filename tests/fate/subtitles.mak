@@ -118,6 +118,9 @@ fate-sub-scc: CMD = fmtstdout ass -ss 57 -i $(TARGET_SAMPLES)/sub/witch.scc
 FATE_SUBTITLES-$(call DEMMUX, SCC, SCC) += fate-sub-scc-remux
 fate-sub-scc-remux: CMD = fmtstdout scc -i $(TARGET_SAMPLES)/sub/witch.scc -ss 4:00 -map 0 -c copy
 
+FATE_SUBTITLES-$(call DEMMUX, SCC, RCWT) += fate-sub-rcwt
+fate-sub-rcwt: CMD = md5 -i $(TARGET_SAMPLES)/sub/witch.scc -map 0 -c copy -f rcwt
+
 FATE_SUBTITLES-$(call ALLYES, MPEGTS_DEMUXER DVBSUB_DECODER DVBSUB_ENCODER) += fate-sub-dvb
 fate-sub-dvb: CMD = framecrc -i $(TARGET_SAMPLES)/sub/dvbsubtest_filter.ts -map s:0 -c dvbsub
 
