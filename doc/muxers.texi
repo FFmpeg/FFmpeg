@@ -872,6 +872,11 @@ ShockWave Flash (SWF) / ActionScript Virtual Machine 2 (AVM2) format muxer.
 
 It accepts one audio stream, one video stream, or both.
 
+@section bit
+G.729 (.bit) file format muxer.
+
+It accepts a single G.729 audio stream.
+
 @anchor{chromaprint}
 @section chromaprint
 
