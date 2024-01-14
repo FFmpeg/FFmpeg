@@ -862,6 +862,11 @@ Set the timescale written in the movie header box (@code{mvhd}).
 Range is 1 to INT_MAX. Default is @code{1000}.
 @end table
 
+@section avm2
+ShockWave Flash (SWF) / ActionScript Virtual Machine 2 (AVM2) format muxer.
+
+It accepts one audio stream, one video stream, or both.
+
 @anchor{chromaprint}
 @section chromaprint
 
