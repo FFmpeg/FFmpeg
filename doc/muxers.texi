@@ -49,10 +49,15 @@ aptX (Audio Processing Technology for Bluetooth)
 aptX HD (Audio Processing Technology for Bluetooth) audio
 
 @item avs2 @emph{video} (avs, avs2)
-AVS2-P2/IEEE1857.4 video.
+AVS2-P2 (Audio Video Standard - Second generation - Part 2) /
+IEEE 1857.4 video
+
+@item avs3 @emph{video} (avs3)
+AVS3-P2 (Audio Video Standard - Third generation - Part 2) /
+IEEE 1857.10 video
 
 @item cavsvideo @emph{video} (cavs)
-Chinese AVS (Audio Video Standard)
+Chinese AVS (Audio Video Standard - First generation)
 
 @item codec2raw @emph{audio}
 Codec 2 audio.
