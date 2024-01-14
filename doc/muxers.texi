@@ -835,6 +835,33 @@ compatibility with software that only supports a single audio stream in AVI
 (see @ref{amerge,,the "amerge" section in the ffmpeg-filters manual,ffmpeg-filters}).
 @end table
 
+@section avif
+AV1 (Alliance for Open Media Video codec 1) image format muxer.
+
+This muxers stores images encoded using the AV1 codec.
+
+It accepts one or two video streams. In case two video streams are
+provided, the second one shall contain a single plane storing the
+alpha mask.
+
+In case more than one image is provided, the generated output is
+considered an animated AVIF and the number of loops can be specified
+with the @option{loop} option.
+
+This is based on the specification by Alliance for Open Media at url
+@url{https://aomediacodec.github.io/av1-avif}.
+
+@subsection Options
+@table @option
+@item loop @var{count}
+number of times to loop an animated AVIF, @code{0} specify an infinite
+loop, default is @code{0}
+
+@item movie_timescale @var{timescale}
+Set the timescale written in the movie header box (@code{mvhd}).
+Range is 1 to INT_MAX. Default is @code{1000}.
+@end table
+
 @anchor{chromaprint}
 @section chromaprint
 
@@ -2048,7 +2075,6 @@ If a PNG image is used, it must use the rgba pixel format
 
 @anchor{image2}
 @section image2
-
 Image file muxer.
 
 The image file muxer writes video frames to image files.
