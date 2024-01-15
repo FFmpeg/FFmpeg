@@ -62,6 +62,8 @@ enum AVIAMFAnimationType {
 
 /**
  * Mix Gain Parameter Data as defined in section 3.8.1 of IAMF.
+ *
+ * @note This struct's size is not a part of the public ABI.
  */
 typedef struct AVIAMFMixGain {
     const AVClass *av_class;
@@ -111,6 +113,8 @@ typedef struct AVIAMFMixGain {
 
 /**
  * Demixing Info Parameter Data as defined in section 3.8.2 of IAMF.
+ *
+ * @note This struct's size is not a part of the public ABI.
  */
 typedef struct AVIAMFDemixingInfo {
     const AVClass *av_class;
@@ -129,6 +133,8 @@ typedef struct AVIAMFDemixingInfo {
 
 /**
  * Recon Gain Info Parameter Data as defined in section 3.8.3 of IAMF.
+ *
+ * @note This struct's size is not a part of the public ABI.
  */
 typedef struct AVIAMFReconGain {
     const AVClass *av_class;
@@ -172,6 +178,8 @@ enum AVIAMFParamDefinitionType {
  * The struct is allocated by av_iamf_param_definition_alloc() along with an
  * array of subblocks, its type depending on the value of type.
  * This array is placed subblocks_offset bytes after the start of this struct.
+ *
+ * @note This struct's size is not a part of the public ABI.
  */
 typedef struct AVIAMFParamDefinition {
     const AVClass *av_class;
@@ -270,6 +278,9 @@ enum AVIAMFAmbisonicsMode {
  * Layout layer as defined in section 3.6.2 of IAMF.
  * For AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE, it is an Ambisonics channel
  * layout as defined in section 3.6.3 of IAMF.
+ *
+ * @note The struct should be allocated with av_iamf_audio_element_add_layer()
+ *       and its size is not a part of the public ABI.
  */
 typedef struct AVIAMFLayer {
     const AVClass *av_class;
@@ -326,6 +337,13 @@ enum AVIAMFAudioElementType {
     AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE,
 };
 
+/**
+ * Information on how to combine one or more audio streams, as defined in
+ * section 3.6 of IAMF.
+ *
+ * @note The struct should be allocated with av_iamf_audio_element_alloc()
+ *       and its size is not a part of the public ABI.
+ */
 typedef struct AVIAMFAudioElement {
     const AVClass *av_class;
 
@@ -410,6 +428,12 @@ enum AVIAMFHeadphonesMode {
     AV_IAMF_HEADPHONES_MODE_BINAURAL,
 };
 
+/**
+ * Submix element as defined in section 3.7 of IAMF.
+ *
+ * @note The struct should be allocated with av_iamf_submix_add_element()
+ *       and its size is not a part of the public ABI.
+ */
 typedef struct AVIAMFSubmixElement {
     const AVClass *av_class;
 
@@ -468,6 +492,12 @@ enum AVIAMFSubmixLayoutType {
     AV_IAMF_SUBMIX_LAYOUT_TYPE_BINAURAL = 3,
 };
 
+/**
+ * Submix layout as defined in section 3.7.6 of IAMF.
+ *
+ * @note The struct should be allocated with av_iamf_submix_add_layout()
+ *       and its size is not a part of the public ABI.
+ */
 typedef struct AVIAMFSubmixLayout {
     const AVClass *av_class;
 
@@ -504,6 +534,12 @@ typedef struct AVIAMFSubmixLayout {
     AVRational album_anchored_loudness;
 } AVIAMFSubmixLayout;
 
+/**
+ * Submix layout as defined in section 3.7 of IAMF.
+ *
+ * @note The struct should be allocated with av_iamf_mix_presentation_add_submix()
+ *       and its size is not a part of the public ABI.
+ */
 typedef struct AVIAMFSubmix {
     const AVClass *av_class;
 
@@ -554,6 +590,13 @@ typedef struct AVIAMFSubmix {
     AVRational default_mix_gain;
 } AVIAMFSubmix;
 
+/**
+ * Information on how to render and mix one or more AVIAMFAudioElement to generate
+ * the final audio output, as defined in section 3.7 of IAMF.
+ *
+ * @note The struct should be allocated with av_iamf_mix_presentation_alloc()
+ *       and its size is not a part of the public ABI.
+ */
 typedef struct AVIAMFMixPresentation {
     const AVClass *av_class;
 
