@@ -882,6 +882,11 @@ Apple CAF (Core Audio Format) muxer.
 
 It accepts a single audio stream.
 
+@section codec2
+Codec2 audio audio muxer.
+
+It accepts a single codec2 audio stream.
+
 @anchor{chromaprint}
 @section chromaprint
 Chromaprint fingerprinter muxers.
