@@ -877,6 +877,11 @@ G.729 (.bit) file format muxer.
 
 It accepts a single G.729 audio stream.
 
+@section caf
+Apple CAF (Core Audio Format) muxer.
+
+It accepts a single audio stream.
+
 @anchor{chromaprint}
 @section chromaprint
 
