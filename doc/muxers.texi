@@ -884,41 +884,44 @@ It accepts a single audio stream.
 
 @anchor{chromaprint}
 @section chromaprint
+Chromaprint fingerprinter muxers.
 
-Chromaprint fingerprinter.
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-chromaprint}.
 
-This muxer feeds audio data to the Chromaprint library,
-which generates a fingerprint for the provided audio data. See @url{https://acoustid.org/chromaprint}
+This muxer feeds audio data to the Chromaprint library, which
+generates a fingerprint for the provided audio data. See:
+@url{https://acoustid.org/chromaprint}
 
-It takes a single signed native-endian 16-bit raw audio stream of at most 2 channels.
+It takes a single signed native-endian 16-bit raw audio stream of at
+most 2 channels.
 
 @subsection Options
-
 @table @option
-@item silence_threshold
-Threshold for detecting silence. Range is from -1 to 32767, where -1 disables
-silence detection. Silence detection can only be used with version 3 of the
-algorithm.
-Silence detection must be disabled for use with the AcoustID service. Default is -1.
+@item algorithm @var{version}
+Select version of algorithm to fingerprint with. Range is @code{0} to
+@code{4}. Version @code{3} enables silence detection. Default is @code{1}.
 
-@item algorithm
-Version of algorithm to fingerprint with. Range is 0 to 4.
-Version 3 enables silence detection. Default is 1.
-
-@item fp_format
+@item fp_format @var{format}
 Format to output the fingerprint as. Accepts the following options:
 @table @samp
-@item raw
-Binary raw fingerprint
+@item base64
+Base64 compressed fingerprint @emph{(default)}
 
 @item compressed
 Binary compressed fingerprint
 
-@item base64
-Base64 compressed fingerprint @emph{(default)}
-
+@item raw
+Binary raw fingerprint
 @end table
 
+@item silence_threshold @var{threshold}
+Threshold for detecting silence. Range is from @code{-1} to
+@code{32767}, where @code{-1} disables silence detection. Silence
+detection can only be used with version @code{3} of the algorithm.
+
+Silence detection must be disabled for use with the AcoustID
+service. Default is @code{-1}.
 @end table
 
 @anchor{crc}
