@@ -303,7 +303,7 @@ static int rtsp_read_setup(AVFormatContext *s, char* host, char *controlurl)
         rtsp_st->interleaved_min = request.transports[0].interleaved_min;
         rtsp_st->interleaved_max = request.transports[0].interleaved_max;
         snprintf(responseheaders, sizeof(responseheaders), "Transport: "
-                 "RTP/AVP/TCP;unicast;mode=receive;interleaved=%d-%d"
+                 "RTP/AVP/TCP;unicast;mode=record;interleaved=%d-%d"
                  "\r\n", request.transports[0].interleaved_min,
                  request.transports[0].interleaved_max);
     } else {
@@ -333,7 +333,7 @@ static int rtsp_read_setup(AVFormatContext *s, char* host, char *controlurl)
 
         localport = ff_rtp_get_local_rtp_port(rtsp_st->rtp_handle);
         snprintf(responseheaders, sizeof(responseheaders), "Transport: "
-                 "RTP/AVP/UDP;unicast;mode=receive;source=%s;"
+                 "RTP/AVP/UDP;unicast;mode=record;source=%s;"
                  "client_port=%d-%d;server_port=%d-%d\r\n",
                  host, request.transports[0].client_port_min,
                  request.transports[0].client_port_max, localport,
