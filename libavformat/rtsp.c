@@ -1012,8 +1012,8 @@ static void rtsp_parse_transport(AVFormatContext *s,
                 if (*p == '=') {
                     p++;
                     get_word_sep(buf, sizeof(buf), ";, ", &p);
-                    if (!strcmp(buf, "record") ||
-                        !strcmp(buf, "receive"))
+                    if (!av_strcasecmp(buf, "record") ||
+                        !av_strcasecmp(buf, "receive"))
                         th->mode_record = 1;
                 }
             }
