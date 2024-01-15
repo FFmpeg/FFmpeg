@@ -37,21 +37,21 @@
 #include "rational.h"
 
 /**
- * @defgroup lavf_iamf_params Parameter Definition
+ * @defgroup lavu_iamf_params Parameter Definition
  * @{
  * Parameters as defined in section 3.6.1 and 3.8 of IAMF.
  * @}
- * @defgroup lavf_iamf_audio Audio Element
+ * @defgroup lavu_iamf_audio Audio Element
  * @{
  * Audio Elements as defined in section 3.6 of IAMF.
  * @}
- * @defgroup lavf_iamf_mix Mix Presentation
+ * @defgroup lavu_iamf_mix Mix Presentation
  * @{
  * Mix Presentations as defined in section 3.7 of IAMF.
  * @}
  *
  * @}
- * @addtogroup lavf_iamf_params
+ * @addtogroup lavu_iamf_params
  * @{
  */
 enum AVIAMFAnimationType {
@@ -248,7 +248,7 @@ av_iamf_param_definition_get_subblock(const AVIAMFParamDefinition *par, unsigned
 
 /**
  * @}
- * @addtogroup lavf_iamf_audio
+ * @addtogroup lavu_iamf_audio
  * @{
  */
 
@@ -395,7 +395,7 @@ void av_iamf_audio_element_free(AVIAMFAudioElement **audio_element);
 
 /**
  * @}
- * @addtogroup lavf_iamf_mix
+ * @addtogroup lavu_iamf_mix
  * @{
  */
 
