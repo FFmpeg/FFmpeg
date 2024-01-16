@@ -1400,16 +1400,38 @@ If not specified, @samp{auto_any} is used.
 platform-appropriate subdevice (@samp{dxva2} or @samp{d3d11va} or @samp{vaapi}) and then deriving a
 QSV device from that.)
 
-Alternatively, @samp{child_device_type} helps to choose platform-appropriate subdevice type.
-On Windows @samp{d3d11va} is used as default subdevice type.
+The following options are recognized:
+@table @option
+@item child_device
+Specify a DRM render node on Linux or DirectX adapter on Windows.
+@item child_device_type
+Choose platform-appropriate subdevice type. On Windows @samp{d3d11va} is used
+as default subdevice type when @code{--enable-libvpl} is specified at configuration time,
+@samp{dxva2} is used as default subdevice type when @code{--enable-libmfx} is specified at
+configuration time. On Linux user can use @samp{vaapi} only as subdevice type.
+@end table
 
 Examples:
 @table @emph
+@item -init_hw_device qsv:hw,child_device=/dev/dri/renderD129
+Create a QSV device with @samp{MFX_IMPL_HARDWARE} on DRM render node @file{/dev/dri/renderD129}.
+
+@item -init_hw_device qsv:hw,child_device=1
+Create a QSV device with @samp{MFX_IMPL_HARDWARE} on DirectX adapter 1.
+
 @item -init_hw_device qsv:hw,child_device_type=d3d11va
 Choose the GPU subdevice with type @samp{d3d11va} and create QSV device with @samp{MFX_IMPL_HARDWARE}.
 
 @item -init_hw_device qsv:hw,child_device_type=dxva2
 Choose the GPU subdevice with type @samp{dxva2} and create QSV device with @samp{MFX_IMPL_HARDWARE}.
+
+@item -init_hw_device qsv:hw,child_device=1,child_device_type=d3d11va
+Create a QSV device with @samp{MFX_IMPL_HARDWARE} on DirectX adapter 1 with subdevice type @samp{d3d11va}.
+
+@item -init_hw_device vaapi=va:/dev/dri/renderD129 -init_hw_device qsv=hw1@@@var{va}
+Create a VAAPI device called @samp{va} on @file{/dev/dri/renderD129}, then derive a QSV device called @samp{hw1}
+from device @samp{va}.
+
 @end table
 
 @item opencl
