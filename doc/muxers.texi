@@ -931,8 +931,7 @@ service. Default is @code{-1}.
 
 @anchor{crc}
 @section crc
-
-CRC (Cyclic Redundancy Check) testing format.
+CRC (Cyclic Redundancy Check) muxer.
 
 This muxer computes and prints the Adler-32 CRC of all the input audio
 and video frames. By default audio frames are converted to signed
@@ -946,25 +945,29 @@ CRC=0x@var{CRC}, where @var{CRC} is a hexadecimal number 0-padded to
 See also the @ref{framecrc} muxer.
 
 @subsection Examples
-
-For example to compute the CRC of the input, and store it in the file
-@file{out.crc}:
+@itemize
+@item
+Use @command{ffmpeg} to compute the CRC of the input, and store it in
+the file @file{out.crc}:
 @example
 ffmpeg -i INPUT -f crc out.crc
 @end example
 
-You can print the CRC to stdout with the command:
+@item
+Use @command{ffmpeg} to print the CRC to stdout with the command:
 @example
 ffmpeg -i INPUT -f crc -
 @end example
 
+@item
 You can select the output format of each frame with @command{ffmpeg} by
-specifying the audio and video codec and format. For example to
+specifying the audio and video codec and format. For example, to
 compute the CRC of the input audio converted to PCM unsigned 8-bit
 and the input video converted to MPEG-2 video, use the command:
 @example
 ffmpeg -i INPUT -c:a pcm_u8 -c:v mpeg2video -f crc -
 @end example
+@end itemize
 
 @anchor{dash}
 @section dash
