@@ -1379,6 +1379,29 @@ If not specified, it will attempt to open the default X11 display (@emph{$DISPLA
 and then the first DRM render node (@emph{/dev/dri/renderD128}), or the default
 DirectX adapter on Windows.
 
+The following options are recognized:
+@table @option
+@item kernel_driver
+When @var{device} is not specified, use this option to specify the name of the kernel
+driver associated with the desired device. This option is available only when
+the hardware acceleration method @emph{drm} and @emph{vaapi} are enabled.
+@end table
+
+Examples:
+@table @emph
+@item -init_hw_device vaapi
+Create a vaapi device on the default device.
+
+@item -init_hw_device vaapi:/dev/dri/renderD129
+Create a vaapi device on DRM render node @file{/dev/dri/renderD129}.
+
+@item -init_hw_device vaapi:1
+Create a vaapi device on DirectX adapter 1.
+
+@item -init_hw_device vaapi:,kernel_driver=i915
+Create a vaapi device on a device associated with kernel driver @samp{i915}.
+@end table
+
 @item vdpau
 @var{device} is an X11 display name.
 If not specified, it will attempt to open the default X11 display (@emph{$DISPLAY}).
