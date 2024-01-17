@@ -45,6 +45,9 @@ typedef struct DecoderPriv {
     // override output video sample aspect ratio with this value
     AVRational       sar_override;
 
+    // a combination of DECODER_FLAG_*, provided to dec_open()
+    int              flags;
+
     enum AVPixelFormat hwaccel_pix_fmt;
 
     // pts/estimated duration of the last decoded frame
@@ -326,7 +329,7 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
     const AVSubtitle *subtitle = (AVSubtitle*)frame->buf[0]->data;
     int ret = 0;
 
-    if (ist->fix_sub_duration) {
+    if (dp->flags & DECODER_FLAG_FIX_SUB_DURATION) {
         AVSubtitle *sub_prev = dp->sub_prev[0]->buf[0] ?
                                (AVSubtitle*)dp->sub_prev[0]->buf[0]->data : NULL;
         int end = 1;
@@ -372,7 +375,7 @@ static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
         (AVSubtitle*)dp->sub_prev[0]->buf[0]->data : NULL;
     AVSubtitle *subtitle;
 
-    if (!ist->fix_sub_duration || !prev_subtitle ||
+    if (!(dp->flags & DECODER_FLAG_FIX_SUB_DURATION) || !prev_subtitle ||
         !prev_subtitle->num_rects || signal_pts <= prev_subtitle->pts)
         return 0;
 
@@ -895,7 +898,7 @@ static const AVClass dec_class = {
 };
 
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
-             AVDictionary **dec_opts)
+             AVDictionary **dec_opts, int flags)
 {
     DecoderPriv *dp;
     const AVCodec *codec = ist->dec;
@@ -909,12 +912,14 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     dp->sch     = sch;
     dp->sch_idx = sch_idx;
 
+    dp->flags      = flags;
     dp->dec.class  = &dec_class;
     dp->log_parent = ist;
 
     snprintf(dp->log_name, sizeof(dp->log_name), "dec:%s", codec->name);
 
-    if (codec->type == AVMEDIA_TYPE_SUBTITLE && ist->fix_sub_duration) {
+    if (codec->type == AVMEDIA_TYPE_SUBTITLE &&
+        (dp->flags & DECODER_FLAG_FIX_SUB_DURATION)) {
         for (int i = 0; i < FF_ARRAY_ELEMS(dp->sub_prev); i++) {
             dp->sub_prev[i] = av_frame_alloc();
             if (!dp->sub_prev[i])

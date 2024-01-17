@@ -280,6 +280,10 @@ typedef struct FilterGraph {
     int         nb_outputs;
 } FilterGraph;
 
+enum DecoderFlags {
+    DECODER_FLAG_FIX_SUB_DURATION = (1 << 0),
+};
+
 typedef struct Decoder {
     const AVClass   *class;
 
@@ -735,7 +739,7 @@ int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input);
  *                 is transferred to the decoder.
  */
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
-             AVDictionary **dec_opts);
+             AVDictionary **dec_opts, int flags);
 void dec_free(Decoder **pdec);
 
 int dec_add_filter(Decoder *dec, InputFilter *ifilter);
