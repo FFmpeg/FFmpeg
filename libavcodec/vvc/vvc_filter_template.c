@@ -545,7 +545,7 @@ static void FUNC(loop_filter_luma_large)(pixel *pix, const ptrdiff_t xstride, co
 
 static void FUNC(vvc_loop_filter_luma)(uint8_t* _pix, ptrdiff_t _xstride, ptrdiff_t _ystride,
     const int32_t *_beta, const int32_t *_tc, const uint8_t *_no_p, const uint8_t *_no_q,
-    const uint8_t *_max_len_p, const uint8_t *_max_len_q, int hor_ctu_edge)
+    const uint8_t *_max_len_p, const uint8_t *_max_len_q, const int hor_ctu_edge)
 {
     const ptrdiff_t xstride = _xstride / sizeof(pixel);
     const ptrdiff_t ystride = _ystride / sizeof(pixel);
@@ -771,7 +771,7 @@ static void FUNC(vvc_v_loop_filter_chroma)(uint8_t *pix, ptrdiff_t stride,
 
 static void FUNC(vvc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
     const int32_t *beta, const int32_t *tc, const uint8_t *no_p, const uint8_t *no_q,
-    const uint8_t *max_len_p, const uint8_t *max_len_q, int hor_ctu_edge)
+    const uint8_t *max_len_p, const uint8_t *max_len_q, const int hor_ctu_edge)
 {
     FUNC(vvc_loop_filter_luma)(pix, stride, sizeof(pixel), beta, tc,
         no_p, no_q, max_len_p, max_len_q, hor_ctu_edge);
@@ -779,7 +779,7 @@ static void FUNC(vvc_h_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
 
 static void FUNC(vvc_v_loop_filter_luma)(uint8_t *pix, ptrdiff_t stride,
     const int32_t *beta, const int32_t *tc, const uint8_t *no_p, const uint8_t *no_q,
-    const uint8_t *max_len_p, const uint8_t *max_len_q, int hor_ctu_edge)
+    const uint8_t *max_len_p, const uint8_t *max_len_q, const int hor_ctu_edge)
 {
     FUNC(vvc_loop_filter_luma)(pix, sizeof(pixel), stride, beta, tc,
         no_p, no_q, max_len_p, max_len_q, hor_ctu_edge);
