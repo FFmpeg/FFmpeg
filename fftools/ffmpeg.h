@@ -731,8 +731,6 @@ void hw_device_free_all(void);
  */
 AVBufferRef *hw_device_for_filter(void);
 
-int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input);
-
 /**
  * @param dec_opts Dictionary filled with decoder options. Its ownership
  *                 is transferred to the decoder.

@@ -297,48 +297,6 @@ void hw_device_free_all(void)
     nb_hw_devices = 0;
 }
 
-int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input)
-{
-    InputStream *ist = avctx->opaque;
-    AVFrame *output = NULL;
-    enum AVPixelFormat output_format = ist->hwaccel_output_format;
-    int err;
-
-    if (input->format == output_format) {
-        // Nothing to do.
-        return 0;
-    }
-
-    output = av_frame_alloc();
-    if (!output)
-        return AVERROR(ENOMEM);
-
-    output->format = output_format;
-
-    err = av_hwframe_transfer_data(output, input, 0);
-    if (err < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to transfer data to "
-               "output frame: %d.\n", err);
-        goto fail;
-    }
-
-    err = av_frame_copy_props(output, input);
-    if (err < 0) {
-        av_frame_unref(output);
-        goto fail;
-    }
-
-    av_frame_unref(input);
-    av_frame_move_ref(input, output);
-    av_frame_free(&output);
-
-    return 0;
-
-fail:
-    av_frame_free(&output);
-    return err;
-}
-
 AVBufferRef *hw_device_for_filter(void)
 {
     // Pick the last hardware device if the user doesn't pick the device for
