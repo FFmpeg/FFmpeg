@@ -5519,7 +5519,7 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     int64_t pos = avio_tell(pb);
-    int has_h264 = 0, has_av1 = 0, has_video = 0, has_dolby = 0;
+    int has_h264 = 0, has_av1 = 0, has_video = 0, has_dolby = 0, has_id3 = 0;
     int has_iamf = 0;
 
 #if CONFIG_IAMFENC
@@ -5550,6 +5550,8 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
                                     st->codecpar->nb_coded_side_data,
                                     AV_PKT_DATA_DOVI_CONF))
             has_dolby = 1;
+        if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3)
+            has_id3 = 1;
     }
 
     avio_wb32(pb, 0); /* size */
@@ -5628,6 +5630,9 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
 
     if (mov->flags & FF_MOV_FLAG_DASH && mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
         ffio_wfourcc(pb, "dash");
+
+    if (has_id3)
+        ffio_wfourcc(pb, "aid3");
 
     return update_size(pb, pos);
 }
@@ -6712,6 +6717,34 @@ static int mov_build_iamf_packet(AVFormatContext *s, MOVTrack *trk, AVPacket *pk
 }
 #endif
 
+static int mov_write_emsg_tag(AVIOContext *pb, AVStream *st, AVPacket *pkt)
+{
+    int64_t pos = avio_tell(pb);
+    const char *scheme_id_uri = "https://aomedia.org/emsg/ID3";
+    const char *value = "";
+
+    av_assert0(st->time_base.num == 1);
+
+    avio_write_marker(pb,
+                      av_rescale_q(pkt->pts, st->time_base, AV_TIME_BASE_Q),
+                      AVIO_DATA_MARKER_BOUNDARY_POINT);
+
+    avio_wb32(pb, 0); /* size */
+    ffio_wfourcc(pb, "emsg");
+    avio_w8(pb, 1); /* version */
+    avio_wb24(pb, 0);
+    avio_wb32(pb, st->time_base.den); /* timescale */
+    avio_wb64(pb, pkt->pts); /* presentation_time */
+    avio_wb32(pb, 0xFFFFFFFFU); /* event_duration */
+    avio_wb32(pb, 0); /* id */
+    /* null terminated UTF8 strings */
+    avio_write(pb, scheme_id_uri, strlen(scheme_id_uri) + 1);
+    avio_write(pb, value, strlen(value) + 1);
+    avio_write(pb, pkt->data, pkt->size);
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVMuxContext *mov = s->priv_data;
@@ -6720,6 +6753,11 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!pkt) {
         mov_flush_fragment(s, 1);
         return 1;
+    }
+
+    if (s->streams[pkt->stream_index]->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+        mov_write_emsg_tag(s->pb, s->streams[pkt->stream_index], pkt);
+        return 0;
     }
 
     trk = s->streams[pkt->stream_index]->priv_data;
@@ -7381,6 +7419,12 @@ static int mov_init(AVFormatContext *s)
         AVStream *st = s->streams[i];
         if (st->priv_data)
             continue;
+        // Don't produce a track in the output file for timed ID3 streams.
+        if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
+            // Leave priv_data set to NULL for these AVStreams that don't
+            // have a corresponding track.
+            continue;
+        }
         st->priv_data = st;
         mov->nb_tracks++;
     }
@@ -7479,6 +7523,9 @@ static int mov_init(AVFormatContext *s)
         AVStream *st= s->streams[i];
         MOVTrack *track = st->priv_data;
         AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
+
+        if (!track)
+            continue;
 
         if (!track->st) {
             track->st  = st;

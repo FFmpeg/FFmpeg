@@ -151,3 +151,11 @@ write_data len 900, time 0, type sync atom moof
 write_data len 908, time 1000000, type sync atom moof
 write_data len 148, time nopts, type trailer atom -
 3be575022e446855bca1e45b7942cc0c 3115 empty-moov-neg-cts
+write_data len 28, time nopts, type header atom ftyp
+write_data len 1123, time nopts, type header atom -
+write_data len 70, time 0, type boundary atom emsg
+write_data len 1832, time 0, type sync atom moof
+write_data len 70, time 2000000, type boundary atom emsg
+write_data len 1840, time 2000000, type sync atom moof
+write_data len 148, time nopts, type trailer atom -
+b72c56c795693820b156f452354a51ff 5111 emsg

@@ -58,7 +58,7 @@ struct AVMD5* md5;
 uint8_t hash[HASH_SIZE];
 
 AVPacket *pkt;
-AVStream *video_st, *audio_st;
+AVStream *video_st, *audio_st, *id3_st;
 int64_t audio_dts, video_dts;
 
 int bframes;
@@ -177,7 +177,7 @@ static void check_func(int value, int line, const char *msg, ...)
 }
 #define check(value, ...) check_func(value, __LINE__, __VA_ARGS__)
 
-static void init_fps(int bf, int audio_preroll, int fps)
+static void init_fps(int bf, int audio_preroll, int fps, int id3)
 {
     AVStream *st;
     int iobuf_size = force_iobuf_size ? force_iobuf_size : sizeof(iobuf);
@@ -225,6 +225,17 @@ static void init_fps(int bf, int audio_preroll, int fps)
     memcpy(st->codecpar->extradata, aac_extradata, sizeof(aac_extradata));
     audio_st = st;
 
+    if (id3) {
+        st = avformat_new_stream(ctx, NULL);
+        if (!st)
+            exit(1);
+        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+        st->codecpar->codec_id = AV_CODEC_ID_TIMED_ID3;
+        st->time_base.num = 1;
+        st->time_base.den = 1000;
+        id3_st = st;
+    }
+
     if (avformat_write_header(ctx, &opts) < 0)
         exit(1);
     av_dict_free(&opts);
@@ -243,7 +254,7 @@ static void init_fps(int bf, int audio_preroll, int fps)
 
 static void init(int bf, int audio_preroll)
 {
-    init_fps(bf, audio_preroll, 30);
+    init_fps(bf, audio_preroll, 30, 0);
 }
 
 static void mux_frames(int n, int c)
@@ -312,6 +323,23 @@ static void mux_frames(int n, int c)
         else
             av_write_frame(ctx, pkt);
     }
+}
+
+static void mux_id3(void)
+{
+    uint8_t pktdata[8] = { 0 };
+    av_packet_unref(pkt);
+
+    pkt->dts = pkt->pts = av_rescale_q(video_dts + (bframes ? duration : 0),
+                                       video_st->time_base, id3_st->time_base);
+    pkt->stream_index = id3_st->index;
+    pkt->duration = 0;
+
+    AV_WB32(pktdata + 4, pkt->pts);
+    pkt->data = pktdata;
+    pkt->size = 8;
+
+    av_write_frame(ctx, pkt);
 }
 
 static void mux_gops(int n)
@@ -702,7 +730,7 @@ int main(int argc, char **argv)
     // by the edit list.
     init_out("vfr");
     av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov+dash", 0);
-    init_fps(1, 1, 3);
+    init_fps(1, 1, 3, 0);
     mux_frames(gop_size/2, 0);
     duration /= 10;
     mux_frames(gop_size/2, 0);
@@ -721,7 +749,7 @@ int main(int argc, char **argv)
     clear_duration = 1;
     init_out("vfr-noduration");
     av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov+dash", 0);
-    init_fps(1, 1, 3);
+    init_fps(1, 1, 3, 0);
     mux_frames(gop_size/2, 0);
     duration /= 10;
     mux_frames(gop_size/2, 0);
@@ -737,7 +765,7 @@ int main(int argc, char **argv)
     force_iobuf_size = 1500;
     init_out("large_frag");
     av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov", 0);
-    init_fps(1, 1, 3);
+    init_fps(1, 1, 3, 0);
     mux_gops(2);
     finish();
     close_out();
@@ -751,7 +779,7 @@ int main(int argc, char **argv)
     init_out("vfr-noduration-interleave");
     av_dict_set(&opts, "movflags", "+frag_keyframe+delay_moov", 0);
     av_dict_set(&opts, "frag_duration", "650000", 0);
-    init_fps(1, 1, 30);
+    init_fps(1, 1, 30, 0);
     mux_frames(gop_size/2, 0);
     // Pretend that the packet duration is the normal, even if
     // we actually skip a bunch of frames. (I.e., simulate that
@@ -784,6 +812,19 @@ int main(int argc, char **argv)
     init_out("empty-moov-neg-cts");
     av_dict_set(&opts, "movflags", "+frag_keyframe+empty_moov+negative_cts_offsets", 0);
     init(1, 0);
+    mux_gops(2);
+    finish();
+    close_out();
+
+    // Write a manually fragmented file, with timed ID3 packets at the head
+    // of each fragment.
+    init_out("emsg");
+    av_dict_set(&opts, "movflags", "+frag_custom+cmaf", 0);
+    init_fps(1, 0, 30, 1);
+    mux_id3();
+    mux_gops(2);
+    av_write_frame(ctx, NULL); // Flush fragment.
+    mux_id3();
     mux_gops(2);
     finish();
     close_out();
