@@ -1210,12 +1210,45 @@ void show_help_default(const char *opt, const char *arg)
         show_help_options(options, "Advanced global options:", OPT_EXPERT,
                           OPT_PERFILE | OPT_EXIT);
 
-    show_help_options(options, "Per-file main options:", OPT_PERFILE,
-                      OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_DATA |
-                      OPT_EXIT);
+    show_help_options(options, "Per-file options (input and output):",
+                      OPT_PERFILE | OPT_INPUT | OPT_OUTPUT,
+                      OPT_EXIT | OPT_FLAG_PERSTREAM | OPT_EXPERT |
+                      OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
     if (show_advanced)
-        show_help_options(options, "Advanced per-file options:",
-                          OPT_EXPERT | OPT_PERFILE, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
+        show_help_options(options, "Advanced per-file options (input and output):",
+                          OPT_PERFILE | OPT_INPUT | OPT_OUTPUT | OPT_EXPERT,
+                          OPT_EXIT | OPT_FLAG_PERSTREAM |
+                          OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
+
+    show_help_options(options, "Per-file options (input-only):",
+                      OPT_PERFILE | OPT_INPUT,
+                      OPT_EXIT | OPT_FLAG_PERSTREAM | OPT_OUTPUT | OPT_EXPERT |
+                      OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
+    if (show_advanced)
+        show_help_options(options, "Advanced per-file options (input-only):",
+                          OPT_PERFILE | OPT_INPUT | OPT_EXPERT,
+                          OPT_EXIT | OPT_FLAG_PERSTREAM | OPT_OUTPUT |
+                          OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
+
+    show_help_options(options, "Per-file options (output-only):",
+                      OPT_PERFILE | OPT_OUTPUT,
+                      OPT_EXIT | OPT_FLAG_PERSTREAM | OPT_INPUT | OPT_EXPERT |
+                      OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
+    if (show_advanced)
+        show_help_options(options, "Advanced per-file options (output-only):",
+                          OPT_PERFILE | OPT_OUTPUT | OPT_EXPERT,
+                          OPT_EXIT | OPT_FLAG_PERSTREAM | OPT_INPUT |
+                          OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
+
+    show_help_options(options, "Per-stream options:",
+                      OPT_FLAG_PERSTREAM,
+                      OPT_EXIT | OPT_EXPERT |
+                      OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
+    if (show_advanced)
+        show_help_options(options, "Advanced per-stream options:",
+                          OPT_FLAG_PERSTREAM | OPT_EXPERT,
+                          OPT_EXIT |
+                          OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
 
     show_help_options(options, "Video options:",
                       OPT_VIDEO, OPT_EXPERT | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
