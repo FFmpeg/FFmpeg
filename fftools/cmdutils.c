@@ -126,6 +126,12 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
             first = 0;
         }
         av_strlcpy(buf, po->name, sizeof(buf));
+
+        if (po->flags & OPT_FLAG_PERSTREAM)
+            av_strlcat(buf, "[:<stream_spec>]", sizeof(buf));
+        else if (po->flags & OPT_FLAG_SPEC)
+            av_strlcat(buf, "[:<spec>]", sizeof(buf));
+
         if (po->argname) {
             av_strlcat(buf, " ", sizeof(buf));
             av_strlcat(buf, po->argname, sizeof(buf));
