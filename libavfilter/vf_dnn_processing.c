@@ -77,22 +77,29 @@ static const enum AVPixelFormat pix_fmts[] = {
            "the frame's format %s does not match "          \
            "the model input channel %d\n",                  \
            av_get_pix_fmt_name(fmt),                        \
-           model_input->channels);
+           model_input->dims[dnn_get_channel_idx_by_layout(model_input->layout)]);
 
 static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLink *inlink)
 {
     AVFilterContext *ctx   = inlink->dst;
     enum AVPixelFormat fmt = inlink->format;
+    int width_idx, height_idx;
 
+    width_idx = dnn_get_width_idx_by_layout(model_input->layout);
+    height_idx = dnn_get_height_idx_by_layout(model_input->layout);
     // the design is to add explicit scale filter before this filter
-    if (model_input->height != -1 && model_input->height != inlink->h) {
+    if (model_input->dims[height_idx] != -1 &&
+        model_input->dims[height_idx] != inlink->h) {
         av_log(ctx, AV_LOG_ERROR, "the model requires frame height %d but got %d\n",
-                                   model_input->height, inlink->h);
+                                   model_input->dims[height_idx],
+                                   inlink->h);
         return AVERROR(EIO);
     }
-    if (model_input->width != -1 && model_input->width != inlink->w) {
+    if (model_input->dims[width_idx] != -1 &&
+        model_input->dims[width_idx] != inlink->w) {
         av_log(ctx, AV_LOG_ERROR, "the model requires frame width %d but got %d\n",
-                                   model_input->width, inlink->w);
+                                   model_input->dims[width_idx],
+                                   inlink->w);
         return AVERROR(EIO);
     }
     if (model_input->dt != DNN_FLOAT) {
@@ -103,7 +110,7 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
     switch (fmt) {
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_BGR24:
-        if (model_input->channels != 3) {
+        if (model_input->dims[dnn_get_channel_idx_by_layout(model_input->layout)] != 3) {
             LOG_FORMAT_CHANNEL_MISMATCH();
             return AVERROR(EIO);
         }
@@ -116,7 +123,7 @@ static int check_modelinput_inlink(const DNNData *model_input, const AVFilterLin
     case AV_PIX_FMT_YUV410P:
     case AV_PIX_FMT_YUV411P:
     case AV_PIX_FMT_NV12:
-        if (model_input->channels != 1) {
+        if (model_input->dims[dnn_get_channel_idx_by_layout(model_input->layout)] != 1) {
             LOG_FORMAT_CHANNEL_MISMATCH();
             return AVERROR(EIO);
         }

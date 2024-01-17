@@ -68,8 +68,8 @@ static int dnn_classify_post_proc(AVFrame *frame, DNNData *output, uint32_t bbox
     uint32_t label_id;
     float confidence;
     AVFrameSideData *sd;
-
-    if (output->channels <= 0) {
+    int output_size = output->dims[3] * output->dims[2] * output->dims[1];
+    if (output_size <= 0) {
         return -1;
     }
 
@@ -88,7 +88,7 @@ static int dnn_classify_post_proc(AVFrame *frame, DNNData *output, uint32_t bbox
     classifications = output->data;
     label_id = 0;
     confidence= classifications[0];
-    for (int i = 1; i < output->channels; i++) {
+    for (int i = 1; i < output_size; i++) {
         if (classifications[i] > confidence) {
             label_id = i;
             confidence= classifications[i];

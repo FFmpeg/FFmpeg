@@ -253,9 +253,9 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
         ov_shape_free(&input_shape);
         return ov2_map_error(status, NULL);
     }
-    input.height = dims[1];
-    input.width = dims[2];
-    input.channels = dims[3];
+    for (int i = 0; i < input_shape.rank; i++)
+        input.dims[i] = dims[i];
+    input.layout = DL_NHWC;
     input.dt = precision_to_datatype(precision);
 #else
     status = ie_infer_request_get_blob(request->infer_request, task->input_name, &input_blob);
@@ -278,9 +278,9 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
         av_log(ctx, AV_LOG_ERROR, "Failed to get input blob buffer\n");
         return DNN_GENERIC_ERROR;
     }
-    input.height = dims.dims[2];
-    input.width = dims.dims[3];
-    input.channels = dims.dims[1];
+    for (int i = 0; i < input_shape.rank; i++)
+        input.dims[i] = dims[i];
+    input.layout = DL_NCHW;
     input.data = blob_buffer.buffer;
     input.dt = precision_to_datatype(precision);
 #endif
@@ -339,8 +339,8 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
             av_assert0(!"should not reach here");
             break;
         }
-        input.data = (uint8_t *)input.data
-                     + input.width * input.height * input.channels * get_datatype_size(input.dt);
+        input.data = (uint8_t *)input.data +
+            input.dims[1] * input.dims[2] * input.dims[3] * get_datatype_size(input.dt);
     }
 #if HAVE_OPENVINO2
     ov_tensor_free(tensor);
@@ -403,10 +403,11 @@ static void infer_completion_callback(void *args)
             goto end;
         }
         outputs[i].dt       = precision_to_datatype(precision);
-
-        outputs[i].channels = output_shape.rank > 2 ? dims[output_shape.rank - 3] : 1;
-        outputs[i].height   = output_shape.rank > 1 ? dims[output_shape.rank - 2] : 1;
-        outputs[i].width    = output_shape.rank > 0 ? dims[output_shape.rank - 1] : 1;
+        outputs[i].layout   = DL_NCHW;
+        outputs[i].dims[0]  = 1;
+        outputs[i].dims[1]  = output_shape.rank > 2 ? dims[output_shape.rank - 3] : 1;
+        outputs[i].dims[2]  = output_shape.rank > 1 ? dims[output_shape.rank - 2] : 1;
+        outputs[i].dims[3]  = output_shape.rank > 0 ? dims[output_shape.rank - 1] : 1;
         av_assert0(request->lltask_count <= dims[0]);
         outputs[i].layout   = ctx->options.layout;
         outputs[i].scale    = ctx->options.scale;
@@ -445,9 +446,9 @@ static void infer_completion_callback(void *args)
         return;
     }
     output.data     = blob_buffer.buffer;
-    output.channels = dims.dims[1];
-    output.height   = dims.dims[2];
-    output.width    = dims.dims[3];
+    output.layout   = DL_NCHW;
+    for (int i = 0; i < 4; i++)
+        output.dims[i] = dims.dims[i];
     av_assert0(request->lltask_count <= dims.dims[0]);
     output.dt       = precision_to_datatype(precision);
     output.layout   = ctx->options.layout;
@@ -469,8 +470,10 @@ static void infer_completion_callback(void *args)
                     ff_proc_from_dnn_to_frame(task->out_frame, outputs, ctx);
                 }
             } else {
-                task->out_frame->width = outputs[0].width;
-                task->out_frame->height = outputs[0].height;
+                task->out_frame->width =
+                    outputs[0].dims[dnn_get_width_idx_by_layout(outputs[0].layout)];
+                task->out_frame->height =
+                    outputs[0].dims[dnn_get_height_idx_by_layout(outputs[0].layout)];
             }
             break;
         case DFT_ANALYTICS_DETECT:
@@ -501,7 +504,8 @@ static void infer_completion_callback(void *args)
         av_freep(&request->lltasks[i]);
         for (int i = 0; i < ov_model->nb_outputs; i++)
             outputs[i].data = (uint8_t *)outputs[i].data +
-                outputs[i].width * outputs[i].height * outputs[i].channels * get_datatype_size(outputs[i].dt);
+                outputs[i].dims[1] * outputs[i].dims[2] * outputs[i].dims[3] *
+                get_datatype_size(outputs[i].dt);
     }
 end:
 #if HAVE_OPENVINO2
@@ -1085,7 +1089,6 @@ static int get_input_ov(void *model, DNNData *input, const char *input_name)
 #if HAVE_OPENVINO2
     ov_shape_t input_shape = {0};
     ov_element_type_e precision;
-    int64_t* dims;
     ov_status_e status;
     if (input_name)
         status = ov_model_const_input_by_name(ov_model->ov_model, input_name, &ov_model->input_port);
@@ -1105,16 +1108,18 @@ static int get_input_ov(void *model, DNNData *input, const char *input_name)
         av_log(ctx, AV_LOG_ERROR, "Failed to get input port shape.\n");
         return ov2_map_error(status, NULL);
     }
-    dims = input_shape.dims;
-    if (dims[1] <= 3) { // NCHW
-        input->channels = dims[1];
-        input->height   = input_resizable ? -1 : dims[2];
-        input->width    = input_resizable ? -1 : dims[3];
-    } else { // NHWC
-        input->height   = input_resizable ? -1 : dims[1];
-        input->width    = input_resizable ? -1 : dims[2];
-        input->channels = dims[3];
+    for (int i = 0; i < 4; i++)
+        input->dims[i] = input_shape.dims[i];
+    if (input_resizable) {
+        input->dims[dnn_get_width_idx_by_layout(input->layout)] = -1;
+        input->dims[dnn_get_height_idx_by_layout(input->layout)] = -1;
     }
+
+    if (input_shape.dims[1] <= 3) // NCHW
+        input->layout = DL_NCHW;
+    else // NHWC
+        input->layout = DL_NHWC;
+
     input->dt       = precision_to_datatype(precision);
     ov_shape_free(&input_shape);
     return 0;
@@ -1144,15 +1149,18 @@ static int get_input_ov(void *model, DNNData *input, const char *input_name)
                 return DNN_GENERIC_ERROR;
             }
 
-            if (dims[1] <= 3) { // NCHW
-                input->channels = dims[1];
-                input->height   = input_resizable ? -1 : dims[2];
-                input->width    = input_resizable ? -1 : dims[3];
-            } else { // NHWC
-                input->height   = input_resizable ? -1 : dims[1];
-                input->width    = input_resizable ? -1 : dims[2];
-                input->channels = dims[3];
+            for (int i = 0; i < 4; i++)
+                input->dims[i] = input_shape.dims[i];
+            if (input_resizable) {
+                input->dims[dnn_get_width_idx_by_layout(input->layout)] = -1;
+                input->dims[dnn_get_height_idx_by_layout(input->layout)] = -1;
             }
+
+            if (input_shape.dims[1] <= 3) // NCHW
+                input->layout = DL_NCHW;
+            else // NHWC
+                input->layout = DL_NHWC;
+
             input->dt       = precision_to_datatype(precision);
             return 0;
         }

@@ -166,14 +166,14 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
         scale_w = cell_w;
         scale_h = cell_h;
     } else {
-        if (output[output_index].height != output[output_index].width &&
-            output[output_index].height == output[output_index].channels) {
+        if (output[output_index].dims[2] != output[output_index].dims[3] &&
+            output[output_index].dims[2] == output[output_index].dims[1]) {
             is_NHWC = 1;
-            cell_w = output[output_index].height;
-            cell_h = output[output_index].channels;
+            cell_w = output[output_index].dims[2];
+            cell_h = output[output_index].dims[1];
         } else {
-            cell_w = output[output_index].width;
-            cell_h = output[output_index].height;
+            cell_w = output[output_index].dims[3];
+            cell_h = output[output_index].dims[2];
         }
         scale_w = ctx->scale_width;
         scale_h = ctx->scale_height;
@@ -205,14 +205,14 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
         return AVERROR(EINVAL);
     }
 
-    if (output[output_index].channels * output[output_index].width *
-            output[output_index].height % (box_size * cell_w * cell_h)) {
+    if (output[output_index].dims[1] * output[output_index].dims[2] *
+            output[output_index].dims[3] % (box_size * cell_w * cell_h)) {
         av_log(filter_ctx, AV_LOG_ERROR, "wrong cell_w, cell_h or nb_classes\n");
         return AVERROR(EINVAL);
     }
-    detection_boxes = output[output_index].channels *
-                      output[output_index].height *
-                      output[output_index].width / box_size / cell_w / cell_h;
+    detection_boxes = output[output_index].dims[1] *
+                      output[output_index].dims[2] *
+                      output[output_index].dims[3] / box_size / cell_w / cell_h;
 
     anchors = anchors + (detection_boxes * output_index * 2);
     /**
@@ -373,18 +373,18 @@ static int dnn_detect_post_proc_ssd(AVFrame *frame, DNNData *output, int nb_outp
     int scale_w = ctx->scale_width;
     int scale_h = ctx->scale_height;
 
-    if (nb_outputs == 1 && output->width == 7) {
-        proposal_count = output->height;
-        detect_size = output->width;
+    if (nb_outputs == 1 && output->dims[3] == 7) {
+        proposal_count = output->dims[2];
+        detect_size = output->dims[3];
         detections = output->data;
-    } else if (nb_outputs == 2 && output[0].width == 5) {
-        proposal_count = output[0].height;
-        detect_size = output[0].width;
+    } else if (nb_outputs == 2 && output[0].dims[3] == 5) {
+        proposal_count = output[0].dims[2];
+        detect_size = output[0].dims[3];
         detections = output[0].data;
         labels = output[1].data;
-    } else if (nb_outputs == 2 && output[1].width == 5) {
-        proposal_count = output[1].height;
-        detect_size = output[1].width;
+    } else if (nb_outputs == 2 && output[1].dims[3] == 5) {
+        proposal_count = output[1].dims[2];
+        detect_size = output[1].dims[3];
         detections = output[1].data;
         labels = output[0].data;
     } else {
@@ -821,15 +821,19 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *context     = inlink->dst;
     DnnDetectContext *ctx = context->priv;
     DNNData model_input;
-    int ret;
+    int ret, width_idx, height_idx;
 
     ret = ff_dnn_get_input(&ctx->dnnctx, &model_input);
     if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "could not get input from the model\n");
         return ret;
     }
-    ctx->scale_width = model_input.width == -1 ? inlink->w : model_input.width;
-    ctx->scale_height = model_input.height ==  -1 ? inlink->h : model_input.height;
+    width_idx = dnn_get_width_idx_by_layout(model_input.layout);
+    height_idx = dnn_get_height_idx_by_layout(model_input.layout);
+    ctx->scale_width = model_input.dims[width_idx] == -1 ? inlink->w :
+        model_input.dims[width_idx];
+    ctx->scale_height = model_input.dims[height_idx] ==  -1 ? inlink->h :
+        model_input.dims[height_idx];
 
     return 0;
 }

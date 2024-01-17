@@ -251,7 +251,12 @@ static TF_Tensor *allocate_input_tensor(const DNNData *input)
 {
     TF_DataType dt;
     size_t size;
-    int64_t input_dims[] = {1, input->height, input->width, input->channels};
+    int64_t input_dims[4] = { 0 };
+
+    input_dims[0] = 1;
+    input_dims[1] = input->dims[dnn_get_height_idx_by_layout(input->layout)];
+    input_dims[2] = input->dims[dnn_get_width_idx_by_layout(input->layout)];
+    input_dims[3] = input->dims[dnn_get_channel_idx_by_layout(input->layout)];
     switch (input->dt) {
     case DNN_FLOAT:
         dt = TF_FLOAT;
@@ -310,9 +315,9 @@ static int get_input_tf(void *model, DNNData *input, const char *input_name)
 
     // currently only NHWC is supported
     av_assert0(dims[0] == 1 || dims[0] == -1);
-    input->height = dims[1];
-    input->width = dims[2];
-    input->channels = dims[3];
+    for (int i = 0; i < 4; i++)
+        input->dims[i] = dims[i];
+    input->layout = DL_NHWC;
 
     return 0;
 }
@@ -640,8 +645,8 @@ static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
     }
 
     infer_request = request->infer_request;
-    input.height = task->in_frame->height;
-    input.width = task->in_frame->width;
+    input.dims[1] = task->in_frame->height;
+    input.dims[2] = task->in_frame->width;
 
     infer_request->tf_input = av_malloc(sizeof(TF_Output));
     if (!infer_request->tf_input) {
@@ -731,9 +736,12 @@ static void infer_completion_callback(void *args) {
     }
 
     for (uint32_t i = 0; i < task->nb_output; ++i) {
-        outputs[i].height = TF_Dim(infer_request->output_tensors[i], 1);
-        outputs[i].width = TF_Dim(infer_request->output_tensors[i], 2);
-        outputs[i].channels = TF_Dim(infer_request->output_tensors[i], 3);
+        outputs[i].dims[dnn_get_height_idx_by_layout(outputs[i].layout)] =
+            TF_Dim(infer_request->output_tensors[i], 1);
+        outputs[i].dims[dnn_get_width_idx_by_layout(outputs[i].layout)] =
+            TF_Dim(infer_request->output_tensors[i], 2);
+        outputs[i].dims[dnn_get_channel_idx_by_layout(outputs[i].layout)] =
+            TF_Dim(infer_request->output_tensors[i], 3);
         outputs[i].data = TF_TensorData(infer_request->output_tensors[i]);
         outputs[i].dt = (DNNDataType)TF_TensorType(infer_request->output_tensors[i]);
     }
@@ -747,8 +755,10 @@ static void infer_completion_callback(void *args) {
                 ff_proc_from_dnn_to_frame(task->out_frame, outputs, ctx);
             }
         } else {
-            task->out_frame->width = outputs[0].width;
-            task->out_frame->height = outputs[0].height;
+            task->out_frame->width =
+                outputs[0].dims[dnn_get_width_idx_by_layout(outputs[0].layout)];
+            task->out_frame->height =
+                outputs[0].dims[dnn_get_height_idx_by_layout(outputs[0].layout)];
         }
         break;
     case DFT_ANALYTICS_DETECT:
