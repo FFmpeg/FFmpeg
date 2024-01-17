@@ -236,9 +236,6 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
                     conf = post_process_raw_data(
                                 detection_boxes_data[cy * cell_w + cx + 4 * cell_w * cell_h]);
                 }
-                if (conf < conf_threshold) {
-                    continue;
-                }
 
                 if (is_NHWC) {
                     x = post_process_raw_data(detection_boxes_data[0]);
@@ -256,6 +253,9 @@ static int dnn_detect_parse_yolo_output(AVFrame *frame, DNNData *output, int out
                         detection_boxes_data + cy * cell_w + cx + 5 * cell_w * cell_h);
                     conf = conf * post_process_raw_data(
                                 detection_boxes_data[cy * cell_w + cx + (label_id + 5) * cell_w * cell_h]);
+                }
+                if (conf < conf_threshold) {
+                    continue;
                 }
 
                 bbox = av_mallocz(sizeof(*bbox));
