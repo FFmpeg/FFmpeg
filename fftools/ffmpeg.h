@@ -282,6 +282,8 @@ typedef struct FilterGraph {
 
 enum DecoderFlags {
     DECODER_FLAG_FIX_SUB_DURATION = (1 << 0),
+    // input timestamps are unreliable (guessed by demuxer)
+    DECODER_FLAG_TS_UNRELIABLE    = (1 << 1),
 };
 
 typedef struct Decoder {
@@ -361,9 +363,6 @@ typedef struct InputFile {
     const AVClass *class;
 
     int index;
-
-    // input format has no timestamps
-    int format_nots;
 
     AVFormatContext *ctx;
     int64_t input_ts_offset;

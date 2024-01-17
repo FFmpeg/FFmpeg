@@ -216,7 +216,7 @@ static void audio_ts_process(DecoderPriv *dp, AVFrame *frame)
 static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
 {
     const DecoderPriv    *dp = dp_from_dec(ist->decoder);
-    const InputFile   *ifile = ist->file;
+    const int  ts_unreliable = dp->flags & DECODER_FLAG_TS_UNRELIABLE;
     int64_t codec_duration = 0;
 
     // XXX lavf currently makes up frame durations when they are not provided by
@@ -226,7 +226,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     // durations, then this should be simplified.
 
     // prefer frame duration for containers with timestamps
-    if (frame->duration > 0 && (!ifile->format_nots || ist->framerate.num))
+    if (frame->duration > 0 && (!ts_unreliable || ist->framerate.num))
         return frame->duration;
 
     if (dp->dec_ctx->framerate.den && dp->dec_ctx->framerate.num) {
@@ -238,7 +238,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     }
 
     // prefer codec-layer duration for containers without timestamps
-    if (codec_duration > 0 && ifile->format_nots)
+    if (codec_duration > 0 && ts_unreliable)
         return codec_duration;
 
     // when timestamps are available, repeat last frame's actual duration
@@ -466,7 +466,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
     if (pkt && pkt->size == 0)
         return 0;
 
-    if (pkt && ifile->format_nots) {
+    if (pkt && (dp->flags & DECODER_FLAG_TS_UNRELIABLE)) {
         pkt->pts = AV_NOPTS_VALUE;
         pkt->dts = AV_NOPTS_VALUE;
     }
