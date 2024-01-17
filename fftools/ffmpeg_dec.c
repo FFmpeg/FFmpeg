@@ -960,9 +960,6 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
 
     if (!av_dict_get(*dec_opts, "threads", NULL, 0))
         av_dict_set(dec_opts, "threads", "auto", 0);
-    /* Attached pics are sparse, therefore we would not want to delay their decoding till EOF. */
-    if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
-        av_dict_set(dec_opts, "threads", "1", 0);
 
     av_dict_set(dec_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
 

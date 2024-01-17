@@ -1259,6 +1259,11 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     if (o->bitexact)
         av_dict_set(&ist->decoder_opts, "flags", "+bitexact", AV_DICT_MULTIKEY);
 
+    /* Attached pics are sparse, therefore we would not want to delay their decoding
+     * till EOF. */
+    if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
+        av_dict_set(&ist->decoder_opts, "thread_type", "-frame", 0);
+
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         MATCH_PER_STREAM_OPT(frame_rates, str, framerate, ic, st);
