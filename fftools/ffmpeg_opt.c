@@ -1195,6 +1195,9 @@ void show_help_default(const char *opt, const char *arg)
            "    -h full -- print all options (including all format and codec specific options, very long)\n"
            "    -h type=name -- print all options for the named decoder/encoder/demuxer/muxer/filter/bsf/protocol\n"
            "    See man %s for detailed description of the options.\n"
+           "\n"
+           "Per-stream options can be followed by :<stream_spec> to apply that option to specific streams only. "
+           "<stream_spec> can be a stream index, or v/a/s for video/audio/subtitle (see manual for full syntax).\n"
            "\n", program_name);
 
     show_help_options(options, "Print help / information / capabilities:",
