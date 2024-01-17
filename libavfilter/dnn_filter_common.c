@@ -57,15 +57,17 @@ int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *fil
         av_log(filter_ctx, AV_LOG_ERROR, "model file for network is not specified\n");
         return AVERROR(EINVAL);
     }
-    if (!ctx->model_inputname) {
-        av_log(filter_ctx, AV_LOG_ERROR, "input name of the model network is not specified\n");
-        return AVERROR(EINVAL);
-    }
 
-    ctx->model_outputnames = separate_output_names(ctx->model_outputnames_string, "&", &ctx->nb_outputs);
-    if (!ctx->model_outputnames) {
-        av_log(filter_ctx, AV_LOG_ERROR, "could not parse model output names\n");
-        return AVERROR(EINVAL);
+    if (ctx->backend_type == DNN_TF) {
+        if (!ctx->model_inputname) {
+            av_log(filter_ctx, AV_LOG_ERROR, "input name of the model network is not specified\n");
+            return AVERROR(EINVAL);
+        }
+        ctx->model_outputnames = separate_output_names(ctx->model_outputnames_string, "&", &ctx->nb_outputs);
+        if (!ctx->model_outputnames) {
+            av_log(filter_ctx, AV_LOG_ERROR, "could not parse model output names\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     ctx->dnn_module = ff_get_dnn_module(ctx->backend_type, filter_ctx);
@@ -113,8 +115,9 @@ int ff_dnn_get_input(DnnContext *ctx, DNNData *input)
 
 int ff_dnn_get_output(DnnContext *ctx, int input_width, int input_height, int *output_width, int *output_height)
 {
+    char * output_name = ctx->model_outputnames ? ctx->model_outputnames[0] : NULL;
     return ctx->model->get_output(ctx->model->model, ctx->model_inputname, input_width, input_height,
-                                    (const char *)ctx->model_outputnames[0], output_width, output_height);
+                                    (const char *)output_name, output_width, output_height);
 }
 
 int ff_dnn_execute_model(DnnContext *ctx, AVFrame *in_frame, AVFrame *out_frame)

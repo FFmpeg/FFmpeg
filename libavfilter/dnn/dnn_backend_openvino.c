@@ -205,6 +205,7 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
     ov_tensor_t* tensor = NULL;
     ov_shape_t input_shape = {0};
     ov_element_type_e precision;
+    char *port_name;
 #else
     dimensions_t dims;
     precision_e precision;
@@ -223,11 +224,23 @@ static int fill_model_input_ov(OVModel *ov_model, OVRequestItem *request)
         ov_output_const_port_free(ov_model->input_port);
         ov_model->input_port = NULL;
     }
-    status = ov_model_const_input_by_name(ov_model->ov_model, task->input_name, &ov_model->input_port);
+    if (task->input_name)
+        status = ov_model_const_input_by_name(ov_model->ov_model, task->input_name, &ov_model->input_port);
+    else
+        status = ov_model_const_input(ov_model->ov_model, &ov_model->input_port);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get input port shape.\n");
         return ov2_map_error(status, NULL);
     }
+    status = ov_port_get_any_name(ov_model->input_port, &port_name);
+    if (status != OK) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to get input port name.\n");
+        return ov2_map_error(status, NULL);
+    }
+    av_log(ctx, AV_LOG_VERBOSE, "OpenVINO model input: %s\n", port_name);
+    ov_free(port_name);
+    port_name = NULL;
+
     status = ov_const_port_get_shape(ov_model->input_port, &input_shape);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get input port shape.\n");
@@ -620,7 +633,10 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         goto err;
     }
 
-    status = ov_preprocess_prepostprocessor_get_input_info_by_name(ov_model->preprocess, input_name, &ov_model->input_info);
+    if (input_name)
+        status = ov_preprocess_prepostprocessor_get_input_info_by_name(ov_model->preprocess, input_name, &ov_model->input_info);
+    else
+        status = ov_preprocess_prepostprocessor_get_input_info(ov_model->preprocess, &ov_model->input_info);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get input info from preprocess.\n");
         ret = ov2_map_error(status, NULL);
@@ -673,10 +689,24 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         goto err;
     }
 
+    if (!nb_outputs) {
+        size_t output_size;
+        status = ov_model_outputs_size(ov_model->ov_model, &output_size);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get output size.\n");
+            ret = ov2_map_error(status, NULL);
+            goto err;
+        }
+        nb_outputs = output_size;
+    }
     ov_model->nb_outputs = nb_outputs;
     for (int i = 0; i < nb_outputs; i++) {
-        status = ov_preprocess_prepostprocessor_get_output_info_by_name(
-                ov_model->preprocess, output_names[i], &ov_model->output_info);
+        if (output_names)
+            status = ov_preprocess_prepostprocessor_get_output_info_by_name(
+                    ov_model->preprocess, output_names[i], &ov_model->output_info);
+        else
+            status = ov_preprocess_prepostprocessor_get_output_info_by_index(
+                    ov_model->preprocess, i, &ov_model->output_info);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to get output info from preprocess.\n");
             ret = ov2_map_error(status, NULL);
@@ -758,12 +788,25 @@ static int init_model_ov(OVModel *ov_model, const char *input_name, const char *
         }
 
     for (int i = 0; i < nb_outputs; i++) {
-        status = ov_model_const_output_by_name(ov_model->ov_model, output_names[i],
-                                               &ov_model->output_ports[i]);
+        char *port_name;
+        if (output_names)
+            status = ov_model_const_output_by_name(ov_model->ov_model, output_names[i],
+                                            &ov_model->output_ports[i]);
+        else
+            status = ov_model_const_output_by_index(ov_model->ov_model, i,
+                                            &ov_model->output_ports[i]);
         if (status != OK) {
             av_log(ctx, AV_LOG_ERROR, "Failed to get output port %s.\n", output_names[i]);
             goto err;
         }
+        status = ov_port_get_any_name(ov_model->output_ports[i], &port_name);
+        if (status != OK) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to get output port name.\n");
+            goto err;
+        }
+        av_log(ctx, AV_LOG_VERBOSE, "OpenVINO model outputs: %s\n", port_name);
+        ov_free(port_name);
+        port_name = NULL;
     }
     //compile network
     status = ov_core_compile_model(ov_model->core, ov_model->ov_model, device, 0, &ov_model->compiled_model);
@@ -1044,7 +1087,10 @@ static int get_input_ov(void *model, DNNData *input, const char *input_name)
     ov_element_type_e precision;
     int64_t* dims;
     ov_status_e status;
-    status = ov_model_const_input_by_name(ov_model->ov_model, input_name, &ov_model->input_port);
+    if (input_name)
+        status = ov_model_const_input_by_name(ov_model->ov_model, input_name, &ov_model->input_port);
+    else
+        status = ov_model_const_input(ov_model->ov_model, &ov_model->input_port);
     if (status != OK) {
         av_log(ctx, AV_LOG_ERROR, "Failed to get input port shape.\n");
         return ov2_map_error(status, NULL);
@@ -1241,7 +1287,7 @@ static int get_output_ov(void *model, const char *input_name, int input_width, i
     OVRequestItem *request;
     DNNExecBaseParams exec_params = {
         .input_name     = input_name,
-        .output_names   = &output_name,
+        .output_names   = output_name ? &output_name : NULL,
         .nb_output      = 1,
         .in_frame       = NULL,
         .out_frame      = NULL,
@@ -1297,7 +1343,7 @@ static int get_output_ov(void *model, const char *input_name, int input_width, i
     }
     if (!ov_model->exe_network) {
 #endif
-        ret = init_model_ov(ov_model, input_name, &output_name, 1);
+        ret = init_model_ov(ov_model, input_name, output_name ? &output_name : NULL, 1);
         if (ret != 0) {
             av_log(ctx, AV_LOG_ERROR, "Failed init OpenVINO exectuable network or inference request\n");
             return ret;
