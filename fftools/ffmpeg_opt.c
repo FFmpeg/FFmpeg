@@ -1198,46 +1198,46 @@ void show_help_default(const char *opt, const char *arg)
            "\n", program_name);
 
     show_help_options(options, "Print help / information / capabilities:",
-                      OPT_EXIT, OPT_EXPERT, 0);
+                      OPT_EXIT, OPT_EXPERT);
     if (show_advanced)
         show_help_options(options, "Advanced information / capabilities:",
-                          OPT_EXIT | OPT_EXPERT, 0, 0);
+                          OPT_EXIT | OPT_EXPERT, 0);
 
     show_help_options(options, "Global options (affect whole program "
                       "instead of just one file):",
-                      0, OPT_PERFILE | OPT_EXIT | OPT_EXPERT, 0);
+                      0, OPT_PERFILE | OPT_EXIT | OPT_EXPERT);
     if (show_advanced)
         show_help_options(options, "Advanced global options:", OPT_EXPERT,
-                          OPT_PERFILE | OPT_EXIT, 0);
+                          OPT_PERFILE | OPT_EXIT);
 
-    show_help_options(options, "Per-file main options:", 0,
+    show_help_options(options, "Per-file main options:", OPT_PERFILE,
                       OPT_EXPERT | OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE | OPT_DATA |
-                      OPT_EXIT, OPT_PERFILE);
+                      OPT_EXIT);
     if (show_advanced)
         show_help_options(options, "Advanced per-file options:",
-                          OPT_EXPERT, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE, OPT_PERFILE);
+                          OPT_EXPERT | OPT_PERFILE, OPT_AUDIO | OPT_VIDEO | OPT_SUBTITLE);
 
     show_help_options(options, "Video options:",
-                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA, 0);
+                      OPT_VIDEO, OPT_EXPERT | OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
     if (show_advanced)
         show_help_options(options, "Advanced Video options:",
-                          OPT_EXPERT | OPT_VIDEO, OPT_AUDIO | OPT_SUBTITLE | OPT_DATA, 0);
+                          OPT_EXPERT | OPT_VIDEO, OPT_AUDIO | OPT_SUBTITLE | OPT_DATA);
 
     show_help_options(options, "Audio options:",
-                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO | OPT_SUBTITLE | OPT_DATA, 0);
+                      OPT_AUDIO, OPT_EXPERT | OPT_VIDEO | OPT_SUBTITLE | OPT_DATA);
     if (show_advanced)
         show_help_options(options, "Advanced Audio options:",
-                          OPT_EXPERT | OPT_AUDIO, OPT_VIDEO | OPT_SUBTITLE | OPT_DATA, 0);
+                          OPT_EXPERT | OPT_AUDIO, OPT_VIDEO | OPT_SUBTITLE | OPT_DATA);
 
     show_help_options(options, "Subtitle options:",
-                      OPT_SUBTITLE, OPT_EXPERT | OPT_VIDEO | OPT_AUDIO | OPT_DATA, 0);
+                      OPT_SUBTITLE, OPT_EXPERT | OPT_VIDEO | OPT_AUDIO | OPT_DATA);
     if (show_advanced)
         show_help_options(options, "Advanced Subtitle options:",
-                          OPT_EXPERT | OPT_SUBTITLE, OPT_VIDEO | OPT_AUDIO | OPT_DATA, 0);
+                          OPT_EXPERT | OPT_SUBTITLE, OPT_VIDEO | OPT_AUDIO | OPT_DATA);
 
     if (show_advanced)
         show_help_options(options, "Data stream options:",
-                          OPT_DATA, OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE, 0);
+                          OPT_DATA, OPT_VIDEO | OPT_AUDIO | OPT_SUBTITLE);
     printf("\n");
 
     if (show_avoptions) {

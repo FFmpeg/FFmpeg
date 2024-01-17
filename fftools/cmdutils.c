@@ -108,7 +108,7 @@ int parse_number(const char *context, const char *numstr, enum OptionType type,
 }
 
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
-                       int rej_flags, int alt_flags)
+                       int rej_flags)
 {
     const OptionDef *po;
     int first;
@@ -118,7 +118,6 @@ void show_help_options(const OptionDef *options, const char *msg, int req_flags,
         char buf[128];
 
         if (((po->flags & req_flags) != req_flags) ||
-            (alt_flags && !(po->flags & alt_flags)) ||
             (po->flags & rej_flags))
             continue;
 
