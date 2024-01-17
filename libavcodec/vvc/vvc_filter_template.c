@@ -551,81 +551,80 @@ static void FUNC(vvc_loop_filter_luma)(uint8_t* _pix, ptrdiff_t _xstride, ptrdif
     const ptrdiff_t ystride = _ystride / sizeof(pixel);
 
     for (int i = 0; i < 2; i++) {
-        pixel* pix      = (pixel*)_pix + i * 4 * ystride;
-        const int dp0   = abs(P2 - 2 * P1 + P0);
-        const int dq0   = abs(Q2 - 2 * Q1 + Q0);
-        const int dp3   = abs(TP2 - 2 * TP1 + TP0);
-        const int dq3   = abs(TQ2 - 2 * TQ1 + TQ0);
-        const int d0    = dp0 + dq0;
-        const int d3    = dp3 + dq3;
 #if BIT_DEPTH < 10
         const int tc    = (_tc[i] + (1 << (9 - BIT_DEPTH))) >> (10 - BIT_DEPTH);
 #else
         const int tc    = _tc[i] << (BIT_DEPTH - 10);
 #endif
-        const int tc25  = ((tc * 5 + 1) >> 1);
+        if (tc) {
+            pixel* pix     = (pixel*)_pix + i * 4 * ystride;
+            const int dp0  = abs(P2 - 2 * P1 + P0);
+            const int dq0  = abs(Q2 - 2 * Q1 + Q0);
+            const int dp3  = abs(TP2 - 2 * TP1 + TP0);
+            const int dq3  = abs(TQ2 - 2 * TQ1 + TQ0);
+            const int d0   = dp0 + dq0;
+            const int d3   = dp3 + dq3;
+            const int tc25 = ((tc * 5 + 1) >> 1);
 
-        const int no_p  = _no_p[i];
-        const int no_q  = _no_q[i];
+            const int no_p = _no_p[i];
+            const int no_q = _no_q[i];
 
-        int max_len_p   = _max_len_p[i];
-        int max_len_q   = _max_len_q[i];
+            int max_len_p  = _max_len_p[i];
+            int max_len_q  = _max_len_q[i];
 
-        const int large_p = (max_len_p > 3 && !hor_ctu_edge);
-        const int large_q = max_len_q > 3;
-        const int beta = _beta[i] << BIT_DEPTH - 8;
+            const int large_p = (max_len_p > 3 && !hor_ctu_edge);
+            const int large_q = max_len_q > 3;
 
-        const int beta_3 = beta >> 3;
-        const int beta_2 = beta >> 2;
+            const int beta    = _beta[i] << BIT_DEPTH - 8;
+            const int beta_3  = beta >> 3;
+            const int beta_2  = beta >> 2;
 
-        if (!tc)
-            continue;
+            if (large_p || large_q) {
+                const int dp0l = large_p ? ((dp0 + abs(P5 - 2 * P4 + P3) + 1) >> 1) : dp0;
+                const int dq0l = large_q ? ((dq0 + abs(Q5 - 2 * Q4 + Q3) + 1) >> 1) : dq0;
+                const int dp3l = large_p ? ((dp3 + abs(TP5 - 2 * TP4 + TP3) + 1) >> 1) : dp3;
+                const int dq3l = large_q ? ((dq3 + abs(TQ5 - 2 * TQ4 + TQ3) + 1) >> 1) : dq3;
+                const int d0l = dp0l + dq0l;
+                const int d3l = dp3l + dq3l;
+                const int beta53 = beta * 3 >> 5;
+                const int beta_4 = beta >> 4;
+                max_len_p = large_p ? max_len_p : 3;
+                max_len_q = large_q ? max_len_q : 3;
 
-        if (large_p || large_q) {
-            const int dp0l = large_p ? ((dp0 + abs(P5 - 2 * P4 + P3) + 1) >> 1) : dp0;
-            const int dq0l = large_q ? ((dq0 + abs(Q5 - 2 * Q4 + Q3) + 1) >> 1) : dq0;
-            const int dp3l = large_p ? ((dp3 + abs(TP5 - 2 * TP4 + TP3) + 1) >> 1) : dp3;
-            const int dq3l = large_q ? ((dq3 + abs(TQ5 - 2 * TQ4 + TQ3) + 1) >> 1) : dq3;
-            const int d0l = dp0l + dq0l;
-            const int d3l = dp3l + dq3l;
-            const int beta53 = beta * 3 >> 5;
-            const int beta_4 = beta >> 4;
-            max_len_p = large_p ? max_len_p : 3;
-            max_len_q = large_q ? max_len_q : 3;
-
-            if (d0l + d3l < beta) {
-                const int sp0l = abs(P3 - P0) + (max_len_p == 7 ? abs(P7 - P6 - P5 + P4) : 0);
-                const int sq0l = abs(Q0 - Q3) + (max_len_q == 7 ? abs(Q4 - Q5 - Q6 + Q7) : 0);
-                const int sp3l = abs(TP3 - TP0) + (max_len_p == 7 ? abs(TP7 - TP6 - TP5 + TP4) : 0);
-                const int sq3l = abs(TQ0 - TQ3) + (max_len_q == 7 ? abs(TQ4 - TQ5 - TQ6 + TQ7) : 0);
-                const int sp0 = large_p ? ((sp0l + abs(P3 -   P(max_len_p)) + 1) >> 1) : sp0l;
-                const int sp3 = large_p ? ((sp3l + abs(TP3 - TP(max_len_p)) + 1) >> 1) : sp3l;
-                const int sq0 = large_q ? ((sq0l + abs(Q3 -   Q(max_len_q)) + 1) >> 1) : sq0l;
-                const int sq3 = large_q ? ((sq3l + abs(TQ3 - TQ(max_len_q)) + 1) >> 1) : sq3l;
-                if (sp0 + sq0 < beta53 && abs(P0 - Q0) < tc25 &&
-                    sp3 + sq3 < beta53 && abs(TP0 - TQ0) < tc25 &&
-                    (d0l << 1) < beta_4 && (d3l << 1) < beta_4) {
-                    FUNC(loop_filter_luma_large)(pix, xstride, ystride, tc, no_p, no_q, max_len_p, max_len_q);
-                    continue;
+                if (d0l + d3l < beta) {
+                    const int sp0l = abs(P3 - P0) + (max_len_p == 7 ? abs(P7 - P6 - P5 + P4) : 0);
+                    const int sq0l = abs(Q0 - Q3) + (max_len_q == 7 ? abs(Q4 - Q5 - Q6 + Q7) : 0);
+                    const int sp3l = abs(TP3 - TP0) + (max_len_p == 7 ? abs(TP7 - TP6 - TP5 + TP4) : 0);
+                    const int sq3l = abs(TQ0 - TQ3) + (max_len_q == 7 ? abs(TQ4 - TQ5 - TQ6 + TQ7) : 0);
+                    const int sp0 = large_p ? ((sp0l + abs(P3 -   P(max_len_p)) + 1) >> 1) : sp0l;
+                    const int sp3 = large_p ? ((sp3l + abs(TP3 - TP(max_len_p)) + 1) >> 1) : sp3l;
+                    const int sq0 = large_q ? ((sq0l + abs(Q3 -   Q(max_len_q)) + 1) >> 1) : sq0l;
+                    const int sq3 = large_q ? ((sq3l + abs(TQ3 - TQ(max_len_q)) + 1) >> 1) : sq3l;
+                    if (sp0 + sq0 < beta53 && abs(P0 - Q0) < tc25 &&
+                        sp3 + sq3 < beta53 && abs(TP0 - TQ0) < tc25 &&
+                        (d0l << 1) < beta_4 && (d3l << 1) < beta_4) {
+                        FUNC(loop_filter_luma_large)(pix, xstride, ystride, tc, no_p, no_q, max_len_p, max_len_q);
+                        continue;
+                    }
                 }
             }
-        }
-        if (d0 + d3 < beta) {
-            if (max_len_p > 2 && max_len_q > 2 &&
-                abs(P3 - P0) + abs(Q3 - Q0) < beta_3 && abs(P0 - Q0) < tc25 &&
-                abs(TP3 - TP0) + abs(TQ3 - TQ0) < beta_3 && abs(TP0 - TQ0) < tc25 &&
-                (d0 << 1) < beta_2 && (d3 << 1) < beta_2) {
-                FUNC(loop_filter_luma_strong)(pix, xstride, ystride, tc, tc << 1, tc * 3, no_p, no_q);
-            } else { // weak filtering
-                int nd_p = 1;
-                int nd_q = 1;
-                if (max_len_p > 1 && max_len_q > 1) {
-                    if (dp0 + dp3 < ((beta + (beta >> 1)) >> 3))
-                        nd_p = 2;
-                    if (dq0 + dq3 < ((beta + (beta >> 1)) >> 3))
-                        nd_q = 2;
+            if (d0 + d3 < beta) {
+                if (max_len_p > 2 && max_len_q > 2 &&
+                    abs(P3 - P0) + abs(Q3 - Q0) < beta_3 && abs(P0 - Q0) < tc25 &&
+                    abs(TP3 - TP0) + abs(TQ3 - TQ0) < beta_3 && abs(TP0 - TQ0) < tc25 &&
+                    (d0 << 1) < beta_2 && (d3 << 1) < beta_2) {
+                    FUNC(loop_filter_luma_strong)(pix, xstride, ystride, tc, tc << 1, tc * 3, no_p, no_q);
+                } else {
+                    int nd_p = 1;
+                    int nd_q = 1;
+                    if (max_len_p > 1 && max_len_q > 1) {
+                        if (dp0 + dp3 < ((beta + (beta >> 1)) >> 3))
+                            nd_p = 2;
+                        if (dq0 + dq3 < ((beta + (beta >> 1)) >> 3))
+                            nd_q = 2;
+                    }
+                    FUNC(loop_filter_luma_weak)(pix, xstride, ystride, tc, beta, no_p, no_q, nd_p, nd_q);
                 }
-                FUNC(loop_filter_luma_weak)(pix, xstride, ystride, tc, beta, no_p, no_q, nd_p, nd_q);
             }
         }
     }
@@ -689,65 +688,68 @@ static void FUNC(vvc_loop_filter_chroma)(uint8_t *_pix, const ptrdiff_t  _xstrid
     const int end           = 8 / size;         // 8 samples a loop
 
     for (int i = 0; i < end; i++) {
-        pixel *pix          = (pixel *)_pix + i * size * ystride;
-        const uint8_t no_p  = _no_p[i];
-        const uint8_t no_q  = _no_q[i];
-        const int beta      = _beta[i] << (BIT_DEPTH - 8);
-        const int beta_3    = beta >> 3;
-        const int beta_2    = beta >> 2;
-
 #if BIT_DEPTH < 10
         const int tc = (_tc[i] + (1 << (9 - BIT_DEPTH))) >> (10 - BIT_DEPTH);
 #else
         const int tc = _tc[i] << (BIT_DEPTH - 10);
 #endif
-        const int tc25      = ((tc * 5 + 1) >> 1);
+        if (tc) {
+            pixel *pix         = (pixel *)_pix + i * size * ystride;
+            const uint8_t no_p = _no_p[i];
+            const uint8_t no_q = _no_q[i];
 
-        uint8_t max_len_p   = _max_len_p[i];
-        uint8_t max_len_q   = _max_len_q[i];
+            const int beta     = _beta[i] << (BIT_DEPTH - 8);
+            const int beta_3   = beta >> 3;
+            const int beta_2   = beta >> 2;
 
-        if (!max_len_p || !max_len_q || !tc)
-            continue;
+            const int tc25     = ((tc * 5 + 1) >> 1);
 
-        if (max_len_q == 3){
-            const int p1n  = shift ? FP1 : TP1;
-            const int p2n = max_len_p == 1 ? p1n : (shift ? FP2 : TP2);
-            const int p0n  = shift ? FP0 : TP0;
-            const int q0n  = shift ? FQ0 : TQ0;
-            const int q1n  = shift ? FQ1 : TQ1;
-            const int q2n  = shift ? FQ2 : TQ2;
-            const int p3   = max_len_p == 1 ? P1 : P3;
-            const int p2   = max_len_p == 1 ? P1 : P2;
-            const int p1   = P1;
-            const int p0   = P0;
-            const int dp0  = abs(p2 - 2 * p1 + p0);
-            const int dq0  = abs(Q2 - 2 * Q1 + Q0);
+            uint8_t max_len_p  = _max_len_p[i];
+            uint8_t max_len_q  = _max_len_q[i];
 
-            const int dp1 = abs(p2n - 2 * p1n + p0n);
-            const int dq1 = abs(q2n - 2 * q1n + q0n);
-            const int d0  = dp0 + dq0;
-            const int d1  = dp1 + dq1;
+            if (!max_len_p || !max_len_q)
+                continue;
 
-            if (d0 + d1 < beta) {
-                const int p3n = max_len_p == 1 ? p1n : (shift ? FP3 : TP3);
-                const int q3n = shift ? FQ3 : TQ3;
-                const int dsam0 = (d0 << 1) < beta_2 && (abs(p3 - p0) + abs(Q0 - Q3)     < beta_3) &&
-                    abs(p0 - Q0)   < tc25;
-                const int dsam1 = (d1 << 1) < beta_2 && (abs(p3n - p0n) + abs(q0n - q3n) < beta_3) &&
-                    abs(p0n - q0n) < tc25;
-                if (!dsam0 || !dsam1)
+            if (max_len_q == 3){
+                const int p1n  = shift ? FP1 : TP1;
+                const int p2n = max_len_p == 1 ? p1n : (shift ? FP2 : TP2);
+                const int p0n  = shift ? FP0 : TP0;
+                const int q0n  = shift ? FQ0 : TQ0;
+                const int q1n  = shift ? FQ1 : TQ1;
+                const int q2n  = shift ? FQ2 : TQ2;
+                const int p3   = max_len_p == 1 ? P1 : P3;
+                const int p2   = max_len_p == 1 ? P1 : P2;
+                const int p1   = P1;
+                const int p0   = P0;
+                const int dp0  = abs(p2 - 2 * p1 + p0);
+                const int dq0  = abs(Q2 - 2 * Q1 + Q0);
+
+                const int dp1 = abs(p2n - 2 * p1n + p0n);
+                const int dq1 = abs(q2n - 2 * q1n + q0n);
+                const int d0  = dp0 + dq0;
+                const int d1  = dp1 + dq1;
+
+                if (d0 + d1 < beta) {
+                    const int p3n = max_len_p == 1 ? p1n : (shift ? FP3 : TP3);
+                    const int q3n = shift ? FQ3 : TQ3;
+                    const int dsam0 = (d0 << 1) < beta_2 && (abs(p3 - p0) + abs(Q0 - Q3)     < beta_3) &&
+                        abs(p0 - Q0)   < tc25;
+                    const int dsam1 = (d1 << 1) < beta_2 && (abs(p3n - p0n) + abs(q0n - q3n) < beta_3) &&
+                        abs(p0n - q0n) < tc25;
+                    if (!dsam0 || !dsam1)
+                        max_len_p = max_len_q = 1;
+                } else {
                     max_len_p = max_len_q = 1;
-            } else {
-                max_len_p = max_len_q = 1;
+                }
             }
-        }
 
-        if (max_len_p == 3 && max_len_q == 3)
-            FUNC(loop_filter_chroma_strong)(pix, xstride, ystride, size, tc, no_p, no_q);
-        else if (max_len_q == 3)
-            FUNC(loop_filter_chroma_strong_one_side)(pix, xstride, ystride, size, tc, no_p, no_q);
-        else
-            FUNC(loop_filter_chroma_weak)(pix, xstride, ystride, size, tc, no_p, no_q);
+            if (max_len_p == 3 && max_len_q == 3)
+                FUNC(loop_filter_chroma_strong)(pix, xstride, ystride, size, tc, no_p, no_q);
+            else if (max_len_q == 3)
+                FUNC(loop_filter_chroma_strong_one_side)(pix, xstride, ystride, size, tc, no_p, no_q);
+            else
+                FUNC(loop_filter_chroma_weak)(pix, xstride, ystride, size, tc, no_p, no_q);
+        }
     }
 }
 
