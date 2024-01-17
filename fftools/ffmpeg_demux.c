@@ -1336,6 +1336,9 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         return ret;
     }
 
+    if (ist->st->sample_aspect_ratio.num)
+        ist->par->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+
     MATCH_PER_STREAM_OPT(bitstream_filters, str, bsfs, ic, st);
     if (bsfs) {
         ret = av_bsf_list_parse_str(bsfs, &ds->bsf);

@@ -42,6 +42,9 @@ typedef struct DecoderPriv {
     AVFrame         *frame;
     AVPacket        *pkt;
 
+    // override output video sample aspect ratio with this value
+    AVRational       sar_override;
+
     enum AVPixelFormat hwaccel_pix_fmt;
 
     // pts/estimated duration of the last decoded frame
@@ -311,8 +314,8 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
                frame->time_base.num, frame->time_base.den);
     }
 
-    if (ist->st->sample_aspect_ratio.num)
-        frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+    if (dp->sar_override.num)
+        frame->sample_aspect_ratio = dp->sar_override;
 
     return 0;
 }
@@ -921,6 +924,8 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
         if (!dp->sub_heartbeat)
             return AVERROR(ENOMEM);
     }
+
+    dp->sar_override = ist->par->sample_aspect_ratio;
 
     dp->dec_ctx = avcodec_alloc_context3(codec);
     if (!dp->dec_ctx)
