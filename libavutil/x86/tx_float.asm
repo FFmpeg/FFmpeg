@@ -46,7 +46,7 @@
 %endif
 
 %assign i 16
-%rep 14
+%rep 18
 cextern tab_ %+ i %+ _float ; ff_tab_i_float...
 %assign i (i << 1)
 %endrep
@@ -1385,7 +1385,11 @@ FFT_SPLIT_RADIX_DEF 8192,  .16384pt
 FFT_SPLIT_RADIX_DEF 16384, .32768pt
 FFT_SPLIT_RADIX_DEF 32768, .65536pt
 FFT_SPLIT_RADIX_DEF 65536, .131072pt
-FFT_SPLIT_RADIX_DEF 131072
+FFT_SPLIT_RADIX_DEF 131072, .262144pt
+FFT_SPLIT_RADIX_DEF 262144, .524288pt
+FFT_SPLIT_RADIX_DEF 524288, .1048576pt
+FFT_SPLIT_RADIX_DEF 1048576, .2097152pt
+FFT_SPLIT_RADIX_DEF 2097152
 
 ;===============================================================================
 ; Final synthesis + deinterleaving code
