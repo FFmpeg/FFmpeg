@@ -971,12 +971,13 @@ ffmpeg -i INPUT -c:a pcm_u8 -c:v mpeg2video -f crc -
 
 @anchor{dash}
 @section dash
+Dynamic Adaptive Streaming over HTTP (DASH) muxer.
 
-Dynamic Adaptive Streaming over HTTP (DASH) muxer that creates segments
-and manifest files according to the MPEG-DASH standard ISO/IEC 23009-1:2014.
+This muxer creates segments and manifest files according to the
+MPEG-DASH standard ISO/IEC 23009-1:2014 and following standard
+updates.
 
 For more information see:
-
 @itemize @bullet
 @item
 ISO DASH Specification: @url{http://standards.iso.org/ittf/PubliclyAvailableStandards/c065274_ISO_IEC_23009-1_2014.zip}
@@ -984,165 +985,332 @@ ISO DASH Specification: @url{http://standards.iso.org/ittf/PubliclyAvailableStan
 WebM DASH Specification: @url{https://sites.google.com/a/webmproject.org/wiki/adaptive-streaming/webm-dash-specification}
 @end itemize
 
-It creates a MPD manifest file and segment files for each stream.
+This muxer creates an MPD (Media Presentation Description) manifest
+file and segment files for each stream. Segment files are placed in
+the same directory of the MPD manifest file.
 
-The segment filename might contain pre-defined identifiers used with SegmentTemplate
-as defined in section 5.3.9.4.4 of the standard. Available identifiers are "$RepresentationID$",
-"$Number$", "$Bandwidth$" and "$Time$".
-In addition to the standard identifiers, an ffmpeg-specific "$ext$" identifier is also supported.
-When specified ffmpeg will replace $ext$ in the file name with muxing format's extensions such as mp4, webm etc.,
+The segment filename might contain pre-defined identifiers used in the
+manifest @code{SegmentTemplate} section as defined in section
+5.3.9.4.4 of the standard.
 
+Available identifiers are @code{$RepresentationID$}, @code{$Number$},
+@code{$Bandwidth$}, and @code{$Time$}. In addition to the standard
+identifiers, an ffmpeg-specific @code{$ext$} identifier is also
+supported. When specified, @command{ffmpeg} will replace @code{$ext$}
+in the file name with muxing format's extensions such as @code{mp4},
+@code{webm} etc.
+
+@subsection Options
+@table @option
+@item adaptation_sets @var{adaptation_sets}
+Assign streams to adaptation sets, specified in the MPD manifest
+@code{AdaptationSets} section.
+
+An adaptation set contains a set of one or more streams accessed as a
+single subset, e.g. corresponding streams encoded at different size
+selectable by the user depending on the available bandwidth, or to
+different audio streams with a different language.
+
+Each adaptation set is specified with the syntax:
 @example
-ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264 \
--b:v:0 800k -b:v:1 300k -s:v:1 320x170 -profile:v:1 baseline \
--profile:v:0 main -bf 1 -keyint_min 120 -g 120 -sc_threshold 0 \
--b_strategy 0 -ar:a:1 22050 -use_timeline 1 -use_template 1 \
--window_size 5 -adaptation_sets "id=0,streams=v id=1,streams=a" \
--f dash /path/to/out.mpd
+id=@var{index},streams=@var{streams}
 @end example
 
+where @var{index} must be a numerical index, and @var{streams} is a
+sequence of @code{,}-separated stream indices. Multiple adaptation
+sets can be specified, separated by spaces.
+
+To map all video (or audio) streams to an adaptation set, @code{v} (or
+@code{a}) can be used as stream identifier instead of IDs.
+
+When no assignment is defined, this defaults to an adaptation set for
+each stream.
+
+The following optional fields can also be specified:
+
 @table @option
-@item seg_duration @var{duration}
-Set the segment length in seconds (fractional value can be set). The value is
-treated as average segment duration when @var{use_template} is enabled and
-@var{use_timeline} is disabled and as minimum segment duration for all the other
-use cases.
-@item frag_duration @var{duration}
-Set the length in seconds of fragments within segments (fractional value can be set).
-@item frag_type @var{type}
-Set the type of interval for fragmentation.
-@item window_size @var{size}
-Set the maximum number of segments kept in the manifest.
+@item descriptor
+Define the descriptor as defined by ISO/IEC 23009-1:2014/Amd.2:2015.
+
+For example:
+@example
+<SupplementalProperty schemeIdUri=\"urn:mpeg:dash:srd:2014\" value=\"0,0,0,1,1,2,2\"/>
+@end example
+
+The descriptor string should be a self-closing XML tag.
+
+@item frag_duration
+Override the global fragment duration specified with the
+@option{frag_duration} option.
+
+@item frag_type
+Override the global fragment type specified with the
+@option{frag_type} option.
+
+@item seg_duration
+Override the global segment duration specified with the
+@option{seg_duration} option.
+
+@item trick_id
+Mark an adaptation set as containing streams meant to be used for
+Trick Mode for the referenced adaptation set.
+@end table
+
+A few examples of possible values for the @option{adaptation_sets}
+option follow:
+@example
+id=0,seg_duration=2,frag_duration=1,frag_type=duration,streams=v id=1,seg_duration=2,frag_type=none,streams=a
+@end example
+
+@example
+id=0,seg_duration=2,frag_type=none,streams=0 id=1,seg_duration=10,frag_type=none,trick_id=0,streams=1
+@end example
+
+@item dash_segment_type @var{type}
+Set DASH segment files type.
+
+Possible values:
+@table @samp
+@item auto
+The dash segment files format will be selected based on the stream
+codec. This is the default mode.
+@item mp4
+the dash segment files will be in ISOBMFF/MP4 format
+@item webm
+the dash segment files will be in WebM format
+@end table
+
 @item extra_window_size @var{size}
-Set the maximum number of segments kept outside of the manifest before removing from disk.
-@item remove_at_exit @var{remove}
-Enable (1) or disable (0) removal of all segments when finished.
-@item use_template @var{template}
-Enable (1) or disable (0) use of SegmentTemplate instead of SegmentList.
-@item use_timeline @var{timeline}
-Enable (1) or disable (0) use of SegmentTimeline in SegmentTemplate.
-@item single_file @var{single_file}
-Enable (1) or disable (0) storing all segments in one file, accessed using byte ranges.
-@item single_file_name @var{file_name}
-DASH-templated name to be used for baseURL. Implies @var{single_file} set to "1". In the template, "$ext$" is replaced with the file name extension specific for the segment format.
-@item init_seg_name @var{init_name}
-DASH-templated name to used for the initialization segment. Default is "init-stream$RepresentationID$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
-@item media_seg_name @var{segment_name}
-DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
-@item utc_timing_url @var{utc_url}
-URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
-@item method @var{method}
-Use the given HTTP method to create output files. Generally set to PUT or POST.
-@item http_user_agent @var{user_agent}
-Override User-Agent field in HTTP header. Applicable only for HTTP output.
-@item http_persistent @var{http_persistent}
-Use persistent HTTP connections. Applicable only for HTTP output.
-@item hls_playlist @var{hls_playlist}
-Generate HLS playlist files as well. The master playlist is generated with the filename @var{hls_master_name}.
-One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
-@item hls_master_name @var{file_name}
-HLS master playlist name. Default is "master.m3u8".
-@item streaming @var{streaming}
-Enable (1) or disable (0) chunk streaming mode of output. In chunk streaming
-mode, each frame will be a moof fragment which forms a chunk.
-@item adaptation_sets @var{adaptation_sets}
-Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
-of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
+Set the maximum number of segments kept outside of the manifest before
+removing from disk.
 
-To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be used as stream identifier instead of IDs.
-
-When no assignment is defined, this defaults to an AdaptationSet for each stream.
-
-Optional syntax is "id=x,seg_duration=x,frag_duration=x,frag_type=type,descriptor=descriptor_string,streams=a,b,c id=y,seg_duration=y,frag_type=type,streams=d,e" and so on,
-descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015.
-For example, -adaptation_sets "id=0,descriptor=<SupplementalProperty schemeIdUri=\"urn:mpeg:dash:srd:2014\" value=\"0,0,0,1,1,2,2\"/>,streams=v".
-Please note that descriptor string should be a self-closing xml tag.
-seg_duration, frag_duration and frag_type override the global option values for each adaptation set.
-For example, -adaptation_sets "id=0,seg_duration=2,frag_duration=1,frag_type=duration,streams=v id=1,seg_duration=2,frag_type=none,streams=a"
-type_id marks an adaptation set as containing streams meant to be used for Trick Mode for the referenced adaptation set.
-For example, -adaptation_sets "id=0,seg_duration=2,frag_type=none,streams=0 id=1,seg_duration=10,frag_type=none,trick_id=0,streams=1"
-@item timeout @var{timeout}
-Set timeout for socket I/O operations. Applicable only for HTTP output.
-@item index_correction @var{index_correction}
-Enable (1) or Disable (0) segment index correction logic. Applicable only when
-@var{use_template} is enabled and @var{use_timeline} is disabled.
-
-When enabled, the logic monitors the flow of segment indexes. If a streams's
-segment index value is not at the expected real time position, then the logic
-corrects that index value.
-
-Typically this logic is needed in live streaming use cases. The network bandwidth
-fluctuations are common during long run streaming. Each fluctuation can cause
-the segment indexes fall behind the expected real time position.
 @item format_options @var{options_list}
-Set container format (mp4/webm) options using a @code{:} separated list of
+Set container format (mp4/webm) options using a @code{:}-separated list of
 key=value parameters. Values containing @code{:} special characters must be
 escaped.
 
-@item global_sidx @var{global_sidx}
-Write global SIDX atom. Applicable only for single file, mp4 output, non-streaming mode.
+@item frag_duration @var{duration}
+Set the length in seconds of fragments within segments, fractional
+value can also be set.
 
-@item dash_segment_type @var{dash_segment_type}
+@item frag_type @var{type}
+Set the type of interval for fragmentation.
+
 Possible values:
-@table @option
+@table @samp
 @item auto
-If this flag is set, the dash segment files format will be selected based on the stream codec. This is the default mode.
+set one fragment per segment
 
-@item mp4
-If this flag is set, the dash segment files will be in in ISOBMFF format.
+@item every_frame
+fragment at every frame
 
-@item webm
-If this flag is set, the dash segment files will be in in WebM format.
+@item duration
+fragment at specific time intervals
+
+@item pframes
+fragment at keyframes and following P-Frame reordering (Video only,
+experimental)
 @end table
 
-@item ignore_io_errors @var{ignore_io_errors}
-Ignore IO errors during open and write. Useful for long-duration runs with network output.
+@item global_sidx @var{bool}
+Write global @code{SIDX} atom. Applicable only for single file, mp4
+output, non-streaming mode.
 
-@item lhls @var{lhls}
-Enable Low-latency HLS(LHLS). Adds #EXT-X-PREFETCH tag with current segment's URI.
-hls.js player folks are trying to standardize an open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
-This option tries to comply with the above open spec.
-It enables @var{streaming} and @var{hls_playlist} options automatically.
-This is an experimental feature.
+@item hls_master_name @var{file_name}
+HLS master playlist name. Default is @file{master.m3u8}.
 
-Note: This is not Apple's version LHLS. See @url{https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis}
-
-@item ldash @var{ldash}
-Enable Low-latency Dash by constraining the presence and values of some elements.
-
-@item master_m3u8_publish_rate @var{master_m3u8_publish_rate}
-Publish master playlist repeatedly every after specified number of segment intervals.
-
-@item write_prft @var{write_prft}
-Write Producer Reference Time elements on supported streams. This also enables writing
-prft boxes in the underlying muxer. Applicable only when the @var{utc_url} option is enabled.
-It's set to auto by default, in which case the muxer will attempt to enable it only in modes
-that require it.
-
-@item mpd_profile @var{mpd_profile}
-Set one or more manifest profiles.
+@item hls_playlist @var{bool}
+Generate HLS playlist files. The master playlist is generated with
+filename specified by the @option{hls_master_name} option. One media
+playlist file is generated for each stream with filenames
+@file{media_0.m3u8}, @file{media_1.m3u8}, etc.
 
 @item http_opts @var{http_opts}
-A :-separated list of key=value options to pass to the underlying HTTP
-protocol. Applicable only for HTTP output.
+Specify a list of @code{:}-separated key=value options to pass to the
+underlying HTTP protocol. Applicable only for HTTP output.
+
+@item http_persistent @var{bool}
+Use persistent HTTP connections. Applicable only for HTTP output.
+
+@item http_user_agent @var{user_agent}
+Override User-Agent field in HTTP header. Applicable only for HTTP
+output.
+
+@item ignore_io_errors @var{bool}
+Ignore IO errors during open and write. Useful for long-duration runs
+with network output. This is disabled by default.
+
+@item index_correction @var{bool}
+Enable or disable segment index correction logic. Applicable only when
+@option{use_template} is enabled and @option{use_timeline} is
+disabled. This is disabled by default.
+
+When enabled, the logic monitors the flow of segment indexes. If a
+streams's segment index value is not at the expected real time
+position, then the logic corrects that index value.
+
+Typically this logic is needed in live streaming use cases. The
+network bandwidth fluctuations are common during long run
+streaming. Each fluctuation can cause the segment indexes fall behind
+the expected real time position.
+
+@item init_seg_name @var{init_name}
+DASH-templated name to use for the initialization segment. Default is
+@code{init-stream$RepresentationID$.$ext$}. @code{$ext$} is replaced
+with the file name extension specific for the segment format.
+
+@item ldash @var{bool}
+Enable Low-latency Dash by constraining the presence and values of
+some elements. This is disabled by default.
+
+@item lhls @var{bool}
+Enable Low-latency HLS (LHLS). Add @code{#EXT-X-PREFETCH} tag with
+current segment's URI. hls.js player folks are trying to standardize
+an open LHLS spec. The draft spec is available at
+@url{https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md}.
+
+This option tries to comply with the above open spec. It enables
+@option{streaming} and @option{hls_playlist} options automatically.
+This is an experimental feature.
+
+Note: This is not Apple's version LHLS. See
+@url{https://datatracker.ietf.org/doc/html/draft-pantos-hls-rfc8216bis}
+
+@item master_m3u8_publish_rate @var{segment_intervals_count}
+Publish master playlist repeatedly every after specified number of
+segment intervals.
+
+@item max_playback_rate @var{rate}
+Set the maximum playback rate indicated as appropriate for the
+purposes of automatically adjusting playback latency and buffer
+occupancy during normal playback by clients.
+
+@item media_seg_name @var{segment_name}
+DASH-templated name to use for the media segments. Default is
+@code{chunk-stream$RepresentationID$-$Number%05d$.$ext$}. @code{$ext$}
+is replaced with the file name extension specific for the segment
+format.
+
+@item method @var{method}
+Use the given HTTP method to create output files. Generally set to @code{PUT}
+or @code{POST}.
+
+@item min_playback_rate @var{rate}
+Set the minimum playback rate indicated as appropriate for the
+purposes of automatically adjusting playback latency and buffer
+occupancy during normal playback by clients.
+
+@item mpd_profile @var{flags}
+Set one or more MPD manifest profiles.
+
+Possible values:
+@table @samp
+@item dash
+MPEG-DASH ISO Base media file format live profile
+@item dvb_dash
+DVB-DASH profile
+@end table
+
+Default value is @code{dash}.
+
+@item remove_at_exit @var{bool}
+Enable or disable removal of all segments when finished. This is
+disabled by default.
+
+@item seg_duration @var{duration}
+Set the segment length in seconds (fractional value can be set). The
+value is treated as average segment duration when the
+@option{use_template} option is enabled and the @option{use_timeline}
+option is disabled and as minimum segment duration for all the other
+use cases.
+
+Default value is @code{5}.
+
+@item single_file @var{bool}
+Enable or disable storing all segments in one file, accessed using
+byte ranges. This is disabled by default.
+
+The name of the single file can be specified with the
+@option{single_file_name} option, if not specified assume the basename
+of the manifest file with the output format extension.
+
+@item single_file_name @var{file_name}
+DASH-templated name to use for the manifest @code{baseURL}
+element. Imply that the @option{single_file} option is set to
+@var{true}. In the template, @code{$ext$} is replaced with the file
+name extension specific for the segment format.
+
+@item streaming @var{bool}
+Enable or disable chunk streaming mode of output. In chunk streaming
+mode, each frame will be a @code{moof} fragment which forms a
+chunk. This is disabled by default.
 
 @item target_latency @var{target_latency}
-Set an intended target latency in seconds (fractional value can be set) for serving. Applicable only when @var{streaming} and @var{write_prft} options are enabled.
-This is an informative fields clients can use to measure the latency of the service.
+Set an intended target latency in seconds for serving (fractional
+value can be set). Applicable only when the @option{streaming} and
+@option{write_prft} options are enabled. This is an informative fields
+clients can use to measure the latency of the service.
 
-@item min_playback_rate @var{min_playback_rate}
-Set the minimum playback rate indicated as appropriate for the purposes of automatically
-adjusting playback latency and buffer occupancy during normal playback by clients.
+@item timeout @var{timeout}
+Set timeout for socket I/O operations expressed in seconds (fractional
+value can be set). Applicable only for HTTP output.
 
-@item max_playback_rate @var{max_playback_rate}
-Set the maximum playback rate indicated as appropriate for the purposes of automatically
-adjusting playback latency and buffer occupancy during normal playback by clients.
+@item update_period @var{period}
+Set the MPD update period, for dynamic content. The unit is
+second. If set to @code{0}, the period is automatically computed.
 
-@item update_period @var{update_period}
- Set the mpd update period ,for dynamic content.
- The unit is second.
+Default value is @code{0}.
 
+@item use_template @var{bool}
+Enable or disable use of @code{SegmentTemplate} instead of
+@code{SegmentList} in the manifest. This is enabled by default.
+
+@item use_timeline @var{bool}
+Enable or disable use of @code{SegmentTimeline} within the
+@code{SegmentTemplate} manifest section. This is enabled by default.
+
+@item utc_timing_url @var{url}
+URL of the page that will return the UTC timestamp in ISO
+format, for example @code{https://time.akamai.com/?iso}
+
+@item window_size @var{size}
+Set the maximum number of segments kept in the manifest, discard the
+oldest one. This is useful for live streaming.
+
+If the value is @code{0}, all segments are kept in the
+manifest. Default value is @code{0}.
+
+@item write_prft @var{write_prft}
+Write Producer Reference Time elements on supported streams. This also
+enables writing prft boxes in the underlying muxer. Applicable only
+when the @var{utc_url} option is enabled. It is set to @var{auto} by
+default, in which case the muxer will attempt to enable it only in
+modes that require it.
 @end table
+
+@subsection Example
+Generate a DASH output reading from an input source in realtime using
+@command{ffmpeg}.
+
+Two multimedia streams are generated from the input file, both
+containing a video stream encoded through @samp{libx264}, and an audio
+stream encoded with @samp{libfdk_aac}. The first multimedia stream
+contains video with a bitrate of 800k and audio at the default rate,
+the second with video scaled to 320x170 pixels at 300k and audio
+resampled at 22005 Hz.
+
+The @option{window_size} option keeps only the latest 5 segments with
+the default duration of 5 seconds.
+
+@example
+ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264 \
+-b:v:0 800k -profile:v:0 main \
+-b:v:1 300k -s:v:1 320x170 -profile:v:1 baseline -ar:a:1 22050 \
+-bf 1 -keyint_min 120 -g 120 -sc_threshold 0 -b_strategy 0 \
+-use_timeline 1 -use_template 1 -window_size 5 \
+-adaptation_sets "id=0,streams=v id=1,streams=a" \
+-f dash /path/to/out.mpd
+@end example
 
 @anchor{fifo}
 @section fifo
