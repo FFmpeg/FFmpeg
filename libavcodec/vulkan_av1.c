@@ -26,7 +26,7 @@
 const FFVulkanDecodeDescriptor ff_vk_dec_av1_desc = {
     .codec_id         = AV_CODEC_ID_AV1,
     .decode_extension = FF_VK_EXT_VIDEO_DECODE_AV1,
-    .decode_op        = 0x01000000, /* TODO fix this */
+    .decode_op        = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,
     .ext_props = {
         .extensionName = VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME,
         .specVersion   = VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION,
@@ -36,33 +36,47 @@ const FFVulkanDecodeDescriptor ff_vk_dec_av1_desc = {
 typedef struct AV1VulkanDecodePicture {
     FFVulkanDecodePicture           vp;
 
-    /* Workaround for a spec issue.
-     *Can be removed once no longer needed, and threading can be enabled. */
+    /* TODO: investigate if this can be removed to make decoding completely
+     * independent. */
     FFVulkanDecodeContext          *dec;
 
-    StdVideoAV1MESATile            tiles[MAX_TILES];
-    StdVideoAV1MESATileList        tile_list;
-    const uint32_t                *tile_offsets;
+    uint32_t tile_sizes[MAX_TILES];
 
     /* Current picture */
-    VkVideoDecodeAV1DpbSlotInfoMESA    vkav1_ref;
-    StdVideoAV1MESAFrameHeader         av1_frame_header;
-    VkVideoDecodeAV1PictureInfoMESA    av1_pic_info;
+    StdVideoDecodeAV1ReferenceInfo     std_ref;
+    VkVideoDecodeAV1DpbSlotInfoKHR     vkav1_ref;
+    uint16_t width_in_sbs_minus1[64];
+    uint16_t height_in_sbs_minus1[64];
+    uint16_t mi_col_starts[64];
+    uint16_t mi_row_starts[64];
+    StdVideoAV1TileInfo tile_info;
+    StdVideoAV1Quantization quantization;
+    StdVideoAV1Segmentation segmentation;
+    StdVideoAV1LoopFilter loop_filter;
+    StdVideoAV1CDEF cdef;
+    StdVideoAV1LoopRestoration loop_restoration;
+    StdVideoAV1GlobalMotion global_motion;
+    StdVideoAV1FilmGrain film_grain;
+    StdVideoDecodeAV1PictureInfo    std_pic_info;
+    VkVideoDecodeAV1PictureInfoKHR     av1_pic_info;
 
     /* Picture refs */
     const AV1Frame                     *ref_src   [AV1_NUM_REF_FRAMES];
-    VkVideoDecodeAV1DpbSlotInfoMESA     vkav1_refs[AV1_NUM_REF_FRAMES];
+    StdVideoDecodeAV1ReferenceInfo      std_refs  [AV1_NUM_REF_FRAMES];
+    VkVideoDecodeAV1DpbSlotInfoKHR      vkav1_refs[AV1_NUM_REF_FRAMES];
 
     uint8_t frame_id_set;
     uint8_t frame_id;
+    uint8_t ref_frame_sign_bias_mask;
 } AV1VulkanDecodePicture;
 
 static int vk_av1_fill_pict(AVCodecContext *avctx, const AV1Frame **ref_src,
                             VkVideoReferenceSlotInfoKHR *ref_slot,      /* Main structure */
                             VkVideoPictureResourceInfoKHR *ref,         /* Goes in ^ */
-                            VkVideoDecodeAV1DpbSlotInfoMESA *vkav1_ref, /* Goes in ^ */
+                            StdVideoDecodeAV1ReferenceInfo *vkav1_std_ref,
+                            VkVideoDecodeAV1DpbSlotInfoKHR *vkav1_ref, /* Goes in ^ */
                             const AV1Frame *pic, int is_current, int has_grain,
-                            int dpb_slot_index)
+                            int *saved_order_hints)
 {
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     AV1VulkanDecodePicture *hp = pic->hwaccel_picture_private;
@@ -73,31 +87,42 @@ static int vk_av1_fill_pict(AVCodecContext *avctx, const AV1Frame **ref_src,
     if (err < 0)
         return err;
 
-    *vkav1_ref = (VkVideoDecodeAV1DpbSlotInfoMESA) {
-        .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_MESA,
-        .frameIdx = hp->frame_id,
+    *vkav1_std_ref = (StdVideoDecodeAV1ReferenceInfo) {
+        .flags = (StdVideoDecodeAV1ReferenceInfoFlags) {
+            .disable_frame_end_update_cdf = pic->raw_frame_header->disable_frame_end_update_cdf,
+            .segmentation_enabled = pic->raw_frame_header->segmentation_enabled,
+        },
+        .frame_type = pic->raw_frame_header->frame_type,
+        .OrderHint = pic->raw_frame_header->order_hint,
+        .RefFrameSignBias = hp->ref_frame_sign_bias_mask,
     };
 
-    for (unsigned i = 0; i < 7; i++) {
-        const int idx = pic->raw_frame_header->ref_frame_idx[i];
-        vkav1_ref->ref_order_hint[i] = pic->raw_frame_header->ref_order_hint[idx];
-    }
+    if (saved_order_hints)
+        for (int i = 0; i < AV1_TOTAL_REFS_PER_FRAME; i++)
+            vkav1_std_ref->SavedOrderHints[i] = saved_order_hints[i];
 
-    vkav1_ref->disable_frame_end_update_cdf = pic->raw_frame_header->disable_frame_end_update_cdf;
+    *vkav1_ref = (VkVideoDecodeAV1DpbSlotInfoKHR) {
+        .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR,
+        .pStdReferenceInfo = vkav1_std_ref,
+    };
+
+    vkav1_std_ref->flags.disable_frame_end_update_cdf = pic->raw_frame_header->disable_frame_end_update_cdf;
+    vkav1_std_ref->flags.segmentation_enabled = pic->raw_frame_header->segmentation_enabled;
+    vkav1_std_ref->frame_type = pic->raw_frame_header->frame_type;
 
     *ref = (VkVideoPictureResourceInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
         .codedOffset = (VkOffset2D){ 0, 0 },
         .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
         .baseArrayLayer = ((has_grain || dec->dedicated_dpb) && dec->layered_dpb) ?
-                          dpb_slot_index : 0,
+                          hp->frame_id : 0,
         .imageViewBinding = vkpic->img_view_ref,
     };
 
     *ref_slot = (VkVideoReferenceSlotInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR,
         .pNext = vkav1_ref,
-        .slotIndex = dpb_slot_index,
+        .slotIndex = hp->frame_id,
         .pPictureResource = ref,
     };
 
@@ -115,15 +140,40 @@ static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf)
 
     const AV1RawSequenceHeader *seq = s->raw_seq;
 
-    StdVideoAV1MESASequenceHeader av1_sequence_header;
-    VkVideoDecodeAV1SessionParametersAddInfoMESA av1_params_info;
-    VkVideoDecodeAV1SessionParametersCreateInfoMESA av1_params;
+    StdVideoAV1SequenceHeader av1_sequence_header;
+    StdVideoAV1TimingInfo av1_timing_info;
+    StdVideoAV1ColorConfig av1_color_config;
+    VkVideoDecodeAV1SessionParametersCreateInfoKHR av1_params;
     VkVideoSessionParametersCreateInfoKHR session_params_create;
 
     int err;
 
-    av1_sequence_header = (StdVideoAV1MESASequenceHeader) {
-        .flags = (StdVideoAV1MESASequenceHeaderFlags) {
+    av1_timing_info = (StdVideoAV1TimingInfo) {
+        .flags = (StdVideoAV1TimingInfoFlags) {
+            .equal_picture_interval = seq->timing_info.equal_picture_interval,
+        },
+        .num_units_in_display_tick = seq->timing_info.num_units_in_display_tick,
+        .time_scale = seq->timing_info.time_scale,
+        .num_ticks_per_picture_minus_1 = seq->timing_info.num_ticks_per_picture_minus_1,
+    };
+
+    av1_color_config = (StdVideoAV1ColorConfig) {
+        .flags = (StdVideoAV1ColorConfigFlags) {
+            .mono_chrome = seq->color_config.mono_chrome,
+            .color_range = seq->color_config.color_range,
+            .separate_uv_delta_q = seq->color_config.separate_uv_delta_q,
+        },
+        .BitDepth = seq->color_config.twelve_bit    ? 12 :
+                    seq->color_config.high_bitdepth ? 10 : 8,
+        .subsampling_x = seq->color_config.subsampling_x,
+        .subsampling_y = seq->color_config.subsampling_y,
+        .color_primaries = seq->color_config.color_primaries,
+        .transfer_characteristics = seq->color_config.transfer_characteristics,
+        .matrix_coefficients = seq->color_config.matrix_coefficients,
+    };
+
+    av1_sequence_header = (StdVideoAV1SequenceHeader) {
+        .flags = (StdVideoAV1SequenceHeaderFlags) {
             .still_picture = seq->still_picture,
             .reduced_still_picture_header = seq->reduced_still_picture_header,
             .use_128x128_superblock = seq->use_128x128_superblock,
@@ -152,34 +202,15 @@ static int vk_av1_create_params(AVCodecContext *avctx, AVBufferRef **buf)
         .delta_frame_id_length_minus_2 = seq->delta_frame_id_length_minus_2,
         .additional_frame_id_length_minus_1 = seq->additional_frame_id_length_minus_1,
         .order_hint_bits_minus_1 = seq->order_hint_bits_minus_1,
-        .timing_info = (StdVideoAV1MESATimingInfo) {
-            .flags = (StdVideoAV1MESATimingInfoFlags) {
-                .equal_picture_interval = seq->timing_info.equal_picture_interval,
-            },
-            .num_units_in_display_tick = seq->timing_info.num_units_in_display_tick,
-            .time_scale = seq->timing_info.time_scale,
-            .num_ticks_per_picture_minus_1 = seq->timing_info.num_ticks_per_picture_minus_1,
-        },
-        .color_config = (StdVideoAV1MESAColorConfig) {
-            .flags = (StdVideoAV1MESAColorConfigFlags) {
-                .mono_chrome = seq->color_config.mono_chrome,
-                .color_range = seq->color_config.color_range,
-                .separate_uv_delta_q = seq->color_config.separate_uv_delta_q,
-            },
-            .bit_depth = seq->color_config.twelve_bit ? 12 :
-                         seq->color_config.high_bitdepth ? 10 : 8,
-            .subsampling_x = seq->color_config.subsampling_x,
-            .subsampling_y = seq->color_config.subsampling_y,
-        },
+        .seq_force_integer_mv = seq->seq_force_integer_mv,
+        .seq_force_screen_content_tools = seq->seq_force_screen_content_tools,
+        .pTimingInfo = &av1_timing_info,
+        .pColorConfig = &av1_color_config,
     };
 
-    av1_params_info = (VkVideoDecodeAV1SessionParametersAddInfoMESA) {
-        .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_ADD_INFO_MESA,
-        .sequence_header = &av1_sequence_header,
-    };
-    av1_params = (VkVideoDecodeAV1SessionParametersCreateInfoMESA) {
-        .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_MESA,
-        .pParametersAddInfo = &av1_params_info,
+    av1_params = (VkVideoDecodeAV1SessionParametersCreateInfoKHR) {
+        .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR,
+        .pStdSequenceHeader = &av1_sequence_header,
     };
     session_params_create = (VkVideoSessionParametersCreateInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
@@ -211,8 +242,14 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
 
     const AV1RawFrameHeader *frame_header = s->raw_frame_header;
     const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
+    CodedBitstreamAV1Context *cbs_ctx = (CodedBitstreamAV1Context *)(s->cbc->priv_data);
+
     const int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
                             film_grain->apply_grain;
+    StdVideoAV1FrameRestorationType remap_lr_type[4] = { STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_NONE,
+                                                         STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SWITCHABLE,
+                                                         STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_WIENER,
+                                                         STD_VIDEO_AV1_FRAME_RESTORATION_TYPE_SGRPROJ };
 
     if (!dec->session_params) {
         err = vk_av1_create_params(avctx, &dec->session_params);
@@ -233,15 +270,31 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
         dec->frame_id_alloc_mask |= (1 << slot_idx);
     }
 
-    /* Fill in references */
-    for (int i = 0; i < AV1_NUM_REF_FRAMES; i++) {
-        const AV1Frame *ref_frame = &s->ref[i];
-        if (s->ref[i].f->pict_type == AV_PICTURE_TYPE_NONE)
+    ap->ref_frame_sign_bias_mask = 0x0;
+    for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
+        ap->ref_frame_sign_bias_mask |= cbs_ctx->ref_frame_sign_bias[i] << i;
+
+    for (int i = 0; i < STD_VIDEO_AV1_REFS_PER_FRAME; i++) {
+        const int idx = pic->raw_frame_header->ref_frame_idx[i];
+        const AV1Frame *ref_frame = &s->ref[idx];
+        AV1VulkanDecodePicture *hp = ref_frame->hwaccel_picture_private;
+        int found = 0;
+
+        if (ref_frame->f->pict_type == AV_PICTURE_TYPE_NONE)
             continue;
 
-        err = vk_av1_fill_pict(avctx, &ap->ref_src[i], &vp->ref_slots[i],
-                               &vp->refs[i], &ap->vkav1_refs[i],
-                               ref_frame, 0, 0, i);
+        for (int j = 0; j < ref_count; j++) {
+            if (vp->ref_slots[j].slotIndex == hp->frame_id) {
+                found = 1;
+                break;
+            }
+        }
+        if (found)
+            continue;
+
+        err = vk_av1_fill_pict(avctx, &ap->ref_src[ref_count], &vp->ref_slots[ref_count],
+                               &vp->refs[ref_count], &ap->std_refs[ref_count], &ap->vkav1_refs[ref_count],
+                               ref_frame, 0, 0, cbs_ctx->ref[idx].saved_order_hints);
         if (err < 0)
             return err;
 
@@ -249,19 +302,31 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
     }
 
     err = vk_av1_fill_pict(avctx, NULL, &vp->ref_slot, &vp->ref,
+                           &ap->std_ref,
                            &ap->vkav1_ref,
-                           pic, 1, apply_grain, 8);
+                           pic, 1, apply_grain, NULL);
     if (err < 0)
         return err;
 
-    ap->tile_list.nb_tiles = 0;
-    ap->tile_list.tile_list = ap->tiles;
-
-    ap->av1_pic_info = (VkVideoDecodeAV1PictureInfoMESA) {
-        .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PICTURE_INFO_MESA,
-        .frame_header = &ap->av1_frame_header,
-        .tile_list = &ap->tile_list,
+    ap->av1_pic_info = (VkVideoDecodeAV1PictureInfoKHR) {
+        .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_PICTURE_INFO_KHR,
+        .pStdPictureInfo = &ap->std_pic_info,
+        .frameHeaderOffset = 0,
+        .tileCount = 0,
+        .pTileOffsets = NULL,
+        .pTileSizes = ap->tile_sizes,
     };
+
+    for (int i = 0; i < STD_VIDEO_AV1_REFS_PER_FRAME; i++) {
+        const int idx = pic->raw_frame_header->ref_frame_idx[i];
+        const AV1Frame *ref_frame = &s->ref[idx];
+        AV1VulkanDecodePicture *hp = ref_frame->hwaccel_picture_private;
+
+        if (ref_frame->f->pict_type == AV_PICTURE_TYPE_NONE)
+            ap->av1_pic_info.referenceNameSlotIndices[i] = AV1_REF_FRAME_NONE;
+        else
+            ap->av1_pic_info.referenceNameSlotIndices[i] = hp->frame_id;
+    }
 
     vp->decode_info = (VkVideoDecodeInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR,
@@ -279,9 +344,87 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
         },
     };
 
+    ap->tile_info = (StdVideoAV1TileInfo) {
+        .flags = (StdVideoAV1TileInfoFlags) {
+            .uniform_tile_spacing_flag = frame_header->uniform_tile_spacing_flag,
+        },
+        .TileCols = frame_header->tile_cols,
+        .TileRows = frame_header->tile_rows,
+        .context_update_tile_id = frame_header->context_update_tile_id,
+        .tile_size_bytes_minus_1 = frame_header->tile_size_bytes_minus1,
+        .pWidthInSbsMinus1 = ap->width_in_sbs_minus1,
+        .pHeightInSbsMinus1 = ap->height_in_sbs_minus1,
+        .pMiColStarts = ap->mi_col_starts,
+        .pMiRowStarts = ap->mi_row_starts,
+    };
+
+    ap->quantization = (StdVideoAV1Quantization) {
+        .flags.using_qmatrix = frame_header->using_qmatrix,
+        .flags.diff_uv_delta = frame_header->diff_uv_delta,
+        .base_q_idx = frame_header->base_q_idx,
+        .DeltaQYDc = frame_header->delta_q_y_dc,
+        .DeltaQUDc = frame_header->delta_q_u_dc,
+        .DeltaQUAc = frame_header->delta_q_u_ac,
+        .DeltaQVDc = frame_header->delta_q_v_dc,
+        .DeltaQVAc = frame_header->delta_q_v_ac,
+        .qm_y = frame_header->qm_y,
+        .qm_u = frame_header->qm_u,
+        .qm_v = frame_header->qm_v,
+    };
+
+    ap->loop_filter = (StdVideoAV1LoopFilter) {
+        .flags = (StdVideoAV1LoopFilterFlags) {
+            .loop_filter_delta_enabled = frame_header->loop_filter_delta_enabled,
+            .loop_filter_delta_update = frame_header->loop_filter_delta_update,
+        },
+        .loop_filter_sharpness = frame_header->loop_filter_sharpness,
+    };
+
+    for (int i = 0; i < STD_VIDEO_AV1_MAX_LOOP_FILTER_STRENGTHS; i++)
+        ap->loop_filter.loop_filter_level[i] = frame_header->loop_filter_level[i];
+    for (int i = 0; i < STD_VIDEO_AV1_LOOP_FILTER_ADJUSTMENTS; i++)
+        ap->loop_filter.loop_filter_mode_deltas[i] = frame_header->loop_filter_mode_deltas[i];
+
+    ap->cdef = (StdVideoAV1CDEF) {
+        .cdef_damping_minus_3 = frame_header->cdef_damping_minus_3,
+        .cdef_bits = frame_header->cdef_bits,
+    };
+
+    ap->loop_restoration = (StdVideoAV1LoopRestoration) {
+        .FrameRestorationType[0] = remap_lr_type[frame_header->lr_type[0]],
+        .FrameRestorationType[1] = remap_lr_type[frame_header->lr_type[1]],
+        .FrameRestorationType[2] = remap_lr_type[frame_header->lr_type[2]],
+        .LoopRestorationSize[0] = 1 + frame_header->lr_unit_shift,
+        .LoopRestorationSize[1] = 1 + frame_header->lr_unit_shift - frame_header->lr_uv_shift,
+        .LoopRestorationSize[2] = 1 + frame_header->lr_unit_shift - frame_header->lr_uv_shift,
+    };
+
+    ap->film_grain = (StdVideoAV1FilmGrain) {
+        .flags = (StdVideoAV1FilmGrainFlags) {
+            .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
+            .overlap_flag = film_grain->overlap_flag,
+            .clip_to_restricted_range = film_grain->clip_to_restricted_range,
+        },
+        .grain_scaling_minus_8 = film_grain->grain_scaling_minus_8,
+        .ar_coeff_lag = film_grain->ar_coeff_lag,
+        .ar_coeff_shift_minus_6 = film_grain->ar_coeff_shift_minus_6,
+        .grain_scale_shift = film_grain->grain_scale_shift,
+        .grain_seed = film_grain->grain_seed,
+        .film_grain_params_ref_idx = film_grain->film_grain_params_ref_idx,
+        .num_y_points = film_grain->num_y_points,
+        .num_cb_points = film_grain->num_cb_points,
+        .num_cr_points = film_grain->num_cr_points,
+        .cb_mult = film_grain->cb_mult,
+        .cb_luma_mult = film_grain->cb_luma_mult,
+        .cb_offset = film_grain->cb_offset,
+        .cr_mult = film_grain->cr_mult,
+        .cr_luma_mult = film_grain->cr_luma_mult,
+        .cr_offset = film_grain->cr_offset,
+    };
+
     /* Setup frame header */
-    ap->av1_frame_header = (StdVideoAV1MESAFrameHeader) {
-        .flags = (StdVideoAV1MESAFrameHeaderFlags) {
+    ap->std_pic_info = (StdVideoDecodeAV1PictureInfo) {
+        .flags = (StdVideoDecodeAV1PictureInfoFlags) {
             .error_resilient_mode = frame_header->error_resilient_mode,
             .disable_cdf_update = frame_header->disable_cdf_update,
             .use_superres = frame_header->use_superres,
@@ -302,174 +445,92 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
             .reference_select = frame_header->reference_select,
             .skip_mode_present = frame_header->skip_mode_present,
             .delta_q_present = frame_header->delta_q_present,
+            .delta_lf_present = frame_header->delta_lf_present,
+            .delta_lf_multi = frame_header->delta_lf_multi,
+            .segmentation_enabled = frame_header->segmentation_enabled,
+            .segmentation_update_map = frame_header->segmentation_update_map,
+            .segmentation_temporal_update = frame_header->segmentation_temporal_update,
+            .segmentation_update_data = frame_header->segmentation_update_data,
+            .UsesLr = frame_header->lr_type[0] || frame_header->lr_type[1] || frame_header->lr_type[2],
+            .apply_grain = apply_grain,
         },
-        .frame_to_show_map_idx = frame_header->frame_to_show_map_idx,
-        .frame_presentation_time = frame_header->frame_presentation_time,
-        .display_frame_id = frame_header->display_frame_id,
         .frame_type = frame_header->frame_type,
         .current_frame_id = frame_header->current_frame_id,
-        .order_hint = frame_header->order_hint,
+        .OrderHint = frame_header->order_hint,
         .primary_ref_frame = frame_header->primary_ref_frame,
-        .frame_width_minus_1 = frame_header->frame_width_minus_1,
-        .frame_height_minus_1 = frame_header->frame_height_minus_1,
-        .coded_denom = frame_header->coded_denom,
-        .render_width_minus_1 = frame_header->render_width_minus_1,
-        .render_height_minus_1 = frame_header->render_height_minus_1,
         .refresh_frame_flags = frame_header->refresh_frame_flags,
         .interpolation_filter = frame_header->interpolation_filter,
-        .tx_mode = frame_header->tx_mode,
-        .tiling = (StdVideoAV1MESATileInfo) {
-            .flags = (StdVideoAV1MESATileInfoFlags) {
-                .uniform_tile_spacing_flag = frame_header->uniform_tile_spacing_flag,
-            },
-            .tile_cols = frame_header->tile_cols,
-            .tile_rows = frame_header->tile_rows,
-            .context_update_tile_id = frame_header->context_update_tile_id,
-            .tile_size_bytes_minus1 = frame_header->tile_size_bytes_minus1,
-        },
-        .quantization = (StdVideoAV1MESAQuantization) {
-            .flags.using_qmatrix = frame_header->using_qmatrix,
-            .base_q_idx = frame_header->base_q_idx,
-            .delta_q_y_dc = frame_header->delta_q_y_dc,
-            .diff_uv_delta = frame_header->diff_uv_delta,
-            .delta_q_u_dc = frame_header->delta_q_u_dc,
-            .delta_q_u_ac = frame_header->delta_q_u_ac,
-            .delta_q_v_dc = frame_header->delta_q_v_dc,
-            .delta_q_v_ac = frame_header->delta_q_v_ac,
-            .qm_y = frame_header->qm_y,
-            .qm_u = frame_header->qm_u,
-            .qm_v = frame_header->qm_v,
-        },
-        .delta_q = (StdVideoAV1MESADeltaQ) {
-            .flags = (StdVideoAV1MESADeltaQFlags) {
-                .delta_lf_present = frame_header->delta_lf_present,
-                .delta_lf_multi = frame_header->delta_lf_multi,
-            },
-            .delta_q_res = frame_header->delta_q_res,
-            .delta_lf_res = frame_header->delta_lf_res,
-        },
-        .loop_filter = (StdVideoAV1MESALoopFilter) {
-            .flags = (StdVideoAV1MESALoopFilterFlags) {
-                .delta_enabled = frame_header->loop_filter_delta_enabled,
-                .delta_update = frame_header->loop_filter_delta_update,
-            },
-            .level = {
-                frame_header->loop_filter_level[0], frame_header->loop_filter_level[1],
-                frame_header->loop_filter_level[2], frame_header->loop_filter_level[3],
-            },
-            .sharpness = frame_header->loop_filter_sharpness,
-            .mode_deltas = {
-                frame_header->loop_filter_mode_deltas[0], frame_header->loop_filter_mode_deltas[1],
-            },
-        },
-        .cdef = (StdVideoAV1MESACDEF) {
-            .damping_minus_3 = frame_header->cdef_damping_minus_3,
-            .bits = frame_header->cdef_bits,
-        },
-        .lr = (StdVideoAV1MESALoopRestoration) {
-            .lr_unit_shift = frame_header->lr_unit_shift,
-            .lr_uv_shift = frame_header->lr_uv_shift,
-            .lr_type = { frame_header->lr_type[0], frame_header->lr_type[1], frame_header->lr_type[2] },
-        },
-        .segmentation = (StdVideoAV1MESASegmentation) {
-            .flags = (StdVideoAV1MESASegmentationFlags) {
-                .enabled = frame_header->segmentation_enabled,
-                .update_map = frame_header->segmentation_update_map,
-                .temporal_update = frame_header->segmentation_temporal_update,
-                .update_data = frame_header->segmentation_update_data,
-            },
-        },
-        .film_grain = (StdVideoAV1MESAFilmGrainParameters) {
-            .flags = (StdVideoAV1MESAFilmGrainFlags) {
-                .apply_grain = apply_grain,
-                .chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma,
-                .overlap_flag = film_grain->overlap_flag,
-                .clip_to_restricted_range = film_grain->clip_to_restricted_range,
-            },
-            .grain_scaling_minus_8 = film_grain->grain_scaling_minus_8,
-            .ar_coeff_lag = film_grain->ar_coeff_lag,
-            .ar_coeff_shift_minus_6 = film_grain->ar_coeff_shift_minus_6,
-            .grain_scale_shift = film_grain->grain_scale_shift,
-            .grain_seed = film_grain->grain_seed,
-            .num_y_points = film_grain->num_y_points,
-            .num_cb_points = film_grain->num_cb_points,
-            .num_cr_points = film_grain->num_cr_points,
-            .cb_mult = film_grain->cb_mult,
-            .cb_luma_mult = film_grain->cb_luma_mult,
-            .cb_offset = film_grain->cb_offset,
-            .cr_mult = film_grain->cr_mult,
-            .cr_luma_mult = film_grain->cr_luma_mult,
-            .cr_offset = film_grain->cr_offset,
-        },
+        .TxMode = frame_header->tx_mode,
+        .delta_q_res = frame_header->delta_q_res,
+        .delta_lf_res = frame_header->delta_lf_res,
+        .SkipModeFrame[0] = s->cur_frame.skip_mode_frame_idx[0],
+        .SkipModeFrame[1] = s->cur_frame.skip_mode_frame_idx[1],
+        .coded_denom = frame_header->coded_denom,
+        .pTileInfo = &ap->tile_info,
+        .pQuantization = &ap->quantization,
+        .pSegmentation = &ap->segmentation,
+        .pLoopFilter = &ap->loop_filter,
+        .pCDEF = &ap->cdef,
+        .pLoopRestoration = &ap->loop_restoration,
+        .pGlobalMotion = &ap->global_motion,
+        .pFilmGrain = apply_grain ? &ap->film_grain : NULL,
     };
 
     for (int i = 0; i < 64; i++) {
-        ap->av1_frame_header.tiling.width_in_sbs_minus_1[i] = frame_header->width_in_sbs_minus_1[i];
-        ap->av1_frame_header.tiling.height_in_sbs_minus_1[i] = frame_header->height_in_sbs_minus_1[i];
-        ap->av1_frame_header.tiling.tile_start_col_sb[i] = frame_header->tile_start_col_sb[i];
-        ap->av1_frame_header.tiling.tile_start_row_sb[i] = frame_header->tile_start_row_sb[i];
+        ap->width_in_sbs_minus1[i] = frame_header->width_in_sbs_minus_1[i];
+        ap->height_in_sbs_minus1[i] = frame_header->height_in_sbs_minus_1[i];
+        ap->mi_col_starts[i] = frame_header->tile_start_col_sb[i];
+        ap->mi_row_starts[i] = frame_header->tile_start_row_sb[i];
     }
 
-    for (int i = 0; i < 8; i++) {
-        ap->av1_frame_header.segmentation.feature_enabled_bits[i] = 0;
-        for (int j = 0; j < 8; j++) {
-            ap->av1_frame_header.segmentation.feature_enabled_bits[i] |= (frame_header->feature_enabled[i][j] << j);
-            ap->av1_frame_header.segmentation.feature_data[i][j] = frame_header->feature_value[i][j];
+    for (int i = 0; i < STD_VIDEO_AV1_MAX_SEGMENTS; i++) {
+        ap->segmentation.FeatureEnabled[i] = 0x0;
+        for (int j = 0; j < STD_VIDEO_AV1_SEG_LVL_MAX; j++) {
+            ap->segmentation.FeatureEnabled[i] |= (frame_header->feature_enabled[i][j] << j);
+            ap->segmentation.FeatureData[i][j] = frame_header->feature_value[i][j];
         }
-
-        ap->av1_frame_header.loop_filter.ref_deltas[i] = frame_header->loop_filter_ref_deltas[i];
-
-        ap->av1_frame_header.cdef.y_pri_strength[i] = frame_header->cdef_y_pri_strength[i];
-        ap->av1_frame_header.cdef.y_sec_strength[i] = frame_header->cdef_y_sec_strength[i];
-        ap->av1_frame_header.cdef.uv_pri_strength[i] = frame_header->cdef_uv_pri_strength[i];
-        ap->av1_frame_header.cdef.uv_sec_strength[i] = frame_header->cdef_uv_sec_strength[i];
-
-        ap->av1_frame_header.ref_order_hint[i] = frame_header->ref_order_hint[i];
-        ap->av1_frame_header.global_motion[i] = (StdVideoAV1MESAGlobalMotion) {
-            .flags = (StdVideoAV1MESAGlobalMotionFlags) {
-                .gm_invalid = s->cur_frame.gm_invalid[i],
-            },
-            .gm_type = s->cur_frame.gm_type[i],
-            .gm_params = {
-                s->cur_frame.gm_params[i][0], s->cur_frame.gm_params[i][1],
-                s->cur_frame.gm_params[i][2], s->cur_frame.gm_params[i][3],
-                s->cur_frame.gm_params[i][4], s->cur_frame.gm_params[i][5],
-            },
-        };
     }
 
-    for (int i = 0; i < 7; i++) {
-        ap->av1_frame_header.ref_frame_idx[i] = frame_header->ref_frame_idx[i];
-        ap->av1_frame_header.delta_frame_id_minus1[i] = frame_header->delta_frame_id_minus1[i];
+    for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
+        ap->loop_filter.loop_filter_ref_deltas[i] = frame_header->loop_filter_ref_deltas[i];
+
+    for (int i = 0; i < STD_VIDEO_AV1_MAX_CDEF_FILTER_STRENGTHS; i++) {
+        ap->cdef.cdef_y_pri_strength[i] = frame_header->cdef_y_pri_strength[i];
+        ap->cdef.cdef_y_sec_strength[i] = frame_header->cdef_y_sec_strength[i];
+        ap->cdef.cdef_uv_pri_strength[i] = frame_header->cdef_uv_pri_strength[i];
+        ap->cdef.cdef_uv_sec_strength[i] = frame_header->cdef_uv_sec_strength[i];
     }
 
-    ap->av1_pic_info.skip_mode_frame_idx[0] = s->cur_frame.skip_mode_frame_idx[0];
-    ap->av1_pic_info.skip_mode_frame_idx[1] = s->cur_frame.skip_mode_frame_idx[1];
+    for (int i = 0; i < STD_VIDEO_AV1_NUM_REF_FRAMES; i++) {
+        ap->std_pic_info.OrderHints[i] = frame_header->ref_order_hint[i];
+        ap->global_motion.GmType[i] = s->cur_frame.gm_type[i];
+        for (int j = 0; j < STD_VIDEO_AV1_GLOBAL_MOTION_PARAMS; j++) {
+            ap->global_motion.gm_params[i][j] = s->cur_frame.gm_params[i][j];
+        }
+    }
 
     if (apply_grain) {
-        for (int i = 0; i < 14; i++) {
-            ap->av1_frame_header.film_grain.point_y_value[i] = film_grain->point_y_value[i];
-            ap->av1_frame_header.film_grain.point_y_scaling[i] = film_grain->point_y_scaling[i];
+        for (int i = 0; i < STD_VIDEO_AV1_MAX_NUM_Y_POINTS; i++) {
+            ap->film_grain.point_y_value[i] = film_grain->point_y_value[i];
+            ap->film_grain.point_y_scaling[i] = film_grain->point_y_scaling[i];
         }
 
-        for (int i = 0; i < 10; i++) {
-            ap->av1_frame_header.film_grain.point_cb_value[i] = film_grain->point_cb_value[i];
-            ap->av1_frame_header.film_grain.point_cb_scaling[i] = film_grain->point_cb_scaling[i];
-            ap->av1_frame_header.film_grain.point_cr_value[i] = film_grain->point_cr_value[i];
-            ap->av1_frame_header.film_grain.point_cr_scaling[i] = film_grain->point_cr_scaling[i];
+        for (int i = 0; i < STD_VIDEO_AV1_MAX_NUM_CB_POINTS; i++) {
+            ap->film_grain.point_cb_value[i] = film_grain->point_cb_value[i];
+            ap->film_grain.point_cb_scaling[i] = film_grain->point_cb_scaling[i];
+            ap->film_grain.point_cr_value[i] = film_grain->point_cr_value[i];
+            ap->film_grain.point_cr_scaling[i] = film_grain->point_cr_scaling[i];
         }
 
-        for (int i = 0; i < 24; i++) {
-            ap->av1_frame_header.film_grain.ar_coeffs_y_plus_128[i] = film_grain->ar_coeffs_y_plus_128[i];
-            ap->av1_frame_header.film_grain.ar_coeffs_cb_plus_128[i] = film_grain->ar_coeffs_cb_plus_128[i];
-            ap->av1_frame_header.film_grain.ar_coeffs_cr_plus_128[i] = film_grain->ar_coeffs_cr_plus_128[i];
-        }
+        for (int i = 0; i < STD_VIDEO_AV1_MAX_NUM_POS_LUMA; i++)
+            ap->film_grain.ar_coeffs_y_plus_128[i] = film_grain->ar_coeffs_y_plus_128[i];
 
-        ap->av1_frame_header.film_grain.ar_coeffs_cb_plus_128[24] = film_grain->ar_coeffs_cb_plus_128[24];
-        ap->av1_frame_header.film_grain.ar_coeffs_cr_plus_128[24] = film_grain->ar_coeffs_cr_plus_128[24];
+        for (int i = 0; i < STD_VIDEO_AV1_MAX_NUM_POS_CHROMA; i++) {
+            ap->film_grain.ar_coeffs_cb_plus_128[i] = film_grain->ar_coeffs_cb_plus_128[i];
+            ap->film_grain.ar_coeffs_cr_plus_128[i] = film_grain->ar_coeffs_cr_plus_128[i];
+        }
     }
 
-    /* Workaround for a spec issue. */
     ap->dec = dec;
 
     return 0;
@@ -484,25 +545,20 @@ static int vk_av1_decode_slice(AVCodecContext *avctx,
     AV1VulkanDecodePicture *ap = s->cur_frame.hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &ap->vp;
 
+    /* Too many tiles, exceeding all defined levels in the AV1 spec */
+    if (ap->av1_pic_info.tileCount > MAX_TILES)
+        return AVERROR(ENOSYS);
+
     for (int i = s->tg_start; i <= s->tg_end; i++) {
-        ap->tiles[ap->tile_list.nb_tiles] = (StdVideoAV1MESATile) {
-            .size     = s->tile_group_info[i].tile_size,
-            .offset   = s->tile_group_info[i].tile_offset,
-            .row      = s->tile_group_info[i].tile_row,
-            .column   = s->tile_group_info[i].tile_column,
-            .tg_start = s->tg_start,
-            .tg_end   = s->tg_end,
-        };
+        ap->tile_sizes[ap->av1_pic_info.tileCount] = s->tile_group_info[i].tile_size;
 
         err = ff_vk_decode_add_slice(avctx, vp,
                                      data + s->tile_group_info[i].tile_offset,
                                      s->tile_group_info[i].tile_size, 0,
-                                     &ap->tile_list.nb_tiles,
-                                     &ap->tile_offsets);
+                                     &ap->av1_pic_info.tileCount,
+                                     &ap->av1_pic_info.pTileOffsets);
         if (err < 0)
             return err;
-
-        ap->tiles[ap->tile_list.nb_tiles - 1].offset = ap->tile_offsets[ap->tile_list.nb_tiles - 1];
     }
 
     return 0;
@@ -518,7 +574,7 @@ static int vk_av1_end_frame(AVCodecContext *avctx)
     FFVulkanDecodePicture *rvp[AV1_NUM_REF_FRAMES] = { 0 };
     AVFrame *rav[AV1_NUM_REF_FRAMES] = { 0 };
 
-    if (!ap->tile_list.nb_tiles)
+    if (!ap->av1_pic_info.tileCount)
         return 0;
 
     if (!dec->session_params) {
@@ -536,7 +592,7 @@ static int vk_av1_end_frame(AVCodecContext *avctx)
     }
 
     av_log(avctx, AV_LOG_VERBOSE, "Decoding frame, %"SIZE_SPECIFIER" bytes, %i tiles\n",
-           vp->slices_size, ap->tile_list.nb_tiles);
+           vp->slices_size, ap->av1_pic_info.tileCount);
 
     return ff_vk_decode_frame(avctx, pic->f, vp, rav, rvp);
 }
@@ -580,8 +636,6 @@ const FFHWAccel ff_av1_vulkan_hwaccel = {
      * flexibility, this index cannot be present anywhere.
      * The current implementation tracks the index for the driver and submits it
      * as necessary information. Due to needing to modify the decoding context,
-     * which is not thread-safe, on frame free, threading is disabled.
-     * In the future, once this is fixed in the spec, the workarounds may be removed
-     * and threading enabled. */
+     * which is not thread-safe, on frame free, threading is disabled. */
     .caps_internal         = HWACCEL_CAP_ASYNC_SAFE,
 };

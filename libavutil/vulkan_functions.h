@@ -43,7 +43,7 @@ typedef enum FFVulkanExtensions {
     FF_VK_EXT_VIDEO_DECODE_QUEUE     = 1ULL << 11, /* VK_KHR_video_decode_queue */
     FF_VK_EXT_VIDEO_DECODE_H264      = 1ULL << 12, /* VK_EXT_video_decode_h264 */
     FF_VK_EXT_VIDEO_DECODE_H265      = 1ULL << 13, /* VK_EXT_video_decode_h265 */
-    FF_VK_EXT_VIDEO_DECODE_AV1       = 1ULL << 14, /* VK_MESA_video_decode_av1 */
+    FF_VK_EXT_VIDEO_DECODE_AV1       = 1ULL << 14, /* VK_KHR_video_decode_av1 */
     FF_VK_EXT_ATOMIC_FLOAT           = 1ULL << 15, /* VK_EXT_shader_atomic_float */
     FF_VK_EXT_COOP_MATRIX            = 1ULL << 16, /* VK_KHR_cooperative_matrix */
 

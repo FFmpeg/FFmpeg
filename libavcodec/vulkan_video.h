@@ -22,8 +22,6 @@
 #include "vulkan.h"
 
 #include <vk_video/vulkan_video_codecs_common.h>
-#include "vulkan_video_codec_av1std_mesa.h"
-#include "vulkan_video_codec_av1std_decode_mesa.h"
 
 #define CODEC_VER_MAJ(ver) (ver >> 22)
 #define CODEC_VER_MIN(ver) ((ver >> 12) & ((1 << 10) - 1))
