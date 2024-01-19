@@ -56,6 +56,7 @@ static const AVOption options[] = {
 
 static const AVClass ac3_eac3_decoder_class = {
     .class_name = "(E-)AC3 decoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

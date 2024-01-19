@@ -165,6 +165,7 @@ static const AVOption options[] = {
 
 static const AVClass ac3_decoder_class = {
     .class_name = "Fixed-Point AC-3 Decoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

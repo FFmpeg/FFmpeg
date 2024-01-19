@@ -280,6 +280,7 @@ static const AVOption options[] = {
 
 static const AVClass aiff_muxer_class = {
     .class_name     = "AIFF muxer",
+    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

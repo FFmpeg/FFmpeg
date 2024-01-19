@@ -1104,6 +1104,7 @@ static const AVOption h264_options[] = {
 
 static const AVClass h264_class = {
     .class_name = "H264 Decoder",
+    .item_name  = av_default_item_name,
     .option     = h264_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

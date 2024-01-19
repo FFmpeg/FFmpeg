@@ -82,6 +82,7 @@ static const AVOption ac4_options[] = {
 
 static const AVClass ac4_muxer_class = {
     .class_name     = "AC4 muxer",
+    .item_name      = av_default_item_name,
     .option         = ac4_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

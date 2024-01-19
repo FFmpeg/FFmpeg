@@ -1263,6 +1263,7 @@ static const AVOption options[] = {
 
 static const AVClass ffv1_class = {
     .class_name = "ffv1 encoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

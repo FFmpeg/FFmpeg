@@ -156,6 +156,7 @@ static const AVOption options[] = {
 
 static const AVClass librsvg_decoder_class = {
     .class_name = "Librsvg",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

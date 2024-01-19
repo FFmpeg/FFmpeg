@@ -51,6 +51,7 @@ static const AVOption options[] = {
 
 static const AVClass g722_decoder_class = {
     .class_name = "g722 decoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

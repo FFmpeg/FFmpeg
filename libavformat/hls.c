@@ -2589,6 +2589,7 @@ static const AVOption hls_options[] = {
 
 static const AVClass hls_class = {
     .class_name = "hls demuxer",
+    .item_name  = av_default_item_name,
     .option     = hls_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

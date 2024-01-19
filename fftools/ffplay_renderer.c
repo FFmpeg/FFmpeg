@@ -776,6 +776,7 @@ static void destroy(VkRenderer *renderer)
 
 static const AVClass vulkan_renderer_class = {
         .class_name = "Vulkan Renderer",
+        .item_name  = av_default_item_name,
         .version    = LIBAVUTIL_VERSION_INT,
 };
 

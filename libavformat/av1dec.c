@@ -116,6 +116,7 @@ static const AVOption av1_options[] = {
 
 static const AVClass av1_demuxer_class = {
     .class_name = "AV1 Annex B/low overhead OBU demuxer",
+    .item_name  = av_default_item_name,
     .option     = av1_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

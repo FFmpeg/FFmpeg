@@ -36,6 +36,7 @@
 
 static const AVClass vorbis_parser_class = {
     .class_name = "Vorbis parser",
+    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

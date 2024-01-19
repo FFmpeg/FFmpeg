@@ -286,6 +286,7 @@ static const AVOption alp_options[] = {
 
 static const AVClass alp_muxer_class = {
     .class_name = "alp",
+    .item_name  = av_default_item_name,
     .option     = alp_options,
     .version    = LIBAVUTIL_VERSION_INT
 };

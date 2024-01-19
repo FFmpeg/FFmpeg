@@ -287,6 +287,7 @@ static const AVOption options[] = {
 
 static const AVClass webm_chunk_class = {
     .class_name = "WebM Chunk Muxer",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

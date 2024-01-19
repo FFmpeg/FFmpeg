@@ -2991,6 +2991,7 @@ static const AVOption options[] = {
 
 static const AVClass mjpegdec_class = {
     .class_name = "MJPEG decoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

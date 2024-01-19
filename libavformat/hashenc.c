@@ -52,6 +52,7 @@ static const AVOption hash_streamhash_options[] = {
 
 static const AVClass hash_streamhashenc_class = {
     .class_name = "(stream) hash muxer",
+    .item_name  = av_default_item_name,
     .option     = hash_streamhash_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -191,6 +192,7 @@ const FFOutputFormat ff_hash_muxer = {
 #if CONFIG_MD5_MUXER
 static const AVClass md5enc_class = {
     .class_name = "MD5 muxer",
+    .item_name  = av_default_item_name,
     .option     = md5_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -318,6 +320,7 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 #if CONFIG_FRAMEHASH_MUXER
 static const AVClass framehash_class = {
     .class_name = "frame hash muxer",
+    .item_name  = av_default_item_name,
     .option     = framehash_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -341,6 +344,7 @@ const FFOutputFormat ff_framehash_muxer = {
 #if CONFIG_FRAMEMD5_MUXER
 static const AVClass framemd5_class = {
     .class_name = "frame MD5 muxer",
+    .item_name  = av_default_item_name,
     .option     = framemd5_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

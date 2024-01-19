@@ -537,6 +537,7 @@ static const AVOption options[] = {
 
 static const AVClass webm_dash_class = {
     .class_name = "WebM DASH Manifest muxer",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

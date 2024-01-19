@@ -237,6 +237,7 @@ static const FFCodecDefault vaapi_encode_vp8_defaults[] = {
 
 static const AVClass vaapi_encode_vp8_class = {
     .class_name = "vp8_vaapi",
+    .item_name  = av_default_item_name,
     .option     = vaapi_encode_vp8_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

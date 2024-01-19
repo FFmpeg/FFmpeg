@@ -1300,6 +1300,7 @@ static const AVOption options[] = {
 
 static const AVClass dcaenc_class = {
     .class_name = "DCA (DTS Coherent Acoustics)",
+    .item_name = av_default_item_name,
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };

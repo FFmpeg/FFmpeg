@@ -466,6 +466,7 @@ static const AVOption argo_asf_options[] = {
 
 static const AVClass argo_asf_muxer_class = {
     .class_name = "argo_asf_muxer",
+    .item_name  = av_default_item_name,
     .option     = argo_asf_options,
     .version    = LIBAVUTIL_VERSION_INT
 };

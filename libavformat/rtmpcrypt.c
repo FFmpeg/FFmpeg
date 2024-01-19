@@ -320,6 +320,7 @@ static const AVOption ffrtmpcrypt_options[] = {
 
 static const AVClass ffrtmpcrypt_class = {
     .class_name = "ffrtmpcrypt",
+    .item_name  = av_default_item_name,
     .option     = ffrtmpcrypt_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -1986,6 +1986,7 @@ static int http_get_short_seek(URLContext *h)
 #define HTTP_CLASS(flavor)                          \
 static const AVClass flavor ## _context_class = {   \
     .class_name = # flavor,                         \
+    .item_name  = av_default_item_name,             \
     .option     = options,                          \
     .version    = LIBAVUTIL_VERSION_INT,            \
 }

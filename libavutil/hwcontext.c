@@ -120,6 +120,7 @@ enum AVHWDeviceType av_hwdevice_iterate_types(enum AVHWDeviceType prev)
 
 static const AVClass hwdevice_ctx_class = {
     .class_name = "AVHWDeviceContext",
+    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -221,6 +222,7 @@ fail:
 
 static const AVClass hwframe_ctx_class = {
     .class_name = "AVHWFramesContext",
+    .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

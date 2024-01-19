@@ -9546,6 +9546,7 @@ static const AVOption mov_options[] = {
 
 static const AVClass mov_class = {
     .class_name = "mov,mp4,m4a,3gp,3g2,mj2",
+    .item_name  = av_default_item_name,
     .option     = mov_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -341,6 +341,7 @@ static const AVOption options[] = {
 
 static const AVClass hapenc_class = {
     .class_name = "Hap encoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

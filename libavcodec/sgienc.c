@@ -265,6 +265,7 @@ static const AVOption options[] = {
 
 static const AVClass sgi_class = {
     .class_name = "sgi",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

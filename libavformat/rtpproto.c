@@ -86,6 +86,7 @@ static const AVOption options[] = {
 
 static const AVClass rtp_class = {
     .class_name = "rtp",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -484,6 +484,7 @@ static const AVOption options[] = {
 
 static const AVClass async_context_class = {
     .class_name = "Async",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -585,6 +586,7 @@ static const AVOption async_test_options[] = {
 
 static const AVClass async_test_context_class = {
     .class_name = "Async-Test",
+    .item_name  = av_default_item_name,
     .option     = async_test_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

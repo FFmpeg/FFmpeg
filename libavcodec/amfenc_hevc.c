@@ -433,6 +433,7 @@ static const FFCodecDefault defaults[] = {
 };
 static const AVClass hevc_amf_class = {
     .class_name = "hevc_amf",
+    .item_name = av_default_item_name,
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };

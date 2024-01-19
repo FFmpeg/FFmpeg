@@ -338,6 +338,7 @@ exit:
 
 static const AVClass bwdif_cuda_class = {
     .class_name = "bwdif_cuda",
+    .item_name  = av_default_item_name,
     .option     = ff_yadif_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_FILTER,

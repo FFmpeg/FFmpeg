@@ -187,6 +187,7 @@ static const AVOption options[] = {
 
 static const AVClass pcm_rechunk_class = {
     .class_name = "pcm_rechunk_bsf",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

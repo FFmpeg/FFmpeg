@@ -392,6 +392,7 @@ static const AVOption deint_vaapi_options[] = {
 
 static const AVClass deint_vaapi_class = {
     .class_name = "deinterlace_vaapi",
+    .item_name  = av_default_item_name,
     .option     = deint_vaapi_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

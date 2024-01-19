@@ -778,6 +778,7 @@ static const AVOption options[] = {
 
 static const AVClass ea_class = {
     .class_name = "ea demuxer",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -197,6 +197,7 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
     };
     static const AVClass class = {
         .class_name = "cpuflags",
+        .item_name  = av_default_item_name,
         .option     = cpuflags_opts,
         .version    = LIBAVUTIL_VERSION_INT,
     };

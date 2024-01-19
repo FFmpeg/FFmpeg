@@ -42,6 +42,7 @@ static const AVOption tedcaptions_options[] = {
 
 static const AVClass tedcaptions_demuxer_class = {
     .class_name = "tedcaptions_demuxer",
+    .item_name  = av_default_item_name,
     .option     = tedcaptions_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

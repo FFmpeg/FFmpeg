@@ -188,6 +188,7 @@ static int probe_gme(const AVProbeData *p)
 
 static const AVClass class_gme = {
     .class_name = "Game Music Emu demuxer",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

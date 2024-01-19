@@ -233,6 +233,7 @@ static const FFCodecDefault defaults[] = {
 
 static const AVClass h264_nvenc_class = {
     .class_name = "h264_nvenc",
+    .item_name = av_default_item_name,
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };

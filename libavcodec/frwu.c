@@ -110,6 +110,7 @@ static const AVOption frwu_options[] = {
 
 static const AVClass frwu_class = {
     .class_name = "frwu Decoder",
+    .item_name  = av_default_item_name,
     .option     = frwu_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

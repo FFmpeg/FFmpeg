@@ -634,6 +634,7 @@ const AVOption ff_img_options[] = {
 
 static const AVClass img2_class = {
     .class_name = "image2 demuxer",
+    .item_name  = av_default_item_name,
     .option     = ff_img_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -657,6 +658,7 @@ static const AVOption img2pipe_options[] = {
 };
 static const AVClass imagepipe_class = {
     .class_name = "imagepipe demuxer",
+    .item_name  = av_default_item_name,
     .option     = img2pipe_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

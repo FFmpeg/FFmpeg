@@ -97,6 +97,7 @@ static const AVOption options[] = {
 
 static const AVClass ogg_muxer_class = {
     .class_name = "Ogg (audio/video/Speex/Opus) muxer",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

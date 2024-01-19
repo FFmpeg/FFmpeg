@@ -335,6 +335,7 @@ static int opt_abort_on(void *optctx, const char *opt, const char *arg)
     };
     static const AVClass class = {
         .class_name = "",
+        .item_name  = av_default_item_name,
         .option     = opts,
         .version    = LIBAVUTIL_VERSION_INT,
     };

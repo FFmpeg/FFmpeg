@@ -117,18 +117,21 @@ static const AVOption pipe_options[] = {
 
 static const AVClass file_class = {
     .class_name = "file",
+    .item_name  = av_default_item_name,
     .option     = file_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const AVClass pipe_class = {
     .class_name = "pipe",
+    .item_name  = av_default_item_name,
     .option     = pipe_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const AVClass fd_class = {
     .class_name = "fd",
+    .item_name  = av_default_item_name,
     .option     = pipe_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

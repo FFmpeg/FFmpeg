@@ -77,6 +77,7 @@
  *
  * static const AVClass test_class = {
  *     .class_name = "test class",
+ *     .item_name  = av_default_item_name,
  *     .option     = test_options,
  *     .version    = LIBAVUTIL_VERSION_INT,
  * };
@@ -130,6 +131,7 @@
  *      };
  *      static const AVClass child_class = {
  *          .class_name = "child class",
+ *          .item_name  = av_default_item_name,
  *          .option     = child_opts,
  *          .version    = LIBAVUTIL_VERSION_INT,
  *      };

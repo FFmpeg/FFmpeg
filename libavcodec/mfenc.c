@@ -1226,6 +1226,7 @@ static int mf_init(AVCodecContext *avctx)
 #define MF_ENCODER(MEDIATYPE, NAME, ID, OPTS, FMTS, CAPS) \
     static const AVClass ff_ ## NAME ## _mf_encoder_class = {                  \
         .class_name = #NAME "_mf",                                             \
+        .item_name  = av_default_item_name,                                    \
         .option     = OPTS,                                                    \
         .version    = LIBAVUTIL_VERSION_INT,                                   \
     };                                                                         \

@@ -306,6 +306,7 @@ static const AVOption options[] = {
 
 static const AVClass ljpeg_class = {
     .class_name = "ljpeg",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

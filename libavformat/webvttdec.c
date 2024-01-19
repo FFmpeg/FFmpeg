@@ -205,6 +205,7 @@ static const AVOption options[] = {
 
 static const AVClass webvtt_demuxer_class = {
     .class_name  = "WebVTT demuxer",
+    .item_name   = av_default_item_name,
     .option      = options,
     .version     = LIBAVUTIL_VERSION_INT,
 };

@@ -47,6 +47,7 @@ static const AVOption options[] = {
 
 static const AVClass amrwb_class = {
     .class_name = "libvo_amrwbenc",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

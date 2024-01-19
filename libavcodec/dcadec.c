@@ -410,6 +410,7 @@ static const AVOption dcadec_options[] = {
 
 static const AVClass dcadec_class = {
     .class_name = "DCA decoder",
+    .item_name  = av_default_item_name,
     .option     = dcadec_options,
     .version    = LIBAVUTIL_VERSION_INT,
     .category   = AV_CLASS_CATEGORY_DECODER,

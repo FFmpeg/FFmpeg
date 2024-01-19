@@ -1277,6 +1277,7 @@ static const AVOption cbs_av1_options[] = {
 
 static const AVClass cbs_av1_class = {
     .class_name = "cbs_av1",
+    .item_name  = av_default_item_name,
     .option     = cbs_av1_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

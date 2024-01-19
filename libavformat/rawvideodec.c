@@ -144,6 +144,7 @@ static const AVOption rawvideo_options[] = {
 
 static const AVClass rawvideo_demuxer_class = {
     .class_name = "rawvideo demuxer",
+    .item_name  = av_default_item_name,
     .option     = rawvideo_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -162,6 +163,7 @@ const AVInputFormat ff_rawvideo_demuxer = {
 
 static const AVClass bitpacked_demuxer_class = {
     .class_name = "bitpacked demuxer",
+    .item_name  = av_default_item_name,
     .option     = rawvideo_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
@@ -182,6 +184,7 @@ const AVInputFormat ff_bitpacked_demuxer = {
 
 static const AVClass v210_demuxer_class = {
     .class_name = "v210(x) demuxer",
+    .item_name  = av_default_item_name,
     .option     = rawvideo_options + 1,
     .version    = LIBAVUTIL_VERSION_INT,
 };

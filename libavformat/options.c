@@ -244,6 +244,7 @@ static const AVOption stream_options[] = {
 
 static const AVClass stream_class = {
     .class_name     = "AVStream",
+    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = stream_options,
 };
@@ -383,6 +384,7 @@ static const AVOption stream_group_options[] = {
 
 static const AVClass stream_group_class = {
     .class_name     = "AVStreamGroup",
+    .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = stream_group_options,
     .child_next     = stream_group_child_next,

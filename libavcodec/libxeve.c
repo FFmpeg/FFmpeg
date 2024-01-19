@@ -580,6 +580,7 @@ static const AVOption libxeve_options[] = {
 
 static const AVClass libxeve_class = {
     .class_name = "libxeve",
+    .item_name  = av_default_item_name,
     .option     = libxeve_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

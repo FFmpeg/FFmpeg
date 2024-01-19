@@ -317,6 +317,7 @@ int ff_request_frame(AVFilterLink *link);
 #define AVFILTER_DEFINE_CLASS_EXT(name, desc, options) \
     static const AVClass name##_class = {       \
         .class_name = desc,                     \
+        .item_name  = av_default_item_name,     \
         .option     = options,                  \
         .version    = LIBAVUTIL_VERSION_INT,    \
         .category   = AV_CLASS_CATEGORY_FILTER, \

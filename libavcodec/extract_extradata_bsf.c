@@ -457,6 +457,7 @@ static const AVOption options[] = {
 
 static const AVClass extract_extradata_class = {
     .class_name = "extract_extradata",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

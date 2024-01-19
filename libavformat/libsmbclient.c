@@ -358,6 +358,7 @@ static const AVOption options[] = {
 
 static const AVClass libsmbclient_context_class = {
     .class_name     = "libsmbc",
+    .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
 };

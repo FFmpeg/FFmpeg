@@ -74,6 +74,7 @@ static void text_flush(AVCodecContext *avctx)
 
 static const AVClass textsub_decoder_class = {
     .class_name = "text/vplayer/stl/pjs/subviewer1 decoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

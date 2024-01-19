@@ -762,6 +762,7 @@ static const AVOption opus_options[] = {
 
 static const AVClass opus_class = {
     .class_name = "Opus Decoder",
+    .item_name  = av_default_item_name,
     .option     = opus_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

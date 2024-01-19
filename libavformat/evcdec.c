@@ -51,6 +51,7 @@ static const AVOption evc_options[] = {
 
 static const AVClass evc_demuxer_class = {
     .class_name = "EVC Annex B demuxer",
+    .item_name  = av_default_item_name,
     .option     = evc_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

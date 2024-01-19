@@ -187,6 +187,7 @@ static int zmq_proto_close(URLContext *h)
 
 static const AVClass zmq_context_class = {
     .class_name = "zmq",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

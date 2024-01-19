@@ -1444,12 +1444,14 @@ static const AVOption options[] = {
 
 static const AVClass mlp_decoder_class = {
     .class_name = "MLP decoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
 static const AVClass truehd_decoder_class = {
     .class_name = "TrueHD decoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

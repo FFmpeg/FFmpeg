@@ -81,6 +81,7 @@ static const AVOption dfpwm_options[] = {
 };
 static const AVClass dfpwm_demuxer_class = {
     .class_name = "dfpwm demuxer",
+    .item_name  = av_default_item_name,
     .option     = dfpwm_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

@@ -1546,6 +1546,7 @@ static const FFCodecDefault defaults[] = {
 
 static const AVClass class_aom = {
     .class_name = "libaom-av1 encoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

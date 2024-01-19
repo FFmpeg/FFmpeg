@@ -143,6 +143,7 @@ static const AVOption hca_options[] = {
 
 static const AVClass hca_class = {
     .class_name = "hca",
+    .item_name  = av_default_item_name,
     .option     = hca_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

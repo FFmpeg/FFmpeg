@@ -193,6 +193,7 @@ static const AVOption microdvd_options[] = {
 
 static const AVClass microdvd_class = {
     .class_name = "microdvddec",
+    .item_name  = av_default_item_name,
     .option     = microdvd_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

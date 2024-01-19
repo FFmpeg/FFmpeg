@@ -93,6 +93,7 @@ static const AVOption options[] = {
 
 static const AVClass dump_extradata_class = {
     .class_name = "dump_extradata bsf",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

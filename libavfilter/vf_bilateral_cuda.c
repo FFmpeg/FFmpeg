@@ -435,6 +435,7 @@ static const AVOption options[] = {
 
 static const AVClass cuda_bilateral_class = {
     .class_name = "cudabilateral",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

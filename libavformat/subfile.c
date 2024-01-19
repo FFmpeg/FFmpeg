@@ -44,6 +44,7 @@ static const AVOption subfile_options[] = {
 
 static const AVClass subfile_class = {
     .class_name = "subfile",
+    .item_name  = av_default_item_name,
     .option     = subfile_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

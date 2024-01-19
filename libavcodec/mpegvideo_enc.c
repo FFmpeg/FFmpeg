@@ -99,6 +99,7 @@ static const AVOption mpv_generic_options[] = {
 
 const AVClass ff_mpv_enc_class = {
     .class_name = "generic mpegvideo encoder",
+    .item_name  = av_default_item_name,
     .option     = mpv_generic_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

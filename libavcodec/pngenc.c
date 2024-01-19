@@ -1189,6 +1189,7 @@ static const AVOption options[] = {
 
 static const AVClass pngenc_class = {
     .class_name = "(A)PNG encoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

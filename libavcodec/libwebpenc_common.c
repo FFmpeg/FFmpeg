@@ -53,6 +53,7 @@ static const AVOption options[] = {
 
 const AVClass ff_libwebpenc_class = {
     .class_name = "libwebp encoder",
+    .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };

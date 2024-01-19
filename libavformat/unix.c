@@ -55,6 +55,7 @@ static const AVOption unix_options[] = {
 
 static const AVClass unix_class = {
     .class_name = "unix",
+    .item_name  = av_default_item_name,
     .option     = unix_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
