@@ -2025,6 +2025,8 @@ static int of_parse_iamf_audio_element_layers(Muxer *mux, AVStreamGroup *stg, ch
         int demixing = 0, recon_gain = 0;
         int layer = 0;
 
+        if (ptr)
+            ptr += strspn(ptr, " \n\t\r");
         if (av_strstart(token, "layer=", &token))
             layer = 1;
         else if (av_strstart(token, "demixing=", &token))
@@ -2092,6 +2094,8 @@ static int of_parse_iamf_submixes(Muxer *mux, AVStreamGroup *stg, char *ptr)
         const char *subtoken;
         char *subptr = NULL;
 
+        if (ptr)
+            ptr += strspn(ptr, " \n\t\r");
         if (!av_strstart(token, "submix=", &token)) {
             av_log(mux, AV_LOG_ERROR, "No submix in mix presentation specification \"%s\"\n", token);
             goto fail;
@@ -2120,6 +2124,8 @@ static int of_parse_iamf_submixes(Muxer *mux, AVStreamGroup *stg, char *ptr)
             const AVDictionaryEntry *e;
             int element = 0, layout = 0;
 
+            if (subptr)
+                subptr += strspn(subptr, " \n\t\r");
             if (av_strstart(subtoken, "element=", &subtoken))
                 element = 1;
             else if (av_strstart(subtoken, "layout=", &subtoken))
@@ -2331,8 +2337,11 @@ static int of_add_groups(Muxer *mux, const OptionsContext *o)
             return ret;
 
         token = av_strtok(str, ",", &ptr);
-        if (token)
+        if (token) {
+            if (ptr)
+                ptr += strspn(ptr, " \n\t\r");
             ret = of_parse_group_token(mux, token, ptr);
+        }
 
         av_free(str);
         if (ret < 0)
