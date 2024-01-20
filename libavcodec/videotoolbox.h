@@ -60,15 +60,6 @@ typedef struct AVVideotoolboxContext {
      */
     VTDecompressionSessionRef session;
 
-#if FF_API_VT_OUTPUT_CALLBACK
-    /**
-     * The output callback that must be passed to the session.
-     * Set by av_videottoolbox_default_init()
-     */
-    attribute_deprecated
-    VTDecompressionOutputCallback output_callback;
-#endif
-
     /**
      * CVPixelBuffer Format Type that Videotoolbox will use for decoded frames.
      * set by the caller. If this is set to 0, then no specific format is
