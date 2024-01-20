@@ -241,13 +241,6 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
             return AVERROR(ENOMEM);
     }
 
-#if FF_API_PKT_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (copy->pkt_duration && copy->pkt_duration != copy->duration)
-        copy->duration = copy->pkt_duration;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 #if FF_API_INTERLACED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
     if (copy->interlaced_frame)

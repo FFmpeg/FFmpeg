@@ -36,11 +36,6 @@ static void get_frame_defaults(AVFrame *frame)
     frame->pkt_dts               = AV_NOPTS_VALUE;
     frame->best_effort_timestamp = AV_NOPTS_VALUE;
     frame->duration            = 0;
-#if FF_API_PKT_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_duration        = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
     frame->pkt_pos             = -1;
@@ -268,11 +263,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 FF_DISABLE_DEPRECATION_WARNINGS
     dst->pkt_pos                = src->pkt_pos;
     dst->pkt_size               = src->pkt_size;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-#if FF_API_PKT_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->pkt_duration           = src->pkt_duration;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     dst->time_base              = src->time_base;

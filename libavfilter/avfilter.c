@@ -1039,11 +1039,6 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
 
         frame->duration = av_rescale_q(frame->nb_samples, (AVRational){ 1, frame->sample_rate },
                                        link->time_base);
-#if FF_API_PKT_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_duration = frame->duration;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     li->frame_blocked_in = link->frame_wanted_out = 0;

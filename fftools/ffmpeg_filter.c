@@ -2666,11 +2666,6 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
     frame->pts       = av_rescale_q(frame->pts,      frame->time_base, ifp->time_base);
     frame->duration  = av_rescale_q(frame->duration, frame->time_base, ifp->time_base);
     frame->time_base = ifp->time_base;
-#if LIBAVUTIL_VERSION_MAJOR < 59
-    AV_NOWARN_DEPRECATED(
-    frame->pkt_duration = frame->duration;
-    )
-#endif
 
     fd = frame_data(frame);
     if (!fd)

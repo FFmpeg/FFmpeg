@@ -634,12 +634,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                                          frame->pts,
                                                          frame->pkt_dts);
 
-#if FF_API_PKT_DURATION
-FF_DISABLE_DEPRECATION_WARNINGS
-        frame->pkt_duration = frame->duration;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         /* the only case where decode data is not set should be decoders
          * that do not call ff_get_buffer() */
         av_assert0((frame->private_ref && frame->private_ref->size == sizeof(FrameDecodeData)) ||

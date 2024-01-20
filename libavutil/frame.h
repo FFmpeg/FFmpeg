@@ -678,19 +678,6 @@ typedef struct AVFrame {
     int64_t pkt_pos;
 #endif
 
-#if FF_API_PKT_DURATION
-    /**
-     * duration of the corresponding packet, expressed in
-     * AVStream->time_base units, 0 if unknown.
-     * - encoding: unused
-     * - decoding: Read by user.
-     *
-     * @deprecated use duration instead
-     */
-    attribute_deprecated
-    int64_t pkt_duration;
-#endif
-
     /**
      * metadata.
      * - encoding: Set by user.
