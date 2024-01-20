@@ -160,11 +160,6 @@ static int segment_mux_init(AVFormatContext *s)
     oc->max_delay          = s->max_delay;
     av_dict_copy(&oc->metadata, s->metadata, 0);
     oc->opaque             = s->opaque;
-#if FF_API_AVFORMAT_IO_CLOSE
-FF_DISABLE_DEPRECATION_WARNINGS
-    oc->io_close           = s->io_close;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     oc->io_close2          = s->io_close2;
     oc->io_open            = s->io_open;
     oc->flags              = s->flags;

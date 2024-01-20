@@ -1544,11 +1544,6 @@ static int dash_init(AVFormatContext *s)
             return AVERROR_MUXER_NOT_FOUND;
         ctx->interrupt_callback    = s->interrupt_callback;
         ctx->opaque                = s->opaque;
-#if FF_API_AVFORMAT_IO_CLOSE
-FF_DISABLE_DEPRECATION_WARNINGS
-        ctx->io_close              = s->io_close;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         ctx->io_close2             = s->io_close2;
         ctx->io_open               = s->io_open;
         ctx->strict_std_compliance = s->strict_std_compliance;

@@ -865,11 +865,6 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
     oc->max_delay                = s->max_delay;
     oc->opaque                   = s->opaque;
     oc->io_open                  = s->io_open;
-#if FF_API_AVFORMAT_IO_CLOSE
-FF_DISABLE_DEPRECATION_WARNINGS
-    oc->io_close                 = s->io_close;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     oc->io_close2                = s->io_close2;
     oc->strict_std_compliance    = s->strict_std_compliance;
     av_dict_copy(&oc->metadata, s->metadata, 0);

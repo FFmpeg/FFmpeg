@@ -501,11 +501,6 @@ static int fifo_mux_init(AVFormatContext *avf, const AVOutputFormat *oformat,
     if (ret < 0)
         return ret;
     avf2->opaque = avf->opaque;
-#if FF_API_AVFORMAT_IO_CLOSE
-FF_DISABLE_DEPRECATION_WARNINGS
-    avf2->io_close = avf->io_close;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     avf2->io_close2 = avf->io_close2;
     avf2->io_open = avf->io_open;
     avf2->flags = avf->flags;
