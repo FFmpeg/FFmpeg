@@ -362,17 +362,6 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height)
     align               = FFMAX3(align, linesize_align[1], linesize_align[2]);
     *width              = FFALIGN(*width, align);
 }
-#if FF_API_AVCODEC_CHROMA_POS
-int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos)
-{
-    return av_chroma_location_enum_to_pos(xpos, ypos, pos);
-}
-
-enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos)
-{
-    return av_chroma_location_pos_to_enum(xpos, ypos);
-}
-#endif
 
 int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
                              enum AVSampleFormat sample_fmt, const uint8_t *buf,

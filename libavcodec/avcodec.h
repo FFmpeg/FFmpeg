@@ -2478,34 +2478,6 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
                                int linesize_align[AV_NUM_DATA_POINTERS]);
 
-#ifdef FF_API_AVCODEC_CHROMA_POS
-/**
- * Converts AVChromaLocation to swscale x/y chroma position.
- *
- * The positions represent the chroma (0,0) position in a coordinates system
- * with luma (0,0) representing the origin and luma(1,1) representing 256,256
- *
- * @param xpos  horizontal chroma sample position
- * @param ypos  vertical   chroma sample position
- * @deprecated Use av_chroma_location_enum_to_pos() instead.
- */
- attribute_deprecated
-int avcodec_enum_to_chroma_pos(int *xpos, int *ypos, enum AVChromaLocation pos);
-
-/**
- * Converts swscale x/y chroma position to AVChromaLocation.
- *
- * The positions represent the chroma (0,0) position in a coordinates system
- * with luma (0,0) representing the origin and luma(1,1) representing 256,256
- *
- * @param xpos  horizontal chroma sample position
- * @param ypos  vertical   chroma sample position
- * @deprecated Use av_chroma_location_pos_to_enum() instead.
- */
- attribute_deprecated
-enum AVChromaLocation avcodec_chroma_pos_to_enum(int xpos, int ypos);
-#endif
-
 /**
  * Decode a subtitle message.
  * Return a negative value on error, otherwise return the number of bytes used.
