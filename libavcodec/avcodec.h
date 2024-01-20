@@ -1500,10 +1500,6 @@ typedef struct AVCodecContext {
 #define FF_IDCT_SIMPLEARMV6   17
 #define FF_IDCT_FAAN          20
 #define FF_IDCT_SIMPLENEON    22
-#if FF_API_IDCT_NONE
-// formerly used by xvmc
-#define FF_IDCT_NONE          24
-#endif
 #define FF_IDCT_SIMPLEAUTO    128
 
     /**
