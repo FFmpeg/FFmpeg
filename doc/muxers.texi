@@ -1339,6 +1339,20 @@ of each audio packet, with a size computed according to the formula:
 The @var{encoded_sample_size} = 3 factor is due to sample size of the
 @samp{pcm_24daud} encoder.
 
+@section dv
+DV (Digital Video) muxer.
+
+It accepts exactly one @samp{dvvideo} video stream and at most two
+@samp{pcm_s16} audio streams. More constraints are defined by the
+property of the video, which must correspond to a DV video supported
+profile, and on the framerate.
+
+@subsection Example
+Use @command{ffmpeg} to convert the input:
+@example
+ffmpeg -i INPUT -s:v 720x480 -pix_fmt yuv411p -r 29.97 -ac 2 -ar 48000 -y out.dv
+@end example
+
 @anchor{fifo}
 @section fifo
 
