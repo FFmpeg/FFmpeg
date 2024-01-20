@@ -52,6 +52,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
 #include "bytestream.h"
@@ -1397,9 +1398,9 @@ static int parse_speex_extradata(AVCodecContext *avctx,
     const uint8_t *extradata, int extradata_size)
 {
     SpeexContext *s = avctx->priv_data;
-    const uint8_t *buf = extradata;
+    const uint8_t *buf = av_strnstr(extradata, "Speex   ", extradata_size);
 
-    if (memcmp(buf, "Speex   ", 8))
+    if (!buf)
         return AVERROR_INVALIDDATA;
 
     buf += 28;
