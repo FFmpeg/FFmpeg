@@ -60,7 +60,7 @@ static av_always_inline void mv_compression(Mv *motion)
     for (int i = 0; i < 2; i++) {
         const int s = mv[i] >> 17;
         const int f = av_log2((mv[i] ^ s) | 31) - 4;
-        const int mask  = (-1 << f) >> 1;
+        const int mask  = (-1 * (1 << f)) >> 1;
         const int round = (1 << f) >> 2;
         mv[i] = (mv[i] + round) & mask;
     }
@@ -342,17 +342,17 @@ static void init_subblock_params(SubblockParams *sp, const MotionInfo* mi,
     const int log2_cbh  = av_log2(cb_height);
     const Mv* cp_mv     = mi->mv[lx];
     const int num_cp_mv = mi->motion_model_idc + 1;
-    sp->d_hor_x = (cp_mv[1].x - cp_mv[0].x) << (MAX_CU_DEPTH - log2_cbw);
-    sp->d_ver_x = (cp_mv[1].y - cp_mv[0].y) << (MAX_CU_DEPTH - log2_cbw);
+    sp->d_hor_x = (cp_mv[1].x - cp_mv[0].x) * (1 << (MAX_CU_DEPTH - log2_cbw));
+    sp->d_ver_x = (cp_mv[1].y - cp_mv[0].y) * (1 << (MAX_CU_DEPTH - log2_cbw));
     if (num_cp_mv == 3) {
-        sp->d_hor_y = (cp_mv[2].x - cp_mv[0].x) << (MAX_CU_DEPTH - log2_cbh);
-        sp->d_ver_y = (cp_mv[2].y - cp_mv[0].y) << (MAX_CU_DEPTH - log2_cbh);
+        sp->d_hor_y = (cp_mv[2].x - cp_mv[0].x) * (1 << (MAX_CU_DEPTH - log2_cbh));
+        sp->d_ver_y = (cp_mv[2].y - cp_mv[0].y) * (1 << (MAX_CU_DEPTH - log2_cbh));
     } else {
         sp->d_hor_y = -sp->d_ver_x;
         sp->d_ver_y = sp->d_hor_x;
     }
-    sp->mv_scale_hor = (cp_mv[0].x) << MAX_CU_DEPTH;
-    sp->mv_scale_ver = (cp_mv[0].y) << MAX_CU_DEPTH;
+    sp->mv_scale_hor = (cp_mv[0].x) * (1 << MAX_CU_DEPTH);
+    sp->mv_scale_ver = (cp_mv[0].y) * (1 << MAX_CU_DEPTH);
     sp->cb_width  = cb_width;
     sp->cb_height = cb_height;
     sp->is_fallback = is_fallback_mode(sp, mi->pred_flag);
@@ -368,8 +368,8 @@ static void derive_subblock_diff_mvs(const VVCLocalContext *lc, PredictionUnit* 
         for (int x = 0; x < AFFINE_MIN_BLOCK_SIZE; x++) {
             for (int y = 0; y < AFFINE_MIN_BLOCK_SIZE; y++) {
                 Mv diff;
-                diff.x = x * (sp->d_hor_x << 2) + y * (sp->d_hor_y << 2) - pos_offset_x;
-                diff.y = x * (sp->d_ver_x << 2) + y * (sp->d_ver_y << 2) - pos_offset_y;
+                diff.x = x * (sp->d_hor_x * (1 << 2)) + y * (sp->d_hor_y * (1 << 2)) - pos_offset_x;
+                diff.y = x * (sp->d_ver_x * (1 << 2)) + y * (sp->d_ver_y * (1 << 2)) - pos_offset_y;
                 ff_vvc_round_mv(&diff, 0, 8);
                 pu->diff_mv_x[lx][AFFINE_MIN_BLOCK_SIZE * y + x] = av_clip(diff.x, -dmv_limit + 1, dmv_limit - 1);
                 pu->diff_mv_y[lx][AFFINE_MIN_BLOCK_SIZE * y + x] = av_clip(diff.y, -dmv_limit + 1, dmv_limit - 1);
@@ -467,8 +467,8 @@ void ff_vvc_store_gpm_mvf(const VVCLocalContext *lc, const PredictionUnit *pu)
 
     for (int y = 0; y < cu->cb_height; y += block_size) {
         for (int x = 0; x < cu->cb_width; x += block_size) {
-            const int motion_idx = (((x + offset_x) << 1) + 5) * displacement_x +
-                (((y + offset_y) << 1) + 5) * displacement_y;
+            const int motion_idx = (((x + offset_x) * (1 << 1)) + 5) * displacement_x +
+                (((y + offset_y) * (1 << 1)) + 5) * displacement_y;
             const int s_type = FFABS(motion_idx) < 32 ? 2 : (motion_idx <= 0 ? (1 - is_flip) : is_flip);
             const int pred_flag = pu->gpm_mv[0].pred_flag | pu->gpm_mv[1].pred_flag;
             const int x0 = cu->x0 + x;
@@ -867,14 +867,14 @@ static void affine_cps_from_nb(const VVCLocalContext *lc,
         l = &TAB_CP_MV(lx, x_nb, y_nb);
         r = &TAB_CP_MV(lx, x_nb + nbw - 1, y_nb) + 1;
     }
-    mv_scale_hor = l->x << 7;
-    mv_scale_ver = l->y << 7;
-    d_hor_x = (r->x - l->x) << (7 - log2_nbw);
-    d_ver_x = (r->y - l->y) << (7 - log2_nbw);
+    mv_scale_hor = l->x * (1 << 7);
+    mv_scale_ver = l->y * (1 << 7);
+    d_hor_x = (r->x - l->x) * (1 << (7 - log2_nbw));
+    d_ver_x = (r->y - l->y) * (1 << (7 - log2_nbw));
     if (!is_ctb_boundary && motion_model_idc_nb == MOTION_6_PARAMS_AFFINE) {
         const Mv* lb = &TAB_CP_MV(lx, x_nb, y_nb + nbh - 1) + 2;
-        d_hor_y = (lb->x - l->x) << (7 - log2_nbh);
-        d_ver_y = (lb->y - l->y) << (7 - log2_nbh);
+        d_hor_y = (lb->x - l->x) * (1 << (7 - log2_nbh));
+        d_ver_y = (lb->y - l->y) * (1 << (7 - log2_nbh));
     } else {
         d_hor_y = -d_ver_x;
         d_ver_y = d_hor_x;
@@ -1242,8 +1242,8 @@ static int affine_merge_const6(const MvField* c0, const MvField* c2, const int c
                 mi->pred_flag |= mask;
                 mi->ref_idx[i] = c0->ref_idx[i];
                 mi->mv[i][0] = c0->mv[i];
-                mi->mv[i][1].x = (c0->mv[i].x << 7) + ((c2->mv[i].y - c0->mv[i].y) << shift);
-                mi->mv[i][1].y = (c0->mv[i].y << 7) - ((c2->mv[i].x - c0->mv[i].x) << shift);
+                mi->mv[i][1].x = (c0->mv[i].x * (1 << 7)) + ((c2->mv[i].y - c0->mv[i].y) * (1 << shift));
+                mi->mv[i][1].y = (c0->mv[i].y * (1 << 7)) - ((c2->mv[i].x - c0->mv[i].x) * (1 << shift));
                 ff_vvc_round_mv(&mi->mv[i][1], 0, 7);
                 ff_vvc_clip_mv(&mi->mv[i][1]);
             }
@@ -1736,11 +1736,11 @@ void ff_vvc_round_mv(Mv *mv, const int lshift, const int rshift)
 {
     if (rshift) {
         const int offset = 1 << (rshift - 1);
-        mv->x = ((mv->x + offset - (mv->x >= 0)) >> rshift) << lshift;
-        mv->y = ((mv->y + offset - (mv->y >= 0)) >> rshift) << lshift;
+        mv->x = ((mv->x + offset - (mv->x >= 0)) >> rshift) * (1 << lshift);
+        mv->y = ((mv->y + offset - (mv->y >= 0)) >> rshift) * (1 << lshift);
     } else {
-        mv->x = mv->x << lshift;
-        mv->y = mv->y << lshift;
+        mv->x = mv->x * (1 << lshift);
+        mv->y = mv->y * (1 << lshift);
     }
 }
 

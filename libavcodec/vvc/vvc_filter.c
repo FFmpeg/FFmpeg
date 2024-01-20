@@ -1115,12 +1115,12 @@ static void alf_prepare_buffer(VVCFrameContext *fc, uint8_t *_dst, const uint8_t
     copy_ctb(_dst, _src, width << ps, height, dst_stride, src_stride);
 
     //top
-    src = fc->tab.alf_pixel_buffer_h[c_idx][1] + (((border_pixels * (y_ctb - 1)) * w + x) << ps);
+    src = fc->tab.alf_pixel_buffer_h[c_idx][1] + (((border_pixels * w) << ps) * (y_ctb - 1) + (x << ps));
     dst = _dst - border_pixels * dst_stride;
     alf_fill_border_h(dst, dst_stride, src, w  << ps, _dst, width, border_pixels, ps, edges[TOP]);
 
     //bottom
-    src = fc->tab.alf_pixel_buffer_h[c_idx][0] + ((border_pixels * (y_ctb + 1) * w + x) << ps);
+    src = fc->tab.alf_pixel_buffer_h[c_idx][0] + (((border_pixels * w) << ps) * (y_ctb + 1) + (x << ps));
     dst = _dst + height * dst_stride;
     alf_fill_border_h(dst, dst_stride, src, w  << ps, _dst + (height - 1) * dst_stride, width, border_pixels, ps, edges[BOTTOM]);
 

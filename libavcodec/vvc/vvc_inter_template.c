@@ -817,8 +817,8 @@ static void FUNC(derive_bdof_vx_vy)(const int16_t *_src0, const int16_t *_src1,
         src0 += MAX_PB_SIZE;
         src1 += MAX_PB_SIZE;
     }
-    *vx = sgx2 > 0 ? av_clip((sgxdi << 2) >> av_log2(sgx2) , -thres + 1, thres - 1) : 0;
-    *vy = sgy2 > 0 ? av_clip(((sgydi << 2) - ((*vx * sgxgy) >> 1)) >> av_log2(sgy2), -thres + 1, thres - 1) : 0;
+    *vx = sgx2 > 0 ? av_clip((sgxdi * (1 << 2)) >> av_log2(sgx2) , -thres + 1, thres - 1) : 0;
+    *vy = sgy2 > 0 ? av_clip(((sgydi * (1 << 2)) - ((*vx * sgxgy) >> 1)) >> av_log2(sgy2), -thres + 1, thres - 1) : 0;
 }
 
 static void FUNC(apply_bdof_min_block)(pixel* dst, const ptrdiff_t dst_stride, const int16_t *src0, const int16_t *src1,
