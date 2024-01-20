@@ -39,6 +39,7 @@
 #include "libavutil/fifo.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/timecode.h"
 
 #define MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32-bit audio
@@ -308,62 +309,107 @@ static int dv_assemble_frame(AVFormatContext *s,
     return 0;
 }
 
-static DVMuxContext* dv_init_mux(AVFormatContext* s)
+static int dv_init_mux(AVFormatContext* s)
 {
     DVMuxContext *c = s->priv_data;
     AVStream *vst = NULL;
     int i;
 
-    /* we support at most 1 video and 2 audio streams */
-    if (s->nb_streams > 5)
-        return NULL;
+    if (s->nb_streams > 5) {
+        av_log(s, AV_LOG_ERROR,
+               "Invalid number of streams %d, the muxer supports at most 1 video channel and 4 audio channels.\n",
+               s->nb_streams);
+        return AVERROR_INVALIDDATA;
+    }
 
     /* We have to sort out where audio and where video stream is */
     for (i=0; i<s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         switch (st->codecpar->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            if (vst) return NULL;
-            if (st->codecpar->codec_id != AV_CODEC_ID_DVVIDEO)
-                goto bail_out;
+            if (vst) {
+                av_log(s, AV_LOG_ERROR,
+                       "More than one video stream found, only one is accepted.\n");
+                return AVERROR_INVALIDDATA;
+            }
+            if (st->codecpar->codec_id != AV_CODEC_ID_DVVIDEO) {
+                av_log(s, AV_LOG_ERROR,
+                       "Invalid codec for video stream, only DVVIDEO is supported.\n");
+                return AVERROR_INVALIDDATA;
+            }
             vst = st;
             break;
         case AVMEDIA_TYPE_AUDIO:
-            if (c->n_ast > 1) return NULL;
+            if (c->n_ast > 1) {
+                av_log(s, AV_LOG_ERROR,
+                       "More than two audio streams found, at most 2 are accepted.\n");
+                return AVERROR_INVALIDDATA;
+            }
             /* Some checks -- DV format is very picky about its incoming streams */
-            if(st->codecpar->codec_id    != AV_CODEC_ID_PCM_S16LE ||
-               st->codecpar->ch_layout.nb_channels    != 2)
-                goto bail_out;
+            if (st->codecpar->codec_id != AV_CODEC_ID_PCM_S16LE) {
+                av_log(s, AV_LOG_ERROR,
+                       "Invalid codec for stream %d, only PCM_S16LE is supported\n.", i);
+                return AVERROR_INVALIDDATA;
+            }
+            if (st->codecpar->ch_layout.nb_channels != 2) {
+                av_log(s, AV_LOG_ERROR,
+                       "Invalid number of audio channels %d for stream %d, only 2 channels are supported\n.",
+                       st->codecpar->ch_layout.nb_channels, i);
+                return AVERROR_INVALIDDATA;
+            }
             if (st->codecpar->sample_rate != 48000 &&
                 st->codecpar->sample_rate != 44100 &&
-                st->codecpar->sample_rate != 32000    )
-                goto bail_out;
+                st->codecpar->sample_rate != 32000) {
+                av_log(s, AV_LOG_ERROR,
+                       "Invalid audio sample rate %d for stream %d, only 32000, 44100, and 48000 are supported.\n",
+                       st->codecpar->sample_rate, i);
+                return AVERROR_INVALIDDATA;
+            }
             c->ast[c->n_ast++] = st;
             break;
         default:
-            goto bail_out;
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid media type for stream %d, only audio and video are supported.\n", i);
+            return AVERROR_INVALIDDATA;
         }
     }
 
-    if (!vst)
-        goto bail_out;
+    if (!vst) {
+        av_log(s, AV_LOG_ERROR,
+               "Missing video stream, must be present\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     c->sys = av_dv_codec_profile2(vst->codecpar->width, vst->codecpar->height,
                                   vst->codecpar->format, vst->time_base);
-    if (!c->sys)
-        goto bail_out;
-
-    if ((c->sys->time_base.den != 25 && c->sys->time_base.den != 50) || c->sys->time_base.num != 1) {
-        if (c->ast[0] && c->ast[0]->codecpar->sample_rate != 48000)
-            goto bail_out;
-        if (c->ast[1] && c->ast[1]->codecpar->sample_rate != 48000)
-            goto bail_out;
+    if (!c->sys) {
+        av_log(s, AV_LOG_ERROR,
+               "Could not find a valid video profile for size:%dx%d format:%s tb:%d%d\n",
+               vst->codecpar->width, vst->codecpar->height,
+               av_get_pix_fmt_name(vst->codecpar->format),
+               vst->time_base.num, vst->time_base.den);
+        return AVERROR_INVALIDDATA;
     }
 
-    if (((c->n_ast > 1) && (c->sys->n_difchan < 2)) ||
-        ((c->n_ast > 2) && (c->sys->n_difchan < 4))) {
-        /* only 2 stereo pairs allowed in 50Mbps mode */
-        goto bail_out;
+    if ((c->sys->time_base.den != 25 && c->sys->time_base.den != 50) || c->sys->time_base.num != 1) {
+        for (i = 0; i < 2; i++) {
+            if (c->ast[i] && c->ast[i]->codecpar->sample_rate != 48000) {
+                av_log(s, AV_LOG_ERROR,
+                       "Invalid sample rate %d for audio stream #%d for this video profile, must be 48000.\n",
+                       c->ast[i]->codecpar->sample_rate, i);
+                return AVERROR_INVALIDDATA;
+            }
+        }
+    }
+
+    for (i = 1; i < 2; i++) {
+        if (((c->n_ast > i) && (c->sys->n_difchan < (2 * i)))) {
+            const char *mode = c->n_ast > 1 ? "50Mps" : "25Mps";
+            av_log(s, AV_LOG_ERROR,
+                   "Invalid number of channels %d, only %d stereo pairs is allowed in %s mode.\n",
+                   c->n_ast, i, mode);
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     /* Ok, everything seems to be in working order */
@@ -376,14 +422,12 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
         if (!c->ast[i])
            continue;
         c->audio_data[i] = av_fifo_alloc2(100 * MAX_AUDIO_FRAME_SIZE, 1, 0);
-        if (!c->audio_data[i])
-            goto bail_out;
+        if (!c->audio_data[i]) {
+            return AVERROR(ENOMEM);
+        }
     }
 
-    return c;
-
-bail_out:
-    return NULL;
+    return 0;
 }
 
 static int dv_write_header(AVFormatContext *s)
@@ -392,12 +436,12 @@ static int dv_write_header(AVFormatContext *s)
     DVMuxContext *dvc = s->priv_data;
     AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
-    if (!dv_init_mux(s)) {
+    if (dv_init_mux(s) < 0) {
         av_log(s, AV_LOG_ERROR, "Can't initialize DV format!\n"
-                    "Make sure that you supply exactly two streams:\n"
-                    "     video: 25fps or 29.97fps, audio: 2ch/48|44|32kHz/PCM\n"
+                    "Make sure that you supply at least two streams:\n"
+                    "     video: 25fps or 29.97fps, audio: 2ch/48|44.1|32kHz/PCM\n"
                     "     (50Mbps allows an optional second audio stream)\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     rate.num = dvc->sys->ltc_divisor;
     rate.den = 1;
