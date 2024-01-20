@@ -47,7 +47,4 @@
 #define FF_API_AVCODEC_CLOSE       (LIBAVCODEC_VERSION_MAJOR < 62)
 #define FF_API_BUFFER_MIN_SIZE     (LIBAVCODEC_VERSION_MAJOR < 62)
 
-// reminder to remove CrystalHD decoders on next major bump
-#define FF_CODEC_CRYSTAL_HD        (LIBAVCODEC_VERSION_MAJOR < 61)
-
 #endif /* AVCODEC_VERSION_MAJOR_H */
