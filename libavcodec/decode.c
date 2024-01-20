@@ -1474,11 +1474,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     }
-#if FF_API_REORDERED_OPAQUE
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->reordered_opaque = avctx->reordered_opaque;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     ret = fill_frame_props(avctx, frame);
     if (ret < 0)

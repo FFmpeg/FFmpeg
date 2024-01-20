@@ -68,9 +68,6 @@ typedef struct FrameData {
     int64_t pts;
     int64_t duration;
 
-#if FF_API_REORDERED_OPAQUE
-    int64_t      reordered_opaque;
-#endif
     void        *frame_opaque;
     AVBufferRef *frame_opaque_ref;
 
@@ -383,11 +380,6 @@ static int frame_data_submit(AVCodecContext *avctx, AVFifo *fifo,
         if (ret < 0)
             goto fail;
     }
-#if FF_API_REORDERED_OPAQUE
-FF_DISABLE_DEPRECATION_WARNINGS
-    fd.reordered_opaque = frame->reordered_opaque;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     ret = av_fifo_write(fifo, &fd, 1);
     if (ret < 0)
@@ -413,12 +405,6 @@ static int frame_data_apply(AVCodecContext *avctx, AVFifo *fifo, AVPacket *pkt)
                "this is a bug, please report it\n", pkt->pts, fd.pts);
         goto skip;
     }
-
-#if FF_API_REORDERED_OPAQUE
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->reordered_opaque = fd.reordered_opaque;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     pkt->duration = fd.duration;
     if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {

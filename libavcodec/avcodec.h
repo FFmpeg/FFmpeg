@@ -1353,22 +1353,6 @@ typedef struct AVCodecContext {
      */
     int err_recognition;
 
-#if FF_API_REORDERED_OPAQUE
-    /**
-     * opaque 64-bit number (generally a PTS) that will be reordered and
-     * output in AVFrame.reordered_opaque
-     * - encoding: Set by libavcodec to the reordered_opaque of the input
-     *             frame corresponding to the last returned packet. Only
-     *             supported by encoders with the
-     *             AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE capability.
-     * - decoding: Set by user.
-     *
-     * @deprecated Use AV_CODEC_FLAG_COPY_OPAQUE instead
-     */
-    attribute_deprecated
-    int64_t reordered_opaque;
-#endif
-
     /**
      * Hardware accelerator in use
      * - encoding: unused.

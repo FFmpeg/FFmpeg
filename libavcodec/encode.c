@@ -234,12 +234,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 int ff_encode_reordered_opaque(AVCodecContext *avctx,
                                AVPacket *pkt, const AVFrame *frame)
 {
-#if FF_API_REORDERED_OPAQUE
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->reordered_opaque = frame->reordered_opaque;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
         int ret = av_buffer_replace(&pkt->opaque_ref, frame->opaque_ref);
         if (ret < 0)

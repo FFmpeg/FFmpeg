@@ -125,11 +125,6 @@ static int init_context_defaults(AVCodecContext *s, const AVCodec *codec)
     s->sw_pix_fmt          = AV_PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
 
-#if FF_API_REORDERED_OPAQUE
-FF_DISABLE_DEPRECATION_WARNINGS
-    s->reordered_opaque    = AV_NOPTS_VALUE;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if(codec && codec2->priv_data_size){
         s->priv_data = av_mallocz(codec2->priv_data_size);
         if (!s->priv_data)

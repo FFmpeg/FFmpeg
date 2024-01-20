@@ -100,10 +100,6 @@ typedef struct NvencFrameData
 {
     int64_t duration;
 
-#if FF_API_REORDERED_OPAQUE
-    int64_t reordered_opaque;
-#endif
-
     void        *frame_opaque;
     AVBufferRef *frame_opaque_ref;
 } NvencFrameData;

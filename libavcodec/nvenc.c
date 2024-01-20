@@ -2282,12 +2282,6 @@ static int nvenc_store_frame_data(AVCodecContext *avctx, NV_ENC_PIC_PARAMS *pic_
     frame_data->duration = frame->duration;
     frame_data->frame_opaque = frame->opaque;
 
-#if FF_API_REORDERED_OPAQUE
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame_data->reordered_opaque = frame->reordered_opaque;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     ctx->frame_data_array_pos = (ctx->frame_data_array_pos + 1) % ctx->frame_data_array_nb;
     pic_params->inputDuration = idx;
 
@@ -2303,12 +2297,6 @@ static int nvenc_retrieve_frame_data(AVCodecContext *avctx, NV_ENC_LOCK_BITSTREA
     NvencFrameData *frame_data = &ctx->frame_data_array[idx];
 
     pkt->duration = frame_data->duration;
-
-#if FF_API_REORDERED_OPAQUE
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->reordered_opaque = frame_data->reordered_opaque;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
         pkt->opaque = frame_data->frame_opaque;
