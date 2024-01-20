@@ -344,12 +344,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             pic->reference = 3;
     }
 
-#if FF_API_FRAME_PICTURE_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-    pic->f->coded_picture_number = s->coded_picture_number++;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (alloc_picture(s, pic) < 0)
         return -1;
 

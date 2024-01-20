@@ -71,8 +71,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0
@@ -115,8 +113,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0
@@ -192,8 +188,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0
@@ -236,8 +230,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0
@@ -346,8 +338,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0
@@ -390,8 +380,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0
@@ -500,8 +488,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0
@@ -544,8 +530,6 @@
             "pix_fmt": "rgb24",
             "sample_aspect_ratio": "1:1",
             "pict_type": "I",
-            "coded_picture_number": 0,
-            "display_picture_number": 0,
             "interlaced_frame": 0,
             "top_field_first": 0,
             "repeat_pict": 0

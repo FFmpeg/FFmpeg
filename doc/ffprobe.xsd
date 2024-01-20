@@ -126,8 +126,6 @@
     <xsd:attribute name="pix_fmt"                type="xsd:string"/>
     <xsd:attribute name="sample_aspect_ratio"    type="xsd:string"/>
     <xsd:attribute name="pict_type"              type="xsd:string"/>
-    <xsd:attribute name="coded_picture_number"   type="xsd:long"  />
-    <xsd:attribute name="display_picture_number" type="xsd:long"  />
     <xsd:attribute name="interlaced_frame"       type="xsd:int"   />
     <xsd:attribute name="top_field_first"        type="xsd:int"   />
     <xsd:attribute name="repeat_pict"            type="xsd:int"   />

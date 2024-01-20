@@ -466,19 +466,6 @@ typedef struct AVFrame {
      */
     AVRational time_base;
 
-#if FF_API_FRAME_PICTURE_NUMBER
-    /**
-     * picture number in bitstream order
-     */
-    attribute_deprecated
-    int coded_picture_number;
-    /**
-     * picture number in display order
-     */
-    attribute_deprecated
-    int display_picture_number;
-#endif
-
     /**
      * quality (between 1 (good) and FF_LAMBDA_MAX (bad))
      */

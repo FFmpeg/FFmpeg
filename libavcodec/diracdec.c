@@ -2103,11 +2103,6 @@ static int get_delayed_pic(DiracContext *s, AVFrame *picture, int *got_frame)
         out->reference ^= DELAYED_PIC_REF;
         if((ret = av_frame_ref(picture, out->avframe)) < 0)
             return ret;
-#if FF_API_FRAME_PICTURE_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-        picture->display_picture_number = out->picture_number;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         *got_frame = 1;
     }
 
@@ -2350,11 +2345,6 @@ static int dirac_decode_frame(AVCodecContext *avctx, AVFrame *picture,
             if((ret = av_frame_ref(picture, delayed_frame->avframe)) < 0)
                 return ret;
             s->frame_number = delayed_frame->picture_number + 1LL;
-#if FF_API_FRAME_PICTURE_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-            picture->display_picture_number = delayed_frame->picture_number;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             *got_frame = 1;
         }
     } else if (s->current_picture->picture_number == s->frame_number) {
@@ -2362,11 +2352,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if((ret = av_frame_ref(picture, s->current_picture->avframe)) < 0)
             return ret;
         s->frame_number = s->current_picture->picture_number + 1LL;
-#if FF_API_FRAME_PICTURE_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-        picture->display_picture_number = s->current_picture->picture_number;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         *got_frame = 1;
     }
 
