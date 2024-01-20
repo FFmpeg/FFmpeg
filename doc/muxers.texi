@@ -261,6 +261,72 @@ PCM unsigned 8-bit
 PCM Archimedes VIDC
 @end table
 
+@section MPEG-1/MPEG-2 program stream muxers
+
+This section covers formats belonging to the MPEG-1 and MPEG-2 Systems
+family.
+
+The MPEG-1 Systems format (also known as ISO/IEEC 11172-1 or MPEG-1
+program stream) has been adopted for the format of media track stored
+in VCD (Video Compact Disc).
+
+The MPEG-2 Systems standard (also known as ISO/IEEC 13818-1) covers
+two containers formats, one known as transport stream and one known as
+program stream; only the latter is covered here.
+
+The MPEG-2 program stream format (also known as VOB due to the
+corresponding file extension) is an extension of MPEG-1 program
+stream: in addition to support different codecs for the audio and
+video streams, it also stores subtitles and navigation metadata.
+MPEG-2 program stream has been adopted for storing media streams in
+SVCD and DVD storage devices.
+
+This section comprises the following muxers.
+
+@table @samp
+@item mpeg (mpg,mpeg)
+MPEG-1 Systems / MPEG-1 program stream muxer.
+
+@item vcd
+MPEG-1 Systems / MPEG-1 program stream (VCD) muxer.
+
+This muxer can be used to generate tracks in the format accepted by
+the VCD (Video Compact Disc) storage devices.
+
+It is the same as the @samp{mpeg} muxer with a few differences.
+
+@item vob
+MPEG-2 program stream (VOB) muxer.
+
+@item dvd
+MPEG-2 program stream (DVD VOB) muxer.
+
+This muxer can be used to generate tracks in the format accepted by
+the DVD (Digital Versatile Disc) storage devices.
+
+This is the same as the @samp{vob} muxer with a few differences.
+
+@item svcd (vob)
+MPEG-2 program stream (SVCD VOB) muxer.
+
+This muxer can be used to generate tracks in the format accepted by
+the SVCD (Super Video Compact Disc) storage devices.
+
+This is the same as the @samp{vob} muxer with a few differences.
+@end table
+
+@subsection Options
+@table @option
+@item muxrate @var{rate}
+Set user-defined mux rate expressed as a number of bits/s. If not
+specied the automatically computed mux rate is employed. Default value
+is @code{0}.
+
+@item preload @var{delay}
+Set initial demux-decode delay in microseconds. Default value is
+@code{500000}.
+@end table
+
 @section MOV/MPEG-4/ISOMBFF muxers
 
 This section covers formats belonging to the QuickTime / MOV family,
