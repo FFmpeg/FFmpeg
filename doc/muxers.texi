@@ -533,7 +533,7 @@ skip writing iods atom (default value is @code{true})
 @item use_editlist @var{bool}
 use edit list (default value is @code{auto})
 
-@item use_stream_ids_as_track_ids
+@item use_stream_ids_as_track_ids @var{bool}
 use stream ids as track ids (default value is @code{false})
 
 @item video_track_timescale @var{scale}
