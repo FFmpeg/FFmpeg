@@ -721,11 +721,9 @@ int ffurl_delete(const char *url)
     return ret;
 }
 
-#if !FF_API_AVIODIRCONTEXT
 struct AVIODirContext {
     struct URLContext *url_context;
 };
-#endif
 
 int avio_open_dir(AVIODirContext **s, const char *url, AVDictionary **options)
 {
