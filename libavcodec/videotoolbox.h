@@ -78,62 +78,6 @@ typedef struct AVVideotoolboxContext {
     int cm_codec_type;
 } AVVideotoolboxContext;
 
-#if FF_API_VT_HWACCEL_CONTEXT
-
-/**
- * Allocate and initialize a Videotoolbox context.
- *
- * This function should be called from the get_format() callback when the caller
- * selects the AV_PIX_FMT_VIDETOOLBOX format. The caller must then create
- * the decoder object (using the output callback provided by libavcodec) that
- * will be used for Videotoolbox-accelerated decoding.
- *
- * When decoding with Videotoolbox is finished, the caller must destroy the decoder
- * object and free the Videotoolbox context using av_free().
- *
- * @return the newly allocated context or NULL on failure
- * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
- */
-attribute_deprecated
-AVVideotoolboxContext *av_videotoolbox_alloc_context(void);
-
-/**
- * This is a convenience function that creates and sets up the Videotoolbox context using
- * an internal implementation.
- *
- * @param avctx the corresponding codec context
- *
- * @return >= 0 on success, a negative AVERROR code on failure
- * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
- */
-attribute_deprecated
-int av_videotoolbox_default_init(AVCodecContext *avctx);
-
-/**
- * This is a convenience function that creates and sets up the Videotoolbox context using
- * an internal implementation.
- *
- * @param avctx the corresponding codec context
- * @param vtctx the Videotoolbox context to use
- *
- * @return >= 0 on success, a negative AVERROR code on failure
- * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
- */
-attribute_deprecated
-int av_videotoolbox_default_init2(AVCodecContext *avctx, AVVideotoolboxContext *vtctx);
-
-/**
- * This function must be called to free the Videotoolbox context initialized with
- * av_videotoolbox_default_init().
- *
- * @param avctx the corresponding codec context
- * @deprecated Use AVCodecContext.hw_frames_ctx or hw_device_ctx instead.
- */
-attribute_deprecated
-void av_videotoolbox_default_free(AVCodecContext *avctx);
-
-#endif /* FF_API_VT_HWACCEL_CONTEXT */
-
 /**
  * @}
  */
