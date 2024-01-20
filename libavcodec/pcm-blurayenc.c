@@ -279,17 +279,6 @@ const FFCodec ff_pcm_bluray_encoder = {
     .init                  = pcm_bluray_encode_init,
     FF_CODEC_ENCODE_CB(pcm_bluray_encode_frame),
     .p.supported_samplerates = (const int[]) { 48000, 96000, 192000, 0 },
-    CODEC_OLD_CHANNEL_LAYOUTS(
-        AV_CH_LAYOUT_MONO,
-        AV_CH_LAYOUT_STEREO,
-        AV_CH_LAYOUT_SURROUND,
-        AV_CH_LAYOUT_2_1,
-        AV_CH_LAYOUT_4POINT0,
-        AV_CH_LAYOUT_2_2,
-        AV_CH_LAYOUT_5POINT0,
-        AV_CH_LAYOUT_5POINT1,
-        AV_CH_LAYOUT_7POINT0,
-        AV_CH_LAYOUT_7POINT1)
     .p.ch_layouts   = (const AVChannelLayout[]) {
         AV_CHANNEL_LAYOUT_MONO,
         AV_CHANNEL_LAYOUT_STEREO,

@@ -64,37 +64,14 @@
 int swr_set_matrix(struct SwrContext *s, const double *matrix, int stride)
 {
     int nb_in, nb_out, in, out;
-    int user_in_chlayout_nb_channels, user_out_chlayout_nb_channels;
 
     if (!s || s->in_convert) // s needs to be allocated but not initialized
         return AVERROR(EINVAL);
     memset(s->matrix, 0, sizeof(s->matrix));
     memset(s->matrix_flt, 0, sizeof(s->matrix_flt));
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    user_in_chlayout_nb_channels = av_get_channel_layout_nb_channels(s->user_in_ch_layout);
-FF_ENABLE_DEPRECATION_WARNINGS
-    if (!user_in_chlayout_nb_channels)
-#endif
-    user_in_chlayout_nb_channels = s->user_in_chlayout.nb_channels;
-    nb_in =
-#if FF_API_OLD_CHANNEL_LAYOUT
-            (s->user_in_ch_count > 0) ? s->user_in_ch_count :
-#endif
-            user_in_chlayout_nb_channels;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    user_out_chlayout_nb_channels = av_get_channel_layout_nb_channels(s->user_out_ch_layout);
-FF_ENABLE_DEPRECATION_WARNINGS
-    if (!user_out_chlayout_nb_channels)
-#endif
-    user_out_chlayout_nb_channels = s->user_out_chlayout.nb_channels;
-    nb_out =
-#if FF_API_OLD_CHANNEL_LAYOUT
-             (s->user_out_ch_count > 0) ? s->user_out_ch_count :
-#endif
-             user_out_chlayout_nb_channels;
+    nb_in = s->user_in_chlayout.nb_channels;
+    nb_out = s->user_out_chlayout.nb_channels;
     for (out = 0; out < nb_out; out++) {
         for (in = 0; in < nb_in; in++)
             s->matrix_flt[out][in] = s->matrix[out][in] = matrix[in];
@@ -145,27 +122,6 @@ static int sane_layout(AVChannelLayout *ch_layout) {
 
     return 1;
 }
-
-#if FF_API_OLD_CHANNEL_LAYOUT
-av_cold int swr_build_matrix(uint64_t in_ch_layout_param, uint64_t out_ch_layout_param,
-                             double center_mix_level, double surround_mix_level,
-                             double lfe_mix_level, double maxval,
-                             double rematrix_volume, double *matrix_param,
-                             int stride, enum AVMatrixEncoding matrix_encoding, void *log_context)
-{
-    AVChannelLayout in_ch_layout = { 0 }, out_ch_layout = { 0 };
-    int ret;
-
-    ret  = av_channel_layout_from_mask(&in_ch_layout, in_ch_layout_param);
-    ret |= av_channel_layout_from_mask(&out_ch_layout, out_ch_layout_param);
-    if (ret < 0)
-        return ret;
-
-    return swr_build_matrix2(&in_ch_layout, &out_ch_layout, center_mix_level, surround_mix_level,
-                             lfe_mix_level, maxval, rematrix_volume, matrix_param,
-                             stride, matrix_encoding, log_context);
-}
-#endif
 
 av_cold int swr_build_matrix2(const AVChannelLayout *in_layout, const AVChannelLayout *out_layout,
                               double center_mix_level, double surround_mix_level,

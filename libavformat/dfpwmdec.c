@@ -31,9 +31,6 @@
 typedef struct DFPWMAudioDemuxerContext {
     AVClass *class;
     int sample_rate;
-#if FF_API_OLD_CHANNEL_LAYOUT
-    int channels;
-#endif
     AVChannelLayout ch_layout;
 } DFPWMAudioDemuxerContext;
 
@@ -52,16 +49,9 @@ static int dfpwm_read_header(AVFormatContext *s)
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = AV_CODEC_ID_DFPWM;
     par->sample_rate = s1->sample_rate;
-#if FF_API_OLD_CHANNEL_LAYOUT
-    if (s1->ch_layout.nb_channels) {
-#endif
     ret = av_channel_layout_copy(&par->ch_layout, &s1->ch_layout);
     if (ret < 0)
         return ret;
-#if FF_API_OLD_CHANNEL_LAYOUT
-    } else
-        par->ch_layout.nb_channels = s1->channels;
-#endif
     par->bits_per_coded_sample = 1;
     par->block_align = 1;
 
@@ -71,13 +61,8 @@ static int dfpwm_read_header(AVFormatContext *s)
 
 static const AVOption dfpwm_options[] = {
     { "sample_rate", "", offsetof(DFPWMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 48000}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-#if FF_API_OLD_CHANNEL_LAYOUT
-    { "channels",    "", offsetof(DFPWMAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 1}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_DEPRECATED },
-    { "ch_layout",   "", offsetof(DFPWMAudioDemuxerContext, ch_layout),   AV_OPT_TYPE_CHLAYOUT, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
-#else
     { "ch_layout",   "", offsetof(DFPWMAudioDemuxerContext, ch_layout),   AV_OPT_TYPE_CHLAYOUT, {.str = "mono"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
-#endif
-    { NULL },
+{ NULL },
 };
 static const AVClass dfpwm_demuxer_class = {
     .class_name = "dfpwm demuxer",

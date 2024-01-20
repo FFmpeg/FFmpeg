@@ -324,12 +324,6 @@ static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
         memcpy(buf->data, buf->extended_data,
            FFMIN(FF_ARRAY_ELEMS(buf->data), nch_out) * sizeof(buf->data[0]));
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    buf->channels = outlink->ch_layout.nb_channels;
-    buf->channel_layout = outlink->channel_layout;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if ((ret = av_channel_layout_copy(&buf->ch_layout, &outlink->ch_layout)) < 0)
         return ret;
 

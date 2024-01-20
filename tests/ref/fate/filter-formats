@@ -82,7 +82,4 @@ quad(side)
 0 = ff_parse_channel_layout(0000000000000000, 65, 65C);
 0 = ff_parse_channel_layout(000000000000003F,  6, 5.1);
 0 = ff_parse_channel_layout(0000000000000003,  2, stereo);
-0 = ff_parse_channel_layout(0000000000000001,  1, 1+1+1+1);
-0 = ff_parse_channel_layout(0000000000000004,  1, 1c+1c+1c+1c);
-0 = ff_parse_channel_layout(0000000000000007,  3, 2c+1c);
 0 = ff_parse_channel_layout(0000000000000003,  2, 0x3);

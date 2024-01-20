@@ -92,23 +92,6 @@ const int16_t ff_aac_channel_map[3][4][6] = {
     },
 };
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-const uint64_t ff_aac_channel_layout[] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    AV_CH_LAYOUT_SURROUND,
-    AV_CH_LAYOUT_4POINT0,
-    AV_CH_LAYOUT_5POINT0_BACK,
-    AV_CH_LAYOUT_5POINT1_BACK,
-    AV_CH_LAYOUT_7POINT1_WIDE_BACK,
-    AV_CH_LAYOUT_6POINT1_BACK,
-    AV_CH_LAYOUT_7POINT1,
-    AV_CH_LAYOUT_22POINT2,
-    AV_CH_LAYOUT_7POINT1_TOP_BACK,
-    0,
-};
-#endif
-
 const AVChannelLayout ff_aac_ch_layout[] = {
     AV_CHANNEL_LAYOUT_MONO,
     AV_CHANNEL_LAYOUT_STEREO,

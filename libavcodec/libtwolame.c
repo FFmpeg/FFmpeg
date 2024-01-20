@@ -228,7 +228,6 @@ const FFCodec ff_libtwolame_encoder = {
         AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_NONE
     },
-    CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO)
     .p.ch_layouts    = (const AVChannelLayout[]) {
         AV_CHANNEL_LAYOUT_MONO,
         AV_CHANNEL_LAYOUT_STEREO,

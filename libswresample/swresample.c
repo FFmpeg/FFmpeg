@@ -36,52 +36,6 @@ int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     return 0;
 }
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
-                                      int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-                                      int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                                      int log_offset, void *log_ctx){
-    if(!s) s= swr_alloc();
-    if(!s) return NULL;
-
-    s->log_level_offset= log_offset;
-    s->log_ctx= log_ctx;
-
-    if (av_opt_set_int(s, "ocl", out_ch_layout,   0) < 0)
-        goto fail;
-
-    if (av_opt_set_int(s, "osf", out_sample_fmt,  0) < 0)
-        goto fail;
-
-    if (av_opt_set_int(s, "osr", out_sample_rate, 0) < 0)
-        goto fail;
-
-    if (av_opt_set_int(s, "icl", in_ch_layout,    0) < 0)
-        goto fail;
-
-    if (av_opt_set_int(s, "isf", in_sample_fmt,   0) < 0)
-        goto fail;
-
-    if (av_opt_set_int(s, "isr", in_sample_rate,  0) < 0)
-        goto fail;
-
-    if (av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> user_in_ch_layout), 0) < 0)
-        goto fail;
-
-    if (av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->user_out_ch_layout), 0) < 0)
-        goto fail;
-
-    av_opt_set_int(s, "uch", 0, 0);
-    return s;
-fail:
-    av_log(s, AV_LOG_ERROR, "Failed to set option\n");
-    swr_free(&s);
-    return NULL;
-}
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
 int swr_alloc_set_opts2(struct SwrContext **ps,
                         const AVChannelLayout *out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
                         const AVChannelLayout *in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
@@ -116,14 +70,6 @@ int swr_alloc_set_opts2(struct SwrContext **ps,
         goto fail;
 
     av_opt_set_int(s, "uch", 0, 0);
-
-#if FF_API_OLD_CHANNEL_LAYOUT
-    // Clear old API values so they don't take precedence in swr_init()
-    av_opt_set_int(s, "icl", 0, 0);
-    av_opt_set_int(s, "ocl", 0, 0);
-    av_opt_set_int(s, "ich", 0, 0);
-    av_opt_set_int(s, "och", 0, 0);
-#endif
 
     return 0;
 fail:
@@ -213,65 +159,7 @@ av_cold int swr_init(struct SwrContext *s){
         av_log(s, AV_LOG_ERROR, "Requested output sample rate %d is invalid\n", s->out_sample_rate);
         return AVERROR(EINVAL);
     }
-#if FF_API_OLD_CHANNEL_LAYOUT
-    s->out.ch_count  = s-> user_out_ch_count;
-    s-> in.ch_count  = s->  user_in_ch_count;
 
-    // if the old/new fields are set inconsistently, prefer the old ones
-    if (s->user_used_ch_count && s->user_used_ch_count != s->user_used_chlayout.nb_channels) {
-        av_channel_layout_uninit(&s->used_ch_layout);
-        s->used_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-        s->used_ch_layout.nb_channels = s->user_used_ch_count;
-    } else if (av_channel_layout_check(&s->user_used_chlayout)) {
-        ret = av_channel_layout_copy(&s->used_ch_layout, &s->user_used_chlayout);
-        if (ret < 0)
-            return ret;
-    }
-    if ((s->user_in_ch_count && s->user_in_ch_count != s->user_in_chlayout.nb_channels) ||
-        (s->user_in_ch_layout && (s->user_in_chlayout.order != AV_CHANNEL_ORDER_NATIVE ||
-                                  s->user_in_chlayout.u.mask != s->user_in_ch_layout))) {
-        av_channel_layout_uninit(&s->in_ch_layout);
-        if (s->user_in_ch_layout)
-            av_channel_layout_from_mask(&s->in_ch_layout, s->user_in_ch_layout);
-        else {
-            s->in_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-            s->in_ch_layout.nb_channels = s->user_in_ch_count;
-        }
-    } else if (av_channel_layout_check(&s->user_in_chlayout))
-        av_channel_layout_copy(&s->in_ch_layout, &s->user_in_chlayout);
-
-    if ((s->user_out_ch_count && s->user_out_ch_count != s->user_out_chlayout.nb_channels) ||
-        (s->user_out_ch_layout && (s->user_out_chlayout.order != AV_CHANNEL_ORDER_NATIVE ||
-                                   s->user_out_chlayout.u.mask != s->user_out_ch_layout))) {
-        av_channel_layout_uninit(&s->out_ch_layout);
-        if (s->user_out_ch_layout)
-            av_channel_layout_from_mask(&s->out_ch_layout, s->user_out_ch_layout);
-        else {
-            s->out_ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-            s->out_ch_layout.nb_channels = s->user_out_ch_count;
-        }
-    } else if (av_channel_layout_check(&s->user_out_chlayout))
-        av_channel_layout_copy(&s->out_ch_layout, &s->user_out_chlayout);
-
-    if (!s->out.ch_count)
-        s->out.ch_count  = s->out_ch_layout.nb_channels;
-    if (!s-> in.ch_count)
-        s-> in.ch_count  = s->in_ch_layout.nb_channels;
-
-    if (!(ret = av_channel_layout_check(&s->in_ch_layout)) || s->in_ch_layout.nb_channels > SWR_CH_MAX) {
-        if (ret)
-            av_channel_layout_describe(&s->in_ch_layout, l1, sizeof(l1));
-        av_log(s, AV_LOG_WARNING, "Input channel layout \"%s\" is invalid or unsupported.\n", ret ? l1 : "");
-        return AVERROR(EINVAL);
-    }
-
-    if (!(ret = av_channel_layout_check(&s->out_ch_layout)) || s->out_ch_layout.nb_channels > SWR_CH_MAX) {
-        if (ret)
-            av_channel_layout_describe(&s->out_ch_layout, l2, sizeof(l2));
-        av_log(s, AV_LOG_WARNING, "Output channel layout \"%s\" is invalid or unsupported.\n", ret ? l2 : "");
-        return AVERROR(EINVAL);
-    }
-#else
     s->out.ch_count  = s-> user_out_chlayout.nb_channels;
     s-> in.ch_count  = s->  user_in_chlayout.nb_channels;
 
@@ -294,7 +182,6 @@ av_cold int swr_init(struct SwrContext *s){
     ret |= av_channel_layout_copy(&s->used_ch_layout, &s->user_used_chlayout);
     if (ret < 0)
         return ret;
-#endif
 
     s->int_sample_fmt= s->user_int_sample_fmt;
 
@@ -423,13 +310,6 @@ av_cold int swr_init(struct SwrContext *s){
     }
 
     av_channel_layout_describe(&s->out_ch_layout, l2, sizeof(l2));
-#if FF_API_OLD_CHANNEL_LAYOUT
-    if (s->out_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->out.ch_count != s->out_ch_layout.nb_channels) {
-        av_log(s, AV_LOG_ERROR, "Output channel layout %s mismatches specified channel count %d\n", l2, s->out.ch_count);
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
-#endif
     av_channel_layout_describe(&s->in_ch_layout, l1, sizeof(l1));
     if (s->in_ch_layout.order != AV_CHANNEL_ORDER_UNSPEC && s->used_ch_layout.nb_channels != s->in_ch_layout.nb_channels) {
         av_log(s, AV_LOG_ERROR, "Input channel layout %s mismatches specified channel count %d\n", l1, s->used_ch_layout.nb_channels);

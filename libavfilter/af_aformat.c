@@ -103,21 +103,8 @@ static int parse_channel_layouts(AVFilterContext *ctx)
 
         ret = av_channel_layout_from_string(&fmt, cur);
         if (ret < 0) {
-#if FF_API_OLD_CHANNEL_LAYOUT
-            uint64_t mask;
-FF_DISABLE_DEPRECATION_WARNINGS
-            mask = av_get_channel_layout(cur);
-            if (!mask) {
-#endif
             av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout: %s.\n", cur);
             return AVERROR(EINVAL);
-#if FF_API_OLD_CHANNEL_LAYOUT
-            }
-FF_ENABLE_DEPRECATION_WARNINGS
-            av_log(ctx, AV_LOG_WARNING, "Channel layout '%s' uses a deprecated syntax.\n",
-                   cur);
-            av_channel_layout_from_mask(&fmt, mask);
-#endif
         }
         ret = ff_add_channel_layout(&s->channel_layouts, &fmt);
         av_channel_layout_uninit(&fmt);

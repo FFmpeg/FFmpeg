@@ -469,13 +469,6 @@ static int output_configure(AACDecContext *ac,
     }
     // Try to sniff a reasonable channel order, otherwise output the
     // channels in the order the PCE declared them.
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->request_channel_layout == AV_CH_LAYOUT_NATIVE)
-        ac->output_channel_order = CHANNEL_ORDER_CODED;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (ac->output_channel_order == CHANNEL_ORDER_DEFAULT)
         layout = sniff_channel_order(layout_map, tags);
     for (i = 0; i < tags; i++) {

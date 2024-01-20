@@ -311,12 +311,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         dst->sample_rate    = src->sample_rate;
         dst->sample_fmt     = src->sample_fmt;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        dst->channels       = src->channels;
-        dst->channel_layout = src->channel_layout;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         err = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
         if (err < 0)
             return err;

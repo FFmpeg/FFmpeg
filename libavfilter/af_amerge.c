@@ -247,12 +247,6 @@ static int try_push_frame(AVFilterContext *ctx, int nb_samples)
 
     if ((ret = av_channel_layout_copy(&outbuf->ch_layout, &outlink->ch_layout)) < 0)
         return ret;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    outbuf->channel_layout = outlink->channel_layout;
-    outbuf->channels       = outlink->ch_layout.nb_channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     while (nb_samples) {
         /* Unroll the most common sample formats: speed +~350% for the loop,

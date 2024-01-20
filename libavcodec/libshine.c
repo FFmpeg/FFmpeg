@@ -140,7 +140,6 @@ const FFCodec ff_libshine_encoder = {
     .p.sample_fmts         = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16P,
                                                             AV_SAMPLE_FMT_NONE },
     .p.supported_samplerates = libshine_sample_rates,
-    CODEC_OLD_CHANNEL_LAYOUTS(AV_CH_LAYOUT_MONO, AV_CH_LAYOUT_STEREO)
     .p.ch_layouts          = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
                                                          AV_CHANNEL_LAYOUT_STEREO,
                                                          { 0 },

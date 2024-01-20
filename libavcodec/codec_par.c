@@ -168,32 +168,9 @@ int avcodec_parameters_from_context(AVCodecParameters *par,
         break;
     case AVMEDIA_TYPE_AUDIO:
         par->format           = codec->sample_fmt;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        // if the old/new fields are set inconsistently, prefer the old ones
-        if ((codec->channels && codec->channels != codec->ch_layout.nb_channels) ||
-            (codec->channel_layout && (codec->ch_layout.order != AV_CHANNEL_ORDER_NATIVE ||
-                                       codec->ch_layout.u.mask != codec->channel_layout))) {
-            if (codec->channel_layout)
-                av_channel_layout_from_mask(&par->ch_layout, codec->channel_layout);
-            else {
-                par->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-                par->ch_layout.nb_channels = codec->channels;
-            }
-FF_ENABLE_DEPRECATION_WARNINGS
-        } else {
-#endif
         ret = av_channel_layout_copy(&par->ch_layout, &codec->ch_layout);
         if (ret < 0)
             return ret;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        }
-        par->channel_layout  = par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                               par->ch_layout.u.mask : 0;
-        par->channels        = par->ch_layout.nb_channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         par->sample_rate      = codec->sample_rate;
         par->block_align      = codec->block_align;
         par->frame_size       = codec->frame_size;
@@ -255,32 +232,9 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
         break;
     case AVMEDIA_TYPE_AUDIO:
         codec->sample_fmt       = par->format;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        // if the old/new fields are set inconsistently, prefer the old ones
-        if ((par->channels && par->channels != par->ch_layout.nb_channels) ||
-            (par->channel_layout && (par->ch_layout.order != AV_CHANNEL_ORDER_NATIVE ||
-                                     par->ch_layout.u.mask != par->channel_layout))) {
-            if (par->channel_layout)
-                av_channel_layout_from_mask(&codec->ch_layout, par->channel_layout);
-            else {
-                codec->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-                codec->ch_layout.nb_channels = par->channels;
-            }
-FF_ENABLE_DEPRECATION_WARNINGS
-        } else {
-#endif
         ret = av_channel_layout_copy(&codec->ch_layout, &par->ch_layout);
         if (ret < 0)
             return ret;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        }
-        codec->channel_layout = codec->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                                codec->ch_layout.u.mask : 0;
-        codec->channels       = codec->ch_layout.nb_channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         codec->sample_rate      = par->sample_rate;
         codec->block_align      = par->block_align;
         codec->frame_size       = par->frame_size;

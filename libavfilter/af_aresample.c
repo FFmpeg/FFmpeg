@@ -194,12 +194,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamplesref)
 
     av_frame_copy_props(outsamplesref, insamplesref);
     outsamplesref->format                = outlink->format;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    outsamplesref->channels              = outlink->ch_layout.nb_channels;
-    outsamplesref->channel_layout        = outlink->channel_layout;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     ret = av_channel_layout_copy(&outsamplesref->ch_layout, &outlink->ch_layout);
     if (ret < 0)
         return ret;

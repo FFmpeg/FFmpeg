@@ -617,21 +617,6 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-static const uint64_t alac_channel_layouts[ALAC_MAX_CHANNELS + 1] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    AV_CH_LAYOUT_SURROUND,
-    AV_CH_LAYOUT_4POINT0,
-    AV_CH_LAYOUT_5POINT0_BACK,
-    AV_CH_LAYOUT_5POINT1_BACK,
-    AV_CH_LAYOUT_6POINT1_BACK,
-    AV_CH_LAYOUT_7POINT1_WIDE_BACK,
-    0
-};
-#endif
-
-
 #define OFFSET(x) offsetof(AlacEncodeContext, x)
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -660,7 +645,6 @@ const FFCodec ff_alac_encoder = {
     .init           = alac_encode_init,
     FF_CODEC_ENCODE_CB(alac_encode_frame),
     .close          = alac_encode_close,
-    CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(alac_channel_layouts)
     .p.ch_layouts   = ff_alac_ch_layouts,
     .p.sample_fmts  = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                      AV_SAMPLE_FMT_S16P,

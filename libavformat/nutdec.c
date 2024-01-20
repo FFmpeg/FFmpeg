@@ -969,10 +969,6 @@ static int read_sm_data(AVFormatContext *s, AVIOContext *bc, AVPacket *pkt, int 
         if (!dst)
             return AVERROR(ENOMEM);
         bytestream_put_le32(&dst,
-#if FF_API_OLD_CHANNEL_LAYOUT
-                            AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT*(!!channels) +
-                            AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT*(!!channel_layout) +
-#endif
                             AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE*(!!sample_rate) +
                             AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS*(!!(width|height))
                            );

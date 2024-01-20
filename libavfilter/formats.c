@@ -972,24 +972,8 @@ int ff_parse_channel_layout(AVChannelLayout *ret, int *nret, const char *arg,
 
     res = av_channel_layout_from_string(&chlayout, arg);
     if (res < 0) {
-#if FF_API_OLD_CHANNEL_LAYOUT
-        int64_t mask;
-        int nb_channels;
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (av_get_extended_channel_layout(arg, &mask, &nb_channels) < 0) {
-#endif
-            av_log(log_ctx, AV_LOG_ERROR, "Invalid channel layout '%s'\n", arg);
-            return AVERROR(EINVAL);
-#if FF_API_OLD_CHANNEL_LAYOUT
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-        av_log(log_ctx, AV_LOG_WARNING, "Channel layout '%s' uses a deprecated syntax.\n",
-               arg);
-        if (mask)
-            av_channel_layout_from_mask(&chlayout, mask);
-        else
-            chlayout = (AVChannelLayout) { .order = AV_CHANNEL_ORDER_UNSPEC, .nb_channels = nb_channels };
-#endif
+        av_log(log_ctx, AV_LOG_ERROR, "Invalid channel layout '%s'\n", arg);
+        return AVERROR(EINVAL);
     }
 
     if (chlayout.order == AV_CHANNEL_ORDER_UNSPEC && !nret) {

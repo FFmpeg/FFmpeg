@@ -264,14 +264,6 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
         return AVERROR_UNKNOWN;
     }
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->request_channel_layout) {
-        av_channel_layout_uninit(&s->downmix_layout);
-        av_channel_layout_from_mask(&s->downmix_layout, avctx->request_channel_layout);
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (s->downmix_layout.nb_channels > 0 &&
         s->downmix_layout.order != AV_CHANNEL_ORDER_NATIVE) {
         int downmix_channels = -1;

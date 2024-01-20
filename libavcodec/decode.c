@@ -92,39 +92,6 @@ static int apply_param_change(AVCodecContext *avctx, const AVPacket *avpkt)
     flags = bytestream_get_le32(&data);
     size -= 4;
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT) {
-        if (size < 4)
-            goto fail;
-        val = bytestream_get_le32(&data);
-        if (val <= 0 || val > INT_MAX) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid channel count");
-            ret = AVERROR_INVALIDDATA;
-            goto fail2;
-        }
-        av_channel_layout_uninit(&avctx->ch_layout);
-        avctx->ch_layout.nb_channels = val;
-        avctx->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
-        size -= 4;
-    }
-    if (flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT) {
-        if (size < 8)
-            goto fail;
-        av_channel_layout_uninit(&avctx->ch_layout);
-        ret = av_channel_layout_from_mask(&avctx->ch_layout, bytestream_get_le64(&data));
-        if (ret < 0)
-            goto fail2;
-        size -= 8;
-    }
-    if (flags & (AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT |
-                 AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT)) {
-        avctx->channels = avctx->ch_layout.nb_channels;
-        avctx->channel_layout = (avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE) ?
-                                avctx->ch_layout.u.mask : 0;
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if (flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE) {
         if (size < 4)
             goto fail;
@@ -582,15 +549,6 @@ static int fill_frame_props(const AVCodecContext *avctx, AVFrame *frame)
             if (ret < 0)
                 return ret;
         }
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (!frame->channel_layout)
-            frame->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                                    avctx->ch_layout.u.mask : 0;
-        if (!frame->channels)
-            frame->channels = avctx->ch_layout.nb_channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         if (!frame->sample_rate)
             frame->sample_rate = avctx->sample_rate;
     }
@@ -1633,15 +1591,6 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
             goto fail;
         }
     } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        /* compat layer for old-style get_buffer() implementations */
-        avctx->channels = avctx->ch_layout.nb_channels;
-        avctx->channel_layout = (avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE) ?
-                                avctx->ch_layout.u.mask : 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
         if (frame->nb_samples * (int64_t)avctx->ch_layout.nb_channels > avctx->max_samples) {
             av_log(avctx, AV_LOG_ERROR, "samples per frame %d, exceeds max_samples %"PRId64"\n", frame->nb_samples, avctx->max_samples);
             ret = AVERROR(EINVAL);

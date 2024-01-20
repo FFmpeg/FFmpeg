@@ -648,7 +648,6 @@ static const AVOption options[] = {
         .p.priv_class   = &ffat_##NAME##_enc_class, \
         .p.capabilities = AV_CODEC_CAP_DELAY | \
                           AV_CODEC_CAP_ENCODER_FLUSH CAPS, \
-        CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(CHANNEL_LAYOUTS) \
         .p.ch_layouts   = CH_LAYOUTS, \
         .p.sample_fmts  = (const enum AVSampleFormat[]) { \
             AV_SAMPLE_FMT_S16, \
@@ -673,24 +672,6 @@ static const AVChannelLayout aac_at_ch_layouts[] = {
     AV_CHANNEL_LAYOUT_OCTAGONAL,
     { 0 },
 };
-
-#if FF_API_OLD_CHANNEL_LAYOUT
-static const uint64_t aac_at_channel_layouts[] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    AV_CH_LAYOUT_SURROUND,
-    AV_CH_LAYOUT_4POINT0,
-    AV_CH_LAYOUT_5POINT0,
-    AV_CH_LAYOUT_5POINT1,
-    AV_CH_LAYOUT_6POINT0,
-    AV_CH_LAYOUT_6POINT1,
-    AV_CH_LAYOUT_7POINT0,
-    AV_CH_LAYOUT_7POINT1_WIDE_BACK,
-    AV_CH_LAYOUT_QUAD,
-    AV_CH_LAYOUT_OCTAGONAL,
-    0,
-};
-#endif
 
 FFAT_ENC(aac,          AV_CODEC_ID_AAC,          aac_profiles, , aac_at_channel_layouts, aac_at_ch_layouts)
 //FFAT_ENC(adpcm_ima_qt, AV_CODEC_ID_ADPCM_IMA_QT, NULL)

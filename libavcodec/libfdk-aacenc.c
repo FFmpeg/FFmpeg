@@ -557,28 +557,6 @@ static const FFCodecDefault aac_encode_defaults[] = {
     { NULL }
 };
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-static const uint64_t aac_channel_layout[] = {
-    AV_CH_LAYOUT_MONO,
-    AV_CH_LAYOUT_STEREO,
-    AV_CH_LAYOUT_SURROUND,
-    AV_CH_LAYOUT_4POINT0,
-    AV_CH_LAYOUT_5POINT0_BACK,
-    AV_CH_LAYOUT_5POINT1_BACK,
-#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
-    AV_CH_LAYOUT_6POINT1_BACK,
-#endif
-#if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
-    AV_CH_LAYOUT_7POINT1_WIDE_BACK,
-    AV_CH_LAYOUT_7POINT1,
-#endif
-#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
-    AV_CH_LAYOUT_7POINT1_TOP_BACK,
-#endif
-    0,
-};
-#endif /* FF_API_OLD_CHANNEL_LAYOUT */
-
 static const AVChannelLayout aac_ch_layouts[16] = {
     AV_CHANNEL_LAYOUT_MONO,
     AV_CHANNEL_LAYOUT_STEREO,
@@ -625,6 +603,5 @@ const FFCodec ff_libfdk_aac_encoder = {
     .p.profiles            = profiles,
     .p.supported_samplerates = aac_sample_rates,
     .p.wrapper_name        = "libfdk",
-    CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(aac_channel_layout)
     .p.ch_layouts          = aac_ch_layouts,
 };

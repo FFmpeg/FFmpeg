@@ -94,9 +94,6 @@ static const AVOption avcodec_options[] = {
 {"time_base", NULL, OFFSET(time_base), AV_OPT_TYPE_RATIONAL, {.dbl = 0}, 0, INT_MAX},
 {"g", "set the group of picture (GOP) size", OFFSET(gop_size), AV_OPT_TYPE_INT, {.i64 = 12 }, INT_MIN, INT_MAX, V|E},
 {"ar", "set audio sampling rate (in Hz)", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, A|D|E},
-#if FF_API_OLD_CHANNEL_LAYOUT
-{"ac", "set number of audio channels", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, A|D|E},
-#endif
 {"cutoff", "set cutoff bandwidth", OFFSET(cutoff), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, INT_MIN, INT_MAX, A|E},
 {"frame_size", NULL, OFFSET(frame_size), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX, A|E},
 {"frame_number", NULL, OFFSET(frame_num), AV_OPT_TYPE_INT64, {.i64 = DEFAULT }, INT_MIN, INT_MAX},
@@ -269,10 +266,6 @@ static const AVOption avcodec_options[] = {
 {"compression_level", NULL, OFFSET(compression_level), AV_OPT_TYPE_INT, {.i64 = FF_COMPRESSION_DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"bits_per_raw_sample", NULL, OFFSET(bits_per_raw_sample), AV_OPT_TYPE_INT, {.i64 = DEFAULT }, 0, INT_MAX},
 {"ch_layout", NULL, OFFSET(ch_layout), AV_OPT_TYPE_CHLAYOUT, {.str = NULL }, 0, 0, A|E|D, .unit = "ch_layout"},
-#if FF_API_OLD_CHANNEL_LAYOUT
-{"channel_layout", NULL, OFFSET(channel_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64 = DEFAULT }, 0, UINT64_MAX, A|E|D, .unit = "channel_layout"},
-{"request_channel_layout", NULL, OFFSET(request_channel_layout), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64 = DEFAULT }, 0, UINT64_MAX, A|D, .unit = "request_channel_layout"},
-#endif
 {"rc_max_vbv_use", NULL, OFFSET(rc_max_available_vbv_use), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, 0.0, FLT_MAX, V|E},
 {"rc_min_vbv_use", NULL, OFFSET(rc_min_vbv_overflow_use),  AV_OPT_TYPE_FLOAT, {.dbl = 3 },     0.0, FLT_MAX, V|E},
 #if FF_API_TICKS_PER_FRAME

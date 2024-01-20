@@ -123,10 +123,6 @@ enum AVColorSpace av_buffersink_get_colorspace         (const AVFilterContext *c
 enum AVColorRange av_buffersink_get_color_range        (const AVFilterContext *ctx);
 
 int              av_buffersink_get_channels            (const AVFilterContext *ctx);
-#if FF_API_OLD_CHANNEL_LAYOUT
-attribute_deprecated
-uint64_t         av_buffersink_get_channel_layout      (const AVFilterContext *ctx);
-#endif
 int              av_buffersink_get_ch_layout           (const AVFilterContext *ctx,
                                                         AVChannelLayout *ch_layout);
 int              av_buffersink_get_sample_rate         (const AVFilterContext *ctx);

@@ -28,13 +28,6 @@
 #include "samplefmt.h"
 #include "hwcontext.h"
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-#define CHECK_CHANNELS_CONSISTENCY(frame) \
-    av_assert2(!(frame)->channel_layout || \
-               (frame)->channels == \
-               av_get_channel_layout_nb_channels((frame)->channel_layout))
-#endif
-
 static void get_frame_defaults(AVFrame *frame)
 {
     memset(frame, 0, sizeof(*frame));
@@ -181,21 +174,6 @@ static int get_audio_buffer(AVFrame *frame, int align)
     int channels, planes;
     int ret;
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!frame->ch_layout.nb_channels) {
-        if (frame->channel_layout) {
-            av_channel_layout_from_mask(&frame->ch_layout, frame->channel_layout);
-        } else {
-            frame->ch_layout.nb_channels = frame->channels;
-            frame->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-        }
-    }
-    frame->channels = frame->ch_layout.nb_channels;
-    frame->channel_layout = frame->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                            frame->ch_layout.u.mask : 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     channels = frame->ch_layout.nb_channels;
     planes   = planar ? channels : 1;
     if (!frame->linesize[0]) {
@@ -245,17 +223,11 @@ int av_frame_get_buffer(AVFrame *frame, int align)
     if (frame->format < 0)
         return AVERROR(EINVAL);
 
-FF_DISABLE_DEPRECATION_WARNINGS
     if (frame->width > 0 && frame->height > 0)
         return get_video_buffer(frame, align);
     else if (frame->nb_samples > 0 &&
-             (av_channel_layout_check(&frame->ch_layout)
-#if FF_API_OLD_CHANNEL_LAYOUT
-              || frame->channel_layout || frame->channels > 0
-#endif
-             ))
+             (av_channel_layout_check(&frame->ch_layout)))
         return get_audio_buffer(frame, align);
-FF_ENABLE_DEPRECATION_WARNINGS
 
     return AVERROR(EINVAL);
 }
@@ -363,11 +335,6 @@ int av_frame_ref(AVFrame *dst, const AVFrame *src)
     int ret = 0;
 
     av_assert1(dst->width == 0 && dst->height == 0);
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    av_assert1(dst->channels == 0);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     av_assert1(dst->ch_layout.nb_channels == 0 &&
                dst->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC);
 
@@ -375,31 +342,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->width          = src->width;
     dst->height         = src->height;
     dst->nb_samples     = src->nb_samples;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->channels       = src->channels;
-    dst->channel_layout = src->channel_layout;
-    if (!av_channel_layout_check(&src->ch_layout)) {
-        if (src->channel_layout)
-            av_channel_layout_from_mask(&dst->ch_layout, src->channel_layout);
-        else {
-            dst->ch_layout.nb_channels = src->channels;
-            dst->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-        }
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     ret = frame_copy_props(dst, src, 0);
     if (ret < 0)
         goto fail;
 
-    // this check is needed only until FF_API_OLD_CHANNEL_LAYOUT is out
-    if (av_channel_layout_check(&src->ch_layout)) {
-        ret = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
-        if (ret < 0)
-            goto fail;
-    }
+    ret = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
+    if (ret < 0)
+        goto fail;
 
     /* duplicate the frame data if it's not refcounted */
     if (!src->buf[0]) {
@@ -503,27 +453,10 @@ int av_frame_replace(AVFrame *dst, const AVFrame *src)
     dst->width          = src->width;
     dst->height         = src->height;
     dst->nb_samples     = src->nb_samples;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->channels       = src->channels;
-    dst->channel_layout = src->channel_layout;
-    if (!av_channel_layout_check(&src->ch_layout)) {
-        av_channel_layout_uninit(&dst->ch_layout);
-        if (src->channel_layout)
-            av_channel_layout_from_mask(&dst->ch_layout, src->channel_layout);
-        else {
-            dst->ch_layout.nb_channels = src->channels;
-            dst->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-        }
-    } else {
-#endif
+
     ret = av_channel_layout_copy(&dst->ch_layout, &src->ch_layout);
     if (ret < 0)
         goto fail;
-#if FF_API_OLD_CHANNEL_LAYOUT
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     wipe_side_data(dst);
     av_dict_free(&dst->metadata);
@@ -649,11 +582,6 @@ void av_frame_unref(AVFrame *frame)
 void av_frame_move_ref(AVFrame *dst, AVFrame *src)
 {
     av_assert1(dst->width == 0 && dst->height == 0);
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    av_assert1(dst->channels == 0);
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     av_assert1(dst->ch_layout.nb_channels == 0 &&
                dst->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC);
 
@@ -692,12 +620,6 @@ int av_frame_make_writable(AVFrame *frame)
     tmp.format         = frame->format;
     tmp.width          = frame->width;
     tmp.height         = frame->height;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    tmp.channels       = frame->channels;
-    tmp.channel_layout = frame->channel_layout;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     tmp.nb_samples     = frame->nb_samples;
     ret = av_channel_layout_copy(&tmp.ch_layout, &frame->ch_layout);
     if (ret < 0) {
@@ -745,15 +667,6 @@ AVBufferRef *av_frame_get_plane_buffer(const AVFrame *frame, int plane)
 
     if (frame->nb_samples) {
         int channels = frame->ch_layout.nb_channels;
-
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (!channels) {
-            channels = frame->channels;
-            CHECK_CHANNELS_CONSISTENCY(frame);
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         if (!channels)
             return NULL;
         planes = av_sample_fmt_is_planar(frame->format) ? channels : 1;
@@ -860,30 +773,8 @@ static int frame_copy_audio(AVFrame *dst, const AVFrame *src)
     int channels = dst->ch_layout.nb_channels;
     int planes   = planar ? channels : 1;
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (!channels || !src->ch_layout.nb_channels) {
-        if (dst->channels       != src->channels ||
-            dst->channel_layout != src->channel_layout)
-            return AVERROR(EINVAL);
-        CHECK_CHANNELS_CONSISTENCY(src);
-    }
-    if (!channels) {
-        channels = dst->channels;
-        planes = planar ? channels : 1;
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (dst->nb_samples != src->nb_samples ||
-#if FF_API_OLD_CHANNEL_LAYOUT
-        (av_channel_layout_check(&dst->ch_layout) &&
-         av_channel_layout_check(&src->ch_layout) &&
-#endif
         av_channel_layout_compare(&dst->ch_layout, &src->ch_layout))
-#if FF_API_OLD_CHANNEL_LAYOUT
-        )
-#endif
         return AVERROR(EINVAL);
 
     for (int i = 0; i < planes; i++)
@@ -901,17 +792,11 @@ int av_frame_copy(AVFrame *dst, const AVFrame *src)
     if (dst->format != src->format || dst->format < 0)
         return AVERROR(EINVAL);
 
-FF_DISABLE_DEPRECATION_WARNINGS
     if (dst->width > 0 && dst->height > 0)
         return frame_copy_video(dst, src);
     else if (dst->nb_samples > 0 &&
-             (av_channel_layout_check(&dst->ch_layout)
-#if FF_API_OLD_CHANNEL_LAYOUT
-              || dst->channels > 0
-#endif
-            ))
+             (av_channel_layout_check(&dst->ch_layout)))
         return frame_copy_audio(dst, src);
-FF_ENABLE_DEPRECATION_WARNINGS
 
     return AVERROR(EINVAL);
 }

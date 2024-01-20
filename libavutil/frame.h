@@ -566,15 +566,6 @@ typedef struct AVFrame {
      */
     int sample_rate;
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-    /**
-     * Channel layout of the audio data.
-     * @deprecated use ch_layout instead
-     */
-    attribute_deprecated
-    uint64_t channel_layout;
-#endif
-
     /**
      * AVBuffer references backing the data for this frame. All the pointers in
      * data and extended_data must point inside one of the buffers in buf or
@@ -719,17 +710,6 @@ typedef struct AVFrame {
 #define FF_DECODE_ERROR_MISSING_REFERENCE   2
 #define FF_DECODE_ERROR_CONCEALMENT_ACTIVE  4
 #define FF_DECODE_ERROR_DECODE_SLICES       8
-
-#if FF_API_OLD_CHANNEL_LAYOUT
-    /**
-     * number of audio channels, only used for audio.
-     * - encoding: unused
-     * - decoding: Read by user.
-     * @deprecated use ch_layout instead
-     */
-    attribute_deprecated
-    int channels;
-#endif
 
 #if FF_API_FRAME_PKT
     /**

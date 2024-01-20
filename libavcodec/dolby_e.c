@@ -1272,13 +1272,6 @@ static av_cold int dolby_e_init(AVCodecContext *avctx)
     if (!(s->fdsp = avpriv_float_dsp_alloc(0)))
         return AVERROR(ENOMEM);
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE)
-        s->dectx.metadata.output_channel_order = CHANNEL_ORDER_CODED;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     s->dectx.metadata.multi_prog_warned = s->dectx.metadata.output_channel_order == CHANNEL_ORDER_CODED;
     s->dectx.avctx = s->avctx = avctx;
     return 0;

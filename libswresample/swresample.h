@@ -234,35 +234,6 @@ int swr_init(struct SwrContext *s);
  */
 int swr_is_initialized(struct SwrContext *s);
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-/**
- * Allocate SwrContext if needed and set/reset common parameters.
- *
- * This function does not require s to be allocated with swr_alloc(). On the
- * other hand, swr_alloc() can use swr_alloc_set_opts() to set the parameters
- * on the allocated context.
- *
- * @param s               existing Swr context if available, or NULL if not
- * @param out_ch_layout   output channel layout (AV_CH_LAYOUT_*)
- * @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*).
- * @param out_sample_rate output sample rate (frequency in Hz)
- * @param in_ch_layout    input channel layout (AV_CH_LAYOUT_*)
- * @param in_sample_fmt   input sample format (AV_SAMPLE_FMT_*).
- * @param in_sample_rate  input sample rate (frequency in Hz)
- * @param log_offset      logging level offset
- * @param log_ctx         parent logging context, can be NULL
- *
- * @see swr_init(), swr_free()
- * @return NULL on error, allocated context otherwise
- * @deprecated use @ref swr_alloc_set_opts2()
- */
-attribute_deprecated
-struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
-                                      int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-                                      int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                                      int log_offset, void *log_ctx);
-#endif
-
 /**
  * Allocate SwrContext if needed and set/reset common parameters.
  *
@@ -398,40 +369,6 @@ int swr_set_compensation(struct SwrContext *s, int sample_delta, int compensatio
  * @return >= 0 on success, or AVERROR error code in case of failure.
  */
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
-
-#if FF_API_OLD_CHANNEL_LAYOUT
-/**
- * Generate a channel mixing matrix.
- *
- * This function is the one used internally by libswresample for building the
- * default mixing matrix. It is made public just as a utility function for
- * building custom matrices.
- *
- * @param in_layout           input channel layout
- * @param out_layout          output channel layout
- * @param center_mix_level    mix level for the center channel
- * @param surround_mix_level  mix level for the surround channel(s)
- * @param lfe_mix_level       mix level for the low-frequency effects channel
- * @param rematrix_maxval     if 1.0, coefficients will be normalized to prevent
- *                            overflow. if INT_MAX, coefficients will not be
- *                            normalized.
- * @param[out] matrix         mixing coefficients; matrix[i + stride * o] is
- *                            the weight of input channel i in output channel o.
- * @param stride              distance between adjacent input channels in the
- *                            matrix array
- * @param matrix_encoding     matrixed stereo downmix mode (e.g. dplii)
- * @param log_ctx             parent logging context, can be NULL
- * @return                    0 on success, negative AVERROR code on failure
- * @deprecated                use @ref swr_build_matrix2()
- */
-attribute_deprecated
-int swr_build_matrix(uint64_t in_layout, uint64_t out_layout,
-                     double center_mix_level, double surround_mix_level,
-                     double lfe_mix_level, double rematrix_maxval,
-                     double rematrix_volume, double *matrix,
-                     int stride, enum AVMatrixEncoding matrix_encoding,
-                     void *log_ctx);
-#endif
 
 /**
  * Generate a channel mixing matrix.

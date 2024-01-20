@@ -263,7 +263,6 @@ const FFCodec ff_eac3_encoder = {
                                                       AV_SAMPLE_FMT_NONE },
     .p.priv_class    = &eac3enc_class,
     .p.supported_samplerates = ff_ac3_sample_rate_tab,
-    CODEC_OLD_CHANNEL_LAYOUTS_ARRAY(ff_ac3_channel_layouts)
     .p.ch_layouts    = ff_ac3_ch_layouts,
     .defaults        = ff_ac3_enc_defaults,
     .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,

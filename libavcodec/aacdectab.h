@@ -49,10 +49,6 @@ extern const uint8_t ff_aac_channel_layout_map[16][16][3];
 
 extern const int16_t ff_aac_channel_map[3][4][6];
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-extern const uint64_t ff_aac_channel_layout[];
-#endif
-
 extern const AVChannelLayout ff_aac_ch_layout[];
 FF_VISIBILITY_POP_HIDDEN
 

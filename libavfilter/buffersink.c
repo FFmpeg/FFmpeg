@@ -55,12 +55,6 @@ typedef struct BufferSinkContext {
     /* only used for audio */
     enum AVSampleFormat *sample_fmts;   ///< list of accepted sample formats
     int sample_fmts_size;
-#if FF_API_OLD_CHANNEL_LAYOUT
-    int64_t *channel_layouts;           ///< list of accepted channel layouts
-    int channel_layouts_size;
-    int *channel_counts;                ///< list of accepted channel counts
-    int channel_counts_size;
-#endif
     char *channel_layouts_str;          ///< list of accepted channel layouts
     int all_channel_counts;
     int *sample_rates;                  ///< list of accepted sample rates
@@ -70,31 +64,6 @@ typedef struct BufferSinkContext {
 } BufferSinkContext;
 
 #define NB_ITEMS(list) (list ## _size / sizeof(*list))
-
-#if FF_API_OLD_CHANNEL_LAYOUT
-static void cleanup_redundant_layouts(AVFilterContext *ctx)
-{
-    BufferSinkContext *buf = ctx->priv;
-    int nb_layouts = NB_ITEMS(buf->channel_layouts);
-    int nb_counts = NB_ITEMS(buf->channel_counts);
-    uint64_t counts = 0;
-    int i, lc, n;
-
-    for (i = 0; i < nb_counts; i++)
-        if (buf->channel_counts[i] < 64)
-            counts |= (uint64_t)1 << buf->channel_counts[i];
-    for (i = lc = 0; i < nb_layouts; i++) {
-        n = av_popcount64(buf->channel_layouts[i]);
-        if (n < 64 && (counts & ((uint64_t)1 << n)))
-            av_log(ctx, AV_LOG_WARNING,
-                   "Removing channel layout 0x%"PRIx64", redundant with %d channels\n",
-                   buf->channel_layouts[i], n);
-        else
-            buf->channel_layouts[lc++] = buf->channel_layouts[i];
-    }
-    buf->channel_layouts_size = lc * sizeof(*buf->channel_layouts);
-}
-#endif
 
 int attribute_align_arg av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame)
 {
@@ -216,11 +185,6 @@ MAKE_AVFILTERLINK_ACCESSOR(AVRational       , sample_aspect_ratio)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVColorSpace, colorspace)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVColorRange, color_range)
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-MAKE_AVFILTERLINK_ACCESSOR(uint64_t         , channel_layout     )
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        )
 
 MAKE_AVFILTERLINK_ACCESSOR(AVBufferRef *    , hw_frames_ctx      )
@@ -301,10 +265,6 @@ static int asink_query_formats(AVFilterContext *ctx)
 
     CHECK_LIST_SIZE(sample_fmts)
     CHECK_LIST_SIZE(sample_rates)
-#if FF_API_OLD_CHANNEL_LAYOUT
-    CHECK_LIST_SIZE(channel_layouts)
-    CHECK_LIST_SIZE(channel_counts)
-#endif
 
     if (buf->sample_fmts_size) {
         for (i = 0; i < NB_ITEMS(buf->sample_fmts); i++)
@@ -314,32 +274,10 @@ static int asink_query_formats(AVFilterContext *ctx)
             return ret;
     }
 
-    if (
-#if FF_API_OLD_CHANNEL_LAYOUT
-        buf->channel_layouts_size || buf->channel_counts_size ||
-#endif
-        buf->channel_layouts_str || buf->all_channel_counts) {
-#if FF_API_OLD_CHANNEL_LAYOUT
-        cleanup_redundant_layouts(ctx);
-        for (i = 0; i < NB_ITEMS(buf->channel_layouts); i++)
-            if ((ret = av_channel_layout_from_mask(&layout, buf->channel_layouts[i])) < 0 ||
-                (ret = ff_add_channel_layout(&layouts, &layout)) < 0)
-                return ret;
-        for (i = 0; i < NB_ITEMS(buf->channel_counts); i++) {
-            layout = FF_COUNT2LAYOUT(buf->channel_counts[i]);
-            if ((ret = ff_add_channel_layout(&layouts, &layout)) < 0)
-                return ret;
-        }
-#endif
+    if (buf->channel_layouts_str || buf->all_channel_counts) {
         if (buf->channel_layouts_str) {
             const char *cur = buf->channel_layouts_str;
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-            if (layouts)
-                av_log(ctx, AV_LOG_WARNING,
-                       "Conflicting ch_layouts and list of channel_counts/channel_layouts. Ignoring the former\n");
-            else
-#endif
             while (cur) {
                 char *next = strchr(cur, '|');
                 if (next)
@@ -395,12 +333,6 @@ static const AVOption buffersink_options[] = {
 static const AVOption abuffersink_options[] = {
     { "sample_fmts",     "set the supported sample formats",  OFFSET(sample_fmts),     AV_OPT_TYPE_BINARY, .flags = FLAGS },
     { "sample_rates",    "set the supported sample rates",    OFFSET(sample_rates),    AV_OPT_TYPE_BINARY, .flags = FLAGS },
-#if FF_API_OLD_CHANNEL_LAYOUT
-    { "channel_layouts", "set the supported channel layouts (deprecated, use ch_layouts)",
-                         OFFSET(channel_layouts), AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
-    { "channel_counts",  "set the supported channel counts (deprecated, use ch_layouts)",
-                         OFFSET(channel_counts),  AV_OPT_TYPE_BINARY, .flags = FLAGS | AV_OPT_FLAG_DEPRECATED },
-#endif
     { "ch_layouts",      "set a '|'-separated list of supported channel layouts",
                          OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = FLAGS },
     { "all_channel_counts", "accept all channel counts", OFFSET(all_channel_counts), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },

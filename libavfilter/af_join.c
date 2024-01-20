@@ -504,12 +504,6 @@ static int try_push_frame(AVFilterContext *ctx)
                                    av_make_q(1, outlink->sample_rate),
                                    outlink->time_base);
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    frame->channel_layout = outlink->channel_layout;
-    frame->channels       = outlink->ch_layout.nb_channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if ((ret = av_channel_layout_copy(&frame->ch_layout, &outlink->ch_layout)) < 0)
         goto fail;
     frame->sample_rate    = outlink->sample_rate;

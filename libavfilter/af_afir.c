@@ -508,11 +508,6 @@ static int config_output(AVFilterLink *outlink)
     s->one2many = ctx->inputs[1 + s->selir]->ch_layout.nb_channels == 1;
     outlink->sample_rate = ctx->inputs[0]->sample_rate;
     outlink->time_base   = ctx->inputs[0]->time_base;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    outlink->channel_layout = ctx->inputs[0]->channel_layout;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     if ((ret = av_channel_layout_copy(&outlink->ch_layout, &ctx->inputs[0]->ch_layout)) < 0)
         return ret;
     outlink->ch_layout.nb_channels = ctx->inputs[0]->ch_layout.nb_channels;

@@ -70,12 +70,6 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
         int planar = av_sample_fmt_is_planar(frame->format);
         ch     = frame->ch_layout.nb_channels;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        if (!ch)
-            ch = frame->channels;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         planes = planar ? ch : 1;
     }
 

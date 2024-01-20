@@ -352,18 +352,6 @@ static av_cold int dcadec_init(AVCodecContext *avctx)
 
     s->crctab = av_crc_get_table(AV_CRC_16_CCITT);
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (avctx->request_channel_layout & AV_CH_LAYOUT_NATIVE)
-        s->output_channel_order = CHANNEL_ORDER_CODED;
-
-    if (avctx->request_channel_layout & ~AV_CH_LAYOUT_NATIVE) {
-        av_channel_layout_uninit(&s->downmix_layout);
-        av_channel_layout_from_mask(&s->downmix_layout, avctx->request_channel_layout & ~AV_CH_LAYOUT_NATIVE);
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     if (s->downmix_layout.nb_channels) {
         if (!av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO) ||
             !av_channel_layout_compare(&s->downmix_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO_DOWNMIX)) {

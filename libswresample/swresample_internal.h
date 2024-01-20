@@ -114,13 +114,6 @@ struct SwrContext {
     const int *channel_map;                         ///< channel index (or -1 if muted channel) map
     int engine;
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-    int user_used_ch_count;                         ///< User set used channel count
-    int user_in_ch_count;                           ///< User set input channel count
-    int user_out_ch_count;                          ///< User set output channel count
-    int64_t user_in_ch_layout;                      ///< User set input channel layout
-    int64_t user_out_ch_layout;                     ///< User set output channel layout
-#endif
     AVChannelLayout user_used_chlayout;             ///< User set used channel layout
     AVChannelLayout user_in_chlayout;               ///< User set input channel layout
     AVChannelLayout user_out_chlayout;              ///< User set output channel layout

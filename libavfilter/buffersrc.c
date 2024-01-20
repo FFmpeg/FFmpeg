@@ -152,16 +152,6 @@ int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *par
         }
         if (param->sample_rate > 0)
             s->sample_rate = param->sample_rate;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        // if the old/new fields are set inconsistently, prefer the old ones
-        if (param->channel_layout && (param->ch_layout.order != AV_CHANNEL_ORDER_NATIVE ||
-                                      param->ch_layout.u.mask != param->channel_layout)) {
-            av_channel_layout_uninit(&s->ch_layout);
-            av_channel_layout_from_mask(&s->ch_layout, param->channel_layout);
-FF_ENABLE_DEPRECATION_WARNINGS
-        } else
-#endif
         if (param->ch_layout.nb_channels) {
             int ret = av_channel_layout_copy(&s->ch_layout, &param->ch_layout);
             if (ret < 0)
@@ -206,16 +196,6 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
     AVFrame *copy;
     int refcounted, ret;
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (frame && frame->channel_layout &&
-        av_get_channel_layout_nb_channels(frame->channel_layout) != frame->channels) {
-        av_log(ctx, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
-        return AVERROR(EINVAL);
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     s->nb_failed_requests = 0;
 
     if (!frame)
@@ -237,13 +217,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         case AVMEDIA_TYPE_AUDIO:
             /* For layouts unknown on input but known on link after negotiation. */
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-            if (!frame->channel_layout)
-                frame->channel_layout = s->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                                        s->ch_layout.u.mask : 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
             if (frame->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
                 ret = av_channel_layout_copy(&frame->ch_layout, &s->ch_layout);
                 if (ret < 0)
@@ -419,22 +392,9 @@ static av_cold int init_audio(AVFilterContext *ctx)
         if (!s->ch_layout.nb_channels) {
             ret = av_channel_layout_from_string(&s->ch_layout, s->channel_layout_str);
             if (ret < 0) {
-#if FF_API_OLD_CHANNEL_LAYOUT
-                uint64_t mask;
-FF_DISABLE_DEPRECATION_WARNINGS
-                mask = av_get_channel_layout(s->channel_layout_str);
-                if (!mask) {
-#endif
-                    av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
-                           s->channel_layout_str);
-                    return AVERROR(EINVAL);
-#if FF_API_OLD_CHANNEL_LAYOUT
-                }
-FF_ENABLE_DEPRECATION_WARNINGS
-                av_log(ctx, AV_LOG_WARNING, "Channel layout '%s' uses a deprecated syntax.\n",
+                av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
                        s->channel_layout_str);
-                av_channel_layout_from_mask(&s->ch_layout, mask);
-#endif
+                return AVERROR(EINVAL);
             }
         }
 

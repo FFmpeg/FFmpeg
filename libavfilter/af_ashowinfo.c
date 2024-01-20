@@ -178,9 +178,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext *ctx = inlink->dst;
     AShowInfoContext *s  = ctx->priv;
-#if FF_API_OLD_CHANNEL_LAYOUT
-    AVChannelLayout layout = { 0 };
-#endif
     char chlayout_str[128];
     uint32_t checksum = 0;
     int channels    = inlink->ch_layout.nb_channels;
@@ -203,13 +200,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
                        s->plane_checksums[0];
     }
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (av_channel_layout_from_mask(&layout, buf->channel_layout)) {
-        av_channel_layout_describe(&layout, chlayout_str, sizeof(chlayout_str));
-FF_ENABLE_DEPRECATION_WARNINGS
-    } else if (buf->ch_layout.nb_channels)
-#endif
     av_channel_layout_describe(&buf->ch_layout, chlayout_str, sizeof(chlayout_str));
 
     av_log(ctx, AV_LOG_INFO,

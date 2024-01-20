@@ -733,12 +733,6 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
         ret = av_channel_layout_copy(&link->ch_layout, &link->incfg.channel_layouts->channel_layouts[0]);
         if (ret < 0)
             return ret;
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-        link->channel_layout = link->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                               link->ch_layout.u.mask : 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     ff_formats_unref(&link->incfg.formats);
