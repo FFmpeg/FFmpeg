@@ -105,7 +105,6 @@
  * @{
  */
 
-#define FF_API_FIFO_OLD_API             (LIBAVUTIL_VERSION_MAJOR < 59)
 #define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 59)
 #define FF_API_OLD_CHANNEL_LAYOUT       (LIBAVUTIL_VERSION_MAJOR < 59)
 #define FF_API_AV_FOPEN_UTF8            (LIBAVUTIL_VERSION_MAJOR < 59)
