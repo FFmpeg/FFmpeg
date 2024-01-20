@@ -240,20 +240,6 @@ typedef struct LibplaceboContext {
     float contrast_recovery;
     float contrast_smoothness;
 
-#if FF_API_LIBPLACEBO_OPTS
-    /* for backwards compatibility */
-    float desat_str;
-    float desat_exp;
-    int gamut_warning;
-    int gamut_clipping;
-    int force_icc_lut;
-    int intent;
-    int tonemapping_mode;
-    float crosstalk;
-    float overshoot;
-    float hybrid_mix;
-#endif
-
     /* pl_dither_params */
     int dithering;
     int dither_lut_size;
@@ -382,32 +368,6 @@ static int update_settings(AVFilterContext *ctx)
     int gamut_mode = s->gamut_mode;
     uint8_t color_rgba[4];
 
-#if FF_API_LIBPLACEBO_OPTS
-    float hybrid_mix = s->hybrid_mix;
-    /* backwards compatibility with older API */
-    switch (s->tonemapping_mode) {
-    case 0: /*PL_TONE_MAP_AUTO*/
-        if (s->desat_str >= 0.0f)
-            hybrid_mix = s->desat_str;
-        break;
-    case 1: /*PL_TONE_MAP_RGB*/     hybrid_mix = 1.0f; break;
-    case 2: /*PL_TONE_MAP_HYBRID*/  hybrid_mix = 0.2f; break;
-    case 3: /*PL_TONE_MAP_LUMA*/    hybrid_mix = 0.0f; break;
-    case 4: /*PL_TONE_MAP_MAX*/     hybrid_mix = 0.0f; break;
-    }
-
-    switch (s->intent) {
-    case PL_INTENT_SATURATION:            gamut_mode = GAMUT_MAP_SATURATION; break;
-    case PL_INTENT_RELATIVE_COLORIMETRIC: gamut_mode = GAMUT_MAP_RELATIVE; break;
-    case PL_INTENT_ABSOLUTE_COLORIMETRIC: gamut_mode = GAMUT_MAP_ABSOLUTE; break;
-    }
-
-    if (s->gamut_warning)
-        gamut_mode = GAMUT_MAP_HIGHLIGHT;
-    if (s->gamut_clipping)
-        gamut_mode = GAMUT_MAP_DESATURATE;
-#endif
-
     RET(av_parse_color(color_rgba, s->fillcolor, -1, s));
 
     opts->deband_params = *pl_deband_params(
@@ -435,20 +395,9 @@ static int update_settings(AVFilterContext *ctx)
 #if PL_API_VER >= 263
         .percentile = s->percentile,
 #endif
-#if FF_API_LIBPLACEBO_OPTS && PL_API_VER < 256
-        .overshoot_margin = s->overshoot,
-#endif
     );
 
     opts->color_map_params = *pl_color_map_params(
-#if FF_API_LIBPLACEBO_OPTS
-# if PL_API_VER >= 269
-        .hybrid_mix = hybrid_mix,
-# else
-        .tone_mapping_mode = s->tonemapping_mode,
-        .tone_mapping_crosstalk = s->crosstalk,
-# endif
-#endif
         .tone_mapping_function = get_tonemapping_func(s->tonemapping),
         .tone_mapping_param = s->tonemapping_param,
         .inverse_tone_mapping = s->inverse_tonemapping,
@@ -1458,28 +1407,6 @@ static const AVOption libplacebo_options[] = {
     { "contrast_recovery", "HDR contrast recovery strength", OFFSET(contrast_recovery), AV_OPT_TYPE_FLOAT, {.dbl = 0.30}, 0.0, 3.0, DYNAMIC },
     { "contrast_smoothness", "HDR contrast recovery smoothness", OFFSET(contrast_smoothness), AV_OPT_TYPE_FLOAT, {.dbl = 3.50}, 1.0, 32.0, DYNAMIC },
 
-#if FF_API_LIBPLACEBO_OPTS
-    /* deprecated options for backwards compatibility, defaulting to -1 to not override the new defaults */
-    { "desaturation_strength", "Desaturation strength", OFFSET(desat_str), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 1.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-    { "desaturation_exponent", "Desaturation exponent", OFFSET(desat_exp), AV_OPT_TYPE_FLOAT, {.dbl = -1.0}, -1.0, 10.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-    { "gamut_warning", "Highlight out-of-gamut colors", OFFSET(gamut_warning), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-    { "gamut_clipping", "Enable desaturating colorimetric gamut clipping", OFFSET(gamut_clipping), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-    { "intent", "Rendering intent", OFFSET(intent), AV_OPT_TYPE_INT, {.i64 = PL_INTENT_PERCEPTUAL}, 0, 3, DYNAMIC | AV_OPT_FLAG_DEPRECATED, .unit = "intent" },
-        { "perceptual", "Perceptual", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_PERCEPTUAL}, 0, 0, STATIC, .unit = "intent" },
-        { "relative", "Relative colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_RELATIVE_COLORIMETRIC}, 0, 0, STATIC, .unit = "intent" },
-        { "absolute", "Absolute colorimetric", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_ABSOLUTE_COLORIMETRIC}, 0, 0, STATIC, .unit = "intent" },
-        { "saturation", "Saturation mapping", 0, AV_OPT_TYPE_CONST, {.i64 = PL_INTENT_SATURATION}, 0, 0, STATIC, .unit = "intent" },
-    { "tonemapping_mode", "Tone-mapping mode", OFFSET(tonemapping_mode), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 4, DYNAMIC | AV_OPT_FLAG_DEPRECATED, .unit = "tonemap_mode" },
-        { "auto", "Automatic selection", 0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, STATIC, .unit = "tonemap_mode" },
-        { "rgb", "Per-channel (RGB)", 0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, STATIC, .unit = "tonemap_mode" },
-        { "max", "Maximum component", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, STATIC, .unit = "tonemap_mode" },
-        { "hybrid", "Hybrid of Luma/RGB", 0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, STATIC, .unit = "tonemap_mode" },
-        { "luma", "Luminance", 0, AV_OPT_TYPE_CONST, {.i64 = 4}, 0, 0, STATIC, .unit = "tonemap_mode" },
-    { "tonemapping_crosstalk", "Crosstalk factor for tone-mapping", OFFSET(crosstalk), AV_OPT_TYPE_FLOAT, {.dbl = 0.04}, 0.0, 0.30, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-    { "overshoot", "Tone-mapping overshoot margin", OFFSET(overshoot), AV_OPT_TYPE_FLOAT, {.dbl = 0.05}, 0.0, 1.0, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-    { "hybrid_mix", "Tone-mapping hybrid LMS mixing coefficient", OFFSET(hybrid_mix), AV_OPT_TYPE_FLOAT, {.dbl = 0.20}, 0.0, 1.00, DYNAMIC },
-#endif
-
     { "dithering", "Dither method to use", OFFSET(dithering), AV_OPT_TYPE_INT, {.i64 = PL_DITHER_BLUE_NOISE}, -1, PL_DITHER_METHOD_COUNT - 1, DYNAMIC, .unit = "dither" },
         { "none", "Disable dithering", 0, AV_OPT_TYPE_CONST, {.i64 = -1}, 0, 0, STATIC, .unit = "dither" },
         { "blue", "Blue noise", 0, AV_OPT_TYPE_CONST, {.i64 = PL_DITHER_BLUE_NOISE}, 0, 0, STATIC, .unit = "dither" },
@@ -1503,9 +1430,6 @@ static const AVOption libplacebo_options[] = {
     { "polar_cutoff", "Polar LUT cutoff", OFFSET(polar_cutoff), AV_OPT_TYPE_FLOAT, {.dbl = 0}, 0.0, 1.0, DYNAMIC },
     { "disable_linear", "Disable linear scaling", OFFSET(disable_linear), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "disable_builtin", "Disable built-in scalers", OFFSET(disable_builtin), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
-#if FF_API_LIBPLACEBO_OPTS
-    { "force_icc_lut", "Deprecated, does nothing", OFFSET(force_icc_lut), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC | AV_OPT_FLAG_DEPRECATED },
-#endif
     { "force_dither", "Force dithering", OFFSET(force_dither), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { "disable_fbos", "Force-disable FBOs", OFFSET(disable_fbos), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DYNAMIC },
     { NULL },
