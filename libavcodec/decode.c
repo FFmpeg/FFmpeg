@@ -820,11 +820,6 @@ int ff_decode_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     }
 
     avctx->frame_num++;
-#if FF_API_AVCTX_FRAME_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->frame_number = avctx->frame_num;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
 #if FF_API_DROPCHANGED
     if (avctx->flags & AV_CODEC_FLAG_DROPCHANGED) {
@@ -1032,11 +1027,6 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
 
         if (*got_sub_ptr)
             avctx->frame_num++;
-#if FF_API_AVCTX_FRAME_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-        avctx->frame_number = avctx->frame_num;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     }
 
     return ret;

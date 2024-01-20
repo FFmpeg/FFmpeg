@@ -198,11 +198,6 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
 
     ret = ffcodec(avctx->codec)->cb.encode_sub(avctx, buf, buf_size, sub);
     avctx->frame_num++;
-#if FF_API_AVCTX_FRAME_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->frame_number = avctx->frame_num;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     return ret;
 }
 
@@ -544,11 +539,6 @@ int attribute_align_arg avcodec_send_frame(AVCodecContext *avctx, const AVFrame 
     }
 
     avctx->frame_num++;
-#if FF_API_AVCTX_FRAME_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->frame_number = avctx->frame_num;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     return 0;
 }

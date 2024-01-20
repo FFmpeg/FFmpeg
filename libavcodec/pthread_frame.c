@@ -418,11 +418,6 @@ static int update_context_from_user(AVCodecContext *dst, const AVCodecContext *s
     dst->skip_frame       = src->skip_frame;
 
     dst->frame_num        = src->frame_num;
-#if FF_API_AVCTX_FRAME_NUMBER
-FF_DISABLE_DEPRECATION_WARNINGS
-    dst->frame_number     = src->frame_number;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 #if FF_API_REORDERED_OPAQUE
 FF_DISABLE_DEPRECATION_WARNINGS
     dst->reordered_opaque = src->reordered_opaque;
