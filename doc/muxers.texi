@@ -1312,6 +1312,30 @@ ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264 \
 -f dash /path/to/out.mpd
 @end example
 
+@section daud
+D-Cinema audio muxer.
+
+It accepts a single 6-channels audio stream resampled at 96000 Hz
+encoded with the @samp{pcm_24daud} codec.
+
+In addition, each muxed packet size must not be greater than 65535 bytes.
+
+@subsection Example
+Use @command{ffmpeg} to mux input audio to a @samp{5.1} channel layout
+resampled at 96000Hz:
+@example
+ffmpeg -i INPUT -af aresample=96000,pan=5.1,asetnsamples=3640 slow.302
+@end example
+
+The @samp{asetnsamples} filter is used to reduce the number of samples
+of each audio packet, with a size computed according to the formula:
+@example
+65535 / (@var{channels} * @var{encoded_sample_size}) = 655535 / (6 * 3) = 3640
+@end example
+
+The @var{encoded_sample_size} = 3 factor is due to sample size of the
+@samp{pcm_24daud} encoder.
+
 @anchor{fifo}
 @section fifo
 
