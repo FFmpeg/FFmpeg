@@ -1423,6 +1423,23 @@ Use @command{ffmpeg} to convert the input:
 ffmpeg -i INPUT -s:v 720x480 -pix_fmt yuv411p -r 29.97 -ac 2 -ar 48000 -y out.dv
 @end example
 
+@section ffmetadata
+FFmpeg metadata muxer.
+
+This muxer writes the streams metadata in the @samp{ffmetadata}
+format.
+
+See @ref{metadata,,the Metadata chapter,ffmpeg-formats} for
+information about the format.
+
+@subsection Example
+
+Use @command{ffmpeg} to extract metadata from an input file to a @file{metadata.ffmeta}
+file in @samp{ffmetadata} format:
+@example
+ffmpeg -i INPUT -f ffmetadata metadata.ffmeta
+@end example
+
 @anchor{fifo}
 @section fifo
 FIFO (First-In First-Out) muxer.
