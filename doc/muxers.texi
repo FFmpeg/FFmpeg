@@ -91,7 +91,7 @@ It is standardized as SMPTE VC-3. Accepts DNxHR streams.
 @item dts @emph{audio}
 DTS Coherent Acoustics (DCA) audio
 
-@item  eac3 @emph{audio}
+@item eac3 @emph{audio}
 Dolby Digital Plus, also known as Enhanced AC-3
 
 @item evc @emph{video} (evc)
