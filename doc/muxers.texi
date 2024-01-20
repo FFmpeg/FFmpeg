@@ -75,6 +75,9 @@ input stream has to be selected using the @code{-map} option with the
 No extension is registered so format name has to be supplied e.g. with
 the @command{ffmpeg} CLI tool @code{-f data}.
 
+@item dfpwm @emph{audio} (dfpwm)
+Raw DFPWM1a (Dynamic Filter Pulse With Modulation) audio muxer.
+
 @item dirac @emph{video} (drc, vc2)
 BBC Dirac video.
 
