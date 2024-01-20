@@ -60,21 +60,4 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
  */
 void av_file_unmap(uint8_t *bufptr, size_t size);
 
-#if FF_API_AV_FOPEN_UTF8
-/**
- * Wrapper to work around the lack of mkstemp() on mingw.
- * Also, tries to create file in /tmp first, if possible.
- * *prefix can be a character constant; *filename will be allocated internally.
- * @return file descriptor of opened file (or negative value corresponding to an
- * AVERROR code on error)
- * and opened file name in **filename.
- * @note On very old libcs it is necessary to set a secure umask before
- *       calling this, av_tempfile() can't call umask itself as it is used in
- *       libraries and could interfere with the calling application.
- * @deprecated as fd numbers cannot be passed saftely between libs on some platforms
- */
-attribute_deprecated
-int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
-#endif
-
 #endif /* AVUTIL_FILE_H */
