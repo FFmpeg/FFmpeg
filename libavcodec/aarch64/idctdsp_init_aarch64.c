@@ -22,7 +22,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/arm/cpu.h"
+#include "libavutil/aarch64/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/idctdsp.h"
 #include "idct.h"
