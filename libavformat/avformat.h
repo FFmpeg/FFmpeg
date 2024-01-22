@@ -802,9 +802,9 @@ typedef struct AVIndexEntry {
  */
 #define AV_DISPOSITION_METADATA             (1 << 18)
 /**
- * The audio stream is intended to be mixed with another stream before
- * presentation.
- * Corresponds to mix_type=0 in mpegts.
+ * The stream is intended to be mixed with another stream before presentation.
+ * Used for example to signal the stream contains an image part of a HEIF grid,
+ * or for mix_type=0 in mpegts.
  */
 #define AV_DISPOSITION_DEPENDENT            (1 << 19)
 /**

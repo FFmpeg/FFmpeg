@@ -637,6 +637,11 @@ void ff_remove_stream(AVFormatContext *s, AVStream *st);
  * is not yet attached to an AVFormatContext.
  */
 void ff_free_stream_group(AVStreamGroup **pstg);
+/**
+ * Remove a stream group from its AVFormatContext and free it.
+ * The stream group must be the last stream group of the AVFormatContext.
+ */
+void ff_remove_stream_group(AVFormatContext *s, AVStreamGroup *stg);
 
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum AVCodecID id);
 

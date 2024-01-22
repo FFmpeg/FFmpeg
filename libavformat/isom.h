@@ -271,14 +271,22 @@ typedef struct MOVStreamContext {
 
 typedef struct HEIFItem {
     AVStream *st;
+    char *name;
     int item_id;
     int64_t extent_length;
     int64_t extent_offset;
-    int64_t size;
     int width;
     int height;
     int type;
+    int is_idat_relative;
 } HEIFItem;
+
+typedef struct HEIFGrid {
+    HEIFItem *item;
+    HEIFItem **tile_item_list;
+    int16_t *tile_id_list;
+    int nb_tiles;
+} HEIFGrid;
 
 typedef struct MOVContext {
     const AVClass *class; ///< class for private options
@@ -343,6 +351,10 @@ typedef struct MOVContext {
     int cur_item_id;
     HEIFItem *heif_item;
     int nb_heif_item;
+    HEIFGrid *heif_grid;
+    int nb_heif_grid;
+    int thmb_item_id;
+    int64_t idat_offset;
     int interleaved_read;
 } MOVContext;
 
