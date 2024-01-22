@@ -1018,10 +1018,170 @@ typedef struct AVStream {
     int pts_wrap_bits;
 } AVStream;
 
+/**
+ * AVStreamGroupTileGrid holds information on how to combine several
+ * independent images on a single canvas for presentation.
+ *
+ * The output should be a @ref AVStreamGroupTileGrid.background "background"
+ * colored @ref AVStreamGroupTileGrid.coded_width "coded_width" x
+ * @ref AVStreamGroupTileGrid.coded_height "coded_height" canvas where a
+ * @ref AVStreamGroupTileGrid.nb_tiles "nb_tiles" amount of tiles are placed in
+ * the order they appear in the @ref AVStreamGroupTileGrid.offsets "offsets"
+ * array, at the exact offset described for them. In particular, if two or more
+ * tiles overlap, the image with higher index in the
+ * @ref AVStreamGroupTileGrid.offsets "offsets" array takes priority.
+ * Note that a single image may be used multiple times, i.e. multiple entries
+ * in @ref AVStreamGroupTileGrid.offsets "offsets" may have the same value of
+ * idx.
+ *
+ * The following is an example of a simple grid with 3 rows and 4 columns:
+ *
+ * +---+---+---+---+
+ * | 0 | 1 | 2 | 3 |
+ * +---+---+---+---+
+ * | 4 | 5 | 6 | 7 |
+ * +---+---+---+---+
+ * | 8 | 9 |10 |11 |
+ * +---+---+---+---+
+ *
+ * Assuming all tiles have a dimension of 512x512, the
+ * @ref AVStreamGroupTileGrid.offsets "offset" of the topleft pixel of
+ * the first @ref AVStreamGroup.streams "stream" in the group is "0,0", the
+ * @ref AVStreamGroupTileGrid.offsets "offset" of the topleft pixel of
+ * the second @ref AVStreamGroup.streams "stream" in the group is "512,0", the
+ * @ref AVStreamGroupTileGrid.offsets "offset" of the topleft pixel of
+ * the fifth @ref AVStreamGroup.streams "stream" in the group is "0,512", the
+ * @ref AVStreamGroupTileGrid.offsets "offset", of the topleft pixel of
+ * the sixth @ref AVStreamGroup.streams "stream" in the group is "512,512",
+ * etc.
+ *
+ * The following is an example of a canvas with overlaping tiles:
+ *
+ * +-----------+
+ * |   %%%%%   |
+ * |***%%3%%@@@|
+ * |**0%%%%%2@@|
+ * |***##1@@@@@|
+ * |   #####   |
+ * +-----------+
+ *
+ * Assuming a canvas with size 1024x1024 and all tiles with a dimension of
+ * 512x512, a possible @ref AVStreamGroupTileGrid.offsets "offset" for the
+ * topleft pixel of the first @ref AVStreamGroup.streams "stream" in the group
+ * would be 0x256, the @ref AVStreamGroupTileGrid.offsets "offset" for the
+ * topleft pixel of the second @ref AVStreamGroup.streams "stream" in the group
+ * would be 256x512, the @ref AVStreamGroupTileGrid.offsets "offset" for the
+ * topleft pixel of the third @ref AVStreamGroup.streams "stream" in the group
+ * would be 512x256, and the @ref AVStreamGroupTileGrid.offsets "offset" for
+ * the topleft pixel of the fourth @ref AVStreamGroup.streams "stream" in the
+ * group would be 256x0.
+ *
+ * sizeof(AVStreamGroupTileGrid) is not a part of the ABI and may only be
+ * allocated by avformat_stream_group_create().
+ */
+typedef struct AVStreamGroupTileGrid {
+    const AVClass *av_class;
+
+    /**
+     * Amount of tiles in the grid.
+     *
+     * Must be > 0.
+     */
+    unsigned int nb_tiles;
+
+    /**
+     * Width of the canvas.
+     *
+     * Must be > 0.
+     */
+    int coded_width;
+    /**
+     * Width of the canvas.
+     *
+     * Must be > 0.
+     */
+    int coded_height;
+
+    /**
+     * An @ref nb_tiles sized array of offsets in pixels from the topleft edge
+     * of the canvas, indicating where each stream should be placed.
+     * It must be allocated with the av_malloc() family of functions.
+     *
+     * - demuxing: set by libavformat, must not be modified by the caller.
+     * - muxing: set by the caller before avformat_write_header().
+     *
+     * Freed by libavformat in avformat_free_context().
+     */
+    struct {
+        /**
+         * Index of the stream in the group this tile references.
+         *
+         * Must be < @ref AVStreamGroup.nb_streams "nb_streams".
+         */
+        unsigned int idx;
+        /**
+         * Offset in pixels from the left edge of the canvas where the tile
+         * should be placed.
+         */
+        int horizontal;
+        /**
+         * Offset in pixels from the top edge of the canvas where the tile
+         * should be placed.
+         */
+        int vertical;
+    } *offsets;
+
+    /**
+     * The pixel value per channel in RGBA format used if no pixel of any tile
+     * is located at a particular pixel location.
+     *
+     * @see av_image_fill_color().
+     * @see av_parse_color().
+     */
+    uint8_t background[4];
+
+    /**
+     * Offset in pixels from the left edge of the canvas where the actual image
+     * meant for presentation starts.
+     *
+     * This field must be >= 0 and < @ref coded_width.
+     */
+    int horizontal_offset;
+    /**
+     * Offset in pixels from the top edge of the canvas where the actual image
+     * meant for presentation starts.
+     *
+     * This field must be >= 0 and < @ref coded_height.
+     */
+    int vertical_offset;
+
+    /**
+     * Width of the final image for presentation.
+     *
+     * Must be > 0 and <= (@ref coded_width - @ref horizontal_offset).
+     * When it's not equal to (@ref coded_width - @ref horizontal_offset), the
+     * result of (@ref coded_width - width - @ref horizontal_offset) is the
+     * amount amount of pixels to be cropped from the right edge of the
+     * final image before presentation.
+     */
+    int width;
+    /**
+     * Height of the final image for presentation.
+     *
+     * Must be > 0 and <= (@ref coded_height - @ref vertical_offset).
+     * When it's not equal to (@ref coded_height - @ref vertical_offset), the
+     * result of (@ref coded_height - height - @ref vertical_offset) is the
+     * amount amount of pixels to be cropped from the bottom edge of the
+     * final image before presentation.
+     */
+    int height;
+} AVStreamGroupTileGrid;
+
 enum AVStreamGroupParamsType {
     AV_STREAM_GROUP_PARAMS_NONE,
     AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT,
     AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION,
+    AV_STREAM_GROUP_PARAMS_TILE_GRID,
 };
 
 struct AVIAMFAudioElement;
@@ -1062,6 +1222,7 @@ typedef struct AVStreamGroup {
     union {
         struct AVIAMFAudioElement *iamf_audio_element;
         struct AVIAMFMixPresentation *iamf_mix_presentation;
+        struct AVStreamGroupTileGrid *tile_grid;
     } params;
 
     /**

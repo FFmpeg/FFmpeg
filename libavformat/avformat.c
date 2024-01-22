@@ -99,6 +99,11 @@ void ff_free_stream_group(AVStreamGroup **pstg)
         av_iamf_mix_presentation_free(&stg->params.iamf_mix_presentation);
         break;
     }
+    case AV_STREAM_GROUP_PARAMS_TILE_GRID:
+        av_opt_free(stg->params.tile_grid);
+        av_freep(&stg->params.tile_grid->offsets);
+        av_freep(&stg->params.tile_grid);
+        break;
     default:
         break;
     }

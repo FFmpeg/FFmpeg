@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
 #include "libavutil/iamf.h"
@@ -744,6 +745,35 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
                     av_log(NULL, AV_LOG_INFO, " Binaural");
                 av_log(NULL, AV_LOG_INFO, "\n");
             }
+        }
+        break;
+    }
+    case AV_STREAM_GROUP_PARAMS_TILE_GRID: {
+        const AVStreamGroupTileGrid *tile_grid = stg->params.tile_grid;
+        AVCodecContext *avctx = avcodec_alloc_context3(NULL);
+        const char *ptr = NULL;
+        av_log(NULL, AV_LOG_INFO, " Tile Grid:");
+        if (avctx && stg->nb_streams && !avcodec_parameters_to_context(avctx, stg->streams[0]->codecpar)) {
+            avctx->width  = tile_grid->width;
+            avctx->height = tile_grid->height;
+            avctx->coded_width  = tile_grid->coded_width;
+            avctx->coded_height = tile_grid->coded_height;
+            if (ic->dump_separator)
+                av_opt_set(avctx, "dump_separator", ic->dump_separator, 0);
+            buf[0] = 0;
+            avcodec_string(buf, sizeof(buf), avctx, is_output);
+            ptr = av_stristr(buf, " ");
+        }
+        avcodec_free_context(&avctx);
+        if (ptr)
+            av_log(NULL, AV_LOG_INFO, "%s", ptr);
+        dump_disposition(stg->disposition, AV_LOG_INFO);
+        av_log(NULL, AV_LOG_INFO, "\n");
+        dump_metadata(NULL, stg->metadata, "    ", AV_LOG_INFO);
+        for (int i = 0; i < stg->nb_streams; i++) {
+            const AVStream *st = stg->streams[i];
+            dump_stream_format(ic, st->index, i, index, is_output, AV_LOG_VERBOSE);
+            printed[st->index] = 1;
         }
         break;
     }
