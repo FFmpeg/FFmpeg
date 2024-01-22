@@ -280,6 +280,7 @@ typedef struct MOVContext {
     int64_t duration;     ///< duration of the longest track
     int found_moov;       ///< 'moov' atom has been found
     int found_iloc;       ///< 'iloc' atom has been found
+    int found_iinf;       ///< 'iinf' atom has been found
     int found_mdat;       ///< 'mdat' atom has been found
     int found_hdlr_mdta;  ///< 'hdlr' atom with type 'mdta' has been found
     int trak_index;       ///< Index of the current 'trak'
