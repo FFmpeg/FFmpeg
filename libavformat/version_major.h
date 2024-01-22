@@ -29,7 +29,7 @@
 
 // Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
 // Also please add any ticket numbers that you believe might be affected here
-#define LIBAVFORMAT_VERSION_MAJOR  60
+#define LIBAVFORMAT_VERSION_MAJOR  61
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
