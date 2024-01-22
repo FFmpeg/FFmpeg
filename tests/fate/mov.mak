@@ -159,7 +159,7 @@ fate-mov-heic-demux-still-image-1-item: CMD = framemd5 -i $(TARGET_SAMPLES)/heif
 
 FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-multiple-items
-fate-mov-heic-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C003.heic -c:v copy
+fate-mov-heic-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C003.heic -c:v copy -map 0
 
 # Resulting remux should have:
 # 1. first audio stream with AV_DISPOSITION_HEARING_IMPAIRED
