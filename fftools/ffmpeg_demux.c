@@ -907,6 +907,12 @@ static int ist_use(InputStream *ist, int decoding_needed)
         ds->dec_opts.flags = (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
                              (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE);
 
+        if (ist->framerate.num) {
+            ds->dec_opts.flags     |= DECODER_FLAG_FRAMERATE_FORCED;
+            ds->dec_opts.framerate  = ist->framerate;
+        } else
+            ds->dec_opts.framerate  = ist->st->avg_frame_rate;
+
         ret = dec_open(ist, d->sch, ds->sch_idx_dec,
                        &ist->decoder_opts, &ds->dec_opts);
         if (ret < 0)

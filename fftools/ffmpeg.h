@@ -284,6 +284,9 @@ enum DecoderFlags {
     DECODER_FLAG_FIX_SUB_DURATION = (1 << 0),
     // input timestamps are unreliable (guessed by demuxer)
     DECODER_FLAG_TS_UNRELIABLE    = (1 << 1),
+    // decoder should override timestamps by fixed framerate
+    // from DecoderOpts.framerate
+    DECODER_FLAG_FRAMERATE_FORCED = (1 << 2),
 };
 
 typedef struct DecoderOpts {
@@ -294,6 +297,10 @@ typedef struct DecoderOpts {
     enum AVHWDeviceType         hwaccel_device_type;
     char                       *hwaccel_device;
     enum AVPixelFormat          hwaccel_output_format;
+
+    // Either forced (when DECODER_FLAG_FRAMERATE_FORCED is set) or
+    // estimated (otherwise) video framerate.
+    AVRational                  framerate;
 } DecoderOpts;
 
 typedef struct Decoder {

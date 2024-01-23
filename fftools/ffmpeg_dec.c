@@ -45,6 +45,8 @@ typedef struct DecoderPriv {
     // override output video sample aspect ratio with this value
     AVRational       sar_override;
 
+    AVRational       framerate_in;
+
     // a combination of DECODER_FLAG_*, provided to dec_open()
     int              flags;
 
@@ -220,6 +222,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
 {
     const DecoderPriv    *dp = dp_from_dec(ist->decoder);
     const int  ts_unreliable = dp->flags & DECODER_FLAG_TS_UNRELIABLE;
+    const int      fr_forced = dp->flags & DECODER_FLAG_FRAMERATE_FORCED;
     int64_t codec_duration = 0;
 
     // XXX lavf currently makes up frame durations when they are not provided by
@@ -229,7 +232,7 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
     // durations, then this should be simplified.
 
     // prefer frame duration for containers with timestamps
-    if (frame->duration > 0 && (!ts_unreliable || ist->framerate.num))
+    if (frame->duration > 0 && (!ts_unreliable || fr_forced))
         return frame->duration;
 
     if (dp->dec_ctx->framerate.den && dp->dec_ctx->framerate.num) {
@@ -257,8 +260,8 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
         return codec_duration;
 
     // try average framerate
-    if (ist->st->avg_frame_rate.num && ist->st->avg_frame_rate.den) {
-        int64_t d = av_rescale_q(1, av_inv_q(ist->st->avg_frame_rate),
+    if (dp->framerate_in.num && dp->framerate_in.den) {
+        int64_t d = av_rescale_q(1, av_inv_q(dp->framerate_in),
                                  frame->time_base);
         if (d > 0)
             return d;
@@ -330,10 +333,10 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     frame->pts = frame->best_effort_timestamp;
 
     // forced fixed framerate
-    if (ist->framerate.num) {
+    if (dp->flags & DECODER_FLAG_FRAMERATE_FORCED) {
         frame->pts       = AV_NOPTS_VALUE;
         frame->duration  = 1;
-        frame->time_base = av_inv_q(ist->framerate);
+        frame->time_base = av_inv_q(dp->framerate_in);
     }
 
     // no timestamp available - extrapolate from previous frame duration
@@ -960,6 +963,8 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     dp->flags      = o->flags;
     dp->dec.class  = &dec_class;
     dp->log_parent = ist;
+
+    dp->framerate_in            = o->framerate;
 
     dp->hwaccel_id              = o->hwaccel_id;
     dp->hwaccel_device_type     = o->hwaccel_device_type;
