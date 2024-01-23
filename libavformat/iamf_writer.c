@@ -750,11 +750,6 @@ static int iamf_write_mixing_presentation(const IAMFContext *iamf,
             int album = submix_layout->album_anchored_loudness.num &&
                         submix_layout->album_anchored_loudness.den;
 
-            if (layout == FF_ARRAY_ELEMS(ff_iamf_sound_system_map)) {
-                av_log(log_ctx, AV_LOG_ERROR, "Invalid Sound System value in a submix\n");
-                return AVERROR(EINVAL);
-            }
-
             if (submix_layout->layout_type == AV_IAMF_SUBMIX_LAYOUT_TYPE_LOUDSPEAKERS) {
                 for (layout = 0; layout < FF_ARRAY_ELEMS(ff_iamf_sound_system_map); layout++) {
                     if (!av_channel_layout_compare(&submix_layout->sound_system, &ff_iamf_sound_system_map[layout].layout))
