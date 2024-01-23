@@ -998,10 +998,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
 
     dp->dec_ctx->opaque                = dp;
     dp->dec_ctx->get_format            = get_format;
-
-    /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
-     * audio, and video decoders such as cuvid or mediacodec */
-    dp->dec_ctx->pkt_timebase = ist->st->time_base;
+    dp->dec_ctx->pkt_timebase          = o->time_base;
 
     if (!av_dict_get(*dec_opts, "threads", NULL, 0))
         av_dict_set(dec_opts, "threads", "auto", 0);

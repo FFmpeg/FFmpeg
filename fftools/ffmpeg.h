@@ -298,6 +298,8 @@ typedef struct DecoderOpts {
     char                       *hwaccel_device;
     enum AVPixelFormat          hwaccel_output_format;
 
+    AVRational                  time_base;
+
     // Either forced (when DECODER_FLAG_FRAMERATE_FORCED is set) or
     // estimated (otherwise) video framerate.
     AVRational                  framerate;
