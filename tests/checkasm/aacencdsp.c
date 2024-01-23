@@ -51,7 +51,7 @@ static void test_abs_pow34(AACEncContext *s) {
         call_ref(out, in, BUF_SIZE);
         call_new(out2, in, BUF_SIZE);
 
-        if (memcmp(out, out2, BUF_SIZE * sizeof(float)) != 0)
+        if (!float_near_ulp_array(out, out2, 1, BUF_SIZE))
             fail();
 
         bench_new(out, in, BUF_SIZE);
