@@ -763,7 +763,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
     FFIOContext b;
     AVIOContext *pbc;
     uint8_t *buf;
-    unsigned mix_presentation_id;
+    unsigned nb_submixes, mix_presentation_id;
     int ret;
 
     buf = av_malloc(len);
@@ -834,35 +834,24 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
             goto fail;
     }
 
-    mix->nb_submixes = ffio_read_leb(pbc);
-    mix->submixes = av_calloc(mix->nb_submixes, sizeof(*mix->submixes));
-    if (!mix->submixes) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    for (int i = 0; i < mix->nb_submixes; i++) {
+    nb_submixes = ffio_read_leb(pbc);
+    for (int i = 0; i < nb_submixes; i++) {
         AVIAMFSubmix *sub_mix;
+        unsigned nb_elements, nb_layouts;
 
-        sub_mix = mix->submixes[i] = av_mallocz(sizeof(*sub_mix));
+        sub_mix = av_iamf_mix_presentation_add_submix(mix);
         if (!sub_mix) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
 
-        sub_mix->nb_elements = ffio_read_leb(pbc);
-        sub_mix->elements = av_calloc(sub_mix->nb_elements, sizeof(*sub_mix->elements));
-        if (!sub_mix->elements) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        for (int j = 0; j < sub_mix->nb_elements; j++) {
+        nb_elements = ffio_read_leb(pbc);
+        for (int j = 0; j < nb_elements; j++) {
             AVIAMFSubmixElement *submix_element;
             IAMFAudioElement *audio_element = NULL;
             unsigned int rendering_config_extension_size;
 
-            submix_element = sub_mix->elements[j] = av_mallocz(sizeof(*submix_element));
+            submix_element = av_iamf_submix_add_element(sub_mix);
             if (!submix_element) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
@@ -912,19 +901,13 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
             goto fail;
         sub_mix->default_mix_gain = av_make_q(sign_extend(avio_rb16(pbc), 16), 1 << 8);
 
-        sub_mix->nb_layouts = ffio_read_leb(pbc);
-        sub_mix->layouts = av_calloc(sub_mix->nb_layouts, sizeof(*sub_mix->layouts));
-        if (!sub_mix->layouts) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        for (int j = 0; j < sub_mix->nb_layouts; j++) {
+        nb_layouts = ffio_read_leb(pbc);
+        for (int j = 0; j < nb_layouts; j++) {
             AVIAMFSubmixLayout *submix_layout;
             int info_type;
             int byte = avio_r8(pbc);
 
-            submix_layout = sub_mix->layouts[j] = av_mallocz(sizeof(*submix_layout));
+            submix_layout = av_iamf_submix_add_layout(sub_mix);
             if (!submix_layout) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
