@@ -298,6 +298,7 @@ typedef struct DecoderOpts {
     char                       *name;
 
     const AVCodec              *codec;
+    const AVCodecParameters    *par;
 
     /* hwaccel options */
     enum HWAccelID              hwaccel_id;

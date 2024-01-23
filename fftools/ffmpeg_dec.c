@@ -990,13 +990,13 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
             return AVERROR(ENOMEM);
     }
 
-    dp->sar_override = ist->par->sample_aspect_ratio;
+    dp->sar_override = o->par->sample_aspect_ratio;
 
     dp->dec_ctx = avcodec_alloc_context3(codec);
     if (!dp->dec_ctx)
         return AVERROR(ENOMEM);
 
-    ret = avcodec_parameters_to_context(dp->dec_ctx, ist->par);
+    ret = avcodec_parameters_to_context(dp->dec_ctx, o->par);
     if (ret < 0) {
         av_log(dp, AV_LOG_ERROR, "Error initializing the decoder context.\n");
         return ret;

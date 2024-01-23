@@ -931,6 +931,7 @@ static int ist_use(InputStream *ist, int decoding_needed)
         ds->dec_opts.name = ds->dec_name;
 
         ds->dec_opts.codec = ist->dec;
+        ds->dec_opts.par   = ist->par;
 
         ret = dec_open(ist, d->sch, ds->sch_idx_dec,
                        &ist->decoder_opts, &ds->dec_opts);
