@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2013 Seppo Tomperi
- * Copyright (c) 2013 - 2014 Pierre-Edouard Lepere
+ * Copyright (c) 2013-2014 Pierre-Edouard Lepere
+ * Copyright (c) 2023-2024 Wu Jianhua
  *
  * This file is part of FFmpeg.
  *
@@ -27,6 +28,7 @@
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/hevcdsp.h"
 #include "libavcodec/x86/hevcdsp.h"
+#include "libavcodec/x86/h26x/h2656dsp.h"
 
 #define LFC_FUNC(DIR, DEPTH, OPT) \
 void ff_hevc_ ## DIR ## _loop_filter_chroma_ ## DEPTH ## _ ## OPT(uint8_t *pix, ptrdiff_t stride, const int *tc, const uint8_t *no_p, const uint8_t *no_q);
@@ -82,6 +84,110 @@ void ff_hevc_idct_32x32_10_ ## opt(int16_t *coeffs, int col_limit);
 
 IDCT_FUNCS(sse2)
 IDCT_FUNCS(avx)
+
+
+#define ff_hevc_pel_filters ff_hevc_qpel_filters
+#define DECL_HV_FILTER(f)                                  \
+    const uint8_t *hf = ff_hevc_ ## f ## _filters[mx - 1]; \
+    const uint8_t *vf = ff_hevc_ ## f ## _filters[my - 1];
+
+#define FW_PUT(p, a, b, depth, opt) \
+void ff_hevc_put_hevc_ ## a ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,   \
+                                                    int height, intptr_t mx, intptr_t my,int width)          \
+{                                                                                                            \
+    DECL_HV_FILTER(p)                                                                                        \
+    ff_h2656_put_ ## b ## _ ## depth ## _##opt(dst, src, srcstride, height, hf, vf, width);                  \
+}
+
+#define FW_PUT_UNI(p, a, b, depth, opt) \
+void ff_hevc_put_hevc_uni_ ## a ## _ ## depth ## _##opt(uint8_t *dst, ptrdiff_t dststride,                   \
+                                                        const uint8_t *src, ptrdiff_t srcstride,             \
+                                                        int height, intptr_t mx, intptr_t my, int width)     \
+{                                                                                                            \
+    DECL_HV_FILTER(p)                                                                                        \
+    ff_h2656_put_uni_ ## b ## _ ## depth ## _##opt(dst, dststride, src, srcstride, height, hf, vf, width);   \
+}
+
+#if ARCH_X86_64 && HAVE_SSE4_EXTERNAL
+
+#define FW_PUT_FUNCS(p, a, b, depth, opt) \
+    FW_PUT(p, a, b, depth, opt) \
+    FW_PUT_UNI(p, a, b, depth, opt)
+
+#define FW_PEL(w, depth, opt) FW_PUT_FUNCS(pel, pel_pixels##w, pixels##w, depth, opt)
+
+#define FW_DIR(npel, n, w, depth, opt) \
+    FW_PUT_FUNCS(npel, npel ## _h##w,  n ## tap_h##w,  depth, opt) \
+    FW_PUT_FUNCS(npel, npel ## _v##w,  n ## tap_v##w,  depth, opt)
+
+#define FW_DIR_HV(npel, n, w, depth, opt) \
+    FW_PUT_FUNCS(npel, npel ## _hv##w,  n ## tap_hv##w,  depth, opt)
+
+FW_PEL(4,   8, sse4);
+FW_PEL(6,   8, sse4);
+FW_PEL(8,   8, sse4);
+FW_PEL(12,  8, sse4);
+FW_PEL(16,  8, sse4);
+FW_PEL(4,  10, sse4);
+FW_PEL(6,  10, sse4);
+FW_PEL(8,  10, sse4);
+FW_PEL(4,  12, sse4);
+FW_PEL(6,  12, sse4);
+FW_PEL(8,  12, sse4);
+
+#define FW_EPEL(w, depth, opt) FW_DIR(epel, 4, w, depth, opt)
+#define FW_EPEL_HV(w, depth, opt) FW_DIR_HV(epel, 4, w, depth, opt)
+#define FW_EPEL_FUNCS(w, depth, opt) \
+    FW_EPEL(w, depth, opt)           \
+    FW_EPEL_HV(w, depth, opt)
+
+FW_EPEL(12,  8, sse4);
+
+FW_EPEL_FUNCS(4,   8, sse4);
+FW_EPEL_FUNCS(6,   8, sse4);
+FW_EPEL_FUNCS(8,   8, sse4);
+FW_EPEL_FUNCS(16,  8, sse4);
+FW_EPEL_FUNCS(4,  10, sse4);
+FW_EPEL_FUNCS(6,  10, sse4);
+FW_EPEL_FUNCS(8,  10, sse4);
+FW_EPEL_FUNCS(4,  12, sse4);
+FW_EPEL_FUNCS(6,  12, sse4);
+FW_EPEL_FUNCS(8,  12, sse4);
+
+#define FW_QPEL(w, depth, opt) FW_DIR(qpel, 8, w, depth, opt)
+#define FW_QPEL_HV(w, depth, opt) FW_DIR_HV(qpel, 8, w, depth, opt)
+#define FW_QPEL_FUNCS(w, depth, opt) \
+    FW_QPEL(w, depth, opt)           \
+    FW_QPEL_HV(w, depth, opt)
+
+FW_QPEL(12, 8, sse4);
+FW_QPEL(16, 8, sse4);
+
+FW_QPEL_FUNCS(4,   8, sse4);
+FW_QPEL_FUNCS(8,   8, sse4);
+FW_QPEL_FUNCS(4,  10, sse4);
+FW_QPEL_FUNCS(8,  10, sse4);
+FW_QPEL_FUNCS(4,  12, sse4);
+FW_QPEL_FUNCS(8,  12, sse4);
+
+#ifdef HAVE_AVX2_EXTERNAL
+
+FW_PEL(32,  8, avx2);
+FW_PUT(pel, pel_pixels16, pixels16, 10, avx2);
+
+FW_EPEL(32,  8, avx2);
+FW_EPEL(16, 10, avx2);
+
+FW_EPEL_HV(32,  8, avx2);
+FW_EPEL_HV(16, 10, avx2);
+
+FW_QPEL(32,  8, avx2);
+FW_QPEL(16, 10, avx2);
+
+FW_QPEL_HV(16, 10, avx2);
+
+#endif
+#endif
 
 #define mc_rep_func(name, bitd, step, W, opt) \
 void ff_hevc_put_hevc_##name##W##_##bitd##_##opt(int16_t *_dst,                                                 \

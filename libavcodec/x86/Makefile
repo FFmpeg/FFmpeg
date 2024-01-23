@@ -167,6 +167,7 @@ X86ASM-OBJS-$(CONFIG_HEVC_DECODER)     += x86/hevc_add_res.o            \
                                           x86/hevc_deblock.o            \
                                           x86/hevc_idct.o               \
                                           x86/hevc_mc.o                 \
+                                          x86/h26x/h2656_inter.o        \
                                           x86/hevc_sao.o                \
                                           x86/hevc_sao_10bit.o
 X86ASM-OBJS-$(CONFIG_JPEG2000_DECODER) += x86/jpeg2000dsp.o
