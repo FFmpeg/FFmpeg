@@ -404,6 +404,7 @@ static int iamf_read_header(AVFormatContext *s)
         if (!stg)
             return AVERROR(ENOMEM);
 
+        av_iamf_audio_element_free(&stg->params.iamf_audio_element);
         stg->id = audio_element->audio_element_id;
         stg->params.iamf_audio_element = audio_element->element;
 
@@ -435,6 +436,7 @@ static int iamf_read_header(AVFormatContext *s)
         if (!stg)
             return AVERROR(ENOMEM);
 
+        av_iamf_mix_presentation_free(&stg->params.iamf_mix_presentation);
         stg->id = mix_presentation->mix_presentation_id;
         stg->params.iamf_mix_presentation = mix_presentation->mix;
 
