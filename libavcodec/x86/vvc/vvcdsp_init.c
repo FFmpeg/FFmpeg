@@ -169,6 +169,42 @@ FW_PUT_16BPC_AVX2(12);
     MC_TAP_LINKS_16BPC_AVX2(LUMA,   8, bd);                          \
     MC_TAP_LINKS_16BPC_AVX2(CHROMA, 4, bd);
 
+#define bf(fn, bd,  opt) fn##_##bd##_##opt
+#define BF(fn, bpc, opt) fn##_##bpc##bpc_##opt
+
+#define AVG_BPC_FUNC(bpc, opt)                                                                      \
+void BF(ff_vvc_avg, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                   \
+    const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height, intptr_t pixel_max); \
+void BF(ff_vvc_w_avg, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                 \
+    const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height,                      \
+    intptr_t denom, intptr_t w0, intptr_t w1,  intptr_t o0, intptr_t o1, intptr_t pixel_max);
+
+#define AVG_FUNCS(bpc, bd, opt)                                                                     \
+static void bf(avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                    \
+    const int16_t *src0, const int16_t *src1, int width, int height)                                \
+{                                                                                                   \
+    BF(ff_vvc_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height, (1 << bd)  - 1);           \
+}                                                                                                   \
+static void bf(w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                  \
+    const int16_t *src0, const int16_t *src1, int width, int height,                                \
+    int denom, int w0, int w1, int o0, int o1)                                                      \
+{                                                                                                   \
+    BF(ff_vvc_w_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height,                          \
+        denom, w0, w1, o0, o1, (1 << bd)  - 1);                                                     \
+}
+
+AVG_BPC_FUNC(8,   avx2)
+AVG_BPC_FUNC(16,  avx2)
+
+AVG_FUNCS(8,  8,  avx2)
+AVG_FUNCS(16, 10, avx2)
+AVG_FUNCS(16, 12, avx2)
+
+#define AVG_INIT(bd, opt) do {                                          \
+    c->inter.avg    = bf(avg, bd, opt);                                 \
+    c->inter.w_avg  = bf(w_avg, bd, opt);                               \
+} while (0)
+
 void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 {
     const int cpu_flags = av_get_cpu_flags();
@@ -196,6 +232,22 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             if (EXTERNAL_AVX2_FAST(cpu_flags)) {
                 MC_LINKS_AVX2(12);
                 MC_LINKS_16BPC_AVX2(12);
+            }
+        }
+
+        if (EXTERNAL_AVX2(cpu_flags)) {
+            switch (bd) {
+                case 8:
+                    AVG_INIT(8, avx2);
+                    break;
+                case 10:
+                    AVG_INIT(10, avx2);
+                    break;
+                case 12:
+                    AVG_INIT(12, avx2);
+                    break;
+                default:
+                    break;
             }
         }
     }
