@@ -913,6 +913,15 @@ static int ist_use(InputStream *ist, int decoding_needed)
         } else
             ds->dec_opts.framerate  = ist->st->avg_frame_rate;
 
+        if (ist->dec->id == AV_CODEC_ID_DVB_SUBTITLE &&
+           (ist->decoding_needed & DECODING_FOR_OST)) {
+            av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
+            if (ist->decoding_needed & DECODING_FOR_FILTER)
+                av_log(ist, AV_LOG_WARNING,
+                       "Warning using DVB subtitles for filtering and output at the "
+                       "same time is not fully supported, also see -compute_edt [0|1]\n");
+        }
+
         ret = dec_open(ist, d->sch, ds->sch_idx_dec,
                        &ist->decoder_opts, &ds->dec_opts);
         if (ret < 0)

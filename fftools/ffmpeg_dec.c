@@ -999,15 +999,6 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     dp->dec_ctx->opaque                = dp;
     dp->dec_ctx->get_format            = get_format;
 
-    if (dp->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
-       (ist->decoding_needed & DECODING_FOR_OST)) {
-        av_dict_set(dec_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
-        if (ist->decoding_needed & DECODING_FOR_FILTER)
-            av_log(dp, AV_LOG_WARNING,
-                   "Warning using DVB subtitles for filtering and output at the "
-                   "same time is not fully supported, also see -compute_edt [0|1]\n");
-    }
-
     /* Useful for subtitles retiming by lavf (FIXME), skipping samples in
      * audio, and video decoders such as cuvid or mediacodec */
     dp->dec_ctx->pkt_timebase = ist->st->time_base;
