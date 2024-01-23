@@ -645,10 +645,9 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-void *decoder_thread(void *arg)
+static void *decoder_thread(void *arg)
 {
-    InputStream *ist = arg;
-    DecoderPriv  *dp = dp_from_dec(ist->decoder);
+    DecoderPriv  *dp = arg;
     DecThreadContext dt;
     int ret = 0, input_status = 0;
 
@@ -692,7 +691,7 @@ void *decoder_thread(void *arg)
                 break;
 
             /* report last frame duration to the scheduler */
-            if (ist->dec->type == AVMEDIA_TYPE_AUDIO) {
+            if (dp->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
                 dt.pkt->pts       = dp->last_frame_pts + dp->last_frame_duration_est;
                 dt.pkt->time_base = dp->last_frame_tb;
             }
@@ -940,7 +939,7 @@ static const AVClass dec_class = {
     .item_name                 = dec_item_name,
 };
 
-int dec_open(Decoder **pdec, Scheduler *sch, unsigned sch_idx,
+int dec_open(Decoder **pdec, Scheduler *sch,
              AVDictionary **dec_opts, const DecoderOpts *o)
 {
     DecoderPriv *dp;
@@ -953,8 +952,11 @@ int dec_open(Decoder **pdec, Scheduler *sch, unsigned sch_idx,
     if (ret < 0)
         return ret;
 
+    ret = sch_add_dec(sch, decoder_thread, dp, o->flags & DECODER_FLAG_SEND_END_TS);
+    if (ret < 0)
+        return ret;
     dp->sch     = sch;
-    dp->sch_idx = sch_idx;
+    dp->sch_idx = ret;
 
     dp->flags      = o->flags;
     dp->dec.class  = &dec_class;
@@ -1036,7 +1038,7 @@ int dec_open(Decoder **pdec, Scheduler *sch, unsigned sch_idx,
 
     *pdec = &dp->dec;
 
-    return 0;
+    return dp->sch_idx;
 fail:
     dec_free((Decoder**)&dp);
     return ret;

@@ -895,18 +895,9 @@ static int ist_use(InputStream *ist, int decoding_needed)
     if (decoding_needed && ds->sch_idx_dec < 0) {
         int is_audio = ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
 
-        ret = sch_add_dec(d->sch, decoder_thread, ist, d->loop && is_audio);
-        if (ret < 0)
-            return ret;
-        ds->sch_idx_dec = ret;
-
-        ret = sch_connect(d->sch, SCH_DSTREAM(d->f.index, ds->sch_idx_stream),
-                                  SCH_DEC(ds->sch_idx_dec));
-        if (ret < 0)
-            return ret;
-
         ds->dec_opts.flags = (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
-                             (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE)
+                             (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE) |
+                             (!!(d->loop && is_audio) * DECODER_FLAG_SEND_END_TS)
 #if FFMPEG_OPT_TOP
                              | ((ist->top_field_first >= 0) * DECODER_FLAG_TOP_FIELD_FIRST)
 #endif
@@ -935,8 +926,14 @@ static int ist_use(InputStream *ist, int decoding_needed)
 
         ds->dec_opts.log_parent = ist;
 
-        ret = dec_open(&ist->decoder, d->sch, ds->sch_idx_dec,
+        ret = dec_open(&ist->decoder, d->sch,
                        &ist->decoder_opts, &ds->dec_opts);
+        if (ret < 0)
+            return ret;
+        ds->sch_idx_dec = ret;
+
+        ret = sch_connect(d->sch, SCH_DSTREAM(d->f.index, ds->sch_idx_stream),
+                                  SCH_DEC(ds->sch_idx_dec));
         if (ret < 0)
             return ret;
 

@@ -290,6 +290,7 @@ enum DecoderFlags {
 #if FFMPEG_OPT_TOP
     DECODER_FLAG_TOP_FIELD_FIRST  = (1 << 3),
 #endif
+    DECODER_FLAG_SEND_END_TS      = (1 << 4),
 };
 
 typedef struct DecoderOpts {
@@ -756,8 +757,11 @@ AVBufferRef *hw_device_for_filter(void);
 /**
  * @param dec_opts Dictionary filled with decoder options. Its ownership
  *                 is transferred to the decoder.
+ *
+ * @retval ">=0" non-negative scheduler index on success
+ * @retval "<0"  an error code on failure
  */
-int dec_open(Decoder **pdec, Scheduler *sch, unsigned sch_idx,
+int dec_open(Decoder **pdec, Scheduler *sch,
              AVDictionary **dec_opts, const DecoderOpts *o);
 void dec_free(Decoder **pdec);
 
@@ -847,7 +851,6 @@ const char *opt_match_per_type_str(const SpecifierOptList *sol,
                                    char mediatype);
 
 void *muxer_thread(void *arg);
-void *decoder_thread(void *arg);
 void *encoder_thread(void *arg);
 
 #endif /* FFTOOLS_FFMPEG_H */
