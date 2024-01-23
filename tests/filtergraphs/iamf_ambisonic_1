@@ -1,0 +1,4 @@
+[0:a]channelmap=0:mono[MONO0];
+[0:a]channelmap=1:mono[MONO1];
+[0:a]channelmap=2:mono[MONO2];
+[0:a]channelmap=3:mono[MONO3];
