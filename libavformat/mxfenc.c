@@ -1487,7 +1487,6 @@ static void mxf_write_jpeg2000_subdesc(AVFormatContext *s, AVStream *st)
     AVIOContext *pb = s->pb;
     int64_t pos;
     int component_count = av_pix_fmt_count_planes(st->codecpar->format);
-    int comp = 0;
 
     /* JPEG2000 subdescriptor key */
     avio_write(pb, mxf_jpeg2000_subdescriptor_key, 16);
@@ -2640,11 +2639,9 @@ static int mxf_parse_jpeg2000_frame(AVFormatContext *s, AVStream *st, AVPacket *
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    AVIOContext *pb = s->pb;
     int component_count = av_pix_fmt_count_planes(st->codecpar->format);
     GetByteContext g;
     uint32_t j2k_ncomponents;
-    int comp;
 
     if (mxf->header_written)
         return 1;
