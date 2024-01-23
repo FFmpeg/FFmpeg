@@ -221,9 +221,8 @@ static void audio_ts_process(DecoderPriv *dp, AVFrame *frame)
     frame->time_base = tb_filter;
 }
 
-static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *frame)
+static int64_t video_duration_estimate(const DecoderPriv *dp, const AVFrame *frame)
 {
-    const DecoderPriv    *dp = dp_from_dec(ist->decoder);
     const int  ts_unreliable = dp->flags & DECODER_FLAG_TS_UNRELIABLE;
     const int      fr_forced = dp->flags & DECODER_FLAG_FRAMERATE_FORCED;
     int64_t codec_duration = 0;
@@ -316,10 +315,8 @@ fail:
     return err;
 }
 
-static int video_frame_process(InputStream *ist, AVFrame *frame)
+static int video_frame_process(DecoderPriv *dp, AVFrame *frame)
 {
-    DecoderPriv *dp = dp_from_dec(ist->decoder);
-
 #if FFMPEG_OPT_TOP
     if (dp->flags & DECODER_FLAG_TOP_FIELD_FIRST) {
         av_log(dp, AV_LOG_WARNING, "-top is deprecated, use the setfield filter instead\n");
@@ -348,7 +345,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
                      dp->last_frame_pts + dp->last_frame_duration_est;
 
     // update timestamp history
-    dp->last_frame_duration_est = video_duration_estimate(ist, frame);
+    dp->last_frame_duration_est = video_duration_estimate(dp, frame);
     dp->last_frame_pts          = frame->pts;
     dp->last_frame_tb           = frame->time_base;
 
@@ -374,9 +371,8 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     return 0;
 }
 
-static int process_subtitle(InputStream *ist, AVFrame *frame)
+static int process_subtitle(DecoderPriv *dp, AVFrame *frame)
 {
-    DecoderPriv *dp = dp_from_dec(ist->decoder);
     const AVSubtitle *subtitle = (AVSubtitle*)frame->buf[0]->data;
     int ret = 0;
 
@@ -418,9 +414,8 @@ static int process_subtitle(InputStream *ist, AVFrame *frame)
     return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
 }
 
-static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
+static int fix_sub_duration_heartbeat(DecoderPriv *dp, int64_t signal_pts)
 {
-    DecoderPriv *dp = dp_from_dec(ist->decoder);
     int ret = AVERROR_BUG;
     AVSubtitle *prev_subtitle = dp->sub_prev[0]->buf[0] ?
         (AVSubtitle*)dp->sub_prev[0]->buf[0]->data : NULL;
@@ -438,13 +433,12 @@ static int fix_sub_duration_heartbeat(InputStream *ist, int64_t signal_pts)
     subtitle = (AVSubtitle*)dp->sub_heartbeat->buf[0]->data;
     subtitle->pts = signal_pts;
 
-    return process_subtitle(ist, dp->sub_heartbeat);
+    return process_subtitle(dp, dp->sub_heartbeat);
 }
 
-static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
+static int transcode_subtitles(DecoderPriv *dp, const AVPacket *pkt,
                                AVFrame *frame)
 {
-    DecoderPriv *dp = dp_from_dec(ist->decoder);
     AVPacket *flush_pkt = NULL;
     AVSubtitle subtitle;
     int got_output;
@@ -458,8 +452,8 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
         ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
         return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
     } else if (pkt && (intptr_t)pkt->opaque == PKT_OPAQUE_FIX_SUB_DURATION) {
-        return fix_sub_duration_heartbeat(ist, av_rescale_q(pkt->pts, pkt->time_base,
-                                                            AV_TIME_BASE_Q));
+        return fix_sub_duration_heartbeat(dp, av_rescale_q(pkt->pts, pkt->time_base,
+                                                           AV_TIME_BASE_Q));
     }
 
     if (!pkt) {
@@ -497,18 +491,17 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
     frame->width  = dp->dec_ctx->width;
     frame->height = dp->dec_ctx->height;
 
-    return process_subtitle(ist, frame);
+    return process_subtitle(dp, frame);
 }
 
-static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
+static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
 {
-    DecoderPriv *dp = dp_from_dec(ist->decoder);
     AVCodecContext *dec = dp->dec_ctx;
     const char *type_desc = av_get_media_type_string(dec->codec_type);
     int ret;
 
     if (dec->codec_type == AVMEDIA_TYPE_SUBTITLE)
-        return transcode_subtitles(ist, pkt, frame);
+        return transcode_subtitles(dp, pkt, frame);
 
     // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
     // reason. This seems like a semi-critical bug. Don't trigger EOF, and
@@ -599,7 +592,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 
             audio_ts_process(dp, frame);
         } else {
-            ret = video_frame_process(ist, frame);
+            ret = video_frame_process(dp, frame);
             if (ret < 0) {
                 av_log(dp, AV_LOG_FATAL,
                        "Error while processing the decoded data\n");
@@ -678,7 +671,7 @@ void *decoder_thread(void *arg)
             av_log(dp, AV_LOG_VERBOSE, "Decoder thread received %s packet\n",
                    flush_buffers ? "flush" : "EOF");
 
-        ret = packet_decode(ist, have_data ? dt.pkt : NULL, dt.frame);
+        ret = packet_decode(dp, have_data ? dt.pkt : NULL, dt.frame);
 
         av_packet_unref(dt.pkt);
         av_frame_unref(dt.frame);
