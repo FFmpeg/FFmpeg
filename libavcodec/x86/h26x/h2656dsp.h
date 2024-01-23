@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #define H2656_PEL_PROTOTYPE(name, D, opt) \
-void ff_h2656_put_ ## name ## _ ## D ## _##opt(int16_t *dst, const uint8_t *_src, ptrdiff_t _srcstride, int height, const int8_t *hf, const int8_t *vf, int width);                               \
+void ff_h2656_put_ ## name ## _ ## D ## _##opt(int16_t *dst, ptrdiff_t dststride, const uint8_t *_src, ptrdiff_t _srcstride, int height, const int8_t *hf, const int8_t *vf, int width);          \
 void ff_h2656_put_uni_ ## name ## _ ## D ## _##opt(uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src, ptrdiff_t _srcstride, int height, const int8_t *hf, const int8_t *vf, int width);    \
 
 #define H2656_MC_8TAP_PROTOTYPES(fname, bitd, opt)    \

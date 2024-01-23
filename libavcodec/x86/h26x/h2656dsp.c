@@ -24,7 +24,7 @@
 #include "h2656dsp.h"
 
 #define mc_rep_func(name, bitd, step, W, opt) \
-void ff_h2656_put_##name##W##_##bitd##_##opt(int16_t *_dst,                                                     \
+void ff_h2656_put_##name##W##_##bitd##_##opt(int16_t *_dst, ptrdiff_t dststride,                                \
     const uint8_t *_src, ptrdiff_t _srcstride, int height, const int8_t *hf, const int8_t *vf, int width)       \
 {                                                                                                               \
     int i;                                                                                                      \
@@ -32,7 +32,7 @@ void ff_h2656_put_##name##W##_##bitd##_##opt(int16_t *_dst,                     
     for (i = 0; i < W; i += step) {                                                                             \
         const uint8_t *src  = _src + (i * ((bitd + 7) / 8));                                                    \
         dst = _dst + i;                                                                                         \
-        ff_h2656_put_##name##step##_##bitd##_##opt(dst, src, _srcstride, height, hf, vf, width);                \
+        ff_h2656_put_##name##step##_##bitd##_##opt(dst, dststride, src, _srcstride, height, hf, vf, width);     \
     }                                                                                                           \
 }
 

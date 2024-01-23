@@ -96,7 +96,7 @@ void ff_hevc_put_hevc_ ## a ## _ ## depth ## _##opt(int16_t *dst, const uint8_t 
                                                     int height, intptr_t mx, intptr_t my,int width)          \
 {                                                                                                            \
     DECL_HV_FILTER(p)                                                                                        \
-    ff_h2656_put_ ## b ## _ ## depth ## _##opt(dst, src, srcstride, height, hf, vf, width);                  \
+    ff_h2656_put_ ## b ## _ ## depth ## _##opt(dst, 2 * MAX_PB_SIZE, src, srcstride, height, hf, vf, width); \
 }
 
 #define FW_PUT_UNI(p, a, b, depth, opt) \
