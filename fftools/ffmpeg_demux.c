@@ -73,6 +73,7 @@ typedef struct DemuxStream {
     const AVCodecDescriptor *codec_desc;
 
     DecoderOpts              dec_opts;
+    char                     dec_name[16];
 
     AVBSFContext *bsf;
 
@@ -925,6 +926,9 @@ static int ist_use(InputStream *ist, int decoding_needed)
                        "Warning using DVB subtitles for filtering and output at the "
                        "same time is not fully supported, also see -compute_edt [0|1]\n");
         }
+
+        snprintf(ds->dec_name, sizeof(ds->dec_name), "%d:%d", ist->file->index, ist->index);
+        ds->dec_opts.name = ds->dec_name;
 
         ret = dec_open(ist, d->sch, ds->sch_idx_dec,
                        &ist->decoder_opts, &ds->dec_opts);

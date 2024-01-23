@@ -295,6 +295,8 @@ enum DecoderFlags {
 typedef struct DecoderOpts {
     int                         flags;
 
+    char                       *name;
+
     /* hwaccel options */
     enum HWAccelID              hwaccel_id;
     enum AVHWDeviceType         hwaccel_device_type;

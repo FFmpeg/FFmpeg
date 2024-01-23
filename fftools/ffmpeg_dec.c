@@ -73,6 +73,7 @@ typedef struct DecoderPriv {
 
     void           *log_parent;
     char            log_name[32];
+    char           *parent_name;
 } DecoderPriv;
 
 static DecoderPriv *dp_from_dec(Decoder *d)
@@ -103,6 +104,8 @@ void dec_free(Decoder **pdec)
     for (int i = 0; i < FF_ARRAY_ELEMS(dp->sub_prev); i++)
         av_frame_free(&dp->sub_prev[i]);
     av_frame_free(&dp->sub_heartbeat);
+
+    av_freep(&dp->parent_name);
 
     av_freep(pdec);
 }
@@ -499,7 +502,6 @@ static int transcode_subtitles(InputStream *ist, const AVPacket *pkt,
 
 static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 {
-    const InputFile *ifile = ist->file;
     DecoderPriv *dp = dp_from_dec(ist->decoder);
     AVCodecContext *dec = dp->dec_ctx;
     const char *type_desc = av_get_media_type_string(dec->codec_type);
@@ -554,8 +556,7 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
 
         update_benchmark(NULL);
         ret = avcodec_receive_frame(dec, frame);
-        update_benchmark("decode_%s %d.%d", type_desc,
-                         ifile->index, ist->index);
+        update_benchmark("decode_%s %s", type_desc, dp->parent_name);
 
         if (ret == AVERROR(EAGAIN)) {
             av_assert0(pkt); // should never happen during flushing
@@ -616,10 +617,10 @@ static int packet_decode(InputStream *ist, AVPacket *pkt, AVFrame *frame)
     }
 }
 
-static void dec_thread_set_name(const InputStream *ist, const DecoderPriv *dp)
+static void dec_thread_set_name(const DecoderPriv *dp)
 {
     char name[16];
-    snprintf(name, sizeof(name), "dec%d:%d:%s", ist->file->index, ist->index,
+    snprintf(name, sizeof(name), "dec%s:%s", dp->parent_name,
              dp->dec_ctx->codec->name);
     ff_thread_setname(name);
 }
@@ -662,7 +663,7 @@ void *decoder_thread(void *arg)
     if (ret < 0)
         goto finish;
 
-    dec_thread_set_name(ist, dp);
+    dec_thread_set_name(dp);
 
     while (!input_status) {
         int flush_buffers, have_data;
@@ -971,6 +972,10 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     dp->hwaccel_output_format   = o->hwaccel_output_format;
 
     snprintf(dp->log_name, sizeof(dp->log_name), "dec:%s", codec->name);
+
+    dp->parent_name = av_strdup(o->name ? o->name : "");
+    if (!dp->parent_name)
+        return AVERROR(ENOMEM);
 
     if (codec->type == AVMEDIA_TYPE_SUBTITLE &&
         (dp->flags & DECODER_FLAG_FIX_SUB_DURATION)) {
