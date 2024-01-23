@@ -930,6 +930,8 @@ static int ist_use(InputStream *ist, int decoding_needed)
         snprintf(ds->dec_name, sizeof(ds->dec_name), "%d:%d", ist->file->index, ist->index);
         ds->dec_opts.name = ds->dec_name;
 
+        ds->dec_opts.codec = ist->dec;
+
         ret = dec_open(ist, d->sch, ds->sch_idx_dec,
                        &ist->decoder_opts, &ds->dec_opts);
         if (ret < 0)

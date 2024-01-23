@@ -951,7 +951,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
              AVDictionary **dec_opts, const DecoderOpts *o)
 {
     DecoderPriv *dp;
-    const AVCodec *codec = ist->dec;
+    const AVCodec *codec = o->codec;
     int ret;
 
     ret = dec_alloc(&ist->decoder);
