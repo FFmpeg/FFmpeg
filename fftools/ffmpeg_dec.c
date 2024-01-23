@@ -48,7 +48,10 @@ typedef struct DecoderPriv {
     // a combination of DECODER_FLAG_*, provided to dec_open()
     int              flags;
 
-    enum AVPixelFormat hwaccel_pix_fmt;
+    enum AVPixelFormat  hwaccel_pix_fmt;
+    enum HWAccelID      hwaccel_id;
+    enum AVHWDeviceType hwaccel_device_type;
+    enum AVPixelFormat  hwaccel_output_format;
 
     // pts/estimated duration of the last decoded frame
     // * in decoder timebase for video,
@@ -267,9 +270,9 @@ static int64_t video_duration_estimate(const InputStream *ist, const AVFrame *fr
 
 static int hwaccel_retrieve_data(AVCodecContext *avctx, AVFrame *input)
 {
-    InputStream *ist = avctx->opaque;
+    DecoderPriv *dp = avctx->opaque;
     AVFrame *output = NULL;
-    enum AVPixelFormat output_format = ist->hwaccel_output_format;
+    enum AVPixelFormat output_format = dp->hwaccel_output_format;
     int err;
 
     if (input->format == output_format) {
@@ -746,8 +749,7 @@ finish:
 
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
 {
-    InputStream *ist = s->opaque;
-    DecoderPriv  *dp = dp_from_dec(ist->decoder);
+    DecoderPriv  *dp = s->opaque;
     const enum AVPixelFormat *p;
 
     for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
@@ -758,8 +760,8 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
 
-        if (ist->hwaccel_id == HWACCEL_GENERIC ||
-            ist->hwaccel_id == HWACCEL_AUTO) {
+        if (dp->hwaccel_id == HWACCEL_GENERIC ||
+            dp->hwaccel_id == HWACCEL_AUTO) {
             for (i = 0;; i++) {
                 config = avcodec_get_hw_config(s->codec, i);
                 if (!config)
@@ -771,7 +773,7 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
                     break;
             }
         }
-        if (config && config->device_type == ist->hwaccel_device_type) {
+        if (config && config->device_type == dp->hwaccel_device_type) {
             dp->hwaccel_pix_fmt = *p;
             break;
         }
@@ -797,21 +799,22 @@ static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
     }
 }
 
-static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
+static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp,
+                                      const char *hwaccel_device)
 {
     const AVCodecHWConfig *config;
     enum AVHWDeviceType type;
     HWDevice *dev = NULL;
     int err, auto_device = 0;
 
-    if (ist->hwaccel_device) {
-        dev = hw_device_get_by_name(ist->hwaccel_device);
+    if (hwaccel_device) {
+        dev = hw_device_get_by_name(hwaccel_device);
         if (!dev) {
-            if (ist->hwaccel_id == HWACCEL_AUTO) {
+            if (dp->hwaccel_id == HWACCEL_AUTO) {
                 auto_device = 1;
-            } else if (ist->hwaccel_id == HWACCEL_GENERIC) {
-                type = ist->hwaccel_device_type;
-                err = hw_device_init_from_type(type, ist->hwaccel_device,
+            } else if (dp->hwaccel_id == HWACCEL_GENERIC) {
+                type = dp->hwaccel_device_type;
+                err = hw_device_init_from_type(type, hwaccel_device,
                                                &dev);
             } else {
                 // This will be dealt with by API-specific initialisation
@@ -819,22 +822,22 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
                 return 0;
             }
         } else {
-            if (ist->hwaccel_id == HWACCEL_AUTO) {
-                ist->hwaccel_device_type = dev->type;
-            } else if (ist->hwaccel_device_type != dev->type) {
+            if (dp->hwaccel_id == HWACCEL_AUTO) {
+                dp->hwaccel_device_type = dev->type;
+            } else if (dp->hwaccel_device_type != dev->type) {
                 av_log(dp, AV_LOG_ERROR, "Invalid hwaccel device "
                        "specified for decoder: device %s of type %s is not "
                        "usable with hwaccel %s.\n", dev->name,
                        av_hwdevice_get_type_name(dev->type),
-                       av_hwdevice_get_type_name(ist->hwaccel_device_type));
+                       av_hwdevice_get_type_name(dp->hwaccel_device_type));
                 return AVERROR(EINVAL);
             }
         }
     } else {
-        if (ist->hwaccel_id == HWACCEL_AUTO) {
+        if (dp->hwaccel_id == HWACCEL_AUTO) {
             auto_device = 1;
-        } else if (ist->hwaccel_id == HWACCEL_GENERIC) {
-            type = ist->hwaccel_device_type;
+        } else if (dp->hwaccel_id == HWACCEL_GENERIC) {
+            type = dp->hwaccel_device_type;
             dev = hw_device_get_by_type(type);
 
             // When "-qsv_device device" is used, an internal QSV device named
@@ -884,17 +887,17 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
                 break;
             type = config->device_type;
             // Try to make a new device of this type.
-            err = hw_device_init_from_type(type, ist->hwaccel_device,
+            err = hw_device_init_from_type(type, hwaccel_device,
                                            &dev);
             if (err < 0) {
                 // Can't make a device of this type.
                 continue;
             }
-            if (ist->hwaccel_device) {
+            if (hwaccel_device) {
                 av_log(dp, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with new device created "
                        "from %s.\n", av_hwdevice_get_type_name(type),
-                       ist->hwaccel_device);
+                       hwaccel_device);
             } else {
                 av_log(dp, AV_LOG_INFO, "Using auto "
                        "hwaccel type %s with new default device.\n",
@@ -902,11 +905,11 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp)
             }
         }
         if (dev) {
-            ist->hwaccel_device_type = type;
+            dp->hwaccel_device_type = type;
         } else {
             av_log(dp, AV_LOG_INFO, "Auto hwaccel "
                    "disabled: no device found.\n");
-            ist->hwaccel_id = HWACCEL_NONE;
+            dp->hwaccel_id = HWACCEL_NONE;
             return 0;
         }
     }
@@ -940,7 +943,7 @@ static const AVClass dec_class = {
 };
 
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
-             AVDictionary **dec_opts, int flags)
+             AVDictionary **dec_opts, int flags, const DecoderOpts *o)
 {
     DecoderPriv *dp;
     const AVCodec *codec = ist->dec;
@@ -957,6 +960,10 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     dp->flags      = flags;
     dp->dec.class  = &dec_class;
     dp->log_parent = ist;
+
+    dp->hwaccel_id              = o->hwaccel_id;
+    dp->hwaccel_device_type     = o->hwaccel_device_type;
+    dp->hwaccel_output_format   = o->hwaccel_output_format;
 
     snprintf(dp->log_name, sizeof(dp->log_name), "dec:%s", codec->name);
 
@@ -984,7 +991,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
         return ret;
     }
 
-    dp->dec_ctx->opaque                = ist;
+    dp->dec_ctx->opaque                = dp;
     dp->dec_ctx->get_format            = get_format;
 
     if (dp->dec_ctx->codec_id == AV_CODEC_ID_DVB_SUBTITLE &&
@@ -1005,7 +1012,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
 
     av_dict_set(dec_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
 
-    ret = hw_device_setup_for_decode(ist, dp);
+    ret = hw_device_setup_for_decode(ist, dp, o->hwaccel_device);
     if (ret < 0) {
         av_log(dp, AV_LOG_ERROR,
                "Hardware device setup failed for decoder: %s\n",

@@ -72,6 +72,8 @@ typedef struct DemuxStream {
 
     const AVCodecDescriptor *codec_desc;
 
+    DecoderOpts              dec_opts;
+
     AVBSFContext *bsf;
 
     /* number of packets successfully read for this stream */
@@ -823,7 +825,7 @@ static void ist_free(InputStream **pist)
     av_dict_free(&ist->decoder_opts);
     av_freep(&ist->filters);
     av_freep(&ist->outputs);
-    av_freep(&ist->hwaccel_device);
+    av_freep(&ds->dec_opts.hwaccel_device);
 
     avcodec_parameters_free(&ist->par);
 
@@ -905,7 +907,7 @@ static int ist_use(InputStream *ist, int decoding_needed)
             return ret;
 
         ret = dec_open(ist, d->sch, ds->sch_idx_dec,
-                       &ist->decoder_opts, dec_flags);
+                       &ist->decoder_opts, dec_flags, &ds->dec_opts);
         if (ret < 0)
             return ret;
 
@@ -1166,25 +1168,25 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
                 "WARNING: defaulting hwaccel_output_format to cuda for compatibility "
                 "with old commandlines. This behaviour is DEPRECATED and will be removed "
                 "in the future. Please explicitly set \"-hwaccel_output_format cuda\".\n");
-            ist->hwaccel_output_format = AV_PIX_FMT_CUDA;
+            ds->dec_opts.hwaccel_output_format = AV_PIX_FMT_CUDA;
         } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "qsv")) {
             av_log(ist, AV_LOG_WARNING,
                 "WARNING: defaulting hwaccel_output_format to qsv for compatibility "
                 "with old commandlines. This behaviour is DEPRECATED and will be removed "
                 "in the future. Please explicitly set \"-hwaccel_output_format qsv\".\n");
-            ist->hwaccel_output_format = AV_PIX_FMT_QSV;
+            ds->dec_opts.hwaccel_output_format = AV_PIX_FMT_QSV;
         } else if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "mediacodec")) {
             // There is no real AVHWFrameContext implementation. Set
             // hwaccel_output_format to avoid av_hwframe_transfer_data error.
-            ist->hwaccel_output_format = AV_PIX_FMT_MEDIACODEC;
+            ds->dec_opts.hwaccel_output_format = AV_PIX_FMT_MEDIACODEC;
         } else if (hwaccel_output_format) {
-            ist->hwaccel_output_format = av_get_pix_fmt(hwaccel_output_format);
-            if (ist->hwaccel_output_format == AV_PIX_FMT_NONE) {
+            ds->dec_opts.hwaccel_output_format = av_get_pix_fmt(hwaccel_output_format);
+            if (ds->dec_opts.hwaccel_output_format == AV_PIX_FMT_NONE) {
                 av_log(ist, AV_LOG_FATAL, "Unrecognised hwaccel output "
                        "format: %s", hwaccel_output_format);
             }
         } else {
-            ist->hwaccel_output_format = AV_PIX_FMT_NONE;
+            ds->dec_opts.hwaccel_output_format = AV_PIX_FMT_NONE;
         }
 
         if (hwaccel) {
@@ -1193,17 +1195,17 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
                 hwaccel = "cuda";
 
             if (!strcmp(hwaccel, "none"))
-                ist->hwaccel_id = HWACCEL_NONE;
+                ds->dec_opts.hwaccel_id = HWACCEL_NONE;
             else if (!strcmp(hwaccel, "auto"))
-                ist->hwaccel_id = HWACCEL_AUTO;
+                ds->dec_opts.hwaccel_id = HWACCEL_AUTO;
             else {
                 enum AVHWDeviceType type = av_hwdevice_find_type_by_name(hwaccel);
                 if (type != AV_HWDEVICE_TYPE_NONE) {
-                    ist->hwaccel_id = HWACCEL_GENERIC;
-                    ist->hwaccel_device_type = type;
+                    ds->dec_opts.hwaccel_id = HWACCEL_GENERIC;
+                    ds->dec_opts.hwaccel_device_type = type;
                 }
 
-                if (!ist->hwaccel_id) {
+                if (!ds->dec_opts.hwaccel_id) {
                     av_log(ist, AV_LOG_FATAL, "Unrecognized hwaccel: %s.\n",
                            hwaccel);
                     av_log(ist, AV_LOG_FATAL, "Supported hwaccels: ");
@@ -1220,14 +1222,14 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 
         MATCH_PER_STREAM_OPT(hwaccel_devices, str, hwaccel_device, ic, st);
         if (hwaccel_device) {
-            ist->hwaccel_device = av_strdup(hwaccel_device);
-            if (!ist->hwaccel_device)
+            ds->dec_opts.hwaccel_device = av_strdup(hwaccel_device);
+            if (!ds->dec_opts.hwaccel_device)
                 return AVERROR(ENOMEM);
         }
     }
 
-    ret = choose_decoder(o, ic, st, ist->hwaccel_id, ist->hwaccel_device_type,
-                         &ist->dec);
+    ret = choose_decoder(o, ic, st, ds->dec_opts.hwaccel_id,
+                         ds->dec_opts.hwaccel_device_type, &ist->dec);
     if (ret < 0)
         return ret;
 

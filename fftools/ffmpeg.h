@@ -286,6 +286,14 @@ enum DecoderFlags {
     DECODER_FLAG_TS_UNRELIABLE    = (1 << 1),
 };
 
+typedef struct DecoderOpts {
+    /* hwaccel options */
+    enum HWAccelID              hwaccel_id;
+    enum AVHWDeviceType         hwaccel_device_type;
+    char                       *hwaccel_device;
+    enum AVPixelFormat          hwaccel_output_format;
+} DecoderOpts;
+
 typedef struct Decoder {
     const AVClass   *class;
 
@@ -351,12 +359,6 @@ typedef struct InputStream {
     int                nb_outputs;
 
     int reinit_filters;
-
-    /* hwaccel options */
-    enum HWAccelID hwaccel_id;
-    enum AVHWDeviceType hwaccel_device_type;
-    char  *hwaccel_device;
-    enum AVPixelFormat hwaccel_output_format;
 } InputStream;
 
 typedef struct InputFile {
@@ -736,7 +738,7 @@ AVBufferRef *hw_device_for_filter(void);
  *                 is transferred to the decoder.
  */
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
-             AVDictionary **dec_opts, int flags);
+             AVDictionary **dec_opts, int flags, const DecoderOpts *o);
 void dec_free(Decoder **pdec);
 
 int dec_add_filter(Decoder *dec, InputFilter *ifilter);
