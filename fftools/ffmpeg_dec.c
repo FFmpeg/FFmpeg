@@ -803,7 +803,8 @@ static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
     }
 }
 
-static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp,
+static int hw_device_setup_for_decode(DecoderPriv *dp,
+                                      const AVCodec *codec,
                                       const char *hwaccel_device)
 {
     const AVCodecHWConfig *config;
@@ -858,7 +859,7 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp,
             if (!dev)
                 err = hw_device_init_from_type(type, NULL, &dev);
         } else {
-            dev = hw_device_match_by_codec(ist->dec);
+            dev = hw_device_match_by_codec(codec);
             if (!dev) {
                 // No device for this codec, but not using generic hwaccel
                 // and therefore may well not need one - ignore.
@@ -869,12 +870,12 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp,
 
     if (auto_device) {
         int i;
-        if (!avcodec_get_hw_config(ist->dec, 0)) {
+        if (!avcodec_get_hw_config(codec, 0)) {
             // Decoder does not support any hardware devices.
             return 0;
         }
         for (i = 0; !dev; i++) {
-            config = avcodec_get_hw_config(ist->dec, i);
+            config = avcodec_get_hw_config(codec, i);
             if (!config)
                 break;
             type = config->device_type;
@@ -886,7 +887,7 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp,
             }
         }
         for (i = 0; !dev; i++) {
-            config = avcodec_get_hw_config(ist->dec, i);
+            config = avcodec_get_hw_config(codec, i);
             if (!config)
                 break;
             type = config->device_type;
@@ -921,7 +922,7 @@ static int hw_device_setup_for_decode(InputStream *ist, DecoderPriv *dp,
     if (!dev) {
         av_log(dp, AV_LOG_ERROR, "No device available "
                "for decoder: device type %s needed for codec %s.\n",
-               av_hwdevice_get_type_name(type), ist->dec->name);
+               av_hwdevice_get_type_name(type), codec->name);
         return err;
     }
 
@@ -1010,7 +1011,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
 
     av_dict_set(dec_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
 
-    ret = hw_device_setup_for_decode(ist, dp, o->hwaccel_device);
+    ret = hw_device_setup_for_decode(dp, codec, o->hwaccel_device);
     if (ret < 0) {
         av_log(dp, AV_LOG_ERROR,
                "Hardware device setup failed for decoder: %s\n",
