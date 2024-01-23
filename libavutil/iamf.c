@@ -64,7 +64,7 @@ child_type *av_iamf_ ## parent_name ## _add_ ## child_name(parent_type *parent_n
 //
 #define OFFSET(x) offsetof(AVIAMFMixGain, x)
 static const AVOption mix_gain_options[] = {
-    { "subblock_duration", "set subblock_duration", OFFSET(subblock_duration), AV_OPT_TYPE_INT64, {.i64 = 1 }, 1, UINT_MAX, FLAGS },
+    { "subblock_duration", "set subblock_duration", OFFSET(subblock_duration), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, UINT_MAX, FLAGS },
     { "animation_type", "set animation_type", OFFSET(animation_type), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, FLAGS },
     { "start_point_value", "set start_point_value", OFFSET(animation_type), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
     { "end_point_value", "set end_point_value", OFFSET(animation_type), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
@@ -83,7 +83,7 @@ static const AVClass mix_gain_class = {
 #undef OFFSET
 #define OFFSET(x) offsetof(AVIAMFDemixingInfo, x)
 static const AVOption demixing_info_options[] = {
-    { "subblock_duration", "set subblock_duration", OFFSET(subblock_duration), AV_OPT_TYPE_INT64, {.i64 = 1 }, 1, UINT_MAX, FLAGS },
+    { "subblock_duration", "set subblock_duration", OFFSET(subblock_duration), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, UINT_MAX, FLAGS },
     { "dmixp_mode", "set dmixp_mode", OFFSET(dmixp_mode), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 6, FLAGS },
     { NULL },
 };
@@ -98,7 +98,7 @@ static const AVClass demixing_info_class = {
 #undef OFFSET
 #define OFFSET(x) offsetof(AVIAMFReconGain, x)
 static const AVOption recon_gain_options[] = {
-    { "subblock_duration", "set subblock_duration", OFFSET(subblock_duration), AV_OPT_TYPE_INT64, {.i64 = 1 }, 1, UINT_MAX, FLAGS },
+    { "subblock_duration", "set subblock_duration", OFFSET(subblock_duration), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, UINT_MAX, FLAGS },
     { NULL },
 };
 
@@ -112,10 +112,10 @@ static const AVClass recon_gain_class = {
 #undef OFFSET
 #define OFFSET(x) offsetof(AVIAMFParamDefinition, x)
 static const AVOption param_definition_options[] = {
-    { "parameter_id", "set parameter_id", OFFSET(parameter_id), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
-    { "parameter_rate", "set parameter_rate", OFFSET(parameter_rate), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
-    { "duration", "set duration", OFFSET(duration), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
-    { "constant_subblock_duration", "set constant_subblock_duration", OFFSET(constant_subblock_duration), AV_OPT_TYPE_INT64, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
+    { "parameter_id", "set parameter_id", OFFSET(parameter_id), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
+    { "parameter_rate", "set parameter_rate", OFFSET(parameter_rate), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
+    { "duration", "set duration", OFFSET(duration), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
+    { "constant_subblock_duration", "set constant_subblock_duration", OFFSET(constant_subblock_duration), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, UINT_MAX, FLAGS },
     { NULL },
 };
 
