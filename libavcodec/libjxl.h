@@ -27,19 +27,8 @@
 #ifndef AVCODEC_LIBJXL_H
 #define AVCODEC_LIBJXL_H
 
-#include <jxl/decode.h>
 #include <jxl/memory_manager.h>
-
-/*
- * libjxl version 0.7.0 and earlier doesn't contain these macros at all
- * so to detect version 0.7.0 versus 0.8.0 we need to define them ourselves
- */
-#ifndef JPEGXL_COMPUTE_NUMERIC_VERSION
-    #define JPEGXL_COMPUTE_NUMERIC_VERSION(major,minor,patch) ((major<<24) | (minor<<16) | (patch<<8) | 0)
-#endif
-#ifndef JPEGXL_NUMERIC_VERSION
-    #define JPEGXL_NUMERIC_VERSION JPEGXL_COMPUTE_NUMERIC_VERSION(0, 7, 0)
-#endif
+#include <jxl/version.h>
 
 /**
  * Transform threadcount in ffmpeg to one used by libjxl.
