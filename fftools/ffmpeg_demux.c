@@ -905,7 +905,11 @@ static int ist_use(InputStream *ist, int decoding_needed)
             return ret;
 
         ds->dec_opts.flags = (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
-                             (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE);
+                             (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE)
+#if FFMPEG_OPT_TOP
+                             | ((ist->top_field_first >= 0) * DECODER_FLAG_TOP_FIELD_FIRST)
+#endif
+                             ;
 
         if (ist->framerate.num) {
             ds->dec_opts.flags     |= DECODER_FLAG_FRAMERATE_FORCED;

@@ -287,6 +287,9 @@ enum DecoderFlags {
     // decoder should override timestamps by fixed framerate
     // from DecoderOpts.framerate
     DECODER_FLAG_FRAMERATE_FORCED = (1 << 2),
+#if FFMPEG_OPT_TOP
+    DECODER_FLAG_TOP_FIELD_FIRST  = (1 << 3),
+#endif
 };
 
 typedef struct DecoderOpts {

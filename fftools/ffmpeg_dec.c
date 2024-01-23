@@ -318,7 +318,7 @@ static int video_frame_process(InputStream *ist, AVFrame *frame)
     DecoderPriv *dp = dp_from_dec(ist->decoder);
 
 #if FFMPEG_OPT_TOP
-    if(ist->top_field_first>=0) {
+    if (dp->flags & DECODER_FLAG_TOP_FIELD_FIRST) {
         av_log(dp, AV_LOG_WARNING, "-top is deprecated, use the setfield filter instead\n");
         frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
