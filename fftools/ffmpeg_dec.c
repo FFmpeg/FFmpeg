@@ -110,7 +110,7 @@ void dec_free(Decoder **pdec)
     av_freep(pdec);
 }
 
-static int dec_alloc(Decoder **pdec)
+static int dec_alloc(DecoderPriv **pdec)
 {
     DecoderPriv *dp;
 
@@ -133,7 +133,7 @@ static int dec_alloc(Decoder **pdec)
     dp->last_frame_tb                = (AVRational){ 1, 1 };
     dp->hwaccel_pix_fmt              = AV_PIX_FMT_NONE;
 
-    *pdec = &dp->dec;
+    *pdec = dp;
 
     return 0;
 fail:
@@ -940,24 +940,25 @@ static const AVClass dec_class = {
     .item_name                 = dec_item_name,
 };
 
-int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
+int dec_open(Decoder **pdec, Scheduler *sch, unsigned sch_idx,
              AVDictionary **dec_opts, const DecoderOpts *o)
 {
     DecoderPriv *dp;
     const AVCodec *codec = o->codec;
     int ret;
 
-    ret = dec_alloc(&ist->decoder);
+    *pdec = NULL;
+
+    ret = dec_alloc(&dp);
     if (ret < 0)
         return ret;
-    dp = dp_from_dec(ist->decoder);
 
     dp->sch     = sch;
     dp->sch_idx = sch_idx;
 
     dp->flags      = o->flags;
     dp->dec.class  = &dec_class;
-    dp->log_parent = ist;
+    dp->log_parent = o->log_parent;
 
     dp->framerate_in            = o->framerate;
 
@@ -968,31 +969,39 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     snprintf(dp->log_name, sizeof(dp->log_name), "dec:%s", codec->name);
 
     dp->parent_name = av_strdup(o->name ? o->name : "");
-    if (!dp->parent_name)
-        return AVERROR(ENOMEM);
+    if (!dp->parent_name) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     if (codec->type == AVMEDIA_TYPE_SUBTITLE &&
         (dp->flags & DECODER_FLAG_FIX_SUB_DURATION)) {
         for (int i = 0; i < FF_ARRAY_ELEMS(dp->sub_prev); i++) {
             dp->sub_prev[i] = av_frame_alloc();
-            if (!dp->sub_prev[i])
-                return AVERROR(ENOMEM);
+            if (!dp->sub_prev[i]) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         }
         dp->sub_heartbeat = av_frame_alloc();
-        if (!dp->sub_heartbeat)
-            return AVERROR(ENOMEM);
+        if (!dp->sub_heartbeat) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
 
     dp->sar_override = o->par->sample_aspect_ratio;
 
     dp->dec_ctx = avcodec_alloc_context3(codec);
-    if (!dp->dec_ctx)
-        return AVERROR(ENOMEM);
+    if (!dp->dec_ctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     ret = avcodec_parameters_to_context(dp->dec_ctx, o->par);
     if (ret < 0) {
         av_log(dp, AV_LOG_ERROR, "Error initializing the decoder context.\n");
-        return ret;
+        goto fail;
     }
 
     dp->dec_ctx->opaque                = dp;
@@ -1009,23 +1018,28 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
         av_log(dp, AV_LOG_ERROR,
                "Hardware device setup failed for decoder: %s\n",
                av_err2str(ret));
-        return ret;
+        goto fail;
     }
 
     if ((ret = avcodec_open2(dp->dec_ctx, codec, dec_opts)) < 0) {
         av_log(dp, AV_LOG_ERROR, "Error while opening decoder: %s\n",
                av_err2str(ret));
-        return ret;
+        goto fail;
     }
 
     ret = check_avoptions(*dec_opts);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     dp->dec.subtitle_header      = dp->dec_ctx->subtitle_header;
     dp->dec.subtitle_header_size = dp->dec_ctx->subtitle_header_size;
 
+    *pdec = &dp->dec;
+
     return 0;
+fail:
+    dec_free((Decoder**)&dp);
+    return ret;
 }
 
 int dec_add_filter(Decoder *dec, InputFilter *ifilter)

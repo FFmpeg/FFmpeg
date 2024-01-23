@@ -296,6 +296,7 @@ typedef struct DecoderOpts {
     int                         flags;
 
     char                       *name;
+    void                       *log_parent;
 
     const AVCodec              *codec;
     const AVCodecParameters    *par;
@@ -756,7 +757,7 @@ AVBufferRef *hw_device_for_filter(void);
  * @param dec_opts Dictionary filled with decoder options. Its ownership
  *                 is transferred to the decoder.
  */
-int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
+int dec_open(Decoder **pdec, Scheduler *sch, unsigned sch_idx,
              AVDictionary **dec_opts, const DecoderOpts *o);
 void dec_free(Decoder **pdec);
 
