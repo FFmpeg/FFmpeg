@@ -287,6 +287,8 @@ enum DecoderFlags {
 };
 
 typedef struct DecoderOpts {
+    int                         flags;
+
     /* hwaccel options */
     enum HWAccelID              hwaccel_id;
     enum AVHWDeviceType         hwaccel_device_type;
@@ -738,7 +740,7 @@ AVBufferRef *hw_device_for_filter(void);
  *                 is transferred to the decoder.
  */
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
-             AVDictionary **dec_opts, int flags, const DecoderOpts *o);
+             AVDictionary **dec_opts, const DecoderOpts *o);
 void dec_free(Decoder **pdec);
 
 int dec_add_filter(Decoder *dec, InputFilter *ifilter);

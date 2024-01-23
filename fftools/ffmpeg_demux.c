@@ -893,8 +893,6 @@ static int ist_use(InputStream *ist, int decoding_needed)
 
     if (decoding_needed && ds->sch_idx_dec < 0) {
         int is_audio = ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
-        int dec_flags = (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
-                        (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE);
 
         ret = sch_add_dec(d->sch, decoder_thread, ist, d->loop && is_audio);
         if (ret < 0)
@@ -906,8 +904,11 @@ static int ist_use(InputStream *ist, int decoding_needed)
         if (ret < 0)
             return ret;
 
+        ds->dec_opts.flags = (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
+                             (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE);
+
         ret = dec_open(ist, d->sch, ds->sch_idx_dec,
-                       &ist->decoder_opts, dec_flags, &ds->dec_opts);
+                       &ist->decoder_opts, &ds->dec_opts);
         if (ret < 0)
             return ret;
 

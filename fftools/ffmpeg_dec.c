@@ -943,7 +943,7 @@ static const AVClass dec_class = {
 };
 
 int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
-             AVDictionary **dec_opts, int flags, const DecoderOpts *o)
+             AVDictionary **dec_opts, const DecoderOpts *o)
 {
     DecoderPriv *dp;
     const AVCodec *codec = ist->dec;
@@ -957,7 +957,7 @@ int dec_open(InputStream *ist, Scheduler *sch, unsigned sch_idx,
     dp->sch     = sch;
     dp->sch_idx = sch_idx;
 
-    dp->flags      = flags;
+    dp->flags      = o->flags;
     dp->dec.class  = &dec_class;
     dp->log_parent = ist;
 
