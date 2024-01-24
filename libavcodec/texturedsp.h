@@ -39,8 +39,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "avcodec.h"
-
 #define TEXTURE_BLOCK_W 4
 #define TEXTURE_BLOCK_H 4
 
@@ -89,7 +87,10 @@ typedef struct TextureDSPThreadContext {
 void ff_texturedsp_init(TextureDSPContext *c);
 void ff_texturedspenc_init(TextureDSPEncContext *c);
 
-int ff_texturedsp_decompress_thread(AVCodecContext *avctx, void *arg, int slice, int thread_nb);
-int ff_texturedsp_compress_thread(AVCodecContext *avctx, void *arg, int slice, int thread_nb);
+struct AVCodecContext;
+int ff_texturedsp_exec_decompress_threads(struct AVCodecContext *avctx,
+                                          TextureDSPThreadContext *ctx);
+int ff_texturedsp_exec_compress_threads(struct AVCodecContext *avctx,
+                                        TextureDSPThreadContext *ctx);
 
 #endif /* AVCODEC_TEXTUREDSP_H */

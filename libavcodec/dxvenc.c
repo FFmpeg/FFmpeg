@@ -236,7 +236,7 @@ static int dxv_encode(AVCodecContext *avctx, AVPacket *pkt,
         ctx->enc.tex_data.out = ctx->tex_data;
         ctx->enc.frame_data.in = frame->data[0];
         ctx->enc.stride = frame->linesize[0];
-        avctx->execute2(avctx, ff_texturedsp_compress_thread, &ctx->enc, NULL, ctx->enc.slice_count);
+        ff_texturedsp_exec_compress_threads(avctx, &ctx->enc);
     } else {
         /* unimplemented: YCoCg formats */
         return AVERROR_INVALIDDATA;

@@ -63,7 +63,7 @@ static int compress_texture(AVCodecContext *avctx, uint8_t *out, int out_length,
     ctx->enc.tex_data.out = out;
     ctx->enc.frame_data.in = f->data[0];
     ctx->enc.stride = f->linesize[0];
-    avctx->execute2(avctx, ff_texturedsp_compress_thread, &ctx->enc, NULL, ctx->enc.slice_count);
+    ff_texturedsp_exec_compress_threads(avctx, &ctx->enc);
 
     return 0;
 }

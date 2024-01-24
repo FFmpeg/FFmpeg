@@ -654,6 +654,6 @@ av_cold void ff_texturedspenc_init(TextureDSPEncContext *c)
     c->dxt5ys_block       = dxt5ys_block;
 }
 
-#define TEXTUREDSP_FUNC_NAME ff_texturedsp_compress_thread
+#define TEXTUREDSP_FUNC_NAME ff_texturedsp_exec_compress_threads
 #define TEXTUREDSP_TEX_FUNC(a, b, c) tex_funct(c, b, a)
 #include "texturedsp_template.c"

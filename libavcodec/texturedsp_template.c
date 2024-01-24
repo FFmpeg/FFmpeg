@@ -20,10 +20,12 @@
  *
  */
 
-int TEXTUREDSP_FUNC_NAME(AVCodecContext *avctx, void *arg,
-                         int slice, int thread_nb)
+#include "avcodec.h"
+
+static int exec_func(AVCodecContext *avctx, void *arg,
+                     int slice, int thread_nb)
 {
-    TextureDSPThreadContext *ctx = arg;
+    const TextureDSPThreadContext *ctx = arg;
     uint8_t *d = ctx->tex_data.out;
     int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
     int h_block = avctx->coded_height / TEXTURE_BLOCK_H;
@@ -54,4 +56,9 @@ int TEXTUREDSP_FUNC_NAME(AVCodecContext *avctx, void *arg,
     }
 
     return 0;
+}
+
+int TEXTUREDSP_FUNC_NAME(AVCodecContext *avctx, TextureDSPThreadContext *ctx)
+{
+    return avctx->execute2(avctx, exec_func, ctx, NULL, ctx->slice_count);
 }

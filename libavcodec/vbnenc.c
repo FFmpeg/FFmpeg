@@ -114,7 +114,7 @@ static int vbn_encode(AVCodecContext *avctx, AVPacket *pkt,
         ctx->enc.frame_data.in = (frame->height - 1) * frame->linesize[0] + frame->data[0];
         ctx->enc.stride = -frame->linesize[0];
         ctx->enc.tex_data.out = pkt->data + VBN_HEADER_SIZE;
-        avctx->execute2(avctx, ff_texturedsp_compress_thread, &ctx->enc, NULL, ctx->enc.slice_count);
+        ff_texturedsp_exec_compress_threads(avctx, &ctx->enc);
     } else {
         const uint8_t *flipped = frame->data[0] + frame->linesize[0] * (frame->height - 1);
         av_image_copy_plane(pkt->data + VBN_HEADER_SIZE, linesize, flipped, -frame->linesize[0], linesize, frame->height);
