@@ -1046,7 +1046,6 @@ static int sb_temporal_luma_motion_data(const VVCLocalContext *lc, const MvField
 
     colPic  = ref->poc;
 
-    AV_ZERO64(temp_mv);
     if (a1) {
         if ((a1->pred_flag & PF_L0) && colPic == rpl[0].list[a1->ref_idx[0]])
             *temp_mv = a1->mv[0];
