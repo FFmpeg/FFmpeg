@@ -23,9 +23,8 @@
 #ifndef AVCODEC_HAP_H
 #define AVCODEC_HAP_H
 
+#include <stddef.h>
 #include <stdint.h>
-
-#include "libavutil/opt.h"
 
 #include "bytestream.h"
 #include "texturedsp.h"
@@ -59,7 +58,7 @@ typedef struct HapChunk {
 } HapChunk;
 
 typedef struct HapContext {
-    AVClass *class;
+    const struct AVClass *class;
 
     GetByteContext gbc;
 

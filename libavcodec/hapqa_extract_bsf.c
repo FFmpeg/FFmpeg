@@ -30,6 +30,8 @@
 #include "bytestream.h"
 #include "hap.h"
 
+#include "libavutil/opt.h"
+
 typedef struct HapqaExtractContext {
     const AVClass *class;
     int texture;/* index of the texture to keep (0 for rgb or 1 for alpha) */
