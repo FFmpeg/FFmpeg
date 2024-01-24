@@ -2871,6 +2871,12 @@ static void *filter_thread(void *arg)
             ret = send_eof(&fgt, ifilter, fgt.frame->pts, fgt.frame->time_base);
         }
         av_frame_unref(fgt.frame);
+        if (ret == AVERROR_EOF) {
+            av_log(fg, AV_LOG_VERBOSE, "Input %u no longer accepts new data\n",
+                   input_idx);
+            sch_filter_receive_finish(fgp->sch, fgp->sch_idx, input_idx);
+            continue;
+        }
         if (ret < 0)
             goto finish;
 
