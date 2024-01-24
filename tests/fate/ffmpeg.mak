@@ -261,3 +261,13 @@ FATE_SAMPLES_FFMPEG-$(call ENCDEC, PCM_S16LE TTA, NULL MATROSKA) += fate-ffmpeg-
 # use -stream_loop, because it tests flushing bsfs
 fate-ffmpeg-bsf-input: CMD = framecrc -stream_loop 2 -bsf setts=PTS*2 -i $(TARGET_SAMPLES)/hevc/extradata-reload-multi-stsd.mov -c copy
 FATE_SAMPLES_FFMPEG-$(call FRAMECRC, MOV, , SETTS_BSF) += fate-ffmpeg-bsf-input
+
+# Test behaviour when a complex filtergraph returns EOF on one of its inputs,
+# but other inputs are still active.
+# cf. #10803
+fate-ffmpeg-filter-in-eof: tests/data/vsynth_lena.yuv
+fate-ffmpeg-filter-in-eof: CMD = framecrc                                                      \
+    -f rawvideo -s 352x288 -pix_fmt yuv420p -t 1 -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv  \
+    -f rawvideo -s 352x288 -pix_fmt yuv420p -t 1 -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv  \
+    -filter_complex "[0][1]concat" -c:v rawvideo
+FATE_FFMPEG-$(call FRAMECRC, RAWVIDEO, RAWVIDEO, CONCAT_FILTER) += fate-ffmpeg-filter-in-eof
