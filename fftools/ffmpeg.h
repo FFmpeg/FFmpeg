@@ -337,9 +337,6 @@ typedef struct InputStream {
 
     AVStream *st;
     int user_set_discard;
-    int decoding_needed;     /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
-#define DECODING_FOR_OST    1
-#define DECODING_FOR_FILTER 2
 
     /**
      * Codec parameters - to be used by the decoding/streamcopy code.

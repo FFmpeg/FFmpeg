@@ -50,6 +50,11 @@ typedef struct DemuxStream {
 
     double ts_scale;
 
+    /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
+    int decoding_needed;
+#define DECODING_FOR_OST    1
+#define DECODING_FOR_FILTER 2
+
     /* true if stream data should be discarded */
     int discard;
 
@@ -796,7 +801,7 @@ static void demux_final_stats(Demuxer *d)
         av_log(f, AV_LOG_VERBOSE, "%"PRIu64" packets read (%"PRIu64" bytes); ",
                ds->nb_packets, ds->data_size);
 
-        if (ist->decoding_needed) {
+        if (ds->decoding_needed) {
             av_log(f, AV_LOG_VERBOSE,
                    "%"PRIu64" frames decoded; %"PRIu64" decode errors",
                    ist->decoder->frames_decoded, ist->decoder->decode_errors);
@@ -889,7 +894,7 @@ static int ist_use(InputStream *ist, int decoding_needed)
     }
 
     ist->st->discard      = ist->user_set_discard;
-    ist->decoding_needed |= decoding_needed;
+    ds->decoding_needed   |= decoding_needed;
     ds->streamcopy_needed |= !decoding_needed;
 
     if (decoding_needed && ds->sch_idx_dec < 0) {
@@ -910,9 +915,9 @@ static int ist_use(InputStream *ist, int decoding_needed)
             ds->dec_opts.framerate  = ist->st->avg_frame_rate;
 
         if (ist->dec->id == AV_CODEC_ID_DVB_SUBTITLE &&
-           (ist->decoding_needed & DECODING_FOR_OST)) {
+           (ds->decoding_needed & DECODING_FOR_OST)) {
             av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
-            if (ist->decoding_needed & DECODING_FOR_FILTER)
+            if (ds->decoding_needed & DECODING_FOR_FILTER)
                 av_log(ist, AV_LOG_WARNING,
                        "Warning using DVB subtitles for filtering and output at the "
                        "same time is not fully supported, also see -compute_edt [0|1]\n");
