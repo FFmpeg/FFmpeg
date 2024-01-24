@@ -113,7 +113,7 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
     AVD3D12VAFramesContext  *frames_hwctx = frames_ctx->hwctx;
     const AV1DecContext     *h            = avctx->priv_data;
     AV1DecodePictureContext *ctx_pic      = h->cur_frame.hwaccel_picture_private;
-    uint8_t *mapped_data;
+    void *mapped_data;
 
     D3D12_VIDEO_DECODE_FRAME_ARGUMENT *args = &input_args->FrameArguments[input_args->NumFrameArguments++];
     args->Type  = D3D12_VIDEO_DECODE_ARGUMENT_TYPE_SLICE_CONTROL;
