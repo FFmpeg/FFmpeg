@@ -130,25 +130,6 @@ typedef struct DXVEncContext {
     HTEntry lut_lookback_ht[LOOKBACK_HT_ELEMS];
 } DXVEncContext;
 
-static int compress_texture_thread(AVCodecContext *avctx, void *arg,
-                                   int slice, int thread_nb)
-{
-    DXVEncContext *ctx = avctx->priv_data;
-    AVFrame *frame = arg;
-
-    if (ctx->enc.tex_funct) {
-        ctx->enc.tex_data.out = ctx->tex_data;
-        ctx->enc.frame_data.in = frame->data[0];
-        ctx->enc.stride = frame->linesize[0];
-        return ff_texturedsp_compress_thread(avctx, &ctx->enc, slice, thread_nb);
-    } else {
-        /* unimplemented: YCoCg formats */
-        return AVERROR_INVALIDDATA;
-    }
-
-    return 0;
-}
-
 /* Converts an index offset value to a 2-bit opcode and pushes it to a stream.
  * Inverse of CHECKPOINT in dxv.c.  */
 #define PUSH_OP(x)                                                            \
@@ -252,7 +233,15 @@ static int dxv_encode(AVCodecContext *avctx, AVPacket *pkt,
     if (ret < 0)
         return ret;
 
-    avctx->execute2(avctx, compress_texture_thread, (void*)frame, NULL, ctx->enc.slice_count);
+    if (ctx->enc.tex_funct) {
+        ctx->enc.tex_data.out = ctx->tex_data;
+        ctx->enc.frame_data.in = frame->data[0];
+        ctx->enc.stride = frame->linesize[0];
+        avctx->execute2(avctx, ff_texturedsp_compress_thread, &ctx->enc, NULL, ctx->enc.slice_count);
+    } else {
+        /* unimplemented: YCoCg formats */
+        return AVERROR_INVALIDDATA;
+    }
 
     bytestream2_init_writer(pbc, pkt->data, pkt->size);
 
