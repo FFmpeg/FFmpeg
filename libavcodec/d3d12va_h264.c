@@ -104,10 +104,6 @@ static int d3d12va_h264_decode_slice(AVCodecContext *avctx, const uint8_t *buffe
 #define START_CODE_SIZE 3
 static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *input_args, ID3D12Resource *buffer)
 {
-    D3D12VADecodeContext     *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
-    AVHWFramesContext        *frames_ctx   = D3D12VA_FRAMES_CONTEXT(avctx);
-    AVD3D12VAFramesContext   *frames_hwctx = frames_ctx->hwctx;
-
     const H264Context        *h               = avctx->priv_data;
     const H264Picture        *current_picture = h->cur_pic_ptr;
     H264DecodePictureContext *ctx_pic         = current_picture->hwaccel_picture_private;

@@ -266,7 +266,6 @@ fail:
 int ff_d3d12va_common_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
 {
     AVHWFramesContext      *frames_ctx   = (AVHWFramesContext *)hw_frames_ctx->data;
-    AVHWDeviceContext      *device_ctx   = frames_ctx->device_ctx;
 
     frames_ctx->format    = AV_PIX_FMT_D3D12;
     frames_ctx->sw_format = avctx->sw_pix_fmt == AV_PIX_FMT_YUV420P10 ? AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
@@ -408,8 +407,6 @@ static inline int d3d12va_update_reference_frames_state(AVCodecContext *avctx, D
                                                         ID3D12Resource *current_resource, int state_before, int state_end)
 {
     D3D12VADecodeContext   *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
-    AVHWFramesContext      *frames_ctx   = D3D12VA_FRAMES_CONTEXT(avctx);
-    AVD3D12VAFramesContext *frames_hwctx = frames_ctx->hwctx;
 
     int num_barrier = 0;
     for (int i = 0; i < ctx->max_num_ref; i++) {
@@ -436,8 +433,6 @@ int ff_d3d12va_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 {
     int ret;
     D3D12VADecodeContext   *ctx               = D3D12VA_DECODE_CONTEXT(avctx);
-    AVHWFramesContext      *frames_ctx        = D3D12VA_FRAMES_CONTEXT(avctx);
-    AVD3D12VAFramesContext *frames_hwctx      = frames_ctx->hwctx;
     ID3D12Resource         *buffer            = NULL;
     ID3D12CommandAllocator *command_allocator = NULL;
     AVD3D12VAFrame         *f                 = (AVD3D12VAFrame *)frame->data[0];

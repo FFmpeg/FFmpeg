@@ -98,10 +98,6 @@ static int d3d12va_hevc_decode_slice(AVCodecContext *avctx, const uint8_t *buffe
 #define START_CODE_SIZE 3
 static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *input_args, ID3D12Resource *buffer)
 {
-    D3D12VADecodeContext   *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
-    AVHWFramesContext      *frames_ctx   = D3D12VA_FRAMES_CONTEXT(avctx);
-    AVD3D12VAFramesContext *frames_hwctx = frames_ctx->hwctx;
-
     const HEVCContext        *h               = avctx->priv_data;
     const HEVCFrame          *current_picture = h->ref;
     HEVCDecodePictureContext *ctx_pic         = current_picture->hwaccel_picture_private;
@@ -166,7 +162,6 @@ static int d3d12va_hevc_end_frame(AVCodecContext *avctx)
 
 static int d3d12va_hevc_decode_init(AVCodecContext *avctx)
 {
-    HEVCContext          *h   = avctx->priv_data;
     D3D12VADecodeContext *ctx = D3D12VA_DECODE_CONTEXT(avctx);
     DXVA_PicParams_HEVC pp;
 

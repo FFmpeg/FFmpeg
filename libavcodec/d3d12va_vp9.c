@@ -85,10 +85,6 @@ static int d3d12va_vp9_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
 
 static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *input_args, ID3D12Resource *buffer)
 {
-    D3D12VADecodeContext   *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
-    AVHWFramesContext      *frames_ctx   = D3D12VA_FRAMES_CONTEXT(avctx);
-    AVD3D12VAFramesContext *frames_hwctx = frames_ctx->hwctx;
-
     const VP9SharedContext  *h       = avctx->priv_data;
     VP9DecodePictureContext *ctx_pic = h->frames[CUR_FRAME].hwaccel_picture_private;
 
