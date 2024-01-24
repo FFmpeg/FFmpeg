@@ -367,12 +367,12 @@ static void derive_subblock_diff_mvs(const VVCLocalContext *lc, PredictionUnit* 
         const int pos_offset_y = 6 * (sp->d_ver_x + sp->d_ver_y);
         for (int x = 0; x < AFFINE_MIN_BLOCK_SIZE; x++) {
             for (int y = 0; y < AFFINE_MIN_BLOCK_SIZE; y++) {
-                Mv diff;
-                diff.x = x * (sp->d_hor_x * (1 << 2)) + y * (sp->d_hor_y * (1 << 2)) - pos_offset_x;
-                diff.y = x * (sp->d_ver_x * (1 << 2)) + y * (sp->d_ver_y * (1 << 2)) - pos_offset_y;
-                ff_vvc_round_mv(&diff, 0, 8);
-                pu->diff_mv_x[lx][AFFINE_MIN_BLOCK_SIZE * y + x] = av_clip(diff.x, -dmv_limit + 1, dmv_limit - 1);
-                pu->diff_mv_y[lx][AFFINE_MIN_BLOCK_SIZE * y + x] = av_clip(diff.y, -dmv_limit + 1, dmv_limit - 1);
+                LOCAL_ALIGNED_8(Mv, diff, [1]);
+                diff->x = x * (sp->d_hor_x * (1 << 2)) + y * (sp->d_hor_y * (1 << 2)) - pos_offset_x;
+                diff->y = x * (sp->d_ver_x * (1 << 2)) + y * (sp->d_ver_y * (1 << 2)) - pos_offset_y;
+                ff_vvc_round_mv(diff, 0, 8);
+                pu->diff_mv_x[lx][AFFINE_MIN_BLOCK_SIZE * y + x] = av_clip(diff->x, -dmv_limit + 1, dmv_limit - 1);
+                pu->diff_mv_y[lx][AFFINE_MIN_BLOCK_SIZE * y + x] = av_clip(diff->y, -dmv_limit + 1, dmv_limit - 1);
             }
         }
     }
@@ -1074,7 +1074,7 @@ static int sb_temporal_merge_candidate(const VVCLocalContext* lc, NeighbourConte
     const NeighbourIdx n        = A1;
     const MvField *a1;
     MvField ctr_mvf;
-    Mv temp_mv;
+    LOCAL_ALIGNED_8(Mv, temp_mv, [1]);
     const int x_ctb = (x0 >> ctb_log2_size) << ctb_log2_size;
     const int y_ctb = (y0 >> ctb_log2_size) << ctb_log2_size;
 
@@ -1088,7 +1088,7 @@ static int sb_temporal_merge_candidate(const VVCLocalContext* lc, NeighbourConte
     mi->num_sb_y = cu->cb_height >> 3;
 
     a1 = derive_corner_mvf(nctx, &n, 1);
-    if (sb_temporal_luma_motion_data(lc, a1, x_ctb, y_ctb, &ctr_mvf, &temp_mv)) {
+    if (sb_temporal_luma_motion_data(lc, a1, x_ctb, y_ctb, &ctr_mvf, temp_mv)) {
         const int sbw = cu->cb_width / mi->num_sb_x;
         const int sbh = cu->cb_height / mi->num_sb_y;
         MvField mvf = {0};
@@ -1096,7 +1096,7 @@ static int sb_temporal_merge_candidate(const VVCLocalContext* lc, NeighbourConte
             for (int sbx = 0; sbx < mi->num_sb_x; sbx++) {
                 int x = x0 + sbx * sbw;
                 int y = y0 + sby * sbh;
-                sb_temproal_luma_motion(lc, x_ctb, y_ctb, &temp_mv, x + sbw / 2, y +  sbh / 2, &mvf.pred_flag, mvf.mv);
+                sb_temproal_luma_motion(lc, x_ctb, y_ctb, temp_mv, x + sbw / 2, y +  sbh / 2, &mvf.pred_flag, mvf.mv);
                 if (!mvf.pred_flag) {
                     mvf.pred_flag = ctr_mvf.pred_flag;
                     memcpy(mvf.mv, ctr_mvf.mv, sizeof(mvf.mv));
@@ -1497,7 +1497,7 @@ static int mvp_spatial_candidates(const VVCLocalContext *lc,
     const NeighbourIdx bk[] = { B0, B1, B2 };
     NeighbourContext nctx;
     int available_a, num_cands = 0;
-    Mv  mv_a;
+    LOCAL_ALIGNED_8(Mv, mv_a, [1]);
 
     init_neighbour_context(&nctx, lc);
 
@@ -1506,10 +1506,10 @@ static int mvp_spatial_candidates(const VVCLocalContext *lc,
         if (mvp_lx_flag == num_cands)
             return 1;
         num_cands++;
-        mv_a = *mv;
+        *mv_a = *mv;
     }
     if (MVP_FROM_NBS(bk)) {
-        if (!available_a || !IS_SAME_MV(&mv_a, mv)) {
+        if (!available_a || !IS_SAME_MV(mv_a, mv)) {
             if (mvp_lx_flag == num_cands)
                 return 1;
             num_cands++;
