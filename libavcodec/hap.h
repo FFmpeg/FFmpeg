@@ -61,7 +61,6 @@ typedef struct HapChunk {
 typedef struct HapContext {
     AVClass *class;
 
-    TextureDSPContext dxtc;
     GetByteContext gbc;
 
     enum HapTextureFormat opt_tex_fmt; /* Texture type (encoder only) */

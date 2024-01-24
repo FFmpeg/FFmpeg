@@ -337,6 +337,7 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
 static av_cold int hap_init(AVCodecContext *avctx)
 {
     HapContext *ctx = avctx->priv_data;
+    TextureDSPContext dxtc;
     const char *texture_name;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
 
@@ -350,7 +351,7 @@ static av_cold int hap_init(AVCodecContext *avctx)
     avctx->coded_width  = FFALIGN(avctx->width,  TEXTURE_BLOCK_W);
     avctx->coded_height = FFALIGN(avctx->height, TEXTURE_BLOCK_H);
 
-    ff_texturedsp_init(&ctx->dxtc);
+    ff_texturedsp_init(&dxtc);
 
     ctx->texture_count  = 1;
     ctx->dec[0].raw_ratio = 16;
@@ -361,25 +362,25 @@ static av_cold int hap_init(AVCodecContext *avctx)
     case MKTAG('H','a','p','1'):
         texture_name = "DXT1";
         ctx->dec[0].tex_ratio = 8;
-        ctx->dec[0].tex_funct = ctx->dxtc.dxt1_block;
+        ctx->dec[0].tex_funct = dxtc.dxt1_block;
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
         break;
     case MKTAG('H','a','p','5'):
         texture_name = "DXT5";
         ctx->dec[0].tex_ratio = 16;
-        ctx->dec[0].tex_funct = ctx->dxtc.dxt5_block;
+        ctx->dec[0].tex_funct = dxtc.dxt5_block;
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
         break;
     case MKTAG('H','a','p','Y'):
         texture_name = "DXT5-YCoCg-scaled";
         ctx->dec[0].tex_ratio = 16;
-        ctx->dec[0].tex_funct = ctx->dxtc.dxt5ys_block;
+        ctx->dec[0].tex_funct = dxtc.dxt5ys_block;
         avctx->pix_fmt = AV_PIX_FMT_RGB0;
         break;
     case MKTAG('H','a','p','A'):
         texture_name = "RGTC1";
         ctx->dec[0].tex_ratio = 8;
-        ctx->dec[0].tex_funct = ctx->dxtc.rgtc1u_gray_block;
+        ctx->dec[0].tex_funct = dxtc.rgtc1u_gray_block;
         ctx->dec[0].raw_ratio = 4;
         avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         break;
@@ -387,8 +388,8 @@ static av_cold int hap_init(AVCodecContext *avctx)
         texture_name  = "DXT5-YCoCg-scaled / RGTC1";
         ctx->dec[0].tex_ratio = 16;
         ctx->dec[1].tex_ratio = 8;
-        ctx->dec[0].tex_funct = ctx->dxtc.dxt5ys_block;
-        ctx->dec[1].tex_funct = ctx->dxtc.rgtc1u_alpha_block;
+        ctx->dec[0].tex_funct = dxtc.dxt5ys_block;
+        ctx->dec[1].tex_funct = dxtc.rgtc1u_alpha_block;
         ctx->dec[1].raw_ratio = 16;
         ctx->dec[1].slice_count = ctx->dec[0].slice_count;
         avctx->pix_fmt = AV_PIX_FMT_RGBA;

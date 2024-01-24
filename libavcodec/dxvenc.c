@@ -110,7 +110,6 @@ static void ht_delete(HTEntry *ht, const AVCRC *hash_ctx,
 typedef struct DXVEncContext {
     AVClass *class;
 
-    TextureDSPContext texdsp;
     PutByteContext pbc;
 
     uint8_t *tex_data;   // Compressed texture
@@ -267,6 +266,7 @@ static int dxv_encode(AVCodecContext *avctx, AVPacket *pkt,
 static av_cold int dxv_init(AVCodecContext *avctx)
 {
     DXVEncContext *ctx = avctx->priv_data;
+    TextureDSPContext texdsp;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
 
     if (ret < 0) {
@@ -275,12 +275,12 @@ static av_cold int dxv_init(AVCodecContext *avctx)
         return ret;
     }
 
-    ff_texturedspenc_init(&ctx->texdsp);
+    ff_texturedspenc_init(&texdsp);
 
     switch (ctx->tex_fmt) {
     case DXV_FMT_DXT1:
         ctx->compress_tex = dxv_compress_dxt1;
-        ctx->enc.tex_funct = ctx->texdsp.dxt1_block;
+        ctx->enc.tex_funct = texdsp.dxt1_block;
         ctx->enc.tex_ratio = 8;
         break;
     default:

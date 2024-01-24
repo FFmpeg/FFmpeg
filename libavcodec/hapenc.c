@@ -232,6 +232,7 @@ static int hap_encode(AVCodecContext *avctx, AVPacket *pkt,
 static av_cold int hap_init(AVCodecContext *avctx)
 {
     HapContext *ctx = avctx->priv_data;
+    TextureDSPContext dxtc;
     int corrected_chunk_count;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
 
@@ -247,26 +248,26 @@ static av_cold int hap_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    ff_texturedspenc_init(&ctx->dxtc);
+    ff_texturedspenc_init(&dxtc);
 
     switch (ctx->opt_tex_fmt) {
     case HAP_FMT_RGBDXT1:
         ctx->enc.tex_ratio = 8;
         avctx->codec_tag = MKTAG('H', 'a', 'p', '1');
         avctx->bits_per_coded_sample = 24;
-        ctx->enc.tex_funct = ctx->dxtc.dxt1_block;
+        ctx->enc.tex_funct = dxtc.dxt1_block;
         break;
     case HAP_FMT_RGBADXT5:
         ctx->enc.tex_ratio = 16;
         avctx->codec_tag = MKTAG('H', 'a', 'p', '5');
         avctx->bits_per_coded_sample = 32;
-        ctx->enc.tex_funct = ctx->dxtc.dxt5_block;
+        ctx->enc.tex_funct = dxtc.dxt5_block;
         break;
     case HAP_FMT_YCOCGDXT5:
         ctx->enc.tex_ratio = 16;
         avctx->codec_tag = MKTAG('H', 'a', 'p', 'Y');
         avctx->bits_per_coded_sample = 24;
-        ctx->enc.tex_funct = ctx->dxtc.dxt5ys_block;
+        ctx->enc.tex_funct = dxtc.dxt5ys_block;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid format %02X\n", ctx->opt_tex_fmt);
