@@ -328,35 +328,36 @@ typedef struct Decoder {
 } Decoder;
 
 typedef struct InputStream {
-    const AVClass *class;
+    const AVClass        *class;
 
     /* parent source */
-    struct InputFile *file;
+    struct InputFile     *file;
 
-    int index;
+    int                   index;
 
-    AVStream *st;
-    int user_set_discard;
+    AVStream             *st;
+    int                   user_set_discard;
 
     /**
      * Codec parameters - to be used by the decoding/streamcopy code.
      * st->codecpar should not be accessed, because it may be modified
      * concurrently by the demuxing thread.
      */
-    AVCodecParameters *par;
-    Decoder *decoder;
-    const AVCodec *dec;
+    AVCodecParameters    *par;
+    Decoder              *decoder;
+    const AVCodec        *dec;
 
-    AVRational framerate_guessed;
+    AVRational            framerate_guessed;
 
-    AVRational framerate;               /* framerate forced with -r */
+    /* framerate forced with -r */
+    AVRational            framerate;
 #if FFMPEG_OPT_TOP
-    int top_field_first;
+    int                   top_field_first;
 #endif
 
-    int autorotate;
+    int                   autorotate;
 
-    int fix_sub_duration;
+    int                   fix_sub_duration;
 
     struct sub2video {
         int w, h;
@@ -364,8 +365,8 @@ typedef struct InputStream {
 
     /* decoded data from this stream goes into all those filters
      * currently video and audio only */
-    InputFilter **filters;
-    int        nb_filters;
+    InputFilter         **filters;
+    int                nb_filters;
 
     /*
      * Output targets that do not go through lavfi, i.e. subtitles or
@@ -379,28 +380,29 @@ typedef struct InputStream {
 } InputStream;
 
 typedef struct InputFile {
-    const AVClass *class;
+    const AVClass   *class;
 
-    int index;
+    int              index;
 
     AVFormatContext *ctx;
-    int64_t input_ts_offset;
-    int input_sync_ref;
+    int64_t          input_ts_offset;
+    int              input_sync_ref;
     /**
      * Effective format start time based on enabled streams.
      */
-    int64_t start_time_effective;
-    int64_t ts_offset;
-    int64_t start_time;   /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
-    int64_t recording_time;
+    int64_t          start_time_effective;
+    int64_t          ts_offset;
+    /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
+    int64_t          start_time;
+    int64_t          recording_time;
 
     /* streams that ffmpeg is aware of;
      * there may be extra streams in ctx that are not mapped to an InputStream
      * if new streams appear dynamically during demuxing */
-    InputStream **streams;
-    int        nb_streams;
+    InputStream    **streams;
+    int           nb_streams;
 
-    int accurate_seek;
+    int              accurate_seek;
 } InputFile;
 
 enum forced_keyframes_const {
