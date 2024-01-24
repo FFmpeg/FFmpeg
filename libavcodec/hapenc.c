@@ -232,7 +232,7 @@ static int hap_encode(AVCodecContext *avctx, AVPacket *pkt,
 static av_cold int hap_init(AVCodecContext *avctx)
 {
     HapContext *ctx = avctx->priv_data;
-    TextureDSPContext dxtc;
+    TextureDSPEncContext dxtc;
     int corrected_chunk_count;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
 

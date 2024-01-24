@@ -647,7 +647,7 @@ static int dxt5ys_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
     return 16;
 }
 
-av_cold void ff_texturedspenc_init(TextureDSPContext *c)
+av_cold void ff_texturedspenc_init(TextureDSPEncContext *c)
 {
     c->dxt1_block         = dxt1_block;
     c->dxt5_block         = dxt5_block;

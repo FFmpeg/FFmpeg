@@ -36,7 +36,7 @@
 
 typedef struct VBNContext {
     AVClass *class;
-    TextureDSPContext dxtc;
+    TextureDSPEncContext dxtc;
     int format;
     TextureDSPThreadContext enc;
 } VBNContext;

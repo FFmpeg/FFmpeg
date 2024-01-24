@@ -266,7 +266,7 @@ static int dxv_encode(AVCodecContext *avctx, AVPacket *pkt,
 static av_cold int dxv_init(AVCodecContext *avctx)
 {
     DXVEncContext *ctx = avctx->priv_data;
-    TextureDSPContext texdsp;
+    TextureDSPEncContext texdsp;
     int ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
 
     if (ret < 0) {

@@ -62,6 +62,12 @@ typedef struct TextureDSPContext {
     int (*dxn3dc_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
 } TextureDSPContext;
 
+typedef struct TextureDSPEncContext {
+    int (*dxt1_block)        (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
+    int (*dxt5_block)        (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
+    int (*dxt5ys_block)      (uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
+} TextureDSPEncContext;
+
 typedef struct TextureDSPThreadContext {
     union {
         const uint8_t *in;       // Input frame data
@@ -81,7 +87,7 @@ typedef struct TextureDSPThreadContext {
 } TextureDSPThreadContext;
 
 void ff_texturedsp_init(TextureDSPContext *c);
-void ff_texturedspenc_init(TextureDSPContext *c);
+void ff_texturedspenc_init(TextureDSPEncContext *c);
 
 int ff_texturedsp_decompress_thread(AVCodecContext *avctx, void *arg, int slice, int thread_nb);
 int ff_texturedsp_compress_thread(AVCodecContext *avctx, void *arg, int slice, int thread_nb);
