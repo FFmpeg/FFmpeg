@@ -29,7 +29,7 @@ typedef struct LangEntry {
     uint16_t next_equivalent;
 } LangEntry;
 
-static const uint16_t lang_table_counts[] = { 484, 20, 184 };
+static const uint16_t lang_table_counts[] = { 484, 20, 190 };
 static const uint16_t lang_table_offsets[] = { 0, 484, 504 };
 
 static const LangEntry lang_table[] = {
@@ -539,7 +539,7 @@ static const LangEntry lang_table[] = {
     /*0501*/ { "slk",  647 },
     /*0502*/ { "sqi",  652 },
     /*0503*/ { "zho",  686 },
-    /*----- AV_LANG_ISO639_1 entries (184) -----*/
+    /*----- AV_LANG_ISO639_1 entries (190) -----*/
     /*0504*/ { "aa" ,    0 },
     /*0505*/ { "ab" ,    1 },
     /*0506*/ { "ae" ,   33 },
@@ -724,6 +724,12 @@ static const LangEntry lang_table[] = {
     /*0685*/ { "za" ,  478 },
     /*0686*/ { "zh" ,   78 },
     /*0687*/ { "zu" ,  480 },
+    /*0688*/ { "in" ,  195 }, /* deprecated */
+    /*0689*/ { "iw" ,  172 }, /* deprecated */
+    /*0690*/ { "ji" ,  472 }, /* deprecated */
+    /*0691*/ { "jw" ,  202 }, /* deprecated */
+    /*0692*/ { "mo" ,  358 }, /* deprecated */
+    /*0693*/ { "sh" ,  693 }, /* deprecated (no equivalent) */
     { "", 0 }
 };
 
