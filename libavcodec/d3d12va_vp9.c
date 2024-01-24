@@ -92,7 +92,7 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
     const VP9SharedContext  *h       = avctx->priv_data;
     VP9DecodePictureContext *ctx_pic = h->frames[CUR_FRAME].hwaccel_picture_private;
 
-    uint8_t *mapped_data;
+    void *mapped_data;
     D3D12_VIDEO_DECODE_FRAME_ARGUMENT *args;
 
     if (FAILED(ID3D12Resource_Map(buffer, 0, NULL, &mapped_data))) {
