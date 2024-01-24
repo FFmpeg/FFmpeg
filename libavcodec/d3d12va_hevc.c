@@ -111,7 +111,7 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
     DXVA_Slice_HEVC_Short *slice;
     D3D12_VIDEO_DECODE_FRAME_ARGUMENT *args;
 
-    if (FAILED(ID3D12Resource_Map(buffer, 0, NULL, &mapped_data))) {
+    if (FAILED(ID3D12Resource_Map(buffer, 0, NULL, (void **)&mapped_data))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to map D3D12 Buffer resource!\n");
         return AVERROR(EINVAL);
     }
