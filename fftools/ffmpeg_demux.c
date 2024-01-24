@@ -77,6 +77,7 @@ typedef struct DemuxStream {
 
     const AVCodecDescriptor *codec_desc;
 
+    AVDictionary            *decoder_opts;
     DecoderOpts              dec_opts;
     char                     dec_name[16];
 
@@ -828,7 +829,7 @@ static void ist_free(InputStream **pist)
 
     dec_free(&ist->decoder);
 
-    av_dict_free(&ist->decoder_opts);
+    av_dict_free(&ds->decoder_opts);
     av_freep(&ist->filters);
     av_freep(&ist->outputs);
     av_freep(&ds->dec_opts.hwaccel_device);
@@ -916,7 +917,7 @@ static int ist_use(InputStream *ist, int decoding_needed)
 
         if (ist->dec->id == AV_CODEC_ID_DVB_SUBTITLE &&
            (ds->decoding_needed & DECODING_FOR_OST)) {
-            av_dict_set(&ist->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
+            av_dict_set(&ds->decoder_opts, "compute_edt", "1", AV_DICT_DONT_OVERWRITE);
             if (ds->decoding_needed & DECODING_FOR_FILTER)
                 av_log(ist, AV_LOG_WARNING,
                        "Warning using DVB subtitles for filtering and output at the "
@@ -932,7 +933,7 @@ static int ist_use(InputStream *ist, int decoding_needed)
         ds->dec_opts.log_parent = ist;
 
         ret = dec_open(&ist->decoder, d->sch,
-                       &ist->decoder_opts, &ds->dec_opts);
+                       &ds->decoder_opts, &ds->dec_opts);
         if (ret < 0)
             return ret;
         ds->sch_idx_dec = ret;
@@ -1267,7 +1268,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         return ret;
 
     ret = filter_codec_opts(o->g->codec_opts, ist->st->codecpar->codec_id,
-                            ic, st, ist->dec, &ist->decoder_opts);
+                            ic, st, ist->dec, &ds->decoder_opts);
     if (ret < 0)
         return ret;
 
@@ -1293,12 +1294,12 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     }
 
     if (o->bitexact)
-        av_dict_set(&ist->decoder_opts, "flags", "+bitexact", AV_DICT_MULTIKEY);
+        av_dict_set(&ds->decoder_opts, "flags", "+bitexact", AV_DICT_MULTIKEY);
 
     /* Attached pics are sparse, therefore we would not want to delay their decoding
      * till EOF. */
     if (ist->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
-        av_dict_set(&ist->decoder_opts, "thread_type", "-frame", 0);
+        av_dict_set(&ds->decoder_opts, "thread_type", "-frame", 0);
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -1772,8 +1773,9 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     /* check if all codec options have been used */
     unused_opts = strip_specifiers(o->g->codec_opts);
     for (i = 0; i < f->nb_streams; i++) {
+        DemuxStream *ds = ds_from_ist(f->streams[i]);
         e = NULL;
-        while ((e = av_dict_iterate(f->streams[i]->decoder_opts, e)))
+        while ((e = av_dict_iterate(ds->decoder_opts, e)))
             av_dict_set(&unused_opts, e->key, NULL, 0);
     }
 

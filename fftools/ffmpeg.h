@@ -349,7 +349,6 @@ typedef struct InputStream {
 
     AVRational framerate_guessed;
 
-    AVDictionary *decoder_opts;
     AVRational framerate;               /* framerate forced with -r */
 #if FFMPEG_OPT_TOP
     int top_field_first;
