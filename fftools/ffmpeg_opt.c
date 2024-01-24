@@ -144,7 +144,7 @@ static void init_options(OptionsContext *o)
     o->limit_filesize = INT64_MAX;
     o->chapters_input_file = INT_MAX;
     o->accurate_seek  = 1;
-    o->thread_queue_size = -1;
+    o->thread_queue_size = 0;
     o->input_sync_ref = -1;
     o->find_stream_info = 1;
     o->shortest_buf_duration = 10.f;

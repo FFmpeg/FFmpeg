@@ -225,12 +225,14 @@ int sch_add_filtergraph(Scheduler *sch, unsigned nb_inputs, unsigned nb_outputs,
  *             streams in the muxer.
  * @param ctx Muxer state; will be passed to func/init and used for logging.
  * @param sdp_auto Determines automatic SDP writing - see sch_sdp_filename().
+ * @param thread_queue_size number of packets that can be buffered before
+ *                          sending to the muxer blocks
  *
  * @retval ">=0" Index of the newly-created muxer.
  * @retval "<0"  Error code.
  */
 int sch_add_mux(Scheduler *sch, SchThreadFunc func, int (*init)(void *),
-                void *ctx, int sdp_auto);
+                void *ctx, int sdp_auto, unsigned thread_queue_size);
 /**
  * Add a muxed stream for a previously added muxer.
  *

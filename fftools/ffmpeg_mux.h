@@ -94,8 +94,6 @@ typedef struct Muxer {
 
     AVDictionary *opts;
 
-    int thread_queue_size;
-
     /* filesize limit expressed in bytes */
     int64_t limit_filesize;
     atomic_int_least64_t last_filesize;

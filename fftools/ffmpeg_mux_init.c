@@ -3047,7 +3047,6 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     of->start_time     = o->start_time;
     of->shortest       = o->shortest;
 
-    mux->thread_queue_size = o->thread_queue_size > 0 ? o->thread_queue_size : 8;
     mux->limit_filesize    = o->limit_filesize;
     av_dict_copy(&mux->opts, o->g->format_opts, 0);
 
@@ -3081,7 +3080,7 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     }
 
     err = sch_add_mux(sch, muxer_thread, mux_check_init, mux,
-                      !strcmp(oc->oformat->name, "rtp"));
+                      !strcmp(oc->oformat->name, "rtp"), o->thread_queue_size);
     if (err < 0)
         return err;
     mux->sch     = sch;
