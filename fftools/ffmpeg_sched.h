@@ -388,6 +388,13 @@ int sch_dec_send(Scheduler *sch, unsigned dec_idx, struct AVFrame *frame);
  */
 int sch_filter_receive(Scheduler *sch, unsigned fg_idx,
                        unsigned *in_idx, struct AVFrame *frame);
+/**
+ * Called by filter tasks to signal that a filter input will no longer accept input.
+ *
+ * @param fg_idx Filtergraph index previously returned from sch_add_filtergraph().
+ * @param in_idx Index of the input to finish.
+ */
+void sch_filter_receive_finish(Scheduler *sch, unsigned fg_idx, unsigned in_idx);
 
 /**
  * Called by filtergraph tasks to send a filtered frame or EOF to consumers.
