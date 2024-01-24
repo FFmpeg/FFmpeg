@@ -130,7 +130,7 @@ fate-matroska-avoid-negative-ts: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/
 # It furthermore tests writing the Cues at the front if the cues_to_front
 # option is set and more than enough space has been reserved in advance.
 # (Btw: The keyframe flags of the input video stream seem wrong.)
-FATE_MATROSKA-$(call REMUX, MATROSKA, AVI_DEMUXER) += fate-matroska-ms-mode
+FATE_MATROSKA-$(call REMUX, MATROSKA, AVI_DEMUXER SPEEX_DECODER) += fate-matroska-ms-mode
 fate-matroska-ms-mode: CMD = transcode avi $(TARGET_SAMPLES)/vp5/potter512-400-partial.avi matroska "-map 0 -c copy -cues_to_front yes -reserve_index_space 5000" "-map 0 -c copy -t 1"
 
 # This tests Matroska's QT-compatibility mode.
