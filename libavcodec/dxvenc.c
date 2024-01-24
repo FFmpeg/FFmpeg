@@ -56,7 +56,7 @@ static void ht_init(HTEntry *ht)
     }
 }
 
-static uint32_t ht_lookup_and_upsert(HTEntry *ht, AVCRC *hash_ctx,
+static uint32_t ht_lookup_and_upsert(HTEntry *ht, const AVCRC *hash_ctx,
                                     uint32_t key, uint32_t pos)
 {
     uint32_t ret = -1;
@@ -74,7 +74,7 @@ static uint32_t ht_lookup_and_upsert(HTEntry *ht, AVCRC *hash_ctx,
     return ret;
 }
 
-static void ht_delete(HTEntry *ht, AVCRC *hash_ctx,
+static void ht_delete(HTEntry *ht, const AVCRC *hash_ctx,
                       uint32_t key, uint32_t pos)
 {
     HTEntry *removed_entry = NULL;
@@ -124,7 +124,7 @@ typedef struct DXVEncContext {
     enum DXVTextureFormat tex_fmt;
     int (*compress_tex)(AVCodecContext *avctx);
 
-    AVCRC *crc_ctx;
+    const AVCRC *crc_ctx;
 
     HTEntry color_lookback_ht[LOOKBACK_HT_ELEMS];
     HTEntry lut_lookback_ht[LOOKBACK_HT_ELEMS];
@@ -309,7 +309,7 @@ static av_cold int dxv_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    ctx->crc_ctx = (AVCRC*)av_crc_get_table(AV_CRC_32_IEEE);
+    ctx->crc_ctx = av_crc_get_table(AV_CRC_32_IEEE);
     if (!ctx->crc_ctx) {
         av_log(avctx, AV_LOG_ERROR, "Could not initialize CRC table.\n");
         return AVERROR_BUG;
