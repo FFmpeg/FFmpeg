@@ -108,7 +108,7 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
 
     static const uint8_t start_code[] = { 0, 0, 1, 0x0d };
 
-    if (FAILED(ID3D12Resource_Map(buffer, 0, NULL, &mapped_data))) {
+    if (FAILED(ID3D12Resource_Map(buffer, 0, NULL, (void **)&mapped_data))) {
         av_log(avctx, AV_LOG_ERROR, "Failed to map D3D12 Buffer resource!\n");
         return AVERROR(EINVAL);
     }
