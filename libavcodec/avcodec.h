@@ -798,24 +798,6 @@ typedef struct AVCodecContext {
      */
     float dark_masking;
 
-#if FF_API_SLICE_OFFSET
-    /**
-     * slice count
-     * - encoding: Set by libavcodec.
-     * - decoding: Set by user (or 0).
-     */
-    attribute_deprecated
-    int slice_count;
-
-    /**
-     * slice offsets in the frame in bytes
-     * - encoding: Set/allocated by libavcodec.
-     * - decoding: Set/allocated by user (or NULL).
-     */
-    attribute_deprecated
-    int *slice_offset;
-#endif
-
     /**
      * sample aspect ratio (0 if unknown)
      * That is the width of a pixel divided by the height of the pixel.
