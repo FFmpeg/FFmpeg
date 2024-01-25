@@ -208,9 +208,7 @@ static av_cold void deint_cuda_uninit(AVFilterContext *ctx)
         CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     }
 
-    av_frame_free(&y->prev);
-    av_frame_free(&y->cur);
-    av_frame_free(&y->next);
+    ff_yadif_uninit(ctx);
 
     av_buffer_unref(&s->device_ref);
     s->hwctx = NULL;
@@ -288,14 +286,9 @@ static int config_output(AVFilterLink *link)
         goto exit;
     }
 
-    link->time_base = av_mul_q(ctx->inputs[0]->time_base, (AVRational){1, 2});
-    link->w         = ctx->inputs[0]->w;
-    link->h         = ctx->inputs[0]->h;
-
-    if(y->mode & 1)
-        link->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
-                                    (AVRational){2, 1});
-
+    ret = ff_yadif_config_output_common(link);
+    if (ret < 0)
+        goto exit;
 
     y->csp = av_pix_fmt_desc_get(output_frames->sw_format);
     y->filter = filter;

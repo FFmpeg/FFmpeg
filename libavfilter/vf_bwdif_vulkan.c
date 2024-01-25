@@ -296,6 +296,8 @@ static void bwdif_vulkan_uninit(AVFilterContext *avctx)
 
     ff_vk_uninit(&s->vkctx);
 
+    ff_yadif_uninit(avctx);
+
     s->initialized = 0;
 }
 
@@ -354,13 +356,9 @@ static int bwdif_vulkan_config_output(AVFilterLink *outlink)
     if (!outlink->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
-    outlink->time_base = av_mul_q(avctx->inputs[0]->time_base, (AVRational){1, 2});
-    outlink->w         = vkctx->output_width;
-    outlink->h         = vkctx->output_height;
-
-    if (y->mode & 1)
-        outlink->frame_rate = av_mul_q(avctx->inputs[0]->frame_rate,
-                                       (AVRational){2, 1});
+    err = ff_yadif_config_output_common(outlink);
+    if (err < 0)
+        return err;
 
     y->csp = av_pix_fmt_desc_get(vkctx->frames->sw_format);
     y->filter = bwdif_vulkan_filter_frame;

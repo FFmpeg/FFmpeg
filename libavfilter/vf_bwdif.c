@@ -137,17 +137,6 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
     }
 }
 
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    BWDIFContext *bwdif = ctx->priv;
-    YADIFContext *yadif = &bwdif->yadif;
-
-    av_frame_free(&yadif->prev);
-    av_frame_free(&yadif->cur );
-    av_frame_free(&yadif->next);
-    ff_ccfifo_uninit(&yadif->cc_fifo);
-}
-
 static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
@@ -176,20 +165,9 @@ static int config_props(AVFilterLink *link)
     YADIFContext *yadif = &s->yadif;
     int ret;
 
-    link->time_base = av_mul_q(ctx->inputs[0]->time_base, (AVRational){1, 2});
-    link->w         = link->src->inputs[0]->w;
-    link->h         = link->src->inputs[0]->h;
-
-    if(yadif->mode&1)
-        link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
-    else
-        link->frame_rate = ctx->inputs[0]->frame_rate;
-
-    ret = ff_ccfifo_init(&yadif->cc_fifo, link->frame_rate, ctx);
-    if (ret < 0 ) {
-        av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
-        return ret;
-    }
+    ret = ff_yadif_config_output_common(link);
+    if (ret < 0)
+        return AVERROR(EINVAL);
 
     yadif->csp = av_pix_fmt_desc_get(link->format);
     yadif->filter = filter;
@@ -251,7 +229,7 @@ const AVFilter ff_vf_bwdif = {
     .description   = NULL_IF_CONFIG_SMALL("Deinterlace the input image."),
     .priv_size     = sizeof(BWDIFContext),
     .priv_class    = &bwdif_class,
-    .uninit        = uninit,
+    .uninit        = ff_yadif_uninit,
     FILTER_INPUTS(avfilter_vf_bwdif_inputs),
     FILTER_OUTPUTS(avfilter_vf_bwdif_outputs),
     FILTER_PIXFMTS_ARRAY(pix_fmts),

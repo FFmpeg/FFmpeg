@@ -209,6 +209,46 @@ int ff_yadif_request_frame(AVFilterLink *link)
     return 0;
 }
 
+int ff_yadif_config_output_common(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    YADIFContext *yadif = ctx->priv;
+    int ret;
+
+    outlink->time_base = av_mul_q(ctx->inputs[0]->time_base, (AVRational){1, 2});
+    outlink->w             = ctx->inputs[0]->w;
+    outlink->h             = ctx->inputs[0]->h;
+
+    if (outlink->w < 3 || outlink->h < 3) {
+        av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
+        return AVERROR(EINVAL);
+    }
+
+    if(yadif->mode & 1)
+        outlink->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
+                                    (AVRational){2, 1});
+    else
+        outlink->frame_rate = ctx->inputs[0]->frame_rate;
+
+    ret = ff_ccfifo_init(&yadif->cc_fifo, outlink->frame_rate, ctx);
+    if (ret < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
+        return ret;
+    }
+
+    return 0;
+}
+
+void ff_yadif_uninit(AVFilterContext *ctx)
+{
+    YADIFContext *yadif = ctx->priv;
+
+    av_frame_free(&yadif->prev);
+    av_frame_free(&yadif->cur );
+    av_frame_free(&yadif->next);
+    ff_ccfifo_uninit(&yadif->cc_fifo);
+}
+
 #define OFFSET(x) offsetof(YADIFContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
