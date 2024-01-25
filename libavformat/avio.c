@@ -560,11 +560,7 @@ int ffurl_read_complete(URLContext *h, unsigned char *buf, int size)
     return retry_transfer_wrapper(h, buf, NULL, size, size, 1);
 }
 
-#if FF_API_AVIO_WRITE_NONCONST
-int ffurl_write2(void *urlcontext, uint8_t *buf, int size)
-#else
 int ffurl_write2(void *urlcontext, const uint8_t *buf, int size)
-#endif
 {
     URLContext *h = urlcontext;
 

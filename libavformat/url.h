@@ -192,11 +192,7 @@ static inline int ffurl_read(URLContext *h, uint8_t *buf, int size)
  */
 int ffurl_read_complete(URLContext *h, unsigned char *buf, int size);
 
-#if FF_API_AVIO_WRITE_NONCONST
-int ffurl_write2(void *urlcontext, uint8_t *buf, int size);
-#else
 int ffurl_write2(void *urlcontext, const uint8_t *buf, int size);
-#endif
 /**
  * Write size bytes from buf to the resource accessed by h.
  *
@@ -205,11 +201,7 @@ int ffurl_write2(void *urlcontext, const uint8_t *buf, int size);
  */
 static inline int ffurl_write(URLContext *h, const uint8_t *buf, int size)
 {
-#if FF_API_AVIO_WRITE_NONCONST
-    return ffurl_write2(h, (uint8_t*)buf, size);
-#else
     return ffurl_write2(h, buf, size);
-#endif
 }
 
 int64_t ffurl_seek2(void *urlcontext, int64_t pos, int whence);
