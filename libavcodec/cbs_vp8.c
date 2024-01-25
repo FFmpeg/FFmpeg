@@ -181,9 +181,11 @@ static int cbs_vp8_bool_decoder_read_signed(
     return 0;
 }
 
-static int cbs_vp8_read_unsigned_le(CodedBitstreamContext *ctx, GetBitContext *gbc,
-                                 int width, const char *name,
-                                 const int *subscripts, uint32_t *write_to)
+static int cbs_vp8_read_unsigned_le(CodedBitstreamContext *ctx,
+                                    GetBitContext *gbc, int width,
+                                    const char *name, const int *subscripts,
+                                    uint32_t *write_to, uint32_t range_min,
+                                    uint32_t range_max)
 {
     int32_t value;
 
@@ -199,6 +201,14 @@ static int cbs_vp8_read_unsigned_le(CodedBitstreamContext *ctx, GetBitContext *g
     value = get_bits_le(gbc, width);
 
     CBS_TRACE_READ_END();
+
+    if (value < range_min || value > range_max) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR,
+               "%s out of range: "
+               "%" PRIu32 ", but must be in [%" PRIu32 ",%" PRIu32 "].\n",
+               name, value, range_min, range_max);
+        return AVERROR_INVALIDDATA;
+    }
 
     *write_to = value;
     return 0;
@@ -246,15 +256,16 @@ static int cbs_vp8_read_unsigned_le(CodedBitstreamContext *ctx, GetBitContext *g
     do { \
         uint32_t value; \
         CHECK(cbs_vp8_read_unsigned_le(ctx, rw, width, #name, \
-                                    SUBSCRIPTS(subs, __VA_ARGS__), &value)); \
+                                       SUBSCRIPTS(subs, __VA_ARGS__), &value, \
+                                       0, MAX_UINT_BITS(width))); \
         current->name = value; \
     } while (0)
 
 #define fixed(width, name, value) \
     do { \
         uint32_t fixed_value; \
-        CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, 0, &fixed_value, \
-                                   value, value)); \
+        CHECK(cbs_vp8_read_unsigned_le(ctx, rw, width, #name, 0, &fixed_value, \
+                                       value, value)); \
     } while (0)
 
 #define bc_unsigned_subs(width, prob, enable_trace, name, subs, ...) \
