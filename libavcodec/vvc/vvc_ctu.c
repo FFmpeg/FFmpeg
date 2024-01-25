@@ -257,8 +257,8 @@ static TransformBlock* add_tb(TransformUnit *tu, VVCLocalContext *lc,
     tb->y0 = y0;
     tb->tb_width  = tb_width;
     tb->tb_height = tb_height;
-    tb->log2_tb_width  = log2(tb_width);
-    tb->log2_tb_height = log2(tb_height);
+    tb->log2_tb_width  = av_log2(tb_width);
+    tb->log2_tb_height = av_log2(tb_height);
 
     tb->max_scan_x = tb->max_scan_y = 0;
     tb->min_scan_x = tb->min_scan_y = 0;

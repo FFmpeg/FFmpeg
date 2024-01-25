@@ -910,7 +910,7 @@ static void scaling_derive(VVCScalingList *sl, const H266RawAPS *aps)
 {
     for (int id = 0; id < SL_MAX_ID; id++) {
         const int matrix_size   = derive_matrix_size(id);
-        const int log2_size     = log2(matrix_size);
+        const int log2_size     = av_log2(matrix_size);
         const int list_size     = matrix_size * matrix_size;
         int coeff[SL_MAX_MATRIX_SIZE * SL_MAX_MATRIX_SIZE];
         const uint8_t *pred;
