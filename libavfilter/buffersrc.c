@@ -49,10 +49,10 @@ typedef struct BufferSourceContext {
     unsigned          nb_failed_requests;
 
     /* video only */
-    int               w, h;
-    enum AVPixelFormat  pix_fmt;
-    enum AVColorSpace color_space;
-    enum AVColorRange color_range;
+    int               w, h, prev_w, prev_h;
+    enum AVPixelFormat  pix_fmt, prev_pix_fmt;
+    enum AVColorSpace color_space, prev_color_space;
+    enum AVColorRange color_range, prev_color_range;
     AVRational        pixel_aspect;
 
     AVBufferRef *hw_frames_ctx;
@@ -66,16 +66,30 @@ typedef struct BufferSourceContext {
 
     int eof;
     int64_t last_pts;
+    int link_delta, prev_delta;
 } BufferSourceContext;
 
 #define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format, csp, range, pts)\
-    if (c->w != width || c->h != height || c->pix_fmt != format ||\
-        c->color_space != csp || c->color_range != range) {\
-        av_log(s, AV_LOG_INFO, "filter context - w: %d h: %d fmt: %d csp: %s range: %s, incoming frame - w: %d h: %d fmt: %d csp: %s range: %s pts_time: %s\n",\
+    c->link_delta = c->w != width || c->h != height || c->pix_fmt != format ||\
+                    c->color_space != csp || c->color_range != range;\
+    c->prev_delta = c->prev_w != width || c->prev_h != height || c->prev_pix_fmt != format ||\
+                    c->prev_color_space != csp || c->prev_color_range != range;\
+    if (c->link_delta) {\
+        int loglevel = c->prev_delta ? AV_LOG_WARNING : AV_LOG_DEBUG;\
+        av_log(s, loglevel, "Changing video frame properties on the fly is not supported by all filters.\n");\
+        av_log(s, loglevel, "filter context - w: %d h: %d fmt: %d csp: %s range: %s, incoming frame - w: %d h: %d fmt: %d csp: %s range: %s pts_time: %s\n",\
                c->w, c->h, c->pix_fmt, av_color_space_name(c->color_space), av_color_range_name(c->color_range),\
                width, height, format, av_color_space_name(csp), av_color_range_name(range),\
                av_ts2timestr(pts, &s->outputs[0]->time_base));\
-        av_log(s, AV_LOG_WARNING, "Changing video frame properties on the fly is not supported by all filters.\n");\
+    }\
+    if (c->prev_delta) {\
+        if (!c->link_delta)\
+            av_log(s, AV_LOG_VERBOSE, "video frame properties congruent with link at pts_time: %s\n", av_ts2timestr(pts, &s->outputs[0]->time_base));\
+        c->prev_w = width;\
+        c->prev_h = height;\
+        c->prev_pix_fmt = format;\
+        c->prev_color_space = csp;\
+        c->prev_color_range = range;\
     }
 
 #define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, layout, format, pts)\
@@ -111,12 +125,12 @@ int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *par
     switch (ctx->filter->outputs[0].type) {
     case AVMEDIA_TYPE_VIDEO:
         if (param->format != AV_PIX_FMT_NONE) {
-            s->pix_fmt = param->format;
+            s->pix_fmt = s->prev_pix_fmt = param->format;
         }
         if (param->width > 0)
-            s->w = param->width;
+            s->w = s->prev_w = param->width;
         if (param->height > 0)
-            s->h = param->height;
+            s->h = s->prev_h = param->height;
         if (param->sample_aspect_ratio.num > 0 && param->sample_aspect_ratio.den > 0)
             s->pixel_aspect = param->sample_aspect_ratio;
         if (param->frame_rate.num > 0 && param->frame_rate.den > 0)
@@ -128,9 +142,9 @@ int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *par
                 return AVERROR(ENOMEM);
         }
         if (param->color_space != AVCOL_SPC_UNSPECIFIED)
-            s->color_space = param->color_space;
+            s->color_space = s->prev_color_space = param->color_space;
         if (param->color_range != AVCOL_RANGE_UNSPECIFIED)
-            s->color_range = param->color_range;
+            s->color_range = s->prev_color_range = param->color_range;
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (param->format != AV_SAMPLE_FMT_NONE) {
