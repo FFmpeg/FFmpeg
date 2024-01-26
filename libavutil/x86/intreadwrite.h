@@ -27,42 +27,6 @@
 
 #if HAVE_MMX
 
-#if !HAVE_FAST_64BIT && defined(__MMX__)
-
-#define FF_COPY_SWAP_ZERO_USES_MMX
-
-#define AV_COPY64 AV_COPY64
-static av_always_inline void AV_COPY64(void *d, const void *s)
-{
-    __asm__("movq   %1, %%mm0  \n\t"
-            "movq   %%mm0, %0  \n\t"
-            : "=m"(*(uint64_t*)d)
-            : "m" (*(const uint64_t*)s)
-            : "mm0");
-}
-
-#define AV_SWAP64 AV_SWAP64
-static av_always_inline void AV_SWAP64(void *a, void *b)
-{
-    __asm__("movq   %1, %%mm0  \n\t"
-            "movq   %0, %%mm1  \n\t"
-            "movq   %%mm0, %0  \n\t"
-            "movq   %%mm1, %1  \n\t"
-            : "+m"(*(uint64_t*)a), "+m"(*(uint64_t*)b)
-            ::"mm0", "mm1");
-}
-
-#define AV_ZERO64 AV_ZERO64
-static av_always_inline void AV_ZERO64(void *d)
-{
-    __asm__("pxor %%mm0, %%mm0  \n\t"
-            "movq %%mm0, %0     \n\t"
-            : "=m"(*(uint64_t*)d)
-            :: "mm0");
-}
-
-#endif /* !HAVE_FAST_64BIT && defined(__MMX__) */
-
 #ifdef __SSE__
 
 #define AV_COPY128 AV_COPY128
