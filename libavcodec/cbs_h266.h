@@ -843,6 +843,7 @@ typedef struct H266RawSlice {
 
     uint8_t     *data;
     AVBufferRef *data_ref;
+    size_t       header_size;
     size_t       data_size;
     int          data_bit_start;
 } H266RawSlice;

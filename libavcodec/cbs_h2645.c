@@ -1155,6 +1155,7 @@ static int cbs_h266_read_nal_unit(CodedBitstreamContext *ctx,
                     return err;
             }
 
+            slice->header_size = pos / 8;
             slice->data_size = len - pos / 8;
             slice->data_ref  = av_buffer_ref(unit->data_ref);
             if (!slice->data_ref)
