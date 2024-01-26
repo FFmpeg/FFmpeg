@@ -114,7 +114,7 @@ AVRational av_d2q(double d, int max)
         return (AVRational) { d < 0 ? -1 : 1, 0 };
     frexp(d, &exponent);
     exponent = FFMAX(exponent-1, 0);
-    den = 1LL << (61 - exponent);
+    den = 1LL << (62 - exponent);
     // (int64_t)rint() and llrint() do not work with gcc on ia64 and sparc64,
     // see Ticket2713 for affected gcc/glibc versions
     av_reduce(&a.num, &a.den, floor(d * den + 0.5), den, max);
