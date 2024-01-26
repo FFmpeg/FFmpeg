@@ -800,12 +800,6 @@ void ff_vvc_ps_uninit(VVCParamSets *ps)
         ff_refstruct_unref(&ps->pps_list[i]);
 }
 
-enum {
-    APS_ALF,
-    APS_LMCS,
-    APS_SCALING,
-};
-
 static void alf_coeff(int16_t *coeff,
     const uint8_t *abs, const uint8_t *sign, const int size)
 {
@@ -990,13 +984,13 @@ int ff_vvc_decode_aps(VVCParamSets *ps, const CodedBitstreamUnit *unit)
         return AVERROR_INVALIDDATA;
 
     switch (aps->aps_params_type) {
-        case APS_ALF:
+        case VVC_ASP_TYPE_ALF:
             ret = aps_decode_alf(&ps->alf_list[aps->aps_adaptation_parameter_set_id], aps);
             break;
-        case APS_LMCS:
+        case VVC_ASP_TYPE_LMCS:
             ff_refstruct_replace(&ps->lmcs_list[aps->aps_adaptation_parameter_set_id], aps);
             break;
-        case APS_SCALING:
+        case VVC_ASP_TYPE_SCALING:
             ret = aps_decode_scaling(&ps->scaling_list[aps->aps_adaptation_parameter_set_id], aps);
             break;
     }
