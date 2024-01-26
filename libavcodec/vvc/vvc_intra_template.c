@@ -969,7 +969,7 @@ static void FUNC(pred_angular_h)(uint8_t *_src, const uint8_t *_top, const uint8
         int pos = (1 + ref_idx) * intra_pred_angle;
         int wt;
         if (need_pdpc)
-            wt = (32 >> ((y * 2) >> nscale));
+            wt = (32 >> FFMIN(31, (y * 2) >> nscale));
 
         for (int x = 0; x < w; x++) {
             const int idx  = (pos >> 5) + ref_idx;
