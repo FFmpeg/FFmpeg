@@ -2456,6 +2456,7 @@ static int FUNC(scaling_list_data)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(aps)(CodedBitstreamContext *ctx, RWContext *rw,
                      H266RawAPS *current, int prefix)
 {
+    int aps_id_max = MAX_UINT_BITS(5);
     int err;
 
     if (prefix)
@@ -2468,7 +2469,12 @@ static int FUNC(aps)(CodedBitstreamContext *ctx, RWContext *rw,
                                        : VVC_SUFFIX_APS_NUT));
 
     ub(3, aps_params_type);
-    ub(5, aps_adaptation_parameter_set_id);
+    if (current->aps_params_type == VVC_ASP_TYPE_ALF ||
+        current->aps_params_type == VVC_ASP_TYPE_SCALING)
+        aps_id_max = 7;
+    else if (current->aps_params_type == VVC_ASP_TYPE_LMCS)
+        aps_id_max = 3;
+    u(5, aps_adaptation_parameter_set_id, 0, aps_id_max);
     flag(aps_chroma_present_flag);
     if (current->aps_params_type == VVC_ASP_TYPE_ALF)
         CHECK(FUNC(alf_data)(ctx, rw, current));
