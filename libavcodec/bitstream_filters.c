@@ -58,6 +58,7 @@ extern const FFBitStreamFilter ff_pgs_frame_merge_bsf;
 extern const FFBitStreamFilter ff_prores_metadata_bsf;
 extern const FFBitStreamFilter ff_remove_extradata_bsf;
 extern const FFBitStreamFilter ff_setts_bsf;
+extern const FFBitStreamFilter ff_showinfo_bsf;
 extern const FFBitStreamFilter ff_text2movsub_bsf;
 extern const FFBitStreamFilter ff_trace_headers_bsf;
 extern const FFBitStreamFilter ff_truehd_core_bsf;

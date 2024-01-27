@@ -23,6 +23,7 @@ version <next>:
 - ffmpeg CLI -bsf option may now be used for input as well as output
 - ffmpeg CLI options may now be used as -/opt <path>, which is equivalent
   to -opt <contents of file <path>>
+- showinfo bitstream filter
 
 version 6.1:
 - libaribcaption decoder

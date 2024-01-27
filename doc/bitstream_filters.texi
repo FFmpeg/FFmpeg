@@ -887,6 +887,10 @@ For example, to set PTS equal to DTS (not recommended if B-frames are involved):
 ffmpeg -i INPUT -c:a copy -bsf:a setts=pts=DTS out.mkv
 @end example
 
+@section showinfo
+Log basic packet information. Mainly useful for testing, debugging,
+and development.
+
 @anchor{text2movsub}
 @section text2movsub
 
