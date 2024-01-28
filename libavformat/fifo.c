@@ -90,7 +90,7 @@ typedef struct FifoThreadContext {
 
     /* Timestamp of last failure.
      * This is either pts in case stream time is used,
-     * or microseconds as returned by av_getttime_relative() */
+     * or microseconds as returned by av_gettime_relative() */
     int64_t last_recovery_ts;
 
     /* Number of current recovery process
