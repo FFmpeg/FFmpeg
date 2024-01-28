@@ -22,7 +22,7 @@
 #include <stdint.h>
 
 /**
- * Maximum window size for avpriv_kbd_window_init.
+ * Maximum window size for ff_kbd_window_init.
  */
 #define FF_KBD_WINDOW_MAX 1024
 
@@ -30,11 +30,9 @@
  * Generate a Kaiser-Bessel Derived Window.
  * @param   window  pointer to half window
  * @param   alpha   determines window shape
- * @param   n       size of half window
- *
- * @return if n is larger than FF_KBD_WINDOW_MAX then AVERROR(ENOMEM) is possible
+ * @param   n       size of half window, max FF_KBD_WINDOW_MAX
  */
-int avpriv_kbd_window_init(float *window, float alpha, int n);
-int avpriv_kbd_window_init_fixed(int32_t *window, float alpha, int n);
+void ff_kbd_window_init(float *window, float alpha, int n);
+void ff_kbd_window_init_fixed(int32_t *window, float alpha, int n);
 
 #endif /* AVCODEC_KBDWIN_H */

@@ -220,7 +220,7 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     if ((ret = av_tx_init(&s->tx_256, &s->tx_fn_256, IMDCT_TYPE, 1, 256, &scale, 0)))
         return ret;
 
-    AC3_RENAME(avpriv_kbd_window_init)(s->window, 5.0, 256);
+    AC3_RENAME(ff_kbd_window_init)(s->window, 5.0, 256);
     ff_bswapdsp_init(&s->bdsp);
 
 #if (USE_FIXED)
