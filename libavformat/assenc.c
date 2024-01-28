@@ -21,6 +21,7 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "mux.h"
 
@@ -70,13 +71,11 @@ static int write_header(AVFormatContext *s)
                 ass->trailer = trailer;
         }
 
-        header_size = av_strnlen(par->extradata, header_size);
-        avio_write(s->pb, par->extradata, header_size);
-        if (header_size && par->extradata[header_size - 1] != '\n')
-            avio_write(s->pb, "\r\n", 2);
+        ffio_write_lines(s->pb, par->extradata, header_size, NULL);
+
         ass->ssa_mode = !strstr(par->extradata, "\n[V4+ Styles]");
         if (!strstr(par->extradata, "\n[Events]"))
-            avio_printf(s->pb, "[Events]\r\nFormat: %s, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
+            avio_printf(s->pb, "[Events]\nFormat: %s, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n",
                         ass->ssa_mode ? "Marked" : "Layer");
     }
 
@@ -96,7 +95,7 @@ static void purge_dialogues(AVFormatContext *s, int force)
                    ass->expected_readorder, dialogue->readorder);
             ass->expected_readorder = dialogue->readorder;
         }
-        avio_print(s->pb, "Dialogue: ", dialogue->line, "\r\n");
+        avio_print(s->pb, "Dialogue: ", dialogue->line, "\n");
         if (dialogue == ass->last_added_dialogue)
             ass->last_added_dialogue = next;
         av_freep(&dialogue->line);
@@ -158,6 +157,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     ASSContext *ass = s->priv_data;
 
     long int layer;
+    int text_len;
     char *p = pkt->data;
     int64_t start = pkt->pts;
     int64_t end   = start + pkt->duration;
@@ -188,9 +188,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     if (hh1 > 9) hh1 = 9, mm1 = 59, ss1 = 59, ms1 = 99;
     if (hh2 > 9) hh2 = 9, mm2 = 59, ss2 = 59, ms2 = 99;
 
-    dialogue->line = av_asprintf("%s%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%s",
+    text_len = strlen(p);
+    while (text_len > 0 && p[text_len - 1] == '\r' || p[text_len - 1] == '\n')
+        text_len--;
+
+    dialogue->line = av_asprintf("%s%ld,%d:%02d:%02d.%02d,%d:%02d:%02d.%02d,%.*s",
                                  ass->ssa_mode ? "Marked=" : "",
-                                 layer, hh1, mm1, ss1, ms1, hh2, mm2, ss2, ms2, p);
+                                 layer, hh1, mm1, ss1, ms1, hh2, mm2, ss2, ms2, text_len, p);
     if (!dialogue->line) {
         av_free(dialogue);
         return AVERROR(ENOMEM);
@@ -208,7 +212,7 @@ static int write_trailer(AVFormatContext *s)
     purge_dialogues(s, 1);
 
     if (ass->trailer) {
-        avio_write(s->pb, ass->trailer, ass->trailer_size);
+        ffio_write_lines(s->pb, ass->trailer, ass->trailer_size, NULL);
     }
 
     return 0;
