@@ -1004,6 +1004,37 @@ void ffio_write_leb(AVIOContext *s, unsigned val)
     }
 }
 
+void ffio_write_lines(AVIOContext *s, const unsigned char *buf, int size,
+                      const unsigned char *ending)
+{
+    int ending_len = ending ? strlen(ending) : 1;
+    if (!ending)
+        ending = "\n";
+    if (size < 0)
+        size = strlen(buf);
+
+    while (size > 0) {
+        size_t len = 0;
+        char last = 0;
+        for (; len < size; len++) {
+            last = buf[len];
+            if (last == '\r' || last == '\n')
+                break;
+        }
+
+        avio_write(s, buf, len);
+        avio_write(s, ending, ending_len);
+
+        buf += len + 1;
+        size -= len + 1;
+
+        if (size > 0 && last == '\r' && buf[0] == '\n') {
+            buf++;
+            size--;
+        }
+    }
+}
+
 int ffio_fdopen(AVIOContext **s, URLContext *h)
 {
     uint8_t *buffer = NULL;

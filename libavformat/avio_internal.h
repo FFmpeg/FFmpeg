@@ -157,6 +157,17 @@ unsigned int ffio_read_leb(AVIOContext *s);
 void ffio_write_leb(AVIOContext *s, unsigned val);
 
 /**
+ * Write a sequence of text lines, converting line endings.
+ * All input line endings (LF, CRLF, CR) are converted to the configured line ending.
+ * @param s The AVIOContext to write to
+ * @param buf The buffer to write
+ * @param size The size of the buffer, or <0 to use the full length of a null-terminated string
+ * @param ending The line ending sequence to convert to, or NULL for \n
+ */
+void ffio_write_lines(AVIOContext *s, const unsigned char *buf, int size,
+                      const unsigned char *ending);
+
+/**
  * Read size bytes from AVIOContext into buf.
  * Check that exactly size bytes have been read.
  * @return number of bytes read or AVERROR
