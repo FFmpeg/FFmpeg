@@ -30,7 +30,6 @@
 #include "libavutil/softfloat.h"
 
 #define AAC_RENAME(x)       x ## _fixed
-#define AAC_RENAME_32(x)    x ## _fixed_32
 #define AAC_RENAME2(x)      x ## _fixed
 typedef int                 INTFLOAT;
 typedef unsigned            UINTFLOAT;  ///< Equivalent to INTFLOAT, Used as temporal cast to avoid undefined sign overflow operations.
@@ -77,7 +76,6 @@ typedef int                 AAC_SIGNE;
 #else
 
 #define AAC_RENAME(x)       x
-#define AAC_RENAME_32(x)    x
 #define AAC_RENAME2(x)      ff_ ## x
 typedef float               INTFLOAT;
 typedef float               UINTFLOAT;
