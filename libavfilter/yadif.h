@@ -86,6 +86,8 @@ typedef struct YADIFContext {
      * the first field.
      */
     int current_field;  ///< YADIFCurrentField
+
+    int pts_multiplier;
 } YADIFContext;
 
 void ff_yadif_init_x86(YADIFContext *yadif);

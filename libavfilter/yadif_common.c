@@ -62,6 +62,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (next_pts != AV_NOPTS_VALUE && cur_pts != AV_NOPTS_VALUE) {
             yadif->out->pts = cur_pts + next_pts;
+            if (yadif->pts_multiplier == 1) {
+                yadif->out->pts >>= 1;
+                yadif->out->duration >>= 1;
+            }
         } else {
             yadif->out->pts = AV_NOPTS_VALUE;
         }
@@ -150,8 +154,8 @@ int ff_yadif_filter_frame(AVFilterLink *link, AVFrame *frame)
         ff_ccfifo_inject(&yadif->cc_fifo, yadif->out);
         av_frame_free(&yadif->prev);
         if (yadif->out->pts != AV_NOPTS_VALUE)
-            yadif->out->pts *= 2;
-        yadif->out->duration *= 2;
+            yadif->out->pts *= yadif->pts_multiplier;
+        yadif->out->duration *= yadif->pts_multiplier;
         return ff_filter_frame(ctx->outputs[0], yadif->out);
     }
 
@@ -168,9 +172,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
     yadif->out->flags &= ~AV_FRAME_FLAG_INTERLACED;
 
     if (yadif->out->pts != AV_NOPTS_VALUE)
-        yadif->out->pts *= 2;
+        yadif->out->pts *= yadif->pts_multiplier;
     if (!(yadif->mode & 1))
-        yadif->out->duration *= 2;
+        yadif->out->duration *= yadif->pts_multiplier;
+    else if (yadif->pts_multiplier == 1)
+        yadif->out->duration >>= 1;
 
     return return_frame(ctx, 0);
 }
@@ -213,9 +219,17 @@ int ff_yadif_config_output_common(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     YADIFContext *yadif = ctx->priv;
+    AVRational tb = ctx->inputs[0]->time_base;
     int ret;
 
-    outlink->time_base = av_mul_q(ctx->inputs[0]->time_base, (AVRational){1, 2});
+    if (av_reduce(&outlink->time_base.num, &outlink->time_base.den, tb.num, tb.den * 2LL, INT_MAX)) {
+        yadif->pts_multiplier = 2;
+    } else {
+        av_log(ctx, AV_LOG_WARNING, "Cannot use exact output timebase\n");
+        outlink->time_base = tb;
+        yadif->pts_multiplier = 1;
+    }
+
     outlink->w             = ctx->inputs[0]->w;
     outlink->h             = ctx->inputs[0]->h;
 
