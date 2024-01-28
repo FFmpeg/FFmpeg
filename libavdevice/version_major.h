@@ -33,4 +33,7 @@
  * the public API and may change, break or disappear at any time.
  */
 
+// reminder to remove the bktr device on next major bump
+#define FF_API_BKTR_DEVICE (LIBAVDEVICE_VERSION_MAJOR < 62)
+
 #endif /* AVDEVICE_VERSION_MAJOR_H */

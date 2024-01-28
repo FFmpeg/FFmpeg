@@ -222,7 +222,8 @@ $ ffmpeg -f avfoundation -capture_raw_data true -i "zr100:none" out.dv
 
 @section bktr
 
-BSD video input device.
+BSD video input device. Deprecated and will be removed - please contact
+the developers if you are interested in maintaining it.
 
 @subsection Options
 
