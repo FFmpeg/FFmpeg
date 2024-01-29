@@ -902,11 +902,10 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
                        current->vps_ols_mode_idc == 1) {
                 num_layers_in_ols = i + 1;
             } else if (current->vps_ols_mode_idc == 2) {
-                for (k = 0, j = 0; k <= current->vps_max_layers_minus1; k++) {
+                for (k = 0, j = 0; k <= current->vps_max_layers_minus1; k++)
                     if (layer_included_in_ols_flag[i][k])
                         j++;
-                    num_layers_in_ols = j;
-                }
+                num_layers_in_ols = j;
             }
             if (num_layers_in_ols > 1) {
                 num_multi_layer_olss++;
