@@ -822,6 +822,46 @@ int av_channel_layout_check(const AVChannelLayout *channel_layout);
 int av_channel_layout_compare(const AVChannelLayout *chl, const AVChannelLayout *chl1);
 
 /**
+ * The conversion must be lossless.
+ */
+#define AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS (1 << 0)
+
+/**
+ * Change the AVChannelOrder of a channel layout.
+ *
+ * Change of AVChannelOrder can be either lossless or lossy. In case of a
+ * lossless conversion all the channel designations and the associated channel
+ * names (if any) are kept. On a lossy conversion the channel names and channel
+ * designations might be lost depending on the capabilities of the desired
+ * AVChannelOrder. Note that some conversions are simply not possible in which
+ * case this function returns AVERROR(ENOSYS).
+ *
+ * The following conversions are supported:
+ *
+ * Any       -> Custom     : Always possible, always lossless.
+ * Any       -> Unspecified: Always possible, lossless if channel designations
+ *   are all unknown and channel names are not used, lossy otherwise.
+ * Custom    -> Ambisonic  : Possible if it contains ambisonic channels with
+ *   optional non-diegetic channels in the end. Lossy if the channels have
+ *   custom names, lossless otherwise.
+ * Custom    -> Native     : Possible if it contains native channels in native
+ *     order. Lossy if the channels have custom names, lossless otherwise.
+ *
+ * On error this function keeps the original channel layout untouched.
+ *
+ * @param channel_layout channel layout which will be changed
+ * @param order the desired channel layout order
+ * @param flags a combination of AV_CHANNEL_LAYOUT_RETYPE_FLAG_* constants
+ * @return 0 if the conversion was successful and lossless or if the channel
+ *           layout was already in the desired order
+ *         >0 if the conversion was successful but lossy
+ *         AVERROR(ENOSYS) if the conversion was not possible (or would be
+ *           lossy and AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS was specified)
+ *         AVERROR(EINVAL), AVERROR(ENOMEM) on error
+ */
+int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrder order, int flags);
+
+/**
  * @}
  */
 

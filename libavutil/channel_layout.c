@@ -1036,3 +1036,109 @@ uint64_t av_channel_layout_subset(const AVChannelLayout *channel_layout,
 
     return ret;
 }
+
+static int64_t masked_description(AVChannelLayout *channel_layout, int start_channel)
+{
+    uint64_t mask = 0;
+    for (int i = start_channel; i < channel_layout->nb_channels; i++) {
+        enum AVChannel ch = channel_layout->u.map[i].id;
+        if (ch >= 0 && ch < 63 && mask < (1ULL << ch))
+            mask |= (1ULL << ch);
+        else
+            return AVERROR(EINVAL);
+    }
+    return mask;
+}
+
+static int has_channel_names(AVChannelLayout *channel_layout)
+{
+    if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM)
+        return 0;
+    for (int i = 0; i < channel_layout->nb_channels; i++)
+        if (channel_layout->u.map[i].name[0])
+            return 1;
+    return 0;
+}
+
+int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrder order, int flags)
+{
+    int allow_lossy = !(flags & AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
+    int lossy;
+
+    if (!av_channel_layout_check(channel_layout))
+        return AVERROR(EINVAL);
+
+    if (channel_layout->order == order)
+        return 0;
+
+    switch (order) {
+    case AV_CHANNEL_ORDER_UNSPEC: {
+        int nb_channels = channel_layout->nb_channels;
+        if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
+            lossy = 0;
+            for (int i = 0; i < nb_channels; i++) {
+                if (channel_layout->u.map[i].id != AV_CHAN_UNKNOWN || channel_layout->u.map[i].name[0]) {
+                    lossy = 1;
+                    break;
+                }
+            }
+        } else {
+            lossy = 1;
+        }
+        if (!lossy || allow_lossy) {
+            av_channel_layout_uninit(channel_layout);
+            channel_layout->order       = AV_CHANNEL_ORDER_UNSPEC;
+            channel_layout->nb_channels = nb_channels;
+            return lossy;
+        }
+        return AVERROR(ENOSYS);
+        }
+    case AV_CHANNEL_ORDER_NATIVE:
+        if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
+            int64_t mask = masked_description(channel_layout, 0);
+            if (mask < 0)
+                return AVERROR(ENOSYS);
+            lossy = has_channel_names(channel_layout);
+            if (!lossy || allow_lossy) {
+                av_channel_layout_uninit(channel_layout);
+                av_channel_layout_from_mask(channel_layout, mask);
+                return lossy;
+            }
+        }
+        return AVERROR(ENOSYS);
+    case AV_CHANNEL_ORDER_CUSTOM: {
+        AVChannelLayout custom = { 0 };
+        int ret = av_channel_layout_custom_init(&custom, channel_layout->nb_channels);
+        if (ret < 0)
+            return ret;
+        if (channel_layout->order != AV_CHANNEL_ORDER_UNSPEC)
+            for (int i = 0; i < channel_layout->nb_channels; i++)
+                custom.u.map[i].id = av_channel_layout_channel_from_index(channel_layout, i);
+        av_channel_layout_uninit(channel_layout);
+        *channel_layout = custom;
+        return 0;
+        }
+    case AV_CHANNEL_ORDER_AMBISONIC:
+        if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
+            int64_t mask;
+            int nb_channels = channel_layout->nb_channels;
+            int order = ambisonic_order(channel_layout);
+            if (order < 0)
+                return AVERROR(ENOSYS);
+            mask = masked_description(channel_layout, (order + 1) * (order + 1));
+            if (mask < 0)
+                return AVERROR(ENOSYS);
+            lossy = has_channel_names(channel_layout);
+            if (!lossy || allow_lossy) {
+                av_channel_layout_uninit(channel_layout);
+                channel_layout->order       = AV_CHANNEL_ORDER_AMBISONIC;
+                channel_layout->nb_channels = nb_channels;
+                channel_layout->u.mask      = mask;
+                return lossy;
+            }
+        }
+        return AVERROR(ENOSYS);
+    default:
+        return AVERROR(EINVAL);
+    }
+}
