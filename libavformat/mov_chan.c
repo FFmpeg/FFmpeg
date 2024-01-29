@@ -530,7 +530,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         size -= 20;
         if (layout_tag == 0) {
             uint64_t mask_incr = mov_get_channel_mask(label);
-            if (mask_incr == 0) {
+            if (mask_incr == 0 || mask_incr <= label_mask) {
                 label_mask = 0;
                 break;
             }
