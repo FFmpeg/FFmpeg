@@ -544,8 +544,13 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         mask = mov_get_channel_layout(layout_tag, bitmap);
 
     if (mask) {
-        av_channel_layout_uninit(&st->codecpar->ch_layout);
-        av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
+        if (!st->codecpar->ch_layout.nb_channels || av_popcount64(mask) == st->codecpar->ch_layout.nb_channels) {
+            av_channel_layout_uninit(&st->codecpar->ch_layout);
+            av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
+        } else {
+            av_log(s, AV_LOG_WARNING, "ignoring channel layout with %d channels because the real number of channels is %d\n",
+                   av_popcount64(mask), st->codecpar->ch_layout.nb_channels);
+        }
     }
     avio_skip(pb, size - 12);
 
