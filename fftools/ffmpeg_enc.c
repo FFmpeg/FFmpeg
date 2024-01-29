@@ -613,7 +613,7 @@ static int update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_
 
     bitrate     = (pkt->size * 8) / av_q2d(enc->time_base) / 1000.0;
     avg_bitrate = (double)(e->data_size * 8) / ti1 / 1000.0;
-    fprintf(vstats_file, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
+    fprintf(vstats_file, "s_size= %8.0fKiB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
            (double)e->data_size / 1024, ti1, bitrate, avg_bitrate);
     fprintf(vstats_file, "type= %c\n", av_get_picture_type_char(pict_type));
 

@@ -329,7 +329,7 @@ static void ffmpeg_cleanup(int ret)
 
     if (do_benchmark) {
         int maxrss = getmaxrss() / 1024;
-        av_log(NULL, AV_LOG_INFO, "bench: maxrss=%ikB\n", maxrss);
+        av_log(NULL, AV_LOG_INFO, "bench: maxrss=%iKiB\n", maxrss);
     }
 
     for (i = 0; i < nb_filtergraphs; i++)
@@ -570,7 +570,7 @@ static void print_report(int is_last_report, int64_t timer_start, int64_t cur_ti
     speed   = pts != AV_NOPTS_VALUE && t != 0.0 ? (double)pts / AV_TIME_BASE / t : -1;
 
     if (total_size < 0) av_bprintf(&buf, "size=N/A time=");
-    else                av_bprintf(&buf, "size=%8.0fkB time=", total_size / 1024.0);
+    else                av_bprintf(&buf, "size=%8.0fKiB time=", total_size / 1024.0);
     if (pts == AV_NOPTS_VALUE) {
         av_bprintf(&buf, "N/A ");
     } else {

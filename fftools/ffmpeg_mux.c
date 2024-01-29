@@ -725,8 +725,8 @@ static void mux_final_stats(Muxer *mux)
     }
 
     av_log(of, AV_LOG_INFO,
-           "video:%1.0fkB audio:%1.0fkB subtitle:%1.0fkB other streams:%1.0fkB "
-           "global headers:%1.0fkB muxing overhead: %s\n",
+           "video:%1.0fKiB audio:%1.0fKiB subtitle:%1.0fKiB other streams:%1.0fKiB "
+           "global headers:%1.0fKiB muxing overhead: %s\n",
            video_size    / 1024.0,
            audio_size    / 1024.0,
            subtitle_size / 1024.0,
