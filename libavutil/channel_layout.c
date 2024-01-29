@@ -398,6 +398,26 @@ int av_get_standard_channel_layout(unsigned index, uint64_t *layout,
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+int av_channel_layout_custom_init(AVChannelLayout *channel_layout, int nb_channels)
+{
+    AVChannelCustom *map;
+
+    if (nb_channels <= 0)
+        return AVERROR(EINVAL);
+
+    map = av_calloc(nb_channels, sizeof(*channel_layout->u.map));
+    if (!map)
+        return AVERROR(ENOMEM);
+    for (int i = 0; i < nb_channels; i++)
+        map[i].id = AV_CHAN_UNKNOWN;
+
+    channel_layout->order       = AV_CHANNEL_ORDER_CUSTOM;
+    channel_layout->nb_channels = nb_channels;
+    channel_layout->u.map       = map;
+
+    return 0;
+}
+
 int av_channel_layout_from_mask(AVChannelLayout *channel_layout,
                                 uint64_t mask)
 {

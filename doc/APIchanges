@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2024-02-xx - xxxxxxxxxx - lavu 58.37.100 - channel_layout.h
+  Add av_channel_layout_custom_init().
+
 2024-02-04 - xxxxxxxxxx - lavc 60.39.100 - packet.h
   Add AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT.
 
