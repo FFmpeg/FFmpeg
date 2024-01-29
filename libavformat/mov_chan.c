@@ -377,23 +377,23 @@ static uint64_t mov_get_channel_layout(uint32_t tag, uint32_t bitmap)
     return layout_map[i].layout;
 }
 
-static uint64_t mov_get_channel_mask(uint32_t label)
+static enum AVChannel mov_get_channel_id(uint32_t label)
 {
     if (label == 0)
-        return 0;
+        return AV_CHAN_UNUSED;
     if (label <= 18)
-        return 1U << (label - 1);
+        return (label - 1);
     if (label == 35)
-        return AV_CH_WIDE_LEFT;
+        return AV_CHAN_WIDE_LEFT;
     if (label == 36)
-        return AV_CH_WIDE_RIGHT;
+        return AV_CHAN_WIDE_RIGHT;
     if (label == 37)
-        return AV_CH_LOW_FREQUENCY_2;
+        return AV_CHAN_LOW_FREQUENCY_2;
     if (label == 38)
-        return AV_CH_STEREO_LEFT;
+        return AV_CHAN_STEREO_LEFT;
     if (label == 39)
-        return AV_CH_STEREO_RIGHT;
-    return 0;
+        return AV_CHAN_STEREO_RIGHT;
+    return AV_CHAN_UNKNOWN;
 }
 
 static uint32_t mov_get_channel_label(enum AVChannel channel)
@@ -497,8 +497,8 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
                      int64_t size)
 {
     uint32_t layout_tag, bitmap, num_descr;
-    uint64_t label_mask, mask = 0;
-    int i;
+    int ret;
+    AVChannelLayout *ch_layout = &st->codecpar->ch_layout;
 
     if (size < 12)
         return AVERROR_INVALIDDATA;
@@ -514,47 +514,58 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
     if (size < 12ULL + num_descr * 20ULL)
         return 0;
 
-    label_mask = 0;
-    for (i = 0; i < num_descr; i++) {
-        uint32_t label;
-        if (pb->eof_reached) {
-            av_log(s, AV_LOG_ERROR,
-                   "reached EOF while reading channel layout\n");
-            return AVERROR_INVALIDDATA;
-        }
-        label     = avio_rb32(pb);          // mChannelLabel
-        avio_rb32(pb);                      // mChannelFlags
-        avio_rl32(pb);                      // mCoordinates[0]
-        avio_rl32(pb);                      // mCoordinates[1]
-        avio_rl32(pb);                      // mCoordinates[2]
-        size -= 20;
-        if (layout_tag == 0) {
-            uint64_t mask_incr = mov_get_channel_mask(label);
-            if (mask_incr == 0 || mask_incr <= label_mask) {
-                label_mask = 0;
-                break;
-            }
-            label_mask |= mask_incr;
-        }
-    }
     if (layout_tag == 0) {
-        if (label_mask)
-            mask = label_mask;
-    } else
-        mask = mov_get_channel_layout(layout_tag, bitmap);
+        int nb_channels = ch_layout->nb_channels ? ch_layout->nb_channels : num_descr;
+        if (num_descr > nb_channels) {
+            av_log(s, AV_LOG_WARNING, "got %d channel descriptions, capping to the number of channels %d\n",
+                   num_descr, nb_channels);
+            num_descr = nb_channels;
+        }
 
-    if (mask) {
-        if (!st->codecpar->ch_layout.nb_channels || av_popcount64(mask) == st->codecpar->ch_layout.nb_channels) {
-            av_channel_layout_uninit(&st->codecpar->ch_layout);
-            av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
-        } else {
-            av_log(s, AV_LOG_WARNING, "ignoring channel layout with %d channels because the real number of channels is %d\n",
-                   av_popcount64(mask), st->codecpar->ch_layout.nb_channels);
+        av_channel_layout_uninit(ch_layout);
+        ret = av_channel_layout_custom_init(ch_layout, nb_channels);
+        if (ret < 0)
+            goto out;
+
+        for (int i = 0; i < num_descr; i++) {
+            uint32_t label;
+            if (pb->eof_reached) {
+                av_log(s, AV_LOG_ERROR,
+                       "reached EOF while reading channel layout\n");
+                return AVERROR_INVALIDDATA;
+            }
+            label     = avio_rb32(pb);          // mChannelLabel
+            avio_rb32(pb);                      // mChannelFlags
+            avio_rl32(pb);                      // mCoordinates[0]
+            avio_rl32(pb);                      // mCoordinates[1]
+            avio_rl32(pb);                      // mCoordinates[2]
+            size -= 20;
+            ch_layout->u.map[i].id = mov_get_channel_id(label);
+        }
+
+        ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_NATIVE, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
+        if (ret == AVERROR(ENOSYS))
+            ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_UNSPEC, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
+        if (ret < 0 && ret != AVERROR(ENOSYS))
+            goto out;
+    } else {
+        uint64_t mask = mov_get_channel_layout(layout_tag, bitmap);
+        if (mask) {
+            if (!ch_layout->nb_channels || av_popcount64(mask) == ch_layout->nb_channels) {
+                av_channel_layout_uninit(ch_layout);
+                av_channel_layout_from_mask(ch_layout, mask);
+            } else {
+                av_log(s, AV_LOG_WARNING, "ignoring channel layout with %d channels because number of channels is %d\n",
+                       av_popcount64(mask), ch_layout->nb_channels);
+            }
         }
     }
+    ret = 0;
+
+out:
     avio_skip(pb, size - 12);
 
-    return 0;
+    return ret;
 }
 
 /* ISO/IEC 23001-8, 8.2 */
