@@ -23,7 +23,7 @@
 #include "libavcodec/opusdsp.h"
 
 void ff_opus_postfilter_fma3(float *data, int period, float *gains, int len);
-float ff_opus_deemphasis_fma3(float *out, float *in, float coeff, int len);
+float ff_opus_deemphasis_fma3(float *out, float *in, float coeff, const float *weights, int len);
 
 av_cold void ff_opus_dsp_init_x86(OpusDSP *ctx)
 {

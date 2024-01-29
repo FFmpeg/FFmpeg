@@ -161,6 +161,8 @@ extern const float    ff_celt_window2[120];
 extern const float    ff_celt_window_padded[];
 static const float *const ff_celt_window = &ff_celt_window_padded[8];
 
+extern const float    ff_opus_deemph_weights[];
+
 extern const uint32_t * const ff_celt_pvq_u_row[15];
 FF_VISIBILITY_POP_HIDDEN
 

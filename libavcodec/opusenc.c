@@ -164,6 +164,7 @@ static void celt_apply_preemph_filter(OpusEncContext *s, CeltFrame *f)
 {
     const int subframesize = s->avctx->frame_size;
     const int subframes = OPUS_BLOCK_SIZE(s->packet.framesize) / subframesize;
+    const float c = ff_opus_deemph_weights[0];
 
     /* Filter overlap */
     for (int ch = 0; ch < f->channels; ch++) {
@@ -172,7 +173,7 @@ static void celt_apply_preemph_filter(OpusEncContext *s, CeltFrame *f)
         for (int i = 0; i < CELT_OVERLAP; i++) {
             float sample = b->overlap[i];
             b->overlap[i] = sample - m;
-            m = sample * CELT_EMPH_COEFF;
+            m = sample * c;
         }
         b->emph_coeff = m;
     }
@@ -185,7 +186,7 @@ static void celt_apply_preemph_filter(OpusEncContext *s, CeltFrame *f)
             for (int i = 0; i < subframesize; i++) {
                 float sample = b->samples[sf*subframesize + i];
                 b->samples[sf*subframesize + i] = sample - m;
-                m = sample * CELT_EMPH_COEFF;
+                m = sample * c;
             }
             if (sf != (subframes - 1))
                 b->emph_coeff = m;

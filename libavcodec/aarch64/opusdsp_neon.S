@@ -18,29 +18,11 @@
 
 #include "libavutil/aarch64/asm.S"
 
-           // 0.85..^1    0.85..^2    0.85..^3    0.85..^4
-const tab_st, align=4
-        .word 0x3f599a00, 0x3f38f671, 0x3f1d382a, 0x3f05a32f
-endconst
-const tab_x0, align=4
-        .word 0x0,        0x3f599a00, 0x3f38f671, 0x3f1d382a
-endconst
-const tab_x1, align=4
-        .word 0x0,        0x0,        0x3f599a00, 0x3f38f671
-endconst
-const tab_x2, align=4
-        .word 0x0,        0x0,        0x0,        0x3f599a00
-endconst
-
 function ff_opus_deemphasis_neon, export=1
-        movrel          x4, tab_st
-        ld1             {v4.4s}, [x4]
-        movrel          x4, tab_x0
-        ld1             {v5.4s}, [x4]
-        movrel          x4, tab_x1
-        ld1             {v6.4s}, [x4]
-        movrel          x4, tab_x2
-        ld1             {v7.4s}, [x4]
+        ld1             {v4.4s}, [x2], #16
+        ld1             {v5.4s}, [x2], #16
+        ld1             {v6.4s}, [x2], #16
+        ld1             {v7.4s}, [x2]
 
         fmul            v0.4s, v4.4s, v0.s[0]
 
@@ -63,7 +45,7 @@ function ff_opus_deemphasis_neon, export=1
         st1             {v1.4s, v2.4s}, [x0], #32
         fmul            v0.4s, v4.4s, v2.s[3]
 
-        subs            w2, w2, #8
+        subs            w3, w3, #8
         b.gt            1b
 
         mov             s0, v2.s[3]

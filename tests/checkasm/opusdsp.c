@@ -19,6 +19,7 @@
 #include "libavutil/mem_internal.h"
 
 #include "libavcodec/opusdsp.h"
+#include "libavcodec/opustab.h"
 
 #include "checkasm.h"
 
@@ -69,17 +70,17 @@ static void test_deemphasis(void)
     LOCAL_ALIGNED(16, float, dst1, [FFALIGN(MAX_SIZE, 4)]);
     float coeff0 = (float)rnd() / (UINT_MAX >> 5) - 16.0f, coeff1 = coeff0;
 
-    declare_func_float(float, float *out, float *in, float coeff, int len);
+    declare_func_float(float, float *out, float *in, float coeff, const float *weights, int len);
 
     randomize_float(src, MAX_SIZE);
 
-    coeff0 = call_ref(dst0, src, coeff0, MAX_SIZE);
-    coeff1 = call_new(dst1, src, coeff1, MAX_SIZE);
+    coeff0 = call_ref(dst0, src, coeff0, ff_opus_deemph_weights, MAX_SIZE);
+    coeff1 = call_new(dst1, src, coeff1, ff_opus_deemph_weights, MAX_SIZE);
 
     if (!float_near_abs_eps(coeff0, coeff1, EPS) ||
         !float_near_abs_eps_array(dst0, dst1, EPS, MAX_SIZE))
         fail();
-    bench_new(dst1, src, coeff1, MAX_SIZE);
+    bench_new(dst1, src, coeff1, ff_opus_deemph_weights, MAX_SIZE);
 }
 
 void checkasm_check_opusdsp(void)

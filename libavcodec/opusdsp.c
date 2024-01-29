@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/mem_internal.h"
 #include "opusdsp.h"
 
 static void postfilter_c(float *data, int period, float *gains, int len)
@@ -43,10 +44,11 @@ static void postfilter_c(float *data, int period, float *gains, int len)
     }
 }
 
-static float deemphasis_c(float *y, float *x, float coeff, int len)
+static float deemphasis_c(float *y, float *x, float coeff, const float *weights, int len)
 {
+    const float c = weights[0];
     for (int i = 0; i < len; i++)
-        coeff = y[i] = x[i] + coeff*CELT_EMPH_COEFF;
+        coeff = y[i] = x[i] + coeff*c;
 
     return coeff;
 }

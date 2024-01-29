@@ -19,11 +19,9 @@
 #ifndef AVCODEC_OPUSDSP_H
 #define AVCODEC_OPUSDSP_H
 
-#define CELT_EMPH_COEFF 0.8500061035f
-
 typedef struct OpusDSP {
     void (*postfilter)(float *data, int period, float *gains, int len);
-    float (*deemphasis)(float *out, float *in, float coeff, int len);
+    float (*deemphasis)(float *out, float *in, float coeff, const float *weights, int len);
 } OpusDSP;
 
 void ff_opus_dsp_init(OpusDSP *ctx);
