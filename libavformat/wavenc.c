@@ -129,7 +129,7 @@ static void bwf_write_bext_chunk(AVFormatContext *s)
 
         for (i = 0; i < len/16; i++) {
             memcpy(umidpart_str, tmp_tag->value + 2 + (i*16), 16);
-            umidpart = strtoll(umidpart_str, NULL, 16);
+            umidpart = strtoull(umidpart_str, NULL, 16);
             avio_wb64(s->pb, umidpart);
         }
         ffio_fill(s->pb, 0, 64 - i*8);
