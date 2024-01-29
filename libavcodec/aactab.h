@@ -93,6 +93,12 @@ extern const float *const ff_aac_codebook_vectors[];
 extern const float *const ff_aac_codebook_vector_vals[];
 extern const uint16_t *const ff_aac_codebook_vector_idx[];
 
+extern const uint16_t ff_aac_ac_msb_cdfs[64][17];
+extern const uint16_t ff_aac_ac_lsb_cdfs[3][4];
+extern const uint8_t ff_aac_ac_lookup_m[742];
+extern const uint32_t ff_aac_ac_hash_m[742];
+extern const uint16_t ff_aac_ac_cf_m[64][17];
+
 extern const uint16_t * const ff_swb_offset_1024[13];
 extern const uint16_t * const ff_swb_offset_960 [13];
 extern const uint16_t * const ff_swb_offset_512 [13];
