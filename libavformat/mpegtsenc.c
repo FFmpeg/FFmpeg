@@ -31,6 +31,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/defs.h"
 #include "libavcodec/h264.h"
+#include "libavcodec/hevc.h"
 #include "libavcodec/startcode.h"
 
 #include "avformat.h"
@@ -1833,6 +1834,8 @@ static int opus_get_packet_samples(AVFormatContext *s, AVPacket *pkt)
     return duration;
 }
 
+#define H264_NAL_TYPE(state) (state & 0x1f)
+#define HEVC_NAL_TYPE(state) ((state & 0x7e) >> 1)
 static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
@@ -1876,6 +1879,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
         const uint8_t *p = buf, *buf_end = p + size;
         const uint8_t *found_aud = NULL, *found_aud_end = NULL;
+        int nal_type;
         uint32_t state = -1;
         int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codecpar->extradata_size : 0;
         int ret = ff_check_h264_startcode(s, st, pkt);
@@ -1890,10 +1894,11 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
          * are assumed to be available in 'extradata' if not found in-band. */
         do {
             p = avpriv_find_start_code(p, buf_end, &state);
-            av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", state & 0x1f);
-            if ((state & 0x1f) == H264_NAL_SPS)
+            nal_type = H264_NAL_TYPE(state);
+            av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", nal_type);
+            if (nal_type == H264_NAL_SPS)
                 extradd = 0;
-            if ((state & 0x1f) == H264_NAL_AUD) {
+            if (nal_type == H264_NAL_AUD) {
                 found_aud = p - 4;     // start of the 0x000001 start code.
                 found_aud_end = p + 1; // first byte past the AUD.
                 if (found_aud < buf)
@@ -1902,10 +1907,10 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
                     found_aud_end = buf_end;
             }
         } while (p < buf_end
-                 && (state & 0x1f) != H264_NAL_IDR_SLICE
-                 && (state & 0x1f) != H264_NAL_SLICE
+                 && nal_type != H264_NAL_IDR_SLICE
+                 && nal_type != H264_NAL_SLICE
                  && (extradd > 0 || !found_aud));
-        if ((state & 0x1f) != H264_NAL_IDR_SLICE)
+        if (nal_type != H264_NAL_IDR_SLICE)
             extradd = 0;
 
         if (!found_aud) {
@@ -1974,6 +1979,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     } else if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
         const uint8_t *p = buf, *buf_end = p + size;
         uint32_t state = -1;
+        int nal_type;
         int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codecpar->extradata_size : 0;
         int ret = check_h26x_startcode(s, st, pkt, "hevc");
         if (ret < 0)
@@ -1984,22 +1990,22 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
         do {
             p = avpriv_find_start_code(p, buf_end, &state);
-            av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", (state & 0x7e)>>1);
-            if ((state & 0x7e) == 2*32)
+            nal_type = HEVC_NAL_TYPE(state);
+            av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", nal_type);
+            if (nal_type == HEVC_NAL_VPS)
                 extradd = 0;
-        } while (p < buf_end && (state & 0x7e) != 2*35 &&
-                 (state & 0x7e) >= 2*32);
+        } while (p < buf_end && nal_type != HEVC_NAL_AUD && nal_type >= HEVC_NAL_VPS);
 
-        if ((state & 0x7e) < 2*16 || (state & 0x7e) >= 2*24)
+        if (nal_type < HEVC_NAL_BLA_W_LP || nal_type >= HEVC_NAL_RSV_VCL24)
             extradd = 0;
-        if ((state & 0x7e) != 2*35) { // AUD NAL
+        if (nal_type != HEVC_NAL_AUD) { // AUD NAL
             data = av_malloc(pkt->size + 7 + extradd);
             if (!data)
                 return AVERROR(ENOMEM);
             memcpy(data + 7, st->codecpar->extradata, extradd);
             memcpy(data + 7 + extradd, pkt->data, pkt->size);
             AV_WB32(data, 0x00000001);
-            data[4] = 2*35;
+            data[4] = (HEVC_NAL_AUD << 1);
             data[5] = 1;
             data[6] = 0x50; // any slice type (0x4) + rbsp stop one bit
             buf     = data;
