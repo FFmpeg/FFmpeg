@@ -2257,23 +2257,26 @@ static void mpegts_deinit(AVFormatContext *s)
 static int mpegts_check_bitstream(AVFormatContext *s, AVStream *st,
                                   const AVPacket *pkt)
 {
-    int ret = 1;
+    const struct Entry {
+        enum AVCodecID id;
+        const char *bsf_name;
+        uint8_t mask;
+        uint8_t value;
+    } list[] = {
+        { AV_CODEC_ID_H264, "h264_mp4toannexb", 0xff, 0x01 /* configurationVersion in AVCDecoderConfigurationRecord  */},
+        { AV_CODEC_ID_HEVC, "hevc_mp4toannexb", 0xff, 0x01 /* configurationVersion in HEVCDecoderConfigurationRecord */},
+    };
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
-        if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
-                             (AV_RB24(pkt->data) != 0x000001 ||
-                              (st->codecpar->extradata_size > 0 &&
-                               st->codecpar->extradata[0] == 1)))
-            ret = ff_stream_add_bitstream_filter(st, "h264_mp4toannexb", NULL);
-    } else if (st->codecpar->codec_id == AV_CODEC_ID_HEVC) {
-        if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
-                             (AV_RB24(pkt->data) != 0x000001 ||
-                              (st->codecpar->extradata_size > 0 &&
-                               st->codecpar->extradata[0] == 1)))
-            ret = ff_stream_add_bitstream_filter(st, "hevc_mp4toannexb", NULL);
+    for (int i = 0; i < FF_ARRAY_ELEMS(list); i++) {
+        const struct Entry *e = list + i;
+        if (e->id == st->codecpar->codec_id &&
+                pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                (AV_RB24(pkt->data) != 0x000001 ||
+                    (st->codecpar->extradata_size > 0 &&
+                        (st->codecpar->extradata[0] & e->mask == e->value))))
+            return ff_stream_add_bitstream_filter(st, e->bsf_name, NULL);
     }
-
-    return ret;
+    return 1;
 }
 
 #define OFFSET(x) offsetof(MpegTSWrite, x)
