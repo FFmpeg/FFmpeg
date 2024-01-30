@@ -1834,6 +1834,21 @@ static int opus_get_packet_samples(AVFormatContext *s, AVPacket *pkt)
     return duration;
 }
 
+static uint8_t *h26x_prefix_aud(const uint8_t *aud, const int aud_size,
+    const uint8_t *extra_data, const int extra_size, AVPacket *pkt, int *size)
+{
+    const int sz = 4;       //start code size
+    uint8_t *data = av_malloc(pkt->size + sz + aud_size + extra_size);
+    if (!data)
+        return NULL;
+    AV_WB32(data, 0x00000001);
+    memcpy(data + sz, aud, aud_size);
+    memcpy(data + sz + aud_size, extra_data, extra_size);
+    memcpy(data + sz + aud_size + extra_size, pkt->data, pkt->size);
+    *size = pkt->size + sz + aud_size + extra_size;
+    return data;
+}
+
 #define H264_NAL_TYPE(state) (state & 0x1f)
 #define HEVC_NAL_TYPE(state) ((state & 0x7e) >> 1)
 static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
@@ -1915,16 +1930,14 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
         if (!found_aud) {
             /* Prefix 'buf' with the missing AUD, and extradata if needed. */
-            data = av_malloc(pkt->size + 6 + extradd);
+            const uint8_t aud[] = {
+                H264_NAL_AUD,
+                0xf0, // any slice type (0xe) + rbsp stop one bit
+            };
+            buf = data = h26x_prefix_aud(aud, FF_ARRAY_ELEMS(aud),
+                st->codecpar->extradata, extradd, pkt, &size);
             if (!data)
                 return AVERROR(ENOMEM);
-            memcpy(data + 6, st->codecpar->extradata, extradd);
-            memcpy(data + 6 + extradd, pkt->data, pkt->size);
-            AV_WB32(data, 0x00000001);
-            data[4] = H264_NAL_AUD;
-            data[5] = 0xf0; // any slice type (0xe) + rbsp stop one bit
-            buf     = data;
-            size    = pkt->size + 6 + extradd;
         } else if (extradd != 0) {
             /* Move the AUD up to the beginning of the frame, where the H.264
              * spec requires it to appear. Emit the extradata after it. */
@@ -1999,17 +2012,15 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         if (nal_type < HEVC_NAL_BLA_W_LP || nal_type >= HEVC_NAL_RSV_VCL24)
             extradd = 0;
         if (nal_type != HEVC_NAL_AUD) { // AUD NAL
-            data = av_malloc(pkt->size + 7 + extradd);
+            const uint8_t aud[] = {
+                (HEVC_NAL_AUD << 1),
+                0x01,
+                0x50, // any slice type (0x4) + rbsp stop one bit
+            };
+            buf = data = h26x_prefix_aud(aud, FF_ARRAY_ELEMS(aud),
+                st->codecpar->extradata, extradd, pkt, &size);
             if (!data)
                 return AVERROR(ENOMEM);
-            memcpy(data + 7, st->codecpar->extradata, extradd);
-            memcpy(data + 7 + extradd, pkt->data, pkt->size);
-            AV_WB32(data, 0x00000001);
-            data[4] = (HEVC_NAL_AUD << 1);
-            data[5] = 1;
-            data[6] = 0x50; // any slice type (0x4) + rbsp stop one bit
-            buf     = data;
-            size    = pkt->size + 7 + extradd;
         }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
         if (pkt->size < 2) {
