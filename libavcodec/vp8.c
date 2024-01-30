@@ -2754,7 +2754,7 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
 
     s->next_framep[VP8_FRAME_CURRENT] = curframe;
 
-    if (ffcodec(avctx->codec)->update_thread_context)
+    if (!is_vp7 && !s->actually_webp)
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
