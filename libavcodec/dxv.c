@@ -955,7 +955,7 @@ static int dxv_decompress_dxt5(AVCodecContext *avctx)
                 break;
             case 2:
                 /* Copy two dwords from a previous index */
-                idx = 8 + bytestream2_get_le16(gbc);
+                idx = 8 + 4 * bytestream2_get_le16(gbc);
                 if (idx > pos || (unsigned int)(pos - idx) + 2 > ctx->tex_size / 4)
                     return AVERROR_INVALIDDATA;
                 prev = AV_RL32(ctx->tex_data + 4 * (pos - idx));
