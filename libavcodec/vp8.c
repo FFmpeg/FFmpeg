@@ -2665,7 +2665,11 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
     if (ret < 0)
         goto err;
 
-    if (s->actually_webp) {
+    if (!is_vp7 && s->actually_webp) {
+        // VP8 in WebP is supposed to be intra-only. Enforce this here
+        // to ensure that output is reproducible with frame-threading.
+        if (!s->keyframe)
+            return AVERROR_INVALIDDATA;
         // avctx->pix_fmt already set in caller.
     } else if (!is_vp7 && s->pix_fmt == AV_PIX_FMT_NONE) {
         s->pix_fmt = get_pixel_format(s);
