@@ -259,6 +259,7 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
     size_t available = ctx->buffer_size;
     size_t bytes_written = 0;
     uint8_t *next_out = ctx->buffer;
+    const uint8_t *data;
 
     ret = libjxl_init_jxl_encoder(avctx);
     if (ret) {
@@ -303,6 +304,7 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
 
     /* bitexact lossless requires there to be no XYB transform */
     info.uses_original_profile = ctx->distance == 0.0;
+    info.orientation = frame->linesize[0] >= 0 ? JXL_ORIENT_IDENTITY : JXL_ORIENT_FLIP_VERTICAL;
 
     if (JxlEncoderSetBasicInfo(ctx->encoder, &info) != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to set JxlBasicInfo\n");
@@ -383,9 +385,15 @@ static int libjxl_encode_frame(AVCodecContext *avctx, AVPacket *pkt, const AVFra
     }
 
     jxl_fmt.endianness = JXL_NATIVE_ENDIAN;
-    jxl_fmt.align = frame->linesize[0];
+    if (frame->linesize[0] >= 0) {
+        jxl_fmt.align = frame->linesize[0];
+        data = frame->data[0];
+    } else {
+        jxl_fmt.align = -frame->linesize[0];
+        data = frame->data[0] + frame->linesize[0] * (info.ysize - 1);
+    }
 
-    if (JxlEncoderAddImageFrame(ctx->options, &jxl_fmt, frame->data[0], jxl_fmt.align * info.ysize) != JXL_ENC_SUCCESS) {
+    if (JxlEncoderAddImageFrame(ctx->options, &jxl_fmt, data, jxl_fmt.align * info.ysize) != JXL_ENC_SUCCESS) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add Image Frame\n");
         return AVERROR_EXTERNAL;
     }
