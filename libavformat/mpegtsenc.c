@@ -32,6 +32,7 @@
 #include "libavcodec/defs.h"
 #include "libavcodec/h264.h"
 #include "libavcodec/hevc.h"
+#include "libavcodec/vvc.h"
 #include "libavcodec/startcode.h"
 
 #include "avformat.h"
@@ -368,6 +369,9 @@ static int get_dvb_stream_type(AVFormatContext *s, AVStream *st)
         break;
     case AV_CODEC_ID_HEVC:
         stream_type = STREAM_TYPE_VIDEO_HEVC;
+        break;
+    case AV_CODEC_ID_VVC:
+        stream_type = STREAM_TYPE_VIDEO_VVC;
         break;
     case AV_CODEC_ID_CAVS:
         stream_type = STREAM_TYPE_VIDEO_CAVS;
@@ -1851,6 +1855,7 @@ static uint8_t *h26x_prefix_aud(const uint8_t *aud, const int aud_size,
 
 #define H264_NAL_TYPE(state) (state & 0x1f)
 #define HEVC_NAL_TYPE(state) ((state & 0x7e) >> 1)
+#define VVC_NAL_TYPE(state)  ((state >> 11) & 0x1f)
 static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st = s->streams[pkt->stream_index];
@@ -2022,6 +2027,39 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
             if (!data)
                 return AVERROR(ENOMEM);
         }
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_VVC) {
+      const uint8_t *p = buf, *buf_end = p + size;
+      uint32_t state = -1;
+      uint32_t nal_type = -1;
+      int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codecpar->extradata_size : 0;
+      int ret = check_h26x_startcode(s, st, pkt, "vvc");
+      if (ret < 0)
+          return ret;
+
+      if (extradd && AV_RB24(st->codecpar->extradata) > 1)
+          extradd = 0;
+
+      do {
+          p = avpriv_find_start_code(p, buf_end, &state);
+          // state contains byte behind start code, p points 2 bytes behind start code
+          nal_type = VVC_NAL_TYPE(state);
+          av_log(s, AV_LOG_TRACE, "nal %"PRId32"\n", nal_type );
+          if (nal_type == VVC_VPS_NUT)
+              extradd = 0;
+      } while (p < buf_end && nal_type != VVC_AUD_NUT && nal_type >= VVC_OPI_NUT);
+
+      if (nal_type >= VVC_OPI_NUT)
+          extradd = 0;
+      if (nal_type != VVC_AUD_NUT) { // AUD NAL
+            const uint8_t aud[] = {
+                0,                                          // forbidden_zero_bit, nuh_reserved_zero_bit, nuh_layer_id
+                (VVC_AUD_NUT << 3) | 1,                     // nal_unit_type, nuh_temporal_id_plus1(1)
+                (pkt->flags & AV_PKT_FLAG_KEY) << 7 | 0x28, // aud_irap_or_gdr_flag, aud_pic_type(2), rbsp_stop_one_bit
+            };
+            buf = data = h26x_prefix_aud(aud, FF_ARRAY_ELEMS(aud), st->codecpar->extradata, extradd, pkt, &size);
+            if (!data)
+                return AVERROR(ENOMEM);
+      }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
         if (pkt->size < 2) {
             av_log(s, AV_LOG_ERROR, "Opus packet too short\n");
@@ -2272,6 +2310,7 @@ static int mpegts_check_bitstream(AVFormatContext *s, AVStream *st,
     } list[] = {
         { AV_CODEC_ID_H264, "h264_mp4toannexb", 0xff, 0x01 /* configurationVersion in AVCDecoderConfigurationRecord  */},
         { AV_CODEC_ID_HEVC, "hevc_mp4toannexb", 0xff, 0x01 /* configurationVersion in HEVCDecoderConfigurationRecord */},
+        { AV_CODEC_ID_VVC,  "vvc_mp4toannexb",  0xf8, 0xf8 /* reserved '11111'b    in VVCDecoderConfigurationRecord  */},
     };
 
     for (int i = 0; i < FF_ARRAY_ELEMS(list); i++) {

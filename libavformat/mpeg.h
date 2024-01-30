@@ -56,6 +56,7 @@
 #define STREAM_TYPE_VIDEO_MPEG4     0x10
 #define STREAM_TYPE_VIDEO_H264      0x1b
 #define STREAM_TYPE_VIDEO_HEVC      0x24
+#define STREAM_TYPE_VIDEO_VVC       0x33
 #define STREAM_TYPE_VIDEO_CAVS      0x42
 
 #define STREAM_TYPE_AUDIO_AC3       0x81
