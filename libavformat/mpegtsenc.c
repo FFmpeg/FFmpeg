@@ -1759,16 +1759,16 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     ts_st->prev_payload_key = key;
 }
 
-int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPacket *pkt)
+static int check_h26x_startcode(AVFormatContext *s, const AVStream *st, const AVPacket *pkt, const char *codec)
 {
     if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001 && AV_RB24(pkt->data) != 0x000001) {
         if (!st->nb_frames) {
-            av_log(s, AV_LOG_ERROR, "H.264 bitstream malformed, "
-                   "no startcode found, use the video bitstream filter 'h264_mp4toannexb' to fix it "
-                   "('-bsf:v h264_mp4toannexb' option with ffmpeg)\n");
+            av_log(s, AV_LOG_ERROR, "%s bitstream malformed, "
+                   "no startcode found, use the video bitstream filter '%s_mp4toannexb' to fix it "
+                   "('-bsf:v %s_mp4toannexb' option with ffmpeg)\n", codec, codec, codec);
             return AVERROR_INVALIDDATA;
         }
-        av_log(s, AV_LOG_WARNING, "H.264 bitstream error, startcode missing, size %d", pkt->size);
+        av_log(s, AV_LOG_WARNING, "%s bitstream error, startcode missing, size %d", codec, pkt->size);
         if (pkt->size)
             av_log(s, AV_LOG_WARNING, " data %08"PRIX32, AV_RB32(pkt->data));
         av_log(s, AV_LOG_WARNING, "\n");
@@ -1776,19 +1776,9 @@ int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPack
     return 0;
 }
 
-static int check_hevc_startcode(AVFormatContext *s, const AVStream *st, const AVPacket *pkt)
+int ff_check_h264_startcode(AVFormatContext *s, const AVStream *st, const AVPacket *pkt)
 {
-    if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001 && AV_RB24(pkt->data) != 0x000001) {
-        if (!st->nb_frames) {
-            av_log(s, AV_LOG_ERROR, "HEVC bitstream malformed, no startcode found\n");
-            return AVERROR_PATCHWELCOME;
-        }
-        av_log(s, AV_LOG_WARNING, "HEVC bitstream error, startcode missing, size %d", pkt->size);
-        if (pkt->size)
-            av_log(s, AV_LOG_WARNING, " data %08"PRIX32, AV_RB32(pkt->data));
-        av_log(s, AV_LOG_WARNING, "\n");
-    }
-    return 0;
+    return check_h26x_startcode(s, st, pkt, "h264");
 }
 
 /* Based on GStreamer's gst-plugins-base/ext/ogg/gstoggstream.c
@@ -1985,7 +1975,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         const uint8_t *p = buf, *buf_end = p + size;
         uint32_t state = -1;
         int extradd = (pkt->flags & AV_PKT_FLAG_KEY) ? st->codecpar->extradata_size : 0;
-        int ret = check_hevc_startcode(s, st, pkt);
+        int ret = check_h26x_startcode(s, st, pkt, "hevc");
         if (ret < 0)
             return ret;
 
