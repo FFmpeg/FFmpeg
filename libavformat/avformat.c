@@ -551,7 +551,7 @@ static int match_stream_specifier(const AVFormatContext *s, const AVStream *st,
                         }
                     }
                 }
-                if (group_idx < 0 || group_idx > s->nb_stream_groups)
+                if (group_idx < 0 || group_idx >= s->nb_stream_groups)
                     return AVERROR(EINVAL);
                 for (unsigned j = 0; j < s->stream_groups[group_idx]->nb_streams; j++) {
                     if (st->index == s->stream_groups[group_idx]->streams[j]->index) {
