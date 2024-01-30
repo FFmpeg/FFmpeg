@@ -911,6 +911,8 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
                 num_multi_layer_olss++;
             }
         }
+        if (!current->vps_each_layer_is_an_ols_flag && num_multi_layer_olss == 0)
+            return AVERROR_INVALIDDATA;
     }
 
     for (i = 0; i <= current->vps_num_ptls_minus1; i++) {
