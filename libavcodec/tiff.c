@@ -1701,7 +1701,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_ICC_PROFILE:
         gb_temp = s->gb;
-        bytestream2_seek(&gb_temp, SEEK_SET, off);
+        bytestream2_seek(&gb_temp, off, SEEK_SET);
 
         if (bytestream2_get_bytes_left(&gb_temp) < count)
             return AVERROR_INVALIDDATA;
