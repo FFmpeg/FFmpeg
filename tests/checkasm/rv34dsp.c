@@ -56,10 +56,34 @@ static void test_rv34_inv_transform_dc(RV34DSPContext *s) {
     report("rv34_inv_transform_dc");
 }
 
+static void test_rv34_idct_dc_add(RV34DSPContext *s) {
+    declare_func(void, uint8_t *dst, ptrdiff_t stride, int dc);
+
+    if (check_func(s->rv34_idct_dc_add, "rv34_idct_dc_add")) {
+        LOCAL_ALIGNED_16(uint8_t, p1, [BUF_SIZE]);
+        LOCAL_ALIGNED_16(uint8_t, p2, [BUF_SIZE]);
+
+        randomize(p1, BUF_SIZE);
+        memcpy(p2, p1, BUF_SIZE * sizeof(*p1));
+
+        call_ref(p1, 4, 5);
+        call_new(p2, 4, 5);
+
+        if (memcmp(p1,  p2,  BUF_SIZE * sizeof (*p1)) != 0) {
+            fail();
+        }
+
+        bench_new(p1, 4, 5);
+    }
+
+    report("rv34_idct_dc_add");
+}
+
 void checkasm_check_rv34dsp(void)
 {
     RV34DSPContext s = { 0 };
     ff_rv34dsp_init(&s);
 
     test_rv34_inv_transform_dc(&s);
+    test_rv34_idct_dc_add(&s);
 }
