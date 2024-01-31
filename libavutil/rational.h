@@ -168,6 +168,10 @@ static av_always_inline AVRational av_inv_q(AVRational q)
  * In case of infinity, the returned value is expressed as `{1, 0}` or
  * `{-1, 0}` depending on the sign.
  *
+ * In general rational numbers with |num| <= 1<<26 && |den| <= 1<<26
+ * can be recovered exactly from their double representation.
+ * (no exceptions were found within 1B random ones)
+ *
  * @param d   `double` to convert
  * @param max Maximum allowed numerator and denominator
  * @return `d` in AVRational form
