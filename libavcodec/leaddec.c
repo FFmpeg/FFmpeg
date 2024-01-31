@@ -38,29 +38,29 @@
 #define LUMA_AC_BITS 10
 #define CHROMA_AC_BITS 10
 
-static VLC luma_dc_vlc;
-static VLC chroma_dc_vlc;
-static VLC luma_ac_vlc;
-static VLC chroma_ac_vlc;
+static VLCElem luma_dc_vlc[1 << LUMA_DC_BITS];
+static VLCElem chroma_dc_vlc[1 << CHROMA_DC_BITS];
+static VLCElem luma_ac_vlc[1160];
+static VLCElem chroma_ac_vlc[1160];
 
 static av_cold void lead_init_static_data(void)
 {
-    VLC_INIT_STATIC_FROM_LENGTHS(&luma_dc_vlc, LUMA_DC_BITS, FF_ARRAY_ELEMS(luma_dc_len),
-                                 luma_dc_len, 1,
-                                 0, 0, 0,
-                                 0, 0, 1 << LUMA_DC_BITS);
-    VLC_INIT_STATIC_FROM_LENGTHS(&chroma_dc_vlc, CHROMA_DC_BITS, FF_ARRAY_ELEMS(chroma_dc_len),
-                                 chroma_dc_len, 1,
-                                 0, 0, 0,
-                                 0, 0, 1 << CHROMA_DC_BITS);
-    VLC_INIT_STATIC_FROM_LENGTHS(&luma_ac_vlc, LUMA_AC_BITS, FF_ARRAY_ELEMS(luma_ac_len),
-                                 luma_ac_len, 1,
-                                 ff_mjpeg_val_ac_luminance, 1, 1,
-                                 0, 0, 1160);
-    VLC_INIT_STATIC_FROM_LENGTHS(&chroma_ac_vlc, CHROMA_AC_BITS, FF_ARRAY_ELEMS(chroma_ac_len),
-                                 chroma_ac_len, 1,
-                                 ff_mjpeg_val_ac_chrominance, 1, 1,
-                                 0, 0, 1160);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(luma_dc_vlc, LUMA_DC_BITS, FF_ARRAY_ELEMS(luma_dc_len),
+                                       luma_dc_len, 1,
+                                       NULL, 0, 0,
+                                       0, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(chroma_dc_vlc, CHROMA_DC_BITS, FF_ARRAY_ELEMS(chroma_dc_len),
+                                       chroma_dc_len, 1,
+                                       NULL, 0, 0,
+                                       0, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(luma_ac_vlc, LUMA_AC_BITS, FF_ARRAY_ELEMS(luma_ac_len),
+                                       luma_ac_len, 1,
+                                       ff_mjpeg_val_ac_luminance, 1, 1,
+                                       0, 0);
+    VLC_INIT_STATIC_TABLE_FROM_LENGTHS(chroma_ac_vlc, CHROMA_AC_BITS, FF_ARRAY_ELEMS(chroma_ac_len),
+                                       chroma_ac_len, 1,
+                                       ff_mjpeg_val_ac_chrominance, 1, 1,
+                                       0, 0);
 }
 
 typedef struct LeadContext {
@@ -199,9 +199,9 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
             for (int mb_x = 0; mb_x < avctx->width / 16; mb_x++)
                 for (int b = 0; b < (yuv20p_half ? 4 : 6); b++) {
                     int luma_block = yuv20p_half ? 2 : 4;
-                    const VLCElem * dc_vlc = b < luma_block ? luma_dc_vlc.table : chroma_dc_vlc.table;
+                    const VLCElem * dc_vlc = b < luma_block ? luma_dc_vlc : chroma_dc_vlc;
                     int dc_bits            = b < luma_block ? LUMA_DC_BITS : CHROMA_DC_BITS;
-                    const VLCElem * ac_vlc = b < luma_block ? luma_ac_vlc.table : chroma_ac_vlc.table;
+                    const VLCElem * ac_vlc = b < luma_block ? luma_ac_vlc : chroma_ac_vlc;
                     int ac_bits            = b < luma_block ? LUMA_AC_BITS : CHROMA_AC_BITS;
                     int plane              = b < luma_block ? 0 : b - (yuv20p_half ? 1 : 3);
                     int x, y;
@@ -231,9 +231,9 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
             for (int j = 0; j < avctx->height / fields / 8; j++)
                 for (int i = 0; i < avctx->width / 8; i++)
                     for (int plane = 0; plane < 3; plane++) {
-                        const VLCElem * dc_vlc = !plane ? luma_dc_vlc.table : chroma_dc_vlc.table;
+                        const VLCElem * dc_vlc = !plane ? luma_dc_vlc : chroma_dc_vlc;
                         int dc_bits            = !plane ? LUMA_DC_BITS : CHROMA_DC_BITS;
-                        const VLCElem * ac_vlc = !plane ? luma_ac_vlc.table : chroma_ac_vlc.table;
+                        const VLCElem * ac_vlc = !plane ? luma_ac_vlc : chroma_ac_vlc;
                         int ac_bits            = !plane ? LUMA_AC_BITS : CHROMA_AC_BITS;
 
                         ret = decode_block(s, &gb, dc_vlc, dc_bits, ac_vlc, ac_bits,
