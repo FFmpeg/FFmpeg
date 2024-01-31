@@ -36,6 +36,8 @@
 typedef struct FLACDecContext {
     FFRawDemuxerContext rawctx;
     int found_seektable;
+
+    AVCodecContext *parser_dec;
 } FLACDecContext;
 
 static void reset_index_position(int64_t metadata_head_size, AVStream *st)
@@ -269,6 +271,7 @@ static int flac_probe(const AVProbeData *p)
 static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_index,
                                              int64_t *ppos, int64_t pos_limit)
 {
+    FLACDecContext *flac = s->priv_data;
     FFFormatContext *const si = ffformatcontext(s);
     AVPacket *const pkt = si->parse_pkt;
     AVStream *st = s->streams[stream_index];
@@ -285,6 +288,16 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
     }
     parser->flags |= PARSER_FLAG_USE_CODEC_TS;
 
+    if (!flac->parser_dec) {
+        flac->parser_dec = avcodec_alloc_context3(NULL);
+        if (!flac->parser_dec)
+            return AV_NOPTS_VALUE;
+
+        ret = avcodec_parameters_to_context(flac->parser_dec, st->codecpar);
+        if (ret < 0)
+            return ret;
+    }
+
     for (;;){
         uint8_t *data;
         int size;
@@ -298,7 +311,7 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
                 av_assert1(!pkt->size);
             }
         }
-        av_parser_parse2(parser, ffstream(st)->avctx,
+        av_parser_parse2(parser, flac->parser_dec,
                          &data, &size, pkt->data, pkt->size,
                          pkt->pts, pkt->dts, *ppos);
 
@@ -316,6 +329,15 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
     }
     av_parser_close(parser);
     return pts;
+}
+
+static int flac_close(AVFormatContext *s)
+{
+    FLACDecContext *flac = s->priv_data;
+
+    avcodec_free_context(&flac->parser_dec);
+
+    return 0;
 }
 
 static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags) {
@@ -347,6 +369,7 @@ const AVInputFormat ff_flac_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("raw FLAC"),
     .read_probe     = flac_probe,
     .read_header    = flac_read_header,
+    .read_close     = flac_close,
     .read_packet    = ff_raw_read_partial_packet,
     .read_seek      = flac_seek,
     .read_timestamp = flac_read_timestamp,
