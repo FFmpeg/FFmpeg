@@ -807,31 +807,15 @@ static int iamf_write_mixing_presentation(const IAMFContext *iamf,
 
 int ff_iamf_write_descriptors(const IAMFContext *iamf, AVIOContext *pb, void *log_ctx)
 {
-    uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
-    PutBitContext pbc;
-    AVIOContext *dyn_bc;
-    uint8_t *dyn_buf = NULL;
-    int dyn_size;
-
-    int ret = avio_open_dyn_buf(&dyn_bc);
-    if (ret < 0)
-        return ret;
+    int ret;
 
     // Sequence Header
-    init_put_bits(&pbc, header, sizeof(header));
-    put_bits(&pbc, 5, IAMF_OBU_IA_SEQUENCE_HEADER);
-    put_bits(&pbc, 3, 0);
-    flush_put_bits(&pbc);
+    avio_w8(pb, IAMF_OBU_IA_SEQUENCE_HEADER << 3);
 
-    avio_write(dyn_bc, header, put_bytes_count(&pbc, 1));
-    ffio_write_leb(dyn_bc, 6);
-    avio_wb32(dyn_bc, MKBETAG('i','a','m','f'));
-    avio_w8(dyn_bc, iamf->nb_audio_elements > 1); // primary_profile
-    avio_w8(dyn_bc, iamf->nb_audio_elements > 1); // additional_profile
-
-    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
-    avio_write(pb, dyn_buf, dyn_size);
-    av_free(dyn_buf);
+    ffio_write_leb(pb, 6);
+    avio_wb32(pb, MKBETAG('i','a','m','f'));
+    avio_w8(pb, iamf->nb_audio_elements > 1); // primary_profile
+    avio_w8(pb, iamf->nb_audio_elements > 1); // additional_profile
 
     for (int i = 0; i < iamf->nb_codec_configs; i++) {
         ret = iamf_write_codec_config(iamf, iamf->codec_configs[i], pb);
