@@ -31,3 +31,23 @@ func ff_rv34_inv_transform_dc_rvv, zve32x
 
         ret
 endfunc
+
+func ff_rv34_idct_dc_add_rvv, zve32x
+        vsetivli      zero, 4, e8, mf4, ta, ma
+        vlse32.v      v0, (a0), a1
+        li            t1, 169
+        mul           t1, t1, a2
+        li            a2, 255
+        addi          t1, t1, 512
+        srai          t1, t1, 10
+        vsetivli      zero, 4*4, e16, m2, ta, ma
+        vzext.vf2     v2, v0
+        vadd.vx       v2, v2, t1
+        vmax.vx       v2, v2, zero
+        vsetvli       zero, zero, e8, m1, ta, ma
+        vnclipu.wi    v0, v2, 0
+        vsetivli      zero, 4, e8, mf4, ta, ma
+        vsse32.v      v0, (a0), a1
+
+        ret
+endfunc

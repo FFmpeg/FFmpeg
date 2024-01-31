@@ -26,6 +26,7 @@
 #include "libavcodec/rv34dsp.h"
 
 void ff_rv34_inv_transform_dc_rvv(int16_t *block);
+void ff_rv34_idct_dc_add_rvv(uint8_t *dst, ptrdiff_t stride, int dc);
 
 av_cold void ff_rv34dsp_init_riscv(RV34DSPContext *c)
 {
@@ -34,6 +35,7 @@ av_cold void ff_rv34dsp_init_riscv(RV34DSPContext *c)
 
     if (flags & AV_CPU_FLAG_RVV_I32 && ff_get_rv_vlenb() >= 16) {
         c->rv34_inv_transform_dc = ff_rv34_inv_transform_dc_rvv;
+        c->rv34_idct_dc_add = ff_rv34_idct_dc_add_rvv;
     }
 #endif
 }
