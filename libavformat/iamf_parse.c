@@ -26,6 +26,7 @@
 #include "libavutil/log.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/flac.h"
+#include "libavcodec/leb.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/put_bits.h"
 #include "avio_internal.h"

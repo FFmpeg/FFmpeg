@@ -68,7 +68,7 @@ static int metadata_is_global(const AV1OBU *obu)
     if (init_get_bits(&gb, obu->data, obu->size_bits) < 0)
         return 0;
 
-    metadata_type = leb128(&gb);
+    metadata_type = get_leb(&gb);
 
     return val_in_array(metadata_obu_types, FF_ARRAY_ELEMS(metadata_obu_types),
                         metadata_type);

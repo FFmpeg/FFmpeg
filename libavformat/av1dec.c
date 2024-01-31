@@ -325,7 +325,7 @@ static int read_obu_with_size(const uint8_t *buf, int buf_size, int64_t *obu_siz
         skip_bits(&gb, 3);  // extension_header_reserved_3bits
     }
 
-    *obu_size  = leb128(&gb);
+    *obu_size  = get_leb128(&gb);
     if (*obu_size > INT_MAX)
         return AVERROR_INVALIDDATA;
 
