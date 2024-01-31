@@ -453,11 +453,11 @@ static int iamf_write_codec_config(const IAMFContext *iamf,
     put_bits(&pbc, 3, 0);
     flush_put_bits(&pbc);
 
-    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size = avio_get_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(pb, header, put_bytes_count(&pbc, 1));
     ffio_write_leb(pb, dyn_size);
     avio_write(pb, dyn_buf, dyn_size);
-    av_free(dyn_buf);
+    ffio_free_dyn_buf(&dyn_bc);
 
     return 0;
 }
@@ -660,11 +660,11 @@ static int iamf_write_audio_element(const IAMFContext *iamf,
     put_bits(&pbc, 3, 0);
     flush_put_bits(&pbc);
 
-    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size = avio_get_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(pb, header, put_bytes_count(&pbc, 1));
     ffio_write_leb(pb, dyn_size);
     avio_write(pb, dyn_buf, dyn_size);
-    av_free(dyn_buf);
+    ffio_free_dyn_buf(&dyn_bc);
 
     return 0;
 }
@@ -796,11 +796,11 @@ static int iamf_write_mixing_presentation(const IAMFContext *iamf,
     put_bits(&pbc, 3, 0);
     flush_put_bits(&pbc);
 
-    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size = avio_get_dyn_buf(dyn_bc, &dyn_buf);
     avio_write(pb, header, put_bytes_count(&pbc, 1));
     ffio_write_leb(pb, dyn_size);
     avio_write(pb, dyn_buf, dyn_size);
-    av_free(dyn_buf);
+    ffio_free_dyn_buf(&dyn_bc);
 
     return 0;
 }

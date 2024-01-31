@@ -257,10 +257,10 @@ static int write_parameter_block(AVFormatContext *s, const AVIAMFParamDefinition
         }
     }
 
-    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size = avio_get_dyn_buf(dyn_bc, &dyn_buf);
     ffio_write_leb(s->pb, dyn_size);
     avio_write(s->pb, dyn_buf, dyn_size);
-    av_free(dyn_buf);
+    ffio_free_dyn_buf(&dyn_bc);
 
     return 0;
 }
@@ -340,10 +340,10 @@ static int iamf_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->id > 17)
         ffio_write_leb(dyn_bc, st->id);
 
-    dyn_size = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    dyn_size = avio_get_dyn_buf(dyn_bc, &dyn_buf);
     ffio_write_leb(s->pb, dyn_size + pkt->size);
     avio_write(s->pb, dyn_buf, dyn_size);
-    av_free(dyn_buf);
+    ffio_free_dyn_buf(&dyn_bc);
     avio_write(s->pb, pkt->data, pkt->size);
 
     return 0;
