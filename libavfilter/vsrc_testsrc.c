@@ -1418,6 +1418,24 @@ static const enum AVPixelFormat smptebars_pix_fmts[] = {
     AV_PIX_FMT_NONE,
 };
 
+static int smptebars_query_formats(AVFilterContext *ctx)
+{
+    enum AVColorSpace csp;
+    int ret;
+
+    if (!strcmp(ctx->name, "smptehdbars")) {
+        csp = AVCOL_SPC_BT709;
+    } else {
+        csp = AVCOL_SPC_BT470BG;
+    }
+
+    if ((ret = ff_set_common_color_spaces(ctx, ff_make_formats_list_singleton(csp))))
+        return ret;
+    if ((ret = ff_set_common_color_ranges(ctx, ff_make_formats_list_singleton(AVCOL_RANGE_MPEG))))
+        return ret;
+    return ff_set_common_formats_from_list(ctx, smptebars_pix_fmts);
+}
+
 AVFILTER_DEFINE_CLASS_EXT(palbars, "pal(75|100)bars", options);
 
 #if CONFIG_PAL75BARS_FILTER
@@ -1427,9 +1445,6 @@ static void pal75bars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     TestSourceContext *test = ctx->priv;
     int r_w, i, x = 0;
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(picref->format);
-
-    picref->color_range = AVCOL_RANGE_MPEG;
-    picref->colorspace = AVCOL_SPC_BT470BG;
 
     r_w = FFALIGN((test->w + 7) / 8, 1 << pixdesc->log2_chroma_w);
 
@@ -1461,7 +1476,7 @@ const AVFilter ff_vsrc_pal75bars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_PAL75BARS_FILTER */
@@ -1473,9 +1488,6 @@ static void pal100bars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     TestSourceContext *test = ctx->priv;
     int r_w, i, x = 0;
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(picref->format);
-
-    picref->color_range = AVCOL_RANGE_MPEG;
-    picref->colorspace = AVCOL_SPC_BT470BG;
 
     r_w = FFALIGN((test->w + 7) / 8, 1 << pixdesc->log2_chroma_w);
 
@@ -1505,7 +1517,7 @@ const AVFilter ff_vsrc_pal100bars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_PAL100BARS_FILTER */
@@ -1519,8 +1531,6 @@ static void smptebars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     TestSourceContext *test = ctx->priv;
     int r_w, r_h, w_h, p_w, p_h, i, tmp, x = 0;
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(picref->format);
-
-    picref->colorspace = AVCOL_SPC_BT470BG;
 
     r_w = FFALIGN((test->w + 6) / 7, 1 << pixdesc->log2_chroma_w);
     r_h = FFALIGN(test->h * 2 / 3, 1 << pixdesc->log2_chroma_h);
@@ -1572,7 +1582,7 @@ const AVFilter ff_vsrc_smptebars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_SMPTEBARS_FILTER */
@@ -1584,8 +1594,6 @@ static void smptehdbars_fill_picture(AVFilterContext *ctx, AVFrame *picref)
     TestSourceContext *test = ctx->priv;
     int d_w, r_w, r_h, l_w, i, tmp, x = 0, y = 0;
     const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(picref->format);
-
-    picref->colorspace = AVCOL_SPC_BT709;
 
     d_w = FFALIGN(test->w / 8, 1 << pixdesc->log2_chroma_w);
     r_h = FFALIGN(test->h * 7 / 12, 1 << pixdesc->log2_chroma_h);
@@ -1675,7 +1683,7 @@ const AVFilter ff_vsrc_smptehdbars = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_PIXFMTS_ARRAY(smptebars_pix_fmts),
+    FILTER_QUERY_FUNC(smptebars_query_formats),
 };
 
 #endif  /* CONFIG_SMPTEHDBARS_FILTER */
@@ -2138,7 +2146,6 @@ ZONEPLATE_SLICE(16, uint16_t)
 static void zoneplate_fill_picture(AVFilterContext *ctx, AVFrame *frame)
 {
     TestSourceContext *test = ctx->priv;
-    frame->color_range = AVCOL_RANGE_JPEG;
     ff_filter_execute(ctx, test->fill_slice_fn, frame, NULL,
                       FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 }
@@ -2194,6 +2201,14 @@ static const enum AVPixelFormat zoneplate_pix_fmts[] = {
     AV_PIX_FMT_NONE,
 };
 
+static int zoneplate_query_formats(AVFilterContext *ctx)
+{
+    int ret;
+    if ((ret = ff_set_common_color_ranges(ctx, ff_make_formats_list_singleton(AVCOL_RANGE_JPEG))))
+        return ret;
+    return ff_set_common_formats_from_list(ctx, zoneplate_pix_fmts);
+}
+
 static const AVFilterPad avfilter_vsrc_zoneplate_outputs[] = {
     {
         .name          = "default",
@@ -2212,7 +2227,7 @@ const AVFilter ff_vsrc_zoneplate = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_zoneplate_outputs),
-    FILTER_PIXFMTS_ARRAY(zoneplate_pix_fmts),
+    FILTER_QUERY_FUNC(zoneplate_query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
