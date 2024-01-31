@@ -24,7 +24,6 @@
 
 #include <stdint.h>
 
-#include "libavutil/iamf.h"
 #include "avio.h"
 #include "iamf.h"
 

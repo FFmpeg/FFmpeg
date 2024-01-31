@@ -22,13 +22,13 @@
 #ifndef AVFORMAT_IAMF_H
 #define AVFORMAT_IAMF_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/iamf.h"
 #include "libavcodec/codec_id.h"
 #include "libavcodec/codec_par.h"
-#include "avformat.h"
 
 #define MAX_IAMF_OBU_HEADER_SIZE (1 + 8 * 3)
 

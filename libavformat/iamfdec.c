@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config_components.h"
-
 #include "libavutil/avassert.h"
 #include "libavutil/iamf.h"
 #include "libavutil/intreadwrite.h"
@@ -28,7 +26,6 @@
 #include "libavcodec/mathops.h"
 #include "avformat.h"
 #include "avio_internal.h"
-#include "demux.h"
 #include "iamf.h"
 #include "iamf_parse.h"
 #include "internal.h"

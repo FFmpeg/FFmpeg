@@ -24,8 +24,6 @@
 #include "libavutil/iamf.h"
 #include "libavutil/mem.h"
 #include "libavcodec/get_bits.h"
-#include "libavcodec/flac.h"
-#include "libavcodec/mpeg4audio.h"
 #include "libavcodec/put_bits.h"
 #include "avformat.h"
 #include "avio_internal.h"

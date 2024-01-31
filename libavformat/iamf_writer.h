@@ -22,9 +22,8 @@
 #ifndef AVFORMAT_IAMF_WRITER_H
 #define AVFORMAT_IAMF_WRITER_H
 
-#include <stdint.h>
+#include <stddef.h>
 
-#include "libavutil/common.h"
 #include "avformat.h"
 #include "avio.h"
 #include "iamf.h"

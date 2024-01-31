@@ -24,7 +24,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/iamf.h"
-#include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 #include "avformat.h"
 #include "avio_internal.h"
