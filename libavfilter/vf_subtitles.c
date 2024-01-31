@@ -148,7 +148,8 @@ static int config_input(AVFilterLink *inlink)
 {
     AssContext *ass = inlink->dst->priv;
 
-    ff_draw_init(&ass->draw, inlink->format, ass->alpha ? FF_DRAW_PROCESS_ALPHA : 0);
+    ff_draw_init2(&ass->draw, inlink->format, inlink->colorspace, inlink->color_range,
+                  ass->alpha ? FF_DRAW_PROCESS_ALPHA : 0);
 
     ass_set_frame_size  (ass->renderer, inlink->w, inlink->h);
     if (ass->original_w && ass->original_h) {

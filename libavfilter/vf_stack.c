@@ -304,7 +304,8 @@ static int config_output(AVFilterLink *outlink)
         int inw, inh, size;
 
         if (s->fillcolor_enable) {
-            ff_draw_init(&s->draw, ctx->inputs[0]->format, 0);
+            const AVFilterLink *inlink = ctx->inputs[0];
+            ff_draw_init2(&s->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
             ff_draw_color(&s->draw, &s->color, s->fillcolor);
         }
 

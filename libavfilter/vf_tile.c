@@ -139,7 +139,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->frame_rate = av_mul_q(inlink->frame_rate,
                                    av_make_q(1, tile->nb_frames - tile->overlap));
-    ff_draw_init(&tile->draw, inlink->format, 0);
+    ff_draw_init2(&tile->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
     ff_draw_color(&tile->draw, &tile->blank, tile->rgba_color);
 
     return 0;

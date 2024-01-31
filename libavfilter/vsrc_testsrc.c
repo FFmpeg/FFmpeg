@@ -263,7 +263,8 @@ static int color_config_props(AVFilterLink *inlink)
     TestSourceContext *test = ctx->priv;
     int ret;
 
-    ff_draw_init(&test->draw, inlink->format, 0);
+    ff_draw_init2(&test->draw, inlink->format, inlink->colorspace,
+                  inlink->color_range, 0);
     ff_draw_color(&test->draw, &test->color, test->color_rgba);
 
     test->w = ff_draw_round_to_sub(&test->draw, 0, -1, test->w);
@@ -944,7 +945,8 @@ static int test2_config_props(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->src;
     TestSourceContext *s = ctx->priv;
 
-    av_assert0(ff_draw_init(&s->draw, inlink->format, 0) >= 0);
+    av_assert0(ff_draw_init2(&s->draw, inlink->format, inlink->colorspace,
+                             inlink->color_range, 0) >= 0);
     s->w = ff_draw_round_to_sub(&s->draw, 0, -1, s->w);
     s->h = ff_draw_round_to_sub(&s->draw, 1, -1, s->h);
     if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
@@ -1964,7 +1966,8 @@ static int colorchart_config_props(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->src;
     TestSourceContext *s = ctx->priv;
 
-    av_assert0(ff_draw_init(&s->draw, inlink->format, 0) >= 0);
+    av_assert0(ff_draw_init2(&s->draw, inlink->format, inlink->colorspace,
+                             inlink->color_range, 0) >= 0);
     if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
         return AVERROR(EINVAL);
     return config_props(inlink);

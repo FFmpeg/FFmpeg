@@ -203,7 +203,7 @@ static int config_input(AVFilterLink *inlink)
     TPadContext *s = ctx->priv;
 
     if (needs_drawing(s)) {
-        ff_draw_init(&s->draw, inlink->format, 0);
+        ff_draw_init2(&s->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
         ff_draw_color(&s->draw, &s->color, s->rgba_color);
     }
 

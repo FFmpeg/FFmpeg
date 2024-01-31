@@ -260,7 +260,7 @@ static int config_output(AVFilterLink *outlink)
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(ctx->inputs[0]->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = ctx->inputs[0]->h;
 
-    ff_draw_init(&s->draw, outlink->format, 0);
+    ff_draw_init2(&s->draw, outlink->format, outlink->colorspace, outlink->color_range, 0);
     ff_draw_color(&s->draw, &s->color, s->fillcolor);
 
     s->filter_slice[0] = s->depth <= 8 ? filter_slice_nn8 : filter_slice_nn16;

@@ -160,7 +160,7 @@ static av_cold int config_props(AVFilterLink *outlink)
     s->dir = 1;
     s->prev_intpart = INT64_MIN;
 
-    ff_draw_init(&s->draw, outlink->format, 0);
+    ff_draw_init2(&s->draw, outlink->format, outlink->colorspace, outlink->color_range, 0);
 
     ff_draw_color(&s->draw, &s->fg, s->rgba[0]);
     ff_draw_color(&s->draw, &s->bg, s->rgba[1]);
