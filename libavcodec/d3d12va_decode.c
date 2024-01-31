@@ -79,7 +79,7 @@ unsigned ff_d3d12va_get_surface_index(const AVCodecContext *avctx,
     }
 
 fail:
-    av_log(avctx, AV_LOG_WARNING, "Could not get surface index. Using 0 instead.\n");
+    av_log((AVCodecContext *)avctx, AV_LOG_WARNING, "Could not get surface index. Using 0 instead.\n");
     return 0;
 }
 
