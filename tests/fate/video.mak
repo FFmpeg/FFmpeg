@@ -152,6 +152,12 @@ fate-dxv3-dxt1: CMD = framecrc -i $(TARGET_SAMPLES)/dxv/dxv3-nqna.mov
 FATE_DXV += fate-dxv3-dxt5
 fate-dxv3-dxt5: CMD = framecrc -i $(TARGET_SAMPLES)/dxv/dxv3-nqwa.mov
 
+FATE_DXV += fate-dxv3-ycg6
+fate-dxv3-ycg6: CMD = framecrc -i $(TARGET_SAMPLES)/dxv/dxv3-hqna.mov
+
+FATE_DXV += fate-dxv3-yg10
+fate-dxv3-yg10: CMD = framecrc -i $(TARGET_SAMPLES)/dxv/dxv3-hqwa.mov
+
 FATE_VIDEO-$(call FRAMECRC, MOV, DXV) += $(FATE_DXV)
 fate-dxv: $(FATE_DXV)
 
