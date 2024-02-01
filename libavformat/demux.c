@@ -1250,6 +1250,53 @@ static int64_t ts_to_samples(AVStream *st, int64_t ts)
     return av_rescale(ts, st->time_base.num * st->codecpar->sample_rate, st->time_base.den);
 }
 
+static int codec_close(FFStream *sti)
+{
+    AVCodecContext *avctx_new = NULL;
+    AVCodecParameters *par_tmp = NULL;
+    int ret;
+
+    avctx_new = avcodec_alloc_context3(sti->avctx->codec);
+    if (!avctx_new) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    par_tmp = avcodec_parameters_alloc();
+    if (!par_tmp) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = avcodec_parameters_from_context(par_tmp, sti->avctx);
+    if (ret < 0)
+        goto fail;
+
+    ret = avcodec_parameters_to_context(avctx_new, par_tmp);
+    if (ret < 0)
+        goto fail;
+
+    avctx_new->pkt_timebase = sti->avctx->pkt_timebase;
+
+#if FF_API_TICKS_PER_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx_new->ticks_per_frame = sti->avctx->ticks_per_frame;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
+    avcodec_free_context(&sti->avctx);
+    sti->avctx = avctx_new;
+
+    avctx_new = NULL;
+    ret       = 0;
+
+fail:
+    avcodec_free_context(&avctx_new);
+    avcodec_parameters_free(&par_tmp);
+
+    return ret;
+}
+
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     FFFormatContext *const si = ffformatcontext(s);
@@ -1286,8 +1333,10 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         if (sti->need_context_update) {
             if (avcodec_is_open(sti->avctx)) {
                 av_log(s, AV_LOG_DEBUG, "Demuxer context update while decoder is open, closing and trying to re-open\n");
-                avcodec_close(sti->avctx);
+                ret = codec_close(sti);
                 sti->info->found_decoder = 0;
+                if (ret < 0)
+                    return ret;
             }
 
             /* close parser, because it depends on the codec */
@@ -3013,14 +3062,16 @@ find_stream_info_err:
     for (unsigned i = 0; i < ic->nb_streams; i++) {
         AVStream *const st  = ic->streams[i];
         FFStream *const sti = ffstream(st);
+        int err;
+
         if (sti->info) {
             av_freep(&sti->info->duration_error);
             av_freep(&sti->info);
         }
-        avcodec_close(sti->avctx);
-        // FIXME: avcodec_close() frees AVOption settable fields which includes ch_layout,
-        //        so we need to restore it.
-        av_channel_layout_copy(&sti->avctx->ch_layout, &st->codecpar->ch_layout);
+
+        err = codec_close(sti);
+        if (err < 0 && ret >= 0)
+            ret = err;
         av_bsf_free(&sti->extract_extradata.bsf);
     }
     if (ic->pb) {
