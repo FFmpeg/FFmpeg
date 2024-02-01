@@ -41,6 +41,7 @@ void ff_blockdsp_init(BlockDSPContext *c);
 void ff_blockdsp_init_alpha(BlockDSPContext *c);
 void ff_blockdsp_init_arm(BlockDSPContext *c);
 void ff_blockdsp_init_ppc(BlockDSPContext *c);
+void ff_blockdsp_init_riscv(BlockDSPContext *c);
 void ff_blockdsp_init_x86(BlockDSPContext *c);
 void ff_blockdsp_init_mips(BlockDSPContext *c);
 
