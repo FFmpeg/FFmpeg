@@ -67,6 +67,8 @@ void ff_h2656_put_uni_##name##W##_##bitd##_##opt(uint8_t *_dst, ptrdiff_t dststr
     mc_rep_funcs(fname, 12,  8, 32, sse4)        \
     mc_rep_funcs(fname, 12,  8, 16, sse4)        \
 
+#if ARCH_X86_64 && HAVE_SSE4_EXTERNAL
+
 MC_REP_FUNCS_SSE4(pixels)
 MC_REP_FUNCS_SSE4(4tap_h)
 MC_REP_FUNCS_SSE4(4tap_v)
@@ -95,4 +97,5 @@ MC_REP_FUNCS_AVX2(8tap_hv)
 MC_REP_FUNCS_AVX2(4tap_h)
 MC_REP_FUNCS_AVX2(4tap_v)
 MC_REP_FUNCS_AVX2(4tap_hv)
+#endif
 #endif
