@@ -170,7 +170,7 @@ FW_QPEL_FUNCS(8,  10, sse4);
 FW_QPEL_FUNCS(4,  12, sse4);
 FW_QPEL_FUNCS(8,  12, sse4);
 
-#ifdef HAVE_AVX2_EXTERNAL
+#if HAVE_AVX2_EXTERNAL
 
 FW_PEL(32,  8, avx2);
 FW_PUT(pel, pel_pixels16, pixels16, 10, avx2);
