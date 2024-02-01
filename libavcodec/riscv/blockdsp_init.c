@@ -26,6 +26,7 @@
 #include "libavcodec/blockdsp.h"
 
 void ff_clear_block_rvv(int16_t *block);
+void ff_clear_blocks_rvv(int16_t *block);
 
 av_cold void ff_blockdsp_init_riscv(BlockDSPContext *c)
 {
@@ -34,6 +35,7 @@ av_cold void ff_blockdsp_init_riscv(BlockDSPContext *c)
 
     if (flags & AV_CPU_FLAG_RVV_I64 && ff_get_rv_vlenb() >= 16) {
         c->clear_block = ff_clear_block_rvv;
+        c->clear_blocks = ff_clear_blocks_rvv;
     }
 #endif
 }

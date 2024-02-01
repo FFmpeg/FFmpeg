@@ -27,3 +27,16 @@ func ff_clear_block_rvv, zve64x
 
         ret
 endfunc
+
+func ff_clear_blocks_rvv, zve64x
+        vsetivli      zero, 16, e64, m8, ta, ma
+        vmv.v.i       v0, 0
+
+        .rept 5
+        vse64.v       v0, (a0)
+        addi          a0, a0, 128
+        .endr
+        vse64.v       v0, (a0)
+
+        ret
+endfunc
