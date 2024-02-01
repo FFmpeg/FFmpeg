@@ -52,6 +52,7 @@
 
 #define FF_API_AVFFT               (LIBAVCODEC_VERSION_MAJOR < 62)
 #define FF_API_FF_PROFILE_LEVEL    (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_AVCODEC_CLOSE       (LIBAVCODEC_VERSION_MAJOR < 62)
 
 // reminder to remove CrystalHD decoders on next major bump
 #define FF_CODEC_CRYSTAL_HD        (LIBAVCODEC_VERSION_MAJOR < 61)

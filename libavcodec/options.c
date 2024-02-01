@@ -27,6 +27,7 @@
 #include "config_components.h"
 
 #include "avcodec.h"
+#include "avcodec_internal.h"
 #include "codec_internal.h"
 #include "libavutil/avassert.h"
 #include "libavutil/internal.h"
@@ -172,7 +173,7 @@ void avcodec_free_context(AVCodecContext **pavctx)
     if (!avctx)
         return;
 
-    avcodec_close(avctx);
+    ff_codec_close(avctx);
 
     av_freep(&avctx->extradata);
     av_freep(&avctx->subtitle_header);

@@ -377,7 +377,7 @@ end:
 
     return ret;
 free_and_end:
-    avcodec_close(avctx);
+    ff_codec_close(avctx);
     goto end;
 }
 
@@ -432,12 +432,12 @@ void avsubtitle_free(AVSubtitle *sub)
     memset(sub, 0, sizeof(*sub));
 }
 
-av_cold int avcodec_close(AVCodecContext *avctx)
+av_cold void ff_codec_close(AVCodecContext *avctx)
 {
     int i;
 
     if (!avctx)
-        return 0;
+        return;
 
     if (avcodec_is_open(avctx)) {
         AVCodecInternal *avci = avctx->internal;
@@ -497,9 +497,15 @@ av_cold int avcodec_close(AVCodecContext *avctx)
 
     avctx->codec = NULL;
     avctx->active_thread_type = 0;
+}
 
+#if FF_API_AVCODEC_CLOSE
+int avcodec_close(AVCodecContext *avctx)
+{
+    ff_codec_close(avctx);
     return 0;
 }
+#endif
 
 static const char *unknown_if_null(const char *str)
 {

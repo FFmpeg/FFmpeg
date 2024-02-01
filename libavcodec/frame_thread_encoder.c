@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
+#include "avcodec_internal.h"
 #include "encode.h"
 #include "internal.h"
 #include "pthread_internal.h"
@@ -110,7 +111,7 @@ static void * attribute_align_arg worker(void *v){
         pthread_mutex_unlock(&c->finished_task_mutex);
     }
 end:
-    avcodec_close(avctx);
+    ff_codec_close(avctx);
     av_freep(&avctx);
     return NULL;
 }
@@ -230,7 +231,7 @@ av_cold int ff_frame_thread_encoder_init(AVCodecContext *avctx)
 
     return 0;
 fail:
-    avcodec_close(thread_avctx);
+    ff_codec_close(thread_avctx);
     av_freep(&thread_avctx);
     avctx->thread_count = i;
     av_log(avctx, AV_LOG_ERROR, "ff_frame_thread_encoder_init failed\n");
