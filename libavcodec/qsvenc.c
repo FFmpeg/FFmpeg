@@ -597,6 +597,13 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
     else if (want_vcm) {
         rc_mode = MFX_RATECONTROL_VCM;
         rc_desc = "video conferencing mode (VCM)";
+
+        if (!avctx->bit_rate) {
+            av_log(avctx, AV_LOG_ERROR, "Using the %s ratecontrol method without "
+                   "setting bitrate. Please use the b option to set the desired "
+                   "bitrate.\n", rc_desc);
+            return AVERROR(EINVAL);
+        }
     }
 #endif
     else if (want_la) {
@@ -606,32 +613,50 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
         if (avctx->global_quality > 0) {
             rc_mode = MFX_RATECONTROL_LA_ICQ;
             rc_desc = "intelligent constant quality with lookahead (LA_ICQ)";
+        } else if (!avctx->bit_rate) {
+            av_log(avctx, AV_LOG_ERROR, "Using the %s ratecontrol method without "
+                   "setting bitrate. Please use the b option to set the desired "
+                   "bitrate.\n", rc_desc);
+            return AVERROR(EINVAL);
         }
     }
     else if (avctx->global_quality > 0 && !avctx->rc_max_rate) {
         rc_mode = MFX_RATECONTROL_ICQ;
         rc_desc = "intelligent constant quality (ICQ)";
     }
-    else if (avctx->rc_max_rate == avctx->bit_rate) {
-        rc_mode = MFX_RATECONTROL_CBR;
-        rc_desc = "constant bitrate (CBR)";
-    }
+    else if (avctx->bit_rate) {
+        if (avctx->rc_max_rate == avctx->bit_rate) {
+            rc_mode = MFX_RATECONTROL_CBR;
+            rc_desc = "constant bitrate (CBR)";
+        }
 #if QSV_HAVE_AVBR
-    else if (!avctx->rc_max_rate &&
-             (avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_HEVC) &&
-             q->avbr_accuracy &&
-             q->avbr_convergence) {
-        rc_mode = MFX_RATECONTROL_AVBR;
-        rc_desc = "average variable bitrate (AVBR)";
-    }
+        else if (!avctx->rc_max_rate &&
+                 (avctx->codec_id == AV_CODEC_ID_H264 || avctx->codec_id == AV_CODEC_ID_HEVC) &&
+                 q->avbr_accuracy &&
+                 q->avbr_convergence) {
+            rc_mode = MFX_RATECONTROL_AVBR;
+            rc_desc = "average variable bitrate (AVBR)";
+        }
 #endif
-    else if (avctx->global_quality > 0) {
-        rc_mode = MFX_RATECONTROL_QVBR;
-        rc_desc = "constant quality with VBR algorithm (QVBR)";
-    }
-    else {
-        rc_mode = MFX_RATECONTROL_VBR;
-        rc_desc = "variable bitrate (VBR)";
+        else if (avctx->global_quality > 0) {
+            rc_mode = MFX_RATECONTROL_QVBR;
+            rc_desc = "constant quality with VBR algorithm (QVBR)";
+        } else {
+            rc_mode = MFX_RATECONTROL_VBR;
+            rc_desc = "variable bitrate (VBR)";
+        }
+    } else {
+        rc_mode = MFX_RATECONTROL_CQP;
+        rc_desc = "constant quantization parameter (CQP)";
+        if (avctx->codec_id == AV_CODEC_ID_AV1)
+            avctx->global_quality = FF_QP2LAMBDA * 128;
+        else
+            avctx->global_quality = FF_QP2LAMBDA * 26;
+        av_log(avctx, AV_LOG_WARNING, "Using the constant quantization "
+               "parameter (CQP) by default. Please use the global_quality "
+               "option and other options for a quality-based mode or the b "
+               "option and other options for a bitrate-based mode if the "
+               "default is not the desired choice.\n");
     }
 
     q->param.mfx.RateControlMethod = rc_mode;

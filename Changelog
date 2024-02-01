@@ -27,6 +27,7 @@ version <next>:
 - a C11-compliant compiler is now required; note that this requirement
   will be bumped to C17 in the near future, so consider updating your
   build environment if it lacks C17 support
+- Change the default bitrate control method from VBR to CQP for QSV encoders.
 
 version 6.1:
 - libaribcaption decoder
