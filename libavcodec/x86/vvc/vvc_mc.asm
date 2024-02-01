@@ -243,7 +243,7 @@ cglobal vvc_avg_%1bpc, 4, 7, 5, dst, stride, src0, src1, w, h, bd
 ;    const int16_t *src0, const int16_t *src1, intptr_t width, intptr_t height,
 ;    intptr_t denom, intptr_t w0, intptr_t w1,  intptr_t o0, intptr_t o1, intptr_t pixel_max);
 %macro VVC_W_AVG_AVX2 1
-cglobal vvc_w_avg_%1bpc, 4, 7, 8, dst, stride, src0, src1, w, h, t0, t1
+cglobal vvc_w_avg_%1bpc, 4, 8, 8, dst, stride, src0, src1, w, h, t0, t1
 
     movifnidn            hd, hm
 
