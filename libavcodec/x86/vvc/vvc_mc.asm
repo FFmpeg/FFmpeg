@@ -31,6 +31,10 @@
 
 SECTION_RODATA 32
 
+%if ARCH_X86_64
+
+%if HAVE_AVX2_EXTERNAL
+
 pw_0    times 2 dw   0
 pw_1    times 2 dw   1
 pw_4    times 2 dw   4
@@ -48,12 +52,10 @@ pw_256  times 2 dw 256
     %endrep
 %endmacro
 
-%if ARCH_X86_64
 AVG_JMP_TABLE    avg,  8, avx2,                2, 4, 8, 16, 32, 64, 128
 AVG_JMP_TABLE    avg, 16, avx2,                2, 4, 8, 16, 32, 64, 128
 AVG_JMP_TABLE  w_avg,  8, avx2,                2, 4, 8, 16, 32, 64, 128
 AVG_JMP_TABLE  w_avg, 16, avx2,                2, 4, 8, 16, 32, 64, 128
-%endif
 
 SECTION .text
 
@@ -286,9 +288,6 @@ cglobal vvc_w_avg_%1bpc, 4, 8, 8, dst, stride, src0, src1, w, h, t0, t1
     AVG_FN              %1, W_AVG
 %endmacro
 
-%if ARCH_X86_64
-
-%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 
 VVC_AVG_AVX2 16
