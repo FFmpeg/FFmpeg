@@ -36,8 +36,24 @@
         vsse32.v      v0, (a0), a2
 .endm
 
+.macro vp8_idct_dc_addy
+        vp8_idct_dc_add
+        addi          a0, a0, 4
+        addi          a1, a1, 32
+.endm
+
 func ff_vp8_idct_dc_add_rvv, zve32x
         vsetivli      zero, 4, e8, mf4, ta, ma
+        vp8_idct_dc_add
+
+        ret
+endfunc
+
+func ff_vp8_idct_dc_add4y_rvv, zve32x
+        vsetivli      zero, 4, e8, mf4, ta, ma
+        .rept 3
+        vp8_idct_dc_addy
+        .endr
         vp8_idct_dc_add
 
         ret
