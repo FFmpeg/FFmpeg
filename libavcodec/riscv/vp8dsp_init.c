@@ -27,6 +27,7 @@
 
 void ff_vp8_idct_dc_add_rvv(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 void ff_vp8_idct_dc_add4y_rvv(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
+void ff_vp8_idct_dc_add4uv_rvv(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 
 av_cold void ff_vp8dsp_init_riscv(VP8DSPContext *c)
 {
@@ -36,6 +37,9 @@ av_cold void ff_vp8dsp_init_riscv(VP8DSPContext *c)
     if (flags & AV_CPU_FLAG_RVV_I32 && ff_get_rv_vlenb() >= 16) {
         c->vp8_idct_dc_add = ff_vp8_idct_dc_add_rvv;
         c->vp8_idct_dc_add4y = ff_vp8_idct_dc_add4y_rvv;
+        if (flags & AV_CPU_FLAG_RVB_ADDR) {
+            c->vp8_idct_dc_add4uv = ff_vp8_idct_dc_add4uv_rvv;
+        }
     }
 #endif
 }

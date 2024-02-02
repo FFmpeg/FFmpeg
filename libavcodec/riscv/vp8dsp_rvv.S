@@ -58,3 +58,16 @@ func ff_vp8_idct_dc_add4y_rvv, zve32x
 
         ret
 endfunc
+
+func ff_vp8_idct_dc_add4uv_rvv, zve32x
+        vsetivli      zero, 4, e8, mf4, ta, ma
+        vp8_idct_dc_addy
+        vp8_idct_dc_add
+        addi          a0, a0, -4
+        sh2add        a0, a2, a0
+        addi          a1, a1, 32
+        vp8_idct_dc_addy
+        vp8_idct_dc_add
+
+        ret
+endfunc
