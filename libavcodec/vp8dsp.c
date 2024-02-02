@@ -742,6 +742,8 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     ff_vp8dsp_init_aarch64(dsp);
 #elif ARCH_ARM
     ff_vp8dsp_init_arm(dsp);
+#elif ARCH_RISCV
+    ff_vp8dsp_init_riscv(dsp);
 #elif ARCH_X86
     ff_vp8dsp_init_x86(dsp);
 #elif ARCH_MIPS
