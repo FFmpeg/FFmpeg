@@ -2362,7 +2362,13 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_r8(pb); /* version */
     avio_rb24(pb); /* flags */
 
+    // Clamp allocation size for `chunk_offsets` -- don't throw an error for an
+    // invalid count since the EOF path doesn't throw either.
     entries = avio_rb32(pb);
+    entries =
+        FFMIN(entries,
+              FFMAX(0, (atom.size - 8) /
+                           (atom.type == MKTAG('s', 't', 'c', 'o') ? 4 : 8)));
 
     if (!entries)
         return 0;
@@ -2371,6 +2377,7 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_WARNING, "Ignoring duplicated STCO atom\n");
         return 0;
     }
+
     av_free(sc->chunk_offsets);
     sc->chunk_count = 0;
     sc->chunk_offsets = av_malloc_array(entries, sizeof(*sc->chunk_offsets));
