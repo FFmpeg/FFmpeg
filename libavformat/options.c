@@ -283,11 +283,12 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
         goto fail;
 
     sti->fmtctx = s;
-    sti->avctx = avcodec_alloc_context3(NULL);
-    if (!sti->avctx)
-        goto fail;
 
     if (s->iformat) {
+        sti->avctx = avcodec_alloc_context3(NULL);
+        if (!sti->avctx)
+            goto fail;
+
         sti->info = av_mallocz(sizeof(*sti->info));
         if (!sti->info)
             goto fail;
@@ -323,6 +324,7 @@ AVStream *avformat_new_stream(AVFormatContext *s, const AVCodec *c)
         sti->pts_buffer[i] = AV_NOPTS_VALUE;
 
     st->sample_aspect_ratio = (AVRational) { 0, 1 };
+    sti->transferred_mux_tb = (AVRational) { 0, 1 };;
 
 #if FF_API_AVSTREAM_SIDE_DATA
     sti->inject_global_side_data = si->inject_global_side_data;

@@ -565,12 +565,14 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
     }
 
     // Fields which are missing from AVCodecParameters need to be taken from the AVCodecContext
-    avctx->properties   = sti->avctx->properties;
-    avctx->codec        = sti->avctx->codec;
-    avctx->qmin         = sti->avctx->qmin;
-    avctx->qmax         = sti->avctx->qmax;
-    avctx->coded_width  = sti->avctx->coded_width;
-    avctx->coded_height = sti->avctx->coded_height;
+    if (sti->avctx) {
+        avctx->properties   = sti->avctx->properties;
+        avctx->codec        = sti->avctx->codec;
+        avctx->qmin         = sti->avctx->qmin;
+        avctx->qmax         = sti->avctx->qmax;
+        avctx->coded_width  = sti->avctx->coded_width;
+        avctx->coded_height = sti->avctx->coded_height;
+    }
 
     if (separator)
         av_opt_set(avctx, "dump_separator", separator, 0);

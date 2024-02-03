@@ -416,6 +416,8 @@ typedef struct FFStream {
     int64_t cur_dts;
 
     const struct AVCodecDescriptor *codec_desc;
+
+    AVRational transferred_mux_tb;
 } FFStream;
 
 static av_always_inline FFStream *ffstream(AVStream *st)
