@@ -775,11 +775,6 @@ int avformat_transfer_internal_stream_timing_info(const AVOutputFormat *ofmt,
             || copy_tb == AVFMT_TBCF_R_FRAMERATE) {
             enc_ctx->time_base.num = ist->r_frame_rate.den;
             enc_ctx->time_base.den = 2*ist->r_frame_rate.num;
-#if FF_API_TICKS_PER_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-            enc_ctx->ticks_per_frame = 2;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         } else
 #endif
             if (copy_tb == AVFMT_TBCF_AUTO && dec_ctx->framerate.num &&
@@ -792,7 +787,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #if FF_API_TICKS_PER_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
             enc_ctx->time_base.num *= dec_ctx->ticks_per_frame;
-            enc_ctx->ticks_per_frame = 2;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         }
@@ -812,7 +806,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    if ((enc_ctx->codec_tag == AV_RL32("tmcd") || ost->codecpar->codec_tag == AV_RL32("tmcd"))
+    if (ost->codecpar->codec_tag == AV_RL32("tmcd")
         && dec_ctx_tb.num < dec_ctx_tb.den
         && dec_ctx_tb.num > 0
         && 121LL*dec_ctx_tb.num > dec_ctx_tb.den) {
