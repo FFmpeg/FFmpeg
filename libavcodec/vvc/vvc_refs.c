@@ -80,6 +80,12 @@ void ff_vvc_clear_refs(VVCFrameContext *fc)
             VVC_FRAME_FLAG_SHORT_REF | VVC_FRAME_FLAG_LONG_REF);
 }
 
+void ff_vvc_flush_dpb(VVCFrameContext *fc)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(fc->DPB); i++)
+        ff_vvc_unref_frame(fc, &fc->DPB[i], ~0);
+}
+
 static void free_progress(FFRefStructOpaque unused, void *obj)
 {
     FrameProgress *p = (FrameProgress *)obj;
