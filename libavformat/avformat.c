@@ -63,7 +63,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     av_parser_close(sti->parser);
     avcodec_free_context(&sti->avctx);
     av_bsf_free(&sti->bsfc);
-    av_freep(&sti->priv_pts);
     av_freep(&sti->index_entries);
     av_freep(&sti->probe_data.buf);
 

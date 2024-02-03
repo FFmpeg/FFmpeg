@@ -245,7 +245,7 @@ typedef struct FFStream {
 
     int is_intra_only;
 
-    FFFrac *priv_pts;
+    FFFrac priv_pts;
 
     /**
      * Stream information used internally by avformat_find_stream_info()

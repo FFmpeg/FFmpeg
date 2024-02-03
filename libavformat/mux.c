@@ -406,16 +406,11 @@ static int init_pts(AVFormatContext *s)
             break;
         }
 
-        if (!sti->priv_pts)
-            sti->priv_pts = av_mallocz(sizeof(*sti->priv_pts));
-        if (!sti->priv_pts)
-            return AVERROR(ENOMEM);
-
         if (den != AV_NOPTS_VALUE) {
             if (den <= 0)
                 return AVERROR_INVALIDDATA;
 
-            frac_init(sti->priv_pts, 0, 0, den);
+            frac_init(&sti->priv_pts, 0, 0, den);
         }
     }
 
@@ -550,7 +545,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         }
         pkt->dts =
 //        pkt->pts= st->cur_dts;
-            pkt->pts = sti->priv_pts->val;
+            pkt->pts = sti->priv_pts.val;
     }
 
     //calculate dts from pts
@@ -587,7 +582,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
             av_ts2str(pkt->pts), av_ts2str(pkt->dts));
 
     sti->cur_dts      = pkt->dts;
-    sti->priv_pts->val = pkt->dts;
+    sti->priv_pts.val = pkt->dts;
 
     /* update pts */
     switch (st->codecpar->codec_type) {
@@ -599,12 +594,12 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
         /* HACK/FIXME, we skip the initial 0 size packets as they are most
          * likely equal to the encoder delay, but it would be better if we
          * had the real timestamps from the encoder */
-        if (frame_size >= 0 && (pkt->size || sti->priv_pts->num != sti->priv_pts->den >> 1 || sti->priv_pts->val)) {
-            frac_add(sti->priv_pts, (int64_t)st->time_base.den * frame_size);
+        if (frame_size >= 0 && (pkt->size || sti->priv_pts.num != sti->priv_pts.den >> 1 || sti->priv_pts.val)) {
+            frac_add(&sti->priv_pts, (int64_t)st->time_base.den * frame_size);
         }
         break;
     case AVMEDIA_TYPE_VIDEO:
-        frac_add(sti->priv_pts, (int64_t)st->time_base.den * st->time_base.num);
+        frac_add(&sti->priv_pts, (int64_t)st->time_base.den * st->time_base.num);
         break;
     }
     return 0;
