@@ -300,6 +300,7 @@ static int mux_packet_filter(Muxer *mux, MuxThreadContext *mt,
             av_packet_unref(pkt);
             pkt = NULL;
             ret = 0;
+            *stream_eof = 1;
         } else if (ret < 0)
             goto fail;
     }
@@ -352,14 +353,13 @@ static int mux_packet_filter(Muxer *mux, MuxThreadContext *mt,
                 goto mux_fail;
         }
         *stream_eof = 1;
-        return AVERROR_EOF;
     } else {
         ret = sync_queue_process(mux, ms, pkt, stream_eof);
         if (ret < 0)
             goto mux_fail;
     }
 
-    return 0;
+    return *stream_eof ? AVERROR_EOF : 0;
 
 mux_fail:
     err_msg = "submitting a packet to the muxer";
