@@ -4705,7 +4705,7 @@ msvc_common_flags(){
             # generic catch all at the bottom will print the original flag.
             -Wall)                ;;
             -Wextra)              ;;
-            -std=c*)              ;;
+            -std=c*)              echo /std:${flag#-std=};;
             # Common flags
             -fomit-frame-pointer) ;;
             -g)                   echo -Z7 ;;
@@ -4750,7 +4750,7 @@ icl_flags(){
             # Despite what Intel's documentation says -Wall, which is supported
             # on Windows, does enable remarks so disable them here.
             -Wall)                echo $flag -Qdiag-disable:remark ;;
-            -std=c99)             echo -Qstd=c99 ;;
+            -std=c11)             echo -Qstd=c11 ;;
             -flto*)               echo -ipo ;;
         esac
     done
@@ -4798,7 +4798,7 @@ suncc_flags(){
                     athlon*)                   echo -xarch=pentium_proa  ;;
                 esac
                 ;;
-            -std=c99)             echo -xc99              ;;
+            -std=c11)             echo -xc11              ;;
             -fomit-frame-pointer) echo -xregs=frameptr    ;;
             -fPIC)                echo -KPIC -xcode=pic32 ;;
             -W*,*)                echo $flag              ;;
@@ -4887,8 +4887,8 @@ probe_cc(){
         _type=suncc
         _ident=$($_cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
         _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
-        _DEPFLAGS='-xM1 -xc99'
-        _ldflags='-std=c99'
+        _DEPFLAGS='-xM1 -xc11'
+        _ldflags='-std=c11'
         _cflags_speed='-O5'
         _cflags_size='-O5 -xspace'
         _flags_filter=suncc_flags
@@ -5517,21 +5517,20 @@ if test "$?" != 0; then
     die "C compiler test failed."
 fi
 
-add_cppflags -D_ISOC99_SOURCE
+add_cppflags -D_ISOC11_SOURCE
 add_cxxflags -D__STDC_CONSTANT_MACROS
 check_cxxflags -std=c++11 || check_cxxflags -std=c++0x
 
 # some compilers silently accept -std=c11, so we also need to check that the
 # version macro is defined properly
 test_cflags_cc -std=c11 ctype.h "__STDC_VERSION__ >= 201112L" &&
-    add_cflags -std=c11 ||
-    check_cflags -std=c99
+    add_cflags -std=c11 || die "Compiler lacks C11 support"
 
 check_cppflags -D_FILE_OFFSET_BITS=64
 check_cppflags -D_LARGEFILE_SOURCE
 
-add_host_cppflags -D_ISOC99_SOURCE
-check_host_cflags -std=c99
+add_host_cppflags -D_ISOC11_SOURCE
+check_host_cflags -std=c11
 check_host_cflags -Wall
 check_host_cflags $host_cflags_speed
 
