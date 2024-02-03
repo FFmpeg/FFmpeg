@@ -821,7 +821,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 AVRational av_stream_get_codec_timebase(const AVStream *st)
 {
-    // See avformat_transfer_internal_stream_timing_info() TODO.
     return cffstream(st)->avctx->time_base;
 }
 
