@@ -1063,21 +1063,21 @@ static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
         ffio_free_dyn_buf(&dyn_bc);
 
         if (nut->write_index) {
-        if ((ret = ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0 /*unused*/, pkt->dts)) < 0)
-            goto fail;
+            if ((ret = ff_nut_add_sp(nut, nut->last_syncpoint_pos, 0 /*unused*/, pkt->dts)) < 0)
+                goto fail;
 
-        if ((1ll<<60) % nut->sp_count == 0)
-            for (i=0; i<s->nb_streams; i++) {
-                int j;
-                StreamContext *nus = &nut->stream[i];
-                av_reallocp_array(&nus->keyframe_pts, 2*nut->sp_count, sizeof(*nus->keyframe_pts));
-                if (!nus->keyframe_pts) {
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
-                }
-                for (j=nut->sp_count == 1 ? 0 : nut->sp_count; j<2*nut->sp_count; j++)
-                    nus->keyframe_pts[j] = AV_NOPTS_VALUE;
-        }
+            if ((1ll<<60) % nut->sp_count == 0)
+                for (unsigned i = 0; i < s->nb_streams; i++) {
+                    StreamContext *nus = &nut->stream[i];
+                    av_reallocp_array(&nus->keyframe_pts, 2*nut->sp_count, sizeof(*nus->keyframe_pts));
+                    if (!nus->keyframe_pts) {
+                        ret = AVERROR(ENOMEM);
+                        goto fail;
+                    }
+                    for (int j = nut->sp_count == 1 ? 0 : nut->sp_count;
+                         j < 2 * nut->sp_count; j++)
+                        nus->keyframe_pts[j] = AV_NOPTS_VALUE;
+            }
         }
     }
     av_assert0(nus->last_pts != AV_NOPTS_VALUE);
