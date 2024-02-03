@@ -29,15 +29,17 @@
 #ifndef AVFILTER_CCFIFO_H
 #define AVFILTER_CCFIFO_H
 
-#include "libavutil/avutil.h"
+#include <stddef.h>
+#include <stdint.h>
+
 #include "libavutil/frame.h"
-#include "libavutil/fifo.h"
+#include "libavutil/rational.h"
 
 #define CC_BYTES_PER_ENTRY 3
 
 typedef struct CCFifo {
-    AVFifo *cc_608_fifo;
-    AVFifo *cc_708_fifo;
+    struct AVFifo *cc_608_fifo;
+    struct AVFifo *cc_708_fifo;
     AVRational framerate;
     int expected_cc_count;
     int expected_608;

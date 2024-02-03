@@ -22,6 +22,7 @@
  */
 
 #include "ccfifo.h"
+#include "libavutil/fifo.h"
 
 #define MAX_CC_ELEMENTS 128
 
