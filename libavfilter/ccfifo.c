@@ -24,7 +24,6 @@
 #include "ccfifo.h"
 
 #define MAX_CC_ELEMENTS 128
-#define CC_BYTES_PER_ENTRY 3
 
 struct cc_lookup {
     int num;
@@ -87,16 +86,6 @@ int ff_ccfifo_init(CCFifo *ccf, AVRational framerate, void *log_ctx)
 error:
     ff_ccfifo_uninit(ccf);
     return AVERROR(ENOMEM);
-}
-
-int ff_ccfifo_getoutputsize(const CCFifo *ccf)
-{
-    return ccf->expected_cc_count * CC_BYTES_PER_ENTRY;
-}
-
-int ff_ccfifo_ccdetected(const CCFifo *ccf)
-{
-    return ccf->cc_detected;
 }
 
 int ff_ccfifo_injectbytes(CCFifo *ccf, uint8_t *cc_data, size_t len)
