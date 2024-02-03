@@ -271,3 +271,11 @@ fate-ffmpeg-filter-in-eof: CMD = framecrc                                       
     -f rawvideo -s 352x288 -pix_fmt yuv420p -t 1 -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv  \
     -filter_complex "[0][1]concat" -c:v rawvideo
 FATE_FFMPEG-$(call FRAMECRC, RAWVIDEO, RAWVIDEO, CONCAT_FILTER) += fate-ffmpeg-filter-in-eof
+
+# Test termination on streamcopy with -t as an output option.
+fate-ffmpeg-streamcopy-t: tests/data/vsynth_lena.yuv
+fate-ffmpeg-streamcopy-t: CMP = null
+fate-ffmpeg-streamcopy-t: CMD = ffmpeg                                                                    \
+    -stream_loop -1 -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv  \
+    -c copy -f null -t 1 -
+FATE_FFMPEG-$(call REMUX, RAWVIDEO) += fate-ffmpeg-streamcopy-t
