@@ -875,20 +875,28 @@ const AVCodec *ff_find_decoder(AVFormatContext *s, const AVStream *st,
 
 int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src)
 {
+#define OFF(field) offsetof(AVFormatContext, field)
+    static const unsigned offsets[] = {
+        OFF(codec_whitelist),    OFF(format_whitelist),
+        OFF(protocol_whitelist), OFF(protocol_blacklist),
+    };
+#undef OFF
     av_assert0(!dst->codec_whitelist &&
                !dst->format_whitelist &&
                !dst->protocol_whitelist &&
                !dst->protocol_blacklist);
-    dst-> codec_whitelist = av_strdup(src->codec_whitelist);
-    dst->format_whitelist = av_strdup(src->format_whitelist);
-    dst->protocol_whitelist = av_strdup(src->protocol_whitelist);
-    dst->protocol_blacklist = av_strdup(src->protocol_blacklist);
-    if (   (src-> codec_whitelist && !dst-> codec_whitelist)
-        || (src->  format_whitelist && !dst->  format_whitelist)
-        || (src->protocol_whitelist && !dst->protocol_whitelist)
-        || (src->protocol_blacklist && !dst->protocol_blacklist)) {
-        av_log(dst, AV_LOG_ERROR, "Failed to duplicate black/whitelist\n");
-        return AVERROR(ENOMEM);
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(offsets); i++) {
+        const char *src_str = *(char *const*)((const char*)src + offsets[i]);
+
+        if (src_str) {
+            char *dst_str = av_strdup(src_str);
+            if (!dst_str) {
+                av_log(dst, AV_LOG_ERROR, "Failed to duplicate black/whitelist\n");
+                return AVERROR(ENOMEM);
+            }
+
+            *(char **)((char*)dst + offsets[i]) = dst_str;
+        }
     }
     return 0;
 }
