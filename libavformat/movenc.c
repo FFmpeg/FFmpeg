@@ -2208,7 +2208,7 @@ static int mov_write_clli_tag(AVIOContext *pb, MOVTrack *track)
     return 12;
 }
 
-static inline int64_t rescale_mdcv(AVRational q, int b)
+static inline int64_t rescale_rational(AVRational q, int b)
 {
     return av_rescale(q.num, b, q.den);
 }
@@ -2231,16 +2231,16 @@ static int mov_write_mdcv_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, 32); // size
     ffio_wfourcc(pb, "mdcv");
-    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[1][0], chroma_den));
-    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[1][1], chroma_den));
-    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[2][0], chroma_den));
-    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[2][1], chroma_den));
-    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[0][0], chroma_den));
-    avio_wb16(pb, rescale_mdcv(metadata->display_primaries[0][1], chroma_den));
-    avio_wb16(pb, rescale_mdcv(metadata->white_point[0], chroma_den));
-    avio_wb16(pb, rescale_mdcv(metadata->white_point[1], chroma_den));
-    avio_wb32(pb, rescale_mdcv(metadata->max_luminance, luma_den));
-    avio_wb32(pb, rescale_mdcv(metadata->min_luminance, luma_den));
+    avio_wb16(pb, rescale_rational(metadata->display_primaries[1][0], chroma_den));
+    avio_wb16(pb, rescale_rational(metadata->display_primaries[1][1], chroma_den));
+    avio_wb16(pb, rescale_rational(metadata->display_primaries[2][0], chroma_den));
+    avio_wb16(pb, rescale_rational(metadata->display_primaries[2][1], chroma_den));
+    avio_wb16(pb, rescale_rational(metadata->display_primaries[0][0], chroma_den));
+    avio_wb16(pb, rescale_rational(metadata->display_primaries[0][1], chroma_den));
+    avio_wb16(pb, rescale_rational(metadata->white_point[0], chroma_den));
+    avio_wb16(pb, rescale_rational(metadata->white_point[1], chroma_den));
+    avio_wb32(pb, rescale_rational(metadata->max_luminance, luma_den));
+    avio_wb32(pb, rescale_rational(metadata->min_luminance, luma_den));
     return 32;
 }
 
