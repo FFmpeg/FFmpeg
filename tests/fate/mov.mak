@@ -9,6 +9,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-frag-encrypted \
            fate-mov-tenc-only-encrypted \
            fate-mov-invalid-elst-entry-count \
+           fate-mov-write-amve \
            fate-mov-gpmf-remux \
            fate-mov-440hz-10ms \
            fate-mov-ibi-elst-starts-b \
@@ -25,6 +26,7 @@ FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-zombie \
                    fate-mov-init-nonkeyframe \
                    fate-mov-displaymatrix \
+                   fate-mov-read-amve \
                    fate-mov-spherical-mono \
                    fate-mov-guess-delay-1 \
                    fate-mov-guess-delay-2 \
@@ -108,6 +110,9 @@ fate-mov-zombie: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_streams -show_packe
 fate-mov-init-nonkeyframe: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact -select_streams v $(TARGET_SAMPLES)/mov/mp4-init-nonkeyframe.mp4
 
 fate-mov-displaymatrix: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=display_aspect_ratio,sample_aspect_ratio:stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/displaymatrix.mov
+
+fate-mov-read-amve: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/amve.mov
+fate-mov-write-amve: CMD = transcode mov $(TARGET_SAMPLES)/mov/amve.mov mp4 "-c:v copy" "-c:v copy -t 0.5" "-show_entries stream_side_data_list"
 
 fate-mov-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/spherical.mov
 

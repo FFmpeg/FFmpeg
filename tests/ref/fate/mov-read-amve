@@ -1,0 +1,8 @@
+[STREAM]
+[SIDE_DATA]
+side_data_type=Ambient viewing environment
+ambient_illuminance=3140000/10000
+ambient_light_x=15635/50000
+ambient_light_y=16450/50000
+[/SIDE_DATA]
+[/STREAM]

@@ -1,0 +1,33 @@
+850c56be1114aa21a2e41bd4ea3da144 *tests/data/fate/mov-write-amve.mp4
+23677 tests/data/fate/mov-write-amve.mp4
+#extradata 0:       49, 0x7f8d1145
+#tb 0: 1/15360
+#media_type 0: video
+#codec_id 0: h264
+#dimensions 0: 640x360
+#sar 0: 0/1
+0,      -1024,          0,      512,    11849, 0xf21aa1d0
+0,       -512,       2048,      512,     1572, 0xf0c41b68, F=0x0
+0,          0,       1024,      512,      347, 0x9b8daabf, F=0x0
+0,        512,        512,      512,      195, 0x557e58db, F=0x0
+0,       1024,       1536,      512,      134, 0x423541b4, F=0x0
+0,       1536,       3072,      512,     1454, 0xe5a2cdad, F=0x0
+0,       2048,       2560,      512,      168, 0xd0ef5402, F=0x0
+0,       2560,       5120,      512,     1395, 0x603eb602, F=0x0
+0,       3072,       4096,      512,      304, 0x69cc92a6, F=0x0
+0,       3584,       3584,      512,      145, 0x3f1a4462, F=0x0
+0,       4096,       4608,      512,      154, 0x953851d1, F=0x0
+0,       4608,       5632,      512,      876, 0xad65ace7, F=0x0
+0,       5120,       7680,      512,      742, 0x6b6d689f, F=0x0
+0,       5632,       6656,      512,      177, 0xa4f2573b, F=0x0
+0,       6144,       6144,      512,      101, 0xb0722d2b, F=0x0
+0,       6656,       7168,      512,      105, 0x1f6033ed, F=0x0
+0,       7168,       9728,      512,      589, 0xcd912063, F=0x0
+[STREAM]
+[SIDE_DATA]
+side_data_type=Ambient viewing environment
+ambient_illuminance=3140000/10000
+ambient_light_x=15635/50000
+ambient_light_y=16450/50000
+[/SIDE_DATA]
+[/STREAM]
