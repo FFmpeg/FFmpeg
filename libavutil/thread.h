@@ -220,7 +220,13 @@ static inline int ff_thread_setname(const char *name)
 #if HAVE_PRCTL
     ret = AVERROR(prctl(PR_SET_NAME, name));
 #elif HAVE_PTHREAD_SETNAME_NP
+#if defined(__APPLE__)
+    ret = AVERROR(pthread_setname_np(name));
+#elif defined(__NetBSD__)
+    ret = AVERROR(pthread_setname_np(pthread_self(), "%s", name));
+#else
     ret = AVERROR(pthread_setname_np(pthread_self(), name));
+#endif
 #elif HAVE_PTHREAD_SET_NAME_NP
     pthread_set_name_np(pthread_self(), name);
 #else
