@@ -611,8 +611,6 @@ extern  const AVFilter ff_asrc_abuffer;
 extern  const AVFilter ff_vsrc_buffer;
 extern  const AVFilter ff_asink_abuffer;
 extern  const AVFilter ff_vsink_buffer;
-extern const AVFilter ff_af_afifo;
-extern const AVFilter ff_vf_fifo;
 
 #include "libavfilter/filter_list.c"
 

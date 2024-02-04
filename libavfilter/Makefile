@@ -16,7 +16,6 @@ OBJS = allfilters.o                                                     \
        colorspace.o                                                     \
        ccfifo.o                                                         \
        drawutils.o                                                      \
-       fifo.o                                                           \
        formats.o                                                        \
        framepool.o                                                      \
        framequeue.o                                                     \
