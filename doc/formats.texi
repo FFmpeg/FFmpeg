@@ -46,7 +46,8 @@ Enable fast, but inaccurate seeks for some formats.
 @item genpts
 Generate missing PTS if DTS is present.
 @item igndts
-Ignore DTS if PTS is set. Inert when nofillin is set.
+Ignore DTS if PTS is also set. In case the PTS is set, the DTS value
+is set to NOPTS. This is ignored when the @code{nofillin} flag is set.
 @item ignidx
 Ignore index.
 @item nobuffer
