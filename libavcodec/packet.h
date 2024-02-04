@@ -324,6 +324,13 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM,
 
     /**
+     * Ambient viewing environment metadata, as defined by H.274. This metadata
+     * should be associated with a video stream and contains data in the form
+     * of the AVAmbientViewingEnvironment struct.
+    */
+    AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.

@@ -2392,6 +2392,9 @@ static void print_pkt_side_data(WriterContext *w,
             AVContentLightMetadata *metadata = (AVContentLightMetadata *)sd->data;
             print_int("max_content", metadata->MaxCLL);
             print_int("max_average", metadata->MaxFALL);
+        } else if (sd->type == AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT) {
+            print_ambient_viewing_environment(
+                w, (const AVAmbientViewingEnvironment *)sd->data);
         } else if (sd->type == AV_PKT_DATA_DYNAMIC_HDR10_PLUS) {
             AVDynamicHDRPlus *metadata = (AVDynamicHDRPlus *)sd->data;
             print_dynamic_hdr10_plus(w, metadata);
