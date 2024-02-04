@@ -48,7 +48,7 @@ static av_cold int aom_init(AVCodecContext *avctx,
         .threads = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 16)
     };
 
-    av_log(avctx, AV_LOG_INFO, "%s\n", aom_codec_version_str());
+    av_log(avctx, AV_LOG_VERBOSE, "%s\n", aom_codec_version_str());
     av_log(avctx, AV_LOG_VERBOSE, "%s\n", aom_codec_build_config());
 
     if (aom_codec_dec_init(&ctx->decoder, iface, &deccfg, 0) != AOM_CODEC_OK) {
