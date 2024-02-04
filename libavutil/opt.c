@@ -93,7 +93,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         *den    = ((AVRational *)dst)->den;
         return 0;
     case AV_OPT_TYPE_CONST:
-        *num = o->default_val.dbl;
+        *intnum = o->default_val.i64;
         return 0;
     }
     return AVERROR(EINVAL);
@@ -878,7 +878,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         ret = snprintf(buf, sizeof(buf), "%d/%d", ((AVRational *)dst)->num, ((AVRational *)dst)->den);
         break;
     case AV_OPT_TYPE_CONST:
-        ret = snprintf(buf, sizeof(buf), "%f", o->default_val.dbl);
+        ret = snprintf(buf, sizeof(buf), "%"PRId64, o->default_val.i64);
         break;
     case AV_OPT_TYPE_STRING:
         if (*(uint8_t **)dst) {
