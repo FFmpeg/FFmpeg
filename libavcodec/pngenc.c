@@ -32,6 +32,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/csp.h"
 #include "libavutil/libm.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/opt.h"
 #include "libavutil/rational.h"
 #include "libavutil/stereo3d.h"
@@ -294,8 +295,9 @@ static int png_write_row(AVCodecContext *avctx, const uint8_t *data, int size)
     return 0;
 }
 
-#define AV_WB32_PNG(buf, n) AV_WB32(buf, lrint((n) * 100000))
-#define AV_WB32_PNG_D(buf, d) AV_WB32_PNG(buf, av_q2d(d))
+#define PNG_LRINT(d, divisor) lrint((d) * (divisor))
+#define PNG_Q2D(q, divisor) PNG_LRINT(av_q2d(q), (divisor))
+#define AV_WB32_PNG_D(buf, q) AV_WB32(buf, PNG_Q2D(q, 100000))
 static int png_get_chrm(enum AVColorPrimaries prim,  uint8_t *buf)
 {
     const AVColorPrimariesDesc *desc = av_csp_primaries_desc_from_id(prim);
@@ -320,7 +322,7 @@ static int png_get_gama(enum AVColorTransferCharacteristic trc, uint8_t *buf)
     if (gamma <= 1e-6)
         return 0;
 
-    AV_WB32_PNG(buf, 1.0 / gamma);
+    AV_WB32(buf, PNG_LRINT(1.0 / gamma, 100000));
     return 1;
 }
 
@@ -435,6 +437,30 @@ static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
         s->buf[2] = 0; /* colorspace = RGB */
         s->buf[3] = pict->color_range == AVCOL_RANGE_MPEG ? 0 : 1;
         png_write_chunk(&s->bytestream, MKTAG('c', 'I', 'C', 'P'), s->buf, 4);
+    }
+
+    side_data = av_frame_get_side_data(pict, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    if (side_data) {
+        AVContentLightMetadata *clli = (AVContentLightMetadata *) side_data->data;
+        AV_WB32(s->buf, clli->MaxCLL * 10000);
+        AV_WB32(s->buf + 4, clli->MaxFALL * 10000);
+        png_write_chunk(&s->bytestream, MKTAG('c', 'L', 'L', 'i'), s->buf, 8);
+    }
+
+    side_data = av_frame_get_side_data(pict, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (side_data) {
+        AVMasteringDisplayMetadata *mdvc = (AVMasteringDisplayMetadata *) side_data->data;
+        if (mdvc->has_luminance && mdvc->has_primaries) {
+            for (int i = 0; i < 3; i++) {
+                AV_WB16(s->buf + 2*i, PNG_Q2D(mdvc->display_primaries[i][0], 50000));
+                AV_WB16(s->buf + 2*i + 2, PNG_Q2D(mdvc->display_primaries[i][1], 50000));
+            }
+            AV_WB16(s->buf + 12, PNG_Q2D(mdvc->white_point[0], 50000));
+            AV_WB16(s->buf + 14, PNG_Q2D(mdvc->white_point[1], 50000));
+            AV_WB32(s->buf + 16, PNG_Q2D(mdvc->max_luminance, 10000));
+            AV_WB32(s->buf + 20, PNG_Q2D(mdvc->min_luminance, 10000));
+            png_write_chunk(&s->bytestream, MKTAG('m', 'D', 'V', 'c'), s->buf, 24);
+        }
     }
 
     if (png_get_chrm(pict->color_primaries, s->buf))
