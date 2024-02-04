@@ -29,6 +29,7 @@
 
 #include "libavutil/encryption_info.h"
 #include "libavutil/mastering_display_metadata.h"
+#include "libavutil/ambient_viewing_environment.h"
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 
@@ -249,6 +250,8 @@ typedef struct MOVStreamContext {
     AVMasteringDisplayMetadata *mastering;
     AVContentLightMetadata *coll;
     size_t coll_size;
+    AVAmbientViewingEnvironment *ambient;
+    size_t ambient_size;
 
     uint32_t format;
 

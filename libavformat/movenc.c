@@ -2244,6 +2244,33 @@ static int mov_write_mdcv_tag(AVIOContext *pb, MOVTrack *track)
     return 32;
 }
 
+static int mov_write_amve_tag(AVIOContext *pb, MOVTrack *track)
+{
+    const int illuminance_den = 10000;
+    const int ambient_den = 50000;
+    const AVPacketSideData *side_data;
+    const AVAmbientViewingEnvironment *ambient;
+
+
+    side_data = av_packet_side_data_get(track->st->codecpar->coded_side_data,
+                                        track->st->codecpar->nb_coded_side_data,
+                                        AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT);
+
+    if (!side_data)
+        return 0;
+
+    ambient = (const AVAmbientViewingEnvironment*)side_data->data;
+    if (!ambient || !ambient->ambient_illuminance.num)
+        return 0;
+
+    avio_wb32(pb, 16); // size
+    ffio_wfourcc(pb, "amve");
+    avio_wb32(pb, rescale_rational(ambient->ambient_illuminance, illuminance_den));
+    avio_wb16(pb, rescale_rational(ambient->ambient_light_x, ambient_den));
+    avio_wb16(pb, rescale_rational(ambient->ambient_light_y, ambient_den));
+    return 16;
+}
+
 static void find_compressor(char * compressor_name, int len, MOVTrack *track)
 {
     AVDictionaryEntry *encoder;
@@ -2457,6 +2484,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     if (track->mode == MODE_MOV || track->mode == MODE_MP4) {
         mov_write_clli_tag(pb, track);
         mov_write_mdcv_tag(pb, track);
+        mov_write_amve_tag(pb, track);
     }
 
     if (track->mode == MODE_MP4 && mov->fc->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {

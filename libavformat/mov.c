@@ -6039,6 +6039,31 @@ static int mov_read_clli(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_amve(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    MOVStreamContext *sc;
+    const int illuminance_den = 10000;
+    const int ambient_den = 50000;
+    if (c->fc->nb_streams < 1)
+        return AVERROR_INVALIDDATA;
+    sc = c->fc->streams[c->fc->nb_streams - 1]->priv_data;
+    if (atom.size < 6) {
+        av_log(c->fc, AV_LOG_ERROR, "Empty Ambient Viewing Environment Info box\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (sc->ambient){
+        av_log(c->fc, AV_LOG_WARNING, "Ignoring duplicate AMVE\n");
+        return 0;
+    }
+    sc->ambient = av_ambient_viewing_environment_alloc(&sc->ambient_size);
+    if (!sc->ambient)
+        return AVERROR(ENOMEM);
+    sc->ambient->ambient_illuminance  = av_make_q(avio_rb32(pb), illuminance_den);
+    sc->ambient->ambient_light_x = av_make_q(avio_rb16(pb), ambient_den);
+    sc->ambient->ambient_light_y = av_make_q(avio_rb16(pb), ambient_den);
+    return 0;
+}
+
 static int mov_read_st3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -8215,6 +8240,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('i','s','p','e'), mov_read_ispe },
 { MKTAG('i','p','r','p'), mov_read_iprp },
 { MKTAG('i','i','n','f'), mov_read_iinf },
+{ MKTAG('a','m','v','e'), mov_read_amve }, /* ambient viewing environment box */
 { 0, NULL }
 };
 
@@ -8680,6 +8706,7 @@ static void mov_free_stream_context(AVFormatContext *s, AVStream *st)
     av_freep(&sc->spherical);
     av_freep(&sc->mastering);
     av_freep(&sc->coll);
+    av_freep(&sc->ambient);
 }
 
 static int mov_read_close(AVFormatContext *s)
@@ -9071,6 +9098,14 @@ static int mov_read_header(AVFormatContext *s)
                     return AVERROR(ENOMEM);
 
                 sc->coll = NULL;
+            }
+            if (sc->ambient) {
+                if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
+                                             AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT,
+                                             (uint8_t *) sc->ambient, sc->ambient_size, 0))
+                    return AVERROR(ENOMEM);
+
+                sc->ambient = NULL;
             }
             break;
         }
