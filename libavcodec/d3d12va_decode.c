@@ -239,10 +239,14 @@ static int d3d12va_create_decoder(AVCodecContext *avctx)
 
     DX_CHECK(ID3D12VideoDevice_CheckFeatureSupport(device_hwctx->video_device, D3D12_FEATURE_VIDEO_DECODE_SUPPORT,
                                                    &feature, sizeof(feature)));
-    if (!(feature.SupportFlags & D3D12_VIDEO_DECODE_SUPPORT_FLAG_SUPPORTED) ||
-        !(feature.DecodeTier >= D3D12_VIDEO_DECODE_TIER_2)) {
-        av_log(avctx, AV_LOG_ERROR, "D3D12 decoder doesn't support on this device\n");
-        return AVERROR(EINVAL);
+    if (!(feature.SupportFlags & D3D12_VIDEO_DECODE_SUPPORT_FLAG_SUPPORTED)) {
+        av_log(avctx, AV_LOG_ERROR, "D3D12 video decode is not supported on this device.\n");
+        return AVERROR(ENOSYS);
+    }
+    if (!(feature.DecodeTier >= D3D12_VIDEO_DECODE_TIER_2)) {
+        av_log(avctx, AV_LOG_ERROR, "D3D12 video decode on this device requires tier %d support, "
+               "but it is not implemented.\n", feature.DecodeTier);
+        return AVERROR_PATCHWELCOME;
     }
 
     desc = (D3D12_VIDEO_DECODER_DESC) {
