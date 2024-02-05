@@ -691,14 +691,6 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     if (v->profile == PROFILE_ADVANCED)
         avctx->level = v->level;
 
-    if (!CONFIG_GRAY || !(avctx->flags & AV_CODEC_FLAG_GRAY))
-        avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
-    else {
-        avctx->pix_fmt = AV_PIX_FMT_GRAY8;
-        if (avctx->color_range == AVCOL_RANGE_UNSPECIFIED)
-            avctx->color_range = AVCOL_RANGE_MPEG;
-    }
-
     ff_blockdsp_init(&s->bdsp);
     ff_h264chroma_init(&v->h264chroma, 8);
 
