@@ -92,7 +92,7 @@ static UInt32 ffat_get_format_id(enum AVCodecID codec, int profile)
     }
 }
 
-static void ffat_update_ctx(AVCodecContext *avctx)
+static int ffat_update_ctx(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
     UInt32 size = sizeof(unsigned);
@@ -118,10 +118,23 @@ static void ffat_update_ctx(AVCodecContext *avctx)
     if (!AudioConverterGetProperty(at->converter,
                                    kAudioConverterCurrentOutputStreamDescription,
                                    &size, &out_format)) {
-        if (out_format.mFramesPerPacket)
+        if (out_format.mFramesPerPacket) {
             avctx->frame_size = out_format.mFramesPerPacket;
+        } else {
+            /* The doc on mFramesPerPacket says:
+             *   For formats with a variable number of frames per packet, such as
+             *   Ogg Vorbis, set this field to 0.
+             * Looks like it means for decoding. There is no known case that
+             * mFramesPerPacket is zero for encoding. Use a default value for safety.
+             */
+            avctx->frame_size = 1024;
+            av_log(avctx, AV_LOG_WARNING, "Missing mFramesPerPacket\n");
+        }
         if (out_format.mBytesPerPacket && avctx->codec_id == AV_CODEC_ID_ILBC)
             avctx->block_align = out_format.mBytesPerPacket;
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Get OutputStreamDescription failed\n");
+        return AVERROR_EXTERNAL;
     }
 
     at->frame_size = avctx->frame_size;
@@ -130,6 +143,8 @@ static void ffat_update_ctx(AVCodecContext *avctx)
         at->pkt_size *= 1024;
         avctx->frame_size *= 1024;
     }
+
+    return 0;
 }
 
 static int read_descr(GetByteContext *gb, int *tag)
@@ -236,6 +251,7 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
 {
     ATDecodeContext *at = avctx->priv_data;
     OSStatus status;
+    int ret;
 
     AudioStreamBasicDescription in_format = {
         .mSampleRate = avctx->sample_rate,
@@ -432,7 +448,9 @@ static av_cold int ffat_init_encoder(AVCodecContext *avctx)
         }
     }
 
-    ffat_update_ctx(avctx);
+    ret = ffat_update_ctx(avctx);
+    if (ret < 0)
+        return ret;
 
 #if !TARGET_OS_IPHONE && defined(__MAC_10_9)
     if (at->mode == kAudioCodecBitRateControlMode_Variable && avctx->rc_max_rate) {
