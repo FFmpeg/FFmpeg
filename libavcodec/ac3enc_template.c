@@ -223,6 +223,8 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         }
     }
 
+    av_assert1(s->fbw_channels > 0);
+
     /* calculate final coupling coordinates, taking into account reusing of
        coordinates in successive blocks */
     for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
