@@ -475,8 +475,6 @@ static int input_packet_process(Demuxer *d, AVPacket *pkt, unsigned *send_flags)
                av_ts2str(f->ts_offset),  av_ts2timestr(f->ts_offset, &AV_TIME_BASE_Q));
     }
 
-    pkt->stream_index = ds->sch_idx_stream;
-
     return 0;
 }
 
@@ -504,6 +502,8 @@ static int do_send(Demuxer *d, DemuxStream *ds, AVPacket *pkt, unsigned flags,
                    const char *pkt_desc)
 {
     int ret;
+
+    pkt->stream_index = ds->sch_idx_stream;
 
     ret = sch_demux_send(d->sch, d->f.index, pkt, flags);
     if (ret == AVERROR_EOF) {
@@ -546,7 +546,6 @@ static int demux_send(Demuxer *d, DemuxThreadContext *dt, DemuxStream *ds,
 
             d->pkt_heartbeat->pts          = pkt->pts;
             d->pkt_heartbeat->time_base    = pkt->time_base;
-            d->pkt_heartbeat->stream_index = ds1->sch_idx_stream;
             d->pkt_heartbeat->opaque       = (void*)(intptr_t)PKT_OPAQUE_SUB_HEARTBEAT;
 
             ret = do_send(d, ds1, d->pkt_heartbeat, 0, "heartbeat");
