@@ -31,6 +31,7 @@
 #include "libavcodec/vvc/vvcdsp.h"
 #include "libavcodec/x86/h26x/h2656dsp.h"
 
+#if ARCH_X86_64
 #define FW_PUT(name, depth, opt) \
 static void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride, \
                                                  int height, const int8_t *hf, const int8_t *vf, int width)    \
@@ -204,51 +205,52 @@ AVG_FUNCS(16, 12, avx2)
     c->inter.avg    = bf(avg, bd, opt);                                 \
     c->inter.w_avg  = bf(w_avg, bd, opt);                               \
 } while (0)
+#endif
 
 void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 {
+#if ARCH_X86_64
     const int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64) {
-        if (bd == 8) {
-            if (EXTERNAL_SSE4(cpu_flags)) {
-                MC_LINK_SSE4(8);
-            }
-            if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-                MC_LINKS_AVX2(8);
-            }
-        } else if (bd == 10) {
-            if (EXTERNAL_SSE4(cpu_flags)) {
-                MC_LINK_SSE4(10);
-            }
-            if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-                MC_LINKS_AVX2(10);
-                MC_LINKS_16BPC_AVX2(10);
-            }
-        } else if (bd == 12) {
-            if (EXTERNAL_SSE4(cpu_flags)) {
-                MC_LINK_SSE4(12);
-            }
-            if (EXTERNAL_AVX2_FAST(cpu_flags)) {
-                MC_LINKS_AVX2(12);
-                MC_LINKS_16BPC_AVX2(12);
-            }
+    if (bd == 8) {
+        if (EXTERNAL_SSE4(cpu_flags)) {
+            MC_LINK_SSE4(8);
         }
-
-        if (EXTERNAL_AVX2(cpu_flags)) {
-            switch (bd) {
-                case 8:
-                    AVG_INIT(8, avx2);
-                    break;
-                case 10:
-                    AVG_INIT(10, avx2);
-                    break;
-                case 12:
-                    AVG_INIT(12, avx2);
-                    break;
-                default:
-                    break;
-            }
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            MC_LINKS_AVX2(8);
+        }
+    } else if (bd == 10) {
+        if (EXTERNAL_SSE4(cpu_flags)) {
+            MC_LINK_SSE4(10);
+        }
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            MC_LINKS_AVX2(10);
+            MC_LINKS_16BPC_AVX2(10);
+        }
+    } else if (bd == 12) {
+        if (EXTERNAL_SSE4(cpu_flags)) {
+            MC_LINK_SSE4(12);
+        }
+        if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            MC_LINKS_AVX2(12);
+            MC_LINKS_16BPC_AVX2(12);
         }
     }
+
+    if (EXTERNAL_AVX2(cpu_flags)) {
+        switch (bd) {
+            case 8:
+                AVG_INIT(8, avx2);
+                break;
+            case 10:
+                AVG_INIT(10, avx2);
+                break;
+            case 12:
+                AVG_INIT(12, avx2);
+                break;
+            default:
+                break;
+        }
+    }
+#endif
 }
