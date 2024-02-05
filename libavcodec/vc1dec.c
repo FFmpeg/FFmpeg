@@ -846,14 +846,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 if (size <= 0) continue;
                 switch (AV_RB32(start)) {
                 case VC1_CODE_FRAME:
-                    if (avctx->hwaccel)
-                        buf_start = start;
+                    buf_start = start;
                     buf_size2 = v->vc1dsp.vc1_unescape_buffer(start + 4, size, buf2);
                     break;
                 case VC1_CODE_FIELD: {
                     int buf_size3;
-                    if (avctx->hwaccel)
-                        buf_start_second_field = start;
+                    buf_start_second_field = start;
                     av_size_mult(sizeof(*slices), n_slices+1, &next_allocated);
                     tmp = next_allocated ? av_fast_realloc(slices, &slices_allocated, next_allocated) : NULL;
                     if (!tmp) {
@@ -918,8 +916,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
                 ret = AVERROR_INVALIDDATA;
                 goto err;
             } else { // found field marker, unescape second field
-                if (avctx->hwaccel)
-                    buf_start_second_field = divider;
+                buf_start_second_field = divider;
                 av_size_mult(sizeof(*slices), n_slices+1, &next_allocated);
                 tmp = next_allocated ? av_fast_realloc(slices, &slices_allocated, next_allocated) : NULL;
                 if (!tmp) {
