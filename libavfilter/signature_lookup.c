@@ -299,6 +299,11 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
                         if (!c->next)
                             av_log(ctx, AV_LOG_FATAL, "Could not allocate memory");
                         c = c->next;
+
+                    }
+                    if (!c) {
+                        sll_free(&cands);
+                        goto error;
                     }
                     c->framerateratio = (i+1.0) / 30;
                     c->score = hspace[i][j].score;
@@ -315,6 +320,7 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
             }
         }
     }
+    error:
     for (i = 0; i < MAX_FRAMERATE; i++) {
         av_freep(&hspace[i]);
     }
