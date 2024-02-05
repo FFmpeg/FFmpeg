@@ -940,6 +940,13 @@ static int upload_texture(SDL_Texture **tex, AVFrame *frame)
     return ret;
 }
 
+static enum AVColorSpace sdl_supported_color_spaces[] = {
+    AVCOL_SPC_BT709,
+    AVCOL_SPC_BT470BG,
+    AVCOL_SPC_SMPTE170M,
+    AVCOL_SPC_UNSPECIFIED,
+};
+
 static void set_sdl_yuv_conversion_mode(AVFrame *frame)
 {
 #if SDL_VERSION_ATLEAST(2,0,8)
@@ -1920,6 +1927,8 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         goto fail;
 
     if ((ret = av_opt_set_int_list(filt_out, "pix_fmts", pix_fmts,  AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN)) < 0)
+        goto fail;
+    if ((ret = av_opt_set_int_list(filt_out, "color_spaces", sdl_supported_color_spaces,  AVCOL_SPC_UNSPECIFIED, AV_OPT_SEARCH_CHILDREN)) < 0)
         goto fail;
 
     last_filter = filt_out;
