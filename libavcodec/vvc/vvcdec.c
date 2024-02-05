@@ -322,7 +322,7 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
     if (ret < 0)
         return ret;
 
-    memset(fc->tab.slice_idx, -1, sizeof(*fc->tab.slice_idx) * fc->tab.sz.ctu_count);
+    memset(fc->tab.slice_idx, -1, sizeof(*fc->tab.slice_idx) * ctu_count);
 
     if (fc->tab.sz.ctu_count != ctu_count) {
         ff_refstruct_pool_uninit(&fc->rpl_tab_pool);
