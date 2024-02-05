@@ -38,8 +38,6 @@ extern VLCElem ff_h263_inter_MCBPC_vlc[];
 extern VLCElem ff_h263_cbpy_vlc[];
 extern VLCElem ff_h263_mv_vlc[];
 
-extern const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[];
-
 int ff_h263_decode_motion(MpegEncContext * s, int pred, int f_code);
 int ff_h263_decode_init(AVCodecContext *avctx);
 int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *frame,

@@ -49,6 +49,23 @@
 #include "thread.h"
 #include "wmv2dec.h"
 
+static const enum AVPixelFormat h263_hwaccel_pixfmt_list_420[] = {
+#if CONFIG_H263_VAAPI_HWACCEL || CONFIG_MPEG4_VAAPI_HWACCEL
+    AV_PIX_FMT_VAAPI,
+#endif
+#if CONFIG_MPEG4_NVDEC_HWACCEL
+    AV_PIX_FMT_CUDA,
+#endif
+#if CONFIG_MPEG4_VDPAU_HWACCEL
+    AV_PIX_FMT_VDPAU,
+#endif
+#if CONFIG_H263_VIDEOTOOLBOX_HWACCEL || CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL
+    AV_PIX_FMT_VIDEOTOOLBOX,
+#endif
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
+};
+
 static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
 {
     /* MPEG-4 Studio Profile only, not supported by hardware */
@@ -63,7 +80,12 @@ static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
         return AV_PIX_FMT_GRAY8;
     }
 
-    return avctx->pix_fmt = ff_get_format(avctx, avctx->codec->pix_fmts);
+    if (avctx->codec_id == AV_CODEC_ID_H263  ||
+        avctx->codec_id == AV_CODEC_ID_H263P ||
+        avctx->codec_id == AV_CODEC_ID_MPEG4)
+        return avctx->pix_fmt = ff_get_format(avctx, h263_hwaccel_pixfmt_list_420);
+
+    return AV_PIX_FMT_YUV420P;
 }
 
 av_cold int ff_h263_decode_init(AVCodecContext *avctx)
@@ -659,23 +681,6 @@ frame_end:
         return get_consumed_bytes(s, buf_size);
 }
 
-const enum AVPixelFormat ff_h263_hwaccel_pixfmt_list_420[] = {
-#if CONFIG_H263_VAAPI_HWACCEL || CONFIG_MPEG4_VAAPI_HWACCEL
-    AV_PIX_FMT_VAAPI,
-#endif
-#if CONFIG_MPEG4_NVDEC_HWACCEL
-    AV_PIX_FMT_CUDA,
-#endif
-#if CONFIG_MPEG4_VDPAU_HWACCEL
-    AV_PIX_FMT_VDPAU,
-#endif
-#if CONFIG_H263_VIDEOTOOLBOX_HWACCEL || CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL
-    AV_PIX_FMT_VIDEOTOOLBOX,
-#endif
-    AV_PIX_FMT_YUV420P,
-    AV_PIX_FMT_NONE
-};
-
 static const AVCodecHWConfigInternal *const h263_hw_config_list[] = {
 #if CONFIG_H263_VAAPI_HWACCEL
     HWACCEL_VAAPI(h263),
@@ -706,7 +711,6 @@ const FFCodec ff_h263_decoder = {
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = ff_mpeg_flush,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = ff_h263_hwaccel_pixfmt_list_420,
     .hw_configs     = h263_hw_config_list,
 };
 
@@ -724,6 +728,5 @@ const FFCodec ff_h263p_decoder = {
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush          = ff_mpeg_flush,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = ff_h263_hwaccel_pixfmt_list_420,
     .hw_configs     = h263_hw_config_list,
 };

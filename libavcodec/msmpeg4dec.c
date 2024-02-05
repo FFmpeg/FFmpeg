@@ -853,10 +853,6 @@ const FFCodec ff_msmpeg4v1_decoder = {
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };
 
 const FFCodec ff_msmpeg4v2_decoder = {
@@ -871,10 +867,6 @@ const FFCodec ff_msmpeg4v2_decoder = {
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };
 
 const FFCodec ff_msmpeg4v3_decoder = {
@@ -889,10 +881,6 @@ const FFCodec ff_msmpeg4v3_decoder = {
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };
 
 const FFCodec ff_wmv1_decoder = {
@@ -907,8 +895,4 @@ const FFCodec ff_wmv1_decoder = {
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };

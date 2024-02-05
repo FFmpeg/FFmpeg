@@ -3865,7 +3865,6 @@ const FFCodec ff_mpeg4_decoder = {
                              FF_CODEC_CAP_ALLOCATE_PROGRESS,
     .flush                 = ff_mpeg_flush,
     .p.max_lowres          = 3,
-    .p.pix_fmts            = ff_h263_hwaccel_pixfmt_list_420,
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_mpeg4_video_profiles),
     UPDATE_THREAD_CONTEXT(mpeg4_update_thread_context),
     UPDATE_THREAD_CONTEXT_FOR_USER(mpeg4_update_thread_context_for_user),
