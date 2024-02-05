@@ -101,6 +101,10 @@ typedef struct MMALDecodeContext {
 // packets (where each packet contains 1 frame).
 #define MAX_DELAYED_FRAMES 16
 
+static const enum AVPixelFormat mmal_pixfmts[] = {
+    AV_PIX_FMT_MMAL, AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE
+};
+
 static void ffmmal_poolref_unref(FFPoolRef *ref)
 {
     if (ref &&
@@ -367,7 +371,7 @@ static av_cold int ffmmal_init_decoder(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
-    if ((ret = ff_get_format(avctx, avctx->codec->pix_fmts)) < 0)
+    if ((ret = ff_get_format(avctx, mmal_pixfmts)) < 0)
         return ret;
 
     avctx->pix_fmt = ret;
@@ -844,9 +848,6 @@ static const AVClass ffmmal_dec_class = {
         .p.priv_class   = &ffmmal_dec_class, \
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE, \
         .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE, \
-        .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_MMAL, \
-                                                         AV_PIX_FMT_YUV420P, \
-                                                         AV_PIX_FMT_NONE}, \
         .hw_configs     = mmal_hw_configs, \
         .p.wrapper_name = "mmal", \
     };
