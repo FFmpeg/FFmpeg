@@ -72,6 +72,30 @@ typedef struct SpriteData {
     int effect_params1[15], effect_params2[10]; ///< effect parameters in 16.16 fixed point format
 } SpriteData;
 
+static const enum AVPixelFormat vc1_hwaccel_pixfmt_list_420[] = {
+#if CONFIG_VC1_DXVA2_HWACCEL
+    AV_PIX_FMT_DXVA2_VLD,
+#endif
+#if CONFIG_VC1_D3D11VA_HWACCEL
+    AV_PIX_FMT_D3D11VA_VLD,
+    AV_PIX_FMT_D3D11,
+#endif
+#if CONFIG_VC1_D3D12VA_HWACCEL
+    AV_PIX_FMT_D3D12,
+#endif
+#if CONFIG_VC1_NVDEC_HWACCEL
+    AV_PIX_FMT_CUDA,
+#endif
+#if CONFIG_VC1_VAAPI_HWACCEL
+    AV_PIX_FMT_VAAPI,
+#endif
+#if CONFIG_VC1_VDPAU_HWACCEL
+    AV_PIX_FMT_VDPAU,
+#endif
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
+};
+
 static inline int get_fp_val(GetBitContext* gb)
 {
     return (get_bits_long(gb, 30) - (1 << 29)) << 1;
@@ -417,7 +441,11 @@ static enum AVPixelFormat vc1_get_format(AVCodecContext *avctx)
         return AV_PIX_FMT_GRAY8;
     }
 
-    return ff_get_format(avctx, avctx->codec->pix_fmts);
+    if (avctx->codec_id == AV_CODEC_ID_VC1IMAGE ||
+        avctx->codec_id == AV_CODEC_ID_WMV3IMAGE)
+        return AV_PIX_FMT_YUV420P;
+
+    return ff_get_format(avctx, vc1_hwaccel_pixfmt_list_420);
 }
 
 av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
@@ -1354,30 +1382,6 @@ err:
 }
 
 
-static const enum AVPixelFormat vc1_hwaccel_pixfmt_list_420[] = {
-#if CONFIG_VC1_DXVA2_HWACCEL
-    AV_PIX_FMT_DXVA2_VLD,
-#endif
-#if CONFIG_VC1_D3D11VA_HWACCEL
-    AV_PIX_FMT_D3D11VA_VLD,
-    AV_PIX_FMT_D3D11,
-#endif
-#if CONFIG_VC1_D3D12VA_HWACCEL
-    AV_PIX_FMT_D3D12,
-#endif
-#if CONFIG_VC1_NVDEC_HWACCEL
-    AV_PIX_FMT_CUDA,
-#endif
-#if CONFIG_VC1_VAAPI_HWACCEL
-    AV_PIX_FMT_VAAPI,
-#endif
-#if CONFIG_VC1_VDPAU_HWACCEL
-    AV_PIX_FMT_VDPAU,
-#endif
-    AV_PIX_FMT_YUV420P,
-    AV_PIX_FMT_NONE
-};
-
 const FFCodec ff_vc1_decoder = {
     .p.name         = "vc1",
     CODEC_LONG_NAME("SMPTE VC-1"),
@@ -1389,7 +1393,6 @@ const FFCodec ff_vc1_decoder = {
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .flush          = ff_mpeg_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .p.pix_fmts     = vc1_hwaccel_pixfmt_list_420,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_VC1_DXVA2_HWACCEL
                         HWACCEL_DXVA2(vc1),
@@ -1429,7 +1432,6 @@ const FFCodec ff_wmv3_decoder = {
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .flush          = ff_mpeg_flush,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .p.pix_fmts     = vc1_hwaccel_pixfmt_list_420,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
 #if CONFIG_WMV3_DXVA2_HWACCEL
                         HWACCEL_DXVA2(wmv3),
@@ -1470,10 +1472,6 @@ const FFCodec ff_wmv3image_decoder = {
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .flush          = vc1_sprite_flush,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };
 #endif
 
@@ -1489,9 +1487,5 @@ const FFCodec ff_vc1image_decoder = {
     FF_CODEC_DECODE_CB(vc1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .flush          = vc1_sprite_flush,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };
 #endif
