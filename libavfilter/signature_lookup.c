@@ -37,6 +37,16 @@
 #define STATUS_END_REACHED 1
 #define STATUS_BEGIN_REACHED 2
 
+static void sll_free(MatchingInfo **sll)
+{
+    while (*sll) {
+        MatchingInfo *tmp = *sll;
+        *sll = tmp->next;
+        tmp->next = NULL;
+        av_free(tmp);
+    }
+}
+
 static void fill_l1distlut(uint8_t lut[])
 {
     int i, j, tmp_i, tmp_j,count;
@@ -520,16 +530,6 @@ static MatchingInfo evaluate_parameters(AVFilterContext *ctx, SignatureContext *
     return bestmatch;
 }
 
-static void sll_free(MatchingInfo *sll)
-{
-    void *tmp;
-    while (sll) {
-        tmp = sll;
-        sll = sll->next;
-        av_freep(&tmp);
-    }
-}
-
 static MatchingInfo lookup_signatures(AVFilterContext *ctx, SignatureContext *sc, StreamContext *first, StreamContext *second, int mode)
 {
     CoarseSignature *cs, *cs2;
@@ -572,7 +572,7 @@ static MatchingInfo lookup_signatures(AVFilterContext *ctx, SignatureContext *sc
                    "ratio %f, offset %d, score %d, %d frames matching\n",
                    bestmatch.first->index, bestmatch.second->index,
                    bestmatch.framerateratio, bestmatch.offset, bestmatch.score, bestmatch.matchframes);
-            sll_free(infos);
+            sll_free(&infos);
         }
     } while (find_next_coarsecandidate(sc, second->coarsesiglist, &cs, &cs2, 0) && !bestmatch.whole);
     return bestmatch;
