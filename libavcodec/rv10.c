@@ -671,10 +671,6 @@ const FFCodec ff_rv10_decoder = {
     FF_CODEC_DECODE_CB(rv10_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };
 
 const FFCodec ff_rv20_decoder = {
@@ -689,8 +685,4 @@ const FFCodec ff_rv20_decoder = {
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
     .p.max_lowres   = 3,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) {
-        AV_PIX_FMT_YUV420P,
-        AV_PIX_FMT_NONE
-    },
 };

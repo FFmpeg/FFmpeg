@@ -274,8 +274,5 @@ const FFCodec ff_libuavs3d_decoder = {
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE |
                       FF_CODEC_CAP_AUTO_THREADS,
     .flush          = libuavs3d_flush,
-    .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
-                                                     AV_PIX_FMT_YUV420P10LE,
-                                                     AV_PIX_FMT_NONE },
     .p.wrapper_name = "libuavs3d",
 };

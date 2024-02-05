@@ -1127,17 +1127,6 @@ const FFCodec ff_##x##_qsv_decoder = { \
     .bsfs           = bsf_name, \
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_AVOID_PROBING | AV_CODEC_CAP_HYBRID, \
     .p.priv_class   = &x##_qsv_class, \
-    .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12, \
-                                                    AV_PIX_FMT_P010, \
-                                                    AV_PIX_FMT_P012, \
-                                                    AV_PIX_FMT_YUYV422, \
-                                                    AV_PIX_FMT_Y210, \
-                                                    AV_PIX_FMT_Y212, \
-                                                    AV_PIX_FMT_VUYX, \
-                                                    AV_PIX_FMT_XV30, \
-                                                    AV_PIX_FMT_XV36, \
-                                                    AV_PIX_FMT_QSV, \
-                                                    AV_PIX_FMT_NONE }, \
     .hw_configs     = qsv_hw_configs, \
     .p.wrapper_name = "qsv", \
     .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE, \
