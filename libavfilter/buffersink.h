@@ -55,6 +55,8 @@
  * The format can be constrained by setting options, using av_opt_set() and
  * related functions with the AV_OPT_SEARCH_CHILDREN flag.
  *  - pix_fmts (int list),
+ *  - color_spaces (int list),
+ *  - color_ranges (int list),
  *  - sample_fmts (int list),
  *  - sample_rates (int list),
  *  - ch_layouts (string),

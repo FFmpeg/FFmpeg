@@ -48,6 +48,10 @@ typedef struct BufferSinkContext {
     /* only used for video */
     enum AVPixelFormat *pixel_fmts;     ///< list of accepted pixel formats
     int pixel_fmts_size;
+    enum AVColorSpace *color_spaces;    ///< list of accepted color spaces
+    int color_spaces_size;
+    enum AVColorRange *color_ranges;    ///< list of accepted color ranges
+    int color_ranges_size;
 
     /* only used for audio */
     enum AVSampleFormat *sample_fmts;   ///< list of accepted sample formats
@@ -250,19 +254,36 @@ int av_buffersink_get_ch_layout(const AVFilterContext *ctx, AVChannelLayout *out
 static int vsink_query_formats(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
-    AVFilterFormats *formats = NULL;
     unsigned i;
     int ret;
 
     CHECK_LIST_SIZE(pixel_fmts)
+    CHECK_LIST_SIZE(color_spaces)
+    CHECK_LIST_SIZE(color_ranges)
     if (buf->pixel_fmts_size) {
+        AVFilterFormats *formats = NULL;
         for (i = 0; i < NB_ITEMS(buf->pixel_fmts); i++)
             if ((ret = ff_add_format(&formats, buf->pixel_fmts[i])) < 0)
                 return ret;
         if ((ret = ff_set_common_formats(ctx, formats)) < 0)
             return ret;
-    } else {
-        if ((ret = ff_default_query_formats(ctx)) < 0)
+    }
+
+    if (buf->color_spaces_size) {
+        AVFilterFormats *formats = NULL;
+        for (i = 0; i < NB_ITEMS(buf->color_spaces); i++)
+            if ((ret = ff_add_format(&formats, buf->color_spaces[i])) < 0)
+                return ret;
+        if ((ret = ff_set_common_color_spaces(ctx, formats)) < 0)
+            return ret;
+    }
+
+    if (buf->color_ranges_size) {
+        AVFilterFormats *formats = NULL;
+        for (i = 0; i < NB_ITEMS(buf->color_ranges); i++)
+            if ((ret = ff_add_format(&formats, buf->color_ranges[i])) < 0)
+                return ret;
+        if ((ret = ff_set_common_color_ranges(ctx, formats)) < 0)
             return ret;
     }
 
@@ -365,6 +386,8 @@ static int asink_query_formats(AVFilterContext *ctx)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption buffersink_options[] = {
     { "pix_fmts", "set the supported pixel formats", OFFSET(pixel_fmts), AV_OPT_TYPE_BINARY, .flags = FLAGS },
+    { "color_spaces", "set the supported color spaces", OFFSET(color_spaces), AV_OPT_TYPE_BINARY, .flags = FLAGS },
+    { "color_ranges", "set the supported color ranges", OFFSET(color_ranges), AV_OPT_TYPE_BINARY, .flags = FLAGS },
     { NULL },
 };
 #undef FLAGS
