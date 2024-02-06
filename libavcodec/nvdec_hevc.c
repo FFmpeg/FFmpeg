@@ -273,11 +273,11 @@ static int nvdec_hevc_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
     void *tmp;
 
-    tmp = av_fast_realloc(ctx->bitstream, &ctx->bitstream_allocated,
+    tmp = av_fast_realloc(ctx->bitstream_internal, &ctx->bitstream_allocated,
                           ctx->bitstream_len + size + 3);
     if (!tmp)
         return AVERROR(ENOMEM);
-    ctx->bitstream = tmp;
+    ctx->bitstream = ctx->bitstream_internal = tmp;
 
     tmp = av_fast_realloc(ctx->slice_offsets, &ctx->slice_offsets_allocated,
                           (ctx->nb_slices + 1) * sizeof(*ctx->slice_offsets));
