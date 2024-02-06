@@ -212,6 +212,7 @@ static int mov_read_covr(MOVContext *c, AVIOContext *pb, int type, int len)
     }
     st = c->fc->streams[c->fc->nb_streams - 1];
     st->priv_data = sc;
+    sc->refcount = 1;
 
     if (st->attached_pic.size >= 8 && id != AV_CODEC_ID_BMP) {
         if (AV_RB64(st->attached_pic.data) == 0x89504e470d0a1a0a) {
@@ -4622,6 +4623,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
     sc->ffindex = st->index;
     c->trak_index = st->index;
+    sc->refcount = 1;
 
     if ((ret = mov_read_default(c, pb, atom)) < 0)
         return ret;
@@ -4909,6 +4911,7 @@ static int heif_add_stream(MOVContext *c, HEIFItem *item)
     sc = st->priv_data;
     sc->pb = c->fc->pb;
     sc->pb_is_copied = 1;
+    sc->refcount = 1;
 
     // Populate the necessary fields used by mov_build_index.
     sc->stsc_count = 1;
@@ -8610,8 +8613,10 @@ static void mov_free_stream_context(AVFormatContext *s, AVStream *st)
 {
     MOVStreamContext *sc = st->priv_data;
 
-    if (!sc)
+    if (!sc || --sc->refcount) {
+        st->priv_data = NULL;
         return;
+    }
 
     av_freep(&sc->ctts_data);
     for (int i = 0; i < sc->drefs_count; i++) {

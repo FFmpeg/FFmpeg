@@ -166,6 +166,7 @@ typedef struct MOVIndexRange {
 
 typedef struct MOVStreamContext {
     AVIOContext *pb;
+    int refcount;
     int pb_is_copied;
     int ffindex;          ///< AVStream index
     int next_chunk;
