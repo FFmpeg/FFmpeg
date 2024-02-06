@@ -48,8 +48,12 @@ int ff_sse4_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
 
 int ff_vsse16_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
 int ff_vsse8_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
+int ff_vsse_intra16_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
+int ff_vsse_intra8_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
 int ff_vsad16_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
 int ff_vsad8_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
+int ff_vsad_intra16_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
+int ff_vsad_intra8_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
 
 av_cold void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx)
 {
@@ -72,8 +76,12 @@ av_cold void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx)
 
         c->vsse[0] = ff_vsse16_rvv;
         c->vsse[1] = ff_vsse8_rvv;
+        c->vsse[4] = ff_vsse_intra16_rvv;
+        c->vsse[5] = ff_vsse_intra8_rvv;
         c->vsad[0] = ff_vsad16_rvv;
         c->vsad[1] = ff_vsad8_rvv;
+        c->vsad[4] = ff_vsad_intra16_rvv;
+        c->vsad[5] = ff_vsad_intra8_rvv;
     }
 #endif
 }
