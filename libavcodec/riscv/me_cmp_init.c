@@ -30,6 +30,10 @@ int ff_pix_abs16_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2
                               ptrdiff_t stride, int h);
 int ff_pix_abs8_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
                              ptrdiff_t stride, int h);
+int ff_pix_abs16_x2_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                         ptrdiff_t stride, int h);
+int ff_pix_abs8_x2_rvv(MpegEncContext *v, const uint8_t *pix1, const uint8_t *pix2,
+                         ptrdiff_t stride, int h);
 
 av_cold void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx)
 {
@@ -41,6 +45,8 @@ av_cold void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx)
         c->sad[0] = ff_pix_abs16_rvv;
         c->pix_abs[1][0] = ff_pix_abs8_rvv;
         c->sad[1] = ff_pix_abs8_rvv;
+        c->pix_abs[0][1] = ff_pix_abs16_x2_rvv;
+        c->pix_abs[1][1] = ff_pix_abs8_x2_rvv;
     }
 #endif
 }
