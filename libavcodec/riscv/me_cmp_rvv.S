@@ -165,3 +165,69 @@ func ff_pix_abs8_y2_rvv, zve32x
 
         pix_abs_ret
 endfunc
+
+func ff_sse16_rvv, zve32x
+        vsetivli        t0, 16, e32, m4, ta, ma
+        vmv.v.x         v24, zero
+        vmv.s.x         v0, zero
+1:
+        vsetvli         zero, zero, e8, m1, tu, ma
+        vle8.v          v4, (a1)
+        vle8.v          v12, (a2)
+        addi            a4, a4, -1
+        vwsubu.vv       v16, v4, v12
+        vsetvli         zero, zero, e16, m2, tu, ma
+        vwmacc.vv       v24, v16, v16
+        add             a1, a1, a3
+        add             a2, a2, a3
+        bnez            a4, 1b
+
+        vsetvli         zero, zero, e32, m4, tu, ma
+        vredsum.vs      v0, v24, v0
+        vmv.x.s         a0, v0
+        ret
+endfunc
+
+func ff_sse8_rvv, zve32x
+        vsetivli        t0, 8, e32, m2, ta, ma
+        vmv.v.x         v24, zero
+        vmv.s.x         v0, zero
+1:
+        vsetvli         zero, zero, e8, mf2, tu, ma
+        vle8.v          v4, (a1)
+        vle8.v          v12, (a2)
+        addi            a4, a4, -1
+        vwsubu.vv       v16, v4, v12
+        vsetvli         zero, zero, e16, m1, tu, ma
+        vwmacc.vv       v24, v16, v16
+        add             a1, a1, a3
+        add             a2, a2, a3
+        bnez            a4, 1b
+
+        vsetvli         zero, zero, e32, m2, tu, ma
+        vredsum.vs      v0, v24, v0
+        vmv.x.s         a0, v0
+        ret
+endfunc
+
+func ff_sse4_rvv, zve32x
+        vsetivli        t0, 4, e32, m1, ta, ma
+        vmv.v.x         v24, zero
+        vmv.s.x         v0, zero
+1:
+        vsetvli         zero, zero, e8, mf4, tu, ma
+        vle8.v          v4, (a1)
+        vle8.v          v12, (a2)
+        addi            a4, a4, -1
+        vwsubu.vv       v16, v4, v12
+        vsetvli         zero, zero, e16, mf2, tu, ma
+        vwmacc.vv       v24, v16, v16
+        add             a1, a1, a3
+        add             a2, a2, a3
+        bnez            a4, 1b
+
+        vsetvli         zero, zero, e32, m1, tu, ma
+        vredsum.vs      v0, v24, v0
+        vmv.x.s         a0, v0
+        ret
+endfunc
