@@ -407,3 +407,121 @@ endfunc
 func ff_vsad_intra8_rvv, zve32x
         vsad_vsse_intra8 abs
 endfunc
+
+func ff_nsse16_rvv, zve32x
+        .macro squarediff16
+        vsetivli        zero, 16, e8, m1, tu, ma
+        vle8.v          v4, (a1)
+        vle8.v          v12, (a2)
+        vwsubu.vv       v16, v4, v12
+        vsetvli         zero, zero, e16, m2, tu, ma
+        vwmacc.vv       v24, v16, v16
+        .endm
+
+        .macro gradiff16 srcx srcv
+        vsetivli        zero, 16, e8, m1, tu, ma
+        vle8.v          v8, (\srcx)
+        vslide1down.vx  v0, \srcv, t5
+        vslide1down.vx  v16, v8, t5
+        vwsubu.vv       v20, \srcv, v0
+        vwsubu.wv       v0, v20, v8
+        vwaddu.wv       v20, v0, v16
+        vsetivli        zero, 15, e16, m2, tu, ma
+        vneg.v          v0, v20
+        vmax.vv         v0, v20, v0
+        .endm
+
+        csrwi           vxrm, 0
+        vsetivli        t0, 16, e32, m4, ta, ma
+        addi            a4, a4, -1
+        li              t5, 1
+        vmv.v.x         v24, zero
+        vmv.v.x         v28, zero
+1:
+        add             t1, a1, a3
+        add             t2, a2, a3
+        addi            a4, a4, -1
+        squarediff16
+        gradiff16       t1, v4
+        vwaddu.wv       v28, v28, v0
+        gradiff16       t2, v12
+        vwsubu.wv       v28, v28, v0
+        add             a1, a1, a3
+        add             a2, a2, a3
+        bnez            a4, 1b
+
+        squarediff16
+        vsetivli        zero, 16, e32, m4, tu, ma
+        vmv.s.x         v0, zero
+        vmv.s.x         v4, zero
+        vredsum.vs      v0, v24, v0
+        vredsum.vs      v4, v28, v4
+        vmv.x.s         t1, v0
+        vmv.x.s         t2, v4
+        srai            t3, t2, 31
+        xor             t2, t3, t2
+        sub             t2, t2, t3
+        mul             t2, t2, a0
+        add             a0, t2, t1
+
+        ret
+endfunc
+
+func ff_nsse8_rvv, zve32x
+        .macro squarediff8
+        vsetivli        zero, 8, e8, mf2, tu, ma
+        vle8.v          v4, (a1)
+        vle8.v          v12, (a2)
+        vwsubu.vv       v16, v4, v12
+        vsetvli         zero, zero, e16, m1, tu, ma
+        vwmacc.vv       v24, v16, v16
+        .endm
+
+        .macro gradiff8 srcx srcv
+        vsetivli        zero, 8, e8, mf2, tu, ma
+        vle8.v          v8, (\srcx)
+        vslide1down.vx  v0, \srcv, t5
+        vslide1down.vx  v16, v8, t5
+        vwsubu.vv       v20, \srcv, v0
+        vwsubu.wv       v0, v20, v8
+        vwaddu.wv       v20, v0, v16
+        vsetivli        zero, 7, e16, m1, tu, ma
+        vneg.v          v0, v20
+        vmax.vv         v0, v20, v0
+        .endm
+
+        csrwi           vxrm, 0
+        vsetivli        t0, 8, e32, m2, ta, ma
+        addi            a4, a4, -1
+        li              t5, 1
+        vmv.v.x         v24, zero
+        vmv.v.x         v28, zero
+1:
+        add             t1, a1, a3
+        add             t2, a2, a3
+        addi            a4, a4, -1
+        squarediff8
+        gradiff8        t1, v4
+        vwaddu.wv       v28, v28, v0
+        gradiff8        t2, v12
+        vwsubu.wv       v28, v28, v0
+        add             a1, a1, a3
+        add             a2, a2, a3
+        bnez            a4, 1b
+
+        squarediff8
+        vsetivli        zero, 8, e32, m2, tu, ma
+        vmv.s.x         v0, zero
+        vmv.s.x         v4, zero
+        vredsum.vs      v0, v24, v0
+        vredsum.vs      v4, v28, v4
+        vmv.x.s         t1, v0
+        vmv.x.s         t2, v4
+        srai            t3, t2, 31
+        xor             t2, t3, t2
+        sub             t2, t2, t3
+        mul             t2, t2, a0
+        add             a0, t2, t1
+
+        ret
+endfunc

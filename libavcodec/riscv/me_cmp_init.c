@@ -54,6 +54,28 @@ int ff_vsad16_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdi
 int ff_vsad8_rvv(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2, ptrdiff_t stride, int h);
 int ff_vsad_intra16_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
 int ff_vsad_intra8_rvv(MpegEncContext *c, const uint8_t *s, const uint8_t *dummy, ptrdiff_t stride, int h);
+int ff_nsse16_rvv(int multiplier, const uint8_t *s1, const uint8_t *s2,
+                    ptrdiff_t stride, int h);
+int ff_nsse8_rvv(int multiplier, const uint8_t *s1, const uint8_t *s2,
+                    ptrdiff_t stride, int h);
+
+static int nsse16_rvv_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+                        ptrdiff_t stride, int h)
+{
+    if (c)
+        return ff_nsse16_rvv(c->avctx->nsse_weight, s1, s2, stride, h);
+    else
+        return ff_nsse16_rvv(8, s1, s2, stride, h);
+}
+
+static int nsse8_rvv_wrapper(MpegEncContext *c, const uint8_t *s1, const uint8_t *s2,
+                        ptrdiff_t stride, int h)
+{
+    if (c)
+        return ff_nsse8_rvv(c->avctx->nsse_weight, s1, s2, stride, h);
+    else
+        return ff_nsse8_rvv(8, s1, s2, stride, h);
+}
 
 av_cold void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx)
 {
@@ -82,6 +104,9 @@ av_cold void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx)
         c->vsad[1] = ff_vsad8_rvv;
         c->vsad[4] = ff_vsad_intra16_rvv;
         c->vsad[5] = ff_vsad_intra8_rvv;
+
+        c->nsse[0] = nsse16_rvv_wrapper;
+        c->nsse[1] = nsse8_rvv_wrapper;
     }
 #endif
 }
