@@ -266,8 +266,8 @@ int ff_nvdec_decode_uninit(AVCodecContext *avctx)
 {
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
 
-    av_freep(&ctx->bitstream);
     av_freep(&ctx->bitstream_internal);
+    ctx->bitstream           = NULL;
     ctx->bitstream_len       = 0;
     ctx->bitstream_allocated = 0;
 
