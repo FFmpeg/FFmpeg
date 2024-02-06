@@ -231,3 +231,101 @@ func ff_sse4_rvv, zve32x
         vmv.x.s         a0, v0
         ret
 endfunc
+
+.macro vabsaddu dst src tmp
+        vneg.v          \tmp, \src
+        vmax.vv         \tmp, \src, \tmp
+        vwaddu.wv       \dst, \dst, \tmp
+.endm
+
+.macro  vsad_vsse16 type
+        vsetivli        t0, 16, e32, m4, ta, ma
+        addi            a4, a4, -1
+        add             t1, a1, a3
+        add             t2, a2, a3
+        vmv.v.x         v24, zero
+        vmv.s.x         v0, zero
+1:
+        vsetvli         zero, zero, e8, m1, tu, ma
+        vle8.v          v4, (a1)
+        vle8.v          v8, (t1)
+        vle8.v          v12, (a2)
+        vle8.v          v16, (t2)
+        addi            a4, a4, -1
+        vwsubu.vv       v28, v4, v12
+        vwsubu.wv       v12, v28, v8
+        vwaddu.wv       v28, v12, v16
+        vsetvli         zero, zero, e16, m2, tu, ma
+
+.ifc \type,abs
+        vabsaddu        v24, v28, v12
+.endif
+.ifc \type,square
+        vwmacc.vv       v24, v28, v28
+.endif
+
+        add             a1, a1, a3
+        add             a2, a2, a3
+        add             t1, t1, a3
+        add             t2, t2, a3
+        bnez            a4, 1b
+
+        vsetvli         zero, zero, e32, m4, tu, ma
+        vredsum.vs      v0, v24, v0
+        vmv.x.s         a0, v0
+        ret
+.endm
+
+.macro  vsad_vsse8 type
+        vsetivli        t0, 8, e32, m2, ta, ma
+        addi            a4, a4, -1
+        add             t1, a1, a3
+        add             t2, a2, a3
+        vmv.v.x         v24, zero
+        vmv.s.x         v0, zero
+1:
+        vsetvli         zero, zero, e8, mf2, tu, ma
+        vle8.v          v4, (a1)
+        vle8.v          v8, (t1)
+        vle8.v          v12, (a2)
+        vle8.v          v16, (t2)
+        addi            a4, a4, -1
+        vwsubu.vv       v28, v4, v12
+        vwsubu.wv       v12, v28, v8
+        vwaddu.wv       v28, v12, v16
+        vsetvli         zero, zero, e16, m1, tu, ma
+
+.ifc \type,abs
+        vabsaddu        v24, v28, v12
+.endif
+.ifc \type,square
+        vwmacc.vv       v24, v28, v28
+.endif
+
+        add             a1, a1, a3
+        add             a2, a2, a3
+        add             t1, t1, a3
+        add             t2, t2, a3
+        bnez            a4, 1b
+
+        vsetvli         zero, zero, e32, m2, tu, ma
+        vredsum.vs      v0, v24, v0
+        vmv.x.s         a0, v0
+        ret
+.endm
+
+func ff_vsse16_rvv, zve32x
+        vsad_vsse16 square
+endfunc
+
+func ff_vsse8_rvv, zve32x
+        vsad_vsse8 square
+endfunc
+
+func ff_vsad16_rvv, zve32x
+        vsad_vsse16 abs
+endfunc
+
+func ff_vsad8_rvv, zve32x
+        vsad_vsse8 abs
+endfunc
