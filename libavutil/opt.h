@@ -246,40 +246,6 @@ enum AVOptionType{
 };
 
 /**
- * AVOption
- */
-typedef struct AVOption {
-    const char *name;
-
-    /**
-     * short English help text
-     * @todo What about other languages?
-     */
-    const char *help;
-
-    /**
-     * The offset relative to the context structure where the option
-     * value is stored. It should be 0 for named constants.
-     */
-    int offset;
-    enum AVOptionType type;
-
-    /**
-     * the default value for scalar options
-     */
-    union {
-        int64_t i64;
-        double dbl;
-        const char *str;
-        /* TODO those are unused now */
-        AVRational q;
-    } default_val;
-    double min;                 ///< minimum valid value for the option
-    double max;                 ///< maximum valid value for the option
-
-    int flags;
-
-/**
  * A generic parameter which can be set by the user for muxing or encoding.
  */
 #define AV_OPT_FLAG_ENCODING_PARAM  (1 << 0)
@@ -321,7 +287,40 @@ typedef struct AVOption {
  * Set if option constants can also reside in child objects.
  */
 #define AV_OPT_FLAG_CHILD_CONSTS    (1 << 18)
-//FIXME think about enc-audio, ... style flags
+
+/**
+ * AVOption
+ */
+typedef struct AVOption {
+    const char *name;
+
+    /**
+     * short English help text
+     * @todo What about other languages?
+     */
+    const char *help;
+
+    /**
+     * The offset relative to the context structure where the option
+     * value is stored. It should be 0 for named constants.
+     */
+    int offset;
+    enum AVOptionType type;
+
+    /**
+     * the default value for scalar options
+     */
+    union {
+        int64_t i64;
+        double dbl;
+        const char *str;
+        /* TODO those are unused now */
+        AVRational q;
+    } default_val;
+    double min;                 ///< minimum valid value for the option
+    double max;                 ///< maximum valid value for the option
+
+    int flags;
 
     /**
      * The logical unit to which the option belongs. Non-constant
