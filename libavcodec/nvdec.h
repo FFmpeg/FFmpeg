@@ -56,7 +56,7 @@ typedef struct NVDECContext {
 
     struct NVDECDecoder  *decoder; ///< RefStruct reference
 
-    uint8_t      *bitstream;
+    const uint8_t *bitstream;
     int           bitstream_len;
     unsigned int  bitstream_allocated;
     uint8_t      *bitstream_internal;

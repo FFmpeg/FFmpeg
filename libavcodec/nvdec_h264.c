@@ -150,8 +150,8 @@ static int nvdec_h264_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
         return AVERROR(ENOMEM);
     ctx->slice_offsets = tmp;
 
-    AV_WB24(ctx->bitstream + ctx->bitstream_len, 1);
-    memcpy(ctx->bitstream + ctx->bitstream_len + 3, buffer, size);
+    AV_WB24(ctx->bitstream_internal + ctx->bitstream_len, 1);
+    memcpy(ctx->bitstream_internal + ctx->bitstream_len + 3, buffer, size);
     ctx->slice_offsets[ctx->nb_slices] = ctx->bitstream_len ;
     ctx->bitstream_len += size + 3;
     ctx->nb_slices++;

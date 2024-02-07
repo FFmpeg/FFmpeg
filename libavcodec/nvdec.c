@@ -680,7 +680,7 @@ int ff_nvdec_simple_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
     ctx->slice_offsets = tmp;
 
     if (!ctx->bitstream)
-        ctx->bitstream = (uint8_t*)buffer;
+        ctx->bitstream = buffer;
 
     ctx->slice_offsets[ctx->nb_slices] = buffer - ctx->bitstream;
     ctx->bitstream_len += size;
