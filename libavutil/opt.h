@@ -320,6 +320,9 @@ typedef struct AVOption {
     double min;                 ///< minimum valid value for the option
     double max;                 ///< maximum valid value for the option
 
+    /**
+     * A combination of AV_OPT_FLAG_*.
+     */
     int flags;
 
     /**
