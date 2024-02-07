@@ -278,25 +278,49 @@ typedef struct AVOption {
     double max;                 ///< maximum valid value for the option
 
     int flags;
-#define AV_OPT_FLAG_ENCODING_PARAM  1   ///< a generic parameter which can be set by the user for muxing or encoding
-#define AV_OPT_FLAG_DECODING_PARAM  2   ///< a generic parameter which can be set by the user for demuxing or decoding
-#define AV_OPT_FLAG_AUDIO_PARAM     8
-#define AV_OPT_FLAG_VIDEO_PARAM     16
-#define AV_OPT_FLAG_SUBTITLE_PARAM  32
+
+/**
+ * A generic parameter which can be set by the user for muxing or encoding.
+ */
+#define AV_OPT_FLAG_ENCODING_PARAM  (1 << 0)
+/**
+ * A generic parameter which can be set by the user for demuxing or decoding.
+ */
+#define AV_OPT_FLAG_DECODING_PARAM  (1 << 1)
+#define AV_OPT_FLAG_AUDIO_PARAM     (1 << 3)
+#define AV_OPT_FLAG_VIDEO_PARAM     (1 << 4)
+#define AV_OPT_FLAG_SUBTITLE_PARAM  (1 << 5)
 /**
  * The option is intended for exporting values to the caller.
  */
-#define AV_OPT_FLAG_EXPORT          64
+#define AV_OPT_FLAG_EXPORT          (1 << 6)
 /**
  * The option may not be set through the AVOptions API, only read.
  * This flag only makes sense when AV_OPT_FLAG_EXPORT is also set.
  */
-#define AV_OPT_FLAG_READONLY        128
-#define AV_OPT_FLAG_BSF_PARAM       (1<<8) ///< a generic parameter which can be set by the user for bit stream filtering
-#define AV_OPT_FLAG_RUNTIME_PARAM   (1<<15) ///< a generic parameter which can be set by the user at runtime
-#define AV_OPT_FLAG_FILTERING_PARAM (1<<16) ///< a generic parameter which can be set by the user for filtering
-#define AV_OPT_FLAG_DEPRECATED      (1<<17) ///< set if option is deprecated, users should refer to AVOption.help text for more information
-#define AV_OPT_FLAG_CHILD_CONSTS    (1<<18) ///< set if option constants can also reside in child objects
+#define AV_OPT_FLAG_READONLY        (1 << 7)
+/**
+ * A generic parameter which can be set by the user for bit stream filtering.
+ */
+#define AV_OPT_FLAG_BSF_PARAM       (1 << 8)
+
+/**
+ * A generic parameter which can be set by the user at runtime.
+ */
+#define AV_OPT_FLAG_RUNTIME_PARAM   (1 << 15)
+/**
+ * A generic parameter which can be set by the user for filtering.
+ */
+#define AV_OPT_FLAG_FILTERING_PARAM (1 << 16)
+/**
+ * Set if option is deprecated, users should refer to AVOption.help text for
+ * more information.
+ */
+#define AV_OPT_FLAG_DEPRECATED      (1 << 17)
+/**
+ * Set if option constants can also reside in child objects.
+ */
+#define AV_OPT_FLAG_CHILD_CONSTS    (1 << 18)
 //FIXME think about enc-audio, ... style flags
 
     /**
