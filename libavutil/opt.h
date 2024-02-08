@@ -402,15 +402,9 @@ typedef struct AVOptionRanges {
 } AVOptionRanges;
 
 /**
- * Show the obj options.
- *
- * @param req_flags requested flags for the options to show. Show only the
- * options for which it is opt->flags & req_flags.
- * @param rej_flags rejected flags for the options to show. Show only the
- * options for which it is !(opt->flags & req_flags).
- * @param av_log_obj log context to use for showing the options
+ * @defgroup opt_mng AVOption (un)initialization and inspection.
+ * @{
  */
-int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags);
 
 /**
  * Set the values of all AVOption fields to their default values.
@@ -431,160 +425,36 @@ void av_opt_set_defaults(void *s);
 void av_opt_set_defaults2(void *s, int mask, int flags);
 
 /**
- * Parse the key/value pairs list in opts. For each key/value pair
- * found, stores the value in the field in ctx that is named like the
- * key. ctx must be an AVClass context, storing is done using
- * AVOptions.
- *
- * @param opts options string to parse, may be NULL
- * @param key_val_sep a 0-terminated list of characters used to
- * separate key from value
- * @param pairs_sep a 0-terminated list of characters used to separate
- * two pairs from each other
- * @return the number of successfully set key/value pairs, or a negative
- * value corresponding to an AVERROR code in case of error:
- * AVERROR(EINVAL) if opts cannot be parsed,
- * the error code issued by av_opt_set() if a key/value pair
- * cannot be set
- */
-int av_set_options_string(void *ctx, const char *opts,
-                          const char *key_val_sep, const char *pairs_sep);
-
-/**
- * Parse the key-value pairs list in opts. For each key=value pair found,
- * set the value of the corresponding option in ctx.
- *
- * @param ctx          the AVClass object to set options on
- * @param opts         the options string, key-value pairs separated by a
- *                     delimiter
- * @param shorthand    a NULL-terminated array of options names for shorthand
- *                     notation: if the first field in opts has no key part,
- *                     the key is taken from the first element of shorthand;
- *                     then again for the second, etc., until either opts is
- *                     finished, shorthand is finished or a named option is
- *                     found; after that, all options must be named
- * @param key_val_sep  a 0-terminated list of characters used to separate
- *                     key from value, for example '='
- * @param pairs_sep    a 0-terminated list of characters used to separate
- *                     two pairs from each other, for example ':' or ','
- * @return  the number of successfully set key=value pairs, or a negative
- *          value corresponding to an AVERROR code in case of error:
- *          AVERROR(EINVAL) if opts cannot be parsed,
- *          the error code issued by av_set_string3() if a key/value pair
- *          cannot be set
- *
- * Options names must use only the following characters: a-z A-Z 0-9 - . / _
- * Separators must use characters distinct from option names and from each
- * other.
- */
-int av_opt_set_from_string(void *ctx, const char *opts,
-                           const char *const *shorthand,
-                           const char *key_val_sep, const char *pairs_sep);
-/**
  * Free all allocated objects in obj.
  */
 void av_opt_free(void *obj);
 
 /**
- * Check whether a particular flag is set in a flags field.
+ * Iterate over all AVOptions belonging to obj.
  *
- * @param field_name the name of the flag field option
- * @param flag_name the name of the flag to check
- * @return non-zero if the flag is set, zero if the flag isn't set,
- *         isn't of the right type, or the flags field doesn't exist.
+ * @param obj an AVOptions-enabled struct or a double pointer to an
+ *            AVClass describing it.
+ * @param prev result of the previous call to av_opt_next() on this object
+ *             or NULL
+ * @return next AVOption or NULL
  */
-int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
+const AVOption *av_opt_next(const void *obj, const AVOption *prev);
 
 /**
- * Set all the options from a given dictionary on an object.
+ * Iterate over AVOptions-enabled children of obj.
  *
- * @param obj a struct whose first element is a pointer to AVClass
- * @param options options to process. This dictionary will be freed and replaced
- *                by a new one containing all options not found in obj.
- *                Of course this new dictionary needs to be freed by caller
- *                with av_dict_free().
- *
- * @return 0 on success, a negative AVERROR if some option was found in obj,
- *         but could not be set.
- *
- * @see av_dict_copy()
+ * @param prev result of a previous call to this function or NULL
+ * @return next AVOptions-enabled child or NULL
  */
-int av_opt_set_dict(void *obj, struct AVDictionary **options);
-
+void *av_opt_child_next(void *obj, void *prev);
 
 /**
- * Set all the options from a given dictionary on an object.
+ * Iterate over potential AVOptions-enabled children of parent.
  *
- * @param obj a struct whose first element is a pointer to AVClass
- * @param options options to process. This dictionary will be freed and replaced
- *                by a new one containing all options not found in obj.
- *                Of course this new dictionary needs to be freed by caller
- *                with av_dict_free().
- * @param search_flags A combination of AV_OPT_SEARCH_*.
- *
- * @return 0 on success, a negative AVERROR if some option was found in obj,
- *         but could not be set.
- *
- * @see av_dict_copy()
+ * @param iter a pointer where iteration state is stored.
+ * @return AVClass corresponding to next potential child or NULL
  */
-int av_opt_set_dict2(void *obj, struct AVDictionary **options, int search_flags);
-
-/**
- * Extract a key-value pair from the beginning of a string.
- *
- * @param ropts        pointer to the options string, will be updated to
- *                     point to the rest of the string (one of the pairs_sep
- *                     or the final NUL)
- * @param key_val_sep  a 0-terminated list of characters used to separate
- *                     key from value, for example '='
- * @param pairs_sep    a 0-terminated list of characters used to separate
- *                     two pairs from each other, for example ':' or ','
- * @param flags        flags; see the AV_OPT_FLAG_* values below
- * @param rkey         parsed key; must be freed using av_free()
- * @param rval         parsed value; must be freed using av_free()
- *
- * @return  >=0 for success, or a negative value corresponding to an
- *          AVERROR code in case of error; in particular:
- *          AVERROR(EINVAL) if no key is present
- *
- */
-int av_opt_get_key_value(const char **ropts,
-                         const char *key_val_sep, const char *pairs_sep,
-                         unsigned flags,
-                         char **rkey, char **rval);
-
-enum {
-
-    /**
-     * Accept to parse a value without a key; the key will then be returned
-     * as NULL.
-     */
-    AV_OPT_FLAG_IMPLICIT_KEY = 1,
-};
-
-/**
- * @defgroup opt_eval_funcs Evaluating option strings
- * @{
- * This group of functions can be used to evaluate option strings
- * and get numbers out of them. They do the same thing as av_opt_set(),
- * except the result is written into the caller-supplied pointer.
- *
- * @param obj a struct whose first element is a pointer to AVClass.
- * @param o an option for which the string is to be evaluated.
- * @param val string to be evaluated.
- * @param *_out value of the string will be written here.
- *
- * @return 0 on success, a negative number on failure.
- */
-int av_opt_eval_flags (void *obj, const AVOption *o, const char *val, int        *flags_out);
-int av_opt_eval_int   (void *obj, const AVOption *o, const char *val, int        *int_out);
-int av_opt_eval_int64 (void *obj, const AVOption *o, const char *val, int64_t    *int64_out);
-int av_opt_eval_float (void *obj, const AVOption *o, const char *val, float      *float_out);
-int av_opt_eval_double(void *obj, const AVOption *o, const char *val, double     *double_out);
-int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational *q_out);
-/**
- * @}
- */
+const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter);
 
 #define AV_OPT_SEARCH_CHILDREN   (1 << 0) /**< Search in possible children of the
                                                given object first. */
@@ -659,31 +529,171 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
                              int opt_flags, int search_flags, void **target_obj);
 
 /**
- * Iterate over all AVOptions belonging to obj.
+ * Show the obj options.
  *
- * @param obj an AVOptions-enabled struct or a double pointer to an
- *            AVClass describing it.
- * @param prev result of the previous call to av_opt_next() on this object
- *             or NULL
- * @return next AVOption or NULL
+ * @param req_flags requested flags for the options to show. Show only the
+ * options for which it is opt->flags & req_flags.
+ * @param rej_flags rejected flags for the options to show. Show only the
+ * options for which it is !(opt->flags & req_flags).
+ * @param av_log_obj log context to use for showing the options
  */
-const AVOption *av_opt_next(const void *obj, const AVOption *prev);
+int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags);
 
 /**
- * Iterate over AVOptions-enabled children of obj.
+ * Extract a key-value pair from the beginning of a string.
  *
- * @param prev result of a previous call to this function or NULL
- * @return next AVOptions-enabled child or NULL
+ * @param ropts        pointer to the options string, will be updated to
+ *                     point to the rest of the string (one of the pairs_sep
+ *                     or the final NUL)
+ * @param key_val_sep  a 0-terminated list of characters used to separate
+ *                     key from value, for example '='
+ * @param pairs_sep    a 0-terminated list of characters used to separate
+ *                     two pairs from each other, for example ':' or ','
+ * @param flags        flags; see the AV_OPT_FLAG_* values below
+ * @param rkey         parsed key; must be freed using av_free()
+ * @param rval         parsed value; must be freed using av_free()
+ *
+ * @return  >=0 for success, or a negative value corresponding to an
+ *          AVERROR code in case of error; in particular:
+ *          AVERROR(EINVAL) if no key is present
+ *
  */
-void *av_opt_child_next(void *obj, void *prev);
+int av_opt_get_key_value(const char **ropts,
+                         const char *key_val_sep, const char *pairs_sep,
+                         unsigned flags,
+                         char **rkey, char **rval);
+
+enum {
+
+    /**
+     * Accept to parse a value without a key; the key will then be returned
+     * as NULL.
+     */
+    AV_OPT_FLAG_IMPLICIT_KEY = 1,
+};
 
 /**
- * Iterate over potential AVOptions-enabled children of parent.
- *
- * @param iter a pointer where iteration state is stored.
- * @return AVClass corresponding to next potential child or NULL
+ * @}
  */
-const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter);
+
+/**
+ * Parse the key/value pairs list in opts. For each key/value pair
+ * found, stores the value in the field in ctx that is named like the
+ * key. ctx must be an AVClass context, storing is done using
+ * AVOptions.
+ *
+ * @param opts options string to parse, may be NULL
+ * @param key_val_sep a 0-terminated list of characters used to
+ * separate key from value
+ * @param pairs_sep a 0-terminated list of characters used to separate
+ * two pairs from each other
+ * @return the number of successfully set key/value pairs, or a negative
+ * value corresponding to an AVERROR code in case of error:
+ * AVERROR(EINVAL) if opts cannot be parsed,
+ * the error code issued by av_opt_set() if a key/value pair
+ * cannot be set
+ */
+int av_set_options_string(void *ctx, const char *opts,
+                          const char *key_val_sep, const char *pairs_sep);
+
+/**
+ * Parse the key-value pairs list in opts. For each key=value pair found,
+ * set the value of the corresponding option in ctx.
+ *
+ * @param ctx          the AVClass object to set options on
+ * @param opts         the options string, key-value pairs separated by a
+ *                     delimiter
+ * @param shorthand    a NULL-terminated array of options names for shorthand
+ *                     notation: if the first field in opts has no key part,
+ *                     the key is taken from the first element of shorthand;
+ *                     then again for the second, etc., until either opts is
+ *                     finished, shorthand is finished or a named option is
+ *                     found; after that, all options must be named
+ * @param key_val_sep  a 0-terminated list of characters used to separate
+ *                     key from value, for example '='
+ * @param pairs_sep    a 0-terminated list of characters used to separate
+ *                     two pairs from each other, for example ':' or ','
+ * @return  the number of successfully set key=value pairs, or a negative
+ *          value corresponding to an AVERROR code in case of error:
+ *          AVERROR(EINVAL) if opts cannot be parsed,
+ *          the error code issued by av_set_string3() if a key/value pair
+ *          cannot be set
+ *
+ * Options names must use only the following characters: a-z A-Z 0-9 - . / _
+ * Separators must use characters distinct from option names and from each
+ * other.
+ */
+int av_opt_set_from_string(void *ctx, const char *opts,
+                           const char *const *shorthand,
+                           const char *key_val_sep, const char *pairs_sep);
+
+/**
+ * Check whether a particular flag is set in a flags field.
+ *
+ * @param field_name the name of the flag field option
+ * @param flag_name the name of the flag to check
+ * @return non-zero if the flag is set, zero if the flag isn't set,
+ *         isn't of the right type, or the flags field doesn't exist.
+ */
+int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
+
+/**
+ * Set all the options from a given dictionary on an object.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass
+ * @param options options to process. This dictionary will be freed and replaced
+ *                by a new one containing all options not found in obj.
+ *                Of course this new dictionary needs to be freed by caller
+ *                with av_dict_free().
+ *
+ * @return 0 on success, a negative AVERROR if some option was found in obj,
+ *         but could not be set.
+ *
+ * @see av_dict_copy()
+ */
+int av_opt_set_dict(void *obj, struct AVDictionary **options);
+
+
+/**
+ * Set all the options from a given dictionary on an object.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass
+ * @param options options to process. This dictionary will be freed and replaced
+ *                by a new one containing all options not found in obj.
+ *                Of course this new dictionary needs to be freed by caller
+ *                with av_dict_free().
+ * @param search_flags A combination of AV_OPT_SEARCH_*.
+ *
+ * @return 0 on success, a negative AVERROR if some option was found in obj,
+ *         but could not be set.
+ *
+ * @see av_dict_copy()
+ */
+int av_opt_set_dict2(void *obj, struct AVDictionary **options, int search_flags);
+
+/**
+ * @defgroup opt_eval_funcs Evaluating option strings
+ * @{
+ * This group of functions can be used to evaluate option strings
+ * and get numbers out of them. They do the same thing as av_opt_set(),
+ * except the result is written into the caller-supplied pointer.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass.
+ * @param o an option for which the string is to be evaluated.
+ * @param val string to be evaluated.
+ * @param *_out value of the string will be written here.
+ *
+ * @return 0 on success, a negative number on failure.
+ */
+int av_opt_eval_flags (void *obj, const AVOption *o, const char *val, int        *flags_out);
+int av_opt_eval_int   (void *obj, const AVOption *o, const char *val, int        *int_out);
+int av_opt_eval_int64 (void *obj, const AVOption *o, const char *val, int64_t    *int64_out);
+int av_opt_eval_float (void *obj, const AVOption *o, const char *val, float      *float_out);
+int av_opt_eval_double(void *obj, const AVOption *o, const char *val, double     *double_out);
+int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational *q_out);
+/**
+ * @}
+ */
 
 /**
  * @defgroup opt_set_funcs Option setting functions
