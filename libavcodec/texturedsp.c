@@ -175,9 +175,12 @@ static av_always_inline void premult2straight(uint8_t *src)
     int b = src[2];
     int a = src[3]; /* unchanged */
 
-    src[0] = (uint8_t) r * a / 255;
-    src[1] = (uint8_t) g * a / 255;
-    src[2] = (uint8_t) b * a / 255;
+    if (a == 0)
+        return;
+
+    src[0] = (uint8_t) FFMIN(r * 255 / a, 255);
+    src[1] = (uint8_t) FFMIN(g * 255 / a, 255);
+    src[2] = (uint8_t) FFMIN(b * 255 / a, 255);
 }
 
 /**
