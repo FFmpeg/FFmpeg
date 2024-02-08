@@ -160,14 +160,14 @@ typedef struct V360Context {
     int in_width, in_height;
     int out_width, out_height;
 
-    int pr_width[4], pr_height[4];
+    int pr_width[AV_VIDEO_MAX_PLANES], pr_height[AV_VIDEO_MAX_PLANES];
 
-    int in_offset_w[4], in_offset_h[4];
-    int out_offset_w[4], out_offset_h[4];
+    int in_offset_w[AV_VIDEO_MAX_PLANES], in_offset_h[AV_VIDEO_MAX_PLANES];
+    int out_offset_w[AV_VIDEO_MAX_PLANES], out_offset_h[AV_VIDEO_MAX_PLANES];
 
-    int planewidth[4], planeheight[4];
-    int inplanewidth[4], inplaneheight[4];
-    int uv_linesize[4];
+    int planewidth[AV_VIDEO_MAX_PLANES], planeheight[AV_VIDEO_MAX_PLANES];
+    int inplanewidth[AV_VIDEO_MAX_PLANES], inplaneheight[AV_VIDEO_MAX_PLANES];
+    int uv_linesize[AV_VIDEO_MAX_PLANES];
     int nb_planes;
     int nb_allocated;
     int elements;
@@ -176,7 +176,7 @@ typedef struct V360Context {
     int nb_threads;
 
     SliceXYRemap *slice_remap;
-    unsigned map[4];
+    unsigned map[AV_VIDEO_MAX_PLANES];
 
     int (*in_transform)(const struct V360Context *s,
                         const float *vec, int width, int height,
