@@ -313,7 +313,7 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
             }
         }
         if (o->type == AV_OPT_TYPE_FLAGS) {
-            read_number(o, dst, NULL, NULL, &intnum);
+            intnum = *(unsigned int*)dst;
             if (cmd == '+')
                 d = intnum | (int64_t)d;
             else if (cmd == '-')
@@ -2035,8 +2035,7 @@ void av_opt_freep_ranges(AVOptionRanges **rangesp)
 int av_opt_is_set_to_default(void *obj, const AVOption *o)
 {
     int64_t i64;
-    double d, d2;
-    float f;
+    double d;
     AVRational q;
     int ret, w, h;
     char *str;
@@ -2081,13 +2080,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return 0;
         return !strcmp(str, o->default_val.str);
     case AV_OPT_TYPE_DOUBLE:
-        read_number(o, dst, &d, NULL, NULL);
+        d = *(double *)dst;
         return o->default_val.dbl == d;
     case AV_OPT_TYPE_FLOAT:
-        read_number(o, dst, &d, NULL, NULL);
-        f = o->default_val.dbl;
-        d2 = f;
-        return d2 == d;
+        d = *(float *)dst;
+        return (float)o->default_val.dbl == d;
     case AV_OPT_TYPE_RATIONAL:
         q = av_d2q(o->default_val.dbl, INT_MAX);
         return !av_cmp_q(*(AVRational*)dst, q);
