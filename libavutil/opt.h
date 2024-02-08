@@ -756,6 +756,11 @@ int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, in
  */
 
 /**
+ * @defgroup opt_read Reading option values
+ * @{
+ */
+
+/**
  * @defgroup opt_get_funcs Option getting functions
  * @{
  * Those functions get a value of the option with the given name from an object.
@@ -832,42 +837,6 @@ int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational
 void *av_opt_ptr(const AVClass *avclass, void *obj, const char *name);
 
 /**
- * Free an AVOptionRanges struct and set it to NULL.
- */
-void av_opt_freep_ranges(AVOptionRanges **ranges);
-
-/**
- * Get a list of allowed ranges for the given option.
- *
- * The returned list may depend on other fields in obj like for example profile.
- *
- * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
- *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
- *              AV_OPT_MULTI_COMPONENT_RANGE indicates that function may return more than one component, @see AVOptionRanges
- *
- * The result must be freed with av_opt_freep_ranges.
- *
- * @return number of compontents returned on success, a negative errro code otherwise
- */
-int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
-
-/**
- * Get a default list of allowed ranges for the given option.
- *
- * This list is constructed without using the AVClass.query_ranges() callback
- * and can be used as fallback from within the callback.
- *
- * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
- *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
- *              AV_OPT_MULTI_COMPONENT_RANGE indicates that function may return more than one component, @see AVOptionRanges
- *
- * The result must be freed with av_opt_free_ranges.
- *
- * @return number of compontents returned on success, a negative errro code otherwise
- */
-int av_opt_query_ranges_default(AVOptionRanges **, void *obj, const char *key, int flags);
-
-/**
  * Check if given option is set to its default value.
  *
  * Options o must belong to the obj. This function must not be called to check child's options state.
@@ -926,6 +895,47 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
  */
 int av_opt_serialize(void *obj, int opt_flags, int flags, char **buffer,
                      const char key_val_sep, const char pairs_sep);
+
+/**
+ * @}
+ */
+
+/**
+ * Free an AVOptionRanges struct and set it to NULL.
+ */
+void av_opt_freep_ranges(AVOptionRanges **ranges);
+
+/**
+ * Get a list of allowed ranges for the given option.
+ *
+ * The returned list may depend on other fields in obj like for example profile.
+ *
+ * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
+ *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
+ *              AV_OPT_MULTI_COMPONENT_RANGE indicates that function may return more than one component, @see AVOptionRanges
+ *
+ * The result must be freed with av_opt_freep_ranges.
+ *
+ * @return number of compontents returned on success, a negative errro code otherwise
+ */
+int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
+
+/**
+ * Get a default list of allowed ranges for the given option.
+ *
+ * This list is constructed without using the AVClass.query_ranges() callback
+ * and can be used as fallback from within the callback.
+ *
+ * @param flags is a bitmask of flags, undefined flags should not be set and should be ignored
+ *              AV_OPT_SEARCH_FAKE_OBJ indicates that the obj is a double pointer to a AVClass instead of a full instance
+ *              AV_OPT_MULTI_COMPONENT_RANGE indicates that function may return more than one component, @see AVOptionRanges
+ *
+ * The result must be freed with av_opt_free_ranges.
+ *
+ * @return number of compontents returned on success, a negative errro code otherwise
+ */
+int av_opt_query_ranges_default(AVOptionRanges **, void *obj, const char *key, int flags);
+
 /**
  * @}
  */
