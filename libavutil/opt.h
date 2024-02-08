@@ -577,6 +577,11 @@ enum {
  */
 
 /**
+ * @defgroup opt_write Setting and modifying option values
+ * @{
+ */
+
+/**
  * Parse the key/value pairs list in opts. For each key/value pair
  * found, stores the value in the field in ctx that is named like the
  * key. ctx must be an AVClass context, storing is done using
@@ -628,16 +633,6 @@ int av_opt_set_from_string(void *ctx, const char *opts,
                            const char *key_val_sep, const char *pairs_sep);
 
 /**
- * Check whether a particular flag is set in a flags field.
- *
- * @param field_name the name of the flag field option
- * @param flag_name the name of the flag to check
- * @return non-zero if the flag is set, zero if the flag isn't set,
- *         isn't of the right type, or the flags field doesn't exist.
- */
-int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
-
-/**
  * Set all the options from a given dictionary on an object.
  *
  * @param obj a struct whose first element is a pointer to AVClass
@@ -672,28 +667,23 @@ int av_opt_set_dict(void *obj, struct AVDictionary **options);
 int av_opt_set_dict2(void *obj, struct AVDictionary **options, int search_flags);
 
 /**
- * @defgroup opt_eval_funcs Evaluating option strings
- * @{
- * This group of functions can be used to evaluate option strings
- * and get numbers out of them. They do the same thing as av_opt_set(),
- * except the result is written into the caller-supplied pointer.
+ * Copy options from src object into dest object.
  *
- * @param obj a struct whose first element is a pointer to AVClass.
- * @param o an option for which the string is to be evaluated.
- * @param val string to be evaluated.
- * @param *_out value of the string will be written here.
+ * The underlying AVClass of both src and dest must coincide. The guarantee
+ * below does not apply if this is not fulfilled.
  *
- * @return 0 on success, a negative number on failure.
+ * Options that require memory allocation (e.g. string or binary) are malloc'ed in dest object.
+ * Original memory allocated for such options is freed unless both src and dest options points to the same memory.
+ *
+ * Even on error it is guaranteed that allocated options from src and dest
+ * no longer alias each other afterwards; in particular calling av_opt_free()
+ * on both src and dest is safe afterwards if dest has been memdup'ed from src.
+ *
+ * @param dest Object to copy from
+ * @param src  Object to copy into
+ * @return 0 on success, negative on error
  */
-int av_opt_eval_flags (void *obj, const AVOption *o, const char *val, int        *flags_out);
-int av_opt_eval_int   (void *obj, const AVOption *o, const char *val, int        *int_out);
-int av_opt_eval_int64 (void *obj, const AVOption *o, const char *val, int64_t    *int64_out);
-int av_opt_eval_float (void *obj, const AVOption *o, const char *val, float      *float_out);
-int av_opt_eval_double(void *obj, const AVOption *o, const char *val, double     *double_out);
-int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational *q_out);
-/**
- * @}
- */
+int av_opt_copy(void *dest, const void *src);
 
 /**
  * @defgroup opt_set_funcs Option setting functions
@@ -762,6 +752,7 @@ int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, in
 
 /**
  * @}
+ * @}
  */
 
 /**
@@ -805,6 +796,31 @@ int av_opt_get_dict_val(void *obj, const char *name, int search_flags, AVDiction
 /**
  * @}
  */
+
+/**
+ * @defgroup opt_eval_funcs Evaluating option strings
+ * @{
+ * This group of functions can be used to evaluate option strings
+ * and get numbers out of them. They do the same thing as av_opt_set(),
+ * except the result is written into the caller-supplied pointer.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass.
+ * @param o an option for which the string is to be evaluated.
+ * @param val string to be evaluated.
+ * @param *_out value of the string will be written here.
+ *
+ * @return 0 on success, a negative number on failure.
+ */
+int av_opt_eval_flags (void *obj, const AVOption *o, const char *val, int        *flags_out);
+int av_opt_eval_int   (void *obj, const AVOption *o, const char *val, int        *int_out);
+int av_opt_eval_int64 (void *obj, const AVOption *o, const char *val, int64_t    *int64_out);
+int av_opt_eval_float (void *obj, const AVOption *o, const char *val, float      *float_out);
+int av_opt_eval_double(void *obj, const AVOption *o, const char *val, double     *double_out);
+int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational *q_out);
+/**
+ * @}
+ */
+
 /**
  * Gets a pointer to the requested field in a struct.
  * This function allows accessing a struct even when its fields are moved or
@@ -834,25 +850,6 @@ void av_opt_freep_ranges(AVOptionRanges **ranges);
  * @return number of compontents returned on success, a negative errro code otherwise
  */
 int av_opt_query_ranges(AVOptionRanges **, void *obj, const char *key, int flags);
-
-/**
- * Copy options from src object into dest object.
- *
- * The underlying AVClass of both src and dest must coincide. The guarantee
- * below does not apply if this is not fulfilled.
- *
- * Options that require memory allocation (e.g. string or binary) are malloc'ed in dest object.
- * Original memory allocated for such options is freed unless both src and dest options points to the same memory.
- *
- * Even on error it is guaranteed that allocated options from src and dest
- * no longer alias each other afterwards; in particular calling av_opt_free()
- * on both src and dest is safe afterwards if dest has been memdup'ed from src.
- *
- * @param dest Object to copy from
- * @param src  Object to copy into
- * @return 0 on success, negative on error
- */
-int av_opt_copy(void *dest, const void *src);
 
 /**
  * Get a default list of allowed ranges for the given option.
@@ -896,6 +893,15 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o);
  */
 int av_opt_is_set_to_default_by_name(void *obj, const char *name, int search_flags);
 
+/**
+ * Check whether a particular flag is set in a flags field.
+ *
+ * @param field_name the name of the flag field option
+ * @param flag_name the name of the flag to check
+ * @return non-zero if the flag is set, zero if the flag isn't set,
+ *         isn't of the right type, or the flags field doesn't exist.
+ */
+int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
 
 #define AV_OPT_SERIALIZE_SKIP_DEFAULTS              0x00000001  ///< Serialize options that are not set to default values only.
 #define AV_OPT_SERIALIZE_OPT_FLAGS_EXACT            0x00000002  ///< Serialize options that exactly match opt_flags only.
