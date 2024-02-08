@@ -76,7 +76,6 @@ static void rcwt_init_cluster(AVFormatContext *avf)
 
     rcwt->cluster_pos = 0;
     rcwt->cluster_pts = AV_NOPTS_VALUE;
-    memset(rcwt->cluster_buf, 0, sizeof(rcwt->cluster_buf));
 }
 
 static void rcwt_flush_cluster(AVFormatContext *avf)
