@@ -70,10 +70,8 @@ typedef struct RCWTContext {
     uint8_t cluster_buf[RCWT_CLUSTER_MAX_BLOCKS * RCWT_BLOCK_SIZE];
 } RCWTContext;
 
-static void rcwt_init_cluster(AVFormatContext *avf)
+static void rcwt_init_cluster(RCWTContext *rcwt)
 {
-    RCWTContext *rcwt = avf->priv_data;
-
     rcwt->cluster_pos = 0;
     rcwt->cluster_pts = AV_NOPTS_VALUE;
 }
@@ -88,7 +86,7 @@ static void rcwt_flush_cluster(AVFormatContext *avf)
         avio_write(avf->pb, rcwt->cluster_buf, rcwt->cluster_pos);
     }
 
-    rcwt_init_cluster(avf);
+    rcwt_init_cluster(rcwt);
 }
 
 static int rcwt_write_header(AVFormatContext *avf)
@@ -117,7 +115,7 @@ static int rcwt_write_header(AVFormatContext *avf)
     avio_wb16(avf->pb, 0x000);
     avio_w8(avf->pb, 0x00);
 
-    rcwt_init_cluster(avf);
+    rcwt_init_cluster(avf->priv_data);
 
     return 0;
 }
