@@ -1074,7 +1074,8 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         break;
     case MKBETAG('D', 'X', 'T', '5'):
         decompress_tex = dxv_decompress_dxt5;
-        ctx->tex_funct = ctx->texdsp.dxt5_block;
+        /* DXV misnomers DXT5, alpha is premultiplied so use DXT4 instead */
+        ctx->tex_funct = ctx->texdsp.dxt4_block;
         ctx->tex_rat   = 4;
         ctx->tex_step  = 16;
         msgcomp = "DXTR5";
