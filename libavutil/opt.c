@@ -971,16 +971,11 @@ static int get_number(void *obj, const char *name, double *num, int *den, int64_
     void *dst, *target_obj;
     const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
     if (!o || !target_obj)
-        goto error;
+        return AVERROR_OPTION_NOT_FOUND;
 
     dst = ((uint8_t *)target_obj) + o->offset;
 
     return read_number(o, dst, num, den, intnum);
-
-error:
-    *den    =
-    *intnum = 0;
-    return -1;
 }
 
 int av_opt_get_int(void *obj, const char *name, int search_flags, int64_t *out_val)
