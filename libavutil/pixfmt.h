@@ -33,6 +33,13 @@
 #define AVPALETTE_COUNT 256
 
 /**
+ * Maximum number of planes in any pixel format.
+ * This should be used when a maximum is needed, but code should not
+ * be written to require a maximum for no good reason.
+ */
+#define AV_VIDEO_MAX_PLANES 4
+
+/**
  * Pixel format.
  *
  * @note
