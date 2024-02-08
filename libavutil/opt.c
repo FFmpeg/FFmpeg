@@ -863,7 +863,7 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     buf[0] = 0;
     switch (o->type) {
     case AV_OPT_TYPE_BOOL:
-        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(get_bool_name(*(int *)dst), "invalid"));
+        ret = snprintf(buf, sizeof(buf), "%s", get_bool_name(*(int *)dst));
         break;
     case AV_OPT_TYPE_FLAGS:
         ret = snprintf(buf, sizeof(buf), "0x%08X", *(int *)dst);
@@ -1292,7 +1292,7 @@ static void log_default(void *obj, void *av_log_obj, const AVOption *opt)
     av_log(av_log_obj, AV_LOG_INFO, " (default ");
     switch (opt->type) {
     case AV_OPT_TYPE_BOOL:
-        av_log(av_log_obj, AV_LOG_INFO, "%s", (char *)av_x_if_null(get_bool_name(opt->default_val.i64), "invalid"));
+        av_log(av_log_obj, AV_LOG_INFO, "%s", get_bool_name(opt->default_val.i64));
         break;
     case AV_OPT_TYPE_FLAGS: {
         char *def_flags = get_opt_flags_string(obj, opt->unit, opt->default_val.i64);
