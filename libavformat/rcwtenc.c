@@ -65,7 +65,6 @@
 #define RCWT_BLOCK_SIZE                     3
 
 typedef struct RCWTContext {
-    int cluster_nb_blocks;
     int cluster_pos;
     int64_t cluster_pts;
     uint8_t cluster_buf[RCWT_CLUSTER_MAX_BLOCKS * RCWT_BLOCK_SIZE];
@@ -75,7 +74,6 @@ static void rcwt_init_cluster(AVFormatContext *avf)
 {
     RCWTContext *rcwt = avf->priv_data;
 
-    rcwt->cluster_nb_blocks = 0;
     rcwt->cluster_pos = 0;
     rcwt->cluster_pts = AV_NOPTS_VALUE;
     memset(rcwt->cluster_buf, 0, sizeof(rcwt->cluster_buf));
@@ -85,10 +83,10 @@ static void rcwt_flush_cluster(AVFormatContext *avf)
 {
     RCWTContext *rcwt = avf->priv_data;
 
-    if (rcwt->cluster_nb_blocks > 0) {
+    if (rcwt->cluster_pos > 0) {
         avio_wl64(avf->pb, rcwt->cluster_pts);
-        avio_wl16(avf->pb, rcwt->cluster_nb_blocks);
-        avio_write(avf->pb, rcwt->cluster_buf, (rcwt->cluster_nb_blocks * RCWT_BLOCK_SIZE));
+        avio_wl16(avf->pb, rcwt->cluster_pos / RCWT_BLOCK_SIZE);
+        avio_write(avf->pb, rcwt->cluster_buf, rcwt->cluster_pos);
     }
 
     rcwt_init_cluster(avf);
@@ -129,10 +127,7 @@ static int rcwt_write_packet(AVFormatContext *avf, AVPacket *pkt)
 {
     RCWTContext *rcwt = avf->priv_data;
 
-    int in_block = 0;
-    int nb_block_bytes = 0;
-
-    if (pkt->size == 0)
+    if (pkt->size < RCWT_BLOCK_SIZE)
         return 0;
 
     /* new PTS, new cluster */
@@ -146,11 +141,11 @@ static int rcwt_write_packet(AVFormatContext *avf, AVPacket *pkt)
         return 0;
     }
 
-    for (int i = 0; i < pkt->size; i++) {
+    for (int i = 0; i <= pkt->size - RCWT_BLOCK_SIZE;) {
         uint8_t cc_valid;
         uint8_t cc_type;
 
-        if (rcwt->cluster_nb_blocks == RCWT_CLUSTER_MAX_BLOCKS) {
+        if (rcwt->cluster_pos == RCWT_CLUSTER_MAX_BLOCKS * RCWT_BLOCK_SIZE) {
             av_log(avf, AV_LOG_WARNING, "Starting new cluster due to size\n");
             rcwt_flush_cluster(avf);
         }
@@ -158,25 +153,14 @@ static int rcwt_write_packet(AVFormatContext *avf, AVPacket *pkt)
         cc_valid = (pkt->data[i] & 0x04) >> 2;
         cc_type = pkt->data[i] & 0x03;
 
-        if (!in_block && !(cc_valid || cc_type == 3))
-            continue;
-
-        memcpy(&rcwt->cluster_buf[rcwt->cluster_pos], &pkt->data[i], 1);
-        rcwt->cluster_pos++;
-
-        if (!in_block) {
-            in_block = 1;
-            nb_block_bytes = 1;
+        if (!(cc_valid || cc_type == 3)) {
+            i++;
             continue;
         }
 
-        nb_block_bytes++;
-
-        if (nb_block_bytes == RCWT_BLOCK_SIZE) {
-            in_block = 0;
-            nb_block_bytes = 0;
-            rcwt->cluster_nb_blocks++;
-        }
+        memcpy(&rcwt->cluster_buf[rcwt->cluster_pos], &pkt->data[i], 3);
+        rcwt->cluster_pos += 3;
+        i                 += 3;
     }
 
     return 0;
