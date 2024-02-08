@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-03-08 - xxxxxxxxxx - lavu 59.1.100 - opt.h
+  Add AV_OPT_TYPE_FLAG_ARRAY and AVOptionArrayDef.
+
 2024-03-08 - xxxxxxxxxx - lavc 61.0.100 - vdpau.h
   Deprecate av_vdpau_alloc_context(), av_alloc_vdpaucontext(),
   av_vdpau_hwaccel_get_render2() and av_vdpau_hwaccel_set_render2().

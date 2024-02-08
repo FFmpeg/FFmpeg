@@ -250,6 +250,17 @@ enum AVOptionType{
     AV_OPT_TYPE_COLOR,
     AV_OPT_TYPE_BOOL,
     AV_OPT_TYPE_CHLAYOUT,
+
+    /**
+     * May be combined with another regular option type to declare an array
+     * option.
+     *
+     * For array options, @ref AVOption.offset should refer to a pointer
+     * corresponding to the option type. The pointer should be immediately
+     * followed by an unsigned int that will store the number of elements in the
+     * array.
+     */
+    AV_OPT_TYPE_FLAG_ARRAY = (1 << 16),
 };
 
 /**
@@ -296,6 +307,40 @@ enum AVOptionType{
 #define AV_OPT_FLAG_CHILD_CONSTS    (1 << 18)
 
 /**
+ * May be set as default_val for AV_OPT_TYPE_FLAG_ARRAY options.
+ */
+typedef struct AVOptionArrayDef {
+    /**
+     * Native access only.
+     *
+     * Default value of the option, as would be serialized by av_opt_get() (i.e.
+     * using the value of sep as the separator).
+     */
+    const char         *def;
+
+    /**
+     * Minimum number of elements in the array. When this field is non-zero, def
+     * must be non-NULL and contain at least this number of elements.
+     */
+    unsigned            size_min;
+    /**
+     * Maximum number of elements in the array, 0 when unlimited.
+     */
+    unsigned            size_max;
+
+    /**
+     * Separator between array elements in string representations of this
+     * option, used by av_opt_set() and av_opt_get(). It must be a printable
+     * ASCII character, excluding alphanumeric and the backslash. A comma is
+     * used when sep=0.
+     *
+     * The separator and the backslash must be backslash-escaped in order to
+     * appear in string representations of the option value.
+     */
+    char                sep;
+} AVOptionArrayDef;
+
+/**
  * AVOption
  */
 typedef struct AVOption {
@@ -317,8 +362,7 @@ typedef struct AVOption {
     enum AVOptionType type;
 
     /**
-     * Native access only.
-     *
+     * Native access only, except when documented otherwise.
      * the default value for scalar options
      */
     union {
@@ -327,6 +371,14 @@ typedef struct AVOption {
         const char *str;
         /* TODO those are unused now */
         AVRational q;
+
+        /**
+         * Used for AV_OPT_TYPE_FLAG_ARRAY options. May be NULL.
+         *
+         * Foreign access to some members allowed, as noted in AVOptionArrayDef
+         * documentation.
+         */
+        const AVOptionArrayDef *arr;
     } default_val;
     double min;                 ///< minimum valid value for the option
     double max;                 ///< maximum valid value for the option

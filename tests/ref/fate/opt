@@ -17,6 +17,12 @@ binary_size=4
 num64=1
 flt=0.333333
 dbl=0.333333
+array_str[0]=str0
+array_str[1]=str|1
+array_str[2]=str\2
+array_dict[0]: k00	v\00
+array_dict[0]: k01	v,01
+array_dict[1]: k10	v=1:0
 TestContext AVOptions:
   -num               <int>        E.......... set num (from 0 to 100) (default 0)
   -toggle            <int>        E.......... set toggle (from 0 to 1) (default 1)
@@ -45,6 +51,9 @@ TestContext AVOptions:
   -bool3             <boolean>    E.......... set boolean value (default false)
   -dict1             <dictionary> E.......... set dictionary value
   -dict2             <dictionary> E.......... set dictionary value (default "happy=':-)'")
+  -array_int         [<int>     ].........T. array of ints
+  -array_str         [<string>  ].........T. array of strings (default str0|str\|1|str\\2)
+  -array_dict        [<dictionary>].........T. array of dicts (default k00=v\\\\00:k01=v\,01,k10=v\\=1\\:0)
 
 Testing av_opt_is_set_to_default()
 name:       num default:1 error:
@@ -74,6 +83,9 @@ name:     bool2 default:0 error:
 name:     bool3 default:1 error:
 name:     dict1 default:1 error:
 name:     dict2 default:0 error:
+name: array_int default:0 error:
+name: array_str default:0 error:
+name:array_dict default:0 error:
 name:       num default:1 error:
 name:    toggle default:1 error:
 name:  rational default:1 error:
@@ -101,6 +113,9 @@ name:     bool2 default:1 error:
 name:     bool3 default:1 error:
 name:     dict1 default:1 error:
 name:     dict2 default:1 error:
+name: array_int default:0 error:
+name: array_str default:1 error:
+name:array_dict default:1 error:
 
 Testing av_opt_get/av_opt_set()
 name: num         get: 0                set: OK               get: 0                OK
@@ -127,9 +142,15 @@ name: bool2       get: true             set: OK               get: true         
 name: bool3       get: false            set: OK               get: false            OK
 name: dict1       get:                  set: OK               get:                  OK
 name: dict2       get: happy=\:-)       set: OK               get: happy=\:-)       OK
+name: array_int   get:                  set: OK               get:                  OK
+name: array_str   get: str0|str\|1|str\\2 set: OK               get: str0|str\|1|str\\2 OK
+name: array_dict  get: k00=v\\\\00:k01=v\,01,k10=v\\=1\\:0 set: OK               get: k00=v\\\\00:k01=v\,01,k10=v\\=1\\:0 OK
+av_opt_set("array_dict", NULL) -> 0
+array_dict=NULL; nb_array_dict=0
+av_opt_get("array_dict") -> NULL
 
 Test av_opt_serialize()
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-),array_int=,array_str=str0|str\\|1|str\\\\2,array_dict=k00\=v\\\\\\\\00:k01\=v\\\,01\,k10\=v\\\\\=1\\\\:0
 Setting entry with key 'num' to value '0'
 Setting entry with key 'toggle' to value '1'
 Setting entry with key 'rational' to value '1/1'
@@ -154,7 +175,10 @@ Setting entry with key 'bool2' to value 'true'
 Setting entry with key 'bool3' to value 'false'
 Setting entry with key 'dict1' to value ''
 Setting entry with key 'dict2' to value 'happy=\:-)'
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-)
+Setting entry with key 'array_int' to value ''
+Setting entry with key 'array_str' to value 'str0|str\|1|str\\2'
+Setting entry with key 'array_dict' to value 'k00=v\\\\00:k01=v\,01,k10=v\\=1\\:0'
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-),array_int=,array_str=str0|str\\|1|str\\\\2,array_dict=k00\=v\\\\\\\\00:k01\=v\\\,01\,k10\=v\\\\\=1\\\\:0
 
 Testing av_set_options_string()
 Setting options string ''
@@ -378,6 +402,13 @@ OK    'bool2=auto'
 Setting options string 'dict1='happy=\:-):sad=\:-(''
 Setting entry with key 'dict1' to value 'happy=\:-):sad=\:-('
 OK    'dict1='happy=\:-):sad=\:-(''
+Setting options string 'array_int=0,32,2147483647'
+Setting entry with key 'array_int' to value '0,32,2147483647'
+OK    'array_int=0,32,2147483647'
+Setting options string 'array_int=2147483648'
+Setting entry with key 'array_int' to value '2147483648'
+Value 2147483648.000000 for parameter 'array_int' out of range [0 - 2.14748e+09]
+Error 'array_int=2147483648'
 
 Testing av_opt_set_from_string()
 Setting options string ''
