@@ -19,7 +19,6 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavutil/emms.h"
 #include "dcaadpcm.h"
 #include "dcadec.h"
 #include "dcadata.h"
