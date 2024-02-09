@@ -82,6 +82,7 @@ typedef struct DdagrabContext {
     int raw_height;
 
     ID3D11Texture2D *probed_texture;
+    ID3D11Texture2D *buffer_texture;
 
     ID3D11VertexShader *vertex_shader;
     ID3D11InputLayout *input_layout;
@@ -154,6 +155,7 @@ static av_cold void ddagrab_uninit(AVFilterContext *avctx)
     release_resource(&dda->const_buffer);
 
     release_resource(&dda->probed_texture);
+    release_resource(&dda->buffer_texture);
 
     release_resource(&dda->dxgi_outdupl);
     release_resource(&dda->mouse_resource_view);
@@ -707,9 +709,29 @@ static int next_frame_internal(AVFilterContext *avctx, ID3D11Texture2D **desktop
             goto error;
     }
 
-    if (need_frame && (!frame_info.LastPresentTime.QuadPart || !frame_info.AccumulatedFrames)) {
-        ret = AVERROR(EAGAIN);
-        goto error;
+    if (!frame_info.LastPresentTime.QuadPart || !frame_info.AccumulatedFrames) {
+        if (need_frame) {
+            ret = AVERROR(EAGAIN);
+            goto error;
+        }
+
+        // Unforunately, we can't rely on the desktop_resource's format in this case.
+        // The API might even return it in with a format that was not in the initial
+        // list of supported formats, and it can change/flicker randomly.
+        // To work around this, return an internal copy of the last valid texture we got.
+        release_resource(&desktop_resource);
+
+        // The initial probing should make this impossible.
+        if (!dda->buffer_texture) {
+            av_log(avctx, AV_LOG_ERROR, "No buffer texture while operating!\n");
+            ret = AVERROR_BUG;
+            goto error;
+        }
+
+        av_log(avctx, AV_LOG_TRACE, "Returning internal buffer for a frame!\n");
+        ID3D11Texture2D_AddRef(dda->buffer_texture);
+        *desktop_texture = dda->buffer_texture;
+        return 0;
     }
 
     hr = IDXGIResource_QueryInterface(desktop_resource, &IID_ID3D11Texture2D, (void**)desktop_texture);
@@ -719,6 +741,24 @@ static int next_frame_internal(AVFilterContext *avctx, ID3D11Texture2D **desktop
         ret = AVERROR_EXTERNAL;
         goto error;
     }
+
+    if (!dda->buffer_texture) {
+        D3D11_TEXTURE2D_DESC desc;
+        ID3D11Texture2D_GetDesc(*desktop_texture, &desc);
+        desc.Usage = D3D11_USAGE_DEFAULT;
+
+        hr = ID3D11Device_CreateTexture2D(dda->device_hwctx->device, &desc, NULL, &dda->buffer_texture);
+        if (FAILED(hr)) {
+            release_resource(desktop_texture);
+            av_log(avctx, AV_LOG_ERROR, "Failed creating internal buffer texture.\n");
+            ret = AVERROR(ENOMEM);
+            goto error;
+        }
+    }
+
+    ID3D11DeviceContext_CopyResource(dda->device_hwctx->device_context,
+                                     (ID3D11Resource*)dda->buffer_texture,
+                                     (ID3D11Resource*)*desktop_texture);
 
     return 0;
 
@@ -1108,7 +1148,7 @@ static int ddagrab_request_frame(AVFilterLink *outlink)
     if (desc.Format != dda->raw_format ||
         (int)desc.Width != dda->raw_width ||
         (int)desc.Height != dda->raw_height) {
-        av_log(avctx, AV_LOG_ERROR, "Output parameters changed!");
+        av_log(avctx, AV_LOG_ERROR, "Output parameters changed!\n");
         ret = AVERROR_OUTPUT_CHANGED;
         goto fail;
     }
