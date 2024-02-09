@@ -155,10 +155,11 @@ static int vvc_extradata_to_annexb(AVBSFContext *ctx)
         }
 
         for (j = 0; j < cnt; j++) {
-            int nalu_len = bytestream2_get_be16(&gb);
+            const int nalu_len = bytestream2_get_be16(&gb);
 
-            if (4 + AV_INPUT_BUFFER_PADDING_SIZE + nalu_len >
-                SIZE_MAX - new_extradata_size) {
+            if (!nalu_len ||
+                nalu_len > bytestream2_get_bytes_left(&gb) ||
+                4 + AV_INPUT_BUFFER_PADDING_SIZE + nalu_len > SIZE_MAX - new_extradata_size) {
                 ret = AVERROR_INVALIDDATA;
                 goto fail;
             }
