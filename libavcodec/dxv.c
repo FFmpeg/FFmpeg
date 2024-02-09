@@ -1238,9 +1238,9 @@ static int dxv_init(AVCodecContext *avctx)
         return ret;
     }
 
-    /* Codec requires 16x16 alignment. */
-    avctx->coded_width  = FFALIGN(avctx->width,  16);
-    avctx->coded_height = FFALIGN(avctx->height, 16);
+    /* Since codec is based on 4x4 blocks, size is aligned to 4 */
+    avctx->coded_width  = FFALIGN(avctx->width,  TEXTURE_BLOCK_W);
+    avctx->coded_height = FFALIGN(avctx->height, TEXTURE_BLOCK_H);
 
     ff_texturedsp_init(&ctx->texdsp);
 
