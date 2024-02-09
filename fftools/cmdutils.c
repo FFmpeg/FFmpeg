@@ -1121,7 +1121,7 @@ double get_rotation(const int32_t *displaymatrix)
 {
     double theta = 0;
     if (displaymatrix)
-        theta = -round(av_display_rotation_get((int32_t*) displaymatrix));
+        theta = -round(av_display_rotation_get(displaymatrix));
 
     theta -= 360*floor(theta/360 + 0.9/360);
 
