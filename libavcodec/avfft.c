@@ -152,7 +152,7 @@ RDFTContext *av_rdft_init(int nbits, enum RDFTransformType trans)
         return NULL;
 
     ret = av_tx_init(&s->ctx, &s->fn, AV_TX_FLOAT_RDFT, trans == IDFT_C2R,
-                     1 << nbits, &scale, AV_TX_INPLACE);
+                     1 << nbits, &scale, 0x0);
     if (ret < 0) {
         av_free(s);
         return NULL;
@@ -162,17 +162,35 @@ RDFTContext *av_rdft_init(int nbits, enum RDFTransformType trans)
     s->len = 1 << nbits;
     s->inv = trans == IDFT_C2R;
 
+    s->tmp = av_malloc((s->len + 2)*sizeof(float));
+    if (!s->tmp) {
+        av_tx_uninit(&s->ctx);
+        av_free(s);
+        return NULL;
+    }
+
     return (RDFTContext *)s;
 }
 
 void av_rdft_calc(RDFTContext *s, FFTSample *data)
 {
     AVTXWrapper *w = (AVTXWrapper *)s;
-    if (w->inv)
-        FFSWAP(float, data[1], data[w->len]);
-    w->fn(w->ctx, data, (void *)data, w->stride);
-    if (!w->inv)
-        FFSWAP(float, data[1], data[w->len]);
+    float *src = w->inv ? w->tmp : (float *)data;
+    float *dst = w->inv ? (float *)data : w->tmp;
+
+    if (w->inv) {
+        memcpy(src, data, w->len*sizeof(float));
+
+        src[w->len] = src[1];
+        src[1] = 0.0f;
+    }
+
+    w->fn(w->ctx, dst, (void *)src, w->stride);
+
+    if (!w->inv) {
+        dst[1] = dst[w->len];
+        memcpy(data, dst, w->len*sizeof(float));
+    }
 }
 
 av_cold void av_rdft_end(RDFTContext *s)
@@ -180,6 +198,7 @@ av_cold void av_rdft_end(RDFTContext *s)
     if (s) {
         AVTXWrapper *w = (AVTXWrapper *)s;
         av_tx_uninit(&w->ctx);
+        av_free(w->tmp);
         av_free(w);
     }
 }
