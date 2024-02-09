@@ -75,20 +75,18 @@
  * @param v Name of the variable
  */
 
-#define MAX_ALIGNMENT (HAVE_SIMD_ALIGN_64 ? 64 : (HAVE_SIMD_ALIGN_32 ? 32 : 16))
-
 #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
-    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (FFMIN(n, MAX_ALIGNMENT)))) v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  t __attribute__ ((aligned (FFMIN(n, MAX_ALIGNMENT)))) v
-    #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (FFMIN(n, MAX_ALIGNMENT)))) v
+    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
 #elif defined(__DJGPP__)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (FFMIN(n, 16)))) v
     #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
     #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (FFMIN(n, 16)))) v
 #elif defined(__GNUC__) || defined(__clang__)
-    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (FFMIN(n, MAX_ALIGNMENT)))) v
-    #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (FFMIN(n, MAX_ALIGNMENT)))) v
-    #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (FFMIN(n, MAX_ALIGNMENT)))) v
+    #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_ALIGNED(n,t,v)  t av_used __attribute__ ((aligned (n))) v
+    #define DECLARE_ASM_CONST(n,t,v)    static const t av_used __attribute__ ((aligned (n))) v
 #elif defined(_MSC_VER)
     #define DECLARE_ALIGNED(n,t,v)      __declspec(align(n)) t v
     #define DECLARE_ASM_ALIGNED(n,t,v)  __declspec(align(n)) t v
