@@ -2296,7 +2296,7 @@ int av_probe_input_buffer(AVIOContext *pb, const AVInputFormat **fmt,
  *                 which case an AVFormatContext is allocated by this
  *                 function and written into ps.
  *                 Note that a user-supplied AVFormatContext will be freed
- *                 on failure.
+ *                 on failure and its pointer set to NULL.
  * @param url      URL of the stream to open.
  * @param fmt      If non-NULL, this parameter forces a specific input format.
  *                 Otherwise the format is autodetected.
@@ -2305,7 +2305,8 @@ int av_probe_input_buffer(AVIOContext *pb, const AVInputFormat **fmt,
  *                 On return this parameter will be destroyed and replaced with
  *                 a dict containing options that were not found. May be NULL.
  *
- * @return 0 on success, a negative AVERROR on failure.
+ * @return 0 on success; on failure: frees ps, sets its pointer to NULL,
+ *         and returns a negative AVERROR.
  *
  * @note If you want to use custom IO, preallocate the format context and set its pb field.
  */
