@@ -953,9 +953,8 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_chnl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     int64_t end = av_sat_add64(avio_tell(pb), atom.size);
-    int stream_structure;
     int version, flags;
-    int ret = 0;
+    int ret;
     AVStream *st;
 
     if (c->fc->nb_streams < 1)
@@ -971,58 +970,9 @@ static int mov_read_chnl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
 
-    stream_structure = avio_r8(pb);
-
-    // stream carries channels
-    if (stream_structure & 1) {
-        int layout = avio_r8(pb);
-
-        av_log(c->fc, AV_LOG_TRACE, "'chnl' layout %d\n", layout);
-        if (!layout) {
-            uint8_t *positions = av_malloc(st->codecpar->ch_layout.nb_channels);
-
-            if (!positions)
-                return AVERROR(ENOMEM);
-            for (int i = 0; i < st->codecpar->ch_layout.nb_channels; i++) {
-                int speaker_pos = avio_r8(pb);
-
-                av_log(c->fc, AV_LOG_TRACE, "speaker_position %d\n", speaker_pos);
-                if (speaker_pos == 126) { // explicit position
-                    avpriv_request_sample(c->fc, "explicit position");
-                    av_freep(&positions);
-                    return AVERROR_PATCHWELCOME;
-                } else {
-                    positions[i] = speaker_pos;
-                }
-            }
-
-            ret = ff_mov_get_layout_from_channel_positions(positions,
-                    st->codecpar->ch_layout.nb_channels,
-                    &st->codecpar->ch_layout);
-            av_freep(&positions);
-            if (ret) {
-                av_log(c->fc, AV_LOG_ERROR,
-                        "get channel layout from speaker positions failed, %s\n",
-                        av_err2str(ret));
-                return ret;
-            }
-        } else {
-            uint64_t omitted_channel_map = avio_rb64(pb);
-
-            if (omitted_channel_map) {
-                avpriv_request_sample(c->fc, "omitted_channel_map 0x%" PRIx64 " != 0",
-                                      omitted_channel_map);
-                return AVERROR_PATCHWELCOME;
-            }
-            ff_mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout);
-        }
-    }
-
-    // stream carries objects
-    if (stream_structure & 2) {
-        int obj_count = avio_r8(pb);
-        av_log(c->fc, AV_LOG_TRACE, "'chnl' with object_count %d\n", obj_count);
-    }
+    ret = ff_mov_read_chnl(c->fc, pb, st);
+    if (ret < 0)
+        return ret;
 
     if (avio_tell(pb) != end) {
         av_log(c->fc, AV_LOG_WARNING, "skip %" PRId64 " bytes of unknown data inside chnl\n",
