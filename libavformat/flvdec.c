@@ -627,12 +627,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                 else if (!strcmp(key, "audiodatarate") &&
                          0 <= (int)(num_val * 1024.0))
                     flv->audio_bit_rate = num_val * 1024.0;
-                else if (!strcmp(key, "datastream")) {
-                    AVStream *st = create_stream(s, AVMEDIA_TYPE_SUBTITLE);
-                    if (!st)
-                        return AVERROR(ENOMEM);
-                    st->codecpar->codec_id = AV_CODEC_ID_TEXT;
-                } else if (!strcmp(key, "framerate")) {
+                else if (!strcmp(key, "framerate")) {
                     flv->framerate = av_d2q(num_val, 1000);
                     if (vstream)
                         vstream->avg_frame_rate = flv->framerate;
@@ -654,6 +649,11 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                         vpar->width = num_val;
                     } else if (!strcmp(key, "height") && vpar) {
                         vpar->height = num_val;
+                    } else if (!strcmp(key, "datastream")) {
+                        AVStream *st = create_stream(s, AVMEDIA_TYPE_SUBTITLE);
+                        if (!st)
+                            return AVERROR(ENOMEM);
+                        st->codecpar->codec_id = AV_CODEC_ID_TEXT;
                     }
                 }
             }
