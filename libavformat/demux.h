@@ -37,7 +37,7 @@ typedef struct FFInputFormat {
     /**
      * Raw demuxers store their codec ID here.
      */
-    int raw_codec_id;
+    enum AVCodecID raw_codec_id;
 
     /**
      * Size of private data so that it can be allocated in the wrapper.
