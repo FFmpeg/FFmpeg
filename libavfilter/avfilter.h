@@ -441,6 +441,13 @@ struct AVFilterContext {
      */
     int thread_type;
 
+    /**
+     * Max number of threads allowed in this filter instance.
+     * If <= 0, its value is ignored.
+     * Overrides global number of threads set per filter graph.
+     */
+    int nb_threads;
+
     struct AVFilterCommand *command_queue;
 
     char *enable_str;               ///< enable expression string
@@ -460,13 +467,6 @@ struct AVFilterContext {
      * avfilter_init_dict().
      */
     AVBufferRef *hw_device_ctx;
-
-    /**
-     * Max number of threads allowed in this filter instance.
-     * If <= 0, its value is ignored.
-     * Overrides global number of threads set per filter graph.
-     */
-    int nb_threads;
 
     /**
      * Ready status of the filter.
@@ -548,26 +548,12 @@ struct AVFilterLink {
 
     enum AVMediaType type;      ///< filter media type
 
+    int format;                 ///< agreed upon media format
+
     /* These parameters apply only to video */
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
-    /* These parameters apply only to audio */
-    int sample_rate;            ///< samples per second
-
-    int format;                 ///< agreed upon media format
-
-    /**
-     * Define the time base used by the PTS of the frames/samples
-     * which will pass through this link.
-     * During the configuration stage, each filter is supposed to
-     * change only the output timebase, while the timebase of the
-     * input link is assumed to be an unchangeable property.
-     */
-    AVRational time_base;
-
-    AVChannelLayout ch_layout;  ///< channel layout of current buffer (see libavutil/channel_layout.h)
-
     /**
      * For non-YUV links, these are respectively set to fallback values (as
      * appropriate for that colorspace).
@@ -577,6 +563,19 @@ struct AVFilterLink {
      */
     enum AVColorSpace colorspace;   ///< agreed upon YUV color space
     enum AVColorRange color_range;  ///< agreed upon YUV color range
+
+    /* These parameters apply only to audio */
+    int sample_rate;            ///< samples per second
+    AVChannelLayout ch_layout;  ///< channel layout of current buffer (see libavutil/channel_layout.h)
+
+    /**
+     * Define the time base used by the PTS of the frames/samples
+     * which will pass through this link.
+     * During the configuration stage, each filter is supposed to
+     * change only the output timebase, while the timebase of the
+     * input link is assumed to be an unchangeable property.
+     */
+    AVRational time_base;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They
