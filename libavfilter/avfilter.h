@@ -899,18 +899,6 @@ typedef struct AVFilterGraph {
     avfilter_execute_func *execute;
 
     char *aresample_swr_opts; ///< swr options to use for the auto-inserted aresample filters, Access ONLY through AVOptions
-
-    /**
-     * Private fields
-     *
-     * The following fields are for internal use only.
-     * Their type, offset, number and semantic can change without notice.
-     */
-
-    AVFilterLink **sink_links;
-    int sink_links_count;
-
-    unsigned disable_auto_convert;
 } AVFilterGraph;
 
 /**

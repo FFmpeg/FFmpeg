@@ -83,6 +83,12 @@ typedef struct FFFilterGraph {
      * The public AVFilterGraph. See avfilter.h for it.
      */
     AVFilterGraph p;
+
+    AVFilterLink **sink_links;
+    int sink_links_count;
+
+    unsigned disable_auto_convert;
+
     void *thread;
     avfilter_execute_func *thread_execute;
     FFFrameQueueGlobal frame_queues;

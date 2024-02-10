@@ -126,7 +126,7 @@ void avfilter_graph_free(AVFilterGraph **graphp)
 
     ff_graph_thread_free(graphi);
 
-    av_freep(&graph->sink_links);
+    av_freep(&graphi->sink_links);
 
     av_opt_free(graph);
 
@@ -158,7 +158,7 @@ fail:
 
 void avfilter_graph_set_auto_convert(AVFilterGraph *graph, unsigned flags)
 {
-    graph->disable_auto_convert = flags;
+    fffiltergraph(graph)->disable_auto_convert = flags;
 }
 
 AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
@@ -470,7 +470,7 @@ static int query_formats(AVFilterGraph *graph, void *log_ctx)
                 char inst_name[30];
                 const char *opts;
 
-                if (graph->disable_auto_convert) {
+                if (fffiltergraph(graph)->disable_auto_convert) {
                     av_log(log_ctx, AV_LOG_ERROR,
                            "The filters '%s' and '%s' do not have a common format "
                            "and automatic conversion is disabled.\n",
@@ -1316,8 +1316,8 @@ static int graph_config_pointers(AVFilterGraph *graph, void *log_ctx)
         }
     }
     av_assert0(n == sink_links_count);
-    graph->sink_links       = sinks;
-    graph->sink_links_count = sink_links_count;
+    fffiltergraph(graph)->sink_links       = sinks;
+    fffiltergraph(graph)->sink_links_count = sink_links_count;
     return 0;
 }
 
@@ -1400,7 +1400,7 @@ int avfilter_graph_queue_command(AVFilterGraph *graph, const char *target, const
     return 0;
 }
 
-static void heap_bubble_up(AVFilterGraph *graph,
+static void heap_bubble_up(FFFilterGraph *graph,
                            AVFilterLink *link, int index)
 {
     AVFilterLink **links = graph->sink_links;
@@ -1419,7 +1419,7 @@ static void heap_bubble_up(AVFilterGraph *graph,
     link->age_index = index;
 }
 
-static void heap_bubble_down(AVFilterGraph *graph,
+static void heap_bubble_down(FFFilterGraph *graph,
                              AVFilterLink *link, int index)
 {
     AVFilterLink **links = graph->sink_links;
@@ -1445,18 +1445,20 @@ static void heap_bubble_down(AVFilterGraph *graph,
 
 void ff_avfilter_graph_update_heap(AVFilterGraph *graph, AVFilterLink *link)
 {
-    heap_bubble_up  (graph, link, link->age_index);
-    heap_bubble_down(graph, link, link->age_index);
+    FFFilterGraph *graphi = fffiltergraph(graph);
+    heap_bubble_up  (graphi, link, link->age_index);
+    heap_bubble_down(graphi, link, link->age_index);
 }
 
 int avfilter_graph_request_oldest(AVFilterGraph *graph)
 {
-    AVFilterLink *oldest = graph->sink_links[0];
+    FFFilterGraph *graphi = fffiltergraph(graph);
+    AVFilterLink *oldest = graphi->sink_links[0];
     int64_t frame_count;
     int r;
 
-    while (graph->sink_links_count) {
-        oldest = graph->sink_links[0];
+    while (graphi->sink_links_count) {
+        oldest = graphi->sink_links[0];
         if (oldest->dst->filter->activate) {
             r = av_buffersink_get_frame_flags(oldest->dst, NULL,
                                               AV_BUFFERSINK_FLAG_PEEK);
@@ -1471,12 +1473,12 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
                oldest->dst->name,
                oldest->dstpad->name);
         /* EOF: remove the link from the heap */
-        if (oldest->age_index < --graph->sink_links_count)
-            heap_bubble_down(graph, graph->sink_links[graph->sink_links_count],
+        if (oldest->age_index < --graphi->sink_links_count)
+            heap_bubble_down(graphi, graphi->sink_links[graphi->sink_links_count],
                              oldest->age_index);
         oldest->age_index = -1;
     }
-    if (!graph->sink_links_count)
+    if (!graphi->sink_links_count)
         return AVERROR_EOF;
     av_assert1(!oldest->dst->filter->activate);
     av_assert1(oldest->age_index >= 0);
