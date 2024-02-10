@@ -116,23 +116,25 @@ void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter
     }
 }
 
-void avfilter_graph_free(AVFilterGraph **graph)
+void avfilter_graph_free(AVFilterGraph **graphp)
 {
-    if (!*graph)
+    AVFilterGraph *graph = *graphp;
+
+    if (!graph)
         return;
 
-    while ((*graph)->nb_filters)
-        avfilter_free((*graph)->filters[0]);
+    while (graph->nb_filters)
+        avfilter_free(graph->filters[0]);
 
-    ff_graph_thread_free(*graph);
+    ff_graph_thread_free(graph);
 
-    av_freep(&(*graph)->sink_links);
+    av_freep(&graph->sink_links);
 
-    av_opt_free(*graph);
+    av_opt_free(graph);
 
-    av_freep(&(*graph)->filters);
-    av_freep(&(*graph)->internal);
-    av_freep(graph);
+    av_freep(&graph->filters);
+    av_freep(&graph->internal);
+    av_freep(graphp);
 }
 
 int avfilter_graph_create_filter(AVFilterContext **filt_ctx, const AVFilter *filt,
