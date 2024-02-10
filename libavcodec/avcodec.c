@@ -625,6 +625,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                        enc->width, enc->height);
 
             if (av_log_get_level() >= AV_LOG_VERBOSE &&
+                enc->coded_width && enc->coded_height &&
                 (enc->width != enc->coded_width ||
                  enc->height != enc->coded_height))
                 av_bprintf(&bprint, " (%dx%d)",
