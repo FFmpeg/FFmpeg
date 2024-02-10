@@ -128,7 +128,7 @@ typedef struct FFHWAccel {
     /**
      * Uninitialize the hwaccel private data.
      *
-     * This will be called from get_format() or avcodec_close(), after hwaccel
+     * This will be called from get_format() or ff_codec_close(), after hwaccel
      * and hwaccel_context are already uninitialized.
      */
     int (*uninit)(AVCodecContext *avctx);

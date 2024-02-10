@@ -761,7 +761,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
     ff_pthread_free(fctx, thread_ctx_offsets);
 
     /* if we have stashed hwaccel state, move it to the user-facing context,
-     * so it will be freed in avcodec_close() */
+     * so it will be freed in ff_codec_close() */
     av_assert0(!avctx->hwaccel);
     FFSWAP(const AVHWAccel*, avctx->hwaccel,                     fctx->stash_hwaccel);
     FFSWAP(void*,            avctx->hwaccel_context,             fctx->stash_hwaccel_context);
