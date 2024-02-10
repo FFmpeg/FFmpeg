@@ -39,20 +39,12 @@ typedef struct DXVContext {
 
     uint8_t *tex_data;   // Compressed texture
     uint8_t *ctex_data;  // Compressed chroma texture
-    int tex_rat;         // Compression ratio
-    int tex_step;        // Distance between blocks
-    int ctex_step;       // Distance between blocks
+
     int64_t tex_size;    // Texture size
     int64_t ctex_size;   // Chroma texture size
 
     uint8_t *op_data[4]; // Opcodes
     int64_t op_size[4];  // Opcodes size
-
-    int texture_block_w;
-    int texture_block_h;
-
-    int ctexture_block_w;
-    int ctexture_block_h;
 } DXVContext;
 
 /* This scheme addresses already decoded elements depending on 2-bit status:
@@ -865,9 +857,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     cavctx.coded_height = avctx->coded_height / 2;
     cavctx.coded_width  = avctx->coded_width  / 2;
 
-    ctx->texture_block_h = 4;
-    ctx->texture_block_w = 4;
-
     avctx->pix_fmt = AV_PIX_FMT_RGBA;
     avctx->colorspace = AVCOL_SPC_RGB;
 
@@ -878,8 +867,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         texdsp_ctx.tex_funct = ctx->texdsp.dxt1_block;
         texdsp_ctx.tex_ratio = 8;
         texdsp_ctx.raw_ratio = 16;
-        ctx->tex_rat   = 8;
-        ctx->tex_step  = 8;
         msgcomp = "DXTR1";
         msgtext = "DXT1";
         break;
@@ -889,8 +876,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         texdsp_ctx.tex_funct = ctx->texdsp.dxt4_block;
         texdsp_ctx.tex_ratio = 16;
         texdsp_ctx.raw_ratio = 16;
-        ctx->tex_rat   = 4;
-        ctx->tex_step  = 16;
         msgcomp = "DXTR5";
         msgtext = "DXT5";
         break;
@@ -902,16 +887,8 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         ctexdsp_ctx.tex_funct = ctx->texdsp.rgtc1u_gray_block;
         ctexdsp_ctx.tex_ratio = 16;
         ctexdsp_ctx.raw_ratio = 4;
-        ctx->tex_rat   = 8;
-        ctx->tex_step  = 32;
-        ctx->ctex_step = 16;
         msgcomp = "YOCOCG6";
         msgtext = "YCG6";
-        ctx->ctex_size = avctx->coded_width * avctx->coded_height / 4;
-        ctx->texture_block_h = 4;
-        ctx->texture_block_w = 16;
-        ctx->ctexture_block_h = 4;
-        ctx->ctexture_block_w = 4;
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         avctx->colorspace = AVCOL_SPC_YCOCG;
         break;
@@ -923,16 +900,8 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         ctexdsp_ctx.tex_funct = ctx->texdsp.rgtc1u_gray_block;
         ctexdsp_ctx.tex_ratio = 16;
         ctexdsp_ctx.raw_ratio = 4;
-        ctx->tex_rat   = 4;
-        ctx->tex_step  = 64;
-        ctx->ctex_step = 16;
         msgcomp = "YAOCOCG10";
         msgtext = "YG10";
-        ctx->ctex_size = avctx->coded_width * avctx->coded_height / 4;
-        ctx->texture_block_h = 4;
-        ctx->texture_block_w = 16;
-        ctx->ctexture_block_h = 4;
-        ctx->ctexture_block_w = 4;
         avctx->pix_fmt = AV_PIX_FMT_YUVA420P;
         avctx->colorspace = AVCOL_SPC_YCOCG;
         break;
@@ -957,7 +926,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
             texdsp_ctx.tex_funct = ctx->texdsp.dxt5_block;
             texdsp_ctx.tex_ratio = 16;
             texdsp_ctx.raw_ratio = 16;
-            ctx->tex_step  = 16;
         } else if (old_type & 0x20 || version_major == 1) {
             tag = DXV_FMT_DXT1;
             msgtext = "DXT1";
@@ -965,12 +933,10 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
             texdsp_ctx.tex_funct = ctx->texdsp.dxt1_block;
             texdsp_ctx.tex_ratio = 8;
             texdsp_ctx.raw_ratio = 16;
-            ctx->tex_step  = 8;
         } else {
             av_log(avctx, AV_LOG_ERROR, "Unsupported header (0x%08"PRIX32")\n.", tag);
             return AVERROR_INVALIDDATA;
         }
-        ctx->tex_rat = 1;
         break;
     }
 
@@ -986,7 +952,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         /* Encoder copies texture data when compression is not advantageous. */
         if (bytestream2_get_byte(gbc)) {
             msgcomp = "RAW";
-            ctx->tex_rat = 1;
             decompress_tex = dxv_decompress_raw;
         }
 
@@ -1004,13 +969,19 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
-    ctx->tex_size = avctx->coded_width * avctx->coded_height * 4 / ctx->tex_rat;
+    ctx->tex_size = avctx->coded_width  / (texdsp_ctx.raw_ratio / (avctx->pix_fmt == AV_PIX_FMT_RGBA ? 4 : 1)) *
+                    avctx->coded_height / TEXTURE_BLOCK_H *
+                    texdsp_ctx.tex_ratio;
     ret = av_reallocp(&ctx->tex_data, ctx->tex_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (ret < 0)
         return ret;
 
-    if (ctx->ctex_size) {
+    if (avctx->pix_fmt != AV_PIX_FMT_RGBA) {
         int i;
+
+        ctx->ctex_size = cavctx.coded_width  / ctexdsp_ctx.raw_ratio *
+                         cavctx.coded_height / TEXTURE_BLOCK_H *
+                         ctexdsp_ctx.tex_ratio;
 
         ctx->op_size[0] = avctx->coded_width * avctx->coded_height / 16;
         ctx->op_size[1] = avctx->coded_width * avctx->coded_height / 32;
@@ -1031,12 +1002,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     ret = decompress_tex(avctx);
     if (ret < 0)
         return ret;
-    {
-        int w_block = avctx->coded_width / ctx->texture_block_w;
-        int h_block = avctx->coded_height / ctx->texture_block_h;
-        if (w_block * h_block * ctx->tex_step > ctx->tex_size * 8LL)
-            return AVERROR_INVALIDDATA;
-    }
 
     ret = ff_thread_get_buffer(avctx, frame, 0);
     if (ret < 0)
