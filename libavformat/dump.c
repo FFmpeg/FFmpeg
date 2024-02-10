@@ -538,6 +538,46 @@ static void dump_sidedata(void *ctx, const AVStream *st, const char *indent,
     }
 }
 
+static void dump_disposition(int disposition, int log_level)
+{
+    if (disposition & AV_DISPOSITION_DEFAULT)
+        av_log(NULL, log_level, " (default)");
+    if (disposition & AV_DISPOSITION_DUB)
+        av_log(NULL, log_level, " (dub)");
+    if (disposition & AV_DISPOSITION_ORIGINAL)
+        av_log(NULL, log_level, " (original)");
+    if (disposition & AV_DISPOSITION_COMMENT)
+        av_log(NULL, log_level, " (comment)");
+    if (disposition & AV_DISPOSITION_LYRICS)
+        av_log(NULL, log_level, " (lyrics)");
+    if (disposition & AV_DISPOSITION_KARAOKE)
+        av_log(NULL, log_level, " (karaoke)");
+    if (disposition & AV_DISPOSITION_FORCED)
+        av_log(NULL, log_level, " (forced)");
+    if (disposition & AV_DISPOSITION_HEARING_IMPAIRED)
+        av_log(NULL, log_level, " (hearing impaired)");
+    if (disposition & AV_DISPOSITION_VISUAL_IMPAIRED)
+        av_log(NULL, log_level, " (visual impaired)");
+    if (disposition & AV_DISPOSITION_CLEAN_EFFECTS)
+        av_log(NULL, log_level, " (clean effects)");
+    if (disposition & AV_DISPOSITION_ATTACHED_PIC)
+        av_log(NULL, log_level, " (attached pic)");
+    if (disposition & AV_DISPOSITION_TIMED_THUMBNAILS)
+        av_log(NULL, log_level, " (timed thumbnails)");
+    if (disposition & AV_DISPOSITION_CAPTIONS)
+        av_log(NULL, log_level, " (captions)");
+    if (disposition & AV_DISPOSITION_DESCRIPTIONS)
+        av_log(NULL, log_level, " (descriptions)");
+    if (disposition & AV_DISPOSITION_METADATA)
+        av_log(NULL, log_level, " (metadata)");
+    if (disposition & AV_DISPOSITION_DEPENDENT)
+        av_log(NULL, log_level, " (dependent)");
+    if (disposition & AV_DISPOSITION_STILL_IMAGE)
+        av_log(NULL, log_level, " (still image)");
+    if (disposition & AV_DISPOSITION_NON_DIEGETIC)
+        av_log(NULL, log_level, " (non-diegetic)");
+}
+
 /* "user interface" functions */
 static void dump_stream_format(const AVFormatContext *ic, int i,
                                int group_index, int index, int is_output,
@@ -620,42 +660,7 @@ static void dump_stream_format(const AVFormatContext *ic, int i,
             print_fps(1 / av_q2d(st->time_base), "tbn", log_level);
     }
 
-    if (st->disposition & AV_DISPOSITION_DEFAULT)
-        av_log(NULL, log_level, " (default)");
-    if (st->disposition & AV_DISPOSITION_DUB)
-        av_log(NULL, log_level, " (dub)");
-    if (st->disposition & AV_DISPOSITION_ORIGINAL)
-        av_log(NULL, log_level, " (original)");
-    if (st->disposition & AV_DISPOSITION_COMMENT)
-        av_log(NULL, log_level, " (comment)");
-    if (st->disposition & AV_DISPOSITION_LYRICS)
-        av_log(NULL, log_level, " (lyrics)");
-    if (st->disposition & AV_DISPOSITION_KARAOKE)
-        av_log(NULL, log_level, " (karaoke)");
-    if (st->disposition & AV_DISPOSITION_FORCED)
-        av_log(NULL, log_level, " (forced)");
-    if (st->disposition & AV_DISPOSITION_HEARING_IMPAIRED)
-        av_log(NULL, log_level, " (hearing impaired)");
-    if (st->disposition & AV_DISPOSITION_VISUAL_IMPAIRED)
-        av_log(NULL, log_level, " (visual impaired)");
-    if (st->disposition & AV_DISPOSITION_CLEAN_EFFECTS)
-        av_log(NULL, log_level, " (clean effects)");
-    if (st->disposition & AV_DISPOSITION_ATTACHED_PIC)
-        av_log(NULL, log_level, " (attached pic)");
-    if (st->disposition & AV_DISPOSITION_TIMED_THUMBNAILS)
-        av_log(NULL, log_level, " (timed thumbnails)");
-    if (st->disposition & AV_DISPOSITION_CAPTIONS)
-        av_log(NULL, log_level, " (captions)");
-    if (st->disposition & AV_DISPOSITION_DESCRIPTIONS)
-        av_log(NULL, log_level, " (descriptions)");
-    if (st->disposition & AV_DISPOSITION_METADATA)
-        av_log(NULL, log_level, " (metadata)");
-    if (st->disposition & AV_DISPOSITION_DEPENDENT)
-        av_log(NULL, log_level, " (dependent)");
-    if (st->disposition & AV_DISPOSITION_STILL_IMAGE)
-        av_log(NULL, log_level, " (still image)");
-    if (st->disposition & AV_DISPOSITION_NON_DIEGETIC)
-        av_log(NULL, log_level, " (non-diegetic)");
+    dump_disposition(st->disposition, log_level);
     av_log(NULL, log_level, "\n");
 
     dump_metadata(NULL, st->metadata, extra_indent, log_level);
@@ -679,7 +684,9 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
     switch (stg->type) {
     case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT: {
         const AVIAMFAudioElement *audio_element = stg->params.iamf_audio_element;
-        av_log(NULL, AV_LOG_INFO, " IAMF Audio Element\n");
+        av_log(NULL, AV_LOG_INFO, " IAMF Audio Element:");
+        dump_disposition(st->disposition, log_level);
+        av_log(NULL, AV_LOG_INFO, "\n");
         dump_metadata(NULL, stg->metadata, "    ", AV_LOG_INFO);
         for (int j = 0; j < audio_element->nb_layers; j++) {
             const AVIAMFLayer *layer = audio_element->layers[j];
@@ -700,7 +707,9 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
     }
     case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION: {
         const AVIAMFMixPresentation *mix_presentation = stg->params.iamf_mix_presentation;
-        av_log(NULL, AV_LOG_INFO, " IAMF Mix Presentation\n");
+        av_log(NULL, AV_LOG_INFO, " IAMF Mix Presentation:");
+        dump_disposition(st->disposition, log_level);
+        av_log(NULL, AV_LOG_INFO, "\n");
         dump_metadata(NULL, stg->metadata, "    ", AV_LOG_INFO);
         dump_dictionary(NULL, mix_presentation->annotations, "Annotations", "    ", AV_LOG_INFO);
         for (int j = 0; j < mix_presentation->nb_submixes; j++) {
