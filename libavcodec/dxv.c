@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "dxv.h"
 #include "lzf.h"
 #include "texturedsp.h"
 #include "thread.h"
@@ -1064,7 +1065,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
 
     tag = bytestream2_get_le32(gbc);
     switch (tag) {
-    case MKBETAG('D', 'X', 'T', '1'):
+    case DXV_FMT_DXT1:
         decompress_tex = dxv_decompress_dxt1;
         ctx->tex_funct = ctx->texdsp.dxt1_block;
         ctx->tex_rat   = 8;
@@ -1072,7 +1073,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         msgcomp = "DXTR1";
         msgtext = "DXT1";
         break;
-    case MKBETAG('D', 'X', 'T', '5'):
+    case DXV_FMT_DXT5:
         decompress_tex = dxv_decompress_dxt5;
         /* DXV misnomers DXT5, alpha is premultiplied so use DXT4 instead */
         ctx->tex_funct = ctx->texdsp.dxt4_block;
@@ -1081,7 +1082,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         msgcomp = "DXTR5";
         msgtext = "DXT5";
         break;
-    case MKBETAG('Y', 'C', 'G', '6'):
+    case DXV_FMT_YCG6:
         decompress_tex = dxv_decompress_ycg6;
         ctx->tex_funct_planar[0] = yo_block;
         ctx->tex_funct_planar[1] = cocg_block;
@@ -1098,7 +1099,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         avctx->pix_fmt = AV_PIX_FMT_YUV420P;
         avctx->colorspace = AVCOL_SPC_YCOCG;
         break;
-    case MKBETAG('Y', 'G', '1', '0'):
+    case DXV_FMT_YG10:
         decompress_tex = dxv_decompress_yg10;
         ctx->tex_funct_planar[0] = yao_block;
         ctx->tex_funct_planar[1] = cocg_block;

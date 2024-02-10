@@ -27,6 +27,7 @@
 
 #include "bytestream.h"
 #include "codec_internal.h"
+#include "dxv.h"
 #include "encode.h"
 #include "texturedsp.h"
 
@@ -39,10 +40,6 @@
  */
 #define LOOKBACK_HT_ELEMS 0x40000
 #define LOOKBACK_WORDS    0x20202
-
-enum DXVTextureFormat {
-    DXV_FMT_DXT1 = MKBETAG('D', 'X', 'T', '1'),
-};
 
 typedef struct HTEntry {
     uint32_t key;
@@ -120,7 +117,7 @@ typedef struct DXVEncContext {
 
     TextureDSPThreadContext enc;
 
-    enum DXVTextureFormat tex_fmt;
+    DXVTextureFormat tex_fmt;
     int (*compress_tex)(AVCodecContext *avctx);
 
     const AVCRC *crc_ctx;
