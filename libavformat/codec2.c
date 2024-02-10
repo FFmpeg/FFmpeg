@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "avio_internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "rawenc.h"
@@ -294,18 +295,18 @@ static const AVClass codec2raw_demux_class = {
 };
 
 #if CONFIG_CODEC2_DEMUXER
-const AVInputFormat ff_codec2_demuxer = {
-    .name           = "codec2",
-    .long_name      = NULL_IF_CONFIG_SMALL("codec2 .c2 demuxer"),
+const FFInputFormat ff_codec2_demuxer = {
+    .p.name         = "codec2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("codec2 .c2 demuxer"),
+    .p.extensions   = "c2",
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &codec2_demux_class,
     .priv_data_size = sizeof(Codec2Context),
-    .extensions     = "c2",
     .read_probe     = codec2_probe,
     .read_header    = codec2_read_header,
     .read_packet    = codec2_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .flags          = AVFMT_GENERIC_INDEX,
     .raw_codec_id   = AV_CODEC_ID_CODEC2,
-    .priv_class     = &codec2_demux_class,
 };
 #endif
 
@@ -324,15 +325,15 @@ const FFOutputFormat ff_codec2_muxer = {
 #endif
 
 #if CONFIG_CODEC2RAW_DEMUXER
-const AVInputFormat ff_codec2raw_demuxer = {
-    .name           = "codec2raw",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw codec2 demuxer"),
+const FFInputFormat ff_codec2raw_demuxer = {
+    .p.name         = "codec2raw",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw codec2 demuxer"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &codec2raw_demux_class,
     .priv_data_size = sizeof(Codec2Context),
     .read_header    = codec2raw_read_header,
     .read_packet    = codec2_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .flags          = AVFMT_GENERIC_INDEX,
     .raw_codec_id   = AV_CODEC_ID_CODEC2,
-    .priv_class     = &codec2raw_demux_class,
 };
 #endif

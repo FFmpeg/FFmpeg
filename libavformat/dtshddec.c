@@ -23,6 +23,7 @@
 #include "libavutil/dict.h"
 #include "libavcodec/dca.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define AUPR_HDR 0x415550522D484452
@@ -162,14 +163,14 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_dtshd_demuxer = {
-    .name           = "dtshd",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw DTS-HD"),
+const FFInputFormat ff_dtshd_demuxer = {
+    .p.name         = "dtshd",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw DTS-HD"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "dtshd",
     .priv_data_size = sizeof(DTSHDDemuxContext),
     .read_probe     = dtshd_probe,
     .read_header    = dtshd_read_header,
     .read_packet    = raw_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "dtshd",
     .raw_codec_id   = AV_CODEC_ID_DTS,
 };

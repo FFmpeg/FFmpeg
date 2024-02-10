@@ -24,6 +24,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavutil/mem.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "libavformat/riff.h"
 #include "avdevice.h"
@@ -1924,14 +1925,15 @@ static const AVClass dshow_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-const AVInputFormat ff_dshow_demuxer = {
-    .name           = "dshow",
-    .long_name      = NULL_IF_CONFIG_SMALL("DirectShow capture"),
+const FFInputFormat ff_dshow_demuxer = {
+    .p.name         = "dshow",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DirectShow capture"),
+    .p.flags        = AVFMT_NOFILE | AVFMT_NOBINSEARCH |
+                      AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
+    .p.priv_class   = &dshow_class,
     .priv_data_size = sizeof(struct dshow_ctx),
     .read_header    = dshow_read_header,
     .read_packet    = dshow_read_packet,
     .read_close     = dshow_read_close,
     .get_device_list= dshow_get_device_list,
-    .flags          = AVFMT_NOFILE | AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
-    .priv_class     = &dshow_class,
 };

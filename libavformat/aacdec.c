@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "id3v1.h"
 #include "id3v2.h"
@@ -208,14 +209,14 @@ retry:
     return ret;
 }
 
-const AVInputFormat ff_aac_demuxer = {
-    .name         = "aac",
-    .long_name    = NULL_IF_CONFIG_SMALL("raw ADTS AAC (Advanced Audio Coding)"),
+const FFInputFormat ff_aac_demuxer = {
+    .p.name       = "aac",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("raw ADTS AAC (Advanced Audio Coding)"),
+    .p.flags      = AVFMT_GENERIC_INDEX,
+    .p.extensions = "aac",
+    .p.mime_type  = "audio/aac,audio/aacp,audio/x-aac",
     .read_probe   = adts_aac_probe,
     .read_header  = adts_aac_read_header,
     .read_packet  = adts_aac_read_packet,
-    .flags        = AVFMT_GENERIC_INDEX,
-    .extensions   = "aac",
-    .mime_type    = "audio/aac,audio/aacp,audio/x-aac",
     .raw_codec_id = AV_CODEC_ID_AAC,
 };

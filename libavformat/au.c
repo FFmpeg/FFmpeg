@@ -32,6 +32,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "avio_internal.h"
 #include "mux.h"
@@ -235,14 +236,14 @@ static int au_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_au_demuxer = {
-    .name        = "au",
-    .long_name   = NULL_IF_CONFIG_SMALL("Sun AU"),
+const FFInputFormat ff_au_demuxer = {
+    .p.name      = "au",
+    .p.long_name = NULL_IF_CONFIG_SMALL("Sun AU"),
+    .p.codec_tag = au_codec_tags,
     .read_probe  = au_probe,
     .read_header = au_read_header,
     .read_packet = ff_pcm_read_packet,
     .read_seek   = ff_pcm_read_seek,
-    .codec_tag   = au_codec_tags,
 };
 
 #endif /* CONFIG_AU_DEMUXER */

@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "avio_internal.h"
 #include "rawdec.h"
@@ -67,15 +68,15 @@ static int ipu_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_ipu_demuxer = {
-    .name           = "ipu",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw IPU Video"),
+const FFInputFormat ff_ipu_demuxer = {
+    .p.name         = "ipu",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw IPU Video"),
+    .p.extensions   = "ipu",
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = ipu_read_probe,
     .read_header    = ipu_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .extensions     = "ipu",
-    .flags          = AVFMT_GENERIC_INDEX,
     .raw_codec_id   = AV_CODEC_ID_IPU,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };

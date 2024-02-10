@@ -960,9 +960,11 @@ static int ogg_probe(const AVProbeData *p)
     return 0;
 }
 
-const AVInputFormat ff_ogg_demuxer = {
-    .name           = "ogg",
-    .long_name      = NULL_IF_CONFIG_SMALL("Ogg"),
+const FFInputFormat ff_ogg_demuxer = {
+    .p.name         = "ogg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Ogg"),
+    .p.extensions   = "ogg",
+    .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_TS_DISCONT | AVFMT_NOBINSEARCH,
     .priv_data_size = sizeof(struct ogg),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = ogg_probe,
@@ -971,6 +973,4 @@ const AVInputFormat ff_ogg_demuxer = {
     .read_close     = ogg_read_close,
     .read_seek      = ogg_read_seek,
     .read_timestamp = ogg_read_timestamp,
-    .extensions     = "ogg",
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_TS_DISCONT | AVFMT_NOBINSEARCH,
 };

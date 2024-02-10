@@ -34,6 +34,7 @@
 #include "libavcodec/gif.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "img2.h"
 #include "os_support.h"
@@ -322,9 +323,9 @@ int ff_img_read_header(AVFormatContext *s1)
     } else if (s1->audio_codec_id) {
         st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codecpar->codec_id   = s1->audio_codec_id;
-    } else if (s1->iformat->raw_codec_id) {
+    } else if (ffifmt(s1->iformat)->raw_codec_id) {
         st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codecpar->codec_id   = s1->iformat->raw_codec_id;
+        st->codecpar->codec_id   = ffifmt(s1->iformat)->raw_codec_id;
     } else {
         const char *str = strrchr(s->path, '.');
         s->split_planes       = str && !av_strcasecmp(str + 1, "y");
@@ -351,13 +352,14 @@ int ff_img_read_header(AVFormatContext *s1)
             pd.filename = s1->url;
 
             while ((fmt = av_demuxer_iterate(&fmt_iter))) {
-                if (fmt->read_header != ff_img_read_header ||
-                    !fmt->read_probe ||
+                const FFInputFormat *fmt2 = ffifmt(fmt);
+                if (fmt2->read_header != ff_img_read_header ||
+                    !fmt2->read_probe ||
                     (fmt->flags & AVFMT_NOFILE) ||
-                    !fmt->raw_codec_id)
+                    !fmt2->raw_codec_id)
                     continue;
-                if (fmt->read_probe(&pd) > 0) {
-                    st->codecpar->codec_id = fmt->raw_codec_id;
+                if (fmt2->read_probe(&pd) > 0) {
+                    st->codecpar->codec_id = fmt2->raw_codec_id;
                     break;
                 }
             }
@@ -458,7 +460,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
         if (par->codec_id == AV_CODEC_ID_NONE) {
             AVProbeData pd = { 0 };
-            const AVInputFormat *ifmt;
+            const FFInputFormat *ifmt;
             uint8_t header[PROBE_BUF_MIN + AVPROBE_PADDING_SIZE];
             int ret;
             int score = 0;
@@ -472,7 +474,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             pd.buf_size = ret;
             pd.filename = filename;
 
-            ifmt = av_probe_input_format3(&pd, 1, &score);
+            ifmt = ffifmt(av_probe_input_format3(&pd, 1, &score));
             if (ifmt && ifmt->read_packet == ff_img_read_packet && ifmt->raw_codec_id)
                 par->codec_id = ifmt->raw_codec_id;
         }
@@ -638,17 +640,17 @@ static const AVClass img2_class = {
     .option     = ff_img_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-const AVInputFormat ff_image2_demuxer = {
-    .name           = "image2",
-    .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
+const FFInputFormat ff_image2_demuxer = {
+    .p.name         = "image2",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("image2 sequence"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &img2_class,
     .priv_data_size = sizeof(VideoDemuxData),
     .read_probe     = img_read_probe,
     .read_header    = ff_img_read_header,
     .read_packet    = ff_img_read_packet,
     .read_close     = img_read_close,
     .read_seek      = img_read_seek,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &img2_class,
 };
 #endif
 
@@ -664,13 +666,13 @@ static const AVClass imagepipe_class = {
 };
 
 #if CONFIG_IMAGE2PIPE_DEMUXER
-const AVInputFormat ff_image2pipe_demuxer = {
-    .name           = "image2pipe",
-    .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
+const FFInputFormat ff_image2pipe_demuxer = {
+    .p.name         = "image2pipe",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
+    .p.priv_class   = &imagepipe_class,
     .priv_data_size = sizeof(VideoDemuxData),
     .read_header    = ff_img_read_header,
     .read_packet    = ff_img_read_packet,
-    .priv_class     = &imagepipe_class,
 };
 #endif
 
@@ -1205,15 +1207,15 @@ static int vbn_probe(const AVProbeData *p)
 
 #define IMAGEAUTO_DEMUXER_0(imgname, codecid)
 #define IMAGEAUTO_DEMUXER_1(imgname, codecid)\
-const AVInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
-    .name           = AV_STRINGIFY(imgname) "_pipe",\
-    .long_name      = NULL_IF_CONFIG_SMALL("piped " AV_STRINGIFY(imgname) " sequence"),\
+const FFInputFormat ff_image_ ## imgname ## _pipe_demuxer = {\
+    .p.name         = AV_STRINGIFY(imgname) "_pipe",\
+    .p.long_name    = NULL_IF_CONFIG_SMALL("piped " AV_STRINGIFY(imgname) " sequence"),\
+    .p.priv_class   = &imagepipe_class,\
+    .p.flags        = AVFMT_GENERIC_INDEX,\
     .priv_data_size = sizeof(VideoDemuxData),\
     .read_probe     = imgname ## _probe,\
     .read_header    = ff_img_read_header,\
     .read_packet    = ff_img_read_packet,\
-    .priv_class     = &imagepipe_class,\
-    .flags          = AVFMT_GENERIC_INDEX, \
     .raw_codec_id   = codecid,\
 };
 

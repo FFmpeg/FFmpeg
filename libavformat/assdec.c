@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavutil/bprint.h"
@@ -160,9 +161,9 @@ end:
     return res;
 }
 
-const AVInputFormat ff_ass_demuxer = {
-    .name           = "ass",
-    .long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
+const FFInputFormat ff_ass_demuxer = {
+    .p.name         = "ass",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .priv_data_size = sizeof(ASSContext),
     .read_probe     = ass_probe,

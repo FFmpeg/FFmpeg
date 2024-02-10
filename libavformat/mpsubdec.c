@@ -24,6 +24,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 
@@ -170,14 +171,14 @@ end:
     return res;
 }
 
-const AVInputFormat ff_mpsub_demuxer = {
-    .name           = "mpsub",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPlayer subtitles"),
+const FFInputFormat ff_mpsub_demuxer = {
+    .p.name         = "mpsub",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MPlayer subtitles"),
+    .p.extensions   = "sub",
     .priv_data_size = sizeof(MPSubContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mpsub_probe,
     .read_header    = mpsub_read_header,
-    .extensions     = "sub",
     .read_packet    = ff_subtitles_read_packet,
     .read_seek2     = ff_subtitles_read_seek,
     .read_close     = ff_subtitles_read_close,

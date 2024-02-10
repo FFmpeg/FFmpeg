@@ -27,6 +27,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 
 static const enum AVPixelFormat frm_pix_fmt_tags[] = {
     AV_PIX_FMT_RGB555,
@@ -102,10 +103,10 @@ static int frm_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_frm_demuxer = {
-    .name           = "frm",
+const FFInputFormat ff_frm_demuxer = {
+    .p.name         = "frm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Megalux Frame"),
     .priv_data_size = sizeof(FrmContext),
-    .long_name      = NULL_IF_CONFIG_SMALL("Megalux Frame"),
     .read_probe     = frm_read_probe,
     .read_header    = frm_read_header,
     .read_packet    = frm_read_packet,

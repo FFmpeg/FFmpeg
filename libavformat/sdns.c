@@ -85,12 +85,12 @@ static int sdns_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_sdns_demuxer = {
-    .name           = "sdns",
-    .long_name      = NULL_IF_CONFIG_SMALL("Xbox SDNS"),
+const FFInputFormat ff_sdns_demuxer = {
+    .p.name         = "sdns",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Xbox SDNS"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "sdns",
     .read_probe     = sdns_probe,
     .read_header    = sdns_read_header,
     .read_packet    = sdns_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "sdns",
 };

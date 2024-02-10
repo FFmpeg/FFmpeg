@@ -204,15 +204,15 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-const AVInputFormat ff_yop_demuxer = {
-    .name           = "yop",
-    .long_name      = NULL_IF_CONFIG_SMALL("Psygnosis YOP"),
+const FFInputFormat ff_yop_demuxer = {
+    .p.name         = "yop",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Psygnosis YOP"),
+    .p.extensions   = "yop",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(YopDecContext),
     .read_probe     = yop_probe,
     .read_header    = yop_read_header,
     .read_packet    = yop_read_packet,
     .read_close     = yop_read_close,
     .read_seek      = yop_read_seek,
-    .extensions     = "yop",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

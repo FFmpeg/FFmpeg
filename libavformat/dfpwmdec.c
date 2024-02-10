@@ -22,6 +22,7 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "pcm.h"
 #include "libavutil/log.h"
@@ -71,15 +72,15 @@ static const AVClass dfpwm_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_dfpwm_demuxer = {
-    .name           = "dfpwm",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw DFPWM1a"),
+const FFInputFormat ff_dfpwm_demuxer = {
+    .p.name         = "dfpwm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw DFPWM1a"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "dfpwm",
+    .p.priv_class   = &dfpwm_demuxer_class,
     .priv_data_size = sizeof(DFPWMAudioDemuxerContext),
     .read_header    = dfpwm_read_header,
     .read_packet    = ff_pcm_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "dfpwm",
     .raw_codec_id   = AV_CODEC_ID_DFPWM,
-    .priv_class     = &dfpwm_demuxer_class,
 };

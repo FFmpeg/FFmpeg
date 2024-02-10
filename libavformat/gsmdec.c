@@ -23,6 +23,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define GSM_BLOCK_SIZE    33
@@ -102,15 +103,15 @@ static const AVClass gsm_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_gsm_demuxer = {
-    .name           = "gsm",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw GSM"),
+const FFInputFormat ff_gsm_demuxer = {
+    .p.name         = "gsm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw GSM"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "gsm",
+    .p.priv_class   = &gsm_class,
     .priv_data_size = sizeof(GSMDemuxerContext),
     .read_probe     = gsm_probe,
     .read_header    = gsm_read_header,
     .read_packet    = gsm_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "gsm",
     .raw_codec_id   = AV_CODEC_ID_GSM,
-    .priv_class     = &gsm_class,
 };

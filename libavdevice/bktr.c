@@ -24,6 +24,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "libavutil/file_open.h"
 #include "libavutil/internal.h"
@@ -352,13 +353,13 @@ static const AVClass bktr_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-const AVInputFormat ff_bktr_demuxer = {
-    .name           = "bktr",
-    .long_name      = NULL_IF_CONFIG_SMALL("video grab"),
+const FFInputFormat ff_bktr_demuxer = {
+    .p.name         = "bktr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("video grab"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &bktr_class,
     .priv_data_size = sizeof(VideoData),
     .read_header    = grab_read_header,
     .read_packet    = grab_read_packet,
     .read_close     = grab_read_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &bktr_class,
 };

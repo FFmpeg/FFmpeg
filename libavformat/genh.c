@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct GENHDemuxContext {
@@ -195,12 +196,12 @@ static int genh_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_genh_demuxer = {
-    .name           = "genh",
-    .long_name      = NULL_IF_CONFIG_SMALL("GENeric Header"),
+const FFInputFormat ff_genh_demuxer = {
+    .p.name         = "genh",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("GENeric Header"),
+    .p.extensions   = "genh",
     .priv_data_size = sizeof(GENHDemuxContext),
     .read_probe     = genh_probe,
     .read_header    = genh_read_header,
     .read_packet    = genh_read_packet,
-    .extensions     = "genh",
 };

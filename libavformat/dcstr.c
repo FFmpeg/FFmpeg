@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int dcstr_probe(const AVProbeData *p)
@@ -80,12 +81,12 @@ static int dcstr_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-const AVInputFormat ff_dcstr_demuxer = {
-    .name           = "dcstr",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sega DC STR"),
+const FFInputFormat ff_dcstr_demuxer = {
+    .p.name         = "dcstr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sega DC STR"),
+    .p.extensions   = "str",
+    .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOBINSEARCH,
     .read_probe     = dcstr_probe,
     .read_header    = dcstr_read_header,
     .read_packet    = dcstr_read_packet,
-    .extensions     = "str",
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOBINSEARCH,
 };

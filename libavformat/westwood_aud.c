@@ -36,6 +36,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define AUD_HEADER_SIZE 12
@@ -176,9 +177,9 @@ static int wsaud_read_packet(AVFormatContext *s,
     return ret;
 }
 
-const AVInputFormat ff_wsaud_demuxer = {
-    .name           = "wsaud",
-    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios audio"),
+const FFInputFormat ff_wsaud_demuxer = {
+    .p.name         = "wsaud",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Westwood Studios audio"),
     .read_probe     = wsaud_probe,
     .read_header    = wsaud_read_header,
     .read_packet    = wsaud_read_packet,

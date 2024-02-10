@@ -30,6 +30,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "avio_internal.h"
 
@@ -313,9 +314,9 @@ static int vmd_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_vmd_demuxer = {
-    .name           = "vmd",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD"),
+const FFInputFormat ff_vmd_demuxer = {
+    .p.name         = "vmd",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sierra VMD"),
     .priv_data_size = sizeof(VmdDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = vmd_probe,

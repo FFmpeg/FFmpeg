@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavutil/intreadwrite.h"
@@ -108,14 +109,14 @@ static int stl_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_stl_demuxer = {
-    .name           = "stl",
-    .long_name      = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
+const FFInputFormat ff_stl_demuxer = {
+    .p.name         = "stl",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Spruce subtitle format"),
+    .p.extensions   = "stl",
     .priv_data_size = sizeof(STLContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = stl_probe,
     .read_header    = stl_read_header,
-    .extensions     = "stl",
     .read_packet    = ff_subtitles_read_packet,
     .read_seek2     = ff_subtitles_read_seek,
     .read_close     = ff_subtitles_read_close,

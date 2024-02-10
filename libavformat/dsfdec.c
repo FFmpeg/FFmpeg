@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "id3v2.h"
 
@@ -209,12 +210,12 @@ static int dsf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_dsf_demuxer = {
-    .name           = "dsf",
-    .long_name      = NULL_IF_CONFIG_SMALL("DSD Stream File (DSF)"),
+const FFInputFormat ff_dsf_demuxer = {
+    .p.name         = "dsf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DSD Stream File (DSF)"),
+    .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
     .priv_data_size = sizeof(DSFContext),
     .read_probe     = dsf_probe,
     .read_header    = dsf_read_header,
     .read_packet    = dsf_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
 };

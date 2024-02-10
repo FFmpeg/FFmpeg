@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define SCHl_TAG MKTAG('S', 'C', 'H', 'l')
@@ -783,12 +784,12 @@ static const AVClass ea_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_ea_demuxer = {
-    .name           = "ea",
-    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts Multimedia"),
+const FFInputFormat ff_ea_demuxer = {
+    .p.name         = "ea",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Electronic Arts Multimedia"),
+    .p.priv_class   = &ea_class,
     .priv_data_size = sizeof(EaDemuxContext),
     .read_probe     = ea_probe,
     .read_header    = ea_read_header,
     .read_packet    = ea_read_packet,
-    .priv_class     = &ea_class,
 };

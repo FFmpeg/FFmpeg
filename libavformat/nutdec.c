@@ -1306,10 +1306,12 @@ static int read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-const AVInputFormat ff_nut_demuxer = {
-    .name           = "nut",
-    .long_name      = NULL_IF_CONFIG_SMALL("NUT"),
-    .flags          = AVFMT_SEEK_TO_PTS,
+const FFInputFormat ff_nut_demuxer = {
+    .p.name         = "nut",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NUT"),
+    .p.flags        = AVFMT_SEEK_TO_PTS,
+    .p.extensions   = "nut",
+    .p.codec_tag    = ff_nut_codec_tags,
     .priv_data_size = sizeof(NUTContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = nut_probe,
@@ -1317,6 +1319,4 @@ const AVInputFormat ff_nut_demuxer = {
     .read_packet    = nut_read_packet,
     .read_close     = nut_read_close,
     .read_seek      = read_seek,
-    .extensions     = "nut",
-    .codec_tag      = ff_nut_codec_tags,
 };

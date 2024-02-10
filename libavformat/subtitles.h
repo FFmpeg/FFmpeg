@@ -140,7 +140,7 @@ int ff_subtitles_queue_read_packet(FFDemuxSubtitlesQueue *q, AVPacket *pkt);
 
 /**
  * Update current_sub_idx to emulate a seek. Except the first parameter, it
- * matches AVInputFormat->read_seek2 prototypes.
+ * matches FFInputFormat->read_seek2 prototypes.
  */
 int ff_subtitles_queue_seek(FFDemuxSubtitlesQueue *q, AVFormatContext *s, int stream_index,
                             int64_t min_ts, int64_t ts, int64_t max_ts, int flags);

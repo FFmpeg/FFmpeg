@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct AFCDemuxContext {
@@ -68,12 +69,12 @@ static int afc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_afc_demuxer = {
-    .name           = "afc",
-    .long_name      = NULL_IF_CONFIG_SMALL("AFC"),
+const FFInputFormat ff_afc_demuxer = {
+    .p.name         = "afc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AFC"),
+    .p.extensions   = "afc",
+    .p.flags        = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
     .priv_data_size = sizeof(AFCDemuxContext),
     .read_header    = afc_read_header,
     .read_packet    = afc_read_packet,
-    .extensions     = "afc",
-    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
 };

@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "riff.h"
 #include "libavutil/avassert.h"
@@ -575,10 +576,10 @@ static int xmv_read_packet(AVFormatContext *s,
     return 0;
 }
 
-const AVInputFormat ff_xmv_demuxer = {
-    .name           = "xmv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Microsoft XMV"),
-    .extensions     = "xmv",
+const FFInputFormat ff_xmv_demuxer = {
+    .p.name         = "xmv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Microsoft XMV"),
+    .p.extensions   = "xmv",
     .priv_data_size = sizeof(XMVDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = xmv_probe,

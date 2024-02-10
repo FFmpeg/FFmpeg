@@ -23,6 +23,7 @@
 #include "config_components.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "rawdec.h"
 #include "libavutil/opt.h"
@@ -56,7 +57,7 @@ int ff_raw_audio_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_id = ffifmt(s->iformat)->raw_codec_id;
     ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     st->start_time = 0;
     /* the parameters will be extracted from the compressed bitstream */
@@ -81,7 +82,7 @@ int ff_raw_video_read_header(AVFormatContext *s)
     sti = ffstream(st);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codecpar->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_id = ffifmt(s->iformat)->raw_codec_id;
     sti->need_parsing = AVSTREAM_PARSE_FULL_RAW;
 
     st->avg_frame_rate = s1->framerate;
@@ -97,7 +98,7 @@ int ff_raw_subtitle_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codecpar->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_id = ffifmt(s->iformat)->raw_codec_id;
     st->start_time = 0;
     return 0;
 }
@@ -108,7 +109,7 @@ static int raw_data_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
-    st->codecpar->codec_id = s->iformat->raw_codec_id;
+    st->codecpar->codec_id = ffifmt(s->iformat)->raw_codec_id;
     st->start_time = 0;
     return 0;
 }
@@ -145,15 +146,15 @@ const AVClass ff_raw_demuxer_class = {
 };
 
 #if CONFIG_DATA_DEMUXER
-const AVInputFormat ff_data_demuxer = {
-    .name           = "data",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw data"),
+const FFInputFormat ff_data_demuxer = {
+    .p.name         = "data",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw data"),
+    .p.flags        = AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_header    = raw_data_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .raw_codec_id   = AV_CODEC_ID_NONE,
-    .flags          = AVFMT_NOTIMESTAMPS,
     .priv_data_size = sizeof(FFRawDemuxerContext),\
-    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 

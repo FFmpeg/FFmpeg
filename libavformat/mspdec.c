@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct {
@@ -106,12 +107,12 @@ static int msp_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_msp_demuxer = {
-    .name         = "msp",
-    .long_name    = NULL_IF_CONFIG_SMALL("Microsoft Paint (MSP))"),
+const FFInputFormat ff_msp_demuxer = {
+    .p.name       = "msp",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("Microsoft Paint (MSP))"),
+    .p.flags      = AVFMT_NOTIMESTAMPS,
     .read_probe   = msp_probe,
     .read_header  = msp_read_header,
     .read_packet  = msp_read_packet,
-    .flags        = AVFMT_NOTIMESTAMPS,
     .priv_data_size = sizeof(MSPContext),
 };

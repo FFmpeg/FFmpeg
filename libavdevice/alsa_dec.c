@@ -52,6 +52,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 
 #include "avdevice.h"
@@ -157,14 +158,14 @@ static const AVClass alsa_demuxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-const AVInputFormat ff_alsa_demuxer = {
-    .name           = "alsa",
-    .long_name      = NULL_IF_CONFIG_SMALL("ALSA audio input"),
+const FFInputFormat ff_alsa_demuxer = {
+    .p.name         = "alsa",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("ALSA audio input"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &alsa_demuxer_class,
     .priv_data_size = sizeof(AlsaData),
     .read_header    = audio_read_header,
     .read_packet    = audio_read_packet,
     .read_close     = ff_alsa_close,
     .get_device_list = audio_get_device_list,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &alsa_demuxer_class,
 };

@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 enum BMVFlags {
@@ -124,12 +125,12 @@ static int bmv_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_bmv_demuxer = {
-    .name           = "bmv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Discworld II BMV"),
+const FFInputFormat ff_bmv_demuxer = {
+    .p.name         = "bmv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Discworld II BMV"),
+    .p.extensions   = "bmv",
     .priv_data_size = sizeof(BMVContext),
     .read_header    = bmv_read_header,
     .read_packet    = bmv_read_packet,
     .read_close     = bmv_read_close,
-    .extensions     = "bmv",
 };

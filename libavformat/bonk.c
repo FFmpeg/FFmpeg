@@ -103,15 +103,15 @@ static int bonk_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_bonk_demuxer = {
-    .name           = "bonk",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw Bonk"),
+const FFInputFormat ff_bonk_demuxer = {
+    .p.name         = "bonk",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw Bonk"),
+    .p.extensions   = "bonk",
+    .p.flags        = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = bonk_probe,
     .read_header    = bonk_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .extensions     = "bonk",
-    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
     .raw_codec_id   = AV_CODEC_ID_BONK,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };

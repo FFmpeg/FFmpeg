@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int sdr2_probe(const AVProbeData *p)
@@ -109,12 +110,12 @@ static int sdr2_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_sdr2_demuxer = {
-    .name        = "sdr2",
-    .long_name   = NULL_IF_CONFIG_SMALL("SDR2"),
+const FFInputFormat ff_sdr2_demuxer = {
+    .p.name      = "sdr2",
+    .p.long_name = NULL_IF_CONFIG_SMALL("SDR2"),
+    .p.extensions= "sdr2",
+    .p.flags     = AVFMT_GENERIC_INDEX,
     .read_probe  = sdr2_probe,
     .read_header = sdr2_read_header,
     .read_packet = sdr2_read_packet,
-    .extensions  = "sdr2",
-    .flags       = AVFMT_GENERIC_INDEX,
 };

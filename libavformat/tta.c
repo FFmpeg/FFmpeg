@@ -26,6 +26,7 @@
 #include "apetag.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "id3v1.h"
 
@@ -187,13 +188,13 @@ static int tta_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-const AVInputFormat ff_tta_demuxer = {
-    .name           = "tta",
-    .long_name      = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+const FFInputFormat ff_tta_demuxer = {
+    .p.name         = "tta",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("TTA (True Audio)"),
+    .p.extensions   = "tta",
     .priv_data_size = sizeof(TTAContext),
     .read_probe     = tta_probe,
     .read_header    = tta_read_header,
     .read_packet    = tta_read_packet,
     .read_seek      = tta_read_seek,
-    .extensions     = "tta",
 };

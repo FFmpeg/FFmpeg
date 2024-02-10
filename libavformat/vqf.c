@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
@@ -287,13 +288,13 @@ static int vqf_read_seek(AVFormatContext *s,
     return 0;
 }
 
-const AVInputFormat ff_vqf_demuxer = {
-    .name           = "vqf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Nippon Telegraph and Telephone Corporation (NTT) TwinVQ"),
+const FFInputFormat ff_vqf_demuxer = {
+    .p.name         = "vqf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Nippon Telegraph and Telephone Corporation (NTT) TwinVQ"),
+    .p.extensions   = "vqf,vql,vqe",
     .priv_data_size = sizeof(VqfContext),
     .read_probe     = vqf_probe,
     .read_header    = vqf_read_header,
     .read_packet    = vqf_read_packet,
     .read_seek      = vqf_read_seek,
-    .extensions     = "vqf,vql,vqe",
 };

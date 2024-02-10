@@ -23,6 +23,7 @@
 #define AVFORMAT_RAWDEC_H
 
 #include "avformat.h"
+#include "demux.h"
 #include "libavutil/log.h"
 
 typedef struct FFRawVideoDemuxerContext {
@@ -50,34 +51,34 @@ int ff_raw_video_read_header(AVFormatContext *s);
 int ff_raw_subtitle_read_header(AVFormatContext *s);
 
 #define FF_DEF_RAWVIDEO_DEMUXER2(shortname, longname, probe, ext, id, flag)\
-const AVInputFormat ff_ ## shortname ## _demuxer = {\
-    .name           = #shortname,\
-    .long_name      = NULL_IF_CONFIG_SMALL(longname),\
+const FFInputFormat ff_ ## shortname ## _demuxer = {\
+    .p.name         = #shortname,\
+    .p.long_name    = NULL_IF_CONFIG_SMALL(longname),\
+    .p.extensions   = ext,\
+    .p.flags        = flag | AVFMT_NOTIMESTAMPS,\
+    .p.priv_class   = &ff_rawvideo_demuxer_class,\
     .read_probe     = probe,\
     .read_header    = ff_raw_video_read_header,\
     .read_packet    = ff_raw_read_partial_packet,\
-    .extensions     = ext,\
-    .flags          = flag | AVFMT_NOTIMESTAMPS,\
     .raw_codec_id   = id,\
     .priv_data_size = sizeof(FFRawVideoDemuxerContext),\
-    .priv_class     = &ff_rawvideo_demuxer_class,\
 };
 
 #define FF_DEF_RAWVIDEO_DEMUXER(shortname, longname, probe, ext, id)\
 FF_DEF_RAWVIDEO_DEMUXER2(shortname, longname, probe, ext, id, AVFMT_GENERIC_INDEX)
 
 #define FF_DEF_RAWSUB_DEMUXER(shortname, longname, probe, ext, id, flag)\
-const AVInputFormat ff_ ## shortname ## _demuxer = {\
-    .name           = #shortname,\
-    .long_name      = NULL_IF_CONFIG_SMALL(longname),\
+const FFInputFormat ff_ ## shortname ## _demuxer = {\
+    .p.name         = #shortname,\
+    .p.long_name    = NULL_IF_CONFIG_SMALL(longname),\
+    .p.extensions   = ext,\
+    .p.flags        = flag,\
+    .p.priv_class   = &ff_raw_demuxer_class,\
     .read_probe     = probe,\
     .read_header    = ff_raw_subtitle_read_header,\
     .read_packet    = ff_raw_read_partial_packet,\
-    .extensions     = ext,\
-    .flags          = flag,\
     .raw_codec_id   = id,\
     .priv_data_size = sizeof(FFRawDemuxerContext),\
-    .priv_class     = &ff_raw_demuxer_class,\
 };
 
 #endif /* AVFORMAT_RAWDEC_H */

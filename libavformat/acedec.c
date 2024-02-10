@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int ace_probe(const AVProbeData *p)
@@ -104,11 +105,11 @@ static int ace_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-const AVInputFormat ff_ace_demuxer = {
-    .name           = "ace",
-    .long_name      = NULL_IF_CONFIG_SMALL("tri-Ace Audio Container"),
+const FFInputFormat ff_ace_demuxer = {
+    .p.name         = "ace",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("tri-Ace Audio Container"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe     = ace_probe,
     .read_header    = ace_read_header,
     .read_packet    = ace_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
 };

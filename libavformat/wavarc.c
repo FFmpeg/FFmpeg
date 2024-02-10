@@ -133,14 +133,14 @@ static int wavarc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_wavarc_demuxer = {
-    .name           = "wavarc",
-    .long_name      = NULL_IF_CONFIG_SMALL("Waveform Archiver"),
+const FFInputFormat ff_wavarc_demuxer = {
+    .p.name         = "wavarc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Waveform Archiver"),
+    .p.flags        = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
+    .p.extensions   = "wa",
     .priv_data_size = sizeof(WavArcContext),
     .read_probe     = wavarc_probe,
     .read_packet    = wavarc_read_packet,
-    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
     .read_header    = wavarc_read_header,
-    .extensions     = "wa",
     .raw_codec_id   = AV_CODEC_ID_WAVARC,
 };

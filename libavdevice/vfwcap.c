@@ -25,6 +25,7 @@
 #include "libavutil/parseutils.h"
 
 #include "libavcodec/packet_internal.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 
 // windows.h must no be included before winsock2.h, and libavformat internal
@@ -482,13 +483,13 @@ static const AVClass vfw_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT
 };
 
-const AVInputFormat ff_vfwcap_demuxer = {
-    .name           = "vfwcap",
-    .long_name      = NULL_IF_CONFIG_SMALL("VfW video capture"),
+const FFInputFormat ff_vfwcap_demuxer = {
+    .p.name         = "vfwcap",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("VfW video capture"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &vfw_class,
     .priv_data_size = sizeof(struct vfw_ctx),
     .read_header    = vfw_read_header,
     .read_packet    = vfw_read_packet,
     .read_close     = vfw_read_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &vfw_class,
 };

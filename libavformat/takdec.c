@@ -27,6 +27,7 @@
 #include "apetag.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "rawdec.h"
 
@@ -213,15 +214,15 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_tak_demuxer = {
-    .name           = "tak",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw TAK"),
+const FFInputFormat ff_tak_demuxer = {
+    .p.name         = "tak",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw TAK"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "tak",
+    .p.priv_class   = &ff_raw_demuxer_class,
     .priv_data_size = sizeof(TAKDemuxContext),
     .read_probe     = tak_probe,
     .read_header    = tak_read_header,
     .read_packet    = raw_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "tak",
     .raw_codec_id   = AV_CODEC_ID_TAK,
-    .priv_class     = &ff_raw_demuxer_class,
 };

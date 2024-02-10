@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct G729DemuxerContext {
@@ -93,13 +94,13 @@ static const AVClass g729_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_g729_demuxer = {
-    .name           = "g729",
-    .long_name      = NULL_IF_CONFIG_SMALL("G.729 raw format demuxer"),
+const FFInputFormat ff_g729_demuxer = {
+    .p.name         = "g729",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("G.729 raw format demuxer"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "g729",
+    .p.priv_class   = &g729_demuxer_class,
     .priv_data_size = sizeof(G729DemuxerContext),
     .read_header    = g729_read_header,
     .read_packet    = g729_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "g729",
-    .priv_class     = &g729_demuxer_class,
 };

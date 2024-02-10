@@ -21,6 +21,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/channel_layout.h"
@@ -155,13 +156,13 @@ retry:
     return ret;
 }
 
-const AVInputFormat ff_simbiosis_imx_demuxer = {
-    .name           = "simbiosis_imx",
-    .long_name      = NULL_IF_CONFIG_SMALL("Simbiosis Interactive IMX"),
+const FFInputFormat ff_simbiosis_imx_demuxer = {
+    .p.name         = "simbiosis_imx",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Simbiosis Interactive IMX"),
+    .p.extensions   = "imx",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(SimbiosisIMXDemuxContext),
     .read_probe     = simbiosis_imx_probe,
     .read_header    = simbiosis_imx_read_header,
     .read_packet    = simbiosis_imx_read_packet,
-    .extensions     = "imx",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

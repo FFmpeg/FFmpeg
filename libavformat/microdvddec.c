@@ -21,6 +21,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavutil/intreadwrite.h"
@@ -198,9 +199,10 @@ static const AVClass microdvd_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_microdvd_demuxer = {
-    .name           = "microdvd",
-    .long_name      = NULL_IF_CONFIG_SMALL("MicroDVD subtitle format"),
+const FFInputFormat ff_microdvd_demuxer = {
+    .p.name         = "microdvd",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MicroDVD subtitle format"),
+    .p.priv_class   = &microdvd_class,
     .priv_data_size = sizeof(MicroDVDContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = microdvd_probe,
@@ -208,5 +210,4 @@ const AVInputFormat ff_microdvd_demuxer = {
     .read_packet    = microdvd_read_packet,
     .read_seek2     = microdvd_read_seek,
     .read_close     = microdvd_read_close,
-    .priv_class     = &microdvd_class,
 };

@@ -26,6 +26,7 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
 
@@ -248,14 +249,14 @@ static const AVClass class = {
     .category = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-const AVInputFormat ff_openal_demuxer = {
-    .name = "openal",
-    .long_name = NULL_IF_CONFIG_SMALL("OpenAL audio capture device"),
+const FFInputFormat ff_openal_demuxer = {
+    .p.name         = "openal",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("OpenAL audio capture device"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &class,
     .priv_data_size = sizeof(al_data),
     .read_probe = NULL,
     .read_header = read_header,
     .read_packet = read_packet,
     .read_close = read_close,
-    .flags = AVFMT_NOFILE,
-    .priv_class = &class
 };

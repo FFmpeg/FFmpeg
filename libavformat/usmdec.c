@@ -414,14 +414,14 @@ static int usm_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_usm_demuxer = {
-    .name           = "usm",
-    .long_name      = NULL_IF_CONFIG_SMALL("CRI USM"),
+const FFInputFormat ff_usm_demuxer = {
+    .p.name         = "usm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("CRI USM"),
+    .p.extensions   = "usm",
+    .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOBINSEARCH,
     .priv_data_size = sizeof(USMDemuxContext),
     .read_probe     = usm_probe,
     .read_header    = usm_read_header,
     .read_packet    = usm_read_packet,
     .read_close     = usm_read_close,
-    .extensions     = "usm",
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOBINSEARCH,
 };

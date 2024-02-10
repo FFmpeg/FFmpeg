@@ -23,6 +23,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define MVI_FRAC_BITS 10
@@ -142,11 +143,11 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_mvi_demuxer = {
-    .name           = "mvi",
-    .long_name      = NULL_IF_CONFIG_SMALL("Motion Pixels MVI"),
+const FFInputFormat ff_mvi_demuxer = {
+    .p.name         = "mvi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Motion Pixels MVI"),
+    .p.extensions   = "mvi",
     .priv_data_size = sizeof(MviDemuxContext),
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .extensions     = "mvi",
 };

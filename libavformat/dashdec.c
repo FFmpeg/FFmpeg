@@ -2355,10 +2355,11 @@ static const AVClass dash_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_dash_demuxer = {
-    .name           = "dash",
-    .long_name      = NULL_IF_CONFIG_SMALL("Dynamic Adaptive Streaming over HTTP"),
-    .priv_class     = &dash_class,
+const FFInputFormat ff_dash_demuxer = {
+    .p.name         = "dash",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Dynamic Adaptive Streaming over HTTP"),
+    .p.priv_class   = &dash_class,
+    .p.flags        = AVFMT_NO_BYTE_SEEK,
     .priv_data_size = sizeof(DASHContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = dash_probe,
@@ -2366,5 +2367,4 @@ const AVInputFormat ff_dash_demuxer = {
     .read_packet    = dash_read_packet,
     .read_close     = dash_close,
     .read_seek      = dash_read_seek,
-    .flags          = AVFMT_NO_BYTE_SEEK,
 };

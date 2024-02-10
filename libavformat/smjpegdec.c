@@ -27,6 +27,7 @@
 #include <inttypes.h>
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "riff.h"
 #include "smjpeg.h"
@@ -180,13 +181,13 @@ static int smjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_smjpeg_demuxer = {
-    .name           = "smjpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("Loki SDL MJPEG"),
+const FFInputFormat ff_smjpeg_demuxer = {
+    .p.name         = "smjpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Loki SDL MJPEG"),
+    .p.extensions   = "mjpg",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(SMJPEGContext),
     .read_probe     = smjpeg_probe,
     .read_header    = smjpeg_read_header,
     .read_packet    = smjpeg_read_packet,
-    .extensions     = "mjpg",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

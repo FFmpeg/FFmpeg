@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavutil/avstring.h"
@@ -200,14 +201,14 @@ static int mcc_read_header(AVFormatContext *s)
     return ret;
 }
 
-const AVInputFormat ff_mcc_demuxer = {
-    .name           = "mcc",
-    .long_name      = NULL_IF_CONFIG_SMALL("MacCaption"),
+const FFInputFormat ff_mcc_demuxer = {
+    .p.name         = "mcc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MacCaption"),
+    .p.extensions   = "mcc",
     .priv_data_size = sizeof(MCCContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mcc_probe,
     .read_header    = mcc_read_header,
-    .extensions     = "mcc",
     .read_packet    = ff_subtitles_read_packet,
     .read_seek2     = ff_subtitles_read_seek,
     .read_close     = ff_subtitles_read_close,

@@ -24,6 +24,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 
@@ -95,14 +96,14 @@ static int vplayer_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_vplayer_demuxer = {
-    .name           = "vplayer",
-    .long_name      = NULL_IF_CONFIG_SMALL("VPlayer subtitles"),
+const FFInputFormat ff_vplayer_demuxer = {
+    .p.name         = "vplayer",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("VPlayer subtitles"),
+    .p.extensions   = "txt",
     .priv_data_size = sizeof(VPlayerContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = vplayer_probe,
     .read_header    = vplayer_read_header,
-    .extensions     = "txt",
     .read_packet    = ff_subtitles_read_packet,
     .read_seek2     = ff_subtitles_read_seek,
     .read_close     = ff_subtitles_read_close,

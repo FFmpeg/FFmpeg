@@ -218,13 +218,13 @@ static int read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-const AVInputFormat ff_mca_demuxer = {
-    .name           = "mca",
-    .long_name      = NULL_IF_CONFIG_SMALL("MCA Audio Format"),
+const FFInputFormat ff_mca_demuxer = {
+    .p.name         = "mca",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MCA Audio Format"),
+    .p.extensions   = "mca",
     .priv_data_size = sizeof(MCADemuxContext),
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_seek      = read_seek,
-    .extensions     = "mca",
 };

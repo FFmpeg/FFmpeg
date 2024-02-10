@@ -27,6 +27,7 @@
 
 #include "avformat.h"
 #include "libavutil/avstring.h"
+#include "demux.h"
 #include "rtpdec.h"
 #include "rdt.h"
 #include "libavutil/base64.h"
@@ -534,7 +535,7 @@ static av_cold int rdt_init(AVFormatContext *s, int st_index, PayloadContext *rd
     if ((ret = ff_copy_whiteblacklists(rdt->rmctx, s)) < 0)
         return ret;
 
-    return avformat_open_input(&rdt->rmctx, "", &ff_rdt_demuxer, NULL);
+    return avformat_open_input(&rdt->rmctx, "", &ff_rdt_demuxer.p, NULL);
 }
 
 static void

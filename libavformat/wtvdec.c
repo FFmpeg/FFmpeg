@@ -1117,14 +1117,14 @@ static int read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_wtv_demuxer = {
-    .name           = "wtv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Windows Television (WTV)"),
+const FFInputFormat ff_wtv_demuxer = {
+    .p.name         = "wtv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Windows Television (WTV)"),
+    .p.flags        = AVFMT_SHOW_IDS,
     .priv_data_size = sizeof(WtvContext),
     .read_probe     = read_probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_seek      = read_seek,
     .read_close     = read_close,
-    .flags          = AVFMT_SHOW_IDS,
 };

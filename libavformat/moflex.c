@@ -24,6 +24,7 @@
 #include "libavcodec/bytestream.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct BitReader {
@@ -371,16 +372,16 @@ static int moflex_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_moflex_demuxer = {
-    .name           = "moflex",
-    .long_name      = NULL_IF_CONFIG_SMALL("MobiClip MOFLEX"),
+const FFInputFormat ff_moflex_demuxer = {
+    .p.name         = "moflex",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MobiClip MOFLEX"),
+    .p.extensions   = "moflex",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(MOFLEXDemuxContext),
     .read_probe     = moflex_probe,
     .read_header    = moflex_read_header,
     .read_packet    = moflex_read_packet,
     .read_seek      = moflex_read_seek,
     .read_close     = moflex_read_close,
-    .extensions     = "moflex",
-    .flags          = AVFMT_GENERIC_INDEX,
     .flags_internal = FF_FMT_INIT_CLEANUP,
 };

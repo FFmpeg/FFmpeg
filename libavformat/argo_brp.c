@@ -21,6 +21,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
@@ -413,9 +414,9 @@ static int argo_brp_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_argo_brp_demuxer = {
-    .name           = "argo_brp",
-    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games BRP"),
+const FFInputFormat ff_argo_brp_demuxer = {
+    .p.name         = "argo_brp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Argonaut Games BRP"),
     .priv_data_size = sizeof(ArgoBRPDemuxContext),
     .read_probe     = argo_brp_probe,
     .read_header    = argo_brp_read_header,

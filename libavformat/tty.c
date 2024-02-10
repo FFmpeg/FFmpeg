@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "sauce.h"
 
@@ -178,14 +179,14 @@ static const AVClass tty_demuxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_tty_demuxer = {
-    .name           = "tty",
-    .long_name      = NULL_IF_CONFIG_SMALL("Tele-typewriter"),
+const FFInputFormat ff_tty_demuxer = {
+    .p.name         = "tty",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Tele-typewriter"),
+    .p.extensions   = tty_extensions,
+    .p.priv_class   = &tty_demuxer_class,
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(TtyDemuxContext),
     .read_probe     = read_probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .extensions     = tty_extensions,
-    .priv_class     = &tty_demuxer_class,
-    .flags          = AVFMT_GENERIC_INDEX,
 };

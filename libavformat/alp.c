@@ -24,6 +24,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "rawenc.h"
@@ -163,9 +164,9 @@ static int alp_seek(AVFormatContext *s, int stream_index,
     return avio_seek(s->pb, hdr->header_size + 8, SEEK_SET);
 }
 
-const AVInputFormat ff_alp_demuxer = {
-    .name           = "alp",
-    .long_name      = NULL_IF_CONFIG_SMALL("LEGO Racers ALP"),
+const FFInputFormat ff_alp_demuxer = {
+    .p.name         = "alp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("LEGO Racers ALP"),
     .priv_data_size = sizeof(ALPHeader),
     .read_probe     = alp_probe,
     .read_header    = alp_read_header,

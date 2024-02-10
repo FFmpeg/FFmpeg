@@ -23,6 +23,7 @@
 #include <stdint.h>
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "riff.h"
 
@@ -313,9 +314,9 @@ static int xwma_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_xwma_demuxer = {
-    .name           = "xwma",
-    .long_name      = NULL_IF_CONFIG_SMALL("Microsoft xWMA"),
+const FFInputFormat ff_xwma_demuxer = {
+    .p.name         = "xwma",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Microsoft xWMA"),
     .priv_data_size = sizeof(XWMAContext),
     .read_probe     = xwma_probe,
     .read_header    = xwma_read_header,

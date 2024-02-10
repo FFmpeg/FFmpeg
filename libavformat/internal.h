@@ -40,7 +40,7 @@
 #endif
 
 /**
- * For an AVInputFormat with this flag set read_close() needs to be called
+ * For an FFInputFormat with this flag set read_close() needs to be called
  * by the caller upon read_header() failure.
  */
 #define FF_FMT_INIT_CLEANUP                             (1 << 0)
@@ -757,6 +757,8 @@ void ff_format_set_url(AVFormatContext *s, char *url);
 int ff_match_url_ext(const char *url, const char *extensions);
 
 struct FFOutputFormat;
-void avpriv_register_devices(const struct FFOutputFormat * const o[], const AVInputFormat * const i[]);
+struct FFInputFormat;
+void avpriv_register_devices(const struct FFOutputFormat * const o[],
+                             const struct FFInputFormat * const i[]);
 
 #endif /* AVFORMAT_INTERNAL_H */

@@ -2010,16 +2010,16 @@ static int avi_probe(const AVProbeData *p)
     return 0;
 }
 
-const AVInputFormat ff_avi_demuxer = {
-    .name           = "avi",
-    .long_name      = NULL_IF_CONFIG_SMALL("AVI (Audio Video Interleaved)"),
+const FFInputFormat ff_avi_demuxer = {
+    .p.name         = "avi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AVI (Audio Video Interleaved)"),
+    .p.extensions   = "avi",
+    .p.priv_class   = &demuxer_class,
     .priv_data_size = sizeof(AVIContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
-    .extensions     = "avi",
     .read_probe     = avi_probe,
     .read_header    = avi_read_header,
     .read_packet    = avi_read_packet,
     .read_close     = avi_read_close,
     .read_seek      = avi_read_seek,
-    .priv_class = &demuxer_class,
 };

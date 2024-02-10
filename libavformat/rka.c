@@ -161,13 +161,13 @@ static int rka_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-const AVInputFormat ff_rka_demuxer = {
-    .name           = "rka",
-    .long_name      = NULL_IF_CONFIG_SMALL("RKA (RK Audio)"),
+const FFInputFormat ff_rka_demuxer = {
+    .p.name         = "rka",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RKA (RK Audio)"),
+    .p.extensions   = "rka",
     .priv_data_size = sizeof(RKAContext),
     .read_probe     = rka_probe,
     .read_header    = rka_read_header,
     .read_packet    = rka_read_packet,
     .read_seek      = rka_read_seek,
-    .extensions     = "rka",
 };

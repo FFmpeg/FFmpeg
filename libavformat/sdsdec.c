@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct SDSContext {
@@ -153,13 +154,13 @@ static int sds_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_sds_demuxer = {
-    .name           = "sds",
-    .long_name      = NULL_IF_CONFIG_SMALL("MIDI Sample Dump Standard"),
+const FFInputFormat ff_sds_demuxer = {
+    .p.name         = "sds",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MIDI Sample Dump Standard"),
+    .p.extensions   = "sds",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(SDSContext),
     .read_probe     = sds_probe,
     .read_header    = sds_read_header,
     .read_packet    = sds_read_packet,
-    .extensions     = "sds",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

@@ -104,15 +104,15 @@ static int osq_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_osq_demuxer = {
-    .name           = "osq",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw OSQ"),
+const FFInputFormat ff_osq_demuxer = {
+    .p.name         = "osq",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw OSQ"),
+    .p.extensions   = "osq",
+    .p.flags        = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = osq_probe,
     .read_header    = osq_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .extensions     = "osq",
-    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
     .raw_codec_id   = AV_CODEC_ID_OSQ,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };

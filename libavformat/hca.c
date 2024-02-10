@@ -24,6 +24,7 @@
 #include "libavcodec/bytestream.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define HCA_MASK 0x7f7f7f7f
@@ -148,14 +149,14 @@ static const AVClass hca_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_hca_demuxer = {
-    .name           = "hca",
-    .long_name      = NULL_IF_CONFIG_SMALL("CRI HCA"),
-    .priv_class     = &hca_class,
+const FFInputFormat ff_hca_demuxer = {
+    .p.name         = "hca",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("CRI HCA"),
+    .p.priv_class   = &hca_class,
+    .p.extensions   = "hca",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(HCADemuxContext),
     .read_probe     = hca_probe,
     .read_header    = hca_read_header,
     .read_packet    = hca_read_packet,
-    .extensions     = "hca",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

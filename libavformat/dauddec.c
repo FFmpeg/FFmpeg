@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int daud_header(AVFormatContext *s) {
@@ -53,10 +54,10 @@ static int daud_packet(AVFormatContext *s, AVPacket *pkt) {
     return ret;
 }
 
-const AVInputFormat ff_daud_demuxer = {
-    .name           = "daud",
-    .long_name      = NULL_IF_CONFIG_SMALL("D-Cinema audio"),
+const FFInputFormat ff_daud_demuxer = {
+    .p.name         = "daud",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("D-Cinema audio"),
+    .p.extensions   = "302,daud",
     .read_header    = daud_header,
     .read_packet    = daud_packet,
-    .extensions     = "302,daud",
 };

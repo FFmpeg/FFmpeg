@@ -22,6 +22,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "pcm.h"
 
@@ -133,13 +134,13 @@ static int nist_read_header(AVFormatContext *s)
     return AVERROR_EOF;
 }
 
-const AVInputFormat ff_nistsphere_demuxer = {
-    .name           = "nistsphere",
-    .long_name      = NULL_IF_CONFIG_SMALL("NIST SPeech HEader REsources"),
+const FFInputFormat ff_nistsphere_demuxer = {
+    .p.name         = "nistsphere",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NIST SPeech HEader REsources"),
+    .p.extensions   = "nist,sph",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe     = nist_probe,
     .read_header    = nist_read_header,
     .read_packet    = ff_pcm_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .extensions     = "nist,sph",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

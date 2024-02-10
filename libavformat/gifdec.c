@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -278,14 +279,14 @@ static const AVClass demuxer_class = {
     .category   = AV_CLASS_CATEGORY_DEMUXER,
 };
 
-const AVInputFormat ff_gif_demuxer = {
-    .name           = "gif",
-    .long_name      = NULL_IF_CONFIG_SMALL("CompuServe Graphics Interchange Format (GIF)"),
+const FFInputFormat ff_gif_demuxer = {
+    .p.name         = "gif",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("CompuServe Graphics Interchange Format (GIF)"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "gif",
+    .p.priv_class   = &demuxer_class,
     .priv_data_size = sizeof(GIFDemuxContext),
     .read_probe     = gif_probe,
     .read_header    = gif_read_header,
     .read_packet    = gif_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "gif",
-    .priv_class     = &demuxer_class,
 };

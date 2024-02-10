@@ -21,6 +21,7 @@
  */
 
 #include "libavformat/avformat.h"
+#include "libavformat/demux.h"
 #include "libavutil/opt.h"
 
 #include "decklink_common_c.h"
@@ -111,11 +112,11 @@ static const AVClass decklink_demuxer_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-const AVInputFormat ff_decklink_demuxer = {
-    .name           = "decklink",
-    .long_name      = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink input"),
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &decklink_demuxer_class,
+const FFInputFormat ff_decklink_demuxer = {
+    .p.name          = "decklink",
+    .p.long_name     = NULL_IF_CONFIG_SMALL("Blackmagic DeckLink input"),
+    .p.flags         = AVFMT_NOFILE,
+    .p.priv_class    = &decklink_demuxer_class,
     .priv_data_size = sizeof(struct decklink_cctx),
     .get_device_list = ff_decklink_list_input_devices,
     .read_header   = ff_decklink_read_header,

@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "avio_internal.h"
 
@@ -248,12 +249,12 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
-const AVInputFormat ff_siff_demuxer = {
-    .name           = "siff",
-    .long_name      = NULL_IF_CONFIG_SMALL("Beam Software SIFF"),
+const FFInputFormat ff_siff_demuxer = {
+    .p.name         = "siff",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Beam Software SIFF"),
+    .p.extensions   = "vb,son",
     .priv_data_size = sizeof(SIFFContext),
     .read_probe     = siff_probe,
     .read_header    = siff_read_header,
     .read_packet    = siff_read_packet,
-    .extensions     = "vb,son",
 };

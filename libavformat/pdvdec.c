@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define PDV_MAGIC "Playdate VID\x00\x00\x00\x00"
@@ -159,9 +160,10 @@ static int pdv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-const AVInputFormat ff_pdv_demuxer = {
-    .name           = "pdv",
-    .long_name      = NULL_IF_CONFIG_SMALL("PlayDate Video"),
+const FFInputFormat ff_pdv_demuxer = {
+    .p.name         = "pdv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("PlayDate Video"),
+    .p.extensions   = "pdv",
     .priv_data_size = sizeof(PDVDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = pdv_probe,
@@ -169,5 +171,4 @@ const AVInputFormat ff_pdv_demuxer = {
     .read_packet    = pdv_read_packet,
     .read_close     = pdv_read_close,
     .read_seek      = pdv_read_seek,
-    .extensions     = "pdv",
 };

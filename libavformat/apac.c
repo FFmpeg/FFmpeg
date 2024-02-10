@@ -72,15 +72,15 @@ static int apac_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_apac_demuxer = {
-    .name           = "apac",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw APAC"),
+const FFInputFormat ff_apac_demuxer = {
+    .p.name         = "apac",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw APAC"),
+    .p.extensions   = "apc",
+    .p.flags        = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = apac_probe,
     .read_header    = apac_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .extensions     = "apc",
-    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
     .raw_codec_id   = AV_CODEC_ID_APAC,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };

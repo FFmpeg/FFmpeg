@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "rawdec.h"
 #include "libavutil/intreadwrite.h"
 
@@ -61,15 +62,15 @@ static int ingenient_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_ingenient_demuxer = {
-    .name           = "ingenient",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw Ingenient MJPEG"),
+const FFInputFormat ff_ingenient_demuxer = {
+    .p.name         = "ingenient",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw Ingenient MJPEG"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "cgi", // FIXME
+    .p.priv_class   = &ff_rawvideo_demuxer_class,
     .priv_data_size = sizeof(FFRawVideoDemuxerContext),
     .read_probe     = ingenient_probe,
     .read_header    = ff_raw_video_read_header,
     .read_packet    = ingenient_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "cgi", // FIXME
     .raw_codec_id   = AV_CODEC_ID_MJPEG,
-    .priv_class     = &ff_rawvideo_demuxer_class,
 };

@@ -34,6 +34,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define FLIC_FILE_MAGIC_1 0xAF11
@@ -285,9 +286,9 @@ static int flic_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-const AVInputFormat ff_flic_demuxer = {
-    .name           = "flic",
-    .long_name      = NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation"),
+const FFInputFormat ff_flic_demuxer = {
+    .p.name         = "flic",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("FLI/FLC/FLX animation"),
     .priv_data_size = sizeof(FlicDemuxContext),
     .read_probe     = flic_probe,
     .read_header    = flic_read_header,

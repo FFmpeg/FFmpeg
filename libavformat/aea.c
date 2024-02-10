@@ -23,6 +23,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "pcm.h"
 
 #define AT1_SU_SIZE 212
@@ -89,13 +90,13 @@ static int aea_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, s->streams[0]->codecpar->block_align);
 }
 
-const AVInputFormat ff_aea_demuxer = {
-    .name           = "aea",
-    .long_name      = NULL_IF_CONFIG_SMALL("MD STUDIO audio"),
+const FFInputFormat ff_aea_demuxer = {
+    .p.name         = "aea",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MD STUDIO audio"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "aea",
     .read_probe     = aea_read_probe,
     .read_header    = aea_read_header,
     .read_packet    = aea_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "aea",
 };

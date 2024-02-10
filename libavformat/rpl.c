@@ -25,6 +25,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define RPL_SIGNATURE "ARMovie\x0A"
@@ -393,9 +394,9 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_rpl_demuxer = {
-    .name           = "rpl",
-    .long_name      = NULL_IF_CONFIG_SMALL("RPL / ARMovie"),
+const FFInputFormat ff_rpl_demuxer = {
+    .p.name         = "rpl",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RPL / ARMovie"),
     .priv_data_size = sizeof(RPLContext),
     .read_probe     = rpl_probe,
     .read_header    = rpl_read_header,

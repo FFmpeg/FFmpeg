@@ -25,6 +25,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "libavutil/opt.h"
@@ -253,9 +254,9 @@ static int argo_cvg_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-const AVInputFormat ff_argo_cvg_demuxer = {
-    .name           = "argo_cvg",
-    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games CVG"),
+const FFInputFormat ff_argo_cvg_demuxer = {
+    .p.name         = "argo_cvg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Argonaut Games CVG"),
     .priv_data_size = sizeof(ArgoCVGDemuxContext),
     .read_probe     = argo_cvg_probe,
     .read_header    = argo_cvg_read_header,

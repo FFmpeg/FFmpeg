@@ -24,6 +24,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
@@ -747,9 +748,9 @@ static int nsv_probe(const AVProbeData *p)
     return score;
 }
 
-const AVInputFormat ff_nsv_demuxer = {
-    .name           = "nsv",
-    .long_name      = NULL_IF_CONFIG_SMALL("Nullsoft Streaming Video"),
+const FFInputFormat ff_nsv_demuxer = {
+    .p.name         = "nsv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Nullsoft Streaming Video"),
     .priv_data_size = sizeof(NSVContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = nsv_probe,

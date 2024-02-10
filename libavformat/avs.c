@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "voc.h"
 
 
@@ -228,9 +229,9 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
     }
 }
 
-const AVInputFormat ff_avs_demuxer = {
-    .name           = "avs",
-    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games Creature Shock"),
+const FFInputFormat ff_avs_demuxer = {
+    .p.name         = "avs",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Argonaut Games Creature Shock"),
     .priv_data_size = sizeof(AvsFormat),
     .read_probe     = avs_probe,
     .read_header    = avs_read_header,

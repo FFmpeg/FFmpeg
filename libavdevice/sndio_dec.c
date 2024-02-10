@@ -27,6 +27,7 @@
 #include "libavutil/time.h"
 
 #include "libavformat/avformat.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 
 #include "libavdevice/sndio.h"
@@ -109,13 +110,13 @@ static const AVClass sndio_demuxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-const AVInputFormat ff_sndio_demuxer = {
-    .name           = "sndio",
-    .long_name      = NULL_IF_CONFIG_SMALL("sndio audio capture"),
+const FFInputFormat ff_sndio_demuxer = {
+    .p.name         = "sndio",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("sndio audio capture"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &sndio_demuxer_class,
     .priv_data_size = sizeof(SndioData),
     .read_header    = audio_read_header,
     .read_packet    = audio_read_packet,
     .read_close     = audio_read_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &sndio_demuxer_class,
 };

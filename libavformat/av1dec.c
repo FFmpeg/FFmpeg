@@ -27,6 +27,7 @@
 #include "libavcodec/bsf.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct AV1DemuxContext {
@@ -281,18 +282,18 @@ end:
     return ret;
 }
 
-const AVInputFormat ff_av1_demuxer = {
-    .name           = "av1",
-    .long_name      = NULL_IF_CONFIG_SMALL("AV1 Annex B"),
+const FFInputFormat ff_av1_demuxer = {
+    .p.name         = "av1",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AV1 Annex B"),
+    .p.extensions   = "obu",
+    .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &av1_demuxer_class,
     .priv_data_size = sizeof(AV1DemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = annexb_probe,
     .read_header    = av1_read_header,
     .read_packet    = annexb_read_packet,
     .read_close     = av1_read_close,
-    .extensions     = "obu",
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
-    .priv_class     = &av1_demuxer_class,
 };
 #endif
 
@@ -426,17 +427,17 @@ static int obu_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_obu_demuxer = {
-    .name           = "obu",
-    .long_name      = NULL_IF_CONFIG_SMALL("AV1 low overhead OBU"),
+const FFInputFormat ff_obu_demuxer = {
+    .p.name         = "obu",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AV1 low overhead OBU"),
+    .p.extensions   = "obu",
+    .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
+    .p.priv_class   = &av1_demuxer_class,
     .priv_data_size = sizeof(AV1DemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = obu_probe,
     .read_header    = av1_read_header,
     .read_packet    = obu_read_packet,
     .read_close     = av1_read_close,
-    .extensions     = "obu",
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
-    .priv_class     = &av1_demuxer_class,
 };
 #endif

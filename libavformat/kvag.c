@@ -25,6 +25,7 @@
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "rawenc.h"
@@ -115,9 +116,9 @@ static int kvag_seek(AVFormatContext *s, int stream_index,
     return avio_seek(s->pb, KVAG_HEADER_SIZE, SEEK_SET);
 }
 
-const AVInputFormat ff_kvag_demuxer = {
-    .name           = "kvag",
-    .long_name      = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
+const FFInputFormat ff_kvag_demuxer = {
+    .p.name         = "kvag",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Simon & Schuster Interactive VAG"),
     .read_probe     = kvag_probe,
     .read_header    = kvag_read_header,
     .read_packet    = kvag_read_packet,

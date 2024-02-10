@@ -20,6 +20,7 @@
 
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 
@@ -99,12 +100,12 @@ static int qoa_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_qoa_demuxer = {
-    .name           = "qoa",
-    .long_name      = NULL_IF_CONFIG_SMALL("QOA"),
+const FFInputFormat ff_qoa_demuxer = {
+    .p.name         = "qoa",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("QOA"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "qoa",
     .read_probe     = qoa_probe,
     .read_header    = qoa_read_header,
     .read_packet    = qoa_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "qoa",
 };

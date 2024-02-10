@@ -283,8 +283,8 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     s->duration = s->start_time = AV_NOPTS_VALUE;
 
     /* Allocate private data. */
-    if (s->iformat->priv_data_size > 0) {
-        if (!(s->priv_data = av_mallocz(s->iformat->priv_data_size))) {
+    if (ffifmt(s->iformat)->priv_data_size > 0) {
+        if (!(s->priv_data = av_mallocz(ffifmt(s->iformat)->priv_data_size))) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -300,9 +300,9 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     if (s->pb)
         ff_id3v2_read_dict(s->pb, &si->id3v2_meta, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
 
-    if (s->iformat->read_header)
-        if ((ret = s->iformat->read_header(s)) < 0) {
-            if (s->iformat->flags_internal & FF_FMT_INIT_CLEANUP)
+    if (ffifmt(s->iformat)->read_header)
+        if ((ret = ffifmt(s->iformat)->read_header(s)) < 0) {
+            if (ffifmt(s->iformat)->flags_internal & FF_FMT_INIT_CLEANUP)
                 goto close;
             goto fail;
         }
@@ -347,8 +347,8 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
     return 0;
 
 close:
-    if (s->iformat->read_close)
-        s->iformat->read_close(s);
+    if (ffifmt(s->iformat)->read_close)
+        ffifmt(s->iformat)->read_close(s);
 fail:
     ff_id3v2_free_extra_meta(&id3v2_extra_meta);
     av_dict_free(&tmp);
@@ -375,8 +375,8 @@ void avformat_close_input(AVFormatContext **ps)
         pb = NULL;
 
     if (s->iformat)
-        if (s->iformat->read_close)
-            s->iformat->read_close(s);
+        if (ffifmt(s->iformat)->read_close)
+            ffifmt(s->iformat)->read_close(s);
 
     avformat_free_context(s);
 
@@ -628,7 +628,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
         }
 
-        err = s->iformat->read_packet(s, pkt);
+        err = ffifmt(s->iformat)->read_packet(s, pkt);
         if (err < 0) {
             av_packet_unref(pkt);
 

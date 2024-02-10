@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio.h"
+#include "demux.h"
 #include "internal.h"
 
 static int fsb_probe(const AVProbeData *p)
@@ -200,12 +201,12 @@ static int fsb_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_fsb_demuxer = {
-    .name        = "fsb",
-    .long_name   = NULL_IF_CONFIG_SMALL("FMOD Sample Bank"),
+const FFInputFormat ff_fsb_demuxer = {
+    .p.name         = "fsb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("FMOD Sample Bank"),
+    .p.extensions   = "fsb",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe  = fsb_probe,
     .read_header = fsb_read_header,
     .read_packet = fsb_read_packet,
-    .extensions  = "fsb",
-    .flags       = AVFMT_GENERIC_INDEX,
 };

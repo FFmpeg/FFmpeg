@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "avio_internal.h"
 
@@ -368,16 +369,16 @@ static const AVClass mpjpeg_demuxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_mpjpeg_demuxer = {
-    .name              = "mpjpeg",
-    .long_name         = NULL_IF_CONFIG_SMALL("MIME multipart JPEG"),
-    .mime_type         = "multipart/x-mixed-replace",
-    .extensions        = "mjpg",
+const FFInputFormat ff_mpjpeg_demuxer = {
+    .p.name            = "mpjpeg",
+    .p.long_name       = NULL_IF_CONFIG_SMALL("MIME multipart JPEG"),
+    .p.mime_type       = "multipart/x-mixed-replace",
+    .p.extensions      = "mjpg",
+    .p.priv_class      = &mpjpeg_demuxer_class,
+    .p.flags           = AVFMT_NOTIMESTAMPS,
     .priv_data_size    = sizeof(MPJPEGDemuxContext),
     .read_probe        = mpjpeg_read_probe,
     .read_header       = mpjpeg_read_header,
     .read_packet       = mpjpeg_read_packet,
     .read_close        = mpjpeg_read_close,
-    .priv_class        = &mpjpeg_demuxer_class,
-    .flags             = AVFMT_NOTIMESTAMPS,
 };

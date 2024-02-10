@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define NC_VIDEO_FLAG 0x1A5
@@ -90,11 +91,11 @@ static int nc_read_packet(AVFormatContext *s, AVPacket *pkt)
     return size;
 }
 
-const AVInputFormat ff_nc_demuxer = {
-    .name           = "nc",
-    .long_name      = NULL_IF_CONFIG_SMALL("NC camera feed"),
+const FFInputFormat ff_nc_demuxer = {
+    .p.name         = "nc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("NC camera feed"),
+    .p.extensions   = "v",
     .read_probe     = nc_probe,
     .read_header    = nc_read_header,
     .read_packet    = nc_read_packet,
-    .extensions     = "v",
 };

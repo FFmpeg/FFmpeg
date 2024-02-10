@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "sauce.h"
 #include "libavcodec/bintext.h"
@@ -388,50 +389,50 @@ static const AVOption options[] = {
 }}
 
 #if CONFIG_BINTEXT_DEMUXER
-const AVInputFormat ff_bintext_demuxer = {
-    .name           = "bin",
-    .long_name      = NULL_IF_CONFIG_SMALL("Binary text"),
+const FFInputFormat ff_bintext_demuxer = {
+    .p.name         = "bin",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Binary text"),
+    .p.priv_class   = CLASS("Binary text demuxer"),
     .priv_data_size = sizeof(BinDemuxContext),
     .read_probe     = bin_probe,
     .read_header    = bintext_read_header,
     .read_packet    = read_packet,
-    .priv_class     = CLASS("Binary text demuxer"),
 };
 #endif
 
 #if CONFIG_XBIN_DEMUXER
-const AVInputFormat ff_xbin_demuxer = {
-    .name           = "xbin",
-    .long_name      = NULL_IF_CONFIG_SMALL("eXtended BINary text (XBIN)"),
+const FFInputFormat ff_xbin_demuxer = {
+    .p.name         = "xbin",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("eXtended BINary text (XBIN)"),
+    .p.priv_class   = CLASS("eXtended BINary text (XBIN) demuxer"),
     .priv_data_size = sizeof(BinDemuxContext),
     .read_probe     = xbin_probe,
     .read_header    = xbin_read_header,
     .read_packet    = read_packet,
-    .priv_class     = CLASS("eXtended BINary text (XBIN) demuxer"),
 };
 #endif
 
 #if CONFIG_ADF_DEMUXER
-const AVInputFormat ff_adf_demuxer = {
-    .name           = "adf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Artworx Data Format"),
+const FFInputFormat ff_adf_demuxer = {
+    .p.name         = "adf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Artworx Data Format"),
+    .p.extensions   = "adf",
+    .p.priv_class   = CLASS("Artworx Data Format demuxer"),
     .priv_data_size = sizeof(BinDemuxContext),
     .read_header    = adf_read_header,
     .read_packet    = read_packet,
-    .extensions     = "adf",
-    .priv_class     = CLASS("Artworx Data Format demuxer"),
 };
 #endif
 
 #if CONFIG_IDF_DEMUXER
-const AVInputFormat ff_idf_demuxer = {
-    .name           = "idf",
-    .long_name      = NULL_IF_CONFIG_SMALL("iCE Draw File"),
+const FFInputFormat ff_idf_demuxer = {
+    .p.name         = "idf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("iCE Draw File"),
+    .p.extensions   = "idf",
+    .p.priv_class   = CLASS("iCE Draw File demuxer"),
     .priv_data_size = sizeof(BinDemuxContext),
     .read_probe     = idf_probe,
     .read_header    = idf_read_header,
     .read_packet    = read_packet,
-    .extensions     = "idf",
-    .priv_class     = CLASS("iCE Draw File demuxer"),
 };
 #endif

@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int mtaf_probe(const AVProbeData *p)
@@ -71,11 +72,11 @@ static int mtaf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-const AVInputFormat ff_mtaf_demuxer = {
-    .name           = "mtaf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Konami PS2 MTAF"),
+const FFInputFormat ff_mtaf_demuxer = {
+    .p.name         = "mtaf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Konami PS2 MTAF"),
+    .p.extensions   = "mtaf",
     .read_probe     = mtaf_probe,
     .read_header    = mtaf_read_header,
     .read_packet    = mtaf_read_packet,
-    .extensions     = "mtaf",
 };

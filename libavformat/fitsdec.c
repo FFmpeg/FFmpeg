@@ -26,6 +26,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/opt.h"
 #include "libavcodec/fits.h"
@@ -220,13 +221,13 @@ static const AVClass fits_demuxer_class = {
     .category   = AV_CLASS_CATEGORY_DEMUXER,
 };
 
-const AVInputFormat ff_fits_demuxer = {
-    .name           = "fits",
-    .long_name      = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
+const FFInputFormat ff_fits_demuxer = {
+    .p.name         = "fits",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Flexible Image Transport System"),
+    .p.priv_class   = &fits_demuxer_class,
+    .p.flags        = AVFMT_NOTIMESTAMPS,
     .priv_data_size = sizeof(FITSContext),
     .read_probe     = fits_probe,
     .read_header    = fits_read_header,
     .read_packet    = fits_read_packet,
-    .priv_class     = &fits_demuxer_class,
-    .flags          = AVFMT_NOTIMESTAMPS,
 };

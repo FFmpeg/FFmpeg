@@ -219,13 +219,13 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 }
 
 
-const AVInputFormat ff_mpc_demuxer = {
-    .name           = "mpc",
-    .long_name      = NULL_IF_CONFIG_SMALL("Musepack"),
+const FFInputFormat ff_mpc_demuxer = {
+    .p.name         = "mpc",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Musepack"),
+    .p.extensions   = "mpc",
     .priv_data_size = sizeof(MPCContext),
     .read_probe     = mpc_probe,
     .read_header    = mpc_read_header,
     .read_packet    = mpc_read_packet,
     .read_seek      = mpc_read_seek,
-    .extensions     = "mpc",
 };

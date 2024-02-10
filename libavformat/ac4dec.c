@@ -22,6 +22,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/crc.h"
 #include "avformat.h"
+#include "demux.h"
 #include "rawdec.h"
 
 static int ac4_probe(const AVProbeData *p)
@@ -93,12 +94,12 @@ static int ac4_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_ac4_demuxer = {
-    .name           = "ac4",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw AC-4"),
+const FFInputFormat ff_ac4_demuxer = {
+    .p.name         = "ac4",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw AC-4"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "ac4",
     .read_probe     = ac4_probe,
     .read_header    = ac4_read_header,
     .read_packet    = ac4_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "ac4",
 };

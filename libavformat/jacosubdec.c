@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavcodec/jacosub.h"
@@ -256,9 +257,9 @@ static int jacosub_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_jacosub_demuxer = {
-    .name           = "jacosub",
-    .long_name      = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
+const FFInputFormat ff_jacosub_demuxer = {
+    .p.name         = "jacosub",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("JACOsub subtitle format"),
     .priv_data_size = sizeof(JACOsubContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = jacosub_probe,

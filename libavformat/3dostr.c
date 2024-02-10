@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int threedostr_probe(const AVProbeData *p)
@@ -191,12 +192,12 @@ static int threedostr_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-const AVInputFormat ff_threedostr_demuxer = {
-    .name           = "3dostr",
-    .long_name      = NULL_IF_CONFIG_SMALL("3DO STR"),
+const FFInputFormat ff_threedostr_demuxer = {
+    .p.name         = "3dostr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("3DO STR"),
+    .p.extensions   = "str",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe     = threedostr_probe,
     .read_header    = threedostr_read_header,
     .read_packet    = threedostr_read_packet,
-    .extensions     = "str",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

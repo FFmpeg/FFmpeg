@@ -69,12 +69,12 @@ static int xmd_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_xmd_demuxer = {
-    .name           = "xmd",
-    .long_name      = NULL_IF_CONFIG_SMALL("Konami XMD"),
+const FFInputFormat ff_xmd_demuxer = {
+    .p.name         = "xmd",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Konami XMD"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "xmd",
     .read_probe     = xmd_probe,
     .read_header    = xmd_read_header,
     .read_packet    = ff_pcm_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "xmd",
 };

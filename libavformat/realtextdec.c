@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavutil/avstring.h"
@@ -131,14 +132,14 @@ end:
     return res;
 }
 
-const AVInputFormat ff_realtext_demuxer = {
-    .name           = "realtext",
-    .long_name      = NULL_IF_CONFIG_SMALL("RealText subtitle format"),
+const FFInputFormat ff_realtext_demuxer = {
+    .p.name         = "realtext",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RealText subtitle format"),
+    .p.extensions   = "rt",
     .priv_data_size = sizeof(RealTextContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = realtext_probe,
     .read_header    = realtext_read_header,
-    .extensions     = "rt",
     .read_packet    = ff_subtitles_read_packet,
     .read_seek2     = ff_subtitles_read_seek,
     .read_close     = ff_subtitles_read_close,

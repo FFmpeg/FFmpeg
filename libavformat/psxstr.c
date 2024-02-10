@@ -33,6 +33,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define RIFF_TAG MKTAG('R', 'I', 'F', 'F')
@@ -302,13 +303,13 @@ static int str_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_str_demuxer = {
-    .name           = "psxstr",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony Playstation STR"),
+const FFInputFormat ff_str_demuxer = {
+    .p.name         = "psxstr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sony Playstation STR"),
+    .p.flags        = AVFMT_NO_BYTE_SEEK,
     .priv_data_size = sizeof(StrDemuxContext),
     .read_probe     = str_probe,
     .read_header    = str_read_header,
     .read_packet    = str_read_packet,
     .read_close     = str_read_close,
-    .flags          = AVFMT_NO_BYTE_SEEK,
 };

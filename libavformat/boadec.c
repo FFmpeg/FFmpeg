@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int probe(const AVProbeData *p)
@@ -78,11 +79,11 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, st->codecpar->block_align);
 }
 
-const AVInputFormat ff_boa_demuxer = {
-    .name           = "boa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Black Ops Audio"),
+const FFInputFormat ff_boa_demuxer = {
+    .p.name         = "boa",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Black Ops Audio"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
 };

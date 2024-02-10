@@ -33,6 +33,7 @@
 #include <media/NdkImageReader.h>
 
 #include "libavformat/avformat.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/display.h"
@@ -860,13 +861,13 @@ static const AVClass android_camera_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-const AVInputFormat ff_android_camera_demuxer = {
-    .name           = "android_camera",
-    .long_name      = NULL_IF_CONFIG_SMALL("Android camera input device"),
+const FFInputFormat ff_android_camera_demuxer = {
+    .p.name         = "android_camera",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Android camera input device"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &android_camera_class,
     .priv_data_size = sizeof(AndroidCameraCtx),
     .read_header    = android_camera_read_header,
     .read_packet    = android_camera_read_packet,
     .read_close     = android_camera_read_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &android_camera_class,
 };

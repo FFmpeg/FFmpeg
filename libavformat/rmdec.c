@@ -1145,9 +1145,9 @@ static int rm_read_seek(AVFormatContext *s, int stream_index,
 }
 
 
-const AVInputFormat ff_rm_demuxer = {
-    .name           = "rm",
-    .long_name      = NULL_IF_CONFIG_SMALL("RealMedia"),
+const FFInputFormat ff_rm_demuxer = {
+    .p.name         = "rm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RealMedia"),
     .priv_data_size = sizeof(RMDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = rm_probe,
@@ -1158,12 +1158,12 @@ const AVInputFormat ff_rm_demuxer = {
     .read_seek      = rm_read_seek,
 };
 
-const AVInputFormat ff_rdt_demuxer = {
-    .name           = "rdt",
-    .long_name      = NULL_IF_CONFIG_SMALL("RDT demuxer"),
+const FFInputFormat ff_rdt_demuxer = {
+    .p.name         = "rdt",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RDT demuxer"),
+    .p.flags        = AVFMT_NOFILE,
     .priv_data_size = sizeof(RMDemuxContext),
     .read_close     = rm_read_close,
-    .flags          = AVFMT_NOFILE,
 };
 
 static int ivr_probe(const AVProbeData *p)
@@ -1398,14 +1398,14 @@ static int ivr_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_ivr_demuxer = {
-    .name           = "ivr",
-    .long_name      = NULL_IF_CONFIG_SMALL("IVR (Internet Video Recording)"),
+const FFInputFormat ff_ivr_demuxer = {
+    .p.name         = "ivr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("IVR (Internet Video Recording)"),
+    .p.extensions   = "ivr",
     .priv_data_size = sizeof(RMDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = ivr_probe,
     .read_header    = ivr_read_header,
     .read_packet    = ivr_read_packet,
     .read_close     = rm_read_close,
-    .extensions     = "ivr",
 };

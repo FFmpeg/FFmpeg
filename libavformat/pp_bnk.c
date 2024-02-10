@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
@@ -315,9 +316,9 @@ static int pp_bnk_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-const AVInputFormat ff_pp_bnk_demuxer = {
-    .name           = "pp_bnk",
-    .long_name      = NULL_IF_CONFIG_SMALL("Pro Pinball Series Soundbank"),
+const FFInputFormat ff_pp_bnk_demuxer = {
+    .p.name         = "pp_bnk",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Pro Pinball Series Soundbank"),
     .priv_data_size = sizeof(PPBnkCtx),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = pp_bnk_probe,

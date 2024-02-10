@@ -28,6 +28,7 @@
 
 #include "avio_internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "id3v2.h"
 #include "internal.h"
 #include "url.h"
@@ -189,8 +190,8 @@ const AVInputFormat *av_probe_input_format3(const AVProbeData *pd,
         if (!is_opened == !(fmt1->flags & AVFMT_NOFILE) && strcmp(fmt1->name, "image2"))
             continue;
         score = 0;
-        if (fmt1->read_probe) {
-            score = fmt1->read_probe(&lpd);
+        if (ffifmt(fmt1)->read_probe) {
+            score = ffifmt(fmt1)->read_probe(&lpd);
             if (score)
                 av_log(NULL, AV_LOG_TRACE, "Probing %s score:%d size:%d\n", fmt1->name, score, lpd.buf_size);
             if (fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions)) {

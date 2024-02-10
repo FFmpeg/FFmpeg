@@ -31,6 +31,7 @@
 #include "libavutil/intfloat.h"
 #include "libavcodec/internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define     RIFF_TAG MKTAG('R', 'I', 'F', 'F')
@@ -396,9 +397,9 @@ static int fourxm_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_fourxm_demuxer = {
-    .name           = "4xm",
-    .long_name      = NULL_IF_CONFIG_SMALL("4X Technologies"),
+const FFInputFormat ff_fourxm_demuxer = {
+    .p.name         = "4xm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("4X Technologies"),
     .priv_data_size = sizeof(FourxmDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = fourxm_probe,

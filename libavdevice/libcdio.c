@@ -180,13 +180,13 @@ static const AVClass libcdio_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-const AVInputFormat ff_libcdio_demuxer = {
-    .name           = "libcdio",
+const FFInputFormat ff_libcdio_demuxer = {
+    .p.name         = "libcdio",
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &libcdio_class,
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_close     = read_close,
     .read_seek      = read_seek,
     .priv_data_size = sizeof(CDIOContext),
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &libcdio_class,
 };

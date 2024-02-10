@@ -28,6 +28,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/png.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct {
@@ -216,14 +217,14 @@ static int ico_read_close(AVFormatContext * s)
     return 0;
 }
 
-const AVInputFormat ff_ico_demuxer = {
-    .name           = "ico",
-    .long_name      = NULL_IF_CONFIG_SMALL("Microsoft Windows ICO"),
+const FFInputFormat ff_ico_demuxer = {
+    .p.name         = "ico",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Microsoft Windows ICO"),
+    .p.flags        = AVFMT_NOTIMESTAMPS,
     .priv_data_size = sizeof(IcoDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_close     = ico_read_close,
-    .flags          = AVFMT_NOTIMESTAMPS,
 };

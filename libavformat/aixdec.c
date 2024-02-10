@@ -130,12 +130,12 @@ static int aix_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_aix_demuxer = {
-    .name        = "aix",
-    .long_name   = NULL_IF_CONFIG_SMALL("CRI AIX"),
+const FFInputFormat ff_aix_demuxer = {
+    .p.name      = "aix",
+    .p.long_name = NULL_IF_CONFIG_SMALL("CRI AIX"),
+    .p.extensions= "aix",
+    .p.flags     = AVFMT_GENERIC_INDEX,
     .read_probe  = aix_probe,
     .read_header = aix_read_header,
     .read_packet = aix_read_packet,
-    .extensions  = "aix",
-    .flags       = AVFMT_GENERIC_INDEX,
 };

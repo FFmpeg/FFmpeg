@@ -24,6 +24,7 @@
 
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "libavutil/channel_layout.h"
@@ -272,9 +273,9 @@ static int argo_asf_seek(AVFormatContext *s, int stream_index,
  * - Argonaut Sound File?
  * - Audio Stream File?
  */
-const AVInputFormat ff_argo_asf_demuxer = {
-    .name           = "argo_asf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games ASF"),
+const FFInputFormat ff_argo_asf_demuxer = {
+    .p.name         = "argo_asf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Argonaut Games ASF"),
     .priv_data_size = sizeof(ArgoASFDemuxContext),
     .read_probe     = argo_asf_probe,
     .read_header    = argo_asf_read_header,

@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "ast.h"
 
@@ -111,13 +112,13 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_ast_demuxer = {
-    .name           = "ast",
-    .long_name      = NULL_IF_CONFIG_SMALL("AST (Audio Stream)"),
+const FFInputFormat ff_ast_demuxer = {
+    .p.name         = "ast",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AST (Audio Stream)"),
+    .p.extensions   = "ast",
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.codec_tag    = ff_ast_codec_tags_list,
     .read_probe     = ast_probe,
     .read_header    = ast_read_header,
     .read_packet    = ast_read_packet,
-    .extensions     = "ast",
-    .flags          = AVFMT_GENERIC_INDEX,
-    .codec_tag      = ff_ast_codec_tags_list,
 };

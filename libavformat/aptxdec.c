@@ -24,6 +24,7 @@
 
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "demux.h"
 
 #define APTX_BLOCK_SIZE   4
 #define APTX_PACKET_SIZE  (256*APTX_BLOCK_SIZE)
@@ -101,27 +102,27 @@ static const AVClass aptx_demuxer_class = {
 };
 
 #if CONFIG_APTX_DEMUXER
-const AVInputFormat ff_aptx_demuxer = {
-    .name           = "aptx",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw aptX"),
-    .extensions     = "aptx",
+const FFInputFormat ff_aptx_demuxer = {
+    .p.name         = "aptx",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw aptX"),
+    .p.extensions   = "aptx",
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &aptx_demuxer_class,
     .priv_data_size = sizeof(AptXDemuxerContext),
     .read_header    = aptx_read_header,
     .read_packet    = aptx_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &aptx_demuxer_class,
 };
 #endif
 
 #if CONFIG_APTX_HD_DEMUXER
-const AVInputFormat ff_aptx_hd_demuxer = {
-    .name           = "aptx_hd",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw aptX HD"),
-    .extensions     = "aptxhd",
+const FFInputFormat ff_aptx_hd_demuxer = {
+    .p.name         = "aptx_hd",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw aptX HD"),
+    .p.extensions   = "aptxhd",
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &aptx_demuxer_class,
     .priv_data_size = sizeof(AptXDemuxerContext),
     .read_header    = aptx_hd_read_header,
     .read_packet    = aptx_hd_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &aptx_demuxer_class,
 };
 #endif

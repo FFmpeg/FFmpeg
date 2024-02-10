@@ -29,6 +29,7 @@ Write and read amr data according to RFC3267, http://www.ietf.org/rfc/rfc3267.tx
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "rawdec.h"
@@ -140,15 +141,15 @@ static int amr_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_amr_demuxer = {
-    .name           = "amr",
-    .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR"),
+const FFInputFormat ff_amr_demuxer = {
+    .p.name         = "amr",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("3GPP AMR"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .priv_data_size = sizeof(AMRContext),
     .read_probe     = amr_probe,
     .read_header    = amr_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 
@@ -197,15 +198,15 @@ static int amrnb_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_amrnb_demuxer = {
-    .name           = "amrnb",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw AMR-NB"),
+const FFInputFormat ff_amrnb_demuxer = {
+    .p.name         = "amrnb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw AMR-NB"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .priv_data_size = sizeof(AMRContext),
     .read_probe     = amrnb_probe,
     .read_header    = amrnb_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 
@@ -254,15 +255,15 @@ static int amrwb_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_amrwb_demuxer = {
-    .name           = "amrwb",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw AMR-WB"),
+const FFInputFormat ff_amrwb_demuxer = {
+    .p.name         = "amrwb",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw AMR-WB"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .priv_data_size = sizeof(AMRContext),
     .read_probe     = amrwb_probe,
     .read_header    = amrwb_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 

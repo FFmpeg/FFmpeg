@@ -22,6 +22,7 @@
 #include "libavutil/bswap.h"
 #include "libavcodec/internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int xvag_probe(const AVProbeData *p)
@@ -104,11 +105,11 @@ static int xvag_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-const AVInputFormat ff_xvag_demuxer = {
-    .name           = "xvag",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony PS3 XVAG"),
+const FFInputFormat ff_xvag_demuxer = {
+    .p.name         = "xvag",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sony PS3 XVAG"),
+    .p.extensions   = "xvag",
     .read_probe     = xvag_probe,
     .read_header    = xvag_read_header,
     .read_packet    = xvag_read_packet,
-    .extensions     = "xvag",
 };

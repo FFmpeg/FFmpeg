@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "pcm.h"
 
@@ -77,11 +78,11 @@ static int fwse_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_fwse_demuxer = {
-    .name           = "fwse",
-    .long_name      = NULL_IF_CONFIG_SMALL("Capcom's MT Framework sound"),
+const FFInputFormat ff_fwse_demuxer = {
+    .p.name         = "fwse",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Capcom's MT Framework sound"),
+    .p.extensions   = "fwse",
     .read_probe     = fwse_probe,
     .read_header    = fwse_read_header,
     .read_packet    = ff_pcm_read_packet,
-    .extensions     = "fwse",
 };

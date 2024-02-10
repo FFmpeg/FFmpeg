@@ -383,15 +383,15 @@ static int aax_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_aax_demuxer = {
-    .name           = "aax",
-    .long_name      = NULL_IF_CONFIG_SMALL("CRI AAX"),
+const FFInputFormat ff_aax_demuxer = {
+    .p.name         = "aax",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("CRI AAX"),
+    .p.extensions   = "aax",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(AAXContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = aax_probe,
     .read_header    = aax_read_header,
     .read_packet    = aax_read_packet,
     .read_close     = aax_read_close,
-    .extensions     = "aax",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

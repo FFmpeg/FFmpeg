@@ -364,18 +364,18 @@ static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     return -1;
 }
 
-const AVInputFormat ff_flac_demuxer = {
-    .name           = "flac",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw FLAC"),
+const FFInputFormat ff_flac_demuxer = {
+    .p.name         = "flac",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw FLAC"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "flac",
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = flac_probe,
     .read_header    = flac_read_header,
     .read_close     = flac_close,
     .read_packet    = ff_raw_read_partial_packet,
     .read_seek      = flac_seek,
     .read_timestamp = flac_read_timestamp,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "flac",
     .raw_codec_id   = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACDecContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };

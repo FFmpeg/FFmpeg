@@ -26,6 +26,7 @@
 #include "libavcodec/internal.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "config.h"
 
@@ -1197,14 +1198,14 @@ static const AVClass avisynth_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_avisynth_demuxer = {
-    .name           = "avisynth",
-    .long_name      = NULL_IF_CONFIG_SMALL("AviSynth script"),
+const FFInputFormat ff_avisynth_demuxer = {
+    .p.name         = "avisynth",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AviSynth script"),
+    .p.extensions   = "avs",
+    .p.priv_class   = &avisynth_demuxer_class,
     .priv_data_size = sizeof(AviSynthContext),
     .read_header    = avisynth_read_header,
     .read_packet    = avisynth_read_packet,
     .read_close     = avisynth_read_close,
     .read_seek      = avisynth_read_seek,
-    .extensions     = "avs",
-    .priv_class     = &avisynth_demuxer_class,
 };

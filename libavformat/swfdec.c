@@ -562,9 +562,9 @@ static av_cold int swf_read_close(AVFormatContext *avctx)
 }
 #endif
 
-const AVInputFormat ff_swf_demuxer = {
-    .name           = "swf",
-    .long_name      = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
+const FFInputFormat ff_swf_demuxer = {
+    .p.name         = "swf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SWF (ShockWave Flash)"),
     .priv_data_size = sizeof(SWFDecContext),
     .read_probe     = swf_probe,
     .read_header    = swf_read_header,

@@ -1209,7 +1209,7 @@ static void dvdvideo_subdemux_close(AVFormatContext *s)
 static int dvdvideo_subdemux_open(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
-    extern const AVInputFormat ff_mpegps_demuxer;
+    extern const FFInputFormat ff_mpegps_demuxer;
     int ret = 0;
 
     if (!(c->mpeg_buf = av_mallocz(DVDVIDEO_BLOCK_SIZE)))
@@ -1238,7 +1238,7 @@ static int dvdvideo_subdemux_open(AVFormatContext *s)
     c->mpeg_ctx->correct_ts_overflow = 0;
     c->mpeg_ctx->io_open = NULL;
 
-    return avformat_open_input(&c->mpeg_ctx, "", &ff_mpegps_demuxer, NULL);
+    return avformat_open_input(&c->mpeg_ctx, "", &ff_mpegps_demuxer.p, NULL);
 }
 
 static int dvdvideo_read_header(AVFormatContext *s)
@@ -1389,12 +1389,13 @@ static const AVClass dvdvideo_class = {
     .version    = LIBAVUTIL_VERSION_INT
 };
 
-const AVInputFormat ff_dvdvideo_demuxer = {
-    .name           = "dvdvideo",
-    .long_name      = NULL_IF_CONFIG_SMALL("DVD-Video"),
-    .priv_class     = &dvdvideo_class,
+const FFInputFormat ff_dvdvideo_demuxer = {
+    .p.name         = "dvdvideo",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("DVD-Video"),
+    .p.priv_class   = &dvdvideo_class,
+    .p.flags        = AVFMT_NOFILE | AVFMT_SHOW_IDS | AVFMT_TS_DISCONT |
+                      AVFMT_NO_BYTE_SEEK | AVFMT_NOGENSEARCH | AVFMT_NOBINSEARCH,
     .priv_data_size = sizeof(DVDVideoDemuxContext),
-    .flags          = AVFMT_NOFILE | AVFMT_SHOW_IDS | AVFMT_TS_DISCONT | AVFMT_NO_BYTE_SEEK | AVFMT_NOGENSEARCH | AVFMT_NOBINSEARCH,
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_close     = dvdvideo_close,
     .read_header    = dvdvideo_read_header,

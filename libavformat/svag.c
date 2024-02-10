@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int svag_probe(const AVProbeData *p)
@@ -69,11 +70,11 @@ static int svag_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-const AVInputFormat ff_svag_demuxer = {
-    .name           = "svag",
-    .long_name      = NULL_IF_CONFIG_SMALL("Konami PS2 SVAG"),
+const FFInputFormat ff_svag_demuxer = {
+    .p.name         = "svag",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Konami PS2 SVAG"),
+    .p.extensions   = "svag",
     .read_probe     = svag_probe,
     .read_header    = svag_read_header,
     .read_packet    = svag_read_packet,
-    .extensions     = "svag",
 };

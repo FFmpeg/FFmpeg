@@ -18,46 +18,47 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "libavformat/mux.h"
 #include "avdevice.h"
 
 /* devices */
-extern const AVInputFormat  ff_alsa_demuxer;
+extern const FFInputFormat  ff_alsa_demuxer;
 extern const FFOutputFormat ff_alsa_muxer;
-extern const AVInputFormat  ff_android_camera_demuxer;
+extern const FFInputFormat  ff_android_camera_demuxer;
 extern const FFOutputFormat ff_audiotoolbox_muxer;
-extern const AVInputFormat  ff_avfoundation_demuxer;
-extern const AVInputFormat  ff_bktr_demuxer;
+extern const FFInputFormat  ff_avfoundation_demuxer;
+extern const FFInputFormat  ff_bktr_demuxer;
 extern const FFOutputFormat ff_caca_muxer;
-extern const AVInputFormat  ff_decklink_demuxer;
+extern const FFInputFormat  ff_decklink_demuxer;
 extern const FFOutputFormat ff_decklink_muxer;
-extern const AVInputFormat  ff_dshow_demuxer;
-extern const AVInputFormat  ff_fbdev_demuxer;
+extern const FFInputFormat  ff_dshow_demuxer;
+extern const FFInputFormat  ff_fbdev_demuxer;
 extern const FFOutputFormat ff_fbdev_muxer;
-extern const AVInputFormat  ff_gdigrab_demuxer;
-extern const AVInputFormat  ff_iec61883_demuxer;
-extern const AVInputFormat  ff_jack_demuxer;
-extern const AVInputFormat  ff_kmsgrab_demuxer;
-extern const AVInputFormat  ff_lavfi_demuxer;
-extern const AVInputFormat  ff_openal_demuxer;
+extern const FFInputFormat  ff_gdigrab_demuxer;
+extern const FFInputFormat  ff_iec61883_demuxer;
+extern const FFInputFormat  ff_jack_demuxer;
+extern const FFInputFormat  ff_kmsgrab_demuxer;
+extern const FFInputFormat  ff_lavfi_demuxer;
+extern const FFInputFormat  ff_openal_demuxer;
 extern const FFOutputFormat ff_opengl_muxer;
-extern const AVInputFormat  ff_oss_demuxer;
+extern const FFInputFormat  ff_oss_demuxer;
 extern const FFOutputFormat ff_oss_muxer;
-extern const AVInputFormat  ff_pulse_demuxer;
+extern const FFInputFormat  ff_pulse_demuxer;
 extern const FFOutputFormat ff_pulse_muxer;
 extern const FFOutputFormat ff_sdl2_muxer;
-extern const AVInputFormat  ff_sndio_demuxer;
+extern const FFInputFormat  ff_sndio_demuxer;
 extern const FFOutputFormat ff_sndio_muxer;
-extern const AVInputFormat  ff_v4l2_demuxer;
+extern const FFInputFormat  ff_v4l2_demuxer;
 extern const FFOutputFormat ff_v4l2_muxer;
-extern const AVInputFormat  ff_vfwcap_demuxer;
-extern const AVInputFormat  ff_xcbgrab_demuxer;
+extern const FFInputFormat  ff_vfwcap_demuxer;
+extern const FFInputFormat  ff_xcbgrab_demuxer;
 extern const FFOutputFormat ff_xv_muxer;
 
 /* external libraries */
-extern const AVInputFormat  ff_libcdio_demuxer;
-extern const AVInputFormat  ff_libdc1394_demuxer;
+extern const FFInputFormat  ff_libcdio_demuxer;
+extern const FFInputFormat  ff_libdc1394_demuxer;
 
 #include "libavdevice/outdev_list.c"
 #include "libavdevice/indev_list.c"
@@ -72,12 +73,12 @@ static const void *next_input(const AVInputFormat *prev, AVClassCategory c2)
     const AVClass *pc;
     const AVClassCategory c1 = AV_CLASS_CATEGORY_DEVICE_INPUT;
     AVClassCategory category = AV_CLASS_CATEGORY_NA;
-    const AVInputFormat *fmt = NULL;
+    const FFInputFormat *fmt = NULL;
     int i = 0;
 
     while (prev && (fmt = indev_list[i])) {
         i++;
-        if (prev == fmt)
+        if (prev == &fmt->p)
             break;
     }
 
@@ -85,7 +86,7 @@ static const void *next_input(const AVInputFormat *prev, AVClassCategory c2)
         fmt = indev_list[i++];
         if (!fmt)
             break;
-        pc = fmt->priv_class;
+        pc = fmt->p.priv_class;
         if (!pc)
             continue;
         category = pc->category;

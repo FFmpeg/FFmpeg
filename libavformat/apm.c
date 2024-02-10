@@ -23,6 +23,7 @@
 #include "config_components.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "rawenc.h"
@@ -202,9 +203,9 @@ static int apm_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_apm_demuxer = {
-    .name           = "apm",
-    .long_name      = NULL_IF_CONFIG_SMALL("Ubisoft Rayman 2 APM"),
+const FFInputFormat ff_apm_demuxer = {
+    .p.name         = "apm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Ubisoft Rayman 2 APM"),
     .read_probe     = apm_probe,
     .read_header    = apm_read_header,
     .read_packet    = apm_read_packet

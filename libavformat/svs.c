@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int svs_probe(const AVProbeData *p)
@@ -84,11 +85,11 @@ static int svs_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_svs_demuxer = {
-    .name        = "svs",
-    .long_name   = NULL_IF_CONFIG_SMALL("Square SVS"),
+const FFInputFormat ff_svs_demuxer = {
+    .p.name         = "svs",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Square SVS"),
+    .p.extensions   = "svs",
     .read_probe  = svs_probe,
     .read_header = svs_read_header,
     .read_packet = svs_read_packet,
-    .extensions  = "svs",
 };

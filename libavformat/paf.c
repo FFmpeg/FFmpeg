@@ -22,6 +22,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavcodec/paf.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define MAGIC "Packed Animation File V1.0\n(c) 1992-96 Amazing Studio\x0a\x1a"
@@ -265,9 +266,9 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
-const AVInputFormat ff_paf_demuxer = {
-    .name           = "paf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File"),
+const FFInputFormat ff_paf_demuxer = {
+    .p.name         = "paf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Amazing Studio Packed Animation File"),
     .priv_data_size = sizeof(PAFDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = read_probe,

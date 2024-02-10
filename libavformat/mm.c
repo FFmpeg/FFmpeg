@@ -34,6 +34,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define MM_PREAMBLE_SIZE    6
@@ -189,9 +190,9 @@ static int read_packet(AVFormatContext *s,
     }
 }
 
-const AVInputFormat ff_mm_demuxer = {
-    .name           = "mm",
-    .long_name      = NULL_IF_CONFIG_SMALL("American Laser Games MM"),
+const FFInputFormat ff_mm_demuxer = {
+    .p.name         = "mm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("American Laser Games MM"),
     .priv_data_size = sizeof(MmDemuxContext),
     .read_probe     = probe,
     .read_header    = read_header,

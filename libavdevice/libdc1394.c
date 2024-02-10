@@ -31,6 +31,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "libavformat/avformat.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 
 typedef struct dc1394_data {
@@ -288,13 +289,13 @@ static int dc1394_close(AVFormatContext * context)
     return 0;
 }
 
-const AVInputFormat ff_libdc1394_demuxer = {
-    .name           = "libdc1394",
-    .long_name      = NULL_IF_CONFIG_SMALL("dc1394 v.2 A/V grab"),
+const FFInputFormat ff_libdc1394_demuxer = {
+    .p.name         = "libdc1394",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("dc1394 v.2 A/V grab"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &libdc1394_class,
     .priv_data_size = sizeof(struct dc1394_data),
     .read_header    = dc1394_read_header,
     .read_packet    = dc1394_read_packet,
     .read_close     = dc1394_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &libdc1394_class,
 };

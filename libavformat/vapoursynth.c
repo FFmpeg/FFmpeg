@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 struct VSState {
@@ -480,9 +481,10 @@ static const AVClass class_vs = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_vapoursynth_demuxer = {
-    .name           = "vapoursynth",
-    .long_name      = NULL_IF_CONFIG_SMALL("VapourSynth demuxer"),
+const FFInputFormat ff_vapoursynth_demuxer = {
+    .p.name         = "vapoursynth",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("VapourSynth demuxer"),
+    .p.priv_class   = &class_vs,
     .priv_data_size = sizeof(VSContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = probe_vs,
@@ -490,5 +492,4 @@ const AVInputFormat ff_vapoursynth_demuxer = {
     .read_packet    = read_packet_vs,
     .read_close     = read_close_vs,
     .read_seek      = read_seek_vs,
-    .priv_class     = &class_vs,
 };

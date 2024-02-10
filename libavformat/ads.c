@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int ads_probe(const AVProbeData *p)
@@ -80,11 +81,11 @@ static int ads_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_ads_demuxer = {
-    .name           = "ads",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony PS2 ADS"),
+const FFInputFormat ff_ads_demuxer = {
+    .p.name         = "ads",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sony PS2 ADS"),
+    .p.extensions   = "ads,ss2",
     .read_probe     = ads_probe,
     .read_header    = ads_read_header,
     .read_packet    = ads_read_packet,
-    .extensions     = "ads,ss2",
 };

@@ -29,6 +29,7 @@
 #include "libavutil/time.h"
 
 #include "libavformat/avformat.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "libavformat/version.h"
 #include "pulse_audio_common.h"
@@ -393,14 +394,14 @@ static const AVClass pulse_demuxer_class = {
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
-const AVInputFormat ff_pulse_demuxer = {
-    .name           = "pulse",
-    .long_name      = NULL_IF_CONFIG_SMALL("Pulse audio input"),
+const FFInputFormat ff_pulse_demuxer = {
+    .p.name          = "pulse",
+    .p.long_name     = NULL_IF_CONFIG_SMALL("Pulse audio input"),
+    .p.flags         = AVFMT_NOFILE,
+    .p.priv_class    = &pulse_demuxer_class,
     .priv_data_size = sizeof(PulseData),
     .read_header    = pulse_read_header,
     .read_packet    = pulse_read_packet,
     .read_close     = pulse_close,
     .get_device_list = pulse_get_device_list,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &pulse_demuxer_class,
 };

@@ -692,15 +692,15 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
     return dts;
 }
 
-const AVInputFormat ff_mpegps_demuxer = {
-    .name           = "mpeg",
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-PS (MPEG-2 Program Stream)"),
+const FFInputFormat ff_mpegps_demuxer = {
+    .p.name         = "mpeg",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MPEG-PS (MPEG-2 Program Stream)"),
+    .p.flags        = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
     .priv_data_size = sizeof(MpegDemuxContext),
     .read_probe     = mpegps_probe,
     .read_header    = mpegps_read_header,
     .read_packet    = mpegps_read_packet,
     .read_timestamp = mpegps_read_dts,
-    .flags          = AVFMT_SHOW_IDS | AVFMT_TS_DISCONT,
 };
 
 #if CONFIG_VOBSUB_DEMUXER
@@ -1048,9 +1048,12 @@ static const AVClass vobsub_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_vobsub_demuxer = {
-    .name           = "vobsub",
-    .long_name      = NULL_IF_CONFIG_SMALL("VobSub subtitle format"),
+const FFInputFormat ff_vobsub_demuxer = {
+    .p.name         = "vobsub",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("VobSub subtitle format"),
+    .p.flags        = AVFMT_SHOW_IDS,
+    .p.extensions   = "idx",
+    .p.priv_class   = &vobsub_demuxer_class,
     .priv_data_size = sizeof(VobSubDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = vobsub_probe,
@@ -1058,8 +1061,5 @@ const AVInputFormat ff_vobsub_demuxer = {
     .read_packet    = vobsub_read_packet,
     .read_seek2     = vobsub_read_seek,
     .read_close     = vobsub_read_close,
-    .flags          = AVFMT_SHOW_IDS,
-    .extensions     = "idx",
-    .priv_class     = &vobsub_demuxer_class,
 };
 #endif

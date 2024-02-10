@@ -27,6 +27,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static const uint8_t frame_size[4] = { 24, 20, 4, 1 };
@@ -74,11 +75,11 @@ static int g723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
-const AVInputFormat ff_g723_1_demuxer = {
-    .name        = "g723_1",
-    .long_name   = NULL_IF_CONFIG_SMALL("G.723.1"),
+const FFInputFormat ff_g723_1_demuxer = {
+    .p.name         = "g723_1",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("G.723.1"),
+    .p.extensions   = "tco,rco,g723_1",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_header = g723_1_init,
     .read_packet = g723_1_read_packet,
-    .extensions  = "tco,rco,g723_1",
-    .flags       = AVFMT_GENERIC_INDEX
 };

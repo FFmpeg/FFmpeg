@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "libavcodec/get_bits.h"
@@ -113,13 +114,13 @@ static int read_packet(AVFormatContext *s,
     return 0;
 }
 
-const AVInputFormat ff_bit_demuxer = {
-    .name        = "bit",
-    .long_name   = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
+const FFInputFormat ff_bit_demuxer = {
+    .p.name       = "bit",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("G.729 BIT file format"),
+    .p.extensions = "bit",
     .read_probe  = probe,
     .read_header = read_header,
     .read_packet = read_packet,
-    .extensions  = "bit",
 };
 #endif
 

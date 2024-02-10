@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "apetag.h"
 
@@ -444,9 +445,10 @@ static int ape_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-const AVInputFormat ff_ape_demuxer = {
-    .name           = "ape",
-    .long_name      = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
+const FFInputFormat ff_ape_demuxer = {
+    .p.name         = "ape",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
+    .p.extensions   = "ape,apl,mac",
     .priv_data_size = sizeof(APEContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = ape_probe,
@@ -454,5 +456,4 @@ const AVInputFormat ff_ape_demuxer = {
     .read_packet    = ape_read_packet,
     .read_close     = ape_read_close,
     .read_seek      = ape_read_seek,
-    .extensions     = "ape,apl,mac",
 };

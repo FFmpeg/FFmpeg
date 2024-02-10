@@ -324,13 +324,13 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     return 0;
 }
 
-const AVInputFormat ff_bink_demuxer = {
-    .name           = "bink",
-    .long_name      = NULL_IF_CONFIG_SMALL("Bink"),
+const FFInputFormat ff_bink_demuxer = {
+    .p.name         = "bink",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Bink"),
+    .p.flags        = AVFMT_SHOW_IDS,
     .priv_data_size = sizeof(BinkDemuxContext),
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_seek      = read_seek,
-    .flags          = AVFMT_SHOW_IDS,
 };

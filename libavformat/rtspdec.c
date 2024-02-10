@@ -27,6 +27,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/time.h"
 #include "avformat.h"
+#include "demux.h"
 
 #include "internal.h"
 #include "network.h"
@@ -992,17 +993,17 @@ static const AVClass rtsp_demuxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_rtsp_demuxer = {
-    .name           = "rtsp",
-    .long_name      = NULL_IF_CONFIG_SMALL("RTSP input"),
+const FFInputFormat ff_rtsp_demuxer = {
+    .p.name         = "rtsp",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("RTSP input"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &rtsp_demuxer_class,
     .priv_data_size = sizeof(RTSPState),
     .read_probe     = rtsp_probe,
     .read_header    = rtsp_read_header,
     .read_packet    = rtsp_read_packet,
     .read_close     = rtsp_read_close,
     .read_seek      = rtsp_read_seek,
-    .flags          = AVFMT_NOFILE,
     .read_play      = rtsp_read_play,
     .read_pause     = rtsp_read_pause,
-    .priv_class     = &rtsp_demuxer_class,
 };

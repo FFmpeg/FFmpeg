@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define HNM4_TAG MKTAG('H', 'N', 'M', '4')
@@ -158,12 +159,12 @@ static int hnm_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_hnm_demuxer = {
-    .name           = "hnm",
-    .long_name      = NULL_IF_CONFIG_SMALL("Cryo HNM v4"),
+const FFInputFormat ff_hnm_demuxer = {
+    .p.name         = "hnm",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Cryo HNM v4"),
+    .p.flags        = AVFMT_NO_BYTE_SEEK | AVFMT_NOGENSEARCH | AVFMT_NOBINSEARCH,
     .priv_data_size = sizeof(Hnm4DemuxContext),
     .read_probe     = hnm_probe,
     .read_header    = hnm_read_header,
     .read_packet    = hnm_read_packet,
-    .flags          = AVFMT_NO_BYTE_SEEK | AVFMT_NOGENSEARCH | AVFMT_NOBINSEARCH
 };

@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define RAND_TAG MKBETAG('R','a','n','d')
@@ -104,12 +105,12 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     return 0;
 }
 
-const AVInputFormat ff_filmstrip_demuxer = {
-    .name           = "filmstrip",
-    .long_name      = NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
+const FFInputFormat ff_filmstrip_demuxer = {
+    .p.name         = "filmstrip",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
+    .p.extensions   = "flm",
     .priv_data_size = sizeof(FilmstripDemuxContext),
     .read_header    = read_header,
     .read_packet    = read_packet,
     .read_seek      = read_seek,
-    .extensions     = "flm",
 };

@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavutil/avstring.h"
@@ -121,14 +122,14 @@ end:
     return res;
 }
 
-const AVInputFormat ff_sami_demuxer = {
-    .name           = "sami",
-    .long_name      = NULL_IF_CONFIG_SMALL("SAMI subtitle format"),
+const FFInputFormat ff_sami_demuxer = {
+    .p.name         = "sami",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SAMI subtitle format"),
+    .p.extensions   = "smi,sami",
     .priv_data_size = sizeof(SAMIContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = sami_probe,
     .read_header    = sami_read_header,
-    .extensions     = "smi,sami",
     .read_packet    = ff_subtitles_read_packet,
     .read_seek2     = ff_subtitles_read_seek,
     .read_close     = ff_subtitles_read_close,

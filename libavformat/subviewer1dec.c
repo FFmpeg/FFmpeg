@@ -24,6 +24,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 
@@ -90,14 +91,14 @@ static int subviewer1_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_subviewer1_demuxer = {
-    .name           = "subviewer1",
-    .long_name      = NULL_IF_CONFIG_SMALL("SubViewer v1 subtitle format"),
+const FFInputFormat ff_subviewer1_demuxer = {
+    .p.name         = "subviewer1",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("SubViewer v1 subtitle format"),
+    .p.extensions   = "sub",
     .priv_data_size = sizeof(SubViewer1Context),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = subviewer1_probe,
     .read_header    = subviewer1_read_header,
-    .extensions     = "sub",
     .read_packet    = ff_subtitles_read_packet,
     .read_seek2     = ff_subtitles_read_seek,
     .read_close     = ff_subtitles_read_close,

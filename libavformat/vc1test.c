@@ -117,12 +117,12 @@ static int vc1t_read_packet(AVFormatContext *s,
     return pkt->size;
 }
 
-const AVInputFormat ff_vc1t_demuxer = {
-    .name           = "vc1test",
-    .long_name      = NULL_IF_CONFIG_SMALL("VC-1 test bitstream"),
+const FFInputFormat ff_vc1t_demuxer = {
+    .p.name         = "vc1test",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("VC-1 test bitstream"),
+    .p.extensions   = "rcv",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe     = vc1t_probe,
     .read_header    = vc1t_read_header,
     .read_packet    = vc1t_read_packet,
-    .extensions     = "rcv",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

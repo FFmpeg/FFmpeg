@@ -32,6 +32,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avio_internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define MAX_AUDIO_SUBPACKETS 100
@@ -790,9 +791,9 @@ static int viv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     return 0;
 }
 
-const AVInputFormat ff_vividas_demuxer = {
-    .name           = "vividas",
-    .long_name      = NULL_IF_CONFIG_SMALL("Vividas VIV"),
+const FFInputFormat ff_vividas_demuxer = {
+    .p.name         = "vividas",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Vividas VIV"),
     .priv_data_size = sizeof(VividasDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = viv_probe,

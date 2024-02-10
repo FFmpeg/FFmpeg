@@ -21,6 +21,7 @@
 #include <stdlib.h>
 
 #include "libavformat/avformat.h"
+#include "libavformat/demux.h"
 #include "libavcodec/put_bits.h"
 #include "libavutil/lfg.h"
 #include "libavutil/timer.h"
@@ -44,12 +45,12 @@ static void probe(AVProbeData *pd, int type, int p, int size)
     while ((fmt = av_demuxer_iterate(&fmt_opaque))) {
         if (fmt->flags & AVFMT_NOFILE)
             continue;
-        if (fmt->read_probe &&
+        if (ffifmt(fmt)->read_probe &&
             (!single_format || !strcmp(single_format, fmt->name))
         ) {
             int score;
             int64_t start = AV_READ_TIME();
-            score = fmt->read_probe(pd);
+            score = ffifmt(fmt)->read_probe(pd);
             time_array[i] += AV_READ_TIME() - start;
             if (score > score_array[i] && score > AVPROBE_SCORE_MAX / 4) {
                 score_array[i] = score;

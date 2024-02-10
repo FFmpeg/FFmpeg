@@ -23,6 +23,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "yuv4mpeg.h"
 
@@ -323,12 +324,12 @@ static int yuv4_probe(const AVProbeData *pd)
         return 0;
 }
 
-const AVInputFormat ff_yuv4mpegpipe_demuxer = {
-    .name           = "yuv4mpegpipe",
-    .long_name      = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
+const FFInputFormat ff_yuv4mpegpipe_demuxer = {
+    .p.name         = "yuv4mpegpipe",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("YUV4MPEG pipe"),
+    .p.extensions   = "y4m",
     .read_probe     = yuv4_probe,
     .read_header    = yuv4_read_header,
     .read_packet    = yuv4_read_packet,
     .read_seek      = yuv4_read_seek,
-    .extensions     = "y4m",
 };

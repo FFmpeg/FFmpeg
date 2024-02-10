@@ -32,6 +32,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define FORM_TAG MKTAG('F', 'O', 'R', 'M')
@@ -293,9 +294,9 @@ static int wc3_read_packet(AVFormatContext *s,
     return ret;
 }
 
-const AVInputFormat ff_wc3_demuxer = {
-    .name           = "wc3movie",
-    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III movie"),
+const FFInputFormat ff_wc3_demuxer = {
+    .p.name         = "wc3movie",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Wing Commander III movie"),
     .priv_data_size = sizeof(Wc3DemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = wc3_probe,

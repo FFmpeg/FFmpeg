@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "libavutil/opt.h"
 
@@ -39,7 +40,7 @@ static int g726_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id   = s->iformat->raw_codec_id;
+    st->codecpar->codec_id   = ffifmt(s->iformat)->raw_codec_id;
 
     st->codecpar->sample_rate           = c->sample_rate;
     st->codecpar->bits_per_coded_sample = c->code_size;
@@ -75,25 +76,25 @@ static const AVClass g726_demuxer_class = {
 };
 
 #if CONFIG_G726_DEMUXER
-const AVInputFormat ff_g726_demuxer = {
-    .name           = "g726",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw big-endian G.726 (\"left aligned\")"),
+const FFInputFormat ff_g726_demuxer = {
+    .p.name         = "g726",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw big-endian G.726 (\"left aligned\")"),
+    .p.priv_class   = &g726_demuxer_class,
     .read_header    = g726_read_header,
     .read_packet    = g726_read_packet,
     .priv_data_size = sizeof(G726Context),
-    .priv_class     = &g726_demuxer_class,
     .raw_codec_id   = AV_CODEC_ID_ADPCM_G726,
 };
 #endif
 
 #if CONFIG_G726LE_DEMUXER
-const AVInputFormat ff_g726le_demuxer = {
-    .name           = "g726le",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw little-endian G.726 (\"right aligned\")"),
+const FFInputFormat ff_g726le_demuxer = {
+    .p.name         = "g726le",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw little-endian G.726 (\"right aligned\")"),
+    .p.priv_class   = &g726_demuxer_class,
     .read_header    = g726_read_header,
     .read_packet    = g726_read_packet,
     .priv_data_size = sizeof(G726Context),
-    .priv_class     = &g726_demuxer_class,
     .raw_codec_id   = AV_CODEC_ID_ADPCM_G726LE,
 };
 #endif

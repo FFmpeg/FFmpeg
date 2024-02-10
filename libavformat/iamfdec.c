@@ -22,6 +22,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "iamf.h"
 #include "iamf_reader.h"
 #include "iamf_parse.h"
@@ -177,15 +178,15 @@ static int iamf_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_iamf_demuxer = {
-    .name           = "iamf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Raw Immersive Audio Model and Formats"),
+const FFInputFormat ff_iamf_demuxer = {
+    .p.name         = "iamf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Raw Immersive Audio Model and Formats"),
+    .p.extensions   = "iamf",
+    .p.flags        = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS | AVFMT_SHOW_IDS,
     .priv_data_size = sizeof(IAMFDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = iamf_probe,
     .read_header    = iamf_read_header,
     .read_packet    = iamf_read_packet,
     .read_close     = iamf_read_close,
-    .extensions     = "iamf",
-    .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS | AVFMT_SHOW_IDS,
 };

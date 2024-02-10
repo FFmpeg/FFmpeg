@@ -39,6 +39,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavfilter/avfilter.h"
 #include "libavfilter/buffersink.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "avdevice.h"
 
@@ -493,14 +494,14 @@ static const AVClass lavfi_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_INPUT,
 };
 
-const AVInputFormat ff_lavfi_demuxer = {
-    .name           = "lavfi",
-    .long_name      = NULL_IF_CONFIG_SMALL("Libavfilter virtual input device"),
+const FFInputFormat ff_lavfi_demuxer = {
+    .p.name         = "lavfi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Libavfilter virtual input device"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &lavfi_class,
     .priv_data_size = sizeof(LavfiContext),
     .read_header    = lavfi_read_header,
     .read_packet    = lavfi_read_packet,
     .read_close     = lavfi_read_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &lavfi_class,
     .flags_internal = FF_FMT_INIT_CLEANUP,
 };

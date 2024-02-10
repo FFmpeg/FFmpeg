@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "rawdec.h"
 
@@ -83,14 +84,14 @@ static int loas_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_loas_demuxer = {
-    .name           = "loas",
-    .long_name      = NULL_IF_CONFIG_SMALL("LOAS AudioSyncStream"),
+const FFInputFormat ff_loas_demuxer = {
+    .p.name         = "loas",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("LOAS AudioSyncStream"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = loas_probe,
     .read_header    = loas_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
     .raw_codec_id = AV_CODEC_ID_AAC_LATM,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };

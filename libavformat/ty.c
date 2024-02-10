@@ -25,6 +25,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mpeg.h"
 
@@ -710,14 +711,14 @@ static int ty_read_close(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_ty_demuxer = {
-    .name           = "ty",
-    .long_name      = NULL_IF_CONFIG_SMALL("TiVo TY Stream"),
+const FFInputFormat ff_ty_demuxer = {
+    .p.name         = "ty",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("TiVo TY Stream"),
+    .p.extensions   = "ty,ty+",
+    .p.flags        = AVFMT_TS_DISCONT,
     .priv_data_size = sizeof(TYDemuxContext),
     .read_probe     = ty_probe,
     .read_header    = ty_read_header,
     .read_packet    = ty_read_packet,
     .read_close     = ty_read_close,
-    .extensions     = "ty,ty+",
-    .flags          = AVFMT_TS_DISCONT,
 };

@@ -26,6 +26,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "pcm.h"
 
@@ -137,9 +138,9 @@ static int sol_read_packet(AVFormatContext *s,
     return 0;
 }
 
-const AVInputFormat ff_sol_demuxer = {
-    .name           = "sol",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sierra SOL"),
+const FFInputFormat ff_sol_demuxer = {
+    .p.name         = "sol",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sierra SOL"),
     .read_probe     = sol_probe,
     .read_header    = sol_read_header,
     .read_packet    = sol_read_packet,

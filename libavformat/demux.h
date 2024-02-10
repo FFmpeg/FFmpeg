@@ -26,6 +26,109 @@
 #include "libavcodec/packet.h"
 #include "avformat.h"
 
+struct AVDeviceInfoList;
+
+typedef struct FFInputFormat {
+    /**
+     * The public AVInputFormat. See avformat.h for it.
+     */
+    AVInputFormat p;
+
+    /**
+     * Raw demuxers store their codec ID here.
+     */
+    int raw_codec_id;
+
+    /**
+     * Size of private data so that it can be allocated in the wrapper.
+     */
+    int priv_data_size;
+
+    /**
+     * Internal flags. See FF_FMT_FLAG_* in internal.h.
+     */
+    int flags_internal;
+
+    /**
+     * Tell if a given file has a chance of being parsed as this format.
+     * The buffer provided is guaranteed to be AVPROBE_PADDING_SIZE bytes
+     * big so you do not have to check for that unless you need more.
+     */
+    int (*read_probe)(const AVProbeData *);
+
+    /**
+     * Read the format header and initialize the AVFormatContext
+     * structure. Return 0 if OK. 'avformat_new_stream' should be
+     * called to create new streams.
+     */
+    int (*read_header)(struct AVFormatContext *);
+
+    /**
+     * Read one packet and put it in 'pkt'. pts and flags are also
+     * set. 'avformat_new_stream' can be called only if the flag
+     * AVFMTCTX_NOHEADER is used and only in the calling thread (not in a
+     * background thread).
+     * @return 0 on success, < 0 on error.
+     *         Upon returning an error, pkt must be unreferenced by the caller.
+     */
+    int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
+
+    /**
+     * Close the stream. The AVFormatContext and AVStreams are not
+     * freed by this function
+     */
+    int (*read_close)(struct AVFormatContext *);
+
+    /**
+     * Seek to a given timestamp relative to the frames in
+     * stream component stream_index.
+     * @param stream_index Must not be -1.
+     * @param flags Selects which direction should be preferred if no exact
+     *              match is available.
+     * @return >= 0 on success (but not necessarily the new offset)
+     */
+    int (*read_seek)(struct AVFormatContext *,
+                     int stream_index, int64_t timestamp, int flags);
+
+    /**
+     * Get the next timestamp in stream[stream_index].time_base units.
+     * @return the timestamp or AV_NOPTS_VALUE if an error occurred
+     */
+    int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
+                              int64_t *pos, int64_t pos_limit);
+
+    /**
+     * Start/resume playing - only meaningful if using a network-based format
+     * (RTSP).
+     */
+    int (*read_play)(struct AVFormatContext *);
+
+    /**
+     * Pause playing - only meaningful if using a network-based format
+     * (RTSP).
+     */
+    int (*read_pause)(struct AVFormatContext *);
+
+    /**
+     * Seek to timestamp ts.
+     * Seeking will be done so that the point from which all active streams
+     * can be presented successfully will be closest to ts and within min/max_ts.
+     * Active streams are all streams that have AVStream.discard < AVDISCARD_ALL.
+     */
+    int (*read_seek2)(struct AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
+
+    /**
+     * Returns device list with it properties.
+     * @see avdevice_list_devices() for more details.
+     */
+    int (*get_device_list)(struct AVFormatContext *s, struct AVDeviceInfoList *device_list);
+} FFInputFormat;
+
+static inline const FFInputFormat *ffifmt(const AVInputFormat *fmt)
+{
+    return (const FFInputFormat*)fmt;
+}
+
 #define MAX_STD_TIMEBASES (30*12+30+3+6)
 typedef struct FFStreamInfo {
     int64_t last_dts;
@@ -90,7 +193,7 @@ void ff_read_frame_flush(AVFormatContext *s);
 
 /**
  * Perform a binary search using av_index_search_timestamp() and
- * AVInputFormat.read_timestamp().
+ * FFInputFormat.read_timestamp().
  *
  * @param target_ts target timestamp in the time base of the given stream
  * @param stream_index stream number
@@ -166,7 +269,7 @@ void ff_rfps_calculate(AVFormatContext *ic);
  * rounded to the nearest integer and halfway cases away from zero, and can
  * therefore fall outside of the output interval.
  *
- * Useful to simplify the rescaling of the arguments of AVInputFormat::read_seek2()
+ * Useful to simplify the rescaling of the arguments of FFInputFormat::read_seek2()
  *
  * @param[in] tb_in      Timebase of the input `min_ts`, `ts` and `max_ts`
  * @param[in] tb_out     Timebase of the output `min_ts`, `ts` and `max_ts`

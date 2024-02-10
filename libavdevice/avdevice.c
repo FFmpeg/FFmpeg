@@ -19,6 +19,7 @@
 #include "libavutil/avassert.h"
 #include "avdevice.h"
 #include "internal.h"
+#include "libavformat/demux.h"
 #include "libavformat/mux.h"
 
 int avdevice_app_to_dev_control_message(struct AVFormatContext *s, enum AVAppToDevMessageType type,
@@ -44,7 +45,7 @@ int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
     av_assert0(device_list);
     av_assert0(s->oformat || s->iformat);
     if ((s->oformat && !ffofmt(s->oformat)->get_device_list) ||
-        (s->iformat && !s->iformat->get_device_list)) {
+        (s->iformat && !ffifmt(s->iformat)->get_device_list)) {
         *device_list = NULL;
         return AVERROR(ENOSYS);
     }
@@ -56,7 +57,7 @@ int avdevice_list_devices(AVFormatContext *s, AVDeviceInfoList **device_list)
     if (s->oformat)
         ret = ffofmt(s->oformat)->get_device_list(s, *device_list);
     else
-        ret = s->iformat->get_device_list(s, *device_list);
+        ret = ffifmt(s->iformat)->get_device_list(s, *device_list);
     if (ret < 0) {
         avdevice_free_list_devices(device_list);
         return ret;

@@ -24,6 +24,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define CDXL_HEADER_SIZE 32
@@ -257,15 +258,15 @@ static const AVClass cdxl_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_cdxl_demuxer = {
-    .name           = "cdxl",
-    .long_name      = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
+const FFInputFormat ff_cdxl_demuxer = {
+    .p.name         = "cdxl",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Commodore CDXL video"),
+    .p.priv_class   = &cdxl_demuxer_class,
+    .p.extensions   = "cdxl,xl",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(CDXLDemuxContext),
-    .priv_class     = &cdxl_demuxer_class,
     .read_probe     = cdxl_read_probe,
     .read_header    = cdxl_read_header,
     .read_packet    = cdxl_read_packet,
     .read_seek      = read_seek,
-    .extensions     = "cdxl,xl",
-    .flags          = AVFMT_GENERIC_INDEX,
 };

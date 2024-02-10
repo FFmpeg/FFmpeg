@@ -135,13 +135,13 @@ static int vpk_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-const AVInputFormat ff_vpk_demuxer = {
-    .name           = "vpk",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony PS2 VPK"),
+const FFInputFormat ff_vpk_demuxer = {
+    .p.name         = "vpk",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sony PS2 VPK"),
+    .p.extensions   = "vpk",
     .priv_data_size = sizeof(VPKDemuxContext),
     .read_probe     = vpk_probe,
     .read_header    = vpk_read_header,
     .read_packet    = vpk_read_packet,
     .read_seek      = vpk_read_seek,
-    .extensions     = "vpk",
 };

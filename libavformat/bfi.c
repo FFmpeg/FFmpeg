@@ -176,9 +176,9 @@ static int bfi_read_packet(AVFormatContext * s, AVPacket * pkt)
     return ret;
 }
 
-const AVInputFormat ff_bfi_demuxer = {
-    .name           = "bfi",
-    .long_name      = NULL_IF_CONFIG_SMALL("Brute Force & Ignorance"),
+const FFInputFormat ff_bfi_demuxer = {
+    .p.name         = "bfi",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Brute Force & Ignorance"),
     .priv_data_size = sizeof(BFIContext),
     .read_probe     = bfi_probe,
     .read_header    = bfi_read_header,

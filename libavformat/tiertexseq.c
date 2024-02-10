@@ -26,6 +26,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define SEQ_FRAME_SIZE         6144
@@ -307,9 +308,9 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_tiertexseq_demuxer = {
-    .name           = "tiertexseq",
-    .long_name      = NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ"),
+const FFInputFormat ff_tiertexseq_demuxer = {
+    .p.name         = "tiertexseq",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ"),
     .priv_data_size = sizeof(SeqDemuxContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = seq_probe,

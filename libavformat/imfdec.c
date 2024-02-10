@@ -1014,12 +1014,12 @@ static const AVClass imf_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_imf_demuxer = {
-    .name           = "imf",
-    .long_name      = NULL_IF_CONFIG_SMALL("IMF (Interoperable Master Format)"),
-    .flags          = AVFMT_NO_BYTE_SEEK,
+const FFInputFormat ff_imf_demuxer = {
+    .p.name         = "imf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("IMF (Interoperable Master Format)"),
+    .p.flags        = AVFMT_NO_BYTE_SEEK,
+    .p.priv_class   = &imf_class,
     .flags_internal = FF_FMT_INIT_CLEANUP,
-    .priv_class     = &imf_class,
     .priv_data_size = sizeof(IMFContext),
     .read_probe     = imf_probe,
     .read_header    = imf_read_header,

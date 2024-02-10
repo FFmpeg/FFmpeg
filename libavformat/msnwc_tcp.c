@@ -20,6 +20,7 @@
 
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define HEADER_SIZE         24
@@ -136,9 +137,9 @@ static int msnwc_tcp_read_packet(AVFormatContext *ctx, AVPacket *pkt)
     return HEADER_SIZE + size;
 }
 
-const AVInputFormat ff_msnwc_tcp_demuxer = {
-    .name        = "msnwctcp",
-    .long_name   = NULL_IF_CONFIG_SMALL("MSN TCP Webcam stream"),
+const FFInputFormat ff_msnwc_tcp_demuxer = {
+    .p.name      = "msnwctcp",
+    .p.long_name = NULL_IF_CONFIG_SMALL("MSN TCP Webcam stream"),
     .read_probe  = msnwc_tcp_probe,
     .read_header = msnwc_tcp_read_header,
     .read_packet = msnwc_tcp_read_packet,

@@ -21,6 +21,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int vag_probe(const AVProbeData *p)
@@ -73,11 +74,11 @@ static int vag_read_packet(AVFormatContext *s, AVPacket *pkt)
     return av_get_packet(s->pb, pkt, par->block_align);
 }
 
-const AVInputFormat ff_vag_demuxer = {
-    .name           = "vag",
-    .long_name      = NULL_IF_CONFIG_SMALL("Sony PS2 VAG"),
+const FFInputFormat ff_vag_demuxer = {
+    .p.name         = "vag",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Sony PS2 VAG"),
+    .p.extensions   = "vag",
     .read_probe     = vag_probe,
     .read_header    = vag_read_header,
     .read_packet    = vag_read_packet,
-    .extensions     = "vag",
 };

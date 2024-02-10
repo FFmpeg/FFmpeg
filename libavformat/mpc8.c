@@ -348,9 +348,9 @@ static int mpc8_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
 }
 
 
-const AVInputFormat ff_mpc8_demuxer = {
-    .name           = "mpc8",
-    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV8"),
+const FFInputFormat ff_mpc8_demuxer = {
+    .p.name         = "mpc8",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Musepack SV8"),
     .priv_data_size = sizeof(MPCContext),
     .read_probe     = mpc8_probe,
     .read_header    = mpc8_read_header,

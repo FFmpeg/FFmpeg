@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio_internal.h"
+#include "demux.h"
 #include "internal.h"
 
 #define MAX_STREAMS 4096
@@ -277,16 +278,16 @@ static int laf_read_seek(AVFormatContext *ctx, int stream_index,
     return -1;
 }
 
-const AVInputFormat ff_laf_demuxer = {
-    .name           = "laf",
-    .long_name      = NULL_IF_CONFIG_SMALL("LAF (Limitless Audio Format)"),
+const FFInputFormat ff_laf_demuxer = {
+    .p.name         = "laf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("LAF (Limitless Audio Format)"),
+    .p.extensions   = "laf",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .priv_data_size = sizeof(LAFContext),
     .read_probe     = laf_probe,
     .read_header    = laf_read_header,
     .read_packet    = laf_read_packet,
     .read_close     = laf_read_close,
     .read_seek      = laf_read_seek,
-    .extensions     = "laf",
-    .flags          = AVFMT_GENERIC_INDEX,
     .flags_internal = FF_FMT_INIT_CLEANUP,
 };

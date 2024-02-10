@@ -26,6 +26,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 typedef struct GMEContext {
@@ -193,9 +194,10 @@ static const AVClass class_gme = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_libgme_demuxer = {
-    .name           = "libgme",
-    .long_name      = NULL_IF_CONFIG_SMALL("Game Music Emu demuxer"),
+const FFInputFormat ff_libgme_demuxer = {
+    .p.name         = "libgme",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Game Music Emu demuxer"),
+    .p.priv_class   = &class_gme,
     .priv_data_size = sizeof(GMEContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = probe_gme,
@@ -203,5 +205,4 @@ const AVInputFormat ff_libgme_demuxer = {
     .read_packet    = read_packet_gme,
     .read_close     = read_close_gme,
     .read_seek      = read_seek_gme,
-    .priv_class     = &class_gme,
 };

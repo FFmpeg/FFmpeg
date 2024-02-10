@@ -22,6 +22,7 @@
 #include "config_components.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "mux.h"
 #include "rawenc.h"
@@ -111,13 +112,13 @@ static int ilbc_read_packet(AVFormatContext *s,
     return 0;
 }
 
-const AVInputFormat ff_ilbc_demuxer = {
-    .name         = "ilbc",
-    .long_name    = NULL_IF_CONFIG_SMALL("iLBC storage"),
+const FFInputFormat ff_ilbc_demuxer = {
+    .p.name       = "ilbc",
+    .p.long_name  = NULL_IF_CONFIG_SMALL("iLBC storage"),
+    .p.flags      = AVFMT_GENERIC_INDEX,
     .read_probe   = ilbc_probe,
     .read_header  = ilbc_read_header,
     .read_packet  = ilbc_read_packet,
-    .flags        = AVFMT_GENERIC_INDEX,
 };
 
 #if CONFIG_ILBC_MUXER

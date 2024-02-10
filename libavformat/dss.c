@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define DSS_HEAD_OFFSET_AUTHOR        0xc
@@ -353,13 +354,13 @@ static int dss_read_seek(AVFormatContext *s, int stream_index,
 }
 
 
-const AVInputFormat ff_dss_demuxer = {
-    .name           = "dss",
-    .long_name      = NULL_IF_CONFIG_SMALL("Digital Speech Standard (DSS)"),
+const FFInputFormat ff_dss_demuxer = {
+    .p.name         = "dss",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Digital Speech Standard (DSS)"),
+    .p.extensions   = "dss",
     .priv_data_size = sizeof(DSSDemuxContext),
     .read_probe     = dss_probe,
     .read_header    = dss_read_header,
     .read_packet    = dss_read_packet,
     .read_seek      = dss_read_seek,
-    .extensions     = "dss"
 };

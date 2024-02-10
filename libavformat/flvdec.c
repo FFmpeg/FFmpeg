@@ -1412,42 +1412,42 @@ static const AVClass flv_kux_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const AVInputFormat ff_flv_demuxer = {
-    .name           = "flv",
-    .long_name      = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
+const FFInputFormat ff_flv_demuxer = {
+    .p.name         = "flv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("FLV (Flash Video)"),
+    .p.extensions   = "flv",
+    .p.priv_class   = &flv_kux_class,
     .priv_data_size = sizeof(FLVContext),
     .read_probe     = flv_probe,
     .read_header    = flv_read_header,
     .read_packet    = flv_read_packet,
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
-    .extensions     = "flv",
-    .priv_class     = &flv_kux_class,
 };
 
-const AVInputFormat ff_live_flv_demuxer = {
-    .name           = "live_flv",
-    .long_name      = NULL_IF_CONFIG_SMALL("live RTMP FLV (Flash Video)"),
+const FFInputFormat ff_live_flv_demuxer = {
+    .p.name         = "live_flv",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("live RTMP FLV (Flash Video)"),
+    .p.extensions   = "flv",
+    .p.priv_class   = &flv_kux_class,
+    .p.flags        = AVFMT_TS_DISCONT,
     .priv_data_size = sizeof(FLVContext),
     .read_probe     = live_flv_probe,
     .read_header    = flv_read_header,
     .read_packet    = flv_read_packet,
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
-    .extensions     = "flv",
-    .priv_class     = &flv_kux_class,
-    .flags          = AVFMT_TS_DISCONT
 };
 
-const AVInputFormat ff_kux_demuxer = {
-    .name           = "kux",
-    .long_name      = NULL_IF_CONFIG_SMALL("KUX (YouKu)"),
+const FFInputFormat ff_kux_demuxer = {
+    .p.name         = "kux",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("KUX (YouKu)"),
+    .p.extensions   = "kux",
+    .p.priv_class   = &flv_kux_class,
     .priv_data_size = sizeof(FLVContext),
     .read_probe     = kux_probe,
     .read_header    = flv_read_header,
     .read_packet    = flv_read_packet,
     .read_seek      = flv_read_seek,
     .read_close     = flv_read_close,
-    .extensions     = "kux",
-    .priv_class     = &flv_kux_class,
 };

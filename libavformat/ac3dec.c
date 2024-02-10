@@ -25,6 +25,7 @@
 #include "libavutil/crc.h"
 #include "libavcodec/ac3_parser.h"
 #include "avformat.h"
+#include "demux.h"
 #include "rawdec.h"
 
 static int ac3_eac3_probe(const AVProbeData *p, enum AVCodecID expected_codec_id)
@@ -104,17 +105,17 @@ static int ac3_probe(const AVProbeData *p)
     return ac3_eac3_probe(p, AV_CODEC_ID_AC3);
 }
 
-const AVInputFormat ff_ac3_demuxer = {
-    .name           = "ac3",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw AC-3"),
+const FFInputFormat ff_ac3_demuxer = {
+    .p.name         = "ac3",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw AC-3"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "ac3",
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = ac3_probe,
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "ac3",
     .raw_codec_id   = AV_CODEC_ID_AC3,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif
 
@@ -124,16 +125,16 @@ static int eac3_probe(const AVProbeData *p)
     return ac3_eac3_probe(p, AV_CODEC_ID_EAC3);
 }
 
-const AVInputFormat ff_eac3_demuxer = {
-    .name           = "eac3",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw E-AC-3"),
+const FFInputFormat ff_eac3_demuxer = {
+    .p.name         = "eac3",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("raw E-AC-3"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.extensions   = "eac3,ec3",
+    .p.priv_class   = &ff_raw_demuxer_class,
     .read_probe     = eac3_probe,
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .extensions     = "eac3,ec3",
     .raw_codec_id   = AV_CODEC_ID_EAC3,
     .priv_data_size = sizeof(FFRawDemuxerContext),
-    .priv_class     = &ff_raw_demuxer_class,
 };
 #endif

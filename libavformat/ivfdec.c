@@ -19,6 +19,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "riff.h"
 #include "libavutil/intreadwrite.h"
@@ -88,12 +89,12 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
-const AVInputFormat ff_ivf_demuxer = {
-    .name           = "ivf",
-    .long_name      = NULL_IF_CONFIG_SMALL("On2 IVF"),
+const FFInputFormat ff_ivf_demuxer = {
+    .p.name         = "ivf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("On2 IVF"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
+    .p.codec_tag    = (const AVCodecTag* const []){ ff_codec_bmp_tags, 0 },
     .read_probe     = probe,
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
-    .codec_tag      = (const AVCodecTag* const []){ ff_codec_bmp_tags, 0 },
 };

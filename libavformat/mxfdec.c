@@ -4284,10 +4284,11 @@ static const AVClass demuxer_class = {
     .category   = AV_CLASS_CATEGORY_DEMUXER,
 };
 
-const AVInputFormat ff_mxf_demuxer = {
-    .name           = "mxf",
-    .long_name      = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
-    .flags          = AVFMT_SEEK_TO_PTS,
+const FFInputFormat ff_mxf_demuxer = {
+    .p.name         = "mxf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
+    .p.flags        = AVFMT_SEEK_TO_PTS,
+    .p.priv_class   = &demuxer_class,
     .priv_data_size = sizeof(MXFContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe     = mxf_probe,
@@ -4295,5 +4296,4 @@ const AVInputFormat ff_mxf_demuxer = {
     .read_packet    = mxf_read_packet,
     .read_close     = mxf_read_close,
     .read_seek      = mxf_read_seek,
-    .priv_class     = &demuxer_class,
 };

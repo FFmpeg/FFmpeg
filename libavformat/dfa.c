@@ -23,6 +23,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 static int dfa_probe(const AVProbeData *p)
@@ -120,11 +121,11 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-const AVInputFormat ff_dfa_demuxer = {
-    .name           = "dfa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Chronomaster DFA"),
+const FFInputFormat ff_dfa_demuxer = {
+    .p.name         = "dfa",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Chronomaster DFA"),
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe     = dfa_probe,
     .read_header    = dfa_read_header,
     .read_packet    = dfa_read_packet,
-    .flags          = AVFMT_GENERIC_INDEX,
 };

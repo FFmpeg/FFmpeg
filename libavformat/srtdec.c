@@ -21,6 +21,7 @@
  */
 
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "subtitles.h"
 #include "libavutil/bprint.h"
@@ -213,9 +214,9 @@ end:
     return res;
 }
 
-const AVInputFormat ff_srt_demuxer = {
-    .name        = "srt",
-    .long_name   = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
+const FFInputFormat ff_srt_demuxer = {
+    .p.name      = "srt",
+    .p.long_name = NULL_IF_CONFIG_SMALL("SubRip subtitle"),
     .priv_data_size = sizeof(SRTContext),
     .flags_internal = FF_FMT_INIT_CLEANUP,
     .read_probe  = srt_probe,

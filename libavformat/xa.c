@@ -29,6 +29,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 
 #define XA00_TAG MKTAG('X', 'A', 0, 0)
@@ -121,9 +122,9 @@ static int xa_read_packet(AVFormatContext *s,
     return ret;
 }
 
-const AVInputFormat ff_xa_demuxer = {
-    .name           = "xa",
-    .long_name      = NULL_IF_CONFIG_SMALL("Maxis XA"),
+const FFInputFormat ff_xa_demuxer = {
+    .p.name         = "xa",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Maxis XA"),
     .priv_data_size = sizeof(MaxisXADemuxContext),
     .read_probe     = xa_probe,
     .read_header    = xa_read_header,

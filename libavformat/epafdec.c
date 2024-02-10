@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/internal.h"
 #include "avformat.h"
+#include "demux.h"
 #include "internal.h"
 #include "pcm.h"
 
@@ -94,13 +95,13 @@ static int epaf_read_header(AVFormatContext *s)
     return 0;
 }
 
-const AVInputFormat ff_epaf_demuxer = {
-    .name           = "epaf",
-    .long_name      = NULL_IF_CONFIG_SMALL("Ensoniq Paris Audio File"),
+const FFInputFormat ff_epaf_demuxer = {
+    .p.name         = "epaf",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Ensoniq Paris Audio File"),
+    .p.extensions   = "paf,fap",
+    .p.flags        = AVFMT_GENERIC_INDEX,
     .read_probe     = epaf_probe,
     .read_header    = epaf_read_header,
     .read_packet    = ff_pcm_read_packet,
     .read_seek      = ff_pcm_read_seek,
-    .extensions     = "paf,fap",
-    .flags          = AVFMT_GENERIC_INDEX,
 };
