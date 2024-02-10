@@ -1714,9 +1714,6 @@ static int config_input(AVFilterLink *inlink) {
     HDCDContext *s = ctx->priv;
     int c;
 
-    av_log(ctx, AV_LOG_VERBOSE, "Auto-convert: %s\n",
-        (ctx->graph->disable_auto_convert) ? "disabled" : "enabled");
-
     if ((inlink->format == AV_SAMPLE_FMT_S16 ||
          inlink->format == AV_SAMPLE_FMT_S16P) &&
          s->bits_per_sample != 16) {
