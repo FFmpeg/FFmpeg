@@ -133,18 +133,28 @@ struct AVFilterGraphInternal {
     FFFrameQueueGlobal frame_queues;
 };
 
-struct AVFilterInternal {
+typedef struct FFFilterContext {
+    /**
+     * The public AVFilterContext. See avfilter.h for it.
+     */
+    AVFilterContext p;
+
     avfilter_execute_func *execute;
 
     // 1 when avfilter_init_*() was successfully called on this filter
     // 0 otherwise
     int initialized;
-};
+} FFFilterContext;
+
+static inline FFFilterContext *fffilterctx(AVFilterContext *ctx)
+{
+    return (FFFilterContext*)ctx;
+}
 
 static av_always_inline int ff_filter_execute(AVFilterContext *ctx, avfilter_action_func *func,
                                               void *arg, int *ret, int nb_jobs)
 {
-    return ctx->internal->execute(ctx, func, arg, ret, nb_jobs);
+    return fffilterctx(ctx)->execute(ctx, func, arg, ret, nb_jobs);
 }
 
 enum FilterFormatsState {

@@ -159,7 +159,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
         src->outputs[srcpad]      || dst->inputs[dstpad])
         return AVERROR(EINVAL);
 
-    if (!src->internal->initialized || !dst->internal->initialized) {
+    if (!fffilterctx(src)->initialized || !fffilterctx(dst)->initialized) {
         av_log(src, AV_LOG_ERROR, "Filters must be initialized before linking.\n");
         return AVERROR(EINVAL);
     }
@@ -668,15 +668,17 @@ static int default_execute(AVFilterContext *ctx, avfilter_action_func *func, voi
 
 AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
 {
+    FFFilterContext *ctx;
     AVFilterContext *ret;
     int preinited = 0;
 
     if (!filter)
         return NULL;
 
-    ret = av_mallocz(sizeof(AVFilterContext));
-    if (!ret)
+    ctx = av_mallocz(sizeof(*ctx));
+    if (!ctx)
         return NULL;
+    ret = &ctx->p;
 
     ret->av_class = &avfilter_class;
     ret->filter   = filter;
@@ -698,10 +700,7 @@ AVFilterContext *ff_filter_alloc(const AVFilter *filter, const char *inst_name)
         av_opt_set_defaults(ret->priv);
     }
 
-    ret->internal = av_mallocz(sizeof(*ret->internal));
-    if (!ret->internal)
-        goto err;
-    ret->internal->execute = default_execute;
+    ctx->execute = default_execute;
 
     ret->nb_inputs  = filter->nb_inputs;
     if (ret->nb_inputs ) {
@@ -735,7 +734,6 @@ err:
     av_freep(&ret->output_pads);
     ret->nb_outputs = 0;
     av_freep(&ret->priv);
-    av_freep(&ret->internal);
     av_free(ret);
     return NULL;
 }
@@ -807,7 +805,6 @@ void avfilter_free(AVFilterContext *filter)
     av_expr_free(filter->enable);
     filter->enable = NULL;
     av_freep(&filter->var_values);
-    av_freep(&filter->internal);
     av_free(filter);
 }
 
@@ -891,9 +888,10 @@ int ff_filter_process_command(AVFilterContext *ctx, const char *cmd,
 
 int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 {
+    FFFilterContext *ctxi = fffilterctx(ctx);
     int ret = 0;
 
-    if (ctx->internal->initialized) {
+    if (ctxi->initialized) {
         av_log(ctx, AV_LOG_ERROR, "Filter already initialized\n");
         return AVERROR(EINVAL);
     }
@@ -908,7 +906,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
         ctx->thread_type & ctx->graph->thread_type & AVFILTER_THREAD_SLICE &&
         ctx->graph->internal->thread_execute) {
         ctx->thread_type       = AVFILTER_THREAD_SLICE;
-        ctx->internal->execute = ctx->graph->internal->thread_execute;
+        ctxi->execute    = ctx->graph->internal->thread_execute;
     } else {
         ctx->thread_type = 0;
     }
@@ -924,7 +922,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
             return ret;
     }
 
-    ctx->internal->initialized = 1;
+    ctxi->initialized = 1;
 
     return 0;
 }
