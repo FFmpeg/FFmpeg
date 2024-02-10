@@ -23,6 +23,7 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "formats.h"
 #include "internal.h"
 #include "video.h"
 
@@ -120,6 +121,29 @@ static const AVOption setparams_options[] = {
 
 AVFILTER_DEFINE_CLASS(setparams);
 
+static int query_formats(AVFilterContext *ctx)
+{
+    SetParamsContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    int ret;
+
+    if (s->colorspace >= 0) {
+        ret = ff_formats_ref(ff_make_formats_list_singleton(s->colorspace),
+                             &outlink->incfg.color_spaces);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (s->color_range >= 0) {
+        ret = ff_formats_ref(ff_make_formats_list_singleton(s->color_range),
+                             &outlink->incfg.color_ranges);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -177,6 +201,7 @@ const AVFilter ff_vf_setparams = {
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    FILTER_QUERY_FUNC(query_formats),
 };
 
 #if CONFIG_SETRANGE_FILTER
@@ -217,6 +242,7 @@ const AVFilter ff_vf_setrange = {
     .flags       = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_video_default_filterpad),
+    FILTER_QUERY_FUNC(query_formats),
 };
 #endif /* CONFIG_SETRANGE_FILTER */
 
