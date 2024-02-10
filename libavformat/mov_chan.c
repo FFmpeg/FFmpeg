@@ -804,66 +804,6 @@ int ff_mov_get_channel_positions_from_layout(const AVChannelLayout *layout,
     return 0;
 }
 
-int ff_mov_get_layout_from_channel_positions(const uint8_t *position, int position_num,
-                                             AVChannelLayout *layout)
-{
-    int ret;
-    enum AVChannel channel;
-
-    av_channel_layout_uninit(layout);
-
-    if (position_num <= 63) {
-        layout->order = AV_CHANNEL_ORDER_NATIVE;
-        layout->nb_channels = position_num;
-        for (int i = 0; i < position_num; i++) {
-            if (position[i] >= FF_ARRAY_ELEMS(iso_channel_position)) {
-                ret = AVERROR_PATCHWELCOME;
-                goto error;
-            }
-
-            channel = iso_channel_position[position[i]];
-            // unsupported layout
-            if (channel == AV_CHAN_NONE) {
-                ret = AVERROR_PATCHWELCOME;
-                goto error;
-            }
-
-            layout->u.mask |= 1ULL << channel;
-        }
-    } else {
-        layout->order = AV_CHANNEL_ORDER_CUSTOM;
-        layout->nb_channels = position_num;
-        layout->u.map = av_calloc(position_num, sizeof(*layout->u.map));
-        if (!layout->u.map) {
-            ret = AVERROR(ENOMEM);
-            goto error;
-        }
-
-        for (int i = 0; i < position_num; i++) {
-            if (position[i] >= FF_ARRAY_ELEMS(iso_channel_position)) {
-                ret = AVERROR_PATCHWELCOME;
-                goto error;
-            }
-
-            channel = iso_channel_position[position[i]];
-            // unsupported layout
-            if (channel == AV_CHAN_NONE) {
-                ret = AVERROR_PATCHWELCOME;
-                goto error;
-            }
-
-            layout->u.map[i].id = channel;
-        }
-    }
-
-
-    return 0;
-
-error:
-    av_channel_layout_uninit(layout);
-    return ret;
-}
-
 int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
 {
     int stream_structure = avio_r8(pb);
@@ -875,33 +815,39 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
 
         av_log(s, AV_LOG_TRACE, "'chnl' layout %d\n", layout);
         if (!layout) {
-            uint8_t *positions = av_malloc(st->codecpar->ch_layout.nb_channels);
+            AVChannelLayout *ch_layout = &st->codecpar->ch_layout;
+            int nb_channels = ch_layout->nb_channels;
 
-            if (!positions)
-                return AVERROR(ENOMEM);
-            for (int i = 0; i < st->codecpar->ch_layout.nb_channels; i++) {
-                int speaker_pos = avio_r8(pb);
-
-                av_log(s, AV_LOG_TRACE, "speaker_position %d\n", speaker_pos);
-                if (speaker_pos == 126) { // explicit position
-                    avpriv_request_sample(s, "explicit position");
-                    av_freep(&positions);
-                    return AVERROR_PATCHWELCOME;
-                } else {
-                    positions[i] = speaker_pos;
-                }
-            }
-
-            ret = ff_mov_get_layout_from_channel_positions(positions,
-                    st->codecpar->ch_layout.nb_channels,
-                    &st->codecpar->ch_layout);
-            av_freep(&positions);
-            if (ret) {
-                av_log(s, AV_LOG_ERROR,
-                        "get channel layout from speaker positions failed, %s\n",
-                        av_err2str(ret));
+            av_channel_layout_uninit(ch_layout);
+            ret = av_channel_layout_custom_init(ch_layout, nb_channels);
+            if (ret < 0)
                 return ret;
+
+            for (int i = 0; i < nb_channels; i++) {
+                int speaker_pos = avio_r8(pb);
+                enum AVChannel channel;
+
+                if (speaker_pos == 126) // explicit position
+                    avio_skip(pb, 3);   // azimuth, elevation
+
+                if (speaker_pos >= FF_ARRAY_ELEMS(iso_channel_position))
+                    channel = AV_CHAN_NONE;
+                else
+                    channel = iso_channel_position[speaker_pos];
+
+                if (channel == AV_CHAN_NONE) {
+                    av_log(s, AV_LOG_WARNING, "speaker position %d is not implemented\n", speaker_pos);
+                    channel = AV_CHAN_UNKNOWN;
+                }
+
+                ch_layout->u.map[i].id = channel;
             }
+
+            ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_NATIVE, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
+            if (ret == AVERROR(ENOSYS))
+                ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_UNSPEC, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
+            if (ret < 0 && ret != AVERROR(ENOSYS))
+                return ret;
         } else {
             uint64_t omitted_channel_map = avio_rb64(pb);
 

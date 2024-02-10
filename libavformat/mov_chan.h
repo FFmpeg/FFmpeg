@@ -184,12 +184,6 @@ int ff_mov_get_channel_positions_from_layout(const AVChannelLayout *layout,
                                              uint8_t *position, int position_num);
 
 /**
- * Get AVChannelLayout from ISO/IEC 23001-8 OutputChannelPosition.
- */
-int ff_mov_get_layout_from_channel_positions(const uint8_t *position, int position_num,
-                                             AVChannelLayout *layout);
-
-/**
  * Read 'chnl' tag from the input stream.
  *
  * @param s     AVFormatContext
