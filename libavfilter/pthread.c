@@ -29,8 +29,7 @@
 #include "libavutil/slicethread.h"
 
 #include "avfilter.h"
-#include "internal.h"
-#include "thread.h"
+#include "avfilter_internal.h"
 
 typedef struct ThreadContext {
     AVFilterGraph *graph;

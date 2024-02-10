@@ -36,12 +36,12 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "avfilter_internal.h"
 #include "filters.h"
 #include "formats.h"
 #include "framequeue.h"
 #include "framepool.h"
 #include "internal.h"
-#include "link_internal.h"
 #include "video.h"
 
 static void tlog_ref(void *ctx, AVFrame *ref, int end)

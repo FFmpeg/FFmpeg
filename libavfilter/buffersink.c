@@ -32,12 +32,12 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "avfilter_internal.h"
 #include "buffersink.h"
 #include "filters.h"
 #include "formats.h"
 #include "framequeue.h"
 #include "internal.h"
-#include "link_internal.h"
 #include "video.h"
 
 typedef struct BufferSinkContext {
