@@ -58,7 +58,7 @@ static void slice_thread_uninit(ThreadContext *c)
 static int thread_execute(AVFilterContext *ctx, avfilter_action_func *func,
                           void *arg, int *ret, int nb_jobs)
 {
-    ThreadContext *c = ctx->graph->internal->thread;
+    ThreadContext *c = fffiltergraph(ctx->graph)->thread;
 
     if (nb_jobs <= 0)
         return 0;
@@ -79,8 +79,9 @@ static int thread_init_internal(ThreadContext *c, int nb_threads)
     return FFMAX(nb_threads, 1);
 }
 
-int ff_graph_thread_init(AVFilterGraph *graph)
+int ff_graph_thread_init(FFFilterGraph *graphi)
 {
+    AVFilterGraph *graph = &graphi->p;
     int ret;
 
     if (graph->nb_threads == 1) {
@@ -88,27 +89,27 @@ int ff_graph_thread_init(AVFilterGraph *graph)
         return 0;
     }
 
-    graph->internal->thread = av_mallocz(sizeof(ThreadContext));
-    if (!graph->internal->thread)
+    graphi->thread = av_mallocz(sizeof(ThreadContext));
+    if (!graphi->thread)
         return AVERROR(ENOMEM);
 
-    ret = thread_init_internal(graph->internal->thread, graph->nb_threads);
+    ret = thread_init_internal(graphi->thread, graph->nb_threads);
     if (ret <= 1) {
-        av_freep(&graph->internal->thread);
+        av_freep(&graphi->thread);
         graph->thread_type = 0;
         graph->nb_threads  = 1;
         return (ret < 0) ? ret : 0;
     }
     graph->nb_threads = ret;
 
-    graph->internal->thread_execute = thread_execute;
+    graphi->thread_execute = thread_execute;
 
     return 0;
 }
 
-void ff_graph_thread_free(AVFilterGraph *graph)
+void ff_graph_thread_free(FFFilterGraph *graph)
 {
-    if (graph->internal->thread)
-        slice_thread_uninit(graph->internal->thread);
-    av_freep(&graph->internal->thread);
+    if (graph->thread)
+        slice_thread_uninit(graph->thread);
+    av_freep(&graph->thread);
 }

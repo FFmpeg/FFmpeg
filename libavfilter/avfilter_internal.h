@@ -78,11 +78,20 @@ typedef struct AVFilterCommand {
     struct AVFilterCommand *next;
 } AVFilterCommand;
 
-struct AVFilterGraphInternal {
+typedef struct FFFilterGraph {
+    /**
+     * The public AVFilterGraph. See avfilter.h for it.
+     */
+    AVFilterGraph p;
     void *thread;
     avfilter_execute_func *thread_execute;
     FFFrameQueueGlobal frame_queues;
-};
+} FFFilterGraph;
+
+static inline FFFilterGraph *fffiltergraph(AVFilterGraph *graph)
+{
+    return (FFFilterGraph*)graph;
+}
 
 /**
  * Update the position of a link in the age heap.
@@ -119,8 +128,8 @@ int ff_filter_activate(AVFilterContext *filter);
 int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
                         AVDictionary **options, const char *args);
 
-int ff_graph_thread_init(AVFilterGraph *graph);
+int ff_graph_thread_init(FFFilterGraph *graph);
 
-void ff_graph_thread_free(AVFilterGraph *graph);
+void ff_graph_thread_free(FFFilterGraph *graph);
 
 #endif /* AVFILTER_AVFILTER_INTERNAL_H */

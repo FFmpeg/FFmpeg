@@ -187,7 +187,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     av_assert0(AV_PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
     link->format  = -1;
     link->colorspace = AVCOL_SPC_UNSPECIFIED;
-    ff_framequeue_init(&li->fifo, &src->graph->internal->frame_queues);
+    ff_framequeue_init(&li->fifo, &fffiltergraph(src->graph)->frame_queues);
 
     return 0;
 }
@@ -904,9 +904,9 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 
     if (ctx->filter->flags & AVFILTER_FLAG_SLICE_THREADS &&
         ctx->thread_type & ctx->graph->thread_type & AVFILTER_THREAD_SLICE &&
-        ctx->graph->internal->thread_execute) {
+        fffiltergraph(ctx->graph)->thread_execute) {
         ctx->thread_type       = AVFILTER_THREAD_SLICE;
-        ctxi->execute    = ctx->graph->internal->thread_execute;
+        ctxi->execute    = fffiltergraph(ctx->graph)->thread_execute;
     } else {
         ctx->thread_type = 0;
     }

@@ -67,33 +67,30 @@ static const AVClass filtergraph_class = {
 };
 
 #if !HAVE_THREADS
-void ff_graph_thread_free(AVFilterGraph *graph)
+void ff_graph_thread_free(FFFilterGraph *graph)
 {
 }
 
-int ff_graph_thread_init(AVFilterGraph *graph)
+int ff_graph_thread_init(FFFilterGraph *graph)
 {
-    graph->thread_type = 0;
-    graph->nb_threads  = 1;
+    graph->p.thread_type = 0;
+    graph->p.nb_threads  = 1;
     return 0;
 }
 #endif
 
 AVFilterGraph *avfilter_graph_alloc(void)
 {
-    AVFilterGraph *ret = av_mallocz(sizeof(*ret));
-    if (!ret)
+    FFFilterGraph *graph = av_mallocz(sizeof(*graph));
+    AVFilterGraph *ret;
+
+    if (!graph)
         return NULL;
 
-    ret->internal = av_mallocz(sizeof(*ret->internal));
-    if (!ret->internal) {
-        av_freep(&ret);
-        return NULL;
-    }
-
+    ret = &graph->p;
     ret->av_class = &filtergraph_class;
     av_opt_set_defaults(ret);
-    ff_framequeue_global_init(&ret->internal->frame_queues);
+    ff_framequeue_global_init(&graph->frame_queues);
 
     return ret;
 }
@@ -119,6 +116,7 @@ void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter
 void avfilter_graph_free(AVFilterGraph **graphp)
 {
     AVFilterGraph *graph = *graphp;
+    FFFilterGraph *graphi = fffiltergraph(graph);
 
     if (!graph)
         return;
@@ -126,14 +124,13 @@ void avfilter_graph_free(AVFilterGraph **graphp)
     while (graph->nb_filters)
         avfilter_free(graph->filters[0]);
 
-    ff_graph_thread_free(graph);
+    ff_graph_thread_free(graphi);
 
     av_freep(&graph->sink_links);
 
     av_opt_free(graph);
 
     av_freep(&graph->filters);
-    av_freep(&graph->internal);
     av_freep(graphp);
 }
 
@@ -169,12 +166,13 @@ AVFilterContext *avfilter_graph_alloc_filter(AVFilterGraph *graph,
                                              const char *name)
 {
     AVFilterContext **filters, *s;
+    FFFilterGraph *graphi = fffiltergraph(graph);
 
-    if (graph->thread_type && !graph->internal->thread_execute) {
+    if (graph->thread_type && !graphi->thread_execute) {
         if (graph->execute) {
-            graph->internal->thread_execute = graph->execute;
+            graphi->thread_execute = graph->execute;
         } else {
-            int ret = ff_graph_thread_init(graph);
+            int ret = ff_graph_thread_init(graphi);
             if (ret < 0) {
                 av_log(graph, AV_LOG_ERROR, "Error initializing threading: %s.\n", av_err2str(ret));
                 return NULL;
