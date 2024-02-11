@@ -90,7 +90,12 @@ typedef struct HWContextType {
                                            AVHWFramesContext *src_ctx, int flags);
 } HWContextType;
 
-struct AVHWFramesInternal {
+typedef struct FFHWFramesContext {
+    /**
+     * The public AVHWFramesContext. See hwcontext.h for it.
+     */
+    AVHWFramesContext p;
+
     const HWContextType *hw_type;
 
     AVBufferPool *pool_internal;
@@ -105,7 +110,12 @@ struct AVHWFramesInternal {
      * frame context when trying to allocate in the derived context.
      */
     int source_allocation_map_flags;
-};
+} FFHWFramesContext;
+
+static inline FFHWFramesContext *ffhwframesctx(AVHWFramesContext *ctx)
+{
+    return (FFHWFramesContext*)ctx;
+}
 
 typedef struct HWMapDescriptor {
     /**

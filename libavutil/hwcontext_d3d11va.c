@@ -319,9 +319,10 @@ static int d3d11va_frames_init(AVHWFramesContext *ctx)
         return AVERROR(ENOMEM);
     s->nb_surfaces = ctx->initial_pool_size;
 
-    ctx->internal->pool_internal = av_buffer_pool_init2(sizeof(AVD3D11FrameDescriptor),
-                                                        ctx, d3d11va_pool_alloc, NULL);
-    if (!ctx->internal->pool_internal)
+    ffhwframesctx(ctx)->pool_internal =
+        av_buffer_pool_init2(sizeof(AVD3D11FrameDescriptor),
+                             ctx, d3d11va_pool_alloc, NULL);
+    if (!ffhwframesctx(ctx)->pool_internal)
         return AVERROR(ENOMEM);
 
     return 0;

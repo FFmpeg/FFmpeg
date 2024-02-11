@@ -633,10 +633,10 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
             avfc->surface_ids = NULL;
         }
 
-        hwfc->internal->pool_internal =
+        ffhwframesctx(hwfc)->pool_internal =
             av_buffer_pool_init2(sizeof(VASurfaceID), hwfc,
                                  &vaapi_pool_alloc, NULL);
-        if (!hwfc->internal->pool_internal) {
+        if (!ffhwframesctx(hwfc)->pool_internal) {
             av_log(hwfc, AV_LOG_ERROR, "Failed to create VAAPI surface pool.\n");
             err = AVERROR(ENOMEM);
             goto fail;
@@ -654,7 +654,7 @@ static int vaapi_frames_init(AVHWFramesContext *hwfc)
             goto fail;
         }
     } else {
-        test_surface = av_buffer_pool_get(hwfc->internal->pool_internal);
+        test_surface = av_buffer_pool_get(ffhwframesctx(hwfc)->pool_internal);
         if (!test_surface) {
             av_log(hwfc, AV_LOG_ERROR, "Unable to allocate a surface from "
                    "internal buffer pool.\n");

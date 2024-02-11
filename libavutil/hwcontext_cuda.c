@@ -170,8 +170,9 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
         if (size < 0)
             return size;
 
-        ctx->internal->pool_internal = av_buffer_pool_init2(size, ctx, cuda_pool_alloc, NULL);
-        if (!ctx->internal->pool_internal)
+        ffhwframesctx(ctx)->pool_internal =
+            av_buffer_pool_init2(size, ctx, cuda_pool_alloc, NULL);
+        if (!ffhwframesctx(ctx)->pool_internal)
             return AVERROR(ENOMEM);
     }
 

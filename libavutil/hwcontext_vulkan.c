@@ -2406,10 +2406,10 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
     /* If user did not specify a pool, hwfc->pool will be set to the internal one
      * in hwcontext.c just after this gets called */
     if (!hwfc->pool) {
-        hwfc->internal->pool_internal = av_buffer_pool_init2(sizeof(AVVkFrame),
-                                                             hwfc, vulkan_pool_alloc,
-                                                             NULL);
-        if (!hwfc->internal->pool_internal)
+        ffhwframesctx(hwfc)->pool_internal = av_buffer_pool_init2(sizeof(AVVkFrame),
+                                                                  hwfc, vulkan_pool_alloc,
+                                                                  NULL);
+        if (!ffhwframesctx(hwfc)->pool_internal)
             return AVERROR(ENOMEM);
     }
 

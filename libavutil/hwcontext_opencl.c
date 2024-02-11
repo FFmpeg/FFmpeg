@@ -1725,10 +1725,10 @@ static int opencl_frames_init_command_queue(AVHWFramesContext *hwfc)
 static int opencl_frames_init(AVHWFramesContext *hwfc)
 {
     if (!hwfc->pool) {
-        hwfc->internal->pool_internal =
+        ffhwframesctx(hwfc)->pool_internal =
             av_buffer_pool_init2(sizeof(cl_mem), hwfc,
                                  &opencl_pool_alloc, NULL);
-        if (!hwfc->internal->pool_internal)
+        if (!ffhwframesctx(hwfc)->pool_internal)
             return AVERROR(ENOMEM);
     }
 

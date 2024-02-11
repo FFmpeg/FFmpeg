@@ -297,10 +297,10 @@ static int d3d12va_frames_init(AVHWFramesContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->internal->pool_internal = av_buffer_pool_init2(sizeof(AVD3D12VAFrame),
+    ffhwframesctx(ctx)->pool_internal = av_buffer_pool_init2(sizeof(AVD3D12VAFrame),
         ctx, d3d12va_pool_alloc, NULL);
 
-    if (!ctx->internal->pool_internal)
+    if (!ffhwframesctx(ctx)->pool_internal)
         return AVERROR(ENOMEM);
 
     return 0;

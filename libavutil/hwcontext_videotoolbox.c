@@ -286,9 +286,9 @@ static int vt_frames_init(AVHWFramesContext *ctx)
     }
 
     if (!ctx->pool) {
-        ctx->internal->pool_internal = av_buffer_pool_init2(
+        ffhwframesctx(ctx)->pool_internal = av_buffer_pool_init2(
                 sizeof(CVPixelBufferRef), ctx, vt_pool_alloc_buffer, NULL);
-        if (!ctx->internal->pool_internal)
+        if (!ffhwframesctx(ctx)->pool_internal)
             return AVERROR(ENOMEM);
     }
 

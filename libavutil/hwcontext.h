@@ -102,8 +102,6 @@ typedef struct AVHWDeviceContext {
     void *user_opaque;
 } AVHWDeviceContext;
 
-typedef struct AVHWFramesInternal AVHWFramesInternal;
-
 /**
  * This struct describes a set or pool of "hardware" frames (i.e. those with
  * data not located in normal system memory). All the frames in the pool are
@@ -119,12 +117,6 @@ typedef struct AVHWFramesContext {
      * A class for logging.
      */
     const AVClass *av_class;
-
-    /**
-     * Private data used internally by libavutil. Must not be accessed in any
-     * way by the caller.
-     */
-    AVHWFramesInternal *internal;
 
     /**
      * A reference to the parent AVHWDeviceContext. This reference is owned and

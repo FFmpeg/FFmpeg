@@ -605,9 +605,9 @@ static int qsv_init_pool(AVHWFramesContext *ctx, uint32_t fourcc)
         return ret;
 #endif
 
-    ctx->internal->pool_internal = av_buffer_pool_init2(sizeof(mfxFrameSurface1),
-                                                        ctx, qsv_pool_alloc, NULL);
-    if (!ctx->internal->pool_internal)
+    ffhwframesctx(ctx)->pool_internal = av_buffer_pool_init2(sizeof(mfxFrameSurface1),
+                                                             ctx, qsv_pool_alloc, NULL);
+    if (!ffhwframesctx(ctx)->pool_internal)
         return AVERROR(ENOMEM);
 
     frames_hwctx->surfaces    = s->surfaces_internal;
