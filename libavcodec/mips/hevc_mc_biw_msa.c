@@ -6060,7 +6060,7 @@ void ff_hevc_put_hevc_bi_w_##PEL##_##DIR##WIDTH##_8_msa(uint8_t *dst,         \
                                                         intptr_t my,          \
                                                         int width)            \
 {                                                                             \
-    const int8_t *filter = ff_hevc_##PEL##_filters[FILT_DIR - 1];             \
+    const int8_t *filter = ff_hevc_##PEL##_filters[FILT_DIR];                 \
     int log2Wd = denom + 14 - 8;                                              \
                                                                               \
     hevc_##DIR1##_biwgt_##TAP##t_##WIDTH##w_msa(src, src_stride, src_16bit,   \
@@ -6122,8 +6122,8 @@ void ff_hevc_put_hevc_bi_w_##PEL##_hv##WIDTH##_8_msa(uint8_t *dst,          \
                                                      intptr_t my,           \
                                                      int width)             \
 {                                                                           \
-    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx - 1];               \
-    const int8_t *filter_y = ff_hevc_##PEL##_filters[my - 1];               \
+    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx];                   \
+    const int8_t *filter_y = ff_hevc_##PEL##_filters[my];                   \
     int log2Wd = denom + 14 - 8;                                            \
                                                                             \
     hevc_hv_biwgt_##TAP##t_##WIDTH##w_msa(src, src_stride, src_16bit,       \

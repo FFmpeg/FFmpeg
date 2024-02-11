@@ -301,9 +301,9 @@ IDCT_DC(32)
 //
 ////////////////////////////////////////////////////////////////////////////////
 #define ff_hevc_pel_filters ff_hevc_qpel_filters
-#define DECL_HV_FILTER(f)                                  \
-    const uint8_t *hf = ff_hevc_ ## f ## _filters[mx - 1]; \
-    const uint8_t *vf = ff_hevc_ ## f ## _filters[my - 1];
+#define DECL_HV_FILTER(f)                              \
+    const uint8_t *hf = ff_hevc_ ## f ## _filters[mx]; \
+    const uint8_t *vf = ff_hevc_ ## f ## _filters[my];
 
 #define FW_PUT(p, f, t)                                                                                   \
 static void FUNC(put_hevc_## f)(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride, int height,        \
@@ -421,7 +421,7 @@ static void FUNC(put_hevc_qpel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride, const 
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
 
-    const int8_t *filter    = ff_hevc_qpel_filters[mx - 1];
+    const int8_t *filter    = ff_hevc_qpel_filters[mx];
 
     int shift = 14  + 1 - BIT_DEPTH;
 #if BIT_DEPTH < 14
@@ -449,7 +449,7 @@ static void FUNC(put_hevc_qpel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride,
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
 
-    const int8_t *filter    = ff_hevc_qpel_filters[my - 1];
+    const int8_t *filter    = ff_hevc_qpel_filters[my];
 
     int shift = 14 + 1 - BIT_DEPTH;
 #if BIT_DEPTH < 14
@@ -487,7 +487,7 @@ static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,
 #endif
 
     src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_filters[mx - 1];
+    filter = ff_hevc_qpel_filters[mx];
     for (y = 0; y < height + QPEL_EXTRA; y++) {
         for (x = 0; x < width; x++)
             tmp[x] = QPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
@@ -496,7 +496,7 @@ static void FUNC(put_hevc_qpel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_filters[my - 1];
+    filter = ff_hevc_qpel_filters[my];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
@@ -518,7 +518,7 @@ static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride,
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
 
-    const int8_t *filter    = ff_hevc_qpel_filters[mx - 1];
+    const int8_t *filter    = ff_hevc_qpel_filters[mx];
 
     int shift = 14  + 1 - BIT_DEPTH;
     int log2Wd = denom + shift - 1;
@@ -546,7 +546,7 @@ static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride,
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
 
-    const int8_t *filter    = ff_hevc_qpel_filters[my - 1];
+    const int8_t *filter    = ff_hevc_qpel_filters[my];
 
     int shift = 14 + 1 - BIT_DEPTH;
     int log2Wd = denom + shift - 1;
@@ -580,7 +580,7 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
     int log2Wd = denom + shift - 1;
 
     src   -= QPEL_EXTRA_BEFORE * srcstride;
-    filter = ff_hevc_qpel_filters[mx - 1];
+    filter = ff_hevc_qpel_filters[mx];
     for (y = 0; y < height + QPEL_EXTRA; y++) {
         for (x = 0; x < width; x++)
             tmp[x] = QPEL_FILTER(src, 1) >> (BIT_DEPTH - 8);
@@ -589,7 +589,7 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 
     tmp    = tmp_array + QPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_qpel_filters[my - 1];
+    filter = ff_hevc_qpel_filters[my];
 
     ox0     = ox0 * (1 << (BIT_DEPTH - 8));
     ox1     = ox1 * (1 << (BIT_DEPTH - 8));
@@ -621,7 +621,7 @@ static void FUNC(put_hevc_epel_bi_h)(uint8_t *_dst, ptrdiff_t _dststride,
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
+    const int8_t *filter = ff_hevc_epel_filters[mx];
     int shift = 14 + 1 - BIT_DEPTH;
 #if BIT_DEPTH < 14
     int offset = 1 << (shift - 1);
@@ -646,7 +646,7 @@ static void FUNC(put_hevc_epel_bi_v)(uint8_t *_dst, ptrdiff_t _dststride,
     int x, y;
     const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[my - 1];
+    const int8_t *filter = ff_hevc_epel_filters[my];
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
     int shift = 14 + 1 - BIT_DEPTH;
@@ -674,7 +674,7 @@ static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
+    const int8_t *filter = ff_hevc_epel_filters[mx];
     int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
     int shift = 14 + 1 - BIT_DEPTH;
@@ -694,7 +694,7 @@ static void FUNC(put_hevc_epel_bi_hv)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 
     tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_epel_filters[my - 1];
+    filter = ff_hevc_epel_filters[my];
 
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
@@ -715,7 +715,7 @@ static void FUNC(put_hevc_epel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride,
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
+    const int8_t *filter = ff_hevc_epel_filters[mx];
     int shift = 14 + 1 - BIT_DEPTH;
     int log2Wd = denom + shift - 1;
 
@@ -739,7 +739,7 @@ static void FUNC(put_hevc_epel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride,
     int x, y;
     const pixel *src = (const pixel *)_src;
     ptrdiff_t srcstride  = _srcstride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[my - 1];
+    const int8_t *filter = ff_hevc_epel_filters[my];
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
     int shift = 14 + 1 - BIT_DEPTH;
@@ -767,7 +767,7 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
     ptrdiff_t srcstride = _srcstride / sizeof(pixel);
     pixel *dst          = (pixel *)_dst;
     ptrdiff_t dststride = _dststride / sizeof(pixel);
-    const int8_t *filter = ff_hevc_epel_filters[mx - 1];
+    const int8_t *filter = ff_hevc_epel_filters[mx];
     int16_t tmp_array[(MAX_PB_SIZE + EPEL_EXTRA) * MAX_PB_SIZE];
     int16_t *tmp = tmp_array;
     int shift = 14 + 1 - BIT_DEPTH;
@@ -783,7 +783,7 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride,
     }
 
     tmp      = tmp_array + EPEL_EXTRA_BEFORE * MAX_PB_SIZE;
-    filter = ff_hevc_epel_filters[my - 1];
+    filter = ff_hevc_epel_filters[my];
 
     ox0     = ox0 * (1 << (BIT_DEPTH - 8));
     ox1     = ox1 * (1 << (BIT_DEPTH - 8));

@@ -2224,7 +2224,7 @@ void ff_hevc_put_hevc_bi_##PEL##_##DIR##WIDTH##_8_lsx(uint8_t *dst,          \
                                                       intptr_t my,           \
                                                       int width)             \
 {                                                                            \
-    const int8_t *filter = ff_hevc_##PEL##_filters[FILT_DIR - 1];            \
+    const int8_t *filter = ff_hevc_##PEL##_filters[FILT_DIR];                \
                                                                              \
     hevc_##DIR1##_##TAP##t_##WIDTH##w_lsx(src, src_stride, src_16bit,        \
                                           MAX_PB_SIZE, dst, dst_stride,      \
@@ -2265,8 +2265,8 @@ void ff_hevc_put_hevc_bi_##PEL##_hv##WIDTH##_8_lsx(uint8_t *dst,          \
                                                    intptr_t my,           \
                                                    int width)             \
 {                                                                         \
-    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx - 1];             \
-    const int8_t *filter_y = ff_hevc_##PEL##_filters[my - 1];             \
+    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx];                 \
+    const int8_t *filter_y = ff_hevc_##PEL##_filters[my];                 \
                                                                           \
     hevc_hv_##TAP##t_##WIDTH##w_lsx(src, src_stride, src_16bit,           \
                                     MAX_PB_SIZE, dst, dst_stride,         \

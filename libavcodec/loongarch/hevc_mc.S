@@ -498,7 +498,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v4_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0  //filter
@@ -570,7 +569,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v6_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -699,7 +697,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v8_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -778,7 +775,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v8_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -845,7 +841,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v16_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -940,7 +935,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v16_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -955,7 +949,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v12_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -969,7 +962,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v12_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -984,7 +976,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v24_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1005,7 +996,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v24_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1027,7 +1017,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v32_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1051,7 +1040,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v32_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1076,7 +1064,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v48_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1102,7 +1089,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v48_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1129,7 +1115,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v64_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1155,7 +1140,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_v64_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1275,7 +1259,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h4_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1325,7 +1308,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h4_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1364,7 +1346,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h6_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1385,7 +1366,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h6_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1408,7 +1388,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h8_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1428,7 +1407,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h8_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1450,7 +1428,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h12_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1475,7 +1452,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h12_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1495,7 +1471,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h16_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1518,7 +1493,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h16_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1537,7 +1511,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h24_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1565,7 +1538,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h24_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1590,7 +1562,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h32_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1622,7 +1593,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h32_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1644,7 +1614,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h48_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1684,7 +1653,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h48_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1709,7 +1677,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h64_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1757,7 +1724,6 @@ endfunc
 function ff_hevc_put_hevc_qpel_uni_w_h64_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
@@ -1841,15 +1807,13 @@ endconst
 function ff_hevc_put_hevc_epel_uni_w_hv4_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2068,15 +2032,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv6_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2094,15 +2056,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv6_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2120,15 +2080,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv8_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2146,15 +2104,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv8_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2172,15 +2128,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv12_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2205,15 +2159,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv12_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2231,15 +2183,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv16_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2267,15 +2217,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv16_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2293,15 +2241,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv24_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2331,15 +2277,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv24_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2364,15 +2308,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv32_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2402,15 +2344,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv32_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2440,15 +2380,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv48_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2478,15 +2416,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv48_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2516,15 +2452,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv64_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     vreplvei.w     vr5,    vr5,     0
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     vreplvei.w     vr16,   vr6,     0
@@ -2554,15 +2488,13 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_hv64_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  // mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
-    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx - 1];
+    vldx           vr5,    t1,      t0 // ff_hevc_epel_filters[mx];
     xvreplve0.w    xr5,    xr5
     ld.d           t0,     sp,      8  // my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
-    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my - 1];
+    vldx           vr6,    t1,      t0 // ff_hevc_epel_filters[my];
     vsllwil.h.b    vr6,    vr6,     0
     vsllwil.w.h    vr6,    vr6,     0
     xvreplve0.q    xr6,    xr6
@@ -2596,8 +2528,7 @@ endfunc
  *                                int width)
  */
 function ff_hevc_put_hevc_uni_qpel_h4_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr5,    t1,      t0 //filter
     addi.d         a2,     a2,      -3 //src -= 3
@@ -2663,8 +2594,7 @@ endfunc
 .endm
 
 function ff_hevc_put_hevc_uni_qpel_h6_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     vreplvei.h     vr1,    vr0,     1  //cd...
@@ -2692,8 +2622,7 @@ function ff_hevc_put_hevc_uni_qpel_h6_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h8_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     vreplvei.h     vr1,    vr0,     1  //cd...
@@ -2720,8 +2649,7 @@ function ff_hevc_put_hevc_uni_qpel_h8_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h12_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     vreplvei.h     vr1,    vr0,     1  //cd...
@@ -2751,8 +2679,7 @@ function ff_hevc_put_hevc_uni_qpel_h12_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h12_8_lasx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     xvreplve0.q    xr0,    xr0
@@ -2784,8 +2711,7 @@ function ff_hevc_put_hevc_uni_qpel_h12_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h16_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     vreplvei.h     vr1,    vr0,     1  //cd...
@@ -2814,8 +2740,7 @@ function ff_hevc_put_hevc_uni_qpel_h16_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h16_8_lasx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     xvreplve0.q    xr0,    xr0
@@ -2846,8 +2771,7 @@ function ff_hevc_put_hevc_uni_qpel_h16_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h24_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     vreplvei.h     vr1,    vr0,     1  //cd...
@@ -2880,8 +2804,7 @@ function ff_hevc_put_hevc_uni_qpel_h24_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h24_8_lasx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     xvreplve0.q    xr0,    xr0
@@ -2916,8 +2839,7 @@ function ff_hevc_put_hevc_uni_qpel_h24_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h32_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     vreplvei.h     vr1,    vr0,     1  //cd...
@@ -2952,8 +2874,7 @@ function ff_hevc_put_hevc_uni_qpel_h32_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h32_8_lasx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     xvreplve0.q    xr0,    xr0
@@ -2987,8 +2908,7 @@ function ff_hevc_put_hevc_uni_qpel_h32_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h48_8_lsx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     vreplvei.h     vr1,    vr0,     1  //cd...
@@ -3029,8 +2949,7 @@ function ff_hevc_put_hevc_uni_qpel_h48_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h48_8_lasx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     xvreplve0.q    xr0,    xr0
@@ -3070,8 +2989,7 @@ function ff_hevc_put_hevc_uni_qpel_h48_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_uni_qpel_h64_8_lasx
-    addi.d         t0,     a5,      -1
-    slli.w         t0,     t0,      4
+    slli.w         t0,     a5,      4
     la.local       t1,     ff_hevc_qpel_filters
     vldx           vr0,    t1,      t0 //filter abcdefgh
     xvreplve0.q    xr0,    xr0
@@ -3122,7 +3040,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v4_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3260,7 +3177,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v6_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3275,7 +3191,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v6_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3289,7 +3204,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v8_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3304,7 +3218,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v8_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3394,7 +3307,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v12_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3409,7 +3321,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v12_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3425,7 +3336,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v16_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3440,7 +3350,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v16_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3456,7 +3365,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v24_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3478,7 +3386,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v24_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3503,7 +3410,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v32_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3525,7 +3431,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v32_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3548,7 +3453,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v48_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3574,7 +3478,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v48_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3601,7 +3504,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v64_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3631,7 +3533,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_v64_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      8  //my
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3668,7 +3569,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h4_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3699,7 +3599,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h6_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3730,7 +3629,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h6_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3759,7 +3657,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h8_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3789,7 +3686,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h8_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3853,7 +3749,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h12_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3889,7 +3784,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h12_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3910,7 +3804,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h16_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3934,7 +3827,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h16_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3955,7 +3847,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h24_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -3986,7 +3877,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h24_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -4015,7 +3905,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h32_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -4040,7 +3929,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h32_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -4062,7 +3950,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h48_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -4088,7 +3975,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h48_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -4111,7 +3997,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h64_8_lsx
     LOAD_VAR 128
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -4138,7 +4023,6 @@ endfunc
 function ff_hevc_put_hevc_epel_uni_w_h64_8_lasx
     LOAD_VAR 256
     ld.d           t0,     sp,      0  //mx
-    addi.d         t0,     t0,      -1
     slli.w         t0,     t0,      2
     la.local       t1,     ff_hevc_epel_filters
     vldx           vr0,    t1,      t0 //filter
@@ -4166,7 +4050,6 @@ endfunc
  *                               intptr_t my, int width)
  */
 function ff_hevc_put_hevc_bi_epel_h4_8_lsx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4209,7 +4092,6 @@ endfunc
 .endm
 
 function ff_hevc_put_hevc_bi_epel_h6_8_lsx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4234,7 +4116,6 @@ function ff_hevc_put_hevc_bi_epel_h6_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h8_8_lsx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4258,7 +4139,6 @@ function ff_hevc_put_hevc_bi_epel_h8_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h12_8_lsx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4286,7 +4166,6 @@ function ff_hevc_put_hevc_bi_epel_h12_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h12_8_lasx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4314,7 +4193,6 @@ function ff_hevc_put_hevc_bi_epel_h12_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h16_8_lsx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4341,7 +4219,6 @@ function ff_hevc_put_hevc_bi_epel_h16_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h16_8_lasx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4368,7 +4245,6 @@ function ff_hevc_put_hevc_bi_epel_h16_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h32_8_lasx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4400,7 +4276,6 @@ function ff_hevc_put_hevc_bi_epel_h32_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h48_8_lsx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6// filter
@@ -4443,7 +4318,6 @@ function ff_hevc_put_hevc_bi_epel_h48_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h48_8_lasx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter
@@ -4481,7 +4355,6 @@ function ff_hevc_put_hevc_bi_epel_h48_8_lasx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h64_8_lsx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6// filter
@@ -4531,7 +4404,6 @@ function ff_hevc_put_hevc_bi_epel_h64_8_lsx
 endfunc
 
 function ff_hevc_put_hevc_bi_epel_h64_8_lasx
-   addi.d          a6,     a6,     -1
    slli.w          a6,     a6,      2
    la.local        t0,     ff_hevc_epel_filters
    vldx            vr0,    t0,      a6 // filter

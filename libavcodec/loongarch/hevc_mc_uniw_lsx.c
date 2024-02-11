@@ -280,8 +280,8 @@ void ff_hevc_put_hevc_uni_w_##PEL##_hv##WIDTH##_8_lsx(uint8_t *dst,            \
                                                       intptr_t my,             \
                                                       int width)               \
 {                                                                              \
-    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx - 1];                  \
-    const int8_t *filter_y = ff_hevc_##PEL##_filters[my - 1];                  \
+    const int8_t *filter_x = ff_hevc_##PEL##_filters[mx];                      \
+    const int8_t *filter_y = ff_hevc_##PEL##_filters[my];                      \
     int shift = denom + 14 - 8;                                                \
                                                                                \
     hevc_hv_##TAP##t_##WIDTH##w_lsx(src, src_stride, dst, dst_stride, filter_x,\

@@ -88,8 +88,8 @@ IDCT_FUNCS(avx)
 
 #define ff_hevc_pel_filters ff_hevc_qpel_filters
 #define DECL_HV_FILTER(f)                                  \
-    const uint8_t *hf = ff_hevc_ ## f ## _filters[mx - 1]; \
-    const uint8_t *vf = ff_hevc_ ## f ## _filters[my - 1];
+    const uint8_t *hf = ff_hevc_ ## f ## _filters[mx];     \
+    const uint8_t *vf = ff_hevc_ ## f ## _filters[my];
 
 #define FW_PUT(p, a, b, depth, opt) \
 void ff_hevc_put_hevc_ ## a ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,   \
