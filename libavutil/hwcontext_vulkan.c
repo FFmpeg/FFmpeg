@@ -129,6 +129,11 @@ typedef struct VulkanDevicePriv {
 } VulkanDevicePriv;
 
 typedef struct VulkanFramesPriv {
+    /**
+     * The public AVVulkanFramesContext. See hwcontext_vulkan.h for it.
+     */
+    AVVulkanFramesContext p;
+
     /* Image conversions */
     FFVkExecPool compute_exec;
 
@@ -2198,9 +2203,9 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
     AVVkFrame *f;
     AVBufferRef *avbuf = NULL;
     AVHWFramesContext *hwfc = opaque;
-    AVVulkanFramesContext *hwctx = hwfc->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
-    VulkanFramesPriv *fp = hwfc->internal->priv;
+    VulkanFramesPriv *fp = hwfc->hwctx;
+    AVVulkanFramesContext *hwctx = &fp->p;
     VkExternalMemoryHandleTypeFlags e = 0x0;
     VkExportMemoryAllocateInfo eminfo[AV_NUM_DATA_POINTERS];
 
@@ -2271,7 +2276,7 @@ static void unlock_frame(AVHWFramesContext *fc, AVVkFrame *vkf)
 static void vulkan_frames_uninit(AVHWFramesContext *hwfc)
 {
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
-    VulkanFramesPriv *fp = hwfc->internal->priv;
+    VulkanFramesPriv *fp = hwfc->hwctx;
 
     if (fp->modifier_info) {
         if (fp->modifier_info->pDrmFormatModifiers)
@@ -2288,8 +2293,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
 {
     int err;
     AVVkFrame *f;
-    AVVulkanFramesContext *hwctx = hwfc->hwctx;
-    VulkanFramesPriv *fp = hwfc->internal->priv;
+    VulkanFramesPriv *fp = hwfc->hwctx;
+    AVVulkanFramesContext *hwctx = &fp->p;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     VkImageUsageFlagBits supported_usage;
     const struct FFVkFormatEntry *fmt;
@@ -2500,7 +2505,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     VulkanDevicePriv *p = ctx->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VulkanFramesPriv *fp = hwfc->internal->priv;
+    VulkanFramesPriv *fp = hwfc->hwctx;
     const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
     VkBindImageMemoryInfo bind_info[AV_DRM_MAX_PLANES];
     VkBindImagePlaneMemoryInfo plane_info[AV_DRM_MAX_PLANES];
@@ -3005,7 +3010,7 @@ static int vulkan_transfer_data_from_cuda(AVHWFramesContext *hwfc,
     CUcontext dummy;
     AVVkFrame *dst_f;
     AVVkFrameInternal *dst_int;
-    VulkanFramesPriv *fp = hwfc->internal->priv;
+    VulkanFramesPriv *fp = hwfc->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hwfc->sw_format);
 
@@ -3147,8 +3152,8 @@ static int vulkan_map_to_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VulkanFramesPriv *fp = hwfc->internal->priv;
-    AVVulkanFramesContext *hwfctx = hwfc->hwctx;
+    VulkanFramesPriv *fp = hwfc->hwctx;
+    AVVulkanFramesContext *hwfctx = &fp->p;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     VkImageDrmFormatModifierPropertiesEXT drm_mod = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_PROPERTIES_EXT,
@@ -3318,7 +3323,7 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, AVFrame *f,
 {
     int err;
     AVVkFrame *frame = (AVVkFrame *)f->data[0];
-    VulkanFramesPriv *fp = hwfc->internal->priv;
+    VulkanFramesPriv *fp = hwfc->hwctx;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
     VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
@@ -3579,7 +3584,7 @@ static int vulkan_transfer_data_to_cuda(AVHWFramesContext *hwfc, AVFrame *dst,
     CUcontext dummy;
     AVVkFrame *dst_f;
     AVVkFrameInternal *dst_int;
-    VulkanFramesPriv *fp = hwfc->internal->priv;
+    VulkanFramesPriv *fp = hwfc->hwctx;
     const int planes = av_pix_fmt_count_planes(hwfc->sw_format);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hwfc->sw_format);
 
@@ -3722,8 +3727,7 @@ const HWContextType ff_hwcontext_type_vulkan = {
     .name                   = "Vulkan",
 
     .device_hwctx_size      = sizeof(VulkanDevicePriv),
-    .frames_hwctx_size      = sizeof(AVVulkanFramesContext),
-    .frames_priv_size       = sizeof(VulkanFramesPriv),
+    .frames_hwctx_size      = sizeof(VulkanFramesPriv),
 
     .device_init            = &vulkan_device_init,
     .device_uninit          = &vulkan_device_uninit,
