@@ -70,6 +70,11 @@ typedef struct QSVDevicePriv {
 } QSVDevicePriv;
 
 typedef struct QSVDeviceContext {
+    /**
+     * The public AVQSVDeviceContext. See hwcontext_qsv.h for it.
+     */
+    AVQSVDeviceContext p;
+
     mfxHDL              handle;
     mfxHandleType       handle_type;
     mfxVersion          ver;
@@ -268,8 +273,8 @@ static int qsv_fill_border(AVFrame *dst, const AVFrame *src)
 
 static int qsv_device_init(AVHWDeviceContext *ctx)
 {
-    AVQSVDeviceContext *hwctx = ctx->hwctx;
-    QSVDeviceContext       *s = ctx->internal->priv;
+    QSVDeviceContext       *s = ctx->hwctx;
+    AVQSVDeviceContext *hwctx = &s->p;
     int   hw_handle_supported = 0;
     mfxHandleType handle_type;
     enum AVHWDeviceType device_type;
@@ -378,7 +383,7 @@ static int qsv_init_child_ctx(AVHWFramesContext *ctx)
 {
     AVQSVFramesContext     *hwctx = ctx->hwctx;
     QSVFramesContext           *s = ctx->internal->priv;
-    QSVDeviceContext *device_priv = ctx->device_ctx->internal->priv;
+    QSVDeviceContext *device_priv = ctx->device_ctx->hwctx;
 
     AVBufferRef *child_device_ref = NULL;
     AVBufferRef *child_frames_ref = NULL;
@@ -1108,7 +1113,8 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
                                      mfxSession *session, int upload)
 {
     AVQSVFramesContext *frames_hwctx = ctx->hwctx;
-    QSVDeviceContext   *device_priv  = ctx->device_ctx->internal->priv;
+    QSVDeviceContext   *device_priv  = ctx->device_ctx->hwctx;
+    AVQSVDeviceContext *hwctx        = &device_priv->p;
     int opaque = 0;
 
     mfxFrameAllocator frame_allocator = {
@@ -1123,7 +1129,6 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
     mfxVideoParam par;
     mfxStatus err;
     int                   ret = AVERROR_UNKNOWN;
-    AVQSVDeviceContext *hwctx = ctx->device_ctx->hwctx;
     /* hwctx->loader is non-NULL for oneVPL user and NULL for non-oneVPL user */
     void             **loader = &hwctx->loader;
 
@@ -2246,8 +2251,7 @@ const HWContextType ff_hwcontext_type_qsv = {
     .type                   = AV_HWDEVICE_TYPE_QSV,
     .name                   = "QSV",
 
-    .device_hwctx_size      = sizeof(AVQSVDeviceContext),
-    .device_priv_size       = sizeof(QSVDeviceContext),
+    .device_hwctx_size      = sizeof(QSVDeviceContext),
     .frames_hwctx_size      = sizeof(AVQSVFramesContext),
     .frames_priv_size       = sizeof(QSVFramesContext),
 
