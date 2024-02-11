@@ -41,11 +41,6 @@ typedef struct HWContextType {
      * i.e. AVHWDeviceContext.hwctx
      */
     size_t             device_hwctx_size;
-    /**
-     * size of the private data, i.e.
-     * AVHWDeviceInternal.priv
-     */
-    size_t             device_priv_size;
 
     /**
      * Size of the hardware-specific device configuration.
@@ -102,7 +97,6 @@ typedef struct HWContextType {
 
 struct AVHWDeviceInternal {
     const HWContextType *hw_type;
-    void                *priv;
 
     /**
      * For a derived device, a reference to the original device

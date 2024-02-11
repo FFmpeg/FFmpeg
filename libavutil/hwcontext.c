@@ -139,7 +139,6 @@ static void hwdevice_ctx_free(void *opaque, uint8_t *data)
     av_buffer_unref(&ctx->internal->source_device);
 
     av_freep(&ctx->hwctx);
-    av_freep(&ctx->internal->priv);
     av_freep(&ctx->internal);
     av_freep(&ctx);
 }
@@ -168,12 +167,6 @@ AVBufferRef *av_hwdevice_ctx_alloc(enum AVHWDeviceType type)
     if (!ctx->internal)
         goto fail;
 
-    if (hw_type->device_priv_size) {
-        ctx->internal->priv = av_mallocz(hw_type->device_priv_size);
-        if (!ctx->internal->priv)
-            goto fail;
-    }
-
     if (hw_type->device_hwctx_size) {
         ctx->hwctx = av_mallocz(hw_type->device_hwctx_size);
         if (!ctx->hwctx)
@@ -194,8 +187,6 @@ AVBufferRef *av_hwdevice_ctx_alloc(enum AVHWDeviceType type)
     return buf;
 
 fail:
-    if (ctx->internal)
-        av_freep(&ctx->internal->priv);
     av_freep(&ctx->internal);
     av_freep(&ctx->hwctx);
     av_freep(&ctx);
