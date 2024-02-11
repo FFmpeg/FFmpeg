@@ -75,6 +75,11 @@ typedef struct VAAPISurfaceFormat {
 } VAAPISurfaceFormat;
 
 typedef struct VAAPIDeviceContext {
+    /**
+     * The public AVVAAPIDeviceContext. See hwcontext_vaapi.h for it.
+     */
+    AVVAAPIDeviceContext p;
+
     // Surface formats which can be used with this device.
     VAAPISurfaceFormat *formats;
     int              nb_formats;
@@ -207,7 +212,7 @@ static int vaapi_get_image_format(AVHWDeviceContext *hwdev,
                                   enum AVPixelFormat pix_fmt,
                                   VAImageFormat **image_format)
 {
-    VAAPIDeviceContext *ctx = hwdev->internal->priv;
+    VAAPIDeviceContext *ctx = hwdev->hwctx;
     int i;
 
     for (i = 0; i < ctx->nb_formats; i++) {
@@ -224,9 +229,9 @@ static int vaapi_frames_get_constraints(AVHWDeviceContext *hwdev,
                                         const void *hwconfig,
                                         AVHWFramesConstraints *constraints)
 {
-    AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
+    VAAPIDeviceContext *ctx = hwdev->hwctx;
+    AVVAAPIDeviceContext *hwctx = &ctx->p;
     const AVVAAPIHWConfig *config = hwconfig;
-    VAAPIDeviceContext *ctx = hwdev->internal->priv;
     VASurfaceAttrib *attr_list = NULL;
     VAStatus vas;
     enum AVPixelFormat pix_fmt;
@@ -384,8 +389,8 @@ static const struct {
 
 static int vaapi_device_init(AVHWDeviceContext *hwdev)
 {
-    VAAPIDeviceContext *ctx = hwdev->internal->priv;
-    AVVAAPIDeviceContext *hwctx = hwdev->hwctx;
+    VAAPIDeviceContext *ctx = hwdev->hwctx;
+    AVVAAPIDeviceContext *hwctx = &ctx->p;
     VAImageFormat *image_list = NULL;
     VAStatus vas;
     const char *vendor_string;
@@ -474,7 +479,7 @@ fail:
 
 static void vaapi_device_uninit(AVHWDeviceContext *hwdev)
 {
-    VAAPIDeviceContext *ctx = hwdev->internal->priv;
+    VAAPIDeviceContext *ctx = hwdev->hwctx;
 
     av_freep(&ctx->formats);
 }
@@ -718,7 +723,7 @@ static int vaapi_transfer_get_formats(AVHWFramesContext *hwfc,
                                       enum AVHWFrameTransferDirection dir,
                                       enum AVPixelFormat **formats)
 {
-    VAAPIDeviceContext *ctx = hwfc->device_ctx->internal->priv;
+    VAAPIDeviceContext *ctx = hwfc->device_ctx->hwctx;
     enum AVPixelFormat *pix_fmts;
     int i, k, sw_format_available;
 
@@ -2007,8 +2012,7 @@ const HWContextType ff_hwcontext_type_vaapi = {
     .type                   = AV_HWDEVICE_TYPE_VAAPI,
     .name                   = "VAAPI",
 
-    .device_hwctx_size      = sizeof(AVVAAPIDeviceContext),
-    .device_priv_size       = sizeof(VAAPIDeviceContext),
+    .device_hwctx_size      = sizeof(VAAPIDeviceContext),
     .device_hwconfig_size   = sizeof(AVVAAPIHWConfig),
     .frames_hwctx_size      = sizeof(AVVAAPIFramesContext),
     .frames_priv_size       = sizeof(VAAPIFramesContext),
