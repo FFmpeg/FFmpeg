@@ -51,27 +51,6 @@
 #include "libavutil/thread.h"
 
 
-#if CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER
-
-typedef struct SpriteData {
-    /**
-     * Transform coefficients for both sprites in 16.16 fixed point format,
-     * in the order they appear in the bitstream:
-     *  x scale
-     *  rotation 1 (unused)
-     *  x offset
-     *  rotation 2 (unused)
-     *  y scale
-     *  y offset
-     *  alpha
-     */
-    int coefs[2][7];
-
-    int effect_type, effect_flag;
-    int effect_pcount1, effect_pcount2;   ///< amount of effect parameters stored in effect_params
-    int effect_params1[15], effect_params2[10]; ///< effect parameters in 16.16 fixed point format
-} SpriteData;
-
 static const enum AVPixelFormat vc1_hwaccel_pixfmt_list_420[] = {
 #if CONFIG_VC1_DXVA2_HWACCEL
     AV_PIX_FMT_DXVA2_VLD,
@@ -95,6 +74,27 @@ static const enum AVPixelFormat vc1_hwaccel_pixfmt_list_420[] = {
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NONE
 };
+
+#if CONFIG_WMV3IMAGE_DECODER || CONFIG_VC1IMAGE_DECODER
+
+typedef struct SpriteData {
+    /**
+     * Transform coefficients for both sprites in 16.16 fixed point format,
+     * in the order they appear in the bitstream:
+     *  x scale
+     *  rotation 1 (unused)
+     *  x offset
+     *  rotation 2 (unused)
+     *  y scale
+     *  y offset
+     *  alpha
+     */
+    int coefs[2][7];
+
+    int effect_type, effect_flag;
+    int effect_pcount1, effect_pcount2;   ///< amount of effect parameters stored in effect_params
+    int effect_params1[15], effect_params2[10]; ///< effect parameters in 16.16 fixed point format
+} SpriteData;
 
 static inline int get_fp_val(GetBitContext* gb)
 {
