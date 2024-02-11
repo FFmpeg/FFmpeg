@@ -185,3 +185,30 @@ On "ambisonic 2+stereo" layout with 11:                    -1
 Testing av_channel_layout_subset
 On "ambisonic 2+stereo" layout with AV_CH_LAYOUT_STEREO:  0x3
 On "ambisonic 2+stereo" layout with AV_CH_LAYOUT_QUAD:    0x3
+
+Testing av_channel_layout_retype
+With "FL@Boo": CUSTOM (1 channels (FL@Boo))
+  ~~ UNSPEC (1 channels)
+  ~~ NATIVE (1 channels (FL))
+  == CUSTOM (1 channels (FL@Boo))
+  != AMBI
+With "stereo": NATIVE (stereo)
+  ~~ UNSPEC (2 channels)
+  == NATIVE (stereo)
+  == CUSTOM (2 channels (FL+FR))
+  != AMBI
+With "FR+FL": CUSTOM (2 channels (FR+FL))
+  ~~ UNSPEC (2 channels)
+  != NATIVE
+  == CUSTOM (2 channels (FR+FL))
+  != AMBI
+With "ambisonic 2+stereo": AMBI   (ambisonic 2+stereo)
+  ~~ UNSPEC (11 channels)
+  != NATIVE
+  == CUSTOM (ambisonic 2+2 channels (FL+FR))
+  == AMBI   (ambisonic 2+stereo)
+With "2C": UNSPEC (2 channels)
+  == UNSPEC (2 channels)
+  != NATIVE
+  == CUSTOM (2 channels (USR768+USR768))
+  != AMBI

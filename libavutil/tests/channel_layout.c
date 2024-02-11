@@ -24,7 +24,9 @@
 
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/error.h"
 #include "libavutil/internal.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 
 #define BPRINT_ARGS1(bp, ...)     (bp), __VA_ARGS__
@@ -110,6 +112,53 @@ static void channel_layout_from_string(AVChannelLayout *layout,
         CMP_BPRINT_AND_NONBPRINT(bp, av_channel_layout_describe, 0, layout);
     else
         av_bprintf(bp, "fail");
+}
+
+static const char* channel_order_names[]  = {"UNSPEC", "NATIVE", "CUSTOM", "AMBI"};
+
+static void describe_type(AVBPrint *bp, AVChannelLayout *layout)
+{
+    if (layout->order >= 0 && layout->order < FF_ARRAY_ELEMS(channel_order_names)) {
+        av_bprintf(bp, "%-6s (", channel_order_names[layout->order]);
+        av_channel_layout_describe_bprint(layout, bp);
+        av_bprintf(bp, ")");
+    } else {
+        av_bprintf(bp, "???");
+    }
+}
+
+static const char *channel_layout_retype(AVChannelLayout *layout, AVBPrint *bp, const char *channel_layout)
+{
+    av_channel_layout_uninit(layout);
+    av_bprint_clear(bp);
+    if (!av_channel_layout_from_string(layout, channel_layout) &&
+        av_channel_layout_check(layout)) {
+        describe_type(bp, layout);
+        for (int i = 0; i < FF_CHANNEL_ORDER_NB; i++) {
+            int ret;
+            AVChannelLayout copy = {0};
+            av_bprintf(bp, "\n ");
+            if (av_channel_layout_copy(&copy, layout) < 0)
+                return "nomem";
+            ret = av_channel_layout_retype(&copy, i, 0);
+            if (ret < 0 && (copy.order != layout->order || av_channel_layout_compare(&copy, layout)))
+                av_bprintf(bp, "failed to keep existing layout on failure");
+            if (ret >= 0 && copy.order != i)
+                av_bprintf(bp, "returned success but did not change order");
+            if (ret == AVERROR(ENOSYS)) {
+                av_bprintf(bp, " != %s", channel_order_names[i]);
+            } else if (ret < 0) {
+                av_bprintf(bp, "FAIL");
+            } else {
+                av_bprintf(bp, " %s ", ret ? "~~" : "==");
+                describe_type(bp, &copy);
+            }
+            av_channel_layout_uninit(&copy);
+        }
+    } else {
+        av_bprintf(bp, "fail");
+    }
+    return bp->str;
 }
 
 #define CHANNEL_NAME(x)                                                    \
@@ -435,6 +484,20 @@ int main(void)
 
     av_channel_layout_uninit(&layout);
     av_channel_layout_uninit(&layout2);
+
+    printf("\nTesting av_channel_layout_retype\n");
+    {
+        const char* layouts[] = {
+            "FL@Boo",
+            "stereo",
+            "FR+FL",
+            "ambisonic 2+stereo",
+            "2C",
+            NULL
+        };
+        for (int i = 0; layouts[i]; i++)
+            printf("With \"%s\": %s\n", layouts[i], channel_layout_retype(&layout, &bp, layouts[i]));
+    }
     av_bprint_finalize(&bp, NULL);
 
     return 0;
