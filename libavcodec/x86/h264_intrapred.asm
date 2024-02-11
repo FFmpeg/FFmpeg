@@ -86,8 +86,6 @@ cglobal pred16x16_horizontal_8, 2,3
     punpcklbw m1, m1
     SPLATW    m0, m0, 3
     SPLATW    m1, m1, 3
-    mova [r0+r1*0+8], m0
-    mova [r0+r1*1+8], m1
 %endif
 
     mova [r0+r1*0], m0
@@ -98,7 +96,7 @@ cglobal pred16x16_horizontal_8, 2,3
     RET
 %endmacro
 
-INIT_MMX mmxext
+INIT_XMM sse2
 PRED16x16_H
 INIT_XMM ssse3
 PRED16x16_H
