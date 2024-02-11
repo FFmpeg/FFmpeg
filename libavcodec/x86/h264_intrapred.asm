@@ -566,17 +566,17 @@ H264_PRED8x8_PLANE
 ; void ff_pred8x8_vertical_8(uint8_t *src, ptrdiff_t stride)
 ;-----------------------------------------------------------------------------
 
-INIT_MMX mmx
+INIT_XMM sse2
 cglobal pred8x8_vertical_8, 2,2
     sub    r0, r1
-    movq  mm0, [r0]
+    movq   m0, [r0]
 %rep 3
-    movq [r0+r1*1], mm0
-    movq [r0+r1*2], mm0
+    movq [r0+r1*1], m0
+    movq [r0+r1*2], m0
     lea    r0, [r0+r1*2]
 %endrep
-    movq [r0+r1*1], mm0
-    movq [r0+r1*2], mm0
+    movq [r0+r1*1], m0
+    movq [r0+r1*2], m0
     RET
 
 ;-----------------------------------------------------------------------------
