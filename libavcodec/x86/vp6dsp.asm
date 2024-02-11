@@ -27,44 +27,6 @@ cextern pw_64
 SECTION .text
 
 %macro DIAG4 6
-%if mmsize == 8
-    movq          m0, [%1+%2]
-    movq          m1, [%1+%3]
-    movq          m3, m0
-    movq          m4, m1
-    punpcklbw     m0, m7
-    punpcklbw     m1, m7
-    punpckhbw     m3, m7
-    punpckhbw     m4, m7
-    pmullw        m0, [rsp+8*11] ; src[x-8 ] * biweight [0]
-    pmullw        m1, [rsp+8*12] ; src[x   ] * biweight [1]
-    pmullw        m3, [rsp+8*11] ; src[x-8 ] * biweight [0]
-    pmullw        m4, [rsp+8*12] ; src[x   ] * biweight [1]
-    paddw         m0, m1
-    paddw         m3, m4
-    movq          m1, [%1+%4]
-    movq          m2, [%1+%5]
-    movq          m4, m1
-    movq          m5, m2
-    punpcklbw     m1, m7
-    punpcklbw     m2, m7
-    punpckhbw     m4, m7
-    punpckhbw     m5, m7
-    pmullw        m1, [rsp+8*13] ; src[x+8 ] * biweight [2]
-    pmullw        m2, [rsp+8*14] ; src[x+16] * biweight [3]
-    pmullw        m4, [rsp+8*13] ; src[x+8 ] * biweight [2]
-    pmullw        m5, [rsp+8*14] ; src[x+16] * biweight [3]
-    paddw         m1, m2
-    paddw         m4, m5
-    paddsw        m0, m1
-    paddsw        m3, m4
-    paddsw        m0, m6         ; Add 64
-    paddsw        m3, m6         ; Add 64
-    psraw         m0, 7
-    psraw         m3, 7
-    packuswb      m0, m3
-    movq        [%6], m0
-%else ; mmsize == 16
     movq          m0, [%1+%2]
     movq          m1, [%1+%3]
     punpcklbw     m0, m7
@@ -84,25 +46,9 @@ SECTION .text
     psraw         m0, 7
     packuswb      m0, m0
     movq        [%6], m0
-%endif ; mmsize == 8/16
 %endmacro
 
 %macro SPLAT4REGS 0
-%if mmsize == 8
-    movq         m5, m3
-    punpcklwd    m3, m3
-    movq         m4, m3
-    punpckldq    m3, m3
-    punpckhdq    m4, m4
-    punpckhwd    m5, m5
-    movq         m2, m5
-    punpckhdq    m2, m2
-    punpckldq    m5, m5
-    movq [rsp+8*11], m3
-    movq [rsp+8*12], m4
-    movq [rsp+8*13], m5
-    movq [rsp+8*14], m2
-%else ; mmsize == 16
     pshuflw      m4, m3, 0x0
     pshuflw      m5, m3, 0x55
     pshuflw      m6, m3, 0xAA
@@ -111,7 +57,6 @@ SECTION .text
     punpcklqdq   m5, m5
     punpcklqdq   m6, m6
     punpcklqdq   m3, m3
-%endif ; mmsize == 8/16
 %endmacro
 
 ; void ff_vp6_filter_diag4_<opt>(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
