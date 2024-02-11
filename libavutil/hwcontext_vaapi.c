@@ -86,6 +86,11 @@ typedef struct VAAPIDeviceContext {
 } VAAPIDeviceContext;
 
 typedef struct VAAPIFramesContext {
+    /**
+     * The public AVVAAPIFramesContext. See hwcontext_vaapi.h for it.
+     */
+    AVVAAPIFramesContext p;
+
     // Surface attributes set at create time.
     VASurfaceAttrib *attributes;
     int           nb_attributes;
@@ -503,9 +508,9 @@ static void vaapi_buffer_free(void *opaque, uint8_t *data)
 static AVBufferRef *vaapi_pool_alloc(void *opaque, size_t size)
 {
     AVHWFramesContext     *hwfc = opaque;
-    VAAPIFramesContext     *ctx = hwfc->internal->priv;
+    VAAPIFramesContext     *ctx = hwfc->hwctx;
+    AVVAAPIFramesContext  *avfc = &ctx->p;
     AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    AVVAAPIFramesContext  *avfc = hwfc->hwctx;
     VASurfaceID surface_id;
     VAStatus vas;
     AVBufferRef *ref;
@@ -546,8 +551,8 @@ static AVBufferRef *vaapi_pool_alloc(void *opaque, size_t size)
 
 static int vaapi_frames_init(AVHWFramesContext *hwfc)
 {
-    AVVAAPIFramesContext  *avfc = hwfc->hwctx;
-    VAAPIFramesContext     *ctx = hwfc->internal->priv;
+    VAAPIFramesContext     *ctx = hwfc->hwctx;
+    AVVAAPIFramesContext  *avfc = &ctx->p;
     AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
     const VAAPIFormatDescriptor *desc;
     VAImageFormat *expected_format;
@@ -698,8 +703,8 @@ fail:
 
 static void vaapi_frames_uninit(AVHWFramesContext *hwfc)
 {
-    AVVAAPIFramesContext *avfc = hwfc->hwctx;
-    VAAPIFramesContext    *ctx = hwfc->internal->priv;
+    VAAPIFramesContext    *ctx = hwfc->hwctx;
+    AVVAAPIFramesContext *avfc = &ctx->p;
 
     av_freep(&avfc->surface_ids);
     av_freep(&ctx->attributes);
@@ -796,7 +801,7 @@ static int vaapi_map_frame(AVHWFramesContext *hwfc,
                            AVFrame *dst, const AVFrame *src, int flags)
 {
     AVVAAPIDeviceContext *hwctx = hwfc->device_ctx->hwctx;
-    VAAPIFramesContext *ctx = hwfc->internal->priv;
+    VAAPIFramesContext *ctx = hwfc->hwctx;
     VASurfaceID surface_id;
     const VAAPIFormatDescriptor *desc;
     VAImageFormat *image_format;
@@ -1075,7 +1080,7 @@ static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
                               const AVFrame *src, int flags)
 {
 #if VA_CHECK_VERSION(1, 1, 0)
-    VAAPIFramesContext     *src_vafc = src_fc->internal->priv;
+    VAAPIFramesContext    *src_vafc = src_fc->hwctx;
     int use_prime2;
 #else
     int k;
@@ -2014,8 +2019,7 @@ const HWContextType ff_hwcontext_type_vaapi = {
 
     .device_hwctx_size      = sizeof(VAAPIDeviceContext),
     .device_hwconfig_size   = sizeof(AVVAAPIHWConfig),
-    .frames_hwctx_size      = sizeof(AVVAAPIFramesContext),
-    .frames_priv_size       = sizeof(VAAPIFramesContext),
+    .frames_hwctx_size      = sizeof(VAAPIFramesContext),
 
     .device_create          = &vaapi_device_create,
     .device_derive          = &vaapi_device_derive,
