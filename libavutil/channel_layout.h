@@ -146,6 +146,10 @@ enum AVChannelOrder {
      * as defined in AmbiX format $ 2.1.
      */
     AV_CHANNEL_ORDER_AMBISONIC,
+    /**
+     * Number of channel orders, not part of ABI/API
+     */
+    FF_CHANNEL_ORDER_NB
 };
 
 
