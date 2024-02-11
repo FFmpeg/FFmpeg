@@ -72,6 +72,11 @@ static av_cold void load_functions(void)
 }
 
 typedef struct D3D11VAFramesContext {
+    /**
+     * The public AVD3D11VAFramesContext. See hwcontext_d3d11va.h for it.
+     */
+    AVD3D11VAFramesContext p;
+
     int nb_surfaces;
     int nb_surfaces_used;
 
@@ -113,8 +118,8 @@ static void d3d11va_default_unlock(void *ctx)
 
 static void d3d11va_frames_uninit(AVHWFramesContext *ctx)
 {
-    AVD3D11VAFramesContext *frames_hwctx = ctx->hwctx;
-    D3D11VAFramesContext *s = ctx->internal->priv;
+    D3D11VAFramesContext *s = ctx->hwctx;
+    AVD3D11VAFramesContext *frames_hwctx = &s->p;
 
     if (frames_hwctx->texture)
         ID3D11Texture2D_Release(frames_hwctx->texture);
@@ -169,8 +174,8 @@ static AVBufferRef *wrap_texture_buf(AVHWFramesContext *ctx, ID3D11Texture2D *te
 {
     AVBufferRef *buf;
     AVD3D11FrameDescriptor         *desc = av_mallocz(sizeof(*desc));
-    D3D11VAFramesContext              *s = ctx->internal->priv;
-    AVD3D11VAFramesContext *frames_hwctx = ctx->hwctx;
+    D3D11VAFramesContext              *s = ctx->hwctx;
+    AVD3D11VAFramesContext *frames_hwctx = &s->p;
     if (!desc) {
         ID3D11Texture2D_Release(tex);
         return NULL;
@@ -206,8 +211,8 @@ static AVBufferRef *wrap_texture_buf(AVHWFramesContext *ctx, ID3D11Texture2D *te
 
 static AVBufferRef *d3d11va_alloc_single(AVHWFramesContext *ctx)
 {
-    D3D11VAFramesContext       *s = ctx->internal->priv;
-    AVD3D11VAFramesContext *hwctx = ctx->hwctx;
+    D3D11VAFramesContext       *s = ctx->hwctx;
+    AVD3D11VAFramesContext *hwctx = &s->p;
     AVD3D11VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
     HRESULT hr;
     ID3D11Texture2D *tex;
@@ -235,8 +240,8 @@ static AVBufferRef *d3d11va_alloc_single(AVHWFramesContext *ctx)
 static AVBufferRef *d3d11va_pool_alloc(void *opaque, size_t size)
 {
     AVHWFramesContext        *ctx = (AVHWFramesContext*)opaque;
-    D3D11VAFramesContext       *s = ctx->internal->priv;
-    AVD3D11VAFramesContext *hwctx = ctx->hwctx;
+    D3D11VAFramesContext       *s = ctx->hwctx;
+    AVD3D11VAFramesContext *hwctx = &s->p;
     D3D11_TEXTURE2D_DESC  texDesc;
 
     if (!hwctx->texture)
@@ -255,9 +260,9 @@ static AVBufferRef *d3d11va_pool_alloc(void *opaque, size_t size)
 
 static int d3d11va_frames_init(AVHWFramesContext *ctx)
 {
-    AVD3D11VAFramesContext *hwctx        = ctx->hwctx;
     AVD3D11VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    D3D11VAFramesContext              *s = ctx->internal->priv;
+    D3D11VAFramesContext              *s = ctx->hwctx;
+    AVD3D11VAFramesContext        *hwctx = &s->p;
 
     int i;
     HRESULT hr;
@@ -345,7 +350,7 @@ static int d3d11va_transfer_get_formats(AVHWFramesContext *ctx,
                                         enum AVHWFrameTransferDirection dir,
                                         enum AVPixelFormat **formats)
 {
-    D3D11VAFramesContext *s = ctx->internal->priv;
+    D3D11VAFramesContext *s = ctx->hwctx;
     enum AVPixelFormat *fmts;
 
     fmts = av_malloc_array(2, sizeof(*fmts));
@@ -367,7 +372,7 @@ static int d3d11va_transfer_get_formats(AVHWFramesContext *ctx,
 static int d3d11va_create_staging_texture(AVHWFramesContext *ctx, DXGI_FORMAT format)
 {
     AVD3D11VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    D3D11VAFramesContext              *s = ctx->internal->priv;
+    D3D11VAFramesContext              *s = ctx->hwctx;
     HRESULT hr;
     D3D11_TEXTURE2D_DESC texDesc = {
         .Width          = ctx->width,
@@ -407,7 +412,7 @@ static int d3d11va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
                                  const AVFrame *src)
 {
     AVD3D11VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    D3D11VAFramesContext              *s = ctx->internal->priv;
+    D3D11VAFramesContext              *s = ctx->hwctx;
     int download = src->format == AV_PIX_FMT_D3D11;
     const AVFrame *frame = download ? src : dst;
     const AVFrame *other = download ? dst : src;
@@ -696,8 +701,7 @@ const HWContextType ff_hwcontext_type_d3d11va = {
     .name                 = "D3D11VA",
 
     .device_hwctx_size    = sizeof(AVD3D11VADeviceContext),
-    .frames_hwctx_size    = sizeof(AVD3D11VAFramesContext),
-    .frames_priv_size     = sizeof(D3D11VAFramesContext),
+    .frames_hwctx_size    = sizeof(D3D11VAFramesContext),
 
     .device_create        = d3d11va_device_create,
     .device_init          = d3d11va_device_init,
