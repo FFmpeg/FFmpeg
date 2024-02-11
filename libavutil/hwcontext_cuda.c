@@ -130,7 +130,7 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
 {
     AVHWDeviceContext *device_ctx = ctx->device_ctx;
     AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
-    CUDAFramesContext       *priv = ctx->internal->priv;
+    CUDAFramesContext       *priv = ctx->hwctx;
     CudaFunctions             *cu = hwctx->internal->cuda_dl;
     int err, i;
 
@@ -175,7 +175,7 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
 
 static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
 {
-    CUDAFramesContext *priv = ctx->internal->priv;
+    CUDAFramesContext *priv = ctx->hwctx;
     int res;
 
     frame->buf[0] = av_buffer_pool_get(ctx->pool);
@@ -223,7 +223,7 @@ static int cuda_transfer_get_formats(AVHWFramesContext *ctx,
 static int cuda_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
                                  const AVFrame *src)
 {
-    CUDAFramesContext       *priv = ctx->internal->priv;
+    CUDAFramesContext       *priv = ctx->hwctx;
     AVHWDeviceContext *device_ctx = ctx->device_ctx;
     AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
     CudaFunctions             *cu = hwctx->internal->cuda_dl;
@@ -563,7 +563,7 @@ const HWContextType ff_hwcontext_type_cuda = {
     .name                 = "CUDA",
 
     .device_hwctx_size    = sizeof(AVCUDADeviceContext),
-    .frames_priv_size     = sizeof(CUDAFramesContext),
+    .frames_hwctx_size    = sizeof(CUDAFramesContext),
 
     .device_create        = cuda_device_create,
     .device_derive        = cuda_device_derive,
