@@ -297,8 +297,7 @@ AVBufferRef *av_hwframe_ctx_alloc(AVBufferRef *device_ref_in)
     return buf;
 
 fail:
-    if (device_ref)
-        av_buffer_unref(&device_ref);
+    av_buffer_unref(&device_ref);
     if (ctx->internal)
         av_freep(&ctx->internal->priv);
     av_freep(&ctx->internal);
