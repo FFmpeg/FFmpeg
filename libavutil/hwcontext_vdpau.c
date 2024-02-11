@@ -233,7 +233,7 @@ static void vdpau_buffer_free(void *opaque, uint8_t *data)
 static AVBufferRef *vdpau_pool_alloc(void *opaque, size_t size)
 {
     AVHWFramesContext             *ctx = opaque;
-    VDPAUFramesContext           *priv = ctx->internal->priv;
+    VDPAUFramesContext           *priv = ctx->hwctx;
     VDPAUDeviceContext    *device_priv = ctx->device_ctx->hwctx;
     AVVDPAUDeviceContext *device_hwctx = &device_priv->p;
 
@@ -261,7 +261,7 @@ static AVBufferRef *vdpau_pool_alloc(void *opaque, size_t size)
 static int vdpau_frames_init(AVHWFramesContext *ctx)
 {
     VDPAUDeviceContext *device_priv = ctx->device_ctx->hwctx;
-    VDPAUFramesContext        *priv = ctx->internal->priv;
+    VDPAUFramesContext        *priv = ctx->hwctx;
 
     int i;
 
@@ -311,7 +311,7 @@ static int vdpau_transfer_get_formats(AVHWFramesContext *ctx,
                                       enum AVHWFrameTransferDirection dir,
                                       enum AVPixelFormat **formats)
 {
-    VDPAUFramesContext *priv  = ctx->internal->priv;
+    VDPAUFramesContext *priv  = ctx->hwctx;
 
     enum AVPixelFormat *fmts;
 
@@ -334,7 +334,7 @@ static int vdpau_transfer_get_formats(AVHWFramesContext *ctx,
 static int vdpau_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
                                     const AVFrame *src)
 {
-    VDPAUFramesContext *priv = ctx->internal->priv;
+    VDPAUFramesContext *priv = ctx->hwctx;
     VdpVideoSurface     surf = (VdpVideoSurface)(uintptr_t)src->data[3];
 
     void *data[3];
@@ -392,7 +392,7 @@ static int vdpau_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 static int vdpau_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
                                   const AVFrame *src)
 {
-    VDPAUFramesContext *priv = ctx->internal->priv;
+    VDPAUFramesContext *priv = ctx->hwctx;
     VdpVideoSurface     surf = (VdpVideoSurface)(uintptr_t)dst->data[3];
 
     const void *data[3];
@@ -514,7 +514,7 @@ const HWContextType ff_hwcontext_type_vdpau = {
     .name                 = "VDPAU",
 
     .device_hwctx_size    = sizeof(VDPAUDeviceContext),
-    .frames_priv_size     = sizeof(VDPAUFramesContext),
+    .frames_hwctx_size    = sizeof(VDPAUFramesContext),
 
 #if HAVE_VDPAU_X11
     .device_create        = vdpau_device_create,
