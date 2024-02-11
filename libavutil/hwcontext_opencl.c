@@ -143,6 +143,11 @@ typedef struct OpenCLDeviceContext {
 } OpenCLDeviceContext;
 
 typedef struct OpenCLFramesContext {
+    /**
+     * The public AVOpenCLFramesContext. See hwcontext_opencl.h for it.
+     */
+    AVOpenCLFramesContext p;
+
     // Command queue used for transfer/mapping operations on this frames
     // context.  If the user supplies one, this is a reference to it.
     // Otherwise, it is a reference to the default command queue for the
@@ -1700,9 +1705,9 @@ fail:
 
 static int opencl_frames_init_command_queue(AVHWFramesContext *hwfc)
 {
-    AVOpenCLFramesContext *hwctx = hwfc->hwctx;
+    OpenCLFramesContext    *priv = hwfc->hwctx;
+    AVOpenCLFramesContext *hwctx = &priv->p;
     OpenCLDeviceContext *devpriv = hwfc->device_ctx->hwctx;
-    OpenCLFramesContext    *priv = hwfc->internal->priv;
     cl_int cle;
 
     priv->command_queue = hwctx->command_queue ? hwctx->command_queue
@@ -1732,7 +1737,7 @@ static int opencl_frames_init(AVHWFramesContext *hwfc)
 
 static void opencl_frames_uninit(AVHWFramesContext *hwfc)
 {
-    OpenCLFramesContext *priv = hwfc->internal->priv;
+    OpenCLFramesContext *priv = hwfc->hwctx;
     cl_int cle;
 
 #if HAVE_OPENCL_DXVA2 || HAVE_OPENCL_D3D11
@@ -1826,7 +1831,7 @@ static int opencl_wait_events(AVHWFramesContext *hwfc,
 static int opencl_transfer_data_from(AVHWFramesContext *hwfc,
                                      AVFrame *dst, const AVFrame *src)
 {
-    OpenCLFramesContext *priv = hwfc->internal->priv;
+    OpenCLFramesContext *priv = hwfc->hwctx;
     cl_image_format image_format;
     cl_image_desc image_desc;
     cl_int cle;
@@ -1881,7 +1886,7 @@ static int opencl_transfer_data_from(AVHWFramesContext *hwfc,
 static int opencl_transfer_data_to(AVHWFramesContext *hwfc,
                                    AVFrame *dst, const AVFrame *src)
 {
-    OpenCLFramesContext *priv = hwfc->internal->priv;
+    OpenCLFramesContext *priv = hwfc->hwctx;
     cl_image_format image_format;
     cl_image_desc image_desc;
     cl_int cle;
@@ -1943,7 +1948,7 @@ typedef struct OpenCLMapping {
 static void opencl_unmap_frame(AVHWFramesContext *hwfc,
                                HWMapDescriptor *hwmap)
 {
-    OpenCLFramesContext *priv = hwfc->internal->priv;
+    OpenCLFramesContext *priv = hwfc->hwctx;
     OpenCLMapping *map = hwmap->priv;
     cl_event events[AV_NUM_DATA_POINTERS];
     int p, e;
@@ -1972,7 +1977,7 @@ static void opencl_unmap_frame(AVHWFramesContext *hwfc,
 static int opencl_map_frame(AVHWFramesContext *hwfc, AVFrame *dst,
                             const AVFrame *src, int flags)
 {
-    OpenCLFramesContext *priv = hwfc->internal->priv;
+    OpenCLFramesContext *priv = hwfc->hwctx;
     cl_map_flags map_flags;
     cl_image_format image_format;
     cl_image_desc image_desc;
@@ -2229,7 +2234,7 @@ static void opencl_unmap_from_qsv(AVHWFramesContext *dst_fc,
 {
     AVOpenCLFrameDescriptor    *desc = hwmap->priv;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->hwctx;
-    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->hwctx;
     cl_event event;
     cl_int cle;
     int p;
@@ -2265,7 +2270,7 @@ static int opencl_map_from_qsv(AVHWFramesContext *dst_fc, AVFrame *dst,
         (AVHWFramesContext*)src->hw_frames_ctx->data;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->hwctx;
     AVOpenCLDeviceContext   *dst_dev = &device_priv->p;
-    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->hwctx;
     AVOpenCLFrameDescriptor *desc;
     VASurfaceID va_surface;
     cl_mem_flags cl_flags;
@@ -2363,7 +2368,7 @@ static void opencl_unmap_from_dxva2(AVHWFramesContext *dst_fc,
 {
     AVOpenCLFrameDescriptor    *desc = hwmap->priv;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->hwctx;
-    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->hwctx;
     cl_event event;
     cl_int cle;
 
@@ -2388,7 +2393,7 @@ static int opencl_map_from_dxva2(AVHWFramesContext *dst_fc, AVFrame *dst,
         (AVHWFramesContext*)src->hw_frames_ctx->data;
     AVDXVA2FramesContext  *src_hwctx = src_fc->hwctx;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->hwctx;
-    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->hwctx;
     AVOpenCLFrameDescriptor *desc;
     cl_event event;
     cl_int cle;
@@ -2451,7 +2456,7 @@ static int opencl_frames_derive_from_dxva2(AVHWFramesContext *dst_fc,
     AVDXVA2FramesContext  *src_hwctx = src_fc->hwctx;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->hwctx;
     AVOpenCLDeviceContext   *dst_dev = &device_priv->p;
-    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->hwctx;
     cl_mem_flags cl_flags;
     cl_int cle;
     int err, i, p, nb_planes;
@@ -2528,7 +2533,7 @@ static void opencl_unmap_from_d3d11(AVHWFramesContext *dst_fc,
 {
     AVOpenCLFrameDescriptor    *desc = hwmap->priv;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->hwctx;
-    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->hwctx;
     cl_event event;
     cl_int cle;
 
@@ -2547,7 +2552,7 @@ static int opencl_map_from_d3d11(AVHWFramesContext *dst_fc, AVFrame *dst,
                                  const AVFrame *src, int flags)
 {
     OpenCLDeviceContext  *device_priv = dst_fc->device_ctx->hwctx;
-    OpenCLFramesContext  *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext  *frames_priv = dst_fc->hwctx;
     AVOpenCLFrameDescriptor *desc;
     cl_event event;
     cl_int cle;
@@ -2607,7 +2612,7 @@ static int opencl_frames_derive_from_d3d11(AVHWFramesContext *dst_fc,
     AVD3D11VAFramesContext *src_hwctx = src_fc->hwctx;
     OpenCLDeviceContext  *device_priv = dst_fc->device_ctx->hwctx;
     AVOpenCLDeviceContext    *dst_dev = &device_priv->p;
-    OpenCLFramesContext  *frames_priv = dst_fc->internal->priv;
+    OpenCLFramesContext  *frames_priv = dst_fc->hwctx;
     cl_mem_flags cl_flags;
     cl_int cle;
     int err, i, p, nb_planes;
@@ -3036,8 +3041,7 @@ const HWContextType ff_hwcontext_type_opencl = {
     .name                   = "OpenCL",
 
     .device_hwctx_size      = sizeof(OpenCLDeviceContext),
-    .frames_hwctx_size      = sizeof(AVOpenCLFramesContext),
-    .frames_priv_size       = sizeof(OpenCLFramesContext),
+    .frames_hwctx_size      = sizeof(OpenCLFramesContext),
 
     .device_create          = &opencl_device_create,
     .device_derive          = &opencl_device_derive,
