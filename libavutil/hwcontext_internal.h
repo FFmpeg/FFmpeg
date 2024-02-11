@@ -53,11 +53,6 @@ typedef struct HWContextType {
      * i.e. AVHWFramesContext.hwctx
      */
     size_t             frames_hwctx_size;
-    /**
-     * size of the private data, i.e.
-     * AVHWFramesInternal.priv
-     */
-    size_t             frames_priv_size;
 
     int              (*device_create)(AVHWDeviceContext *ctx, const char *device,
                                       AVDictionary *opts, int flags);
@@ -97,7 +92,6 @@ typedef struct HWContextType {
 
 struct AVHWFramesInternal {
     const HWContextType *hw_type;
-    void                *priv;
 
     AVBufferPool *pool_internal;
 
