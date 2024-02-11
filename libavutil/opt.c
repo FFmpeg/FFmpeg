@@ -794,13 +794,114 @@ static void format_duration(char *buf, size_t size, int64_t d)
         *(--e) = 0;
 }
 
+static int opt_get_elem(const AVOption *o, uint8_t **pbuf, size_t buf_len,
+                        void *dst, int search_flags)
+{
+    int ret;
+
+    switch (o->type) {
+    case AV_OPT_TYPE_BOOL:
+        ret = snprintf(*pbuf, buf_len, "%s", get_bool_name(*(int *)dst));
+        break;
+    case AV_OPT_TYPE_FLAGS:
+        ret = snprintf(*pbuf, buf_len, "0x%08X", *(int *)dst);
+        break;
+    case AV_OPT_TYPE_INT:
+        ret = snprintf(*pbuf, buf_len, "%d", *(int *)dst);
+        break;
+    case AV_OPT_TYPE_INT64:
+        ret = snprintf(*pbuf, buf_len, "%"PRId64, *(int64_t *)dst);
+        break;
+    case AV_OPT_TYPE_UINT64:
+        ret = snprintf(*pbuf, buf_len, "%"PRIu64, *(uint64_t *)dst);
+        break;
+    case AV_OPT_TYPE_FLOAT:
+        ret = snprintf(*pbuf, buf_len, "%f", *(float *)dst);
+        break;
+    case AV_OPT_TYPE_DOUBLE:
+        ret = snprintf(*pbuf, buf_len, "%f", *(double *)dst);
+        break;
+    case AV_OPT_TYPE_VIDEO_RATE:
+    case AV_OPT_TYPE_RATIONAL:
+        ret = snprintf(*pbuf, buf_len, "%d/%d", ((AVRational *)dst)->num, ((AVRational *)dst)->den);
+        break;
+    case AV_OPT_TYPE_CONST:
+        ret = snprintf(*pbuf, buf_len, "%"PRId64, o->default_val.i64);
+        break;
+    case AV_OPT_TYPE_STRING:
+        if (*(uint8_t **)dst) {
+            *pbuf = av_strdup(*(uint8_t **)dst);
+        } else if (search_flags & AV_OPT_ALLOW_NULL) {
+            *pbuf = NULL;
+            return 0;
+        } else {
+            *pbuf = av_strdup("");
+        }
+        return *pbuf ? 0 : AVERROR(ENOMEM);
+    case AV_OPT_TYPE_BINARY: {
+        const uint8_t *bin;
+        int len;
+
+        if (!*(uint8_t **)dst && (search_flags & AV_OPT_ALLOW_NULL)) {
+            *pbuf = NULL;
+            return 0;
+        }
+        len = *(int *)(((uint8_t *)dst) + sizeof(uint8_t *));
+        if ((uint64_t)len * 2 + 1 > INT_MAX)
+            return AVERROR(EINVAL);
+        if (!(*pbuf = av_malloc(len * 2 + 1)))
+            return AVERROR(ENOMEM);
+        if (!len) {
+            *pbuf[0] = '\0';
+            return 0;
+        }
+        bin = *(uint8_t **)dst;
+        for (int i = 0; i < len; i++)
+            snprintf(*pbuf + i * 2, 3, "%02X", bin[i]);
+        return 0;
+    }
+    case AV_OPT_TYPE_IMAGE_SIZE:
+        ret = snprintf(*pbuf, buf_len, "%dx%d", ((int *)dst)[0], ((int *)dst)[1]);
+        break;
+    case AV_OPT_TYPE_PIXEL_FMT:
+        ret = snprintf(*pbuf, buf_len, "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum AVPixelFormat *)dst), "none"));
+        break;
+    case AV_OPT_TYPE_SAMPLE_FMT:
+        ret = snprintf(*pbuf, buf_len, "%s", (char *)av_x_if_null(av_get_sample_fmt_name(*(enum AVSampleFormat *)dst), "none"));
+        break;
+    case AV_OPT_TYPE_DURATION: {
+        int64_t i64 = *(int64_t *)dst;
+        format_duration(*pbuf, buf_len, i64);
+        ret = strlen(*pbuf); // no overflow possible, checked by an assert
+        break;
+    }
+    case AV_OPT_TYPE_COLOR:
+        ret = snprintf(*pbuf, buf_len, "0x%02x%02x%02x%02x",
+                       (int)((uint8_t *)dst)[0], (int)((uint8_t *)dst)[1],
+                       (int)((uint8_t *)dst)[2], (int)((uint8_t *)dst)[3]);
+        break;
+    case AV_OPT_TYPE_CHLAYOUT:
+        ret = av_channel_layout_describe(dst, *pbuf, buf_len);
+        break;
+    case AV_OPT_TYPE_DICT:
+        if (!*(AVDictionary **)dst && (search_flags & AV_OPT_ALLOW_NULL)) {
+            *pbuf = NULL;
+            return 0;
+        }
+        return av_dict_get_string(*(AVDictionary **)dst, (char **)pbuf, '=', ':');
+    default:
+        return AVERROR(EINVAL);
+    }
+
+    return ret;
+}
+
 int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
 {
     void *dst, *target_obj;
     const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
-    uint8_t *bin, buf[128];
-    int len, i, ret;
-    int64_t i64;
+    uint8_t *out, buf[128];
+    int ret;
 
     if (!o || !target_obj || (o->offset<=0 && o->type != AV_OPT_TYPE_CONST))
         return AVERROR_OPTION_NOT_FOUND;
@@ -811,98 +912,19 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     dst = (uint8_t *)target_obj + o->offset;
 
     buf[0] = 0;
-    switch (o->type) {
-    case AV_OPT_TYPE_BOOL:
-        ret = snprintf(buf, sizeof(buf), "%s", get_bool_name(*(int *)dst));
-        break;
-    case AV_OPT_TYPE_FLAGS:
-        ret = snprintf(buf, sizeof(buf), "0x%08X", *(int *)dst);
-        break;
-    case AV_OPT_TYPE_INT:
-        ret = snprintf(buf, sizeof(buf), "%d", *(int *)dst);
-        break;
-    case AV_OPT_TYPE_INT64:
-        ret = snprintf(buf, sizeof(buf), "%"PRId64, *(int64_t *)dst);
-        break;
-    case AV_OPT_TYPE_UINT64:
-        ret = snprintf(buf, sizeof(buf), "%"PRIu64, *(uint64_t *)dst);
-        break;
-    case AV_OPT_TYPE_FLOAT:
-        ret = snprintf(buf, sizeof(buf), "%f", *(float *)dst);
-        break;
-    case AV_OPT_TYPE_DOUBLE:
-        ret = snprintf(buf, sizeof(buf), "%f", *(double *)dst);
-        break;
-    case AV_OPT_TYPE_VIDEO_RATE:
-    case AV_OPT_TYPE_RATIONAL:
-        ret = snprintf(buf, sizeof(buf), "%d/%d", ((AVRational *)dst)->num, ((AVRational *)dst)->den);
-        break;
-    case AV_OPT_TYPE_CONST:
-        ret = snprintf(buf, sizeof(buf), "%"PRId64, o->default_val.i64);
-        break;
-    case AV_OPT_TYPE_STRING:
-        if (*(uint8_t **)dst) {
-            *out_val = av_strdup(*(uint8_t **)dst);
-        } else if (search_flags & AV_OPT_ALLOW_NULL) {
-            *out_val = NULL;
-            return 0;
-        } else {
-            *out_val = av_strdup("");
-        }
-        return *out_val ? 0 : AVERROR(ENOMEM);
-    case AV_OPT_TYPE_BINARY:
-        if (!*(uint8_t **)dst && (search_flags & AV_OPT_ALLOW_NULL)) {
-            *out_val = NULL;
-            return 0;
-        }
-        len = *(int *)(((uint8_t *)dst) + sizeof(uint8_t *));
-        if ((uint64_t)len * 2 + 1 > INT_MAX)
-            return AVERROR(EINVAL);
-        if (!(*out_val = av_malloc(len * 2 + 1)))
-            return AVERROR(ENOMEM);
-        if (!len) {
-            *out_val[0] = '\0';
-            return 0;
-        }
-        bin = *(uint8_t **)dst;
-        for (i = 0; i < len; i++)
-            snprintf(*out_val + i * 2, 3, "%02X", bin[i]);
+
+    out = buf;
+    ret = opt_get_elem(o, &out, sizeof(buf), dst, search_flags);
+    if (ret < 0)
+        return ret;
+    if (out != buf) {
+        *out_val = out;
         return 0;
-    case AV_OPT_TYPE_IMAGE_SIZE:
-        ret = snprintf(buf, sizeof(buf), "%dx%d", ((int *)dst)[0], ((int *)dst)[1]);
-        break;
-    case AV_OPT_TYPE_PIXEL_FMT:
-        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_pix_fmt_name(*(enum AVPixelFormat *)dst), "none"));
-        break;
-    case AV_OPT_TYPE_SAMPLE_FMT:
-        ret = snprintf(buf, sizeof(buf), "%s", (char *)av_x_if_null(av_get_sample_fmt_name(*(enum AVSampleFormat *)dst), "none"));
-        break;
-    case AV_OPT_TYPE_DURATION:
-        i64 = *(int64_t *)dst;
-        format_duration(buf, sizeof(buf), i64);
-        ret = strlen(buf); // no overflow possible, checked by an assert
-        break;
-    case AV_OPT_TYPE_COLOR:
-        ret = snprintf(buf, sizeof(buf), "0x%02x%02x%02x%02x",
-                       (int)((uint8_t *)dst)[0], (int)((uint8_t *)dst)[1],
-                       (int)((uint8_t *)dst)[2], (int)((uint8_t *)dst)[3]);
-        break;
-    case AV_OPT_TYPE_CHLAYOUT:
-        ret = av_channel_layout_describe(dst, buf, sizeof(buf));
-        break;
-    case AV_OPT_TYPE_DICT:
-        if (!*(AVDictionary **)dst && (search_flags & AV_OPT_ALLOW_NULL)) {
-            *out_val = NULL;
-            return 0;
-        }
-        return av_dict_get_string(*(AVDictionary **)dst, (char **)out_val, '=', ':');
-    default:
-        return AVERROR(EINVAL);
     }
 
     if (ret >= sizeof(buf))
         return AVERROR(EINVAL);
-    *out_val = av_strdup(buf);
+    *out_val = av_strdup(out);
     return *out_val ? 0 : AVERROR(ENOMEM);
 }
 
