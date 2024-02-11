@@ -36,6 +36,11 @@
 typedef HRESULT(WINAPI *PFN_CREATE_DXGI_FACTORY2)(UINT Flags, REFIID riid, void **ppFactory);
 
 typedef struct D3D12VAFramesContext {
+    /**
+     * The public AVD3D12VAFramesContext. See hwcontext_d3d12va.h for it.
+     */
+    AVD3D12VAFramesContext p;
+
     ID3D12Resource            *staging_download_buffer;
     ID3D12Resource            *staging_upload_buffer;
     ID3D12CommandQueue        *command_queue;
@@ -101,7 +106,7 @@ static int d3d12va_create_staging_buffer_resource(AVHWFramesContext *ctx, D3D12_
                                                   ID3D12Resource **ppResource, int download)
 {
     AVD3D12VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    D3D12VAFramesContext   *s            = ctx->internal->priv;
+    D3D12VAFramesContext   *s            = ctx->hwctx;
     D3D12_HEAP_PROPERTIES props = { .Type = download ? D3D12_HEAP_TYPE_READBACK : D3D12_HEAP_TYPE_UPLOAD };
     D3D12_RESOURCE_DESC desc = {
         .Dimension          = D3D12_RESOURCE_DIMENSION_BUFFER,
@@ -128,8 +133,8 @@ static int d3d12va_create_staging_buffer_resource(AVHWFramesContext *ctx, D3D12_
 static int d3d12va_create_helper_objects(AVHWFramesContext *ctx)
 {
     AVD3D12VADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    AVD3D12VAFramesContext *frames_hwctx = ctx->hwctx;
-    D3D12VAFramesContext   *s            = ctx->internal->priv;
+    D3D12VAFramesContext   *s            = ctx->hwctx;
+    AVD3D12VAFramesContext *frames_hwctx = &s->p;
 
     D3D12_COMMAND_QUEUE_DESC queue_desc = {
         .Type     = D3D12_COMMAND_LIST_TYPE_COPY,
@@ -168,7 +173,7 @@ fail:
 
 static void d3d12va_frames_uninit(AVHWFramesContext *ctx)
 {
-    D3D12VAFramesContext *s = ctx->internal->priv;
+    D3D12VAFramesContext *s = ctx->hwctx;
 
     D3D12_OBJECT_RELEASE(s->sync_ctx.fence);
     if (s->sync_ctx.event)
@@ -345,8 +350,8 @@ static int d3d12va_transfer_data(AVHWFramesContext *ctx, AVFrame *dst,
                                  const AVFrame *src)
 {
     AVD3D12VADeviceContext *hwctx        = ctx->device_ctx->hwctx;
-    AVD3D12VAFramesContext *frames_hwctx = ctx->hwctx;
-    D3D12VAFramesContext   *s            = ctx->internal->priv;
+    D3D12VAFramesContext   *s            = ctx->hwctx;
+    AVD3D12VAFramesContext *frames_hwctx = &s->p;
 
     int ret;
     int download = src->format == AV_PIX_FMT_D3D12;
@@ -675,8 +680,7 @@ const HWContextType ff_hwcontext_type_d3d12va = {
     .name                   = "D3D12VA",
 
     .device_hwctx_size      = sizeof(D3D12VADevicePriv),
-    .frames_hwctx_size      = sizeof(AVD3D12VAFramesContext),
-    .frames_priv_size       = sizeof(D3D12VAFramesContext),
+    .frames_hwctx_size      = sizeof(D3D12VAFramesContext),
 
     .device_create          = d3d12va_device_create,
     .device_init            = d3d12va_device_init,
