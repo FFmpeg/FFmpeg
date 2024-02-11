@@ -2346,7 +2346,7 @@ static void opencl_unmap_from_dxva2(AVHWFramesContext *dst_fc,
 {
     AVOpenCLFrameDescriptor    *desc = hwmap->priv;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->internal->priv;
-    OpenCLFramesContext *frames_priv = dst_fc->device_ctx->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
     cl_event event;
     cl_int cle;
 
@@ -2511,7 +2511,7 @@ static void opencl_unmap_from_d3d11(AVHWFramesContext *dst_fc,
 {
     AVOpenCLFrameDescriptor    *desc = hwmap->priv;
     OpenCLDeviceContext *device_priv = dst_fc->device_ctx->internal->priv;
-    OpenCLFramesContext *frames_priv = dst_fc->device_ctx->internal->priv;
+    OpenCLFramesContext *frames_priv = dst_fc->internal->priv;
     cl_event event;
     cl_int cle;
 
