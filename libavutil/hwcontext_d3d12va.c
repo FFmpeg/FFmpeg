@@ -46,6 +46,10 @@ typedef struct D3D12VAFramesContext {
 } D3D12VAFramesContext;
 
 typedef struct D3D12VADevicePriv {
+    /**
+     * The public AVD3D12VADeviceContext. See hwcontext_d3d12va.h for it.
+     */
+    AVD3D12VADeviceContext p;
     HANDLE                        d3d12lib;
     HANDLE                        dxgilib;
     PFN_CREATE_DXGI_FACTORY2      create_dxgi_factory2;
@@ -526,7 +530,7 @@ fail:
 
 static int d3d12va_load_functions(AVHWDeviceContext *hwdev)
 {
-    D3D12VADevicePriv *priv = hwdev->internal->priv;
+    D3D12VADevicePriv *priv = hwdev->hwctx;
 
 #if !HAVE_UWP
     priv->d3d12lib = dlopen("d3d12.dll", 0);
@@ -558,8 +562,8 @@ fail:
 
 static void d3d12va_device_free(AVHWDeviceContext *hwdev)
 {
-    AVD3D12VADeviceContext *ctx  = hwdev->hwctx;
-    D3D12VADevicePriv      *priv = hwdev->internal->priv;
+    D3D12VADevicePriv      *priv = hwdev->hwctx;
+    AVD3D12VADeviceContext *ctx  = &priv->p;
 
     D3D12_OBJECT_RELEASE(ctx->device);
 
@@ -609,8 +613,8 @@ static void d3d12va_device_uninit(AVHWDeviceContext *hwdev)
 static int d3d12va_device_create(AVHWDeviceContext *hwdev, const char *device,
                                  AVDictionary *opts, int flags)
 {
-    AVD3D12VADeviceContext *ctx  = hwdev->hwctx;
-    D3D12VADevicePriv      *priv = hwdev->internal->priv;
+    D3D12VADevicePriv      *priv = hwdev->hwctx;
+    AVD3D12VADeviceContext *ctx  = &priv->p;
 
     HRESULT hr;
     UINT create_flags = 0;
@@ -670,8 +674,7 @@ const HWContextType ff_hwcontext_type_d3d12va = {
     .type                   = AV_HWDEVICE_TYPE_D3D12VA,
     .name                   = "D3D12VA",
 
-    .device_hwctx_size      = sizeof(AVD3D12VADeviceContext),
-    .device_priv_size       = sizeof(D3D12VADevicePriv),
+    .device_hwctx_size      = sizeof(D3D12VADevicePriv),
     .frames_hwctx_size      = sizeof(AVD3D12VAFramesContext),
     .frames_priv_size       = sizeof(D3D12VAFramesContext),
 
