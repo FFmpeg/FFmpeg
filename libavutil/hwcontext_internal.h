@@ -95,16 +95,6 @@ typedef struct HWContextType {
                                            AVHWFramesContext *src_ctx, int flags);
 } HWContextType;
 
-struct AVHWDeviceInternal {
-    const HWContextType *hw_type;
-
-    /**
-     * For a derived device, a reference to the original device
-     * context it was derived from.
-     */
-    AVBufferRef *source_device;
-};
-
 struct AVHWFramesInternal {
     const HWContextType *hw_type;
     void                *priv;

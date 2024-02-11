@@ -40,8 +40,6 @@ enum AVHWDeviceType {
     AV_HWDEVICE_TYPE_D3D12VA,
 };
 
-typedef struct AVHWDeviceInternal AVHWDeviceInternal;
-
 /**
  * This struct aggregates all the (hardware/vendor-specific) "high-level" state,
  * i.e. state that is not tied to a concrete processing configuration.
@@ -64,12 +62,6 @@ typedef struct AVHWDeviceContext {
      * A class for logging. Set by av_hwdevice_ctx_alloc().
      */
     const AVClass *av_class;
-
-    /**
-     * Private data used internally by libavutil. Must not be accessed in any
-     * way by the caller.
-     */
-    AVHWDeviceInternal *internal;
 
     /**
      * This field identifies the underlying API used for hardware access.

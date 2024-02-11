@@ -84,6 +84,21 @@ static const char *const hw_type_names[] = {
     [AV_HWDEVICE_TYPE_VULKAN] = "vulkan",
 };
 
+typedef struct FFHWDeviceContext {
+    /**
+     * The public AVHWDeviceContext. See hwcontext.h for it.
+     */
+    AVHWDeviceContext p;
+
+    const HWContextType *hw_type;
+
+    /**
+     * For a derived device, a reference to the original device
+     * context it was derived from.
+     */
+    AVBufferRef *source_device;
+} FFHWDeviceContext;
+
 enum AVHWDeviceType av_hwdevice_find_type_by_name(const char *name)
 {
     int type;
@@ -126,25 +141,26 @@ static const AVClass hwdevice_ctx_class = {
 
 static void hwdevice_ctx_free(void *opaque, uint8_t *data)
 {
-    AVHWDeviceContext *ctx = (AVHWDeviceContext*)data;
+    FFHWDeviceContext *ctxi = (FFHWDeviceContext*)data;
+    AVHWDeviceContext *ctx  = &ctxi->p;
 
     /* uninit might still want access the hw context and the user
      * free() callback might destroy it, so uninit has to be called first */
-    if (ctx->internal->hw_type->device_uninit)
-        ctx->internal->hw_type->device_uninit(ctx);
+    if (ctxi->hw_type->device_uninit)
+        ctxi->hw_type->device_uninit(ctx);
 
     if (ctx->free)
         ctx->free(ctx);
 
-    av_buffer_unref(&ctx->internal->source_device);
+    av_buffer_unref(&ctxi->source_device);
 
     av_freep(&ctx->hwctx);
-    av_freep(&ctx->internal);
     av_freep(&ctx);
 }
 
 AVBufferRef *av_hwdevice_ctx_alloc(enum AVHWDeviceType type)
 {
+    FFHWDeviceContext *ctxi;
     AVHWDeviceContext *ctx;
     AVBufferRef *buf;
     const HWContextType *hw_type = NULL;
@@ -159,13 +175,10 @@ AVBufferRef *av_hwdevice_ctx_alloc(enum AVHWDeviceType type)
     if (!hw_type)
         return NULL;
 
-    ctx = av_mallocz(sizeof(*ctx));
-    if (!ctx)
+    ctxi = av_mallocz(sizeof(*ctxi));
+    if (!ctxi)
         return NULL;
-
-    ctx->internal = av_mallocz(sizeof(*ctx->internal));
-    if (!ctx->internal)
-        goto fail;
+    ctx = &ctxi->p;
 
     if (hw_type->device_hwctx_size) {
         ctx->hwctx = av_mallocz(hw_type->device_hwctx_size);
@@ -182,12 +195,11 @@ AVBufferRef *av_hwdevice_ctx_alloc(enum AVHWDeviceType type)
     ctx->type     = type;
     ctx->av_class = &hwdevice_ctx_class;
 
-    ctx->internal->hw_type = hw_type;
+    ctxi->hw_type = hw_type;
 
     return buf;
 
 fail:
-    av_freep(&ctx->internal);
     av_freep(&ctx->hwctx);
     av_freep(&ctx);
     return NULL;
@@ -195,11 +207,12 @@ fail:
 
 int av_hwdevice_ctx_init(AVBufferRef *ref)
 {
-    AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
+    FFHWDeviceContext *ctxi = (FFHWDeviceContext*)ref->data;
+    AVHWDeviceContext *ctx  = &ctxi->p;
     int ret = 0;
 
-    if (ctx->internal->hw_type->device_init)
-        ret = ctx->internal->hw_type->device_init(ctx);
+    if (ctxi->hw_type->device_init)
+        ret = ctxi->hw_type->device_init(ctx);
 
     return ret;
 }
@@ -235,8 +248,8 @@ static void hwframe_ctx_free(void *opaque, uint8_t *data)
 
 AVBufferRef *av_hwframe_ctx_alloc(AVBufferRef *device_ref_in)
 {
-    AVHWDeviceContext *device_ctx = (AVHWDeviceContext*)device_ref_in->data;
-    const HWContextType  *hw_type = device_ctx->internal->hw_type;
+    FFHWDeviceContext *device_ctx = (FFHWDeviceContext*)device_ref_in->data;
+    const HWContextType  *hw_type = device_ctx->hw_type;
     AVHWFramesContext *ctx;
     AVBufferRef *buf, *device_ref = NULL;
 
@@ -272,7 +285,7 @@ AVBufferRef *av_hwframe_ctx_alloc(AVBufferRef *device_ref_in)
 
     ctx->av_class   = &hwframe_ctx_class;
     ctx->device_ref = device_ref;
-    ctx->device_ctx = device_ctx;
+    ctx->device_ctx = &device_ctx->p;
     ctx->format     = AV_PIX_FMT_NONE;
     ctx->sw_format  = AV_PIX_FMT_NONE;
 
@@ -552,8 +565,8 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
 
 void *av_hwdevice_hwconfig_alloc(AVBufferRef *ref)
 {
-    AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
-    const HWContextType  *hw_type = ctx->internal->hw_type;
+    FFHWDeviceContext *ctx = (FFHWDeviceContext*)ref->data;
+    const HWContextType  *hw_type = ctx->hw_type;
 
     if (hw_type->device_hwconfig_size == 0)
         return NULL;
@@ -564,8 +577,8 @@ void *av_hwdevice_hwconfig_alloc(AVBufferRef *ref)
 AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
                                                            const void *hwconfig)
 {
-    AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
-    const HWContextType  *hw_type = ctx->internal->hw_type;
+    FFHWDeviceContext *ctx = (FFHWDeviceContext*)ref->data;
+    const HWContextType  *hw_type = ctx->hw_type;
     AVHWFramesConstraints *constraints;
 
     if (!hw_type->frames_get_constraints)
@@ -578,7 +591,7 @@ AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
     constraints->min_width = constraints->min_height = 0;
     constraints->max_width = constraints->max_height = INT_MAX;
 
-    if (hw_type->frames_get_constraints(ctx, hwconfig, constraints) >= 0) {
+    if (hw_type->frames_get_constraints(&ctx->p, hwconfig, constraints) >= 0) {
         return constraints;
     } else {
         av_hwframe_constraints_free(&constraints);
@@ -599,7 +612,7 @@ int av_hwdevice_ctx_create(AVBufferRef **pdevice_ref, enum AVHWDeviceType type,
                            const char *device, AVDictionary *opts, int flags)
 {
     AVBufferRef *device_ref = NULL;
-    AVHWDeviceContext *device_ctx;
+    FFHWDeviceContext *device_ctx;
     int ret = 0;
 
     device_ref = av_hwdevice_ctx_alloc(type);
@@ -607,15 +620,15 @@ int av_hwdevice_ctx_create(AVBufferRef **pdevice_ref, enum AVHWDeviceType type,
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    device_ctx = (AVHWDeviceContext*)device_ref->data;
+    device_ctx = (FFHWDeviceContext*)device_ref->data;
 
-    if (!device_ctx->internal->hw_type->device_create) {
+    if (!device_ctx->hw_type->device_create) {
         ret = AVERROR(ENOSYS);
         goto fail;
     }
 
-    ret = device_ctx->internal->hw_type->device_create(device_ctx, device,
-                                                       opts, flags);
+    ret = device_ctx->hw_type->device_create(&device_ctx->p, device,
+                                             opts, flags);
     if (ret < 0)
         goto fail;
 
@@ -637,13 +650,13 @@ int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
                                         AVDictionary *options, int flags)
 {
     AVBufferRef *dst_ref = NULL, *tmp_ref;
-    AVHWDeviceContext *dst_ctx, *tmp_ctx;
+    FFHWDeviceContext *dst_ctx;
     int ret = 0;
 
     tmp_ref = src_ref;
     while (tmp_ref) {
-        tmp_ctx = (AVHWDeviceContext*)tmp_ref->data;
-        if (tmp_ctx->type == type) {
+        FFHWDeviceContext *tmp_ctx = (FFHWDeviceContext*)tmp_ref->data;
+        if (tmp_ctx->p.type == type) {
             dst_ref = av_buffer_ref(tmp_ref);
             if (!dst_ref) {
                 ret = AVERROR(ENOMEM);
@@ -651,7 +664,7 @@ int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
             }
             goto done;
         }
-        tmp_ref = tmp_ctx->internal->source_device;
+        tmp_ref = tmp_ctx->source_device;
     }
 
     dst_ref = av_hwdevice_ctx_alloc(type);
@@ -659,19 +672,18 @@ int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    dst_ctx = (AVHWDeviceContext*)dst_ref->data;
+    dst_ctx = (FFHWDeviceContext*)dst_ref->data;
 
     tmp_ref = src_ref;
     while (tmp_ref) {
-        tmp_ctx = (AVHWDeviceContext*)tmp_ref->data;
-        if (dst_ctx->internal->hw_type->device_derive) {
-            ret = dst_ctx->internal->hw_type->device_derive(dst_ctx,
-                                                            tmp_ctx,
-                                                            options,
-                                                            flags);
+        FFHWDeviceContext *tmp_ctx = (FFHWDeviceContext*)tmp_ref->data;
+        if (dst_ctx->hw_type->device_derive) {
+            ret = dst_ctx->hw_type->device_derive(&dst_ctx->p,
+                                                  &tmp_ctx->p,
+                                                  options, flags);
             if (ret == 0) {
-                dst_ctx->internal->source_device = av_buffer_ref(src_ref);
-                if (!dst_ctx->internal->source_device) {
+                dst_ctx->source_device = av_buffer_ref(src_ref);
+                if (!dst_ctx->source_device) {
                     ret = AVERROR(ENOMEM);
                     goto fail;
                 }
@@ -683,7 +695,7 @@ int av_hwdevice_ctx_create_derived_opts(AVBufferRef **dst_ref_ptr,
             if (ret != AVERROR(ENOSYS))
                 goto fail;
         }
-        tmp_ref = tmp_ctx->internal->source_device;
+        tmp_ref = tmp_ctx->source_device;
     }
 
     ret = AVERROR(ENOSYS);
