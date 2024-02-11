@@ -153,9 +153,12 @@ typedef struct AVHWFramesContext {
      * The format-specific data, allocated and freed automatically along with
      * this context.
      *
-     * Should be cast by the user to the format-specific context defined in the
-     * corresponding header (hwframe_*.h) and filled as described in the
-     * documentation before calling av_hwframe_ctx_init().
+     * The user shall ignore this field if the corresponding format-specific
+     * header (hwcontext_*.h) does not define a context to be used as
+     * AVHWFramesContext.hwctx.
+     *
+     * Otherwise, it should be cast by the user to said context and filled
+     * as described in the documentation before calling av_hwframe_ctx_init().
      *
      * After any frames using this context are created, the contents of this
      * struct should not be modified by the caller.
