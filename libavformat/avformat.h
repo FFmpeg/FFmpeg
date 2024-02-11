@@ -1698,7 +1698,7 @@ typedef struct AVFormatContext {
     /**
      * Number of bytes to be written as padding in a metadata header.
      * Demuxing: Unused.
-     * Muxing: Set by user via av_format_set_metadata_header_padding.
+     * Muxing: Set by user.
      */
     int metadata_header_padding;
 
