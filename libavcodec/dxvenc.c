@@ -324,8 +324,8 @@ static av_cold int dxv_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(DXVEncContext, x)
 #define FLAGS     AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "format", NULL, OFFSET(tex_fmt), AV_OPT_TYPE_INT, { .i64 = DXV_FMT_DXT1 }, DXV_FMT_DXT1, DXV_FMT_DXT1, FLAGS, "format" },
-        { "dxt1", "DXT1 (Normal Quality, No Alpha)", 0, AV_OPT_TYPE_CONST, { .i64 = DXV_FMT_DXT1   }, 0, 0, FLAGS, "format" },
+    { "format", NULL, OFFSET(tex_fmt), AV_OPT_TYPE_INT, { .i64 = DXV_FMT_DXT1 }, DXV_FMT_DXT1, DXV_FMT_DXT1, FLAGS, .unit = "format" },
+        { "dxt1", "DXT1 (Normal Quality, No Alpha)", 0, AV_OPT_TYPE_CONST, { .i64 = DXV_FMT_DXT1   }, 0, 0, FLAGS, .unit = "format" },
     { NULL },
 };
 

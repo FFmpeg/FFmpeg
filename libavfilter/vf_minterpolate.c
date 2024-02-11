@@ -197,21 +197,21 @@ typedef struct MIContext {
 
 #define OFFSET(x) offsetof(MIContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-#define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, 0, 0, FLAGS, unit }
+#define CONST(name, help, val, u) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, 0, 0, FLAGS, .unit = u }
 
 static const AVOption minterpolate_options[] = {
     { "fps", "output's frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "60"}, 0, INT_MAX, FLAGS },
-    { "mi_mode", "motion interpolation mode", OFFSET(mi_mode), AV_OPT_TYPE_INT, {.i64 = MI_MODE_MCI}, MI_MODE_DUP, MI_MODE_MCI, FLAGS, "mi_mode" },
+    { "mi_mode", "motion interpolation mode", OFFSET(mi_mode), AV_OPT_TYPE_INT, {.i64 = MI_MODE_MCI}, MI_MODE_DUP, MI_MODE_MCI, FLAGS, .unit = "mi_mode" },
         CONST("dup",    "duplicate frames",                     MI_MODE_DUP,            "mi_mode"),
         CONST("blend",  "blend frames",                         MI_MODE_BLEND,          "mi_mode"),
         CONST("mci",    "motion compensated interpolation",     MI_MODE_MCI,            "mi_mode"),
-    { "mc_mode", "motion compensation mode", OFFSET(mc_mode), AV_OPT_TYPE_INT, {.i64 = MC_MODE_OBMC}, MC_MODE_OBMC, MC_MODE_AOBMC, FLAGS, "mc_mode" },
+    { "mc_mode", "motion compensation mode", OFFSET(mc_mode), AV_OPT_TYPE_INT, {.i64 = MC_MODE_OBMC}, MC_MODE_OBMC, MC_MODE_AOBMC, FLAGS, .unit = "mc_mode" },
         CONST("obmc",   "overlapped block motion compensation", MC_MODE_OBMC,           "mc_mode"),
         CONST("aobmc",  "adaptive overlapped block motion compensation", MC_MODE_AOBMC, "mc_mode"),
-    { "me_mode", "motion estimation mode", OFFSET(me_mode), AV_OPT_TYPE_INT, {.i64 = ME_MODE_BILAT}, ME_MODE_BIDIR, ME_MODE_BILAT, FLAGS, "me_mode" },
+    { "me_mode", "motion estimation mode", OFFSET(me_mode), AV_OPT_TYPE_INT, {.i64 = ME_MODE_BILAT}, ME_MODE_BIDIR, ME_MODE_BILAT, FLAGS, .unit = "me_mode" },
         CONST("bidir",  "bidirectional motion estimation",      ME_MODE_BIDIR,          "me_mode"),
         CONST("bilat",  "bilateral motion estimation",          ME_MODE_BILAT,          "me_mode"),
-    { "me", "motion estimation method", OFFSET(me_method), AV_OPT_TYPE_INT, {.i64 = AV_ME_METHOD_EPZS}, AV_ME_METHOD_ESA, AV_ME_METHOD_UMH, FLAGS, "me" },
+    { "me", "motion estimation method", OFFSET(me_method), AV_OPT_TYPE_INT, {.i64 = AV_ME_METHOD_EPZS}, AV_ME_METHOD_ESA, AV_ME_METHOD_UMH, FLAGS, .unit = "me" },
         CONST("esa",    "exhaustive search",                    AV_ME_METHOD_ESA,       "me"),
         CONST("tss",    "three step search",                    AV_ME_METHOD_TSS,       "me"),
         CONST("tdls",   "two dimensional logarithmic search",   AV_ME_METHOD_TDLS,      "me"),
@@ -224,7 +224,7 @@ static const AVOption minterpolate_options[] = {
     { "mb_size", "macroblock size", OFFSET(mb_size), AV_OPT_TYPE_INT, {.i64 = 16}, 4, 16, FLAGS },
     { "search_param", "search parameter", OFFSET(search_param), AV_OPT_TYPE_INT, {.i64 = 32}, 4, INT_MAX, FLAGS },
     { "vsbmc", "variable-size block motion compensation", OFFSET(vsbmc), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 1, FLAGS },
-    { "scd", "scene change detection method", OFFSET(scd_method), AV_OPT_TYPE_INT, {.i64 = SCD_METHOD_FDIFF}, SCD_METHOD_NONE, SCD_METHOD_FDIFF, FLAGS, "scene" },
+    { "scd", "scene change detection method", OFFSET(scd_method), AV_OPT_TYPE_INT, {.i64 = SCD_METHOD_FDIFF}, SCD_METHOD_NONE, SCD_METHOD_FDIFF, FLAGS, .unit = "scene" },
         CONST("none",   "disable detection",                    SCD_METHOD_NONE,        "scene"),
         CONST("fdiff",  "frame difference",                     SCD_METHOD_FDIFF,       "scene"),
     { "scd_threshold", "scene change threshold", OFFSET(scd_threshold), AV_OPT_TYPE_DOUBLE, {.dbl = 10.}, 0, 100.0, FLAGS },

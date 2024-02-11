@@ -43,10 +43,10 @@ static const AVOption pullup_options[] = {
     { "jt", "set top junk size",   OFFSET(junk_top),   AV_OPT_TYPE_INT, {.i64=4}, 1, INT_MAX, FLAGS },
     { "jb", "set bottom junk size", OFFSET(junk_bottom), AV_OPT_TYPE_INT, {.i64=4}, 1, INT_MAX, FLAGS },
     { "sb", "set strict breaks", OFFSET(strict_breaks), AV_OPT_TYPE_BOOL,{.i64=0},-1, 1, FLAGS },
-    { "mp", "set metric plane",  OFFSET(metric_plane),  AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "mp" },
-    { "y", "luma",        0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mp" },
-    { "u", "chroma blue", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mp" },
-    { "v", "chroma red",  0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "mp" },
+    { "mp", "set metric plane",  OFFSET(metric_plane),  AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, .unit = "mp" },
+    { "y", "luma",        0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, .unit = "mp" },
+    { "u", "chroma blue", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, .unit = "mp" },
+    { "v", "chroma red",  0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, .unit = "mp" },
     { NULL }
 };
 

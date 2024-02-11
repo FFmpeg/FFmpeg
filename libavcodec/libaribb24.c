@@ -379,9 +379,9 @@ static const AVOption options[] = {
     { "aribb24-skip-ruby-text", "skip ruby text blocks during decoding",
       OFFSET(aribb24_skip_ruby), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
     { "default_profile", "default profile to use if not specified in the stream parameters",
-      OFFSET(default_profile), AV_OPT_TYPE_INT, { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, AV_PROFILE_ARIB_PROFILE_C, SD, "profile" },
-        {"a", "Profile A", 0, AV_OPT_TYPE_CONST, {.i64 = AV_PROFILE_ARIB_PROFILE_A}, INT_MIN, INT_MAX, SD, "profile"},
-        {"c", "Profile C", 0, AV_OPT_TYPE_CONST, {.i64 = AV_PROFILE_ARIB_PROFILE_C}, INT_MIN, INT_MAX, SD, "profile"},
+      OFFSET(default_profile), AV_OPT_TYPE_INT, { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, AV_PROFILE_ARIB_PROFILE_C, SD, .unit = "profile" },
+        {"a", "Profile A", 0, AV_OPT_TYPE_CONST, {.i64 = AV_PROFILE_ARIB_PROFILE_A}, INT_MIN, INT_MAX, SD, .unit = "profile"},
+        {"c", "Profile C", 0, AV_OPT_TYPE_CONST, {.i64 = AV_PROFILE_ARIB_PROFILE_C}, INT_MIN, INT_MAX, SD, .unit = "profile"},
     { NULL }
 };
 

@@ -2215,7 +2215,7 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
     const AVDictionaryEntry *e;
     const AVOption opts[] = {
         { "type", "Set group type", offsetof(AVStreamGroup, type), AV_OPT_TYPE_INT,
-                { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "type" },
+                { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, .unit = "type" },
             { "iamf_audio_element",    NULL, 0, AV_OPT_TYPE_CONST,
                 { .i64 = AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT },    .unit = "type" },
             { "iamf_mix_presentation", NULL, 0, AV_OPT_TYPE_CONST,

@@ -36,19 +36,19 @@ static const char *framesync_name(void *ptr)
 static const AVOption framesync_options[] = {
     { "eof_action", "Action to take when encountering EOF from secondary input ",
         OFFSET(opt_eof_action), AV_OPT_TYPE_INT, { .i64 = EOF_ACTION_REPEAT },
-        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, "eof_action" },
-        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, "eof_action" },
-        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, "eof_action" },
-        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, "eof_action" },
+        EOF_ACTION_REPEAT, EOF_ACTION_PASS, .flags = FLAGS, .unit = "eof_action" },
+        { "repeat", "Repeat the previous frame.",   0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_REPEAT }, .flags = FLAGS, .unit = "eof_action" },
+        { "endall", "End both streams.",            0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_ENDALL }, .flags = FLAGS, .unit = "eof_action" },
+        { "pass",   "Pass through the main input.", 0, AV_OPT_TYPE_CONST, { .i64 = EOF_ACTION_PASS },   .flags = FLAGS, .unit = "eof_action" },
     { "shortest", "force termination when the shortest input terminates", OFFSET(opt_shortest), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { "repeatlast", "extend last frame of secondary streams beyond EOF", OFFSET(opt_repeatlast), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
     { "ts_sync_mode", "How strictly to sync streams based on secondary input timestamps",
         OFFSET(opt_ts_sync_mode), AV_OPT_TYPE_INT, { .i64 = TS_DEFAULT },
-        TS_DEFAULT, TS_NEAREST, .flags = FLAGS, "ts_sync_mode" },
+        TS_DEFAULT, TS_NEAREST, .flags = FLAGS, .unit = "ts_sync_mode" },
         { "default", "Frame from secondary input with the nearest lower or equal timestamp to the primary input frame",
-            0, AV_OPT_TYPE_CONST, { .i64 = TS_DEFAULT }, .flags = FLAGS, "ts_sync_mode" },
+            0, AV_OPT_TYPE_CONST, { .i64 = TS_DEFAULT }, .flags = FLAGS, .unit = "ts_sync_mode" },
         { "nearest", "Frame from secondary input with the absolute nearest timestamp to the primary input frame",
-            0, AV_OPT_TYPE_CONST, { .i64 = TS_NEAREST }, .flags = FLAGS, "ts_sync_mode" },
+            0, AV_OPT_TYPE_CONST, { .i64 = TS_NEAREST }, .flags = FLAGS, .unit = "ts_sync_mode" },
     { NULL }
 };
 static const AVClass framesync_class = {

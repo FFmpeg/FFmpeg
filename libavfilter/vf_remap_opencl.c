@@ -48,9 +48,9 @@ typedef struct RemapOpenCLContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 static const AVOption remap_opencl_options[] = {
-    { "interp", "set interpolation method", OFFSET(interp), AV_OPT_TYPE_INT,   {.i64=1}, 0, 1, FLAGS, "interp" },
-    {  "near",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "interp" },
-    {  "linear", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "interp" },
+    { "interp", "set interpolation method", OFFSET(interp), AV_OPT_TYPE_INT,   {.i64=1}, 0, 1, FLAGS, .unit = "interp" },
+    {  "near",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, .unit = "interp" },
+    {  "linear", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, .unit = "interp" },
     { "fill", "set the color of the unmapped pixels", OFFSET(fill_rgba), AV_OPT_TYPE_COLOR, {.str="black"}, .flags = FLAGS },
     { NULL }
 };

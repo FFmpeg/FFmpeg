@@ -80,7 +80,7 @@ typedef struct MCDeintContext {
 
 #define OFFSET(x) offsetof(MCDeintContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-#define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, unit }
+#define CONST(name, help, val, u) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, .unit = u }
 
 static const AVOption mcdeint_options[] = {
     { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=MODE_FAST}, 0, MODE_NB-1, FLAGS, .unit="mode" },
@@ -89,7 +89,7 @@ static const AVOption mcdeint_options[] = {
     CONST("slow",       NULL, MODE_SLOW,       "mode"),
     CONST("extra_slow", NULL, MODE_EXTRA_SLOW, "mode"),
 
-    { "parity", "set the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=PARITY_BFF}, -1, 1, FLAGS, "parity" },
+    { "parity", "set the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=PARITY_BFF}, -1, 1, FLAGS, .unit = "parity" },
     CONST("tff", "assume top field first",    PARITY_TFF, "parity"),
     CONST("bff", "assume bottom field first", PARITY_BFF, "parity"),
 

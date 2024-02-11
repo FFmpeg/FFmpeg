@@ -114,9 +114,9 @@ static const enum AVCodecID codec_ids[] = {
 #define OFFSET(x) offsetof(HapqaExtractContext, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_BSF_PARAM)
 static const AVOption options[] = {
-    { "texture", "texture to keep", OFFSET(texture), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS, "texture" },
-        { "color", "keep HapQ texture",         0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "texture" },
-        { "alpha", "keep HapAlphaOnly texture", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "texture" },
+    { "texture", "texture to keep", OFFSET(texture), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS, .unit = "texture" },
+        { "color", "keep HapQ texture",         0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, .unit = "texture" },
+        { "alpha", "keep HapAlphaOnly texture", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, .unit = "texture" },
     { NULL },
 };
 

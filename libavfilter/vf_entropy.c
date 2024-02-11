@@ -43,9 +43,9 @@ typedef struct EntropyContext {
 #define OFFSET(x) offsetof(EntropyContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption entropy_options[] = {
-    { "mode", "set kind of histogram entropy measurement",  OFFSET(mode), AV_OPT_TYPE_INT,   {.i64=0}, 0, 1, FLAGS, "mode" },
-    { "normal", NULL,                                       0,            AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mode" },
-    { "diff",   NULL,                                       0,            AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mode" },
+    { "mode", "set kind of histogram entropy measurement",  OFFSET(mode), AV_OPT_TYPE_INT,   {.i64=0}, 0, 1, FLAGS, .unit = "mode" },
+    { "normal", NULL,                                       0,            AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, .unit = "mode" },
+    { "diff",   NULL,                                       0,            AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, .unit = "mode" },
     { NULL }
 };
 

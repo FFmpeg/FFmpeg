@@ -58,10 +58,10 @@ static const AVOption deesser_options[] = {
     { "i", "set intensity",    OFFSET(intensity), AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, 0.0, 1.0, A },
     { "m", "set max deessing", OFFSET(max),       AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0.0, 1.0, A },
     { "f", "set frequency",    OFFSET(frequency), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0.0, 1.0, A },
-    { "s", "set output mode",  OFFSET(mode),      AV_OPT_TYPE_INT,    {.i64=OUT_MODE}, 0, NB_MODES-1, A, "mode" },
-    {  "i", "input",           0,                 AV_OPT_TYPE_CONST,  {.i64=IN_MODE},  0, 0, A, "mode" },
-    {  "o", "output",          0,                 AV_OPT_TYPE_CONST,  {.i64=OUT_MODE}, 0, 0, A, "mode" },
-    {  "e", "ess",             0,                 AV_OPT_TYPE_CONST,  {.i64=ESS_MODE}, 0, 0, A, "mode" },
+    { "s", "set output mode",  OFFSET(mode),      AV_OPT_TYPE_INT,    {.i64=OUT_MODE}, 0, NB_MODES-1, A, .unit = "mode" },
+    {  "i", "input",           0,                 AV_OPT_TYPE_CONST,  {.i64=IN_MODE},  0, 0, A, .unit = "mode" },
+    {  "o", "output",          0,                 AV_OPT_TYPE_CONST,  {.i64=OUT_MODE}, 0, 0, A, .unit = "mode" },
+    {  "e", "ess",             0,                 AV_OPT_TYPE_CONST,  {.i64=ESS_MODE}, 0, 0, A, .unit = "mode" },
     { NULL }
 };
 

@@ -520,11 +520,11 @@ static const AVOption colorcorrect_options[] = {
     { "rh", "set the red highlight spot",           OFFSET(rh), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, VF },
     { "bh", "set the blue highlight spot",          OFFSET(bh), AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, VF },
     { "saturation", "set the amount of saturation", OFFSET(saturation), AV_OPT_TYPE_FLOAT, {.dbl=1}, -3, 3, VF },
-    { "analyze", "set the analyze mode",            OFFSET(analyze), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_ANALYZE-1, VF, "analyze" },
-    {   "manual",  "manually set options", 0, AV_OPT_TYPE_CONST, {.i64=MANUAL},  0, 0, VF, "analyze" },
-    {   "average", "use average pixels",   0, AV_OPT_TYPE_CONST, {.i64=AVERAGE}, 0, 0, VF, "analyze" },
-    {   "minmax",  "use minmax pixels",    0, AV_OPT_TYPE_CONST, {.i64=MINMAX},  0, 0, VF, "analyze" },
-    {   "median",  "use median pixels",    0, AV_OPT_TYPE_CONST, {.i64=MEDIAN},  0, 0, VF, "analyze" },
+    { "analyze", "set the analyze mode",            OFFSET(analyze), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_ANALYZE-1, VF, .unit = "analyze" },
+    {   "manual",  "manually set options", 0, AV_OPT_TYPE_CONST, {.i64=MANUAL},  0, 0, VF, .unit = "analyze" },
+    {   "average", "use average pixels",   0, AV_OPT_TYPE_CONST, {.i64=AVERAGE}, 0, 0, VF, .unit = "analyze" },
+    {   "minmax",  "use minmax pixels",    0, AV_OPT_TYPE_CONST, {.i64=MINMAX},  0, 0, VF, .unit = "analyze" },
+    {   "median",  "use median pixels",    0, AV_OPT_TYPE_CONST, {.i64=MEDIAN},  0, 0, VF, .unit = "analyze" },
     { NULL }
 };
 

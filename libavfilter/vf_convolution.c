@@ -48,13 +48,13 @@ static const AVOption convolution_options[] = {
     { "1bias", "set bias for 2nd plane", OFFSET(bias[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
     { "2bias", "set bias for 3rd plane", OFFSET(bias[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
     { "3bias", "set bias for 4th plane", OFFSET(bias[3]), AV_OPT_TYPE_FLOAT, {.dbl=0.0}, 0.0, INT_MAX, FLAGS},
-    { "0mode", "set matrix mode for 1st plane", OFFSET(mode[0]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, "mode" },
-    { "1mode", "set matrix mode for 2nd plane", OFFSET(mode[1]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, "mode" },
-    { "2mode", "set matrix mode for 3rd plane", OFFSET(mode[2]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, "mode" },
-    { "3mode", "set matrix mode for 4th plane", OFFSET(mode[3]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, "mode" },
-    { "square", "square matrix",     0, AV_OPT_TYPE_CONST, {.i64=MATRIX_SQUARE}, 0, 0, FLAGS, "mode" },
-    { "row",    "single row matrix", 0, AV_OPT_TYPE_CONST, {.i64=MATRIX_ROW}   , 0, 0, FLAGS, "mode" },
-    { "column", "single column matrix", 0, AV_OPT_TYPE_CONST, {.i64=MATRIX_COLUMN}, 0, 0, FLAGS, "mode" },
+    { "0mode", "set matrix mode for 1st plane", OFFSET(mode[0]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, .unit = "mode" },
+    { "1mode", "set matrix mode for 2nd plane", OFFSET(mode[1]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, .unit = "mode" },
+    { "2mode", "set matrix mode for 3rd plane", OFFSET(mode[2]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, .unit = "mode" },
+    { "3mode", "set matrix mode for 4th plane", OFFSET(mode[3]), AV_OPT_TYPE_INT, {.i64=MATRIX_SQUARE}, 0, MATRIX_NBMODES-1, FLAGS, .unit = "mode" },
+    { "square", "square matrix",     0, AV_OPT_TYPE_CONST, {.i64=MATRIX_SQUARE}, 0, 0, FLAGS, .unit = "mode" },
+    { "row",    "single row matrix", 0, AV_OPT_TYPE_CONST, {.i64=MATRIX_ROW}   , 0, 0, FLAGS, .unit = "mode" },
+    { "column", "single column matrix", 0, AV_OPT_TYPE_CONST, {.i64=MATRIX_COLUMN}, 0, 0, FLAGS, .unit = "mode" },
     { NULL }
 };
 

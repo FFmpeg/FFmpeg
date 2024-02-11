@@ -177,12 +177,12 @@ static int twolame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 #define OFFSET(x) offsetof(TWOLAMEContext, x)
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "mode", "Mpeg Mode", OFFSET(mode), AV_OPT_TYPE_INT, { .i64 = TWOLAME_AUTO_MODE }, TWOLAME_AUTO_MODE, TWOLAME_MONO, AE, "mode"},
-        { "auto", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_AUTO_MODE }, 0, 0, AE, "mode" },
-        { "stereo", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_STEREO }, 0, 0, AE, "mode" },
-        { "joint_stereo", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_JOINT_STEREO }, 0, 0, AE, "mode" },
-        { "dual_channel", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_DUAL_CHANNEL }, 0, 0, AE, "mode" },
-        { "mono", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_MONO }, 0, 0, AE, "mode" },
+    { "mode", "Mpeg Mode", OFFSET(mode), AV_OPT_TYPE_INT, { .i64 = TWOLAME_AUTO_MODE }, TWOLAME_AUTO_MODE, TWOLAME_MONO, AE, .unit = "mode"},
+        { "auto", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_AUTO_MODE }, 0, 0, AE, .unit = "mode" },
+        { "stereo", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_STEREO }, 0, 0, AE, .unit = "mode" },
+        { "joint_stereo", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_JOINT_STEREO }, 0, 0, AE, .unit = "mode" },
+        { "dual_channel", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_DUAL_CHANNEL }, 0, 0, AE, .unit = "mode" },
+        { "mono", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = TWOLAME_MONO }, 0, 0, AE, .unit = "mode" },
     { "psymodel", "Psychoacoustic Model", OFFSET(psymodel), AV_OPT_TYPE_INT, { .i64 = 3 }, -1, 4, AE},
     { "energy_levels","enable energy levels", OFFSET(energy), AV_OPT_TYPE_INT, { .i64 = 0 },  0, 1, AE},
     { "error_protection","enable CRC error protection", OFFSET(error_protection), AV_OPT_TYPE_INT, { .i64 = 0 },  0, 1, AE},

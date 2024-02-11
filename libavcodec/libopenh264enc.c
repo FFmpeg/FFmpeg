@@ -61,28 +61,28 @@ typedef struct SVCContext {
 #define DEPRECATED AV_OPT_FLAG_DEPRECATED
 static const AVOption options[] = {
     { "loopfilter", "enable loop filter", OFFSET(loopfilter), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, VE },
-    { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xffff, VE, "profile" },
-#define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, { .i64 = value }, 0, 0, VE, "profile"
+    { "profile", "set profile restrictions", OFFSET(profile), AV_OPT_TYPE_INT, { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xffff, VE, .unit = "profile" },
+#define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, { .i64 = value }, 0, 0, VE, .unit = "profile"
         { PROFILE("constrained_baseline", AV_PROFILE_H264_CONSTRAINED_BASELINE) },
         { PROFILE("main",                 AV_PROFILE_H264_MAIN) },
         { PROFILE("high",                 AV_PROFILE_H264_HIGH) },
 #undef PROFILE
     { "max_nal_size", "set maximum NAL size in bytes", OFFSET(max_nal_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "allow_skip_frames", "allow skipping frames to hit the target bitrate", OFFSET(skip_frames), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
-    { "coder", "Coder type",  OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, "coder" },
-        { "default",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, INT_MIN, INT_MAX, VE, "coder" },
-        { "cavlc",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "coder" },
-        { "cabac",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "coder" },
-        { "vlc",              NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, "coder" },
-        { "ac",               NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, "coder" },
+    { "coder", "Coder type",  OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 1, VE, .unit = "coder" },
+        { "default",          NULL, 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, INT_MIN, INT_MAX, VE, .unit = "coder" },
+        { "cavlc",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, .unit = "coder" },
+        { "cabac",            NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, .unit = "coder" },
+        { "vlc",              NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 },  INT_MIN, INT_MAX, VE, .unit = "coder" },
+        { "ac",               NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 },  INT_MIN, INT_MAX, VE, .unit = "coder" },
 
-    { "rc_mode", "Select rate control mode", OFFSET(rc_mode), AV_OPT_TYPE_INT, { .i64 = RC_QUALITY_MODE }, RC_OFF_MODE, RC_TIMESTAMP_MODE, VE, "rc_mode" },
-        { "off",       "bit rate control off",                                                 0, AV_OPT_TYPE_CONST, { .i64 = RC_OFF_MODE },         0, 0, VE, "rc_mode" },
-        { "quality",   "quality mode",                                                         0, AV_OPT_TYPE_CONST, { .i64 = RC_QUALITY_MODE },     0, 0, VE, "rc_mode" },
-        { "bitrate",   "bitrate mode",                                                         0, AV_OPT_TYPE_CONST, { .i64 = RC_BITRATE_MODE },     0, 0, VE, "rc_mode" },
-        { "buffer",    "using buffer status to adjust the video quality (no bitrate control)", 0, AV_OPT_TYPE_CONST, { .i64 = RC_BUFFERBASED_MODE }, 0, 0, VE, "rc_mode" },
+    { "rc_mode", "Select rate control mode", OFFSET(rc_mode), AV_OPT_TYPE_INT, { .i64 = RC_QUALITY_MODE }, RC_OFF_MODE, RC_TIMESTAMP_MODE, VE, .unit = "rc_mode" },
+        { "off",       "bit rate control off",                                                 0, AV_OPT_TYPE_CONST, { .i64 = RC_OFF_MODE },         0, 0, VE, .unit = "rc_mode" },
+        { "quality",   "quality mode",                                                         0, AV_OPT_TYPE_CONST, { .i64 = RC_QUALITY_MODE },     0, 0, VE, .unit = "rc_mode" },
+        { "bitrate",   "bitrate mode",                                                         0, AV_OPT_TYPE_CONST, { .i64 = RC_BITRATE_MODE },     0, 0, VE, .unit = "rc_mode" },
+        { "buffer",    "using buffer status to adjust the video quality (no bitrate control)", 0, AV_OPT_TYPE_CONST, { .i64 = RC_BUFFERBASED_MODE }, 0, 0, VE, .unit = "rc_mode" },
 #if OPENH264_VER_AT_LEAST(1, 4)
-        { "timestamp", "bit rate control based on timestamp",                                  0, AV_OPT_TYPE_CONST, { .i64 = RC_TIMESTAMP_MODE },   0, 0, VE, "rc_mode" },
+        { "timestamp", "bit rate control based on timestamp",                                  0, AV_OPT_TYPE_CONST, { .i64 = RC_TIMESTAMP_MODE },   0, 0, VE, .unit = "rc_mode" },
 #endif
 
     { NULL }

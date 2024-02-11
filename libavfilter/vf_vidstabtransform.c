@@ -55,13 +55,13 @@ static const AVOption vidstabtransform_options[] = {
                    AV_OPT_TYPE_INT,    {.i64 = 15},       0, 1000, FLAGS},
 
     {"optalgo",   "set camera path optimization algo", OFFSETC(camPathAlgo),
-                   AV_OPT_TYPE_INT,    {.i64 = VSOptimalL1}, VSOptimalL1, VSAvg, FLAGS, "optalgo"},
+                   AV_OPT_TYPE_INT,    {.i64 = VSOptimalL1}, VSOptimalL1, VSAvg, FLAGS, .unit = "optalgo"},
     {  "opt",     "global optimization",                                            0, // from version 1.0 on
-                   AV_OPT_TYPE_CONST,  {.i64 = VSOptimalL1 }, 0, 0, FLAGS, "optalgo"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VSOptimalL1 }, 0, 0, FLAGS, .unit = "optalgo"},
     {  "gauss",   "gaussian kernel",                                                0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VSGaussian }, 0, 0, FLAGS,  "optalgo"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VSGaussian }, 0, 0, FLAGS,  .unit = "optalgo"},
     {  "avg",     "simple averaging on motion",                                     0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VSAvg },      0, 0, FLAGS,  "optalgo"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VSAvg },      0, 0, FLAGS,  .unit = "optalgo"},
 
     {"maxshift",  "set maximal number of pixels to translate image", OFFSETC(maxShift),
                    AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 500,  FLAGS},
@@ -69,11 +69,11 @@ static const AVOption vidstabtransform_options[] = {
                    AV_OPT_TYPE_DOUBLE, {.dbl = -1.0},  -1.0, 3.14, FLAGS},
 
     {"crop",      "set cropping mode", OFFSETC(crop),
-                   AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS, "crop"},
+                   AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS, .unit = "crop"},
     {  "keep",    "keep border",                                                    0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VSKeepBorder }, 0, 0, FLAGS, "crop"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VSKeepBorder }, 0, 0, FLAGS, .unit = "crop"},
     {  "black",   "black border",                                                   0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VSCropBorder }, 0, 0, FLAGS, "crop"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VSCropBorder }, 0, 0, FLAGS, .unit = "crop"},
 
     {"invert",    "invert transforms", OFFSETC(invert),
                    AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,    FLAGS},
@@ -87,15 +87,15 @@ static const AVOption vidstabtransform_options[] = {
                    AV_OPT_TYPE_DOUBLE, {.dbl = 0.25},     0, 5,    FLAGS},
 
     {"interpol",  "set type of interpolation", OFFSETC(interpolType),
-                   AV_OPT_TYPE_INT,    {.i64 = 2},        0, 3,    FLAGS, "interpol"},
+                   AV_OPT_TYPE_INT,    {.i64 = 2},        0, 3,    FLAGS, .unit = "interpol"},
     {  "no",      "no interpolation",                                               0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VS_Zero  },  0, 0,  FLAGS, "interpol"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VS_Zero  },  0, 0,  FLAGS, .unit = "interpol"},
     {  "linear",  "linear (horizontal)",                                            0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VS_Linear }, 0, 0,  FLAGS, "interpol"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VS_Linear }, 0, 0,  FLAGS, .unit = "interpol"},
     {  "bilinear","bi-linear",                                                      0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VS_BiLinear},0, 0,  FLAGS, "interpol"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VS_BiLinear},0, 0,  FLAGS, .unit = "interpol"},
     {  "bicubic", "bi-cubic",                                                       0,
-                   AV_OPT_TYPE_CONST,  {.i64 = VS_BiCubic },0, 0,  FLAGS, "interpol"},
+                   AV_OPT_TYPE_CONST,  {.i64 = VS_BiCubic },0, 0,  FLAGS, .unit = "interpol"},
 
     {"tripod",    "enable virtual tripod mode (same as relative=0:smoothing=0)", OFFSET(tripod),
                    AV_OPT_TYPE_BOOL,   {.i64 = 0},        0, 1,    FLAGS},

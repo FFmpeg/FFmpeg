@@ -50,11 +50,11 @@ typedef struct DisplaceContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption displace_options[] = {
-    { "edge", "set edge mode", OFFSET(edge), AV_OPT_TYPE_INT, {.i64=EDGE_SMEAR}, 0, EDGE_NB-1, FLAGS, "edge" },
-    {   "blank",   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_BLANK},  0, 0, FLAGS, "edge" },
-    {   "smear",   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_SMEAR},  0, 0, FLAGS, "edge" },
-    {   "wrap" ,   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_WRAP},   0, 0, FLAGS, "edge" },
-    {   "mirror" , "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_MIRROR}, 0, 0, FLAGS, "edge" },
+    { "edge", "set edge mode", OFFSET(edge), AV_OPT_TYPE_INT, {.i64=EDGE_SMEAR}, 0, EDGE_NB-1, FLAGS, .unit = "edge" },
+    {   "blank",   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_BLANK},  0, 0, FLAGS, .unit = "edge" },
+    {   "smear",   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_SMEAR},  0, 0, FLAGS, .unit = "edge" },
+    {   "wrap" ,   "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_WRAP},   0, 0, FLAGS, .unit = "edge" },
+    {   "mirror" , "", 0, AV_OPT_TYPE_CONST, {.i64=EDGE_MIRROR}, 0, 0, FLAGS, .unit = "edge" },
     { NULL }
 };
 

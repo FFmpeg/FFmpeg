@@ -117,10 +117,10 @@ static const AVOption loudnorm_options[] = {
     { "offset",           "set offset gain",                   OFFSET(offset),           AV_OPT_TYPE_DOUBLE,  {.dbl =  0.},    -99.,       99.,  FLAGS },
     { "linear",           "normalize linearly if possible",    OFFSET(linear),           AV_OPT_TYPE_BOOL,    {.i64 =  1},        0,         1,  FLAGS },
     { "dual_mono",        "treat mono input as dual-mono",     OFFSET(dual_mono),        AV_OPT_TYPE_BOOL,    {.i64 =  0},        0,         1,  FLAGS },
-    { "print_format",     "set print format for stats",        OFFSET(print_format),     AV_OPT_TYPE_INT,     {.i64 =  NONE},  NONE,  PF_NB -1,  FLAGS, "print_format" },
-    {     "none",         0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  NONE},     0,         0,  FLAGS, "print_format" },
-    {     "json",         0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  JSON},     0,         0,  FLAGS, "print_format" },
-    {     "summary",      0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  SUMMARY},  0,         0,  FLAGS, "print_format" },
+    { "print_format",     "set print format for stats",        OFFSET(print_format),     AV_OPT_TYPE_INT,     {.i64 =  NONE},  NONE,  PF_NB -1,  FLAGS, .unit = "print_format" },
+    {     "none",         0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  NONE},     0,         0,  FLAGS, .unit = "print_format" },
+    {     "json",         0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  JSON},     0,         0,  FLAGS, .unit = "print_format" },
+    {     "summary",      0,                                   0,                        AV_OPT_TYPE_CONST,   {.i64 =  SUMMARY},  0,         0,  FLAGS, .unit = "print_format" },
     { NULL }
 };
 

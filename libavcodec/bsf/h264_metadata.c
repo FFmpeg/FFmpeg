@@ -660,7 +660,7 @@ static const AVOption h264_metadata_options[] = {
         { .dbl = NAN }, -360.0, +360.0, FLAGS },
     { "flip", "Set flip in display orientation SEI",
         OFFSET(flip), AV_OPT_TYPE_FLAGS,
-        { .i64 = 0 }, 0, FLIP_HORIZONTAL | FLIP_VERTICAL, FLAGS, "flip" },
+        { .i64 = 0 }, 0, FLIP_HORIZONTAL | FLIP_VERTICAL, FLAGS, .unit = "flip" },
     { "horizontal", "Set hor_flip",
         0, AV_OPT_TYPE_CONST,
         { .i64 = FLIP_HORIZONTAL }, .flags = FLAGS, .unit = "flip" },
@@ -670,7 +670,7 @@ static const AVOption h264_metadata_options[] = {
 
     { "level", "Set level (table A-1)",
         OFFSET(level), AV_OPT_TYPE_INT,
-        { .i64 = LEVEL_UNSET }, LEVEL_UNSET, 0xff, FLAGS, "level" },
+        { .i64 = LEVEL_UNSET }, LEVEL_UNSET, 0xff, FLAGS, .unit = "level" },
     { "auto", "Attempt to guess level from stream properties",
         0, AV_OPT_TYPE_CONST,
         { .i64 = LEVEL_AUTO }, .flags = FLAGS, .unit = "level" },

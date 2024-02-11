@@ -396,11 +396,11 @@ static const AVOption dcadec_options[] = {
 
     { "channel_order", "Order in which the channels are to be exported",
         OFFSET(output_channel_order), AV_OPT_TYPE_INT,
-        { .i64 = CHANNEL_ORDER_DEFAULT }, 0, 1, PARAM, "channel_order" },
+        { .i64 = CHANNEL_ORDER_DEFAULT }, 0, 1, PARAM, .unit = "channel_order" },
       { "default", "normal libavcodec channel order", 0, AV_OPT_TYPE_CONST,
-        { .i64 = CHANNEL_ORDER_DEFAULT }, .flags = PARAM, "channel_order" },
+        { .i64 = CHANNEL_ORDER_DEFAULT }, .flags = PARAM, .unit = "channel_order" },
       { "coded",    "order in which the channels are coded in the bitstream",
-        0, AV_OPT_TYPE_CONST, { .i64 = CHANNEL_ORDER_CODED }, .flags = PARAM, "channel_order" },
+        0, AV_OPT_TYPE_CONST, { .i64 = CHANNEL_ORDER_CODED }, .flags = PARAM, .unit = "channel_order" },
 
     { "downmix", "Request a specific channel layout from the decoder", OFFSET(downmix_layout),
         AV_OPT_TYPE_CHLAYOUT, {.str = NULL}, .flags = PARAM },

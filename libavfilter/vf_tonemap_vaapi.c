@@ -367,25 +367,25 @@ static av_cold int tonemap_vaapi_init(AVFilterContext *avctx)
 #define OFFSET(x) offsetof(HDRVAAPIContext, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM)
 static const AVOption tonemap_vaapi_options[] = {
-    { "format", "Output pixel format set", OFFSET(output_format_string), AV_OPT_TYPE_STRING, .flags = FLAGS, "format" },
+    { "format", "Output pixel format set", OFFSET(output_format_string), AV_OPT_TYPE_STRING, .flags = FLAGS, .unit = "format" },
     { "matrix", "Output color matrix coefficient set",
       OFFSET(color_matrix_string), AV_OPT_TYPE_STRING,
-      { .str = NULL }, .flags = FLAGS, "matrix" },
+      { .str = NULL }, .flags = FLAGS, .unit = "matrix" },
     { "m",      "Output color matrix coefficient set",
       OFFSET(color_matrix_string), AV_OPT_TYPE_STRING,
-      { .str = NULL }, .flags = FLAGS, "matrix" },
+      { .str = NULL }, .flags = FLAGS, .unit = "matrix" },
     { "primaries", "Output color primaries set",
       OFFSET(color_primaries_string), AV_OPT_TYPE_STRING,
-      { .str = NULL }, .flags = FLAGS, "primaries" },
+      { .str = NULL }, .flags = FLAGS, .unit = "primaries" },
     { "p",         "Output color primaries set",
       OFFSET(color_primaries_string), AV_OPT_TYPE_STRING,
-      { .str = NULL }, .flags = FLAGS, "primaries" },
+      { .str = NULL }, .flags = FLAGS, .unit = "primaries" },
     { "transfer", "Output color transfer characteristics set",
       OFFSET(color_transfer_string),  AV_OPT_TYPE_STRING,
-      { .str = NULL }, .flags = FLAGS, "transfer" },
+      { .str = NULL }, .flags = FLAGS, .unit = "transfer" },
     { "t",        "Output color transfer characteristics set",
       OFFSET(color_transfer_string),  AV_OPT_TYPE_STRING,
-      { .str = NULL }, .flags = FLAGS, "transfer" },
+      { .str = NULL }, .flags = FLAGS, .unit = "transfer" },
     { NULL }
 };
 

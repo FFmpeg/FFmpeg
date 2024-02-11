@@ -1289,11 +1289,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static const AVOption options[] = {
     { "channel_order", "Order in which the channels are to be exported",
         OFFSET(dectx.metadata.output_channel_order), AV_OPT_TYPE_INT,
-        { .i64 = CHANNEL_ORDER_DEFAULT }, 0, 1, FLAGS, "channel_order" },
+        { .i64 = CHANNEL_ORDER_DEFAULT }, 0, 1, FLAGS, .unit = "channel_order" },
       { "default", "normal libavcodec channel order", 0, AV_OPT_TYPE_CONST,
-        { .i64 = CHANNEL_ORDER_DEFAULT }, .flags = FLAGS, "channel_order" },
+        { .i64 = CHANNEL_ORDER_DEFAULT }, .flags = FLAGS, .unit = "channel_order" },
       { "coded",    "order in which the channels are coded in the bitstream",
-        0, AV_OPT_TYPE_CONST, { .i64 = CHANNEL_ORDER_CODED }, .flags = FLAGS, "channel_order" },
+        0, AV_OPT_TYPE_CONST, { .i64 = CHANNEL_ORDER_CODED }, .flags = FLAGS, .unit = "channel_order" },
 
       { NULL },
 };

@@ -67,15 +67,15 @@ typedef struct HistogramContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
 #define COMMON_OPTIONS \
-    { "display_mode", "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS, "display_mode"}, \
-    { "d",            "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS, "display_mode"}, \
-        { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "display_mode" }, \
-        { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "display_mode" }, \
-        { "stack",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "display_mode" }, \
-    { "levels_mode", "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "levels_mode"}, \
-    { "m",           "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "levels_mode"}, \
-        { "linear",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "levels_mode" }, \
-        { "logarithmic", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "levels_mode" }, \
+    { "display_mode", "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS, .unit = "display_mode"}, \
+    { "d",            "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS, .unit = "display_mode"}, \
+        { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, .unit = "display_mode" }, \
+        { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, .unit = "display_mode" }, \
+        { "stack",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, .unit = "display_mode" }, \
+    { "levels_mode", "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, .unit = "levels_mode"}, \
+    { "m",           "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, .unit = "levels_mode"}, \
+        { "linear",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, .unit = "levels_mode" }, \
+        { "logarithmic", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, .unit = "levels_mode" }, \
     { "components", "set color components to display", OFFSET(components), AV_OPT_TYPE_INT, {.i64=7}, 1, 15, FLAGS}, \
     { "c",          "set color components to display", OFFSET(components), AV_OPT_TYPE_INT, {.i64=7}, 1, 15, FLAGS},
 
@@ -87,18 +87,18 @@ static const AVOption histogram_options[] = {
     { "f",         "set foreground opacity", OFFSET(fgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.7}, 0, 1, FLAGS},
     { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
     { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
-    { "colors_mode", "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 9, FLAGS, "colors_mode"},
-    { "l",           "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 9, FLAGS, "colors_mode"},
-        { "whiteonblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "colors_mode" },
-        { "blackonwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "colors_mode" },
-        { "whiteongray",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "colors_mode" },
-        { "blackongray",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, "colors_mode" },
-        { "coloronblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, "colors_mode" },
-        { "coloronwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=5}, 0, 0, FLAGS, "colors_mode" },
-        { "colorongray" , NULL, 0, AV_OPT_TYPE_CONST, {.i64=6}, 0, 0, FLAGS, "colors_mode" },
-        { "blackoncolor", NULL, 0, AV_OPT_TYPE_CONST, {.i64=7}, 0, 0, FLAGS, "colors_mode" },
-        { "whiteoncolor", NULL, 0, AV_OPT_TYPE_CONST, {.i64=8}, 0, 0, FLAGS, "colors_mode" },
-        { "grayoncolor" , NULL, 0, AV_OPT_TYPE_CONST, {.i64=9}, 0, 0, FLAGS, "colors_mode" },
+    { "colors_mode", "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 9, FLAGS, .unit = "colors_mode"},
+    { "l",           "set colors mode", OFFSET(colors_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 9, FLAGS, .unit = "colors_mode"},
+        { "whiteonblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "blackonwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "whiteongray",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "blackongray",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "coloronblack", NULL, 0, AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "coloronwhite", NULL, 0, AV_OPT_TYPE_CONST, {.i64=5}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "colorongray" , NULL, 0, AV_OPT_TYPE_CONST, {.i64=6}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "blackoncolor", NULL, 0, AV_OPT_TYPE_CONST, {.i64=7}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "whiteoncolor", NULL, 0, AV_OPT_TYPE_CONST, {.i64=8}, 0, 0, FLAGS, .unit = "colors_mode" },
+        { "grayoncolor" , NULL, 0, AV_OPT_TYPE_CONST, {.i64=9}, 0, 0, FLAGS, .unit = "colors_mode" },
     { NULL }
 };
 
@@ -667,12 +667,12 @@ static const AVOption thistogram_options[] = {
     { "e",        "display envelope", OFFSET(envelope), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
     { "ecolor", "set envelope color", OFFSET(envelope_rgba), AV_OPT_TYPE_COLOR, {.str="gold"}, 0, 0, FLAGS },
     { "ec",     "set envelope color", OFFSET(envelope_rgba), AV_OPT_TYPE_COLOR, {.str="gold"}, 0, 0, FLAGS },
-    { "slide", "set slide mode",                     OFFSET(slide), AV_OPT_TYPE_INT,   {.i64=1}, 0, 4, FLAGS, "slide" },
-        {"frame",   "draw new frames",               OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "slide"},
-        {"replace", "replace old columns with new",  OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "slide"},
-        {"scroll",  "scroll from right to left",     OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "slide"},
-        {"rscroll", "scroll from left to right",     OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, "slide"},
-        {"picture", "display graph in single frame", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, "slide"},
+    { "slide", "set slide mode",                     OFFSET(slide), AV_OPT_TYPE_INT,   {.i64=1}, 0, 4, FLAGS, .unit = "slide" },
+        {"frame",   "draw new frames",               OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, .unit = "slide"},
+        {"replace", "replace old columns with new",  OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, .unit = "slide"},
+        {"scroll",  "scroll from right to left",     OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, .unit = "slide"},
+        {"rscroll", "scroll from left to right",     OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=3}, 0, 0, FLAGS, .unit = "slide"},
+        {"picture", "display graph in single frame", OFFSET(slide), AV_OPT_TYPE_CONST, {.i64=4}, 0, 0, FLAGS, .unit = "slide"},
     { NULL }
 };
 

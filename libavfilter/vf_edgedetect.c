@@ -71,17 +71,17 @@ typedef struct EdgeDetectContext {
 static const AVOption edgedetect_options[] = {
     { "high", "set high threshold", OFFSET(high), AV_OPT_TYPE_DOUBLE, {.dbl=50/255.}, 0, 1, FLAGS },
     { "low",  "set low threshold",  OFFSET(low),  AV_OPT_TYPE_DOUBLE, {.dbl=20/255.}, 0, 1, FLAGS },
-    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=MODE_WIRES}, 0, NB_MODE-1, FLAGS, "mode" },
-        { "wires",    "white/gray wires on black",  0, AV_OPT_TYPE_CONST, {.i64=MODE_WIRES},    INT_MIN, INT_MAX, FLAGS, "mode" },
-        { "colormix", "mix colors",                 0, AV_OPT_TYPE_CONST, {.i64=MODE_COLORMIX}, INT_MIN, INT_MAX, FLAGS, "mode" },
-        { "canny",    "detect edges on planes",     0, AV_OPT_TYPE_CONST, {.i64=MODE_CANNY},    INT_MIN, INT_MAX, FLAGS, "mode" },
-    { "planes", "set planes to filter",  OFFSET(filter_planes), AV_OPT_TYPE_FLAGS, {.i64=7}, 1, 0x7, FLAGS, "flags" },
-        { "y", "filter luma plane",  0, AV_OPT_TYPE_CONST, {.i64=PLANE_Y}, 0, 0, FLAGS, "flags" },
-        { "u", "filter u plane",     0, AV_OPT_TYPE_CONST, {.i64=PLANE_U}, 0, 0, FLAGS, "flags" },
-        { "v", "filter v plane",     0, AV_OPT_TYPE_CONST, {.i64=PLANE_V}, 0, 0, FLAGS, "flags" },
-        { "r", "filter red plane",   0, AV_OPT_TYPE_CONST, {.i64=PLANE_R}, 0, 0, FLAGS, "flags" },
-        { "g", "filter green plane", 0, AV_OPT_TYPE_CONST, {.i64=PLANE_G}, 0, 0, FLAGS, "flags" },
-        { "b", "filter blue plane",  0, AV_OPT_TYPE_CONST, {.i64=PLANE_B}, 0, 0, FLAGS, "flags" },
+    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=MODE_WIRES}, 0, NB_MODE-1, FLAGS, .unit = "mode" },
+        { "wires",    "white/gray wires on black",  0, AV_OPT_TYPE_CONST, {.i64=MODE_WIRES},    INT_MIN, INT_MAX, FLAGS, .unit = "mode" },
+        { "colormix", "mix colors",                 0, AV_OPT_TYPE_CONST, {.i64=MODE_COLORMIX}, INT_MIN, INT_MAX, FLAGS, .unit = "mode" },
+        { "canny",    "detect edges on planes",     0, AV_OPT_TYPE_CONST, {.i64=MODE_CANNY},    INT_MIN, INT_MAX, FLAGS, .unit = "mode" },
+    { "planes", "set planes to filter",  OFFSET(filter_planes), AV_OPT_TYPE_FLAGS, {.i64=7}, 1, 0x7, FLAGS, .unit = "flags" },
+        { "y", "filter luma plane",  0, AV_OPT_TYPE_CONST, {.i64=PLANE_Y}, 0, 0, FLAGS, .unit = "flags" },
+        { "u", "filter u plane",     0, AV_OPT_TYPE_CONST, {.i64=PLANE_U}, 0, 0, FLAGS, .unit = "flags" },
+        { "v", "filter v plane",     0, AV_OPT_TYPE_CONST, {.i64=PLANE_V}, 0, 0, FLAGS, .unit = "flags" },
+        { "r", "filter red plane",   0, AV_OPT_TYPE_CONST, {.i64=PLANE_R}, 0, 0, FLAGS, .unit = "flags" },
+        { "g", "filter green plane", 0, AV_OPT_TYPE_CONST, {.i64=PLANE_G}, 0, 0, FLAGS, .unit = "flags" },
+        { "b", "filter blue plane",  0, AV_OPT_TYPE_CONST, {.i64=PLANE_B}, 0, 0, FLAGS, .unit = "flags" },
     { NULL }
 };
 

@@ -525,14 +525,14 @@ int ff_vaapi_encode_close(AVCodecContext *avctx);
 
 #define VAAPI_ENCODE_RC_MODE(name, desc) \
     { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_ ## name }, \
-      0, 0, FLAGS, "rc_mode" }
+      0, 0, FLAGS, .unit = "rc_mode" }
 #define VAAPI_ENCODE_RC_OPTIONS \
     { "rc_mode",\
       "Set rate control mode", \
       OFFSET(common.explicit_rc_mode), AV_OPT_TYPE_INT, \
-      { .i64 = RC_MODE_AUTO }, RC_MODE_AUTO, RC_MODE_MAX, FLAGS, "rc_mode" }, \
+      { .i64 = RC_MODE_AUTO }, RC_MODE_AUTO, RC_MODE_MAX, FLAGS, .unit = "rc_mode" }, \
     { "auto", "Choose mode automatically based on other parameters", \
-      0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_AUTO }, 0, 0, FLAGS, "rc_mode" }, \
+      0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_AUTO }, 0, 0, FLAGS, .unit = "rc_mode" }, \
     VAAPI_ENCODE_RC_MODE(CQP,  "Constant-quality"), \
     VAAPI_ENCODE_RC_MODE(CBR,  "Constant-bitrate"), \
     VAAPI_ENCODE_RC_MODE(VBR,  "Variable-bitrate"), \

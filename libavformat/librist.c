@@ -63,10 +63,10 @@ typedef struct RISTContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 #define OFFSET(x) offsetof(RISTContext, x)
 static const AVOption librist_options[] = {
-    { "rist_profile","set profile",     OFFSET(profile),     AV_OPT_TYPE_INT,   {.i64=RIST_PROFILE_MAIN},     0, 2, .flags = D|E, "profile" },
-    { "simple",      NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_SIMPLE},   0, 0, .flags = D|E, "profile" },
-    { "main",        NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_MAIN},     0, 0, .flags = D|E, "profile" },
-    { "advanced",    NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_ADVANCED}, 0, 0, .flags = D|E, "profile" },
+    { "rist_profile","set profile",     OFFSET(profile),     AV_OPT_TYPE_INT,   {.i64=RIST_PROFILE_MAIN},     0, 2, .flags = D|E, .unit = "profile" },
+    { "simple",      NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_SIMPLE},   0, 0, .flags = D|E, .unit = "profile" },
+    { "main",        NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_MAIN},     0, 0, .flags = D|E, .unit = "profile" },
+    { "advanced",    NULL,              0,                   AV_OPT_TYPE_CONST, {.i64=RIST_PROFILE_ADVANCED}, 0, 0, .flags = D|E, .unit = "profile" },
     { "buffer_size", "set buffer_size in ms", OFFSET(buffer_size), AV_OPT_TYPE_INT, {.i64=0},                 0, 30000, .flags = D|E },
     { "fifo_size",   "set fifo buffer size, must be a power of 2", OFFSET(fifo_size), AV_OPT_TYPE_INT, {.i64=FIFO_SIZE_DEFAULT}, 32, 262144, .flags = D|E },
     { "overrun_nonfatal", "survive in case of receiving fifo buffer overrun", OFFSET(overrun_nonfatal), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1,    D },

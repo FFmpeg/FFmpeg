@@ -56,10 +56,10 @@ static const AVOption abitscope_options[] = {
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="1024x256"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="1024x256"}, 0, 0, FLAGS },
     { "colors", "set channels colors", OFFSET(colors), AV_OPT_TYPE_STRING, {.str = "red|green|blue|yellow|orange|lime|pink|magenta|brown" }, 0, 0, FLAGS },
-    { "mode", "set output mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FLAGS, "mode" },
-    { "m",    "set output mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FLAGS, "mode" },
-    { "bars",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "mode" },
-    { "trace", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "mode" },
+    { "mode", "set output mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FLAGS, .unit = "mode" },
+    { "m",    "set output mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FLAGS, .unit = "mode" },
+    { "bars",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, .unit = "mode" },
+    { "trace", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, .unit = "mode" },
     { NULL }
 };
 

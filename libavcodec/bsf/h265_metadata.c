@@ -456,7 +456,7 @@ static const AVOption h265_metadata_options[] = {
 
     { "level", "Set level (tables A.6 and A.7)",
         OFFSET(level), AV_OPT_TYPE_INT,
-        { .i64 = LEVEL_UNSET }, LEVEL_UNSET, 0xff, FLAGS, "level" },
+        { .i64 = LEVEL_UNSET }, LEVEL_UNSET, 0xff, FLAGS, .unit = "level" },
     { "auto", "Attempt to guess level from stream properties",
         0, AV_OPT_TYPE_CONST,
         { .i64 = LEVEL_AUTO }, .flags = FLAGS, .unit = "level" },

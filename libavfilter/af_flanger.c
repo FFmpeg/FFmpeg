@@ -58,15 +58,15 @@ static const AVOption flanger_options[] = {
     { "regen", "percentage regeneration (delayed signal feedback)", OFFSET(feedback_gain), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -95, 95, A },
     { "width", "percentage of delayed signal mixed with original", OFFSET(delay_gain), AV_OPT_TYPE_DOUBLE, {.dbl=71}, 0, 100, A },
     { "speed", "sweeps per second (Hz)", OFFSET(speed), AV_OPT_TYPE_DOUBLE, {.dbl=0.5}, 0.1, 10, A },
-    { "shape", "swept wave shape", OFFSET(wave_shape), AV_OPT_TYPE_INT, {.i64=WAVE_SIN}, WAVE_SIN, WAVE_NB-1, A, "type" },
-    { "triangular",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, A, "type" },
-    { "t",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, A, "type" },
-    { "sinusoidal",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, A, "type" },
-    { "s",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, A, "type" },
+    { "shape", "swept wave shape", OFFSET(wave_shape), AV_OPT_TYPE_INT, {.i64=WAVE_SIN}, WAVE_SIN, WAVE_NB-1, A, .unit = "type" },
+    { "triangular",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, A, .unit = "type" },
+    { "t",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, A, .unit = "type" },
+    { "sinusoidal",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, A, .unit = "type" },
+    { "s",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, A, .unit = "type" },
     { "phase", "swept wave percentage phase-shift for multi-channel", OFFSET(channel_phase), AV_OPT_TYPE_DOUBLE, {.dbl=25}, 0, 100, A },
-    { "interp", "delay-line interpolation", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, A, "itype" },
-    { "linear",     NULL, 0, AV_OPT_TYPE_CONST,  {.i64=INTERPOLATION_LINEAR},    0, 0, A, "itype" },
-    { "quadratic",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=INTERPOLATION_QUADRATIC}, 0, 0, A, "itype" },
+    { "interp", "delay-line interpolation", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, A, .unit = "itype" },
+    { "linear",     NULL, 0, AV_OPT_TYPE_CONST,  {.i64=INTERPOLATION_LINEAR},    0, 0, A, .unit = "itype" },
+    { "quadratic",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=INTERPOLATION_QUADRATIC}, 0, 0, A, .unit = "itype" },
     { NULL }
 };
 

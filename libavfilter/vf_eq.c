@@ -334,7 +334,7 @@ static const AVOption eq_options[] = {
         OFFSET(gamma_b_expr),      AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
     { "gamma_weight", "set the gamma weight which reduces the effect of gamma on bright areas",
         OFFSET(gamma_weight_expr), AV_OPT_TYPE_STRING, {.str = "1.0"}, 0, 0, TFLAGS },
-    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, "eval" },
+    { "eval", "specify when to evaluate expressions", OFFSET(eval_mode), AV_OPT_TYPE_INT, {.i64 = EVAL_MODE_INIT}, 0, EVAL_MODE_NB-1, FLAGS, .unit = "eval" },
          { "init",  "eval expressions once during initialization", 0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_INIT},  .flags = FLAGS, .unit = "eval" },
          { "frame", "eval expressions per-frame",                  0, AV_OPT_TYPE_CONST, {.i64=EVAL_MODE_FRAME}, .flags = FLAGS, .unit = "eval" },
     { NULL }

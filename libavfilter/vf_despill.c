@@ -141,9 +141,9 @@ static const AVFilterPad despill_outputs[] = {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption despill_options[] = {
-    { "type",       "set the screen type",     OFFSET(type),        AV_OPT_TYPE_INT,     {.i64=0},     0,   1, FLAGS, "type" },
-    {   "green",    "greenscreen",             0,                   AV_OPT_TYPE_CONST,   {.i64=0},     0,   0, FLAGS, "type" },
-    {   "blue",     "bluescreen",              0,                   AV_OPT_TYPE_CONST,   {.i64=1},     0,   0, FLAGS, "type" },
+    { "type",       "set the screen type",     OFFSET(type),        AV_OPT_TYPE_INT,     {.i64=0},     0,   1, FLAGS, .unit = "type" },
+    {   "green",    "greenscreen",             0,                   AV_OPT_TYPE_CONST,   {.i64=0},     0,   0, FLAGS, .unit = "type" },
+    {   "blue",     "bluescreen",              0,                   AV_OPT_TYPE_CONST,   {.i64=1},     0,   0, FLAGS, .unit = "type" },
     { "mix",        "set the spillmap mix",    OFFSET(spillmix),    AV_OPT_TYPE_FLOAT,   {.dbl=0.5},   0,   1, FLAGS },
     { "expand",     "set the spillmap expand", OFFSET(spillexpand), AV_OPT_TYPE_FLOAT,   {.dbl=0},     0,   1, FLAGS },
     { "red",        "set red scale",           OFFSET(redscale),    AV_OPT_TYPE_FLOAT,   {.dbl=0},  -100, 100, FLAGS },

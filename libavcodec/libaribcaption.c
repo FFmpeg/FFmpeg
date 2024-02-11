@@ -1114,7 +1114,7 @@ static int aribcaption_init(AVCodecContext *avctx)
 static const AVOption options[] = {
     { "sub_type", "subtitle rendering type",
       OFFSET(subtitle_type), AV_OPT_TYPE_INT,
-      { .i64 = SUBTITLE_ASS }, SUBTITLE_NONE, SUBTITLE_ASS, SD, "type" },
+      { .i64 = SUBTITLE_ASS }, SUBTITLE_NONE, SUBTITLE_ASS, SD, .unit = "type" },
     { "none",   "do nothing", 0, AV_OPT_TYPE_CONST,
       { .i64 = SUBTITLE_NONE }, .flags = SD, .unit = "type" },
     { "bitmap", "bitmap rendering", 0, AV_OPT_TYPE_CONST,
@@ -1125,7 +1125,7 @@ static const AVOption options[] = {
       { .i64 = SUBTITLE_ASS }, .flags = SD, .unit = "type" },
     { "caption_encoding", "encoding scheme of subtitle text",
       OFFSET(encoding_scheme), AV_OPT_TYPE_INT, { .i64 = ARIBCC_ENCODING_SCHEME_AUTO },
-      ARIBCC_ENCODING_SCHEME_AUTO, ARIBCC_ENCODING_SCHEME_ABNT_NBR_15606_1_LATIN, SD, "encoding" },
+      ARIBCC_ENCODING_SCHEME_AUTO, ARIBCC_ENCODING_SCHEME_ABNT_NBR_15606_1_LATIN, SD, .unit = "encoding" },
     { "auto",   "automatically detect encoding scheme", 0, AV_OPT_TYPE_CONST,
       { .i64 = ARIBCC_ENCODING_SCHEME_AUTO }, .flags = SD, .unit = "encoding" },
     { "jis",    "8bit-char JIS encoding (Japanese ISDB captions)", 0, AV_OPT_TYPE_CONST,

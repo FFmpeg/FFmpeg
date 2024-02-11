@@ -332,13 +332,13 @@ static int grab_read_close(AVFormatContext *s1)
 #define OFFSET(x) offsetof(VideoData, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "standard", "", offsetof(VideoData, standard), AV_OPT_TYPE_INT, {.i64 = VIDEO_FORMAT}, PAL, NTSCJ, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "PAL",      "", 0, AV_OPT_TYPE_CONST, {.i64 = PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "NTSC",     "", 0, AV_OPT_TYPE_CONST, {.i64 = NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "SECAM",    "", 0, AV_OPT_TYPE_CONST, {.i64 = SECAM}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "PALN",     "", 0, AV_OPT_TYPE_CONST, {.i64 = PALN},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "PALM",     "", 0, AV_OPT_TYPE_CONST, {.i64 = PALM},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
-    { "NTSCJ",    "", 0, AV_OPT_TYPE_CONST, {.i64 = NTSCJ}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "standard", "", offsetof(VideoData, standard), AV_OPT_TYPE_INT, {.i64 = VIDEO_FORMAT}, PAL, NTSCJ, AV_OPT_FLAG_DECODING_PARAM, .unit = "standard" },
+    { "PAL",      "", 0, AV_OPT_TYPE_CONST, {.i64 = PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, .unit = "standard" },
+    { "NTSC",     "", 0, AV_OPT_TYPE_CONST, {.i64 = NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, .unit = "standard" },
+    { "SECAM",    "", 0, AV_OPT_TYPE_CONST, {.i64 = SECAM}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, .unit = "standard" },
+    { "PALN",     "", 0, AV_OPT_TYPE_CONST, {.i64 = PALN},  0, 0, AV_OPT_FLAG_DECODING_PARAM, .unit = "standard" },
+    { "PALM",     "", 0, AV_OPT_TYPE_CONST, {.i64 = PALM},  0, 0, AV_OPT_FLAG_DECODING_PARAM, .unit = "standard" },
+    { "NTSCJ",    "", 0, AV_OPT_TYPE_CONST, {.i64 = NTSCJ}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, .unit = "standard" },
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "vga"}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },

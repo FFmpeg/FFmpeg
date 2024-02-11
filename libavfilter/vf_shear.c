@@ -64,9 +64,9 @@ static const AVOption shear_options[] = {
     { "shy",       "set y shear factor",        OFFSET(shy),           AV_OPT_TYPE_FLOAT,  {.dbl=0.},     -2, 2, .flags=FLAGS },
     { "fillcolor", "set background fill color", OFFSET(fillcolor_str), AV_OPT_TYPE_STRING, {.str="black"}, 0, 0, .flags=FLAGS },
     { "c",         "set background fill color", OFFSET(fillcolor_str), AV_OPT_TYPE_STRING, {.str="black"}, 0, 0, .flags=FLAGS },
-    { "interp",    "set interpolation",         OFFSET(interp),        AV_OPT_TYPE_INT,    {.i64=1},       0, 1, .flags=FLAGS, "interp" },
-    {  "nearest",  "nearest neighbour",         0,                     AV_OPT_TYPE_CONST,  {.i64=0},       0, 0, .flags=FLAGS, "interp" },
-    {  "bilinear", "bilinear",                  0,                     AV_OPT_TYPE_CONST,  {.i64=1},       0, 0, .flags=FLAGS, "interp" },
+    { "interp",    "set interpolation",         OFFSET(interp),        AV_OPT_TYPE_INT,    {.i64=1},       0, 1, .flags=FLAGS, .unit = "interp" },
+    {  "nearest",  "nearest neighbour",         0,                     AV_OPT_TYPE_CONST,  {.i64=0},       0, 0, .flags=FLAGS, .unit = "interp" },
+    {  "bilinear", "bilinear",                  0,                     AV_OPT_TYPE_CONST,  {.i64=1},       0, 0, .flags=FLAGS, .unit = "interp" },
     { NULL }
 };
 

@@ -61,11 +61,11 @@ static const AVOption aphaser_options[] = {
     { "delay",    "set delay in milliseconds", OFFSET(delay),    AV_OPT_TYPE_DOUBLE, {.dbl=3.},  0,  5,   FLAGS },
     { "decay",    "set decay",                 OFFSET(decay),    AV_OPT_TYPE_DOUBLE, {.dbl=.4},  0, .99,  FLAGS },
     { "speed",    "set modulation speed",      OFFSET(speed),    AV_OPT_TYPE_DOUBLE, {.dbl=.5}, .1,  2,   FLAGS },
-    { "type",     "set modulation type",       OFFSET(type),     AV_OPT_TYPE_INT,    {.i64=WAVE_TRI}, 0, WAVE_NB-1, FLAGS, "type" },
-    { "triangular",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, FLAGS, "type" },
-    { "t",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, FLAGS, "type" },
-    { "sinusoidal",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, FLAGS, "type" },
-    { "s",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, FLAGS, "type" },
+    { "type",     "set modulation type",       OFFSET(type),     AV_OPT_TYPE_INT,    {.i64=WAVE_TRI}, 0, WAVE_NB-1, FLAGS, .unit = "type" },
+    { "triangular",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, FLAGS, .unit = "type" },
+    { "t",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_TRI}, 0, 0, FLAGS, .unit = "type" },
+    { "sinusoidal",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, FLAGS, .unit = "type" },
+    { "s",           NULL, 0, AV_OPT_TYPE_CONST,  {.i64=WAVE_SIN}, 0, 0, FLAGS, .unit = "type" },
     { NULL }
 };
 

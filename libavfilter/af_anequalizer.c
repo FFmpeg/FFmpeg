@@ -84,9 +84,9 @@ static const AVOption anequalizer_options[] = {
     { "curves", "draw frequency response curves", OFFSET(draw_curves), AV_OPT_TYPE_BOOL,       {.i64=0}, 0, 1, V|F },
     { "size",   "set video size",                 OFFSET(w),           AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, V|F },
     { "mgain",  "set max gain",                   OFFSET(mag),         AV_OPT_TYPE_DOUBLE,     {.dbl=60}, -900, 900, V|F },
-    { "fscale", "set frequency scale",            OFFSET(fscale),      AV_OPT_TYPE_INT,        {.i64=1}, 0, 1, V|F, "fscale" },
-        { "lin",  "linear",                       0,                   AV_OPT_TYPE_CONST,      {.i64=0}, 0, 0, V|F, "fscale" },
-        { "log",  "logarithmic",                  0,                   AV_OPT_TYPE_CONST,      {.i64=1}, 0, 0, V|F, "fscale" },
+    { "fscale", "set frequency scale",            OFFSET(fscale),      AV_OPT_TYPE_INT,        {.i64=1}, 0, 1, V|F, .unit = "fscale" },
+        { "lin",  "linear",                       0,                   AV_OPT_TYPE_CONST,      {.i64=0}, 0, 0, V|F, .unit = "fscale" },
+        { "log",  "logarithmic",                  0,                   AV_OPT_TYPE_CONST,      {.i64=1}, 0, 0, V|F, .unit = "fscale" },
     { "colors", "set channels curves colors",     OFFSET(colors),      AV_OPT_TYPE_STRING,     {.str = "red|green|blue|yellow|orange|lime|pink|magenta|brown" }, 0, 0, V|F },
     { NULL }
 };

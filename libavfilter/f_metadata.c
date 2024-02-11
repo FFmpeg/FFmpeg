@@ -100,22 +100,22 @@ typedef struct MetadataContext {
 #define OFFSET(x) offsetof(MetadataContext, x)
 #define DEFINE_OPTIONS(filt_name, FLAGS) \
 static const AVOption filt_name##_options[] = { \
-    { "mode", "set a mode of operation", OFFSET(mode),   AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, METADATA_NB-1, FLAGS, "mode" }, \
-    {   "select", "select frame",        0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_SELECT }, 0, 0, FLAGS, "mode" }, \
-    {   "add",    "add new metadata",    0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_ADD },    0, 0, FLAGS, "mode" }, \
-    {   "modify", "modify metadata",     0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_MODIFY }, 0, 0, FLAGS, "mode" }, \
-    {   "delete", "delete metadata",     0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_DELETE }, 0, 0, FLAGS, "mode" }, \
-    {   "print",  "print metadata",      0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_PRINT },  0, 0, FLAGS, "mode" }, \
+    { "mode", "set a mode of operation", OFFSET(mode),   AV_OPT_TYPE_INT,    {.i64 = 0 }, 0, METADATA_NB-1, FLAGS, .unit = "mode" }, \
+    {   "select", "select frame",        0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_SELECT }, 0, 0, FLAGS, .unit = "mode" }, \
+    {   "add",    "add new metadata",    0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_ADD },    0, 0, FLAGS, .unit = "mode" }, \
+    {   "modify", "modify metadata",     0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_MODIFY }, 0, 0, FLAGS, .unit = "mode" }, \
+    {   "delete", "delete metadata",     0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_DELETE }, 0, 0, FLAGS, .unit = "mode" }, \
+    {   "print",  "print metadata",      0,              AV_OPT_TYPE_CONST,  {.i64 = METADATA_PRINT },  0, 0, FLAGS, .unit = "mode" }, \
     { "key",   "set metadata key",       OFFSET(key),    AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "value", "set metadata value",     OFFSET(value),  AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
-    { "function", "function for comparing values", OFFSET(function), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, METADATAF_NB-1, FLAGS, "function" }, \
-    {   "same_str",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_SAME_STR },    0, 3, FLAGS, "function" }, \
-    {   "starts_with", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STARTS_WITH }, 0, 0, FLAGS, "function" }, \
-    {   "less",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_LESS    },     0, 3, FLAGS, "function" }, \
-    {   "equal",       NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EQUAL   },     0, 3, FLAGS, "function" }, \
-    {   "greater",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_GREATER },     0, 3, FLAGS, "function" }, \
-    {   "expr",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EXPR    },     0, 3, FLAGS, "function" }, \
-    {   "ends_with",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_ENDS_WITH },   0, 0, FLAGS, "function" }, \
+    { "function", "function for comparing values", OFFSET(function), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, METADATAF_NB-1, FLAGS, .unit = "function" }, \
+    {   "same_str",    NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_SAME_STR },    0, 3, FLAGS, .unit = "function" }, \
+    {   "starts_with", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_STARTS_WITH }, 0, 0, FLAGS, .unit = "function" }, \
+    {   "less",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_LESS    },     0, 3, FLAGS, .unit = "function" }, \
+    {   "equal",       NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EQUAL   },     0, 3, FLAGS, .unit = "function" }, \
+    {   "greater",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_GREATER },     0, 3, FLAGS, .unit = "function" }, \
+    {   "expr",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EXPR    },     0, 3, FLAGS, .unit = "function" }, \
+    {   "ends_with",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_ENDS_WITH },   0, 0, FLAGS, .unit = "function" }, \
     { "expr", "set expression for expr function", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "file", "set file where to print metadata information", OFFSET(file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS }, \
     { "direct", "reduce buffering when printing to user-set file or pipe", OFFSET(direct), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS }, \

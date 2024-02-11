@@ -128,18 +128,18 @@ typedef struct MorphoContext {
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption morpho_options[] = {
-    { "mode",  "set morphological transform",                 OFFSET(mode),       AV_OPT_TYPE_INT,   {.i64=0}, 0, NB_MODES-1, FLAGS, "mode" },
-    { "erode",  NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=ERODE},  0,  0, FLAGS, "mode" },
-    { "dilate", NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=DILATE}, 0,  0, FLAGS, "mode" },
-    { "open",   NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=OPEN},   0,  0, FLAGS, "mode" },
-    { "close",  NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=CLOSE},  0,  0, FLAGS, "mode" },
-    { "gradient",NULL,                                        0,                  AV_OPT_TYPE_CONST, {.i64=GRADIENT},0, 0, FLAGS, "mode" },
-    { "tophat",NULL,                                          0,                  AV_OPT_TYPE_CONST, {.i64=TOPHAT},  0, 0, FLAGS, "mode" },
-    { "blackhat",NULL,                                        0,                  AV_OPT_TYPE_CONST, {.i64=BLACKHAT},0, 0, FLAGS, "mode" },
+    { "mode",  "set morphological transform",                 OFFSET(mode),       AV_OPT_TYPE_INT,   {.i64=0}, 0, NB_MODES-1, FLAGS, .unit = "mode" },
+    { "erode",  NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=ERODE},  0,  0, FLAGS, .unit = "mode" },
+    { "dilate", NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=DILATE}, 0,  0, FLAGS, .unit = "mode" },
+    { "open",   NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=OPEN},   0,  0, FLAGS, .unit = "mode" },
+    { "close",  NULL,                                         0,                  AV_OPT_TYPE_CONST, {.i64=CLOSE},  0,  0, FLAGS, .unit = "mode" },
+    { "gradient",NULL,                                        0,                  AV_OPT_TYPE_CONST, {.i64=GRADIENT},0, 0, FLAGS, .unit = "mode" },
+    { "tophat",NULL,                                          0,                  AV_OPT_TYPE_CONST, {.i64=TOPHAT},  0, 0, FLAGS, .unit = "mode" },
+    { "blackhat",NULL,                                        0,                  AV_OPT_TYPE_CONST, {.i64=BLACKHAT},0, 0, FLAGS, .unit = "mode" },
     { "planes",  "set planes to filter",                      OFFSET(planes),     AV_OPT_TYPE_INT,   {.i64=7}, 0, 15, FLAGS },
-    { "structure", "when to process structures",              OFFSET(structures), AV_OPT_TYPE_INT,   {.i64=1}, 0,  1, FLAGS, "str" },
-    {   "first", "process only first structure, ignore rest", 0,                  AV_OPT_TYPE_CONST, {.i64=0}, 0,  0, FLAGS, "str" },
-    {   "all",   "process all structure",                     0,                  AV_OPT_TYPE_CONST, {.i64=1}, 0,  0, FLAGS, "str" },
+    { "structure", "when to process structures",              OFFSET(structures), AV_OPT_TYPE_INT,   {.i64=1}, 0,  1, FLAGS, .unit = "str" },
+    {   "first", "process only first structure, ignore rest", 0,                  AV_OPT_TYPE_CONST, {.i64=0}, 0,  0, FLAGS, .unit = "str" },
+    {   "all",   "process all structure",                     0,                  AV_OPT_TYPE_CONST, {.i64=1}, 0,  0, FLAGS, .unit = "str" },
     { NULL }
 };
 

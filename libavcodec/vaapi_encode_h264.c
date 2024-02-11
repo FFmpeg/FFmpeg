@@ -1285,11 +1285,11 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "quality", "Set encode quality (trades off against speed, higher is faster)",
       OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
     { "coder", "Entropy coder type",
-      OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "coder" },
-        { "cavlc", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },
-        { "cabac", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, "coder" },
-        { "vlc",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },
-        { "ac",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, "coder" },
+      OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, .unit = "coder" },
+        { "cavlc", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, .unit = "coder" },
+        { "cabac", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, .unit = "coder" },
+        { "vlc",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, .unit = "coder" },
+        { "ac",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, INT_MIN, INT_MAX, FLAGS, .unit = "coder" },
 
     { "aud", "Include AUD",
       OFFSET(aud), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
@@ -1297,26 +1297,26 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "sei", "Set SEI to include",
       OFFSET(sei), AV_OPT_TYPE_FLAGS,
       { .i64 = SEI_IDENTIFIER | SEI_TIMING | SEI_RECOVERY_POINT | SEI_A53_CC },
-      0, INT_MAX, FLAGS, "sei" },
+      0, INT_MAX, FLAGS, .unit = "sei" },
     { "identifier", "Include encoder version identifier",
       0, AV_OPT_TYPE_CONST, { .i64 = SEI_IDENTIFIER },
-      INT_MIN, INT_MAX, FLAGS, "sei" },
+      INT_MIN, INT_MAX, FLAGS, .unit = "sei" },
     { "timing", "Include timing parameters (buffering_period and pic_timing)",
       0, AV_OPT_TYPE_CONST, { .i64 = SEI_TIMING },
-      INT_MIN, INT_MAX, FLAGS, "sei" },
+      INT_MIN, INT_MAX, FLAGS, .unit = "sei" },
     { "recovery_point", "Include recovery points where appropriate",
       0, AV_OPT_TYPE_CONST, { .i64 = SEI_RECOVERY_POINT },
-      INT_MIN, INT_MAX, FLAGS, "sei" },
+      INT_MIN, INT_MAX, FLAGS, .unit = "sei" },
     { "a53_cc", "Include A/53 caption data",
       0, AV_OPT_TYPE_CONST, { .i64 = SEI_A53_CC },
-      INT_MIN, INT_MAX, FLAGS, "sei" },
+      INT_MIN, INT_MAX, FLAGS, .unit = "sei" },
 
     { "profile", "Set profile (profile_idc and constraint_set*_flag)",
       OFFSET(profile), AV_OPT_TYPE_INT,
-      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xffff, FLAGS, "profile" },
+      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xffff, FLAGS, .unit = "profile" },
 
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
-      { .i64 = value }, 0, 0, FLAGS, "profile"
+      { .i64 = value }, 0, 0, FLAGS, .unit = "profile"
     { PROFILE("constrained_baseline", AV_PROFILE_H264_CONSTRAINED_BASELINE) },
     { PROFILE("main",                 AV_PROFILE_H264_MAIN) },
     { PROFILE("high",                 AV_PROFILE_H264_HIGH) },
@@ -1325,10 +1325,10 @@ static const AVOption vaapi_encode_h264_options[] = {
 
     { "level", "Set level (level_idc)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = AV_LEVEL_UNKNOWN }, AV_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
+      { .i64 = AV_LEVEL_UNKNOWN }, AV_LEVEL_UNKNOWN, 0xff, FLAGS, .unit = "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
-      { .i64 = value }, 0, 0, FLAGS, "level"
+      { .i64 = value }, 0, 0, FLAGS, .unit = "level"
     { LEVEL("1",   10) },
     { LEVEL("1.1", 11) },
     { LEVEL("1.2", 12) },

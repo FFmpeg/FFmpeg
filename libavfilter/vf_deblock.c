@@ -381,9 +381,9 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption deblock_options[] = {
-    { "filter",    "set type of filter",          OFFSET(filter),    AV_OPT_TYPE_INT,   {.i64=STRONG},0, 1,  FLAGS, "filter" },
-    { "weak",      0,                             0,                 AV_OPT_TYPE_CONST, {.i64=WEAK},  0, 0,  FLAGS, "filter" },
-    { "strong",    0,                             0,                 AV_OPT_TYPE_CONST, {.i64=STRONG},0, 0,  FLAGS, "filter" },
+    { "filter",    "set type of filter",          OFFSET(filter),    AV_OPT_TYPE_INT,   {.i64=STRONG},0, 1,  FLAGS, .unit = "filter" },
+    { "weak",      0,                             0,                 AV_OPT_TYPE_CONST, {.i64=WEAK},  0, 0,  FLAGS, .unit = "filter" },
+    { "strong",    0,                             0,                 AV_OPT_TYPE_CONST, {.i64=STRONG},0, 0,  FLAGS, .unit = "filter" },
     { "block",     "set size of block",           OFFSET(block),     AV_OPT_TYPE_INT,   {.i64=8},    4, 512, FLAGS },
     { "alpha",     "set 1st detection threshold", OFFSET(alpha),     AV_OPT_TYPE_FLOAT, {.dbl=.098}, 0,  1,  FLAGS },
     { "beta",      "set 2nd detection threshold", OFFSET(beta),      AV_OPT_TYPE_FLOAT, {.dbl=.05},  0,  1,  FLAGS },

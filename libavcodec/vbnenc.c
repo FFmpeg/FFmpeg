@@ -134,10 +134,10 @@ static av_cold int vbn_init(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VBNContext, x)
 #define FLAGS     AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "format",      "Texture format", OFFSET(format), AV_OPT_TYPE_INT,   { .i64 = VBN_FORMAT_DXT5 }, VBN_FORMAT_RAW, VBN_FORMAT_DXT5, FLAGS, "format" },
-        { "raw",     "RAW texture",                 0, AV_OPT_TYPE_CONST, { .i64 = VBN_FORMAT_RAW  },              0,               0, FLAGS, "format" },
-        { "dxt1",    "DXT1 texture",                0, AV_OPT_TYPE_CONST, { .i64 = VBN_FORMAT_DXT1 },              0,               0, FLAGS, "format" },
-        { "dxt5",    "DXT5 texture",                0, AV_OPT_TYPE_CONST, { .i64 = VBN_FORMAT_DXT5 },              0,               0, FLAGS, "format" },
+    { "format",      "Texture format", OFFSET(format), AV_OPT_TYPE_INT,   { .i64 = VBN_FORMAT_DXT5 }, VBN_FORMAT_RAW, VBN_FORMAT_DXT5, FLAGS, .unit = "format" },
+        { "raw",     "RAW texture",                 0, AV_OPT_TYPE_CONST, { .i64 = VBN_FORMAT_RAW  },              0,               0, FLAGS, .unit = "format" },
+        { "dxt1",    "DXT1 texture",                0, AV_OPT_TYPE_CONST, { .i64 = VBN_FORMAT_DXT1 },              0,               0, FLAGS, .unit = "format" },
+        { "dxt5",    "DXT5 texture",                0, AV_OPT_TYPE_CONST, { .i64 = VBN_FORMAT_DXT5 },              0,               0, FLAGS, .unit = "format" },
     { NULL },
 };
 

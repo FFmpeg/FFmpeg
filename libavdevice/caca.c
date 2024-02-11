@@ -205,11 +205,11 @@ static const AVOption options[] = {
     { "charset",      "set charset used to render output", OFFSET(charset), AV_OPT_TYPE_STRING, {.str = "default" }, 0, 0, ENC },
     { "color",        "set color used to render output",   OFFSET(color),   AV_OPT_TYPE_STRING, {.str = "default" }, 0, 0, ENC },
     { "list_drivers", "list available drivers",  OFFSET(list_drivers), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, ENC },
-    { "list_dither", "list available dither options", OFFSET(list_dither), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, INT_MAX, ENC, "list_dither" },
-    { "algorithms",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_ALGORITHMS },  0, 0, ENC, "list_dither" },
-    { "antialiases",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_ANTIALIASES }, 0, 0, ENC, "list_dither" },
-    { "charsets",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_CHARSETS },    0, 0, ENC, "list_dither" },
-    { "colors",       NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_COLORS },      0, 0, ENC, "list_dither" },
+    { "list_dither", "list available dither options", OFFSET(list_dither), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, INT_MAX, ENC, .unit = "list_dither" },
+    { "algorithms",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_ALGORITHMS },  0, 0, ENC, .unit = "list_dither" },
+    { "antialiases",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_ANTIALIASES }, 0, 0, ENC, .unit = "list_dither" },
+    { "charsets",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_CHARSETS },    0, 0, ENC, .unit = "list_dither" },
+    { "colors",       NULL, 0, AV_OPT_TYPE_CONST, {.i64 = LIST_COLORS },      0, 0, ENC, .unit = "list_dither" },
     { NULL },
 };
 

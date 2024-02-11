@@ -47,12 +47,12 @@
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 #define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 #define COMMON_OPTIONS \
-    { "interp", "select interpolation mode", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=INTERPOLATE_TETRAHEDRAL}, 0, NB_INTERP_MODE-1, TFLAGS, "interp_mode" }, \
-        { "nearest",     "use values from the nearest defined points",            0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_NEAREST},     0, 0, TFLAGS, "interp_mode" }, \
-        { "trilinear",   "interpolate values using the 8 points defining a cube", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TRILINEAR},   0, 0, TFLAGS, "interp_mode" }, \
-        { "tetrahedral", "interpolate values using a tetrahedron",                0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TETRAHEDRAL}, 0, 0, TFLAGS, "interp_mode" }, \
-        { "pyramid",     "interpolate values using a pyramid",                    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PYRAMID},     0, 0, TFLAGS, "interp_mode" }, \
-        { "prism",       "interpolate values using a prism",                      0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PRISM},       0, 0, TFLAGS, "interp_mode" }, \
+    { "interp", "select interpolation mode", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=INTERPOLATE_TETRAHEDRAL}, 0, NB_INTERP_MODE-1, TFLAGS, .unit = "interp_mode" }, \
+        { "nearest",     "use values from the nearest defined points",            0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_NEAREST},     0, 0, TFLAGS, .unit = "interp_mode" }, \
+        { "trilinear",   "interpolate values using the 8 points defining a cube", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TRILINEAR},   0, 0, TFLAGS, .unit = "interp_mode" }, \
+        { "tetrahedral", "interpolate values using a tetrahedron",                0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_TETRAHEDRAL}, 0, 0, TFLAGS, .unit = "interp_mode" }, \
+        { "pyramid",     "interpolate values using a pyramid",                    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PYRAMID},     0, 0, TFLAGS, .unit = "interp_mode" }, \
+        { "prism",       "interpolate values using a prism",                      0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_PRISM},       0, 0, TFLAGS, .unit = "interp_mode" }, \
     { NULL }
 
 #define EXPONENT_MASK 0x7F800000
@@ -1217,9 +1217,9 @@ static const AVOption lut3d_haldclut_options[] = {
     { "file", "set 3D LUT file name", OFFSET(file), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
 #endif
 #if CONFIG_HALDCLUT_FILTER
-    { "clut", "when to process CLUT", OFFSET(clut), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, .flags = TFLAGS, "clut" },
-    {   "first", "process only first CLUT, ignore rest", 0, AV_OPT_TYPE_CONST, {.i64=0}, .flags = TFLAGS, "clut" },
-    {   "all",   "process all CLUTs",                    0, AV_OPT_TYPE_CONST, {.i64=1}, .flags = TFLAGS, "clut" },
+    { "clut", "when to process CLUT", OFFSET(clut), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, .flags = TFLAGS, .unit = "clut" },
+    {   "first", "process only first CLUT, ignore rest", 0, AV_OPT_TYPE_CONST, {.i64=0}, .flags = TFLAGS, .unit = "clut" },
+    {   "all",   "process all CLUTs",                    0, AV_OPT_TYPE_CONST, {.i64=1}, .flags = TFLAGS, .unit = "clut" },
 #endif
     COMMON_OPTIONS
 };
@@ -1762,12 +1762,12 @@ try_again:
 
 static const AVOption lut1d_options[] = {
     { "file", "set 1D LUT file name", OFFSET(file), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = TFLAGS },
-    { "interp", "select interpolation mode", OFFSET(interpolation),    AV_OPT_TYPE_INT, {.i64=INTERPOLATE_1D_LINEAR}, 0, NB_INTERP_1D_MODE-1, TFLAGS, "interp_mode" },
-        { "nearest", "use values from the nearest defined points", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_NEAREST},   0, 0, TFLAGS, "interp_mode" },
-        { "linear",  "use values from the linear interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_LINEAR},    0, 0, TFLAGS, "interp_mode" },
-        { "cosine",  "use values from the cosine interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_COSINE},    0, 0, TFLAGS, "interp_mode" },
-        { "cubic",   "use values from the cubic interpolation",    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_CUBIC},     0, 0, TFLAGS, "interp_mode" },
-        { "spline",  "use values from the spline interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_SPLINE},    0, 0, TFLAGS, "interp_mode" },
+    { "interp", "select interpolation mode", OFFSET(interpolation),    AV_OPT_TYPE_INT, {.i64=INTERPOLATE_1D_LINEAR}, 0, NB_INTERP_1D_MODE-1, TFLAGS, .unit = "interp_mode" },
+        { "nearest", "use values from the nearest defined points", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_NEAREST},   0, 0, TFLAGS, .unit = "interp_mode" },
+        { "linear",  "use values from the linear interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_LINEAR},    0, 0, TFLAGS, .unit = "interp_mode" },
+        { "cosine",  "use values from the cosine interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_COSINE},    0, 0, TFLAGS, .unit = "interp_mode" },
+        { "cubic",   "use values from the cubic interpolation",    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_CUBIC},     0, 0, TFLAGS, .unit = "interp_mode" },
+        { "spline",  "use values from the spline interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_SPLINE},    0, 0, TFLAGS, .unit = "interp_mode" },
     { NULL }
 };
 

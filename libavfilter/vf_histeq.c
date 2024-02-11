@@ -67,12 +67,12 @@ typedef struct HisteqContext {
 
 #define OFFSET(x) offsetof(HisteqContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
-#define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, unit }
+#define CONST(name, help, val, u) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, .unit = u }
 
 static const AVOption histeq_options[] = {
     { "strength",    "set the strength", OFFSET(strength), AV_OPT_TYPE_FLOAT, {.dbl=0.2}, 0, 1, FLAGS },
     { "intensity",   "set the intensity", OFFSET(intensity), AV_OPT_TYPE_FLOAT, {.dbl=0.21}, 0, 1, FLAGS },
-    { "antibanding", "set the antibanding level", OFFSET(antibanding), AV_OPT_TYPE_INT, {.i64=HISTEQ_ANTIBANDING_NONE}, 0, HISTEQ_ANTIBANDING_NB-1, FLAGS, "antibanding" },
+    { "antibanding", "set the antibanding level", OFFSET(antibanding), AV_OPT_TYPE_INT, {.i64=HISTEQ_ANTIBANDING_NONE}, 0, HISTEQ_ANTIBANDING_NB-1, FLAGS, .unit = "antibanding" },
     CONST("none",    "apply no antibanding",     HISTEQ_ANTIBANDING_NONE,   "antibanding"),
     CONST("weak",    "apply weak antibanding",   HISTEQ_ANTIBANDING_WEAK,   "antibanding"),
     CONST("strong",  "apply strong antibanding", HISTEQ_ANTIBANDING_STRONG, "antibanding"),

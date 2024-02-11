@@ -47,10 +47,10 @@
 #define A AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption filtergraph_options[] = {
     { "thread_type", "Allowed thread types", OFFSET(thread_type), AV_OPT_TYPE_FLAGS,
-        { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, F|V|A, "thread_type" },
+        { .i64 = AVFILTER_THREAD_SLICE }, 0, INT_MAX, F|V|A, .unit = "thread_type" },
         { "slice", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AVFILTER_THREAD_SLICE }, .flags = F|V|A, .unit = "thread_type" },
     { "threads",     "Maximum number of threads", OFFSET(nb_threads), AV_OPT_TYPE_INT,
-        { .i64 = 0 }, 0, INT_MAX, F|V|A, "threads"},
+        { .i64 = 0 }, 0, INT_MAX, F|V|A, .unit = "threads"},
         {"auto", "autodetect a suitable number of threads to use", 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, .flags = F|V|A, .unit = "threads"},
     {"scale_sws_opts"       , "default scale filter options"        , OFFSET(scale_sws_opts)        ,
         AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, F|V },

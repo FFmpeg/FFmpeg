@@ -363,9 +363,9 @@ static const AVOption chromashift_options[] = {
     { "cbv", "shift chroma-blue vertically",   OFFSET(cbv),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
     { "crh", "shift chroma-red horizontally",  OFFSET(crh),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
     { "crv", "shift chroma-red vertically",    OFFSET(crv),  AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
-    { "edge", "set edge operation",            OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VFR, "edge" },
-    { "smear",                              0,            0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VFR, "edge" },
-    { "wrap",                               0,            0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VFR, "edge" },
+    { "edge", "set edge operation",            OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VFR, .unit = "edge" },
+    { "smear",                              0,            0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VFR, .unit = "edge" },
+    { "wrap",                               0,            0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VFR, .unit = "edge" },
     { NULL },
 };
 
@@ -424,9 +424,9 @@ static const AVOption rgbashift_options[] = {
     { "bv", "shift blue vertically",    OFFSET(bv),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
     { "ah", "shift alpha horizontally", OFFSET(ah),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
     { "av", "shift alpha vertically",   OFFSET(av),   AV_OPT_TYPE_INT,   {.i64=0}, -255, 255, .flags = VFR },
-    { "edge", "set edge operation",     OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VFR, "edge" },
-    { "smear",                          0,         0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VFR, "edge" },
-    { "wrap",                           0,         0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VFR, "edge" },
+    { "edge", "set edge operation",     OFFSET(edge), AV_OPT_TYPE_INT,   {.i64=0},    0,   1, .flags = VFR, .unit = "edge" },
+    { "smear",                          0,         0, AV_OPT_TYPE_CONST, {.i64=0},    0,   0, .flags = VFR, .unit = "edge" },
+    { "wrap",                           0,         0, AV_OPT_TYPE_CONST, {.i64=1},    0,   0, .flags = VFR, .unit = "edge" },
     { NULL },
 };
 

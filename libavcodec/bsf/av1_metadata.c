@@ -179,7 +179,7 @@ static const AVOption av1_metadata_options[] = {
 
     { "color_range", "Set color range flag (section 6.4.2)",
         OFFSET(color_range), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 1, FLAGS, "cr" },
+        { .i64 = -1 }, -1, 1, FLAGS, .unit = "cr" },
     { "tv", "TV (limited) range", 0, AV_OPT_TYPE_CONST,
         { .i64 = 0 }, .flags = FLAGS, .unit = "cr" },
     { "pc", "PC (full) range",    0, AV_OPT_TYPE_CONST,
@@ -187,7 +187,7 @@ static const AVOption av1_metadata_options[] = {
 
     { "chroma_sample_position", "Set chroma sample position (section 6.4.2)",
         OFFSET(chroma_sample_position), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 3, FLAGS, "csp" },
+        { .i64 = -1 }, -1, 3, FLAGS, .unit = "csp" },
     { "unknown",   "Unknown chroma sample position",  0, AV_OPT_TYPE_CONST,
         { .i64 = AV1_CSP_UNKNOWN },   .flags = FLAGS, .unit = "csp" },
     { "vertical",  "Left chroma sample position",     0, AV_OPT_TYPE_CONST,

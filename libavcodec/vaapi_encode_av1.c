@@ -866,27 +866,27 @@ static const AVOption vaapi_encode_av1_options[] = {
     VAAPI_ENCODE_RC_OPTIONS,
     { "profile", "Set profile (seq_profile)",
       OFFSET(profile), AV_OPT_TYPE_INT,
-      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xff, FLAGS, "profile" },
+      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 0xff, FLAGS, .unit = "profile" },
 
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
-    { .i64 = value }, 0, 0, FLAGS, "profile"
+    { .i64 = value }, 0, 0, FLAGS, .unit = "profile"
     { PROFILE("main",               AV_PROFILE_AV1_MAIN) },
     { PROFILE("high",               AV_PROFILE_AV1_HIGH) },
     { PROFILE("professional",       AV_PROFILE_AV1_PROFESSIONAL) },
 #undef PROFILE
 
     { "tier", "Set tier (seq_tier)",
-      OFFSET(tier), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS, "tier" },
+      OFFSET(tier), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS, .unit = "tier" },
     { "main", NULL, 0, AV_OPT_TYPE_CONST,
-      { .i64 = 0 }, 0, 0, FLAGS, "tier" },
+      { .i64 = 0 }, 0, 0, FLAGS, .unit = "tier" },
     { "high", NULL, 0, AV_OPT_TYPE_CONST,
-      { .i64 = 1 }, 0, 0, FLAGS, "tier" },
+      { .i64 = 1 }, 0, 0, FLAGS, .unit = "tier" },
     { "level", "Set level (seq_level_idx)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = AV_LEVEL_UNKNOWN }, AV_LEVEL_UNKNOWN, 0x1f, FLAGS, "level" },
+      { .i64 = AV_LEVEL_UNKNOWN }, AV_LEVEL_UNKNOWN, 0x1f, FLAGS, .unit = "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
-      { .i64 = value }, 0, 0, FLAGS, "level"
+      { .i64 = value }, 0, 0, FLAGS, .unit = "level"
     { LEVEL("2.0",  0) },
     { LEVEL("2.1",  1) },
     { LEVEL("3.0",  4) },

@@ -78,17 +78,17 @@ typedef struct ESTDIFContext {
 
 #define OFFSET(x) offsetof(ESTDIFContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
-#define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, 0, 0, FLAGS, unit }
+#define CONST(name, help, val, u) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, 0, 0, FLAGS, .unit = u }
 
 static const AVOption estdif_options[] = {
-    { "mode", "specify the mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "mode" },
+    { "mode", "specify the mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, .unit = "mode" },
     CONST("frame", "send one frame for each frame", 0, "mode"),
     CONST("field", "send one frame for each field", 1, "mode"),
-    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, FLAGS, "parity" },
+    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=-1}, -1, 1, FLAGS, .unit = "parity" },
     CONST("tff",  "assume top field first",    0, "parity"),
     CONST("bff",  "assume bottom field first", 1, "parity"),
     CONST("auto", "auto detect parity",       -1, "parity"),
-    { "deint",  "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "deint" },
+    { "deint",  "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, .unit = "deint" },
     CONST("all",        "deinterlace all frames",                       0, "deint"),
     CONST("interlaced", "only deinterlace frames marked as interlaced", 1, "deint"),
     { "rslope", "specify the search radius for edge slope tracing", OFFSET(rslope), AV_OPT_TYPE_INT, {.i64=1}, 1, MAX_R, FLAGS },
@@ -96,7 +96,7 @@ static const AVOption estdif_options[] = {
     { "ecost",  "specify the edge cost for edge matching",          OFFSET(ecost),  AV_OPT_TYPE_INT, {.i64=2}, 0, 50, FLAGS },
     { "mcost",  "specify the middle cost for edge matching",        OFFSET(mcost),  AV_OPT_TYPE_INT, {.i64=1}, 0, 50, FLAGS },
     { "dcost",  "specify the distance cost for edge matching",      OFFSET(dcost),  AV_OPT_TYPE_INT, {.i64=1}, 0, 50, FLAGS },
-    { "interp", "specify the type of interpolation",                OFFSET(interp), AV_OPT_TYPE_INT, {.i64=1}, 0, 2,     FLAGS, "interp" },
+    { "interp", "specify the type of interpolation",                OFFSET(interp), AV_OPT_TYPE_INT, {.i64=1}, 0, 2,     FLAGS, .unit = "interp" },
     CONST("2p", "two-point interpolation",  0, "interp"),
     CONST("4p", "four-point interpolation", 1, "interp"),
     CONST("6p", "six-point interpolation",  2, "interp"),

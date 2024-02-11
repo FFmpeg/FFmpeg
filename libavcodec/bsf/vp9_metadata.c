@@ -97,7 +97,7 @@ static int vp9_metadata_init(AVBSFContext *bsf)
 static const AVOption vp9_metadata_options[] = {
     { "color_space", "Set colour space (section 7.2.2)",
         OFFSET(color_space), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, VP9_CS_RGB, FLAGS, "cs" },
+        { .i64 = -1 }, -1, VP9_CS_RGB, FLAGS, .unit = "cs" },
     { "unknown",  "Unknown/unspecified",  0, AV_OPT_TYPE_CONST,
         { .i64 = VP9_CS_UNKNOWN   }, .flags = FLAGS, .unit = "cs" },
     { "bt601",    "ITU-R BT.601-7",       0, AV_OPT_TYPE_CONST,
@@ -115,7 +115,7 @@ static const AVOption vp9_metadata_options[] = {
 
     { "color_range", "Set colour range (section 7.2.2)",
         OFFSET(color_range), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 1, FLAGS, "cr" },
+        { .i64 = -1 }, -1, 1, FLAGS, .unit = "cr" },
     { "tv", "TV (limited) range", 0, AV_OPT_TYPE_CONST,
         { .i64 = 0 }, .flags = FLAGS, .unit = "cr" },
     { "pc", "PC (full) range",    0, AV_OPT_TYPE_CONST,

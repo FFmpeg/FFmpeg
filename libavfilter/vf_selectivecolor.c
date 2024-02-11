@@ -95,9 +95,9 @@ typedef struct SelectiveColorContext {
     { color_name"s", "adjust "color_name" regions", OFFSET(opt_cmyk_adjust[range]), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS }
 
 static const AVOption selectivecolor_options[] = {
-    { "correction_method", "select correction method", OFFSET(correction_method), AV_OPT_TYPE_INT, {.i64 = CORRECTION_METHOD_ABSOLUTE}, 0, NB_CORRECTION_METHODS-1, FLAGS, "correction_method" },
-        { "absolute", NULL, 0, AV_OPT_TYPE_CONST, {.i64=CORRECTION_METHOD_ABSOLUTE}, INT_MIN, INT_MAX, FLAGS, "correction_method" },
-        { "relative", NULL, 0, AV_OPT_TYPE_CONST, {.i64=CORRECTION_METHOD_RELATIVE}, INT_MIN, INT_MAX, FLAGS, "correction_method" },
+    { "correction_method", "select correction method", OFFSET(correction_method), AV_OPT_TYPE_INT, {.i64 = CORRECTION_METHOD_ABSOLUTE}, 0, NB_CORRECTION_METHODS-1, FLAGS, .unit = "correction_method" },
+        { "absolute", NULL, 0, AV_OPT_TYPE_CONST, {.i64=CORRECTION_METHOD_ABSOLUTE}, INT_MIN, INT_MAX, FLAGS, .unit = "correction_method" },
+        { "relative", NULL, 0, AV_OPT_TYPE_CONST, {.i64=CORRECTION_METHOD_RELATIVE}, INT_MIN, INT_MAX, FLAGS, .unit = "correction_method" },
     RANGE_OPTION("red",     RANGE_REDS),
     RANGE_OPTION("yellow",  RANGE_YELLOWS),
     RANGE_OPTION("green",   RANGE_GREENS),

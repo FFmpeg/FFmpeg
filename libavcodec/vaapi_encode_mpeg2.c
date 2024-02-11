@@ -644,20 +644,20 @@ static const AVOption vaapi_encode_mpeg2_options[] = {
 
     { "profile", "Set profile (in profile_and_level_indication)",
       OFFSET(profile), AV_OPT_TYPE_INT,
-      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 7, FLAGS, "profile" },
+      { .i64 = AV_PROFILE_UNKNOWN }, AV_PROFILE_UNKNOWN, 7, FLAGS, .unit = "profile" },
 
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
-      { .i64 = value }, 0, 0, FLAGS, "profile"
+      { .i64 = value }, 0, 0, FLAGS, .unit = "profile"
     { PROFILE("simple", AV_PROFILE_MPEG2_SIMPLE) },
     { PROFILE("main",   AV_PROFILE_MPEG2_MAIN)   },
 #undef PROFILE
 
     { "level", "Set level (in profile_and_level_indication)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = 4 }, 0, 15, FLAGS, "level" },
+      { .i64 = 4 }, 0, 15, FLAGS, .unit = "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
-      { .i64 = value }, 0, 0, FLAGS, "level"
+      { .i64 = value }, 0, 0, FLAGS, .unit = "level"
     { LEVEL("low",       10) },
     { LEVEL("main",       8) },
     { LEVEL("high_1440",  6) },

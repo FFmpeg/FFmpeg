@@ -60,9 +60,9 @@ static const AVOption vidstabdetect_options[] = {
     {"tripod",      "virtual tripod mode (if >0): motion is compared to a reference"
                     " reference frame (frame # is the value)",                       OFFSETC(virtualTripod),     AV_OPT_TYPE_INT,    {.i64 = 0}, 0, INT_MAX, FLAGS},
 #ifdef LIBVIDSTAB_FILE_FORMAT_VERSION
-    { "fileformat",   "transforms data file format",  OFFSET(fileformat),  AV_OPT_TYPE_INT,  {.i64 = BINARY_SERIALIZATION_MODE},  ASCII_SERIALIZATION_MODE,  BINARY_SERIALIZATION_MODE,  FLAGS,  "file_format"},
-    { "ascii",        "ASCII text",  0,  AV_OPT_TYPE_CONST,  {.i64 = ASCII_SERIALIZATION_MODE },  0,  0,  FLAGS,  "file_format"},
-    { "binary",       "binary",      0,  AV_OPT_TYPE_CONST,  {.i64 = BINARY_SERIALIZATION_MODE},  0,  0,  FLAGS,  "file_format"},
+    { "fileformat",   "transforms data file format",  OFFSET(fileformat),  AV_OPT_TYPE_INT,  {.i64 = BINARY_SERIALIZATION_MODE},  ASCII_SERIALIZATION_MODE,  BINARY_SERIALIZATION_MODE,  FLAGS,  .unit = "file_format"},
+    { "ascii",        "ASCII text",  0,  AV_OPT_TYPE_CONST,  {.i64 = ASCII_SERIALIZATION_MODE },  0,  0,  FLAGS,  .unit = "file_format"},
+    { "binary",       "binary",      0,  AV_OPT_TYPE_CONST,  {.i64 = BINARY_SERIALIZATION_MODE},  0,  0,  FLAGS,  .unit = "file_format"},
 #endif
     {NULL}
 };

@@ -219,30 +219,30 @@ static const AVOption ssim360_options[] = {
 
     { "ref_projection", "projection of the reference video",
       OFFSET(ref_projection), AV_OPT_TYPE_INT, {.i64 = PROJECTION_EQUIRECT},
-      0, PROJECTION_N - 1, .flags = FLAGS, "projection" },
+      0, PROJECTION_N - 1, .flags = FLAGS, .unit = "projection" },
 
-    { "e",           "equirectangular",                     0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_EQUIRECT},           0, 0, FLAGS, "projection" },
-    { "equirect",    "equirectangular",                     0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_EQUIRECT},           0, 0, FLAGS, "projection" },
-    { "c3x2",        "cubemap 3x2",                         0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_CUBEMAP32},          0, 0, FLAGS, "projection" },
-    { "c2x3",        "cubemap 2x3",                         0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_CUBEMAP23},          0, 0, FLAGS, "projection" },
-    { "barrel",      "barrel facebook's 360 format",        0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_BARREL},             0, 0, FLAGS, "projection" },
-    { "barrelsplit", "barrel split facebook's 360 format",  0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_BARREL_SPLIT},       0, 0, FLAGS, "projection" },
+    { "e",           "equirectangular",                     0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_EQUIRECT},           0, 0, FLAGS, .unit = "projection" },
+    { "equirect",    "equirectangular",                     0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_EQUIRECT},           0, 0, FLAGS, .unit = "projection" },
+    { "c3x2",        "cubemap 3x2",                         0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_CUBEMAP32},          0, 0, FLAGS, .unit = "projection" },
+    { "c2x3",        "cubemap 2x3",                         0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_CUBEMAP23},          0, 0, FLAGS, .unit = "projection" },
+    { "barrel",      "barrel facebook's 360 format",        0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_BARREL},             0, 0, FLAGS, .unit = "projection" },
+    { "barrelsplit", "barrel split facebook's 360 format",  0, AV_OPT_TYPE_CONST, {.i64 = PROJECTION_BARREL_SPLIT},       0, 0, FLAGS, .unit = "projection" },
 
     { "main_projection", "projection of the main video",
       OFFSET(main_projection), AV_OPT_TYPE_INT, {.i64 = PROJECTION_N},
-      0, PROJECTION_N, .flags = FLAGS, "projection" },
+      0, PROJECTION_N, .flags = FLAGS, .unit = "projection" },
 
     { "ref_stereo", "stereo format of the reference video",
       OFFSET(ref_stereo_format), AV_OPT_TYPE_INT, {.i64 = STEREO_FORMAT_MONO},
-      0, STEREO_FORMAT_N - 1, .flags = FLAGS, "stereo_format" },
+      0, STEREO_FORMAT_N - 1, .flags = FLAGS, .unit = "stereo_format" },
 
-    { "mono", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = STEREO_FORMAT_MONO }, 0, 0, FLAGS, "stereo_format" },
-    { "tb",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = STEREO_FORMAT_TB },   0, 0, FLAGS, "stereo_format" },
-    { "lr",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = STEREO_FORMAT_LR },   0, 0, FLAGS, "stereo_format" },
+    { "mono", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = STEREO_FORMAT_MONO }, 0, 0, FLAGS, .unit = "stereo_format" },
+    { "tb",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = STEREO_FORMAT_TB },   0, 0, FLAGS, .unit = "stereo_format" },
+    { "lr",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = STEREO_FORMAT_LR },   0, 0, FLAGS, .unit = "stereo_format" },
 
     { "main_stereo", "stereo format of main video",
       OFFSET(main_stereo_format), AV_OPT_TYPE_INT, {.i64 = STEREO_FORMAT_N},
-      0, STEREO_FORMAT_N, .flags = FLAGS, "stereo_format" },
+      0, STEREO_FORMAT_N, .flags = FLAGS, .unit = "stereo_format" },
 
     { "ref_pad",
       "Expansion (padding) coefficient for each cube face of the reference video",

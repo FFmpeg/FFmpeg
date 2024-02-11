@@ -62,14 +62,14 @@ typedef struct NegateContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption negate_options[] = {
-    { "components", "set components to negate",  OFFSET(requested_components), AV_OPT_TYPE_FLAGS, {.i64=0x77}, 1, 0xff, FLAGS, "flags"},
-    {      "y", "set luma component",  0, AV_OPT_TYPE_CONST, {.i64=COMP_Y}, 0, 0, FLAGS, "flags"},
-    {      "u", "set u component",     0, AV_OPT_TYPE_CONST, {.i64=COMP_U}, 0, 0, FLAGS, "flags"},
-    {      "v", "set v component",     0, AV_OPT_TYPE_CONST, {.i64=COMP_V}, 0, 0, FLAGS, "flags"},
-    {      "r", "set red component",   0, AV_OPT_TYPE_CONST, {.i64=COMP_R}, 0, 0, FLAGS, "flags"},
-    {      "g", "set green component", 0, AV_OPT_TYPE_CONST, {.i64=COMP_G}, 0, 0, FLAGS, "flags"},
-    {      "b", "set blue component",  0, AV_OPT_TYPE_CONST, {.i64=COMP_B}, 0, 0, FLAGS, "flags"},
-    {      "a", "set alpha component", 0, AV_OPT_TYPE_CONST, {.i64=COMP_A}, 0, 0, FLAGS, "flags"},
+    { "components", "set components to negate",  OFFSET(requested_components), AV_OPT_TYPE_FLAGS, {.i64=0x77}, 1, 0xff, FLAGS, .unit = "flags"},
+    {      "y", "set luma component",  0, AV_OPT_TYPE_CONST, {.i64=COMP_Y}, 0, 0, FLAGS, .unit = "flags"},
+    {      "u", "set u component",     0, AV_OPT_TYPE_CONST, {.i64=COMP_U}, 0, 0, FLAGS, .unit = "flags"},
+    {      "v", "set v component",     0, AV_OPT_TYPE_CONST, {.i64=COMP_V}, 0, 0, FLAGS, .unit = "flags"},
+    {      "r", "set red component",   0, AV_OPT_TYPE_CONST, {.i64=COMP_R}, 0, 0, FLAGS, .unit = "flags"},
+    {      "g", "set green component", 0, AV_OPT_TYPE_CONST, {.i64=COMP_G}, 0, 0, FLAGS, .unit = "flags"},
+    {      "b", "set blue component",  0, AV_OPT_TYPE_CONST, {.i64=COMP_B}, 0, 0, FLAGS, .unit = "flags"},
+    {      "a", "set alpha component", 0, AV_OPT_TYPE_CONST, {.i64=COMP_A}, 0, 0, FLAGS, .unit = "flags"},
     { "negate_alpha",  NULL,    OFFSET(negate_alpha), AV_OPT_TYPE_BOOL, {.i64=0},    0,    1, FLAGS },
     { NULL }
 };
