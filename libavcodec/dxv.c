@@ -919,7 +919,7 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
             tag = DXV_FMT_DXT5;
             msgtext = "DXT5";
 
-            texdsp_ctx.tex_funct = ctx->texdsp.dxt5_block;
+            texdsp_ctx.tex_funct = ctx->texdsp.dxt4_block;
             texdsp_ctx.tex_ratio = 16;
             texdsp_ctx.raw_ratio = 16;
         } else if (old_type & 0x20 || version_major == 1) {
