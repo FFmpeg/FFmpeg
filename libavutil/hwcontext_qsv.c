@@ -85,6 +85,11 @@ typedef struct QSVDeviceContext {
 } QSVDeviceContext;
 
 typedef struct QSVFramesContext {
+    /**
+     * The public AVQSVFramesContext. See hwcontext_qsv.h for it.
+     */
+    AVQSVFramesContext p;
+
     mfxSession session_download;
     atomic_int session_download_init;
     mfxSession session_upload;
@@ -329,7 +334,7 @@ static int qsv_device_init(AVHWDeviceContext *ctx)
 
 static void qsv_frames_uninit(AVHWFramesContext *ctx)
 {
-    QSVFramesContext *s = ctx->internal->priv;
+    QSVFramesContext *s = ctx->hwctx;
 
     if (s->session_download) {
         MFXVideoVPP_Close(s->session_download);
@@ -367,8 +372,8 @@ static void qsv_pool_release_dummy(void *opaque, uint8_t *data)
 static AVBufferRef *qsv_pool_alloc(void *opaque, size_t size)
 {
     AVHWFramesContext    *ctx = (AVHWFramesContext*)opaque;
-    QSVFramesContext       *s = ctx->internal->priv;
-    AVQSVFramesContext *hwctx = ctx->hwctx;
+    QSVFramesContext       *s = ctx->hwctx;
+    AVQSVFramesContext *hwctx = &s->p;
 
     if (s->nb_surfaces_used < hwctx->nb_surfaces) {
         s->nb_surfaces_used++;
@@ -381,9 +386,9 @@ static AVBufferRef *qsv_pool_alloc(void *opaque, size_t size)
 
 static int qsv_init_child_ctx(AVHWFramesContext *ctx)
 {
-    AVQSVFramesContext     *hwctx = ctx->hwctx;
-    QSVFramesContext           *s = ctx->internal->priv;
     QSVDeviceContext *device_priv = ctx->device_ctx->hwctx;
+    QSVFramesContext           *s = ctx->hwctx;
+    AVQSVFramesContext     *hwctx = &s->p;
 
     AVBufferRef *child_device_ref = NULL;
     AVBufferRef *child_frames_ref = NULL;
@@ -562,8 +567,8 @@ static int qsv_init_surface(AVHWFramesContext *ctx, mfxFrameSurface1 *surf)
 
 static int qsv_init_pool(AVHWFramesContext *ctx, uint32_t fourcc)
 {
-    QSVFramesContext              *s = ctx->internal->priv;
-    AVQSVFramesContext *frames_hwctx = ctx->hwctx;
+    QSVFramesContext              *s = ctx->hwctx;
+    AVQSVFramesContext *frames_hwctx = &s->p;
 
     int i, ret = 0;
 
@@ -615,8 +620,8 @@ static mfxStatus frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
                              mfxFrameAllocResponse *resp)
 {
     AVHWFramesContext    *ctx = pthis;
-    QSVFramesContext       *s = ctx->internal->priv;
-    AVQSVFramesContext *hwctx = ctx->hwctx;
+    QSVFramesContext       *s = ctx->hwctx;
+    AVQSVFramesContext *hwctx = &s->p;
     mfxFrameInfo *i  = &req->Info;
     mfxFrameInfo *i1 = &hwctx->surfaces[0].Info;
 
@@ -1133,7 +1138,7 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
     void             **loader = &hwctx->loader;
 
 #if QSV_HAVE_OPAQUE
-    QSVFramesContext              *s = ctx->internal->priv;
+    QSVFramesContext              *s = ctx->hwctx;
     opaque = !!(frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
 #endif
 
@@ -1210,8 +1215,8 @@ fail:
 
 static int qsv_frames_init(AVHWFramesContext *ctx)
 {
-    QSVFramesContext              *s = ctx->internal->priv;
-    AVQSVFramesContext *frames_hwctx = ctx->hwctx;
+    QSVFramesContext              *s = ctx->hwctx;
+    AVQSVFramesContext *frames_hwctx = &s->p;
 
     int opaque = 0;
 
@@ -1387,7 +1392,7 @@ static int qsv_frames_derive_from(AVHWFramesContext *dst_ctx,
 static int qsv_map_from(AVHWFramesContext *ctx,
                         AVFrame *dst, const AVFrame *src, int flags)
 {
-    QSVFramesContext *s = ctx->internal->priv;
+    QSVFramesContext *s = ctx->hwctx;
     mfxFrameSurface1 *surf = (mfxFrameSurface1*)src->data[3];
     AVHWFramesContext *child_frames_ctx;
     const AVPixFmtDescriptor *desc;
@@ -1490,7 +1495,7 @@ fail:
 static int qsv_transfer_data_child(AVHWFramesContext *ctx, AVFrame *dst,
                                    const AVFrame *src)
 {
-    QSVFramesContext *s = ctx->internal->priv;
+    QSVFramesContext *s = ctx->hwctx;
     AVHWFramesContext *child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
     int download = !!src->hw_frames_ctx;
     mfxFrameSurface1 *surf = (mfxFrameSurface1*)(download ? src->data[3] : dst->data[3]);
@@ -1592,7 +1597,7 @@ static int map_frame_to_surface(const AVFrame *frame, mfxFrameSurface1 *surface)
 
 static int qsv_internal_session_check_init(AVHWFramesContext *ctx, int upload)
 {
-    QSVFramesContext *s = ctx->internal->priv;
+    QSVFramesContext *s = ctx->hwctx;
     atomic_int *inited  = upload ? &s->session_upload_init : &s->session_download_init;
     mfxSession *session = upload ? &s->session_upload      : &s->session_download;
     int ret = 0;
@@ -1619,7 +1624,7 @@ static int qsv_internal_session_check_init(AVHWFramesContext *ctx, int upload)
 static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
                                   const AVFrame *src)
 {
-    QSVFramesContext  *s = ctx->internal->priv;
+    QSVFramesContext  *s = ctx->hwctx;
     mfxFrameSurface1 out = {{ 0 }};
     mfxFrameSurface1 *in = (mfxFrameSurface1*)src->data[3];
 
@@ -1702,7 +1707,7 @@ static int qsv_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
                                 const AVFrame *src)
 {
-    QSVFramesContext   *s = ctx->internal->priv;
+    QSVFramesContext   *s = ctx->hwctx;
     mfxFrameSurface1   in = {{ 0 }};
     mfxFrameSurface1 *out = (mfxFrameSurface1*)dst->data[3];
     mfxFrameInfo tmp_info;
@@ -1795,8 +1800,8 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 static int qsv_frames_derive_to(AVHWFramesContext *dst_ctx,
                                 AVHWFramesContext *src_ctx, int flags)
 {
-    QSVFramesContext *s = dst_ctx->internal->priv;
-    AVQSVFramesContext *dst_hwctx = dst_ctx->hwctx;
+    QSVFramesContext *s = dst_ctx->hwctx;
+    AVQSVFramesContext *dst_hwctx = &s->p;
     int i;
 
     if (src_ctx->initial_pool_size == 0) {
@@ -2252,8 +2257,7 @@ const HWContextType ff_hwcontext_type_qsv = {
     .name                   = "QSV",
 
     .device_hwctx_size      = sizeof(QSVDeviceContext),
-    .frames_hwctx_size      = sizeof(AVQSVFramesContext),
-    .frames_priv_size       = sizeof(QSVFramesContext),
+    .frames_hwctx_size      = sizeof(QSVFramesContext),
 
     .device_create          = qsv_device_create,
     .device_derive          = qsv_device_derive,
