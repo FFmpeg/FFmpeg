@@ -191,7 +191,6 @@ static av_cold void deint_cuda_uninit(AVFilterContext *ctx)
 {
     CUcontext dummy;
     DeintCUDAContext *s = ctx->priv;
-    YADIFContext *y = &s->yadif;
 
     if (s->hwctx && s->cu_module) {
         CudaFunctions *cu = s->hwctx->internal->cuda_dl;
