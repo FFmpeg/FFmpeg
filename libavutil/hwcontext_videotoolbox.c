@@ -34,6 +34,10 @@
 #include "pixdesc.h"
 
 typedef struct VTFramesContext {
+    /**
+     * The public AVVTFramesContext. See hwcontext_videotoolbox.h for it.
+     */
+    AVVTFramesContext p;
     CVPixelBufferPoolRef pool;
 } VTFramesContext;
 
@@ -176,12 +180,12 @@ uint32_t av_map_videotoolbox_format_from_pixfmt2(enum AVPixelFormat pix_fmt, boo
 
 static int vt_pool_alloc(AVHWFramesContext *ctx)
 {
-    VTFramesContext *fctx = ctx->internal->priv;
+    VTFramesContext *fctx = ctx->hwctx;
+    AVVTFramesContext *hw_ctx = &fctx->p;
     CVReturn err;
     CFNumberRef w, h, pixfmt;
     uint32_t cv_pixfmt;
     CFMutableDictionaryRef attributes, iosurface_properties;
-    AVVTFramesContext *hw_ctx = ctx->hwctx;
 
     attributes = CFDictionaryCreateMutable(
         NULL,
@@ -237,7 +241,7 @@ static AVBufferRef *vt_pool_alloc_buffer(void *opaque, size_t size)
     AVBufferRef *buf;
     CVReturn err;
     AVHWFramesContext *ctx = opaque;
-    VTFramesContext *fctx = ctx->internal->priv;
+    VTFramesContext *fctx = ctx->hwctx;
 
     err = CVPixelBufferPoolCreatePixelBuffer(
         NULL,
@@ -260,7 +264,7 @@ static AVBufferRef *vt_pool_alloc_buffer(void *opaque, size_t size)
 
 static void vt_frames_uninit(AVHWFramesContext *ctx)
 {
-    VTFramesContext *fctx = ctx->internal->priv;
+    VTFramesContext *fctx = ctx->hwctx;
     if (fctx->pool) {
         CVPixelBufferPoolRelease(fctx->pool);
         fctx->pool = NULL;
@@ -763,10 +767,9 @@ const HWContextType ff_hwcontext_type_videotoolbox = {
     .type                 = AV_HWDEVICE_TYPE_VIDEOTOOLBOX,
     .name                 = "videotoolbox",
 
-    .frames_priv_size     = sizeof(VTFramesContext),
+    .frames_hwctx_size    = sizeof(VTFramesContext),
 
     .device_create        = vt_device_create,
-    .frames_hwctx_size    = sizeof(AVVTFramesContext),
     .frames_init          = vt_frames_init,
     .frames_get_buffer    = vt_get_buffer,
     .frames_get_constraints = vt_frames_get_constraints,
