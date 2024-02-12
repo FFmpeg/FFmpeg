@@ -35,6 +35,7 @@
 #include "ffjni.h"
 
 static void *java_vm;
+static void *android_app_ctx;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 int av_jni_set_java_vm(void *vm, void *log_ctx)
@@ -74,6 +75,48 @@ int av_jni_set_java_vm(void *vm, void *log_ctx)
 void *av_jni_get_java_vm(void *log_ctx)
 {
     return NULL;
+}
+
+#endif
+
+#if defined(__ANDROID__)
+
+int av_jni_set_android_app_ctx(void *app_ctx, void *log_ctx)
+{
+#if CONFIG_JNI
+    JNIEnv *env = ff_jni_get_env(log_ctx);
+    if (!env)
+        return AVERROR(EINVAL);
+
+    jobjectRefType type = (*env)->GetObjectRefType(env, app_ctx);
+    if (type != JNIGlobalRefType) {
+        av_log(log_ctx, AV_LOG_ERROR, "Application context must be passed as a global reference");
+        return AVERROR(EINVAL);
+    }
+
+    pthread_mutex_lock(&lock);
+    android_app_ctx = app_ctx;
+    pthread_mutex_unlock(&lock);
+
+    return 0;
+#else
+    return AVERROR(ENOSYS);
+#endif
+}
+
+void *av_jni_get_android_app_ctx(void)
+{
+#if CONFIG_JNI
+    void *ctx;
+
+    pthread_mutex_lock(&lock);
+    ctx = android_app_ctx;
+    pthread_mutex_unlock(&lock);
+
+    return ctx;
+#else
+    return NULL;
+#endif
 }
 
 #endif
