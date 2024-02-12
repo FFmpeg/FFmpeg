@@ -484,13 +484,11 @@ static int set_string_channel_layout(void *obj, const AVOption *o,
     return av_channel_layout_from_string(channel_layout, val);
 }
 
-int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
+static int opt_set_elem(void *obj, void *target_obj, const AVOption *o,
+                        const char *val, void *dst)
 {
-    int ret = 0;
-    void *dst, *target_obj;
-    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
-    if (!o || !target_obj)
-        return AVERROR_OPTION_NOT_FOUND;
+    int ret;
+
 FF_DISABLE_DEPRECATION_WARNINGS
     if (!val && (o->type != AV_OPT_TYPE_STRING &&
                  o->type != AV_OPT_TYPE_PIXEL_FMT && o->type != AV_OPT_TYPE_SAMPLE_FMT &&
@@ -500,13 +498,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
         return AVERROR(EINVAL);
 FF_ENABLE_DEPRECATION_WARNINGS
 
-    if (o->flags & AV_OPT_FLAG_READONLY)
-        return AVERROR(EINVAL);
-
-    if (o->flags & AV_OPT_FLAG_DEPRECATED)
-        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
-
-    dst = ((uint8_t *)target_obj) + o->offset;
     switch (o->type) {
     case AV_OPT_TYPE_BOOL:
         return set_string_bool(obj, o, val, dst);
@@ -567,6 +558,24 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_log(obj, AV_LOG_ERROR, "Invalid option type.\n");
     return AVERROR(EINVAL);
+}
+
+int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
+{
+    void *dst, *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+
+    if (o->flags & AV_OPT_FLAG_READONLY)
+        return AVERROR(EINVAL);
+
+    if (o->flags & AV_OPT_FLAG_DEPRECATED)
+        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
+
+    dst = ((uint8_t *)target_obj) + o->offset;
+
+    return opt_set_elem(obj, target_obj, o, val, dst);
 }
 
 #define OPT_EVAL_NUMBER(name, opttype, vartype)                         \
