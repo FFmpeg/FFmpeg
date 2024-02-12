@@ -2779,6 +2779,14 @@ static int mka_parse_audio_codec(MatroskaTrack *track, AVCodecParameters *par,
             return AVERROR(ENOMEM);
         break;
     }
+    case AV_CODEC_ID_ATRAC1:
+        /* ATRAC1 uses a constant frame size.
+         * Typical ATRAC1 streams are either mono or stereo.
+         * At most, ATRAC1 was used to store 8 channels of audio. */
+        if (track->audio.channels > 8)
+            return AVERROR_INVALIDDATA;
+        par->block_align = track->audio.channels * 212;
+        break;
     case AV_CODEC_ID_FLAC:
         if (track->codec_priv.size) {
             ret = matroska_parse_flac(s, track, extradata_offset);

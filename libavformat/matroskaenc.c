@@ -3474,6 +3474,7 @@ static int mkv_check_bitstream(AVFormatContext *s, AVStream *st,
 
 static const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_ALAC,      0XFFFFFFFF },
+    { AV_CODEC_ID_ATRAC1,    0xFFFFFFFF },
     { AV_CODEC_ID_MLP,       0xFFFFFFFF },
     { AV_CODEC_ID_OPUS,      0xFFFFFFFF },
     { AV_CODEC_ID_PCM_S16BE, 0xFFFFFFFF },
