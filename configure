@@ -3711,6 +3711,8 @@ xcbgrab_indev_suggest="libxcb_shm libxcb_shape libxcb_xfixes"
 xv_outdev_deps="xlib_xv xlib_x11 xlib_xext"
 
 # protocols
+android_content_protocol_deps="jni"
+android_content_protocol_select="file_protocol"
 async_protocol_deps="threads"
 bluray_protocol_deps="libbluray"
 ffrtmpcrypt_protocol_conflict="librtmp_protocol"

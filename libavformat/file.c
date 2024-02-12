@@ -40,6 +40,12 @@
 #include <stdlib.h>
 #include "os_support.h"
 #include "url.h"
+#if CONFIG_ANDROID_CONTENT_PROTOCOL
+#include <jni.h>
+#include "libavcodec/jni.h"
+#include "libavcodec/ffjni.c"
+#endif
+
 
 /* Some systems may not have S_ISFIFO */
 #ifndef S_ISFIFO
@@ -100,6 +106,21 @@ typedef struct FileContext {
 #endif
     int64_t initial_pos;
 } FileContext;
+
+
+#if CONFIG_ANDROID_CONTENT_PROTOCOL
+static const AVOption android_content_options[] = {
+    { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass android_content_class = {
+    .class_name = "android_content",
+    .item_name  = av_default_item_name,
+    .option     = android_content_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+#endif
 
 static const AVOption file_options[] = {
     { "truncate", "truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
@@ -524,3 +545,142 @@ const URLProtocol ff_fd_protocol = {
 };
 
 #endif /* CONFIG_FD_PROTOCOL */
+
+#if CONFIG_ANDROID_CONTENT_PROTOCOL
+
+typedef struct JFields {
+    jclass uri_class;
+    jmethodID parse_id;
+
+    jclass context_class;
+    jmethodID get_content_resolver_id;
+
+    jclass content_resolver_class;
+    jmethodID open_file_descriptor_id;
+
+    jclass parcel_file_descriptor_class;
+    jmethodID detach_fd_id;
+} JFields;
+
+#define OFFSET(x) offsetof(JFields, x)
+static const struct FFJniField jfields_mapping[] = {
+    { "android/net/Uri", NULL, NULL, FF_JNI_CLASS, OFFSET(uri_class), 1 },
+        { "android/net/Uri", "parse", "(Ljava/lang/String;)Landroid/net/Uri;", FF_JNI_STATIC_METHOD, OFFSET(parse_id), 1 },
+
+    { "android/content/Context", NULL, NULL, FF_JNI_CLASS, OFFSET(context_class), 1 },
+        { "android/content/Context", "getContentResolver", "()Landroid/content/ContentResolver;", FF_JNI_METHOD, OFFSET(get_content_resolver_id), 1 },
+
+    { "android/content/ContentResolver", NULL, NULL, FF_JNI_CLASS, OFFSET(content_resolver_class), 1 },
+        { "android/content/ContentResolver", "openFileDescriptor", "(Landroid/net/Uri;Ljava/lang/String;)Landroid/os/ParcelFileDescriptor;", FF_JNI_METHOD, OFFSET(open_file_descriptor_id), 1 },
+
+    { "android/os/ParcelFileDescriptor", NULL, NULL, FF_JNI_CLASS, OFFSET(parcel_file_descriptor_class), 1 },
+        { "android/os/ParcelFileDescriptor", "detachFd", "()I", FF_JNI_METHOD, OFFSET(detach_fd_id), 1 },
+
+    { NULL }
+};
+#undef OFFSET
+
+static int android_content_open(URLContext *h, const char *filename, int flags)
+{
+    FileContext *c = h->priv_data;
+    int fd, ret;
+    struct stat st;
+    const char *mode_str = "r";
+
+    JNIEnv *env;
+    JFields jfields = { 0 };
+    jobject application_context = NULL;
+    jobject url = NULL;
+    jobject mode = NULL;
+    jobject uri = NULL;
+    jobject content_resolver = NULL;
+    jobject parcel_file_descriptor = NULL;
+
+    env = ff_jni_get_env(c);
+    if (!env) {
+        return AVERROR(EINVAL);
+    }
+
+    ret = ff_jni_init_jfields(env, &jfields, jfields_mapping, 0, c);
+    if (ret < 0) {
+        av_log(c, AV_LOG_ERROR, "failed to initialize jni fields\n");
+        return ret;
+    }
+
+    application_context = av_jni_get_android_app_ctx();
+    if (!application_context) {
+        av_log(c, AV_LOG_ERROR, "application context is not set\n");
+        ret = AVERROR_EXTERNAL;
+        goto done;
+    }
+
+    url = ff_jni_utf_chars_to_jstring(env, filename, c);
+    if (!url) {
+        ret = AVERROR_EXTERNAL;
+        goto done;
+    }
+
+    if (flags & AVIO_FLAG_WRITE && flags & AVIO_FLAG_READ)
+        mode_str = "rw";
+    else if (flags & AVIO_FLAG_WRITE)
+        mode_str = "w";
+
+    mode = ff_jni_utf_chars_to_jstring(env, mode_str, c);
+    if (!mode) {
+        ret = AVERROR_EXTERNAL;
+        goto done;
+    }
+
+    uri = (*env)->CallStaticObjectMethod(env, jfields.uri_class, jfields.parse_id, url);
+    ret = ff_jni_exception_check(env, 1, c);
+    if (ret < 0)
+        goto done;
+
+    content_resolver = (*env)->CallObjectMethod(env, application_context, jfields.get_content_resolver_id);
+    ret = ff_jni_exception_check(env, 1, c);
+    if (ret < 0)
+        goto done;
+
+    parcel_file_descriptor = (*env)->CallObjectMethod(env, content_resolver, jfields.open_file_descriptor_id, uri, mode);
+    ret = ff_jni_exception_check(env, 1, c);
+    if (ret < 0)
+        goto done;
+
+    fd = (*env)->CallIntMethod(env, parcel_file_descriptor, jfields.detach_fd_id);
+    ret = ff_jni_exception_check(env, 1, c);
+    if (ret < 0)
+        goto done;
+
+    if (fstat(fd, &st) < 0) {
+        close(fd);
+        return AVERROR(errno);
+    }
+
+    c->fd = fd;
+    h->is_streamed = !(S_ISREG(st.st_mode) || S_ISBLK(st.st_mode));
+
+done:
+    (*env)->DeleteLocalRef(env, url);
+    (*env)->DeleteLocalRef(env, mode);
+    (*env)->DeleteLocalRef(env, uri);
+    (*env)->DeleteLocalRef(env, content_resolver);
+    (*env)->DeleteLocalRef(env, parcel_file_descriptor);
+    ff_jni_reset_jfields(env, &jfields, jfields_mapping, 0, c);
+
+    return ret;
+}
+
+URLProtocol ff_android_content_protocol = {
+    .name                = "content",
+    .url_open            = android_content_open,
+    .url_read            = file_read,
+    .url_write           = file_write,
+    .url_seek            = file_seek,
+    .url_close           = file_close,
+    .url_get_file_handle = file_get_handle,
+    .url_check           = NULL,
+    .priv_data_size      = sizeof(FileContext),
+    .priv_data_class     = &android_content_class,
+};
+
+#endif /* CONFIG_ANDROID_CONTENT_PROTOCOL */
