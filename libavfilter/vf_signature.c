@@ -391,6 +391,9 @@ static int xml_export(AVFilterContext *ctx, StreamContext *sc, const char* filen
     FILE* f;
     unsigned int pot3[5] = { 3*3*3*3, 3*3*3, 3*3, 3, 1 };
 
+    if (!sc->coarseend->last)
+        return AVERROR(EINVAL); // No frames ?
+
     f = fopen(filename, "w");
     if (!f) {
         int err = AVERROR(EINVAL);
