@@ -32,6 +32,7 @@
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
+#include "urldecode.h"
 
 /* This is for MPEG-TS and it's a default SRTO_PAYLOADSIZE for SRTT_LIVE (8 TS packets) */
 #ifndef SRT_LIVE_DEFAULT_PAYLOAD_SIZE
@@ -547,7 +548,11 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "passphrase", p)) {
             av_freep(&s->passphrase);
-            s->passphrase = av_strndup(buf, strlen(buf));
+            s->passphrase = ff_urldecode(buf, 1);
+            if (!s->passphrase) {
+                ret = AVERROR(ENOMEM);
+                goto err;
+            }
         }
 #if SRT_VERSION_VALUE >= 0x010302
         if (av_find_info_tag(buf, sizeof(buf), "enforced_encryption", p)) {
@@ -632,7 +637,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "streamid", p)) {
             av_freep(&s->streamid);
-            s->streamid = av_strdup(buf);
+            s->streamid = ff_urldecode(buf, 1);
             if (!s->streamid) {
                 ret = AVERROR(ENOMEM);
                 goto err;
@@ -640,7 +645,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "smoother", p)) {
             av_freep(&s->smoother);
-            s->smoother = av_strdup(buf);
+            s->smoother = ff_urldecode(buf, 1);
             if(!s->smoother) {
                 ret = AVERROR(ENOMEM);
                 goto err;
@@ -671,6 +676,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
 err:
     av_freep(&s->smoother);
     av_freep(&s->streamid);
+    av_freep(&s->passphrase);
     srt_cleanup();
     return ret;
 }
