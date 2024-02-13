@@ -148,6 +148,8 @@ typedef struct InputFilterPriv {
 
     // fallback parameters to use when no input is ever sent
     struct {
+        AVRational          time_base;
+
         int                 format;
 
         int                 width;
@@ -695,6 +697,8 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
         /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
            palettes for all rectangles are identical or compatible */
         ifp->format = AV_PIX_FMT_RGB32;
+
+        ifp->time_base = AV_TIME_BASE_Q;
 
         av_log(fgp, AV_LOG_VERBOSE, "sub2video: using %dx%d canvas\n",
                ifp->width, ifp->height);
@@ -1469,7 +1473,6 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     AVFilterContext *last_filter;
     const AVFilter *buffer_filt = avfilter_get_by_name("buffer");
     const AVPixFmtDescriptor *desc;
-    InputStream *ist = ifp->ist;
     AVRational fr = ifp->opts.framerate;
     AVRational sar;
     AVBPrint args;
@@ -1481,9 +1484,6 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
 
     if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE)
         sub2video_prepare(ifp);
-
-    ifp->time_base = (ifp->opts.flags & IFILTER_FLAG_CFR) ?
-                     av_inv_q(ifp->opts.framerate) : ist->st->time_base;
 
     sar = ifp->sample_aspect_ratio;
     if(!sar.den)
@@ -1574,8 +1574,6 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     AVBPrint args;
     char name[255];
     int ret, pad_idx = 0;
-
-    ifp->time_base = (AVRational){ 1, ifp->sample_rate };
 
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprintf(&args, "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
@@ -1804,6 +1802,8 @@ int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
 
+    ifp->fallback.time_base = dec->pkt_timebase;
+
     if (dec->codec_type == AVMEDIA_TYPE_VIDEO) {
         ifp->fallback.format                 = dec->pix_fmt;
         ifp->fallback.width                  = dec->width;
@@ -1834,6 +1834,10 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     ret = av_buffer_replace(&ifp->hw_frames_ctx, frame->hw_frames_ctx);
     if (ret < 0)
         return ret;
+
+    ifp->time_base = (ifp->type == AVMEDIA_TYPE_AUDIO)    ? (AVRational){ 1, frame->sample_rate } :
+                     (ifp->opts.flags & IFILTER_FLAG_CFR) ? av_inv_q(ifp->opts.framerate)         :
+                     frame->time_base;
 
     ifp->format              = frame->format;
 
@@ -2523,6 +2527,7 @@ static int send_eof(FilterGraphThread *fgt, InputFilter *ifilter,
             ifp->sample_aspect_ratio    = ifp->fallback.sample_aspect_ratio;
             ifp->color_space            = ifp->fallback.color_space;
             ifp->color_range            = ifp->fallback.color_range;
+            ifp->time_base              = ifp->fallback.time_base;
 
             ret = av_channel_layout_copy(&ifp->ch_layout,
                                          &ifp->fallback.ch_layout);
