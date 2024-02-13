@@ -685,7 +685,7 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
     case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT: {
         const AVIAMFAudioElement *audio_element = stg->params.iamf_audio_element;
         av_log(NULL, AV_LOG_INFO, " IAMF Audio Element:");
-        dump_disposition(st->disposition, log_level);
+        dump_disposition(stg->disposition, AV_LOG_INFO);
         av_log(NULL, AV_LOG_INFO, "\n");
         dump_metadata(NULL, stg->metadata, "    ", AV_LOG_INFO);
         for (int j = 0; j < audio_element->nb_layers; j++) {
@@ -708,7 +708,7 @@ static void dump_stream_group(const AVFormatContext *ic, uint8_t *printed,
     case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION: {
         const AVIAMFMixPresentation *mix_presentation = stg->params.iamf_mix_presentation;
         av_log(NULL, AV_LOG_INFO, " IAMF Mix Presentation:");
-        dump_disposition(st->disposition, log_level);
+        dump_disposition(stg->disposition, AV_LOG_INFO);
         av_log(NULL, AV_LOG_INFO, "\n");
         dump_metadata(NULL, stg->metadata, "    ", AV_LOG_INFO);
         dump_dictionary(NULL, mix_presentation->annotations, "Annotations", "    ", AV_LOG_INFO);
