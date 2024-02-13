@@ -236,17 +236,9 @@ done:
     av_free(name);
     av_free(message);
 
-    if (class_class) {
-        (*env)->DeleteLocalRef(env, class_class);
-    }
-
-    if (exception_class) {
-        (*env)->DeleteLocalRef(env, exception_class);
-    }
-
-    if (string) {
-        (*env)->DeleteLocalRef(env, string);
-    }
+    (*env)->DeleteLocalRef(env, class_class);
+    (*env)->DeleteLocalRef(env, exception_class);
+    (*env)->DeleteLocalRef(env, string);
 
     return ret;
 }
