@@ -253,6 +253,7 @@ typedef struct OptionsContext {
 enum IFilterFlags {
     IFILTER_FLAG_AUTOROTATE     = (1 << 0),
     IFILTER_FLAG_REINIT         = (1 << 1),
+    IFILTER_FLAG_CFR            = (1 << 2),
 };
 
 typedef struct InputFilterOptions {
@@ -260,6 +261,13 @@ typedef struct InputFilterOptions {
     int64_t             trim_end_us;
 
     uint8_t            *name;
+
+    /* When IFILTER_FLAG_CFR is set, the stream is guaranteed to be CFR with
+     * this framerate.
+     *
+     * Otherwise, this is an estimate that should not be relied upon to be
+     * accurate */
+    AVRational          framerate;
 
     int                 sub2video_width;
     int                 sub2video_height;
@@ -364,8 +372,6 @@ typedef struct InputStream {
     AVCodecParameters    *par;
     Decoder              *decoder;
     const AVCodec        *dec;
-
-    AVRational            framerate_guessed;
 
     /* framerate forced with -r */
     AVRational            framerate;

@@ -1486,7 +1486,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     const AVFilter *buffer_filt = avfilter_get_by_name("buffer");
     const AVPixFmtDescriptor *desc;
     InputStream *ist = ifp->ist;
-    AVRational fr = ist->framerate;
+    AVRational fr = ifp->opts.framerate;
     AVRational sar;
     AVBPrint args;
     char name[255];
@@ -1495,14 +1495,11 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     if (!par)
         return AVERROR(ENOMEM);
 
-    if (!fr.num)
-        fr = ist->framerate_guessed;
-
     if (ifp->type_src == AVMEDIA_TYPE_SUBTITLE)
         sub2video_prepare(ifp);
 
-    ifp->time_base =  ist->framerate.num ? av_inv_q(ist->framerate) :
-                                           ist->st->time_base;
+    ifp->time_base = (ifp->opts.flags & IFILTER_FLAG_CFR) ?
+                     av_inv_q(ifp->opts.framerate) : ist->st->time_base;
 
     sar = ifp->sample_aspect_ratio;
     if(!sar.den)

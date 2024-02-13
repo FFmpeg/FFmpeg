@@ -992,7 +992,13 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
     if (ret < 0)
         return ret;
 
-    if (ist->par->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+    if (ist->par->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (ist->framerate.num > 0 && ist->framerate.den > 0) {
+            opts->framerate = ist->framerate;
+            opts->flags |= IFILTER_FLAG_CFR;
+        } else
+            opts->framerate = av_guess_frame_rate(d->f.ctx, ist->st, NULL);
+    } else if (ist->par->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         /* Compute the size of the canvas for the subtitles stream.
            If the subtitles codecpar has set a size, use it. Otherwise use the
            maximum dimensions of the video streams in the same file. */
@@ -1358,8 +1364,6 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         ist->top_field_first = -1;
         MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
 #endif
-
-        ist->framerate_guessed = av_guess_frame_rate(ic, st, NULL);
 
         break;
     case AVMEDIA_TYPE_AUDIO: {
