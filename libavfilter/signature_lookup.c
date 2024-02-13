@@ -297,13 +297,9 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
                 if (hmax < hspace[i][j].score) {
                     if (c == NULL) {
                         c = av_malloc(sizeof(MatchingInfo));
-                        if (!c)
-                            av_log(ctx, AV_LOG_FATAL, "Could not allocate memory");
                         cands = c;
                     } else {
                         c->next = av_malloc(sizeof(MatchingInfo));
-                        if (!c->next)
-                            av_log(ctx, AV_LOG_FATAL, "Could not allocate memory");
                         c = c->next;
 
                     }
