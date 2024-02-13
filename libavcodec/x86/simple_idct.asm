@@ -845,6 +845,7 @@ INIT_MMX mmx
 
 cglobal simple_idct, 1, 2, 8, 128, block, t0
     IDCT
+    emms
 RET
 
 INIT_XMM sse2
