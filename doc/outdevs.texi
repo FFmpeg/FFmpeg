@@ -408,7 +408,13 @@ ffmpeg  -i INPUT -f pulse "stream name"
 
 @section sdl
 
-SDL (Simple DirectMedia Layer) output device.
+SDL (Simple DirectMedia Layer) output device. Deprecated and will be removed.
+
+For monitoring purposes in FFmpeg, pipes and a video player such as ffplay can be used:
+
+@example
+ffmpeg -i INPUT -f nut -c:v rawvideo - | ffplay -
+@end example
 
 "sdl2" can be used as alias for "sdl".
 

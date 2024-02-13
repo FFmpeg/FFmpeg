@@ -37,5 +37,7 @@
 #define FF_API_BKTR_DEVICE (LIBAVDEVICE_VERSION_MAJOR < 62)
 // reminder to remove the opengl device on next major bump
 #define FF_API_OPENGL_DEVICE (LIBAVDEVICE_VERSION_MAJOR < 62)
+// reminder to remove the sdl2 device on next major bump
+#define FF_API_SDL2_DEVICE (LIBAVDEVICE_VERSION_MAJOR < 62)
 
 #endif /* AVDEVICE_VERSION_MAJOR_H */
