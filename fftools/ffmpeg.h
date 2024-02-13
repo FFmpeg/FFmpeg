@@ -250,6 +250,11 @@ typedef struct OptionsContext {
     SpecifierOptList mux_stats_fmt;
 } OptionsContext;
 
+typedef struct InputFilterOptions {
+    int64_t             trim_start_us;
+    int64_t             trim_end_us;
+} InputFilterOptions;
+
 typedef struct InputFilter {
     struct FilterGraph *graph;
     uint8_t            *name;
@@ -394,15 +399,12 @@ typedef struct InputFile {
     int64_t          ts_offset;
     /* user-specified start time in AV_TIME_BASE or AV_NOPTS_VALUE */
     int64_t          start_time;
-    int64_t          recording_time;
 
     /* streams that ffmpeg is aware of;
      * there may be extra streams in ctx that are not mapped to an InputStream
      * if new streams appear dynamically during demuxing */
     InputStream    **streams;
     int           nb_streams;
-
-    int              accurate_seek;
 } InputFile;
 
 enum forced_keyframes_const {
@@ -790,7 +792,8 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch);
 void ifile_close(InputFile **f);
 
 int ist_output_add(InputStream *ist, OutputStream *ost);
-int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple);
+int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
+                   InputFilterOptions *opts);
 
 /**
  * Find an unused input stream of given type.

@@ -103,6 +103,8 @@ typedef struct FilterGraphThread {
 typedef struct InputFilterPriv {
     InputFilter ifilter;
 
+    InputFilterOptions opts;
+
     int              index;
 
     AVFilterContext *filter;
@@ -673,7 +675,8 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     ifp->ist             = ist;
     ifp->type_src        = ist->st->codecpar->codec_type;
 
-    dec_idx = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph));
+    dec_idx = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph),
+                             &ifp->opts);
     if (dec_idx < 0)
         return dec_idx;
 
@@ -1478,7 +1481,6 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     AVBPrint args;
     char name[255];
     int ret, pad_idx = 0;
-    int64_t tsoffset = 0;
     AVBufferSrcParameters *par = av_buffersrc_parameters_alloc();
     if (!par)
         return AVERROR(ENOMEM);
@@ -1558,13 +1560,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
 
     snprintf(name, sizeof(name), "trim_in_%d_%d",
              f->index, ist->index);
-    if (copy_ts) {
-        tsoffset = f->start_time == AV_NOPTS_VALUE ? 0 : f->start_time;
-        if (!start_at_zero && f->ctx->start_time != AV_NOPTS_VALUE)
-            tsoffset += f->ctx->start_time;
-    }
-    ret = insert_trim(((f->start_time == AV_NOPTS_VALUE) || !f->accurate_seek) ?
-                      AV_NOPTS_VALUE : tsoffset, f->recording_time,
+    ret = insert_trim(ifp->opts.trim_start_us, ifp->opts.trim_end_us,
                       &last_filter, &pad_idx, name);
     if (ret < 0)
         return ret;
@@ -1589,7 +1585,6 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     AVBPrint args;
     char name[255];
     int ret, pad_idx = 0;
-    int64_t tsoffset = 0;
 
     ifp->time_base = (AVRational){ 1, ifp->sample_rate };
 
@@ -1615,13 +1610,7 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
 
     snprintf(name, sizeof(name), "trim for input stream %d:%d",
              f->index, ist->index);
-    if (copy_ts) {
-        tsoffset = f->start_time == AV_NOPTS_VALUE ? 0 : f->start_time;
-        if (!start_at_zero && f->ctx->start_time != AV_NOPTS_VALUE)
-            tsoffset += f->ctx->start_time;
-    }
-    ret = insert_trim(((f->start_time == AV_NOPTS_VALUE) || !f->accurate_seek) ?
-                      AV_NOPTS_VALUE : tsoffset, f->recording_time,
+    ret = insert_trim(ifp->opts.trim_start_us, ifp->opts.trim_end_us,
                       &last_filter, &pad_idx, name);
     if (ret < 0)
         return ret;

@@ -103,6 +103,9 @@ typedef struct Demuxer {
     int64_t ts_offset_discont;
     int64_t last_ts;
 
+    int64_t recording_time;
+    int accurate_seek;
+
     /* number of times input stream should be looped */
     int loop;
     int have_audio_dec;
@@ -450,13 +453,13 @@ static int input_packet_process(Demuxer *d, AVPacket *pkt, unsigned *send_flags)
     if (ret < 0)
         return ret;
 
-    if (f->recording_time != INT64_MAX) {
+    if (d->recording_time != INT64_MAX) {
         int64_t start_time = 0;
         if (copy_ts) {
             start_time += f->start_time != AV_NOPTS_VALUE ? f->start_time : 0;
             start_time += start_at_zero ? 0 : f->start_time_effective;
         }
-        if (ds->dts >= f->recording_time + start_time)
+        if (ds->dts >= d->recording_time + start_time)
             *send_flags |= DEMUX_SEND_STREAMCOPY_EOF;
     }
 
@@ -966,10 +969,12 @@ int ist_output_add(InputStream *ist, OutputStream *ost)
     return ost->enc ? ds->sch_idx_dec : ds->sch_idx_stream;
 }
 
-int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
+int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
+                   InputFilterOptions *opts)
 {
     Demuxer      *d = demuxer_from_ifile(ist->file);
     DemuxStream *ds = ds_from_ist(ist);
+    int64_t tsoffset = 0;
     int ret;
 
     ret = ist_use(ist, is_simple ? DECODING_FOR_OST : DECODING_FOR_FILTER);
@@ -994,6 +999,15 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple)
         }
         ds->have_sub2video = 1;
     }
+
+    if (copy_ts) {
+        tsoffset = d->f.start_time == AV_NOPTS_VALUE ? 0 : d->f.start_time;
+        if (!start_at_zero && d->f.ctx->start_time != AV_NOPTS_VALUE)
+            tsoffset += d->f.ctx->start_time;
+    }
+    opts->trim_start_us = ((d->f.start_time == AV_NOPTS_VALUE) || !d->accurate_seek) ?
+                          AV_NOPTS_VALUE : tsoffset;
+    opts->trim_end_us   = d->recording_time;
 
     return ds->sch_idx_dec;
 }
@@ -1722,11 +1736,11 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     }
 
     f->start_time = start_time;
-    f->recording_time = recording_time;
+    d->recording_time = recording_time;
     f->input_sync_ref = o->input_sync_ref;
     f->input_ts_offset = o->input_ts_offset;
     f->ts_offset  = o->input_ts_offset - (copy_ts ? (start_at_zero && ic->start_time != AV_NOPTS_VALUE ? ic->start_time : 0) : timestamp);
-    f->accurate_seek = o->accurate_seek;
+    d->accurate_seek   = o->accurate_seek;
     d->loop = o->loop;
     d->nb_streams_warn = ic->nb_streams;
 
