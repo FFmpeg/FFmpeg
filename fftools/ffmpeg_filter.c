@@ -109,8 +109,6 @@ typedef struct InputFilterPriv {
 
     AVFilterContext    *filter;
 
-    InputStream        *ist;
-
     // used to hold submitted input
     AVFrame            *frame;
 
@@ -125,6 +123,7 @@ typedef struct InputFilterPriv {
     enum AVMediaType    type_src;
 
     int                 eof;
+    int                 bound;
 
     // parameters configured for this input
     int                 format;
@@ -664,7 +663,8 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     FilterGraphPriv *fgp = fgp_from_fg(ifilter->graph);
     int ret, dec_idx;
 
-    av_assert0(!ifp->ist);
+    av_assert0(!ifp->bound);
+    ifp->bound = 1;
 
     if (ifp->type != ist->par->codec_type &&
         !(ifp->type == AVMEDIA_TYPE_VIDEO && ist->par->codec_type == AVMEDIA_TYPE_SUBTITLE)) {
@@ -673,7 +673,6 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
         return AVERROR(EINVAL);
     }
 
-    ifp->ist             = ist;
     ifp->type_src        = ist->st->codecpar->codec_type;
 
     dec_idx = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph),
