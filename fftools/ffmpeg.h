@@ -709,9 +709,6 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                             Scheduler *sch, unsigned sch_idx_enc);
 int init_complex_filtergraph(FilterGraph *fg);
 
-int copy_av_subtitle(AVSubtitle *dst, const AVSubtitle *src);
-int subtitle_wrap_frame(AVFrame *frame, AVSubtitle *subtitle, int copy);
-
 /**
  * Get our axiliary frame data attached to the frame, allocating it
  * if needed.
