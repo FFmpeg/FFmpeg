@@ -1534,7 +1534,8 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     av_assert0(desc);
 
     // TODO: insert hwaccel enabled filters like transpose_vaapi into the graph
-    if (ist->autorotate && !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+    if ((ifp->opts.flags & IFILTER_FLAG_AUTOROTATE) &&
+        !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
         int32_t *displaymatrix = ifp->displaymatrix;
         double theta;
 
@@ -2614,7 +2615,7 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
     } else if (ifp->displaymatrix_present)
         need_reinit |= MATRIX_CHANGED;
 
-    if (!ifp->ist->reinit_filters && fgt->graph)
+    if (!(ifp->opts.flags & IFILTER_FLAG_REINIT) && fgt->graph)
         need_reinit = 0;
 
     if (!!ifp->hw_frames_ctx != !!frame->hw_frames_ctx ||

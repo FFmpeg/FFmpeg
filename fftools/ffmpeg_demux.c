@@ -63,6 +63,7 @@ typedef struct DemuxStream {
 
     int streamcopy_needed;
     int have_sub2video;
+    int reinit_filters;
 
     int wrap_correction_done;
     int saw_first_ts;
@@ -1033,6 +1034,9 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
     if (!opts->name)
         return AVERROR(ENOMEM);
 
+    opts->flags |= IFILTER_FLAG_AUTOROTATE * !!(ist->autorotate) |
+                   IFILTER_FLAG_REINIT     * !!(ds->reinit_filters);
+
     return ds->sch_idx_dec;
 }
 
@@ -1309,8 +1313,8 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     if (ret < 0)
         return ret;
 
-    ist->reinit_filters = -1;
-    MATCH_PER_STREAM_OPT(reinit_filters, i, ist->reinit_filters, ic, st);
+    ds->reinit_filters = -1;
+    MATCH_PER_STREAM_OPT(reinit_filters, i, ds->reinit_filters, ic, st);
 
     ist->user_set_discard = AVDISCARD_NONE;
 

@@ -250,6 +250,11 @@ typedef struct OptionsContext {
     SpecifierOptList mux_stats_fmt;
 } OptionsContext;
 
+enum IFilterFlags {
+    IFILTER_FLAG_AUTOROTATE     = (1 << 0),
+    IFILTER_FLAG_REINIT         = (1 << 1),
+};
+
 typedef struct InputFilterOptions {
     int64_t             trim_start_us;
     int64_t             trim_end_us;
@@ -258,6 +263,9 @@ typedef struct InputFilterOptions {
 
     int                 sub2video_width;
     int                 sub2video_height;
+
+    // a combination of IFILTER_FLAG_*
+    unsigned            flags;
 } InputFilterOptions;
 
 typedef struct InputFilter {
@@ -381,8 +389,6 @@ typedef struct InputStream {
      */
     struct OutputStream **outputs;
     int                nb_outputs;
-
-    int reinit_filters;
 } InputStream;
 
 typedef struct InputFile {
