@@ -102,6 +102,7 @@ fate-sub-charenc: CMD = fmtstdout ass -sub_charenc cp1251 -i $(TARGET_SAMPLES)/s
 
 FATE_SUBTITLES-$(call DEMDEC, SCC, CCAPTION) += fate-sub-scc
 fate-sub-scc: CMD = fmtstdout ass -ss 57 -i $(TARGET_SAMPLES)/sub/witch.scc
+fate-sub-scc: CMP = diff
 
 FATE_SUBTITLES-$(call ALLYES, MPEGTS_DEMUXER DVBSUB_DECODER DVBSUB_ENCODER) += fate-sub-dvb
 fate-sub-dvb: CMD = framecrc -i $(TARGET_SAMPLES)/sub/dvbsubtest_filter.ts -map s:0 -c dvbsub
