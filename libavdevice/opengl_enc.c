@@ -224,6 +224,8 @@ typedef struct OpenGLContext {
     int picture_height;                ///< Rendered height
     int window_width;
     int window_height;
+
+    int warned;
 } OpenGLContext;
 
 static const struct OpenGLFormatDesc {
@@ -1059,6 +1061,15 @@ static av_cold int opengl_write_header(AVFormatContext *h)
     AVCodecParameters *par = h->streams[0]->codecpar;
     AVStream *st;
     int ret;
+
+    if (!opengl->warned) {
+        av_log(opengl, AV_LOG_WARNING,
+            "The opengl output device is deprecated due to being fundamentally incompatible with libavformat API. "
+            "For monitoring purposes in ffmpeg you can output to a file or use pipes and a video player.\n"
+            "Example: ffmpeg -i INPUT -f nut -c:v rawvideo - | ffplay -\n"
+        );
+        opengl->warned = 1;
+    }
 
     if (h->nb_streams != 1 ||
         par->codec_type != AVMEDIA_TYPE_VIDEO ||

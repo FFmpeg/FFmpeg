@@ -302,7 +302,7 @@ ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
 
 @section opengl
-OpenGL output device.
+OpenGL output device. Deprecated and will be removed.
 
 To enable this output device you need to configure FFmpeg with @code{--enable-opengl}.
 
