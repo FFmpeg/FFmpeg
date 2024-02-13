@@ -250,14 +250,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
         int64_t* elemsignature;
         uint64_t* sortsignature;
 
-        elemsignature = av_malloc_array(elemcat->elem_count, sizeof(int64_t));
+        elemsignature = av_malloc_array(elemcat->elem_count, 2 * sizeof(int64_t));
         if (!elemsignature)
             return AVERROR(ENOMEM);
-        sortsignature = av_malloc_array(elemcat->elem_count, sizeof(int64_t));
-        if (!sortsignature) {
-            av_freep(&elemsignature);
-            return AVERROR(ENOMEM);
-        }
+        sortsignature = elemsignature + elemcat->elem_count;
 
         for (j = 0; j < elemcat->elem_count; j++) {
             blocksum = 0;
@@ -307,7 +303,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
             f++;
         }
         av_freep(&elemsignature);
-        av_freep(&sortsignature);
     }
 
     /* confidence */
