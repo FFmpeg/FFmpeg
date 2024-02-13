@@ -60,31 +60,33 @@ struct JNIAMediaCodecListFields {
     jfieldID level_id;
 };
 
+#define OFFSET(x) offsetof(struct JNIAMediaCodecListFields, x)
 static const struct FFJniField jni_amediacodeclist_mapping[] = {
-    { "android/media/MediaCodecList", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediacodec_list_class), 1 },
-        { "android/media/MediaCodecList", "<init>", "(I)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, init_id), 0 },
-        { "android/media/MediaCodecList", "findDecoderForFormat", "(Landroid/media/MediaFormat;)Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, find_decoder_for_format_id), 0 },
+    { "android/media/MediaCodecList", NULL, NULL, FF_JNI_CLASS, OFFSET(mediacodec_list_class), 1 },
+        { "android/media/MediaCodecList", "<init>", "(I)V", FF_JNI_METHOD, OFFSET(init_id), 0 },
+        { "android/media/MediaCodecList", "findDecoderForFormat", "(Landroid/media/MediaFormat;)Ljava/lang/String;", FF_JNI_METHOD, OFFSET(find_decoder_for_format_id), 0 },
 
-        { "android/media/MediaCodecList", "getCodecCount", "()I", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecListFields, get_codec_count_id), 1 },
-        { "android/media/MediaCodecList", "getCodecInfoAt", "(I)Landroid/media/MediaCodecInfo;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecListFields, get_codec_info_at_id), 1 },
+        { "android/media/MediaCodecList", "getCodecCount", "()I", FF_JNI_STATIC_METHOD, OFFSET(get_codec_count_id), 1 },
+        { "android/media/MediaCodecList", "getCodecInfoAt", "(I)Landroid/media/MediaCodecInfo;", FF_JNI_STATIC_METHOD, OFFSET(get_codec_info_at_id), 1 },
 
-    { "android/media/MediaCodecInfo", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, mediacodec_info_class), 1 },
-        { "android/media/MediaCodecInfo", "getName", "()Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_name_id), 1 },
-        { "android/media/MediaCodecInfo", "getCapabilitiesForType", "(Ljava/lang/String;)Landroid/media/MediaCodecInfo$CodecCapabilities;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_codec_capabilities_id), 1 },
-        { "android/media/MediaCodecInfo", "getSupportedTypes", "()[Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, get_supported_types_id), 1 },
-        { "android/media/MediaCodecInfo", "isEncoder", "()Z", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, is_encoder_id), 1 },
-        { "android/media/MediaCodecInfo", "isSoftwareOnly", "()Z", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecListFields, is_software_only_id), 0 },
+    { "android/media/MediaCodecInfo", NULL, NULL, FF_JNI_CLASS, OFFSET(mediacodec_info_class), 1 },
+        { "android/media/MediaCodecInfo", "getName", "()Ljava/lang/String;", FF_JNI_METHOD, OFFSET(get_name_id), 1 },
+        { "android/media/MediaCodecInfo", "getCapabilitiesForType", "(Ljava/lang/String;)Landroid/media/MediaCodecInfo$CodecCapabilities;", FF_JNI_METHOD, OFFSET(get_codec_capabilities_id), 1 },
+        { "android/media/MediaCodecInfo", "getSupportedTypes", "()[Ljava/lang/String;", FF_JNI_METHOD, OFFSET(get_supported_types_id), 1 },
+        { "android/media/MediaCodecInfo", "isEncoder", "()Z", FF_JNI_METHOD, OFFSET(is_encoder_id), 1 },
+        { "android/media/MediaCodecInfo", "isSoftwareOnly", "()Z", FF_JNI_METHOD, OFFSET(is_software_only_id), 0 },
 
-    { "android/media/MediaCodecInfo$CodecCapabilities", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, codec_capabilities_class), 1 },
-        { "android/media/MediaCodecInfo$CodecCapabilities", "colorFormats", "[I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, color_formats_id), 1 },
-        { "android/media/MediaCodecInfo$CodecCapabilities", "profileLevels", "[Landroid/media/MediaCodecInfo$CodecProfileLevel;", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, profile_levels_id), 1 },
+    { "android/media/MediaCodecInfo$CodecCapabilities", NULL, NULL, FF_JNI_CLASS, OFFSET(codec_capabilities_class), 1 },
+        { "android/media/MediaCodecInfo$CodecCapabilities", "colorFormats", "[I", FF_JNI_FIELD, OFFSET(color_formats_id), 1 },
+        { "android/media/MediaCodecInfo$CodecCapabilities", "profileLevels", "[Landroid/media/MediaCodecInfo$CodecProfileLevel;", FF_JNI_FIELD, OFFSET(profile_levels_id), 1 },
 
-    { "android/media/MediaCodecInfo$CodecProfileLevel", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecListFields, codec_profile_level_class), 1 },
-        { "android/media/MediaCodecInfo$CodecProfileLevel", "profile", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, profile_id), 1 },
-        { "android/media/MediaCodecInfo$CodecProfileLevel", "level", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecListFields, level_id), 1 },
+    { "android/media/MediaCodecInfo$CodecProfileLevel", NULL, NULL, FF_JNI_CLASS, OFFSET(codec_profile_level_class), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "profile", "I", FF_JNI_FIELD, OFFSET(profile_id), 1 },
+        { "android/media/MediaCodecInfo$CodecProfileLevel", "level", "I", FF_JNI_FIELD, OFFSET(level_id), 1 },
 
     { NULL }
 };
+#undef OFFSET
 
 struct JNIAMediaFormatFields {
 
@@ -110,29 +112,31 @@ struct JNIAMediaFormatFields {
 
 };
 
+#define OFFSET(x) offsetof(struct JNIAMediaFormatFields, x)
 static const struct FFJniField jni_amediaformat_mapping[] = {
-    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaFormatFields, mediaformat_class), 1 },
+    { "android/media/MediaFormat", NULL, NULL, FF_JNI_CLASS, OFFSET(mediaformat_class), 1 },
 
-        { "android/media/MediaFormat", "<init>", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, init_id), 1 },
+        { "android/media/MediaFormat", "<init>", "()V", FF_JNI_METHOD, OFFSET(init_id), 1 },
 
-        { "android/media/MediaFormat", "containsKey", "(Ljava/lang/String;)Z", FF_JNI_METHOD,offsetof(struct JNIAMediaFormatFields, contains_key_id), 1 },
+        { "android/media/MediaFormat", "containsKey", "(Ljava/lang/String;)Z", FF_JNI_METHOD, OFFSET(contains_key_id), 1 },
 
-        { "android/media/MediaFormat", "getInteger", "(Ljava/lang/String;)I", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, get_integer_id), 1 },
-        { "android/media/MediaFormat", "getLong", "(Ljava/lang/String;)J", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, get_long_id), 1 },
-        { "android/media/MediaFormat", "getFloat", "(Ljava/lang/String;)F", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, get_float_id), 1 },
-        { "android/media/MediaFormat", "getByteBuffer", "(Ljava/lang/String;)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, get_bytebuffer_id), 1 },
-        { "android/media/MediaFormat", "getString", "(Ljava/lang/String;)Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, get_string_id), 1 },
+        { "android/media/MediaFormat", "getInteger", "(Ljava/lang/String;)I", FF_JNI_METHOD, OFFSET(get_integer_id), 1 },
+        { "android/media/MediaFormat", "getLong", "(Ljava/lang/String;)J", FF_JNI_METHOD, OFFSET(get_long_id), 1 },
+        { "android/media/MediaFormat", "getFloat", "(Ljava/lang/String;)F", FF_JNI_METHOD, OFFSET(get_float_id), 1 },
+        { "android/media/MediaFormat", "getByteBuffer", "(Ljava/lang/String;)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(get_bytebuffer_id), 1 },
+        { "android/media/MediaFormat", "getString", "(Ljava/lang/String;)Ljava/lang/String;", FF_JNI_METHOD, OFFSET(get_string_id), 1 },
 
-        { "android/media/MediaFormat", "setInteger", "(Ljava/lang/String;I)V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, set_integer_id), 1 },
-        { "android/media/MediaFormat", "setLong", "(Ljava/lang/String;J)V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, set_long_id), 1 },
-        { "android/media/MediaFormat", "setFloat", "(Ljava/lang/String;F)V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, set_float_id), 1 },
-        { "android/media/MediaFormat", "setByteBuffer", "(Ljava/lang/String;Ljava/nio/ByteBuffer;)V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, set_bytebuffer_id), 1 },
-        { "android/media/MediaFormat", "setString", "(Ljava/lang/String;Ljava/lang/String;)V", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, set_string_id), 1 },
+        { "android/media/MediaFormat", "setInteger", "(Ljava/lang/String;I)V", FF_JNI_METHOD, OFFSET(set_integer_id), 1 },
+        { "android/media/MediaFormat", "setLong", "(Ljava/lang/String;J)V", FF_JNI_METHOD, OFFSET(set_long_id), 1 },
+        { "android/media/MediaFormat", "setFloat", "(Ljava/lang/String;F)V", FF_JNI_METHOD, OFFSET(set_float_id), 1 },
+        { "android/media/MediaFormat", "setByteBuffer", "(Ljava/lang/String;Ljava/nio/ByteBuffer;)V", FF_JNI_METHOD, OFFSET(set_bytebuffer_id), 1 },
+        { "android/media/MediaFormat", "setString", "(Ljava/lang/String;Ljava/lang/String;)V", FF_JNI_METHOD, OFFSET(set_string_id), 1 },
 
-        { "android/media/MediaFormat", "toString", "()Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaFormatFields, to_string_id), 1 },
+        { "android/media/MediaFormat", "toString", "()Ljava/lang/String;", FF_JNI_METHOD, OFFSET(to_string_id), 1 },
 
     { NULL }
 };
+#undef OFFSET
 
 static const AVClass amediaformat_class = {
     .class_name = "amediaformat",
@@ -202,57 +206,59 @@ struct JNIAMediaCodecFields {
 
 };
 
+#define OFFSET(x) offsetof(struct JNIAMediaCodecFields, x)
 static const struct FFJniField jni_amediacodec_mapping[] = {
-    { "android/media/MediaCodec", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediacodec_class), 1 },
+    { "android/media/MediaCodec", NULL, NULL, FF_JNI_CLASS, OFFSET(mediacodec_class), 1 },
 
-        { "android/media/MediaCodec", "INFO_TRY_AGAIN_LATER", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_try_again_later_id), 1 },
-        { "android/media/MediaCodec", "INFO_OUTPUT_BUFFERS_CHANGED", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_output_buffers_changed_id), 1 },
-        { "android/media/MediaCodec", "INFO_OUTPUT_FORMAT_CHANGED", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, info_output_format_changed_id), 1 },
+        { "android/media/MediaCodec", "INFO_TRY_AGAIN_LATER", "I", FF_JNI_STATIC_FIELD, OFFSET(info_try_again_later_id), 1 },
+        { "android/media/MediaCodec", "INFO_OUTPUT_BUFFERS_CHANGED", "I", FF_JNI_STATIC_FIELD, OFFSET(info_output_buffers_changed_id), 1 },
+        { "android/media/MediaCodec", "INFO_OUTPUT_FORMAT_CHANGED", "I", FF_JNI_STATIC_FIELD, OFFSET(info_output_format_changed_id), 1 },
 
-        { "android/media/MediaCodec", "BUFFER_FLAG_CODEC_CONFIG", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_codec_config_id), 1 },
-        { "android/media/MediaCodec", "BUFFER_FLAG_END_OF_STREAM", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_end_of_stream_id), 1 },
-        { "android/media/MediaCodec", "BUFFER_FLAG_KEY_FRAME", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, buffer_flag_key_frame_id), 0 },
+        { "android/media/MediaCodec", "BUFFER_FLAG_CODEC_CONFIG", "I", FF_JNI_STATIC_FIELD, OFFSET(buffer_flag_codec_config_id), 1 },
+        { "android/media/MediaCodec", "BUFFER_FLAG_END_OF_STREAM", "I", FF_JNI_STATIC_FIELD, OFFSET(buffer_flag_end_of_stream_id), 1 },
+        { "android/media/MediaCodec", "BUFFER_FLAG_KEY_FRAME", "I", FF_JNI_STATIC_FIELD, OFFSET(buffer_flag_key_frame_id), 0 },
 
-        { "android/media/MediaCodec", "CONFIGURE_FLAG_ENCODE", "I", FF_JNI_STATIC_FIELD, offsetof(struct JNIAMediaCodecFields, configure_flag_encode_id), 1 },
+        { "android/media/MediaCodec", "CONFIGURE_FLAG_ENCODE", "I", FF_JNI_STATIC_FIELD, OFFSET(configure_flag_encode_id), 1 },
 
-        { "android/media/MediaCodec", "createByCodecName", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_by_codec_name_id), 1 },
-        { "android/media/MediaCodec", "createDecoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_decoder_by_type_id), 1 },
-        { "android/media/MediaCodec", "createEncoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, offsetof(struct JNIAMediaCodecFields, create_encoder_by_type_id), 1 },
+        { "android/media/MediaCodec", "createByCodecName", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, OFFSET(create_by_codec_name_id), 1 },
+        { "android/media/MediaCodec", "createDecoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, OFFSET(create_decoder_by_type_id), 1 },
+        { "android/media/MediaCodec", "createEncoderByType", "(Ljava/lang/String;)Landroid/media/MediaCodec;", FF_JNI_STATIC_METHOD, OFFSET(create_encoder_by_type_id), 1 },
 
-        { "android/media/MediaCodec", "getName", "()Ljava/lang/String;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_name_id), 1 },
+        { "android/media/MediaCodec", "getName", "()Ljava/lang/String;", FF_JNI_METHOD, OFFSET(get_name_id), 1 },
 
-        { "android/media/MediaCodec", "configure", "(Landroid/media/MediaFormat;Landroid/view/Surface;Landroid/media/MediaCrypto;I)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, configure_id), 1 },
-        { "android/media/MediaCodec", "start", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, start_id), 1 },
-        { "android/media/MediaCodec", "flush", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, flush_id), 1 },
-        { "android/media/MediaCodec", "stop", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, stop_id), 1 },
-        { "android/media/MediaCodec", "release", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_id), 1 },
+        { "android/media/MediaCodec", "configure", "(Landroid/media/MediaFormat;Landroid/view/Surface;Landroid/media/MediaCrypto;I)V", FF_JNI_METHOD, OFFSET(configure_id), 1 },
+        { "android/media/MediaCodec", "start", "()V", FF_JNI_METHOD, OFFSET(start_id), 1 },
+        { "android/media/MediaCodec", "flush", "()V", FF_JNI_METHOD, OFFSET(flush_id), 1 },
+        { "android/media/MediaCodec", "stop", "()V", FF_JNI_METHOD, OFFSET(stop_id), 1 },
+        { "android/media/MediaCodec", "release", "()V", FF_JNI_METHOD, OFFSET(release_id), 1 },
 
-        { "android/media/MediaCodec", "getOutputFormat", "()Landroid/media/MediaFormat;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_format_id), 1 },
+        { "android/media/MediaCodec", "getOutputFormat", "()Landroid/media/MediaFormat;", FF_JNI_METHOD, OFFSET(get_output_format_id), 1 },
 
-        { "android/media/MediaCodec", "dequeueInputBuffer", "(J)I", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, dequeue_input_buffer_id), 1 },
-        { "android/media/MediaCodec", "queueInputBuffer", "(IIIJI)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, queue_input_buffer_id), 1 },
-        { "android/media/MediaCodec", "getInputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffer_id), 0 },
-        { "android/media/MediaCodec", "getInputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_input_buffers_id), 1 },
+        { "android/media/MediaCodec", "dequeueInputBuffer", "(J)I", FF_JNI_METHOD, OFFSET(dequeue_input_buffer_id), 1 },
+        { "android/media/MediaCodec", "queueInputBuffer", "(IIIJI)V", FF_JNI_METHOD, OFFSET(queue_input_buffer_id), 1 },
+        { "android/media/MediaCodec", "getInputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(get_input_buffer_id), 0 },
+        { "android/media/MediaCodec", "getInputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(get_input_buffers_id), 1 },
 
-        { "android/media/MediaCodec", "dequeueOutputBuffer", "(Landroid/media/MediaCodec$BufferInfo;J)I", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, dequeue_output_buffer_id), 1 },
-        { "android/media/MediaCodec", "getOutputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffer_id), 0 },
-        { "android/media/MediaCodec", "getOutputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, get_output_buffers_id), 1 },
-        { "android/media/MediaCodec", "releaseOutputBuffer", "(IZ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_id), 1 },
-        { "android/media/MediaCodec", "releaseOutputBuffer", "(IJ)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, release_output_buffer_at_time_id), 0 },
+        { "android/media/MediaCodec", "dequeueOutputBuffer", "(Landroid/media/MediaCodec$BufferInfo;J)I", FF_JNI_METHOD, OFFSET(dequeue_output_buffer_id), 1 },
+        { "android/media/MediaCodec", "getOutputBuffer", "(I)Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(get_output_buffer_id), 0 },
+        { "android/media/MediaCodec", "getOutputBuffers", "()[Ljava/nio/ByteBuffer;", FF_JNI_METHOD, OFFSET(get_output_buffers_id), 1 },
+        { "android/media/MediaCodec", "releaseOutputBuffer", "(IZ)V", FF_JNI_METHOD, OFFSET(release_output_buffer_id), 1 },
+        { "android/media/MediaCodec", "releaseOutputBuffer", "(IJ)V", FF_JNI_METHOD, OFFSET(release_output_buffer_at_time_id), 0 },
 
-        { "android/media/MediaCodec", "setInputSurface", "(Landroid/view/Surface;)V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, set_input_surface_id), 0 },
-        { "android/media/MediaCodec", "signalEndOfInputStream", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, signal_end_of_input_stream_id), 0 },
+        { "android/media/MediaCodec", "setInputSurface", "(Landroid/view/Surface;)V", FF_JNI_METHOD, OFFSET(set_input_surface_id), 0 },
+        { "android/media/MediaCodec", "signalEndOfInputStream", "()V", FF_JNI_METHOD, OFFSET(signal_end_of_input_stream_id), 0 },
 
-    { "android/media/MediaCodec$BufferInfo", NULL, NULL, FF_JNI_CLASS, offsetof(struct JNIAMediaCodecFields, mediainfo_class), 1 },
+    { "android/media/MediaCodec$BufferInfo", NULL, NULL, FF_JNI_CLASS, OFFSET(mediainfo_class), 1 },
 
-        { "android/media/MediaCodec.BufferInfo", "<init>", "()V", FF_JNI_METHOD, offsetof(struct JNIAMediaCodecFields, init_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "flags", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, flags_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "offset", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, offset_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "presentationTimeUs", "J", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, presentation_time_us_id), 1 },
-        { "android/media/MediaCodec.BufferInfo", "size", "I", FF_JNI_FIELD, offsetof(struct JNIAMediaCodecFields, size_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "<init>", "()V", FF_JNI_METHOD, OFFSET(init_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "flags", "I", FF_JNI_FIELD, OFFSET(flags_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "offset", "I", FF_JNI_FIELD, OFFSET(offset_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "presentationTimeUs", "J", FF_JNI_FIELD, OFFSET(presentation_time_us_id), 1 },
+        { "android/media/MediaCodec.BufferInfo", "size", "I", FF_JNI_FIELD, OFFSET(size_id), 1 },
 
     { NULL }
 };
+#undef OFFSET
 
 static const AVClass amediacodec_class = {
     .class_name = "amediacodec",
