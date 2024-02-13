@@ -2237,6 +2237,12 @@ the two temporal layer 2 frames within the temporal period.
 @end table
 @end table
 
+@item VP8-specific options
+@table @option
+@item screen-content-mode
+Screen content mode, one of: 0 (off), 1 (screen), 2 (screen with more aggressive rate control).
+@end table
+
 @item VP9-specific options
 @table @option
 @item lossless

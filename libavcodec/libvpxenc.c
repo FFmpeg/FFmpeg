@@ -121,6 +121,9 @@ typedef struct VPxEncoderContext {
     int *ts_layer_flags;
     int current_temporal_idx;
 
+    // VP8-only
+    int screen_content_mode;
+
     // VP9-only
     int lossless;
     int tile_columns;
@@ -164,6 +167,7 @@ static const char *const ctlidstr[] = {
     [VP8E_SET_MAX_INTRA_BITRATE_PCT] = "VP8E_SET_MAX_INTRA_BITRATE_PCT",
     [VP8E_SET_SHARPNESS]               = "VP8E_SET_SHARPNESS",
     [VP8E_SET_TEMPORAL_LAYER_ID]       = "VP8E_SET_TEMPORAL_LAYER_ID",
+    [VP8E_SET_SCREEN_CONTENT_MODE]     = "VP8E_SET_SCREEN_CONTENT_MODE",
 #if CONFIG_LIBVPX_VP9_ENCODER
     [VP9E_SET_LOSSLESS]                = "VP9E_SET_LOSSLESS",
     [VP9E_SET_TILE_COLUMNS]            = "VP9E_SET_TILE_COLUMNS",
@@ -1262,6 +1266,14 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 #endif
     }
 #endif
+    if (avctx->codec_id == AV_CODEC_ID_VP8 && ctx->screen_content_mode >= 0) {
+        if (ctx->screen_content_mode == 2 && ctx->is_alpha) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Transparency encoding with screen mode with aggressive rate control not supported\n");
+            return AVERROR(EINVAL);
+        }
+        codecctl_int(avctx, VP8E_SET_SCREEN_CONTENT_MODE, ctx->screen_content_mode);
+    }
 
     av_log(avctx, AV_LOG_DEBUG, "Using deadline: %d\n", ctx->deadline);
 
@@ -1946,6 +1958,7 @@ static const AVOption vp8_options[] = {
     { "auto-alt-ref",    "Enable use of alternate reference "
                          "frames (2-pass only)",                        OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1}, -1,  2, VE},
     { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE},
+    { "screen-content-mode",     "Encoder screen content mode",         OFFSET(screen_content_mode), AV_OPT_TYPE_INT, {.i64 = -1}, -1,  2, VE},
     LEGACY_OPTIONS
     { NULL }
 };
