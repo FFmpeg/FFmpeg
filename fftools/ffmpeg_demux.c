@@ -1009,6 +1009,10 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
                           AV_NOPTS_VALUE : tsoffset;
     opts->trim_end_us   = d->recording_time;
 
+    opts->name = av_strdup(ds->dec_name);
+    if (!opts->name)
+        return AVERROR(ENOMEM);
+
     return ds->sch_idx_dec;
 }
 

@@ -253,6 +253,8 @@ typedef struct OptionsContext {
 typedef struct InputFilterOptions {
     int64_t             trim_start_us;
     int64_t             trim_end_us;
+
+    uint8_t            *name;
 } InputFilterOptions;
 
 typedef struct InputFilter {
