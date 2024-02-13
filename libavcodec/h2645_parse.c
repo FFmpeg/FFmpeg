@@ -40,8 +40,9 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
 
     nal->skipped_bytes = 0;
 #define STARTCODE_TEST                                                  \
-        if (i + 2 < length && src[i + 1] == 0 && src[i + 2] <= 3) {     \
-            if (src[i + 2] != 3 && src[i + 2] != 0) {                   \
+        if (i + 2 < length && src[i + 1] == 0 &&                        \
+           (src[i + 2] == 3 || src[i + 2] == 1)) {                      \
+            if (src[i + 2] == 1) {                                      \
                 /* startcode, so we must be past the end */             \
                 length = i;                                             \
             }                                                           \
