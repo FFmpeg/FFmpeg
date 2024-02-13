@@ -689,6 +689,16 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
         ifp->sub2video.frame = av_frame_alloc();
         if (!ifp->sub2video.frame)
             return AVERROR(ENOMEM);
+
+        ifp->width  = ifp->opts.sub2video_width;
+        ifp->height = ifp->opts.sub2video_height;
+
+        /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
+           palettes for all rectangles are identical or compatible */
+        ifp->format = AV_PIX_FMT_RGB32;
+
+        av_log(fgp, AV_LOG_VERBOSE, "sub2video: using %dx%d canvas\n",
+               ifp->width, ifp->height);
     }
 
     return 0;
@@ -1829,17 +1839,6 @@ int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec)
         ret = av_channel_layout_copy(&ifp->fallback.ch_layout, &dec->ch_layout);
         if (ret < 0)
             return ret;
-    } else {
-        // for subtitles (i.e. sub2video) we set the actual parameters,
-        // rather than just fallback
-        ifp->width  = ifp->ist->sub2video.w;
-        ifp->height = ifp->ist->sub2video.h;
-
-        /* rectangles are AV_PIX_FMT_PAL8, but we have no guarantee that the
-           palettes for all rectangles are identical or compatible */
-        ifp->format = AV_PIX_FMT_RGB32;
-
-        av_log(NULL, AV_LOG_VERBOSE, "sub2video: using %dx%d canvas\n", ifp->width, ifp->height);
     }
 
     return 0;

@@ -255,6 +255,9 @@ typedef struct InputFilterOptions {
     int64_t             trim_end_us;
 
     uint8_t            *name;
+
+    int                 sub2video_width;
+    int                 sub2video_height;
 } InputFilterOptions;
 
 typedef struct InputFilter {
@@ -365,10 +368,6 @@ typedef struct InputStream {
     int                   autorotate;
 
     int                   fix_sub_duration;
-
-    struct sub2video {
-        int w, h;
-    } sub2video;
 
     /* decoded data from this stream goes into all those filters
      * currently video and audio only */
