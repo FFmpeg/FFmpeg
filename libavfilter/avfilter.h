@@ -629,11 +629,6 @@ struct AVFilterLink {
     int64_t current_pts_us;
 
     /**
-     * Index in the age array.
-     */
-    int age_index;
-
-    /**
      * Frame rate of the stream on the link, or 1/0 if unknown or variable;
      * if left to 0/0, will be automatically copied from the first input
      * of the source filter if it exists.

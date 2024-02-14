@@ -207,15 +207,17 @@ void avfilter_link_free(AVFilterLink **link)
     av_freep(link);
 }
 
-static void update_link_current_pts(AVFilterLink *link, int64_t pts)
+static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
 {
+    AVFilterLink *const link = &li->l;
+
     if (pts == AV_NOPTS_VALUE)
         return;
     link->current_pts = pts;
     link->current_pts_us = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
     /* TODO use duration */
-    if (link->graph && link->age_index >= 0)
-        ff_avfilter_graph_update_heap(link->graph, link);
+    if (link->graph && li->age_index >= 0)
+        ff_avfilter_graph_update_heap(link->graph, li);
 }
 
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)
@@ -265,7 +267,7 @@ static void link_set_out_status(AVFilterLink *link, int status, int64_t pts)
     av_assert0(!li->status_out);
     li->status_out = status;
     if (pts != AV_NOPTS_VALUE)
-        update_link_current_pts(link, pts);
+        update_link_current_pts(li, pts);
     filter_unblock(link->dst);
     ff_filter_set_ready(link->src, 200);
 }
@@ -1392,7 +1394,7 @@ int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts
     if (!li->status_in)
         return *rstatus = 0;
     *rstatus = li->status_out = li->status_in;
-    update_link_current_pts(link, li->status_in_pts);
+    update_link_current_pts(li, li->status_in_pts);
     *rpts = link->current_pts;
     return 1;
 }
@@ -1423,9 +1425,10 @@ int ff_inlink_check_available_samples(AVFilterLink *link, unsigned min)
     return samples >= min || (li->status_in && samples);
 }
 
-static void consume_update(AVFilterLink *link, const AVFrame *frame)
+static void consume_update(FilterLinkInternal *li, const AVFrame *frame)
 {
-    update_link_current_pts(link, frame->pts);
+    AVFilterLink *const link = &li->l;
+    update_link_current_pts(li, frame->pts);
     ff_inlink_process_commands(link, frame);
     link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
     link->frame_count_out++;
@@ -1447,7 +1450,7 @@ int ff_inlink_consume_frame(AVFilterLink *link, AVFrame **rframe)
     }
 
     frame = ff_framequeue_take(&li->fifo);
-    consume_update(link, frame);
+    consume_update(li, frame);
     *rframe = frame;
     return 1;
 }
@@ -1468,7 +1471,7 @@ int ff_inlink_consume_samples(AVFilterLink *link, unsigned min, unsigned max,
     ret = take_samples(li, min, max, &frame);
     if (ret < 0)
         return ret;
-    consume_update(link, frame);
+    consume_update(li, frame);
     *rframe = frame;
     return 1;
 }

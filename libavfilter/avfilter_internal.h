@@ -64,6 +64,11 @@ typedef struct FilterLinkInternal {
      */
     int status_out;
 
+    /**
+     * Index in the age array.
+     */
+    int age_index;
+
     /** stage of the initialization of the link properties (dimensions, etc) */
     enum {
         AVLINK_UNINIT = 0,      ///< not started
@@ -91,7 +96,7 @@ typedef struct FFFilterGraph {
      */
     AVFilterGraph p;
 
-    AVFilterLink **sink_links;
+    struct FilterLinkInternal **sink_links;
     int sink_links_count;
 
     unsigned disable_auto_convert;
@@ -109,7 +114,8 @@ static inline FFFilterGraph *fffiltergraph(AVFilterGraph *graph)
 /**
  * Update the position of a link in the age heap.
  */
-void ff_avfilter_graph_update_heap(AVFilterGraph *graph, AVFilterLink *link);
+void ff_avfilter_graph_update_heap(AVFilterGraph *graph,
+                                   struct FilterLinkInternal *li);
 
 /**
  * Allocate a new filter context and return it.
