@@ -71,6 +71,21 @@ static uint64_t getSSD(const uint8_t *src1, const uint8_t *src2,
     return ssd;
 }
 
+static uint64_t getSSD0(int ref, const uint8_t *src1, int stride1,
+                        int w, int h)
+{
+    int x, y;
+    uint64_t ssd = 0;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int d = src1[x + y * stride1] - ref;
+            ssd += d * d;
+        }
+    }
+    return ssd;
+}
+
 struct Results {
     uint64_t ssdY;
     uint64_t ssdU;
@@ -239,9 +254,17 @@ static int doTest(const uint8_t * const ref[4], int refStride[4], int w, int h,
                           (w + 1) >> 1, (h + 1) >> 1);
             ssdV = getSSD(ref[2], out[2], refStride[2], refStride[2],
                           (w + 1) >> 1, (h + 1) >> 1);
+        } else {
+            ssdU = getSSD0(128, out[1], refStride[1],
+                          (w + 1) >> 1, (h + 1) >> 1);
+            ssdV = getSSD0(128, out[2], refStride[2],
+                          (w + 1) >> 1, (h + 1) >> 1);
         }
-        if (isALPHA(srcFormat) && isALPHA(dstFormat))
+        if (isALPHA(srcFormat) && isALPHA(dstFormat)) {
             ssdA = getSSD(ref[3], out[3], refStride[3], refStride[3], w, h);
+        } else {
+            ssdA = getSSD0(0xFF, out[3], refStride[3], w, h);
+        }
 
         ssdY /= w * h;
         ssdU /= w * h / 4;
