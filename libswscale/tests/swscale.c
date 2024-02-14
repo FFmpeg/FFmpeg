@@ -296,8 +296,10 @@ static void selfTest(const uint8_t * const ref[4], int refStride[4],
                      enum AVPixelFormat srcFormat_in,
                      enum AVPixelFormat dstFormat_in)
 {
-    const int flags[] = { SWS_FAST_BILINEAR, SWS_BILINEAR, SWS_BICUBIC,
-                          SWS_X, SWS_POINT, SWS_AREA, 0 };
+    const int flags[] = { SWS_FAST_BILINEAR,
+                          SWS_BILINEAR, SWS_BICUBIC,
+                          SWS_X|SWS_BITEXACT       , SWS_POINT  , SWS_AREA|SWS_ACCURATE_RND,
+                          SWS_BICUBIC|SWS_FULL_CHR_H_INT|SWS_FULL_CHR_H_INP, 0};
     const int srcW   = w;
     const int srcH   = h;
     const int dstW[] = { srcW - srcW / 3, srcW, srcW + srcW / 3, 0 };
