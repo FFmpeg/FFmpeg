@@ -33,6 +33,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
+#include "libavutil/sfc64.h"
 
 #include "libswscale/swscale.h"
 
@@ -55,6 +56,9 @@ static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     return desc->flags & AV_PIX_FMT_FLAG_ALPHA;
 }
+
+static double prob = 1;
+FFSFC64 prng_state;
 
 static uint64_t getSSD(const uint8_t *src1, const uint8_t *src2,
                        int stride1, int stride2, int w, int h)
@@ -116,6 +120,9 @@ static int doTest(const uint8_t * const ref[4], int refStride[4], int w, int h,
     struct SwsContext *dstContext = NULL, *outContext = NULL;
     uint32_t crc = 0;
     int res      = 0;
+
+    if (ff_sfc64_get(&prng_state) > UINT64_MAX * prob)
+        return 0;
 
     if (cur_srcFormat != srcFormat || cur_srcW != srcW || cur_srcH != srcH) {
         struct SwsContext *srcContext = NULL;
@@ -449,12 +456,16 @@ int main(int argc, char **argv)
                 fprintf(stderr, "invalid pixel format %s\n", argv[i + 1]);
                 return -1;
             }
+        } else if (!strcmp(argv[i], "-p")) {
+            prob = atof(argv[i + 1]);
         } else {
 bad_option:
             fprintf(stderr, "bad option or argument missing (%s)\n", argv[i]);
             goto error;
         }
     }
+
+    ff_sfc64_init(&prng_state, 0, 0, 0, 12);
 
     sws = sws_getContext(W / 12, H / 12, AV_PIX_FMT_RGB32, W, H,
                          AV_PIX_FMT_YUVA420P, SWS_BILINEAR, NULL, NULL, NULL);
