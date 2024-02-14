@@ -1079,7 +1079,7 @@ static int take_samples(FilterLinkInternal *li, unsigned min, unsigned max,
 
     /* Note: this function relies on no format changes and must only be
        called with enough samples. */
-    av_assert1(samples_ready(link, link->min_samples));
+    av_assert1(samples_ready(li, link->min_samples));
     frame0 = frame = ff_framequeue_peek(&li->fifo, 0);
     if (!li->fifo.samples_skipped && frame->nb_samples >= min && frame->nb_samples <= max) {
         *rframe = ff_framequeue_take(&li->fifo);
@@ -1136,7 +1136,7 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
     AVFilterContext *dst = link->dst;
     int ret;
 
-    av_assert1(ff_framequeue_queued_frames(&link->fifo));
+    av_assert1(ff_framequeue_queued_frames(&li->fifo));
     ret = link->min_samples ?
           ff_inlink_consume_samples(link, link->min_samples, link->max_samples, &frame) :
           ff_inlink_consume_frame(link, &frame);
@@ -1561,8 +1561,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 void ff_inlink_request_frame(AVFilterLink *link)
 {
-    av_assert1(!link->status_in);
-    av_assert1(!link->status_out);
+    FilterLinkInternal *li = ff_link_internal(link);
+    av_assert1(!li->status_in);
+    av_assert1(!li->status_out);
     link->frame_wanted_out = 1;
     ff_filter_set_ready(link->src, 100);
 }
