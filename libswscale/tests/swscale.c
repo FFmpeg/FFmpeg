@@ -30,6 +30,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/avutil.h"
 #include "libavutil/crc.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/lfg.h"
 
@@ -165,10 +166,26 @@ static int doTest(const uint8_t * const ref[4], int refStride[4], int w, int h,
         }
     }
 
-    dstContext = sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat,
-                                flags, NULL, NULL, NULL);
+    dstContext = sws_alloc_context();
     if (!dstContext) {
-        fprintf(stderr, "Failed to get %s ---> %s\n",
+        fprintf(stderr, "Failed to alloc %s ---> %s\n",
+                desc_src->name, desc_dst->name);
+        res = -1;
+        goto end;
+    }
+
+    av_opt_set_int(dstContext, "sws_flags",  flags, 0);
+    av_opt_set_int(dstContext, "srcw",       srcW, 0);
+    av_opt_set_int(dstContext, "srch",       srcH, 0);
+    av_opt_set_int(dstContext, "dstw",       dstW, 0);
+    av_opt_set_int(dstContext, "dsth",       dstH, 0);
+    av_opt_set_int(dstContext, "src_format", srcFormat, 0);
+    av_opt_set_int(dstContext, "dst_format", dstFormat, 0);
+    av_opt_set(dstContext, "alphablend", "none", 0);
+
+    if (sws_init_context(dstContext, NULL, NULL) < 0) {
+        sws_freeContext(dstContext);
+        fprintf(stderr, "Failed to init %s ---> %s\n",
                 desc_src->name, desc_dst->name);
         res = -1;
         goto end;
