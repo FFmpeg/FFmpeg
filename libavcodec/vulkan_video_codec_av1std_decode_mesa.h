@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef VULKAN_VIDEO_CODEC_AV1STD_DECODE_H_
-#define VULKAN_VIDEO_CODEC_AV1STD_DECODE_H_ 1
+#ifndef VULKAN_VIDEO_CODEC_AV1STD_DECODE_MESA_H_
+#define VULKAN_VIDEO_CODEC_AV1STD_DECODE_MESA_H_ 1
 
 /*
 ** This header is NOT YET generated from the Khronos Vulkan XML API Registry.
