@@ -33,6 +33,8 @@
 typedef struct FilterLinkInternal {
     AVFilterLink l;
 
+    struct FFFramePool *frame_pool;
+
     /**
      * Queue of frames waiting to be filtered.
      */

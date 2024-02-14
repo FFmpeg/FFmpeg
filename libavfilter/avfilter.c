@@ -201,7 +201,7 @@ void avfilter_link_free(AVFilterLink **link)
     li = ff_link_internal(*link);
 
     ff_framequeue_free(&li->fifo);
-    ff_frame_pool_uninit((FFFramePool**)&(*link)->frame_pool);
+    ff_frame_pool_uninit(&li->frame_pool);
     av_channel_layout_uninit(&(*link)->ch_layout);
 
     av_freep(link);

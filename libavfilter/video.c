@@ -29,6 +29,7 @@
 #include "libavutil/imgutils.h"
 
 #include "avfilter.h"
+#include "avfilter_internal.h"
 #include "framepool.h"
 #include "internal.h"
 #include "video.h"
@@ -47,6 +48,7 @@ AVFrame *ff_null_get_video_buffer(AVFilterLink *link, int w, int h)
 
 AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int align)
 {
+    FilterLinkInternal *const li = ff_link_internal(link);
     AVFrame *frame = NULL;
     int pool_width = 0;
     int pool_height = 0;
@@ -68,13 +70,13 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
         return frame;
     }
 
-    if (!link->frame_pool) {
-        link->frame_pool = ff_frame_pool_video_init(av_buffer_allocz, w, h,
-                                                    link->format, align);
-        if (!link->frame_pool)
+    if (!li->frame_pool) {
+        li->frame_pool = ff_frame_pool_video_init(av_buffer_allocz, w, h,
+                                                  link->format, align);
+        if (!li->frame_pool)
             return NULL;
     } else {
-        if (ff_frame_pool_get_video_config(link->frame_pool,
+        if (ff_frame_pool_get_video_config(li->frame_pool,
                                            &pool_width, &pool_height,
                                            &pool_format, &pool_align) < 0) {
             return NULL;
@@ -83,15 +85,15 @@ AVFrame *ff_default_get_video_buffer2(AVFilterLink *link, int w, int h, int alig
         if (pool_width != w || pool_height != h ||
             pool_format != link->format || pool_align != align) {
 
-            ff_frame_pool_uninit((FFFramePool **)&link->frame_pool);
-            link->frame_pool = ff_frame_pool_video_init(av_buffer_allocz, w, h,
-                                                        link->format, align);
-            if (!link->frame_pool)
+            ff_frame_pool_uninit(&li->frame_pool);
+            li->frame_pool = ff_frame_pool_video_init(av_buffer_allocz, w, h,
+                                                      link->format, align);
+            if (!li->frame_pool)
                 return NULL;
         }
     }
 
-    frame = ff_frame_pool_get(link->frame_pool);
+    frame = ff_frame_pool_get(li->frame_pool);
     if (!frame)
         return NULL;
 

@@ -667,11 +667,6 @@ struct AVFilterLink {
     int64_t sample_count_in, sample_count_out;
 
     /**
-     * A pointer to a FFFramePool struct.
-     */
-    void *frame_pool;
-
-    /**
      * True if a frame is currently wanted on the output of this filter.
      * Set when ff_request_frame() is called by the output,
      * cleared when a frame is filtered.
