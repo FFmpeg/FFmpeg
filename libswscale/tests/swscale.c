@@ -437,6 +437,25 @@ int main(int argc, char **argv)
         return -1;
 
     for (i = 1; i < argc; i += 2) {
+        if (!strcmp(argv[i], "-help") || !strcmp(argv[i], "--help")) {
+            fprintf(stderr,
+                    "swscale [options...]\n"
+                    "   -help\n"
+                    "       This text\n"
+                    "   -ref <file>\n"
+                    "       Uses file as reference to compae tests againsts. Tests that have become worse will contain the string worse or WORSE\n"
+                    "   -p <number between 0.0 and 1.0>\n"
+                    "       The percentage of tests or comparissions to perform. Doing all tests will take long and generate over a hundread MB text output\n"
+                    "       It is often convenient to perform a random subset\n"
+                    "   -dst <pixfmt>\n"
+                    "       Only test the specified destination pixel format\n"
+                    "   -src <pixfmt>\n"
+                    "       Only test the specified source pixel format\n"
+                    "   -cpuflags <cpuflags>\n"
+                    "       Uses the specified cpuflags in teh tests\n"
+            );
+            goto error;
+        }
         if (argv[i][0] != '-' || i + 1 == argc)
             goto bad_option;
         if (!strcmp(argv[i], "-ref")) {
@@ -469,7 +488,7 @@ int main(int argc, char **argv)
             prob = atof(argv[i + 1]);
         } else {
 bad_option:
-            fprintf(stderr, "bad option or argument missing (%s)\n", argv[i]);
+            fprintf(stderr, "bad option or argument missing (%s) see -help\n", argv[i]);
             goto error;
         }
     }
