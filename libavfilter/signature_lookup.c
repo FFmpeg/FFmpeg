@@ -187,7 +187,7 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
     size_t i, j, k, l, hmax = 0, score;
     int framerate, offset, l1dist;
     double m;
-    MatchingInfo *cands = NULL, *c = NULL;
+    MatchingInfo cands = { 0 }, *c = &cands;
 
     struct {
         uint8_t size;
@@ -295,16 +295,10 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
         for (i = 0; i < MAX_FRAMERATE; i++) {
             for (j = 0; j < HOUGH_MAX_OFFSET; j++) {
                 if (hmax < hspace[i][j].score) {
-                    if (c == NULL) {
-                        c = av_malloc(sizeof(MatchingInfo));
-                        cands = c;
-                    } else {
-                        c->next = av_malloc(sizeof(MatchingInfo));
-                        c = c->next;
-
-                    }
+                    c->next = av_malloc(sizeof(MatchingInfo));
+                    c = c->next;
                     if (!c) {
-                        sll_free(&cands);
+                        sll_free(&cands.next);
                         goto error;
                     }
                     c->framerateratio = (i+1.0) / 30;
@@ -325,7 +319,7 @@ static MatchingInfo* get_matching_parameters(AVFilterContext *ctx, SignatureCont
     error:
     av_freep(&hspace);
     av_free(hspaces);
-    return cands;
+    return cands.next;
 }
 
 static int iterate_frame(double frr, FineSignature **a, FineSignature **b, int fcount, int *bcount, int dir)
