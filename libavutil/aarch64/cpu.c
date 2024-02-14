@@ -24,34 +24,20 @@
 #include <stdint.h>
 #include <sys/auxv.h>
 
-#define get_cpu_feature_reg(reg, val) \
-        __asm__("mrs %0, " #reg : "=r" (val))
+#define HWCAP_AARCH64_ASIMDDP (1 << 20)
+#define HWCAP2_AARCH64_I8MM   (1 << 13)
 
 static int detect_flags(void)
 {
     int flags = 0;
 
-#if defined(HWCAP_CPUID) && HAVE_INLINE_ASM
     unsigned long hwcap = getauxval(AT_HWCAP);
-    // We can check for DOTPROD and I8MM using HWCAP_ASIMDDP and
-    // HWCAP2_I8MM too, avoiding to read the CPUID registers (which triggers
-    // a trap, handled by the kernel). However the HWCAP_* defines for these
-    // extensions are added much later than HWCAP_CPUID, so the userland
-    // headers might lack support for them even if the binary later is run
-    // on hardware that does support it (and where the kernel might support
-    // HWCAP_CPUID).
-    // See https://www.kernel.org/doc/html/latest/arm64/cpu-feature-registers.html
-    if (hwcap & HWCAP_CPUID) {
-        uint64_t tmp;
+    unsigned long hwcap2 = getauxval(AT_HWCAP2);
 
-        get_cpu_feature_reg(ID_AA64ISAR0_EL1, tmp);
-        if (((tmp >> 44) & 0xf) == 0x1)
-            flags |= AV_CPU_FLAG_DOTPROD;
-        get_cpu_feature_reg(ID_AA64ISAR1_EL1, tmp);
-        if (((tmp >> 52) & 0xf) == 0x1)
-            flags |= AV_CPU_FLAG_I8MM;
-    }
-#endif
+    if (hwcap & HWCAP_AARCH64_ASIMDDP)
+        flags |= AV_CPU_FLAG_DOTPROD;
+    if (hwcap2 & HWCAP2_AARCH64_I8MM)
+        flags |= AV_CPU_FLAG_I8MM;
 
     return flags;
 }
