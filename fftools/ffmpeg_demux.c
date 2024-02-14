@@ -40,41 +40,41 @@
 #include "libavformat/avformat.h"
 
 typedef struct DemuxStream {
-    InputStream ist;
+    InputStream              ist;
 
     // name used for logging
-    char log_name[32];
+    char                     log_name[32];
 
-    int sch_idx_stream;
-    int sch_idx_dec;
+    int                      sch_idx_stream;
+    int                      sch_idx_dec;
 
-    double ts_scale;
+    double                   ts_scale;
 
     /* non zero if the packets must be decoded in 'raw_fifo', see DECODING_FOR_* */
-    int decoding_needed;
+    int                      decoding_needed;
 #define DECODING_FOR_OST    1
 #define DECODING_FOR_FILTER 2
 
     /* true if stream data should be discarded */
-    int discard;
+    int                      discard;
 
     // scheduler returned EOF for this stream
-    int finished;
+    int                      finished;
 
-    int streamcopy_needed;
-    int have_sub2video;
-    int reinit_filters;
+    int                      streamcopy_needed;
+    int                      have_sub2video;
+    int                      reinit_filters;
 
-    int wrap_correction_done;
-    int saw_first_ts;
+    int                      wrap_correction_done;
+    int                      saw_first_ts;
     ///< dts of the first packet read for this stream (in AV_TIME_BASE units)
-    int64_t first_dts;
+    int64_t                  first_dts;
 
     /* predicted dts of the next packet read for this stream or (when there are
      * several frames in a packet) of the next frame in current packet (in AV_TIME_BASE units) */
-    int64_t       next_dts;
+    int64_t                  next_dts;
     ///< dts of the last packet read for this stream (in AV_TIME_BASE units)
-    int64_t       dts;
+    int64_t                  dts;
 
     const AVCodecDescriptor *codec_desc;
 
@@ -82,45 +82,45 @@ typedef struct DemuxStream {
     DecoderOpts              dec_opts;
     char                     dec_name[16];
 
-    AVBSFContext *bsf;
+    AVBSFContext            *bsf;
 
     /* number of packets successfully read for this stream */
-    uint64_t nb_packets;
+    uint64_t                 nb_packets;
     // combined size of all the packets read
-    uint64_t data_size;
+    uint64_t                 data_size;
 } DemuxStream;
 
 typedef struct Demuxer {
-    InputFile f;
+    InputFile             f;
 
     // name used for logging
-    char log_name[32];
+    char                  log_name[32];
 
-    int64_t wallclock_start;
+    int64_t               wallclock_start;
 
     /**
      * Extra timestamp offset added by discontinuity handling.
      */
-    int64_t ts_offset_discont;
-    int64_t last_ts;
+    int64_t               ts_offset_discont;
+    int64_t               last_ts;
 
-    int64_t recording_time;
-    int accurate_seek;
+    int64_t               recording_time;
+    int                   accurate_seek;
 
     /* number of times input stream should be looped */
-    int loop;
-    int have_audio_dec;
+    int                   loop;
+    int                   have_audio_dec;
     /* duration of the looped segment of the input file */
-    Timestamp duration;
+    Timestamp             duration;
     /* pts with the smallest/largest values ever seen */
-    Timestamp min_pts;
-    Timestamp max_pts;
+    Timestamp             min_pts;
+    Timestamp             max_pts;
 
     /* number of streams that the user was warned of */
-    int nb_streams_warn;
+    int                   nb_streams_warn;
 
-    float  readrate;
-    double readrate_initial_burst;
+    float                 readrate;
+    double                readrate_initial_burst;
 
     Scheduler            *sch;
 

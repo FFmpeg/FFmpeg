@@ -35,20 +35,20 @@
 #include "thread_queue.h"
 
 typedef struct DecoderPriv {
-    Decoder          dec;
+    Decoder             dec;
 
-    AVCodecContext  *dec_ctx;
+    AVCodecContext     *dec_ctx;
 
-    AVFrame         *frame;
-    AVPacket        *pkt;
+    AVFrame            *frame;
+    AVPacket           *pkt;
 
     // override output video sample aspect ratio with this value
-    AVRational       sar_override;
+    AVRational          sar_override;
 
-    AVRational       framerate_in;
+    AVRational          framerate_in;
 
     // a combination of DECODER_FLAG_*, provided to dec_open()
-    int              flags;
+    int                 flags;
 
     enum AVPixelFormat  hwaccel_pix_fmt;
     enum HWAccelID      hwaccel_id;
@@ -58,22 +58,22 @@ typedef struct DecoderPriv {
     // pts/estimated duration of the last decoded frame
     // * in decoder timebase for video,
     // * in last_frame_tb (may change during decoding) for audio
-    int64_t         last_frame_pts;
-    int64_t         last_frame_duration_est;
-    AVRational      last_frame_tb;
-    int64_t         last_filter_in_rescale_delta;
-    int             last_frame_sample_rate;
+    int64_t             last_frame_pts;
+    int64_t             last_frame_duration_est;
+    AVRational          last_frame_tb;
+    int64_t             last_filter_in_rescale_delta;
+    int                 last_frame_sample_rate;
 
     /* previous decoded subtitles */
-    AVFrame *sub_prev[2];
-    AVFrame *sub_heartbeat;
+    AVFrame            *sub_prev[2];
+    AVFrame            *sub_heartbeat;
 
-    Scheduler      *sch;
-    unsigned        sch_idx;
+    Scheduler          *sch;
+    unsigned            sch_idx;
 
-    void           *log_parent;
-    char            log_name[32];
-    char           *parent_name;
+    void               *log_parent;
+    char                log_name[32];
+    char               *parent_name;
 } DecoderPriv;
 
 static DecoderPriv *dp_from_dec(Decoder *d)
