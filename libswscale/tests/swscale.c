@@ -285,6 +285,15 @@ static int doTest(const uint8_t * const ref[4], int refStride[4], int w, int h,
                 av_free(out[i]);
     }
 
+    if(r){
+        if(ssdY>r->ssdY*1.02+1 || ssdU>r->ssdU*1.02+1 || ssdV>r->ssdV*1.02+1|| ssdA>r->ssdA*1.02+1)
+            printf("WORSE SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"",
+            r->ssdY, r->ssdU, r->ssdV, r->ssdA);
+        else if(ssdY>r->ssdY || ssdU>r->ssdU || ssdV>r->ssdV|| ssdA>r->ssdA)
+            printf("worse SSD=%5"PRId64",%5"PRId64",%5"PRId64",%5"PRId64"",
+            r->ssdY, r->ssdU, r->ssdV, r->ssdA);
+    }
+
     printf(" CRC=%08x SSD=%5"PRId64 ",%5"PRId64 ",%5"PRId64 ",%5"PRId64 "\n",
            crc, ssdY, ssdU, ssdV, ssdA);
 
