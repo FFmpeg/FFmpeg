@@ -322,6 +322,7 @@ int avfilter_config_links(AVFilterContext *filter)
     for (i = 0; i < filter->nb_inputs; i ++) {
         AVFilterLink *link = filter->inputs[i];
         AVFilterLink *inlink;
+        FilterLinkInternal *li = ff_link_internal(link);
 
         if (!link) continue;
         if (!link->src || !link->dst) {
@@ -334,14 +335,14 @@ int avfilter_config_links(AVFilterContext *filter)
         link->current_pts =
         link->current_pts_us = AV_NOPTS_VALUE;
 
-        switch (link->init_state) {
+        switch (li->init_state) {
         case AVLINK_INIT:
             continue;
         case AVLINK_STARTINIT:
             av_log(filter, AV_LOG_INFO, "circular filter chain detected\n");
             return 0;
         case AVLINK_UNINIT:
-            link->init_state = AVLINK_STARTINIT;
+            li->init_state = AVLINK_STARTINIT;
 
             if ((ret = avfilter_config_links(link->src)) < 0)
                 return ret;
@@ -412,7 +413,7 @@ int avfilter_config_links(AVFilterContext *filter)
                     return ret;
                 }
 
-            link->init_state = AVLINK_INIT;
+            li->init_state = AVLINK_INIT;
         }
     }
 

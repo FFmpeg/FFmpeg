@@ -63,6 +63,13 @@ typedef struct FilterLinkInternal {
      * corresponding code.
      */
     int status_out;
+
+    /** stage of the initialization of the link properties (dimensions, etc) */
+    enum {
+        AVLINK_UNINIT = 0,      ///< not started
+        AVLINK_STARTINIT,       ///< started, but incomplete
+        AVLINK_INIT             ///< complete
+    } init_state;
 } FilterLinkInternal;
 
 static inline FilterLinkInternal *ff_link_internal(AVFilterLink *link)
