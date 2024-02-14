@@ -48,12 +48,12 @@
     (!(isGray(x)                ||     \
        (x) == AV_PIX_FMT_MONOBLACK ||     \
        (x) == AV_PIX_FMT_MONOWHITE))
-#define isALPHA(x)                     \
-    ((x) == AV_PIX_FMT_BGR32   ||         \
-     (x) == AV_PIX_FMT_BGR32_1 ||         \
-     (x) == AV_PIX_FMT_RGB32   ||         \
-     (x) == AV_PIX_FMT_RGB32_1 ||         \
-     (x) == AV_PIX_FMT_YUVA420P)
+
+static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    return desc->flags & AV_PIX_FMT_FLAG_ALPHA;
+}
 
 static uint64_t getSSD(const uint8_t *src1, const uint8_t *src2,
                        int stride1, int stride2, int w, int h)
