@@ -22919,6 +22919,76 @@ input upscaled using bicubic upscaling with proper scale factor.
 
 To get full functionality (such as async execution), please use the @ref{dnn_processing} filter.
 
+@anchor{sr_amf}
+@section sr_amf
+
+Upscale (size increasing) for the input video using AMD Advanced Media Framework library for hardware acceleration.
+Use advanced algorithms for upscaling with higher output quality.
+Setting the output width and height works in the same way as for the @ref{scale} filter.
+
+The filter accepts the following options:
+@table @option
+@item w
+@item h
+Set the output video dimension expression. Default value is the input dimension.
+
+Allows for the same expressions as the @ref{scale} filter.
+
+@item algorithm
+Sets the algorithm used for scaling:
+
+@table @var
+@item bilinear
+Bilinear
+
+@item bicubic
+Bicubic
+
+@item sr1-0
+Video SR1.0
+This is a default value
+
+@item point
+Point
+
+@item sr1-1
+Video SR1.1
+
+@end table
+
+@item sharpness
+Control hq scaler sharpening. The value is a float in the range of [0.0, 2.0]
+
+@item format
+Controls the output pixel format. By default, or if none is specified, the input
+pixel format is used.
+
+@item keep-ratio
+Force the scaler to keep the aspect ratio of the input image when the output size has a different aspect ratio.
+Default value is false.
+
+@item fill
+Specifies whether the output image outside the region of interest,
+which does not fill the entire output surface should be filled with a solid color.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Scale input to 720p, keeping aspect ratio and ensuring the output is yuv420p.
+@example
+sr_amf=-2:720:format=yuv420p
+@end example
+
+@item
+Upscale to 4K with algorithm video SR1.1.
+@example
+sr_amf=4096:2160:algorithm=sr1-1
+@end example
+@end itemize
+
 @section ssim
 
 Obtain the SSIM (Structural SImilarity Metric) between two input videos.
@@ -25656,6 +25726,172 @@ Example:
 @example
 ffmpeg -i ref.mpg -vf vmafmotion -f null -
 @end example
+
+@anchor{vpp_amf}
+@section vpp_amf
+
+Scale (resize) and convert colorspace, transfer characteristics or color primaries for the input video, using AMD Advanced Media Framework library for hardware acceleration.
+Setting the output width and height works in the same way as for the @ref{scale} filter.
+
+The filter accepts the following options:
+@table @option
+@item w
+@item h
+Set the output video dimension expression. Default value is the input dimension.
+
+Allows for the same expressions as the @ref{scale} filter.
+
+@item scale_type
+Sets the algorithm used for scaling:
+
+@table @var
+@item bilinear
+Bilinear
+
+This is the default.
+
+@item bicubic
+Bicubic
+
+@end table
+
+@item format
+Controls the output pixel format. By default, or if none is specified, the input
+pixel format is used.
+
+
+@item force_original_aspect_ratio
+@item force_divisible_by
+Work the same as the identical @ref{scale} filter options.
+
+@anchor{color_profile}
+@item color_profile
+Specify all color properties at once.
+
+The accepted values are:
+@table @samp
+@item bt601
+BT.601
+
+@item bt709
+BT.709
+
+@item bt2020
+BT.2020
+
+@end table
+
+@item trc
+Specify output transfer characteristics.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item gamma22
+Constant gamma of 2.2
+
+@item gamma28
+Constant gamma of 2.8
+
+@item smpte170m
+SMPTE-170M
+
+@item smpte240m
+SMPTE-240M
+
+@item linear
+Linear
+
+@item log
+LOG
+
+@item log-sqrt
+LOG_SQRT
+
+@item iec61966-2-4
+iec61966-2-4
+
+@item bt1361-ecg
+BT1361_ECG
+
+@item iec61966-2-1
+iec61966-2-1
+
+@item bt2020-10
+BT.2020 for 10-bits content
+
+@item bt2020-12
+BT.2020 for 12-bits content
+
+@item smpte2084
+SMPTE2084
+
+@item smpte428
+SMPTE428
+
+@item arib-std-b67
+ARIB_STD_B67
+
+@end table
+
+@item primaries
+Specify output color primaries.
+
+The accepted values are:
+@table @samp
+@item bt709
+BT.709
+
+@item bt470m
+BT.470M
+
+@item bt470bg
+BT.470BG or BT.601-6 625
+
+@item smpte170m
+SMPTE-170M or BT.601-6 525
+
+@item smpte240m
+SMPTE-240M
+
+@item film
+film
+
+@item bt2020
+BT.2020
+
+@item smpte428
+SMPTE-428
+
+@item smpte431
+SMPTE-431
+
+@item smpte432
+SMPTE-432
+
+@item jedec-p22
+JEDEC P22 phosphors
+
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Scale input to 720p, keeping aspect ratio and ensuring the output is yuv420p.
+@example
+vpp_amf=-2:720:format=yuv420p
+@end example
+
+@item
+Upscale to 4K and change color profile to bt2020.
+@example
+vpp_amf=4096:2160:color_profile=bt2020
+@end example
+@end itemize
 
 @anchor{vstack}
 @section vstack
