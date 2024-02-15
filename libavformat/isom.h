@@ -168,6 +168,7 @@ typedef struct MOVStreamContext {
     AVIOContext *pb;
     int refcount;
     int pb_is_copied;
+    int id;               ///< AVStream id
     int ffindex;          ///< AVStream index
     int next_chunk;
     unsigned int chunk_count;
@@ -264,6 +265,8 @@ typedef struct MOVStreamContext {
         AVEncryptionInfo *default_encrypted_sample;
         MOVEncryptionIndex *encryption_index;
     } cenc;
+
+    struct IAMFDemuxContext *iamf;
 } MOVStreamContext;
 
 typedef struct HEIFItem {
