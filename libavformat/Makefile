@@ -35,6 +35,7 @@ OBJS-$(HAVE_LIBC_MSVCRT)                 += file_open.o
 
 # subsystems
 OBJS-$(CONFIG_ISO_MEDIA)                 += isom.o
+OBJS-$(CONFIG_IAMFDEC)                   += iamf_reader.o iamf_parse.o iamf.o
 OBJS-$(CONFIG_NETWORK)                   += network.o
 OBJS-$(CONFIG_RIFFDEC)                   += riffdec.o
 OBJS-$(CONFIG_RIFFENC)                   += riffenc.o
@@ -258,7 +259,7 @@ OBJS-$(CONFIG_EVC_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_HLS_DEMUXER)               += hls.o hls_sample_encryption.o
 OBJS-$(CONFIG_HLS_MUXER)                 += hlsenc.o hlsplaylist.o avc.o
 OBJS-$(CONFIG_HNM_DEMUXER)               += hnm.o
-OBJS-$(CONFIG_IAMF_DEMUXER)              += iamfdec.o iamf_parse.o iamf.o
+OBJS-$(CONFIG_IAMF_DEMUXER)              += iamfdec.o
 OBJS-$(CONFIG_IAMF_MUXER)                += iamfenc.o iamf_writer.o iamf.o
 OBJS-$(CONFIG_ICO_DEMUXER)               += icodec.o
 OBJS-$(CONFIG_ICO_MUXER)                 += icoenc.o
