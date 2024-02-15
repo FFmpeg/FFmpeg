@@ -59,8 +59,6 @@ typedef struct VVCSPS {
     const H266RawSPS *r;                                            ///< RefStruct reference
 
     //derived values
-    uint16_t    width;
-    uint16_t    height;
     uint8_t     hshift[VVC_MAX_SAMPLE_ARRAYS];
     uint8_t     vshift[VVC_MAX_SAMPLE_ARRAYS];
     uint32_t    max_pic_order_cnt_lsb;                             ///< MaxPicOrderCntLsb

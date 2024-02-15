@@ -85,7 +85,7 @@
 /**
  * Value of the luma sample at position (x, y) in the 2D array tab.
  */
-#define SAMPLE(tab, x, y) ((tab)[(y) * s->sps->width + (x)])
+#define SAMPLE(tab, x, y) ((tab)[(y) * s->pps->width + (x)])
 #define SAMPLE_CTB(tab, x, y) ((tab)[(y) * min_cb_width + (x)])
 #define CTB(tab, x, y) ((tab)[(y) * fc->ps.pps->ctb_width + (x)])
 

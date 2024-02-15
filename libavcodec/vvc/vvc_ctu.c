@@ -2415,8 +2415,8 @@ void ff_vvc_decode_neighbour(VVCLocalContext *lc, const int x_ctb, const int y_c
     VVCFrameContext *fc = lc->fc;
     const int ctb_size         = fc->ps.sps->ctb_size_y;
 
-    lc->end_of_tiles_x = fc->ps.sps->width;
-    lc->end_of_tiles_y = fc->ps.sps->height;
+    lc->end_of_tiles_x = fc->ps.pps->width;
+    lc->end_of_tiles_y = fc->ps.pps->height;
     if (fc->ps.pps->ctb_to_col_bd[rx] != fc->ps.pps->ctb_to_col_bd[rx + 1])
         lc->end_of_tiles_x = FFMIN(x_ctb + ctb_size, lc->end_of_tiles_x);
     if (fc->ps.pps->ctb_to_row_bd[ry] != fc->ps.pps->ctb_to_row_bd[ry + 1])

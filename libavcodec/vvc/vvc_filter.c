@@ -102,8 +102,8 @@ static void copy_ctb_to_hv(VVCFrameContext *fc, const uint8_t *src,
     const int c_idx, const int x_ctb, const int y_ctb, const int top)
 {
     const int ps = fc->ps.sps->pixel_shift;
-    const int w  = fc->ps.sps->width >> fc->ps.sps->hshift[c_idx];
-    const int h  = fc->ps.sps->height >> fc->ps.sps->vshift[c_idx];
+    const int w  = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
+    const int h  = fc->ps.pps->height >> fc->ps.sps->vshift[c_idx];
 
     if (top) {
         /* top */
@@ -133,8 +133,8 @@ static void sao_copy_ctb_to_hv(VVCLocalContext *lc, const int rx, const int ry, 
         const ptrdiff_t src_stride = fc->frame->linesize[c_idx];
         const int ctb_size_h       = ctb_size_y >> fc->ps.sps->hshift[c_idx];
         const int ctb_size_v       = ctb_size_y >> fc->ps.sps->vshift[c_idx];
-        const int width            = FFMIN(ctb_size_h, (fc->ps.sps->width  >> fc->ps.sps->hshift[c_idx]) - x);
-        const int height           = FFMIN(ctb_size_v, (fc->ps.sps->height >> fc->ps.sps->vshift[c_idx]) - y);
+        const int width            = FFMIN(ctb_size_h, (fc->ps.pps->width  >> fc->ps.sps->hshift[c_idx]) - x);
+        const int height           = FFMIN(ctb_size_v, (fc->ps.pps->height >> fc->ps.sps->vshift[c_idx]) - y);
         const uint8_t *src          = &fc->frame->data[c_idx][y * src_stride + (x << fc->ps.sps->pixel_shift)];
         copy_ctb_to_hv(fc, src, src_stride, x, y, width, height, c_idx, rx, ry, top);
     }
@@ -216,8 +216,8 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
         ptrdiff_t src_stride = fc->frame->linesize[c_idx];
         int ctb_size_h = ctb_size_y >> fc->ps.sps->hshift[c_idx];
         int ctb_size_v = ctb_size_y >> fc->ps.sps->vshift[c_idx];
-        int width    = FFMIN(ctb_size_h, (fc->ps.sps->width  >> fc->ps.sps->hshift[c_idx]) - x0);
-        int height   = FFMIN(ctb_size_v, (fc->ps.sps->height >> fc->ps.sps->vshift[c_idx]) - y0);
+        int width    = FFMIN(ctb_size_h, (fc->ps.pps->width  >> fc->ps.sps->hshift[c_idx]) - x0);
+        int height   = FFMIN(ctb_size_v, (fc->ps.pps->height >> fc->ps.sps->vshift[c_idx]) - y0);
         int tab      = sao_tab[(FFALIGN(width, 8) >> 3) - 1];
         uint8_t *src = &fc->frame->data[c_idx][y0 * src_stride + (x0 << fc->ps.sps->pixel_shift)];
         ptrdiff_t dst_stride;
@@ -230,8 +230,8 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
             break;
         case SAO_EDGE:
         {
-            const int w = fc->ps.sps->width >> fc->ps.sps->hshift[c_idx];
-            const int h = fc->ps.sps->height >> fc->ps.sps->vshift[c_idx];
+            const int w = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
+            const int h = fc->ps.pps->height >> fc->ps.sps->vshift[c_idx];
             const int sh = fc->ps.sps->pixel_shift;
 
             dst_stride = 2*MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE;
@@ -880,11 +880,11 @@ void ff_vvc_deblock_vertical(const VVCLocalContext *lc, int x0, int y0)
     vvc_deblock_bs(lc, x0, y0, 1);
 
     x_end = x0 + ctb_size;
-    if (x_end > fc->ps.sps->width)
-        x_end = fc->ps.sps->width;
+    if (x_end > fc->ps.pps->width)
+        x_end = fc->ps.pps->width;
     y_end = y0 + ctb_size;
-    if (y_end > fc->ps.sps->height)
-        y_end = fc->ps.sps->height;
+    if (y_end > fc->ps.pps->height)
+        y_end = fc->ps.pps->height;
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
         const int hs          = sps->hshift[c_idx];
@@ -950,11 +950,11 @@ void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, int x0, int y0)
     vvc_deblock_bs(lc, x0, y0, 0);
 
     x_end = x0 + ctb_size;
-    if (x_end > fc->ps.sps->width)
-        x_end = fc->ps.sps->width;
+    if (x_end > fc->ps.pps->width)
+        x_end = fc->ps.pps->width;
     y_end = y0 + ctb_size;
-    if (y_end > fc->ps.sps->height)
-        y_end = fc->ps.sps->height;
+    if (y_end > fc->ps.pps->height)
+        y_end = fc->ps.pps->height;
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
         const int hs          = sps->hshift[c_idx];
@@ -1050,8 +1050,8 @@ static void alf_copy_ctb_to_hv(VVCFrameContext *fc, const uint8_t *src, const pt
     const int x, const int y, const int width, const int height, const int x_ctb, const int y_ctb, const int c_idx)
 {
     const int ps            = fc->ps.sps->pixel_shift;
-    const int w             = fc->ps.sps->width >> fc->ps.sps->hshift[c_idx];
-    const int h             = fc->ps.sps->height >> fc->ps.sps->vshift[c_idx];
+    const int w             = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
+    const int h             = fc->ps.pps->height >> fc->ps.sps->vshift[c_idx];
     const int border_pixels = (c_idx == 0) ? ALF_BORDER_LUMA : ALF_BORDER_CHROMA;
     const int offset_h[]    = { 0, height - border_pixels };
     const int offset_v[]    = { 0, width  - border_pixels };
@@ -1107,8 +1107,8 @@ static void alf_prepare_buffer(VVCFrameContext *fc, uint8_t *_dst, const uint8_t
     const int c_idx, const int *edges)
 {
     const int ps = fc->ps.sps->pixel_shift;
-    const int w = fc->ps.sps->width >> fc->ps.sps->hshift[c_idx];
-    const int h = fc->ps.sps->height >> fc->ps.sps->vshift[c_idx];
+    const int w = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
+    const int h = fc->ps.pps->height >> fc->ps.sps->vshift[c_idx];
     const int border_pixels = c_idx == 0 ? ALF_BORDER_LUMA : ALF_BORDER_CHROMA;
     uint8_t *dst, *src;
 
@@ -1241,8 +1241,8 @@ void ff_vvc_alf_copy_ctu_to_hv(VVCLocalContext* lc, const int x0, const int y0)
         const int vs     = fc->ps.sps->vshift[c_idx];
         const int x      = x0 >> hs;
         const int y      = y0 >> vs;
-        const int width  = FFMIN(fc->ps.sps->width - x0, ctb_size_y) >> hs;
-        const int height = FFMIN(fc->ps.sps->height - y0, ctb_size_y) >> vs;
+        const int width  = FFMIN(fc->ps.pps->width - x0, ctb_size_y) >> hs;
+        const int height = FFMIN(fc->ps.pps->height - y0, ctb_size_y) >> vs;
 
         const int src_stride = fc->frame->linesize[c_idx];
         uint8_t* src = &fc->frame->data[c_idx][y * src_stride + (x << ps)];
@@ -1286,8 +1286,8 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
         const int ctb_size_v = ctb_size_y >> vs;
         const int x = x0 >> hs;
         const int y = y0 >> vs;
-        const int pic_width = fc->ps.sps->width >> hs;
-        const int pic_height = fc->ps.sps->height >> vs;
+        const int pic_width = fc->ps.pps->width >> hs;
+        const int pic_height = fc->ps.pps->height >> vs;
         const int width  = FFMIN(pic_width  - x, ctb_size_h);
         const int height = FFMIN(pic_height - y, ctb_size_v);
         const int src_stride = fc->frame->linesize[c_idx];

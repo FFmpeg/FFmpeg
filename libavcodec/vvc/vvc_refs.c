@@ -316,6 +316,7 @@ static void mark_ref(VVCFrame *frame, int flag)
 static VVCFrame *generate_missing_ref(VVCContext *s, VVCFrameContext *fc, int poc)
 {
     const VVCSPS *sps = fc->ps.sps;
+    const VVCPPS *pps = fc->ps.pps;
     VVCFrame *frame;
 
     frame = alloc_frame(s, fc);
@@ -329,10 +330,10 @@ static VVCFrame *generate_missing_ref(VVCContext *s, VVCFrameContext *fc, int po
                        frame->frame->buf[i]->size);
         } else {
             for (int i = 0; frame->frame->data[i]; i++)
-                for (int y = 0; y < (sps->height >> sps->vshift[i]); y++) {
+                for (int y = 0; y < (pps->height >> sps->vshift[i]); y++) {
                     uint8_t *dst = frame->frame->data[i] + y * frame->frame->linesize[i];
                     AV_WN16(dst, 1 << (sps->bit_depth - 1));
-                    av_memcpy_backptr(dst + 2, 2, 2*(sps->width >> sps->hshift[i]) - 2);
+                    av_memcpy_backptr(dst + 2, 2, 2*(pps->width >> sps->hshift[i]) - 2);
                 }
         }
     }

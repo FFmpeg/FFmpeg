@@ -177,9 +177,6 @@ static int sps_derive(VVCSPS *sps, void *log_ctx)
     int ret;
     const H266RawSPS *r = sps->r;
 
-    sps->width  = r->sps_pic_width_max_in_luma_samples;
-    sps->height = r->sps_pic_height_max_in_luma_samples;
-
     ret = sps_bit_depth(sps, log_ctx);
     if (ret < 0)
         return ret;

@@ -226,8 +226,8 @@ static int temporal_luma_motion_vector(const VVCLocalContext *lc,
 
     if (tab_mvf &&
         (cu->y0 >> sps->ctb_log2_size_y) == (y >> sps->ctb_log2_size_y) &&
-        y < fc->ps.sps->height &&
-        x < fc->ps.sps->width) {
+        y < fc->ps.pps->height &&
+        x < fc->ps.pps->width) {
         x                 &= ~7;
         y                 &= ~7;
         temp_col           = TAB_MVF(x, y);
