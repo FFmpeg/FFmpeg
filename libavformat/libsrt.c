@@ -674,9 +674,6 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
     return 0;
 
 err:
-    av_freep(&s->smoother);
-    av_freep(&s->streamid);
-    av_freep(&s->passphrase);
     srt_cleanup();
     return ret;
 }
