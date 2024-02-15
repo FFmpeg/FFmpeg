@@ -9142,8 +9142,9 @@ static int mov_switch_root(AVFormatContext *s, int64_t target, int index)
     return 1;
 }
 
-static int mov_change_extradata(MOVStreamContext *sc, AVPacket *pkt)
+static int mov_change_extradata(AVStream *st, AVPacket *pkt)
 {
+    MOVStreamContext *sc = st->priv_data;
     uint8_t *side, *extradata;
     int extradata_size;
 
@@ -9153,7 +9154,7 @@ static int mov_change_extradata(MOVStreamContext *sc, AVPacket *pkt)
     /* Notify the decoder that extradata changed. */
     extradata_size = sc->extradata_size[sc->last_stsd_index];
     extradata = sc->extradata[sc->last_stsd_index];
-    if (extradata_size > 0 && extradata) {
+    if (st->discard != AVDISCARD_ALL && extradata_size > 0 && extradata) {
         side = av_packet_new_side_data(pkt,
                                        AV_PKT_DATA_NEW_EXTRADATA,
                                        extradata_size);
@@ -9181,6 +9182,64 @@ static int get_eia608_packet(AVIOContext *pb, AVPacket *pkt, int size)
         pkt->data[j] = 0xFC;
         pkt->data[j+1] = avio_r8(pb);
         pkt->data[j+2] = avio_r8(pb);
+    }
+
+    return 0;
+}
+
+static int mov_finalize_packet(AVFormatContext *s, AVStream *st, AVIndexEntry *sample,
+                                int64_t current_index, AVPacket *pkt)
+{
+    MOVStreamContext *sc = st->priv_data;
+
+    pkt->stream_index = sc->ffindex;
+    pkt->dts = sample->timestamp;
+    if (sample->flags & AVINDEX_DISCARD_FRAME) {
+        pkt->flags |= AV_PKT_FLAG_DISCARD;
+    }
+    if (sc->ctts_data && sc->ctts_index < sc->ctts_count) {
+        pkt->pts = av_sat_add64(pkt->dts, av_sat_add64(sc->dts_shift, sc->ctts_data[sc->ctts_index].duration));
+        /* update ctts context */
+        sc->ctts_sample++;
+        if (sc->ctts_index < sc->ctts_count &&
+            sc->ctts_data[sc->ctts_index].count == sc->ctts_sample) {
+            sc->ctts_index++;
+            sc->ctts_sample = 0;
+        }
+    } else {
+        int64_t next_dts = (sc->current_sample < ffstream(st)->nb_index_entries) ?
+            ffstream(st)->index_entries[sc->current_sample].timestamp : st->duration;
+
+        if (next_dts >= pkt->dts)
+            pkt->duration = next_dts - pkt->dts;
+        pkt->pts = pkt->dts;
+    }
+
+    if (sc->sdtp_data && sc->current_sample <= sc->sdtp_count) {
+        uint8_t sample_flags = sc->sdtp_data[sc->current_sample - 1];
+        uint8_t sample_is_depended_on = (sample_flags >> 2) & 0x3;
+        pkt->flags |= sample_is_depended_on == MOV_SAMPLE_DEPENDENCY_NO ? AV_PKT_FLAG_DISPOSABLE : 0;
+    }
+    pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? AV_PKT_FLAG_KEY : 0;
+    pkt->pos = sample->pos;
+
+    /* Multiple stsd handling. */
+    if (sc->stsc_data) {
+        if (sc->stsc_data[sc->stsc_index].id > 0 &&
+            sc->stsc_data[sc->stsc_index].id - 1 < sc->stsd_count &&
+            sc->stsc_data[sc->stsc_index].id - 1 != sc->last_stsd_index) {
+            int ret = mov_change_extradata(st, pkt);
+            if (ret < 0)
+                return ret;
+        }
+
+        /* Update the stsc index for the next sample */
+        sc->stsc_sample++;
+        if (mov_stsc_index_valid(sc->stsc_index, sc->stsc_count) &&
+            mov_get_stsc_samples(sc, sc->stsc_index) == sc->stsc_sample) {
+            sc->stsc_index++;
+            sc->stsc_sample = 0;
+        }
     }
 
     return 0;
@@ -9270,56 +9329,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    pkt->stream_index = sc->ffindex;
-    pkt->dts = sample->timestamp;
-    if (sample->flags & AVINDEX_DISCARD_FRAME) {
-        pkt->flags |= AV_PKT_FLAG_DISCARD;
-    }
-    if (sc->ctts_data && sc->ctts_index < sc->ctts_count) {
-        pkt->pts = av_sat_add64(pkt->dts, av_sat_add64(sc->dts_shift, sc->ctts_data[sc->ctts_index].duration));
-        /* update ctts context */
-        sc->ctts_sample++;
-        if (sc->ctts_index < sc->ctts_count &&
-            sc->ctts_data[sc->ctts_index].count == sc->ctts_sample) {
-            sc->ctts_index++;
-            sc->ctts_sample = 0;
-        }
-    } else {
-        int64_t next_dts = (sc->current_sample < ffstream(st)->nb_index_entries) ?
-            ffstream(st)->index_entries[sc->current_sample].timestamp : st->duration;
+    ret = mov_finalize_packet(s, st, sample, current_index, pkt);
+    if (ret < 0)
+        return ret;
 
-        if (next_dts >= pkt->dts)
-            pkt->duration = next_dts - pkt->dts;
-        pkt->pts = pkt->dts;
-    }
     if (st->discard == AVDISCARD_ALL)
         goto retry;
-    if (sc->sdtp_data && sc->current_sample <= sc->sdtp_count) {
-        uint8_t sample_flags = sc->sdtp_data[sc->current_sample - 1];
-        uint8_t sample_is_depended_on = (sample_flags >> 2) & 0x3;
-        pkt->flags |= sample_is_depended_on == MOV_SAMPLE_DEPENDENCY_NO ? AV_PKT_FLAG_DISPOSABLE : 0;
-    }
-    pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? AV_PKT_FLAG_KEY : 0;
-    pkt->pos = sample->pos;
-
-    /* Multiple stsd handling. */
-    if (sc->stsc_data) {
-        if (sc->stsc_data[sc->stsc_index].id > 0 &&
-            sc->stsc_data[sc->stsc_index].id - 1 < sc->stsd_count &&
-            sc->stsc_data[sc->stsc_index].id - 1 != sc->last_stsd_index) {
-            ret = mov_change_extradata(sc, pkt);
-            if (ret < 0)
-                return ret;
-        }
-
-        /* Update the stsc index for the next sample */
-        sc->stsc_sample++;
-        if (mov_stsc_index_valid(sc->stsc_index, sc->stsc_count) &&
-            mov_get_stsc_samples(sc, sc->stsc_index) == sc->stsc_sample) {
-            sc->stsc_index++;
-            sc->stsc_sample = 0;
-        }
-    }
 
     if (mov->aax_mode)
         aax_filter(pkt->data, pkt->size, mov);
