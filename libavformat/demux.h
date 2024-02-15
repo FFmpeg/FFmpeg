@@ -238,4 +238,6 @@ int ff_get_extradata(void *logctx, AVCodecParameters *par, AVIOContext *pb, int 
  */
 int ff_find_stream_index(const AVFormatContext *s, int id);
 
+int ff_buffer_packet(AVFormatContext *s, AVPacket *pkt);
+
 #endif /* AVFORMAT_DEMUX_H */

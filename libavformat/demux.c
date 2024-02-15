@@ -540,6 +540,73 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
     return 1;
 }
 
+static void update_timestamps(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+{
+    FFStream *const sti = ffstream(st);
+
+    av_assert0(pkt->stream_index < (unsigned)s->nb_streams &&
+               "Invalid stream index.\n");
+
+    if (update_wrap_reference(s, st, pkt->stream_index, pkt) && sti->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
+        // correct first time stamps to negative values
+        if (!is_relative(sti->first_dts))
+            sti->first_dts = wrap_timestamp(st, sti->first_dts);
+        if (!is_relative(st->start_time))
+            st->start_time = wrap_timestamp(st, st->start_time);
+        if (!is_relative(sti->cur_dts))
+            sti->cur_dts = wrap_timestamp(st, sti->cur_dts);
+    }
+
+    pkt->dts = wrap_timestamp(st, pkt->dts);
+    pkt->pts = wrap_timestamp(st, pkt->pts);
+
+    force_codec_ids(s, st);
+
+    /* TODO: audio: time filter; video: frame reordering (pts != dts) */
+    if (s->use_wallclock_as_timestamps)
+        pkt->dts = pkt->pts = av_rescale_q(av_gettime(), AV_TIME_BASE_Q, st->time_base);
+}
+
+int ff_buffer_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    FFFormatContext *const si = ffformatcontext(s);
+    AVStream *st  = s->streams[pkt->stream_index];
+    FFStream *sti = ffstream(st);
+    int err;
+
+    if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
+        av_log(s, AV_LOG_WARNING,
+               "Packet corrupt (stream = %d, dts = %s)",
+               pkt->stream_index, av_ts2str(pkt->dts));
+        if (s->flags & AVFMT_FLAG_DISCARD_CORRUPT) {
+            av_log(s, AV_LOG_WARNING, ", dropping it.\n");
+            av_packet_unref(pkt);
+            return 0;
+        }
+        av_log(s, AV_LOG_WARNING, ".\n");
+    }
+
+    update_timestamps(s, st, pkt);
+
+    err = avpriv_packet_list_put(&si->raw_packet_buffer, pkt, NULL, 0);
+    if (err < 0) {
+        av_packet_unref(pkt);
+        return err;
+    }
+
+    pkt = &si->raw_packet_buffer.tail->pkt;
+    si->raw_packet_buffer_size += pkt->size;
+
+    if (sti->request_probe <= 0)
+        return 0;
+
+    err = probe_codec(s, st, pkt);
+    if (err < 0)
+        return err;
+
+    return 0;
+}
+
 int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FFFormatContext *const si = ffformatcontext(s);
@@ -613,30 +680,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_log(s, AV_LOG_WARNING, ".\n");
         }
 
-        av_assert0(pkt->stream_index < (unsigned)s->nb_streams &&
-                   "Invalid stream index.\n");
-
         st  = s->streams[pkt->stream_index];
         sti = ffstream(st);
 
-        if (update_wrap_reference(s, st, pkt->stream_index, pkt) && sti->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
-            // correct first time stamps to negative values
-            if (!is_relative(sti->first_dts))
-                sti->first_dts = wrap_timestamp(st, sti->first_dts);
-            if (!is_relative(st->start_time))
-                st->start_time = wrap_timestamp(st, st->start_time);
-            if (!is_relative(sti->cur_dts))
-                sti->cur_dts = wrap_timestamp(st, sti->cur_dts);
-        }
-
-        pkt->dts = wrap_timestamp(st, pkt->dts);
-        pkt->pts = wrap_timestamp(st, pkt->pts);
-
-        force_codec_ids(s, st);
-
-        /* TODO: audio: time filter; video: frame reordering (pts != dts) */
-        if (s->use_wallclock_as_timestamps)
-            pkt->dts = pkt->pts = av_rescale_q(av_gettime(), AV_TIME_BASE_Q, st->time_base);
+        update_timestamps(s, st, pkt);
 
         if (!pktl && sti->request_probe <= 0)
             return 0;
