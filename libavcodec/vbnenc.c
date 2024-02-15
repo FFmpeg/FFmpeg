@@ -114,6 +114,8 @@ static int vbn_encode(AVCodecContext *avctx, AVPacket *pkt,
         ctx->enc.frame_data.in = (frame->height - 1) * frame->linesize[0] + frame->data[0];
         ctx->enc.stride = -frame->linesize[0];
         ctx->enc.tex_data.out = pkt->data + VBN_HEADER_SIZE;
+        ctx->enc.width  = avctx->width;
+        ctx->enc.height = avctx->height;
         ff_texturedsp_exec_compress_threads(avctx, &ctx->enc);
     } else {
         const uint8_t *flipped = frame->data[0] + frame->linesize[0] * (frame->height - 1);

@@ -27,8 +27,8 @@ static int exec_func(AVCodecContext *avctx, void *arg,
 {
     const TextureDSPThreadContext *ctx = arg;
     uint8_t *d = ctx->tex_data.out;
-    int w_block = avctx->coded_width / TEXTURE_BLOCK_W;
-    int h_block = avctx->coded_height / TEXTURE_BLOCK_H;
+    int w_block = ctx->width  / TEXTURE_BLOCK_W;
+    int h_block = ctx->height / TEXTURE_BLOCK_H;
     int x, y;
     int start_slice, end_slice;
     int base_blocks_per_slice = h_block / ctx->slice_count;

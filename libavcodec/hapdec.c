@@ -323,6 +323,8 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
 
         ctx->dec[t].frame_data.out = frame->data[0];
         ctx->dec[t].stride = frame->linesize[0];
+        ctx->dec[t].width  = avctx->coded_width;
+        ctx->dec[t].height = avctx->coded_height;
         ff_texturedsp_exec_decompress_threads(avctx, &ctx->dec[t]);
     }
 

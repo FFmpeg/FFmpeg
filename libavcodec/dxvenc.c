@@ -233,6 +233,8 @@ static int dxv_encode(AVCodecContext *avctx, AVPacket *pkt,
         ctx->enc.tex_data.out = ctx->tex_data;
         ctx->enc.frame_data.in = frame->data[0];
         ctx->enc.stride = frame->linesize[0];
+        ctx->enc.width  = avctx->width;
+        ctx->enc.height = avctx->height;
         ff_texturedsp_exec_compress_threads(avctx, &ctx->enc);
     } else {
         /* unimplemented: YCoCg formats */

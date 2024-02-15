@@ -843,7 +843,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
 {
     DXVContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
-    AVCodecContext cavctx = *avctx;
     TextureDSPThreadContext texdsp_ctx, ctexdsp_ctx;
     int (*decompress_tex)(AVCodecContext *avctx);
     const char *msgcomp, *msgtext;
@@ -853,9 +852,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     int ret;
 
     bytestream2_init(gbc, avpkt->data, avpkt->size);
-
-    cavctx.coded_height = avctx->coded_height / 2;
-    cavctx.coded_width  = avctx->coded_width  / 2;
 
     avctx->pix_fmt = AV_PIX_FMT_RGBA;
     avctx->colorspace = AVCOL_SPC_RGB;
@@ -943,7 +939,8 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     texdsp_ctx.slice_count  = av_clip(avctx->thread_count, 1,
                                       avctx->coded_height / TEXTURE_BLOCK_H);
     ctexdsp_ctx.slice_count = av_clip(avctx->thread_count, 1,
-                                      cavctx.coded_height / TEXTURE_BLOCK_H);
+                                      avctx->coded_height / 2 / TEXTURE_BLOCK_H);
+
     /* New header is 12 bytes long. */
     if (!old_type) {
         version_major = bytestream2_get_byte(gbc) - 1;
@@ -979,8 +976,8 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     if (avctx->pix_fmt != AV_PIX_FMT_RGBA) {
         int i;
 
-        ctx->ctex_size = cavctx.coded_width  / ctexdsp_ctx.raw_ratio *
-                         cavctx.coded_height / TEXTURE_BLOCK_H *
+        ctx->ctex_size = avctx->coded_width  / 2 / ctexdsp_ctx.raw_ratio *
+                         avctx->coded_height / 2 / TEXTURE_BLOCK_H *
                          ctexdsp_ctx.tex_ratio;
 
         ctx->op_size[0] = avctx->coded_width * avctx->coded_height / 16;
@@ -1007,6 +1004,10 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     if (ret < 0)
         return ret;
 
+    texdsp_ctx.width   = avctx->coded_width;
+    texdsp_ctx.height  = avctx->coded_height;
+    ctexdsp_ctx.width  = avctx->coded_width  / 2;
+    ctexdsp_ctx.height = avctx->coded_height / 2;
     switch (tag) {
     case DXV_FMT_YG10:
         /* BC5 texture with alpha in the second half of each block */
@@ -1022,13 +1023,13 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
         ctexdsp_ctx.tex_data.in    = ctx->ctex_data;
         ctexdsp_ctx.frame_data.out = frame->data[2];
         ctexdsp_ctx.stride         = frame->linesize[2];
-        ret = ff_texturedsp_exec_decompress_threads(&cavctx, &ctexdsp_ctx);
+        ret = ff_texturedsp_exec_decompress_threads(avctx, &ctexdsp_ctx);
         if (ret < 0)
             return ret;
         ctexdsp_ctx.tex_data.in    = ctx->ctex_data + ctexdsp_ctx.tex_ratio / 2;
         ctexdsp_ctx.frame_data.out = frame->data[1];
         ctexdsp_ctx.stride         = frame->linesize[1];
-        ret = ff_texturedsp_exec_decompress_threads(&cavctx, &ctexdsp_ctx);
+        ret = ff_texturedsp_exec_decompress_threads(avctx, &ctexdsp_ctx);
         if (ret < 0)
             return ret;
         /* fallthrough */

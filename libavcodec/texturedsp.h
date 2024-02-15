@@ -72,6 +72,7 @@ typedef struct TextureDSPThreadContext {
         uint8_t *out;            // Output frame data
     } frame_data;
     ptrdiff_t stride;            // Frame linesize
+    int width, height;           // Frame width / height
     union {
         const uint8_t *in;       // Compressed texture for decompression
         uint8_t *out;            // Compressed texture of compression
