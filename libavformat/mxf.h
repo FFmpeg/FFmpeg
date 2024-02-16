@@ -30,8 +30,7 @@
 typedef AVUUID UID;
 
 enum MXFMetadataSetType {
-    AnyType,
-    MaterialPackage,
+    MaterialPackage = 1,
     SourcePackage,
     SourceClip,
     TimecodeComponent,
