@@ -266,7 +266,6 @@ typedef struct MXFPackage {
     UID package_ul;
     UID *tracks_refs;
     int tracks_count;
-    MXFDescriptor *descriptor; /* only one */
     UID descriptor_ref;
     char *name;
     UID *comment_refs;
@@ -2257,11 +2256,12 @@ static MXFPackage* mxf_resolve_source_package(MXFContext *mxf, UID package_ul, U
     return NULL;
 }
 
-static MXFDescriptor* mxf_resolve_multidescriptor(MXFContext *mxf, MXFDescriptor *descriptor, int track_id)
+static MXFDescriptor* mxf_resolve_descriptor(MXFContext *mxf, UID *strong_ref, int track_id)
 {
-    MXFDescriptor *file_descriptor = NULL;
+    MXFDescriptor *descriptor, *file_descriptor = NULL;
     int i;
 
+    descriptor = mxf_resolve_strong_ref(mxf, strong_ref, AnyType);
     if (!descriptor)
         return NULL;
 
@@ -2782,8 +2782,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         st->id = material_track->track_id;
         st->priv_data = source_track;
 
-        source_package->descriptor = mxf_resolve_strong_ref(mxf, &source_package->descriptor_ref, AnyType);
-        descriptor = mxf_resolve_multidescriptor(mxf, source_package->descriptor, source_track->track_id);
+        descriptor = mxf_resolve_descriptor(mxf, &source_package->descriptor_ref, source_track->track_id);
 
         /* A SourceClip from a EssenceGroup may only be a single frame of essence data. The clips duration is then how many
          * frames its suppose to repeat for. Descriptor->duration, if present, contains the real duration of the essence data */
