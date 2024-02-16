@@ -2035,13 +2035,11 @@ int sch_dec_send(Scheduler *sch, unsigned dec_idx, AVFrame *frame)
                 ret = 0;
                 continue;
             }
-            goto finish;
+            return ret;
         }
     }
 
-finish:
-    return ret < 0                  ? ret :
-           (nb_done == dec->nb_dst) ? AVERROR_EOF : 0;
+    return (nb_done == dec->nb_dst) ? AVERROR_EOF : 0;
 }
 
 static int dec_done(Scheduler *sch, unsigned dec_idx)
