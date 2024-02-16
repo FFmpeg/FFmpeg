@@ -2258,16 +2258,14 @@ static MXFPackage* mxf_resolve_source_package(MXFContext *mxf, UID package_ul, U
 
 static MXFDescriptor* mxf_resolve_descriptor(MXFContext *mxf, UID *strong_ref, int track_id)
 {
-    MXFDescriptor *descriptor, *file_descriptor = NULL;
-    int i;
+    MXFDescriptor *descriptor = mxf_resolve_strong_ref(mxf, strong_ref, Descriptor);
+    if (descriptor)
+        return descriptor;
 
-    descriptor = mxf_resolve_strong_ref(mxf, strong_ref, AnyType);
-    if (!descriptor)
-        return NULL;
-
-    if (descriptor->meta.type == MultipleDescriptor) {
-        for (i = 0; i < descriptor->file_descriptors_count; i++) {
-            file_descriptor = mxf_resolve_strong_ref(mxf, &descriptor->file_descriptors_refs[i], Descriptor);
+    descriptor = mxf_resolve_strong_ref(mxf, strong_ref, MultipleDescriptor);
+    if (descriptor) {
+        for (int i = 0; i < descriptor->file_descriptors_count; i++) {
+            MXFDescriptor *file_descriptor = mxf_resolve_strong_ref(mxf, &descriptor->file_descriptors_refs[i], Descriptor);
 
             if (!file_descriptor) {
                 av_log(mxf->fc, AV_LOG_ERROR, "could not resolve file descriptor strong ref\n");
@@ -2277,8 +2275,7 @@ static MXFDescriptor* mxf_resolve_descriptor(MXFContext *mxf, UID *strong_ref, i
                 return file_descriptor;
             }
         }
-    } else if (descriptor->meta.type == Descriptor)
-        return descriptor;
+    }
 
     return NULL;
 }
