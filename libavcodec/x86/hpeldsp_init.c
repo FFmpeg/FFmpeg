@@ -62,11 +62,9 @@ void ff_avg_pixels8_y2_mmxext(uint8_t *block, const uint8_t *pixels,
 void ff_avg_approx_pixels8_xy2_mmxext(uint8_t *block, const uint8_t *pixels,
                                       ptrdiff_t line_size, int h);
 
-#define avg_pixels16_mmx        ff_avg_pixels16_mmx
 #define put_pixels8_mmx         ff_put_pixels8_mmx
 #define put_pixels16_mmx        ff_put_pixels16_mmx
 #define put_pixels8_xy2_mmx     ff_put_pixels8_xy2_mmx
-#define avg_no_rnd_pixels16_mmx ff_avg_pixels16_mmx
 #define put_no_rnd_pixels8_mmx  ff_put_pixels8_mmx
 #define put_no_rnd_pixels16_mmx ff_put_pixels16_mmx
 
@@ -138,7 +136,6 @@ HPELDSP_AVG_PIXELS16(_mmxext)
     if (HAVE_MMX_EXTERNAL)                                                  \
         c->PFX ## _pixels_tab IDX [0] = PFX ## _pixels ## SIZE ## _ ## CPU
 
-#if HAVE_MMX_INLINE
 #define SET_HPEL_FUNCS03(PFX, IDX, SIZE, CPU)                                   \
     do {                                                                        \
         SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU);                                \
@@ -149,10 +146,6 @@ HPELDSP_AVG_PIXELS16(_mmxext)
         c->PFX ## _pixels_tab IDX [1] = PFX ## _pixels ## SIZE ## _x2_  ## CPU; \
         c->PFX ## _pixels_tab IDX [2] = PFX ## _pixels ## SIZE ## _y2_  ## CPU; \
     } while (0)
-#else
-#define SET_HPEL_FUNCS03(PFX, IDX, SIZE, CPU) SET_HPEL_FUNCS_EXT(PFX, IDX, SIZE, CPU)
-#define SET_HPEL_FUNCS12(PFX, IDX, SIZE, CPU) ((void)0)
-#endif
 #define SET_HPEL_FUNCS(PFX, IDX, SIZE, CPU)                                     \
     do {                                                                        \
         SET_HPEL_FUNCS03(PFX, IDX, SIZE, CPU);                                  \
@@ -161,11 +154,14 @@ HPELDSP_AVG_PIXELS16(_mmxext)
 
 static void hpeldsp_init_mmx(HpelDSPContext *c, int flags)
 {
+#if HAVE_MMX_INLINE
     SET_HPEL_FUNCS03(put,      [0], 16, mmx);
     SET_HPEL_FUNCS(put_no_rnd, [0], 16, mmx);
-    SET_HPEL_FUNCS(avg_no_rnd,    , 16, mmx);
+    SET_HPEL_FUNCS12(avg_no_rnd,  , 16, mmx);
+    c->avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels16_xy2_mmx;
     SET_HPEL_FUNCS03(put,      [1],  8, mmx);
     SET_HPEL_FUNCS(put_no_rnd, [1],  8, mmx);
+#endif
 }
 
 static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
@@ -189,6 +185,8 @@ static void hpeldsp_init_mmxext(HpelDSPContext *c, int flags)
 
     c->put_no_rnd_pixels_tab[1][1] = ff_put_no_rnd_pixels8_x2_exact_mmxext;
     c->put_no_rnd_pixels_tab[1][2] = ff_put_no_rnd_pixels8_y2_exact_mmxext;
+
+    c->avg_no_rnd_pixels_tab[0] = ff_avg_pixels16_mmxext;
 
     if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
         c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmxext;
@@ -214,6 +212,7 @@ static void hpeldsp_init_sse2_fast(HpelDSPContext *c, int flags)
     c->avg_pixels_tab[0][1]        = ff_avg_pixels16_x2_sse2;
     c->avg_pixels_tab[0][2]        = ff_avg_pixels16_y2_sse2;
     c->avg_pixels_tab[0][3]        = ff_avg_pixels16_xy2_sse2;
+    c->avg_no_rnd_pixels_tab[0]    = ff_avg_pixels16_sse2;
 #endif /* HAVE_SSE2_EXTERNAL */
 }
 
