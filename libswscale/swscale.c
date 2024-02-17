@@ -904,7 +904,8 @@ static int scale_internal(SwsContext *c,
 
     if ((srcSliceY  & (macro_height_src - 1)) ||
         ((srcSliceH & (macro_height_src - 1)) && srcSliceY + srcSliceH != c->srcH) ||
-        srcSliceY + srcSliceH > c->srcH) {
+        srcSliceY + srcSliceH > c->srcH ||
+        (isBayer(c->srcFormat) && srcSliceH <= 1)) {
         av_log(c, AV_LOG_ERROR, "Slice parameters %d, %d are invalid\n", srcSliceY, srcSliceH);
         return AVERROR(EINVAL);
     }
