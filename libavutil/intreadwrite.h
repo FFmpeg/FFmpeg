@@ -583,9 +583,7 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #endif
 
 /* Parameters for AV_COPY*, AV_SWAP*, AV_ZERO* must be
- * naturally aligned. They may be implemented using MMX,
- * so emms_c() must be called before using any float code
- * afterwards.
+ * naturally aligned.
  */
 
 #define AV_COPY(n, d, s) \
