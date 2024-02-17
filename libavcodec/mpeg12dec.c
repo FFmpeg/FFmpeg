@@ -1306,20 +1306,20 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             }
         }
 
-        pan_scan = av_frame_new_side_data(s->current_picture_ptr->f,
-                                          AV_FRAME_DATA_PANSCAN,
-                                          sizeof(s1->pan_scan));
-        if (!pan_scan)
-            return AVERROR(ENOMEM);
-        memcpy(pan_scan->data, &s1->pan_scan, sizeof(s1->pan_scan));
+        ret = ff_frame_new_side_data(s->avctx, s->current_picture_ptr->f,
+                                     AV_FRAME_DATA_PANSCAN, sizeof(s1->pan_scan),
+                                     &pan_scan);
+        if (ret < 0)
+            return ret;
+        if (pan_scan)
+            memcpy(pan_scan->data, &s1->pan_scan, sizeof(s1->pan_scan));
 
         if (s1->a53_buf_ref) {
-            AVFrameSideData *sd = av_frame_new_side_data_from_buf(
-                s->current_picture_ptr->f, AV_FRAME_DATA_A53_CC,
-                s1->a53_buf_ref);
-            if (!sd)
-                av_buffer_unref(&s1->a53_buf_ref);
-            s1->a53_buf_ref = NULL;
+            ret = ff_frame_new_side_data_from_buf(
+                s->avctx, s->current_picture_ptr->f, AV_FRAME_DATA_A53_CC,
+                &s1->a53_buf_ref, NULL);
+            if (ret < 0)
+                return ret;
         }
 
         if (s1->has_stereo3d) {
@@ -1332,13 +1332,13 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         }
 
         if (s1->has_afd) {
-            AVFrameSideData *sd =
-                av_frame_new_side_data(s->current_picture_ptr->f,
-                                       AV_FRAME_DATA_AFD, 1);
-            if (!sd)
-                return AVERROR(ENOMEM);
-
-            *sd->data   = s1->afd;
+            AVFrameSideData *sd;
+            ret = ff_frame_new_side_data(s->avctx, s->current_picture_ptr->f,
+                                         AV_FRAME_DATA_AFD, 1, &sd);
+            if (ret < 0)
+                return ret;
+            if (sd)
+                *sd->data = s1->afd;
             s1->has_afd = 0;
         }
 
