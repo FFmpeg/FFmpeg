@@ -31,10 +31,10 @@
 #include "sbr.h"
 #include "aacsbr.h"
 #include "aacsbrdata.h"
-#include "internal.h"
 #include "aacps.h"
 #include "sbrdsp.h"
 #include "libavutil/internal.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/libm.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem_internal.h"
@@ -46,6 +46,25 @@
 #if ARCH_MIPS
 #include "mips/aacsbr_mips.h"
 #endif /* ARCH_MIPS */
+
+/**
+ * 2^(x) for integer x
+ * @return correctly rounded float
+ */
+static av_always_inline float exp2fi(int x) {
+    /* Normal range */
+    if (-126 <= x && x <= 128)
+        return av_int2float((x+127) << 23);
+    /* Too large */
+    else if (x > 128)
+        return INFINITY;
+    /* Subnormal numbers */
+    else if (x > -150)
+        return av_int2float(1 << (x+149));
+    /* Negligibly small */
+    else
+        return 0;
+}
 
 static void aacsbr_func_ptr_init(AACSBRContext *c);
 
@@ -79,13 +98,13 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (k = 0; k < sbr->n[sbr->data[0].bs_freq_res[e]]; k++) {
                 float temp1, temp2, fac;
                 if (sbr->data[0].bs_amp_res) {
-                    temp1 = ff_exp2fi(sbr->data[0].env_facs_q[e][k] + 7);
-                    temp2 = ff_exp2fi(pan_offset - sbr->data[1].env_facs_q[e][k]);
+                    temp1 = exp2fi(sbr->data[0].env_facs_q[e][k] + 7);
+                    temp2 = exp2fi(pan_offset - sbr->data[1].env_facs_q[e][k]);
                 }
                 else {
-                    temp1 = ff_exp2fi((sbr->data[0].env_facs_q[e][k]>>1) + 7) *
+                    temp1 = exp2fi((sbr->data[0].env_facs_q[e][k]>>1) + 7) *
                             exp2_tab[sbr->data[0].env_facs_q[e][k] & 1];
-                    temp2 = ff_exp2fi((pan_offset - sbr->data[1].env_facs_q[e][k])>>1) *
+                    temp2 = exp2fi((pan_offset - sbr->data[1].env_facs_q[e][k])>>1) *
                             exp2_tab[(pan_offset - sbr->data[1].env_facs_q[e][k]) & 1];
                 }
                 if (temp1 > 1E20) {
@@ -99,8 +118,8 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
         }
         for (e = 1; e <= sbr->data[0].bs_num_noise; e++) {
             for (k = 0; k < sbr->n_q; k++) {
-                float temp1 = ff_exp2fi(NOISE_FLOOR_OFFSET - sbr->data[0].noise_facs_q[e][k] + 1);
-                float temp2 = ff_exp2fi(12 - sbr->data[1].noise_facs_q[e][k]);
+                float temp1 = exp2fi(NOISE_FLOOR_OFFSET - sbr->data[0].noise_facs_q[e][k] + 1);
+                float temp2 = exp2fi(12 - sbr->data[1].noise_facs_q[e][k]);
                 float fac;
                 av_assert0(temp1 <= 1E20);
                 fac = temp1 / (1.0f + temp2);
@@ -113,9 +132,9 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (e = 1; e <= sbr->data[ch].bs_num_env; e++)
                 for (k = 0; k < sbr->n[sbr->data[ch].bs_freq_res[e]]; k++){
                     if (sbr->data[ch].bs_amp_res)
-                        sbr->data[ch].env_facs[e][k] = ff_exp2fi(sbr->data[ch].env_facs_q[e][k] + 6);
+                        sbr->data[ch].env_facs[e][k] = exp2fi(sbr->data[ch].env_facs_q[e][k] + 6);
                     else
-                        sbr->data[ch].env_facs[e][k] = ff_exp2fi((sbr->data[ch].env_facs_q[e][k]>>1) + 6)
+                        sbr->data[ch].env_facs[e][k] = exp2fi((sbr->data[ch].env_facs_q[e][k]>>1) + 6)
                                                        * exp2_tab[sbr->data[ch].env_facs_q[e][k] & 1];
                     if (sbr->data[ch].env_facs[e][k] > 1E20) {
                         av_log(NULL, AV_LOG_ERROR, "envelope scalefactor overflow in dequant\n");
@@ -126,7 +145,7 @@ static void sbr_dequant(SpectralBandReplication *sbr, int id_aac)
             for (e = 1; e <= sbr->data[ch].bs_num_noise; e++)
                 for (k = 0; k < sbr->n_q; k++)
                     sbr->data[ch].noise_facs[e][k] =
-                        ff_exp2fi(NOISE_FLOOR_OFFSET - sbr->data[ch].noise_facs_q[e][k]);
+                        exp2fi(NOISE_FLOOR_OFFSET - sbr->data[ch].noise_facs_q[e][k]);
         }
     }
 }
