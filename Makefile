@@ -64,6 +64,9 @@ tools/target_dem_fuzzer$(EXESUF): tools/target_dem_fuzzer.o $(FF_DEP_LIBS)
 tools/target_io_dem_fuzzer$(EXESUF): tools/target_io_dem_fuzzer.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
 
+tools/target_sws_fuzzer$(EXESUF): tools/target_sws_fuzzer.o $(FF_DEP_LIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $^ $(ELIBS) $(FF_EXTRALIBS) $(LIBFUZZER_PATH)
+
 
 tools/enum_options$(EXESUF): ELIBS = $(FF_EXTRALIBS)
 tools/enum_options$(EXESUF): $(FF_DEP_LIBS)
