@@ -954,8 +954,9 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
             if (!ret)
                 break;
 
-            if (!av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_A53_CC, buf))
-                av_buffer_unref(&buf);
+            ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_A53_CC, &buf, NULL);
+            if (ret < 0)
+                return ret;
 
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
             break;
