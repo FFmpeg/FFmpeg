@@ -914,10 +914,12 @@ av_cold int av_tx_init(AVTXContext **ctx, av_tx_fn *tx, enum AVTXType type,
     if (!(flags & AV_TX_INPLACE))
         flags |= FF_TX_OUT_OF_PLACE;
 
-    if (!scale && ((type == AV_TX_FLOAT_MDCT) || (type == AV_TX_INT32_MDCT) || (type == AV_TX_FLOAT_RDFT) || (AV_TX_INT32_RDFT)))
-        scale = &default_scale_f;
-    else if (!scale && ((type == AV_TX_DOUBLE_MDCT) || (type == AV_TX_DOUBLE_RDFT)))
+    if (!scale && ((type == AV_TX_DOUBLE_MDCT) || (type == AV_TX_DOUBLE_DCT) ||
+                   (type == AV_TX_DOUBLE_DCT_I) || (type == AV_TX_DOUBLE_DST_I) ||
+                   (type == AV_TX_DOUBLE_RDFT)))
         scale = &default_scale_d;
+    else if (!scale && !TYPE_IS(FFT, type))
+        scale = &default_scale_f;
 
     ret = ff_tx_init_subtx(&tmp, type, flags, NULL, len, inv, scale);
     if (ret < 0)
