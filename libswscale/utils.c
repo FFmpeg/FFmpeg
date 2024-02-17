@@ -1714,7 +1714,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     }
 
     for (i = 0; i < 4; i++)
-        FF_ALLOCZ_OR_GOTO(c, c->dither_error[i], (c->dstW+2) * sizeof(int), fail);
+        FF_ALLOCZ_OR_GOTO(c, c->dither_error[i], (c->dstW+3) * sizeof(int), fail);
 
     c->needAlpha = (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat)) ? 1 : 0;
 
