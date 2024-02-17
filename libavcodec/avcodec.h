@@ -187,12 +187,16 @@ struct AVCodecParameters;
  * @{
  */
 
+#if FF_API_BUFFER_MIN_SIZE
 /**
  * @ingroup lavc_encoding
  * minimum encoding buffer size
  * Used to avoid some checks during header writing.
+ * @deprecated Unused: avcodec_receive_packet() does not work
+ *             with preallocated packet buffers.
  */
 #define AV_INPUT_BUFFER_MIN_SIZE 16384
+#endif
 
 /**
  * @ingroup lavc_encoding

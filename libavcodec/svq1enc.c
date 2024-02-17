@@ -655,7 +655,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int i, ret;
 
     ret = ff_alloc_packet(avctx, pkt, s->y_block_width * s->y_block_height *
-                          MAX_MB_BYTES * 3 + AV_INPUT_BUFFER_MIN_SIZE);
+                          MAX_MB_BYTES * 3 + FF_INPUT_BUFFER_MIN_SIZE);
     if (ret < 0)
         return ret;
 

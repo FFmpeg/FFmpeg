@@ -981,7 +981,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ctx->pic = pic;
     pkt_size = ctx->frame_size_upper_bound;
 
-    if ((ret = ff_alloc_packet(avctx, pkt, pkt_size + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, pkt_size + FF_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
 
     orig_buf = pkt->data;

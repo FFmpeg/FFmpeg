@@ -477,7 +477,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const uint32_t *palette = NULL;
     int ret;
 
-    if ((ret = ff_alloc_packet(avctx, pkt, avctx->width*avctx->height*7/5 + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, avctx->width*avctx->height*7/5 + FF_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
     outbuf_ptr = pkt->data;
     end        = pkt->data + pkt->size;

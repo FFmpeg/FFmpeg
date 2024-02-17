@@ -252,7 +252,7 @@ static int msrle_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if ((ret = ff_alloc_packet(avctx, pkt, (
                 avctx->width*2 /* worst case = rle every pixel */ + 2 /*end of line */
-            ) * avctx->height + 2 /* end of bitmap */ + AV_INPUT_BUFFER_MIN_SIZE)))
+            ) * avctx->height + 2 /* end of bitmap */ + FF_INPUT_BUFFER_MIN_SIZE)))
         return ret;
 
     if (pict->data[1]) {

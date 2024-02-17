@@ -27,6 +27,12 @@
 #include "packet.h"
 
 /**
+ * Used by some encoders as upper bound for the length of headers.
+ * TODO: Use proper codec-specific upper bounds.
+ */
+#define FF_INPUT_BUFFER_MIN_SIZE 16384
+
+/**
  * Called by encoders to get the next frame for encoding.
  *
  * @param frame An empty frame to be filled with data.

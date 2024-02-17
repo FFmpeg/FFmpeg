@@ -1104,7 +1104,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t keystate    = 128;
     uint8_t *buf_p;
     int i, ret;
-    int64_t maxsize =   AV_INPUT_BUFFER_MIN_SIZE
+    int64_t maxsize =   FF_INPUT_BUFFER_MIN_SIZE
                       + avctx->width*avctx->height*37LL*4;
 
     if(!pict) {
@@ -1154,7 +1154,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     if (f->version > 3)
-        maxsize = AV_INPUT_BUFFER_MIN_SIZE + avctx->width*avctx->height*3LL*4;
+        maxsize = FF_INPUT_BUFFER_MIN_SIZE + avctx->width*avctx->height*3LL*4;
 
     if (maxsize > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - 32) {
         av_log(avctx, AV_LOG_WARNING, "Cannot allocate worst case packet size, the encoding could fail\n");

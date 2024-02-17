@@ -1534,7 +1534,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *chunkstart, *jp2cstart, *jp2hstart;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
-    if ((ret = ff_alloc_packet(avctx, pkt, avctx->width*avctx->height*9 + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, avctx->width*avctx->height*9 + FF_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
 
     // init:

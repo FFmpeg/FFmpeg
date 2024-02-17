@@ -214,7 +214,7 @@ static int ljpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const int height = avctx->height;
     const int mb_width  = (width  + s->hsample[0] - 1) / s->hsample[0];
     const int mb_height = (height + s->vsample[0] - 1) / s->vsample[0];
-    size_t max_pkt_size = AV_INPUT_BUFFER_MIN_SIZE;
+    size_t max_pkt_size = FF_INPUT_BUFFER_MIN_SIZE;
     int ret, header_bits;
 
     if(    avctx->pix_fmt == AV_PIX_FMT_BGR0

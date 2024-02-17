@@ -762,7 +762,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const AVFrame * const p = pict;
     int i, j, size = 0, ret;
 
-    if ((ret = ff_alloc_packet(avctx, pkt, width * height * 3 * 4 + AV_INPUT_BUFFER_MIN_SIZE)) < 0)
+    if ((ret = ff_alloc_packet(avctx, pkt, width * height * 3 * 4 + FF_INPUT_BUFFER_MIN_SIZE)) < 0)
         return ret;
 
     if (s->context) {

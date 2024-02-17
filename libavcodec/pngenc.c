@@ -637,7 +637,7 @@ static int encode_png(AVCodecContext *avctx, AVPacket *pkt,
     enc_row_size    = deflateBound(&s->zstream.zstream,
                                    (avctx->width * s->bits_per_pixel + 7) >> 3);
     max_packet_size =
-        AV_INPUT_BUFFER_MIN_SIZE + // headers
+        FF_INPUT_BUFFER_MIN_SIZE + // headers
         avctx->height * (
             enc_row_size +
             12 * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // IDAT * ceil(enc_row_size / IOBUF_SIZE)
@@ -968,7 +968,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
     enc_row_size    = deflateBound(&s->zstream.zstream,
                                    (avctx->width * s->bits_per_pixel + 7) >> 3);
     max_packet_size =
-        AV_INPUT_BUFFER_MIN_SIZE + // headers
+        FF_INPUT_BUFFER_MIN_SIZE + // headers
         avctx->height * (
             enc_row_size +
             (4 + 12) * (((int64_t)enc_row_size + IOBUF_SIZE - 1) / IOBUF_SIZE) // fdAT * ceil(enc_row_size / IOBUF_SIZE)
@@ -982,7 +982,7 @@ static int encode_apng(AVCodecContext *avctx, AVPacket *pkt,
         if (!pict)
             return AVERROR(EINVAL);
 
-        s->bytestream = s->extra_data = av_malloc(AV_INPUT_BUFFER_MIN_SIZE);
+        s->bytestream = s->extra_data = av_malloc(FF_INPUT_BUFFER_MIN_SIZE);
         if (!s->extra_data)
             return AVERROR(ENOMEM);
 
