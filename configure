@@ -2517,6 +2517,7 @@ CONFIG_EXTRA="
     huffyuvdsp
     huffyuvencdsp
     iamfdec
+    iamfenc
     idctdsp
     iirfilter
     inflate_wrapper
@@ -3536,6 +3537,7 @@ hds_muxer_select="flv_muxer"
 hls_demuxer_select="adts_header ac3_parser mov_demuxer mpegts_demuxer"
 hls_muxer_select="mov_muxer mpegts_muxer"
 iamf_demuxer_select="iamfdec"
+iamf_muxer_select="iamfenc"
 image2_alias_pix_demuxer_select="image2_demuxer"
 image2_brender_pix_demuxer_select="image2_demuxer"
 imf_demuxer_deps="libxml2"

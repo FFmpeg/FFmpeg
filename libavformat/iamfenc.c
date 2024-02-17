@@ -133,219 +133,18 @@ static int iamf_write_header(AVFormatContext *s)
     return 0;
 }
 
-static inline int rescale_rational(AVRational q, int b)
-{
-    return av_clip_int16(av_rescale(q.num, b, q.den));
-}
-
-static int write_parameter_block(AVFormatContext *s, const AVIAMFParamDefinition *param)
-{
-    const IAMFMuxContext *const c = s->priv_data;
-    const IAMFContext *const iamf = &c->iamf;
-    uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
-    IAMFParamDefinition *param_definition = ff_iamf_get_param_definition(iamf, param->parameter_id);
-    PutBitContext pb;
-    AVIOContext *dyn_bc;
-    uint8_t *dyn_buf = NULL;
-    int dyn_size, ret;
-
-    if (param->type > AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN) {
-        av_log(s, AV_LOG_DEBUG, "Ignoring side data with unknown type %u\n",
-               param->type);
-        return 0;
-    }
-
-    if (!param_definition) {
-        av_log(s, AV_LOG_ERROR, "Non-existent Parameter Definition with ID %u referenced by a packet\n",
-               param->parameter_id);
-        return AVERROR(EINVAL);
-    }
-
-    if (param->type != param_definition->param->type) {
-        av_log(s, AV_LOG_ERROR, "Inconsistent values for Parameter Definition "
-                                "with ID %u in a packet\n",
-               param->parameter_id);
-        return AVERROR(EINVAL);
-    }
-
-    ret = avio_open_dyn_buf(&dyn_bc);
-    if (ret < 0)
-        return ret;
-
-    // Sequence Header
-    init_put_bits(&pb, header, sizeof(header));
-    put_bits(&pb, 5, IAMF_OBU_IA_PARAMETER_BLOCK);
-    put_bits(&pb, 3, 0);
-    flush_put_bits(&pb);
-    avio_write(s->pb, header, put_bytes_count(&pb, 1));
-
-    ffio_write_leb(dyn_bc, param->parameter_id);
-    if (!param_definition->mode) {
-        ffio_write_leb(dyn_bc, param->duration);
-        ffio_write_leb(dyn_bc, param->constant_subblock_duration);
-        if (param->constant_subblock_duration == 0)
-            ffio_write_leb(dyn_bc, param->nb_subblocks);
-    }
-
-    for (int i = 0; i < param->nb_subblocks; i++) {
-        const void *subblock = av_iamf_param_definition_get_subblock(param, i);
-
-        switch (param->type) {
-        case AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN: {
-            const AVIAMFMixGain *mix = subblock;
-            if (!param_definition->mode && param->constant_subblock_duration == 0)
-                ffio_write_leb(dyn_bc, mix->subblock_duration);
-
-            ffio_write_leb(dyn_bc, mix->animation_type);
-
-            avio_wb16(dyn_bc, rescale_rational(mix->start_point_value, 1 << 8));
-            if (mix->animation_type >= AV_IAMF_ANIMATION_TYPE_LINEAR)
-                avio_wb16(dyn_bc, rescale_rational(mix->end_point_value, 1 << 8));
-            if (mix->animation_type == AV_IAMF_ANIMATION_TYPE_BEZIER) {
-                avio_wb16(dyn_bc, rescale_rational(mix->control_point_value, 1 << 8));
-                avio_w8(dyn_bc, av_clip_uint8(av_rescale(mix->control_point_relative_time.num, 1 << 8,
-                                                         mix->control_point_relative_time.den)));
-            }
-            break;
-        }
-        case AV_IAMF_PARAMETER_DEFINITION_DEMIXING: {
-            const AVIAMFDemixingInfo *demix = subblock;
-            if (!param_definition->mode && param->constant_subblock_duration == 0)
-                ffio_write_leb(dyn_bc, demix->subblock_duration);
-
-            avio_w8(dyn_bc, demix->dmixp_mode << 5);
-            break;
-        }
-        case AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN: {
-            const AVIAMFReconGain *recon = subblock;
-            const AVIAMFAudioElement *audio_element = param_definition->audio_element->celement;
-
-            if (!param_definition->mode && param->constant_subblock_duration == 0)
-                ffio_write_leb(dyn_bc, recon->subblock_duration);
-
-            if (!audio_element) {
-                av_log(s, AV_LOG_ERROR, "Invalid Parameter Definition with ID %u referenced by a packet\n", param->parameter_id);
-                return AVERROR(EINVAL);
-            }
-
-            for (int j = 0; j < audio_element->nb_layers; j++) {
-                const AVIAMFLayer *layer = audio_element->layers[j];
-
-                if (layer->flags & AV_IAMF_LAYER_FLAG_RECON_GAIN) {
-                    unsigned int recon_gain_flags = 0;
-                    int k = 0;
-
-                    for (; k < 7; k++)
-                        recon_gain_flags |= (1 << k) * !!recon->recon_gain[j][k];
-                    for (; k < 12; k++)
-                        recon_gain_flags |= (2 << k) * !!recon->recon_gain[j][k];
-                    if (recon_gain_flags >> 8)
-                        recon_gain_flags |= (1 << k);
-
-                    ffio_write_leb(dyn_bc, recon_gain_flags);
-                    for (k = 0; k < 12; k++) {
-                        if (recon->recon_gain[j][k])
-                            avio_w8(dyn_bc, recon->recon_gain[j][k]);
-                    }
-                }
-            }
-            break;
-        }
-        default:
-            av_assert0(0);
-        }
-    }
-
-    dyn_size = avio_get_dyn_buf(dyn_bc, &dyn_buf);
-    ffio_write_leb(s->pb, dyn_size);
-    avio_write(s->pb, dyn_buf, dyn_size);
-    ffio_free_dyn_buf(&dyn_bc);
-
-    return 0;
-}
-
 static int iamf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     const IAMFMuxContext *const c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
-    uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
-    PutBitContext pb;
-    AVIOContext *dyn_bc;
-    uint8_t *side_data, *dyn_buf = NULL;
-    unsigned int skip_samples = 0, discard_padding = 0;
-    size_t side_data_size;
-    int dyn_size, type = st->id <= 17 ? st->id + IAMF_OBU_IA_AUDIO_FRAME_ID0 : IAMF_OBU_IA_AUDIO_FRAME;
-    int ret;
+    int ret = 0;
 
-    if (!pkt->size) {
-        uint8_t *new_extradata = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, NULL);
+    if (st->id == c->first_stream_id)
+        ret = ff_iamf_write_parameter_blocks(&c->iamf, s->pb, pkt, s);
+    if (!ret)
+        ret = ff_iamf_write_audio_frame(&c->iamf, s->pb, st->id, pkt);
 
-        if (!new_extradata)
-            return AVERROR_INVALIDDATA;
-
-        // TODO: update FLAC Streaminfo on seekable output
-        return 0;
-    }
-
-    if (s->nb_stream_groups && st->id == c->first_stream_id) {
-        AVIAMFParamDefinition *mix =
-            (AVIAMFParamDefinition *)av_packet_get_side_data(pkt, AV_PKT_DATA_IAMF_MIX_GAIN_PARAM, NULL);
-        AVIAMFParamDefinition *demix =
-            (AVIAMFParamDefinition *)av_packet_get_side_data(pkt, AV_PKT_DATA_IAMF_DEMIXING_INFO_PARAM, NULL);
-        AVIAMFParamDefinition *recon =
-            (AVIAMFParamDefinition *)av_packet_get_side_data(pkt, AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM, NULL);
-
-        if (mix) {
-            ret = write_parameter_block(s, mix);
-            if (ret < 0)
-               return ret;
-        }
-        if (demix) {
-            ret = write_parameter_block(s, demix);
-            if (ret < 0)
-               return ret;
-        }
-        if (recon) {
-            ret = write_parameter_block(s, recon);
-            if (ret < 0)
-               return ret;
-        }
-    }
-    side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES,
-                                        &side_data_size);
-
-    if (side_data && side_data_size >= 10) {
-        skip_samples = AV_RL32(side_data);
-        discard_padding = AV_RL32(side_data + 4);
-    }
-
-    ret = avio_open_dyn_buf(&dyn_bc);
-    if (ret < 0)
-        return ret;
-
-    init_put_bits(&pb, header, sizeof(header));
-    put_bits(&pb, 5, type);
-    put_bits(&pb, 1, 0); // obu_redundant_copy
-    put_bits(&pb, 1, skip_samples || discard_padding);
-    put_bits(&pb, 1, 0); // obu_extension_flag
-    flush_put_bits(&pb);
-    avio_write(s->pb, header, put_bytes_count(&pb, 1));
-
-    if (skip_samples || discard_padding) {
-        ffio_write_leb(dyn_bc, discard_padding);
-        ffio_write_leb(dyn_bc, skip_samples);
-    }
-
-    if (st->id > 17)
-        ffio_write_leb(dyn_bc, st->id);
-
-    dyn_size = avio_get_dyn_buf(dyn_bc, &dyn_buf);
-    ffio_write_leb(s->pb, dyn_size + pkt->size);
-    avio_write(s->pb, dyn_buf, dyn_size);
-    ffio_free_dyn_buf(&dyn_bc);
-    avio_write(s->pb, pkt->data, pkt->size);
-
-    return 0;
+    return ret;
 }
 
 static void iamf_deinit(AVFormatContext *s)
@@ -354,8 +153,6 @@ static void iamf_deinit(AVFormatContext *s)
     IAMFContext *const iamf = &c->iamf;
 
     ff_iamf_uninit_context(iamf);
-
-    return;
 }
 
 static const AVCodecTag iamf_codec_tags[] = {
