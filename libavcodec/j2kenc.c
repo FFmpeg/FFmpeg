@@ -781,7 +781,7 @@ static void putnumpasses(Jpeg2000EncoderContext *s, int n)
 
 
 static int encode_packet(Jpeg2000EncoderContext *s, Jpeg2000ResLevel *rlevel, int layno,
-                         int precno, uint8_t *expn, int numgbits, int packetno,
+                         int precno, const uint8_t *expn, int numgbits, int packetno,
                          int nlayers)
 {
     int bandno, empty = 1;
