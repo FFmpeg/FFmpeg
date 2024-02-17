@@ -47,8 +47,8 @@ void ff_avg_pixels16_l2_mmxext(uint8_t *dst, const uint8_t *src1, const uint8_t 
 #define ff_put_pixels16_l2_sse2 ff_put_pixels16_l2_mmxext
 #define ff_avg_pixels16_l2_sse2 ff_avg_pixels16_l2_mmxext
 #define ff_put_pixels16_mmxext  ff_put_pixels16_mmx
-#define ff_put_pixels8_mmxext   ff_put_pixels8_mmx
-#define ff_put_pixels4_mmxext   ff_put_pixels4_mmx
+#define ff_put_pixels8_mmxext(...)
+#define ff_put_pixels4_mmxext(...)
 
 #define DEF_QPEL(OPNAME)\
 void ff_ ## OPNAME ## _h264_qpel4_h_lowpass_mmxext(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride);\
@@ -217,11 +217,10 @@ static void avg_h264_qpel16_mc00_sse2 (uint8_t *dst, const uint8_t *src,
 {
     ff_avg_pixels16_sse2(dst, src, stride, 16);
 }
-#define put_h264_qpel8_mc00_sse2 put_h264_qpel8_mc00_mmxext
 #define avg_h264_qpel8_mc00_sse2 avg_h264_qpel8_mc00_mmxext
 
 #define H264_MC_C(OPNAME, SIZE, MMX, ALIGN) \
-static void OPNAME ## h264_qpel ## SIZE ## _mc00_ ## MMX (uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
+static void av_unused OPNAME ## h264_qpel ## SIZE ## _mc00_ ## MMX (uint8_t *dst, const uint8_t *src, ptrdiff_t stride)\
 {\
     ff_ ## OPNAME ## pixels ## SIZE ## _ ## MMX(dst, src, stride, SIZE);\
 }\
@@ -424,16 +423,20 @@ LUMA_MC_816(10, mc33, sse2)
 
 #endif /* HAVE_X86ASM */
 
-#define SET_QPEL_FUNCS0123(PFX, IDX, SIZE, CPU, PREFIX)                      \
+#define SET_QPEL_FUNCS123(PFX, IDX, SIZE, CPU, PREFIX)                       \
     do {                                                                     \
-    c->PFX ## _pixels_tab[IDX][ 0] = PREFIX ## PFX ## SIZE ## _mc00_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 1] = PREFIX ## PFX ## SIZE ## _mc10_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 2] = PREFIX ## PFX ## SIZE ## _mc20_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 3] = PREFIX ## PFX ## SIZE ## _mc30_ ## CPU; \
     } while (0)
-#define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
+#define SET_QPEL_FUNCS0123(PFX, IDX, SIZE, CPU, PREFIX)                      \
     do {                                                                     \
-    SET_QPEL_FUNCS0123(PFX, IDX, SIZE, CPU, PREFIX);                         \
+    c->PFX ## _pixels_tab[IDX][ 0] = PREFIX ## PFX ## SIZE ## _mc00_ ## CPU; \
+    SET_QPEL_FUNCS123(PFX, IDX, SIZE, CPU, PREFIX);                          \
+    } while (0)
+#define SET_QPEL_FUNCS_1PP(PFX, IDX, SIZE, CPU, PREFIX)                      \
+    do {                                                                     \
+    SET_QPEL_FUNCS123(PFX, IDX, SIZE, CPU, PREFIX);                          \
     c->PFX ## _pixels_tab[IDX][ 4] = PREFIX ## PFX ## SIZE ## _mc01_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 5] = PREFIX ## PFX ## SIZE ## _mc11_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][ 6] = PREFIX ## PFX ## SIZE ## _mc21_ ## CPU; \
@@ -446,6 +449,11 @@ LUMA_MC_816(10, mc33, sse2)
     c->PFX ## _pixels_tab[IDX][13] = PREFIX ## PFX ## SIZE ## _mc13_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][14] = PREFIX ## PFX ## SIZE ## _mc23_ ## CPU; \
     c->PFX ## _pixels_tab[IDX][15] = PREFIX ## PFX ## SIZE ## _mc33_ ## CPU; \
+    } while (0)
+#define SET_QPEL_FUNCS(PFX, IDX, SIZE, CPU, PREFIX)                          \
+    do {                                                                     \
+    c->PFX ## _pixels_tab[IDX][ 0] = PREFIX ## PFX ## SIZE ## _mc00_ ## CPU; \
+    SET_QPEL_FUNCS_1PP(PFX, IDX, SIZE, CPU, PREFIX);                         \
     } while (0)
 
 #define H264_QPEL_FUNCS(x, y, CPU)                                                            \
@@ -473,8 +481,8 @@ av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         if (!high_bit_depth) {
             SET_QPEL_FUNCS0123(put_h264_qpel, 0, 16, mmxext, );
-            SET_QPEL_FUNCS0123(put_h264_qpel, 1,  8, mmxext, );
-            SET_QPEL_FUNCS(put_h264_qpel, 2,  4, mmxext, );
+            SET_QPEL_FUNCS123 (put_h264_qpel, 1,  8, mmxext, );
+            SET_QPEL_FUNCS_1PP(put_h264_qpel, 2,  4, mmxext, );
             SET_QPEL_FUNCS0123(avg_h264_qpel, 0, 16, mmxext, );
             SET_QPEL_FUNCS0123(avg_h264_qpel, 1,  8, mmxext, );
             SET_QPEL_FUNCS(avg_h264_qpel, 2,  4, mmxext, );
@@ -513,7 +521,9 @@ av_cold void ff_h264qpel_init_x86(H264QpelContext *c, int bit_depth)
 
     if (EXTERNAL_SSE2_FAST(cpu_flags)) {
         if (!high_bit_depth) {
-            H264_QPEL_FUNCS(0, 0, sse2);
+            c->put_h264_qpel_pixels_tab[0][0] = put_h264_qpel16_mc00_sse2;
+            c->avg_h264_qpel_pixels_tab[0][0] = avg_h264_qpel16_mc00_sse2;
+            c->avg_h264_qpel_pixels_tab[1][0] = avg_h264_qpel8_mc00_sse2;
         }
     }
 

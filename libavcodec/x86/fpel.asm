@@ -89,7 +89,6 @@ cglobal %1_pixels%2, 4,5,4
 %endmacro
 
 INIT_MMX mmx
-OP_PIXELS put, 4
 OP_PIXELS put, 8
 OP_PIXELS put, 16
 
