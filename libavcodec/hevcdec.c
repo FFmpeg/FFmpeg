@@ -2788,24 +2788,27 @@ static int set_side_data(HEVCContext *s)
     if (s->sei.timecode.present) {
         uint32_t *tc_sd;
         char tcbuf[AV_TIMECODE_STR_SIZE];
-        AVFrameSideData *tcside = av_frame_new_side_data(out, AV_FRAME_DATA_S12M_TIMECODE,
-                                                         sizeof(uint32_t) * 4);
-        if (!tcside)
-            return AVERROR(ENOMEM);
+        AVFrameSideData *tcside;
+        ret = ff_frame_new_side_data(s->avctx, out, AV_FRAME_DATA_S12M_TIMECODE,
+                                     sizeof(uint32_t) * 4, &tcside);
+        if (ret < 0)
+            return ret;
 
-        tc_sd = (uint32_t*)tcside->data;
-        tc_sd[0] = s->sei.timecode.num_clock_ts;
+        if (tcside) {
+            tc_sd = (uint32_t*)tcside->data;
+            tc_sd[0] = s->sei.timecode.num_clock_ts;
 
-        for (int i = 0; i < tc_sd[0]; i++) {
-            int drop = s->sei.timecode.cnt_dropped_flag[i];
-            int   hh = s->sei.timecode.hours_value[i];
-            int   mm = s->sei.timecode.minutes_value[i];
-            int   ss = s->sei.timecode.seconds_value[i];
-            int   ff = s->sei.timecode.n_frames[i];
+            for (int i = 0; i < tc_sd[0]; i++) {
+                int drop = s->sei.timecode.cnt_dropped_flag[i];
+                int   hh = s->sei.timecode.hours_value[i];
+                int   mm = s->sei.timecode.minutes_value[i];
+                int   ss = s->sei.timecode.seconds_value[i];
+                int   ff = s->sei.timecode.n_frames[i];
 
-            tc_sd[i + 1] = av_timecode_get_smpte(s->avctx->framerate, drop, hh, mm, ss, ff);
-            av_timecode_make_smpte_tc_string2(tcbuf, s->avctx->framerate, tc_sd[i + 1], 0, 0);
-            av_dict_set(&out->metadata, "timecode", tcbuf, 0);
+                tc_sd[i + 1] = av_timecode_get_smpte(s->avctx->framerate, drop, hh, mm, ss, ff);
+                av_timecode_make_smpte_tc_string2(tcbuf, s->avctx->framerate, tc_sd[i + 1], 0, 0);
+                av_dict_set(&out->metadata, "timecode", tcbuf, 0);
+            }
         }
 
         s->sei.timecode.num_clock_ts = 0;
@@ -2816,10 +2819,9 @@ static int set_side_data(HEVCContext *s)
         if (!info_ref)
             return AVERROR(ENOMEM);
 
-        if (!av_frame_new_side_data_from_buf(out, AV_FRAME_DATA_DYNAMIC_HDR_PLUS, info_ref)) {
-            av_buffer_unref(&info_ref);
-            return AVERROR(ENOMEM);
-        }
+        ret = ff_frame_new_side_data_from_buf(s->avctx, out, AV_FRAME_DATA_DYNAMIC_HDR_PLUS, &info_ref, NULL);
+        if (ret < 0)
+            return ret;
     }
 
     if (s->rpu_buf) {
