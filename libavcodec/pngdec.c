@@ -660,6 +660,7 @@ static int decode_phys_chunk(AVCodecContext *avctx, PNGDecContext *s,
 static int populate_avctx_color_fields(AVCodecContext *avctx, AVFrame *frame)
 {
     PNGDecContext *s = avctx->priv_data;
+    int ret;
 
     if (s->have_cicp) {
         if (s->cicp_primaries >= AVCOL_PRI_NB)
@@ -678,11 +679,15 @@ static int populate_avctx_color_fields(AVCodecContext *avctx, AVFrame *frame)
             avctx->color_range = frame->color_range = AVCOL_RANGE_UNSPECIFIED;
         }
     } else if (s->iccp_data) {
-        AVFrameSideData *sd = av_frame_new_side_data(frame, AV_FRAME_DATA_ICC_PROFILE, s->iccp_data_len);
-        if (!sd)
-            return AVERROR(ENOMEM);
-        memcpy(sd->data, s->iccp_data, s->iccp_data_len);
-        av_dict_set(&sd->metadata, "name", s->iccp_name, 0);
+        AVFrameSideData *sd;
+        ret = ff_frame_new_side_data(avctx, frame, AV_FRAME_DATA_ICC_PROFILE,
+                                     s->iccp_data_len, &sd);
+        if (ret < 0)
+            return ret;
+        if (sd) {
+            memcpy(sd->data, s->iccp_data, s->iccp_data_len);
+            av_dict_set(&sd->metadata, "name", s->iccp_name, 0);
+        }
     } else if (s->have_srgb) {
         avctx->color_primaries = frame->color_primaries = AVCOL_PRI_BT709;
         avctx->color_trc = frame->color_trc = AVCOL_TRC_IEC61966_2_1;
