@@ -8090,7 +8090,6 @@ cat > $TMPH <<EOF
 #define EXTERN_ASM ${extern_prefix}
 #define BUILDSUF "$build_suffix"
 #define SLIBSUF "$SLIBSUF"
-#define HAVE_MMX2 HAVE_MMXEXT
 #define SWS_MAX_FILTER_SIZE $sws_max_filter_size
 EOF
 

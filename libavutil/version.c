@@ -43,7 +43,6 @@ unsigned avutil_version(void)
     av_assert0(AVMEDIA_TYPE_ATTACHMENT == 4);
     av_assert0(AV_PICTURE_TYPE_BI == 7);
     av_assert0(LIBAVUTIL_VERSION_MICRO >= 100);
-    av_assert0(HAVE_MMX2 == HAVE_MMXEXT);
 
     av_assert0(((size_t)-1) > 0); // C guarantees this but if false on a platform we care about revert at least b284e1ffe343d6697fb950d1ee517bafda8a9844
 
