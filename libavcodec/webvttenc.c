@@ -22,7 +22,6 @@
 
 #include <stdarg.h>
 #include "avcodec.h"
-#include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "ass_split.h"
 #include "ass.h"
@@ -162,7 +161,7 @@ static int webvtt_encode_frame(AVCodecContext *avctx,
     ASSDialog *dialog;
     int i;
 
-    av_bprint_clear(&s->buffer);
+    av_bprint_init_for_buffer(&s->buffer, buf, bufsize);
 
     for (i=0; i<sub->num_rects; i++) {
         const char *ass = sub->rects[i]->ass;
@@ -180,16 +179,13 @@ static int webvtt_encode_frame(AVCodecContext *avctx,
         ff_ass_free_dialog(&dialog);
     }
 
-    if (!av_bprint_is_complete(&s->buffer))
-        return AVERROR(ENOMEM);
     if (!s->buffer.len)
         return 0;
 
-    if (s->buffer.len > bufsize) {
+    if (!av_bprint_is_complete(&s->buffer)) {
         av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
         return AVERROR_BUFFER_TOO_SMALL;
     }
-    memcpy(buf, s->buffer.str, s->buffer.len);
 
     return s->buffer.len;
 }
@@ -198,7 +194,6 @@ static int webvtt_encode_close(AVCodecContext *avctx)
 {
     WebVTTContext *s = avctx->priv_data;
     ff_ass_split_free(s->ass_ctx);
-    av_bprint_finalize(&s->buffer, NULL);
     return 0;
 }
 
@@ -207,7 +202,6 @@ static av_cold int webvtt_encode_init(AVCodecContext *avctx)
     WebVTTContext *s = avctx->priv_data;
     s->avctx = avctx;
     s->ass_ctx = ff_ass_split(avctx->subtitle_header);
-    av_bprint_init(&s->buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
     return s->ass_ctx ? 0 : AVERROR_INVALIDDATA;
 }
 
