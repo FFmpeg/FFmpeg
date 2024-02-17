@@ -1500,11 +1500,16 @@ exif_end:
                        "VP8X header\n");
 
             s->has_iccp = 1;
-            sd = av_frame_new_side_data(p, AV_FRAME_DATA_ICC_PROFILE, chunk_size);
-            if (!sd)
-                return AVERROR(ENOMEM);
 
-            bytestream2_get_buffer(&gb, sd->data, chunk_size);
+            ret = ff_frame_new_side_data(avctx, p, AV_FRAME_DATA_ICC_PROFILE, chunk_size, &sd);
+            if (ret < 0)
+                return ret;
+
+            if (sd) {
+                bytestream2_get_buffer(&gb, sd->data, chunk_size);
+            } else {
+                bytestream2_skip(&gb, chunk_size);
+            }
             break;
         }
         case MKTAG('A', 'N', 'I', 'M'):
