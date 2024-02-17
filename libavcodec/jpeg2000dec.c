@@ -886,8 +886,8 @@ static int get_ppm(Jpeg2000DecoderContext *s, int n)
         return AVERROR(ENOMEM);
     s->has_ppm = 1;
     memset(&s->packed_headers_stream, 0, sizeof(s->packed_headers_stream));
-    bytestream_get_buffer(&s->g.buffer, s->packed_headers + s->packed_headers_size,
-                          n - 3);
+    bytestream2_get_bufferu(&s->g, s->packed_headers + s->packed_headers_size,
+                            n - 3);
     s->packed_headers_size += n - 3;
 
     return 0;
@@ -921,10 +921,8 @@ static int get_ppt(Jpeg2000DecoderContext *s, int n)
     } else
         return AVERROR(ENOMEM);
     memset(&tile->packed_headers_stream, 0, sizeof(tile->packed_headers_stream));
-    memcpy(tile->packed_headers + tile->packed_headers_size,
-           s->g.buffer, n - 3);
+    bytestream2_get_bufferu(&s->g, tile->packed_headers + tile->packed_headers_size, n - 3);
     tile->packed_headers_size += n - 3;
-    bytestream2_skip(&s->g, n - 3);
 
     return 0;
 }
