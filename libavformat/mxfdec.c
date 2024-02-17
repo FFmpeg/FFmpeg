@@ -116,8 +116,12 @@ typedef struct MXFPartition {
 typedef struct MXFMetadataSet {
     UID uid;
     uint64_t partition_score;
-    enum MXFMetadataSetType type;
 } MXFMetadataSet;
+
+typedef struct MXFMetadataSetGroup {
+    MXFMetadataSet **metadata_sets;
+    int metadata_sets_count;
+} MXFMetadataSetGroup;
 
 typedef struct MXFCryptoContext {
     MXFMetadataSet meta;
@@ -302,8 +306,7 @@ typedef struct MXFContext {
     int packages_count;
     UID *essence_container_data_refs;
     int essence_container_data_count;
-    MXFMetadataSet **metadata_sets;
-    int metadata_sets_count;
+    MXFMetadataSetGroup metadata_set_groups[MetadataSetTypeNB];
     AVFormatContext *fc;
     struct AVAES *aesc;
     uint8_t *local_tags;
@@ -374,10 +377,10 @@ static const uint8_t mxf_mastering_display_uls[4][16] = {
 
 #define IS_KLV_KEY(x, y) (!memcmp(x, y, sizeof(y)))
 
-static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
+static void mxf_free_metadataset(MXFMetadataSet **ctx, enum MXFMetadataSetType type)
 {
     MXFIndexTableSegment *seg;
-    switch ((*ctx)->type) {
+    switch (type) {
     case Descriptor:
     case MultipleDescriptor:
         av_freep(&((MXFDescriptor *)*ctx)->extradata);
@@ -422,9 +425,7 @@ static void mxf_free_metadataset(MXFMetadataSet **ctx, int freectx)
     default:
         break;
     }
-    if (freectx) {
-        av_freep(ctx);
-    }
+    av_freep(ctx);
 }
 
 static int64_t klv_decode_ber_length(AVIOContext *pb)
@@ -915,34 +916,32 @@ static uint64_t partition_score(MXFPartition *p)
     return (score << 60) | ((uint64_t)p->pack_ofs >> 4);
 }
 
-static int mxf_add_metadata_set(MXFContext *mxf, MXFMetadataSet **metadata_set)
+static int mxf_add_metadata_set(MXFContext *mxf, MXFMetadataSet **metadata_set, enum MXFMetadataSetType type)
 {
-    MXFMetadataSet **tmp;
-    enum MXFMetadataSetType type = (*metadata_set)->type;
+    MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[type];
+    int ret;
 
     // Index Table is special because it might be added manually without
     // partition and we iterate thorugh all instances of them. Also some files
     // use the same Instance UID for different index tables...
     if (type != IndexTableSegment) {
-        for (int i = 0; i < mxf->metadata_sets_count; i++) {
-            if (!memcmp((*metadata_set)->uid, mxf->metadata_sets[i]->uid, 16) && type == mxf->metadata_sets[i]->type) {
-                uint64_t old_s = mxf->metadata_sets[i]->partition_score;
+        for (int i = 0; i < mg->metadata_sets_count; i++) {
+            if (!memcmp((*metadata_set)->uid, mg->metadata_sets[i]->uid, 16)) {
+                uint64_t old_s = mg->metadata_sets[i]->partition_score;
                 uint64_t new_s = (*metadata_set)->partition_score;
                 if (old_s > new_s) {
-                     mxf_free_metadataset(metadata_set, 1);
+                     mxf_free_metadataset(metadata_set, type);
                      return 0;
                 }
             }
         }
     }
-    tmp = av_realloc_array(mxf->metadata_sets, mxf->metadata_sets_count + 1, sizeof(*mxf->metadata_sets));
-    if (!tmp) {
-        mxf_free_metadataset(metadata_set, 1);
-        return AVERROR(ENOMEM);
+
+    ret = av_dynarray_add_nofree(&mg->metadata_sets, &mg->metadata_sets_count, *metadata_set);
+    if (ret < 0) {
+        mxf_free_metadataset(metadata_set, type);
+        return ret;
     }
-    mxf->metadata_sets = tmp;
-    mxf->metadata_sets[mxf->metadata_sets_count] = *metadata_set;
-    mxf->metadata_sets_count++;
     return 0;
 }
 
@@ -1576,16 +1575,14 @@ static const MXFCodecUL *mxf_get_codec_ul(const MXFCodecUL *uls, UID *uid)
 
 static void *mxf_resolve_strong_ref(MXFContext *mxf, UID *strong_ref, enum MXFMetadataSetType type)
 {
-    int i;
+    MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[type];
 
     if (!strong_ref)
         return NULL;
-    for (i = mxf->metadata_sets_count - 1; i >= 0; i--) {
-        if (!memcmp(*strong_ref, mxf->metadata_sets[i]->uid, 16) &&
-            (mxf->metadata_sets[i]->type == type)) {
-            return mxf->metadata_sets[i];
-        }
-    }
+    for (int i = mg->metadata_sets_count - 1; i >= 0; i--)
+        if (!memcmp(*strong_ref, mg->metadata_sets[i]->uid, 16))
+            return mg->metadata_sets[i];
+
     return NULL;
 }
 
@@ -1742,12 +1739,10 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
     int i, j, nb_segments = 0;
     MXFIndexTableSegment **unsorted_segments;
     int last_body_sid = -1, last_index_sid = -1, last_index_start = -1;
+    MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[IndexTableSegment];
 
     /* count number of segments, allocate arrays and copy unsorted segments */
-    for (i = 0; i < mxf->metadata_sets_count; i++)
-        if (mxf->metadata_sets[i]->type == IndexTableSegment)
-            nb_segments++;
-
+    nb_segments = mg->metadata_sets_count;
     if (!nb_segments)
         return AVERROR_INVALIDDATA;
 
@@ -1758,15 +1753,13 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
         return AVERROR(ENOMEM);
     }
 
-    for (i = nb_segments = 0; i < mxf->metadata_sets_count; i++) {
-        if (mxf->metadata_sets[i]->type == IndexTableSegment) {
-            MXFIndexTableSegment *s = (MXFIndexTableSegment*)mxf->metadata_sets[i];
-            if (s->edit_unit_byte_count || s->nb_index_entries)
-                unsorted_segments[nb_segments++] = s;
-            else
-                av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment at %"PRId64" missing EditUnitByteCount and IndexEntryArray\n",
-                       s->index_sid, s->index_start_position);
-        }
+    for (i = nb_segments = 0; i < mg->metadata_sets_count; i++) {
+        MXFIndexTableSegment *s = (MXFIndexTableSegment*)mg->metadata_sets[i];
+        if (s->edit_unit_byte_count || s->nb_index_entries)
+            unsorted_segments[nb_segments++] = s;
+        else
+            av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment at %"PRId64" missing EditUnitByteCount and IndexEntryArray\n",
+                   s->index_sid, s->index_start_position);
     }
 
     if (!nb_segments) {
@@ -2484,9 +2477,10 @@ static int set_language(AVFormatContext *s, const char *rfc5646, AVDictionary **
 
 static MXFMCASubDescriptor *find_mca_link_id(MXFContext *mxf, enum MXFMetadataSetType type, UID *mca_link_id)
 {
-    for (int k = 0; k < mxf->metadata_sets_count; k++) {
-        MXFMCASubDescriptor *group = (MXFMCASubDescriptor*)mxf->metadata_sets[k];
-        if (group->meta.type == type && !memcmp(&group->mca_link_id, mca_link_id, 16))
+    MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[type];
+    for (int k = 0; k < mg->metadata_sets_count; k++) {
+        MXFMCASubDescriptor *group = (MXFMCASubDescriptor*)mg->metadata_sets[k];
+        if (!memcmp(&group->mca_link_id, mca_link_id, 16))
             return group;
     }
     return NULL;
@@ -2622,7 +2616,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     MXFPackage *material_package = NULL;
     int i, j, k, ret;
 
-    av_log(mxf->fc, AV_LOG_TRACE, "metadata sets count %d\n", mxf->metadata_sets_count);
     /* TODO: handle multiple material packages (OP3x) */
     for (i = 0; i < mxf->packages_count; i++) {
         material_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i], MaterialPackage);
@@ -2807,13 +2800,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         /* HACK: replacing the original key with mxf_encrypted_essence_container
          * is not allowed according to s429-6, try to find correct information anyway */
         if (IS_KLV_KEY(essence_container_ul, mxf_encrypted_essence_container)) {
+            MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[CryptoContext];
             av_log(mxf->fc, AV_LOG_INFO, "broken encrypted mxf file\n");
-            for (k = 0; k < mxf->metadata_sets_count; k++) {
-                MXFMetadataSet *metadata = mxf->metadata_sets[k];
-                if (metadata->type == CryptoContext) {
-                    essence_container_ul = &((MXFCryptoContext *)metadata)->source_container_ul;
-                    break;
-                }
+            if (mg->metadata_sets_count) {
+                MXFMetadataSet *metadata = mg->metadata_sets[0];
+                essence_container_ul = &((MXFCryptoContext *)metadata)->source_container_ul;
             }
         }
 
@@ -3261,7 +3252,6 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
 
 static int mxf_metadataset_init(MXFMetadataSet *ctx, enum MXFMetadataSetType type, MXFPartition *partition)
 {
-    ctx->type = type;
     ctx->partition_score = partition_score(partition);
     switch (type){
     case MultipleDescriptor:
@@ -3300,7 +3290,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         UID uid = {0};
         if (next < 0 || next > INT64_MAX - size) {
             if (meta) {
-                mxf_free_metadataset(&meta, 1);
+                mxf_free_metadataset(&meta, type);
             }
             return next < 0 ? next : AVERROR_INVALIDDATA;
         }
@@ -3326,7 +3316,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
             avio_read(pb, meta->uid, 16);
         } else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0) {
             if (meta) {
-                mxf_free_metadataset(&meta, 1);
+                mxf_free_metadataset(&meta, type);
             }
             return ret;
         }
@@ -3335,7 +3325,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
          * it extending past the end of the KLV though (zzuf5.mxf). */
         if (avio_tell(pb) > klv_end) {
             if (meta) {
-                mxf_free_metadataset(&meta, 1);
+                mxf_free_metadataset(&meta, type);
             }
 
             av_log(mxf->fc, AV_LOG_ERROR,
@@ -3345,7 +3335,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         } else if (avio_tell(pb) <= next)   /* only seek forward, else this can loop for a long time */
             avio_seek(pb, next, SEEK_SET);
     }
-    return meta ? mxf_add_metadata_set(mxf, &meta) : 0;
+    return meta ? mxf_add_metadata_set(mxf, &meta, type) : 0;
 }
 
 /**
@@ -3601,17 +3591,16 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf, AVStream *st)
     int essence_partition_count = 0;
     int edit_unit_byte_count = 0;
     int i, ret;
+    MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[IndexTableSegment];
 
     if (!track || track->wrapping != ClipWrapped)
         return 0;
 
     /* check if track already has an IndexTableSegment */
-    for (i = 0; i < mxf->metadata_sets_count; i++) {
-        if (mxf->metadata_sets[i]->type == IndexTableSegment) {
-            MXFIndexTableSegment *s = (MXFIndexTableSegment*)mxf->metadata_sets[i];
-            if (s->body_sid == track->body_sid)
-                return 0;
-        }
+    for (i = 0; i < mg->metadata_sets_count; i++) {
+        MXFIndexTableSegment *s = (MXFIndexTableSegment*)mg->metadata_sets[i];
+        if (s->body_sid == track->body_sid)
+            return 0;
     }
 
     /* find the essence partition */
@@ -3643,7 +3632,7 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf, AVStream *st)
     if (!(segment = av_mallocz(sizeof(*segment))))
         return AVERROR(ENOMEM);
 
-    if ((ret = mxf_add_metadata_set(mxf, (MXFMetadataSet**)&segment)))
+    if ((ret = mxf_add_metadata_set(mxf, (MXFMetadataSet**)&segment, IndexTableSegment)))
         return ret;
 
     /* Make sure we have nonzero unique index_sid, body_sid will be ok, because
@@ -3651,7 +3640,6 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf, AVStream *st)
     if (!track->index_sid)
         track->index_sid = track->body_sid;
 
-    segment->meta.type = IndexTableSegment;
     /* stream will be treated as small EditUnitByteCount */
     segment->edit_unit_byte_count = edit_unit_byte_count;
     segment->index_start_position = 0;
@@ -4120,12 +4108,14 @@ static int mxf_read_close(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++)
         s->streams[i]->priv_data = NULL;
 
-    for (i = 0; i < mxf->metadata_sets_count; i++) {
-        mxf_free_metadataset(mxf->metadata_sets + i, 1);
+    for (int type = 0; type < FF_ARRAY_ELEMS(mxf->metadata_set_groups); type++) {
+        MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[type];
+        for (i = 0; i < mg->metadata_sets_count; i++)
+            mxf_free_metadataset(mg->metadata_sets + i, type);
+        mg->metadata_sets_count = 0;
+        av_freep(&mg->metadata_sets);
     }
-    mxf->metadata_sets_count = 0;
     av_freep(&mxf->partitions);
-    av_freep(&mxf->metadata_sets);
     av_freep(&mxf->aesc);
     av_freep(&mxf->local_tags);
 
