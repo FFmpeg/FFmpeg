@@ -155,4 +155,24 @@ int ff_hwaccel_frame_priv_alloc(AVCodecContext *avctx, void **hwaccel_picture_pr
 const AVPacketSideData *ff_get_coded_side_data(const AVCodecContext *avctx,
                                                enum AVPacketSideDataType type);
 
+/**
+ * Wrapper around av_frame_new_side_data, which rejects side data overridden by
+ * the demuxer. Returns 0 on success, and a negative error code otherwise.
+ * If successful and sd is not NULL, *sd may either contain a pointer to the new
+ * side data, or NULL in case the side data was already present.
+ */
+int ff_frame_new_side_data(const AVCodecContext *avctx, AVFrame *frame,
+                           enum AVFrameSideDataType type, size_t size,
+                           AVFrameSideData **sd);
+
+/**
+ * Similar to `ff_frame_new_side_data`, but using an existing buffer ref.
+ *
+ * *buf is ALWAYS consumed by this function and NULL written in its place, even
+ * on failure.
+ */
+int ff_frame_new_side_data_from_buf(const AVCodecContext *avctx,
+                                    AVFrame *frame, enum AVFrameSideDataType type,
+                                    AVBufferRef **buf, AVFrameSideData **sd);
+
 #endif /* AVCODEC_DECODE_H */

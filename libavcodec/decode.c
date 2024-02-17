@@ -1791,6 +1791,72 @@ int ff_decode_preinit(AVCodecContext *avctx)
     return 0;
 }
 
+/**
+ * Check side data preference and clear existing side data from frame
+ * if needed.
+ *
+ * @retval 0 side data of this type can be added to frame
+ * @retval 1 side data of this type should not be added to frame
+ */
+static int side_data_pref(const AVCodecContext *avctx, AVFrame *frame,
+                          enum AVFrameSideDataType type)
+{
+    DecodeContext *dc = decode_ctx(avctx->internal);
+
+    // Note: could be skipped for `type` without corresponding packet sd
+    if (av_frame_get_side_data(frame, type)) {
+        if (dc->side_data_pref_mask & (1ULL << type))
+            return 1;
+        av_frame_remove_side_data(frame, type);
+    }
+
+    return 0;
+}
+
+
+int ff_frame_new_side_data(const AVCodecContext *avctx, AVFrame *frame,
+                           enum AVFrameSideDataType type, size_t size,
+                           AVFrameSideData **psd)
+{
+    AVFrameSideData *sd;
+
+    if (side_data_pref(avctx, frame, type)) {
+        if (psd)
+            *psd = NULL;
+        return 0;
+    }
+
+    sd = av_frame_new_side_data(frame, type, size);
+    if (psd)
+        *psd = sd;
+
+    return sd ? 0 : AVERROR(ENOMEM);
+}
+
+int ff_frame_new_side_data_from_buf(const AVCodecContext *avctx,
+                                    AVFrame *frame, enum AVFrameSideDataType type,
+                                    AVBufferRef **buf, AVFrameSideData **psd)
+{
+    AVFrameSideData *sd = NULL;
+    int ret = 0;
+
+    if (side_data_pref(avctx, frame, type))
+        goto finish;
+
+    sd = av_frame_new_side_data_from_buf(frame, type, *buf);
+    if (sd)
+        *buf = NULL;
+    else
+        ret = AVERROR(ENOMEM);
+
+finish:
+    av_buffer_unref(buf);
+    if (psd)
+        *psd = sd;
+
+    return ret;
+}
+
 int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
 {
     size_t size;
