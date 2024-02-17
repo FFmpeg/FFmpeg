@@ -45,7 +45,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
                             unsigned char *buf, int bufsize,
                             const AVSubtitle *sub)
 {
-    int len;
+    size_t len;
 
     if (sub->num_rects != 1) {
         av_log(avctx, AV_LOG_ERROR, "Only one rect per AVSubtitle is supported in ASS.\n");
@@ -59,7 +59,7 @@ static int ass_encode_frame(AVCodecContext *avctx,
 
     len = av_strlcpy(buf, sub->rects[0]->ass, bufsize);
 
-    if (len > bufsize - 1) {
+    if (len >= bufsize) {
         av_log(avctx, AV_LOG_ERROR, "Buffer too small for ASS event.\n");
         return AVERROR_BUFFER_TOO_SMALL;
     }
