@@ -191,9 +191,10 @@ typedef struct VVCLMCS {
     uint8_t  min_bin_idx;
     uint8_t  max_bin_idx;
 
-    //*2 for high depth
-    uint8_t  fwd_lut[LMCS_MAX_LUT_SIZE * 2];
-    uint8_t  inv_lut[LMCS_MAX_LUT_SIZE * 2];
+    union {
+        uint8_t  u8[LMCS_MAX_LUT_SIZE];
+        uint16_t u16[LMCS_MAX_LUT_SIZE]; ///< for high bit-depth
+    } fwd_lut, inv_lut;
 
     uint16_t pivot[LMCS_MAX_BIN_SIZE + 1];
     uint16_t chroma_scale_coeff[LMCS_MAX_BIN_SIZE];

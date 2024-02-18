@@ -642,9 +642,9 @@ static int lmcs_derive_lut(VVCLMCS *lmcs, const H266RawAPS *rlmcs, const H266Raw
         const uint16_t fwd_sample = lmcs_derive_lut_sample(sample, lmcs->pivot,
             input_pivot, scale_coeff, idx_y, max);
         if (bit_depth > 8)
-            ((uint16_t *)lmcs->fwd_lut)[sample] = fwd_sample;
+            lmcs->fwd_lut.u16[sample] = fwd_sample;
         else
-            lmcs->fwd_lut[sample] = fwd_sample;
+            lmcs->fwd_lut.u8 [sample] = fwd_sample;
 
     }
 
@@ -659,9 +659,9 @@ static int lmcs_derive_lut(VVCLMCS *lmcs, const H266RawAPS *rlmcs, const H266Raw
             inv_scale_coeff, i, max);
 
         if (bit_depth > 8)
-            ((uint16_t *)lmcs->inv_lut)[sample] = inv_sample;
+            lmcs->inv_lut.u16[sample] = inv_sample;
         else
-            lmcs->inv_lut[sample] = inv_sample;
+            lmcs->inv_lut.u8 [sample] = inv_sample;
     }
 
     return 0;

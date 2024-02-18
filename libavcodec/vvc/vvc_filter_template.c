@@ -22,9 +22,9 @@
 
 #include "libavcodec/h26x/h2656_sao_template.c"
 
-static void FUNC(lmcs_filter_luma)(uint8_t *_dst, ptrdiff_t dst_stride, const int width, const int height, const uint8_t *_lut)
+static void FUNC(lmcs_filter_luma)(uint8_t *_dst, ptrdiff_t dst_stride, const int width, const int height, const void *_lut)
 {
-    const pixel *lut = (const pixel *)_lut;
+    const pixel *lut = _lut;
     pixel *dst = (pixel*)_dst;
     dst_stride /= sizeof(pixel);
 
