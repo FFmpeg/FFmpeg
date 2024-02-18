@@ -353,11 +353,6 @@ static int cbs_vp8_assemble_fragment(CodedBitstreamContext *ctx,
     return AVERROR_PATCHWELCOME;
 }
 
-static void cbs_vp8_flush(CodedBitstreamContext *ctx)
-{
-    // Do nothing.
-}
-
 static const CodedBitstreamUnitTypeDescriptor cbs_vp8_unit_types[] = {
     CBS_UNIT_TYPE_INTERNAL_REF(0, VP8RawFrame, data),
     CBS_UNIT_TYPE_END_OF_LIST,
@@ -373,8 +368,6 @@ const CodedBitstreamType ff_cbs_type_vp8 = {
     .split_fragment    = &cbs_vp8_split_fragment,
     .read_unit         = &cbs_vp8_read_unit,
     .write_unit        = &cbs_vp8_write_unit,
-
-    .flush             = &cbs_vp8_flush,
 
     .assemble_fragment = &cbs_vp8_assemble_fragment,
 };
