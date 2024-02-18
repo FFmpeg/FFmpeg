@@ -555,7 +555,7 @@ typedef struct OutputStream {
     AVDictionary *swr_opts;
     char *apad;
 
-    const char *attachment_filename;
+    char *attachment_filename;
 
     int keep_pix_fmt;
 

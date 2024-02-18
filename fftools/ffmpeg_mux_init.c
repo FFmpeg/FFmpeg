@@ -1741,6 +1741,7 @@ static int of_add_attachments(Muxer *mux, const OptionsContext *o)
     for (int i = 0; i < o->nb_attachments; i++) {
         AVIOContext *pb;
         uint8_t *attachment;
+        char *attachment_filename;
         const char *p;
         int64_t len;
 
@@ -1788,13 +1789,20 @@ read_fail:
         av_log(mux, AV_LOG_VERBOSE, "Creating attachment stream from file %s\n",
                o->attachments[i]);
 
+        attachment_filename = av_strdup(o->attachments[i]);
+        if (!attachment_filename) {
+            av_free(attachment);
+            return AVERROR(ENOMEM);
+        }
+
         err = ost_add(mux, o, AVMEDIA_TYPE_ATTACHMENT, NULL, NULL, &ost);
         if (err < 0) {
+            av_free(attachment_filename);
             av_freep(&attachment);
             return err;
         }
 
-        ost->attachment_filename       = o->attachments[i];
+        ost->attachment_filename       = attachment_filename;
         ost->par_in->extradata         = attachment;
         ost->par_in->extradata_size    = len;
 

@@ -817,6 +817,8 @@ static void ost_free(OutputStream **post)
     av_freep(&ost->logfile_prefix);
     av_freep(&ost->apad);
 
+    av_freep(&ost->attachment_filename);
+
 #if FFMPEG_OPT_MAP_CHANNEL
     av_freep(&ost->audio_channels_map);
     ost->audio_channels_mapped = 0;
