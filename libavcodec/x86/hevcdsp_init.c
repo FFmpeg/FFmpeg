@@ -123,17 +123,17 @@ void ff_hevc_put_hevc_uni_ ## a ## _ ## depth ## _##opt(uint8_t *dst, ptrdiff_t 
 #define FW_DIR_HV(npel, n, w, depth, opt) \
     FW_PUT_FUNCS(npel, npel ## _hv##w,  n ## tap_hv##w,  depth, opt)
 
-FW_PEL(4,   8, sse4);
-FW_PEL(6,   8, sse4);
-FW_PEL(8,   8, sse4);
-FW_PEL(12,  8, sse4);
-FW_PEL(16,  8, sse4);
-FW_PEL(4,  10, sse4);
-FW_PEL(6,  10, sse4);
-FW_PEL(8,  10, sse4);
-FW_PEL(4,  12, sse4);
-FW_PEL(6,  12, sse4);
-FW_PEL(8,  12, sse4);
+FW_PEL(4,   8, sse4)
+FW_PEL(6,   8, sse4)
+FW_PEL(8,   8, sse4)
+FW_PEL(12,  8, sse4)
+FW_PEL(16,  8, sse4)
+FW_PEL(4,  10, sse4)
+FW_PEL(6,  10, sse4)
+FW_PEL(8,  10, sse4)
+FW_PEL(4,  12, sse4)
+FW_PEL(6,  12, sse4)
+FW_PEL(8,  12, sse4)
 
 #define FW_EPEL(w, depth, opt) FW_DIR(epel, 4, w, depth, opt)
 #define FW_EPEL_HV(w, depth, opt) FW_DIR_HV(epel, 4, w, depth, opt)
@@ -141,18 +141,18 @@ FW_PEL(8,  12, sse4);
     FW_EPEL(w, depth, opt)           \
     FW_EPEL_HV(w, depth, opt)
 
-FW_EPEL(12,  8, sse4);
+FW_EPEL(12,  8, sse4)
 
-FW_EPEL_FUNCS(4,   8, sse4);
-FW_EPEL_FUNCS(6,   8, sse4);
-FW_EPEL_FUNCS(8,   8, sse4);
-FW_EPEL_FUNCS(16,  8, sse4);
-FW_EPEL_FUNCS(4,  10, sse4);
-FW_EPEL_FUNCS(6,  10, sse4);
-FW_EPEL_FUNCS(8,  10, sse4);
-FW_EPEL_FUNCS(4,  12, sse4);
-FW_EPEL_FUNCS(6,  12, sse4);
-FW_EPEL_FUNCS(8,  12, sse4);
+FW_EPEL_FUNCS(4,   8, sse4)
+FW_EPEL_FUNCS(6,   8, sse4)
+FW_EPEL_FUNCS(8,   8, sse4)
+FW_EPEL_FUNCS(16,  8, sse4)
+FW_EPEL_FUNCS(4,  10, sse4)
+FW_EPEL_FUNCS(6,  10, sse4)
+FW_EPEL_FUNCS(8,  10, sse4)
+FW_EPEL_FUNCS(4,  12, sse4)
+FW_EPEL_FUNCS(6,  12, sse4)
+FW_EPEL_FUNCS(8,  12, sse4)
 
 #define FW_QPEL(w, depth, opt) FW_DIR(qpel, 8, w, depth, opt)
 #define FW_QPEL_HV(w, depth, opt) FW_DIR_HV(qpel, 8, w, depth, opt)
@@ -160,31 +160,31 @@ FW_EPEL_FUNCS(8,  12, sse4);
     FW_QPEL(w, depth, opt)           \
     FW_QPEL_HV(w, depth, opt)
 
-FW_QPEL(12, 8, sse4);
-FW_QPEL(16, 8, sse4);
+FW_QPEL(12, 8, sse4)
+FW_QPEL(16, 8, sse4)
 
-FW_QPEL_FUNCS(4,   8, sse4);
-FW_QPEL_FUNCS(8,   8, sse4);
-FW_QPEL_FUNCS(4,  10, sse4);
-FW_QPEL_FUNCS(8,  10, sse4);
-FW_QPEL_FUNCS(4,  12, sse4);
-FW_QPEL_FUNCS(8,  12, sse4);
+FW_QPEL_FUNCS(4,   8, sse4)
+FW_QPEL_FUNCS(8,   8, sse4)
+FW_QPEL_FUNCS(4,  10, sse4)
+FW_QPEL_FUNCS(8,  10, sse4)
+FW_QPEL_FUNCS(4,  12, sse4)
+FW_QPEL_FUNCS(8,  12, sse4)
 
 #if HAVE_AVX2_EXTERNAL
 
-FW_PEL(32,  8, avx2);
-FW_PUT(pel, pel_pixels16, pixels16, 10, avx2);
+FW_PEL(32,  8, avx2)
+FW_PUT(pel, pel_pixels16, pixels16, 10, avx2)
 
-FW_EPEL(32,  8, avx2);
-FW_EPEL(16, 10, avx2);
+FW_EPEL(32,  8, avx2)
+FW_EPEL(16, 10, avx2)
 
-FW_EPEL_HV(32,  8, avx2);
-FW_EPEL_HV(16, 10, avx2);
+FW_EPEL_HV(32,  8, avx2)
+FW_EPEL_HV(16, 10, avx2)
 
-FW_QPEL(32,  8, avx2);
-FW_QPEL(16, 10, avx2);
+FW_QPEL(32,  8, avx2)
+FW_QPEL(16, 10, avx2)
 
-FW_QPEL_HV(16, 10, avx2);
+FW_QPEL_HV(16, 10, avx2)
 
 #endif
 #endif

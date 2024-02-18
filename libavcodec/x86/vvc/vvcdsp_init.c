@@ -40,12 +40,12 @@ static void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint
 }
 
 #define FW_PUT_TAP(fname, bitd, opt ) \
-    FW_PUT(fname##4,   bitd, opt );   \
-    FW_PUT(fname##8,   bitd, opt );   \
-    FW_PUT(fname##16,  bitd, opt );   \
-    FW_PUT(fname##32,  bitd, opt );   \
-    FW_PUT(fname##64,  bitd, opt );   \
-    FW_PUT(fname##128, bitd, opt );   \
+    FW_PUT(fname##4,   bitd, opt )    \
+    FW_PUT(fname##8,   bitd, opt )    \
+    FW_PUT(fname##16,  bitd, opt )    \
+    FW_PUT(fname##32,  bitd, opt )    \
+    FW_PUT(fname##64,  bitd, opt )    \
+    FW_PUT(fname##128, bitd, opt )    \
 
 #define FW_PUT_4TAP(fname, bitd, opt) \
     FW_PUT(fname ## 2, bitd, opt)     \
@@ -66,9 +66,9 @@ static void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint
     FW_PUT_4TAP_SSE4(bitd) \
     FW_PUT_8TAP_SSE4(bitd)
 
-FW_PUT_SSE4( 8);
-FW_PUT_SSE4(10);
-FW_PUT_SSE4(12);
+FW_PUT_SSE4( 8)
+FW_PUT_SSE4(10)
+FW_PUT_SSE4(12)
 
 #define FW_PUT_TAP_AVX2(n, bitd)        \
     FW_PUT(n ## tap_h32,   bitd, avx2)  \
@@ -100,10 +100,10 @@ FW_PUT_AVX2(12)
 #define FW_PUT_16BPC_AVX2(bitd)     \
     FW_PUT(pixels16, bitd, avx2)    \
     FW_PUT_TAP_16BPC_AVX2(4, bitd)  \
-    FW_PUT_TAP_16BPC_AVX2(8, bitd);
+    FW_PUT_TAP_16BPC_AVX2(8, bitd)
 
-FW_PUT_16BPC_AVX2(10);
-FW_PUT_16BPC_AVX2(12);
+FW_PUT_16BPC_AVX2(10)
+FW_PUT_16BPC_AVX2(12)
 
 #define PEL_LINK(dst, C, W, idx1, idx2, name, D, opt)                              \
     dst[C][W][idx1][idx2] = ff_vvc_put_## name ## _ ## D ## _##opt;                \

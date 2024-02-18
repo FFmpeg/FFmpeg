@@ -639,7 +639,7 @@ void ff_vvc_inv_dct2_64(int *coeffs, const ptrdiff_t stride, const size_t nz)
     coeffs[61 * stride] = E[2]  - O[2];
     coeffs[62 * stride] = E[1]  - O[1];
     coeffs[63 * stride] = E[0]  - O[0];
-};
+}
 
 static void matrix_mul(int *coeffs, const ptrdiff_t stride, const int8_t* matrix, const int size, const size_t nz)
 {
