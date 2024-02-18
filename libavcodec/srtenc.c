@@ -41,10 +41,7 @@ typedef struct {
 } SRTContext;
 
 
-#ifdef __GNUC__
-__attribute__ ((__format__ (__printf__, 2, 3)))
-#endif
-static void srt_print(SRTContext *s, const char *str, ...)
+static av_printf_format(2, 3) void srt_print(SRTContext *s, const char *str, ...)
 {
     va_list vargs;
     va_start(vargs, str);
