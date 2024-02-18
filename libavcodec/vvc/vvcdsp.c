@@ -64,24 +64,6 @@ static int vvc_sad(const int16_t *src0, const int16_t *src1, int dx, int dy,
     return sad;
 }
 
-#define itx_fn(type, s)                                                         \
-static void itx_##type##_##s(int *coeffs, ptrdiff_t step, size_t nz)            \
-{                                                                               \
-  ff_vvc_inv_##type##_##s(coeffs, step, nz);                                    \
-}
-
-#define itx_fn_common(type) \
-    itx_fn(type, 4);        \
-    itx_fn(type, 8);        \
-    itx_fn(type, 16);       \
-    itx_fn(type, 32);       \
-
-itx_fn_common(dct2);
-itx_fn_common(dst7);
-itx_fn_common(dct8);
-itx_fn(dct2, 2);
-itx_fn(dct2, 64);
-
 typedef struct IntraEdgeParams {
     uint8_t* top;
     uint8_t* left;
