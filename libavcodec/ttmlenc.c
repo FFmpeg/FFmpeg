@@ -351,9 +351,8 @@ static int ttml_write_header_content(AVCodecContext *avctx)
     memcpy(avctx->extradata, TTMLENC_EXTRADATA_SIGNATURE,
            TTMLENC_EXTRADATA_SIGNATURE_SIZE);
 
-    if (additional_extradata_size)
-        memcpy(avctx->extradata + TTMLENC_EXTRADATA_SIGNATURE_SIZE,
-               s->buffer.str, additional_extradata_size);
+    memcpy(avctx->extradata + TTMLENC_EXTRADATA_SIGNATURE_SIZE,
+           s->buffer.str, additional_extradata_size);
 
     ret = 0;
 fail:
