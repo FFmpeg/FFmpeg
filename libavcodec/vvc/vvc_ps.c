@@ -652,7 +652,7 @@ static int lmcs_derive_lut(VVCLMCS *lmcs, const H266RawAPS *rlmcs, const H266Raw
     i = lmcs->min_bin_idx;
     for (uint16_t sample = 0; sample < max; sample++) {
         uint16_t inv_sample;
-        while (sample >= lmcs->pivot[i + 1] && i <= lmcs->max_bin_idx)
+        while (i <= lmcs->max_bin_idx && sample >= lmcs->pivot[i + 1])
             i++;
 
         inv_sample = lmcs_derive_lut_sample(sample, input_pivot, lmcs->pivot,
