@@ -29,11 +29,9 @@
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/internal.h"
 #include "ass_split.h"
-#include "ass.h"
 #include "ttmlenc.h"
 
 typedef struct {
@@ -84,7 +82,7 @@ static int ttml_encode_frame(AVCodecContext *avctx, uint8_t *buf,
     ASSDialog *dialog;
     int i;
 
-    av_bprint_clear(&s->buffer);
+    av_bprint_init_for_buffer(&s->buffer, buf, bufsize);
 
     for (i=0; i<sub->num_rects; i++) {
         const char *ass = sub->rects[i]->ass;
@@ -129,14 +127,9 @@ static int ttml_encode_frame(AVCodecContext *avctx, uint8_t *buf,
         ff_ass_free_dialog(&dialog);
     }
 
-    if (!av_bprint_is_complete(&s->buffer))
-        return AVERROR(ENOMEM);
     if (!s->buffer.len)
         return 0;
-
-    // force null-termination, so in case our destination buffer is
-    // too small, the return value is larger than bufsize minus null.
-    if (av_strlcpy(buf, s->buffer.str, bufsize) > bufsize - 1) {
+    if (!av_bprint_is_complete(&s->buffer)) {
         av_log(avctx, AV_LOG_ERROR, "Buffer too small for TTML event.\n");
         return AVERROR_BUFFER_TOO_SMALL;
     }
@@ -149,8 +142,6 @@ static av_cold int ttml_encode_close(AVCodecContext *avctx)
     TTMLContext *s = avctx->priv_data;
 
     ff_ass_split_free(s->ass_ctx);
-
-    av_bprint_finalize(&s->buffer, NULL);
 
     return 0;
 }
@@ -306,6 +297,7 @@ static int ttml_write_header_content(AVCodecContext *avctx)
     const size_t base_extradata_size = TTMLENC_EXTRADATA_SIGNATURE_SIZE + 1 +
                                        AV_INPUT_BUFFER_PADDING_SIZE;
     size_t additional_extradata_size = 0;
+    int ret;
 
     if (script_info.play_res_x <= 0 || script_info.play_res_y <= 0) {
         av_log(avctx, AV_LOG_ERROR,
@@ -313,6 +305,8 @@ static int ttml_write_header_content(AVCodecContext *avctx)
                script_info.play_res_x, script_info.play_res_y);
         return AVERROR_INVALIDDATA;
     }
+
+    av_bprint_init(&s->buffer, 0, INT_MAX - base_extradata_size);
 
     // write the first string in extradata, attributes in the base "tt" element.
     av_bprintf(&s->buffer, TTML_DEFAULT_NAMESPACING);
@@ -329,10 +323,10 @@ static int ttml_write_header_content(AVCodecContext *avctx)
     av_bprintf(&s->buffer, "    <layout>\n");
 
     for (int i = 0; i < ass->styles_count; i++) {
-        int ret = ttml_write_region(avctx, &s->buffer, script_info,
-                                    ass->styles[i]);
+        ret = ttml_write_region(avctx, &s->buffer, script_info,
+                                ass->styles[i]);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     av_bprintf(&s->buffer, "    </layout>\n");
@@ -340,14 +334,16 @@ static int ttml_write_header_content(AVCodecContext *avctx)
     av_bprint_chars(&s->buffer, '\0', 1);
 
     if (!av_bprint_is_complete(&s->buffer)) {
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
     additional_extradata_size = s->buffer.len;
 
     if (!(avctx->extradata =
             av_mallocz(base_extradata_size + additional_extradata_size))) {
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
     avctx->extradata_size =
@@ -359,9 +355,11 @@ static int ttml_write_header_content(AVCodecContext *avctx)
         memcpy(avctx->extradata + TTMLENC_EXTRADATA_SIGNATURE_SIZE,
                s->buffer.str, additional_extradata_size);
 
-    av_bprint_clear(&s->buffer);
+    ret = 0;
+fail:
+    av_bprint_finalize(&s->buffer, NULL);
 
-    return 0;
+    return ret;
 }
 
 static av_cold int ttml_encode_init(AVCodecContext *avctx)
@@ -369,8 +367,6 @@ static av_cold int ttml_encode_init(AVCodecContext *avctx)
     TTMLContext *s = avctx->priv_data;
     int ret = AVERROR_BUG;
     s->avctx   = avctx;
-
-    av_bprint_init(&s->buffer, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     if (!(s->ass_ctx = ff_ass_split(avctx->subtitle_header))) {
         return AVERROR_INVALIDDATA;
