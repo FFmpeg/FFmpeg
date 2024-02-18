@@ -1,7 +1,7 @@
-691a76a847e0f3720c09cca341971f19 *tests/data/fate/mov-mp4-pcm-float.mp4
+7b998e652d5b7154e646a98bd2bf28a1 *tests/data/fate/mov-mp4-pcm-float.mp4
 3175929 tests/data/fate/mov-mp4-pcm-float.mp4
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: pcm_f32le
 #sample_rate 0: 44100
-#channel_layout_name 0: 3 channels (FL+LFE+BR)
+#channel_layout_name 0: 3 channels (FR+FL+FR)
