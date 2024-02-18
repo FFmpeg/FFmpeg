@@ -99,7 +99,6 @@ typedef struct IAMFAudioElement {
 
     unsigned int codec_config_id;
 
-    // mux
     IAMFLayer *layers;
     unsigned int nb_layers;
 } IAMFAudioElement;

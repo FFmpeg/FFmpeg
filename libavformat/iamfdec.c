@@ -106,6 +106,10 @@ static int iamf_read_header(AVFormatContext *s)
             if (ret < 0)
                 return ret;
 
+            if (!i && !j && audio_element->layers[0].substream_count == 1)
+                st->disposition |= AV_DISPOSITION_DEFAULT;
+            else
+                st->disposition |= AV_DISPOSITION_DEPENDENT;
             st->id = substream->audio_substream_id;
             avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
         }

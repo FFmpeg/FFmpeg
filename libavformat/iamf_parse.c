@@ -333,6 +333,11 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
     if (nb_layers > 6)
         return AVERROR_INVALIDDATA;
 
+    audio_element->layers = av_calloc(nb_layers, sizeof(*audio_element->layers));
+    if (!audio_element->layers)
+        return AVERROR(ENOMEM);
+
+    audio_element->nb_layers = nb_layers;
     for (int i = 0; i < nb_layers; i++) {
         AVIAMFLayer *layer;
         int loudspeaker_layout, output_gain_is_present_flag;
@@ -350,6 +355,8 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
         substream_count = avio_r8(pb);
         coupled_substream_count = avio_r8(pb);
 
+        audio_element->layers[i].substream_count         = substream_count;
+        audio_element->layers[i].coupled_substream_count = coupled_substream_count;
         if (output_gain_is_present_flag) {
             layer->output_gain_flags = avio_r8(pb) >> 2;  // get_bits(&gb, 6);
             layer->output_gain = av_make_q(sign_extend(avio_rb16(pb), 16), 1 << 8);
@@ -401,6 +408,13 @@ static int ambisonics_config(void *s, AVIOContext *pb,
     if ((order + 1) * (order + 1) != output_channel_count)
         return AVERROR_INVALIDDATA;
 
+    audio_element->layers = av_mallocz(sizeof(*audio_element->layers));
+    if (!audio_element->layers)
+        return AVERROR(ENOMEM);
+
+    audio_element->nb_layers = 1;
+    audio_element->layers->substream_count = substream_count;
+
     layer = av_iamf_audio_element_add_layer(audio_element->element);
     if (!layer)
         return AVERROR(ENOMEM);
@@ -429,6 +443,8 @@ static int ambisonics_config(void *s, AVIOContext *pb,
         int coupled_substream_count = avio_r8(pb);  // M
         int nb_demixing_matrix = substream_count + coupled_substream_count;
         int demixing_matrix_size = nb_demixing_matrix * output_channel_count;
+
+        audio_element->layers->coupled_substream_count = coupled_substream_count;
 
         layer->ch_layout = (AVChannelLayout){ .order = AV_CHANNEL_ORDER_AMBISONIC, .nb_channels = output_channel_count };
         layer->demixing_matrix = av_malloc_array(demixing_matrix_size, sizeof(*layer->demixing_matrix));
