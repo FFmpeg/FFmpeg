@@ -150,6 +150,7 @@ extern const AVInputFormat  ff_dv_demuxer;
 extern const FFOutputFormat ff_dv_muxer;
 extern const AVInputFormat  ff_dvbsub_demuxer;
 extern const AVInputFormat  ff_dvbtxt_demuxer;
+extern const AVInputFormat  ff_dvdvideo_demuxer;
 extern const AVInputFormat  ff_dxa_demuxer;
 extern const AVInputFormat  ff_ea_demuxer;
 extern const AVInputFormat  ff_ea_cdata_demuxer;

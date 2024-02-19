@@ -285,6 +285,136 @@ This demuxer accepts the following option:
 
 @end table
 
+@section dvdvideo
+
+DVD-Video demuxer, powered by libdvdnav and libdvdread.
+
+Can directly ingest DVD titles, specifically sequential PGCs,
+into a conversion pipeline. Menus and seeking are not supported at this time.
+
+Block devices (DVD drives), ISO files, and directory structures are accepted.
+Activate with @code{-f dvdvideo} in front of one of these inputs.
+
+Underlying playback is handled by libdvdnav, and structure parsing by libdvdread.
+FFmpeg must be built with GPL library support available as well as the
+configure switches @code{--enable-libdvdnav} and @code{--enable-libdvdread}.
+
+You will need to provide either the desired "title number" or exact PGC/PG coordinates.
+Many open-source DVD players and tools can aid in providing this information.
+If not specified, the demuxer will default to title 1 which works for many discs.
+However, due to the flexibility of the format, it is recommended to check manually.
+There are many discs that are authored strangely or with invalid headers.
+
+If the input is a real DVD drive, please note that there are some drives which may
+silently fail on reading bad sectors from the disc, returning random bits instead
+which is effectively corrupt data. This is especially prominent on aging or rotting discs.
+A second pass and integrity checks would be needed to detect the corruption.
+This is not an FFmpeg issue.
+
+@subsection Background
+
+DVD-Video is not a directly accessible, linear container format in the
+traditional sense. Instead, it allows for complex and programmatic playback of
+carefully muxed MPEG-PS streams that are stored in headerless VOB files.
+To the end-user, these streams are known simply as "titles", but the actual
+logical playback sequence is defined by one or more "PGCs", or Program Group Chains,
+within the title. The PGC is in turn comprised of multiple "PGs", or Programs",
+which are the actual video segments (and for a typical video feature, sequentially
+ordered). The PGC structure, along with stream layout and metadata, are stored in
+IFO files that need to be parsed. PGCs can be thought of as playlists in easier terms.
+
+An actual DVD player relies on user GUI interaction via menus and an internal VM
+to drive the direction of demuxing. Generally, the user would either navigate (via menus)
+or automatically be redirected to the PGC of their choice. During this process and
+the subsequent playback, the DVD player's internal VM also maintains a state and
+executes instructions that can create jumps to different sectors during playback.
+This is why libdvdnav is involved, as a linear read of the MPEG-PS blobs on the
+disc (VOBs) is not enough to produce the right sequence in many cases.
+
+There are many other DVD structures (a long subject) that will not be discussed here.
+NAV packets, in particular, are handled by this demuxer to build accurate timing
+but not emitted as a stream. For a good high-level understanding, refer to:
+@url{https://code.videolan.org/videolan/libdvdnav/-/blob/master/doc/dvd_structures}
+
+@subsection Options
+
+This demuxer accepts the following options:
+
+@table @option
+
+@item title @var{int}
+The title number to play. Must be set if @option{pgc} and @option{pg} are not set.
+Default is 0 (auto), which currently only selects the first available title (title 1)
+and notifies the user about the implications.
+
+@item chapter_start @var{int}
+The chapter, or PTT (part-of-title), number to start at. Default is 1.
+
+@item chapter_end @var{int}
+The chapter, or PTT (part-of-title), number to end at. Default is 0,
+which is a special value to signal end at the last possible chapter.
+
+@item angle @var{int}
+The video angle number, referring to what is essentially an additional
+video stream that is composed from alternate frames interleaved in the VOBs.
+Default is 1.
+
+@item region @var{int}
+The region code to use for playback. Some discs may use this to default playback
+at a particular angle in different regions. This option will not affect the region code
+of a real DVD drive, if used as an input. Default is 0, "world".
+
+@item pgc @var{int}
+The entry PGC to start playback, in conjunction with @option{pg}.
+Alternative to setting @option{title}.
+Chapter markers are not supported at this time.
+Default is 0, automatically resolve from value of @option{title}.
+
+@item pg @var{int}
+The entry PG to start playback, in conjunction with @option{pgc}.
+Alternative to setting @option{title}.
+Chapter markers are not supported at this time.
+Default is 0, automatically resolve from value of @option{title}.
+
+@item preindex @var{bool}
+Enable this to have accurate chapter (PTT) markers and duration measurement,
+which requires a slow second pass read in order to index the chapter marker
+timestamps from NAV packets. This is non-ideal extra work for real optical drives.
+It is recommended and faster to use this option with a backup of the DVD structure
+stored on a hard drive. Not compatible with @option{pgc} and @option{pg}.
+Default is 0, false.
+
+@item trim @var{bool}
+Skip padding cells (i.e. cells shorter than 1 second) from the beginning.
+There exist many discs with filler segments at the beginning of the PGC,
+often with junk data intended for controlling a real DVD player's
+buffering speed and with no other material data value.
+Default is 1, true.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Open title 3 from a given DVD structure:
+@example
+ffmpeg -f dvdvideo -title 3 -i <path to DVD> ...
+@end example
+
+@item
+Open chapters 3-6 from title 1 from a given DVD structure:
+@example
+ffmpeg -f dvdvideo -chapter_start 3 -chapter_end 6 -title 1 -i <path to DVD> ...
+@end example
+
+@item
+Open only chapter 5 from title 1 from a given DVD structure:
+@example
+ffmpeg -f dvdvideo -chapter_start 5 -chapter_end 5 -title 1 -i <path to DVD> ...
+@end example
+@end itemize
+
 @section ea
 
 Electronic Arts Multimedia format demuxer.

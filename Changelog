@@ -29,6 +29,7 @@ version <next>:
   build environment if it lacks C17 support
 - Change the default bitrate control method from VBR to CQP for QSV encoders.
 - removed deprecated ffmpeg CLI options -psnr and -map_channel
+- DVD-Video demuxer, powered by libdvdnav and libdvdread
 
 version 6.1:
 - libaribcaption decoder

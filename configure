@@ -227,6 +227,8 @@ External library support:
   --enable-libdavs2        enable AVS2 decoding via libdavs2 [no]
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
+  --enable-libdvdnav       enable libdvdnav, needed for DVD demuxing [no]
+  --enable-libdvdread      enable libdvdread, needed for DVD demuxing [no]
   --enable-libfdk-aac      enable AAC de/encoding via libfdk-aac [no]
   --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfontconfig   enable libfontconfig, useful for drawtext filter [no]
@@ -1806,6 +1808,8 @@ EXTERNAL_LIBRARY_GPL_LIST="
     frei0r
     libcdio
     libdavs2
+    libdvdnav
+    libdvdread
     librubberband
     libvidstab
     libx264
@@ -3526,6 +3530,8 @@ dts_demuxer_select="dca_parser"
 dtshd_demuxer_select="dca_parser"
 dv_demuxer_select="dvprofile"
 dv_muxer_select="dvprofile"
+dvdvideo_demuxer_select="mpegps_demuxer"
+dvdvideo_demuxer_deps="libdvdnav libdvdread"
 dxa_demuxer_select="riffdec"
 eac3_demuxer_select="ac3_parser"
 evc_demuxer_select="evc_frame_merge_bsf evc_parser"
@@ -6775,6 +6781,8 @@ enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.5.0" "dav1d
 enabled libdavs2          && require_pkg_config libdavs2 "davs2 >= 1.6.0" davs2.h davs2_decoder_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdrm            && check_pkg_config libdrm libdrm xf86drm.h drmGetVersion
+enabled libdvdnav         && require_pkg_config libdvdnav "dvdnav >= 6.1.1" dvdnav/dvdnav.h dvdnav_open2
+enabled libdvdread        && require_pkg_config libdvdread "dvdread >= 6.1.2" dvdread/dvd_reader.h DVDOpen2 -ldvdread
 enabled libfdk_aac        && { check_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen ||
                                { require libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac &&
                                  warn "using libfdk without pkg-config"; } }
