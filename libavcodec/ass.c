@@ -183,8 +183,15 @@ void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,
 
         /* standard ASS escaping so random characters don't get mis-interpreted
          * as ASS */
-        } else if (!keep_ass_markup && strchr("{}\\", *p)) {
+        } else if (!keep_ass_markup && strchr("{}", *p)) {
             av_bprintf(buf, "\\%c", *p);
+
+        /* append word-joiner U+2060 as UTF-8 to break up sequences like \N */
+        } else if (!keep_ass_markup && *p == '\\') {
+            if (p_end - p <= 3 || strncmp(p + 1, "\xe2\x81\xa0", 3))
+                av_bprintf(buf, "\\\xe2\x81\xa0");
+            else
+                av_bprintf(buf, "\\");
 
         /* some packets might end abruptly (no \0 at the end, like for example
          * in some cases of demuxing from a classic video container), some
