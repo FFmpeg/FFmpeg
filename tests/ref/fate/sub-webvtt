@@ -21,7 +21,7 @@ Dialogue: 0,0:00:22.00,0:00:24.00,Default,,0,0,0,,at the AMNH.
 Dialogue: 0,0:00:24.00,0:00:26.00,Default,,0,0,0,,Thank you for walking down here.
 Dialogue: 0,0:00:27.00,0:00:30.00,Default,,0,0,0,,And I want to do a follow-up on the last conversation we did.\Nmultiple lines\Nagain
 Dialogue: 0,0:00:30.00,0:00:31.50,Default,,0,0,0,,When we e-mailed—
-Dialogue: 0,0:00:30.50,0:00:32.50,Default,,0,0,0,,Didn't we {\b1}talk {\i1}about\N{\i0} enough{\b0} in that conversation? \{I'm not an ASS comment\}
+Dialogue: 0,0:00:30.50,0:00:32.50,Default,,0,0,0,,Didn't we {\b1}talk {\i1}about\N{\i0} enough{\b0} in that conversation? \{{}I'm not an ASS comment}
 Dialogue: 0,0:00:32.00,0:00:35.50,Default,,0,0,0,,No! No no no no; 'cos 'cos obviously 'cos
 Dialogue: 0,0:00:32.50,0:00:33.50,Default,,0,0,0,,{\i1}Laughs{\i0}
 Dialogue: 0,0:00:35.50,0:00:38.00,Default,,0,0,0,,You know I'm so excited my glasses are falling off here.

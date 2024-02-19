@@ -181,10 +181,14 @@ void ff_ass_bprint_text_event(AVBPrint *buf, const char *p, int size,
         if (linebreaks && strchr(linebreaks, *p)) {
             av_bprintf(buf, "\\N");
 
-        /* standard ASS escaping so random characters don't get mis-interpreted
-         * as ASS */
-        } else if (!keep_ass_markup && strchr("{}", *p)) {
-            av_bprintf(buf, "\\%c", *p);
+        /* cancel curly brackets to avoid bogus override tag blocks
+         * hiding text. Standard ASS has no character escapes,
+         * though (only) libass provides \{ and \}.
+         * Unpaired closing brackets don't need escaping at all though and
+         * to make the situation less bad in standard ASS insert an empty block
+         */
+        } else if (!keep_ass_markup && *p == '{') {
+            av_bprintf(buf, "\\{{}");
 
         /* append word-joiner U+2060 as UTF-8 to break up sequences like \N */
         } else if (!keep_ass_markup && *p == '\\') {
