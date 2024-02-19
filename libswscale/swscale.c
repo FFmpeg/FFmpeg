@@ -1017,7 +1017,7 @@ static int scale_internal(SwsContext *c,
     reset_ptr(src2, c->srcFormat);
     reset_ptr((void*)dst2, c->dstFormat);
 
-    if (c->convert_unscaled && !c->lumConvertRange && !c->chrConvertRange) {
+    if (c->convert_unscaled) {
         int offset  = srcSliceY_internal;
         int slice_h = srcSliceH;
 
