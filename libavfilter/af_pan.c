@@ -399,6 +399,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     PanContext *pan = ctx->priv;
     swr_free(&pan->swr);
+    av_channel_layout_uninit(&pan->out_channel_layout);
 }
 
 #define OFFSET(x) offsetof(PanContext, x)
