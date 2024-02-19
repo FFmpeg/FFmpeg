@@ -138,10 +138,6 @@ static IAMFParamDefinition *add_param_definition(IAMFContext *iamf, AVIAMFParamD
 
     iamf->param_definitions = tmp;
 
-    param_definition = av_mallocz(sizeof(*param_definition));
-    if (!param_definition)
-        return NULL;
-
     if (audio_element)
         codec_config = iamf->codec_configs[audio_element->codec_config_id];
 
@@ -159,6 +155,10 @@ static IAMFParamDefinition *add_param_definition(IAMFContext *iamf, AVIAMFParamD
         if (!param->constant_subblock_duration)
             param->constant_subblock_duration = codec_config->nb_samples;
     }
+
+    param_definition = av_mallocz(sizeof(*param_definition));
+    if (!param_definition)
+        return NULL;
 
     param_definition->mode = !!param->duration;
     param_definition->param = param;
