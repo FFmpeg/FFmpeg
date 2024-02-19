@@ -125,8 +125,8 @@ fail:
     return ret;
 }
 
-static IAMFParamDefinition *add_param_definition(IAMFContext *iamf, AVIAMFParamDefinition *param,
-                                                 const IAMFAudioElement *audio_element, void *log_ctx)
+static int add_param_definition(IAMFContext *iamf, AVIAMFParamDefinition *param,
+                                const IAMFAudioElement *audio_element, void *log_ctx)
 {
     IAMFParamDefinition **tmp, *param_definition;
     IAMFCodecConfig *codec_config = NULL;
@@ -134,7 +134,7 @@ static IAMFParamDefinition *add_param_definition(IAMFContext *iamf, AVIAMFParamD
     tmp = av_realloc_array(iamf->param_definitions, iamf->nb_param_definitions + 1,
                            sizeof(*iamf->param_definitions));
     if (!tmp)
-        return NULL;
+        return AVERROR(ENOMEM);
 
     iamf->param_definitions = tmp;
 
@@ -145,7 +145,7 @@ static IAMFParamDefinition *add_param_definition(IAMFContext *iamf, AVIAMFParamD
         if (!codec_config) {
             av_log(log_ctx, AV_LOG_ERROR, "parameter_rate needed but not set for parameter_id %u\n",
                    param->parameter_id);
-            return NULL;
+            return AVERROR(EINVAL);
         }
         param->parameter_rate = codec_config->sample_rate;
     }
@@ -158,14 +158,14 @@ static IAMFParamDefinition *add_param_definition(IAMFContext *iamf, AVIAMFParamD
 
     param_definition = av_mallocz(sizeof(*param_definition));
     if (!param_definition)
-        return NULL;
+        return AVERROR(ENOMEM);
 
     param_definition->mode = !!param->duration;
     param_definition->param = param;
     param_definition->audio_element = audio_element;
     iamf->param_definitions[iamf->nb_param_definitions++] = param_definition;
 
-    return param_definition;
+    return 0;
 }
 
 int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void *log_ctx)
@@ -280,9 +280,9 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
         }
 
         if (!param_definition) {
-            param_definition = add_param_definition(iamf, param, audio_element, log_ctx);
-            if (!param_definition)
-                return AVERROR(ENOMEM);
+            ret = add_param_definition(iamf, param, audio_element, log_ctx);
+            if (ret < 0)
+                return ret;
         }
     }
     if (iamf_audio_element->recon_gain_info) {
@@ -295,9 +295,9 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
         }
 
         if (!param_definition) {
-            param_definition = add_param_definition(iamf, param, audio_element, log_ctx);
-            if (!param_definition)
-                return AVERROR(ENOMEM);
+            ret = add_param_definition(iamf, param, audio_element, log_ctx);
+            if (ret < 0)
+                return ret;
         }
     }
 
@@ -314,6 +314,7 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
 int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, void *log_ctx)
 {
     IAMFMixPresentation **tmp, *mix_presentation;
+    int ret;
 
     if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION)
         return AVERROR(EINVAL);
@@ -345,9 +346,9 @@ int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, vo
 
         param_definition = ff_iamf_get_param_definition(iamf, param->parameter_id);
         if (!param_definition) {
-            param_definition = add_param_definition(iamf, param, NULL, log_ctx);
-            if (!param_definition)
-                return AVERROR(ENOMEM);
+            ret = add_param_definition(iamf, param, NULL, log_ctx);
+            if (ret < 0)
+                return ret;
         }
 
         for (int j = 0; j < submix->nb_elements; j++) {
@@ -361,9 +362,9 @@ int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, vo
             }
             param_definition = ff_iamf_get_param_definition(iamf, param->parameter_id);
             if (!param_definition) {
-                param_definition = add_param_definition(iamf, param, NULL, log_ctx);
-                if (!param_definition)
-                    return AVERROR(ENOMEM);
+                ret = add_param_definition(iamf, param, NULL, log_ctx);
+                if (ret < 0)
+                    return ret;
             }
         }
     }
