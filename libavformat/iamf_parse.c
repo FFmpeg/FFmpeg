@@ -651,6 +651,7 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+    audio_element->celement = element;
 
     element->audio_element_type = audio_element_type;
 
@@ -809,6 +810,7 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+    mix_presentation->cmix = mix;
 
     mix_presentation->count_label = ffio_read_leb(pbc);
     mix_presentation->language_label = av_calloc(mix_presentation->count_label,

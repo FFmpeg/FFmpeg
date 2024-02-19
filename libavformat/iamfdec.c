@@ -232,7 +232,7 @@ static int parameter_block_obu(AVFormatContext *s, int len)
         case AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN: {
             AVIAMFReconGain *recon = subblock;
             const IAMFAudioElement *audio_element = param_definition->audio_element;
-            const AVIAMFAudioElement *element = audio_element->element;
+            const AVIAMFAudioElement *element = audio_element->celement;
 
             av_assert0(audio_element && element);
             for (int i = 0; i < element->nb_layers; i++) {
@@ -403,7 +403,9 @@ static int iamf_read_header(AVFormatContext *s)
 
         av_iamf_audio_element_free(&stg->params.iamf_audio_element);
         stg->id = audio_element->audio_element_id;
+        /* Transfer ownership */
         stg->params.iamf_audio_element = audio_element->element;
+        audio_element->element = NULL;
 
         for (int j = 0; j < audio_element->nb_substreams; j++) {
             IAMFSubStream *substream = &audio_element->substreams[j];
@@ -428,20 +430,22 @@ static int iamf_read_header(AVFormatContext *s)
     for (int i = 0; i < iamf->nb_mix_presentations; i++) {
         IAMFMixPresentation *mix_presentation = iamf->mix_presentations[i];
         AVStreamGroup *stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION, NULL);
-        const AVIAMFMixPresentation *mix = mix_presentation->mix;
+        const AVIAMFMixPresentation *mix = mix_presentation->cmix;
 
         if (!stg)
             return AVERROR(ENOMEM);
 
         av_iamf_mix_presentation_free(&stg->params.iamf_mix_presentation);
         stg->id = mix_presentation->mix_presentation_id;
+        /* Transfer ownership */
         stg->params.iamf_mix_presentation = mix_presentation->mix;
+        mix_presentation->mix = NULL;
 
         for (int j = 0; j < mix->nb_submixes; j++) {
-            AVIAMFSubmix *sub_mix = mix->submixes[j];
+            const AVIAMFSubmix *sub_mix = mix->submixes[j];
 
             for (int k = 0; k < sub_mix->nb_elements; k++) {
-                AVIAMFSubmixElement *submix_element = sub_mix->elements[k];
+                const AVIAMFSubmixElement *submix_element = sub_mix->elements[k];
                 AVStreamGroup *audio_element = NULL;
 
                 for (int l = 0; l < s->nb_stream_groups; l++)
@@ -467,16 +471,6 @@ static int iamf_read_header(AVFormatContext *s)
 static int iamf_read_close(AVFormatContext *s)
 {
     IAMFDemuxContext *const c = s->priv_data;
-    IAMFContext *const iamf = &c->iamf;
-
-    for (int i = 0; i < iamf->nb_audio_elements; i++) {
-        IAMFAudioElement *audio_element = iamf->audio_elements[i];
-        audio_element->element = NULL;
-    }
-    for (int i = 0; i < iamf->nb_mix_presentations; i++) {
-        IAMFMixPresentation *mix_presentation = iamf->mix_presentations[i];
-        mix_presentation->mix = NULL;
-    }
 
     ff_iamf_uninit_context(&c->iamf);
 

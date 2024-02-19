@@ -218,7 +218,7 @@ static int write_parameter_block(AVFormatContext *s, const AVIAMFParamDefinition
         }
         case AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN: {
             const AVIAMFReconGain *recon = subblock;
-            const AVIAMFAudioElement *audio_element = param_definition->audio_element->element;
+            const AVIAMFAudioElement *audio_element = param_definition->audio_element->celement;
 
             if (!param_definition->mode && param->constant_subblock_duration == 0)
                 ffio_write_leb(dyn_bc, recon->subblock_duration);
@@ -352,16 +352,6 @@ static void iamf_deinit(AVFormatContext *s)
 {
     IAMFMuxContext *const c = s->priv_data;
     IAMFContext *const iamf = &c->iamf;
-
-    for (int i = 0; i < iamf->nb_audio_elements; i++) {
-        IAMFAudioElement *audio_element = iamf->audio_elements[i];
-        audio_element->element = NULL;
-    }
-
-    for (int i = 0; i < iamf->nb_mix_presentations; i++) {
-        IAMFMixPresentation *mix_presentation = iamf->mix_presentations[i];
-        mix_presentation->mix = NULL;
-    }
 
     ff_iamf_uninit_context(iamf);
 

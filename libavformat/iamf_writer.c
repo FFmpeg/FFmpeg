@@ -234,7 +234,7 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
     if (!audio_element)
         return AVERROR(ENOMEM);
 
-    audio_element->element = stg->params.iamf_audio_element;
+    audio_element->celement = stg->params.iamf_audio_element;
     audio_element->audio_element_id = stg->id;
     audio_element->codec_config_id = ret;
 
@@ -329,11 +329,11 @@ int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, vo
     if (!mix_presentation)
         return AVERROR(ENOMEM);
 
-    mix_presentation->mix = stg->params.iamf_mix_presentation;
+    mix_presentation->cmix = stg->params.iamf_mix_presentation;
     mix_presentation->mix_presentation_id = stg->id;
 
-    for (int i = 0; i < mix_presentation->mix->nb_submixes; i++) {
-        const AVIAMFSubmix *submix = mix_presentation->mix->submixes[i];
+    for (int i = 0; i < mix_presentation->cmix->nb_submixes; i++) {
+        const AVIAMFSubmix *submix = mix_presentation->cmix->submixes[i];
         AVIAMFParamDefinition *param = submix->output_mix_config;
         IAMFParamDefinition *param_definition;
 
@@ -465,7 +465,7 @@ static inline int rescale_rational(AVRational q, int b)
 static int scalable_channel_layout_config(const IAMFAudioElement *audio_element,
                                           AVIOContext *dyn_bc)
 {
-    const AVIAMFAudioElement *element = audio_element->element;
+    const AVIAMFAudioElement *element = audio_element->celement;
     uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
     PutBitContext pb;
 
@@ -503,7 +503,7 @@ static int scalable_channel_layout_config(const IAMFAudioElement *audio_element,
 static int ambisonics_config(const IAMFAudioElement *audio_element,
                              AVIOContext *dyn_bc)
 {
-    const AVIAMFAudioElement *element = audio_element->element;
+    const AVIAMFAudioElement *element = audio_element->celement;
     AVIAMFLayer *layer = element->layers[0];
 
     ffio_write_leb(dyn_bc, 0); // ambisonics_mode
@@ -565,7 +565,7 @@ static int iamf_write_audio_element(const IAMFContext *iamf,
                                     const IAMFAudioElement *audio_element,
                                     AVIOContext *pb, void *log_ctx)
 {
-    const AVIAMFAudioElement *element = audio_element->element;
+    const AVIAMFAudioElement *element = audio_element->celement;
     const IAMFCodecConfig *codec_config = iamf->codec_configs[audio_element->codec_config_id];
     uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
     AVIOContext *dyn_bc;
@@ -669,7 +669,7 @@ static int iamf_write_mixing_presentation(const IAMFContext *iamf,
                                           AVIOContext *pb, void *log_ctx)
 {
     uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
-    const AVIAMFMixPresentation *mix = mix_presentation->mix;
+    const AVIAMFMixPresentation *mix = mix_presentation->cmix;
     const AVDictionaryEntry *tag = NULL;
     PutBitContext pbc;
     AVIOContext *dyn_bc;
