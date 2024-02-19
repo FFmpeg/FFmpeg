@@ -251,7 +251,6 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
         int nb_channels = iamf_audio_element->layers[i]->ch_layout.nb_channels;
 
         IAMFLayer *layer = &audio_element->layers[i];
-        memset(layer, 0, sizeof(*layer));
 
         if (i)
             nb_channels -= iamf_audio_element->layers[i - 1]->ch_layout.nb_channels;
