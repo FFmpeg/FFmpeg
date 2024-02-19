@@ -39,7 +39,7 @@ static const struct {
     {"<u>", "{\\u1}"}, {"</u>", "{\\u0}"},
     {"{", "\\{"}, {"}", "\\}"}, // escape to avoid ASS markup conflicts
     {"&gt;", ">"}, {"&lt;", "<"},
-    {"&lrm;", ""}, {"&rlm;", ""}, // FIXME: properly honor bidi marks
+    {"&lrm;", "\xe2\x80\x8e"}, {"&rlm;", "\xe2\x80\x8f"},
     {"&amp;", "&"}, {"&nbsp;", "\\h"},
 };
 
