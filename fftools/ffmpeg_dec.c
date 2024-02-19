@@ -110,9 +110,26 @@ void dec_free(Decoder **pdec)
     av_freep(pdec);
 }
 
-static int dec_alloc(DecoderPriv **pdec)
+static const char *dec_item_name(void *obj)
+{
+    const DecoderPriv *dp = obj;
+
+    return dp->log_name;
+}
+
+static const AVClass dec_class = {
+    .class_name                = "Decoder",
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .parent_log_context_offset = offsetof(DecoderPriv, log_parent),
+    .item_name                 = dec_item_name,
+};
+
+static void *decoder_thread(void *arg);
+
+static int dec_alloc(DecoderPriv **pdec, Scheduler *sch, int send_end_ts)
 {
     DecoderPriv *dp;
+    int ret = 0;
 
     *pdec = NULL;
 
@@ -128,17 +145,24 @@ static int dec_alloc(DecoderPriv **pdec)
     if (!dp->pkt)
         goto fail;
 
+    dp->dec.class                    = &dec_class;
     dp->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
     dp->last_frame_pts               = AV_NOPTS_VALUE;
     dp->last_frame_tb                = (AVRational){ 1, 1 };
     dp->hwaccel_pix_fmt              = AV_PIX_FMT_NONE;
+
+    ret = sch_add_dec(sch, decoder_thread, dp, send_end_ts);
+    if (ret < 0)
+        goto fail;
+    dp->sch     = sch;
+    dp->sch_idx = ret;
 
     *pdec = dp;
 
     return 0;
 fail:
     dec_free((Decoder**)&dp);
-    return AVERROR(ENOMEM);
+    return ret >= 0 ? AVERROR(ENOMEM) : ret;
 }
 
 static AVRational audio_samplerate_update(DecoderPriv *dp,
@@ -1042,20 +1066,6 @@ static int hw_device_setup_for_decode(DecoderPriv *dp,
     return 0;
 }
 
-static const char *dec_item_name(void *obj)
-{
-    const DecoderPriv *dp = obj;
-
-    return dp->log_name;
-}
-
-static const AVClass dec_class = {
-    .class_name                = "Decoder",
-    .version                   = LIBAVUTIL_VERSION_INT,
-    .parent_log_context_offset = offsetof(DecoderPriv, log_parent),
-    .item_name                 = dec_item_name,
-};
-
 int dec_open(Decoder **pdec, Scheduler *sch,
              AVDictionary **dec_opts, const DecoderOpts *o)
 {
@@ -1065,18 +1075,11 @@ int dec_open(Decoder **pdec, Scheduler *sch,
 
     *pdec = NULL;
 
-    ret = dec_alloc(&dp);
+    ret = dec_alloc(&dp, sch, !!(o->flags & DECODER_FLAG_SEND_END_TS));
     if (ret < 0)
         return ret;
-
-    ret = sch_add_dec(sch, decoder_thread, dp, o->flags & DECODER_FLAG_SEND_END_TS);
-    if (ret < 0)
-        return ret;
-    dp->sch     = sch;
-    dp->sch_idx = ret;
 
     dp->flags      = o->flags;
-    dp->dec.class  = &dec_class;
     dp->log_parent = o->log_parent;
 
     dp->framerate_in            = o->framerate;
