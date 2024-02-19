@@ -223,19 +223,19 @@ static int cbs_vp8_read_unsigned_le(CodedBitstreamContext *ctx, GetBitContext *g
 #define SUBSCRIPTS(subs, ...) \
     (subs > 0 ? ((int[subs + 1]){subs, __VA_ARGS__}) : NULL)
 
-#define f(width, name) xf(width, name, 0)
+#define f(width, name) xf(width, name, 0, )
 
 // bool [de|en]coder methods.
-#define bc_f(width, name) bc_unsigned_subs(width, DEFAULT_PROB, true, name, 0)
-#define bc_s(width, name) bc_signed_subs(width, DEFAULT_PROB, name, 0)
+#define bc_f(width, name) bc_unsigned_subs(width, DEFAULT_PROB, true, name, 0, )
+#define bc_s(width, name) bc_signed_subs(width, DEFAULT_PROB, name, 0, )
 #define bc_fs(width, name, subs, ...) \
     bc_unsigned_subs(width, DEFAULT_PROB, true, name, subs, __VA_ARGS__)
 #define bc_ss(width, name, subs, ...) \
     bc_signed_subs(width, DEFAULT_PROB, name, subs, __VA_ARGS__)
 
 // bool [de|en]coder methods for boolean value and disable tracing.
-#define bc_b(name) bc_unsigned_subs(1, DEFAULT_PROB, false, name, 0)
-#define bc_b_prob(prob, name) bc_unsigned_subs(1, prob, false, name, 0)
+#define bc_b(name) bc_unsigned_subs(1, DEFAULT_PROB, false, name, 0, )
+#define bc_b_prob(prob, name) bc_unsigned_subs(1, prob, false, name, 0, )
 
 #define READ
 #define READWRITE read
