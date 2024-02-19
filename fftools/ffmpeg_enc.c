@@ -93,7 +93,6 @@ static int hw_device_setup_for_encode(OutputStream *ost, AVBufferRef *frames_ref
 {
     const AVCodecHWConfig *config;
     HWDevice *dev = NULL;
-    int i;
 
     if (frames_ref &&
         ((AVHWFramesContext*)frames_ref->data)->format ==
@@ -103,7 +102,7 @@ static int hw_device_setup_for_encode(OutputStream *ost, AVBufferRef *frames_ref
         frames_ref = NULL;
     }
 
-    for (i = 0;; i++) {
+    for (int i = 0;; i++) {
         config = avcodec_get_hw_config(ost->enc_ctx->codec, i);
         if (!config)
             break;
@@ -353,8 +352,7 @@ int enc_open(void *opaque, const AVFrame *frame)
      * global side data.
      */
     if (ist) {
-        int i;
-        for (i = 0; i < ist->st->codecpar->nb_coded_side_data; i++) {
+        for (int i = 0; i < ist->st->codecpar->nb_coded_side_data; i++) {
             AVPacketSideData *sd_src = &ist->st->codecpar->coded_side_data[i];
             if (sd_src->type != AV_PKT_DATA_CPB_PROPERTIES) {
                 AVPacketSideData *sd_dst = av_packet_side_data_new(&ost->par_in->coded_side_data,

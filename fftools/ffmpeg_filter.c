@@ -330,7 +330,7 @@ static void sub2video_update(InputFilterPriv *ifp, int64_t heartbeat_pts,
     AVFrame *frame = ifp->sub2video.frame;
     int8_t *dst;
     int     dst_linesize;
-    int num_rects, i;
+    int num_rects;
     int64_t pts, end_pts;
 
     if (sub) {
@@ -356,7 +356,7 @@ static void sub2video_update(InputFilterPriv *ifp, int64_t heartbeat_pts,
     }
     dst          = frame->data    [0];
     dst_linesize = frame->linesize[0];
-    for (i = 0; i < num_rects; i++)
+    for (int i = 0; i < num_rects; i++)
         sub2video_copy_rect(dst, dst_linesize, frame->width, frame->height, sub->rects[i]);
     sub2video_push_ref(ifp, pts);
     ifp->sub2video.end_pts = end_pts;
@@ -617,8 +617,7 @@ fail:
 // Filters can be configured only if the formats of all inputs are known.
 static int ifilter_has_all_input_formats(FilterGraph *fg)
 {
-    int i;
-    for (i = 0; i < fg->nb_inputs; i++) {
+    for (int i = 0; i < fg->nb_inputs; i++) {
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         if (ifp->format < 0)
             return 0;
@@ -1368,10 +1367,9 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
 #if FFMPEG_OPT_MAP_CHANNEL
     if (ost->audio_channels_mapped) {
         AVChannelLayout mapped_layout = { 0 };
-        int i;
         av_channel_layout_default(&mapped_layout, ost->audio_channels_mapped);
         av_channel_layout_describe_bprint(&mapped_layout, &args);
-        for (i = 0; i < ost->audio_channels_mapped; i++)
+        for (int i = 0; i < ost->audio_channels_mapped; i++)
             if (ost->audio_channels_map[i] != -1)
                 av_bprintf(&args, "|c%d=c%d", i, ost->audio_channels_map[i]);
 
@@ -1450,8 +1448,7 @@ static int configure_output_filter(FilterGraph *fg, AVFilterGraph *graph,
 
 int check_filter_outputs(void)
 {
-    int i;
-    for (i = 0; i < nb_filtergraphs; i++) {
+    for (int i = 0; i < nb_filtergraphs; i++) {
         int n;
         for (n = 0; n < filtergraphs[i]->nb_outputs; n++) {
             OutputFilter *output = filtergraphs[i]->outputs[n];
@@ -1636,10 +1633,9 @@ static int configure_input_filter(FilterGraph *fg, AVFilterGraph *graph,
 
 static void cleanup_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
 {
-    int i;
-    for (i = 0; i < fg->nb_outputs; i++)
+    for (int i = 0; i < fg->nb_outputs; i++)
         ofp_from_ofilter(fg->outputs[i])->filter = NULL;
-    for (i = 0; i < fg->nb_inputs; i++)
+    for (int i = 0; i < fg->nb_inputs; i++)
         ifp_from_ifilter(fg->inputs[i])->filter = NULL;
     avfilter_graph_free(&fgt->graph);
 }
@@ -1749,7 +1745,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
 
     /* limit the lists of allowed formats to the ones selected, to
      * make sure they stay the same if the filtergraph is reconfigured later */
-    for (i = 0; i < fg->nb_outputs; i++) {
+    for (int i = 0; i < fg->nb_outputs; i++) {
         OutputFilter *ofilter = fg->outputs[i];
         OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
         AVFilterContext *sink = ofp->filter;
@@ -1778,7 +1774,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
             goto fail;
     }
 
-    for (i = 0; i < fg->nb_inputs; i++) {
+    for (int i = 0; i < fg->nb_inputs; i++) {
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         AVFrame *tmp;
         while (av_fifo_read(ifp->frame_queue, &tmp, 1) >= 0) {
@@ -1794,7 +1790,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
     }
 
     /* send the EOFs for the finished inputs */
-    for (i = 0; i < fg->nb_inputs; i++) {
+    for (int i = 0; i < fg->nb_inputs; i++) {
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         if (fgt->eof_in[i]) {
             ret = av_buffersrc_add_frame(ifp->filter, NULL);

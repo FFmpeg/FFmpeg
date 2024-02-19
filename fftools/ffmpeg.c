@@ -325,21 +325,19 @@ const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
 static void ffmpeg_cleanup(int ret)
 {
-    int i;
-
     if (do_benchmark) {
         int maxrss = getmaxrss() / 1024;
         av_log(NULL, AV_LOG_INFO, "bench: maxrss=%iKiB\n", maxrss);
     }
 
-    for (i = 0; i < nb_filtergraphs; i++)
+    for (int i = 0; i < nb_filtergraphs; i++)
         fg_free(&filtergraphs[i]);
     av_freep(&filtergraphs);
 
-    for (i = 0; i < nb_output_files; i++)
+    for (int i = 0; i < nb_output_files; i++)
         of_free(&output_files[i]);
 
-    for (i = 0; i < nb_input_files; i++)
+    for (int i = 0; i < nb_input_files; i++)
         ifile_close(&input_files[i]);
 
     if (vstats_file) {
@@ -792,7 +790,7 @@ static int check_keyboard_interaction(int64_t cur_time)
  */
 static int transcode(Scheduler *sch)
 {
-    int ret = 0, i;
+    int ret = 0;
     int64_t timer_start, transcode_ts = 0;
 
     print_stream_maps();
@@ -824,7 +822,7 @@ static int transcode(Scheduler *sch)
     ret = sch_stop(sch, &transcode_ts);
 
     /* write the trailer if needed */
-    for (i = 0; i < nb_output_files; i++) {
+    for (int i = 0; i < nb_output_files; i++) {
         int err = of_write_trailer(output_files[i]);
         ret = err_merge(ret, err);
     }

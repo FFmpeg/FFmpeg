@@ -506,7 +506,6 @@ int print_sdp(const char *filename);
 int print_sdp(const char *filename)
 {
     char sdp[16384];
-    int i;
     int j, ret;
     AVIOContext *sdp_pb;
     AVFormatContext **avc;
@@ -514,7 +513,7 @@ int print_sdp(const char *filename)
     avc = av_malloc_array(nb_output_files, sizeof(*avc));
     if (!avc)
         return AVERROR(ENOMEM);
-    for (i = 0, j = 0; i < nb_output_files; i++) {
+    for (int i = 0, j = 0; i < nb_output_files; i++) {
         if (!strcmp(output_files[i]->format->name, "rtp")) {
             avc[j] = mux_from_of(output_files[i])->fc;
             j++;

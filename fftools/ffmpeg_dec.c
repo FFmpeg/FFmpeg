@@ -871,14 +871,13 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
     for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(*p);
         const AVCodecHWConfig  *config = NULL;
-        int i;
 
         if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL))
             break;
 
         if (dp->hwaccel_id == HWACCEL_GENERIC ||
             dp->hwaccel_id == HWACCEL_AUTO) {
-            for (i = 0;; i++) {
+            for (int i = 0;; i++) {
                 config = avcodec_get_hw_config(s->codec, i);
                 if (!config)
                     break;
@@ -902,8 +901,7 @@ static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
 {
     const AVCodecHWConfig *config;
     HWDevice *dev;
-    int i;
-    for (i = 0;; i++) {
+    for (int i = 0;; i++) {
         config = avcodec_get_hw_config(codec, i);
         if (!config)
             return NULL;
@@ -981,12 +979,11 @@ static int hw_device_setup_for_decode(DecoderPriv *dp,
     }
 
     if (auto_device) {
-        int i;
         if (!avcodec_get_hw_config(codec, 0)) {
             // Decoder does not support any hardware devices.
             return 0;
         }
-        for (i = 0; !dev; i++) {
+        for (int i = 0; !dev; i++) {
             config = avcodec_get_hw_config(codec, i);
             if (!config)
                 break;
@@ -998,7 +995,7 @@ static int hw_device_setup_for_decode(DecoderPriv *dp,
                        av_hwdevice_get_type_name(type), dev->name);
             }
         }
-        for (i = 0; !dev; i++) {
+        for (int i = 0; !dev; i++) {
             config = avcodec_get_hw_config(codec, i);
             if (!config)
                 break;

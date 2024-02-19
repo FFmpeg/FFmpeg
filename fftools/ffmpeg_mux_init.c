@@ -485,9 +485,8 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
 
 static int parse_matrix_coeffs(void *logctx, uint16_t *dest, const char *str)
 {
-    int i;
     const char *p = str;
-    for (i = 0;; i++) {
+    for (int i = 0;; i++) {
         dest[i] = atoi(p);
         if (i == 63)
             break;
@@ -1108,7 +1107,6 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     const char *bsfs = NULL, *time_base = NULL;
     char *filters = NULL, *next, *codec_tag = NULL;
     double qscale = -1;
-    int i;
 
     st = avformat_new_stream(oc, NULL);
     if (!st)
@@ -1350,7 +1348,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     ms->max_frames = INT64_MAX;
     MATCH_PER_STREAM_OPT(max_frames, i64, ms->max_frames, oc, st);
-    for (i = 0; i < o->max_frames.nb_opt; i++) {
+    for (int i = 0; i < o->max_frames.nb_opt; i++) {
         char *p = o->max_frames.opt[i].specifier;
         if (!*p && type != AVMEDIA_TYPE_VIDEO) {
             av_log(ost, AV_LOG_WARNING, "Applying unspecific -frames to non video streams, maybe you meant -vframes ?\n");
@@ -2541,14 +2539,13 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, AVFormatContext *o
 {
     AVFormatContext *is = ifile->ctx;
     AVChapter **tmp;
-    int i;
 
     tmp = av_realloc_f(os->chapters, is->nb_chapters + os->nb_chapters, sizeof(*os->chapters));
     if (!tmp)
         return AVERROR(ENOMEM);
     os->chapters = tmp;
 
-    for (i = 0; i < is->nb_chapters; i++) {
+    for (int i = 0; i < is->nb_chapters; i++) {
         AVChapter *in_ch = is->chapters[i], *out_ch;
         int64_t start_time = (ofile->start_time == AV_NOPTS_VALUE) ? 0 : ofile->start_time;
         int64_t ts_off   = av_rescale_q(start_time - ifile->ts_offset,
