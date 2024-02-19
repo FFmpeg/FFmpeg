@@ -745,6 +745,17 @@ fail:
     return err;
 }
 
+int ff_hw_base_encode_free(FFHWBaseEncodePicture *pic)
+{
+    av_frame_free(&pic->input_image);
+    av_frame_free(&pic->recon_image);
+
+    av_buffer_unref(&pic->opaque_ref);
+    av_freep(&pic->priv_data);
+
+    return 0;
+}
+
 int ff_hw_base_encode_init(AVCodecContext *avctx)
 {
     FFHWBaseEncodeContext *ctx = avctx->priv_data;

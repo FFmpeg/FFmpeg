@@ -224,6 +224,8 @@ int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32
 
 int ff_hw_base_get_recon_format(AVCodecContext *avctx, const void *hwconfig, enum AVPixelFormat *fmt);
 
+int ff_hw_base_encode_free(FFHWBaseEncodePicture *pic);
+
 int ff_hw_base_encode_init(AVCodecContext *avctx);
 
 int ff_hw_base_encode_close(AVCodecContext *avctx);

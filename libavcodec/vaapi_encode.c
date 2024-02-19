@@ -878,17 +878,13 @@ static int vaapi_encode_free(AVCodecContext *avctx,
             av_freep(&pic->slices[i].codec_slice_params);
     }
 
-    av_frame_free(&base_pic->input_image);
-    av_frame_free(&base_pic->recon_image);
-
-    av_buffer_unref(&base_pic->opaque_ref);
+    ff_hw_base_encode_free(base_pic);
 
     av_freep(&pic->param_buffers);
     av_freep(&pic->slices);
     // Output buffer should already be destroyed.
     av_assert0(pic->output_buffer == VA_INVALID_ID);
 
-    av_freep(&base_pic->priv_data);
     av_freep(&pic->codec_picture_params);
     av_freep(&pic->roi);
 
