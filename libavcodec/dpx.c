@@ -287,19 +287,21 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         tc = av_bswap32(read32(&buf, endian));
 
         if (i != 0xFFFFFFFF) {
-            AVFrameSideData *tcside =
-                av_frame_new_side_data(p, AV_FRAME_DATA_S12M_TIMECODE,
-                                       sizeof(uint32_t) * 4);
-            if (!tcside)
-                return AVERROR(ENOMEM);
+            AVFrameSideData *tcside;
+            ret = ff_frame_new_side_data(avctx, p, AV_FRAME_DATA_S12M_TIMECODE,
+                                         sizeof(uint32_t) * 4, &tcside);
+            if (ret < 0)
+                return ret;
 
-            tc_sd = (uint32_t*)tcside->data;
-            tc_sd[0] = 1;
-            tc_sd[1] = tc;
+            if (tcside) {
+                tc_sd = (uint32_t*)tcside->data;
+                tc_sd[0] = 1;
+                tc_sd[1] = tc;
 
-            av_timecode_make_smpte_tc_string2(tcbuf, avctx->framerate,
-                                              tc_sd[1], 0, 0);
-            av_dict_set(&p->metadata, "timecode", tcbuf, 0);
+                av_timecode_make_smpte_tc_string2(tcbuf, avctx->framerate,
+                                                  tc_sd[1], 0, 0);
+                av_dict_set(&p->metadata, "timecode", tcbuf, 0);
+            }
         }
     }
 
