@@ -167,6 +167,8 @@ struct MpegTSContext {
     int merge_pmt_versions;
     int max_packet_size;
 
+    int id;
+
     /******************************************/
     /* private mpegts data */
     /* scan context */
@@ -184,7 +186,12 @@ struct MpegTSContext {
 };
 
 #define MPEGTS_OPTIONS \
-    { "resync_size",   "set size limit for looking up a new synchronization", offsetof(MpegTSContext, resync_size), AV_OPT_TYPE_INT,  { .i64 =  MAX_RESYNC_SIZE}, 0, INT_MAX,  AV_OPT_FLAG_DECODING_PARAM }
+    { "resync_size",   "set size limit for looking up a new synchronization",  \
+        offsetof(MpegTSContext, resync_size), AV_OPT_TYPE_INT,                 \
+        { .i64 =  MAX_RESYNC_SIZE}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },  \
+    { "ts_id", "transport stream id",                                          \
+        offsetof(MpegTSContext, id), AV_OPT_TYPE_INT,                          \
+        { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY }
 
 static const AVOption options[] = {
     MPEGTS_OPTIONS,
@@ -2554,7 +2561,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     if (skip_identical(h, tssf))
         return;
-    ts->stream->ts_id = h->id;
+    ts->stream->ts_id = ts->id = h->id;
 
     for (;;) {
         sid = get16(&p, p_end);
