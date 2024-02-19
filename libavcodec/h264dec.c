@@ -125,16 +125,16 @@ void ff_h264_draw_horiz_band(const H264Context *h, H264SliceContext *sl,
     desc   = av_pix_fmt_desc_get(avctx->pix_fmt);
     vshift = desc->log2_chroma_h;
 
-        offset[0] = y * src->linesize[0];
-        offset[1] =
-        offset[2] = (y >> vshift) * src->linesize[1];
-        for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
-            offset[i] = 0;
+    offset[0] = y * src->linesize[0];
+    offset[1] =
+    offset[2] = (y >> vshift) * src->linesize[1];
+    for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
+        offset[i] = 0;
 
-        emms_c();
+    emms_c();
 
-        avctx->draw_horiz_band(avctx, src, offset,
-                               y, h->picture_structure, height);
+    avctx->draw_horiz_band(avctx, src, offset,
+                           y, h->picture_structure, height);
 }
 
 void ff_h264_free_tables(H264Context *h)
