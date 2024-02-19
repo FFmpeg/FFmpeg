@@ -2561,7 +2561,7 @@ static void pat_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     if (skip_identical(h, tssf))
         return;
-    ts->stream->ts_id = ts->id = h->id;
+    ts->id = h->id;
 
     for (;;) {
         sid = get16(&p, p_end);
