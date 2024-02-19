@@ -1325,6 +1325,39 @@ typedef struct AVFormatContext {
     AVStream **streams;
 
     /**
+     * Number of elements in AVFormatContext.stream_groups.
+     *
+     * Set by avformat_stream_group_create(), must not be modified by any other code.
+     */
+    unsigned int nb_stream_groups;
+    /**
+     * A list of all stream groups in the file. New groups are created with
+     * avformat_stream_group_create(), and filled with avformat_stream_group_add_stream().
+     *
+     * - demuxing: groups may be created by libavformat in avformat_open_input().
+     *             If AVFMTCTX_NOHEADER is set in ctx_flags, then new groups may also
+     *             appear in av_read_frame().
+     * - muxing: groups may be created by the user before avformat_write_header().
+     *
+     * Freed by libavformat in avformat_free_context().
+     */
+    AVStreamGroup **stream_groups;
+
+    /**
+     * Number of chapters in AVChapter array.
+     * When muxing, chapters are normally written in the file header,
+     * so nb_chapters should normally be initialized before write_header
+     * is called. Some muxers (e.g. mov and mkv) can also write chapters
+     * in the trailer.  To write chapters in the trailer, nb_chapters
+     * must be zero when write_header is called and non-zero when
+     * write_trailer is called.
+     * - muxing: set by user
+     * - demuxing: set by libavformat
+     */
+    unsigned int nb_chapters;
+    AVChapter **chapters;
+
+    /**
      * input or output URL. Unlike the old filename field, this field has no
      * length restriction.
      *
@@ -1443,36 +1476,10 @@ typedef struct AVFormatContext {
     enum AVCodecID subtitle_codec_id;
 
     /**
-     * Maximum amount of memory in bytes to use for the index of each stream.
-     * If the index exceeds this size, entries will be discarded as
-     * needed to maintain a smaller size. This can lead to slower or less
-     * accurate seeking (depends on demuxer).
-     * Demuxers for which a full in-memory index is mandatory will ignore
-     * this.
-     * - muxing: unused
-     * - demuxing: set by user
+     * Forced Data codec_id.
+     * Demuxing: Set by user.
      */
-    unsigned int max_index_size;
-
-    /**
-     * Maximum amount of memory in bytes to use for buffering frames
-     * obtained from realtime capture devices.
-     */
-    unsigned int max_picture_buffer;
-
-    /**
-     * Number of chapters in AVChapter array.
-     * When muxing, chapters are normally written in the file header,
-     * so nb_chapters should normally be initialized before write_header
-     * is called. Some muxers (e.g. mov and mkv) can also write chapters
-     * in the trailer.  To write chapters in the trailer, nb_chapters
-     * must be zero when write_header is called and non-zero when
-     * write_trailer is called.
-     * - muxing: set by user
-     * - demuxing: set by libavformat
-     */
-    unsigned int nb_chapters;
-    AVChapter **chapters;
+    enum AVCodecID data_codec_id;
 
     /**
      * Metadata that applies to the whole file.
@@ -1529,6 +1536,31 @@ typedef struct AVFormatContext {
 #define FF_FDEBUG_TS        0x0001
 
     /**
+     * The maximum number of streams.
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    int max_streams;
+
+    /**
+     * Maximum amount of memory in bytes to use for the index of each stream.
+     * If the index exceeds this size, entries will be discarded as
+     * needed to maintain a smaller size. This can lead to slower or less
+     * accurate seeking (depends on demuxer).
+     * Demuxers for which a full in-memory index is mandatory will ignore
+     * this.
+     * - muxing: unused
+     * - demuxing: set by user
+     */
+    unsigned int max_index_size;
+
+    /**
+     * Maximum amount of memory in bytes to use for buffering frames
+     * obtained from realtime capture devices.
+     */
+    unsigned int max_picture_buffer;
+
+    /**
      * Maximum buffering duration for interleaving.
      *
      * To ensure all the streams are interleaved correctly,
@@ -1545,6 +1577,35 @@ typedef struct AVFormatContext {
      * Muxing only, set by the caller before avformat_write_header().
      */
     int64_t max_interleave_delta;
+
+    /**
+     * Maximum number of packets to read while waiting for the first timestamp.
+     * Decoding only.
+     */
+    int max_ts_probe;
+
+    /**
+     * Max chunk time in microseconds.
+     * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    int max_chunk_duration;
+
+    /**
+     * Max chunk size in bytes
+     * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+     * - encoding: Set by user
+     * - decoding: unused
+     */
+    int max_chunk_size;
+
+    /**
+     * Maximum number of packets that can be probed
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    int max_probe_packets;
 
     /**
      * Allow non-standard and experimental extension
@@ -1572,11 +1633,6 @@ typedef struct AVFormatContext {
  */
 #define AVFMT_EVENT_FLAG_METADATA_UPDATED 0x0001
 
-    /**
-     * Maximum number of packets to read while waiting for the first timestamp.
-     * Decoding only.
-     */
-    int max_ts_probe;
 
     /**
      * Avoid negative timestamps during muxing.
@@ -1600,28 +1656,19 @@ typedef struct AVFormatContext {
     int audio_preload;
 
     /**
-     * Max chunk time in microseconds.
-     * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    int max_chunk_duration;
-
-    /**
-     * Max chunk size in bytes
-     * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
-     * - encoding: Set by user
-     * - decoding: unused
-     */
-    int max_chunk_size;
-
-    /**
      * forces the use of wallclock timestamps as pts/dts of packets
      * This has undefined results in the presence of B frames.
      * - encoding: unused
      * - decoding: Set by user
      */
     int use_wallclock_as_timestamps;
+
+    /**
+     * Skip duration calcuation in estimate_timings_from_pts.
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    int skip_estimate_duration_from_pts;
 
     /**
      * avio flags, used to force AVIO_FLAG_DIRECT.
@@ -1703,6 +1750,20 @@ typedef struct AVFormatContext {
     char *format_whitelist;
 
     /**
+     * ',' separated list of allowed protocols.
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    char *protocol_whitelist;
+
+    /**
+     * ',' separated list of disallowed protocols.
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    char *protocol_blacklist;
+
+    /**
      * IO repositioned flag.
      * This is set by avformat when the underlaying IO context read pointer
      * is repositioned, for example when doing byte based seeking.
@@ -1775,19 +1836,6 @@ typedef struct AVFormatContext {
     uint8_t *dump_separator;
 
     /**
-     * Forced Data codec_id.
-     * Demuxing: Set by user.
-     */
-    enum AVCodecID data_codec_id;
-
-    /**
-     * ',' separated list of allowed protocols.
-     * - encoding: unused
-     * - decoding: set by user
-     */
-    char *protocol_whitelist;
-
-    /**
      * A callback for opening new IO streams.
      *
      * Whenever a muxer or a demuxer needs to open an IO stream (typically from
@@ -1811,34 +1859,6 @@ typedef struct AVFormatContext {
                    int flags, AVDictionary **options);
 
     /**
-     * ',' separated list of disallowed protocols.
-     * - encoding: unused
-     * - decoding: set by user
-     */
-    char *protocol_blacklist;
-
-    /**
-     * The maximum number of streams.
-     * - encoding: unused
-     * - decoding: set by user
-     */
-    int max_streams;
-
-    /**
-     * Skip duration calcuation in estimate_timings_from_pts.
-     * - encoding: unused
-     * - decoding: set by user
-     */
-    int skip_estimate_duration_from_pts;
-
-    /**
-     * Maximum number of packets that can be probed
-     * - encoding: unused
-     * - decoding: set by user
-     */
-    int max_probe_packets;
-
-    /**
      * A callback for closing the streams opened with AVFormatContext.io_open().
      *
      * Using this is preferred over io_close, because this can return an error.
@@ -1850,26 +1870,6 @@ typedef struct AVFormatContext {
      * @return 0 on success, a negative AVERROR code on failure
      */
     int (*io_close2)(struct AVFormatContext *s, AVIOContext *pb);
-
-    /**
-     * Number of elements in AVFormatContext.stream_groups.
-     *
-     * Set by avformat_stream_group_create(), must not be modified by any other code.
-     */
-    unsigned int nb_stream_groups;
-
-    /**
-     * A list of all stream groups in the file. New groups are created with
-     * avformat_stream_group_create(), and filled with avformat_stream_group_add_stream().
-     *
-     * - demuxing: groups may be created by libavformat in avformat_open_input().
-     *             If AVFMTCTX_NOHEADER is set in ctx_flags, then new groups may also
-     *             appear in av_read_frame().
-     * - muxing: groups may be created by the user before avformat_write_header().
-     *
-     * Freed by libavformat in avformat_free_context().
-     */
-    AVStreamGroup **stream_groups;
 } AVFormatContext;
 
 /**
