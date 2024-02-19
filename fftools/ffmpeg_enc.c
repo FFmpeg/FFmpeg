@@ -49,6 +49,7 @@ struct Encoder {
     uint64_t packets_encoded;
 
     int opened;
+    int attach_par;
 
     Scheduler      *sch;
     unsigned        sch_idx;
@@ -693,6 +694,18 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
             return AVERROR(ENOMEM);
         fd->wallclock[LATENCY_PROBE_ENC_POST] = av_gettime_relative();
 
+        // attach stream parameters to first packet if requested
+        avcodec_parameters_free(&fd->par_enc);
+        if (e->attach_par && !e->packets_encoded) {
+            fd->par_enc = avcodec_parameters_alloc();
+            if (!fd->par_enc)
+                return AVERROR(ENOMEM);
+
+            ret = avcodec_parameters_from_context(fd->par_enc, enc);
+            if (ret < 0)
+                return ret;
+        }
+
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             ret = update_video_stats(ost, pkt, !!vstats_filename);
             if (ret < 0)
@@ -928,4 +941,10 @@ finish:
     enc_thread_uninit(&et);
 
     return ret;
+}
+
+int enc_loopback(Encoder *enc)
+{
+    enc->attach_par = 1;
+    return enc->sch_idx;
 }

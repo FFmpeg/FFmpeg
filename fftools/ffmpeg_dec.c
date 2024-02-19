@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/error.h"
 #include "libavutil/log.h"
@@ -71,9 +72,16 @@ typedef struct DecoderPriv {
     Scheduler          *sch;
     unsigned            sch_idx;
 
+    // this decoder's index in decoders or -1
+    int                 index;
     void               *log_parent;
     char                log_name[32];
     char               *parent_name;
+
+    struct {
+        AVDictionary       *opts;
+        const AVCodec      *codec;
+    } standalone_init;
 } DecoderPriv;
 
 static DecoderPriv *dp_from_dec(Decoder *d)
@@ -100,6 +108,8 @@ void dec_free(Decoder **pdec)
 
     av_frame_free(&dp->frame);
     av_packet_free(&dp->pkt);
+
+    av_dict_free(&dp->standalone_init.opts);
 
     for (int i = 0; i < FF_ARRAY_ELEMS(dp->sub_prev); i++)
         av_frame_free(&dp->sub_prev[i]);
@@ -145,6 +155,7 @@ static int dec_alloc(DecoderPriv **pdec, Scheduler *sch, int send_end_ts)
     if (!dp->pkt)
         goto fail;
 
+    dp->index                        = -1;
     dp->dec.class                    = &dec_class;
     dp->last_filter_in_rescale_delta = AV_NOPTS_VALUE;
     dp->last_frame_pts               = AV_NOPTS_VALUE;
@@ -754,11 +765,56 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
     }
 }
 
+static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
+                    const DecoderOpts *o, AVFrame *param_out);
+
+static int dec_standalone_open(DecoderPriv *dp, const AVPacket *pkt)
+{
+    DecoderOpts o;
+    const FrameData *fd;
+    char name[16];
+
+    if (!pkt->opaque_ref)
+        return AVERROR_BUG;
+    fd = (FrameData *)pkt->opaque_ref->data;
+
+    if (!fd->par_enc)
+        return AVERROR_BUG;
+
+    memset(&o, 0, sizeof(o));
+
+    o.par       = fd->par_enc;
+    o.time_base = pkt->time_base;
+
+    o.codec = dp->standalone_init.codec;
+    if (!o.codec)
+        o.codec = avcodec_find_decoder(o.par->codec_id);
+    if (!o.codec) {
+        const AVCodecDescriptor *desc = avcodec_descriptor_get(o.par->codec_id);
+
+        av_log(dp, AV_LOG_ERROR, "Cannot find a decoder for codec ID '%s'\n",
+               desc ? desc->name : "?");
+        return AVERROR_DECODER_NOT_FOUND;
+    }
+
+    snprintf(name, sizeof(name), "dec%d", dp->index);
+    o.name = name;
+
+    return dec_open(dp, &dp->standalone_init.opts, &o, NULL);
+}
+
 static void dec_thread_set_name(const DecoderPriv *dp)
 {
-    char name[16];
-    snprintf(name, sizeof(name), "dec%s:%s", dp->parent_name,
-             dp->dec_ctx->codec->name);
+    char name[16] = "dec";
+
+    if (dp->index >= 0)
+        av_strlcatf(name, sizeof(name), "%d", dp->index);
+    else if (dp->parent_name)
+        av_strlcat(name, dp->parent_name, sizeof(name));
+
+    if (dp->dec_ctx)
+        av_strlcatf(name, sizeof(name), ":%s", dp->dec_ctx->codec->name);
+
     ff_thread_setname(name);
 }
 
@@ -813,6 +869,22 @@ static int decoder_thread(void *arg)
         if (!have_data)
             av_log(dp, AV_LOG_VERBOSE, "Decoder thread received %s packet\n",
                    flush_buffers ? "flush" : "EOF");
+
+        // this is a standalone decoder that has not been initialized yet
+        if (!dp->dec_ctx) {
+            if (flush_buffers)
+                continue;
+            if (input_status < 0) {
+                av_log(dp, AV_LOG_ERROR,
+                       "Cannot initialize a standalone decoder\n");
+                ret = input_status;
+                goto finish;
+            }
+
+            ret = dec_standalone_open(dp, dt.pkt);
+            if (ret < 0)
+                goto finish;
+        }
 
         ret = packet_decode(dp, have_data ? dt.pkt : NULL, dt.frame);
 
@@ -1075,6 +1147,7 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
     dp->flags      = o->flags;
     dp->log_parent = o->log_parent;
 
+    dp->dec.type                = codec->type;
     dp->framerate_in            = o->framerate;
 
     dp->hwaccel_id              = o->hwaccel_id;
@@ -1187,4 +1260,89 @@ int dec_init(Decoder **pdec, Scheduler *sch,
 fail:
     dec_free((Decoder**)&dp);
     return ret;
+}
+
+int dec_create(const OptionsContext *o, const char *arg, Scheduler *sch)
+{
+    DecoderPriv *dp;
+
+    OutputFile      *of;
+    OutputStream    *ost;
+    int of_index, ost_index;
+    char *p;
+
+    unsigned enc_idx;
+    int ret;
+
+    ret = dec_alloc(&dp, sch, 0);
+    if (ret < 0)
+        return ret;
+
+    dp->index = nb_decoders;
+
+    ret = GROW_ARRAY(decoders, nb_decoders);
+    if (ret < 0) {
+        dec_free((Decoder **)&dp);
+        return ret;
+    }
+
+    decoders[nb_decoders - 1] = (Decoder *)dp;
+
+    of_index = strtol(arg, &p, 0);
+    if (of_index < 0 || of_index >= nb_output_files) {
+        av_log(dp, AV_LOG_ERROR, "Invalid output file index '%d' in %s\n", of_index, arg);
+        return AVERROR(EINVAL);
+    }
+    of = output_files[of_index];
+
+    ost_index = strtol(p + 1, NULL, 0);
+    if (ost_index < 0 || ost_index >= of->nb_streams) {
+        av_log(dp, AV_LOG_ERROR, "Invalid output stream index '%d' in %s\n", ost_index, arg);
+        return AVERROR(EINVAL);
+    }
+    ost = of->streams[ost_index];
+
+    if (!ost->enc) {
+        av_log(dp, AV_LOG_ERROR, "Output stream %s has no encoder\n", arg);
+        return AVERROR(EINVAL);
+    }
+
+    dp->dec.type = ost->type;
+
+    ret = enc_loopback(ost->enc);
+    if (ret < 0)
+        return ret;
+    enc_idx = ret;
+
+    ret = sch_connect(sch, SCH_ENC(enc_idx), SCH_DEC(dp->sch_idx));
+    if (ret < 0)
+        return ret;
+
+    ret = av_dict_copy(&dp->standalone_init.opts, o->g->codec_opts, 0);
+    if (ret < 0)
+        return ret;
+
+    if (o->codec_names.nb_opt) {
+        const char *name = o->codec_names.opt[o->codec_names.nb_opt - 1].u.str;
+        dp->standalone_init.codec = avcodec_find_decoder_by_name(name);
+        if (!dp->standalone_init.codec) {
+            av_log(dp, AV_LOG_ERROR, "No such decoder: %s\n", name);
+            return AVERROR_DECODER_NOT_FOUND;
+        }
+    }
+
+    return 0;
+}
+
+int dec_filter_add(Decoder *d, InputFilter *ifilter, InputFilterOptions *opts)
+{
+    DecoderPriv *dp = dp_from_dec(d);
+    char name[16];
+
+    snprintf(name, sizeof(name), "dec%d", dp->index);
+    opts->name = av_strdup(name);
+    if (!opts->name)
+        return AVERROR(ENOMEM);
+
+    return dp->sch_idx;
 }

@@ -144,8 +144,8 @@ typedef struct OptionDef {
 #define OPT_AUDIO       (1 << 4)
 #define OPT_SUBTITLE    (1 << 5)
 #define OPT_DATA        (1 << 6)
-/* The option is per-file (currently ffmpeg-only). At least one of OPT_INPUT or
- * OPT_OUTPUT must be set when this flag is in use.
+/* The option is per-file (currently ffmpeg-only). At least one of OPT_INPUT,
+ * OPT_OUTPUT, OPT_DECODER must be set when this flag is in use.
    */
 #define OPT_PERFILE     (1 << 7)
 
@@ -174,6 +174,9 @@ typedef struct OptionDef {
 /* This option is an alternative form of some other option, whose
  * name is stored in u1.name_canon */
 #define OPT_HAS_CANON   (1 << 14)
+
+/* ffmpeg-only - OPT_PERFILE may apply to standalone decoders */
+#define OPT_DECODER     (1 << 15)
 
      union {
         void *dst_ptr;

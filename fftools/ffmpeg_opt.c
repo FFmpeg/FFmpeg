@@ -1177,11 +1177,13 @@ void show_usage(void)
 enum OptGroup {
     GROUP_OUTFILE,
     GROUP_INFILE,
+    GROUP_DECODER,
 };
 
 static const OptionGroupDef groups[] = {
     [GROUP_OUTFILE] = { "output url",  NULL, OPT_OUTPUT },
     [GROUP_INFILE]  = { "input url",   "i",  OPT_INPUT },
+    [GROUP_DECODER] = { "loopback decoder", "dec", OPT_DECODER },
 };
 
 static int open_files(OptionGroupList *l, const char *inout, Scheduler *sch,
@@ -1256,6 +1258,13 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
     ret = open_files(&octx.groups[GROUP_OUTFILE], "output", sch, of_open);
     if (ret < 0) {
         errmsg = "opening output files";
+        goto fail;
+    }
+
+    /* create loopback decoders */
+    ret = open_files(&octx.groups[GROUP_DECODER], "decoder", sch, dec_create);
+    if (ret < 0) {
+        errmsg = "creating loopback decoders";
         goto fail;
     }
 
@@ -1367,11 +1376,11 @@ const OptionDef options[] = {
     { "recast_media",           OPT_TYPE_BOOL, OPT_EXPERT,
         {              &recast_media },
         "allow recasting stream type in order to force a decoder of different media type" },
-    { "c",                      OPT_TYPE_STRING, OPT_PERSTREAM | OPT_INPUT | OPT_OUTPUT | OPT_HAS_CANON,
+    { "c",                      OPT_TYPE_STRING, OPT_PERSTREAM | OPT_INPUT | OPT_OUTPUT | OPT_DECODER | OPT_HAS_CANON,
         { .off       = OFFSET(codec_names) },
         "select encoder/decoder ('copy' to copy stream without reencoding)", "codec",
         .u1.name_canon = "codec", },
-    { "codec",                  OPT_TYPE_STRING, OPT_PERSTREAM | OPT_INPUT | OPT_OUTPUT | OPT_EXPERT | OPT_HAS_ALT,
+    { "codec",                  OPT_TYPE_STRING, OPT_PERSTREAM | OPT_INPUT | OPT_OUTPUT | OPT_DECODER | OPT_EXPERT | OPT_HAS_ALT,
         { .off       = OFFSET(codec_names) },
         "alias for -c (select encoder/decoder)", "codec",
         .u1.names_alt = alt_codec, },

@@ -528,7 +528,7 @@ static void check_options(const OptionDef *po)
 {
     while (po->name) {
         if (po->flags & OPT_PERFILE)
-            av_assert0(po->flags & (OPT_INPUT | OPT_OUTPUT));
+            av_assert0(po->flags & (OPT_INPUT | OPT_OUTPUT | OPT_DECODER));
 
         if (po->type == OPT_TYPE_FUNC)
             av_assert0(!(po->flags & (OPT_FLAG_OFFSET | OPT_FLAG_SPEC)));

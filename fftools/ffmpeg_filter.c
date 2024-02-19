@@ -710,6 +710,34 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     return 0;
 }
 
+static int ifilter_bind_dec(InputFilterPriv *ifp, Decoder *dec)
+{
+    FilterGraphPriv *fgp = fgp_from_fg(ifp->ifilter.graph);
+    int ret, dec_idx;
+
+    av_assert0(!ifp->bound);
+    ifp->bound = 1;
+
+    if (ifp->type != dec->type) {
+        av_log(fgp, AV_LOG_ERROR, "Tried to connect %s decoder to %s filtergraph input\n",
+               av_get_media_type_string(dec->type), av_get_media_type_string(ifp->type));
+        return AVERROR(EINVAL);
+    }
+
+    ifp->type_src = ifp->type;
+
+    dec_idx = dec_filter_add(dec, &ifp->ifilter, &ifp->opts);
+    if (dec_idx < 0)
+        return dec_idx;
+
+    ret = sch_connect(fgp->sch, SCH_DEC(dec_idx),
+                                SCH_FILTER_IN(fgp->sch_idx, ifp->index));
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 static int set_channel_layout(OutputFilterPriv *f, OutputStream *ost)
 {
     const AVCodec *c = ost->enc_ctx->codec;
@@ -1114,7 +1142,24 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
     enum AVMediaType type = ifp->type;
     int i, ret;
 
-    if (ifp->linklabel) {
+    if (ifp->linklabel && !strncmp(ifp->linklabel, "dec:", 4)) {
+        // bind to a standalone decoder
+        int dec_idx;
+
+        dec_idx = strtol(ifp->linklabel + 4, NULL, 0);
+        if (dec_idx < 0 || dec_idx >= nb_decoders) {
+            av_log(fg, AV_LOG_ERROR, "Invalid decoder index %d in filtergraph description %s\n",
+                   dec_idx, fgp->graph_desc);
+            return AVERROR(EINVAL);
+        }
+
+        ret = ifilter_bind_dec(ifp, decoders[dec_idx]);
+        if (ret < 0)
+            av_log(fg, AV_LOG_ERROR, "Error binding a decoder to filtergraph input %s\n",
+                   ifilter->name);
+        return ret;
+    } else if (ifp->linklabel) {
+        // bind to an explicitly specified demuxer stream
         AVFormatContext *s;
         AVStream       *st = NULL;
         char *p;

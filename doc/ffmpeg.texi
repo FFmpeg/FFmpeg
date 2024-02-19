@@ -219,6 +219,40 @@ Since there is no decoding or encoding, it is very fast and there is no quality
 loss. However, it might not work in some cases because of many factors. Applying
 filters is obviously also impossible, since filters work on uncompressed data.
 
+@section Loopback decoders
+While decoders are normally associated with demuxer streams, it is also possible
+to create "loopback" decoders that decode the output from some encoder and allow
+it to be fed back to complex filtergraphs. This is done with the @code{-dec}
+directive, which takes as a parameter the index of the output stream that should
+be decoded. Every such directive creates a new loopback decoder, indexed with
+successive integers starting at zero. These indices should then be used to refer
+to loopback decoders in complex filtergraph link labels, as described in the
+documentation for @option{-filter_complex}.
+
+E.g. the following example:
+
+@example
+ffmpeg -i INPUT                                        \
+  -map 0:v:0 -c:v libx264 -crf 45 -f null -            \
+  -dec 0:0 -filter_complex '[0:v][dec:0]hstack[stack]' \
+  -map '[stack]' -c:v ffv1 OUTPUT
+@end example
+
+reads an input video and
+@itemize
+@item
+(line 2) encodes it with @code{libx264} at low quality;
+
+@item
+(line 3) decodes this encoded stream and places it side by side with the
+original input video;
+
+@item
+(line 4) combined video is then losslessly encoded and written into
+@file{OUTPUT}.
+
+@end itemize
+
 @c man end DETAILED DESCRIPTION
 
 @chapter Stream selection
@@ -2105,11 +2139,16 @@ type -- see the @option{-filter} options. @var{filtergraph} is a description of
 the filtergraph, as described in the ``Filtergraph syntax'' section of the
 ffmpeg-filters manual.
 
-Input link labels must refer to input streams using the
-@code{[file_index:stream_specifier]} syntax (i.e. the same as @option{-map}
-uses). If @var{stream_specifier} matches multiple streams, the first one will be
-used. An unlabeled input will be connected to the first unused input stream of
-the matching type.
+Input link labels must refer to either input streams or loopback decoders. For
+input streams, use the @code{[file_index:stream_specifier]} syntax (i.e. the
+same as @option{-map} uses). If @var{stream_specifier} matches multiple streams,
+the first one will be used.
+
+For decoders, the link label must be [dec:@var{dec_idx}], where @var{dec_idx} is
+the index of the loopback decoder to be connected to given input.
+
+An unlabeled input will be connected to the first unused input stream of the
+matching type.
 
 Output link labels are referred to with @option{-map}. Unlabeled outputs are
 added to the first output file.
