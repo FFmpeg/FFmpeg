@@ -541,8 +541,9 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                 if (!res)
                     break;
 
-                if (!av_frame_new_side_data_from_buf(frame, AV_FRAME_DATA_A53_CC, buf))
-                    av_buffer_unref(&buf);
+                res = ff_frame_new_side_data_from_buf(c, frame, AV_FRAME_DATA_A53_CC, &buf, NULL);
+                if (res < 0)
+                    goto fail;
 
                 c->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
                 break;
