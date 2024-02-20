@@ -2632,7 +2632,8 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         if (ret != VK_SUCCESS) {
             av_log(hwctx, AV_LOG_ERROR, "Failed to create semaphore: %s\n",
                    ff_vk_ret2str(ret));
-            return AVERROR_EXTERNAL;
+            err = AVERROR_EXTERNAL;
+            goto fail;
         }
 
         /* We'd import a semaphore onto the one we created using
@@ -2751,14 +2752,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     return 0;
 
 fail:
-    for (int i = 0; i < desc->nb_layers; i++) {
-        vk->DestroyImage(hwctx->act_dev, f->img[i], hwctx->alloc);
-        vk->DestroySemaphore(hwctx->act_dev, f->sem[i], hwctx->alloc);
-    }
-    for (int i = 0; i < desc->nb_objects; i++)
-        vk->FreeMemory(hwctx->act_dev, f->mem[i], hwctx->alloc);
-
-    av_free(f);
+    vulkan_frame_free(hwfc, f);
 
     return err;
 }
