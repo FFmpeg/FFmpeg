@@ -331,14 +331,6 @@ static av_cold int tonemap_vaapi_init(AVFilterContext *avctx)
 
     if (ctx->output_format_string) {
         vpp_ctx->output_format = av_get_pix_fmt(ctx->output_format_string);
-        switch (vpp_ctx->output_format) {
-        case AV_PIX_FMT_NV12:
-        case AV_PIX_FMT_P010:
-            break;
-        default:
-            av_log(avctx, AV_LOG_ERROR, "Invalid output format.\n");
-            return AVERROR(EINVAL);
-        }
     } else {
         vpp_ctx->output_format = AV_PIX_FMT_NV12;
         av_log(avctx, AV_LOG_WARNING, "Output format not set, use default format NV12\n");
