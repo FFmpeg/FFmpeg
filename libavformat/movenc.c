@@ -7160,7 +7160,7 @@ static int mov_init_iamf_track(AVFormatContext *s)
     if (!nb_audio_elements && !nb_mix_presentations)
         return 0;
 
-    if ((nb_audio_elements < 1 && nb_audio_elements > 2) || nb_mix_presentations < 1) {
+    if (nb_audio_elements < 1 || nb_audio_elements > 2 || nb_mix_presentations < 1) {
         av_log(s, AV_LOG_ERROR, "There must be >= 1 and <= 2 IAMF_AUDIO_ELEMENT and at least "
                                 "one IAMF_MIX_PRESENTATION stream groups to write a IMAF track\n");
         return AVERROR(EINVAL);
