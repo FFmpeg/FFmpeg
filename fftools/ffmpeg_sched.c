@@ -1541,28 +1541,31 @@ static int send_to_enc_sq(Scheduler *sch, SchEnc *enc, AVFrame *frame)
         // TODO: the SQ API should be extended to allow returning EOF
         // for individual streams
         ret = sq_receive(sq->sq, -1, SQFRAME(sq->frame));
-        if (ret == AVERROR(EAGAIN)) {
-            ret = 0;
-            goto finish;
-        } else if (ret < 0) {
-            // close all encoders fed from this sync queue
-            for (unsigned i = 0; i < sq->nb_enc_idx; i++) {
-                int err = send_to_enc_thread(sch, &sch->enc[sq->enc_idx[i]], NULL);
-
-                // if the sync queue error is EOF and closing the encoder
-                // produces a more serious error, make sure to pick the latter
-                ret = err_merge((ret == AVERROR_EOF && err < 0) ? 0 : ret, err);
-            }
-            goto finish;
+        if (ret < 0) {
+            ret = (ret == AVERROR(EAGAIN)) ? 0 : ret;
+            break;
         }
 
         enc = &sch->enc[sq->enc_idx[ret]];
         ret = send_to_enc_thread(sch, enc, sq->frame);
         if (ret < 0) {
-            av_assert0(ret == AVERROR_EOF);
             av_frame_unref(sq->frame);
+            if (ret != AVERROR_EOF)
+                break;
+
             sq_send(sq->sq, enc->sq_idx[1], SQFRAME(NULL));
             continue;
+        }
+    }
+
+    if (ret < 0) {
+        // close all encoders fed from this sync queue
+        for (unsigned i = 0; i < sq->nb_enc_idx; i++) {
+            int err = send_to_enc_thread(sch, &sch->enc[sq->enc_idx[i]], NULL);
+
+            // if the sync queue error is EOF and closing the encoder
+            // produces a more serious error, make sure to pick the latter
+            ret = err_merge((ret == AVERROR_EOF && err < 0) ? 0 : ret, err);
         }
     }
 
