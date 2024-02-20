@@ -271,7 +271,7 @@ typedef struct FFVulkanContext {
 static inline int ff_vk_count_images(AVVkFrame *f)
 {
     int cnt = 0;
-    while (f->img[cnt])
+    while (cnt < FF_ARRAY_ELEMS(f->img) && f->img[cnt])
         cnt++;
 
     return cnt;
