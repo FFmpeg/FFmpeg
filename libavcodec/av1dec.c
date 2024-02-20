@@ -620,6 +620,12 @@ static int get_pixel_format(AVCodecContext *avctx)
     *fmtp++ = pix_fmt;
     *fmtp = AV_PIX_FMT_NONE;
 
+    for (int i = 0; pix_fmts[i] != pix_fmt; i++)
+        if (pix_fmts[i] == avctx->pix_fmt) {
+            s->pix_fmt = pix_fmt;
+            return 1;
+        }
+
     ret = ff_get_format(avctx, pix_fmts);
 
     /**
@@ -715,6 +721,7 @@ static av_cold int av1_decode_free(AVCodecContext *avctx)
         av1_frame_unref(&s->cur_frame);
         av_frame_free(&s->cur_frame.f);
     }
+    av_buffer_unref(&s->seq_data_ref);
     ff_refstruct_unref(&s->seq_ref);
     ff_refstruct_unref(&s->header_ref);
     ff_refstruct_unref(&s->cll_ref);
@@ -770,6 +777,9 @@ static int set_context_with_sequence(AVCodecContext *avctx,
         avctx->framerate = ff_av1_framerate(1LL + seq->timing_info.num_ticks_per_picture_minus_1,
                                             seq->timing_info.num_units_in_display_tick,
                                             seq->timing_info.time_scale);
+
+    if (avctx->pix_fmt == AV_PIX_FMT_NONE)
+        avctx->pix_fmt = get_sw_pixel_format(avctx, seq);
 
     return 0;
 }
@@ -868,8 +878,6 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING, "Failed to set decoder context.\n");
             goto end;
         }
-
-        avctx->pix_fmt = get_sw_pixel_format(avctx, seq);
 
         end:
         ff_cbs_fragment_reset(&s->current_obu);
@@ -1174,6 +1182,23 @@ static int get_current_frame(AVCodecContext *avctx)
         avctx->skip_frame >= AVDISCARD_ALL)
         return 0;
 
+    if (s->pix_fmt == AV_PIX_FMT_NONE) {
+        ret = get_pixel_format(avctx);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to get pixel format.\n");
+            return ret;
+        }
+
+        if (!ret && FF_HW_HAS_CB(avctx, decode_params)) {
+            ret = FF_HW_CALL(avctx, decode_params, AV1_OBU_SEQUENCE_HEADER,
+                             s->seq_data_ref->data, s->seq_data_ref->size);
+            if (ret < 0) {
+                av_log(avctx, AV_LOG_ERROR, "HW accel decode params fail.\n");
+                return ret;
+            }
+        }
+    }
+
     ret = av1_frame_alloc(avctx, &s->cur_frame);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
@@ -1215,6 +1240,12 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
         switch (unit->type) {
         case AV1_OBU_SEQUENCE_HEADER:
+            ret = av_buffer_replace(&s->seq_data_ref, unit->data_ref);
+            if (ret < 0)
+                goto end;
+
+            s->seq_data_ref->data = unit->data;
+            s->seq_data_ref->size = unit->data_size;
             ff_refstruct_replace(&s->seq_ref, unit->content_ref);
 
             s->raw_seq = &obu->obu.sequence_header;
@@ -1228,25 +1259,8 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
             s->operating_point_idc = s->raw_seq->operating_point_idc[s->operating_point];
 
-            if (s->pix_fmt == AV_PIX_FMT_NONE) {
-                ret = get_pixel_format(avctx);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Failed to get pixel format.\n");
-                    s->raw_seq = NULL;
-                    goto end;
-                }
-            }
+            s->pix_fmt = AV_PIX_FMT_NONE;
 
-            if (FF_HW_HAS_CB(avctx, decode_params)) {
-                ret = FF_HW_CALL(avctx, decode_params, unit->type,
-                                 unit->data, unit->data_size);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "HW accel decode params fail.\n");
-                    s->raw_seq = NULL;
-                    goto end;
-                }
-            }
             break;
         case AV1_OBU_REDUNDANT_FRAME_HEADER:
             if (s->raw_frame_header)
@@ -1423,6 +1437,8 @@ end:
         ff_cbs_fragment_reset(&s->current_obu);
         s->nb_unit = 0;
     }
+    if (!ret && !frame->buf[0])
+        ret = AVERROR(EAGAIN);
 
     return ret;
 }
@@ -1507,7 +1523,7 @@ const FFCodec ff_av1_decoder = {
     .close                 = av1_decode_free,
     FF_CODEC_RECEIVE_FRAME_CB(av1_receive_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1,
-    .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .flush                 = av1_decode_flush,
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .p.priv_class          = &av1_class,

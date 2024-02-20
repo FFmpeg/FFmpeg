@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/buffer.h"
 #include "libavutil/fifo.h"
 #include "libavutil/frame.h"
 #include "libavutil/pixfmt.h"
@@ -69,6 +70,7 @@ typedef struct AV1DecContext {
     CodedBitstreamFragment current_obu;
     AVPacket *pkt;
 
+    AVBufferRef *seq_data_ref;
     AV1RawOBU *seq_ref;    ///< RefStruct reference backing raw_seq
     AV1RawSequenceHeader *raw_seq;
     AV1RawOBU *header_ref; ///< RefStruct reference backing raw_frame_header
