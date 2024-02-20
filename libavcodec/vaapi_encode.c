@@ -914,7 +914,6 @@ static int vaapi_encode_free(AVCodecContext *avctx,
         for (i = 0; i < pic->nb_slices; i++)
             av_freep(&pic->slices[i].codec_slice_params);
     }
-    av_freep(&pic->codec_picture_params);
 
     av_frame_free(&pic->input_image);
     av_frame_free(&pic->recon_image);
