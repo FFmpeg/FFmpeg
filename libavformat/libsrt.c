@@ -250,7 +250,7 @@ static int libsrt_listen(int eid, int fd, const struct sockaddr *addr, socklen_t
     if (srt_listen(fd, 1))
         return libsrt_neterrno(h);
 
-    ret = libsrt_network_wait_fd_timeout(h, eid, 1, timeout, &h->interrupt_callback);
+    ret = libsrt_network_wait_fd_timeout(h, eid, 0, timeout, &h->interrupt_callback);
     if (ret < 0)
         return ret;
 
@@ -391,7 +391,7 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
     int64_t open_timeout = 0;
-    int eid, write_eid;
+    int eid;
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
@@ -455,18 +455,21 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
     if (libsrt_socket_nonblock(fd, 1) < 0)
         av_log(h, AV_LOG_DEBUG, "libsrt_socket_nonblock failed\n");
 
-    ret = write_eid = libsrt_epoll_create(h, fd, 1);
-    if (ret < 0)
-        goto fail1;
     if (s->mode == SRT_MODE_LISTENER) {
+        int read_eid = ret = libsrt_epoll_create(h, fd, 0);
+        if (ret < 0)
+            goto fail1;
         // multi-client
-        ret = libsrt_listen(write_eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, s->listen_timeout);
-        srt_epoll_release(write_eid);
+        ret = libsrt_listen(read_eid, fd, cur_ai->ai_addr, cur_ai->ai_addrlen, h, s->listen_timeout);
+        srt_epoll_release(read_eid);
         if (ret < 0)
             goto fail1;
         srt_close(fd);
         fd = ret;
     } else {
+        int write_eid = ret = libsrt_epoll_create(h, fd, 1);
+        if (ret < 0)
+            goto fail1;
         if (s->mode == SRT_MODE_RENDEZVOUS) {
             if (srt_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen)) {
                 ret = libsrt_neterrno(h);
