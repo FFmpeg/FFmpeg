@@ -205,18 +205,11 @@ fail:
 int av_hwdevice_ctx_init(AVBufferRef *ref)
 {
     AVHWDeviceContext *ctx = (AVHWDeviceContext*)ref->data;
-    int ret;
+    int ret = 0;
 
-    if (ctx->internal->hw_type->device_init) {
+    if (ctx->internal->hw_type->device_init)
         ret = ctx->internal->hw_type->device_init(ctx);
-        if (ret < 0)
-            goto fail;
-    }
 
-    return 0;
-fail:
-    if (ctx->internal->hw_type->device_uninit)
-        ctx->internal->hw_type->device_uninit(ctx);
     return ret;
 }
 
