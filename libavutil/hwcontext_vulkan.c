@@ -3394,9 +3394,7 @@ static int transfer_image_buf(AVHWFramesContext *hwfc, AVFrame *f,
     if (err < 0)
         return err;
 
-    /* Wait for the operation to complete when downloading */
-    if (to_buf)
-        ff_vk_exec_wait(&p->vkctx, exec);
+    ff_vk_exec_wait(&p->vkctx, exec);
 
     return 0;
 }
