@@ -29,7 +29,7 @@ fate-mxf-probe-dnxhd: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
 
 FATE_MXF_PROBE-$(call DEMDEC, MXF, JPEG2000) += fate-mxf-probe-j2k
 fate-mxf-probe-j2k: SRC = $(TARGET_SAMPLES)/imf/countdown/countdown-small.mxf
-fate-mxf-probe-j2k: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)"
+fate-mxf-probe-j2k: CMD = run $(PROBE_FORMAT_STREAMS_COMMAND) -i "$(SRC)" | sed -e "s/rgb48../rgb48/"
 
 FATE_MXF_PROBE-$(call DEMDEC, MXF, DVVIDEO PCM_S16LE) += fate-mxf-probe-dv25
 fate-mxf-probe-dv25: SRC = $(TARGET_SAMPLES)/mxf/Avid-00005.mxf
