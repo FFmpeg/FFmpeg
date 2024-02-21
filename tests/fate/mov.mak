@@ -143,21 +143,21 @@ fate-mov-mp4-ttml-stpp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capabil
 fate-mov-mp4-ttml-dfxp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt mp4 "-map 0:s -c:s ttml -time_base:s 1:1000 -tag:s dfxp -strict unofficial" "-map 0 -c copy" "-of json -show_entries packet:stream=index,codec_type,codec_tag_string,codec_tag,codec_name,time_base,start_time,duration_ts,duration,nb_frames,nb_read_packets:stream_tags"
 
 # avif demuxing - still image with 1 item.
-FATE_MOV_FFMPEG-$(call FRAMEMD5, MOV, AV1, AV1_PARSER) \
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-1-item
 fate-mov-avif-demux-still-image-1-item: CMD = framemd5 -c:v av1 -i $(TARGET_SAMPLES)/avif/still_image.avif -c:v copy
 
 # avif demuxing - still image with multiple items. only the primary item will be
 # parsed.
-FATE_MOV_FFMPEG-$(call FRAMEMD5, MOV, AV1, AV1_PARSER) \
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-multiple-items
 fate-mov-avif-demux-still-image-multiple-items: CMD = framemd5 -c:v av1 -i $(TARGET_SAMPLES)/avif/still_image_exif.avif -c:v copy
 
-FATE_MOV_FFMPEG-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-1-item
 fate-mov-heic-demux-still-image-1-item: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C002.heic -c:v copy
 
-FATE_MOV_FFMPEG-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-multiple-items
 fate-mov-heic-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C003.heic -c:v copy
 
@@ -173,6 +173,7 @@ FATE_MOV_FFMPEG_FFPROBE-$(call REMUX, MP4 MOV) \
 fate-mov-write-amve: CMD = transcode mov $(TARGET_SAMPLES)/mov/amve.mov mp4 "-c:v copy" "-c:v copy -t 0.5" "-show_entries stream_side_data_list"
 
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
+FATE_SAMPLES_FFMPEG += $(FATE_MOV_FFMPEG_SAMPLES-yes)
 
 FATE_MOV_FFMPEG-$(call TRANSCODE, PCM_S16LE, MOV, WAV_DEMUXER PAN_FILTER) \
                           += fate-mov-channel-description
@@ -233,4 +234,4 @@ fate-mov-mp4-iamf-ambisonic_1: CMD = transcode wav $(SRC) mp4 "-auto_conversion_
 
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
 
-fate-mov: $(FATE_MOV) $(FATE_MOV_FFMPEG-yes) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_FFPROBE-yes)
+fate-mov: $(FATE_MOV) $(FATE_MOV_FFMPEG-yes) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_SAMPLES-yes) $(FATE_MOV_FFMPEG_FFPROBE-yes)
