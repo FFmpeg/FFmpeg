@@ -789,7 +789,7 @@ static inline int validate_string(WriterContext *wctx, char **dstp, const char *
     av_bprint_init(&dstbuf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     endp = src + strlen(src);
-    for (p = (uint8_t *)src; *p;) {
+    for (p = src; *p;) {
         uint32_t code;
         int invalid = 0;
         const uint8_t *p0 = p;
