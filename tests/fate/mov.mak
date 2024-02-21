@@ -9,7 +9,6 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-frag-encrypted \
            fate-mov-tenc-only-encrypted \
            fate-mov-invalid-elst-entry-count \
-           fate-mov-write-amve \
            fate-mov-gpmf-remux \
            fate-mov-440hz-10ms \
            fate-mov-ibi-elst-starts-b \
@@ -112,7 +111,6 @@ fate-mov-init-nonkeyframe: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -
 fate-mov-displaymatrix: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=display_aspect_ratio,sample_aspect_ratio:stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/displaymatrix.mov
 
 fate-mov-read-amve: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/amve.mov
-fate-mov-write-amve: CMD = transcode mov $(TARGET_SAMPLES)/mov/amve.mov mp4 "-c:v copy" "-c:v copy -t 0.5" "-show_entries stream_side_data_list"
 
 fate-mov-spherical-mono: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream_side_data_list -select_streams v -v 0 $(TARGET_SAMPLES)/mov/spherical.mov
 
@@ -169,6 +167,10 @@ fate-mov-heic-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPL
 FATE_MOV_FFMPEG_FFPROBE-$(call REMUX, MP4 MOV, MPEGTS_DEMUXER AC3_DECODER) \
                           += fate-mov-mp4-disposition-mpegts-remux
 fate-mov-mp4-disposition-mpegts-remux: CMD = transcode mpegts $(TARGET_SAMPLES)/mpegts/pmtchange.ts mp4 "-map 0:1 -map 0:2 -c copy -disposition:a:0 +hearing_impaired" "-map 0 -c copy" "-of json -show_entries stream_disposition:stream=index"
+
+FATE_MOV_FFMPEG_FFPROBE-$(call REMUX, MP4 MOV) \
+                          += fate-mov-write-amve
+fate-mov-write-amve: CMD = transcode mov $(TARGET_SAMPLES)/mov/amve.mov mp4 "-c:v copy" "-c:v copy -t 0.5" "-show_entries stream_side_data_list"
 
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
 
