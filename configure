@@ -6111,7 +6111,7 @@ if enabled aarch64; then
         # Clang before version 17 (Xcode versions up to and including 15.0)
         # also had a bug (https://github.com/llvm/llvm-project/issues/32220)
         # causing a plain ".arch <level>" to not have any effect unless it
-        # had an extra "+<feature>" included - but it was activate on the next
+        # had an extra "+<feature>" included - but it was activated on the next
         # ".arch_extension" directive. Check if we can include "+crc" as dummy
         # feature to make the .arch directive behave as expected and take
         # effect right away.
