@@ -3430,7 +3430,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(sei_decoded_picture_hash) (CodedBitstreamContext *ctx,
                                            RWContext *rw,
                                            H266RawSEIDecodedPictureHash *
-                                           current)
+                                           current, SEIMessageState *unused)
 {
     int err, c_idx, i;
 
