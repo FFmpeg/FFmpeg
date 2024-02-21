@@ -1142,6 +1142,10 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
             return AVERROR(EINVAL);
         }
         ist = input_files[file_idx]->streams[st->index];
+
+        av_log(fg, AV_LOG_VERBOSE,
+               "Binding input with label '%s' to input stream %d:%d\n",
+               ifp->linklabel, ist->file->index, ist->index);
     } else {
         ist = ist_find_unused(type);
         if (!ist) {
@@ -1149,6 +1153,10 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
                    "unlabeled input pad %s\n", ifilter->name);
             return AVERROR(EINVAL);
         }
+
+        av_log(fg, AV_LOG_VERBOSE,
+               "Binding unlabeled input %d to input stream %d:%d\n",
+               ifp->index, ist->file->index, ist->index);
     }
     av_assert0(ist);
 
