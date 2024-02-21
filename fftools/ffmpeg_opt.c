@@ -88,9 +88,6 @@ int64_t stats_period = 500000;
 
 static int file_overwrite     = 0;
 static int no_file_overwrite  = 0;
-#if FFMPEG_OPT_PSNR
-int do_psnr            = 0;
-#endif
 int ignore_unknown_streams = 0;
 int copy_unknown_streams = 0;
 int recast_media = 0;
@@ -121,9 +118,6 @@ static void uninit_options(OptionsContext *o)
     for (i = 0; i < o->nb_stream_maps; i++)
         av_freep(&o->stream_maps[i].linklabel);
     av_freep(&o->stream_maps);
-#if FFMPEG_OPT_MAP_CHANNEL
-    av_freep(&o->audio_channel_maps);
-#endif
 
     for (i = 0; i < o->nb_attachments; i++)
         av_freep(&o->attachments[i]);
@@ -403,19 +397,6 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     if (!map)
         return AVERROR(ENOMEM);
 
-#if FFMPEG_OPT_MAP_SYNC
-    {
-        /* parse sync stream first, just pick first matching stream */
-        char *sync = strchr(map, ',');
-
-        if (sync) {
-            *sync = 0;
-            av_log(NULL, AV_LOG_WARNING, "Specifying a sync stream is deprecated and has no effect\n");
-        }
-    }
-#endif
-
-
     if (map[0] == '[') {
         /* this mapping refers to lavfi output */
         const char *c = map + 1;
@@ -504,99 +485,6 @@ static int opt_attach(void *optctx, const char *opt, const char *arg)
 
     return 0;
 }
-
-#if FFMPEG_OPT_MAP_CHANNEL
-static int opt_map_channel(void *optctx, const char *opt, const char *arg)
-{
-    OptionsContext *o = optctx;
-    int n, ret;
-    AVStream *st;
-    AudioChannelMap *m;
-    char *allow_unused;
-    char *mapchan;
-
-    av_log(NULL, AV_LOG_WARNING,
-           "The -%s option is deprecated and will be removed. "
-           "It can be replaced by the 'pan' filter, or in some cases by "
-           "combinations of 'channelsplit', 'channelmap', 'amerge' filters.\n", opt);
-
-    mapchan = av_strdup(arg);
-    if (!mapchan)
-        return AVERROR(ENOMEM);
-
-    ret = GROW_ARRAY(o->audio_channel_maps, o->nb_audio_channel_maps);
-    if (ret < 0)
-        goto end;
-
-    m = &o->audio_channel_maps[o->nb_audio_channel_maps - 1];
-
-    /* muted channel syntax */
-    n = sscanf(arg, "%d:%d.%d", &m->channel_idx, &m->ofile_idx, &m->ostream_idx);
-    if ((n == 1 || n == 3) && m->channel_idx == -1) {
-        m->file_idx = m->stream_idx = -1;
-        if (n == 1)
-            m->ofile_idx = m->ostream_idx = -1;
-        av_free(mapchan);
-        return 0;
-    }
-
-    /* normal syntax */
-    n = sscanf(arg, "%d.%d.%d:%d.%d",
-               &m->file_idx,  &m->stream_idx, &m->channel_idx,
-               &m->ofile_idx, &m->ostream_idx);
-
-    if (n != 3 && n != 5) {
-        av_log(NULL, AV_LOG_FATAL, "Syntax error, mapchan usage: "
-               "[file.stream.channel|-1][:syncfile:syncstream]\n");
-        goto fail;
-    }
-
-    if (n != 5) // only file.stream.channel specified
-        m->ofile_idx = m->ostream_idx = -1;
-
-    /* check input */
-    if (m->file_idx < 0 || m->file_idx >= nb_input_files) {
-        av_log(NULL, AV_LOG_FATAL, "mapchan: invalid input file index: %d\n",
-               m->file_idx);
-        goto fail;
-    }
-    if (m->stream_idx < 0 ||
-        m->stream_idx >= input_files[m->file_idx]->nb_streams) {
-        av_log(NULL, AV_LOG_FATAL, "mapchan: invalid input file stream index #%d.%d\n",
-               m->file_idx, m->stream_idx);
-        goto fail;
-    }
-    st = input_files[m->file_idx]->ctx->streams[m->stream_idx];
-    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
-        av_log(NULL, AV_LOG_FATAL, "mapchan: stream #%d.%d is not an audio stream.\n",
-               m->file_idx, m->stream_idx);
-        goto fail;
-    }
-    /* allow trailing ? to map_channel */
-    if (allow_unused = strchr(mapchan, '?'))
-        *allow_unused = 0;
-    if (m->channel_idx < 0 || m->channel_idx >= st->codecpar->ch_layout.nb_channels ||
-        input_files[m->file_idx]->streams[m->stream_idx]->user_set_discard == AVDISCARD_ALL) {
-        if (allow_unused) {
-            av_log(NULL, AV_LOG_VERBOSE, "mapchan: invalid audio channel #%d.%d.%d\n",
-                    m->file_idx, m->stream_idx, m->channel_idx);
-        } else {
-            av_log(NULL, AV_LOG_FATAL,  "mapchan: invalid audio channel #%d.%d.%d\n"
-                    "To ignore this, add a trailing '?' to the map_channel.\n",
-                    m->file_idx, m->stream_idx, m->channel_idx);
-            goto fail;
-        }
-
-    }
-    ret = 0;
-end:
-    av_free(mapchan);
-    return ret;
-fail:
-    ret = AVERROR(EINVAL);
-    goto end;
-}
-#endif
 
 static int opt_sdp_file(void *optctx, const char *opt, const char *arg)
 {
@@ -2005,20 +1893,10 @@ const OptionDef options[] = {
         "set hardware device used when filtering", "device" },
 
     // deprecated options
-#if FFMPEG_OPT_MAP_CHANNEL
-    { "map_channel", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT | OPT_PERFILE | OPT_OUTPUT,
-        { .func_arg = opt_map_channel },
-        "map an audio channel from one stream to another (deprecated)", "file.stream.channel[:syncfile.syncstream]" },
-#endif
 #if FFMPEG_OPT_ADRIFT_THRESHOLD
     { "adrift_threshold", OPT_TYPE_FUNC, OPT_FUNC_ARG | OPT_EXPERT,
         { .func_arg = opt_adrift_threshold },
         "deprecated, does nothing", "threshold" },
-#endif
-#if FFMPEG_OPT_PSNR
-    { "psnr", OPT_TYPE_BOOL,   OPT_VIDEO | OPT_EXPERT,
-        { &do_psnr },
-        "calculate PSNR of compressed frames (deprecated, use -flags +psnr)" },
 #endif
 #if FFMPEG_OPT_TOP
     { "top", OPT_TYPE_INT,     OPT_VIDEO | OPT_EXPERT | OPT_PERSTREAM | OPT_INPUT | OPT_OUTPUT,

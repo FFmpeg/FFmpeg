@@ -51,10 +51,6 @@
 #include "libswresample/swresample.h"
 
 // deprecated features
-#define FFMPEG_OPT_PSNR 1
-#define FFMPEG_OPT_MAP_CHANNEL 1
-#define FFMPEG_OPT_MAP_SYNC 1
-#define FFMPEG_ROTATION_METADATA 1
 #define FFMPEG_OPT_QPHIST 1
 #define FFMPEG_OPT_ADRIFT_THRESHOLD 1
 #define FFMPEG_OPT_ENC_TIME_BASE_NUM 1
@@ -124,13 +120,6 @@ typedef struct StreamMap {
     char *linklabel;       /* name of an output link, for mapping lavfi outputs */
 } StreamMap;
 
-#if FFMPEG_OPT_MAP_CHANNEL
-typedef struct {
-    int  file_idx,  stream_idx,  channel_idx; // input
-    int ofile_idx, ostream_idx;               // output
-} AudioChannelMap;
-#endif
-
 typedef struct OptionsContext {
     OptionGroup *g;
 
@@ -170,10 +159,6 @@ typedef struct OptionsContext {
     /* output options */
     StreamMap *stream_maps;
     int     nb_stream_maps;
-#if FFMPEG_OPT_MAP_CHANNEL
-    AudioChannelMap *audio_channel_maps; /* one info entry per -map_channel */
-    int           nb_audio_channel_maps; /* number of (valid) -map_channel settings */
-#endif
     const char **attachments;
     int       nb_attachments;
 
@@ -540,25 +525,13 @@ typedef struct OutputStream {
 #if FFMPEG_OPT_TOP
     int top_field_first;
 #endif
-#if FFMPEG_ROTATION_METADATA
-    int rotate_overridden;
-#endif
     int autoscale;
     int bitexact;
     int bits_per_raw_sample;
-#if FFMPEG_ROTATION_METADATA
-    double rotate_override_value;
-#endif
 
     AVRational frame_aspect_ratio;
 
     KeyframeForceCtx kf;
-
-    /* audio only */
-#if FFMPEG_OPT_MAP_CHANNEL
-    int *audio_channels_map;             /* list of the channels id to pick from the source stream */
-    int audio_channels_mapped;           /* number of channels in audio_channels_map */
-#endif
 
     char *logfile_prefix;
     FILE *logfile;
@@ -683,10 +656,6 @@ extern int copy_unknown_streams;
 extern int recast_media;
 
 extern FILE *vstats_file;
-
-#if FFMPEG_OPT_PSNR
-extern int do_psnr;
-#endif
 
 void term_init(void);
 void term_exit(void);

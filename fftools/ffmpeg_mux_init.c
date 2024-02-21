@@ -706,13 +706,6 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
         }
         video_enc->rc_override_count = i;
 
-#if FFMPEG_OPT_PSNR
-        if (do_psnr) {
-            av_log(ost, AV_LOG_WARNING, "The -psnr option is deprecated, use -flags +psnr\n");
-            video_enc->flags|= AV_CODEC_FLAG_PSNR;
-        }
-#endif
-
         /* two pass mode */
         MATCH_PER_STREAM_OPT(pass, i, do_pass, oc, st);
         if (do_pass) {
@@ -832,10 +825,7 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
                             OutputStream *ost)
 {
     AVFormatContext *oc = mux->fc;
-    AVStream *st;
-    int ret = 0;
-
-    st  = ost->st;
+    AVStream *st = ost->st;
 
     if (ost->enc_ctx) {
         AVCodecContext *audio_enc = ost->enc_ctx;
@@ -881,37 +871,6 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
 
         MATCH_PER_STREAM_OPT(apad, str, ost->apad, oc, st);
         ost->apad = av_strdup(ost->apad);
-
-#if FFMPEG_OPT_MAP_CHANNEL
-        /* check for channel mapping for this audio stream */
-        for (int n = 0; n < o->nb_audio_channel_maps; n++) {
-            AudioChannelMap *map = &o->audio_channel_maps[n];
-            if ((map->ofile_idx   == -1 || ost->file->index == map->ofile_idx) &&
-                (map->ostream_idx == -1 || ost->st->index  == map->ostream_idx)) {
-                InputStream *ist;
-
-                if (map->channel_idx == -1) {
-                    ist = NULL;
-                } else if (!ost->ist) {
-                    av_log(ost, AV_LOG_FATAL, "Cannot determine input stream for channel mapping %d.%d\n",
-                           ost->file->index, ost->st->index);
-                    continue;
-                } else {
-                    ist = ost->ist;
-                }
-
-                if (!ist || (ist->file->index == map->file_idx && ist->index == map->stream_idx)) {
-                    ret = av_reallocp_array(&ost->audio_channels_map,
-                                            ost->audio_channels_mapped + 1,
-                                            sizeof(*ost->audio_channels_map));
-                    if (ret < 0)
-                        return ret;
-
-                    ost->audio_channels_map[ost->audio_channels_mapped++] = map->channel_idx;
-                }
-            }
-        }
-#endif
     }
 
     return 0;
@@ -1048,17 +1007,6 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
         }
         memcpy(sd_dst->data, sd_src->data, sd_src->size);
     }
-
-#if FFMPEG_ROTATION_METADATA
-    if (ost->rotate_overridden) {
-        AVPacketSideData *sd = av_packet_side_data_new(&ost->st->codecpar->coded_side_data,
-                                                       &ost->st->codecpar->nb_coded_side_data,
-                                                       AV_PKT_DATA_DISPLAYMATRIX,
-                                                       sizeof(int32_t) * 9, 0);
-        if (sd)
-            av_display_rotation_set((int32_t *)sd->data, -ost->rotate_override_value);
-    }
-#endif
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
@@ -2479,28 +2427,8 @@ static int of_add_metadata(OutputFile *of, AVFormatContext *oc,
 
         if (type == 's') {
             for (int j = 0; j < oc->nb_streams; j++) {
-                OutputStream *ost = of->streams[j];
                 if ((ret = check_stream_specifier(oc, oc->streams[j], stream_spec)) > 0) {
-#if FFMPEG_ROTATION_METADATA
-                    if (!strcmp(o->metadata.opt[i].u.str, "rotate")) {
-                        char *tail;
-                        double theta = av_strtod(val, &tail);
-                        if (!*tail) {
-                            ost->rotate_overridden = 1;
-                            ost->rotate_override_value = theta;
-                        }
-
-                        av_log(ost, AV_LOG_WARNING,
-                               "Conversion of a 'rotate' metadata key to a "
-                               "proper display matrix rotation is deprecated. "
-                               "See -display_rotation for setting rotation "
-                               "instead.");
-                    } else {
-#endif
-                        av_dict_set(&oc->streams[j]->metadata, o->metadata.opt[i].u.str, *val ? val : NULL, 0);
-#if FFMPEG_ROTATION_METADATA
-                    }
-#endif
+                    av_dict_set(&oc->streams[j]->metadata, o->metadata.opt[i].u.str, *val ? val : NULL, 0);
                 } else if (ret < 0)
                     return ret;
             }

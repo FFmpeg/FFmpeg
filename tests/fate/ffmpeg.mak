@@ -1,28 +1,3 @@
-FATE_MAPCHAN-$(call FILTERDEMDECENCMUX, PAN, WAV, PCM_S16LE, PCM_S16LE, WAV, MD5_PROTOCOL) += fate-mapchan-6ch-extract-2
-fate-mapchan-6ch-extract-2: tests/data/asynth-22050-6.wav
-fate-mapchan-6ch-extract-2: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-22050-6.wav -map_channel 0.0.0 -fflags +bitexact -f wav md5: -map_channel 0.0.1 -fflags +bitexact -f wav md5:
-
-FATE_MAPCHAN-$(call FILTERDEMDECENCMUX, PAN ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-mapchan-6ch-extract-2-downmix-mono
-fate-mapchan-6ch-extract-2-downmix-mono: tests/data/asynth-22050-6.wav
-fate-mapchan-6ch-extract-2-downmix-mono: CMD = md5 -auto_conversion_filters -i $(TARGET_PATH)/tests/data/asynth-22050-6.wav -map_channel 0.0.1 -map_channel 0.0.0 -ac 1 -fflags +bitexact -f wav
-
-FATE_MAPCHAN-$(call FILTERDEMDECENCMUX, PAN, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-mapchan-silent-mono
-fate-mapchan-silent-mono: tests/data/asynth-22050-1.wav
-fate-mapchan-silent-mono: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-22050-1.wav -map_channel -1 -map_channel 0.0.0 -fflags +bitexact -f wav
-
-FATE_MAPCHAN-$(call FILTERDEMDECENCMUX, PAN, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-mapchan-2ch-extract-ch0-ch2-trailing
-fate-mapchan-2ch-extract-ch0-ch2-trailing: tests/data/asynth-44100-2.wav
-fate-mapchan-2ch-extract-ch0-ch2-trailing: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-2.wav -map_channel 0.0.0 -map_channel 0.0.2? -fflags +bitexact -f wav
-
-FATE_MAPCHAN-$(call FILTERDEMDECENCMUX, PAN, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-mapchan-3ch-extract-ch0-ch2-trailing
-fate-mapchan-3ch-extract-ch0-ch2-trailing: tests/data/asynth-44100-3.wav
-fate-mapchan-3ch-extract-ch0-ch2-trailing: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-3.wav -map_channel 0.0.0 -map_channel 0.0.2? -fflags +bitexact -f wav
-
-FATE_MAPCHAN = $(FATE_MAPCHAN-yes)
-
-FATE_FFMPEG += $(FATE_MAPCHAN)
-fate-mapchan: $(FATE_MAPCHAN)
-
 FATE_FFMPEG-$(call FILTERFRAMECRC, COLOR) += fate-ffmpeg-filter_complex
 fate-ffmpeg-filter_complex: CMD = framecrc -filter_complex color=d=1:r=5 -fflags +bitexact
 

@@ -818,11 +818,6 @@ static void ost_free(OutputStream **post)
 
     av_freep(&ost->attachment_filename);
 
-#if FFMPEG_OPT_MAP_CHANNEL
-    av_freep(&ost->audio_channels_map);
-    ost->audio_channels_mapped = 0;
-#endif
-
     av_dict_free(&ost->sws_dict);
     av_dict_free(&ost->swr_opts);
 

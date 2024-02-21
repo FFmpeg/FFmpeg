@@ -1364,19 +1364,6 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     pad_idx = 0;                                                            \
 } while (0)
     av_bprint_init(&args, 0, AV_BPRINT_SIZE_UNLIMITED);
-#if FFMPEG_OPT_MAP_CHANNEL
-    if (ost->audio_channels_mapped) {
-        AVChannelLayout mapped_layout = { 0 };
-        av_channel_layout_default(&mapped_layout, ost->audio_channels_mapped);
-        av_channel_layout_describe_bprint(&mapped_layout, &args);
-        for (int i = 0; i < ost->audio_channels_mapped; i++)
-            if (ost->audio_channels_map[i] != -1)
-                av_bprintf(&args, "|c%d=c%d", i, ost->audio_channels_map[i]);
-
-        AUTO_INSERT_FILTER("-map_channel", "pan", args.str);
-        av_bprint_clear(&args);
-    }
-#endif
 
     choose_sample_fmts(ofp,     &args);
     choose_sample_rates(ofp,    &args);

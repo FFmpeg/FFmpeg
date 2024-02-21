@@ -1230,10 +1230,6 @@ list separated with slashes. Two first values are the beginning and
 end frame numbers, last one is quantizer to use if positive, or quality
 factor if negative.
 
-@item -psnr
-Calculate PSNR of compressed frames. This option is deprecated, pass the
-PSNR flag to the encoder instead, using @code{-flags +psnr}.
-
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}. See the
 @ref{vstats_file_format,,vstats file format} section for the format description.
@@ -1805,77 +1801,6 @@ such streams is attempted.
 @item -copy_unknown
 Allow input streams with unknown type to be copied instead of failing if copying
 such streams is attempted.
-
-@item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][?][:@var{output_file_id}.@var{stream_specifier}]
-This option is deprecated and will be removed. It can be replaced by the
-@var{pan} filter. In some cases it may be easier to use some combination of the
-@var{channelsplit}, @var{channelmap}, or @var{amerge} filters.
-
-Map an audio channel from a given input to an output. If
-@var{output_file_id}.@var{stream_specifier} is not set, the audio channel will
-be mapped on all the audio streams.
-
-Using "-1" instead of
-@var{input_file_id}.@var{stream_specifier}.@var{channel_id} will map a muted
-channel.
-
-A trailing @code{?} will allow the map_channel to be
-optional: if the map_channel matches no channel the map_channel will be ignored instead
-of failing.
-
-For example, assuming @var{INPUT} is a stereo audio file, you can switch the
-two audio channels with the following command:
-@example
-ffmpeg -i INPUT -map_channel 0.0.1 -map_channel 0.0.0 OUTPUT
-@end example
-
-If you want to mute the first channel and keep the second:
-@example
-ffmpeg -i INPUT -map_channel -1 -map_channel 0.0.1 OUTPUT
-@end example
-
-The order of the "-map_channel" option specifies the order of the channels in
-the output stream. The output channel layout is guessed from the number of
-channels mapped (mono if one "-map_channel", stereo if two, etc.). Using "-ac"
-in combination of "-map_channel" makes the channel gain levels to be updated if
-input and output channel layouts don't match (for instance two "-map_channel"
-options and "-ac 6").
-
-You can also extract each channel of an input to specific outputs; the following
-command extracts two channels of the @var{INPUT} audio stream (file 0, stream 0)
-to the respective @var{OUTPUT_CH0} and @var{OUTPUT_CH1} outputs:
-@example
-ffmpeg -i INPUT -map_channel 0.0.0 OUTPUT_CH0 -map_channel 0.0.1 OUTPUT_CH1
-@end example
-
-The following example splits the channels of a stereo input into two separate
-streams, which are put into the same output file:
-@example
-ffmpeg -i stereo.wav -map 0:0 -map 0:0 -map_channel 0.0.0:0.0 -map_channel 0.0.1:0.1 -y out.ogg
-@end example
-
-Note that currently each output stream can only contain channels from a single
-input stream; you can't for example use "-map_channel" to pick multiple input
-audio channels contained in different streams (from the same or different files)
-and merge them into a single output stream. It is therefore not currently
-possible, for example, to turn two separate mono streams into a single stereo
-stream. However splitting a stereo stream into two single channel mono streams
-is possible.
-
-If you need this feature, a possible workaround is to use the @emph{amerge}
-filter. For example, if you need to merge a media (here @file{input.mkv}) with 2
-mono audio streams into one single stereo channel audio stream (and keep the
-video stream), you can use the following command:
-@example
-ffmpeg -i input.mkv -filter_complex "[0:1] [0:2] amerge" -c:a pcm_s16le -c:v copy output.mkv
-@end example
-
-To map the first two audio channels from the first input, and using the
-trailing @code{?}, ignore the audio channel mapping if the first input is
-mono instead of stereo:
-@example
-ffmpeg -i INPUT -map_channel 0.0.0 -map_channel 0.0.1? OUTPUT
-@end example
 
 @item -map_metadata[:@var{metadata_spec_out}] @var{infile}[:@var{metadata_spec_in}] (@emph{output,per-metadata})
 Set metadata information of the next output file from @var{infile}. Note that

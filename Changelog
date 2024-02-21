@@ -28,6 +28,7 @@ version <next>:
   will be bumped to C17 in the near future, so consider updating your
   build environment if it lacks C17 support
 - Change the default bitrate control method from VBR to CQP for QSV encoders.
+- removed deprecated ffmpeg CLI options -psnr and -map_channel
 
 version 6.1:
 - libaribcaption decoder
