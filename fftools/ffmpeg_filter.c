@@ -1096,7 +1096,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     return 0;
 }
 
-static int init_input_filter(FilterGraph *fg, InputFilter *ifilter)
+static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
 {
     FilterGraphPriv *fgp = fgp_from_fg(fg);
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
@@ -1162,13 +1162,28 @@ static int init_input_filter(FilterGraph *fg, InputFilter *ifilter)
     return 0;
 }
 
-int init_complex_filtergraph(FilterGraph *fg)
+int fg_finalise_bindings(FilterGraph *fg)
 {
     // bind filtergraph inputs to input streams
     for (int i = 0; i < fg->nb_inputs; i++) {
-        int ret = init_input_filter(fg, fg->inputs[i]);
+        InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
+        int ret;
+
+        if (ifp->bound)
+            continue;
+
+        ret = fg_complex_bind_input(fg, &ifp->ifilter);
         if (ret < 0)
             return ret;
+    }
+
+    for (int i = 0; i < fg->nb_outputs; i++) {
+        OutputFilter *output = fg->outputs[i];
+        if (!output->ost) {
+            av_log(filtergraphs[i], AV_LOG_FATAL,
+                   "Filter %s has an unconnected output\n", output->name);
+            return AVERROR(EINVAL);
+        }
     }
     return 0;
 }
@@ -1434,23 +1449,6 @@ static int configure_output_filter(FilterGraph *fg, AVFilterGraph *graph,
     case AVMEDIA_TYPE_AUDIO: return configure_output_audio_filter(fg, graph, ofilter, out);
     default: av_assert0(0); return 0;
     }
-}
-
-int check_filter_outputs(void)
-{
-    for (int i = 0; i < nb_filtergraphs; i++) {
-        int n;
-        for (n = 0; n < filtergraphs[i]->nb_outputs; n++) {
-            OutputFilter *output = filtergraphs[i]->outputs[n];
-            if (!output->ost) {
-                av_log(filtergraphs[i], AV_LOG_FATAL,
-                       "Filter %s has an unconnected output\n", output->name);
-                return AVERROR(EINVAL);
-            }
-        }
-    }
-
-    return 0;
 }
 
 static void sub2video_prepare(InputFilterPriv *ifp)

@@ -674,18 +674,6 @@ static int opt_streamid(void *optctx, const char *opt, const char *arg)
     return av_dict_set(&o->streamid, idx_str, p, 0);
 }
 
-static int init_complex_filters(void)
-{
-    int i, ret = 0;
-
-    for (i = 0; i < nb_filtergraphs; i++) {
-        ret = init_complex_filtergraph(filtergraphs[i]);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
-}
-
 static int opt_target(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
@@ -1264,13 +1252,6 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
         goto fail;
     }
 
-    /* create the complex filtergraphs */
-    ret = init_complex_filters();
-    if (ret < 0) {
-        errmsg = "initializing complex filters";
-        goto fail;
-    }
-
     /* open output files */
     ret = open_files(&octx.groups[GROUP_OUTFILE], "output", sch, of_open);
     if (ret < 0) {
@@ -1278,13 +1259,18 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
         goto fail;
     }
 
+    // bind unbound filtegraph inputs/outputs and check consistency
+    for (int i = 0; i < nb_filtergraphs; i++) {
+        ret = fg_finalise_bindings(filtergraphs[i]);
+        if (ret < 0) {
+            errmsg = "binding filtergraph inputs/outputs";
+            goto fail;
+        }
+    }
+
     correct_input_start_times();
 
     ret = apply_sync_offsets();
-    if (ret < 0)
-        goto fail;
-
-    ret = check_filter_outputs();
     if (ret < 0)
         goto fail;
 
