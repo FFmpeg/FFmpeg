@@ -1005,6 +1005,14 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
 
         ifp->type      = avfilter_pad_get_type(cur->filter_ctx->input_pads,
                                                cur->pad_idx);
+
+        if (ifp->type != AVMEDIA_TYPE_VIDEO && ifp->type != AVMEDIA_TYPE_AUDIO) {
+            av_log(fg, AV_LOG_FATAL, "Only video and audio filters supported "
+                   "currently.\n");
+            ret = AVERROR(ENOSYS);
+            goto fail;
+        }
+
         ifilter->name  = describe_filter_link(fg, cur, 1);
         if (!ifilter->name) {
             ret = AVERROR(ENOMEM);
@@ -1103,13 +1111,6 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
     InputStream *ist = NULL;
     enum AVMediaType type = ifp->type;
     int i, ret;
-
-    // TODO: support other filter types
-    if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
-        av_log(fg, AV_LOG_FATAL, "Only video and audio filters supported "
-               "currently.\n");
-        return AVERROR(ENOSYS);
-    }
 
     if (ifp->linklabel) {
         AVFormatContext *s;
