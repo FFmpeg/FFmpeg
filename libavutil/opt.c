@@ -444,16 +444,26 @@ static int set_string_fmt(void *obj, const AVOption *o, const char *val, uint8_t
     return 0;
 }
 
+static int get_pix_fmt(const char *name)
+{
+    return av_get_pix_fmt(name);
+}
+
 static int set_string_pixel_fmt(void *obj, const AVOption *o, const char *val, uint8_t *dst)
 {
     return set_string_fmt(obj, o, val, dst,
-                          AV_PIX_FMT_NB, av_get_pix_fmt, "pixel format");
+                          AV_PIX_FMT_NB, get_pix_fmt, "pixel format");
+}
+
+static int get_sample_fmt(const char *name)
+{
+    return av_get_sample_fmt(name);
 }
 
 static int set_string_sample_fmt(void *obj, const AVOption *o, const char *val, uint8_t *dst)
 {
     return set_string_fmt(obj, o, val, dst,
-                          AV_SAMPLE_FMT_NB, av_get_sample_fmt, "sample format");
+                          AV_SAMPLE_FMT_NB, get_sample_fmt, "sample format");
 }
 
 static int set_string_dict(void *obj, const AVOption *o, const char *val, uint8_t **dst)
