@@ -403,8 +403,6 @@ unsigned avfilter_filter_pad_count(const AVFilter *filter, int is_output);
  */
 #define AVFILTER_THREAD_SLICE (1 << 0)
 
-typedef struct AVFilterInternal AVFilterInternal;
-
 /** An instance of a filter */
 struct AVFilterContext {
     const AVClass *av_class;        ///< needed for av_log() and filters common options
@@ -442,11 +440,6 @@ struct AVFilterContext {
      * threading type that is actually used (0 for no multithreading).
      */
     int thread_type;
-
-    /**
-     * An opaque struct for libavfilter internal use.
-     */
-    AVFilterInternal *internal;
 
     struct AVFilterCommand *command_queue;
 
@@ -788,8 +781,6 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
  */
 const AVClass *avfilter_get_class(void);
 
-typedef struct AVFilterGraphInternal AVFilterGraphInternal;
-
 /**
  * A function pointer passed to the @ref AVFilterGraph.execute callback to be
  * executed multiple times, possibly in parallel.
@@ -846,11 +837,6 @@ typedef struct AVFilterGraph {
      * default) means that the number of threads is determined automatically.
      */
     int nb_threads;
-
-    /**
-     * Opaque object for libavfilter internal use.
-     */
-    AVFilterGraphInternal *internal;
 
     /**
      * Opaque user data. May be set by the caller to an arbitrary value, e.g. to
