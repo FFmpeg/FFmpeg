@@ -124,7 +124,7 @@ static const AVClass dec_class = {
     .item_name                 = dec_item_name,
 };
 
-static void *decoder_thread(void *arg);
+static int decoder_thread(void *arg);
 
 static int dec_alloc(DecoderPriv **pdec, Scheduler *sch, int send_end_ts)
 {
@@ -789,7 +789,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static void *decoder_thread(void *arg)
+static int decoder_thread(void *arg)
 {
     DecoderPriv  *dp = arg;
     DecThreadContext dt;
@@ -884,7 +884,7 @@ static void *decoder_thread(void *arg)
 finish:
     dec_thread_uninit(&dt);
 
-    return (void*)(intptr_t)ret;
+    return ret;
 }
 
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)

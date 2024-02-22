@@ -2226,7 +2226,7 @@ static void *task_wrapper(void *arg)
     int ret;
     int err = 0;
 
-    ret = (intptr_t)task->func(task->func_arg);
+    ret = task->func(task->func_arg);
     if (ret < 0)
         av_log(task->func_arg, AV_LOG_ERROR,
                "Task finished with error code: %d (%s)\n", ret, av_err2str(ret));

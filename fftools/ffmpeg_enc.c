@@ -870,7 +870,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-void *encoder_thread(void *arg)
+int encoder_thread(void *arg)
 {
     OutputStream *ost = arg;
     Encoder        *e = ost->enc;
@@ -948,5 +948,5 @@ void *encoder_thread(void *arg)
 finish:
     enc_thread_uninit(&et);
 
-    return (void*)(intptr_t)ret;
+    return ret;
 }

@@ -102,7 +102,7 @@ typedef struct SchedulerNode {
     unsigned                idx_stream;
 } SchedulerNode;
 
-typedef void* (*SchThreadFunc)(void *arg);
+typedef int (*SchThreadFunc)(void *arg);
 
 #define SCH_DSTREAM(file, stream)                           \
     (SchedulerNode){ .type = SCH_NODE_TYPE_DEMUX,           \

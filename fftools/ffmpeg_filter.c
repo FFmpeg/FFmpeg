@@ -626,7 +626,7 @@ static int ifilter_has_all_input_formats(FilterGraph *fg)
     return 1;
 }
 
-static void *filter_thread(void *arg);
+static int filter_thread(void *arg);
 
 static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
 {
@@ -2729,7 +2729,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-static void *filter_thread(void *arg)
+static int filter_thread(void *arg)
 {
     FilterGraphPriv *fgp = arg;
     FilterGraph      *fg = &fgp->fg;
@@ -2843,7 +2843,7 @@ finish:
 
     fg_thread_uninit(&fgt);
 
-    return (void*)(intptr_t)ret;
+    return ret;
 }
 
 void fg_send_command(FilterGraph *fg, double time, const char *target,

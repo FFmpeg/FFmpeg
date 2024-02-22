@@ -404,7 +404,7 @@ fail:
     return AVERROR(ENOMEM);
 }
 
-void *muxer_thread(void *arg)
+int muxer_thread(void *arg)
 {
     Muxer     *mux = arg;
     OutputFile *of = &mux->of;
@@ -453,7 +453,7 @@ void *muxer_thread(void *arg)
 finish:
     mux_thread_uninit(&mt);
 
-    return (void*)(intptr_t)ret;
+    return ret;
 }
 
 static int of_streamcopy(OutputFile *of, OutputStream *ost, AVPacket *pkt)

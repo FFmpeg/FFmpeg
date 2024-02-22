@@ -675,7 +675,7 @@ static int demux_thread_init(DemuxThreadContext *dt)
     return 0;
 }
 
-static void *input_thread(void *arg)
+static int input_thread(void *arg)
 {
     Demuxer   *d = arg;
     InputFile *f = &d->f;
@@ -780,7 +780,7 @@ static void *input_thread(void *arg)
 finish:
     demux_thread_uninit(&dt);
 
-    return (void*)(intptr_t)ret;
+    return ret;
 }
 
 static void demux_final_stats(Demuxer *d)

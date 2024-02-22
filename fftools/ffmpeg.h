@@ -832,7 +832,7 @@ void update_benchmark(const char *fmt, ...);
 const char *opt_match_per_type_str(const SpecifierOptList *sol,
                                    char mediatype);
 
-void *muxer_thread(void *arg);
-void *encoder_thread(void *arg);
+int muxer_thread(void *arg);
+int encoder_thread(void *arg);
 
 #endif /* FFTOOLS_FFMPEG_H */
