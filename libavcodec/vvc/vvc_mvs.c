@@ -589,7 +589,7 @@ static void init_neighbour_context(NeighbourContext *ctx, const VVCLocalContext 
     ctx->lc = lc;
 }
 
-static int check_available(Neighbour *n, const VVCLocalContext *lc, const int is_mvp)
+static int check_available(Neighbour *n, const VVCLocalContext *lc, const int check_mer)
 {
     const VVCFrameContext *fc   = lc->fc;
     const VVCSPS *sps           = fc->ps.sps;
@@ -601,7 +601,7 @@ static int check_available(Neighbour *n, const VVCLocalContext *lc, const int is
         n->checked = 1;
         n->available = !sps->r->sps_entropy_coding_sync_enabled_flag || ((n->x >> sps->ctb_log2_size_y) <= (cu->x0 >> sps->ctb_log2_size_y));
         n->available &= TAB_MVF(n->x, n->y).pred_flag != PF_INTRA;
-        if (!is_mvp)
+        if (check_mer)
             n->available &= !is_same_mer(fc, n->x, n->y, cu->x0, cu->y0);
     }
     return n->available;
@@ -620,10 +620,9 @@ static const MvField *mv_merge_candidate(const VVCLocalContext *lc, const int x_
 static const MvField* mv_merge_from_nb(NeighbourContext *ctx, const NeighbourIdx nb)
 {
     const VVCLocalContext *lc   = ctx->lc;
-    const int is_mvp            = 0;
     Neighbour *n                = &ctx->neighbours[nb];
 
-    if (check_available(n, lc, is_mvp))
+    if (check_available(n, lc, 1))
         return mv_merge_candidate(lc, n->x, n->y);
     return 0;
 }
@@ -943,10 +942,9 @@ static int affine_merge_candidate(const VVCLocalContext *lc, const int x_cand, c
 static int affine_merge_from_nbs(NeighbourContext *ctx, const NeighbourIdx *nbs, const int num_nbs, MotionInfo* cand)
 {
     const VVCLocalContext *lc = ctx->lc;
-    const int is_mvp          = 0;
     for (int i = 0; i < num_nbs; i++) {
         Neighbour *n = &ctx->neighbours[nbs[i]];
-        if (check_available(n, lc, is_mvp) && affine_merge_candidate(lc, n->x, n->y, cand))
+        if (check_available(n, lc, 1) && affine_merge_candidate(lc, n->x, n->y, cand))
             return 1;
     }
     return 0;
@@ -961,7 +959,7 @@ static const MvField* derive_corner_mvf(NeighbourContext *ctx, const NeighbourId
     const int min_pu_width      = fc->ps.pps->min_pu_width;
     for (int i = 0; i < num_neighbour; i++) {
         Neighbour *n = &ctx->neighbours[neighbour[i]];
-        if (check_available(n, ctx->lc, 0)) {
+        if (check_available(n, ctx->lc, 1)) {
             return &TAB_MVF(n->x, n->y);
         }
     }
@@ -1461,12 +1459,11 @@ static int mvp_from_nbs(NeighbourContext *ctx,
     Mv *cps, const int num_cps)
 {
     const VVCLocalContext *lc   = ctx->lc;
-    const int is_mvp            = 1;
     int available               = 0;
 
     for (int i = 0; i < num_nbs; i++) {
         Neighbour *n = &ctx->neighbours[nbs[i]];
-        if (check_available(n, lc, is_mvp)) {
+        if (check_available(n, lc, 0)) {
             if (num_cps > 1)
                 available = affine_mvp_candidate(lc, n->x, n->y, lx, ref_idx, cps, num_cps);
             else
@@ -1601,12 +1598,11 @@ static int affine_mvp_constructed_cp(NeighbourContext *ctx,
     const MvField *tab_mvf          = fc->tab.mvf;
     const int min_pu_width          = fc->ps.pps->min_pu_width;
     const RefPicList* rpl           = lc->sc->rpl;
-    const int is_mvp                = 1;
     int available                   = 0;
 
     for (int i = 0; i < num_neighbour; i++) {
         Neighbour *n = &ctx->neighbours[neighbour[i]];
-        if (check_available(n, ctx->lc, is_mvp)) {
+        if (check_available(n, ctx->lc, 0)) {
             const PredFlag maskx = lx + 1;
             const MvField* mvf = &TAB_MVF(n->x, n->y);
             const int poc = rpl[lx].list[ref_idx];
