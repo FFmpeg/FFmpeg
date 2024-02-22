@@ -1444,6 +1444,22 @@ static void merge_data_block(VVCLocalContext *lc)
     }
 }
 
+static void merge_data_ibc(VVCLocalContext *lc)
+{
+    const VVCFrameContext* fc = lc->fc;
+    const VVCSPS* sps         = fc->ps.sps;
+    MotionInfo *mi            = &lc->cu->pu.mi;
+    int merge_idx             = 0;
+
+    mi->pred_flag = PF_IBC;
+
+    if (sps->max_num_ibc_merge_cand > 1)
+        merge_idx = ff_vvc_merge_idx(lc);
+
+    ff_vvc_luma_mv_merge_ibc(lc, merge_idx, &mi->mv[L0][0]);
+    ff_vvc_store_mv(lc, mi);
+}
+
 static int hls_merge_data(VVCLocalContext *lc)
 {
     const VVCFrameContext *fc   = lc->fc;
@@ -1454,8 +1470,7 @@ static int hls_merge_data(VVCLocalContext *lc)
     pu->merge_gpm_flag = 0;
     pu->mi.num_sb_x = pu->mi.num_sb_y = 1;
     if (cu->pred_mode == MODE_IBC) {
-        avpriv_report_missing_feature(fc->log_ctx, "Intra Block Copy");
-        return AVERROR_PATCHWELCOME;
+        merge_data_ibc(lc);
     } else {
         if (ph->max_num_subblock_merge_cand > 0 && cu->cb_width >= 8 && cu->cb_height >= 8)
             pu->merge_subblock_flag = ff_vvc_merge_subblock_flag(lc);
@@ -1569,6 +1584,33 @@ static void mvp_add_difference(MotionInfo *mi, const int num_cp_mv,
             }
         }
     }
+}
+
+static int mvp_data_ibc(VVCLocalContext *lc)
+{
+    const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
+    const PredictionUnit *pu  = &lc->cu->pu;
+    const VVCSPS *sps         = fc->ps.sps;
+    MotionInfo *mi            = &lc->cu->pu.mi;
+    int mvp_l0_flag           = 0;
+    int amvr_shift            = 4;
+    Mv *mv                    = &mi->mv[L0][0];
+
+    mi->pred_flag = PF_IBC;
+    mi->num_sb_x  = 1;
+    mi->num_sb_y  = 1;
+
+    hls_mvd_coding(lc, mv);
+    if (sps->max_num_ibc_merge_cand > 1)
+        mvp_l0_flag = ff_vvc_mvp_lx_flag(lc);
+    if (sps->r->sps_amvr_enabled_flag && (mv->x || mv->y))
+        amvr_shift = ff_vvc_amvr_shift(lc, pu->inter_affine_flag, cu->pred_mode, 1);
+
+    ff_vvc_mvp_ibc(lc, mvp_l0_flag, amvr_shift, mv);
+    ff_vvc_store_mv(lc, mi);
+
+    return 0;
 }
 
 static int mvp_data(VVCLocalContext *lc)
@@ -1691,17 +1733,24 @@ static void refine_regular_subblock(const VVCLocalContext *lc)
     }
 }
 
-static void fill_dmvr_info(const VVCFrameContext *fc, const int x0, const int y0,
-    const int width, const int height)
+static void fill_dmvr_info(const VVCLocalContext *lc)
 {
-    const VVCPPS *pps = fc->ps.pps;
-    const int w = width >> MIN_PU_LOG2;
+    const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
 
-    for (int y = y0 >> MIN_PU_LOG2; y < (y0 + height) >> MIN_PU_LOG2; y++) {
-        const int idx = pps->min_pu_width * y + (x0 >> MIN_PU_LOG2);
-        const MvField *mvf = fc->tab.mvf + idx;
-        MvField *dmvr_mvf  = fc->ref->tab_dmvr_mvf + idx;
-        memcpy(dmvr_mvf, mvf, sizeof(MvField) * w);
+    if (cu->pred_mode == MODE_IBC) {
+        ff_vvc_set_intra_mvf(lc, 1);
+    } else {
+        const VVCPPS *pps = fc->ps.pps;
+        const int w       = cu->cb_width >> MIN_PU_LOG2;
+
+        for (int y = cu->y0 >> MIN_PU_LOG2; y < (cu->y0 + cu->cb_height) >> MIN_PU_LOG2; y++) {
+            const int idx = pps->min_pu_width * y + (cu->x0 >> MIN_PU_LOG2);
+            const MvField *mvf = fc->tab.mvf + idx;
+            MvField *dmvr_mvf  = fc->ref->tab_dmvr_mvf + idx;
+
+            memcpy(dmvr_mvf, mvf, sizeof(MvField) * w);
+        }
     }
 }
 
@@ -1719,8 +1768,7 @@ static int inter_data(VVCLocalContext *lc)
     if (pu->general_merge_flag) {
         hls_merge_data(lc);
     } else if (cu->pred_mode == MODE_IBC){
-        avpriv_report_missing_feature(lc->fc->log_ctx, "Intra Block Copy");
-        return AVERROR_PATCHWELCOME;
+        ret = mvp_data_ibc(lc);
     } else {
         ret = mvp_data(lc);
     }
@@ -1734,7 +1782,7 @@ static int inter_data(VVCLocalContext *lc)
     }
 
     if (!pu->dmvr_flag)
-        fill_dmvr_info(lc->fc, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
+        fill_dmvr_info(lc);
     return ret;
 }
 

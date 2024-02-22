@@ -589,6 +589,11 @@ static void init_neighbour_context(NeighbourContext *ctx, const VVCLocalContext 
     ctx->lc = lc;
 }
 
+static av_always_inline PredMode pred_flag_to_mode(PredFlag pred)
+{
+    return pred == PF_IBC ? MODE_IBC : (pred == PF_INTRA ? MODE_INTRA : MODE_INTER);
+}
+
 static int check_available(Neighbour *n, const VVCLocalContext *lc, const int check_mer)
 {
     const VVCFrameContext *fc   = lc->fc;
@@ -600,7 +605,7 @@ static int check_available(Neighbour *n, const VVCLocalContext *lc, const int ch
     if (!n->checked) {
         n->checked = 1;
         n->available = !sps->r->sps_entropy_coding_sync_enabled_flag || ((n->x >> sps->ctb_log2_size_y) <= (cu->x0 >> sps->ctb_log2_size_y));
-        n->available &= TAB_MVF(n->x, n->y).pred_flag != PF_INTRA;
+        n->available &= cu->pred_mode == pred_flag_to_mode(TAB_MVF(n->x, n->y).pred_flag);
         if (check_mer)
             n->available &= !is_same_mer(fc, n->x, n->y, cu->x0, cu->y0);
     }
@@ -1587,6 +1592,112 @@ void ff_vvc_mvp(VVCLocalContext *lc, const int *mvp_lx_flag, const int amvr_shif
         mvp(lc, mvp_lx_flag[L0], L0, mi->ref_idx, amvr_shift, &mi->mv[L0][0]);
     if (mi->pred_flag != PF_L0)
         mvp(lc, mvp_lx_flag[L1], L1, mi->ref_idx, amvr_shift, &mi->mv[L1][0]);
+}
+
+static int ibc_spatial_candidates(const VVCLocalContext *lc, const int merge_idx, Mv *const cand_list, int *nb_merge_cand)
+{
+    const CodingUnit *cu      = lc->cu;
+    const VVCFrameContext *fc = lc->fc;
+    const int min_pu_width    = fc->ps.pps->min_pu_width;
+    const MvField *tab_mvf    = fc->tab.mvf;
+    const int is_gt4by4       = (cu->cb_width * cu->cb_height) > 16;
+    int num_cands             = 0;
+
+    NeighbourContext nctx;
+    Neighbour *a1 = &nctx.neighbours[A1];
+    Neighbour *b1 = &nctx.neighbours[B1];
+
+    if (!is_gt4by4) {
+        *nb_merge_cand = 0;
+        return 0;
+    }
+
+    init_neighbour_context(&nctx, lc);
+
+    if (check_available(a1, lc, 1)) {
+        cand_list[num_cands++] = TAB_MVF(a1->x, a1->y).mv[L0];
+        if (num_cands > merge_idx)
+            return 1;
+    }
+    if (check_available(b1, lc, 1)) {
+        const MvField *mvf = &TAB_MVF(b1->x, b1->y);
+        if (!num_cands || !IS_SAME_MV(&cand_list[0], mvf->mv)) {
+            cand_list[num_cands++] = mvf->mv[L0];
+            if (num_cands > merge_idx)
+                return 1;
+        }
+    }
+
+    *nb_merge_cand = num_cands;
+    return 0;
+}
+
+static int ibc_history_candidates(const VVCLocalContext *lc,
+    const int merge_idx, Mv *cand_list, int *nb_merge_cand)
+{
+    const CodingUnit *cu = lc->cu;
+    const EntryPoint *ep = lc->ep;
+    const int is_gt4by4  = (cu->cb_width * cu->cb_height) > 16;
+    int num_cands        = *nb_merge_cand;
+
+    for (int i = 1; i <= ep->num_hmvp_ibc; i++) {
+        int same_motion = 0;
+        const MvField *mvf = &ep->hmvp_ibc[ep->num_hmvp_ibc - i];
+        for (int j = 0; j < *nb_merge_cand; j++) {
+            same_motion = is_gt4by4 && i == 1 && IS_SAME_MV(&mvf->mv[L0], &cand_list[j]);
+            if (same_motion)
+                break;
+        }
+        if (!same_motion) {
+            cand_list[num_cands++] = mvf->mv[L0];
+            if (num_cands > merge_idx)
+                return 1;
+        }
+    }
+
+    *nb_merge_cand = num_cands;
+    return 0;
+}
+
+#define MV_BITS 18
+#define IBC_SHIFT(v) ((v) >= (1 << (MV_BITS - 1)) ? ((v) - (1 << MV_BITS)) : (v))
+
+static inline void ibc_add_mvp(Mv *mv, Mv *mvp, const int amvr_shift)
+{
+    ff_vvc_round_mv(mv, amvr_shift, 0);
+    ff_vvc_round_mv(mvp, amvr_shift, amvr_shift);
+    mv->x = IBC_SHIFT(mv->x + mvp->x);
+    mv->y = IBC_SHIFT(mv->y + mvp->y);
+}
+
+static void ibc_merge_candidates(VVCLocalContext *lc, const int merge_idx, Mv *mv)
+{
+    const CodingUnit *cu = lc->cu;
+    LOCAL_ALIGNED_8(Mv, cand_list, [MRG_MAX_NUM_CANDS]);
+    int nb_cands;
+
+    ff_vvc_set_neighbour_available(lc, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
+    if (ibc_spatial_candidates(lc, merge_idx, cand_list, &nb_cands) ||
+        ibc_history_candidates(lc, merge_idx, cand_list, &nb_cands)) {
+        *mv = cand_list[merge_idx];
+        return;
+    }
+
+    //zero mv
+    memset(mv, 0, sizeof(*mv));
+}
+
+void ff_vvc_mvp_ibc(VVCLocalContext *lc, const int mvp_l0_flag, const int amvr_shift, Mv *mv)
+{
+    LOCAL_ALIGNED_8(Mv, mvp, [1]);
+
+    ibc_merge_candidates(lc, mvp_l0_flag, mvp);
+    ibc_add_mvp(mv, mvp, amvr_shift);
+}
+
+void ff_vvc_luma_mv_merge_ibc(VVCLocalContext *lc, const int merge_idx, Mv *mv)
+{
+    ibc_merge_candidates(lc, merge_idx, mv);
 }
 
 static int affine_mvp_constructed_cp(NeighbourContext *ctx,
