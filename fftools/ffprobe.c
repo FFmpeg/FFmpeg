@@ -228,16 +228,18 @@ struct section {
     const char *element_name; ///< name of the contained element, if provided
     const char *unique_name;  ///< unique section name, in case the name is ambiguous
     AVDictionary *entries_to_show;
-    const char *(* get_type)(void *data); ///< function returning a type if defined, must be defined when SECTION_FLAG_HAS_TYPE is defined
+    const char *(* get_type)(const void *data); ///< function returning a type if defined, must be defined when SECTION_FLAG_HAS_TYPE is defined
     int show_all_entries;
 };
 
-static const char *get_packet_side_data_type(void *data) {
+static const char *get_packet_side_data_type(const void *data)
+{
     const AVPacketSideData *sd = (const AVPacketSideData *)data;
     return av_x_if_null(av_packet_side_data_name(sd->type), "unknown");
 }
 
-static const char *get_frame_side_data_type(void *data) {
+static const char *get_frame_side_data_type(const void *data)
+{
     const AVFrameSideData *sd = (const AVFrameSideData *)data;
     return av_x_if_null(av_frame_side_data_name(sd->type), "unknown");
 }
@@ -474,7 +476,7 @@ typedef struct Writer {
     int  (*init)  (WriterContext *wctx);
     void (*uninit)(WriterContext *wctx);
 
-    void (*print_section_header)(WriterContext *wctx, void *data);
+    void (*print_section_header)(WriterContext *wctx, const void *data);
     void (*print_section_footer)(WriterContext *wctx);
     void (*print_integer)       (WriterContext *wctx, const char *, long long int);
     void (*print_rational)      (WriterContext *wctx, AVRational *q, char *sep);
@@ -728,7 +730,7 @@ fail:
 }
 
 static inline void writer_print_section_header(WriterContext *wctx,
-                                               void *data,
+                                               const void *data,
                                                int section_id)
 {
     int parent_section_id;
@@ -1056,7 +1058,7 @@ static inline char *upcase_string(char *dst, size_t dst_size, const char *src)
     return dst;
 }
 
-static void default_print_section_header(WriterContext *wctx, void *data)
+static void default_print_section_header(WriterContext *wctx, const void *data)
 {
     DefaultContext *def = wctx->priv;
     char buf[32];
@@ -1226,7 +1228,7 @@ static av_cold int compact_init(WriterContext *wctx)
     return 0;
 }
 
-static void compact_print_section_header(WriterContext *wctx, void *data)
+static void compact_print_section_header(WriterContext *wctx, const void *data)
 {
     CompactContext *compact = wctx->priv;
     const struct section *section = wctx->section[wctx->level];
@@ -1423,7 +1425,7 @@ static const char *flat_escape_value_str(AVBPrint *dst, const char *src)
     return dst->str;
 }
 
-static void flat_print_section_header(WriterContext *wctx, void *data)
+static void flat_print_section_header(WriterContext *wctx, const void *data)
 {
     FlatContext *flat = wctx->priv;
     AVBPrint *buf = &wctx->section_pbuf[wctx->level];
@@ -1523,7 +1525,7 @@ static char *ini_escape_str(AVBPrint *dst, const char *src)
     return dst->str;
 }
 
-static void ini_print_section_header(WriterContext *wctx, void *data)
+static void ini_print_section_header(WriterContext *wctx, const void *data)
 {
     INIContext *ini = wctx->priv;
     AVBPrint *buf = &wctx->section_pbuf[wctx->level];
@@ -1634,7 +1636,7 @@ static const char *json_escape_str(AVBPrint *dst, const char *src, void *log_ctx
 
 #define JSON_INDENT() writer_printf(wctx, "%*c", json->indent_level * 4, ' ')
 
-static void json_print_section_header(WriterContext *wctx, void *data)
+static void json_print_section_header(WriterContext *wctx, const void *data)
 {
     JSONContext *json = wctx->priv;
     AVBPrint buf;
@@ -1795,7 +1797,7 @@ static av_cold int xml_init(WriterContext *wctx)
 
 #define XML_INDENT() writer_printf(wctx, "%*c", xml->indent_level * 4, ' ')
 
-static void xml_print_section_header(WriterContext *wctx, void *data)
+static void xml_print_section_header(WriterContext *wctx, const void *data)
 {
     XMLContext *xml = wctx->priv;
     const struct section *section = wctx->section[wctx->level];
@@ -2334,7 +2336,7 @@ static void print_pkt_side_data(WriterContext *w,
 {
         const char *name = av_packet_side_data_name(sd->type);
 
-        writer_print_section_header(w, (void *)sd, id_data);
+        writer_print_section_header(w, sd, id_data);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_PKT_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
             double rotation = av_display_rotation_get((int32_t *)sd->data);
@@ -2635,7 +2637,7 @@ static void print_frame_side_data(WriterContext *w,
         const AVFrameSideData *sd = frame->side_data[i];
         const char *name;
 
-        writer_print_section_header(w, (void *)sd, SECTION_ID_FRAME_SIDE_DATA);
+        writer_print_section_header(w, sd, SECTION_ID_FRAME_SIDE_DATA);
         name = av_frame_side_data_name(sd->type);
         print_str("side_data_type", name ? name : "unknown");
         if (sd->type == AV_FRAME_DATA_DISPLAYMATRIX && sd->size >= 9*4) {
