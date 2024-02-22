@@ -737,6 +737,8 @@ static int encode_preinit_audio(AVCodecContext *avctx)
     }
 
     if (!avctx->bits_per_raw_sample)
+        avctx->bits_per_raw_sample = av_get_exact_bits_per_sample(avctx->codec_id);
+    if (!avctx->bits_per_raw_sample)
         avctx->bits_per_raw_sample = 8 * av_get_bytes_per_sample(avctx->sample_fmt);
 
     return 0;
