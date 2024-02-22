@@ -593,7 +593,8 @@ static void print_type(AVBPrint *bp, enum AVTXType type)
                "unknown");
 }
 
-static void print_cd_info(const FFTXCodelet *cd, int prio, int len, int print_prio)
+static void print_cd_info(const FFTXCodelet *cd, int prio, int len, int print_prio,
+                          int log_level)
 {
     AVBPrint bp;
     av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
@@ -643,7 +644,7 @@ static void print_cd_info(const FFTXCodelet *cd, int prio, int len, int print_pr
     if (print_prio)
         av_bprintf(&bp, ", prio: %i", prio);
 
-    av_log(NULL, AV_LOG_DEBUG, "%s\n", bp.str);
+    av_log(NULL, log_level, "%s\n", bp.str);
 }
 
 static void print_tx_structure(AVTXContext *s, int depth)
@@ -653,7 +654,7 @@ static void print_tx_structure(AVTXContext *s, int depth)
     for (int i = 0; i <= depth; i++)
         av_log(NULL, AV_LOG_DEBUG, "    ");
 
-    print_cd_info(cd, cd->prio, s->len, 0);
+    print_cd_info(cd, cd->prio, s->len, 0, AV_LOG_DEBUG);
 
     for (int i = 0; i < s->nb_sub; i++)
         print_tx_structure(&s->sub[i], depth + 1);
@@ -816,11 +817,11 @@ av_cold int ff_tx_init_subtx(AVTXContext *s, enum AVTXType type,
     AV_QSORT(cd_matches, nb_cd_matches, TXCodeletMatch, cmp_matches);
 
 #if !CONFIG_SMALL
-    av_log(NULL, AV_LOG_DEBUG, "%s\n", bp.str);
+    av_log(NULL, AV_LOG_TRACE, "%s\n", bp.str);
 
     for (int i = 0; i < nb_cd_matches; i++) {
-        av_log(NULL, AV_LOG_DEBUG, "    %i: ", i + 1);
-        print_cd_info(cd_matches[i].cd, cd_matches[i].prio, 0, 1);
+        av_log(NULL, AV_LOG_TRACE, "    %i: ", i + 1);
+        print_cd_info(cd_matches[i].cd, cd_matches[i].prio, 0, 1, AV_LOG_TRACE);
     }
 #endif
 
