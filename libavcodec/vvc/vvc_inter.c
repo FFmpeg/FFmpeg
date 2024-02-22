@@ -893,7 +893,7 @@ static void predict_inter(VVCLocalContext *lc)
 
 static int has_inter_luma(const CodingUnit *cu)
 {
-    return cu->pred_mode != MODE_INTRA && cu->pred_mode != MODE_PLT && cu->tree_type != DUAL_TREE_CHROMA;
+    return (cu->pred_mode == MODE_INTER || cu->pred_mode == MODE_SKIP) && cu->tree_type != DUAL_TREE_CHROMA;
 }
 
 int ff_vvc_predict_inter(VVCLocalContext *lc, const int rs)
