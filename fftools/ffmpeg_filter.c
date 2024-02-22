@@ -675,6 +675,10 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
 
     ifp->type_src        = ist->st->codecpar->codec_type;
 
+    ifp->opts.fallback = av_frame_alloc();
+    if (!ifp->opts.fallback)
+        return AVERROR(ENOMEM);
+
     dec_idx = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph),
                              &ifp->opts);
     if (dec_idx < 0)
@@ -863,9 +867,8 @@ static InputFilter *ifilter_alloc(FilterGraph *fg)
 
     ifp->index           = fg->nb_inputs - 1;
     ifp->format          = -1;
-    ifp->fallback.format = -1;
-    ifp->color_space = ifp->fallback.color_space = AVCOL_SPC_UNSPECIFIED;
-    ifp->color_range = ifp->fallback.color_range = AVCOL_RANGE_UNSPECIFIED;
+    ifp->color_space     = AVCOL_SPC_UNSPECIFIED;
+    ifp->color_range     = AVCOL_RANGE_UNSPECIFIED;
 
     ifp->frame_queue = av_fifo_alloc2(8, sizeof(AVFrame*), AV_FIFO_FLAG_AUTO_GROW);
     if (!ifp->frame_queue)
@@ -895,9 +898,8 @@ void fg_free(FilterGraph **pfg)
         }
         av_frame_free(&ifp->sub2video.frame);
 
-        av_channel_layout_uninit(&ifp->fallback.ch_layout);
-
         av_frame_free(&ifp->frame);
+        av_frame_free(&ifp->opts.fallback);
 
         av_buffer_unref(&ifp->hw_frames_ctx);
         av_freep(&ifp->linklabel);
@@ -1804,33 +1806,6 @@ fail:
     return ret;
 }
 
-int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec)
-{
-    InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
-
-    ifp->fallback.time_base = dec->pkt_timebase;
-
-    if (dec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        ifp->fallback.format                 = dec->pix_fmt;
-        ifp->fallback.width                  = dec->width;
-        ifp->fallback.height                 = dec->height;
-        ifp->fallback.sample_aspect_ratio    = dec->sample_aspect_ratio;
-        ifp->fallback.color_space            = dec->colorspace;
-        ifp->fallback.color_range            = dec->color_range;
-    } else if (dec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int ret;
-
-        ifp->fallback.format                 = dec->sample_fmt;
-        ifp->fallback.sample_rate            = dec->sample_rate;
-
-        ret = av_channel_layout_copy(&ifp->fallback.ch_layout, &dec->ch_layout);
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
-}
-
 static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
@@ -2526,17 +2501,17 @@ static int send_eof(FilterGraphThread *fgt, InputFilter *ifilter,
     } else {
         if (ifp->format < 0) {
             // the filtergraph was never configured, use the fallback parameters
-            ifp->format                 = ifp->fallback.format;
-            ifp->sample_rate            = ifp->fallback.sample_rate;
-            ifp->width                  = ifp->fallback.width;
-            ifp->height                 = ifp->fallback.height;
-            ifp->sample_aspect_ratio    = ifp->fallback.sample_aspect_ratio;
-            ifp->color_space            = ifp->fallback.color_space;
-            ifp->color_range            = ifp->fallback.color_range;
-            ifp->time_base              = ifp->fallback.time_base;
+            ifp->format                 = ifp->opts.fallback->format;
+            ifp->sample_rate            = ifp->opts.fallback->sample_rate;
+            ifp->width                  = ifp->opts.fallback->width;
+            ifp->height                 = ifp->opts.fallback->height;
+            ifp->sample_aspect_ratio    = ifp->opts.fallback->sample_aspect_ratio;
+            ifp->color_space            = ifp->opts.fallback->colorspace;
+            ifp->color_range            = ifp->opts.fallback->color_range;
+            ifp->time_base              = ifp->opts.fallback->time_base;
 
             ret = av_channel_layout_copy(&ifp->ch_layout,
-                                         &ifp->fallback.ch_layout);
+                                         &ifp->opts.fallback->ch_layout);
             if (ret < 0)
                 return ret;
 

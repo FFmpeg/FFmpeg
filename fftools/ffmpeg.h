@@ -259,6 +259,8 @@ typedef struct InputFilterOptions {
 
     // a combination of IFILTER_FLAG_*
     unsigned            flags;
+
+    AVFrame            *fallback;
 } InputFilterOptions;
 
 typedef struct InputFilter {
@@ -735,15 +737,16 @@ AVBufferRef *hw_device_for_filter(void);
 /**
  * @param dec_opts Dictionary filled with decoder options. Its ownership
  *                 is transferred to the decoder.
+ * @param param_out If non-NULL, media properties after opening the decoder
+ *                  are written here.
  *
  * @retval ">=0" non-negative scheduler index on success
  * @retval "<0"  an error code on failure
  */
 int dec_init(Decoder **pdec, Scheduler *sch,
-             AVDictionary **dec_opts, const DecoderOpts *o);
+             AVDictionary **dec_opts, const DecoderOpts *o,
+             AVFrame *param_out);
 void dec_free(Decoder **pdec);
-
-int dec_add_filter(Decoder *dec, InputFilter *ifilter);
 
 int enc_alloc(Encoder **penc, const AVCodec *codec,
               Scheduler *sch, unsigned sch_idx);

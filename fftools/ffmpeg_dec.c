@@ -1066,7 +1066,8 @@ static int hw_device_setup_for_decode(DecoderPriv *dp,
     return 0;
 }
 
-static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts, const DecoderOpts *o)
+static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
+                    const DecoderOpts *o, AVFrame *param_out)
 {
     const AVCodec *codec = o->codec;
     int ret;
@@ -1140,11 +1141,32 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts, const DecoderOpts 
     dp->dec.subtitle_header      = dp->dec_ctx->subtitle_header;
     dp->dec.subtitle_header_size = dp->dec_ctx->subtitle_header_size;
 
+    if (param_out) {
+        if (dp->dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+            param_out->format               = dp->dec_ctx->sample_fmt;
+            param_out->sample_rate          = dp->dec_ctx->sample_rate;
+
+            ret = av_channel_layout_copy(&param_out->ch_layout, &dp->dec_ctx->ch_layout);
+            if (ret < 0)
+                return ret;
+        } else if (dp->dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+            param_out->format               = dp->dec_ctx->pix_fmt;
+            param_out->width                = dp->dec_ctx->width;
+            param_out->height               = dp->dec_ctx->height;
+            param_out->sample_aspect_ratio  = dp->dec_ctx->sample_aspect_ratio;
+            param_out->colorspace           = dp->dec_ctx->colorspace;
+            param_out->color_range          = dp->dec_ctx->color_range;
+        }
+
+        param_out->time_base = dp->dec_ctx->pkt_timebase;
+    }
+
     return 0;
 }
 
 int dec_init(Decoder **pdec, Scheduler *sch,
-             AVDictionary **dec_opts, const DecoderOpts *o)
+             AVDictionary **dec_opts, const DecoderOpts *o,
+             AVFrame *param_out)
 {
     DecoderPriv *dp;
     int ret;
@@ -1155,7 +1177,7 @@ int dec_init(Decoder **pdec, Scheduler *sch,
     if (ret < 0)
         return ret;
 
-    ret = dec_open(dp, dec_opts, o);
+    ret = dec_open(dp, dec_opts, o, param_out);
     if (ret < 0)
         goto fail;
 
@@ -1165,12 +1187,4 @@ int dec_init(Decoder **pdec, Scheduler *sch,
 fail:
     dec_free((Decoder**)&dp);
     return ret;
-}
-
-int dec_add_filter(Decoder *dec, InputFilter *ifilter)
-{
-    DecoderPriv *dp = dp_from_dec(dec);
-
-    // initialize fallback parameters for filtering
-    return ifilter_parameters_from_dec(ifilter, dp->dec_ctx);
 }

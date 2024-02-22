@@ -81,6 +81,8 @@ typedef struct DemuxStream {
     AVDictionary            *decoder_opts;
     DecoderOpts              dec_opts;
     char                     dec_name[16];
+    // decoded media properties, as estimated by opening the decoder
+    AVFrame                 *decoded_params;
 
     AVBSFContext            *bsf;
 
@@ -839,6 +841,8 @@ static void ist_free(InputStream **pist)
 
     avcodec_parameters_free(&ist->par);
 
+    av_frame_free(&ds->decoded_params);
+
     av_bsf_free(&ds->bsf);
 
     av_freep(pist);
@@ -935,8 +939,12 @@ static int ist_use(InputStream *ist, int decoding_needed)
 
         ds->dec_opts.log_parent = ist;
 
+        ds->decoded_params = av_frame_alloc();
+        if (!ds->decoded_params)
+            return AVERROR(ENOMEM);
+
         ret = dec_init(&ist->decoder, d->sch,
-                       &ds->decoder_opts, &ds->dec_opts);
+                       &ds->decoder_opts, &ds->dec_opts, ds->decoded_params);
         if (ret < 0)
             return ret;
         ds->sch_idx_dec = ret;
@@ -988,10 +996,6 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
 
     ist->filters[ist->nb_filters - 1] = ifilter;
 
-    ret = dec_add_filter(ist->decoder, ifilter);
-    if (ret < 0)
-        return ret;
-
     if (ist->par->codec_type == AVMEDIA_TYPE_VIDEO) {
         if (ist->framerate.num > 0 && ist->framerate.den > 0) {
             opts->framerate = ist->framerate;
@@ -1026,6 +1030,17 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
         }
         ds->have_sub2video = 1;
     }
+
+    ret = av_frame_copy_props(opts->fallback, ds->decoded_params);
+    if (ret < 0)
+        return ret;
+    opts->fallback->format = ds->decoded_params->format;
+    opts->fallback->width  = ds->decoded_params->width;
+    opts->fallback->height = ds->decoded_params->height;
+
+    ret = av_channel_layout_copy(&opts->fallback->ch_layout, &ds->decoded_params->ch_layout);
+    if (ret < 0)
+        return ret;
 
     if (copy_ts) {
         tsoffset = d->f.start_time == AV_NOPTS_VALUE ? 0 : d->f.start_time;
