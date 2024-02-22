@@ -1227,9 +1227,12 @@ static void set_cu_tabs(const VVCLocalContext *lc, const CodingUnit *cu)
     const VVCFrameContext *fc   = lc->fc;
     const TransformUnit *tu     = cu->tus.head;
 
-    set_cb_tab(lc, fc->tab.cpm[cu->ch_type], cu->pred_mode);
-    if (cu->tree_type != DUAL_TREE_CHROMA)
+    if (cu->tree_type != DUAL_TREE_CHROMA) {
+        set_cb_tab(lc, fc->tab.cpm[LUMA], cu->pred_mode);
         set_cb_tab(lc, fc->tab.skip, cu->skip_flag);
+    }
+    if (fc->ps.sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
+        set_cb_tab(lc, fc->tab.cpm[CHROMA], cu->pred_mode);
 
     while (tu) {
           for (int j = 0; j < tu->nb_tbs; j++) {
