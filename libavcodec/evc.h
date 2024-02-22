@@ -141,15 +141,6 @@ enum {
 
     // A.4.1: table A.1 allows at most 600 slice segments for any level.
     EVC_MAX_SLICE_SEGMENTS = 600,
-
-    // 7.4.7.1: in the worst case (tiles_enabled_flag and
-    // entropy_coding_sync_enabled_flag are both set), entry points can be
-    // placed at the beginning of every Ctb row in every tile, giving an
-    // upper bound of (num_tile_columns_minus1 + 1) * PicHeightInCtbsY - 1.
-    // Only a stream with very high resolution and perverse parameters could
-    // get near that, though, so set a lower limit here with the maximum
-    // possible value for 4K video (at most 135 16x16 Ctb rows).
-    HEVC_MAX_ENTRY_POINT_OFFSETS = EVC_MAX_TILE_COLUMNS * 135,
 };
 
 #endif // AVCODEC_EVC_H
