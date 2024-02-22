@@ -481,8 +481,9 @@ static int hls_transform_tree(VVCLocalContext *lc, int x0, int y0,int tu_width, 
 
 static int skipped_transform_tree(VVCLocalContext *lc, int x0, int y0,int tu_width, int tu_height)
 {
-    VVCFrameContext *fc   = lc->fc;
-    const VVCSPS *sps           = fc->ps.sps;
+    VVCFrameContext *fc  = lc->fc;
+    const CodingUnit *cu = lc->cu;
+    const VVCSPS *sps    = fc->ps.sps;
 
     if (tu_width > sps->max_tb_size_y || tu_height > sps->max_tb_size_y) {
         const int ver_split_first = tu_width > sps->max_tb_size_y && tu_width > tu_height;
@@ -501,11 +502,14 @@ static int skipped_transform_tree(VVCLocalContext *lc, int x0, int y0,int tu_wid
         else
             SKIPPED_TRANSFORM_TREE(x0, y0 + trafo_height);
     } else {
-        TransformUnit *tu = add_tu(fc, lc->cu, x0, y0, tu_width, tu_height);
-        const int c_end = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : (LUMA + 1);
+        TransformUnit *tu    = add_tu(fc, lc->cu, x0, y0, tu_width, tu_height);
+        const int has_chroma = sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA;
+        const int c_start    = cu->tree_type == DUAL_TREE_CHROMA ? CB : LUMA;
+        const int c_end      = has_chroma ? VVC_MAX_SAMPLE_ARRAYS : CB;
+
         if (!tu)
             return AVERROR_INVALIDDATA;
-        for (int i = LUMA; i < c_end; i++) {
+        for (int i = c_start; i < c_end; i++) {
             TransformBlock *tb = add_tb(tu, lc, x0, y0, tu_width >> sps->hshift[i], tu_height >> sps->vshift[i], i);
             if (i != CR)
                 set_tb_pos(fc, tb);
@@ -1125,11 +1129,14 @@ static void sbt_info(VVCLocalContext *lc, const VVCSPS *sps)
 
 static int skipped_transform_tree_unit(VVCLocalContext *lc)
 {
-    const CodingUnit *cu = lc->cu;
+    const H266RawSPS *rsps = lc->fc->ps.sps->r;
+    const CodingUnit *cu   = lc->cu;
     int ret;
 
-    set_qp_y(lc, cu->x0, cu->y0, 0);
-    set_qp_c(lc);
+    if (cu->tree_type != DUAL_TREE_CHROMA)
+        set_qp_y(lc, cu->x0, cu->y0, 0);
+    if (rsps->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
+        set_qp_c(lc);
     ret = skipped_transform_tree(lc, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
     if (ret < 0)
         return ret;
@@ -1815,7 +1822,6 @@ static int hls_coding_unit(VVCLocalContext *lc, int x0, int y0, int cb_width, in
         if (ret < 0)
             return ret;
     } else {
-        av_assert0(tree_type == SINGLE_TREE);
         ret = skipped_transform_tree_unit(lc);
         if (ret < 0)
             return ret;

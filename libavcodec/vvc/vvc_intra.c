@@ -602,8 +602,10 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
         if (cu->coded_flag) {
             ret = reconstruct(lc);
         } else {
-            add_reconstructed_area(lc, LUMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
-            add_reconstructed_area(lc, CHROMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
+            if (cu->tree_type != DUAL_TREE_CHROMA)
+                add_reconstructed_area(lc, LUMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
+            if (sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
+                add_reconstructed_area(lc, CHROMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
         }
         cu = cu->next;
     }
