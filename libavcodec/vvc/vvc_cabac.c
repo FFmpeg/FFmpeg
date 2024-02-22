@@ -1196,10 +1196,10 @@ VVCSplitMode ff_vvc_split_mode(VVCLocalContext *lc, const int x0, const int y0, 
 int ff_vvc_non_inter_flag(VVCLocalContext *lc, const int x0, const int y0, const int ch_type)
 {
     const VVCFrameContext *fc = lc->fc;
-    uint8_t inc, left = 0, top = 0;
+    uint8_t inc, left = MODE_INTER, top = MODE_INTER;
 
     get_left_top(lc, &left, &top, x0, y0, fc->tab.cpm[ch_type], fc->tab.cpm[ch_type]);
-    inc = left || top;
+    inc = left == MODE_INTRA || top == MODE_INTRA;
     return GET_CABAC(NON_INTER_FLAG + inc);
 }
 
@@ -1207,10 +1207,10 @@ int ff_vvc_pred_mode_flag(VVCLocalContext *lc, const int is_chroma)
 {
     const VVCFrameContext *fc = lc->fc;
     const CodingUnit *cu      = lc->cu;
-    uint8_t inc, left = 0, top = 0;
+    uint8_t inc, left = MODE_INTER, top = MODE_INTER;
 
     get_left_top(lc, &left, &top, cu->x0, cu->y0, fc->tab.cpm[is_chroma], fc->tab.cpm[is_chroma]);
-    inc = left || top;
+    inc = left == MODE_INTRA || top == MODE_INTRA;
     return GET_CABAC(PRED_MODE_FLAG + inc);
 }
 
@@ -1569,7 +1569,7 @@ int ff_vvc_amvr_shift(VVCLocalContext *lc, const int inter_affine_flag,
 {
     int amvr_shift = 2;
     if (has_amvr_flag) {
-        if (amvr_flag(lc, inter_affine_flag)) {
+        if (pred_mode == MODE_IBC || amvr_flag(lc, inter_affine_flag)) {
             int idx;
             if (inter_affine_flag) {
                 idx = amvr_precision_idx(lc, 2, 1);
