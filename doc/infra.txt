@@ -1,0 +1,94 @@
+FFmpeg Infrastructure:
+======================
+
+
+
+
+Servers:
+~~~~~~~~
+
+
+Main Server:
+------------
+Our Main server is hosted at telepoint.bg
+for more details see: https://www.ffmpeg.org/#thanks_sponsor_0001
+Nothing runs on our main server directly, instead several VMs run on it.
+
+
+ffmpeg.org VM:
+--------------
+Web, mail, and public facing git, also website git
+
+
+fftrac VM:
+----------
+trac.ffmpeg.org         Issue tracking
+
+
+ffaux VM:
+---------
+patchwork.ffmpeg.org    Patch tracking
+vote.ffmpeg.org         Condorcet voting
+
+
+fate:
+-----
+fate.ffmpeg.org         FFmpeg automated testing environment
+
+
+coverage:
+---------
+coverage.ffmpeg.org     Fate code coverage
+
+
+The main and fate server as well as VMs currently run ubuntu
+
+
+
+Cronjobs:
+~~~~~~~~~
+Part of the docs is in the main ffmpeg repository as texi files, this part is build by a cronjob. So is the
+doxygen stuff as well as the FFmpeg git snapshot.
+These 3 scripts are under the ffcron user
+
+
+
+Git:
+~~~~
+Public facing git is provided by our infra, (https://git.ffmpeg.org/gitweb)
+main developer ffmpeg git repository for historic reasons is provided by (git@source.ffmpeg.org:ffmpeg)
+Other developer git repositories are provided via git@git.ffmpeg.org:<NAME_OF_REPOSITORY>
+git mirrors are available on https://github.com/FFmpeg
+(there are some exceptions where primary repositories are on github or elsewhere instead of the mirrors)
+
+Github mirrors are redundantly synced by multiple people
+
+You need a new git repository related to FFmpeg ? contact root at ffmpeg.org
+
+
+Fate:
+~~~~~
+fatesamples are provided via rsync. Every FFmpeg developer who has a shell account in ffmpeg.org
+should be in the samples group and be able to upload samples.
+See https://www.ffmpeg.org/fate.html#Uploading-new-samples-to-the-fate-suite
+
+
+
+Accounts:
+~~~~~~~~~
+You need an account for some FFmpeg work? Send mail to root at ffmpeg.org
+
+
+
+VMs:
+~~~~
+You need a VM, docker container for FFmpeg? contact root at ffmpeg.org
+(for docker, CC Andriy)
+
+
+
+IRC:
+~~~~
+irc channels are at https://libera.chat/
+irc channel archives are at https://libera.irclog.whitequark.org
+
