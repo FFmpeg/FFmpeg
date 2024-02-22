@@ -746,16 +746,16 @@ static int do_audio_out(OutputFile *of, OutputStream *ost,
 }
 
 static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
-                                          AVRational tb, const AVFrame *in_picture)
+                                          const AVFrame *frame)
 {
     double pts_time;
 
     if (kf->ref_pts == AV_NOPTS_VALUE)
-        kf->ref_pts = in_picture->pts;
+        kf->ref_pts = frame->pts;
 
-    pts_time = (in_picture->pts - kf->ref_pts) * av_q2d(tb);
+    pts_time = (frame->pts - kf->ref_pts) * av_q2d(frame->time_base);
     if (kf->index < kf->nb_pts &&
-        av_compare_ts(in_picture->pts, tb, kf->pts[kf->index], AV_TIME_BASE_Q) >= 0) {
+        av_compare_ts(frame->pts, frame->time_base, kf->pts[kf->index], AV_TIME_BASE_Q) >= 0) {
         kf->index++;
         goto force_keyframe;
     } else if (kf->pexpr) {
@@ -780,7 +780,7 @@ static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
             kf->expr_const_values[FKF_N_FORCED]     += 1;
             goto force_keyframe;
         }
-    } else if (kf->type == KF_FORCE_SOURCE && (in_picture->flags & AV_FRAME_FLAG_KEY)) {
+    } else if (kf->type == KF_FORCE_SOURCE && (frame->flags & AV_FRAME_FLAG_KEY)) {
         goto force_keyframe;
     }
 
@@ -801,7 +801,7 @@ static int do_video_out(OutputFile *of, OutputStream *ost,
         return AVERROR_EOF;
 
     in_picture->quality = enc->global_quality;
-    in_picture->pict_type = forced_kf_apply(ost, &ost->kf, enc->time_base, in_picture);
+    in_picture->pict_type = forced_kf_apply(ost, &ost->kf, in_picture);
 
 #if FFMPEG_OPT_TOP
     if (ost->top_field_first >= 0) {
