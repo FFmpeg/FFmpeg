@@ -1776,7 +1776,7 @@ static int hls_coding_unit(VVCLocalContext *lc, int x0, int y0, int cb_width, in
             } else {
                 intra_luma_pred_modes(lc);
             }
-            ff_vvc_set_intra_mvf(lc);
+            ff_vvc_set_intra_mvf(lc, 0);
         }
         if ((tree_type == SINGLE_TREE || tree_type == DUAL_TREE_CHROMA) && sps->r->sps_chroma_format_idc) {
             if (pred_mode_plt_flag && tree_type == DUAL_TREE_CHROMA) {

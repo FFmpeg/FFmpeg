@@ -262,11 +262,11 @@ void ff_vvc_set_mvf(const VVCLocalContext *lc, const int x0, const int y0, const
     }
 }
 
-void ff_vvc_set_intra_mvf(const VVCLocalContext *lc)
+void ff_vvc_set_intra_mvf(const VVCLocalContext *lc, const int dmvr)
 {
     const VVCFrameContext *fc   = lc->fc;
     const CodingUnit *cu        = lc->cu;
-    MvField *tab_mvf            = fc->tab.mvf;
+    MvField *tab_mvf            = dmvr ? fc->ref->tab_dmvr_mvf : fc->tab.mvf;
     const int min_pu_width      = fc->ps.pps->min_pu_width;
     const int min_pu_size       = 1 << MIN_PU_LOG2;
     for (int dy = 0; dy < cu->cb_height; dy += min_pu_size) {
