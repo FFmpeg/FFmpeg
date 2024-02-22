@@ -727,24 +727,6 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
     av_assert0(0);
 }
 
-static int do_audio_out(OutputFile *of, OutputStream *ost,
-                        AVFrame *frame, AVPacket *pkt)
-{
-    AVCodecContext *enc = ost->enc_ctx;
-
-    if (!(enc->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
-        enc->ch_layout.nb_channels != frame->ch_layout.nb_channels) {
-        av_log(ost, AV_LOG_ERROR,
-               "Audio channel count changed and encoder does not support parameter changes\n");
-        return 0;
-    }
-
-    if (!check_recording_time(ost, frame->pts, frame->time_base))
-        return AVERROR_EOF;
-
-    return encode_frame(of, ost, frame, pkt);
-}
-
 static enum AVPictureType forced_kf_apply(void *logctx, KeyframeForceCtx *kf,
                                           const AVFrame *frame)
 {
@@ -791,28 +773,6 @@ force_keyframe:
     return AV_PICTURE_TYPE_I;
 }
 
-/* May modify/reset frame */
-static int do_video_out(OutputFile *of, OutputStream *ost,
-                        AVFrame *in_picture, AVPacket *pkt)
-{
-    AVCodecContext *enc = ost->enc_ctx;
-
-    if (!check_recording_time(ost, in_picture->pts, ost->enc_ctx->time_base))
-        return AVERROR_EOF;
-
-    in_picture->quality = enc->global_quality;
-    in_picture->pict_type = forced_kf_apply(ost, &ost->kf, in_picture);
-
-#if FFMPEG_OPT_TOP
-    if (ost->top_field_first >= 0) {
-        in_picture->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
-        in_picture->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * (!!ost->top_field_first);
-    }
-#endif
-
-    return encode_frame(of, ost, in_picture, pkt);
-}
-
 static int frame_encode(OutputStream *ost, AVFrame *frame, AVPacket *pkt)
 {
     OutputFile *of = ost->file;
@@ -828,11 +788,30 @@ static int frame_encode(OutputStream *ost, AVFrame *frame, AVPacket *pkt)
     }
 
     if (frame) {
-        return (type == AVMEDIA_TYPE_VIDEO) ? do_video_out(of, ost, frame, pkt) :
-                                              do_audio_out(of, ost, frame, pkt);
+        if (!check_recording_time(ost, frame->pts, frame->time_base))
+            return AVERROR_EOF;
+
+        if (type == AVMEDIA_TYPE_VIDEO) {
+            frame->quality   = ost->enc_ctx->global_quality;
+            frame->pict_type = forced_kf_apply(ost, &ost->kf, frame);
+
+#if FFMPEG_OPT_TOP
+            if (ost->top_field_first >= 0) {
+                frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+                frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * (!!ost->top_field_first);
+            }
+#endif
+        } else {
+            if (!(ost->enc_ctx->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
+                ost->enc_ctx->ch_layout.nb_channels != frame->ch_layout.nb_channels) {
+                av_log(ost, AV_LOG_ERROR,
+                       "Audio channel count changed and encoder does not support parameter changes\n");
+                return 0;
+            }
+        }
     }
 
-    return  encode_frame(of, ost, NULL, pkt);
+    return encode_frame(of, ost, frame, pkt);
 }
 
 static void enc_thread_set_name(const OutputStream *ost)
