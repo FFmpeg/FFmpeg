@@ -474,8 +474,9 @@ static void vvc_deblock_subblock_bs_horizontal(const VVCLocalContext *lc,
     }
 }
 
-static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height)
+static av_always_inline int deblock_bs(const VVCLocalContext *lc,
+    const int x_p, const int y_p, const int x_q, const int y_q,
+    const RefPicList *rpl_p, const int c_idx, const int off_to_cb, const uint8_t has_sub_block)
 {
     const VVCFrameContext *fc  = lc->fc;
     const MvField *tab_mvf     = fc->tab.mvf;
@@ -483,6 +484,44 @@ static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
     const int log2_min_tu_size = MIN_TU_LOG2;
     const int min_pu_width     = fc->ps.pps->min_pu_width;
     const int min_tu_width     = fc->ps.pps->min_tu_width;
+    const int pu_p             = (y_p >> log2_min_pu_size) * min_pu_width  + (x_p >>  log2_min_pu_size);
+    const int pu_q             = (y_q >> log2_min_pu_size) * min_pu_width  + (x_q >>  log2_min_pu_size);
+    const MvField *mvf_p       = &tab_mvf[pu_p];
+    const MvField *mvf_q       = &tab_mvf[pu_q];
+    const uint8_t chroma       = !!c_idx;
+    const int tu_p             = (y_p >> log2_min_tu_size) * min_tu_width  + (x_p >>  log2_min_tu_size);
+    const int tu_q             = (y_q >> log2_min_tu_size) * min_tu_width  + (x_q >>  log2_min_tu_size);
+    const uint8_t pcmf         = fc->tab.pcmf[chroma][tu_p] && fc->tab.pcmf[chroma][tu_q];
+
+    if (pcmf)
+        return 0;
+
+    if (mvf_p->pred_flag == PF_INTRA || mvf_q->pred_flag == PF_INTRA || mvf_p->ciip_flag || mvf_q->ciip_flag)
+        return 2;
+
+    if (chroma) {
+        return fc->tab.tu_coded_flag[c_idx][tu_p] ||
+               fc->tab.tu_coded_flag[c_idx][tu_q] ||
+               fc->tab.tu_joint_cbcr_residual_flag[tu_p] ||
+               fc->tab.tu_joint_cbcr_residual_flag[tu_q];
+    }
+
+    if (fc->tab.tu_coded_flag[LUMA][tu_p] || fc->tab.tu_coded_flag[LUMA][tu_q])
+        return 1;
+
+    if ((off_to_cb && ((off_to_cb % 8) || !has_sub_block)))
+        return 0;                                     // inside a cu, not aligned to 8 or with no subblocks
+
+    return boundary_strength(lc, mvf_q, mvf_p, rpl_p);
+}
+
+static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
+    const int x0, const int y0, const int width, const int height)
+{
+    const VVCFrameContext *fc  = lc->fc;
+    const MvField *tab_mvf     = fc->tab.mvf;
+    const int log2_min_pu_size = MIN_PU_LOG2;
+    const int min_pu_width     = fc->ps.pps->min_pu_width;
     const int min_cb_log2      = fc->ps.sps->min_cb_log2_size_y;
     const int min_cb_width     = fc->ps.pps->min_cb_width;
     const int is_intra         = tab_mvf[(y0 >> log2_min_pu_size) * min_pu_width +
@@ -494,6 +533,7 @@ static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
     const int cb_x             = fc->tab.cb_pos_x[LUMA][off_q];
     const int cb_y             = fc->tab.cb_pos_y[LUMA][off_q];
     const int cb_width         = fc->tab.cb_width[LUMA][off_q];
+    const int off_x            = cb_x - x0;
 
     if (!is_intra) {
         if (fc->tab.msf[off_q] || fc->tab.iaf[off_q])
@@ -514,34 +554,9 @@ static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
     if (boundary_left) {
         const RefPicList *rpl_left =
             (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ? ff_vvc_get_ref_list(fc, fc->ref, x0 - 1, y0) : lc->sc->rpl;
-        const int xp_pu = (x0 - 1) >> log2_min_pu_size;
-        const int xq_pu =  x0      >> log2_min_pu_size;
-        const int xp_tu = (x0 - 1) >> log2_min_tu_size;
-        const int xq_tu =  x0      >> log2_min_tu_size;
-
         for (int i = 0; i < height; i += 4) {
-            const int off_x = cb_x - x0;
-            const int y_pu  = (y0 + i) >> log2_min_pu_size;
-            const int y_tu  = (y0 + i) >> log2_min_tu_size;
-            const MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
-            const MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
-            const uint8_t left_cbf_luma = fc->tab.tu_coded_flag[LUMA][y_tu * min_tu_width + xp_tu];
-            const uint8_t curr_cbf_luma = fc->tab.tu_coded_flag[LUMA][y_tu * min_tu_width + xq_tu];
-            const uint8_t pcmf          = fc->tab.pcmf[LUMA][y_tu * min_tu_width + xp_tu] &&
-                fc->tab.pcmf[LUMA][y_tu * min_tu_width + xq_tu];
             uint8_t max_len_p, max_len_q;
-            int bs;
-
-            if (pcmf)
-                bs = 0;
-            else if (curr->pred_flag == PF_INTRA || left->pred_flag == PF_INTRA || curr->ciip_flag || left->ciip_flag)
-                bs = 2;
-            else if (curr_cbf_luma || left_cbf_luma)
-                bs = 1;
-            else if (off_x && ((off_x % 8) || !has_vertical_sb))
-                bs = 0;                                     ////inside a cu, not aligned to 8 or with no subblocks
-            else
-                bs = boundary_strength(lc, curr, left, rpl_left);
+            const int bs = deblock_bs(lc, x0 - 1, y0 + i, x0, y0 + i, rpl_left, 0, off_x, has_vertical_sb);
 
             TAB_BS(fc->tab.vertical_bs[LUMA], x0, (y0 + i)) = bs;
 
@@ -561,11 +576,9 @@ static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
     const int x0, const int y0, const int width, const int height)
 {
     const VVCFrameContext *fc  = lc->fc;
-    const MvField *tab_mvf           = fc->tab.mvf;
+    const MvField *tab_mvf     = fc->tab.mvf;
     const int log2_min_pu_size = MIN_PU_LOG2;
-    const int log2_min_tu_size = MIN_TU_LOG2;
     const int min_pu_width     = fc->ps.pps->min_pu_width;
-    const int min_tu_width     = fc->ps.pps->min_tu_width;
     const int min_cb_log2      = fc->ps.sps->min_cb_log2_size_y;
     const int min_cb_width     = fc->ps.pps->min_cb_width;
     const int is_intra = tab_mvf[(y0 >> log2_min_pu_size) * min_pu_width +
@@ -577,6 +590,7 @@ static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
     const int cb_x             = fc->tab.cb_pos_x[LUMA][off_q];
     const int cb_y             = fc->tab.cb_pos_y[LUMA][off_q];
     const int cb_height        = fc->tab.cb_height[LUMA][off_q];
+    const int off_y            = y0 - cb_y;
 
     if (!is_intra) {
         if (fc->tab.msf[off_q] || fc->tab.iaf[off_q])
@@ -596,34 +610,10 @@ static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
     if (boundary_upper) {
         const RefPicList *rpl_top =
             (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ? ff_vvc_get_ref_list(fc, fc->ref, x0, y0 - 1) : lc->sc->rpl;
-        int yp_pu = (y0 - 1) >> log2_min_pu_size;
-        int yq_pu =  y0      >> log2_min_pu_size;
-        int yp_tu = (y0 - 1) >> log2_min_tu_size;
-        int yq_tu =  y0      >> log2_min_tu_size;
 
         for (int i = 0; i < width; i += 4) {
-            const int off_y = y0 - cb_y;
-            const int x_pu  = (x0 + i) >> log2_min_pu_size;
-            const int x_tu  = (x0 + i) >> log2_min_tu_size;
-            const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
-            const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
-            const uint8_t top_cbf_luma  = fc->tab.tu_coded_flag[LUMA][yp_tu * min_tu_width + x_tu];
-            const uint8_t curr_cbf_luma = fc->tab.tu_coded_flag[LUMA][yq_tu * min_tu_width + x_tu];
-            const uint8_t pcmf          = fc->tab.pcmf[LUMA][yp_tu * min_tu_width + x_tu] &&
-                fc->tab.pcmf[LUMA][yq_tu * min_tu_width + x_tu];
             uint8_t max_len_p, max_len_q;
-            int bs;
-
-            if (pcmf)
-                bs = 0;
-            else if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA || curr->ciip_flag || top->ciip_flag)
-                bs = 2;
-            else if (curr_cbf_luma || top_cbf_luma)
-                bs = 1;
-            else if (off_y && ((off_y % 8) || !has_horizontal_sb))
-                bs = 0;                                     //inside a cu, not aligned to 8 or with no subblocks
-            else
-                bs = boundary_strength(lc, curr, top, rpl_top);
+            const int bs = deblock_bs(lc, x0 + i, y0 - 1, x0 + i, y0, rpl_top, 0, off_y, has_horizontal_sb);
 
             TAB_BS(fc->tab.horizontal_bs[LUMA], x0 + i, y0) = bs;
 
@@ -642,12 +632,7 @@ static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
 static void vvc_deblock_bs_chroma_vertical(const VVCLocalContext *lc,
     const int x0, const int y0, const int width, const int height)
 {
-    const VVCFrameContext *fc  = lc->fc;
-    const MvField *tab_mvf           = fc->tab.mvf;
-    const int log2_min_pu_size = MIN_PU_LOG2;
-    const int log2_min_tu_size = MIN_PU_LOG2;
-    const int min_pu_width     = fc->ps.pps->min_pu_width;
-    const int min_tu_width     = fc->ps.pps->min_tu_width;
+    const VVCFrameContext *fc = lc->fc;
     int boundary_left;
 
     // bs for vertical TU boundaries
@@ -662,34 +647,11 @@ static void vvc_deblock_bs_chroma_vertical(const VVCLocalContext *lc,
         boundary_left = 0;
 
     if (boundary_left) {
-        const int xp_pu = (x0 - 1) >> log2_min_pu_size;
-        const int xq_pu =  x0      >> log2_min_pu_size;
-        const int xp_tu = (x0 - 1) >> log2_min_tu_size;
-        const int xq_tu =  x0      >> log2_min_tu_size;
-
         for (int i = 0; i < height; i += 2) {
-            const int y_pu      = (y0 + i) >> log2_min_pu_size;
-            const int y_tu      = (y0 + i) >> log2_min_tu_size;
-            const MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
-            const MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
-            const int left_tu   = y_tu * min_tu_width + xp_tu;
-            const int curr_tu   = y_tu * min_tu_width + xq_tu;
-            const uint8_t pcmf  = fc->tab.pcmf[CHROMA][left_tu] && fc->tab.pcmf[CHROMA][curr_tu];
+            for (int c_idx = CB; c_idx <= CR; c_idx++) {
+                const int bs = deblock_bs(lc, x0 - 1, y0 + i, x0, y0 + i, NULL, c_idx, 0, 0);
 
-            for (int c = CB; c <= CR; c++) {
-                uint8_t cbf = fc->tab.tu_coded_flag[c][left_tu] |
-                    fc->tab.tu_coded_flag[c][curr_tu] |
-                    fc->tab.tu_joint_cbcr_residual_flag[left_tu] |
-                    fc->tab.tu_joint_cbcr_residual_flag[curr_tu];
-                int bs = 0;
-
-                if (pcmf)
-                    bs = 0;
-                else if (curr->pred_flag == PF_INTRA || left->pred_flag == PF_INTRA || curr->ciip_flag || left->ciip_flag)
-                    bs = 2;
-                else if (cbf)
-                    bs = 1;
-                TAB_BS(fc->tab.vertical_bs[c], x0, (y0 + i)) = bs;
+                TAB_BS(fc->tab.vertical_bs[c_idx], x0, (y0 + i)) = bs;
             }
         }
     }
@@ -699,11 +661,6 @@ static void vvc_deblock_bs_chroma_horizontal(const VVCLocalContext *lc,
     const int x0, const int y0, const int width, const int height)
 {
     const VVCFrameContext *fc = lc->fc;
-    MvField *tab_mvf = fc->tab.mvf;
-    const int log2_min_pu_size = MIN_PU_LOG2;
-    const int log2_min_tu_size = MIN_PU_LOG2;
-    const int min_pu_width = fc->ps.pps->min_pu_width;
-    const int min_tu_width = fc->ps.pps->min_tu_width;
     int boundary_upper;
 
     boundary_upper = y0 > 0 && !(y0 & ((CHROMA_GRID << fc->ps.sps->vshift[1]) - 1));
@@ -717,34 +674,11 @@ static void vvc_deblock_bs_chroma_horizontal(const VVCLocalContext *lc,
         boundary_upper = 0;
 
     if (boundary_upper) {
-        int yp_pu = (y0 - 1) >> log2_min_pu_size;
-        int yq_pu = y0 >> log2_min_pu_size;
-        int yp_tu = (y0 - 1) >> log2_min_tu_size;
-        int yq_tu = y0 >> log2_min_tu_size;
-
         for (int i = 0; i < width; i += 2) {
-            const int x_pu = (x0 + i) >> log2_min_pu_size;
-            const int x_tu = (x0 + i) >> log2_min_tu_size;
-            const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
-            const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
-            const int top_tu  = yp_tu * min_tu_width + x_tu;
-            const int curr_tu = yq_tu * min_tu_width + x_tu;
-            const uint8_t pcmf = fc->tab.pcmf[CHROMA][top_tu] && fc->tab.pcmf[CHROMA][curr_tu];
+            for (int c_idx = CB; c_idx <= CR; c_idx++) {
+                const int bs = deblock_bs(lc, x0 + i, y0 - 1, x0 + i, y0, NULL, c_idx, 0, 0);
 
-            for (int c = CB; c <= CR; c++) {
-                uint8_t cbf = fc->tab.tu_coded_flag[c][top_tu] |
-                    fc->tab.tu_coded_flag[c][curr_tu] |
-                    fc->tab.tu_joint_cbcr_residual_flag[top_tu] |
-                    fc->tab.tu_joint_cbcr_residual_flag[curr_tu];
-                int bs = 0;
-
-                if (pcmf)
-                    bs = 0;
-                else if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA || curr->ciip_flag || top->ciip_flag)
-                    bs = 2;
-                else if (cbf)
-                    bs = 1;
-                TAB_BS(fc->tab.horizontal_bs[c], x0 + i, y0) = bs;
+                TAB_BS(fc->tab.horizontal_bs[c_idx], x0 + i, y0) = bs;
             }
         }
     }
