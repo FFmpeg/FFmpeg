@@ -20,11 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "libavutil/frame.h"
+#include "libavutil/imgutils.h"
 
 #include "vvc_data.h"
 #include "vvc_inter.h"
 #include "vvc_intra.h"
 #include "vvc_itx_1d.h"
+#include "vvc_mvs.h"
 
 static int is_cclm(enum IntraPredMode mode)
 {
@@ -580,6 +582,81 @@ static int reconstruct(VVCLocalContext *lc)
     return 0;
 }
 
+#define POS(c_idx, x, y)    \
+    &fc->frame->data[c_idx][((y) >> fc->ps.sps->vshift[c_idx]) * fc->frame->linesize[c_idx] +   \
+        (((x) >> fc->ps.sps->hshift[c_idx]) << fc->ps.sps->pixel_shift)]
+
+#define IBC_POS(c_idx, x, y) \
+    (fc->tab.ibc_vir_buf[c_idx] + \
+        (x << ps) + (y + ((cu->y0 & ~(sps->ctb_size_y - 1)) >> vs)) * ibc_stride)
+#define IBC_X(x)  ((x) & ((fc->tab.sz.ibc_buffer_width >> hs) - 1))
+#define IBC_Y(y)  ((y) & ((1 << sps->ctb_log2_size_y >> vs) - 1))
+
+static void intra_block_copy(const VVCLocalContext *lc, const int c_idx)
+{
+    const CodingUnit *cu      = lc->cu;
+    const PredictionUnit *pu  = &cu->pu;
+    const VVCFrameContext *fc = lc->fc;
+    const VVCSPS *sps         = fc->ps.sps;
+    const Mv *bv              = &pu->mi.mv[L0][0];
+    const int hs              = sps->hshift[c_idx];
+    const int vs              = sps->vshift[c_idx];
+    const int ps              = sps->pixel_shift;
+    const int ref_x           = IBC_X((cu->x0 >> hs) + (bv->x >> (4 + hs)));
+    const int ref_y           = IBC_Y((cu->y0 >> vs) + (bv->y >> (4 + vs)));
+    const int w               = cu->cb_width >> hs;
+    const int h               = cu->cb_height >> vs;
+    const int ibc_buf_width   = fc->tab.sz.ibc_buffer_width >> hs;    ///< IbcBufWidthY and IbcBufWidthC
+    const int rw              = FFMIN(w, ibc_buf_width - ref_x);
+    const int ibc_stride      = ibc_buf_width << ps;
+    const int dst_stride      = fc->frame->linesize[c_idx];
+    const uint8_t *ibc_buf    = IBC_POS(c_idx, ref_x, ref_y);
+    uint8_t *dst              = POS(c_idx, cu->x0, cu->y0);
+
+    av_image_copy_plane(dst, dst_stride, ibc_buf, ibc_stride, rw << ps, h);
+
+    if (w > rw) {
+        //wrap around, left part
+        ibc_buf = IBC_POS(c_idx, 0, ref_y);
+        dst  += rw << ps;
+        av_image_copy_plane(dst, dst_stride, ibc_buf, ibc_stride, (w - rw) << ps, h);
+    }
+}
+
+static void vvc_predict_ibc(const VVCLocalContext *lc)
+{
+    const H266RawSPS *rsps = lc->fc->ps.sps->r;
+
+    intra_block_copy(lc, LUMA);
+    if (lc->cu->tree_type == SINGLE_TREE && rsps->sps_chroma_format_idc) {
+        intra_block_copy(lc, CB);
+        intra_block_copy(lc, CR);
+    }
+}
+
+static void ibc_fill_vir_buf(const VVCLocalContext *lc, const CodingUnit *cu)
+{
+    const VVCFrameContext *fc = lc->fc;
+    const VVCSPS *sps         = fc->ps.sps;
+    const int has_chroma      = sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA;
+    const int start           = cu->tree_type == DUAL_TREE_CHROMA;
+    const int end             = has_chroma ? CR : LUMA;
+
+    for (int c_idx = start; c_idx <= end; c_idx++) {
+        const int hs = sps->hshift[c_idx];
+        const int vs = sps->vshift[c_idx];
+        const int ps = sps->pixel_shift;
+        const int x  = IBC_X(cu->x0 >> hs);
+        const int y  = IBC_Y(cu->y0 >> vs);
+        const int src_stride = fc->frame->linesize[c_idx];
+        const int ibc_stride = fc->tab.sz.ibc_buffer_width >> hs << ps;
+        const uint8_t *src   = POS(c_idx, cu->x0, cu->y0);
+        uint8_t *ibc_buf     = IBC_POS(c_idx, x, y);
+
+        av_image_copy_plane(ibc_buf, ibc_stride, src, src_stride, cu->cb_width >> hs << ps , cu->cb_height >> vs);
+    }
+}
+
 int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const int ry)
 {
     const VVCFrameContext *fc   = lc->fc;
@@ -599,6 +676,8 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
 
         if (cu->ciip_flag)
             ff_vvc_predict_ciip(lc);
+        else if (cu->pred_mode == MODE_IBC)
+            vvc_predict_ibc(lc);
         if (cu->coded_flag) {
             ret = reconstruct(lc);
         } else {
@@ -607,6 +686,8 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
             if (sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
                 add_reconstructed_area(lc, CHROMA, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
         }
+        if (sps->r->sps_ibc_enabled_flag)
+            ibc_fill_vir_buf(lc, cu);
         cu = cu->next;
     }
     ff_vvc_ctu_free_cus(ctu);
