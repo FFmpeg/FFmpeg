@@ -357,8 +357,11 @@ typedef struct EntryPoint {
     int ctu_end;
 
     uint8_t is_first_qg;                            // first quantization group
+
     MvField hmvp[MAX_NUM_HMVP_CANDS];               ///< HmvpCandList
     int     num_hmvp;                               ///< NumHmvpCand
+    MvField hmvp_ibc[MAX_NUM_HMVP_CANDS];           ///< HmvpIbcCandList
+    int     num_hmvp_ibc;                           ///< NumHmvpIbcCand
 } EntryPoint;
 
 typedef struct VVCLocalContext {

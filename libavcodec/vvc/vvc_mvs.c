@@ -1758,34 +1758,49 @@ static av_always_inline int is_greater_mer(const VVCFrameContext *fc, const int 
            y0_br >> plevel > y0 >> plevel;
 }
 
+static void update_hmvp(MvField *hmvp, int *num_hmvp, const MvField *mvf,
+    int (*compare)(const MvField *n, const MvField *o))
+{
+    int i;
+    for (i = 0; i < *num_hmvp; i++) {
+        if (compare(mvf, hmvp + i)) {
+            (*num_hmvp)--;
+            break;
+        }
+    }
+    if (i == MAX_NUM_HMVP_CANDS) {
+        (*num_hmvp)--;
+        i = 0;
+    }
+
+    memmove(hmvp + i, hmvp + i + 1, (*num_hmvp - i) * sizeof(MvField));
+    hmvp[(*num_hmvp)++] = *mvf;
+}
+
+static int compare_l0_mv(const MvField *n, const MvField *o)
+{
+    return IS_SAME_MV(&n->mv[L0], &o->mv[L0]);
+}
+
+//8.6.2.4 Derivation process for IBC history-based block vector candidates
 //8.5.2.16 Updating process for the history-based motion vector predictor candidate list
 void ff_vvc_update_hmvp(VVCLocalContext *lc, const MotionInfo *mi)
 {
     const VVCFrameContext *fc   = lc->fc;
     const CodingUnit *cu        = lc->cu;
     const int min_pu_width      = fc->ps.pps->min_pu_width;
-    const MvField* tab_mvf      = fc->tab.mvf;
-    EntryPoint* ep              = lc->ep;
-    const MvField *mvf;
-    int i;
+    const MvField *tab_mvf      = fc->tab.mvf;
+    EntryPoint *ep              = lc->ep;
 
-    if (!is_greater_mer(fc, cu->x0, cu->y0, cu->x0 + cu->cb_width, cu->y0 + cu->cb_height))
-        return;
-    mvf = &TAB_MVF(cu->x0, cu->y0);
-
-    for (i = 0; i < ep->num_hmvp; i++) {
-        if (compare_mv_ref_idx(mvf, ep->hmvp + i)) {
-            ep->num_hmvp--;
-            break;
-        }
+    if (cu->pred_mode == MODE_IBC) {
+        if (cu->cb_width * cu->cb_height <= 16)
+            return;
+        update_hmvp(ep->hmvp_ibc, &ep->num_hmvp_ibc, &TAB_MVF(cu->x0, cu->y0), compare_l0_mv);
+    } else {
+        if (!is_greater_mer(fc, cu->x0, cu->y0, cu->x0 + cu->cb_width, cu->y0 + cu->cb_height))
+            return;
+        update_hmvp(ep->hmvp, &ep->num_hmvp, &TAB_MVF(cu->x0, cu->y0), compare_mv_ref_idx);
     }
-    if (i == MAX_NUM_HMVP_CANDS) {
-        ep->num_hmvp--;
-        i = 0;
-    }
-
-    memmove(ep->hmvp + i, ep->hmvp + i + 1, (ep->num_hmvp - i) * sizeof(MvField));
-    ep->hmvp[ep->num_hmvp++] = *mvf;
 }
 
 MvField* ff_vvc_get_mvf(const VVCFrameContext *fc, const int x0, const int y0)

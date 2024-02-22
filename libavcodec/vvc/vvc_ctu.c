@@ -1717,10 +1717,15 @@ static int inter_data(VVCLocalContext *lc)
     } else {
         ret = mvp_data(lc);
     }
-    if (!pu->merge_gpm_flag && !pu->inter_affine_flag && !pu->merge_subblock_flag) {
+
+    if (cu->pred_mode == MODE_IBC)
+    {
+        ff_vvc_update_hmvp(lc, mi);
+    } else if (!pu->merge_gpm_flag && !pu->inter_affine_flag && !pu->merge_subblock_flag) {
         refine_regular_subblock(lc);
         ff_vvc_update_hmvp(lc, mi);
     }
+
     if (!pu->dmvr_flag)
         fill_dmvr_info(lc->fc, cu->x0, cu->y0, cu->cb_width, cu->cb_height);
     return ret;
@@ -2394,8 +2399,8 @@ int ff_vvc_coding_tree_unit(VVCLocalContext *lc,
     int ret;
 
     if (rx == pps->ctb_to_col_bd[rx]) {
-        //fix me for ibc
         ep->num_hmvp = 0;
+        ep->num_hmvp_ibc = 0;
         ep->is_first_qg = ry == pps->ctb_to_row_bd[ry] || !ctu_idx;
     }
 
