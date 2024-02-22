@@ -793,7 +793,7 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
     while (optindex < argc) {
         const char *opt = argv[optindex++], *arg;
         const OptionDef *po;
-        int ret;
+        int ret, group_idx;
 
         av_log(NULL, AV_LOG_DEBUG, "Reading option '%s' ...", opt);
 
@@ -822,14 +822,15 @@ do {                                                                           \
 } while (0)
 
         /* named group separators, e.g. -i */
-        if ((ret = match_group_separator(groups, nb_groups, opt)) >= 0) {
+        group_idx = match_group_separator(groups, nb_groups, opt);
+        if (group_idx >= 0) {
             GET_ARG(arg);
-            ret = finish_group(octx, ret, arg);
+            ret = finish_group(octx, group_idx, arg);
             if (ret < 0)
                 return ret;
 
             av_log(NULL, AV_LOG_DEBUG, " matched as %s with argument '%s'.\n",
-                   groups[ret].name, arg);
+                   groups[group_idx].name, arg);
             continue;
         }
 
