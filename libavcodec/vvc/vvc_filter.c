@@ -482,8 +482,10 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
     const MvField *tab_mvf     = fc->tab.mvf;
     const int log2_min_pu_size = MIN_PU_LOG2;
     const int log2_min_tu_size = MIN_TU_LOG2;
+    const int log2_min_cb_size = fc->ps.sps->min_cb_log2_size_y;
     const int min_pu_width     = fc->ps.pps->min_pu_width;
     const int min_tu_width     = fc->ps.pps->min_tu_width;
+    const int min_cb_width     = fc->ps.pps->min_cb_width;
     const int pu_p             = (y_p >> log2_min_pu_size) * min_pu_width  + (x_p >>  log2_min_pu_size);
     const int pu_q             = (y_q >> log2_min_pu_size) * min_pu_width  + (x_q >>  log2_min_pu_size);
     const MvField *mvf_p       = &tab_mvf[pu_p];
@@ -492,11 +494,14 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
     const int tu_p             = (y_p >> log2_min_tu_size) * min_tu_width  + (x_p >>  log2_min_tu_size);
     const int tu_q             = (y_q >> log2_min_tu_size) * min_tu_width  + (x_q >>  log2_min_tu_size);
     const uint8_t pcmf         = fc->tab.pcmf[chroma][tu_p] && fc->tab.pcmf[chroma][tu_q];
+    const int cb_p             = (y_p >> log2_min_cb_size) * min_cb_width  + (x_p >>  log2_min_cb_size);
+    const int cb_q             = (y_q >> log2_min_cb_size) * min_cb_width  + (x_q >>  log2_min_cb_size);
+    const uint8_t intra        = fc->tab.cpm[chroma][cb_p] == MODE_INTRA || fc->tab.cpm[chroma][cb_q] == MODE_INTRA;
 
     if (pcmf)
         return 0;
 
-    if (mvf_p->pred_flag == PF_INTRA || mvf_q->pred_flag == PF_INTRA || mvf_p->ciip_flag || mvf_q->ciip_flag)
+    if (intra || mvf_p->ciip_flag || mvf_q->ciip_flag)
         return 2;
 
     if (chroma) {
