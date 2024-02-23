@@ -35,6 +35,7 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/mastering_display_metadata.h"
 
 #include "avcodec.h"
 #include "avcodec_internal.h"
@@ -1855,6 +1856,30 @@ finish:
         *psd = sd;
 
     return ret;
+}
+
+int ff_decode_mastering_display_new(const AVCodecContext *avctx, AVFrame *frame,
+                                    AVMasteringDisplayMetadata **mdm)
+{
+    if (side_data_pref(avctx, frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA)) {
+        *mdm = NULL;
+        return 0;
+    }
+
+    *mdm = av_mastering_display_metadata_create_side_data(frame);
+    return *mdm ? 0 : AVERROR(ENOMEM);
+}
+
+int ff_decode_content_light_new(const AVCodecContext *avctx, AVFrame *frame,
+                                AVContentLightMetadata **clm)
+{
+    if (side_data_pref(avctx, frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL)) {
+        *clm = NULL;
+        return 0;
+    }
+
+    *clm = av_content_light_metadata_create_side_data(frame);
+    return *clm ? 0 : AVERROR(ENOMEM);
 }
 
 int ff_copy_palette(void *dst, const AVPacket *src, void *logctx)
