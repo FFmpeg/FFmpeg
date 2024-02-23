@@ -999,31 +999,39 @@ static int export_metadata(AVCodecContext *avctx, AVFrame *frame)
     int ret = 0;
 
     if (s->mdcv) {
-        AVMasteringDisplayMetadata *mastering = av_mastering_display_metadata_create_side_data(frame);
-        if (!mastering)
-            return AVERROR(ENOMEM);
+        AVMasteringDisplayMetadata *mastering;
 
-        for (int i = 0; i < 3; i++) {
-            mastering->display_primaries[i][0] = av_make_q(s->mdcv->primary_chromaticity_x[i], 1 << 16);
-            mastering->display_primaries[i][1] = av_make_q(s->mdcv->primary_chromaticity_y[i], 1 << 16);
+        ret = ff_decode_mastering_display_new(avctx, frame, &mastering);
+        if (ret < 0)
+            return ret;
+
+        if (mastering) {
+            for (int i = 0; i < 3; i++) {
+                mastering->display_primaries[i][0] = av_make_q(s->mdcv->primary_chromaticity_x[i], 1 << 16);
+                mastering->display_primaries[i][1] = av_make_q(s->mdcv->primary_chromaticity_y[i], 1 << 16);
+            }
+            mastering->white_point[0] = av_make_q(s->mdcv->white_point_chromaticity_x, 1 << 16);
+            mastering->white_point[1] = av_make_q(s->mdcv->white_point_chromaticity_y, 1 << 16);
+
+            mastering->max_luminance = av_make_q(s->mdcv->luminance_max, 1 << 8);
+            mastering->min_luminance = av_make_q(s->mdcv->luminance_min, 1 << 14);
+
+            mastering->has_primaries = 1;
+            mastering->has_luminance = 1;
         }
-        mastering->white_point[0] = av_make_q(s->mdcv->white_point_chromaticity_x, 1 << 16);
-        mastering->white_point[1] = av_make_q(s->mdcv->white_point_chromaticity_y, 1 << 16);
-
-        mastering->max_luminance = av_make_q(s->mdcv->luminance_max, 1 << 8);
-        mastering->min_luminance = av_make_q(s->mdcv->luminance_min, 1 << 14);
-
-        mastering->has_primaries = 1;
-        mastering->has_luminance = 1;
     }
 
     if (s->cll) {
-        AVContentLightMetadata *light = av_content_light_metadata_create_side_data(frame);
-        if (!light)
-            return AVERROR(ENOMEM);
+        AVContentLightMetadata *light;
 
-        light->MaxCLL = s->cll->max_cll;
-        light->MaxFALL = s->cll->max_fall;
+        ret = ff_decode_content_light_new(avctx, frame, &light);
+        if (ret < 0)
+            return ret;
+
+        if (light) {
+            light->MaxCLL = s->cll->max_cll;
+            light->MaxFALL = s->cll->max_fall;
+        }
     }
 
     while (av_fifo_read(s->itut_t35_fifo, &itut_t35, 1) >= 0) {

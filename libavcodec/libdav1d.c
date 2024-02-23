@@ -487,33 +487,38 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     }
 
     if (p->mastering_display) {
-        AVMasteringDisplayMetadata *mastering = av_mastering_display_metadata_create_side_data(frame);
-        if (!mastering) {
-            res = AVERROR(ENOMEM);
+        AVMasteringDisplayMetadata *mastering;
+
+        res = ff_decode_mastering_display_new(c, frame, &mastering);
+        if (res < 0)
             goto fail;
+
+        if (mastering) {
+            for (int i = 0; i < 3; i++) {
+                mastering->display_primaries[i][0] = av_make_q(p->mastering_display->primaries[i][0], 1 << 16);
+                mastering->display_primaries[i][1] = av_make_q(p->mastering_display->primaries[i][1], 1 << 16);
+            }
+            mastering->white_point[0] = av_make_q(p->mastering_display->white_point[0], 1 << 16);
+            mastering->white_point[1] = av_make_q(p->mastering_display->white_point[1], 1 << 16);
+
+            mastering->max_luminance = av_make_q(p->mastering_display->max_luminance, 1 << 8);
+            mastering->min_luminance = av_make_q(p->mastering_display->min_luminance, 1 << 14);
+
+            mastering->has_primaries = 1;
+            mastering->has_luminance = 1;
         }
-
-        for (int i = 0; i < 3; i++) {
-            mastering->display_primaries[i][0] = av_make_q(p->mastering_display->primaries[i][0], 1 << 16);
-            mastering->display_primaries[i][1] = av_make_q(p->mastering_display->primaries[i][1], 1 << 16);
-        }
-        mastering->white_point[0] = av_make_q(p->mastering_display->white_point[0], 1 << 16);
-        mastering->white_point[1] = av_make_q(p->mastering_display->white_point[1], 1 << 16);
-
-        mastering->max_luminance = av_make_q(p->mastering_display->max_luminance, 1 << 8);
-        mastering->min_luminance = av_make_q(p->mastering_display->min_luminance, 1 << 14);
-
-        mastering->has_primaries = 1;
-        mastering->has_luminance = 1;
     }
     if (p->content_light) {
-        AVContentLightMetadata *light = av_content_light_metadata_create_side_data(frame);
-        if (!light) {
-            res = AVERROR(ENOMEM);
+        AVContentLightMetadata *light;
+
+        res = ff_decode_content_light_new(c, frame, &light);
+        if (res < 0)
             goto fail;
+
+        if (light) {
+            light->MaxCLL = p->content_light->max_content_light_level;
+            light->MaxFALL = p->content_light->max_frame_average_light_level;
         }
-        light->MaxCLL = p->content_light->max_content_light_level;
-        light->MaxFALL = p->content_light->max_frame_average_light_level;
     }
     if (p->itut_t35) {
 #if FF_DAV1D_VERSION_AT_LEAST(6,9)

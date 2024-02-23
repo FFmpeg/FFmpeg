@@ -746,33 +746,41 @@ static int populate_avctx_color_fields(AVCodecContext *avctx, AVFrame *frame)
         avctx->bits_per_raw_sample = s->significant_bits;
 
     if (s->have_clli) {
-        AVContentLightMetadata *clli =
-            av_content_light_metadata_create_side_data(frame);
-        if (!clli)
-            return AVERROR(ENOMEM);
-        /*
-         * 0.0001 divisor value
-         * see: https://www.w3.org/TR/png-3/#cLLi-chunk
-         */
-        clli->MaxCLL = s->clli_max / 10000;
-        clli->MaxFALL = s->clli_avg / 10000;
+        AVContentLightMetadata *clli;
+
+        ret = ff_decode_content_light_new(avctx, frame, &clli);
+        if (ret < 0)
+            return ret;
+
+        if (clli) {
+            /*
+             * 0.0001 divisor value
+             * see: https://www.w3.org/TR/png-3/#cLLi-chunk
+             */
+            clli->MaxCLL = s->clli_max / 10000;
+            clli->MaxFALL = s->clli_avg / 10000;
+        }
     }
 
     if (s->have_mdvc) {
-        AVMasteringDisplayMetadata *mdvc =
-            av_mastering_display_metadata_create_side_data(frame);
-        if (!mdvc)
-            return AVERROR(ENOMEM);
-        mdvc->has_primaries = 1;
-        for (int i = 0; i < 3; i++) {
-            mdvc->display_primaries[i][0] = av_make_q(s->mdvc_primaries[i][0], 50000);
-            mdvc->display_primaries[i][1] = av_make_q(s->mdvc_primaries[i][1], 50000);
+        AVMasteringDisplayMetadata *mdvc;
+
+        ret = ff_decode_mastering_display_new(avctx, frame, &mdvc);
+        if (ret < 0)
+            return ret;
+
+        if (mdvc) {
+            mdvc->has_primaries = 1;
+            for (int i = 0; i < 3; i++) {
+                mdvc->display_primaries[i][0] = av_make_q(s->mdvc_primaries[i][0], 50000);
+                mdvc->display_primaries[i][1] = av_make_q(s->mdvc_primaries[i][1], 50000);
+            }
+            mdvc->white_point[0] = av_make_q(s->mdvc_white_point[0], 50000);
+            mdvc->white_point[1] = av_make_q(s->mdvc_white_point[1], 50000);
+            mdvc->has_luminance = 1;
+            mdvc->max_luminance = av_make_q(s->mdvc_max_lum, 10000);
+            mdvc->min_luminance = av_make_q(s->mdvc_min_lum, 10000);
         }
-        mdvc->white_point[0] = av_make_q(s->mdvc_white_point[0], 50000);
-        mdvc->white_point[1] = av_make_q(s->mdvc_white_point[1], 50000);
-        mdvc->has_luminance = 1;
-        mdvc->max_luminance = av_make_q(s->mdvc_max_lum, 10000);
-        mdvc->min_luminance = av_make_q(s->mdvc_min_lum, 10000);
     }
 
     return 0;

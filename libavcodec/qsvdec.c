@@ -651,42 +651,50 @@ static int qsv_export_film_grain(AVCodecContext *avctx, mfxExtAV1FilmGrainParam 
 static int qsv_export_hdr_side_data(AVCodecContext *avctx, mfxExtMasteringDisplayColourVolume *mdcv,
                                     mfxExtContentLightLevelInfo *clli, AVFrame *frame)
 {
+    int ret;
+
     // The SDK re-uses this flag for HDR SEI parsing
     if (mdcv->InsertPayloadToggle) {
-        AVMasteringDisplayMetadata *mastering = av_mastering_display_metadata_create_side_data(frame);
+        AVMasteringDisplayMetadata *mastering;
         const int mapping[3] = {2, 0, 1};
         const int chroma_den = 50000;
         const int luma_den = 10000;
         int i;
 
-        if (!mastering)
-            return AVERROR(ENOMEM);
+        ret = ff_decode_mastering_display_new(avctx, frame, &mastering);
+        if (ret < 0)
+            return ret;
 
-        for (i = 0; i < 3; i++) {
-            const int j = mapping[i];
-            mastering->display_primaries[i][0] = av_make_q(mdcv->DisplayPrimariesX[j], chroma_den);
-            mastering->display_primaries[i][1] = av_make_q(mdcv->DisplayPrimariesY[j], chroma_den);
+        if (mastering) {
+            for (i = 0; i < 3; i++) {
+                const int j = mapping[i];
+                mastering->display_primaries[i][0] = av_make_q(mdcv->DisplayPrimariesX[j], chroma_den);
+                mastering->display_primaries[i][1] = av_make_q(mdcv->DisplayPrimariesY[j], chroma_den);
+            }
+
+            mastering->white_point[0] = av_make_q(mdcv->WhitePointX, chroma_den);
+            mastering->white_point[1] = av_make_q(mdcv->WhitePointY, chroma_den);
+
+            mastering->max_luminance = av_make_q(mdcv->MaxDisplayMasteringLuminance, luma_den);
+            mastering->min_luminance = av_make_q(mdcv->MinDisplayMasteringLuminance, luma_den);
+
+            mastering->has_luminance = 1;
+            mastering->has_primaries = 1;
         }
-
-        mastering->white_point[0] = av_make_q(mdcv->WhitePointX, chroma_den);
-        mastering->white_point[1] = av_make_q(mdcv->WhitePointY, chroma_den);
-
-        mastering->max_luminance = av_make_q(mdcv->MaxDisplayMasteringLuminance, luma_den);
-        mastering->min_luminance = av_make_q(mdcv->MinDisplayMasteringLuminance, luma_den);
-
-        mastering->has_luminance = 1;
-        mastering->has_primaries = 1;
     }
 
     // The SDK re-uses this flag for HDR SEI parsing
     if (clli->InsertPayloadToggle) {
-        AVContentLightMetadata *light = av_content_light_metadata_create_side_data(frame);
+        AVContentLightMetadata *light;
 
-        if (!light)
-            return AVERROR(ENOMEM);
+        ret = ff_decode_content_light_new(avctx, frame, &light);
+        if (ret < 0)
+            return ret;
 
-        light->MaxCLL  = clli->MaxContentLightLevel;
-        light->MaxFALL = clli->MaxPicAverageLightLevel;
+        if (light) {
+            light->MaxCLL  = clli->MaxContentLightLevel;
+            light->MaxFALL = clli->MaxPicAverageLightLevel;
+        }
     }
 
     return 0;
