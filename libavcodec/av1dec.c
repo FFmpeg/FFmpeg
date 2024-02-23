@@ -734,6 +734,7 @@ static av_cold int av1_decode_free(AVCodecContext *avctx)
 
     ff_cbs_fragment_free(&s->current_obu);
     ff_cbs_close(&s->cbc);
+    ff_dovi_ctx_unref(&s->dovi);
 
     return 0;
 }
@@ -828,6 +829,7 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
 {
     AV1DecContext *s = avctx->priv_data;
     AV1RawSequenceHeader *seq;
+    const AVPacketSideData *sd;
     int ret;
 
     s->avctx = avctx;
@@ -883,6 +885,12 @@ static av_cold int av1_decode_init(AVCodecContext *avctx)
         ff_cbs_fragment_reset(&s->current_obu);
     }
 
+    s->dovi.logctx = avctx;
+    s->dovi.dv_profile = 10; // default for AV1
+    sd = ff_get_coded_side_data(avctx, AV_PKT_DATA_DOVI_CONF);
+    if (sd && sd->size > 0)
+        ff_dovi_update_cfg(&s->dovi, (AVDOVIDecoderConfigurationRecord *) sd->data);
+
     return ret;
 }
 
@@ -936,6 +944,7 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
                            const AV1RawMetadataITUTT35 *itut_t35)
 {
     GetByteContext gb;
+    AV1DecContext *s = avctx->priv_data;
     int ret, provider_code;
 
     bytestream2_init(&gb, itut_t35->payload, itut_t35->payload_size);
@@ -981,6 +990,22 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
 
         ret = av_dynamic_hdr_plus_from_t35(hdrplus, gb.buffer,
                                            bytestream2_get_bytes_left(&gb));
+        if (ret < 0)
+            return ret;
+        break;
+    }
+    case 0x3B: { // dolby_provider_code
+        int provider_oriented_code = bytestream2_get_be32(&gb);
+        if (itut_t35->itu_t_t35_country_code != 0xB5 || provider_oriented_code != 0x800)
+            break;
+
+        ret = ff_dovi_rpu_parse(&s->dovi, gb.buffer, gb.buffer_end - gb.buffer);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_WARNING, "Error parsing DOVI OBU.\n");
+            break; // ignore
+        }
+
+        ret = ff_dovi_attach_side_data(&s->dovi, frame);
         if (ret < 0)
             return ret;
         break;
