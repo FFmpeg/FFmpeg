@@ -2460,6 +2460,7 @@ HAVE_LIST="
     opencl_dxva2
     opencl_vaapi_beignet
     opencl_vaapi_intel_media
+    opencl_videotoolbox
     perl
     pod2man
     texi2html
@@ -7215,6 +7216,11 @@ fi
 if enabled_all opencl d3d11va ; then
     check_type "CL/cl_d3d11.h" clGetDeviceIDsFromD3D11KHR_fn &&
         enable opencl_d3d11
+fi
+
+if enabled_all opencl videotoolbox ; then
+    check_func_headers OpenCL/cl_gl_ext.h clCreateImageFromIOSurfaceWithPropertiesAPPLE -framework VideoToolbox -framework OpenCL &&
+        enable opencl_videotoolbox
 fi
 
 enabled vdpau &&
