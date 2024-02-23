@@ -35,6 +35,7 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "decode.h"
+#include "dovi_rpu.h"
 #include "internal.h"
 
 #define FF_DAV1D_VERSION_AT_LEAST(x,y) \
@@ -44,6 +45,7 @@ typedef struct Libdav1dContext {
     AVClass *class;
     Dav1dContext *c;
     AVBufferPool *pool;
+    DOVIContext dovi;
     int pool_size;
 
     Dav1dData data;
@@ -213,6 +215,7 @@ static av_cold int libdav1d_init(AVCodecContext *c)
 #else
     int threads = (c->thread_count ? c->thread_count : av_cpu_count()) * 3 / 2;
 #endif
+    const AVPacketSideData *sd;
     int res;
 
     av_log(c, AV_LOG_VERBOSE, "libdav1d %s\n", dav1d_version());
@@ -285,6 +288,11 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     c->delay = res > 1 ? res : 0;
 #endif
 
+    dav1d->dovi.logctx = c;
+    dav1d->dovi.dv_profile = 10; // default for AV1
+    sd = ff_get_coded_side_data(c, AV_PKT_DATA_DOVI_CONF);
+    if (sd && sd->size > 0)
+        ff_dovi_update_cfg(&dav1d->dovi, (AVDOVIDecoderConfigurationRecord *) sd->data);
     return 0;
 }
 
@@ -579,6 +587,22 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                 goto fail;
             break;
         }
+        case 0x3B: { // dolby_provider_code
+            int provider_oriented_code = bytestream2_get_be32(&gb);
+            if (itut_t35->country_code != 0xB5 || provider_oriented_code != 0x800)
+                break;
+
+            res = ff_dovi_rpu_parse(&dav1d->dovi, gb.buffer, gb.buffer_end - gb.buffer);
+            if (res < 0) {
+                av_log(c, AV_LOG_WARNING, "Error parsing DOVI OBU.\n");
+                break; // ignore
+            }
+
+            res = ff_dovi_attach_side_data(&dav1d->dovi, frame);
+            if (res < 0)
+                goto fail;
+            break;
+        }
         default: // ignore unsupported provider codes
             break;
         }
@@ -638,6 +662,7 @@ static av_cold int libdav1d_close(AVCodecContext *c)
     Libdav1dContext *dav1d = c->priv_data;
 
     av_buffer_pool_uninit(&dav1d->pool);
+    ff_dovi_ctx_unref(&dav1d->dovi);
     dav1d_data_unref(&dav1d->data);
     dav1d_close(&dav1d->c);
 
