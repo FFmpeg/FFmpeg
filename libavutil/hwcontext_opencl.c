@@ -2014,6 +2014,7 @@ static int opencl_map_frame(AVHWFramesContext *hwfc, AVFrame *dst,
         }
 
         dst->data[p] = map->address[p];
+        dst->linesize[p] = row_pitch;
 
         av_log(hwfc, AV_LOG_DEBUG, "Map plane %d (%p -> %p).\n",
                p, src->data[p], dst->data[p]);
