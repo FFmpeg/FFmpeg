@@ -2778,7 +2778,7 @@ static int set_side_data(HEVCContext *s)
             s->sei.common.content_light.present--;
     }
 
-    ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, NULL,
+    ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, s->avctx,
                                 &s->ps.sps->vui.common,
                                 s->ps.sps->bit_depth, s->ps.sps->bit_depth_chroma,
                                 s->ref->poc /* no poc_offset in HEVC */);
