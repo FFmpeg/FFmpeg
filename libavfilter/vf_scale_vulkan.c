@@ -204,7 +204,7 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
     GLSLC(0,                                                                 );
 
     if (s->vkctx.output_format == s->vkctx.input_format) {
-        for (int i = 0; i < desc[i].elems; i++) {
+        for (int i = 0; i < desc[1].elems; i++) {
             GLSLF(1,  size = imageSize(output_img[%i]);                    ,i);
             GLSLC(1,  if (IS_WITHIN(pos, size)) {                            );
             switch (s->scaler) {
