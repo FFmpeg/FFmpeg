@@ -152,7 +152,7 @@ typedef struct VVCPH {
 
 #define ALF_NUM_FILTERS_LUMA    25
 #define ALF_NUM_FILTERS_CHROMA   8
-#define ALF_NUM_FILTERS_CC       5
+#define ALF_NUM_FILTERS_CC       4
 
 #define ALF_NUM_COEFF_LUMA      12
 #define ALF_NUM_COEFF_CHROMA     6
