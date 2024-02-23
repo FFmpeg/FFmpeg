@@ -3542,6 +3542,16 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *pkt,
     return mxf_interleave_get_packet(s, pkt, flush);
 }
 
+static int mxf_check_bitstream(AVFormatContext *s, AVStream *st, const AVPacket *pkt)
+{
+    if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
+        if (pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
+                              AV_RB24(pkt->data) != 0x000001)
+            return ff_stream_add_bitstream_filter(st, "h264_mp4toannexb", NULL);
+    }
+    return 1;
+}
+
 #define MXF_COMMON_OPTIONS \
     { "signal_standard", "Force/set Signal Standard",\
       offsetof(MXFContext, signal_standard), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, .unit = "signal_standard"},\
@@ -3623,6 +3633,7 @@ const FFOutputFormat ff_mxf_muxer = {
     .p.flags           = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
     .p.priv_class      = &mxf_muxer_class,
+    .check_bitstream   = mxf_check_bitstream,
 };
 
 const FFOutputFormat ff_mxf_d10_muxer = {
@@ -3656,4 +3667,5 @@ const FFOutputFormat ff_mxf_opatom_muxer = {
     .p.flags           = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
     .p.priv_class      = &mxf_opatom_muxer_class,
+    .check_bitstream   = mxf_check_bitstream,
 };
