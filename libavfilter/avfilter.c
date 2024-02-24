@@ -1563,7 +1563,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 void ff_inlink_request_frame(AVFilterLink *link)
 {
-    FilterLinkInternal *li = ff_link_internal(link);
+    av_unused FilterLinkInternal *li = ff_link_internal(link);
     av_assert1(!li->status_in);
     av_assert1(!li->status_out);
     link->frame_wanted_out = 1;
