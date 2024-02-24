@@ -34,13 +34,14 @@ typedef struct ConvolutionContext {
     const AVClass *class;
 
     char *matrix_str[4];
-    float rdiv[4];
+    float user_rdiv[4];
     float bias[4];
     int mode[4];
     float scale;
     float delta;
     int planes;
 
+    float rdiv[4];
     int size[4];
     int depth;
     int max;
