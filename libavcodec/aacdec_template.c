@@ -3032,7 +3032,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     return size;
 }
 
-static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
+static int aac_decode_er_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, GetBitContext *gb)
 {
     AACContext *ac = avctx->priv_data;
@@ -3046,7 +3046,7 @@ static int aac_decode_er_frame(AVCodecContext *avctx, void *data,
     if (aot == AOT_ER_AAC_LD || aot == AOT_ER_AAC_ELD)
         samples >>= 1;
 
-    ac->frame = data;
+    ac->frame = frame;
 
     if ((err = frame_configure_elements(avctx)) < 0)
         return err;
