@@ -658,7 +658,7 @@ else
 fi
 echo "${test}:${sig:-$err}:$cmpo:$erro" >$repfile
 
-if test $err != 0 && test $gen != "no" ; then
+if test $err != 0 && test $gen != "no" && test "${ref#tests/data/}" == "$ref" ; then
     echo "GEN     $ref"
     cp -f "$outfile" "$ref"
     err=$?
