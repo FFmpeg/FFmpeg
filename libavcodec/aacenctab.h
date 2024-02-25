@@ -30,6 +30,7 @@
 
 #include "libavutil/channel_layout.h"
 #include "aac.h"
+#include "defs.h"
 
 /** Total number of usable codebooks **/
 #define CB_TOT 12

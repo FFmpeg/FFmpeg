@@ -22,9 +22,12 @@
 #ifndef AVCODEC_AACENC_H
 #define AVCODEC_AACENC_H
 
+#include <stdint.h>
+
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/tx.h"
 
 #include "avcodec.h"
 #include "put_bits.h"
@@ -34,6 +37,8 @@
 #include "psymodel.h"
 
 #include "lpc.h"
+
+#define CLIP_AVOIDANCE_FACTOR 0.95f
 
 typedef enum AACCoder {
     AAC_CODER_ANMR = 0,
@@ -53,6 +58,90 @@ typedef struct AACEncOptions {
     int mid_side;
     int intensity_stereo;
 } AACEncOptions;
+
+/**
+ * Long Term Prediction
+ */
+typedef struct LongTermPrediction {
+    int8_t present;
+    int16_t lag;
+    int coef_idx;
+    float coef;
+    int8_t used[MAX_LTP_LONG_SFB];
+} LongTermPrediction;
+
+/**
+ * Individual Channel Stream
+ */
+typedef struct IndividualChannelStream {
+    uint8_t max_sfb;            ///< number of scalefactor bands per group
+    enum WindowSequence window_sequence[2];
+    uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sine window.
+    uint8_t group_len[8];
+    LongTermPrediction ltp;
+    const uint16_t *swb_offset; ///< table of offsets to the lowest spectral coefficient of a scalefactor band, sfb, for a particular window
+    const uint8_t *swb_sizes;   ///< table of scalefactor band sizes for a particular window
+    int num_swb;                ///< number of scalefactor window bands
+    int num_windows;
+    int tns_max_bands;
+    int predictor_present;
+    int predictor_initialized;
+    int predictor_reset_group;
+    int predictor_reset_count[31];  ///< used to count prediction resets
+    uint8_t prediction_used[41];
+    uint8_t window_clipping[8]; ///< set if a certain window is near clipping
+    float clip_avoidance_factor; ///< set if any window is near clipping to the necessary atennuation factor to avoid it
+} IndividualChannelStream;
+
+/**
+ * Temporal Noise Shaping
+ */
+typedef struct TemporalNoiseShaping {
+    int present;
+    int n_filt[8];
+    int length[8][4];
+    int direction[8][4];
+    int order[8][4];
+    int coef_idx[8][4][TNS_MAX_ORDER];
+    float coef[8][4][TNS_MAX_ORDER];
+} TemporalNoiseShaping;
+
+/**
+ * Single Channel Element - used for both SCE and LFE elements.
+ */
+typedef struct SingleChannelElement {
+    IndividualChannelStream ics;
+    TemporalNoiseShaping tns;
+    Pulse pulse;
+    enum BandType band_type[128];                   ///< band types
+    enum BandType band_alt[128];                    ///< alternative band type
+    int sf_idx[128];                                ///< scalefactor indices
+    uint8_t zeroes[128];                            ///< band is not coded
+    uint8_t can_pns[128];                           ///< band is allowed to PNS (informative)
+    float  is_ener[128];                            ///< Intensity stereo pos
+    float pns_ener[128];                            ///< Noise energy values
+    DECLARE_ALIGNED(32, float, pcoeffs)[1024];      ///< coefficients for IMDCT, pristine
+    DECLARE_ALIGNED(32, float, coeffs)[1024];       ///< coefficients for IMDCT, maybe processed
+    DECLARE_ALIGNED(32, float, ret_buf)[2048];      ///< PCM output buffer
+    DECLARE_ALIGNED(16, float, ltp_state)[3072];    ///< time signal for LTP
+    DECLARE_ALIGNED(32, float, lcoeffs)[1024];      ///< MDCT of LTP coefficients
+    DECLARE_ALIGNED(32, float, prcoeffs)[1024];     ///< Main prediction coefs
+    PredictorState predictor_state[MAX_PREDICTORS];
+} SingleChannelElement;
+
+/**
+ * channel element - generic struct for SCE/CPE/CCE/LFE
+ */
+typedef struct ChannelElement {
+    // CPE specific
+    int common_window;        ///< Set if channels share a common 'IndividualChannelStream' in bitstream.
+    int     ms_mode;          ///< Signals mid/side stereo flags coding mode
+    uint8_t is_mode;          ///< Set if any bands have been encoded using intensity stereo
+    uint8_t ms_mask[128];     ///< Set if mid/side stereo is used for each scalefactor window band
+    uint8_t is_mask[128];     ///< Set if intensity stereo is used
+    // shared
+    SingleChannelElement ch[2];
+} ChannelElement;
 
 struct AACEncContext;
 

@@ -32,19 +32,12 @@
 
 
 #include "aac_defines.h"
-#include "libavutil/channel_layout.h"
-#include "libavutil/mem_internal.h"
-#include "sbr.h"
-
-#include <stdint.h>
 
 #define MAX_CHANNELS 64
 #define MAX_ELEM_ID 16
 
 #define TNS_MAX_ORDER 20
 #define MAX_LTP_LONG_SFB 40
-
-#define CLIP_AVOIDANCE_FACTOR 0.95f
 
 enum RawDataBlockType {
     TYPE_SCE,
@@ -83,8 +76,6 @@ enum BandType {
     INTENSITY_BT   = 15,    ///< Scalefactor data are intensity stereo positions (in phase).
 };
 
-#define IS_CODEBOOK_UNSIGNED(x) (((x) - 1) & 10)
-
 enum ChannelPosition {
     AAC_CHANNEL_OFF   = 0,
     AAC_CHANNEL_FRONT = 1,
@@ -92,15 +83,6 @@ enum ChannelPosition {
     AAC_CHANNEL_BACK  = 3,
     AAC_CHANNEL_LFE   = 4,
     AAC_CHANNEL_CC    = 5,
-};
-
-/**
- * The point during decoding at which channel coupling is applied.
- */
-enum CouplingPoint {
-    BEFORE_TNS,
-    BETWEEN_TNS_AND_IMDCT,
-    AFTER_IMDCT = 3,
 };
 
 /**
@@ -131,118 +113,11 @@ typedef struct PredictorState {
 #define NOISE_PRE_BITS    9    ///< length of preamble
 #define NOISE_OFFSET     90    ///< subtracted from global gain, used as offset for the preamble
 
-/**
- * Long Term Prediction
- */
-typedef struct LongTermPrediction {
-    int8_t present;
-    int16_t lag;
-    int coef_idx;
-    INTFLOAT coef;
-    int8_t used[MAX_LTP_LONG_SFB];
-} LongTermPrediction;
-
-/**
- * Individual Channel Stream
- */
-typedef struct IndividualChannelStream {
-    uint8_t max_sfb;            ///< number of scalefactor bands per group
-    enum WindowSequence window_sequence[2];
-    uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sine window.
-    int num_window_groups;
-    uint8_t group_len[8];
-    LongTermPrediction ltp;
-    const uint16_t *swb_offset; ///< table of offsets to the lowest spectral coefficient of a scalefactor band, sfb, for a particular window
-    const uint8_t *swb_sizes;   ///< table of scalefactor band sizes for a particular window
-    int num_swb;                ///< number of scalefactor window bands
-    int num_windows;
-    int tns_max_bands;
-    int predictor_present;
-    int predictor_initialized;
-    int predictor_reset_group;
-    int predictor_reset_count[31];  ///< used by encoder to count prediction resets
-    uint8_t prediction_used[41];
-    uint8_t window_clipping[8]; ///< set if a certain window is near clipping
-    float clip_avoidance_factor; ///< set if any window is near clipping to the necessary atennuation factor to avoid it
-} IndividualChannelStream;
-
-/**
- * Temporal Noise Shaping
- */
-typedef struct TemporalNoiseShaping {
-    int present;
-    int n_filt[8];
-    int length[8][4];
-    int direction[8][4];
-    int order[8][4];
-    int coef_idx[8][4][TNS_MAX_ORDER];
-    INTFLOAT coef[8][4][TNS_MAX_ORDER];
-} TemporalNoiseShaping;
-
 typedef struct Pulse {
     int num_pulse;
     int start;
     int pos[4];
     int amp[4];
 } Pulse;
-
-/**
- * coupling parameters
- */
-typedef struct ChannelCoupling {
-    enum CouplingPoint coupling_point;  ///< The point during decoding at which coupling is applied.
-    int num_coupled;       ///< number of target elements
-    enum RawDataBlockType type[8];   ///< Type of channel element to be coupled - SCE or CPE.
-    int id_select[8];      ///< element id
-    int ch_select[8];      /**< [0] shared list of gains; [1] list of gains for right channel;
-                            *   [2] list of gains for left channel; [3] lists of gains for both channels
-                            */
-    INTFLOAT gain[16][120];
-} ChannelCoupling;
-
-/**
- * Single Channel Element - used for both SCE and LFE elements.
- */
-typedef struct SingleChannelElement {
-    IndividualChannelStream ics;
-    TemporalNoiseShaping tns;
-    Pulse pulse;
-    enum BandType band_type[128];                   ///< band types
-    enum BandType band_alt[128];                    ///< alternative band type (used by encoder)
-    int band_type_run_end[120];                     ///< band type run end points
-    INTFLOAT sf[120];                               ///< scalefactors
-    int sf_idx[128];                                ///< scalefactor indices (used by encoder)
-    uint8_t zeroes[128];                            ///< band is not coded (used by encoder)
-    uint8_t can_pns[128];                           ///< band is allowed to PNS (informative)
-    float  is_ener[128];                            ///< Intensity stereo pos (used by encoder)
-    float pns_ener[128];                            ///< Noise energy values (used by encoder)
-    DECLARE_ALIGNED(32, INTFLOAT, pcoeffs)[1024];   ///< coefficients for IMDCT, pristine
-    DECLARE_ALIGNED(32, INTFLOAT, coeffs)[1024];    ///< coefficients for IMDCT, maybe processed
-    DECLARE_ALIGNED(32, INTFLOAT, saved)[1536];     ///< overlap
-    DECLARE_ALIGNED(32, INTFLOAT, ret_buf)[2048];   ///< PCM output buffer
-    DECLARE_ALIGNED(16, INTFLOAT, ltp_state)[3072]; ///< time signal for LTP
-    DECLARE_ALIGNED(32, AAC_FLOAT, lcoeffs)[1024];  ///< MDCT of LTP coefficients (used by encoder)
-    DECLARE_ALIGNED(32, AAC_FLOAT, prcoeffs)[1024]; ///< Main prediction coefs (used by encoder)
-    PredictorState predictor_state[MAX_PREDICTORS];
-    INTFLOAT *ret;                                  ///< PCM output
-} SingleChannelElement;
-
-/**
- * channel element - generic struct for SCE/CPE/CCE/LFE
- */
-typedef struct ChannelElement {
-    int present;
-    // CPE specific
-    int common_window;        ///< Set if channels share a common 'IndividualChannelStream' in bitstream.
-    int     ms_mode;          ///< Signals mid/side stereo flags coding mode (used by encoder)
-    uint8_t is_mode;          ///< Set if any bands have been encoded using intensity stereo (used by encoder)
-    uint8_t ms_mask[128];     ///< Set if mid/side stereo is used for each scalefactor window band
-    uint8_t is_mask[128];     ///< Set if intensity stereo is used (used by encoder)
-    // shared
-    SingleChannelElement ch[2];
-    // CCE specific
-    ChannelCoupling coup;
-    SpectralBandReplication sbr;
-} ChannelElement;
 
 #endif /* AVCODEC_AAC_H */

@@ -29,7 +29,7 @@
 #define AVCODEC_AACENC_UTILS_H
 
 #include "libavutil/ffmath.h"
-#include "aac.h"
+#include "aacenc.h"
 #include "aacenctab.h"
 #include "aactab.h"
 

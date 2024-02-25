@@ -30,13 +30,18 @@
 #ifndef AVCODEC_AACDEC_H
 #define AVCODEC_AACDEC_H
 
+#include <stdint.h>
+
+#include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/fixed_dsp.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/tx.h"
 
 #include "aac.h"
+#include "aac_defines.h"
 #include "mpeg4audio.h"
+#include "sbr.h"
 
 /**
  * Output configuration status
@@ -53,6 +58,103 @@ enum AACOutputChannelOrder {
     CHANNEL_ORDER_DEFAULT,
     CHANNEL_ORDER_CODED,
 };
+
+/**
+ * The point during decoding at which channel coupling is applied.
+ */
+enum CouplingPoint {
+    BEFORE_TNS,
+    BETWEEN_TNS_AND_IMDCT,
+    AFTER_IMDCT = 3,
+};
+
+/**
+ * Long Term Prediction
+ */
+typedef struct LongTermPrediction {
+    int8_t present;
+    int16_t lag;
+    INTFLOAT coef;
+    int8_t used[MAX_LTP_LONG_SFB];
+} LongTermPrediction;
+
+/**
+ * Individual Channel Stream
+ */
+typedef struct IndividualChannelStream {
+    uint8_t max_sfb;            ///< number of scalefactor bands per group
+    enum WindowSequence window_sequence[2];
+    uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sine window.
+    int num_window_groups;
+    uint8_t group_len[8];
+    LongTermPrediction ltp;
+    const uint16_t *swb_offset; ///< table of offsets to the lowest spectral coefficient of a scalefactor band, sfb, for a particular window
+    int num_swb;                ///< number of scalefactor window bands
+    int num_windows;
+    int tns_max_bands;
+    int predictor_present;
+    int predictor_initialized;
+    int predictor_reset_group;
+    uint8_t prediction_used[41];
+    uint8_t window_clipping[8]; ///< set if a certain window is near clipping
+} IndividualChannelStream;
+
+/**
+ * Temporal Noise Shaping
+ */
+typedef struct TemporalNoiseShaping {
+    int present;
+    int n_filt[8];
+    int length[8][4];
+    int direction[8][4];
+    int order[8][4];
+    INTFLOAT coef[8][4][TNS_MAX_ORDER];
+} TemporalNoiseShaping;
+
+/**
+ * coupling parameters
+ */
+typedef struct ChannelCoupling {
+    enum CouplingPoint coupling_point;  ///< The point during decoding at which coupling is applied.
+    int num_coupled;       ///< number of target elements
+    enum RawDataBlockType type[8];   ///< Type of channel element to be coupled - SCE or CPE.
+    int id_select[8];      ///< element id
+    int ch_select[8];      /**< [0] shared list of gains; [1] list of gains for right channel;
+                            *   [2] list of gains for left channel; [3] lists of gains for both channels
+                            */
+    INTFLOAT gain[16][120];
+} ChannelCoupling;
+
+/**
+ * Single Channel Element - used for both SCE and LFE elements.
+ */
+typedef struct SingleChannelElement {
+    IndividualChannelStream ics;
+    TemporalNoiseShaping tns;
+    enum BandType band_type[128];                   ///< band types
+    int band_type_run_end[120];                     ///< band type run end points
+    INTFLOAT sf[120];                               ///< scalefactors
+    DECLARE_ALIGNED(32, INTFLOAT, coeffs)[1024];    ///< coefficients for IMDCT, maybe processed
+    DECLARE_ALIGNED(32, INTFLOAT, saved)[1536];     ///< overlap
+    DECLARE_ALIGNED(32, INTFLOAT, ret_buf)[2048];   ///< PCM output buffer
+    DECLARE_ALIGNED(16, INTFLOAT, ltp_state)[3072]; ///< time signal for LTP
+    PredictorState predictor_state[MAX_PREDICTORS];
+    INTFLOAT *ret;                                  ///< PCM output
+} SingleChannelElement;
+
+/**
+ * channel element - generic struct for SCE/CPE/CCE/LFE
+ */
+typedef struct ChannelElement {
+    int present;
+    // CPE specific
+    uint8_t ms_mask[128];     ///< Set if mid/side stereo is used for each scalefactor window band
+    // shared
+    SingleChannelElement ch[2];
+    // CCE specific
+    ChannelCoupling coup;
+    SpectralBandReplication sbr;
+} ChannelElement;
 
 typedef struct OutputConfiguration {
     MPEG4AudioConfig m4ac;
