@@ -510,9 +510,9 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
-                                      H264RawSEIBufferingPeriod *current,
-                                      SEIMessageState *sei)
+SEI_FUNC(sei_buffering_period, (CodedBitstreamContext *ctx, RWContext *rw,
+                                H264RawSEIBufferingPeriod *current,
+                                SEIMessageState *sei))
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
     const H264RawSPS *sps;
@@ -604,9 +604,8 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
-                                H264RawSEIPicTiming *current,
-                                SEIMessageState *sei)
+SEI_FUNC(sei_pic_timing, (CodedBitstreamContext *ctx, RWContext *rw,
+                          H264RawSEIPicTiming *current, SEIMessageState *sei))
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
     const H264RawSPS *sps;
@@ -676,9 +675,9 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
-                                   H264RawSEIPanScanRect *current,
-                                   SEIMessageState *sei)
+SEI_FUNC(sei_pan_scan_rect, (CodedBitstreamContext *ctx, RWContext *rw,
+                             H264RawSEIPanScanRect *current,
+                             SEIMessageState *sei))
 {
     int err, i;
 
@@ -703,9 +702,9 @@ static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
-                                    H264RawSEIRecoveryPoint *current,
-                                    SEIMessageState *sei)
+SEI_FUNC(sei_recovery_point, (CodedBitstreamContext *ctx, RWContext *rw,
+                              H264RawSEIRecoveryPoint *current,
+                              SEIMessageState *sei))
 {
     int err;
 
@@ -719,9 +718,9 @@ static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(film_grain_characteristics)(CodedBitstreamContext *ctx, RWContext *rw,
-                                            H264RawFilmGrainCharacteristics *current,
-                                            SEIMessageState *state)
+SEI_FUNC(film_grain_characteristics, (CodedBitstreamContext *ctx, RWContext *rw,
+                                      H264RawFilmGrainCharacteristics *current,
+                                      SEIMessageState *state))
 {
     CodedBitstreamH264Context *h264 = ctx->priv_data;
     const H264RawSPS *sps;
@@ -802,9 +801,9 @@ static int FUNC(film_grain_characteristics)(CodedBitstreamContext *ctx, RWContex
     return 0;
 }
 
-static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *rw,
-                                         H264RawSEIDisplayOrientation *current,
-                                         SEIMessageState *sei)
+SEI_FUNC(sei_display_orientation, (CodedBitstreamContext *ctx, RWContext *rw,
+                                   H264RawSEIDisplayOrientation *current,
+                                   SEIMessageState *sei))
 {
     int err;
 

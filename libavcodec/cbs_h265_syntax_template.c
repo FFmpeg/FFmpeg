@@ -1618,9 +1618,9 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
-static int FUNC(sei_buffering_period)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIBufferingPeriod *current, SEIMessageState *sei)
+SEI_FUNC(sei_buffering_period, (CodedBitstreamContext *ctx, RWContext *rw,
+                                H265RawSEIBufferingPeriod *current,
+                                SEIMessageState *sei))
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     const H265RawSPS *sps;
@@ -1728,9 +1728,8 @@ static int FUNC(sei_buffering_period)
     return 0;
 }
 
-static int FUNC(sei_pic_timing)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIPicTiming *current, SEIMessageState *sei)
+SEI_FUNC(sei_pic_timing, (CodedBitstreamContext *ctx, RWContext *rw,
+                          H265RawSEIPicTiming *current, SEIMessageState *sei))
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     const H265RawSPS *sps;
@@ -1804,9 +1803,9 @@ static int FUNC(sei_pic_timing)
     return 0;
 }
 
-static int FUNC(sei_pan_scan_rect)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIPanScanRect *current, SEIMessageState *sei)
+SEI_FUNC(sei_pan_scan_rect, (CodedBitstreamContext *ctx, RWContext *rw,
+                             H265RawSEIPanScanRect *current,
+                             SEIMessageState *sei))
 {
     int err, i;
 
@@ -1831,9 +1830,9 @@ static int FUNC(sei_pan_scan_rect)
     return 0;
 }
 
-static int FUNC(sei_recovery_point)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIRecoveryPoint *current, SEIMessageState *sei)
+SEI_FUNC(sei_recovery_point, (CodedBitstreamContext *ctx, RWContext *rw,
+                              H265RawSEIRecoveryPoint *current,
+                              SEIMessageState *sei))
 {
     int err;
 
@@ -1847,9 +1846,9 @@ static int FUNC(sei_recovery_point)
     return 0;
 }
 
-static int FUNC(film_grain_characteristics)(CodedBitstreamContext *ctx, RWContext *rw,
-                                            H265RawFilmGrainCharacteristics *current,
-                                            SEIMessageState *state)
+SEI_FUNC(film_grain_characteristics, (CodedBitstreamContext *ctx, RWContext *rw,
+                                      H265RawFilmGrainCharacteristics *current,
+                                      SEIMessageState *state))
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     const H265RawSPS *sps = h265->active_sps;
@@ -1912,9 +1911,9 @@ static int FUNC(film_grain_characteristics)(CodedBitstreamContext *ctx, RWContex
     return 0;
 }
 
-static int FUNC(sei_display_orientation)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIDisplayOrientation *current, SEIMessageState *sei)
+SEI_FUNC(sei_display_orientation, (CodedBitstreamContext *ctx, RWContext *rw,
+                                   H265RawSEIDisplayOrientation *current,
+                                   SEIMessageState *sei))
 {
     int err;
 
@@ -1931,9 +1930,9 @@ static int FUNC(sei_display_orientation)
     return 0;
 }
 
-static int FUNC(sei_active_parameter_sets)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIActiveParameterSets *current, SEIMessageState *sei)
+SEI_FUNC(sei_active_parameter_sets, (CodedBitstreamContext *ctx, RWContext *rw,
+                                     H265RawSEIActiveParameterSets *current,
+                                     SEIMessageState *sei))
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     const H265RawVPS *vps;
@@ -1968,9 +1967,9 @@ static int FUNC(sei_active_parameter_sets)
     return 0;
 }
 
-static int FUNC(sei_decoded_picture_hash)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIDecodedPictureHash *current, SEIMessageState *sei)
+SEI_FUNC(sei_decoded_picture_hash, (CodedBitstreamContext *ctx, RWContext *rw,
+                                    H265RawSEIDecodedPictureHash *current,
+                                    SEIMessageState *sei))
 {
     CodedBitstreamH265Context *h265 = ctx->priv_data;
     const H265RawSPS *sps = h265->active_sps;
@@ -2000,9 +1999,8 @@ static int FUNC(sei_decoded_picture_hash)
     return 0;
 }
 
-static int FUNC(sei_time_code)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEITimeCode *current, SEIMessageState *sei)
+SEI_FUNC(sei_time_code, (CodedBitstreamContext *ctx, RWContext *rw,
+                         H265RawSEITimeCode *current, SEIMessageState *sei))
 {
     int err, i;
 
@@ -2051,9 +2049,9 @@ static int FUNC(sei_time_code)
     return 0;
 }
 
-static int FUNC(sei_alpha_channel_info)
-    (CodedBitstreamContext *ctx, RWContext *rw,
-     H265RawSEIAlphaChannelInfo *current, SEIMessageState *sei)
+SEI_FUNC(sei_alpha_channel_info, (CodedBitstreamContext *ctx, RWContext *rw,
+                                  H265RawSEIAlphaChannelInfo *current,
+                                  SEIMessageState *sei))
 {
     int err, length;
 
