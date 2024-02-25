@@ -123,25 +123,25 @@ enum {
     // 7.4.6.1: hrd_cpb_cnt_minus1 is in [0, 31].
     VVC_MAX_CPB_CNT = 32,
 
-    // A.4.1: the highest level allows a MaxLumaPs of 35 651 584.
-    VVC_MAX_LUMA_PS = 35651584,
+    // A.4.1: the highest level allows a MaxLumaPs of 80,216,064.
+    VVC_MAX_LUMA_PS = 80216064,
 
     // A.4.1: pic_width_in_luma_samples and pic_height_in_luma_samples are
     // constrained to be not greater than sqrt(MaxLumaPs * 8).  Hence height/
-    // width are bounded above by sqrt(8 * 35651584) = 16888.2 samples.
-    VVC_MAX_WIDTH  = 16888,
-    VVC_MAX_HEIGHT = 16888,
+    // width are bounded above by sqrt(8 * 80216064) = 25332.4 samples.
+    VVC_MAX_WIDTH  = 25332,
+    VVC_MAX_HEIGHT = 25332,
 
-    // A.4.1: table A.1 allows at most 440 tiles per au for any level.
-    VVC_MAX_TILES_PER_AU = 440,
-    // A.4.1: table A.1 did not define max tile rows.
-    // in worest a case, we can have 1x440 tiles picture.
+    // A.4.1: table A.2 allows at most 990 tiles per AU for any level.
+    VVC_MAX_TILES_PER_AU = 990,
+    // A.4.1: table A.2 did not define max tile rows.
+    // in worest a case, we can have 1x990 tiles picture.
     VVC_MAX_TILE_ROWS    = VVC_MAX_TILES_PER_AU,
-    // A.4.1: table A.1 allows at most 20 tile columns for any level.
-    VVC_MAX_TILE_COLUMNS = 20,
+    // A.4.1: table A.2 allows at most 30 tile columns for any level.
+    VVC_MAX_TILE_COLUMNS = 30,
 
-    // A.4.1 table A.1 allows at most 600 slice for any level.
-    VVC_MAX_SLICES = 600,
+    // A.4.1 table A.2 allows at most 1000 slices for any level.
+    VVC_MAX_SLICES = 1000,
 
     // 7.4.8: in the worst case (!pps_no_pic_partition_flag and
     // sps_entropy_coding_sync_enabled_flag are both true), entry points can be
