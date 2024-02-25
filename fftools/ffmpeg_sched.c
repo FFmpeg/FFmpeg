@@ -365,7 +365,21 @@ static int queue_alloc(ThreadQueue **ptq, unsigned nb_streams, unsigned queue_si
     ThreadQueue *tq;
     ObjPool *op;
 
-    queue_size = queue_size > 0 ? queue_size : 8;
+    if (queue_size <= 0) {
+        if (type == QUEUE_FRAMES)
+            queue_size = DEFAULT_FRAME_THREAD_QUEUE_SIZE;
+        else
+            queue_size = DEFAULT_PACKET_THREAD_QUEUE_SIZE;
+    }
+
+    if (type == QUEUE_FRAMES) {
+        // This queue length is used in the decoder code to ensure that
+        // there are enough entries in fixed-size frame pools to account
+        // for frames held in queues inside the ffmpeg utility.  If this
+        // can ever dynamically change then the corresponding decode
+        // code needs to be updated as well.
+        av_assert0(queue_size == DEFAULT_FRAME_THREAD_QUEUE_SIZE);
+    }
 
     op = (type == QUEUE_PACKETS) ? objpool_alloc_packets() :
                                    objpool_alloc_frames();

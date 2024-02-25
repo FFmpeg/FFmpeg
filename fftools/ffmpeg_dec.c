@@ -1207,6 +1207,19 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
         return ret;
     }
 
+    if (dp->dec_ctx->hw_device_ctx) {
+        // Update decoder extra_hw_frames option to account for the
+        // frames held in queues inside the ffmpeg utility.  This is
+        // called after avcodec_open2() because the user-set value of
+        // extra_hw_frames becomes valid in there, and we need to add
+        // this on top of it.
+        int extra_frames = DEFAULT_FRAME_THREAD_QUEUE_SIZE;
+        if (dp->dec_ctx->extra_hw_frames >= 0)
+            dp->dec_ctx->extra_hw_frames += extra_frames;
+        else
+            dp->dec_ctx->extra_hw_frames = extra_frames;
+    }
+
     ret = check_avoptions(*dec_opts);
     if (ret < 0)
         return ret;

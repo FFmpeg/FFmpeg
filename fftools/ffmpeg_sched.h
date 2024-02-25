@@ -233,6 +233,18 @@ int sch_add_filtergraph(Scheduler *sch, unsigned nb_inputs, unsigned nb_outputs,
  */
 int sch_add_mux(Scheduler *sch, SchThreadFunc func, int (*init)(void *),
                 void *ctx, int sdp_auto, unsigned thread_queue_size);
+
+/**
+ * Default size of a packet thread queue.  For muxing this can be overridden by
+ * the thread_queue_size option as passed to a call to sch_add_mux().
+ */
+#define DEFAULT_PACKET_THREAD_QUEUE_SIZE 8
+
+/**
+ * Default size of a frame thread queue.
+ */
+#define DEFAULT_FRAME_THREAD_QUEUE_SIZE 8
+
 /**
  * Add a muxed stream for a previously added muxer.
  *
