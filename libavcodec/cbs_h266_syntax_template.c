@@ -1130,7 +1130,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(sps_subpic_info_present_flag);
     if (current->sps_subpic_info_present_flag) {
-        ue(sps_num_subpics_minus1, 1, VVC_MAX_SLICES - 1);
+        ue(sps_num_subpics_minus1, 0, VVC_MAX_SLICES - 1);
         if (current->sps_num_subpics_minus1 > 0) {
             flag(sps_independent_subpics_flag);
             flag(sps_subpic_same_size_flag);
