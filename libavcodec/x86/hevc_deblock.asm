@@ -541,19 +541,41 @@ ALIGN 16
     add             betaq, r13
     shr             betaq, 3; ((beta + (beta >> 1)) >> 3))
 
-    mova            m13, [pw_8]
     psubw           m12, m4, m3 ; q0 - p0
-    psllw           m10, m12, 3; 8 * (q0 - p0)
-    paddw           m12, m10 ; 9 * (q0 - p0)
-
+    paddw           m10, m12, m12
+    paddw           m12, m10 ; 3 * (q0 - p0)
     psubw           m10, m5, m2 ; q1 - p1
-    psllw            m8, m10, 1; 2 * ( q1 - p1 )
-    paddw           m10, m8; 3 * ( q1 - p1 )
-    psubw           m12, m10; 9 * (q0 - p0) - 3 * ( q1 - p1 )
-    paddw           m12, m13; + 8
+    psubw           m12, m10 ; 3 * (q0 - p0) - (q1 - p1)
+%if %1 < 12
+    paddw           m10, m12, m12
+    paddw           m12, [pw_8]; + 8
+    paddw           m12, m10 ; 9 * (q0 - p0) - 3 * ( q1 - p1 )
     psraw           m12, 4; >> 4 , delta0
     PABSW           m13, m12; abs(delta0)
-
+%elif cpuflag(ssse3)
+    pabsw           m13, m12
+    paddw           m10, m13, m13
+    paddw           m13, [pw_8]
+    paddw           m13, m10 ; abs(9 * (q0 - p0) - 3 * ( q1 - p1 ))
+    pxor            m10, m10
+    pcmpgtw         m10, m12
+    paddw           m13, m10
+    psrlw           m13, 4; >> 4, abs(delta0)
+    psignw          m10, m13, m12
+    SWAP             10, 12
+%else
+    pxor            m10, m10
+    pcmpgtw         m10, m12
+    pxor            m12, m10
+    psubw           m12, m10 ; abs()
+    paddw           m13, m12, m12
+    paddw           m12, [pw_8]
+    paddw           m13, m12 ; 3*abs(m12)
+    paddw           m13, m10
+    psrlw           m13, 4
+    pxor            m12, m13, m10
+    psubw           m12, m10
+%endif
 
     psllw           m10, m9, 2; 8 * tc
     paddw           m10, m9; 10 * tc
