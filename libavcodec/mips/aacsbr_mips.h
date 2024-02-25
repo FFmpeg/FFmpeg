@@ -54,7 +54,7 @@
 #ifndef AVCODEC_MIPS_AACSBR_MIPS_H
 #define AVCODEC_MIPS_AACSBR_MIPS_H
 
-#include "libavcodec/aac.h"
+#include "libavcodec/aacdec.h"
 #include "libavcodec/sbr.h"
 #include "libavutil/mips/asmdefs.h"
 

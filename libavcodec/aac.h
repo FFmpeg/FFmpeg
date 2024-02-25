@@ -33,12 +33,7 @@
 
 #include "aac_defines.h"
 #include "libavutil/channel_layout.h"
-#include "libavutil/float_dsp.h"
-#include "libavutil/fixed_dsp.h"
 #include "libavutil/mem_internal.h"
-#include "libavutil/tx.h"
-#include "avcodec.h"
-#include "mpeg4audio.h"
 #include "sbr.h"
 
 #include <stdint.h>
@@ -107,25 +102,6 @@ enum CouplingPoint {
     BETWEEN_TNS_AND_IMDCT,
     AFTER_IMDCT = 3,
 };
-
-/**
- * Output configuration status
- */
-enum OCStatus {
-    OC_NONE,        ///< Output unconfigured
-    OC_TRIAL_PCE,   ///< Output configuration under trial specified by an inband PCE
-    OC_TRIAL_FRAME, ///< Output configuration under trial specified by a frame header
-    OC_GLOBAL_HDR,  ///< Output configuration set in a global header but not yet locked
-    OC_LOCKED,      ///< Output configuration locked in place
-};
-
-typedef struct OutputConfiguration {
-    MPEG4AudioConfig m4ac;
-    uint8_t layout_map[MAX_ELEM_ID*4][3];
-    int layout_map_tags;
-    AVChannelLayout ch_layout;
-    enum OCStatus status;
-} OutputConfiguration;
 
 /**
  * Predictor State
@@ -203,22 +179,6 @@ typedef struct TemporalNoiseShaping {
     INTFLOAT coef[8][4][TNS_MAX_ORDER];
 } TemporalNoiseShaping;
 
-/**
- * Dynamic Range Control - decoded from the bitstream but not processed further.
- */
-typedef struct DynamicRangeControl {
-    int pce_instance_tag;                           ///< Indicates with which program the DRC info is associated.
-    int dyn_rng_sgn[17];                            ///< DRC sign information; 0 - positive, 1 - negative
-    int dyn_rng_ctl[17];                            ///< DRC magnitude information
-    int exclude_mask[MAX_CHANNELS];                 ///< Channels to be excluded from DRC processing.
-    int band_incr;                                  ///< Number of DRC bands greater than 1 having DRC info.
-    int interpolation_scheme;                       ///< Indicates the interpolation scheme used in the SBR QMF domain.
-    int band_top[17];                               ///< Indicates the top of the i-th DRC band in units of 4 spectral lines.
-    int prog_ref_level;                             /**< A reference level for the long-term program audio level for all
-                                                     *   channels combined.
-                                                     */
-} DynamicRangeControl;
-
 typedef struct Pulse {
     int num_pulse;
     int start;
@@ -284,108 +244,5 @@ typedef struct ChannelElement {
     ChannelCoupling coup;
     SpectralBandReplication sbr;
 } ChannelElement;
-
-enum AACOutputChannelOrder {
-    CHANNEL_ORDER_DEFAULT,
-    CHANNEL_ORDER_CODED,
-};
-
-/**
- * main AAC context
- */
-struct AACContext {
-    AVClass        *class;
-    AVCodecContext *avctx;
-    AVFrame *frame;
-
-    int is_saved;                 ///< Set if elements have stored overlap from previous frame.
-    DynamicRangeControl che_drc;
-
-    /**
-     * @name Channel element related data
-     * @{
-     */
-    ChannelElement          *che[4][MAX_ELEM_ID];
-    ChannelElement  *tag_che_map[4][MAX_ELEM_ID];
-    int tags_mapped;
-    int warned_remapping_once;
-    /** @} */
-
-    /**
-     * @name temporary aligned temporary buffers
-     * (We do not want to have these on the stack.)
-     * @{
-     */
-    DECLARE_ALIGNED(32, INTFLOAT, buf_mdct)[1024];
-    /** @} */
-
-    /**
-     * @name Computed / set up during initialization
-     * @{
-     */
-    AVTXContext *mdct120;
-    AVTXContext *mdct128;
-    AVTXContext *mdct480;
-    AVTXContext *mdct512;
-    AVTXContext *mdct960;
-    AVTXContext *mdct1024;
-    AVTXContext *mdct_ltp;
-
-    av_tx_fn mdct120_fn;
-    av_tx_fn mdct128_fn;
-    av_tx_fn mdct480_fn;
-    av_tx_fn mdct512_fn;
-    av_tx_fn mdct960_fn;
-    av_tx_fn mdct1024_fn;
-    av_tx_fn mdct_ltp_fn;
-#if USE_FIXED
-    AVFixedDSPContext *fdsp;
-#else
-    AVFloatDSPContext *fdsp;
-#endif /* USE_FIXED */
-    int random_state;
-    /** @} */
-
-    /**
-     * @name Members used for output
-     * @{
-     */
-    SingleChannelElement *output_element[MAX_CHANNELS]; ///< Points to each SingleChannelElement
-    /** @} */
-
-
-    /**
-     * @name Japanese DTV specific extension
-     * @{
-     */
-    int force_dmono_mode;///< 0->not dmono, 1->use first channel, 2->use second channel
-    int dmono_mode;      ///< 0->not dmono, 1->use first channel, 2->use second channel
-    /** @} */
-
-    enum AACOutputChannelOrder output_channel_order;
-
-    DECLARE_ALIGNED(32, INTFLOAT, temp)[128];
-
-    OutputConfiguration oc[2];
-    int warned_num_aac_frames;
-    int warned_960_sbr;
-    unsigned warned_71_wide;
-    int warned_gain_control;
-    int warned_he_aac_mono;
-
-    /* aacdec functions pointers */
-    void (*imdct_and_windowing)(AACContext *ac, SingleChannelElement *sce);
-    void (*apply_ltp)(AACContext *ac, SingleChannelElement *sce);
-    void (*apply_tns)(INTFLOAT coef[1024], TemporalNoiseShaping *tns,
-                      IndividualChannelStream *ics, int decode);
-    void (*windowing_and_mdct_ltp)(AACContext *ac, INTFLOAT *out,
-                                   INTFLOAT *in, IndividualChannelStream *ics);
-    void (*update_ltp)(AACContext *ac, SingleChannelElement *sce);
-    void (*vector_pow43)(int *coefs, int len);
-    void (*subband_scale)(int *dst, int *src, int scale, int offset, int len, void *log_context);
-
-};
-
-void ff_aacdec_init_mips(AACContext *c);
 
 #endif /* AVCODEC_AAC_H */

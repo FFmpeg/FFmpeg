@@ -53,7 +53,7 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavcodec/aac.h"
+#include "libavcodec/aacdec.h"
 #include "aacdec_mips.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin.h"

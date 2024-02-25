@@ -57,7 +57,7 @@
 #ifndef AVCODEC_MIPS_AACDEC_MIPS_H
 #define AVCODEC_MIPS_AACDEC_MIPS_H
 
-#include "libavcodec/aac.h"
+#include "libavcodec/aacdec.h"
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM && HAVE_MIPSFPU

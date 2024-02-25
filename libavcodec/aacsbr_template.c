@@ -32,7 +32,9 @@
  * @author Zoran Basaric ( zoran.basaric@imgtec.com )
  */
 
+#include "aacdec.h"
 #include "aacdectab.h"
+#include "avcodec.h"
 #include "libavutil/qsort.h"
 
 static av_cold void aacsbr_tableinit(void)

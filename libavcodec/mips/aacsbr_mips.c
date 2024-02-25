@@ -51,7 +51,7 @@
  * Reference: libavcodec/aacsbr.c
  */
 
-#include "libavcodec/aac.h"
+#include "libavcodec/aacdec.h"
 #include "libavcodec/aacsbr.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/mips/asmdefs.h"
