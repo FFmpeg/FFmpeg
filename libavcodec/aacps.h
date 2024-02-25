@@ -93,7 +93,12 @@ extern const int8_t ff_k_to_i_34[];
 
 void ff_ps_init_common(void);
 void AAC_RENAME(ff_ps_init)(void);
-void AAC_RENAME(ff_ps_ctx_init)(PSContext *ps);
+
+static inline void AAC_RENAME(ff_ps_ctx_init)(PSContext *ps)
+{
+    AAC_RENAME(ff_psdsp_init)(&ps->dsp);
+}
+
 int ff_ps_read_data(void *logctx, GetBitContext *gb,
                      PSCommonContext *ps, int bits_left);
 int AAC_RENAME(ff_ps_apply)(PSContext *ps, INTFLOAT L[2][38][64], INTFLOAT R[2][38][64], int top);
