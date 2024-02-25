@@ -63,7 +63,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     unsigned int planes = c->planes;
     int ret;
 
-    if (buf_size < planes * height * 2)
+    if (buf_size < planes * height * (2 + 2*((avctx->width+128)/129)))
         return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
