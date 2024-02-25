@@ -126,13 +126,6 @@ typedef struct SEIMessageTypeDescriptor {
     SEIMessageWriteFunction write;
 } SEIMessageTypeDescriptor;
 
-// Macro for the read/write pair.  The clumsy cast is needed because the
-// current pointer is typed in all of the read/write functions but has to
-// be void here to fit all cases.
-#define SEI_MESSAGE_RW(codec, name) \
-    .read  = (SEIMessageReadFunction) cbs_ ## codec ## _read_  ## name, \
-    .write = (SEIMessageWriteFunction)cbs_ ## codec ## _write_ ## name
-
 // End-of-list sentinel element.
 #define SEI_MESSAGE_TYPE_END { .type = -1 }
 
