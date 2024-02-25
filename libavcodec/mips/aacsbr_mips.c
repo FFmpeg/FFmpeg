@@ -60,7 +60,7 @@
 
 #if HAVE_INLINE_ASM
 #if HAVE_MIPSFPU
-static int sbr_lf_gen_mips(AACDecContext *ac, SpectralBandReplication *sbr,
+static int sbr_lf_gen_mips(SpectralBandReplication *sbr,
                       float X_low[32][40][2], const float W[2][32][32][2],
                       int buf_idx)
 {

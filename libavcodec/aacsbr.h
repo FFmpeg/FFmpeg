@@ -36,6 +36,8 @@
 #define ENVELOPE_ADJUSTMENT_OFFSET 2
 #define NOISE_FLOOR_OFFSET 6
 
+struct AACDecContext;
+
 /**
  * SBR VLC tables
  */

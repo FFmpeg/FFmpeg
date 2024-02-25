@@ -1243,7 +1243,7 @@ static void sbr_qmf_synthesis(AVTXContext *mdct, av_tx_fn mdct_fn,
 #endif
 
 /// Generate the subband filtered lowband
-static int sbr_lf_gen(AACDecContext *ac, SpectralBandReplication *sbr,
+static int sbr_lf_gen(SpectralBandReplication *sbr,
                       INTFLOAT X_low[32][40][2], const INTFLOAT W[2][32][32][2],
                       int buf_idx)
 {
@@ -1493,7 +1493,7 @@ void AAC_RENAME(ff_sbr_apply)(AACDecContext *ac, SpectralBandReplication *sbr, i
                          ch ? R : L, sbr->data[ch].analysis_filterbank_samples,
                          (INTFLOAT*)sbr->qmf_filter_scratch,
                          sbr->data[ch].W, sbr->data[ch].Ypos);
-        sbr->c.sbr_lf_gen(ac, sbr, sbr->X_low,
+        sbr->c.sbr_lf_gen(sbr, sbr->X_low,
                           (const INTFLOAT (*)[32][32][2]) sbr->data[ch].W,
                           sbr->data[ch].Ypos);
         sbr->data[ch].Ypos ^= 1;
