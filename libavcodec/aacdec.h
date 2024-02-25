@@ -81,7 +81,7 @@ typedef struct DynamicRangeControl {
 /**
  * main AAC decoding context
  */
-struct AACContext {
+typedef struct AACDecContext {
     const struct AVClass  *class;
     struct AVCodecContext *avctx;
     struct AVFrame *frame;
@@ -162,18 +162,17 @@ struct AACContext {
     int warned_he_aac_mono;
 
     /* aacdec functions pointers */
-    void (*imdct_and_windowing)(AACContext *ac, SingleChannelElement *sce);
-    void (*apply_ltp)(AACContext *ac, SingleChannelElement *sce);
+    void (*imdct_and_windowing)(struct AACDecContext *ac, SingleChannelElement *sce);
+    void (*apply_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*apply_tns)(INTFLOAT coef[1024], TemporalNoiseShaping *tns,
                       IndividualChannelStream *ics, int decode);
-    void (*windowing_and_mdct_ltp)(AACContext *ac, INTFLOAT *out,
+    void (*windowing_and_mdct_ltp)(struct AACDecContext *ac, INTFLOAT *out,
                                    INTFLOAT *in, IndividualChannelStream *ics);
-    void (*update_ltp)(AACContext *ac, SingleChannelElement *sce);
+    void (*update_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*vector_pow43)(int *coefs, int len);
     void (*subband_scale)(int *dst, int *src, int scale, int offset, int len, void *log_context);
+} AACDecContext;
 
-};
-
-void ff_aacdec_init_mips(AACContext *c);
+void ff_aacdec_init_mips(AACDecContext *c);
 
 #endif /* AVCODEC_AACDEC_H */

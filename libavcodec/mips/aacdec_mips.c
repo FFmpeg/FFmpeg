@@ -112,7 +112,7 @@ static av_always_inline int lcg_random(unsigned previous_val)
     return v.s;
 }
 
-static void imdct_and_windowing_mips(AACContext *ac, SingleChannelElement *sce)
+static void imdct_and_windowing_mips(AACDecContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
     float *in    = sce->coeffs;
@@ -224,7 +224,7 @@ static void imdct_and_windowing_mips(AACContext *ac, SingleChannelElement *sce)
     }
 }
 
-static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
+static void apply_ltp_mips(AACDecContext *ac, SingleChannelElement *sce)
 {
     const LongTermPrediction *ltp = &sce->ics.ltp;
     const uint16_t *offsets = sce->ics.swb_offset;
@@ -334,7 +334,7 @@ static av_always_inline void fmul_and_reverse(float *dst, const float *src0, con
     }
 }
 
-static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
+static void update_ltp_mips(AACDecContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
     float *saved     = sce->saved;
@@ -431,7 +431,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
-void ff_aacdec_init_mips(AACContext *c)
+void ff_aacdec_init_mips(AACDecContext *c)
 {
 #if HAVE_INLINE_ASM
 #if HAVE_MIPSFPU

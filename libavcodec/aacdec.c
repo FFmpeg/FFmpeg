@@ -210,7 +210,7 @@ static av_always_inline void predict(PredictorState *ps, float *coef,
  *
  * @param   index   index into coupling gain array
  */
-static void apply_dependent_coupling(AACContext *ac,
+static void apply_dependent_coupling(AACDecContext *ac,
                                      SingleChannelElement *target,
                                      ChannelElement *cce, int index)
 {
@@ -246,7 +246,7 @@ static void apply_dependent_coupling(AACContext *ac,
  *
  * @param   index   index into coupling gain array
  */
-static void apply_independent_coupling(AACContext *ac,
+static void apply_independent_coupling(AACDecContext *ac,
                                        SingleChannelElement *target,
                                        ChannelElement *cce, int index)
 {
@@ -263,7 +263,7 @@ static void apply_independent_coupling(AACContext *ac,
 #define LOAS_SYNC_WORD   0x2b7       ///< 11 bits LOAS sync word
 
 struct LATMContext {
-    AACContext aac_ctx;     ///< containing AACContext
+    AACDecContext aac_ctx;  ///< containing AACContext
     int initialized;        ///< initialized after a valid extradata was seen
 
     // parser data
@@ -282,7 +282,7 @@ static inline uint32_t latm_get_value(GetBitContext *b)
 static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
                                              GetBitContext *gb, int asclen)
 {
-    AACContext *ac        = &latmctx->aac_ctx;
+    AACDecContext *ac     = &latmctx->aac_ctx;
     AVCodecContext *avctx = ac->avctx;
     MPEG4AudioConfig m4ac = { 0 };
     GetBitContext gbc;
@@ -556,7 +556,7 @@ const FFCodec ff_aac_decoder = {
     CODEC_LONG_NAME("AAC (Advanced Audio Coding)"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_AAC,
-    .priv_data_size  = sizeof(AACContext),
+    .priv_data_size  = sizeof(AACDecContext),
     .init            = aac_decode_init,
     .close           = aac_decode_close,
     FF_CODEC_DECODE_CB(aac_decode_frame),

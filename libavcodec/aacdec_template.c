@@ -94,7 +94,7 @@
 #include "decode.h"
 #include "internal.h"
 
-static int output_configure(AACContext *ac,
+static int output_configure(AACDecContext *ac,
                             uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,
                             enum OCStatus oc_type, int get_new_frame);
 
@@ -124,7 +124,7 @@ static int count_channels(uint8_t (*layout)[3], int tags)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static av_cold int che_configure(AACContext *ac,
+static av_cold int che_configure(AACDecContext *ac,
                                  enum ChannelPosition che_pos,
                                  int type, int id, int *channels)
 {
@@ -160,7 +160,7 @@ static av_cold int che_configure(AACContext *ac,
 
 static int frame_configure_elements(AVCodecContext *avctx)
 {
-    AACContext *ac = avctx->priv_data;
+    AACDecContext *ac = avctx->priv_data;
     int type, id, ch, ret;
 
     /* set channel pointers to internal buffers by default */
@@ -411,7 +411,8 @@ static uint64_t sniff_channel_order(uint8_t (*layout_map)[3], int tags)
 /**
  * Save current output configuration if and only if it has been locked.
  */
-static int push_output_configuration(AACContext *ac) {
+static int push_output_configuration(AACDecContext *ac)
+{
     int pushed = 0;
 
     if (ac->oc[1].status == OC_LOCKED || ac->oc[0].status == OC_NONE) {
@@ -426,7 +427,8 @@ static int push_output_configuration(AACContext *ac) {
  * Restore the previous output configuration if and only if the current
  * configuration is unlocked.
  */
-static void pop_output_configuration(AACContext *ac) {
+static void pop_output_configuration(AACDecContext *ac)
+{
     if (ac->oc[1].status != OC_LOCKED && ac->oc[0].status != OC_NONE) {
         ac->oc[1] = ac->oc[0];
         ac->avctx->ch_layout = ac->oc[1].ch_layout;
@@ -441,7 +443,7 @@ static void pop_output_configuration(AACContext *ac) {
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int output_configure(AACContext *ac,
+static int output_configure(AACDecContext *ac,
                             uint8_t layout_map[MAX_ELEM_ID * 4][3], int tags,
                             enum OCStatus oc_type, int get_new_frame)
 {
@@ -516,7 +518,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static void flush(AVCodecContext *avctx)
 {
-    AACContext *ac= avctx->priv_data;
+    AACDecContext *ac= avctx->priv_data;
     int type, i, j;
 
     for (type = 3; type >= 0; type--) {
@@ -537,7 +539,7 @@ static void flush(AVCodecContext *avctx)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int set_default_channel_config(AACContext *ac, AVCodecContext *avctx,
+static int set_default_channel_config(AACDecContext *ac, AVCodecContext *avctx,
                                       uint8_t (*layout_map)[3],
                                       int *tags,
                                       int channel_config)
@@ -577,7 +579,7 @@ static int set_default_channel_config(AACContext *ac, AVCodecContext *avctx,
     return 0;
 }
 
-static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
+static ChannelElement *get_che(AACDecContext *ac, int type, int elem_id)
 {
     /* For PCE based channel configurations map the channels solely based
      * on tags. */
@@ -830,12 +832,12 @@ static int decode_pce(AVCodecContext *avctx, MPEG4AudioConfig *m4ac,
 /**
  * Decode GA "General Audio" specific configuration; reference: table 4.1.
  *
- * @param   ac          pointer to AACContext, may be null
+ * @param   ac          pointer to AACDecContext, may be null
  * @param   avctx       pointer to AVCCodecContext, used for logging
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
+static int decode_ga_specific_config(AACDecContext *ac, AVCodecContext *avctx,
                                      GetBitContext *gb,
                                      int get_bit_alignment,
                                      MPEG4AudioConfig *m4ac,
@@ -916,7 +918,7 @@ static int decode_ga_specific_config(AACContext *ac, AVCodecContext *avctx,
     return 0;
 }
 
-static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
+static int decode_eld_specific_config(AACDecContext *ac, AVCodecContext *avctx,
                                      GetBitContext *gb,
                                      MPEG4AudioConfig *m4ac,
                                      int channel_config)
@@ -976,7 +978,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
 /**
  * Decode audio specific configuration; reference: table 1.13.
  *
- * @param   ac          pointer to AACContext, may be null
+ * @param   ac          pointer to AACDecContext, may be null
  * @param   avctx       pointer to AVCCodecContext, used for logging
  * @param   m4ac        pointer to MPEG4AudioConfig, used for parsing
  * @param   gb          buffer holding an audio specific config
@@ -985,7 +987,7 @@ static int decode_eld_specific_config(AACContext *ac, AVCodecContext *avctx,
  *
  * @return  Returns error status or number of consumed bits. <0 - error
  */
-static int decode_audio_specific_config_gb(AACContext *ac,
+static int decode_audio_specific_config_gb(AACDecContext *ac,
                                            AVCodecContext *avctx,
                                            MPEG4AudioConfig *m4ac,
                                            GetBitContext *gb,
@@ -1052,7 +1054,7 @@ static int decode_audio_specific_config_gb(AACContext *ac,
     return get_bits_count(gb);
 }
 
-static int decode_audio_specific_config(AACContext *ac,
+static int decode_audio_specific_config(AACDecContext *ac,
                                         AVCodecContext *avctx,
                                         MPEG4AudioConfig *m4ac,
                                         const uint8_t *data, int64_t bit_size,
@@ -1121,7 +1123,7 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
         reset_predict_state(&ps[i]);
 }
 
-static void aacdec_init(AACContext *ac);
+static void aacdec_init(AACDecContext *ac);
 
 static av_cold void aac_static_table_init(void)
 {
@@ -1152,7 +1154,7 @@ static AVOnce aac_table_init = AV_ONCE_INIT;
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     float scale;
-    AACContext *ac = avctx->priv_data;
+    AACDecContext *ac = avctx->priv_data;
     int ret;
 
     if (avctx->sample_rate > 96000)
@@ -1250,7 +1252,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 /**
  * Skip data_stream_element; reference: table 4.10.
  */
-static int skip_data_stream_element(AACContext *ac, GetBitContext *gb)
+static int skip_data_stream_element(AACDecContext *ac, GetBitContext *gb)
 {
     int byte_align = get_bits1(gb);
     int count = get_bits(gb, 8);
@@ -1267,7 +1269,7 @@ static int skip_data_stream_element(AACContext *ac, GetBitContext *gb)
     return 0;
 }
 
-static int decode_prediction(AACContext *ac, IndividualChannelStream *ics,
+static int decode_prediction(AACDecContext *ac, IndividualChannelStream *ics,
                              GetBitContext *gb)
 {
     int sfb;
@@ -1303,7 +1305,7 @@ static void decode_ltp(LongTermPrediction *ltp,
 /**
  * Decode Individual Channel Stream info; reference: table 4.6.
  */
-static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
+static int decode_ics_info(AACDecContext *ac, IndividualChannelStream *ics,
                            GetBitContext *gb)
 {
     const MPEG4AudioConfig *const m4ac = &ac->oc[1].m4ac;
@@ -1429,7 +1431,7 @@ fail:
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_band_types(AACContext *ac, enum BandType band_type[120],
+static int decode_band_types(AACDecContext *ac, enum BandType band_type[120],
                              int band_type_run_end[120], GetBitContext *gb,
                              IndividualChannelStream *ics)
 {
@@ -1478,7 +1480,7 @@ static int decode_band_types(AACContext *ac, enum BandType band_type[120],
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_scalefactors(AACContext *ac, INTFLOAT sf[120], GetBitContext *gb,
+static int decode_scalefactors(AACDecContext *ac, INTFLOAT sf[120], GetBitContext *gb,
                                unsigned int global_gain,
                                IndividualChannelStream *ics,
                                enum BandType band_type[120],
@@ -1580,7 +1582,7 @@ static int decode_pulses(Pulse *pulse, GetBitContext *gb,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_tns(AACContext *ac, TemporalNoiseShaping *tns,
+static int decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
                       GetBitContext *gb, const IndividualChannelStream *ics)
 {
     int w, filt, i, coef_len, coef_res, coef_compress;
@@ -1648,7 +1650,7 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
+static int decode_spectrum_and_dequant(AACDecContext *ac, INTFLOAT coef[1024],
                                        GetBitContext *gb, const INTFLOAT sf[120],
                                        int pulse_present, const Pulse *pulse,
                                        const IndividualChannelStream *ics,
@@ -1943,7 +1945,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
 /**
  * Apply AAC-Main style frequency domain prediction.
  */
-static void apply_prediction(AACContext *ac, SingleChannelElement *sce)
+static void apply_prediction(AACDecContext *ac, SingleChannelElement *sce)
 {
     int sfb, k;
 
@@ -2006,7 +2008,7 @@ static void decode_gain_control(SingleChannelElement * sce, GetBitContext * gb)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_ics(AACContext *ac, SingleChannelElement *sce,
+static int decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                       GetBitContext *gb, int common_window, int scale_flag)
 {
     Pulse pulse;
@@ -2097,7 +2099,7 @@ fail:
 /**
  * Mid/Side stereo decoding; reference: 4.6.8.1.3.
  */
-static void apply_mid_side_stereo(AACContext *ac, ChannelElement *cpe)
+static void apply_mid_side_stereo(AACDecContext *ac, ChannelElement *cpe)
 {
     const IndividualChannelStream *ics = &cpe->ch[0].ics;
     INTFLOAT *ch0 = cpe->ch[0].coeffs;
@@ -2135,7 +2137,7 @@ static void apply_mid_side_stereo(AACContext *ac, ChannelElement *cpe)
  *                      [1] mask is decoded from bitstream; [2] mask is all 1s;
  *                      [3] reserved for scalable AAC
  */
-static void apply_intensity_stereo(AACContext *ac,
+static void apply_intensity_stereo(AACDecContext *ac,
                                    ChannelElement *cpe, int ms_present)
 {
     const IndividualChannelStream *ics = &cpe->ch[1].ics;
@@ -2185,7 +2187,7 @@ static void apply_intensity_stereo(AACContext *ac,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
+static int decode_cpe(AACDecContext *ac, GetBitContext *gb, ChannelElement *cpe)
 {
     int i, ret, common_window, ms_present = 0;
     int eld_syntax = ac->oc[1].m4ac.object_type == AOT_ER_AAC_ELD;
@@ -2238,7 +2240,7 @@ static const float cce_scale[] = {
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_cce(AACContext *ac, GetBitContext *gb, ChannelElement *che)
+static int decode_cce(AACDecContext *ac, GetBitContext *gb, ChannelElement *che)
 {
     int num_gain = 0;
     int c, g, sfb, ret;
@@ -2388,7 +2390,7 @@ static int decode_dynamic_range(DynamicRangeControl *che_drc,
     return n;
 }
 
-static int decode_fill(AACContext *ac, GetBitContext *gb, int len) {
+static int decode_fill(AACDecContext *ac, GetBitContext *gb, int len) {
     uint8_t buf[256];
     int i, major, minor;
 
@@ -2421,7 +2423,7 @@ unknown:
  *
  * @return Returns number of bytes consumed
  */
-static int decode_extension_payload(AACContext *ac, GetBitContext *gb, int cnt,
+static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cnt,
                                     ChannelElement *che, enum RawDataBlockType elem_type)
 {
     int crc_flag = 0;
@@ -2551,7 +2553,7 @@ static void apply_tns(INTFLOAT coef_param[1024], TemporalNoiseShaping *tns,
  *  Apply windowing and MDCT to obtain the spectral
  *  coefficient from the predicted sample by LTP.
  */
-static void windowing_and_mdct_ltp(AACContext *ac, INTFLOAT *out,
+static void windowing_and_mdct_ltp(AACDecContext *ac, INTFLOAT *out,
                                    INTFLOAT *in, IndividualChannelStream *ics)
 {
     const INTFLOAT *lwindow      = ics->use_kb_window[0] ? AAC_RENAME2(aac_kbd_long_1024) : AAC_RENAME2(sine_1024);
@@ -2577,7 +2579,7 @@ static void windowing_and_mdct_ltp(AACContext *ac, INTFLOAT *out,
 /**
  * Apply the long term prediction
  */
-static void apply_ltp(AACContext *ac, SingleChannelElement *sce)
+static void apply_ltp(AACDecContext *ac, SingleChannelElement *sce)
 {
     const LongTermPrediction *ltp = &sce->ics.ltp;
     const uint16_t *offsets = sce->ics.swb_offset;
@@ -2609,7 +2611,7 @@ static void apply_ltp(AACContext *ac, SingleChannelElement *sce)
 /**
  * Update the LTP buffer for next frame
  */
-static void update_ltp(AACContext *ac, SingleChannelElement *sce)
+static void update_ltp(AACDecContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
     INTFLOAT *saved     = sce->saved;
@@ -2647,7 +2649,7 @@ static void update_ltp(AACContext *ac, SingleChannelElement *sce)
 /**
  * Conduct IMDCT and windowing.
  */
-static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
+static void imdct_and_windowing(AACDecContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
     INTFLOAT *in    = sce->coeffs;
@@ -2711,7 +2713,7 @@ static void imdct_and_windowing(AACContext *ac, SingleChannelElement *sce)
 /**
  * Conduct IMDCT and windowing.
  */
-static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
+static void imdct_and_windowing_960(AACDecContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
     INTFLOAT *in    = sce->coeffs;
@@ -2772,7 +2774,7 @@ static void imdct_and_windowing_960(AACContext *ac, SingleChannelElement *sce)
         memcpy(                      saved,       buf + 480,        480 * sizeof(*saved));
     }
 }
-static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
+static void imdct_and_windowing_ld(AACDecContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
     INTFLOAT *in    = sce->coeffs;
@@ -2797,7 +2799,7 @@ static void imdct_and_windowing_ld(AACContext *ac, SingleChannelElement *sce)
     memcpy(saved, buf + 256, 256 * sizeof(*saved));
 }
 
-static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
+static void imdct_and_windowing_eld(AACDecContext *ac, SingleChannelElement *sce)
 {
     UINTFLOAT *in   = sce->coeffs;
     INTFLOAT *out   = sce->ret;
@@ -2865,10 +2867,10 @@ static void imdct_and_windowing_eld(AACContext *ac, SingleChannelElement *sce)
  *
  * @param   apply_coupling_method   pointer to (in)dependent coupling function
  */
-static void apply_channel_coupling(AACContext *ac, ChannelElement *cc,
+static void apply_channel_coupling(AACDecContext *ac, ChannelElement *cc,
                                    enum RawDataBlockType type, int elem_id,
                                    enum CouplingPoint coupling_point,
-                                   void (*apply_coupling_method)(AACContext *ac, SingleChannelElement *target, ChannelElement *cce, int index))
+                                   void (*apply_coupling_method)(AACDecContext *ac, SingleChannelElement *target, ChannelElement *cce, int index))
 {
     int i, c;
 
@@ -2898,10 +2900,10 @@ static void apply_channel_coupling(AACContext *ac, ChannelElement *cc,
 /**
  * Convert spectral data to samples, applying all supported tools as appropriate.
  */
-static void spectral_to_sample(AACContext *ac, int samples)
+static void spectral_to_sample(AACDecContext *ac, int samples)
 {
     int i, type;
-    void (*imdct_and_window)(AACContext *ac, SingleChannelElement *sce);
+    void (*imdct_and_window)(AACDecContext *ac, SingleChannelElement *sce);
     switch (ac->oc[1].m4ac.object_type) {
     case AOT_ER_AAC_LD:
         imdct_and_window = imdct_and_windowing_ld;
@@ -2970,7 +2972,7 @@ static void spectral_to_sample(AACContext *ac, int samples)
     }
 }
 
-static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
+static int parse_adts_frame_header(AACDecContext *ac, GetBitContext *gb)
 {
     int size;
     AACADTSHeaderInfo hdr_info;
@@ -3035,7 +3037,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
 static int aac_decode_er_frame(AVCodecContext *avctx, AVFrame *frame,
                                int *got_frame_ptr, GetBitContext *gb)
 {
-    AACContext *ac = avctx->priv_data;
+    AACDecContext *ac = avctx->priv_data;
     const MPEG4AudioConfig *const m4ac = &ac->oc[1].m4ac;
     ChannelElement *che;
     int err, i;
@@ -3108,7 +3110,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
                                 int *got_frame_ptr, GetBitContext *gb,
                                 const AVPacket *avpkt)
 {
-    AACContext *ac = avctx->priv_data;
+    AACDecContext *ac = avctx->priv_data;
     ChannelElement *che = NULL, *che_prev = NULL;
     enum RawDataBlockType elem_type, che_prev_type = TYPE_END;
     int err, elem_id;
@@ -3317,7 +3319,7 @@ fail:
 static int aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
-    AACContext *ac = avctx->priv_data;
+    AACDecContext *ac = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     GetBitContext gb;
@@ -3379,7 +3381,7 @@ static int aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 static av_cold int aac_decode_close(AVCodecContext *avctx)
 {
-    AACContext *ac = avctx->priv_data;
+    AACDecContext *ac = avctx->priv_data;
     int i, type;
 
     for (i = 0; i < MAX_ELEM_ID; i++) {
@@ -3402,7 +3404,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static void aacdec_init(AACContext *c)
+static void aacdec_init(AACDecContext *c)
 {
     c->imdct_and_windowing                      = imdct_and_windowing;
     c->apply_ltp                                = apply_ltp;
@@ -3424,9 +3426,10 @@ static void aacdec_init(AACContext *c)
  * AVOptions for Japanese DTV specific extensions (ADTS only)
  */
 #define AACDEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+#define OFF(field) offsetof(AACDecContext, field)
 static const AVOption options[] = {
     {"dual_mono_mode", "Select the channel to decode for dual mono",
-     offsetof(AACContext, force_dmono_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, 2,
+     OFF(force_dmono_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, 2,
      AACDEC_FLAGS, .unit = "dual_mono_mode"},
 
     {"auto", "autoselection",            0, AV_OPT_TYPE_CONST, {.i64=-1}, INT_MIN, INT_MAX, AACDEC_FLAGS, .unit = "dual_mono_mode"},
@@ -3435,7 +3438,7 @@ static const AVOption options[] = {
     {"both", "Select both channels",     0, AV_OPT_TYPE_CONST, {.i64= 0}, INT_MIN, INT_MAX, AACDEC_FLAGS, .unit = "dual_mono_mode"},
 
     { "channel_order", "Order in which the channels are to be exported",
-        offsetof(AACContext, output_channel_order), AV_OPT_TYPE_INT,
+        OFF(output_channel_order), AV_OPT_TYPE_INT,
         { .i64 = CHANNEL_ORDER_DEFAULT }, 0, 1, AACDEC_FLAGS, .unit = "channel_order" },
       { "default", "normal libavcodec channel order", 0, AV_OPT_TYPE_CONST,
         { .i64 = CHANNEL_ORDER_DEFAULT }, .flags = AACDEC_FLAGS, .unit = "channel_order" },

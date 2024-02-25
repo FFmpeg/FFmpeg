@@ -37,7 +37,7 @@
 #include "aacps.h"
 #include "sbrdsp.h"
 
-typedef struct AACContext AACContext;
+struct AACDecContext;
 
 /**
  * Spectral Band Replication header - spectrum parameters that invoke a reset if they differ from the previous header.
@@ -121,7 +121,7 @@ typedef struct SpectralBandReplication SpectralBandReplication;
  * aacsbr functions pointers
  */
 typedef struct AACSBRContext {
-    int (*sbr_lf_gen)(AACContext *ac, SpectralBandReplication *sbr,
+    int (*sbr_lf_gen)(struct AACDecContext *ac, SpectralBandReplication *sbr,
                       INTFLOAT X_low[32][40][2], const INTFLOAT W[2][32][32][2],
                       int buf_idx);
     void (*sbr_hf_assemble)(INTFLOAT Y1[38][64][2],
