@@ -1513,7 +1513,7 @@ void AAC_RENAME(ff_sbr_apply)(AACContext *ac, SpectralBandReplication *sbr, int 
             err = sbr_mapping(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
             if (!err) {
                 sbr_env_estimate(sbr->e_curr, sbr->X_high, sbr, &sbr->data[ch]);
-                sbr_gain_calc(ac, sbr, &sbr->data[ch], sbr->data[ch].e_a);
+                sbr_gain_calc(sbr, &sbr->data[ch], sbr->data[ch].e_a);
                 sbr->c.sbr_hf_assemble(sbr->data[ch].Y[sbr->data[ch].Ypos],
                                 (const INTFLOAT (*)[40][2]) sbr->X_high,
                                 sbr, &sbr->data[ch],

@@ -394,7 +394,7 @@ static void sbr_chirp(SpectralBandReplication *sbr, SBRData *ch_data)
  * Calculation of levels of additional HF signal components (14496-3 sp04 p219)
  * and Calculation of gain (14496-3 sp04 p219)
  */
-static void sbr_gain_calc(AACContext *ac, SpectralBandReplication *sbr,
+static void sbr_gain_calc(SpectralBandReplication *sbr,
                           SBRData *ch_data, const int e_a[2])
 {
     int e, k, m;
