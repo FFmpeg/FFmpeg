@@ -30,9 +30,22 @@
 
 #include "libavutil/film_grain_params.h"
 
+typedef struct AVFilmGrainAFGS1Params {
+    int enable;
+    AVFilmGrainParams sets[8];
+} AVFilmGrainAFGS1Params;
+
 // Synthesizes film grain on top of `in` and stores the result to `out`. `out`
 // must already have been allocated and set to the same size and format as `in`.
 int ff_aom_apply_film_grain(AVFrame *out, const AVFrame *in,
                             const AVFilmGrainParams *params);
+
+// Parse AFGS1 parameter sets from an ITU-T T.35 payload. Returns 0 on success,
+// or a negative error code.
+int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
+                                 const uint8_t *payload, int payload_size);
+
+// Attach all valid film grain param sets to `frame`.
+int ff_aom_attach_film_grain_sets(const AVFilmGrainAFGS1Params *s, AVFrame *frame);
 
 #endif /* AVCODEC_AOM_FILM_GRAIN_H */

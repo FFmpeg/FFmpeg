@@ -29,6 +29,7 @@
 #include "libavutil/imgutils.h"
 
 #include "aom_film_grain.h"
+#include "get_bits.h"
 
 // Common/shared helpers (not dependent on BIT_DEPTH)
 static inline int get_random_number(const int bits, unsigned *const state) {
@@ -116,6 +117,243 @@ int ff_aom_apply_film_grain(AVFrame *out, const AVFrame *in,
 
     /* The AV1 spec only defines film grain synthesis for these formats */
     return AVERROR_INVALIDDATA;
+}
+
+int ff_aom_parse_film_grain_sets(AVFilmGrainAFGS1Params *s,
+                                 const uint8_t *payload, int payload_size)
+{
+    GetBitContext gbc, *gb = &gbc;
+    AVFilmGrainAOMParams *aom;
+    AVFilmGrainParams *fgp, *ref = NULL;
+    int ret, num_sets, n, i, uv, num_y_coeffs, update_grain, luma_only;
+
+    ret = init_get_bits8(gb, payload, payload_size);
+    if (ret < 0)
+        return ret;
+
+    s->enable = get_bits1(gb);
+    if (!s->enable)
+        return 0;
+
+    skip_bits(gb, 4); // reserved
+    num_sets = get_bits(gb, 3) + 1;
+    for (n = 0; n < num_sets; n++) {
+        int payload_4byte, payload_size, set_idx, apply_units_log2, vsc_flag;
+        int predict_scaling, predict_y_scaling, predict_uv_scaling[2];
+        int payload_bits, start_position;
+
+        start_position = get_bits_count(gb);
+        payload_4byte = get_bits1(gb);
+        payload_size = get_bits(gb, payload_4byte ? 2 : 8);
+        set_idx = get_bits(gb, 3);
+        fgp = &s->sets[set_idx];
+        aom = &fgp->codec.aom;
+
+        fgp->type = get_bits1(gb) ? AV_FILM_GRAIN_PARAMS_AV1 : AV_FILM_GRAIN_PARAMS_NONE;
+        if (!fgp->type)
+            continue;
+
+        fgp->seed = get_bits(gb, 16);
+        update_grain = get_bits1(gb);
+        if (!update_grain)
+            continue;
+
+        apply_units_log2  = get_bits(gb, 4);
+        fgp->width  = get_bits(gb, 12) << apply_units_log2;
+        fgp->height = get_bits(gb, 12) << apply_units_log2;
+        luma_only = get_bits1(gb);
+        if (luma_only) {
+            fgp->subsampling_x = fgp->subsampling_y = 0;
+        } else {
+            fgp->subsampling_x = get_bits1(gb);
+            fgp->subsampling_y = get_bits1(gb);
+        }
+
+        fgp->bit_depth_luma  = fgp->bit_depth_chroma = 0;
+        fgp->color_primaries = AVCOL_PRI_UNSPECIFIED;
+        fgp->color_trc       = AVCOL_TRC_UNSPECIFIED;
+        fgp->color_space     = AVCOL_SPC_UNSPECIFIED;
+        fgp->color_range     = AVCOL_RANGE_UNSPECIFIED;
+
+        vsc_flag = get_bits1(gb); // video_signal_characteristics_flag
+        if (vsc_flag) {
+            int cicp_flag;
+            fgp->bit_depth_luma = get_bits(gb, 3) + 8;
+            if (!luma_only)
+                fgp->bit_depth_chroma = fgp->bit_depth_luma;
+            cicp_flag = get_bits1(gb);
+            if (cicp_flag) {
+                fgp->color_primaries = get_bits(gb, 8);
+                fgp->color_trc = get_bits(gb, 8);
+                fgp->color_space = get_bits(gb, 8);
+                fgp->color_range = get_bits1(gb) ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+                if (fgp->color_primaries > AVCOL_PRI_NB ||
+                    fgp->color_primaries == AVCOL_PRI_RESERVED ||
+                    fgp->color_primaries == AVCOL_PRI_RESERVED0 ||
+                    fgp->color_trc > AVCOL_TRC_NB ||
+                    fgp->color_trc == AVCOL_TRC_RESERVED ||
+                    fgp->color_trc == AVCOL_TRC_RESERVED0 ||
+                    fgp->color_space > AVCOL_SPC_NB ||
+                    fgp->color_space == AVCOL_SPC_RESERVED)
+                    goto error;
+            }
+        }
+
+        predict_scaling = get_bits1(gb);
+        if (predict_scaling && (!ref || ref == fgp))
+            goto error; // prediction must be from valid, different set
+
+        predict_y_scaling = predict_scaling ? get_bits1(gb) : 0;
+        if (predict_y_scaling) {
+            int y_scale, y_offset, bits_res;
+            y_scale = get_bits(gb, 9) - 256;
+            y_offset = get_bits(gb, 9) - 256;
+            bits_res = get_bits(gb, 3);
+            if (bits_res) {
+                int res[14], pred, granularity;
+                aom->num_y_points = ref->codec.aom.num_y_points;
+                for (i = 0; i < aom->num_y_points; i++)
+                    res[i] = get_bits(gb, bits_res);
+                granularity = get_bits(gb, 3);
+                for (i = 0; i < aom->num_y_points; i++) {
+                    pred = ref->codec.aom.y_points[i][1];
+                    pred = ((pred * y_scale + 8) >> 4) + y_offset;
+                    pred += (res[i] - (1 << (bits_res - 1))) * granularity;
+                    aom->y_points[i][0] = ref->codec.aom.y_points[i][0];
+                    aom->y_points[i][1] = av_clip_uint8(pred);
+                }
+            }
+        } else {
+            aom->num_y_points = get_bits(gb, 4);
+            if (aom->num_y_points > 14) {
+                goto error;
+            } else if (aom->num_y_points) {
+                int bits_inc, bits_scaling;
+                int y_value = 0;
+                bits_inc = get_bits(gb, 3) + 1;
+                bits_scaling = get_bits(gb, 2) + 5;
+                for (i = 0; i < aom->num_y_points; i++) {
+                    y_value += get_bits(gb, bits_inc);
+                    if (y_value > UINT8_MAX)
+                        goto error;
+                    aom->y_points[i][0] = y_value;
+                    aom->y_points[i][1] = get_bits(gb, bits_scaling);
+                }
+            }
+        }
+
+        if (luma_only) {
+            aom->chroma_scaling_from_luma = 0;
+            aom->num_uv_points[0] = aom->num_uv_points[1] = 0;
+        } else {
+            aom->chroma_scaling_from_luma = get_bits1(gb);
+            if (aom->chroma_scaling_from_luma) {
+                aom->num_uv_points[0] = aom->num_uv_points[1] = 0;
+            } else {
+                for (uv = 0; uv < 2; uv++) {
+                    predict_uv_scaling[uv] = predict_scaling ? get_bits1(gb) : 0;
+                    if (predict_uv_scaling[uv]) {
+                        int uv_scale, uv_offset, bits_res;
+                        uv_scale = get_bits(gb, 9) - 256;
+                        uv_offset = get_bits(gb, 9) - 256;
+                        bits_res = get_bits(gb, 3);
+                        aom->uv_mult[uv] = ref->codec.aom.uv_mult[uv];
+                        aom->uv_mult_luma[uv] = ref->codec.aom.uv_mult_luma[uv];
+                        aom->uv_offset[uv] = ref->codec.aom.uv_offset[uv];
+                        if (bits_res) {
+                            int res[10], pred, granularity;
+                            aom->num_uv_points[uv] = ref->codec.aom.num_uv_points[uv];
+                            for (i = 0; i < aom->num_uv_points[uv]; i++)
+                                res[i] = get_bits(gb, bits_res);
+                            granularity = get_bits(gb, 3);
+                            for (i = 0; i < aom->num_uv_points[uv]; i++) {
+                                pred = ref->codec.aom.uv_points[uv][i][1];
+                                pred = ((pred * uv_scale + 8) >> 4) + uv_offset;
+                                pred += (res[i] - (1 << (bits_res - 1))) * granularity;
+                                aom->uv_points[uv][i][0] = ref->codec.aom.uv_points[uv][i][0];
+                                aom->uv_points[uv][i][1] = av_clip_uint8(pred);
+                            }
+                        }
+                    } else {
+                        int bits_inc, bits_scaling, uv_offset;
+                        int uv_value = 0;
+                        aom->num_uv_points[uv] = get_bits(gb, 4);
+                        if (aom->num_uv_points[uv] > 10)
+                            goto error;
+                        bits_inc = get_bits(gb, 3) + 1;
+                        bits_scaling = get_bits(gb, 2) + 5;
+                        uv_offset = get_bits(gb, 8);
+                        for (i = 0; i < aom->num_uv_points[uv]; i++) {
+                            uv_value += get_bits(gb, bits_inc);
+                            if (uv_value > UINT8_MAX)
+                                goto error;
+                            aom->uv_points[uv][i][0] = uv_value;
+                            aom->uv_points[uv][i][1] = get_bits(gb, bits_scaling) + uv_offset;
+                        }
+                    }
+                }
+            }
+        }
+
+        aom->scaling_shift = get_bits(gb, 2) + 8;
+        aom->ar_coeff_lag = get_bits(gb, 2);
+        num_y_coeffs = 2 * aom->ar_coeff_lag * (aom->ar_coeff_lag + 1);
+        if (aom->num_y_points) {
+            int ar_bits = get_bits(gb, 2) + 5;
+            for (i = 0; i < num_y_coeffs; i++)
+                aom->ar_coeffs_y[i] = get_bits(gb, ar_bits) - (1 << (ar_bits - 1));
+        }
+        for (uv = 0; uv < 2; uv++) {
+            if (aom->chroma_scaling_from_luma || aom->num_uv_points[uv]) {
+                int ar_bits = get_bits(gb, 2) + 5;
+                for (i = 0; i < num_y_coeffs + !!aom->num_y_points; i++)
+                    aom->ar_coeffs_uv[uv][i] = get_bits(gb, ar_bits) - (1 << (ar_bits - 1));
+            }
+        }
+        aom->ar_coeff_shift = get_bits(gb, 2) + 6;
+        aom->grain_scale_shift = get_bits(gb, 2);
+        for (uv = 0; uv < 2; uv++) {
+            if (aom->num_uv_points[uv] && !predict_uv_scaling[uv]) {
+                aom->uv_mult[uv]      = get_bits(gb, 8) - 128;
+                aom->uv_mult_luma[uv] = get_bits(gb, 8) - 128;
+                aom->uv_offset[uv]    = get_bits(gb, 9) - 256;
+            }
+        }
+        aom->overlap_flag = get_bits1(gb);
+        aom->limit_output_range = get_bits1(gb);
+
+        // use first set as reference only if it was fully transmitted
+        if (n == 0)
+            ref = fgp;
+
+        payload_bits = get_bits_count(gb) - start_position;
+        if (payload_bits > payload_size * 8)
+            goto error;
+        skip_bits(gb, payload_size * 8 - payload_bits);
+    }
+    return 0;
+
+error:
+    memset(s, 0, sizeof(*s));
+    return AVERROR_INVALIDDATA;
+}
+
+int ff_aom_attach_film_grain_sets(const AVFilmGrainAFGS1Params *s, AVFrame *frame)
+{
+    AVFilmGrainParams *fgp;
+    if (!s->enable)
+        return 0;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->sets); i++) {
+        if (s->sets[i].type != AV_FILM_GRAIN_PARAMS_AV1)
+            continue;
+        fgp = av_film_grain_params_create_side_data(frame);
+        if (!fgp)
+            return AVERROR(ENOMEM);
+        memcpy(fgp, &s->sets[i], sizeof(*fgp));
+    }
+
+    return 0;
 }
 
 // Taken from the AV1 spec. Range is [-2048, 2047], mean is 0 and stddev is 512
