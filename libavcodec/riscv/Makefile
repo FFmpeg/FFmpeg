@@ -58,5 +58,7 @@ OBJS-$(CONFIG_VC1DSP) += riscv/vc1dsp_init.o
 RVV-OBJS-$(CONFIG_VC1DSP) += riscv/vc1dsp_rvv.o
 OBJS-$(CONFIG_VP8DSP) += riscv/vp8dsp_init.o
 RVV-OBJS-$(CONFIG_VP8DSP) += riscv/vp8dsp_rvv.o
+OBJS-$(CONFIG_VP9_DECODER) += riscv/vp9dsp_init.o
+RVV-OBJS-$(CONFIG_VP9_DECODER) += riscv/vp9_intra_rvv.o
 OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_init.o
 RVV-OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_rvv.o

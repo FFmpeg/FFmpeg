@@ -100,6 +100,8 @@ av_cold void ff_vp9dsp_init(VP9DSPContext *dsp, int bpp, int bitexact)
     ff_vp9dsp_init_aarch64(dsp, bpp);
 #elif ARCH_ARM
     ff_vp9dsp_init_arm(dsp, bpp);
+#elif ARCH_RISCV
+    ff_vp9dsp_init_riscv(dsp, bpp, bitexact);
 #elif ARCH_X86
     ff_vp9dsp_init_x86(dsp, bpp, bitexact);
 #elif ARCH_MIPS
