@@ -73,9 +73,24 @@ static const AVOption demux_options[] = {
 #if CONFIG_WAV_DEMUXER
     { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
 #endif
-    { "max_size",      "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 4096 }, 1024, 1 << 22, DEC },
+    { "max_size",      "max size of single packet", OFFSET(max_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1 << 22, DEC },
     { NULL },
 };
+
+static void set_max_size(AVStream *st, WAVDemuxContext *wav)
+{
+    if (wav->max_size <= 0) {
+        int64_t nb_samples = av_clip(st->codecpar->sample_rate / 25, 1, 1024);
+        if (st->codecpar->block_align > 0 &&
+            st->codecpar->block_align * nb_samples < INT_MAX &&
+            st->codecpar->ch_layout.nb_channels > 0 &&
+            st->codecpar->block_align <= 8LL * st->codecpar->ch_layout.nb_channels) {
+            wav->max_size = st->codecpar->block_align * nb_samples;
+        } else {
+            wav->max_size = 4096;
+        }
+    }
+}
 
 static void set_spdif(AVFormatContext *s, WAVDemuxContext *wav)
 {
@@ -669,6 +684,7 @@ break_loop:
     ff_metadata_conv_ctx(s, NULL, ff_riff_info_conv);
 
     set_spdif(s, wav);
+    set_max_size(st, wav);
 
     return 0;
 }
@@ -981,6 +997,7 @@ static int w64_read_header(AVFormatContext *s)
     avio_seek(pb, data_ofs, SEEK_SET);
 
     set_spdif(s, wav);
+    set_max_size(st, wav);
 
     return 0;
 }

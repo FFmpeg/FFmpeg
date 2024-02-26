@@ -1073,4 +1073,27 @@ which in turn, acts as a ceiling for the size of scripts that can be read.
 Default is 1 MiB.
 @end table
 
+@section w64
+
+Sony Wave64 Audio demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item max_size
+See the same option for the @ref{wav} demuxer.
+@end table
+
+@anchor{wav}
+@section wav
+
+RIFF Wave Audio demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item max_size
+Specify the maximum packet size in bytes for the demuxed packets. By default
+this is set to 0, which means that a sensible value is chosen based on the
+input format.
+@end table
+
 @c man end DEMUXERS
