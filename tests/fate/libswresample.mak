@@ -357,9 +357,9 @@ fate-swr-resample_nn-s16p-8000-44100: CMP_TARGET = 3156.61
 fate-swr-resample_nn-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 
 define ARESAMPLE_ASYNC
-FATE_SWR_RESAMPLE += fate-swr-resample_async-$(3)-$(1)-$(2)
+FATE_SWR_RESAMPLE-$(call FILTERDEMDECENCMUX, ATRIM ASETNSAMPLES ASETPTS ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-swr-resample_async-$(3)-$(1)-$(2)
 fate-swr-resample_async-$(3)-$(1)-$(2): tests/data/asynth-$(1)-1.wav
-fate-swr-resample_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,asetpts=PTS+random\(0\)*200-100,aresample=$(2):async=50:min_hard_comp=0.100000:first_pts=0:linear_interp=0:exact_rational=0:internal_sample_fmt=$(3),aformat=$(3),aresample=$(1):linear_interp=0:exact_rational=0:internal_sample_fmt=$(3) -f wav -c:a pcm_s16le -
+fate-swr-resample_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,asetnsamples=2048,asetpts=PTS+random\(0\)*200-100,aresample=$(2):async=50:min_hard_comp=0.100000:first_pts=0:linear_interp=0:exact_rational=0:internal_sample_fmt=$(3),aformat=$(3),aresample=$(1):linear_interp=0:exact_rational=0:internal_sample_fmt=$(3) -f wav -c:a pcm_s16le -
 
 fate-swr-resample_async-$(3)-$(1)-$(2): CMP = stddev
 fate-swr-resample_async-$(3)-$(1)-$(2): CMP_UNIT = $(5)
@@ -631,9 +631,9 @@ fate-swr-resample_exact-s32p-96000-8000: CMP_TARGET = 58.54
 fate-swr-resample_exact-s32p-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
 define ARESAMPLE_EXACT_ASYNC
-FATE_SWR_RESAMPLE += fate-swr-resample_exact_async-$(3)-$(1)-$(2)
+FATE_SWR_RESAMPLE-$(call FILTERDEMDECENCMUX, ATRIM ASETNSAMPLES ASETPTS ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-swr-resample_exact_async-$(3)-$(1)-$(2)
 fate-swr-resample_exact_async-$(3)-$(1)-$(2): tests/data/asynth-$(1)-1.wav
-fate-swr-resample_exact_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,asetpts=PTS+random\(0\)*200-100,aresample=$(2):async=50:min_hard_comp=0.100000:first_pts=0:internal_sample_fmt=$(3):exact_rational=on:linear_interp=0,aformat=$(3),aresample=$(1):internal_sample_fmt=$(3):exact_rational=on:linear_interp=0 -f wav -c:a pcm_s16le -
+fate-swr-resample_exact_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,asetnsamples=2048,asetpts=PTS+random\(0\)*200-100,aresample=$(2):async=50:min_hard_comp=0.100000:first_pts=0:internal_sample_fmt=$(3):exact_rational=on:linear_interp=0,aformat=$(3),aresample=$(1):internal_sample_fmt=$(3):exact_rational=on:linear_interp=0 -f wav -c:a pcm_s16le -
 
 fate-swr-resample_exact_async-$(3)-$(1)-$(2): CMP = stddev
 fate-swr-resample_exact_async-$(3)-$(1)-$(2): CMP_UNIT = $(5)
@@ -965,9 +965,9 @@ fate-swr-resample_exact_lin-s32p-96000-8000: CMP_TARGET = 58.54
 fate-swr-resample_exact_lin-s32p-96000-8000: SIZE_TOLERANCE = 1152000 - 20496
 
 define ARESAMPLE_EXACT_LIN_ASYNC
-FATE_SWR_RESAMPLE += fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2)
+FATE_SWR_RESAMPLE-$(call FILTERDEMDECENCMUX, ATRIM ASETNSAMPLES ASETPTS ARESAMPLE, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2)
 fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2): tests/data/asynth-$(1)-1.wav
-fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,asetpts=PTS+random\(0\)*200-100,aresample=$(2):async=50:min_hard_comp=0.100000:first_pts=0:internal_sample_fmt=$(3):exact_rational=on:linear_interp=on,aformat=$(3),aresample=$(1):internal_sample_fmt=$(3):exact_rational=on:linear_interp=on -f wav -c:a pcm_s16le -
+fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2): CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-$(1)-1.wav -af atrim=end_sample=10240,asetnsamples=2048,asetpts=PTS+random\(0\)*200-100,aresample=$(2):async=50:min_hard_comp=0.100000:first_pts=0:internal_sample_fmt=$(3):exact_rational=on:linear_interp=on,aformat=$(3),aresample=$(1):internal_sample_fmt=$(3):exact_rational=on:linear_interp=on -f wav -c:a pcm_s16le -
 
 fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2): CMP = stddev
 fate-swr-resample_exact_lin_async-$(3)-$(1)-$(2): CMP_UNIT = $(5)
