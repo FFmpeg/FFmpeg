@@ -4022,7 +4022,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     int num_discarded_begin = 0;
     int first_non_zero_audio_edit = -1;
     int packet_skip_samples = 0;
-    MOVIndexRange *current_index_range;
+    MOVIndexRange *current_index_range = NULL;
     int found_keyframe_after_edit = 0;
     int found_non_empty_edit = 0;
 
@@ -4038,7 +4038,6 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         return;
     }
     msc->current_index_range = msc->index_ranges;
-    current_index_range = msc->index_ranges - 1;
 
     // Clean AVStream from traces of old index
     sti->index_entries = NULL;
@@ -4225,8 +4224,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
             }
 
             // Update the index ranges array
-            if (current_index_range < msc->index_ranges || index != current_index_range->end) {
-                current_index_range++;
+            if (!current_index_range || index != current_index_range->end) {
+                current_index_range = current_index_range ? current_index_range + 1
+                                                          : msc->index_ranges;
                 current_index_range->start = index;
             }
             current_index_range->end = index + 1;
@@ -4289,7 +4289,8 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     av_freep(&frame_duration_buffer);
 
     // Null terminate the index ranges array
-    current_index_range++;
+    current_index_range = current_index_range ? current_index_range + 1
+                                              : msc->index_ranges;
     current_index_range->start = 0;
     current_index_range->end = 0;
     msc->current_index = msc->index_ranges[0].start;
