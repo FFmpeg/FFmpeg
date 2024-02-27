@@ -50,8 +50,6 @@
  * The structure stores all the states associated with the instance of Xeve MPEG-5 EVC decoder
  */
 typedef struct XevdContext {
-    const AVClass *class;
-
     XEVD id;            // XEVD instance identifier @see xevd.h
     XEVD_CDSC cdsc;     // decoding parameters @see xevd.h
 
@@ -471,15 +469,6 @@ static av_cold int libxevd_close(AVCodecContext *avctx)
     return 0;
 }
 
-#define OFFSET(x) offsetof(XevdContext, x)
-#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
-
-static const AVClass libxevd_class = {
-    .class_name = "libxevd",
-    .item_name  = av_default_item_name,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 const FFCodec ff_libxevd_decoder = {
     .p.name             = "evc",
     .p.long_name        = NULL_IF_CONFIG_SMALL("EVC / MPEG-5 Essential Video Coding (EVC)"),
@@ -489,7 +478,6 @@ const FFCodec ff_libxevd_decoder = {
     FF_CODEC_RECEIVE_FRAME_CB(libxevd_receive_frame),
     .close              = libxevd_close,
     .priv_data_size     = sizeof(XevdContext),
-    .p.priv_class       = &libxevd_class,
     .p.capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                           AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_AVOID_PROBING,
     .p.profiles         = NULL_IF_CONFIG_SMALL(ff_evc_profiles),
