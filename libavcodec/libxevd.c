@@ -531,7 +531,8 @@ const FFCodec ff_libxevd_decoder = {
     .close              = libxevd_close,
     .priv_data_size     = sizeof(XevdContext),
     .p.priv_class       = &libxevd_class,
-    .p.capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_AVOID_PROBING,
+    .p.capabilities     = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                          AV_CODEC_CAP_OTHER_THREADS | AV_CODEC_CAP_AVOID_PROBING,
     .p.profiles         = NULL_IF_CONFIG_SMALL(ff_evc_profiles),
     .p.wrapper_name     = "libxevd",
     .caps_internal      = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_NOT_INIT_THREADSAFE |
