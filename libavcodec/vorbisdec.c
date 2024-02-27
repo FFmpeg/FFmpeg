@@ -1451,6 +1451,9 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                             unsigned step = FASTDIV(vr->partition_size << 1, dim << 1);
                             vorbis_codebook codebook = vc->codebooks[vqbook];
 
+                            if (get_bits_left(gb) <= 0)
+                                return AVERROR_INVALIDDATA;
+
                             if (vr_type == 0) {
 
                                 voffs = voffset+j*vlen;
