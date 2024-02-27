@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-05-04 - xxxxxxxxxx - lavu 59.17.100 - opt.h
+  Add AV_OPT_TYPE_UINT and av_opt_eval_uint().
+
 2024-04-24 - 8616cfe0890 - lavu 59.16.100 - opt.h
   Add AV_OPT_SERIALIZE_SEARCH_CHILDREN.
 

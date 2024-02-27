@@ -62,6 +62,7 @@ static const size_t opt_elem_size[] = {
     [AV_OPT_TYPE_FLAGS]         = sizeof(unsigned),
     [AV_OPT_TYPE_INT]           = sizeof(int),
     [AV_OPT_TYPE_INT64]         = sizeof(int64_t),
+    [AV_OPT_TYPE_UINT]          = sizeof(unsigned),
     [AV_OPT_TYPE_UINT64]        = sizeof(uint64_t),
     [AV_OPT_TYPE_DOUBLE]        = sizeof(double),
     [AV_OPT_TYPE_FLOAT]         = sizeof(float),
@@ -166,6 +167,9 @@ static int read_number(const AVOption *o, const void *dst, double *num, int *den
     case AV_OPT_TYPE_INT:
         *intnum = *(int *)dst;
         return 0;
+    case AV_OPT_TYPE_UINT:
+        *intnum = *(unsigned int *)dst;
+        return 0;
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_INT64:
     case AV_OPT_TYPE_UINT64:
@@ -219,6 +223,7 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
     case AV_OPT_TYPE_BOOL:
     case AV_OPT_TYPE_FLAGS:
     case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_UINT:
         *(int *)dst = llrint(num / den) * intnum;
         break;
     case AV_OPT_TYPE_DURATION:
@@ -319,6 +324,7 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
                               opt->type == AV_OPT_TYPE_UINT64 || \
                               opt->type == AV_OPT_TYPE_CONST || \
                               opt->type == AV_OPT_TYPE_FLAGS || \
+                              opt->type == AV_OPT_TYPE_UINT  || \
                               opt->type == AV_OPT_TYPE_INT)     \
                              ? opt->default_val.i64             \
                              : opt->default_val.dbl)
@@ -605,6 +611,7 @@ static int opt_set_elem(void *obj, void *target_obj, const AVOption *o,
         return set_string_binary(obj, o, val, dst);
     case AV_OPT_TYPE_FLAGS:
     case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_UINT:
     case AV_OPT_TYPE_INT64:
     case AV_OPT_TYPE_UINT64:
     case AV_OPT_TYPE_FLOAT:
@@ -767,6 +774,7 @@ int av_opt_eval_ ## name(void *obj, const AVOption *o,                  \
 
 OPT_EVAL_NUMBER(flags,  AV_OPT_TYPE_FLAGS,    int)
 OPT_EVAL_NUMBER(int,    AV_OPT_TYPE_INT,      int)
+OPT_EVAL_NUMBER(uint,   AV_OPT_TYPE_UINT,     unsigned)
 OPT_EVAL_NUMBER(int64,  AV_OPT_TYPE_INT64,    int64_t)
 OPT_EVAL_NUMBER(float,  AV_OPT_TYPE_FLOAT,    float)
 OPT_EVAL_NUMBER(double, AV_OPT_TYPE_DOUBLE,   double)
@@ -996,6 +1004,9 @@ static int opt_get_elem(const AVOption *o, uint8_t **pbuf, size_t buf_len,
         break;
     case AV_OPT_TYPE_INT:
         ret = snprintf(*pbuf, buf_len, "%d", *(int *)dst);
+        break;
+    case AV_OPT_TYPE_UINT:
+        ret = snprintf(*pbuf, buf_len, "%u", *(unsigned *)dst);
         break;
     case AV_OPT_TYPE_INT64:
         ret = snprintf(*pbuf, buf_len, "%"PRId64, *(int64_t *)dst);
@@ -1444,6 +1455,7 @@ static void log_type(void *av_log_obj, const AVOption *o,
         [AV_OPT_TYPE_FLAGS]         = "<flags>",
         [AV_OPT_TYPE_INT]           = "<int>",
         [AV_OPT_TYPE_INT64]         = "<int64>",
+        [AV_OPT_TYPE_UINT]          = "<unsigned>",
         [AV_OPT_TYPE_UINT64]        = "<uint64>",
         [AV_OPT_TYPE_DOUBLE]        = "<double>",
         [AV_OPT_TYPE_FLOAT]         = "<float>",
@@ -1515,6 +1527,7 @@ static void log_default(void *obj, void *av_log_obj, const AVOption *opt)
         av_log(av_log_obj, AV_LOG_INFO, "%s", buf);
         break;
     }
+    case AV_OPT_TYPE_UINT:
     case AV_OPT_TYPE_INT:
     case AV_OPT_TYPE_UINT64:
     case AV_OPT_TYPE_INT64: {
@@ -1600,6 +1613,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         if (av_opt_query_ranges(&r, obj, opt->name, AV_OPT_SEARCH_FAKE_OBJ) >= 0) {
             switch (opt->type) {
             case AV_OPT_TYPE_INT:
+            case AV_OPT_TYPE_UINT:
             case AV_OPT_TYPE_INT64:
             case AV_OPT_TYPE_UINT64:
             case AV_OPT_TYPE_DOUBLE:
@@ -1676,6 +1690,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_BOOL:
             case AV_OPT_TYPE_FLAGS:
             case AV_OPT_TYPE_INT:
+            case AV_OPT_TYPE_UINT:
             case AV_OPT_TYPE_INT64:
             case AV_OPT_TYPE_UINT64:
             case AV_OPT_TYPE_DURATION:
@@ -2177,6 +2192,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     switch (field->type) {
     case AV_OPT_TYPE_BOOL:
     case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_UINT:
     case AV_OPT_TYPE_INT64:
     case AV_OPT_TYPE_UINT64:
     case AV_OPT_TYPE_PIXEL_FMT:
@@ -2281,6 +2297,7 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
     case AV_OPT_TYPE_PIXEL_FMT:
     case AV_OPT_TYPE_SAMPLE_FMT:
     case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_UINT:
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_INT64:
     case AV_OPT_TYPE_UINT64:

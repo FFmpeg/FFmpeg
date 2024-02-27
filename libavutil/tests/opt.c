@@ -32,6 +32,7 @@ typedef struct TestContext {
     const AVClass *class;
     struct ChildContext *child;
     int num;
+    int unum;
     int toggle;
     char *string;
     int flags;
@@ -87,6 +88,7 @@ static const AVOptionArrayDef array_dict = {
 
 static const AVOption test_options[]= {
     {"num",        "set num",            OFFSET(num),            AV_OPT_TYPE_INT,            { .i64 = 0 },                     -1,       100, 1 },
+    {"unum",       "set unum",           OFFSET(unum),           AV_OPT_TYPE_UINT,           { .i64 = 1U << 31 },               0,  1U << 31, 1 },
     {"toggle",     "set toggle",         OFFSET(toggle),         AV_OPT_TYPE_INT,            { .i64 = 1 },                      0,         1, 1 },
     {"rational",   "set rational",       OFFSET(rational),       AV_OPT_TYPE_RATIONAL,       { .dbl = 1 },                      0,        10, 1 },
     {"string",     "set string",         OFFSET(string),         AV_OPT_TYPE_STRING,         { .str = "default" },       CHAR_MIN,  CHAR_MAX, 1 },
@@ -186,6 +188,7 @@ int main(void)
         av_opt_set_defaults(&test_ctx);
 
         printf("num=%d\n", test_ctx.num);
+        printf("unum=%u\n", test_ctx.unum);
         printf("toggle=%d\n", test_ctx.toggle);
         printf("string=%s\n", test_ctx.string);
         printf("escape=%s\n", test_ctx.escape);
@@ -386,6 +389,12 @@ int main(void)
             "num=-1",
             "num=-2",
             "num=101",
+            "unum=bogus",
+            "unum=44",
+            "unum=44.4",
+            "unum=-1",
+            "unum=2147483648",
+            "unum=2147483649",
             "num64=bogus",
             "num64=44",
             "num64=44.4",
