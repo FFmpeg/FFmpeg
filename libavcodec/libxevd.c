@@ -286,17 +286,14 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         XEVD_STAT stat;
         XEVD_BITB bitb;
         int nalu_size;
-        AVPacket* pkt_au;
+        AVPacket *pkt_au = av_packet_alloc();
         imgb = NULL;
 
-        pkt_au = av_packet_clone(pkt);
         if (!pkt_au) {
-            av_log(avctx, AV_LOG_ERROR, "Cannot clone AVPacket\n");
             av_packet_unref(pkt);
             return AVERROR(ENOMEM);
         }
-
-        av_packet_unref(pkt);
+        FFSWAP(AVPacket*, pkt_au, xectx->pkt);
 
         // get all nal units from AU
         while(pkt_au->size > (bs_read_pos + XEVD_NAL_UNIT_LENGTH_BYTE)) {
