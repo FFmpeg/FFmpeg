@@ -977,8 +977,8 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
     }
     if (!avctx->codec)
         return AVERROR(EINVAL);
-    if (avctx->codec->type != AVMEDIA_TYPE_SUBTITLE) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid media type for subtitles\n");
+    if (ffcodec(avctx->codec)->cb_type != FF_CODEC_CB_TYPE_DECODE_SUB) {
+        av_log(avctx, AV_LOG_ERROR, "Codec not subtitle decoder\n");
         return AVERROR(EINVAL);
     }
 
