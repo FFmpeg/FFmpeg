@@ -357,8 +357,8 @@ static int multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, A
     *consumed = 0;
 
     if (c->filter_length == 1 && c->phase_count == 1) {
-        int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*c->index;
-        int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr;
+        int64_t index2= (1LL<<32)*c->frac/c->src_incr + (1LL<<32)*c->index + 1;
+        int64_t incr= (1LL<<32) * c->dst_incr / c->src_incr + 1;
         int new_size = (src_size * (int64_t)c->src_incr - c->frac + c->dst_incr - 1) / c->dst_incr;
 
         dst_size = FFMAX(FFMIN(dst_size, new_size), 0);
