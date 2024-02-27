@@ -204,7 +204,8 @@ static int libxevd_image_copy(struct AVCodecContext *avctx, XEVD_IMGB *imgb, str
         }
     }
 
-    if (ret = ff_get_buffer(avctx, frame, 0) < 0)
+    ret = ff_get_buffer(avctx, frame, 0);
+    if (ret < 0)
         return ret;
 
     av_image_copy(frame->data, frame->linesize, (const uint8_t **)imgb->a,
