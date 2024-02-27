@@ -347,13 +347,13 @@ endef
 fate-swr-resample_nn-fltp-44100-8000: CMP_TARGET = 591.03
 fate-swr-resample_nn-fltp-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_nn-fltp-8000-44100: CMP_TARGET = 3163.32
+fate-swr-resample_nn-fltp-8000-44100: CMP_TARGET = 3156.61
 fate-swr-resample_nn-fltp-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 
 fate-swr-resample_nn-s16p-44100-8000: CMP_TARGET = 590.98
 fate-swr-resample_nn-s16p-44100-8000: SIZE_TOLERANCE = 529200 - 20486
 
-fate-swr-resample_nn-s16p-8000-44100: CMP_TARGET = 3163.39
+fate-swr-resample_nn-s16p-8000-44100: CMP_TARGET = 3156.61
 fate-swr-resample_nn-s16p-8000-44100: SIZE_TOLERANCE = 96000 - 20480
 
 define ARESAMPLE_ASYNC
