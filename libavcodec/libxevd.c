@@ -21,22 +21,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <float.h>
-#include <stdlib.h>
+#include <stddef.h>
 
 #include <xevd.h>
 
 #include "libavutil/internal.h"
 #include "libavutil/common.h"
-#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/cpu.h"
 
 #include "avcodec.h"
-#include "internal.h"
-#include "packet_internal.h"
 #include "codec_internal.h"
 #include "profiles.h"
 #include "decode.h"
