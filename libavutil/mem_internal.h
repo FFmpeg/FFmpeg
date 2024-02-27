@@ -27,8 +27,6 @@
 
 #include "attributes.h"
 #include "macros.h"
-#include "mem.h"
-#include "version.h"
 
 /**
  * @def DECLARE_ALIGNED(n,t,v)
