@@ -14,7 +14,7 @@ color=255 192 203 255
 channel_layout=311=311
 binary=62 69 6e 0
 binary_size=4
-num64=1
+num64=4294967296
 flt=0.333333
 dbl=0.333333
 array_str[0]=str0
@@ -43,7 +43,7 @@ TestContext AVOptions:
   -bin               <binary>     E.......... set binary value
   -bin1              <binary>     E.......... set binary value
   -bin2              <binary>     E.......... set binary value
-  -num64             <int64>      E.......... set num 64bit (from -1 to 100) (default 1)
+  -num64             <int64>      E.......... set num 64bit (from -1 to 4.29497e+09) (default 4294967296)
   -flt               <float>      E.......... set float (from 0 to 100) (default 0.333333)
   -dbl               <double>     E.......... set double (from 0 to 100) (default 0.333333)
   -bool1             <boolean>    E.......... set boolean value (default auto)
@@ -134,7 +134,7 @@ name: cl          get: hexagonal        set: OK               get: hexagonal    
 name: bin         get: 62696E00         set: OK               get: 62696E00         OK
 name: bin1        get:                  set: OK               get:                  OK
 name: bin2        get:                  set: OK               get:                  OK
-name: num64       get: 1                set: OK               get: 1                OK
+name: num64       get: 4294967296       set: OK               get: 4294967296       OK
 name: flt         get: 0.333333         set: OK               get: 0.333333         OK
 name: dbl         get: 0.333333         set: OK               get: 0.333333         OK
 name: bool1       get: auto             set: OK               get: auto             OK
@@ -150,7 +150,7 @@ array_dict=NULL; nb_array_dict=0
 av_opt_get("array_dict") -> NULL
 
 Test av_opt_serialize()
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-),array_int=,array_str=str0|str\\|1|str\\\\2,array_dict=k00\=v\\\\\\\\00:k01\=v\\\,01\,k10\=v\\\\\=1\\\\:0
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=4294967296,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-),array_int=,array_str=str0|str\\|1|str\\\\2,array_dict=k00\=v\\\\\\\\00:k01\=v\\\,01\,k10\=v\\\\\=1\\\\:0
 Setting entry with key 'num' to value '0'
 Setting entry with key 'toggle' to value '1'
 Setting entry with key 'rational' to value '1/1'
@@ -167,7 +167,7 @@ Setting entry with key 'cl' to value 'hexagonal'
 Setting entry with key 'bin' to value '62696E00'
 Setting entry with key 'bin1' to value ''
 Setting entry with key 'bin2' to value ''
-Setting entry with key 'num64' to value '1'
+Setting entry with key 'num64' to value '4294967296'
 Setting entry with key 'flt' to value '0.333333'
 Setting entry with key 'dbl' to value '0.333333'
 Setting entry with key 'bool1' to value 'auto'
@@ -178,7 +178,7 @@ Setting entry with key 'dict2' to value 'happy=\:-)'
 Setting entry with key 'array_int' to value ''
 Setting entry with key 'array_str' to value 'str0|str\|1|str\\2'
 Setting entry with key 'array_dict' to value 'k00=v\\\\00:k01=v\,01,k10=v\\=1\\:0'
-num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=1,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-),array_int=,array_str=str0|str\\|1|str\\\\2,array_dict=k00\=v\\\\\\\\00:k01\=v\\\,01\,k10\=v\\\\\=1\\\\:0
+num=0,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=4294967296,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-),array_int=,array_str=str0|str\\|1|str\\\\2,array_dict=k00\=v\\\\\\\\00:k01\=v\\\,01\,k10\=v\\\\\=1\\\\:0
 child_num=0,flt=0.333333,dbl=0.333333,array_int=
 
 Testing av_set_options_string()
@@ -375,12 +375,15 @@ Setting entry with key 'num64' to value '-1'
 OK    'num64=-1'
 Setting options string 'num64=-2'
 Setting entry with key 'num64' to value '-2'
-Value -2.000000 for parameter 'num64' out of range [-1 - 100]
+Value -2.000000 for parameter 'num64' out of range [-1 - 4.29497e+09]
 Error 'num64=-2'
-Setting options string 'num64=101'
-Setting entry with key 'num64' to value '101'
-Value 101.000000 for parameter 'num64' out of range [-1 - 100]
-Error 'num64=101'
+Setting options string 'num64=4294967296'
+Setting entry with key 'num64' to value '4294967296'
+OK    'num64=4294967296'
+Setting options string 'num64=4294967297'
+Setting entry with key 'num64' to value '4294967297'
+Value 4294967297.000000 for parameter 'num64' out of range [-1 - 4.29497e+09]
+Error 'num64=4294967297'
 Setting options string 'flt=bogus'
 Setting entry with key 'flt' to value 'bogus'
 Undefined constant or missing '(' in 'bogus'
