@@ -206,7 +206,7 @@ static av_cold int mss1_decode_init(AVCodecContext *avctx)
 
     ret = ff_mss12_decode_init(&c->ctx, 0, &c->sc, NULL);
     if (ret < 0)
-        av_frame_free(&c->pic);
+        return ret;
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
 
@@ -233,4 +233,5 @@ const FFCodec ff_mss1_decoder = {
     .close          = mss1_decode_end,
     FF_CODEC_DECODE_CB(mss1_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

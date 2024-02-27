@@ -886,14 +886,10 @@ static av_cold int mss2_decode_init(AVCodecContext *avctx)
     c->pal_stride   = c->mask_stride;
     c->pal_pic      = av_mallocz(c->pal_stride * avctx->height);
     c->last_pal_pic = av_mallocz(c->pal_stride * avctx->height);
-    if (!c->pal_pic || !c->last_pal_pic || !ctx->last_pic) {
-        mss2_decode_end(avctx);
+    if (!c->pal_pic || !c->last_pal_pic || !ctx->last_pic)
         return AVERROR(ENOMEM);
-    }
-    if (ret = wmv9_init(avctx)) {
-        mss2_decode_end(avctx);
+    if (ret = wmv9_init(avctx))
         return ret;
-    }
     ff_mss2dsp_init(&ctx->dsp);
 
     avctx->pix_fmt = c->free_colours == 127 ? AV_PIX_FMT_RGB555
@@ -913,4 +909,5 @@ const FFCodec ff_mss2_decoder = {
     .close          = mss2_decode_end,
     FF_CODEC_DECODE_CB(mss2_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
