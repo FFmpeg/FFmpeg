@@ -462,8 +462,46 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
 
     switch (fgp->type) {
     case AV_FILM_GRAIN_PARAMS_NONE:
-    case AV_FILM_GRAIN_PARAMS_AV1:
-        return;
+        break;
+    case AV_FILM_GRAIN_PARAMS_AV1: {
+        const AVFilmGrainAOMParams *aom = &fgp->codec.aom;
+        const int num_ar_coeffs_y = 2 * aom->ar_coeff_lag * (aom->ar_coeff_lag + 1);
+        const int num_ar_coeffs_uv = num_ar_coeffs_y + !!aom->num_y_points;
+        av_log(ctx, AV_LOG_INFO, "y_points={ ");
+        for (int i = 0; i < aom->num_y_points; i++)
+            av_log(ctx, AV_LOG_INFO, "(%d,%d) ", aom->y_points[i][0], aom->y_points[i][1]);
+        av_log(ctx, AV_LOG_INFO, "}; chroma_scaling_from_luma=%d; ", aom->chroma_scaling_from_luma);
+        for (int uv = 0; uv < 2; uv++) {
+            av_log(ctx, AV_LOG_INFO, "uv_points[%d]={ ", uv);
+            for (int i = 0; i < aom->num_uv_points[uv]; i++)
+                av_log(ctx, AV_LOG_INFO, "(%d,%d) ", aom->uv_points[uv][i][0], aom->uv_points[uv][i][1]);
+            av_log(ctx, AV_LOG_INFO, "}; ");
+        }
+        av_log(ctx, AV_LOG_INFO, "scaling_shift=%d; ", aom->scaling_shift);
+        av_log(ctx, AV_LOG_INFO, "ar_coeff_lag=%d; ", aom->ar_coeff_lag);
+        if (num_ar_coeffs_y) {
+            av_log(ctx, AV_LOG_INFO, "ar_coeffs_y={ ");
+            for (int i = 0; i < num_ar_coeffs_y; i++)
+                av_log(ctx, AV_LOG_INFO, "%d ", aom->ar_coeffs_y[i]);
+            av_log(ctx, AV_LOG_INFO, "}; ");
+        }
+        for (int uv = 0; num_ar_coeffs_uv && uv < 2; uv++) {
+            av_log(ctx, AV_LOG_INFO, "ar_coeffs_uv[%d]={ ", uv);
+            for (int i = 0; i < num_ar_coeffs_uv; i++)
+                av_log(ctx, AV_LOG_INFO, "%d ", aom->ar_coeffs_uv[uv][i]);
+            av_log(ctx, AV_LOG_INFO, "}; ");
+        }
+        av_log(ctx, AV_LOG_INFO, "ar_coeff_shift=%d; ", aom->ar_coeff_shift);
+        av_log(ctx, AV_LOG_INFO, "grain_scale_shift=%d; ", aom->grain_scale_shift);
+        for (int uv = 0; uv < 2; uv++) {
+            av_log(ctx, AV_LOG_INFO, "uv_mult[%d] = %d; ", uv, aom->uv_mult[uv]);
+            av_log(ctx, AV_LOG_INFO, "uv_mult_luma[%d] = %d; ", uv, aom->uv_mult_luma[uv]);
+            av_log(ctx, AV_LOG_INFO, "uv_offset[%d] = %d; ", uv, aom->uv_offset[uv]);
+        }
+        av_log(ctx, AV_LOG_INFO, "overlap_flag=%d; ", aom->overlap_flag);
+        av_log(ctx, AV_LOG_INFO, "limit_output_range=%d; ", aom->limit_output_range);
+        break;
+    }
     case AV_FILM_GRAIN_PARAMS_H274: {
         const AVFilmGrainH274Params *h274 = &fgp->codec.h274;
         const char *color_range_str     = av_color_range_name(h274->color_range);
