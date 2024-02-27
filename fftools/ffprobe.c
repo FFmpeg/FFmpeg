@@ -39,6 +39,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/display.h"
+#include "libavutil/film_grain_params.h"
 #include "libavutil/hash.h"
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/mastering_display_metadata.h"
@@ -2376,6 +2377,120 @@ static void print_ambient_viewing_environment(WriterContext *w,
     print_q("ambient_light_y",     env->ambient_light_y,     '/');
 }
 
+static void print_film_grain_params(WriterContext *w,
+                                    const AVFilmGrainParams *fgp)
+{
+    AVBPrint pbuf;
+    if (!fgp)
+        return;
+
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
+
+    switch (fgp->type) {
+    case AV_FILM_GRAIN_PARAMS_NONE:
+        print_str("type", "none");
+        break;
+    case AV_FILM_GRAIN_PARAMS_AV1: {
+        const AVFilmGrainAOMParams *aom = &fgp->codec.aom;
+        const int num_ar_coeffs_y = 2 * aom->ar_coeff_lag * (aom->ar_coeff_lag + 1);
+        const int num_ar_coeffs_uv = num_ar_coeffs_y + !!aom->num_y_points;
+        print_str("type", "av1");
+        print_fmt("seed", "%"PRIu64, fgp->seed);
+        print_int("chroma_scaling_from_luma", aom->chroma_scaling_from_luma);
+        print_int("scaling_shift", aom->scaling_shift);
+        print_int("ar_coeff_lag", aom->ar_coeff_lag);
+        print_int("ar_coeff_shift", aom->ar_coeff_shift);
+        print_int("grain_scale_shift", aom->grain_scale_shift);
+        print_int("overlap_flag", aom->overlap_flag);
+        print_int("limit_output_range", aom->limit_output_range);
+
+        writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST);
+
+        if (aom->num_y_points) {
+            writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+
+            print_list_fmt("y_points_value", "%"PRIu8, aom->num_y_points, 1, aom->y_points[idx][0]);
+            print_list_fmt("y_points_scaling", "%"PRIu8, aom->num_y_points, 1, aom->y_points[idx][1]);
+            print_list_fmt("ar_coeffs_y", "%"PRId8, num_ar_coeffs_y, 1, aom->ar_coeffs_y[idx]);
+
+            // SECTION_ID_FRAME_SIDE_DATA_COMPONENT
+            writer_print_section_footer(w);
+        }
+
+        for (int uv = 0; uv < 2; uv++) {
+            if (!aom->num_uv_points[uv] && !aom->chroma_scaling_from_luma)
+                continue;
+
+            writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+
+            print_list_fmt("uv_points_value", "%"PRIu8, aom->num_uv_points[uv], 1, aom->uv_points[uv][idx][0]);
+            print_list_fmt("uv_points_scaling", "%"PRIu8, aom->num_uv_points[uv], 1, aom->uv_points[uv][idx][1]);
+            print_list_fmt("ar_coeffs_uv", "%"PRId8, num_ar_coeffs_uv, 1, aom->ar_coeffs_uv[uv][idx]);
+            print_int("uv_mult", aom->uv_mult[uv]);
+            print_int("uv_mult_luma", aom->uv_mult_luma[uv]);
+            print_int("uv_offset", aom->uv_offset[uv]);
+
+            // SECTION_ID_FRAME_SIDE_DATA_COMPONENT
+            writer_print_section_footer(w);
+        }
+
+        // SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST
+        writer_print_section_footer(w);
+        break;
+    }
+    case AV_FILM_GRAIN_PARAMS_H274: {
+        const AVFilmGrainH274Params *h274 = &fgp->codec.h274;
+        const char *color_range_str     = av_color_range_name(h274->color_range);
+        const char *color_primaries_str = av_color_primaries_name(h274->color_primaries);
+        const char *color_trc_str       = av_color_transfer_name(h274->color_trc);
+        const char *color_space_str     = av_color_space_name(h274->color_space);
+        print_str("type", "h274");
+        print_fmt("seed", "%"PRIu64, fgp->seed);
+        print_int("model_id", h274->model_id);
+        print_str("color_range", color_range_str ? color_range_str : "unknown");
+        print_str("color_primaries", color_primaries_str ? color_primaries_str : "unknown");
+        print_str("color_trc", color_trc_str ? color_trc_str : "unknown");
+        print_str("color_space", color_space_str ? color_space_str : "unknown");
+        print_int("blending_mode_id", h274->blending_mode_id);
+        print_int("log2_scale_factor", h274->log2_scale_factor);
+
+        writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST);
+
+        for (int c = 0; c < 3; c++) {
+            if (!h274->component_model_present[c])
+                continue;
+
+            writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
+            print_int(c ? "bit_depth_chroma" : "bit_depth_luma", c ? h274->bit_depth_chroma : h274->bit_depth_luma);
+
+            writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST);
+            for (int i = 0; i < h274->num_intensity_intervals[c]; i++) {
+
+                writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_PIECE);
+                print_int("intensity_interval_lower_bound", h274->intensity_interval_lower_bound[c][i]);
+                print_int("intensity_interval_upper_bound", h274->intensity_interval_upper_bound[c][i]);
+                print_list_fmt("comp_model_value", "%"PRId16, h274->num_model_values[c], 1, h274->comp_model_value[c][i][idx]);
+
+                // SECTION_ID_FRAME_SIDE_DATA_PIECE
+                writer_print_section_footer(w);
+            }
+
+            // SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST
+            writer_print_section_footer(w);
+
+            // SECTION_ID_FRAME_SIDE_DATA_COMPONENT
+            writer_print_section_footer(w);
+        }
+
+        // SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST
+        writer_print_section_footer(w);
+        break;
+    }
+    }
+
+    av_bprint_finalize(&pbuf, NULL);
+}
+
 static void print_pkt_side_data(WriterContext *w,
                                 AVCodecParameters *par,
                                 const AVPacketSideData *sd,
@@ -2749,6 +2864,9 @@ static void print_frame_side_data(WriterContext *w,
             print_dynamic_hdr_vivid(w, metadata);
         } else if (sd->type == AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT) {
             print_ambient_viewing_environment(w, (const AVAmbientViewingEnvironment *)sd->data);
+        } else if (sd->type == AV_FRAME_DATA_FILM_GRAIN_PARAMS) {
+            AVFilmGrainParams *fgp = (AVFilmGrainParams *)sd->data;
+            print_film_grain_params(w, fgp);
         }
         writer_print_section_footer(w);
     }
