@@ -255,59 +255,59 @@ static av_cold int libxevd_init(AVCodecContext *avctx)
 static int libxevd_return_frame(AVCodecContext *avctx, AVFrame *frame,
                                 XEVD_IMGB *imgb, AVPacket **pkt_au)
 {
+    AVPacket *pkt_au_imgb = (AVPacket*)imgb->pdata[0];
     int ret;
 
-                        AVPacket* pkt_au_imgb = (AVPacket*)imgb->pdata[0];
-                        if(!pkt_au_imgb) {
-                            av_log(avctx, AV_LOG_ERROR, "Invalid data needed to fill frame properties\n");
+    if (!pkt_au_imgb) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid data needed to fill frame properties\n");
 
-                            if (pkt_au)
-                                av_packet_free(pkt_au);
-                            av_frame_unref(frame);
+        if (pkt_au)
+            av_packet_free(pkt_au);
+        av_frame_unref(frame);
 
-                            imgb->release(imgb);
-                            imgb = NULL;
+        imgb->release(imgb);
+        imgb = NULL;
 
-                            return AVERROR_INVALIDDATA;
-                        }
+        return AVERROR_INVALIDDATA;
+    }
 
-                        // got frame
-                        ret = libxevd_image_copy(avctx, imgb, frame);
-                        if(ret < 0) {
-                            av_log(avctx, AV_LOG_ERROR, "Image copying error\n");
+    // got frame
+    ret = libxevd_image_copy(avctx, imgb, frame);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Image copying error\n");
 
-                            av_packet_free(&pkt_au_imgb);
-                            av_frame_unref(frame);
+        av_packet_free(&pkt_au_imgb);
+        av_frame_unref(frame);
 
-                            imgb->release(imgb);
-                            imgb = NULL;
+        imgb->release(imgb);
+        imgb = NULL;
 
-                            return ret;
-                        }
+        return ret;
+    }
 
-                        // use ff_decode_frame_props_from_pkt() to fill frame properties
-                        ret = ff_decode_frame_props_from_pkt(avctx, frame, pkt_au_imgb);
-                        if (ret < 0) {
-                            av_log(avctx, AV_LOG_ERROR, "ff_decode_frame_props_from_pkt error\n");
+    // use ff_decode_frame_props_from_pkt() to fill frame properties
+    ret = ff_decode_frame_props_from_pkt(avctx, frame, pkt_au_imgb);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "ff_decode_frame_props_from_pkt error\n");
 
-                            av_packet_free(&pkt_au_imgb);
-                            av_frame_unref(frame);
+        av_packet_free(&pkt_au_imgb);
+        av_frame_unref(frame);
 
-                            imgb->release(imgb);
-                            imgb = NULL;
+        imgb->release(imgb);
+        imgb = NULL;
 
-                            return ret;
-                        }
+        return ret;
+    }
 
-                        frame->pkt_dts = imgb->ts[XEVD_TS_DTS];
-                        frame->pts = imgb->ts[XEVD_TS_PTS];
+    frame->pkt_dts = imgb->ts[XEVD_TS_DTS];
+    frame->pts = imgb->ts[XEVD_TS_PTS];
 
-                        av_packet_free(&pkt_au_imgb);
+    av_packet_free(&pkt_au_imgb);
 
-                        // xevd_pull uses pool of objects of type XEVD_IMGB.
-                        // The pool size is equal MAX_PB_SIZE (26), so release object when it is no more needed
-                        imgb->release(imgb);
-                        imgb = NULL;
+    // xevd_pull uses pool of objects of type XEVD_IMGB.
+    // The pool size is equal MAX_PB_SIZE (26), so release object when it is no more needed
+    imgb->release(imgb);
+    imgb = NULL;
 
     return 0;
 }
