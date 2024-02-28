@@ -161,7 +161,7 @@ InputStream *ist_find_unused(enum AVMediaType type)
 
 static void report_new_stream(Demuxer *d, const AVPacket *pkt)
 {
-    AVStream *st = d->f.ctx->streams[pkt->stream_index];
+    const AVStream *st = d->f.ctx->streams[pkt->stream_index];
 
     if (pkt->stream_index < d->nb_streams_warn)
         return;

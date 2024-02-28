@@ -319,7 +319,7 @@ static int overflow_heartbeat(SyncQueue *sq, int stream_idx)
     /* signal a fake timestamp for all streams that prevent tail_ts from being output */
     tail_ts++;
     for (unsigned int i = 0; i < sq->nb_streams; i++) {
-        SyncQueueStream *st1 = &sq->streams[i];
+        const SyncQueueStream *st1 = &sq->streams[i];
         int64_t ts;
 
         if (st == st1 || st1->finished ||
@@ -524,8 +524,8 @@ fail:
 static int receive_for_stream(SyncQueue *sq, unsigned int stream_idx,
                               SyncQueueFrame frame)
 {
-    SyncQueueStream *st_head = sq->head_stream >= 0 ?
-                               &sq->streams[sq->head_stream] : NULL;
+    const SyncQueueStream *st_head = sq->head_stream >= 0 ?
+                                     &sq->streams[sq->head_stream] : NULL;
     SyncQueueStream *st;
 
     av_assert0(stream_idx < sq->nb_streams);
