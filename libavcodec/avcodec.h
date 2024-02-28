@@ -1832,10 +1832,10 @@ typedef struct AVCodecContext {
      * - decoding: maintained and used by libavcodec, not intended to be used by user apps
      * - encoding: unused
      */
-    int64_t pts_correction_num_faulty_pts; /// Number of incorrect PTS values so far
-    int64_t pts_correction_num_faulty_dts; /// Number of incorrect DTS values so far
-    int64_t pts_correction_last_pts;       /// PTS of the last frame
-    int64_t pts_correction_last_dts;       /// DTS of the last frame
+    int64_t pts_correction_num_faulty_pts; ///< Number of incorrect PTS values so far
+    int64_t pts_correction_num_faulty_dts; ///< Number of incorrect DTS values so far
+    int64_t pts_correction_last_pts;       ///< PTS of the last frame
+    int64_t pts_correction_last_dts;       ///< DTS of the last frame
 
     /**
      * Character encoding of the input subtitles file.

@@ -61,17 +61,17 @@ typedef struct IVIHuffDesc {
  *  macroblock/block huffman table descriptor
  */
 typedef struct IVIHuffTab {
-    int32_t     tab_sel;    /// index of one of the predefined tables
+    int32_t     tab_sel;    ///< index of one of the predefined tables
                             /// or "7" for custom one
-    VLC         *tab;       /// pointer to the table associated with tab_sel
+    VLC         *tab;       ///< pointer to the table associated with tab_sel
 
     /// the following are used only when tab_sel == 7
-    IVIHuffDesc cust_desc;  /// custom Huffman codebook descriptor
-    VLC         cust_tab;   /// vlc table for custom codebook
+    IVIHuffDesc cust_desc;  ///< custom Huffman codebook descriptor
+    VLC         cust_tab;   ///< vlc table for custom codebook
 } IVIHuffTab;
 
 enum {
-    IVI_MB_HUFF   = 0,      /// Huffman table is used for coding macroblocks
+    IVI_MB_HUFF   = 0,      ///< Huffman table is used for coding macroblocks
     IVI_BLK_HUFF  = 1       /// Huffman table is used for coding blocks
 };
 

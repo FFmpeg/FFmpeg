@@ -51,8 +51,8 @@ struct RMStream {
     int64_t audiotimestamp; ///< Audio packet timestamp
     int sub_packet_cnt; // Subpacket counter, used while reading
     int sub_packet_size, sub_packet_h, coded_framesize; ///< Descrambling parameters from container
-    int audio_framesize; /// Audio frame size from container
-    int sub_packet_lengths[16]; /// Length of each subpacket
+    int audio_framesize; ///< Audio frame size from container
+    int sub_packet_lengths[16]; ///< Length of each subpacket
     int32_t deint_id;  ///< deinterleaver used in audio stream
 };
 
