@@ -22,13 +22,11 @@
 #include <string.h>
 
 #include "checkasm.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/vvc/vvc_ctu.h"
 #include "libavcodec/vvc/vvc_data.h"
+#include "libavcodec/vvc/vvcdsp.h"
 
 #include "libavutil/common.h"
-#include "libavutil/internal.h"
-#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 

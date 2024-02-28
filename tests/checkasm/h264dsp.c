@@ -20,12 +20,10 @@
 
 #include <string.h>
 #include "checkasm.h"
-#include "libavcodec/avcodec.h"
 #include "libavcodec/h264dsp.h"
 #include "libavcodec/h264data.h"
 #include "libavcodec/h264_parse.h"
 #include "libavutil/common.h"
-#include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 

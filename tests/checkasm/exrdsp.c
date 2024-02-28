@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include "checkasm.h"
-#include "libavcodec/avcodec.h"
+#include "libavcodec/defs.h"
 #include "libavcodec/exrdsp.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"

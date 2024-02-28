@@ -20,7 +20,6 @@
 
 #include <string.h>
 
-#include "libavcodec/avcodec.h"
 #include "libavcodec/vp8dsp.h"
 
 #include "libavutil/common.h"

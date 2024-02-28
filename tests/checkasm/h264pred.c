@@ -20,7 +20,7 @@
 
 #include <string.h>
 #include "checkasm.h"
-#include "libavcodec/avcodec.h"
+#include "libavcodec/codec_id.h"
 #include "libavcodec/h264pred.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
