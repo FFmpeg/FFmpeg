@@ -23,7 +23,7 @@
 #ifndef AVCODEC_VVC_VVC_MVS_H
 #define AVCODEC_VVC_VVC_MVS_H
 
-#include "vvcdec.h"
+#include "vvc_ctu.h"
 
 void ff_vvc_round_mv(Mv *mv, int lshift, int rshift);
 void ff_vvc_clip_mv(Mv *mv);
