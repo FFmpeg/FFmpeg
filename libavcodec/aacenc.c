@@ -1381,7 +1381,11 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ff_lpc_init(&s->lpc, 2*avctx->frame_size, TNS_MAX_ORDER, FF_LPC_TYPE_LEVINSON);
     s->random_state = 0x1f2e3d4c;
 
-    ff_aac_dsp_init(s);
+    ff_aacenc_dsp_init(&s->aacdsp);
+
+#if HAVE_MIPSDSP
+    ff_aac_coder_init_mips(s);
+#endif
 
     ff_af_queue_init(avctx, &s->afq);
 
@@ -1435,18 +1439,3 @@ const FFCodec ff_aac_encoder = {
                                                      AV_SAMPLE_FMT_NONE },
     .p.priv_class   = &aacenc_class,
 };
-
-void ff_aac_dsp_init(AACEncContext *s){
-    s->abs_pow34   = abs_pow34_v;
-    s->quant_bands = quantize_bands;
-
-#if ARCH_RISCV
-    ff_aac_dsp_init_riscv(s);
-#elif ARCH_X86
-    ff_aac_dsp_init_x86(s);
-#endif
-
-#if HAVE_MIPSDSP
-    ff_aac_coder_init_mips(s);
-#endif
-}

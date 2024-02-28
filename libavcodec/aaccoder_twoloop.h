@@ -291,7 +291,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
 
     if (!allz)
         return;
-    s->abs_pow34(s->scoefs, sce->coeffs, 1024);
+    s->aacdsp.abs_pow34(s->scoefs, sce->coeffs, 1024);
     ff_quantize_band_cost_cache_init(s);
 
     for (i = 0; i < sizeof(minsf) / sizeof(minsf[0]); ++i)

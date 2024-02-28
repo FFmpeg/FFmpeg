@@ -22,13 +22,12 @@
 #include "config.h"
 
 #include "libavutil/attributes.h"
-#include "libavutil/float_dsp.h"
 #include "libavutil/cpu.h"
-#include "libavcodec/aacenc.h"
+#include "libavcodec/aacencdsp.h"
 
 void ff_abs_pow34_rvv(float *out, const float *in, const int size);
 
-av_cold void ff_aac_dsp_init_riscv(AACEncContext *s)
+av_cold void ff_aacenc_dsp_init_riscv(AACEncDSPContext *s)
 {
 #if HAVE_RVV
     int flags = av_get_cpu_flags();

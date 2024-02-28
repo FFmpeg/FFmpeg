@@ -61,6 +61,7 @@
 #include "libavcodec/put_bits.h"
 #include "libavcodec/aac.h"
 #include "libavcodec/aacenc.h"
+#include "libavcodec/aacencdsp.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/aacenctab.h"
 #include "libavcodec/aacenc_utils.h"
