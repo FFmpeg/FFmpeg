@@ -162,6 +162,7 @@
   <xsd:complexType name="frameSideDataType">
     <xsd:sequence>
       <xsd:element name="timecodes" type="ffprobe:frameSideDataTimecodeList" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="components" type="ffprobe:frameSideDataComponentList" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="side_datum" type="ffprobe:frameSideDatumType" minOccurs="0" maxOccurs="unbounded"/>
     </xsd:sequence>
 
@@ -183,6 +184,31 @@
 
   <xsd:complexType name="frameSideDataTimecodeType">
     <xsd:attribute name="value"              type="xsd:string"/>
+  </xsd:complexType>
+
+  <xsd:complexType name="frameSideDataComponentList">
+    <xsd:sequence>
+      <xsd:element name="component" type="ffprobe:frameSideDataComponentType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="frameSideDataComponentType">
+    <xsd:sequence>
+      <xsd:element name="pieces" type="ffprobe:frameSideDataPieceList" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="side_datum" type="ffprobe:frameSideDatumType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="frameSideDataPieceList">
+    <xsd:sequence>
+      <xsd:element name="piece" type="ffprobe:frameSideDataPieceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="frameSideDataPieceType">
+    <xsd:sequence>
+      <xsd:element name="side_datum" type="ffprobe:frameSideDatumType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
   </xsd:complexType>
 
   <xsd:complexType name="subtitleType">
