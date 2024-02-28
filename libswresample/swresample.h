@@ -340,8 +340,8 @@ void swr_close(struct SwrContext *s);
  *
  * @return number of samples output per channel, negative value on error
  */
-int swr_convert(struct SwrContext *s, uint8_t **out, int out_count,
-                                const uint8_t **in , int in_count);
+int swr_convert(struct SwrContext *s, uint8_t * const *out, int out_count,
+                                const uint8_t * const *in , int in_count);
 
 /**
  * Convert the next timestamp from input to output

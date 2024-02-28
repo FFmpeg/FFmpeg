@@ -563,7 +563,8 @@ static void copy(AudioData *out, AudioData *in,
         memcpy(out->ch[0], in->ch[0], count*out->ch_count*out->bps);
 }
 
-static void fill_audiodata(AudioData *out, uint8_t *in_arg [SWR_CH_MAX]){
+static void fill_audiodata(AudioData *out, uint8_t *const in_arg [SWR_CH_MAX])
+{
     int i;
     if(!in_arg){
         memset(out->ch, 0, sizeof(out->ch));
@@ -835,8 +836,8 @@ int swr_is_initialized(struct SwrContext *s) {
 }
 
 int attribute_align_arg swr_convert(struct SwrContext *s,
-                                          uint8_t **out_arg, int out_count,
-                                    const uint8_t **in_arg,  int in_count)
+                                          uint8_t * const *out_arg, int out_count,
+                                    const uint8_t * const *in_arg,  int in_count)
 {
     AudioData * in= &s->in;
     AudioData *out= &s->out;
