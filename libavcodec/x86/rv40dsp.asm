@@ -401,15 +401,6 @@ FILTER_SSSE3  avg
 
 
 %macro MAIN_LOOP   2
-%if mmsize == 8
-    RV40_WCORE %2, r0, r1, r2
-%if %1 == 16
-    RV40_WCORE %2, r0 + 8, r1 + 8, r2 + 8
-%endif
-
-    ; Prepare for next loop
-    add        r6, r5
-%else
 %ifidn %1, 8
     RV40_WCORE %2, r0, r1, r2, r5
     ; Prepare 2 next lines
@@ -418,7 +409,6 @@ FILTER_SSSE3  avg
     RV40_WCORE %2, r0, r1, r2
     ; Prepare single next line
     add        r6, r5
-%endif
 %endif
 
 %endmacro

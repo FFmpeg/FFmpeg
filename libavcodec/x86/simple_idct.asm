@@ -783,62 +783,26 @@ SECTION .text
 %macro PUT_PIXELS_CLAMPED_HALF 1
     mova     m0, [blockq+mmsize*0+%1]
     mova     m1, [blockq+mmsize*2+%1]
-%if mmsize == 8
-    mova     m2, [blockq+mmsize*4+%1]
-    mova     m3, [blockq+mmsize*6+%1]
-%endif
     packuswb m0, [blockq+mmsize*1+%1]
     packuswb m1, [blockq+mmsize*3+%1]
-%if mmsize == 8
-    packuswb m2, [blockq+mmsize*5+%1]
-    packuswb m3, [blockq+mmsize*7+%1]
-    movq           [pixelsq], m0
-    movq    [lsizeq+pixelsq], m1
-    movq  [2*lsizeq+pixelsq], m2
-    movq   [lsize3q+pixelsq], m3
-%else
     movq           [pixelsq], m0
     movhps  [lsizeq+pixelsq], m0
     movq  [2*lsizeq+pixelsq], m1
     movhps [lsize3q+pixelsq], m1
-%endif
 %endmacro
 
 %macro ADD_PIXELS_CLAMPED 1
     mova       m0, [blockq+mmsize*0+%1]
     mova       m1, [blockq+mmsize*1+%1]
-%if mmsize == 8
-    mova       m5, [blockq+mmsize*2+%1]
-    mova       m6, [blockq+mmsize*3+%1]
-%endif
     movq       m2, [pixelsq]
     movq       m3, [pixelsq+lsizeq]
-%if mmsize == 8
-    mova       m7, m2
-    punpcklbw  m2, m4
-    punpckhbw  m7, m4
-    paddsw     m0, m2
-    paddsw     m1, m7
-    mova       m7, m3
-    punpcklbw  m3, m4
-    punpckhbw  m7, m4
-    paddsw     m5, m3
-    paddsw     m6, m7
-%else
     punpcklbw  m2, m4
     punpcklbw  m3, m4
     paddsw     m0, m2
     paddsw     m1, m3
-%endif
     packuswb   m0, m1
-%if mmsize == 8
-    packuswb   m5, m6
-    movq       [pixelsq], m0
-    movq       [pixelsq+lsizeq], m5
-%else
     movq       [pixelsq], m0
     movhps     [pixelsq+lsizeq], m0
-%endif
 %endmacro
 
 INIT_MMX mmx
