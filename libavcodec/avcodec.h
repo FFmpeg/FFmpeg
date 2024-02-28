@@ -1827,7 +1827,7 @@ typedef struct AVCodecContext {
      */
     const struct AVCodecDescriptor *codec_descriptor;
 
-    /**
+    /*
      * Current statistics for PTS correction.
      * - decoding: maintained and used by libavcodec, not intended to be used by user apps
      * - encoding: unused
