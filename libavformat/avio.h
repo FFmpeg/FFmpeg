@@ -544,7 +544,7 @@ int avio_printf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);
  * Usually you don't need to use this function directly but its macro wrapper,
  * avio_print.
  */
-void avio_print_string_array(AVIOContext *s, const char *strings[]);
+void avio_print_string_array(AVIOContext *s, const char * const strings[]);
 
 /**
  * Write strings (const char *) to the context.

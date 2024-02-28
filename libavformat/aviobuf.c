@@ -1400,7 +1400,7 @@ int avio_printf(AVIOContext *s, const char *fmt, ...)
     return ret;
 }
 
-void avio_print_string_array(AVIOContext *s, const char *strings[])
+void avio_print_string_array(AVIOContext *s, const char *const strings[])
 {
     for(; *strings; strings++)
         avio_write(s, (const unsigned char *)*strings, strlen(*strings));
