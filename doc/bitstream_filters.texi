@@ -528,10 +528,6 @@ metadata header from each subtitle packet.
 
 See also the @ref{text2movsub} filter.
 
-@section mp3decomp
-
-Decompress non-standard compressed MP3 audio headers.
-
 @section mpeg2_metadata
 
 Modify metadata embedded in an MPEG-2 stream.

@@ -25,7 +25,6 @@ OBJS-$(CONFIG_MEDIA100_TO_MJPEGB_BSF)     += bsf/media100_to_mjpegb.o
 OBJS-$(CONFIG_MJPEG2JPEG_BSF)             += bsf/mjpeg2jpeg.o
 OBJS-$(CONFIG_MJPEGA_DUMP_HEADER_BSF)     += bsf/mjpega_dump_header.o
 OBJS-$(CONFIG_MOV2TEXTSUB_BSF)            += bsf/movsub.o
-OBJS-$(CONFIG_MP3_HEADER_DECOMPRESS_BSF)  += bsf/mp3_header_decompress.o
 OBJS-$(CONFIG_MPEG2_METADATA_BSF)         += bsf/mpeg2_metadata.o
 OBJS-$(CONFIG_MPEG4_UNPACK_BFRAMES_BSF)   += bsf/mpeg4_unpack_bframes.o
 OBJS-$(CONFIG_NOISE_BSF)                  += bsf/noise.o

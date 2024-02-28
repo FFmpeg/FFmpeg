@@ -46,7 +46,6 @@ extern const FFBitStreamFilter ff_imx_dump_header_bsf;
 extern const FFBitStreamFilter ff_media100_to_mjpegb_bsf;
 extern const FFBitStreamFilter ff_mjpeg2jpeg_bsf;
 extern const FFBitStreamFilter ff_mjpega_dump_header_bsf;
-extern const FFBitStreamFilter ff_mp3_header_decompress_bsf;
 extern const FFBitStreamFilter ff_mpeg2_metadata_bsf;
 extern const FFBitStreamFilter ff_mpeg4_unpack_bframes_bsf;
 extern const FFBitStreamFilter ff_mov2textsub_bsf;
