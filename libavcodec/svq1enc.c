@@ -137,16 +137,6 @@ static void svq1_write_header(SVQ1EncContext *s, PutBitContext *pb, int frame_ty
 #define QUALITY_THRESHOLD    100
 #define THRESHOLD_MULTIPLIER 0.6
 
-static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
-                               intptr_t size)
-{
-    int score = 0, i;
-
-    for (i = 0; i < size; i++)
-        score += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);
-    return score;
-}
-
 static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
                         uint8_t *decoded, int stride, unsigned level,
                         int threshold, int lambda, int intra)
@@ -760,16 +750,3 @@ const FFCodec ff_svq1_encoder = {
                                                      AV_PIX_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
-
-void ff_svq1enc_init(SVQ1EncDSPContext *c)
-{
-    c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
-
-#if ARCH_PPC
-    ff_svq1enc_init_ppc(c);
-#elif ARCH_RISCV
-    ff_svq1enc_init_riscv(c);
-#elif ARCH_X86
-    ff_svq1enc_init_x86(c);
-#endif
-}

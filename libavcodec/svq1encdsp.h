@@ -23,14 +23,38 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 typedef struct SVQ1EncDSPContext {
     int (*ssd_int8_vs_int16)(const int8_t *pix1, const int16_t *pix2,
                              intptr_t size);
 } SVQ1EncDSPContext;
 
-void ff_svq1enc_init(SVQ1EncDSPContext *c);
 void ff_svq1enc_init_ppc(SVQ1EncDSPContext *c);
 void ff_svq1enc_init_riscv(SVQ1EncDSPContext *c);
 void ff_svq1enc_init_x86(SVQ1EncDSPContext *c);
+
+static int ssd_int8_vs_int16_c(const int8_t *pix1, const int16_t *pix2,
+                               intptr_t size)
+{
+    int score = 0;
+
+    for (intptr_t i = 0; i < size; i++)
+        score += (pix1[i] - pix2[i]) * (pix1[i] - pix2[i]);
+    return score;
+}
+
+static inline void ff_svq1enc_init(SVQ1EncDSPContext *c)
+{
+    c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
+
+#if ARCH_PPC
+    ff_svq1enc_init_ppc(c);
+#elif ARCH_RISCV
+    ff_svq1enc_init_riscv(c);
+#elif ARCH_X86
+    ff_svq1enc_init_x86(c);
+#endif
+}
 
 #endif /* AVCODEC_SVQ1ENCDSP_H */
