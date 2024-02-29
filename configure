@@ -4359,6 +4359,9 @@ do_random(){
     $action $(rand_list "$@" | awk "BEGIN { srand($random_seed) } \$1 == \"prob\" { prob = \$2; next } rand() < prob { print }")
 }
 
+# deprecated components (disabled by default)
+disable sonic_encoder sonic_ls_encoder
+
 for opt do
     optval="${opt#*=}"
     case "$opt" in
