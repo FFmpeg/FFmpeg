@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include "libavutil/avassert.h"
 #include "libavutil/lls.h"
-#include "aac_defines.h"
 
 #define ORDER_METHOD_EST     0
 #define ORDER_METHOD_2LEVEL  1
@@ -117,10 +116,20 @@ void ff_lpc_init_x86(LPCContext *s);
  */
 void ff_lpc_end(LPCContext *s);
 
-#if USE_FIXED
+#ifndef LPC_USE_FIXED
+#define LPC_USE_FIXED 0
+#endif
+
+#if LPC_USE_FIXED
 typedef int LPC_TYPE;
 typedef unsigned LPC_TYPE_U;
 #else
+#ifndef LPC_SRA_R
+#define LPC_SRA_R(x, y) (x)
+#define LPC_MUL26(x, y) ((x) * (y))
+#define LPC_FIXR(x)     ((float)(x))
+#endif
+
 #ifdef LPC_USE_DOUBLE
 typedef double LPC_TYPE;
 typedef double LPC_TYPE_U;
@@ -145,7 +154,7 @@ static inline void compute_ref_coefs(const LPC_TYPE *autoc, int max_order,
         gen0[i] = gen1[i] = autoc[i + 1];
 
     err    = autoc[0];
-    ref[0] = -gen1[0] / ((USE_FIXED || err) ? err : 1);
+    ref[0] = -gen1[0] / ((LPC_USE_FIXED || err) ? err : 1);
     err   +=  gen1[0] * ref[0];
     if (error)
         error[0] = err;
@@ -154,7 +163,7 @@ static inline void compute_ref_coefs(const LPC_TYPE *autoc, int max_order,
             gen1[j] = gen1[j + 1] + ref[i - 1] * gen0[j];
             gen0[j] = gen1[j + 1] * ref[i - 1] + gen0[j];
         }
-        ref[i] = -gen1[0] / ((USE_FIXED || err) ? err : 1);
+        ref[i] = -gen1[0] / ((LPC_USE_FIXED || err) ? err : 1);
         err   +=  gen1[0] * ref[i];
         if (error)
             error[i] = err;
@@ -165,7 +174,7 @@ static inline void compute_ref_coefs(const LPC_TYPE *autoc, int max_order,
  * Levinson-Durbin recursion.
  * Produce LPC coefficients from autocorrelation data.
  */
-static inline int AAC_RENAME(compute_lpc_coefs)(const LPC_TYPE *autoc, int max_order,
+static inline int compute_lpc_coefs(const LPC_TYPE *autoc, int max_order,
                                     LPC_TYPE *lpc, int lpc_stride, int fail,
                                     int normalize)
 {
@@ -182,7 +191,7 @@ static inline int AAC_RENAME(compute_lpc_coefs)(const LPC_TYPE *autoc, int max_o
         return -1;
 
     for(i=0; i<max_order; i++) {
-        LPC_TYPE r = AAC_SRA_R(-autoc[i], 5);
+        LPC_TYPE r = LPC_SRA_R(-autoc[i], 5);
 
         if (normalize) {
             for(j=0; j<i; j++)
@@ -190,7 +199,7 @@ static inline int AAC_RENAME(compute_lpc_coefs)(const LPC_TYPE *autoc, int max_o
 
             if (err)
                 r /= err;
-            err *= FIXR(1.0) - (r * r);
+            err *= LPC_FIXR(1.0) - (r * r);
         }
 
         lpc[i] = r;
@@ -198,8 +207,8 @@ static inline int AAC_RENAME(compute_lpc_coefs)(const LPC_TYPE *autoc, int max_o
         for(j=0; j < (i+1)>>1; j++) {
             LPC_TYPE f = lpc_last[    j];
             LPC_TYPE b = lpc_last[i-1-j];
-            lpc[    j] = f + (LPC_TYPE_U)AAC_MUL26(r, b);
-            lpc[i-1-j] = b + (LPC_TYPE_U)AAC_MUL26(r, f);
+            lpc[    j] = f + (LPC_TYPE_U)LPC_MUL26(r, b);
+            lpc[i-1-j] = b + (LPC_TYPE_U)LPC_MUL26(r, f);
         }
 
         if (fail && err < 0)

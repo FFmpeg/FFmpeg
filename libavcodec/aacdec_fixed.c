@@ -66,7 +66,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"
-#include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin_fixed_tablegen.h"
 
@@ -76,6 +75,7 @@
 #include "aacdectab.h"
 #include "adts_header.h"
 #include "cbrt_data.h"
+#include "lpc.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"

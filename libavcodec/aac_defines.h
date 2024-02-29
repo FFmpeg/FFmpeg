@@ -71,7 +71,15 @@ typedef int                 AAC_SIGNE;
                                       ((int64_t)(y) * (z)) + \
                                         0x40000000) >> 31)
 #define AAC_HALF_SUM(x, y)  (((x) >> 1) + ((y) >> 1))
-#define AAC_SRA_R(x, y)     (int)(((x) + (1 << ((y) - 1))) >> (y))
+
+#ifdef LPC_USE_FIXED
+#error aac_defines.h must be included before lpc.h for fixed point decoder
+#endif
+
+#define LPC_USE_FIXED 1
+#define LPC_MUL26(x, y)     AAC_MUL26((x), (y))
+#define LPC_FIXR(x)         FIXR(x)
+#define LPC_SRA_R(x, y)     (int)(((x) + (1 << ((y) - 1))) >> (y))
 
 #else
 
@@ -103,7 +111,6 @@ typedef unsigned            AAC_SIGNE;
                                                (c) * (d) - (e) * (f))
 #define AAC_MSUB31_V3(x, y, z)    ((x) - (y)) * (z)
 #define AAC_HALF_SUM(x, y)  ((x) + (y)) * 0.5f
-#define AAC_SRA_R(x, y)     (x)
 
 #endif /* USE_FIXED */
 
