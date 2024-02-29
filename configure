@@ -2490,6 +2490,7 @@ TYPES_LIST="
     struct_sockaddr_storage
     struct_stat_st_mtim_tv_nsec
     struct_v4l2_frmivalenum_discrete
+    struct_mfxConfigInterface
 "
 
 HAVE_LIST="
@@ -6921,6 +6922,7 @@ elif enabled libvpl; then
     check_pkg_config libmfx "vpl >= 2.6" "mfxvideo.h mfxdispatcher.h" MFXLoad || \
             die "ERROR: libvpl >= 2.6 not found"
     add_cflags -DMFX_DEPRECATED_OFF
+    check_type "vpl/mfxdefs.h vpl/mfxvideo.h" "struct mfxConfigInterface"
 fi
 
 if enabled libmfx; then

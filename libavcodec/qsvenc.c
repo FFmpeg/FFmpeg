@@ -31,6 +31,7 @@
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/mem.h"
 #include "libavutil/log.h"
+#include "libavutil/dict.h"
 #include "libavutil/time.h"
 #include "libavutil/imgutils.h"
 
@@ -1635,6 +1636,11 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     int opaque_alloc = 0;
     int ret;
     void *tmp;
+#if HAVE_STRUCT_MFXCONFIGINTERFACE
+    mfxExtBuffer ext_buf;
+    mfxConfigInterface *iface = NULL;
+    const AVDictionaryEntry *param = NULL;
+#endif
 
     q->param.AsyncDepth = q->async_depth;
 
@@ -1728,6 +1734,58 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 
     q->param.ExtParam    = q->extparam;
     q->param.NumExtParam = q->nb_extparam;
+
+#if HAVE_STRUCT_MFXCONFIGINTERFACE
+    ret = MFXVideoCORE_GetHandle(q->session, MFX_HANDLE_CONFIG_INTERFACE, (mfxHDL *)(&iface));
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error getting mfx config interface handle");
+
+    while ((param = av_dict_get(q->qsv_params, "", param, AV_DICT_IGNORE_SUFFIX))) {
+        const char *param_key = param->key;
+        const char *param_value = param->value;
+        mfxExtBuffer *new_ext_buf;
+        void *tmp;
+
+        av_log(avctx, AV_LOG_VERBOSE, "Parameter key: %s, value: %s\n", param_key, param_value);
+
+        // Set encoding parameters using MFXSetParameter
+        for (int i = 0; i < 2; i++) {
+            ret = iface->SetParameter(iface, (mfxU8*)param_key, (mfxU8*)param_value, MFX_STRUCTURE_TYPE_VIDEO_PARAM, &q->param, &ext_buf);
+            if (ret == MFX_ERR_NONE) {
+                break;
+            } else if (i == 0 && ret == MFX_ERR_MORE_EXTBUFFER) {
+                tmp = av_realloc_array(q->extparam_str, q->nb_extparam_str + 1, sizeof(*q->extparam_str));
+                if (!tmp)
+                    return AVERROR(ENOMEM);
+                q->extparam_str = tmp;
+
+                tmp = av_realloc_array(q->extparam, q->nb_extparam + 1, sizeof(*q->extparam));
+                if (!tmp)
+                    return AVERROR(ENOMEM);
+                q->extparam = tmp;
+
+                new_ext_buf = (mfxExtBuffer*)av_mallocz(ext_buf.BufferSz);
+                if (!new_ext_buf)
+                    return AVERROR(ENOMEM);
+
+                new_ext_buf->BufferId = ext_buf.BufferId;
+                new_ext_buf->BufferSz = ext_buf.BufferSz;
+                q->extparam_str[q->nb_extparam_str++] = new_ext_buf;
+                q->extparam[q->nb_extparam++] = new_ext_buf;
+                q->param.ExtParam    = q->extparam;
+                q->param.NumExtParam = q->nb_extparam;
+            } else {
+                av_log(avctx, AV_LOG_ERROR, "Failed to set parameter: %s\n", param_key);
+                return AVERROR_UNKNOWN;
+            }
+       }
+    }
+#else
+    if (q->qsv_params) {
+        av_log(avctx, AV_LOG_WARNING, "MFX string API is not supported, ignore qsv_params option\n");
+    }
+#endif
 
     ret = MFXVideoENCODE_Query(q->session, &q->param, &q->param);
     if (ret == MFX_WRN_PARTIAL_ACCELERATION) {
@@ -2688,6 +2746,10 @@ int ff_qsv_enc_close(AVCodecContext *avctx, QSVEncContext *q)
     av_buffer_unref(&q->opaque_alloc_buf);
 #endif
 
+    for (int i = 0; i < q->nb_extparam_str; i++)
+        av_free(q->extparam_str[i]);
+
+    av_freep(&q->extparam_str);
     av_freep(&q->extparam);
 
     return 0;

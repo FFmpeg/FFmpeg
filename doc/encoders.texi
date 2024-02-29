@@ -3546,6 +3546,20 @@ Change these value to reset qsv codec's bitrate control configuration.
 @item @var{pic_timing_sei}
 Supported in h264_qsv and hevc_qsv.
 Change this value to reset qsv codec's pic_timing_sei configuration.
+
+@item @var{qsv_params}
+Set QSV encoder parameters as a colon-separated list of key-value pairs.
+
+The @option{qsv_params} should be formatted as @code{key1=value1:key2=value2:...}.
+
+These parameters are passed directly to the underlying Intel Quick Sync Video (QSV) encoder using the MFXSetParameter function.
+
+Example:
+@example
+ffmpeg -i input.mp4 -c:v h264_qsv -qsv_params "CodingOption1=1:CodingOption2=2" output.mp4
+@end example
+
+This option allows fine-grained control over various encoder-specific settings provided by the QSV encoder.
 @end table
 
 @subsection H264 options

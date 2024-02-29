@@ -9,6 +9,7 @@ version <next>:
 - pad_vaapi, drawbox_vaapi filters
 - vf_scale supports secondary ref input and framesync options
 - vf_scale2ref deprecated
+- qsv_params option added for QSV encoders
 
 
 version 7.0:
