@@ -1942,7 +1942,7 @@ static void apply_prediction(AACDecContext *ac, SingleChannelElement *sce)
     int sfb, k;
 
     if (!sce->ics.predictor_initialized) {
-        reset_all_predictors(sce->predictor_state);
+        reset_all_predictors(sce->AAC_RENAME(predictor_state));
         sce->ics.predictor_initialized = 1;
     }
 
@@ -1953,16 +1953,16 @@ static void apply_prediction(AACDecContext *ac, SingleChannelElement *sce)
             for (k = sce->ics.swb_offset[sfb];
                  k < sce->ics.swb_offset[sfb + 1];
                  k++) {
-                predict(&sce->predictor_state[k], &sce->coeffs[k],
+                predict(&sce->AAC_RENAME(predictor_state)[k], &sce->coeffs[k],
                         sce->ics.predictor_present &&
                         sce->ics.prediction_used[sfb]);
             }
         }
         if (sce->ics.predictor_reset_group)
-            reset_predictor_group(sce->predictor_state,
+            reset_predictor_group(sce->AAC_RENAME(predictor_state),
                                   sce->ics.predictor_reset_group);
     } else
-        reset_all_predictors(sce->predictor_state);
+        reset_all_predictors(sce->AAC_RENAME(predictor_state));
 }
 
 static void decode_gain_control(SingleChannelElement * sce, GetBitContext * gb)

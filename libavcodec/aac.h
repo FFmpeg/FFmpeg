@@ -30,9 +30,6 @@
 #ifndef AVCODEC_AAC_H
 #define AVCODEC_AAC_H
 
-
-#include "aac_defines.h"
-
 #define MAX_CHANNELS 64
 #define MAX_ELEM_ID 16
 
@@ -84,20 +81,6 @@ enum ChannelPosition {
     AAC_CHANNEL_LFE   = 4,
     AAC_CHANNEL_CC    = 5,
 };
-
-/**
- * Predictor State
- */
-typedef struct PredictorState {
-    AAC_FLOAT cor0;
-    AAC_FLOAT cor1;
-    AAC_FLOAT var0;
-    AAC_FLOAT var1;
-    AAC_FLOAT r0;
-    AAC_FLOAT r1;
-    AAC_FLOAT k1;
-    AAC_FLOAT x_est;
-} PredictorState;
 
 #define MAX_PREDICTORS 672
 

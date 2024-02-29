@@ -72,6 +72,20 @@ typedef int                 AAC_SIGNE;
                                         0x40000000) >> 31)
 #define AAC_HALF_SUM(x, y)  (((x) >> 1) + ((y) >> 1))
 
+/**
+ * Predictor State
+ */
+typedef struct PredictorStateFixed {
+    SoftFloat cor0;
+    SoftFloat cor1;
+    SoftFloat var0;
+    SoftFloat var1;
+    SoftFloat r0;
+    SoftFloat r1;
+    SoftFloat k1;
+    SoftFloat x_est;
+} PredictorState;
+
 #ifdef LPC_USE_FIXED
 #error aac_defines.h must be included before lpc_functions.h for fixed point decoder
 #endif
@@ -111,6 +125,20 @@ typedef unsigned            AAC_SIGNE;
                                                (c) * (d) - (e) * (f))
 #define AAC_MSUB31_V3(x, y, z)    ((x) - (y)) * (z)
 #define AAC_HALF_SUM(x, y)  ((x) + (y)) * 0.5f
+
+/**
+ * Predictor State
+ */
+typedef struct PredictorState {
+    float cor0;
+    float cor1;
+    float var0;
+    float var1;
+    float r0;
+    float r1;
+    float k1;
+    float x_est;
+} PredictorState;
 
 #endif /* USE_FIXED */
 

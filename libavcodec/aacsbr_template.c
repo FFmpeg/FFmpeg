@@ -40,6 +40,7 @@
 
 typedef struct ExtChannelElement {
     ChannelElement ch;
+    PredictorState predictor_state[2][MAX_PREDICTORS];
     SpectralBandReplication sbr;
 } ExtChannelElement;
 
@@ -87,6 +88,8 @@ av_cold int AAC_RENAME(ff_aac_sbr_ctx_alloc_init)(AACDecContext *ac,
         return AVERROR(ENOMEM);
     *che = &ext->ch;
     sbr  = &ext->sbr;
+    ext->ch.ch[0].AAC_RENAME(predictor_state) = ext->predictor_state[0];
+    ext->ch.ch[1].AAC_RENAME(predictor_state) = ext->predictor_state[1];
 
     sbr->kx[0] = sbr->kx[1];
     sbr->id_aac = id_aac;
