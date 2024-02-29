@@ -41,7 +41,6 @@
 #include "aac.h"
 #include "aac_defines.h"
 #include "mpeg4audio.h"
-#include "sbr.h"
 
 /**
  * Output configuration status
@@ -153,7 +152,6 @@ typedef struct ChannelElement {
     SingleChannelElement ch[2];
     // CCE specific
     ChannelCoupling coup;
-    SpectralBandReplication sbr;
 } ChannelElement;
 
 typedef struct OutputConfiguration {

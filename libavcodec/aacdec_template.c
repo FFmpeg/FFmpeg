@@ -134,10 +134,7 @@ static av_cold int che_configure(AACDecContext *ac,
         return AVERROR_INVALIDDATA;
     if (che_pos) {
         if (!ac->che[type][id]) {
-            int ret;
-            if (!(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
-                return AVERROR(ENOMEM);
-            ret = AAC_RENAME(ff_aac_sbr_ctx_init)(ac, ac->che[type][id], type);
+            int ret = AAC_RENAME(ff_aac_sbr_ctx_alloc_init)(ac, &ac->che[type][id], type);
             if (ret < 0)
                 return ret;
         }

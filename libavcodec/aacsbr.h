@@ -68,8 +68,11 @@ enum {
 
 /** Initialize SBR. */
 void AAC_RENAME(ff_aac_sbr_init)(void);
-/** Initialize one SBR context. */
-int AAC_RENAME(ff_aac_sbr_ctx_init)(AACDecContext *ac, ChannelElement *che, int id_aac);
+/**
+ * Allocate an ExtChannelElement (if necessary) and
+ * initialize the SBR context contained in it.
+ */
+int AAC_RENAME(ff_aac_sbr_ctx_alloc_init)(AACDecContext *ac, ChannelElement **che, int id_aac);
 /** Close one SBR context. */
 void AAC_RENAME(ff_aac_sbr_ctx_close)(ChannelElement *che);
 /** Decode one SBR element. */
