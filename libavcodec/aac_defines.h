@@ -73,7 +73,7 @@ typedef int                 AAC_SIGNE;
 #define AAC_HALF_SUM(x, y)  (((x) >> 1) + ((y) >> 1))
 
 #ifdef LPC_USE_FIXED
-#error aac_defines.h must be included before lpc.h for fixed point decoder
+#error aac_defines.h must be included before lpc_functions.h for fixed point decoder
 #endif
 
 #define LPC_USE_FIXED 1

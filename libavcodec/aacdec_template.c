@@ -93,6 +93,7 @@
 #include "libavutil/thread.h"
 #include "decode.h"
 #include "internal.h"
+#include "lpc_functions.h"
 
 static int output_configure(AACDecContext *ac,
                             uint8_t layout_map[MAX_ELEM_ID*4][3], int tags,

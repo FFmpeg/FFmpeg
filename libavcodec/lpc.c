@@ -25,7 +25,38 @@
 
 #define LPC_USE_DOUBLE
 #include "lpc.h"
+#include "lpc_functions.h"
 #include "libavutil/avassert.h"
+
+/**
+ * Schur recursion.
+ * Produces reflection coefficients from autocorrelation data.
+ */
+static inline void compute_ref_coefs(const LPC_TYPE *autoc, int max_order,
+                                     LPC_TYPE *ref, LPC_TYPE *error)
+{
+    LPC_TYPE err;
+    LPC_TYPE gen0[MAX_LPC_ORDER], gen1[MAX_LPC_ORDER];
+
+    for (int i = 0; i < max_order; i++)
+        gen0[i] = gen1[i] = autoc[i + 1];
+
+    err    = autoc[0];
+    ref[0] = -gen1[0] / ((LPC_USE_FIXED || err) ? err : 1);
+    err   +=  gen1[0] * ref[0];
+    if (error)
+        error[0] = err;
+    for (int i = 1; i < max_order; i++) {
+        for (int j = 0; j < max_order - i; j++) {
+            gen1[j] = gen1[j + 1] + ref[i - 1] * gen0[j];
+            gen0[j] = gen1[j + 1] * ref[i - 1] + gen0[j];
+        }
+        ref[i] = -gen1[0] / ((LPC_USE_FIXED || err) ? err : 1);
+        err   +=  gen1[0] * ref[i];
+        if (error)
+            error[i] = err;
+    }
+}
 
 
 /**

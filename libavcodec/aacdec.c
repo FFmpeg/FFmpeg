@@ -40,7 +40,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"
-#include "lpc.h"
 #include "kbdwin.h"
 #include "sinewin.h"
 

@@ -30,6 +30,7 @@
 #include "aacenc_tns.h"
 #include "aactab.h"
 #include "aacenc_utils.h"
+#include "lpc_functions.h"
 
 /* Could be set to 3 to save an additional bit at the cost of little quality */
 #define TNS_Q_BITS 4

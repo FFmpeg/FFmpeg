@@ -75,7 +75,6 @@
 #include "aacdectab.h"
 #include "adts_header.h"
 #include "cbrt_data.h"
-#include "lpc.h"
 #include "sbr.h"
 #include "aacsbr.h"
 #include "mpeg4audio.h"

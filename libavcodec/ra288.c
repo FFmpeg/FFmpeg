@@ -30,7 +30,7 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
-#include "lpc.h"
+#include "lpc_functions.h"
 #include "ra288.h"
 
 #define MAX_BACKWARD_FILTER_ORDER  36
