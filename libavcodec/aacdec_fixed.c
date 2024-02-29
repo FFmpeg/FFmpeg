@@ -72,7 +72,7 @@
 #include "aac.h"
 #include "aacdec.h"
 #include "aactab.h"
-#include "aacdectab.h"
+#include "aac/aacdec_tab.h"
 #include "adts_header.h"
 #include "cbrt_data.h"
 #include "sbr.h"

@@ -25,12 +25,12 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#ifndef AVCODEC_AACDECTAB_H
-#define AVCODEC_AACDECTAB_H
+#ifndef AVCODEC_AAC_AACDEC_TAB_H
+#define AVCODEC_AAC_AACDEC_TAB_H
 
 #include <stdint.h>
 
-#include "vlc.h"
+#include "libavcodec/vlc.h"
 
 #include "libavutil/attributes_internal.h"
 #include "libavutil/channel_layout.h"
@@ -52,4 +52,4 @@ extern const int16_t ff_aac_channel_map[3][4][6];
 extern const AVChannelLayout ff_aac_ch_layout[];
 FF_VISIBILITY_POP_HIDDEN
 
-#endif /* AVCODEC_AACDECTAB_H */
+#endif /* AVCODEC_AAC_AACDEC_TAB_H */

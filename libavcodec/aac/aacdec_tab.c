@@ -25,11 +25,12 @@
  * Common code and tables of the AAC fixed- and floating-point decoders
  */
 
-#include "aac.h"
-#include "aacdectab.h"
-#include "aacps.h"
-#include "aactab.h"
-#include "vlc.h"
+#include "aacdec_tab.h"
+
+#include "libavcodec/aac.h"
+#include "libavcodec/aacps.h"
+#include "libavcodec/aactab.h"
+#include "libavcodec/vlc.h"
 
 #include "libavutil/attributes.h"
 #include "libavutil/thread.h"

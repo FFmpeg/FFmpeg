@@ -33,7 +33,7 @@
  */
 
 #include "aacdec.h"
-#include "aacdectab.h"
+#include "aac/aacdec_tab.h"
 #include "avcodec.h"
 #include "libavutil/qsort.h"
 
