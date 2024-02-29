@@ -278,6 +278,8 @@ typedef struct AACDecContext {
     int warned_gain_control;
     int warned_he_aac_mono;
 
+    int is_fixed;
+
     /* aacdec functions pointers */
     void (*imdct_and_windowing)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*apply_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
@@ -301,6 +303,8 @@ typedef struct AACDecContext {
 #if defined(USE_FIXED) && USE_FIXED
 #define fdsp          RENAME_FIXED(fdsp)
 #endif
+
+int ff_aac_decode_close(struct AVCodecContext *avctx);
 
 void ff_aacdec_init_mips(AACDecContext *c);
 

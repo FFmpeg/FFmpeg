@@ -500,7 +500,7 @@ const FFCodec ff_aac_fixed_decoder = {
     .p.id            = AV_CODEC_ID_AAC,
     .priv_data_size  = sizeof(AACDecContext),
     .init            = aac_decode_init,
-    .close           = aac_decode_close,
+    .close           = ff_aac_decode_close,
     FF_CODEC_DECODE_CB(aac_decode_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE
