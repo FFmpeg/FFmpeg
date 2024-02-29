@@ -1303,11 +1303,65 @@ static void schedule_update_locked(Scheduler *sch)
 
 }
 
-int sch_start(Scheduler *sch)
+static int start_prepare(Scheduler *sch)
 {
     int ret;
 
-    sch->transcode_started = 1;
+    for (unsigned i = 0; i < sch->nb_demux; i++) {
+        SchDemux *d = &sch->demux[i];
+
+        for (unsigned j = 0; j < d->nb_streams; j++) {
+            SchDemuxStream *ds = &d->streams[j];
+
+            if (!ds->nb_dst) {
+                av_log(d, AV_LOG_ERROR,
+                       "Demuxer stream %u not connected to any sink\n", j);
+                return AVERROR(EINVAL);
+            }
+
+            ds->dst_finished = av_calloc(ds->nb_dst, sizeof(*ds->dst_finished));
+            if (!ds->dst_finished)
+                return AVERROR(ENOMEM);
+        }
+    }
+
+    for (unsigned i = 0; i < sch->nb_dec; i++) {
+        SchDec *dec = &sch->dec[i];
+
+        if (!dec->src.type) {
+            av_log(dec, AV_LOG_ERROR,
+                   "Decoder not connected to a source\n");
+            return AVERROR(EINVAL);
+        }
+        if (!dec->nb_dst) {
+            av_log(dec, AV_LOG_ERROR,
+                   "Decoder not connected to any sink\n");
+            return AVERROR(EINVAL);
+        }
+
+        dec->dst_finished = av_calloc(dec->nb_dst, sizeof(*dec->dst_finished));
+        if (!dec->dst_finished)
+            return AVERROR(ENOMEM);
+    }
+
+    for (unsigned i = 0; i < sch->nb_enc; i++) {
+        SchEnc *enc = &sch->enc[i];
+
+        if (!enc->src.type) {
+            av_log(enc, AV_LOG_ERROR,
+                   "Encoder not connected to a source\n");
+            return AVERROR(EINVAL);
+        }
+        if (!enc->nb_dst) {
+            av_log(enc, AV_LOG_ERROR,
+                   "Encoder not connected to any sink\n");
+            return AVERROR(EINVAL);
+        }
+
+        enc->dst_finished = av_calloc(enc->nb_dst, sizeof(*enc->dst_finished));
+        if (!enc->dst_finished)
+            return AVERROR(ENOMEM);
+    }
 
     for (unsigned i = 0; i < sch->nb_mux; i++) {
         SchMux *mux = &sch->mux[i];
@@ -1341,35 +1395,6 @@ int sch_start(Scheduler *sch)
                           QUEUE_PACKETS);
         if (ret < 0)
             return ret;
-
-        if (mux->nb_streams_ready == mux->nb_streams) {
-            ret = mux_init(sch, mux);
-            if (ret < 0)
-                return ret;
-        }
-    }
-
-    for (unsigned i = 0; i < sch->nb_enc; i++) {
-        SchEnc *enc = &sch->enc[i];
-
-        if (!enc->src.type) {
-            av_log(enc, AV_LOG_ERROR,
-                   "Encoder not connected to a source\n");
-            return AVERROR(EINVAL);
-        }
-        if (!enc->nb_dst) {
-            av_log(enc, AV_LOG_ERROR,
-                   "Encoder not connected to any sink\n");
-            return AVERROR(EINVAL);
-        }
-
-        enc->dst_finished = av_calloc(enc->nb_dst, sizeof(*enc->dst_finished));
-        if (!enc->dst_finished)
-            return AVERROR(ENOMEM);
-
-        ret = task_start(&enc->task);
-        if (ret < 0)
-            return ret;
     }
 
     for (unsigned i = 0; i < sch->nb_filters; i++) {
@@ -1396,6 +1421,41 @@ int sch_start(Scheduler *sch)
                 return AVERROR(EINVAL);
             }
         }
+    }
+
+    return 0;
+}
+
+int sch_start(Scheduler *sch)
+{
+    int ret;
+
+    ret = start_prepare(sch);
+    if (ret < 0)
+        return ret;
+
+    sch->transcode_started = 1;
+
+    for (unsigned i = 0; i < sch->nb_mux; i++) {
+        SchMux *mux = &sch->mux[i];
+
+        if (mux->nb_streams_ready == mux->nb_streams) {
+            ret = mux_init(sch, mux);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    for (unsigned i = 0; i < sch->nb_enc; i++) {
+        SchEnc *enc = &sch->enc[i];
+
+        ret = task_start(&enc->task);
+        if (ret < 0)
+            return ret;
+    }
+
+    for (unsigned i = 0; i < sch->nb_filters; i++) {
+        SchFilterGraph *fg = &sch->filters[i];
 
         ret = task_start(&fg->task);
         if (ret < 0)
@@ -1404,21 +1464,6 @@ int sch_start(Scheduler *sch)
 
     for (unsigned i = 0; i < sch->nb_dec; i++) {
         SchDec *dec = &sch->dec[i];
-
-        if (!dec->src.type) {
-            av_log(dec, AV_LOG_ERROR,
-                   "Decoder not connected to a source\n");
-            return AVERROR(EINVAL);
-        }
-        if (!dec->nb_dst) {
-            av_log(dec, AV_LOG_ERROR,
-                   "Decoder not connected to any sink\n");
-            return AVERROR(EINVAL);
-        }
-
-        dec->dst_finished = av_calloc(dec->nb_dst, sizeof(*dec->dst_finished));
-        if (!dec->dst_finished)
-            return AVERROR(ENOMEM);
 
         ret = task_start(&dec->task);
         if (ret < 0)
@@ -1430,20 +1475,6 @@ int sch_start(Scheduler *sch)
 
         if (!d->nb_streams)
             continue;
-
-        for (unsigned j = 0; j < d->nb_streams; j++) {
-            SchDemuxStream *ds = &d->streams[j];
-
-            if (!ds->nb_dst) {
-                av_log(d, AV_LOG_ERROR,
-                       "Demuxer stream %u not connected to any sink\n", j);
-                return AVERROR(EINVAL);
-            }
-
-            ds->dst_finished = av_calloc(ds->nb_dst, sizeof(*ds->dst_finished));
-            if (!ds->dst_finished)
-                return AVERROR(ENOMEM);
-        }
 
         ret = task_start(&d->task);
         if (ret < 0)
