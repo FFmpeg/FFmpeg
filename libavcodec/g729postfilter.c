@@ -78,7 +78,7 @@ static const int16_t formant_pp_factor_den_pow[10] = {
 
 /**
  * \brief Residual signal calculation (4.2.1 if G.729)
- * \param out [out] output data filtered through A(z/FORMANT_PP_FACTOR_NUM)
+ * \param[out] out  output data filtered through A(z/FORMANT_PP_FACTOR_NUM)
  * \param filter_coeffs (3.12) A(z/FORMANT_PP_FACTOR_NUM) filter coefficients
  * \param in input speech data to process
  * \param subframe_size size of one subframe
@@ -105,7 +105,7 @@ static void residual_filter(int16_t* out, const int16_t* filter_coeffs, const in
  * \param dsp initialized DSP context
  * \param pitch_delay_int integer part of the pitch delay in the first subframe
  * \param residual filtering input data
- * \param residual_filt [out] speech signal with applied A(z/FORMANT_PP_FACTOR_NUM) filter
+ * \param[out] residual_filt  speech signal with applied A(z/FORMANT_PP_FACTOR_NUM) filter
  * \param subframe_size size of subframe
  *
  * \return 0 if long-term prediction gain is less than 3dB, 1 -  otherwise
@@ -472,7 +472,7 @@ static int16_t get_tilt_comp(AudioDSPContext *adsp, int16_t *lp_gn,
 
 /**
  * \brief Apply tilt compensation filter (4.2.3).
- * \param res_pst [in/out] residual signal (partially filtered)
+ * \param[in,out] res_pst  residual signal (partially filtered)
  * \param k1 (3.12) reflection coefficient
  * \param subframe_size size of subframe
  * \param ht_prev_data previous data for 4.2.3, equation 86
@@ -572,7 +572,7 @@ void ff_g729_postfilter(AudioDSPContext *adsp, int16_t* ht_prev_data, int* voici
  * \brief Adaptive gain control (4.2.4)
  * \param gain_before gain of speech before applying postfilters
  * \param gain_after  gain of speech after applying postfilters
- * \param speech [in/out] signal buffer
+ * \param[in,out] speech  signal buffer
  * \param subframe_size length of subframe
  * \param gain_prev (3.12) previous value of gain coefficient
  *
