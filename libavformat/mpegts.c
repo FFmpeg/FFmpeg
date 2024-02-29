@@ -1307,8 +1307,11 @@ skip:
                     p += sl_header_bytes;
                     buf_size -= sl_header_bytes;
                 }
-                if (pes->st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV && buf_size >= 5) {
-                    /* skip metadata access unit header */
+                if (pes->stream_type == STREAM_TYPE_METADATA &&
+                    pes->stream_id == STREAM_ID_METADATA_STREAM &&
+                    pes->st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV &&
+                    buf_size >= 5) {
+                    /* skip metadata access unit header - see MISB ST 1402 */
                     pes->pes_header_size += 5;
                     p += 5;
                     buf_size -= 5;
