@@ -495,11 +495,11 @@ static void fcb_excitation(EVRCContext *e, const uint16_t *codebook,
 /**
  * Synthesis of the decoder output signal.
  *
- * param[in]     in              input signal
- * param[in]     filter_coeffs   LPC coefficients
- * param[in/out] memory          synthesis filter memory
- * param         buffer_length   amount of data to process
- * param[out]    samples         output samples
+ * @param[in]     in              input signal
+ * @param[in]     filter_coeffs   LPC coefficients
+ * @param[in/out] memory          synthesis filter memory
+ * @param         buffer_length   amount of data to process
+ * @param[out]    samples         output samples
  *
  * TIA/IS-127 5.2.3.15, 5.7.3.4
  */
