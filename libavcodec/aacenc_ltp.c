@@ -92,8 +92,8 @@ static void get_lag(float *buf, const float *new, LongTermPrediction *ltp)
         }
     }
     ltp->lag = FFMAX(av_clip_uintp2(lag, 11), 0);
-    ltp->coef_idx = quant_array_idx(max_ratio, ltp_coef, 8);
-    ltp->coef = ltp_coef[ltp->coef_idx];
+    ltp->coef_idx = quant_array_idx(max_ratio, ff_ltp_coef, 8);
+    ltp->coef     = ff_ltp_coef[ltp->coef_idx];
 }
 
 static void generate_samples(float *buf, LongTermPrediction *ltp)

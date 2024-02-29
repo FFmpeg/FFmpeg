@@ -1298,7 +1298,7 @@ static void decode_ltp(LongTermPrediction *ltp,
     int sfb;
 
     ltp->lag  = get_bits(gb, 11);
-    ltp->coef = ltp_coef[get_bits(gb, 3)];
+    ltp->coef = AAC_RENAME2(ltp_coef)[get_bits(gb, 3)];
     for (sfb = 0; sfb < FFMIN(max_sfb, MAX_LTP_LONG_SFB); sfb++)
         ltp->used[sfb] = get_bits1(gb);
 }
@@ -1611,7 +1611,7 @@ static int decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
                     tmp2_idx = 2 * coef_compress + coef_res;
 
                     for (i = 0; i < tns->order[w][filt]; i++)
-                        tns->coef[w][filt][i] = tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)];
+                        tns->coef[w][filt][i] = AAC_RENAME2(tns_tmp2_map)[tmp2_idx][get_bits(gb, coef_len)];
                 }
             }
         }

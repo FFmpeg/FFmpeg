@@ -105,6 +105,45 @@ av_cold void ff_aac_float_common_init(void)
     static AVOnce init_static_once = AV_ONCE_INIT;
     ff_thread_once(&init_static_once, aac_float_common_init);
 }
+
+const float ff_ltp_coef[8] = {
+    0.570829, 0.696616, 0.813004, 0.911304,
+    0.984900, 1.067894, 1.194601, 1.369533,
+};
+
+/* @name tns_tmp2_map
+ * Tables of the tmp2[] arrays of LPC coefficients used for TNS.
+ * The suffix _M_N[] indicate the values of coef_compress and coef_res
+ * respectively.
+ * @{
+ */
+static const float tns_tmp2_map_1_3[4] = {
+    0.00000000, -0.43388373,  0.64278758,  0.34202015,
+};
+
+static const float tns_tmp2_map_0_3[8] = {
+    0.00000000, -0.43388373, -0.78183150, -0.97492790,
+    0.98480773,  0.86602539,  0.64278758,  0.34202015,
+};
+
+static const float tns_tmp2_map_1_4[8] = {
+    0.00000000, -0.20791170, -0.40673664, -0.58778524,
+    0.67369562,  0.52643216,  0.36124167,  0.18374951,
+};
+
+static const float tns_tmp2_map_0_4[16] = {
+     0.00000000, -0.20791170, -0.40673664, -0.58778524,
+    -0.74314481, -0.86602539, -0.95105654, -0.99452192,
+     0.99573416,  0.96182561,  0.89516330,  0.79801720,
+     0.67369562,  0.52643216,  0.36124167,  0.18374951,
+};
+
+const float * const ff_tns_tmp2_map[4] = {
+    tns_tmp2_map_0_3,
+    tns_tmp2_map_0_4,
+    tns_tmp2_map_1_3,
+    tns_tmp2_map_1_4
+};
 #endif
 
 const uint8_t ff_aac_num_swb_1024[] = {
