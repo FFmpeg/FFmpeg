@@ -35,9 +35,9 @@
  * - demuxers, each containing any number of demuxed streams; demuxed packets
  *   belonging to some stream are sent to any number of decoders (transcoding)
  *   and/or muxers (streamcopy);
- * - decoders, which receive encoded packets from some demuxed stream, decode
- *   them, and send decoded frames to any number of filtergraph inputs
- *   (audio/video) or encoders (subtitles);
+ * - decoders, which receive encoded packets from some demuxed stream or
+ *   encoder, decode them, and send decoded frames to any number of filtergraph
+ *   inputs (audio/video) or encoders (subtitles);
  * - filtergraphs, each containing zero or more inputs (0 in case the
  *   filtergraph contains a lavfi source filter), and one or more outputs; the
  *   inputs and outputs need not have matching media types;
@@ -45,7 +45,7 @@
  *   filtered frames from each output are sent to some encoder;
  * - encoders, which receive decoded frames from some decoder (subtitles) or
  *   some filtergraph output (audio/video), encode them, and send encoded
- *   packets to some muxed stream;
+ *   packets to any number of muxed streams or decoders;
  * - muxers, each containing any number of muxed streams; each muxed stream
  *   receives encoded packets from some demuxed stream (streamcopy) or some
  *   encoder (transcoding); those packets are interleaved and written out by the
