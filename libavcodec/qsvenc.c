@@ -1634,6 +1634,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     int iopattern = 0;
     int opaque_alloc = 0;
     int ret;
+    void *tmp;
 
     q->param.AsyncDepth = q->async_depth;
 
@@ -1694,34 +1695,39 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     if (ret < 0)
         return ret;
 
+    tmp = av_realloc_array(q->extparam, q->nb_extparam_internal, sizeof(*q->extparam));
+    if (!tmp)
+        return AVERROR(ENOMEM);
+
+    q->extparam = tmp;
+    q->nb_extparam = q->nb_extparam_internal;
+    memcpy(q->extparam, q->extparam_internal, q->nb_extparam * sizeof(*q->extparam));
+
     if (avctx->hwaccel_context) {
         AVQSVContext *qsv = avctx->hwaccel_context;
         int i, j;
 
-        q->extparam = av_calloc(qsv->nb_ext_buffers + q->nb_extparam_internal,
-                                sizeof(*q->extparam));
-        if (!q->extparam)
-            return AVERROR(ENOMEM);
-
-        q->param.ExtParam = q->extparam;
-        for (i = 0; i < qsv->nb_ext_buffers; i++)
-            q->param.ExtParam[i] = qsv->ext_buffers[i];
-        q->param.NumExtParam = qsv->nb_ext_buffers;
-
-        for (i = 0; i < q->nb_extparam_internal; i++) {
-            for (j = 0; j < qsv->nb_ext_buffers; j++) {
-                if (qsv->ext_buffers[j]->BufferId == q->extparam_internal[i]->BufferId)
+        for (i = 0; i < qsv->nb_ext_buffers; i++) {
+            for (j = 0; j < q->nb_extparam_internal; j++) {
+                if (qsv->ext_buffers[i]->BufferId == q->extparam_internal[j]->BufferId) {
+                    q->extparam[j] = qsv->ext_buffers[i];
                     break;
+                }
             }
-            if (j < qsv->nb_ext_buffers)
-                continue;
 
-            q->param.ExtParam[q->param.NumExtParam++] = q->extparam_internal[i];
+            if (j == q->nb_extparam_internal) {
+                tmp = av_realloc_array(q->extparam, q->nb_extparam + 1, sizeof(*q->extparam));
+                if (!tmp)
+                    return AVERROR(ENOMEM);
+
+                q->extparam = tmp;
+                q->extparam[q->nb_extparam++] = qsv->ext_buffers[i];
+            }
         }
-    } else {
-        q->param.ExtParam    = q->extparam_internal;
-        q->param.NumExtParam = q->nb_extparam_internal;
     }
+
+    q->param.ExtParam    = q->extparam;
+    q->param.NumExtParam = q->nb_extparam;
 
     ret = MFXVideoENCODE_Query(q->session, &q->param, &q->param);
     if (ret == MFX_WRN_PARTIAL_ACCELERATION) {

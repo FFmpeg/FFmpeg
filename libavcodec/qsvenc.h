@@ -196,6 +196,7 @@ typedef struct QSVEncContext {
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
+    int         nb_extparam;
 
     AVFifo *async_fifo;
 
