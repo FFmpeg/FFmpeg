@@ -1013,6 +1013,21 @@ int ff_iamf_write_parameter_blocks(const IAMFContext *iamf, AVIOContext *pb,
     return 0;
 }
 
+static IAMFAudioElement *get_audio_element(const IAMFContext *c,
+                                           unsigned int audio_substream_id)
+{
+    for (int i = 0; i < c->nb_audio_elements; i++) {
+        IAMFAudioElement *audio_element = c->audio_elements[i];
+        for (int j = 0; j < audio_element->nb_substreams; j++) {
+            IAMFSubStream *substream = &audio_element->substreams[j];
+            if (substream->audio_substream_id == audio_substream_id)
+                return audio_element;
+        }
+    }
+
+    return NULL;
+}
+
 int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
                               unsigned audio_substream_id, const AVPacket *pkt)
 {
@@ -1027,15 +1042,29 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
     int ret;
 
     if (!pkt->size) {
+        IAMFAudioElement *audio_element;
+        IAMFCodecConfig *codec_config;
+        size_t new_extradata_size;
         uint8_t *new_extradata = av_packet_get_side_data(pkt,
                                                          AV_PKT_DATA_NEW_EXTRADATA,
-                                                         NULL);
+                                                         &new_extradata_size);
 
         if (!new_extradata)
             return AVERROR_INVALIDDATA;
+        audio_element = get_audio_element(iamf, audio_substream_id);
+        if (!audio_element)
+            return AVERROR(EINVAL);
+        codec_config = ff_iamf_get_codec_config(iamf, audio_element->codec_config_id);
+        if (!codec_config)
+            return AVERROR(EINVAL);
 
-        // TODO: update FLAC Streaminfo on seekable output
-        return 0;
+        av_free(codec_config->extradata);
+        codec_config->extradata = av_memdup(new_extradata, new_extradata_size);
+        if (!codec_config->extradata)
+            return AVERROR(ENOMEM);
+        codec_config->extradata_size = new_extradata_size;
+
+        return update_extradata(codec_config);
     }
 
     side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES,

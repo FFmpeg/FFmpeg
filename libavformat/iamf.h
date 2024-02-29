@@ -165,6 +165,19 @@ struct IAMFSoundSystemMap {
 extern const AVChannelLayout ff_iamf_scalable_ch_layouts[10];
 extern const struct IAMFSoundSystemMap ff_iamf_sound_system_map[13];
 
+static inline IAMFCodecConfig *ff_iamf_get_codec_config(const IAMFContext *c,
+                                                        unsigned int codec_config_id)
+{
+    IAMFCodecConfig *codec_config = NULL;
+
+    for (int i = 0; i < c->nb_codec_configs; i++) {
+        if (c->codec_configs[i]->codec_config_id == codec_config_id)
+            codec_config = c->codec_configs[i];
+    }
+
+    return codec_config;
+}
+
 static inline IAMFParamDefinition *ff_iamf_get_param_definition(const IAMFContext *iamf,
                                                                 unsigned int parameter_id)
 {

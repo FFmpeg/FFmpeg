@@ -1,6 +1,6 @@
-7df5cc61ee480e558389051a83040dd2 *tests/data/fate/mov-mp4-iamf-stereo.mp4
+88c2b547f069f2d4a11d24f7f922251a *tests/data/fate/mov-mp4-iamf-stereo.mp4
 15163 tests/data/fate/mov-mp4-iamf-stereo.mp4
-#extradata 0:       34, 0x40a802c6
+#extradata 0:       34, 0xafa70d5e
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: flac

@@ -580,16 +580,6 @@ static int param_parse(void *s, IAMFContext *c, AVIOContext *pb,
     return 0;
 }
 
-static IAMFCodecConfig *get_codec_config(IAMFContext *c, unsigned int codec_config_id)
-{
-    for (int i = 0; i < c->nb_codec_configs; i++) {
-        if (c->codec_configs[i]->codec_config_id == codec_config_id)
-            return c->codec_configs[i];
-    }
-
-    return NULL;
-}
-
 static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
 {
     const IAMFCodecConfig *codec_config;
@@ -627,7 +617,7 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
     audio_element_type = avio_r8(pbc) >> 5;
     codec_config_id = ffio_read_leb(pbc);
 
-    codec_config = get_codec_config(c, codec_config_id);
+    codec_config = ff_iamf_get_codec_config(c, codec_config_id);
     if (!codec_config) {
         av_log(s, AV_LOG_ERROR, "Non existant codec config id %d referenced in an audio element\n", codec_config_id);
         ret = AVERROR_INVALIDDATA;
