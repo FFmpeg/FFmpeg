@@ -29,20 +29,6 @@
 #include "avio.h"
 #include "iamf.h"
 
-static inline IAMFParamDefinition *ff_iamf_get_param_definition(const IAMFContext *iamf,
-                                                                unsigned int parameter_id)
-{
-    IAMFParamDefinition *param_definition = NULL;
-
-    for (int i = 0; i < iamf->nb_param_definitions; i++)
-        if (iamf->param_definitions[i]->param->parameter_id == parameter_id) {
-            param_definition = iamf->param_definitions[i];
-            break;
-        }
-
-    return param_definition;
-}
-
 int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void *log_ctx);
 int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, void *log_ctx);
 

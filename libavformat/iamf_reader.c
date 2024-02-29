@@ -98,22 +98,6 @@ static int audio_frame_obu(AVFormatContext *s, const IAMFDemuxContext *c,
     return 0;
 }
 
-static const IAMFParamDefinition *get_param_definition(AVFormatContext *s,
-                                                       const IAMFDemuxContext *c,
-                                                       unsigned int parameter_id)
-{
-    const IAMFContext *const iamf = &c->iamf;
-    const IAMFParamDefinition *param_definition = NULL;
-
-    for (int i = 0; i < iamf->nb_param_definitions; i++)
-        if (iamf->param_definitions[i]->param->parameter_id == parameter_id) {
-            param_definition = iamf->param_definitions[i];
-            break;
-        }
-
-    return param_definition;
-}
-
 static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
                                AVIOContext *pbc, int len)
 {
@@ -144,7 +128,7 @@ static int parameter_block_obu(AVFormatContext *s, IAMFDemuxContext *c,
     pb = &b.pub;
 
     parameter_id = ffio_read_leb(pb);
-    param_definition = get_param_definition(s, c, parameter_id);
+    param_definition = ff_iamf_get_param_definition(&c->iamf, parameter_id);
     if (!param_definition) {
         av_log(s, AV_LOG_VERBOSE, "Non existant parameter_id %d referenced in a parameter block. Ignoring\n",
                parameter_id);
