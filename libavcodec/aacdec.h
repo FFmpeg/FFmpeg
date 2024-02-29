@@ -207,6 +207,7 @@ typedef struct AACDecContext {
      * @{
      */
     DECLARE_ALIGNED(32, INTFLOAT, buf_mdct)[1024];
+    DECLARE_ALIGNED(32, INTFLOAT, temp)[128];
     /** @} */
 
     /**
@@ -253,8 +254,6 @@ typedef struct AACDecContext {
     /** @} */
 
     enum AACOutputChannelOrder output_channel_order;
-
-    DECLARE_ALIGNED(32, INTFLOAT, temp)[128];
 
     OutputConfiguration oc[2];
     int warned_num_aac_frames;
