@@ -25,16 +25,6 @@
 
 SECTION .text
 
-%macro PAVGB_MMX 4
-    LOAD   %3, %1
-    por    %3, %2
-    pxor   %2, %1
-    pand   %2, %4
-    psrlq  %2, 1
-    psubb  %3, %2
-    SWAP   %2, %3
-%endmacro
-
 ; void ff_put/avg_pixels(uint8_t *block, const uint8_t *pixels,
 ;                        ptrdiff_t line_size, int h)
 %macro OP_PIXELS 2
@@ -49,12 +39,6 @@ SECTION .text
 %endif
 cglobal %1_pixels%2, 4,5,4
     lea          r4, [r2*3]
-%ifidn %1, avg
-%if notcpuflag(mmxext)
-    pcmpeqd      m6, m6
-    paddb        m6, m6
-%endif
-%endif
 .loop:
 %assign %%i 0
 %rep LEN/mmsize
@@ -63,17 +47,10 @@ cglobal %1_pixels%2, 4,5,4
     LOAD         m2, [r1+r2*2 + %%i]
     LOAD         m3, [r1+r4 + %%i]
 %ifidn %1, avg
-%if notcpuflag(mmxext)
-    PAVGB_MMX    [r0 + %%i], m0, m4, m6
-    PAVGB_MMX    [r0+r2 + %%i], m1, m5, m6
-    PAVGB_MMX    [r0+r2*2 + %%i], m2, m4, m6
-    PAVGB_MMX    [r0+r4 + %%i], m3, m5, m6
-%else
     pavgb        m0, [r0 + %%i]
     pavgb        m1, [r0+r2 + %%i]
     pavgb        m2, [r0+r2*2 + %%i]
     pavgb        m3, [r0+r4 + %%i]
-%endif
 %endif
     SAVE       [r0 + %%i], m0
     SAVE    [r0+r2 + %%i], m1
