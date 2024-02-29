@@ -116,7 +116,7 @@ static void imdct_and_windowing_mips(AACDecContext *ac, SingleChannelElement *sc
 {
     IndividualChannelStream *ics = &sce->ics;
     float *in    = sce->coeffs;
-    float *out   = sce->ret;
+    float *out   = sce->output;
     float *saved = sce->saved;
     const float *swindow      = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
     const float *lwindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
@@ -232,7 +232,7 @@ static void apply_ltp_mips(AACDecContext *ac, SingleChannelElement *sce)
     int j, k;
 
     if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
-        float *predTime = sce->ret;
+        float *predTime = sce->output;
         float *predFreq = ac->buf_mdct;
         float *p_predTime;
         int16_t num_samples = 2048;
@@ -425,7 +425,7 @@ static void update_ltp_mips(AACDecContext *ac, SingleChannelElement *sce)
     }
 
     float_copy(sce->ltp_state, sce->ltp_state + 1024, 1024);
-    float_copy(sce->ltp_state + 1024, sce->ret, 1024);
+    float_copy(sce->ltp_state + 1024, sce->output, 1024);
     float_copy(sce->ltp_state + 2048, saved_ltp, 1024);
 }
 #endif /* HAVE_MIPSFPU */

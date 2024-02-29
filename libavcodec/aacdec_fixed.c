@@ -402,8 +402,8 @@ static void apply_dependent_coupling_fixed(AACDecContext *ac,
 {
     IndividualChannelStream *ics = &cce->ch[0].ics;
     const uint16_t *offsets = ics->swb_offset;
-    int *dest = target->coeffs;
-    const int *src = cce->ch[0].coeffs;
+    int *dest = target->coeffs_fixed;
+    const int *src = cce->ch[0].coeffs_fixed;
     int g, i, group, k, idx = 0;
     if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP) {
         av_log(ac->avctx, AV_LOG_ERROR,
@@ -466,8 +466,8 @@ static void apply_independent_coupling_fixed(AACDecContext *ac,
 {
     int i, c, shift, round, tmp;
     const int gain = cce->coup.gain[index][0];
-    const int *src = cce->ch[0].ret;
-    unsigned int *dest = target->ret;
+    const int *src = cce->ch[0].output_fixed;
+    unsigned int *dest = target->output_fixed;
     const int len = 1024 << (ac->oc[1].m4ac.sbr == 1);
 
     c = cce_scale_fixed[gain & 7];

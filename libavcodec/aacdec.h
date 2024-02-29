@@ -39,7 +39,6 @@
 #include "libavutil/tx.h"
 
 #include "aac.h"
-#include "aac_defines.h"
 #include "mpeg4audio.h"
 
 /**
@@ -70,13 +69,24 @@ enum CouplingPoint {
 // Supposed to be equal to AAC_RENAME() in case of USE_FIXED.
 #define RENAME_FIXED(name) name ## _fixed
 
+#define INTFLOAT_UNION(name, elems)     \
+    union {                             \
+        int   RENAME_FIXED(name) elems; \
+        float name       elems;         \
+    };
+
+#define INTFLOAT_ALIGNED_UNION(alignment, name, nb_elems)                \
+    union {                                                              \
+        DECLARE_ALIGNED(alignment, int,   RENAME_FIXED(name))[nb_elems]; \
+        DECLARE_ALIGNED(alignment, float, name)[nb_elems];               \
+    };
 /**
  * Long Term Prediction
  */
 typedef struct LongTermPrediction {
     int8_t present;
     int16_t lag;
-    INTFLOAT coef;
+    INTFLOAT_UNION(coef,);
     int8_t used[MAX_LTP_LONG_SFB];
 } LongTermPrediction;
 
@@ -110,7 +120,7 @@ typedef struct TemporalNoiseShaping {
     int length[8][4];
     int direction[8][4];
     int order[8][4];
-    INTFLOAT coef[8][4][TNS_MAX_ORDER];
+    INTFLOAT_UNION(coef, [8][4][TNS_MAX_ORDER]);
 } TemporalNoiseShaping;
 
 /**
@@ -124,7 +134,7 @@ typedef struct ChannelCoupling {
     int ch_select[8];      /**< [0] shared list of gains; [1] list of gains for right channel;
                             *   [2] list of gains for left channel; [3] lists of gains for both channels
                             */
-    INTFLOAT gain[16][120];
+    INTFLOAT_UNION(gain, [16][120]);
 } ChannelCoupling;
 
 /**
@@ -135,16 +145,19 @@ typedef struct SingleChannelElement {
     TemporalNoiseShaping tns;
     enum BandType band_type[128];                   ///< band types
     int band_type_run_end[120];                     ///< band type run end points
-    INTFLOAT sf[120];                               ///< scalefactors
-    DECLARE_ALIGNED(32, INTFLOAT, coeffs)[1024];    ///< coefficients for IMDCT, maybe processed
-    DECLARE_ALIGNED(32, INTFLOAT, saved)[1536];     ///< overlap
-    DECLARE_ALIGNED(32, INTFLOAT, ret_buf)[2048];   ///< PCM output buffer
-    DECLARE_ALIGNED(16, INTFLOAT, ltp_state)[3072]; ///< time signal for LTP
+    INTFLOAT_UNION(sf, [120]);                      ///< scalefactors
+    INTFLOAT_ALIGNED_UNION(32, coeffs,    1024);    ///< coefficients for IMDCT, maybe processed
+    INTFLOAT_ALIGNED_UNION(32, saved,     1536);    ///< overlap
+    INTFLOAT_ALIGNED_UNION(32, ret_buf,   2048);    ///< PCM output buffer
+    INTFLOAT_ALIGNED_UNION(16, ltp_state, 3072);    ///< time signal for LTP
     union {
         struct PredictorStateFixed *RENAME_FIXED(predictor_state);
         struct PredictorState      *predictor_state;
     };
-    INTFLOAT *ret;                                  ///< PCM output
+    union {
+        float *output;                              ///< PCM output
+        int   *RENAME_FIXED(output);                ///< PCM output
+    };
 } SingleChannelElement;
 
 /**
@@ -210,8 +223,8 @@ typedef struct AACDecContext {
      * (We do not want to have these on the stack.)
      * @{
      */
-    DECLARE_ALIGNED(32, INTFLOAT, buf_mdct)[1024];
-    DECLARE_ALIGNED(32, INTFLOAT, temp)[128];
+    INTFLOAT_ALIGNED_UNION(32, buf_mdct, 1024);
+    INTFLOAT_ALIGNED_UNION(32, temp, 128);
     /** @} */
 
     /**
@@ -268,10 +281,18 @@ typedef struct AACDecContext {
     /* aacdec functions pointers */
     void (*imdct_and_windowing)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*apply_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
-    void (*apply_tns)(INTFLOAT coef[1024], TemporalNoiseShaping *tns,
-                      IndividualChannelStream *ics, int decode);
-    void (*windowing_and_mdct_ltp)(struct AACDecContext *ac, INTFLOAT *out,
-                                   INTFLOAT *in, IndividualChannelStream *ics);
+    union {
+        void (*apply_tns)(float coef[1024], TemporalNoiseShaping *tns,
+                          IndividualChannelStream *ics, int decode);
+        void (*apply_tns_fixed)(int coef[1024], TemporalNoiseShaping *tns,
+                                IndividualChannelStream *ics, int decode);
+    };
+    union {
+        void (*windowing_and_mdct_ltp)(struct AACDecContext *ac, float *out,
+                                       float *in, IndividualChannelStream *ics);
+        void (*windowing_and_mdct_ltp_fixed)(struct AACDecContext *ac, int *out,
+                                             int *in, IndividualChannelStream *ics);
+    };
     void (*update_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*vector_pow43)(int *coefs, int len);
     void (*subband_scale)(int *dst, int *src, int scale, int offset, int len, void *log_context);

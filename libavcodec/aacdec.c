@@ -250,8 +250,8 @@ static void apply_independent_coupling(AACDecContext *ac,
                                        ChannelElement *cce, int index)
 {
     const float gain = cce->coup.gain[index][0];
-    const float *src = cce->ch[0].ret;
-    float *dest = target->ret;
+    const float *src = cce->ch[0].output;
+    float *dest = target->output;
     const int len = 1024 << (ac->oc[1].m4ac.sbr == 1);
 
     ac->fdsp->vector_fmac_scalar(dest, src, gain, len);
