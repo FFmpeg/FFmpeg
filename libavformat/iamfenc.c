@@ -35,6 +35,9 @@
 typedef struct IAMFMuxContext {
     IAMFContext iamf;
 
+    int64_t descriptors_offset;
+    int update_extradata;
+
     int first_stream_id;
 } IAMFMuxContext;
 
@@ -124,6 +127,7 @@ static int iamf_write_header(AVFormatContext *s)
     IAMFContext *const iamf = &c->iamf;
     int ret;
 
+    c->descriptors_offset = avio_tell(s->pb);
     ret = ff_iamf_write_descriptors(iamf, s->pb, s);
     if (ret < 0)
         return ret;
@@ -135,7 +139,7 @@ static int iamf_write_header(AVFormatContext *s)
 
 static int iamf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    const IAMFMuxContext *const c = s->priv_data;
+    IAMFMuxContext *const c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
     int ret = 0;
 
@@ -143,8 +147,31 @@ static int iamf_write_packet(AVFormatContext *s, AVPacket *pkt)
         ret = ff_iamf_write_parameter_blocks(&c->iamf, s->pb, pkt, s);
     if (!ret)
         ret = ff_iamf_write_audio_frame(&c->iamf, s->pb, st->id, pkt);
+    if (!ret && !pkt->size)
+        c->update_extradata = 1;
 
     return ret;
+}
+
+static int iamf_write_trailer(AVFormatContext *s)
+{
+    const IAMFMuxContext *const c = s->priv_data;
+    const IAMFContext *const iamf = &c->iamf;
+    int64_t pos;
+    int ret;
+
+    if (!c->update_extradata || !(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
+        return 0;
+
+    pos = avio_tell(s->pb);
+    avio_seek(s->pb, c->descriptors_offset, SEEK_SET);
+    ret = ff_iamf_write_descriptors(iamf, s->pb, s);
+    if (ret < 0)
+        return ret;
+
+    avio_seek(s->pb, pos, SEEK_SET);
+
+    return 0;
 }
 
 static void iamf_deinit(AVFormatContext *s)
@@ -178,6 +205,7 @@ const FFOutputFormat ff_iamf_muxer = {
     .deinit            = iamf_deinit,
     .write_header      = iamf_write_header,
     .write_packet      = iamf_write_packet,
+    .write_trailer     = iamf_write_trailer,
     .p.codec_tag       = (const AVCodecTag* const []){ iamf_codec_tags, NULL },
     .p.flags           = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS,
 };

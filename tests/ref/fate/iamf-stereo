@@ -1,6 +1,6 @@
-ace731a4fbc302e24498d6b64daa16e7 *tests/data/fate/iamf-stereo.iamf
+4000d96f7363212c5a75c6f7fa5756f5 *tests/data/fate/iamf-stereo.iamf
 14426 tests/data/fate/iamf-stereo.iamf
-#extradata 0:       34, 0x40a802c6
+#extradata 0:       34, 0xafa70d5e
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: flac
