@@ -1436,7 +1436,8 @@ static void consume_update(FilterLinkInternal *li, const AVFrame *frame)
     AVFilterLink *const link = &li->l;
     update_link_current_pts(li, frame->pts);
     ff_inlink_process_commands(link, frame);
-    link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
+    if (link == link->dst->inputs[0])
+        link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
     link->frame_count_out++;
     link->sample_count_out += frame->nb_samples;
 }
