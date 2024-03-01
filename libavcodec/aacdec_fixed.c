@@ -62,7 +62,6 @@
 #define TX_TYPE AV_TX_INT32_MDCT
 
 #include "libavutil/fixed_dsp.h"
-#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"
@@ -498,6 +497,7 @@ const FFCodec ff_aac_fixed_decoder = {
     CODEC_LONG_NAME("AAC (Advanced Audio Coding)"),
     .p.type          = AVMEDIA_TYPE_AUDIO,
     .p.id            = AV_CODEC_ID_AAC,
+    .p.priv_class    = &ff_aac_decoder_class,
     .priv_data_size  = sizeof(AACDecContext),
     .init            = aac_decode_init,
     .close           = ff_aac_decode_close,
@@ -508,7 +508,6 @@ const FFCodec ff_aac_fixed_decoder = {
     .p.capabilities  = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
     .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
     .p.ch_layouts    = ff_aac_ch_layout,
-    .p.priv_class    = &aac_decoder_class,
     .p.profiles      = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     .flush = flush,
 };

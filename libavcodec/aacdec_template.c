@@ -3401,35 +3401,3 @@ static void aacdec_init(AACDecContext *c)
 #endif
 #endif /* !USE_FIXED */
 }
-/**
- * AVOptions for Japanese DTV specific extensions (ADTS only)
- */
-#define AACDEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
-#define OFF(field) offsetof(AACDecContext, field)
-static const AVOption options[] = {
-    {"dual_mono_mode", "Select the channel to decode for dual mono",
-     OFF(force_dmono_mode), AV_OPT_TYPE_INT, {.i64=-1}, -1, 2,
-     AACDEC_FLAGS, .unit = "dual_mono_mode"},
-
-    {"auto", "autoselection",            0, AV_OPT_TYPE_CONST, {.i64=-1}, INT_MIN, INT_MAX, AACDEC_FLAGS, .unit = "dual_mono_mode"},
-    {"main", "Select Main/Left channel", 0, AV_OPT_TYPE_CONST, {.i64= 1}, INT_MIN, INT_MAX, AACDEC_FLAGS, .unit = "dual_mono_mode"},
-    {"sub" , "Select Sub/Right channel", 0, AV_OPT_TYPE_CONST, {.i64= 2}, INT_MIN, INT_MAX, AACDEC_FLAGS, .unit = "dual_mono_mode"},
-    {"both", "Select both channels",     0, AV_OPT_TYPE_CONST, {.i64= 0}, INT_MIN, INT_MAX, AACDEC_FLAGS, .unit = "dual_mono_mode"},
-
-    { "channel_order", "Order in which the channels are to be exported",
-        OFF(output_channel_order), AV_OPT_TYPE_INT,
-        { .i64 = CHANNEL_ORDER_DEFAULT }, 0, 1, AACDEC_FLAGS, .unit = "channel_order" },
-      { "default", "normal libavcodec channel order", 0, AV_OPT_TYPE_CONST,
-        { .i64 = CHANNEL_ORDER_DEFAULT }, .flags = AACDEC_FLAGS, .unit = "channel_order" },
-      { "coded",    "order in which the channels are coded in the bitstream",
-        0, AV_OPT_TYPE_CONST, { .i64 = CHANNEL_ORDER_CODED }, .flags = AACDEC_FLAGS, .unit = "channel_order" },
-
-    {NULL},
-};
-
-static const AVClass aac_decoder_class = {
-    .class_name = "AAC decoder",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};

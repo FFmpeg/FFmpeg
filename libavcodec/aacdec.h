@@ -304,6 +304,8 @@ typedef struct AACDecContext {
 #define fdsp          RENAME_FIXED(fdsp)
 #endif
 
+extern const struct AVClass ff_aac_decoder_class;
+
 int ff_aac_decode_close(struct AVCodecContext *avctx);
 
 void ff_aacdec_init_mips(AACDecContext *c);
