@@ -1321,8 +1321,6 @@ function ff_hevc_put_hevc_epel_uni_v64_8_neon, export=1
         ret
 endfunc
 
-#if HAVE_I8MM
-ENABLE_I8MM
 
 .macro EPEL_H_HEADER
         movrel          x5, epel_filters
@@ -1332,6 +1330,198 @@ ENABLE_I8MM
         mov             x10, #(MAX_PB_SIZE * 2)
 .endm
 
+function ff_hevc_put_hevc_epel_h4_8_neon, export=1
+        EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+1:      ld1             {v4.8b}, [x1], x2
+        subs            w3,  w3,  #1   // height
+        uxtl            v4.8h,   v4.8b
+        ext             v5.16b,  v4.16b,  v4.16b,  #2
+        ext             v6.16b,  v4.16b,  v4.16b,  #4
+        ext             v7.16b,  v4.16b,  v4.16b,  #6
+        mul             v16.4h,  v4.4h,   v0.h[0]
+        mla             v16.4h,  v5.4h,   v0.h[1]
+        mla             v16.4h,  v6.4h,   v0.h[2]
+        mla             v16.4h,  v7.4h,   v0.h[3]
+        st1             {v16.4h}, [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h6_8_neon, export=1
+        EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+        add             x6,  x0,  #8
+1:      ld1             {v3.16b},  [x1], x2
+        subs            w3,  w3,  #1   // height
+        uxtl2           v4.8h,   v3.16b
+        uxtl            v3.8h,   v3.8b
+        ext             v5.16b,  v3.16b,  v4.16b,  #2
+        ext             v6.16b,  v3.16b,  v4.16b,  #4
+        ext             v7.16b,  v3.16b,  v4.16b,  #6
+        mul             v16.8h,  v3.8h,   v0.h[0]
+        mla             v16.8h,  v5.8h,   v0.h[1]
+        mla             v16.8h,  v6.8h,   v0.h[2]
+        mla             v16.8h,  v7.8h,   v0.h[3]
+        st1             {v16.4h},   [x0], x10
+        st1             {v16.s}[2], [x6], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h8_8_neon, export=1
+        EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+1:      ld1             {v3.16b},  [x1], x2
+        subs            w3,  w3,  #1   // height
+        uxtl2           v4.8h,   v3.16b
+        uxtl            v3.8h,   v3.8b
+        ext             v5.16b,  v3.16b,  v4.16b,  #2
+        ext             v6.16b,  v3.16b,  v4.16b,  #4
+        ext             v7.16b,  v3.16b,  v4.16b,  #6
+        mul             v16.8h,  v3.8h,   v0.h[0]
+        mla             v16.8h,  v5.8h,   v0.h[1]
+        mla             v16.8h,  v6.8h,   v0.h[2]
+        mla             v16.8h,  v7.8h,   v0.h[3]
+        st1             {v16.8h},   [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h12_8_neon, export=1
+        EPEL_H_HEADER
+        add             x6,  x0,  #16
+        sxtl            v0.8h,   v30.8b
+1:      ld1             {v3.16b}, [x1], x2
+        subs            w3,  w3,  #1   // height
+        uxtl2           v4.8h,   v3.16b
+        uxtl            v3.8h,   v3.8b
+        ext             v5.16b,  v3.16b,  v4.16b,  #2
+        ext             v6.16b,  v3.16b,  v4.16b,  #4
+        ext             v7.16b,  v3.16b,  v4.16b,  #6
+        ext             v20.16b, v4.16b,  v4.16b,  #2
+        ext             v21.16b, v4.16b,  v4.16b,  #4
+        ext             v22.16b, v4.16b,  v4.16b,  #6
+        mul             v16.8h,  v3.8h,   v0.h[0]
+        mla             v16.8h,  v5.8h,   v0.h[1]
+        mla             v16.8h,  v6.8h,   v0.h[2]
+        mla             v16.8h,  v7.8h,   v0.h[3]
+        mul             v17.4h,  v4.4h,   v0.h[0]
+        mla             v17.4h,  v20.4h,  v0.h[1]
+        mla             v17.4h,  v21.4h,  v0.h[2]
+        mla             v17.4h,  v22.4h,  v0.h[3]
+        st1             {v16.8h}, [x0], x10
+        st1             {v17.4h}, [x6], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h16_8_neon, export=1
+        EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+1:      ld1             {v1.8b, v2.8b, v3.8b}, [x1], x2
+        subs            w3,  w3,  #1   // height
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        uxtl            v3.8h,   v3.8b
+        ext             v5.16b,  v1.16b,  v2.16b,  #2
+        ext             v6.16b,  v1.16b,  v2.16b,  #4
+        ext             v7.16b,  v1.16b,  v2.16b,  #6
+        ext             v20.16b, v2.16b,  v3.16b,  #2
+        ext             v21.16b, v2.16b,  v3.16b,  #4
+        ext             v22.16b, v2.16b,  v3.16b,  #6
+        mul             v16.8h,  v1.8h,   v0.h[0]
+        mla             v16.8h,  v5.8h,   v0.h[1]
+        mla             v16.8h,  v6.8h,   v0.h[2]
+        mla             v16.8h,  v7.8h,   v0.h[3]
+        mul             v17.8h,  v2.8h,   v0.h[0]
+        mla             v17.8h,  v20.8h,  v0.h[1]
+        mla             v17.8h,  v21.8h,  v0.h[2]
+        mla             v17.8h,  v22.8h,  v0.h[3]
+        st1             {v16.8h, v17.8h}, [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h24_8_neon, export=1
+        EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+1:      ld1             {v1.8b, v2.8b, v3.8b, v4.8b}, [x1], x2
+        subs            w3,  w3,  #1   // height
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        uxtl            v3.8h,   v3.8b
+        uxtl            v4.8h,   v4.8b
+        ext             v5.16b,  v1.16b,  v2.16b,  #2
+        ext             v6.16b,  v1.16b,  v2.16b,  #4
+        ext             v7.16b,  v1.16b,  v2.16b,  #6
+        ext             v20.16b, v2.16b,  v3.16b,  #2
+        ext             v21.16b, v2.16b,  v3.16b,  #4
+        ext             v22.16b, v2.16b,  v3.16b,  #6
+        ext             v23.16b, v3.16b,  v4.16b,  #2
+        ext             v24.16b, v3.16b,  v4.16b,  #4
+        ext             v25.16b, v3.16b,  v4.16b,  #6
+        mul             v16.8h,  v1.8h,   v0.h[0]
+        mla             v16.8h,  v5.8h,   v0.h[1]
+        mla             v16.8h,  v6.8h,   v0.h[2]
+        mla             v16.8h,  v7.8h,   v0.h[3]
+        mul             v17.8h,  v2.8h,   v0.h[0]
+        mla             v17.8h,  v20.8h,  v0.h[1]
+        mla             v17.8h,  v21.8h,  v0.h[2]
+        mla             v17.8h,  v22.8h,  v0.h[3]
+        mul             v18.8h,  v3.8h,   v0.h[0]
+        mla             v18.8h,  v23.8h,  v0.h[1]
+        mla             v18.8h,  v24.8h,  v0.h[2]
+        mla             v18.8h,  v25.8h,  v0.h[3]
+        st1             {v16.8h, v17.8h, v18.8h}, [x0], x10
+        b.ne            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_epel_h32_8_neon, export=1
+        EPEL_H_HEADER
+        ld1             {v1.8b}, [x1], #8
+        sub             x2,  x2,  w6, uxtw    // decrement src stride
+        mov             w7,  w6               // original width
+        sub             x2,  x2,  #8          // decrement src stride
+        sub             x10, x10, w6, uxtw #1 // decrement dst stride
+        sxtl            v0.8h,   v30.8b
+        uxtl            v1.8h,   v1.8b
+1:      ld1             {v2.8b, v3.8b}, [x1], #16
+        subs            w6,  w6,  #16   // width
+        uxtl            v2.8h,   v2.8b
+        uxtl            v3.8h,   v3.8b
+        ext             v5.16b,  v1.16b,  v2.16b,  #2
+        ext             v6.16b,  v1.16b,  v2.16b,  #4
+        ext             v7.16b,  v1.16b,  v2.16b,  #6
+        ext             v20.16b, v2.16b,  v3.16b,  #2
+        ext             v21.16b, v2.16b,  v3.16b,  #4
+        ext             v22.16b, v2.16b,  v3.16b,  #6
+        mul             v16.8h,  v1.8h,   v0.h[0]
+        mla             v16.8h,  v5.8h,   v0.h[1]
+        mla             v16.8h,  v6.8h,   v0.h[2]
+        mla             v16.8h,  v7.8h,   v0.h[3]
+        mul             v17.8h,  v2.8h,   v0.h[0]
+        mla             v17.8h,  v20.8h,  v0.h[1]
+        mla             v17.8h,  v21.8h,  v0.h[2]
+        mla             v17.8h,  v22.8h,  v0.h[3]
+        st1             {v16.8h, v17.8h}, [x0], #32
+        mov             v1.16b,  v3.16b
+        b.gt            1b
+        subs            w3,  w3,  #1   // height
+        add             x1,  x1,  x2
+        b.le            9f
+        ld1             {v1.8b}, [x1], #8
+        mov             w6,  w7
+        add             x0,  x0,  x10
+        uxtl            v1.8h,   v1.8b
+        b               1b
+9:
+        ret
+endfunc
+
+#if HAVE_I8MM
+ENABLE_I8MM
 function ff_hevc_put_hevc_epel_h4_8_neon_i8mm, export=1
         EPEL_H_HEADER
 1:      ld1             {v4.8b}, [x1], x2
