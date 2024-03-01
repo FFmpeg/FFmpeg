@@ -439,6 +439,40 @@ static void check_unescape(void)
     }
 }
 
+static void check_mspel_pixels(void)
+{
+    LOCAL_ALIGNED_8(uint8_t, src0, [32 * 32]);
+    LOCAL_ALIGNED_8(uint8_t, src1, [32 * 32]);
+    LOCAL_ALIGNED_8(uint8_t, dst0, [32 * 32]);
+    LOCAL_ALIGNED_8(uint8_t, dst1, [32 * 32]);
+
+    VC1DSPContext h;
+
+    const test tests[] = {
+        VC1DSP_SIZED_TEST(put_vc1_mspel_pixels_tab[0][0], 16, 16)
+        VC1DSP_SIZED_TEST(put_vc1_mspel_pixels_tab[1][0], 8, 8)
+        VC1DSP_SIZED_TEST(avg_vc1_mspel_pixels_tab[0][0], 16, 16)
+        VC1DSP_SIZED_TEST(avg_vc1_mspel_pixels_tab[1][0], 8, 8)
+    };
+
+    ff_vc1dsp_init(&h);
+
+    for (size_t t = 0; t < FF_ARRAY_ELEMS(tests); ++t) {
+        void (*func)(uint8_t *, const uint8_t*, ptrdiff_t, int) = *(void **)((intptr_t) &h + tests[t].offset);
+        if (check_func(func, "vc1dsp.%s", tests[t].name)) {
+            declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, const uint8_t*, ptrdiff_t, int);
+            RANDOMIZE_BUFFER8(dst, 32 * 32);
+            RANDOMIZE_BUFFER8(src, 32 * 32);
+            call_ref(dst0, src0, 32, 0);
+            call_new(dst1, src1, 32, 0);
+            if (memcmp(dst0, dst1, 32 * 32)) {
+                fail();
+            }
+            bench_new(dst1, src0, 32, 0);
+        }
+    }
+}
+
 void checkasm_check_vc1dsp(void)
 {
     check_inv_trans_inplace();
@@ -450,4 +484,7 @@ void checkasm_check_vc1dsp(void)
 
     check_unescape();
     report("unescape_buffer");
+
+    check_mspel_pixels();
+    report("mspel_pixels");
 }
