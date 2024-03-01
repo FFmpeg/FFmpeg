@@ -30,13 +30,11 @@
 #define AVCODEC_AACSBR_H
 
 #include "get_bits.h"
+#include "aacdec.h"
 #include "aac_defines.h"
-#include "sbr.h"
 
 #define ENVELOPE_ADJUSTMENT_OFFSET 2
 #define NOISE_FLOOR_OFFSET 6
-
-struct AACDecContext;
 
 /**
  * SBR VLC tables
@@ -71,16 +69,14 @@ enum {
 /** Initialize SBR. */
 void AAC_RENAME(ff_aac_sbr_init)(void);
 /** Initialize one SBR context. */
-int AAC_RENAME(ff_aac_sbr_ctx_init)(struct AACDecContext *ac, SpectralBandReplication *sbr, int id_aac);
+int AAC_RENAME(ff_aac_sbr_ctx_init)(AACDecContext *ac, ChannelElement *che, int id_aac);
 /** Close one SBR context. */
-void AAC_RENAME(ff_aac_sbr_ctx_close)(SpectralBandReplication *sbr);
+void AAC_RENAME(ff_aac_sbr_ctx_close)(ChannelElement *che);
 /** Decode one SBR element. */
-int AAC_RENAME(ff_decode_sbr_extension)(struct AACDecContext *ac, SpectralBandReplication *sbr,
-                            GetBitContext *gb, int crc, int cnt, int id_aac);
+int AAC_RENAME(ff_aac_sbr_decode_extension)(AACDecContext *ac, ChannelElement *che,
+                                            GetBitContext *gb, int crc, int cnt, int id_aac);
 /** Apply one SBR element to one AAC element. */
-void AAC_RENAME(ff_sbr_apply)(struct AACDecContext *ac, SpectralBandReplication *sbr, int id_aac,
-                  INTFLOAT* L, INTFLOAT *R);
-
-void ff_aacsbr_func_ptr_init_mips(AACSBRContext *c);
+void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
+                                  int id_aac, INTFLOAT* L, INTFLOAT* R);
 
 #endif /* AVCODEC_AACSBR_H */

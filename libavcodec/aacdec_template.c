@@ -137,7 +137,7 @@ static av_cold int che_configure(AACDecContext *ac,
             int ret;
             if (!(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
                 return AVERROR(ENOMEM);
-            ret = AAC_RENAME(ff_aac_sbr_ctx_init)(ac, &ac->che[type][id]->sbr, type);
+            ret = AAC_RENAME(ff_aac_sbr_ctx_init)(ac, ac->che[type][id], type);
             if (ret < 0)
                 return ret;
         }
@@ -154,7 +154,7 @@ static av_cold int che_configure(AACDecContext *ac,
         }
     } else {
         if (ac->che[type][id])
-            AAC_RENAME(ff_aac_sbr_ctx_close)(&ac->che[type][id]->sbr);
+            AAC_RENAME(ff_aac_sbr_ctx_close)(ac->che[type][id]);
         av_freep(&ac->che[type][id]);
     }
     return 0;
@@ -2461,7 +2461,7 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
             ac->oc[1].m4ac.sbr = 1;
             ac->avctx->profile = AV_PROFILE_AAC_HE;
         }
-        res = AAC_RENAME(ff_decode_sbr_extension)(ac, &che->sbr, gb, crc_flag, cnt, elem_type);
+        res = AAC_RENAME(ff_aac_sbr_decode_extension)(ac, che, gb, crc_flag, cnt, elem_type);
         if (ac->oc[1].m4ac.ps == 1 && !ac->warned_he_aac_mono) {
             av_log(ac->avctx, AV_LOG_VERBOSE, "Treating HE-AAC mono as stereo.\n");
             ac->warned_he_aac_mono = 1;
@@ -2942,7 +2942,7 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                             ac->update_ltp(ac, &che->ch[1]);
                     }
                     if (ac->oc[1].m4ac.sbr > 0) {
-                        AAC_RENAME(ff_sbr_apply)(ac, &che->sbr, type, che->ch[0].ret, che->ch[1].ret);
+                        AAC_RENAME(ff_aac_sbr_apply)(ac, che, type, che->ch[0].ret, che->ch[1].ret);
                     }
                 }
                 if (type <= TYPE_CCE)
@@ -3382,7 +3382,7 @@ static av_cold int aac_decode_close(AVCodecContext *avctx)
     for (i = 0; i < MAX_ELEM_ID; i++) {
         for (type = 0; type < 4; type++) {
             if (ac->che[type][i])
-                AAC_RENAME(ff_aac_sbr_ctx_close)(&ac->che[type][i]->sbr);
+                AAC_RENAME(ff_aac_sbr_ctx_close)(ac->che[type][i]);
             av_freep(&ac->che[type][i]);
         }
     }

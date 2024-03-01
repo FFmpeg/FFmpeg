@@ -53,6 +53,7 @@
 
 #include "libavcodec/aacdec.h"
 #include "libavcodec/aacsbr.h"
+#include "libavcodec/sbr.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/mips/asmdefs.h"
 

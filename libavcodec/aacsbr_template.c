@@ -65,8 +65,9 @@ static void sbr_turnoff(SpectralBandReplication *sbr) {
     memset(&sbr->spectrum_params, -1, sizeof(SpectrumParameters));
 }
 
-av_cold int AAC_RENAME(ff_aac_sbr_ctx_init)(AACDecContext *ac, SpectralBandReplication *sbr, int id_aac)
+av_cold int AAC_RENAME(ff_aac_sbr_ctx_init)(AACDecContext *ac, ChannelElement *che, int id_aac)
 {
+    SpectralBandReplication *sbr = &che->sbr;
     int ret;
     float scale;
 
@@ -103,8 +104,9 @@ av_cold int AAC_RENAME(ff_aac_sbr_ctx_init)(AACDecContext *ac, SpectralBandRepli
     return 0;
 }
 
-av_cold void AAC_RENAME(ff_aac_sbr_ctx_close)(SpectralBandReplication *sbr)
+av_cold void AAC_RENAME(ff_aac_sbr_ctx_close)(ChannelElement *che)
 {
+    SpectralBandReplication *sbr = &che->sbr;
     av_tx_uninit(&sbr->mdct);
     av_tx_uninit(&sbr->mdct_ana);
 }
@@ -1091,9 +1093,11 @@ static void sbr_reset(AACDecContext *ac, SpectralBandReplication *sbr)
  *
  * @return  Returns number of bytes consumed from the TYPE_FIL element.
  */
-int AAC_RENAME(ff_decode_sbr_extension)(AACDecContext *ac, SpectralBandReplication *sbr,
-                            GetBitContext *gb_host, int crc, int cnt, int id_aac)
+int AAC_RENAME(ff_aac_sbr_decode_extension)(AACDecContext *ac, ChannelElement *che,
+                                            GetBitContext *gb_host, int crc,
+                                            int cnt, int id_aac)
 {
+    SpectralBandReplication *sbr = &che->sbr;
     unsigned int num_sbr_bits = 0, num_align_bits;
     unsigned bytes_read;
     GetBitContext gbc = *gb_host, *gb = &gbc;
@@ -1457,9 +1461,10 @@ static void sbr_env_estimate(AAC_FLOAT (*e_curr)[48], INTFLOAT X_high[64][40][2]
     }
 }
 
-void AAC_RENAME(ff_sbr_apply)(AACDecContext *ac, SpectralBandReplication *sbr, int id_aac,
-                  INTFLOAT* L, INTFLOAT* R)
+void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
+                                  int id_aac, INTFLOAT* L, INTFLOAT* R)
 {
+    SpectralBandReplication *sbr = &che->sbr;
     int downsampled = ac->oc[1].m4ac.ext_sample_rate < sbr->sample_rate;
     int ch;
     int nch = (id_aac == TYPE_CPE) ? 2 : 1;
