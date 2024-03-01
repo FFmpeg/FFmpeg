@@ -306,6 +306,7 @@ typedef struct AACDecContext {
 
 extern const struct AVClass ff_aac_decoder_class;
 
+int ff_aac_decode_init_common(struct AVCodecContext *avctx);
 int ff_aac_decode_close(struct AVCodecContext *avctx);
 
 void ff_aacdec_init_mips(AACDecContext *c);

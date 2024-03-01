@@ -1145,7 +1145,6 @@ static AVOnce aac_table_init = AV_ONCE_INIT;
 
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
-    float scale;
     AACDecContext *ac = avctx->priv_data;
     int ret;
 
@@ -1204,11 +1203,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         }
     }
 
-    if (avctx->ch_layout.nb_channels > MAX_CHANNELS) {
-        av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
-        return AVERROR_INVALIDDATA;
-    }
-
 #if USE_FIXED
     ac->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 #else
@@ -1218,29 +1212,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    ac->random_state = 0x1f2e3d4c;
-
-#define MDCT_INIT(s, fn, len, sval)                                            \
-    scale = sval;                                                              \
-    ret = av_tx_init(&s, &fn, TX_TYPE, 1, len, &scale, 0);                     \
-    if (ret < 0)                                                               \
-        return ret;
-
-    MDCT_INIT(ac->mdct120,  ac->mdct120_fn,   120, TX_SCALE(1.0/120))
-    MDCT_INIT(ac->mdct128,  ac->mdct128_fn,   128, TX_SCALE(1.0/128))
-    MDCT_INIT(ac->mdct480,  ac->mdct480_fn,   480, TX_SCALE(1.0/480))
-    MDCT_INIT(ac->mdct512,  ac->mdct512_fn,   512, TX_SCALE(1.0/512))
-    MDCT_INIT(ac->mdct960,  ac->mdct960_fn,   960, TX_SCALE(1.0/960))
-    MDCT_INIT(ac->mdct1024, ac->mdct1024_fn, 1024, TX_SCALE(1.0/1024))
-#undef MDCT_INIT
-
-    /* LTP forward MDCT */
-    scale = USE_FIXED ? -1.0 : -32786.0*2 + 36;
-    ret = av_tx_init(&ac->mdct_ltp, &ac->mdct_ltp_fn, TX_TYPE, 0, 1024, &scale, 0);
-    if (ret < 0)
-        return ret;
-
-    return 0;
+    return ff_aac_decode_init_common(avctx);
 }
 
 /**

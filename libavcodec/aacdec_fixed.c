@@ -59,7 +59,6 @@
  */
 
 #define USE_FIXED 1
-#define TX_TYPE AV_TX_INT32_MDCT
 
 #include "libavutil/fixed_dsp.h"
 #include "avcodec.h"

@@ -33,7 +33,6 @@
  */
 
 #define USE_FIXED 0
-#define TX_TYPE AV_TX_FLOAT_MDCT
 
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"

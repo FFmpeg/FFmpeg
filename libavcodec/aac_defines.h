@@ -42,7 +42,6 @@ typedef int                 AAC_SIGNE;
 #define Q23(a)              (int)((a) * 8388608.0 + 0.5)
 #define Q30(x)              (int)((x)*1073741824.0 + 0.5)
 #define Q31(x)              (int)((x)*2147483648.0 + 0.5)
-#define TX_SCALE(x)         ((x) * 128.0f)
 #define GET_GAIN(x, y)      (-(y) * (1 << (x))) + 1024
 #define AAC_MUL16(x, y)     (int)(((int64_t)(x) * (y) + 0x8000) >> 16)
 #define AAC_MUL26(x, y)     (int)(((int64_t)(x) * (y) + 0x2000000) >> 26)
@@ -110,7 +109,6 @@ typedef unsigned            AAC_SIGNE;
 #define Q23(x)              ((float)(x))
 #define Q30(x)              ((float)(x))
 #define Q31(x)              ((float)(x))
-#define TX_SCALE(x)         ((x) / 32768.0f)
 #define GET_GAIN(x, y)      powf((x), -(y))
 #define AAC_MUL16(x, y)     ((x) * (y))
 #define AAC_MUL26(x, y)     ((x) * (y))
