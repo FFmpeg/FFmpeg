@@ -433,6 +433,7 @@ int muxer_thread(void *arg)
 
         ost = of->streams[mux->sch_stream_idx[stream_idx]];
         mt.pkt->stream_index = ost->index;
+        mt.pkt->flags       &= ~AV_PKT_FLAG_TRUSTED;
 
         ret = mux_packet_filter(mux, &mt, ost, ret < 0 ? NULL : mt.pkt, &stream_eof);
         av_packet_unref(mt.pkt);

@@ -706,6 +706,8 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
                 return ret;
         }
 
+        pkt->flags |= AV_PKT_FLAG_TRUSTED;
+
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             ret = update_video_stats(ost, pkt, !!vstats_filename);
             if (ret < 0)
