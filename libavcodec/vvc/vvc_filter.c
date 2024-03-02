@@ -309,6 +309,10 @@ static int boundary_strength(const VVCLocalContext *lc, const MvField *curr, con
     const RefPicList *neigh_rpl)
 {
     RefPicList *rpl = lc->sc->rpl;
+
+    if (curr->pred_flag == PF_IBC)
+        return FFABS(neigh->mv[0].x - curr->mv[0].x) >= 8 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 8;
+
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
         // same L0 and L1
         if (rpl[0].list[curr->ref_idx[0]] == neigh_rpl[0].list[neigh->ref_idx[0]]  &&
@@ -497,6 +501,7 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
     const int cb_p             = (y_p >> log2_min_cb_size) * min_cb_width  + (x_p >>  log2_min_cb_size);
     const int cb_q             = (y_q >> log2_min_cb_size) * min_cb_width  + (x_q >>  log2_min_cb_size);
     const uint8_t intra        = fc->tab.cpm[chroma][cb_p] == MODE_INTRA || fc->tab.cpm[chroma][cb_q] == MODE_INTRA;
+    const uint8_t same_mode    = fc->tab.cpm[chroma][cb_p] == fc->tab.cpm[chroma][cb_q];
 
     if (pcmf)
         return 0;
@@ -516,6 +521,9 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
 
     if ((off_to_cb && ((off_to_cb % 8) || !has_sub_block)))
         return 0;                                     // inside a cu, not aligned to 8 or with no subblocks
+
+    if (!same_mode)
+        return 1;
 
     return boundary_strength(lc, mvf_q, mvf_p, rpl_p);
 }
