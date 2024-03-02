@@ -220,8 +220,9 @@ static int rtmp_read(URLContext *s, uint8_t *buf, int size)
     return ret;
 }
 
-static int rtmp_read_pause(URLContext *s, int pause)
+static int rtmp_read_pause(void *opaque, int pause)
 {
+    URLContext *s = opaque;
     LibRTMPContext *ctx = s->priv_data;
     RTMP *r = &ctx->rtmp;
 
@@ -230,9 +231,10 @@ static int rtmp_read_pause(URLContext *s, int pause)
     return 0;
 }
 
-static int64_t rtmp_read_seek(URLContext *s, int stream_index,
+static int64_t rtmp_read_seek(void *opaque, int stream_index,
                               int64_t timestamp, int flags)
 {
+    URLContext *s = opaque;
     LibRTMPContext *ctx = s->priv_data;
     RTMP *r = &ctx->rtmp;
 

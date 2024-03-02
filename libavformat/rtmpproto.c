@@ -2952,9 +2952,10 @@ static int rtmp_read(URLContext *s, uint8_t *buf, int size)
     return orig_size;
 }
 
-static int64_t rtmp_seek(URLContext *s, int stream_index, int64_t timestamp,
+static int64_t rtmp_seek(void *opaque, int stream_index, int64_t timestamp,
                          int flags)
 {
+    URLContext *s = opaque;
     RTMPContext *rt = s->priv_data;
     int ret;
     av_log(s, AV_LOG_DEBUG,
@@ -2972,8 +2973,9 @@ static int64_t rtmp_seek(URLContext *s, int stream_index, int64_t timestamp,
     return timestamp;
 }
 
-static int rtmp_pause(URLContext *s, int pause)
+static int rtmp_pause(void *opaque, int pause)
 {
+    URLContext *s = opaque;
     RTMPContext *rt = s->priv_data;
     int ret;
     av_log(s, AV_LOG_DEBUG, "Pause at timestamp %d\n",

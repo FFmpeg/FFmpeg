@@ -450,9 +450,8 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     (*s)->max_packet_size = max_packet_size;
     (*s)->min_packet_size = h->min_packet_size;
     if(h->prot) {
-        (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
-        (*s)->read_seek  =
-            (int64_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
+        (*s)->read_pause = h->prot->url_read_pause;
+        (*s)->read_seek  = h->prot->url_read_seek;
 
         if (h->prot->url_read_seek)
             (*s)->seekable |= AVIO_SEEKABLE_TIME;
