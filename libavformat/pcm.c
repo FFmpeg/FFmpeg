@@ -24,26 +24,43 @@
 #include "internal.h"
 #include "pcm.h"
 
-#define RAW_SAMPLES     1024
+#define PCM_DEMUX_TARGET_FPS  25
 
-int ff_pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
+int ff_pcm_default_packet_size(AVCodecParameters *par)
 {
-    AVCodecParameters *par = s->streams[0]->codecpar;
-    int ret, size;
+    int nb_samples, max_samples, bits_per_sample;
+    int64_t bitrate;
 
     if (par->block_align <= 0)
         return AVERROR(EINVAL);
 
-    /*
-     * Compute read size to complete a read every 62ms.
-     * Clamp to RAW_SAMPLES if larger.
-     */
-    size = FFMAX(par->sample_rate/25, 1);
-    if (par->block_align <= INT_MAX / RAW_SAMPLES) {
-        size = FFMIN(size, RAW_SAMPLES) * par->block_align;
+    max_samples = INT_MAX / par->block_align;
+    bits_per_sample = av_get_bits_per_sample(par->codec_id);
+    bitrate = par->bit_rate;
+
+    /* Don't trust the codecpar bitrate if we can calculate it ourselves */
+    if (bits_per_sample > 0 && par->sample_rate > 0 && par->ch_layout.nb_channels > 0)
+        if ((int64_t)par->sample_rate * par->ch_layout.nb_channels < INT64_MAX / bits_per_sample)
+            bitrate = bits_per_sample * par->sample_rate * par->ch_layout.nb_channels;
+
+    if (bitrate > 0) {
+        nb_samples = av_clip64(bitrate / 8 / PCM_DEMUX_TARGET_FPS / par->block_align, 1, max_samples);
+        nb_samples = 1 << av_log2(nb_samples);
     } else {
-        size = par->block_align;
+        /* Fallback to a size based method for a non-pcm codec with unknown bitrate */
+        nb_samples = av_clip(4096 / par->block_align, 1, max_samples);
     }
+
+    return par->block_align * nb_samples;
+}
+
+int ff_pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret, size;
+
+    size = ff_pcm_default_packet_size(s->streams[0]->codecpar);
+    if (size < 0)
+        return size;
 
     ret = av_get_packet(s->pb, pkt, size);
 
