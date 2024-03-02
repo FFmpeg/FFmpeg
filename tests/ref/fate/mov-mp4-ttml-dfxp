@@ -23,6 +23,9 @@
     "programs": [
 
     ],
+    "stream_groups": [
+
+    ],
     "streams": [
         {
             "index": 0,

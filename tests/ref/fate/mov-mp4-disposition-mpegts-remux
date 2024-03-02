@@ -20,6 +20,9 @@ adb3b95c07a5f3e0c86641dd62f01dae *tests/data/fate/mov-mp4-disposition-mpegts-rem
     "programs": [
 
     ],
+    "stream_groups": [
+
+    ],
     "streams": [
         {
             "index": 0,
