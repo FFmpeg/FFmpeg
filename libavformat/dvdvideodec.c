@@ -863,7 +863,7 @@ static int dvdvideo_video_stream_setup(AVFormatContext *s)
         return ret;
     }
 
-    return ret;
+    return 0;
 }
 
 static int dvdvideo_audio_stream_analyze(AVFormatContext *s, audio_attr_t audio_attr,
@@ -1032,7 +1032,7 @@ break_error:
         return ret;
     }
 
-    return ret;
+    return 0;
 }
 
 static int dvdvideo_subp_stream_analyze(AVFormatContext *s, uint32_t offset, subp_attr_t subp_attr,
@@ -1056,7 +1056,6 @@ static int dvdvideo_subp_stream_add(AVFormatContext *s, DVDVideoPGCSubtitleStrea
 {
     AVStream *st;
     FFStream *sti;
-    int ret = 0;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -1080,7 +1079,7 @@ static int dvdvideo_subp_stream_add(AVFormatContext *s, DVDVideoPGCSubtitleStrea
     avpriv_set_pts_info(st, DVDVIDEO_PTS_WRAP_BITS,
                         DVDVIDEO_TIME_BASE_Q.num, DVDVIDEO_TIME_BASE_Q.den);
 
-    return ret;
+    return 0;
 }
 
 static int dvdvideo_subp_stream_add_internal(AVFormatContext *s, uint32_t offset,
@@ -1098,17 +1097,15 @@ static int dvdvideo_subp_stream_add_internal(AVFormatContext *s, uint32_t offset
     /* IFO structures can declare duplicate entries for the same startcode */
     for (int i = 0; i < s->nb_streams; i++)
         if (s->streams[i]->id == entry.startcode)
-            goto end;
+            return 0;
 
     if ((ret = dvdvideo_subp_stream_add(s, &entry, AVSTREAM_PARSE_HEADERS)) < 0)
         goto end_error;
 
-    goto end;
+    return 0;
 
 end_error:
     av_log(s, AV_LOG_ERROR, "Unable to add subtitle stream\n");
-
-end:
     return ret;
 }
 
@@ -1291,7 +1288,7 @@ static int dvdvideo_read_header(AVFormatContext *s)
     if (!c->opt_preindex)
         return dvdvideo_chapters_setup_simple(s);
 
-    return ret;
+    return 0;
 }
 
 static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
