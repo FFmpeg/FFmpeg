@@ -10,6 +10,25 @@ index=0
 id=0x3eb
 nb_streams=1
 type=Tile Grid
+[COMPONENT]
+nb_tiles=2
+coded_width=640
+coded_height=360
+horizontal_offset=0
+vertical_offset=0
+width=640
+height=360
+[SUBCOMPONENT]
+stream_index=0
+tile_horizontal_offset=0
+tile_vertical_offset=0
+[/SUBCOMPONENT]
+[SUBCOMPONENT]
+stream_index=0
+tile_horizontal_offset=64896
+tile_vertical_offset=65176
+[/SUBCOMPONENT]
+[/COMPONENT]
 DISPOSITION:default=0
 DISPOSITION:dub=0
 DISPOSITION:original=0

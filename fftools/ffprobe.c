@@ -114,6 +114,7 @@ static int do_show_frames  = 0;
 static int do_show_packets = 0;
 static int do_show_programs = 0;
 static int do_show_stream_groups = 0;
+static int do_show_stream_group_components = 0;
 static int do_show_streams = 0;
 static int do_show_stream_disposition = 0;
 static int do_show_stream_group_disposition = 0;
@@ -210,6 +211,10 @@ typedef enum {
     SECTION_ID_STREAM_GROUP_STREAM_DISPOSITION,
     SECTION_ID_STREAM_GROUP_STREAM_TAGS,
     SECTION_ID_STREAM_GROUP,
+    SECTION_ID_STREAM_GROUP_COMPONENTS,
+    SECTION_ID_STREAM_GROUP_COMPONENT,
+    SECTION_ID_STREAM_GROUP_SUBCOMPONENTS,
+    SECTION_ID_STREAM_GROUP_SUBCOMPONENT,
     SECTION_ID_STREAM_GROUP_STREAMS,
     SECTION_ID_STREAM_GROUP_STREAM,
     SECTION_ID_STREAM_GROUP_DISPOSITION,
@@ -310,7 +315,11 @@ static struct section sections[] = {
     [SECTION_ID_PROGRAMS] =                   { SECTION_ID_PROGRAMS, "programs", SECTION_FLAG_IS_ARRAY, { SECTION_ID_PROGRAM, -1 } },
     [SECTION_ID_STREAM_GROUP_STREAM_DISPOSITION] = { SECTION_ID_STREAM_GROUP_STREAM_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_group_stream_disposition" },
     [SECTION_ID_STREAM_GROUP_STREAM_TAGS] =        { SECTION_ID_STREAM_GROUP_STREAM_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "stream_group_stream_tags" },
-    [SECTION_ID_STREAM_GROUP] =                    { SECTION_ID_STREAM_GROUP, "stream_group", SECTION_FLAG_HAS_TYPE, { SECTION_ID_STREAM_GROUP_TAGS, SECTION_ID_STREAM_GROUP_DISPOSITION, SECTION_ID_STREAM_GROUP_STREAMS, -1 }, .get_type = get_stream_group_type },
+    [SECTION_ID_STREAM_GROUP] =                    { SECTION_ID_STREAM_GROUP, "stream_group", 0, { SECTION_ID_STREAM_GROUP_TAGS, SECTION_ID_STREAM_GROUP_DISPOSITION, SECTION_ID_STREAM_GROUP_COMPONENTS, SECTION_ID_STREAM_GROUP_STREAMS, -1 } },
+    [SECTION_ID_STREAM_GROUP_COMPONENTS] =         { SECTION_ID_STREAM_GROUP_COMPONENTS, "components", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_COMPONENT, -1 }, .element_name = "component", .unique_name = "stream_group_components" },
+    [SECTION_ID_STREAM_GROUP_COMPONENT] =          { SECTION_ID_STREAM_GROUP_COMPONENT, "component", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { SECTION_ID_STREAM_GROUP_SUBCOMPONENTS, -1 }, .unique_name = "stream_group_component", .element_name = "component_entry", .get_type = get_stream_group_type },
+    [SECTION_ID_STREAM_GROUP_SUBCOMPONENTS] =      { SECTION_ID_STREAM_GROUP_SUBCOMPONENTS, "subcomponents", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_SUBCOMPONENT, -1 }, .element_name = "component" },
+    [SECTION_ID_STREAM_GROUP_SUBCOMPONENT] =       { SECTION_ID_STREAM_GROUP_SUBCOMPONENT, "subcomponent", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { -1 }, .element_name = "subcomponent_entry", .get_type = get_raw_string_type },
     [SECTION_ID_STREAM_GROUP_STREAMS] =            { SECTION_ID_STREAM_GROUP_STREAMS, "streams", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_STREAM, -1 }, .unique_name = "stream_group_streams" },
     [SECTION_ID_STREAM_GROUP_STREAM] =             { SECTION_ID_STREAM_GROUP_STREAM, "stream", 0, { SECTION_ID_STREAM_GROUP_STREAM_DISPOSITION, SECTION_ID_STREAM_GROUP_STREAM_TAGS, -1 }, .unique_name = "stream_group_stream" },
     [SECTION_ID_STREAM_GROUP_DISPOSITION] =        { SECTION_ID_STREAM_GROUP_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_group_disposition" },
@@ -3491,13 +3500,35 @@ static int show_programs(WriterContext *w, InputFile *ifile)
     return ret;
 }
 
+static void print_tile_grid_params(WriterContext *w, const AVStreamGroup *stg,
+                                   const AVStreamGroupTileGrid *tile_grid)
+{
+    writer_print_section_header(w, stg, SECTION_ID_STREAM_GROUP_COMPONENT);
+    print_int("nb_tiles",          tile_grid->nb_tiles);
+    print_int("coded_width",       tile_grid->coded_width);
+    print_int("coded_height",      tile_grid->coded_height);
+    print_int("horizontal_offset", tile_grid->horizontal_offset);
+    print_int("vertical_offset",   tile_grid->vertical_offset);
+    print_int("width",             tile_grid->width);
+    print_int("height",            tile_grid->height);
+    writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP_SUBCOMPONENTS);
+    for (int i = 0; i < tile_grid->nb_tiles; i++) {
+        writer_print_section_header(w, "tile_offset", SECTION_ID_STREAM_GROUP_SUBCOMPONENT);
+        print_int("stream_index",           tile_grid->offsets[i].idx);
+        print_int("tile_horizontal_offset", tile_grid->offsets[i].horizontal);
+        print_int("tile_vertical_offset",   tile_grid->offsets[i].vertical);
+        writer_print_section_footer(w);
+    }
+    writer_print_section_footer(w);
+    writer_print_section_footer(w);
+}
+
 static void print_stream_group_params(WriterContext *w, AVStreamGroup *stg)
 {
-    const char *unknown = "unknown";
-    if (stg->type != AV_STREAM_GROUP_PARAMS_NONE)
-        print_str("type", av_x_if_null(avformat_stream_group_name(stg->type), unknown));
-    else
-        print_str_opt("type", unknown);
+    writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP_COMPONENTS);
+    if (stg->type == AV_STREAM_GROUP_PARAMS_TILE_GRID)
+        print_tile_grid_params(w, stg, stg->params.tile_grid);
+    writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_COMPONENTS
 }
 
 static int show_stream_group(WriterContext *w, InputFile *ifile, AVStreamGroup *stg)
@@ -3507,12 +3538,17 @@ static int show_stream_group(WriterContext *w, InputFile *ifile, AVStreamGroup *
     int i, ret = 0;
 
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
-    writer_print_section_header(w, stg, SECTION_ID_STREAM_GROUP);
+    writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP);
     print_int("index", stg->index);
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS) print_fmt    ("id", "0x%"PRIx64, stg->id);
     else                                          print_str_opt("id", "N/A");
     print_int("nb_streams", stg->nb_streams);
-    print_stream_group_params(w, stg);
+    if (stg->type != AV_STREAM_GROUP_PARAMS_NONE)
+        print_str("type", av_x_if_null(avformat_stream_group_name(stg->type), "unknown"));
+    else
+        print_str_opt("type", "unknown");
+    if (do_show_stream_group_components)
+        print_stream_group_params(w, stg);
 
     /* Print disposition information */
     if (do_show_stream_group_disposition)
@@ -4439,6 +4475,7 @@ int main(int argc, char **argv)
     SET_DO_SHOW(PROGRAMS, programs);
     SET_DO_SHOW(STREAM_GROUP_DISPOSITION, stream_group_disposition);
     SET_DO_SHOW(STREAM_GROUPS, stream_groups);
+    SET_DO_SHOW(STREAM_GROUP_COMPONENTS, stream_group_components);
     SET_DO_SHOW(STREAMS, streams);
     SET_DO_SHOW(STREAM_DISPOSITION, stream_disposition);
     SET_DO_SHOW(PROGRAM_STREAM_DISPOSITION, stream_disposition);
