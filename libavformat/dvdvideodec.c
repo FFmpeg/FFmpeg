@@ -1202,7 +1202,6 @@ static void dvdvideo_subdemux_close(AVFormatContext *s)
     DVDVideoDemuxContext *c = s->priv_data;
 
     av_freep(&c->mpeg_pb.pub.buffer);
-    av_freep(&c->mpeg_pb);
     avformat_close_input(&c->mpeg_ctx);
 }
 
