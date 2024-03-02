@@ -1211,19 +1211,15 @@ static int dvdvideo_subdemux_open(AVFormatContext *s)
     extern const AVInputFormat ff_mpegps_demuxer;
     int ret = 0;
 
-    if (!(c->mpeg_ctx = avformat_alloc_context()))
+    if (!(c->mpeg_buf = av_mallocz(DVDVIDEO_BLOCK_SIZE)))
         return AVERROR(ENOMEM);
-
-    if (!(c->mpeg_buf = av_mallocz(DVDVIDEO_BLOCK_SIZE))) {
-        avformat_free_context(c->mpeg_ctx);
-        c->mpeg_ctx = NULL;
-
-        return AVERROR(ENOMEM);
-    }
 
     ffio_init_context(&c->mpeg_pb, c->mpeg_buf, DVDVIDEO_BLOCK_SIZE, 0, s,
                       dvdvideo_subdemux_read_data, NULL, NULL);
     c->mpeg_pb.pub.seekable = 0;
+
+    if (!(c->mpeg_ctx = avformat_alloc_context()))
+        return AVERROR(ENOMEM);
 
     if ((ret = ff_copy_whiteblacklists(c->mpeg_ctx, s)) < 0) {
         avformat_free_context(c->mpeg_ctx);
