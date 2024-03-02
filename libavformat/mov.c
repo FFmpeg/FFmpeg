@@ -9443,7 +9443,8 @@ static int mov_parse_tiles(AVFormatContext *s)
                 if (err < 0 && err != AVERROR(EEXIST))
                     return err;
 
-                st->disposition |= AV_DISPOSITION_DEPENDENT;
+                if (item->item_id != mov->primary_item_id)
+                    st->disposition |= AV_DISPOSITION_DEPENDENT;
                 break;
             }
 
