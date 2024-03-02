@@ -136,7 +136,6 @@ typedef struct DVDVideoDemuxContext {
     int                         opt_trim;           /* trim padding cells at beginning */
 
     /* subdemux */
-    const AVInputFormat         *mpeg_fmt;          /* inner MPEG-PS (VOB) demuxer */
     AVFormatContext             *mpeg_ctx;          /* context for inner demuxer */
     uint8_t                     *mpeg_buf;          /* buffer for inner demuxer */
     FFIOContext                 mpeg_pb;            /* buffer context for inner demuxer */
@@ -1210,11 +1209,8 @@ static void dvdvideo_subdemux_close(AVFormatContext *s)
 static int dvdvideo_subdemux_open(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
-
+    extern const AVInputFormat ff_mpegps_demuxer;
     int ret = 0;
-
-    if (!(c->mpeg_fmt = av_find_input_format("mpeg")))
-        return AVERROR_DEMUXER_NOT_FOUND;
 
     if (!(c->mpeg_ctx = avformat_alloc_context()))
         return AVERROR(ENOMEM);
@@ -1246,7 +1242,7 @@ static int dvdvideo_subdemux_open(AVFormatContext *s)
     c->mpeg_ctx->correct_ts_overflow = 0;
     c->mpeg_ctx->io_open = NULL;
 
-    return avformat_open_input(&c->mpeg_ctx, "", c->mpeg_fmt, NULL);
+    return avformat_open_input(&c->mpeg_ctx, "", &ff_mpegps_demuxer, NULL);
 }
 
 static int dvdvideo_read_header(AVFormatContext *s)
