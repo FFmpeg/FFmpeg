@@ -3039,6 +3039,18 @@ static int read_packets(WriterContext *w, InputFile *ifile)
     return ret;
 }
 
+static void print_dispositions(WriterContext *w, uint32_t disposition, SectionID section_id)
+{
+    writer_print_section_header(w, NULL, section_id);
+    for (int i = 0; i < sizeof(disposition) * CHAR_BIT; i++) {
+        const char *disposition_str = av_disposition_to_string(1U << i);
+
+        if (disposition_str)
+            print_int(disposition_str, !!(disposition & (1U << i)));
+    }
+    writer_print_section_footer(w);
+}
+
 static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_idx, InputStream *ist, int in_program)
 {
     AVStream *stream = ist->st;
@@ -3215,31 +3227,10 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
     }
 
     /* Print disposition information */
-#define PRINT_DISPOSITION(flagname, name) do {                                \
-        print_int(name, !!(stream->disposition & AV_DISPOSITION_##flagname)); \
-    } while (0)
-
     if (do_show_stream_disposition) {
-        writer_print_section_header(w, NULL, in_program ? SECTION_ID_PROGRAM_STREAM_DISPOSITION : SECTION_ID_STREAM_DISPOSITION);
-        PRINT_DISPOSITION(DEFAULT,          "default");
-        PRINT_DISPOSITION(DUB,              "dub");
-        PRINT_DISPOSITION(ORIGINAL,         "original");
-        PRINT_DISPOSITION(COMMENT,          "comment");
-        PRINT_DISPOSITION(LYRICS,           "lyrics");
-        PRINT_DISPOSITION(KARAOKE,          "karaoke");
-        PRINT_DISPOSITION(FORCED,           "forced");
-        PRINT_DISPOSITION(HEARING_IMPAIRED, "hearing_impaired");
-        PRINT_DISPOSITION(VISUAL_IMPAIRED,  "visual_impaired");
-        PRINT_DISPOSITION(CLEAN_EFFECTS,    "clean_effects");
-        PRINT_DISPOSITION(ATTACHED_PIC,     "attached_pic");
-        PRINT_DISPOSITION(TIMED_THUMBNAILS, "timed_thumbnails");
-        PRINT_DISPOSITION(NON_DIEGETIC,     "non_diegetic");
-        PRINT_DISPOSITION(CAPTIONS,         "captions");
-        PRINT_DISPOSITION(DESCRIPTIONS,     "descriptions");
-        PRINT_DISPOSITION(METADATA,         "metadata");
-        PRINT_DISPOSITION(DEPENDENT,        "dependent");
-        PRINT_DISPOSITION(STILL_IMAGE,      "still_image");
-        writer_print_section_footer(w);
+        print_dispositions(w, stream->disposition,
+                           in_program ? SECTION_ID_PROGRAM_STREAM_DISPOSITION
+                                      : SECTION_ID_STREAM_DISPOSITION);
     }
 
     if (do_show_stream_tags)
