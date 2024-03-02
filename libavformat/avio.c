@@ -408,8 +408,9 @@ fail:
     return ret;
 }
 
-int ffio_fdopen(AVIOContext **s, URLContext *h)
+int ffio_fdopen(AVIOContext **sp, URLContext *h)
 {
+    AVIOContext *s;
     uint8_t *buffer = NULL;
     int buffer_size, max_packet_size;
 
@@ -428,36 +429,37 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     if (!buffer)
         return AVERROR(ENOMEM);
 
-    *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
-                            ffurl_read2, ffurl_write2, ffurl_seek2);
-    if (!*s) {
+    *sp = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
+                             ffurl_read2, ffurl_write2, ffurl_seek2);
+    if (!*sp) {
         av_freep(&buffer);
         return AVERROR(ENOMEM);
     }
-    (*s)->protocol_whitelist = av_strdup(h->protocol_whitelist);
-    if (!(*s)->protocol_whitelist && h->protocol_whitelist) {
-        avio_closep(s);
+    s = *sp;
+    s->protocol_whitelist = av_strdup(h->protocol_whitelist);
+    if (!s->protocol_whitelist && h->protocol_whitelist) {
+        avio_closep(sp);
         return AVERROR(ENOMEM);
     }
-    (*s)->protocol_blacklist = av_strdup(h->protocol_blacklist);
-    if (!(*s)->protocol_blacklist && h->protocol_blacklist) {
-        avio_closep(s);
+    s->protocol_blacklist = av_strdup(h->protocol_blacklist);
+    if (!s->protocol_blacklist && h->protocol_blacklist) {
+        avio_closep(sp);
         return AVERROR(ENOMEM);
     }
-    (*s)->direct = h->flags & AVIO_FLAG_DIRECT;
+    s->direct = h->flags & AVIO_FLAG_DIRECT;
 
-    (*s)->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
-    (*s)->max_packet_size = max_packet_size;
-    (*s)->min_packet_size = h->min_packet_size;
+    s->seekable = h->is_streamed ? 0 : AVIO_SEEKABLE_NORMAL;
+    s->max_packet_size = max_packet_size;
+    s->min_packet_size = h->min_packet_size;
     if(h->prot) {
-        (*s)->read_pause = h->prot->url_read_pause;
-        (*s)->read_seek  = h->prot->url_read_seek;
+        s->read_pause = h->prot->url_read_pause;
+        s->read_seek  = h->prot->url_read_seek;
 
         if (h->prot->url_read_seek)
-            (*s)->seekable |= AVIO_SEEKABLE_TIME;
+            s->seekable |= AVIO_SEEKABLE_TIME;
     }
-    ((FFIOContext*)(*s))->short_seek_get = ffurl_get_short_seek;
-    (*s)->av_class = &ff_avio_class;
+    ((FFIOContext*)s)->short_seek_get = ffurl_get_short_seek;
+    s->av_class = &ff_avio_class;
     return 0;
 }
 
