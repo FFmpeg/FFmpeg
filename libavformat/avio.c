@@ -436,15 +436,19 @@ int ffio_fdopen(AVIOContext **sp, URLContext *h)
         return AVERROR(ENOMEM);
     }
     s = *sp;
-    s->protocol_whitelist = av_strdup(h->protocol_whitelist);
-    if (!s->protocol_whitelist && h->protocol_whitelist) {
-        avio_closep(sp);
-        return AVERROR(ENOMEM);
+    if (h->protocol_whitelist) {
+        s->protocol_whitelist = av_strdup(h->protocol_whitelist);
+        if (!s->protocol_whitelist) {
+            avio_closep(sp);
+            return AVERROR(ENOMEM);
+        }
     }
-    s->protocol_blacklist = av_strdup(h->protocol_blacklist);
-    if (!s->protocol_blacklist && h->protocol_blacklist) {
-        avio_closep(sp);
-        return AVERROR(ENOMEM);
+    if (h->protocol_blacklist) {
+        s->protocol_blacklist = av_strdup(h->protocol_blacklist);
+        if (!s->protocol_blacklist) {
+            avio_closep(sp);
+            return AVERROR(ENOMEM);
+        }
     }
     s->direct = h->flags & AVIO_FLAG_DIRECT;
 
