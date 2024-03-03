@@ -780,11 +780,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
     VkVideoFormatPropertiesKHR *ret_info;
     uint32_t nb_out_fmts = 0;
 
-    if (!vk_desc->decode_op || !vk_desc->decode_extension) {
-        av_log(avctx, AV_LOG_ERROR, "Unsupported codec for Vulkan decoding: %s!\n",
-               avcodec_get_name(avctx->codec_id));
-        return AVERROR(ENOSYS);
-    } else if (!(vk_desc->decode_extension & ctx->s.extensions)) {
+    if (!(vk_desc->decode_extension & ctx->s.extensions)) {
         av_log(avctx, AV_LOG_ERROR, "Device does not support decoding %s!\n",
                avcodec_get_name(avctx->codec_id));
         return AVERROR(ENOSYS);
