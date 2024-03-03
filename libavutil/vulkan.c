@@ -1308,13 +1308,15 @@ void ff_vk_frame_barrier(FFVulkanContext *s, FFVkExecContext *e,
                          VkImageLayout        new_layout,
                          uint32_t             new_qf)
 {
-    int i, found;
+    int found = -1;
     AVVkFrame *vkf = (AVVkFrame *)pic->data[0];
     const int nb_images = ff_vk_count_images(vkf);
-    for (i = 0; i < e->nb_frame_deps; i++)
-        if (e->frame_deps[i]->data[0] == pic->data[0])
+    for (int i = 0; i < e->nb_frame_deps; i++)
+        if (e->frame_deps[i]->data[0] == pic->data[0]) {
+            if (e->frame_update[i])
+                found = i;
             break;
-    found = (i < e->nb_frame_deps) && (e->frame_update[i]) ? i : -1;
+        }
 
     for (int i = 0; i < nb_images; i++) {
         bar[*nb_bar] = (VkImageMemoryBarrier2) {
