@@ -24,7 +24,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-#define PCM_DEMUX_TARGET_FPS  25
+#define PCM_DEMUX_TARGET_FPS  10
 
 int ff_pcm_default_packet_size(AVCodecParameters *par)
 {

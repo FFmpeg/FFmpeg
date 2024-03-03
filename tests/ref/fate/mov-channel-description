@@ -1,5 +1,5 @@
-cef306a5fa3bf45bcf174558d8ee6669 *tests/data/fate/mov-channel-description.mov
-4246172 tests/data/fate/mov-channel-description.mov
+38349ec7e5b2b440de54cfa383124359 *tests/data/fate/mov-channel-description.mov
+4239964 tests/data/fate/mov-channel-description.mov
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: pcm_s16le

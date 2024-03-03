@@ -1,5 +1,5 @@
-c0cb74130c1a776cd076c50012572ca0 *tests/data/fate/matroska-move-cues-to-front.matroska
-23081433 tests/data/fate/matroska-move-cues-to-front.matroska
+deeb9e63e52e015e5f7f592f3417f385 *tests/data/fate/matroska-move-cues-to-front.matroska
+23056700 tests/data/fate/matroska-move-cues-to-front.matroska
 #tb 0: 1/1000
 #media_type 0: audio
 #codec_id 0: pcm_s24be
@@ -10,13 +10,7 @@ c0cb74130c1a776cd076c50012572ca0 *tests/data/fate/matroska-move-cues-to-front.ma
 #codec_id 1: pcm_s24le
 #sample_rate 1: 192000
 #channel_layout_name 1: stereo
-0,          0,          0,       21,    24576, 0xb53676cf
-1,          0,          0,       21,    24576, 0x96eb76cf
-0,         21,         21,       21,    24576, 0xf4ee36fe
-1,         21,         21,       21,    24576, 0xb35336fe
-0,         43,         43,       21,    24576, 0x58eb025c
-1,         43,         43,       21,    24576, 0x1ae9025c
-0,         64,         64,       21,    24576, 0x1a322ce1
-1,         64,         64,       21,    24576, 0xf11c2ce1
-0,         85,         85,       21,    24576, 0xfba5a91d
-1,         85,         85,       21,    24576, 0xef55a91d
+0,          0,          0,       85,    98304, 0x4acbdd0a
+1,          0,          0,       85,    98304, 0x83cddd0a
+0,         85,         85,       85,    98304, 0x8f975bc7
+1,         85,         85,       85,    98304, 0xdd315bc7

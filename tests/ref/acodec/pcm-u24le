@@ -1,4 +1,4 @@
-884a3a562a8005084fde088fc3a74283 *tests/data/fate/acodec-pcm-u24le.nut
-1590249 tests/data/fate/acodec-pcm-u24le.nut
+ad263ac0fc0bc92f1bc20739c54b4904 *tests/data/fate/acodec-pcm-u24le.nut
+1589629 tests/data/fate/acodec-pcm-u24le.nut
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-u24le.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
