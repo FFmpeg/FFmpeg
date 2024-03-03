@@ -97,9 +97,9 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
     AVVulkanDeviceContext *hwctx = ctx->hwctx;
 
     static const struct FunctionLoadInfo {
-        int req_inst;
-        int req_dev;
-        size_t struct_offset;
+        char req_inst;
+        char req_dev;
+        uint16_t struct_offset;
         FFVulkanExtensions ext_flag;
         const char *name;
     } vk_load_info[] = {
