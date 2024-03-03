@@ -979,7 +979,7 @@ static int write_parameter_block(const IAMFContext *iamf, AVIOContext *pb,
 }
 
 int ff_iamf_write_parameter_blocks(const IAMFContext *iamf, AVIOContext *pb,
-                                   AVPacket *pkt, void *log_ctx)
+                                   const AVPacket *pkt, void *log_ctx)
 {
     AVIAMFParamDefinition *mix =
         (AVIAMFParamDefinition *)av_packet_get_side_data(pkt,
@@ -1014,7 +1014,7 @@ int ff_iamf_write_parameter_blocks(const IAMFContext *iamf, AVIOContext *pb,
 }
 
 int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
-                              unsigned audio_substream_id, AVPacket *pkt)
+                              unsigned audio_substream_id, const AVPacket *pkt)
 {
     uint8_t header[MAX_IAMF_OBU_HEADER_SIZE];
     PutBitContext pbc;

@@ -35,8 +35,8 @@ int ff_iamf_add_mix_presentation(IAMFContext *iamf, const AVStreamGroup *stg, vo
 int ff_iamf_write_descriptors(const IAMFContext *iamf, AVIOContext *pb, void *log_ctx);
 
 int ff_iamf_write_parameter_blocks(const IAMFContext *iamf, AVIOContext *pb,
-                                   AVPacket *pkt, void *log_ctx);
+                                   const AVPacket *pkt, void *log_ctx);
 int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
-                              unsigned audio_substream_id, AVPacket *pkt);
+                              unsigned audio_substream_id, const AVPacket *pkt);
 
 #endif /* AVFORMAT_IAMF_WRITER_H */
