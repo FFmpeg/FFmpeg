@@ -198,10 +198,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return s;
 }
 
+#if FF_API_GET_DUR_ESTIMATE_METHOD
 enum AVDurationEstimationMethod av_fmt_ctx_get_duration_estimation_method(const AVFormatContext* ctx)
 {
     return ctx->duration_estimation_method;
 }
+#endif
 
 const AVClass *avformat_get_class(void)
 {

@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2024-03-06 - xxxxxxxxxx - lavf 60.25.100 - avformat.h
+  Deprecate av_fmt_ctx_get_duration_estimation_method().
+  The relevant field is public and needs no getter to access.
+
 2024-03-05 - xxxxxxxxxx - lavf 60.24.100 - avformat.h
   Add avformat_stream_group_name().
 
