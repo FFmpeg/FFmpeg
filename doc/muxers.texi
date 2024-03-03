@@ -1397,23 +1397,17 @@ D-Cinema audio muxer.
 It accepts a single 6-channels audio stream resampled at 96000 Hz
 encoded with the @samp{pcm_24daud} codec.
 
-In addition, each muxed packet size must not be greater than 65535 bytes.
-
 @subsection Example
 Use @command{ffmpeg} to mux input audio to a @samp{5.1} channel layout
 resampled at 96000Hz:
 @example
-ffmpeg -i INPUT -af aresample=96000,pan=5.1,asetnsamples=3640 slow.302
+ffmpeg -i INPUT -af aresample=96000,pan=5.1 slow.302
 @end example
 
-The @samp{asetnsamples} filter is used to reduce the number of samples
-of each audio packet, with a size computed according to the formula:
-@example
-65535 / (@var{channels} * @var{encoded_sample_size}) = 655535 / (6 * 3) = 3640
-@end example
-
-The @var{encoded_sample_size} = 3 factor is due to sample size of the
-@samp{pcm_24daud} encoder.
+For ffmpeg versions before 7.0 you might have to use the @samp{asetnsamples}
+filter to limit the muxed packet size, because this format does not support
+muxing packets larger than 65535 bytes (3640 samples). For newer ffmpeg
+versions audio is automatically packetized to 36000 byte (2000 sample) packets.
 
 @section dv
 DV (Digital Video) muxer.
