@@ -16,3 +16,23 @@
 0,      32256,      32256,     4608,     1768, 0x2a044b99
 0,      36864,      36864,     4608,     1534, 0xb0b35a3f
 0,      41472,      41472,     4608,      926, 0xc26a5eae
+[STREAM_GROUP]
+index=0
+id=0x1
+nb_streams=1
+type=IAMF Audio Element
+[STREAM]
+index=0
+id=0x0
+[/STREAM]
+[/STREAM_GROUP]
+[STREAM_GROUP]
+index=1
+id=0x2
+nb_streams=1
+type=IAMF Mix Presentation
+[STREAM]
+index=0
+id=0x0
+[/STREAM]
+[/STREAM_GROUP]

@@ -64,3 +64,47 @@ c3751e6a2d85bd6a8318fe93b5754309 *tests/data/fate/iamf-ambisonic_1.iamf
 1,      41472,      41472,     4608,      923, 0xa7225edf
 2,      41472,      41472,     4608,      923, 0xa7225edf
 3,      41472,      41472,     4608,      923, 0xa7225edf
+[STREAM_GROUP]
+index=0
+id=0x1
+nb_streams=4
+type=IAMF Audio Element
+[STREAM]
+index=0
+id=0x0
+[/STREAM]
+[STREAM]
+index=1
+id=0x1
+[/STREAM]
+[STREAM]
+index=2
+id=0x2
+[/STREAM]
+[STREAM]
+index=3
+id=0x3
+[/STREAM]
+[/STREAM_GROUP]
+[STREAM_GROUP]
+index=1
+id=0x2
+nb_streams=4
+type=IAMF Mix Presentation
+[STREAM]
+index=0
+id=0x0
+[/STREAM]
+[STREAM]
+index=1
+id=0x1
+[/STREAM]
+[STREAM]
+index=2
+id=0x2
+[/STREAM]
+[STREAM]
+index=3
+id=0x3
+[/STREAM]
+[/STREAM_GROUP]
