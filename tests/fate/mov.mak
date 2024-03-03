@@ -205,41 +205,46 @@ fate-mov-pcm-remux: CMD = md5 -i $(TARGET_PATH)/tests/data/asynth-44100-1.wav -m
 fate-mov-pcm-remux: CMP = oneline
 fate-mov-pcm-remux: REF = e76115bc392d702da38f523216bba165
 
-FATE_MOV_FFMPEG-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-stereo
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-stereo
 fate-mov-mp4-iamf-stereo: tests/data/asynth-44100-2.wav tests/data/streamgroups/audio_element-stereo tests/data/streamgroups/mix_presentation-stereo
 fate-mov-mp4-iamf-stereo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-mov-mp4-iamf-stereo: CMD = transcode wav $(SRC) mp4 " \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-stereo \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-stereo \
-  -streamid 0:0 -c:a flac -t 1" "-c:a copy -map 0"
+  -streamid 0:0 -c:a flac -t 1" "-c:a copy -map 0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-5_1_4
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-5_1_4
 fate-mov-mp4-iamf-5_1_4: tests/data/asynth-44100-10.wav tests/data/filtergraphs/iamf_5_1_4 tests/data/streamgroups/audio_element-5_1_4 tests/data/streamgroups/mix_presentation-5_1_4
 fate-mov-mp4-iamf-5_1_4: SRC = $(TARGET_PATH)/tests/data/asynth-44100-10.wav
 fate-mov-mp4-iamf-5_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
   -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/iamf_5_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-5_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-5_1_4 \
-  -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -streamid 4:4 -streamid 5:5 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [TOP_FRONT] -map [TOP_BACK] -c:a flac -t 1" "-c:a copy -map 0"
+  -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -streamid 4:4 -streamid 5:5 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [TOP_FRONT] -map [TOP_BACK] -c:a flac -t 1" "-c:a copy -map 0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-7_1_4
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-7_1_4
 fate-mov-mp4-iamf-7_1_4: tests/data/asynth-44100-12.wav tests/data/filtergraphs/iamf_7_1_4 tests/data/streamgroups/audio_element-7_1_4 tests/data/streamgroups/mix_presentation-7_1_4
 fate-mov-mp4-iamf-7_1_4: SRC = $(TARGET_PATH)/tests/data/asynth-44100-12.wav
 fate-mov-mp4-iamf-7_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
   -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/iamf_7_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-7_1_4 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-7_1_4 \
-  -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -streamid 4:4 -streamid 5:5 -streamid 6:6 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [SIDE] -map [TOP_FRONT] -map [TOP_BACK] -c:a flac -t 1" "-c:a copy -map 0"
+  -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -streamid 4:4 -streamid 5:5 -streamid 6:6 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [SIDE] -map [TOP_FRONT] -map [TOP_BACK] -c:a flac -t 1" "-c:a copy -map 0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-ambisonic_1
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-ambisonic_1
 fate-mov-mp4-iamf-ambisonic_1: tests/data/asynth-44100-4.wav tests/data/filtergraphs/iamf_ambisonic_1 tests/data/streamgroups/audio_element-ambisonic_1 tests/data/streamgroups/mix_presentation-ambisonic_1
 fate-mov-mp4-iamf-ambisonic_1: SRC = $(TARGET_PATH)/tests/data/asynth-44100-4.wav
 fate-mov-mp4-iamf-ambisonic_1: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
   -/filter_complex $(TARGET_PATH)/tests/data/filtergraphs/iamf_ambisonic_1 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/audio_element-ambisonic_1 \
   -/stream_group $(TARGET_PATH)/tests/data/streamgroups/mix_presentation-ambisonic_1 \
-  -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -map [MONO0] -map [MONO1] -map [MONO2] -map [MONO3] -c:a flac -t 1" "-c:a copy -map 0"
+  -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -map [MONO0] -map [MONO1] -map [MONO2] -map [MONO3] -c:a flac -t 1" "-c:a copy -map 0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
+FATE_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
 
-fate-mov: $(FATE_MOV) $(FATE_MOV_FFMPEG-yes) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_SAMPLES-yes) $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
+fate-mov: $(FATE_MOV) $(FATE_MOV_FFMPEG-yes) $(FATE_MOV_FFMPEG_FFPROBE-yes) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_SAMPLES-yes) $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
