@@ -19,6 +19,9 @@
 #ifndef AVUTIL_VULKAN_LOADER_H
 #define AVUTIL_VULKAN_LOADER_H
 
+#include <stdio.h>
+
+#include "avassert.h"
 #include "vulkan_functions.h"
 
 /* Macro to turn a function name into a loader struct */
@@ -28,7 +31,7 @@
         req_dev,                                         \
         offsetof(FFVulkanFunctions, name),               \
         ext_flag,                                        \
-        { "vk"#name, "vk"#name"EXT", "vk"#name"KHR" }    \
+        "vk"#name,                                       \
     },
 
 static inline uint64_t ff_vk_extensions_to_mask(const char * const *extensions,
@@ -98,7 +101,7 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
         int req_dev;
         size_t struct_offset;
         FFVulkanExtensions ext_flag;
-        const char *names[3];
+        const char *name;
     } vk_load_info[] = {
         FN_LIST(PFN_LOAD_INFO)
 #ifdef _WIN32
@@ -108,6 +111,8 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
 
     for (int i = 0; i < FF_ARRAY_ELEMS(vk_load_info); i++) {
         const struct FunctionLoadInfo *load = &vk_load_info[i];
+        static const char extensions[][4] = { "", "EXT", "KHR" };
+        const char *name = load->name;
         PFN_vkVoidFunction fn;
 
         if (load->req_dev  && !has_dev)
@@ -115,15 +120,19 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
         if (load->req_inst && !has_inst)
             continue;
 
-        for (int j = 0; j < FF_ARRAY_ELEMS(load->names); j++) {
-            const char *name = load->names[j];
+        for (int j = 0; j < FF_ARRAY_ELEMS(extensions); j++) {
+            char ext_name[128];
+            av_unused int n;
+
+            n = snprintf(ext_name, sizeof(ext_name), "%s%s", name, extensions[j]);
+            av_assert1(n < sizeof(ext_name));
 
             if (load->req_dev)
-                fn = vk->GetDeviceProcAddr(hwctx->act_dev, name);
+                fn = vk->GetDeviceProcAddr(hwctx->act_dev, ext_name);
             else if (load->req_inst)
-                fn = hwctx->get_proc_addr(hwctx->inst, name);
+                fn = hwctx->get_proc_addr(hwctx->inst, ext_name);
             else
-                fn = hwctx->get_proc_addr(NULL, name);
+                fn = hwctx->get_proc_addr(NULL, ext_name);
 
             if (fn)
                 break;
@@ -131,7 +140,7 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
 
         if (!fn && ((extensions_mask &~ FF_VK_EXT_NO_FLAG) & load->ext_flag)) {
             av_log(ctx, AV_LOG_ERROR, "Loader error, function \"%s\" indicated "
-                   "as supported, but got NULL function pointer!\n", load->names[0]);
+                   "as supported, but got NULL function pointer!\n", name);
             return AVERROR_EXTERNAL;
         }
 
