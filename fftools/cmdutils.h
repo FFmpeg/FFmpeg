@@ -395,7 +395,10 @@ int setup_find_stream_info_opts(AVFormatContext *s,
  *
  * @see av_strerror()
  */
-void print_error(const char *filename, int err);
+static inline void print_error(const char *filename, int err)
+{
+    av_log(NULL, AV_LOG_ERROR, "%s: %s\n", filename, av_err2str(err));
+}
 
 /**
  * Print the program banner to stderr. The banner contents depend on the

@@ -895,11 +895,6 @@ do {                                                                           \
     return 0;
 }
 
-void print_error(const char *filename, int err)
-{
-    av_log(NULL, AV_LOG_ERROR, "%s: %s\n", filename, av_err2str(err));
-}
-
 int read_yesno(void)
 {
     int c = getchar();
