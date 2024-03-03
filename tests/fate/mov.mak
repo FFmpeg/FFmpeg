@@ -143,23 +143,24 @@ fate-mov-mp4-ttml-stpp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capabil
 fate-mov-mp4-ttml-dfxp: CMD = transcode srt $(TARGET_SAMPLES)/sub/SubRip_capability_tester.srt mp4 "-map 0:s -c:s ttml -time_base:s 1:1000 -tag:s dfxp -strict unofficial" "-map 0 -c copy" "-of json -show_entries packet:stream=index,codec_type,codec_tag_string,codec_tag,codec_name,time_base,start_time,duration_ts,duration,nb_frames,nb_read_packets:stream_tags"
 
 # avif demuxing - still image with 1 item.
-FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, AV1, AV1_PARSER) \
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-1-item
-fate-mov-avif-demux-still-image-1-item: CMD = framemd5 -c:v av1 -i $(TARGET_SAMPLES)/avif/still_image.avif -c:v copy
+fate-mov-avif-demux-still-image-1-item: CMD = framecrc -c:v av1 -i $(TARGET_SAMPLES)/avif/still_image.avif -c:v copy
 
-# avif demuxing - still image with multiple items. only the primary item will be
-# parsed.
-FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, AV1, AV1_PARSER) \
+# avif demuxing - still image with multiple items.
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, AV1, AV1_PARSER) \
                            += fate-mov-avif-demux-still-image-multiple-items
-fate-mov-avif-demux-still-image-multiple-items: CMD = framemd5 -c:v av1 -i $(TARGET_SAMPLES)/avif/still_image_exif.avif -c:v copy
+fate-mov-avif-demux-still-image-multiple-items: CMD = framecrc -c:v av1 -i $(TARGET_SAMPLES)/avif/still_image_exif.avif -c:v copy
 
-FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
+# heic demuxing - still image with 1 item.
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-1-item
-fate-mov-heic-demux-still-image-1-item: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C002.heic -c:v copy
+fate-mov-heic-demux-still-image-1-item: CMD = framecrc -i $(TARGET_SAMPLES)/heif-conformance/C002.heic -c:v copy
 
-FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
+# heic demuxing - still image with multiple items.
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMECRC, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-multiple-items
-fate-mov-heic-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C003.heic -c:v copy -map 0
+fate-mov-heic-demux-still-image-multiple-items: CMD = framecrc -i $(TARGET_SAMPLES)/heif-conformance/C003.heic -c:v copy -map 0
 
 # heic demuxing - still image with multiple items in a grid.
 FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call DEMMUX, MOV, FRAMECRC, HEVC_DECODER HEVC_PARSER) \
