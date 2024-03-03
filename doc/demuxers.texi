@@ -295,6 +295,9 @@ into a conversion pipeline. Menus and seeking are not supported at this time.
 Block devices (DVD drives), ISO files, and directory structures are accepted.
 Activate with @code{-f dvdvideo} in front of one of these inputs.
 
+This demuxer does NOT have decryption code of any kind. You are on your own
+working with encrypted DVDs, and should not expect support on the matter.
+
 Underlying playback is handled by libdvdnav, and structure parsing by libdvdread.
 FFmpeg must be built with GPL library support available as well as the
 configure switches @code{--enable-libdvdnav} and @code{--enable-libdvdread}.
