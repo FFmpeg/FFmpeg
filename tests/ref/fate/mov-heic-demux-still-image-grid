@@ -1,10 +1,7 @@
-#format: frame checksums
-#version: 2
-#hash: MD5
-#extradata 0,                             100, 5444bf01e03182c73ae957179d560f4d
-#extradata 1,                             100, 5444bf01e03182c73ae957179d560f4d
-#extradata 2,                             100, 5444bf01e03182c73ae957179d560f4d
-#extradata 3,                             100, 5444bf01e03182c73ae957179d560f4d
+#extradata 0:      100, 0xee3e15e9
+#extradata 1:      100, 0xee3e15e9
+#extradata 2:      100, 0xee3e15e9
+#extradata 3:      100, 0xee3e15e9
 #tb 0: 1/1
 #media_type 0: video
 #codec_id 0: hevc
@@ -25,8 +22,120 @@
 #codec_id 3: hevc
 #dimensions 3: 1280x720
 #sar 3: 0/1
-#stream#, dts,        pts, duration,     size, hash
-0,          0,          0,        1,   111554, 03ceabfab39afd2e2e796b9362111f32
-1,          0,          0,        1,   111481, e5db978adbe4de7ee50fe73abc39fcfa
-2,          0,          0,        1,   111451, 08700213113cadbb6628ecb8253c1c2a
-3,          0,          0,        1,   111353, 5de942e14c848e5e22fad5d88fb13776
+0,          0,          0,        1,   111554, 0xa0679859
+1,          0,          0,        1,   111481, 0xc5386eaf
+2,          0,          0,        1,   111451, 0xdbde88de
+3,          0,          0,        1,   111353, 0x26435c8c
+[STREAM_GROUP]
+index=0
+id=0x3f1
+nb_streams=4
+type=Tile Grid
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+TAG:title=Derived image
+[STREAM]
+index=0
+id=0x3ea
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+[/STREAM]
+[STREAM]
+index=1
+id=0x3ec
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+[/STREAM]
+[STREAM]
+index=2
+id=0x3ee
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+[/STREAM]
+[STREAM]
+index=3
+id=0x3f0
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+[/STREAM]
+[/STREAM_GROUP]

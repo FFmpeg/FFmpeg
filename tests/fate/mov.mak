@@ -161,13 +161,17 @@ FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-multiple-items
 fate-mov-heic-demux-still-image-multiple-items: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C003.heic -c:v copy -map 0
 
-FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
+# heic demuxing - still image with multiple items in a grid.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call DEMMUX, MOV, FRAMECRC, HEVC_DECODER HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-grid
-fate-mov-heic-demux-still-image-grid: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C007.heic -c:v copy -map 0:g:0
+fate-mov-heic-demux-still-image-grid: CMD = stream_demux mov $(TARGET_SAMPLES)/heif-conformance/C007.heic "" "-c:v copy -map 0:g:0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, HEVC, HEVC_PARSER) \
+# heic demuxing - still image with multiple items in an overlay canvas.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call DEMMUX, MOV, FRAMECRC, HEVC_DECODER HEVC_PARSER) \
                            += fate-mov-heic-demux-still-image-iovl
-fate-mov-heic-demux-still-image-iovl: CMD = framemd5 -i $(TARGET_SAMPLES)/heif-conformance/C015.heic -c:v copy -map 0:g:0
+fate-mov-heic-demux-still-image-iovl: CMD = stream_demux mov $(TARGET_SAMPLES)/heif-conformance/C015.heic "" "-c:v copy -map 0:g:0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
 # Resulting remux should have:
 # 1. first audio stream with AV_DISPOSITION_HEARING_IMPAIRED
