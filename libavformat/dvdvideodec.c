@@ -507,11 +507,12 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                                         state->celln, e_cell->cellN, is_cell_promising);
 
                 if (!state->in_ps && !state->in_pgc) {
-                    if (cur_title == c->opt_title       &&
-                        cur_ptt == c->opt_chapter_start &&
-                        cur_pgcn == state->pgcn         &&
-                        cur_pgn == state->entry_pgn     &&
+                    if (cur_title == c->opt_title                        &&
+                        (c->opt_pgc || cur_ptt == c->opt_chapter_start)  &&
+                        cur_pgcn == state->pgcn                          &&
+                        cur_pgn == state->entry_pgn                      &&
                         is_cell_promising) {
+
                         state->in_pgc = 1;
                     }
 
@@ -1254,19 +1255,21 @@ static int dvdvideo_read_header(AVFormatContext *s)
     }
 
     if (c->opt_pgc) {
-        if (c->opt_pg == 0)
+        if (c->opt_pg == 0) {
             av_log(s, AV_LOG_ERROR, "Invalid coordinates. If -pgc is set, -pg must be set too.\n");
-        else if (c->opt_chapter_start > 1 || c->opt_chapter_end > 0 || c->opt_preindex)
+
+            return AVERROR(EINVAL);
+        } else if (c->opt_chapter_start > 1 || c->opt_chapter_end > 0 || c->opt_preindex) {
             av_log(s, AV_LOG_ERROR, "-pgc is not compatible with the -preindex or "
                                     "-chapter_start/-chapter_end options\n");
-
-        return AVERROR(EINVAL);
+            return AVERROR(EINVAL);
+        }
     }
 
     if ((ret = dvdvideo_ifo_open(s)) < 0)
         return ret;
 
-    if (c->opt_preindex && (ret = dvdvideo_chapters_setup_preindex(s)) < 0)
+    if (!c->opt_pgc && c->opt_preindex && (ret = dvdvideo_chapters_setup_preindex(s)) < 0)
         return ret;
 
     if ((ret = dvdvideo_play_open(s, &c->play_state)) < 0   ||
@@ -1276,7 +1279,7 @@ static int dvdvideo_read_header(AVFormatContext *s)
         (ret = dvdvideo_subp_stream_add_all(s)) < 0)
         return ret;
 
-    if (!c->opt_preindex)
+    if (!c->opt_pgc && !c->opt_preindex)
         return dvdvideo_chapters_setup_simple(s);
 
     return 0;
