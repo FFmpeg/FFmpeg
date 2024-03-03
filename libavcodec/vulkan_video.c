@@ -20,20 +20,23 @@
 
 #include "vulkan_video.h"
 
-const FFVkCodecMap ff_vk_codec_map[AV_CODEC_ID_FIRST_AUDIO] = {
-    [AV_CODEC_ID_H264] = {
+const FFVkCodecMap ff_vk_codec_map[3] = {
+    {
+        .codec_id = AV_CODEC_ID_H264,
                            0,
                            0,
                            FF_VK_EXT_VIDEO_DECODE_H264,
                            VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
     },
-    [AV_CODEC_ID_HEVC] = {
+    {
+        .codec_id = AV_CODEC_ID_HEVC,
                            0,
                            0,
                            FF_VK_EXT_VIDEO_DECODE_H265,
                            VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR
     },
-    [AV_CODEC_ID_AV1] = {
+    {
+        .codec_id = AV_CODEC_ID_AV1,
                            0,
                            0,
                            FF_VK_EXT_VIDEO_DECODE_AV1,

@@ -20,6 +20,7 @@
 #include "vulkan_video.h"
 #include "vulkan_decode.h"
 #include "config_components.h"
+#include "libavutil/avassert.h"
 
 #if CONFIG_H264_VULKAN_HWACCEL
 extern const VkExtensionProperties ff_vk_dec_h264_ext;
@@ -42,6 +43,15 @@ static const VkExtensionProperties *dec_ext[] = {
     [AV_CODEC_ID_AV1] = &ff_vk_dec_av1_ext,
 #endif
 };
+
+static const FFVkCodecMap *get_codecmap(enum AVCodecID codec_id)
+{
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(ff_vk_codec_map); i++)
+        if (ff_vk_codec_map[i].codec_id == codec_id)
+            return &ff_vk_codec_map[i];
+    av_assert1(!"unreachable");
+    return NULL;
+}
 
 static const VkVideoProfileInfoKHR *get_video_profile(FFVulkanDecodeShared *ctx, enum AVCodecID codec_id)
 {
@@ -737,7 +747,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
 {
     VkResult ret;
     int max_level, base_profile, cur_profile;
-    const struct FFVkCodecMap *vk_codec = &ff_vk_codec_map[avctx->codec_id];
+    const FFVkCodecMap *vk_codec = get_codecmap(avctx->codec_id);
     AVHWFramesContext *frames = (AVHWFramesContext *)frames_ref->data;
     AVHWDeviceContext *device = (AVHWDeviceContext *)frames->device_ref->data;
     AVVulkanDeviceContext *hwctx = device->hwctx;
@@ -1111,6 +1121,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     FFVulkanContext *s;
     FFVulkanFunctions *vk;
     const VkVideoProfileInfoKHR *profile;
+    const FFVkCodecMap *vk_codec;
 
     VkVideoDecodeH264SessionParametersCreateInfoKHR h264_params = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR,
@@ -1167,9 +1178,9 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     /* Create queue context */
     qf = ff_vk_qf_init(s, &ctx->qf, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
 
+    vk_codec = get_codecmap(avctx->codec_id);
     /* Check for support */
-    if (!(s->video_props[qf].videoCodecOperations &
-          ff_vk_codec_map[avctx->codec_id].decode_op)) {
+    if (!(s->video_props[qf].videoCodecOperations & vk_codec->decode_op)) {
         av_log(avctx, AV_LOG_ERROR, "Decoding %s not supported on the given "
                "queue family %i!\n", avcodec_get_name(avctx->codec_id), qf);
         return AVERROR(EINVAL);

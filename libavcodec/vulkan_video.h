@@ -32,6 +32,7 @@
 #define CODEC_VER(ver) CODEC_VER_MAJ(ver), CODEC_VER_MIN(ver), CODEC_VER_PAT(ver)
 
 typedef struct FFVkCodecMap {
+    enum AVCodecID                   codec_id;
     FFVulkanExtensions               encode_extension;
     VkVideoCodecOperationFlagBitsKHR encode_op;
     FFVulkanExtensions               decode_extension;
@@ -46,10 +47,7 @@ typedef struct FFVkVideoSession {
     AVBufferPool *buf_pool;
 } FFVkVideoCommon;
 
-/**
- * Index is codec_id.
- */
-extern const FFVkCodecMap ff_vk_codec_map[AV_CODEC_ID_FIRST_AUDIO];
+extern const FFVkCodecMap ff_vk_codec_map[3];
 
 /**
  * Get pixfmt from a Vulkan format.
