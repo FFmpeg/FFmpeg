@@ -108,6 +108,18 @@ static int get_next_nb_samples(AVBSFContext *ctx)
     }
 }
 
+static void set_silence(AVCodecParameters *par, uint8_t *buf, size_t size)
+{
+    int c = 0;
+    switch (par->codec_id) {
+    case AV_CODEC_ID_PCM_ALAW:  c = 0xd5; break;
+    case AV_CODEC_ID_PCM_MULAW:
+    case AV_CODEC_ID_PCM_VIDC:  c = 0xff; break;
+    case AV_CODEC_ID_PCM_U8:    c = 0x80; break;
+    }
+    memset(buf, c, size);
+}
+
 static int rechunk_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     PCMContext *s = ctx->priv_data;
@@ -158,7 +170,7 @@ static int rechunk_filter(AVBSFContext *ctx, AVPacket *pkt)
         ret = ff_bsf_get_packet_ref(ctx, s->in_pkt);
         if (ret == AVERROR_EOF && s->out_pkt->size) {
             if (s->pad) {
-                memset(s->out_pkt->data + s->out_pkt->size, 0, data_size - s->out_pkt->size);
+                set_silence(ctx->par_in, s->out_pkt->data + s->out_pkt->size, data_size - s->out_pkt->size);
                 s->out_pkt->size = data_size;
             } else {
                 nb_samples = s->out_pkt->size / s->sample_size;
@@ -193,21 +205,27 @@ static const AVClass pcm_rechunk_class = {
 };
 
 static const enum AVCodecID codec_ids[] = {
+    AV_CODEC_ID_PCM_ALAW,
     AV_CODEC_ID_PCM_F16LE,
     AV_CODEC_ID_PCM_F24LE,
     AV_CODEC_ID_PCM_F32BE,
     AV_CODEC_ID_PCM_F32LE,
     AV_CODEC_ID_PCM_F64BE,
     AV_CODEC_ID_PCM_F64LE,
+    AV_CODEC_ID_PCM_MULAW,
     AV_CODEC_ID_PCM_S16BE,
     AV_CODEC_ID_PCM_S16LE,
     AV_CODEC_ID_PCM_S24BE,
+    AV_CODEC_ID_PCM_S24DAUD,
     AV_CODEC_ID_PCM_S24LE,
     AV_CODEC_ID_PCM_S32BE,
     AV_CODEC_ID_PCM_S32LE,
     AV_CODEC_ID_PCM_S64BE,
     AV_CODEC_ID_PCM_S64LE,
     AV_CODEC_ID_PCM_S8,
+    AV_CODEC_ID_PCM_SGA,
+    AV_CODEC_ID_PCM_U8,
+    AV_CODEC_ID_PCM_VIDC,
     AV_CODEC_ID_NONE,
 };
 
