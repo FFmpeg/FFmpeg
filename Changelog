@@ -31,6 +31,7 @@ version <next>:
 - removed deprecated ffmpeg CLI options -psnr and -map_channel
 - DVD-Video demuxer, powered by libdvdnav and libdvdread
 
+
 version 6.1:
 - libaribcaption decoder
 - Playdate video decoder and demuxer
