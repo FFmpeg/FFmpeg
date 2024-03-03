@@ -21,7 +21,6 @@
 #include "avassert.h"
 
 #include "vulkan.h"
-#include "vulkan_loader.h"
 
 const VkComponentMapping ff_comp_identity_map = {
     .r = VK_COMPONENT_SWIZZLE_IDENTITY,

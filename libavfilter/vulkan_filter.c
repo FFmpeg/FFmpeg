@@ -19,6 +19,7 @@
  */
 
 #include "vulkan_filter.h"
+#include "libavutil/vulkan_loader.h"
 
 int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
                               AVBufferRef *frames_ref,

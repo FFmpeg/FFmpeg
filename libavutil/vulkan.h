@@ -29,7 +29,6 @@
 #include "hwcontext.h"
 #include "vulkan_functions.h"
 #include "hwcontext_vulkan.h"
-#include "vulkan_loader.h"
 
 /* GLSL management macros */
 #define INDENT(N) INDENT_##N
