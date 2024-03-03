@@ -31,7 +31,6 @@
         req_dev,                                         \
         offsetof(FFVulkanFunctions, name),               \
         ext_flag,                                        \
-        "vk"#name,                                       \
     },
 
 static inline uint64_t ff_vk_extensions_to_mask(const char * const *extensions,
@@ -101,18 +100,26 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
         char req_dev;
         uint16_t struct_offset;
         FFVulkanExtensions ext_flag;
-        const char *name;
     } vk_load_info[] = {
         FN_LIST(PFN_LOAD_INFO)
 #ifdef _WIN32
         FN_LIST_WIN32(PFN_LOAD_INFO)
 #endif
     };
+    // Concatenate the names to avoid relocations. The resulting string
+    // will end with \0\0
+#define FUNC_NAME(req_inst, req_dev, ext_flag, name) "vk"#name"\0"
+    const char *name =
+        FN_LIST(FUNC_NAME)
+#ifdef _WIN32
+        FN_LIST_WIN32(FUNC_NAME)
+#endif
+    ;
+#undef FUNC_NAME
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(vk_load_info); i++) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(vk_load_info); name += strlen(name) + 1, i++) {
         const struct FunctionLoadInfo *load = &vk_load_info[i];
         static const char extensions[][4] = { "", "EXT", "KHR" };
-        const char *name = load->name;
         PFN_vkVoidFunction fn;
 
         if (load->req_dev  && !has_dev)
@@ -146,6 +153,7 @@ static inline int ff_vk_load_functions(AVHWDeviceContext *ctx,
 
         *(PFN_vkVoidFunction *)((uint8_t *)vk + load->struct_offset) = fn;
     }
+    av_assert1(*name == '\0');
 
     return 0;
 }
