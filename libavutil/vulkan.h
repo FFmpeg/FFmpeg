@@ -485,9 +485,6 @@ void ff_vk_exec_bind_pipeline(FFVulkanContext *s, FFVkExecContext *e,
 int ff_vk_set_descriptor_sampler(FFVulkanContext *s, FFVulkanPipeline *pl,
                                  FFVkExecContext *e, int set, int bind, int offs,
                                  VkSampler *sampler);
-int ff_vk_set_descriptor_image(FFVulkanContext *s, FFVulkanPipeline *pl,
-                               FFVkExecContext *e, int set, int bind, int offs,
-                               VkImageView view, VkImageLayout layout, VkSampler sampler);
 int ff_vk_set_descriptor_buffer(FFVulkanContext *s, FFVulkanPipeline *pl,
                                 FFVkExecContext *e, int set, int bind, int offs,
                                 VkDeviceAddress addr, VkDeviceSize len, VkFormat fmt);
