@@ -1632,33 +1632,6 @@ static inline void update_set_descriptor(FFVulkanContext *s, FFVkExecContext *e,
     vk->GetDescriptorEXT(s->hwctx->act_dev, desc_get_info, desc_size, desc);
 }
 
-int ff_vk_set_descriptor_sampler(FFVulkanContext *s, FFVulkanPipeline *pl,
-                                 FFVkExecContext *e, int set, int bind, int offs,
-                                 VkSampler *sampler)
-{
-    FFVulkanDescriptorSet *desc_set = &pl->desc_set[set];
-    VkDescriptorGetInfoEXT desc_get_info = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT,
-        .type = desc_set->binding[bind].descriptorType,
-    };
-
-    switch (desc_get_info.type) {
-    case VK_DESCRIPTOR_TYPE_SAMPLER:
-        desc_get_info.data.pSampler = sampler;
-        break;
-    default:
-        av_log(s, AV_LOG_ERROR, "Invalid descriptor type at set %i binding %i: %i!\n",
-               set, bind, desc_get_info.type);
-        return AVERROR(EINVAL);
-        break;
-    };
-
-    update_set_descriptor(s, e, desc_set, bind, offs, &desc_get_info,
-                          s->desc_buf_props.samplerDescriptorSize);
-
-    return 0;
-}
-
 static int vk_set_descriptor_image(FFVulkanContext *s, FFVulkanPipeline *pl,
                                    FFVkExecContext *e, int set, int bind, int offs,
                                    VkImageView view, VkImageLayout layout,
