@@ -43,6 +43,16 @@
  * ("objects"). An option can have a help text, a type and a range of possible
  * values. Options may then be enumerated, read and written to.
  *
+ * There are two modes of access to members of AVOption and its child structs.
+ * One is called 'native access', and refers to access from the code that
+ * declares the AVOption in question.  The other is 'foreign access', and refers
+ * to access from other code.
+ *
+ * Certain struct members in this header are documented as 'native access only'
+ * or similar - it means that only the code that declared the AVOption in
+ * question is allowed to access the field. This allows us to extend the
+ * semantics of those fields without breaking API compatibility.
+ *
  * @section avoptions_implement Implementing AVOptions
  * This section describes how to add AVOptions capabilities to a struct.
  *
@@ -298,6 +308,8 @@ typedef struct AVOption {
     const char *help;
 
     /**
+     * Native access only.
+     *
      * The offset relative to the context structure where the option
      * value is stored. It should be 0 for named constants.
      */
@@ -305,6 +317,8 @@ typedef struct AVOption {
     enum AVOptionType type;
 
     /**
+     * Native access only.
+     *
      * the default value for scalar options
      */
     union {
