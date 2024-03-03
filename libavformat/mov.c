@@ -946,7 +946,7 @@ static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
             if (!i && !j) {
                 if (audio_element->layers[0].substream_count != 1)
-                    st->disposition &= ~AV_DISPOSITION_DEFAULT;
+                    disposition &= ~AV_DISPOSITION_DEFAULT;
                 stream = st;
             } else
                 stream = avformat_new_stream(c->fc, NULL);
