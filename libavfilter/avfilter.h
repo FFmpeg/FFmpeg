@@ -676,10 +676,13 @@ struct AVFilterLink {
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad);
 
+#if FF_API_LINK_PUBLIC
 /**
- * Free the link in *link, and set its pointer to NULL.
+ * @deprecated this function should never be called by users
  */
+attribute_deprecated
 void avfilter_link_free(AVFilterLink **link);
+#endif
 
 /**
  * Negotiate the media format, dimensions, etc of all inputs to a filter.

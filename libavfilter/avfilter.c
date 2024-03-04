@@ -192,7 +192,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     return 0;
 }
 
-void avfilter_link_free(AVFilterLink **link)
+static void link_free(AVFilterLink **link)
 {
     FilterLinkInternal *li;
 
@@ -206,6 +206,13 @@ void avfilter_link_free(AVFilterLink **link)
 
     av_freep(link);
 }
+
+#if FF_API_LINK_PUBLIC
+void avfilter_link_free(AVFilterLink **link)
+{
+    link_free(link);
+}
+#endif
 
 static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
 {
@@ -763,7 +770,7 @@ static void free_link(AVFilterLink *link)
     ff_formats_unref(&link->outcfg.samplerates);
     ff_channel_layouts_unref(&link->incfg.channel_layouts);
     ff_channel_layouts_unref(&link->outcfg.channel_layouts);
-    avfilter_link_free(&link);
+    link_free(&link);
 }
 
 void avfilter_free(AVFilterContext *filter)
