@@ -33,6 +33,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "demux.h"
@@ -44,6 +45,28 @@
 #define RESYNC_BUFFER_SIZE (1<<20)
 
 #define MAX_DEPTH 16      ///< arbitrary limit to prevent unbounded recursion
+
+typedef struct FLVMasteringMeta {
+    double r_x;
+    double r_y;
+    double g_x;
+    double g_y;
+    double b_x;
+    double b_y;
+    double white_x;
+    double white_y;
+    double max_luminance;
+    double min_luminance;
+} FLVMasteringMeta;
+
+typedef struct FLVMetaVideoColor {
+    uint64_t matrix_coefficients;
+    uint64_t transfer_characteristics;
+    uint64_t primaries;
+    uint64_t max_cll;
+    uint64_t max_fall;
+    FLVMasteringMeta mastering_meta;
+} FLVMetaVideoColor;
 
 typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
@@ -80,6 +103,8 @@ typedef struct FLVContext {
     int64_t time_offset;
     int64_t time_pos;
 
+    FLVMetaVideoColor *metaVideoColor;
+    int meta_color_info_flag;
 } FLVContext;
 
 /* AMF date type */
@@ -524,6 +549,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     FLVContext *flv = s->priv_data;
     AVIOContext *ioc;
     AMFDataType amf_type;
+    FLVMetaVideoColor *meta_video_color = flv->metaVideoColor;
     char str_val[1024];
     double num_val;
     amf_date date;
@@ -668,6 +694,43 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
                     if (   !strcmp (str_val, "MEGA")
                         || !strncmp(str_val, "FlixEngine", 10))
                         flv->broken_sizes = 1;
+                }
+            }
+        }
+
+        if (meta_video_color) {
+            if (amf_type == AMF_DATA_TYPE_NUMBER ||
+                amf_type == AMF_DATA_TYPE_BOOL) {
+                if (!strcmp(key, "colorPrimaries")) {
+                    meta_video_color->primaries = num_val;
+                } else if (!strcmp(key, "transferCharacteristics")) {
+                    meta_video_color->transfer_characteristics = num_val;
+                } else if (!strcmp(key, "matrixCoefficients")) {
+                    meta_video_color->matrix_coefficients = num_val;
+                } else if (!strcmp(key, "maxFall")) {
+                    meta_video_color->max_fall = num_val;
+                } else if (!strcmp(key, "maxCLL")) {
+                    meta_video_color->max_cll = num_val;
+                } else if (!strcmp(key, "redX")) {
+                    meta_video_color->mastering_meta.r_x = num_val;
+                } else if (!strcmp(key, "redY")) {
+                    meta_video_color->mastering_meta.r_y = num_val;
+                } else if (!strcmp(key, "greenX")) {
+                    meta_video_color->mastering_meta.g_x = num_val;
+                } else if (!strcmp(key, "greenY")) {
+                    meta_video_color->mastering_meta.g_y = num_val;
+                } else if (!strcmp(key, "blueX")) {
+                    meta_video_color->mastering_meta.b_x = num_val;
+                } else if (!strcmp(key, "blueY")) {
+                    meta_video_color->mastering_meta.b_y = num_val;
+                } else if (!strcmp(key, "whitePointX")) {
+                    meta_video_color->mastering_meta.white_x = num_val;
+                } else if (!strcmp(key, "whitePointY")) {
+                    meta_video_color->mastering_meta.white_y = num_val;
+                } else if (!strcmp(key, "maxLuminance")) {
+                    meta_video_color->mastering_meta.max_luminance = num_val;
+                } else if (!strcmp(key, "minLuminance")) {
+                    meta_video_color->mastering_meta.min_luminance = num_val;
                 }
             }
         }
@@ -824,6 +887,7 @@ static int flv_read_close(AVFormatContext *s)
         av_freep(&flv->new_extradata[i]);
     av_freep(&flv->keyframe_times);
     av_freep(&flv->keyframe_filepositions);
+    av_freep(&flv->metaVideoColor);
     return 0;
 }
 
@@ -1028,6 +1092,103 @@ static int resync(AVFormatContext *s)
     return AVERROR_EOF;
 }
 
+static int flv_parse_video_color_info(AVFormatContext *s, AVStream *st, int64_t next_pos)
+{
+    FLVContext *flv = s->priv_data;
+    AMFDataType type;
+    AVIOContext *ioc;
+    char buffer[32];
+    ioc     = s->pb;
+
+    // first object needs to be "colorInfo" string
+    type = avio_r8(ioc);
+    if (type != AMF_DATA_TYPE_STRING ||
+        amf_get_string(ioc, buffer, sizeof(buffer)) < 0)
+        return TYPE_UNKNOWN;
+
+    if (strcmp(buffer, "colorInfo")) {
+        av_log(s, AV_LOG_DEBUG, "Unknown type %s\n", buffer);
+        return TYPE_UNKNOWN;
+    }
+
+    if (!(flv->metaVideoColor = av_mallocz(sizeof(FLVMetaVideoColor)))) {
+        return AVERROR(ENOMEM);
+    }
+    flv->meta_color_info_flag = 1;
+    amf_parse_object(s, NULL, NULL, buffer, next_pos, 0); // parse metadata
+    return 0;
+}
+
+static int flv_update_video_color_info(AVFormatContext *s, AVStream *st)
+{
+    FLVContext *flv = s->priv_data;
+    const FLVMetaVideoColor* meta_video_color = flv->metaVideoColor;
+    const FLVMasteringMeta *mastering_meta = &meta_video_color->mastering_meta;
+
+    int has_mastering_primaries, has_mastering_luminance;
+    // Mastering primaries are CIE 1931 coords, and must be > 0.
+    has_mastering_primaries =
+        mastering_meta->r_x > 0 && mastering_meta->r_y > 0 &&
+        mastering_meta->g_x > 0 && mastering_meta->g_y > 0 &&
+        mastering_meta->b_x > 0 && mastering_meta->b_y > 0 &&
+        mastering_meta->white_x > 0 && mastering_meta->white_y > 0;
+    has_mastering_luminance = mastering_meta->max_luminance > 0 && mastering_meta->min_luminance > 0;
+
+    if (meta_video_color->matrix_coefficients != AVCOL_SPC_RESERVED)
+        st->codecpar->color_space = meta_video_color->matrix_coefficients;
+    if (meta_video_color->primaries != AVCOL_PRI_RESERVED &&
+        meta_video_color->primaries != AVCOL_PRI_RESERVED0)
+        st->codecpar->color_primaries = meta_video_color->primaries;
+    if (meta_video_color->transfer_characteristics != AVCOL_TRC_RESERVED &&
+        meta_video_color->transfer_characteristics != AVCOL_TRC_RESERVED0)
+        st->codecpar->color_trc = meta_video_color->transfer_characteristics;
+
+    if (meta_video_color->max_cll && meta_video_color->max_fall) {
+        size_t size = 0;
+        AVContentLightMetadata *metadata = av_content_light_metadata_alloc(&size);
+        if (!metadata)
+            return AVERROR(ENOMEM);
+        if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
+                                        AV_PKT_DATA_CONTENT_LIGHT_LEVEL, metadata, size, 0)) {
+            av_freep(&metadata);
+            return AVERROR(ENOMEM);
+        }
+        metadata->MaxCLL  = meta_video_color->max_cll;
+        metadata->MaxFALL = meta_video_color->max_fall;
+    }
+
+    if (has_mastering_primaries || has_mastering_luminance) {
+        AVMasteringDisplayMetadata *metadata;
+        AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
+                                                        &st->codecpar->nb_coded_side_data,
+                                                        AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
+                                                        sizeof(AVMasteringDisplayMetadata), 0);
+        if (!sd)
+            return AVERROR(ENOMEM);
+        metadata = (AVMasteringDisplayMetadata*)sd->data;
+        memset(metadata, 0, sizeof(AVMasteringDisplayMetadata));
+        // hdrCll
+        if (has_mastering_luminance) {
+            metadata->max_luminance = av_d2q(mastering_meta->max_luminance, INT_MAX);
+            metadata->min_luminance = av_d2q(mastering_meta->min_luminance, INT_MAX);
+            metadata->has_luminance = 1;
+        }
+        // hdrMdcv
+        if (has_mastering_primaries) {
+            metadata->display_primaries[0][0] = av_d2q(mastering_meta->r_x, INT_MAX);
+            metadata->display_primaries[0][1] = av_d2q(mastering_meta->r_y, INT_MAX);
+            metadata->display_primaries[1][0] = av_d2q(mastering_meta->g_x, INT_MAX);
+            metadata->display_primaries[1][1] = av_d2q(mastering_meta->g_y, INT_MAX);
+            metadata->display_primaries[2][0] = av_d2q(mastering_meta->b_x, INT_MAX);
+            metadata->display_primaries[2][1] = av_d2q(mastering_meta->b_y, INT_MAX);
+            metadata->white_point[0] = av_d2q(mastering_meta->white_x, INT_MAX);
+            metadata->white_point[1] = av_d2q(mastering_meta->white_y, INT_MAX);
+            metadata->has_primaries = 1;
+        }
+    }
+    return 0;
+}
+
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FLVContext *flv = s->priv_data;
@@ -1100,8 +1261,17 @@ retry:
             video_codec_id = avio_rb32(s->pb);
             size -= 4;
         }
-        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
+
+        if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO && (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD) {
+            int pkt_type = flags & 0x0F;
+            if (pkt_type == PacketTypeMetadata) {
+                int ret = flv_parse_video_color_info(s, st, next);
+                av_log(s, AV_LOG_DEBUG, "enhanced flv parse metadata ret %d and skip\n", ret);
+            }
             goto skip;
+        } else if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD) {
+            goto skip;
+        }
     } else if (type == FLV_TAG_TYPE_META) {
         stream_type=FLV_STREAM_TYPE_SUBTITLE;
         if (size > 13 + 1 + 4) { // Header-type metadata stuff
@@ -1285,6 +1455,11 @@ retry_duration:
         if (size < 0) {
             ret = AVERROR_INVALIDDATA;
             goto leave;
+        }
+
+        if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO && flv->meta_color_info_flag) {
+            flv_update_video_color_info(s, st); // update av packet side data
+            flv->meta_color_info_flag = 0;
         }
 
         if (st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
