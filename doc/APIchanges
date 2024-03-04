@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2023-02-09
 
 API changes, most recent first:
 
+2024-03-05 - xxxxxxxxxx - lavf 60.24.100 - avformat.h
+  Add avformat_stream_group_name().
+
 2024-02-28 - xxxxxxxxxx - swr   4.14.100 - swresample.h
   swr_convert() now accepts arrays of const pointers (to input and output).
 

@@ -2121,6 +2121,11 @@ const AVClass *av_stream_get_class(void);
 const AVClass *av_stream_group_get_class(void);
 
 /**
+ * @return a string identifying the stream group type, or NULL if unknown
+ */
+const char *avformat_stream_group_name(enum AVStreamGroupParamsType type);
+
+/**
  * Add a new empty stream group to a media file.
  *
  * When demuxing, it may be called by the demuxer in read_header(). If the

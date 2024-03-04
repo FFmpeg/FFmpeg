@@ -321,6 +321,16 @@ AVStream *ff_stream_clone(AVFormatContext *dst_ctx, const AVStream *src)
     return st;
 }
 
+const char *avformat_stream_group_name(enum AVStreamGroupParamsType type)
+{
+    switch(type) {
+    case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:        return "IAMF Audio Element";
+    case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION:     return "IAMF Mix Presentation";
+    case AV_STREAM_GROUP_PARAMS_TILE_GRID:                 return "Tile Grid";
+    }
+    return NULL;
+}
+
 AVProgram *av_new_program(AVFormatContext *ac, int id)
 {
     AVProgram *program = NULL;
