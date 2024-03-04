@@ -174,6 +174,12 @@ FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call DEMMUX, MOV, FRAMECRC, HEVC_DECODER HEVC_
 fate-mov-heic-demux-still-image-iovl: CMD = stream_demux mov $(TARGET_SAMPLES)/heif-conformance/C015.heic "" "-c:v copy -map 0:g:0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
+# heic demuxing - still image where one image item is placed twice on an overlay canvas.
+FATE_MOV_FFMPEG_FFPROBE_SAMPLES-$(call DEMMUX, MOV, FRAMECRC, HEVC_DECODER HEVC_PARSER) \
+                           += fate-mov-heic-demux-still-image-iovl-2
+fate-mov-heic-demux-still-image-iovl-2: CMD = stream_demux mov $(TARGET_SAMPLES)/heif-conformance/C021.heic "" "-c:v copy -map 0:g:0" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
+
 # Resulting remux should have:
 # 1. first audio stream with AV_DISPOSITION_HEARING_IMPAIRED
 # 2. second audio stream with AV_DISPOSITION_VISUAL_IMPAIRED | DESCRIPTIONS
