@@ -212,6 +212,10 @@ void avfilter_link_free(AVFilterLink **link)
 {
     link_free(link);
 }
+int avfilter_config_links(AVFilterContext *filter)
+{
+    return ff_filter_config_links(EINVAL);
+}
 #endif
 
 static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
@@ -322,7 +326,7 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     return 0;
 }
 
-int avfilter_config_links(AVFilterContext *filter)
+int ff_filter_config_links(AVFilterContext *filter)
 {
     int (*config_link)(AVFilterLink *);
     unsigned i;
@@ -353,7 +357,7 @@ int avfilter_config_links(AVFilterContext *filter)
         case AVLINK_UNINIT:
             li->init_state = AVLINK_STARTINIT;
 
-            if ((ret = avfilter_config_links(link->src)) < 0)
+            if ((ret = ff_filter_config_links(link->src)) < 0)
                 return ret;
 
             if (!(config_link = link->srcpad->config_props)) {

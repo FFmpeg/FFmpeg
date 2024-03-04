@@ -245,7 +245,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
         if (ret < 0)
             return ret;
-        return avfilter_config_links(ctx);
+        return ff_filter_config_links(ctx);
     }
     return AVERROR(ENOSYS);
 }

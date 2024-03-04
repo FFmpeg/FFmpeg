@@ -251,7 +251,7 @@ static int graph_config_links(AVFilterGraph *graph, void *log_ctx)
         filt = graph->filters[i];
 
         if (!filt->nb_outputs) {
-            if ((ret = avfilter_config_links(filt)))
+            if ((ret = ff_filter_config_links(filt)))
                 return ret;
         }
     }
