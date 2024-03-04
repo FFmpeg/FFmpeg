@@ -60,6 +60,11 @@ typedef struct DecodeContext {
      * The caller has submitted a NULL packet on input.
      */
     int draining_started;
+
+    int64_t pts_correction_num_faulty_pts; /// Number of incorrect PTS values so far
+    int64_t pts_correction_num_faulty_dts; /// Number of incorrect DTS values so far
+    int64_t pts_correction_last_pts;       /// PTS of the last frame
+    int64_t pts_correction_last_dts;       /// DTS of the last frame
 } DecodeContext;
 
 static DecodeContext *decode_ctx(AVCodecInternal *avci)
@@ -240,24 +245,24 @@ int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
  * @param dts the dts field of the decoded AVPacket
  * @return one of the input values, may be AV_NOPTS_VALUE
  */
-static int64_t guess_correct_pts(AVCodecContext *ctx,
+static int64_t guess_correct_pts(DecodeContext *dc,
                                  int64_t reordered_pts, int64_t dts)
 {
     int64_t pts = AV_NOPTS_VALUE;
 
     if (dts != AV_NOPTS_VALUE) {
-        ctx->pts_correction_num_faulty_dts += dts <= ctx->pts_correction_last_dts;
-        ctx->pts_correction_last_dts = dts;
+        dc->pts_correction_num_faulty_dts += dts <= dc->pts_correction_last_dts;
+        dc->pts_correction_last_dts = dts;
     } else if (reordered_pts != AV_NOPTS_VALUE)
-        ctx->pts_correction_last_dts = reordered_pts;
+        dc->pts_correction_last_dts = reordered_pts;
 
     if (reordered_pts != AV_NOPTS_VALUE) {
-        ctx->pts_correction_num_faulty_pts += reordered_pts <= ctx->pts_correction_last_pts;
-        ctx->pts_correction_last_pts = reordered_pts;
+        dc->pts_correction_num_faulty_pts += reordered_pts <= dc->pts_correction_last_pts;
+        dc->pts_correction_last_pts = reordered_pts;
     } else if(dts != AV_NOPTS_VALUE)
-        ctx->pts_correction_last_pts = dts;
+        dc->pts_correction_last_pts = dts;
 
-    if ((ctx->pts_correction_num_faulty_pts<=ctx->pts_correction_num_faulty_dts || dts == AV_NOPTS_VALUE)
+    if ((dc->pts_correction_num_faulty_pts<=dc->pts_correction_num_faulty_dts || dts == AV_NOPTS_VALUE)
        && reordered_pts != AV_NOPTS_VALUE)
         pts = reordered_pts;
     else
@@ -575,6 +580,7 @@ static int decode_simple_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 {
     AVCodecInternal *avci = avctx->internal;
+    DecodeContext     *dc = decode_ctx(avci);
     const FFCodec *const codec = ffcodec(avctx->codec);
     int ret, ok;
 
@@ -630,7 +636,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
         frame->top_field_first =  !!(frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST);
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        frame->best_effort_timestamp = guess_correct_pts(avctx,
+        frame->best_effort_timestamp = guess_correct_pts(dc,
                                                          frame->pts,
                                                          frame->pkt_dts);
 
@@ -1672,6 +1678,7 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 int ff_decode_preinit(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
+    DecodeContext     *dc = decode_ctx(avci);
     int ret = 0;
 
     /* if the decoder init function was already called previously,
@@ -1719,10 +1726,10 @@ int ff_decode_preinit(AVCodecContext *avctx)
         }
     }
 
-    avctx->pts_correction_num_faulty_pts =
-    avctx->pts_correction_num_faulty_dts = 0;
-    avctx->pts_correction_last_pts =
-    avctx->pts_correction_last_dts = INT64_MIN;
+    dc->pts_correction_num_faulty_pts =
+    dc->pts_correction_num_faulty_dts = 0;
+    dc->pts_correction_last_pts =
+    dc->pts_correction_last_dts = INT64_MIN;
 
     if (   !CONFIG_GRAY && avctx->flags & AV_CODEC_FLAG_GRAY
         && avctx->codec_descriptor->type == AVMEDIA_TYPE_VIDEO)
@@ -1801,8 +1808,8 @@ void ff_decode_flush_buffers(AVCodecContext *avctx)
     av_packet_unref(avci->last_pkt_props);
     av_packet_unref(avci->in_pkt);
 
-    avctx->pts_correction_last_pts =
-    avctx->pts_correction_last_dts = INT64_MIN;
+    dc->pts_correction_last_pts =
+    dc->pts_correction_last_dts = INT64_MIN;
 
     av_bsf_flush(avci->bsf);
 
