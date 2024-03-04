@@ -9315,6 +9315,7 @@ static int read_image_grid(AVFormatContext *s, const HEIFGrid *grid,
             if (i == tile_grid->nb_tiles)
                 return AVERROR_INVALIDDATA;
 
+            tile_grid->offsets[i].idx        = i;
             tile_grid->offsets[i].horizontal = x;
             tile_grid->offsets[i].vertical   = y;
 
