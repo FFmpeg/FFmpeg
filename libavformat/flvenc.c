@@ -23,6 +23,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
 #include "libavcodec/codec_desc.h"
 #include "libavcodec/mpeg4audio.h"
@@ -124,6 +125,7 @@ typedef struct FLVContext {
 
     int flags;
     int64_t last_ts[FLV_STREAM_TYPE_NB];
+    int metadata_pkt_written;
 } FLVContext;
 
 static int get_audio_flags(AVFormatContext *s, AVCodecParameters *par)
@@ -476,6 +478,142 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     avio_skip(pb, flv->metadata_totalsize + 10 - 3);
     flv->metadata_totalsize_pos = avio_tell(pb);
     avio_wb32(pb, flv->metadata_totalsize + 11);
+}
+
+static void flv_write_metadata_packet(AVFormatContext *s, AVCodecParameters *par, unsigned int ts)
+{
+    AVIOContext *pb = s->pb;
+    FLVContext *flv = s->priv_data;
+    AVContentLightMetadata *lightMetadata = NULL;
+    AVMasteringDisplayMetadata *displayMetadata = NULL;
+    int64_t metadata_size_pos = 0;
+    int64_t total_size = 0;
+    const AVPacketSideData *side_data = NULL;
+
+    if (flv->metadata_pkt_written) return;
+    if (par->codec_id == AV_CODEC_ID_HEVC || par->codec_id == AV_CODEC_ID_AV1 ||
+        par->codec_id == AV_CODEC_ID_VP9) {
+        int flags_size = 5;
+        side_data = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
+                                            AV_PKT_DATA_CONTENT_LIGHT_LEVEL);
+        if (side_data)
+            lightMetadata = (AVContentLightMetadata *)side_data->data;
+
+        side_data = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
+                                            AV_PKT_DATA_MASTERING_DISPLAY_METADATA);
+        if (side_data)
+            displayMetadata = (AVMasteringDisplayMetadata *)side_data->data;
+
+        /*
+        * Reference Enhancing FLV
+        * https://github.com/veovera/enhanced-rtmp/blob/main/enhanced-rtmp.pdf
+        * */
+        avio_w8(pb, FLV_TAG_TYPE_VIDEO); //write video tag type
+        metadata_size_pos = avio_tell(pb);
+        avio_wb24(pb, 0 + flags_size);
+        put_timestamp(pb, ts); //ts = pkt->dts, gen
+        avio_wb24(pb, flv->reserved);
+
+        if (par->codec_id == AV_CODEC_ID_HEVC) {
+            avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeMetadata| FLV_FRAME_VIDEO_INFO_CMD); // ExVideoTagHeader mode with PacketTypeMetadata
+            avio_write(pb, "hvc1", 4);
+        } else if (par->codec_id == AV_CODEC_ID_AV1 || par->codec_id == AV_CODEC_ID_VP9) {
+            avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeMetadata| FLV_FRAME_VIDEO_INFO_CMD);
+            avio_write(pb, par->codec_id == AV_CODEC_ID_AV1 ? "av01" : "vp09", 4);
+        }
+
+        avio_w8(pb, AMF_DATA_TYPE_STRING);
+        put_amf_string(pb, "colorInfo");
+
+        avio_w8(pb, AMF_DATA_TYPE_OBJECT);
+
+        put_amf_string(pb, "colorConfig");  // colorConfig
+
+        avio_w8(pb, AMF_DATA_TYPE_OBJECT);
+
+        if (par->color_trc != AVCOL_TRC_UNSPECIFIED &&
+            par->color_trc < AVCOL_TRC_NB) {
+            put_amf_string(pb, "transferCharacteristics");  // color_trc
+            put_amf_double(pb, par->color_trc);
+        }
+
+        if (par->color_space != AVCOL_SPC_UNSPECIFIED &&
+            par->color_space < AVCOL_SPC_NB) {
+            put_amf_string(pb, "matrixCoefficients"); // colorspace
+            put_amf_double(pb, par->color_space);
+        }
+
+        if (par->color_primaries != AVCOL_PRI_UNSPECIFIED &&
+            par->color_primaries < AVCOL_PRI_NB) {
+            put_amf_string(pb, "colorPrimaries"); // color_primaries
+            put_amf_double(pb, par->color_primaries);
+        }
+
+        put_amf_string(pb, "");
+        avio_w8(pb, AMF_END_OF_OBJECT);
+
+        if (lightMetadata) {
+            put_amf_string(pb, "hdrCll");
+            avio_w8(pb, AMF_DATA_TYPE_OBJECT);
+
+            put_amf_string(pb, "maxFall");
+            put_amf_double(pb, lightMetadata->MaxFALL);
+
+            put_amf_string(pb, "maxCLL");
+            put_amf_double(pb, lightMetadata->MaxCLL);
+
+            put_amf_string(pb, "");
+            avio_w8(pb, AMF_END_OF_OBJECT);
+        }
+
+        if (displayMetadata && (displayMetadata->has_primaries || displayMetadata->has_luminance)) {
+            put_amf_string(pb, "hdrMdcv");
+            avio_w8(pb, AMF_DATA_TYPE_OBJECT);
+            if (displayMetadata->has_primaries) {
+                put_amf_string(pb, "redX");
+                put_amf_double(pb, av_q2d(displayMetadata->display_primaries[0][0]));
+
+                put_amf_string(pb, "redY");
+                put_amf_double(pb, av_q2d(displayMetadata->display_primaries[0][1]));
+
+                put_amf_string(pb, "greenX");
+                put_amf_double(pb, av_q2d(displayMetadata->display_primaries[1][0]));
+
+                put_amf_string(pb, "greenY");
+                put_amf_double(pb, av_q2d(displayMetadata->display_primaries[1][1]));
+
+                put_amf_string(pb, "blueX");
+                put_amf_double(pb, av_q2d(displayMetadata->display_primaries[2][0]));
+
+                put_amf_string(pb, "blueY");
+                put_amf_double(pb, av_q2d(displayMetadata->display_primaries[2][1]));
+
+                put_amf_string(pb, "whitePointX");
+                put_amf_double(pb, av_q2d(displayMetadata->white_point[0]));
+
+                put_amf_string(pb, "whitePointY");
+                put_amf_double(pb, av_q2d(displayMetadata->white_point[1]));
+            }
+            if (displayMetadata->has_luminance) {
+                put_amf_string(pb, "maxLuminance");
+                put_amf_double(pb, av_q2d(displayMetadata->max_luminance));
+
+                put_amf_string(pb, "minLuminance");
+                put_amf_double(pb, av_q2d(displayMetadata->min_luminance));
+            }
+            put_amf_string(pb, "");
+            avio_w8(pb, AMF_END_OF_OBJECT);
+        }
+        put_amf_string(pb, "");
+        avio_w8(pb, AMF_END_OF_OBJECT);
+
+        total_size = avio_tell(pb) - metadata_size_pos - 10;
+        avio_seek(pb, metadata_size_pos, SEEK_SET);
+        avio_wb24(pb, total_size);
+        avio_skip(pb, total_size + 10 - 3);
+        avio_wb32(pb, total_size + 11); // previous tag size
+        flv->metadata_pkt_written = 1;
+    }
 }
 
 static int unsupported_codec(AVFormatContext *s,
@@ -878,6 +1016,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             memcpy(par->extradata, side, side_size);
             flv_write_codec_header(s, par, pkt->dts);
         }
+        flv_write_metadata_packet(s, par, pkt->dts);
     }
 
     if (flv->delay == AV_NOPTS_VALUE)
