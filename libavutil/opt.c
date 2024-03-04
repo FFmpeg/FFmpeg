@@ -1799,6 +1799,51 @@ void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
     return (uint8_t*)obj + opt->offset;
 }
 
+static int opt_copy_elem(void *logctx, enum AVOptionType type,
+                         void *dst, const void *src)
+{
+    uint8_t       **dst8 =       (uint8_t **)dst;
+    const uint8_t **src8 = (const uint8_t **)src;
+
+    if (type == AV_OPT_TYPE_STRING) {
+        if (*dst8 != *src8)
+            av_freep(dst8);
+        *dst8 = av_strdup(*src8);
+        if (*src8 && !*dst8)
+            return AVERROR(ENOMEM);
+    } else if (type == AV_OPT_TYPE_BINARY) {
+        int len = *(const int *)(src8 + 1);
+        if (*dst8 != *src8)
+            av_freep(dst8);
+        *dst8 = av_memdup(*src8, len);
+        if (len && !*dst8) {
+            *(int *)(dst8 + 1) = 0;
+            return AVERROR(ENOMEM);
+        }
+        *(int *)(dst8 + 1) = len;
+    } else if (type == AV_OPT_TYPE_CONST) {
+        // do nothing
+    } else if (type == AV_OPT_TYPE_DICT) {
+        AVDictionary **sdict = (AVDictionary **)src;
+        AVDictionary **ddict = (AVDictionary **)dst;
+        if (*sdict != *ddict)
+            av_dict_free(ddict);
+        *ddict = NULL;
+        return av_dict_copy(ddict, *sdict, 0);
+    } else if (type == AV_OPT_TYPE_CHLAYOUT) {
+        if (dst != src)
+            return av_channel_layout_copy(dst, src);
+    } else if (opt_is_pod(type)) {
+        size_t size = opt_elem_size[type];
+        memcpy(dst, src, size);
+    } else {
+        av_log(logctx, AV_LOG_ERROR, "Unhandled option type: %d\n", type);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 int av_opt_copy(void *dst, const void *src)
 {
     const AVOption *o = NULL;
@@ -1815,48 +1860,10 @@ int av_opt_copy(void *dst, const void *src)
     while ((o = av_opt_next(src, o))) {
         void *field_dst = (uint8_t *)dst + o->offset;
         void *field_src = (uint8_t *)src + o->offset;
-        uint8_t **field_dst8 = (uint8_t **)field_dst;
-        uint8_t **field_src8 = (uint8_t **)field_src;
 
-        if (o->type == AV_OPT_TYPE_STRING) {
-            if (*field_dst8 != *field_src8)
-                av_freep(field_dst8);
-            *field_dst8 = av_strdup(*field_src8);
-            if (*field_src8 && !*field_dst8)
-                ret = AVERROR(ENOMEM);
-        } else if (o->type == AV_OPT_TYPE_BINARY) {
-            int len = *(int *)(field_src8 + 1);
-            if (*field_dst8 != *field_src8)
-                av_freep(field_dst8);
-            *field_dst8 = av_memdup(*field_src8, len);
-            if (len && !*field_dst8) {
-                ret = AVERROR(ENOMEM);
-                len = 0;
-            }
-            *(int *)(field_dst8 + 1) = len;
-        } else if (o->type == AV_OPT_TYPE_CONST) {
-            // do nothing
-        } else if (o->type == AV_OPT_TYPE_DICT) {
-            AVDictionary **sdict = (AVDictionary **) field_src;
-            AVDictionary **ddict = (AVDictionary **) field_dst;
-            int ret2;
-            if (*sdict != *ddict)
-                av_dict_free(ddict);
-            *ddict = NULL;
-            ret2 = av_dict_copy(ddict, *sdict, 0);
-            if (ret2 < 0)
-                ret = ret2;
-        } else if (o->type == AV_OPT_TYPE_CHLAYOUT) {
-            if (field_dst != field_src)
-                ret = av_channel_layout_copy(field_dst, field_src);
-        } else if (opt_is_pod(o->type)) {
-            size_t size = opt_elem_size[o->type];
-            memcpy(field_dst, field_src, size);
-        } else {
-            av_log(dst, AV_LOG_ERROR, "Unhandled option type: %d\n",
-                   o->type);
-            ret = AVERROR(EINVAL);
-        }
+        int err = opt_copy_elem(dst, o->type, field_dst, field_src);
+        if (err < 0)
+            ret = err;
     }
     return ret;
 }
