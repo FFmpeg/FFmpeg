@@ -22,6 +22,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -53,10 +54,11 @@ typedef struct HQContext {
     AVCodecContext *avctx;
     HQDSPContext hqhqadsp;
 
-    VLC hq_ac_vlc;
-    VLC hqa_cbp_vlc;
     DECLARE_ALIGNED(16, int16_t, block)[12][64];
 } HQContext;
+
+static VLCElem hq_ac_vlc[1184];
+static VLCElem hqa_cbp_vlc[32];
 
 static inline void put_blocks(HQContext *c, AVFrame *pic,
                               int plane, int x, int y, int ilace,
@@ -87,7 +89,7 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
     }
 
     for (;;) {
-        val = get_vlc2(gb, c->hq_ac_vlc.table, 9, 2);
+        val = get_vlc2(gb, hq_ac_vlc, 9, 2);
         if (val < 0)
             return AVERROR_INVALIDDATA;
 
@@ -195,7 +197,7 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
     if (get_bits_left(gb) < 1)
         return AVERROR_INVALIDDATA;
 
-    cbp = get_vlc2(gb, c->hqa_cbp_vlc.table, 5, 1);
+    cbp = get_vlc2(gb, hqa_cbp_vlc, 5, 1);
 
     for (i = 0; i < 12; i++)
         memset(c->block[i], 0, sizeof(*c->block));
@@ -372,33 +374,24 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     return avpkt->size;
 }
 
-static av_cold int hq_init_vlcs(HQContext *c)
+static av_cold void hq_init_vlcs(void)
 {
-    int ret = vlc_init(&c->hqa_cbp_vlc, 5, FF_ARRAY_ELEMS(cbp_vlc_lens),
-                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
-    if (ret < 0)
-        return ret;
+    VLC_INIT_STATIC_TABLE(hqa_cbp_vlc, 5, FF_ARRAY_ELEMS(cbp_vlc_lens),
+                          cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
 
-    return vlc_init(&c->hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
-                    hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
+    VLC_INIT_STATIC_TABLE(hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
+                          hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
 }
 
 static av_cold int hq_hqa_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     HQContext *ctx = avctx->priv_data;
     ctx->avctx = avctx;
 
     ff_hqdsp_init(&ctx->hqhqadsp);
 
-    return hq_init_vlcs(ctx);
-}
-
-static av_cold int hq_hqa_decode_close(AVCodecContext *avctx)
-{
-    HQContext *ctx = avctx->priv_data;
-
-    ff_vlc_free(&ctx->hq_ac_vlc);
-    ff_vlc_free(&ctx->hqa_cbp_vlc);
+    ff_thread_once(&init_static_once, hq_init_vlcs);
 
     return 0;
 }
@@ -411,7 +404,5 @@ const FFCodec ff_hq_hqa_decoder = {
     .priv_data_size = sizeof(HQContext),
     .init           = hq_hqa_decode_init,
     FF_CODEC_DECODE_CB(hq_hqa_decode_frame),
-    .close          = hq_hqa_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
