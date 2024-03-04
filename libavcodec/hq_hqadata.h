@@ -1,5 +1,5 @@
 /*
- * Canopus HQ/HQA decoder
+ * Canopus HQ/HQA data
  *
  * This file is part of FFmpeg.
  *
@@ -18,7 +18,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "hq_hqa.h"
+#ifndef AVCODEC_HQ_HQADATA_H
+#define AVCODEC_HQ_HQADATA_H
+
+#include <stdint.h>
+
+#define NUM_HQ_AC_ENTRIES 746
+#define NUM_HQ_PROFILES   22
+#define NUM_HQ_QUANTS     16
+
+typedef struct HQProfile {
+    const uint8_t *perm_tab;
+    int width, height;
+    int num_slices;
+    int tab_w, tab_h;
+} HQProfile;
 
 #define MAT_SIZE 64
 
@@ -1123,7 +1137,7 @@ static const int32_t qmat4D[MAT_SIZE] = {
     0x24CF8B9, 0x384AC0F, 0x709581F, 0x3CDBBA7,
 };
 
-const int32_t *const ff_hq_quants[NUM_HQ_QUANTS][2][4] = {
+static const int32_t *const hq_quants[NUM_HQ_QUANTS][2][4] = {
     { { qmat00, qmat02, qmat06, qmat0E }, { qmat01, qmat03, qmat07, qmat0F } },
     { { qmat02, qmat06, qmat0E, qmat16 }, { qmat03, qmat07, qmat0F, qmat17 } },
     { { qmat04, qmat0A, qmat12, qmat1E }, { qmat05, qmat0B, qmat13, qmat1F } },
@@ -1289,7 +1303,7 @@ static const uint16_t hq_ac_codes[NUM_HQ_AC_ENTRIES] = {
     0xFFFE, 0xFFFF,
 };
 
-const uint8_t ff_hq_ac_skips[NUM_HQ_AC_ENTRIES] = {
+static const uint8_t hq_ac_skips[NUM_HQ_AC_ENTRIES] = {
      0,  0,  0,  0, 64,  1,  1,  0,  0,  0,  0,  2,  2,  1,  1,  0,
      0,  0,  0,  3,  3,  4,  4,  0,  0,  0,  0,  5,  5,  6,  6,  2,
      2,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  7,  7,  8,  8,  9,
@@ -1339,7 +1353,7 @@ const uint8_t ff_hq_ac_skips[NUM_HQ_AC_ENTRIES] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 };
 
-const int16_t ff_hq_ac_syms[NUM_HQ_AC_ENTRIES] = {
+static const int16_t hq_ac_syms[NUM_HQ_AC_ENTRIES] = {
       1,   -1,   2,   -2,   0,    1,  -1,    3,
      -3,    4,  -4,    1,  -1,    2,  -2,    5,
      -5,    6,  -6,    1,  -1,    1,  -1,    7,
@@ -8340,7 +8354,7 @@ static const uint8_t hq_tab_21[] = {
 };
 
 /* List of profiles, order is important */
-const HQProfile ff_hq_profile[NUM_HQ_PROFILES] = {
+static const HQProfile hq_profile[NUM_HQ_PROFILES] = {
     { hq_tab_11,  160,  120,  8, 10,   8 }, // case 0 (default) = case 11
     { hq_tab_01,  720,  480,  8, 25,  54 },
     { hq_tab_02,  720,  486,  8, 15,  93 },
@@ -8365,13 +8379,4 @@ const HQProfile ff_hq_profile[NUM_HQ_PROFILES] = {
     { hq_tab_21,  704,  576,  8, 24,  66 },
 };
 
-av_cold int ff_hq_init_vlcs(HQContext *c)
-{
-    int ret = vlc_init(&c->hqa_cbp_vlc, 5, FF_ARRAY_ELEMS(cbp_vlc_lens),
-                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
-    if (ret < 0)
-        return ret;
-
-    return vlc_init(&c->hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
-                    hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
-}
+#endif /* AVCODEC_HQ_HQADATA_H */

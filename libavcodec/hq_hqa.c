@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -28,9 +29,9 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
-
-#include "hq_hqa.h"
+#include "hq_hqadata.h"
 #include "hq_hqadsp.h"
+#include "vlc.h"
 
 /* HQ/HQA slices are a set of macroblocks belonging to a frame, and
  * they usually form a pseudorandom pattern (probably because it is
@@ -47,6 +48,15 @@
  * The original decoder has special handling for edge macroblocks,
  * while lavc simply aligns coded_width and coded_height.
  */
+
+typedef struct HQContext {
+    AVCodecContext *avctx;
+    HQDSPContext hqhqadsp;
+
+    VLC hq_ac_vlc;
+    VLC hqa_cbp_vlc;
+    DECLARE_ALIGNED(16, int16_t, block)[12][64];
+} HQContext;
 
 static inline void put_blocks(HQContext *c, AVFrame *pic,
                               int plane, int x, int y, int ilace,
@@ -70,9 +80,9 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
 
     if (!is_hqa) {
         block[0] = get_sbits(gb, 9) * 64;
-        q = ff_hq_quants[qsel][is_chroma][get_bits(gb, 2)];
+        q = hq_quants[qsel][is_chroma][get_bits(gb, 2)];
     } else {
-        q = ff_hq_quants[qsel][is_chroma][get_bits(gb, 2)];
+        q = hq_quants[qsel][is_chroma][get_bits(gb, 2)];
         block[0] = get_sbits(gb, 9) * 64;
     }
 
@@ -81,10 +91,10 @@ static int hq_decode_block(HQContext *c, GetBitContext *gb, int16_t block[64],
         if (val < 0)
             return AVERROR_INVALIDDATA;
 
-        pos += ff_hq_ac_skips[val];
+        pos += hq_ac_skips[val];
         if (pos >= 64)
             break;
-        block[ff_zigzag_direct[pos]] = (int)(ff_hq_ac_syms[val] * (unsigned)q[pos]) >> 12;
+        block[ff_zigzag_direct[pos]] = (int)(hq_ac_syms[val] * (unsigned)q[pos]) >> 12;
         pos++;
     }
 
@@ -124,10 +134,10 @@ static int hq_decode_frame(HQContext *ctx, AVFrame *pic, GetByteContext *gbc,
     int slice, start_off, next_off, i, ret;
 
     if ((unsigned)prof_num >= NUM_HQ_PROFILES) {
-        profile = &ff_hq_profile[0];
+        profile = &hq_profile[0];
         avpriv_request_sample(ctx->avctx, "HQ Profile %d", prof_num);
     } else {
-        profile = &ff_hq_profile[prof_num];
+        profile = &hq_profile[prof_num];
         av_log(ctx->avctx, AV_LOG_VERBOSE, "HQ Profile %d\n", prof_num);
     }
 
@@ -362,6 +372,17 @@ static int hq_hqa_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     return avpkt->size;
 }
 
+static av_cold int hq_init_vlcs(HQContext *c)
+{
+    int ret = vlc_init(&c->hqa_cbp_vlc, 5, FF_ARRAY_ELEMS(cbp_vlc_lens),
+                       cbp_vlc_lens, 1, 1, cbp_vlc_bits, 1, 1, 0);
+    if (ret < 0)
+        return ret;
+
+    return vlc_init(&c->hq_ac_vlc, 9, NUM_HQ_AC_ENTRIES,
+                    hq_ac_bits, 1, 1, hq_ac_codes, 2, 2, 0);
+}
+
 static av_cold int hq_hqa_decode_init(AVCodecContext *avctx)
 {
     HQContext *ctx = avctx->priv_data;
@@ -369,7 +390,7 @@ static av_cold int hq_hqa_decode_init(AVCodecContext *avctx)
 
     ff_hqdsp_init(&ctx->hqhqadsp);
 
-    return ff_hq_init_vlcs(ctx);
+    return hq_init_vlcs(ctx);
 }
 
 static av_cold int hq_hqa_decode_close(AVCodecContext *avctx)
