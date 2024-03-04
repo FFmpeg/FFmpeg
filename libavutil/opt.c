@@ -56,6 +56,50 @@ const AVOption *av_opt_next(const void *obj, const AVOption *last)
     return NULL;
 }
 
+static const size_t opt_elem_size[] = {
+    [AV_OPT_TYPE_FLAGS]         = sizeof(unsigned),
+    [AV_OPT_TYPE_INT]           = sizeof(int),
+    [AV_OPT_TYPE_INT64]         = sizeof(int64_t),
+    [AV_OPT_TYPE_UINT64]        = sizeof(uint64_t),
+    [AV_OPT_TYPE_DOUBLE]        = sizeof(double),
+    [AV_OPT_TYPE_FLOAT]         = sizeof(float),
+    [AV_OPT_TYPE_STRING]        = sizeof(char *),
+    [AV_OPT_TYPE_RATIONAL]      = sizeof(AVRational),
+    [AV_OPT_TYPE_BINARY]        = sizeof(uint8_t *),
+    [AV_OPT_TYPE_DICT]          = sizeof(AVDictionary *),
+    [AV_OPT_TYPE_IMAGE_SIZE]    = sizeof(int[2]),
+    [AV_OPT_TYPE_VIDEO_RATE]    = sizeof(AVRational),
+    [AV_OPT_TYPE_PIXEL_FMT]     = sizeof(int),
+    [AV_OPT_TYPE_SAMPLE_FMT]    = sizeof(int),
+    [AV_OPT_TYPE_DURATION]      = sizeof(int64_t),
+    [AV_OPT_TYPE_COLOR]         = sizeof(uint8_t[4]),
+    [AV_OPT_TYPE_CHLAYOUT]      = sizeof(AVChannelLayout),
+    [AV_OPT_TYPE_BOOL]          = sizeof(int),
+};
+
+// option is plain old data
+static int opt_is_pod(enum AVOptionType type)
+{
+    switch (type) {
+    case AV_OPT_TYPE_FLAGS:
+    case AV_OPT_TYPE_INT:
+    case AV_OPT_TYPE_INT64:
+    case AV_OPT_TYPE_DOUBLE:
+    case AV_OPT_TYPE_FLOAT:
+    case AV_OPT_TYPE_RATIONAL:
+    case AV_OPT_TYPE_UINT64:
+    case AV_OPT_TYPE_IMAGE_SIZE:
+    case AV_OPT_TYPE_PIXEL_FMT:
+    case AV_OPT_TYPE_SAMPLE_FMT:
+    case AV_OPT_TYPE_VIDEO_RATE:
+    case AV_OPT_TYPE_DURATION:
+    case AV_OPT_TYPE_COLOR:
+    case AV_OPT_TYPE_BOOL:
+        return 1;
+    }
+    return 0;
+}
+
 static int read_number(const AVOption *o, const void *dst, double *num, int *den, int64_t *intnum)
 {
     switch (o->type) {
@@ -1755,40 +1799,6 @@ void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
     return (uint8_t*)obj + opt->offset;
 }
 
-static int opt_size(enum AVOptionType type)
-{
-    switch(type) {
-    case AV_OPT_TYPE_BOOL:
-    case AV_OPT_TYPE_INT:
-    case AV_OPT_TYPE_FLAGS:
-        return sizeof(int);
-    case AV_OPT_TYPE_DURATION:
-    case AV_OPT_TYPE_INT64:
-    case AV_OPT_TYPE_UINT64:
-        return sizeof(int64_t);
-    case AV_OPT_TYPE_DOUBLE:
-        return sizeof(double);
-    case AV_OPT_TYPE_FLOAT:
-        return sizeof(float);
-    case AV_OPT_TYPE_STRING:
-        return sizeof(uint8_t*);
-    case AV_OPT_TYPE_VIDEO_RATE:
-    case AV_OPT_TYPE_RATIONAL:
-        return sizeof(AVRational);
-    case AV_OPT_TYPE_BINARY:
-        return sizeof(uint8_t*) + sizeof(int);
-    case AV_OPT_TYPE_IMAGE_SIZE:
-        return sizeof(int[2]);
-    case AV_OPT_TYPE_PIXEL_FMT:
-        return sizeof(enum AVPixelFormat);
-    case AV_OPT_TYPE_SAMPLE_FMT:
-        return sizeof(enum AVSampleFormat);
-    case AV_OPT_TYPE_COLOR:
-        return 4;
-    }
-    return AVERROR(EINVAL);
-}
-
 int av_opt_copy(void *dst, const void *src)
 {
     const AVOption *o = NULL;
@@ -1839,12 +1849,13 @@ int av_opt_copy(void *dst, const void *src)
         } else if (o->type == AV_OPT_TYPE_CHLAYOUT) {
             if (field_dst != field_src)
                 ret = av_channel_layout_copy(field_dst, field_src);
+        } else if (opt_is_pod(o->type)) {
+            size_t size = opt_elem_size[o->type];
+            memcpy(field_dst, field_src, size);
         } else {
-            int size = opt_size(o->type);
-            if (size < 0)
-                ret = size;
-            else
-                memcpy(field_dst, field_src, size);
+            av_log(dst, AV_LOG_ERROR, "Unhandled option type: %d\n",
+                   o->type);
+            ret = AVERROR(EINVAL);
         }
     }
     return ret;
