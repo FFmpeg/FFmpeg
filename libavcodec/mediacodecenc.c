@@ -319,6 +319,9 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     ret = ff_AMediaCodec_configure(s->codec, format, s->window, NULL, ret);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "MediaCodec configure failed, %s\n", av_err2str(ret));
+        if (avctx->pix_fmt == AV_PIX_FMT_YUV420P)
+            av_log(avctx, AV_LOG_ERROR, "Please try -pix_fmt nv12, some devices don't "
+                                        "support yuv420p as encoder input format.\n");
         goto bailout;
     }
 
