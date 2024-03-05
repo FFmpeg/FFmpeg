@@ -233,13 +233,11 @@ static size_t mod_strcspn(const char *string, const char *reject)
     return i;
 }
 
-static uint32_t color_string_to_rgba(const char *p, int len)
+static uint32_t color_string_to_rgba(const char *p, size_t len)
 {
     uint32_t ret = 0xFF000000;
     const ColorEntry *entry;
     char color_name[100];
-
-    len = FFMIN(FFMAX(len, 0), sizeof(color_name) - 1);
 
     if (*p == '#') {
         p++;
@@ -271,6 +269,7 @@ static uint32_t color_string_to_rgba(const char *p, int len)
                    (hex_char_to_number(p[0]) << 28);
         }
     } else {
+        len = FFMIN(len, sizeof(color_name) - 1);
         strncpy(color_name, p, len);
         color_name[len] = '\0';
 
@@ -375,7 +374,7 @@ static int xpm_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     for (i = 0; i < ncolors; i++) {
         const uint8_t *index;
-        int len;
+        size_t len;
 
         ptr += mod_strcspn(ptr, "\"") + 1;
         if (end - ptr < cpp)
