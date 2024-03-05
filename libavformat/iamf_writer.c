@@ -1060,8 +1060,10 @@ int ff_iamf_write_audio_frame(const IAMFContext *iamf, AVIOContext *pb,
 
         av_free(codec_config->extradata);
         codec_config->extradata = av_memdup(new_extradata, new_extradata_size);
-        if (!codec_config->extradata)
+        if (!codec_config->extradata) {
+            codec_config->extradata_size = 0;
             return AVERROR(ENOMEM);
+        }
         codec_config->extradata_size = new_extradata_size;
 
         return update_extradata(codec_config);
