@@ -229,17 +229,17 @@ fate-filter-hls-append: tests/data/hls-list-append.m3u8
 fate-filter-hls-append: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls-list-append.m3u8 -af asetpts=N*23,aresample
 
 FATE_AMIX += fate-filter-amix-simple
-fate-filter-amix-simple: CMD = ffmpeg -auto_conversion_filters -filter_complex amix -i $(SRC) -ss 3 -i $(SRC1) -f f32le -
+fate-filter-amix-simple: CMD = ffmpeg -auto_conversion_filters -filter_complex amix -max_size 4096 -i $(SRC) -ss 3 -max_size 4096 -i $(SRC1) -f f32le -
 fate-filter-amix-simple: REF = $(SAMPLES)/filter/amix_simple.pcm
 
 FATE_AMIX += fate-filter-amix-first
-fate-filter-amix-first: CMD = ffmpeg -auto_conversion_filters -filter_complex amix=duration=first -ss 4 -i $(SRC) -i $(SRC1) -f f32le -
+fate-filter-amix-first: CMD = ffmpeg -auto_conversion_filters -filter_complex amix=duration=first -ss 4 -max_size 4096 -i $(SRC) -max_size 4096 -i $(SRC1) -f f32le -
 fate-filter-amix-first: REF = $(SAMPLES)/filter/amix_first.pcm
 
 FATE_AMIX += fate-filter-amix-transition
 fate-filter-amix-transition: tests/data/asynth-44100-2-3.wav
 fate-filter-amix-transition: SRC2 = $(TARGET_PATH)/tests/data/asynth-44100-2-3.wav
-fate-filter-amix-transition: CMD = ffmpeg -auto_conversion_filters -filter_complex amix=inputs=3:dropout_transition=0.5 -i $(SRC) -ss 2 -i $(SRC1) -ss 4 -i $(SRC2) -f f32le -
+fate-filter-amix-transition: CMD = ffmpeg -auto_conversion_filters -filter_complex amix=inputs=3:dropout_transition=0.5 -max_size 4096 -i $(SRC) -ss 2 -max_size 4096 -i $(SRC1) -ss 4 -max_size 4096 -i $(SRC2) -f f32le -
 fate-filter-amix-transition: REF = $(SAMPLES)/filter/amix_transition.pcm
 
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, AMIX, WAV, PCM_S16LE, PCM_F32LE, PCM_F32LE) += $(FATE_AMIX)
