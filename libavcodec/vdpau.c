@@ -34,9 +34,6 @@
 #include "vdpau.h"
 #include "vdpau_internal.h"
 
-// XXX: at the time of adding this ifdefery, av_assert* wasn't use outside.
-// When dropping it, make sure other av_assert* were not added since then.
-
 /**
  * @addtogroup VDPAU_Decoding
  *
