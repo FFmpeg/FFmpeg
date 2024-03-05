@@ -2372,7 +2372,7 @@ static int hls_write_header(AVFormatContext *s)
         }
     }
 
-    return ret;
+    return 0;
 }
 
 static int hls_init_file_resend(AVFormatContext *s, VariantStream *vs)

@@ -1747,7 +1747,7 @@ static int dash_write_header(AVFormatContext *s)
             (ret = flush_init_segment(s, os)) < 0)
             return ret;
     }
-    return ret;
+    return 0;
 }
 
 static int add_segment(OutputStream *os, const char *file,
