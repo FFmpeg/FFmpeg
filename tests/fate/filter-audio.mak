@@ -306,10 +306,10 @@ fate-filter-channelmap-one-str: REF = 0ea3052e482c95d5d3bd9da6dac1b5fa
 
 FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELMAP, WAV, PCM_S16LE, PCM_S16LE, WAV) += $(FATE_FILTER_CHANNELMAP)
 
-FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELSPLIT, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-channelsplit
+FATE_AFILTER-$(call FILTERDEMDECENCMUX, CHANNELSPLIT ASETNSAMPLES, WAV, PCM_S16LE, PCM_S16LE, PCM_S16LE) += fate-filter-channelsplit
 fate-filter-channelsplit: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-filter-channelsplit: tests/data/asynth-44100-2.wav
-fate-filter-channelsplit: CMD = md5 -auto_conversion_filters -i $(SRC) -filter_complex channelsplit -f s16le
+fate-filter-channelsplit: CMD = md5 -auto_conversion_filters -i $(SRC) -filter_complex asetnsamples=n=1024:p=0,channelsplit -f s16le
 fate-filter-channelsplit: CMP = oneline
 fate-filter-channelsplit: REF = d92988d0fe2dd92236763f47b07ab597
 
