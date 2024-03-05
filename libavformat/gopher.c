@@ -48,8 +48,11 @@ static int gopher_connect(URLContext *h, const char *path)
 
     if (!*path) return AVERROR(EINVAL);
     switch (*++path) {
+        case ';':
+        case '<':
         case '5':
         case '9':
+        case 's':
             path = strchr(path, '/');
             if (!path) return AVERROR(EINVAL);
             break;
