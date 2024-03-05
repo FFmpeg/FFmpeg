@@ -227,6 +227,7 @@ static void check_deblock_luma(HEVCDSPContext *h, int bit_depth, int c)
             *ptr1 = buf1 + BUF_OFFSET;
 
     declare_func(void, uint8_t *pix, ptrdiff_t stride, int beta, int32_t *tc, uint8_t *no_p, uint8_t *no_q);
+    memset(buf0, 0, BUF_SIZE);
 
     for (int j = 0; j < 3; j++) {
         type = types[j];
