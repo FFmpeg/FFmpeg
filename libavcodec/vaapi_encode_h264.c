@@ -758,7 +758,7 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     vpic->frame_num = hpic->frame_num;
 
     vpic->pic_fields.bits.idr_pic_flag       = (pic->type == PICTURE_TYPE_IDR);
-    vpic->pic_fields.bits.reference_pic_flag = (pic->type != PICTURE_TYPE_B);
+    vpic->pic_fields.bits.reference_pic_flag = pic->is_reference;
 
     return 0;
 }
