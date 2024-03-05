@@ -66,16 +66,14 @@ typedef int (*AVVDPAU_Render2)(struct AVCodecContext *, struct AVFrame *,
 /**
  * This structure is used to share data between the libavcodec library and
  * the client video application.
- * The user shall allocate the structure via the av_alloc_vdpau_hwaccel
- * function and make it available as
- * AVCodecContext.hwaccel_context. Members can be set by the user once
+ * This structure will be allocated and stored in AVCodecContext.hwaccel_context
+ * by av_vdpau_bind_context(). Members can be set by the user once
  * during initialization or through each AVCodecContext.get_buffer()
  * function call. In any case, they must be valid prior to calling
  * decoding functions.
  *
  * The size of this structure is not a part of the public ABI and must not
- * be used outside of libavcodec. Use av_vdpau_alloc_context() to allocate an
- * AVVDPAUContext.
+ * be used outside of libavcodec.
  */
 typedef struct AVVDPAUContext {
     /**
@@ -95,15 +93,27 @@ typedef struct AVVDPAUContext {
     AVVDPAU_Render2 render2;
 } AVVDPAUContext;
 
+#if FF_API_VDPAU_ALLOC_GET_SET
 /**
  * @brief allocation function for AVVDPAUContext
  *
  * Allows extending the struct without breaking API/ABI
+ * @deprecated use av_vdpau_bind_context() instead
  */
+attribute_deprecated
 AVVDPAUContext *av_alloc_vdpaucontext(void);
 
+/**
+ * @deprecated render2 is public and can be accessed directly
+ */
+attribute_deprecated
 AVVDPAU_Render2 av_vdpau_hwaccel_get_render2(const AVVDPAUContext *);
+/**
+ * @deprecated render2 is public and can be accessed directly
+ */
+attribute_deprecated
 void av_vdpau_hwaccel_set_render2(AVVDPAUContext *, AVVDPAU_Render2);
+#endif
 
 /**
  * Associate a VDPAU device with a codec context for hardware acceleration.
@@ -145,12 +155,16 @@ int av_vdpau_bind_context(AVCodecContext *avctx, VdpDevice device,
 int av_vdpau_get_surface_parameters(AVCodecContext *avctx, VdpChromaType *type,
                                     uint32_t *width, uint32_t *height);
 
+#if FF_API_VDPAU_ALLOC_GET_SET
 /**
  * Allocate an AVVDPAUContext.
  *
  * @return Newly-allocated AVVDPAUContext or NULL on failure.
+ * @deprecated use av_vdpau_bind_context() instead
  */
+attribute_deprecated
 AVVDPAUContext *av_vdpau_alloc_context(void);
+#endif
 
 /** @} */
 
