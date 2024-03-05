@@ -926,6 +926,7 @@ static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     for (int i = 0; i < iamf->nb_audio_elements; i++) {
         IAMFAudioElement *audio_element = iamf->audio_elements[i];
+        const AVIAMFAudioElement *element;
         AVStreamGroup *stg =
             avformat_stream_group_create(c->fc, AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT, NULL);
 
@@ -937,7 +938,7 @@ static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_iamf_audio_element_free(&stg->params.iamf_audio_element);
         stg->id = audio_element->audio_element_id;
         /* Transfer ownership */
-        stg->params.iamf_audio_element = audio_element->element;
+        element = stg->params.iamf_audio_element = audio_element->element;
         audio_element->element = NULL;
 
         for (int j = 0; j < audio_element->nb_substreams; j++) {
@@ -964,6 +965,8 @@ static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 sc->refcount++;
             }
 
+            if (element->audio_element_type == AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE)
+                stream->disposition |= AV_DISPOSITION_DEPENDENT;
             if (i || j) {
                 stream->disposition |= AV_DISPOSITION_DEPENDENT;
                 if (audio_element->layers[0].substream_count == 1)

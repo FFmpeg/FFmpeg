@@ -109,7 +109,7 @@ DISPOSITION:non_diegetic=0
 DISPOSITION:captions=0
 DISPOSITION:descriptions=0
 DISPOSITION:metadata=0
-DISPOSITION:dependent=0
+DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
@@ -224,7 +224,7 @@ DISPOSITION:non_diegetic=0
 DISPOSITION:captions=0
 DISPOSITION:descriptions=0
 DISPOSITION:metadata=0
-DISPOSITION:dependent=0
+DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
