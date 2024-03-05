@@ -190,10 +190,10 @@ FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, STEREOTOOLS, WAV, PCM_S16LE, PCM
 fate-filter-stereotools: SRC = $(TARGET_SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 fate-filter-stereotools: CMD = framecrc -i $(SRC) -frames:a 20 -af aresample,stereotools=mlev=0.015625,aresample
 
-FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, TREMOLO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-tremolo
+FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, TREMOLO ATRIM, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-tremolo
 fate-filter-tremolo: tests/data/asynth-44100-2.wav
 fate-filter-tremolo: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
-fate-filter-tremolo: CMD = ffmpeg -auto_conversion_filters -i $(SRC) -frames:a 20 -af tremolo -f wav -f s16le -
+fate-filter-tremolo: CMD = ffmpeg -auto_conversion_filters -i $(SRC) -af tremolo,atrim=end_sample=20480 -f wav -f s16le -
 fate-filter-tremolo: REF = $(SAMPLES)/filter/tremolo.pcm
 fate-filter-tremolo: CMP = oneoff
 fate-filter-tremolo: CMP_UNIT = s16
