@@ -338,12 +338,13 @@ static int mov_cenc_write_saiz_tag(MOVMuxCencContext* ctx, AVIOContext *pb)
     return update_size(pb, pos);
 }
 
-void ff_mov_cenc_write_stbl_atoms(MOVMuxCencContext* ctx, AVIOContext *pb)
+void ff_mov_cenc_write_stbl_atoms(MOVMuxCencContext* ctx, AVIOContext *pb,
+                                  int64_t moof_offset)
 {
     int64_t auxiliary_info_offset;
 
     mov_cenc_write_senc_tag(ctx, pb, &auxiliary_info_offset);
-    mov_cenc_write_saio_tag(pb, auxiliary_info_offset);
+    mov_cenc_write_saio_tag(pb, auxiliary_info_offset - moof_offset);
     mov_cenc_write_saiz_tag(ctx, pb);
 }
 
