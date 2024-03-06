@@ -522,7 +522,7 @@ int ff_h264_decode_seq_parameter_set(GetBitContext *gb, AVCodecContext *avctx,
 
     sps->vui_parameters_present_flag = get_bits1(gb);
     if (sps->vui_parameters_present_flag) {
-        int ret = decode_vui_parameters(gb, avctx, sps);
+        ret = decode_vui_parameters(gb, avctx, sps);
         if (ret < 0)
             goto fail;
     }
