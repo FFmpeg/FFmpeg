@@ -42,6 +42,7 @@
 #include "libavutil/film_grain_params.h"
 #include "libavutil/hash.h"
 #include "libavutil/hdr_dynamic_metadata.h"
+#include "libavutil/iamf.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/hdr_dynamic_vivid_metadata.h"
 #include "libavutil/dovi_meta.h"
@@ -215,6 +216,12 @@ typedef enum {
     SECTION_ID_STREAM_GROUP_COMPONENT,
     SECTION_ID_STREAM_GROUP_SUBCOMPONENTS,
     SECTION_ID_STREAM_GROUP_SUBCOMPONENT,
+    SECTION_ID_STREAM_GROUP_PIECES,
+    SECTION_ID_STREAM_GROUP_PIECE,
+    SECTION_ID_STREAM_GROUP_SUBPIECES,
+    SECTION_ID_STREAM_GROUP_SUBPIECE,
+    SECTION_ID_STREAM_GROUP_BLOCKS,
+    SECTION_ID_STREAM_GROUP_BLOCK,
     SECTION_ID_STREAM_GROUP_STREAMS,
     SECTION_ID_STREAM_GROUP_STREAM,
     SECTION_ID_STREAM_GROUP_DISPOSITION,
@@ -288,8 +295,8 @@ static struct section sections[] = {
     [SECTION_ID_FRAME_SIDE_DATA_TIMECODE] =       { SECTION_ID_FRAME_SIDE_DATA_TIMECODE, "timecode", 0, { -1 } },
     [SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST] = { SECTION_ID_FRAME_SIDE_DATA_COMPONENT_LIST, "components", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA_COMPONENT, -1 }, .element_name = "component", .unique_name = "frame_side_data_components" },
     [SECTION_ID_FRAME_SIDE_DATA_COMPONENT] =      { SECTION_ID_FRAME_SIDE_DATA_COMPONENT, "component", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST, -1 }, .unique_name = "frame_side_data_component", .element_name = "component_entry", .get_type = get_raw_string_type },
-    [SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST] =   { SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST, "pieces", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA_PIECE, -1 }, .element_name = "piece" },
-    [SECTION_ID_FRAME_SIDE_DATA_PIECE] =        { SECTION_ID_FRAME_SIDE_DATA_PIECE, "piece", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { -1 }, .element_name = "piece_entry", .get_type = get_raw_string_type },
+    [SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST] =   { SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST, "pieces", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA_PIECE, -1 }, .element_name = "piece", .unique_name = "frame_side_data_pieces" },
+    [SECTION_ID_FRAME_SIDE_DATA_PIECE] =        { SECTION_ID_FRAME_SIDE_DATA_PIECE, "piece", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { -1 }, .element_name = "piece_entry", .unique_name = "frame_side_data_piece", .get_type = get_raw_string_type },
     [SECTION_ID_FRAME_LOGS] =         { SECTION_ID_FRAME_LOGS, "logs", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_LOG, -1 } },
     [SECTION_ID_FRAME_LOG] =          { SECTION_ID_FRAME_LOG, "log", 0, { -1 },  },
     [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS, "library_versions", SECTION_FLAG_IS_ARRAY, { SECTION_ID_LIBRARY_VERSION, -1 } },
@@ -319,7 +326,13 @@ static struct section sections[] = {
     [SECTION_ID_STREAM_GROUP_COMPONENTS] =         { SECTION_ID_STREAM_GROUP_COMPONENTS, "components", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_COMPONENT, -1 }, .element_name = "component", .unique_name = "stream_group_components" },
     [SECTION_ID_STREAM_GROUP_COMPONENT] =          { SECTION_ID_STREAM_GROUP_COMPONENT, "component", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { SECTION_ID_STREAM_GROUP_SUBCOMPONENTS, -1 }, .unique_name = "stream_group_component", .element_name = "component_entry", .get_type = get_stream_group_type },
     [SECTION_ID_STREAM_GROUP_SUBCOMPONENTS] =      { SECTION_ID_STREAM_GROUP_SUBCOMPONENTS, "subcomponents", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_SUBCOMPONENT, -1 }, .element_name = "component" },
-    [SECTION_ID_STREAM_GROUP_SUBCOMPONENT] =       { SECTION_ID_STREAM_GROUP_SUBCOMPONENT, "subcomponent", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { -1 }, .element_name = "subcomponent_entry", .get_type = get_raw_string_type },
+    [SECTION_ID_STREAM_GROUP_SUBCOMPONENT] =       { SECTION_ID_STREAM_GROUP_SUBCOMPONENT, "subcomponent", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { SECTION_ID_STREAM_GROUP_PIECES, -1 }, .element_name = "subcomponent_entry", .get_type = get_raw_string_type },
+    [SECTION_ID_STREAM_GROUP_PIECES] =             { SECTION_ID_STREAM_GROUP_PIECES, "pieces", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_PIECE, -1 }, .element_name = "piece", .unique_name = "stream_group_pieces" },
+    [SECTION_ID_STREAM_GROUP_PIECE] =              { SECTION_ID_STREAM_GROUP_PIECE, "piece", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { SECTION_ID_STREAM_GROUP_SUBPIECES, -1 }, .unique_name = "stream_group_piece", .element_name = "piece_entry", .get_type = get_raw_string_type },
+    [SECTION_ID_STREAM_GROUP_SUBPIECES] =          { SECTION_ID_STREAM_GROUP_SUBPIECES, "subpieces", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_SUBPIECE, -1 }, .element_name = "subpiece" },
+    [SECTION_ID_STREAM_GROUP_SUBPIECE] =           { SECTION_ID_STREAM_GROUP_SUBPIECE, "subpiece", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { SECTION_ID_STREAM_GROUP_BLOCKS, -1 }, .element_name = "subpiece_entry", .get_type = get_raw_string_type },
+    [SECTION_ID_STREAM_GROUP_BLOCKS] =             { SECTION_ID_STREAM_GROUP_BLOCKS, "blocks", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_BLOCK, -1 }, .element_name = "block" },
+    [SECTION_ID_STREAM_GROUP_BLOCK] =              { SECTION_ID_STREAM_GROUP_BLOCK, "block", SECTION_FLAG_HAS_VARIABLE_FIELDS|SECTION_FLAG_HAS_TYPE, { -1 }, .element_name = "block_entry", .get_type = get_raw_string_type },
     [SECTION_ID_STREAM_GROUP_STREAMS] =            { SECTION_ID_STREAM_GROUP_STREAMS, "streams", SECTION_FLAG_IS_ARRAY, { SECTION_ID_STREAM_GROUP_STREAM, -1 }, .unique_name = "stream_group_streams" },
     [SECTION_ID_STREAM_GROUP_STREAM] =             { SECTION_ID_STREAM_GROUP_STREAM, "stream", 0, { SECTION_ID_STREAM_GROUP_STREAM_DISPOSITION, SECTION_ID_STREAM_GROUP_STREAM_TAGS, -1 }, .unique_name = "stream_group_stream" },
     [SECTION_ID_STREAM_GROUP_DISPOSITION] =        { SECTION_ID_STREAM_GROUP_DISPOSITION, "disposition", 0, { -1 }, .unique_name = "stream_group_disposition" },
@@ -524,7 +537,7 @@ typedef struct Writer {
     int flags;                  ///< a combination or WRITER_FLAG_*
 } Writer;
 
-#define SECTION_MAX_NB_LEVELS 10
+#define SECTION_MAX_NB_LEVELS 12
 
 struct WriterContext {
     const AVClass *class;           ///< class of the writer
@@ -3523,11 +3536,167 @@ static void print_tile_grid_params(WriterContext *w, const AVStreamGroup *stg,
     writer_print_section_footer(w);
 }
 
+static void print_iamf_param_definition(WriterContext *w, const char *name,
+                                        const AVIAMFParamDefinition *param, SectionID section_id)
+{
+    SectionID subsection_id, parameter_section_id;
+    subsection_id = sections[section_id].children_ids[0];
+    av_assert0(subsection_id != -1);
+    parameter_section_id = sections[subsection_id].children_ids[0];
+    av_assert0(parameter_section_id != -1);
+    writer_print_section_header(w, "IAMF Param Definition", section_id);
+    print_str("name",           name);
+    print_int("nb_subblocks",   param->nb_subblocks);
+    print_int("type",           param->type);
+    print_int("parameter_id",   param->parameter_id);
+    print_int("parameter_rate", param->parameter_rate);
+    print_int("duration",       param->duration);
+    print_int("constant_subblock_duration",          param->constant_subblock_duration);
+    if (param->nb_subblocks > 0)
+        writer_print_section_header(w, NULL, subsection_id);
+    for (int i = 0; i < param->nb_subblocks; i++) {
+        const void *subblock = av_iamf_param_definition_get_subblock(param, i);
+        switch(param->type) {
+        case AV_IAMF_PARAMETER_DEFINITION_MIX_GAIN: {
+            const AVIAMFMixGain *mix = subblock;
+            writer_print_section_header(w, "IAMF Mix Gain Parameters", parameter_section_id);
+            print_int("subblock_duration",         mix->subblock_duration);
+            print_int("animation_type",            mix->animation_type);
+            print_q("start_point_value",           mix->start_point_value, '/');
+            print_q("end_point_value",             mix->end_point_value, '/');
+            print_q("control_point_value",         mix->control_point_value, '/');
+            print_q("control_point_relative_time", mix->control_point_relative_time, '/');
+            writer_print_section_footer(w); // parameter_section_id
+            break;
+        }
+        case AV_IAMF_PARAMETER_DEFINITION_DEMIXING: {
+            const AVIAMFDemixingInfo *demix = subblock;
+            writer_print_section_header(w, "IAMF Demixing Info", parameter_section_id);
+            print_int("subblock_duration", demix->subblock_duration);
+            print_int("dmixp_mode",        demix->dmixp_mode);
+            writer_print_section_footer(w); // parameter_section_id
+            break;
+        }
+        case AV_IAMF_PARAMETER_DEFINITION_RECON_GAIN: {
+            const AVIAMFReconGain *recon = subblock;
+            writer_print_section_header(w, "IAMF Recon Gain", parameter_section_id);
+            print_int("subblock_duration", recon->subblock_duration);
+            writer_print_section_footer(w); // parameter_section_id
+            break;
+        }
+        }
+    }
+    if (param->nb_subblocks > 0)
+        writer_print_section_footer(w); // subsection_id
+    writer_print_section_footer(w); // section_id
+}
+
+static void print_iamf_audio_element_params(WriterContext *w, const AVStreamGroup *stg,
+                                            const AVIAMFAudioElement *audio_element)
+{
+    writer_print_section_header(w, stg, SECTION_ID_STREAM_GROUP_COMPONENT);
+    print_int("nb_layers",          audio_element->nb_layers);
+    print_int("audio_element_type", audio_element->audio_element_type);
+    print_int("default_w",          audio_element->default_w);
+    writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP_SUBCOMPONENTS);
+    for (int i = 0; i < audio_element->nb_layers; i++) {
+        const AVIAMFLayer *layer = audio_element->layers[i];
+        char val_str[128];
+        writer_print_section_header(w, "IAMF Audio Layer", SECTION_ID_STREAM_GROUP_SUBCOMPONENT);
+        av_channel_layout_describe(&layer->ch_layout, val_str, sizeof(val_str));
+        print_str("channel_layout", val_str);
+        if (audio_element->audio_element_type == AV_IAMF_AUDIO_ELEMENT_TYPE_CHANNEL) {
+            print_int("output_gain_flags", layer->output_gain_flags);
+            print_q("output_gain",         layer->output_gain, '/');
+        } else if (audio_element->audio_element_type == AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE)
+            print_int("ambisonics_mode",   layer->ambisonics_mode);
+        writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_SUBCOMPONENT
+    }
+    if (audio_element->demixing_info)
+        print_iamf_param_definition(w, "demixing_info", audio_element->demixing_info,
+                                    SECTION_ID_STREAM_GROUP_SUBCOMPONENT);
+    if (audio_element->recon_gain_info)
+        print_iamf_param_definition(w, "recon_gain_info", audio_element->recon_gain_info,
+                                    SECTION_ID_STREAM_GROUP_SUBCOMPONENT);
+    writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_SUBCOMPONENTS
+    writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_COMPONENT
+}
+
+static void print_iamf_submix_params(WriterContext *w, const AVIAMFSubmix *submix)
+{
+    writer_print_section_header(w, "IAMF Submix", SECTION_ID_STREAM_GROUP_SUBCOMPONENT);
+    print_int("nb_elements",    submix->nb_elements);
+    print_int("nb_layouts",     submix->nb_layouts);
+    print_q("default_mix_gain", submix->default_mix_gain, '/');
+    writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP_PIECES);
+    for (int i = 0; i < submix->nb_elements; i++) {
+        const AVIAMFSubmixElement *element = submix->elements[i];
+        writer_print_section_header(w, "IAMF Submix Element", SECTION_ID_STREAM_GROUP_PIECE);
+        print_int("stream_id",                 element->audio_element_id);
+        print_q("default_mix_gain",            element->default_mix_gain, '/');
+        print_int("headphones_rendering_mode", element->headphones_rendering_mode);
+        writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP_SUBPIECES);
+        if (element->annotations) {
+            const AVDictionaryEntry *annotation = NULL;
+            writer_print_section_header(w, "IAMF Annotations", SECTION_ID_STREAM_GROUP_SUBPIECE);
+            while (annotation = av_dict_iterate(element->annotations, annotation))
+                print_str(annotation->key, annotation->value);
+            writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_SUBPIECE
+        }
+        if (element->element_mix_config)
+            print_iamf_param_definition(w, "element_mix_config", element->element_mix_config,
+                                        SECTION_ID_STREAM_GROUP_SUBPIECE);
+        writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_SUBPIECES
+        writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_PIECE
+    }
+    if (submix->output_mix_config)
+        print_iamf_param_definition(w, "output_mix_config", submix->output_mix_config,
+                                    SECTION_ID_STREAM_GROUP_PIECE);
+    for (int i = 0; i < submix->nb_layouts; i++) {
+        const AVIAMFSubmixLayout *layout = submix->layouts[i];
+        char val_str[128];
+        writer_print_section_header(w, "IAMF Submix Layout", SECTION_ID_STREAM_GROUP_PIECE);
+        av_channel_layout_describe(&layout->sound_system, val_str, sizeof(val_str));
+        print_str("sound_system",             val_str);
+        print_q("integrated_loudness",        layout->integrated_loudness, '/');
+        print_q("digital_peak",               layout->digital_peak, '/');
+        print_q("true_peak",                  layout->true_peak, '/');
+        print_q("dialogue_anchored_loudness", layout->dialogue_anchored_loudness, '/');
+        print_q("album_anchored_loudness",    layout->album_anchored_loudness, '/');
+        writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_PIECE
+    }
+    writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_PIECES
+    writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_SUBCOMPONENT
+}
+
+static void print_iamf_mix_presentation_params(WriterContext *w, const AVStreamGroup *stg,
+                                               const AVIAMFMixPresentation *mix_presentation)
+{
+    writer_print_section_header(w, stg, SECTION_ID_STREAM_GROUP_COMPONENT);
+    print_int("nb_submixes", mix_presentation->nb_submixes);
+    writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP_SUBCOMPONENTS);
+    if (mix_presentation->annotations) {
+        const AVDictionaryEntry *annotation = NULL;
+        writer_print_section_header(w, "IAMF Annotations", SECTION_ID_STREAM_GROUP_SUBCOMPONENT);
+        while (annotation = av_dict_iterate(mix_presentation->annotations, annotation))
+            print_str(annotation->key, annotation->value);
+        writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_SUBCOMPONENT
+    }
+    for (int i = 0; i < mix_presentation->nb_submixes; i++)
+        print_iamf_submix_params(w, mix_presentation->submixes[i]);
+    writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_SUBCOMPONENTS
+    writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_COMPONENT
+}
+
 static void print_stream_group_params(WriterContext *w, AVStreamGroup *stg)
 {
     writer_print_section_header(w, NULL, SECTION_ID_STREAM_GROUP_COMPONENTS);
     if (stg->type == AV_STREAM_GROUP_PARAMS_TILE_GRID)
         print_tile_grid_params(w, stg, stg->params.tile_grid);
+    else if (stg->type == AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
+        print_iamf_audio_element_params(w, stg, stg->params.iamf_audio_element);
+    else if (stg->type == AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION)
+        print_iamf_mix_presentation_params(w, stg, stg->params.iamf_mix_presentation);
     writer_print_section_footer(w); // SECTION_ID_STREAM_GROUP_COMPONENTS
 }
 

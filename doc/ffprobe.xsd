@@ -366,7 +366,46 @@
 
   <xsd:complexType name="streamGroupSubComponentType">
     <xsd:sequence>
+      <xsd:element name="pieces" type="ffprobe:streamGroupPieceList" minOccurs="0" maxOccurs="1"/>
       <xsd:element name="subcomponent_entry" type="ffprobe:streamGroupEntryType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="streamGroupPieceList">
+    <xsd:sequence>
+      <xsd:element name="piece" type="ffprobe:streamGroupPieceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="streamGroupPieceType">
+    <xsd:sequence>
+      <xsd:element name="subpieces" type="ffprobe:streamGroupSubPieceList" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="piece_entry" type="ffprobe:streamGroupEntryType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="streamGroupSubPieceList">
+    <xsd:sequence>
+      <xsd:element name="subpiece" type="ffprobe:streamGroupSubPieceType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="streamGroupSubPieceType">
+    <xsd:sequence>
+      <xsd:element name="blocks" type="ffprobe:streamGroupBlockList" minOccurs="0" maxOccurs="1"/>
+      <xsd:element name="subpiece_entry" type="ffprobe:streamGroupEntryType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="streamGroupBlockList">
+    <xsd:sequence>
+      <xsd:element name="block" type="ffprobe:streamGroupBlockType" minOccurs="0" maxOccurs="unbounded"/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="streamGroupBlockType">
+    <xsd:sequence>
+      <xsd:element name="block_entry" type="ffprobe:streamGroupEntryType" minOccurs="0" maxOccurs="unbounded"/>
     </xsd:sequence>
   </xsd:complexType>
 
