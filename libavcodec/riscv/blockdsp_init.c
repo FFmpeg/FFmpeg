@@ -27,6 +27,10 @@
 
 void ff_clear_block_rvv(int16_t *block);
 void ff_clear_blocks_rvv(int16_t *block);
+void ff_fill_block16_rvv(uint8_t *block, uint8_t value, ptrdiff_t line_size,
+                           int h);
+void ff_fill_block8_rvv(uint8_t *block, uint8_t value, ptrdiff_t line_size,
+                           int h);
 
 av_cold void ff_blockdsp_init_riscv(BlockDSPContext *c)
 {
@@ -36,6 +40,8 @@ av_cold void ff_blockdsp_init_riscv(BlockDSPContext *c)
     if (flags & AV_CPU_FLAG_RVV_I64 && ff_get_rv_vlenb() >= 16) {
         c->clear_block = ff_clear_block_rvv;
         c->clear_blocks = ff_clear_blocks_rvv;
+        c->fill_block_tab[0] = ff_fill_block16_rvv;
+        c->fill_block_tab[1] = ff_fill_block8_rvv;
     }
 #endif
 }

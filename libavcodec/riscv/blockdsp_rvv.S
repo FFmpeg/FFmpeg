@@ -40,3 +40,24 @@ func ff_clear_blocks_rvv, zve64x
 
         ret
 endfunc
+
+func ff_fill_block16_rvv, zve32x
+        vsetivli      t0, 16, e8, m1, ta, ma
+        vmv.v.x       v8, a1
+1:
+        addi          a3, a3, -1
+        vse8.v        v8, (a0)
+        add           a0, a0, a2
+        bnez          a3, 1b
+
+        ret
+endfunc
+
+func ff_fill_block8_rvv, zve64x
+        vsetvli       t0, zero, e8, m4, ta, ma
+        vmv.v.x       v8, a1
+        vsetvli       t0, a3, e64, m4, ta, ma
+        vsse64.v      v8, (a0), a2
+
+        ret
+endfunc
