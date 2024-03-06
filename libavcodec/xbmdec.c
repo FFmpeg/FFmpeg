@@ -28,17 +28,22 @@
 
 static int get_nibble(uint8_t x)
 {
-    int ret = 255;
+#define TIMES256(idx) \
+TIMES64(4 * (idx)) TIMES64(4 * (idx) + 1) TIMES64(4 * (idx) + 2) TIMES64(4 * (idx) + 3)
+#define TIMES64(idx) \
+TIMES16(4 * (idx)) TIMES16(4 * (idx) + 1) TIMES16(4 * (idx) + 2) TIMES16(4 * (idx) + 3)
+#define TIMES16(idx) \
+TIMES4(4 * (idx)) TIMES4(4 * (idx) + 1) TIMES4(4 * (idx) + 2) TIMES4(4 * (idx) + 3)
+#define TIMES4(idx) \
+ENTRY(4 * (idx)) ENTRY(4 * (idx) + 1) ENTRY(4 * (idx) + 2) ENTRY(4 * (idx) + 3)
+#define ENTRY(x) [x] = ((x) >= 'a' && (x) <= 'f') ? (x) - ('a' - 10) : \
+                       ((x) >= 'A' && (x) <= 'F') ? (x) - ('A' - 10) : \
+                       ((x) >= '0' && (x) <= '9') ? (x) - '0' : 255,
 
-    if (x <= '9') {
-        if (x >= '0')
-            ret = x - '0';
-    } else if (x >= 'a') {
-        if (x <= 'f')
-            ret = x - ('a' - 10);
-    } else if (x >= 'A' && x <= 'F')
-        ret = x - ('A' - 10);
-    return ret;
+    static const uint8_t lut[] = {
+        TIMES256(0)
+    };
+    return lut[x];
 }
 
 static int parse_str_int(const uint8_t *p, const uint8_t *end, const uint8_t *key)
