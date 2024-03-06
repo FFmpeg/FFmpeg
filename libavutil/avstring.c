@@ -345,7 +345,7 @@ int av_escape(char **dst, const char *src, const char *special_chars,
 int av_match_name(const char *name, const char *names)
 {
     const char *p;
-    int len, namelen;
+    size_t len, namelen;
 
     if (!name || !names)
         return 0;
