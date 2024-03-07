@@ -19,6 +19,7 @@
 #ifndef AVCODEC_VULKAN_DECODE_H
 #define AVCODEC_VULKAN_DECODE_H
 
+#include "codec_id.h"
 #include "decode.h"
 #include "hwaccel_internal.h"
 #include "internal.h"
@@ -26,6 +27,7 @@
 #include "vulkan_video.h"
 
 typedef struct FFVulkanDecodeDescriptor {
+    enum AVCodecID                   codec_id;
     FFVulkanExtensions               decode_extension;
     VkVideoCodecOperationFlagBitsKHR decode_op;
 

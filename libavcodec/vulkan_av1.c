@@ -24,6 +24,7 @@
 #define MAX_TILES 256
 
 const FFVulkanDecodeDescriptor ff_vk_dec_av1_desc = {
+    .codec_id         = AV_CODEC_ID_AV1,
     .decode_extension = FF_VK_EXT_VIDEO_DECODE_AV1,
     .decode_op        = 0x01000000, /* TODO fix this */
     .ext_props = {

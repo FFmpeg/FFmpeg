@@ -23,6 +23,7 @@
 #include "vulkan_decode.h"
 
 const FFVulkanDecodeDescriptor ff_vk_dec_hevc_desc = {
+    .codec_id         = AV_CODEC_ID_HEVC,
     .decode_extension = FF_VK_EXT_VIDEO_DECODE_H265,
     .decode_op        = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,
     .ext_props = {

@@ -20,6 +20,7 @@
 #include "vulkan_video.h"
 #include "vulkan_decode.h"
 #include "config_components.h"
+#include "libavutil/avassert.h"
 #include "libavutil/vulkan_loader.h"
 
 #if CONFIG_H264_VULKAN_HWACCEL
@@ -34,19 +35,23 @@ extern const FFVulkanDecodeDescriptor ff_vk_dec_av1_desc;
 
 static const FFVulkanDecodeDescriptor *dec_descs[] = {
 #if CONFIG_H264_VULKAN_HWACCEL
-    [AV_CODEC_ID_H264] = &ff_vk_dec_h264_desc,
+    &ff_vk_dec_h264_desc,
 #endif
 #if CONFIG_HEVC_VULKAN_HWACCEL
-    [AV_CODEC_ID_HEVC] = &ff_vk_dec_hevc_desc,
+    &ff_vk_dec_hevc_desc,
 #endif
 #if CONFIG_AV1_VULKAN_HWACCEL
-    [AV_CODEC_ID_AV1] = &ff_vk_dec_av1_desc,
+    &ff_vk_dec_av1_desc,
 #endif
 };
 
 static const FFVulkanDecodeDescriptor *get_codecdesc(enum AVCodecID codec_id)
 {
-    return dec_descs[codec_id];
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(dec_descs); i++)
+        if (dec_descs[i]->codec_id == codec_id)
+            return dec_descs[i];
+    av_assert1(!"no codec descriptor");
+    return NULL;
 }
 
 static const VkVideoProfileInfoKHR *get_video_profile(FFVulkanDecodeShared *ctx, enum AVCodecID codec_id)
