@@ -472,12 +472,8 @@ static int librav1e_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
 
             if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
                 fd->frame_opaque = frame->opaque;
-                ret = av_buffer_replace(&fd->frame_opaque_ref, frame->opaque_ref);
-                if (ret < 0) {
-                    frame_data_free(fd);
-                    av_frame_unref(frame);
-                    return ret;
-                }
+                fd->frame_opaque_ref = frame->opaque_ref;
+                frame->opaque_ref    = NULL;
             }
 
             rframe = rav1e_frame_new(ctx->ctx);
