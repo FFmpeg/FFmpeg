@@ -22,9 +22,13 @@
 
 #include "vulkan_decode.h"
 
-const VkExtensionProperties ff_vk_dec_hevc_ext = {
-    .extensionName = VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME,
-    .specVersion   = VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION,
+const FFVulkanDecodeDescriptor ff_vk_dec_hevc_desc = {
+    .decode_extension = FF_VK_EXT_VIDEO_DECODE_H265,
+    .decode_op        = VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,
+    .ext_props = {
+        .extensionName = VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME,
+        .specVersion   = VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION,
+    },
 };
 
 typedef struct HEVCHeaderSPS {

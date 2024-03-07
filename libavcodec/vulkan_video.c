@@ -16,33 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "codec_id.h"
-
 #include "vulkan_video.h"
-
-const FFVkCodecMap ff_vk_codec_map[3] = {
-    {
-        .codec_id = AV_CODEC_ID_H264,
-                           0,
-                           0,
-                           FF_VK_EXT_VIDEO_DECODE_H264,
-                           VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
-    },
-    {
-        .codec_id = AV_CODEC_ID_HEVC,
-                           0,
-                           0,
-                           FF_VK_EXT_VIDEO_DECODE_H265,
-                           VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR
-    },
-    {
-        .codec_id = AV_CODEC_ID_AV1,
-                           0,
-                           0,
-                           FF_VK_EXT_VIDEO_DECODE_AV1,
-                           0x01000000 /* TODO fix this */
-    },
-};
 
 #define ASPECT_2PLANE (VK_IMAGE_ASPECT_PLANE_0_BIT | VK_IMAGE_ASPECT_PLANE_1_BIT)
 #define ASPECT_3PLANE (VK_IMAGE_ASPECT_PLANE_0_BIT | VK_IMAGE_ASPECT_PLANE_1_BIT | VK_IMAGE_ASPECT_PLANE_2_BIT)

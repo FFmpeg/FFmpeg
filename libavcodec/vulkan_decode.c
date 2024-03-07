@@ -20,38 +20,33 @@
 #include "vulkan_video.h"
 #include "vulkan_decode.h"
 #include "config_components.h"
-#include "libavutil/avassert.h"
 #include "libavutil/vulkan_loader.h"
 
 #if CONFIG_H264_VULKAN_HWACCEL
-extern const VkExtensionProperties ff_vk_dec_h264_ext;
+extern const FFVulkanDecodeDescriptor ff_vk_dec_h264_desc;
 #endif
 #if CONFIG_HEVC_VULKAN_HWACCEL
-extern const VkExtensionProperties ff_vk_dec_hevc_ext;
+extern const FFVulkanDecodeDescriptor ff_vk_dec_hevc_desc;
 #endif
 #if CONFIG_AV1_VULKAN_HWACCEL
-extern const VkExtensionProperties ff_vk_dec_av1_ext;
+extern const FFVulkanDecodeDescriptor ff_vk_dec_av1_desc;
 #endif
 
-static const VkExtensionProperties *dec_ext[] = {
+static const FFVulkanDecodeDescriptor *dec_descs[] = {
 #if CONFIG_H264_VULKAN_HWACCEL
-    [AV_CODEC_ID_H264] = &ff_vk_dec_h264_ext,
+    [AV_CODEC_ID_H264] = &ff_vk_dec_h264_desc,
 #endif
 #if CONFIG_HEVC_VULKAN_HWACCEL
-    [AV_CODEC_ID_HEVC] = &ff_vk_dec_hevc_ext,
+    [AV_CODEC_ID_HEVC] = &ff_vk_dec_hevc_desc,
 #endif
 #if CONFIG_AV1_VULKAN_HWACCEL
-    [AV_CODEC_ID_AV1] = &ff_vk_dec_av1_ext,
+    [AV_CODEC_ID_AV1] = &ff_vk_dec_av1_desc,
 #endif
 };
 
-static const FFVkCodecMap *get_codecmap(enum AVCodecID codec_id)
+static const FFVulkanDecodeDescriptor *get_codecdesc(enum AVCodecID codec_id)
 {
-    for (size_t i = 0; i < FF_ARRAY_ELEMS(ff_vk_codec_map); i++)
-        if (ff_vk_codec_map[i].codec_id == codec_id)
-            return &ff_vk_codec_map[i];
-    av_assert1(!"unreachable");
-    return NULL;
+    return dec_descs[codec_id];
 }
 
 static const VkVideoProfileInfoKHR *get_video_profile(FFVulkanDecodeShared *ctx, enum AVCodecID codec_id)
@@ -671,7 +666,7 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
                                      FFVulkanDecodeProfileData *prof,
                                      AVVulkanDeviceContext *hwctx,
                                      FFVulkanFunctions *vk,
-                                     const struct FFVkCodecMap *vk_codec,
+                                     const FFVulkanDecodeDescriptor *vk_desc,
                                      VkVideoDecodeH264CapabilitiesKHR *h264_caps,
                                      VkVideoDecodeH265CapabilitiesKHR *h265_caps,
                                      VkVideoDecodeAV1CapabilitiesMESA *av1_caps,
@@ -722,7 +717,7 @@ static VkResult vulkan_setup_profile(AVCodecContext *avctx,
 
     profile->sType               = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
     profile->pNext               = usage;
-    profile->videoCodecOperation = vk_codec->decode_op;
+    profile->videoCodecOperation = vk_desc->decode_op;
     profile->chromaSubsampling   = ff_vk_subsampling_from_av_desc(desc);
     profile->lumaBitDepth        = ff_vk_depth_from_av_depth(desc->comp[0].depth);
     profile->chromaBitDepth      = profile->lumaBitDepth;
@@ -748,7 +743,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
 {
     VkResult ret;
     int max_level, base_profile, cur_profile;
-    const FFVkCodecMap *vk_codec = get_codecmap(avctx->codec_id);
+    const FFVulkanDecodeDescriptor *vk_desc = get_codecdesc(avctx->codec_id);
     AVHWFramesContext *frames = (AVHWFramesContext *)frames_ref->data;
     AVHWDeviceContext *device = (AVHWDeviceContext *)frames->device_ref->data;
     AVVulkanDeviceContext *hwctx = device->hwctx;
@@ -780,11 +775,11 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
     VkVideoFormatPropertiesKHR *ret_info;
     uint32_t nb_out_fmts = 0;
 
-    if (!vk_codec->decode_op || !vk_codec->decode_extension) {
+    if (!vk_desc->decode_op || !vk_desc->decode_extension) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported codec for Vulkan decoding: %s!\n",
                avcodec_get_name(avctx->codec_id));
         return AVERROR(ENOSYS);
-    } else if (!(vk_codec->decode_extension & ctx->s.extensions)) {
+    } else if (!(vk_desc->decode_extension & ctx->s.extensions)) {
         av_log(avctx, AV_LOG_ERROR, "Device does not support decoding %s!\n",
                avcodec_get_name(avctx->codec_id));
         return AVERROR(ENOSYS);
@@ -796,7 +791,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                    avctx->codec_id == AV_CODEC_ID_AV1  ? STD_VIDEO_AV1_MESA_PROFILE_MAIN :
                    0;
 
-    ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_codec,
+    ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc,
                                &h264_caps,
                                &h265_caps,
                                &av1_caps,
@@ -812,7 +807,7 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
                avcodec_profile_name(avctx->codec_id, cur_profile),
                avcodec_profile_name(avctx->codec_id, base_profile));
         cur_profile = base_profile;
-        ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_codec,
+        ret = vulkan_setup_profile(avctx, prof, hwctx, vk, vk_desc,
                                    &h264_caps,
                                    &h265_caps,
                                    &av1_caps,
@@ -867,10 +862,10 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
            caps->maxActiveReferencePictures);
     av_log(avctx, AV_LOG_VERBOSE, "    Codec header name: '%s' (driver), '%s' (compiled)\n",
            caps->stdHeaderVersion.extensionName,
-           dec_ext[avctx->codec_id]->extensionName);
+           vk_desc->ext_props.extensionName);
     av_log(avctx, AV_LOG_VERBOSE, "    Codec header version: %i.%i.%i (driver), %i.%i.%i (compiled)\n",
            CODEC_VER(caps->stdHeaderVersion.specVersion),
-           CODEC_VER(dec_ext[avctx->codec_id]->specVersion));
+           CODEC_VER(vk_desc->ext_props.specVersion));
     av_log(avctx, AV_LOG_VERBOSE, "    Decode modes:%s%s%s\n",
            dec_caps->flags ? "" :
                " invalid",
@@ -1122,7 +1117,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     FFVulkanContext *s;
     FFVulkanFunctions *vk;
     const VkVideoProfileInfoKHR *profile;
-    const FFVkCodecMap *vk_codec;
+    const FFVulkanDecodeDescriptor *vk_desc;
 
     VkVideoDecodeH264SessionParametersCreateInfoKHR h264_params = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR,
@@ -1179,9 +1174,9 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     /* Create queue context */
     qf = ff_vk_qf_init(s, &ctx->qf, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
 
-    vk_codec = get_codecmap(avctx->codec_id);
+    vk_desc = get_codecdesc(avctx->codec_id);
     /* Check for support */
-    if (!(s->video_props[qf].videoCodecOperations & vk_codec->decode_op)) {
+    if (!(s->video_props[qf].videoCodecOperations & vk_desc->decode_op)) {
         av_log(avctx, AV_LOG_ERROR, "Decoding %s not supported on the given "
                "queue family %i!\n", avcodec_get_name(avctx->codec_id), qf);
         return AVERROR(EINVAL);
@@ -1198,7 +1193,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     session_create.maxActiveReferencePictures = ctx->caps.maxActiveReferencePictures;
     session_create.pictureFormat = s->hwfc->format[0];
     session_create.referencePictureFormat = session_create.pictureFormat;
-    session_create.pStdHeaderVersion = dec_ext[avctx->codec_id];
+    session_create.pStdHeaderVersion = &vk_desc->ext_props;
     session_create.pVideoProfile = profile;
 
     /* Create decode exec context for this specific main thread.

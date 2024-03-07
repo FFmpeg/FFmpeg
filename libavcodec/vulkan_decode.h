@@ -25,6 +25,13 @@
 
 #include "vulkan_video.h"
 
+typedef struct FFVulkanDecodeDescriptor {
+    FFVulkanExtensions               decode_extension;
+    VkVideoCodecOperationFlagBitsKHR decode_op;
+
+    VkExtensionProperties ext_props;
+} FFVulkanDecodeDescriptor;
+
 typedef struct FFVulkanDecodeProfileData {
     VkVideoDecodeH264ProfileInfoKHR h264_profile;
     VkVideoDecodeH265ProfileInfoKHR h265_profile;
