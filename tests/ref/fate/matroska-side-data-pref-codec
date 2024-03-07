@@ -1,0 +1,348 @@
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=H.26[45] User Data Unregistered SEI message
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=3x3 displaymatrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=35400/50000
+red_y=14599/50000
+green_x=8500/50000
+green_y=39850/50000
+blue_x=6550/50000
+blue_y=2300/50000
+white_point_x=15634/50000
+white_point_y=16450/50000
+min_luminance=10/10000
+max_luminance=10000000/10000
+[/SIDE_DATA]
+[/FRAME]
+[STREAM]
+DISPOSITION:default=1
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=0
+DISPOSITION:still_image=0
+TAG:language=spa
+TAG:BPS-eng=216040
+TAG:DURATION-eng=00:00:00.400000000
+TAG:NUMBER_OF_FRAMES-eng=10
+TAG:NUMBER_OF_BYTES-eng=10802
+TAG:_STATISTICS_WRITING_APP-eng=mkvmerge v9.0.1 ('Mask Machine') 64bit
+TAG:_STATISTICS_WRITING_DATE_UTC-eng=2019-02-14 12:53:10
+TAG:_STATISTICS_TAGS-eng=BPS DURATION NUMBER_OF_FRAMES NUMBER_OF_BYTES
+[SIDE_DATA]
+side_data_type=Content light level metadata
+max_content=1000
+max_average=300
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Mastering display metadata
+red_x=11408507/16777216
+red_y=5368709/16777216
+green_x=2222981/8388608
+green_y=11576279/16777216
+blue_x=5033165/33554432
+blue_y=16106127/268435456
+white_point_x=10492471/33554432
+white_point_y=689963/2097152
+min_luminance=5368709/536870912
+max_luminance=1000/1
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=Display Matrix
+displaymatrix=
+00000000:            0       65536           0
+00000001:        65536           0           0
+00000002:            0           0  1073741824
+
+rotation=-90
+[/SIDE_DATA]
+[/STREAM]

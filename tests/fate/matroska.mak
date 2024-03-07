@@ -264,6 +264,12 @@ FATE_MATROSKA_FFMPEG_FFPROBE-$(call REMUX, MATROSKA, VP9_PARSER) \
                                += fate-matroska-hdr10-plus-remux
 fate-matroska-hdr10-plus-remux: CMD = transcode webm $(TARGET_SAMPLES)/mkv/hdr10_plus_vp9_sample.webm matroska "-map 0 -c:v copy" "-map 0 -c:v copy" "-show_packets"
 
+fate-matroska-side-data-pref-codec: CMD = run ffprobe$(PROGSSUF)$(EXESUF) $(TARGET_SAMPLES)/mkv/hdr10tags-both.mkv \
+    -select_streams v:0 -show_streams -show_frames -show_entries stream=stream_side_data:frame=frame_side_data_list
+fate-matroska-side-data-pref-packet: CMD = run ffprobe$(PROGSSUF)$(EXESUF) $(TARGET_SAMPLES)/mkv/hdr10tags-both.mkv \
+    -select_streams v:0 -show_streams -show_frames -show_entries stream=stream_side_data:frame=frame_side_data_list -side_data_prefer_packet mastering_display_metadata,content_light_level
+FATE_MATROSKA_FFPROBE-$(call ALLYES MATROSKA_DEMUXER HEVC_DECODER) += fate-matroska-side-data-pref-codec fate-matroska-side-data-pref-packet
+
 FATE_SAMPLES_AVCONV += $(FATE_MATROSKA-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_MATROSKA_FFPROBE-yes)
 FATE_SAMPLES_FFMPEG_FFPROBE += $(FATE_MATROSKA_FFMPEG_FFPROBE-yes)
