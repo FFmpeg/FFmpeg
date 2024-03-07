@@ -25,7 +25,6 @@ HEADERS = ac3_parser.h                                                  \
           version_major.h                                               \
           videotoolbox.h                                                \
           vorbis_parser.h                                               \
-          xvmc.h                                                        \
 
 OBJS = ac3_parser.o                                                     \
        adts_parser.o                                                    \
@@ -1278,7 +1277,6 @@ SKIPHEADERS-$(CONFIG_NVDEC)            += nvdec.h
 SKIPHEADERS-$(CONFIG_NVENC)            += nvenc.h
 SKIPHEADERS-$(CONFIG_QSV)              += qsv.h qsv_internal.h
 SKIPHEADERS-$(CONFIG_QSVENC)           += qsvenc.h
-SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_decode.h vaapi_hevc.h vaapi_encode.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h vdpau_internal.h
 SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += videotoolbox.h vt_internal.h
