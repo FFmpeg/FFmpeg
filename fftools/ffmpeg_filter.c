@@ -1889,7 +1889,7 @@ static void send_command(FilterGraph *fg, AVFilterGraph *graph,
 
 static int choose_input(const FilterGraph *fg, const FilterGraphThread *fgt)
 {
-    int nb_requests, nb_requests_max = 0;
+    int nb_requests, nb_requests_max = -1;
     int best_input = -1;
 
     for (int i = 0; i < fg->nb_inputs; i++) {
