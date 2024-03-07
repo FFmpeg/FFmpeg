@@ -80,15 +80,8 @@ static const AVOption demux_options[] = {
 static void set_max_size(AVStream *st, WAVDemuxContext *wav)
 {
     if (wav->max_size <= 0) {
-        int64_t nb_samples = av_clip(st->codecpar->sample_rate / 25, 1, 1024);
-        if (st->codecpar->block_align > 0 &&
-            st->codecpar->block_align * nb_samples < INT_MAX &&
-            st->codecpar->ch_layout.nb_channels > 0 &&
-            st->codecpar->block_align <= 8LL * st->codecpar->ch_layout.nb_channels) {
-            wav->max_size = st->codecpar->block_align * nb_samples;
-        } else {
-            wav->max_size = 4096;
-        }
+        int max_size = ff_pcm_default_packet_size(st->codecpar);
+        wav->max_size = max_size < 0 ? 4096 : max_size;
     }
 }
 
