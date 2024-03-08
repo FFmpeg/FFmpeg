@@ -72,4 +72,28 @@ struct AVCodecInternal *ff_encode_internal_alloc(void);
 
 void ff_codec_close(struct AVCodecContext *avctx);
 
+int ff_thread_init(struct AVCodecContext *s);
+void ff_thread_free(struct AVCodecContext *s);
+
+/**
+ * Wait for decoding threads to finish and reset internal state.
+ * Called by avcodec_flush_buffers().
+ *
+ * @param avctx The context.
+ */
+void ff_thread_flush(struct AVCodecContext *avctx);
+
+/**
+ * Submit a new frame to a decoding thread.
+ * Returns the next available frame in picture. *got_picture_ptr
+ * will be 0 if none is available.
+ * The return value on success is the size of the consumed packet for
+ * compatibility with FFCodec.decode. This means the decoder
+ * has to consume the full packet.
+ *
+ * Parameters are the same as FFCodec.decode.
+ */
+int ff_thread_decode_frame(struct AVCodecContext *avctx, struct AVFrame *frame,
+                           int *got_picture_ptr, struct AVPacket *avpkt);
+
 #endif // AVCODEC_AVCODEC_INTERNAL_H

@@ -809,14 +809,6 @@ int av_get_audio_frame_duration2(AVCodecParameters *par, int frame_bytes)
     return FFMAX(0, duration);
 }
 
-#if !HAVE_THREADS
-int ff_thread_init(AVCodecContext *s)
-{
-    return -1;
-}
-
-#endif
-
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v)
 {
     unsigned int n = 0;

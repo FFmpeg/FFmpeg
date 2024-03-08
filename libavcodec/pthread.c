@@ -32,6 +32,7 @@
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
+#include "avcodec_internal.h"
 #include "codec_internal.h"
 #include "pthread_internal.h"
 #include "thread.h"
