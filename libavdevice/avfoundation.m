@@ -32,6 +32,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
+#include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/parseutils.h"
@@ -1292,13 +1293,13 @@ static const AVClass avf_class = {
     .category   = AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT,
 };
 
-const AVInputFormat ff_avfoundation_demuxer = {
-    .name           = "avfoundation",
-    .long_name      = NULL_IF_CONFIG_SMALL("AVFoundation input device"),
+const FFInputFormat ff_avfoundation_demuxer = {
+    .p.name         = "avfoundation",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("AVFoundation input device"),
+    .p.flags        = AVFMT_NOFILE,
+    .p.priv_class   = &avf_class,
     .priv_data_size = sizeof(AVFContext),
     .read_header    = avf_read_header,
     .read_packet    = avf_read_packet,
     .read_close     = avf_close,
-    .flags          = AVFMT_NOFILE,
-    .priv_class     = &avf_class,
 };
