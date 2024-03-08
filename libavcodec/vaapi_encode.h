@@ -216,6 +216,9 @@ typedef struct VAAPIEncodeContext {
     // available modes).
     int             explicit_rc_mode;
 
+    // Block Level based bitrate control.
+    int             blbrc;
+
     // Explicitly-set QP, for use with the "qp" options.
     // (Forces CQP mode when set, overriding everything else.)
     int             explicit_qp;
@@ -538,7 +541,11 @@ int ff_vaapi_encode_close(AVCodecContext *avctx);
     VAAPI_ENCODE_RC_MODE(VBR,  "Variable-bitrate"), \
     VAAPI_ENCODE_RC_MODE(ICQ,  "Intelligent constant-quality"), \
     VAAPI_ENCODE_RC_MODE(QVBR, "Quality-defined variable-bitrate"), \
-    VAAPI_ENCODE_RC_MODE(AVBR, "Average variable-bitrate")
+    VAAPI_ENCODE_RC_MODE(AVBR, "Average variable-bitrate"), \
+    { "blbrc", \
+      "Block level based bitrate control",\
+      OFFSET(common.blbrc), AV_OPT_TYPE_BOOL, \
+      { .i64 = 0 }, 0, 1, FLAGS }
 
 
 #endif /* AVCODEC_VAAPI_ENCODE_H */

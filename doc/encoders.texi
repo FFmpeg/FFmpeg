@@ -4089,6 +4089,10 @@ Quality-defined variable-bitrate.
 Average variable bitrate.
 @end table
 
+@item blbrc
+Enable block level rate control, which assigns different bitrate block by block.
+Invalid for CQP mode.
+
 @end table
 
 Each encoder also has its own specific options:
