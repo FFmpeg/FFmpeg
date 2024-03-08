@@ -255,6 +255,11 @@ int main(void)
     CHANNEL_FROM_STRING("USR63");
     CHANNEL_FROM_STRING("AMBI0");
     CHANNEL_FROM_STRING("AMBI1023");
+    CHANNEL_FROM_STRING("AMBI1024");
+    CHANNEL_FROM_STRING("Dummy");
+    CHANNEL_FROM_STRING("FL@Foo");
+    CHANNEL_FROM_STRING("Foo@FL");
+    CHANNEL_FROM_STRING("@FL");
 
     printf("\n==Native layouts==\n");
 
@@ -301,6 +306,9 @@ int main(void)
     CHANNEL_LAYOUT_CHANNEL_FROM_STRING(bp.str, "SL");
     CHANNEL_LAYOUT_CHANNEL_FROM_STRING(bp.str, "SR");
     CHANNEL_LAYOUT_CHANNEL_FROM_STRING(bp.str, "BC");
+    CHANNEL_LAYOUT_CHANNEL_FROM_STRING(bp.str, "@");
+    CHANNEL_LAYOUT_CHANNEL_FROM_STRING(bp.str, "@Foo");
+    CHANNEL_LAYOUT_CHANNEL_FROM_STRING(bp.str, "FL@Foo");
 
     printf("\nTesting av_channel_layout_index_from_string\n");
     CHANNEL_LAYOUT_INDEX_FROM_STRING(bp.str, "FL");
@@ -321,9 +329,27 @@ int main(void)
     printf("\nTesting av_channel_layout_from_string\n");
     CHANNEL_LAYOUT_FROM_STRING("FL+FR+FC+BL+BR+LFE");
     CHANNEL_LAYOUT_FROM_STRING("2 channels (FR+FL)");
+    CHANNEL_LAYOUT_FROM_STRING("2 channels (AMBI1023+FL)");
+    CHANNEL_LAYOUT_FROM_STRING("3 channels (FR+FL)");
+    CHANNEL_LAYOUT_FROM_STRING("-3 channels (FR+FL)");
+    CHANNEL_LAYOUT_FROM_STRING("0 channels ()");
+    CHANNEL_LAYOUT_FROM_STRING("2 channels (FL+FR");
     CHANNEL_LAYOUT_FROM_STRING("ambisonic 1+FR+FL");
     CHANNEL_LAYOUT_FROM_STRING("ambisonic 2+FC@Foo");
     CHANNEL_LAYOUT_FROM_STRING("FL@Foo+FR@Bar");
+    CHANNEL_LAYOUT_FROM_STRING("FL+stereo");
+    CHANNEL_LAYOUT_FROM_STRING("stereo+stereo");
+    CHANNEL_LAYOUT_FROM_STRING("stereo@Boo");
+    CHANNEL_LAYOUT_FROM_STRING("");
+    CHANNEL_LAYOUT_FROM_STRING("@");
+    CHANNEL_LAYOUT_FROM_STRING("@Dummy");
+    CHANNEL_LAYOUT_FROM_STRING("@FL");
+    CHANNEL_LAYOUT_FROM_STRING("Dummy");
+    CHANNEL_LAYOUT_FROM_STRING("Dummy@FL");
+    CHANNEL_LAYOUT_FROM_STRING("FR+Dummy");
+    CHANNEL_LAYOUT_FROM_STRING("FR+Dummy@FL");
+    CHANNEL_LAYOUT_FROM_STRING("FR+@FL");
+    CHANNEL_LAYOUT_FROM_STRING("FL+@");
     CHANNEL_LAYOUT_FROM_STRING("FR+FL@Foo+USR63@Foo");
 
     ret = av_channel_layout_copy(&layout2, &layout);

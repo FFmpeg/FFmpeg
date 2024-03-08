@@ -56,6 +56,11 @@ With "FR":                                         1
 With "USR63":                                     63
 With "AMBI0":                                   1024
 With "AMBI1023":                                2047
+With "AMBI1024":                                  -1
+With "Dummy":                                     -1
+With "FL@Foo":                                    -1
+With "Foo@FL":                                    -1
+With "@FL":                                       -1
 
 ==Native layouts==
 
@@ -101,6 +106,9 @@ On "5.1(side)" layout with "LFE":                  3
 On "5.1(side)" layout with "SL":                   9
 On "5.1(side)" layout with "SR":                  10
 On "5.1(side)" layout with "BC":                  -1
+On "5.1(side)" layout with "@":                   -1
+On "5.1(side)" layout with "@Foo":                -1
+On "5.1(side)" layout with "FL@Foo":              -1
 
 Testing av_channel_layout_index_from_string
 On "5.1(side)" layout with "FL":                  0
@@ -121,9 +129,27 @@ On "5.1(side)" layout with AV_CH_LAYOUT_4POINT1:  0xf
 Testing av_channel_layout_from_string
 With "FL+FR+FC+BL+BR+LFE":                6 channels (FL+FR+FC+BL+BR+LFE)
 With "2 channels (FR+FL)":                             2 channels (FR+FL)
+With "2 channels (AMBI1023+FL)":                                     fail
+With "3 channels (FR+FL)":                                           fail
+With "-3 channels (FR+FL)":                                          fail
+With "0 channels ()":                                                fail
+With "2 channels (FL+FR":                                            fail
 With "ambisonic 1+FR+FL":                  ambisonic 1+2 channels (FR+FL)
 With "ambisonic 2+FC@Foo":                ambisonic 2+1 channels (FC@Foo)
 With "FL@Foo+FR@Bar":                          2 channels (FL@Foo+FR@Bar)
+With "FL+stereo":                                                    fail
+With "stereo+stereo":                                                fail
+With "stereo@Boo":                                                   fail
+With "":                                                             fail
+With "@":                                                            fail
+With "@Dummy":                                                       fail
+With "@FL":                                               1 channels (FL)
+With "Dummy":                                                        fail
+With "Dummy@FL":                                                     fail
+With "FR+Dummy":                                                     fail
+With "FR+Dummy@FL":                                       1 channels (FR)
+With "FR+@FL":                                      2 channels (FR+FL@FL)
+With "FL+@":                                                         fail
 With "FR+FL@Foo+USR63@Foo":              3 channels (FR+FL@Foo+USR63@Foo)
 
 Testing av_channel_layout_index_from_string
