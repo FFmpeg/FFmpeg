@@ -47,6 +47,7 @@ extern const FFOutputFormat ff_adts_muxer;
 extern const FFInputFormat  ff_adx_demuxer;
 extern const FFOutputFormat ff_adx_muxer;
 extern const FFInputFormat  ff_aea_demuxer;
+extern const FFOutputFormat ff_aea_muxer;
 extern const FFInputFormat  ff_afc_demuxer;
 extern const FFInputFormat  ff_aiff_demuxer;
 extern const FFOutputFormat ff_aiff_muxer;

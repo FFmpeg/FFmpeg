@@ -32,6 +32,7 @@ version <next>:
 - DVD-Video demuxer, powered by libdvdnav and libdvdread
 - ffprobe -show_stream_groups option
 - ffprobe (with -export_side_data film_grain) now prints film grain metadata
+- AEA muxer
 
 
 version 6.1:

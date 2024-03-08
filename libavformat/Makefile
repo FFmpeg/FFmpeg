@@ -91,7 +91,8 @@ OBJS-$(CONFIG_ADTS_MUXER)                += adtsenc.o apetag.o img2.o \
                                             id3v2enc.o
 OBJS-$(CONFIG_ADX_DEMUXER)               += adxdec.o
 OBJS-$(CONFIG_ADX_MUXER)                 += rawenc.o
-OBJS-$(CONFIG_AEA_DEMUXER)               += aea.o pcm.o
+OBJS-$(CONFIG_AEA_DEMUXER)               += aeadec.o pcm.o
+OBJS-$(CONFIG_AEA_MUXER)                 += aeaenc.o rawenc.o
 OBJS-$(CONFIG_AFC_DEMUXER)               += afc.o
 OBJS-$(CONFIG_AIFF_DEMUXER)              += aiffdec.o aiff.o pcm.o \
                                             mov_chan.o replaygain.o
