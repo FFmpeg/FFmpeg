@@ -214,7 +214,7 @@ void avfilter_link_free(AVFilterLink **link)
 }
 int avfilter_config_links(AVFilterContext *filter)
 {
-    return ff_filter_config_links(EINVAL);
+    return ff_filter_config_links(filter);
 }
 #endif
 
