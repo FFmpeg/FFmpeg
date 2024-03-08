@@ -31,114 +31,66 @@
 
 #define CABAC_MAX_BIN 31
 
-/**
- * number of bin by SyntaxElement.
- */
-static const int8_t num_bins_in_se[] = {
-     1, // sao_merge_flag
-     1, // sao_type_idx
-     0, // sao_eo_class
-     0, // sao_band_position
-     0, // sao_offset_abs
-     0, // sao_offset_sign
-     0, // end_of_slice_flag
-     3, // split_coding_unit_flag
-     1, // cu_transquant_bypass_flag
-     3, // skip_flag
-     3, // cu_qp_delta
-     1, // pred_mode
-     4, // part_mode
-     0, // pcm_flag
-     1, // prev_intra_luma_pred_mode
-     0, // mpm_idx
-     0, // rem_intra_luma_pred_mode
-     2, // intra_chroma_pred_mode
-     1, // merge_flag
-     1, // merge_idx
-     5, // inter_pred_idc
-     2, // ref_idx_l0
-     2, // ref_idx_l1
-     2, // abs_mvd_greater0_flag
-     2, // abs_mvd_greater1_flag
-     0, // abs_mvd_minus2
-     0, // mvd_sign_flag
-     1, // mvp_lx_flag
-     1, // no_residual_data_flag
-     3, // split_transform_flag
-     2, // cbf_luma
-     5, // cbf_cb, cbf_cr
-     2, // transform_skip_flag[][]
-     2, // explicit_rdpcm_flag[][]
-     2, // explicit_rdpcm_dir_flag[][]
-    18, // last_significant_coeff_x_prefix
-    18, // last_significant_coeff_y_prefix
-     0, // last_significant_coeff_x_suffix
-     0, // last_significant_coeff_y_suffix
-     4, // significant_coeff_group_flag
-    44, // significant_coeff_flag
-    24, // coeff_abs_level_greater1_flag
-     6, // coeff_abs_level_greater2_flag
-     0, // coeff_abs_level_remaining
-     0, // coeff_sign_flag
-     8, // log2_res_scale_abs
-     2, // res_scale_sign_flag
-     1, // cu_chroma_qp_offset_flag
-     1, // cu_chroma_qp_offset_idx
-};
+// ELEM(NAME, NUM_BINS)
+#define CABAC_ELEMS(ELEM)                     \
+    ELEM(SAO_MERGE_FLAG, 1)                   \
+    ELEM(SAO_TYPE_IDX, 1)                     \
+    ELEM(SAO_EO_CLASS, 0)                     \
+    ELEM(SAO_BAND_POSITION, 0)                \
+    ELEM(SAO_OFFSET_ABS, 0)                   \
+    ELEM(SAO_OFFSET_SIGN, 0)                  \
+    ELEM(END_OF_SLICE_FLAG, 0)                \
+    ELEM(SPLIT_CODING_UNIT_FLAG, 3)           \
+    ELEM(CU_TRANSQUANT_BYPASS_FLAG, 1)        \
+    ELEM(SKIP_FLAG, 3)                        \
+    ELEM(CU_QP_DELTA, 3)                      \
+    ELEM(PRED_MODE_FLAG, 1)                   \
+    ELEM(PART_MODE, 4)                        \
+    ELEM(PCM_FLAG, 0)                         \
+    ELEM(PREV_INTRA_LUMA_PRED_FLAG, 1)        \
+    ELEM(MPM_IDX, 0)                          \
+    ELEM(REM_INTRA_LUMA_PRED_MODE, 0)         \
+    ELEM(INTRA_CHROMA_PRED_MODE, 2)           \
+    ELEM(MERGE_FLAG, 1)                       \
+    ELEM(MERGE_IDX, 1)                        \
+    ELEM(INTER_PRED_IDC, 5)                   \
+    ELEM(REF_IDX_L0, 2)                       \
+    ELEM(REF_IDX_L1, 2)                       \
+    ELEM(ABS_MVD_GREATER0_FLAG, 2)            \
+    ELEM(ABS_MVD_GREATER1_FLAG, 2)            \
+    ELEM(ABS_MVD_MINUS2, 0)                   \
+    ELEM(MVD_SIGN_FLAG, 0)                    \
+    ELEM(MVP_LX_FLAG, 1)                      \
+    ELEM(NO_RESIDUAL_DATA_FLAG, 1)            \
+    ELEM(SPLIT_TRANSFORM_FLAG, 3)             \
+    ELEM(CBF_LUMA, 2)                         \
+    ELEM(CBF_CB_CR, 5)                        \
+    ELEM(TRANSFORM_SKIP_FLAG, 2)              \
+    ELEM(EXPLICIT_RDPCM_FLAG, 2)              \
+    ELEM(EXPLICIT_RDPCM_DIR_FLAG, 2)          \
+    ELEM(LAST_SIGNIFICANT_COEFF_X_PREFIX, 18) \
+    ELEM(LAST_SIGNIFICANT_COEFF_Y_PREFIX, 18) \
+    ELEM(LAST_SIGNIFICANT_COEFF_X_SUFFIX, 0)  \
+    ELEM(LAST_SIGNIFICANT_COEFF_Y_SUFFIX, 0)  \
+    ELEM(SIGNIFICANT_COEFF_GROUP_FLAG, 4)     \
+    ELEM(SIGNIFICANT_COEFF_FLAG, 44)          \
+    ELEM(COEFF_ABS_LEVEL_GREATER1_FLAG, 24)   \
+    ELEM(COEFF_ABS_LEVEL_GREATER2_FLAG, 6)    \
+    ELEM(COEFF_ABS_LEVEL_REMAINING, 0)        \
+    ELEM(COEFF_SIGN_FLAG, 0)                  \
+    ELEM(LOG2_RES_SCALE_ABS, 8)               \
+    ELEM(RES_SCALE_SIGN_FLAG, 2)              \
+    ELEM(CU_CHROMA_QP_OFFSET_FLAG, 1)         \
+    ELEM(CU_CHROMA_QP_OFFSET_IDX, 1)          \
 
 /**
- * Offset to ctxIdx 0 in init_values and states, indexed by SyntaxElement.
+ * Offset to ctxIdx 0 in init_values and states.
  */
-static const int elem_offset[sizeof(num_bins_in_se)] = {
-    0, // sao_merge_flag
-    1, // sao_type_idx
-    2, // sao_eo_class
-    2, // sao_band_position
-    2, // sao_offset_abs
-    2, // sao_offset_sign
-    2, // end_of_slice_flag
-    2, // split_coding_unit_flag
-    5, // cu_transquant_bypass_flag
-    6, // skip_flag
-    9, // cu_qp_delta
-    12, // pred_mode
-    13, // part_mode
-    17, // pcm_flag
-    17, // prev_intra_luma_pred_mode
-    18, // mpm_idx
-    18, // rem_intra_luma_pred_mode
-    18, // intra_chroma_pred_mode
-    20, // merge_flag
-    21, // merge_idx
-    22, // inter_pred_idc
-    27, // ref_idx_l0
-    29, // ref_idx_l1
-    31, // abs_mvd_greater0_flag
-    33, // abs_mvd_greater1_flag
-    35, // abs_mvd_minus2
-    35, // mvd_sign_flag
-    35, // mvp_lx_flag
-    36, // no_residual_data_flag
-    37, // split_transform_flag
-    40, // cbf_luma
-    42, // cbf_cb, cbf_cr
-    47, // transform_skip_flag[][]
-    49, // explicit_rdpcm_flag[][]
-    51, // explicit_rdpcm_dir_flag[][]
-    53, // last_significant_coeff_x_prefix
-    71, // last_significant_coeff_y_prefix
-    89, // last_significant_coeff_x_suffix
-    89, // last_significant_coeff_y_suffix
-    89, // significant_coeff_group_flag
-    93, // significant_coeff_flag
-    137, // coeff_abs_level_greater1_flag
-    161, // coeff_abs_level_greater2_flag
-    167, // coeff_abs_level_remaining
-    167, // coeff_sign_flag
-    167, // log2_res_scale_abs
-    175, // res_scale_sign_flag
-    177, // cu_chroma_qp_offset_flag
-    178, // cu_chroma_qp_offset_idx
+enum {
+#define OFFSET(NAME, NUM_BINS)                     \
+    NAME ## _OFFSET,                               \
+    NAME ## _END = NAME ## _OFFSET + NUM_BINS - 1,
+CABAC_ELEMS(OFFSET)
 };
 
 #define CNU 154
@@ -570,12 +522,12 @@ int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts)
 
 int ff_hevc_sao_merge_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[SAO_MERGE_FLAG]);
+    return GET_CABAC(SAO_MERGE_FLAG_OFFSET);
 }
 
 int ff_hevc_sao_type_idx_decode(HEVCLocalContext *lc)
 {
-    if (!GET_CABAC(elem_offset[SAO_TYPE_IDX]))
+    if (!GET_CABAC(SAO_TYPE_IDX_OFFSET))
         return 0;
 
     if (!get_cabac_bypass(&lc->cc))
@@ -622,7 +574,7 @@ int ff_hevc_end_of_slice_flag_decode(HEVCLocalContext *lc)
 
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[CU_TRANSQUANT_BYPASS_FLAG]);
+    return GET_CABAC(CU_TRANSQUANT_BYPASS_FLAG_OFFSET);
 }
 
 int ff_hevc_skip_flag_decode(HEVCLocalContext *lc, int x0, int y0, int x_cb, int y_cb)
@@ -638,7 +590,7 @@ int ff_hevc_skip_flag_decode(HEVCLocalContext *lc, int x0, int y0, int x_cb, int
     if (lc->ctb_up_flag || y0b)
         inc += !!SAMPLE_CTB(s->skip_flag, x_cb, y_cb - 1);
 
-    return GET_CABAC(elem_offset[SKIP_FLAG] + inc);
+    return GET_CABAC(SKIP_FLAG_OFFSET + inc);
 }
 
 int ff_hevc_cu_qp_delta_abs(HEVCLocalContext *lc)
@@ -647,7 +599,7 @@ int ff_hevc_cu_qp_delta_abs(HEVCLocalContext *lc)
     int suffix_val = 0;
     int inc = 0;
 
-    while (prefix_val < 5 && GET_CABAC(elem_offset[CU_QP_DELTA] + inc)) {
+    while (prefix_val < 5 && GET_CABAC(CU_QP_DELTA_OFFSET + inc)) {
         prefix_val++;
         inc = 1;
     }
@@ -675,7 +627,7 @@ int ff_hevc_cu_qp_delta_sign_flag(HEVCLocalContext *lc)
 
 int ff_hevc_cu_chroma_qp_offset_flag(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[CU_CHROMA_QP_OFFSET_FLAG]);
+    return GET_CABAC(CU_CHROMA_QP_OFFSET_FLAG_OFFSET);
 }
 
 int ff_hevc_cu_chroma_qp_offset_idx(HEVCLocalContext *lc)
@@ -683,7 +635,7 @@ int ff_hevc_cu_chroma_qp_offset_idx(HEVCLocalContext *lc)
     int c_max= FFMAX(5, lc->parent->ps.pps->chroma_qp_offset_list_len_minus1);
     int i = 0;
 
-    while (i < c_max && GET_CABAC(elem_offset[CU_CHROMA_QP_OFFSET_IDX]))
+    while (i < c_max && GET_CABAC(CU_CHROMA_QP_OFFSET_IDX_OFFSET))
         i++;
 
     return i;
@@ -691,7 +643,7 @@ int ff_hevc_cu_chroma_qp_offset_idx(HEVCLocalContext *lc)
 
 int ff_hevc_pred_mode_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[PRED_MODE_FLAG]);
+    return GET_CABAC(PRED_MODE_FLAG_OFFSET);
 }
 
 int ff_hevc_split_coding_unit_flag_decode(HEVCLocalContext *lc, int ct_depth, int x0, int y0)
@@ -712,40 +664,40 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCLocalContext *lc, int ct_depth, in
     inc += (depth_left > ct_depth);
     inc += (depth_top  > ct_depth);
 
-    return GET_CABAC(elem_offset[SPLIT_CODING_UNIT_FLAG] + inc);
+    return GET_CABAC(SPLIT_CODING_UNIT_FLAG_OFFSET + inc);
 }
 
 int ff_hevc_part_mode_decode(HEVCLocalContext *lc, int log2_cb_size)
 {
-    if (GET_CABAC(elem_offset[PART_MODE])) // 1
+    if (GET_CABAC(PART_MODE_OFFSET)) // 1
         return PART_2Nx2N;
     if (log2_cb_size == lc->parent->ps.sps->log2_min_cb_size) {
         if (lc->cu.pred_mode == MODE_INTRA) // 0
             return PART_NxN;
-        if (GET_CABAC(elem_offset[PART_MODE] + 1)) // 01
+        if (GET_CABAC(PART_MODE_OFFSET + 1)) // 01
             return PART_2NxN;
         if (log2_cb_size == 3) // 00
             return PART_Nx2N;
-        if (GET_CABAC(elem_offset[PART_MODE] + 2)) // 001
+        if (GET_CABAC(PART_MODE_OFFSET + 2)) // 001
             return PART_Nx2N;
         return PART_NxN; // 000
     }
 
     if (!lc->parent->ps.sps->amp_enabled_flag) {
-        if (GET_CABAC(elem_offset[PART_MODE] + 1)) // 01
+        if (GET_CABAC(PART_MODE_OFFSET + 1)) // 01
             return PART_2NxN;
         return PART_Nx2N;
     }
 
-    if (GET_CABAC(elem_offset[PART_MODE] + 1)) { // 01X, 01XX
-        if (GET_CABAC(elem_offset[PART_MODE] + 3)) // 011
+    if (GET_CABAC(PART_MODE_OFFSET + 1)) { // 01X, 01XX
+        if (GET_CABAC(PART_MODE_OFFSET + 3)) // 011
             return PART_2NxN;
         if (get_cabac_bypass(&lc->cc)) // 0101
             return PART_2NxnD;
         return PART_2NxnU; // 0100
     }
 
-    if (GET_CABAC(elem_offset[PART_MODE] + 3)) // 001
+    if (GET_CABAC(PART_MODE_OFFSET + 3)) // 001
         return PART_Nx2N;
     if (get_cabac_bypass(&lc->cc)) // 0001
         return PART_nRx2N;
@@ -759,7 +711,7 @@ int ff_hevc_pcm_flag_decode(HEVCLocalContext *lc)
 
 int ff_hevc_prev_intra_luma_pred_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[PREV_INTRA_LUMA_PRED_FLAG]);
+    return GET_CABAC(PREV_INTRA_LUMA_PRED_FLAG_OFFSET);
 }
 
 int ff_hevc_mpm_idx_decode(HEVCLocalContext *lc)
@@ -783,7 +735,7 @@ int ff_hevc_rem_intra_luma_pred_mode_decode(HEVCLocalContext *lc)
 int ff_hevc_intra_chroma_pred_mode_decode(HEVCLocalContext *lc)
 {
     int ret;
-    if (!GET_CABAC(elem_offset[INTRA_CHROMA_PRED_MODE]))
+    if (!GET_CABAC(INTRA_CHROMA_PRED_MODE_OFFSET))
         return 4;
 
     ret  = get_cabac_bypass(&lc->cc) << 1;
@@ -793,7 +745,7 @@ int ff_hevc_intra_chroma_pred_mode_decode(HEVCLocalContext *lc)
 
 int ff_hevc_merge_idx_decode(HEVCLocalContext *lc)
 {
-    int i = GET_CABAC(elem_offset[MERGE_IDX]);
+    int i = GET_CABAC(MERGE_IDX_OFFSET);
 
     if (i != 0) {
         while (i < lc->parent->sh.max_num_merge_cand-1 && get_cabac_bypass(&lc->cc))
@@ -804,17 +756,17 @@ int ff_hevc_merge_idx_decode(HEVCLocalContext *lc)
 
 int ff_hevc_merge_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[MERGE_FLAG]);
+    return GET_CABAC(MERGE_FLAG_OFFSET);
 }
 
 int ff_hevc_inter_pred_idc_decode(HEVCLocalContext *lc, int nPbW, int nPbH)
 {
     if (nPbW + nPbH == 12)
-        return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
-    if (GET_CABAC(elem_offset[INTER_PRED_IDC] + lc->ct_depth))
+        return GET_CABAC(INTER_PRED_IDC_OFFSET + 4);
+    if (GET_CABAC(INTER_PRED_IDC_OFFSET + lc->ct_depth))
         return PRED_BI;
 
-    return GET_CABAC(elem_offset[INTER_PRED_IDC] + 4);
+    return GET_CABAC(INTER_PRED_IDC_OFFSET + 4);
 }
 
 int ff_hevc_ref_idx_lx_decode(HEVCLocalContext *lc, int num_ref_idx_lx)
@@ -823,7 +775,7 @@ int ff_hevc_ref_idx_lx_decode(HEVCLocalContext *lc, int num_ref_idx_lx)
     int max = num_ref_idx_lx - 1;
     int max_ctx = FFMIN(max, 2);
 
-    while (i < max_ctx && GET_CABAC(elem_offset[REF_IDX_L0] + i))
+    while (i < max_ctx && GET_CABAC(REF_IDX_L0_OFFSET + i))
         i++;
     if (i == 2) {
         while (i < max && get_cabac_bypass(&lc->cc))
@@ -835,22 +787,22 @@ int ff_hevc_ref_idx_lx_decode(HEVCLocalContext *lc, int num_ref_idx_lx)
 
 int ff_hevc_mvp_lx_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[MVP_LX_FLAG]);
+    return GET_CABAC(MVP_LX_FLAG_OFFSET);
 }
 
 int ff_hevc_no_residual_syntax_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[NO_RESIDUAL_DATA_FLAG]);
+    return GET_CABAC(NO_RESIDUAL_DATA_FLAG_OFFSET);
 }
 
 static av_always_inline int abs_mvd_greater0_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[ABS_MVD_GREATER0_FLAG]);
+    return GET_CABAC(ABS_MVD_GREATER0_FLAG_OFFSET);
 }
 
 static av_always_inline int abs_mvd_greater1_flag_decode(HEVCLocalContext *lc)
 {
-    return GET_CABAC(elem_offset[ABS_MVD_GREATER1_FLAG] + 1);
+    return GET_CABAC(ABS_MVD_GREATER1_FLAG_OFFSET + 1);
 }
 
 static av_always_inline int mvd_decode(HEVCLocalContext *lc)
@@ -878,39 +830,39 @@ static av_always_inline int mvd_sign_flag_decode(HEVCLocalContext *lc)
 
 int ff_hevc_split_transform_flag_decode(HEVCLocalContext *lc, int log2_trafo_size)
 {
-    return GET_CABAC(elem_offset[SPLIT_TRANSFORM_FLAG] + 5 - log2_trafo_size);
+    return GET_CABAC(SPLIT_TRANSFORM_FLAG_OFFSET + 5 - log2_trafo_size);
 }
 
 int ff_hevc_cbf_cb_cr_decode(HEVCLocalContext *lc, int trafo_depth)
 {
-    return GET_CABAC(elem_offset[CBF_CB_CR] + trafo_depth);
+    return GET_CABAC(CBF_CB_CR_OFFSET + trafo_depth);
 }
 
 int ff_hevc_cbf_luma_decode(HEVCLocalContext *lc, int trafo_depth)
 {
-    return GET_CABAC(elem_offset[CBF_LUMA] + !trafo_depth);
+    return GET_CABAC(CBF_LUMA_OFFSET + !trafo_depth);
 }
 
 static int hevc_transform_skip_flag_decode(HEVCLocalContext *lc, int c_idx)
 {
-    return GET_CABAC(elem_offset[TRANSFORM_SKIP_FLAG] + !!c_idx);
+    return GET_CABAC(TRANSFORM_SKIP_FLAG_OFFSET + !!c_idx);
 }
 
 static int explicit_rdpcm_flag_decode(HEVCLocalContext *lc, int c_idx)
 {
-    return GET_CABAC(elem_offset[EXPLICIT_RDPCM_FLAG] + !!c_idx);
+    return GET_CABAC(EXPLICIT_RDPCM_FLAG_OFFSET + !!c_idx);
 }
 
 static int explicit_rdpcm_dir_flag_decode(HEVCLocalContext *lc, int c_idx)
 {
-    return GET_CABAC(elem_offset[EXPLICIT_RDPCM_DIR_FLAG] + !!c_idx);
+    return GET_CABAC(EXPLICIT_RDPCM_DIR_FLAG_OFFSET + !!c_idx);
 }
 
 int ff_hevc_log2_res_scale_abs(HEVCLocalContext *lc, int idx)
 {
     int i =0;
 
-    while (i < 4 && GET_CABAC(elem_offset[LOG2_RES_SCALE_ABS] + 4 * idx + i))
+    while (i < 4 && GET_CABAC(LOG2_RES_SCALE_ABS_OFFSET + 4 * idx + i))
         i++;
 
     return i;
@@ -918,7 +870,7 @@ int ff_hevc_log2_res_scale_abs(HEVCLocalContext *lc, int idx)
 
 int ff_hevc_res_scale_sign_flag(HEVCLocalContext *lc, int idx)
 {
-    return GET_CABAC(elem_offset[RES_SCALE_SIGN_FLAG] + idx);
+    return GET_CABAC(RES_SCALE_SIGN_FLAG_OFFSET + idx);
 }
 
 static av_always_inline void last_significant_coeff_xy_prefix_decode(HEVCLocalContext *lc, int c_idx,
@@ -936,13 +888,13 @@ static av_always_inline void last_significant_coeff_xy_prefix_decode(HEVCLocalCo
         ctx_shift = log2_size - 2;
     }
     while (i < max &&
-           GET_CABAC(elem_offset[LAST_SIGNIFICANT_COEFF_X_PREFIX] + (i >> ctx_shift) + ctx_offset))
+           GET_CABAC(LAST_SIGNIFICANT_COEFF_X_PREFIX_OFFSET + (i >> ctx_shift) + ctx_offset))
         i++;
     *last_scx_prefix = i;
 
     i = 0;
     while (i < max &&
-           GET_CABAC(elem_offset[LAST_SIGNIFICANT_COEFF_Y_PREFIX] + (i >> ctx_shift) + ctx_offset))
+           GET_CABAC(LAST_SIGNIFICANT_COEFF_Y_PREFIX_OFFSET + (i >> ctx_shift) + ctx_offset))
         i++;
     *last_scy_prefix = i;
 }
@@ -965,18 +917,18 @@ static av_always_inline int significant_coeff_group_flag_decode(HEVCLocalContext
 
     inc = FFMIN(ctx_cg, 1) + (c_idx>0 ? 2 : 0);
 
-    return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_GROUP_FLAG] + inc);
+    return GET_CABAC(SIGNIFICANT_COEFF_GROUP_FLAG_OFFSET + inc);
 }
 static av_always_inline int significant_coeff_flag_decode(HEVCLocalContext *lc, int x_c, int y_c,
                                            int offset, const uint8_t *ctx_idx_map)
 {
     int inc = ctx_idx_map[(y_c << 2) + x_c] + offset;
-    return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + inc);
+    return GET_CABAC(SIGNIFICANT_COEFF_FLAG_OFFSET + inc);
 }
 
 static av_always_inline int significant_coeff_flag_decode_0(HEVCLocalContext *lc, int c_idx, int offset)
 {
-    return GET_CABAC(elem_offset[SIGNIFICANT_COEFF_FLAG] + offset);
+    return GET_CABAC(SIGNIFICANT_COEFF_FLAG_OFFSET + offset);
 }
 
 static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCLocalContext *lc, int c_idx, int inc)
@@ -985,7 +937,7 @@ static av_always_inline int coeff_abs_level_greater1_flag_decode(HEVCLocalContex
     if (c_idx > 0)
         inc += 16;
 
-    return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER1_FLAG] + inc);
+    return GET_CABAC(COEFF_ABS_LEVEL_GREATER1_FLAG_OFFSET + inc);
 }
 
 static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCLocalContext *lc, int c_idx, int inc)
@@ -993,7 +945,7 @@ static av_always_inline int coeff_abs_level_greater2_flag_decode(HEVCLocalContex
     if (c_idx > 0)
         inc += 4;
 
-    return GET_CABAC(elem_offset[COEFF_ABS_LEVEL_GREATER2_FLAG] + inc);
+    return GET_CABAC(COEFF_ABS_LEVEL_GREATER2_FLAG_OFFSET + inc);
 }
 
 static av_always_inline int coeff_abs_level_remaining_decode(HEVCLocalContext *lc, int rc_rice_param)
