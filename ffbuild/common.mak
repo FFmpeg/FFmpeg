@@ -140,7 +140,7 @@ else
 endif
 
 clean::
-	$(RM) $(BIN2CEXE)
+	$(RM) $(BIN2CEXE) $(CLEANSUFFIXES:%=ffbuild/%)
 
 %.c %.h %.pc %.ver %.version: TAG = GEN
 

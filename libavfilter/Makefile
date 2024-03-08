@@ -666,6 +666,7 @@ TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 
 clean::
 	$(RM) $(CLEANSUFFIXES:%=libavfilter/dnn/%) $(CLEANSUFFIXES:%=libavfilter/opencl/%) \
+              $(CLEANSUFFIXES:%=libavfilter/metal/%) \
               $(CLEANSUFFIXES:%=libavfilter/vulkan/%)
 
 OPENCL = $(subst $(SRC_PATH)/,,$(wildcard $(SRC_PATH)/libavfilter/opencl/*.cl))
