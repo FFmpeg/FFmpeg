@@ -932,7 +932,9 @@ static int dvdvideo_audio_stream_analyze(AVFormatContext *s, audio_attr_t audio_
         return AVERROR_INVALIDDATA;
     }
 
-    if (nb_channels == 2)
+    if (nb_channels == 1)
+        ch_layout = (AVChannelLayout) AV_CHANNEL_LAYOUT_MONO;
+    else if (nb_channels == 2)
         ch_layout = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
     else if (nb_channels == 6)
         ch_layout = (AVChannelLayout) AV_CHANNEL_LAYOUT_5POINT1;
