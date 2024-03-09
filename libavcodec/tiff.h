@@ -30,9 +30,6 @@
 #ifndef AVCODEC_TIFF_H
 #define AVCODEC_TIFF_H
 
-#include <stdint.h>
-#include "tiff_common.h"
-
 /** TIFF types in ascenting priority (last in the list is highest) */
 enum TiffType {
     /** TIFF image based on the TIFF 6.0 or TIFF/EP (ISO 12234-2) specifications */

@@ -30,7 +30,6 @@
 #include <zlib.h>
 #endif
 
-#include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -39,9 +38,9 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "lzw.h"
-#include "put_bits.h"
 #include "rle.h"
 #include "tiff.h"
+#include "tiff_common.h"
 #include "version.h"
 
 #define TIFF_MAX_ENTRY 32

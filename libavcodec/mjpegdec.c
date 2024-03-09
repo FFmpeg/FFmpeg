@@ -52,7 +52,6 @@
 #include "jpeglsdec.h"
 #include "profiles.h"
 #include "put_bits.h"
-#include "tiff.h"
 #include "exif.h"
 #include "bytestream.h"
 #include "tiff_common.h"

@@ -48,6 +48,7 @@
 #include "faxcompr.h"
 #include "lzw.h"
 #include "tiff.h"
+#include "tiff_common.h"
 #include "tiff_data.h"
 #include "mjpegdec.h"
 #include "thread.h"
