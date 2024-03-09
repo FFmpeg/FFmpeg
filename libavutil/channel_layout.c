@@ -86,6 +86,10 @@ void av_channel_name_bprint(AVBPrint *bp, enum AVChannel channel_id)
         av_bprintf(bp, "%s", channel_names[channel_id].name);
     else if (channel_id == AV_CHAN_NONE)
         av_bprintf(bp, "NONE");
+    else if (channel_id == AV_CHAN_UNKNOWN)
+        av_bprintf(bp, "UNK");
+    else if (channel_id == AV_CHAN_UNUSED)
+        av_bprintf(bp, "UNSD");
     else
         av_bprintf(bp, "USR%d", channel_id);
 }
@@ -115,6 +119,10 @@ void av_channel_description_bprint(AVBPrint *bp, enum AVChannel channel_id)
         av_bprintf(bp, "%s", channel_names[channel_id].description);
     else if (channel_id == AV_CHAN_NONE)
         av_bprintf(bp, "none");
+    else if (channel_id == AV_CHAN_UNKNOWN)
+        av_bprintf(bp, "unknown");
+    else if (channel_id == AV_CHAN_UNUSED)
+        av_bprintf(bp, "unused");
     else
         av_bprintf(bp, "user %d", channel_id);
 }
@@ -151,6 +159,11 @@ enum AVChannel av_channel_from_string(const char *str)
         if (channel_names[i].name && !strcmp(str, channel_names[i].name))
             return i;
     }
+    if (!strcmp(str, "UNK"))
+        return AV_CHAN_UNKNOWN;
+    if (!strcmp(str, "UNSD"))
+        return AV_CHAN_UNUSED;
+
     if (!strncmp(str, "USR", 3)) {
         const char *p = str + 3;
         id = strtol(p, &endptr, 0);

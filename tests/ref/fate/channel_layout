@@ -148,6 +148,8 @@ With "Dummy":                                                        fail
 With "Dummy@FL":                                                     fail
 With "FR+Dummy":                                                     fail
 With "FR+Dummy@FL":                                                  fail
+With "UNK+UNSD":                                    2 channels (UNK+UNSD)
+With "NONE":                                                         fail
 With "FR+@FL":                                                       fail
 With "FL+@":                                                         fail
 With "FR+FL@Foo+USR63@Foo":              3 channels (FR+FL@Foo+USR63@Foo)
@@ -236,5 +238,5 @@ With "ambisonic 2+stereo": AMBI   (ambisonic 2+stereo)
 With "2C": UNSPEC (2 channels)
   == UNSPEC (2 channels)
   != NATIVE
-  == CUSTOM (2 channels (USR768+USR768))
+  == CUSTOM (2 channels (UNK+UNK))
   != AMBI
