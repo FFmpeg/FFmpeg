@@ -239,13 +239,58 @@ int av_channel_layout_from_mask(AVChannelLayout *channel_layout,
     return 0;
 }
 
+static int parse_channel_list(AVChannelLayout *ch_layout, const char *str)
+{
+    int ret;
+    int nb_channels = 0;
+    AVChannelCustom *map = NULL;
+    AVChannelCustom custom = {0};
+
+    while (*str) {
+        char *channel, *chname;
+        int ret = av_opt_get_key_value(&str, "@", "+", AV_OPT_FLAG_IMPLICIT_KEY, &channel, &chname);
+        if (ret < 0) {
+            av_freep(&map);
+            return ret;
+        }
+        if (*str)
+            str++; // skip separator
+        if (!channel) {
+            channel = chname;
+            chname = NULL;
+        }
+        av_strlcpy(custom.name, chname ? chname : "", sizeof(custom.name));
+        custom.id = av_channel_from_string(channel);
+        av_free(channel);
+        av_free(chname);
+        if (custom.id == AV_CHAN_NONE) {
+            av_freep(&map);
+            return AVERROR(EINVAL);
+        }
+
+        av_dynarray2_add((void **)&map, &nb_channels, sizeof(custom), (void *)&custom);
+        if (!map)
+            return AVERROR(ENOMEM);
+    }
+
+    if (!nb_channels)
+        return AVERROR(EINVAL);
+
+    ch_layout->order = AV_CHANNEL_ORDER_CUSTOM;
+    ch_layout->u.map = map;
+    ch_layout->nb_channels = nb_channels;
+
+    ret = av_channel_layout_retype(ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+    av_assert0(ret == 0);
+
+    return 0;
+}
+
 int av_channel_layout_from_string(AVChannelLayout *channel_layout,
                                   const char *str)
 {
-    int i;
-    int channels = 0, nb_channels = 0, native = 1;
-    enum AVChannel highest_channel = AV_CHAN_NONE;
-    const char *dup;
+    int i, matches, ret;
+    int channels = 0, nb_channels = 0;
     char *chlist, *end;
     uint64_t mask = 0;
 
@@ -321,121 +366,20 @@ int av_channel_layout_from_string(AVChannelLayout *channel_layout,
         return AVERROR(ENOMEM);
 
     /* channel names */
-    av_sscanf(str, "%d channels (%[^)]", &nb_channels, chlist);
-    end = strchr(str, ')');
-
-    dup = chlist;
-    while (*dup) {
-        char *channel, *chname;
-        int ret = av_opt_get_key_value(&dup, "@", "+", AV_OPT_FLAG_IMPLICIT_KEY, &channel, &chname);
-        if (ret < 0) {
-            av_free(chlist);
-            return ret;
-        }
-        if (*dup)
-            dup++; // skip separator
-        if (channel && !*channel)
-            av_freep(&channel);
-        for (i = 0; i < FF_ARRAY_ELEMS(channel_names); i++) {
-            if (channel_names[i].name && !strcmp(channel ? channel : chname, channel_names[i].name)) {
-                if (channel || i < highest_channel || mask & (1ULL << i))
-                    native = 0; // Not a native layout, use a custom one
-                highest_channel = i;
-                mask |= 1ULL << i;
-                break;
-            }
-        }
-
-        if (!channel && i >= FF_ARRAY_ELEMS(channel_names)) {
-            char *endptr = chname;
-            enum AVChannel id = AV_CHAN_NONE;
-
-            if (!strncmp(chname, "USR", 3)) {
-                const char *p = chname + 3;
-                id = strtol(p, &endptr, 0);
-            }
-            if (id < 0 || *endptr) {
-                native = 0; // Unknown channel name
-                channels = 0;
-                mask = 0;
-                av_free(chname);
-                break;
-            }
-            if (id > 63)
-                native = 0; // Not a native layout, use a custom one
-            else {
-                if (id < highest_channel || mask & (1ULL << id))
-                    native = 0; // Not a native layout, use a custom one
-                highest_channel = id;
-                mask |= 1ULL << id;
-            }
-        }
-        channels++;
-        av_free(channel);
-        av_free(chname);
-    }
-
-    if (mask && native) {
-        av_free(chlist);
-        if (nb_channels && ((nb_channels != channels) || (!end || *++end)))
-            return AVERROR(EINVAL);
-        av_channel_layout_from_mask(channel_layout, mask);
-        return 0;
-    }
-
-    /* custom layout of channel names */
-    if (channels && !native) {
-        int idx = 0;
-
-        if (nb_channels && ((nb_channels != channels) || (!end || *++end))) {
-            av_free(chlist);
-            return AVERROR(EINVAL);
-        }
-
-        channel_layout->u.map = av_calloc(channels, sizeof(*channel_layout->u.map));
-        if (!channel_layout->u.map) {
-            av_free(chlist);
-            return AVERROR(ENOMEM);
-        }
-
-        channel_layout->order = AV_CHANNEL_ORDER_CUSTOM;
-        channel_layout->nb_channels = channels;
-
-        dup = chlist;
-        while (*dup) {
-            char *channel, *chname;
-            int ret = av_opt_get_key_value(&dup, "@", "+", AV_OPT_FLAG_IMPLICIT_KEY, &channel, &chname);
-            if (ret < 0) {
-                av_freep(&channel_layout->u.map);
-                av_free(chlist);
-                return ret;
-            }
-            if (*dup)
-                dup++; // skip separator
-            for (i = 0; i < FF_ARRAY_ELEMS(channel_names); i++) {
-                if (channel_names[i].name && !strcmp(channel ? channel : chname, channel_names[i].name)) {
-                    channel_layout->u.map[idx].id = i;
-                    if (channel)
-                        av_strlcpy(channel_layout->u.map[idx].name, chname, sizeof(channel_layout->u.map[idx].name));
-                    idx++;
-                    break;
-                }
-            }
-            if (i >= FF_ARRAY_ELEMS(channel_names)) {
-                const char *p = (channel ? channel : chname) + 3;
-                channel_layout->u.map[idx].id = strtol(p, NULL, 0);
-                if (channel)
-                    av_strlcpy(channel_layout->u.map[idx].name, chname, sizeof(channel_layout->u.map[idx].name));
-                idx++;
-            }
-            av_free(channel);
-            av_free(chname);
-        }
-        av_free(chlist);
-
-        return 0;
-    }
+    matches = av_sscanf(str, "%d channels (%[^)]", &nb_channels, chlist);
+    ret = parse_channel_list(channel_layout, chlist);
     av_freep(&chlist);
+    if (ret < 0 && ret != AVERROR(EINVAL))
+        return ret;
+
+    if (ret >= 0) {
+        end = strchr(str, ')');
+        if (matches == 2 && (nb_channels != channel_layout->nb_channels || !end || *++end)) {
+            av_channel_layout_uninit(channel_layout);
+            return AVERROR(EINVAL);
+        }
+        return 0;
+    }
 
     errno = 0;
     mask = strtoull(str, &end, 0);

@@ -129,7 +129,7 @@ On "5.1(side)" layout with AV_CH_LAYOUT_4POINT1:  0xf
 Testing av_channel_layout_from_string
 With "FL+FR+FC+BL+BR+LFE":                6 channels (FL+FR+FC+BL+BR+LFE)
 With "2 channels (FR+FL)":                             2 channels (FR+FL)
-With "2 channels (AMBI1023+FL)":                                     fail
+With "2 channels (AMBI1023+FL)":                 2 channels (AMBI1023+FL)
 With "3 channels (FR+FL)":                                           fail
 With "-3 channels (FR+FL)":                                          fail
 With "0 channels ()":                                                fail
@@ -143,12 +143,12 @@ With "stereo@Boo":                                                   fail
 With "":                                                             fail
 With "@":                                                            fail
 With "@Dummy":                                                       fail
-With "@FL":                                               1 channels (FL)
+With "@FL":                                                          fail
 With "Dummy":                                                        fail
 With "Dummy@FL":                                                     fail
 With "FR+Dummy":                                                     fail
-With "FR+Dummy@FL":                                       1 channels (FR)
-With "FR+@FL":                                      2 channels (FR+FL@FL)
+With "FR+Dummy@FL":                                                  fail
+With "FR+@FL":                                                       fail
 With "FL+@":                                                         fail
 With "FR+FL@Foo+USR63@Foo":              3 channels (FR+FL@Foo+USR63@Foo)
 
