@@ -553,6 +553,33 @@ static int ambisonic_order(const AVChannelLayout *channel_layout)
     return order;
 }
 
+static enum AVChannelOrder canonical_order(AVChannelLayout *channel_layout)
+{
+    int has_known_channel = 0;
+    int order;
+
+    if (channel_layout->order != AV_CHANNEL_ORDER_CUSTOM)
+        return channel_layout->order;
+
+    if (has_channel_names(channel_layout))
+        return AV_CHANNEL_ORDER_CUSTOM;
+
+    for (int i = 0; i < channel_layout->nb_channels && !has_known_channel; i++)
+        if (channel_layout->u.map[i].id != AV_CHAN_UNKNOWN)
+            has_known_channel = 1;
+    if (!has_known_channel)
+        return AV_CHANNEL_ORDER_UNSPEC;
+
+    if (masked_description(channel_layout, 0) > 0)
+        return AV_CHANNEL_ORDER_NATIVE;
+
+    order = ambisonic_order(channel_layout);
+    if (order >= 0 && masked_description(channel_layout, (order + 1) * (order + 1)) >= 0)
+        return AV_CHANNEL_ORDER_AMBISONIC;
+
+    return AV_CHANNEL_ORDER_CUSTOM;
+}
+
 /**
  * If the custom layout is n-th order standard-order ambisonic, with optional
  * extra non-diegetic channels at the end, write its string description in bp.
@@ -891,6 +918,9 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
 
     if (!av_channel_layout_check(channel_layout))
         return AVERROR(EINVAL);
+
+    if (flags & AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL)
+        order = canonical_order(channel_layout);
 
     if (channel_layout->order == order)
         return 0;

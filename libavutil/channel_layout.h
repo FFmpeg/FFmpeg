@@ -681,6 +681,13 @@ int av_channel_layout_compare(const AVChannelLayout *chl, const AVChannelLayout 
 #define AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS (1 << 0)
 
 /**
+ * The specified retype target order is ignored and the simplest possible
+ * (canonical) order is used for which the input layout can be losslessy
+ * represented.
+ */
+#define AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL (1 << 1)
+
+/**
  * Change the AVChannelOrder of a channel layout.
  *
  * Change of AVChannelOrder can be either lossless or lossy. In case of a

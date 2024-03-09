@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-03-xx - xxxxxxxxxx - lavu 59.2.100 - channel_layout.h
+  Add AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL.
+
 2024-03-08 - xxxxxxxxxx - lavc 61.1.100 - avcodec.h
   Add AVCodecContext.[nb_]side_data_prefer_packet.
 
