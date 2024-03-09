@@ -2251,19 +2251,17 @@ static int fg_output_frame(OutputFilterPriv *ofp, FilterGraphThread *fgt,
             frame_out = frame;
         }
 
-        {
-            // send the frame to consumers
-            ret = sch_filter_send(fgp->sch, fgp->sch_idx, ofp->index, frame_out);
-            if (ret < 0) {
-                av_frame_unref(frame_out);
+        // send the frame to consumers
+        ret = sch_filter_send(fgp->sch, fgp->sch_idx, ofp->index, frame_out);
+        if (ret < 0) {
+            av_frame_unref(frame_out);
 
-                if (!fgt->eof_out[ofp->index]) {
-                    fgt->eof_out[ofp->index] = 1;
-                    fgp->nb_outputs_done++;
-                }
-
-                return ret == AVERROR_EOF ? 0 : ret;
+            if (!fgt->eof_out[ofp->index]) {
+                fgt->eof_out[ofp->index] = 1;
+                fgp->nb_outputs_done++;
             }
+
+            return ret == AVERROR_EOF ? 0 : ret;
         }
 
         if (type == AVMEDIA_TYPE_VIDEO) {
