@@ -302,6 +302,10 @@ int av_channel_layout_from_string(AVChannelLayout *channel_layout,
         }
     }
 
+    /* This function is a channel layout initializer, so we have to
+     * zero-initialize before we start setting fields individually. */
+    memset(channel_layout, 0, sizeof(*channel_layout));
+
     /* ambisonic */
     if (!strncmp(str, "ambisonic ", 10)) {
         const char *p = str + 10;
@@ -343,6 +347,7 @@ int av_channel_layout_from_string(AVChannelLayout *channel_layout,
                 for (i = 0; i < extra.nb_channels; i++) {
                     enum AVChannel ch = av_channel_layout_channel_from_index(&extra, i);
                     if (CHAN_IS_AMBI(ch)) {
+                        av_channel_layout_uninit(channel_layout);
                         av_channel_layout_uninit(&extra);
                         return AVERROR(EINVAL);
                     }

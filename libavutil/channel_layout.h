@@ -512,10 +512,14 @@ int av_channel_layout_from_mask(AVChannelLayout *channel_layout, uint64_t mask);
  *  - the number of unordered channels (eg. "4C" or "4 channels")
  *  - the ambisonic order followed by optional non-diegetic channels (eg.
  *    "ambisonic 2+stereo")
+ * On error, the channel layout will remain uninitialized, but not necessarily
+ * untouched.
  *
- * @param channel_layout input channel layout
+ * @param channel_layout uninitialized channel layout for the result
  * @param str string describing the channel layout
- * @return 0 channel layout was detected, AVERROR_INVALIDATATA otherwise
+ * @return 0 on success parsing the channel layout
+ *         AVERROR(EINVAL) if an invalid channel layout string was provided
+ *         AVERROR(ENOMEM) if there was not enough memory
  */
 int av_channel_layout_from_string(AVChannelLayout *channel_layout,
                                   const char *str);
