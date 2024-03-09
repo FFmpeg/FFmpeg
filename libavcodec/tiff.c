@@ -36,6 +36,7 @@
 #include <float.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/avstring.h"
 #include "libavutil/error.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -179,19 +180,17 @@ static const char *search_keyval(const TiffGeoTagKeyName *keys, int n, int id)
     return NULL;
 }
 
-static char *get_geokey_val(int key, int val)
+static const char *get_geokey_val(int key, uint16_t val)
 {
-    char *ap;
-
     if (val == TIFF_GEO_KEY_UNDEFINED)
-        return av_strdup("undefined");
+        return "undefined";
     if (val == TIFF_GEO_KEY_USER_DEFINED)
-        return av_strdup("User-Defined");
+        return "User-Defined";
 
 #define RET_GEOKEY_VAL(TYPE, array)\
     if (val >= TIFF_##TYPE##_OFFSET &&\
         val - TIFF_##TYPE##_OFFSET < FF_ARRAY_ELEMS(tiff_##array##_codes))\
-        return av_strdup(tiff_##array##_codes[val - TIFF_##TYPE##_OFFSET]);
+        return tiff_##array##_codes[val - TIFF_##TYPE##_OFFSET];
 
     switch (key) {
     case TIFF_GT_MODEL_TYPE_GEOKEY:
@@ -224,13 +223,9 @@ static char *get_geokey_val(int key, int val)
         RET_GEOKEY_VAL(PRIME_MERIDIAN, prime_meridian);
         break;
     case TIFF_PROJECTED_CS_TYPE_GEOKEY:
-        ap = av_strdup(search_keyval(tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(tiff_proj_cs_type_codes), val));
-        if(ap) return ap;
-        break;
+        return search_keyval(tiff_proj_cs_type_codes, FF_ARRAY_ELEMS(tiff_proj_cs_type_codes), val);
     case TIFF_PROJECTION_GEOKEY:
-        ap = av_strdup(search_keyval(tiff_projection_codes, FF_ARRAY_ELEMS(tiff_projection_codes), val));
-        if(ap) return ap;
-        break;
+        return search_keyval(tiff_projection_codes, FF_ARRAY_ELEMS(tiff_projection_codes), val);
     case TIFF_PROJ_COORD_TRANS_GEOKEY:
         RET_GEOKEY_VAL(COORD_TRANS, coord_trans);
         break;
@@ -241,10 +236,7 @@ static char *get_geokey_val(int key, int val)
 
     }
 
-    ap = av_malloc(14);
-    if (ap)
-        snprintf(ap, 14, "Unknown-%d", val);
-    return ap;
+    return NULL;
 }
 
 static char *doubles2str(double *dp, int count, const char *sep)
@@ -1630,14 +1622,20 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             goto end;
         }
         for (i = 0; i < s->geotag_count; i++) {
+            unsigned val;
             s->geotags[i].key    = ff_tget_short(&s->gb, s->le);
             s->geotags[i].type   = ff_tget_short(&s->gb, s->le);
             s->geotags[i].count  = ff_tget_short(&s->gb, s->le);
+            val                  = ff_tget_short(&s->gb, s->le);
 
-            if (!s->geotags[i].type)
-                s->geotags[i].val  = get_geokey_val(s->geotags[i].key, ff_tget_short(&s->gb, s->le));
-            else
-                s->geotags[i].offset = ff_tget_short(&s->gb, s->le);
+            if (!s->geotags[i].type) {
+                const char *str = get_geokey_val(s->geotags[i].key, val);
+
+                s->geotags[i].val = str ? av_strdup(str) : av_asprintf("Unknown-%u", val);
+                if (!s->geotags[i].val)
+                    return AVERROR(ENOMEM);
+            } else
+                s->geotags[i].offset = val;
         }
         break;
     case TIFF_GEO_DOUBLE_PARAMS:
