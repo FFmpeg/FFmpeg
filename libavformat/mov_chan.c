@@ -543,10 +543,8 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
             ch_layout->u.map[i].id = mov_get_channel_id(label);
         }
 
-        ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_NATIVE, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
-        if (ret == AVERROR(ENOSYS))
-            ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_UNSPEC, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
-        if (ret < 0 && ret != AVERROR(ENOSYS))
+        ret = av_channel_layout_retype(ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+        if (ret < 0)
             goto out;
     } else {
         uint64_t mask = mov_get_channel_layout(layout_tag, bitmap);
@@ -843,10 +841,8 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
                 ch_layout->u.map[i].id = channel;
             }
 
-            ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_NATIVE, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
-            if (ret == AVERROR(ENOSYS))
-                ret = av_channel_layout_retype(ch_layout, AV_CHANNEL_ORDER_UNSPEC, AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS);
-            if (ret < 0 && ret != AVERROR(ENOSYS))
+            ret = av_channel_layout_retype(ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
+            if (ret < 0)
                 return ret;
         } else {
             uint64_t omitted_channel_map = avio_rb64(pb);
