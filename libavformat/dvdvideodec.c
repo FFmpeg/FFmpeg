@@ -49,6 +49,7 @@
 #include "avio_internal.h"
 #include "avlanguage.h"
 #include "demux.h"
+#include "dvdclut.h"
 #include "internal.h"
 #include "url.h"
 
@@ -95,6 +96,7 @@ typedef struct DVDVideoPGCSubtitleStreamEntry {
     int                                 startcode;
     enum DVDVideoSubpictureViewport     viewport;
     int                                 disposition;
+    uint32_t                            clut[FF_DVDCLUT_CLUT_LEN];
     const char                          *lang_iso;
 } DVDVideoPGCSubtitleStreamEntry;
 
@@ -1040,12 +1042,20 @@ break_error:
 static int dvdvideo_subp_stream_analyze(AVFormatContext *s, uint32_t offset, subp_attr_t subp_attr,
                                         DVDVideoPGCSubtitleStreamEntry *entry)
 {
+    DVDVideoDemuxContext *c = s->priv_data;
+
     char lang_dvd[3] = {0};
 
     entry->startcode = 0x20 + (offset & 0x1F);
 
     if (subp_attr.lang_extension == 9)
         entry->disposition |= AV_DISPOSITION_FORCED;
+
+    memcpy(&entry->clut, c->play_state.pgc->palette, FF_DVDCLUT_CLUT_SIZE);
+
+    /* dvdsub palettes currently have no colorspace tagging and all muxers only support RGB */
+    /* this is not a lossless conversion, but no use cases are supported for the original YUV */
+    ff_dvdclut_yuv_to_rgb(entry->clut, FF_DVDCLUT_CLUT_SIZE);
 
     AV_WB16(lang_dvd, subp_attr.lang_code);
     entry->lang_iso = ff_convert_lang_to(lang_dvd, AV_LANG_ISO639_2_BIBL);
@@ -1058,6 +1068,7 @@ static int dvdvideo_subp_stream_add(AVFormatContext *s, DVDVideoPGCSubtitleStrea
 {
     AVStream *st;
     FFStream *sti;
+    int ret;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -1066,6 +1077,9 @@ static int dvdvideo_subp_stream_add(AVFormatContext *s, DVDVideoPGCSubtitleStrea
     st->id = entry->startcode;
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id = AV_CODEC_ID_DVD_SUBTITLE;
+
+    if ((ret = ff_dvdclut_palette_extradata_cat(entry->clut, FF_DVDCLUT_CLUT_SIZE, st->codecpar)) < 0)
+        return ret;
 
     if (entry->lang_iso)
         av_dict_set(&st->metadata, "language", entry->lang_iso, 0);
