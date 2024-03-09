@@ -289,8 +289,10 @@ This demuxer accepts the following option:
 
 DVD-Video demuxer, powered by libdvdnav and libdvdread.
 
-Can directly ingest DVD titles, specifically sequential PGCs,
-into a conversion pipeline. Menus and seeking are not supported at this time.
+Can directly ingest DVD titles, specifically sequential PGCs, into
+a conversion pipeline. Menu assets, such as background video or audio,
+can also be demuxed given the menu's coordinates (at best effort).
+Seeking is not supported at this time.
 
 Block devices (DVD drives), ISO files, and directory structures are accepted.
 Activate with @code{-f dvdvideo} in front of one of these inputs.
@@ -347,37 +349,56 @@ This demuxer accepts the following options:
 
 @item title @var{int}
 The title number to play. Must be set if @option{pgc} and @option{pg} are not set.
+Not applicable to menus.
 Default is 0 (auto), which currently only selects the first available title (title 1)
 and notifies the user about the implications.
 
 @item chapter_start @var{int}
-The chapter, or PTT (part-of-title), number to start at. Default is 1.
+The chapter, or PTT (part-of-title), number to start at. Not applicable to menus.
+Default is 1.
 
 @item chapter_end @var{int}
-The chapter, or PTT (part-of-title), number to end at. Default is 0,
-which is a special value to signal end at the last possible chapter.
+The chapter, or PTT (part-of-title), number to end at. Not applicable to menus.
+Default is 0, which is a special value to signal end at the last possible chapter.
 
 @item angle @var{int}
 The video angle number, referring to what is essentially an additional
 video stream that is composed from alternate frames interleaved in the VOBs.
+Not applicable to menus.
 Default is 1.
 
 @item region @var{int}
 The region code to use for playback. Some discs may use this to default playback
 at a particular angle in different regions. This option will not affect the region code
-of a real DVD drive, if used as an input. Default is 0, "world".
+of a real DVD drive, if used as an input. Not applicable to menus.
+Default is 0, "world".
+
+@item menu @var{bool}
+Demux menu assets instead of navigating a title. Requires exact coordinates
+of the menu (@option{menu_lu}, @option{menu_vts}, @option{pgc}, @option{pg}).
+Default is false.
+
+@item menu_lu @var{int}
+The menu language to demux. In DVD, menus are grouped by language.
+Default is 0, the first language unit.
+
+@item menu_vts @var{int}
+The VTS where the menu lives, or 0 if it is a VMG menu (root-level).
+Default is 0, VMG menu.
 
 @item pgc @var{int}
 The entry PGC to start playback, in conjunction with @option{pg}.
 Alternative to setting @option{title}.
 Chapter markers are not supported at this time.
+Must be explicitly set for menus.
 Default is 0, automatically resolve from value of @option{title}.
 
 @item pg @var{int}
 The entry PG to start playback, in conjunction with @option{pgc}.
 Alternative to setting @option{title}.
 Chapter markers are not supported at this time.
-Default is 0, automatically resolve from value of @option{title}.
+Default is 0, automatically resolve from value of @option{title}, or
+start from the beginning (PG 1) of the menu.
 
 @item preindex @var{bool}
 Enable this to have accurate chapter (PTT) markers and duration measurement,
@@ -385,6 +406,7 @@ which requires a slow second pass read in order to index the chapter marker
 timestamps from NAV packets. This is non-ideal extra work for real optical drives.
 It is recommended and faster to use this option with a backup of the DVD structure
 stored on a hard drive. Not compatible with @option{pgc} and @option{pg}.
+Not applicable to menus.
 Default is 0, false.
 
 @item trim @var{bool}
@@ -392,6 +414,7 @@ Skip padding cells (i.e. cells shorter than 1 second) from the beginning.
 There exist many discs with filler segments at the beginning of the PGC,
 often with junk data intended for controlling a real DVD player's
 buffering speed and with no other material data value.
+Not applicable to menus.
 Default is 1, true.
 
 @end table
@@ -415,6 +438,12 @@ ffmpeg -f dvdvideo -chapter_start 3 -chapter_end 6 -title 1 -i <path to DVD> ...
 Open only chapter 5 from title 1 from a given DVD structure:
 @example
 ffmpeg -f dvdvideo -chapter_start 5 -chapter_end 5 -title 1 -i <path to DVD> ...
+@end example
+
+@item
+Demux menu with language 1 from VTS 1, PGC 1, starting at PG 1:
+@example
+ffmpeg -f dvdvideo -menu 1 -menu_lu 1 -menu_vts 1 -pgc 1 -pg 1 -i <path to DVD> ...
 @end example
 @end itemize
 

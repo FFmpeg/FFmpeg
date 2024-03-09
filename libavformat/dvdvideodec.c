@@ -57,8 +57,10 @@
 #define DVDVIDEO_BLOCK_SIZE                             2048
 #define DVDVIDEO_TIME_BASE_Q                            (AVRational) { 1, 90000 }
 #define DVDVIDEO_PTS_WRAP_BITS                          64 /* VOBUs use 32 (PES allows 33) */
-
 #define DVDVIDEO_LIBDVDX_LOG_BUFFER_SIZE                1024
+
+#define PCI_START_BYTE                                  45 /* complement dvdread's DSI_START_BYTE */
+static const uint8_t dvdvideo_nav_header[4] =           { 0x00, 0x00, 0x01, 0xBF };
 
 enum DVDVideoSubpictureViewport {
     DVDVIDEO_SUBP_VIEWPORT_FULLSCREEN,
@@ -121,6 +123,15 @@ typedef struct DVDVideoPlaybackState {
     uint64_t                    *pgc_pg_times_est;  /* PG start times as reported by IFO */
     pgc_t                       *pgc;               /* handle to the active PGC */
     dvdnav_t                    *dvdnav;            /* handle to the dvdnav VM */
+
+    /* the following fields are only used for menu playback */
+    int                         celln_start;        /* starting cell number */
+    int                         celln_end;          /* ending cell number */
+    int                         sector_offset;      /* current sector relative to the current VOB */
+    uint32_t                    sector_end;         /* end sector relative to the current VOBU */
+    uint32_t                    vobu_next;          /* the next VOBU pointer */
+    uint32_t                    vobu_remaining;     /* remaining blocks for current VOBU */
+    dvd_file_t                  *vob_file;          /* handle to the menu VOB (VMG or VTS) */
 } DVDVideoPlaybackState;
 
 typedef struct DVDVideoDemuxContext {
@@ -130,6 +141,9 @@ typedef struct DVDVideoDemuxContext {
     int                         opt_angle;          /* the user-provided angle number (1-indexed) */
     int                         opt_chapter_end;    /* the user-provided exit PTT (0 for last) */
     int                         opt_chapter_start;  /* the user-provided entry PTT (1-indexed) */
+    int                         opt_menu;           /* demux menu domain instead of title domain */
+    int                         opt_menu_lu;        /* the menu language unit (logical grouping) */
+    int                         opt_menu_vts;       /* the menu VTS, or 0 for VMG (main menu) */
     int                         opt_pg;             /* the user-provided PG number (1-indexed) */
     int                         opt_pgc;            /* the user-provided PGC number (1-indexed) */
     int                         opt_preindex;       /* pre-indexing mode (2-pass read) */
@@ -226,6 +240,16 @@ static int dvdvideo_ifo_open(AVFormatContext *s)
         return AVERROR_EXTERNAL;
     }
 
+    if (c->opt_menu) {
+        if (c->opt_menu_vts > 0 && !(c->vts_ifo = ifoOpen(c->dvdread, c->opt_menu_vts))) {
+            av_log(s, AV_LOG_ERROR, "Unable to open IFO structure for VTS %d\n", c->opt_menu_vts);
+
+            return AVERROR_EXTERNAL;
+        }
+
+        return 0;
+    }
+
     if (c->opt_title > c->vmg_ifo->tt_srpt->nr_of_srpts) {
         av_log(s, AV_LOG_ERROR, "Title %d not found\n", c->opt_title);
 
@@ -287,6 +311,183 @@ static int dvdvideo_is_pgc_promising(AVFormatContext *s, pgc_t *pgc)
             return 1;
 
     return 0;
+}
+
+static void dvdvideo_menu_close(AVFormatContext *s, DVDVideoPlaybackState *state)
+{
+    if (state->vob_file)
+        DVDCloseFile(state->vob_file);
+}
+
+static int dvdvideo_menu_open(AVFormatContext *s, DVDVideoPlaybackState *state)
+{
+    DVDVideoDemuxContext *c = s->priv_data;
+    pgci_ut_t *pgci_ut;
+
+    pgci_ut = c->opt_menu_vts ? c->vts_ifo->pgci_ut : c->vmg_ifo->pgci_ut;
+    if (!pgci_ut) {
+        av_log(s, AV_LOG_ERROR, "Invalid PGC table for menu [LU %d, PGC %d]\n",
+                                c->opt_menu_lu, c->opt_pgc);
+
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (c->opt_pgc < 1                      ||
+        c->opt_menu_lu < 1                  ||
+        c->opt_menu_lu > pgci_ut->nr_of_lus ||
+        c->opt_pgc > pgci_ut->lu[c->opt_menu_lu - 1].pgcit->nr_of_pgci_srp) {
+
+        av_log(s, AV_LOG_ERROR, "Menu [LU %d, PGC %d] not found\n", c->opt_menu_lu, c->opt_pgc);
+
+        return AVERROR(EINVAL);
+    }
+
+    /* make sure the PGC is valid */
+    state->pgcn          = c->opt_pgc - 1;
+    state->pgc           = pgci_ut->lu[c->opt_menu_lu - 1].pgcit->pgci_srp[c->opt_pgc - 1].pgc;
+    if (!state->pgc || !state->pgc->program_map || !state->pgc->cell_playback) {
+        av_log(s, AV_LOG_ERROR, "Invalid PGC structure for menu [LU %d, PGC %d]\n",
+                                c->opt_menu_lu, c->opt_pgc);
+
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* make sure the PG is valid */
+    state->entry_pgn     = c->opt_pg;
+    if (state->entry_pgn < 1 || state->entry_pgn > state->pgc->nr_of_programs) {
+        av_log(s, AV_LOG_ERROR, "Entry PG %d not found\n", state->entry_pgn);
+
+        return AVERROR(EINVAL);
+    }
+
+    /* make sure the program map isn't leading us to nowhere */
+    state->celln_start   = state->pgc->program_map[state->entry_pgn - 1];
+    state->celln_end     = state->pgc->nr_of_cells;
+    state->celln         = state->celln_start;
+    if (state->celln_start > state->pgc->nr_of_cells) {
+        av_log(s, AV_LOG_ERROR, "Invalid PGC structure: program map points to unknown cell\n");
+
+        return AVERROR_INVALIDDATA;
+    }
+
+    state->sector_end    = state->pgc->cell_playback[state->celln - 1].last_sector;
+    state->vobu_next     = state->pgc->cell_playback[state->celln - 1].first_sector;
+    state->sector_offset = state->vobu_next;
+
+    if (c->opt_menu_vts > 0)
+        state->in_vts    = 1;
+
+    if (!(state->vob_file = DVDOpenFile(c->dvdread, c->opt_menu_vts, DVD_READ_MENU_VOBS))) {
+        av_log(s, AV_LOG_ERROR, !c->opt_menu_vts ?
+                                "Unable to open main menu VOB (VIDEO_TS.VOB)\n" :
+                                "Unable to open menu VOBs for VTS %d\n", c->opt_menu_vts);
+
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
+static int dvdvideo_menu_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState *state,
+                                       uint8_t *buf, int buf_size,
+                                       void (*flush_cb)(AVFormatContext *s))
+{
+    ssize_t blocks_read                   = 0;
+    uint8_t read_buf[DVDVIDEO_BLOCK_SIZE] = {0};
+    pci_t pci                             = (pci_t) {0};
+    dsi_t dsi                             = (dsi_t) {0};
+
+    if (buf_size != DVDVIDEO_BLOCK_SIZE) {
+        av_log(s, AV_LOG_ERROR, "Invalid buffer size (expected=%d actual=%d)\n",
+                                DVDVIDEO_BLOCK_SIZE, buf_size);
+
+        return AVERROR(EINVAL);
+    }
+
+    /* we were at the end of a vobu, so now go to the next one or EOF */
+    if (!state->vobu_remaining && state->in_pgc) {
+        if (state->vobu_next == SRI_END_OF_CELL) {
+            if (state->celln == state->celln_end && state->sector_offset > state->sector_end)
+                return AVERROR_EOF;
+
+            state->celln++;
+            state->sector_offset = state->pgc->cell_playback[state->celln - 1].first_sector;
+            state->sector_end    = state->pgc->cell_playback[state->celln - 1].last_sector;
+        } else {
+            state->sector_offset = state->vobu_next;
+        }
+    }
+
+    /* continue reading the VOBU */
+    av_log(s, AV_LOG_TRACE, "reading block at offset %d\n", state->sector_offset);
+
+    blocks_read = DVDReadBlocks(state->vob_file, state->sector_offset, 1, read_buf);
+    if (blocks_read != 1) {
+        av_log(s, AV_LOG_ERROR, "Unable to read VOB block: offset=%d blocks_read=%d\n",
+                                state->sector_offset, blocks_read);
+
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* we are at the start of a VOBU, so we are expecting a NAV packet */
+    if (!state->vobu_remaining) {
+        if (!memcmp(&read_buf[PCI_START_BYTE - 4], dvdvideo_nav_header, 4) ||
+            !memcmp(&read_buf[DSI_START_BYTE - 4], dvdvideo_nav_header, 4) ||
+            read_buf[PCI_START_BYTE - 1] != 0x00                           ||
+            read_buf[DSI_START_BYTE - 1] != 0x01) {
+
+            av_log(s, AV_LOG_ERROR, "Invalid NAV packet at offset %d: PCI or DSI header mismatch\n",
+                                    state->sector_offset);
+
+            return AVERROR_INVALIDDATA;
+        }
+
+        navRead_PCI(&pci, &read_buf[PCI_START_BYTE]);
+        navRead_DSI(&dsi, &read_buf[DSI_START_BYTE]);
+
+        if (!pci.pci_gi.vobu_s_ptm                          ||
+            !pci.pci_gi.vobu_e_ptm                          ||
+            pci.pci_gi.vobu_s_ptm > pci.pci_gi.vobu_e_ptm) {
+
+            av_log(s, AV_LOG_ERROR, "Invalid NAV packet at offset %d: PCI header is invalid\n",
+                                    state->sector_offset);
+
+            return AVERROR_INVALIDDATA;
+        }
+
+        state->vobu_remaining    = dsi.dsi_gi.vobu_ea;
+        state->vobu_next         = dsi.vobu_sri.next_vobu == SRI_END_OF_CELL ? SRI_END_OF_CELL :
+                                   dsi.dsi_gi.nv_pck_lbn + (dsi.vobu_sri.next_vobu & 0x7FFFFFFF);
+        state->sector_offset++;
+
+        if (state->in_pgc) {
+            if (state->vobu_e_ptm != pci.pci_gi.vobu_s_ptm) {
+                if (flush_cb)
+                    flush_cb(s);
+
+                state->ts_offset += state->vobu_e_ptm - pci.pci_gi.vobu_s_ptm;
+            }
+        } else {
+            state->in_pgc        = 1;
+            state->in_ps         = 1;
+        }
+
+        state->vobu_e_ptm        = pci.pci_gi.vobu_e_ptm;
+
+        av_log(s, AV_LOG_DEBUG, "NAV packet: sector=%d "
+                                "vobu_s_ptm=%d vobu_e_ptm=%d ts_offset=%ld\n",
+                                dsi.dsi_gi.nv_pck_lbn,
+                                pci.pci_gi.vobu_s_ptm, pci.pci_gi.vobu_e_ptm, state->ts_offset);
+
+        return FFERROR_REDO;
+    }
+
+    /* we are in the middle of a VOBU, so pass on the PS packet */
+    memcpy(buf, &read_buf, DVDVIDEO_BLOCK_SIZE);
+    state->sector_offset++;
+    state->vobu_remaining--;
+
+    return DVDVIDEO_BLOCK_SIZE;
 }
 
 static void dvdvideo_play_close(AVFormatContext *s, DVDVideoPlaybackState *state)
@@ -857,8 +1058,15 @@ static int dvdvideo_video_stream_setup(AVFormatContext *s)
 
     int ret = 0;
     DVDVideoVTSVideoStreamEntry entry = {0};
+    video_attr_t video_attr;
 
-    if ((ret = dvdvideo_video_stream_analyze(s, c->vts_ifo->vtsi_mat->vts_video_attr, &entry)) < 0 ||
+    if (c->opt_menu)
+        video_attr = !c->opt_menu_vts ? c->vmg_ifo->vmgi_mat->vmgm_video_attr :
+                                        c->vts_ifo->vtsi_mat->vtsm_video_attr;
+    else
+        video_attr = c->vts_ifo->vtsi_mat->vts_video_attr;
+
+    if ((ret = dvdvideo_video_stream_analyze(s, video_attr, &entry)) < 0 ||
         (ret = dvdvideo_video_stream_add(s, &entry, AVSTREAM_PARSE_HEADERS)) < 0) {
 
         av_log(s, AV_LOG_ERROR, "Unable to add video stream\n");
@@ -1010,15 +1218,29 @@ static int dvdvideo_audio_stream_add_all(AVFormatContext *s)
     DVDVideoDemuxContext *c = s->priv_data;
 
     int ret = 0;
+    int nb_streams;
 
-    for (int i = 0; i < c->vts_ifo->vtsi_mat->nr_of_vts_audio_streams; i++) {
+    if (c->opt_menu)
+        nb_streams = !c->opt_menu_vts ? c->vmg_ifo->vmgi_mat->nr_of_vmgm_audio_streams :
+                                        c->vts_ifo->vtsi_mat->nr_of_vtsm_audio_streams;
+    else
+        nb_streams = c->vts_ifo->vtsi_mat->nr_of_vts_audio_streams;
+
+    for (int i = 0; i < nb_streams; i++) {
         DVDVideoPGCAudioStreamEntry entry = {0};
+        audio_attr_t audio_attr;
+
+        if (c->opt_menu)
+            audio_attr = !c->opt_menu_vts ? c->vmg_ifo->vmgi_mat->vmgm_audio_attr :
+                                            c->vts_ifo->vtsi_mat->vtsm_audio_attr;
+        else
+            audio_attr = c->vts_ifo->vtsi_mat->vts_audio_attr[i];
 
         if (!(c->play_state.pgc->audio_control[i] & 0x8000))
             continue;
 
-        if ((ret = dvdvideo_audio_stream_analyze(s, c->vts_ifo->vtsi_mat->vts_audio_attr[i],
-                                                 c->play_state.pgc->audio_control[i], &entry)) < 0)
+        if ((ret = dvdvideo_audio_stream_analyze(s, audio_attr, c->play_state.pgc->audio_control[i],
+                                                 &entry)) < 0)
             goto break_error;
 
         /* IFO structures can declare duplicate entries for the same startcode */
@@ -1129,7 +1351,16 @@ static int dvdvideo_subp_stream_add_all(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
 
-    for (int i = 0; i < c->vts_ifo->vtsi_mat->nr_of_vts_subp_streams; i++) {
+    int nb_streams;
+
+    if (c->opt_menu)
+        nb_streams = !c->opt_menu_vts ? c->vmg_ifo->vmgi_mat->nr_of_vmgm_subp_streams :
+                                        c->vts_ifo->vtsi_mat->nr_of_vtsm_subp_streams;
+    else
+        nb_streams = c->vts_ifo->vtsi_mat->nr_of_vts_subp_streams;
+
+
+    for (int i = 0; i < nb_streams; i++) {
         int ret = 0;
         uint32_t subp_control;
         subp_attr_t subp_attr;
@@ -1141,8 +1372,16 @@ static int dvdvideo_subp_stream_add_all(AVFormatContext *s)
 
         /* there can be several presentations for one SPU */
         /* the DAR check is flexible in order to support weird authoring */
-        video_attr = c->vts_ifo->vtsi_mat->vts_video_attr;
-        subp_attr = c->vts_ifo->vtsi_mat->vts_subp_attr[i];
+        if (c->opt_menu) {
+            video_attr = !c->opt_menu_vts ? c->vmg_ifo->vmgi_mat->vmgm_video_attr :
+                                            c->vts_ifo->vtsi_mat->vtsm_video_attr;
+
+            subp_attr  = !c->opt_menu_vts ? c->vmg_ifo->vmgi_mat->vmgm_subp_attr :
+                                            c->vts_ifo->vtsi_mat->vtsm_subp_attr;
+        } else {
+            video_attr = c->vts_ifo->vtsi_mat->vts_video_attr;
+            subp_attr = c->vts_ifo->vtsi_mat->vts_subp_attr[i];
+        }
 
         /* 4:3 */
         if (!video_attr.display_aspect_ratio) {
@@ -1198,8 +1437,12 @@ static int dvdvideo_subdemux_read_data(void *opaque, uint8_t *buf, int buf_size)
     if (c->play_end)
         return AVERROR_EOF;
 
-    ret = dvdvideo_play_next_ps_block(opaque, &c->play_state, buf, buf_size,
-                                      &nav_event, dvdvideo_subdemux_flush);
+    if (c->opt_menu)
+        ret = dvdvideo_menu_next_ps_block(s, &c->play_state, buf, buf_size,
+                                          dvdvideo_subdemux_flush);
+    else
+        ret = dvdvideo_play_next_ps_block(opaque, &c->play_state, buf, buf_size,
+                                          &nav_event, dvdvideo_subdemux_flush);
 
     if (ret == AVERROR_EOF) {
         c->mpeg_pb.pub.eof_reached = 1;
@@ -1262,6 +1505,47 @@ static int dvdvideo_read_header(AVFormatContext *s)
     DVDVideoDemuxContext *c = s->priv_data;
 
     int ret = 0;
+
+    if (c->opt_menu) {
+        if (c->opt_region               ||
+            c->opt_title > 1            ||
+            c->opt_preindex             ||
+            c->opt_chapter_start > 1    ||
+            c->opt_chapter_end > 0) {
+            av_log(s, AV_LOG_ERROR, "-menu is not compatible with the -region, -title, "
+                                    "-preindex, or -chapter_start/-chapter_end options\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (!c->opt_pgc) {
+            av_log(s, AV_LOG_ERROR, "If -menu is enabled, -pgc must be set to a non-zero value\n");
+
+            return AVERROR(EINVAL);
+        }
+
+        if (!c->opt_menu_lu) {
+            av_log(s, AV_LOG_INFO, "Defaulting to menu language unit #1. "
+                                   "This is not always desirable, validation suggested.\n");
+
+            c->opt_menu_lu = 1;
+        }
+
+        if (!c->opt_pg) {
+            av_log(s, AV_LOG_INFO, "Defaulting to menu PG #1. "
+                                   "This is not always desirable, validation suggested.\n");
+
+            c->opt_pg = 1;
+        }
+
+        if ((ret = dvdvideo_ifo_open(s)) < 0                    ||
+            (ret = dvdvideo_menu_open(s, &c->play_state)) < 0   ||
+            (ret = dvdvideo_subdemux_open(s)) < 0               ||
+            (ret = dvdvideo_video_stream_setup(s)) < 0          ||
+            (ret = dvdvideo_audio_stream_add_all(s)) < 0)
+        return ret;
+
+        return 0;
+    }
 
     if (c->opt_title == 0) {
         av_log(s, AV_LOG_INFO, "Defaulting to title #1. "
@@ -1378,7 +1662,12 @@ static int dvdvideo_close(AVFormatContext *s)
     DVDVideoDemuxContext *c = s->priv_data;
 
     dvdvideo_subdemux_close(s);
-    dvdvideo_play_close(s, &c->play_state);
+
+    if (c->opt_menu)
+        dvdvideo_menu_close(s, &c->play_state);
+    else
+        dvdvideo_play_close(s, &c->play_state);
+
     dvdvideo_ifo_close(s);
 
     return 0;
@@ -1389,6 +1678,9 @@ static const AVOption dvdvideo_options[] = {
     {"angle",           "playback angle number",                                    OFFSET(opt_angle),          AV_OPT_TYPE_INT,    { .i64=1 },     1,          9,         AV_OPT_FLAG_DECODING_PARAM },
     {"chapter_end",     "exit chapter (PTT) number (0=end)",                        OFFSET(opt_chapter_end),    AV_OPT_TYPE_INT,    { .i64=0 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
     {"chapter_start",   "entry chapter (PTT) number",                               OFFSET(opt_chapter_start),  AV_OPT_TYPE_INT,    { .i64=1 },     1,          99,        AV_OPT_FLAG_DECODING_PARAM },
+    {"menu",            "demux menu domain",                                        OFFSET(opt_menu),           AV_OPT_TYPE_BOOL,   { .i64=0 },     0,          1,         AV_OPT_FLAG_DECODING_PARAM },
+    {"menu_lu",         "menu language unit (0=auto)",                              OFFSET(opt_menu_lu),        AV_OPT_TYPE_INT,    { .i64=0 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
+    {"menu_vts",        "menu VTS (0=VMG main menu)",                               OFFSET(opt_menu_vts),       AV_OPT_TYPE_INT,    { .i64=0 },     0,          99,        AV_OPT_FLAG_DECODING_PARAM },
     {"pg",              "entry PG number (0=auto)",                                 OFFSET(opt_pg),             AV_OPT_TYPE_INT,    { .i64=0 },     0,          255,       AV_OPT_FLAG_DECODING_PARAM },
     {"pgc",             "entry PGC number (0=auto)",                                OFFSET(opt_pgc),            AV_OPT_TYPE_INT,    { .i64=0 },     0,          999,       AV_OPT_FLAG_DECODING_PARAM },
     {"preindex",        "enable for accurate chapter markers, slow (2-pass read)",  OFFSET(opt_preindex),       AV_OPT_TYPE_BOOL,   { .i64=0 },     0,          1,         AV_OPT_FLAG_DECODING_PARAM },
