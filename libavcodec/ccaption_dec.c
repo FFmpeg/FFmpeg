@@ -358,7 +358,7 @@ static void write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
         return;
     }
     else {
-        av_log(ctx, AV_LOG_WARNING, "Data Ignored since exceeding screen width\n");
+        av_log(ctx, AV_LOG_WARNING, "Data ignored due to columns exceeding screen width\n");
         return;
     }
 }
