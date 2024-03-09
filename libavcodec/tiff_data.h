@@ -32,66 +32,89 @@
 
 #include "tiff.h"
 
+typedef struct TiffGeoTagNameType {
+    enum TiffGeoTagType type;
+    unsigned offset;
+} TiffGeoTagNameType;
+
 #define TIFF_CONF_KEY_ID_OFFSET 1024
-static const TiffGeoTagNameType tiff_conf_name_type_map[] = {
-    {"GTModelTypeGeoKey",              GEOTIFF_SHORT },
-    {"GTRasterTypeGeoKey",             GEOTIFF_SHORT },
-    {"GTCitationGeoKey",               GEOTIFF_STRING}
-};
+#define CONF_NAME_TYPE_MAP(KEY)                 \
+    KEY(GTModelTypeGeoKey,              SHORT ) \
+    KEY(GTRasterTypeGeoKey,             SHORT ) \
+    KEY(GTCitationGeoKey,               STRING) \
 
 #define TIFF_GEOG_KEY_ID_OFFSET 2048
-static const TiffGeoTagNameType tiff_geog_name_type_map[] = {
-    {"GeographicTypeGeoKey",           GEOTIFF_SHORT },
-    {"GeogCitationGeoKey",             GEOTIFF_STRING},
-    {"GeogGeodeticDatumGeoKey",        GEOTIFF_SHORT },
-    {"GeogPrimeMeridianGeoKey",        GEOTIFF_SHORT },
-    {"GeogLinearUnitsGeoKey",          GEOTIFF_SHORT },
-    {"GeogLinearUnitSizeGeoKey",       GEOTIFF_DOUBLE},
-    {"GeogAngularUnitsGeoKey",         GEOTIFF_SHORT },
-    {"GeogAngularUnitSizeGeoKey",      GEOTIFF_DOUBLE},
-    {"GeogEllipsoidGeoKey",            GEOTIFF_SHORT },
-    {"GeogSemiMajorAxisGeoKey",        GEOTIFF_DOUBLE},
-    {"GeogSemiMinorAxisGeoKey",        GEOTIFF_DOUBLE},
-    {"GeogInvFlatteningGeoKey",        GEOTIFF_DOUBLE},
-    {"GeogAzimuthUnitsGeoKey",         GEOTIFF_SHORT },
-    {"GeogPrimeMeridianLongGeoKey",    GEOTIFF_DOUBLE}
-};
+#define GEOG_NAME_TYPE_MAP(KEY)                 \
+    KEY(GeographicTypeGeoKey,           SHORT ) \
+    KEY(GeogCitationGeoKey,             STRING) \
+    KEY(GeogGeodeticDatumGeoKey,        SHORT ) \
+    KEY(GeogPrimeMeridianGeoKey,        SHORT ) \
+    KEY(GeogLinearUnitsGeoKey,          SHORT ) \
+    KEY(GeogLinearUnitSizeGeoKey,       DOUBLE) \
+    KEY(GeogAngularUnitsGeoKey,         SHORT ) \
+    KEY(GeogAngularUnitSizeGeoKey,      DOUBLE) \
+    KEY(GeogEllipsoidGeoKey,            SHORT ) \
+    KEY(GeogSemiMajorAxisGeoKey,        DOUBLE) \
+    KEY(GeogSemiMinorAxisGeoKey,        DOUBLE) \
+    KEY(GeogInvFlatteningGeoKey,        DOUBLE) \
+    KEY(GeogAzimuthUnitsGeoKey,         SHORT ) \
+    KEY(GeogPrimeMeridianLongGeoKey,    DOUBLE) \
 
 #define TIFF_PROJ_KEY_ID_OFFSET 3072
-static const TiffGeoTagNameType tiff_proj_name_type_map[] = {
-    {"ProjectedCSTypeGeoKey",          GEOTIFF_SHORT },
-    {"PCSCitationGeoKey",              GEOTIFF_STRING},
-    {"ProjectionGeoKey",               GEOTIFF_SHORT },
-    {"ProjCoordTransGeoKey",           GEOTIFF_SHORT },
-    {"ProjLinearUnitsGeoKey",          GEOTIFF_SHORT },
-    {"ProjLinearUnitSizeGeoKey",       GEOTIFF_DOUBLE},
-    {"ProjStdParallel1GeoKey",         GEOTIFF_DOUBLE},
-    {"ProjStdParallel2GeoKey",         GEOTIFF_DOUBLE},
-    {"ProjNatOriginLongGeoKey",        GEOTIFF_DOUBLE},
-    {"ProjNatOriginLatGeoKey",         GEOTIFF_DOUBLE},
-    {"ProjFalseEastingGeoKey",         GEOTIFF_DOUBLE},
-    {"ProjFalseNorthingGeoKey",        GEOTIFF_DOUBLE},
-    {"ProjFalseOriginLongGeoKey",      GEOTIFF_DOUBLE},
-    {"ProjFalseOriginLatGeoKey",       GEOTIFF_DOUBLE},
-    {"ProjFalseOriginEastingGeoKey",   GEOTIFF_DOUBLE},
-    {"ProjFalseOriginNorthingGeoKey",  GEOTIFF_DOUBLE},
-    {"ProjCenterLongGeoKey",           GEOTIFF_DOUBLE},
-    {"ProjCenterLatGeoKey",            GEOTIFF_DOUBLE},
-    {"ProjCenterEastingGeoKey",        GEOTIFF_DOUBLE},
-    {"ProjCenterNorthingGeoKey",       GEOTIFF_DOUBLE},
-    {"ProjScaleAtNatOriginGeoKey",     GEOTIFF_DOUBLE},
-    {"ProjScaleAtCenterGeoKey",        GEOTIFF_DOUBLE},
-    {"ProjAzimuthAngleGeoKey",         GEOTIFF_DOUBLE},
-    {"ProjStraightVertPoleLongGeoKey", GEOTIFF_DOUBLE}
-};
+#define PROJ_NAME_TYPE_MAP(KEY)                 \
+    KEY(ProjectedCSTypeGeoKey,          SHORT ) \
+    KEY(PCSCitationGeoKey,              STRING) \
+    KEY(ProjectionGeoKey,               SHORT ) \
+    KEY(ProjCoordTransGeoKey,           SHORT ) \
+    KEY(ProjLinearUnitsGeoKey,          SHORT ) \
+    KEY(ProjLinearUnitSizeGeoKey,       DOUBLE) \
+    KEY(ProjStdParallel1GeoKey,         DOUBLE) \
+    KEY(ProjStdParallel2GeoKey,         DOUBLE) \
+    KEY(ProjNatOriginLongGeoKey,        DOUBLE) \
+    KEY(ProjNatOriginLatGeoKey,         DOUBLE) \
+    KEY(ProjFalseEastingGeoKey,         DOUBLE) \
+    KEY(ProjFalseNorthingGeoKey,        DOUBLE) \
+    KEY(ProjFalseOriginLongGeoKey,      DOUBLE) \
+    KEY(ProjFalseOriginLatGeoKey,       DOUBLE) \
+    KEY(ProjFalseOriginEastingGeoKey,   DOUBLE) \
+    KEY(ProjFalseOriginNorthingGeoKey,  DOUBLE) \
+    KEY(ProjCenterLongGeoKey,           DOUBLE) \
+    KEY(ProjCenterLatGeoKey,            DOUBLE) \
+    KEY(ProjCenterEastingGeoKey,        DOUBLE) \
+    KEY(ProjCenterNorthingGeoKey,       DOUBLE) \
+    KEY(ProjScaleAtNatOriginGeoKey,     DOUBLE) \
+    KEY(ProjScaleAtCenterGeoKey,        DOUBLE) \
+    KEY(ProjAzimuthAngleGeoKey,         DOUBLE) \
+    KEY(ProjStraightVertPoleLongGeoKey, DOUBLE) \
 
 #define TIFF_VERT_KEY_ID_OFFSET 4096
-static const TiffGeoTagNameType tiff_vert_name_type_map[] = {
-    {"VerticalCSTypeGeoKey",           GEOTIFF_SHORT },
-    {"VerticalCitationGeoKey",         GEOTIFF_STRING},
-    {"VerticalDatumGeoKey",            GEOTIFF_SHORT },
-    {"VerticalUnitsGeoKey",            GEOTIFF_SHORT }
-};
+#define VERT_NAME_TYPE_MAP(KEY)                 \
+    KEY(VerticalCSTypeGeoKey,           SHORT ) \
+    KEY(VerticalCitationGeoKey,         STRING) \
+    KEY(VerticalDatumGeoKey,            SHORT ) \
+    KEY(VerticalUnitsGeoKey,            SHORT ) \
+
+#define ADD_OFFSET(NAME, TYPE)                          \
+    NAME ## _OFFSET,                                    \
+    NAME ## _END = NAME ## _OFFSET + sizeof(#NAME) - 1, \
+
+#define STRING(NAME, TYPE) #NAME "\0"
+
+#define ENTRY(NAME, TYPE) { .type = GEOTIFF_ ## TYPE, .offset = NAME ## _OFFSET },
+#define NAME_TYPE_MAP(NAME, name) \
+    enum { \
+        NAME ## _NAME_TYPE_MAP(ADD_OFFSET) \
+    }; \
+    static const TiffGeoTagNameType tiff_ ## name ## _name_type_map[] = { \
+        NAME ## _NAME_TYPE_MAP(ENTRY) \
+    }; \
+    static const char *const tiff_ ## name ## _name_type_string = \
+        NAME ## _NAME_TYPE_MAP(STRING)
+
+NAME_TYPE_MAP(CONF, conf);
+NAME_TYPE_MAP(GEOG, geog);
+NAME_TYPE_MAP(PROJ, proj);
+NAME_TYPE_MAP(VERT, vert);
 
 #define TIFF_GEO_KEY_UNDEFINED    0
 #define TIFF_GEO_KEY_USER_DEFINED 32767

@@ -222,9 +222,4 @@ typedef struct TiffGeoTagKeyName {
     const char *const name;
 } TiffGeoTagKeyName;
 
-typedef struct TiffGeoTagNameType {
-    const char *const name;
-    const enum TiffGeoTagType type;
-} TiffGeoTagNameType;
-
 #endif /* AVCODEC_TIFF_H */

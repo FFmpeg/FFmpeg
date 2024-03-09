@@ -139,27 +139,31 @@ static void free_geotags(TiffContext *const s)
     s->geotag_count = 0;
 }
 
-#define RET_GEOKEY(TYPE, array, element)\
-    if (key >= TIFF_##TYPE##_KEY_ID_OFFSET &&\
-        key - TIFF_##TYPE##_KEY_ID_OFFSET < FF_ARRAY_ELEMS(tiff_##array##_name_type_map))\
-        return tiff_##array##_name_type_map[key - TIFF_##TYPE##_KEY_ID_OFFSET].element;
-
 static const char *get_geokey_name(int key)
 {
-    RET_GEOKEY(VERT, vert, name);
-    RET_GEOKEY(PROJ, proj, name);
-    RET_GEOKEY(GEOG, geog, name);
-    RET_GEOKEY(CONF, conf, name);
+#define RET_GEOKEY_STR(TYPE, array)\
+    if (key >= TIFF_##TYPE##_KEY_ID_OFFSET &&\
+        key - TIFF_##TYPE##_KEY_ID_OFFSET < FF_ARRAY_ELEMS(tiff_##array##_name_type_map))\
+        return tiff_##array##_name_type_string + tiff_##array##_name_type_map[key - TIFF_##TYPE##_KEY_ID_OFFSET].offset;
+
+    RET_GEOKEY_STR(VERT, vert);
+    RET_GEOKEY_STR(PROJ, proj);
+    RET_GEOKEY_STR(GEOG, geog);
+    RET_GEOKEY_STR(CONF, conf);
 
     return NULL;
 }
 
 static int get_geokey_type(int key)
 {
-    RET_GEOKEY(VERT, vert, type);
-    RET_GEOKEY(PROJ, proj, type);
-    RET_GEOKEY(GEOG, geog, type);
-    RET_GEOKEY(CONF, conf, type);
+#define RET_GEOKEY_TYPE(TYPE, array)\
+    if (key >= TIFF_##TYPE##_KEY_ID_OFFSET &&\
+        key - TIFF_##TYPE##_KEY_ID_OFFSET < FF_ARRAY_ELEMS(tiff_##array##_name_type_map))\
+        return tiff_##array##_name_type_map[key - TIFF_##TYPE##_KEY_ID_OFFSET].type;
+    RET_GEOKEY_TYPE(VERT, vert);
+    RET_GEOKEY_TYPE(PROJ, proj);
+    RET_GEOKEY_TYPE(GEOG, geog);
+    RET_GEOKEY_TYPE(CONF, conf);
 
     return AVERROR_INVALIDDATA;
 }
