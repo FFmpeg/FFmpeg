@@ -132,11 +132,8 @@ static void tiff_set_type(TiffContext *s, enum TiffType tiff_type) {
 
 static void free_geotags(TiffContext *const s)
 {
-    int i;
-    for (i = 0; i < s->geotag_count; i++) {
-        if (s->geotags[i].val)
-            av_freep(&s->geotags[i].val);
-    }
+    for (int i = 0; i < s->geotag_count; i++)
+        av_freep(&s->geotags[i].val);
     av_freep(&s->geotags);
     s->geotag_count = 0;
 }
