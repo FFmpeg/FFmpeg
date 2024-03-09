@@ -373,6 +373,7 @@ Muxers/Demuxers:
   dss.c                                 Oleksij Rempel
   dtsdec.c                              foo86
   dv.c                                  Roman Shaposhnik
+  dvdvideodec.c                         Marth64
   electronicarts.c                      Peter Ross
   evc*                                  Samsung (Dawid Kozinski)
   ffm*                                  Baptiste Coudurier
@@ -425,6 +426,7 @@ Muxers/Demuxers:
   pva.c                                 Ivo van Poorten
   r3d.c                                 Baptiste Coudurier
   raw.c                                 Michael Niedermayer
+  rcwtenc.c                             Marth64
   rdt.c                                 Ronald S. Bultje
   rl2.c                                 Sascha Sommer
   rmdec.c, rmenc.c                      Ronald S. Bultje
