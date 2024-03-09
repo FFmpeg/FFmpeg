@@ -2199,7 +2199,8 @@ static int close_output(OutputFilterPriv *ofp, FilterGraphThread *fgt)
 
     fgt->eof_out[ofp->index] = 1;
 
-    return sch_filter_send(fgp->sch, fgp->sch_idx, ofp->index, NULL);
+    ret = sch_filter_send(fgp->sch, fgp->sch_idx, ofp->index, NULL);
+    return (ret == AVERROR_EOF) ? 0 : ret;
 }
 
 static int fg_output_frame(OutputFilterPriv *ofp, FilterGraphThread *fgt,
