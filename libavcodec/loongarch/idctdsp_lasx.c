@@ -23,7 +23,7 @@
 #include "libavutil/loongarch/loongson_intrinsics.h"
 
 void ff_put_pixels_clamped_lasx(const int16_t *block,
-                                uint8_t *av_restrict pixels,
+                                uint8_t *restrict pixels,
                                 ptrdiff_t stride)
 {
     __m256i b0, b1, b2, b3;
@@ -48,7 +48,7 @@ void ff_put_pixels_clamped_lasx(const int16_t *block,
 }
 
 void ff_put_signed_pixels_clamped_lasx(const int16_t *block,
-                                       uint8_t *av_restrict pixels,
+                                       uint8_t *restrict pixels,
                                        ptrdiff_t stride)
 {
     __m256i b0, b1, b2, b3;
@@ -77,7 +77,7 @@ void ff_put_signed_pixels_clamped_lasx(const int16_t *block,
 }
 
 void ff_add_pixels_clamped_lasx(const int16_t *block,
-                                uint8_t *av_restrict pixels,
+                                uint8_t *restrict pixels,
                                 ptrdiff_t stride)
 {
     __m256i b0, b1, b2, b3;

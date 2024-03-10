@@ -100,7 +100,7 @@ static void check_butterflies(const int *src0, const int *src1)
     LOCAL_ALIGNED_16(int, new0, [BUF_SIZE]);
     LOCAL_ALIGNED_16(int, new1, [BUF_SIZE]);
 
-    declare_func(void, int *av_restrict src0, int *av_restrict src1, int len);
+    declare_func(void, int *restrict src0, int *restrict src1, int len);
 
     memcpy(ref0, src0, BUF_SIZE * sizeof(*src0));
     memcpy(ref1, src1, BUF_SIZE * sizeof(*src1));

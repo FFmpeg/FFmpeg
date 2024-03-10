@@ -26,7 +26,7 @@
 #include "libavutil/mips/mmiutils.h"
 
 void ff_put_pixels_clamped_mmi(const int16_t *block,
-        uint8_t *av_restrict pixels, ptrdiff_t line_size)
+        uint8_t *restrict pixels, ptrdiff_t line_size)
 {
     double ftmp[8];
 
@@ -83,7 +83,7 @@ void ff_put_pixels_clamped_mmi(const int16_t *block,
 }
 
 void ff_put_signed_pixels_clamped_mmi(const int16_t *block,
-    uint8_t *av_restrict pixels, ptrdiff_t line_size)
+    uint8_t *restrict pixels, ptrdiff_t line_size)
 {
     double ftmp[5];
 
@@ -148,7 +148,7 @@ void ff_put_signed_pixels_clamped_mmi(const int16_t *block,
 }
 
 void ff_add_pixels_clamped_mmi(const int16_t *block,
-        uint8_t *av_restrict pixels, ptrdiff_t line_size)
+        uint8_t *restrict pixels, ptrdiff_t line_size)
 {
     double ftmp[9];
     uint64_t tmp[1];

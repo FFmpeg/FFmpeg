@@ -196,8 +196,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->gain_entry_cmd);
 }
 
-static void fast_convolute(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, float *av_restrict conv_buf,
-                           OverlapIndex *av_restrict idx, float *av_restrict data, int nsamples)
+static void fast_convolute(FIREqualizerContext *restrict s, const float *restrict kernel_buf, float *restrict conv_buf,
+                           OverlapIndex *restrict idx, float *restrict data, int nsamples)
 {
     if (nsamples <= s->nsamples_max) {
         float *buf = conv_buf + idx->buf_idx * s->rdft_len;
@@ -233,9 +233,9 @@ static void fast_convolute(FIREqualizerContext *av_restrict s, const float *av_r
     }
 }
 
-static void fast_convolute_nonlinear(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf,
-                                     float *av_restrict conv_buf, OverlapIndex *av_restrict idx,
-                                     float *av_restrict data, int nsamples)
+static void fast_convolute_nonlinear(FIREqualizerContext *restrict s, const float *restrict kernel_buf,
+                                     float *restrict conv_buf, OverlapIndex *restrict idx,
+                                     float *restrict data, int nsamples)
 {
     if (nsamples <= s->nsamples_max) {
         float *buf = conv_buf + idx->buf_idx * s->rdft_len;
@@ -272,8 +272,8 @@ static void fast_convolute_nonlinear(FIREqualizerContext *av_restrict s, const f
     }
 }
 
-static void fast_convolute2(FIREqualizerContext *av_restrict s, const float *av_restrict kernel_buf, AVComplexFloat *av_restrict conv_buf,
-                            OverlapIndex *av_restrict idx, float *av_restrict data0, float *av_restrict data1, int nsamples)
+static void fast_convolute2(FIREqualizerContext *restrict s, const float *restrict kernel_buf, AVComplexFloat *restrict conv_buf,
+                            OverlapIndex *restrict idx, float *restrict data0, float *restrict data1, int nsamples)
 {
     if (nsamples <= s->nsamples_max) {
         AVComplexFloat *buf = conv_buf + idx->buf_idx * s->rdft_len;

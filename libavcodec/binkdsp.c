@@ -24,7 +24,6 @@
  * Bink DSP routines
  */
 
-#include "config.h"
 #include "libavutil/attributes.h"
 #include "binkdsp.h"
 
@@ -131,7 +130,7 @@ static void scale_block_c(const uint8_t src[64]/*align 8*/, uint8_t *dst/*align 
     }
 }
 
-static void add_pixels8_c(uint8_t *av_restrict pixels, int16_t *block,
+static void add_pixels8_c(uint8_t *restrict pixels, int16_t *block,
                           int line_size)
 {
     int i;

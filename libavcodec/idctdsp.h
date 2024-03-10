@@ -22,8 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "config.h"
-
 struct AVCodecContext;
 
 enum idct_permutation_type {
@@ -45,13 +43,13 @@ int ff_init_scantable_permutation_x86(uint8_t *idct_permutation,
 typedef struct IDCTDSPContext {
     /* pixel ops : interface with DCT */
     void (*put_pixels_clamped)(const int16_t *block /* align 16 */,
-                               uint8_t *av_restrict pixels /* align 8 */,
+                               uint8_t *restrict pixels /* align 8 */,
                                ptrdiff_t line_size);
     void (*put_signed_pixels_clamped)(const int16_t *block /* align 16 */,
-                                      uint8_t *av_restrict pixels /* align 8 */,
+                                      uint8_t *restrict pixels /* align 8 */,
                                       ptrdiff_t line_size);
     void (*add_pixels_clamped)(const int16_t *block /* align 16 */,
-                               uint8_t *av_restrict pixels /* align 8 */,
+                               uint8_t *restrict pixels /* align 8 */,
                                ptrdiff_t line_size);
 
     void (*idct)(int16_t *block /* align 16 */);
@@ -91,9 +89,9 @@ typedef struct IDCTDSPContext {
     int mpeg4_studio_profile;
 } IDCTDSPContext;
 
-void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+void ff_put_pixels_clamped_c(const int16_t *block, uint8_t *restrict pixels,
                              ptrdiff_t line_size);
-void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *av_restrict pixels,
+void ff_add_pixels_clamped_c(const int16_t *block, uint8_t *restrict pixels,
                              ptrdiff_t line_size);
 
 void ff_idctdsp_init(IDCTDSPContext *c, struct AVCodecContext *avctx);

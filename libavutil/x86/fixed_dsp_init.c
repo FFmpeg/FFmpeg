@@ -16,14 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/fixed_dsp.h"
 #include "cpu.h"
 
-void ff_butterflies_fixed_sse2(int *av_restrict src0, int *av_restrict src1, int len);
+void ff_butterflies_fixed_sse2(int *restrict src0, int *restrict src1, int len);
 
 av_cold void ff_fixed_dsp_init_x86(AVFixedDSPContext *fdsp)
 {

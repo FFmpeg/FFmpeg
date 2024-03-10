@@ -16,13 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/float_dsp.h"
 #include "cpu.h"
-#include "asm.h"
 
 void ff_vector_fmul_sse(float *dst, const float *src0, const float *src1,
                         int len);
@@ -76,7 +73,7 @@ void ff_vector_fmul_reverse_avx2(float *dst, const float *src0,
 float ff_scalarproduct_float_sse(const float *v1, const float *v2, int order);
 float ff_scalarproduct_float_fma3(const float *v1, const float *v2, int order);
 
-void ff_butterflies_float_sse(float *av_restrict src0, float *av_restrict src1, int len);
+void ff_butterflies_float_sse(float *restrict src0, float *restrict src1, int len);
 
 av_cold void ff_float_dsp_init_x86(AVFloatDSPContext *fdsp)
 {

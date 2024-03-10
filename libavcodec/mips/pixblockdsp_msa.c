@@ -124,19 +124,19 @@ static void copy_width16_msa(const uint8_t *src, int32_t src_stride,
     }
 }
 
-void ff_get_pixels_16_msa(int16_t *av_restrict dest, const uint8_t *src,
+void ff_get_pixels_16_msa(int16_t *restrict dest, const uint8_t *src,
                           ptrdiff_t stride)
 {
     copy_width16_msa(src, stride, (uint8_t *) dest, 16, 8);
 }
 
-void ff_get_pixels_8_msa(int16_t *av_restrict dest, const uint8_t *src,
+void ff_get_pixels_8_msa(int16_t *restrict dest, const uint8_t *src,
                          ptrdiff_t stride)
 {
     copy_8bit_to_16bit_width8_msa(src, stride, dest, 8, 8);
 }
 
-void ff_diff_pixels_msa(int16_t *av_restrict block, const uint8_t *src1,
+void ff_diff_pixels_msa(int16_t *restrict block, const uint8_t *src1,
                         const uint8_t *src2, ptrdiff_t stride)
 {
     diff_pixels_msa(block, src1, src2, stride);

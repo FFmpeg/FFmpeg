@@ -939,9 +939,9 @@ void ff_thread_report_progress2(AVCodecContext *avctx, int field, int thread, in
 
 #endif
 
-const uint8_t *avpriv_find_start_code(const uint8_t *av_restrict p,
+const uint8_t *avpriv_find_start_code(const uint8_t *restrict p,
                                       const uint8_t *end,
-                                      uint32_t *av_restrict state)
+                                      uint32_t *restrict state)
 {
     int i;
 

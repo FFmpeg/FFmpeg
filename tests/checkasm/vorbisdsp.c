@@ -16,8 +16,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "config.h"
-
 #include <float.h>
 
 #include "libavutil/mem_internal.h"
@@ -48,7 +46,7 @@ static void test_inverse_coupling(void)
     LOCAL_ALIGNED_16(float, cdst1, [LEN]);
     LOCAL_ALIGNED_16(float, odst1, [LEN]);
 
-    declare_func(void, float *av_restrict mag, float *av_restrict ang,
+    declare_func(void, float *restrict mag, float *restrict ang,
                  ptrdiff_t blocksize);
 
     randomize_buffer(src0);

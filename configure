@@ -6033,10 +6033,6 @@ extern_prefix=${sym%%ff_extern*}
 
 ! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
-for restrict_keyword in restrict __restrict__ __restrict ""; do
-    test_code cc "" "char * $restrict_keyword p" && break
-done
-
 check_cc pragma_deprecated "" '_Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
 
 # The global variable ensures the bits appear unchanged in the object file.
@@ -7543,17 +7539,6 @@ elif enabled_any msvc icl; then
     fi
     # msvcrt10 x64 incorrectly enables log2, only msvcrt12 (MSVC 2013) onwards actually has log2.
     check_cpp_condition log2 crtversion.h "_VC_CRT_MAJOR_VERSION >= 12"
-    # The CRT headers contain __declspec(restrict) in a few places, but if redefining
-    # restrict, this might break. MSVC 2010 and 2012 fail with __declspec(__restrict)
-    # (as it ends up if the restrict redefine is done before including stdlib.h), while
-    # MSVC 2013 and newer can handle it fine.
-    # If this declspec fails, force including stdlib.h before the restrict redefinition
-    # happens in config.h.
-    if [ $restrict_keyword != restrict ]; then
-        test_cc <<EOF || add_cflags -FIstdlib.h
-__declspec($restrict_keyword) void *foo(int);
-EOF
-    fi
     # the new SSA optimzer in VS2015 U3 is mis-optimizing some parts of the code
     # Issue has been fixed in MSVC v19.00.24218.
     test_cpp_condition windows.h "_MSC_FULL_VER >= 190024218" ||
@@ -8091,7 +8076,6 @@ cat > $TMPH <<EOF
 #define AVCONV_DATADIR "$(eval c_escape $datadir)"
 #define CC_IDENT "$(c_escape ${cc_ident:-Unknown compiler})"
 #define OS_NAME $target_os
-#define av_restrict $restrict_keyword
 #define EXTERN_PREFIX "${extern_prefix}"
 #define EXTERN_ASM ${extern_prefix}
 #define BUILDSUF "$build_suffix"

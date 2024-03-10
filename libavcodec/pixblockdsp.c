@@ -24,7 +24,7 @@
 #include "avcodec.h"
 #include "pixblockdsp.h"
 
-static void get_pixels_16_c(int16_t *av_restrict block, const uint8_t *pixels,
+static void get_pixels_16_c(int16_t *restrict block, const uint8_t *pixels,
                             ptrdiff_t stride)
 {
     AV_COPY128U(block + 0 * 8, pixels + 0 * stride);
@@ -37,7 +37,7 @@ static void get_pixels_16_c(int16_t *av_restrict block, const uint8_t *pixels,
     AV_COPY128U(block + 7 * 8, pixels + 7 * stride);
 }
 
-static void get_pixels_8_c(int16_t *av_restrict block, const uint8_t *pixels,
+static void get_pixels_8_c(int16_t *restrict block, const uint8_t *pixels,
                            ptrdiff_t stride)
 {
     int i;
@@ -57,7 +57,7 @@ static void get_pixels_8_c(int16_t *av_restrict block, const uint8_t *pixels,
     }
 }
 
-static void diff_pixels_c(int16_t *av_restrict block, const uint8_t *s1,
+static void diff_pixels_c(int16_t *restrict block, const uint8_t *s1,
                           const uint8_t *s2, ptrdiff_t stride)
 {
     int i;

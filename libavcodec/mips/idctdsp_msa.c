@@ -125,21 +125,21 @@ static void add_pixels_clamped_msa(const int16_t *block, uint8_t *pixels,
 }
 
 void ff_put_pixels_clamped_msa(const int16_t *block,
-                               uint8_t *av_restrict pixels,
+                               uint8_t *restrict pixels,
                                ptrdiff_t line_size)
 {
     put_pixels_clamped_msa(block, pixels, line_size);
 }
 
 void ff_put_signed_pixels_clamped_msa(const int16_t *block,
-                                      uint8_t *av_restrict pixels,
+                                      uint8_t *restrict pixels,
                                       ptrdiff_t line_size)
 {
     put_signed_pixels_clamped_msa(block, pixels, line_size);
 }
 
 void ff_add_pixels_clamped_msa(const int16_t *block,
-                               uint8_t *av_restrict pixels,
+                               uint8_t *restrict pixels,
                                ptrdiff_t line_size)
 {
     add_pixels_clamped_msa(block, pixels, line_size);

@@ -26,14 +26,14 @@
 #include "libavutil/attributes.h"
 #include "aacpsdsp.h"
 
-static void ps_add_squares_c(INTFLOAT *av_restrict dst,
+static void ps_add_squares_c(INTFLOAT *restrict dst,
                              const INTFLOAT (*src)[2], int n)
 {
     for (int i = 0; i < n; i++)
         dst[i] += (UINTFLOAT)AAC_MADD28(src[i][0], src[i][0], src[i][1], src[i][1]);
 }
 
-static void ps_mul_pair_single_c(INTFLOAT (*av_restrict dst)[2],
+static void ps_mul_pair_single_c(INTFLOAT (*restrict dst)[2],
                                  INTFLOAT (*src0)[2], INTFLOAT *src1,
                                  int n)
 {
@@ -43,7 +43,7 @@ static void ps_mul_pair_single_c(INTFLOAT (*av_restrict dst)[2],
     }
 }
 
-static void ps_hybrid_analysis_c(INTFLOAT (*av_restrict out)[2],
+static void ps_hybrid_analysis_c(INTFLOAT (*restrict out)[2],
                                  INTFLOAT (*in)[2],
                                  const INTFLOAT (*filter)[8][2],
                                  ptrdiff_t stride, int n)
@@ -77,7 +77,7 @@ static void ps_hybrid_analysis_c(INTFLOAT (*av_restrict out)[2],
     }
 }
 
-static void ps_hybrid_analysis_ileave_c(INTFLOAT (*av_restrict out)[32][2],
+static void ps_hybrid_analysis_ileave_c(INTFLOAT (*restrict out)[32][2],
                                         INTFLOAT L[2][38][64],
                                         int i, int len)
 {
@@ -90,7 +90,7 @@ static void ps_hybrid_analysis_ileave_c(INTFLOAT (*av_restrict out)[32][2],
 }
 
 static void ps_hybrid_synthesis_deint_c(INTFLOAT out[2][38][64],
-                                        INTFLOAT (*av_restrict in)[32][2],
+                                        INTFLOAT (*restrict in)[32][2],
                                         int i, int len)
 {
     for (; i < 64; i++) {

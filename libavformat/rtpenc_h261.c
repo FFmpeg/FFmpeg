@@ -24,8 +24,8 @@
 
 #define RTP_H261_HEADER_SIZE 4
 
-static const uint8_t *find_resync_marker_reverse(const uint8_t *av_restrict start,
-                                                 const uint8_t *av_restrict end)
+static const uint8_t *find_resync_marker_reverse(const uint8_t *restrict start,
+                                                 const uint8_t *restrict end)
 {
     const uint8_t *p = end - 1;
     start += 1; /* Make sure we never return the original start. */

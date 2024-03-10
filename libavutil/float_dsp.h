@@ -19,8 +19,6 @@
 #ifndef AVUTIL_FLOAT_DSP_H
 #define AVUTIL_FLOAT_DSP_H
 
-#include "config.h"
-
 typedef struct AVFloatDSPContext {
     /**
      * Calculate the entry wise product of two vectors of floats and store the result in
@@ -161,7 +159,7 @@ typedef struct AVFloatDSPContext {
      * @param v2  second input vector, difference output, 16-byte aligned
      * @param len length of vectors, multiple of 4
      */
-    void (*butterflies_float)(float *av_restrict v1, float *av_restrict v2, int len);
+    void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
 
     /**
      * Calculate the scalar product of two vectors of floats.

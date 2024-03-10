@@ -54,7 +54,7 @@ int ff_sse8_msa(MpegEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
                 ptrdiff_t stride, int i32Height);
 int ff_sse4_msa(MpegEncContext *v, const uint8_t *pu8Src, const uint8_t *pu8Ref,
                 ptrdiff_t stride, int i32Height);
-void ff_add_pixels8_msa(const uint8_t *av_restrict pixels, int16_t *block,
+void ff_add_pixels8_msa(const uint8_t *restrict pixels, int16_t *block,
                         ptrdiff_t stride);
 
 #endif  // #ifndef AVCODEC_MIPS_ME_CMP_MIPS_H

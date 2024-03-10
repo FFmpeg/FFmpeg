@@ -224,7 +224,7 @@ static void vector_fmul_window_mips(float *dst, const float *src0,
     );
 }
 
-static void butterflies_float_mips(float *av_restrict v1, float *av_restrict v2,
+static void butterflies_float_mips(float *restrict v1, float *restrict v2,
                                 int len)
 {
     float temp0, temp1, temp2, temp3, temp4;

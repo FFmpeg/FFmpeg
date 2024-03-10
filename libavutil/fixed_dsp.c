@@ -135,7 +135,7 @@ static int scalarproduct_fixed_c(const int *v1, const int *v2, int len)
     return (int)(p >> 31);
 }
 
-static void butterflies_fixed_c(int *av_restrict v1s, int *av_restrict v2, int len)
+static void butterflies_fixed_c(int *restrict v1s, int *restrict v2, int len)
 {
     int i;
     unsigned int *v1 = v1s;

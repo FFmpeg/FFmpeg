@@ -25,7 +25,7 @@
 #include "libavutil/mips/asmdefs.h"
 #include "libavutil/mips/mmiutils.h"
 
-void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
+void ff_get_pixels_8_mmi(int16_t *restrict block, const uint8_t *pixels,
                          ptrdiff_t stride)
 {
     double ftmp[7];
@@ -94,7 +94,7 @@ void ff_get_pixels_8_mmi(int16_t *av_restrict block, const uint8_t *pixels,
     );
 }
 
-void ff_diff_pixels_mmi(int16_t *av_restrict block, const uint8_t *src1,
+void ff_diff_pixels_mmi(int16_t *restrict block, const uint8_t *src1,
         const uint8_t *src2, ptrdiff_t stride)
 {
     double ftmp[5];
