@@ -199,6 +199,13 @@ Identical to @option{pass_types}, except the units in the given set
 removed and all others passed through.
 @end table
 
+The types used by pass_types and remove_types correspond to NAL unit types
+(nal_unit_type) in H.264, HEVC and H.266 (see Table 7-1 in the H.264
+and HEVC specifications or Table 5 in the H.266 specification), to
+marker values for JPEG (without 0xFF prefix) and to start codes without
+start code prefix (i.e. the byte following the 0x000001) for MPEG-2.
+For VP8 and VP9, every unit has type zero.
+
 Extradata is unchanged by this transformation, but note that if the stream
 contains inline parameter sets then the output may be unusable if they are
 removed.
