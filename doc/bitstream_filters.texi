@@ -213,6 +213,21 @@ To remove all AUDs, SEI and filler from an H.265 stream:
 ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=remove_types=35|38-40' OUTPUT
 @end example
 
+To remove all user data from a MPEG-2 stream, including Closed Captions:
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=remove_types=178' OUTPUT
+@end example
+
+To remove all SEI from a H264 stream, including Closed Captions:
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=remove_types=6' OUTPUT
+@end example
+
+To remove all prefix and suffix SEI from a HEVC stream, including Closed Captions and dynamic HDR:
+@example
+ffmpeg -i INPUT -c:v copy -bsf:v 'filter_units=remove_types=39|40' OUTPUT
+@end example
+
 @section hapqa_extract
 
 Extract Rgb or Alpha part of an HAPQA file, without recompression, in order to create an HAPQ or an HAPAlphaOnly file.
