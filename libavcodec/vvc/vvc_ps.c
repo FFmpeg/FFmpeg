@@ -742,7 +742,7 @@ static int decode_frame_ps(VVCFrameParamSets *fps, const VVCParamSets *ps,
 static void decode_recovery_flag(VVCContext *s)
 {
     if (IS_IDR(s))
-        s->no_output_before_recovery_flag = 0;
+        s->no_output_before_recovery_flag = 1;
     else if (IS_CRA(s) || IS_GDR(s))
         s->no_output_before_recovery_flag = s->last_eos;
 }
