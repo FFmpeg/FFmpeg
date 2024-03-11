@@ -37,6 +37,7 @@
 #include "decode.h"
 #include "dovi_rpu.h"
 #include "internal.h"
+#include "itut35.h"
 
 #define FF_DAV1D_VERSION_AT_LEAST(x,y) \
     (DAV1D_API_VERSION_MAJOR > (x) || DAV1D_API_VERSION_MAJOR == (x) && DAV1D_API_VERSION_MINOR >= (y))
@@ -542,7 +543,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
         provider_code = bytestream2_get_be16(&gb);
         switch (provider_code) {
-        case 0x31: { // atsc_provider_code
+        case ITU_T_T35_PROVIDER_CODE_ATSC: {
             uint32_t user_identifier = bytestream2_get_be32(&gb);
             switch (user_identifier) {
             case MKBETAG('G', 'A', '9', '4'): { // closed captions
@@ -566,12 +567,12 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             }
             break;
         }
-        case 0x3C: { // smpte_provider_code
+        case ITU_T_T35_PROVIDER_CODE_SMTPE: {
             AVDynamicHDRPlus *hdrplus;
             int provider_oriented_code = bytestream2_get_be16(&gb);
             int application_identifier = bytestream2_get_byte(&gb);
 
-            if (itut_t35->country_code != 0xB5 ||
+            if (itut_t35->country_code != ITU_T_T35_COUNTRY_CODE_US ||
                 provider_oriented_code != 1 || application_identifier != 4)
                 break;
 
@@ -587,9 +588,10 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                 goto fail;
             break;
         }
-        case 0x3B: { // dolby_provider_code
+        case ITU_T_T35_PROVIDER_CODE_DOLBY: {
             int provider_oriented_code = bytestream2_get_be32(&gb);
-            if (itut_t35->country_code != 0xB5 || provider_oriented_code != 0x800)
+            if (itut_t35->country_code != ITU_T_T35_COUNTRY_CODE_US ||
+                provider_oriented_code != 0x800)
                 break;
 
             res = ff_dovi_rpu_parse(&dav1d->dovi, gb.buffer, gb.buffer_end - gb.buffer);
