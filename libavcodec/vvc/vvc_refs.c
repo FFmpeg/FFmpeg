@@ -185,10 +185,10 @@ int ff_vvc_set_new_ref(VVCContext *s, VVCFrameContext *fc, AVFrame **frame)
 
     ref->poc      = poc;
     ref->sequence = s->seq_decode;
-    ref->frame->crop_left   = fc->ps.pps->r->pps_conf_win_left_offset;
-    ref->frame->crop_right  = fc->ps.pps->r->pps_conf_win_right_offset;
-    ref->frame->crop_top    = fc->ps.pps->r->pps_conf_win_top_offset;
-    ref->frame->crop_bottom = fc->ps.pps->r->pps_conf_win_bottom_offset;
+    ref->frame->crop_left   = fc->ps.pps->r->pps_conf_win_left_offset << fc->ps.sps->hshift[CHROMA];
+    ref->frame->crop_right  = fc->ps.pps->r->pps_conf_win_right_offset << fc->ps.sps->hshift[CHROMA];
+    ref->frame->crop_top    = fc->ps.pps->r->pps_conf_win_top_offset << fc->ps.sps->vshift[CHROMA];
+    ref->frame->crop_bottom = fc->ps.pps->r->pps_conf_win_bottom_offset << fc->ps.sps->vshift[CHROMA];
 
     return 0;
 }

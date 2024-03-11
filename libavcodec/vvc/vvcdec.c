@@ -727,8 +727,8 @@ static void export_frame_params(VVCContext *s, const VVCFrameContext *fc)
     c->pix_fmt      = sps->pix_fmt;
     c->coded_width  = pps->width;
     c->coded_height = pps->height;
-    c->width        = pps->width  - pps->r->pps_conf_win_left_offset - pps->r->pps_conf_win_right_offset;
-    c->height       = pps->height - pps->r->pps_conf_win_top_offset - pps->r->pps_conf_win_bottom_offset;
+    c->width        = pps->width  - ((pps->r->pps_conf_win_left_offset + pps->r->pps_conf_win_right_offset) << sps->hshift[CHROMA]);
+    c->height       = pps->height - ((pps->r->pps_conf_win_top_offset + pps->r->pps_conf_win_bottom_offset) << sps->vshift[CHROMA]);
 }
 
 static int frame_setup(VVCFrameContext *fc, VVCContext *s)
