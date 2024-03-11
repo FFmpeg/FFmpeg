@@ -24,6 +24,7 @@ version <next>:
 - Vulkan H.264 encoder
 - Vulkan H.265 encoder
 - stream specifiers in fftools can now match by stream disposition
+- LCEVC enhancement data exporting in H.26x
 
 
 version 7.0:

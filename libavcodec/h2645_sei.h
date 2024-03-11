@@ -50,6 +50,10 @@ typedef struct HEVCSEIDynamicHDRVivid {
     AVBufferRef *info;
 } HEVCSEIDynamicHDRVivid;
 
+typedef struct HEVCSEILCEVC {
+    AVBufferRef *info;
+} HEVCSEILCEVC;
+
 typedef struct H2645SEIUnregistered {
     AVBufferRef **buf_ref;
     unsigned nb_buf_ref;
@@ -126,6 +130,7 @@ typedef struct H2645SEI {
     H2645SEIAFD afd;
     HEVCSEIDynamicHDRPlus  dynamic_hdr_plus;     //< HEVC only
     HEVCSEIDynamicHDRVivid dynamic_hdr_vivid;    //< HEVC only
+    HEVCSEILCEVC lcevc;
     H2645SEIUnregistered unregistered;
     H2645SEIFramePacking frame_packing;
     H2645SEIDisplayOrientation display_orientation;
