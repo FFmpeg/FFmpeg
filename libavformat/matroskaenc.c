@@ -63,6 +63,7 @@
 #include "libavcodec/codec_desc.h"
 #include "libavcodec/codec_par.h"
 #include "libavcodec/defs.h"
+#include "libavcodec/itut35.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 
@@ -2824,8 +2825,8 @@ static int mkv_write_block(void *logctx, MatroskaMuxContext *mkv,
             uint8_t *payload = t35_buf;
             size_t payload_size = sizeof(t35_buf) - 6;
 
-            bytestream_put_byte(&payload, 0xB5); // country_code
-            bytestream_put_be16(&payload, 0x3C); // provider_code
+            bytestream_put_byte(&payload, ITU_T_T35_COUNTRY_CODE_US);
+            bytestream_put_be16(&payload, ITU_T_T35_PROVIDER_CODE_SMTPE);
             bytestream_put_be16(&payload, 0x01); // provider_oriented_code
             bytestream_put_byte(&payload, 0x04); // application_identifier
 

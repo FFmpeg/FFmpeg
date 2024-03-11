@@ -54,6 +54,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/defs.h"
 #include "libavcodec/flac.h"
+#include "libavcodec/itut35.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/packet_internal.h"
 
@@ -3884,7 +3885,8 @@ static int matroska_parse_block_additional(MatroskaDemuxContext *matroska,
         country_code  = bytestream2_get_byteu(&bc);
         provider_code = bytestream2_get_be16u(&bc);
 
-        if (country_code != 0xB5 || provider_code != 0x3C)
+        if (country_code != ITU_T_T35_COUNTRY_CODE_US ||
+            provider_code != ITU_T_T35_PROVIDER_CODE_SMTPE)
             break; // ignore
 
         provider_oriented_code = bytestream2_get_be16u(&bc);
