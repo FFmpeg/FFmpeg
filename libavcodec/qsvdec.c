@@ -762,7 +762,9 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
     if (!*sync && !bs.DataOffset) {
         bs.DataOffset = avpkt->size;
         ++q->zero_consume_run;
-        if (q->zero_consume_run > 1)
+        if (q->zero_consume_run > 1 &&
+            (avpkt->size ||
+            ret != MFX_ERR_MORE_DATA))
             ff_qsv_print_warning(avctx, ret, "A decode call did not consume any data");
     } else {
         q->zero_consume_run = 0;
