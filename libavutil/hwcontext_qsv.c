@@ -55,6 +55,10 @@
     (MFX_VERSION_MAJOR > (MAJOR) ||         \
      MFX_VERSION_MAJOR == (MAJOR) && MFX_VERSION_MINOR >= (MINOR))
 
+#define QSV_RUNTIME_VERSION_ATLEAST(MFX_VERSION, MAJOR, MINOR)          \
+    ((MFX_VERSION.Major > (MAJOR)) ||                                   \
+     (MFX_VERSION.Major == (MAJOR) && MFX_VERSION.Minor >= (MINOR)))
+
 #define MFX_IMPL_VIA_MASK(impl) (0x0f00 & (impl))
 #define QSV_ONEVPL       QSV_VERSION_ATLEAST(2, 0)
 #define QSV_HAVE_OPAQUE  !QSV_ONEVPL
@@ -1136,6 +1140,17 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
     int                   ret = AVERROR_UNKNOWN;
     /* hwctx->loader is non-NULL for oneVPL user and NULL for non-oneVPL user */
     void             **loader = &hwctx->loader;
+    mfxSession parent_session = hwctx->session;
+    mfxIMPL impl;
+    mfxVersion ver;
+
+    err = MFXQueryIMPL(parent_session, &impl);
+    if (err == MFX_ERR_NONE)
+        err = MFXQueryVersion(parent_session, &ver);
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error querying the session attributes.\n");
+        return AVERROR_UNKNOWN;
+    }
 
 #if QSV_HAVE_OPAQUE
     QSVFramesContext              *s = ctx->hwctx;
@@ -1151,6 +1166,15 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
         err = MFXVideoCORE_SetHandle(*session, device_priv->handle_type,
                                      device_priv->handle);
         if (err != MFX_ERR_NONE) {
+            ret = AVERROR_UNKNOWN;
+            goto fail;
+        }
+    }
+
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        err = MFXJoinSession(parent_session, *session);
+        if (err != MFX_ERR_NONE) {
+            av_log(ctx, AV_LOG_ERROR, "Error joining session.\n");
             ret = AVERROR_UNKNOWN;
             goto fail;
         }
