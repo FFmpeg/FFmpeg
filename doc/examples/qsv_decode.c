@@ -28,8 +28,6 @@
  * GPU video surfaces, write the decoded frames to an output file.
  */
 
-#include "config.h"
-
 #include <stdio.h>
 
 #include "libavformat/avformat.h"
