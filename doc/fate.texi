@@ -79,6 +79,14 @@ Do not put a '~' character in the samples path to indicate a home
 directory. Because of shell nuances, this will cause FATE to fail.
 @end float
 
+Beware that some assertions are disabled by default, so mind setting
+@option{--assert-level=<level>} at configuration time, e.g. when seeking
+the highest possible test coverage:
+@example
+./configure --assert-level=2
+@end example
+Note that raising the assert level could have a performance impact.
+
 To get the complete list of tests, run the command:
 @example
 make fate-list
