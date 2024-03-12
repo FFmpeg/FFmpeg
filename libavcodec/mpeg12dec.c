@@ -62,6 +62,13 @@
 
 #define A53_MAX_CC_COUNT 2000
 
+enum Mpeg2ClosedCaptionsFormat {
+    CC_FORMAT_AUTO,
+    CC_FORMAT_A53_PART4,
+    CC_FORMAT_SCTE20,
+    CC_FORMAT_DVD
+};
+
 typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
@@ -70,6 +77,7 @@ typedef struct Mpeg1Context {
     AVStereo3D stereo3d;
     int has_stereo3d;
     AVBufferRef *a53_buf_ref;
+    enum Mpeg2ClosedCaptionsFormat cc_format;
     uint8_t afd;
     int has_afd;
     int slice_count;
@@ -1903,12 +1911,27 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     return 0;
 }
 
+static void mpeg_set_cc_format(AVCodecContext *avctx, enum Mpeg2ClosedCaptionsFormat format,
+                               const char *label)
+{
+    Mpeg1Context *s1 = avctx->priv_data;
+
+    av_assert2(format != CC_FORMAT_AUTO);
+
+    if (!s1->cc_format) {
+        s1->cc_format = format;
+
+        av_log(avctx, AV_LOG_DEBUG, "CC: first seen substream is %s format\n", label);
+    }
+}
+
 static int mpeg_decode_a53_cc(AVCodecContext *avctx,
                               const uint8_t *p, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
 
-    if (buf_size >= 6 &&
+    if ((!s1->cc_format || s1->cc_format == CC_FORMAT_A53_PART4) &&
+        buf_size >= 6 &&
         p[0] == 'G' && p[1] == 'A' && p[2] == '9' && p[3] == '4' &&
         p[4] == 3 && (p[5] & 0x40)) {
         /* extract A53 Part 4 CC data */
@@ -1927,9 +1950,11 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
                 memcpy(s1->a53_buf_ref->data + old_size, p + 7, cc_count * UINT64_C(3));
 
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+            mpeg_set_cc_format(avctx, CC_FORMAT_A53_PART4, "A/53 Part 4");
         }
         return 1;
-    } else if (buf_size >= 2 &&
+    } else if ((!s1->cc_format || s1->cc_format == CC_FORMAT_SCTE20) &&
+               buf_size >= 2 &&
                p[0] == 0x03 && (p[1]&0x7f) == 0x01) {
         /* extract SCTE-20 CC data */
         GetBitContext gb;
@@ -1973,10 +1998,13 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
                     cap += 3;
                 }
             }
+
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+            mpeg_set_cc_format(avctx, CC_FORMAT_SCTE20, "SCTE-20");
         }
         return 1;
-    } else if (buf_size >= 11 &&
+    } else if ((!s1->cc_format || s1->cc_format == CC_FORMAT_DVD) &&
+               buf_size >= 11 &&
                p[0] == 'C' && p[1] == 'C' && p[2] == 0x01 && p[3] == 0xf8) {
         /* extract DVD CC data
          *
@@ -2033,7 +2061,9 @@ static int mpeg_decode_a53_cc(AVCodecContext *avctx,
                     p += 6;
                 }
             }
+
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+            mpeg_set_cc_format(avctx, CC_FORMAT_DVD, "DVD");
         }
         return 1;
     }
@@ -2598,11 +2628,39 @@ const FFCodec ff_mpeg1video_decoder = {
                            },
 };
 
+#define M2V_OFFSET(x) offsetof(Mpeg1Context, x)
+#define M2V_PARAM     AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+
+static const AVOption mpeg2video_options[] = {
+    { "cc_format", "extract a specific Closed Captions format",
+       M2V_OFFSET(cc_format), AV_OPT_TYPE_INT, { .i64 = CC_FORMAT_AUTO },
+        CC_FORMAT_AUTO, CC_FORMAT_DVD, M2V_PARAM, .unit = "cc_format" },
+
+       { "auto",   "pick first seen CC substream",  0, AV_OPT_TYPE_CONST,
+        { .i64 =   CC_FORMAT_AUTO },                .flags = M2V_PARAM, .unit = "cc_format" },
+       { "a53",    "pick A/53 Part 4 CC substream", 0, AV_OPT_TYPE_CONST,
+        { .i64 =   CC_FORMAT_A53_PART4 },           .flags = M2V_PARAM, .unit = "cc_format" },
+       { "scte20", "pick SCTE-20 CC substream",     0, AV_OPT_TYPE_CONST,
+        { .i64 =   CC_FORMAT_SCTE20 },              .flags = M2V_PARAM, .unit = "cc_format" },
+       { "dvd",    "pick DVD CC substream",         0, AV_OPT_TYPE_CONST,
+        { .i64 =   CC_FORMAT_DVD },                 .flags = M2V_PARAM, .unit = "cc_format" },
+    { NULL }
+};
+
+static const AVClass mpeg2video_class = {
+    .class_name = "MPEG-2 video",
+    .item_name  = av_default_item_name,
+    .option     = mpeg2video_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DECODER,
+};
+
 const FFCodec ff_mpeg2video_decoder = {
     .p.name         = "mpeg2video",
     CODEC_LONG_NAME("MPEG-2 video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_MPEG2VIDEO,
+    .p.priv_class   = &mpeg2video_class,
     .priv_data_size = sizeof(Mpeg1Context),
     .init           = mpeg_decode_init,
     .close          = mpeg_decode_end,
