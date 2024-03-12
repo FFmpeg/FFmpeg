@@ -224,9 +224,10 @@ FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-unescaped-extradata
 # this sample contains field-coded frames, with both fields in a single packet
 FATE_H264-$(call FRAMECRC, MOV, H264) += fate-h264-twofields-packet
 
+FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF SCALE_FILTER) += fate-h264-bsf-mp4toannexb-new-extradata
+
 FATE_H264-$(call DEMMUX, MOV, H264, H264_MP4TOANNEXB_BSF) += fate-h264-bsf-mp4toannexb \
                                                              fate-h264-bsf-mp4toannexb-2 \
-                                                             fate-h264-bsf-mp4toannexb-new-extradata \
                                                              fate-h264_mp4toannexb_ticket5927 \
                                                              fate-h264_mp4toannexb_ticket5927_2 \
 
