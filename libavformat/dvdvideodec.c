@@ -392,7 +392,7 @@ static int dvdvideo_menu_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                                        uint8_t *buf, int buf_size,
                                        void (*flush_cb)(AVFormatContext *s))
 {
-    ssize_t blocks_read                   = 0;
+    int64_t blocks_read                   = 0;
     uint8_t read_buf[DVDVIDEO_BLOCK_SIZE] = {0};
     pci_t pci                             = (pci_t) {0};
     dsi_t dsi                             = (dsi_t) {0};
@@ -423,7 +423,7 @@ static int dvdvideo_menu_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
 
     blocks_read = DVDReadBlocks(state->vob_file, state->sector_offset, 1, read_buf);
     if (blocks_read != 1) {
-        av_log(s, AV_LOG_ERROR, "Unable to read VOB block: offset=%d blocks_read=%d\n",
+        av_log(s, AV_LOG_ERROR, "Unable to read VOB block: offset=%d blocks_read=%" PRId64 "\n",
                                 state->sector_offset, blocks_read);
 
         return AVERROR_INVALIDDATA;
@@ -475,7 +475,7 @@ static int dvdvideo_menu_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
         state->vobu_e_ptm        = pci.pci_gi.vobu_e_ptm;
 
         av_log(s, AV_LOG_DEBUG, "NAV packet: sector=%d "
-                                "vobu_s_ptm=%d vobu_e_ptm=%d ts_offset=%ld\n",
+                                "vobu_s_ptm=%d vobu_e_ptm=%d ts_offset=%" PRId64 "\n",
                                 dsi.dsi_gi.nv_pck_lbn,
                                 pci.pci_gi.vobu_s_ptm, pci.pci_gi.vobu_e_ptm, state->ts_offset);
 
@@ -758,7 +758,7 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
 
                 av_log(s, AV_LOG_DEBUG,
                        "NAV packet: s_ptm=%d e_ptm=%d "
-                       "scr=%d lbn=%d vobu_duration=%d nav_pts=%ld\n",
+                       "scr=%d lbn=%d vobu_duration=%d nav_pts=%" PRId64 "\n",
                        e_pci->pci_gi.vobu_s_ptm, e_pci->pci_gi.vobu_e_ptm,
                        e_dsi->dsi_gi.nv_pck_scr,
                        e_pci->pci_gi.nv_pck_lbn, state->vobu_duration, state->nav_pts);
@@ -1639,18 +1639,19 @@ static int dvdvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->dts += c->play_state.ts_offset - c->first_pts;
 
         if (pkt->pts < 0) {
-            av_log(s, AV_LOG_VERBOSE, "Discarding packet with negative PTS (st=%d pts=%ld), "
+            av_log(s, AV_LOG_VERBOSE, "Discarding packet with negative PTS (st=%d pts=%" PRId64 "), "
                                       "this is OK at start of playback\n",
                                       pkt->stream_index, pkt->pts);
 
             return FFERROR_REDO;
         }
     } else {
-        av_log(s, AV_LOG_WARNING, "Unset PTS or DTS @ st=%d pts=%ld dts=%ld\n",
+        av_log(s, AV_LOG_WARNING, "Unset PTS or DTS @ st=%d pts=%" PRId64 " dts=%" PRId64 "\n",
                                   pkt->stream_index, pkt->pts, pkt->dts);
     }
 
-    av_log(s, AV_LOG_TRACE, "st=%d pts=%ld dts=%ld ts_offset=%ld first_pts=%ld\n",
+    av_log(s, AV_LOG_TRACE, "st=%d pts=%" PRId64 " dts=%" PRId64 " "
+                            "ts_offset=%" PRId64 " first_pts=%" PRId64 "\n",
                             pkt->stream_index, pkt->pts, pkt->dts,
                             c->play_state.ts_offset, c->first_pts);
 
