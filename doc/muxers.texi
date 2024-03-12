@@ -1562,6 +1562,12 @@ For more information regarding the Sega film file format, visit
 It accepts at maximum one @samp{cinepak} or raw video stream, and at
 maximum one audio stream.
 
+@section filmstrip
+Adobe Filmstrip muxer.
+
+This format is used by several Adobe tools to store a generated filmstrip export. It
+accepts a single raw video stream.
+
 @section flv
 
 Adobe Flash Video Format muxer.
