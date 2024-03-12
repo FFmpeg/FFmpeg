@@ -1745,24 +1745,26 @@ See also the @ref{framehash} and @ref{md5} muxers.
 
 @anchor{gif}
 @section gif
-
 Animated GIF muxer.
 
-It accepts the following options:
+Note that the GIF format has a very large time base: the delay between two frames can
+therefore not be smaller than one centi second.
 
+@subsection Options
 @table @option
-@item loop
+@item loop @var{bool}
 Set the number of times to loop the output. Use @code{-1} for no loop, @code{0}
 for looping indefinitely (default).
 
-@item final_delay
+@item final_delay @var{delay}
 Force the delay (expressed in centiseconds) after the last frame. Each frame
 ends with a delay until the next frame. The default is @code{-1}, which is a
 special value to tell the muxer to re-use the previous delay. In case of a
 loop, you might want to customize this value to mark a pause for instance.
 @end table
 
-For example, to encode a gif looping 10 times, with a 5 seconds delay between
+@subsection Example
+Encode a gif looping 10 times, with a 5 seconds delay between
 the loops:
 @example
 ffmpeg -i INPUT -loop 10 -final_delay 500 out.gif
@@ -1773,9 +1775,6 @@ force the @ref{image2} muxer:
 @example
 ffmpeg -i INPUT -c:v gif -f image2 "out%d.gif"
 @end example
-
-Note 2: the GIF format has a very large time base: the delay between two frames
-can therefore not be smaller than one centi second.
 
 @anchor{hash}
 @section hash
