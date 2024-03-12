@@ -528,6 +528,13 @@ static int fifo_init(AVFormatContext *avf)
     atomic_init(&fifo->queue_duration, 0);
     fifo->last_sent_dts = AV_NOPTS_VALUE;
 
+#ifdef FIFO_TEST
+    /* This exists for the fifo_muxer test tool. */
+    if (fifo->format && !strcmp(fifo->format, "fifo_test")) {
+        extern const FFOutputFormat ff_fifo_test_muxer;
+        oformat = &ff_fifo_test_muxer.p;
+    } else
+#endif
     oformat = av_guess_format(fifo->format, avf->url, NULL);
     if (!oformat) {
         ret = AVERROR_MUXER_NOT_FOUND;

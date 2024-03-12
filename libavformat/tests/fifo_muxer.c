@@ -23,8 +23,21 @@
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavformat/avformat.h"
-#include "libavformat/url.h"
+#include "libavformat/mux.h"
 #include "libavformat/network.h"
+#include "libavformat/url.h"
+
+/*
+ * Include fifo.c directly to override libavformat/fifo.c and
+ * thereby prevent libavformat/fifo.o from being pulled in when linking.
+ * This relies on libavformat always being linked statically to its
+ * test tools (like this one).
+ * Due to FIFO_TEST, our fifo muxer will include special handling
+ * for tests, i.e. it allows to select the fifo_test muxer below
+ * even though it is not accessible via the API.
+ */
+#define FIFO_TEST
+#include "libavformat/fifo.c"
 
 #define MAX_TST_PACKETS 128
 #define SLEEPTIME_50_MS 50000
@@ -37,6 +50,118 @@ typedef struct FailingMuxerPacketData {
     int recover_after;   /* set ret to zero after this number of recovery attempts */
     unsigned sleep_time; /* sleep for this long in write_packet to simulate long I/O operation */
 } FailingMuxerPacketData;
+
+typedef struct FifoTestMuxerContext {
+    AVClass *class;
+    int write_header_ret;
+    int write_trailer_ret;
+    /* If non-zero, summary of processed packets will be printed in deinit */
+    int print_deinit_summary;
+
+    int flush_count;
+    int pts_written[MAX_TST_PACKETS];
+    int pts_written_nr;
+} FifoTestMuxerContext;
+
+static int fifo_test_header(AVFormatContext *avf)
+{
+    FifoTestMuxerContext *ctx = avf->priv_data;
+    return ctx->write_header_ret;
+}
+
+static int fifo_test_packet(AVFormatContext *avf, AVPacket *pkt)
+{
+    FifoTestMuxerContext *ctx = avf->priv_data;
+    int ret = 0;
+    if (!pkt) {
+        ctx->flush_count++;
+    } else {
+        FailingMuxerPacketData *data = (FailingMuxerPacketData*) pkt->data;
+
+        if (!data->recover_after) {
+            data->ret = 0;
+        } else {
+            data->recover_after--;
+        }
+
+        ret = data->ret;
+
+        if (data->sleep_time) {
+            int64_t slept = 0;
+            while (slept < data->sleep_time) {
+                if (ff_check_interrupt(&avf->interrupt_callback))
+                    return AVERROR_EXIT;
+                av_usleep(SLEEPTIME_10_MS);
+                slept += SLEEPTIME_10_MS;
+            }
+        }
+
+        if (!ret) {
+            ctx->pts_written[ctx->pts_written_nr++] = pkt->pts;
+            av_packet_unref(pkt);
+        }
+    }
+    return ret;
+}
+
+static int fifo_test_trailer(AVFormatContext *avf)
+{
+    FifoTestMuxerContext *ctx = avf->priv_data;
+    return ctx->write_trailer_ret;
+}
+
+static void failing_deinit(AVFormatContext *avf)
+{
+    int i;
+    FifoTestMuxerContext *ctx = avf->priv_data;
+
+    if (!ctx->print_deinit_summary)
+        return;
+
+    printf("flush count: %d\n", ctx->flush_count);
+    printf("pts seen nr: %d\n", ctx->pts_written_nr);
+    printf("pts seen: ");
+    for (i = 0; i < ctx->pts_written_nr; ++i ) {
+        printf(i ? ",%d" : "%d", ctx->pts_written[i]);
+    }
+    printf("\n");
+}
+
+#define OFF(x) offsetof(FifoTestMuxerContext, x)
+static const AVOption fifo_test_options[] = {
+        {"write_header_ret", "write_header() return value", OFF(write_header_ret),
+         AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+        {"write_trailer_ret", "write_trailer() return value", OFF(write_trailer_ret),
+         AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
+        {"print_deinit_summary", "print summary when deinitializing muxer", OFF(print_deinit_summary),
+         AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+        {NULL}
+    };
+
+static const AVClass failing_muxer_class = {
+    .class_name = "Fifo test muxer",
+    .item_name  = av_default_item_name,
+    .option     = fifo_test_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+const FFOutputFormat ff_fifo_test_muxer = {
+    .p.name         = "fifo_test",
+    .p.long_name    = NULL_IF_CONFIG_SMALL("Fifo test muxer"),
+    .priv_data_size = sizeof(FifoTestMuxerContext),
+    .write_header   = fifo_test_header,
+    .write_packet   = fifo_test_packet,
+    .write_trailer  = fifo_test_trailer,
+    .deinit         = failing_deinit,
+    .p.priv_class   = &failing_muxer_class,
+#if FF_API_ALLOW_FLUSH
+    .p.flags        = AVFMT_NOFILE | AVFMT_ALLOW_FLUSH,
+#else
+    .p.flags        = AVFMT_NOFILE,
+#endif
+    .flags_internal = FF_FMT_ALLOW_FLUSH,
+};
+
 
 static int prepare_packet(AVPacket *pkt, const FailingMuxerPacketData *pkt_data, int64_t pts)
 {

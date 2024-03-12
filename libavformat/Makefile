@@ -205,7 +205,6 @@ OBJS-$(CONFIG_EPAF_DEMUXER)              += epafdec.o pcm.o
 OBJS-$(CONFIG_FFMETADATA_DEMUXER)        += ffmetadec.o
 OBJS-$(CONFIG_FFMETADATA_MUXER)          += ffmetaenc.o
 OBJS-$(CONFIG_FIFO_MUXER)                += fifo.o
-OBJS-$(CONFIG_FIFO_TEST_MUXER)           += fifo_test.o
 OBJS-$(CONFIG_FILMSTRIP_DEMUXER)         += filmstripdec.o
 OBJS-$(CONFIG_FILMSTRIP_MUXER)           += filmstripenc.o rawenc.o
 OBJS-$(CONFIG_FITS_DEMUXER)              += fitsdec.o
