@@ -45,22 +45,23 @@ static int detect_flags(void)
 #elif defined(__APPLE__) && HAVE_SYSCTLBYNAME
 #include <sys/sysctl.h>
 
+static int have_feature(const char *feature) {
+    uint32_t value = 0;
+    size_t size = sizeof(value);
+    if (!sysctlbyname(feature, &value, &size, NULL, 0))
+        return value;
+    return 0;
+}
+
 static int detect_flags(void)
 {
-    uint32_t value = 0;
-    size_t size;
     int flags = 0;
 
-    size = sizeof(value);
-    if (!sysctlbyname("hw.optional.arm.FEAT_DotProd", &value, &size, NULL, 0)) {
-        if (value)
-            flags |= AV_CPU_FLAG_DOTPROD;
-    }
-    size = sizeof(value);
-    if (!sysctlbyname("hw.optional.arm.FEAT_I8MM", &value, &size, NULL, 0)) {
-        if (value)
-            flags |= AV_CPU_FLAG_I8MM;
-    }
+    if (have_feature("hw.optional.arm.FEAT_DotProd"))
+        flags |= AV_CPU_FLAG_DOTPROD;
+    if (have_feature("hw.optional.arm.FEAT_I8MM"))
+        flags |= AV_CPU_FLAG_I8MM;
+
     return flags;
 }
 
