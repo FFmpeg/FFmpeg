@@ -1568,6 +1568,14 @@ Adobe Filmstrip muxer.
 This format is used by several Adobe tools to store a generated filmstrip export. It
 accepts a single raw video stream.
 
+@section fits
+Flexible Image Transport System (FITS) muxer.
+
+This image format is used to store astronomical data.
+
+For more information regarding the format, visit
+@url{https://fits.gsfc.nasa.gov}.
+
 @section flv
 
 Adobe Flash Video Format muxer.
