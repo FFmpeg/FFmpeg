@@ -102,7 +102,7 @@ static void checkasm_check_hevc_qpel(void)
                         call_ref(dstw0, src0, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                         call_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                         for (row = 0; row < size[sizes]; row++) {
-                            if (memcmp(dstw0 + row * MAX_PB_SIZE, dstw1 + row * MAX_PB_SIZE, sizes[size] * SIZEOF_PIXEL))
+                            if (memcmp(dstw0 + row * MAX_PB_SIZE, dstw1 + row * MAX_PB_SIZE, sizes[size] * sizeof(int16_t)))
                                 fail();
                         }
                         bench_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
@@ -334,7 +334,7 @@ static void checkasm_check_hevc_epel(void)
                         call_ref(dstw0, src0, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                         call_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
                         for (row = 0; row < size[sizes]; row++) {
-                            if (memcmp(dstw0 + row * MAX_PB_SIZE, dstw1 + row * MAX_PB_SIZE, sizes[size] * SIZEOF_PIXEL))
+                            if (memcmp(dstw0 + row * MAX_PB_SIZE, dstw1 + row * MAX_PB_SIZE, sizes[size] * sizeof(int16_t)))
                                 fail();
                         }
                         bench_new(dstw1, src1, sizes[size] * SIZEOF_PIXEL, sizes[size], i, j, sizes[size]);
