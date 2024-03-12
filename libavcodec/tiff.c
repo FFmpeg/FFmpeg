@@ -1269,8 +1269,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             value = ff_tget(&s->gb, type, s->le);
             break;
         case TIFF_RATIONAL:
-            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value  = ff_tget_long(&s->gb, s->le);
+            value2 = ff_tget_long(&s->gb, s->le);
             if (!value2) {
                 av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator in rational\n");
                 value2 = 1;
@@ -1437,7 +1437,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         if (count == 1)
             s->sub_ifd = value;
         else if (count > 1)
-            s->sub_ifd = ff_tget(&s->gb, TIFF_LONG, s->le); /** Only get the first SubIFD */
+            s->sub_ifd = ff_tget_long(&s->gb, s->le); /** Only get the first SubIFD */
         break;
     case TIFF_GRAY_RESPONSE_CURVE:
     case DNG_LINEARIZATION_TABLE:
@@ -1453,8 +1453,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         s->black_level[0] = value / (float)value2;
         for (int i = 0; i < count && count > 1; i++) {
             if (type == TIFF_RATIONAL) {
-                value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-                value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                value  = ff_tget_long(&s->gb, s->le);
+                value2 = ff_tget_long(&s->gb, s->le);
                 if (!value2) {
                     av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                     value2 = 1;
@@ -1462,8 +1462,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
 
                 s->black_level[i] = value / (float)value2;
             } else if (type == TIFF_SRATIONAL) {
-                int value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-                int value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                int value  = ff_tget_long(&s->gb, s->le);
+                int value2 = ff_tget_long(&s->gb, s->le);
                 if (!value2) {
                     av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                     value2 = 1;
@@ -1740,7 +1740,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         // need to seek back to re-read the page number
         bytestream2_seek(&s->gb, -count * sizeof(uint16_t), SEEK_CUR);
         // read the page number
-        s->cur_page = ff_tget(&s->gb, TIFF_SHORT, s->le);
+        s->cur_page = ff_tget_short(&s->gb, s->le);
         // get back to where we were before the previous seek
         bytestream2_seek(&s->gb, count * sizeof(uint16_t) - sizeof(uint16_t), SEEK_CUR);
         break;
@@ -1766,8 +1766,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             break;
 
         for (int i = 0; i < 3; i++) {
-            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value  = ff_tget_long(&s->gb, s->le);
+            value2 = ff_tget_long(&s->gb, s->le);
             if (!value2) {
                 av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                 value2 = 1;
@@ -1781,8 +1781,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             break;
 
         for (int i = 0; i < 3; i++) {
-            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value  = ff_tget_long(&s->gb, s->le);
+            value2 = ff_tget_long(&s->gb, s->le);
             if (!value2) {
                 av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                 value2 = 1;
@@ -1796,8 +1796,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             break;
 
         for (int i = 0; i < 2; i++) {
-            value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-            value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            value  = ff_tget_long(&s->gb, s->le);
+            value2 = ff_tget_long(&s->gb, s->le);
             if (!value2) {
                 av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                 value2 = 1;
@@ -1814,8 +1814,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case DNG_COLOR_MATRIX2:
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                int value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-                int value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                int value  = ff_tget_long(&s->gb, s->le);
+                int value2 = ff_tget_long(&s->gb, s->le);
                 if (!value2) {
                     av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                     value2 = 1;
@@ -1829,8 +1829,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case DNG_CAMERA_CALIBRATION2:
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                int value  = ff_tget(&s->gb, TIFF_LONG, s->le);
-                int value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                int value  = ff_tget_long(&s->gb, s->le);
+                int value2 = ff_tget_long(&s->gb, s->le);
                 if (!value2) {
                     av_log(s->avctx, AV_LOG_WARNING, "Invalid denominator\n");
                     value2 = 1;
