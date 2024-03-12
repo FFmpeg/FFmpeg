@@ -252,6 +252,7 @@ int ff_combine_frame(ParseContext *pc, int next,
                                            AV_INPUT_BUFFER_PADDING_SIZE);
         if (!new_buffer) {
             av_log(NULL, AV_LOG_ERROR, "Failed to reallocate parser buffer to %d\n", next + pc->index + AV_INPUT_BUFFER_PADDING_SIZE);
+            *buf_size =
             pc->overread_index =
             pc->index = 0;
             return AVERROR(ENOMEM);
