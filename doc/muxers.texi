@@ -1551,6 +1551,17 @@ ffmpeg -re -i ... -c:v libx264 -c:a aac -f fifo -fifo_format flv \
   -map 0:v -map 0:a rtmp://example.com/live/stream_name
 @end example
 
+@section film_cpk
+Sega film (.cpk) muxer.
+
+This format was used as internal format for several Sega games.
+
+For more information regarding the Sega film file format, visit
+@url{http://wiki.multimedia.cx/index.php?title=Sega_FILM}.
+
+It accepts at maximum one @samp{cinepak} or raw video stream, and at
+maximum one audio stream.
+
 @section flv
 
 Adobe Flash Video Format muxer.
