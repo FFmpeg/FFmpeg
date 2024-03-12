@@ -23,7 +23,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"
 #include "libavformat/avformat.h"
-
+#include "libavformat/demux.h"
 
 typedef struct IOContext {
     int64_t pos;
