@@ -94,13 +94,16 @@ int recast_media = 0;
 
 static void uninit_options(OptionsContext *o)
 {
-    const OptionDef *po = options;
     int i;
 
     /* all OPT_SPEC and OPT_TYPE_STRING can be freed in generic way */
-    while (po->name) {
-        void *dst = (uint8_t*)o + po->u.off;
+    for (const OptionDef *po = options; po->name; po++) {
+        void *dst;
 
+        if (!(po->flags & OPT_FLAG_OFFSET))
+            continue;
+
+        dst = (uint8_t*)o + po->u.off;
         if (po->flags & OPT_FLAG_SPEC) {
             SpecifierOptList *so = dst;
             for (int i = 0; i < so->nb_opt; i++) {
@@ -110,9 +113,8 @@ static void uninit_options(OptionsContext *o)
             }
             av_freep(&so->opt);
             so->nb_opt = 0;
-        } else if (po->flags & OPT_FLAG_OFFSET && po->type == OPT_TYPE_STRING)
+        } else if (po->type == OPT_TYPE_STRING)
             av_freep(dst);
-        po++;
     }
 
     for (i = 0; i < o->nb_stream_maps; i++)
