@@ -1,6 +1,5 @@
 /*
- * Raw Captions With Time (RCWT) muxer
- * Author: Marth64 <marth64@proxyid.net>
+ * RCWT (Raw Captions With Time) muxer
  *
  * This file is part of FFmpeg.
  *
@@ -20,16 +19,16 @@
  */
 
 /*
- * Raw Captions With Time (RCWT) is a format native to ccextractor, a commonly
- * used open source tool for processing 608/708 closed caption (CC) sources.
+ * RCWT (Raw Captions With Time) is a format native to ccextractor, a commonly
+ * used open source tool for processing 608/708 Closed Captions (CC) sources.
  * It can be used to archive the original, raw CC bitstream and to produce
  * a source file for later CC processing or conversion. As a result,
  * it also allows for interopability with ccextractor for processing CC data
  * extracted via ffmpeg. The format is simple to parse and can be used
  * to retain all lines and variants of CC.
  *
- * This muxer implements the specification as of 2024-01-05, which has
- * been stable and unchanged for 10 years as of this writing.
+ * This muxer implements the specification as of March 2024, which has
+ * been stable and unchanged since April 2014.
  *
  * This muxer will have some nuances from the way that ccextractor muxes RCWT.
  * No compatibility issues when processing the output with ccextractor
@@ -40,13 +39,7 @@
  * (1) This muxer will identify as "FF" as the writing program identifier, so
  *     as to be honest about the output's origin.
  *
- * (2) ffmpeg's MPEG-1/2, H264, HEVC, etc. decoders extract closed captioning
- *     data differently than ccextractor from embedded SEI/user data.
- *     For example, DVD captioning bytes will be translated to ATSC A53 format.
- *     This allows ffmpeg to handle 608/708 in a consistant way downstream.
- *     This is a lossless conversion and the meaningful data is retained.
- *
- * (3) This muxer will not alter the extracted data except to remove invalid
+ * (2) This muxer will not alter the extracted data except to remove invalid
  *     packets in between valid CC blocks. On the other hand, ccextractor
  *     will by default remove mid-stream padding, and add padding at the end
  *     of the stream (in order to convey the end time of the source video).
@@ -172,7 +165,7 @@ static int rcwt_write_trailer(AVFormatContext *avf)
 
 const FFOutputFormat ff_rcwt_muxer = {
     .p.name             = "rcwt",
-    .p.long_name        = NULL_IF_CONFIG_SMALL("Raw Captions With Time"),
+    .p.long_name        = NULL_IF_CONFIG_SMALL("RCWT (Raw Captions With Time)"),
     .p.extensions       = "bin",
     .p.flags            = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
     .p.subtitle_codec   = AV_CODEC_ID_EIA_608,
