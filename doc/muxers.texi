@@ -1597,18 +1597,14 @@ ffmpeg -i INPUT -i pic1.png -i pic2.jpg -map 0:a -map 1 -map 2 -disposition:v at
 @end example
 
 @section flv
-
 Adobe Flash Video Format muxer.
 
-This muxer accepts the following options:
-
+@subsection Options
 @table @option
-
 @item flvflags @var{flags}
 Possible values:
 
 @table @samp
-
 @item aac_seq_header_detect
 Place AAC sequence header based on audio stream data.
 
