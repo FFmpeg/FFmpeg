@@ -401,30 +401,29 @@ static inline void write16x4(uint8_t *dst, int dst_stride,
                              register vec_u8 r0, register vec_u8 r1,
                              register vec_u8 r2, register vec_u8 r3) {
     DECLARE_ALIGNED(16, unsigned char, result)[64];
-    uint32_t *src_int = (uint32_t *)result, *dst_int = (uint32_t *)dst;
-    int int_dst_stride = dst_stride/4;
+    uint32_t *src_int = (uint32_t *)result;
 
     vec_st(r0, 0, result);
     vec_st(r1, 16, result);
     vec_st(r2, 32, result);
     vec_st(r3, 48, result);
     /* FIXME: there has to be a better way!!!! */
-    *dst_int = *src_int;
-    *(dst_int+   int_dst_stride) = *(src_int + 1);
-    *(dst_int+ 2*int_dst_stride) = *(src_int + 2);
-    *(dst_int+ 3*int_dst_stride) = *(src_int + 3);
-    *(dst_int+ 4*int_dst_stride) = *(src_int + 4);
-    *(dst_int+ 5*int_dst_stride) = *(src_int + 5);
-    *(dst_int+ 6*int_dst_stride) = *(src_int + 6);
-    *(dst_int+ 7*int_dst_stride) = *(src_int + 7);
-    *(dst_int+ 8*int_dst_stride) = *(src_int + 8);
-    *(dst_int+ 9*int_dst_stride) = *(src_int + 9);
-    *(dst_int+10*int_dst_stride) = *(src_int + 10);
-    *(dst_int+11*int_dst_stride) = *(src_int + 11);
-    *(dst_int+12*int_dst_stride) = *(src_int + 12);
-    *(dst_int+13*int_dst_stride) = *(src_int + 13);
-    *(dst_int+14*int_dst_stride) = *(src_int + 14);
-    *(dst_int+15*int_dst_stride) = *(src_int + 15);
+    AV_WN32(dst,                   AV_RN32A(src_int + 0));
+    AV_WN32(dst +      dst_stride, AV_RN32A(src_int + 1));
+    AV_WN32(dst +  2 * dst_stride, AV_RN32A(src_int + 2));
+    AV_WN32(dst +  3 * dst_stride, AV_RN32A(src_int + 3));
+    AV_WN32(dst +  4 * dst_stride, AV_RN32A(src_int + 4));
+    AV_WN32(dst +  5 * dst_stride, AV_RN32A(src_int + 5));
+    AV_WN32(dst +  6 * dst_stride, AV_RN32A(src_int + 6));
+    AV_WN32(dst +  7 * dst_stride, AV_RN32A(src_int + 7));
+    AV_WN32(dst +  8 * dst_stride, AV_RN32A(src_int + 8));
+    AV_WN32(dst +  9 * dst_stride, AV_RN32A(src_int + 9));
+    AV_WN32(dst + 10 * dst_stride, AV_RN32A(src_int + 10));
+    AV_WN32(dst + 11 * dst_stride, AV_RN32A(src_int + 11));
+    AV_WN32(dst + 12 * dst_stride, AV_RN32A(src_int + 12));
+    AV_WN32(dst + 13 * dst_stride, AV_RN32A(src_int + 13));
+    AV_WN32(dst + 14 * dst_stride, AV_RN32A(src_int + 14));
+    AV_WN32(dst + 15 * dst_stride, AV_RN32A(src_int + 15));
 }
 
 /** @brief performs a 6x16 transpose of data in src, and stores it to dst
