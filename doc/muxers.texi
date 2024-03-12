@@ -1576,6 +1576,26 @@ This image format is used to store astronomical data.
 For more information regarding the format, visit
 @url{https://fits.gsfc.nasa.gov}.
 
+@section flac
+Raw FLAC audio muxer.
+
+This muxer accepts exactly one FLAC audio stream. Additionally, it is possible to add
+images with disposition @samp{attached_pic}.
+
+@subsection Options
+@table @option
+@item write_header @var{bool}
+write the file header if set to @code{true}, default is @code{true}
+@end table
+
+@subsection Example
+Use @command{ffmpeg} to store the audio stream from an input file,
+together with several pictures used with @samp{attached_pic}
+disposition:
+@example
+ffmpeg -i INPUT -i pic1.png -i pic2.jpg -map 0:a -map 1 -map 2 -disposition:v attached_pic OUTPUT
+@end example
+
 @section flv
 
 Adobe Flash Video Format muxer.
