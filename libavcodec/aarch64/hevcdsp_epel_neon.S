@@ -1572,6 +1572,7 @@ function ff_hevc_put_hevc_epel_h48_8_neon_i8mm, export=1
         xtn2            v22.8h, v26.4s
         xtn             v23.4h, v23.4s
         xtn2            v23.8h, v27.4s
+        add             x7, x0, #64
         st4             {v20.8h, v21.8h, v22.8h, v23.8h}, [x0], x10
         ext             v4.16b, v2.16b, v3.16b, #1
         ext             v5.16b, v2.16b, v3.16b, #2
@@ -1584,11 +1585,14 @@ function ff_hevc_put_hevc_epel_h48_8_neon_i8mm, export=1
         usdot           v21.4s, v4.16b, v30.16b
         usdot           v22.4s, v5.16b, v30.16b
         usdot           v23.4s, v6.16b, v30.16b
-        xtn             v20.4h, v20.4s
-        xtn2            v20.8h, v22.4s
-        xtn             v21.4h, v21.4s
-        xtn2            v21.8h, v23.4s
-        add             x7, x0, #64
+        zip1            v24.4s, v20.4s, v22.4s
+        zip2            v25.4s, v20.4s, v22.4s
+        zip1            v26.4s, v21.4s, v23.4s
+        zip2            v27.4s, v21.4s, v23.4s
+        xtn             v20.4h, v24.4s
+        xtn2            v20.8h, v25.4s
+        xtn             v21.4h, v26.4s
+        xtn2            v21.8h, v27.4s
         st2             {v20.8h, v21.8h}, [x7]
         b.ne            1b
         ret
