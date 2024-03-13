@@ -18,11 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes_internal.h"
 #include "libavformat/demux.h"
 #include "libavformat/internal.h"
 #include "libavformat/mux.h"
 #include "avdevice.h"
 
+FF_VISIBILITY_PUSH_HIDDEN
 /* devices */
 extern const FFInputFormat  ff_alsa_demuxer;
 extern const FFOutputFormat ff_alsa_muxer;
@@ -59,6 +61,7 @@ extern const FFOutputFormat ff_xv_muxer;
 /* external libraries */
 extern const FFInputFormat  ff_libcdio_demuxer;
 extern const FFInputFormat  ff_libdc1394_demuxer;
+FF_VISIBILITY_POP_HIDDEN
 
 #include "libavdevice/outdev_list.c"
 #include "libavdevice/indev_list.c"
