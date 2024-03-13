@@ -1660,14 +1660,16 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
  * @return  Returns error status. 0 - OK, !0 - error
  */
 static int decode_spectrum_and_dequant(AACDecContext *ac, INTFLOAT coef[1024],
-                                       GetBitContext *gb, const INTFLOAT sf[120],
+                                       GetBitContext *gb,
                                        int pulse_present, const Pulse *pulse,
-                                       const IndividualChannelStream *ics,
-                                       enum BandType band_type[120])
+                                       SingleChannelElement *sce)
 {
     int i, k, g, idx = 0;
+    IndividualChannelStream *ics = &sce->ics;
     const int c = 1024 / ics->num_windows;
     const uint16_t *offsets = ics->swb_offset;
+    const INTFLOAT *sf = sce->AAC_RENAME(sf);
+    const enum BandType *band_type = sce->band_type;
     INTFLOAT *coef_base = coef;
 
     for (g = 0; g < ics->num_windows; g++)
@@ -2094,8 +2096,9 @@ static int decode_ics(AACDecContext *ac, SingleChannelElement *sce,
         }
     }
 
-    ret = decode_spectrum_and_dequant(ac, out, gb, sce->AAC_RENAME(sf), pulse_present,
-                                    &pulse, ics, sce->band_type);
+    ret = decode_spectrum_and_dequant(ac, out, gb,
+                                      pulse_present,
+                                      &pulse, sce);
     if (ret < 0)
         goto fail;
 
