@@ -1505,7 +1505,7 @@ typedef struct AVCodecContext {
      */
     int hwaccel_flags;
 
-    /*
+    /**
      * Video decoding only.  Sets the number of extra hardware frames which
      * the decoder will allocate for use by the caller.  This must be set
      * before avcodec_open2() is called.
