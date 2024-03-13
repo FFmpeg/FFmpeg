@@ -31,6 +31,7 @@
 
 #include "libavcodec/aacdec.h"
 #include "libavcodec/aac_defines.h"
+#include "libavcodec/lpc_functions.h"
 
 #include "libavcodec/aactab.h"
 
@@ -174,8 +175,72 @@ static void AAC_RENAME(apply_intensity_stereo)(AACDecContext *ac,
     }
 }
 
+/**
+ * Decode Temporal Noise Shaping filter coefficients and apply all-pole filters; reference: 4.6.9.3.
+ *
+ * @param   decode  1 if tool is used normally, 0 if tool is used in LTP.
+ * @param   coef    spectral coefficients
+ */
+static void AAC_RENAME(apply_tns)(void *_coef_param, TemporalNoiseShaping *tns,
+                                  IndividualChannelStream *ics, int decode)
+{
+    const int mmm = FFMIN(ics->tns_max_bands, ics->max_sfb);
+    int w, filt, m, i;
+    int bottom, top, order, start, end, size, inc;
+    INTFLOAT *coef_param = _coef_param;
+    INTFLOAT lpc[TNS_MAX_ORDER];
+    INTFLOAT tmp[TNS_MAX_ORDER+1];
+    UINTFLOAT *coef = coef_param;
+
+    if(!mmm)
+        return;
+
+    for (w = 0; w < ics->num_windows; w++) {
+        bottom = ics->num_swb;
+        for (filt = 0; filt < tns->n_filt[w]; filt++) {
+            top    = bottom;
+            bottom = FFMAX(0, top - tns->length[w][filt]);
+            order  = tns->order[w][filt];
+            if (order == 0)
+                continue;
+
+            // tns_decode_coef
+            compute_lpc_coefs(tns->AAC_RENAME(coef)[w][filt], order, lpc, 0, 0, 0);
+
+            start = ics->swb_offset[FFMIN(bottom, mmm)];
+            end   = ics->swb_offset[FFMIN(   top, mmm)];
+            if ((size = end - start) <= 0)
+                continue;
+            if (tns->direction[w][filt]) {
+                inc = -1;
+                start = end - 1;
+            } else {
+                inc = 1;
+            }
+            start += w * 128;
+
+            if (decode) {
+                // ar filter
+                for (m = 0; m < size; m++, start += inc)
+                    for (i = 1; i <= FFMIN(m, order); i++)
+                        coef[start] -= AAC_MUL26((INTFLOAT)coef[start - i * inc], lpc[i - 1]);
+            } else {
+                // ma filter
+                for (m = 0; m < size; m++, start += inc) {
+                    tmp[0] = coef[start];
+                    for (i = 1; i <= FFMIN(m, order); i++)
+                        coef[start] += AAC_MUL26(tmp[i], lpc[i - 1]);
+                    for (i = order; i > 0; i--)
+                        tmp[i] = tmp[i - 1];
+                }
+            }
+        }
+    }
+}
+
 const AACDecDSP AAC_RENAME(aac_dsp) = {
     .dequant_scalefactors = &AAC_RENAME(dequant_scalefactors),
     .apply_mid_side_stereo = &AAC_RENAME(apply_mid_side_stereo),
     .apply_intensity_stereo = &AAC_RENAME(apply_intensity_stereo),
+    .apply_tns = &AAC_RENAME(apply_tns),
 };

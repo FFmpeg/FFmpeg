@@ -2368,68 +2368,6 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
 }
 
 /**
- * Decode Temporal Noise Shaping filter coefficients and apply all-pole filters; reference: 4.6.9.3.
- *
- * @param   decode  1 if tool is used normally, 0 if tool is used in LTP.
- * @param   coef    spectral coefficients
- */
-static void apply_tns(INTFLOAT coef_param[1024], TemporalNoiseShaping *tns,
-                      IndividualChannelStream *ics, int decode)
-{
-    const int mmm = FFMIN(ics->tns_max_bands, ics->max_sfb);
-    int w, filt, m, i;
-    int bottom, top, order, start, end, size, inc;
-    INTFLOAT lpc[TNS_MAX_ORDER];
-    INTFLOAT tmp[TNS_MAX_ORDER+1];
-    UINTFLOAT *coef = coef_param;
-
-    if(!mmm)
-        return;
-
-    for (w = 0; w < ics->num_windows; w++) {
-        bottom = ics->num_swb;
-        for (filt = 0; filt < tns->n_filt[w]; filt++) {
-            top    = bottom;
-            bottom = FFMAX(0, top - tns->length[w][filt]);
-            order  = tns->order[w][filt];
-            if (order == 0)
-                continue;
-
-            // tns_decode_coef
-            compute_lpc_coefs(tns->AAC_RENAME(coef)[w][filt], order, lpc, 0, 0, 0);
-
-            start = ics->swb_offset[FFMIN(bottom, mmm)];
-            end   = ics->swb_offset[FFMIN(   top, mmm)];
-            if ((size = end - start) <= 0)
-                continue;
-            if (tns->direction[w][filt]) {
-                inc = -1;
-                start = end - 1;
-            } else {
-                inc = 1;
-            }
-            start += w * 128;
-
-            if (decode) {
-                // ar filter
-                for (m = 0; m < size; m++, start += inc)
-                    for (i = 1; i <= FFMIN(m, order); i++)
-                        coef[start] -= AAC_MUL26((INTFLOAT)coef[start - i * inc], lpc[i - 1]);
-            } else {
-                // ma filter
-                for (m = 0; m < size; m++, start += inc) {
-                    tmp[0] = coef[start];
-                    for (i = 1; i <= FFMIN(m, order); i++)
-                        coef[start] += AAC_MUL26(tmp[i], lpc[i - 1]);
-                    for (i = order; i > 0; i--)
-                        tmp[i] = tmp[i - 1];
-                }
-            }
-        }
-    }
-}
-
-/**
  *  Apply windowing and MDCT to obtain the spectral
  *  coefficient from the predicted sample by LTP.
  */
@@ -2479,7 +2417,7 @@ static void apply_ltp(AACDecContext *ac, SingleChannelElement *sce)
         ac->AAC_RENAME(windowing_and_mdct_ltp)(ac, predFreq, predTime, &sce->ics);
 
         if (sce->tns.present)
-            ac->AAC_RENAME(apply_tns)(predFreq, &sce->tns, &sce->ics, 0);
+            ac->dsp.apply_tns(predFreq, &sce->tns, &sce->ics, 0);
 
         for (sfb = 0; sfb < FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++)
             if (ltp->used[sfb])
@@ -2815,11 +2753,11 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                     }
                 }
                 if (che->ch[0].tns.present)
-                    ac->AAC_RENAME(apply_tns)(che->ch[0].AAC_RENAME(coeffs),
-                                              &che->ch[0].tns, &che->ch[0].ics, 1);
+                    ac->dsp.apply_tns(che->ch[0].AAC_RENAME(coeffs),
+                                      &che->ch[0].tns, &che->ch[0].ics, 1);
                 if (che->ch[1].tns.present)
-                    ac->AAC_RENAME(apply_tns)(che->ch[1].AAC_RENAME(coeffs),
-                                              &che->ch[1].tns, &che->ch[1].ics, 1);
+                    ac->dsp.apply_tns(che->ch[1].AAC_RENAME(coeffs),
+                                      &che->ch[1].tns, &che->ch[1].ics, 1);
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, AAC_RENAME(apply_dependent_coupling));
                 if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
@@ -3272,7 +3210,6 @@ static void aacdec_init(AACDecContext *c)
 {
     c->imdct_and_windowing                      = imdct_and_windowing;
     c->apply_ltp                                = apply_ltp;
-    c->AAC_RENAME(apply_tns)                    = apply_tns;
     c->AAC_RENAME(windowing_and_mdct_ltp)       = windowing_and_mdct_ltp;
     c->update_ltp                               = update_ltp;
 #if USE_FIXED

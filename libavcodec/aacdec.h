@@ -312,12 +312,6 @@ struct AACDecContext {
     void (*imdct_and_windowing)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*apply_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
     union {
-        void (*apply_tns)(float coef[1024], TemporalNoiseShaping *tns,
-                          IndividualChannelStream *ics, int decode);
-        void (*apply_tns_fixed)(int coef[1024], TemporalNoiseShaping *tns,
-                                IndividualChannelStream *ics, int decode);
-    };
-    union {
         void (*windowing_and_mdct_ltp)(struct AACDecContext *ac, float *out,
                                        float *in, IndividualChannelStream *ics);
         void (*windowing_and_mdct_ltp_fixed)(struct AACDecContext *ac, int *out,

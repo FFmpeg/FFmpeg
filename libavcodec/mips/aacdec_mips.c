@@ -275,7 +275,7 @@ static void apply_ltp_mips(AACDecContext *ac, SingleChannelElement *sce)
         ac->windowing_and_mdct_ltp(ac, predFreq, predTime, &sce->ics);
 
         if (sce->tns.present)
-            ac->apply_tns(predFreq, &sce->tns, &sce->ics, 0);
+            ac->dsp.apply_tns(predFreq, &sce->tns, &sce->ics, 0);
 
         for (sfb = 0; sfb < FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++)
             if (ltp->used[sfb])
