@@ -147,6 +147,7 @@ typedef struct SingleChannelElement {
     TemporalNoiseShaping tns;
     enum BandType band_type[128];                   ///< band types
     int band_type_run_end[120];                     ///< band type run end points
+    int sfo[120];                                   ///< scalefactor offsets
     INTFLOAT_UNION(sf, [120]);                      ///< scalefactors
     INTFLOAT_ALIGNED_UNION(32, coeffs,    1024);    ///< coefficients for IMDCT, maybe processed
     INTFLOAT_ALIGNED_UNION(32, saved,     1536);    ///< overlap
