@@ -41,6 +41,8 @@
 #include "aac.h"
 #include "mpeg4audio.h"
 
+typedef struct AACDecContext AACDecContext;
+
 /**
  * Output configuration status
  */
@@ -198,11 +200,36 @@ typedef struct DynamicRangeControl {
 } DynamicRangeControl;
 
 /**
+ * DSP-specific primitives
+ */
+typedef struct AACDecDSP {
+    void (*dequant_scalefactors)(SingleChannelElement *sce);
+
+    void (*apply_mid_side_stereo)(AACDecContext *ac, ChannelElement *cpe);
+    void (*apply_intensity_stereo)(AACDecContext *ac, ChannelElement *cpe,
+                                   int ms_present);
+
+    void (*apply_tns)(void *_coef_param, TemporalNoiseShaping *tns,
+                      IndividualChannelStream *ics, int decode);
+
+    void (*apply_ltp)(AACDecContext *ac, SingleChannelElement *sce);
+    void (*update_ltp)(AACDecContext *ac, SingleChannelElement *sce);
+
+    void (*imdct_and_windowing)(AACDecContext *ac, SingleChannelElement *sce);
+    void (*imdct_and_windowing_960)(AACDecContext *ac, SingleChannelElement *sce);
+    void (*imdct_and_windowing_ld)(AACDecContext *ac, SingleChannelElement *sce);
+    void (*imdct_and_windowing_eld)(AACDecContext *ac, SingleChannelElement *sce);
+} AACDecDSP;
+
+/**
  * main AAC decoding context
  */
-typedef struct AACDecContext {
+struct AACDecContext {
     const struct AVClass  *class;
     struct AVCodecContext *avctx;
+
+    AACDecDSP dsp;
+
     struct AVFrame *frame;
 
     int is_saved;                 ///< Set if elements have stored overlap from previous frame.
@@ -298,7 +325,7 @@ typedef struct AACDecContext {
     void (*update_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*vector_pow43)(int *coefs, int len);
     void (*subband_scale)(int *dst, int *src, int scale, int offset, int len, void *log_context);
-} AACDecContext;
+};
 
 #if defined(USE_FIXED) && USE_FIXED
 #define fdsp          RENAME_FIXED(fdsp)
