@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/attributes_internal.h"
 #include "libavformat/demux.h"
 #include "libavformat/internal.h"
@@ -66,12 +67,12 @@ FF_VISIBILITY_POP_HIDDEN
 #include "libavdevice/outdev_list.c"
 #include "libavdevice/indev_list.c"
 
-void avdevice_register_all(void)
+av_cold void avdevice_register_all(void)
 {
     avpriv_register_devices(outdev_list, indev_list);
 }
 
-static const void *next_input(const AVInputFormat *prev, AVClassCategory c2)
+static av_cold const void *next_input(const AVInputFormat *prev, AVClassCategory c2)
 {
     const AVClass *pc;
     const AVClassCategory c1 = AV_CLASS_CATEGORY_DEVICE_INPUT;
@@ -97,7 +98,7 @@ static const void *next_input(const AVInputFormat *prev, AVClassCategory c2)
     return fmt;
 }
 
-static const void *next_output(const AVOutputFormat *prev, AVClassCategory c2)
+static av_cold const void *next_output(const AVOutputFormat *prev, AVClassCategory c2)
 {
     const AVClass *pc;
     const AVClassCategory c1 = AV_CLASS_CATEGORY_DEVICE_OUTPUT;
@@ -123,22 +124,22 @@ static const void *next_output(const AVOutputFormat *prev, AVClassCategory c2)
     return fmt;
 }
 
-const AVInputFormat *av_input_audio_device_next(const AVInputFormat  *d)
+av_cold const AVInputFormat *av_input_audio_device_next(const AVInputFormat  *d)
 {
     return next_input(d, AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT);
 }
 
-const AVInputFormat *av_input_video_device_next(const AVInputFormat  *d)
+av_cold const AVInputFormat *av_input_video_device_next(const AVInputFormat  *d)
 {
     return next_input(d, AV_CLASS_CATEGORY_DEVICE_VIDEO_INPUT);
 }
 
-const AVOutputFormat *av_output_audio_device_next(const AVOutputFormat *d)
+av_cold const AVOutputFormat *av_output_audio_device_next(const AVOutputFormat *d)
 {
     return next_output(d, AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT);
 }
 
-const AVOutputFormat *av_output_video_device_next(const AVOutputFormat *d)
+av_cold const AVOutputFormat *av_output_video_device_next(const AVOutputFormat *d)
 {
     return next_output(d, AV_CLASS_CATEGORY_DEVICE_VIDEO_OUTPUT);
 }
