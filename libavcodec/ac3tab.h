@@ -45,22 +45,6 @@ extern const uint8_t  ff_ac3_band_start_tab[AC3_CRITICAL_BANDS+1];
 extern const uint8_t  ff_ac3_bin_to_band_tab[253];
 extern const uint64_t ff_eac3_custom_channel_map_locations[16][2];
 
-
-/** Custom channel map locations bitmask
- *  Other channels described in documentation:
- *      Lc/Rc pair, Lrs/Rrs pair, Ts, Lsd/Rsd pair,
- *      Lw/Rw pair, Lvh/Rvh pair, Cvh, Reserved, LFE2
- */
-enum CustomChannelMapLocation{
-    AC3_CHMAP_L=        1<<(15-0),
-    AC3_CHMAP_C=        1<<(15-1),
-    AC3_CHMAP_R=        1<<(15-2),
-    AC3_CHMAP_L_SUR=    1<<(15-3),
-    AC3_CHMAP_R_SUR =   1<<(15-4),
-    AC3_CHMAP_C_SUR=    1<<(15-7),
-    AC3_CHMAP_LFE =     1<<(15-15)
-};
-
 #define COMMON_CHANNEL_MAP \
     { { 0, 1,          }, { 0, 1, 2,         } },\
     { { 0,             }, { 0, 1,            } },\
