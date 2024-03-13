@@ -50,11 +50,12 @@ static const vec_s8 h_subpel_filters_inner[7] =
 // for 6tap filters, these are the outer two taps
 // The zeros mask off pixels 4-7 when filtering 0-3
 // and vice-versa
-static const vec_s8 h_subpel_filters_outer[3] =
+static const vec_s8 h_subpel_filters_outer[4] =
 {
     REPT4(0, 0, 2, 1),
     REPT4(0, 0, 3, 3),
     REPT4(0, 0, 1, 2),
+    REPT4(0, 0, 0, 0),
 };
 
 #define LOAD_H_SUBPEL_FILTER(i) \
