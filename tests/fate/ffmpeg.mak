@@ -254,3 +254,10 @@ fate-ffmpeg-streamcopy-t: CMD = ffmpeg                                          
     -stream_loop -1 -f rawvideo -s 352x288 -pix_fmt yuv420p -i $(TARGET_PATH)/tests/data/vsynth_lena.yuv  \
     -c copy -f null -t 1 -
 FATE_FFMPEG-$(call REMUX, RAWVIDEO) += fate-ffmpeg-streamcopy-t
+
+# Test loopback decoding and passing the output to a complex graph.
+fate-ffmpeg-loopback-decoding: tests/data/vsynth_lena.yuv
+fate-ffmpeg-loopback-decoding:  CMD = transcode \
+    "rawvideo -s 352x288 -pix_fmt yuv420p" $(TARGET_PATH)/tests/data/vsynth_lena.yuv nut \
+    "-map 0:v:0 -c:v mpeg2video -f null - -flags +bitexact -dec 0:0 -filter_complex '[0:v][dec:0]hstack[stack]' -map '[stack]' -c:v ffv1" ""
+FATE_FFMPEG-$(call ENCDEC2, MPEG2VIDEO, FFV1, NUT, HSTACK_FILTER PIPE_PROTOCOL FRAMECRC_MUXER) += fate-ffmpeg-loopback-decoding
