@@ -2063,40 +2063,6 @@ fail:
 }
 
 /**
- * Mid/Side stereo decoding; reference: 4.6.8.1.3.
- */
-static void apply_mid_side_stereo(AACDecContext *ac, ChannelElement *cpe)
-{
-    const IndividualChannelStream *ics = &cpe->ch[0].ics;
-    INTFLOAT *ch0 = cpe->ch[0].AAC_RENAME(coeffs);
-    INTFLOAT *ch1 = cpe->ch[1].AAC_RENAME(coeffs);
-    int g, i, group, idx = 0;
-    const uint16_t *offsets = ics->swb_offset;
-    for (g = 0; g < ics->num_window_groups; g++) {
-        for (i = 0; i < ics->max_sfb; i++, idx++) {
-            if (cpe->ms_mask[idx] &&
-                cpe->ch[0].band_type[idx] < NOISE_BT &&
-                cpe->ch[1].band_type[idx] < NOISE_BT) {
-#if USE_FIXED
-                for (group = 0; group < ics->group_len[g]; group++) {
-                    ac->fdsp->butterflies_fixed(ch0 + group * 128 + offsets[i],
-                                                ch1 + group * 128 + offsets[i],
-                                                offsets[i+1] - offsets[i]);
-#else
-                for (group = 0; group < ics->group_len[g]; group++) {
-                    ac->fdsp->butterflies_float(ch0 + group * 128 + offsets[i],
-                                               ch1 + group * 128 + offsets[i],
-                                               offsets[i+1] - offsets[i]);
-#endif /* USE_FIXED */
-                }
-            }
-        }
-        ch0 += ics->group_len[g] * 128;
-        ch1 += ics->group_len[g] * 128;
-    }
-}
-
-/**
  * intensity stereo decoding; reference: 4.6.8.2.3
  *
  * @param   ms_present  Indicates mid/side stereo presence. [0] mask is all 0s;
@@ -2183,7 +2149,7 @@ static int decode_cpe(AACDecContext *ac, GetBitContext *gb, ChannelElement *cpe)
 
     if (common_window) {
         if (ms_present)
-            apply_mid_side_stereo(ac, cpe);
+            ac->dsp.apply_mid_side_stereo(ac, cpe);
         if (ac->oc[1].m4ac.object_type == AOT_AAC_MAIN) {
             apply_prediction(ac, &cpe->ch[0]);
             apply_prediction(ac, &cpe->ch[1]);
