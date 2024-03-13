@@ -2310,7 +2310,6 @@ int sch_enc_send(Scheduler *sch, unsigned enc_idx, AVPacket *pkt)
 {
     SchEnc *enc;
     int ret;
-    unsigned nb_done = 0;
 
     av_assert0(enc_idx < sch->nb_enc);
     enc = &sch->enc[enc_idx];
@@ -2332,7 +2331,6 @@ int sch_enc_send(Scheduler *sch, unsigned enc_idx, AVPacket *pkt)
         if (ret < 0) {
             av_packet_unref(to_send);
             if (ret == AVERROR_EOF) {
-                nb_done++;
                 ret = 0;
                 continue;
             }
