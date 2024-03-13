@@ -122,7 +122,60 @@ static void AAC_RENAME(apply_mid_side_stereo)(AACDecContext *ac, ChannelElement 
     }
 }
 
+/**
+ * intensity stereo decoding; reference: 4.6.8.2.3
+ *
+ * @param   ms_present  Indicates mid/side stereo presence. [0] mask is all 0s;
+ *                      [1] mask is decoded from bitstream; [2] mask is all 1s;
+ *                      [3] reserved for scalable AAC
+ */
+static void AAC_RENAME(apply_intensity_stereo)(AACDecContext *ac,
+                                               ChannelElement *cpe, int ms_present)
+{
+    const IndividualChannelStream *ics = &cpe->ch[1].ics;
+    SingleChannelElement         *sce1 = &cpe->ch[1];
+    INTFLOAT *coef0 = cpe->ch[0].AAC_RENAME(coeffs), *coef1 = cpe->ch[1].AAC_RENAME(coeffs);
+    const uint16_t *offsets = ics->swb_offset;
+    int g, group, i, idx = 0;
+    int c;
+    INTFLOAT scale;
+    for (g = 0; g < ics->num_window_groups; g++) {
+        for (i = 0; i < ics->max_sfb;) {
+            if (sce1->band_type[idx] == INTENSITY_BT ||
+                sce1->band_type[idx] == INTENSITY_BT2) {
+                const int bt_run_end = sce1->band_type_run_end[idx];
+                for (; i < bt_run_end; i++, idx++) {
+                    c = -1 + 2 * (sce1->band_type[idx] - 14);
+                    if (ms_present)
+                        c *= 1 - 2 * cpe->ms_mask[idx];
+                    scale = c * sce1->AAC_RENAME(sf)[idx];
+                    for (group = 0; group < ics->group_len[g]; group++)
+#if USE_FIXED
+                        ac->subband_scale(coef1 + group * 128 + offsets[i],
+                                      coef0 + group * 128 + offsets[i],
+                                      scale,
+                                      23,
+                                      offsets[i + 1] - offsets[i] ,ac->avctx);
+#else
+                        ac->fdsp->vector_fmul_scalar(coef1 + group * 128 + offsets[i],
+                                                    coef0 + group * 128 + offsets[i],
+                                                    scale,
+                                                    offsets[i + 1] - offsets[i]);
+#endif /* USE_FIXED */
+                }
+            } else {
+                int bt_run_end = sce1->band_type_run_end[idx];
+                idx += bt_run_end - i;
+                i    = bt_run_end;
+            }
+        }
+        coef0 += ics->group_len[g] * 128;
+        coef1 += ics->group_len[g] * 128;
+    }
+}
+
 const AACDecDSP AAC_RENAME(aac_dsp) = {
     .dequant_scalefactors = &AAC_RENAME(dequant_scalefactors),
     .apply_mid_side_stereo = &AAC_RENAME(apply_mid_side_stereo),
+    .apply_intensity_stereo = &AAC_RENAME(apply_intensity_stereo),
 };
