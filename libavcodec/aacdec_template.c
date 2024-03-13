@@ -1460,11 +1460,13 @@ static int decode_scalefactors(AACDecContext *ac, int sfo[120],
     for (g = 0; g < ics->num_window_groups; g++) {
         for (i = 0; i < ics->max_sfb;) {
             int run_end = band_type_run_end[idx];
-            if (band_type[idx] == ZERO_BT) {
+            switch (band_type[idx]) {
+            case ZERO_BT:
                 for (; i < run_end; i++, idx++)
                     sfo[idx] = 0;
-            } else if ((band_type[idx] == INTENSITY_BT) ||
-                       (band_type[idx] == INTENSITY_BT2)) {
+                break;
+            case INTENSITY_BT: /* fallthrough */
+            case INTENSITY_BT2:
                 for (; i < run_end; i++, idx++) {
                     offset[2] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
                     clipped_offset = av_clip(offset[2], -155, 100);
@@ -1476,7 +1478,8 @@ static int decode_scalefactors(AACDecContext *ac, int sfo[120],
                     }
                     sfo[idx] = clipped_offset;
                 }
-            } else if (band_type[idx] == NOISE_BT) {
+                break;
+            case NOISE_BT:
                 for (; i < run_end; i++, idx++) {
                     if (noise_flag-- > 0)
                         offset[1] += get_bits(gb, NOISE_PRE_BITS) - NOISE_PRE;
@@ -1491,7 +1494,8 @@ static int decode_scalefactors(AACDecContext *ac, int sfo[120],
                     }
                     sfo[idx] = clipped_offset;
                 }
-            } else {
+                break;
+            default:
                 for (; i < run_end; i++, idx++) {
                     offset[0] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
                     if (offset[0] > 255U) {
@@ -1501,6 +1505,7 @@ static int decode_scalefactors(AACDecContext *ac, int sfo[120],
                     }
                     sfo[idx] = offset[0];
                 }
+                break;
             }
         }
     }
