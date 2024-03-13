@@ -1513,60 +1513,6 @@ static int decode_scalefactors(AACDecContext *ac, int sfo[120],
 }
 
 /**
- * Convert integer scalefactors to the decoder's native expected
- * scalefactor values.
- */
-static void dequant_scalefactors(SingleChannelElement *sce)
-{
-    IndividualChannelStream *ics = &sce->ics;
-    const enum BandType *band_type = sce->band_type;
-    const int *band_type_run_end = sce->band_type_run_end;
-    const int *sfo = sce->sfo;
-    INTFLOAT *sf = sce->AAC_RENAME(sf);
-
-    int g, i, idx = 0;
-    for (g = 0; g < ics->num_window_groups; g++) {
-        for (i = 0; i < ics->max_sfb;) {
-            int run_end = band_type_run_end[idx];
-            switch (band_type[idx]) {
-            case ZERO_BT:
-                for (; i < run_end; i++, idx++)
-                    sf[idx] = FIXR(0.);
-                break;
-            case INTENSITY_BT: /* fallthrough */
-            case INTENSITY_BT2:
-                for (; i < run_end; i++, idx++) {
-#if USE_FIXED
-                    sf[idx] = 100 - sfo[idx];
-#else
-                    sf[idx] = ff_aac_pow2sf_tab[-sfo[idx] + POW_SF2_ZERO];
-#endif /* USE_FIXED */
-                }
-                break;
-            case NOISE_BT:
-                for (; i < run_end; i++, idx++) {
-#if USE_FIXED
-                    sf[idx] = -(100 + sfo[idx]);
-#else
-                    sf[idx] = -ff_aac_pow2sf_tab[sfo[idx] + POW_SF2_ZERO];
-#endif /* USE_FIXED */
-                }
-                break;
-            default:
-                for (; i < run_end; i++, idx++) {
-#if USE_FIXED
-                    sf[idx] = -sfo[idx];
-#else
-                    sf[idx] = -ff_aac_pow2sf_tab[sfo[idx] - 100 + POW_SF2_ZERO];
-#endif /* USE_FIXED */
-                }
-                break;
-            }
-        }
-    }
-}
-
-/**
  * Decode pulse data; reference: table 4.7.
  */
 static int decode_pulses(Pulse *pulse, GetBitContext *gb,
@@ -2061,7 +2007,7 @@ static int decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                                    sce->band_type, sce->band_type_run_end)) < 0)
         goto fail;
 
-    dequant_scalefactors(sce);
+    ac->dsp.dequant_scalefactors(sce);
 
     pulse_present = 0;
     if (!scale_flag) {

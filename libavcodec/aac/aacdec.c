@@ -45,6 +45,9 @@
 #include "libavutil/tx.h"
 #include "libavutil/version.h"
 
+extern const AACDecDSP aac_dsp;
+extern const AACDecDSP aac_dsp_fixed;
+
 av_cold int ff_aac_decode_close(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
@@ -114,6 +117,8 @@ av_cold int ff_aac_decode_init_common(AVCodecContext *avctx)
     ret = av_tx_init(&ac->mdct_ltp, &ac->mdct_ltp_fn, tx_type, 0, 1024, scalep, 0);
     if (ret < 0)
         return ret;
+
+    ac->dsp = is_fixed ? aac_dsp_fixed : aac_dsp;
 
     return 0;
 }
