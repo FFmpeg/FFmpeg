@@ -1089,7 +1089,7 @@ FATE_SWR_RESAMPLE-$(call FILTERDEMDECENCMUX, ARESAMPLE, WAV, PCM_S16LE, PCM_S16L
 fate-swr-resample: $(FATE_SWR_RESAMPLE-yes)
 FATE_SWR += $(FATE_SWR_RESAMPLE-yes)
 
-FATE_SWR_AUDIOCONVERT-$(call FILTERDEMDECENCMUX, AFORMAT AEVAL, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-swr-audioconvert
+FATE_SWR_AUDIOCONVERT-$(call FILTERDEMDECENCMUX, ARESAMPLE AFORMAT AEVAL, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-swr-audioconvert
 fate-swr-audioconvert: tests/data/asynth-44100-1.wav
 fate-swr-audioconvert: REF = tests/data/asynth-44100-1.wav
 fate-swr-audioconvert: CMD = ffmpeg -i $(TARGET_PATH)/tests/data/asynth-44100-1.wav -af "aresample,aformat=fltp,aresample,aeval=val(0)+(random(0)-0.5)/33000,aresample,aformat=fltp,aresample" -f wav -c:a pcm_s16le -
