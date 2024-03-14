@@ -10497,7 +10497,7 @@ and from 1 to 49 odd number of signed integers in @var{row} mode.
 @item 2rdiv
 @item 3rdiv
 Set multiplier for calculated value for each plane.
-If unset or 0, it will be sum of all matrix elements.
+If unset or 0, it will be 1/sum of all matrix elements.
 
 @item 0bias
 @item 1bias
