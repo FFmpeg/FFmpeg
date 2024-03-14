@@ -54,7 +54,7 @@ static int put_id3v2_tags(AVFormatContext *s, AIFFOutputContext *aiff)
     if (!s->metadata && !s->nb_chapters && !list_entry)
         return 0;
 
-    avio_wl32(pb, MKTAG('I', 'D', '3', ' '));
+    avio_wb32(pb, MKBETAG('I', 'D', '3', ' '));
     avio_wb32(pb, 0);
     pos = avio_tell(pb);
 
@@ -93,7 +93,7 @@ static void put_meta(AVFormatContext *s, const char *key, uint32_t id)
         // So simply copy the terminating \0 if the length is odd.
         size = FFALIGN(size, 2);
 
-        avio_wl32(pb, id);
+        avio_wb32(pb, id);
         avio_wb32(pb, size);
         avio_write(pb, tag->value, size);
     }
@@ -153,10 +153,10 @@ static int aiff_write_header(AVFormatContext *s)
         ff_mov_write_chan(pb, par->ch_layout.u.mask);
     }
 
-    put_meta(s, "title",     MKTAG('N', 'A', 'M', 'E'));
-    put_meta(s, "author",    MKTAG('A', 'U', 'T', 'H'));
-    put_meta(s, "copyright", MKTAG('(', 'c', ')', ' '));
-    put_meta(s, "comment",   MKTAG('A', 'N', 'N', 'O'));
+    put_meta(s, "title",     MKBETAG('N', 'A', 'M', 'E'));
+    put_meta(s, "author",    MKBETAG('A', 'U', 'T', 'H'));
+    put_meta(s, "copyright", MKBETAG('(', 'c', ')', ' '));
+    put_meta(s, "comment",   MKBETAG('A', 'N', 'N', 'O'));
 
     /* Common chunk */
     ffio_wfourcc(pb, "COMM");
