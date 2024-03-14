@@ -65,17 +65,17 @@ fate-eac3-5: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
 
 $(FATE_AC3) $(FATE_EAC3): CMP = oneoff
 
-FATE_AC3-$(call  DEMDEC, AC3,  AC3)  += $(FATE_AC3)
-FATE_EAC3-$(call DEMDEC, EAC3, EAC3) += $(FATE_EAC3)
+FATE_AC3-$(call  DEMDEC, AC3,  AC3,  ARESAMPLE_FILTER)  += $(FATE_AC3)
+FATE_EAC3-$(call DEMDEC, EAC3, EAC3, ARESAMPLE_FILTER) += $(FATE_EAC3)
 
-FATE_AC3-$(call ENCDEC, AC3, AC3) += fate-ac3-encode
+FATE_AC3-$(call ENCDEC, AC3, AC3, ARESAMPLE_FILTER) += fate-ac3-encode
 fate-ac3-encode: CMD = enc_dec_pcm ac3 wav s16le $(subst $(SAMPLES),$(TARGET_SAMPLES),$(REF)) -c:a ac3 -b:a 128k
 fate-ac3-encode: CMP_SHIFT = -1024
 fate-ac3-encode: CMP_TARGET = 404.53
 fate-ac3-encode: SIZE_TOLERANCE = 488
 
 
-FATE_EAC3-$(call ENCDEC, EAC3, EAC3) += fate-eac3-encode
+FATE_EAC3-$(call ENCDEC, EAC3, EAC3, ARESAMPLE_FILTER) += fate-eac3-encode
 fate-eac3-encode: CMD = enc_dec_pcm eac3 wav s16le $(subst $(SAMPLES),$(TARGET_SAMPLES),$(REF)) -c:a eac3 -b:a 128k
 fate-eac3-encode: CMP_SHIFT = -1024
 fate-eac3-encode: CMP_TARGET = 516.94
@@ -84,7 +84,7 @@ fate-eac3-encode: SIZE_TOLERANCE = 488
 fate-ac3-encode fate-eac3-encode: CMP = stddev
 fate-ac3-encode fate-eac3-encode: REF = $(SAMPLES)/audio-reference/luckynight_2ch_44kHz_s16.wav
 
-FATE_AC3-$(call ENCMUX, AC3_FIXED, AC3) += fate-ac3-fixed-encode
+FATE_AC3-$(call ENCMUX, AC3_FIXED, AC3, ARESAMPLE_FILTER) += fate-ac3-fixed-encode
 fate-ac3-fixed-encode: tests/data/asynth-44100-2.wav
 fate-ac3-fixed-encode: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -ab 128k -f ac3 -flags +bitexact -af aresample
