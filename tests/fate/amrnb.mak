@@ -30,11 +30,11 @@ FATE_AMRNB += fate-amrnb-12k2
 fate-amrnb-12k2: CMD = pcm -i $(TARGET_SAMPLES)/amrnb/12.2k.amr
 fate-amrnb-12k2: REF = $(SAMPLES)/amrnb/12.2k.pcm
 
-FATE_AMRNB_REMUX-$(call REMUX, AMR, AMR_PARSER) += fate-amrnb-remux
+FATE_AMRNB_REMUX-$(call REMUX, AMR, AMR_PARSER ARESAMPLE_FILTER) += fate-amrnb-remux
 fate-amrnb-remux: CMD = transcode amr $(TARGET_SAMPLES)/amrnb/10.2k.amr amr "-c copy" "-c copy -t 1"
 
 $(FATE_AMRNB): CMP = stddev
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, AMR, AMRNB) += $(FATE_AMRNB)
+FATE_SAMPLES_FFMPEG-$(call DEMDEC, AMR, AMRNB, ARESAMPLE_FILTER) += $(FATE_AMRNB)
 FATE_SAMPLES_FFMPEG += $(FATE_AMRNB_REMUX-yes)
 fate-amrnb: $(FATE_AMRNB) $(FATE_AMRNB_REMUX-yes)
