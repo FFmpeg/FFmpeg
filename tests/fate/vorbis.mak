@@ -94,7 +94,9 @@ fate-vorbis-1833-chapters: CMD = probechapters $(TARGET_SAMPLES)/vorbis/vorbis_c
 
 FATE_SAMPLES_FFPROBE += $(FATE_VORBIS_FFPROBE-yes)
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, OGG, VORBIS) += $(FATE_VORBIS)
-fate-vorbis: $(FATE_VORBIS) $(FATE_VORBIS_FFPROBE-yes)
-$(FATE_VORBIS): CMP = oneoff
+FATE_VORBIS-$(call DEMDEC, OGG, VORBIS, ARESAMPLE_FILTER) += $(FATE_VORBIS)
+
+FATE_SAMPLES_AVCONV += $(FATE_VORBIS-yes)
+fate-vorbis: $(FATE_VORBIS-yes) $(FATE_VORBIS_FFPROBE-yes)
+$(FATE_VORBIS-yes): CMP = oneoff
 fate-vorbis-encode: CMP = stddev
