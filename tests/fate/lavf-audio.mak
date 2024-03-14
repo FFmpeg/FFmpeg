@@ -28,6 +28,7 @@ $(FATE_LAVF_AUDIO): CMD = lavf_audio
 $(FATE_LAVF_AUDIO): REF = $(SRC_PATH)/tests/ref/lavf/$(@:fate-lavf-%=%)
 $(FATE_LAVF_AUDIO): $(AREF)
 
+fate-lavf-aiff: CMD = lavf_audio "" "-metadata copyright=noone"
 fate-lavf-al fate-lavf-ul: CMD = lavf_audio "" "" "-ar 44100"
 fate-lavf-dfpwm: CMD = lavf_audio "" "" "-sample_rate 44100"
 fate-lavf-ogg: CMD = lavf_audio "" "-c:a flac"
