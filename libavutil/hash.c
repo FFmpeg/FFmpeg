@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -38,22 +39,27 @@
 #include "intreadwrite.h"
 #include "mem.h"
 
+// ENTRY(HASH_TYPE, HASH_NAME, HASH_SIZE)
+#define HASHES(ENTRY)                   \
+    ENTRY(MD5,        "MD5",        16) \
+    ENTRY(MURMUR3,    "murmur3",    16) \
+    ENTRY(RIPEMD128,  "RIPEMD128",  16) \
+    ENTRY(RIPEMD160,  "RIPEMD160",  20) \
+    ENTRY(RIPEMD256,  "RIPEMD256",  32) \
+    ENTRY(RIPEMD320,  "RIPEMD320",  40) \
+    ENTRY(SHA160,     "SHA160",     20) \
+    ENTRY(SHA224,     "SHA224",     28) \
+    ENTRY(SHA256,     "SHA256",     32) \
+    ENTRY(SHA512_224, "SHA512/224", 28) \
+    ENTRY(SHA512_256, "SHA512/256", 32) \
+    ENTRY(SHA384,     "SHA384",     48) \
+    ENTRY(SHA512,     "SHA512",     64) \
+    ENTRY(CRC32,      "CRC32",       4) \
+    ENTRY(ADLER32,    "adler32",     4) \
+
 enum hashtype {
-    MD5,
-    MURMUR3,
-    RIPEMD128,
-    RIPEMD160,
-    RIPEMD256,
-    RIPEMD320,
-    SHA160,
-    SHA224,
-    SHA256,
-    SHA512_224,
-    SHA512_256,
-    SHA384,
-    SHA512,
-    CRC32,
-    ADLER32,
+#define HASH_TYPE(TYPE, NAME, SIZE) TYPE,
+    HASHES(HASH_TYPE)
     NUM_HASHES
 };
 
@@ -64,25 +70,29 @@ typedef struct AVHashContext {
     uint32_t crc;
 } AVHashContext;
 
+#define HASH_MAX_SIZE(TYPE, NAME, SIZE) \
+    HASH_MAX_SIZE_BEFORE_ ## TYPE,      \
+    HASH_MAX_SIZE_UNTIL_ ## TYPE ## _MINUS_ONE = FFMAX(SIZE, HASH_MAX_SIZE_BEFORE_ ## TYPE) - 1,
+enum {
+    HASHES(HASH_MAX_SIZE)
+    MAX_HASH_SIZE
+};
+static_assert(AV_HASH_MAX_SIZE >= MAX_HASH_SIZE, "AV_HASH_MAX_SIZE needs to be updated!");
+
+#define HASH_MAX_NAME_SIZE(TYPE, NAME, SIZE) \
+    HASH_MAX_NAME_SIZE_BEFORE_ ## TYPE,      \
+    HASH_MAX_NAME_SIZE_UNTIL_ ## TYPE ## _MINUS_ONE = FFMAX(sizeof(NAME), HASH_MAX_NAME_SIZE_BEFORE_ ## TYPE) - 1,
+enum {
+    HASHES(HASH_MAX_NAME_SIZE)
+    MAX_HASH_NAME_SIZE
+};
+
 static const struct {
-    const char *name;
+    const char name[MAX_HASH_NAME_SIZE];
     int size;
 } hashdesc[] = {
-    [MD5]     = {"MD5",     16},
-    [MURMUR3] = {"murmur3", 16},
-    [RIPEMD128] = {"RIPEMD128", 16},
-    [RIPEMD160] = {"RIPEMD160", 20},
-    [RIPEMD256] = {"RIPEMD256", 32},
-    [RIPEMD320] = {"RIPEMD320", 40},
-    [SHA160]  = {"SHA160",  20},
-    [SHA224]  = {"SHA224",  28},
-    [SHA256]  = {"SHA256",  32},
-    [SHA512_224]  = {"SHA512/224",  28},
-    [SHA512_256]  = {"SHA512/256",  32},
-    [SHA384]  = {"SHA384",  48},
-    [SHA512]  = {"SHA512",  64},
-    [CRC32]   = {"CRC32",    4},
-    [ADLER32] = {"adler32",  4},
+#define HASH_DESC(TYPE, NAME, SIZE) [TYPE] = { NAME, SIZE },
+    HASHES(HASH_DESC)
 };
 
 const char *av_hash_names(int i)
