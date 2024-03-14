@@ -612,14 +612,10 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
     int ret;
     int adapter = -1;
 
-    // (On UWP we can't check this.)
-#if !HAVE_UWP
-    if (!LoadLibrary("d3d11_1sdklayers.dll"))
-        is_debug = 0;
-#endif
-
-    if (is_debug)
+    if (is_debug) {
         creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
+        av_log(ctx, AV_LOG_INFO, "Enabling d3d11 debugging.\n");
+    }
 
     if ((ret = ff_thread_once(&functions_loaded, load_functions)) != 0)
         return AVERROR_UNKNOWN;
