@@ -229,12 +229,16 @@ successive integers starting at zero. These indices should then be used to refer
 to loopback decoders in complex filtergraph link labels, as described in the
 documentation for @option{-filter_complex}.
 
+Decoding AVOptions can be passed to loopback decoders by placing them before
+@code{-dec}, analogously to input/output options.
+
 E.g. the following example:
 
 @example
 ffmpeg -i INPUT                                        \
   -map 0:v:0 -c:v libx264 -crf 45 -f null -            \
-  -dec 0:0 -filter_complex '[0:v][dec:0]hstack[stack]' \
+  -threads 3 -dec 0:0                                  \
+  -filter_complex '[0:v][dec:0]hstack[stack]'          \
   -map '[stack]' -c:v ffv1 OUTPUT
 @end example
 
@@ -244,11 +248,13 @@ reads an input video and
 (line 2) encodes it with @code{libx264} at low quality;
 
 @item
-(line 3) decodes this encoded stream and places it side by side with the
-original input video;
+(line 3) decodes this encoded stream using 3 threads;
 
 @item
-(line 4) combined video is then losslessly encoded and written into
+(line 4) places decoded video side by side with the original input video;
+
+@item
+(line 5) combined video is then losslessly encoded and written into
 @file{OUTPUT}.
 
 @end itemize
