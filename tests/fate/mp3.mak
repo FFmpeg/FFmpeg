@@ -36,7 +36,7 @@ $(FATE_MP3): FUZZ = 18
 
 fate-mp3-float-extra_overread: FUZZ = 23
 
-FATE_MP3-$(call DEMDEC, MP3, MP3FLOAT) += $(FATE_MP3)
+FATE_MP3-$(call DEMDEC, MP3, MP3FLOAT, ARESAMPLE_FILTER) += $(FATE_MP3)
 
 FATE_SAMPLES_AVCONV += $(FATE_MP3-yes)
 fate-mp3: $(FATE_MP3-yes)
