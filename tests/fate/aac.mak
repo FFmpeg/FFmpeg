@@ -243,17 +243,17 @@ fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51_ref.s16
 fate-aac-autobsf-adtstoasc: CMD = transcode "aac" $(TARGET_SAMPLES)/audiomatch/tones_afconvert_16000_mono_aac_lc.adts \
                                             matroska "-c:a copy" "-c:a copy"
 
-FATE_AAC-$(call      DEMDEC, AAC,    AAC)      += $(FATE_AAC_CT_RAW)
-FATE_AAC-$(call      DEMDEC, MOV,    AAC)      += $(FATE_AAC)
-FATE_AAC_LATM-$(call DEMDEC, MPEGTS, AAC_LATM) += $(FATE_AAC_LATM)
-FATE_AAC-$(call      DEMDEC, AAC,    AAC_FIXED)+= $(FATE_AAC_FIXED)
+FATE_AAC-$(call      DEMDEC, AAC,    AAC,       ARESAMPLE_FILTER) += $(FATE_AAC_CT_RAW)
+FATE_AAC-$(call      DEMDEC, MOV,    AAC,       ARESAMPLE_FILTER) += $(FATE_AAC)
+FATE_AAC_LATM-$(call DEMDEC, MPEGTS, AAC_LATM,  ARESAMPLE_FILTER) += $(FATE_AAC_LATM)
+FATE_AAC-$(call      DEMDEC, AAC,    AAC_FIXED, ARESAMPLE_FILTER) += $(FATE_AAC_FIXED)
 
 FATE_AAC_ALL = $(FATE_AAC-yes) $(FATE_AAC_LATM-yes) $(FATE_AAC_FIXED-yes)
 
 $(FATE_AAC_ALL): CMP  = oneoff
 $(FATE_AAC_ALL): FUZZ = 2
 
-FATE_AAC_ENCODE-$(call ENCMUX, AAC, ADTS) += $(FATE_AAC_ENCODE)
+FATE_AAC_ENCODE-$(call ENCMUX, AAC, ADTS, ARESAMPLE_FILTER) += $(FATE_AAC_ENCODE)
 
 FATE_AAC_BSF-$(call ALLYES, AAC_DEMUXER AAC_ADTSTOASC_BSF MATROSKA_MUXER) += fate-aac-autobsf-adtstoasc
 
