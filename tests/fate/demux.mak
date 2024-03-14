@@ -79,7 +79,7 @@ fate-mlv-demux: CMD = crc -i $(TARGET_SAMPLES)/mlv/M19-0333-cut.MLV -c copy
 FATE_SAMPLES_DEMUX-$(CONFIG_MOV_DEMUXER) += fate-mov-mp3-demux
 fate-mov-mp3-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mpegaudio/packed_maindata.mp3.mp4 -c copy
 
-FATE_FFPROBE_DEMUX-$(CONFIG_MPEGTS_DEMUXER) += fate-ts-opus-demux
+FATE_FFPROBE_DEMUX-$(call ALLYES, MPEGTS_DEMUXER ARESAMPLE_FILTER) += fate-ts-opus-demux
 fate-ts-opus-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/opus/test-8-7.1.opus-small.ts
 
 FATE_FFPROBE_DEMUX-$(CONFIG_MPEGTS_DEMUXER) += fate-ts-small-demux
@@ -100,7 +100,7 @@ fate-nistsphere-demux: CMD = crc -i $(TARGET_SAMPLES)/nistsphere/nist-ulaw.nist 
 FATE_SAMPLES_DEMUX-$(CONFIG_NSV_DEMUXER) += fate-nsv-demux
 fate-nsv-demux: CMD = framecrc -i $(TARGET_SAMPLES)/nsv/witchblade-51kbps.nsv -t 6 -c:v copy -c:a copy
 
-FATE_FFPROBE_DEMUX-$(CONFIG_OGG_DEMUXER) += fate-oggopus-demux
+FATE_FFPROBE_DEMUX-$(call ALLYES, OGG_DEMUXER ARESAMPLE_FILTER) += fate-oggopus-demux
 fate-oggopus-demux: CMD = ffprobe_demux $(TARGET_SAMPLES)/ogg/intro-partial.opus
 
 FATE_SAMPLES_DEMUX-$(CONFIG_OGG_DEMUXER) += fate-oggvp8-demux
