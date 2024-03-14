@@ -10,11 +10,9 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-tenc-only-encrypted \
            fate-mov-invalid-elst-entry-count \
            fate-mov-gpmf-remux \
-           fate-mov-440hz-10ms \
            fate-mov-ibi-elst-starts-b \
            fate-mov-elst-ends-betn-b-and-i \
            fate-mov-frag-overlap \
-           fate-mov-bbi-elst-starts-b \
            fate-mov-neg-firstpts-discard-frames \
            fate-mov-stream-shorter-than-movie \
            fate-mov-pcm-remux \
@@ -69,6 +67,8 @@ fate-mov-2elist-elist1-ends-bframe: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-
 fate-mov-elst-ends-betn-b-and-i: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/elst_ends_betn_b_and_i.mp4
 
 # Makes sure that we handle edit lists and start padding correctly.
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, AAC, ARESAMPLE_FILTER) \
+                            += fate-mov-440hz-10ms
 fate-mov-440hz-10ms: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/440hz-10ms.m4a -af aresample
 
 # Makes sure that we handle invalid edit list entry count correctly.
@@ -87,6 +87,8 @@ fate-mov-frag-overlap: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/frag_overlap.mp4
 # Makes sure that we pick the right frames according to edit list when there is no keyframe with PTS < edit list start.
 # For example, when video starts on a B-frame, and edit list starts on that B-frame too.
 # GOP structure : B B I in presentation order.
+FATE_MOV_FFMPEG_SAMPLES-$(call FRAMEMD5, MOV, AAC_FIXED, ARESAMPLE_FILTER) \
+                            += fate-mov-bbi-elst-starts-b
 fate-mov-bbi-elst-starts-b: CMD = framemd5 -flags +bitexact -acodec aac_fixed -i $(TARGET_SAMPLES)/h264/twofields_packet.mp4 -af aresample
 
 # Makes sure that the stream start_time is not negative when the first packet is a DISCARD packet with negative timestamp.
@@ -225,7 +227,7 @@ fate-mov-mp4-iamf-stereo: CMD = transcode wav $(SRC) mp4 " \
   -streamid 0:0 -c:a flac -t 1" "-c:a copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-5_1_4
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-5_1_4
 fate-mov-mp4-iamf-5_1_4: tests/data/asynth-44100-10.wav tests/data/filtergraphs/iamf_5_1_4 tests/data/streamgroups/audio_element-5_1_4 tests/data/streamgroups/mix_presentation-5_1_4
 fate-mov-mp4-iamf-5_1_4: SRC = $(TARGET_PATH)/tests/data/asynth-44100-10.wav
 fate-mov-mp4-iamf-5_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
@@ -235,7 +237,7 @@ fate-mov-mp4-iamf-5_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filter
   -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -streamid 4:4 -streamid 5:5 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [TOP_FRONT] -map [TOP_BACK] -c:a flac -t 1" "-c:a copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-7_1_4
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-7_1_4
 fate-mov-mp4-iamf-7_1_4: tests/data/asynth-44100-12.wav tests/data/filtergraphs/iamf_7_1_4 tests/data/streamgroups/audio_element-7_1_4 tests/data/streamgroups/mix_presentation-7_1_4
 fate-mov-mp4-iamf-7_1_4: SRC = $(TARGET_PATH)/tests/data/asynth-44100-12.wav
 fate-mov-mp4-iamf-7_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
@@ -245,7 +247,7 @@ fate-mov-mp4-iamf-7_1_4: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filter
   -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -streamid 4:4 -streamid 5:5 -streamid 6:6 -map [FRONT] -map [BACK] -map [CENTER] -map [LFE] -map [SIDE] -map [TOP_FRONT] -map [TOP_BACK] -c:a flac -t 1" "-c:a copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_disposition:stream_group_tags:stream_group_stream=index,id:stream_group_stream_disposition"
 
-FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER) += fate-mov-mp4-iamf-ambisonic_1
+FATE_MOV_FFMPEG_FFPROBE-$(call TRANSCODE, FLAC, MOV, WAV_DEMUXER PCM_S16LE_DECODER ARESAMPLE_FILTER) += fate-mov-mp4-iamf-ambisonic_1
 fate-mov-mp4-iamf-ambisonic_1: tests/data/asynth-44100-4.wav tests/data/filtergraphs/iamf_ambisonic_1 tests/data/streamgroups/audio_element-ambisonic_1 tests/data/streamgroups/mix_presentation-ambisonic_1
 fate-mov-mp4-iamf-ambisonic_1: SRC = $(TARGET_PATH)/tests/data/asynth-44100-4.wav
 fate-mov-mp4-iamf-ambisonic_1: CMD = transcode wav $(SRC) mp4 "-auto_conversion_filters \
