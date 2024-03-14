@@ -19,5 +19,5 @@ fate-lossless-monkeysaudio-399: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/lu
 FATE_APE += fate-lossless-monkeysaudio-legacy
 fate-lossless-monkeysaudio-legacy: CMD = md5 -i $(TARGET_SAMPLES)/lossless-audio/NoLegacy-cut.ape -f s32le -af aresample
 
-FATE_SAMPLES_AVCONV-$(call DEMDEC, APE, APE) += $(FATE_APE)
+FATE_SAMPLES_FFMPEG-$(call DEMDEC, APE, APE, ARESAMPLE_FILTER) += $(FATE_APE)
 fate-lossless-monkeysaudio: $(FATE_APE)
