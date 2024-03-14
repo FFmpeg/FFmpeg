@@ -72,17 +72,14 @@ int ff_vaapi_decode_make_slice_buffer(AVCodecContext *avctx,
 
     av_assert0(pic->nb_slices <= pic->slices_allocated);
     if (pic->nb_slices == pic->slices_allocated) {
-        if (pic->slices_allocated > 0)
-            pic->slices_allocated *= 2;
-        else
-            pic->slices_allocated = 64;
-
         pic->slice_buffers =
             av_realloc_array(pic->slice_buffers,
-                             pic->slices_allocated,
+                             pic->slices_allocated ? pic->slices_allocated * 2 : 64,
                              2 * sizeof(*pic->slice_buffers));
         if (!pic->slice_buffers)
             return AVERROR(ENOMEM);
+
+        pic->slices_allocated = pic->slices_allocated ? pic->slices_allocated * 2 : 64;
     }
     av_assert0(pic->nb_slices + 1 <= pic->slices_allocated);
 
