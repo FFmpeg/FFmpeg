@@ -310,14 +310,12 @@ struct AACDecContext {
 
     /* aacdec functions pointers */
     void (*imdct_and_windowing)(struct AACDecContext *ac, SingleChannelElement *sce);
-    void (*apply_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
     union {
         void (*windowing_and_mdct_ltp)(struct AACDecContext *ac, float *out,
                                        float *in, IndividualChannelStream *ics);
         void (*windowing_and_mdct_ltp_fixed)(struct AACDecContext *ac, int *out,
                                              int *in, IndividualChannelStream *ics);
     };
-    void (*update_ltp)(struct AACDecContext *ac, SingleChannelElement *sce);
     void (*vector_pow43)(int *coefs, int len);
     void (*subband_scale)(int *dst, int *src, int scale, int offset, int len, void *log_context);
 };

@@ -81,10 +81,10 @@
 #include <math.h>
 #include <string.h>
 
-DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_long_1024))[1024];
-DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_short_128))[128];
-DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_long_960))[960];
-DECLARE_ALIGNED(32, static int, AAC_RENAME2(aac_kbd_short_120))[120];
+DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_long_1024))[1024];
+DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_short_128))[128];
+DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_long_960))[960];
+DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_short_120))[120];
 
 /* @name ltp_coef
  * Table of the LTP coefficients

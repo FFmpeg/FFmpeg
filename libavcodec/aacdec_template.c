@@ -2395,79 +2395,6 @@ static void windowing_and_mdct_ltp(AACDecContext *ac, INTFLOAT *out,
 }
 
 /**
- * Apply the long term prediction
- */
-static void apply_ltp(AACDecContext *ac, SingleChannelElement *sce)
-{
-    const LongTermPrediction *ltp = &sce->ics.ltp;
-    const uint16_t *offsets = sce->ics.swb_offset;
-    int i, sfb;
-
-    if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
-        INTFLOAT *predTime = sce->AAC_RENAME(output);
-        INTFLOAT *predFreq = ac->AAC_RENAME(buf_mdct);
-        int16_t num_samples = 2048;
-
-        if (ltp->lag < 1024)
-            num_samples = ltp->lag + 1024;
-        for (i = 0; i < num_samples; i++)
-            predTime[i] = AAC_MUL30(sce->AAC_RENAME(ltp_state)[i + 2048 - ltp->lag], ltp->AAC_RENAME(coef));
-        memset(&predTime[i], 0, (2048 - i) * sizeof(*predTime));
-
-        ac->AAC_RENAME(windowing_and_mdct_ltp)(ac, predFreq, predTime, &sce->ics);
-
-        if (sce->tns.present)
-            ac->dsp.apply_tns(predFreq, &sce->tns, &sce->ics, 0);
-
-        for (sfb = 0; sfb < FFMIN(sce->ics.max_sfb, MAX_LTP_LONG_SFB); sfb++)
-            if (ltp->used[sfb])
-                for (i = offsets[sfb]; i < offsets[sfb + 1]; i++)
-                    sce->AAC_RENAME(coeffs)[i] += (UINTFLOAT)predFreq[i];
-    }
-}
-
-/**
- * Update the LTP buffer for next frame
- */
-static void update_ltp(AACDecContext *ac, SingleChannelElement *sce)
-{
-    IndividualChannelStream *ics = &sce->ics;
-    INTFLOAT *saved     = sce->AAC_RENAME(saved);
-    INTFLOAT *saved_ltp = sce->AAC_RENAME(coeffs);
-    const INTFLOAT *lwindow = ics->use_kb_window[0] ? AAC_RENAME2(aac_kbd_long_1024) : AAC_RENAME2(sine_1024);
-    const INTFLOAT *swindow = ics->use_kb_window[0] ? AAC_RENAME2(aac_kbd_short_128) : AAC_RENAME2(sine_128);
-    int i;
-
-    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-        memcpy(saved_ltp,       saved, 512 * sizeof(*saved_ltp));
-        memset(saved_ltp + 576, 0,     448 * sizeof(*saved_ltp));
-        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->AAC_RENAME(buf_mdct) + 960,     &swindow[64],      64);
-
-        for (i = 0; i < 64; i++)
-            saved_ltp[i + 512] = AAC_MUL31(ac->AAC_RENAME(buf_mdct)[1023 - i], swindow[63 - i]);
-    } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
-        memcpy(saved_ltp,       ac->AAC_RENAME(buf_mdct) + 512, 448 * sizeof(*saved_ltp));
-        memset(saved_ltp + 576, 0,                  448 * sizeof(*saved_ltp));
-        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->AAC_RENAME(buf_mdct) + 960,     &swindow[64],      64);
-
-        for (i = 0; i < 64; i++)
-            saved_ltp[i + 512] = AAC_MUL31(ac->AAC_RENAME(buf_mdct)[1023 - i], swindow[63 - i]);
-    } else { // LONG_STOP or ONLY_LONG
-        ac->fdsp->vector_fmul_reverse(saved_ltp, ac->AAC_RENAME(buf_mdct) + 512,     &lwindow[512],     512);
-
-        for (i = 0; i < 512; i++)
-            saved_ltp[i + 512] = AAC_MUL31(ac->AAC_RENAME(buf_mdct)[1023 - i], lwindow[511 - i]);
-    }
-
-    memcpy(sce->AAC_RENAME(ltp_state),      sce->AAC_RENAME(ltp_state)+1024,
-           1024 * sizeof(*sce->AAC_RENAME(ltp_state)));
-    memcpy(sce->AAC_RENAME(ltp_state) + 1024, sce->AAC_RENAME(output),
-           1024 * sizeof(*sce->AAC_RENAME(ltp_state)));
-    memcpy(sce->AAC_RENAME(ltp_state) + 2048, saved_ltp,
-           1024 * sizeof(*sce->AAC_RENAME(ltp_state)));
-}
-
-/**
  * Conduct IMDCT and windowing.
  */
 static void imdct_and_windowing(AACDecContext *ac, SingleChannelElement *sce)
@@ -2747,9 +2674,9 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                 if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP) {
                     if (che->ch[0].ics.predictor_present) {
                         if (che->ch[0].ics.ltp.present)
-                            ac->apply_ltp(ac, &che->ch[0]);
+                            ac->dsp.apply_ltp(ac, &che->ch[0]);
                         if (che->ch[1].ics.ltp.present && type == TYPE_CPE)
-                            ac->apply_ltp(ac, &che->ch[1]);
+                            ac->dsp.apply_ltp(ac, &che->ch[1]);
                     }
                 }
                 if (che->ch[0].tns.present)
@@ -2763,11 +2690,11 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                 if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
                     imdct_and_window(ac, &che->ch[0]);
                     if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP)
-                        ac->update_ltp(ac, &che->ch[0]);
+                        ac->dsp.update_ltp(ac, &che->ch[0]);
                     if (type == TYPE_CPE) {
                         imdct_and_window(ac, &che->ch[1]);
                         if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP)
-                            ac->update_ltp(ac, &che->ch[1]);
+                            ac->dsp.update_ltp(ac, &che->ch[1]);
                     }
                     if (ac->oc[1].m4ac.sbr > 0) {
                         AAC_RENAME(ff_aac_sbr_apply)(ac, che, type,
@@ -3209,9 +3136,7 @@ static int aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 static void aacdec_init(AACDecContext *c)
 {
     c->imdct_and_windowing                      = imdct_and_windowing;
-    c->apply_ltp                                = apply_ltp;
     c->AAC_RENAME(windowing_and_mdct_ltp)       = windowing_and_mdct_ltp;
-    c->update_ltp                               = update_ltp;
 #if USE_FIXED
     c->vector_pow43                             = vector_pow43;
     c->subband_scale                            = subband_scale;

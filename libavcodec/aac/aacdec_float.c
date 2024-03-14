@@ -31,4 +31,9 @@
 
 #define USE_FIXED 0
 
+#include "libavcodec/aac_defines.h"
+
+#include "libavcodec/aactab.h"
+#include "libavcodec/sinewin.h"
+
 #include "aacdec_dsp_template.c"

@@ -31,4 +31,12 @@
 
 #define USE_FIXED 1
 
+#include "libavcodec/aac_defines.h"
+
+#include "libavcodec/aactab.h"
+#include "libavcodec/sinewin_fixed_tablegen.h"
+
+DECLARE_ALIGNED(32, extern int, AAC_RENAME2(aac_kbd_long_1024))[1024];
+DECLARE_ALIGNED(32, extern int, AAC_RENAME2(aac_kbd_short_128))[128];
+
 #include "aacdec_dsp_template.c"
