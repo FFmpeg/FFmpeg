@@ -87,13 +87,15 @@ static void put_meta(AVFormatContext *s, const char *key, uint32_t id)
     AVIOContext *pb = s->pb;
 
     if (tag = av_dict_get(s->metadata, key, NULL, 0)) {
-        int size = strlen(tag->value);
+        size_t size = strlen(tag->value);
+
+        // AIFF tags are zero-padded to an even length.
+        // So simply copy the terminating \0 if the length is odd.
+        size = FFALIGN(size, 2);
 
         avio_wl32(pb, id);
-        avio_wb32(pb, FFALIGN(size, 2));
+        avio_wb32(pb, size);
         avio_write(pb, tag->value, size);
-        if (size & 1)
-            avio_w8(pb, 0);
     }
 }
 
