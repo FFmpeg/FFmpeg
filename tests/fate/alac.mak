@@ -20,5 +20,7 @@ fate-alac-24-%: CMD = enc_dec_pcm mov wav s24le $(subst $(SAMPLES),$(TARGET_SAMP
 fate-alac-%: CMP = oneoff
 fate-alac-%: FUZZ = 0
 
-FATE_SAMPLES_AVCONV-$(call ENCDEC, ALAC, MOV) += $(FATE_ALAC)
-fate-alac: $(FATE_ALAC)
+FATE_ALAC-$(call ENCDEC, ALAC, MOV, ARESAMPLE_FILTER) += $(FATE_ALAC)
+
+FATE_SAMPLES_FFMPEG += $(FATE_ALAC-yes)
+fate-alac: $(FATE_ALAC-yes)
