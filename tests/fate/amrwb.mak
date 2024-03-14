@@ -46,6 +46,6 @@ fate-amrwb-remux: CMD = transcode mov $(TARGET_SAMPLES)/amrwb/seed-23k85.awb amr
 
 $(FATE_AMRWB): CMP = stddev
 
-FATE_SAMPLES_FFMPEG-$(call DEMDEC, MOV, AMRWB) += $(FATE_AMRWB)
+FATE_SAMPLES_FFMPEG-$(call DEMDEC, MOV, AMRWB, ARESAMPLE_FILTER) += $(FATE_AMRWB)
 FATE_SAMPLES_FFMPEG += $(FATE_AMRWB_REMUX-yes)
 fate-amrwb: $(FATE_AMRWB) $(FATE_AMRWB_REMUX-yes)
