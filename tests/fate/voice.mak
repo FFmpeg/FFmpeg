@@ -33,7 +33,7 @@ fate-g723_1-dec-7: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx6
 FATE_G723_1 += fate-g723_1-dec-8
 fate-g723_1-dec-8: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63e.tco -af aresample
 
-FATE_VOICE-$(call DEMDEC, G723_1, G723_1) += $(FATE_G723_1)
+FATE_VOICE-$(call DEMDEC, G723_1, G723_1, ARESAMPLE_FILTER) += $(FATE_G723_1)
 fate-g723_1: $(FATE_G723_1)
 
 FATE_G726 += fate-g726-encode-2bit
@@ -63,7 +63,7 @@ fate-gsm-toast: CMD = framecrc -i $(TARGET_SAMPLES)/gsm/sample-gsm-8000.mov -t 1
 FATE_VOICE-yes += $(FATE_GSM-yes)
 fate-gsm: $(FATE_GSM-yes)
 
-FATE_VOICE-$(call DEMDEC, QCP, QCELP) += fate-qcelp
+FATE_VOICE-$(call DEMDEC, QCP, QCELP, ARESAMPLE_FILTER) += fate-qcelp
 fate-qcelp: CMD = pcm -i $(TARGET_SAMPLES)/qcp/0036580847.QCP
 fate-qcelp: CMP = oneoff
 fate-qcelp: REF = $(SAMPLES)/qcp/0036580847.pcm
