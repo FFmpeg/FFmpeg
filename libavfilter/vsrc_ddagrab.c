@@ -746,6 +746,9 @@ static int next_frame_internal(AVFilterContext *avctx, ID3D11Texture2D **desktop
         D3D11_TEXTURE2D_DESC desc;
         ID3D11Texture2D_GetDesc(*desktop_texture, &desc);
         desc.Usage = D3D11_USAGE_DEFAULT;
+        desc.BindFlags = 0;
+        desc.CPUAccessFlags = 0;
+        desc.MiscFlags = 0;
 
         hr = ID3D11Device_CreateTexture2D(dda->device_hwctx->device, &desc, NULL, &dda->buffer_texture);
         if (FAILED(hr)) {
