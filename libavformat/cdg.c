@@ -46,7 +46,7 @@ static int read_probe(const AVProbeData *p)
 static int read_header(AVFormatContext *s)
 {
     AVStream *vst;
-    int ret;
+    int64_t ret;
 
     vst = avformat_new_stream(s, NULL);
     if (!vst)
