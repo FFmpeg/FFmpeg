@@ -180,6 +180,10 @@ enum AVFrameSideDataType {
     /**
      * Film grain parameters for a frame, described by AVFilmGrainParams.
      * Must be present for every frame which should have film grain applied.
+     *
+     * May be present multiple times, for example when there are multiple
+     * alternative parameter sets for different video signal characteristics.
+     * The user should select the most appropriate set for the application.
      */
     AV_FRAME_DATA_FILM_GRAIN_PARAMS,
 
