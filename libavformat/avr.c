@@ -49,8 +49,7 @@ static int avr_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
 
-    avio_skip(s->pb, 4); // magic
-    avio_skip(s->pb, 8); // sample_name
+    avio_skip(s->pb, 4 /* magic */ + 8 /* sample_name */);
 
     chan = avio_rb16(s->pb);
     if (!chan) {
@@ -66,18 +65,13 @@ static int avr_read_header(AVFormatContext *s)
 
     sign = avio_rb16(s->pb);
 
-    avio_skip(s->pb, 2); // loop
-    avio_skip(s->pb, 2); // midi
-    avio_skip(s->pb, 1); // replay speed
+    avio_skip(s->pb, 2 /* loop */ + 2 /* midi */ + 1 /* replay speed */);
 
     st->codecpar->sample_rate = avio_rb24(s->pb);
     if (st->codecpar->sample_rate == 0)
         return AVERROR_INVALIDDATA;
 
-    avio_skip(s->pb, 4 * 3);
-    avio_skip(s->pb, 2 * 3);
-    avio_skip(s->pb, 20);
-    avio_skip(s->pb, 64);
+    avio_skip(s->pb, 4 * 3 + 2 * 3 + 20 + 64);
 
     st->codecpar->codec_id = ff_get_pcm_codec_id(bps, 0, 1, sign);
     if (st->codecpar->codec_id == AV_CODEC_ID_NONE) {
