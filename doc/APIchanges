@@ -2,6 +2,12 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-03-xx - xxxxxxxxxx - lavu 59.5.100 - film_grain_params.h
+  Add AVFilmGrainParams.color_range, color_primaries, color_trc, color_space,
+  width, height, subsampling_x, subsampling_y, bit_depth_luma and
+  bit_depth_chroma. Deprecate the corresponding fields from
+  AVFilmGrainH274Params.
+
 2024-03-xx - xxxxxxxxxx - lavc 61.3.100 - jni.h
   Add av_jni_set_android_app_ctx() and av_jni_get_android_app_ctx().
 
