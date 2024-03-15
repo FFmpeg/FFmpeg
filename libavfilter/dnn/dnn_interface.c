@@ -28,6 +28,7 @@
 
 extern const DNNModule ff_dnn_backend_openvino;
 extern const DNNModule ff_dnn_backend_tf;
+extern const DNNModule ff_dnn_backend_torch;
 
 const DNNModule *ff_get_dnn_module(DNNBackendType backend_type, void *log_ctx)
 {
@@ -39,6 +40,10 @@ const DNNModule *ff_get_dnn_module(DNNBackendType backend_type, void *log_ctx)
     #if (CONFIG_LIBOPENVINO == 1)
     case DNN_OV:
         return &ff_dnn_backend_openvino;
+    #endif
+    #if (CONFIG_LIBTORCH == 1)
+    case DNN_TH:
+        return &ff_dnn_backend_torch;
     #endif
     default:
         av_log(log_ctx, AV_LOG_ERROR,

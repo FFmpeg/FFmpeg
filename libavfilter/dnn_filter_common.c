@@ -53,12 +53,22 @@ static char **separate_output_names(const char *expr, const char *val_sep, int *
 
 int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx)
 {
+    DNNBackendType backend = ctx->backend_type;
+
     if (!ctx->model_filename) {
         av_log(filter_ctx, AV_LOG_ERROR, "model file for network is not specified\n");
         return AVERROR(EINVAL);
     }
 
-    if (ctx->backend_type == DNN_TF) {
+    if (backend == DNN_TH) {
+        if (ctx->model_inputname)
+            av_log(filter_ctx, AV_LOG_WARNING, "LibTorch backend do not require inputname, "\
+                                               "inputname will be ignored.\n");
+        if (ctx->model_outputnames)
+            av_log(filter_ctx, AV_LOG_WARNING, "LibTorch backend do not require outputname(s), "\
+                                               "all outputname(s) will be ignored.\n");
+        ctx->nb_outputs = 1;
+    } else if (backend == DNN_TF) {
         if (!ctx->model_inputname) {
             av_log(filter_ctx, AV_LOG_ERROR, "input name of the model network is not specified\n");
             return AVERROR(EINVAL);
@@ -115,7 +125,8 @@ int ff_dnn_get_input(DnnContext *ctx, DNNData *input)
 
 int ff_dnn_get_output(DnnContext *ctx, int input_width, int input_height, int *output_width, int *output_height)
 {
-    char * output_name = ctx->model_outputnames ? ctx->model_outputnames[0] : NULL;
+    char * output_name = ctx->model_outputnames && ctx->backend_type != DNN_TH ?
+                         ctx->model_outputnames[0] : NULL;
     return ctx->model->get_output(ctx->model->model, ctx->model_inputname, input_width, input_height,
                                     (const char *)output_name, output_width, output_height);
 }
