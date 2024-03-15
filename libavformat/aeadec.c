@@ -25,6 +25,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "demux.h"
+#include "internal.h"
 #include "pcm.h"
 
 #define AT1_SU_SIZE 212
@@ -91,6 +92,7 @@ static int aea_read_header(AVFormatContext *s)
     av_channel_layout_default(&st->codecpar->ch_layout, channels);
 
     st->codecpar->block_align = AT1_SU_SIZE * st->codecpar->ch_layout.nb_channels;
+    avpriv_set_pts_info(st, 64, 1, 44100);
     return 0;
 }
 
