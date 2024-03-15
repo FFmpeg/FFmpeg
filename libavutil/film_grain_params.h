@@ -308,4 +308,15 @@ AVFilmGrainParams *av_film_grain_params_alloc(size_t *size);
  */
 AVFilmGrainParams *av_film_grain_params_create_side_data(AVFrame *frame);
 
+/**
+ * Select the most appropriate film grain parameters set for the frame,
+ * taking into account the frame's format, resolution and video signal
+ * characteristics.
+ *
+ * @note, for H.274, this may select a film grain parameter set with
+ * greater chroma resolution than the frame. Users should take care to
+ * correctly adjust the chroma grain frequency to the frame.
+ */
+const AVFilmGrainParams *av_film_grain_params_select(const AVFrame *frame);
+
 #endif /* AVUTIL_FILM_GRAIN_PARAMS_H */
