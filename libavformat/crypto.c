@@ -254,7 +254,7 @@ static int64_t crypto_seek(URLContext *h, int64_t pos, int whence)
         newpos = ffurl_seek( c->hd, pos, AVSEEK_SIZE );
         if (newpos < 0) {
             av_log(h, AV_LOG_ERROR,
-                "Crypto: seek_end - can't get file size (pos=%lld)\r\n", (long long int)pos);
+                "Crypto: seek_end - can't get file size (pos=%"PRId64")\r\n", pos);
             return newpos;
         }
         pos = newpos - pos;
