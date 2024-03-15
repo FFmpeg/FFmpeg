@@ -1074,9 +1074,11 @@ static int export_film_grain(AVCodecContext *avctx, AVFrame *frame)
 {
     AV1DecContext *s = avctx->priv_data;
     const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
+    const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(frame->format);
     AVFilmGrainParams *fgp;
     AVFilmGrainAOMParams *aom;
 
+    av_assert0(pixdesc);
     if (!film_grain->apply_grain)
         return 0;
 
@@ -1086,6 +1088,14 @@ static int export_film_grain(AVCodecContext *avctx, AVFrame *frame)
 
     fgp->type = AV_FILM_GRAIN_PARAMS_AV1;
     fgp->seed = film_grain->grain_seed;
+    fgp->width = frame->width;
+    fgp->height = frame->height;
+    fgp->color_range = frame->color_range;
+    fgp->color_primaries = frame->color_primaries;
+    fgp->color_trc = frame->color_trc;
+    fgp->color_space = frame->colorspace;
+    fgp->subsampling_x = pixdesc->log2_chroma_w;
+    fgp->subsampling_y = pixdesc->log2_chroma_h;
 
     aom = &fgp->codec.aom;
     aom->chroma_scaling_from_luma = film_grain->chroma_scaling_from_luma;
