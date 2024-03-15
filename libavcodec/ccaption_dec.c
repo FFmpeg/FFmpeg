@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
 #include "avcodec.h"
 #include "ass.h"
 #include "codec_internal.h"
@@ -180,9 +181,9 @@ static const char charset_overrides[4][128][sizeof("\u266a")] =
 };
 #define EMPTY_START(IDX)
 #define EMPTY_END
-#define ASSERT_ENTRY(IDX, str)                                     \
-    _Static_assert(sizeof(str) <= sizeof(charset_overrides[0][0]), \
-                   "'" str "' string takes too much space");
+#define ASSERT_ENTRY(IDX, str)                                    \
+    static_assert(sizeof(str) <= sizeof(charset_overrides[0][0]), \
+                  "'" str "' string takes too much space");
 CHARSET_OVERRIDE_LIST(EMPTY_START, ASSERT_ENTRY, EMPTY_END)
 
 static const unsigned char bg_attribs[8] = // Color
