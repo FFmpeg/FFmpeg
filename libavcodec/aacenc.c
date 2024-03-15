@@ -1383,10 +1383,6 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     ff_aacenc_dsp_init(&s->aacdsp);
 
-#if HAVE_MIPSDSP
-    ff_aac_coder_init_mips(s);
-#endif
-
     ff_af_queue_init(avctx, &s->afq);
 
     return 0;
