@@ -91,7 +91,7 @@ static int aea_write_trailer(struct AVFormatContext *s)
         avio_seek(pb, 260, SEEK_SET);
         total_blocks = st->nb_frames * st->codecpar->ch_layout.nb_channels;
         if (total_blocks > UINT32_MAX) {
-            av_log(s, AV_LOG_WARNING, "Too many frames in the file to properly encode the header (%ld)."
+            av_log(s, AV_LOG_WARNING, "Too many frames in the file to properly encode the header (%"PRId64")."
                    " Block count in the header will be truncated.\n", total_blocks);
             total_blocks = UINT32_MAX;
         }
