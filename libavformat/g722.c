@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "demux.h"
 #include "internal.h"
@@ -38,10 +37,7 @@ static int g722_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = 16000;
     st->codecpar->ch_layout   = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
-    st->codecpar->bits_per_coded_sample =
-        av_get_bits_per_sample(st->codecpar->codec_id);
-
-    av_assert0(st->codecpar->bits_per_coded_sample > 0);
+    st->codecpar->bits_per_coded_sample = 4;
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     return 0;
