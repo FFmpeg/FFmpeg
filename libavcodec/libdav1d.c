@@ -588,6 +588,8 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     if (p->frame_hdr->film_grain.present && (!dav1d->apply_grain ||
         (c->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN))) {
         AVFilmGrainParams *fgp = av_film_grain_params_create_side_data(frame);
+        const AVPixFmtDescriptor *pixdesc = av_pix_fmt_desc_get(frame->format);
+        av_assert0(pixdesc);
         if (!fgp) {
             res = AVERROR(ENOMEM);
             goto fail;
@@ -595,6 +597,14 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
         fgp->type = AV_FILM_GRAIN_PARAMS_AV1;
         fgp->seed = p->frame_hdr->film_grain.data.seed;
+        fgp->width = frame->width;
+        fgp->height = frame->height;
+        fgp->color_range = frame->color_range;
+        fgp->color_primaries = frame->color_primaries;
+        fgp->color_trc = frame->color_trc;
+        fgp->color_space = frame->colorspace;
+        fgp->subsampling_x = pixdesc->log2_chroma_w;
+        fgp->subsampling_y = pixdesc->log2_chroma_h;
         fgp->codec.aom.num_y_points = p->frame_hdr->film_grain.data.num_y_points;
         fgp->codec.aom.chroma_scaling_from_luma = p->frame_hdr->film_grain.data.chroma_scaling_from_luma;
         fgp->codec.aom.scaling_shift = p->frame_hdr->film_grain.data.scaling_shift;
