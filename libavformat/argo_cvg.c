@@ -47,13 +47,6 @@ typedef struct ArgoCVGHeader {
     uint32_t reverb; /*< Reverb flag. */
 } ArgoCVGHeader;
 
-typedef struct ArgoCVGOverride {
-    const char    *name;
-    ArgoCVGHeader header;
-    uint32_t      checksum;
-    int           sample_rate;
-} ArgoCVGOverride;
-
 typedef struct ArgoCVGDemuxContext {
     ArgoCVGHeader header;
     uint32_t      checksum;
@@ -72,12 +65,33 @@ typedef struct ArgoCVGMuxContext {
 
 #if CONFIG_ARGO_CVG_DEMUXER
 /* "Special" files that are played at a different rate. */
+//  FILE(NAME, SIZE, LOOP, REVERB, CHECKSUM, SAMPLE_RATE)
+#define OVERRIDE_FILES(FILE)                               \
+    FILE(CRYS,     23592, 0, 1, 2495499, 88200) /* Beta */ \
+    FILE(REDCRY88, 38280, 0, 1, 4134848, 88200) /* Beta */ \
+    FILE(DANLOOP1, 54744, 1, 0, 5684641, 37800) /* Beta */ \
+    FILE(PICKUP88, 12904, 0, 1, 1348091, 48000) /* Beta */ \
+    FILE(SELECT1,   5080, 0, 1,  549987, 44100) /* Beta */ \
+
+#define MAX_FILENAME_SIZE(NAME, SIZE, LOOP, REVERB, CHECKSUM, SAMPLE_RATE) \
+    MAX_SIZE_BEFORE_ ## NAME,                                  \
+    MAX_SIZE_UNTIL_ ## NAME ## _MINUS1 = FFMAX(sizeof(#NAME ".CVG"), MAX_SIZE_BEFORE_ ## NAME) - 1,
+enum {
+    OVERRIDE_FILES(MAX_FILENAME_SIZE)
+    MAX_OVERRIDE_FILENAME_SIZE
+};
+
+typedef struct ArgoCVGOverride {
+    const char    name[MAX_OVERRIDE_FILENAME_SIZE];
+    ArgoCVGHeader header;
+    uint32_t      checksum;
+    int           sample_rate;
+} ArgoCVGOverride;
+
+#define FILE(NAME, SIZE, LOOP, REVERB, CHECKSUM, SAMPLE_RATE) \
+    { #NAME ".CVG", { SIZE, LOOP, REVERB }, CHECKSUM, SAMPLE_RATE },
 static const ArgoCVGOverride overrides[] = {
-    { "CRYS.CVG",     { 23592, 0, 1 }, 2495499, 88200 }, /* Beta */
-    { "REDCRY88.CVG", { 38280, 0, 1 }, 4134848, 88200 }, /* Beta */
-    { "DANLOOP1.CVG", { 54744, 1, 0 }, 5684641, 37800 }, /* Beta */
-    { "PICKUP88.CVG", { 12904, 0, 1 }, 1348091, 48000 }, /* Beta */
-    { "SELECT1.CVG",  {  5080, 0, 1 },  549987, 44100 }, /* Beta */
+    OVERRIDE_FILES(FILE)
 };
 
 static int argo_cvg_probe(const AVProbeData *p)
