@@ -35,9 +35,9 @@ int main(void){
     SnowContext s;
     int i;
     AVLFG prng;
+    int ret = 0;
     s.spatial_decomposition_count=6;
     s.spatial_decomposition_type=1;
-    int ret = 0;
 
     s.temp_dwt_buffer  = av_calloc(width, sizeof(*s.temp_dwt_buffer));
     s.temp_idwt_buffer = av_calloc(width, sizeof(*s.temp_idwt_buffer));
