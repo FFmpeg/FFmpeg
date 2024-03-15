@@ -120,6 +120,8 @@ av_cold int ff_aac_decode_init_common(AVCodecContext *avctx)
 
     ac->dsp = is_fixed ? aac_dsp_fixed : aac_dsp;
 
+    ac->dsp.init_tables();
+
     return 0;
 }
 

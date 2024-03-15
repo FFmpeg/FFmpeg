@@ -204,6 +204,8 @@ typedef struct DynamicRangeControl {
  * DSP-specific primitives
  */
 typedef struct AACDecDSP {
+    void (*init_tables)(void);
+
     void (*dequant_scalefactors)(SingleChannelElement *sce);
 
     void (*apply_mid_side_stereo)(AACDecContext *ac, ChannelElement *cpe);

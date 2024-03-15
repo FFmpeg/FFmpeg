@@ -311,6 +311,8 @@ static void AAC_RENAME(update_ltp)(AACDecContext *ac, SingleChannelElement *sce)
 }
 
 const AACDecDSP AAC_RENAME(aac_dsp) = {
+    .init_tables = &AAC_RENAME(init_tables),
+
     .dequant_scalefactors = &AAC_RENAME(dequant_scalefactors),
     .apply_mid_side_stereo = &AAC_RENAME(apply_mid_side_stereo),
     .apply_intensity_stereo = &AAC_RENAME(apply_intensity_stereo),

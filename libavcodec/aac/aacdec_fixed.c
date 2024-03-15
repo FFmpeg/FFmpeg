@@ -31,12 +31,34 @@
 
 #define USE_FIXED 1
 
+#include "libavutil/thread.h"
+
 #include "libavcodec/aac_defines.h"
 
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin_fixed_tablegen.h"
+#include "libavcodec/kbdwin.h"
 
-DECLARE_ALIGNED(32, extern int, AAC_RENAME2(aac_kbd_long_1024))[1024];
-DECLARE_ALIGNED(32, extern int, AAC_RENAME2(aac_kbd_short_128))[128];
+DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_long_1024))[1024];
+DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_short_128))[128];
+DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME(aac_kbd_long_960))[960];
+DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME(aac_kbd_short_120))[120];
+
+static void init_tables_fixed_fn(void)
+{
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_long_1024), 4.0, 1024);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_short_128), 6.0, 128);
+
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_short_120), 6.0, 120);
+
+    init_sine_windows_fixed();
+}
+
+static void init_tables_fixed(void)
+{
+    static AVOnce init_fixed_once = AV_ONCE_INIT;
+    ff_thread_once(&init_fixed_once, init_tables_fixed_fn);
+}
 
 #include "aacdec_dsp_template.c"

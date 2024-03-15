@@ -31,9 +31,36 @@
 
 #define USE_FIXED 0
 
+#include "libavutil/thread.h"
+
 #include "libavcodec/aac_defines.h"
 
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin.h"
+#include "libavcodec/kbdwin.h"
+
+DECLARE_ALIGNED(32, static float, sine_120)[120];
+DECLARE_ALIGNED(32, static float, sine_960)[960];
+DECLARE_ALIGNED(32, static float, aac_kbd_long_960)[960];
+DECLARE_ALIGNED(32, static float, aac_kbd_short_120)[120];
+
+static void init_tables_float_fn(void)
+{
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_long_1024), 4.0, 1024);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_short_128), 6.0, 128);
+
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);
+    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_short_120), 6.0, 120);
+
+    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_960), 960);
+    AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_120), 120);
+    AAC_RENAME(ff_init_ff_sine_windows)(9);
+}
+
+static void init_tables(void)
+{
+    static AVOnce init_float_once = AV_ONCE_INIT;
+    ff_thread_once(&init_float_once, init_tables_float_fn);
+}
 
 #include "aacdec_dsp_template.c"
