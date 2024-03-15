@@ -777,7 +777,7 @@ const FFOutputFormat ff_ogg_muxer = {
     .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_TS_NONSTRICT,
 #endif
     .p.priv_class      = &ogg_muxer_class,
-    .flags_internal    = FF_FMT_ALLOW_FLUSH,
+    .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
 #endif
 
@@ -800,7 +800,7 @@ const FFOutputFormat ff_oga_muxer = {
     .p.flags           = AVFMT_TS_NEGATIVE,
 #endif
     .p.priv_class      = &ogg_muxer_class,
-    .flags_internal    = FF_FMT_ALLOW_FLUSH,
+    .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
 #endif
 
@@ -826,7 +826,7 @@ const FFOutputFormat ff_ogv_muxer = {
     .p.flags           = AVFMT_TS_NEGATIVE | AVFMT_TS_NONSTRICT,
 #endif
     .p.priv_class      = &ogg_muxer_class,
-    .flags_internal    = FF_FMT_ALLOW_FLUSH,
+    .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
 #endif
 
@@ -849,7 +849,7 @@ const FFOutputFormat ff_spx_muxer = {
     .p.flags           = AVFMT_TS_NEGATIVE,
 #endif
     .p.priv_class      = &ogg_muxer_class,
-    .flags_internal    = FF_FMT_ALLOW_FLUSH,
+    .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
 #endif
 
@@ -872,6 +872,6 @@ const FFOutputFormat ff_opus_muxer = {
     .p.flags           = AVFMT_TS_NEGATIVE,
 #endif
     .p.priv_class      = &ogg_muxer_class,
-    .flags_internal    = FF_FMT_ALLOW_FLUSH,
+    .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
 #endif

@@ -801,5 +801,5 @@ const FFOutputFormat ff_pulse_muxer = {
     .p.flags              = AVFMT_NOFILE,
 #endif
     .p.priv_class         = &pulse_muxer_class,
-    .flags_internal       = FF_FMT_ALLOW_FLUSH,
+    .flags_internal       = FF_OFMT_FLAG_ALLOW_FLUSH,
 };

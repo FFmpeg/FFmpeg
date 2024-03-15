@@ -3205,7 +3205,7 @@ const FFOutputFormat ff_hls_muxer = {
     .p.flags          = AVFMT_NOFILE | AVFMT_GLOBALHEADER | AVFMT_NODIMENSIONS,
 #endif
     .p.priv_class     = &hls_class,
-    .flags_internal   = FF_FMT_ALLOW_FLUSH,
+    .flags_internal   = FF_OFMT_FLAG_ALLOW_FLUSH,
     .priv_data_size = sizeof(HLSContext),
     .init           = hls_init,
     .write_header   = hls_write_header,

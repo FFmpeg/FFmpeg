@@ -27,7 +27,15 @@
 
 struct AVDeviceInfoList;
 
-#define FF_FMT_ALLOW_FLUSH                    (1 << 1)
+/**
+ * This flag indicates that the muxer stores data internally
+ * and supports flushing it. Flushing is signalled by sending
+ * a NULL packet to the muxer's write_packet callback;
+ * without this flag, a muxer never receives NULL packets.
+ * So the documentation of write_packet below for the semantics
+ * of the return value in case of flushing.
+ */
+#define FF_OFMT_FLAG_ALLOW_FLUSH                    (1 << 1)
 
 typedef struct FFOutputFormat {
     /**
@@ -40,13 +48,13 @@ typedef struct FFOutputFormat {
     int priv_data_size;
 
     /**
-     * Internal flags. See FF_FMT_* in internal.h and mux.h.
+     * Internal flags. See FF_OFMT_FLAG_* above and FF_FMT_FLAG_* in internal.h.
      */
     int flags_internal;
 
     int (*write_header)(AVFormatContext *);
     /**
-     * Write a packet. If FF_FMT_ALLOW_FLUSH is set in flags_internal,
+     * Write a packet. If FF_OFMT_FLAG_ALLOW_FLUSH is set in flags_internal,
      * pkt can be NULL in order to flush data buffered in the muxer.
      * When flushing, return 0 if there still is more data to flush,
      * or 1 if everything was flushed and there is no more buffered

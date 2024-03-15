@@ -159,7 +159,7 @@ const FFOutputFormat ff_fifo_test_muxer = {
 #else
     .p.flags        = AVFMT_NOFILE,
 #endif
-    .flags_internal = FF_FMT_ALLOW_FLUSH,
+    .flags_internal = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
 
 

@@ -728,5 +728,5 @@ const FFOutputFormat ff_fifo_muxer = {
     .write_packet   = fifo_write_packet,
     .write_trailer  = fifo_write_trailer,
     .deinit         = fifo_deinit,
-    .flags_internal = FF_FMT_ALLOW_FLUSH,
+    .flags_internal = FF_OFMT_FLAG_ALLOW_FLUSH,
 };

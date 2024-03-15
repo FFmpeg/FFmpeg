@@ -614,5 +614,5 @@ const FFOutputFormat ff_tee_muxer = {
 #else
     .p.flags           = AVFMT_NOFILE | AVFMT_TS_NEGATIVE,
 #endif
-    .flags_internal    = FF_FMT_ALLOW_FLUSH,
+    .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
 };
