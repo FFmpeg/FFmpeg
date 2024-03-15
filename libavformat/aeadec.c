@@ -23,6 +23,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "demux.h"
 #include "pcm.h"
 
@@ -59,12 +60,20 @@ static int aea_read_probe(const AVProbeData *p)
 static int aea_read_header(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
-    int channels;
+    char title[256 + 1];
+    int channels, ret;
     if (!st)
         return AVERROR(ENOMEM);
 
-    /* Parse the amount of channels and skip to pos 2048(0x800) */
-    avio_skip(s->pb, 264);
+    /* Read the title, parse the number of channels and skip to pos 2048(0x800) */
+    avio_rl32(s->pb); // magic
+    ret = ffio_read_size(s->pb, title, sizeof(title) - 1);
+    if (ret < 0)
+        return ret;
+    title[sizeof(title) - 1] = '\0';
+    if (title[0] != '\0')
+        av_dict_set(&st->metadata, "title", title, 0);
+    avio_rl32(s->pb); // Block count
     channels = avio_r8(s->pb);
     avio_skip(s->pb, 1783);
 
