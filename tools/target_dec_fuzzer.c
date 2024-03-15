@@ -333,6 +333,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     ctx->max_samples = maxsamples_per_frame;
     ctx->get_buffer2 = fuzz_get_buffer2;
+    if (c->p.capabilities & AV_CODEC_CAP_EXPERIMENTAL)
+        ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
     if (size > 1024) {
         GetByteContext gbc;
