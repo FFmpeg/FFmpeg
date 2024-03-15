@@ -37,8 +37,16 @@ FATE_ATRAC_ALL = $(FATE_ATRAC1-yes) $(FATE_ATRAC3-yes) $(FATE_ATRAC3P-yes)
 
 $(FATE_ATRAC_ALL): CMP = oneoff
 
-FATE_SAMPLES_AVCONV += $(FATE_ATRAC_ALL)
+FATE_ATRAC_REMUX-$(call REMUX, AEA) += fate-atrac-aea-remux
+fate-atrac-aea-remux: CMD = transcode aea $(TARGET_SAMPLES)/atrac1/test_tones_small.aea \
+                            aea "-c copy" "-c copy -t 1"
 
-fate-atrac:   $(FATE_ATRAC_ALL)
+FATE_ATRAC_REMUX-$(call REMUX, MATROSKA, AEA_DEMUXER ATRAC1_DECODER) += fate-atrac-matroska-remux
+fate-atrac-matroska-remux: CMD = transcode aea $(TARGET_SAMPLES)/aea/chirp.aea \
+                                 matroska "-c copy" "-c copy -t 1"
+
+FATE_SAMPLES_FFMPEG += $(FATE_ATRAC_ALL) $(FATE_ATRAC_REMUX-yes)
+
+fate-atrac:   $(FATE_ATRAC_ALL) $(FATE_ATRAC_REMUX-yes)
 fate-atrac3:  $(FATE_ATRAC3-yes)
 fate-atrac3p: $(FATE_ATRAC3P-yes)
