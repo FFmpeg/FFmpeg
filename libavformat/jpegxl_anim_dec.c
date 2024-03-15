@@ -202,5 +202,5 @@ const FFInputFormat ff_jpegxl_anim_demuxer = {
     .read_header    = jpegxl_anim_read_header,
     .read_packet    = jpegxl_anim_read_packet,
     .read_close     = jpegxl_anim_close,
-    .flags_internal = FF_FMT_INIT_CLEANUP,
+    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
 };

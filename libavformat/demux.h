@@ -28,6 +28,12 @@
 
 struct AVDeviceInfoList;
 
+/**
+ * For an FFInputFormat with this flag set read_close() needs to be called
+ * by the caller upon read_header() failure.
+ */
+#define FF_INFMT_FLAG_INIT_CLEANUP                             (1 << 0)
+
 typedef struct FFInputFormat {
     /**
      * The public AVInputFormat. See avformat.h for it.
@@ -45,7 +51,7 @@ typedef struct FFInputFormat {
     int priv_data_size;
 
     /**
-     * Internal flags. See FF_FMT_FLAG_* in internal.h.
+     * Internal flags. See FF_INFMT_FLAG_* above and FF_FMT_FLAG_* in internal.h.
      */
     int flags_internal;
 

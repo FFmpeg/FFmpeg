@@ -212,7 +212,7 @@ const FFInputFormat ff_evc_demuxer = {
     .read_header    = evc_read_header, // annexb_read_header
     .read_packet    = evc_read_packet, // annexb_read_packet
     .read_close     = evc_read_close,
-    .flags_internal = FF_FMT_INIT_CLEANUP,
+    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
     .raw_codec_id   = AV_CODEC_ID_EVC,
     .priv_data_size = sizeof(EVCDemuxContext),
 };

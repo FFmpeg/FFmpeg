@@ -289,7 +289,7 @@ const FFInputFormat ff_libopenmpt_demuxer = {
     .p.extensions   = "669,amf,ams,dbm,digi,dmf,dsm,far,gdm,ice,imf,it,j2b,m15,mdl,med,mmcmp,mms,mo3,mod,mptm,mt2,mtm,nst,okt,plm,ppm,psm,pt36,ptm,s3m,sfx,sfx2,st26,stk,stm,ult,umx,wow,xm,xpk",
 #endif
     .priv_data_size = sizeof(OpenMPTContext),
-    .flags_internal = FF_FMT_INIT_CLEANUP,
+    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
     .read_probe     = read_probe_openmpt,
     .read_header    = read_header_openmpt,
     .read_packet    = read_packet_openmpt,

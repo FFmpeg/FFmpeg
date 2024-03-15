@@ -302,7 +302,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename,
 
     if (ffifmt(s->iformat)->read_header)
         if ((ret = ffifmt(s->iformat)->read_header(s)) < 0) {
-            if (ffifmt(s->iformat)->flags_internal & FF_FMT_INIT_CLEANUP)
+            if (ffifmt(s->iformat)->flags_internal & FF_INFMT_FLAG_INIT_CLEANUP)
                 goto close;
             goto fail;
         }

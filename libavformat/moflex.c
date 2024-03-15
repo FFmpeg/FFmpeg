@@ -383,5 +383,5 @@ const FFInputFormat ff_moflex_demuxer = {
     .read_packet    = moflex_read_packet,
     .read_seek      = moflex_read_seek,
     .read_close     = moflex_read_close,
-    .flags_internal = FF_FMT_INIT_CLEANUP,
+    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
 };

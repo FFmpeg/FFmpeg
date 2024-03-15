@@ -289,5 +289,5 @@ const FFInputFormat ff_laf_demuxer = {
     .read_packet    = laf_read_packet,
     .read_close     = laf_read_close,
     .read_seek      = laf_read_seek,
-    .flags_internal = FF_FMT_INIT_CLEANUP,
+    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
 };

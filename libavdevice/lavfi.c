@@ -503,5 +503,5 @@ const FFInputFormat ff_lavfi_demuxer = {
     .read_header    = lavfi_read_header,
     .read_packet    = lavfi_read_packet,
     .read_close     = lavfi_read_close,
-    .flags_internal = FF_FMT_INIT_CLEANUP,
+    .flags_internal = FF_INFMT_FLAG_INIT_CLEANUP,
 };
