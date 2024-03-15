@@ -310,6 +310,222 @@ static void AAC_RENAME(update_ltp)(AACDecContext *ac, SingleChannelElement *sce)
            1024 * sizeof(*sce->AAC_RENAME(ltp_state)));
 }
 
+/**
+ * Conduct IMDCT and windowing.
+ */
+static void AAC_RENAME(imdct_and_windowing)(AACDecContext *ac, SingleChannelElement *sce)
+{
+    IndividualChannelStream *ics = &sce->ics;
+    INTFLOAT *in    = sce->AAC_RENAME(coeffs);
+    INTFLOAT *out   = sce->AAC_RENAME(output);
+    INTFLOAT *saved = sce->AAC_RENAME(saved);
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME2(aac_kbd_short_128) : AAC_RENAME2(sine_128);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME2(aac_kbd_long_1024) : AAC_RENAME2(sine_1024);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME2(aac_kbd_short_128) : AAC_RENAME2(sine_128);
+    INTFLOAT *buf  = ac->AAC_RENAME(buf_mdct);
+    INTFLOAT *temp = ac->AAC_RENAME(temp);
+    int i;
+
+    // imdct
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        for (i = 0; i < 1024; i += 128)
+            ac->mdct128_fn(ac->mdct128, buf + i, in + i, sizeof(INTFLOAT));
+    } else {
+        ac->mdct1024_fn(ac->mdct1024, buf, in, sizeof(INTFLOAT));
+    }
+
+    /* window overlapping
+     * NOTE: To simplify the overlapping code, all 'meaningless' short to long
+     * and long to short transitions are considered to be short to short
+     * transitions. This leaves just two cases (long to long and short to short)
+     * with a little special sauce for EIGHT_SHORT_SEQUENCE.
+     */
+    if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
+            (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
+    } else {
+        memcpy(                         out,               saved,            448 * sizeof(*out));
+
+        if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+            ac->fdsp->vector_fmul_window(out + 448 + 0*128, saved + 448,      buf + 0*128, swindow_prev, 64);
+            ac->fdsp->vector_fmul_window(out + 448 + 1*128, buf + 0*128 + 64, buf + 1*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 2*128, buf + 1*128 + 64, buf + 2*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(out + 448 + 3*128, buf + 2*128 + 64, buf + 3*128, swindow,      64);
+            ac->fdsp->vector_fmul_window(temp,              buf + 3*128 + 64, buf + 4*128, swindow,      64);
+            memcpy(                     out + 448 + 4*128, temp, 64 * sizeof(*out));
+        } else {
+            ac->fdsp->vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
+            memcpy(                     out + 576,         buf + 64,         448 * sizeof(*out));
+        }
+    }
+
+    // buffer update
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        memcpy(                     saved,       temp + 64,         64 * sizeof(*saved));
+        ac->fdsp->vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
+        memcpy(                     saved + 448, buf + 7*128 + 64,  64 * sizeof(*saved));
+    } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
+        memcpy(                     saved,       buf + 512,        448 * sizeof(*saved));
+        memcpy(                     saved + 448, buf + 7*128 + 64,  64 * sizeof(*saved));
+    } else { // LONG_STOP or ONLY_LONG
+        memcpy(                     saved,       buf + 512,        512 * sizeof(*saved));
+    }
+}
+
+/**
+ * Conduct IMDCT and windowing.
+ */
+static void AAC_RENAME(imdct_and_windowing_960)(AACDecContext *ac, SingleChannelElement *sce)
+{
+    IndividualChannelStream *ics = &sce->ics;
+    INTFLOAT *in    = sce->AAC_RENAME(coeffs);
+    INTFLOAT *out   = sce->AAC_RENAME(output);
+    INTFLOAT *saved = sce->AAC_RENAME(saved);
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(aac_kbd_short_120) : AAC_RENAME(sine_120);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(aac_kbd_long_960) : AAC_RENAME(sine_960);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(aac_kbd_short_120) : AAC_RENAME(sine_120);
+    INTFLOAT *buf  = ac->AAC_RENAME(buf_mdct);
+    INTFLOAT *temp = ac->AAC_RENAME(temp);
+    int i;
+
+    // imdct
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        for (i = 0; i < 8; i++)
+            ac->mdct120_fn(ac->mdct120, buf + i * 120, in + i * 128, sizeof(INTFLOAT));
+    } else {
+        ac->mdct960_fn(ac->mdct960, buf, in, sizeof(INTFLOAT));
+    }
+
+    /* window overlapping
+     * NOTE: To simplify the overlapping code, all 'meaningless' short to long
+     * and long to short transitions are considered to be short to short
+     * transitions. This leaves just two cases (long to long and short to short)
+     * with a little special sauce for EIGHT_SHORT_SEQUENCE.
+     */
+
+    if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
+        (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 480);
+    } else {
+        memcpy(                          out,               saved,            420 * sizeof(*out));
+
+        if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+            ac->fdsp->vector_fmul_window(out + 420 + 0*120, saved + 420,      buf + 0*120, swindow_prev, 60);
+            ac->fdsp->vector_fmul_window(out + 420 + 1*120, buf + 0*120 + 60, buf + 1*120, swindow,      60);
+            ac->fdsp->vector_fmul_window(out + 420 + 2*120, buf + 1*120 + 60, buf + 2*120, swindow,      60);
+            ac->fdsp->vector_fmul_window(out + 420 + 3*120, buf + 2*120 + 60, buf + 3*120, swindow,      60);
+            ac->fdsp->vector_fmul_window(temp,              buf + 3*120 + 60, buf + 4*120, swindow,      60);
+            memcpy(                      out + 420 + 4*120, temp, 60 * sizeof(*out));
+        } else {
+            ac->fdsp->vector_fmul_window(out + 420,         saved + 420,      buf,         swindow_prev, 60);
+            memcpy(                      out + 540,         buf + 60,         420 * sizeof(*out));
+        }
+    }
+
+    // buffer update
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        memcpy(                      saved,       temp + 60,         60 * sizeof(*saved));
+        ac->fdsp->vector_fmul_window(saved + 60,  buf + 4*120 + 60, buf + 5*120, swindow, 60);
+        ac->fdsp->vector_fmul_window(saved + 180, buf + 5*120 + 60, buf + 6*120, swindow, 60);
+        ac->fdsp->vector_fmul_window(saved + 300, buf + 6*120 + 60, buf + 7*120, swindow, 60);
+        memcpy(                      saved + 420, buf + 7*120 + 60,  60 * sizeof(*saved));
+    } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
+        memcpy(                      saved,       buf + 480,        420 * sizeof(*saved));
+        memcpy(                      saved + 420, buf + 7*120 + 60,  60 * sizeof(*saved));
+    } else { // LONG_STOP or ONLY_LONG
+        memcpy(                      saved,       buf + 480,        480 * sizeof(*saved));
+    }
+}
+static void AAC_RENAME(imdct_and_windowing_ld)(AACDecContext *ac, SingleChannelElement *sce)
+{
+    IndividualChannelStream *ics = &sce->ics;
+    INTFLOAT *in    = sce->AAC_RENAME(coeffs);
+    INTFLOAT *out   = sce->AAC_RENAME(output);
+    INTFLOAT *saved = sce->AAC_RENAME(saved);
+    INTFLOAT *buf   = ac->AAC_RENAME(buf_mdct);
+
+    // imdct
+    ac->mdct512_fn(ac->mdct512, buf, in, sizeof(INTFLOAT));
+
+    // window overlapping
+    if (ics->use_kb_window[1]) {
+        // AAC LD uses a low overlap sine window instead of a KBD window
+        memcpy(out, saved, 192 * sizeof(*out));
+        ac->fdsp->vector_fmul_window(out + 192, saved + 192, buf, AAC_RENAME2(sine_128), 64);
+        memcpy(                     out + 320, buf + 64, 192 * sizeof(*out));
+    } else {
+        ac->fdsp->vector_fmul_window(out, saved, buf, AAC_RENAME2(sine_512), 256);
+    }
+
+    // buffer update
+    memcpy(saved, buf + 256, 256 * sizeof(*saved));
+}
+
+static void AAC_RENAME(imdct_and_windowing_eld)(AACDecContext *ac, SingleChannelElement *sce)
+{
+    UINTFLOAT *in   = sce->AAC_RENAME(coeffs);
+    INTFLOAT *out   = sce->AAC_RENAME(output);
+    INTFLOAT *saved = sce->AAC_RENAME(saved);
+    INTFLOAT *buf   = ac->AAC_RENAME(buf_mdct);
+    int i;
+    const int n  = ac->oc[1].m4ac.frame_length_short ? 480 : 512;
+    const int n2 = n >> 1;
+    const int n4 = n >> 2;
+    const INTFLOAT *const window = n == 480 ? AAC_RENAME(ff_aac_eld_window_480) :
+                                           AAC_RENAME(ff_aac_eld_window_512);
+
+    // Inverse transform, mapped to the conventional IMDCT by
+    // Chivukula, R.K.; Reznik, Y.A.; Devarajan, V.,
+    // "Efficient algorithms for MPEG-4 AAC-ELD, AAC-LD and AAC-LC filterbanks,"
+    // International Conference on Audio, Language and Image Processing, ICALIP 2008.
+    // URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4590245&isnumber=4589950
+    for (i = 0; i < n2; i+=2) {
+        INTFLOAT temp;
+        temp =  in[i    ]; in[i    ] = -in[n - 1 - i]; in[n - 1 - i] = temp;
+        temp = -in[i + 1]; in[i + 1] =  in[n - 2 - i]; in[n - 2 - i] = temp;
+    }
+
+    if (n == 480)
+        ac->mdct480_fn(ac->mdct480, buf, in, sizeof(INTFLOAT));
+    else
+        ac->mdct512_fn(ac->mdct512, buf, in, sizeof(INTFLOAT));
+
+    for (i = 0; i < n; i+=2) {
+        buf[i + 0] = -(UINTFLOAT)(USE_FIXED + 1)*buf[i + 0];
+        buf[i + 1] =  (UINTFLOAT)(USE_FIXED + 1)*buf[i + 1];
+    }
+    // Like with the regular IMDCT at this point we still have the middle half
+    // of a transform but with even symmetry on the left and odd symmetry on
+    // the right
+
+    // window overlapping
+    // The spec says to use samples [0..511] but the reference decoder uses
+    // samples [128..639].
+    for (i = n4; i < n2; i ++) {
+        out[i - n4] = AAC_MUL31(   buf[    n2 - 1 - i] , window[i       - n4]) +
+                      AAC_MUL31( saved[        i + n2] , window[i +   n - n4]) +
+                      AAC_MUL31(-saved[n + n2 - 1 - i] , window[i + 2*n - n4]) +
+                      AAC_MUL31(-saved[  2*n + n2 + i] , window[i + 3*n - n4]);
+    }
+    for (i = 0; i < n2; i ++) {
+        out[n4 + i] = AAC_MUL31(   buf[              i] , window[i + n2       - n4]) +
+                      AAC_MUL31(-saved[      n - 1 - i] , window[i + n2 +   n - n4]) +
+                      AAC_MUL31(-saved[          n + i] , window[i + n2 + 2*n - n4]) +
+                      AAC_MUL31( saved[2*n + n - 1 - i] , window[i + n2 + 3*n - n4]);
+    }
+    for (i = 0; i < n4; i ++) {
+        out[n2 + n4 + i] = AAC_MUL31(   buf[    i + n2] , window[i +   n - n4]) +
+                           AAC_MUL31(-saved[n2 - 1 - i] , window[i + 2*n - n4]) +
+                           AAC_MUL31(-saved[n + n2 + i] , window[i + 3*n - n4]);
+    }
+
+    // buffer update
+    memmove(saved + n, saved, 2 * n * sizeof(*saved));
+    memcpy( saved,       buf,     n * sizeof(*saved));
+}
+
 const AACDecDSP AAC_RENAME(aac_dsp) = {
     .init_tables = &AAC_RENAME(init_tables),
 
@@ -319,4 +535,9 @@ const AACDecDSP AAC_RENAME(aac_dsp) = {
     .apply_tns = &AAC_RENAME(apply_tns),
     .apply_ltp = &AAC_RENAME(apply_ltp),
     .update_ltp = &AAC_RENAME(update_ltp),
+
+    .imdct_and_windowing = AAC_RENAME(imdct_and_windowing),
+    .imdct_and_windowing_960 = AAC_RENAME(imdct_and_windowing_960),
+    .imdct_and_windowing_ld = AAC_RENAME(imdct_and_windowing_ld),
+    .imdct_and_windowing_eld = AAC_RENAME(imdct_and_windowing_eld),
 };

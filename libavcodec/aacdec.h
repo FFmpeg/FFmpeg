@@ -311,7 +311,6 @@ struct AACDecContext {
     int is_fixed;
 
     /* aacdec functions pointers */
-    void (*imdct_and_windowing)(struct AACDecContext *ac, SingleChannelElement *sce);
     union {
         void (*windowing_and_mdct_ltp)(struct AACDecContext *ac, float *out,
                                        float *in, IndividualChannelStream *ics);

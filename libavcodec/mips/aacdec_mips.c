@@ -435,7 +435,7 @@ void ff_aacdec_init_mips(AACDecContext *c)
 {
 #if HAVE_INLINE_ASM
 #if HAVE_MIPSFPU
-    c->imdct_and_windowing         = imdct_and_windowing_mips;
+    c->dsp.imdct_and_windowing     = imdct_and_windowing_mips;
     c->dsp.apply_ltp               = apply_ltp_mips;
     c->update_ltp                  = update_ltp_mips;
 #endif /* HAVE_MIPSFPU */
