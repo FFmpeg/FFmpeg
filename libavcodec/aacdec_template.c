@@ -1610,12 +1610,13 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_spectrum_and_dequant(AACDecContext *ac, INTFLOAT coef[1024],
+static int decode_spectrum_and_dequant(AACDecContext *ac,
                                        GetBitContext *gb,
-                                       int pulse_present, const Pulse *pulse,
+                                       const Pulse *pulse,
                                        SingleChannelElement *sce)
 {
     int i, k, g, idx = 0;
+    INTFLOAT *coef = sce->AAC_RENAME(coeffs);
     IndividualChannelStream *ics = &sce->ics;
     const int c = 1024 / ics->num_windows;
     const uint16_t *offsets = ics->swb_offset;
@@ -1856,7 +1857,7 @@ static int decode_spectrum_and_dequant(AACDecContext *ac, INTFLOAT coef[1024],
         coef += g_len << 7;
     }
 
-    if (pulse_present) {
+    if (pulse) {
         idx = 0;
         for (i = 0; i < pulse->num_pulse; i++) {
             INTFLOAT co = coef_base[ pulse->pos[i] ];
@@ -1977,7 +1978,6 @@ static int decode_ics(AACDecContext *ac, SingleChannelElement *sce,
     Pulse pulse;
     TemporalNoiseShaping    *tns = &sce->tns;
     IndividualChannelStream *ics = &sce->ics;
-    INTFLOAT *out = sce->AAC_RENAME(coeffs);
     int global_gain, eld_syntax, er_syntax, pulse_present = 0;
     int ret;
 
@@ -2047,9 +2047,9 @@ static int decode_ics(AACDecContext *ac, SingleChannelElement *sce,
         }
     }
 
-    ret = decode_spectrum_and_dequant(ac, out, gb,
-                                      pulse_present,
-                                      &pulse, sce);
+    ret = decode_spectrum_and_dequant(ac, gb,
+                                      pulse_present ? &pulse : NULL,
+                                      sce);
     if (ret < 0)
         goto fail;
 
