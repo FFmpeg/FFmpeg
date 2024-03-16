@@ -33,7 +33,7 @@ pw_257:   times  8 dw 257
 SECTION .text
 
 INIT_XMM sse4
-cglobal overlay_row_44, 5, 7, 6, 0, d, da, s, a, w, r, x
+cglobal overlay_row_44, 5, 7, 6, 0, dst, da, s, a, w, r, x
     xor          xq, xq
     movsxdifnidn wq, wd
     mov          rq, wq
@@ -47,7 +47,7 @@ cglobal overlay_row_44, 5, 7, 6, 0, d, da, s, a, w, r, x
     .loop:
         pmovzxbw    m0, [sq+xq]
         pmovzxbw    m2, [aq+xq]
-        pmovzxbw    m1, [dq+xq]
+        pmovzxbw    m1, [dstq+xq]
         pmullw      m0, m2
         pxor        m2, m3
         pmullw      m1, m2
@@ -55,7 +55,7 @@ cglobal overlay_row_44, 5, 7, 6, 0, d, da, s, a, w, r, x
         paddw       m0, m1
         pmulhuw     m0, m5
         packuswb    m0, m0
-        movq   [dq+xq], m0
+        movq [dstq+xq], m0
         add         xq, mmsize/2
         cmp         xq, wq
         jl .loop
@@ -65,7 +65,7 @@ cglobal overlay_row_44, 5, 7, 6, 0, d, da, s, a, w, r, x
     RET
 
 INIT_XMM sse4
-cglobal overlay_row_22, 5, 7, 6, 0, d, da, s, a, w, r, x
+cglobal overlay_row_22, 5, 7, 6, 0, dst, da, s, a, w, r, x
     xor          xq, xq
     movsxdifnidn wq, wd
     sub          wq, 1
@@ -85,7 +85,7 @@ cglobal overlay_row_22, 5, 7, 6, 0, d, da, s, a, w, r, x
         pavgw       m2, m1
         pavgw       m2, m1
         psrlw       m2, 8
-        pmovzxbw    m1, [dq+xq]
+        pmovzxbw    m1, [dstq+xq]
         pmullw      m0, m2
         pxor        m2, m3
         pmullw      m1, m2
@@ -93,7 +93,7 @@ cglobal overlay_row_22, 5, 7, 6, 0, d, da, s, a, w, r, x
         paddw       m0, m1
         pmulhuw     m0, m5
         packuswb    m0, m0
-        movq   [dq+xq], m0
+        movq [dstq+xq], m0
         add         xq, mmsize/2
         cmp         xq, wq
         jl .loop
@@ -103,7 +103,7 @@ cglobal overlay_row_22, 5, 7, 6, 0, d, da, s, a, w, r, x
     RET
 
 INIT_XMM sse4
-cglobal overlay_row_20, 6, 7, 7, 0, d, da, s, a, w, r, x
+cglobal overlay_row_20, 6, 7, 7, 0, dst, da, s, a, w, r, x
     mov         daq, aq
     add         daq, rmp
     xor          xq, xq
@@ -126,7 +126,7 @@ cglobal overlay_row_20, 6, 7, 7, 0, d, da, s, a, w, r, x
         pmaddubsw   m1, m6
         paddw       m2, m1
         psrlw       m2, 2
-        pmovzxbw    m1, [dq+xq]
+        pmovzxbw    m1, [dstq+xq]
         pmullw      m0, m2
         pxor        m2, m3
         pmullw      m1, m2
@@ -134,7 +134,7 @@ cglobal overlay_row_20, 6, 7, 7, 0, d, da, s, a, w, r, x
         paddw       m0, m1
         pmulhuw     m0, m5
         packuswb    m0, m0
-        movq   [dq+xq], m0
+        movq [dstq+xq], m0
         add         xq, mmsize/2
         cmp         xq, wq
         jl .loop

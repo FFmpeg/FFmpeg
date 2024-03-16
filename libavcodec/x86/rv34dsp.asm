@@ -113,15 +113,15 @@ cglobal rv34_idct_dc_noround, 1, 2, 0
     movd         %1, %2
 %endmacro
 INIT_MMX mmxext
-cglobal rv34_idct_add, 3,3,0, d, s, b
-    ROW_TRANSFORM       bq
-    COL_TRANSFORM     [dq], mm0, [pw_col_coeffs+ 0], [pw_col_coeffs+ 8]
-    mova               mm0, [pw_col_coeffs+ 0]
-    COL_TRANSFORM  [dq+sq], mm4, mm0, [pw_col_coeffs+ 8]
-    mova               mm4, [pw_col_coeffs+ 8]
-    lea                 dq, [dq + 2*sq]
-    COL_TRANSFORM     [dq], mm6, mm0, mm4
-    COL_TRANSFORM  [dq+sq], mm7, mm0, mm4
+cglobal rv34_idct_add, 3, 3, 0, dst, s, b
+    ROW_TRANSFORM        bq
+    COL_TRANSFORM    [dstq], mm0, [pw_col_coeffs+ 0], [pw_col_coeffs+ 8]
+    mova                mm0, [pw_col_coeffs+ 0]
+    COL_TRANSFORM [dstq+sq], mm4, mm0, [pw_col_coeffs+ 8]
+    mova                mm4, [pw_col_coeffs+ 8]
+    lea                dstq, [dstq + 2*sq]
+    COL_TRANSFORM    [dstq], mm6, mm0, mm4
+    COL_TRANSFORM [dstq+sq], mm7, mm0, mm4
     ret
 
 ; ff_rv34_idct_dc_add_sse4(uint8_t *dst, int stride, int dc);
