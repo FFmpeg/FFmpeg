@@ -2222,7 +2222,6 @@ ARCH_EXT_LIST_RISCV="
 
 ARCH_EXT_LIST_X86="
     $ARCH_EXT_LIST_X86_SIMD
-    cpunop
     i686
 "
 
@@ -2771,7 +2770,6 @@ mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 msa_deps="mipsfpu"
 
-cpunop_deps="i686"
 x86_64_select="i686"
 x86_64_suggest="fast_cmov"
 
@@ -6401,7 +6399,6 @@ EOF
         done
         disabled x86asm && die "nasm/yasm not found or too old. Use --disable-x86asm for a crippled build."
         X86ASMFLAGS="-f $objformat"
-        enabled pic               && append X86ASMFLAGS "-DPIC"
         test -n "$extern_prefix"  && append X86ASMFLAGS "-DPREFIX"
         case "$objformat" in
             elf*) enabled debug && append X86ASMFLAGS $x86asm_debug ;;
@@ -6412,7 +6409,6 @@ EOF
         enabled avx2      && check_x86asm avx2_external      "vextracti128 xmm0, ymm0, 0"
         enabled xop       && check_x86asm xop_external       "vpmacsdd xmm0, xmm1, xmm2, xmm3"
         enabled fma4      && check_x86asm fma4_external      "vfmaddps ymm0, ymm1, ymm2, ymm3"
-        check_x86asm cpunop          "CPU amdnop"
     fi
 
     case "$cpu" in

@@ -114,7 +114,7 @@ bilinear_filter_vb_m: times 8 db 7, 1
                       times 8 db 2, 6
                       times 8 db 1, 7
 
-%ifdef PIC
+%if PIC
 %define fourtap_filter_hw  picregq
 %define sixtap_filter_hw   picregq
 %define fourtap_filter_hb  picregq
@@ -166,7 +166,7 @@ cglobal put_vp8_epel%1_h6, 6, 6 + npicregs, 8, dst, dststride, src, srcstride, h
     lea      mxd, [mxq*3]
     mova      m3, [filter_h6_shuf2]
     mova      m4, [filter_h6_shuf3]
-%ifdef PIC
+%if PIC
     lea  picregq, [sixtap_filter_hb_m]
 %endif
     mova      m5, [sixtap_filter_hb+mxq*8-48] ; set up 6tap filter in bytes
@@ -207,7 +207,7 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
     mova      m2, [pw_256]
     mova      m3, [filter_h2_shuf]
     mova      m4, [filter_h4_shuf]
-%ifdef PIC
+%if PIC
     lea  picregq, [fourtap_filter_hb_m]
 %endif
     mova      m5, [fourtap_filter_hb+mxq-16] ; set up 4tap filter in bytes
@@ -234,7 +234,7 @@ cglobal put_vp8_epel%1_h4, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, h
 
 cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
-%ifdef PIC
+%if PIC
     lea  picregq, [fourtap_filter_hb_m]
 %endif
     mova      m5, [fourtap_filter_hb+myq-16]
@@ -272,7 +272,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
 
 cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     lea      myd, [myq*3]
-%ifdef PIC
+%if PIC
     lea  picregq, [sixtap_filter_hb_m]
 %endif
     lea      myq, [sixtap_filter_hb+myq*8]
@@ -326,7 +326,7 @@ FILTER_SSSE3 8
 INIT_MMX mmxext
 cglobal put_vp8_epel4_h4, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, height, mx, picreg
     shl       mxd, 4
-%ifdef PIC
+%if PIC
     lea   picregq, [fourtap_filter_hw_m]
 %endif
     movq      mm4, [fourtap_filter_hw+mxq-16] ; set up 4tap filter in words
@@ -374,7 +374,7 @@ cglobal put_vp8_epel4_h4, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, he
 INIT_MMX mmxext
 cglobal put_vp8_epel4_h6, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, height, mx, picreg
     lea       mxd, [mxq*3]
-%ifdef PIC
+%if PIC
     lea   picregq, [sixtap_filter_hw_m]
 %endif
     movq      mm4, [sixtap_filter_hw+mxq*8-48] ; set up 4tap filter in words
@@ -431,7 +431,7 @@ cglobal put_vp8_epel4_h6, 6, 6 + npicregs, 0, dst, dststride, src, srcstride, he
 INIT_XMM sse2
 cglobal put_vp8_epel8_h4, 6, 6 + npicregs, 10, dst, dststride, src, srcstride, height, mx, picreg
     shl      mxd, 5
-%ifdef PIC
+%if PIC
     lea  picregq, [fourtap_filter_v_m]
 %endif
     lea      mxq, [fourtap_filter_v+mxq-32]
@@ -480,7 +480,7 @@ INIT_XMM sse2
 cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, height, mx, picreg
     lea      mxd, [mxq*3]
     shl      mxd, 4
-%ifdef PIC
+%if PIC
     lea  picregq, [sixtap_filter_v_m]
 %endif
     lea      mxq, [sixtap_filter_v+mxq-96]
@@ -543,7 +543,7 @@ cglobal put_vp8_epel8_h6, 6, 6 + npicregs, 14, dst, dststride, src, srcstride, h
 ; 4x4 block, V-only 4-tap filter
 cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 5
-%ifdef PIC
+%if PIC
     lea  picregq, [fourtap_filter_v_m]
 %endif
     lea      myq, [fourtap_filter_v+myq-32]
@@ -597,7 +597,7 @@ cglobal put_vp8_epel%1_v4, 7, 7, 8, dst, dststride, src, srcstride, height, picr
 cglobal put_vp8_epel%1_v6, 7, 7, 8, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
     lea      myq, [myq*3]
-%ifdef PIC
+%if PIC
     lea  picregq, [sixtap_filter_v_m]
 %endif
     lea      myq, [sixtap_filter_v+myq-96]
@@ -667,7 +667,7 @@ FILTER_V 8
 %if cpuflag(ssse3)
 cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
-%ifdef PIC
+%if PIC
     lea  picregq, [bilinear_filter_vb_m]
 %endif
     pxor      m4, m4
@@ -697,7 +697,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 5, dst, dststride, src, srcstride, height, p
 %else ; cpuflag(ssse3)
 cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, picreg, my
     shl      myd, 4
-%ifdef PIC
+%if PIC
     lea  picregq, [bilinear_filter_vw_m]
 %endif
     pxor      m6, m6
@@ -743,7 +743,7 @@ cglobal put_vp8_bilinear%1_v, 7, 7, 7, dst, dststride, src, srcstride, height, p
 %if cpuflag(ssse3)
 cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 5, dst, dststride, src, srcstride, height, mx, picreg
     shl      mxd, 4
-%ifdef PIC
+%if PIC
     lea  picregq, [bilinear_filter_vb_m]
 %endif
     pxor      m4, m4
@@ -773,7 +773,7 @@ cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 5, dst, dststride, src, srcstride
 %else ; cpuflag(ssse3)
 cglobal put_vp8_bilinear%1_h, 6, 6 + npicregs, 7, dst, dststride, src, srcstride, height, mx, picreg
     shl      mxd, 4
-%ifdef PIC
+%if PIC
     lea  picregq, [bilinear_filter_vw_m]
 %endif
     pxor      m6, m6

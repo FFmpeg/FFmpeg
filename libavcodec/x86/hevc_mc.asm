@@ -180,7 +180,7 @@ SECTION .text
 %macro EPEL_FILTER 5 ; bit depth, filter index, xmma, xmmb, gprtmp
 %if cpuflag(avx2)
 %assign %%offset 32
-%ifdef PIC
+%if PIC
     lea              %5q, [hevc_epel_filters_avx2_%1]
     %define FILTER %5q
 %else
@@ -188,7 +188,7 @@ SECTION .text
 %endif
 %else
 %assign %%offset 16
-%ifdef PIC
+%if PIC
     lea              %5q, [hevc_epel_filters_sse4_%1]
     %define FILTER %5q
 %else
@@ -216,7 +216,7 @@ SECTION .text
 %define %%table  hevc_epel_filters_sse4_%1
 %endif
 
-%ifdef PIC
+%if PIC
     lea           r3srcq, [%%table]
     %define FILTER r3srcq
 %else
@@ -234,7 +234,7 @@ SECTION .text
 %else
 %define %%table  hevc_epel_filters_sse4_10
 %endif
-%ifdef PIC
+%if PIC
     lea           r3srcq, [%%table]
     %define FILTER r3srcq
 %else
@@ -257,7 +257,7 @@ SECTION .text
 %define %%table  hevc_qpel_filters_sse4_%1
 %endif
 
-%ifdef PIC
+%if PIC
     lea         rfilterq, [%%table]
 %else
     %define rfilterq %%table
@@ -576,7 +576,7 @@ SECTION .text
 %define %%table  hevc_qpel_filters_sse4_%2
 %endif
 
-%ifdef PIC
+%if PIC
     lea         rfilterq, [%%table]
 %else
     %define rfilterq %%table
@@ -1288,7 +1288,7 @@ HEVC_PUT_HEVC_QPEL_HV 16, 10
 %assign %%offset 4
     dec %2q
     shl %2q, 3
-%ifdef PIC
+%if PIC
     lea %5q, [%%table]
     %define FILTER %5q
 %else
@@ -1365,7 +1365,7 @@ cglobal hevc_put_hevc_qpel_hv%1_%2, 6, 7, 27, dst, src, srcstride, height, mx, m
     sub             myq, 1
     shl             myq, 5
 %define %%table hevc_qpel_filters_avx512icl_v_%1
-%ifdef PIC
+%if PIC
     lea tmpq, [%%table]
     %define FILTER tmpq
 %else

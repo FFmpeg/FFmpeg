@@ -91,7 +91,7 @@ SECTION .text
 
 %macro chroma_mc8_mmx_func 2-3
 %ifidn %2, rv40
-%ifdef PIC
+%if PIC
 %define rnd_1d_rv40 r8
 %define rnd_2d_rv40 r8
 %define extra_regs 2
@@ -147,7 +147,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7 + extra_regs, 0
     or           r4d, r5d       ; x + y
 
 %ifidn %2, rv40
-%ifdef PIC
+%if PIC
     lea           r8, [rnd_rv40_1d_tbl]
 %endif
 %if ARCH_X86_64 == 0
@@ -198,7 +198,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7 + extra_regs, 0
     movd          m4, r4d         ; x
     movd          m6, r5d         ; y
 %ifidn %2, rv40
-%ifdef PIC
+%if PIC
     lea           r8, [rnd_rv40_2d_tbl]
 %endif
 %if ARCH_X86_64 == 0
@@ -283,7 +283,7 @@ cglobal %1_%2_chroma_mc8%3, 6, 7 + extra_regs, 0
 %macro chroma_mc4_mmx_func 2
 %define extra_regs 0
 %ifidn %2, rv40
-%ifdef PIC
+%if PIC
 %define extra_regs 1
 %endif ; PIC
 %endif ; rv40
@@ -301,7 +301,7 @@ cglobal %1_%2_chroma_mc4, 6, 6 + extra_regs, 0
     psubw         m5, m3
 
 %ifidn %2, rv40
-%ifdef PIC
+%if PIC
    lea            r6, [rnd_rv40_2d_tbl]
 %define rnd_2d_rv40 r6
 %else

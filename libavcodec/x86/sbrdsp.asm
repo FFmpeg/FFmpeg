@@ -308,7 +308,7 @@ cglobal sbr_qmf_pre_shuffle, 1,4,6,z
     movq    [r2q], m2
     RET
 
-%ifdef PIC
+%if PIC
 %define NREGS 1
 %if UNIX64
 %define NOISE_TABLE r6q ; r5q is m_max
@@ -321,7 +321,7 @@ cglobal sbr_qmf_pre_shuffle, 1,4,6,z
 %endif
 
 %macro LOAD_NST  1
-%ifdef PIC
+%if PIC
     lea  NOISE_TABLE, [%1]
     mova          m0, [kxq + NOISE_TABLE]
 %else
@@ -371,7 +371,7 @@ apply_noise_main:
     movsxdifnidn    noiseq, noised
     dec    noiseq
     shl    countd, 2
-%ifdef PIC
+%if PIC
     lea NOISE_TABLE, [sbr_noise_table]
 %endif
     lea        Yq, [Yq + 2*countq]

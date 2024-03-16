@@ -330,7 +330,9 @@ IDCT_4x4_FN ssse3
 INIT_MMX %5
 cglobal vp9_%1_%3_4x4_add, 3, 3, 0, dst, stride, block, eob
 %if WIN64 && notcpuflag(ssse3)
+INIT_XMM cpuname
     WIN64_SPILL_XMM 8
+INIT_MMX cpuname
 %endif
     movdqa            xmm5, [pd_8192]
     mova                m0, [blockq+ 0]

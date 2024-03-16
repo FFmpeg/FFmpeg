@@ -303,7 +303,9 @@ IDCT4_10_FN
 %macro IADST4_FN 4
 cglobal vp9_%1_%3_4x4_add_10, 3, 3, 0, dst, stride, block, eob
 %if WIN64 && notcpuflag(ssse3)
+INIT_XMM cpuname
     WIN64_SPILL_XMM 8
+INIT_MMX cpuname
 %endif
     movdqa            xmm5, [pd_8192]
     mova                m0, [blockq+0*16+0]
@@ -672,7 +674,7 @@ cglobal vp9_idct_idct_8x8_add_10, 4, 6 + ARCH_X86_64, 14, \
     mov            dstbakq, dstq
     movsxd            cntq, cntd
 %endif
-%ifdef PIC
+%if PIC
     lea               ptrq, [default_8x8]
     movzx             cntd, byte [ptrq+cntq-1]
 %else
@@ -921,7 +923,7 @@ cglobal vp9_%1_%3_8x8_add_10, 4, 6 + ARCH_X86_64, 16, \
     mov            dstbakq, dstq
     movsxd            cntq, cntd
 %endif
-%ifdef PIC
+%if PIC
     lea               ptrq, [%5_8x8]
     movzx             cntd, byte [ptrq+cntq-1]
 %else
@@ -1128,7 +1130,7 @@ cglobal vp9_idct_idct_16x16_add_10, 4, 6 + ARCH_X86_64, 16, \
     mov            dstbakq, dstq
     movsxd            cntq, cntd
 %endif
-%ifdef PIC
+%if PIC
     lea               ptrq, [default_16x16]
     movzx             cntd, byte [ptrq+cntq-1]
 %else
@@ -1445,7 +1447,7 @@ cglobal vp9_%1_%4_16x16_add_10, 4, 6 + ARCH_X86_64, 16, \
     mov            dstbakq, dstq
     movsxd            cntq, cntd
 %endif
-%ifdef PIC
+%if PIC
     lea               ptrq, [%7_16x16]
     movzx             cntd, byte [ptrq+cntq-1]
 %else
@@ -1958,7 +1960,7 @@ cglobal vp9_idct_idct_32x32_add_10, 4, 6 + ARCH_X86_64, 16, \
     mov            dstbakq, dstq
     movsxd            cntq, cntd
 %endif
-%ifdef PIC
+%if PIC
     lea               ptrq, [default_32x32]
     movzx             cntd, byte [ptrq+cntq-1]
 %else
