@@ -32,7 +32,7 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#define USE_FIXED 0
+#define USE_FIXED 1 // aacsbr.h breaks without this
 
 #include "libavutil/float_dsp.h"
 #include "avcodec.h"
@@ -398,4 +398,24 @@ const FFCodec ff_aac_latm_decoder = {
     .p.ch_layouts    = ff_aac_ch_layout,
     .flush = flush,
     .p.profiles      = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
+};
+
+const FFCodec ff_aac_fixed_decoder = {
+    .p.name          = "aac_fixed",
+    CODEC_LONG_NAME("AAC (Advanced Audio Coding)"),
+    .p.type          = AVMEDIA_TYPE_AUDIO,
+    .p.id            = AV_CODEC_ID_AAC,
+    .p.priv_class    = &ff_aac_decoder_class,
+    .priv_data_size  = sizeof(AACDecContext),
+    .init            = aac_decode_init_fixed,
+    .close           = ff_aac_decode_close,
+    FF_CODEC_DECODE_CB(aac_decode_frame),
+    .p.sample_fmts   = (const enum AVSampleFormat[]) {
+        AV_SAMPLE_FMT_S32P, AV_SAMPLE_FMT_NONE
+    },
+    .p.capabilities  = AV_CODEC_CAP_CHANNEL_CONF | AV_CODEC_CAP_DR1,
+    .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
+    .p.ch_layouts    = ff_aac_ch_layout,
+    .p.profiles      = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
+    .flush = flush,
 };

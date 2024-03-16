@@ -134,7 +134,11 @@ static av_cold int che_configure(AACDecContext *ac,
         return AVERROR_INVALIDDATA;
     if (che_pos) {
         if (!ac->che[type][id]) {
-            int ret = AAC_RENAME(ff_aac_sbr_ctx_alloc_init)(ac, &ac->che[type][id], type);
+            int ret;
+            if (ac->is_fixed)
+                ret = ff_aac_sbr_ctx_alloc_init_fixed(ac, &ac->che[type][id], type);
+            else
+                ret = ff_aac_sbr_ctx_alloc_init(ac, &ac->che[type][id], type);
             if (ret < 0)
                 return ret;
         }
@@ -150,8 +154,12 @@ static av_cold int che_configure(AACDecContext *ac,
             }
         }
     } else {
-        if (ac->che[type][id])
-            AAC_RENAME(ff_aac_sbr_ctx_close)(ac->che[type][id]);
+        if (ac->che[type][id]) {
+            if (ac->is_fixed)
+                ff_aac_sbr_ctx_close_fixed(ac->che[type][id]);
+            else
+                ff_aac_sbr_ctx_close(ac->che[type][id]);
+        }
         av_freep(&ac->che[type][id]);
     }
     return 0;
@@ -1090,19 +1098,18 @@ static int sample_rate_idx (int rate)
 
 static av_cold void aac_static_table_init(void)
 {
-    AAC_RENAME(ff_aac_sbr_init)();
+    ff_aac_sbr_init();
+    ff_aac_sbr_init_fixed();
 
     ff_aacdec_common_init_once();
 }
 
 static AVOnce aac_table_init = AV_ONCE_INIT;
 
-static av_cold int aac_decode_init(AVCodecContext *avctx)
+static av_cold int aac_decode_init_internal(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
     int ret;
-
-    ac->is_fixed = USE_FIXED;
 
     if (avctx->sample_rate > 96000)
         return AVERROR_INVALIDDATA;
@@ -1156,6 +1163,20 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     }
 
     return ff_aac_decode_init_common(avctx);
+}
+
+static av_cold int aac_decode_init(AVCodecContext *avctx)
+{
+    AACDecContext *ac = avctx->priv_data;
+    ac->is_fixed = 0;
+    return aac_decode_init_internal(avctx);
+}
+
+static av_cold int aac_decode_init_fixed(AVCodecContext *avctx)
+{
+    AACDecContext *ac = avctx->priv_data;
+    ac->is_fixed = 1;
+    return aac_decode_init_internal(avctx);
 }
 
 /**
@@ -1516,8 +1537,12 @@ static int decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
                     coef_len = coef_res + 3 - coef_compress;
                     tmp2_idx = 2 * coef_compress + coef_res;
 
-                    for (i = 0; i < tns->order[w][filt]; i++)
-                        tns->AAC_RENAME(coef)[w][filt][i] = Q31(ff_tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)]);
+                    for (i = 0; i < tns->order[w][filt]; i++) {
+                        if (ac->is_fixed)
+                            tns->coef_fixed[w][filt][i] = Q31(ff_tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)]);
+                        else
+                            tns->coef[w][filt][i] = ff_tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)];
+                    }
                 }
             }
         }
@@ -1580,8 +1605,8 @@ static void decode_gain_control(SingleChannelElement * sce, GetBitContext * gb)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-int AAC_RENAME(ff_aac_decode_ics)(AACDecContext *ac, SingleChannelElement *sce,
-                                  GetBitContext *gb, int common_window, int scale_flag)
+int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
+                      GetBitContext *gb, int common_window, int scale_flag)
 {
     Pulse pulse;
     TemporalNoiseShaping    *tns = &sce->tns;
@@ -1698,9 +1723,9 @@ static int decode_cpe(AACDecContext *ac, GetBitContext *gb, ChannelElement *cpe)
         } else if (ms_present)
             decode_mid_side_stereo(cpe, gb, ms_present);
     }
-    if ((ret = AAC_RENAME(ff_aac_decode_ics)(ac, &cpe->ch[0], gb, common_window, 0)))
+    if ((ret = ff_aac_decode_ics(ac, &cpe->ch[0], gb, common_window, 0)))
         return ret;
-    if ((ret = AAC_RENAME(ff_aac_decode_ics)(ac, &cpe->ch[1], gb, common_window, 0)))
+    if ((ret = ff_aac_decode_ics(ac, &cpe->ch[1], gb, common_window, 0)))
         return ret;
 
     if (common_window) {
@@ -1863,7 +1888,13 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
             ac->oc[1].m4ac.sbr = 1;
             ac->avctx->profile = AV_PROFILE_AAC_HE;
         }
-        res = AAC_RENAME(ff_aac_sbr_decode_extension)(ac, che, gb, crc_flag, cnt, elem_type);
+
+        if (ac->is_fixed)
+            res = ff_aac_sbr_decode_extension_fixed(ac, che, gb, crc_flag, cnt, elem_type);
+        else
+            res = ff_aac_sbr_decode_extension(ac, che, gb, crc_flag, cnt, elem_type);
+
+
         if (ac->oc[1].m4ac.ps == 1 && !ac->warned_he_aac_mono) {
             av_log(ac->avctx, AV_LOG_VERBOSE, "Treating HE-AAC mono as stereo.\n");
             ac->warned_he_aac_mono = 1;
@@ -1971,9 +2002,14 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                             ac->dsp.update_ltp(ac, &che->ch[1]);
                     }
                     if (ac->oc[1].m4ac.sbr > 0) {
-                        AAC_RENAME(ff_aac_sbr_apply)(ac, che, type,
-                                                 che->ch[0].AAC_RENAME(output),
-                                                 che->ch[1].AAC_RENAME(output));
+                        if (ac->is_fixed)
+                            ff_aac_sbr_apply_fixed(ac, che, type,
+                                                   che->ch[0].AAC_RENAME(output),
+                                                   che->ch[1].AAC_RENAME(output));
+                        else
+                            ff_aac_sbr_apply(ac, che, type,
+                                             che->ch[0].AAC_RENAME(output),
+                                             che->ch[1].AAC_RENAME(output));
                     }
                 }
                 if (type <= TYPE_CCE)
@@ -2093,13 +2129,13 @@ static int aac_decode_er_frame(AVCodecContext *avctx, AVFrame *frame,
             skip_bits(gb, 4);
         switch (elem_type) {
         case TYPE_SCE:
-            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
+            err = ff_aac_decode_ics(ac, &che->ch[0], gb, 0, 0);
             break;
         case TYPE_CPE:
             err = decode_cpe(ac, gb, che);
             break;
         case TYPE_LFE:
-            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
+            err = ff_aac_decode_ics(ac, &che->ch[0], gb, 0, 0);
             break;
         }
         if (err < 0)
@@ -2194,7 +2230,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
         switch (elem_type) {
 
         case TYPE_SCE:
-            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
+            err = ff_aac_decode_ics(ac, &che->ch[0], gb, 0, 0);
             audio_found = 1;
             sce_count++;
             break;
@@ -2209,7 +2245,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
             break;
 
         case TYPE_LFE:
-            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
+            err = ff_aac_decode_ics(ac, &che->ch[0], gb, 0, 0);
             audio_found = 1;
             break;
 

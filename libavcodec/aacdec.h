@@ -348,7 +348,5 @@ void ff_aacdec_init_mips(AACDecContext *c);
 
 int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                       GetBitContext *gb, int common_window, int scale_flag);
-int ff_aac_decode_ics_fixed(AACDecContext *ac, SingleChannelElement *sce,
-                            GetBitContext *gb, int common_window, int scale_flag);
 
 #endif /* AVCODEC_AACDEC_H */

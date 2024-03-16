@@ -184,7 +184,7 @@ OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o \
                                           aacsbr.o aacps_common.o aacps_float.o \
                                           kbdwin.o \
                                           sbrdsp.o aacpsdsp_float.o cbrt_data.o
-OBJS-$(CONFIG_AAC_FIXED_DECODER)       += aacdec_fixed.o aactab.o \
+OBJS-$(CONFIG_AAC_FIXED_DECODER)       += aactab.o \
                                           aacsbr_fixed.o aacps_common.o aacps_fixed.o \
                                           kbdwin.o \
                                           sbrdsp_fixed.o aacpsdsp_fixed.o cbrt_data_fixed.o

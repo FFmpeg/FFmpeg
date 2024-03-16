@@ -385,7 +385,7 @@ static int AAC_RENAME(decode_cce)(AACDecContext *ac, GetBitContext *gb, ChannelE
     scale = cce_scale[get_bits(gb, 2)];
 #endif
 
-    if ((ret = AAC_RENAME(ff_aac_decode_ics)(ac, sce, gb, 0, 0)))
+    if ((ret = ff_aac_decode_ics(ac, sce, gb, 0, 0)))
         return ret;
 
     for (c = 0; c < num_gain; c++) {
