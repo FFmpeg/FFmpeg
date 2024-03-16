@@ -64,8 +64,6 @@
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"
-#include "kbdwin.h"
-#include "sinewin_fixed_tablegen.h"
 
 #include "aac.h"
 #include "aacdec.h"

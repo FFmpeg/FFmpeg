@@ -47,6 +47,8 @@ DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME(aac_kbd_short_120))[120];
 
 static void init_tables_fixed_fn(void)
 {
+    AAC_RENAME(ff_cbrt_tableinit)();
+
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_long_1024), 4.0, 1024);
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_short_128), 6.0, 128);
 
