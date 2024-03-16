@@ -208,6 +208,8 @@ typedef struct AACDecProc {
                                        GetBitContext *gb,
                                        const Pulse *pulse,
                                        SingleChannelElement *sce);
+
+    int (*decode_cce)(AACDecContext *ac, GetBitContext *gb, ChannelElement *che);
 } AACDecProc;
 
 /**
@@ -341,5 +343,10 @@ int ff_aac_decode_init_common(struct AVCodecContext *avctx);
 int ff_aac_decode_close(struct AVCodecContext *avctx);
 
 void ff_aacdec_init_mips(AACDecContext *c);
+
+int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
+                      GetBitContext *gb, int common_window, int scale_flag);
+int ff_aac_decode_ics_fixed(AACDecContext *ac, SingleChannelElement *sce,
+                            GetBitContext *gb, int common_window, int scale_flag);
 
 #endif /* AVCODEC_AACDEC_H */

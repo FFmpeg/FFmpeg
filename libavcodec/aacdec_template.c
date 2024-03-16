@@ -1640,8 +1640,8 @@ static void decode_gain_control(SingleChannelElement * sce, GetBitContext * gb)
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_ics(AACDecContext *ac, SingleChannelElement *sce,
-                      GetBitContext *gb, int common_window, int scale_flag)
+int AAC_RENAME(ff_aac_decode_ics)(AACDecContext *ac, SingleChannelElement *sce,
+                                  GetBitContext *gb, int common_window, int scale_flag)
 {
     Pulse pulse;
     TemporalNoiseShaping    *tns = &sce->tns;
@@ -1758,9 +1758,9 @@ static int decode_cpe(AACDecContext *ac, GetBitContext *gb, ChannelElement *cpe)
         } else if (ms_present)
             decode_mid_side_stereo(cpe, gb, ms_present);
     }
-    if ((ret = decode_ics(ac, &cpe->ch[0], gb, common_window, 0)))
+    if ((ret = AAC_RENAME(ff_aac_decode_ics)(ac, &cpe->ch[0], gb, common_window, 0)))
         return ret;
-    if ((ret = decode_ics(ac, &cpe->ch[1], gb, common_window, 0)))
+    if ((ret = AAC_RENAME(ff_aac_decode_ics)(ac, &cpe->ch[1], gb, common_window, 0)))
         return ret;
 
     if (common_window) {
@@ -1773,97 +1773,6 @@ static int decode_cpe(AACDecContext *ac, GetBitContext *gb, ChannelElement *cpe)
     }
 
     ac->dsp.apply_intensity_stereo(ac, cpe, ms_present);
-    return 0;
-}
-
-static const float cce_scale[] = {
-    1.09050773266525765921, //2^(1/8)
-    1.18920711500272106672, //2^(1/4)
-    M_SQRT2,
-    2,
-};
-
-/**
- * Decode coupling_channel_element; reference: table 4.8.
- *
- * @return  Returns error status. 0 - OK, !0 - error
- */
-static int decode_cce(AACDecContext *ac, GetBitContext *gb, ChannelElement *che)
-{
-    int num_gain = 0;
-    int c, g, sfb, ret;
-    int sign;
-    INTFLOAT scale;
-    SingleChannelElement *sce = &che->ch[0];
-    ChannelCoupling     *coup = &che->coup;
-
-    coup->coupling_point = 2 * get_bits1(gb);
-    coup->num_coupled = get_bits(gb, 3);
-    for (c = 0; c <= coup->num_coupled; c++) {
-        num_gain++;
-        coup->type[c] = get_bits1(gb) ? TYPE_CPE : TYPE_SCE;
-        coup->id_select[c] = get_bits(gb, 4);
-        if (coup->type[c] == TYPE_CPE) {
-            coup->ch_select[c] = get_bits(gb, 2);
-            if (coup->ch_select[c] == 3)
-                num_gain++;
-        } else
-            coup->ch_select[c] = 2;
-    }
-    coup->coupling_point += get_bits1(gb) || (coup->coupling_point >> 1);
-
-    sign  = get_bits(gb, 1);
-#if USE_FIXED
-    scale = get_bits(gb, 2);
-#else
-    scale = cce_scale[get_bits(gb, 2)];
-#endif
-
-    if ((ret = decode_ics(ac, sce, gb, 0, 0)))
-        return ret;
-
-    for (c = 0; c < num_gain; c++) {
-        int idx  = 0;
-        int cge  = 1;
-        int gain = 0;
-        INTFLOAT gain_cache = FIXR10(1.);
-        if (c) {
-            cge = coup->coupling_point == AFTER_IMDCT ? 1 : get_bits1(gb);
-            gain = cge ? get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - 60: 0;
-            gain_cache = GET_GAIN(scale, gain);
-#if USE_FIXED
-            if ((abs(gain_cache)-1024) >> 3 > 30)
-                return AVERROR(ERANGE);
-#endif
-        }
-        if (coup->coupling_point == AFTER_IMDCT) {
-            coup->gain[c][0] = gain_cache;
-        } else {
-            for (g = 0; g < sce->ics.num_window_groups; g++) {
-                for (sfb = 0; sfb < sce->ics.max_sfb; sfb++, idx++) {
-                    if (sce->band_type[idx] != ZERO_BT) {
-                        if (!cge) {
-                            int t = get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - 60;
-                            if (t) {
-                                int s = 1;
-                                t = gain += t;
-                                if (sign) {
-                                    s  -= 2 * (t & 0x1);
-                                    t >>= 1;
-                                }
-                                gain_cache = GET_GAIN(scale, t) * s;
-#if USE_FIXED
-                                if ((abs(gain_cache)-1024) >> 3 > 30)
-                                    return AVERROR(ERANGE);
-#endif
-                            }
-                        }
-                        coup->gain[c][idx] = gain_cache;
-                    }
-                }
-            }
-        }
-    }
     return 0;
 }
 
@@ -2244,13 +2153,13 @@ static int aac_decode_er_frame(AVCodecContext *avctx, AVFrame *frame,
             skip_bits(gb, 4);
         switch (elem_type) {
         case TYPE_SCE:
-            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
+            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
             break;
         case TYPE_CPE:
             err = decode_cpe(ac, gb, che);
             break;
         case TYPE_LFE:
-            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
+            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
             break;
         }
         if (err < 0)
@@ -2345,7 +2254,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
         switch (elem_type) {
 
         case TYPE_SCE:
-            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
+            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
             audio_found = 1;
             sce_count++;
             break;
@@ -2356,11 +2265,11 @@ static int aac_decode_frame_int(AVCodecContext *avctx, AVFrame *frame,
             break;
 
         case TYPE_CCE:
-            err = decode_cce(ac, gb, che);
+            err = ac->proc.decode_cce(ac, gb, che);
             break;
 
         case TYPE_LFE:
-            err = decode_ics(ac, &che->ch[0], gb, 0, 0);
+            err = AAC_RENAME(ff_aac_decode_ics)(ac, &che->ch[0], gb, 0, 0);
             audio_found = 1;
             break;
 

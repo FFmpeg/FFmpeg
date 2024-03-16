@@ -39,6 +39,7 @@
 #include "libavcodec/sinewin.h"
 #include "libavcodec/kbdwin.h"
 #include "libavcodec/cbrt_data.h"
+#include "libavutil/mathematics.h"
 
 DECLARE_ALIGNED(32, static float, sine_120)[120];
 DECLARE_ALIGNED(32, static float, sine_960)[960];
@@ -65,6 +66,13 @@ static void init_tables(void)
     static AVOnce init_float_once = AV_ONCE_INIT;
     ff_thread_once(&init_float_once, init_tables_float_fn);
 }
+
+static const float cce_scale[] = {
+    1.09050773266525765921, //2^(1/8)
+    1.18920711500272106672, //2^(1/4)
+    M_SQRT2,
+    2,
+};
 
 /** Dequantization-related **/
 #include "aacdec_tab.h"
