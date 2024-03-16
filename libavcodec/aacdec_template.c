@@ -2368,33 +2368,6 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
 }
 
 /**
- *  Apply windowing and MDCT to obtain the spectral
- *  coefficient from the predicted sample by LTP.
- */
-static void windowing_and_mdct_ltp(AACDecContext *ac, INTFLOAT *out,
-                                   INTFLOAT *in, IndividualChannelStream *ics)
-{
-    const INTFLOAT *lwindow      = ics->use_kb_window[0] ? AAC_RENAME2(aac_kbd_long_1024) : AAC_RENAME2(sine_1024);
-    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME2(aac_kbd_short_128) : AAC_RENAME2(sine_128);
-    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME2(aac_kbd_long_1024) : AAC_RENAME2(sine_1024);
-    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME2(aac_kbd_short_128) : AAC_RENAME2(sine_128);
-
-    if (ics->window_sequence[0] != LONG_STOP_SEQUENCE) {
-        ac->fdsp->vector_fmul(in, in, lwindow_prev, 1024);
-    } else {
-        memset(in, 0, 448 * sizeof(*in));
-        ac->fdsp->vector_fmul(in + 448, in + 448, swindow_prev, 128);
-    }
-    if (ics->window_sequence[0] != LONG_START_SEQUENCE) {
-        ac->fdsp->vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
-    } else {
-        ac->fdsp->vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
-        memset(in + 1024 + 576, 0, 448 * sizeof(*in));
-    }
-    ac->mdct_ltp_fn(ac->mdct_ltp, out, in, sizeof(INTFLOAT));
-}
-
-/**
  * channel coupling transformation interface
  *
  * @param   apply_coupling_method   pointer to (in)dependent coupling function
@@ -2919,7 +2892,6 @@ static int aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
 static void aacdec_init(AACDecContext *c)
 {
-    c->AAC_RENAME(windowing_and_mdct_ltp)       = windowing_and_mdct_ltp;
 #if USE_FIXED
     c->vector_pow43                             = vector_pow43;
     c->subband_scale                            = subband_scale;

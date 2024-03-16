@@ -224,6 +224,34 @@ static void imdct_and_windowing_mips(AACDecContext *ac, SingleChannelElement *sc
     }
 }
 
+/**
+ *  Apply windowing and MDCT to obtain the spectral
+ *  coefficient from the predicted sample by LTP.
+ */
+static inline void windowing_and_mdct_ltp(AACDecContext *ac,
+                                          float *out, float *in,
+                                          IndividualChannelStream *ics)
+{
+    const float *lwindow      = ics->use_kb_window[0] ? ff_aac_kbd_long_1024) : ff_sine_1024;
+    const float *swindow      = ics->use_kb_window[0] ? ff_aac_kbd_short_128) : ff_sine_128;
+    const float *lwindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_long_1024) : ff_sine_1024;
+    const float *swindow_prev = ics->use_kb_window[1] ? ff_aac_kbd_short_128) : ff_sine_128;
+
+    if (ics->window_sequence[0] != LONG_STOP_SEQUENCE) {
+        ac->fdsp->vector_fmul(in, in, lwindow_prev, 1024);
+    } else {
+        memset(in, 0, 448 * sizeof(*in));
+        ac->fdsp->vector_fmul(in + 448, in + 448, swindow_prev, 128);
+    }
+    if (ics->window_sequence[0] != LONG_START_SEQUENCE) {
+        ac->fdsp->vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
+    } else {
+        ac->fdsp->vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
+        memset(in + 1024 + 576, 0, 448 * sizeof(*in));
+    }
+    ac->mdct_ltp_fn(ac->mdct_ltp, out, in, sizeof(INTFLOAT));
+}
+
 static void apply_ltp_mips(AACDecContext *ac, SingleChannelElement *sce)
 {
     const LongTermPrediction *ltp = &sce->ics.ltp;
@@ -272,7 +300,7 @@ static void apply_ltp_mips(AACDecContext *ac, SingleChannelElement *sce)
             );
         }
 
-        ac->windowing_and_mdct_ltp(ac, predFreq, predTime, &sce->ics);
+        windowing_and_mdct_ltp(ac, predFreq, predTime, &sce->ics);
 
         if (sce->tns.present)
             ac->dsp.apply_tns(predFreq, &sce->tns, &sce->ics, 0);

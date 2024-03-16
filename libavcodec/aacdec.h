@@ -311,12 +311,6 @@ struct AACDecContext {
     int is_fixed;
 
     /* aacdec functions pointers */
-    union {
-        void (*windowing_and_mdct_ltp)(struct AACDecContext *ac, float *out,
-                                       float *in, IndividualChannelStream *ics);
-        void (*windowing_and_mdct_ltp_fixed)(struct AACDecContext *ac, int *out,
-                                             int *in, IndividualChannelStream *ics);
-    };
     void (*vector_pow43)(int *coefs, int len);
     void (*subband_scale)(int *dst, int *src, int scale, int offset, int len, void *log_context);
 };
