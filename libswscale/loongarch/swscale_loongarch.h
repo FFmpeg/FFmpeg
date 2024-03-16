@@ -68,6 +68,29 @@ void yuv2planeX_8_lsx(const int16_t *filter, int filterSize,
 void yuv2plane1_8_lsx(const int16_t *src, uint8_t *dest, int dstW,
                       const uint8_t *dither, int offset);
 
+void yuy2ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                  const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void yvy2ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                  const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void uyvyToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                  const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void nv12ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                  const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void nv21ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                  const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void abgrToA_lsx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                 const uint8_t *unused2, int width, uint32_t *unused, void *opq);
+
+void rgbaToA_lsx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                 const uint8_t *unused2, int width, uint32_t *unused, void *opq);
+
+av_cold void ff_sws_init_input_lsx(SwsContext *c);
+
 av_cold void ff_sws_init_output_lsx(SwsContext *c,
                                     yuv2planar1_fn *yuv2plane1,
                                     yuv2planarX_fn *yuv2planeX,
@@ -151,6 +174,29 @@ void yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
 
 void yuv2plane1_8_lasx(const int16_t *src, uint8_t *dest, int dstW,
                       const uint8_t *dither, int offset);
+
+void yuy2ToUV_lasx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                   const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void yvy2ToUV_lasx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                   const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void uyvyToUV_lasx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                   const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void nv12ToUV_lasx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                   const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void nv21ToUV_lasx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+                   const uint8_t *src2, int width, uint32_t *unused, void *opq);
+
+void abgrToA_lasx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                  const uint8_t *unused2, int width, uint32_t *unused, void *opq);
+
+void rgbaToA_lasx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                  const uint8_t *unused2, int width, uint32_t *unused, void *opq);
+
+av_cold void ff_sws_init_input_lasx(SwsContext *c);
 
 av_cold void ff_sws_init_output_lasx(SwsContext *c,
                                      yuv2planar1_fn *yuv2plane1,

@@ -283,3 +283,498 @@ function planar_rgb_to_uv_lsx
     ld.d            s3,     sp,    16
     addi.d          sp,     sp,    24
 endfunc
+
+/*
+ * void yuy2ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+ *                   const uint8_t *src2, int width, uint32_t *unused, void *opq)
+ */
+function yuy2ToUV_lsx
+    andi         t0,    a5,    7
+    srli.d       a5,    a5,    3
+    beqz         a5,    2f
+1:
+    vld          vr0,   a3,    1
+    vld          vr1,   a3,    17
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    32
+    vpickev.b    vr2,   vr1,   vr0
+    vpickev.b    vr0,   vr2,   vr2
+    vpickod.b    vr1,   vr2,   vr2
+    fst.d        f0,    a0,    0
+    fst.d        f1,    a1,    0
+    addi.d       a0,    a0,    8
+    addi.d       a1,    a1,    8
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    1
+    ld.b         t2,    a3,    3
+    addi.d       a3,    a3,    4
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a0,    0
+    st.b         t2,    a1,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+function yuy2ToUV_lasx
+    andi         t0,    a5,    15
+    srli.d       a5,    a5,    4
+    beqz         a5,    2f
+1:
+    xvld         xr0,   a3,    1
+    xvld         xr1,   a3,    33
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    64
+    xvpickev.b   xr2,   xr1,   xr0
+    xvpermi.d    xr2,   xr2,   0xd8
+    xvpickev.b   xr0,   xr2,   xr2
+    xvpermi.d    xr0,   xr0,   0xd8
+    xvpickod.b   xr1,   xr2,   xr2
+    xvpermi.d    xr1,   xr1,   0xd8
+    vst          vr0,   a0,    0
+    vst          vr1,   a1,    0
+    addi.d       a0,    a0,    16
+    addi.d       a1,    a1,    16
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    1
+    ld.b         t2,    a3,    3
+    addi.d       a3,    a3,    4
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a0,    0
+    st.b         t2,    a1,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+/*
+ * void yvy2ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+ *                   const uint8_t *src2, int width, uint32_t *unused, void *opq)
+ */
+function yvy2ToUV_lsx
+    andi         t0,    a5,    7
+    srli.d       a5,    a5,    3
+    beqz         a5,    2f
+1:
+    vld          vr0,   a3,    1
+    vld          vr1,   a3,    17
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    32
+    vpickev.b    vr2,   vr1,   vr0
+    vpickev.b    vr0,   vr2,   vr2
+    vpickod.b    vr1,   vr2,   vr2
+    fst.d        f0,    a1,    0
+    fst.d        f1,    a0,    0
+    addi.d       a0,    a0,    8
+    addi.d       a1,    a1,    8
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    1
+    ld.b         t2,    a3,    3
+    addi.d       a3,    a3,    4
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a1,    0
+    st.b         t2,    a0,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+function yvy2ToUV_lasx
+    andi         t0,    a5,    15
+    srli.d       a5,    a5,    4
+    beqz         a5,    2f
+1:
+    xvld         xr0,   a3,    1
+    xvld         xr1,   a3,    33
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    64
+    xvpickev.b   xr2,   xr1,   xr0
+    xvpermi.d    xr2,   xr2,   0xd8
+    xvpickev.b   xr0,   xr2,   xr2
+    xvpermi.d    xr0,   xr0,   0xd8
+    xvpickod.b   xr1,   xr2,   xr2
+    xvpermi.d    xr1,   xr1,   0xd8
+    vst          vr0,   a1,    0
+    vst          vr1,   a0,    0
+    addi.d       a0,    a0,    16
+    addi.d       a1,    a1,    16
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    1
+    ld.b         t2,    a3,    3
+    addi.d       a3,    a3,    4
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a1,    0
+    st.b         t2,    a0,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+/*
+ * void uyvyToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+ *                   const uint8_t *src2, int width, uint32_t *unused, void *opq)
+ */
+function uyvyToUV_lsx
+    andi         t0,    a5,    7
+    srli.d       a5,    a5,    3
+    beqz         a5,    2f
+1:
+    vld          vr0,   a3,    0
+    vld          vr1,   a3,    16
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    32
+    vpickev.b    vr2,   vr1,   vr0
+    vpickev.b    vr0,   vr2,   vr2
+    vpickod.b    vr1,   vr2,   vr2
+    fst.d        f0,    a0,    0
+    fst.d        f1,    a1,    0
+    addi.d       a0,    a0,    8
+    addi.d       a1,    a1,    8
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    1
+    ld.b         t2,    a3,    3
+    addi.d       a3,    a3,    4
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a0,    0
+    st.b         t2,    a1,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+function uyvyToUV_lasx
+    andi         t0,    a5,    15
+    srli.d       a5,    a5,    4
+    beqz         a5,    2f
+1:
+    xvld         xr0,   a3,    0
+    xvld         xr1,   a3,    32
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    64
+    xvpickev.b   xr2,   xr1,   xr0
+    xvpermi.d    xr2,   xr2,   0xd8
+    xvpickev.b   xr0,   xr2,   xr2
+    xvpermi.d    xr0,   xr0,   0xd8
+    xvpickod.b   xr1,   xr2,   xr2
+    xvpermi.d    xr1,   xr1,   0xd8
+    vst          vr0,   a0,    0
+    vst          vr1,   a1,    0
+    addi.d       a0,    a0,    16
+    addi.d       a1,    a1,    16
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    1
+    ld.b         t2,    a3,    3
+    addi.d       a3,    a3,    4
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a0,    0
+    st.b         t2,    a1,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+/*
+ * void nv12ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+ *                   const uint8_t *src2, int width, uint32_t *unused, void *opq)
+ */
+function nv12ToUV_lsx
+    andi         t0,    a5,    15
+    srli.d       a5,    a5,    4
+    beqz         a5,    2f
+1:
+    vld          vr0,   a3,    0
+    vld          vr1,   a3,    16
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    32
+    vpickev.b    vr2,   vr1,   vr0
+    vpickod.b    vr3,   vr1,   vr0
+    vst          vr2,   a0,    0
+    vst          vr3,   a1,    0
+    addi.d       a0,    a0,    16
+    addi.d       a1,    a1,    16
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    0
+    ld.b         t2,    a3,    1
+    addi.d       a3,    a3,    2
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a0,    0
+    st.b         t2,    a1,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+function nv12ToUV_lasx
+    andi         t0,    a5,    31
+    srli.d       a5,    a5,    5
+    beqz         a5,    2f
+1:
+    xvld         xr0,   a3,    0
+    xvld         xr1,   a3,    32
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    64
+    xvpickev.b   xr2,   xr1,   xr0
+    xvpickod.b   xr3,   xr1,   xr0
+    xvpermi.d    xr2,   xr2,   0xd8
+    xvpermi.d    xr3,   xr3,   0xd8
+    xvst         xr2,   a0,    0
+    xvst         xr3,   a1,    0
+    addi.d       a0,    a0,    32
+    addi.d       a1,    a1,    32
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    0
+    ld.b         t2,    a3,    1
+    addi.d       a3,    a3,    2
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a0,    0
+    st.b         t2,    a1,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+/*
+ * void nv21ToUV_lsx(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
+ *                   const uint8_t *src2, int width, uint32_t *unused, void *opq)
+ */
+function nv21ToUV_lsx
+    andi         t0,    a5,    15
+    srli.d       a5,    a5,    4
+    beqz         a5,    2f
+1:
+    vld          vr0,   a3,    0
+    vld          vr1,   a3,    16
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    32
+    vpickev.b    vr2,   vr1,   vr0
+    vpickod.b    vr3,   vr1,   vr0
+    vst          vr2,   a1,    0
+    vst          vr3,   a0,    0
+    addi.d       a0,    a0,    16
+    addi.d       a1,    a1,    16
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    0
+    ld.b         t2,    a3,    1
+    addi.d       a3,    a3,    2
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a1,    0
+    st.b         t2,    a0,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+function nv21ToUV_lasx
+    andi         t0,    a5,    31
+    srli.d       a5,    a5,    5
+    beqz         a5,    2f
+1:
+    xvld         xr0,   a3,    0
+    xvld         xr1,   a3,    32
+    addi.d       a5,    a5,    -1
+    addi.d       a3,    a3,    64
+    xvpickev.b   xr2,   xr1,   xr0
+    xvpickod.b   xr3,   xr1,   xr0
+    xvpermi.d    xr2,   xr2,   0xd8
+    xvpermi.d    xr3,   xr3,   0xd8
+    xvst         xr2,   a1,    0
+    xvst         xr3,   a0,    0
+    addi.d       a0,    a0,    32
+    addi.d       a1,    a1,    32
+    bnez         a5,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a3,    0
+    ld.b         t2,    a3,    1
+    addi.d       a3,    a3,    2
+    addi.d       t0,    t0,    -1
+    st.b         t1,    a1,    0
+    st.b         t2,    a0,    0
+    addi.d       a0,    a0,    1
+    addi.d       a1,    a1,    1
+    bnez         t0,    3b
+4:
+endfunc
+
+/*
+ *void abgrToA_lsx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+ *                 const uint8_t *unused2, int width, uint32_t *unused, void *opq)
+ */
+function abgrToA_lsx
+    andi         t0,    a4,    7
+    srli.d       a4,    a4,    3
+    vxor.v       vr0,   vr0,   vr0
+    beqz         a4,    2f
+1:
+    vld          vr1,   a1,    0
+    vld          vr2,   a1,    16
+    addi.d       a4,    a4,    -1
+    addi.d       a1,    a1,    32
+    vpickev.b    vr3,   vr2,   vr1
+    vpackev.b    vr3,   vr0,   vr3
+    vslli.h      vr1,   vr3,   6
+    vsrli.h      vr2,   vr3,   2
+    vor.v        vr3,   vr2,   vr1
+    vst          vr3,   a0,    0
+    addi.d       a0,    a0,    16
+    bnez         a4,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a1,    3
+    addi.d       t0,    t0,    -1
+    addi.d       a1,    a1,    4
+    andi         t1,    t1,    0xff
+    slli.w       t2,    t1,    6
+    srli.w       t3,    t1,    2
+    or           t1,    t2,    t3
+    st.h         t1,    a0,    0
+    addi.d       a0,    a0,    2
+    bnez         t0,    3b
+4:
+endfunc
+
+function abgrToA_lasx
+    andi         t0,    a4,    15
+    srli.d       a4,    a4,    4
+    xvxor.v      xr0,   xr0,   xr0
+    beqz         a4,    2f
+1:
+    xvld         xr1,   a1,    0
+    xvld         xr2,   a1,    32
+    addi.d       a4,    a4,    -1
+    addi.d       a1,    a1,    64
+    xvpickev.b   xr3,   xr2,   xr1
+    xvpermi.d    xr3,   xr3,   0xd8
+    xvpackev.b   xr3,   xr0,   xr3
+    xvslli.h     xr1,   xr3,   6
+    xvsrli.h     xr2,   xr3,   2
+    xvor.v       xr3,   xr2,   xr1
+    xvst         xr3,   a0,    0
+    addi.d       a0,    a0,    32
+    bnez         a4,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a1,    3
+    addi.d       t0,    t0,    -1
+    addi.d       a1,    a1,    4
+    andi         t1,    t1,    0xff
+    slli.w       t2,    t1,    6
+    srli.w       t3,    t1,    2
+    or           t1,    t2,    t3
+    st.h         t1,    a0,    0
+    addi.d       a0,    a0,    2
+    bnez         t0,    3b
+4:
+endfunc
+
+/*
+ *void rgbaToA_lsx(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+ *                 const uint8_t *unused2, int width, uint32_t *unused, void *opq)
+ */
+function rgbaToA_lsx
+    andi         t0,    a4,    7
+    srli.d       a4,    a4,    3
+    vxor.v       vr0,   vr0,   vr0
+    beqz         a4,    2f
+1:
+    vld          vr1,   a1,    3
+    vld          vr2,   a1,    19
+    addi.d       a4,    a4,    -1
+    addi.d       a1,    a1,    32
+    vpickev.b    vr3,   vr2,   vr1
+    vpackev.b    vr3,   vr0,   vr3
+    vslli.h      vr1,   vr3,   6
+    vsrli.h      vr2,   vr3,   2
+    vor.v        vr3,   vr2,   vr1
+    vst          vr3,   a0,    0
+    addi.d       a0,    a0,    16
+    bnez         a4,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a1,    3
+    addi.d       t0,    t0,    -1
+    addi.d       a1,    a1,    4
+    andi         t1,    t1,    0xff
+    slli.w       t2,    t1,    6
+    srli.w       t3,    t1,    2
+    or           t1,    t2,    t3
+    st.h         t1,    a0,    0
+    addi.d       a0,    a0,    2
+    bnez         t0,    3b
+4:
+endfunc
+
+function rgbaToA_lasx
+    andi         t0,    a4,    15
+    srli.d       a4,    a4,    4
+    xvxor.v      xr0,   xr0,   xr0
+    beqz         a4,    2f
+1:
+    xvld         xr1,   a1,    3
+    xvld         xr2,   a1,    35
+    addi.d       a4,    a4,    -1
+    addi.d       a1,    a1,    64
+    xvpickev.b   xr3,   xr2,   xr1
+    xvpermi.d    xr3,   xr3,   0xd8
+    xvpackev.b   xr3,   xr0,   xr3
+    xvslli.h     xr1,   xr3,   6
+    xvsrli.h     xr2,   xr3,   2
+    xvor.v       xr3,   xr2,   xr1
+    xvst         xr3,   a0,    0
+    addi.d       a0,    a0,    32
+    bnez         a4,    1b
+2:
+    beqz         t0,    4f
+3:
+    ld.b         t1,    a1,    3
+    addi.d       t0,    t0,    -1
+    addi.d       a1,    a1,    4
+    andi         t1,    t1,    0xff
+    slli.w       t2,    t1,    6
+    srli.w       t3,    t1,    2
+    or           t1,    t2,    t3
+    st.h         t1,    a0,    0
+    addi.d       a0,    a0,    2
+    bnez         t0,    3b
+4:
+endfunc

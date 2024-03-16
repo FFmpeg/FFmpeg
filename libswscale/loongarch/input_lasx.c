@@ -200,3 +200,46 @@ void planar_rgb_to_y_lasx(uint8_t *_dst, const uint8_t *src[4], int width,
         dst[i] = (tem_ry * r + tem_gy * g + tem_by * b + set) >> shift;
     }
 }
+
+av_cold void ff_sws_init_input_lasx(SwsContext *c)
+{
+    enum AVPixelFormat srcFormat = c->srcFormat;
+
+    switch (srcFormat) {
+    case AV_PIX_FMT_YUYV422:
+        c->chrToYV12 = yuy2ToUV_lasx;
+        break;
+    case AV_PIX_FMT_YVYU422:
+        c->chrToYV12 = yvy2ToUV_lasx;
+        break;
+    case AV_PIX_FMT_UYVY422:
+        c->chrToYV12 = uyvyToUV_lasx;
+        break;
+    case AV_PIX_FMT_NV12:
+    case AV_PIX_FMT_NV16:
+    case AV_PIX_FMT_NV24:
+        c->chrToYV12 = nv12ToUV_lasx;
+        break;
+    case AV_PIX_FMT_NV21:
+    case AV_PIX_FMT_NV42:
+        c->chrToYV12 = nv21ToUV_lasx;
+        break;
+    case AV_PIX_FMT_GBRAP:
+    case AV_PIX_FMT_GBRP:
+        c->readChrPlanar = planar_rgb_to_uv_lasx;
+        break;
+    }
+
+    if (c->needAlpha) {
+        switch (srcFormat) {
+        case AV_PIX_FMT_BGRA:
+        case AV_PIX_FMT_RGBA:
+            c->alpToYV12 = rgbaToA_lasx;
+            break;
+        case AV_PIX_FMT_ABGR:
+        case AV_PIX_FMT_ARGB:
+            c->alpToYV12 = abgrToA_lasx;
+            break;
+        }
+    }
+}
