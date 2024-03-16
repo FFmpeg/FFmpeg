@@ -38,6 +38,7 @@
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin.h"
 #include "libavcodec/kbdwin.h"
+#include "libavcodec/cbrt_data.h"
 
 DECLARE_ALIGNED(32, static float, sine_120)[120];
 DECLARE_ALIGNED(32, static float, sine_960)[960];
@@ -63,4 +64,77 @@ static void init_tables(void)
     ff_thread_once(&init_float_once, init_tables_float_fn);
 }
 
+/** Dequantization-related **/
+#include "aacdec_tab.h"
+#include "libavutil/intfloat.h"
+
+#ifndef VMUL2
+static inline float *VMUL2(float *dst, const float *v, unsigned idx,
+                           const float *scale)
+{
+    float s = *scale;
+    *dst++ = v[idx    & 15] * s;
+    *dst++ = v[idx>>4 & 15] * s;
+    return dst;
+}
+#endif
+
+#ifndef VMUL4
+static inline float *VMUL4(float *dst, const float *v, unsigned idx,
+                           const float *scale)
+{
+    float s = *scale;
+    *dst++ = v[idx    & 3] * s;
+    *dst++ = v[idx>>2 & 3] * s;
+    *dst++ = v[idx>>4 & 3] * s;
+    *dst++ = v[idx>>6 & 3] * s;
+    return dst;
+}
+#endif
+
+#ifndef VMUL2S
+static inline float *VMUL2S(float *dst, const float *v, unsigned idx,
+                            unsigned sign, const float *scale)
+{
+    union av_intfloat32 s0, s1;
+
+    s0.f = s1.f = *scale;
+    s0.i ^= sign >> 1 << 31;
+    s1.i ^= sign      << 31;
+
+    *dst++ = v[idx    & 15] * s0.f;
+    *dst++ = v[idx>>4 & 15] * s1.f;
+
+    return dst;
+}
+#endif
+
+#ifndef VMUL4S
+static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
+                            unsigned sign, const float *scale)
+{
+    unsigned nz = idx >> 12;
+    union av_intfloat32 s = { .f = *scale };
+    union av_intfloat32 t;
+
+    t.i = s.i ^ (sign & 1U<<31);
+    *dst++ = v[idx    & 3] * t.f;
+
+    sign <<= nz & 1; nz >>= 1;
+    t.i = s.i ^ (sign & 1U<<31);
+    *dst++ = v[idx>>2 & 3] * t.f;
+
+    sign <<= nz & 1; nz >>= 1;
+    t.i = s.i ^ (sign & 1U<<31);
+    *dst++ = v[idx>>4 & 3] * t.f;
+
+    sign <<= nz & 1;
+    t.i = s.i ^ (sign & 1U<<31);
+    *dst++ = v[idx>>6 & 3] * t.f;
+
+    return dst;
+}
+#endif
+
 #include "aacdec_dsp_template.c"
+#include "aacdec_proc_template.c"

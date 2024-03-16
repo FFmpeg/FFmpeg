@@ -48,6 +48,9 @@
 extern const AACDecDSP aac_dsp;
 extern const AACDecDSP aac_dsp_fixed;
 
+extern const AACDecProc aac_proc;
+extern const AACDecProc aac_proc_fixed;
+
 av_cold int ff_aac_decode_close(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
@@ -119,6 +122,7 @@ av_cold int ff_aac_decode_init_common(AVCodecContext *avctx)
         return ret;
 
     ac->dsp = is_fixed ? aac_dsp_fixed : aac_dsp;
+    ac->proc = is_fixed ? aac_proc_fixed : aac_proc;
 
     ac->dsp.init_tables();
 

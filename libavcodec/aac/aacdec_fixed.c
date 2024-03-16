@@ -38,6 +38,7 @@
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin_fixed_tablegen.h"
 #include "libavcodec/kbdwin.h"
+#include "libavcodec/cbrt_data.h"
 
 DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_long_1024))[1024];
 DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_short_128))[128];
@@ -61,4 +62,8 @@ static void init_tables_fixed(void)
     ff_thread_once(&init_fixed_once, init_tables_fixed_fn);
 }
 
+/** Dequantization-related */
+#include "aacdec_fixed_dequant.h"
+
 #include "aacdec_dsp_template.c"
+#include "aacdec_proc_template.c"

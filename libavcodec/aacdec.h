@@ -201,6 +201,16 @@ typedef struct DynamicRangeControl {
 } DynamicRangeControl;
 
 /**
+ * Decode-specific primitives
+ */
+typedef struct AACDecProc {
+    int (*decode_spectrum_and_dequant)(AACDecContext *ac,
+                                       GetBitContext *gb,
+                                       const Pulse *pulse,
+                                       SingleChannelElement *sce);
+} AACDecProc;
+
+/**
  * DSP-specific primitives
  */
 typedef struct AACDecDSP {
@@ -232,6 +242,7 @@ struct AACDecContext {
     struct AVCodecContext *avctx;
 
     AACDecDSP dsp;
+    AACDecProc proc;
 
     struct AVFrame *frame;
 
@@ -309,10 +320,6 @@ struct AACDecContext {
     int warned_he_aac_mono;
 
     int is_fixed;
-
-    /* aacdec functions pointers */
-    void (*vector_pow43)(int *coefs, int len);
-    void (*subband_scale)(int *dst, int *src, int scale, int offset, int len, void *log_context);
 };
 
 #if defined(USE_FIXED) && USE_FIXED

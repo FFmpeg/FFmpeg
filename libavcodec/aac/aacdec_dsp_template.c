@@ -151,7 +151,7 @@ static void AAC_RENAME(apply_intensity_stereo)(AACDecContext *ac,
                     scale = c * sce1->AAC_RENAME(sf)[idx];
                     for (group = 0; group < ics->group_len[g]; group++)
 #if USE_FIXED
-                        ac->subband_scale(coef1 + group * 128 + offsets[i],
+                        subband_scale(coef1 + group * 128 + offsets[i],
                                       coef0 + group * 128 + offsets[i],
                                       scale,
                                       23,
