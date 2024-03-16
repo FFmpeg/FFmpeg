@@ -616,7 +616,7 @@ static void AAC_RENAME(apply_prediction)(AACDecContext *ac, SingleChannelElement
 }
 
 const AACDecDSP AAC_RENAME(aac_dsp) = {
-    .init_tables = &AAC_RENAME(init_tables),
+    .init = &AAC_RENAME(init),
 
     .dequant_scalefactors = &AAC_RENAME(dequant_scalefactors),
     .apply_mid_side_stereo = &AAC_RENAME(apply_mid_side_stereo),

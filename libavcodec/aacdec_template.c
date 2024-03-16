@@ -1088,18 +1088,11 @@ static int sample_rate_idx (int rate)
     else                    return 11;
 }
 
-static void aacdec_init(AACDecContext *ac);
-
 static av_cold void aac_static_table_init(void)
 {
     AAC_RENAME(ff_aac_sbr_init)();
 
     ff_aacdec_common_init_once();
-
-#if !USE_FIXED
-    ff_aac_float_common_init();
-#else
-#endif
 }
 
 static AVOnce aac_table_init = AV_ONCE_INIT;
@@ -1121,12 +1114,10 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ac->avctx = avctx;
     ac->oc[1].m4ac.sample_rate = avctx->sample_rate;
 
-    aacdec_init(ac);
-#if USE_FIXED
-    avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
-#else
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-#endif /* USE_FIXED */
+    if (ac->is_fixed)
+        avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+    else
+        avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     if (avctx->extradata_size > 0) {
         if ((ret = decode_audio_specific_config(ac, ac->avctx, &ac->oc[1].m4ac,
@@ -1162,15 +1153,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
             else if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
         }
-    }
-
-#if USE_FIXED
-    ac->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-#else
-    ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
-#endif /* USE_FIXED */
-    if (!ac->fdsp) {
-        return AVERROR(ENOMEM);
     }
 
     return ff_aac_decode_init_common(avctx);
@@ -2410,13 +2392,4 @@ static int aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             break;
 
     return buf_size > buf_offset ? buf_consumed : buf_size;
-}
-
-static void aacdec_init(AACDecContext *c)
-{
-#if !USE_FIXED
-#if ARCH_MIPS
-    ff_aacdec_init_mips(c);
-#endif
-#endif /* !USE_FIXED */
 }

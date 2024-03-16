@@ -35,6 +35,8 @@
 
 #include "libavcodec/aac_defines.h"
 
+#include "libavcodec/avcodec.h"
+#include "libavcodec/aacdec.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin.h"
 #include "libavcodec/kbdwin.h"
@@ -61,10 +63,22 @@ static void init_tables_float_fn(void)
     AAC_RENAME(ff_init_ff_sine_windows)(9);
 }
 
-static void init_tables(void)
+static int init(AACDecContext *ac)
 {
     static AVOnce init_float_once = AV_ONCE_INIT;
     ff_thread_once(&init_float_once, init_tables_float_fn);
+
+    ac->fdsp = avpriv_float_dsp_alloc(ac->avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!ac->fdsp)
+        return AVERROR(ENOMEM);
+
+    ff_aac_float_common_init();
+
+#if ARCH_MIPS
+    ff_aacdec_init_mips(ac);
+#endif
+
+    return 0;
 }
 
 static const float cce_scale[] = {

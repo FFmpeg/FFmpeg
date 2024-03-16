@@ -124,9 +124,7 @@ av_cold int ff_aac_decode_init_common(AVCodecContext *avctx)
     ac->dsp = is_fixed ? aac_dsp_fixed : aac_dsp;
     ac->proc = is_fixed ? aac_proc_fixed : aac_proc;
 
-    ac->dsp.init_tables();
-
-    return 0;
+    return ac->dsp.init(ac);
 }
 
 #define AACDEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM

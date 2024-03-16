@@ -216,7 +216,7 @@ typedef struct AACDecProc {
  * DSP-specific primitives
  */
 typedef struct AACDecDSP {
-    void (*init_tables)(void);
+    int (*init)(AACDecContext *ac);
 
     void (*dequant_scalefactors)(SingleChannelElement *sce);
 

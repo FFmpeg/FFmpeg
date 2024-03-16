@@ -35,6 +35,8 @@
 
 #include "libavcodec/aac_defines.h"
 
+#include "libavcodec/avcodec.h"
+#include "libavcodec/aacdec.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin_fixed_tablegen.h"
 #include "libavcodec/kbdwin.h"
@@ -58,10 +60,16 @@ static void init_tables_fixed_fn(void)
     init_sine_windows_fixed();
 }
 
-static void init_tables_fixed(void)
+static int init_fixed(AACDecContext *ac)
 {
     static AVOnce init_fixed_once = AV_ONCE_INIT;
     ff_thread_once(&init_fixed_once, init_tables_fixed_fn);
+
+    ac->fdsp = avpriv_alloc_fixed_dsp(ac->avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!ac->fdsp)
+        return AVERROR(ENOMEM);
+
+    return 0;
 }
 
 static const int cce_scale_fixed[8] = {
