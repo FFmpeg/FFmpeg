@@ -79,56 +79,6 @@
 #include <math.h>
 #include <string.h>
 
-DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_long_1024))[1024];
-DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_short_128))[128];
-DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_long_960))[960];
-DECLARE_ALIGNED(32, int, AAC_RENAME2(aac_kbd_short_120))[120];
-
-/* @name ltp_coef
- * Table of the LTP coefficients
- */
-static const int ltp_coef_fixed[8] = {
-    Q30(0.570829), Q30(0.696616), Q30(0.813004), Q30(0.911304),
-    Q30(0.984900), Q30(1.067894), Q30(1.194601), Q30(1.369533),
-};
-
-/* @name tns_tmp2_map
- * Tables of the tmp2[] arrays of LPC coefficients used for TNS.
- * The suffix _M_N[] indicate the values of coef_compress and coef_res
- * respectively.
- * @{
- */
-static const int tns_tmp2_map_1_3[4] = {
-    Q31(0.00000000), Q31(-0.43388373),  Q31(0.64278758),  Q31(0.34202015),
-};
-
-static const int tns_tmp2_map_0_3[8] = {
-    Q31(0.00000000), Q31(-0.43388373), Q31(-0.78183150), Q31(-0.97492790),
-    Q31(0.98480773), Q31( 0.86602539), Q31( 0.64278758), Q31( 0.34202015),
-};
-
-static const int tns_tmp2_map_1_4[8] = {
-    Q31(0.00000000), Q31(-0.20791170), Q31(-0.40673664), Q31(-0.58778524),
-    Q31(0.67369562), Q31( 0.52643216), Q31( 0.36124167), Q31( 0.18374951),
-};
-
-static const int tns_tmp2_map_0_4[16] = {
-    Q31( 0.00000000), Q31(-0.20791170), Q31(-0.40673664), Q31(-0.58778524),
-    Q31(-0.74314481), Q31(-0.86602539), Q31(-0.95105654), Q31(-0.99452192),
-    Q31( 0.99573416), Q31( 0.96182561), Q31( 0.89516330), Q31( 0.79801720),
-    Q31( 0.67369562), Q31( 0.52643216), Q31( 0.36124167), Q31( 0.18374951),
-};
-
-static const int * const tns_tmp2_map_fixed[4] = {
-    tns_tmp2_map_0_3,
-    tns_tmp2_map_0_4,
-    tns_tmp2_map_1_3,
-    tns_tmp2_map_1_4
-};
-// @}
-
-static const int exp2tab[4] = { Q31(1.0000000000/2), Q31(1.1892071150/2), Q31(1.4142135624/2), Q31(1.6817928305/2) };  // 2^0, 2^0.25, 2^0.5, 2^0.75
-
 #include "aacdec_template.c"
 
 const FFCodec ff_aac_fixed_decoder = {

@@ -1218,13 +1218,17 @@ static int decode_prediction(AACDecContext *ac, IndividualChannelStream *ics,
 /**
  * Decode Long Term Prediction data; reference: table 4.xx.
  */
-static void decode_ltp(LongTermPrediction *ltp,
+static void decode_ltp(AACDecContext *ac, LongTermPrediction *ltp,
                        GetBitContext *gb, uint8_t max_sfb)
 {
     int sfb;
 
     ltp->lag  = get_bits(gb, 11);
-    ltp->AAC_RENAME(coef) = AAC_RENAME2(ltp_coef)[get_bits(gb, 3)];
+    if (ac->is_fixed)
+        ltp->coef_fixed = Q30(ff_ltp_coef[get_bits(gb, 3)]);
+    else
+        ltp->coef = ff_ltp_coef[get_bits(gb, 3)];
+
     for (sfb = 0; sfb < FFMIN(max_sfb, MAX_LTP_LONG_SFB); sfb++)
         ltp->used[sfb] = get_bits1(gb);
 }
@@ -1331,7 +1335,7 @@ static int decode_ics_info(AACDecContext *ac, IndividualChannelStream *ics,
                     goto fail;
                 }
                 if ((ics->ltp.present = get_bits(gb, 1)))
-                    decode_ltp(&ics->ltp, gb, ics->max_sfb);
+                    decode_ltp(ac, &ics->ltp, gb, ics->max_sfb);
             }
         }
     }
@@ -1531,7 +1535,7 @@ static int decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
                     tmp2_idx = 2 * coef_compress + coef_res;
 
                     for (i = 0; i < tns->order[w][filt]; i++)
-                        tns->AAC_RENAME(coef)[w][filt][i] = AAC_RENAME2(tns_tmp2_map)[tmp2_idx][get_bits(gb, coef_len)];
+                        tns->AAC_RENAME(coef)[w][filt][i] = Q31(ff_tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)]);
                 }
             }
         }
@@ -1704,7 +1708,7 @@ static int decode_cpe(AACDecContext *ac, GetBitContext *gb, ChannelElement *cpe)
         if (cpe->ch[1].ics.predictor_present &&
             (ac->oc[1].m4ac.object_type != AOT_AAC_MAIN))
             if ((cpe->ch[1].ics.ltp.present = get_bits(gb, 1)))
-                decode_ltp(&cpe->ch[1].ics.ltp, gb, cpe->ch[1].ics.max_sfb);
+                decode_ltp(ac, &cpe->ch[1].ics.ltp, gb, cpe->ch[1].ics.max_sfb);
         ms_present = get_bits(gb, 2);
         if (ms_present == 3) {
             av_log(ac->avctx, AV_LOG_ERROR, "ms_present = 3 is reserved.\n");
