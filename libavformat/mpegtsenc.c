@@ -2319,7 +2319,7 @@ static int mpegts_check_bitstream(AVFormatContext *s, AVStream *st,
                 pkt->size >= 5 && AV_RB32(pkt->data) != 0x0000001 &&
                 (AV_RB24(pkt->data) != 0x000001 ||
                     (st->codecpar->extradata_size > 0 &&
-                        (st->codecpar->extradata[0] & e->mask == e->value))))
+                        ((st->codecpar->extradata[0] & e->mask) == e->value))))
             return ff_stream_add_bitstream_filter(st, e->bsf_name, NULL);
     }
     return 1;
