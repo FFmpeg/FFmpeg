@@ -554,6 +554,21 @@ static void AAC_RENAME(imdct_and_windowing_eld)(AACDecContext *ac, SingleChannel
     memcpy( saved,       buf,     n * sizeof(*saved));
 }
 
+static void AAC_RENAME(clip_output)(AACDecContext *ac, ChannelElement *che,
+                                    int type, int samples)
+{
+#if USE_FIXED
+    /* preparation for resampler */
+    for (int j = 0; j < samples; j++){
+        che->ch[0].output_fixed[j] = (int32_t)av_clip64((int64_t)che->ch[0].output_fixed[j]*128,
+                                                    INT32_MIN, INT32_MAX-0x8000)+0x8000;
+        if (type == TYPE_CPE || (type == TYPE_SCE && ac->oc[1].m4ac.ps == 1))
+            che->ch[1].output_fixed[j] = (int32_t)av_clip64((int64_t)che->ch[1].output_fixed[j]*128,
+                                                        INT32_MIN, INT32_MAX-0x8000)+0x8000;
+    }
+#endif
+}
+
 const AACDecDSP AAC_RENAME(aac_dsp) = {
     .init_tables = &AAC_RENAME(init_tables),
 
@@ -571,4 +586,6 @@ const AACDecDSP AAC_RENAME(aac_dsp) = {
 
     .apply_dependent_coupling = AAC_RENAME(apply_dependent_coupling),
     .apply_independent_coupling = AAC_RENAME(apply_independent_coupling),
+
+    .clip_output = AAC_RENAME(clip_output),
 };

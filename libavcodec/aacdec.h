@@ -239,6 +239,8 @@ typedef struct AACDecDSP {
     void (*imdct_and_windowing_960)(AACDecContext *ac, SingleChannelElement *sce);
     void (*imdct_and_windowing_ld)(AACDecContext *ac, SingleChannelElement *sce);
     void (*imdct_and_windowing_eld)(AACDecContext *ac, SingleChannelElement *sce);
+
+    void (*clip_output)(AACDecContext *ac, ChannelElement *che, int type, int samples);
 } AACDecDSP;
 
 /**

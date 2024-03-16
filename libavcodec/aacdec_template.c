@@ -2129,20 +2129,7 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                 }
                 if (type <= TYPE_CCE)
                     apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, ac->dsp.apply_independent_coupling);
-
-#if USE_FIXED
-                {
-                    int j;
-                    /* preparation for resampler */
-                    for(j = 0; j<samples; j++){
-                        che->ch[0].output_fixed[j] = (int32_t)av_clip64((int64_t)che->ch[0].output_fixed[j]*128,
-                                                                    INT32_MIN, INT32_MAX-0x8000)+0x8000;
-                        if (type == TYPE_CPE || (type == TYPE_SCE && ac->oc[1].m4ac.ps == 1))
-                            che->ch[1].output_fixed[j] = (int32_t)av_clip64((int64_t)che->ch[1].output_fixed[j]*128,
-                                                                        INT32_MIN, INT32_MAX-0x8000)+0x8000;
-                    }
-                }
-#endif /* USE_FIXED */
+                ac->dsp.clip_output(ac, che, type, samples);
                 che->present = 0;
             } else if (che) {
                 av_log(ac->avctx, AV_LOG_VERBOSE, "ChannelElement %d.%d missing \n", type, i);
