@@ -22,7 +22,7 @@
 #include "swscale_loongarch.h"
 #include "libavutil/loongarch/loongson_intrinsics.h"
 
-void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
+void yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
                           const int16_t **src, uint8_t *dest, int dstW,
                           const uint8_t *dither, int offset)
 {
@@ -1775,8 +1775,27 @@ YUV2RGBWRAPPER(yuv2, rgb_full, bgr8_full,   AV_PIX_FMT_BGR8,  0)
 YUV2RGBWRAPPER(yuv2, rgb_full, rgb8_full,   AV_PIX_FMT_RGB8,  0)
 
 
-av_cold void ff_sws_init_output_lasx(SwsContext *c)
+av_cold void ff_sws_init_output_lasx(SwsContext *c,
+                                     yuv2planar1_fn *yuv2plane1,
+                                     yuv2planarX_fn *yuv2planeX,
+                                     yuv2interleavedX_fn *yuv2nv12cX,
+                                     yuv2packed1_fn *yuv2packed1,
+                                     yuv2packed2_fn *yuv2packed2,
+                                     yuv2packedX_fn *yuv2packedX,
+                                     yuv2anyX_fn *yuv2anyX)
 {
+    enum AVPixelFormat dstFormat = c->dstFormat;
+
+    /* Add initialization once optimized */
+    if (isSemiPlanarYUV(dstFormat) && isDataInHighBits(dstFormat)) {
+    } else if (is16BPS(dstFormat)) {
+    } else if (isNBPS(dstFormat)) {
+    } else if (dstFormat == AV_PIX_FMT_GRAYF32BE) {
+    } else if (dstFormat == AV_PIX_FMT_GRAYF32LE) {
+    } else {
+        *yuv2plane1 = yuv2plane1_8_lasx;
+        *yuv2planeX = yuv2planeX_8_lasx;
+    }
 
     if(c->flags & SWS_FULL_CHR_H_INT) {
         switch (c->dstFormat) {

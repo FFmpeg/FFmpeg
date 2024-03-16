@@ -61,11 +61,21 @@ void planar_rgb_to_uv_lsx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
 void planar_rgb_to_y_lsx(uint8_t *_dst, const uint8_t *src[4], int width,
                          int32_t *rgb2yuv, void *opq);
 
-void ff_yuv2planeX_8_lsx(const int16_t *filter, int filterSize,
+void yuv2planeX_8_lsx(const int16_t *filter, int filterSize,
                          const int16_t **src, uint8_t *dest, int dstW,
                          const uint8_t *dither, int offset);
 
-av_cold void ff_sws_init_output_lsx(SwsContext *c);
+void yuv2plane1_8_lsx(const int16_t *src, uint8_t *dest, int dstW,
+                      const uint8_t *dither, int offset);
+
+av_cold void ff_sws_init_output_lsx(SwsContext *c,
+                                    yuv2planar1_fn *yuv2plane1,
+                                    yuv2planarX_fn *yuv2planeX,
+                                    yuv2interleavedX_fn *yuv2nv12cX,
+                                    yuv2packed1_fn *yuv2packed1,
+                                    yuv2packed2_fn *yuv2packed2,
+                                    yuv2packedX_fn *yuv2packedX,
+                                    yuv2anyX_fn *yuv2anyX);
 
 int yuv420_rgb24_lsx(SwsContext *c, const uint8_t *src[], int srcStride[],
                      int srcSliceY, int srcSliceH, uint8_t *dst[], int dstStride[]);
@@ -135,12 +145,21 @@ void ff_interleave_bytes_lasx(const uint8_t *src1, const uint8_t *src2,
                               uint8_t *dest, int width, int height,
                               int src1Stride, int src2Stride, int dstStride);
 
-void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
+void yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
                           const int16_t **src, uint8_t *dest, int dstW,
                           const uint8_t *dither, int offset);
 
-av_cold void ff_sws_init_output_lasx(SwsContext *c);
+void yuv2plane1_8_lasx(const int16_t *src, uint8_t *dest, int dstW,
+                      const uint8_t *dither, int offset);
 
+av_cold void ff_sws_init_output_lasx(SwsContext *c,
+                                     yuv2planar1_fn *yuv2plane1,
+                                     yuv2planarX_fn *yuv2planeX,
+                                     yuv2interleavedX_fn *yuv2nv12cX,
+                                     yuv2packed1_fn *yuv2packed1,
+                                     yuv2packed2_fn *yuv2packed2,
+                                     yuv2packedX_fn *yuv2packedX,
+                                     yuv2anyX_fn *yuv2anyX);
 #endif // #if HAVE_LASX
 
 #endif /* SWSCALE_LOONGARCH_SWSCALE_LOONGARCH_H */

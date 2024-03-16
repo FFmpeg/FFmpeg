@@ -60,7 +60,9 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
     if (have_lsx(cpu_flags)) {
-        ff_sws_init_output_lsx(c);
+        ff_sws_init_output_lsx(c, &c->yuv2plane1, &c->yuv2planeX,
+                               &c->yuv2nv12cX, &c->yuv2packed1,
+                               &c->yuv2packed2, &c->yuv2packedX, &c->yuv2anyX);
         if (c->srcBpc == 8) {
             if (c->dstBpc <= 14) {
                 c->hyScale = c->hcScale = ff_hscale_8_to_15_lsx;
@@ -80,12 +82,12 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
             }
             break;
         }
-        if (c->dstBpc == 8)
-            c->yuv2planeX = ff_yuv2planeX_8_lsx;
     }
 #if HAVE_LASX
     if (have_lasx(cpu_flags)) {
-        ff_sws_init_output_lasx(c);
+        ff_sws_init_output_lasx(c, &c->yuv2plane1, &c->yuv2planeX,
+                                &c->yuv2nv12cX, &c->yuv2packed1,
+                                &c->yuv2packed2, &c->yuv2packedX, &c->yuv2anyX);
         if (c->srcBpc == 8) {
             if (c->dstBpc <= 14) {
                 c->hyScale = c->hcScale = ff_hscale_8_to_15_lasx;
@@ -105,8 +107,6 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
             }
             break;
         }
-        if (c->dstBpc == 8)
-            c->yuv2planeX = ff_yuv2planeX_8_lasx;
     }
 #endif // #if HAVE_LASX
     ff_sws_init_range_convert_loongarch(c);
