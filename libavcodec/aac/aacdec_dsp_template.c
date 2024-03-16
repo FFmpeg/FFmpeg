@@ -568,4 +568,7 @@ const AACDecDSP AAC_RENAME(aac_dsp) = {
     .imdct_and_windowing_960 = AAC_RENAME(imdct_and_windowing_960),
     .imdct_and_windowing_ld = AAC_RENAME(imdct_and_windowing_ld),
     .imdct_and_windowing_eld = AAC_RENAME(imdct_and_windowing_eld),
+
+    .apply_dependent_coupling = AAC_RENAME(apply_dependent_coupling),
+    .apply_independent_coupling = AAC_RENAME(apply_independent_coupling),
 };

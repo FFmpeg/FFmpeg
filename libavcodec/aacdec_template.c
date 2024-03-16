@@ -2095,7 +2095,7 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
             ChannelElement *che = ac->che[type][i];
             if (che && che->present) {
                 if (type <= TYPE_CPE)
-                    apply_channel_coupling(ac, che, type, i, BEFORE_TNS, AAC_RENAME(apply_dependent_coupling));
+                    apply_channel_coupling(ac, che, type, i, BEFORE_TNS, ac->dsp.apply_dependent_coupling);
                 if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP) {
                     if (che->ch[0].ics.predictor_present) {
                         if (che->ch[0].ics.ltp.present)
@@ -2111,7 +2111,7 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                     ac->dsp.apply_tns(che->ch[1].AAC_RENAME(coeffs),
                                       &che->ch[1].tns, &che->ch[1].ics, 1);
                 if (type <= TYPE_CPE)
-                    apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, AAC_RENAME(apply_dependent_coupling));
+                    apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, ac->dsp.apply_dependent_coupling);
                 if (type != TYPE_CCE || che->coup.coupling_point == AFTER_IMDCT) {
                     imdct_and_window(ac, &che->ch[0]);
                     if (ac->oc[1].m4ac.object_type == AOT_AAC_LTP)
@@ -2128,7 +2128,7 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                     }
                 }
                 if (type <= TYPE_CCE)
-                    apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, AAC_RENAME(apply_independent_coupling));
+                    apply_channel_coupling(ac, che, type, i, AFTER_IMDCT, ac->dsp.apply_independent_coupling);
 
 #if USE_FIXED
                 {

@@ -64,8 +64,20 @@ static void init_tables_fixed(void)
     ff_thread_once(&init_fixed_once, init_tables_fixed_fn);
 }
 
+static const int cce_scale_fixed[8] = {
+    Q30(1.0),          //2^(0/8)
+    Q30(1.0905077327), //2^(1/8)
+    Q30(1.1892071150), //2^(2/8)
+    Q30(1.2968395547), //2^(3/8)
+    Q30(1.4142135624), //2^(4/8)
+    Q30(1.5422108254), //2^(5/8)
+    Q30(1.6817928305), //2^(6/8)
+    Q30(1.8340080864), //2^(7/8)
+};
+
 /** Dequantization-related */
 #include "aacdec_fixed_dequant.h"
 
+#include "aacdec_fixed_coupling.h"
 #include "aacdec_dsp_template.c"
 #include "aacdec_proc_template.c"

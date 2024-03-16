@@ -228,6 +228,13 @@ typedef struct AACDecDSP {
     void (*apply_ltp)(AACDecContext *ac, SingleChannelElement *sce);
     void (*update_ltp)(AACDecContext *ac, SingleChannelElement *sce);
 
+    void (*apply_dependent_coupling)(AACDecContext *ac,
+                                     SingleChannelElement *target,
+                                     ChannelElement *cce, int index);
+    void (*apply_independent_coupling)(AACDecContext *ac,
+                                       SingleChannelElement *target,
+                                       ChannelElement *cce, int index);
+
     void (*imdct_and_windowing)(AACDecContext *ac, SingleChannelElement *sce);
     void (*imdct_and_windowing_960)(AACDecContext *ac, SingleChannelElement *sce);
     void (*imdct_and_windowing_ld)(AACDecContext *ac, SingleChannelElement *sce);
