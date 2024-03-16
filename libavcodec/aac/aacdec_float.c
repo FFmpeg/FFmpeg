@@ -147,5 +147,6 @@ static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
 #endif
 
 #include "aacdec_float_coupling.h"
+#include "aacdec_float_prediction.h"
 #include "aacdec_dsp_template.c"
 #include "aacdec_proc_template.c"

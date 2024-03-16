@@ -79,5 +79,6 @@ static const int cce_scale_fixed[8] = {
 #include "aacdec_fixed_dequant.h"
 
 #include "aacdec_fixed_coupling.h"
+#include "aacdec_fixed_prediction.h"
 #include "aacdec_dsp_template.c"
 #include "aacdec_proc_template.c"

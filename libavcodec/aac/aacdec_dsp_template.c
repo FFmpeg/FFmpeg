@@ -569,6 +569,52 @@ static void AAC_RENAME(clip_output)(AACDecContext *ac, ChannelElement *che,
 #endif
 }
 
+static inline void reset_all_predictors(PredictorState *ps)
+{
+    int i;
+    for (i = 0; i < MAX_PREDICTORS; i++)
+        reset_predict_state(&ps[i]);
+}
+
+static inline void reset_predictor_group(PredictorState *ps, int group_num)
+{
+    int i;
+    for (i = group_num - 1; i < MAX_PREDICTORS; i += 30)
+        reset_predict_state(&ps[i]);
+}
+
+/**
+ * Apply AAC-Main style frequency domain prediction.
+ */
+static void AAC_RENAME(apply_prediction)(AACDecContext *ac, SingleChannelElement *sce)
+{
+    int sfb, k;
+
+    if (!sce->ics.predictor_initialized) {
+        reset_all_predictors(sce->AAC_RENAME(predictor_state));
+        sce->ics.predictor_initialized = 1;
+    }
+
+    if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
+        for (sfb = 0;
+             sfb < ff_aac_pred_sfb_max[ac->oc[1].m4ac.sampling_index];
+             sfb++) {
+            for (k = sce->ics.swb_offset[sfb];
+                 k < sce->ics.swb_offset[sfb + 1];
+                 k++) {
+                predict(&sce->AAC_RENAME(predictor_state)[k],
+                        &sce->AAC_RENAME(coeffs)[k],
+                        sce->ics.predictor_present &&
+                        sce->ics.prediction_used[sfb]);
+            }
+        }
+        if (sce->ics.predictor_reset_group)
+            reset_predictor_group(sce->AAC_RENAME(predictor_state),
+                                  sce->ics.predictor_reset_group);
+    } else
+        reset_all_predictors(sce->AAC_RENAME(predictor_state));
+}
+
 const AACDecDSP AAC_RENAME(aac_dsp) = {
     .init_tables = &AAC_RENAME(init_tables),
 
@@ -578,6 +624,8 @@ const AACDecDSP AAC_RENAME(aac_dsp) = {
     .apply_tns = &AAC_RENAME(apply_tns),
     .apply_ltp = &AAC_RENAME(apply_ltp),
     .update_ltp = &AAC_RENAME(update_ltp),
+
+    .apply_prediction = AAC_RENAME(apply_prediction),
 
     .imdct_and_windowing = AAC_RENAME(imdct_and_windowing),
     .imdct_and_windowing_960 = AAC_RENAME(imdct_and_windowing_960),

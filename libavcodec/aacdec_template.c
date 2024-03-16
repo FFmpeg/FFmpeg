@@ -1072,13 +1072,6 @@ static int decode_audio_specific_config(AACDecContext *ac,
                                            sync_extension);
 }
 
-static void reset_all_predictors(PredictorState *ps)
-{
-    int i;
-    for (i = 0; i < MAX_PREDICTORS; i++)
-        reset_predict_state(&ps[i]);
-}
-
 static int sample_rate_idx (int rate)
 {
          if (92017 <= rate) return 0;
@@ -1093,13 +1086,6 @@ static int sample_rate_idx (int rate)
     else if (11502 <= rate) return 9;
     else if (9391  <= rate) return 10;
     else                    return 11;
-}
-
-static void reset_predictor_group(PredictorState *ps, int group_num)
-{
-    int i;
-    for (i = group_num - 1; i < MAX_PREDICTORS; i += 30)
-        reset_predict_state(&ps[i]);
 }
 
 static void aacdec_init(AACDecContext *ac);
@@ -1573,38 +1559,6 @@ static void decode_mid_side_stereo(ChannelElement *cpe, GetBitContext *gb,
     }
 }
 
-/**
- * Apply AAC-Main style frequency domain prediction.
- */
-static void apply_prediction(AACDecContext *ac, SingleChannelElement *sce)
-{
-    int sfb, k;
-
-    if (!sce->ics.predictor_initialized) {
-        reset_all_predictors(sce->AAC_RENAME(predictor_state));
-        sce->ics.predictor_initialized = 1;
-    }
-
-    if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
-        for (sfb = 0;
-             sfb < ff_aac_pred_sfb_max[ac->oc[1].m4ac.sampling_index];
-             sfb++) {
-            for (k = sce->ics.swb_offset[sfb];
-                 k < sce->ics.swb_offset[sfb + 1];
-                 k++) {
-                predict(&sce->AAC_RENAME(predictor_state)[k],
-                        &sce->AAC_RENAME(coeffs)[k],
-                        sce->ics.predictor_present &&
-                        sce->ics.prediction_used[sfb]);
-            }
-        }
-        if (sce->ics.predictor_reset_group)
-            reset_predictor_group(sce->AAC_RENAME(predictor_state),
-                                  sce->ics.predictor_reset_group);
-    } else
-        reset_all_predictors(sce->AAC_RENAME(predictor_state));
-}
-
 static void decode_gain_control(SingleChannelElement * sce, GetBitContext * gb)
 {
     // wd_num, wd_test, aloc_size
@@ -1722,7 +1676,7 @@ int AAC_RENAME(ff_aac_decode_ics)(AACDecContext *ac, SingleChannelElement *sce,
         goto fail;
 
     if (ac->oc[1].m4ac.object_type == AOT_AAC_MAIN && !common_window)
-        apply_prediction(ac, sce);
+        ac->dsp.apply_prediction(ac, sce);
 
     return 0;
 fail:
@@ -1767,8 +1721,8 @@ static int decode_cpe(AACDecContext *ac, GetBitContext *gb, ChannelElement *cpe)
         if (ms_present)
             ac->dsp.apply_mid_side_stereo(ac, cpe);
         if (ac->oc[1].m4ac.object_type == AOT_AAC_MAIN) {
-            apply_prediction(ac, &cpe->ch[0]);
-            apply_prediction(ac, &cpe->ch[1]);
+            ac->dsp.apply_prediction(ac, &cpe->ch[0]);
+            ac->dsp.apply_prediction(ac, &cpe->ch[1]);
         }
     }
 
