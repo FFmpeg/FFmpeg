@@ -24,6 +24,38 @@
 #include "libswscale/rgb2rgb.h"
 #include "libavutil/loongarch/cpu.h"
 
+av_cold void ff_sws_init_range_convert_loongarch(SwsContext *c)
+{
+    int cpu_flags = av_get_cpu_flags();
+
+    if (have_lsx(cpu_flags)) {
+        if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
+            if (c->dstBpc <= 14) {
+                if (c->srcRange) {
+                    c->lumConvertRange = lumRangeFromJpeg_lsx;
+                    c->chrConvertRange = chrRangeFromJpeg_lsx;
+                } else {
+                    c->lumConvertRange = lumRangeToJpeg_lsx;
+                    c->chrConvertRange = chrRangeToJpeg_lsx;
+                }
+            }
+        }
+    }
+    if (have_lasx(cpu_flags)) {
+        if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
+            if (c->dstBpc <= 14) {
+                if (c->srcRange) {
+                    c->lumConvertRange = lumRangeFromJpeg_lasx;
+                    c->chrConvertRange = chrRangeFromJpeg_lasx;
+                } else {
+                    c->lumConvertRange = lumRangeToJpeg_lasx;
+                    c->chrConvertRange = chrRangeToJpeg_lasx;
+                }
+            }
+        }
+    }
+}
+
 av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -77,6 +109,7 @@ av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
             c->yuv2planeX = ff_yuv2planeX_8_lasx;
     }
 #endif // #if HAVE_LASX
+    ff_sws_init_range_convert_loongarch(c);
 }
 
 av_cold void rgb2rgb_init_loongarch(void)

@@ -50,6 +50,11 @@ void ff_hscale_16_to_19_sub_lsx(SwsContext *c, int16_t *_dst, int dstW,
                                 const uint8_t *_src, const int16_t *filter,
                                 const int32_t *filterPos, int filterSize, int sh);
 
+void lumRangeFromJpeg_lsx(int16_t *dst, int width);
+void chrRangeFromJpeg_lsx(int16_t *dstU, int16_t *dstV, int width);
+void lumRangeToJpeg_lsx(int16_t *dst, int width);
+void chrRangeToJpeg_lsx(int16_t *dstU, int16_t *dstV, int width);
+
 void planar_rgb_to_uv_lsx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
                           int width, int32_t *rgb2yuv, void *opq);
 
@@ -97,6 +102,11 @@ void ff_hscale_16_to_15_lasx(SwsContext *c, int16_t *dst, int dstW,
                              const uint8_t *_src, const int16_t *filter,
                              const int32_t *filterPos, int filterSize);
 
+void lumRangeFromJpeg_lasx(int16_t *dst, int width);
+void chrRangeFromJpeg_lasx(int16_t *dstU, int16_t *dstV, int width);
+void lumRangeToJpeg_lasx(int16_t *dst, int width);
+void chrRangeToJpeg_lasx(int16_t *dstU, int16_t *dstV, int width);
+
 void planar_rgb_to_uv_lasx(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *src[4],
                            int width, int32_t *rgb2yuv, void *opq);
 
@@ -130,6 +140,7 @@ void ff_yuv2planeX_8_lasx(const int16_t *filter, int filterSize,
                           const uint8_t *dither, int offset);
 
 av_cold void ff_sws_init_output_lasx(SwsContext *c);
+
 #endif // #if HAVE_LASX
 
 #endif /* SWSCALE_LOONGARCH_SWSCALE_LOONGARCH_H */
