@@ -802,10 +802,6 @@
 %macro PMINSD 3 ; dst, src, tmp/unused
 %if cpuflag(sse4)
     pminsd    %1, %2
-%elif cpuflag(sse2)
-    cvtdq2ps  %1, %1
-    minps     %1, %2
-    cvtps2dq  %1, %1
 %else
     mova      %3, %2
     pcmpgtd   %3, %1

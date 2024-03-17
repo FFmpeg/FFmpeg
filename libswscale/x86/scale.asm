@@ -24,7 +24,6 @@
 SECTION_RODATA
 
 max_19bit_int: times 4 dd 0x7ffff
-max_19bit_flt: times 4 dd 524287.0
 minshort:      times 8 dw 0x8000
 unicoeff:      times 4 dd 0x20000000
 
@@ -61,11 +60,7 @@ cglobal hscale%1to%2_%4, %5, 10, %6, pos0, dst, w, srcmem, filter, fltpos, fltsi
 %define mov32 mov
 %endif ; x86-64
 %if %2 == 19
-%if cpuflag(sse4)
     mova          m2, [max_19bit_int]
-%else ; ssse3/sse2
-    mova          m2, [max_19bit_flt]
-%endif ; sse2/ssse3/sse4
 %endif ; %2 == 19
 %if %1 == 16
     mova          m6, [minshort]
