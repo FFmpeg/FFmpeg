@@ -360,7 +360,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
     int i, j;
 
     for (i = 0; i < AV1_REFS_PER_FRAME; i++)
-        ref_frame_idx[i] = -1;
+        ref_frame_idx[i] = AV1_REF_FRAME_NONE;
     ref_frame_idx[AV1_REF_FRAME_LAST - AV1_REF_FRAME_LAST] = current->last_frame_idx;
     ref_frame_idx[AV1_REF_FRAME_GOLDEN - AV1_REF_FRAME_LAST] = current->golden_frame_idx;
 
@@ -378,7 +378,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
     latest_order_hint = shifted_order_hints[current->last_frame_idx];
     earliest_order_hint = shifted_order_hints[current->golden_frame_idx];
 
-    ref = -1;
+    ref = AV1_REF_FRAME_NONE;
     for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
         int hint = shifted_order_hints[i];
         if (!used_frame[i] && hint >= cur_frame_hint &&
@@ -392,7 +392,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
         used_frame[ref] = 1;
     }
 
-    ref = -1;
+    ref = AV1_REF_FRAME_NONE;
     for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
         int hint = shifted_order_hints[i];
         if (!used_frame[i] && hint >= cur_frame_hint &&
@@ -406,7 +406,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
         used_frame[ref] = 1;
     }
 
-    ref = -1;
+    ref = AV1_REF_FRAME_NONE;
     for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
         int hint = shifted_order_hints[i];
         if (!used_frame[i] && hint >= cur_frame_hint &&
@@ -423,7 +423,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
     for (i = 0; i < AV1_REFS_PER_FRAME - 2; i++) {
         int ref_frame = ref_frame_list[i];
         if (ref_frame_idx[ref_frame - AV1_REF_FRAME_LAST] < 0 ) {
-            ref = -1;
+            ref = AV1_REF_FRAME_NONE;
             for (j = 0; j < AV1_NUM_REF_FRAMES; j++) {
                 int hint = shifted_order_hints[j];
                 if (!used_frame[j] && hint < cur_frame_hint &&
@@ -439,7 +439,7 @@ static int FUNC(set_frame_refs)(CodedBitstreamContext *ctx, RWContext *rw,
         }
     }
 
-    ref = -1;
+    ref = AV1_REF_FRAME_NONE;
     for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
         int hint = shifted_order_hints[i];
         if (ref < 0 || hint < earliest_order_hint) {

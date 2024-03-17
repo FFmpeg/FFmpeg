@@ -58,6 +58,7 @@ enum {
 
 // Reference frames (section 6.10.24).
 enum {
+    AV1_REF_FRAME_NONE    = -1,
     AV1_REF_FRAME_INTRA   = 0,
     AV1_REF_FRAME_LAST    = 1,
     AV1_REF_FRAME_LAST2   = 2,
