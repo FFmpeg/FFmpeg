@@ -144,6 +144,12 @@ typedef struct AVCodecInternal {
 #if CONFIG_LCMS2
     FFIccContext icc; /* used to read and write embedded ICC profiles */
 #endif
+
+    /**
+     * Set when the user has been warned about a failed allocation from
+     * a fixed frame pool.
+     */
+    int warned_on_failed_allocation_from_fixed_pool;
 } AVCodecInternal;
 
 /**

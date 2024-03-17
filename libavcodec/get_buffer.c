@@ -257,6 +257,22 @@ int avcodec_default_get_buffer2(AVCodecContext *avctx, AVFrame *frame, int flags
 
     if (avctx->hw_frames_ctx) {
         ret = av_hwframe_get_buffer(avctx->hw_frames_ctx, frame, 0);
+        if (ret == AVERROR(ENOMEM)) {
+            AVHWFramesContext *frames_ctx =
+                (AVHWFramesContext*)avctx->hw_frames_ctx->data;
+            if (frames_ctx->initial_pool_size > 0 &&
+                !avctx->internal->warned_on_failed_allocation_from_fixed_pool) {
+                av_log(avctx, AV_LOG_WARNING, "Failed to allocate a %s/%s "
+                       "frame from a fixed pool of hardware frames.\n",
+                       av_get_pix_fmt_name(frames_ctx->format),
+                       av_get_pix_fmt_name(frames_ctx->sw_format));
+                av_log(avctx, AV_LOG_WARNING, "Consider setting "
+                       "extra_hw_frames to a larger value "
+                       "(currently set to %d, giving a pool size of %d).\n",
+                       avctx->extra_hw_frames, frames_ctx->initial_pool_size);
+                avctx->internal->warned_on_failed_allocation_from_fixed_pool = 1;
+            }
+        }
         frame->width  = avctx->coded_width;
         frame->height = avctx->coded_height;
         return ret;
