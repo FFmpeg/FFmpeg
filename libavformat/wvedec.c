@@ -45,7 +45,7 @@ static int wve_read_header(AVFormatContext *s)
     st->codecpar->codec_id    = AV_CODEC_ID_PCM_ALAW;
     st->codecpar->sample_rate = 8000;
     st->codecpar->ch_layout.nb_channels = 1;
-    st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
+    st->codecpar->bits_per_coded_sample = 8;
     st->codecpar->block_align = st->codecpar->bits_per_coded_sample *
                                 st->codecpar->ch_layout.nb_channels / 8;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
