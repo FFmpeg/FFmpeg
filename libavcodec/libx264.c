@@ -39,6 +39,7 @@
 #include "packet_internal.h"
 #include "atsc_a53.h"
 #include "sei.h"
+#include "golomb.h"
 
 #include <x264.h>
 #include <float.h>
@@ -848,6 +849,144 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
     return 0;
 }
 
+static int save_sei(AVCodecContext *avctx, x264_nal_t *nal)
+{
+    X264Context *x4 = avctx->priv_data;
+
+    av_log(avctx, AV_LOG_INFO, "%s\n", nal->p_payload + 25);
+    x4->sei_size = nal->i_payload;
+    x4->sei = av_malloc(x4->sei_size);
+    if (!x4->sei)
+        return AVERROR(ENOMEM);
+
+    memcpy(x4->sei, nal->p_payload, nal->i_payload);
+
+    return 0;
+}
+
+#if CONFIG_LIBX264_ENCODER
+static int set_avcc_extradata(AVCodecContext *avctx, x264_nal_t *nal, int nnal)
+{
+    X264Context *x4 = avctx->priv_data;
+    x264_nal_t *sps_nal = NULL;
+    x264_nal_t *pps_nal = NULL;
+    uint8_t *p, *sps;
+    int ret;
+
+    /* We know it's in the order of SPS/PPS/SEI, but it's not documented in x264 API.
+     * The x264 param i_sps_id implies there is a single pair of SPS/PPS.
+     */
+    for (int i = 0; i < nnal; i++) {
+        switch (nal[i].i_type) {
+        case NAL_SPS:
+            sps_nal = &nal[i];
+            break;
+        case NAL_PPS:
+            pps_nal = &nal[i];
+            break;
+        case NAL_SEI:
+            ret = save_sei(avctx, &nal[i]);
+            if (ret < 0)
+                return ret;
+            break;
+        }
+    }
+    if (!sps_nal || !pps_nal)
+        return AVERROR_EXTERNAL;
+
+    avctx->extradata_size = sps_nal->i_payload + pps_nal->i_payload + 7;
+    avctx->extradata = av_mallocz(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!avctx->extradata)
+        return AVERROR(ENOMEM);
+
+    // Now create AVCDecoderConfigurationRecord
+    p = avctx->extradata;
+    // Skip size part
+    sps = sps_nal->p_payload + 4;
+    *p++ = 1; // version
+    *p++ = sps[1]; // AVCProfileIndication
+    *p++ = sps[2]; // profile_compatibility
+    *p++ = sps[3]; // AVCLevelIndication
+    *p++ = 0xFF;
+    *p++ = 0xE0 | 0x01; // 3 bits reserved (111) + 5 bits number of sps
+    memcpy(p, sps_nal->p_payload + 2, sps_nal->i_payload - 2);
+    // Make sps has AV_INPUT_BUFFER_PADDING_SIZE padding, so it can be used
+    // with GetBitContext
+    sps = p + 2;
+    p += sps_nal->i_payload - 2;
+    *p++ = 1;
+    memcpy(p, pps_nal->p_payload + 2, pps_nal->i_payload - 2);
+    p += pps_nal->i_payload - 2;
+
+    if (sps[3] != 66 && sps[3] != 77 && sps[3] != 88) {
+        GetBitContext gbc;
+        int chroma_format_idc;
+        int bit_depth_luma_minus8, bit_depth_chroma_minus8;
+
+        /* It's not possible to have emulation prevention byte before
+         * bit_depth_chroma_minus8 due to the range of sps id, chroma_format_idc
+         * and so on. So we can read directly without need to escape emulation
+         * prevention byte.
+         *
+         * +4 to skip until sps id.
+         */
+        init_get_bits8(&gbc, sps + 4, sps_nal->i_payload - 4 - 4);
+        // Skip sps id
+        get_ue_golomb_31(&gbc);
+        chroma_format_idc = get_ue_golomb_31(&gbc);
+        if (chroma_format_idc == 3)
+            skip_bits1(&gbc);
+        bit_depth_luma_minus8 = get_ue_golomb_31(&gbc);
+        bit_depth_chroma_minus8 = get_ue_golomb_31(&gbc);
+
+        *p++ = 0xFC | chroma_format_idc;
+        *p++ = 0xF8 | bit_depth_luma_minus8;
+        *p++ = 0xF8 | bit_depth_chroma_minus8;
+        *p++ = 0;
+    }
+    av_assert2(avctx->extradata + avctx->extradata_size >= p);
+    avctx->extradata_size = p - avctx->extradata;
+
+    return 0;
+}
+#endif
+
+static int set_extradata(AVCodecContext *avctx)
+{
+    X264Context *x4 = avctx->priv_data;
+    x264_nal_t *nal;
+    uint8_t *p;
+    int nnal, s;
+
+    s = x264_encoder_headers(x4->enc, &nal, &nnal);
+    if (s < 0)
+        return AVERROR_EXTERNAL;
+
+#if CONFIG_LIBX264_ENCODER
+    if (!x4->params.b_annexb)
+        return set_avcc_extradata(avctx, nal, nnal);
+#endif
+
+    avctx->extradata = p = av_mallocz(s + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!p)
+        return AVERROR(ENOMEM);
+
+    for (int i = 0; i < nnal; i++) {
+        /* Don't put the SEI in extradata. */
+        if (nal[i].i_type == NAL_SEI) {
+            s = save_sei(avctx, &nal[i]);
+            if (s < 0)
+                return s;
+            continue;
+        }
+        memcpy(p, nal[i].p_payload, nal[i].i_payload);
+        p += nal[i].i_payload;
+    }
+    avctx->extradata_size = p - avctx->extradata;
+
+    return 0;
+}
+
 #define PARSE_X264_OPT(name, var)\
     if (x4->var && x264_param_parse(&x4->params, name, x4->var) < 0) {\
         av_log(avctx, AV_LOG_ERROR, "Error parsing option '%s' with value '%s'.\n", name, x4->var);\
@@ -1295,30 +1434,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return AVERROR_EXTERNAL;
 
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-        x264_nal_t *nal;
-        uint8_t *p;
-        int nnal, s, i;
-
-        s = x264_encoder_headers(x4->enc, &nal, &nnal);
-        avctx->extradata = p = av_mallocz(s + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!p)
-            return AVERROR(ENOMEM);
-
-        for (i = 0; i < nnal; i++) {
-            /* Don't put the SEI in extradata. */
-            if (nal[i].i_type == NAL_SEI) {
-                av_log(avctx, AV_LOG_INFO, "%s\n", nal[i].p_payload+25);
-                x4->sei_size = nal[i].i_payload;
-                x4->sei      = av_malloc(x4->sei_size);
-                if (!x4->sei)
-                    return AVERROR(ENOMEM);
-                memcpy(x4->sei, nal[i].p_payload, nal[i].i_payload);
-                continue;
-            }
-            memcpy(p, nal[i].p_payload, nal[i].i_payload);
-            p += nal[i].i_payload;
-        }
-        avctx->extradata_size = p - avctx->extradata;
+        ret = set_extradata(avctx);
+        if (ret < 0)
+            return ret;
     }
 
     cpb_props = ff_encode_add_cpb_side_data(avctx);
