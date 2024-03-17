@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-03-xx - xxxxxxxxxx - lavu 59.7.100 - timestamp.h
+  Add av_ts_make_time_string2() for better timestamp precision, the new
+  function accepts AVRational as time base instead of *AVRational, and is not
+  an inline function like its predecessor.
+
 2024-03-xx - xxxxxxxxxx - lavu 59.6.100 - film_grain_params.h
   Add av_film_grain_params_select().
 

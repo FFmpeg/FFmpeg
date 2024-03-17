@@ -62,6 +62,14 @@ static inline char *av_ts_make_string(char *buf, int64_t ts)
  * @param tb the timebase of the timestamp
  * @return the buffer in input
  */
+char *av_ts_make_time_string2(char *buf, int64_t ts, AVRational tb);
+
+/**
+ * Fill the provided buffer with a string containing a timestamp
+ * representation.
+ *
+ * @see av_ts_make_time_string2
+ */
 static inline char *av_ts_make_time_string(char *buf, int64_t ts,
                                            const AVRational *tb)
 {

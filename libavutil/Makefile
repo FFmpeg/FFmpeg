@@ -174,6 +174,7 @@ OBJS = adler32.o                                                        \
        threadmessage.o                                                  \
        time.o                                                           \
        timecode.o                                                       \
+       timestamp.o                                                      \
        tree.o                                                           \
        twofish.o                                                        \
        utils.o                                                          \
