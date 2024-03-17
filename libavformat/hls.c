@@ -2100,10 +2100,12 @@ static int hls_read_header(AVFormatContext *s)
          */
         if (seg && seg->key_type == KEY_SAMPLE_AES && pls->is_id3_timestamped &&
             pls->audio_setup_info.codec_id != AV_CODEC_ID_NONE) {
-            void *iter = NULL;
-            while ((in_fmt = av_demuxer_iterate(&iter)))
-                if (ffifmt(in_fmt)->raw_codec_id == pls->audio_setup_info.codec_id)
-                    break;
+            av_assert1(pls->audio_setup_info.codec_id == AV_CODEC_ID_AAC ||
+                       pls->audio_setup_info.codec_id == AV_CODEC_ID_AC3 ||
+                       pls->audio_setup_info.codec_id == AV_CODEC_ID_EAC3);
+            // Keep this list in sync with ff_hls_senc_read_audio_setup_info()
+            in_fmt = av_find_input_format(pls->audio_setup_info.codec_id == AV_CODEC_ID_AAC ? "aac" :
+                                          pls->audio_setup_info.codec_id == AV_CODEC_ID_AC3 ? "ac3" : "eac3");
         } else {
             pls->ctx->probesize = s->probesize > 0 ? s->probesize : 1024 * 4;
             pls->ctx->max_analyze_duration = s->max_analyze_duration > 0 ? s->max_analyze_duration : 4 * AV_TIME_BASE;
