@@ -148,8 +148,8 @@ static int laf_read_header(AVFormatContext *ctx)
     if (!s->data)
         return AVERROR(ENOMEM);
 
-    for (int st = 0; st < st_count; st++) {
-        StreamParams *stp = &s->p[st];
+    for (unsigned i = 0; i < st_count; i++) {
+        StreamParams *stp = &s->p[i];
         AVCodecParameters *par;
         AVStream *st = avformat_new_stream(ctx, NULL);
         if (!st)
