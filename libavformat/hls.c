@@ -2163,6 +2163,7 @@ static int hls_read_header(AVFormatContext *s)
          * If encryption scheme is SAMPLE-AES and audio setup information is present in external audio track,
          * use that information to find the media format, otherwise probe input data
          */
+        seg = current_segment(pls);
         if (seg && seg->key_type == KEY_SAMPLE_AES && pls->is_id3_timestamped &&
             pls->audio_setup_info.codec_id != AV_CODEC_ID_NONE) {
             void *iter = NULL;
@@ -2194,6 +2195,7 @@ static int hls_read_header(AVFormatContext *s)
             av_free(url);
         }
 
+        seg = current_segment(pls);
         if (seg && seg->key_type == KEY_SAMPLE_AES) {
             if (strstr(in_fmt->name, "mov")) {
                 char key[33];
@@ -2240,6 +2242,7 @@ static int hls_read_header(AVFormatContext *s)
          * on us if they want to.
          */
         if (pls->is_id3_timestamped || (pls->n_renditions > 0 && pls->renditions[0]->type == AVMEDIA_TYPE_AUDIO)) {
+            seg = current_segment(pls);
             if (seg && seg->key_type == KEY_SAMPLE_AES && pls->audio_setup_info.setup_data_length > 0 &&
                 pls->ctx->nb_streams == 1)
                 ret = ff_hls_senc_parse_audio_setup_info(pls->ctx->streams[0], &pls->audio_setup_info);
