@@ -46,13 +46,12 @@ static int wady_read_header(AVFormatContext *s)
     int channels, ret;
     AVStream *st;
 
-    avio_skip(pb, 4);
+    avio_skip(pb, 4 + 1);
 
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
-    avio_skip(pb, 1);
     par              = st->codecpar;
     par->codec_type  = AVMEDIA_TYPE_AUDIO;
     par->codec_id    = AV_CODEC_ID_WADY_DPCM;
