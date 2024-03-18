@@ -28032,6 +28032,91 @@ input sample aspect ratio
 input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
 @end table
 
+@section drawbox_vaapi
+
+Draw a colored box on the input image.
+
+It accepts the following parameters:
+
+@table @option
+@item x
+@item y
+The expressions which specify the top left corner coordinates of the box. It defaults to 0.
+
+@item width, w
+@item height, h
+The expressions which specify the width and height of the box; if 0 they are interpreted as
+the input width and height. It defaults to 0.
+
+@item color, c
+Specify the color of the box to write. For the general syntax of this option,
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils manual,ffmpeg-utils}.
+
+@item thickness, t
+The expression which sets the thickness of the box edge.
+A value of @code{fill} will create a filled box. Default value is @code{3}.
+
+See below for the list of accepted constants.
+
+@item replace
+With value @code{1}, the pixels of the painted box will overwrite the video's color and alpha pixels.
+Default is @code{0}, which composites the box onto the input video.
+@end table
+
+The parameters for @var{x}, @var{y}, @var{w} and @var{h} and @var{t} are expressions containing the
+following constants:
+
+@table @option
+@item in_h, ih
+@item in_w, iw
+The input width and height.
+
+@item x
+@item y
+The x and y offset coordinates where the box is drawn.
+
+@item w
+@item h
+The width and height of the drawn box.
+
+@item t
+The thickness of the drawn box.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Draw a black box around the edge of the input image:
+@example
+drawbox
+@end example
+
+@item
+Draw a box with color red and an opacity of 50%:
+@example
+drawbox=10:20:200:60:red@@0.5
+@end example
+
+The previous example can be specified as:
+@example
+drawbox=x=10:y=20:w=200:h=60:color=red@@0.5
+@end example
+
+@item
+Fill the box with pink color:
+@example
+drawbox=x=10:y=10:w=100:h=100:color=pink@@0.5:t=fill
+@end example
+
+@item
+Draw a 2-pixel red 2.40:1 mask:
+@example
+drawbox=x=-t:y=0.5*(ih-iw/2.4)-t:w=iw+t*2:h=iw/2.4+t*2:t=2:c=red
+@end example
+@end itemize
+
 @c man end VAAPI VIDEO FILTERS
 
 @chapter Vulkan Video Filters
