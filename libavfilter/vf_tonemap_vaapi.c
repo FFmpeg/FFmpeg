@@ -39,7 +39,11 @@ typedef struct HDRVAAPIContext {
     enum AVColorTransferCharacteristic color_transfer;
     enum AVColorSpace color_matrix;
 
+    char *mastering_display;
+    char *content_light;
+
     VAHdrMetaDataHDR10  in_metadata;
+    VAHdrMetaDataHDR10  out_metadata;
 
     AVFrameSideData    *src_display;
     AVFrameSideData    *src_light;
@@ -146,6 +150,87 @@ static int tonemap_vaapi_save_metadata(AVFilterContext *avctx, AVFrame *input_fr
     return 0;
 }
 
+static int tonemap_vaapi_update_sidedata(AVFilterContext *avctx, AVFrame *output_frame)
+{
+    HDRVAAPIContext *ctx = avctx->priv;
+    AVFrameSideData *metadata;
+    AVMasteringDisplayMetadata *hdr_meta;
+    AVFrameSideData *metadata_lt;
+    AVContentLightMetadata *hdr_meta_lt;
+    int i;
+    const int mapping[3] = {1, 2, 0};  //green, blue, red
+    const int chroma_den = 50000;
+    const int luma_den   = 10000;
+
+    metadata = av_frame_new_side_data(output_frame,
+                                      AV_FRAME_DATA_MASTERING_DISPLAY_METADATA,
+                                      sizeof(AVMasteringDisplayMetadata));
+    if (!metadata)
+        return AVERROR(ENOMEM);
+
+    hdr_meta = (AVMasteringDisplayMetadata *)metadata->data;
+
+    for (i = 0; i < 3; i++) {
+        const int j = mapping[i];
+        hdr_meta->display_primaries[j][0].num = ctx->out_metadata.display_primaries_x[i];
+        hdr_meta->display_primaries[j][0].den = chroma_den;
+
+        hdr_meta->display_primaries[j][1].num = ctx->out_metadata.display_primaries_y[i];
+        hdr_meta->display_primaries[j][1].den = chroma_den;
+    }
+
+    hdr_meta->white_point[0].num = ctx->out_metadata.white_point_x;
+    hdr_meta->white_point[0].den = chroma_den;
+
+    hdr_meta->white_point[1].num = ctx->out_metadata.white_point_y;
+    hdr_meta->white_point[1].den = chroma_den;
+    hdr_meta->has_primaries = 1;
+
+    hdr_meta->max_luminance.num = ctx->out_metadata.max_display_mastering_luminance;
+    hdr_meta->max_luminance.den = luma_den;
+
+    hdr_meta->min_luminance.num = ctx->out_metadata.min_display_mastering_luminance;
+    hdr_meta->min_luminance.den = luma_den;
+    hdr_meta->has_luminance = 1;
+
+    av_log(avctx, AV_LOG_DEBUG,
+           "Mastering display colour volume(out):\n");
+    av_log(avctx, AV_LOG_DEBUG,
+           "G(%u,%u) B(%u,%u) R(%u,%u) WP(%u,%u)\n",
+           ctx->out_metadata.display_primaries_x[0],
+           ctx->out_metadata.display_primaries_y[0],
+           ctx->out_metadata.display_primaries_x[1],
+           ctx->out_metadata.display_primaries_y[1],
+           ctx->out_metadata.display_primaries_x[2],
+           ctx->out_metadata.display_primaries_y[2],
+           ctx->out_metadata.white_point_x,
+           ctx->out_metadata.white_point_y);
+    av_log(avctx, AV_LOG_DEBUG,
+           "max_display_mastering_luminance=%u, min_display_mastering_luminance=%u\n",
+           ctx->out_metadata.max_display_mastering_luminance,
+           ctx->out_metadata.min_display_mastering_luminance);
+
+    metadata_lt = av_frame_new_side_data(output_frame,
+                                         AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+                                         sizeof(AVContentLightMetadata));
+    if (!metadata_lt)
+        return AVERROR(ENOMEM);
+
+    hdr_meta_lt = (AVContentLightMetadata *)metadata_lt->data;
+
+    hdr_meta_lt->MaxCLL = FFMIN(ctx->out_metadata.max_content_light_level, 65535);
+    hdr_meta_lt->MaxFALL = FFMIN(ctx->out_metadata.max_pic_average_light_level, 65535);
+
+    av_log(avctx, AV_LOG_DEBUG,
+           "Content light level information(out):\n");
+    av_log(avctx, AV_LOG_DEBUG,
+           "MaxCLL(%u) MaxFALL(%u)\n",
+           ctx->out_metadata.max_content_light_level,
+           ctx->out_metadata.max_pic_average_light_level);
+
+    return 0;
+}
+
 static int tonemap_vaapi_set_filter_params(AVFilterContext *avctx, AVFrame *input_frame)
 {
     VAAPIVPPContext *vpp_ctx   = avctx->priv;
@@ -208,15 +293,26 @@ static int tonemap_vaapi_build_filter_params(AVFilterContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    for (i = 0; i < num_query_caps; i++) {
-        if (VA_TONE_MAPPING_HDR_TO_SDR & hdr_cap[i].caps_flag)
-            break;
-    }
-
-    if (i >= num_query_caps) {
-        av_log(avctx, AV_LOG_ERROR,
-               "VAAPI driver doesn't support HDR to SDR\n");
-        return AVERROR(EINVAL);
+    if (ctx->mastering_display) {
+        for (i = 0; i < num_query_caps; i++) {
+            if (VA_TONE_MAPPING_HDR_TO_HDR & hdr_cap[i].caps_flag)
+                break;
+        }
+        if (i >= num_query_caps) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "VAAPI driver doesn't support HDR to HDR\n");
+            return AVERROR(EINVAL);
+        }
+    } else {
+        for (i = 0; i < num_query_caps; i++) {
+            if (VA_TONE_MAPPING_HDR_TO_SDR & hdr_cap[i].caps_flag)
+                break;
+        }
+        if (i >= num_query_caps) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "VAAPI driver doesn't support HDR to SDR\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     hdrtm_param.type = VAProcFilterHighDynamicRangeToneMapping;
@@ -240,6 +336,8 @@ static int tonemap_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
 
     VAProcPipelineParameterBuffer params;
     int err;
+
+    VAHdrMetaData              out_hdr_metadata;
 
     av_log(avctx, AV_LOG_DEBUG, "Filter input: %s, %ux%u (%"PRId64").\n",
            av_get_pix_fmt_name(input_frame->format),
@@ -278,10 +376,15 @@ static int tonemap_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
     if (err < 0)
         goto fail;
 
-    /* Use BT709 by default for HDR to SDR output frame */
-    output_frame->color_primaries = AVCOL_PRI_BT709;
-    output_frame->color_trc = AVCOL_TRC_BT709;
-    output_frame->colorspace = AVCOL_SPC_BT709;
+    av_frame_remove_side_data(output_frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    av_frame_remove_side_data(output_frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+
+    if (!ctx->mastering_display) {
+        /* Use BT709 by default for HDR to SDR output frame */
+        output_frame->color_primaries = AVCOL_PRI_BT709;
+        output_frame->color_trc = AVCOL_TRC_BT709;
+        output_frame->colorspace = AVCOL_SPC_BT709;
+    }
 
     if (ctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
         output_frame->color_primaries = ctx->color_primaries;
@@ -292,10 +395,23 @@ static int tonemap_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
     if (ctx->color_matrix != AVCOL_SPC_UNSPECIFIED)
         output_frame->colorspace = ctx->color_matrix;
 
+    if (ctx->mastering_display) {
+        err = tonemap_vaapi_update_sidedata(avctx, output_frame);
+        if (err < 0)
+            goto fail;
+    }
+
     err = ff_vaapi_vpp_init_params(avctx, &params,
                                    input_frame, output_frame);
     if (err < 0)
         goto fail;
+
+    if (ctx->mastering_display) {
+        out_hdr_metadata.metadata_type = VAProcHighDynamicRangeMetadataHDR10;
+        out_hdr_metadata.metadata      = &ctx->out_metadata;
+        out_hdr_metadata.metadata_size = sizeof(VAHdrMetaDataHDR10);
+        params.output_hdr_metadata     = &out_hdr_metadata;
+    }
 
     if (vpp_ctx->nb_filter_buffers) {
         params.filters = &vpp_ctx->filter_buffers[0];
@@ -311,9 +427,6 @@ static int tonemap_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
     av_log(avctx, AV_LOG_DEBUG, "Filter output: %s, %ux%u (%"PRId64").\n",
            av_get_pix_fmt_name(output_frame->format),
            output_frame->width, output_frame->height, output_frame->pts);
-
-    av_frame_remove_side_data(output_frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-    av_frame_remove_side_data(output_frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
 
     return ff_filter_frame(outlink, output_frame);
 
@@ -335,8 +448,13 @@ static av_cold int tonemap_vaapi_init(AVFilterContext *avctx)
     if (ctx->output_format_string) {
         vpp_ctx->output_format = av_get_pix_fmt(ctx->output_format_string);
     } else {
-        vpp_ctx->output_format = AV_PIX_FMT_NV12;
-        av_log(avctx, AV_LOG_VERBOSE, "Output format not set, use default format NV12 for HDR to SDR tone mapping.\n");
+        if (ctx->mastering_display) {
+            vpp_ctx->output_format = AV_PIX_FMT_P010;
+            av_log(avctx, AV_LOG_VERBOSE, "Output format not set, use default format P010 for HDR to HDR tone mapping.\n");
+        } else {
+            vpp_ctx->output_format = AV_PIX_FMT_NV12;
+            av_log(avctx, AV_LOG_VERBOSE, "Output format not set, use default format NV12 for HDR to SDR tone mapping.\n");
+        }
     }
 
 #define STRING_OPTION(var_name, func_name, default_value) do { \
@@ -355,6 +473,37 @@ static av_cold int tonemap_vaapi_init(AVFilterContext *avctx)
     STRING_OPTION(color_primaries, color_primaries, AVCOL_PRI_UNSPECIFIED);
     STRING_OPTION(color_transfer,  color_transfer,  AVCOL_TRC_UNSPECIFIED);
     STRING_OPTION(color_matrix,    color_space,     AVCOL_SPC_UNSPECIFIED);
+
+    if (ctx->mastering_display) {
+        if (10 != sscanf(ctx->mastering_display,
+                         "%hu %hu|%hu %hu|%hu %hu|%hu %hu|%u %u",
+                         &ctx->out_metadata.display_primaries_x[0],
+                         &ctx->out_metadata.display_primaries_y[0],
+                         &ctx->out_metadata.display_primaries_x[1],
+                         &ctx->out_metadata.display_primaries_y[1],
+                         &ctx->out_metadata.display_primaries_x[2],
+                         &ctx->out_metadata.display_primaries_y[2],
+                         &ctx->out_metadata.white_point_x,
+                         &ctx->out_metadata.white_point_y,
+                         &ctx->out_metadata.min_display_mastering_luminance,
+                         &ctx->out_metadata.max_display_mastering_luminance)) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Option mastering-display input invalid\n");
+            return AVERROR(EINVAL);
+        }
+
+        if (!ctx->content_light) {
+            ctx->out_metadata.max_content_light_level = 0;
+            ctx->out_metadata.max_pic_average_light_level = 0;
+        } else if (2 != sscanf(ctx->content_light,
+                               "%hu %hu",
+                               &ctx->out_metadata.max_content_light_level,
+                               &ctx->out_metadata.max_pic_average_light_level)) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Option content-light input invalid\n");
+            return AVERROR(EINVAL);
+        }
+    }
 
     return 0;
 }
@@ -381,6 +530,12 @@ static const AVOption tonemap_vaapi_options[] = {
     { "t",        "Output color transfer characteristics set",
       OFFSET(color_transfer_string),  AV_OPT_TYPE_STRING,
       { .str = NULL }, .flags = FLAGS, .unit = "transfer" },
+    { "display",  "set mastering display colour volume",
+      OFFSET(mastering_display),      AV_OPT_TYPE_STRING,
+      { .str = NULL }, .flags = FLAGS },
+    { "light",    "set content light level information",
+      OFFSET(content_light),          AV_OPT_TYPE_STRING,
+      { .str = NULL }, .flags = FLAGS },
     { NULL }
 };
 

@@ -27832,8 +27832,7 @@ The inputs have same memory layout for color channels, the overlay has additiona
 
 @section tonemap_vaapi
 
-Perform HDR(High Dynamic Range) to SDR(Standard Dynamic Range) conversion with tone-mapping.
-It maps the dynamic range of HDR10 content to the SDR content.
+Perform HDR-to-SDR or HDR-to-HDR tone-mapping.
 It currently only accepts HDR10 as input.
 
 It accepts the following parameters:
@@ -27842,28 +27841,42 @@ It accepts the following parameters:
 @item format
 Specify the output pixel format.
 
-Currently supported formats are:
-@table @var
-@item p010
-@item nv12
-@end table
-
-Default is nv12.
+Default is nv12 for HDR-to-SDR tone-mapping and p010 for HDR-to-HDR
+tone-mapping.
 
 @item primaries, p
 Set the output color primaries.
 
-Default is bt709.
+Default is bt709 for HDR-to-SDR tone-mapping and same as input for HDR-to-HDR
+tone-mapping.
 
 @item transfer, t
 Set the output transfer characteristics.
 
-Default is bt709.
+Default is bt709 for HDR-to-SDR tone-mapping and same as input for HDR-to-HDR
+tone-mapping.
 
 @item matrix, m
 Set the output colorspace matrix.
 
-Default is bt709.
+Default is bt709 for HDR-to-SDR tone-mapping and same as input for HDR-to-HDR
+tone-mapping.
+
+@item display
+Set the output mastering display colour volume. It is given by a '|'-separated
+list of two values, two values are space separated. It set display primaries
+x & y in G, B, R order, then white point x & y, the nominal minimum & maximum
+display luminances.
+
+HDR-to-HDR tone-mapping will be performed when this option is set.
+
+@item light
+Set the output content light level information. It accepts 2 space-separated
+values, the first input is the maximum light level and the second input is
+the maximum average light level.
+
+It is ignored for HDR-to-SDR tone-mapping, and optional for HDR-to-HDR
+tone-mapping.
 
 @end table
 
@@ -27874,6 +27887,11 @@ Default is bt709.
 Convert HDR(HDR10) video to bt2020-transfer-characteristic p010 format
 @example
 tonemap_vaapi=format=p010:t=bt2020-10
+@end example
+@item
+Convert HDR video to HDR video
+@example
+tonemap_vaapi=display=7500\ 3000|34000\ 16000|13250\ 34500|15635\ 16450|500\ 10000000
 @end example
 @end itemize
 
