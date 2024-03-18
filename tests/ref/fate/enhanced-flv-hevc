@@ -1,5 +1,5 @@
-25fb1fcdcfde498ab86a3387f1a7f833 *tests/data/fate/enhanced-flv-hevc.flv
-3602897 tests/data/fate/enhanced-flv-hevc.flv
+0da54607064548fa1aae5695751f189c *tests/data/fate/enhanced-flv-hevc.flv
+3603038 tests/data/fate/enhanced-flv-hevc.flv
 #extradata 0:      551, 0xa18acf66
 #extradata 1:        2, 0x00340022
 #tb 0: 1/1000
