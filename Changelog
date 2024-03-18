@@ -35,6 +35,7 @@ version <next>:
 - AEA muxer
 - ffmpeg CLI loopback decoders
 - Support PacketTypeMetadata of PacketType in enhanced flv format
+- ffplay with hwaccel decoding support (depends on vulkan renderer via libplacebo)
 
 
 version 6.1:
