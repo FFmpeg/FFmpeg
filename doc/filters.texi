@@ -27853,7 +27853,7 @@ Default is nv12.
 @item primaries, p
 Set the output color primaries.
 
-Default is same as input.
+Default is bt709.
 
 @item transfer, t
 Set the output transfer characteristics.
@@ -27863,7 +27863,7 @@ Default is bt709.
 @item matrix, m
 Set the output colorspace matrix.
 
-Default is same as input.
+Default is bt709.
 
 @end table
 

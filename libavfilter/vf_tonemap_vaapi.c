@@ -278,13 +278,16 @@ static int tonemap_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
     if (err < 0)
         goto fail;
 
+    /* Use BT709 by default for HDR to SDR output frame */
+    output_frame->color_primaries = AVCOL_PRI_BT709;
+    output_frame->color_trc = AVCOL_TRC_BT709;
+    output_frame->colorspace = AVCOL_SPC_BT709;
+
     if (ctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
         output_frame->color_primaries = ctx->color_primaries;
 
     if (ctx->color_transfer != AVCOL_TRC_UNSPECIFIED)
         output_frame->color_trc = ctx->color_transfer;
-    else
-        output_frame->color_trc = AVCOL_TRC_BT709;
 
     if (ctx->color_matrix != AVCOL_SPC_UNSPECIFIED)
         output_frame->colorspace = ctx->color_matrix;
