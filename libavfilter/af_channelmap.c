@@ -342,7 +342,7 @@ static int channelmap_config_input(AVFilterLink *inlink)
     for (i = 0; i < s->nch; i++) {
         struct ChannelMap *m = &s->map[i];
 
-        if (s->mode == MAP_PAIR_STR_INT || s->mode == MAP_PAIR_STR_STR) {
+        if (s->mode == MAP_PAIR_STR_INT || s->mode == MAP_PAIR_STR_STR || s->mode == MAP_ONE_STR) {
             m->in_channel_idx = av_channel_layout_index_from_channel(
                 &inlink->ch_layout, m->in_channel);
         }
