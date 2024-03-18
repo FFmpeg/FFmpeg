@@ -643,34 +643,44 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
         h274      = &fgp->codec.h274;
 
         fgp->seed = seed;
+        fgp->width = frame->width;
+        fgp->height = frame->height;
+
+        /* H.274 mandates film grain be applied to 4:4:4 frames */
+        fgp->subsampling_x = fgp->subsampling_y = 0;
 
         h274->model_id = fgc->model_id;
         if (fgc->separate_colour_description_present_flag) {
-            h274->bit_depth_luma   = fgc->bit_depth_luma;
-            h274->bit_depth_chroma = fgc->bit_depth_chroma;
-            h274->color_range      = fgc->full_range + 1;
-            h274->color_primaries  = fgc->color_primaries;
-            h274->color_trc        = fgc->transfer_characteristics;
-            h274->color_space      = fgc->matrix_coeffs;
+            fgp->bit_depth_luma   = fgc->bit_depth_luma;
+            fgp->bit_depth_chroma = fgc->bit_depth_chroma;
+            fgp->color_range      = fgc->full_range + 1;
+            fgp->color_primaries  = fgc->color_primaries;
+            fgp->color_trc        = fgc->transfer_characteristics;
+            fgp->color_space      = fgc->matrix_coeffs;
         } else {
-            h274->bit_depth_luma   = bit_depth_luma;
-            h274->bit_depth_chroma = bit_depth_chroma;
+            fgp->bit_depth_luma   = bit_depth_luma;
+            fgp->bit_depth_chroma = bit_depth_chroma;
             if (vui->video_signal_type_present_flag)
-                h274->color_range = vui->video_full_range_flag + 1;
-            else
-                h274->color_range = AVCOL_RANGE_UNSPECIFIED;
+                fgp->color_range = vui->video_full_range_flag + 1;
             if (vui->colour_description_present_flag) {
-                h274->color_primaries = vui->colour_primaries;
-                h274->color_trc       = vui->transfer_characteristics;
-                h274->color_space     = vui->matrix_coeffs;
-            } else {
-                h274->color_primaries = AVCOL_PRI_UNSPECIFIED;
-                h274->color_trc       = AVCOL_TRC_UNSPECIFIED;
-                h274->color_space     = AVCOL_SPC_UNSPECIFIED;
+                fgp->color_primaries = vui->colour_primaries;
+                fgp->color_trc       = vui->transfer_characteristics;
+                fgp->color_space     = vui->matrix_coeffs;
             }
         }
         h274->blending_mode_id  = fgc->blending_mode_id;
         h274->log2_scale_factor = fgc->log2_scale_factor;
+
+#if FF_API_H274_FILM_GRAIN_VCS
+FF_DISABLE_DEPRECATION_WARNINGS
+        h274->bit_depth_luma   = fgp->bit_depth_luma;
+        h274->bit_depth_chroma = fgp->bit_depth_chroma;
+        h274->color_range      = fgp->color_range;
+        h274->color_primaries  = fgp->color_primaries;
+        h274->color_trc        = fgp->color_trc;
+        h274->color_space      = fgp->color_space;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
         memcpy(&h274->component_model_present, &fgc->comp_model_present_flag,
                sizeof(h274->component_model_present));
