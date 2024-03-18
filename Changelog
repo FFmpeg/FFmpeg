@@ -6,6 +6,7 @@ version <next>:
 - LC3/LC3plus decoding/encoding using external library liblc3
 - ffmpeg CLI filtergraph chaining
 - LC3/LC3plus demuxer and muxer
+- pad_vaapi, drawbox_vaapi filters
 
 
 version 7.0:
