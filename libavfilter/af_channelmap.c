@@ -146,7 +146,8 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
     char *mapping, separator = '|';
     int map_entries = 0;
     enum MappingMode mode;
-    uint64_t out_ch_mask = 0;
+    int64_t out_ch_mask = 0;
+    uint64_t presence_mask;
     int i;
 
     mapping = s->mapping_str;
@@ -187,6 +188,13 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
+    for (i = 0; i < MAX_CH; i++) {
+        s->map[i].in_channel_idx  = -1;
+        s->map[i].out_channel_idx = -1;
+        s->map[i].in_channel      = -1;
+        s->map[i].out_channel     = -1;
+    }
+
     for (i = 0; i < map_entries; i++) {
         int in_ch_idx = -1, out_ch_idx = -1;
         int in_ch = -1, out_ch = -1;
@@ -219,14 +227,16 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
             break;
         case MAP_PAIR_INT_STR:
             if (get_channel_idx(&mapping, &in_ch_idx, '-', MAX_CH) < 0 ||
-                get_channel(&mapping, &out_ch, separator) < 0 ||
-                (1ULL << out_ch) & out_ch_mask) {
+                get_channel(&mapping, &out_ch, separator) < 0) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 return AVERROR(EINVAL);
             }
             s->map[i].in_channel_idx  = in_ch_idx;
             s->map[i].out_channel     = out_ch;
-            out_ch_mask |= 1ULL << out_ch;
+            if (out_ch < 63)
+                out_ch_mask |= 1ULL << out_ch;
+            else
+                out_ch_mask = -1;
             break;
         case MAP_PAIR_STR_INT:
             if (get_channel(&mapping, &in_ch, '-') < 0 ||
@@ -239,23 +249,27 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
             break;
         case MAP_PAIR_STR_STR:
             if (get_channel(&mapping, &in_ch, '-') < 0 ||
-                get_channel(&mapping, &out_ch, separator) < 0 ||
-                (1ULL << out_ch) & out_ch_mask) {
+                get_channel(&mapping, &out_ch, separator) < 0) {
                 av_log(ctx, AV_LOG_ERROR, err);
                 return AVERROR(EINVAL);
             }
             s->map[i].in_channel = in_ch;
             s->map[i].out_channel = out_ch;
-            out_ch_mask |= 1ULL << out_ch;
+            if (out_ch < 63)
+                out_ch_mask |= 1ULL << out_ch;
+            else
+                out_ch_mask = -1;
             break;
         }
     }
     s->mode          = mode;
     s->nch           = map_entries;
-    if (out_ch_mask)
-        av_channel_layout_from_mask(&s->output_layout, out_ch_mask);
-    else if (map_entries && s->output_layout.nb_channels == 0)
-        av_channel_layout_default(&s->output_layout, map_entries);
+    if (s->output_layout.nb_channels == 0) {
+        if (out_ch_mask > 0)
+            av_channel_layout_from_mask(&s->output_layout, out_ch_mask);
+        else if (map_entries)
+            av_channel_layout_default(&s->output_layout, map_entries);
+    }
 
     if (mode == MAP_NONE) {
         int i;
@@ -284,6 +298,23 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
             s->map[i].out_channel_idx = av_channel_layout_index_from_channel(
                 &s->output_layout, s->map[i].out_channel);
         }
+    }
+
+    presence_mask = 0;
+    for (i = 0; i < s->nch; i++) {
+        uint64_t idx_mask;
+        int ret = check_idx_and_id(ctx, s->map[i].out_channel_idx, s->map[i].out_channel, &s->output_layout, "out");
+        if (ret < 0)
+            return ret;
+        idx_mask = (1ULL << s->map[i].out_channel_idx);
+        if (presence_mask & idx_mask) {
+            char layout_name[256];
+            av_channel_layout_describe(&s->output_layout, layout_name, sizeof(layout_name));
+            av_log(ctx, AV_LOG_ERROR, "Mapping %d assigns channel #%d twice in output layout '%s'.\n",
+                   i + 1, s->map[i].out_channel_idx, layout_name);
+            return AVERROR(EINVAL);
+        }
+        presence_mask |= idx_mask;
     }
 
     return 0;
