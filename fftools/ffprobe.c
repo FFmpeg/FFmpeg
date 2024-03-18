@@ -2402,22 +2402,41 @@ static void print_ambient_viewing_environment(WriterContext *w,
 static void print_film_grain_params(WriterContext *w,
                                     const AVFilmGrainParams *fgp)
 {
+    const char *color_range, *color_primaries, *color_trc, *color_space;
+    const char *const film_grain_type_names[] = {
+        [AV_FILM_GRAIN_PARAMS_NONE] = "none",
+        [AV_FILM_GRAIN_PARAMS_AV1]  = "av1",
+        [AV_FILM_GRAIN_PARAMS_H274] = "h274",
+    };
+
     AVBPrint pbuf;
-    if (!fgp)
+    if (!fgp || fgp->type >= FF_ARRAY_ELEMS(film_grain_type_names))
         return;
 
+    color_range     = av_color_range_name(fgp->color_range);
+    color_primaries = av_color_primaries_name(fgp->color_primaries);
+    color_trc       = av_color_transfer_name(fgp->color_trc);
+    color_space     = av_color_space_name(fgp->color_space);
+
     av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
+    print_str("type", film_grain_type_names[fgp->type]);
+    print_fmt("seed", "%"PRIu64, fgp->seed);
+    print_int("width", fgp->width);
+    print_int("height", fgp->height);
+    print_int("subsampling_x", fgp->subsampling_x);
+    print_int("subsampling_y", fgp->subsampling_y);
+    print_str("color_range", color_range ? color_range : "unknown");
+    print_str("color_primaries", color_primaries ? color_primaries : "unknown");
+    print_str("color_trc", color_trc ? color_trc : "unknown");
+    print_str("color_space", color_space ? color_space : "unknown");
 
     switch (fgp->type) {
     case AV_FILM_GRAIN_PARAMS_NONE:
-        print_str("type", "none");
         break;
     case AV_FILM_GRAIN_PARAMS_AV1: {
         const AVFilmGrainAOMParams *aom = &fgp->codec.aom;
         const int num_ar_coeffs_y = 2 * aom->ar_coeff_lag * (aom->ar_coeff_lag + 1);
         const int num_ar_coeffs_uv = num_ar_coeffs_y + !!aom->num_y_points;
-        print_str("type", "av1");
-        print_fmt("seed", "%"PRIu64, fgp->seed);
         print_int("chroma_scaling_from_luma", aom->chroma_scaling_from_luma);
         print_int("scaling_shift", aom->scaling_shift);
         print_int("ar_coeff_lag", aom->ar_coeff_lag);
@@ -2431,6 +2450,7 @@ static void print_film_grain_params(WriterContext *w,
         if (aom->num_y_points) {
             writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
 
+            print_int("bit_depth_luma", fgp->bit_depth_luma);
             print_list_fmt("y_points_value", "%"PRIu8, aom->num_y_points, 1, aom->y_points[idx][0]);
             print_list_fmt("y_points_scaling", "%"PRIu8, aom->num_y_points, 1, aom->y_points[idx][1]);
             print_list_fmt("ar_coeffs_y", "%"PRId8, num_ar_coeffs_y, 1, aom->ar_coeffs_y[idx]);
@@ -2445,6 +2465,7 @@ static void print_film_grain_params(WriterContext *w,
 
             writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
 
+            print_int("bit_depth_chroma", fgp->bit_depth_chroma);
             print_list_fmt("uv_points_value", "%"PRIu8, aom->num_uv_points[uv], 1, aom->uv_points[uv][idx][0]);
             print_list_fmt("uv_points_scaling", "%"PRIu8, aom->num_uv_points[uv], 1, aom->uv_points[uv][idx][1]);
             print_list_fmt("ar_coeffs_uv", "%"PRId8, num_ar_coeffs_uv, 1, aom->ar_coeffs_uv[uv][idx]);
@@ -2462,17 +2483,7 @@ static void print_film_grain_params(WriterContext *w,
     }
     case AV_FILM_GRAIN_PARAMS_H274: {
         const AVFilmGrainH274Params *h274 = &fgp->codec.h274;
-        const char *color_range_str     = av_color_range_name(h274->color_range);
-        const char *color_primaries_str = av_color_primaries_name(h274->color_primaries);
-        const char *color_trc_str       = av_color_transfer_name(h274->color_trc);
-        const char *color_space_str     = av_color_space_name(h274->color_space);
-        print_str("type", "h274");
-        print_fmt("seed", "%"PRIu64, fgp->seed);
         print_int("model_id", h274->model_id);
-        print_str("color_range", color_range_str ? color_range_str : "unknown");
-        print_str("color_primaries", color_primaries_str ? color_primaries_str : "unknown");
-        print_str("color_trc", color_trc_str ? color_trc_str : "unknown");
-        print_str("color_space", color_space_str ? color_space_str : "unknown");
         print_int("blending_mode_id", h274->blending_mode_id);
         print_int("log2_scale_factor", h274->log2_scale_factor);
 
@@ -2483,7 +2494,7 @@ static void print_film_grain_params(WriterContext *w,
                 continue;
 
             writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_COMPONENT);
-            print_int(c ? "bit_depth_chroma" : "bit_depth_luma", c ? h274->bit_depth_chroma : h274->bit_depth_luma);
+            print_int(c ? "bit_depth_chroma" : "bit_depth_luma", c ? fgp->bit_depth_chroma : fgp->bit_depth_luma);
 
             writer_print_section_header(w, NULL, SECTION_ID_FRAME_SIDE_DATA_PIECE_LIST);
             for (int i = 0; i < h274->num_intensity_intervals[c]; i++) {
