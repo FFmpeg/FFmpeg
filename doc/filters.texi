@@ -27955,6 +27955,83 @@ first input stream. For the syntax of this option, check the
 See @ref{xstack}.
 @end table
 
+@section pad_vaapi
+
+Add paddings to the input image, and place the original input at the
+provided @var{x}, @var{y} coordinates.
+
+It accepts the following options:
+
+@table @option
+@item width, w
+@item height, h
+Specify an expression for the size of the output image with the
+paddings added. If the value for @var{width} or @var{height} is 0, the
+corresponding input size is used for the output.
+
+The @var{width} expression can reference the value set by the
+@var{height} expression, and vice versa.
+
+The default value of @var{width} and @var{height} is 0.
+
+@item x
+@item y
+Specify the offsets to place the input image at within the padded area,
+with respect to the top/left border of the output image.
+
+The @var{x} expression can reference the value set by the @var{y}
+expression, and vice versa.
+
+The default value of @var{x} and @var{y} is 0.
+
+If @var{x} or @var{y} evaluate to a negative number, they'll be changed
+so the input image is centered on the padded area.
+
+@item color
+Specify the color of the padded area. For the syntax of this option,
+check the @ref{color syntax,,"Color" section in the ffmpeg-utils
+manual,ffmpeg-utils}.
+
+@item aspect
+Pad to an aspect instead to a resolution.
+@end table
+
+The value for the @var{width}, @var{height}, @var{x}, and @var{y}
+options are expressions containing the following constants:
+
+@table @option
+@item in_w
+@item in_h
+The input video width and height.
+
+@item iw
+@item ih
+These are the same as @var{in_w} and @var{in_h}.
+
+@item out_w
+@item out_h
+The output width and height (the size of the padded area), as
+specified by the @var{width} and @var{height} expressions.
+
+@item ow
+@item oh
+These are the same as @var{out_w} and @var{out_h}.
+
+@item x
+@item y
+The x and y offsets as specified by the @var{x} and @var{y}
+expressions, or NAN if not yet specified.
+
+@item a
+same as @var{iw} / @var{ih}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
+@end table
+
 @c man end VAAPI VIDEO FILTERS
 
 @chapter Vulkan Video Filters

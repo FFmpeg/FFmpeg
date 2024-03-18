@@ -3956,6 +3956,7 @@ vstack_qsv_filter_deps="libmfx"
 vstack_qsv_filter_select="qsvvpp"
 xstack_qsv_filter_deps="libmfx"
 xstack_qsv_filter_select="qsvvpp"
+pad_vaapi_filter_deps="vaapi_1"
 
 # examples
 avio_http_serve_files_deps="avformat avutil fork"
