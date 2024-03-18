@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-03-xx - xxxxxxxxxx - lavu 59.3.100 - frame.h
+  Add av_frame_side_data_free(), av_frame_side_data_new(),
+  av_frame_side_data_clone(), av_frame_side_data_get() as well
+  as AV_FRAME_SIDE_DATA_FLAG_UNIQUE.
+
 2024-03-xx - xxxxxxxxxx - lavu 59.2.100 - channel_layout.h
   Add AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL.
 
