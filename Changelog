@@ -34,6 +34,7 @@ version <next>:
 - ffprobe (with -export_side_data film_grain) now prints film grain metadata
 - AEA muxer
 - ffmpeg CLI loopback decoders
+- Support PacketTypeMetadata of PacketType in enhanced flv format
 
 
 version 6.1:
