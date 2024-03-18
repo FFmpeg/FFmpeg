@@ -336,7 +336,7 @@ static av_cold int tonemap_vaapi_init(AVFilterContext *avctx)
         vpp_ctx->output_format = av_get_pix_fmt(ctx->output_format_string);
     } else {
         vpp_ctx->output_format = AV_PIX_FMT_NV12;
-        av_log(avctx, AV_LOG_WARNING, "Output format not set, use default format NV12\n");
+        av_log(avctx, AV_LOG_VERBOSE, "Output format not set, use default format NV12 for HDR to SDR tone mapping.\n");
     }
 
 #define STRING_OPTION(var_name, func_name, default_value) do { \
