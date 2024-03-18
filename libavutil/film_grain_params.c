@@ -30,13 +30,20 @@ AVFilmGrainParams *av_film_grain_params_alloc(size_t *size)
 
 AVFilmGrainParams *av_film_grain_params_create_side_data(AVFrame *frame)
 {
+    AVFilmGrainParams *fgp;
     AVFrameSideData *side_data = av_frame_new_side_data(frame,
                                                         AV_FRAME_DATA_FILM_GRAIN_PARAMS,
                                                         sizeof(AVFilmGrainParams));
     if (!side_data)
         return NULL;
 
-    memset(side_data->data, 0, sizeof(AVFilmGrainParams));
+    fgp = (AVFilmGrainParams *) side_data->data;
+    *fgp = (AVFilmGrainParams) {
+        .color_range     = AVCOL_RANGE_UNSPECIFIED,
+        .color_primaries = AVCOL_PRI_UNSPECIFIED,
+        .color_trc       = AVCOL_TRC_UNSPECIFIED,
+        .color_space     = AVCOL_SPC_UNSPECIFIED,
+    };
 
-    return (AVFilmGrainParams *)side_data->data;
+    return fgp;
 }
