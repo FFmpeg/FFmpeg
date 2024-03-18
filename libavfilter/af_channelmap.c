@@ -84,7 +84,7 @@ static char* split(char *message, char delim) {
     return next;
 }
 
-static int get_channel_idx(char **map, int *ch, char delim, int max_ch)
+static int get_channel_idx(char **map, int *ch, char delim, int max_nb_channels)
 {
     char *next;
     int len;
@@ -98,7 +98,7 @@ static int get_channel_idx(char **map, int *ch, char delim, int max_ch)
     sscanf(*map, "%d%n", ch, &n);
     if (n != len)
         return AVERROR(EINVAL);
-    if (*ch < 0 || *ch > max_ch)
+    if (*ch < 0 || *ch >= max_nb_channels)
         return AVERROR(EINVAL);
     *map = next;
     return 0;
