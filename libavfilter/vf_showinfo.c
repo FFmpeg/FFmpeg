@@ -452,6 +452,11 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
         [AV_FILM_GRAIN_PARAMS_H274] = "h274",
     };
 
+    const char *color_range_str     = av_color_range_name(fgp->color_range);
+    const char *color_primaries_str = av_color_primaries_name(fgp->color_primaries);
+    const char *color_trc_str       = av_color_transfer_name(fgp->color_trc);
+    const char *colorspace_str      = av_color_space_name(fgp->color_space);
+
     if (fgp->type >= FF_ARRAY_ELEMS(film_grain_type_names)) {
         av_log(ctx, AV_LOG_ERROR, "invalid data\n");
         return;
@@ -459,6 +464,16 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
 
     av_log(ctx, AV_LOG_INFO, "type %s; ", film_grain_type_names[fgp->type]);
     av_log(ctx, AV_LOG_INFO, "seed=%"PRIu64"; ", fgp->seed);
+    av_log(ctx, AV_LOG_INFO, "width=%d; ", fgp->width);
+    av_log(ctx, AV_LOG_INFO, "height=%d; ", fgp->height);
+    av_log(ctx, AV_LOG_INFO, "subsampling_x=%d; ", fgp->subsampling_x);
+    av_log(ctx, AV_LOG_INFO, "subsampling_y=%d; ", fgp->subsampling_y);
+    av_log(ctx, AV_LOG_INFO, "color_range=%s; ", color_range_str ? color_range_str : "unknown");
+    av_log(ctx, AV_LOG_INFO, "color_primaries=%s; ", color_primaries_str ? color_primaries_str : "unknown");
+    av_log(ctx, AV_LOG_INFO, "color_trc=%s; ", color_trc_str ? color_trc_str : "unknown");
+    av_log(ctx, AV_LOG_INFO, "color_space=%s; ", colorspace_str ? colorspace_str : "unknown");
+    av_log(ctx, AV_LOG_INFO, "bit_depth_luma=%d; ", fgp->bit_depth_luma);
+    av_log(ctx, AV_LOG_INFO, "bit_depth_chroma=%d; ", fgp->bit_depth_chroma);
 
     switch (fgp->type) {
     case AV_FILM_GRAIN_PARAMS_NONE:
@@ -504,18 +519,7 @@ static void dump_sei_film_grain_params_metadata(AVFilterContext *ctx, const AVFr
     }
     case AV_FILM_GRAIN_PARAMS_H274: {
         const AVFilmGrainH274Params *h274 = &fgp->codec.h274;
-        const char *color_range_str     = av_color_range_name(h274->color_range);
-        const char *color_primaries_str = av_color_primaries_name(h274->color_primaries);
-        const char *color_trc_str       = av_color_transfer_name(h274->color_trc);
-        const char *colorspace_str      = av_color_space_name(h274->color_space);
-
         av_log(ctx, AV_LOG_INFO, "model_id=%d; ", h274->model_id);
-        av_log(ctx, AV_LOG_INFO, "bit_depth_luma=%d; ", h274->bit_depth_luma);
-        av_log(ctx, AV_LOG_INFO, "bit_depth_chroma=%d; ", h274->bit_depth_chroma);
-        av_log(ctx, AV_LOG_INFO, "color_range=%s; ", color_range_str ? color_range_str : "unknown");
-        av_log(ctx, AV_LOG_INFO, "color_primaries=%s; ", color_primaries_str ? color_primaries_str : "unknown");
-        av_log(ctx, AV_LOG_INFO, "color_trc=%s; ", color_trc_str ? color_trc_str : "unknown");
-        av_log(ctx, AV_LOG_INFO, "color_space=%s; ", colorspace_str ? colorspace_str : "unknown");
         av_log(ctx, AV_LOG_INFO, "blending_mode_id=%d; ", h274->blending_mode_id);
         av_log(ctx, AV_LOG_INFO, "log2_scale_factor=%d; ", h274->log2_scale_factor);
 
