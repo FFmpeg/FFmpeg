@@ -318,7 +318,6 @@ const FFOutputFormat ff_codec2_muxer = {
     .p.audio_codec  = AV_CODEC_ID_CODEC2,
     .p.video_codec  = AV_CODEC_ID_NONE,
     .p.flags        = AVFMT_NOTIMESTAMPS,
-    .priv_data_size = sizeof(Codec2Context),
     .write_header   = codec2_write_header,
     .write_packet   = ff_raw_write_packet,
 };
