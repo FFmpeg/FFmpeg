@@ -116,6 +116,30 @@ static int get_channel(char **map, int *ch, char delim)
     return 0;
 }
 
+static int check_idx_and_id(AVFilterContext *ctx, int channel_idx, int channel, AVChannelLayout *ch_layout, const char *io)
+{
+    char channel_name[64];
+    char layout_name[256];
+    int nb_channels = ch_layout->nb_channels;
+
+    if (channel_idx < 0 || channel_idx >= nb_channels) {
+        av_channel_layout_describe(ch_layout, layout_name, sizeof(layout_name));
+        if (channel >= 0) {
+            av_channel_name(channel_name, sizeof(channel_name), channel);
+            av_log(ctx, AV_LOG_ERROR,
+                   "%sput channel '%s' not available from %sput layout '%s'\n",
+                   io, channel_name, io, layout_name);
+        } else {
+            av_log(ctx, AV_LOG_ERROR,
+                   "%sput channel #%d not available from %sput layout '%s'\n",
+                   io, channel_idx, io, layout_name);
+        }
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static av_cold int channelmap_init(AVFilterContext *ctx)
 {
     ChannelMapContext *s = ctx->priv;
@@ -334,10 +358,7 @@ static int channelmap_config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     ChannelMapContext *s = ctx->priv;
-    int nb_channels = inlink->ch_layout.nb_channels;
     int i, err = 0;
-    char channel_name[64];
-    char layout_name[256];
 
     for (i = 0; i < s->nch; i++) {
         struct ChannelMap *m = &s->map[i];
@@ -347,20 +368,8 @@ static int channelmap_config_input(AVFilterLink *inlink)
                 &inlink->ch_layout, m->in_channel);
         }
 
-        if (m->in_channel_idx < 0 || m->in_channel_idx >= nb_channels) {
-            av_channel_layout_describe(&inlink->ch_layout, layout_name, sizeof(layout_name));
-            if (m->in_channel >= 0) {
-                av_channel_name(channel_name, sizeof(channel_name), m->in_channel);
-                av_log(ctx, AV_LOG_ERROR,
-                       "input channel '%s' not available from input layout '%s'\n",
-                       channel_name, layout_name);
-            } else {
-                av_log(ctx, AV_LOG_ERROR,
-                       "input channel #%d not available from input layout '%s'\n",
-                       m->in_channel_idx, layout_name);
-            }
+        if (check_idx_and_id(ctx, m->in_channel_idx, m->in_channel, &inlink->ch_layout, "in") < 0)
             err = AVERROR(EINVAL);
-        }
     }
 
     return err;
