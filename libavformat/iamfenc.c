@@ -48,11 +48,6 @@ static int iamf_init(AVFormatContext *s)
     int nb_audio_elements = 0, nb_mix_presentations = 0;
     int ret;
 
-    if (!s->nb_streams) {
-        av_log(s, AV_LOG_ERROR, "There must be at least one stream\n");
-        return AVERROR(EINVAL);
-    }
-
     for (int i = 0; i < s->nb_streams; i++) {
         if (s->streams[i]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO ||
             (s->streams[i]->codecpar->codec_tag != MKTAG('m','p','4','a') &&
