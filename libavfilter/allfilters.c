@@ -337,6 +337,7 @@ extern const AVFilter ff_vf_kerndeint;
 extern const AVFilter ff_vf_kirsch;
 extern const AVFilter ff_vf_lagfun;
 extern const AVFilter ff_vf_latency;
+extern const AVFilter ff_vf_lcevc;
 extern const AVFilter ff_vf_lenscorrection;
 extern const AVFilter ff_vf_lensfun;
 extern const AVFilter ff_vf_libplacebo;

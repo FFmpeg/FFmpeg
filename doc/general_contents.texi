@@ -160,6 +160,19 @@ Go to @url{http://lame.sourceforge.net/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libmp3lame} to configure to enable it.
 
+@section LCEVCdec
+
+FFmpeg can make use of the liblcevc_dec library for LCEVC enhacement layer
+decoding on supported bitstreams.
+
+Go to @url{https://github.com/v-novaltd/LCEVCdec} and follow the instructions
+for installing the library. Then pass @code{--enable-liblcevc-dec} to configure to
+enable it.
+
+@float NOTE
+LCEVCdec is under the BSD-3-Clause-Clear License.
+@end float
+
 @section libilbc
 
 iLBC is a narrowband speech codec that has been made freely available
