@@ -270,7 +270,7 @@ fail:
 
 int ff_d3d12va_common_frame_params(AVCodecContext *avctx, AVBufferRef *hw_frames_ctx)
 {
-    AVHWFramesContext      *frames_ctx   = (AVHWFramesContext *)hw_frames_ctx->data;
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext *)hw_frames_ctx->data;
 
     frames_ctx->format    = AV_PIX_FMT_D3D12;
     frames_ctx->sw_format = avctx->sw_pix_fmt == AV_PIX_FMT_YUV420P10 ? AV_PIX_FMT_P010 : AV_PIX_FMT_NV12;
@@ -411,7 +411,7 @@ int ff_d3d12va_decode_uninit(AVCodecContext *avctx)
 static inline int d3d12va_update_reference_frames_state(AVCodecContext *avctx, D3D12_RESOURCE_BARRIER *barriers,
                                                         ID3D12Resource *current_resource, int state_before, int state_end)
 {
-    D3D12VADecodeContext   *ctx          = D3D12VA_DECODE_CONTEXT(avctx);
+    D3D12VADecodeContext *ctx = D3D12VA_DECODE_CONTEXT(avctx);
 
     int num_barrier = 0;
     for (int i = 0; i < ctx->max_num_ref; i++) {
