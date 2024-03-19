@@ -21,12 +21,7 @@
 
 #include <stdint.h>
 
-#include "libavutil/avassert.h"
-#include "libavutil/common.h"
-#include "libavutil/iamf.h"
-#include "libavcodec/put_bits.h"
 #include "avformat.h"
-#include "avio_internal.h"
 #include "iamf.h"
 #include "iamf_writer.h"
 #include "internal.h"
