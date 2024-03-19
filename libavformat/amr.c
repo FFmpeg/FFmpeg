@@ -51,23 +51,6 @@ static const uint8_t amrwb_packed_size[16] = {
     18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 1, 1, 1, 1, 1, 1
 };
 
-#if CONFIG_AMR_MUXER
-static int amr_write_header(AVFormatContext *s)
-{
-    AVIOContext    *pb  = s->pb;
-    AVCodecParameters *par = s->streams[0]->codecpar;
-
-    if (par->codec_id == AV_CODEC_ID_AMR_NB) {
-        avio_write(pb, AMR_header,   sizeof(AMR_header));   /* magic number */
-    } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
-        avio_write(pb, AMRWB_header, sizeof(AMRWB_header)); /* magic number */
-    } else {
-        return -1;
-    }
-    return 0;
-}
-#endif /* CONFIG_AMR_MUXER */
-
 #if CONFIG_AMR_DEMUXER
 static int amr_probe(const AVProbeData *p)
 {
@@ -268,6 +251,21 @@ const FFInputFormat ff_amrwb_demuxer = {
 #endif
 
 #if CONFIG_AMR_MUXER
+static int amr_write_header(AVFormatContext *s)
+{
+    AVIOContext    *pb  = s->pb;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+
+    if (par->codec_id == AV_CODEC_ID_AMR_NB) {
+        avio_write(pb, AMR_header,   sizeof(AMR_header));   /* magic number */
+    } else if (par->codec_id == AV_CODEC_ID_AMR_WB) {
+        avio_write(pb, AMRWB_header, sizeof(AMRWB_header)); /* magic number */
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
 const FFOutputFormat ff_amr_muxer = {
     .p.name            = "amr",
     .p.long_name       = NULL_IF_CONFIG_SMALL("3GPP AMR"),
