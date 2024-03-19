@@ -32,7 +32,7 @@
  * @author Zoran Basaric ( zoran.basaric@imgtec.com )
  */
 
-#include "aacdec.h"
+#include "aac/aacdec.h"
 #include "aac/aacdec_tab.h"
 #include "avcodec.h"
 #include "libavutil/qsort.h"

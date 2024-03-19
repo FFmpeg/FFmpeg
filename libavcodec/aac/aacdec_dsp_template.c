@@ -29,7 +29,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/aacdec.h"
+#include "aacdec.h"
 #include "libavcodec/lpc_functions.h"
 
 #include "libavcodec/aactab.h"

@@ -27,8 +27,8 @@
  * @author Maxim Gavrilov ( maxim.gavrilov gmail com )
  */
 
-#ifndef AVCODEC_AACDEC_H
-#define AVCODEC_AACDEC_H
+#ifndef AVCODEC_AAC_AACDEC_H
+#define AVCODEC_AAC_AACDEC_H
 
 #include <stdint.h>
 
@@ -38,8 +38,8 @@
 #include "libavutil/mem_internal.h"
 #include "libavutil/tx.h"
 
-#include "aac.h"
-#include "mpeg4audio.h"
+#include "libavcodec/aac.h"
+#include "libavcodec/mpeg4audio.h"
 
 typedef struct AACDecContext AACDecContext;
 
@@ -349,4 +349,4 @@ void ff_aacdec_init_mips(AACDecContext *c);
 int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                       GetBitContext *gb, int common_window, int scale_flag);
 
-#endif /* AVCODEC_AACDEC_H */
+#endif /* AVCODEC_AAC_AACDEC_H */

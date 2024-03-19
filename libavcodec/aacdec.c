@@ -42,7 +42,7 @@
 #include "sinewin.h"
 
 #include "aac.h"
-#include "aacdec.h"
+#include "aac/aacdec.h"
 #include "aactab.h"
 #include "aac/aacdec_tab.h"
 #include "adts_header.h"

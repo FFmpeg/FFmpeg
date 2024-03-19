@@ -32,7 +32,7 @@
 #ifndef AVCODEC_AAC_AACDEC_FIXED_COUPLING_H
 #define AVCODEC_AAC_AACDEC_FIXED_COUPLING_H
 
-#include "libavcodec/aacdec.h"
+#include "aacdec.h"
 
 /**
  * Apply dependent channel coupling (applied before IMDCT).

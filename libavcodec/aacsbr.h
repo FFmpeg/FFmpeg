@@ -30,7 +30,7 @@
 #define AVCODEC_AACSBR_H
 
 #include "get_bits.h"
-#include "aacdec.h"
+#include "aac/aacdec.h"
 #include "aac_defines.h"
 
 #include "libavutil/attributes_internal.h"

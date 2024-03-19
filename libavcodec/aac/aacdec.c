@@ -34,7 +34,7 @@
 
 #include "libavcodec/aac.h"
 #include "libavcodec/aacsbr.h"
-#include "libavcodec/aacdec.h"
+#include "aacdec.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/attributes.h"
 #include "libavutil/error.h"

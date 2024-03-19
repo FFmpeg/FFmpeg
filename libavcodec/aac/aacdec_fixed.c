@@ -36,7 +36,7 @@
 #include "libavcodec/aac_defines.h"
 
 #include "libavcodec/avcodec.h"
-#include "libavcodec/aacdec.h"
+#include "aacdec.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin_fixed_tablegen.h"
 #include "libavcodec/kbdwin.h"
