@@ -179,7 +179,8 @@ const FFOutputFormat ff_chromaprint_muxer = {
     .p.audio_codec     = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,

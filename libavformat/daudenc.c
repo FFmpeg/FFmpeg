@@ -64,7 +64,8 @@ const FFOutputFormat ff_daud_muxer = {
     .p.video_codec = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.flags       = AVFMT_NOTIMESTAMPS,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .init         = daud_init,
     .write_packet = daud_write_packet,
 };

@@ -169,7 +169,8 @@ const FFOutputFormat ff_tta_muxer = {
     .p.audio_codec     = AV_CODEC_ID_TTA,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .init              = tta_init,
     .deinit            = tta_deinit,
     .write_header      = tta_write_header,

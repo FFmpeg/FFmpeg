@@ -45,7 +45,8 @@ const FFOutputFormat ff_ac3_muxer = {
     .p.audio_codec     = AV_CODEC_ID_AC3,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -78,7 +79,8 @@ const FFOutputFormat ff_adx_muxer = {
     .p.audio_codec     = AV_CODEC_ID_ADPCM_ADX,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .write_trailer     = adx_write_trailer,
     .p.flags           = AVFMT_NOTIMESTAMPS,
@@ -93,7 +95,8 @@ const FFOutputFormat ff_aptx_muxer = {
     .p.audio_codec     = AV_CODEC_ID_APTX,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -107,7 +110,8 @@ const FFOutputFormat ff_aptx_hd_muxer = {
     .p.audio_codec     = AV_CODEC_ID_APTX_HD,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -121,7 +125,8 @@ const FFOutputFormat ff_avs2_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_AVS2,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -135,7 +140,8 @@ const FFOutputFormat ff_avs3_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_AVS3,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -150,7 +156,8 @@ const FFOutputFormat ff_cavsvideo_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_CAVS,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -163,7 +170,8 @@ const FFOutputFormat ff_codec2raw_muxer = {
     .p.audio_codec     = AV_CODEC_ID_CODEC2,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -197,7 +205,8 @@ const FFOutputFormat ff_dfpwm_muxer = {
     .p.audio_codec     = AV_CODEC_ID_DFPWM,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -211,7 +220,8 @@ const FFOutputFormat ff_dirac_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_DIRAC,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -225,7 +235,8 @@ const FFOutputFormat ff_dnxhd_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_DNXHD,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -240,7 +251,8 @@ const FFOutputFormat ff_dts_muxer = {
     .p.audio_codec     = AV_CODEC_ID_DTS,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -255,7 +267,8 @@ const FFOutputFormat ff_eac3_muxer = {
     .p.audio_codec     = AV_CODEC_ID_EAC3,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -270,7 +283,8 @@ const FFOutputFormat ff_g722_muxer = {
     .p.audio_codec     = AV_CODEC_ID_ADPCM_G722,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -285,7 +299,8 @@ const FFOutputFormat ff_g723_1_muxer = {
     .p.audio_codec     = AV_CODEC_ID_G723_1,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -298,7 +313,8 @@ const FFOutputFormat ff_g726_muxer = {
     .p.audio_codec     = AV_CODEC_ID_ADPCM_G726,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -311,7 +327,8 @@ const FFOutputFormat ff_g726le_muxer = {
     .p.audio_codec     = AV_CODEC_ID_ADPCM_G726LE,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -326,7 +343,8 @@ const FFOutputFormat ff_gsm_muxer = {
     .p.audio_codec     = AV_CODEC_ID_GSM,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -341,7 +359,8 @@ const FFOutputFormat ff_h261_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_H261,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -356,7 +375,8 @@ const FFOutputFormat ff_h263_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_H263,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -379,7 +399,8 @@ const FFOutputFormat ff_h264_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_H264,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .check_bitstream   = h264_check_bitstream,
     .p.flags           = AVFMT_NOTIMESTAMPS,
@@ -403,7 +424,8 @@ const FFOutputFormat ff_vvc_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_VVC,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .check_bitstream   = vvc_check_bitstream,
     .p.flags           = AVFMT_NOTIMESTAMPS,
@@ -427,7 +449,8 @@ const FFOutputFormat ff_hevc_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_HEVC,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .check_bitstream   = hevc_check_bitstream,
     .p.flags           = AVFMT_NOTIMESTAMPS,
@@ -442,7 +465,8 @@ const FFOutputFormat ff_evc_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_EVC,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -456,7 +480,8 @@ const FFOutputFormat ff_m4v_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_MPEG4,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -471,7 +496,8 @@ const FFOutputFormat ff_mjpeg_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_MJPEG,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -485,7 +511,8 @@ const FFOutputFormat ff_mlp_muxer = {
     .p.audio_codec     = AV_CODEC_ID_MLP,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -500,7 +527,8 @@ const FFOutputFormat ff_mp2_muxer = {
     .p.audio_codec     = AV_CODEC_ID_MP2,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -515,7 +543,8 @@ const FFOutputFormat ff_mpeg1video_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_MPEG1VIDEO,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -529,7 +558,8 @@ const FFOutputFormat ff_mpeg2video_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_MPEG2VIDEO,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -549,7 +579,8 @@ const FFOutputFormat ff_obu_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_AV1,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .check_bitstream   = obu_check_bitstream,
     .p.flags           = AVFMT_NOTIMESTAMPS,
@@ -578,7 +609,8 @@ const FFOutputFormat ff_sbc_muxer = {
     .p.audio_codec     = AV_CODEC_ID_SBC,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -592,7 +624,8 @@ const FFOutputFormat ff_truehd_muxer = {
     .p.audio_codec     = AV_CODEC_ID_TRUEHD,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
@@ -606,7 +639,8 @@ const FFOutputFormat ff_vc1_muxer = {
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_VC1,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ff_raw_write_packet,
     .p.flags           = AVFMT_NOTIMESTAMPS,
 };
