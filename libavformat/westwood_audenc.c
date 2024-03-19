@@ -48,19 +48,19 @@ static int wsaud_write_init(AVFormatContext *ctx)
 
     /* Stream must be seekable to correctly write the file. */
     if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
-        av_log(ctx->streams[0], AV_LOG_ERROR, "Cannot write Westwood AUD to"
+        av_log(ctx, AV_LOG_ERROR, "Cannot write Westwood AUD to"
                " non-seekable stream.\n");
         return AVERROR(EINVAL);
     }
 
     if (st->codecpar->codec_id != AV_CODEC_ID_ADPCM_IMA_WS) {
-        av_log(st, AV_LOG_ERROR, "%s codec not supported for Westwood AUD.\n",
+        av_log(ctx, AV_LOG_ERROR, "%s codec not supported for Westwood AUD.\n",
                avcodec_get_name(st->codecpar->codec_id));
         return AVERROR(EINVAL);
     }
 
     if (ctx->nb_streams != 1) {
-        av_log(st, AV_LOG_ERROR, "AUD files have exactly one stream\n");
+        av_log(ctx, AV_LOG_ERROR, "AUD files have exactly one stream\n");
         return AVERROR(EINVAL);
     }
 
