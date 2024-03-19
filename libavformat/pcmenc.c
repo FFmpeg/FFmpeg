@@ -33,7 +33,9 @@ const FFOutputFormat ff_pcm_ ## name_ ## _muxer = {         \
     .p.extensions  = ext,                                   \
     .p.audio_codec = codec,                                 \
     .p.video_codec = AV_CODEC_ID_NONE,                      \
+    .p.subtitle_codec = AV_CODEC_ID_NONE,                   \
     .p.flags       = AVFMT_NOTIMESTAMPS,                    \
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,       \
     .write_packet = ff_raw_write_packet,                    \
 };
 #define PCMDEF_2(name, long_name, ext, codec, enabled)      \

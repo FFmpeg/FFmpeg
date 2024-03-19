@@ -681,9 +681,11 @@ const FFOutputFormat ff_spdif_muxer = {
     .priv_data_size    = sizeof(IEC61937Context),
     .p.audio_codec     = AV_CODEC_ID_AC3,
     .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .write_header      = spdif_write_header,
     .write_packet      = spdif_write_packet,
     .deinit            = spdif_deinit,
     .p.flags           = AVFMT_NOTIMESTAMPS,
     .p.priv_class      = &spdif_class,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };

@@ -273,7 +273,9 @@ const FFOutputFormat ff_amr_muxer = {
     .p.extensions      = "amr",
     .p.audio_codec     = AV_CODEC_ID_AMR_NB,
     .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .p.flags           = AVFMT_NOTIMESTAMPS,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header      = amr_write_header,
     .write_packet      = ff_raw_write_packet,
 };

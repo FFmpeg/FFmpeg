@@ -65,6 +65,9 @@ const FFOutputFormat ff_a64_muxer = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("a64 - video for Commodore 64"),
     .p.extensions   = "a64, A64",
     .p.video_codec  = AV_CODEC_ID_A64_MULTI,
+    .p.audio_codec    = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = a64_write_header,
     .write_packet   = ff_raw_write_packet,
 };

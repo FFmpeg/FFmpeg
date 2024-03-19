@@ -62,7 +62,9 @@ const FFOutputFormat ff_daud_muxer = {
     .p.extensions  = "302",
     .p.audio_codec = AV_CODEC_ID_PCM_S24DAUD,
     .p.video_codec = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.flags       = AVFMT_NOTIMESTAMPS,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .init         = daud_init,
     .write_packet = daud_write_packet,
 };

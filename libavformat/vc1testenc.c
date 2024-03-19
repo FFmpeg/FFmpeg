@@ -88,7 +88,9 @@ const FFOutputFormat ff_vc1t_muxer = {
     .priv_data_size    = sizeof(RCVContext),
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.video_codec     = AV_CODEC_ID_WMV3,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .write_header      = vc1test_write_header,
     .write_packet      = vc1test_write_packet,
     .write_trailer     = vc1test_write_trailer,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };

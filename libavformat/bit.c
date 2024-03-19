@@ -167,6 +167,8 @@ const FFOutputFormat ff_bit_muxer = {
     .p.extensions   = "bit",
     .p.audio_codec  = AV_CODEC_ID_G729,
     .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header = write_header,
     .write_packet = write_packet,
 };

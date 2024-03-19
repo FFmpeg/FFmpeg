@@ -36,7 +36,10 @@ const FFOutputFormat ff_jacosub_muxer = {
     .p.mime_type      = "text/x-jacosub",
     .p.extensions     = "jss,js",
     .p.flags          = AVFMT_TS_NONSTRICT,
+    .p.video_codec    = AV_CODEC_ID_NONE,
+    .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_JACOSUB,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = jacosub_write_header,
     .write_packet   = ff_raw_write_packet,
 };

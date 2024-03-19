@@ -39,10 +39,6 @@ static int smjpeg_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int n, tag;
 
-    if (s->nb_streams > 2) {
-        av_log(s, AV_LOG_ERROR, "more than >2 streams are not supported\n");
-        return AVERROR(EINVAL);
-    }
     avio_write(pb, SMJPEG_MAGIC, 8);
     avio_wb32(pb, 0);
     avio_wb32(pb, 0);
@@ -139,6 +135,8 @@ const FFOutputFormat ff_smjpeg_muxer = {
     .priv_data_size = sizeof(SMJPEGMuxContext),
     .p.audio_codec  = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec  = AV_CODEC_ID_MJPEG,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = smjpeg_write_header,
     .write_packet   = smjpeg_write_packet,
     .write_trailer  = smjpeg_write_trailer,

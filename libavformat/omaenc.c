@@ -97,9 +97,12 @@ const FFOutputFormat ff_oma_muxer = {
     .p.long_name       = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
     .p.mime_type       = "audio/x-oma",
     .p.extensions      = "oma",
+    .p.video_codec     = AV_CODEC_ID_NONE,
     .p.audio_codec     = AV_CODEC_ID_ATRAC3,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .write_header      = oma_write_header,
     .write_packet      = ff_raw_write_packet,
     .p.codec_tag       = ff_oma_codec_tags_list,
     .p.flags           = AVFMT_NOTIMESTAMPS,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };
