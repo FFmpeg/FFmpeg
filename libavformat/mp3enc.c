@@ -495,12 +495,16 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 static int query_codec(enum AVCodecID id, int std_compliance)
 {
     const CodecMime *cm= ff_id3v2_mime_tags;
+
+    if (id == AV_CODEC_ID_MP3)
+        return 1;
+
     while(cm->id != AV_CODEC_ID_NONE) {
         if(id == cm->id)
             return MKTAG('A', 'P', 'I', 'C');
         cm++;
     }
-    return -1;
+    return 0;
 }
 
 static const AVOption options[] = {
