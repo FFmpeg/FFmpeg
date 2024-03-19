@@ -58,7 +58,7 @@ static void deinit(AVFormatContext *s)
     }
 }
 
-static int write_header(AVFormatContext *s)
+static av_cold int init(AVFormatContext *s)
 {
     ChromaprintMuxContext *cpr = s->priv_data;
     AVStream *st;
@@ -181,7 +181,7 @@ const FFOutputFormat ff_chromaprint_muxer = {
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
                          FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
-    .write_header      = write_header,
+    .init              = init,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
     .deinit            = deinit,

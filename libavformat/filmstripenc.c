@@ -32,7 +32,7 @@
 
 #define RAND_TAG MKBETAG('R','a','n','d')
 
-static int write_header(AVFormatContext *s)
+static av_cold int init(AVFormatContext *s)
 {
     if (s->streams[0]->codecpar->format != AV_PIX_FMT_RGBA) {
         av_log(s, AV_LOG_ERROR, "only AV_PIX_FMT_RGBA is supported\n");
@@ -69,7 +69,7 @@ const FFOutputFormat ff_filmstrip_muxer = {
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
                          FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
-    .write_header      = write_header,
+    .init              = init,
     .write_packet      = ff_raw_write_packet,
     .write_trailer     = write_trailer,
 };

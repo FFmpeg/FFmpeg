@@ -40,7 +40,7 @@ typedef struct GIFContext {
     AVPacket *prev_pkt;
 } GIFContext;
 
-static int gif_write_header(AVFormatContext *s)
+static av_cold int gif_init(AVFormatContext *s)
 {
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
 
@@ -208,7 +208,7 @@ const FFOutputFormat ff_gif_muxer = {
     .p.subtitle_codec = AV_CODEC_ID_NONE,
     .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
-    .write_header   = gif_write_header,
+    .init             = gif_init,
     .write_packet   = gif_write_packet,
     .write_trailer  = gif_write_trailer,
     .p.priv_class   = &gif_muxer_class,

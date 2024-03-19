@@ -72,7 +72,7 @@ static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int sup_write_header(AVFormatContext *s)
+static av_cold int sup_init(AVFormatContext *s)
 {
     avpriv_set_pts_info(s->streams[0], 32, 1, 90000);
 
@@ -89,6 +89,6 @@ const FFOutputFormat ff_sup_muxer = {
     .p.subtitle_codec = AV_CODEC_ID_HDMV_PGS_SUBTITLE,
     .p.flags          = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
     .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
-    .write_header   = sup_write_header,
+    .init             = sup_init,
     .write_packet   = sup_write_packet,
 };
