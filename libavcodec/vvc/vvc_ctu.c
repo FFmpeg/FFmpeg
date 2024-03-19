@@ -96,7 +96,7 @@ static int get_qp_y_pred(const VVCLocalContext *lc)
     if (lc->na.cand_up) {
         const int first_qg_in_ctu = !(xQg & ctb_size_mask) &&  !(yQg & ctb_size_mask);
         const int qPy_up          = fc->tab.qp[LUMA][x_cb + (y_cb - 1) * min_cb_width];
-        if (first_qg_in_ctu && pps->ctb_to_col_bd[xQg >> ctb_log2_size] == xQg)
+        if (first_qg_in_ctu && pps->ctb_to_col_bd[xQg >> ctb_log2_size] == xQg >> ctb_log2_size)
             return qPy_up;
     }
 
