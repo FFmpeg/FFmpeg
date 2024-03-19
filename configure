@@ -387,7 +387,9 @@ Toolchain options:
   --windres=WINDRES        use windows resource compiler WINDRES [$windres_default]
   --x86asmexe=EXE          use nasm-compatible assembler EXE [$x86asmexe_default]
   --cc=CC                  use C compiler CC [$cc_default]
+  --stdc=STDC              use C standard STDC [$stdc_default]
   --cxx=CXX                use C compiler CXX [$cxx_default]
+  --stdcxx=STDCXX          use C standard STDCXX [$stdcxx_default]
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
   --nvcc=NVCC              use Nvidia CUDA compiler NVCC or clang [$nvcc_default]
@@ -1454,6 +1456,33 @@ test_cflags_cc(){
 EOF
 }
 
+check_cflags_cc(){
+    log check_cflags_cc "$@"
+    flags=$1
+    test_cflags_cc "$@" && add_cflags $flags
+}
+
+test_cxxflags_cc(){
+    log test_cxxflags_cc "$@"
+    flags=$1
+    header=$2
+    condition=$3
+    shift 3
+    set -- $($cflags_filter "$flags")
+    test_cxx "$@" <<EOF
+#include <$header>
+#if !($condition)
+#error "unsatisfied condition: $condition"
+#endif
+EOF
+}
+
+check_cxxflags_cc(){
+    log check_cxxflags_cc "$@"
+    flags=$1
+    test_cxxflags_cc "$@" && add_cxxflags $flags
+}
+
 check_lib(){
     log check_lib "$@"
     name="$1"
@@ -1693,6 +1722,27 @@ check_host_cflags(){
     test_host_cc "$@" <<EOF && append host_cflags "$@"
 int x;
 EOF
+}
+
+test_host_cflags_cc(){
+    log test_host_cflags_cc "$@"
+    flags=$1
+    header=$2
+    condition=$3
+    shift 3
+    set -- $($host_cflags_filter "$flags")
+    test_host_cc "$@" <<EOF
+#include <$header>
+#if !($condition)
+#error "unsatisfied condition: $condition"
+#endif
+EOF
+}
+
+check_host_cflags_cc(){
+    log check_host_cflags_cc "$@"
+    flags=$1
+    test_host_cflags_cc "$@" && add_host_cflags $flags
 }
 
 test_host_cpp_condition(){
@@ -2653,6 +2703,8 @@ CMDLINE_SET="
     random_seed
     ranlib
     samples
+    stdc
+    stdcxx
     strip
     sws_max_filter_size
     sysinclude
@@ -3981,6 +4033,8 @@ mandir_default='${prefix}/share/man'
 # toolchain
 ar_default="ar"
 cc_default="gcc"
+stdc_default="c11"
+stdcxx_default="c++11"
 cxx_default="g++"
 host_cc_default="gcc"
 doxygen_default="doxygen"
@@ -4588,7 +4642,7 @@ if enabled cuda_nvcc; then
 fi
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
-    target_exec x86asmexe metalcc metallib
+    target_exec x86asmexe metalcc metallib stdc stdcxx
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -4758,7 +4812,7 @@ icl_flags(){
             # Despite what Intel's documentation says -Wall, which is supported
             # on Windows, does enable remarks so disable them here.
             -Wall)                echo $flag -Qdiag-disable:remark ;;
-            -std=c11)             echo -Qstd=c11 ;;
+            -std=$stdc)           echo -Qstd=$stdc ;;
             -flto*)               echo -ipo ;;
         esac
     done
@@ -4806,7 +4860,7 @@ suncc_flags(){
                     athlon*)                   echo -xarch=pentium_proa  ;;
                 esac
                 ;;
-            -std=c11)             echo -xc11              ;;
+            -std=$stdc)           echo -x$stdc            ;;
             -fomit-frame-pointer) echo -xregs=frameptr    ;;
             -fPIC)                echo -KPIC -xcode=pic32 ;;
             -W*,*)                echo $flag              ;;
@@ -4895,8 +4949,8 @@ probe_cc(){
         _type=suncc
         _ident=$($_cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
         _DEPCMD='$(DEP$(1)) $(DEP$(1)FLAGS) $($(1)DEP_FLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
-        _DEPFLAGS='-xM1 -xc11'
-        _ldflags='-std=c11'
+        _DEPFLAGS='-xM1 -x$stdc'
+        _ldflags='-std=$stdc'
         _cflags_speed='-O5'
         _cflags_size='-O5 -xspace'
         _flags_filter=suncc_flags
@@ -5527,18 +5581,21 @@ fi
 
 add_cppflags -D_ISOC11_SOURCE
 add_cxxflags -D__STDC_CONSTANT_MACROS
-check_cxxflags -std=c++11 || check_cxxflags -std=c++0x
+check_cxxflags_cc -std=$stdcxx ctype.h "__cplusplus >= 201103L" ||
+    { check_cxxflags -std=c++11 && stdcxx="c++11" || { check_cxxflags -std=c++0x && stdcxx="c++0x"; }; }
 
 # some compilers silently accept -std=c11, so we also need to check that the
 # version macro is defined properly
-test_cflags_cc -std=c11 ctype.h "__STDC_VERSION__ >= 201112L" &&
-    add_cflags -std=c11 || die "Compiler lacks C11 support"
+check_cflags_cc -std=$stdc ctype.h "__STDC_VERSION__ >= 201112L" ||
+    { check_cflags_cc -std=c11 ctype.h "__STDC_VERSION__ >= 201112L" && stdc="c11" || die "Compiler lacks C11 support"; }
 
 check_cppflags -D_FILE_OFFSET_BITS=64
 check_cppflags -D_LARGEFILE_SOURCE
 
 add_host_cppflags -D_ISOC11_SOURCE
-check_host_cflags -std=c11
+check_host_cflags_cc -std=$stdc ctype.h "__STDC_VERSION__ >= 201112L" ||
+    check_host_cflags_cc -std=c11 ctype.h "__STDC_VERSION__ >= 201112L" || die "Host compiler lacks C11 support"
+
 check_host_cflags -Wall
 check_host_cflags $host_cflags_speed
 
