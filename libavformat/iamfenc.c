@@ -72,7 +72,7 @@ static int iamf_init(AVFormatContext *s)
         }
     }
 
-    if (!s->nb_stream_groups) {
+    if (s->nb_stream_groups <= 1) {
         av_log(s, AV_LOG_ERROR, "There must be at least two stream groups\n");
         return AVERROR(EINVAL);
     }
