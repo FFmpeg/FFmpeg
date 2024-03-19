@@ -4033,7 +4033,7 @@ mandir_default='${prefix}/share/man'
 # toolchain
 ar_default="ar"
 cc_default="gcc"
-stdc_default="c11"
+stdc_default="c17"
 stdcxx_default="c++11"
 cxx_default="g++"
 host_cc_default="gcc"
