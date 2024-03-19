@@ -339,7 +339,9 @@ static int cbs_vp8_read_unit(CodedBitstreamContext *ctx,
         return err;
 
     pos = get_bits_count(&gbc);
-    pos /= 8;
+    // Position may not be byte-aligned after compressed header; Round up byte
+    // count for accurate data positioning.
+    pos = (pos + 7) / 8;
     av_assert0(pos <= unit->data_size);
 
     frame->data_ref = av_buffer_ref(unit->data_ref);
