@@ -129,14 +129,7 @@ const FFInputFormat ff_kvag_demuxer = {
 #if CONFIG_KVAG_MUXER
 static int kvag_write_init(AVFormatContext *s)
 {
-    AVCodecParameters *par;
-
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "KVAG files have exactly one stream\n");
-        return AVERROR(EINVAL);
-    }
-
-    par = s->streams[0]->codecpar;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (par->codec_id != AV_CODEC_ID_ADPCM_IMA_SSI) {
         av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
@@ -196,6 +189,8 @@ const FFOutputFormat ff_kvag_muxer = {
     .p.extensions   = "vag",
     .p.audio_codec  = AV_CODEC_ID_ADPCM_IMA_SSI,
     .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .init           = kvag_write_init,
     .write_header   = kvag_write_header,
     .write_packet   = ff_raw_write_packet,

@@ -35,7 +35,7 @@ static int ac4_init(AVFormatContext *s)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (s->nb_streams != 1 || par->codec_id != AV_CODEC_ID_AC4) {
+    if (par->codec_id != AV_CODEC_ID_AC4) {
         av_log(s, AV_LOG_ERROR, "Only one AC-4 stream can be muxed by the AC-4 muxer\n");
         return AVERROR(EINVAL);
     }
@@ -95,6 +95,8 @@ const FFOutputFormat ff_ac4_muxer = {
     .priv_data_size    = sizeof(AC4Context),
     .p.audio_codec     = AV_CODEC_ID_AC4,
     .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .init              = ac4_init,
     .write_packet      = ac4_write_packet,
     .p.priv_class      = &ac4_muxer_class,

@@ -33,13 +33,7 @@ static const char mode30_header[] = "#!iLBC30\n";
 static int ilbc_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
-    AVCodecParameters *par;
-
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "Unsupported number of streams\n");
-        return AVERROR(EINVAL);
-    }
-    par = s->streams[0]->codecpar;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (par->codec_id != AV_CODEC_ID_ILBC) {
         av_log(s, AV_LOG_ERROR, "Unsupported codec\n");
@@ -127,8 +121,11 @@ const FFOutputFormat ff_ilbc_muxer = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("iLBC storage"),
     .p.mime_type    = "audio/iLBC",
     .p.extensions   = "lbc",
+    .p.video_codec    = AV_CODEC_ID_NONE,
     .p.audio_codec  = AV_CODEC_ID_ILBC,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.flags        = AVFMT_NOTIMESTAMPS,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header = ilbc_write_header,
     .write_packet = ff_raw_write_packet,
 };

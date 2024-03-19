@@ -188,6 +188,12 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     AVDictionary *tmp = NULL;
     const FFOutputFormat *of = ffofmt(s->oformat);
     AVDictionaryEntry *e;
+    static const unsigned default_codec_offsets[] = {
+        [AVMEDIA_TYPE_VIDEO]    = offsetof(AVOutputFormat, video_codec),
+        [AVMEDIA_TYPE_AUDIO]    = offsetof(AVOutputFormat, audio_codec),
+        [AVMEDIA_TYPE_SUBTITLE] = offsetof(AVOutputFormat, subtitle_codec),
+    };
+    unsigned nb_type[FF_ARRAY_ELEMS(default_codec_offsets)] = { 0 };
     int ret = 0;
 
     if (options)
@@ -261,6 +267,23 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
                 }
             }
             break;
+        }
+        if (of->flags_internal & FF_OFMT_FLAG_MAX_ONE_OF_EACH) {
+            enum AVCodecID default_codec_id = AV_CODEC_ID_NONE;
+            unsigned nb;
+            if ((unsigned)par->codec_type < FF_ARRAY_ELEMS(default_codec_offsets)) {
+                nb = ++nb_type[par->codec_type];
+                if (default_codec_offsets[par->codec_type])
+                    default_codec_id = *(const enum AVCodecID*)((const char*)of + default_codec_offsets[par->codec_type]);
+            }
+            if (default_codec_id == AV_CODEC_ID_NONE || nb > 1) {
+                const char *type = av_get_media_type_string(par->codec_type);
+                av_log(s, AV_LOG_ERROR, "%s muxer does not support %s stream of type %s\n",
+                       of->p.name, default_codec_id == AV_CODEC_ID_NONE ? "any" : "more than one",
+                       type ? type : "unknown");
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
         }
 
 #if FF_API_AVSTREAM_SIDE_DATA

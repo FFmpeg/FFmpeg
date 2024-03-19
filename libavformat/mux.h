@@ -36,6 +36,18 @@ struct AVDeviceInfoList;
  * of the return value in case of flushing.
  */
 #define FF_OFMT_FLAG_ALLOW_FLUSH                    (1 << 1)
+/**
+ * If this flag is set, it indicates that for each codec type
+ * whose corresponding default codec (i.e. AVOutputFormat.audio_codec,
+ * AVOutputFormat.video_codec and AVOutputFormat.subtitle_codec)
+ * is set (i.e. != AV_CODEC_ID_NONE) only one stream of this type
+ * can be muxed. It furthermore indicates that no stream with
+ * a codec type that has no default codec or whose default codec
+ * is AV_CODEC_ID_NONE can be muxed.
+ * Both of these restrictions are checked generically before
+ * the actual muxer's init/write_header callbacks.
+ */
+#define FF_OFMT_FLAG_MAX_ONE_OF_EACH                (1 << 2)
 
 typedef struct FFOutputFormat {
     /**

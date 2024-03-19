@@ -42,9 +42,7 @@ typedef struct GIFContext {
 
 static int gif_write_header(AVFormatContext *s)
 {
-    if (s->nb_streams != 1 ||
-        s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
-        s->streams[0]->codecpar->codec_id   != AV_CODEC_ID_GIF) {
+    if (s->streams[0]->codecpar->codec_id   != AV_CODEC_ID_GIF) {
         av_log(s, AV_LOG_ERROR,
                "GIF muxer supports only a single video GIF stream.\n");
         return AVERROR(EINVAL);
@@ -213,6 +211,8 @@ const FFOutputFormat ff_gif_muxer = {
     .priv_data_size = sizeof(GIFContext),
     .p.audio_codec  = AV_CODEC_ID_NONE,
     .p.video_codec  = AV_CODEC_ID_GIF,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = gif_write_header,
     .write_packet   = gif_write_packet,
     .write_trailer  = gif_write_trailer,

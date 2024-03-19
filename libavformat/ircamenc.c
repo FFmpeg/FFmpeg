@@ -32,11 +32,6 @@ static int ircam_write_header(AVFormatContext *s)
     AVCodecParameters *par = s->streams[0]->codecpar;
     uint32_t tag;
 
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
-        return AVERROR(EINVAL);
-    }
-
     tag = ff_codec_get_tag(ff_codec_ircam_le_tags, par->codec_id);
     if (!tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
@@ -57,6 +52,8 @@ const FFOutputFormat ff_ircam_muxer = {
     .p.long_name    = NULL_IF_CONFIG_SMALL("Berkeley/IRCAM/CARL Sound Format"),
     .p.audio_codec  = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = ircam_write_header,
     .write_packet   = ff_raw_write_packet,
     .p.codec_tag    = (const AVCodecTag *const []){ ff_codec_ircam_le_tags, 0 },

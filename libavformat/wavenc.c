@@ -304,11 +304,6 @@ static int wav_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t fmt;
 
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "WAVE files have exactly one stream\n");
-        return AVERROR(EINVAL);
-    }
-
     if (wav->rf64 == RF64_ALWAYS) {
         ffio_wfourcc(pb, "RF64");
         avio_wl32(pb, -1); /* RF64 chunk size: use size in ds64 */
@@ -516,6 +511,7 @@ const FFOutputFormat ff_wav_muxer = {
     .priv_data_size    = sizeof(WAVMuxContext),
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .write_header      = wav_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = wav_write_trailer,
@@ -523,21 +519,12 @@ const FFOutputFormat ff_wav_muxer = {
     .p.flags           = AVFMT_TS_NONSTRICT,
     .p.codec_tag       = ff_wav_codec_tags_list,
     .p.priv_class      = &wav_muxer_class,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };
 #endif /* CONFIG_WAV_MUXER */
 
 #if CONFIG_W64_MUXER
 #include "w64.h"
-
-static av_cold int w64_init(AVFormatContext *ctx)
-{
-    if (ctx->nb_streams != 1) {
-        av_log(ctx, AV_LOG_ERROR, "This muxer only supports a single stream.\n");
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
-}
 
 static void start_guid(AVIOContext *pb, const uint8_t *guid, int64_t *pos)
 {
@@ -624,11 +611,12 @@ const FFOutputFormat ff_w64_muxer = {
     .priv_data_size    = sizeof(WAVMuxContext),
     .p.audio_codec     = AV_CODEC_ID_PCM_S16LE,
     .p.video_codec     = AV_CODEC_ID_NONE,
-    .init              = w64_init,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .write_header      = w64_write_header,
     .write_packet      = wav_write_packet,
     .write_trailer     = w64_write_trailer,
     .p.flags           = AVFMT_TS_NONSTRICT,
     .p.codec_tag       = ff_wav_codec_tags_list,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };
 #endif /* CONFIG_W64_MUXER */

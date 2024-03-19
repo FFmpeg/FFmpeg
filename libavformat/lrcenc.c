@@ -37,12 +37,6 @@ static int lrc_write_header(AVFormatContext *s)
 {
     const AVDictionaryEntry *metadata_item;
 
-    if(s->nb_streams != 1 ||
-       s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-        av_log(s, AV_LOG_ERROR,
-               "LRC supports only a single subtitle stream.\n");
-        return AVERROR(EINVAL);
-    }
     if(s->streams[0]->codecpar->codec_id != AV_CODEC_ID_SUBRIP &&
        s->streams[0]->codecpar->codec_id != AV_CODEC_ID_TEXT) {
         av_log(s, AV_LOG_ERROR, "Unsupported subtitle codec: %s\n",
@@ -131,7 +125,10 @@ const FFOutputFormat ff_lrc_muxer = {
     .p.extensions     = "lrc",
     .p.flags          = AVFMT_VARIABLE_FPS | AVFMT_GLOBALHEADER |
                         AVFMT_TS_NEGATIVE | AVFMT_TS_NONSTRICT,
+    .p.video_codec    = AV_CODEC_ID_NONE,
+    .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_SUBRIP,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .priv_data_size = 0,
     .write_header   = lrc_write_header,
     .write_packet   = lrc_write_packet,

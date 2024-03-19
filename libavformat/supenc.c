@@ -74,12 +74,6 @@ static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int sup_write_header(AVFormatContext *s)
 {
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "%s files have exactly one stream\n",
-               s->oformat->name);
-        return AVERROR(EINVAL);
-    }
-
     avpriv_set_pts_info(s->streams[0], 32, 1, 90000);
 
     return 0;
@@ -90,8 +84,11 @@ const FFOutputFormat ff_sup_muxer = {
     .p.long_name      = NULL_IF_CONFIG_SMALL("raw HDMV Presentation Graphic Stream subtitles"),
     .p.extensions     = "sup",
     .p.mime_type      = "application/x-pgs",
+    .p.video_codec    = AV_CODEC_ID_NONE,
+    .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_HDMV_PGS_SUBTITLE,
     .p.flags          = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = sup_write_header,
     .write_packet   = sup_write_packet,
 };

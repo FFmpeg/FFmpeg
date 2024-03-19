@@ -291,11 +291,6 @@ static int au_write_header(AVFormatContext *s)
     AVCodecParameters *par = s->streams[0]->codecpar;
     AVBPrint annotations;
 
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
-        return AVERROR(EINVAL);
-    }
-
     par->codec_tag = ff_codec_get_tag(codec_au_tags, par->codec_id);
     if (!par->codec_tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
@@ -346,7 +341,9 @@ const FFOutputFormat ff_au_muxer = {
     .p.codec_tag    = au_codec_tags,
     .p.audio_codec  = AV_CODEC_ID_PCM_S16BE,
     .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.flags        = AVFMT_NOTIMESTAMPS,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .priv_data_size = sizeof(AUContext),
     .write_header  = au_write_header,
     .write_packet  = ff_raw_write_packet,

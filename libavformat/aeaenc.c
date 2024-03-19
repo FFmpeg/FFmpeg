@@ -29,14 +29,8 @@ static int aea_write_header(AVFormatContext *s)
 {
     const AVDictionaryEntry *title_entry;
     size_t title_length = 0;
-    AVStream *st;
+    AVStream *st = s->streams[0];
 
-    if (s->nb_streams > 1) {
-        av_log(s, AV_LOG_ERROR, "Got more than one stream to encode. This is not supported.\n");
-        return AVERROR(EINVAL);
-    }
-
-    st = s->streams[0];
     if (st->codecpar->ch_layout.nb_channels != 1 && st->codecpar->ch_layout.nb_channels != 2) {
         av_log(s, AV_LOG_ERROR, "Only maximum 2 channels are supported in the audio"
                " stream, %d channels were found.\n", st->codecpar->ch_layout.nb_channels);
@@ -108,7 +102,10 @@ const FFOutputFormat ff_aea_muxer = {
     .p.long_name      = NULL_IF_CONFIG_SMALL("MD STUDIO audio"),
     .p.extensions     = "aea",
     .p.audio_codec    = AV_CODEC_ID_ATRAC1,
+    .p.video_codec    = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
 
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header     = aea_write_header,
     .write_packet     = ff_raw_write_packet,
     .write_trailer    = aea_write_trailer,

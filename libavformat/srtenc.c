@@ -39,12 +39,6 @@ static int srt_write_header(AVFormatContext *avf)
 {
     SRTContext *srt = avf->priv_data;
 
-    if (avf->nb_streams != 1 ||
-        avf->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-        av_log(avf, AV_LOG_ERROR,
-               "SRT supports only a single subtitles stream.\n");
-        return AVERROR(EINVAL);
-    }
     if (avf->streams[0]->codecpar->codec_id != AV_CODEC_ID_TEXT &&
         avf->streams[0]->codecpar->codec_id != AV_CODEC_ID_SUBRIP) {
         av_log(avf, AV_LOG_ERROR,
@@ -103,7 +97,10 @@ const FFOutputFormat ff_srt_muxer = {
     .p.mime_type      = "application/x-subrip",
     .p.extensions     = "srt",
     .p.flags          = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .p.video_codec    = AV_CODEC_ID_NONE,
+    .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_SUBRIP,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .priv_data_size = sizeof(SRTContext),
     .write_header   = srt_write_header,
     .write_packet   = srt_write_packet,

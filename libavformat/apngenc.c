@@ -84,9 +84,7 @@ static int apng_write_header(AVFormatContext *format_context)
     APNGMuxContext *apng = format_context->priv_data;
     AVCodecParameters *par = format_context->streams[0]->codecpar;
 
-    if (format_context->nb_streams != 1 ||
-        format_context->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
-        format_context->streams[0]->codecpar->codec_id   != AV_CODEC_ID_APNG) {
+    if (format_context->streams[0]->codecpar->codec_id   != AV_CODEC_ID_APNG) {
         av_log(format_context, AV_LOG_ERROR,
                "APNG muxer supports only a single video APNG stream.\n");
         return AVERROR(EINVAL);
@@ -315,6 +313,8 @@ const FFOutputFormat ff_apng_muxer = {
     .priv_data_size = sizeof(APNGMuxContext),
     .p.audio_codec  = AV_CODEC_ID_NONE,
     .p.video_codec  = AV_CODEC_ID_APNG,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = apng_write_header,
     .write_packet   = apng_write_packet,
     .write_trailer  = apng_write_trailer,

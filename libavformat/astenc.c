@@ -49,15 +49,8 @@ static int ast_write_header(AVFormatContext *s)
 {
     ASTMuxContext *ast = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVCodecParameters *par;
+    AVCodecParameters *par = s->streams[0]->codecpar;
     unsigned int codec_tag;
-
-    if (s->nb_streams == 1) {
-        par = s->streams[0]->codecpar;
-    } else {
-        av_log(s, AV_LOG_ERROR, "only one stream is supported\n");
-        return AVERROR(EINVAL);
-    }
 
     if (par->codec_id == AV_CODEC_ID_ADPCM_AFC) {
         av_log(s, AV_LOG_ERROR, "muxing ADPCM AFC is not implemented\n");
@@ -204,6 +197,8 @@ const FFOutputFormat ff_ast_muxer = {
     .priv_data_size    = sizeof(ASTMuxContext),
     .p.audio_codec     = AV_CODEC_ID_PCM_S16BE_PLANAR,
     .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header      = ast_write_header,
     .write_packet      = ast_write_packet,
     .write_trailer     = ast_write_trailer,

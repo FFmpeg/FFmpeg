@@ -40,13 +40,7 @@ typedef struct TTAMuxContext {
 static int tta_init(AVFormatContext *s)
 {
     TTAMuxContext *tta = s->priv_data;
-    AVCodecParameters *par;
-
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "Only one stream is supported\n");
-        return AVERROR(EINVAL);
-    }
-    par = s->streams[0]->codecpar;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (par->codec_id != AV_CODEC_ID_TTA) {
         av_log(s, AV_LOG_ERROR, "Unsupported codec\n");
@@ -174,6 +168,8 @@ const FFOutputFormat ff_tta_muxer = {
     .priv_data_size    = sizeof(TTAMuxContext),
     .p.audio_codec     = AV_CODEC_ID_TTA,
     .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .init              = tta_init,
     .deinit            = tta_deinit,
     .write_header      = tta_write_header,

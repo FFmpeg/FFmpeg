@@ -269,14 +269,7 @@ const FFInputFormat ff_argo_cvg_demuxer = {
 static int argo_cvg_write_init(AVFormatContext *s)
 {
     ArgoCVGMuxContext *ctx = s->priv_data;
-    const AVCodecParameters *par;
-
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "CVG files have exactly one stream\n");
-        return AVERROR(EINVAL);
-    }
-
-    par = s->streams[0]->codecpar;
+    const AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (par->codec_id != AV_CODEC_ID_ADPCM_PSX) {
         av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
@@ -408,7 +401,9 @@ const FFOutputFormat ff_argo_cvg_muxer = {
     .p.extensions   = "cvg",
     .p.audio_codec  = AV_CODEC_ID_ADPCM_PSX,
     .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.priv_class   = &argo_cvg_muxer_class,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .init           = argo_cvg_write_init,
     .write_header   = argo_cvg_write_header,
     .write_packet   = argo_cvg_write_packet,

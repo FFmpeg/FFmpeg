@@ -216,7 +216,7 @@ static int codec2_write_header(AVFormatContext *s)
 {
     AVStream *st;
 
-    if (s->nb_streams != 1 || s->streams[0]->codecpar->codec_id != AV_CODEC_ID_CODEC2) {
+    if (s->streams[0]->codecpar->codec_id != AV_CODEC_ID_CODEC2) {
         av_log(s, AV_LOG_ERROR, ".c2 files must have exactly one codec2 stream\n");
         return AVERROR(EINVAL);
     }
@@ -317,7 +317,9 @@ const FFOutputFormat ff_codec2_muxer = {
     .p.extensions   = "c2",
     .p.audio_codec  = AV_CODEC_ID_CODEC2,
     .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.flags        = AVFMT_NOTIMESTAMPS,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header   = codec2_write_header,
     .write_packet   = ff_raw_write_packet,
 };

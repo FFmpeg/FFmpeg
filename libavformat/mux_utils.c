@@ -44,6 +44,25 @@ int avformat_query_codec(const AVOutputFormat *ofmt, enum AVCodecID codec_id,
                   codec_id == ofmt->audio_codec ||
                   codec_id == ofmt->subtitle_codec))
             return 1;
+        else if (ffofmt(ofmt)->flags_internal & FF_OFMT_FLAG_MAX_ONE_OF_EACH) {
+            enum AVMediaType type = avcodec_get_type(codec_id);
+            switch (type) {
+            case AVMEDIA_TYPE_AUDIO:
+                if (ofmt->audio_codec == AV_CODEC_ID_NONE)
+                    return 0;
+                break;
+            case AVMEDIA_TYPE_VIDEO:
+                if (ofmt->video_codec == AV_CODEC_ID_NONE)
+                    return 0;
+                break;
+            case AVMEDIA_TYPE_SUBTITLE:
+                if (ofmt->subtitle_codec == AV_CODEC_ID_NONE)
+                    return 0;
+                break;
+            default:
+                return 0;
+            }
+        }
     }
     return AVERROR_PATCHWELCOME;
 }

@@ -50,7 +50,7 @@ static int write_header(AVFormatContext *s)
     ASSContext *ass = s->priv_data;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (s->nb_streams != 1 || par->codec_id != AV_CODEC_ID_ASS) {
+    if (par->codec_id != AV_CODEC_ID_ASS) {
         av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
         return AVERROR(EINVAL);
     }
@@ -237,8 +237,11 @@ const FFOutputFormat ff_ass_muxer = {
     .p.long_name      = NULL_IF_CONFIG_SMALL("SSA (SubStation Alpha) subtitle"),
     .p.mime_type      = "text/x-ass",
     .p.extensions     = "ass,ssa",
+    .p.audio_codec    = AV_CODEC_ID_NONE,
+    .p.video_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_ASS,
     .p.flags          = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS | AVFMT_TS_NONSTRICT,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .p.priv_class     = &ass_class,
     .priv_data_size = sizeof(ASSContext),
     .write_header   = write_header,

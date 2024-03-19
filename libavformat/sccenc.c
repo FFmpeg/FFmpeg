@@ -35,12 +35,6 @@ static int scc_write_header(AVFormatContext *avf)
 {
     SCCContext *scc = avf->priv_data;
 
-    if (avf->nb_streams != 1 ||
-        avf->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-        av_log(avf, AV_LOG_ERROR,
-               "SCC supports only a single subtitles stream.\n");
-        return AVERROR(EINVAL);
-    }
     if (avf->streams[0]->codecpar->codec_id != AV_CODEC_ID_EIA_608) {
         av_log(avf, AV_LOG_ERROR,
                "Unsupported subtitles codec: %s\n",
@@ -117,7 +111,10 @@ const FFOutputFormat ff_scc_muxer = {
     .p.long_name      = NULL_IF_CONFIG_SMALL("Scenarist Closed Captions"),
     .p.extensions     = "scc",
     .p.flags          = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .p.video_codec    = AV_CODEC_ID_NONE,
+    .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_EIA_608,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .priv_data_size = sizeof(SCCContext),
     .write_header   = scc_write_header,
     .write_packet   = scc_write_packet,

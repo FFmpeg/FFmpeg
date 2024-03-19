@@ -59,11 +59,6 @@ static int wsaud_write_init(AVFormatContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (ctx->nb_streams != 1) {
-        av_log(ctx, AV_LOG_ERROR, "AUD files have exactly one stream\n");
-        return AVERROR(EINVAL);
-    }
-
     return 0;
 }
 
@@ -133,8 +128,10 @@ const FFOutputFormat ff_wsaud_muxer = {
     .priv_data_size    = sizeof(AUDMuxContext),
     .p.audio_codec     = AV_CODEC_ID_ADPCM_IMA_WS,
     .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
     .init              = wsaud_write_init,
     .write_header      = wsaud_write_header,
     .write_packet      = wsaud_write_packet,
     .write_trailer     = wsaud_write_trailer,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };

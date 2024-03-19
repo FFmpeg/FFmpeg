@@ -189,11 +189,6 @@ static int alp_write_init(AVFormatContext *s)
             alp->type = ALP_TYPE_TUN;
     }
 
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "Too many streams\n");
-        return AVERROR(EINVAL);
-    }
-
     par = s->streams[0]->codecpar;
 
     if (par->codec_id != AV_CODEC_ID_ADPCM_IMA_ALP) {
@@ -298,7 +293,9 @@ const FFOutputFormat ff_alp_muxer = {
     .p.extensions   = "tun,pcm",
     .p.audio_codec  = AV_CODEC_ID_ADPCM_IMA_ALP,
     .p.video_codec  = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.priv_class   = &alp_muxer_class,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .init           = alp_write_init,
     .write_header   = alp_write_header,
     .write_packet   = ff_raw_write_packet,

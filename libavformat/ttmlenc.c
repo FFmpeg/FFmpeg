@@ -126,8 +126,7 @@ static int ttml_write_header(AVFormatContext *ctx)
     TTMLMuxContext *ttml_ctx = ctx->priv_data;
     ttml_ctx->document_written = 0;
 
-    if (ctx->nb_streams != 1 ||
-        ctx->streams[0]->codecpar->codec_id != AV_CODEC_ID_TTML) {
+    if (ctx->streams[0]->codecpar->codec_id != AV_CODEC_ID_TTML) {
         av_log(ctx, AV_LOG_ERROR, "Exactly one TTML stream is required!\n");
         return AVERROR(EINVAL);
     }
@@ -224,7 +223,10 @@ const FFOutputFormat ff_ttml_muxer = {
     .priv_data_size    = sizeof(TTMLMuxContext),
     .p.flags           = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                          AVFMT_TS_NONSTRICT,
+    .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_TTML,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header      = ttml_write_header,
     .write_packet      = ttml_write_packet,
     .write_trailer     = ttml_write_trailer,

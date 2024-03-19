@@ -42,10 +42,6 @@ static int webp_init(AVFormatContext *s)
 
     w->last_pkt = ffformatcontext(s)->pkt;
 
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "Only exactly 1 stream is supported\n");
-        return AVERROR(EINVAL);
-    }
     st = s->streams[0];
     if (st->codecpar->codec_id != AV_CODEC_ID_WEBP) {
         av_log(s, AV_LOG_ERROR, "Only WebP is supported\n");
@@ -230,9 +226,12 @@ const FFOutputFormat ff_webp_muxer = {
     .p.extensions   = "webp",
     .priv_data_size = sizeof(WebpContext),
     .p.video_codec  = AV_CODEC_ID_WEBP,
+    .p.audio_codec    = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .init           = webp_init,
     .write_packet   = webp_write_packet,
     .write_trailer  = webp_write_trailer,
     .p.priv_class   = &webp_muxer_class,
     .p.flags        = AVFMT_VARIABLE_FPS,
+    .flags_internal = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };

@@ -50,7 +50,7 @@ static int webvtt_write_header(AVFormatContext *ctx)
     AVCodecParameters *par = ctx->streams[0]->codecpar;
     AVIOContext *pb = ctx->pb;
 
-    if (ctx->nb_streams != 1 || par->codec_id != AV_CODEC_ID_WEBVTT) {
+    if (par->codec_id != AV_CODEC_ID_WEBVTT) {
         av_log(ctx, AV_LOG_ERROR, "Exactly one WebVTT stream is needed.\n");
         return AVERROR(EINVAL);
     }
@@ -109,7 +109,10 @@ const FFOutputFormat ff_webvtt_muxer = {
     .p.extensions      = "vtt",
     .p.mime_type       = "text/vtt",
     .p.flags           = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
+    .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_WEBVTT,
     .write_header      = webvtt_write_header,
     .write_packet      = webvtt_write_packet,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
 };

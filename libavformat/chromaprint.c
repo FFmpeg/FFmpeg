@@ -85,11 +85,6 @@ static int write_header(AVFormatContext *s)
 #endif
     }
 
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "Only one stream is supported\n");
-        return AVERROR(EINVAL);
-    }
-
     st = s->streams[0];
 
     if (st->codecpar->ch_layout.nb_channels > 2) {
@@ -182,6 +177,9 @@ const FFOutputFormat ff_chromaprint_muxer = {
     .p.long_name       = NULL_IF_CONFIG_SMALL("Chromaprint"),
     .priv_data_size    = sizeof(ChromaprintMuxContext),
     .p.audio_codec     = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE),
+    .p.video_codec     = AV_CODEC_ID_NONE,
+    .p.subtitle_codec  = AV_CODEC_ID_NONE,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
