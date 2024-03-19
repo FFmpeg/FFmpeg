@@ -43,19 +43,12 @@ typedef struct AUDMuxContext {
 
 static int wsaud_write_init(AVFormatContext *ctx)
 {
-    AVStream     *st = ctx->streams[0];
     AVIOContext  *pb = ctx->pb;
 
     /* Stream must be seekable to correctly write the file. */
     if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(ctx, AV_LOG_ERROR, "Cannot write Westwood AUD to"
                " non-seekable stream.\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (st->codecpar->codec_id != AV_CODEC_ID_ADPCM_IMA_WS) {
-        av_log(ctx, AV_LOG_ERROR, "%s codec not supported for Westwood AUD.\n",
-               avcodec_get_name(st->codecpar->codec_id));
         return AVERROR(EINVAL);
     }
 
@@ -133,5 +126,6 @@ const FFOutputFormat ff_wsaud_muxer = {
     .write_header      = wsaud_write_header,
     .write_packet      = wsaud_write_packet,
     .write_trailer     = wsaud_write_trailer,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
 };

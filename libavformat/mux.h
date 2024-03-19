@@ -48,6 +48,15 @@ struct AVDeviceInfoList;
  * the actual muxer's init/write_header callbacks.
  */
 #define FF_OFMT_FLAG_MAX_ONE_OF_EACH                (1 << 2)
+/**
+ * If this flag is set, then the only permitted audio/video/subtitle
+ * codec ids are AVOutputFormat.audio/video/subtitle_codec;
+ * if any of the latter is unset (i.e. equal to AV_CODEC_ID_NONE),
+ * then no stream of the corresponding type is supported.
+ * In addition, codec types without default codec field
+ * are disallowed.
+ */
+#define FF_OFMT_FLAG_ONLY_DEFAULT_CODECS            (1 << 3)
 
 typedef struct FFOutputFormat {
     /**

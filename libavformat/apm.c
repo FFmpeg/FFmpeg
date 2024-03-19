@@ -217,12 +217,6 @@ static int apm_write_init(AVFormatContext *s)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (par->codec_id != AV_CODEC_ID_ADPCM_IMA_APM) {
-        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
-               avcodec_get_name(par->codec_id));
-        return AVERROR(EINVAL);
-    }
-
     if (par->ch_layout.nb_channels > 2) {
         av_log(s, AV_LOG_ERROR, "APM files only support up to 2 channels\n");
         return AVERROR(EINVAL);
@@ -305,7 +299,8 @@ const FFOutputFormat ff_apm_muxer = {
     .p.audio_codec  = AV_CODEC_ID_ADPCM_IMA_APM,
     .p.video_codec  = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .init           = apm_write_init,
     .write_header   = apm_write_header,
     .write_packet   = ff_raw_write_packet,

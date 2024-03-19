@@ -19,7 +19,6 @@
  */
 
 #include "libavcodec/codec_id.h"
-#include "libavcodec/codec_par.h"
 #include "libavcodec/packet.h"
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
@@ -30,18 +29,6 @@ typedef struct AC4Context {
     AVClass *class;
     int write_crc;
 } AC4Context;
-
-static int ac4_init(AVFormatContext *s)
-{
-    AVCodecParameters *par = s->streams[0]->codecpar;
-
-    if (par->codec_id != AV_CODEC_ID_AC4) {
-        av_log(s, AV_LOG_ERROR, "Only one AC-4 stream can be muxed by the AC-4 muxer\n");
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
-}
 
 static int ac4_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -96,8 +83,8 @@ const FFOutputFormat ff_ac4_muxer = {
     .p.audio_codec     = AV_CODEC_ID_AC4,
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_NONE,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
-    .init              = ac4_init,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_packet      = ac4_write_packet,
     .p.priv_class      = &ac4_muxer_class,
     .p.flags           = AVFMT_NOTIMESTAMPS,

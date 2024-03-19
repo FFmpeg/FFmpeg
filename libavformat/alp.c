@@ -191,12 +191,6 @@ static int alp_write_init(AVFormatContext *s)
 
     par = s->streams[0]->codecpar;
 
-    if (par->codec_id != AV_CODEC_ID_ADPCM_IMA_ALP) {
-        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
-               avcodec_get_name(par->codec_id));
-        return AVERROR(EINVAL);
-    }
-
     if (par->ch_layout.nb_channels > 2) {
         av_log(s, AV_LOG_ERROR, "A maximum of 2 channels are supported\n");
         return AVERROR(EINVAL);
@@ -295,7 +289,8 @@ const FFOutputFormat ff_alp_muxer = {
     .p.video_codec  = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.priv_class   = &alp_muxer_class,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .init           = alp_write_init,
     .write_header   = alp_write_header,
     .write_packet   = ff_raw_write_packet,

@@ -38,15 +38,10 @@ typedef struct WebpContext{
 static int webp_init(AVFormatContext *s)
 {
     WebpContext *const w = s->priv_data;
-    AVStream *st;
+    AVStream *st = s->streams[0];
 
     w->last_pkt = ffformatcontext(s)->pkt;
 
-    st = s->streams[0];
-    if (st->codecpar->codec_id != AV_CODEC_ID_WEBP) {
-        av_log(s, AV_LOG_ERROR, "Only WebP is supported\n");
-        return AVERROR(EINVAL);
-    }
     avpriv_set_pts_info(st, 24, 1, 1000);
 
     return 0;
@@ -233,5 +228,6 @@ const FFOutputFormat ff_webp_muxer = {
     .write_trailer  = webp_write_trailer,
     .p.priv_class   = &webp_muxer_class,
     .p.flags        = AVFMT_VARIABLE_FPS,
-    .flags_internal = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                      FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
 };

@@ -31,10 +31,6 @@ static int vc1test_write_header(AVFormatContext *s)
     AVCodecParameters *par = s->streams[0]->codecpar;
     AVIOContext *pb = s->pb;
 
-    if (par->codec_id != AV_CODEC_ID_WMV3) {
-        av_log(s, AV_LOG_ERROR, "Only WMV3 is accepted!\n");
-        return -1;
-    }
     avio_wl24(pb, 0); //frames count will be here
     avio_w8(pb, 0xC5);
     avio_wl32(pb, 4);
@@ -92,5 +88,6 @@ const FFOutputFormat ff_vc1t_muxer = {
     .write_header      = vc1test_write_header,
     .write_packet      = vc1test_write_packet,
     .write_trailer     = vc1test_write_trailer,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
 };

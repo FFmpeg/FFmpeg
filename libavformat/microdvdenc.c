@@ -29,11 +29,6 @@ static int microdvd_write_header(struct AVFormatContext *s)
     AVCodecParameters *par = s->streams[0]->codecpar;
     AVRational framerate = s->streams[0]->avg_frame_rate;
 
-    if (par->codec_id != AV_CODEC_ID_MICRODVD) {
-        av_log(s, AV_LOG_ERROR, "Exactly one MicroDVD stream is needed.\n");
-        return -1;
-    }
-
     if (par->extradata && par->extradata_size > 0) {
         avio_write(s->pb, "{DEFAULT}{}", 11);
         avio_write(s->pb, par->extradata, par->extradata_size);
@@ -65,7 +60,8 @@ const FFOutputFormat ff_microdvd_muxer = {
     .p.video_codec    = AV_CODEC_ID_NONE,
     .p.audio_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_MICRODVD,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header   = microdvd_write_header,
     .write_packet   = microdvd_write_packet,
 };

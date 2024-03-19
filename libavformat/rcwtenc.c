@@ -84,11 +84,6 @@ static void rcwt_flush_cluster(AVFormatContext *avf)
 
 static int rcwt_write_header(AVFormatContext *avf)
 {
-    if (avf->streams[0]->codecpar->codec_id != AV_CODEC_ID_EIA_608) {
-        av_log(avf, AV_LOG_ERROR, "RCWT supports only CC (608/708)\n");
-        return AVERROR(EINVAL);
-    }
-
     avpriv_set_pts_info(avf->streams[0], 64, 1, 1000);
 
     /* magic number */
@@ -169,7 +164,8 @@ const FFOutputFormat ff_rcwt_muxer = {
     .p.video_codec      = AV_CODEC_ID_NONE,
     .p.audio_codec      = AV_CODEC_ID_NONE,
     .p.subtitle_codec   = AV_CODEC_ID_EIA_608,
-    .flags_internal     = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal     = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                          FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .priv_data_size     = sizeof(RCWTContext),
     .write_header       = rcwt_write_header,
     .write_packet       = rcwt_write_packet,

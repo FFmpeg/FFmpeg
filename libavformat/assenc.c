@@ -50,10 +50,6 @@ static int write_header(AVFormatContext *s)
     ASSContext *ass = s->priv_data;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (par->codec_id != AV_CODEC_ID_ASS) {
-        av_log(s, AV_LOG_ERROR, "Exactly one ASS/SSA stream is needed.\n");
-        return AVERROR(EINVAL);
-    }
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
     if (par->extradata_size > 0) {
         size_t header_size = par->extradata_size;
@@ -241,7 +237,8 @@ const FFOutputFormat ff_ass_muxer = {
     .p.video_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_ASS,
     .p.flags          = AVFMT_GLOBALHEADER | AVFMT_NOTIMESTAMPS | AVFMT_TS_NONSTRICT,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .p.priv_class     = &ass_class,
     .priv_data_size = sizeof(ASSContext),
     .write_header   = write_header,

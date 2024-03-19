@@ -129,7 +129,7 @@ static int write_header(AVFormatContext *s)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if ((par->codec_id != AV_CODEC_ID_G729) || par->ch_layout.nb_channels != 1) {
+    if (par->ch_layout.nb_channels != 1) {
         av_log(s, AV_LOG_ERROR,
                "only codec g729 with 1 channel is supported by this format\n");
         return AVERROR(EINVAL);
@@ -168,7 +168,8 @@ const FFOutputFormat ff_bit_muxer = {
     .p.audio_codec  = AV_CODEC_ID_G729,
     .p.video_codec  = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header = write_header,
     .write_packet = write_packet,
 };

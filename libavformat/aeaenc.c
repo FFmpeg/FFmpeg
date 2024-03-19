@@ -37,11 +37,6 @@ static int aea_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    if (st->codecpar->codec_id != AV_CODEC_ID_ATRAC1) {
-        av_log(s, AV_LOG_ERROR, "AEA can only store ATRAC1 streams, %s was found.\n", avcodec_get_name(st->codecpar->codec_id));
-        return AVERROR(EINVAL);
-    }
-
     if (st->codecpar->sample_rate != 44100) {
         av_log(s, AV_LOG_ERROR, "Invalid sample rate (%d) AEA only supports 44.1kHz.\n", st->codecpar->sample_rate);
         return AVERROR(EINVAL);
@@ -105,7 +100,8 @@ const FFOutputFormat ff_aea_muxer = {
     .p.video_codec    = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
 
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header     = aea_write_header,
     .write_packet     = ff_raw_write_packet,
     .write_trailer    = aea_write_trailer,

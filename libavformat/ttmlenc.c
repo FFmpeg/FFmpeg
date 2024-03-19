@@ -126,11 +126,6 @@ static int ttml_write_header(AVFormatContext *ctx)
     TTMLMuxContext *ttml_ctx = ctx->priv_data;
     ttml_ctx->document_written = 0;
 
-    if (ctx->streams[0]->codecpar->codec_id != AV_CODEC_ID_TTML) {
-        av_log(ctx, AV_LOG_ERROR, "Exactly one TTML stream is required!\n");
-        return AVERROR(EINVAL);
-    }
-
     {
         AVStream    *st = ctx->streams[0];
         AVIOContext *pb = ctx->pb;
@@ -226,7 +221,8 @@ const FFOutputFormat ff_ttml_muxer = {
     .p.video_codec     = AV_CODEC_ID_NONE,
     .p.audio_codec     = AV_CODEC_ID_NONE,
     .p.subtitle_codec  = AV_CODEC_ID_TTML,
-    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal    = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                         FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header      = ttml_write_header,
     .write_packet      = ttml_write_packet,
     .write_trailer     = ttml_write_trailer,

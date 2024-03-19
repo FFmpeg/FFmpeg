@@ -290,12 +290,6 @@ static int argo_asf_write_init(AVFormatContext *s)
     ArgoASFMuxContext *ctx = s->priv_data;
     const AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (par->codec_id != AV_CODEC_ID_ADPCM_ARGO) {
-        av_log(s, AV_LOG_ERROR, "%s codec not supported\n",
-               avcodec_get_name(par->codec_id));
-        return AVERROR(EINVAL);
-    }
-
     if (ctx->version_major == 1 && ctx->version_minor == 1 && par->sample_rate != 22050) {
         av_log(s, AV_LOG_ERROR, "ASF v1.1 files only support a sample rate of 22050\n");
         return AVERROR(EINVAL);
@@ -476,7 +470,8 @@ const FFOutputFormat ff_argo_asf_muxer = {
     .p.video_codec  = AV_CODEC_ID_NONE,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.priv_class   = &argo_asf_muxer_class,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .init           = argo_asf_write_init,
     .write_header   = argo_asf_write_header,
     .write_packet   = argo_asf_write_packet,

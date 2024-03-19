@@ -35,11 +35,6 @@ static int ilbc_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (par->codec_id != AV_CODEC_ID_ILBC) {
-        av_log(s, AV_LOG_ERROR, "Unsupported codec\n");
-        return AVERROR(EINVAL);
-    }
-
     if (par->block_align == 50) {
         avio_write(pb, mode30_header, sizeof(mode30_header) - 1);
     } else if (par->block_align == 38) {
@@ -125,7 +120,8 @@ const FFOutputFormat ff_ilbc_muxer = {
     .p.audio_codec  = AV_CODEC_ID_ILBC,
     .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.flags        = AVFMT_NOTIMESTAMPS,
-    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header = ilbc_write_header,
     .write_packet = ff_raw_write_packet,
 };
