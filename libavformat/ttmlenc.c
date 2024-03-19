@@ -124,38 +124,35 @@ static int ttml_set_header_values_from_extradata(
 static int ttml_write_header(AVFormatContext *ctx)
 {
     TTMLMuxContext *ttml_ctx = ctx->priv_data;
+    AVStream    *st = ctx->streams[0];
+    AVIOContext *pb = ctx->pb;
+
+    const AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,
+                                                0);
+    const char *printed_lang = (lang && lang->value) ? lang->value : "";
+
     ttml_ctx->document_written = 0;
+    ttml_ctx->input_type = ff_is_ttml_stream_paragraph_based(st->codecpar) ?
+                           PACKET_TYPE_PARAGRAPH :
+                           PACKET_TYPE_DOCUMENT;
 
-    {
-        AVStream    *st = ctx->streams[0];
-        AVIOContext *pb = ctx->pb;
+    avpriv_set_pts_info(st, 64, 1, 1000);
 
-        AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,
-                                              0);
-        const char *printed_lang = (lang && lang->value) ? lang->value : "";
-
-        ttml_ctx->input_type = ff_is_ttml_stream_paragraph_based(st->codecpar) ?
-                               PACKET_TYPE_PARAGRAPH :
-                               PACKET_TYPE_DOCUMENT;
-
-        avpriv_set_pts_info(st, 64, 1, 1000);
-
-        if (ttml_ctx->input_type == PACKET_TYPE_PARAGRAPH) {
-            struct TTMLHeaderParameters header_params;
-            int ret = ttml_set_header_values_from_extradata(
-                st->codecpar, &header_params);
-            if (ret < 0) {
-                av_log(ctx, AV_LOG_ERROR,
-                       "Failed to parse TTML header values from extradata: "
-                       "%s!\n", av_err2str(ret));
-                return ret;
-            }
-
-            avio_printf(pb, ttml_header_text,
-                        header_params.tt_element_params,
-                        printed_lang,
-                        header_params.pre_body_elements);
+    if (ttml_ctx->input_type == PACKET_TYPE_PARAGRAPH) {
+        struct TTMLHeaderParameters header_params;
+        int ret = ttml_set_header_values_from_extradata(
+            st->codecpar, &header_params);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Failed to parse TTML header values from extradata: "
+                   "%s!\n", av_err2str(ret));
+            return ret;
         }
+
+        avio_printf(pb, ttml_header_text,
+                    header_params.tt_element_params,
+                    printed_lang,
+                    header_params.pre_body_elements);
     }
 
     return 0;
