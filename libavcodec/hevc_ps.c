@@ -370,7 +370,7 @@ static void decode_sublayer_hrd(GetBitContext *gb, unsigned int nb_cpb,
             par->bit_rate_du_value_minus1[i] = get_ue_golomb_long(gb);
         }
 
-        par->cbr_flag = get_bits1(gb);
+        par->cbr_flag |= get_bits1(gb) << i;
     }
 }
 
@@ -378,24 +378,24 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
                       HEVCHdrParams *hdr, int max_sublayers)
 {
     if (common_inf_present) {
-        hdr->flags.nal_hrd_parameters_present_flag = get_bits1(gb);
-        hdr->flags.vcl_hrd_parameters_present_flag = get_bits1(gb);
+        hdr->nal_hrd_parameters_present_flag = get_bits1(gb);
+        hdr->vcl_hrd_parameters_present_flag = get_bits1(gb);
 
-        if (hdr->flags.nal_hrd_parameters_present_flag ||
-            hdr->flags.vcl_hrd_parameters_present_flag) {
-            hdr->flags.sub_pic_hrd_params_present_flag = get_bits1(gb);
+        if (hdr->nal_hrd_parameters_present_flag ||
+            hdr->vcl_hrd_parameters_present_flag) {
+            hdr->sub_pic_hrd_params_present_flag = get_bits1(gb);
 
-            if (hdr->flags.sub_pic_hrd_params_present_flag) {
+            if (hdr->sub_pic_hrd_params_present_flag) {
                 hdr->tick_divisor_minus2 = get_bits(gb, 8);
                 hdr->du_cpb_removal_delay_increment_length_minus1 = get_bits(gb, 5);
-                hdr->flags.sub_pic_cpb_params_in_pic_timing_sei_flag = get_bits1(gb);
+                hdr->sub_pic_cpb_params_in_pic_timing_sei_flag = get_bits1(gb);
                 hdr->dpb_output_delay_du_length_minus1 = get_bits(gb, 5);
             }
 
             hdr->bit_rate_scale = get_bits(gb, 4);
             hdr->cpb_size_scale = get_bits(gb, 4);
 
-            if (hdr->flags.sub_pic_hrd_params_present_flag)
+            if (hdr->sub_pic_hrd_params_present_flag)
                 hdr->cpb_size_du_scale = get_bits(gb, 4);
 
             hdr->initial_cpb_removal_delay_length_minus1 = get_bits(gb, 5);
@@ -405,18 +405,22 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
     }
 
     for (int i = 0; i < max_sublayers; i++) {
-        hdr->flags.fixed_pic_rate_general_flag = get_bits1(gb);
+        unsigned fixed_pic_rate_general_flag = get_bits1(gb);
+        unsigned fixed_pic_rate_within_cvs_flag = 0;
+        unsigned low_delay_hrd_flag = 0;
+        hdr->flags.fixed_pic_rate_general_flag |= fixed_pic_rate_general_flag << i;
 
-        if (!hdr->flags.fixed_pic_rate_general_flag)
-            hdr->flags.fixed_pic_rate_within_cvs_flag = get_bits1(gb);
+        if (!fixed_pic_rate_general_flag)
+            fixed_pic_rate_within_cvs_flag = get_bits1(gb);
+        hdr->flags.fixed_pic_rate_within_cvs_flag |= fixed_pic_rate_within_cvs_flag << i;
 
-        if (hdr->flags.fixed_pic_rate_within_cvs_flag ||
-            hdr->flags.fixed_pic_rate_general_flag)
+        if (fixed_pic_rate_within_cvs_flag || fixed_pic_rate_general_flag)
             hdr->elemental_duration_in_tc_minus1[i] = get_ue_golomb_long(gb);
         else
-            hdr->flags.low_delay_hrd_flag = get_bits1(gb);
+            low_delay_hrd_flag = get_bits1(gb);
+        hdr->flags.low_delay_hrd_flag |= low_delay_hrd_flag << i;
 
-        if (!hdr->flags.low_delay_hrd_flag) {
+        if (!low_delay_hrd_flag) {
             unsigned cpb_cnt_minus1 = get_ue_golomb_long(gb);
             if (cpb_cnt_minus1 > 31) {
                 av_log(NULL, AV_LOG_ERROR, "nb_cpb %d invalid\n",
@@ -426,13 +430,13 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
             hdr->cpb_cnt_minus1[i] = cpb_cnt_minus1;
         }
 
-        if (hdr->flags.nal_hrd_parameters_present_flag)
+        if (hdr->nal_hrd_parameters_present_flag)
             decode_sublayer_hrd(gb, hdr->cpb_cnt_minus1[i]+1, &hdr->nal_params[i],
-                                hdr->flags.sub_pic_hrd_params_present_flag);
+                                hdr->sub_pic_hrd_params_present_flag);
 
-        if (hdr->flags.vcl_hrd_parameters_present_flag)
+        if (hdr->vcl_hrd_parameters_present_flag)
             decode_sublayer_hrd(gb, hdr->cpb_cnt_minus1[i]+1, &hdr->vcl_params[i],
-                                hdr->flags.sub_pic_hrd_params_present_flag);
+                                hdr->sub_pic_hrd_params_present_flag);
     }
 
     return 0;

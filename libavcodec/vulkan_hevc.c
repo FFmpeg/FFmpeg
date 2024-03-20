@@ -250,10 +250,10 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
 
     *vksps_vui_header = (StdVideoH265HrdParameters) {
         .flags = (StdVideoH265HrdFlags) {
-            .nal_hrd_parameters_present_flag = sps->hdr.flags.nal_hrd_parameters_present_flag,
-            .vcl_hrd_parameters_present_flag = sps->hdr.flags.vcl_hrd_parameters_present_flag,
-            .sub_pic_hrd_params_present_flag = sps->hdr.flags.sub_pic_hrd_params_present_flag,
-            .sub_pic_cpb_params_in_pic_timing_sei_flag = sps->hdr.flags.sub_pic_cpb_params_in_pic_timing_sei_flag,
+            .nal_hrd_parameters_present_flag = sps->hdr.nal_hrd_parameters_present_flag,
+            .vcl_hrd_parameters_present_flag = sps->hdr.vcl_hrd_parameters_present_flag,
+            .sub_pic_hrd_params_present_flag = sps->hdr.sub_pic_hrd_params_present_flag,
+            .sub_pic_cpb_params_in_pic_timing_sei_flag = sps->hdr.sub_pic_cpb_params_in_pic_timing_sei_flag,
             .fixed_pic_rate_general_flag = sps->hdr.flags.fixed_pic_rate_general_flag,
             .fixed_pic_rate_within_cvs_flag = sps->hdr.flags.fixed_pic_rate_within_cvs_flag,
             .low_delay_hrd_flag = sps->hdr.flags.low_delay_hrd_flag,
@@ -567,10 +567,10 @@ static void set_vps(const HEVCVPS *vps,
 
         sls_hdr[i] = (StdVideoH265HrdParameters) {
             .flags = (StdVideoH265HrdFlags) {
-                .nal_hrd_parameters_present_flag = src->flags.nal_hrd_parameters_present_flag,
-                .vcl_hrd_parameters_present_flag = src->flags.vcl_hrd_parameters_present_flag,
-                .sub_pic_hrd_params_present_flag = src->flags.sub_pic_hrd_params_present_flag,
-                .sub_pic_cpb_params_in_pic_timing_sei_flag = src->flags.sub_pic_cpb_params_in_pic_timing_sei_flag,
+                .nal_hrd_parameters_present_flag = src->nal_hrd_parameters_present_flag,
+                .vcl_hrd_parameters_present_flag = src->vcl_hrd_parameters_present_flag,
+                .sub_pic_hrd_params_present_flag = src->sub_pic_hrd_params_present_flag,
+                .sub_pic_cpb_params_in_pic_timing_sei_flag = src->sub_pic_cpb_params_in_pic_timing_sei_flag,
                 .fixed_pic_rate_general_flag = src->flags.fixed_pic_rate_general_flag,
                 .fixed_pic_rate_within_cvs_flag = src->flags.fixed_pic_rate_within_cvs_flag,
                 .low_delay_hrd_flag = src->flags.low_delay_hrd_flag,
