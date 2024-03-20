@@ -692,7 +692,7 @@ static int gxf_write_header(AVFormatContext *s)
 
     if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "gxf muxer does not support streamed output, patch welcome\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     gxf->flags |= 0x00080000; /* material is simple clip */
@@ -707,15 +707,15 @@ static int gxf_write_header(AVFormatContext *s)
         if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (st->codecpar->codec_id != AV_CODEC_ID_PCM_S16LE) {
                 av_log(s, AV_LOG_ERROR, "only 16 BIT PCM LE allowed for now\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             if (st->codecpar->sample_rate != 48000) {
                 av_log(s, AV_LOG_ERROR, "only 48000hz sampling rate is allowed\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             if (st->codecpar->ch_layout.nb_channels != 1) {
                 av_log(s, AV_LOG_ERROR, "only mono tracks are allowed\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             ret = ff_stream_add_bitstream_filter(st, "pcm_rechunk", "n="AV_STRINGIFY(GXF_SAMPLES_PER_FRAME));
             if (ret < 0)
@@ -733,7 +733,7 @@ static int gxf_write_header(AVFormatContext *s)
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             if (i != 0) {
                 av_log(s, AV_LOG_ERROR, "video stream must be the first track\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             /* FIXME check from time_base ? */
             if (st->codecpar->height == 480 || st->codecpar->height == 512) { /* NTSC or NTSC+VBI */
@@ -750,7 +750,7 @@ static int gxf_write_header(AVFormatContext *s)
             } else {
                 av_log(s, AV_LOG_ERROR, "unsupported video resolution, "
                        "gxf muxer only accepts PAL or NTSC resolutions currently\n");
-                return -1;
+                return AVERROR(EINVAL);
             }
             if (!tcr)
                 tcr = av_dict_get(st->metadata, "timecode", NULL, 0);
