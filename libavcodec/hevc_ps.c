@@ -438,13 +438,20 @@ static int decode_hrd(GetBitContext *gb, int common_inf_present,
     return 0;
 }
 
+static void uninit_vps(FFRefStructOpaque opaque, void *obj)
+{
+    HEVCVPS *vps = obj;
+
+    av_freep(&vps->hdr);
+}
+
 int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps)
 {
     int i,j;
     int vps_id = 0;
     ptrdiff_t nal_size;
-    HEVCVPS *vps = ff_refstruct_allocz(sizeof(*vps));
+    HEVCVPS *vps = ff_refstruct_alloc_ext(sizeof(*vps), 0, NULL, uninit_vps);
 
     if (!vps)
         return AVERROR(ENOMEM);
@@ -533,6 +540,11 @@ int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
                    "vps_num_hrd_parameters %d is invalid\n", vps->vps_num_hrd_parameters);
             goto err;
         }
+
+        vps->hdr = av_calloc(vps->vps_num_hrd_parameters, sizeof(*vps->hdr));
+        if (!vps->hdr)
+            goto err;
+
         for (i = 0; i < vps->vps_num_hrd_parameters; i++) {
             int common_inf_present = 1;
 
