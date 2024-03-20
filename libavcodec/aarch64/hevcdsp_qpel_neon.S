@@ -2456,8 +2456,10 @@ function ff_hevc_put_hevc_qpel_uni_hv64_8_neon_i8mm, export=1
         ldp             x7, x30, [sp], #48
         b               .Lqpel_uni_hv16_loop
 endfunc
+DISABLE_I8MM
+#endif
 
-.macro QPEL_UNI_W_H_HEADER
+.macro QPEL_UNI_W_H_HEADER elems=4s
         ldr             x12, [sp]
         sub             x2, x2, #3
         movrel          x9, qpel_filters
@@ -2465,11 +2467,410 @@ endfunc
         ld1r            {v28.2d}, [x9]
         mov             w10, #-6
         sub             w10, w10, w5
-        dup             v30.4s, w6              // wx
+        dup             v30.\elems, w6          // wx
         dup             v31.4s, w10             // shift
         dup             v29.4s, w7              // ox
 .endm
 
+function ff_hevc_put_hevc_qpel_uni_w_h4_8_neon, export=1
+        QPEL_UNI_W_H_HEADER 4h
+        sxtl            v0.8h,   v28.8b
+1:
+        ld1             {v1.8b, v2.8b}, [x2], x3
+        subs            w4,  w4,  #1
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        ext             v3.16b,  v1.16b,  v2.16b,  #2
+        ext             v4.16b,  v1.16b,  v2.16b,  #4
+        ext             v5.16b,  v1.16b,  v2.16b,  #6
+        ext             v6.16b,  v1.16b,  v2.16b,  #8
+        ext             v7.16b,  v1.16b,  v2.16b,  #10
+        ext             v16.16b, v1.16b,  v2.16b,  #12
+        ext             v17.16b, v1.16b,  v2.16b,  #14
+        mul             v18.4h,  v1.4h,   v0.h[0]
+        mla             v18.4h,  v3.4h,   v0.h[1]
+        mla             v18.4h,  v4.4h,   v0.h[2]
+        mla             v18.4h,  v5.4h,   v0.h[3]
+        mla             v18.4h,  v6.4h,   v0.h[4]
+        mla             v18.4h,  v7.4h,   v0.h[5]
+        mla             v18.4h,  v16.4h,  v0.h[6]
+        mla             v18.4h,  v17.4h,  v0.h[7]
+        smull           v16.4s,  v18.4h,  v30.4h
+        sqrshl          v16.4s,  v16.4s,  v31.4s
+        sqadd           v16.4s,  v16.4s,  v29.4s
+        sqxtn           v16.4h,  v16.4s
+        sqxtun          v16.8b,  v16.8h
+        str             s16, [x0]
+        add             x0,  x0,  x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_uni_w_h6_8_neon, export=1
+        QPEL_UNI_W_H_HEADER 8h
+        sub             x1,  x1,  #4
+        sxtl            v0.8h,   v28.8b
+1:
+        ld1             {v1.8b, v2.8b}, [x2], x3
+        subs            w4,  w4,  #1
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        ext             v3.16b,  v1.16b,  v2.16b,  #2
+        ext             v4.16b,  v1.16b,  v2.16b,  #4
+        ext             v5.16b,  v1.16b,  v2.16b,  #6
+        ext             v6.16b,  v1.16b,  v2.16b,  #8
+        ext             v7.16b,  v1.16b,  v2.16b,  #10
+        ext             v16.16b, v1.16b,  v2.16b,  #12
+        ext             v17.16b, v1.16b,  v2.16b,  #14
+        mul             v18.8h,  v1.8h,   v0.h[0]
+        mla             v18.8h,  v3.8h,   v0.h[1]
+        mla             v18.8h,  v4.8h,   v0.h[2]
+        mla             v18.8h,  v5.8h,   v0.h[3]
+        mla             v18.8h,  v6.8h,   v0.h[4]
+        mla             v18.8h,  v7.8h,   v0.h[5]
+        mla             v18.8h,  v16.8h,  v0.h[6]
+        mla             v18.8h,  v17.8h,  v0.h[7]
+        smull           v16.4s,  v18.4h,  v30.4h
+        smull2          v17.4s,  v18.8h,  v30.8h
+        sqrshl          v16.4s,  v16.4s,  v31.4s
+        sqrshl          v17.4s,  v17.4s,  v31.4s
+        sqadd           v16.4s,  v16.4s,  v29.4s
+        sqadd           v17.4s,  v17.4s,  v29.4s
+        sqxtn           v16.4h,  v16.4s
+        sqxtn2          v16.8h,  v17.4s
+        sqxtun          v16.8b,  v16.8h
+        str             s16, [x0], #4
+        st1             {v16.h}[2], [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_uni_w_h8_8_neon, export=1
+        QPEL_UNI_W_H_HEADER 8h
+        sxtl            v0.8h,   v28.8b
+1:
+        ld1             {v1.8b, v2.8b}, [x2], x3
+        subs            w4,  w4,  #1
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        ext             v3.16b,  v1.16b,  v2.16b,  #2
+        ext             v4.16b,  v1.16b,  v2.16b,  #4
+        ext             v5.16b,  v1.16b,  v2.16b,  #6
+        ext             v6.16b,  v1.16b,  v2.16b,  #8
+        ext             v7.16b,  v1.16b,  v2.16b,  #10
+        ext             v16.16b, v1.16b,  v2.16b,  #12
+        ext             v17.16b, v1.16b,  v2.16b,  #14
+        mul             v18.8h,  v1.8h,   v0.h[0]
+        mla             v18.8h,  v3.8h,   v0.h[1]
+        mla             v18.8h,  v4.8h,   v0.h[2]
+        mla             v18.8h,  v5.8h,   v0.h[3]
+        mla             v18.8h,  v6.8h,   v0.h[4]
+        mla             v18.8h,  v7.8h,   v0.h[5]
+        mla             v18.8h,  v16.8h,  v0.h[6]
+        mla             v18.8h,  v17.8h,  v0.h[7]
+        smull           v16.4s,  v18.4h,  v30.4h
+        smull2          v17.4s,  v18.8h,  v30.8h
+        sqrshl          v16.4s,  v16.4s,  v31.4s
+        sqrshl          v17.4s,  v17.4s,  v31.4s
+        sqadd           v16.4s,  v16.4s,  v29.4s
+        sqadd           v17.4s,  v17.4s,  v29.4s
+        sqxtn           v16.4h,  v16.4s
+        sqxtn2          v16.8h,  v17.4s
+        sqxtun          v16.8b,  v16.8h
+        st1             {v16.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_uni_w_h12_8_neon, export=1
+        QPEL_UNI_W_H_HEADER 8h
+        add             x13, x0,  #8
+        sxtl            v0.8h,   v28.8b
+1:
+        ld1             {v1.8b, v2.8b, v3.8b}, [x2], x3
+        subs            w4,  w4,  #1
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        uxtl            v3.8h,   v3.8b
+        ext             v4.16b,  v1.16b,  v2.16b,  #2
+        ext             v5.16b,  v1.16b,  v2.16b,  #4
+        ext             v6.16b,  v1.16b,  v2.16b,  #6
+        ext             v7.16b,  v1.16b,  v2.16b,  #8
+        ext             v16.16b, v1.16b,  v2.16b,  #10
+        ext             v17.16b, v1.16b,  v2.16b,  #12
+        ext             v18.16b, v1.16b,  v2.16b,  #14
+        mul             v19.8h,  v1.8h,   v0.h[0]
+        mla             v19.8h,  v4.8h,   v0.h[1]
+        mla             v19.8h,  v5.8h,   v0.h[2]
+        mla             v19.8h,  v6.8h,   v0.h[3]
+        mla             v19.8h,  v7.8h,   v0.h[4]
+        mla             v19.8h,  v16.8h,  v0.h[5]
+        mla             v19.8h,  v17.8h,  v0.h[6]
+        mla             v19.8h,  v18.8h,  v0.h[7]
+        ext             v4.16b,  v2.16b,  v3.16b,  #2
+        ext             v5.16b,  v2.16b,  v3.16b,  #4
+        ext             v6.16b,  v2.16b,  v3.16b,  #6
+        ext             v7.16b,  v2.16b,  v3.16b,  #8
+        ext             v16.16b, v2.16b,  v3.16b,  #10
+        ext             v17.16b, v2.16b,  v3.16b,  #12
+        ext             v18.16b, v2.16b,  v3.16b,  #14
+        mul             v20.4h,  v2.4h,   v0.h[0]
+        mla             v20.4h,  v4.4h,   v0.h[1]
+        mla             v20.4h,  v5.4h,   v0.h[2]
+        mla             v20.4h,  v6.4h,   v0.h[3]
+        mla             v20.4h,  v7.4h,   v0.h[4]
+        mla             v20.4h,  v16.4h,  v0.h[5]
+        mla             v20.4h,  v17.4h,  v0.h[6]
+        mla             v20.4h,  v18.4h,  v0.h[7]
+        smull           v16.4s,  v19.4h,  v30.4h
+        smull2          v17.4s,  v19.8h,  v30.8h
+        smull           v18.4s,  v20.4h,  v30.4h
+        sqrshl          v16.4s,  v16.4s,  v31.4s
+        sqrshl          v17.4s,  v17.4s,  v31.4s
+        sqrshl          v18.4s,  v18.4s,  v31.4s
+        sqadd           v16.4s,  v16.4s,  v29.4s
+        sqadd           v17.4s,  v17.4s,  v29.4s
+        sqadd           v18.4s,  v18.4s,  v29.4s
+        sqxtn           v16.4h,  v16.4s
+        sqxtn2          v16.8h,  v17.4s
+        sqxtn           v17.4h,  v18.4s
+        sqxtun          v16.8b,  v16.8h
+        sqxtun          v17.8b,  v17.8h
+        st1             {v16.8b},   [x0],  x1
+        st1             {v17.s}[0], [x13], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_uni_w_h16_8_neon, export=1
+        QPEL_UNI_W_H_HEADER 8h
+        sxtl            v0.8h,   v28.8b
+1:
+        ld1             {v1.8b, v2.8b, v3.8b}, [x2], x3
+        subs            w4,  w4,  #1
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        uxtl            v3.8h,   v3.8b
+        ext             v4.16b,  v1.16b,  v2.16b,  #2
+        ext             v5.16b,  v1.16b,  v2.16b,  #4
+        ext             v6.16b,  v1.16b,  v2.16b,  #6
+        ext             v7.16b,  v1.16b,  v2.16b,  #8
+        ext             v16.16b, v1.16b,  v2.16b,  #10
+        ext             v17.16b, v1.16b,  v2.16b,  #12
+        ext             v18.16b, v1.16b,  v2.16b,  #14
+        mul             v19.8h,  v1.8h,   v0.h[0]
+        mla             v19.8h,  v4.8h,   v0.h[1]
+        mla             v19.8h,  v5.8h,   v0.h[2]
+        mla             v19.8h,  v6.8h,   v0.h[3]
+        mla             v19.8h,  v7.8h,   v0.h[4]
+        mla             v19.8h,  v16.8h,  v0.h[5]
+        mla             v19.8h,  v17.8h,  v0.h[6]
+        mla             v19.8h,  v18.8h,  v0.h[7]
+        ext             v4.16b,  v2.16b,  v3.16b,  #2
+        ext             v5.16b,  v2.16b,  v3.16b,  #4
+        ext             v6.16b,  v2.16b,  v3.16b,  #6
+        ext             v7.16b,  v2.16b,  v3.16b,  #8
+        ext             v16.16b, v2.16b,  v3.16b,  #10
+        ext             v17.16b, v2.16b,  v3.16b,  #12
+        ext             v18.16b, v2.16b,  v3.16b,  #14
+        mul             v20.8h,  v2.8h,   v0.h[0]
+        mla             v20.8h,  v4.8h,   v0.h[1]
+        mla             v20.8h,  v5.8h,   v0.h[2]
+        mla             v20.8h,  v6.8h,   v0.h[3]
+        mla             v20.8h,  v7.8h,   v0.h[4]
+        mla             v20.8h,  v16.8h,  v0.h[5]
+        mla             v20.8h,  v17.8h,  v0.h[6]
+        mla             v20.8h,  v18.8h,  v0.h[7]
+        smull           v16.4s,  v19.4h,  v30.4h
+        smull2          v17.4s,  v19.8h,  v30.8h
+        smull           v18.4s,  v20.4h,  v30.4h
+        smull2          v19.4s,  v20.8h,  v30.8h
+        sqrshl          v16.4s,  v16.4s,  v31.4s
+        sqrshl          v17.4s,  v17.4s,  v31.4s
+        sqrshl          v18.4s,  v18.4s,  v31.4s
+        sqrshl          v19.4s,  v19.4s,  v31.4s
+        sqadd           v16.4s,  v16.4s,  v29.4s
+        sqadd           v17.4s,  v17.4s,  v29.4s
+        sqadd           v18.4s,  v18.4s,  v29.4s
+        sqadd           v19.4s,  v19.4s,  v29.4s
+        sqxtn           v16.4h,  v16.4s
+        sqxtn2          v16.8h,  v17.4s
+        sqxtn           v17.4h,  v18.4s
+        sqxtn2          v17.8h,  v19.4s
+        sqxtun          v16.8b,  v16.8h
+        sqxtun          v17.8b,  v17.8h
+        st1             {v16.8b, v17.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_uni_w_h24_8_neon, export=1
+        QPEL_UNI_W_H_HEADER 8h
+        sxtl            v0.8h,   v28.8b
+1:
+        ld1             {v1.8b, v2.8b, v3.8b, v4.8b}, [x2], x3
+        subs            w4,  w4,  #1
+        uxtl            v1.8h,   v1.8b
+        uxtl            v2.8h,   v2.8b
+        uxtl            v3.8h,   v3.8b
+        uxtl            v4.8h,   v4.8b
+        ext             v5.16b,  v1.16b,  v2.16b,  #2
+        ext             v6.16b,  v1.16b,  v2.16b,  #4
+        ext             v7.16b,  v1.16b,  v2.16b,  #6
+        ext             v16.16b, v1.16b,  v2.16b,  #8
+        ext             v17.16b, v1.16b,  v2.16b,  #10
+        ext             v18.16b, v1.16b,  v2.16b,  #12
+        ext             v19.16b, v1.16b,  v2.16b,  #14
+        mul             v20.8h,  v1.8h,   v0.h[0]
+        mla             v20.8h,  v5.8h,   v0.h[1]
+        mla             v20.8h,  v6.8h,   v0.h[2]
+        mla             v20.8h,  v7.8h,   v0.h[3]
+        mla             v20.8h,  v16.8h,  v0.h[4]
+        mla             v20.8h,  v17.8h,  v0.h[5]
+        mla             v20.8h,  v18.8h,  v0.h[6]
+        mla             v20.8h,  v19.8h,  v0.h[7]
+        ext             v5.16b,  v2.16b,  v3.16b,  #2
+        ext             v6.16b,  v2.16b,  v3.16b,  #4
+        ext             v7.16b,  v2.16b,  v3.16b,  #6
+        ext             v16.16b, v2.16b,  v3.16b,  #8
+        ext             v17.16b, v2.16b,  v3.16b,  #10
+        ext             v18.16b, v2.16b,  v3.16b,  #12
+        ext             v19.16b, v2.16b,  v3.16b,  #14
+        mul             v21.8h,  v2.8h,   v0.h[0]
+        mla             v21.8h,  v5.8h,   v0.h[1]
+        mla             v21.8h,  v6.8h,   v0.h[2]
+        mla             v21.8h,  v7.8h,   v0.h[3]
+        mla             v21.8h,  v16.8h,  v0.h[4]
+        mla             v21.8h,  v17.8h,  v0.h[5]
+        mla             v21.8h,  v18.8h,  v0.h[6]
+        mla             v21.8h,  v19.8h,  v0.h[7]
+        ext             v5.16b,  v3.16b,  v4.16b,  #2
+        ext             v6.16b,  v3.16b,  v4.16b,  #4
+        ext             v7.16b,  v3.16b,  v4.16b,  #6
+        ext             v16.16b, v3.16b,  v4.16b,  #8
+        ext             v17.16b, v3.16b,  v4.16b,  #10
+        ext             v18.16b, v3.16b,  v4.16b,  #12
+        ext             v19.16b, v3.16b,  v4.16b,  #14
+        mul             v22.8h,  v3.8h,   v0.h[0]
+        mla             v22.8h,  v5.8h,   v0.h[1]
+        mla             v22.8h,  v6.8h,   v0.h[2]
+        mla             v22.8h,  v7.8h,   v0.h[3]
+        mla             v22.8h,  v16.8h,  v0.h[4]
+        mla             v22.8h,  v17.8h,  v0.h[5]
+        mla             v22.8h,  v18.8h,  v0.h[6]
+        mla             v22.8h,  v19.8h,  v0.h[7]
+        smull           v16.4s,  v20.4h,  v30.4h
+        smull2          v17.4s,  v20.8h,  v30.8h
+        smull           v18.4s,  v21.4h,  v30.4h
+        smull2          v19.4s,  v21.8h,  v30.8h
+        smull           v20.4s,  v22.4h,  v30.4h
+        smull2          v21.4s,  v22.8h,  v30.8h
+        sqrshl          v16.4s,  v16.4s,  v31.4s
+        sqrshl          v17.4s,  v17.4s,  v31.4s
+        sqrshl          v18.4s,  v18.4s,  v31.4s
+        sqrshl          v19.4s,  v19.4s,  v31.4s
+        sqrshl          v20.4s,  v20.4s,  v31.4s
+        sqrshl          v21.4s,  v21.4s,  v31.4s
+        sqadd           v16.4s,  v16.4s,  v29.4s
+        sqadd           v17.4s,  v17.4s,  v29.4s
+        sqadd           v18.4s,  v18.4s,  v29.4s
+        sqadd           v19.4s,  v19.4s,  v29.4s
+        sqadd           v20.4s,  v20.4s,  v29.4s
+        sqadd           v21.4s,  v21.4s,  v29.4s
+        sqxtn           v16.4h,  v16.4s
+        sqxtn2          v16.8h,  v17.4s
+        sqxtn           v17.4h,  v18.4s
+        sqxtn2          v17.8h,  v19.4s
+        sqxtn           v18.4h,  v20.4s
+        sqxtn2          v18.8h,  v21.4s
+        sqxtun          v16.8b,  v16.8h
+        sqxtun          v17.8b,  v17.8h
+        sqxtun          v18.8b,  v18.8h
+        st1             {v16.8b, v17.8b, v18.8b}, [x0], x1
+        b.hi            1b
+        ret
+endfunc
+
+function ff_hevc_put_hevc_qpel_uni_w_h32_8_neon, export=1
+        QPEL_UNI_W_H_HEADER 8h
+        ldr             w10, [sp, #16]        // width
+        ld1             {v1.8b}, [x2], #8
+        sub             x3,  x3,  w10, uxtw   // decrement src stride
+        mov             w11, w10              // original width
+        sub             x3,  x3,  #8          // decrement src stride
+        sub             x1,  x1,  w10, uxtw   // decrement dst stride
+        sxtl            v0.8h,   v28.8b
+        uxtl            v1.8h,   v1.8b
+1:
+        ld1             {v2.8b, v3.8b}, [x2], #16
+        subs            w10, w10, #16         // width
+        uxtl            v2.8h,   v2.8b
+        uxtl            v3.8h,   v3.8b
+        ext             v4.16b,  v1.16b,  v2.16b,  #2
+        ext             v5.16b,  v1.16b,  v2.16b,  #4
+        ext             v6.16b,  v1.16b,  v2.16b,  #6
+        ext             v7.16b,  v1.16b,  v2.16b,  #8
+        ext             v16.16b, v1.16b,  v2.16b,  #10
+        ext             v17.16b, v1.16b,  v2.16b,  #12
+        ext             v18.16b, v1.16b,  v2.16b,  #14
+        mul             v19.8h,  v1.8h,   v0.h[0]
+        mla             v19.8h,  v4.8h,   v0.h[1]
+        mla             v19.8h,  v5.8h,   v0.h[2]
+        mla             v19.8h,  v6.8h,   v0.h[3]
+        mla             v19.8h,  v7.8h,   v0.h[4]
+        mla             v19.8h,  v16.8h,  v0.h[5]
+        mla             v19.8h,  v17.8h,  v0.h[6]
+        mla             v19.8h,  v18.8h,  v0.h[7]
+        ext             v4.16b,  v2.16b,  v3.16b,  #2
+        ext             v5.16b,  v2.16b,  v3.16b,  #4
+        ext             v6.16b,  v2.16b,  v3.16b,  #6
+        ext             v7.16b,  v2.16b,  v3.16b,  #8
+        ext             v16.16b, v2.16b,  v3.16b,  #10
+        ext             v17.16b, v2.16b,  v3.16b,  #12
+        ext             v18.16b, v2.16b,  v3.16b,  #14
+        mul             v20.8h,  v2.8h,   v0.h[0]
+        mla             v20.8h,  v4.8h,   v0.h[1]
+        mla             v20.8h,  v5.8h,   v0.h[2]
+        mla             v20.8h,  v6.8h,   v0.h[3]
+        mla             v20.8h,  v7.8h,   v0.h[4]
+        mla             v20.8h,  v16.8h,  v0.h[5]
+        mla             v20.8h,  v17.8h,  v0.h[6]
+        mla             v20.8h,  v18.8h,  v0.h[7]
+        smull           v16.4s,  v19.4h,  v30.4h
+        smull2          v17.4s,  v19.8h,  v30.8h
+        smull           v18.4s,  v20.4h,  v30.4h
+        smull2          v19.4s,  v20.8h,  v30.8h
+        sqrshl          v16.4s,  v16.4s,  v31.4s
+        sqrshl          v17.4s,  v17.4s,  v31.4s
+        sqrshl          v18.4s,  v18.4s,  v31.4s
+        sqrshl          v19.4s,  v19.4s,  v31.4s
+        sqadd           v16.4s,  v16.4s,  v29.4s
+        sqadd           v17.4s,  v17.4s,  v29.4s
+        sqadd           v18.4s,  v18.4s,  v29.4s
+        sqadd           v19.4s,  v19.4s,  v29.4s
+        sqxtn           v16.4h,  v16.4s
+        sqxtn2          v16.8h,  v17.4s
+        sqxtn           v17.4h,  v18.4s
+        sqxtn2          v17.8h,  v19.4s
+        sqxtun          v16.8b,  v16.8h
+        sqxtun          v17.8b,  v17.8h
+        st1             {v16.8b, v17.8b}, [x0], #16
+        mov             v1.16b,  v3.16b
+        b.gt            1b
+        subs            w4,  w4,  #1          // height
+        add             x2,  x2,  x3
+        b.le            9f
+        ld1             {v1.8b}, [x2], #8
+        mov             w10, w11
+        add             x0,  x0,  x1
+        uxtl            v1.8h,   v1.8b
+        b               1b
+9:
+        ret
+endfunc
+
+#if HAVE_I8MM
+ENABLE_I8MM
 function ff_hevc_put_hevc_qpel_uni_w_h4_8_neon_i8mm, export=1
         QPEL_UNI_W_H_HEADER
 1:
