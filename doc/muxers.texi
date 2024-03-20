@@ -1833,6 +1833,45 @@ ffmpeg -i INPUT -f hash -hash md5 -
 
 See also the @ref{framehash} muxer.
 
+@anchor{hds}
+@section hds
+HTTP Dynamic Streaming (HDS) muxer.
+
+HTTP dynamic streaming, or HDS, is an adaptive bitrate streaming method
+developed by Adobe. HDS delivers MP4 video content over HTTP connections. HDS
+can be used for on-demand streaming or live streaming.
+
+This muxer creates an .f4m (Adobe Flash Media Manifest File) manifest, an .abst
+(Adobe Bootstrap File) for each stream, and segment files in a directory
+specified as the output.
+
+These needs to be accessed by an HDS player throuhg HTTPS for it to be able to
+perform playback on the generated stream.
+
+@subsection Options
+@table @option
+@item extra_window_size @var{int}
+number of fragments kept outside of the manifest before removing from disk
+
+@item min_frag_duration @var{microseconds}
+minimum fragment duration (in microseconds), default value is 1 second
+(@code{10000000})
+
+@item remove_at_exit @var{bool}
+remove all fragments when finished when set to @code{true}
+
+@item window_size @var{int}
+number of fragments kept in the manifest, if set to a value different from
+@code{0}. By default all segments are kept in the output directory.
+@end table
+
+@subsection Example
+Use @command{ffmpeg} to generate HDS files to the @file{output.hds} directory in
+real-time rate:
+@example
+ffmpeg -re -i INPUT -f hds -b:v 200k output.hds
+@end example
+
 @anchor{hls}
 @section hls
 
