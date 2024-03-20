@@ -235,6 +235,9 @@ static int decode_frame(AVCodecContext *avctx,
     else if (offset != 3)
         return AVERROR_INVALIDDATA;
 
+    if (s->lshift > 31)
+        return AVERROR_INVALIDDATA;
+
     q = quality[FFMIN(avpkt->data[offset - 2], FF_ARRAY_ELEMS(quality)-1)];
     for (int n = 0; n < 64; n++)
         s->factors[n] = quant[n] * q;
