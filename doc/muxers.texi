@@ -1776,6 +1776,18 @@ force the @ref{image2} muxer:
 ffmpeg -i INPUT -c:v gif -f image2 "out%d.gif"
 @end example
 
+@section gxf
+General eXchange Format (GXF) muxer.
+
+GXF was developed by Grass Valley Group, then standardized by SMPTE as SMPTE
+360M and was extended in SMPTE RDD 14-2007 to include high-definition video
+resolutions.
+
+It accepts at most one video stream with codec @samp{mjpeg}, or
+@samp{mpeg1video}, or @samp{mpeg2video}, or @samp{dvvideo} with resolution
+@samp{512x480} or @samp{608x576}, and several audio streams with rate 48000Hz
+and codec @samp{pcm16_le}.
+
 @anchor{hash}
 @section hash
 
