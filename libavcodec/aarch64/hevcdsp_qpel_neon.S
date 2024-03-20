@@ -2462,8 +2462,7 @@ endfunc
         sub             x2, x2, #3
         movrel          x9, qpel_filters
         add             x9, x9, x12, lsl #3
-        ldr             x11, [x9]
-        dup             v28.2d, x11
+        ld1r            {v28.2d}, [x9]
         mov             w10, #-6
         sub             w10, w10, w5
         dup             v30.4s, w6              // wx
