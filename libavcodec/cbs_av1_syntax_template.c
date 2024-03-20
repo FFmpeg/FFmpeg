@@ -1414,6 +1414,8 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             priv->ref[i].valid = 0;
             priv->ref[i].order_hint = 0;
         }
+        for (i = 0; i < AV1_REFS_PER_FRAME; i++)
+            priv->order_hints[i + AV1_REF_FRAME_LAST] = 0;
     }
 
     flag(disable_cdf_update);
@@ -1568,11 +1570,20 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
         else
             flag(use_ref_frame_mvs);
 
-        infer(allow_intrabc, 0);
-    }
+        for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
+            int ref_frame = AV1_REF_FRAME_LAST + i;
+            int hint = priv->ref[current->ref_frame_idx[i]].order_hint;
+            priv->order_hints[ref_frame] = hint;
+            if (!seq->enable_order_hint) {
+                priv->ref_frame_sign_bias[ref_frame] = 0;
+            } else {
+                priv->ref_frame_sign_bias[ref_frame] =
+                    cbs_av1_get_relative_dist(seq, hint,
+                                              current->order_hint) > 0;
+            }
+        }
 
-    if (!frame_is_intra) {
-        // Derive reference frame sign biases.
+        infer(allow_intrabc, 0);
     }
 
     if (seq->reduced_still_picture_header || current->disable_cdf_update)
@@ -1674,6 +1685,12 @@ update_refs:
                 .bit_depth      = priv->bit_depth,
                 .order_hint     = priv->order_hint,
             };
+
+            for (int j = 0; j < AV1_REFS_PER_FRAME; j++) {
+                priv->ref[i].saved_order_hints[j + AV1_REF_FRAME_LAST] =
+                    priv->order_hints[j + AV1_REF_FRAME_LAST];
+            }
+
             memcpy(priv->ref[i].loop_filter_ref_deltas, current->loop_filter_ref_deltas,
                    sizeof(current->loop_filter_ref_deltas));
             memcpy(priv->ref[i].loop_filter_mode_deltas, current->loop_filter_mode_deltas,
