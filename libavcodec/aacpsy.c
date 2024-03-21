@@ -223,10 +223,6 @@ static const float psy_fir_coeffs[] = {
     -5.52212e-17 * 2, -0.313819 * 2
 };
 
-#if ARCH_MIPS
-#   include "mips/aacpsy_mips.h"
-#endif /* ARCH_MIPS */
-
 /**
  * Calculate the ABR attack threshold from the above LAME psymodel table.
  */

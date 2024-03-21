@@ -50,6 +50,5 @@ void ff_sbrdsp_init_arm(SBRDSPContext *s);
 void ff_sbrdsp_init_aarch64(SBRDSPContext *s);
 void ff_sbrdsp_init_riscv(SBRDSPContext *s);
 void ff_sbrdsp_init_x86(SBRDSPContext *s);
-void ff_sbrdsp_init_mips(SBRDSPContext *s);
 
 #endif /* AVCODEC_SBRDSP_H */

@@ -345,8 +345,6 @@ extern const AACDecDSP aac_dsp_fixed;
 extern const AACDecProc aac_proc;
 extern const AACDecProc aac_proc_fixed;
 
-void ff_aacdec_init_mips(AACDecContext *c);
-
 int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                       GetBitContext *gb, int common_window, int scale_flag);
 

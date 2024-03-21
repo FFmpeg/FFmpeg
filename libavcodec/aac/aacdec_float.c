@@ -74,10 +74,6 @@ static int init(AACDecContext *ac)
 
     ff_aac_float_common_init();
 
-#if ARCH_MIPS
-    ff_aacdec_init_mips(ac);
-#endif
-
     return 0;
 }
 

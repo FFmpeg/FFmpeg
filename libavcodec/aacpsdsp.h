@@ -54,7 +54,6 @@ typedef struct PSDSPContext {
 void AAC_RENAME(ff_psdsp_init)(PSDSPContext *s);
 void ff_psdsp_init_arm(PSDSPContext *s);
 void ff_psdsp_init_aarch64(PSDSPContext *s);
-void ff_psdsp_init_mips(PSDSPContext *s);
 void ff_psdsp_init_riscv(PSDSPContext *s);
 void ff_psdsp_init_x86(PSDSPContext *s);
 

@@ -104,8 +104,6 @@ av_cold void AAC_RENAME(ff_sbrdsp_init)(SBRDSPContext *s)
     ff_sbrdsp_init_riscv(s);
 #elif ARCH_X86
     ff_sbrdsp_init_x86(s);
-#elif ARCH_MIPS
-    ff_sbrdsp_init_mips(s);
 #endif
 #endif /* !USE_FIXED */
 }

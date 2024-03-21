@@ -217,6 +217,4 @@ struct SpectralBandReplication {
     AACSBRContext      c;
 };
 
-void ff_aacsbr_func_ptr_init_mips(AACSBRContext *c);
-
 #endif /* AVCODEC_SBR_H */
