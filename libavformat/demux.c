@@ -572,14 +572,13 @@ static int handle_new_packet(AVFormatContext *s, AVPacket *pkt, int allow_passth
 
     if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
         av_log(s, AV_LOG_WARNING,
-               "Packet corrupt (stream = %d, dts = %s)",
-               pkt->stream_index, av_ts2str(pkt->dts));
+               "Packet corrupt (stream = %d, dts = %s)%s.\n",
+               pkt->stream_index, av_ts2str(pkt->dts),
+               s->flags & AVFMT_FLAG_DISCARD_CORRUPT ? ", dropping it" : "");
         if (s->flags & AVFMT_FLAG_DISCARD_CORRUPT) {
-            av_log(s, AV_LOG_WARNING, ", dropping it.\n");
             av_packet_unref(pkt);
             return 1;
         }
-        av_log(s, AV_LOG_WARNING, ".\n");
     }
 
     st  = s->streams[pkt->stream_index];
