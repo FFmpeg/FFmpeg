@@ -68,7 +68,7 @@ void ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0)
     s->mapping = s0->mapping;
     s->color = s0->color;
     s->dv_profile = s0->dv_profile;
-    for (int i = 0; i < DOVI_MAX_DM_ID; i++)
+    for (int i = 0; i <= DOVI_MAX_DM_ID; i++)
         ff_refstruct_replace(&s->vdr[i], s0->vdr[i]);
 }
 
