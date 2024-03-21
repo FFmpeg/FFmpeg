@@ -310,10 +310,8 @@ int ff_iamf_read_packet(AVFormatContext *s, IAMFDemuxContext *c,
             c->recon_size = 0;
         } else {
             int64_t offset = avio_skip(pb, obu_size);
-            if (offset < 0) {
-                ret = offset;
-                break;
-            }
+            if (offset < 0)
+                return offset;
         }
         max_size -= len;
         if (max_size < 0)
