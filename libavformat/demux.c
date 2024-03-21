@@ -532,9 +532,6 @@ static void update_timestamps(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     FFStream *const sti = ffstream(st);
 
-    av_assert0(pkt->stream_index < (unsigned)s->nb_streams &&
-               "Invalid stream index.\n");
-
     if (update_wrap_reference(s, st, pkt->stream_index, pkt) && sti->pts_wrap_behavior == AV_PTS_WRAP_SUB_OFFSET) {
         // correct first time stamps to negative values
         if (!is_relative(sti->first_dts))
@@ -555,12 +552,23 @@ static void update_timestamps(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         pkt->dts = pkt->pts = av_rescale_q(av_gettime(), AV_TIME_BASE_Q, st->time_base);
 }
 
-int ff_buffer_packet(AVFormatContext *s, AVPacket *pkt)
+/**
+ * Handle a new packet and either return it directly if possible and
+ * allow_passthrough is true or queue the packet (or drop the packet
+ * if corrupt).
+ *
+ * @return < 0 on error, 0 if the packet was passed through,
+ *         1 if it was queued or dropped
+ */
+static int handle_new_packet(AVFormatContext *s, AVPacket *pkt, int allow_passthrough)
 {
     FFFormatContext *const si = ffformatcontext(s);
-    AVStream *st  = s->streams[pkt->stream_index];
-    FFStream *sti = ffstream(st);
+    AVStream *st;
+    FFStream *sti;
     int err;
+
+    av_assert0(pkt->stream_index < (unsigned)s->nb_streams &&
+               "Invalid stream index.\n");
 
     if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
         av_log(s, AV_LOG_WARNING,
@@ -569,12 +577,18 @@ int ff_buffer_packet(AVFormatContext *s, AVPacket *pkt)
         if (s->flags & AVFMT_FLAG_DISCARD_CORRUPT) {
             av_log(s, AV_LOG_WARNING, ", dropping it.\n");
             av_packet_unref(pkt);
-            return 0;
+            return 1;
         }
         av_log(s, AV_LOG_WARNING, ".\n");
     }
 
+    st  = s->streams[pkt->stream_index];
+    sti = ffstream(st);
+
     update_timestamps(s, st, pkt);
+
+    if (sti->request_probe <= 0 && allow_passthrough && !si->raw_packet_buffer.head)
+        return 0;
 
     err = avpriv_packet_list_put(&si->raw_packet_buffer, pkt, NULL, 0);
     if (err < 0) {
@@ -585,14 +599,18 @@ int ff_buffer_packet(AVFormatContext *s, AVPacket *pkt)
     pkt = &si->raw_packet_buffer.tail->pkt;
     si->raw_packet_buffer_size += pkt->size;
 
-    if (sti->request_probe <= 0)
-        return 0;
-
     err = probe_codec(s, st, pkt);
     if (err < 0)
         return err;
 
-    return 0;
+    return 1;
+}
+
+int ff_buffer_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int err = handle_new_packet(s, pkt, 0);
+
+    return err < 0 ? err : 0;
 }
 
 int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -612,9 +630,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     for (;;) {
         PacketListEntry *pktl = si->raw_packet_buffer.head;
-        AVStream *st;
-        FFStream *sti;
-        const AVPacket *pkt1;
 
         if (pktl) {
             AVStream *const st = s->streams[pktl->pkt.stream_index];
@@ -656,36 +671,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return err;
         }
 
-        if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
-            av_log(s, AV_LOG_WARNING,
-                   "Packet corrupt (stream = %d, dts = %s)",
-                   pkt->stream_index, av_ts2str(pkt->dts));
-            if (s->flags & AVFMT_FLAG_DISCARD_CORRUPT) {
-                av_log(s, AV_LOG_WARNING, ", dropping it.\n");
-                av_packet_unref(pkt);
-                continue;
-            }
-            av_log(s, AV_LOG_WARNING, ".\n");
-        }
-
-        st  = s->streams[pkt->stream_index];
-        sti = ffstream(st);
-
-        update_timestamps(s, st, pkt);
-
-        if (!pktl && sti->request_probe <= 0)
-            return 0;
-
-        err = avpriv_packet_list_put(&si->raw_packet_buffer,
-                                     pkt, NULL, 0);
-        if (err < 0) {
-            av_packet_unref(pkt);
-            return err;
-        }
-        pkt1 = &si->raw_packet_buffer.tail->pkt;
-        si->raw_packet_buffer_size += pkt1->size;
-
-        if ((err = probe_codec(s, st, pkt1)) < 0)
+        err = handle_new_packet(s, pkt, 1);
+        if (err <= 0) /* Error or passthrough */
             return err;
     }
 }
