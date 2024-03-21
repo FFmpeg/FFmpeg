@@ -335,7 +335,7 @@ const FFCodec ff_aac_latm_decoder = {
     .p.id            = AV_CODEC_ID_AAC_LATM,
     .priv_data_size  = sizeof(struct LATMContext),
     .init            = latm_decode_init,
-    .close           = ff_aac_decode_close,
+    .close           = decode_close,
     FF_CODEC_DECODE_CB(latm_decode_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE

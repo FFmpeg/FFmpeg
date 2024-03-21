@@ -180,7 +180,7 @@ OBJS-$(CONFIG_WMV2DSP)                 += wmv2dsp.o
 OBJS-$(CONFIG_ZERO12V_DECODER)         += 012v.o
 OBJS-$(CONFIG_A64MULTI_ENCODER)        += a64multienc.o elbg.o
 OBJS-$(CONFIG_A64MULTI5_ENCODER)       += a64multienc.o elbg.o
-OBJS-$(CONFIG_AAC_DECODER)             += aacdec.o aactab.o \
+OBJS-$(CONFIG_AAC_DECODER)             += aactab.o \
                                           aacsbr.o aacps_common.o aacps_float.o \
                                           kbdwin.o \
                                           sbrdsp.o aacpsdsp_float.o cbrt_data.o

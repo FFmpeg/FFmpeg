@@ -339,10 +339,11 @@ struct AACDecContext {
 #define fdsp          RENAME_FIXED(fdsp)
 #endif
 
-extern const struct AVClass ff_aac_decoder_class;
+extern const AACDecDSP aac_dsp;
+extern const AACDecDSP aac_dsp_fixed;
 
-int ff_aac_decode_init_common(struct AVCodecContext *avctx);
-int ff_aac_decode_close(struct AVCodecContext *avctx);
+extern const AACDecProc aac_proc;
+extern const AACDecProc aac_proc_fixed;
 
 void ff_aacdec_init_mips(AACDecContext *c);
 
