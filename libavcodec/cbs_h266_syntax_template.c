@@ -2072,6 +2072,8 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
 
                 tile_x = tile_idx % current->num_tile_columns;
                 tile_y = tile_idx / current->num_tile_columns;
+                if (tile_y >= current->num_tile_rows)
+                    return AVERROR_INVALIDDATA;
 
                 ctu_x = 0, ctu_y = 0;
                 for (j = 0; j < tile_x; j++) {
