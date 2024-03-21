@@ -171,6 +171,8 @@ static int jpegxl_anim_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_buffer_unref(&ctx->initial);
     }
 
+    pkt->pos = avio_tell(pb) - offset;
+
     ret = avio_read(pb, pkt->data + offset, size - offset);
     if (ret < 0)
         return ret;
