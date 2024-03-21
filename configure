@@ -5589,6 +5589,19 @@ check_cxxflags_cc -std=$stdcxx ctype.h "__cplusplus >= 201103L" ||
 check_cflags_cc -std=$stdc ctype.h "__STDC_VERSION__ >= 201112L" ||
     { check_cflags_cc -std=c11 ctype.h "__STDC_VERSION__ >= 201112L" && stdc="c11" || die "Compiler lacks C11 support"; }
 
+test_cc <<EOF || die "Compiler lacks support for C11 static assertions"
+#include <assert.h>
+#include <stddef.h>
+struct Foo {
+    int a;
+    void *ptr;
+} obj;
+static_assert(offsetof(struct Foo, a) == 0,
+              "First element of struct does not have offset 0");
+_Static_assert(offsetof(struct Foo, ptr) >= offsetof(struct Foo, a) + sizeof(obj.a),
+               "elements not properly ordered in struct");
+EOF
+
 check_cppflags -D_FILE_OFFSET_BITS=64
 check_cppflags -D_LARGEFILE_SOURCE
 
