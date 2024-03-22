@@ -121,7 +121,7 @@ int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame)
     return 0;
 }
 
-static int guess_profile(const AVDOVIRpuDataHeader *hdr)
+int ff_dovi_guess_profile_hevc(const AVDOVIRpuDataHeader *hdr)
 {
     switch (hdr->vdr_rpu_profile) {
     case 0:
@@ -510,7 +510,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     use_prev_vdr_rpu = get_bits1(gb);
     use_nlq = (hdr->rpu_format & 0x700) == 0 && !hdr->disable_residual_flag;
 
-    profile = s->cfg.dv_profile ? s->cfg.dv_profile : guess_profile(hdr);
+    profile = s->cfg.dv_profile ? s->cfg.dv_profile : ff_dovi_guess_profile_hevc(hdr);
     if (profile == 5 && use_nlq) {
         av_log(s->logctx, AV_LOG_ERROR, "Profile 5 RPUs should not use NLQ\n");
         goto fail;

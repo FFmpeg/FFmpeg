@@ -87,6 +87,10 @@ void ff_dovi_ctx_flush(DOVIContext *s);
  * DOVIContext struct.
  *
  * Returns 0 or an error code.
+ *
+ * Note: `DOVIContext.cfg` should be initialized before calling into this
+ * function. If not done, the profile will be guessed according to HEVC
+ * semantics.
  */
 int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
                       int err_recognition);
@@ -95,5 +99,12 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
  * Attach the decoded AVDOVIMetadata as side data to an AVFrame.
  */
 int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame);
+
+/**
+ * Internal helper function to guess the correct DV profile for HEVC.
+ *
+ * Returns the profile number or 0 if unknown.
+ */
+int ff_dovi_guess_profile_hevc(const AVDOVIRpuDataHeader *hdr);
 
 #endif /* AVCODEC_DOVI_RPU_H */
