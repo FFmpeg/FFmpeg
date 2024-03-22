@@ -107,6 +107,8 @@ static int get_aiff_header(AVFormatContext *s, int64_t size,
         size++;
     par->codec_type = AVMEDIA_TYPE_AUDIO;
     channels = avio_rb16(pb);
+    if (par->ch_layout.nb_channels && par->ch_layout.nb_channels != channels)
+        return AVERROR_INVALIDDATA;
     par->ch_layout.nb_channels = channels;
     num_frames = avio_rb32(pb);
     par->bits_per_coded_sample = avio_rb16(pb);
