@@ -3,6 +3,8 @@ OBJS += aarch64/aes_init.o                                            \
         aarch64/float_dsp_init.o                                      \
         aarch64/tx_float_init.o                                       \
 
+OBJS-$(CONFIG_ASM_DEBUG) += aarch64/asm_debug.o
+
 ARMV8-OBJS += aarch64/crc.o
 
 NEON-OBJS += aarch64/aes.o                                            \

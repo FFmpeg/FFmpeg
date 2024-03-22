@@ -370,3 +370,123 @@ ELF     .size   \name, . - \name
         AARCH64_VALIDATE_LINK_REGISTER
 .endm
 #endif
+
+
+#if CONFIG_ASM_DEBUG
+#undef x18
+.macro call_c func, line, msg, first, last, ptr, offset
+        stp             x29, x30, [sp, #-16]!
+        stp             x27, x28, [sp, #-16]!
+        stp             x25, x26, [sp, #-16]!
+        stp             x23, x24, [sp, #-16]!
+        stp             x21, x22, [sp, #-16]!
+        stp             x19, x20, [sp, #-16]!
+        stp             x17, x18, [sp, #-16]!
+        stp             x15, x16, [sp, #-16]!
+        stp             x13, x14, [sp, #-16]!
+        stp             x11, x12, [sp, #-16]!
+        stp             x9,  x10, [sp, #-16]!
+        stp             x7,  x8,  [sp, #-16]!
+        stp             x5,  x6,  [sp, #-16]!
+        stp             x3,  x4,  [sp, #-16]!
+        stp             x1,  x2,  [sp, #-16]!
+        mrs             x30, nzcv
+        stp             x30, x0,  [sp, #-16]!
+
+        stp             q30, q31, [sp, #-32]!
+        stp             q28, q29, [sp, #-32]!
+        stp             q26, q27, [sp, #-32]!
+        stp             q24, q25, [sp, #-32]!
+        stp             q22, q23, [sp, #-32]!
+        stp             q20, q21, [sp, #-32]!
+        stp             q18, q19, [sp, #-32]!
+        stp             q16, q17, [sp, #-32]!
+        stp             q14, q15, [sp, #-32]!
+        stp             q12, q13, [sp, #-32]!
+        stp             q10, q11, [sp, #-32]!
+        stp             q8,  q9,  [sp, #-32]!
+        stp             q6,  q7,  [sp, #-32]!
+        stp             q4,  q5,  [sp, #-32]!
+        stp             q2,  q3,  [sp, #-32]!
+        stp             q0,  q1,  [sp, #-32]!
+
+        add             x4,  \ptr, #\offset
+        ldr             x0,  =\line
+        adr             x1,  777f
+        mov             x2,  \first
+        mov             x3,  \last
+        bl              X(avpriv_\func)
+
+        ldp             q0,  q1,  [sp], #32
+        ldp             q2,  q3,  [sp], #32
+        ldp             q4,  q5,  [sp], #32
+        ldp             q6,  q7,  [sp], #32
+        ldp             q8,  q9,  [sp], #32
+        ldp             q10, q11, [sp], #32
+        ldp             q12, q13, [sp], #32
+        ldp             q14, q15, [sp], #32
+        ldp             q16, q17, [sp], #32
+        ldp             q18, q19, [sp], #32
+        ldp             q20, q21, [sp], #32
+        ldp             q22, q23, [sp], #32
+        ldp             q24, q25, [sp], #32
+        ldp             q26, q27, [sp], #32
+        ldp             q28, q29, [sp], #32
+        ldp             q30, q31, [sp], #32
+
+        ldp             x30, x0,  [sp], #16
+        msr             nzcv, x30
+        ldp             x1,  x2,  [sp], #16
+        ldp             x3,  x4,  [sp], #16
+        ldp             x5,  x6,  [sp], #16
+        ldp             x7,  x8,  [sp], #16
+        ldp             x9,  x10, [sp], #16
+        ldp             x11, x12, [sp], #16
+        ldp             x13, x14, [sp], #16
+        ldp             x15, x16, [sp], #16
+        ldp             x17, x18, [sp], #16
+        ldp             x19, x20, [sp], #16
+        ldp             x21, x22, [sp], #16
+        ldp             x23, x24, [sp], #16
+        ldp             x25, x26, [sp], #16
+        ldp             x27, x28, [sp], #16
+        ldp             x29, x30, [sp], #16
+.endm
+
+#ifdef __APPLE__
+#define SEP %%
+#else
+#define SEP ;
+#endif
+
+#define CALL_C(func, msg, first, last, ptr, offset) \
+        call_c          func, __LINE__, msg, first, last, ptr, offset SEP \
+        b               778f SEP \
+    777: \
+        .asciz msg SEP \
+        .align 2 SEP \
+    778:
+
+#define DUMP_SIMD_S8(msg, first, last)  CALL_C(dump_simd_s8,  msg, first, last, sp, 0)
+#define DUMP_SIMD_U8(msg, first, last)  CALL_C(dump_simd_u8,  msg, first, last, sp, 0)
+#define DUMP_SIMD_S16(msg, first, last) CALL_C(dump_simd_s16, msg, first, last, sp, 0)
+#define DUMP_SIMD_U16(msg, first, last) CALL_C(dump_simd_u16, msg, first, last, sp, 0)
+#define DUMP_SIMD_S32(msg, first, last) CALL_C(dump_simd_s32, msg, first, last, sp, 0)
+#define DUMP_SIMD_U32(msg, first, last) CALL_C(dump_simd_u32, msg, first, last, sp, 0)
+#define DUMP_SIMD_S64(msg, first, last) CALL_C(dump_simd_s64, msg, first, last, sp, 0)
+#define DUMP_SIMD_U64(msg, first, last) CALL_C(dump_simd_u64, msg, first, last, sp, 0)
+#define DUMP_SIMD_F32(msg, first, last) CALL_C(dump_simd_f32, msg, first, last, sp, 0)
+#define DUMP_SIMD_F64(msg, first, last) CALL_C(dump_simd_f64, msg, first, last, sp, 0)
+#define DUMP_MEM_S8(msg, reg, n)        CALL_C(dump_simd_s8,  msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U8(msg, reg, n)        CALL_C(dump_simd_u8,  msg, 0, n-1, reg, 0)
+#define DUMP_MEM_S16(msg, reg, n)       CALL_C(dump_simd_s16, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U16(msg, reg, n)       CALL_C(dump_simd_u16, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_S32(msg, reg, n)       CALL_C(dump_simd_s32, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U32(msg, reg, n)       CALL_C(dump_simd_u32, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_S64(msg, reg, n)       CALL_C(dump_simd_s64, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U64(msg, reg, n)       CALL_C(dump_simd_u64, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_F32(msg, reg, n)       CALL_C(dump_simd_f32, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_F64(msg, reg, n)       CALL_C(dump_simd_f64, msg, 0, n-1, reg, 0)
+#define DUMP_GPR(msg, first, last)      CALL_C(dump_gpr,      msg, first, last, sp, 520)
+
+#endif /* CONFIG_ASM_DEBUG */

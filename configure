@@ -541,6 +541,7 @@ Developer options (useful when working on FFmpeg itself):
   --disable-shader-compression don't compress shader code even when possible
   --disable-resource-compression don't compress resources even when possible
   --disable-version-tracking don't include the git/release version in the build
+  --enable-asm-debug       include functions for assembly debugging
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -2249,6 +2250,7 @@ CONFIG_LIST="
     $PROGRAM_LIST
     $SUBSYSTEM_LIST
     autodetect
+    asm_debug
     fontconfig
     large_tests
     linux_perf
