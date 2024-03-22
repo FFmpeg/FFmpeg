@@ -173,7 +173,7 @@ static void set_parser_ctx(AVCodecParserContext *s, AVCodecContext *avctx,
         h266_sub_width_c[sps->sps_chroma_format_idc];
     s->height = pps->pps_pic_height_in_luma_samples -
         (pps->pps_conf_win_top_offset + pps->pps_conf_win_bottom_offset) *
-        h266_sub_height_c[sps->sps_chroma_format_idc];;
+        h266_sub_height_c[sps->sps_chroma_format_idc];
 
     avctx->profile = sps->profile_tier_level.general_profile_idc;
     avctx->level = sps->profile_tier_level.general_level_idc;
@@ -317,7 +317,7 @@ static int get_pu_info(PuInfo *info, const CodedBitstreamH266Context *h266,
     }
     info->pic_type = get_pict_type(pu);
     return 0;
-  error:
+error:
     memset(info, 0, sizeof(*info));
     return ret;
 }
@@ -329,7 +329,7 @@ static int append_au(AVPacket *pkt, const uint8_t *buf, int buf_size)
     if ((ret = av_grow_packet(pkt, buf_size)) < 0)
         goto end;
     memcpy(pkt->data + offset, buf, buf_size);
-  end:
+end:
     return ret;
 }
 
@@ -376,7 +376,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     } else {
         ret = 1; //not a completed au
     }
-  end:
+end:
     ff_cbs_fragment_reset(pu);
     return ret;
 }
