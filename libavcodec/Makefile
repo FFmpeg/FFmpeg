@@ -32,7 +32,7 @@ OBJS = ac3_parser.o                                                     \
        avcodec.o                                                        \
        avdct.o                                                          \
        avfft.o                                                          \
-       avpacket.o                                                       \
+       packet.o                                                         \
        bitstream.o                                                      \
        bitstream_filters.o                                              \
        bsf.o                                                            \
