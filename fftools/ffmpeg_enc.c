@@ -359,29 +359,6 @@ int enc_open(void *opaque, const AVFrame *frame)
         return ret;
     }
 
-    /*
-     * Add global input side data. For now this is naive, and copies it
-     * from the input stream's global side data. All side data should
-     * really be funneled over AVFrame and libavfilter, then added back to
-     * packet side data, and then potentially using the first packet for
-     * global side data.
-     */
-    if (ist) {
-        for (int i = 0; i < ist->st->codecpar->nb_coded_side_data; i++) {
-            AVPacketSideData *sd_src = &ist->st->codecpar->coded_side_data[i];
-            if (sd_src->type != AV_PKT_DATA_CPB_PROPERTIES) {
-                AVPacketSideData *sd_dst = av_packet_side_data_new(&ost->par_in->coded_side_data,
-                                                                   &ost->par_in->nb_coded_side_data,
-                                                                   sd_src->type, sd_src->size, 0);
-                if (!sd_dst)
-                    return AVERROR(ENOMEM);
-                memcpy(sd_dst->data, sd_src->data, sd_src->size);
-                if (ist->autorotate && sd_src->type == AV_PKT_DATA_DISPLAYMATRIX)
-                    av_display_rotation_set((int32_t *)sd_dst->data, 0);
-            }
-        }
-    }
-
     // copy timebase while removing common factors
     if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
         ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
