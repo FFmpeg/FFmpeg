@@ -1329,10 +1329,12 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     if (ret < 0)
         return ret;
 
-    ret = filter_codec_opts(o->g->codec_opts, ist->st->codecpar->codec_id,
-                            ic, st, ist->dec, &ds->decoder_opts);
-    if (ret < 0)
-        return ret;
+    if (ist->dec) {
+        ret = filter_codec_opts(o->g->codec_opts, ist->st->codecpar->codec_id,
+                                ic, st, ist->dec, &ds->decoder_opts);
+        if (ret < 0)
+            return ret;
+    }
 
     ds->reinit_filters = -1;
     MATCH_PER_STREAM_OPT(reinit_filters, i, ds->reinit_filters, ic, st);
