@@ -4164,7 +4164,7 @@ qpel_hv neon_i8mm
 DISABLE_I8MM
 #endif
 
-.macro QPEL_UNI_W_HV_HEADER width
+.macro QPEL_UNI_W_HV_HEADER width, suffix
         ldp             x14, x15, [sp]          // mx, my
         ldr             w13, [sp, #16]          // width
         stp             x19, x30, [sp, #-80]!
@@ -4173,7 +4173,7 @@ DISABLE_I8MM
         stp             x24, x25, [sp, #48]
         stp             x26, x27, [sp, #64]
         mov             x19, sp
-        mov             x11, #9088
+        mov             x11, #(MAX_PB_SIZE*(MAX_PB_SIZE+8)*2)
         sub             sp, sp, x11
         mov             x20, x0
         mov             x21, x1
@@ -4190,7 +4190,16 @@ DISABLE_I8MM
         mov             w26, #-6
         sub             w26, w26, w5            // -shift
         mov             w27, w13                // width
-        bl              X(ff_hevc_put_hevc_qpel_h\width\()_8_neon_i8mm)
+.ifc \suffix, neon
+.if \width >= 32
+        mov             w6,  #\width
+        bl              X(ff_hevc_put_hevc_qpel_h32_8_neon)
+.else
+        bl              X(ff_hevc_put_hevc_qpel_h\width\()_8_\suffix)
+.endif
+.else
+        bl              X(ff_hevc_put_hevc_qpel_h\width\()_8_\suffix)
+.endif
         movrel          x9, qpel_filters
         add             x9, x9, x23, lsl #3
         ld1             {v0.8b}, [x9]
@@ -4552,33 +4561,39 @@ function hevc_put_hevc_qpel_uni_w_hv16_8_end_neon
         ret
 endfunc
 
-#if HAVE_I8MM
-ENABLE_I8MM
-
-function ff_hevc_put_hevc_qpel_uni_w_hv4_8_neon_i8mm, export=1
-        QPEL_UNI_W_HV_HEADER 4
+.macro qpel_uni_w_hv suffix
+function ff_hevc_put_hevc_qpel_uni_w_hv4_8_\suffix, export=1
+        QPEL_UNI_W_HV_HEADER 4, \suffix
         b               hevc_put_hevc_qpel_uni_w_hv4_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_uni_w_hv8_8_neon_i8mm, export=1
-        QPEL_UNI_W_HV_HEADER 8
+function ff_hevc_put_hevc_qpel_uni_w_hv8_8_\suffix, export=1
+        QPEL_UNI_W_HV_HEADER 8, \suffix
         b               hevc_put_hevc_qpel_uni_w_hv8_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_uni_w_hv16_8_neon_i8mm, export=1
-        QPEL_UNI_W_HV_HEADER 16
+function ff_hevc_put_hevc_qpel_uni_w_hv16_8_\suffix, export=1
+        QPEL_UNI_W_HV_HEADER 16, \suffix
         b               hevc_put_hevc_qpel_uni_w_hv16_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_uni_w_hv32_8_neon_i8mm, export=1
-        QPEL_UNI_W_HV_HEADER 32
+function ff_hevc_put_hevc_qpel_uni_w_hv32_8_\suffix, export=1
+        QPEL_UNI_W_HV_HEADER 32, \suffix
         b               hevc_put_hevc_qpel_uni_w_hv16_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_uni_w_hv64_8_neon_i8mm, export=1
-        QPEL_UNI_W_HV_HEADER 64
+function ff_hevc_put_hevc_qpel_uni_w_hv64_8_\suffix, export=1
+        QPEL_UNI_W_HV_HEADER 64, \suffix
         b               hevc_put_hevc_qpel_uni_w_hv16_8_end_neon
 endfunc
+.endm
+
+qpel_uni_w_hv neon
+
+#if HAVE_I8MM
+ENABLE_I8MM
+
+qpel_uni_w_hv neon_i8mm
 
 DISABLE_I8MM
 #endif
