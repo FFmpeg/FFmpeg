@@ -902,9 +902,11 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
             lossy = 1;
         }
         if (!lossy || allow_lossy) {
+            void *opaque = channel_layout->opaque;
             av_channel_layout_uninit(channel_layout);
             channel_layout->order       = AV_CHANNEL_ORDER_UNSPEC;
             channel_layout->nb_channels = nb_channels;
+            channel_layout->opaque      = opaque;
             return lossy;
         }
         return AVERROR(ENOSYS);
@@ -916,8 +918,10 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
                 return AVERROR(ENOSYS);
             lossy = has_channel_names(channel_layout);
             if (!lossy || allow_lossy) {
+                void *opaque = channel_layout->opaque;
                 av_channel_layout_uninit(channel_layout);
                 av_channel_layout_from_mask(channel_layout, mask);
+                channel_layout->opaque = opaque;
                 return lossy;
             }
         }
@@ -925,6 +929,7 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
     case AV_CHANNEL_ORDER_CUSTOM: {
         AVChannelLayout custom = { 0 };
         int ret = av_channel_layout_custom_init(&custom, channel_layout->nb_channels);
+        void *opaque = channel_layout->opaque;
         if (ret < 0)
             return ret;
         if (channel_layout->order != AV_CHANNEL_ORDER_UNSPEC)
@@ -932,6 +937,7 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
                 custom.u.map[i].id = av_channel_layout_channel_from_index(channel_layout, i);
         av_channel_layout_uninit(channel_layout);
         *channel_layout = custom;
+        channel_layout->opaque = opaque;
         return 0;
         }
     case AV_CHANNEL_ORDER_AMBISONIC:
@@ -946,10 +952,12 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
                 return AVERROR(ENOSYS);
             lossy = has_channel_names(channel_layout);
             if (!lossy || allow_lossy) {
+                void *opaque = channel_layout->opaque;
                 av_channel_layout_uninit(channel_layout);
                 channel_layout->order       = AV_CHANNEL_ORDER_AMBISONIC;
                 channel_layout->nb_channels = nb_channels;
                 channel_layout->u.mask      = mask;
+                channel_layout->opaque      = opaque;
                 return lossy;
             }
         }
