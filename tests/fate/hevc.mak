@@ -200,8 +200,8 @@ $(HEVC_TESTS_444_8BIT): SCALE_OPTS := -pix_fmt yuv444p
 $(HEVC_TESTS_10BIT): SCALE_OPTS := -pix_fmt yuv420p10le -vf scale
 $(HEVC_TESTS_422_10BIT) $(HEVC_TESTS_422_10BIN): SCALE_OPTS := -pix_fmt yuv422p10le -vf scale
 $(HEVC_TESTS_444_12BIT): SCALE_OPTS := -pix_fmt yuv444p12le -vf scale
-fate-hevc-conformance-%: CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bit $(SCALE_OPTS)
-$(HEVC_TESTS_422_10BIN): CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bin $(SCALE_OPTS)
+fate-hevc-conformance-%: CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bit $(SCALE_OPTS)
+$(HEVC_TESTS_422_10BIN): CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bin $(SCALE_OPTS)
 
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += $(HEVC_TESTS_8BIT) $(HEVC_TESTS_444_8BIT)
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) +=         \
@@ -252,10 +252,10 @@ FATE_HEVC_FFPROBE-$(call DEMDEC, MOV, HEVC) += fate-hevc-dv-rpu
 fate-hevc-two-first-slice: CMD = threads=2 framemd5 -i $(TARGET_SAMPLES)/hevc/two_first_slice.mp4 -sws_flags bitexact -t 00:02.00 -an
 FATE_HEVC-$(call FRAMEMD5, MOV, HEVC) += fate-hevc-two-first-slice
 
-fate-hevc-cabac-tudepth: CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc/cbf_cr_cb_TUDepth_4_circle.h265 -pix_fmt yuv444p
+fate-hevc-cabac-tudepth: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/cbf_cr_cb_TUDepth_4_circle.h265 -pix_fmt yuv444p
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-cabac-tudepth
 
-fate-hevc-small422chroma: CMD = framecrc -flags unaligned -i $(TARGET_SAMPLES)/hevc/food.hevc -pix_fmt yuv422p10le -vf scale
+fate-hevc-small422chroma: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/food.hevc -pix_fmt yuv422p10le -vf scale
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) += fate-hevc-small422chroma
 
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)

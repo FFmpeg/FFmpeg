@@ -51,6 +51,7 @@ typedef struct DecoderPriv {
 
     // a combination of DECODER_FLAG_*, provided to dec_open()
     int                 flags;
+    int                 apply_cropping;
 
     enum AVPixelFormat  hwaccel_pix_fmt;
     enum HWAccelID      hwaccel_id;
@@ -403,6 +404,15 @@ static int video_frame_process(DecoderPriv *dp, AVFrame *frame)
 
     if (dp->sar_override.num)
         frame->sample_aspect_ratio = dp->sar_override;
+
+    if (dp->apply_cropping) {
+        // lavfi does not require aligned frame data
+        int ret = av_frame_apply_cropping(frame, AV_FRAME_CROP_UNALIGNED);
+        if (ret < 0) {
+            av_log(dp, AV_LOG_ERROR, "Error applying decoder cropping\n");
+            return ret;
+        }
+    }
 
     return 0;
 }
@@ -1213,6 +1223,10 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
     dp->dec_ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
     if (o->flags & DECODER_FLAG_BITEXACT)
         dp->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
+
+    // we apply cropping outselves
+    dp->apply_cropping          = dp->dec_ctx->apply_cropping;
+    dp->dec_ctx->apply_cropping = 0;
 
     if ((ret = avcodec_open2(dp->dec_ctx, codec, NULL)) < 0) {
         av_log(dp, AV_LOG_ERROR, "Error while opening decoder: %s\n",
