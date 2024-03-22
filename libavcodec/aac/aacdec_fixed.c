@@ -41,6 +41,7 @@
 #include "libavcodec/sinewin_fixed_tablegen.h"
 #include "libavcodec/kbdwin.h"
 #include "libavcodec/cbrt_data.h"
+#include "libavcodec/aacsbr.h"
 
 DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_long_1024))[1024];
 DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_short_128))[128];
@@ -56,6 +57,8 @@ static void init_tables_fixed_fn(void)
 
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);
     AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_short_120), 6.0, 120);
+
+    AAC_RENAME(ff_aac_sbr_init)();
 
     init_sine_windows_fixed();
 }

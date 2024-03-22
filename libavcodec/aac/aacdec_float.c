@@ -42,6 +42,7 @@
 #include "libavcodec/kbdwin.h"
 #include "libavcodec/cbrt_data.h"
 #include "libavutil/mathematics.h"
+#include "libavcodec/aacsbr.h"
 
 DECLARE_ALIGNED(32, static float, sine_120)[120];
 DECLARE_ALIGNED(32, static float, sine_960)[960];
@@ -61,6 +62,8 @@ static void init_tables_float_fn(void)
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_960), 960);
     AAC_RENAME(ff_sine_window_init)(AAC_RENAME(sine_120), 120);
     AAC_RENAME(ff_init_ff_sine_windows)(9);
+
+    AAC_RENAME(ff_aac_sbr_init)();
 }
 
 static int init(AACDecContext *ac)

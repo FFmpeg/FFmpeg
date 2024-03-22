@@ -29,6 +29,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/* We use several quantization functions here (Q31, Q30),
+ * for which we need this to be defined for them to work as expected. */
+#define USE_FIXED 1
+
 #include <limits.h>
 #include <stddef.h>
 
@@ -184,8 +188,8 @@ static int frame_configure_elements(AVCodecContext *avctx)
         for (id = 0; id < MAX_ELEM_ID; id++) {
             ChannelElement *che = ac->che[type][id];
             if (che) {
-                che->ch[0].AAC_RENAME(output) = che->ch[0].AAC_RENAME(ret_buf);
-                che->ch[1].AAC_RENAME(output) = che->ch[1].AAC_RENAME(ret_buf);
+                che->ch[0].output = che->ch[0].ret_buf;
+                che->ch[1].output = che->ch[1].ret_buf;
             }
         }
     }
@@ -202,7 +206,7 @@ static int frame_configure_elements(AVCodecContext *avctx)
     /* map output channel pointers to AVFrame data */
     for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
         if (ac->output_element[ch])
-            ac->output_element[ch]->AAC_RENAME(output) = (INTFLOAT *)ac->frame->extended_data[ch];
+            ac->output_element[ch]->output = (void *)ac->frame->extended_data[ch];
     }
 
     return 0;
@@ -1107,9 +1111,6 @@ static int sample_rate_idx (int rate)
 
 static av_cold void aac_static_table_init(void)
 {
-    ff_aac_sbr_init();
-    ff_aac_sbr_init_fixed();
-
     ff_aacdec_common_init_once();
 }
 static AVOnce aac_table_init = AV_ONCE_INIT;
@@ -1118,8 +1119,8 @@ static av_cold int decode_close(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
     int is_fixed = ac->is_fixed;
-    void (*sbr_close)(ChannelElement *che) = is_fixed ? RENAME_FIXED(ff_aac_sbr_ctx_close)
-                                                      : ff_aac_sbr_ctx_close;
+    void (*sbr_close)(ChannelElement *che) = is_fixed ? ff_aac_sbr_ctx_close_fixed :
+                                                        ff_aac_sbr_ctx_close;
 
     for (int type = 0; type < FF_ARRAY_ELEMS(ac->che); type++) {
         for (int i = 0; i < MAX_ELEM_ID; i++) {
@@ -2069,10 +2070,10 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                     }
                 }
                 if (che->ch[0].tns.present)
-                    ac->dsp.apply_tns(che->ch[0].AAC_RENAME(coeffs),
+                    ac->dsp.apply_tns(che->ch[0].coeffs,
                                       &che->ch[0].tns, &che->ch[0].ics, 1);
                 if (che->ch[1].tns.present)
-                    ac->dsp.apply_tns(che->ch[1].AAC_RENAME(coeffs),
+                    ac->dsp.apply_tns(che->ch[1].coeffs,
                                       &che->ch[1].tns, &che->ch[1].ics, 1);
                 if (type <= TYPE_CPE)
                     apply_channel_coupling(ac, che, type, i, BETWEEN_TNS_AND_IMDCT, ac->dsp.apply_dependent_coupling);
@@ -2088,12 +2089,12 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                     if (ac->oc[1].m4ac.sbr > 0) {
                         if (ac->is_fixed)
                             ff_aac_sbr_apply_fixed(ac, che, type,
-                                                   che->ch[0].AAC_RENAME(output),
-                                                   che->ch[1].AAC_RENAME(output));
+                                                   (void *)che->ch[0].output,
+                                                   (void *)che->ch[1].output);
                         else
                             ff_aac_sbr_apply(ac, che, type,
-                                             che->ch[0].AAC_RENAME(output),
-                                             che->ch[1].AAC_RENAME(output));
+                                             (void *)che->ch[0].output,
+                                             (void *)che->ch[1].output);
                     }
                 }
                 if (type <= TYPE_CCE)
