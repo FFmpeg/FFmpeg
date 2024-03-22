@@ -43,6 +43,7 @@
 #include "avcodec.h"
 #include "bsf.h"
 #include "codec_internal.h"
+#include "dovi_rpu.h"
 #include "encode.h"
 #include "internal.h"
 #include "libaom.h"
@@ -70,6 +71,7 @@ struct FrameListData {
 typedef struct AOMEncoderContext {
     AVClass *class;
     AVBSFContext *bsf;
+    DOVIContext dovi;
     struct aom_codec_ctx encoder;
     struct aom_image rawimg;
     struct aom_fixed_buf twopass_stats;
@@ -421,6 +423,7 @@ static av_cold int aom_free(AVCodecContext *avctx)
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
     av_bsf_free(&ctx->bsf);
+    ff_dovi_ctx_unref(&ctx->dovi);
     return 0;
 }
 
@@ -989,6 +992,10 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (!cpb_props)
         return AVERROR(ENOMEM);
 
+    ctx->dovi.logctx = avctx;
+    if ((res = ff_dovi_configure(&ctx->dovi, avctx)) < 0)
+        return res;
+
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         const AVBitStreamFilter *filter = av_bsf_get_by_name("extract_extradata");
         int ret;
@@ -1242,6 +1249,7 @@ static int aom_encode(AVCodecContext *avctx, AVPacket *pkt,
     unsigned long duration = 0;
     int res, coded_size;
     aom_enc_frame_flags_t flags = 0;
+    AVFrameSideData *sd;
 
     if (frame) {
         rawimg                      = &ctx->rawimg;
@@ -1277,6 +1285,24 @@ FF_ENABLE_DEPRECATION_WARNINGS
         case AVCOL_RANGE_JPEG:
             rawimg->range = AOM_CR_FULL_RANGE;
             break;
+        }
+
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DOVI_METADATA);
+        if (ctx->dovi.cfg.dv_profile && sd) {
+            const AVDOVIMetadata *metadata = (const AVDOVIMetadata *)sd->data;
+            uint8_t *t35;
+            int size;
+            if ((res = ff_dovi_rpu_generate(&ctx->dovi, metadata, &t35, &size)) < 0)
+                return res;
+            res = aom_img_add_metadata(rawimg, OBU_METADATA_TYPE_ITUT_T35,
+                                       t35, size, AOM_MIF_ANY_FRAME);
+            av_free(t35);
+            if (res != AOM_CODEC_OK)
+                return AVERROR(ENOMEM);
+        } else if (ctx->dovi.cfg.dv_profile) {
+            av_log(avctx, AV_LOG_ERROR, "Dolby Vision enabled, but received frame "
+                   "without AV_FRAME_DATA_DOVI_METADATA\n");
+            return AVERROR_INVALIDDATA;
         }
 
         if (frame->pict_type == AV_PICTURE_TYPE_I)
@@ -1459,6 +1485,8 @@ static const AVOption options[] = {
     { "ssim",            NULL,         0, AV_OPT_TYPE_CONST, {.i64 = AOM_TUNE_SSIM}, 0, 0, VE, .unit = "tune"},
     FF_AV1_PROFILE_OPTS
     { "still-picture", "Encode in single frame mode (typically used for still AVIF images).", OFFSET(still_picture), AV_OPT_TYPE_BOOL, {.i64 = 0}, -1, 1, VE },
+    { "dolbyvision",     "Enable Dolby Vision RPU coding", OFFSET(dovi.enable), AV_OPT_TYPE_BOOL, {.i64 = FF_DOVI_AUTOMATIC }, -1, 1, VE, .unit = "dovi" },
+    {   "auto", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DOVI_AUTOMATIC}, .flags = VE, .unit = "dovi" },
     { "enable-rect-partitions", "Enable rectangular partitions", OFFSET(enable_rect_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-1to4-partitions", "Enable 1:4/4:1 partitions",     OFFSET(enable_1to4_partitions), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-ab-partitions",   "Enable ab shape partitions",    OFFSET(enable_ab_partitions),   AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
