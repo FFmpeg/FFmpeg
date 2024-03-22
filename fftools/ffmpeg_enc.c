@@ -646,7 +646,6 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
     if (frame) {
         FrameData *fd = frame_data(frame);
 
-        fd = frame_data(frame);
         if (!fd)
             return AVERROR(ENOMEM);
 
