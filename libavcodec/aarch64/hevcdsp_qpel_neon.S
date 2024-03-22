@@ -512,11 +512,10 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
 .ifc \type, qpel
         mov             dststride, #(MAX_PB_SIZE << 1)
         lsl             x13, srcstride, #1 // srcstridel
-        mov             x14, #((MAX_PB_SIZE << 2) - 16)
+        mov             x14, #(MAX_PB_SIZE << 2)
 .else
         lsl             x14, dststride, #1 // dststridel
         lsl             x13, srcstride, #1 // srcstridel
-        sub             x14, x14, #8
 .endif
         add             x10, dst, dststride // dstb
         add             x12, src, srcstride // srcb
@@ -527,10 +526,8 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
         bl              ff_hevc_put_hevc_h16_8_neon
 
 .ifc \type, qpel
-        st1             {v26.8h}, [dst], #16
-        st1             {v28.8h}, [x10], #16
-        st1             {v27.8h}, [dst], x14
-        st1             {v29.8h}, [x10], x14
+        st1             {v26.8h, v27.8h}, [dst], x14
+        st1             {v28.8h, v29.8h}, [x10], x14
 .else
 .ifc \type, qpel_bi
         ld1             {v16.8h, v17.8h}, [ x4], x16
@@ -549,10 +546,8 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
         sqrshrun        v28.8b, v28.8h, #6
         sqrshrun        v29.8b, v29.8h, #6
 .endif
-        st1             {v26.8b}, [dst], #8
-        st1             {v28.8b}, [x10], #8
-        st1             {v27.8b}, [dst], x14
-        st1             {v29.8b}, [x10], x14
+        st1             {v26.8b, v27.8b}, [dst], x14
+        st1             {v28.8b, v29.8b}, [x10], x14
 .endif
         b.gt            1b // double line
         subs            width, width, #16
