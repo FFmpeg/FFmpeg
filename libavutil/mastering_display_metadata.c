@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -27,6 +28,18 @@
 AVMasteringDisplayMetadata *av_mastering_display_metadata_alloc(void)
 {
     return av_mallocz(sizeof(AVMasteringDisplayMetadata));
+}
+
+AVMasteringDisplayMetadata *av_mastering_display_metadata_alloc_size(size_t *size)
+{
+    AVMasteringDisplayMetadata *mastering = av_mallocz(sizeof(AVMasteringDisplayMetadata));
+    if (!mastering)
+        return NULL;
+
+    if (size)
+        *size = sizeof(*mastering);
+
+    return mastering;
 }
 
 AVMasteringDisplayMetadata *av_mastering_display_metadata_create_side_data(AVFrame *frame)

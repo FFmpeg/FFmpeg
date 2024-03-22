@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-04-11 - xxxxxxxxxx - lavu 59.15.100 - frame.h
+  Add av_mastering_display_metadata_alloc_size().
+
 2024-04-11 - xxxxxxxxxx - lavu 59.14.100 - frame.h
   Add av_frame_side_data_add() and av_frame_side_data_remove().
   Add AV_FRAME_SIDE_DATA_FLAG_REPLACE.
