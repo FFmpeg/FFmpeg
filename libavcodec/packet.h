@@ -341,7 +341,9 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_NB
 };
 
+#if FF_API_QUALITY_FACTOR
 #define AV_PKT_DATA_QUALITY_FACTOR AV_PKT_DATA_QUALITY_STATS //DEPRECATED
+#endif
 
 /**
  * This structure stores auxiliary information for decoding, presenting, or
