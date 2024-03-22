@@ -867,7 +867,6 @@ static int save_sei(AVCodecContext *avctx, x264_nal_t *nal)
 #if CONFIG_LIBX264_ENCODER
 static int set_avcc_extradata(AVCodecContext *avctx, x264_nal_t *nal, int nnal)
 {
-    X264Context *x4 = avctx->priv_data;
     x264_nal_t *sps_nal = NULL;
     x264_nal_t *pps_nal = NULL;
     uint8_t *p, *sps;
