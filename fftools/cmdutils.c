@@ -998,10 +998,6 @@ int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
     char          prefix = 0;
     const AVClass    *cc = avcodec_get_class();
 
-    if (!codec)
-        codec            = s->oformat ? avcodec_find_encoder(codec_id)
-                                      : avcodec_find_decoder(codec_id);
-
     switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
         prefix  = 'v';
