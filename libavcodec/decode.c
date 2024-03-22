@@ -1376,21 +1376,6 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
     return av_packet_unpack_dictionary(side_metadata, size, frame_md);
 }
 
-static const struct {
-    enum AVPacketSideDataType packet;
-    enum AVFrameSideDataType frame;
-} sd_global_map[] = {
-    { AV_PKT_DATA_REPLAYGAIN ,                AV_FRAME_DATA_REPLAYGAIN },
-    { AV_PKT_DATA_DISPLAYMATRIX,              AV_FRAME_DATA_DISPLAYMATRIX },
-    { AV_PKT_DATA_SPHERICAL,                  AV_FRAME_DATA_SPHERICAL },
-    { AV_PKT_DATA_STEREO3D,                   AV_FRAME_DATA_STEREO3D },
-    { AV_PKT_DATA_AUDIO_SERVICE_TYPE,         AV_FRAME_DATA_AUDIO_SERVICE_TYPE },
-    { AV_PKT_DATA_MASTERING_DISPLAY_METADATA, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA },
-    { AV_PKT_DATA_CONTENT_LIGHT_LEVEL,        AV_FRAME_DATA_CONTENT_LIGHT_LEVEL },
-    { AV_PKT_DATA_ICC_PROFILE,                AV_FRAME_DATA_ICC_PROFILE },
-    { AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT,AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT },
-};
-
 int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
                                    AVFrame *frame, const AVPacket *pkt)
 {
@@ -1414,13 +1399,13 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(sd_global_map); i++) {
+    for (int i = 0; ff_sd_global_map[i].packet < AV_PKT_DATA_NB; i++) {
         size_t size;
-        const uint8_t *packet_sd = av_packet_get_side_data(pkt, sd_global_map[i].packet, &size);
+        const uint8_t *packet_sd = av_packet_get_side_data(pkt, ff_sd_global_map[i].packet, &size);
         if (packet_sd) {
             AVFrameSideData *frame_sd;
 
-            frame_sd = av_frame_new_side_data(frame, sd_global_map[i].frame, size);
+            frame_sd = av_frame_new_side_data(frame, ff_sd_global_map[i].frame, size);
             if (!frame_sd)
                 return AVERROR(ENOMEM);
             memcpy(frame_sd->data, packet_sd, size);
@@ -1461,12 +1446,12 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
     int ret;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(sd_global_map); i++) {
+    for (int i = 0; ff_sd_global_map[i].packet < AV_PKT_DATA_NB; i++) {
         const AVPacketSideData *packet_sd = ff_get_coded_side_data(avctx,
-                                                                   sd_global_map[i].packet);
+                                                                   ff_sd_global_map[i].packet);
         if (packet_sd) {
             AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
-                                                               sd_global_map[i].frame,
+                                                               ff_sd_global_map[i].frame,
                                                                packet_sd->size);
             if (!frame_sd)
                 return AVERROR(ENOMEM);
@@ -1758,9 +1743,9 @@ int ff_decode_preinit(AVCodecContext *avctx)
                 return AVERROR(EINVAL);
             }
 
-            for (unsigned j = 0; j < FF_ARRAY_ELEMS(sd_global_map); j++) {
-                if (sd_global_map[j].packet == val) {
-                    val = sd_global_map[j].frame;
+            for (unsigned j = 0; ff_sd_global_map[j].packet < AV_PKT_DATA_NB; j++) {
+                if (ff_sd_global_map[j].packet == val) {
+                    val = ff_sd_global_map[j].frame;
 
                     // this code will need to be changed when we have more than
                     // 64 frame side data types
