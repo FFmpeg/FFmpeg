@@ -3804,7 +3804,8 @@ function hevc_put_hevc_qpel_hv4_8_end_neon
 .endm
 1:      calc_all
 .purgem calc
-2:      ret
+2:      mov             sp, x14
+        ret
 endfunc
 
 function hevc_put_hevc_qpel_hv6_8_end_neon
@@ -3831,7 +3832,8 @@ function hevc_put_hevc_qpel_hv6_8_end_neon
 .endm
 1:      calc_all
 .purgem calc
-2:      ret
+2:      mov             sp, x14
+        ret
 endfunc
 
 function hevc_put_hevc_qpel_hv8_8_end_neon
@@ -3857,7 +3859,8 @@ function hevc_put_hevc_qpel_hv8_8_end_neon
 .endm
 1:      calc_all
 .purgem calc
-2:      ret
+2:      mov             sp, x14
+        ret
 endfunc
 
 function hevc_put_hevc_qpel_hv12_8_end_neon
@@ -3882,7 +3885,8 @@ function hevc_put_hevc_qpel_hv12_8_end_neon
 .endm
 1:      calc_all2
 .purgem calc
-2:      ret
+2:      mov             sp, x14
+        ret
 endfunc
 
 function hevc_put_hevc_qpel_hv16_8_end_neon
@@ -3906,7 +3910,8 @@ function hevc_put_hevc_qpel_hv16_8_end_neon
 .endm
 1:      calc_all2
 .purgem calc
-2:      ret
+2:      mov             sp, x14
+        ret
 endfunc
 
 function hevc_put_hevc_qpel_hv32_8_end_neon
@@ -3937,162 +3942,187 @@ function hevc_put_hevc_qpel_hv32_8_end_neon
         add             sp, sp, #32
         subs            w6, w6, #16
         b.hi            0b
-        add             w10, w3, #6
-        add             sp, sp, #64          // discard rest of first line
-        lsl             x10, x10, #7
-        add             sp, sp, x10         // tmp_array without first line
+        mov             sp, x14
         ret
 endfunc
 
-#if HAVE_I8MM
-ENABLE_I8MM
-function ff_hevc_put_hevc_qpel_hv4_8_neon_i8mm, export=1
-        add             w10, w3, #7
+.macro qpel_hv suffix
+function ff_hevc_put_hevc_qpel_hv4_8_\suffix, export=1
+        add             w10, w3, #8
         mov             x7, #128
         lsl             x10, x10, #7
+        mov             x14, sp
         sub             sp, sp, x10         // tmp_array
-        stp             x5, x30, [sp, #-32]!
-        stp             x0, x3, [sp, #16]
-        add             x0, sp, #32
+        stp             x5,  x30, [sp, #-48]!
+        stp             x0,  x3,  [sp, #16]
+        str             x14,      [sp, #32]
+        add             x0, sp, #48
         sub             x1, x1, x2, lsl #1
         add             x3, x3, #7
         sub             x1, x1, x2
-        bl              X(ff_hevc_put_hevc_qpel_h4_8_neon_i8mm)
-        ldp             x0, x3, [sp, #16]
-        ldp             x5, x30, [sp], #32
+        bl              X(ff_hevc_put_hevc_qpel_h4_8_\suffix)
+        ldr             x14,      [sp, #32]
+        ldp             x0,  x3,  [sp, #16]
+        ldp             x5,  x30, [sp], #48
         b               hevc_put_hevc_qpel_hv4_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv6_8_neon_i8mm, export=1
-        add             w10, w3, #7
+function ff_hevc_put_hevc_qpel_hv6_8_\suffix, export=1
+        add             w10, w3, #8
         mov             x7, #128
         lsl             x10, x10, #7
+        mov             x14, sp
         sub             sp, sp, x10         // tmp_array
-        stp             x5, x30, [sp, #-32]!
-        stp             x0, x3, [sp, #16]
-        add             x0, sp, #32
+        stp             x5,  x30, [sp, #-48]!
+        stp             x0,  x3,  [sp, #16]
+        str             x14,      [sp, #32]
+        add             x0, sp, #48
         sub             x1, x1, x2, lsl #1
         add             x3, x3, #7
         sub             x1, x1, x2
-        bl              X(ff_hevc_put_hevc_qpel_h6_8_neon_i8mm)
-        ldp             x0, x3, [sp, #16]
-        ldp             x5, x30, [sp], #32
+        bl              X(ff_hevc_put_hevc_qpel_h6_8_\suffix)
+        ldr             x14,      [sp, #32]
+        ldp             x0,  x3,  [sp, #16]
+        ldp             x5,  x30, [sp], #48
         b               hevc_put_hevc_qpel_hv6_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv8_8_neon_i8mm, export=1
-        add             w10, w3, #7
+function ff_hevc_put_hevc_qpel_hv8_8_\suffix, export=1
+        add             w10, w3, #8
         lsl             x10, x10, #7
         sub             x1, x1, x2, lsl #1
+        mov             x14, sp
         sub             sp, sp, x10         // tmp_array
-        stp             x5, x30, [sp, #-32]!
-        stp             x0, x3, [sp, #16]
-        add             x0, sp, #32
+        stp             x5,  x30, [sp, #-48]!
+        stp             x0,  x3,  [sp, #16]
+        str             x14,      [sp, #32]
+        add             x0, sp, #48
         add             x3, x3, #7
         sub             x1, x1, x2
-        bl              X(ff_hevc_put_hevc_qpel_h8_8_neon_i8mm)
-        ldp             x0, x3, [sp, #16]
-        ldp             x5, x30, [sp], #32
+        bl              X(ff_hevc_put_hevc_qpel_h8_8_\suffix)
+        ldr             x14,      [sp, #32]
+        ldp             x0,  x3,  [sp, #16]
+        ldp             x5,  x30, [sp], #48
         b               hevc_put_hevc_qpel_hv8_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv12_8_neon_i8mm, export=1
-        add             w10, w3, #7
+function ff_hevc_put_hevc_qpel_hv12_8_\suffix, export=1
+        add             w10, w3, #8
         lsl             x10, x10, #7
         sub             x1, x1, x2, lsl #1
+        mov             x14, sp
         sub             sp, sp, x10         // tmp_array
-        stp             x5, x30, [sp, #-32]!
-        stp             x0, x3, [sp, #16]
-        add             x0, sp, #32
+        stp             x5,  x30, [sp, #-48]!
+        stp             x0,  x3,  [sp, #16]
+        str             x14,      [sp, #32]
+        add             x0, sp, #48
         add             x3, x3, #7
         sub             x1, x1, x2
-        bl              X(ff_hevc_put_hevc_qpel_h12_8_neon_i8mm)
-        ldp             x0, x3, [sp, #16]
-        ldp             x5, x30, [sp], #32
+        mov             w6, #12
+        bl              X(ff_hevc_put_hevc_qpel_h12_8_\suffix)
+        ldr             x14,      [sp, #32]
+        ldp             x0,  x3,  [sp, #16]
+        ldp             x5,  x30, [sp], #48
         b               hevc_put_hevc_qpel_hv12_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv16_8_neon_i8mm, export=1
-        add             w10, w3, #7
+function ff_hevc_put_hevc_qpel_hv16_8_\suffix, export=1
+        add             w10, w3, #8
         lsl             x10, x10, #7
         sub             x1, x1, x2, lsl #1
+        mov             x14, sp
         sub             sp, sp, x10         // tmp_array
-        stp             x5, x30, [sp, #-32]!
-        stp             x0, x3, [sp, #16]
+        stp             x5,  x30, [sp, #-48]!
+        stp             x0,  x3,  [sp, #16]
+        str             x14,      [sp, #32]
         add             x3, x3, #7
-        add             x0, sp, #32
+        add             x0, sp, #48
         sub             x1, x1, x2
-        bl              X(ff_hevc_put_hevc_qpel_h16_8_neon_i8mm)
-        ldp             x0, x3, [sp, #16]
-        ldp             x5, x30, [sp], #32
+        bl              X(ff_hevc_put_hevc_qpel_h16_8_\suffix)
+        ldr             x14,      [sp, #32]
+        ldp             x0,  x3,  [sp, #16]
+        ldp             x5,  x30, [sp], #48
         b               hevc_put_hevc_qpel_hv16_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv24_8_neon_i8mm, export=1
+function ff_hevc_put_hevc_qpel_hv24_8_\suffix, export=1
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
         str             x30, [sp, #48]
-        bl              X(ff_hevc_put_hevc_qpel_hv12_8_neon_i8mm)
+        bl              X(ff_hevc_put_hevc_qpel_hv12_8_\suffix)
         ldp             x0, x1, [sp, #32]
         ldp             x2, x3, [sp, #16]
         ldp             x4, x5, [sp], #48
         add             x1, x1, #12
         add             x0, x0, #24
-        bl              X(ff_hevc_put_hevc_qpel_hv12_8_neon_i8mm)
+        bl              X(ff_hevc_put_hevc_qpel_hv12_8_\suffix)
         ldr             x30, [sp], #16
         ret
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv32_8_neon_i8mm, export=1
-        add             w10, w3, #7
+function ff_hevc_put_hevc_qpel_hv32_8_\suffix, export=1
+        add             w10, w3, #8
         sub             x1, x1, x2, lsl #1
         lsl             x10, x10, #7
         sub             x1, x1, x2
+        mov             x14, sp
         sub             sp, sp, x10         // tmp_array
-        stp             x5, x30, [sp, #-32]!
-        stp             x0, x3, [sp, #16]
+        stp             x5,  x30, [sp, #-48]!
+        stp             x0,  x3,  [sp, #16]
+        str             x14,      [sp, #32]
         add             x3, x3, #7
-        add             x0, sp, #32
-        bl              X(ff_hevc_put_hevc_qpel_h32_8_neon_i8mm)
-        ldp             x0, x3, [sp, #16]
-        ldp             x5, x30, [sp], #32
+        add             x0, sp, #48
+        mov             w6, #32
+        bl              X(ff_hevc_put_hevc_qpel_h32_8_\suffix)
+        ldr             x14,      [sp, #32]
+        ldp             x0,  x3,  [sp, #16]
+        ldp             x5,  x30, [sp], #48
         b               hevc_put_hevc_qpel_hv32_8_end_neon
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv48_8_neon_i8mm, export=1
+function ff_hevc_put_hevc_qpel_hv48_8_\suffix, export=1
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
         str             x30, [sp, #48]
-        bl              X(ff_hevc_put_hevc_qpel_hv24_8_neon_i8mm)
+        bl              X(ff_hevc_put_hevc_qpel_hv24_8_\suffix)
         ldp             x0, x1, [sp, #32]
         ldp             x2, x3, [sp, #16]
         ldp             x4, x5, [sp], #48
         add             x1, x1, #24
         add             x0, x0, #48
-        bl              X(ff_hevc_put_hevc_qpel_hv24_8_neon_i8mm)
+        bl              X(ff_hevc_put_hevc_qpel_hv24_8_\suffix)
         ldr             x30, [sp], #16
         ret
 endfunc
 
-function ff_hevc_put_hevc_qpel_hv64_8_neon_i8mm, export=1
+function ff_hevc_put_hevc_qpel_hv64_8_\suffix, export=1
         stp             x4, x5, [sp, #-64]!
         stp             x2, x3, [sp, #16]
         stp             x0, x1, [sp, #32]
         str             x30, [sp, #48]
         mov             x6, #32
-        bl              X(ff_hevc_put_hevc_qpel_hv32_8_neon_i8mm)
+        bl              X(ff_hevc_put_hevc_qpel_hv32_8_\suffix)
         ldp             x0, x1, [sp, #32]
         ldp             x2, x3, [sp, #16]
         ldp             x4, x5, [sp], #48
         add             x1, x1, #32
         add             x0, x0, #64
         mov             x6, #32
-        bl              X(ff_hevc_put_hevc_qpel_hv32_8_neon_i8mm)
+        bl              X(ff_hevc_put_hevc_qpel_hv32_8_\suffix)
         ldr             x30, [sp], #16
         ret
 endfunc
+.endm
+
+qpel_hv neon
+
+#if HAVE_I8MM
+ENABLE_I8MM
+
+qpel_hv neon_i8mm
+
 DISABLE_I8MM
 #endif
 
