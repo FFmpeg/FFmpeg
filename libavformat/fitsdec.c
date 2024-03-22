@@ -24,13 +24,10 @@
  * FITS demuxer.
  */
 
-#include "libavutil/avassert.h"
-#include "libavutil/intreadwrite.h"
 #include "demux.h"
 #include "internal.h"
 #include "libavutil/opt.h"
 #include "libavcodec/fits.h"
-#include "libavutil/bprint.h"
 
 #define FITS_BLOCK_SIZE 2880
 
@@ -71,31 +68,31 @@ static int fits_read_header(AVFormatContext *s)
  * @param s pointer to AVFormat Context
  * @param fits pointer to FITSContext
  * @param header pointer to FITSHeader
- * @param avbuf pointer to AVBPrint to store the header
+ * @param pkt pointer to AVPacket to store the header
  * @param data_size to store the size of data part
- * @return 1 if image found, 0 if any other extension and AVERROR_INVALIDDATA otherwise
+ * @return 1 if image found, 0 if any other extension and AVERROR code otherwise
  */
-static int64_t is_image(AVFormatContext *s, FITSContext *fits, FITSHeader *header,
-                         AVBPrint *avbuf, uint64_t *data_size)
+static int is_image(AVFormatContext *s, FITSContext *fits, FITSHeader *header,
+                    AVPacket *pkt, uint64_t *data_size)
 {
     int i, ret, image = 0;
-    char buf[FITS_BLOCK_SIZE] = { 0 };
-    int64_t buf_size = 0, size = 0, t;
+    int64_t size = 0, t;
 
     do {
-        ret = avio_read(s->pb, buf, FITS_BLOCK_SIZE);
+        const uint8_t *buf, *buf_end;
+        ret = av_append_packet(s->pb, pkt, FITS_BLOCK_SIZE);
         if (ret < 0) {
             return ret;
         } else if (ret < FITS_BLOCK_SIZE) {
             return AVERROR_INVALIDDATA;
         }
 
-        av_bprint_append_data(avbuf, buf, FITS_BLOCK_SIZE);
         ret = 0;
-        buf_size = 0;
-        while(!ret && buf_size < FITS_BLOCK_SIZE) {
-            ret = avpriv_fits_header_parse_line(s, header, buf + buf_size, NULL);
-            buf_size += 80;
+        buf_end = pkt->data + pkt->size;
+        buf     = buf_end - FITS_BLOCK_SIZE;
+        while(!ret && buf < buf_end) {
+            ret = avpriv_fits_header_parse_line(s, header, buf, NULL);
+            buf += 80;
         }
     } while (!ret);
     if (ret < 0)
@@ -142,12 +139,10 @@ static int64_t is_image(AVFormatContext *s, FITSContext *fits, FITSHeader *heade
 
 static int fits_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int64_t pos, ret;
     uint64_t size;
     FITSContext *fits = s->priv_data;
     FITSHeader header;
-    AVBPrint avbuf;
-    char *buf;
+    int ret;
 
     if (fits->first_image) {
         avpriv_fits_header_init(&header, STATE_SIMPLE);
@@ -155,57 +150,32 @@ static int fits_read_packet(AVFormatContext *s, AVPacket *pkt)
         avpriv_fits_header_init(&header, STATE_XTENSION);
     }
 
-    av_bprint_init(&avbuf, FITS_BLOCK_SIZE, AV_BPRINT_SIZE_UNLIMITED);
-    while ((ret = is_image(s, fits, &header, &avbuf, &size)) == 0) {
-        av_bprint_finalize(&avbuf, NULL);
-        pos = avio_skip(s->pb, size);
+    while ((ret = is_image(s, fits, &header, pkt, &size)) == 0) {
+        int64_t pos = avio_skip(s->pb, size);
         if (pos < 0)
             return pos;
 
-        av_bprint_init(&avbuf, FITS_BLOCK_SIZE, AV_BPRINT_SIZE_UNLIMITED);
         avpriv_fits_header_init(&header, STATE_XTENSION);
+        av_packet_unref(pkt);
     }
     if (ret < 0)
-        goto fail;
-
-    if (!av_bprint_is_complete(&avbuf)) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    av_assert0(avbuf.len <= INT64_MAX && size <= INT64_MAX);
-    if (avbuf.len + size > INT_MAX - 80)  {
-        ret = AVERROR_INVALIDDATA;
-        goto fail;
-    }
-    // Header is sent with the first line removed...
-    ret = av_new_packet(pkt, avbuf.len - 80 + size);
-    if (ret < 0)
-        goto fail;
+        return ret;
 
     pkt->stream_index = 0;
-    pkt->flags |= AV_PKT_FLAG_KEY;
+    pkt->flags       |= AV_PKT_FLAG_KEY;
+    pkt->duration     = 1;
+    // Header is sent with the first line removed...
+    pkt->data        += 80;
+    pkt->size        -= 80;
 
-    ret = av_bprint_finalize(&avbuf, &buf);
-    if (ret < 0) {
-        return ret;
-    }
+    if (size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE - pkt->size)
+        return AVERROR(ERANGE);
 
-    memcpy(pkt->data, buf + 80, avbuf.len - 80);
-    pkt->size = avbuf.len - 80;
-    av_freep(&buf);
-    ret = avio_read(s->pb, pkt->data + pkt->size, size);
+    ret = av_append_packet(s->pb, pkt, size);
     if (ret < 0)
         return ret;
 
-    pkt->size += ret;
-    pkt->duration = 1;
-
     return 0;
-
-fail:
-    av_bprint_finalize(&avbuf, NULL);
-    return ret;
 }
 
 static const AVOption fits_options[] = {
