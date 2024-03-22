@@ -721,10 +721,11 @@ static AVFrameSideData *add_side_data_from_buf(AVFrameSideData ***sd,
     if (!buf)
         return NULL;
 
-    if (*nb_sd > INT_MAX / sizeof(*sd) - 1)
+    // *nb_sd + 1 needs to fit into an int and a size_t.
+    if ((unsigned)*nb_sd >= FFMIN(INT_MAX, SIZE_MAX))
         return NULL;
 
-    tmp = av_realloc(*sd, (*nb_sd + 1) * sizeof(*sd));
+    tmp = av_realloc_array(*sd, sizeof(**sd), *nb_sd + 1);
     if (!tmp)
         return NULL;
     *sd = tmp;
