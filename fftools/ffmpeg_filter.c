@@ -143,6 +143,7 @@ typedef struct InputFilterPriv {
     AVBufferRef        *hw_frames_ctx;
 
     int                 displaymatrix_present;
+    int                 displaymatrix_applied;
     int32_t             displaymatrix[9];
 
     struct {
@@ -1552,6 +1553,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     av_assert0(desc);
 
     // TODO: insert hwaccel enabled filters like transpose_vaapi into the graph
+    ifp->displaymatrix_applied = 0;
     if ((ifp->opts.flags & IFILTER_FLAG_AUTOROTATE) &&
         !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
         int32_t *displaymatrix = ifp->displaymatrix;
@@ -1585,6 +1587,8 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
         }
         if (ret < 0)
             return ret;
+
+        ifp->displaymatrix_applied = 1;
     }
 
     snprintf(name, sizeof(name), "trim_in_%s", ifp->opts.name);
@@ -2680,6 +2684,9 @@ static int send_frame(FilterGraph *fg, FilterGraphThread *fgt,
     frame->pts       = av_rescale_q(frame->pts,      frame->time_base, ifp->time_base);
     frame->duration  = av_rescale_q(frame->duration, frame->time_base, ifp->time_base);
     frame->time_base = ifp->time_base;
+
+    if (ifp->displaymatrix_applied)
+        av_frame_remove_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
 
     fd = frame_data(frame);
     if (!fd)
