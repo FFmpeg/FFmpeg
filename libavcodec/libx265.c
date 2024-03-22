@@ -175,7 +175,7 @@ static av_cold int libx265_param_parse_int(AVCodecContext *avctx,
     return 0;
 }
 
-static int handle_mdcv(const AVClass **avcl, const x265_api *api,
+static int handle_mdcv(void *logctx, const x265_api *api,
                        x265_param *params,
                        const AVMasteringDisplayMetadata *mdcv)
 {
@@ -198,7 +198,7 @@ static int handle_mdcv(const AVClass **avcl, const x265_api *api,
 
     if (api->param_parse(params, "master-display", buf) ==
             X265_PARAM_BAD_VALUE) {
-        av_log(avcl, AV_LOG_ERROR,
+        av_log(logctx, AV_LOG_ERROR,
                "Invalid value \"%s\" for param \"master-display\".\n",
                buf);
         return AVERROR(EINVAL);
@@ -230,7 +230,7 @@ static int handle_side_data(AVCodecContext *avctx, const x265_api *api,
 
     if (mdcv_sd) {
         int ret = handle_mdcv(
-            &avctx->av_class, api, params,
+            avctx, api, params,
             (AVMasteringDisplayMetadata *)mdcv_sd->data);
         if (ret < 0)
             return ret;
