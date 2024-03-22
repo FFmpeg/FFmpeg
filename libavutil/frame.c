@@ -813,7 +813,7 @@ int av_frame_side_data_clone(AVFrameSideData ***sd, int *nb_sd,
     return 0;
 }
 
-const AVFrameSideData *av_frame_side_data_get(const AVFrameSideData **sd,
+const AVFrameSideData *av_frame_side_data_get(const AVFrameSideData * const *sd,
                                               const int nb_sd,
                                               enum AVFrameSideDataType type)
 {

@@ -1051,7 +1051,7 @@ int av_frame_side_data_clone(AVFrameSideData ***sd, int *nb_sd,
  * @return a pointer to the side data of a given type on success, NULL if there
  *         is no side data with such type in this set.
  */
-const AVFrameSideData *av_frame_side_data_get(const AVFrameSideData **sd,
+const AVFrameSideData *av_frame_side_data_get(const AVFrameSideData * const *sd,
                                               const int nb_sd,
                                               enum AVFrameSideDataType type);
 
