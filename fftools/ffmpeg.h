@@ -304,6 +304,8 @@ enum DecoderFlags {
     DECODER_FLAG_TOP_FIELD_FIRST  = (1 << 3),
 #endif
     DECODER_FLAG_SEND_END_TS      = (1 << 4),
+    // force bitexact decoding
+    DECODER_FLAG_BITEXACT         = (1 << 5),
 };
 
 typedef struct DecoderOpts {

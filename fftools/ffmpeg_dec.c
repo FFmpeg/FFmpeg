@@ -1211,6 +1211,8 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
         return ret;
 
     dp->dec_ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
+    if (o->flags & DECODER_FLAG_BITEXACT)
+        dp->dec_ctx->flags |= AV_CODEC_FLAG_BITEXACT;
 
     if ((ret = avcodec_open2(dp->dec_ctx, codec, NULL)) < 0) {
         av_log(dp, AV_LOG_ERROR, "Error while opening decoder: %s\n",

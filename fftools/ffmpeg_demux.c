@@ -908,11 +908,11 @@ static int ist_use(InputStream *ist, int decoding_needed)
     if (decoding_needed && ds->sch_idx_dec < 0) {
         int is_audio = ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
 
-        ds->dec_opts.flags = (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
-                             (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE) |
-                             (!!(d->loop && is_audio) * DECODER_FLAG_SEND_END_TS)
+        ds->dec_opts.flags |= (!!ist->fix_sub_duration * DECODER_FLAG_FIX_SUB_DURATION) |
+                              (!!(d->f.ctx->iformat->flags & AVFMT_NOTIMESTAMPS) * DECODER_FLAG_TS_UNRELIABLE) |
+                              (!!(d->loop && is_audio) * DECODER_FLAG_SEND_END_TS)
 #if FFMPEG_OPT_TOP
-                             | ((ist->top_field_first >= 0) * DECODER_FLAG_TOP_FIELD_FIRST)
+                              | ((ist->top_field_first >= 0) * DECODER_FLAG_TOP_FIELD_FIRST)
 #endif
                              ;
 
@@ -1357,8 +1357,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
         ist->user_set_discard = ist->st->discard;
     }
 
-    if (o->bitexact)
-        av_dict_set(&ds->decoder_opts, "flags", "+bitexact", AV_DICT_MULTIKEY);
+    ds->dec_opts.flags |= DECODER_FLAG_BITEXACT * !!o->bitexact;
 
     /* Attached pics are sparse, therefore we would not want to delay their decoding
      * till EOF. */
