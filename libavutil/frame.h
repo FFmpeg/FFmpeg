@@ -1150,6 +1150,11 @@ const AVFrameSideData *av_frame_side_data_get(AVFrameSideData * const *sd,
 }
 
 /**
+ * Remove and free all side data instances of the given type from an array.
+ */
+void av_frame_side_data_remove(AVFrameSideData ***sd, int *nb_sd,
+                               enum AVFrameSideDataType type);
+/**
  * @}
  */
 

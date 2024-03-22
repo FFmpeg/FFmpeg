@@ -937,6 +937,12 @@ const AVFrameSideData *av_frame_side_data_get_c(const AVFrameSideData * const *s
     return NULL;
 }
 
+void av_frame_side_data_remove(AVFrameSideData ***sd, int *nb_sd,
+                               enum AVFrameSideDataType type)
+{
+    remove_side_data(sd, nb_sd, type);
+}
+
 AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
                                         enum AVFrameSideDataType type)
 {
