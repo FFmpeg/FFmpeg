@@ -49,18 +49,8 @@ static inline SpectralBandReplication *get_sbr(ChannelElement *ch)
     return &((ExtChannelElement*)ch)->sbr;
 }
 
-static av_cold void aacsbr_tableinit(void)
-{
-    int n;
-
-    for (n = 0; n < 320; n++)
-        sbr_qmf_window_ds[n] = sbr_qmf_window_us[2*n];
-}
-
 av_cold void AAC_RENAME(ff_aac_sbr_init)(void)
 {
-    aacsbr_tableinit();
-
     AAC_RENAME(ff_ps_init)();
 }
 
