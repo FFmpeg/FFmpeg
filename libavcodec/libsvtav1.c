@@ -180,12 +180,10 @@ static void handle_side_data(AVCodecContext *avctx,
                              EbSvtAv1EncConfiguration *param)
 {
     const AVFrameSideData *cll_sd =
-        av_frame_side_data_get(
-            (const AVFrameSideData **)avctx->decoded_side_data,
+        av_frame_side_data_get(avctx->decoded_side_data,
             avctx->nb_decoded_side_data, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
     const AVFrameSideData *mdcv_sd =
-        av_frame_side_data_get(
-            (const AVFrameSideData **)avctx->decoded_side_data,
+        av_frame_side_data_get(avctx->decoded_side_data,
             avctx->nb_decoded_side_data,
             AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
 

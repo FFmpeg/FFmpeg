@@ -3,7 +3,10 @@ The last version increases of all libraries were on 2024-03-07
 API changes, most recent first:
 
 2024-03-22 - xxxxxxxxxx - lavu 59.4.100 - frame.h
-  Constified the first-level pointee of av_frame_side_data_get().
+  Constified the first-level pointee of av_frame_side_data_get()
+  and renamed it to av_frame_side_data_get_c(). From now on,
+  av_frame_side_data_get() is a wrapper around av_frame_side_data_get_c()
+  that accepts AVFrameSideData * const *sd.
 
 2024-03-xx - xxxxxxxxxx - lavc 61.2.100 - avcodec.h
   Add AVCodecContext.[nb_]decoded_side_data.

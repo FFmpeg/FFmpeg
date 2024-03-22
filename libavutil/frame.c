@@ -813,9 +813,9 @@ int av_frame_side_data_clone(AVFrameSideData ***sd, int *nb_sd,
     return 0;
 }
 
-const AVFrameSideData *av_frame_side_data_get(const AVFrameSideData * const *sd,
-                                              const int nb_sd,
-                                              enum AVFrameSideDataType type)
+const AVFrameSideData *av_frame_side_data_get_c(const AVFrameSideData * const *sd,
+                                                const int nb_sd,
+                                                enum AVFrameSideDataType type)
 {
     for (int i = 0; i < nb_sd; i++) {
         if (sd[i]->type == type)
@@ -828,7 +828,7 @@ AVFrameSideData *av_frame_get_side_data(const AVFrame *frame,
                                         enum AVFrameSideDataType type)
 {
     return (AVFrameSideData *)av_frame_side_data_get(
-        (const AVFrameSideData **)frame->side_data, frame->nb_side_data,
+        frame->side_data, frame->nb_side_data,
         type
     );
 }

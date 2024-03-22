@@ -1051,9 +1051,24 @@ int av_frame_side_data_clone(AVFrameSideData ***sd, int *nb_sd,
  * @return a pointer to the side data of a given type on success, NULL if there
  *         is no side data with such type in this set.
  */
-const AVFrameSideData *av_frame_side_data_get(const AVFrameSideData * const *sd,
+const AVFrameSideData *av_frame_side_data_get_c(const AVFrameSideData * const *sd,
+                                                const int nb_sd,
+                                                enum AVFrameSideDataType type);
+
+/**
+ * Wrapper around av_frame_side_data_get_c() to workaround the limitation
+ * that for any type T the conversion from T * const * to const T * const *
+ * is not performed automatically in C.
+ * @see av_frame_side_data_get_c()
+ */
+static inline
+const AVFrameSideData *av_frame_side_data_get(AVFrameSideData * const *sd,
                                               const int nb_sd,
-                                              enum AVFrameSideDataType type);
+                                              enum AVFrameSideDataType type)
+{
+    return av_frame_side_data_get_c((const AVFrameSideData * const *)sd,
+                                    nb_sd, type);
+}
 
 /**
  * @}
