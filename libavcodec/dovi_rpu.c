@@ -64,7 +64,7 @@ void ff_dovi_ctx_flush(DOVIContext *s)
 
     *s = (DOVIContext) {
         .logctx = s->logctx,
-        .dv_profile = s->dv_profile,
+        .cfg = s->cfg,
         /* preserve temporary buffer */
         .rpu_buf = s->rpu_buf,
         .rpu_buf_sz = s->rpu_buf_sz,
@@ -74,20 +74,12 @@ void ff_dovi_ctx_flush(DOVIContext *s)
 void ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0)
 {
     s->logctx = s0->logctx;
+    s->cfg = s0->cfg;
     s->mapping = s0->mapping;
     s->color = s0->color;
-    s->dv_profile = s0->dv_profile;
     for (int i = 0; i <= DOVI_MAX_DM_ID; i++)
         ff_refstruct_replace(&s->vdr[i], s0->vdr[i]);
     ff_refstruct_replace(&s->ext_blocks, s0->ext_blocks);
-}
-
-void ff_dovi_update_cfg(DOVIContext *s, const AVDOVIDecoderConfigurationRecord *cfg)
-{
-    if (!cfg)
-        return;
-
-    s->dv_profile = cfg->dv_profile;
 }
 
 int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame)
@@ -392,7 +384,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         goto fail;
 
     /* Container */
-    if (s->dv_profile == 10 /* dav1.10 */) {
+    if (s->cfg.dv_profile == 10 /* dav1.10 */) {
         /* DV inside AV1 re-uses an EMDF container skeleton, but with fixed
          * values - so we can effectively treat this as a magic byte sequence.
          *
@@ -517,7 +509,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     use_prev_vdr_rpu = get_bits1(gb);
     use_nlq = (hdr->rpu_format & 0x700) == 0 && !hdr->disable_residual_flag;
 
-    profile = s->dv_profile ? s->dv_profile : guess_profile(hdr);
+    profile = s->cfg.dv_profile ? s->cfg.dv_profile : guess_profile(hdr);
     if (profile == 5 && use_nlq) {
         av_log(s->logctx, AV_LOG_ERROR, "Profile 5 RPUs should not use NLQ\n");
         goto fail;

@@ -290,10 +290,10 @@ static av_cold int libdav1d_init(AVCodecContext *c)
 #endif
 
     dav1d->dovi.logctx = c;
-    dav1d->dovi.dv_profile = 10; // default for AV1
+    dav1d->dovi.cfg.dv_profile = 10; // default for AV1
     sd = ff_get_coded_side_data(c, AV_PKT_DATA_DOVI_CONF);
-    if (sd && sd->size > 0)
-        ff_dovi_update_cfg(&dav1d->dovi, (AVDOVIDecoderConfigurationRecord *) sd->data);
+    if (sd && sd->size >= sizeof(dav1d->dovi.cfg))
+        dav1d->dovi.cfg = *(AVDOVIDecoderConfigurationRecord *) sd->data;
     return 0;
 }
 

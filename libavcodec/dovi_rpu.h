@@ -32,6 +32,16 @@ typedef struct DOVIContext {
     void *logctx;
 
     /**
+     * Currently active dolby vision configuration, or {0} for none.
+     * Set by the user when decoding.
+     *
+     * Note: sizeof(cfg) is not part of the libavutil ABI, so users should
+     * never pass &cfg to any other library calls. This is included merely as
+     * a way to look up the values of fields known at compile time.
+     */
+    AVDOVIDecoderConfigurationRecord cfg;
+
+    /**
      * Currently active RPU data header, updates on every dovi_rpu_parse().
      */
     AVDOVIRpuDataHeader header;
@@ -56,7 +66,6 @@ typedef struct DOVIContext {
     struct DOVIVdr *vdr[DOVI_MAX_DM_ID+1]; ///< RefStruct references
     uint8_t *rpu_buf; ///< temporary buffer
     unsigned rpu_buf_sz;
-    uint8_t dv_profile;
 
 } DOVIContext;
 
@@ -68,16 +77,10 @@ void ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0);
 void ff_dovi_ctx_unref(DOVIContext *s);
 
 /**
- * Partially reset the internal state. Resets per-frame state while preserving
- * fields parsed from the configuration record.
+ * Partially reset the internal state. Resets per-frame state, but preserves
+ * the stream-wide configuration record.
  */
 void ff_dovi_ctx_flush(DOVIContext *s);
-
-/**
- * Read the contents of an AVDOVIDecoderConfigurationRecord (usually provided
- * by stream side data) and update internal state accordingly.
- */
-void ff_dovi_update_cfg(DOVIContext *s, const AVDOVIDecoderConfigurationRecord *cfg);
 
 /**
  * Parse the contents of a Dovi RPU NAL and update the parsed values in the
