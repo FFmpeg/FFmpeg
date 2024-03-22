@@ -370,8 +370,6 @@ typedef struct InputStream {
     int                   top_field_first;
 #endif
 
-    int                   autorotate;
-
     int                   fix_sub_duration;
 
     /* decoded data from this stream goes into all those filters

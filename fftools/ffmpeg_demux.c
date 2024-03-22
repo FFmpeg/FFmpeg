@@ -64,6 +64,8 @@ typedef struct DemuxStream {
     int                      streamcopy_needed;
     int                      have_sub2video;
     int                      reinit_filters;
+    int                      autorotate;
+
 
     int                      wrap_correction_done;
     int                      saw_first_ts;
@@ -1055,7 +1057,7 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
     if (!opts->name)
         return AVERROR(ENOMEM);
 
-    opts->flags |= IFILTER_FLAG_AUTOROTATE * !!(ist->autorotate) |
+    opts->flags |= IFILTER_FLAG_AUTOROTATE * !!(ds->autorotate) |
                    IFILTER_FLAG_REINIT     * !!(ds->reinit_filters);
 
     return ds->sch_idx_dec;
@@ -1235,8 +1237,8 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
     ds->ts_scale = 1.0;
     MATCH_PER_STREAM_OPT(ts_scale, dbl, ds->ts_scale, ic, st);
 
-    ist->autorotate = 1;
-    MATCH_PER_STREAM_OPT(autorotate, i, ist->autorotate, ic, st);
+    ds->autorotate = 1;
+    MATCH_PER_STREAM_OPT(autorotate, i, ds->autorotate, ic, st);
 
     MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, ic, st);
     if (codec_tag) {
