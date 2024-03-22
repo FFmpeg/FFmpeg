@@ -21,6 +21,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/error.h"
 #include "libavutil/log.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/time.h"
@@ -1191,8 +1192,6 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
     if (!av_dict_get(*dec_opts, "threads", NULL, 0))
         av_dict_set(dec_opts, "threads", "auto", 0);
 
-    av_dict_set(dec_opts, "flags", "+copy_opaque", AV_DICT_MULTIKEY);
-
     ret = hw_device_setup_for_decode(dp, codec, o->hwaccel_device);
     if (ret < 0) {
         av_log(dp, AV_LOG_ERROR,
@@ -1201,7 +1200,19 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
         return ret;
     }
 
-    if ((ret = avcodec_open2(dp->dec_ctx, codec, dec_opts)) < 0) {
+    ret = av_opt_set_dict2(dp->dec_ctx, dec_opts, AV_OPT_SEARCH_CHILDREN);
+    if (ret < 0) {
+        av_log(dp, AV_LOG_ERROR, "Error applying decoder options: %s\n",
+               av_err2str(ret));
+        return ret;
+    }
+    ret = check_avoptions(*dec_opts);
+    if (ret < 0)
+        return ret;
+
+    dp->dec_ctx->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
+
+    if ((ret = avcodec_open2(dp->dec_ctx, codec, NULL)) < 0) {
         av_log(dp, AV_LOG_ERROR, "Error while opening decoder: %s\n",
                av_err2str(ret));
         return ret;
@@ -1219,10 +1230,6 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
         else
             dp->dec_ctx->extra_hw_frames = extra_frames;
     }
-
-    ret = check_avoptions(*dec_opts);
-    if (ret < 0)
-        return ret;
 
     dp->dec.subtitle_header      = dp->dec_ctx->subtitle_header;
     dp->dec.subtitle_header_size = dp->dec_ctx->subtitle_header_size;
