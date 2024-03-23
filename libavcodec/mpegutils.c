@@ -265,7 +265,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
             margin_left++;
 
         av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
-        av_bprintf(&buf, "%*s", margin_left, " ");
+        av_bprint_chars(&buf, ' ', margin_left);
 
         n = 0;
         if (avctx->debug & FF_DEBUG_SKIP)
