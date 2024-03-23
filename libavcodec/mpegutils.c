@@ -252,7 +252,6 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
     if (avctx->debug & (FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)) {
         int x,y;
         AVBPrint buf;
-        char *str = NULL;
         int n;
         int margin_left;
         int x_step;
@@ -278,16 +277,11 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
         x_step = (mb_width * 16 > 999) ? 8 : 4;
         for (x = 0; x < mb_width; x += x_step)
             av_bprintf(&buf, "%-*d", n * x_step, x << 4);
-        n = av_bprint_finalize(&buf, &str);
-        if (n < 0) {
-            av_log(avctx, AV_LOG_ERROR, "%s failed, %s\n", __func__, av_err2str(n));
-            return;
-        }
-        av_log(avctx, AV_LOG_DEBUG, "%s\n", str);
-        av_freep(&str);
+
+        av_log(avctx, AV_LOG_DEBUG, "%s\n", buf.str);
 
         for (y = 0; y < mb_height; y++) {
-            av_bprint_init(&buf, 1, AV_BPRINT_SIZE_UNLIMITED);
+            av_bprint_clear(&buf);
             for (x = 0; x < mb_width; x++) {
                 if (x == 0)
                     av_bprintf(&buf, "%*d ", margin_left - 1, y << 4);
@@ -310,13 +304,8 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
                 }
             }
 
-            n = av_bprint_finalize(&buf, &str);
-            if (n < 0) {
-                av_log(avctx, AV_LOG_ERROR, "%s failed, %s\n", __func__, av_err2str(n));
-                return;
-            }
-            av_log(avctx, AV_LOG_DEBUG, "%s\n", str);
-            av_freep(&str);
+            av_log(avctx, AV_LOG_DEBUG, "%s\n", buf.str);
         }
+        av_bprint_finalize(&buf, NULL);
     }
 }
