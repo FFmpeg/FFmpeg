@@ -36,6 +36,7 @@ version <next>:
 - ffmpeg CLI loopback decoders
 - Support PacketTypeMetadata of PacketType in enhanced flv format
 - ffplay with hwaccel decoding support (depends on vulkan renderer via libplacebo)
+- dnn filter libtorch backend
 
 
 version 6.1:
