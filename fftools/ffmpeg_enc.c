@@ -247,6 +247,11 @@ int enc_open(void *opaque, const AVFrame *frame)
         enc_ctx->chroma_sample_location = frame->chroma_location;
 
         for (int i = 0; i < frame->nb_side_data; i++) {
+            const AVSideDataDescriptor *desc = av_frame_side_data_desc(frame->side_data[i]->type);
+
+            if (!(desc->props & AV_SIDE_DATA_PROP_GLOBAL))
+                continue;
+
             ret = av_frame_side_data_clone(
                 &enc_ctx->decoded_side_data, &enc_ctx->nb_decoded_side_data,
                 frame->side_data[i], AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
