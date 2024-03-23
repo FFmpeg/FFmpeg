@@ -29,7 +29,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+
 #include "rational.h"
+#include "csp.h"
 
 /*
  * DOVI configuration
@@ -187,6 +189,130 @@ typedef struct AVDOVIColorMetadata {
     uint16_t source_diagonal;
 } AVDOVIColorMetadata;
 
+typedef struct AVDOVIDmLevel1 {
+    /* Per-frame brightness metadata */
+    uint16_t min_pq;
+    uint16_t max_pq;
+    uint16_t avg_pq;
+} AVDOVIDmLevel1;
+
+typedef struct AVDOVIDmLevel2 {
+    /* Usually derived from level 8 (at different levels) */
+    uint16_t target_max_pq;
+    uint16_t trim_slope;
+    uint16_t trim_offset;
+    uint16_t trim_power;
+    uint16_t trim_chroma_weight;
+    uint16_t trim_saturation_gain;
+    int16_t ms_weight;
+} AVDOVIDmLevel2;
+
+typedef struct AVDOVIDmLevel3 {
+    uint16_t min_pq_offset;
+    uint16_t max_pq_offset;
+    uint16_t avg_pq_offset;
+} AVDOVIDmLevel3;
+
+typedef struct AVDOVIDmLevel4 {
+    uint16_t anchor_pq;
+    uint16_t anchor_power;
+} AVDOVIDmLevel4;
+
+typedef struct AVDOVIDmLevel5 {
+    /* Active area definition */
+    uint16_t left_offset;
+    uint16_t right_offset;
+    uint16_t top_offset;
+    uint16_t bottom_offset;
+} AVDOVIDmLevel5;
+
+typedef struct AVDOVIDmLevel6 {
+    /* Static HDR10 metadata */
+    uint16_t max_luminance;
+    uint16_t min_luminance;
+    uint16_t max_cll;
+    uint16_t max_fall;
+} AVDOVIDmLevel6;
+
+typedef struct AVDOVIDmLevel8 {
+    /* Extended version of level 2 */
+    uint8_t target_display_index;
+    uint16_t trim_slope;
+    uint16_t trim_offset;
+    uint16_t trim_power;
+    uint16_t trim_chroma_weight;
+    uint16_t trim_saturation_gain;
+    uint16_t ms_weight;
+    uint16_t target_mid_contrast;
+    uint16_t clip_trim;
+    uint8_t saturation_vector_field[6];
+    uint8_t hue_vector_field[6];
+} AVDOVIDmLevel8;
+
+typedef struct AVDOVIDmLevel9 {
+    /* Source display characteristics */
+    uint8_t source_primary_index;
+    AVColorPrimariesDesc source_display_primaries;
+} AVDOVIDmLevel9;
+
+typedef struct AVDOVIDmLevel10 {
+    /* Target display characteristics */
+    uint8_t target_display_index;
+    uint16_t target_max_pq;
+    uint16_t target_min_pq;
+    uint8_t target_primary_index;
+    AVColorPrimariesDesc target_display_primaries;
+} AVDOVIDmLevel10;
+
+typedef struct AVDOVIDmLevel11 {
+    uint8_t content_type;
+    uint8_t whitepoint;
+    uint8_t reference_mode_flag;
+    uint8_t sharpness;
+    uint8_t noise_reduction;
+    uint8_t mpeg_noise_reduction;
+    uint8_t frame_rate_conversion;
+    uint8_t brightness;
+    uint8_t color;
+} AVDOVIDmLevel11;
+
+typedef struct AVDOVIDmLevel254 {
+    /* DMv2 info block, always present in samples with DMv2 metadata */
+    uint8_t dm_mode;
+    uint8_t dm_version_index;
+} AVDOVIDmLevel254;
+
+typedef struct AVDOVIDmLevel255 {
+    /* Debug block, not really used in samples */
+    uint8_t dm_run_mode;
+    uint8_t dm_run_version;
+    uint8_t dm_debug[4];
+} AVDOVIDmLevel255;
+
+/**
+ * Dolby Vision metadata extension block.
+ *
+ * @note sizeof(AVDOVIDmData) is not part of the public API.
+ */
+typedef struct AVDOVIDmData {
+    uint8_t level; /* [1, 255] */
+    union {
+        AVDOVIDmLevel1 l1;
+        AVDOVIDmLevel2 l2; /* may appear multiple times */
+        AVDOVIDmLevel3 l3;
+        AVDOVIDmLevel4 l4;
+        AVDOVIDmLevel5 l5;
+        AVDOVIDmLevel6 l6;
+        /* level 7 is currently unused */
+        AVDOVIDmLevel8 l8; /* may appear multiple times */
+        AVDOVIDmLevel9 l9;
+        AVDOVIDmLevel10 l10; /* may appear multiple times */
+        AVDOVIDmLevel11 l11;
+        AVDOVIDmLevel254 l254;
+        AVDOVIDmLevel255 l255;
+    };
+} AVDOVIDmData;
+
 /**
  * Combined struct representing a combination of header, mapping and color
  * metadata, for attaching to frames as side data.
@@ -203,6 +329,13 @@ typedef struct AVDOVIMetadata {
     size_t header_offset;   /* AVDOVIRpuDataHeader */
     size_t mapping_offset;  /* AVDOVIDataMapping */
     size_t color_offset;    /* AVDOVIColorMetadata */
+
+    size_t ext_block_offset; /* offset to start of ext blocks array */
+    size_t ext_block_size; /* size per element */
+    int num_ext_blocks; /* number of extension blocks */
+
+    /* static limit on num_ext_blocks, derived from bitstream limitations */
+#define AV_DOVI_MAX_EXT_BLOCKS 32
 } AVDOVIMetadata;
 
 static av_always_inline AVDOVIRpuDataHeader *
@@ -222,6 +355,19 @@ av_dovi_get_color(const AVDOVIMetadata *data)
 {
     return (AVDOVIColorMetadata *)((uint8_t *) data + data->color_offset);
 }
+
+static av_always_inline AVDOVIDmData *
+av_dovi_get_ext(const AVDOVIMetadata *data, int index)
+{
+    return (AVDOVIDmData *)((uint8_t *) data + data->ext_block_offset +
+                            data->ext_block_size * index);
+}
+
+/**
+ * Find an extension block with a given level, or NULL. In the case of
+ * multiple extension blocks, only the first is returned.
+ */
+AVDOVIDmData *av_dovi_find_level(const AVDOVIMetadata *data, uint8_t level);
 
 /**
  * Allocate an AVDOVIMetadata structure and initialize its

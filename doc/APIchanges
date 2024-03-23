@@ -2,6 +2,11 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-04-xx - xxxxxxxxxx - lavu 59.12.100 - dovi_meta.h
+  Add AVDOVIMetadata.ext_block_{offset,size}, AVDOVIMetadata.num_ext_blocks,
+  AVDOVIDmData and AVDOVIDmLevel{1..6,8..11,254..255}, av_dovi_get_ext()
+  and av_dovi_find_level().
+
 2024-04-xx - xxxxxxxxxx - lavu 59.11.100 - dovi_meta.h
   Add AVDOVIDataMapping.nlq_pivots.
 
