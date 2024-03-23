@@ -187,6 +187,27 @@ int enc_open(void *opaque, const AVFrame *frame)
     if (frame) {
         av_assert0(frame->opaque_ref);
         fd = (FrameData*)frame->opaque_ref->data;
+
+        for (int i = 0; i < frame->nb_side_data; i++) {
+            const AVSideDataDescriptor *desc = av_frame_side_data_desc(frame->side_data[i]->type);
+
+            if (!(desc->props & AV_SIDE_DATA_PROP_GLOBAL))
+                continue;
+
+            ret = av_frame_side_data_clone(&enc_ctx->decoded_side_data,
+                                           &enc_ctx->nb_decoded_side_data,
+                                           frame->side_data[i],
+                                           AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
+            if (ret < 0) {
+                av_frame_side_data_free(
+                    &enc_ctx->decoded_side_data,
+                    &enc_ctx->nb_decoded_side_data);
+                av_log(NULL, AV_LOG_ERROR,
+                        "failed to configure video encoder: %s!\n",
+                        av_err2str(ret));
+                return ret;
+            }
+        }
     }
 
     ret = set_encoder_id(of, ost);
@@ -245,26 +266,6 @@ int enc_open(void *opaque, const AVFrame *frame)
         enc_ctx->color_trc              = frame->color_trc;
         enc_ctx->colorspace             = frame->colorspace;
         enc_ctx->chroma_sample_location = frame->chroma_location;
-
-        for (int i = 0; i < frame->nb_side_data; i++) {
-            const AVSideDataDescriptor *desc = av_frame_side_data_desc(frame->side_data[i]->type);
-
-            if (!(desc->props & AV_SIDE_DATA_PROP_GLOBAL))
-                continue;
-
-            ret = av_frame_side_data_clone(
-                &enc_ctx->decoded_side_data, &enc_ctx->nb_decoded_side_data,
-                frame->side_data[i], AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
-            if (ret < 0) {
-                av_frame_side_data_free(
-                    &enc_ctx->decoded_side_data,
-                    &enc_ctx->nb_decoded_side_data);
-                av_log(NULL, AV_LOG_ERROR,
-                        "failed to configure video encoder: %s!\n",
-                        av_err2str(ret));
-                return ret;
-            }
-        }
 
         if (enc_ctx->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) ||
             (frame->flags & AV_FRAME_FLAG_INTERLACED)
