@@ -24,6 +24,7 @@
 #include "libavutil/buffer.h"
 #include "libavutil/mem.h"
 
+#include "avcodec.h"
 #include "dovi_rpu.h"
 #include "golomb.h"
 #include "get_bits.h"
@@ -46,6 +47,7 @@ void ff_dovi_ctx_unref(DOVIContext *s)
 {
     for (int i = 0; i < FF_ARRAY_ELEMS(s->vdr); i++)
         ff_refstruct_unref(&s->vdr[i]);
+    av_free(s->rpu_buf);
 
     *s = (DOVIContext) {
         .logctx = s->logctx,
@@ -60,6 +62,9 @@ void ff_dovi_ctx_flush(DOVIContext *s)
     *s = (DOVIContext) {
         .logctx = s->logctx,
         .dv_profile = s->dv_profile,
+        /* preserve temporary buffer */
+        .rpu_buf = s->rpu_buf,
+        .rpu_buf_sz = s->rpu_buf_sz,
     };
 }
 
@@ -203,17 +208,17 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size)
     DOVIVdr *vdr;
     int ret;
 
-    uint8_t nal_prefix;
     uint8_t rpu_type;
     uint8_t vdr_seq_info_present;
     uint8_t vdr_dm_metadata_present;
     uint8_t use_prev_vdr_rpu;
     uint8_t use_nlq;
     uint8_t profile;
-    if ((ret = init_get_bits8(gb, rpu, rpu_size)) < 0)
-        return ret;
 
-    /* Container header */
+    if (rpu_size < 5)
+        goto fail;
+
+    /* Container */
     if (s->dv_profile == 10 /* dav1.10 */) {
         /* DV inside AV1 re-uses an EMDF container skeleton, but with fixed
          * values - so we can effectively treat this as a magic byte sequence.
@@ -230,17 +235,42 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size)
          *   discard_unknown_payload : f(1) = 1
          */
         const unsigned header_magic = 0x01be6841u;
-        unsigned header, emdf_payload_size;
-        header = get_bits_long(gb, 27);
-        VALIDATE(header, header_magic, header_magic);
+        unsigned emdf_header, emdf_payload_size, emdf_protection;
+        if ((ret = init_get_bits8(gb, rpu, rpu_size)) < 0)
+            return ret;
+        emdf_header = get_bits_long(gb, 27);
+        VALIDATE(emdf_header, header_magic, header_magic);
         emdf_payload_size = get_variable_bits(gb, 8);
         VALIDATE(emdf_payload_size, 6, 512);
         if (emdf_payload_size * 8 > get_bits_left(gb))
             return AVERROR_INVALIDDATA;
+
+        /* The payload is not byte-aligned (off by *one* bit, curse Dolby),
+         * so copy into a fresh buffer to preserve byte alignment of the
+         * RPU struct */
+        av_fast_padded_malloc(&s->rpu_buf, &s->rpu_buf_sz, emdf_payload_size);
+        if (!s->rpu_buf)
+            return AVERROR(ENOMEM);
+        for (int i = 0; i < emdf_payload_size; i++)
+            s->rpu_buf[i] = get_bits(gb, 8);
+        rpu = s->rpu_buf;
+        rpu_size = emdf_payload_size;
+
+        /* Validate EMDF footer */
+        emdf_protection = get_bits(gb, 5 + 12);
+        VALIDATE(emdf_protection, 0x400, 0x400);
     } else {
-        nal_prefix = get_bits(gb, 8);
-        VALIDATE(nal_prefix, 25, 25);
+        /* NAL RBSP with prefix and trailing zeroes */
+        VALIDATE(rpu[0], 25, 25); /* NAL prefix */
+        rpu++;
+        rpu_size--;
+        /* Strip trailing padding bytes */
+        while (rpu_size && rpu[rpu_size - 1] == 0)
+            rpu_size--;
     }
+
+    if ((ret = init_get_bits8(gb, rpu, rpu_size)) < 0)
+        return ret;
 
     /* RPU header */
     rpu_type = get_bits(gb, 6);

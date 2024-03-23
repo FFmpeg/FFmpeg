@@ -48,6 +48,8 @@ typedef struct DOVIContext {
      * Private fields internal to dovi_rpu.c
      */
     struct DOVIVdr *vdr[DOVI_MAX_DM_ID+1]; ///< RefStruct references
+    uint8_t *rpu_buf; ///< temporary buffer
+    unsigned rpu_buf_sz;
     uint8_t dv_profile;
 
 } DOVIContext;
