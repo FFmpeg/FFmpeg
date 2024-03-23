@@ -484,5 +484,5 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size)
 
 fail:
     ff_dovi_ctx_unref(s); /* don't leak potentially invalid state */
-    return AVERROR(EINVAL);
+    return AVERROR_INVALIDDATA;
 }
