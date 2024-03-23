@@ -507,7 +507,7 @@ static int config_props(AVFilterLink *link)
         }
         break;
     case AVMEDIA_TYPE_AUDIO:
-        if (!c->ch_layout.nb_channels) {
+        if (!c->ch_layout.nb_channels || c->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
             int ret = av_channel_layout_copy(&c->ch_layout, &link->ch_layout);
             if (ret < 0)
                 return ret;
