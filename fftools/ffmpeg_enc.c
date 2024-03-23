@@ -198,15 +198,8 @@ int enc_open(void *opaque, const AVFrame *frame)
                                            &enc_ctx->nb_decoded_side_data,
                                            frame->side_data[i],
                                            AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
-            if (ret < 0) {
-                av_frame_side_data_free(
-                    &enc_ctx->decoded_side_data,
-                    &enc_ctx->nb_decoded_side_data);
-                av_log(NULL, AV_LOG_ERROR,
-                        "failed to configure video encoder: %s!\n",
-                        av_err2str(ret));
+            if (ret < 0)
                 return ret;
-            }
         }
     }
 
