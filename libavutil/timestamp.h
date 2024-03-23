@@ -73,9 +73,7 @@ char *av_ts_make_time_string2(char *buf, int64_t ts, AVRational tb);
 static inline char *av_ts_make_time_string(char *buf, int64_t ts,
                                            const AVRational *tb)
 {
-    if (ts == AV_NOPTS_VALUE) snprintf(buf, AV_TS_MAX_STRING_SIZE, "NOPTS");
-    else                      snprintf(buf, AV_TS_MAX_STRING_SIZE, "%.6g", av_q2d(*tb) * ts);
-    return buf;
+    return av_ts_make_time_string2(buf, ts, *tb);
 }
 
 /**

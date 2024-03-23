@@ -1,5 +1,5 @@
 pts=0|tag:lavfi.silence_duration=0.523107|tag:lavfi.silence_end=0.690023|tag:lavfi.silence_start=0.736417
-pts=46080|tag:lavfi.silence_start=1.27626|tag:lavfi.silence_end=1.80751|tag:lavfi.silence_duration=0.531247
+pts=46080|tag:lavfi.silence_start=1.276259|tag:lavfi.silence_end=1.807506|tag:lavfi.silence_duration=0.531247
 pts=92160
 pts=138240
 pts=184320
