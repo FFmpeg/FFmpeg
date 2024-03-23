@@ -255,6 +255,37 @@ typedef struct AVFrameSideData {
     AVBufferRef *buf;
 } AVFrameSideData;
 
+enum AVSideDataProps {
+    /**
+     * The side data type can be used in stream-global structures.
+     * Side data types without this property are only meaningful on per-frame
+     * basis.
+     */
+    AV_SIDE_DATA_PROP_GLOBAL = (1 << 0),
+
+    /**
+     * Multiple instances of this side data type can be meaningfully present in
+     * a single side data array.
+     */
+    AV_SIDE_DATA_PROP_MULTI  = (1 << 1),
+};
+
+/**
+ * This struct describes the properties of a side data type. Its instance
+ * corresponding to a given type can be obtained from av_frame_side_data_desc().
+ */
+typedef struct AVSideDataDescriptor {
+    /**
+     * Human-readable side data description.
+     */
+    const char      *name;
+
+    /**
+     * Side data property flags, a combination of AVSideDataProps values.
+     */
+    unsigned         props;
+} AVSideDataDescriptor;
+
 /**
  * Structure describing a single Region Of Interest.
  *
@@ -991,6 +1022,12 @@ int av_frame_apply_cropping(AVFrame *frame, int flags);
  * @return a string identifying the side data type
  */
 const char *av_frame_side_data_name(enum AVFrameSideDataType type);
+
+/**
+ * @return side data descriptor corresponding to a given side data type, NULL
+ *         when not available.
+ */
+const AVSideDataDescriptor *av_frame_side_data_desc(enum AVFrameSideDataType type);
 
 /**
  * Free all side data entries and their contents, then zeroes out the

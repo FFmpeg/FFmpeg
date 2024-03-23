@@ -28,6 +28,36 @@
 #include "samplefmt.h"
 #include "hwcontext.h"
 
+static const AVSideDataDescriptor sd_props[] = {
+    [AV_FRAME_DATA_PANSCAN]                     = { "AVPanScan" },
+    [AV_FRAME_DATA_A53_CC]                      = { "ATSC A53 Part 4 Closed Captions" },
+    [AV_FRAME_DATA_MATRIXENCODING]              = { "AVMatrixEncoding" },
+    [AV_FRAME_DATA_DOWNMIX_INFO]                = { "Metadata relevant to a downmix procedure" },
+    [AV_FRAME_DATA_AFD]                         = { "Active format description" },
+    [AV_FRAME_DATA_MOTION_VECTORS]              = { "Motion vectors" },
+    [AV_FRAME_DATA_SKIP_SAMPLES]                = { "Skip samples" },
+    [AV_FRAME_DATA_GOP_TIMECODE]                = { "GOP timecode" },
+    [AV_FRAME_DATA_S12M_TIMECODE]               = { "SMPTE 12-1 timecode" },
+    [AV_FRAME_DATA_DYNAMIC_HDR_PLUS]            = { "HDR Dynamic Metadata SMPTE2094-40 (HDR10+)" },
+    [AV_FRAME_DATA_DYNAMIC_HDR_VIVID]           = { "HDR Dynamic Metadata CUVA 005.1 2021 (Vivid)" },
+    [AV_FRAME_DATA_REGIONS_OF_INTEREST]         = { "Regions Of Interest" },
+    [AV_FRAME_DATA_VIDEO_ENC_PARAMS]            = { "Video encoding parameters" },
+    [AV_FRAME_DATA_FILM_GRAIN_PARAMS]           = { "Film grain parameters" },
+    [AV_FRAME_DATA_DETECTION_BBOXES]            = { "Bounding boxes for object detection and classification" },
+    [AV_FRAME_DATA_DOVI_RPU_BUFFER]             = { "Dolby Vision RPU Data" },
+    [AV_FRAME_DATA_DOVI_METADATA]               = { "Dolby Vision Metadata" },
+    [AV_FRAME_DATA_STEREO3D]                    = { "Stereo 3D",                                    AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_REPLAYGAIN]                  = { "AVReplayGain",                                 AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_DISPLAYMATRIX]               = { "3x3 displaymatrix",                            AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_AUDIO_SERVICE_TYPE]          = { "Audio service type",                           AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_MASTERING_DISPLAY_METADATA]  = { "Mastering display metadata",                   AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_CONTENT_LIGHT_LEVEL]         = { "Content light level metadata",                 AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT] = { "Ambient viewing environment",                  AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_SPHERICAL]                   = { "Spherical Mapping",                            AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_ICC_PROFILE]                 = { "ICC profile",                                  AV_SIDE_DATA_PROP_GLOBAL },
+    [AV_FRAME_DATA_SEI_UNREGISTERED]            = { "H.26[45] User Data Unregistered SEI message",  AV_SIDE_DATA_PROP_MULTI },
+};
+
 static void get_frame_defaults(AVFrame *frame)
 {
     memset(frame, 0, sizeof(*frame));
@@ -896,38 +926,18 @@ void av_frame_remove_side_data(AVFrame *frame, enum AVFrameSideDataType type)
     remove_side_data(&frame->side_data, &frame->nb_side_data, type);
 }
 
+const AVSideDataDescriptor *av_frame_side_data_desc(enum AVFrameSideDataType type)
+{
+    unsigned t = type;
+    if (t < FF_ARRAY_ELEMS(sd_props) && sd_props[t].name)
+        return &sd_props[t];
+    return NULL;
+}
+
 const char *av_frame_side_data_name(enum AVFrameSideDataType type)
 {
-    switch(type) {
-    case AV_FRAME_DATA_PANSCAN:         return "AVPanScan";
-    case AV_FRAME_DATA_A53_CC:          return "ATSC A53 Part 4 Closed Captions";
-    case AV_FRAME_DATA_STEREO3D:        return "Stereo 3D";
-    case AV_FRAME_DATA_MATRIXENCODING:  return "AVMatrixEncoding";
-    case AV_FRAME_DATA_DOWNMIX_INFO:    return "Metadata relevant to a downmix procedure";
-    case AV_FRAME_DATA_REPLAYGAIN:      return "AVReplayGain";
-    case AV_FRAME_DATA_DISPLAYMATRIX:   return "3x3 displaymatrix";
-    case AV_FRAME_DATA_AFD:             return "Active format description";
-    case AV_FRAME_DATA_MOTION_VECTORS:  return "Motion vectors";
-    case AV_FRAME_DATA_SKIP_SAMPLES:    return "Skip samples";
-    case AV_FRAME_DATA_AUDIO_SERVICE_TYPE:          return "Audio service type";
-    case AV_FRAME_DATA_MASTERING_DISPLAY_METADATA:  return "Mastering display metadata";
-    case AV_FRAME_DATA_CONTENT_LIGHT_LEVEL:         return "Content light level metadata";
-    case AV_FRAME_DATA_GOP_TIMECODE:                return "GOP timecode";
-    case AV_FRAME_DATA_S12M_TIMECODE:               return "SMPTE 12-1 timecode";
-    case AV_FRAME_DATA_SPHERICAL:                   return "Spherical Mapping";
-    case AV_FRAME_DATA_ICC_PROFILE:                 return "ICC profile";
-    case AV_FRAME_DATA_DYNAMIC_HDR_PLUS: return "HDR Dynamic Metadata SMPTE2094-40 (HDR10+)";
-    case AV_FRAME_DATA_DYNAMIC_HDR_VIVID: return "HDR Dynamic Metadata CUVA 005.1 2021 (Vivid)";
-    case AV_FRAME_DATA_REGIONS_OF_INTEREST: return "Regions Of Interest";
-    case AV_FRAME_DATA_VIDEO_ENC_PARAMS:            return "Video encoding parameters";
-    case AV_FRAME_DATA_SEI_UNREGISTERED:            return "H.26[45] User Data Unregistered SEI message";
-    case AV_FRAME_DATA_FILM_GRAIN_PARAMS:           return "Film grain parameters";
-    case AV_FRAME_DATA_DETECTION_BBOXES:            return "Bounding boxes for object detection and classification";
-    case AV_FRAME_DATA_DOVI_RPU_BUFFER:             return "Dolby Vision RPU Data";
-    case AV_FRAME_DATA_DOVI_METADATA:               return "Dolby Vision Metadata";
-    case AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT: return "Ambient viewing environment";
-    }
-    return NULL;
+    const AVSideDataDescriptor *desc = av_frame_side_data_desc(type);
+    return desc ? desc->name : NULL;
 }
 
 static int calc_cropping_offsets(size_t offsets[4], const AVFrame *frame,
