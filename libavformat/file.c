@@ -670,7 +670,7 @@ done:
     return ret;
 }
 
-URLProtocol ff_android_content_protocol = {
+const URLProtocol ff_android_content_protocol = {
     .name                = "content",
     .url_open            = android_content_open,
     .url_read            = file_read,
