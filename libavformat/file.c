@@ -40,12 +40,6 @@
 #include <stdlib.h>
 #include "os_support.h"
 #include "url.h"
-#if CONFIG_ANDROID_CONTENT_PROTOCOL
-#include <jni.h>
-#include "libavcodec/jni.h"
-#include "libavcodec/ffjni.c"
-#endif
-
 
 /* Some systems may not have S_ISFIFO */
 #ifndef S_ISFIFO
@@ -106,21 +100,6 @@ typedef struct FileContext {
 #endif
     int64_t initial_pos;
 } FileContext;
-
-
-#if CONFIG_ANDROID_CONTENT_PROTOCOL
-static const AVOption android_content_options[] = {
-    { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
-    { NULL }
-};
-
-static const AVClass android_content_class = {
-    .class_name = "android_content",
-    .item_name  = av_default_item_name,
-    .option     = android_content_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-#endif
 
 static const AVOption file_options[] = {
     { "truncate", "truncate existing files on write", offsetof(FileContext, trunc), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
@@ -547,6 +526,9 @@ const URLProtocol ff_fd_protocol = {
 #endif /* CONFIG_FD_PROTOCOL */
 
 #if CONFIG_ANDROID_CONTENT_PROTOCOL
+#include <jni.h>
+#include "libavcodec/jni.h"
+#include "libavcodec/ffjni.c"
 
 typedef struct JFields {
     jclass uri_class;
@@ -669,6 +651,18 @@ done:
 
     return ret;
 }
+
+static const AVOption android_content_options[] = {
+    { "blocksize", "set I/O operation maximum block size", offsetof(FileContext, blocksize), AV_OPT_TYPE_INT, { .i64 = INT_MAX }, 1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { NULL }
+};
+
+static const AVClass android_content_class = {
+    .class_name = "android_content",
+    .item_name  = av_default_item_name,
+    .option     = android_content_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 const URLProtocol ff_android_content_protocol = {
     .name                = "content",
