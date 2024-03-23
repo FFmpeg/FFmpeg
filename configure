@@ -6619,8 +6619,8 @@ check_headers asm/types.h
 # some configurations also require linking to libatomic, so try
 # both with -latomic and without
 for LATOMIC in "-latomic" ""; do
-    check_builtin stdatomic stdatomic.h                                                 \
-        "atomic_int foo, bar = ATOMIC_VAR_INIT(-1); atomic_store(&foo, 0); foo += bar"  \
+    check_builtin stdatomic stdatomic.h                                \
+        "atomic_int foo, bar = -1; atomic_store(&foo, 0); foo += bar"  \
         $LATOMIC && eval stdatomic_extralibs="\$LATOMIC" && break
 done
 

@@ -576,8 +576,8 @@ extern const FFInputFormat  ff_vapoursynth_demuxer;
 #include "libavformat/muxer_list.c"
 #include "libavformat/demuxer_list.c"
 
-static atomic_uintptr_t indev_list_intptr  = ATOMIC_VAR_INIT(0);
-static atomic_uintptr_t outdev_list_intptr = ATOMIC_VAR_INIT(0);
+static atomic_uintptr_t indev_list_intptr  = 0;
+static atomic_uintptr_t outdev_list_intptr = 0;
 
 const AVOutputFormat *av_muxer_iterate(void **opaque)
 {

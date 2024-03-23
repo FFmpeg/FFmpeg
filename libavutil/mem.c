@@ -69,7 +69,7 @@ void  free(void *ptr);
  * dynamic libraries and remove -Wl,-Bsymbolic from the linker flags.
  * Note that this will cost performance. */
 
-static atomic_size_t max_alloc_size = ATOMIC_VAR_INIT(INT_MAX);
+static atomic_size_t max_alloc_size = INT_MAX;
 
 void av_max_alloc(size_t max){
     atomic_store_explicit(&max_alloc_size, max, memory_order_relaxed);
