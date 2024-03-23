@@ -205,6 +205,170 @@ static inline unsigned get_variable_bits(GetBitContext *gb, int n)
         }                                                                       \
     } while (0)
 
+static void parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
+{
+    switch (dm->level) {
+    case 1:
+        dm->l1.min_pq = get_bits(gb, 12);
+        dm->l1.max_pq = get_bits(gb, 12);
+        dm->l1.avg_pq = get_bits(gb, 12);
+        break;
+    case 2:
+        dm->l2.target_max_pq = get_bits(gb, 12);
+        dm->l2.trim_slope = get_bits(gb, 12);
+        dm->l2.trim_offset = get_bits(gb, 12);
+        dm->l2.trim_power = get_bits(gb, 12);
+        dm->l2.trim_chroma_weight = get_bits(gb, 12);
+        dm->l2.trim_saturation_gain = get_bits(gb, 12);
+        dm->l2.ms_weight = get_bits(gb, 13) - 8192;
+        break;
+    case 4:
+        dm->l4.anchor_pq = get_bits(gb, 12);
+        dm->l4.anchor_power = get_bits(gb, 12);
+        break;
+    case 5:
+        dm->l5.left_offset = get_bits(gb, 13);
+        dm->l5.right_offset = get_bits(gb, 13);
+        dm->l5.top_offset = get_bits(gb, 13);
+        dm->l5.bottom_offset = get_bits(gb, 13);
+        break;
+    case 6:
+        dm->l6.max_luminance = get_bits(gb, 16);
+        dm->l6.min_luminance = get_bits(gb, 16);
+        dm->l6.max_cll = get_bits(gb, 16);
+        dm->l6.max_fall = get_bits(gb, 16);
+        break;
+    case 255:
+        dm->l255.dm_run_mode = get_bits(gb, 8);
+        dm->l255.dm_run_version = get_bits(gb, 8);
+        for (int i = 0; i < 4; i++)
+            dm->l255.dm_debug[i] = get_bits(gb, 8);
+        break;
+    default:
+        av_log(s->logctx, AV_LOG_WARNING,
+               "Unknown Dolby Vision DM v1 level: %u\n", dm->level);
+    }
+}
+
+static AVCIExy get_cie_xy(GetBitContext *gb)
+{
+    AVCIExy xy;
+    const int denom = 32767;
+    xy.x = av_make_q(get_sbits(gb, 16), denom);
+    xy.y = av_make_q(get_sbits(gb, 16), denom);
+    return xy;
+}
+
+static void parse_ext_v2(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm,
+                         int ext_block_length)
+{
+    switch (dm->level) {
+    case 3:
+        dm->l3.min_pq_offset = get_bits(gb, 12);
+        dm->l3.max_pq_offset = get_bits(gb, 12);
+        dm->l3.avg_pq_offset = get_bits(gb, 12);
+        break;
+    case 8:
+        dm->l8.target_display_index = get_bits(gb, 8);
+        dm->l8.trim_slope = get_bits(gb, 12);
+        dm->l8.trim_offset = get_bits(gb, 12);
+        dm->l8.trim_power = get_bits(gb, 12);
+        dm->l8.trim_chroma_weight = get_bits(gb, 12);
+        dm->l8.trim_saturation_gain = get_bits(gb, 12);
+        dm->l8.ms_weight = get_bits(gb, 12) - 8192;
+        if (ext_block_length < 12)
+            break;
+        dm->l8.target_mid_contrast = get_bits(gb, 12);
+        if (ext_block_length < 13)
+            break;
+        dm->l8.clip_trim = get_bits(gb, 12);
+        if (ext_block_length < 19)
+            break;
+        for (int i = 0; i < 6; i++)
+            dm->l8.saturation_vector_field[i] = get_bits(gb, 8);
+        if (ext_block_length < 25)
+            break;
+        for (int i = 0; i < 6; i++)
+            dm->l8.hue_vector_field[i] = get_bits(gb, 8);
+        break;
+    case 9:
+        dm->l9.source_primary_index = get_bits(gb, 8);
+        if (ext_block_length < 17)
+            break;
+        dm->l9.source_display_primaries.prim.r = get_cie_xy(gb);
+        dm->l9.source_display_primaries.prim.g = get_cie_xy(gb);
+        dm->l9.source_display_primaries.prim.b = get_cie_xy(gb);
+        dm->l9.source_display_primaries.wp = get_cie_xy(gb);
+        break;
+    case 10:
+        dm->l10.target_display_index = get_bits(gb, 8);
+        dm->l10.target_max_pq = get_bits(gb, 12);
+        dm->l10.target_min_pq = get_bits(gb, 12);
+        dm->l10.target_primary_index = get_bits(gb, 8);
+        if (ext_block_length < 21)
+            break;
+        dm->l10.target_display_primaries.prim.r = get_cie_xy(gb);
+        dm->l10.target_display_primaries.prim.g = get_cie_xy(gb);
+        dm->l10.target_display_primaries.prim.b = get_cie_xy(gb);
+        dm->l10.target_display_primaries.wp = get_cie_xy(gb);
+        break;
+    case 11:
+        dm->l11.content_type = get_bits(gb, 8);
+        dm->l11.whitepoint = get_bits(gb, 4);
+        dm->l11.reference_mode_flag = get_bits1(gb);
+        skip_bits(gb, 3); /* reserved */
+        dm->l11.sharpness = get_bits(gb, 2);
+        dm->l11.noise_reduction = get_bits(gb, 2);
+        dm->l11.mpeg_noise_reduction = get_bits(gb, 2);
+        dm->l11.frame_rate_conversion = get_bits(gb, 2);
+        dm->l11.brightness = get_bits(gb, 2);
+        dm->l11.color = get_bits(gb, 2);
+        break;
+    case 254:
+        dm->l254.dm_mode = get_bits(gb, 8);
+        dm->l254.dm_version_index = get_bits(gb, 8);
+        break;
+    default:
+        av_log(s->logctx, AV_LOG_WARNING,
+               "Unknown Dolby Vision DM v2 level: %u\n", dm->level);
+    }
+}
+
+static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver)
+{
+    int num_ext_blocks, ext_block_length, start_pos, parsed_bits;
+
+    num_ext_blocks = get_ue_golomb_31(gb);
+    align_get_bits(gb);
+    if (s->num_ext_blocks + num_ext_blocks > AV_DOVI_MAX_EXT_BLOCKS)
+        return AVERROR_INVALIDDATA;
+
+    if (!s->ext_blocks) {
+        s->ext_blocks = ff_refstruct_allocz(sizeof(AVDOVIDmData) * AV_DOVI_MAX_EXT_BLOCKS);
+        if (!s->ext_blocks)
+            return AVERROR(ENOMEM);
+    }
+
+    while (num_ext_blocks--) {
+        AVDOVIDmData *dm = &s->ext_blocks[s->num_ext_blocks++];
+        ext_block_length = get_ue_golomb_31(gb);
+        dm->level = get_bits(gb, 8);
+        start_pos = get_bits_count(gb);
+
+        switch (ver) {
+        case 1: parse_ext_v1(s, gb, dm); break;
+        case 2: parse_ext_v2(s, gb, dm, ext_block_length); break;
+        }
+
+        parsed_bits = get_bits_count(gb) - start_pos;
+        if (parsed_bits > ext_block_length * 8)
+            return AVERROR_INVALIDDATA;
+        skip_bits(gb, ext_block_length * 8 - parsed_bits);
+    }
+
+    return 0;
+}
+
 int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
                       int err_recognition)
 {
@@ -525,6 +689,20 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         color->source_min_pq = get_bits(gb, 12);
         color->source_max_pq = get_bits(gb, 12);
         color->source_diagonal = get_bits(gb, 10);
+    }
+
+    /* Parse extension blocks */
+    s->num_ext_blocks = 0;
+    if ((ret = parse_ext_blocks(s, gb, 1)) < 0) {
+        ff_dovi_ctx_unref(s);
+        return ret;
+    }
+
+    if (get_bits_left(gb) > 48 /* padding + CRC32 + terminator */) {
+        if ((ret = parse_ext_blocks(s, gb, 2)) < 0) {
+            ff_dovi_ctx_unref(s);
+            return ret;
+        }
     }
 
     return 0;
