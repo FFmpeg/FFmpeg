@@ -45,6 +45,12 @@ typedef struct DOVIContext {
     const AVDOVIColorMetadata *color;
 
     /**
+     * Currently active extension blocks, updates on every ff_dovi_rpu_parse()
+     */
+    AVDOVIDmData *ext_blocks;
+    int num_ext_blocks;
+
+    /**
      * Private fields internal to dovi_rpu.c
      */
     struct DOVIVdr *vdr[DOVI_MAX_DM_ID+1]; ///< RefStruct references
