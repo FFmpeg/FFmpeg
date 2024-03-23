@@ -79,7 +79,8 @@ void ff_dovi_update_cfg(DOVIContext *s, const AVDOVIDecoderConfigurationRecord *
  *
  * Returns 0 or an error code.
  */
-int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size);
+int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
+                      int err_recognition);
 
 /**
  * Attach the decoded AVDOVIMetadata as side data to an AVFrame.

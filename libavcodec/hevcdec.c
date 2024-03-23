@@ -3208,7 +3208,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             return AVERROR(ENOMEM);
         memcpy(s->rpu_buf->data, nal->raw_data + 2, nal->raw_size - 2);
 
-        ret = ff_dovi_rpu_parse(&s->dovi_ctx, nal->data + 2, nal->size - 2);
+        ret = ff_dovi_rpu_parse(&s->dovi_ctx, nal->data + 2, nal->size - 2,
+                                s->avctx->err_recognition);
         if (ret < 0) {
             av_buffer_unref(&s->rpu_buf);
             av_log(s->avctx, AV_LOG_WARNING, "Error parsing DOVI NAL unit.\n");

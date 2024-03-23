@@ -567,7 +567,8 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                 provider_oriented_code != 0x800)
                 break;
 
-            res = ff_dovi_rpu_parse(&dav1d->dovi, gb.buffer, gb.buffer_end - gb.buffer);
+            res = ff_dovi_rpu_parse(&dav1d->dovi, gb.buffer, gb.buffer_end - gb.buffer,
+                                    c->err_recognition);
             if (res < 0) {
                 av_log(c, AV_LOG_WARNING, "Error parsing DOVI OBU.\n");
                 break; // ignore
