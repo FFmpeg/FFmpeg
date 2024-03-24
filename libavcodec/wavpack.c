@@ -103,7 +103,6 @@ typedef struct WavpackContext {
     WavpackFrameContext **fdec;
     int fdec_num;
 
-    int block;
     int samples;
     int ch_offset;
 
@@ -1638,14 +1637,13 @@ static int wavpack_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int frame_size, ret, frame_flags;
-    int new_progress = 0;
+    int block = 0, new_progress = 0;
 
     av_assert1(!s->curr_progress || s->dsdctx);
 
     if (avpkt->size <= WV_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
 
-    s->block     = 0;
     s->ch_offset = 0;
 
     /* determine number of samples */
@@ -1666,14 +1664,15 @@ static int wavpack_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (frame_size <= 0 || frame_size > buf_size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Block %d has invalid size (size %d vs. %d bytes left)\n",
-                   s->block, frame_size, buf_size);
+                   block, frame_size, buf_size);
             ret = AVERROR_INVALIDDATA;
             goto error;
         }
-        ret = wavpack_decode_block(avctx, frame, s->block, buf, frame_size, &new_progress);
+        ret = wavpack_decode_block(avctx, frame, block, buf,
+                                   frame_size, &new_progress);
         if (ret < 0)
             goto error;
-        s->block++;
+        block++;
         buf      += frame_size;
         buf_size -= frame_size;
     }
