@@ -139,6 +139,9 @@ typedef struct InputFilterPriv {
 
     AVRational          time_base;
 
+    AVFrameSideData   **side_data;
+    int                 nb_side_data;
+
     AVFifo             *frame_queue;
 
     AVBufferRef        *hw_frames_ctx;
@@ -204,6 +207,9 @@ typedef struct OutputFilterPriv {
     AVChannelLayout         ch_layout;
     enum AVColorSpace       color_space;
     enum AVColorRange       color_range;
+
+    AVFrameSideData       **side_data;
+    int                     nb_side_data;
 
     // time base in which the output is sent to our downstream
     // does not need to match the filtersink's timebase
@@ -1009,6 +1015,7 @@ void fg_free(FilterGraph **pfg)
         av_buffer_unref(&ifp->hw_frames_ctx);
         av_freep(&ifp->linklabel);
         av_freep(&ifp->opts.name);
+        av_frame_side_data_free(&ifp->side_data, &ifp->nb_side_data);
         av_freep(&ifilter->name);
         av_freep(&fg->inputs[j]);
     }
@@ -1026,6 +1033,7 @@ void fg_free(FilterGraph **pfg)
         av_freep(&ofilter->apad);
         av_freep(&ofp->name);
         av_channel_layout_uninit(&ofp->ch_layout);
+        av_frame_side_data_free(&ofp->side_data, &ofp->nb_side_data);
         av_freep(&fg->outputs[j]);
     }
     av_freep(&fg->outputs);
@@ -1725,6 +1733,9 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     par->color_space         = ifp->color_space;
     par->color_range         = ifp->color_range;
     par->hw_frames_ctx       = ifp->hw_frames_ctx;
+    par->side_data           = ifp->side_data;
+    par->nb_side_data        = ifp->nb_side_data;
+
     ret = av_buffersrc_parameters_set(ifp->filter, par);
     if (ret < 0)
         goto fail;
@@ -1809,6 +1820,7 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     AVFilterContext *last_filter;
+    AVBufferSrcParameters *par;
     const AVFilter *abuffer_filt = avfilter_get_by_name("abuffer");
     AVBPrint args;
     char name[255];
@@ -1830,6 +1842,15 @@ static int configure_input_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     if ((ret = avfilter_graph_create_filter(&ifp->filter, abuffer_filt,
                                             name, args.str, NULL,
                                             graph)) < 0)
+        return ret;
+    par = av_buffersrc_parameters_alloc();
+    if (!par)
+        return AVERROR(ENOMEM);
+    par->side_data     = ifp->side_data;
+    par->nb_side_data  = ifp->nb_side_data;
+    ret = av_buffersrc_parameters_set(ifp->filter, par);
+    av_free(par);
+    if (ret < 0)
         return ret;
     last_filter = ifp->filter;
 
@@ -1970,6 +1991,8 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
     /* limit the lists of allowed formats to the ones selected, to
      * make sure they stay the same if the filtergraph is reconfigured later */
     for (int i = 0; i < fg->nb_outputs; i++) {
+        const AVFrameSideData *const *sd;
+        int nb_sd;
         OutputFilter *ofilter = fg->outputs[i];
         OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
         AVFilterContext *sink = ofp->filter;
@@ -1998,6 +2021,17 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
         ret = av_buffersink_get_ch_layout(sink, &ofp->ch_layout);
         if (ret < 0)
             goto fail;
+        av_frame_side_data_free(&ofp->side_data, &ofp->nb_side_data);
+        sd = av_buffersink_get_side_data(sink, &nb_sd);
+        if (nb_sd)
+            for (int j = 0; j < nb_sd; j++) {
+                int ret = av_frame_side_data_clone(&ofp->side_data, &ofp->nb_side_data,
+                                                   sd[j], 0);
+                if (ret < 0) {
+                    av_frame_side_data_free(&ofp->side_data, &ofp->nb_side_data);
+                    goto fail;
+                }
+            }
     }
 
     for (int i = 0; i < fg->nb_inputs; i++) {
@@ -2065,6 +2099,20 @@ static int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *fr
     ret = av_channel_layout_copy(&ifp->ch_layout, &frame->ch_layout);
     if (ret < 0)
         return ret;
+
+    av_frame_side_data_free(&ifp->side_data, &ifp->nb_side_data);
+    for (int i = 0; i < frame->nb_side_data; i++) {
+        const AVSideDataDescriptor *desc = av_frame_side_data_desc(frame->side_data[i]->type);
+
+        if (!(desc->props & AV_SIDE_DATA_PROP_GLOBAL))
+            continue;
+
+        ret = av_frame_side_data_clone(&ifp->side_data,
+                                       &ifp->nb_side_data,
+                                       frame->side_data[i], 0);
+        if (ret < 0)
+            return ret;
+    }
 
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DISPLAYMATRIX);
     if (sd)
@@ -2396,6 +2444,11 @@ static int close_output(OutputFilterPriv *ofp, FilterGraphThread *fgt)
             if (ret < 0)
                 return ret;
         }
+        av_frame_side_data_free(&frame->side_data, &frame->nb_side_data);
+        ret = clone_side_data(&frame->side_data, &frame->nb_side_data,
+                              ofp->side_data, ofp->nb_side_data, 0);
+        if (ret < 0)
+            return ret;
 
         fd = frame_data(frame);
         if (!fd)
@@ -2745,6 +2798,13 @@ static int send_eof(FilterGraphThread *fgt, InputFilter *ifilter,
 
             ret = av_channel_layout_copy(&ifp->ch_layout,
                                          &ifp->opts.fallback->ch_layout);
+            if (ret < 0)
+                return ret;
+
+            av_frame_side_data_free(&ifp->side_data, &ifp->nb_side_data);
+            ret = clone_side_data(&ifp->side_data, &ifp->nb_side_data,
+                                  ifp->opts.fallback->side_data,
+                                  ifp->opts.fallback->nb_side_data, 0);
             if (ret < 0)
                 return ret;
 
