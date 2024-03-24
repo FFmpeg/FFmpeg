@@ -53,8 +53,6 @@ const AVFilmGrainParams *av_film_grain_params_select(const AVFrame *frame)
 {
     const AVFilmGrainParams *fgp, *best = NULL;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-    const AVFilmGrainAOMParams *aom;
-    const AVFilmGrainH274Params *h274;
     int bit_depth_luma, bit_depth_chroma;
     if (!desc)
         return NULL;
@@ -88,7 +86,6 @@ const AVFilmGrainParams *av_film_grain_params_select(const AVFrame *frame)
         case AV_FILM_GRAIN_PARAMS_NONE:
             continue;
         case AV_FILM_GRAIN_PARAMS_AV1:
-            aom = &fgp->codec.aom;
             /* AOM FGS needs an exact match for the chroma resolution */
             if (fgp->subsampling_x != desc->log2_chroma_w ||
                 fgp->subsampling_y != desc->log2_chroma_h)
