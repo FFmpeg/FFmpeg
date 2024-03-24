@@ -973,9 +973,11 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
 
 static av_cold int wv_alloc_frame_context(WavpackContext *c)
 {
-    c->fdec = av_realloc_f(c->fdec, c->fdec_num + 1, sizeof(*c->fdec));
-    if (!c->fdec)
+    WavpackFrameContext **fdec = av_realloc_array(c->fdec, c->fdec_num + 1, sizeof(*c->fdec));
+
+    if (!fdec)
         return -1;
+    c->fdec = fdec;
 
     c->fdec[c->fdec_num] = av_mallocz(sizeof(**c->fdec));
     if (!c->fdec[c->fdec_num])
