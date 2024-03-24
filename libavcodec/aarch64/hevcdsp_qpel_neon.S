@@ -383,11 +383,9 @@ endfunc
 
 .ifc \type, qpel
 function ff_hevc_put_hevc_h16_8_neon, export=0
-        uxtl            v16.8h,  v16.8b
         uxtl            v17.8h,  v17.8b
         uxtl            v18.8h,  v18.8b
 
-        uxtl            v19.8h,  v19.8b
         uxtl            v20.8h,  v20.8b
         uxtl            v21.8h,  v21.8b
 
@@ -408,7 +406,6 @@ function ff_hevc_put_hevc_h16_8_neon, export=0
         mla             v28.8h,  v24.8h, v0.h[\i]
         mla             v29.8h,  v25.8h, v0.h[\i]
 .endr
-        subs            x9, x9, #2
         ret
 endfunc
 .endif
@@ -439,7 +436,10 @@ function ff_hevc_put_hevc_\type\()_h12_8_neon, export=1
 1:      ld1             {v16.8b-v18.8b}, [src], x13
         ld1             {v19.8b-v21.8b}, [x12], x13
 
+        uxtl            v16.8h,  v16.8b
+        uxtl            v19.8h,  v19.8b
         bl              ff_hevc_put_hevc_h16_8_neon
+        subs            x9, x9, #2
 
 .ifc \type, qpel
         st1             {v26.8h}, [dst], #16
@@ -504,7 +504,6 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
 .ifc \type, qpel_bi
         ldrh            w8, [sp] // width
         mov             x16, #(MAX_PB_SIZE << 2) // src2bstridel
-        lsl             x17, x5, #7 // src2b reset
         add             x15, x4, #(MAX_PB_SIZE << 1) // src2b
 .endif
         sub             src, src, #3
@@ -519,11 +518,14 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
 .endif
         add             x10, dst, dststride // dstb
         add             x12, src, srcstride // srcb
-0:      mov             x9, height
+
 1:      ld1             {v16.8b-v18.8b}, [src], x13
         ld1             {v19.8b-v21.8b}, [x12], x13
 
+        uxtl            v16.8h,  v16.8b
+        uxtl            v19.8h,  v19.8b
         bl              ff_hevc_put_hevc_h16_8_neon
+        subs            height, height, #2
 
 .ifc \type, qpel
         st1             {v26.8h, v27.8h}, [dst], x14
@@ -550,28 +552,83 @@ function ff_hevc_put_hevc_\type\()_h16_8_neon, export=1
         st1             {v28.8b, v29.8b}, [x10], x14
 .endif
         b.gt            1b // double line
-        subs            width, width, #16
-        // reset src
-        msub            src, srcstride, height, src
-        msub            x12, srcstride, height, x12
-        // reset dst
-        msub            dst, dststride, height, dst
-        msub            x10, dststride, height, x10
+        ret             mx
+endfunc
+
+function ff_hevc_put_hevc_\type\()_h32_8_neon, export=1
+        load_filter     mx
+        sxtw            height, heightw
+        mov             mx, x30
 .ifc \type, qpel_bi
-        // reset xsrc
-        sub             x4,  x4,  x17
-        sub             x15, x15, x17
-        add             x4,  x4,  #32
-        add             x15, x15, #32
+        ldrh            w8, [sp] // width
+        mov             x16, #(MAX_PB_SIZE << 2) // src2bstridel
+        lsl             x17, x5, #7 // src2b reset
+        add             x15, x4, #(MAX_PB_SIZE << 1) // src2b
+        sub             x16, x16, width, uxtw #1
 .endif
-        add             src, src, #16
-        add             x12, x12, #16
+        sub             src, src, #3
+        mov             mx, x30
 .ifc \type, qpel
-        add             dst, dst, #32
-        add             x10, x10, #32
+        mov             dststride, #(MAX_PB_SIZE << 1)
+        lsl             x13, srcstride, #1 // srcstridel
+        mov             x14, #(MAX_PB_SIZE << 2)
+        sub             x14, x14, width, uxtw #1
 .else
-        add             dst, dst, #16
-        add             x10, x10, #16
+        lsl             x14, dststride, #1 // dststridel
+        lsl             x13, srcstride, #1 // srcstridel
+        sub             x14, x14, width, uxtw
+.endif
+        sub             x13, x13, width, uxtw
+        sub             x13, x13, #8
+        add             x10, dst, dststride // dstb
+        add             x12, src, srcstride // srcb
+0:      mov             w9, width
+        ld1             {v16.8b}, [src], #8
+        ld1             {v19.8b}, [x12], #8
+        uxtl            v16.8h, v16.8b
+        uxtl            v19.8h, v19.8b
+1:
+        ld1             {v17.8b-v18.8b}, [src], #16
+        ld1             {v20.8b-v21.8b}, [x12], #16
+
+        bl              ff_hevc_put_hevc_h16_8_neon
+        subs            w9, w9, #16
+
+        mov             v16.16b, v18.16b
+        mov             v19.16b, v21.16b
+.ifc \type, qpel
+        st1             {v26.8h, v27.8h}, [dst], #32
+        st1             {v28.8h, v29.8h}, [x10], #32
+.else
+.ifc \type, qpel_bi
+        ld1             {v20.8h, v21.8h}, [ x4], #32
+        ld1             {v22.8h, v23.8h}, [x15], #32
+        sqadd           v26.8h, v26.8h, v20.8h
+        sqadd           v27.8h, v27.8h, v21.8h
+        sqadd           v28.8h, v28.8h, v22.8h
+        sqadd           v29.8h, v29.8h, v23.8h
+        sqrshrun        v26.8b, v26.8h, #7
+        sqrshrun        v27.8b, v27.8h, #7
+        sqrshrun        v28.8b, v28.8h, #7
+        sqrshrun        v29.8b, v29.8h, #7
+.else
+        sqrshrun        v26.8b, v26.8h, #6
+        sqrshrun        v27.8b, v27.8h, #6
+        sqrshrun        v28.8b, v28.8h, #6
+        sqrshrun        v29.8b, v29.8h, #6
+.endif
+        st1             {v26.8b, v27.8b}, [dst], #16
+        st1             {v28.8b, v29.8b}, [x10], #16
+.endif
+        b.gt            1b // double line
+        subs            height, height, #2
+        add             src, src, x13
+        add             x12, x12, x13
+        add             dst, dst, x14
+        add             x10, x10, x14
+.ifc \type, qpel_bi
+        add             x4,  x4,  x16
+        add             x15, x15, x16
 .endif
         b.gt            0b
         ret             mx
