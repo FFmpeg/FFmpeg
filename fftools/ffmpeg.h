@@ -698,13 +698,6 @@ const FrameData *frame_data_c(AVFrame *frame);
 FrameData       *packet_data  (AVPacket *pkt);
 const FrameData *packet_data_c(AVPacket *pkt);
 
-/**
- * Set up fallback filtering parameters from a decoder context. They will only
- * be used if no frames are ever sent on this input, otherwise the actual
- * parameters are taken from the frame.
- */
-int ifilter_parameters_from_dec(InputFilter *ifilter, const AVCodecContext *dec);
-
 int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
                      unsigned sched_idx_enc);
 
