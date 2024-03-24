@@ -26,10 +26,6 @@
 #define AVUTIL_FIFO_H
 
 #include <stddef.h>
-#include <stdint.h>
-
-#include "attributes.h"
-#include "version.h"
 
 /**
  * @defgroup lavu_fifo AVFifo
