@@ -29,19 +29,19 @@
 
 #include <stdio.h>
 
-#include "libavformat/avformat.h"
-#include "libavformat/avio.h"
+#include <libavformat/avformat.h>
+#include <libavformat/avio.h>
 
-#include "libavcodec/avcodec.h"
+#include <libavcodec/avcodec.h>
 
-#include "libavutil/audio_fifo.h"
-#include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
-#include "libavutil/channel_layout.h"
-#include "libavutil/frame.h"
-#include "libavutil/opt.h"
+#include <libavutil/audio_fifo.h>
+#include <libavutil/avassert.h>
+#include <libavutil/avstring.h>
+#include <libavutil/channel_layout.h>
+#include <libavutil/frame.h>
+#include <libavutil/opt.h>
 
-#include "libswresample/swresample.h"
+#include <libswresample/swresample.h>
 
 /* The output bit rate in bit/s */
 #define OUTPUT_BIT_RATE 96000
