@@ -145,22 +145,6 @@ typedef struct InputFilterPriv {
     int                 displaymatrix_present;
     int32_t             displaymatrix[9];
 
-    // fallback parameters to use when no input is ever sent
-    struct {
-        AVRational          time_base;
-
-        int                 format;
-
-        int                 width;
-        int                 height;
-        AVRational          sample_aspect_ratio;
-        enum AVColorSpace   color_space;
-        enum AVColorRange   color_range;
-
-        int                 sample_rate;
-        AVChannelLayout     ch_layout;
-    } fallback;
-
     struct {
         AVFrame *frame;
 
