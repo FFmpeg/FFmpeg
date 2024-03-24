@@ -70,10 +70,8 @@ const AVFilmGrainParams *av_film_grain_params_select(const AVFrame *frame)
             continue;
 
 #define CHECK(a, b, unspec)                                     \
-    do {                                                        \
         if ((a) != (unspec) && (b) != (unspec) && (a) != (b))   \
-            continue;                                           \
-    } while (0)
+            continue
 
         CHECK(fgp->bit_depth_luma,   bit_depth_luma,         0);
         CHECK(fgp->bit_depth_chroma, bit_depth_chroma,       0);
