@@ -1121,7 +1121,8 @@ fail:
 static int qsv_init_internal_session(AVHWFramesContext *ctx,
                                      mfxSession *session, int upload)
 {
-    AVQSVFramesContext *frames_hwctx = ctx->hwctx;
+    QSVFramesContext              *s = ctx->hwctx;
+    AVQSVFramesContext *frames_hwctx = &s->p;
     QSVDeviceContext   *device_priv  = ctx->device_ctx->hwctx;
     AVQSVDeviceContext *hwctx        = &device_priv->p;
     int opaque = 0;
@@ -1153,7 +1154,6 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
     }
 
 #if QSV_HAVE_OPAQUE
-    QSVFramesContext              *s = ctx->hwctx;
     opaque = !!(frames_hwctx->frame_type & MFX_MEMTYPE_OPAQUE_FRAME);
 #endif
 
