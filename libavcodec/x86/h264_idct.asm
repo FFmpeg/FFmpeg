@@ -716,11 +716,9 @@ RET
 %endif
 %endmacro
 
-%macro IDCT_DC_DEQUANT 1
-cglobal h264_luma_dc_dequant_idct, 3, 4, %1
-    ; manually spill XMM registers for Win64 because
-    ; the code here is initialized with INIT_MMX
-    WIN64_SPILL_XMM %1
+INIT_XMM sse2
+cglobal h264_luma_dc_dequant_idct, 3, 4, 7
+INIT_MMX cpuname
     movq        m3, [r1+24]
     movq        m2, [r1+16]
     movq        m1, [r1+ 8]
@@ -757,10 +755,6 @@ cglobal h264_luma_dc_dequant_idct, 3, 4, %1
     movd      xmm6, t1d
     DEQUANT_STORE xmm6
     RET
-%endmacro
-
-INIT_MMX sse2
-IDCT_DC_DEQUANT 7
 
 %ifdef __NASM_VER__
 %if __NASM_MAJOR__ >= 2 && __NASM_MINOR__ >= 4
