@@ -284,9 +284,9 @@ int ff_iamf_read_packet(AVFormatContext *s, IAMFDemuxContext *c,
 
         len = ff_iamf_parse_obu_header(header, size, &obu_size, &start_pos, &type,
                                        &skip_samples, &discard_padding);
-        if (len < 0 || obu_size > max_size) {
+        if (len < 0 || obu_size > max_size || len > INT_MAX - read) {
             av_log(s, AV_LOG_ERROR, "Failed to read obu\n");
-            return len;
+            return len < 0 ? len : AVERROR_INVALIDDATA;
         }
         avio_seek(pb, -(size - start_pos), SEEK_CUR);
 
