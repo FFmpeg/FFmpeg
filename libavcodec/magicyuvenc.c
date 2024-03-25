@@ -211,10 +211,13 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     if (s->correlate) {
-        s->decorrelate_buf[0] = av_calloc(2U * (s->nb_slices * s->slice_height), FFALIGN(avctx->width, av_cpu_max_align()));
+        size_t max_align = av_cpu_max_align();
+        size_t aligned_width = FFALIGN(avctx->width, max_align);
+        s->decorrelate_buf[0] = av_calloc(2U * (s->nb_slices * s->slice_height),
+                                          aligned_width);
         if (!s->decorrelate_buf[0])
             return AVERROR(ENOMEM);
-        s->decorrelate_buf[1] = s->decorrelate_buf[0] + (s->nb_slices * s->slice_height) * FFALIGN(avctx->width, av_cpu_max_align());
+        s->decorrelate_buf[1] = s->decorrelate_buf[0] + (s->nb_slices * s->slice_height) * aligned_width;
     }
 
     s->bitslice_size = avctx->width * s->slice_height + 2;
@@ -493,7 +496,8 @@ static int encode_slice(AVCodecContext *avctx, void *tdata,
 static int predict_slice(AVCodecContext *avctx, void *tdata,
                          int n, int threadnr)
 {
-    const int aligned_width = FFALIGN(avctx->width, av_cpu_max_align());
+    size_t max_align = av_cpu_max_align();
+    const int aligned_width = FFALIGN(avctx->width, max_align);
     MagicYUVContext *s = avctx->priv_data;
     const int slice_height = s->slice_height;
     const int last_height = FFMIN(slice_height, avctx->height - n * slice_height);
