@@ -245,6 +245,7 @@ typedef struct AACDecDSP {
                                        ChannelElement *cce, int index);
 
     void (*imdct_and_windowing)(AACDecContext *ac, SingleChannelElement *sce);
+    void (*imdct_and_windowing_768)(AACDecContext *ac, SingleChannelElement *sce);
     void (*imdct_and_windowing_960)(AACDecContext *ac, SingleChannelElement *sce);
     void (*imdct_and_windowing_ld)(AACDecContext *ac, SingleChannelElement *sce);
     void (*imdct_and_windowing_eld)(AACDecContext *ac, SingleChannelElement *sce);
@@ -290,18 +291,22 @@ struct AACDecContext {
      * @name Computed / set up during initialization
      * @{
      */
+    AVTXContext *mdct96;
     AVTXContext *mdct120;
     AVTXContext *mdct128;
     AVTXContext *mdct480;
     AVTXContext *mdct512;
+    AVTXContext *mdct768;
     AVTXContext *mdct960;
     AVTXContext *mdct1024;
     AVTXContext *mdct_ltp;
 
+    av_tx_fn mdct96_fn;
     av_tx_fn mdct120_fn;
     av_tx_fn mdct128_fn;
     av_tx_fn mdct480_fn;
     av_tx_fn mdct512_fn;
+    av_tx_fn mdct768_fn;
     av_tx_fn mdct960_fn;
     av_tx_fn mdct1024_fn;
     av_tx_fn mdct_ltp_fn;

@@ -35,10 +35,12 @@ int main(void)
     printf("SINETABLE("#size") = {\n");                 \
     write_int32_t_array(sine_ ## size ## _fixed, size); \
     printf("};\n")
+    PRINT_TABLE(96);
     PRINT_TABLE(120);
     PRINT_TABLE(128);
     PRINT_TABLE(480);
     PRINT_TABLE(512);
+    PRINT_TABLE(768);
     PRINT_TABLE(960);
     PRINT_TABLE(1024);
     return 0;

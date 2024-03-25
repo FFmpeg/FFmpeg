@@ -47,6 +47,8 @@ DECLARE_ALIGNED(32, static int, aac_kbd_long_1024_fixed)[1024];
 DECLARE_ALIGNED(32, static int, aac_kbd_short_128_fixed)[128];
 DECLARE_ALIGNED(32, static int, aac_kbd_long_960_fixed)[960];
 DECLARE_ALIGNED(32, static int, aac_kbd_short_120_fixed)[120];
+DECLARE_ALIGNED(32, static int, aac_kbd_long_768_fixed)[768];
+DECLARE_ALIGNED(32, static int, aac_kbd_short_96_fixed)[96];
 
 static void init_tables_fixed_fn(void)
 {

@@ -44,10 +44,14 @@
 #include "libavutil/mathematics.h"
 #include "libavcodec/aacsbr.h"
 
+DECLARE_ALIGNED(32, static float, sine_96)[96];
 DECLARE_ALIGNED(32, static float, sine_120)[120];
+DECLARE_ALIGNED(32, static float, sine_768)[768];
 DECLARE_ALIGNED(32, static float, sine_960)[960];
 DECLARE_ALIGNED(32, static float, aac_kbd_long_960)[960];
 DECLARE_ALIGNED(32, static float, aac_kbd_short_120)[120];
+DECLARE_ALIGNED(32, static float, aac_kbd_long_768)[768];
+DECLARE_ALIGNED(32, static float, aac_kbd_short_96)[96];
 
 static void init_tables_float_fn(void)
 {

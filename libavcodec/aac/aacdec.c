@@ -1113,10 +1113,12 @@ static av_cold int decode_close(AVCodecContext *avctx)
         }
     }
 
+    av_tx_uninit(&ac->mdct96);
     av_tx_uninit(&ac->mdct120);
     av_tx_uninit(&ac->mdct128);
     av_tx_uninit(&ac->mdct480);
     av_tx_uninit(&ac->mdct512);
+    av_tx_uninit(&ac->mdct768);
     av_tx_uninit(&ac->mdct960);
     av_tx_uninit(&ac->mdct1024);
     av_tx_uninit(&ac->mdct_ltp);
@@ -1145,10 +1147,12 @@ static av_cold int init_dsp(AVCodecContext *avctx)
     if (ret < 0)                                                             \
         return ret
 
+    MDCT_INIT(ac->mdct96,   ac->mdct96_fn,     96, 1.0/96);
     MDCT_INIT(ac->mdct120,  ac->mdct120_fn,   120, 1.0/120);
     MDCT_INIT(ac->mdct128,  ac->mdct128_fn,   128, 1.0/128);
     MDCT_INIT(ac->mdct480,  ac->mdct480_fn,   480, 1.0/480);
     MDCT_INIT(ac->mdct512,  ac->mdct512_fn,   512, 1.0/512);
+    MDCT_INIT(ac->mdct768,  ac->mdct768_fn,   768, 1.0/768);
     MDCT_INIT(ac->mdct960,  ac->mdct960_fn,   960, 1.0/960);
     MDCT_INIT(ac->mdct1024, ac->mdct1024_fn, 1024, 1.0/1024);
 #undef MDCT_INIT

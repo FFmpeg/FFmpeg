@@ -384,6 +384,71 @@ static void AAC_RENAME(imdct_and_windowing)(AACDecContext *ac, SingleChannelElem
 }
 
 /**
+ * Conduct IMDCT and windowing for 768-point frames.
+ */
+static void AAC_RENAME(imdct_and_windowing_768)(AACDecContext *ac, SingleChannelElement *sce)
+{
+    IndividualChannelStream *ics = &sce->ics;
+    INTFLOAT *in    = sce->AAC_RENAME(coeffs);
+    INTFLOAT *out   = sce->AAC_RENAME(output);
+    INTFLOAT *saved = sce->AAC_RENAME(saved);
+    const INTFLOAT *swindow      = ics->use_kb_window[0] ? AAC_RENAME(aac_kbd_short_96) : AAC_RENAME(sine_96);
+    const INTFLOAT *lwindow_prev = ics->use_kb_window[1] ? AAC_RENAME(aac_kbd_long_768) : AAC_RENAME(sine_768);
+    const INTFLOAT *swindow_prev = ics->use_kb_window[1] ? AAC_RENAME(aac_kbd_short_96) : AAC_RENAME(sine_96);
+    INTFLOAT *buf  = ac->AAC_RENAME(buf_mdct);
+    INTFLOAT *temp = ac->AAC_RENAME(temp);
+    int i;
+
+    // imdct
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        for (i = 0; i < 8; i++)
+            ac->mdct96_fn(ac->mdct96, buf + i * 96, in + i * 96, sizeof(INTFLOAT));
+    } else {
+        ac->mdct768_fn(ac->mdct768, buf, in, sizeof(INTFLOAT));
+    }
+
+    /* window overlapping
+     * NOTE: To simplify the overlapping code, all 'meaningless' short to long
+     * and long to short transitions are considered to be short to short
+     * transitions. This leaves just two cases (long to long and short to short)
+     * with a little special sauce for EIGHT_SHORT_SEQUENCE.
+     */
+
+    if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
+        (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 384);
+    } else {
+        memcpy(                          out,               saved,            336 * sizeof(*out));
+
+        if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+            ac->fdsp->vector_fmul_window(out + 336 + 0*96, saved + 336,     buf + 0*96, swindow_prev, 48);
+            ac->fdsp->vector_fmul_window(out + 336 + 1*96, buf + 0*96 + 48, buf + 1*96, swindow,      48);
+            ac->fdsp->vector_fmul_window(out + 336 + 2*96, buf + 1*96 + 48, buf + 2*96, swindow,      48);
+            ac->fdsp->vector_fmul_window(out + 336 + 3*96, buf + 2*96 + 48, buf + 3*96, swindow,      48);
+            ac->fdsp->vector_fmul_window(temp,             buf + 3*96 + 48, buf + 4*96, swindow,      48);
+            memcpy(                      out + 336 + 4*96, temp, 48 * sizeof(*out));
+        } else {
+            ac->fdsp->vector_fmul_window(out + 336,        saved + 336,     buf,        swindow_prev, 48);
+            memcpy(                      out + 432,        buf + 48,        336 * sizeof(*out));
+        }
+    }
+
+    // buffer update
+    if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
+        memcpy(                      saved,       temp + 48,         48 * sizeof(*saved));
+        ac->fdsp->vector_fmul_window(saved + 48,  buf + 4*96 + 48, buf + 5*96, swindow, 48);
+        ac->fdsp->vector_fmul_window(saved + 144, buf + 5*96 + 48, buf + 6*96, swindow, 48);
+        ac->fdsp->vector_fmul_window(saved + 240, buf + 6*96 + 48, buf + 7*96, swindow, 48);
+        memcpy(                      saved + 336, buf + 7*96 + 48,  48 * sizeof(*saved));
+    } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
+        memcpy(                      saved,       buf + 384,       336 * sizeof(*saved));
+        memcpy(                      saved + 336, buf + 7*96 + 48,  48 * sizeof(*saved));
+    } else { // LONG_STOP or ONLY_LONG
+        memcpy(                      saved,       buf + 384,       384 * sizeof(*saved));
+    }
+}
+
+/**
  * Conduct IMDCT and windowing.
  */
 static void AAC_RENAME(imdct_and_windowing_960)(AACDecContext *ac, SingleChannelElement *sce)
@@ -447,6 +512,7 @@ static void AAC_RENAME(imdct_and_windowing_960)(AACDecContext *ac, SingleChannel
         memcpy(                      saved,       buf + 480,        480 * sizeof(*saved));
     }
 }
+
 static void AAC_RENAME(imdct_and_windowing_ld)(AACDecContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
@@ -609,6 +675,7 @@ static av_cold void AAC_RENAME(aac_dsp_init)(AACDecDSP *aac_dsp)
     SET(apply_prediction);
 
     SET(imdct_and_windowing);
+    SET(imdct_and_windowing_768);
     SET(imdct_and_windowing_960);
     SET(imdct_and_windowing_ld);
     SET(imdct_and_windowing_eld);
