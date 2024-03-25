@@ -2344,15 +2344,13 @@ int sch_enc_send(Scheduler *sch, unsigned enc_idx, AVPacket *pkt)
         ret = enc_send_to_dst(sch, enc->dst[i], finished, to_send);
         if (ret < 0) {
             av_packet_unref(to_send);
-            if (ret == AVERROR_EOF) {
-                ret = 0;
+            if (ret == AVERROR_EOF)
                 continue;
-            }
             return ret;
         }
     }
 
-    return ret;
+    return 0;
 }
 
 static int enc_done(Scheduler *sch, unsigned enc_idx)
