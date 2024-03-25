@@ -2023,7 +2023,7 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
 
-    return ret;
+    return 0;
 }
 
 static av_cold int xma_decode_end(AVCodecContext *avctx)
