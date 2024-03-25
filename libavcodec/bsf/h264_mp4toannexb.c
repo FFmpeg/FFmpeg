@@ -208,6 +208,49 @@ static int h264_mp4toannexb_save_ps(uint8_t **dst, int *dst_size,
     return 0;
 }
 
+static int h264_mp4toannexb_filter_ps(H264BSFContext *s,
+                                      const uint8_t *buf,
+                                      const uint8_t *buf_end)
+{
+    int sps_count = 0;
+    int pps_count = 0;
+    uint8_t unit_type;
+
+    do {
+        uint32_t nal_size = 0;
+
+        /* possible overread ok due to padding */
+        for (int i = 0; i < s->length_size; i++)
+            nal_size = (nal_size << 8) | buf[i];
+
+        buf += s->length_size;
+
+        /* This check requires the cast as the right side might
+         * otherwise be promoted to an unsigned value. */
+        if ((int64_t)nal_size > buf_end - buf)
+            return AVERROR_INVALIDDATA;
+
+        if (!nal_size)
+            continue;
+
+        unit_type = *buf & 0x1f;
+
+        if (unit_type == H264_NAL_SPS) {
+            h264_mp4toannexb_save_ps(&s->sps, &s->sps_size, &s->sps_buf_size, buf,
+                                   nal_size, !sps_count);
+            sps_count++;
+        } else if (unit_type == H264_NAL_PPS) {
+            h264_mp4toannexb_save_ps(&s->pps, &s->pps_size, &s->pps_buf_size, buf,
+                                   nal_size, !pps_count);
+            pps_count++;
+        }
+
+        buf += nal_size;
+    } while (buf < buf_end);
+
+    return 0;
+}
+
 static int h264_mp4toannexb_init(AVBSFContext *ctx)
 {
     int extra_size = ctx->par_in->extradata_size;
@@ -263,14 +306,14 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
     }
 
     buf_end  = in->data + in->size;
+    ret = h264_mp4toannexb_filter_ps(s, in->data, buf_end);
+    if (ret < 0)
+        goto fail;
 
 #define LOG_ONCE(...) \
     if (j) \
         av_log(__VA_ARGS__)
     for (int j = 0; j < 2; j++) {
-        int sps_count = 0;
-        int pps_count = 0;
-
         buf      = in->data;
         new_idr  = s->new_idr;
         sps_seen = s->idr_sps_seen;
@@ -301,18 +344,8 @@ static int h264_mp4toannexb_filter(AVBSFContext *ctx, AVPacket *opkt)
 
             if (unit_type == H264_NAL_SPS) {
                 sps_seen = new_idr = 1;
-                if (!j) {
-                    h264_mp4toannexb_save_ps(&s->sps, &s->sps_size, &s->sps_buf_size,
-                                             buf, nal_size, !sps_count);
-                    sps_count++;
-                }
             } else if (unit_type == H264_NAL_PPS) {
                 pps_seen = new_idr = 1;
-                if (!j) {
-                    h264_mp4toannexb_save_ps(&s->pps, &s->pps_size, &s->pps_buf_size,
-                                             buf, nal_size, !pps_count);
-                    pps_count++;
-                }
                 /* if SPS has not been seen yet, prepend the AVCC one to PPS */
                 if (!sps_seen) {
                     if (!s->sps_size) {
