@@ -206,6 +206,7 @@ static void link_free(AVFilterLink **link)
     ff_framequeue_free(&li->fifo);
     ff_frame_pool_uninit(&li->frame_pool);
     av_channel_layout_uninit(&(*link)->ch_layout);
+    av_frame_side_data_free(&(*link)->side_data, &(*link)->nb_side_data);
 
     av_buffer_unref(&li->l.hw_frames_ctx);
 
@@ -376,7 +377,22 @@ int ff_filter_config_links(AVFilterContext *filter)
                                                     "callbacks on all outputs\n");
                     return AVERROR(EINVAL);
                 }
-            } else if ((ret = config_link(link)) < 0) {
+            }
+
+            /* Copy side data before link->srcpad->config_props() is called, so the filter
+             * may remove it for the next filter in the chain */
+            if (inlink && inlink->nb_side_data && !link->nb_side_data) {
+                for (i = 0; i < inlink->nb_side_data; i++) {
+                    ret = av_frame_side_data_clone(&link->side_data, &link->nb_side_data,
+                                                   inlink->side_data[i], 0);
+                    if (ret < 0) {
+                        av_frame_side_data_free(&link->side_data, &link->nb_side_data);
+                        return ret;
+                    }
+                }
+            }
+
+            if (config_link && (ret = config_link(link)) < 0) {
                 av_log(link->src, AV_LOG_ERROR,
                        "Failed to configure output pad on %s\n",
                        link->src->name);

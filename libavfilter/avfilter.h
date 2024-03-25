@@ -413,6 +413,9 @@ struct AVFilterLink {
      */
     AVRational time_base;
 
+    AVFrameSideData **side_data;
+    int nb_side_data;
+
     /*****************************************************************
      * All fields below this line are not part of the public API. They
      * may not be used outside of libavfilter and can be changed and
