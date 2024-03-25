@@ -51,4 +51,9 @@ AVFrame *ff_get_video_buffer(AVFilterLink *link, int w, int h);
  */
 int ff_fmt_is_regular_yuv(enum AVPixelFormat fmt);
 
+/**
+ * Returns true if a YUV pixel format is forced full range (i.e. YUVJ).
+ */
+int ff_fmt_is_forced_full_range(enum AVPixelFormat fmt);
+
 #endif /* AVFILTER_VIDEO_H */

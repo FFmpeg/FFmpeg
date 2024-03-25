@@ -461,12 +461,17 @@ static int query_formats(AVFilterContext *ctx)
             if ((ret = ff_add_format(&color_spaces, c->color_space)) < 0 ||
                 (ret = ff_set_common_color_spaces(ctx, color_spaces)) < 0)
                 return ret;
-            if ((ret = ff_add_format(&color_ranges, c->color_range)) < 0)
-                return ret;
-            if (c->color_range == AVCOL_RANGE_UNSPECIFIED) {
-                /* allow implicitly promoting unspecified to mpeg */
-                if ((ret = ff_add_format(&color_ranges, AVCOL_RANGE_MPEG)) < 0)
+            if (ff_fmt_is_forced_full_range(swfmt)) {
+                if ((ret = ff_add_format(&color_ranges, AVCOL_RANGE_JPEG)) < 0)
                     return ret;
+            } else {
+                if ((ret = ff_add_format(&color_ranges, c->color_range)) < 0)
+                    return ret;
+                if (c->color_range == AVCOL_RANGE_UNSPECIFIED) {
+                    /* allow implicitly promoting unspecified to mpeg */
+                    if ((ret = ff_add_format(&color_ranges, AVCOL_RANGE_MPEG)) < 0)
+                        return ret;
+                }
             }
             if ((ret = ff_set_common_color_ranges(ctx, color_ranges)) < 0)
                 return ret;

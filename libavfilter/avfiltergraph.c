@@ -656,19 +656,22 @@ int ff_fmt_is_regular_yuv(enum AVPixelFormat fmt)
     if (desc->nb_components < 3)
         return 0; /* Grayscale is explicitly full-range in swscale */
     av_assert1(!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL));
-    if (desc->flags & (AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_PAL |
-                       AV_PIX_FMT_FLAG_XYZ | AV_PIX_FMT_FLAG_FLOAT))
-        return 0;
+    return !(desc->flags & (AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_PAL |
+                            AV_PIX_FMT_FLAG_XYZ | AV_PIX_FMT_FLAG_FLOAT));
+}
 
+
+int ff_fmt_is_forced_full_range(enum AVPixelFormat fmt)
+{
     switch (fmt) {
     case AV_PIX_FMT_YUVJ420P:
     case AV_PIX_FMT_YUVJ422P:
     case AV_PIX_FMT_YUVJ444P:
     case AV_PIX_FMT_YUVJ440P:
     case AV_PIX_FMT_YUVJ411P:
-        return 0;
-    default:
         return 1;
+    default:
+        return 0;
     }
 }
 
@@ -744,14 +747,18 @@ static int pick_format(AVFilterLink *link, AVFilterLink *ref)
             link->incfg.color_spaces->nb_formats = 1;
             link->colorspace = link->incfg.color_spaces->formats[0];
 
-            if (!link->incfg.color_ranges->nb_formats) {
-                av_log(link->src, AV_LOG_ERROR, "Cannot select color range for"
-                       " the link between filters %s and %s.\n", link->src->name,
-                       link->dst->name);
-                return AVERROR(EINVAL);
+            if (ff_fmt_is_forced_full_range(swfmt)) {
+                link->color_range = AVCOL_RANGE_JPEG;
+            } else {
+                if (!link->incfg.color_ranges->nb_formats) {
+                    av_log(link->src, AV_LOG_ERROR, "Cannot select color range for"
+                           " the link between filters %s and %s.\n", link->src->name,
+                           link->dst->name);
+                    return AVERROR(EINVAL);
+                }
+                link->incfg.color_ranges->nb_formats = 1;
+                link->color_range = link->incfg.color_ranges->formats[0];
             }
-            link->incfg.color_ranges->nb_formats = 1;
-            link->color_range = link->incfg.color_ranges->formats[0];
         }
     } else if (link->type == AVMEDIA_TYPE_AUDIO) {
         int ret;
