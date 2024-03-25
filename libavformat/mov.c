@@ -8085,7 +8085,6 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         memset(c->heif_item + c->nb_heif_item, 0,
                sizeof(*c->heif_item) * (item_count - c->nb_heif_item));
     c->nb_heif_item = FFMAX(c->nb_heif_item, item_count);
-    c->cur_item_id = 0;
 
     av_log(c->fc, AV_LOG_TRACE, "iloc: item_count %d\n", item_count);
     for (int i = 0; i < item_count; i++) {
@@ -8127,7 +8126,7 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return atom.size;
 }
 
-static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
 {
     AVBPrint item_name;
     int64_t size = atom.size;
@@ -8164,20 +8163,18 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         avio_skip(pb, size);
 
     if (ret)
-        av_bprint_finalize(&item_name, &c->heif_item[c->cur_item_id].name);
-    c->heif_item[c->cur_item_id].item_id = item_id;
-    c->heif_item[c->cur_item_id].type    = item_type;
+        av_bprint_finalize(&item_name, &c->heif_item[idx].name);
+    c->heif_item[idx].item_id = item_id;
+    c->heif_item[idx].type    = item_type;
 
     switch (item_type) {
     case MKTAG('a','v','0','1'):
     case MKTAG('h','v','c','1'):
-        ret = heif_add_stream(c, &c->heif_item[c->cur_item_id]);
+        ret = heif_add_stream(c, &c->heif_item[idx]);
         if (ret < 0)
             return ret;
         break;
     }
-
-    c->cur_item_id++;
 
     return 0;
 }
@@ -8210,14 +8207,13 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         memset(c->heif_item + c->nb_heif_item, 0,
                sizeof(*c->heif_item) * (entry_count - c->nb_heif_item));
     c->nb_heif_item = FFMAX(c->nb_heif_item, entry_count);
-    c->cur_item_id = 0;
 
     for (int i = 0; i < entry_count; i++) {
         MOVAtom infe;
 
         infe.size = avio_rb32(pb) - 8;
         infe.type = avio_rl32(pb);
-        ret = mov_read_infe(c, pb, infe);
+        ret = mov_read_infe(c, pb, infe, i);
         if (ret < 0)
             return ret;
     }
