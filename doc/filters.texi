@@ -12073,11 +12073,21 @@ need to build and install the OpenVINO for C library (see
 @code{--enable-libopenvino} (--extra-cflags=-I... --extra-ldflags=-L... might
 be needed if the header files and libraries are not installed into system path)
 
+@item torch
+Libtorch backend. To enable this backend you need to build and install Libtroch
+for C++ library. Please download cxx11 ABI version (see
+@url{https://pytorch.org/get-started/locally})
+and configure FFmpeg with @code{--enable-libtorch
+--extra-cflags=-I/libtorch_root/libtorch/include
+--extra-cflags=-I/libtorch_root/libtorch/include/torch/csrc/api/include
+--extra-ldflags=-L/libtorch_root/libtorch/lib/}
+
 @end table
 
 @item model
 Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow, OpenVINO backend can load files for only its format.
+Note that different backends use different file formats. TensorFlow, OpenVINO
+and Libtorch backend can load files for only its format.
 
 @item input
 Set the input name of the dnn network.
