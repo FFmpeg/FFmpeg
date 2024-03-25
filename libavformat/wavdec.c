@@ -453,7 +453,7 @@ static int wav_read_header(AVFormatContext *s)
             }
 
             if (rf64 || bw64) {
-                next_tag_ofs = wav->data_end = avio_tell(pb) + data_size;
+                next_tag_ofs = wav->data_end = av_sat_add64(avio_tell(pb), data_size);
             } else if (size != 0xFFFFFFFF) {
                 data_size    = size;
                 next_tag_ofs = wav->data_end = size ? next_tag_ofs : INT64_MAX;
