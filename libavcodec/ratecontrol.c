@@ -78,12 +78,22 @@ static inline double qp2bits(RateControlEntry *rce, double qp)
     return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits + 1) / qp;
 }
 
+static double qp2bits_cb(void *rce, double qp)
+{
+    return qp2bits(rce, qp);
+}
+
 static inline double bits2qp(RateControlEntry *rce, double bits)
 {
     if (bits < 0.9) {
         av_log(NULL, AV_LOG_ERROR, "bits<0.9\n");
     }
     return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits + 1) / bits;
+}
+
+static double bits2qp_cb(void *rce, double qp)
+{
+    return bits2qp(rce, qp);
 }
 
 static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, double q)
@@ -506,8 +516,8 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         NULL
     };
     static double (* const func1[])(void *, double) = {
-        (double (*)(void *, double)) bits2qp,
-        (double (*)(void *, double)) qp2bits,
+        bits2qp_cb,
+        qp2bits_cb,
         NULL
     };
     static const char * const func1_names[] = {
