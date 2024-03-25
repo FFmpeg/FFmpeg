@@ -117,7 +117,7 @@ static int rpl_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     RPLContext *rpl = s->priv_data;
     AVStream *vst = NULL, *ast = NULL;
-    int total_audio_size;
+    int64_t total_audio_size;
     int error = 0;
 
     uint32_t i;
@@ -270,6 +270,8 @@ static int rpl_read_header(AVFormatContext *s)
         if (ast)
             av_add_index_entry(ast, offset + video_size, total_audio_size,
                                audio_size, audio_size * 8, 0);
+        if (total_audio_size/8 + (uint64_t)audio_size >= INT64_MAX/8)
+            return AVERROR_INVALIDDATA;
         total_audio_size += audio_size * 8;
     }
 
