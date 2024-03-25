@@ -30,6 +30,8 @@
  * 7) Close the dvdnav VM, and free dvdread's IFO structures
  */
 
+#include <inttypes.h>
+
 #include <dvdnav/dvdnav.h>
 #include <dvdread/dvd_reader.h>
 #include <dvdread/ifo_read.h>
