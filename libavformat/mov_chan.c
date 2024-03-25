@@ -30,7 +30,7 @@
 #include "libavcodec/codec_id.h"
 #include "mov_chan.h"
 
-enum ShortChannelName {
+enum {
     c_L      = AV_CHAN_FRONT_LEFT,
     c_R      = AV_CHAN_FRONT_RIGHT,
     c_C      = AV_CHAN_FRONT_CENTER,
