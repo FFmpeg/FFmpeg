@@ -3195,6 +3195,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
                    track->time_scale);
             track->time_scale = 1.0;
         }
+
+        if (matroska->time_scale * track->time_scale > UINT_MAX)
+            return AVERROR_INVALIDDATA;
+
         avpriv_set_pts_info(st, 64, matroska->time_scale * track->time_scale,
                             1000 * 1000 * 1000);    /* 64 bit pts in ns */
 
