@@ -150,7 +150,7 @@ static int get_shift(unsigned timeres, const char *buf)
     }
 
     ret = (int64_t)h*3600 + (int64_t)m*60 + s;
-    if (FFABS(ret) > (INT64_MAX - FFABS(d)) / timeres)
+    if (FFABS(ret) > (INT64_MAX - FFABS((int64_t)d)) / timeres)
         return 0;
     ret = sign * (ret * timeres + d);
 
