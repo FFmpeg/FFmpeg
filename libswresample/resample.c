@@ -27,7 +27,7 @@
  */
 
 #include "libavutil/avassert.h"
-#include "libavutil/cpu.h"
+#include "libavutil/mem.h"
 #include "resample.h"
 
 /**

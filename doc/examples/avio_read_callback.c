@@ -32,6 +32,7 @@
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 #include <libavutil/file.h>
+#include <libavutil/mem.h>
 
 struct buffer_data {
     uint8_t *ptr;

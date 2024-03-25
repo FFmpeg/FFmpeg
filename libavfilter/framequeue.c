@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 #include "framequeue.h"
 
 static inline FFFrameBucket *bucket(FFFrameQueue *fq, size_t idx)

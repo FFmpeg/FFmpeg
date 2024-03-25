@@ -34,6 +34,7 @@
  * Supports: BGR8,BGR555,BGR24 - only BGR8 and BGR555 tested
  */
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"

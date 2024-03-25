@@ -24,11 +24,11 @@
 #include <string.h>
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "decode.h"
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
 #include "golomb.h"
 #include "get_bits.h"

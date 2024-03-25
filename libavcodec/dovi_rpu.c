@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/buffer.h"
+#include "libavutil/mem.h"
 
 #include "dovi_rpu.h"
 #include "golomb.h"

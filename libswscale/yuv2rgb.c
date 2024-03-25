@@ -23,13 +23,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <inttypes.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "libavutil/bswap.h"
+#include "libavutil/mem.h"
 #include "config.h"
-#include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "libavutil/pixdesc.h"

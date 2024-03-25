@@ -18,6 +18,7 @@
 
 #include "dnn_filter_common.h"
 #include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 
 #define MAX_SUPPORTED_OUTPUTS_NB 4
 

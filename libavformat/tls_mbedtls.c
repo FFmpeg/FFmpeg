@@ -31,6 +31,7 @@
 #include "internal.h"
 #include "url.h"
 #include "tls.h"
+#include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 
 typedef struct TLSContext {

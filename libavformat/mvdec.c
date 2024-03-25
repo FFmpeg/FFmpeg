@@ -28,6 +28,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/rational.h"
 
 #include "avformat.h"

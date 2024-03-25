@@ -26,6 +26,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 #include "libavutil/time.h"
 

@@ -27,10 +27,9 @@
 #include <zlib.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/float2half.h"
 #include "avcodec.h"
 #include "bytestream.h"

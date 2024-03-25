@@ -24,6 +24,7 @@
  * RTP protocol
  */
 
+#include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
@@ -34,7 +35,6 @@
 #include "ip.h"
 
 #include <stdarg.h>
-#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include <fcntl.h>

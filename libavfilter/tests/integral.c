@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mem.h"
 #include "libavfilter/vf_nlmeans.c"
 
 static void display_integral(const uint32_t *ii, int w, int h, int lz_32)

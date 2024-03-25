@@ -25,6 +25,7 @@
 #include "encode.h"
 #include "mf_utils.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "codec_internal.h"

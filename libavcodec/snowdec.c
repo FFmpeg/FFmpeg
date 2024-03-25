@@ -21,7 +21,7 @@
 #include "libavutil/emms.h"
 #include "libavutil/intmath.h"
 #include "libavutil/log.h"
-#include "libavutil/opt.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"

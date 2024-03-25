@@ -28,16 +28,14 @@
 
 #include "config_components.h"
 
-#include <float.h>
 #include <stdint.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
-#include "libavutil/timestamp.h"
 
 #include "libavcodec/avcodec.h"
 

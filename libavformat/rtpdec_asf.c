@@ -28,6 +28,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "rtpdec_formats.h"
 #include "rtsp.h"
 #include "asf.h"

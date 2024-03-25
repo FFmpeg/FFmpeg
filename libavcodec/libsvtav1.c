@@ -29,12 +29,12 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mastering_display_metadata.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
 
 #include "codec_internal.h"
-#include "internal.h"
 #include "encode.h"
 #include "packet_internal.h"
 #include "avcodec.h"

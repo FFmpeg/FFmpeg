@@ -27,9 +27,9 @@
 #include <sys/stat.h>
 #include "libavutil/avstring.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/parseutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/gif.h"
 #include "avformat.h"

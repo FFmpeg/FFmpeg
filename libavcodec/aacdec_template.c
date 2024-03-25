@@ -90,6 +90,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 #include "decode.h"
 #include "internal.h"

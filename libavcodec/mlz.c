@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mem.h"
 #include "mlz.h"
 
 av_cold int ff_mlz_init_dict(void *context, MLZ *mlz)

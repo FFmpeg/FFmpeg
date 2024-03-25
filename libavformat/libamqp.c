@@ -23,9 +23,8 @@
 #include <amqp_tcp_socket.h>
 #include <sys/time.h>
 #include "avformat.h"
-#include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/time.h"
 #include "network.h"
 #include "url.h"
 #include "urldecode.h"

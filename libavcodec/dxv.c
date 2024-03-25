@@ -23,8 +23,8 @@
 #include <stdint.h>
 
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 
-#include "mathops.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"

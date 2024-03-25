@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
 

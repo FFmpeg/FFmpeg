@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <sndio.h>
 
-#include "avdevice.h"
+#include "libavutil/mem.h"
 
 #include "libavdevice/sndio.h"
 

@@ -17,6 +17,7 @@
  */
 
 #include "film_grain_params.h"
+#include "mem.h"
 #include "pixdesc.h"
 
 AVFilmGrainParams *av_film_grain_params_alloc(size_t *size)

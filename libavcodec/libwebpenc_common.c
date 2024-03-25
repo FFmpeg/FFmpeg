@@ -24,6 +24,7 @@
  * WebP encoder using libwebp: common structs and methods.
  */
 
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libwebpenc_common.h"
 

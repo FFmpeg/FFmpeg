@@ -42,12 +42,13 @@
 #include "attributes.h"
 #include "error.h"
 #include "macros.h"
-#include "mem.h"
 
 #ifdef HAVE_AV_CONFIG_H
 #   include "config.h"
 #   include "intmath.h"
 #   include "internal.h"
+#else
+#   include "mem.h"
 #endif /* HAVE_AV_CONFIG_H */
 
 //rounded division & shift

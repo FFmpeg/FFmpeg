@@ -22,6 +22,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"

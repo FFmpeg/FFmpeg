@@ -33,6 +33,7 @@
 
 #include "libavutil/internal.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"

@@ -24,17 +24,15 @@
  * @todo support float pixel format
  */
 
+#include "libavutil/mem.h"
 #include "libavutil/tx.h"
 #include "libavutil/avassert.h"
-#include "libavutil/channel_layout.h"
 #include "libavutil/cpu.h"
 #include "libavutil/ffmath.h"
 #include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "audio.h"
-#include "video.h"
 #include "filters.h"
 #include "internal.h"
 #include "window_func.h"

@@ -25,6 +25,7 @@
 #include "libavcodec/profiles.h"
 #include "libavcodec/refstruct.h"
 #include "libavutil/cpu.h"
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 
 #include "vvcdec.h"

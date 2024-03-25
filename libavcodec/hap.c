@@ -23,6 +23,7 @@
  * @file
  * Hap utilities
  */
+#include "libavutil/mem.h"
 #include "hap.h"
 
 int ff_hap_set_chunk_count(HapContext *ctx, int count, int first_in_frame)

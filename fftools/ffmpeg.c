@@ -68,40 +68,19 @@
 #include <conio.h>
 #endif
 
-#include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
-#include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
-#include "libavutil/display.h"
-#include "libavutil/fifo.h"
-#include "libavutil/hwcontext.h"
-#include "libavutil/imgutils.h"
-#include "libavutil/intreadwrite.h"
-#include "libavutil/libm.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
-#include "libavutil/pixdesc.h"
-#include "libavutil/samplefmt.h"
-#include "libavutil/thread.h"
-#include "libavutil/threadmessage.h"
+#include "libavutil/mem.h"
 #include "libavutil/time.h"
-#include "libavutil/timestamp.h"
-
-#include "libavcodec/version.h"
 
 #include "libavformat/avformat.h"
 
 #include "libavdevice/avdevice.h"
 
-#include "libswresample/swresample.h"
-
 #include "cmdutils.h"
 #include "ffmpeg.h"
 #include "ffmpeg_sched.h"
 #include "ffmpeg_utils.h"
-#include "sync_queue.h"
 
 const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;

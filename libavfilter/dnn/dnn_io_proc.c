@@ -20,6 +20,7 @@
 
 #include "dnn_io_proc.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libswscale/swscale.h"
 #include "libavutil/avassert.h"
 #include "libavutil/detection_bbox.h"

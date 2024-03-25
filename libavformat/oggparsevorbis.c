@@ -27,6 +27,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
 #include "libavutil/dict.h"
+#include "libavutil/mem.h"
 
 #include "libavcodec/bytestream.h"
 #include "libavcodec/vorbis_parser.h"

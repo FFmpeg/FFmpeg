@@ -25,6 +25,7 @@
  * aka Microsoft Expression Encoder Screen) decoder
  */
 
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 #include "libavutil/imgutils.h"
 

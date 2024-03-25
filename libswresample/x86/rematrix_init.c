@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/mem.h"
 #include "libavutil/x86/cpu.h"
 #include "libswresample/swresample_internal.h"
 

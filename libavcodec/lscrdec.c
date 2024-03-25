@@ -24,6 +24,7 @@
 #include "libavutil/frame.h"
 #include "libavutil/error.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 
 #include "avcodec.h"
 #include "bytestream.h"

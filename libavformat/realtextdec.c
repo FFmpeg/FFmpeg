@@ -30,7 +30,7 @@
 #include "subtitles.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
-#include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 
 typedef struct {
     FFDemuxSubtitlesQueue q;

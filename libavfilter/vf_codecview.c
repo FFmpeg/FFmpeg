@@ -29,9 +29,10 @@
  * TODO: segmentation
  */
 
-#include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/motion_vector.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/video_enc_params.h"
 #include "avfilter.h"
 #include "qp_table.h"

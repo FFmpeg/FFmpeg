@@ -27,6 +27,7 @@
 #include "fbdev_common.h"
 #include "libavutil/common.h"
 #include "libavutil/file_open.h"
+#include "libavutil/mem.h"
 #include "avdevice.h"
 
 struct rgb_pixfmt_map_entry {

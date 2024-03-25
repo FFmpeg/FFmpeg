@@ -26,6 +26,7 @@
 
 #include <float.h>
 #include "libavutil/float_dsp.h"
+#include "libavutil/mem.h"
 #include "libavutil/tx.h"
 
 #include "avcodec.h"

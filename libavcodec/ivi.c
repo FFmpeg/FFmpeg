@@ -30,6 +30,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 
 #define BITSTREAM_READER_LE

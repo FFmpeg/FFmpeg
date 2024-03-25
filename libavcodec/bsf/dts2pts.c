@@ -25,6 +25,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/fifo.h"
+#include "libavutil/mem.h"
 #include "libavutil/tree.h"
 
 #include "bsf.h"

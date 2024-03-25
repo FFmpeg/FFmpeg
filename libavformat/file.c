@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/file_open.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avio.h"
 #if HAVE_DIRENT_H

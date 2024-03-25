@@ -37,10 +37,10 @@
 #include "decode.h"
 #include "internal.h"
 #include "mlz.h"
+#include "libavutil/mem.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/crc.h"
 #include "libavutil/softfloat_ieee754.h"
-#include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 
 #include <stdint.h>

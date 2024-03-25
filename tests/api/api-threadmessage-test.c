@@ -25,6 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/frame.h"
+#include "libavutil/mem.h"
 #include "libavutil/threadmessage.h"
 #include "libavutil/thread.h" // not public
 

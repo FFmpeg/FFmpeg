@@ -31,6 +31,7 @@
 #include "internal.h"
 #include "video.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 

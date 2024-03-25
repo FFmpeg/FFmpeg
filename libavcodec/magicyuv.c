@@ -24,6 +24,7 @@
 
 #define CACHED_BITSTREAM_READER !ARCH_X86_32
 
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"

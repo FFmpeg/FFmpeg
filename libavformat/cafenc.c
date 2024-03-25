@@ -26,6 +26,7 @@
 #include "mux.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/dict.h"
+#include "libavutil/mem.h"
 
 #define FRAME_SIZE_OFFSET 40
 

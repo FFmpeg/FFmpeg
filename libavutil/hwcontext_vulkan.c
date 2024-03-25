@@ -37,9 +37,9 @@
 #include "avstring.h"
 #include "imgutils.h"
 #include "hwcontext.h"
-#include "avassert.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_vulkan.h"
+#include "mem.h"
 
 #include "vulkan.h"
 #include "vulkan_loader.h"

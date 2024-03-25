@@ -26,16 +26,14 @@
 #include <float.h>
 
 #include "libavutil/cpu.h"
+#include "libavutil/mem.h"
 #include "libavutil/tx.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
-#include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/frame.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
-#include "libavutil/rational.h"
 
 #include "audio.h"
 #include "avfilter.h"
@@ -44,7 +42,6 @@
 #include "internal.h"
 #include "af_afir.h"
 #include "af_afirdsp.h"
-#include "video.h"
 
 #define DEPTH 32
 #include "afir_template.c"

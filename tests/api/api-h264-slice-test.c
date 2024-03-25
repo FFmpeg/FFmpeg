@@ -39,6 +39,7 @@
 #include <fcntl.h>
 
 #include "libavcodec/avcodec.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/hash.h"
 #include "libavutil/bswap.h"

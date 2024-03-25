@@ -30,6 +30,7 @@
 #include "video.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include <float.h>
 #include <math.h>

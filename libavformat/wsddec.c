@@ -21,10 +21,10 @@
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/timecode.h"
 #include "avformat.h"
 #include "demux.h"
-#include "internal.h"
 #include "rawdec.h"
 
 static int wsd_probe(const AVProbeData *p)

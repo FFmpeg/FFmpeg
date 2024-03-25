@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/mem.h"
 
 #include "avcodec.h"
 #include "sinewin.h"

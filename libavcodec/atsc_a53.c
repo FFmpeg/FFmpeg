@@ -19,6 +19,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/mem.h"
 #include "atsc_a53.h"
 #include "get_bits.h"
 

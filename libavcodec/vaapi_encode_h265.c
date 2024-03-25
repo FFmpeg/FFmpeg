@@ -23,6 +23,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavutil/mastering_display_metadata.h"
@@ -35,8 +36,6 @@
 #include "h2645data.h"
 #include "h265_profile_level.h"
 #include "hevc.h"
-#include "hevc_sei.h"
-#include "put_bits.h"
 #include "vaapi_encode.h"
 
 enum {

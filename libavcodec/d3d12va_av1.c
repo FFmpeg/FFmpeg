@@ -23,6 +23,7 @@
 #include "config_components.h"
 #include "libavutil/avassert.h"
 #include "libavutil/hwcontext_d3d12va_internal.h"
+#include "libavutil/mem.h"
 #include "av1dec.h"
 #include "dxva2_internal.h"
 #include "d3d12va_decode.h"

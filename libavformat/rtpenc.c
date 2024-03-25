@@ -24,6 +24,7 @@
 #include "internal.h"
 #include "mux.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/opt.h"
 

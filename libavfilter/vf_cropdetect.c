@@ -25,6 +25,7 @@
 
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/motion_vector.h"
 #include "libavutil/qsort.h"

@@ -25,6 +25,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/time.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/hwcontext_d3d12va_internal.h"

@@ -27,6 +27,7 @@
  * CRT, and FILE* handles can't be shared across them.) */
 
 #ifdef _WIN32
+#include "libavutil/mem.h"
 #include "libavutil/wchar_filename.h"
 
 static inline FILE *fopen_utf8(const char *path_utf8, const char *mode)

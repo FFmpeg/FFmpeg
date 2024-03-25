@@ -22,6 +22,7 @@
 
 #include <time.h>
 
+#include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
 #include "avio_internal.h"
 #include "avformat.h"

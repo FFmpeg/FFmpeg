@@ -18,7 +18,7 @@
 
 #include <stdlib.h>
 
-#include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 #include "bsf.h"

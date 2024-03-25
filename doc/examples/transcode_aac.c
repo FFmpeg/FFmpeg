@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 
+#include <libavutil/mem.h>
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 

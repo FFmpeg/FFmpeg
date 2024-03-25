@@ -24,6 +24,7 @@
 #include <TargetConditionals.h>
 #include <Availability.h>
 #include "avcodec.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"

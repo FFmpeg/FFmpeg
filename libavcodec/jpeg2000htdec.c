@@ -51,6 +51,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 #include "jpeg2000htdec.h"
 #include "jpeg2000.h"
 #include "jpeg2000dec.h"

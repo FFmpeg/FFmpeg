@@ -19,6 +19,7 @@
 #include "avassert.h"
 #include "intmath.h"
 #include "cpu.h"
+#include "mem.h"
 #include "qsort.h"
 #include "bprint.h"
 

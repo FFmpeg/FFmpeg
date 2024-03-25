@@ -21,6 +21,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/error.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
@@ -30,11 +31,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/codec.h"
 
-#include "libavfilter/buffersrc.h"
-
 #include "ffmpeg.h"
-#include "ffmpeg_utils.h"
-#include "thread_queue.h"
 
 typedef struct DecoderPriv {
     Decoder             dec;

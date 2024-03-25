@@ -26,6 +26,7 @@
  */
 
 #define UNCHECKED_BITSTREAM_READER 1
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avcodec.h"
 #include "bytestream.h"

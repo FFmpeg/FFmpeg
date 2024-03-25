@@ -27,6 +27,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/fifo.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavformat/avformat.h"

@@ -22,10 +22,10 @@
 #include "libavcodec/ass.h"
 #include "codec_internal.h"
 #include "libavcodec/dvbtxt.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/bprint.h"
 #include "libavutil/internal.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
 #include "libavutil/common.h"
 

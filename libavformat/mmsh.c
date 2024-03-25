@@ -28,8 +28,9 @@
 #include <string.h>
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "internal.h"
+#include "avformat.h"
 #include "mms.h"
 #include "http.h"
 #include "url.h"

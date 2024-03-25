@@ -24,6 +24,7 @@
  * Microsoft Screen 3 (aka Microsoft ATC Screen) decoder
  */
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "codec_internal.h"

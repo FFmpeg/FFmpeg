@@ -32,13 +32,12 @@
 #include "common.h"
 #include "eval.h"
 #include "ffmath.h"
-#include "internal.h"
 #include "log.h"
 #include "mathematics.h"
+#include "mem.h"
 #include "sfc64.h"
 #include "time.h"
 #include "avstring.h"
-#include "timer.h"
 #include "reverse.h"
 
 typedef struct Parser {

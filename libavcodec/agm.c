@@ -24,6 +24,7 @@
 
 #define BITSTREAM_READER_LE
 
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"

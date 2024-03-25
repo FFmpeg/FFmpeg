@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/mem.h"
 #include "adts_header.h"
 #include "adts_parser.h"
 

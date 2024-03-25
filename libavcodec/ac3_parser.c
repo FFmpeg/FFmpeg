@@ -20,10 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
 #include "config_components.h"
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 #include "parser.h"
 #include "ac3defs.h"
 #include "ac3tab.h"

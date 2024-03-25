@@ -20,6 +20,7 @@
 
 #include "avcodec.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 #include "dcadec.h"
 #include "dcadata.h"
 #include "dcamath.h"

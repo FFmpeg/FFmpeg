@@ -28,6 +28,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/emms.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 #include "avcodec.h"
 #include "ratecontrol.h"

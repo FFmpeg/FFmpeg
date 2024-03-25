@@ -23,6 +23,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavutil/timestamp.h"
 
 #include "libavcodec/avcodec.h"

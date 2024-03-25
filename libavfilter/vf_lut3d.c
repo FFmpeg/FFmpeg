@@ -28,6 +28,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/file_open.h"
 #include "libavutil/intfloat.h"

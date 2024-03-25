@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 #include "avcodec.h"
 #include "snow_dwt.h"

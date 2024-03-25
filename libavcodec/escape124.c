@@ -20,6 +20,7 @@
  */
 
 #define BITSTREAM_READER_LE
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "decode.h"

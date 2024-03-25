@@ -72,15 +72,15 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 //Changelog: use git log
 
-#include "config.h"
-#include "libavutil/avutil.h"
-#include "libavutil/avassert.h"
-#include "libavutil/cpu.h"
-#include "libavutil/intreadwrite.h"
-#include <inttypes.h>
-#include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "config.h"
+#include "libavutil/common.h"
+#include "libavutil/cpu.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 //#undef HAVE_MMXEXT_INLINE
 //#undef HAVE_MMX_INLINE
 //#undef ARCH_X86

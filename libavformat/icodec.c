@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/png.h"
 #include "avformat.h"

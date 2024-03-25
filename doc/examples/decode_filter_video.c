@@ -36,6 +36,7 @@
 #include <libavformat/avformat.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
+#include <libavutil/mem.h>
 #include <libavutil/opt.h>
 
 const char *filter_descr = "scale=78:24,transpose=cclock";

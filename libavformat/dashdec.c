@@ -22,6 +22,7 @@
 #include <libxml/parser.h>
 #include <time.h>
 #include "libavutil/bprint.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/parseutils.h"

@@ -20,9 +20,8 @@
  */
 
 #include "libavcodec/bytestream.h"
-#include "libavutil/avstring.h"
 #include "libavutil/intfloat.h"
-#include "avformat.h"
+#include "libavutil/mem.h"
 
 #include "rtmppkt.h"
 #include "flv.h"

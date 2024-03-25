@@ -21,6 +21,7 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/cuda_check.h"
+#include "libavutil/mem.h"
 
 #if CONFIG_PTX_COMPRESSION
 #include <zlib.h>

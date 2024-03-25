@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavutil/tree.h"
 #include "nut.h"
 #include "riff.h"

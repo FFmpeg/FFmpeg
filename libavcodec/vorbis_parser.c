@@ -28,9 +28,9 @@
 #include "config_components.h"
 
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 
 #include "get_bits.h"
-#include "parser.h"
 #include "xiph.h"
 #include "vorbis_parser_internal.h"
 

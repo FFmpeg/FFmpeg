@@ -22,7 +22,7 @@
  * @todo switch to dualinput
  */
 
-#include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "internal.h"
 #include "video.h"

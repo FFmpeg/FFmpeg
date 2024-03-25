@@ -27,6 +27,7 @@
 #include "hwcontext_d3d12va_internal.h"
 #include "hwcontext_d3d12va.h"
 #include "imgutils.h"
+#include "mem.h"
 #include "pixdesc.h"
 #include "pixfmt.h"
 #include "thread.h"

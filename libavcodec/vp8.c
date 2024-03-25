@@ -26,6 +26,7 @@
 
 #include "config_components.h"
 
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"

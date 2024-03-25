@@ -24,6 +24,7 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 
 static av_cold int avui_encode_init(AVCodecContext *avctx)
 {

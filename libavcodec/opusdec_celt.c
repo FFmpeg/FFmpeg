@@ -27,6 +27,7 @@
 
 #include <float.h>
 
+#include "libavutil/mem.h"
 #include "opus_celt.h"
 #include "opustab.h"
 #include "opus_pvq.h"

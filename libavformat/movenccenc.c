@@ -20,6 +20,7 @@
  */
 #include "movenccenc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "avio_internal.h"
 #include "movenc.h"
 #include "avc.h"

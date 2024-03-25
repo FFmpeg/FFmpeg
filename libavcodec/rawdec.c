@@ -29,13 +29,12 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "get_bits.h"
-#include "internal.h"
 #include "raw.h"
 #include "libavutil/avassert.h"
 #include "libavutil/buffer.h"
-#include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 typedef struct RawVideoContext {

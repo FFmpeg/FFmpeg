@@ -34,6 +34,7 @@
 #include <dxgi1_5.h>
 #endif
 
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
 #include "libavutil/avstring.h"

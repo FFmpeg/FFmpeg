@@ -25,13 +25,13 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"
 #include "lossless_videodsp.h"
-#include "mathops.h"
 #include "thread.h"
 
 typedef struct VBLEContext {

@@ -29,6 +29,7 @@
 #include <zlib.h>
 
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 
 #include "avcodec.h"

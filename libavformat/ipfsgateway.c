@@ -22,6 +22,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/file_open.h"
 #include "libavutil/getenv_utf8.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include <sys/stat.h>
 #include "os_support.h"

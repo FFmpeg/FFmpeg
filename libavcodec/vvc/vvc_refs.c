@@ -22,6 +22,7 @@
 
 #include <stdatomic.h>
 
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 #include "libavcodec/refstruct.h"
 #include "libavcodec/thread.h"

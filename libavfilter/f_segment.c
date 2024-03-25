@@ -21,15 +21,12 @@
 #include <stdint.h>
 
 #include "libavutil/avstring.h"
-#include "libavutil/channel_layout.h"
-#include "libavutil/common.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
-#include "libavutil/samplefmt.h"
 
-#include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
 #include "internal.h"

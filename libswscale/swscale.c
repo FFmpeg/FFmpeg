@@ -28,6 +28,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/emms.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/pixdesc.h"
 #include "config.h"

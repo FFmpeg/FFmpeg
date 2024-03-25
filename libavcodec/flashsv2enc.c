@@ -47,11 +47,11 @@
 #include <zlib.h>
 
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
-#include "bytestream.h"
 #include "zlib_wrapper.h"
 
 #define HAS_IFRAME_IMAGE 0x02

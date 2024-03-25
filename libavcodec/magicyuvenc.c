@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "libavutil/cpu.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/qsort.h"
@@ -32,7 +33,6 @@
 #include "codec_internal.h"
 #include "encode.h"
 #include "put_bits.h"
-#include "thread.h"
 #include "lossless_videoencdsp.h"
 
 #define MAGICYUV_EXTRADATA_SIZE 32

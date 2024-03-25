@@ -21,6 +21,7 @@
 #include "checkasm.h"
 #include "libavfilter/vf_nlmeans_init.h"
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 
 #define randomize_buffer(buf, size) do {    \
     int i;                                  \

@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/mem.h"
 #include "mathops.h"
 #include "opus.h"
 #include "opus_rc.h"

@@ -24,6 +24,7 @@
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "golomb.h"
 #include "h2645_vui.h"
 #include "hevc_data.h"

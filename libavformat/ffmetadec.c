@@ -21,6 +21,7 @@
 
 #include "libavutil/bprint.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "avformat.h"
 #include "demux.h"
 #include "ffmeta.h"

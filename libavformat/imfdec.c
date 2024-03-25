@@ -70,8 +70,8 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "mxf.h"
 #include <inttypes.h>
 #include <libxml/parser.h>
 

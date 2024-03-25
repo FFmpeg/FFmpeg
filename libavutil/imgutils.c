@@ -29,6 +29,7 @@
 #include "intreadwrite.h"
 #include "log.h"
 #include "mathematics.h"
+#include "mem.h"
 #include "pixdesc.h"
 #include "rational.h"
 

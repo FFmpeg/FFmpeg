@@ -23,6 +23,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavutil/time.h"
 #include "libavutil/pixdesc.h"
 

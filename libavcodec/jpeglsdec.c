@@ -25,6 +25,7 @@
  * JPEG-LS decoder.
  */
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "get_bits.h"

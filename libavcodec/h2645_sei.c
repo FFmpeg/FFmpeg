@@ -30,7 +30,7 @@
 #include "libavutil/hdr_dynamic_metadata.h"
 #include "libavutil/film_grain_params.h"
 #include "libavutil/mastering_display_metadata.h"
-#include "libavutil/pixdesc.h"
+#include "libavutil/mem.h"
 #include "libavutil/stereo3d.h"
 
 #include "atsc_a53.h"

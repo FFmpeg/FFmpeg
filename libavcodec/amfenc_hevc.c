@@ -17,10 +17,10 @@
  */
 
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "amfenc.h"
 #include "codec_internal.h"
-#include "internal.h"
 #include <AMF/components/PreAnalysis.h>
 
 #define OFFSET(x) offsetof(AmfContext, x)

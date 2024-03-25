@@ -24,6 +24,7 @@
 
 #include "avcodec.h"
 #include "libavutil/avutil.h"
+#include "libavutil/mem.h"
 #include "get_bits.h"
 #include "audiodsp.h"
 #include "codec_internal.h"

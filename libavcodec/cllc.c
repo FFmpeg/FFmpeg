@@ -23,6 +23,7 @@
 #include <inttypes.h>
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "bswapdsp.h"
 #include "canopus.h"
 #include "get_bits.h"

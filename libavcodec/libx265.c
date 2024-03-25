@@ -31,6 +31,7 @@
 #include "libavutil/buffer.h"
 #include "libavutil/internal.h"
 #include "libavutil/mastering_display_metadata.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"

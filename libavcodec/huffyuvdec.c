@@ -44,6 +44,7 @@
 #include "thread.h"
 #include "libavutil/emms.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 
 #define VLC_BITS 12

@@ -19,6 +19,7 @@
 #include "config.h"
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 
 #include "libavcodec/avcodec.h"
 #include "libavcodec/bytestream.h"

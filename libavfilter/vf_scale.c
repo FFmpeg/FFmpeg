@@ -32,14 +32,12 @@
 #include "internal.h"
 #include "scale_eval.h"
 #include "video.h"
-#include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
-#include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
 
 static const char *const var_names[] = {

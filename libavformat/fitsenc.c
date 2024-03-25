@@ -24,8 +24,8 @@
  * FITS muxer.
  */
 
+#include "avformat.h"
 #include "avio_internal.h"
-#include "internal.h"
 #include "mux.h"
 
 typedef struct FITSContext {

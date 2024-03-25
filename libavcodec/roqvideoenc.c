@@ -58,6 +58,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "roqvideo.h"
 #include "bytestream.h"

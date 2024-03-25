@@ -29,6 +29,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/error.h"
 #include "libavutil/file.h"
+#include "libavutil/mem.h"
 #include "libavutil/time.h"
 
 static int ff_expand_text_function_internal(FFExpandTextContext *expand_text, AVBPrint *bp,

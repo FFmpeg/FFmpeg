@@ -30,6 +30,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/samplefmt.h"
 
 #define NUMBER_OF_AUDIO_FRAMES 200

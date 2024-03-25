@@ -23,8 +23,8 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
 #include "atsc_a53.h"
@@ -34,7 +34,6 @@
 #include "codec_internal.h"
 #include "h264.h"
 #include "h264_levels.h"
-#include "h264_sei.h"
 #include "h2645data.h"
 #include "vaapi_encode.h"
 #include "version.h"

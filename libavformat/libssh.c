@@ -22,6 +22,7 @@
 #define LIBSSH_STATIC
 #include <libssh/sftp.h>
 #include "libavutil/avstring.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/attributes.h"
 #include "libavformat/avio.h"

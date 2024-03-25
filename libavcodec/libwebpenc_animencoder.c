@@ -25,8 +25,8 @@
  */
 
 #include "libavutil/buffer.h"
+#include "libavutil/mem.h"
 
-#include "config.h"
 #include "codec_internal.h"
 #include "encode.h"
 #include "libwebpenc_common.h"

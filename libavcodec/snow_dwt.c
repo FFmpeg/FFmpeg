@@ -22,6 +22,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "me_cmp.h"
 #include "snow_dwt.h"
 

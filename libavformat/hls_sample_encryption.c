@@ -28,6 +28,7 @@
 
 #include "libavutil/aes.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/mem.h"
 
 #include "hls_sample_encryption.h"
 

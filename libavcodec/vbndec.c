@@ -30,6 +30,7 @@
 #include "texturedsp.h"
 #include "vbn.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 
 typedef struct VBNContext {
     TextureDSPContext texdsp;

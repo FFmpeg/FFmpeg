@@ -28,6 +28,7 @@
  * input to the output without transcoding.
  */
 
+#include <libavutil/mem.h>
 #include <libavutil/timestamp.h>
 #include <libavformat/avformat.h>
 

@@ -26,6 +26,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 
 #define PP_BNK_MAX_READ_SIZE    4096
 #define PP_BNK_FILE_HEADER_SIZE 20

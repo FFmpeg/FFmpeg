@@ -23,6 +23,7 @@
 #include <stdatomic.h>
 
 #include "libavutil/executor.h"
+#include "libavutil/mem.h"
 #include "libavutil/thread.h"
 
 #include "vvc_thread.h"

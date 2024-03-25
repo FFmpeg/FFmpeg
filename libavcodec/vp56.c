@@ -23,6 +23,7 @@
  * VP5 and VP6 compatible video decoder (common features)
  */
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "decode.h"

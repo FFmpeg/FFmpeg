@@ -22,6 +22,7 @@
 #include "libavutil/intmath.h"
 #include "libavutil/libm.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"

@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "formats.h"
 #include "internal.h"

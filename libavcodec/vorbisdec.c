@@ -31,6 +31,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/float_dsp.h"
+#include "libavutil/mem.h"
 #include "libavutil/tx.h"
 
 #define BITSTREAM_READER_LE

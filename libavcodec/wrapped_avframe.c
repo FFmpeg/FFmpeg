@@ -28,10 +28,9 @@
 #include "codec_internal.h"
 #include "decode.h"
 
-#include "libavutil/internal.h"
 #include "libavutil/frame.h"
 #include "libavutil/buffer.h"
-#include "libavutil/pixdesc.h"
+#include "libavutil/mem.h"
 
 static void wrapped_avframe_release_buffer(void *unused, uint8_t *data)
 {

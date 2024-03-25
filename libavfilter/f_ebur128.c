@@ -30,15 +30,14 @@
 #include <math.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/dict.h"
 #include "libavutil/ffmath.h"
+#include "libavutil/mem.h"
 #include "libavutil/xga_font_data.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "libswresample/swresample.h"
-#include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"

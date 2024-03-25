@@ -49,11 +49,10 @@
  *      even output then setting frame_rate=1/0 in practice.
  */
 
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/mathematics.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "video.h"
 
 typedef struct DejudderContext {
     const AVClass *class;

@@ -33,6 +33,7 @@
 #include "common.h"
 #include "error.h"
 #include "macros.h"
+#include "mem.h"
 #include "opt.h"
 
 #define CHAN_IS_AMBI(x) ((x) >= AV_CHAN_AMBISONIC_BASE &&\

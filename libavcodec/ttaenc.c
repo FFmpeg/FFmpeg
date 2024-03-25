@@ -26,6 +26,7 @@
 #include "encode.h"
 #include "put_bits.h"
 #include "libavutil/crc.h"
+#include "libavutil/mem.h"
 
 typedef struct TTAEncContext {
     const AVCRC *crc_table;

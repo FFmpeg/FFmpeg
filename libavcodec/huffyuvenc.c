@@ -40,6 +40,7 @@
 #include "lossless_videoencdsp.h"
 #include "put_bits.h"
 #include "libavutil/emms.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 

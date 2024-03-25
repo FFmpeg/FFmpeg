@@ -23,6 +23,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 

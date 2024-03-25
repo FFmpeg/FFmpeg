@@ -25,6 +25,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/mem.h"
 #include "libavcodec/codec_desc.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avio.h"

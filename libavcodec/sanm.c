@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 
 #include "avcodec.h"
 #include "bytestream.h"

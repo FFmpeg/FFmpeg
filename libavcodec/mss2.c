@@ -24,12 +24,12 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/mem.h"
 #include "codec_internal.h"
 #include "decode.h"
 #include "error_resilience.h"
 #include "mpeg_er.h"
 #include "mpegvideodec.h"
-#include "qpeldsp.h"
 #include "vc1.h"
 #include "wmv2data.h"
 #include "mss12.h"

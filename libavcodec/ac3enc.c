@@ -35,6 +35,7 @@
 #include "libavutil/crc.h"
 #include "libavutil/emms.h"
 #include "libavutil/internal.h"
+#include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"

@@ -26,9 +26,9 @@
 
 #include "config_components.h"
 
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "codec_internal.h"
-#include "mjpeg.h"
 #include "mjpegdec.h"
 #include "sp5x.h"
 

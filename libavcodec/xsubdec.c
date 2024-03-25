@@ -21,6 +21,7 @@
 
 #include "libavutil/mathematics.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mem.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "bytestream.h"

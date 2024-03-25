@@ -32,6 +32,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/crc.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/timer.h"
 
 #ifndef AV_READ_TIME

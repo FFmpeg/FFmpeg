@@ -22,6 +22,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/thread.h"
 #include "codec_internal.h"

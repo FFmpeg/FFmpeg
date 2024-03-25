@@ -25,7 +25,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/pixdesc.h"
+#include "libavutil/mem.h"
 
 #include "libavcodec/codec_id.h"
 

@@ -28,6 +28,7 @@
 #include "libavutil/file.h"
 #include "libavutil/internal.h"
 #include "libavutil/lfg.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/avstring.h"

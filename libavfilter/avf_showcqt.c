@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include "libavutil/mem.h"
 #include "libavutil/tx.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"

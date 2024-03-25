@@ -89,6 +89,7 @@
 #include <inttypes.h>
 
 #include "libavutil/audio_fifo.h"
+#include "libavutil/mem.h"
 #include "libavutil/tx.h"
 #include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"

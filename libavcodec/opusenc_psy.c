@@ -21,6 +21,7 @@
 
 #include <float.h>
 
+#include "libavutil/mem.h"
 #include "opusenc_psy.h"
 #include "opus_celt.h"
 #include "opus_pvq.h"

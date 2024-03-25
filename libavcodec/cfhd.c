@@ -24,9 +24,9 @@
  */
 
 #include "libavutil/attributes.h"
-#include "libavutil/buffer.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 
 #include "avcodec.h"

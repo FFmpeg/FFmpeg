@@ -19,6 +19,7 @@
  */
 
 #include "avassert.h"
+#include "mem.h"
 
 #include "vulkan.h"
 
