@@ -364,6 +364,14 @@ int av_buffersink_get_ch_layout(const AVFilterContext *ctx, AVChannelLayout *out
     return 0;
 }
 
+const AVFrameSideData *const *av_buffersink_get_side_data(const AVFilterContext *ctx,
+                                                          int *nb_side_data)
+{
+    av_assert0(fffilter(ctx->filter)->activate == activate);
+    *nb_side_data = ctx->inputs[0]->nb_side_data;
+    return (const AVFrameSideData *const *)ctx->inputs[0]->side_data;
+}
+
 #if FF_API_BUFFERSINK_OPTS
 #define NB_ITEMS(list) (list ## _size / sizeof(*list))
 #endif
