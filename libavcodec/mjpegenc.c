@@ -32,8 +32,6 @@
 
 #include "config_components.h"
 
-#include "libavutil/pixdesc.h"
-
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "jpegtables.h"
@@ -595,9 +593,7 @@ static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
     MpegEncContext *s = avctx->priv_data;
     AVFrame *pic;
     int i, ret;
-    int chroma_h_shift, chroma_v_shift;
-
-    av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
+    int chroma_v_shift = 1; /* AMV is 420-only */
 
     if ((avctx->height & 15) && avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
         av_log(avctx, AV_LOG_ERROR,
