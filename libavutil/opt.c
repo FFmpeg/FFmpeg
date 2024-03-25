@@ -309,6 +309,8 @@ static int set_string_binary(void *obj, const AVOption *o, const char *val, uint
 static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **dst)
 {
     av_freep(dst);
+    if (!val)
+        return 0;
     *dst = av_strdup(val);
     return *dst ? 0 : AVERROR(ENOMEM);
 }
@@ -2032,9 +2034,11 @@ static int opt_copy_elem(void *logctx, enum AVOptionType type,
     if (type == AV_OPT_TYPE_STRING) {
         if (*dst8 != *src8)
             av_freep(dst8);
-        *dst8 = av_strdup(*src8);
-        if (*src8 && !*dst8)
-            return AVERROR(ENOMEM);
+        if (*src8) {
+            *dst8 = av_strdup(*src8);
+            if (!*dst8)
+                return AVERROR(ENOMEM);
+        }
     } else if (type == AV_OPT_TYPE_BINARY) {
         int len = *(const int *)(src8 + 1);
         if (*dst8 != *src8)
