@@ -2054,6 +2054,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
         int channels = 0;
         char *layout = NULL;
         char *sample_fmt = NULL;
+        const char *apad = NULL;
 
         MATCH_PER_STREAM_OPT(audio_channels, i, channels, oc, st);
         if (channels) {
@@ -2091,8 +2092,12 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc, in
 
         MATCH_PER_STREAM_OPT(audio_sample_rate, i, audio_enc->sample_rate, oc, st);
 
-        MATCH_PER_STREAM_OPT(apad, str, ost->apad, oc, st);
-        ost->apad = av_strdup(ost->apad);
+        MATCH_PER_STREAM_OPT(apad, str, apad, oc, st);
+        if (apad) {
+            ost->apad = av_strdup(apad);
+            if (!ost->apad)
+                exit_program(1);
+        }
 
         ost->avfilter = get_ost_filters(o, oc, ost);
         if (!ost->avfilter)
