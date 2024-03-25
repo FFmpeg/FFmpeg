@@ -2028,18 +2028,19 @@ void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
 static int opt_copy_elem(void *logctx, enum AVOptionType type,
                          void *dst, const void *src)
 {
-    uint8_t       **dst8 =       (uint8_t **)dst;
-    const uint8_t **src8 = (const uint8_t **)src;
-
     if (type == AV_OPT_TYPE_STRING) {
-        if (*dst8 != *src8)
-            av_freep(dst8);
-        if (*src8) {
-            *dst8 = av_strdup(*src8);
-            if (!*dst8)
+        const char *src_str = *(const char *const *)src;
+        char         **dstp =  (char **)dst;
+        if (*dstp != src_str)
+            av_freep(dstp);
+        if (src_str) {
+            *dstp = av_strdup(src_str);
+            if (!*dstp)
                 return AVERROR(ENOMEM);
         }
     } else if (type == AV_OPT_TYPE_BINARY) {
+        const uint8_t *const *src8 = (const uint8_t *const *)src;
+        uint8_t             **dst8 = (uint8_t **)dst;
         int len = *(const int *)(src8 + 1);
         if (*dst8 != *src8)
             av_freep(dst8);
@@ -2052,12 +2053,12 @@ static int opt_copy_elem(void *logctx, enum AVOptionType type,
     } else if (type == AV_OPT_TYPE_CONST) {
         // do nothing
     } else if (type == AV_OPT_TYPE_DICT) {
-        AVDictionary **sdict = (AVDictionary **)src;
-        AVDictionary **ddict = (AVDictionary **)dst;
-        if (*sdict != *ddict)
-            av_dict_free(ddict);
-        *ddict = NULL;
-        return av_dict_copy(ddict, *sdict, 0);
+        const AVDictionary *sdict = *(const AVDictionary * const *)src;
+        AVDictionary     **ddictp = (AVDictionary **)dst;
+        if (sdict != *ddictp)
+            av_dict_free(ddictp);
+        *ddictp = NULL;
+        return av_dict_copy(ddictp, sdict, 0);
     } else if (type == AV_OPT_TYPE_CHLAYOUT) {
         if (dst != src)
             return av_channel_layout_copy(dst, src);
