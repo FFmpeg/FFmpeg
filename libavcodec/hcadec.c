@@ -538,8 +538,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
             return AVERROR_INVALIDDATA;
         } else if (AV_RB16(avpkt->data + 6) <= avpkt->size) {
             ret = init_hca(avctx, avpkt->data, AV_RB16(avpkt->data + 6));
-            if (ret < 0)
+            if (ret < 0) {
+                c->crc_table = NULL; // signal that init has not finished
                 return ret;
+            }
             offset = AV_RB16(avpkt->data + 6);
             if (offset == avpkt->size)
                 return avpkt->size;
