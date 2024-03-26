@@ -110,6 +110,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     float scale = 1.f / 8.f;
     unsigned b, chunk;
     int version, ret;
+    unsigned hfr_group_count;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     c->crc_table = av_crc_get_table(AV_CRC_16_ANSI);
@@ -233,11 +234,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (c->total_band_count < c->base_band_count)
         return AVERROR_INVALIDDATA;
 
-    c->hfr_group_count = ceil2(c->total_band_count - (c->base_band_count + c->stereo_band_count),
+    hfr_group_count = ceil2(c->total_band_count - (c->base_band_count + c->stereo_band_count),
                                c->bands_per_hfr_group);
 
-    if (c->base_band_count + c->stereo_band_count + (unsigned long)c->hfr_group_count > 128ULL)
+    if (c->base_band_count + c->stereo_band_count + (uint64_t)hfr_group_count > 128ULL)
         return AVERROR_INVALIDDATA;
+    c->hfr_group_count = hfr_group_count;
 
     for (int i = 0; i < avctx->channels; i++) {
         c->ch[i].chan_type = r[i];
