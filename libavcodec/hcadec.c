@@ -212,6 +212,7 @@ static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
     int8_t r[16] = { 0 };
     unsigned b, chunk;
     int version, ret;
+    unsigned hfr_group_count;
 
     init_flush(avctx);
 
@@ -336,11 +337,12 @@ static int init_hca(AVCodecContext *avctx, const uint8_t *extradata,
     if (c->total_band_count < c->base_band_count)
         return AVERROR_INVALIDDATA;
 
-    c->hfr_group_count = ceil2(c->total_band_count - (c->base_band_count + c->stereo_band_count),
+    hfr_group_count = ceil2(c->total_band_count - (c->base_band_count + c->stereo_band_count),
                                c->bands_per_hfr_group);
 
-    if (c->base_band_count + c->stereo_band_count + (unsigned long)c->hfr_group_count > 128ULL)
+    if (c->base_band_count + c->stereo_band_count + (uint64_t)hfr_group_count > 128ULL)
         return AVERROR_INVALIDDATA;
+    c->hfr_group_count = hfr_group_count;
 
     for (int i = 0; i < avctx->ch_layout.nb_channels; i++) {
         c->ch[i].chan_type = r[i];
