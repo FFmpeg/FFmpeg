@@ -469,7 +469,7 @@ int ff_h264_decode_extradata(const uint8_t *data, int size, H264ParamSets *ps,
     int ret;
 
     if (!data || size <= 0)
-        return -1;
+        return AVERROR(EINVAL);
 
     if (data[0] == 1) {
         int i, cnt, nalsize;
