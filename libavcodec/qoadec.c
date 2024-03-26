@@ -67,7 +67,7 @@ static int qoa_lms_predict(QOAChannel *lms)
 {
     int prediction = 0;
     for (int i = 0; i < QOA_LMS_LEN; i++)
-        prediction += lms->weights[i] * lms->history[i];
+        prediction += (unsigned)lms->weights[i] * lms->history[i];
     return prediction >> 13;
 }
 
