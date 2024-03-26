@@ -646,8 +646,9 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
             av_log(h->avctx, AV_LOG_DEBUG, "mmco:%d %d %d\n", h->mmco[i].opcode,
                    h->mmco[i].short_pic_num, h->mmco[i].long_arg);
 
-        if (mmco[i].opcode == MMCO_SHORT2UNUSED ||
-            mmco[i].opcode == MMCO_SHORT2LONG) {
+        switch (mmco[i].opcode) {
+        case MMCO_SHORT2UNUSED:
+        case MMCO_SHORT2LONG:
             frame_num = pic_num_extract(h, mmco[i].short_pic_num, &structure);
             pic       = find_short(h, frame_num, &j);
             if (!pic) {
@@ -659,16 +660,12 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
                 }
                 continue;
             }
-        }
-
-        switch (mmco[i].opcode) {
-        case MMCO_SHORT2UNUSED:
-            if (h->avctx->debug & FF_DEBUG_MMCO)
-                av_log(h->avctx, AV_LOG_DEBUG, "mmco: unref short %d count %d\n",
-                       h->mmco[i].short_pic_num, h->short_ref_count);
-            remove_short(h, frame_num, structure ^ PICT_FRAME);
-            break;
-        case MMCO_SHORT2LONG:
+            if (mmco[i].opcode == MMCO_SHORT2UNUSED) {
+                if (h->avctx->debug & FF_DEBUG_MMCO)
+                    av_log(h->avctx, AV_LOG_DEBUG, "mmco: unref short %d count %d\n",
+                           h->mmco[i].short_pic_num, h->short_ref_count);
+                remove_short(h, frame_num, structure ^ PICT_FRAME);
+            } else {
                 if (h->long_ref[mmco[i].long_arg] != pic)
                     remove_long(h, mmco[i].long_arg, 0);
 
@@ -678,6 +675,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
                     h->long_ref[mmco[i].long_arg]->long_ref = 1;
                     h->long_ref_count++;
                 }
+            }
             break;
         case MMCO_LONG2UNUSED:
             j   = pic_num_extract(h, mmco[i].long_arg, &structure);
