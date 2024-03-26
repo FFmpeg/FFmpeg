@@ -407,6 +407,11 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (s->h & 3) {
+        avpriv_request_sample(s->avctx, "Frame with height not being a multiple of 4");
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (s->w != s->avctx->width || s->h != s->avctx->height ||
         new_pix_fmt != s->avctx->pix_fmt) {
         av_frame_unref(s->frame);
