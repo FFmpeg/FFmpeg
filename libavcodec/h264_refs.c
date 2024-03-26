@@ -38,8 +38,7 @@
 
 static void pic_as_field(H264Ref *pic, const int parity)
 {
-    int i;
-    for (i = 0; i < FF_ARRAY_ELEMS(pic->data); ++i) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(pic->data); ++i) {
         if (parity == PICT_BOTTOM_FIELD)
             pic->data[i]   += pic->linesize[i];
         pic->reference      = parity;
@@ -104,13 +103,12 @@ static int build_def_list(H264Ref *def, int def_len,
 static int add_sorted(H264Picture **sorted, H264Picture * const *src,
                       int len, int limit, int dir)
 {
-    int i, best_poc;
     int out_i = 0;
 
     for (;;) {
-        best_poc = dir ? INT_MIN : INT_MAX;
+        int best_poc = dir ? INT_MIN : INT_MAX;
 
-        for (i = 0; i < len; i++) {
+        for (int i = 0; i < len; i++) {
             const int poc = src[i]->poc;
             if (((poc > limit) ^ dir) && ((poc < best_poc) ^ dir)) {
                 best_poc      = poc;
@@ -134,12 +132,11 @@ static int mismatches_ref(const H264Context *h, const H264Picture *pic)
 
 static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
 {
-    int i, len;
-    int j;
+    int len;
 
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
         H264Picture *sorted[32];
-        int cur_poc, list;
+        int cur_poc;
         int lens[2];
 
         if (FIELD_PICTURE(h))
@@ -147,7 +144,7 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
         else
             cur_poc = h->cur_pic_ptr->poc;
 
-        for (list = 0; list < 2; list++) {
+        for (int list = 0; list < 2; list++) {
             len  = add_sorted(sorted,       h->short_ref, h->short_ref_count, cur_poc, 1 ^ list);
             len += add_sorted(sorted + len, h->short_ref, h->short_ref_count, cur_poc, 0 ^ list);
             av_assert0(len <= 32);
@@ -165,6 +162,7 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
         }
 
         if (lens[0] == lens[1] && lens[1] > 1) {
+            int i;
             for (i = 0; i < lens[0] &&
                         sl->ref_list[0][i].parent->f->buf[0]->buffer ==
                         sl->ref_list[1][i].parent->f->buf[0]->buffer; i++);
@@ -184,14 +182,14 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
             memset(&sl->ref_list[0][len], 0, sizeof(H264Ref) * (sl->ref_count[0] - len));
     }
 #ifdef TRACE
-    for (i = 0; i < sl->ref_count[0]; i++) {
+    for (int i = 0; i < sl->ref_count[0]; i++) {
         ff_tlog(h->avctx, "List0: %s fn:%d 0x%p\n",
                 (sl->ref_list[0][i].parent ? (sl->ref_list[0][i].parent->long_ref ? "LT" : "ST") : "??"),
                 sl->ref_list[0][i].pic_id,
                 sl->ref_list[0][i].data[0]);
     }
     if (sl->slice_type_nos == AV_PICTURE_TYPE_B) {
-        for (i = 0; i < sl->ref_count[1]; i++) {
+        for (int i = 0; i < sl->ref_count[1]; i++) {
             ff_tlog(h->avctx, "List1: %s fn:%d 0x%p\n",
                     (sl->ref_list[1][i].parent ? (sl->ref_list[1][i].parent->long_ref ? "LT" : "ST") : "??"),
                     sl->ref_list[1][i].pic_id,
@@ -200,8 +198,8 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
     }
 #endif
 
-    for (j = 0; j<1+(sl->slice_type_nos == AV_PICTURE_TYPE_B); j++) {
-        for (i = 0; i < sl->ref_count[j]; i++) {
+    for (int j = 0; j < 1 + (sl->slice_type_nos == AV_PICTURE_TYPE_B); j++) {
+        for (int i = 0; i < sl->ref_count[j]; i++) {
             if (sl->ref_list[j][i].parent) {
                 if (mismatches_ref(h, sl->ref_list[j][i].parent)) {
                     av_log(h->avctx, AV_LOG_ERROR, "Discarding mismatching reference\n");
@@ -210,7 +208,7 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
             }
         }
     }
-    for (i = 0; i < sl->list_count; i++)
+    for (int i = 0; i < sl->list_count; i++)
         h->default_ref[i] = sl->ref_list[i][0];
 }
 
@@ -219,10 +217,9 @@ static void h264_initialise_ref_list(H264Context *h, H264SliceContext *sl)
  */
 static void print_short_term(const H264Context *h)
 {
-    uint32_t i;
     if (h->avctx->debug & FF_DEBUG_MMCO) {
         av_log(h->avctx, AV_LOG_DEBUG, "short term list:\n");
-        for (i = 0; i < h->short_ref_count; i++) {
+        for (uint32_t i = 0; i < h->short_ref_count; i++) {
             H264Picture *pic = h->short_ref[i];
             av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
                    i, pic->frame_num, pic->poc, pic->f->data[0]);
@@ -235,10 +232,9 @@ static void print_short_term(const H264Context *h)
  */
 static void print_long_term(const H264Context *h)
 {
-    uint32_t i;
     if (h->avctx->debug & FF_DEBUG_MMCO) {
         av_log(h->avctx, AV_LOG_DEBUG, "long term list:\n");
-        for (i = 0; i < 16; i++) {
+        for (uint32_t i = 0; i < 16; i++) {
             H264Picture *pic = h->long_ref[i];
             if (pic) {
                 av_log(h->avctx, AV_LOG_DEBUG, "%"PRIu32" fn:%d poc:%d %p\n",
@@ -273,22 +269,21 @@ static int pic_num_extract(const H264Context *h, int pic_num, int *structure)
 
 static void h264_fill_mbaff_ref_list(H264SliceContext *sl)
 {
-    int list, i, j;
-    for (list = 0; list < sl->list_count; list++) {
-        for (i = 0; i < sl->ref_count[list]; i++) {
+    for (int list = 0; list < sl->list_count; list++) {
+        for (int i = 0; i < sl->ref_count[list]; i++) {
             const H264Ref *frame = &sl->ref_list[list][i];
             H264Ref *field = &sl->ref_list[list][16 + 2 * i];
 
             field[0] = *frame;
 
-            for (j = 0; j < 3; j++)
+            for (int j = 0; j < 3; j++)
                 field[0].linesize[j] <<= 1;
             field[0].reference = PICT_TOP_FIELD;
             field[0].poc       = field[0].parent->field_poc[0];
 
             field[1] = field[0];
 
-            for (j = 0; j < 3; j++)
+            for (int j = 0; j < 3; j++)
                 field[1].data[j] += frame->parent->f->linesize[j];
             field[1].reference = PICT_BOTTOM_FIELD;
             field[1].poc       = field[1].parent->field_poc[1];
@@ -298,21 +293,19 @@ static void h264_fill_mbaff_ref_list(H264SliceContext *sl)
 
 int ff_h264_build_ref_list(H264Context *h, H264SliceContext *sl)
 {
-    int list, index, pic_structure;
-
     print_short_term(h);
     print_long_term(h);
 
     h264_initialise_ref_list(h, sl);
 
-    for (list = 0; list < sl->list_count; list++) {
+    for (int list = 0; list < sl->list_count; list++) {
         int pred = sl->curr_pic_num;
 
-        for (index = 0; index < sl->nb_ref_modifications[list]; index++) {
+        for (int index = 0; index < sl->nb_ref_modifications[list]; index++) {
             unsigned int modification_of_pic_nums_idc = sl->ref_modifications[list][index].op;
             unsigned int                          val = sl->ref_modifications[list][index].val;
             unsigned int pic_id;
-            int i;
+            int i, pic_structure;
             H264Picture *ref = NULL;
 
             switch (modification_of_pic_nums_idc) {
@@ -396,13 +389,13 @@ int ff_h264_build_ref_list(H264Context *h, H264SliceContext *sl)
             }
         }
     }
-    for (list = 0; list < sl->list_count; list++) {
-        for (index = 0; index < sl->ref_count[list]; index++) {
+    for (int list = 0; list < sl->list_count; list++) {
+        for (int index = 0; index < sl->ref_count[list]; index++) {
             if (   !sl->ref_list[list][index].parent
                 || (!FIELD_PICTURE(h) && (sl->ref_list[list][index].reference&3) != 3)) {
-                int i;
                 av_log(h->avctx, AV_LOG_ERROR, "Missing reference picture, default is %d\n", h->default_ref[list].poc);
-                for (i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
+
+                for (int i = 0; i < FF_ARRAY_ELEMS(h->last_pocs); i++)
                     h->last_pocs[i] = INT_MIN;
                 if (h->default_ref[list].parent
                     && !(!FIELD_PICTURE(h) && (h->default_ref[list].reference&3) != 3))
@@ -433,16 +426,14 @@ int ff_h264_build_ref_list(H264Context *h, H264SliceContext *sl)
 
 int ff_h264_decode_ref_pic_list_reordering(H264SliceContext *sl, void *logctx)
 {
-    int list, index;
-
     sl->nb_ref_modifications[0] = 0;
     sl->nb_ref_modifications[1] = 0;
 
-    for (list = 0; list < sl->list_count; list++) {
+    for (int list = 0; list < sl->list_count; list++) {
         if (!get_bits1(&sl->gb))    // ref_pic_list_modification_flag_l[01]
             continue;
 
-        for (index = 0; ; index++) {
+        for (int index = 0; ; index++) {
             unsigned int op = get_ue_golomb_31(&sl->gb);
 
             if (op == 3)
@@ -479,11 +470,10 @@ int ff_h264_decode_ref_pic_list_reordering(H264SliceContext *sl, void *logctx)
  */
 static inline int unreference_pic(H264Context *h, H264Picture *pic, int refmask)
 {
-    int i;
     if (pic->reference &= refmask) {
         return 0;
     } else {
-        for(i = 0; h->delayed_pic[i]; i++)
+        for (int i = 0; h->delayed_pic[i]; i++)
             if(pic == h->delayed_pic[i]){
                 pic->reference = DELAYED_PIC_REF;
                 break;
@@ -502,9 +492,7 @@ static inline int unreference_pic(H264Context *h, H264Picture *pic, int refmask)
  */
 static H264Picture *find_short(H264Context *h, int frame_num, int *idx)
 {
-    int i;
-
-    for (i = 0; i < h->short_ref_count; i++) {
+    for (int i = 0; i < h->short_ref_count; i++) {
         H264Picture *pic = h->short_ref[i];
         if (h->avctx->debug & FF_DEBUG_MMCO)
             av_log(h->avctx, AV_LOG_DEBUG, "%d %d %p\n", i, pic->frame_num, pic);
@@ -575,11 +563,8 @@ static H264Picture *remove_long(H264Context *h, int i, int ref_mask)
 
 void ff_h264_remove_all_refs(H264Context *h)
 {
-    int i;
-
-    for (i = 0; i < 16; i++) {
+    for (int i = 0; i < 16; i++)
         remove_long(h, i, 0);
-    }
     assert(h->long_ref_count == 0);
 
     if (h->short_ref_count && !h->last_pic_for_ec.f->data[0]) {
@@ -587,7 +572,7 @@ void ff_h264_remove_all_refs(H264Context *h)
         ff_h264_ref_picture(&h->last_pic_for_ec, h->short_ref[0]);
     }
 
-    for (i = 0; i < h->short_ref_count; i++) {
+    for (int i = 0; i < h->short_ref_count; i++) {
         unreference_pic(h, h->short_ref[i], 0);
         h->short_ref[i] = NULL;
     }
@@ -622,10 +607,8 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
 {
     MMCO *mmco = h->mmco;
     int mmco_count;
-    int i, av_uninit(j);
     int pps_ref_count[2] = {0};
     int current_ref_assigned = 0, err = 0;
-    H264Picture *av_uninit(pic);
 
     if (!h->ps.sps) {
         av_log(h->avctx, AV_LOG_ERROR, "SPS is unset\n");
@@ -640,17 +623,18 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
     if ((h->avctx->debug & FF_DEBUG_MMCO) && mmco_count == 0)
         av_log(h->avctx, AV_LOG_DEBUG, "no mmco here\n");
 
-    for (i = 0; i < mmco_count; i++) {
-        int av_uninit(structure), av_uninit(frame_num);
+    for (int i = 0; i < mmco_count; i++) {
         if (h->avctx->debug & FF_DEBUG_MMCO)
             av_log(h->avctx, AV_LOG_DEBUG, "mmco:%d %d %d\n", h->mmco[i].opcode,
                    h->mmco[i].short_pic_num, h->mmco[i].long_arg);
 
         switch (mmco[i].opcode) {
         case MMCO_SHORT2UNUSED:
-        case MMCO_SHORT2LONG:
-            frame_num = pic_num_extract(h, mmco[i].short_pic_num, &structure);
-            pic       = find_short(h, frame_num, &j);
+        case MMCO_SHORT2LONG: {
+            int structure, j;
+            int frame_num = pic_num_extract(h, mmco[i].short_pic_num, &structure);
+            H264Picture *pic = find_short(h, frame_num, &j);
+
             if (!pic) {
                 if (mmco[i].opcode != MMCO_SHORT2LONG ||
                     !h->long_ref[mmco[i].long_arg]    ||
@@ -677,14 +661,16 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
                 }
             }
             break;
-        case MMCO_LONG2UNUSED:
-            j   = pic_num_extract(h, mmco[i].long_arg, &structure);
-            pic = h->long_ref[j];
+        }
+        case MMCO_LONG2UNUSED: {
+            int structure, j = pic_num_extract(h, mmco[i].long_arg, &structure);
+            H264Picture *pic = h->long_ref[j];
             if (pic) {
                 remove_long(h, j, structure ^ PICT_FRAME);
             } else if (h->avctx->debug & FF_DEBUG_MMCO)
                 av_log(h->avctx, AV_LOG_DEBUG, "mmco: unref long failure\n");
             break;
+        }
         case MMCO_LONG:
                     // Comment below left from previous code as it is an interesting note.
                     /* First field in pair is in short term list or
@@ -700,7 +686,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
 
             /* make sure the current picture is not already assigned as a long ref */
             if (h->cur_pic_ptr->long_ref) {
-                for (j = 0; j < FF_ARRAY_ELEMS(h->long_ref); j++) {
+                for (int j = 0; j < FF_ARRAY_ELEMS(h->long_ref); j++) {
                     if (h->long_ref[j] == h->cur_pic_ptr) {
                         if (j != mmco[i].long_arg)
                             av_log(h->avctx, AV_LOG_ERROR, "mmco: cannot assign current picture to 2 long term references\n");
@@ -724,21 +710,19 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
         case MMCO_SET_MAX_LONG:
             assert(mmco[i].long_arg <= 16);
             // just remove the long term which index is greater than new max
-            for (j = mmco[i].long_arg; j < 16; j++) {
+            for (int j = mmco[i].long_arg; j < 16; j++)
                 remove_long(h, j, 0);
-            }
             break;
         case MMCO_RESET:
             while (h->short_ref_count) {
                 remove_short(h, h->short_ref[0]->frame_num, 0);
             }
-            for (j = 0; j < 16; j++) {
+            for (int j = 0; j < 16; j++)
                 remove_long(h, j, 0);
-            }
             h->poc.frame_num = h->cur_pic_ptr->frame_num = 0;
             h->mmco_reset = 1;
             h->cur_pic_ptr->mmco_reset = 1;
-            for (j = 0; j < FF_ARRAY_ELEMS(h->last_pocs); j++)
+            for (int j = 0; j < FF_ARRAY_ELEMS(h->last_pocs); j++)
                 h->last_pocs[j] = INT_MIN;
             break;
         default: av_assert0(0);
@@ -762,7 +746,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
                                            "(first field is long term)\n");
             err = AVERROR_INVALIDDATA;
         } else {
-            pic = remove_short(h, h->cur_pic_ptr->frame_num, 0);
+            H264Picture *pic = remove_short(h, h->cur_pic_ptr->frame_num, 0);
             if (pic) {
                 av_log(h->avctx, AV_LOG_ERROR, "illegal short term buffer state detected\n");
                 err = AVERROR_INVALIDDATA;
@@ -791,6 +775,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
         err = AVERROR_INVALIDDATA;
 
         if (h->long_ref_count && !h->short_ref_count) {
+            int i;
             for (i = 0; i < 16; ++i)
                 if (h->long_ref[i])
                     break;
@@ -798,13 +783,13 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
             assert(i < 16);
             remove_long(h, i, 0);
         } else {
-            pic = h->short_ref[h->short_ref_count - 1];
+            H264Picture *pic = h->short_ref[h->short_ref_count - 1];
             remove_short(h, pic->frame_num, 0);
         }
     }
 
-    for (i = 0; i<h->short_ref_count; i++) {
-        pic = h->short_ref[i];
+    for (int i = 0; i < h->short_ref_count; i++) {
+        H264Picture *pic = h->short_ref[i];
         if (pic->invalid_gap) {
             int d = av_mod_uintp2(h->cur_pic_ptr->frame_num - pic->frame_num, h->ps.sps->log2_max_frame_num);
             if (d > h->ps.sps->ref_frame_count)
@@ -815,7 +800,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
     print_short_term(h);
     print_long_term(h);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(h->ps.pps_list); i++) {
         if (h->ps.pps_list[i]) {
             const PPS *pps = h->ps.pps_list[i];
             pps_ref_count[0] = FFMAX(pps_ref_count[0], pps->ref_count[0]);
@@ -843,7 +828,6 @@ out:
 int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
                                    const H2645NAL *nal, void *logctx)
 {
-    int i;
     MMCO *mmco = sl->mmco;
     int nb_mmco = 0;
 
@@ -858,6 +842,7 @@ int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
     } else {
         sl->explicit_ref_marking = get_bits1(gb);
         if (sl->explicit_ref_marking) {
+            int i;
             for (i = 0; i < FF_ARRAY_ELEMS(sl->mmco); i++) {
                 MMCOOpcode opcode = get_ue_golomb_31(gb);
 
