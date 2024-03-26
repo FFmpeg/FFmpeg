@@ -262,7 +262,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
                     break;
                 case SND2_TAG:
                     /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
-                    pkt->duration = (chunk_size * 2) / wsvqa->channels;
+                    pkt->duration = (chunk_size * 2LL) / wsvqa->channels;
                     break;
                 }
                 break;
