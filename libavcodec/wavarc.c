@@ -414,7 +414,7 @@ static int ac_init(AVCodecContext *avctx,
 
 static uint16_t ac_get_prob(WavArcContext *s)
 {
-    return ((s->freq_range - 1) + (s->ac_value - s->ac_low) * s->freq_range) /
+    return ((s->freq_range - 1) + (s->ac_value - s->ac_low) * (unsigned)s->freq_range) /
            ((s->ac_high - s->ac_low) + 1U);
 }
 
@@ -439,8 +439,8 @@ static int ac_normalize(AVCodecContext *avctx, WavArcContext *s, GetBitContext *
         goto fail;
 
     range = (s->ac_high - s->ac_low) + 1;
-    s->ac_high = (range * s->range_high) / s->freq_range + s->ac_low - 1;
-    s->ac_low += (range * s->range_low)  / s->freq_range;
+    s->ac_high = (range * (unsigned)s->range_high) / s->freq_range + s->ac_low - 1;
+    s->ac_low += (range * (unsigned)s->range_low)  / s->freq_range;
 
     if (s->ac_high < s->ac_low)
         goto fail;
