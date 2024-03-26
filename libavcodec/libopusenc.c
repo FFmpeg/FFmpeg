@@ -43,6 +43,7 @@ typedef struct LibopusEncOpts {
     int packet_size;
     int max_bandwidth;
     int mapping_family;
+    int dtx;
 #ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
     int apply_phase_inv;
 #endif
@@ -158,6 +159,13 @@ static int libopus_configure_encoder(AVCodecContext *avctx, OpusMSEncoder *enc,
     if (ret != OPUS_OK)
         av_log(avctx, AV_LOG_WARNING,
                "Unable to set inband FEC: %s\n",
+               opus_strerror(ret));
+
+    ret = opus_multistream_encoder_ctl(enc,
+                                       OPUS_SET_DTX(opts->dtx));
+    if (ret != OPUS_OK)
+        av_log(avctx, AV_LOG_WARNING,
+               "Unable to set DTX: %s\n",
                opus_strerror(ret));
 
     if (avctx->cutoff) {
@@ -557,6 +565,7 @@ static const AVOption libopus_options[] = {
         { "on",             "Use variable bit rate", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, .unit = "vbr" },
         { "constrained",    "Use constrained VBR",   0, AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0, FLAGS, .unit = "vbr" },
     { "mapping_family", "Channel Mapping Family",              OFFSET(mapping_family), AV_OPT_TYPE_INT,   { .i64 = -1 },   -1,  255,  FLAGS, .unit = "mapping_family" },
+    { "dtx", "Enable DTX (Discontinuous transmission)", OFFSET(dtx), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
 #ifdef OPUS_SET_PHASE_INVERSION_DISABLED_REQUEST
     { "apply_phase_inv", "Apply intensity stereo phase inversion", OFFSET(apply_phase_inv), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, FLAGS },
 #endif
