@@ -113,6 +113,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     width = bytestream2_get_le32(&gb);
     height = bytestream2_get_le32(&gb);
+    if (width > INT_MAX-4U || height > INT_MAX-4U)
+        return AVERROR_INVALIDDATA;
     ret = ff_set_dimensions(avctx, FFALIGN(width, 4), FFALIGN(height, 4));
     if (ret < 0)
         return ret;
