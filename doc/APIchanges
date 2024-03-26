@@ -2,93 +2,93 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
-2024-03-xx - xxxxxxxxxx - lavu 59.7.100 - timestamp.h
+2024-03-25 - 5df901ffa56 - lavu 59.7.100 - timestamp.h
   Add av_ts_make_time_string2() for better timestamp precision, the new
   function accepts AVRational as time base instead of *AVRational, and is not
   an inline function like its predecessor.
 
-2024-03-xx - xxxxxxxxxx - lavu 59.6.100 - film_grain_params.h
+2024-03-23 - a9023377b22 - lavu 59.6.100 - film_grain_params.h
   Add av_film_grain_params_select().
 
-2024-03-xx - xxxxxxxxxx - lavu 59.5.100 - film_grain_params.h
+2024-03-23 - 35d2960dcd0 - lavu 59.5.100 - film_grain_params.h
   Add AVFilmGrainParams.color_range, color_primaries, color_trc, color_space,
   width, height, subsampling_x, subsampling_y, bit_depth_luma and
   bit_depth_chroma. Deprecate the corresponding fields from
   AVFilmGrainH274Params.
 
-2024-03-xx - xxxxxxxxxx - lavc 61.3.100 - jni.h
+2024-03-23 - f17e18d2922 - lavc 61.3.100 - jni.h
   Add av_jni_set_android_app_ctx() and av_jni_get_android_app_ctx().
 
-2024-03-22 - xxxxxxxxxx - lavu 59.4.100 - frame.h
+2024-03-22 - 26398da8f30 - lavu 59.4.100 - frame.h
   Constified the first-level pointee of av_frame_side_data_get()
   and renamed it to av_frame_side_data_get_c(). From now on,
   av_frame_side_data_get() is a wrapper around av_frame_side_data_get_c()
   that accepts AVFrameSideData * const *sd.
 
-2024-03-xx - xxxxxxxxxx - lavc 61.2.100 - avcodec.h
+2024-03-20 - 0d36844ddf9 - lavc 61.2.100 - avcodec.h
   Add AVCodecContext.[nb_]decoded_side_data.
 
-2024-03-xx - xxxxxxxxxx - lavu 59.3.100 - frame.h
+2024-03-20 - d9ade14c5c5 - lavu 59.3.100 - frame.h
   Add av_frame_side_data_free(), av_frame_side_data_new(),
   av_frame_side_data_clone(), av_frame_side_data_get() as well
   as AV_FRAME_SIDE_DATA_FLAG_UNIQUE.
 
-2024-03-xx - xxxxxxxxxx - lavu 59.2.100 - channel_layout.h
+2024-03-16 - ed6207274e6 - lavu 59.2.100 - channel_layout.h
   Add AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL.
 
-2024-03-08 - xxxxxxxxxx - lavc 61.1.100 - avcodec.h
+2024-03-08 - 68a8eca7523 - lavc 61.1.100 - avcodec.h
   Add AVCodecContext.[nb_]side_data_prefer_packet.
 
-2024-03-08 - xxxxxxxxxx - lavu 59.1.100 - opt.h
+2024-03-08 - efe44787781 - lavu 59.1.100 - opt.h
   Add AV_OPT_TYPE_FLAG_ARRAY and AVOptionArrayDef.
 
-2024-03-08 - xxxxxxxxxx - lavc 61.0.100 - vdpau.h
+2024-03-08 - c9f5cea9cca - lavc 61.0.100 - vdpau.h
   Deprecate av_vdpau_alloc_context(), av_alloc_vdpaucontext(),
   av_vdpau_hwaccel_get_render2() and av_vdpau_hwaccel_set_render2().
   The former are superseded by av_vdpau_bind_context(), the latter
   are unneeded as the relevant field is public and can be accessed directly.
 
-2024-03-06 - xxxxxxxxxx - lavf 60.25.100 - avformat.h
+2024-03-06 - 49707b05900 - lavf 60.25.100 - avformat.h
   Deprecate av_fmt_ctx_get_duration_estimation_method().
   The relevant field is public and needs no getter to access.
 
-2024-03-05 - xxxxxxxxxx - lavf 60.24.100 - avformat.h
+2024-03-05 - ab15c04dee5 - lavf 60.24.100 - avformat.h
   Add avformat_stream_group_name().
 
-2024-02-28 - xxxxxxxxxx - swr   4.14.100 - swresample.h
+2024-02-28 - b295aafb082 - swr   4.14.100 - swresample.h
   swr_convert() now accepts arrays of const pointers (to input and output).
 
-2024-02-28 - xxxxxxxxxx - lavu 58.40.100 - timestamp.h
+2024-02-28 - 58e3ef7f546 - lavu 58.40.100 - timestamp.h
   av_ts_make_time_string() now accepts a pointer to const AVRational.
 
-2024-02-28 - xxxxxxxxxx - lavf 60.23.100 - avio.h
+2024-02-28 - dfb9d8a5a2f - lavf 60.23.100 - avio.h
   avio_print_string_array() now accepts an array of const pointers.
 
-2024-02-26 - xxxxxxxxxx - lavf 60.22.101 - avformat.h
+2024-02-26 - 41e349c24a7 - lavf 60.22.101 - avformat.h
   AV_DISPOSITION_DEPENDENT may now also be used for video streams
   intended to be merged with other video streams for presentation.
 
-2024-02-26 - xxxxxxxxxx - lavf 60.22.100 - avformat.h
+2024-02-26 - 25a10677d12 - lavf 60.22.100 - avformat.h
   Add AVStreamGroupTileGrid
   Add AV_STREAM_GROUP_PARAMS_TILE_GRID
   Add AVStreamGroup.params.tile_grid
 
-2024-02-21 - xxxxxxxxxx - lavc 60.40.100 - avcodec.h
+2024-02-21 - 1d66a122df9 - lavc 60.40.100 - avcodec.h
   Deprecate AV_INPUT_BUFFER_MIN_SIZE without replacement.
 
-2024-02-16 - xxxxxxxxxx - lavu 58.39.100 - pixfmt.h
+2024-02-16 - eea9bd88a5f - lavu 58.39.100 - pixfmt.h
   Add AV_VIDEO_MAX_PLANES
 
-2024-02-13 - xxxxxxxxxx - lavf 60.21.100 - avformat.h
+2024-02-13 - ec2036454bc - lavf 60.21.100 - avformat.h
   Add AVStreamGroup.disposition.
 
-2024-02-xx - xxxxxxxxxx - lavu 58.38.100 - channel_layout.h
+2024-02-12 - 66386bf2a2a - lavu 58.38.100 - channel_layout.h
   Add av_channel_layout_retype().
 
-2024-02-xx - xxxxxxxxxx - lavu 58.37.100 - channel_layout.h
+2024-02-12 - 4569b861322 - lavu 58.37.100 - channel_layout.h
   Add av_channel_layout_custom_init().
 
-2024-02-04 - xxxxxxxxxx - lavc 60.39.100 - packet.h
+2024-02-04 - 45697e6a512 - lavc 60.39.100 - packet.h
   Add AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT.
 
 2023-11-xx - xxxxxxxxxx - lavfi 9.16.100 - buffersink.h buffersrc.h
@@ -98,7 +98,7 @@ API changes, most recent first:
 2023-11-xx - xxxxxxxxxx - lavfi 9.15.100 - avfilter.h
   Add AVFilterLink.colorspace, AVFilterLink.color_range
 
-2023-12-xx - xxxxxxxxxx - lavu 58.36.100 - pixfmt.h hwcontext.h hwcontext_d3d12va.h
+2023-12-21 - 142f727b9ca - lavu 58.36.100 - pixfmt.h hwcontext.h hwcontext_d3d12va.h
   Add AV_HWDEVICE_TYPE_D3D12VA and AV_PIX_FMT_D3D12.
   Add AVD3D12VADeviceContext, AVD3D12VASyncContext, AVD3D12VAFrame and
   AVD3D12VAFramesContext.
@@ -107,7 +107,7 @@ API changes, most recent first:
   Add AV_PKT_DATA_IAMF_MIX_GAIN_PARAM, AV_PKT_DATA_IAMF_DEMIXING_INFO_PARAM
   and AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM.
 
-2023-12-18 - xxxxxxxxxxx - lavc 60.19.100 - avformat.h
+2023-12-18 - 556b596d1d9 - lavc 60.19.100 - avformat.h
   Add AVStreamGroup struct.
   Add AVFormatContext.stream_groups and AVFormatContext.nb_stream_groups
   Add avformat_stream_group_create(), avformat_stream_group_add_stream(),
@@ -116,10 +116,10 @@ API changes, most recent first:
   AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT and
   AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION.
 
-2023-12-18 - xxxxxxxxxxx - lavu 58.35.100 - iamf.h
+2023-12-18 - d2af93bbefc - lavu 58.35.100 - iamf.h
   Add a new API to support Immersive Audio Model and Formats.
 
-2023-12-xx - xxxxxxxxxxx - lavu 58.33.100 - imgutils.h
+2023-12-13 - 5475f665f60 - lavu 58.33.100 - imgutils.h
   Add av_image_fill_color().
 
 2023-11-08 - b82957a66a7 - lavu 58.32.100 - channel_layout.h
