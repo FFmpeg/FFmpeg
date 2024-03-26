@@ -599,22 +599,26 @@ static int vaapi_decode_make_config(AVCodecContext *avctx,
         if (err < 0)
             goto fail;
 
-        frames->initial_pool_size = 1;
-        // Add per-codec number of surfaces used for storing reference frames.
-        switch (avctx->codec_id) {
-        case AV_CODEC_ID_H264:
-        case AV_CODEC_ID_HEVC:
-        case AV_CODEC_ID_AV1:
-            frames->initial_pool_size += 16;
-            break;
-        case AV_CODEC_ID_VP9:
-            frames->initial_pool_size += 8;
-            break;
-        case AV_CODEC_ID_VP8:
-            frames->initial_pool_size += 3;
-            break;
-        default:
-            frames->initial_pool_size += 2;
+        if (CONFIG_VAAPI_1)
+            frames->initial_pool_size = 0;
+        else {
+            frames->initial_pool_size = 1;
+            // Add per-codec number of surfaces used for storing reference frames.
+            switch (avctx->codec_id) {
+            case AV_CODEC_ID_H264:
+            case AV_CODEC_ID_HEVC:
+            case AV_CODEC_ID_AV1:
+                frames->initial_pool_size += 16;
+                break;
+            case AV_CODEC_ID_VP9:
+                frames->initial_pool_size += 8;
+                break;
+            case AV_CODEC_ID_VP8:
+                frames->initial_pool_size += 3;
+                break;
+            default:
+                frames->initial_pool_size += 2;
+            }
         }
     }
 
