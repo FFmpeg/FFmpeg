@@ -374,7 +374,7 @@ static int decode_2slp(AVCodecContext *avctx,
                 for (int o = 0; o < order; o++)
                     sum += s->filter[ch][o] * (unsigned)samples[n + 70 - o - 1];
 
-                samples[n + 70] = get_srice(gb, k) + (sum >> 4);
+                samples[n + 70] = get_srice(gb, k) + (unsigned)(sum >> 4);
             }
             finished = 1;
             break;
