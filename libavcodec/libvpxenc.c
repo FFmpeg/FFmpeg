@@ -49,6 +49,9 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
+#define IS_VP9(avctx) (CONFIG_LIBVPX_VP9_ENCODER && avctx->codec_id == AV_CODEC_ID_VP9)
+#define IS_VP8(avctx) (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8)
+
 /**
  * Portion of struct vpx_codec_cx_pkt from vpx_encoder.h.
  * One encoded frame returned from the library.
@@ -359,8 +362,7 @@ static int frame_data_submit(AVCodecContext *avctx, AVFifo *fifo,
     FrameData fd = { .pts = frame->pts };
     int ret;
 
-#if CONFIG_LIBVPX_VP9_ENCODER
-    if (avctx->codec_id == AV_CODEC_ID_VP9 &&
+    if (IS_VP9(avctx) &&
         // Keep HDR10+ if it has bit depth higher than 8 and
         // it has PQ trc (SMPTE2084).
         enccfg->g_bit_depth > 8 && avctx->color_trc == AVCOL_TRC_SMPTE2084) {
@@ -372,7 +374,6 @@ static int frame_data_submit(AVCodecContext *avctx, AVFifo *fifo,
                 return AVERROR(ENOMEM);
         }
     }
-#endif
 
     fd.duration     = frame->duration;
     fd.frame_opaque = frame->opaque;
