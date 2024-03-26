@@ -4866,6 +4866,8 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         for (int i = c->nb_heif_item - 1; i >= 0; i--) {
             HEIFItem *item = &c->heif_item[i];
 
+            av_freep(&item->name);
+
             if (!item->st)
                 continue;
 
