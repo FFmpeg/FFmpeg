@@ -204,7 +204,10 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
     output_frames->width     = ctx->output_width;
     output_frames->height    = ctx->output_height;
 
-    output_frames->initial_pool_size = 4;
+    if (CONFIG_VAAPI_1)
+        output_frames->initial_pool_size = 0;
+    else
+        output_frames->initial_pool_size = 4;
 
     err = ff_filter_init_hw_frames(avctx, outlink, 10);
     if (err < 0)
@@ -220,6 +223,8 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink)
     va_frames = output_frames->hwctx;
 
     av_assert0(ctx->va_context == VA_INVALID_ID);
+    av_assert0(output_frames->initial_pool_size ||
+               (va_frames->surface_ids == NULL && va_frames->nb_surfaces == 0));
     vas = vaCreateContext(ctx->hwctx->display, ctx->va_config,
                           ctx->output_width, ctx->output_height,
                           VA_PROGRESSIVE,
