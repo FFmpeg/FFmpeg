@@ -399,22 +399,6 @@ static int queue_alloc(ThreadQueue **ptq, unsigned nb_streams, unsigned queue_si
 
 static void *task_wrapper(void *arg);
 
-static int task_stop(SchTask *task)
-{
-    int ret;
-    void *thread_ret;
-
-    if (!task->thread_running)
-        return 0;
-
-    ret = pthread_join(task->thread, &thread_ret);
-    av_assert0(ret == 0);
-
-    task->thread_running = 0;
-
-    return (intptr_t)thread_ret;
-}
-
 static int task_start(SchTask *task)
 {
     int ret;
@@ -466,59 +450,6 @@ static int64_t trailing_dts(const Scheduler *sch, int count_finished)
     }
 
     return min_dts == INT64_MAX ? AV_NOPTS_VALUE : min_dts;
-}
-
-int sch_stop(Scheduler *sch, int64_t *finish_ts)
-{
-    int ret = 0, err;
-
-    atomic_store(&sch->terminate, 1);
-
-    for (unsigned type = 0; type < 2; type++)
-        for (unsigned i = 0; i < (type ? sch->nb_demux : sch->nb_filters); i++) {
-            SchWaiter *w = type ? &sch->demux[i].waiter : &sch->filters[i].waiter;
-            waiter_set(w, 1);
-        }
-
-    for (unsigned i = 0; i < sch->nb_demux; i++) {
-        SchDemux *d = &sch->demux[i];
-
-        err = task_stop(&d->task);
-        ret = err_merge(ret, err);
-    }
-
-    for (unsigned i = 0; i < sch->nb_dec; i++) {
-        SchDec *dec = &sch->dec[i];
-
-        err = task_stop(&dec->task);
-        ret = err_merge(ret, err);
-    }
-
-    for (unsigned i = 0; i < sch->nb_filters; i++) {
-        SchFilterGraph *fg = &sch->filters[i];
-
-        err = task_stop(&fg->task);
-        ret = err_merge(ret, err);
-    }
-
-    for (unsigned i = 0; i < sch->nb_enc; i++) {
-        SchEnc *enc = &sch->enc[i];
-
-        err = task_stop(&enc->task);
-        ret = err_merge(ret, err);
-    }
-
-    for (unsigned i = 0; i < sch->nb_mux; i++) {
-        SchMux *mux = &sch->mux[i];
-
-        err = task_stop(&mux->task);
-        ret = err_merge(ret, err);
-    }
-
-    if (finish_ts)
-        *finish_ts = trailing_dts(sch, 1);
-
-    return ret;
 }
 
 void sch_free(Scheduler **psch)
@@ -2515,4 +2446,73 @@ static void *task_wrapper(void *arg)
            ret < 0 ? av_err2str(ret) : "success");
 
     return (void*)(intptr_t)ret;
+}
+
+static int task_stop(SchTask *task)
+{
+    int ret;
+    void *thread_ret;
+
+    if (!task->thread_running)
+        return 0;
+
+    ret = pthread_join(task->thread, &thread_ret);
+    av_assert0(ret == 0);
+
+    task->thread_running = 0;
+
+    return (intptr_t)thread_ret;
+}
+
+int sch_stop(Scheduler *sch, int64_t *finish_ts)
+{
+    int ret = 0, err;
+
+    atomic_store(&sch->terminate, 1);
+
+    for (unsigned type = 0; type < 2; type++)
+        for (unsigned i = 0; i < (type ? sch->nb_demux : sch->nb_filters); i++) {
+            SchWaiter *w = type ? &sch->demux[i].waiter : &sch->filters[i].waiter;
+            waiter_set(w, 1);
+        }
+
+    for (unsigned i = 0; i < sch->nb_demux; i++) {
+        SchDemux *d = &sch->demux[i];
+
+        err = task_stop(&d->task);
+        ret = err_merge(ret, err);
+    }
+
+    for (unsigned i = 0; i < sch->nb_dec; i++) {
+        SchDec *dec = &sch->dec[i];
+
+        err = task_stop(&dec->task);
+        ret = err_merge(ret, err);
+    }
+
+    for (unsigned i = 0; i < sch->nb_filters; i++) {
+        SchFilterGraph *fg = &sch->filters[i];
+
+        err = task_stop(&fg->task);
+        ret = err_merge(ret, err);
+    }
+
+    for (unsigned i = 0; i < sch->nb_enc; i++) {
+        SchEnc *enc = &sch->enc[i];
+
+        err = task_stop(&enc->task);
+        ret = err_merge(ret, err);
+    }
+
+    for (unsigned i = 0; i < sch->nb_mux; i++) {
+        SchMux *mux = &sch->mux[i];
+
+        err = task_stop(&mux->task);
+        ret = err_merge(ret, err);
+    }
+
+    if (finish_ts)
+        *finish_ts = trailing_dts(sch, 1);
+
+    return ret;
 }
