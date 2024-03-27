@@ -421,8 +421,10 @@ typedef struct VVCLocalContext {
 
 #define BOUNDARY_LEFT_SLICE     (1 << 0)
 #define BOUNDARY_LEFT_TILE      (1 << 1)
-#define BOUNDARY_UPPER_SLICE    (1 << 2)
-#define BOUNDARY_UPPER_TILE     (1 << 3)
+#define BOUNDARY_LEFT_SUBPIC    (1 << 2)
+#define BOUNDARY_UPPER_SLICE    (1 << 3)
+#define BOUNDARY_UPPER_TILE     (1 << 4)
+#define BOUNDARY_UPPER_SUBPIC   (1 << 5)
     /* properties of the boundary of the current CTB for the purposes
      * of the deblocking filter */
     int boundary_flags;

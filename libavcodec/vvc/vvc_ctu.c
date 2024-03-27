@@ -2493,6 +2493,10 @@ void ff_vvc_decode_neighbour(VVCLocalContext *lc, const int x_ctb, const int y_c
         lc->boundary_flags |= BOUNDARY_UPPER_TILE;
     if (ry > 0 && fc->tab.slice_idx[rs] != fc->tab.slice_idx[rs - fc->ps.pps->ctb_width])
         lc->boundary_flags |= BOUNDARY_UPPER_SLICE;
+    if (fc->ps.sps->r->sps_subpic_ctu_top_left_x[lc->sc->sh.r->curr_subpic_idx] == rx)
+        lc->boundary_flags |= BOUNDARY_LEFT_SUBPIC;
+    if (fc->ps.sps->r->sps_subpic_ctu_top_left_y[lc->sc->sh.r->curr_subpic_idx] == ry)
+        lc->boundary_flags |= BOUNDARY_UPPER_SUBPIC;
     lc->ctb_left_flag = rx > 0 && !(lc->boundary_flags & BOUNDARY_LEFT_TILE);
     lc->ctb_up_flag   = ry > 0 && !(lc->boundary_flags & BOUNDARY_UPPER_TILE) && !(lc->boundary_flags & BOUNDARY_UPPER_SLICE);
     lc->ctb_up_right_flag = lc->ctb_up_flag && (fc->ps.pps->ctb_to_col_bd[rx] == fc->ps.pps->ctb_to_col_bd[rx + 1]) &&
