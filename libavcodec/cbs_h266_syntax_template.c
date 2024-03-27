@@ -2120,9 +2120,12 @@ static int FUNC(pps) (CodedBitstreamContext *ctx, RWContext *rw,
         } else {
             if (current->pps_no_pic_partition_flag)
                 infer(pps_num_slices_in_pic_minus1, 0);
-            else if (current->pps_single_slice_per_subpic_flag)
+            else if (current->pps_single_slice_per_subpic_flag) {
+                for (i = 0; i <= sps->sps_num_subpics_minus1; i++)
+                    current->num_slices_in_subpic[i] = 1;
                 infer(pps_num_slices_in_pic_minus1,
                       sps->sps_num_subpics_minus1);
+            }
             // else?
         }
         if (!current->pps_rect_slice_flag ||
