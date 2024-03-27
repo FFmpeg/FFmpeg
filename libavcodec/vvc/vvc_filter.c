@@ -528,6 +528,26 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
     return boundary_strength(lc, mvf_q, mvf_p, rpl_p);
 }
 
+static int deblock_is_boundary(const VVCLocalContext *lc, const int boundary,
+    const int pos, const int vertical)
+{
+    const VVCFrameContext *fc = lc->fc;
+    const H266RawPPS *rpps    = fc->ps.pps->r;
+    int flag;
+    if (boundary && (pos % fc->ps.sps->ctb_size_y) == 0) {
+        flag = vertical ? BOUNDARY_LEFT_SLICE : BOUNDARY_UPPER_SLICE;
+        if (lc->boundary_flags & flag &&
+            !rpps->pps_loop_filter_across_slices_enabled_flag)
+            return 0;
+
+        flag = vertical ? BOUNDARY_LEFT_TILE : BOUNDARY_UPPER_TILE;
+        if (lc->boundary_flags & flag &&
+            !rpps->pps_loop_filter_across_tiles_enabled_flag)
+            return 0;
+    }
+    return boundary;
+}
+
 static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
     const int x0, const int y0, const int width, const int height)
 {
@@ -554,15 +574,7 @@ static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
     }
 
     // bs for vertical TU boundaries
-    boundary_left = x0 > 0 && !(x0 & 3);
-    if (boundary_left &&
-        ((!fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag &&
-            lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
-            (x0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0) ||
-            (!fc->ps.pps->r->pps_loop_filter_across_tiles_enabled_flag &&
-            lc->boundary_flags & BOUNDARY_LEFT_TILE &&
-            (x0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0)))
-        boundary_left = 0;
+    boundary_left = deblock_is_boundary(lc, x0 > 0 && !(x0 & 3), x0, 1);
 
     if (boundary_left) {
         const RefPicList *rpl_left =
@@ -610,15 +622,7 @@ static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
             has_horizontal_sb = cb_height > 8;
     }
 
-    boundary_upper = y0 > 0 && !(y0 & 3);
-    if (boundary_upper &&
-        ((!fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag &&
-            lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
-            (y0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0) ||
-            (!fc->ps.pps->r->pps_loop_filter_across_tiles_enabled_flag &&
-            lc->boundary_flags & BOUNDARY_UPPER_TILE &&
-            (y0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0)))
-        boundary_upper = 0;
+    boundary_upper = deblock_is_boundary(lc, y0 > 0 && !(y0 & 3), y0, 0);
 
     if (boundary_upper) {
         const RefPicList *rpl_top =
@@ -646,18 +650,9 @@ static void vvc_deblock_bs_chroma_vertical(const VVCLocalContext *lc,
     const int x0, const int y0, const int width, const int height)
 {
     const VVCFrameContext *fc = lc->fc;
-    int boundary_left;
-
     // bs for vertical TU boundaries
-    boundary_left = x0 > 0 && !(x0 & ((CHROMA_GRID << fc->ps.sps->hshift[1]) - 1));
-    if (boundary_left &&
-        ((!fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag &&
-          lc->boundary_flags & BOUNDARY_LEFT_SLICE &&
-          (x0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0) ||
-         (!fc->ps.pps->r->pps_loop_filter_across_tiles_enabled_flag &&
-          lc->boundary_flags & BOUNDARY_LEFT_TILE &&
-          (x0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0)))
-        boundary_left = 0;
+    const int boundary_left = deblock_is_boundary(lc,
+         x0 > 0 && !(x0 & ((CHROMA_GRID << fc->ps.sps->hshift[CHROMA]) - 1)), x0, 1);
 
     if (boundary_left) {
         for (int i = 0; i < height; i += 2) {
@@ -674,17 +669,8 @@ static void vvc_deblock_bs_chroma_horizontal(const VVCLocalContext *lc,
     const int x0, const int y0, const int width, const int height)
 {
     const VVCFrameContext *fc = lc->fc;
-    int boundary_upper;
-
-    boundary_upper = y0 > 0 && !(y0 & ((CHROMA_GRID << fc->ps.sps->vshift[1]) - 1));
-    if (boundary_upper &&
-        ((!fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag &&
-            lc->boundary_flags & BOUNDARY_UPPER_SLICE &&
-            (y0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0) ||
-            (!fc->ps.pps->r->pps_loop_filter_across_tiles_enabled_flag &&
-                lc->boundary_flags & BOUNDARY_UPPER_TILE &&
-                (y0 % (1 << fc->ps.sps->ctb_log2_size_y)) == 0)))
-        boundary_upper = 0;
+    const int boundary_upper  = deblock_is_boundary(lc,
+        y0 > 0 && !(y0 & ((CHROMA_GRID << fc->ps.sps->vshift[CHROMA]) - 1)), y0, 0);
 
     if (boundary_upper) {
         for (int i = 0; i < width; i += 2) {
