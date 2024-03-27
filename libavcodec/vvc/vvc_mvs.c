@@ -200,10 +200,12 @@ static int derive_temporal_colocated_mvs(const VVCLocalContext *lc, MvField temp
 static int temporal_luma_motion_vector(const VVCLocalContext *lc,
     const int refIdxLx, Mv *mvLXCol, const int X, int check_center, int sb_flag)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const VVCSPS *sps           = fc->ps.sps;
-    const CodingUnit *cu        = lc->cu;
-    int x, y, colPic, availableFlagLXCol = 0;
+    const VVCFrameContext *fc = lc->fc;
+    const VVCSPS *sps         = fc->ps.sps;
+    const VVCPPS *pps         = fc->ps.pps;
+    const CodingUnit *cu      = lc->cu;
+    const int subpic_idx      = lc->sc->sh.r->curr_subpic_idx;
+    int x, y, x_end, y_end, colPic, availableFlagLXCol = 0;
     int min_pu_width = fc->ps.pps->min_pu_width;
     VVCFrame *ref = fc->ref->collocated_ref;
     MvField *tab_mvf;
@@ -224,10 +226,12 @@ static int temporal_luma_motion_vector(const VVCLocalContext *lc,
     x = cu->x0 + cu->cb_width;
     y = cu->y0 + cu->cb_height;
 
+    x_end = pps->subpic_x[subpic_idx] + pps->subpic_width[subpic_idx];
+    y_end = pps->subpic_y[subpic_idx] + pps->subpic_height[subpic_idx];
+
     if (tab_mvf &&
         (cu->y0 >> sps->ctb_log2_size_y) == (y >> sps->ctb_log2_size_y) &&
-        y < fc->ps.pps->height &&
-        x < fc->ps.pps->width) {
+        x < x_end && y < y_end) {
         x                 &= ~7;
         y                 &= ~7;
         temp_col           = TAB_MVF(x, y);
@@ -991,13 +995,18 @@ static av_always_inline int compare_pf_ref_idx(const MvField *A, const struct Mv
     return 1;
 }
 
-static av_always_inline void sb_clip_location(const VVCFrameContext *fc,
+static av_always_inline void sb_clip_location(const VVCLocalContext *lc,
     const int x_ctb, const int y_ctb, const Mv* temp_mv, int *x, int *y)
 {
-    const VVCPPS *pps       = fc->ps.pps;
-    const int ctb_log2_size = fc->ps.sps->ctb_log2_size_y;
-    *y = av_clip(*y + temp_mv->y, y_ctb, FFMIN(pps->height - 1, y_ctb + (1 << ctb_log2_size) - 1)) & ~7;
-    *x = av_clip(*x + temp_mv->x, x_ctb, FFMIN(pps->width - 1,  x_ctb + (1 << ctb_log2_size) + 3)) & ~7;
+    const VVCFrameContext *fc = lc->fc;
+    const VVCPPS *pps         = fc->ps.pps;
+    const int ctb_log2_size   = fc->ps.sps->ctb_log2_size_y;
+    const int subpic_idx      = lc->sc->sh.r->curr_subpic_idx;
+    const int x_end           = pps->subpic_x[subpic_idx] + pps->subpic_width[subpic_idx];
+    const int y_end           = pps->subpic_y[subpic_idx] + pps->subpic_height[subpic_idx];
+
+    *x = av_clip(*x + temp_mv->x, x_ctb, FFMIN(x_end - 1, x_ctb + (1 << ctb_log2_size) + 3)) & ~7;
+    *y = av_clip(*y + temp_mv->y, y_ctb, FFMIN(y_end - 1, y_ctb + (1 << ctb_log2_size) - 1)) & ~7;
 }
 
 static void sb_temproal_luma_motion(const VVCLocalContext *lc,
@@ -1015,7 +1024,7 @@ static void sb_temproal_luma_motion(const VVCLocalContext *lc,
     int colPic                  = ref->poc;
     int X                       = 0;
 
-    sb_clip_location(fc, x_ctb, y_ctb, temp_mv, &x, &y);
+    sb_clip_location(lc, x_ctb, y_ctb, temp_mv, &x, &y);
 
     temp_col    = TAB_MVF(x, y);
     mvLXCol     = mv + 0;
