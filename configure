@@ -6120,11 +6120,7 @@ extern_prefix=${sym%%ff_extern*}
 
 check_cc pragma_deprecated "" '_Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")'
 
-# The global variable ensures the bits appear unchanged in the object file.
-test_cc <<EOF || die "endian test failed"
-unsigned int endian = 'B' << 24 | 'I' << 16 | 'G' << 8 | 'E';
-EOF
-od -t x1 $TMPO | grep -q '42 *49 *47 *45' && enable bigendian
+test_cpp_condition stdlib.h "defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)" && enable bigendian
 
 check_cc const_nan math.h "struct { double d; } static const bar[] = { { NAN } }"
 
