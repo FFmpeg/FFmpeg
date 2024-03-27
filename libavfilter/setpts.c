@@ -150,6 +150,13 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static int config_output_video(AVFilterLink *outlink)
+{
+    outlink->frame_rate = (AVRational){ 1, 0 };
+
+    return 0;
+}
+
 #define BUF_SIZE 64
 
 static inline char *double2int64str(char *buf, double v)
@@ -322,6 +329,14 @@ static const AVFilterPad avfilter_vf_setpts_inputs[] = {
     },
 };
 
+static const AVFilterPad outputs_video[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .config_props = config_output_video,
+    },
+};
+
 const AVFilter ff_vf_setpts = {
     .name            = "setpts",
     .description     = NULL_IF_CONFIG_SMALL("Set PTS for the output video frame."),
@@ -335,7 +350,7 @@ const AVFilter ff_vf_setpts = {
     .priv_class = &setpts_class,
 
     FILTER_INPUTS(avfilter_vf_setpts_inputs),
-    FILTER_OUTPUTS(ff_video_default_filterpad),
+    FILTER_OUTPUTS(outputs_video),
 };
 #endif /* CONFIG_SETPTS_FILTER */
 
