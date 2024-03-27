@@ -528,8 +528,8 @@ const URLProtocol ff_fd_protocol = {
 
 #if CONFIG_ANDROID_CONTENT_PROTOCOL
 #include <jni.h>
+#include "libavcodec/ffjni.h"
 #include "libavcodec/jni.h"
-#include "libavcodec/ffjni.c"
 
 typedef struct JFields {
     jclass uri_class;
