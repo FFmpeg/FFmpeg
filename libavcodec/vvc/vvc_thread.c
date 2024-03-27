@@ -417,7 +417,6 @@ static int run_parse(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     const int rs        = t->rs;
     const CTU *ctu      = fc->tab.ctus + rs;
 
-    lc->sc = t->sc;
     lc->ep = t->ep;
 
     ret = ff_vvc_coding_tree_unit(lc, t->ctu_idx, rs, t->rx, t->ry);
@@ -433,15 +432,9 @@ static int run_parse(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 static int run_inter(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 {
     VVCFrameContext *fc = lc->fc;
-    VVCFrameThread *ft  = fc->ft;
-    const int rs        = t->ry * ft->ctu_width + t->rx;
-    const CTU *ctu      = fc->tab.ctus + rs;
-    const int slice_idx = fc->tab.slice_idx[rs];
+    const CTU *ctu      = fc->tab.ctus + t->rs;
 
-    if (slice_idx != -1) {
-        lc->sc = fc->slices[slice_idx];
-        ff_vvc_predict_inter(lc, rs);
-    }
+    ff_vvc_predict_inter(lc, t->rs);
 
     if (ctu->has_dmvr)
         report_frame_progress(fc, t->ry, VVC_PROGRESS_MV);
@@ -451,14 +444,7 @@ static int run_inter(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 
 static int run_recon(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 {
-    VVCFrameContext *fc = lc->fc;
-    const int rs        = t->rs;
-    const int slice_idx = fc->tab.slice_idx[rs];
-
-    if (slice_idx != -1) {
-        lc->sc = fc->slices[slice_idx];
-        ff_vvc_reconstruct(lc, rs, t->rx, t->ry);
-    }
+    ff_vvc_reconstruct(lc, t->rs, t->rx, t->ry);
 
     return 0;
 }
@@ -470,13 +456,8 @@ static int run_lmcs(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     const int ctu_size  = ft->ctu_size;
     const int x0        = t->rx * ctu_size;
     const int y0        = t->ry * ctu_size;
-    const int rs        = t->ry * ft->ctu_width + t->rx;
-    const int slice_idx = fc->tab.slice_idx[rs];
 
-    if (slice_idx != -1) {
-        lc->sc = fc->slices[slice_idx];
-        ff_vvc_lmcs_filter(lc, x0, y0);
-    }
+    ff_vvc_lmcs_filter(lc, x0, y0);
 
     return 0;
 }
@@ -485,18 +466,13 @@ static int run_deblock_v(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 {
     VVCFrameContext *fc = lc->fc;
     VVCFrameThread *ft  = fc->ft;
-    const int rs        = t->ry * ft->ctu_width + t->rx;
     const int ctb_size  = ft->ctu_size;
     const int x0        = t->rx * ctb_size;
     const int y0        = t->ry * ctb_size;
-    const int slice_idx = fc->tab.slice_idx[rs];
 
-    if (slice_idx != -1) {
-        lc->sc = fc->slices[slice_idx];
-        if (!lc->sc->sh.r->sh_deblocking_filter_disabled_flag) {
-            ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, rs);
-            ff_vvc_deblock_vertical(lc, x0, y0, rs);
-        }
+    if (!lc->sc->sh.r->sh_deblocking_filter_disabled_flag) {
+        ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, t->rs);
+        ff_vvc_deblock_vertical(lc, x0, y0, t->rs);
     }
 
     return 0;
@@ -507,20 +483,15 @@ static int run_deblock_h(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     VVCFrameContext *fc = lc->fc;
     VVCFrameThread *ft  = fc->ft;
     const int ctb_size  = ft->ctu_size;
-    const int rs        = t->ry * ft->ctu_width + t->rx;
     const int x0        = t->rx * ctb_size;
     const int y0        = t->ry * ctb_size;
-    const int slice_idx = fc->tab.slice_idx[rs];
 
-    if (slice_idx != -1) {
-        lc->sc = fc->slices[slice_idx];
-        if (!lc->sc->sh.r->sh_deblocking_filter_disabled_flag) {
-            ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, rs);
-            ff_vvc_deblock_horizontal(lc, x0, y0, rs);
-        }
-        if (fc->ps.sps->r->sps_sao_enabled_flag)
-            ff_vvc_sao_copy_ctb_to_hv(lc, t->rx, t->ry, t->ry == ft->ctu_height - 1);
+    if (!lc->sc->sh.r->sh_deblocking_filter_disabled_flag) {
+        ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, t->rs);
+        ff_vvc_deblock_horizontal(lc, x0, y0, t->rs);
     }
+    if (fc->ps.sps->r->sps_sao_enabled_flag)
+        ff_vvc_sao_copy_ctb_to_hv(lc, t->rx, t->ry, t->ry == ft->ctu_height - 1);
 
     return 0;
 }
@@ -529,13 +500,12 @@ static int run_sao(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 {
     VVCFrameContext *fc = lc->fc;
     VVCFrameThread *ft  = fc->ft;
-    const int rs        = t->ry * fc->ps.pps->ctb_width + t->rx;
     const int ctb_size  = ft->ctu_size;
     const int x0        = t->rx * ctb_size;
     const int y0        = t->ry * ctb_size;
 
     if (fc->ps.sps->r->sps_sao_enabled_flag) {
-        ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, rs);
+        ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, t->rs);
         ff_vvc_sao_filter(lc, x0, y0);
     }
 
@@ -554,12 +524,8 @@ static int run_alf(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     const int y0        = t->ry * ctu_size;
 
     if (fc->ps.sps->r->sps_alf_enabled_flag) {
-        const int slice_idx = CTB(fc->tab.slice_idx, t->rx, t->ry);
-        if (slice_idx != -1) {
-            lc->sc = fc->slices[slice_idx];
-            ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, t->rs);
-            ff_vvc_alf_filter(lc, x0, y0);
-        }
+        ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, t->rs);
+        ff_vvc_alf_filter(lc, x0, y0);
     }
     report_frame_progress(fc, t->ry, VVC_PROGRESS_PIXEL);
 
@@ -602,6 +568,8 @@ static void task_run_stage(VVCTask *t, VVCContext *s, VVCLocalContext *lc)
 #ifdef VVC_THREAD_DEBUG
     av_log(s->avctx, AV_LOG_DEBUG, "frame %5d, %s(%3d, %3d)\r\n", (int)t->fc->decode_order, task_name[stage], t->rx, t->ry);
 #endif
+
+    lc->sc = t->sc;
 
     if (!atomic_load(&ft->ret)) {
         if ((ret = run[stage](s, lc, t)) < 0) {
