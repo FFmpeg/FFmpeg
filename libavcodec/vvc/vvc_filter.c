@@ -529,9 +529,10 @@ static av_always_inline int deblock_bs(const VVCLocalContext *lc,
 }
 
 static int deblock_is_boundary(const VVCLocalContext *lc, const int boundary,
-    const int pos, const int vertical)
+    const int pos, const int rs, const int vertical)
 {
     const VVCFrameContext *fc = lc->fc;
+    const H266RawSPS *rsps    = fc->ps.sps->r;
     const H266RawPPS *rpps    = fc->ps.pps->r;
     int flag;
     if (boundary && (pos % fc->ps.sps->ctb_size_y) == 0) {
@@ -544,12 +545,22 @@ static int deblock_is_boundary(const VVCLocalContext *lc, const int boundary,
         if (lc->boundary_flags & flag &&
             !rpps->pps_loop_filter_across_tiles_enabled_flag)
             return 0;
+
+        flag = vertical ? BOUNDARY_LEFT_SUBPIC : BOUNDARY_UPPER_SUBPIC;
+        if (lc->boundary_flags & flag) {
+            const int q_rs              = rs - (vertical ? 1 : fc->ps.pps->ctb_width);
+            const SliceContext *q_slice = lc->fc->slices[lc->fc->tab.slice_idx[q_rs]];
+
+            if (!rsps->sps_loop_filter_across_subpic_enabled_flag[q_slice->sh.r->curr_subpic_idx] ||
+                !rsps->sps_loop_filter_across_subpic_enabled_flag[lc->sc->sh.r->curr_subpic_idx])
+                return 0;
+        }
     }
     return boundary;
 }
 
 static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height)
+    const int x0, const int y0, const int width, const int height, const int rs)
 {
     const VVCFrameContext *fc  = lc->fc;
     const MvField *tab_mvf     = fc->tab.mvf;
@@ -574,7 +585,7 @@ static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
     }
 
     // bs for vertical TU boundaries
-    boundary_left = deblock_is_boundary(lc, x0 > 0 && !(x0 & 3), x0, 1);
+    boundary_left = deblock_is_boundary(lc, x0 > 0 && !(x0 & 3), x0, rs, 1);
 
     if (boundary_left) {
         const RefPicList *rpl_left =
@@ -598,7 +609,7 @@ static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
 }
 
 static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height)
+    const int x0, const int y0, const int width, const int height, const int rs)
 {
     const VVCFrameContext *fc  = lc->fc;
     const MvField *tab_mvf     = fc->tab.mvf;
@@ -622,7 +633,7 @@ static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
             has_horizontal_sb = cb_height > 8;
     }
 
-    boundary_upper = deblock_is_boundary(lc, y0 > 0 && !(y0 & 3), y0, 0);
+    boundary_upper = deblock_is_boundary(lc, y0 > 0 && !(y0 & 3), y0, rs, 0);
 
     if (boundary_upper) {
         const RefPicList *rpl_top =
@@ -647,12 +658,11 @@ static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
 }
 
 static void vvc_deblock_bs_chroma_vertical(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height)
+    const int x0, const int y0, const int width, const int height, const int rs)
 {
     const VVCFrameContext *fc = lc->fc;
-    // bs for vertical TU boundaries
     const int boundary_left = deblock_is_boundary(lc,
-         x0 > 0 && !(x0 & ((CHROMA_GRID << fc->ps.sps->hshift[CHROMA]) - 1)), x0, 1);
+         x0 > 0 && !(x0 & ((CHROMA_GRID << fc->ps.sps->hshift[CHROMA]) - 1)), x0, rs, 1);
 
     if (boundary_left) {
         for (int i = 0; i < height; i += 2) {
@@ -666,11 +676,11 @@ static void vvc_deblock_bs_chroma_vertical(const VVCLocalContext *lc,
 }
 
 static void vvc_deblock_bs_chroma_horizontal(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height)
+    const int x0, const int y0, const int width, const int height, const int rs)
 {
     const VVCFrameContext *fc = lc->fc;
     const int boundary_upper  = deblock_is_boundary(lc,
-        y0 > 0 && !(y0 & ((CHROMA_GRID << fc->ps.sps->vshift[CHROMA]) - 1)), y0, 0);
+        y0 > 0 && !(y0 & ((CHROMA_GRID << fc->ps.sps->vshift[CHROMA]) - 1)), y0, rs, 0);
 
     if (boundary_upper) {
         for (int i = 0; i < width; i += 2) {
@@ -684,9 +694,9 @@ static void vvc_deblock_bs_chroma_horizontal(const VVCLocalContext *lc,
 }
 
 typedef void (*deblock_bs_fn)(const VVCLocalContext *lc, const int x0, const int y0,
-    const int width, const int height);
+    const int width, const int height, const int rs);
 
-static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0, const int vertical)
+static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0, const int rs, const int vertical)
 {
     const VVCFrameContext *fc = lc->fc;
     const VVCSPS *sps  = fc->ps.sps;
@@ -707,7 +717,7 @@ static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0
                 const int off = y * fc->ps.pps->min_tu_width + x;
                 if ((fc->tab.tb_pos_x0[is_chroma][off] >> MIN_TU_LOG2) == x && (fc->tab.tb_pos_y0[is_chroma][off] >> MIN_TU_LOG2) == y) {
                     deblock_bs[vertical][is_chroma](lc, x << MIN_TU_LOG2, y << MIN_TU_LOG2,
-                        fc->tab.tb_width[is_chroma][off] << hs, fc->tab.tb_height[is_chroma][off] << vs);
+                        fc->tab.tb_width[is_chroma][off] << hs, fc->tab.tb_height[is_chroma][off] << vs, rs);
                 }
             }
         }
@@ -791,7 +801,7 @@ static int get_qp(const VVCFrameContext *fc, const uint8_t *src, const int x, co
     return get_qp_c(fc, x, y, c_idx, vertical);
 }
 
-void ff_vvc_deblock_vertical(const VVCLocalContext *lc, int x0, int y0)
+void ff_vvc_deblock_vertical(const VVCLocalContext *lc, const int x0, const int y0, const int rs)
 {
     VVCFrameContext *fc = lc->fc;
     const VVCSPS *sps   = fc->ps.sps;
@@ -806,11 +816,9 @@ void ff_vvc_deblock_vertical(const VVCLocalContext *lc, int x0, int y0)
     const int ctb_log2_size_y = fc->ps.sps->ctb_log2_size_y;
     int x_end, y_end;
     const int ctb_size = 1 << ctb_log2_size_y;
-    const int ctb = (x0 >> ctb_log2_size_y) +
-        (y0 >> ctb_log2_size_y) * fc->ps.pps->ctb_width;
-    const DBParams  *params = fc->tab.deblock + ctb;
+    const DBParams *params = fc->tab.deblock + rs;
 
-    vvc_deblock_bs(lc, x0, y0, 1);
+    vvc_deblock_bs(lc, x0, y0, rs, 1);
 
     x_end = x0 + ctb_size;
     if (x_end > fc->ps.pps->width)
@@ -861,7 +869,7 @@ void ff_vvc_deblock_vertical(const VVCLocalContext *lc, int x0, int y0)
     }
 }
 
-void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, int x0, int y0)
+void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, const int x0, const int y0, const int rs)
 {
     VVCFrameContext *fc = lc->fc;
     const VVCSPS *sps   = fc->ps.sps;
@@ -876,11 +884,9 @@ void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, int x0, int y0)
     const int ctb_log2_size_y = fc->ps.sps->ctb_log2_size_y;
     int x_end, y_end;
     const int ctb_size = 1 << ctb_log2_size_y;
-    const int ctb = (x0 >> ctb_log2_size_y) +
-        (y0 >> ctb_log2_size_y) * fc->ps.pps->ctb_width;
-    const DBParams *params = fc->tab.deblock + ctb;
+    const DBParams *params = fc->tab.deblock + rs;
 
-    vvc_deblock_bs(lc, x0, y0, 0);
+    vvc_deblock_bs(lc, x0, y0, rs, 0);
 
     x_end = x0 + ctb_size;
     if (x_end > fc->ps.pps->width)

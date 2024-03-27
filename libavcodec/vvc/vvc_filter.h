@@ -38,16 +38,18 @@ void ff_vvc_lmcs_filter(const VVCLocalContext *lc, const int x0, const int y0);
  * @param lc local context for CTU
  * @param x0 x position for the CTU
  * @param y0 y position for the CTU
+ * @param rs raster position for the CTU
  */
-void ff_vvc_deblock_vertical(const VVCLocalContext *lc, int x0, int y0);
+void ff_vvc_deblock_vertical(const VVCLocalContext *lc, int x0, int y0, int rs);
 
 /**
  * horizontal deblock filter for the CTU
  * @param lc local context for CTU
  * @param x0 x position for the CTU
  * @param y0 y position for the CTU
+ * @param rs raster position for the CTU
  */
-void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, int x0, int y0);
+void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, int x0, int y0, int rs);
 
 /**
  * sao filter for the CTU

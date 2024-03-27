@@ -495,7 +495,7 @@ static int run_deblock_v(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
         lc->sc = fc->slices[slice_idx];
         if (!lc->sc->sh.r->sh_deblocking_filter_disabled_flag) {
             ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, rs);
-            ff_vvc_deblock_vertical(lc, x0, y0);
+            ff_vvc_deblock_vertical(lc, x0, y0, rs);
         }
     }
 
@@ -516,7 +516,7 @@ static int run_deblock_h(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
         lc->sc = fc->slices[slice_idx];
         if (!lc->sc->sh.r->sh_deblocking_filter_disabled_flag) {
             ff_vvc_decode_neighbour(lc, x0, y0, t->rx, t->ry, rs);
-            ff_vvc_deblock_horizontal(lc, x0, y0);
+            ff_vvc_deblock_horizontal(lc, x0, y0, rs);
         }
         if (fc->ps.sps->r->sps_sao_enabled_flag)
             ff_vvc_sao_copy_ctb_to_hv(lc, t->rx, t->ry, t->ry == ft->ctu_height - 1);
