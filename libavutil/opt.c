@@ -1861,7 +1861,6 @@ int av_opt_set_from_string(void *ctx, const char *opts,
 {
     int ret, count = 0;
     const char *dummy_shorthand = NULL;
-    char *av_uninit(parsed_key), *av_uninit(value);
     const char *key;
 
     if (!opts)
@@ -1870,6 +1869,7 @@ int av_opt_set_from_string(void *ctx, const char *opts,
         shorthand = &dummy_shorthand;
 
     while (*opts) {
+        char *parsed_key, *value;
         ret = av_opt_get_key_value(&opts, key_val_sep, pairs_sep,
                                    *shorthand ? AV_OPT_FLAG_IMPLICIT_KEY : 0,
                                    &parsed_key, &value);
