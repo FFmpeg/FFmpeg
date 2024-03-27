@@ -279,6 +279,25 @@ int main(int argc, char **argv)
         }
         av_packet_unref(packet);
     }
+    if (ret == AVERROR_EOF) {
+        /* signal EOF to the filtergraph */
+        if (av_buffersrc_add_frame_flags(buffersrc_ctx, NULL, 0) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error while closing the filtergraph\n");
+            goto end;
+        }
+
+        /* pull remaining frames from the filtergraph */
+        while (1) {
+            ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                break;
+            if (ret < 0)
+                goto end;
+            print_frame(filt_frame);
+            av_frame_unref(filt_frame);
+        }
+    }
+
 end:
     avfilter_graph_free(&filter_graph);
     avcodec_free_context(&dec_ctx);
