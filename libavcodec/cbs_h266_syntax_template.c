@@ -3221,19 +3221,27 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
             flag(sh_cabac_init_flag);
         else
             infer(sh_cabac_init_flag, 0);
-        if (ph->ph_temporal_mvp_enabled_flag && !pps->pps_rpl_info_in_ph_flag) {
-            if (current->sh_slice_type == VVC_SLICE_TYPE_B)
-                flag(sh_collocated_from_l0_flag);
-            else
-                infer(sh_collocated_from_l0_flag, 1);
-            if ((current->sh_collocated_from_l0_flag &&
-                 current->num_ref_idx_active[0] > 1) ||
-                (!current->sh_collocated_from_l0_flag &&
-                 current->num_ref_idx_active[1] > 1)) {
-                unsigned int idx = current->sh_collocated_from_l0_flag ? 0 : 1;
-                ue(sh_collocated_ref_idx, 0, current->num_ref_idx_active[idx] - 1);
+        if (ph->ph_temporal_mvp_enabled_flag) {
+            if (!pps->pps_rpl_info_in_ph_flag) {
+                if (current->sh_slice_type == VVC_SLICE_TYPE_B)
+                    flag(sh_collocated_from_l0_flag);
+                else
+                    infer(sh_collocated_from_l0_flag, 1);
+                if ((current->sh_collocated_from_l0_flag &&
+                    current->num_ref_idx_active[0] > 1) ||
+                    (!current->sh_collocated_from_l0_flag &&
+                    current->num_ref_idx_active[1] > 1)) {
+                    unsigned int idx = current->sh_collocated_from_l0_flag ? 0 : 1;
+                    ue(sh_collocated_ref_idx, 0, current->num_ref_idx_active[idx] - 1);
+                } else {
+                    infer(sh_collocated_ref_idx, 0);
+                }
             } else {
-                infer(sh_collocated_ref_idx, 0);
+                if (current->sh_slice_type == VVC_SLICE_TYPE_B)
+                    infer(sh_collocated_from_l0_flag, ph->ph_collocated_from_l0_flag);
+                else
+                    infer(sh_collocated_from_l0_flag, 1);
+                infer(sh_collocated_ref_idx, ph->ph_collocated_ref_idx);
             }
         }
         if (!pps->pps_wp_info_in_ph_flag &&
