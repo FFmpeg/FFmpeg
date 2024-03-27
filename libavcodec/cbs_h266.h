@@ -588,11 +588,11 @@ typedef struct H266RawPPS {
     uint16_t num_tile_columns;
     uint16_t num_tile_rows;
     uint16_t num_tiles_in_pic;
-    uint16_t slice_height_in_ctus[VVC_MAX_SLICES];
-    uint16_t num_slices_in_subpic[VVC_MAX_SLICES];
-    uint16_t sub_pic_id_val[VVC_MAX_SLICES];
-    uint16_t col_width_val[VVC_MAX_TILE_COLUMNS];
-    uint16_t row_height_val[VVC_MAX_TILE_ROWS];
+    uint16_t slice_height_in_ctus[VVC_MAX_SLICES];          ///< sliceHeightInCtus
+    uint16_t num_slices_in_subpic[VVC_MAX_SLICES];          ///< NumSlicesInSubpic
+    uint16_t sub_pic_id_val[VVC_MAX_SLICES];                ///< SubpicIdVal
+    uint16_t col_width_val[VVC_MAX_TILE_COLUMNS];           ///< ColWidthVal
+    uint16_t row_height_val[VVC_MAX_TILE_ROWS];             ///< RowHeightVal
 } H266RawPPS;
 
 typedef struct H266RawAPS {
