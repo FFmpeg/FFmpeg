@@ -292,6 +292,7 @@ static int pps_bd(VVCPPS *pps)
         for (int k = pps->col_bd[i]; k < j; k++)
             pps->ctb_to_col_bd[k] = pps->col_bd[i];
     }
+    pps->col_bd[r->num_tile_columns] = pps->ctb_to_col_bd[pps->ctb_width] = pps->ctb_width;
 
     for (int i = 0, j = 0; i < r->num_tile_rows; i++) {
         pps->row_bd[i] = j;
@@ -299,6 +300,8 @@ static int pps_bd(VVCPPS *pps)
         for (int k = pps->row_bd[i]; k < j; k++)
             pps->ctb_to_row_bd[k] = pps->row_bd[i];
     }
+    pps->row_bd[r->num_tile_rows] = pps->ctb_to_row_bd[pps->ctb_height] = pps->ctb_height;
+
     return 0;
 }
 
