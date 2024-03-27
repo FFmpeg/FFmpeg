@@ -127,6 +127,10 @@ typedef struct VVCPPS {
 
     uint16_t ref_wraparound_offset;         ///< PpsRefWraparoundOffset
 
+    uint16_t subpic_x[VVC_MAX_SLICES];      ///< SubpicLeftBoundaryPos
+    uint16_t subpic_y[VVC_MAX_SLICES];      ///< SubpicTopBoundaryPos
+    uint16_t subpic_width[VVC_MAX_SLICES];
+    uint16_t subpic_height[VVC_MAX_SLICES];
 } VVCPPS;
 
 #define MAX_WEIGHTS 15

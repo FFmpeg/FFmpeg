@@ -516,6 +516,24 @@ static void pps_ref_wraparound_offset(VVCPPS *pps, const VVCSPS *sps)
         pps->ref_wraparound_offset = (pps->width / sps->min_cb_size_y) - r->pps_pic_width_minus_wraparound_offset;
 }
 
+static void pps_subpic(VVCPPS *pps, const VVCSPS *sps)
+{
+    const H266RawSPS *rsps = sps->r;
+    for (int i = 0; i < rsps->sps_num_subpics_minus1 + 1; i++) {
+        if (rsps->sps_subpic_treated_as_pic_flag[i]) {
+            pps->subpic_x[i]      = rsps->sps_subpic_ctu_top_left_x[i] << sps->ctb_log2_size_y;
+            pps->subpic_y[i]      = rsps->sps_subpic_ctu_top_left_y[i] << sps->ctb_log2_size_y;
+            pps->subpic_width[i]  = FFMIN(pps->width  - pps->subpic_x[i], (rsps->sps_subpic_width_minus1[i]  + 1) << sps->ctb_log2_size_y);
+            pps->subpic_height[i] = FFMIN(pps->height - pps->subpic_y[i], (rsps->sps_subpic_height_minus1[i] + 1) << sps->ctb_log2_size_y);
+        } else {
+            pps->subpic_x[i]      = 0;
+            pps->subpic_y[i]      = 0;
+            pps->subpic_width[i]  = pps->width;
+            pps->subpic_height[i] = pps->height;
+        }
+    }
+}
+
 static int pps_derive(VVCPPS *pps, const VVCSPS *sps)
 {
     int ret;
@@ -532,6 +550,7 @@ static int pps_derive(VVCPPS *pps, const VVCSPS *sps)
         return ret;
 
     pps_ref_wraparound_offset(pps, sps);
+    pps_subpic(pps, sps);
 
     return 0;
 }
