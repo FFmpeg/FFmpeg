@@ -87,10 +87,10 @@ static int get_qp_y_pred(const VVCLocalContext *lc)
     const int min_cb_width  = fc->ps.pps->min_cb_width;
     const int x_cb          = cu->x0 >> sps->min_cb_log2_size_y;
     const int y_cb          = cu->y0 >> sps->min_cb_log2_size_y;
-    const int x_ctb         = cu->x0 >> ctb_log2_size;
-    const int y_ctb         = cu->y0 >> ctb_log2_size;
-    const int in_same_ctb_a = ((xQg - 1) >> ctb_log2_size) == x_ctb && (yQg >> ctb_log2_size) == y_ctb;
-    const int in_same_ctb_b = (xQg >> ctb_log2_size) == x_ctb && ((yQg - 1) >> ctb_log2_size) == y_ctb;
+    const int rx            = cu->x0 >> ctb_log2_size;
+    const int ry            = cu->y0 >> ctb_log2_size;
+    const int in_same_ctb_a = ((xQg - 1) >> ctb_log2_size) == rx && (yQg >> ctb_log2_size) == ry;
+    const int in_same_ctb_b = (xQg >> ctb_log2_size) == rx && ((yQg - 1) >> ctb_log2_size) == ry;
     int qPy_pred, qPy_a, qPy_b;
 
     if (lc->na.cand_up) {

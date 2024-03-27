@@ -99,7 +99,7 @@ static void copy_vert(uint8_t *dst, const uint8_t *src, const int pixel_shift, c
 
 static void copy_ctb_to_hv(VVCFrameContext *fc, const uint8_t *src,
     const ptrdiff_t src_stride, const int x, const int y, const int width, const int height,
-    const int c_idx, const int x_ctb, const int y_ctb, const int top)
+    const int c_idx, const int rx, const int ry, const int top)
 {
     const int ps = fc->ps.sps->pixel_shift;
     const int w  = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
@@ -107,16 +107,16 @@ static void copy_ctb_to_hv(VVCFrameContext *fc, const uint8_t *src,
 
     if (top) {
         /* top */
-        memcpy(fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * y_ctb) * w + x) << ps),
+        memcpy(fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * ry) * w + x) << ps),
             src, width << ps);
     } else {
         /* bottom */
-        memcpy(fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * y_ctb + 1) * w + x) << ps),
+        memcpy(fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * ry + 1) * w + x) << ps),
             src + src_stride * (height - 1), width << ps);
 
         /* copy vertical edges */
-        copy_vert(fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * x_ctb) * h + y) << ps), src, ps, height, 1 << ps, src_stride);
-        copy_vert(fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * x_ctb + 1) * h + y) << ps), src + ((width - 1) << ps), ps, height, 1 << ps, src_stride);
+        copy_vert(fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * rx) * h + y) << ps), src, ps, height, 1 << ps, src_stride);
+        copy_vert(fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * rx + 1) * h + y) << ps), src + ((width - 1) << ps), ps, height, 1 << ps, src_stride);
     }
 }
 
@@ -158,9 +158,9 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
     static const uint8_t sao_tab[16] = { 0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8 };
     int c_idx;
     int edges[4];  // 0 left 1 top 2 right 3 bottom
-    const int x_ctb      = x >> fc->ps.sps->ctb_log2_size_y;
-    const int y_ctb      = y >> fc->ps.sps->ctb_log2_size_y;
-    const SAOParams *sao = &CTB(fc->tab.sao, x_ctb, y_ctb);
+    const int rx         = x >> fc->ps.sps->ctb_log2_size_y;
+    const int ry         = y >> fc->ps.sps->ctb_log2_size_y;
+    const SAOParams *sao = &CTB(fc->tab.sao, rx, ry);
     // flags indicating unfilterable edges
     uint8_t vert_edge[]          = { 0, 0 };
     uint8_t horiz_edge[]         = { 0, 0 };
@@ -174,39 +174,39 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
     uint8_t up_tile_edge     = 0;
     uint8_t bottom_tile_edge = 0;
 
-    edges[LEFT]   = x_ctb == 0;
-    edges[TOP]    = y_ctb == 0;
-    edges[RIGHT]  = x_ctb == fc->ps.pps->ctb_width  - 1;
-    edges[BOTTOM] = y_ctb == fc->ps.pps->ctb_height - 1;
+    edges[LEFT]   = rx == 0;
+    edges[TOP]    = ry == 0;
+    edges[RIGHT]  = rx == fc->ps.pps->ctb_width  - 1;
+    edges[BOTTOM] = ry == fc->ps.pps->ctb_height - 1;
 
     if (restore) {
         if (!edges[LEFT]) {
-            left_tile_edge  = no_tile_filter && fc->ps.pps->ctb_to_col_bd[x_ctb] == x_ctb;
-            vert_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb - 1, y_ctb)) || left_tile_edge;
+            left_tile_edge  = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] == rx;
+            vert_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry)) || left_tile_edge;
         }
         if (!edges[RIGHT]) {
-            right_tile_edge = no_tile_filter && fc->ps.pps->ctb_to_col_bd[x_ctb] != fc->ps.pps->ctb_to_col_bd[x_ctb + 1];
-            vert_edge[1]    = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb + 1, y_ctb)) || right_tile_edge;
+            right_tile_edge = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] != fc->ps.pps->ctb_to_col_bd[rx + 1];
+            vert_edge[1]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry)) || right_tile_edge;
         }
         if (!edges[TOP]) {
-            up_tile_edge     = no_tile_filter && fc->ps.pps->ctb_to_row_bd[y_ctb] == y_ctb;
-            horiz_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb, y_ctb - 1)) || up_tile_edge;
+            up_tile_edge     = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] == ry;
+            horiz_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry - 1)) || up_tile_edge;
         }
         if (!edges[BOTTOM]) {
-            bottom_tile_edge = no_tile_filter && fc->ps.pps->ctb_to_row_bd[y_ctb] != fc->ps.pps->ctb_to_row_bd[y_ctb + 1];
-            horiz_edge[1]    = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb, y_ctb + 1)) || bottom_tile_edge;
+            bottom_tile_edge = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] != fc->ps.pps->ctb_to_row_bd[ry + 1];
+            horiz_edge[1]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry + 1)) || bottom_tile_edge;
         }
         if (!edges[LEFT] && !edges[TOP]) {
-            diag_edge[0] = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb - 1, y_ctb - 1)) || left_tile_edge || up_tile_edge;
+            diag_edge[0] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry - 1)) || left_tile_edge || up_tile_edge;
         }
         if (!edges[TOP] && !edges[RIGHT]) {
-            diag_edge[1] = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb + 1, y_ctb - 1)) || right_tile_edge || up_tile_edge;
+            diag_edge[1] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry - 1)) || right_tile_edge || up_tile_edge;
         }
         if (!edges[RIGHT] && !edges[BOTTOM]) {
-            diag_edge[2] = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb + 1, y_ctb + 1)) || right_tile_edge || bottom_tile_edge;
+            diag_edge[2] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry + 1)) || right_tile_edge || bottom_tile_edge;
         }
         if (!edges[LEFT] && !edges[BOTTOM]) {
-            diag_edge[3] = (!lfase && CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb - 1, y_ctb + 1)) || left_tile_edge || bottom_tile_edge;
+            diag_edge[3] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry + 1)) || left_tile_edge || bottom_tile_edge;
         }
     }
 
@@ -245,7 +245,7 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
                 int pos = 0;
 
                 dst1 = dst - dst_stride - (left << sh);
-                src1 = fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * y_ctb - 1) * w + x0 - left) << sh);
+                src1 = fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * ry - 1) * w + x0 - left) << sh);
                 if (left) {
                     copy_pixel(dst1, src1, sh);
                     pos += (1 << sh);
@@ -264,7 +264,7 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
                 int pos = 0;
 
                 dst1 = dst + height * dst_stride - (left << sh);
-                src1 = fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * y_ctb + 2) * w + x0 - left) << sh);
+                src1 = fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * ry + 2) * w + x0 - left) << sh);
                 if (left) {
                     copy_pixel(dst1, src1, sh);
                     pos += (1 << sh);
@@ -277,12 +277,12 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
             }
             if (!edges[LEFT]) {
                 copy_vert(dst - (1 << sh),
-                    fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * x_ctb - 1) * h + y0) << sh),
+                    fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * rx - 1) * h + y0) << sh),
                     sh, height, dst_stride, 1 << sh);
             }
             if (!edges[RIGHT]) {
                 copy_vert(dst + (width << sh),
-                    fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * x_ctb + 2) * h + y0) << sh),
+                    fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * rx + 2) * h + y0) << sh),
                     sh, height, dst_stride, 1 << sh);
             }
 
@@ -994,7 +994,7 @@ static void alf_extend_horz(uint8_t *dst, const uint8_t *src,
 }
 
 static void alf_copy_ctb_to_hv(VVCFrameContext *fc, const uint8_t *src, const ptrdiff_t src_stride,
-    const int x, const int y, const int width, const int height, const int x_ctb, const int y_ctb, const int c_idx)
+    const int x, const int y, const int width, const int height, const int rx, const int ry, const int c_idx)
 {
     const int ps            = fc->ps.sps->pixel_shift;
     const int w             = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
@@ -1005,12 +1005,12 @@ static void alf_copy_ctb_to_hv(VVCFrameContext *fc, const uint8_t *src, const pt
 
     /* copy horizontal edges */
     for (int i = 0; i < FF_ARRAY_ELEMS(offset_h); i++) {
-        alf_copy_border(fc->tab.alf_pixel_buffer_h[c_idx][i] + ((border_pixels * y_ctb * w + x)<< ps),
+        alf_copy_border(fc->tab.alf_pixel_buffer_h[c_idx][i] + ((border_pixels * ry * w + x)<< ps),
             src + offset_h[i] * src_stride, ps, width, border_pixels, w << ps, src_stride);
     }
     /* copy vertical edges */
     for (int i = 0; i < FF_ARRAY_ELEMS(offset_v); i++) {
-        alf_copy_border(fc->tab.alf_pixel_buffer_v[c_idx][i] + ((h * x_ctb + y) * (border_pixels << ps)),
+        alf_copy_border(fc->tab.alf_pixel_buffer_v[c_idx][i] + ((h * rx + y) * (border_pixels << ps)),
             src + (offset_v[i] << ps), ps, border_pixels, height, border_pixels << ps, src_stride);
     }
 }
@@ -1050,7 +1050,7 @@ static void alf_fill_border_v(uint8_t *dst, const ptrdiff_t dst_stride, const ui
 }
 
 static void alf_prepare_buffer(VVCFrameContext *fc, uint8_t *_dst, const uint8_t *_src, const int x, const int y,
-    const int x_ctb, const int y_ctb, const int width, const int height, const ptrdiff_t dst_stride, const ptrdiff_t src_stride,
+    const int rx, const int ry, const int width, const int height, const ptrdiff_t dst_stride, const ptrdiff_t src_stride,
     const int c_idx, const int *edges)
 {
     const int ps = fc->ps.sps->pixel_shift;
@@ -1062,23 +1062,23 @@ static void alf_prepare_buffer(VVCFrameContext *fc, uint8_t *_dst, const uint8_t
     copy_ctb(_dst, _src, width << ps, height, dst_stride, src_stride);
 
     //top
-    src = fc->tab.alf_pixel_buffer_h[c_idx][1] + (((border_pixels * w) << ps) * (y_ctb - 1) + (x << ps));
+    src = fc->tab.alf_pixel_buffer_h[c_idx][1] + (((border_pixels * w) << ps) * (ry - 1) + (x << ps));
     dst = _dst - border_pixels * dst_stride;
     alf_fill_border_h(dst, dst_stride, src, w  << ps, _dst, width, border_pixels, ps, edges[TOP]);
 
     //bottom
-    src = fc->tab.alf_pixel_buffer_h[c_idx][0] + (((border_pixels * w) << ps) * (y_ctb + 1) + (x << ps));
+    src = fc->tab.alf_pixel_buffer_h[c_idx][0] + (((border_pixels * w) << ps) * (ry + 1) + (x << ps));
     dst = _dst + height * dst_stride;
     alf_fill_border_h(dst, dst_stride, src, w  << ps, _dst + (height - 1) * dst_stride, width, border_pixels, ps, edges[BOTTOM]);
 
 
     //left
-    src = fc->tab.alf_pixel_buffer_v[c_idx][1] + (h * (x_ctb - 1) + y - border_pixels) * (border_pixels << ps);
+    src = fc->tab.alf_pixel_buffer_v[c_idx][1] + (h * (rx - 1) + y - border_pixels) * (border_pixels << ps);
     dst = _dst - (border_pixels << ps) - border_pixels * dst_stride;
     alf_fill_border_v(dst, dst_stride, src,  dst + (border_pixels << ps), border_pixels, height, ps, edges, edges[LEFT]);
 
     //right
-    src = fc->tab.alf_pixel_buffer_v[c_idx][0] + (h * (x_ctb + 1) + y - border_pixels) * (border_pixels << ps);
+    src = fc->tab.alf_pixel_buffer_v[c_idx][0] + (h * (rx + 1) + y - border_pixels) * (border_pixels << ps);
     dst = _dst + (width << ps) - border_pixels * dst_stride;
     alf_fill_border_v(dst, dst_stride, src,  dst - (1 << ps), border_pixels, height, ps, edges, edges[RIGHT]);
 }
@@ -1177,8 +1177,8 @@ static void alf_filter_cc(VVCLocalContext *lc, uint8_t *dst, const uint8_t *luma
 void ff_vvc_alf_copy_ctu_to_hv(VVCLocalContext* lc, const int x0, const int y0)
 {
     VVCFrameContext *fc  = lc->fc;
-    const int x_ctb      = x0 >> fc->ps.sps->ctb_log2_size_y;
-    const int y_ctb      = y0 >> fc->ps.sps->ctb_log2_size_y;
+    const int rx         = x0 >> fc->ps.sps->ctb_log2_size_y;
+    const int ry         = y0 >> fc->ps.sps->ctb_log2_size_y;
     const int ctb_size_y = fc->ps.sps->ctb_size_y;
     const int ps         = fc->ps.sps->pixel_shift;
     const int c_end      = fc->ps.sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
@@ -1194,7 +1194,7 @@ void ff_vvc_alf_copy_ctu_to_hv(VVCLocalContext* lc, const int x0, const int y0)
         const int src_stride = fc->frame->linesize[c_idx];
         uint8_t* src = &fc->frame->data[c_idx][y * src_stride + (x << ps)];
 
-        alf_copy_ctb_to_hv(fc, src, src_stride, x, y, width, height, x_ctb, y_ctb, c_idx);
+        alf_copy_ctb_to_hv(fc, src, src_stride, x, y, width, height, rx, ry, c_idx);
     }
 }
 
@@ -1202,28 +1202,28 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
 {
     VVCFrameContext *fc     = lc->fc;
     const VVCPPS *pps       = fc->ps.pps;
-    const int x_ctb         = x0 >> fc->ps.sps->ctb_log2_size_y;
-    const int y_ctb         = y0 >> fc->ps.sps->ctb_log2_size_y;
+    const int rx            = x0 >> fc->ps.sps->ctb_log2_size_y;
+    const int ry            = y0 >> fc->ps.sps->ctb_log2_size_y;
     const int ctb_size_y    = fc->ps.sps->ctb_size_y;
     const int ps            = fc->ps.sps->pixel_shift;
     const int padded_stride = EDGE_EMU_BUFFER_STRIDE << ps;
     const int padded_offset = padded_stride * ALF_PADDING_SIZE + (ALF_PADDING_SIZE << ps);
     const int c_end         = fc->ps.sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
-    ALFParams *alf          = &CTB(fc->tab.alf, x_ctb, y_ctb);
-    int edges[MAX_EDGES]    = { x_ctb == 0, y_ctb == 0, x_ctb == pps->ctb_width - 1, y_ctb == pps->ctb_height - 1 };
+    ALFParams *alf          = &CTB(fc->tab.alf, rx, ry);
+    int edges[MAX_EDGES]    = { rx == 0, ry == 0, rx == pps->ctb_width - 1, ry == pps->ctb_height - 1 };
 
     if (!pps->r->pps_loop_filter_across_tiles_enabled_flag) {
         edges[LEFT]   = edges[LEFT] || (lc->boundary_flags & BOUNDARY_LEFT_TILE);
         edges[TOP]    = edges[TOP] || (lc->boundary_flags & BOUNDARY_UPPER_TILE);
-        edges[RIGHT]  = edges[RIGHT] || pps->ctb_to_col_bd[x_ctb] != pps->ctb_to_col_bd[x_ctb + 1];
-        edges[BOTTOM] = edges[BOTTOM] || pps->ctb_to_row_bd[y_ctb] != pps->ctb_to_row_bd[y_ctb + 1];
+        edges[RIGHT]  = edges[RIGHT] || pps->ctb_to_col_bd[rx] != pps->ctb_to_col_bd[rx + 1];
+        edges[BOTTOM] = edges[BOTTOM] || pps->ctb_to_row_bd[ry] != pps->ctb_to_row_bd[ry + 1];
     }
 
     if (!pps->r->pps_loop_filter_across_slices_enabled_flag) {
         edges[LEFT]   = edges[LEFT] || (lc->boundary_flags & BOUNDARY_LEFT_SLICE);
         edges[TOP]    = edges[TOP] || (lc->boundary_flags & BOUNDARY_UPPER_SLICE);
-        edges[RIGHT]  = edges[RIGHT] || CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb + 1, y_ctb);
-        edges[BOTTOM] = edges[BOTTOM] || CTB(fc->tab.slice_idx, x_ctb, y_ctb) != CTB(fc->tab.slice_idx, x_ctb, y_ctb + 1);
+        edges[RIGHT]  = edges[RIGHT] || CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry);
+        edges[BOTTOM] = edges[BOTTOM] || CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry + 1);
     }
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
@@ -1243,7 +1243,7 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
 
         if (alf->ctb_flag[c_idx] || (!c_idx && (alf->ctb_cc_idc[0] || alf->ctb_cc_idc[1]))) {
             padded = (c_idx ? lc->alf_buffer_chroma : lc->alf_buffer_luma) + padded_offset;
-            alf_prepare_buffer(fc, padded, src, x, y, x_ctb, y_ctb, width, height,
+            alf_prepare_buffer(fc, padded, src, x, y, rx, ry, width, height,
                 padded_stride, src_stride, c_idx, edges);
         }
         if (alf->ctb_flag[c_idx]) {
