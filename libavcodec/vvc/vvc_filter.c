@@ -166,39 +166,53 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
     uint8_t horiz_edge[]         = { 0, 0 };
     uint8_t diag_edge[]          = { 0, 0, 0, 0 };
     uint8_t tile_edge[]          = { 0, 0, 0, 0 };
+    uint8_t subpic_edge[]        = { 0, 0, 0, 0 };
+    const int subpic_idx         = lc->sc->sh.r->curr_subpic_idx;
     const uint8_t lfase          = fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag;
     const uint8_t no_tile_filter = fc->ps.pps->r->num_tiles_in_pic > 1 &&
                                !fc->ps.pps->r->pps_loop_filter_across_tiles_enabled_flag;
-    const uint8_t restore        = no_tile_filter || !lfase;
+    const uint8_t no_subpic_filter = fc->ps.sps->r->sps_num_subpics_minus1 &&
+        !fc->ps.sps->r->sps_loop_filter_across_subpic_enabled_flag[subpic_idx];
+    const uint8_t restore        = no_subpic_filter || no_tile_filter || !lfase;
 
     if (restore) {
         if (!edges[LEFT]) {
-            tile_edge[LEFT]  = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] == rx;
-            vert_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry)) || tile_edge[LEFT];
+            tile_edge[LEFT]   = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] == rx;
+            subpic_edge[LEFT] = no_subpic_filter && fc->ps.sps->r->sps_subpic_ctu_top_left_x[subpic_idx] == rx;
+            vert_edge[0]      = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry)) || tile_edge[LEFT] || subpic_edge[LEFT];
         }
         if (!edges[RIGHT]) {
-            tile_edge[RIGHT] = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] != fc->ps.pps->ctb_to_col_bd[rx + 1];
-            vert_edge[1]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry)) || tile_edge[RIGHT];
+            tile_edge[RIGHT]   = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] != fc->ps.pps->ctb_to_col_bd[rx + 1];
+            subpic_edge[RIGHT] = no_subpic_filter &&
+                fc->ps.sps->r->sps_subpic_ctu_top_left_x[subpic_idx] + fc->ps.sps->r->sps_subpic_width_minus1[subpic_idx] == rx;
+            vert_edge[1]       = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry)) || tile_edge[RIGHT] || subpic_edge[RIGHT];
         }
         if (!edges[TOP]) {
-            tile_edge[TOP]     = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] == ry;
-            horiz_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry - 1)) || tile_edge[TOP];
+            tile_edge[TOP]   = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] == ry;
+            subpic_edge[TOP] = no_subpic_filter && fc->ps.sps->r->sps_subpic_ctu_top_left_y[subpic_idx] == ry;
+            horiz_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry - 1)) || tile_edge[TOP] || subpic_edge[TOP];
         }
         if (!edges[BOTTOM]) {
-            tile_edge[BOTTOM] = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] != fc->ps.pps->ctb_to_row_bd[ry + 1];
-            horiz_edge[1]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry + 1)) || tile_edge[BOTTOM];
+            tile_edge[BOTTOM]   = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] != fc->ps.pps->ctb_to_row_bd[ry + 1];
+            subpic_edge[BOTTOM] = no_subpic_filter &&
+                fc->ps.sps->r->sps_subpic_ctu_top_left_y[subpic_idx] + fc->ps.sps->r->sps_subpic_height_minus1[subpic_idx] == ry;
+            horiz_edge[1]       = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry + 1)) || tile_edge[BOTTOM] || subpic_edge[BOTTOM];
         }
         if (!edges[LEFT] && !edges[TOP]) {
-            diag_edge[0] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry - 1)) || tile_edge[LEFT] || tile_edge[TOP];
+            diag_edge[0] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry - 1)) ||
+                tile_edge[LEFT] || tile_edge[TOP] || subpic_edge[LEFT] || subpic_edge[TOP];
         }
         if (!edges[TOP] && !edges[RIGHT]) {
-            diag_edge[1] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry - 1)) || tile_edge[RIGHT] || tile_edge[TOP];
+            diag_edge[1] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry - 1)) ||
+                tile_edge[RIGHT] || tile_edge[TOP] || subpic_edge[TOP] || subpic_edge[RIGHT];
         }
         if (!edges[RIGHT] && !edges[BOTTOM]) {
-            diag_edge[2] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry + 1)) || tile_edge[RIGHT] || tile_edge[BOTTOM];
+            diag_edge[2] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry + 1)) ||
+                tile_edge[RIGHT] || tile_edge[BOTTOM] || subpic_edge[RIGHT] || subpic_edge[BOTTOM];
         }
         if (!edges[LEFT] && !edges[BOTTOM]) {
-            diag_edge[3] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry + 1)) || tile_edge[LEFT] || tile_edge[BOTTOM];
+            diag_edge[3] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry + 1)) ||
+                tile_edge[LEFT] || tile_edge[BOTTOM] || subpic_edge[LEFT] || subpic_edge[BOTTOM];
         }
     }
 
