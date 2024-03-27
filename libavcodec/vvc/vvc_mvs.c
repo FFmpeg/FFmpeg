@@ -125,7 +125,7 @@ int ff_vvc_no_backward_pred_flag(const VVCLocalContext *lc)
     const RefPicList *rpl = lc->sc->rpl;
 
     for (j = 0; j < 2; j++) {
-        for (i = 0; i < rpl[j].nb_refs; i++) {
+        for (i = 0; i < lc->sc->sh.r->num_ref_idx_active[j]; i++) {
             if (rpl[j].list[i] > lc->fc->ps.ph.poc) {
                 check_diffpicount++;
                 break;
