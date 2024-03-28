@@ -18,14 +18,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #include "config.h"
-#include "libavutil/avassert.h"
 #include "swscale.h"
 #include "version.h"
 
 unsigned swscale_version(void)
 {
-    av_assert0(LIBSWSCALE_VERSION_MICRO >= 100);
+    static_assert(LIBSWSCALE_VERSION_MICRO >= 100, "micro version starts at 100");
     return LIBSWSCALE_VERSION_INT;
 }
 

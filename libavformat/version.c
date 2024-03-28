@@ -18,9 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #include "config.h"
 
-#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "version.h"
 
@@ -29,7 +30,7 @@ const char av_format_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
 unsigned avformat_version(void)
 {
-    av_assert0(LIBAVFORMAT_VERSION_MICRO >= 100);
+    static_assert(LIBAVFORMAT_VERSION_MICRO >= 100, "micro version starts at 100");
     return LIBAVFORMAT_VERSION_INT;
 }
 

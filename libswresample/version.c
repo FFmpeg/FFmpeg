@@ -18,8 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #include "config.h"
-#include "libavutil/avassert.h"
 #include "swresample.h"
 #include "version.h"
 
@@ -28,7 +29,7 @@ const char swr_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
 unsigned swresample_version(void)
 {
-    av_assert0(LIBSWRESAMPLE_VERSION_MICRO >= 100);
+    static_assert(LIBSWRESAMPLE_VERSION_MICRO >= 100, "micro version starts at 100");
     return LIBSWRESAMPLE_VERSION_INT;
 }
 
