@@ -1021,28 +1021,20 @@ int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
 static inline void fillPlane16(uint8_t *plane, int stride, int width, int height, int y,
                                int alpha, int bits, const int big_endian)
 {
-    int i, j;
     uint8_t *ptr = plane + stride * y;
     int v = alpha ? 0xFFFF>>(16-bits) : (1<<(bits-1));
-    for (i = 0; i < height; i++) {
-#define FILL(wfunc) \
-        for (j = 0; j < width; j++) {\
-            wfunc(ptr+2*j, v);\
-        }
-        if (big_endian) {
-            FILL(AV_WB16);
-        } else {
-            FILL(AV_WL16);
-        }
+    if (big_endian != HAVE_BIGENDIAN)
+        v = av_bswap16(v);
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++)
+            AV_WN16(ptr + 2 * j, v);
         ptr += stride;
     }
-#undef FILL
 }
 
 static inline void fillPlane32(uint8_t *plane, int stride, int width, int height, int y,
                                int alpha, int bits, const int big_endian, int is_float)
 {
-    int i, j;
     uint8_t *ptr = plane + stride * y;
     uint32_t v;
     uint32_t onef32 = 0x3f800000;
@@ -1050,20 +1042,14 @@ static inline void fillPlane32(uint8_t *plane, int stride, int width, int height
         v = alpha ? onef32 : 0;
     else
         v = alpha ? 0xFFFFFFFF>>(32-bits) : (1<<(bits-1));
+    if (big_endian != HAVE_BIGENDIAN)
+        v = av_bswap32(v);
 
-    for (i = 0; i < height; i++) {
-#define FILL(wfunc) \
-        for (j = 0; j < width; j++) {\
-            wfunc(ptr+4*j, v);\
-        }
-        if (big_endian) {
-            FILL(AV_WB32);
-        } else {
-            FILL(AV_WL32);
-        }
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++)
+            AV_WN32(ptr + 4 * j, v);
         ptr += stride;
     }
-#undef FILL
 }
 
 
