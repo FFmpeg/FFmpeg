@@ -107,6 +107,8 @@
 
 #endif /* HAVE_BIGENDIAN */
 
+#define SHIFT  3
+
 #define output_pixel(pos, val, bias, signedness) \
     if (big_endian) { \
         AV_WB16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
@@ -149,12 +151,11 @@ yuv2plane1_float_bswap_u(const int32_t *src, uint32_t *dest, int dstW, int start
 static void yuv2plane1_float_altivec(const int32_t *src, float *dest, int dstW)
 {
     const int dst_u = -(uintptr_t)dest & 3;
-    const int shift = 3;
-    const int add = (1 << (shift - 1));
+    const int add = (1 << (SHIFT - 1));
     const int clip = (1 << 16) - 1;
     const float fmult = 1.0f / 65535.0f;
     const vec_u32 vadd = (vec_u32) {add, add, add, add};
-    const vec_u32 vshift = (vec_u32) vec_splat_u32(shift);
+    const vec_u32 vshift = (vec_u32) vec_splat_u32(SHIFT);
     const vec_u32 vlargest = (vec_u32) {clip, clip, clip, clip};
     const vec_f vmul = (vec_f) {fmult, fmult, fmult, fmult};
     const vec_f vzero = (vec_f) {0, 0, 0, 0};
@@ -182,12 +183,11 @@ static void yuv2plane1_float_altivec(const int32_t *src, float *dest, int dstW)
 static void yuv2plane1_float_bswap_altivec(const int32_t *src, uint32_t *dest, int dstW)
 {
     const int dst_u = -(uintptr_t)dest & 3;
-    const int shift = 3;
-    const int add = (1 << (shift - 1));
+    const int add = (1 << (SHIFT - 1));
     const int clip = (1 << 16) - 1;
     const float fmult = 1.0f / 65535.0f;
     const vec_u32 vadd = (vec_u32) {add, add, add, add};
-    const vec_u32 vshift = (vec_u32) vec_splat_u32(shift);
+    const vec_u32 vshift = (vec_u32) vec_splat_u32(SHIFT);
     const vec_u32 vlargest = (vec_u32) {clip, clip, clip, clip};
     const vec_f vmul = (vec_f) {fmult, fmult, fmult, fmult};
     const vec_f vzero = (vec_f) {0, 0, 0, 0};
