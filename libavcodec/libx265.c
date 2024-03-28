@@ -316,12 +316,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
             avctx->pix_fmt == AV_PIX_FMT_YUVJ444P;
 
-    if ((avctx->color_primaries <= AVCOL_PRI_SMPTE432 &&
-         avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
-        (avctx->color_trc <= AVCOL_TRC_ARIB_STD_B67 &&
-         avctx->color_trc != AVCOL_TRC_UNSPECIFIED) ||
-        (avctx->colorspace <= AVCOL_SPC_ICTCP &&
-         avctx->colorspace != AVCOL_SPC_UNSPECIFIED)) {
+    if (avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
+        avctx->color_trc       != AVCOL_TRC_UNSPECIFIED ||
+        avctx->colorspace      != AVCOL_SPC_UNSPECIFIED) {
 
         ctx->params->vui.bEnableColorDescriptionPresentFlag = 1;
 
