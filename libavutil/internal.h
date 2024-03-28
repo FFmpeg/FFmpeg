@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include "config.h"
 #include "attributes.h"
+#include "libm.h"
 #include "macros.h"
 #include "pixfmt.h"
 
@@ -85,8 +86,6 @@
  * Access a field in a structure by its offset.
  */
 #define FF_FIELD_AT(type, off, obj) (*(type *)((char *)&(obj) + (off)))
-
-#include "libm.h"
 
 /**
  * Return NULL if CONFIG_SMALL is true, otherwise the argument
