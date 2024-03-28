@@ -110,12 +110,15 @@ static const AVOption setparams_options[] = {
     {"smpte170m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE170M},         INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"smpte240m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE240M},         INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"ycgco",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_YCGCO},             INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
+    {"ycgco-re",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_YCGCO_RE},          INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
+    {"ycgco-ro",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_YCGCO_RO},          INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"bt2020nc",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_NCL},        INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"bt2020c",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_CL},         INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"smpte2085",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE2085},         INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"chroma-derived-nc",          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_CHROMA_DERIVED_NCL},INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"chroma-derived-c",           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_CHROMA_DERIVED_CL}, INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"ictcp",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_ICTCP},             INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
+    {"ipt-c2",                     NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_IPT_C2},            INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {NULL}
 };
 
