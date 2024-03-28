@@ -623,6 +623,9 @@ enum AVColorSpace {
     AVCOL_SPC_CHROMA_DERIVED_NCL = 12, ///< Chromaticity-derived non-constant luminance system
     AVCOL_SPC_CHROMA_DERIVED_CL = 13, ///< Chromaticity-derived constant luminance system
     AVCOL_SPC_ICTCP       = 14, ///< ITU-R BT.2100-0, ICtCp
+    AVCOL_SPC_IPT_C2      = 15, ///< SMPTE ST 2128, IPT-C2
+    AVCOL_SPC_YCGCO_RE    = 16, ///< YCgCo-R, even addition of bits
+    AVCOL_SPC_YCGCO_RO    = 17, ///< YCgCo-R, odd addition of bits
     AVCOL_SPC_NB                ///< Not part of ABI
 };
 
