@@ -24,9 +24,9 @@
  * 3D Lookup table filter
  */
 
-#include "config_components.h"
+#include <float.h>
 
-#include "float.h"
+#include "config_components.h"
 
 #include "libavutil/opt.h"
 #include "libavutil/file_open.h"
