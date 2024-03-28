@@ -18,8 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #include "libavutil/attributes.h"
-#include "libavutil/internal.h"
 #include "libavutil/arm/cpu.h"
 #include "libavcodec/avcodec.h"
 #include "libavcodec/mpegvideo.h"
@@ -27,13 +28,16 @@
 #include "asm-offsets.h"
 
 #if HAVE_NEON
-AV_CHECK_OFFSET(MpegEncContext, y_dc_scale,       Y_DC_SCALE);
-AV_CHECK_OFFSET(MpegEncContext, c_dc_scale,       C_DC_SCALE);
-AV_CHECK_OFFSET(MpegEncContext, ac_pred,          AC_PRED);
-AV_CHECK_OFFSET(MpegEncContext, block_last_index, BLOCK_LAST_INDEX);
-AV_CHECK_OFFSET(MpegEncContext, inter_scantable.raster_end,
-                INTER_SCANTAB_RASTER_END);
-AV_CHECK_OFFSET(MpegEncContext, h263_aic,         H263_AIC);
+#define CHECK_OFFSET(s, m, o)          \
+    static_assert(offsetof(s, m) == o, \
+                  "Hardcoded ASM offset of " #s " field " #o " needs to be updated.");
+CHECK_OFFSET(MpegEncContext, y_dc_scale,       Y_DC_SCALE);
+CHECK_OFFSET(MpegEncContext, c_dc_scale,       C_DC_SCALE);
+CHECK_OFFSET(MpegEncContext, ac_pred,          AC_PRED);
+CHECK_OFFSET(MpegEncContext, block_last_index, BLOCK_LAST_INDEX);
+CHECK_OFFSET(MpegEncContext, inter_scantable.raster_end,
+             INTER_SCANTAB_RASTER_END);
+CHECK_OFFSET(MpegEncContext, h263_aic,         H263_AIC);
 #endif
 
 void ff_dct_unquantize_h263_inter_neon(MpegEncContext *s, int16_t *block,
