@@ -821,6 +821,25 @@ AVFrameSideData *av_frame_side_data_new(AVFrameSideData ***sd, int *nb_sd,
     return ret;
 }
 
+AVFrameSideData *av_frame_side_data_add(AVFrameSideData ***sd, int *nb_sd,
+                                        enum AVFrameSideDataType type,
+                                        AVBufferRef **pbuf, unsigned int flags)
+{
+    const AVSideDataDescriptor *desc = av_frame_side_data_desc(type);
+    AVFrameSideData *sd_dst  = NULL;
+    AVBufferRef *buf = *pbuf;
+
+    if (flags & AV_FRAME_SIDE_DATA_FLAG_UNIQUE)
+        remove_side_data(sd, nb_sd, type);
+
+    sd_dst = add_side_data_from_buf(sd, nb_sd, type, buf);
+    if (!sd_dst)
+        return NULL;
+
+    *pbuf = NULL;
+    return sd_dst;
+}
+
 int av_frame_side_data_clone(AVFrameSideData ***sd, int *nb_sd,
                              const AVFrameSideData *src, unsigned int flags)
 {
