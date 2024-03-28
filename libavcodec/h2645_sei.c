@@ -529,6 +529,119 @@ static int is_frame_packing_type_valid(SEIFpaType type, enum AVCodecID codec_id)
                type >= SEI_FPA_TYPE_SIDE_BY_SIDE;
 }
 
+static int h2645_sei_to_side_data(AVCodecContext *avctx, H2645SEI *sei,
+                                  AVFrameSideData ***sd, int *nb_sd)
+{
+    int ret;
+
+    for (unsigned i = 0; i < sei->unregistered.nb_buf_ref; i++) {
+        H2645SEIUnregistered *unreg = &sei->unregistered;
+
+        if (unreg->buf_ref[i]) {
+            AVFrameSideData *entry =
+                av_frame_side_data_add(sd, nb_sd, AV_FRAME_DATA_SEI_UNREGISTERED,
+                                       &unreg->buf_ref[i], 0);
+            if (!entry)
+                av_buffer_unref(&unreg->buf_ref[i]);
+        }
+    }
+    sei->unregistered.nb_buf_ref = 0;
+
+    if (sei->ambient_viewing_environment.present) {
+        H2645SEIAmbientViewingEnvironment *env = &sei->ambient_viewing_environment;
+        AVBufferRef *buf;
+        size_t size;
+
+        AVAmbientViewingEnvironment *dst_env =
+            av_ambient_viewing_environment_alloc(&size);
+        if (!dst_env)
+            return AVERROR(ENOMEM);
+
+        buf = av_buffer_create((uint8_t *)dst_env, size, NULL, NULL, 0);
+        if (!buf) {
+            av_free(dst_env);
+            return AVERROR(ENOMEM);
+        }
+
+        ret = ff_frame_new_side_data_from_buf_ext(avctx, sd, nb_sd,
+                                                  AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT, &buf);
+
+        if (ret < 0)
+            return ret;
+
+        dst_env->ambient_illuminance = av_make_q(env->ambient_illuminance, 10000);
+        dst_env->ambient_light_x     = av_make_q(env->ambient_light_x,     50000);
+        dst_env->ambient_light_y     = av_make_q(env->ambient_light_y,     50000);
+    }
+
+    if (sei->mastering_display.present) {
+        // HEVC uses a g,b,r ordering, which we convert to a more natural r,g,b
+        const int mapping[3] = {2, 0, 1};
+        const int chroma_den = 50000;
+        const int luma_den = 10000;
+        int i;
+        AVMasteringDisplayMetadata *metadata;
+
+        ret = ff_decode_mastering_display_new_ext(avctx, sd, nb_sd, &metadata);
+        if (ret < 0)
+            return ret;
+
+        if (metadata) {
+            for (i = 0; i < 3; i++) {
+                const int j = mapping[i];
+                metadata->display_primaries[i][0].num = sei->mastering_display.display_primaries[j][0];
+                metadata->display_primaries[i][0].den = chroma_den;
+                metadata->display_primaries[i][1].num = sei->mastering_display.display_primaries[j][1];
+                metadata->display_primaries[i][1].den = chroma_den;
+            }
+            metadata->white_point[0].num = sei->mastering_display.white_point[0];
+            metadata->white_point[0].den = chroma_den;
+            metadata->white_point[1].num = sei->mastering_display.white_point[1];
+            metadata->white_point[1].den = chroma_den;
+
+            metadata->max_luminance.num = sei->mastering_display.max_luminance;
+            metadata->max_luminance.den = luma_den;
+            metadata->min_luminance.num = sei->mastering_display.min_luminance;
+            metadata->min_luminance.den = luma_den;
+            metadata->has_luminance = 1;
+            metadata->has_primaries = 1;
+
+            av_log(avctx, AV_LOG_DEBUG, "Mastering Display Metadata:\n");
+            av_log(avctx, AV_LOG_DEBUG,
+                   "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f)\n",
+                   av_q2d(metadata->display_primaries[0][0]),
+                   av_q2d(metadata->display_primaries[0][1]),
+                   av_q2d(metadata->display_primaries[1][0]),
+                   av_q2d(metadata->display_primaries[1][1]),
+                   av_q2d(metadata->display_primaries[2][0]),
+                   av_q2d(metadata->display_primaries[2][1]),
+                   av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]));
+            av_log(avctx, AV_LOG_DEBUG,
+                   "min_luminance=%f, max_luminance=%f\n",
+                   av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+        }
+    }
+
+    if (sei->content_light.present) {
+        AVContentLightMetadata *metadata;
+
+        ret = ff_decode_content_light_new_ext(avctx, sd, nb_sd, &metadata);
+        if (ret < 0)
+            return ret;
+
+        if (metadata) {
+            metadata->MaxCLL  = sei->content_light.max_content_light_level;
+            metadata->MaxFALL = sei->content_light.max_pic_average_light_level;
+
+            av_log(avctx, AV_LOG_DEBUG, "Content Light Level Metadata:\n");
+            av_log(avctx, AV_LOG_DEBUG, "MaxCLL=%d, MaxFALL=%d\n",
+                   metadata->MaxCLL, metadata->MaxFALL);
+        }
+    }
+
+    return 0;
+}
+
 int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
                           enum AVCodecID codec_id,
                           AVCodecContext *avctx, const H2645VUI *vui,
@@ -625,19 +738,9 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
             avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
-    for (unsigned i = 0; i < sei->unregistered.nb_buf_ref; i++) {
-        H2645SEIUnregistered *unreg = &sei->unregistered;
-
-        if (unreg->buf_ref[i]) {
-            AVFrameSideData *sd = av_frame_new_side_data_from_buf(frame,
-                    AV_FRAME_DATA_SEI_UNREGISTERED,
-                    unreg->buf_ref[i]);
-            if (!sd)
-                av_buffer_unref(&unreg->buf_ref[i]);
-            unreg->buf_ref[i] = NULL;
-        }
-    }
-    sei->unregistered.nb_buf_ref = 0;
+    ret = h2645_sei_to_side_data(avctx, sei, &frame->side_data, &frame->nb_side_data);
+    if (ret < 0)
+        return ret;
 
     if (sei->afd.present) {
         AVFrameSideData *sd = av_frame_new_side_data(frame, AV_FRAME_DATA_AFD,
@@ -728,86 +831,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
         return ret;
 #endif
 
-    if (sei->ambient_viewing_environment.present) {
-        H2645SEIAmbientViewingEnvironment *env =
-            &sei->ambient_viewing_environment;
-
-        AVAmbientViewingEnvironment *dst_env =
-            av_ambient_viewing_environment_create_side_data(frame);
-        if (!dst_env)
-            return AVERROR(ENOMEM);
-
-        dst_env->ambient_illuminance = av_make_q(env->ambient_illuminance, 10000);
-        dst_env->ambient_light_x     = av_make_q(env->ambient_light_x,     50000);
-        dst_env->ambient_light_y     = av_make_q(env->ambient_light_y,     50000);
-    }
-
-    if (sei->mastering_display.present) {
-        // HEVC uses a g,b,r ordering, which we convert to a more natural r,g,b
-        const int mapping[3] = {2, 0, 1};
-        const int chroma_den = 50000;
-        const int luma_den = 10000;
-        int i;
-        AVMasteringDisplayMetadata *metadata;
-
-        ret = ff_decode_mastering_display_new(avctx, frame, &metadata);
-        if (ret < 0)
-            return ret;
-
-        if (metadata) {
-            for (i = 0; i < 3; i++) {
-                const int j = mapping[i];
-                metadata->display_primaries[i][0].num = sei->mastering_display.display_primaries[j][0];
-                metadata->display_primaries[i][0].den = chroma_den;
-                metadata->display_primaries[i][1].num = sei->mastering_display.display_primaries[j][1];
-                metadata->display_primaries[i][1].den = chroma_den;
-            }
-            metadata->white_point[0].num = sei->mastering_display.white_point[0];
-            metadata->white_point[0].den = chroma_den;
-            metadata->white_point[1].num = sei->mastering_display.white_point[1];
-            metadata->white_point[1].den = chroma_den;
-
-            metadata->max_luminance.num = sei->mastering_display.max_luminance;
-            metadata->max_luminance.den = luma_den;
-            metadata->min_luminance.num = sei->mastering_display.min_luminance;
-            metadata->min_luminance.den = luma_den;
-            metadata->has_luminance = 1;
-            metadata->has_primaries = 1;
-
-            av_log(avctx, AV_LOG_DEBUG, "Mastering Display Metadata:\n");
-            av_log(avctx, AV_LOG_DEBUG,
-                   "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f)\n",
-                   av_q2d(metadata->display_primaries[0][0]),
-                   av_q2d(metadata->display_primaries[0][1]),
-                   av_q2d(metadata->display_primaries[1][0]),
-                   av_q2d(metadata->display_primaries[1][1]),
-                   av_q2d(metadata->display_primaries[2][0]),
-                   av_q2d(metadata->display_primaries[2][1]),
-                   av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]));
-            av_log(avctx, AV_LOG_DEBUG,
-                   "min_luminance=%f, max_luminance=%f\n",
-                   av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
-        }
-    }
-
-    if (sei->content_light.present) {
-        AVContentLightMetadata *metadata;
-
-        ret = ff_decode_content_light_new(avctx, frame, &metadata);
-        if (ret < 0)
-            return ret;
-
-        if (metadata) {
-            metadata->MaxCLL  = sei->content_light.max_content_light_level;
-            metadata->MaxFALL = sei->content_light.max_pic_average_light_level;
-
-            av_log(avctx, AV_LOG_DEBUG, "Content Light Level Metadata:\n");
-            av_log(avctx, AV_LOG_DEBUG, "MaxCLL=%d, MaxFALL=%d\n",
-                   metadata->MaxCLL, metadata->MaxFALL);
-        }
-    }
-
     return 0;
+}
+
+int ff_h2645_sei_to_context(AVCodecContext *avctx, H2645SEI *sei)
+{
+    return h2645_sei_to_side_data(avctx, sei, &avctx->decoded_side_data,
+                                  &avctx->nb_decoded_side_data);
 }
 
 void ff_h2645_sei_reset(H2645SEI *s)

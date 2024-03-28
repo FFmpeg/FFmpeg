@@ -3659,6 +3659,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
             if (ret < 0) {
                 return ret;
             }
+
+            ret = ff_h2645_sei_to_context(avctx, &s->sei.common);
+            if (ret < 0)
+                return ret;
         }
 
         sd = ff_get_coded_side_data(avctx, AV_PKT_DATA_DOVI_CONF);

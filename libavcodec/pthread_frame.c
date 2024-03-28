@@ -767,6 +767,8 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     if (!copy)
         return AVERROR(ENOMEM);
     copy->priv_data = NULL;
+    copy->decoded_side_data = NULL;
+    copy->nb_decoded_side_data = 0;
 
     /* From now on, this PerThreadContext will be cleaned up by
      * ff_frame_thread_free in case of errors. */
@@ -820,8 +822,18 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     }
     p->thread_init = NEEDS_CLOSE;
 
-    if (first)
+    if (first) {
         update_context_from_thread(avctx, copy, 1);
+
+        av_frame_side_data_free(&avctx->decoded_side_data, &avctx->nb_decoded_side_data);
+        for (int i = 0; i < copy->nb_decoded_side_data; i++) {
+            err = av_frame_side_data_clone(&avctx->decoded_side_data,
+                                           &avctx->nb_decoded_side_data,
+                                           copy->decoded_side_data[i], 0);
+            if (err < 0)
+                return err;
+        }
+    }
 
     atomic_init(&p->debug_threads, (copy->debug & FF_DEBUG_THREADS) != 0);
 
