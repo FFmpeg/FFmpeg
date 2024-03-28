@@ -1003,17 +1003,6 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
                             int dstWidth, const uint8_t *src1,
                             const uint8_t *src2, int srcW, int xInc);
 
-/**
- * Allocate and return an SwsContext.
- * This is like sws_getContext() but does not perform the init step, allowing
- * the user to set additional AVOptions.
- *
- * @see sws_getContext()
- */
-struct SwsContext *sws_alloc_set_opts(int srcW, int srcH, enum AVPixelFormat srcFormat,
-                                      int dstW, int dstH, enum AVPixelFormat dstFormat,
-                                      int flags, const double *param);
-
 int ff_sws_alphablendaway(SwsContext *c, const uint8_t *src[],
                           int srcStride[], int srcSliceY, int srcSliceH,
                           uint8_t *dst[], int dstStride[]);
