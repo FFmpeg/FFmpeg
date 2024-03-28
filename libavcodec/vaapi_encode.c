@@ -1970,7 +1970,10 @@ rc_mode_found:
         if (ctx->explicit_qp) {
             rc_quality = ctx->explicit_qp;
         } else if (avctx->global_quality > 0) {
-            rc_quality = avctx->global_quality;
+            if (avctx->flags & AV_CODEC_FLAG_QSCALE)
+                rc_quality = avctx->global_quality / FF_QP2LAMBDA;
+            else
+                rc_quality = avctx->global_quality;
         } else {
             rc_quality = ctx->codec->default_quality;
             av_log(avctx, AV_LOG_WARNING, "No quality level set; "
