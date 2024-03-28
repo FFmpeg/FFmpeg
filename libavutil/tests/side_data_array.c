@@ -20,23 +20,22 @@
 
 #include <stdio.h>
 #include "libavutil/frame.c"
-#include "libavutil/mastering_display_metadata.h"
+#include "libavutil/internal.h"
 
-static void print_clls(const AVFrameSideData **sd, const int nb_sd)
+static void print_entries(const AVFrameSideData **sd, const int nb_sd)
 {
     for (int i = 0; i < nb_sd; i++) {
         const AVFrameSideData *entry = sd[i];
 
-        printf("sd %d, %s",
-               i, av_frame_side_data_name(entry->type));
+        printf("sd %d (size %"SIZE_SPECIFIER"), %s",
+               i, entry->size, av_frame_side_data_name(entry->type));
 
-        if (entry->type != AV_FRAME_DATA_CONTENT_LIGHT_LEVEL) {
+        if (entry->type != AV_FRAME_DATA_SEI_UNREGISTERED) {
             putchar('\n');
             continue;
         }
 
-        printf(": MaxCLL: %u\n",
-               ((AVContentLightMetadata *)entry->data)->MaxCLL);
+        printf(": %d\n", *(int32_t *)entry->data);
     }
 }
 
@@ -51,51 +50,60 @@ int main(void)
 
     av_assert0(
         av_frame_side_data_new(&set.sd, &set.nb_sd,
-                               AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT,
-                               0, 0));
+                               AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+                               sizeof(int64_t), 0));
+    av_assert0(
+        av_frame_side_data_new(&set.sd, &set.nb_sd,
+                               AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
+                               sizeof(int32_t), AV_FRAME_SIDE_DATA_FLAG_REPLACE));
 
     // test entries in the middle
     for (int value = 1; value < 4; value++) {
         AVFrameSideData *sd = av_frame_side_data_new(
-            &set.sd, &set.nb_sd, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
-            sizeof(AVContentLightMetadata), 0);
+            &set.sd, &set.nb_sd, AV_FRAME_DATA_SEI_UNREGISTERED,
+            sizeof(int32_t), 0);
 
         av_assert0(sd);
 
-        ((AVContentLightMetadata *)sd->data)->MaxCLL = value;
+        *(int32_t *)sd->data = value;
     }
 
     av_assert0(
         av_frame_side_data_new(
-            &set.sd, &set.nb_sd, AV_FRAME_DATA_SPHERICAL, 0, 0));
+            &set.sd, &set.nb_sd, AV_FRAME_DATA_SPHERICAL,
+           sizeof(int64_t), 0));
+
+    av_assert0(
+        av_frame_side_data_new(
+            &set.sd, &set.nb_sd, AV_FRAME_DATA_SPHERICAL,
+            sizeof(int32_t), AV_FRAME_SIDE_DATA_FLAG_REPLACE));
 
     // test entries at the end
     for (int value = 1; value < 4; value++) {
         AVFrameSideData *sd = av_frame_side_data_new(
-            &set.sd, &set.nb_sd, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
-            sizeof(AVContentLightMetadata), 0);
+            &set.sd, &set.nb_sd, AV_FRAME_DATA_SEI_UNREGISTERED,
+            sizeof(int32_t), 0);
 
         av_assert0(sd);
 
-        ((AVContentLightMetadata *)sd->data)->MaxCLL = value + 3;
+        *(int32_t *)sd->data = value + 3;
     }
 
     puts("Initial addition results with duplicates:");
-    print_clls((const AVFrameSideData **)set.sd, set.nb_sd);
+    print_entries((const AVFrameSideData **)set.sd, set.nb_sd);
 
     {
         AVFrameSideData *sd = av_frame_side_data_new(
-            &set.sd, &set.nb_sd, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL,
-            sizeof(AVContentLightMetadata),
-            AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
+            &set.sd, &set.nb_sd, AV_FRAME_DATA_SEI_UNREGISTERED,
+            sizeof(int32_t), AV_FRAME_SIDE_DATA_FLAG_UNIQUE);
 
         av_assert0(sd);
 
-        ((AVContentLightMetadata *)sd->data)->MaxCLL = 1337;
+        *(int32_t *)sd->data = 1337;
     }
 
     puts("\nFinal state after a single 'no-duplicates' addition:");
-    print_clls((const AVFrameSideData **)set.sd, set.nb_sd);
+    print_entries((const AVFrameSideData **)set.sd, set.nb_sd);
 
     av_frame_side_data_free(&set.sd, &set.nb_sd);
 
