@@ -157,7 +157,7 @@ static void *pcm_dvd_decode_samples(AVCodecContext *avctx, const uint8_t *src,
     switch (avctx->bits_per_coded_sample) {
     case 16: {
 #if HAVE_BIGENDIAN
-        bytestream2_get_buffer(&gb, dst16, blocks * s->block_size);
+        bytestream2_get_buffer(&gb, (uint8_t*)dst16, blocks * s->block_size);
         dst16 += blocks * s->block_size / 2;
 #else
         int samples = blocks * avctx->ch_layout.nb_channels;
