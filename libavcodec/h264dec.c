@@ -1014,6 +1014,9 @@ static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
         h->delayed_pic[i] = h->delayed_pic[i + 1];
 
     if (out) {
+        h->frame_recovered |= out->recovered;
+        out->recovered |= h->frame_recovered & FRAME_RECOVERED_SEI;
+
         out->reference &= ~DELAYED_PIC_REF;
         ret = finalize_frame(h, dst_frame, out, got_frame);
         if (ret < 0)
