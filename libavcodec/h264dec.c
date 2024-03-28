@@ -994,11 +994,13 @@ static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
                                    int *got_frame, int buf_index)
 {
     int ret, i, out_idx;
-    H264Picture *out = h->delayed_pic[0];
+    H264Picture *out;
 
     h->cur_pic_ptr = NULL;
     h->first_field = 0;
 
+    while (h->delayed_pic[0]) {
+    out = h->delayed_pic[0];
     out_idx = 0;
     for (i = 1;
          h->delayed_pic[i] &&
@@ -1021,6 +1023,9 @@ static int send_next_delayed_frame(H264Context *h, AVFrame *dst_frame,
         ret = finalize_frame(h, dst_frame, out, got_frame);
         if (ret < 0)
             return ret;
+        if (*got_frame)
+            break;
+    }
     }
 
     return buf_index;
