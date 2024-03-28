@@ -109,17 +109,12 @@
 
 #define SHIFT  3
 
-#define output_pixel(pos, val, bias, signedness) \
-    if (big_endian) { \
-        AV_WB16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
-    } else { \
-        AV_WL16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
-    }
+#define get_pixel(val, bias, signedness) \
+    (bias + av_clip_ ## signedness ## 16(val >> shift))
 
 static void
 yuv2plane1_float_u(const int32_t *src, float *dest, int dstW, int start)
 {
-    static const int big_endian = HAVE_BIGENDIAN;
     static const int shift = 3;
     static const float float_mult = 1.0f / 65535.0f;
     int i, val;
@@ -127,7 +122,7 @@ yuv2plane1_float_u(const int32_t *src, float *dest, int dstW, int start)
 
     for (i = start; i < dstW; ++i){
         val = src[i] + (1 << (shift - 1));
-        output_pixel(&val_uint, val, 0, uint);
+        val_uint = get_pixel(val, 0, uint);
         dest[i] = float_mult * (float)val_uint;
     }
 }
@@ -135,7 +130,6 @@ yuv2plane1_float_u(const int32_t *src, float *dest, int dstW, int start)
 static void
 yuv2plane1_float_bswap_u(const int32_t *src, uint32_t *dest, int dstW, int start)
 {
-    static const int big_endian = HAVE_BIGENDIAN;
     static const int shift = 3;
     static const float float_mult = 1.0f / 65535.0f;
     int i, val;
@@ -143,7 +137,7 @@ yuv2plane1_float_bswap_u(const int32_t *src, uint32_t *dest, int dstW, int start
 
     for (i = start; i < dstW; ++i){
         val = src[i] + (1 << (shift - 1));
-        output_pixel(&val_uint, val, 0, uint);
+        val_uint = get_pixel(val, 0, uint);
         dest[i] = av_bswap32(av_float2int(float_mult * (float)val_uint));
     }
 }
