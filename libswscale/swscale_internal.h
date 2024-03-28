@@ -34,7 +34,9 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/slicethread.h"
+#if HAVE_ALTIVEC
 #include "libavutil/ppc/util_altivec.h"
+#endif
 #include "libavutil/half2float.h"
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
