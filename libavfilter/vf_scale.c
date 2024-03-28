@@ -33,6 +33,7 @@
 #include "scale_eval.h"
 #include "video.h"
 #include "libavutil/eval.h"
+#include "libavutil/imgutils_internal.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"

@@ -42,7 +42,6 @@
 #include "attributes.h"
 #include "libm.h"
 #include "macros.h"
-#include "pixfmt.h"
 
 #ifndef attribute_align_arg
 #if ARCH_X86_32 && AV_GCC_VERSION_AT_LEAST(4,2)
@@ -151,8 +150,6 @@ void avpriv_request_sample(void *avc,
 #define SUINT   unsigned
 #define SUINT32 uint32_t
 #endif
-
-int avpriv_set_systematic_pal2(uint32_t pal[256], enum AVPixelFormat pix_fmt);
 
 static av_always_inline av_const int avpriv_mirror(int x, int w)
 {

@@ -22,8 +22,8 @@
 
 #include "config.h"
 
-#include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils_internal.h"
 #include "avcodec.h"
 #include "bytestream.h"
 #include "bmp.h"
