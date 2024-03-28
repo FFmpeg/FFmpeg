@@ -696,6 +696,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (c->opt_enc_quality >= 0)
             ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncCommonQuality, FF_VAL_VT_UI4(c->opt_enc_quality));
 
+        if (avctx->rc_max_rate > 0)
+            ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncCommonMaxBitRate, FF_VAL_VT_UI4(avctx->rc_max_rate));
+
+        if (avctx->gop_size > 0)
+            ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncMPVGOPSize, FF_VAL_VT_UI4(avctx->gop_size));
+
+        if(avctx->rc_buffer_size > 0)
+            ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncCommonBufferSize, FF_VAL_VT_UI4(avctx->rc_buffer_size));
+
+        if(avctx->compression_level >= 0)
+            ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncCommonQualityVsSpeed, FF_VAL_VT_UI4(avctx->compression_level));
+
+        if(avctx->global_quality > 0)
+            ICodecAPI_SetValue(c->codec_api, &ff_CODECAPI_AVEncVideoEncodeQP, FF_VAL_VT_UI4(avctx->global_quality ));
+
         // Always set the number of b-frames. Qualcomm's HEVC encoder on SD835
         // defaults this to 1, and that setting is buggy with many of the
         // rate control modes. (0 or 2 b-frames works fine with most rate
@@ -1224,7 +1239,7 @@ static int mf_init(AVCodecContext *avctx)
 
 #define OFFSET(x) offsetof(MFContext, x)
 
-#define MF_ENCODER(MEDIATYPE, NAME, ID, OPTS, FMTS, CAPS) \
+#define MF_ENCODER(MEDIATYPE, NAME, ID, OPTS, FMTS, CAPS, DEFAULTS) \
     static const AVClass ff_ ## NAME ## _mf_encoder_class = {                  \
         .class_name = #NAME "_mf",                                             \
         .item_name  = av_default_item_name,                                    \
@@ -1244,6 +1259,7 @@ static int mf_init(AVCodecContext *avctx)
         FMTS                                                                   \
         CAPS                                                                   \
         .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,                           \
+        .defaults       = DEFAULTS,                                            \
     };
 
 #define AFMTS \
@@ -1253,9 +1269,9 @@ static int mf_init(AVCodecContext *avctx)
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
                           AV_CODEC_CAP_DR1 | AV_CODEC_CAP_VARIABLE_FRAME_SIZE,
 
-MF_ENCODER(AUDIO, aac,         AAC, NULL, AFMTS, ACAPS);
-MF_ENCODER(AUDIO, ac3,         AC3, NULL, AFMTS, ACAPS);
-MF_ENCODER(AUDIO, mp3,         MP3, NULL, AFMTS, ACAPS);
+MF_ENCODER(AUDIO, aac,         AAC, NULL, AFMTS, ACAPS, NULL);
+MF_ENCODER(AUDIO, ac3,         AC3, NULL, AFMTS, ACAPS, NULL);
+MF_ENCODER(AUDIO, mp3,         MP3, NULL, AFMTS, ACAPS, NULL);
 
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption venc_opts[] = {
@@ -1284,6 +1300,11 @@ static const AVOption venc_opts[] = {
     {NULL}
 };
 
+static const FFCodecDefault defaults[] = {
+    { "g", "0" },
+    { NULL },
+};
+
 #define VFMTS \
         .p.pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,       \
                                                         AV_PIX_FMT_YUV420P,    \
@@ -1292,5 +1313,5 @@ static const AVOption venc_opts[] = {
         .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID |           \
                           AV_CODEC_CAP_DR1,
 
-MF_ENCODER(VIDEO, h264,        H264, venc_opts, VFMTS, VCAPS);
-MF_ENCODER(VIDEO, hevc,        HEVC, venc_opts, VFMTS, VCAPS);
+MF_ENCODER(VIDEO, h264,        H264, venc_opts, VFMTS, VCAPS, defaults);
+MF_ENCODER(VIDEO, hevc,        HEVC, venc_opts, VFMTS, VCAPS, defaults);
