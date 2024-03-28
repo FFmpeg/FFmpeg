@@ -54,11 +54,13 @@
  */
 
 #include <stddef.h>
+#include <string.h>
 
 #include "config.h"
 #include "libavcodec/ac3dsp.h"
 #include "libavcodec/ac3.h"
 #include "libavcodec/ac3tab.h"
+#include "libavutil/macros.h"
 #include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
