@@ -741,15 +741,13 @@ AVBufferRef *av_frame_get_plane_buffer(const AVFrame *frame, int plane)
     return NULL;
 }
 
-static AVFrameSideData *add_side_data_from_buf(AVFrameSideData ***sd,
-                                               int *nb_sd,
-                                               enum AVFrameSideDataType type,
-                                               AVBufferRef *buf)
+static AVFrameSideData *add_side_data_from_buf_ext(AVFrameSideData ***sd,
+                                                   int *nb_sd,
+                                                   enum AVFrameSideDataType type,
+                                                   AVBufferRef *buf, uint8_t *data,
+                                                   size_t size)
 {
     AVFrameSideData *ret, **tmp;
-
-    if (!buf)
-        return NULL;
 
     // *nb_sd + 1 needs to fit into an int and a size_t.
     if ((unsigned)*nb_sd >= FFMIN(INT_MAX, SIZE_MAX))
@@ -765,13 +763,24 @@ static AVFrameSideData *add_side_data_from_buf(AVFrameSideData ***sd,
         return NULL;
 
     ret->buf = buf;
-    ret->data = ret->buf->data;
-    ret->size = buf->size;
+    ret->data = data;
+    ret->size = size;
     ret->type = type;
 
     (*sd)[(*nb_sd)++] = ret;
 
     return ret;
+}
+
+static AVFrameSideData *add_side_data_from_buf(AVFrameSideData ***sd,
+                                               int *nb_sd,
+                                               enum AVFrameSideDataType type,
+                                               AVBufferRef *buf)
+{
+    if (!buf)
+        return NULL;
+
+    return add_side_data_from_buf_ext(sd, nb_sd, type, buf, buf->data, buf->size);
 }
 
 AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
@@ -829,7 +838,8 @@ int av_frame_side_data_clone(AVFrameSideData ***sd, int *nb_sd,
     if (flags & AV_FRAME_SIDE_DATA_FLAG_UNIQUE)
         remove_side_data(sd, nb_sd, src->type);
 
-    sd_dst = add_side_data_from_buf(sd, nb_sd, src->type, buf);
+    sd_dst = add_side_data_from_buf_ext(sd, nb_sd, src->type, buf,
+                                        src->data, src->size);
     if (!sd_dst) {
         av_buffer_unref(&buf);
         return AVERROR(ENOMEM);
