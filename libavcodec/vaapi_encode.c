@@ -1806,9 +1806,17 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         int i, first = 1, res;
 
         supported_va_rc_modes = rc_attr.value;
-        if (ctx->blbrc && !(supported_va_rc_modes & VA_RC_MB)) {
+        if (ctx->blbrc) {
+#if VA_CHECK_VERSION(0, 39, 2)
+            if (!(supported_va_rc_modes & VA_RC_MB)) {
+                ctx->blbrc = 0;
+                av_log(avctx, AV_LOG_WARNING, "Driver does not support BLBRC.\n");
+            }
+#else
             ctx->blbrc = 0;
-            av_log(avctx, AV_LOG_WARNING, "Driver does not support BLBRC.\n");
+            av_log(avctx, AV_LOG_WARNING, "Please consider to update to VAAPI 0.39.2 "
+                   "or above, which can support BLBRC.\n");
+#endif
         }
 
         for (i = 0; i < FF_ARRAY_ELEMS(vaapi_encode_rc_modes); i++) {
@@ -2033,7 +2041,11 @@ rc_mode_found:
         ctx->config_attributes[ctx->nb_config_attributes++] =
             (VAConfigAttrib) {
             .type  = VAConfigAttribRateControl,
+#if VA_CHECK_VERSION(0, 39, 2)
             .value = ctx->blbrc ? ctx->va_rc_mode | VA_RC_MB : ctx->va_rc_mode,
+#else
+            .value = ctx->va_rc_mode,
+#endif
         };
     }
 
@@ -2062,10 +2074,12 @@ rc_mode_found:
 #if VA_CHECK_VERSION(1, 1, 0)
             .ICQ_quality_factor = av_clip(rc_quality, 1, 51),
             .max_qp             = (avctx->qmax > 0 ? avctx->qmax : 0),
-            .rc_flags.bits.mb_rate_control = ctx->blbrc ? 1 : 2,
 #endif
 #if VA_CHECK_VERSION(1, 3, 0)
             .quality_factor     = rc_quality,
+#endif
+#if VA_CHECK_VERSION(0, 39, 2)
+            .rc_flags.bits.mb_rate_control = ctx->blbrc ? 1 : 2,
 #endif
         };
         vaapi_encode_add_global_param(avctx,
