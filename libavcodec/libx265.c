@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "codec_internal.h"
+#include "dovi_rpu.h"
 #include "encode.h"
 #include "packet_internal.h"
 #include "atsc_a53.h"
@@ -78,6 +79,8 @@ typedef struct libx265Context {
      * encounter a frame with ROI side data.
      */
     int roi_warned;
+
+    DOVIContext dovi;
 } libx265Context;
 
 static int is_keyframe(NalUnitType naltype)
@@ -142,6 +145,8 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
 
     if (ctx->encoder)
         ctx->api->encoder_close(ctx->encoder);
+
+    ff_dovi_ctx_unref(&ctx->dovi);
 
     return 0;
 }
@@ -526,6 +531,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
+#if X265_BUILD >= 167
+    ctx->dovi.logctx = avctx;
+    if ((ret = ff_dovi_configure(&ctx->dovi, avctx)) < 0)
+        return ret;
+    ctx->params->dolbyProfile = ctx->dovi.cfg.dv_profile * 10 +
+                                ctx->dovi.cfg.dv_bl_signal_compatibility_id;
+#endif
+
     ctx->encoder = ctx->api->encoder_open(ctx->params);
     if (!ctx->encoder) {
         av_log(avctx, AV_LOG_ERROR, "Cannot open libx265 encoder.\n");
@@ -629,6 +642,10 @@ static void free_picture(libx265Context *ctx, x265_picture *pic)
     for (int i = 0; i < sei->numPayloads; i++)
         av_free(sei->payloads[i].payload);
 
+#if X265_BUILD >= 167
+    av_free(pic->rpu.payload);
+#endif
+
     if (pic->userData) {
         int idx = (int)(intptr_t)pic->userData - 1;
         rd_release(ctx, idx);
@@ -660,6 +677,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     sei->numPayloads = 0;
 
     if (pic) {
+        AVFrameSideData *sd;
         ReorderedData *rd;
         int rd_idx;
 
@@ -760,6 +778,24 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                 sei->numPayloads++;
             }
         }
+
+#if X265_BUILD >= 167
+        sd = av_frame_get_side_data(pic, AV_FRAME_DATA_DOVI_METADATA);
+        if (ctx->dovi.cfg.dv_profile && sd) {
+            const AVDOVIMetadata *metadata = (const AVDOVIMetadata *)sd->data;
+            ret = ff_dovi_rpu_generate(&ctx->dovi, metadata, &x265pic.rpu.payload,
+                                       &x265pic.rpu.payloadSize);
+            if (ret < 0) {
+                free_picture(ctx, &x265pic);
+                return ret;
+            }
+        } else if (ctx->dovi.cfg.dv_profile) {
+            av_log(avctx, AV_LOG_ERROR, "Dolby Vision enabled, but received frame "
+                   "without AV_FRAME_DATA_DOVI_METADATA");
+            free_picture(ctx, &x265pic);
+            return AVERROR_INVALIDDATA;
+        }
+#endif
     }
 
     ret = ctx->api->encoder_encode(ctx->encoder, &nal, &nnal,
@@ -914,6 +950,10 @@ static const AVOption options[] = {
     { "udu_sei",     "Use user data unregistered SEI if available",                                 OFFSET(udu_sei),   AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
     { "a53cc",       "Use A53 Closed Captions (if available)",                                      OFFSET(a53_cc),    AV_OPT_TYPE_BOOL,   { .i64 = 1 }, 0, 1, VE },
     { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_DICT,   { 0 }, 0, 0, VE },
+#if X265_BUILD >= 167
+    { "dolbyvision", "Enable Dolby Vision RPU coding", OFFSET(dovi.enable), AV_OPT_TYPE_BOOL, {.i64 = FF_DOVI_AUTOMATIC }, -1, 1, VE, .unit = "dovi" },
+    {   "auto", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DOVI_AUTOMATIC}, .flags = VE, .unit = "dovi" },
+#endif
     { NULL }
 };
 
