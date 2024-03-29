@@ -496,6 +496,8 @@ int ff_nvdec_simple_end_frame(AVCodecContext *avctx)
     NVDECContext *ctx = avctx->internal->hwaccel_priv_data;
     int ret = ff_nvdec_end_frame(avctx);
     ctx->bitstream = NULL;
+    ctx->bitstream_len = 0;
+    ctx->nb_slices = 0;
     return ret;
 }
 
