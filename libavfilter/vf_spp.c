@@ -172,7 +172,7 @@ static void store_slice_c(uint8_t *dst, const int16_t *src,
     int y, x;
 
 #define STORE(pos) do {                                                     \
-    temp = ((src[x + y*src_linesize + pos] << log2_scale) + d[pos]) >> 6;   \
+    temp = (src[x + y*src_linesize + pos] * (1 << log2_scale) + d[pos]) >> 6;\
     if (temp & 0x100)                                                       \
         temp = ~(temp >> 31);                                               \
     dst[x + y*dst_linesize + pos] = temp;                                   \
@@ -203,7 +203,7 @@ static void store_slice16_c(uint16_t *dst, const int16_t *src,
     unsigned int mask = -1<<depth;
 
 #define STORE16(pos) do {                                                   \
-    temp = ((src[x + y*src_linesize + pos] << log2_scale) + (d[pos]>>1)) >> 5;   \
+    temp = (src[x + y*src_linesize + pos] * (1 << log2_scale) + (d[pos]>>1)) >> 5; \
     if (temp & mask )                                                       \
         temp = ~(temp >> 31);                                               \
     dst[x + y*dst_linesize + pos] = temp;                                   \
