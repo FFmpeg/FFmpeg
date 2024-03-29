@@ -2569,10 +2569,10 @@ Internet Low Bitrate Codec (iLBC) raw muxer.
 It accepts a single @samp{ilbc} audio stream.
 
 @anchor{image2}
-@section image2
+@section image2, image2pipe
 Image file muxer.
 
-The image file muxer writes video frames to image files.
+The @samp{image2} muxer writes video frames to image files.
 
 The output filenames are specified by a pattern, which can be used to
 produce sequentially numbered series of files.
@@ -2602,6 +2602,10 @@ special in that each image frame consists of three files, for
 each of the YUV420P components. To read or write this image file format,
 specify the name of the '.Y' file. The muxer will automatically open the
 '.U' and '.V' files as required.
+
+The @samp{image2pipe} muxer accepts the same options as the @samp{image2} muxer,
+but ignores the pattern verification and expansion, as it is supposed to write
+to the command output rather than to an actual stored file.
 
 @subsection Options
 @table @option
