@@ -2515,6 +2515,21 @@ Ignore IO errors during open, write and delete. Useful for long-duration runs wi
 Set custom HTTP headers, can override built in default headers. Applicable only for HTTP output.
 @end table
 
+@section iamf
+Immersive Audio Model and Formats (IAMF) muxer.
+
+IAMF is used to provide immersive audio content for presentation on a wide range
+of devices in both streaming and offline applications. These applications
+include internet audio streaming, multicasting/broadcasting services, file
+download, gaming, communication, virtual and augmented reality, and others. In
+these applications, audio may be played back on a wide range of devices, e.g.,
+headphones, mobile phones, tablets, TVs, sound bars, home theater systems, and
+big screens.
+
+This format was promoted and desgined by Alliance for Open Media.
+
+For more information about this format, see @url{https://aomedia.org/iamf/}.
+
 @anchor{ico}
 @section ico
 
