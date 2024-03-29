@@ -41,9 +41,9 @@ void ff_put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, ptrdiff_t li
     register vector unsigned char pixelsv1D;
 
     int i;
-    register ptrdiff_t line_size_2 = line_size << 1;
+    register ptrdiff_t line_size_2 = line_size * (1 << 1);
     register ptrdiff_t line_size_3 = line_size + line_size_2;
-    register ptrdiff_t line_size_4 = line_size << 2;
+    register ptrdiff_t line_size_4 = line_size * (1 << 2);
 
 // hand-unrolling the loop by 4 gains about 15%
 // mininum execution time goes from 74 to 60 cycles
