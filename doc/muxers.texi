@@ -1900,9 +1900,6 @@ flexible implementation of a segmenter, and can be used to perform HLS
 segmentation.
 
 @subsection Options
-
-This muxer supports the following options:
-
 @table @option
 @item hls_init_time @var{duration}
 Set the initial target segment length. Default value is @var{0}.
@@ -1910,9 +1907,9 @@ Set the initial target segment length. Default value is @var{0}.
 @var{duration} must be a time duration specification,
 see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
-Segment will be cut on the next key frame after this time has passed on the first m3u8 list.
-After the initial playlist is filled @command{ffmpeg} will cut segments
-at duration equal to @code{hls_time}
+Segment will be cut on the next key frame after this time has passed on the
+first m3u8 list. After the initial playlist is filled, @command{ffmpeg} will cut
+segments at duration equal to @option{hls_time}.
 
 @item hls_time @var{duration}
 Set the target segment length. Default value is 2.
@@ -1929,12 +1926,12 @@ will contain all the segments. Default value is 5.
 Set the number of unreferenced segments to keep on disk before @code{hls_flags delete_segments}
 deletes them. Increase this to allow continue clients to download segments which
 were recently referenced in the playlist. Default value is 1, meaning segments older than
-@code{hls_list_size+1} will be deleted.
+@option{hls_list_size+1} will be deleted.
 
-@item hls_start_number_source
+@item hls_start_number_source @var{source}
 Start the playlist sequence number (@code{#EXT-X-MEDIA-SEQUENCE}) according to the specified source.
-Unless @code{hls_flags single_file} is set, it also specifies source of starting sequence numbers of
-segment and subtitle filenames. In any case, if @code{hls_flags append_list}
+Unless @option{hls_flags single_file} is set, it also specifies source of starting sequence numbers of
+segment and subtitle filenames. In any case, if @option{hls_flags append_list}
 is set and read playlist sequence number is greater than the specified start sequence number,
 then that value will be used as start value.
 
@@ -1943,26 +1940,25 @@ It accepts the following values:
 @table @option
 
 @item generic (default)
-Set the starting sequence numbers according to @var{start_number} option value.
+Set the start numbers according to the @option{start_number} option value.
 
 @item epoch
-The start number will be the seconds since epoch (1970-01-01 00:00:00)
+Set the start number as the seconds since epoch (1970-01-01 00:00:00).
 
 @item epoch_us
-The start number will be the microseconds since epoch (1970-01-01 00:00:00)
+Set the start number as the microseconds since epoch (1970-01-01 00:00:00).
 
 @item datetime
-The start number will be based on the current date/time as YYYYmmddHHMMSS. e.g. 20161231235759.
-
+Set the start number based on the current date/time as YYYYmmddHHMMSS. e.g. 20161231235759.
 @end table
 
 @item start_number @var{number}
 Start the playlist sequence number (@code{#EXT-X-MEDIA-SEQUENCE}) from the specified @var{number}
-when @var{hls_start_number_source} value is @var{generic}. (This is the default case.)
-Unless @code{hls_flags single_file} is set, it also specifies starting sequence numbers of segment and subtitle filenames.
+when @option{hls_start_number_source} value is @var{generic}. (This is the default case.)
+Unless @option{hls_flags single_file} is set, it also specifies starting sequence numbers of segment and subtitle filenames.
 Default value is 0.
 
-@item hls_allow_cache @var{allowcache}
+@item hls_allow_cache @var{bool}
 Explicitly set whether the client MAY (1) or MUST NOT (0) cache media segments.
 
 @item hls_base_url @var{baseurl}
@@ -1975,29 +1971,37 @@ which can be cyclic, for example if the @option{wrap} option is
 specified.
 
 @item hls_segment_filename @var{filename}
-Set the segment filename. Unless @code{hls_flags single_file} is set,
-@var{filename} is used as a string format with the segment number:
+Set the segment filename. Unless the @option{hls_flags} option is set with
+@samp{single_file}, @var{filename} is used as a string format with the
+segment number appended.
+
+For example:
 @example
 ffmpeg -i in.nut -hls_segment_filename 'file%03d.ts' out.m3u8
 @end example
-This example will produce the playlist, @file{out.m3u8}, and segment files:
+
+will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file000.ts}, @file{file001.ts}, @file{file002.ts}, etc.
 
-@var{filename} may contain full path or relative path specification,
-but only the file name part without any path info will be contained in the m3u8 segment list.
+@var{filename} may contain a full path or relative path specification,
+but only the file name part without any path will be contained in the m3u8 segment list.
 Should a relative path be specified, the path of the created segment
 files will be relative to the current working directory.
-When strftime_mkdir is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
+When @option{strftime_mkdir} is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
 
-When @code{var_stream_map} is set with two or more variant streams, the
-@var{filename} pattern must contain the string "%v", this string specifies
-the position of variant stream index in the generated segment file names.
+When @option{var_stream_map} is set with two or more variant streams, the
+@var{filename} pattern must contain the string "%v", and this string will be
+expanded to the position of variant stream index in the generated segment file
+names.
+
+For example:
 @example
 ffmpeg -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
   -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
   -hls_segment_filename 'file_%v_%03d.ts' out_%v.m3u8
 @end example
-This example will produce the playlists segment file sets:
+
+will produce the playlists segment file sets:
 @file{file_0_000.ts}, @file{file_0_001.ts}, @file{file_0_002.ts}, etc. and
 @file{file_1_000.ts}, @file{file_1_001.ts}, @file{file_1_002.ts}, etc.
 
@@ -2007,48 +2011,60 @@ sub-directory or filename.) If the string %v is present in the directory name, t
 sub-directories are created after expanding the directory name pattern. This
 enables creation of segments corresponding to different variant streams in
 subdirectories.
+
+For example:
 @example
 ffmpeg -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
   -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
   -hls_segment_filename 'vs%v/file_%03d.ts' vs%v/out.m3u8
 @end example
-This example will produce the playlists segment file sets:
+will produce the playlists segment file sets:
 @file{vs0/file_000.ts}, @file{vs0/file_001.ts}, @file{vs0/file_002.ts}, etc. and
 @file{vs1/file_000.ts}, @file{vs1/file_001.ts}, @file{vs1/file_002.ts}, etc.
 
-@item strftime
-Use strftime() on @var{filename} to expand the segment filename with localtime.
-The segment number is also available in this mode, but to use it, you need to specify second_level_segment_index
-hls_flag and %%d will be the specifier.
+@item strftime @var{bool}
+Use @code{strftime()} on @var{filename} to expand the segment filename with
+localtime. The segment number is also available in this mode, but to use it,
+you need to set @samp{second_level_segment_index} in the @option{hls_flag} and
+%%d will be the specifier.
+
+For example:
 @example
 ffmpeg -i in.nut -strftime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
 @end example
-This example will produce the playlist, @file{out.m3u8}, and segment files:
+will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-1455569023.ts}, @file{file-20160215-1455569024.ts}, etc.
-Note: On some systems/environments, the @code{%s} specifier is not available. See
-  @code{strftime()} documentation.
+Note: On some systems/environments, the @code{%s} specifier is not
+available. See @code{strftime()} documentation.
+
+For example:
 @example
 ffmpeg -i in.nut -strftime 1 -hls_flags second_level_segment_index -hls_segment_filename 'file-%Y%m%d-%%04d.ts' out.m3u8
 @end example
-This example will produce the playlist, @file{out.m3u8}, and segment files:
+will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-0001.ts}, @file{file-20160215-0002.ts}, etc.
 
-@item strftime_mkdir
-Used together with -strftime_mkdir, it will create all subdirectories which
-is expanded in @var{filename}.
+@item strftime_mkdir @var{bool}
+Used together with @option{strftime}, it will create all subdirectories which
+are present in the expanded values of option @option{hls_segment_filename}.
+
+For example:
 @example
 ffmpeg -i in.nut -strftime 1 -strftime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
 @end example
-This example will create a directory 201560215 (if it does not exist), and then
+will create a directory @file{201560215} (if it does not exist), and then
 produce the playlist, @file{out.m3u8}, and segment files:
-@file{20160215/file-20160215-1455569023.ts}, @file{20160215/file-20160215-1455569024.ts}, etc.
+@file{20160215/file-20160215-1455569023.ts},
+@file{20160215/file-20160215-1455569024.ts}, etc.
 
+For example:
 @example
 ffmpeg -i in.nut -strftime 1 -strftime_mkdir 1 -hls_segment_filename '%Y/%m/%d/file-%Y%m%d-%s.ts' out.m3u8
 @end example
-This example will create a directory hierarchy 2016/02/15 (if any of them do not exist), and then
-produce the playlist, @file{out.m3u8}, and segment files:
-@file{2016/02/15/file-20160215-1455569023.ts}, @file{2016/02/15/file-20160215-1455569024.ts}, etc.
+will create a directory hierarchy @file{2016/02/15} (if any of them do not
+exist), and then produce the playlist, @file{out.m3u8}, and segment files:
+@file{2016/02/15/file-20160215-1455569023.ts},
+@file{2016/02/15/file-20160215-1455569024.ts}, etc.
 
 @item hls_segment_options @var{options_list}
 Set output format options using a :-separated list of key=value
@@ -2065,7 +2081,7 @@ format. The optional third line specifies the initialization vector (IV) as a
 hexadecimal string to be used instead of the segment sequence number (default)
 for encryption. Changes to @var{key_info_file} will result in segment
 encryption with the new key/IV and an entry in the playlist for the new key
-URI/IV if @code{hls_flags periodic_rekey} is enabled.
+URI/IV if @option{hls_flags periodic_rekey} is enabled.
 
 Key info file format:
 @example
@@ -2111,22 +2127,22 @@ ffmpeg -f lavfi -re -i testsrc -c:v h264 -hls_flags delete_segments \
   -hls_key_info_file file.keyinfo out.m3u8
 @end example
 
-@item -hls_enc @var{enc}
+@item hls_enc @var{bool}
 Enable (1) or disable (0) the AES128 encryption.
 When enabled every segment generated is encrypted and the encryption key
 is saved as @var{playlist name}.key.
 
-@item -hls_enc_key @var{key}
-16-octet key to encrypt the segments, by default it
-is randomly generated.
+@item hls_enc_key @var{key}
+Specify a 16-octet key to encrypt the segments, by default it is randomly
+generated.
 
-@item -hls_enc_key_url @var{keyurl}
+@item hls_enc_key_url @var{keyurl}
 If set, @var{keyurl} is prepended instead of @var{baseurl} to the key filename
 in the playlist.
 
-@item -hls_enc_iv @var{iv}
-16-octet initialization vector for every segment instead
-of the autogenerated ones.
+@item hls_enc_iv @var{iv}
+Specify the 16-octet initialization vector for every segment instead of the
+autogenerated ones.
 
 @item hls_segment_type @var{flags}
 Possible values:
@@ -2139,23 +2155,23 @@ compatible with all HLS versions.
 @item fmp4
 Output segment files in fragmented MP4 format, similar to MPEG-DASH.
 fmp4 files may be used in HLS version 7 and above.
-
 @end table
 
 @item hls_fmp4_init_filename @var{filename}
-Set filename to the fragment files header file, default filename is @file{init.mp4}.
+Set filename for the fragment files header file, default filename is @file{init.mp4}.
 
-Use @code{-strftime 1} on @var{filename} to expand the segment filename with localtime.
+When @option{strftime} is enabled, @var{filename} is expanded to the segment filename with localtime.
+
+For example:
 @example
-ffmpeg -i in.nut  -hls_segment_type fmp4 -strftime 1 -hls_fmp4_init_filename "%s_init.mp4" out.m3u8
+ffmpeg -i in.nut -hls_segment_type fmp4 -strftime 1 -hls_fmp4_init_filename "%s_init.mp4" out.m3u8
 @end example
-This will produce init like this
-@file{1602678741_init.mp4}
+will produce init like this @file{1602678741_init.mp4}.
 
-@item hls_fmp4_init_resend
+@item hls_fmp4_init_resend @var{bool}
 Resend init file after m3u8 file refresh every time, default is @var{0}.
 
-When @code{var_stream_map} is set with two or more variant streams, the
+When @option{var_stream_map} is set with two or more variant streams, the
 @var{filename} pattern must contain the string "%v", this string specifies
 the position of variant stream index in the generated init file names.
 The string "%v" may be present in the filename or in the last directory name
@@ -2172,11 +2188,12 @@ Possible values:
 If this flag is set, the muxer will store all segments in a single MPEG-TS
 file, and will use byte ranges in the playlist. HLS playlists generated with
 this way will have the version number 4.
+
 For example:
 @example
 ffmpeg -i in.nut -hls_flags single_file out.m3u8
 @end example
-Will produce the playlist, @file{out.m3u8}, and a single segment file,
+will produce the playlist, @file{out.m3u8}, and a single segment file,
 @file{out.ts}.
 
 @item delete_segments
@@ -2191,7 +2208,7 @@ and remove the @code{#EXT-X-ENDLIST} from the old segment list.
 Round the duration info in the playlist file segment info to integer
 values, instead of using floating point.
 If there are no other features requiring higher HLS versions be used,
-then this will allow ffmpeg to output a HLS version 2 m3u8.
+then this will allow @command{ffmpeg} to output a HLS version 2 m3u8.
 
 @item discont_start
 Add the @code{#EXT-X-DISCONTINUITY} tag to the playlist, before the
@@ -2206,137 +2223,165 @@ detect updates to the encryption info. Be sure to replace this file atomically,
 including the file containing the AES encryption key.
 
 @item independent_segments
-Add the @code{#EXT-X-INDEPENDENT-SEGMENTS} to playlists that has video segments
-and when all the segments of that playlist are guaranteed to start with a Key frame.
+Add the @code{#EXT-X-INDEPENDENT-SEGMENTS} tag to playlists that has video segments
+and when all the segments of that playlist are guaranteed to start with a key frame.
 
 @item iframes_only
-Add the @code{#EXT-X-I-FRAMES-ONLY} to playlists that has video segments
+Add the @code{#EXT-X-I-FRAMES-ONLY} tag to playlists that has video segments
 and can play only I-frames in the @code{#EXT-X-BYTERANGE} mode.
 
 @item split_by_time
-Allow segments to start on frames other than keyframes. This improves
-behavior on some players when the time between keyframes is inconsistent,
+Allow segments to start on frames other than key frames. This improves
+behavior on some players when the time between key frames is inconsistent,
 but may make things worse on others, and can cause some oddities during
-seeking. This flag should be used with the @code{hls_time} option.
+seeking. This flag should be used with the @option{hls_time} option.
 
 @item program_date_time
 Generate @code{EXT-X-PROGRAM-DATE-TIME} tags.
 
 @item second_level_segment_index
-Makes it possible to use segment indexes as %%d in hls_segment_filename expression
-besides date/time values when strftime is on.
-To get fixed width numbers with trailing zeroes, %%0xd format is available where x is the required width.
+Make it possible to use segment indexes as %%d in the
+@option{hls_segment_filename} option expression besides date/time values when
+@option{strftime} option is on. To get fixed width numbers with trailing zeroes, %%0xd format
+is available where x is the required width.
 
 @item second_level_segment_size
-Makes it possible to use segment sizes (counted in bytes) as %%s in hls_segment_filename
-expression besides date/time values when strftime is on.
-To get fixed width numbers with trailing zeroes, %%0xs format is available where x is the required width.
+Make it possible to use segment sizes (counted in bytes) as %%s in
+@option{hls_segment_filename} option expression besides date/time values when
+strftime is on. To get fixed width numbers with trailing zeroes, %%0xs format
+is available where x is the required width.
 
 @item second_level_segment_duration
-Makes it possible to use segment duration (calculated  in microseconds) as %%t in hls_segment_filename
-expression besides date/time values when strftime is on.
-To get fixed width numbers with trailing zeroes, %%0xt format is available where x is the required width.
+Make it possible to use segment duration (calculated in microseconds) as %%t in
+@option{hls_segment_filename} option expression besides date/time values when
+strftime is on. To get fixed width numbers with trailing zeroes, %%0xt format
+is available where x is the required width.
 
+For example:
 @example
 ffmpeg -i sample.mpeg \
    -f hls -hls_time 3 -hls_list_size 5 \
    -hls_flags second_level_segment_index+second_level_segment_size+second_level_segment_duration \
    -strftime 1 -strftime_mkdir 1 -hls_segment_filename "segment_%Y%m%d%H%M%S_%%04d_%%08s_%%013t.ts" stream.m3u8
 @end example
-This will produce segments like this:
+will produce segments like this:
 @file{segment_20170102194334_0003_00122200_0000003000000.ts}, @file{segment_20170102194334_0004_00120072_0000003000000.ts} etc.
 
 @item temp_file
-Write segment data to filename.tmp and rename to filename only once the segment is complete. A webserver
-serving up segments can be configured to reject requests to *.tmp to prevent access to in-progress segments
-before they have been added to the m3u8 playlist. This flag also affects how m3u8 playlist files are created.
-If this flag is set, all playlist files will written into temporary file and renamed after they are complete, similarly as segments are handled.
-But playlists with @code{file} protocol and with type (@code{hls_playlist_type}) other than @code{vod}
-are always written into temporary file regardless of this flag. Master playlist files (@code{master_pl_name}), if any, with @code{file} protocol,
-are always written into temporary file regardless of this flag if @code{master_pl_publish_rate} value is other than zero.
+Write segment data to @file{filename.tmp} and rename to filename only once the
+segment is complete.
 
+A webserver serving up segments can be configured to reject requests to *.tmp to
+prevent access to in-progress segments before they have been added to the m3u8
+playlist.
+
+This flag also affects how m3u8 playlist files are created. If this flag is set,
+all playlist files will be written into a temporary file and renamed after they
+are complete, similarly as segments are handled. But playlists with @code{file}
+protocol and with @option{hls_playlist_type} type other than @samp{vod} are
+always written into a temporary file regardless of this flag.
+
+Master playlist files specified with @option{master_pl_name}, if any, with
+@code{file} protocol, are always written into temporary file regardless of this
+flag if @option{master_pl_publish_rate} value is other than zero.
 @end table
 
-@item hls_playlist_type event
-Emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8 header. Forces
-@option{hls_list_size} to 0; the playlist can only be appended to.
+@item hls_playlist_type @var{type}
+If type is @samp{event}, emit @code{#EXT-X-PLAYLIST-TYPE:EVENT} in the m3u8
+header. This forces @option{hls_list_size} to 0; the playlist can only be
+appended to.
 
-@item hls_playlist_type vod
-Emit @code{#EXT-X-PLAYLIST-TYPE:VOD} in the m3u8 header. Forces
-@option{hls_list_size} to 0; the playlist must not change.
+If type is @samp{vod}, emit @code{#EXT-X-PLAYLIST-TYPE:VOD} in the m3u8
+header. This forces @option{hls_list_size} to 0; the playlist must not change.
 
-@item method
+@item method @var{method}
 Use the given HTTP method to create the hls files.
+
+For example:
 @example
 ffmpeg -re -i in.ts -f hls -method PUT http://example.com/live/out.m3u8
 @end example
-This example will upload all the mpegts segment files to the HTTP
-server using the HTTP PUT method, and update the m3u8 files every
-@code{refresh} times using the same method.
-Note that the HTTP server must support the given method for uploading
+will upload all the mpegts segment files to the HTTP server using the HTTP PUT
+method, and update the m3u8 files every @code{refresh} times using the same
+method. Note that the HTTP server must support the given method for uploading
 files.
 
-@item http_user_agent
+@item http_user_agent @var{agent}
 Override User-Agent field in HTTP header. Applicable only for HTTP output.
 
-@item var_stream_map
-Map string which specifies how to group the audio, video and subtitle streams
-into different variant streams. The variant stream groups are separated
-by space.
+@item var_stream_map @var{stream_map}
+Specify a map string defining how to group the audio, video and subtitle streams
+into different variant streams. The variant stream groups are separated by
+space.
+
 Expected string format is like this "a:0,v:0 a:1,v:1 ....". Here a:, v:, s: are
 the keys to specify audio, video and subtitle streams respectively.
 Allowed values are 0 to 9 (limited just based on practical usage).
 
 When there are two or more variant streams, the output filename pattern must
-contain the string "%v", this string specifies the position of variant stream
+contain the string "%v": this string specifies the position of variant stream
 index in the output media playlist filenames. The string "%v" may be present in
 the filename or in the last directory name containing the file. If the string is
 present in the directory name, then sub-directories are created after expanding
 the directory name pattern. This enables creation of variant streams in
 subdirectories.
 
+A few examples follow.
+
+@itemize
+@item
+Create two hls variant streams. The first variant stream will contain video
+stream of bitrate 1000k and audio stream of bitrate 64k and the second variant
+stream will contain video stream of bitrate 256k and audio stream of bitrate
+32k. Here, two media playlist with file names @file{out_0.m3u8} and
+@file{out_1.m3u8} will be created.
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
   -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
   http://example.com/live/out_%v.m3u8
 @end example
-This example creates two hls variant streams. The first variant stream will
-contain video stream of bitrate 1000k and audio stream of bitrate 64k and the
-second variant stream will contain video stream of bitrate 256k and audio
-stream of bitrate 32k. Here, two media playlist with file names out_0.m3u8 and
-out_1.m3u8 will be created. If you want something meaningful text instead of indexes
-in result names, you may specify names for each or some of the variants
-as in the following example.
 
-
+@item
+If you want something meaningful text instead of indexes in result names, you
+may specify names for each or some of the variants. The following example will
+create two hls variant streams as in the previous one. But here, the two media
+playlist with file names @file{out_my_hd.m3u8} and @file{out_my_sd.m3u8} will be
+created.
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
   -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0,name:my_hd v:1,a:1,name:my_sd" \
   http://example.com/live/out_%v.m3u8
 @end example
 
-This example creates two hls variant streams as in the previous one.
-But here, the two media playlist with file names out_my_hd.m3u8 and
-out_my_sd.m3u8 will be created.
-
+@item
+Create three hls variant streams. The first variant stream will be a video only
+stream with video bitrate 1000k, the second variant stream will be an audio only
+stream with bitrate 64k and the third variant stream will be a video only stream
+with bitrate 256k. Here, three media playlist with file names @file{out_0.m3u8},
+@file{out_1.m3u8} and @file{out_2.m3u8} will be created.
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k \
   -map 0:v -map 0:a -map 0:v -f hls -var_stream_map "v:0 a:0 v:1" \
   http://example.com/live/out_%v.m3u8
 @end example
-This example creates three hls variant streams. The first variant stream will
-be a video only stream with video bitrate 1000k, the second variant stream will
-be an audio only stream with bitrate 64k and the third variant stream will be a
-video only stream with bitrate 256k. Here, three media playlist with file names
-out_0.m3u8, out_1.m3u8 and out_2.m3u8 will be created.
+
+@item
+Create the variant streams in subdirectories. Here, the first media playlist is
+created at @file{http://example.com/live/vs_0/out.m3u8} and the second one at
+@file{http://example.com/live/vs_1/out.m3u8}.
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
   -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0 v:1,a:1" \
   http://example.com/live/vs_%v/out.m3u8
 @end example
-This example creates the variant streams in subdirectories. Here, the first
-media playlist is created at @file{http://example.com/live/vs_0/out.m3u8} and
-the second one at @file{http://example.com/live/vs_1/out.m3u8}.
+
+@item
+Create two audio only and two video only variant streams. In addition to the
+@code{#EXT-X-STREAM-INF} tag for each variant stream in the master playlist, the
+@code{#EXT-X-MEDIA} tag is also added for the two audio only variant streams and
+they are mapped to the two video only variant streams with audio group names
+'aud_low' and 'aud_high'.
+By default, a single hls variant containing all the encoded streams is created.
 @example
 ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k -b:v:1 3000k  \
   -map 0:a -map 0:a -map 0:v -map 0:v -f hls \
@@ -2344,14 +2389,15 @@ ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k -b:v:1 3000k  \
   -master_pl_name master.m3u8 \
   http://example.com/live/out_%v.m3u8
 @end example
-This example creates two audio only and two video only variant streams. In
-addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
-playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
-and they are mapped to the two video only variant streams with audio group names
-'aud_low' and 'aud_high'.
 
+@item
+
+Create two audio only and one video only variant streams. In addition to the
+@code{#EXT-X-STREAM-INF} tag for each variant stream in the master playlist, the
+@code{#EXT-X-MEDIA} tag is also added for the two audio only variant streams and
+they are mapped to the one video only variant streams with audio group name
+'aud_low', and the audio group have default stat is NO or YES.
 By default, a single hls variant containing all the encoded streams is created.
-
 @example
 ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
   -map 0:a -map 0:a -map 0:v -f hls \
@@ -2359,14 +2405,15 @@ ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
   -master_pl_name master.m3u8 \
   http://example.com/live/out_%v.m3u8
 @end example
-This example creates two audio only and one video only variant streams. In
-addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
-playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
-and they are mapped to the one video only variant streams with audio group name
-'aud_low', and the audio group have default stat is NO or YES.
 
-By default, a single hls variant containing all the encoded streams is created.
-
+@item
+Create two audio only and one video only variant streams. In addition to the
+@code{#EXT-X-STREAM-INF} tag for each variant stream in the master playlist, the
+@code{#EXT-X-MEDIA} tag is also added for the two audio only variant streams and
+they are mapped to the one video only variant streams with audio group name
+'aud_low', and the audio group have default stat is NO or YES, and one audio
+have and language is named ENG, the other audio language is named CHN. By
+default, a single hls variant containing all the encoded streams is created.
 @example
 ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
   -map 0:a -map 0:a -map 0:v -f hls \
@@ -2374,15 +2421,11 @@ ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
   -master_pl_name master.m3u8 \
   http://example.com/live/out_%v.m3u8
 @end example
-This example creates two audio only and one video only variant streams. In
-addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
-playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
-and they are mapped to the one video only variant streams with audio group name
-'aud_low', and the audio group have default stat is NO or YES, and one audio
-have and language is named ENG, the other audio language is named CHN.
 
-By default, a single hls variant containing all the encoded streams is created.
-
+@item
+Create a single variant stream. Add the @code{#EXT-X-MEDIA} tag with
+@code{TYPE=SUBTITLES} in the master playlist with webvtt subtitle group name
+'subtitle'. Make sure the input file has one text subtitle stream at least.
 @example
 ffmpeg -y -i input_with_subtitle.mkv \
  -b:v:0 5250k -c:v h264 -pix_fmt yuv420p -profile:v main -level 4.1 \
@@ -2390,83 +2433,86 @@ ffmpeg -y -i input_with_subtitle.mkv \
  -c:s webvtt -c:a mp2 -ar 48000 -ac 2 -map 0:v -map 0:a:0 -map 0:s:0 \
  -f hls -var_stream_map "v:0,a:0,s:0,sgroup:subtitle" \
  -master_pl_name master.m3u8 -t 300 -hls_time 10 -hls_init_time 4 -hls_list_size \
- 10 -master_pl_publish_rate 10  -hls_flags \
+ 10 -master_pl_publish_rate 10 -hls_flags \
  delete_segments+discont_start+split_by_time ./tmp/video.m3u8
 @end example
+@end itemize
 
-This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=SUBTITLES} in
-the master playlist with webvtt subtitle group name 'subtitle'. Please make sure
-the input file has one text subtitle stream at least.
-
-@item cc_stream_map
+@item cc_stream_map @var{cc_stream_map}
 Map string which specifies different closed captions groups and their
 attributes. The closed captions stream groups are separated by space.
+
 Expected string format is like this
 "ccgroup:<group name>,instreamid:<INSTREAM-ID>,language:<language code> ....".
 'ccgroup' and 'instreamid' are mandatory attributes. 'language' is an optional
 attribute.
+
 The closed captions groups configured using this option are mapped to different
 variant streams by providing the same 'ccgroup' name in the
-@code{var_stream_map} string. If @code{var_stream_map} is not set, then the
-first available ccgroup in @code{cc_stream_map} is mapped to the output variant
-stream. The examples for these two use cases are given below.
+@option{var_stream_map} string.
 
-@example
-ffmpeg -re -i in.ts -b:v 1000k -b:a 64k -a53cc 1 -f hls \
-  -cc_stream_map "ccgroup:cc,instreamid:CC1,language:en" \
-  -master_pl_name master.m3u8 \
-  http://example.com/live/out.m3u8
-@end example
-This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=CLOSED-CAPTIONS} in
-the master playlist with group name 'cc', language 'en' (english) and
-INSTREAM-ID 'CC1'. Also, it adds @code{CLOSED-CAPTIONS} attribute with group
-name 'cc' for the output variant stream.
+For example:
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
-  -a53cc:0 1 -a53cc:1 1\
+  -a53cc:0 1 -a53cc:1 1 \
   -map 0:v -map 0:a -map 0:v -map 0:a -f hls \
   -cc_stream_map "ccgroup:cc,instreamid:CC1,language:en ccgroup:cc,instreamid:CC2,language:sp" \
   -var_stream_map "v:0,a:0,ccgroup:cc v:1,a:1,ccgroup:cc" \
   -master_pl_name master.m3u8 \
   http://example.com/live/out_%v.m3u8
 @end example
-This example adds two @code{#EXT-X-MEDIA} tags with @code{TYPE=CLOSED-CAPTIONS} in
-the master playlist for the INSTREAM-IDs 'CC1' and 'CC2'. Also, it adds
+will add two @code{#EXT-X-MEDIA} tags with @code{TYPE=CLOSED-CAPTIONS} in the
+master playlist for the INSTREAM-IDs 'CC1' and 'CC2'. Also, it will add
 @code{CLOSED-CAPTIONS} attribute with group name 'cc' for the two output variant
 streams.
 
-@item master_pl_name
+If @option{var_stream_map} is not set, then the first available ccgroup in
+@option{cc_stream_map} is mapped to the output variant stream.
+
+For example:
+@example
+ffmpeg -re -i in.ts -b:v 1000k -b:a 64k -a53cc 1 -f hls \
+  -cc_stream_map "ccgroup:cc,instreamid:CC1,language:en" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out.m3u8
+@end example
+this will add @code{#EXT-X-MEDIA} tag with @code{TYPE=CLOSED-CAPTIONS} in the
+master playlist with group name 'cc', language 'en' (english) and INSTREAM-ID
+'CC1'. Also, it will add @code{CLOSED-CAPTIONS} attribute with group name 'cc'
+for the output variant stream.
+
+@item master_pl_name @var{name}
 Create HLS master playlist with the given name.
 
+For example:
 @example
 ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 http://example.com/live/out.m3u8
 @end example
-This example creates HLS master playlist with name master.m3u8 and it is
-published at http://example.com/live/
+creates an HLS master playlist with name @file{master.m3u8} which is published
+at @url{http://example.com/live/}.
 
-@item master_pl_publish_rate
+@item master_pl_publish_rate @var{count}
 Publish master play list repeatedly every after specified number of segment intervals.
 
+For example:
 @example
 ffmpeg -re -i in.ts -f hls -master_pl_name master.m3u8 \
 -hls_time 2 -master_pl_publish_rate 30 http://example.com/live/out.m3u8
 @end example
-
-This example creates HLS master playlist with name master.m3u8 and keep
+creates an HLS master playlist with name @file{master.m3u8} and keeps
 publishing it repeatedly every after 30 segments i.e. every after 60s.
 
-@item http_persistent
+@item http_persistent @var{bool}
 Use persistent HTTP connections. Applicable only for HTTP output.
 
-@item timeout
+@item timeout @var{timeout}
 Set timeout for socket I/O operations. Applicable only for HTTP output.
 
-@item ignore_io_errors
+@item ignore_io_errors @var{bool}
 Ignore IO errors during open, write and delete. Useful for long-duration runs with network output.
 
-@item headers
+@item headers @var{headers}
 Set custom HTTP headers, can override built in default headers. Applicable only for HTTP output.
-
 @end table
 
 @anchor{ico}
