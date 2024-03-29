@@ -153,7 +153,6 @@ typedef struct PTL {
 
 typedef struct HEVCVPS {
     unsigned int vps_id;
-    HEVCHdrParams *hdr;
 
     uint8_t vps_temporal_id_nesting_flag;
     int vps_max_layers;
@@ -175,6 +174,9 @@ typedef struct HEVCVPS {
 
     uint8_t data[4096];
     int data_size;
+    /* Put this at the end of the structure to make it easier to calculate the
+     * size before this pointer, which is used for memcmp */
+    HEVCHdrParams *hdr;
 } HEVCVPS;
 
 typedef struct ScalingList {
