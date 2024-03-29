@@ -172,11 +172,10 @@ typedef struct HEVCVPS {
     int vps_num_ticks_poc_diff_one; ///< vps_num_ticks_poc_diff_one_minus1 + 1
     int vps_num_hrd_parameters;
 
-    uint8_t data[4096];
-    int data_size;
-    /* Put this at the end of the structure to make it easier to calculate the
-     * size before this pointer, which is used for memcmp */
     HEVCHdrParams *hdr;
+
+    uint8_t *data;
+    int data_size;
 } HEVCVPS;
 
 typedef struct ScalingList {
@@ -299,7 +298,7 @@ typedef struct HEVCSPS {
 
     int qp_bd_offset;
 
-    uint8_t data[4096];
+    uint8_t *data;
     int data_size;
 } HEVCSPS;
 
@@ -434,7 +433,7 @@ typedef struct HEVCPPS {
     int *min_tb_addr_zs;    ///< MinTbAddrZS
     int *min_tb_addr_zs_tab;///< MinTbAddrZS
 
-    uint8_t data[4096];
+    uint8_t *data;
     int data_size;
 } HEVCPPS;
 
