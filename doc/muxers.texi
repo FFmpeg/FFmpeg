@@ -2604,39 +2604,37 @@ specify the name of the '.Y' file. The muxer will automatically open the
 '.U' and '.V' files as required.
 
 @subsection Options
-
 @table @option
-@item frame_pts
-If set to 1, expand the filename with pts from pkt->pts.
+@item frame_pts @var{bool}
+If set to 1, expand the filename with the packet PTS (presentation time stamp).
 Default value is 0.
 
-@item start_number
+@item start_number @var{count}
 Start the sequence from the specified number. Default value is 1.
 
-@item update
+@item update @var{bool}
 If set to 1, the filename will always be interpreted as just a
 filename, not a pattern, and the corresponding file will be continuously
 overwritten with new images. Default value is 0.
 
-@item strftime
+@item strftime @var{bool}
 If set to 1, expand the filename with date and time information from
 @code{strftime()}. Default value is 0.
 
-@item atomic_writing
+@item atomic_writing @var{bool}
 Write output to a temporary file, which is renamed to target filename once
 writing is completed. Default is disabled.
 
 @item protocol_opts @var{options_list}
 Set protocol options as a :-separated list of key=value parameters. Values
 containing the @code{:} special character must be escaped.
-
 @end table
 
 @subsection Examples
-
-The following example shows how to use @command{ffmpeg} for creating a
-sequence of files @file{img-001.jpeg}, @file{img-002.jpeg}, ...,
-taking one image every second from the input video:
+@itemize
+@item
+Use @command{ffmpeg} for creating a sequence of files @file{img-001.jpeg},
+@file{img-002.jpeg}, ..., taking one image every second from the input video:
 @example
 ffmpeg -i in.avi -vsync cfr -r 1 -f image2 'img-%03d.jpeg'
 @end example
@@ -2656,27 +2654,29 @@ Note also that the pattern must not necessarily contain "%d" or
 ffmpeg -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
 
+@item
 The @option{strftime} option allows you to expand the filename with
 date and time information. Check the documentation of
 the @code{strftime()} function for the syntax.
 
-For example to generate image files from the @code{strftime()}
-"%Y-%m-%d_%H-%M-%S" pattern, the following @command{ffmpeg} command
-can be used:
+To generate image files from the @code{strftime()} "%Y-%m-%d_%H-%M-%S" pattern,
+the following @command{ffmpeg} command can be used:
 @example
 ffmpeg -f v4l2 -r 1 -i /dev/video0 -f image2 -strftime 1 "%Y-%m-%d_%H-%M-%S.jpg"
 @end example
 
-You can set the file name with current frame's PTS:
+@item
+Set the file name with current frame's PTS:
 @example
 ffmpeg -f v4l2 -r 1 -i /dev/video0 -copyts -f image2 -frame_pts true %d.jpg
 @end example
 
-A more complex example is to publish contents of your desktop directly to a
-WebDAV server every second:
+@item
+Publish contents of your desktop directly to a WebDAV server every second:
 @example
 ffmpeg -f x11grab -framerate 1 -i :0.0 -q:v 6 -update 1 -protocol_opts method=PUT http://example.com/desktop.jpg
 @end example
+@end itemize
 
 @section matroska
 
