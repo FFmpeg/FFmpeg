@@ -692,7 +692,7 @@ fate-filter-metadata-freezedetect: CMD = run $(FILTER_METADATA_COMMAND) "sws_fla
 SIGNALSTATS_DEPS = LAVFI_INDEV COLOR_FILTER SCALE_FILTER SIGNALSTATS_FILTER
 FATE_METADATA_FILTER-$(call ALLYES, $(SIGNALSTATS_DEPS)) += fate-filter-metadata-signalstats-yuv420p fate-filter-metadata-signalstats-yuv420p10
 fate-filter-metadata-signalstats-yuv420p: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;color=white:duration=1:r=1,signalstats"
-fate-filter-metadata-signalstats-yuv420p10: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;color=white:duration=1:r=1,format=yuv420p10,signalstats"
+fate-filter-metadata-signalstats-yuv420p10: CMD = run $(FILTER_METADATA_COMMAND) "sws_flags=+accurate_rnd+bitexact;color=white:duration=1:r=1,format=yuv420p10le,signalstats"
 
 SILENCEDETECT_DEPS = LAVFI_INDEV FILE_PROTOCOL AMOVIE_FILTER TTA_DEMUXER TTA_DECODER SILENCEDETECT_FILTER
 FATE_METADATA_FILTER-$(call ALLYES, $(SILENCEDETECT_DEPS)) += fate-filter-metadata-silencedetect
