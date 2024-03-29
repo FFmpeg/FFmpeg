@@ -225,8 +225,25 @@ Specifies the maximum number of streams. This can be used to reject files that
 would require too many resources due to a large number of streams.
 
 @item skip_estimate_duration_from_pts @var{bool} (@emph{input})
-Skip estimation of input duration when calculated using PTS.
+Skip estimation of input duration if it requires an additional probing for PTS at end of file.
 At present, applicable for MPEG-PS and MPEG-TS.
+
+@item duration_probesize @var{integer} (@emph{input})
+Set probing size, in bytes, for input duration estimation when it actually requires
+an additional probing for PTS at end of file (at present: MPEG-PS and MPEG-TS).
+It is aimed at users interested in better durations probing for itself, or indirectly
+because using the concat demuxer, for example.
+The typical use case is an MPEG-TS CBR with a high bitrate, high video buffering and
+ending cleaning with similar PTS for video and audio: in such a scenario, the large
+physical gap between the last video packet and the last audio packet makes it necessary
+to read many bytes in order to get the video stream duration.
+Another use case is where the default probing behaviour only reaches a single video frame which is
+not the last one of the stream due to frame reordering, so the duration is not accurate.
+Setting this option has a performance impact even for small files because the probing
+size is fixed.
+Default behaviour is a general purpose trade-off, largely adaptive, but the probing size
+will not be extended to get streams durations at all costs.
+Must be an integer not lesser than 1, or 0 for default behaviour.
 
 @item strict, f_strict @var{integer} (@emph{input/output})
 Specify how strictly to follow the standards. @code{f_strict} is deprecated and
