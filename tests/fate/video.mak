@@ -48,7 +48,7 @@ FATE_VIDEO-$(call FRAMECRC, AVI, AVRN) += fate-avid-interlaced
 fate-avid-interlaced: CMD = framecrc -i $(TARGET_SAMPLES)/avid/avid_ntsc_interlaced.avi
 
 FATE_VIDEO-$(call FRAMECRC, MOV, MJPEG) += fate-avid-meridian
-fate-avid-meridian: CMD = framecrc -i $(TARGET_SAMPLES)/avid/avidmeridianntsc.mov
+fate-avid-meridian: CMD = framecrc -bitexact -i $(TARGET_SAMPLES)/avid/avidmeridianntsc.mov
 
 FATE_VIDEO-$(call FRAMECRC, BETHSOFTVID, BETHSOFTVID, ARESAMPLE_FILTER SCALE_FILTER) += fate-bethsoft-vid
 fate-bethsoft-vid: CMD = framecrc -i $(TARGET_SAMPLES)/bethsoft-vid/ANIM0001.VID -t 5 -pix_fmt rgb24 -vf scale -af aresample
