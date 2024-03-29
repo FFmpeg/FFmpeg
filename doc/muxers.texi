@@ -2563,6 +2563,11 @@ If a BMP image is used, it must use the BITMAPINFOHEADER DIB header
 If a PNG image is used, it must use the rgba pixel format
 @end itemize
 
+@section ilbc
+Internet Low Bitrate Codec (iLBC) raw muxer.
+
+It accepts a single @samp{ilbc} audio stream.
+
 @anchor{image2}
 @section image2
 Image file muxer.
