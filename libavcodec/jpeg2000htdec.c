@@ -1198,6 +1198,9 @@ ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *c
     av_assert0(width * height <= 4096);
     av_assert0(width * height > 0);
 
+    if (roi_shift)
+        avpriv_report_missing_feature(s->avctx, "ROI shift");
+
     memset(t1->data, 0, t1->stride * height * sizeof(*t1->data));
     memset(t1->flags, 0, t1->stride * (height + 2) * sizeof(*t1->flags));
 
