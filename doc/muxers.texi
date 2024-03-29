@@ -2682,6 +2682,24 @@ ffmpeg -f x11grab -framerate 1 -i :0.0 -q:v 6 -update 1 -protocol_opts method=PU
 @end example
 @end itemize
 
+@section ircam
+Berkeley / IRCAM / CARL Sound Filesystem (BICSF) format muxer.
+
+The Berkeley/IRCAM/CARL Sound Format, developed in the 1980s, is a result of the
+merging of several different earlier sound file formats and systems including
+the csound system developed by Dr Gareth Loy at the Computer Audio Research Lab
+(CARL) at UC San Diego, the IRCAM sound file system developed by Rob Gross and
+Dan Timis at the Institut de Recherche et Coordination Acoustique / Musique in
+Paris and the Berkeley Fast Filesystem.
+
+It was developed initially as part of the Berkeley/IRCAM/CARL Sound Filesystem,
+a suite of programs designed to implement a filesystem for audio applications
+running under Berkeley UNIX. It was particularly popular in academic music
+research centres, and was used a number of times in the creation of early
+computer-generated compositions.
+
+This muxer accepts a single audio stream containing PCM data.
+
 @section matroska
 
 Matroska container muxer.
