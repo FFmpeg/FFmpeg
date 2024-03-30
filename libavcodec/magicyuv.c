@@ -124,7 +124,7 @@ static void magicyuv_median_pred16(uint16_t *dst, const uint16_t *src1,
     x = 0; \
     for (; CACHED_BITSTREAM_READER && x < width-c && get_bits_left(&gb) > 0;) {\
         ret = get_vlc_multi(&gb, (uint8_t *)dst + x * b, multi, \
-                            vlc, vlc_bits, 3); \
+                            vlc, vlc_bits, 3, b); \
         if (ret <= 0) \
             return AVERROR_INVALIDDATA; \
         x += ret; \
