@@ -6194,6 +6194,12 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (ret < 0)
         return ret;
 
+    if (pkt->pts != AV_NOPTS_VALUE &&
+        (uint64_t)pkt->dts - pkt->pts != (int32_t)((uint64_t)pkt->dts - pkt->pts)) {
+        av_log(s, AV_LOG_WARNING, "pts/dts pair unsupported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     if (mov->flags & FF_MOV_FLAG_FRAGMENT || mov->mode == MODE_AVIF) {
         int ret;
         if (mov->moov_written || mov->flags & FF_MOV_FLAG_EMPTY_MOOV) {
