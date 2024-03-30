@@ -28,7 +28,7 @@ fate-fitsdec-multi: tests/data/fits-multi.fits
 fate-fitsdec-multi: CMD = framecrc -i $(TARGET_PATH)/tests/data/fits-multi.fits -pix_fmt gbrap
 
 fate-fitsdec%: PIXFMT = $(word 3, $(subst -, ,$(@)))
-fate-fitsdec%: CMD = transcode image2 $(TARGET_SAMPLES)/png1/lena-$(fits-png-map-$(PIXFMT)).png fits "-vf scale -pix_fmt $(PIXFMT)"
+fate-fitsdec%: CMD = transcode image2 $(TARGET_SAMPLES)/png1/lena-$(fits-png-map-$(PIXFMT)).png fits "-vf scale -pix_fmt $(PIXFMT)" "-vf scale -pix_fmt $(PIXFMT)"
 
 FATE_FITS_DEC_PIXFMT = gray gbrp gbrp16be gbrap16be
 FATE_FITS_DEC-$(call TRANSCODE, FITS, FITS, IMAGE2_DEMUXER PNG_DECODER SCALE_FILTER) += $(FATE_FITS_DEC_PIXFMT:%=fate-fitsdec-%)
