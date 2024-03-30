@@ -667,7 +667,8 @@ static av_always_inline int get_vlc2(GetBitContext *s, const VLCElem *table,
 static inline int get_vlc_multi(GetBitContext *s, uint8_t *dst,
                                 const VLC_MULTI_ELEM *const Jtable,
                                 const VLCElem *const table,
-                                const int bits, const int max_depth)
+                                const int bits, const int max_depth,
+                                const int symbols_size)
 {
     dst[0] = get_vlc2(s, table, bits, max_depth);
     return 1;

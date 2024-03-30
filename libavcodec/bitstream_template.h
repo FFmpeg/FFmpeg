@@ -536,7 +536,8 @@ static inline int BS_FUNC(read_vlc)(BSCTX *bc, const VLCElem *table,
 static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t dst[8],
                                           const VLC_MULTI_ELEM *const Jtable,
                                           const VLCElem *const table,
-                                          const int bits, const int max_depth)
+                                          const int bits, const int max_depth,
+                                          const int symbols_size)
 {
     unsigned idx = BS_FUNC(peek)(bc, bits);
     int ret, nb_bits, code, n = Jtable[idx].len;
@@ -554,7 +555,10 @@ static inline int BS_FUNC(read_vlc_multi)(BSCTX *bc, uint8_t dst[8],
                 code = BS_FUNC(priv_set_idx)(bc, code, &n, &nb_bits, table);
             }
         }
-        AV_WN16(dst, code);
+        if (symbols_size == 1)
+            *dst = code;
+        else
+            AV_WN16(dst, code);
         ret = n > 0;
     }
     BS_FUNC(priv_skip_remaining)(bc, n);
