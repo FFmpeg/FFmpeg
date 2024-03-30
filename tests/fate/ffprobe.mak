@@ -10,41 +10,19 @@ tests/data/ffprobe-test.nut: ffmpeg$(PROGSSUF)$(EXESUF) tests/test_copy.ffmeta |
 FFPROBE_TEST_FILE=tests/data/ffprobe-test.nut
 FFPROBE_COMMAND=ffprobe$(PROGSSUF)$(EXESUF) -show_streams -show_packets -show_format -show_frames -bitexact $(TARGET_PATH)/$(FFPROBE_TEST_FILE) -print_filename $(FFPROBE_TEST_FILE)
 
-FATE_FFPROBE-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_compact
-fate-ffprobe_compact: $(FFPROBE_TEST_FILE)
-fate-ffprobe_compact: CMD = run $(FFPROBE_COMMAND) -of compact
+FFPROBE_OUTPUT_MODES_TESTS = $(addprefix fate-ffprobe_, compact csv default flat ini json xml)
+$(FFPROBE_OUTPUT_MODES_TESTS): $(FFPROBE_TEST_FILE)
+$(FFPROBE_OUTPUT_MODES_TESTS): CMD = run $(FFPROBE_COMMAND) -of $(@:fate-ffprobe_%=%)
+FFPROBE_TEST_FILE_TESTS-yes += $(FFPROBE_OUTPUT_MODES_TESTS)
 
-FATE_FFPROBE-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_csv
-fate-ffprobe_csv: $(FFPROBE_TEST_FILE)
-fate-ffprobe_csv: CMD = run $(FFPROBE_COMMAND) -of csv
-
-FATE_FFPROBE-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_default
-fate-ffprobe_default: $(FFPROBE_TEST_FILE)
-fate-ffprobe_default: CMD = run $(FFPROBE_COMMAND) -of default
-
-FATE_FFPROBE-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_flat
-fate-ffprobe_flat: $(FFPROBE_TEST_FILE)
-fate-ffprobe_flat: CMD = run $(FFPROBE_COMMAND) -of flat
-
-FATE_FFPROBE-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_ini
-fate-ffprobe_ini: $(FFPROBE_TEST_FILE)
-fate-ffprobe_ini: CMD = run $(FFPROBE_COMMAND) -of ini
-
-FATE_FFPROBE-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_json
-fate-ffprobe_json: $(FFPROBE_TEST_FILE)
-fate-ffprobe_json: CMD = run $(FFPROBE_COMMAND) -of json
-
-FATE_FFPROBE-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_xml
-fate-ffprobe_xml: $(FFPROBE_TEST_FILE)
-fate-ffprobe_xml: CMD = run $(FFPROBE_COMMAND) -of xml
-
-FATE_FFPROBE_SCHEMA-$(call ALLYES, AVDEVICE ARESAMPLE_FILTER) += fate-ffprobe_xsd
+FFPROBE_TEST_FILE_TESTS-$(HAVE_XMLLINT) += fate-ffprobe_xsd
 fate-ffprobe_xsd: $(FFPROBE_TEST_FILE)
 fate-ffprobe_xsd: CMD = run $(FFPROBE_COMMAND) -noprivate -of xml=q=1:x=1 | \
 	xmllint --schema $(SRC_PATH)/doc/ffprobe.xsd -
 
-FATE_FFPROBE-$(HAVE_XMLLINT) += $(FATE_FFPROBE_SCHEMA-yes)
-FATE_FFPROBE += $(FATE_FFPROBE-yes)
+FATE_FFPROBE-$(call FILTERDEMDECENCMUX, AEVALSRC TESTSRC ARESAMPLE, FFMETADATA, WRAPPED_AVFRAME, RAWVIDEO, NUT,   \
+                                        FFMPEG LAVFI_INDEV PCM_F64BE_DECODER PCM_F64LE_DECODER PCM_S16LE_ENCODER) \
+                                        += $(FFPROBE_TEST_FILE_TESTS-yes)
 
-fate-ffprobe: $(FATE_FFPROBE)
+fate-ffprobe: $(FATE_FFPROBE-yes)
 
