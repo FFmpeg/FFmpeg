@@ -51,20 +51,22 @@ typedef struct DOVIContext {
     AVDOVIDecoderConfigurationRecord cfg;
 
     /**
-     * Currently active RPU data header, updates on every dovi_rpu_parse().
+     * Currently active RPU data header, updates on every ff_dovi_rpu_parse()
+     * or ff_dovi_rpu_generate().
      */
     AVDOVIRpuDataHeader header;
 
     /**
      * Currently active data mappings, or NULL. Points into memory owned by the
      * corresponding rpu/vdr_ref, which becomes invalid on the next call to
-     * dovi_rpu_parse.
+     * ff_dovi_rpu_parse() or ff_dovi_rpu_generate().
      */
     const AVDOVIDataMapping *mapping;
     const AVDOVIColorMetadata *color;
 
     /**
      * Currently active extension blocks, updates on every ff_dovi_rpu_parse()
+     * or ff_dovi_rpu_generate().
      */
     AVDOVIDmData *ext_blocks;
     int num_ext_blocks;
@@ -133,6 +135,20 @@ enum {
     RPU_COEFF_FIXED = 0,
     RPU_COEFF_FLOAT = 1,
 };
+
+/**
+ * Synthesize a Dolby Vision RPU reflecting the current state. Note that this
+ * assumes all previous calls to `ff_dovi_rpu_generate` have been appropriately
+ * signalled, i.e. it will not re-send already transmitted redundant data.
+ *
+ * Mutates the internal state of DOVIContext to reflect the change.
+ * Returns 0 or a negative error code.
+ *
+ * This generates a fully formed RPU ready for inclusion in the bitstream,
+ * including the EMDF header (profile 10) or NAL encapsulation (otherwise).
+ */
+int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
+                         uint8_t **out_rpu, int *out_size);
 
 /**
  * Internal helper function to guess the correct DV profile for HEVC.
