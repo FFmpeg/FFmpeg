@@ -440,8 +440,8 @@ static void add_level(VLC_MULTI_ELEM *table, const int is16bit,
             code = curcode + (buf[t].code >> curlen);
             newlimit = curlimit - l;
             l  += curlen;
-            if (is16bit) AV_WN16(info.val+2*curlevel, sym);
-            else info.val[curlevel] = sym&0xFF;
+            if (is16bit) info.val16[curlevel] = sym;
+            else info.val8[curlevel] = sym&0xFF;
 
             if (curlevel) { // let's not add single entries
                 uint32_t val = code >> (32 - numbits);
@@ -468,7 +468,7 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
 {
     int minbits, maxbits, max;
     unsigned count[VLC_MULTI_MAX_SYMBOLS-1] = { 0, };
-    VLC_MULTI_ELEM info = { { 0, }, 0, 0, };
+    VLC_MULTI_ELEM info = { 0 };
     int count0 = 0;
 
     for (int j = 0; j < 1<<numbits; j++) {
@@ -500,9 +500,9 @@ static int vlc_multi_gen(VLC_MULTI_ELEM *table, const VLC *single,
         table[j].len = single->table[j].len;
         table[j].num = single->table[j].len > 0 ? 1 : 0;
         if (is16bit)
-            AV_WN16(table[j].val, single->table[j].sym);
+            table[j].val16[0] = single->table[j].sym;
         else
-            table[j].val[0] = single->table[j].sym;
+            table[j].val8[0]  = single->table[j].sym;
     }
 
     add_level(table, is16bit, nb_codes, numbits, buf,

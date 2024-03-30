@@ -40,7 +40,10 @@ typedef struct VLC {
 } VLC;
 
 typedef struct VLC_MULTI_ELEM {
-    uint8_t val[VLC_MULTI_MAX_SYMBOLS];
+    union {
+        uint8_t   val8[VLC_MULTI_MAX_SYMBOLS];
+        uint16_t val16[VLC_MULTI_MAX_SYMBOLS / 2];
+    };
     int8_t len; // -31,32
     uint8_t num;
 } VLC_MULTI_ELEM;
