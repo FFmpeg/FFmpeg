@@ -215,7 +215,7 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
             break;
         case AVMEDIA_TYPE_AUDIO:
             /* For layouts unknown on input but known on link after negotiation. */
-            if (frame->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC) {
+            if (frame->ch_layout.order == AV_CHANNEL_ORDER_UNSPEC && frame->ch_layout.nb_channels == s->ch_layout.nb_channels) {
                 ret = av_channel_layout_copy(&frame->ch_layout, &s->ch_layout);
                 if (ret < 0)
                     return ret;
