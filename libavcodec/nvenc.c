@@ -1689,15 +1689,15 @@ static NV_ENC_BUFFER_FORMAT nvenc_map_buffer_format(enum AVPixelFormat pix_fmt)
 {
     switch (pix_fmt) {
     case AV_PIX_FMT_YUV420P:
-        return NV_ENC_BUFFER_FORMAT_YV12_PL;
+        return NV_ENC_BUFFER_FORMAT_YV12;
     case AV_PIX_FMT_NV12:
-        return NV_ENC_BUFFER_FORMAT_NV12_PL;
+        return NV_ENC_BUFFER_FORMAT_NV12;
     case AV_PIX_FMT_P010:
     case AV_PIX_FMT_P016:
         return NV_ENC_BUFFER_FORMAT_YUV420_10BIT;
     case AV_PIX_FMT_GBRP:
     case AV_PIX_FMT_YUV444P:
-        return NV_ENC_BUFFER_FORMAT_YUV444_PL;
+        return NV_ENC_BUFFER_FORMAT_YUV444;
     case AV_PIX_FMT_GBRP16:
     case AV_PIX_FMT_YUV444P16:
         return NV_ENC_BUFFER_FORMAT_YUV444_10BIT;
