@@ -570,12 +570,6 @@ static void reflush_dynbuf(VariantStream *vs, int *range_length)
     avio_write(vs->out, vs->temp_buffer, *range_length);
 }
 
-#if HAVE_DOS_PATHS
-#define SEPARATOR '\\'
-#else
-#define SEPARATOR '/'
-#endif
-
 static int hls_delete_file(HLSContext *hls, AVFormatContext *avf,
                            char *path, const char *proto)
 {
@@ -668,7 +662,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         av_log(hls, AV_LOG_DEBUG, "deleting old segment %s\n",
                segment->filename);
         if (!hls->use_localtime_mkdir) // segment->filename contains basename only
-            av_bprintf(&path, "%s%c", dirname, SEPARATOR);
+            av_bprintf(&path, "%s/", dirname);
         av_bprintf(&path, "%s", segment->filename);
 
         if (!av_bprint_is_complete(&path)) {
@@ -685,8 +679,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
             vtt_dirname = av_dirname(vtt_dirname_r);
 
             av_bprint_clear(&path);
-            av_bprintf(&path, "%s%c%s", vtt_dirname, SEPARATOR,
-                                         segment->sub_filename);
+            av_bprintf(&path, "%s/%s", vtt_dirname, segment->sub_filename);
             av_freep(&vtt_dirname_r);
 
             if (!av_bprint_is_complete(&path)) {
