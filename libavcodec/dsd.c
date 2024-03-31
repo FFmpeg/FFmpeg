@@ -68,7 +68,7 @@ static const double htaps[HTAPS] = {
      3.423230509967409e-07,  1.244182214744588e-07,  3.130441005359396e-08
 };
 
-static float ctables[CTABLES][256];
+static double ctables[CTABLES][256];
 
 static av_cold void dsd_ctables_tableinit(void)
 {
