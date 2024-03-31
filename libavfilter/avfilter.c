@@ -835,14 +835,14 @@ int ff_filter_opt_parse(void *logctx, const AVClass *priv_class,
 {
     const AVOption *o = NULL;
     int ret;
-    char *av_uninit(parsed_key), *av_uninit(value);
-    const char *key;
     int offset= -1;
 
     if (!args)
         return 0;
 
     while (*args) {
+        char *parsed_key, *value;
+        const char *key;
         const char *shorthand = NULL;
         int additional_flags  = 0;
 
