@@ -226,6 +226,8 @@ typedef struct NvencContext
 
     void *nvencoder;
 
+    uint32_t frame_idx_counter;
+
     int preset;
     int profile;
     int level;
