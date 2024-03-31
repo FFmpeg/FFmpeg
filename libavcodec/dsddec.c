@@ -56,7 +56,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!s)
         return AVERROR(ENOMEM);
 
-    silence = avctx->codec_id == AV_CODEC_ID_DSD_LSBF || avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR ? DSD_SILENCE_REVERSED : DSD_SILENCE;
+    silence = DSD_SILENCE;
     for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
         s[i].pos = 0;
         memset(s[i].buf, silence, sizeof(s[i].buf));
