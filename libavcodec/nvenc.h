@@ -88,6 +88,7 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_NEW_BIT_DEPTH_API
 #define NVENC_HAVE_TEMPORAL_FILTER
 #define NVENC_HAVE_LOOKAHEAD_LEVEL
+#define NVENC_HAVE_UHQ_TUNING
 #endif
 
 typedef struct NvencSurface
