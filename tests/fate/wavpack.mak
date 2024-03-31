@@ -18,6 +18,9 @@ fate-wavpack-lossless-32bit: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/lossless
 FATE_WAVPACK_F32 += fate-wavpack-lossless-float
 fate-wavpack-lossless-float: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/lossless/32bit_float-partial.wv -f f32le -af aresample
 
+FATE_WAVPACK_F32 += fate-wavpack-lossless-dsd
+fate-wavpack-lossless-dsd: CMD = md5pipe -i $(TARGET_SAMPLES)/wavpack/lossless/dsd.wv -f f32le -af aresample
+
 # lossy
 
 FATE_WAVPACK_S8 += fate-wavpack-lossy-8bit
