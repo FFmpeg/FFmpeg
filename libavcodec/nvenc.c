@@ -1255,6 +1255,11 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
 
     h264->level = ctx->level;
 
+#ifdef NVENC_HAVE_NEW_BIT_DEPTH_API
+    h264->inputBitDepth = h264->outputBitDepth =
+        IS_10BIT(ctx->data_pix_fmt) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
+#endif
+
     if (ctx->coder >= 0)
         h264->entropyCodingMode = ctx->coder;
 
@@ -1370,7 +1375,12 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     hevc->chromaFormatIDC = IS_YUV444(ctx->data_pix_fmt) ? 3 : 1;
 
+#ifdef NVENC_HAVE_NEW_BIT_DEPTH_API
+    hevc->inputBitDepth = hevc->outputBitDepth =
+        IS_10BIT(ctx->data_pix_fmt) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
+#else
     hevc->pixelBitDepthMinus8 = IS_10BIT(ctx->data_pix_fmt) ? 2 : 0;
+#endif
 
     hevc->level = ctx->level;
 
@@ -1455,8 +1465,13 @@ static av_cold int nvenc_setup_av1_config(AVCodecContext *avctx)
 
     av1->chromaFormatIDC = IS_YUV444(ctx->data_pix_fmt) ? 3 : 1;
 
+#ifdef NVENC_HAVE_NEW_BIT_DEPTH_API
+    av1->inputBitDepth = IS_10BIT(ctx->data_pix_fmt) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
+    av1->outputBitDepth = (IS_10BIT(ctx->data_pix_fmt) || ctx->highbitdepth) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
+#else
     av1->inputPixelBitDepthMinus8 = IS_10BIT(ctx->data_pix_fmt) ? 2 : 0;
     av1->pixelBitDepthMinus8 = (IS_10BIT(ctx->data_pix_fmt) || ctx->highbitdepth) ? 2 : 0;
+#endif
 
     if (ctx->b_ref_mode >= 0)
         av1->useBFramesAsRef = ctx->b_ref_mode;
