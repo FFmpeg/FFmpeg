@@ -1049,8 +1049,6 @@ static av_cold int wavpack_decode_init(AVCodecContext *avctx)
     if (!s->curr_frame.f || !s->prev_frame.f)
         return AVERROR(ENOMEM);
 
-    ff_init_dsd_data();
-
     return 0;
 }
 
@@ -1529,6 +1527,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
                 return ret;
             }
             ff_thread_release_ext_buffer(&wc->curr_frame);
+            ff_init_dsd_data();
         }
         av_channel_layout_copy(&avctx->ch_layout, &new_ch_layout);
         avctx->sample_rate         = new_samplerate;
