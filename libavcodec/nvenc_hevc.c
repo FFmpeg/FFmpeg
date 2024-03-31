@@ -214,6 +214,9 @@ static const AVOption options[] = {
     { "2",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_2 }, 0, 0, VE, .unit = "lookahead_level" },
     { "3",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_3 }, 0, 0, VE, .unit = "lookahead_level" },
 #endif
+#ifdef NVENC_HAVE_UNIDIR_B
+    { "unidir_b",     "Enable use of unidirectional B-Frames.", OFFSET(unidir_b), AV_OPT_TYPE_BOOL,  { .i64 = 0 }, 0, 1, VE },
+#endif
     { NULL }
 };
 

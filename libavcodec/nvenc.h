@@ -89,6 +89,7 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_TEMPORAL_FILTER
 #define NVENC_HAVE_LOOKAHEAD_LEVEL
 #define NVENC_HAVE_UHQ_TUNING
+#define NVENC_HAVE_UNIDIR_B
 #endif
 
 typedef struct NvencSurface
@@ -276,6 +277,7 @@ typedef struct NvencContext
     int rgb_mode;
     int tf_level;
     int lookahead_level;
+    int unidir_b;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

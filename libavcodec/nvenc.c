@@ -613,6 +613,14 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 #endif
 
+#ifdef NVENC_HAVE_UNIDIR_B
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_UNIDIRECTIONAL_B);
+    if(ctx->unidir_b && ret <= 0) {
+        av_log(avctx, AV_LOG_WARNING, "Unidirectional B-Frames not supported by the device\n");
+        return AVERROR(ENOSYS);
+    }
+#endif
+
     ctx->support_dyn_bitrate = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE);
 
     return 0;
@@ -1657,6 +1665,10 @@ FF_DISABLE_DEPRECATION_WARNINGS
             ;
 FF_ENABLE_DEPRECATION_WARNINGS
     }
+
+#ifdef NVENC_HAVE_UNIDIR_B
+    ctx->init_encode_params.enableUniDirectionalB = ctx->unidir_b;
+#endif
 
     ctx->init_encode_params.enableEncodeAsync = 0;
     ctx->init_encode_params.enablePTD = 1;
