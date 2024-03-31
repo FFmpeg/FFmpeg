@@ -149,6 +149,15 @@ static const AVOption options[] = {
                                                             OFFSET(extra_sei),    AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "a53cc",        "Use A53 Closed Captions (if available)", OFFSET(a53_cc),   AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
     { "s12m_tc",      "Use timecode (if available)",        OFFSET(s12m_tc),      AV_OPT_TYPE_BOOL,  { .i64 = 1 }, 0, 1, VE },
+#ifdef NVENC_HAVE_LOOKAHEAD_LEVEL
+    { "lookahead_level", "Specifies the lookahead level. Higher level may improve quality at the expense of performance.",
+                                                            OFFSET(lookahead_level), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, NV_ENC_LOOKAHEAD_LEVEL_AUTOSELECT, VE, .unit = "lookahead_level" },
+    { "auto",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_AUTOSELECT }, 0, 0, VE, .unit = "lookahead_level" },
+    { "0",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_0 }, 0, 0, VE, .unit = "lookahead_level" },
+    { "1",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_1 }, 0, 0, VE, .unit = "lookahead_level" },
+    { "2",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_2 }, 0, 0, VE, .unit = "lookahead_level" },
+    { "3",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_3 }, 0, 0, VE, .unit = "lookahead_level" },
+#endif
     { NULL }
 };
 

@@ -202,6 +202,15 @@ static const AVOption options[] = {
     { "0",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TEMPORAL_FILTER_LEVEL_0 }, 0, 0, VE, .unit = "tf_level" },
     { "4",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TEMPORAL_FILTER_LEVEL_4 }, 0, 0, VE, .unit = "tf_level" },
 #endif
+#ifdef NVENC_HAVE_LOOKAHEAD_LEVEL
+    { "lookahead_level", "Specifies the lookahead level. Higher level may improve quality at the expense of performance.",
+                                                            OFFSET(lookahead_level), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, NV_ENC_LOOKAHEAD_LEVEL_AUTOSELECT, VE, .unit = "lookahead_level" },
+    { "auto",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_AUTOSELECT }, 0, 0, VE, .unit = "lookahead_level" },
+    { "0",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_0 }, 0, 0, VE, .unit = "lookahead_level" },
+    { "1",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_1 }, 0, 0, VE, .unit = "lookahead_level" },
+    { "2",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_2 }, 0, 0, VE, .unit = "lookahead_level" },
+    { "3",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_LOOKAHEAD_LEVEL_3 }, 0, 0, VE, .unit = "lookahead_level" },
+#endif
     { NULL }
 };
 

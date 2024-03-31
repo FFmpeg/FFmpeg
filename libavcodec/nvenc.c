@@ -602,6 +602,17 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 #endif
 
+#ifdef NVENC_HAVE_LOOKAHEAD_LEVEL
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_LOOKAHEAD_LEVEL);
+    if(ctx->rc_lookahead > 0 && ctx->lookahead_level > 0 &&
+       ctx->lookahead_level != NV_ENC_LOOKAHEAD_LEVEL_AUTOSELECT &&
+       ctx->lookahead_level > ret)
+    {
+        av_log(avctx, AV_LOG_WARNING, "Lookahead level not supported. Maximum level: %d\n", ret);
+        return AVERROR(ENOSYS);
+    }
+#endif
+
     ctx->support_dyn_bitrate = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE);
 
     return 0;
@@ -995,7 +1006,7 @@ static av_cold int nvenc_recalc_surfaces(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
+static av_cold int nvenc_setup_rate_control(AVCodecContext *avctx)
 {
     NvencContext *ctx = avctx->priv_data;
 
@@ -1124,6 +1135,24 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
             if (ctx->encode_config.rcParams.lookaheadDepth < ctx->rc_lookahead)
                 av_log(avctx, AV_LOG_WARNING, "Clipping lookahead depth to %d (from %d) due to lack of surfaces/delay",
                     ctx->encode_config.rcParams.lookaheadDepth, ctx->rc_lookahead);
+
+#ifdef NVENC_HAVE_LOOKAHEAD_LEVEL
+            if (ctx->lookahead_level >= 0) {
+                switch (ctx->lookahead_level) {
+                    case NV_ENC_LOOKAHEAD_LEVEL_0:
+                    case NV_ENC_LOOKAHEAD_LEVEL_1:
+                    case NV_ENC_LOOKAHEAD_LEVEL_2:
+                    case NV_ENC_LOOKAHEAD_LEVEL_3:
+                    case NV_ENC_LOOKAHEAD_LEVEL_AUTOSELECT:
+                        break;
+                    default:
+                        av_log(avctx, AV_LOG_ERROR, "Invalid lookahead level.\n");
+                        return AVERROR(EINVAL);
+                }
+
+                ctx->encode_config.rcParams.lookaheadLevel = ctx->lookahead_level;
+            }
+#endif
         }
     }
 
@@ -1151,6 +1180,8 @@ static av_cold void nvenc_setup_rate_control(AVCodecContext *avctx)
         ctx->encode_config.rcParams.vbvBufferSize = avctx->rc_buffer_size = 0;
         ctx->encode_config.rcParams.maxBitRate = avctx->rc_max_rate;
     }
+
+    return 0;
 }
 
 static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
@@ -1675,7 +1706,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     nvenc_recalc_surfaces(avctx);
 
-    nvenc_setup_rate_control(avctx);
+    res = nvenc_setup_rate_control(avctx);
+    if (res < 0)
+        return res;
 
     if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         ctx->encode_config.frameFieldMode = NV_ENC_PARAMS_FRAME_FIELD_MODE_FIELD;
