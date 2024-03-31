@@ -196,6 +196,12 @@ static const AVOption options[] = {
                                                             OFFSET(max_slice_size), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "constrained-encoding", "Enable constrainedFrame encoding where each slice in the constrained picture is independent of other slices",
                                                             OFFSET(constrained_encoding), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE },
+#ifdef NVENC_HAVE_TEMPORAL_FILTER
+    { "tf_level",     "Specifies the strength of the temporal filtering",
+                                                            OFFSET(tf_level),     AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, INT_MAX, VE, .unit = "tf_level" },
+    { "0",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TEMPORAL_FILTER_LEVEL_0 }, 0, 0, VE, .unit = "tf_level" },
+    { "4",            "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = NV_ENC_TEMPORAL_FILTER_LEVEL_4 }, 0, 0, VE, .unit = "tf_level" },
+#endif
     { NULL }
 };
 

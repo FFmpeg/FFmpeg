@@ -86,6 +86,7 @@ typedef void ID3D11Device;
 // SDK 12.2 compile time feature checks
 #if NVENCAPI_CHECK_VERSION(12, 2)
 #define NVENC_HAVE_NEW_BIT_DEPTH_API
+#define NVENC_HAVE_TEMPORAL_FILTER
 #endif
 
 typedef struct NvencSurface
@@ -271,6 +272,7 @@ typedef struct NvencContext
     int highbitdepth;
     int max_slice_size;
     int rgb_mode;
+    int tf_level;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);
