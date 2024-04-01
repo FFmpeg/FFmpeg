@@ -1371,14 +1371,18 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+        OutputFilterOptions opts = {
+            .enc = enc,
+        };
+
         if (ofilter) {
             ost->filter       = ofilter;
-            ret = ofilter_bind_ost(ofilter, ost, ms->sch_idx_enc);
+            ret = ofilter_bind_ost(ofilter, ost, ms->sch_idx_enc, &opts);
             if (ret < 0)
                 return ret;
         } else {
             ret = init_simple_filtergraph(ost->ist, ost, filters,
-                                          mux->sch, ms->sch_idx_enc);
+                                          mux->sch, ms->sch_idx_enc, &opts);
             if (ret < 0) {
                 av_log(ost, AV_LOG_ERROR,
                        "Error initializing a simple filtergraph\n");

@@ -263,6 +263,11 @@ typedef struct InputFilterOptions {
     AVFrame            *fallback;
 } InputFilterOptions;
 
+typedef struct OutputFilterOptions {
+    // Codec used for encoding, may be NULL
+    const AVCodec      *enc;
+} OutputFilterOptions;
+
 typedef struct InputFilter {
     struct FilterGraph *graph;
     uint8_t            *name;
@@ -684,7 +689,8 @@ int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_id
 int filtergraph_is_simple(const FilterGraph *fg);
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                             char *graph_desc,
-                            Scheduler *sch, unsigned sch_idx_enc);
+                            Scheduler *sch, unsigned sch_idx_enc,
+                            const OutputFilterOptions *opts);
 int fg_finalise_bindings(FilterGraph *fg);
 
 /**
@@ -699,7 +705,8 @@ FrameData       *packet_data  (AVPacket *pkt);
 const FrameData *packet_data_c(AVPacket *pkt);
 
 int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
-                     unsigned sched_idx_enc);
+                     unsigned sched_idx_enc,
+                     const OutputFilterOptions *opts);
 
 /**
  * Create a new filtergraph in the global filtergraph list.

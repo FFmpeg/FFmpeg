@@ -763,13 +763,13 @@ static int set_channel_layout(OutputFilterPriv *f, const AVChannelLayout *layout
 }
 
 int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
-                     unsigned sched_idx_enc)
+                     unsigned sched_idx_enc,
+                     const OutputFilterOptions *opts)
 {
     const OutputFile  *of = ost->file;
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     FilterGraph  *fg = ofilter->graph;
     FilterGraphPriv *fgp = fgp_from_fg(fg);
-    const AVCodec *c = ost->enc_ctx->codec;
     int ret;
 
     av_assert0(!ofilter->ost);
@@ -786,14 +786,14 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
         ofp->height     = ost->enc_ctx->height;
         if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
             ofp->format = ost->enc_ctx->pix_fmt;
-        } else {
-            ofp->formats = c->pix_fmts;
+        } else if (opts->enc) {
+            ofp->formats = opts->enc->pix_fmts;
 
             // MJPEG encoder exports a full list of supported pixel formats,
             // but the full-range ones are experimental-only.
             // Restrict the auto-conversion list unless -strict experimental
             // has been specified.
-            if (!strcmp(c->name, "mjpeg")) {
+            if (!strcmp(opts->enc->name, "mjpeg")) {
                 // FIXME: YUV420P etc. are actually supported with full color range,
                 // yet the latter information isn't available here.
                 static const enum AVPixelFormat mjpeg_formats[] =
@@ -822,11 +822,11 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
 
         ofp->fps.framerate           = ost->frame_rate;
         ofp->fps.framerate_max       = ost->max_frame_rate;
-        ofp->fps.framerate_supported = ost->force_fps ?
-                                       NULL : c->supported_framerates;
+        ofp->fps.framerate_supported = ost->force_fps && opts->enc ?
+                                       NULL : opts->enc->supported_framerates;
 
         // reduce frame rate for mpeg4 to be within the spec limits
-        if (c->id == AV_CODEC_ID_MPEG4)
+        if (opts->enc && opts->enc->id == AV_CODEC_ID_MPEG4)
             ofp->fps.framerate_clip = 65535;
 
         ofp->fps.dup_warning         = 1000;
@@ -835,20 +835,21 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     case AVMEDIA_TYPE_AUDIO:
         if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
             ofp->format = ost->enc_ctx->sample_fmt;
-        } else {
-            ofp->formats = c->sample_fmts;
+        } else if (opts->enc) {
+            ofp->formats = opts->enc->sample_fmts;
         }
         if (ost->enc_ctx->sample_rate) {
             ofp->sample_rate = ost->enc_ctx->sample_rate;
-        } else {
-            ofp->sample_rates = c->supported_samplerates;
+        } else if (opts->enc) {
+            ofp->sample_rates = opts->enc->supported_samplerates;
         }
         if (ost->enc_ctx->ch_layout.nb_channels) {
-            int ret = set_channel_layout(ofp, c->ch_layouts, &ost->enc_ctx->ch_layout);
+            int ret = set_channel_layout(ofp, opts->enc ? opts->enc->ch_layouts : NULL,
+                                         &ost->enc_ctx->ch_layout);
             if (ret < 0)
                 return ret;
-        } else if (c->ch_layouts) {
-            ofp->ch_layouts = c->ch_layouts;
+        } else if (opts->enc) {
+            ofp->ch_layouts = opts->enc->ch_layouts;
         }
         break;
     }
@@ -1079,7 +1080,8 @@ fail:
 
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                             char *graph_desc,
-                            Scheduler *sch, unsigned sched_idx_enc)
+                            Scheduler *sch, unsigned sched_idx_enc,
+                            const OutputFilterOptions *opts)
 {
     FilterGraph *fg;
     FilterGraphPriv *fgp;
@@ -1111,7 +1113,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     if (ret < 0)
         return ret;
 
-    ret = ofilter_bind_ost(fg->outputs[0], ost, sched_idx_enc);
+    ret = ofilter_bind_ost(fg->outputs[0], ost, sched_idx_enc, opts);
     if (ret < 0)
         return ret;
 
