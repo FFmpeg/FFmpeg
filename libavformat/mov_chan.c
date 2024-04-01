@@ -190,6 +190,7 @@ MOV_CH_LAYOUT_MAP
 #define CHLIST(_tag, _cnt, ...)    TAG(_tag, _cnt), __VA_ARGS__,
 static const struct MovChannelLayoutMap mov_ch_layout_map[] = {
     MOV_CH_LAYOUT_MAP
+    { {0} },
 };
 
 static const enum MovChannelLayoutTag mov_ch_layouts_aac[] = {
@@ -286,11 +287,11 @@ static const struct {
     { AV_CODEC_ID_NONE,    NULL                    },
 };
 
-static const struct MovChannelLayoutMap* find_layout_map(uint32_t tag)
+static const struct MovChannelLayoutMap* find_layout_map(uint32_t tag, const struct MovChannelLayoutMap *map)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(mov_ch_layout_map); i += 1 + (mov_ch_layout_map[i].tag & 0xffff))
-        if (mov_ch_layout_map[i].tag == tag)
-            return &mov_ch_layout_map[i + 1];
+    for (int i = 0; map[i].tag & 0xffff; i += 1 + (map[i].tag & 0xffff))
+        if (map[i].tag == tag)
+            return &map[i + 1];
     return NULL;
 }
 
@@ -302,7 +303,7 @@ static const struct MovChannelLayoutMap* find_layout_map(uint32_t tag)
  * @param[in]      tag        channel layout tag
  * @return                    <0 on error
  */
-static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag)
+static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag, const struct MovChannelLayoutMap *map)
 {
     int i, channels;
     const struct MovChannelLayoutMap *layout_map;
@@ -310,7 +311,7 @@ static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag)
     channels = tag & 0xFFFF;
 
     /* find the channel layout for the specified layout tag */
-    layout_map = find_layout_map(tag);
+    layout_map = find_layout_map(tag, map);
     if (layout_map) {
         int ret;
         av_channel_layout_uninit(ch_layout);
@@ -364,12 +365,34 @@ static uint32_t mov_get_channel_label(enum AVChannel channel)
     return 0;
 }
 
+static int is_layout_valid_for_tag(const AVChannelLayout *ch_layout, uint32_t tag, const struct MovChannelLayoutMap *map)
+{
+    const struct MovChannelLayoutMap *layout_map;
+    int channels = ch_layout->nb_channels;
+
+    /* get the layout map based on the channel count */
+    if ((tag & 0xFFFF) != channels)
+        return 0;
+
+    layout_map = find_layout_map(tag, map);
+    if (layout_map) {
+        int i;
+        for (i = 0; i < channels; i++) {
+            if (av_channel_layout_channel_from_index(ch_layout, i) != layout_map[i].id)
+                break;
+        }
+        if (i == channels)
+            return 1;
+    }
+    return 0;
+}
+
 int ff_mov_get_channel_layout_tag(const AVCodecParameters *par,
                                   uint32_t *layout,
                                   uint32_t *bitmap,
                                   uint32_t **pchannel_desc)
 {
-    int i, j;
+    int i;
     uint32_t tag = 0;
     const enum MovChannelLayoutTag *layouts = NULL;
 
@@ -382,26 +405,11 @@ int ff_mov_get_channel_layout_tag(const AVCodecParameters *par,
         layouts = mov_codec_ch_layouts[i].layouts;
 
     if (layouts) {
-        int channels;
-        const struct MovChannelLayoutMap *layout_map;
-
-        /* get the layout map based on the channel count */
-        channels = par->ch_layout.nb_channels;
-
         /* find the layout tag for the specified channel layout */
-        for (i = 0; layouts[i] != 0; i++) {
-            if ((layouts[i] & 0xFFFF) != channels)
-                continue;
-            layout_map = find_layout_map(layouts[i]);
-            if (layout_map) {
-                for (j = 0; j < channels; j++) {
-                    if (av_channel_layout_channel_from_index(&par->ch_layout, j) != layout_map[j].id)
-                        break;
-                }
-                if (j == channels)
-                    break;
-            }
-        }
+        for (i = 0; layouts[i] != 0; i++)
+            if (is_layout_valid_for_tag(&par->ch_layout, layouts[i], mov_ch_layout_map))
+                break;
+
         tag = layouts[i];
     }
 
@@ -508,7 +516,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         if (!ch_layout->nb_channels)
             ch_layout->nb_channels = nb_channels;
         if (nb_channels == ch_layout->nb_channels) {
-            ret = mov_get_channel_layout(ch_layout, layout_tag);
+            ret = mov_get_channel_layout(ch_layout, layout_tag, mov_ch_layout_map);
             if (ret < 0)
                 return ret;
         } else {
