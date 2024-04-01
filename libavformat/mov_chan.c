@@ -75,6 +75,46 @@ enum {
     c_Haptic = AV_CHAN_NONE,
 };
 
+enum {
+    iso_L    = AV_CHAN_FRONT_LEFT,
+    iso_R    = AV_CHAN_FRONT_RIGHT,
+    iso_C    = AV_CHAN_FRONT_CENTER,
+    iso_LFE  = AV_CHAN_LOW_FREQUENCY,
+    iso_Lsr  = AV_CHAN_BACK_LEFT,
+    iso_Rsr  = AV_CHAN_BACK_RIGHT,
+    iso_Lc   = AV_CHAN_FRONT_LEFT_OF_CENTER,
+    iso_Rc   = AV_CHAN_FRONT_RIGHT_OF_CENTER,
+    iso_Cs   = AV_CHAN_BACK_CENTER,
+    /* Side and surround are not exactly the same, but in order to have
+     * consistent 5.1/7.1 layouts we map them to the side channels. */
+    iso_Ls   = AV_CHAN_SIDE_LEFT,
+    iso_Lss  = AV_CHAN_SIDE_LEFT,
+    iso_Rs   = AV_CHAN_SIDE_RIGHT,
+    iso_Rss  = AV_CHAN_SIDE_RIGHT,
+    iso_Ts   = AV_CHAN_TOP_CENTER,
+    iso_Lv   = AV_CHAN_TOP_FRONT_LEFT,
+    iso_Cv   = AV_CHAN_TOP_FRONT_CENTER,
+    iso_Rv   = AV_CHAN_TOP_FRONT_RIGHT,
+    iso_Lvr  = AV_CHAN_TOP_BACK_LEFT,
+    iso_Cvr  = AV_CHAN_TOP_BACK_CENTER,
+    iso_Rvr  = AV_CHAN_TOP_BACK_RIGHT,
+    //       = AV_CHAN_STEREO_LEFT,
+    //       = AV_CHAN_STEREO_RIGHT,
+    iso_Lw   = AV_CHAN_WIDE_LEFT,
+    iso_Rw   = AV_CHAN_WIDE_RIGHT,
+    iso_Lsd  = AV_CHAN_SURROUND_DIRECT_LEFT,
+    iso_Rsd  = AV_CHAN_SURROUND_DIRECT_RIGHT,
+    iso_LFE2 = AV_CHAN_LOW_FREQUENCY_2,
+    iso_Lvss = AV_CHAN_TOP_SIDE_LEFT,
+    iso_Rvss = AV_CHAN_TOP_SIDE_RIGHT,
+    iso_Cb   = AV_CHAN_BOTTOM_FRONT_CENTER,
+    iso_Lb   = AV_CHAN_BOTTOM_FRONT_LEFT,
+    iso_Rb   = AV_CHAN_BOTTOM_FRONT_RIGHT,
+    /* The following have no exact counterparts */
+    iso_Lvs  = AV_CHAN_NONE,
+    iso_Rvs  = AV_CHAN_NONE,
+};
+
 struct MovChannelLayoutMap {
     union {
         uint32_t tag;
@@ -99,6 +139,10 @@ struct MovChannelLayoutMap {
 #define CHLIST21(_tag, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21) \
     CHLIST(_tag, 21, ID(_1),  ID(_2),  ID(_3),  ID(_4),  ID(_5),  ID(_6),  ID(_7),  ID(_8),  ID(_9),  ID(_10), \
                      ID(_11), ID(_12), ID(_13), ID(_14), ID(_15), ID(_16), ID(_17), ID(_18), ID(_19), ID(_20), ID(_21))
+#define CHLIST24(_tag, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24) \
+    CHLIST(_tag, 24, ID(_1),  ID(_2),  ID(_3),  ID(_4),  ID(_5),  ID(_6),  ID(_7),  ID(_8),  ID(_9),  ID(_10), \
+                     ID(_11), ID(_12), ID(_13), ID(_14), ID(_15), ID(_16), ID(_17), ID(_18), ID(_19), ID(_20), \
+                     ID(_21), ID(_22), ID(_23), ID(_24))
 
 #define MOV_CH_LAYOUT_MAP \
     CHLIST01( MOV_CH_LAYOUT_MONO,                 C    )\
@@ -190,6 +234,29 @@ MOV_CH_LAYOUT_MAP
 #define CHLIST(_tag, _cnt, ...)    TAG(_tag, _cnt), __VA_ARGS__,
 static const struct MovChannelLayoutMap mov_ch_layout_map[] = {
     MOV_CH_LAYOUT_MAP
+    { {0} },
+};
+
+#undef ID
+#undef TAG
+#define ID(_0)            {.id = iso_##_0}
+#define TAG(_tag, _cnt)   {.tag = (_tag << 16) | _cnt}
+
+/* ISO/IEC 23001-8 */
+static const struct MovChannelLayoutMap iso_ch_layout_map[] = {
+    CHLIST01(  1,  C )
+    CHLIST02(  2,  L,   R   )
+    CHLIST03(  3,  C,   L,   R   )
+    CHLIST04(  4,  C,   L,   R,    Cs  )
+    CHLIST05(  5,  C,   L,   R,    Ls,   Rs  )
+    CHLIST06(  6,  C,   L,   R,    Ls,   Rs,   LFE )
+    CHLIST08(  7,  C,   Lc,  Rc,   L,    R,    Ls,   Rs,   LFE )
+    CHLIST03(  9,  L,   R,   Cs  )
+    CHLIST04( 10,  L,   R,   Ls,   Rs  )
+    CHLIST07( 11,  C,   L,   R,    Ls,   Rs,   Cs,   LFE )
+    CHLIST08( 12,  C,   L,   R,    Ls,   Rs,   Lsr,  Rsr,  LFE )
+    CHLIST24( 13,  C,   Lc,  Rc,   L,    R,    Lss,  Rss,  Lsr,  Rsr,  Cs,  LFE,  LFE2,  Cv,  Lv,  Rv,  Lvss,  Rvss,  Ts,  Lvr,  Rvr,  Cvr,  Cb,  Lb,  Rb)
+    CHLIST08( 14,  C,   L,   R,    Ls,   Rs,   LFE,  Lv,   Rv)
     { {0} },
 };
 
@@ -532,60 +599,6 @@ out:
     return ret;
 }
 
-/* ISO/IEC 23001-8, 8.2 */
-static const AVChannelLayout iso_channel_configuration[] = {
-    // 0: any setup
-    {0},
-
-    // 1: centre front
-    AV_CHANNEL_LAYOUT_MONO,
-
-    // 2: left front, right front
-    AV_CHANNEL_LAYOUT_STEREO,
-
-    // 3: centre front, left front, right front
-    AV_CHANNEL_LAYOUT_SURROUND,
-
-    // 4: centre front, left front, right front, rear centre
-    AV_CHANNEL_LAYOUT_4POINT0,
-
-    // 5: centre front, left front, right front, left surround, right surround
-    AV_CHANNEL_LAYOUT_5POINT0,
-
-    // 6: 5 + LFE
-    AV_CHANNEL_LAYOUT_5POINT1,
-
-    // 7: centre front, left front centre, right front centre,
-    // left front, right front, left surround, right surround, LFE
-    AV_CHANNEL_LAYOUT_7POINT1_WIDE,
-
-    // 8: channel1, channel2
-    AV_CHANNEL_LAYOUT_STEREO_DOWNMIX,
-
-    // 9: left front, right front, rear centre
-    AV_CHANNEL_LAYOUT_2_1,
-
-    // 10: left front, right front, left surround, right surround
-    AV_CHANNEL_LAYOUT_2_2,
-
-    // 11: centre front, left front, right front, left surround, right surround, rear centre, LFE
-    AV_CHANNEL_LAYOUT_6POINT1,
-
-    // 12: centre front, left front, right front
-    // left surround, right surround
-    // rear surround left, rear surround right
-    // LFE
-    AV_CHANNEL_LAYOUT_7POINT1,
-
-    // 13:
-    AV_CHANNEL_LAYOUT_22POINT2,
-
-    // 14:
-    AV_CHANNEL_LAYOUT_7POINT1_TOP_BACK,
-
-    // TODO: 15 - 20
-};
-
 /* ISO/IEC 23001-8, table 8 */
 static const enum AVChannel iso_channel_position[] = {
     // 0: left front
@@ -721,9 +734,9 @@ int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *co
 {
     // Set default value which means any setup in 23001-8
     *config = 0;
-    for (int i = 0; i < FF_ARRAY_ELEMS(iso_channel_configuration); i++) {
-        if (!av_channel_layout_compare(layout, iso_channel_configuration + i)) {
-            *config = i;
+    for (int i = 0; iso_ch_layout_map[i].tag & 0xffff; i += 1 + (iso_ch_layout_map[i].tag & 0xffff)) {
+        if (is_layout_valid_for_tag(layout, iso_ch_layout_map[i].tag, &iso_ch_layout_map[i])) {
+            *config = iso_ch_layout_map[i].tag >> 16;
             break;
         }
     }
@@ -733,12 +746,16 @@ int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *co
 
 int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout)
 {
-    if (config > 0 && config < FF_ARRAY_ELEMS(iso_channel_configuration)) {
-        av_channel_layout_copy(layout, &iso_channel_configuration[config]);
-        return 0;
-    }
+    if (config > 0) {
+        uint32_t layout_tag;
 
-    return -1;
+        if (layout->nb_channels <= 0 || layout->nb_channels > UINT16_MAX)
+            return AVERROR_INVALIDDATA;
+
+        layout_tag = (config << 16) | layout->nb_channels;
+        return mov_get_channel_layout(layout, layout_tag, iso_ch_layout_map);
+    }
+    return 1;
 }
 
 int ff_mov_get_channel_positions_from_layout(const AVChannelLayout *layout,
@@ -818,7 +835,9 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
                                       omitted_channel_map);
                 return AVERROR_PATCHWELCOME;
             }
-            ff_mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout);
+            ret = ff_mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout);
+            if (ret < 0)
+                return ret;
         }
     }
 

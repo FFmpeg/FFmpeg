@@ -172,9 +172,10 @@ int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *co
 /**
  * Get AVChannelLayout from ISO/IEC 23001-8 ChannelConfiguration.
  *
- * @return 0 for success, -1 for doesn't match, layout is untouched on failure
+ * @return 1  if the config was unknown, layout is untouched in this case
+ *         0  if the config was found
+ *         <0 on error
  */
-
 int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout);
 
 /**
