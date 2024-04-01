@@ -1373,6 +1373,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         OutputFilterOptions opts = {
             .enc = enc,
+            .ts_offset = mux->of.start_time == AV_NOPTS_VALUE ?
+                         0 : mux->of.start_time,
         };
 
         if (ofilter) {

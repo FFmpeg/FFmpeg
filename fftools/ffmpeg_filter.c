@@ -766,7 +766,6 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
                      unsigned sched_idx_enc,
                      const OutputFilterOptions *opts)
 {
-    const OutputFile  *of = ost->file;
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
     FilterGraph  *fg = ofilter->graph;
     FilterGraphPriv *fgp = fgp_from_fg(fg);
@@ -778,7 +777,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     ofilter->ost = ost;
     av_freep(&ofilter->linklabel);
 
-    ofp->ts_offset     = of->start_time == AV_NOPTS_VALUE ? 0 : of->start_time;
+    ofp->ts_offset    = opts->ts_offset;
     ofp->enc_timebase = ost->enc_timebase;
 
     switch (ost->enc_ctx->codec_type) {

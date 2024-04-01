@@ -266,6 +266,8 @@ typedef struct InputFilterOptions {
 typedef struct OutputFilterOptions {
     // Codec used for encoding, may be NULL
     const AVCodec      *enc;
+
+    int64_t             ts_offset;
 } OutputFilterOptions;
 
 typedef struct InputFilter {
