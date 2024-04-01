@@ -282,6 +282,13 @@ typedef struct OutputFilterOptions {
 
     // A combination of OFilterFlags.
     unsigned            flags;
+
+    int                 format;
+    int                 width;
+    int                 height;
+
+    int                 sample_rate;
+    AVChannelLayout     ch_layout;
 } OutputFilterOptions;
 
 typedef struct InputFilter {

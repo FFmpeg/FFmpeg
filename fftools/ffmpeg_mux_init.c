@@ -1378,6 +1378,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         OutputFilterOptions opts = {
             .enc = enc,
+            .format      = (type == AVMEDIA_TYPE_VIDEO) ?
+                           ost->enc_ctx->pix_fmt : ost->enc_ctx->sample_fmt,
+            .width       = ost->enc_ctx->width,
+            .height      = ost->enc_ctx->height,
+            .sample_rate = ost->enc_ctx->sample_rate,
+            .ch_layout   = ost->enc_ctx->ch_layout,
             .output_tb = enc_tb,
             .ts_offset = mux->of.start_time == AV_NOPTS_VALUE ?
                          0 : mux->of.start_time,

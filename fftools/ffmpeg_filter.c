@@ -782,12 +782,12 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     ofp->ts_offset    = opts->ts_offset;
     ofp->enc_timebase = opts->output_tb;
 
-    switch (ost->enc_ctx->codec_type) {
+    switch (ofilter->type) {
     case AVMEDIA_TYPE_VIDEO:
-        ofp->width      = ost->enc_ctx->width;
-        ofp->height     = ost->enc_ctx->height;
-        if (ost->enc_ctx->pix_fmt != AV_PIX_FMT_NONE) {
-            ofp->format = ost->enc_ctx->pix_fmt;
+        ofp->width      = opts->width;
+        ofp->height     = opts->height;
+        if (opts->format != AV_PIX_FMT_NONE) {
+            ofp->format = opts->format;
         } else if (opts->pix_fmts)
             ofp->formats = opts->pix_fmts;
         else if (opts->enc)
@@ -812,19 +812,19 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
 
         break;
     case AVMEDIA_TYPE_AUDIO:
-        if (ost->enc_ctx->sample_fmt != AV_SAMPLE_FMT_NONE) {
-            ofp->format = ost->enc_ctx->sample_fmt;
+        if (opts->format != AV_SAMPLE_FMT_NONE) {
+            ofp->format = opts->format;
         } else if (opts->enc) {
             ofp->formats = opts->enc->sample_fmts;
         }
-        if (ost->enc_ctx->sample_rate) {
-            ofp->sample_rate = ost->enc_ctx->sample_rate;
+        if (opts->sample_rate) {
+            ofp->sample_rate = opts->sample_rate;
         } else if (opts->enc) {
             ofp->sample_rates = opts->enc->supported_samplerates;
         }
-        if (ost->enc_ctx->ch_layout.nb_channels) {
+        if (opts->ch_layout.nb_channels) {
             int ret = set_channel_layout(ofp, opts->enc ? opts->enc->ch_layouts : NULL,
-                                         &ost->enc_ctx->ch_layout);
+                                         &opts->ch_layout);
             if (ret < 0)
                 return ret;
         } else if (opts->enc) {
