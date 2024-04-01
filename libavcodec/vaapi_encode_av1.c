@@ -155,6 +155,8 @@ static av_cold int vaapi_encode_av1_configure(AVCodecContext *avctx)
         priv->q_idx_idr = priv->q_idx_p = priv->q_idx_b = 128;
     }
 
+    ctx->roi_quant_range = AV1_MAX_QUANT;
+
     return 0;
 }
 
