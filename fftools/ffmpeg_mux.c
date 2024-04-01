@@ -140,7 +140,7 @@ static int mux_fixup_ts(Muxer *mux, MuxStream *ms, AVPacket *pkt)
     OutputStream *ost = &ms->ost;
 
 #if FFMPEG_OPT_VSYNC_DROP
-    if (ost->type == AVMEDIA_TYPE_VIDEO && ost->vsync_method == VSYNC_DROP)
+    if (ost->type == AVMEDIA_TYPE_VIDEO && ms->ts_drop)
         pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 #endif
 

@@ -287,6 +287,8 @@ typedef struct OutputFilterOptions {
     int                 width;
     int                 height;
 
+    enum VideoSyncMethod vsync_method;
+
     int                 sample_rate;
     AVChannelLayout     ch_layout;
 } OutputFilterOptions;
@@ -549,7 +551,6 @@ typedef struct OutputStream {
     /* video only */
     AVRational frame_rate;
     AVRational max_frame_rate;
-    enum VideoSyncMethod vsync_method;
     int is_cfr;
     int force_fps;
 #if FFMPEG_OPT_TOP

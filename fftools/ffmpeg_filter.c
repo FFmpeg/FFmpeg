@@ -175,6 +175,8 @@ typedef struct FPSConvContext {
     int               last_dropped;
     int               dropped_keyframe;
 
+    enum VideoSyncMethod vsync_method;
+
     AVRational        framerate;
     AVRational        framerate_max;
     const AVRational *framerate_supported;
@@ -799,6 +801,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
         if (!ofp->fps.last_frame)
             return AVERROR(ENOMEM);
 
+        ofp->fps.vsync_method        = opts->vsync_method;
         ofp->fps.framerate           = ost->frame_rate;
         ofp->fps.framerate_max       = ost->max_frame_rate;
         ofp->fps.framerate_supported = ost->force_fps && opts->enc ?
@@ -2072,9 +2075,9 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
 
     if (delta0 < 0 &&
         delta > 0 &&
-        ost->vsync_method != VSYNC_PASSTHROUGH
+        fps->vsync_method != VSYNC_PASSTHROUGH
 #if FFMPEG_OPT_VSYNC_DROP
-        && ost->vsync_method != VSYNC_DROP
+        && fps->vsync_method != VSYNC_DROP
 #endif
         ) {
         if (delta0 < -0.6) {
@@ -2086,7 +2089,7 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
         delta0 = 0;
     }
 
-    switch (ost->vsync_method) {
+    switch (fps->vsync_method) {
     case VSYNC_VSCFR:
         if (fps->frame_number == 0 && delta0 >= 0.5) {
             av_log(ost, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));

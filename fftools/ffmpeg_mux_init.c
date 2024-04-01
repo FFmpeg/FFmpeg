@@ -580,8 +580,10 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
 }
 
 static int new_stream_video(Muxer *mux, const OptionsContext *o,
-                            OutputStream *ost, int *keep_pix_fmt)
+                            OutputStream *ost, int *keep_pix_fmt,
+                            enum VideoSyncMethod *vsync_method)
 {
+    MuxStream       *ms = ms_from_ost(ost);
     AVFormatContext *oc = mux->fc;
     AVStream *st;
     char *frame_rate = NULL, *max_frame_rate = NULL, *frame_aspect_ratio = NULL;
@@ -773,49 +775,52 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
 #endif
 
 #if FFMPEG_OPT_VSYNC
-        ost->vsync_method = video_sync_method;
+        *vsync_method = video_sync_method;
 #else
-        ost->vsync_method = VSYNC_AUTO;
+        *vsync_method = VSYNC_AUTO;
 #endif
         MATCH_PER_STREAM_OPT(fps_mode, str, fps_mode, oc, st);
         if (fps_mode) {
-            ret = parse_and_set_vsync(fps_mode, &ost->vsync_method, ost->file->index, ost->index, 0);
+            ret = parse_and_set_vsync(fps_mode, vsync_method, ost->file->index, ost->index, 0);
             if (ret < 0)
                 return ret;
         }
 
         if ((ost->frame_rate.num || ost->max_frame_rate.num) &&
-            !(ost->vsync_method == VSYNC_AUTO ||
-              ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR)) {
+            !(*vsync_method == VSYNC_AUTO ||
+              *vsync_method == VSYNC_CFR || *vsync_method == VSYNC_VSCFR)) {
             av_log(ost, AV_LOG_FATAL, "One of -r/-fpsmax was specified "
                    "together a non-CFR -vsync/-fps_mode. This is contradictory.\n");
             return AVERROR(EINVAL);
         }
 
-        if (ost->vsync_method == VSYNC_AUTO) {
+        if (*vsync_method == VSYNC_AUTO) {
             if (ost->frame_rate.num || ost->max_frame_rate.num) {
-                ost->vsync_method = VSYNC_CFR;
+                *vsync_method = VSYNC_CFR;
             } else if (!strcmp(oc->oformat->name, "avi")) {
-                ost->vsync_method = VSYNC_VFR;
+                *vsync_method = VSYNC_VFR;
             } else {
-                ost->vsync_method = (oc->oformat->flags & AVFMT_VARIABLE_FPS)       ?
-                                     ((oc->oformat->flags & AVFMT_NOTIMESTAMPS) ?
-                                      VSYNC_PASSTHROUGH : VSYNC_VFR)                :
-                                     VSYNC_CFR;
+                *vsync_method = (oc->oformat->flags & AVFMT_VARIABLE_FPS)  ?
+                                ((oc->oformat->flags & AVFMT_NOTIMESTAMPS) ?
+                                VSYNC_PASSTHROUGH : VSYNC_VFR) : VSYNC_CFR;
             }
 
-            if (ost->ist && ost->vsync_method == VSYNC_CFR) {
+            if (ost->ist && *vsync_method == VSYNC_CFR) {
                 const InputFile *ifile = ost->ist->file;
 
                 if (ifile->nb_streams == 1 && ifile->input_ts_offset == 0)
-                    ost->vsync_method = VSYNC_VSCFR;
+                    *vsync_method = VSYNC_VSCFR;
             }
 
-            if (ost->vsync_method == VSYNC_CFR && copy_ts) {
-                ost->vsync_method = VSYNC_VSCFR;
+            if (*vsync_method == VSYNC_CFR && copy_ts) {
+                *vsync_method = VSYNC_VSCFR;
             }
         }
-        ost->is_cfr = (ost->vsync_method == VSYNC_CFR || ost->vsync_method == VSYNC_VSCFR);
+        ost->is_cfr = (*vsync_method == VSYNC_CFR || *vsync_method == VSYNC_VSCFR);
+#if FFMPEG_OPT_VSYNC_DROP
+        if (*vsync_method == VSYNC_DROP)
+            ms->ts_drop = 1;
+#endif
     }
 
     return 0;
@@ -1043,6 +1048,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     AVStream *st;
     int ret = 0, keep_pix_fmt = 0;
     AVRational enc_tb = { 0, 0 };
+    enum VideoSyncMethod vsync_method = VSYNC_AUTO;
     const char *bsfs = NULL, *time_base = NULL;
     char *filters = NULL, *next, *codec_tag = NULL;
     double qscale = -1;
@@ -1361,7 +1367,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                          ms->copy_initial_nonkeyframes, oc, st);
 
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO:      ret = new_stream_video     (mux, o, ost, &keep_pix_fmt); break;
+    case AVMEDIA_TYPE_VIDEO:      ret = new_stream_video     (mux, o, ost, &keep_pix_fmt, &vsync_method); break;
     case AVMEDIA_TYPE_AUDIO:      ret = new_stream_audio     (mux, o, ost); break;
     case AVMEDIA_TYPE_SUBTITLE:   ret = new_stream_subtitle  (mux, o, ost); break;
     }
@@ -1382,6 +1388,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                            ost->enc_ctx->pix_fmt : ost->enc_ctx->sample_fmt,
             .width       = ost->enc_ctx->width,
             .height      = ost->enc_ctx->height,
+            .vsync_method = vsync_method,
             .sample_rate = ost->enc_ctx->sample_rate,
             .ch_layout   = ost->enc_ctx->ch_layout,
             .output_tb = enc_tb,
