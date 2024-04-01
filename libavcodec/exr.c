@@ -335,7 +335,7 @@ static int huf_unpack_enc_table(GetByteContext *gb,
         return ret;
 
     for (; im <= iM; im++) {
-        uint64_t l;
+        int l;
         if (get_bits_left(&gbit) < 6)
             return AVERROR_INVALIDDATA;
         l = freq[im] = get_bits(&gbit, 6);
