@@ -1042,6 +1042,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     const AVCodec *enc;
     AVStream *st;
     int ret = 0, keep_pix_fmt = 0;
+    AVRational enc_tb = { 0, 0 };
     const char *bsfs = NULL, *time_base = NULL;
     char *filters = NULL, *next, *codec_tag = NULL;
     double qscale = -1;
@@ -1260,7 +1261,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 #endif
             }
 
-            ost->enc_timebase = q;
+            enc_tb = q;
         }
     } else {
         ret = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st,
@@ -1377,6 +1378,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         OutputFilterOptions opts = {
             .enc = enc,
+            .output_tb = enc_tb,
             .ts_offset = mux->of.start_time == AV_NOPTS_VALUE ?
                          0 : mux->of.start_time,
             .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt,

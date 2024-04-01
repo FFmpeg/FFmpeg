@@ -273,6 +273,11 @@ typedef struct OutputFilterOptions {
 
     int64_t             ts_offset;
 
+    /* Desired output timebase.
+     * Numerator can be one of EncTimeBase values, or 0 when no preference.
+     */
+    AVRational          output_tb;
+
     // A combination of OFilterFlags.
     unsigned            flags;
 } OutputFilterOptions;
@@ -528,8 +533,6 @@ typedef struct OutputStream {
     InputStream *ist;
 
     AVStream *st;            /* stream in the output file */
-
-    AVRational enc_timebase;
 
     Encoder *enc;
     AVCodecContext *enc_ctx;

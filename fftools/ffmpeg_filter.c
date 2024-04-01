@@ -780,7 +780,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
 
     ofp->flags        = opts->flags;
     ofp->ts_offset    = opts->ts_offset;
-    ofp->enc_timebase = ost->enc_timebase;
+    ofp->enc_timebase = opts->output_tb;
 
     switch (ost->enc_ctx->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
