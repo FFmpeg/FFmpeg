@@ -23,6 +23,7 @@
  * @author Justin Ruggles
  */
 
+#include <assert.h>
 #include <stdint.h>
 
 #include "libavutil/avassert.h"
@@ -81,108 +82,114 @@ struct MovChannelLayoutMap {
     };
 };
 
-#define TAG(_0)                                          {.tag = _0}
-#define ID(_0)                                           {.id = c_##_0}
-#define CHLIST(_0, ...)                                  TAG(_0), __VA_ARGS__
-#define CHLIST01(_0, _1)                                 CHLIST(_0, ID(_1))
-#define CHLIST02(_0, _1, _2)                             CHLIST(_0, ID(_1), ID(_2))
-#define CHLIST03(_0, _1, _2, _3)                         CHLIST(_0, ID(_1), ID(_2), ID(_3))
-#define CHLIST04(_0, _1, _2, _3, _4)                     CHLIST(_0, ID(_1), ID(_2), ID(_3), ID(_4))
-#define CHLIST05(_0, _1, _2, _3, _4, _5)                 CHLIST(_0, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5))
-#define CHLIST06(_0, _1, _2, _3, _4, _5, _6)             CHLIST(_0, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6))
-#define CHLIST07(_0, _1, _2, _3, _4, _5, _6, _7)         CHLIST(_0, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6), ID(_7))
-#define CHLIST08(_0, _1, _2, _3, _4, _5, _6, _7, _8)     CHLIST(_0, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6), ID(_7), ID(_8))
-#define CHLIST09(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9) CHLIST(_0, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6), ID(_7), ID(_8), ID(_9))
-#define CHLIST16(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16) \
-    CHLIST(_0, ID(_1),  ID(_2),  ID(_3),  ID(_4),  ID(_5),  ID(_6), ID(_7), ID(_8), ID(_9), ID(_10), \
-               ID(_11), ID(_12), ID(_13), ID(_14), ID(_15), ID(_16))
-#define CHLIST21(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21) \
-    CHLIST(_0, ID(_1),  ID(_2),  ID(_3),  ID(_4),  ID(_5),  ID(_6),  ID(_7),  ID(_8),  ID(_9),  ID(_10), \
-               ID(_11), ID(_12), ID(_13), ID(_14), ID(_15), ID(_16), ID(_17), ID(_18), ID(_19), ID(_20), ID(_21))
+#define TAG(_tag, _cnt)                                    {.tag = _tag}
+#define ID(_0)                                             {.id = c_##_0}
+#define CHLIST01(_tag, _1)                                 CHLIST(_tag, 1, ID(_1))
+#define CHLIST02(_tag, _1, _2)                             CHLIST(_tag, 2, ID(_1), ID(_2))
+#define CHLIST03(_tag, _1, _2, _3)                         CHLIST(_tag, 3, ID(_1), ID(_2), ID(_3))
+#define CHLIST04(_tag, _1, _2, _3, _4)                     CHLIST(_tag, 4, ID(_1), ID(_2), ID(_3), ID(_4))
+#define CHLIST05(_tag, _1, _2, _3, _4, _5)                 CHLIST(_tag, 5, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5))
+#define CHLIST06(_tag, _1, _2, _3, _4, _5, _6)             CHLIST(_tag, 6, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6))
+#define CHLIST07(_tag, _1, _2, _3, _4, _5, _6, _7)         CHLIST(_tag, 7, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6), ID(_7))
+#define CHLIST08(_tag, _1, _2, _3, _4, _5, _6, _7, _8)     CHLIST(_tag, 8, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6), ID(_7), ID(_8))
+#define CHLIST09(_tag, _1, _2, _3, _4, _5, _6, _7, _8, _9) CHLIST(_tag, 9, ID(_1), ID(_2), ID(_3), ID(_4), ID(_5), ID(_6), ID(_7), ID(_8), ID(_9))
+#define CHLIST16(_tag, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16) \
+    CHLIST(_tag, 16, ID(_1),  ID(_2),  ID(_3),  ID(_4),  ID(_5),  ID(_6), ID(_7), ID(_8), ID(_9), ID(_10), \
+                     ID(_11), ID(_12), ID(_13), ID(_14), ID(_15), ID(_16))
+#define CHLIST21(_tag, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21) \
+    CHLIST(_tag, 21, ID(_1),  ID(_2),  ID(_3),  ID(_4),  ID(_5),  ID(_6),  ID(_7),  ID(_8),  ID(_9),  ID(_10), \
+                     ID(_11), ID(_12), ID(_13), ID(_14), ID(_15), ID(_16), ID(_17), ID(_18), ID(_19), ID(_20), ID(_21))
 
+#define MOV_CH_LAYOUT_MAP \
+    CHLIST01( MOV_CH_LAYOUT_MONO,                 C    )\
+    CHLIST02( MOV_CH_LAYOUT_STEREO,               L,   R    )\
+    CHLIST02( MOV_CH_LAYOUT_STEREOHEADPHONES,     L,   R    )\
+    CHLIST02( MOV_CH_LAYOUT_BINAURAL,             L,   R    )\
+    CHLIST02( MOV_CH_LAYOUT_MIDSIDE,              L,   R    )\
+    CHLIST02( MOV_CH_LAYOUT_XY,                   L,   R    )\
+    CHLIST02( MOV_CH_LAYOUT_MATRIXSTEREO,         Lt,  Rt   )\
+    CHLIST02( MOV_CH_LAYOUT_AC3_1_0_1,            C,   LFE  )\
+    CHLIST03( MOV_CH_LAYOUT_MPEG_3_0_A,           L,   R,   C     )\
+    CHLIST03( MOV_CH_LAYOUT_MPEG_3_0_B,           C,   L,   R     )\
+    CHLIST03( MOV_CH_LAYOUT_AC3_3_0,              L,   C,   R     )\
+    CHLIST03( MOV_CH_LAYOUT_ITU_2_1,              L,   R,   Cs    )\
+    CHLIST03( MOV_CH_LAYOUT_DVD_4,                L,   R,   LFE   )\
+    CHLIST04( MOV_CH_LAYOUT_AMBISONIC_B_FORMAT,   W,   X,   Y,    Z     )\
+    CHLIST04( MOV_CH_LAYOUT_QUADRAPHONIC,         L,   R,   Rls,  Rrs   )\
+    CHLIST04( MOV_CH_LAYOUT_MPEG_4_0_A,           L,   R,   C,    Cs    )\
+    CHLIST04( MOV_CH_LAYOUT_MPEG_4_0_B,           C,   L,   R,    Cs    )\
+    CHLIST04( MOV_CH_LAYOUT_AC3_3_1,              L,   C,   R,    Cs    )\
+    CHLIST04( MOV_CH_LAYOUT_ITU_2_2,              L,   R,   Ls,   Rs    )\
+    CHLIST04( MOV_CH_LAYOUT_DVD_5,                L,   R,   LFE,  Cs    )\
+    CHLIST04( MOV_CH_LAYOUT_AC3_2_1_1,            L,   R,   Cs,   LFE   )\
+    CHLIST04( MOV_CH_LAYOUT_DVD_10,               L,   R,   C,    LFE   )\
+    CHLIST04( MOV_CH_LAYOUT_AC3_3_0_1,            L,   C,   R,    LFE   )\
+    CHLIST04( MOV_CH_LAYOUT_DTS_3_1,              C,   L,   R,    LFE   )\
+    CHLIST05( MOV_CH_LAYOUT_PENTAGONAL,           L,   R,   Rls,  Rrs,  C     )\
+    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_A,           L,   R,   C,    Ls,   Rs    )\
+    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_B,           L,   R,   Ls,   Rs,   C     )\
+    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_C,           L,   C,   R,    Ls,   Rs    )\
+    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_D,           C,   L,   R,    Ls,   Rs    )\
+    CHLIST05( MOV_CH_LAYOUT_DVD_6,                L,   R,   LFE,  Ls,   Rs    )\
+    CHLIST05( MOV_CH_LAYOUT_DVD_18,               L,   R,   Ls,   Rs,   LFE   )\
+    CHLIST05( MOV_CH_LAYOUT_DVD_11,               L,   R,   C,    LFE,  Cs    )\
+    CHLIST05( MOV_CH_LAYOUT_AC3_3_1_1,            L,   C,   R,    Cs,   LFE   )\
+    CHLIST05( MOV_CH_LAYOUT_DTS_4_1,              C,   L,   R,    Cs,   LFE   )\
+    CHLIST06( MOV_CH_LAYOUT_HEXAGONAL,            L,   R,   Rls,  Rrs,  C,    Cs     )\
+    CHLIST06( MOV_CH_LAYOUT_DTS_6_0_C,            C,   Cs,  L,    R,    Rls,  Rrs    )\
+    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_A,           L,   R,   C,    LFE,  Ls,   Rs     )\
+    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_B,           L,   R,   Ls,   Rs,   C,    LFE    )\
+    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_C,           L,   C,   R,    Ls,   Rs,   LFE    )\
+    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_D,           C,   L,   R,    Ls,   Rs,   LFE    )\
+    CHLIST06( MOV_CH_LAYOUT_AUDIOUNIT_6_0,        L,   R,   Ls,   Rs,   C,    Cs     )\
+    CHLIST06( MOV_CH_LAYOUT_AAC_6_0,              C,   L,   R,    Ls,   Rs,   Cs     )\
+    CHLIST06( MOV_CH_LAYOUT_EAC3_6_0_A,           L,   C,   R,    Ls,   Rs,   Cs     )\
+    CHLIST06( MOV_CH_LAYOUT_DTS_6_0_A,            Lc,  Rc,  L,    R,    Ls,   Rs     )\
+    CHLIST06( MOV_CH_LAYOUT_DTS_6_0_B,            C,   L,   R,    Rls,  Rrs,  Ts     )\
+    CHLIST07( MOV_CH_LAYOUT_MPEG_6_1_A,           L,   R,   C,    LFE,  Ls,   Rs,    Cs    )\
+    CHLIST07( MOV_CH_LAYOUT_AAC_6_1,              C,   L,   R,    Ls,   Rs,   Cs,    LFE   )\
+    CHLIST07( MOV_CH_LAYOUT_EAC3_6_1_A,           L,   C,   R,    Ls,   Rs,   LFE,   Cs    )\
+    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_D,            C,   L,   R,    Ls,   Rs,   LFE,   Cs    )\
+    CHLIST07( MOV_CH_LAYOUT_AUDIOUNIT_7_0,        L,   R,   Ls,   Rs,   C,    Rls,   Rrs   )\
+    CHLIST07( MOV_CH_LAYOUT_AAC_7_0,              C,   L,   R,    Ls,   Rs,   Rls,   Rrs   )\
+    CHLIST07( MOV_CH_LAYOUT_EAC3_7_0_A,           L,   C,   R,    Ls,   Rs,   Rls,   Rrs   )\
+    CHLIST07( MOV_CH_LAYOUT_AUDIOUNIT_7_0_FRONT,  L,   R,   Ls,   Rs,   C,    Lc,    Rc    )\
+    CHLIST07( MOV_CH_LAYOUT_DTS_7_0,              Lc,  C,   Rc,   L,    R,    Ls,    Rs    )\
+    CHLIST07( MOV_CH_LAYOUT_EAC3_6_1_B,           L,   C,   R,    Ls,   Rs,   LFE,   Ts    )\
+    CHLIST07( MOV_CH_LAYOUT_EAC3_6_1_C,           L,   C,   R,    Ls,   Rs,   LFE,   Vhc   )\
+    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_A,            Lc,  Rc,  L,    R,    Ls,   Rs,    LFE   )\
+    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_B,            C,   L,   R,    Rls,  Rrs,  Ts,    LFE   )\
+    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_C,            C,   Cs,  L,    R,    Rls,  Rrs,   LFE   )\
+    CHLIST08( MOV_CH_LAYOUT_OCTAGONAL,            L,   R,   Rls,  Rrs,  C,    Cs,    Ls,   Rs    )\
+    CHLIST08( MOV_CH_LAYOUT_AAC_OCTAGONAL,        C,   L,   R,    Ls,   Rs,   Rls,   Rrs,  Cs    )\
+    CHLIST08( MOV_CH_LAYOUT_CUBE,                 L,   R,   Rls,  Rrs,  Vhl,  Vhr,   Rlt,  Rrt   )\
+    CHLIST08( MOV_CH_LAYOUT_MPEG_7_1_A,           L,   R,   C,    LFE,  Ls,   Rs,    Lc,   Rc    )\
+    CHLIST08( MOV_CH_LAYOUT_MPEG_7_1_B,           C,   Lc,  Rc,   L,    R,    Ls,    Rs,   LFE   )\
+    CHLIST08( MOV_CH_LAYOUT_EMAGIC_DEFAULT_7_1,   L,   R,   Ls,   Rs,   C,    LFE,   Lc,   Rc    )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_B,           L,   C,   R,    Ls,   Rs,   LFE,   Lc,   Rc    )\
+    CHLIST08( MOV_CH_LAYOUT_DTS_7_1,              Lc,  C,   Rc,   L,    R,    Ls,    Rs,   LFE   )\
+    CHLIST08( MOV_CH_LAYOUT_MPEG_7_1_C,           L,   R,   C,    LFE,  Ls,   Rs,    Rls,  Rrs   )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_A,           L,   C,   R,    Ls,   Rs,   LFE,   Rls,  Rrs   )\
+    CHLIST08( MOV_CH_LAYOUT_SMPTE_DTV,            L,   R,   C,    LFE,  Ls,   Rs,    Lt,   Rt    )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_C,           L,   C,   R,    Ls,   Rs,   LFE,   Lsd,  Rsd   )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_D,           L,   C,   R,    Ls,   Rs,   LFE,   Lw,   Rw    )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_E,           L,   C,   R,    Ls,   Rs,   LFE,   Vhl,  Vhr   )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_F,           L,   C,   R,    Ls,   Rs,   LFE,   Cs,   Ts    )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_G,           L,   C,   R,    Ls,   Rs,   LFE,   Cs,   Vhc   )\
+    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_H,           L,   C,   R,    Ls,   Rs,   LFE,   Ts,   Vhc   )\
+    CHLIST08( MOV_CH_LAYOUT_DTS_8_0_A,            Lc,  Rc,  L,    R,    Ls,   Rs,    Rls,  Rrs   )\
+    CHLIST08( MOV_CH_LAYOUT_DTS_8_0_B,            Lc,  C,   Rc,   L,    R,    Ls,    Cs,   Rs    )\
+    CHLIST09( MOV_CH_LAYOUT_DTS_8_1_A,            Lc,  Rc,  L,    R,    Ls,   Rs,    Rls,  Rrs,  LFE   )\
+    CHLIST09( MOV_CH_LAYOUT_DTS_8_1_B,            Lc,  C,   Rc,   L,    R,    Ls,    Cs,   Rs,   LFE   )\
+    CHLIST16( MOV_CH_LAYOUT_TMH_10_2_STD,         L,   R,   C,    Vhc,  Lsd,  Rsd,   Ls,   Rs,   Vhl,  Vhr,  Lw,  Rw,  Csd,  Cs,  LFE1,  LFE2  )\
+    CHLIST21( MOV_CH_LAYOUT_TMH_10_2_FULL,        L,   R,   C,    Vhc,  Lsd,  Rsd,   Ls,   Rs,   Vhl,  Vhr,  Lw,  Rw,  Csd,  Cs,  LFE1,  LFE2,  Lc,  Rc,  HI,  VI,  Haptic  )\
+
+#define CHLIST(_tag, _cnt, ...)    static_assert((_tag & 0xffff) == _cnt, "Channel count of " #_tag " is not " #_cnt);
+MOV_CH_LAYOUT_MAP
+#undef CHLIST
+#define CHLIST(_tag, _cnt, ...)    TAG(_tag, _cnt), __VA_ARGS__,
 static const struct MovChannelLayoutMap mov_ch_layout_map[] = {
-    CHLIST01( MOV_CH_LAYOUT_MONO,                 C ),
-    CHLIST02( MOV_CH_LAYOUT_STEREO,               L,   R   ),
-    CHLIST02( MOV_CH_LAYOUT_STEREOHEADPHONES,     L,   R   ),
-    CHLIST02( MOV_CH_LAYOUT_BINAURAL,             L,   R   ),
-    CHLIST02( MOV_CH_LAYOUT_MIDSIDE,              L,   R   ),     //C, sides
-    CHLIST02( MOV_CH_LAYOUT_XY,                   L,   R   ),     //X (left ), Y (right )
-    CHLIST02( MOV_CH_LAYOUT_MATRIXSTEREO,         Lt,  Rt  ),
-    CHLIST02( MOV_CH_LAYOUT_AC3_1_0_1,            C,   LFE ),
-    CHLIST03( MOV_CH_LAYOUT_MPEG_3_0_A,           L,   R,   C   ),
-    CHLIST03( MOV_CH_LAYOUT_MPEG_3_0_B,           C,   L,   R   ),
-    CHLIST03( MOV_CH_LAYOUT_AC3_3_0,              L,   C,   R   ),
-    CHLIST03( MOV_CH_LAYOUT_ITU_2_1,              L,   R,   Cs  ),
-    CHLIST03( MOV_CH_LAYOUT_DVD_4,                L,   R,   LFE ),
-    CHLIST04( MOV_CH_LAYOUT_AMBISONIC_B_FORMAT,   W,   X,   Y,    Z   ),
-    CHLIST04( MOV_CH_LAYOUT_QUADRAPHONIC,         L,   R,   Rls,  Rrs ),
-    CHLIST04( MOV_CH_LAYOUT_MPEG_4_0_A,           L,   R,   C,    Cs  ),
-    CHLIST04( MOV_CH_LAYOUT_MPEG_4_0_B,           C,   L,   R,    Cs  ),
-    CHLIST04( MOV_CH_LAYOUT_AC3_3_1,              L,   C,   R,    Cs  ),
-    CHLIST04( MOV_CH_LAYOUT_ITU_2_2,              L,   R,   Ls,   Rs  ),
-    CHLIST04( MOV_CH_LAYOUT_DVD_5,                L,   R,   LFE,  Cs  ),
-    CHLIST04( MOV_CH_LAYOUT_AC3_2_1_1,            L,   R,   Cs,   LFE ),
-    CHLIST04( MOV_CH_LAYOUT_DVD_10,               L,   R,   C,    LFE ),
-    CHLIST04( MOV_CH_LAYOUT_AC3_3_0_1,            L,   C,   R,    LFE ),
-    CHLIST04( MOV_CH_LAYOUT_DTS_3_1,              C,   L,   R,    LFE ),
-    CHLIST05( MOV_CH_LAYOUT_PENTAGONAL,           L,   R,   Rls,  Rrs,  C   ),
-    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_A,           L,   R,   C,    Ls,   Rs  ),
-    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_B,           L,   R,   Ls,   Rs,   C   ),
-    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_C,           L,   C,   R,    Ls,   Rs  ),
-    CHLIST05( MOV_CH_LAYOUT_MPEG_5_0_D,           C,   L,   R,    Ls,   Rs  ),
-    CHLIST05( MOV_CH_LAYOUT_DVD_6,                L,   R,   LFE,  Ls,   Rs  ),
-    CHLIST05( MOV_CH_LAYOUT_DVD_18,               L,   R,   Ls,   Rs,   LFE ),
-    CHLIST05( MOV_CH_LAYOUT_DVD_11,               L,   R,   C,    LFE,  Cs  ),
-    CHLIST05( MOV_CH_LAYOUT_AC3_3_1_1,            L,   C,   R,    Cs,   LFE ),
-    CHLIST05( MOV_CH_LAYOUT_DTS_4_1,              C,   L,   R,    Cs,   LFE ),
-    CHLIST06( MOV_CH_LAYOUT_HEXAGONAL,            L,   R,   Rls,  Rrs,  C,    Cs  ),
-    CHLIST06( MOV_CH_LAYOUT_DTS_6_0_C,            C,   Cs,  L,    R,    Rls,  Rrs ),
-    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_A,           L,   R,   C,    LFE,  Ls,   Rs  ),
-    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_B,           L,   R,   Ls,   Rs,   C,    LFE ),
-    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_C,           L,   C,   R,    Ls,   Rs,   LFE ),
-    CHLIST06( MOV_CH_LAYOUT_MPEG_5_1_D,           C,   L,   R,    Ls,   Rs,   LFE ),
-    CHLIST06( MOV_CH_LAYOUT_AUDIOUNIT_6_0,        L,   R,   Ls,   Rs,   C,    Cs  ),
-    CHLIST06( MOV_CH_LAYOUT_AAC_6_0,              C,   L,   R,    Ls,   Rs,   Cs  ),
-    CHLIST06( MOV_CH_LAYOUT_EAC3_6_0_A,           L,   C,   R,    Ls,   Rs,   Cs  ),
-    CHLIST06( MOV_CH_LAYOUT_DTS_6_0_A,            Lc,  Rc,  L,    R,    Ls,   Rs  ),
-    CHLIST06( MOV_CH_LAYOUT_DTS_6_0_B,            C,   L,   R,    Rls,  Rrs,  Ts  ),
-    CHLIST07( MOV_CH_LAYOUT_MPEG_6_1_A,           L,   R,   C,    LFE,  Ls,   Rs,    Cs  ),
-    CHLIST07( MOV_CH_LAYOUT_AAC_6_1,              C,   L,   R,    Ls,   Rs,   Cs,    LFE ),
-    CHLIST07( MOV_CH_LAYOUT_EAC3_6_1_A,           L,   C,   R,    Ls,   Rs,   LFE,   Cs  ),
-    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_D,            C,   L,   R,    Ls,   Rs,   LFE,   Cs  ),
-    CHLIST07( MOV_CH_LAYOUT_AUDIOUNIT_7_0,        L,   R,   Ls,   Rs,   C,    Rls,   Rrs ),
-    CHLIST07( MOV_CH_LAYOUT_AAC_7_0,              C,   L,   R,    Ls,   Rs,   Rls,   Rrs ),
-    CHLIST07( MOV_CH_LAYOUT_EAC3_7_0_A,           L,   C,   R,    Ls,   Rs,   Rls,   Rrs ),
-    CHLIST07( MOV_CH_LAYOUT_AUDIOUNIT_7_0_FRONT,  L,   R,   Ls,   Rs,   C,    Lc,    Rc  ),
-    CHLIST07( MOV_CH_LAYOUT_DTS_7_0,              Lc,  C,   Rc,   L,    R,    Ls,    Rs  ),
-    CHLIST07( MOV_CH_LAYOUT_EAC3_6_1_B,           L,   C,   R,    Ls,   Rs,   LFE,   Ts  ),
-    CHLIST07( MOV_CH_LAYOUT_EAC3_6_1_C,           L,   C,   R,    Ls,   Rs,   LFE,   Vhc ),
-    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_A,            Lc,  Rc,  L,    R,    Ls,   Rs,    LFE ),
-    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_B,            C,   L,   R,    Rls,  Rrs,  Ts,    LFE ),
-    CHLIST07( MOV_CH_LAYOUT_DTS_6_1_C,            C,   Cs,  L,    R,    Rls,  Rrs,   LFE ),
-    CHLIST08( MOV_CH_LAYOUT_OCTAGONAL,            L,   R,   Rls,  Rrs,  C,    Cs,    Ls,   Rs  ),
-    CHLIST08( MOV_CH_LAYOUT_AAC_OCTAGONAL,        C,   L,   R,    Ls,   Rs,   Rls,   Rrs,  Cs  ),
-    CHLIST08( MOV_CH_LAYOUT_CUBE,                 L,   R,   Rls,  Rrs,  Vhl,  Vhr,   Rlt,  Rrt ),
-    CHLIST08( MOV_CH_LAYOUT_MPEG_7_1_A,           L,   R,   C,    LFE,  Ls,   Rs,    Lc,   Rc  ),
-    CHLIST08( MOV_CH_LAYOUT_MPEG_7_1_B,           C,   Lc,  Rc,   L,    R,    Ls,    Rs,   LFE ),
-    CHLIST08( MOV_CH_LAYOUT_EMAGIC_DEFAULT_7_1,   L,   R,   Ls,   Rs,   C,    LFE,   Lc,   Rc  ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_B,           L,   C,   R,    Ls,   Rs,   LFE,   Lc,   Rc  ),
-    CHLIST08( MOV_CH_LAYOUT_DTS_7_1,              Lc,  C,   Rc,   L,    R,    Ls,    Rs,   LFE ),
-    CHLIST08( MOV_CH_LAYOUT_MPEG_7_1_C,           L,   R,   C,    LFE,  Ls,   Rs,    Rls,  Rrs ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_A,           L,   C,   R,    Ls,   Rs,   LFE,   Rls,  Rrs ),
-    CHLIST08( MOV_CH_LAYOUT_SMPTE_DTV,            L,   R,   C,    LFE,  Ls,   Rs,    Lt,   Rt  ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_C,           L,   C,   R,    Ls,   Rs,   LFE,   Lsd,  Rsd ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_D,           L,   C,   R,    Ls,   Rs,   LFE,   Lw,   Rw  ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_E,           L,   C,   R,    Ls,   Rs,   LFE,   Vhl,  Vhr ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_F,           L,   C,   R,    Ls,   Rs,   LFE,   Cs,   Ts  ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_G,           L,   C,   R,    Ls,   Rs,   LFE,   Cs,   Vhc ),
-    CHLIST08( MOV_CH_LAYOUT_EAC3_7_1_H,           L,   C,   R,    Ls,   Rs,   LFE,   Ts,   Vhc ),
-    CHLIST08( MOV_CH_LAYOUT_DTS_8_0_A,            Lc,  Rc,  L,    R,    Ls,   Rs,    Rls,  Rrs ),
-    CHLIST08( MOV_CH_LAYOUT_DTS_8_0_B,            Lc,  C,   Rc,   L,    R,    Ls,    Cs,   Rs  ),
-    CHLIST09( MOV_CH_LAYOUT_DTS_8_1_A,            Lc,  Rc,  L,    R,    Ls,   Rs,    Rls,  Rrs,  LFE ),
-    CHLIST09( MOV_CH_LAYOUT_DTS_8_1_B,            Lc,  C,   Rc,   L,    R,    Ls,    Cs,   Rs,   LFE ),
-    CHLIST16( MOV_CH_LAYOUT_TMH_10_2_STD,         L,   R,   C,    Vhc,  Lsd,  Rsd,   Ls,   Rs,   Vhl,  Vhr,  Lw,  Rw,  Csd,  Cs,  LFE1,  LFE2),
-    CHLIST21( MOV_CH_LAYOUT_TMH_10_2_FULL,        L,   R,   C,    Vhc,  Lsd,  Rsd,   Ls,   Rs,   Vhl,  Vhr,  Lw,  Rw,  Csd,  Cs,  LFE1,  LFE2,  Lc,  Rc,  HI,  VI,  Haptic),
+    MOV_CH_LAYOUT_MAP
 };
 
 static const enum MovChannelLayoutTag mov_ch_layouts_aac[] = {
@@ -281,14 +288,6 @@ static const struct {
 
 static const struct MovChannelLayoutMap* find_layout_map(uint32_t tag)
 {
-#if defined(ASSERT_LEVEL) && ASSERT_LEVEL > 1
-    {
-        int i;
-        for (i = 0; i < FF_ARRAY_ELEMS(mov_ch_layout_map); i += 1 + (mov_ch_layout_map[i].tag & 0xffff))
-            av_assert2(mov_ch_layout_map[i].tag & 0xffff0000);
-        av_assert2(i == FF_ARRAY_ELEMS(mov_ch_layout_map));
-    }
-#endif
     for (int i = 0; i < FF_ARRAY_ELEMS(mov_ch_layout_map); i += 1 + (mov_ch_layout_map[i].tag & 0xffff))
         if (mov_ch_layout_map[i].tag == tag)
             return &mov_ch_layout_map[i + 1];
