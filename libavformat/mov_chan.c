@@ -370,25 +370,33 @@ static const struct MovChannelLayoutMap* find_layout_map(uint32_t tag, const str
  * @param[in]      tag        channel layout tag
  * @return                    <0 on error
  */
-static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag, const struct MovChannelLayoutMap *map)
+static int mov_get_channel_layout(AVChannelLayout *ch_layout, uint32_t tag, uint64_t omitted_channel_map, const struct MovChannelLayoutMap *map)
 {
-    int i, channels;
     const struct MovChannelLayoutMap *layout_map;
-
-    channels = tag & 0xFFFF;
 
     /* find the channel layout for the specified layout tag */
     layout_map = find_layout_map(tag, map);
     if (layout_map) {
         int ret;
+        int map_layout_nb_channels = tag & 0xFFFF;
+        int nb_channels = ch_layout->nb_channels;
+
+        /* Omitted channel bits must not exceed number of channels in map */
+        if (omitted_channel_map >> map_layout_nb_channels)
+            return AVERROR_INVALIDDATA;
+
         av_channel_layout_uninit(ch_layout);
-        ret = av_channel_layout_custom_init(ch_layout, channels);
+        ret = av_channel_layout_custom_init(ch_layout, nb_channels);
         if (ret < 0)
             return ret;
-        for (i = 0; i < channels; i++) {
-            enum AVChannel id = layout_map[i].id;
-            ch_layout->u.map[i].id = (id != AV_CHAN_NONE ? id : AV_CHAN_UNKNOWN);
+
+        for (int i = 0, idx = 0; i < map_layout_nb_channels && idx < nb_channels; i++, omitted_channel_map >>= 1) {
+            if (!(omitted_channel_map & 1)) {
+                enum AVChannel id = layout_map[i].id;
+                ch_layout->u.map[idx++].id = (id != AV_CHAN_NONE ? id : AV_CHAN_UNKNOWN);
+            }
         }
+
         return av_channel_layout_retype(ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
     }
     return 0;
@@ -583,7 +591,7 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         if (!ch_layout->nb_channels)
             ch_layout->nb_channels = nb_channels;
         if (nb_channels == ch_layout->nb_channels) {
-            ret = mov_get_channel_layout(ch_layout, layout_tag, mov_ch_layout_map);
+            ret = mov_get_channel_layout(ch_layout, layout_tag, 0, mov_ch_layout_map);
             if (ret < 0)
                 return ret;
         } else {
@@ -744,16 +752,17 @@ int ff_mov_get_channel_config_from_layout(const AVChannelLayout *layout, int *co
     return 0;
 }
 
-int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout)
+int ff_mov_get_channel_layout_from_config(int config, AVChannelLayout *layout, uint64_t omitted_channel_map)
 {
     if (config > 0) {
         uint32_t layout_tag;
+        int nb_omitted_channels = av_popcount64(omitted_channel_map);
 
-        if (layout->nb_channels <= 0 || layout->nb_channels > UINT16_MAX)
+        if (layout->nb_channels <= 0 || layout->nb_channels > UINT16_MAX - nb_omitted_channels)
             return AVERROR_INVALIDDATA;
 
-        layout_tag = (config << 16) | layout->nb_channels;
-        return mov_get_channel_layout(layout, layout_tag, iso_ch_layout_map);
+        layout_tag = (config << 16) | (layout->nb_channels + nb_omitted_channels);
+        return mov_get_channel_layout(layout, layout_tag, omitted_channel_map, iso_ch_layout_map);
     }
     return 1;
 }
@@ -829,13 +838,7 @@ int ff_mov_read_chnl(AVFormatContext *s, AVIOContext *pb, AVStream *st)
                 return ret;
         } else {
             uint64_t omitted_channel_map = avio_rb64(pb);
-
-            if (omitted_channel_map) {
-                avpriv_request_sample(s, "omitted_channel_map 0x%" PRIx64 " != 0",
-                                      omitted_channel_map);
-                return AVERROR_PATCHWELCOME;
-            }
-            ret = ff_mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout);
+            ret = ff_mov_get_channel_layout_from_config(layout, &st->codecpar->ch_layout, omitted_channel_map);
             if (ret < 0)
                 return ret;
         }
