@@ -1233,8 +1233,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         }
 
         MATCH_PER_STREAM_OPT(enc_time_bases, str, enc_time_base, oc, st);
-        if (enc_time_base) {
+        if (enc_time_base && type == AVMEDIA_TYPE_SUBTITLE)
+            av_log(ost, AV_LOG_WARNING,
+                   "-enc_time_base not supported for subtitles, ignoring\n");
+        else if (enc_time_base) {
             AVRational q;
+
             if (!strcmp(enc_time_base, "demux")) {
                 q = (AVRational){ ENC_TIME_BASE_DEMUX, 0 };
             } else if (!strcmp(enc_time_base, "filter")) {

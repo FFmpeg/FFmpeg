@@ -280,9 +280,6 @@ int enc_open(void *opaque, const AVFrame *frame)
         break;
         }
     case AVMEDIA_TYPE_SUBTITLE:
-        if (ost->enc_timebase.num)
-            av_log(ost, AV_LOG_WARNING,
-                   "-enc_time_base not supported for subtitles, ignoring\n");
         enc_ctx->time_base = AV_TIME_BASE_Q;
 
         if (!enc_ctx->width) {
