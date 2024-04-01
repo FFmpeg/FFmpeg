@@ -551,7 +551,6 @@ typedef struct OutputStream {
     /* video only */
     AVRational frame_rate;
     AVRational max_frame_rate;
-    int is_cfr;
     int force_fps;
 #if FFMPEG_OPT_TOP
     int top_field_first;

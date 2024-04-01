@@ -1956,7 +1956,7 @@ static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
             fr = fr_sink;
     }
 
-    if (ofilter->ost->is_cfr) {
+    if (fps->vsync_method == VSYNC_CFR || fps->vsync_method == VSYNC_VSCFR) {
         if (!fr.num && !fps->framerate_max.num) {
             fr = (AVRational){25, 1};
             av_log(ofilter->ost, AV_LOG_WARNING,
