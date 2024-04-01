@@ -773,6 +773,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     int ret;
 
     av_assert0(!ofilter->ost);
+    av_assert0(ofilter->type == ost->type);
 
     ofilter->ost = ost;
     av_freep(&ofilter->linklabel);
@@ -1104,6 +1105,13 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                "However, it had %d input(s) and %d output(s). Please adjust, "
                "or use a complex filtergraph (-filter_complex) instead.\n",
                graph_desc, fg->nb_inputs, fg->nb_outputs);
+        return AVERROR(EINVAL);
+    }
+    if (fg->outputs[0]->type != ost->type) {
+        av_log(fg, AV_LOG_ERROR, "Filtergraph has a %s output, cannot connect "
+               "it to %s output stream\n",
+               av_get_media_type_string(fg->outputs[0]->type),
+               av_get_media_type_string(ost->type));
         return AVERROR(EINVAL);
     }
 
