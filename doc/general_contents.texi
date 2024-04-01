@@ -237,6 +237,14 @@ Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libfdk-aac} to configure to enable it.
 
+@subsection LC3 library
+
+FFmpeg can make use of the Google LC3 library for LC3 decoding & encoding.
+
+Go to @url{https://github.com/google/liblc3/} and follow the instructions for
+installing the library.
+Then pass @code{--enable-liblc3} to configure to enable it.
+
 @section OpenH264
 
 FFmpeg can make use of the OpenH264 library for H.264 decoding and encoding.
@@ -1300,7 +1308,8 @@ following image formats are supported:
     @tab encoding and decoding supported through external library libilbc
 @item IMC (Intel Music Coder)  @tab     @tab  X
 @item Interplay ACM            @tab     @tab  X
-@item MACE (Macintosh Audio Compression/Expansion) 3:1  @tab     @tab  X
+@item LC3                    @tab E  @tab  E
+    @tab supported through external library liblc3
 @item MACE (Macintosh Audio Compression/Expansion) 6:1  @tab     @tab  X
 @item Marian's A-pac audio     @tab     @tab  X
 @item MI-SC4 (Micronas SC-4 Audio)  @tab     @tab  X

@@ -245,6 +245,7 @@ External library support:
   --enable-libjxl          enable JPEG XL de/encoding via libjxl [no]
   --enable-libklvanc       enable Kernel Labs VANC processing [no]
   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
+  --enable-liblc3          enable LC3 de/encoding via liblc3 [no]
   --enable-liblensfun      enable lensfun lens correction [no]
   --enable-libmodplug      enable ModPlug via libmodplug [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
@@ -1927,6 +1928,7 @@ EXTERNAL_LIBRARY_LIST="
     libjxl
     libklvanc
     libkvazaar
+    liblc3
     libmodplug
     libmp3lame
     libmysofa
@@ -3504,6 +3506,9 @@ libilbc_encoder_deps="libilbc"
 libjxl_decoder_deps="libjxl libjxl_threads"
 libjxl_encoder_deps="libjxl libjxl_threads"
 libkvazaar_encoder_deps="libkvazaar"
+liblc3_decoder_deps="liblc3"
+liblc3_encoder_deps="liblc3"
+liblc3_encoder_select="audio_frame_queue"
 libmodplug_demuxer_deps="libmodplug"
 libmp3lame_encoder_deps="libmp3lame"
 libmp3lame_encoder_select="audio_frame_queue mpegaudioheader"
@@ -6876,6 +6881,7 @@ enabled libjxl            && require_pkg_config libjxl "libjxl >= 0.7.0" jxl/dec
                              require_pkg_config libjxl_threads "libjxl_threads >= 0.7.0" jxl/thread_parallel_runner.h JxlThreadParallelRunner
 enabled libklvanc         && require libklvanc libklvanc/vanc.h klvanc_context_create -lklvanc
 enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 2.0.0" kvazaar.h kvz_api_get
+enabled liblc3            && require_pkg_config liblc3 "lc3 >= 1.1.0" lc3.h lc3_hr_setup_encoder
 enabled liblensfun        && require_pkg_config liblensfun lensfun lensfun.h lf_db_create
 
 if enabled libmfx && enabled libvpl; then

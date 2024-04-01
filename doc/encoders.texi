@@ -814,6 +814,63 @@ ffmpeg -i input.wav -c:a libfdk_aac -profile:a aac_he -b:a 64k output.m4a
 @end example
 @end itemize
 
+@anchor{liblc3-enc}
+@section liblc3
+
+liblc3 LC3 (Low Complexity Communication Codec) encoder wrapper.
+
+Requires the presence of the liblc3 headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-liblc3}.
+
+This encoder has support for the Bluetooth SIG LC3 codec for the LE Audio
+protocol, and the following features of LC3plus:
+@itemize
+@item
+Frame duration of 2.5 and 5ms.
+@item
+High-Resolution mode, 48 KHz, and 96 kHz sampling rates.
+@end itemize
+
+For more information see the liblc3 project at
+@url{https://github.com/google/liblc3}.
+
+@subsection Options
+
+The following options are mapped on the shared FFmpeg codec options.
+
+@table @option
+@item b @var{bitrate}
+Set the bit rate in bits/s. This will determine the fixed size of the encoded
+frames, for a selected frame duration.
+
+@item ar @var{frequency}
+Set the audio sampling rate (in Hz).
+
+@item channels
+Set the number of audio channels.
+
+@item frame_duration
+Set the audio frame duration in milliseconds. Default value is 10ms.
+Allowed frame durations are 2.5ms, 5ms, 7.5ms and 10ms.
+LC3 (Bluetooth LE Audio), allows 7.5ms and 10ms; and LC3plus 2.5ms, 5ms
+and 10ms.
+
+The 10ms frame duration is available in LC3 and LC3 plus standard.
+In this mode, the produced bitstream can be referenced either as LC3 or LC3plus.
+
+@item high_resolution @var{boolean}
+Enable the high-resolution mode if set to 1. The high-resolution mode is
+available with all LC3plus frame durations and for a sampling rate of 48 KHz,
+and 96 KHz.
+
+The encoder automatically turns off this mode at lower sampling rates and
+activates it at 96 KHz.
+
+This mode should be preferred at high bitrates. In this mode, the audio
+bandwidth is always up to the Nyquist frequency, compared to LC3 at 48 KHz,
+which limits the bandwidth to 20 KHz.
+@end table
+
 @anchor{libmp3lame}
 @section libmp3lame
 
