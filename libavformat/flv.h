@@ -125,6 +125,13 @@ enum {
     PacketTypeCodedFramesX          = 3,
     PacketTypeMetadata              = 4,
     PacketTypeMPEG2TSSequenceStart  = 5,
+    PacketTypeMultitrack            = 6,
+};
+
+enum {
+    MultitrackTypeOneTrack             = 0x00,
+    MultitrackTypeManyTracks           = 0x10,
+    MultitrackTypeManyTracksManyCodecs = 0x20,
 };
 
 enum {
