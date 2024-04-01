@@ -270,6 +270,8 @@ enum OFilterFlags {
 typedef struct OutputFilterOptions {
     // Codec used for encoding, may be NULL
     const AVCodec      *enc;
+    // Overrides encoder pixel formats when set.
+    const enum AVPixelFormat *pix_fmts;
 
     int64_t             ts_offset;
 
