@@ -263,11 +263,18 @@ typedef struct InputFilterOptions {
     AVFrame            *fallback;
 } InputFilterOptions;
 
+enum OFilterFlags {
+    OFILTER_FLAG_DISABLE_CONVERT    = (1 << 0),
+};
+
 typedef struct OutputFilterOptions {
     // Codec used for encoding, may be NULL
     const AVCodec      *enc;
 
     int64_t             ts_offset;
+
+    // A combination of OFilterFlags.
+    unsigned            flags;
 } OutputFilterOptions;
 
 typedef struct InputFilter {
@@ -555,8 +562,6 @@ typedef struct OutputStream {
     char *apad;
 
     char *attachment_filename;
-
-    int keep_pix_fmt;
 
     /* stats */
     // number of packets send to the muxer

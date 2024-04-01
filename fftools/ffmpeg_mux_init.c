@@ -580,7 +580,7 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
 }
 
 static int new_stream_video(Muxer *mux, const OptionsContext *o,
-                            OutputStream *ost)
+                            OutputStream *ost, int *keep_pix_fmt)
 {
     AVFormatContext *oc = mux->fc;
     AVStream *st;
@@ -638,7 +638,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
 
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
         if (frame_pix_fmt && *frame_pix_fmt == '+') {
-            ost->keep_pix_fmt = 1;
+            *keep_pix_fmt = 1;
             if (!*++frame_pix_fmt)
                 frame_pix_fmt = NULL;
         }
@@ -1041,7 +1041,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     OutputStream *ost;
     const AVCodec *enc;
     AVStream *st;
-    int ret = 0;
+    int ret = 0, keep_pix_fmt = 0;
     const char *bsfs = NULL, *time_base = NULL;
     char *filters = NULL, *next, *codec_tag = NULL;
     double qscale = -1;
@@ -1356,7 +1356,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                          ms->copy_initial_nonkeyframes, oc, st);
 
     switch (type) {
-    case AVMEDIA_TYPE_VIDEO:      ret = new_stream_video     (mux, o, ost); break;
+    case AVMEDIA_TYPE_VIDEO:      ret = new_stream_video     (mux, o, ost, &keep_pix_fmt); break;
     case AVMEDIA_TYPE_AUDIO:      ret = new_stream_audio     (mux, o, ost); break;
     case AVMEDIA_TYPE_SUBTITLE:   ret = new_stream_subtitle  (mux, o, ost); break;
     }
@@ -1375,6 +1375,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             .enc = enc,
             .ts_offset = mux->of.start_time == AV_NOPTS_VALUE ?
                          0 : mux->of.start_time,
+            .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt,
         };
 
         if (ofilter) {

@@ -214,6 +214,8 @@ typedef struct OutputFilterPriv {
     int64_t                 ts_offset;
     int64_t                 next_pts;
     FPSConvContext          fps;
+
+    unsigned                flags;
 } OutputFilterPriv;
 
 static OutputFilterPriv *ofp_from_ofilter(OutputFilter *ofilter)
@@ -355,11 +357,10 @@ static int choose_pix_fmts(OutputFilter *ofilter, AVBPrint *bprint,
                            const char **dst)
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
-    OutputStream *ost = ofilter->ost;
 
     *dst = NULL;
 
-    if (ost->keep_pix_fmt || ofp->format != AV_PIX_FMT_NONE) {
+    if (ofp->flags & OFILTER_FLAG_DISABLE_CONVERT || ofp->format != AV_PIX_FMT_NONE) {
         *dst = ofp->format == AV_PIX_FMT_NONE ? NULL :
                av_get_pix_fmt_name(ofp->format);
     } else if (ofp->formats) {
@@ -777,6 +778,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     ofilter->ost = ost;
     av_freep(&ofilter->linklabel);
 
+    ofp->flags        = opts->flags;
     ofp->ts_offset    = opts->ts_offset;
     ofp->enc_timebase = ost->enc_timebase;
 
@@ -814,7 +816,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
             }
         }
 
-        fgp->disable_conversions |= ost->keep_pix_fmt;
+        fgp->disable_conversions |= !!(ofp->flags & OFILTER_FLAG_DISABLE_CONVERT);
 
         ofp->fps.last_frame = av_frame_alloc();
         if (!ofp->fps.last_frame)
