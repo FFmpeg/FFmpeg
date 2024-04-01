@@ -251,7 +251,7 @@ typedef struct MXFFFV1SubDescriptor {
 
 typedef struct MXFIndexTableSegment {
     MXFMetadataSet meta;
-    int edit_unit_byte_count;
+    unsigned edit_unit_byte_count;
     int index_sid;
     int body_sid;
     AVRational index_edit_rate;
