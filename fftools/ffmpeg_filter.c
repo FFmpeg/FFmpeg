@@ -1472,7 +1472,7 @@ fail:
 static int configure_output_filter(FilterGraph *fg, AVFilterGraph *graph,
                                    OutputFilter *ofilter, AVFilterInOut *out)
 {
-    switch (avfilter_pad_get_type(out->filter_ctx->output_pads, out->pad_idx)) {
+    switch (ofilter->type) {
     case AVMEDIA_TYPE_VIDEO: return configure_output_video_filter(fg, graph, ofilter, out);
     case AVMEDIA_TYPE_AUDIO: return configure_output_audio_filter(fg, graph, ofilter, out);
     default: av_assert0(0); return 0;
