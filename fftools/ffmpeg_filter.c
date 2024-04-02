@@ -220,6 +220,8 @@ typedef struct OutputFilterPriv {
     const int              *sample_rates;
 
     AVRational              enc_timebase;
+    int64_t                 trim_start_us;
+    int64_t                 trim_duration_us;
     // offset for output timestamps, in AV_TIME_BASE_Q
     int64_t                 ts_offset;
     int64_t                 next_pts;
@@ -812,6 +814,9 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     ofp->ts_offset    = opts->ts_offset;
     ofp->enc_timebase = opts->output_tb;
 
+    ofp->trim_start_us    = opts->trim_start_us;
+    ofp->trim_duration_us = opts->trim_duration_us;
+
     ofp->name         = av_strdup(opts->name);
     if (!ofp->name)
         return AVERROR(EINVAL);
@@ -1349,8 +1354,6 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
                                          OutputFilter *ofilter, AVFilterInOut *out)
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
-    OutputStream *ost = ofilter->ost;
-    OutputFile    *of = ost->file;
     AVFilterContext *last_filter = out->filter_ctx;
     AVBPrint bprint;
     int pad_idx = out->pad_idx;
@@ -1411,7 +1414,7 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     }
 
     snprintf(name, sizeof(name), "trim_out_%s", ofp->name);
-    ret = insert_trim(of->start_time, of->recording_time,
+    ret = insert_trim(ofp->trim_start_us, ofp->trim_duration_us,
                       &last_filter, &pad_idx, name);
     if (ret < 0)
         return ret;
@@ -1503,7 +1506,7 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
     }
 
     snprintf(name, sizeof(name), "trim for output %s", ofp->name);
-    ret = insert_trim(of->start_time, of->recording_time,
+    ret = insert_trim(ofp->trim_start_us, ofp->trim_duration_us,
                       &last_filter, &pad_idx, name);
     if (ret < 0)
         goto fail;

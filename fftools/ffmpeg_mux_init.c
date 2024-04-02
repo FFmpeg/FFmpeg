@@ -1389,6 +1389,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             .sws_opts    = o->g->sws_dict,
             .swr_opts    = o->g->swr_opts,
             .output_tb = enc_tb,
+            .trim_start_us    = mux->of.start_time,
+            .trim_duration_us = mux->of.recording_time,
             .ts_offset = mux->of.start_time == AV_NOPTS_VALUE ?
                          0 : mux->of.start_time,
             .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt |

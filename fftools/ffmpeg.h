@@ -279,6 +279,8 @@ typedef struct OutputFilterOptions {
     // Overrides encoder pixel formats when set.
     const enum AVPixelFormat *pix_fmts;
 
+    int64_t             trim_start_us;
+    int64_t             trim_duration_us;
     int64_t             ts_offset;
 
     /* Desired output timebase.
