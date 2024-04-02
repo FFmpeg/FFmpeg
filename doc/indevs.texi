@@ -1069,9 +1069,9 @@ ffplay -f lavfi "movie=test.avi[out0];amovie=test.wav[out1]"
 @end example
 
 @item
-Dump decoded frames to images and closed captions to a file (experimental):
+Dump decoded frames to images and Closed Captions to an RCWT backup:
 @example
-ffmpeg -f lavfi -i "movie=test.ts[out0+subcc]" -map v frame%08d.png -map s -c copy -f rawvideo subcc.bin
+ffmpeg -f lavfi -i "movie=test.ts[out0+subcc]" -map v frame%08d.png -map s -c copy -f rcwt subcc.bin
 @end example
 
 @end itemize
