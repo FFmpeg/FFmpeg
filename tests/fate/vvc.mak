@@ -9,7 +9,6 @@ VVC_SAMPLES_10BIT =       \
     BUMP_A_2              \
     DCI_A_3               \
     HRD_A_3               \
-    OPI_B_3               \
     PHSH_B_1              \
     POC_A_1               \
     PPS_B_1               \
@@ -21,7 +20,6 @@ VVC_SAMPLES_10BIT =       \
     STILL_B_1             \
     SUBPIC_A_3            \
     TILE_A_2              \
-    VPS_A_3               \
     WP_A_3                \
     WPP_A_3               \
     WRAP_A_4              \
@@ -31,6 +29,8 @@ VVC_SAMPLES_444_10BIT =   \
 
 # not tested:
 # BOUNDARY_A_3 (too big)
+# OPI_B_3 (Inter layer ref support needed)
+# VPS_A_3 (Inter layer ref support needed)
 
 FATE_VVC_VARS := 8BIT 10BIT 444_10BIT
 $(foreach VAR,$(FATE_VVC_VARS), $(eval VVC_TESTS_$(VAR) := $(addprefix fate-vvc-conformance-, $(VVC_SAMPLES_$(VAR)))))
