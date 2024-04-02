@@ -1045,7 +1045,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     OutputStream *ost;
     const AVCodec *enc;
     AVStream *st;
-    int ret = 0, keep_pix_fmt = 0;
+    int ret = 0, keep_pix_fmt = 0, autoscale = 1;
     AVRational enc_tb = { 0, 0 };
     enum VideoSyncMethod vsync_method = VSYNC_AUTO;
     const char *bsfs = NULL, *time_base = NULL;
@@ -1170,8 +1170,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             return ret;
 
         MATCH_PER_STREAM_OPT(presets, str, preset, oc, st);
-        ost->autoscale = 1;
-        MATCH_PER_STREAM_OPT(autoscale, i, ost->autoscale, oc, st);
+
+        MATCH_PER_STREAM_OPT(autoscale, i, autoscale, oc, st);
         if (preset && (!(ret = get_preset_file_2(preset, enc->codec->name, &s)))) {
             AVBPrint bprint;
             av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -1392,6 +1392,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             .ts_offset = mux->of.start_time == AV_NOPTS_VALUE ?
                          0 : mux->of.start_time,
             .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt |
+                     OFILTER_FLAG_AUTOSCALE       * !!autoscale    |
                      OFILTER_FLAG_AUDIO_24BIT * !!(av_get_exact_bits_per_sample(ost->enc_ctx->codec_id) == 24),
         };
 

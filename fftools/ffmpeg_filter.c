@@ -1366,7 +1366,7 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     if (ret < 0)
         return ret;
 
-    if ((ofp->width || ofp->height) && ofilter->ost->autoscale) {
+    if ((ofp->width || ofp->height) && (ofp->flags & OFILTER_FLAG_AUTOSCALE)) {
         char args[255];
         AVFilterContext *filter;
         const AVDictionaryEntry *e = NULL;

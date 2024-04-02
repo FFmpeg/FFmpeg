@@ -267,6 +267,7 @@ enum OFilterFlags {
     OFILTER_FLAG_DISABLE_CONVERT    = (1 << 0),
     // produce 24-bit audio
     OFILTER_FLAG_AUDIO_24BIT        = (1 << 1),
+    OFILTER_FLAG_AUTOSCALE          = (1 << 2),
 };
 
 typedef struct OutputFilterOptions {
@@ -565,7 +566,6 @@ typedef struct OutputStream {
 #if FFMPEG_OPT_TOP
     int top_field_first;
 #endif
-    int autoscale;
     int bitexact;
     int bits_per_raw_sample;
 
