@@ -19,6 +19,7 @@ VVC_SAMPLES_10BIT =       \
     SPS_B_1               \
     STILL_B_1             \
     SUBPIC_A_3            \
+    SUBPIC_C_ERICSSON_1   \
     TILE_A_2              \
     WP_A_3                \
     WPP_A_3               \
