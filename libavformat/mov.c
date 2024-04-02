@@ -9397,8 +9397,9 @@ static int mov_parse_tiles(AVFormatContext *s)
 
         for (int j = 0; j < grid->nb_tiles; j++) {
             int tile_id = grid->tile_id_list[j];
+            int k;
 
-            for (int k = 0; k < mov->nb_heif_item; k++) {
+            for (k = 0; k < mov->nb_heif_item; k++) {
                 HEIFItem *item = &mov->heif_item[k];
                 AVStream *st = item->st;
 
@@ -9424,6 +9425,13 @@ static int mov_parse_tiles(AVFormatContext *s)
                 break;
             }
 
+            if (k == grid->nb_tiles) {
+                av_log(s, AV_LOG_WARNING, "HEIF item id %d referenced by grid id %d doesn't "
+                                          "exist\n",
+                       tile_id, grid->item->item_id);
+                ff_remove_stream_group(s, stg);
+                loop = 0;
+            }
             if (!loop)
                 break;
         }
