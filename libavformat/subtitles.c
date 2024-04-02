@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "subtitles.h"
 #include "avio_internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
 
@@ -112,15 +113,19 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
 {
     AVPacket **subs, *sub;
 
+    av_assert1(event || len == 0);
+
     if (merge && q->nb_subs > 0) {
         /* merge with previous event */
 
         int old_len;
         sub = q->subs[q->nb_subs - 1];
         old_len = sub->size;
-        if (av_grow_packet(sub, len) < 0)
-            return NULL;
-        memcpy(sub->data + old_len, event, len);
+        if (event) {
+            if (av_grow_packet(sub, len) < 0)
+                return NULL;
+            memcpy(sub->data + old_len, event, len);
+        }
     } else {
         /* new event */
 
@@ -134,14 +139,16 @@ AVPacket *ff_subtitles_queue_insert(FFDemuxSubtitlesQueue *q,
         sub = av_packet_alloc();
         if (!sub)
             return NULL;
-        if (av_new_packet(sub, len) < 0) {
-            av_packet_free(&sub);
-            return NULL;
+        if (event) {
+            if (av_new_packet(sub, len) < 0) {
+                av_packet_free(&sub);
+                return NULL;
+            }
+            memcpy(sub->data, event, len);
         }
-        subs[q->nb_subs++] = sub;
         sub->flags |= AV_PKT_FLAG_KEY;
         sub->pts = sub->dts = 0;
-        memcpy(sub->data, event, len);
+        subs[q->nb_subs++] = sub;
     }
     return sub;
 }
