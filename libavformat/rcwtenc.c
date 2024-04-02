@@ -159,7 +159,6 @@ static int rcwt_write_trailer(AVFormatContext *avf)
 const FFOutputFormat ff_rcwt_muxer = {
     .p.name             = "rcwt",
     .p.long_name        = NULL_IF_CONFIG_SMALL("RCWT (Raw Captions With Time)"),
-    .p.extensions       = "bin",
     .p.flags            = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
     .p.video_codec      = AV_CODEC_ID_NONE,
     .p.audio_codec      = AV_CODEC_ID_NONE,
