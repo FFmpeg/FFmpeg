@@ -1381,8 +1381,10 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+        char name[16];
         OutputFilterOptions opts = {
             .enc = enc,
+            .name        = name,
             .format      = (type == AVMEDIA_TYPE_VIDEO) ?
                            ost->enc_ctx->pix_fmt : ost->enc_ctx->sample_fmt,
             .width       = ost->enc_ctx->width,
@@ -1395,6 +1397,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                          0 : mux->of.start_time,
             .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt,
         };
+
+        snprintf(name, sizeof(name), "#%d:%d", mux->of.index, ost->index);
 
         // MJPEG encoder exports a full list of supported pixel formats,
         // but the full-range ones are experimental-only.

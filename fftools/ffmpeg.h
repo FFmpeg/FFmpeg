@@ -268,6 +268,9 @@ enum OFilterFlags {
 };
 
 typedef struct OutputFilterOptions {
+    // Caller-provided name for this output
+    char               *name;
+
     // Codec used for encoding, may be NULL
     const AVCodec      *enc;
     // Overrides encoder pixel formats when set.
