@@ -302,6 +302,8 @@ typedef struct InputFilter {
 } InputFilter;
 
 typedef struct OutputFilter {
+    const AVClass       *class;
+
     struct OutputStream *ost;
     struct FilterGraph  *graph;
     uint8_t             *name;

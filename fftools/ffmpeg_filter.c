@@ -188,6 +188,9 @@ typedef struct OutputFilterPriv {
 
     int                     index;
 
+    void                   *log_parent;
+    char                    log_name[32];
+
     char                   *name;
 
     AVFilterContext        *filter;
@@ -629,7 +632,21 @@ static char *describe_filter_link(FilterGraph *fg, AVFilterInOut *inout, int in)
                        avfilter_pad_get_name(pads, inout->pad_idx));
 }
 
-static OutputFilter *ofilter_alloc(FilterGraph *fg)
+static const char *ofilter_item_name(void *obj)
+{
+    OutputFilterPriv *ofp = obj;
+    return ofp->log_name;
+}
+
+static const AVClass ofilter_class = {
+    .class_name                = "OutputFilter",
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .item_name                 = ofilter_item_name,
+    .parent_log_context_offset = offsetof(OutputFilterPriv, log_parent),
+    .category                  = AV_CLASS_CATEGORY_FILTER,
+};
+
+static OutputFilter *ofilter_alloc(FilterGraph *fg, enum AVMediaType type)
 {
     OutputFilterPriv *ofp;
     OutputFilter *ofilter;
@@ -639,9 +656,15 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg)
         return NULL;
 
     ofilter           = &ofp->ofilter;
+    ofilter->class    = &ofilter_class;
+    ofp->log_parent   = fg;
     ofilter->graph    = fg;
+    ofilter->type     = type;
     ofp->format       = -1;
     ofp->index        = fg->nb_outputs - 1;
+
+    snprintf(ofp->log_name, sizeof(ofp->log_name), "%co%d",
+             av_get_media_type_string(type)[0], ofp->index);
 
     return ofilter;
 }
@@ -789,6 +812,14 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     ofp->name         = av_strdup(opts->name);
     if (!ofp->name)
         return AVERROR(EINVAL);
+
+    if (fgp->is_simple) {
+        // for simple filtergraph there is just one output,
+        // so use only graph-level information for logging
+        ofp->log_parent = NULL;
+        av_strlcpy(ofp->log_name, fgp->log_name, sizeof(ofp->log_name));
+    } else
+        av_strlcatf(ofp->log_name, sizeof(ofp->log_name), "->%s", ofp->name);
 
     switch (ofilter->type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -1025,7 +1056,9 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
     }
 
     for (AVFilterInOut *cur = outputs; cur; cur = cur->next) {
-        OutputFilter *const ofilter = ofilter_alloc(fg);
+        const enum AVMediaType type = avfilter_pad_get_type(cur->filter_ctx->output_pads,
+                                                            cur->pad_idx);
+        OutputFilter *const ofilter = ofilter_alloc(fg, type);
 
         if (!ofilter) {
             ret = AVERROR(ENOMEM);
@@ -1035,8 +1068,6 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
         ofilter->linklabel = cur->name;
         cur->name          = NULL;
 
-        ofilter->type      = avfilter_pad_get_type(cur->filter_ctx->output_pads,
-                                                   cur->pad_idx);
         ofilter->name      = describe_filter_link(fg, cur, 0);
         if (!ofilter->name) {
             ret = AVERROR(ENOMEM);
@@ -1400,7 +1431,7 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
 #define AUTO_INSERT_FILTER(opt_name, filter_name, arg) do {                 \
     AVFilterContext *filt_ctx;                                              \
                                                                             \
-    av_log(fg, AV_LOG_INFO, opt_name " is forwarded to lavfi "              \
+    av_log(ofilter, AV_LOG_INFO, opt_name " is forwarded to lavfi "         \
            "similarly to -af " filter_name "=%s.\n", arg);                  \
                                                                             \
     ret = avfilter_graph_create_filter(&filt_ctx,                           \
@@ -1929,7 +1960,7 @@ static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
     // apply -enc_time_base
     if (ofp->enc_timebase.num == ENC_TIME_BASE_DEMUX &&
         (fd->dec.tb.num <= 0 || fd->dec.tb.den <= 0)) {
-        av_log(ofilter->ost, AV_LOG_ERROR,
+        av_log(ofp, AV_LOG_ERROR,
                "Demuxing timebase not available - cannot use it for encoding\n");
         return AVERROR(EINVAL);
     }
@@ -1956,7 +1987,7 @@ static int choose_out_timebase(OutputFilterPriv *ofp, AVFrame *frame)
     if (fps->vsync_method == VSYNC_CFR || fps->vsync_method == VSYNC_VSCFR) {
         if (!fr.num && !fps->framerate_max.num) {
             fr = (AVRational){25, 1};
-            av_log(ofilter->ost, AV_LOG_WARNING,
+            av_log(ofp, AV_LOG_WARNING,
                    "No information "
                    "about the input framerate is available. Falling "
                    "back to a default value of 25fps. Use the -r option "
@@ -2039,7 +2070,6 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
                                int64_t *nb_frames, int64_t *nb_frames_prev)
 {
     OutputFilter   *ofilter = &ofp->ofilter;
-    OutputStream       *ost = ofilter->ost;
     FPSConvContext     *fps = &ofp->fps;
     double delta0, delta, sync_ipts, duration;
 
@@ -2078,9 +2108,9 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
 #endif
         ) {
         if (delta0 < -0.6) {
-            av_log(ost, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
+            av_log(ofp, AV_LOG_VERBOSE, "Past duration %f too large\n", -delta0);
         } else
-            av_log(ost, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
+            av_log(ofp, AV_LOG_DEBUG, "Clipping frame in rate conversion by %f\n", -delta0);
         sync_ipts = ofp->next_pts;
         duration += delta0;
         delta0 = 0;
@@ -2089,7 +2119,7 @@ static void video_sync_process(OutputFilterPriv *ofp, AVFrame *frame,
     switch (fps->vsync_method) {
     case VSYNC_VSCFR:
         if (fps->frame_number == 0 && delta0 >= 0.5) {
-            av_log(ost, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
+            av_log(ofp, AV_LOG_DEBUG, "Not duplicating %d initial frames\n", (int)lrintf(delta0));
             delta = duration;
             delta0 = 0;
             ofp->next_pts = llrint(sync_ipts);
@@ -2133,23 +2163,23 @@ finish:
 
     if (*nb_frames_prev == 0 && fps->last_dropped) {
         atomic_fetch_add(&ofilter->nb_frames_drop, 1);
-        av_log(ost, AV_LOG_VERBOSE,
+        av_log(ofp, AV_LOG_VERBOSE,
                "*** dropping frame %"PRId64" at ts %"PRId64"\n",
                fps->frame_number, fps->last_frame->pts);
     }
     if (*nb_frames > (*nb_frames_prev && fps->last_dropped) + (*nb_frames > *nb_frames_prev)) {
         uint64_t nb_frames_dup;
         if (*nb_frames > dts_error_threshold * 30) {
-            av_log(ost, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", *nb_frames - 1);
+            av_log(ofp, AV_LOG_ERROR, "%"PRId64" frame duplication too large, skipping\n", *nb_frames - 1);
             atomic_fetch_add(&ofilter->nb_frames_drop, 1);
             *nb_frames = 0;
             return;
         }
         nb_frames_dup = atomic_fetch_add(&ofilter->nb_frames_dup,
                                          *nb_frames - (*nb_frames_prev && fps->last_dropped) - (*nb_frames > *nb_frames_prev));
-        av_log(ost, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", *nb_frames - 1);
+        av_log(ofp, AV_LOG_VERBOSE, "*** %"PRId64" dup!\n", *nb_frames - 1);
         if (nb_frames_dup > fps->dup_warning) {
-            av_log(ost, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", fps->dup_warning);
+            av_log(ofp, AV_LOG_WARNING, "More than %"PRIu64" frames duplicated\n", fps->dup_warning);
             fps->dup_warning *= 10;
         }
     }
@@ -2191,7 +2221,7 @@ static int close_output(OutputFilterPriv *ofp, FilterGraphThread *fgt)
 
         av_assert0(!frame->buf[0]);
 
-        av_log(ofp->ofilter.ost, AV_LOG_WARNING,
+        av_log(ofp, AV_LOG_WARNING,
                "No filtered frames for output stream, trying to "
                "initialize anyway.\n");
 
@@ -2308,7 +2338,7 @@ static int fg_output_step(OutputFilterPriv *ofp, FilterGraphThread *fgt,
     } else if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
         return 1;
     } else if (ret < 0) {
-        av_log(fgp, AV_LOG_WARNING,
+        av_log(ofp, AV_LOG_WARNING,
                "Error in retrieving a frame from the filtergraph: %s\n",
                av_err2str(ret));
         return ret;
@@ -2322,7 +2352,7 @@ static int fg_output_step(OutputFilterPriv *ofp, FilterGraphThread *fgt,
     frame->time_base = av_buffersink_get_time_base(filter);
 
     if (debug_ts)
-        av_log(fgp, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
+        av_log(ofp, AV_LOG_INFO, "filter_raw -> pts:%s pts_time:%s time_base:%d/%d\n",
                av_ts2str(frame->pts), av_ts2timestr(frame->pts, &frame->time_base),
                          frame->time_base.num, frame->time_base.den);
 
@@ -2330,7 +2360,7 @@ static int fg_output_step(OutputFilterPriv *ofp, FilterGraphThread *fgt,
     if (!ofp->tb_out_locked) {
         ret = choose_out_timebase(ofp, frame);
         if (ret < 0) {
-            av_log(ost, AV_LOG_ERROR, "Could not choose an output time base\n");
+            av_log(ofp, AV_LOG_ERROR, "Could not choose an output time base\n");
             av_frame_unref(frame);
             return ret;
         }
