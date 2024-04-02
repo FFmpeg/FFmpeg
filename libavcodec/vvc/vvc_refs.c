@@ -455,7 +455,8 @@ int ff_vvc_slice_rpl(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
                 if (ret < 0)
                     return ret;
             } else {
-                avpriv_request_sample(fc->log_ctx, "Inter layer ref");
+                // OPI_B_3.bit and VPS_A_3.bit should cover this
+                avpriv_report_missing_feature(fc->log_ctx, "Inter layer ref");
                 ret = AVERROR_PATCHWELCOME;
                 return ret;
             }
