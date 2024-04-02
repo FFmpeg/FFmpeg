@@ -9,6 +9,7 @@ VVC_SAMPLES_10BIT =       \
     BUMP_A_2              \
     DCI_A_3               \
     HRD_A_3               \
+    IBC_B_Tencent_2       \
     PHSH_B_1              \
     POC_A_1               \
     PPS_B_1               \
