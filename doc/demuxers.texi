@@ -1038,6 +1038,36 @@ the command:
 ffplay -f rawvideo -pixel_format rgb24 -video_size 320x240 -framerate 10 input.raw
 @end example
 
+@anchor{rcwtdec}
+@section rcwt
+
+RCWT (Raw Captions With Time) is a format native to ccextractor, a commonly
+used open source tool for processing 608/708 Closed Captions (CC) sources.
+For more information on the format, see @ref{rcwtenc,,,ffmpeg-formats}.
+
+This demuxer implements the specification as of March 2024, which has
+been stable and unchanged since April 2014.
+
+@subsection Examples
+
+@itemize
+@item
+Render CC to ASS using the built-in decoder:
+@example
+ffmpeg -i CC.rcwt.bin CC.ass
+@end example
+Note that if your output appears to be empty, you may have to manually
+set the decoder's @option{data_field} option to pick the desired CC substream.
+
+@item
+Convert an RCWT backup to Scenarist (SCC) format:
+@example
+ffmpeg -i CC.rcwt.bin -c:s copy CC.scc
+@end example
+Note that the SCC format does not support all of the possible CC extensions
+that can be stored in RCWT (such as EIA-708).
+@end itemize
+
 @section sbg
 
 SBaGen script demuxer.

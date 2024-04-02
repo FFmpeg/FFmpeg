@@ -493,6 +493,7 @@ OBJS-$(CONFIG_QOA_DEMUXER)               += qoadec.o
 OBJS-$(CONFIG_R3D_DEMUXER)               += r3d.o
 OBJS-$(CONFIG_RAWVIDEO_DEMUXER)          += rawvideodec.o
 OBJS-$(CONFIG_RAWVIDEO_MUXER)            += rawenc.o
+OBJS-$(CONFIG_RCWT_DEMUXER)              += rcwtdec.o subtitles.o
 OBJS-$(CONFIG_RCWT_MUXER)                += rcwtenc.o subtitles.o
 OBJS-$(CONFIG_REALTEXT_DEMUXER)          += realtextdec.o subtitles.o
 OBJS-$(CONFIG_REDSPARK_DEMUXER)          += redspark.o

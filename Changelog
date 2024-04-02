@@ -2,6 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- Raw Captions with Time (RCWT) closed caption demuxer
 
 
 version 7.0:
