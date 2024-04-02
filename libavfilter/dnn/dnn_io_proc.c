@@ -351,6 +351,7 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     const AVDetectionBBoxHeader *header;
     const AVDetectionBBox *bbox;
     AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DETECTION_BBOXES);
+    int max_step[4] = { 0 };
     av_assert0(sd);
 
     /* (scale != 1 and scale != 0) or mean != 0 */
@@ -406,8 +407,9 @@ int ff_frame_to_dnn_classify(AVFrame *frame, DNNData *input, uint32_t bbox_index
     offsety[1] = offsety[2] = AV_CEIL_RSHIFT(top, desc->log2_chroma_h);
     offsety[0] = offsety[3] = top;
 
+    av_image_fill_max_pixsteps(max_step, NULL, desc);
     for (int k = 0; frame->data[k]; k++)
-        bbox_data[k] = frame->data[k] + offsety[k] * frame->linesize[k] + offsetx[k];
+        bbox_data[k] = frame->data[k] + offsety[k] * frame->linesize[k] + offsetx[k] * max_step[k];
 
     sws_scale(sws_ctx, (const uint8_t *const *)&bbox_data, frame->linesize,
                        0, height,
