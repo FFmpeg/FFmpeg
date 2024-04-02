@@ -210,6 +210,9 @@ typedef struct OutputFilterPriv {
 
     AVRational              sample_aspect_ratio;
 
+    AVDictionary           *sws_opts;
+    AVDictionary           *swr_opts;
+
     // those are only set if no format is specified and the encoder gives us multiple options
     // They point directly to the relevant lists of the encoder.
     const int              *formats;
@@ -813,6 +816,17 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     if (!ofp->name)
         return AVERROR(EINVAL);
 
+    ret = av_dict_copy(&ofp->sws_opts, opts->sws_opts, 0);
+    if (ret < 0)
+        return ret;
+
+    ret = av_dict_copy(&ofp->swr_opts, opts->swr_opts, 0);
+    if (ret < 0)
+        return ret;
+
+    if (opts->flags & OFILTER_FLAG_AUDIO_24BIT)
+        av_dict_set(&ofp->swr_opts, "output_sample_bits", "24", 0);
+
     if (fgp->is_simple) {
         // for simple filtergraph there is just one output,
         // so use only graph-level information for logging
@@ -945,6 +959,8 @@ void fg_free(FilterGraph **pfg)
         OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
 
         av_frame_free(&ofp->fps.last_frame);
+        av_dict_free(&ofp->sws_opts);
+        av_dict_free(&ofp->swr_opts);
 
         av_freep(&ofilter->linklabel);
         av_freep(&ofilter->name);
@@ -1358,7 +1374,7 @@ static int configure_output_video_filter(FilterGraph *fg, AVFilterGraph *graph,
         snprintf(args, sizeof(args), "%d:%d",
                  ofp->width, ofp->height);
 
-        while ((e = av_dict_iterate(ost->sws_dict, e))) {
+        while ((e = av_dict_iterate(ofp->sws_opts, e))) {
             av_strlcatf(args, sizeof(args), ":%s=%s", e->key, e->value);
         }
 
@@ -1725,6 +1741,7 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
         return AVERROR(ENOMEM);
 
     if (simple) {
+        OutputFilterPriv *ofp = ofp_from_ofilter(fg->outputs[0]);
         OutputStream *ost = fg->outputs[0]->ost;
 
         if (filter_nbthreads) {
@@ -1738,17 +1755,17 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
                 av_opt_set(fgt->graph, "threads", e->value, 0);
         }
 
-        if (av_dict_count(ost->sws_dict)) {
-            ret = av_dict_get_string(ost->sws_dict,
+        if (av_dict_count(ofp->sws_opts)) {
+            ret = av_dict_get_string(ofp->sws_opts,
                                      &fgt->graph->scale_sws_opts,
                                      '=', ':');
             if (ret < 0)
                 goto fail;
         }
 
-        if (av_dict_count(ost->swr_opts)) {
+        if (av_dict_count(ofp->swr_opts)) {
             char *args;
-            ret = av_dict_get_string(ost->swr_opts, &args, '=', ':');
+            ret = av_dict_get_string(ofp->swr_opts, &args, '=', ':');
             if (ret < 0)
                 goto fail;
             av_opt_set(fgt->graph, "aresample_swr_opts", args, 0);

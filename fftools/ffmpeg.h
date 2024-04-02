@@ -265,6 +265,8 @@ typedef struct InputFilterOptions {
 
 enum OFilterFlags {
     OFILTER_FLAG_DISABLE_CONVERT    = (1 << 0),
+    // produce 24-bit audio
+    OFILTER_FLAG_AUDIO_24BIT        = (1 << 1),
 };
 
 typedef struct OutputFilterOptions {
@@ -282,6 +284,9 @@ typedef struct OutputFilterOptions {
      * Numerator can be one of EncTimeBase values, or 0 when no preference.
      */
     AVRational          output_tb;
+
+    AVDictionary       *sws_opts;
+    AVDictionary       *swr_opts;
 
     // A combination of OFilterFlags.
     unsigned            flags;
@@ -574,8 +579,6 @@ typedef struct OutputStream {
     OutputFilter *filter;
 
     AVDictionary *encoder_opts;
-    AVDictionary *sws_dict;
-    AVDictionary *swr_opts;
     char *apad;
 
     char *attachment_filename;

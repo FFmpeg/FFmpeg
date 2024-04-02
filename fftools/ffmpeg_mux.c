@@ -819,9 +819,6 @@ static void ost_free(OutputStream **post)
 
     av_freep(&ost->attachment_filename);
 
-    av_dict_free(&ost->sws_dict);
-    av_dict_free(&ost->swr_opts);
-
     if (ost->enc_ctx)
         av_freep(&ost->enc_ctx->stats_in);
     avcodec_free_context(&ost->enc_ctx);
