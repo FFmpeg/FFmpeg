@@ -5049,6 +5049,7 @@ static int mov_read_keys(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         key_size -= 8;
         if (type != MKTAG('m','d','t','a')) {
             avio_skip(pb, key_size);
+            continue;
         }
         c->meta_keys[i] = av_mallocz(key_size + 1);
         if (!c->meta_keys[i])
