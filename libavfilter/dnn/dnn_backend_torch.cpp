@@ -31,6 +31,7 @@ extern "C" {
 #include "dnn_io_proc.h"
 #include "dnn_backend_common.h"
 #include "libavutil/opt.h"
+#include "libavutil/mem.h"
 #include "queue.h"
 #include "safe_queue.h"
 }
