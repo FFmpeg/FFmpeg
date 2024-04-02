@@ -359,9 +359,11 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
                                                 st->codecpar->extradata_size, 1, fc);
             if (ret < 0)
                 return ret;
-            av_channel_layout_uninit(&st->codecpar->ch_layout);
-            st->codecpar->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
-            st->codecpar->ch_layout.nb_channels = cfg.channels;
+            if (cfg.channels != st->codecpar->ch_layout.nb_channels) {
+                av_channel_layout_uninit(&st->codecpar->ch_layout);
+                st->codecpar->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+                st->codecpar->ch_layout.nb_channels = cfg.channels;
+            }
             if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
                 st->codecpar->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
             else if (cfg.ext_sample_rate)
