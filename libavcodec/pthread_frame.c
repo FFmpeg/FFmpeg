@@ -406,6 +406,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         dst->hwaccel_flags = src->hwaccel_flags;
 
         ff_refstruct_replace(&dst->internal->pool, src->internal->pool);
+        ff_decode_internal_sync(dst, src);
     }
 
     if (for_user) {
@@ -782,6 +783,7 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             ff_refstruct_unref(&ctx->internal->pool);
             av_packet_free(&ctx->internal->in_pkt);
             av_packet_free(&ctx->internal->last_pkt_props);
+            ff_decode_internal_uninit(ctx);
             av_freep(&ctx->internal);
             av_buffer_unref(&ctx->hw_frames_ctx);
             av_frame_side_data_free(&ctx->decoded_side_data,
@@ -845,6 +847,7 @@ static av_cold int init_thread(PerThreadContext *p, int *threads_to_free,
     copy->internal = ff_decode_internal_alloc();
     if (!copy->internal)
         return AVERROR(ENOMEM);
+    ff_decode_internal_sync(copy, avctx);
     copy->internal->thread_ctx = p;
     copy->internal->progress_frame_pool = avctx->internal->progress_frame_pool;
 

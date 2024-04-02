@@ -46,6 +46,7 @@ OBJS = ac3_parser.o                                                     \
        get_buffer.o                                                     \
        imgconvert.o                                                     \
        jni.o                                                            \
+       lcevcdec.o                                                       \
        mathtables.o                                                     \
        mediacodec.o                                                     \
        mpeg12framerate.o                                                \

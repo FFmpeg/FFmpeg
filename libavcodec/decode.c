@@ -48,6 +48,7 @@
 #include "hwaccel_internal.h"
 #include "hwconfig.h"
 #include "internal.h"
+#include "lcevcdec.h"
 #include "packet_internal.h"
 #include "progressframe.h"
 #include "refstruct.h"
@@ -89,6 +90,11 @@ typedef struct DecodeContext {
      * (global or attached to packets) side data over bytestream.
      */
     uint64_t side_data_pref_mask;
+
+    FFLCEVCContext *lcevc;
+    int lcevc_frame;
+    int width;
+    int height;
 } DecodeContext;
 
 static DecodeContext *decode_ctx(AVCodecInternal *avci)
@@ -1597,6 +1603,40 @@ int ff_attach_decode_data(AVFrame *frame)
     return 0;
 }
 
+static void update_frame_props(AVCodecContext *avctx, AVFrame *frame)
+{
+    AVCodecInternal    *avci = avctx->internal;
+    DecodeContext        *dc = decode_ctx(avci);
+
+    dc->lcevc_frame = dc->lcevc && avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
+                      av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
+
+    if (dc->lcevc_frame) {
+        dc->width     = frame->width;
+        dc->height    = frame->height;
+        frame->width  = frame->width  * 2 / FFMAX(frame->sample_aspect_ratio.den, 1);
+        frame->height = frame->height * 2 / FFMAX(frame->sample_aspect_ratio.num, 1);
+    }
+}
+
+static void attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
+{
+    AVCodecInternal    *avci = avctx->internal;
+    DecodeContext        *dc = decode_ctx(avci);
+
+    if (dc->lcevc_frame) {
+        FrameDecodeData *fdd = (FrameDecodeData*)frame->private_ref->data;
+
+        fdd->post_process_opaque = ff_refstruct_ref(dc->lcevc);
+        fdd->post_process_opaque_free = ff_lcevc_unref;
+        fdd->post_process = ff_lcevc_process;
+
+        frame->width  = dc->width;
+        frame->height = dc->height;
+    }
+    dc->lcevc_frame = 0;
+}
+
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
     const FFHWAccel *hwaccel = ffhwaccel(avctx->hwaccel);
@@ -1640,8 +1680,10 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
             ret = hwaccel->alloc_frame(avctx, frame);
             goto end;
         }
-    } else
+    } else {
         avctx->sw_pix_fmt = avctx->pix_fmt;
+        update_frame_props(avctx, frame);
+    }
 
     ret = avctx->get_buffer2(avctx, frame, flags);
     if (ret < 0)
@@ -1652,6 +1694,8 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     ret = ff_attach_decode_data(frame);
     if (ret < 0)
         goto fail;
+
+    attach_post_process_data(avctx, frame);
 
 end:
     if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && !override_dimensions &&
@@ -1953,6 +1997,12 @@ int ff_decode_preinit(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
+    if (!(avctx->export_side_data & AV_CODEC_EXPORT_DATA_ENHANCEMENTS)) {
+        ret = ff_lcevc_alloc(&dc->lcevc);
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+            return ret;
+    }
+
 #if FF_API_DROPCHANGED
     if (avctx->flags & AV_CODEC_FLAG_DROPCHANGED)
         av_log(avctx, AV_LOG_WARNING, "The dropchanged flag is deprecated.\n");
@@ -2186,4 +2236,20 @@ void ff_decode_flush_buffers(AVCodecContext *avctx)
 AVCodecInternal *ff_decode_internal_alloc(void)
 {
     return av_mallocz(sizeof(DecodeContext));
+}
+
+void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *src)
+{
+    const DecodeContext *src_dc = decode_ctx(src->internal);
+    DecodeContext *dst_dc = decode_ctx(dst->internal);
+
+    ff_refstruct_replace(&dst_dc->lcevc, src_dc->lcevc);
+}
+
+void ff_decode_internal_uninit(AVCodecContext *avctx)
+{
+    AVCodecInternal *avci = avctx->internal;
+    DecodeContext *dc = decode_ctx(avci);
+
+    ff_refstruct_unref(&dc->lcevc);
 }
