@@ -213,8 +213,6 @@ static int decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
     int ret;
 
     ret = av_bsf_receive_packet(avci->bsf, pkt);
-    if (ret == AVERROR_EOF)
-        avci->draining = 1;
     if (ret < 0)
         return ret;
 
@@ -247,14 +245,14 @@ int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt)
         if (ret == AVERROR(EAGAIN) &&
             (!AVPACKET_IS_EMPTY(avci->buffer_pkt) || dc->draining_started)) {
             ret = av_bsf_send_packet(avci->bsf, avci->buffer_pkt);
-            if (ret < 0) {
-                av_packet_unref(avci->buffer_pkt);
-                return ret;
-            }
+            if (ret >= 0)
+                continue;
 
-            continue;
+            av_packet_unref(avci->buffer_pkt);
         }
 
+        if (ret == AVERROR_EOF)
+            avci->draining = 1;
         return ret;
     }
 }

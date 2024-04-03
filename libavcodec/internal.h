@@ -123,7 +123,11 @@ typedef struct AVCodecInternal {
     void *hwaccel_priv_data;
 
     /**
-     * checks API usage: after codec draining, flush is required to resume operation
+     * decoding: AVERROR_EOF has been returned from ff_decode_get_packet(); must
+     *           not be used by decoders that use the decode() callback, as they
+     *           do not call ff_decode_get_packet() directly.
+     *
+     * encoding: a flush frame has been submitted to avcodec_send_frame().
      */
     int draining;
 
