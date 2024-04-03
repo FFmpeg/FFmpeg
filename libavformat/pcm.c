@@ -41,7 +41,7 @@ int ff_pcm_default_packet_size(AVCodecParameters *par)
     /* Don't trust the codecpar bitrate if we can calculate it ourselves */
     if (bits_per_sample > 0 && par->sample_rate > 0 && par->ch_layout.nb_channels > 0)
         if ((int64_t)par->sample_rate * par->ch_layout.nb_channels < INT64_MAX / bits_per_sample)
-            bitrate = bits_per_sample * par->sample_rate * par->ch_layout.nb_channels;
+            bitrate = bits_per_sample * (int64_t)par->sample_rate * par->ch_layout.nb_channels;
 
     if (bitrate > 0) {
         nb_samples = av_clip64(bitrate / 8 / PCM_DEMUX_TARGET_FPS / par->block_align, 1, max_samples);
