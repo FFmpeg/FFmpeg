@@ -2526,16 +2526,21 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         const AVPacketSideData *spherical_mapping = av_packet_side_data_get(track->st->codecpar->coded_side_data,
                                                                             track->st->codecpar->nb_coded_side_data,
                                                                             AV_PKT_DATA_SPHERICAL);
-        const AVPacketSideData *dovi = av_packet_side_data_get(track->st->codecpar->coded_side_data,
-                                                               track->st->codecpar->nb_coded_side_data,
-                                                               AV_PKT_DATA_DOVI_CONF);
-
         if (stereo_3d)
             mov_write_st3d_tag(s, pb, (AVStereo3D*)stereo_3d->data);
         if (spherical_mapping)
             mov_write_sv3d_tag(mov->fc, pb, (AVSphericalMapping*)spherical_mapping->data);
-        if (dovi)
+    }
+
+    if (track->mode == MODE_MP4) {
+        const AVPacketSideData *dovi = av_packet_side_data_get(track->st->codecpar->coded_side_data,
+                                                               track->st->codecpar->nb_coded_side_data,
+                                                               AV_PKT_DATA_DOVI_CONF);
+        if (dovi && mov->fc->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL) {
             mov_write_dvcc_dvvc_tag(s, pb, (AVDOVIDecoderConfigurationRecord *)dovi->data);
+        } else if (dovi) {
+            av_log(mov->fc, AV_LOG_WARNING, "Not writing 'dvcC'/'dvvC' box. Requires -strict unofficial.\n");
+        }
     }
 
     if (track->par->sample_aspect_ratio.den && track->par->sample_aspect_ratio.num) {
