@@ -2695,6 +2695,36 @@ int avcodec_get_hw_frames_parameters(AVCodecContext *avctx,
                                      enum AVPixelFormat hw_pix_fmt,
                                      AVBufferRef **out_frames_ref);
 
+enum AVCodecConfig {
+    AV_CODEC_CONFIG_PIX_FORMAT,     ///< AVPixelFormat, terminated by AV_PIX_FMT_NONE
+    AV_CODEC_CONFIG_FRAME_RATE,     ///< AVRational, terminated by {0, 0}
+    AV_CODEC_CONFIG_SAMPLE_RATE,    ///< int, terminated by 0
+    AV_CODEC_CONFIG_SAMPLE_FORMAT,  ///< AVSampleFormat, terminated by AV_SAMPLE_FMT_NONE
+    AV_CODEC_CONFIG_CHANNEL_LAYOUT, ///< AVChannelLayout, terminated by {0}
+    AV_CODEC_CONFIG_COLOR_RANGE,    ///< AVColorRange, terminated by AVCOL_RANGE_UNSPECIFIED
+    AV_CODEC_CONFIG_COLOR_SPACE,    ///< AVColorSpace, terminated by AVCOL_SPC_UNSPECIFIED
+};
+
+/**
+ * Retrieve a list of all supported values for a given configuration type.
+ *
+ * @param avctx An optional context to use. Values such as
+ *              `strict_std_compliance` may affect the result. If NULL,
+ *              default values are used.
+ * @param codec The codec to query, or NULL to use avctx->codec.
+ * @param config The configuration to query.
+ * @param flags Currently unused; should be set to zero.
+ * @param out_configs On success, set to a list of configurations, terminated
+ *                    by a config-specific terminator, or NULL if all
+ *                    possible values are supported.
+ * @param out_num_configs On success, set to the number of elements in
+                          *out_configs, excluding the terminator. Optional.
+ */
+int avcodec_get_supported_config(const AVCodecContext *avctx,
+                                 const AVCodec *codec, enum AVCodecConfig config,
+                                 unsigned flags, const void **out_configs,
+                                 int *out_num_configs);
+
 
 
 /**

@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/common.h"
 #include "libavutil/emms.h"
 #include "libavutil/fifo.h"
 #include "libavutil/imgutils.h"
@@ -705,4 +706,97 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
     if (av_codec_is_decoder(avctx->codec))
         return ff_decode_receive_frame(avctx, frame);
     return ff_encode_receive_frame(avctx, frame);
+}
+
+#define WRAP_CONFIG(allowed_type, field, terminator)                        \
+    do {                                                                    \
+        static const __typeof__(*(field)) end = terminator;                 \
+        if (codec->type != (allowed_type))                                  \
+            return AVERROR(EINVAL);                                         \
+        *out_configs = (field);                                             \
+        if (out_num_configs) {                                              \
+            for (int i = 0;; i++) {                                         \
+                if (!(field) || !memcmp(&(field)[i], &end, sizeof(end))) {  \
+                    *out_num_configs = i;                                   \
+                    break;                                                  \
+                }                                                           \
+            }                                                               \
+        }                                                                   \
+        return 0;                                                           \
+    } while (0)
+
+static const enum AVColorRange color_range_jpeg[] = {
+    AVCOL_RANGE_JPEG, AVCOL_RANGE_UNSPECIFIED
+};
+
+static const enum AVColorRange color_range_mpeg[] = {
+    AVCOL_RANGE_MPEG, AVCOL_RANGE_UNSPECIFIED
+};
+
+static const enum AVColorRange color_range_all[] = {
+    AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG, AVCOL_RANGE_UNSPECIFIED
+};
+
+static const enum AVColorRange *color_range_table[] = {
+    [AVCOL_RANGE_MPEG] = color_range_mpeg,
+    [AVCOL_RANGE_JPEG] = color_range_jpeg,
+    [AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG] = color_range_all,
+};
+
+int ff_default_get_supported_config(const AVCodecContext *avctx,
+                                    const AVCodec *codec,
+                                    enum AVCodecConfig config,
+                                    unsigned flags,
+                                    const void **out_configs,
+                                    int *out_num_configs)
+{
+    switch (config) {
+FF_DISABLE_DEPRECATION_WARNINGS
+    case AV_CODEC_CONFIG_PIX_FORMAT:
+        WRAP_CONFIG(AVMEDIA_TYPE_VIDEO, codec->pix_fmts, AV_PIX_FMT_NONE);
+    case AV_CODEC_CONFIG_FRAME_RATE:
+        WRAP_CONFIG(AVMEDIA_TYPE_VIDEO, codec->supported_framerates, (AVRational){0});
+    case AV_CODEC_CONFIG_SAMPLE_RATE:
+        WRAP_CONFIG(AVMEDIA_TYPE_AUDIO, codec->supported_samplerates, 0);
+    case AV_CODEC_CONFIG_SAMPLE_FORMAT:
+        WRAP_CONFIG(AVMEDIA_TYPE_AUDIO, codec->sample_fmts, AV_SAMPLE_FMT_NONE);
+    case AV_CODEC_CONFIG_CHANNEL_LAYOUT:
+        WRAP_CONFIG(AVMEDIA_TYPE_AUDIO, codec->ch_layouts, (AVChannelLayout){0});
+FF_ENABLE_DEPRECATION_WARNINGS
+
+    case AV_CODEC_CONFIG_COLOR_RANGE:
+        if (codec->type != AVMEDIA_TYPE_VIDEO)
+            return AVERROR(EINVAL);
+        *out_configs = color_range_table[ffcodec(codec)->color_ranges];
+        if (out_num_configs)
+            *out_num_configs = av_popcount(ffcodec(codec)->color_ranges);
+        return 0;
+
+    case AV_CODEC_CONFIG_COLOR_SPACE:
+        *out_configs = NULL;
+        if (out_num_configs)
+            *out_num_configs = 0;
+        return 0;
+    default:
+        return AVERROR(EINVAL);
+    }
+}
+
+int avcodec_get_supported_config(const AVCodecContext *avctx, const AVCodec *codec,
+                                 enum AVCodecConfig config, unsigned flags,
+                                 const void **out, int *out_num)
+{
+    const FFCodec *codec2;
+    int dummy_num = 0;
+    if (!codec)
+        codec = avctx->codec;
+    if (!out_num)
+        out_num = &dummy_num;
+
+    codec2 = ffcodec(codec);
+    if (codec2->get_supported_config) {
+        return codec2->get_supported_config(avctx, codec, config, flags, out, out_num);
+    } else {
+        return ff_default_get_supported_config(avctx, codec, config, flags, out, out_num);
+    }
 }

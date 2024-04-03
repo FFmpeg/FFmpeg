@@ -205,10 +205,19 @@ typedef struct AVCodec {
      */
     int capabilities;
     uint8_t max_lowres;                     ///< maximum value for lowres supported by the decoder
-    const AVRational *supported_framerates; ///< array of supported framerates, or NULL if any, array is terminated by {0,0}
-    const enum AVPixelFormat *pix_fmts;     ///< array of supported pixel formats, or NULL if unknown, array is terminated by -1
-    const int *supported_samplerates;       ///< array of supported audio samplerates, or NULL if unknown, array is terminated by 0
-    const enum AVSampleFormat *sample_fmts; ///< array of supported sample formats, or NULL if unknown, array is terminated by -1
+
+    /**
+     * Deprecated codec capabilities.
+     */
+    attribute_deprecated
+    const AVRational *supported_framerates; ///< @deprecated use avcodec_get_supported_config()
+    attribute_deprecated
+    const enum AVPixelFormat *pix_fmts;     ///< @deprecated use avcodec_get_supported_config()
+    attribute_deprecated
+    const int *supported_samplerates;       ///< @deprecated use avcodec_get_supported_config()
+    attribute_deprecated
+    const enum AVSampleFormat *sample_fmts; ///< @deprecated use avcodec_get_supported_config()
+
     const AVClass *priv_class;              ///< AVClass for the private context
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {AV_PROFILE_UNKNOWN}
 
@@ -226,7 +235,9 @@ typedef struct AVCodec {
 
     /**
      * Array of supported channel layouts, terminated with a zeroed layout.
+     * @deprecated use avcodec_get_supported_config()
      */
+    attribute_deprecated
     const AVChannelLayout *ch_layouts;
 } AVCodec;
 
