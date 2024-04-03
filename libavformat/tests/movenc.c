@@ -215,6 +215,7 @@ static void init_fps(int bf, int audio_preroll, int fps, int id3)
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_AAC;
     st->codecpar->sample_rate = 44100;
+    st->codecpar->frame_size = 1024;
     st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     st->time_base.num = 1;
     st->time_base.den = 44100;
@@ -243,9 +244,10 @@ static void init_fps(int bf, int audio_preroll, int fps, int id3)
     frames = 0;
     gop_size = 30;
     duration = video_st->time_base.den / fps;
-    audio_duration = 1024LL * audio_st->time_base.den / audio_st->codecpar->sample_rate;
+    audio_duration = (long long)audio_st->codecpar->frame_size *
+                     audio_st->time_base.den / audio_st->codecpar->sample_rate;
     if (audio_preroll)
-        audio_preroll = 2048LL * audio_st->time_base.den / audio_st->codecpar->sample_rate;
+        audio_preroll = 2 * audio_duration;
 
     bframes = bf;
     video_dts = bframes ? -duration : 0;
@@ -470,12 +472,16 @@ int main(int argc, char **argv)
     // Similar to the previous one, but with input that doesn't start at
     // pts/dts 0. avoid_negative_ts behaves in the same way as
     // in non-empty-moov-no-elst above.
+    init_count_warnings();
     init_out("empty-moov-no-elst");
     av_dict_set(&opts, "movflags", "+frag_keyframe+empty_moov", 0);
     init(1, 0);
     mux_gops(2);
     finish();
     close_out();
+
+    reset_count_warnings();
+    check(num_warnings == 0, "Unexpected warnings printed");
 
     // Same as the previous one, but disable avoid_negative_ts (which
     // would require using an edit list, but with empty_moov, one can't
