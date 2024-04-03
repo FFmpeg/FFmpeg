@@ -430,20 +430,20 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
 
     got_frame = 0;
 
-        frame->pict_type = dc->initial_pict_type;
-        frame->flags    |= dc->intra_only_flag;
-        consumed = codec->cb.decode(avctx, frame, &got_frame, pkt);
+    frame->pict_type = dc->initial_pict_type;
+    frame->flags    |= dc->intra_only_flag;
+    consumed = codec->cb.decode(avctx, frame, &got_frame, pkt);
 
-        if (!(codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
-            frame->pkt_dts = pkt->dts;
-        if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
+    if (!(codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
+        frame->pkt_dts = pkt->dts;
+    if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
-            if(!avctx->has_b_frames)
-                frame->pkt_pos = pkt->pos;
+        if(!avctx->has_b_frames)
+            frame->pkt_pos = pkt->pos;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        }
+    }
     emms_c();
 
     if (avctx->codec->type == AVMEDIA_TYPE_VIDEO) {
