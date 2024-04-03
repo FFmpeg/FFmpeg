@@ -75,6 +75,7 @@ void ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0)
 {
     s->logctx = s0->logctx;
     s->cfg = s0->cfg;
+    s->header = s0->header;
     s->mapping = s0->mapping;
     s->color = s0->color;
     for (int i = 0; i <= DOVI_MAX_DM_ID; i++)
