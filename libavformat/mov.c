@@ -863,6 +863,7 @@ static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+#if CONFIG_IAMFDEC
 static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
@@ -1042,6 +1043,7 @@ fail:
 
     return ret;
 }
+#endif
 
 static int mov_read_dec3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
@@ -4810,6 +4812,7 @@ static void fix_timescale(MOVContext *c, MOVStreamContext *sc)
     }
 }
 
+#if CONFIG_IAMFDEC
 static int mov_update_iamf_streams(MOVContext *c, const AVStream *st)
 {
     const MOVStreamContext *sc = st->priv_data;
@@ -4853,6 +4856,7 @@ static int mov_update_iamf_streams(MOVContext *c, const AVStream *st)
 
     return 0;
 }
+#endif
 
 static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
@@ -4917,11 +4921,13 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     mov_build_index(c, st);
 
+#if CONFIG_IAMFDEC
     if (sc->iamf) {
         ret = mov_update_iamf_streams(c, st);
         if (ret < 0)
             return ret;
     }
+#endif
 
     if (sc->dref_id-1 < sc->drefs_count && sc->drefs[sc->dref_id-1].path) {
         MOVDref *dref = &sc->drefs[sc->dref_id - 1];
@@ -8573,7 +8579,9 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('i','p','r','p'), mov_read_iprp },
 { MKTAG('i','i','n','f'), mov_read_iinf },
 { MKTAG('a','m','v','e'), mov_read_amve }, /* ambient viewing environment box */
+#if CONFIG_IAMFDEC
 { MKTAG('i','a','c','b'), mov_read_iacb },
+#endif
 { 0, NULL }
 };
 
@@ -9045,8 +9053,10 @@ static void mov_free_stream_context(AVFormatContext *s, AVStream *st)
     av_freep(&sc->coll);
     av_freep(&sc->ambient);
 
+#if CONFIG_IAMFDEC
     if (sc->iamf)
         ff_iamf_read_deinit(sc->iamf);
+#endif
     av_freep(&sc->iamf);
 }
 
@@ -9951,6 +9961,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (st->codecpar->codec_id == AV_CODEC_ID_EIA_608 && sample->size > 8)
             ret = get_eia608_packet(sc->pb, pkt, sample->size);
+#if CONFIG_IAMFDEC
         else if (sc->iamf) {
             int64_t pts, dts, pos, duration;
             int flags, size = sample->size;
@@ -9973,7 +9984,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             if (!ret)
                 return FFERROR_REDO;
-        } else
+        }
+#endif
+        else
             ret = av_get_packet(sc->pb, pkt, sample->size);
         if (ret < 0) {
             if (should_retry(sc->pb, ret)) {

@@ -140,6 +140,7 @@ Component options:
   --disable-error-resilience disable error resilience code
   --disable-lsp            disable LSP code
   --disable-faan           disable floating point AAN (I)DCT code
+  --disable-iamf           disable support for Immersive Audio Model
   --disable-pixelutils     disable pixel utils in libavutil
 
 Individual component options:
@@ -2070,6 +2071,7 @@ SUBSYSTEM_LIST="
     error_resilience
     faan
     fast_unaligned
+    iamf
     lsp
     pixelutils
     network
@@ -2851,6 +2853,8 @@ h264_sei_select="atsc_a53 golomb"
 hevcparse_select="golomb"
 hevc_sei_select="atsc_a53 golomb"
 frame_thread_encoder_deps="encoders threads"
+iamfdec_deps="iamf"
+iamfenc_deps="iamf"
 inflate_wrapper_deps="zlib"
 intrax8_select="blockdsp wmv2dsp"
 iso_media_select="mpeg4audio"
@@ -3590,8 +3594,8 @@ gxf_muxer_select="pcm_rechunk_bsf"
 hds_muxer_select="flv_muxer"
 hls_demuxer_select="aac_demuxer ac3_demuxer adts_header ac3_parser eac3_demuxer mov_demuxer mpegts_demuxer"
 hls_muxer_select="mov_muxer mpegts_muxer"
-iamf_demuxer_select="iamfdec"
-iamf_muxer_select="iamfenc"
+iamf_demuxer_deps="iamfdec"
+iamf_muxer_deps="iamfenc"
 image2_alias_pix_demuxer_select="image2_demuxer"
 image2_brender_pix_demuxer_select="image2_demuxer"
 imf_demuxer_deps="libxml2"
@@ -3606,9 +3610,9 @@ matroska_demuxer_suggest="bzlib zlib"
 matroska_muxer_select="mpeg4audio riffenc aac_adtstoasc_bsf pgs_frame_merge_bsf vp9_superframe_bsf"
 mlp_demuxer_select="mlp_parser"
 mmf_muxer_select="riffenc"
-mov_demuxer_select="iso_media riffdec iamfdec"
+mov_demuxer_select="iso_media riffdec"
 mov_demuxer_suggest="zlib"
-mov_muxer_select="iso_media riffenc rtpenc_chain vp9_superframe_bsf aac_adtstoasc_bsf ac3_parser iamfenc"
+mov_muxer_select="iso_media riffenc rtpenc_chain vp9_superframe_bsf aac_adtstoasc_bsf ac3_parser"
 mp3_demuxer_select="mpegaudio_parser"
 mp3_muxer_select="mpegaudioheader"
 mp4_muxer_select="mov_muxer"
@@ -4079,6 +4083,7 @@ enable asm
 enable debug
 enable doc
 enable faan faandct faanidct
+enable iamf iamfdec iamfenc
 enable large_tests
 enable optimizations
 enable ptx_compression
