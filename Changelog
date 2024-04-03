@@ -21,7 +21,7 @@ version 7.0:
 - qrencode filter and qrencodesrc source
 - quirc filter
 - lavu/eval: introduce randomi() function in expressions
-- VVC decoder
+- VVC decoder (experimental)
 - fsync filter
 - Raw Captions with Time (RCWT) closed caption muxer
 - ffmpeg CLI -bsf option may now be used for input as well as output
@@ -42,6 +42,15 @@ version 7.0:
 - ffplay with hwaccel decoding support (depends on vulkan renderer via libplacebo)
 - dnn filter libtorch backend
 - Android content URIs protocol
+- AOMedia Film Grain Synthesis 1 (AFGS1)
+- RISC-V optimizations for AAC, FLAC, JPEG-2000,LPC, RV4.0, SVQ, VC1, VP8 and more
+- Loongarch optimizations for HEVC decoding
+- Important AArch64 optimizations for HEVC
+- IAMF support inside MP4/ISOBMFF
+- Support for HEIF/AVIF still images and tiled still images
+- Dolby Vision profile 10 support in AV1
+- Support for Ambient Viewing Environment metadata in MP4/ISOBMFF
+- HDR10 metadata passthrough when encoding with libx264, libx265 and libsvtav1
 
 
 version 6.1:
