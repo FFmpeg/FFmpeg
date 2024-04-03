@@ -499,11 +499,11 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
             hdr->el_spatial_resampling_filter_flag = get_bits1(gb);
             hdr->disable_residual_flag = get_bits1(gb);
         }
-    }
-
-    if (!hdr->bl_bit_depth) {
-        av_log(s->logctx, AV_LOG_ERROR, "Missing RPU VDR sequence info?\n");
-        goto fail;
+    } else {
+        /* lack of documentation/samples */
+        avpriv_request_sample(s->logctx, "Missing RPU VDR sequence info\n");
+        ff_dovi_ctx_unref(s);
+        return AVERROR_PATCHWELCOME;
     }
 
     vdr_dm_metadata_present = get_bits1(gb);
