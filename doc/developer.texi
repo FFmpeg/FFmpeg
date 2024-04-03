@@ -390,6 +390,10 @@ If you apply a patch, send an
 answer to ffmpeg-devel (or wherever you got the patch from) saying that
 you applied the patch.
 
+@subheading Credit any researchers
+If a commit/patch fixes an issues found by some researcher, always credit the
+researcher in the commit message for finding/reporting the issue.
+
 @subheading Always wait long enough before pushing changes
 Do NOT commit to code actively maintained by others without permission.
 Send a patch to ffmpeg-devel. If no one answers within a reasonable
