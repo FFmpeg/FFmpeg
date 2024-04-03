@@ -647,7 +647,7 @@ static int decode_5elp(AVCodecContext *avctx,
                 for (int o = 0; o < order; o++)
                     sum += s->filter[ch][o] * (unsigned)samples[n + 70 - o - 1];
 
-                samples[n + 70] += ac_out[n] + (sum >> 4);
+                samples[n + 70] += ac_out[n] + (unsigned)(sum >> 4);
             }
 
             for (int n = 0; n < 70; n++)
