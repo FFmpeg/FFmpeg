@@ -55,8 +55,6 @@ typedef enum Predictor {
     MEDIAN,
 } Predictor;
 
-void ff_huffyuv_common_end(uint8_t *temp[3], uint16_t *temp16[3]);
-int  ff_huffyuv_alloc_temp(uint8_t *temp[3], uint16_t *temp16[3], int width);
 int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int n);
 
 #endif /* AVCODEC_HUFFYUV_H */

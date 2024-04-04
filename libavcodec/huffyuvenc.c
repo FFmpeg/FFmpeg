@@ -430,11 +430,14 @@ static av_cold int encode_init(AVCodecContext *avctx)
                 s->stats[i][j]= 0;
     }
 
-    ret = ff_huffyuv_alloc_temp(s->temp, s->temp16, avctx->width);
-    if (ret < 0)
-        return ret;
-
     s->picture_number=0;
+
+    for (int i = 0; i < 3; i++) {
+        s->temp[i] = av_malloc(4 * avctx->width + 16);
+        if (!s->temp[i])
+            return AVERROR(ENOMEM);
+        s->temp16[i] = (uint16_t*)s->temp[i];
+    }
 
     return 0;
 }
@@ -1035,9 +1038,12 @@ static av_cold int encode_end(AVCodecContext *avctx)
 {
     HYuvEncContext *s = avctx->priv_data;
 
-    ff_huffyuv_common_end(s->temp, s->temp16);
-
     av_freep(&avctx->stats_out);
+
+    for (int i = 0; i < 3; i++) {
+        av_freep(&s->temp[i]);
+        s->temp16[i] = NULL;
+    }
 
     return 0;
 }

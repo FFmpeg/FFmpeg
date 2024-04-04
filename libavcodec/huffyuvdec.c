@@ -323,7 +323,11 @@ static av_cold int decode_end(AVCodecContext *avctx)
     HYuvDecContext *s = avctx->priv_data;
     int i;
 
-    ff_huffyuv_common_end(s->temp, s->temp16);
+    for (int i = 0; i < 3; i++) {
+        av_freep(&s->temp[i]);
+        s->temp16[i] = NULL;
+    }
+
     av_freep(&s->bitstream_buffer);
 
     for (i = 0; i < 8; i++)
@@ -599,8 +603,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_huffyuv_alloc_temp(s->temp, s->temp16, avctx->width)) < 0)
-        return ret;
+    for (int i = 0; i < 3; i++) {
+        s->temp[i] = av_malloc(4 * avctx->width + 16);
+        if (!s->temp[i])
+            return AVERROR(ENOMEM);
+        s->temp16[i] = (uint16_t*)s->temp[i];
+    }
 
     return 0;
 }
