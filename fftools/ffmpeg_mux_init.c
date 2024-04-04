@@ -1370,6 +1370,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
+        const AVDictionaryEntry *e;
         char name[16];
         OutputFilterOptions opts = {
             .enc = enc,
@@ -1394,6 +1395,10 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         };
 
         snprintf(name, sizeof(name), "#%d:%d", mux->of.index, ost->index);
+
+        e = av_dict_get(ost->encoder_opts, "threads", NULL, 0);
+        if (e)
+            opts.nb_threads = e->value;
 
         // MJPEG encoder exports a full list of supported pixel formats,
         // but the full-range ones are experimental-only.

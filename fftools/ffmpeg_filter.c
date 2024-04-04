@@ -59,6 +59,8 @@ typedef struct FilterGraphPriv {
 
     const char      *graph_desc;
 
+    char            *nb_threads;
+
     // frame for temporarily holding output from the filtergraph
     AVFrame         *frame;
     // frame for sending output to the encoder
@@ -976,6 +978,7 @@ void fg_free(FilterGraph **pfg)
     }
     av_freep(&fg->outputs);
     av_freep(&fgp->graph_desc);
+    av_freep(&fgp->nb_threads);
 
     av_frame_free(&fgp->frame);
     av_frame_free(&fgp->frame_enc);
@@ -1164,6 +1167,13 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     ret = ofilter_bind_ost(fg->outputs[0], ost, sched_idx_enc, opts);
     if (ret < 0)
         return ret;
+
+    if (opts->nb_threads) {
+        av_freep(&fgp->nb_threads);
+        fgp->nb_threads = av_strdup(opts->nb_threads);
+        if (!fgp->nb_threads)
+            return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
@@ -1735,17 +1745,15 @@ static int configure_filtergraph(FilterGraph *fg, FilterGraphThread *fgt)
 
     if (simple) {
         OutputFilterPriv *ofp = ofp_from_ofilter(fg->outputs[0]);
-        OutputStream *ost = fg->outputs[0]->ost;
 
         if (filter_nbthreads) {
             ret = av_opt_set(fgt->graph, "threads", filter_nbthreads, 0);
             if (ret < 0)
                 goto fail;
-        } else {
-            const AVDictionaryEntry *e = NULL;
-            e = av_dict_get(ost->encoder_opts, "threads", NULL, 0);
-            if (e)
-                av_opt_set(fgt->graph, "threads", e->value, 0);
+        } else if (fgp->nb_threads) {
+            ret = av_opt_set(fgt->graph, "threads", fgp->nb_threads, 0);
+            if (ret < 0)
+                return ret;
         }
 
         if (av_dict_count(ofp->sws_opts)) {
