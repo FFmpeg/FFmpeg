@@ -5,6 +5,7 @@ version <next>:
 - Raw Captions with Time (RCWT) closed caption demuxer
 - LC3/LC3plus decoding/encoding using external library liblc3
 - ffmpeg CLI filtergraph chaining
+- LC3/LC3plus demuxer and muxer
 
 
 version 7.0:

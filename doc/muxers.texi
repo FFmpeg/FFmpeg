@@ -2725,6 +2725,12 @@ games such as "Real War", and "Real War: Rogue States".
 
 This muxer accepts a single @samp{adpcm_ima_ssi} audio stream.
 
+@section lc3
+Bluetooth SIG Low Complexity Communication Codec audio (LC3), or
+ETSI TS 103 634 Low Complexity Communication Codec plus (LC3plus).
+
+This muxer accepts a single @samp{lc3} audio stream.
+
 @section lrc
 LRC lyrics file format muxer.
 
