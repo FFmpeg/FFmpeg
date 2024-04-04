@@ -1175,8 +1175,6 @@ static int get_samples_per_packet(MOVTrack *track)
 {
     int i, first_duration;
 
-// return track->par->frame_size;
-
     /* use 1 for raw PCM */
     if (!track->audio_vbr)
         return 1;
