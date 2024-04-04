@@ -433,8 +433,7 @@ static int create_filtergraph(AVFilterContext *ctx,
     if (out->color_trc       != s->out_trc) s->out_txchr     = NULL;
     if (in->colorspace       != s->in_csp ||
         in->color_range      != s->in_rng)  s->in_lumacoef   = NULL;
-    if (out->colorspace      != s->out_csp ||
-        out->color_range     != s->out_rng) s->out_lumacoef  = NULL;
+    if (out->color_range     != s->out_rng) s->rgb2yuv       = NULL;
 
     if (!s->out_primaries || !s->in_primaries) {
         s->in_prm = in->color_primaries;
@@ -563,26 +562,8 @@ static int create_filtergraph(AVFilterContext *ctx,
         redo_yuv2rgb = 1;
     }
 
-    if (!s->out_lumacoef) {
-        s->out_csp = out->colorspace;
+    if (!s->rgb2yuv) {
         s->out_rng = out->color_range;
-        s->out_lumacoef = av_csp_luma_coeffs_from_avcsp(s->out_csp);
-        if (!s->out_lumacoef) {
-            if (s->out_csp == AVCOL_SPC_UNSPECIFIED) {
-                if (s->user_all == CS_UNSPECIFIED) {
-                    av_log(ctx, AV_LOG_ERROR,
-                           "Please specify output colorspace\n");
-                } else {
-                    av_log(ctx, AV_LOG_ERROR,
-                           "Unsupported output color property %d\n", s->user_all);
-                }
-            } else {
-                av_log(ctx, AV_LOG_ERROR,
-                       "Unsupported output colorspace %d (%s)\n", s->out_csp,
-                       av_color_space_name(s->out_csp));
-            }
-            return AVERROR(EINVAL);
-        }
         redo_rgb2yuv = 1;
     }
 
@@ -687,6 +668,26 @@ static av_cold int init(AVFilterContext *ctx)
 {
     ColorSpaceContext *s = ctx->priv;
 
+    s->out_csp  = s->user_csp == AVCOL_SPC_UNSPECIFIED ?
+                  default_csp[FFMIN(s->user_all, CS_NB)] : s->user_csp;
+    s->out_lumacoef = av_csp_luma_coeffs_from_avcsp(s->out_csp);
+    if (!s->out_lumacoef) {
+        if (s->out_csp == AVCOL_SPC_UNSPECIFIED) {
+            if (s->user_all == CS_UNSPECIFIED) {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Please specify output colorspace\n");
+            } else {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Unsupported output color property %d\n", s->user_all);
+            }
+        } else {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Unsupported output colorspace %d (%s)\n", s->out_csp,
+                   av_color_space_name(s->out_csp));
+        }
+        return AVERROR(EINVAL);
+    }
+
     ff_colorspacedsp_init(&s->dsp);
 
     return 0;
@@ -735,6 +736,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         return res;
     }
 
+    out->colorspace =      s->out_csp;
+    out->color_range =     s->user_rng == AVCOL_RANGE_UNSPECIFIED ?
+                           in->color_range : s->user_rng;
     out->color_primaries = s->user_prm == AVCOL_PRI_UNSPECIFIED ?
                            default_prm[FFMIN(s->user_all, CS_NB)] : s->user_prm;
     if (s->user_trc == AVCOL_TRC_UNSPECIFIED) {
@@ -746,10 +750,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     } else {
         out->color_trc   = s->user_trc;
     }
-    out->colorspace      = s->user_csp == AVCOL_SPC_UNSPECIFIED ?
-                           default_csp[FFMIN(s->user_all, CS_NB)] : s->user_csp;
-    out->color_range     = s->user_rng == AVCOL_RANGE_UNSPECIFIED ?
-                           in->color_range : s->user_rng;
     if (rgb_sz != s->rgb_sz) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(out->format);
         int uvw = in->width >> desc->log2_chroma_w;
@@ -841,7 +841,17 @@ static int query_formats(AVFilterContext *ctx)
     };
     int res;
     ColorSpaceContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFilterFormats *formats = ff_make_format_list(pix_fmts);
+
+    res = ff_formats_ref(ff_make_formats_list_singleton(s->out_csp), &outlink->incfg.color_spaces);
+    if (res < 0)
+        return res;
+    if (s->user_rng != AVCOL_RANGE_UNSPECIFIED) {
+        res = ff_formats_ref(ff_make_formats_list_singleton(s->user_rng), &outlink->incfg.color_ranges);
+        if (res < 0)
+            return res;
+    }
 
     if (!formats)
         return AVERROR(ENOMEM);
@@ -855,7 +865,7 @@ static int query_formats(AVFilterContext *ctx)
     if (res < 0)
         return res;
 
-    return ff_formats_ref(formats, &ctx->outputs[0]->incfg.formats);
+    return ff_formats_ref(formats, &outlink->incfg.formats);
 }
 
 static int config_props(AVFilterLink *outlink)
