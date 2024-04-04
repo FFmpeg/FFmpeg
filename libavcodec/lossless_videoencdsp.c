@@ -25,13 +25,11 @@
 #if HAVE_FAST_64BIT
 typedef uint64_t uint_native;
 #define READ   AV_RN64
-#define READA  AV_RN64A
-#define WRITEA AV_WN64A
+#define WRITE  AV_WN64
 #else
 typedef uint32_t uint_native;
 #define READ   AV_RN32
-#define READA  AV_RN32A
-#define WRITEA AV_WN32A
+#define WRITE  AV_WN32
 #endif
 // 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
 #define pb_7f (~(uint_native)0 / 255 * 0x7f)
@@ -56,9 +54,9 @@ static void diff_bytes_c(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
     } else
 #endif
     for (i = 0; i <= w - (int) sizeof(uint_native); i += sizeof(uint_native)) {
-        uint_native a = READA(src1 + i);
+        uint_native a = READ(src1 + i);
         uint_native b = READ(src2 + i);
-        WRITEA(dst + i, ((a | pb_80) - (b & pb_7f)) ^ ((a ^ b ^ pb_80) & pb_80));
+        WRITE(dst + i, ((a | pb_80) - (b & pb_7f)) ^ ((a ^ b ^ pb_80) & pb_80));
     }
     for (; i < w; i++)
         dst[i + 0] = src1[i + 0] - src2[i + 0];
