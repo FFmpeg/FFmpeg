@@ -36,6 +36,7 @@
 
 #include "avcodec.h"
 #include "bswapdsp.h"
+#include "bytestream.h"
 #include "codec_internal.h"
 #include "get_bits.h"
 #include "huffyuv.h"
@@ -86,21 +87,17 @@ typedef struct HYuvDecContext {
 } HYuvDecContext;
 
 
-#define classic_shift_luma_table_size 42
-static const unsigned char classic_shift_luma[classic_shift_luma_table_size + AV_INPUT_BUFFER_PADDING_SIZE] = {
+static const uint8_t classic_shift_luma[] = {
     34, 36, 35, 69, 135, 232,   9, 16, 10, 24,  11,  23,  12,  16, 13, 10,
     14,  8, 15,  8,  16,   8,  17, 20, 16, 10, 207, 206, 205, 236, 11,  8,
-    10, 21,  9, 23,   8,   8, 199, 70, 69, 68,   0,
-  0,0,0,0,0,0,0,0,
+    10, 21,  9, 23,   8,   8, 199, 70, 69, 68,
 };
 
-#define classic_shift_chroma_table_size 59
-static const unsigned char classic_shift_chroma[classic_shift_chroma_table_size + AV_INPUT_BUFFER_PADDING_SIZE] = {
+static const uint8_t classic_shift_chroma[] = {
     66, 36,  37,  38, 39, 40,  41,  75,  76,  77, 110, 239, 144, 81, 82,  83,
     84, 85, 118, 183, 56, 57,  88,  89,  56,  89, 154,  57,  58, 57, 26, 141,
     57, 56,  58,  57, 58, 57, 184, 119, 214, 245, 116,  83,  82, 49, 80,  79,
-    78, 77,  44,  75, 41, 40,  39,  38,  37,  36,  34,  0,
-  0,0,0,0,0,0,0,0,
+    78, 77,  44,  75, 41, 40,  39,  38,  37,  36,  34,
 };
 
 static const unsigned char classic_add_luma[256] = {
@@ -141,23 +138,30 @@ static const unsigned char classic_add_chroma[256] = {
       6,  12,   8,  10,   7,   9,   6,   4,   6,   2,   2,   3,   3,   3,   3,   2,
 };
 
-static int read_len_table(uint8_t *dst, GetBitContext *gb, int n)
+static int read_len_table(uint8_t *dst, GetByteContext *gb, int n)
 {
     int i, val, repeat;
 
     for (i = 0; i < n;) {
-        repeat = get_bits(gb, 3);
-        val    = get_bits(gb, 5);
-        if (repeat == 0)
-            repeat = get_bits(gb, 8);
-        if (i + repeat > n || get_bits_left(gb) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Error reading huffman table\n");
-            return AVERROR_INVALIDDATA;
+        if (bytestream2_get_bytes_left(gb) <= 0)
+            goto error;
+        repeat = bytestream2_peek_byteu(gb) >> 5;
+        val    = bytestream2_get_byteu(gb) & 0x1F;
+        if (repeat == 0) {
+            if (bytestream2_get_bytes_left(gb) <= 0)
+                goto error;
+            repeat = bytestream2_get_byteu(gb);
         }
+        if (i + repeat > n)
+            goto error;
         while (repeat--)
             dst[i++] = val;
     }
     return 0;
+
+error:
+    av_log(NULL, AV_LOG_ERROR, "Error reading huffman table\n");
+    return AVERROR_INVALIDDATA;
 }
 
 static int generate_joint_tables(HYuvDecContext *s)
@@ -253,12 +257,11 @@ out:
 
 static int read_huffman_tables(HYuvDecContext *s, const uint8_t *src, int length)
 {
-    GetBitContext gb;
+    GetByteContext gb;
     int i, ret;
     int count = 3;
 
-    if ((ret = init_get_bits(&gb, src, length * 8)) < 0)
-        return ret;
+    bytestream2_init(&gb, src, length);
 
     if (s->version > 2)
         count = 1 + s->alpha + 2*s->chroma;
@@ -277,21 +280,21 @@ static int read_huffman_tables(HYuvDecContext *s, const uint8_t *src, int length
     if ((ret = generate_joint_tables(s)) < 0)
         return ret;
 
-    return (get_bits_count(&gb) + 7) / 8;
+    return bytestream2_tell(&gb);
 }
 
 static int read_old_huffman_tables(HYuvDecContext *s)
 {
-    GetBitContext gb;
+    GetByteContext gb;
     int i, ret;
 
-    init_get_bits(&gb, classic_shift_luma,
-                  classic_shift_luma_table_size * 8);
+    bytestream2_init(&gb, classic_shift_luma,
+                     sizeof(classic_shift_luma));
     if ((ret = read_len_table(s->len[0], &gb, 256)) < 0)
         return ret;
 
-    init_get_bits(&gb, classic_shift_chroma,
-                  classic_shift_chroma_table_size * 8);
+    bytestream2_init(&gb, classic_shift_chroma,
+                     sizeof(classic_shift_chroma));
     if ((ret = read_len_table(s->len[1], &gb, 256)) < 0)
         return ret;
 
