@@ -828,6 +828,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
 static int new_stream_audio(Muxer *mux, const OptionsContext *o,
                             OutputStream *ost)
 {
+    MuxStream *ms = ms_from_ost(ost);
     AVFormatContext *oc = mux->fc;
     AVStream *st = ost->st;
 
@@ -836,7 +837,6 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
         int channels = 0;
         char *layout = NULL;
         char *sample_fmt = NULL;
-        const char *apad = NULL;
 
         MATCH_PER_STREAM_OPT(audio_channels, i, channels, oc, st);
         if (channels) {
@@ -859,12 +859,7 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
 
         MATCH_PER_STREAM_OPT(audio_sample_rate, i, audio_enc->sample_rate, oc, st);
 
-        MATCH_PER_STREAM_OPT(apad, str, apad, oc, st);
-        if (apad) {
-            ost->apad = av_strdup(apad);
-            if (!ost->apad)
-                return AVERROR(ENOMEM);
-        }
+        MATCH_PER_STREAM_OPT(apad, str, ms->apad, oc, st);
     }
 
     return 0;
@@ -1888,6 +1883,33 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
                                             dst->sch_idx_src);
 
         }
+    }
+
+    // handle -apad
+    if (mux->of.shortest) {
+        int have_video = 0;
+
+        for (unsigned i = 0; i < mux->of.nb_streams; i++)
+            if (mux->of.streams[i]->type == AVMEDIA_TYPE_VIDEO) {
+                have_video = 1;
+                break;
+            }
+
+        for (unsigned i = 0; have_video && i < mux->of.nb_streams; i++) {
+            MuxStream         *ms = ms_from_ost(mux->of.streams[i]);
+            OutputFilter *ofilter = ms->ost.filter;
+
+            if (ms->ost.type != AVMEDIA_TYPE_AUDIO || !ms->apad || !ofilter)
+                continue;
+
+            ofilter->apad = av_strdup(ms->apad);
+            if (!ofilter->apad)
+                return AVERROR(ENOMEM);
+        }
+    }
+    for (unsigned i = 0; i < mux->of.nb_streams; i++) {
+        MuxStream *ms = ms_from_ost(mux->of.streams[i]);
+        ms->apad = NULL;
     }
 
     if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {

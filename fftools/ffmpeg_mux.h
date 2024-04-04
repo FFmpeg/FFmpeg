@@ -78,6 +78,8 @@ typedef struct MuxStream {
 #if FFMPEG_OPT_VSYNC_DROP
     int             ts_drop;
 #endif
+
+    char           *apad;
 } MuxStream;
 
 typedef struct Muxer {

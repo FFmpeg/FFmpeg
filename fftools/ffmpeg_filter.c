@@ -969,6 +969,7 @@ void fg_free(FilterGraph **pfg)
 
         av_freep(&ofilter->linklabel);
         av_freep(&ofilter->name);
+        av_freep(&ofilter->apad);
         av_freep(&ofp->name);
         av_channel_layout_uninit(&ofp->ch_layout);
         av_freep(&fg->outputs[j]);
@@ -1430,8 +1431,6 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
                                          OutputFilter *ofilter, AVFilterInOut *out)
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
-    OutputStream *ost = ofilter->ost;
-    OutputFile    *of = ost->file;
     AVFilterContext *last_filter = out->filter_ctx;
     int pad_idx = out->pad_idx;
     AVBPrint args;
@@ -1493,17 +1492,8 @@ static int configure_output_audio_filter(FilterGraph *fg, AVFilterGraph *graph,
         pad_idx = 0;
     }
 
-    if (ost->apad && of->shortest) {
-        int i;
-
-        for (i = 0; i < of->nb_streams; i++)
-            if (of->streams[i]->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-                break;
-
-        if (i < of->nb_streams) {
-            AUTO_INSERT_FILTER("-apad", "apad", ost->apad);
-        }
-    }
+    if (ofilter->apad)
+        AUTO_INSERT_FILTER("-apad", "apad", ofilter->apad);
 
     snprintf(name, sizeof(name), "trim for output %s", ofp->name);
     ret = insert_trim(ofp->trim_start_us, ofp->trim_duration_us,

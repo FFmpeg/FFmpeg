@@ -815,7 +815,6 @@ static void ost_free(OutputStream **post)
     av_expr_free(ost->kf.pexpr);
 
     av_freep(&ost->logfile_prefix);
-    av_freep(&ost->apad);
 
     av_freep(&ost->attachment_filename);
 

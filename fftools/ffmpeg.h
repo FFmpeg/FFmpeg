@@ -320,6 +320,8 @@ typedef struct OutputFilter {
      * this stores the output linklabel, if any */
     uint8_t             *linklabel;
 
+    char                *apad;
+
     enum AVMediaType     type;
 
     atomic_uint_least64_t nb_frames_dup;
@@ -581,7 +583,6 @@ typedef struct OutputStream {
     OutputFilter *filter;
 
     AVDictionary *encoder_opts;
-    char *apad;
 
     char *attachment_filename;
 
