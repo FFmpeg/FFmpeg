@@ -663,7 +663,7 @@ void weight_h264_W_altivec(uint8_t *block, int stride, int height,
     DECLARE_ALIGNED(16, int32_t, temp)[4];
     LOAD_ZERO;
 
-    offset <<= log2_denom;
+    offset *= 1 << log2_denom;
     if(log2_denom) offset += 1<<(log2_denom-1);
     temp[0] = log2_denom;
     temp[1] = weight;
@@ -712,7 +712,7 @@ void biweight_h264_W_altivec(uint8_t *dst, uint8_t *src, int stride, int height,
     DECLARE_ALIGNED(16, int32_t, temp)[4];
     LOAD_ZERO;
 
-    offset = ((offset + 1) | 1) << log2_denom;
+    offset = ((offset + 1) | 1) * (1 << log2_denom);
     temp[0] = log2_denom+1;
     temp[1] = weights;
     temp[2] = weightd;
