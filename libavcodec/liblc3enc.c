@@ -61,6 +61,12 @@ static av_cold int liblc3_encode_init(AVCodecContext *avctx)
                "Unsupported frame duration %.1f ms.\n", frame_us / 1000.f);
         return AVERROR(EINVAL);
     }
+    if (channels < 0 || channels > ENCODER_MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Invalid number of channels %d. Max %d channels are accepted\n",
+               channels, ENCODER_MAX_CHANNELS);
+        return AVERROR(EINVAL);
+    }
 
     hr_mode |= srate_hz > 48000;
     hr_mode &= srate_hz >= 48000;
@@ -195,9 +201,6 @@ const FFCodec ff_liblc3_encoder = {
     .p.type         = AVMEDIA_TYPE_AUDIO,
     .p.id           = AV_CODEC_ID_LC3,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
-    .p.ch_layouts = (const AVChannelLayout[])
-        { { AV_CHANNEL_ORDER_UNSPEC, 1 },
-          { AV_CHANNEL_ORDER_UNSPEC, 2 }, { 0 } },
     .p.supported_samplerates = (const int [])
         { 96000, 48000, 32000, 24000, 16000, 8000, 0 },
     .p.sample_fmts = (const enum AVSampleFormat[])
