@@ -499,7 +499,7 @@ static int encode_422_bitstream(HYuvEncContext *s, int offset, int count)
 
 static int encode_plane_bitstream(HYuvEncContext *s, int width, int plane)
 {
-    int i, count = width/2;
+    int count = width/2;
 
     if (put_bytes_left(&s->pb, 0) < count * s->bps / 2) {
         av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
@@ -546,112 +546,52 @@ static int encode_plane_bitstream(HYuvEncContext *s, int width, int plane)
             put_bits(&s->pb, s->len[plane][y1>>2], s->bits[plane][y1>>2]);\
             put_bits(&s->pb, 2, y1&3);
 
-    if (s->bps <= 8) {
-    if (s->flags & AV_CODEC_FLAG_PASS1) {
-        for (i = 0; i < count; i++) {
-            LOAD2;
-            STAT2;
-        }
-        if (width&1) {
-            LOADEND;
-            STATEND;
-        }
-    }
-    if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT)
-        return 0;
+#define ENCODE_PLANE(LOAD, LOADEND, WRITE, WRITEEND, STAT, STATEND)   \
+do {                                                                  \
+    if (s->flags & AV_CODEC_FLAG_PASS1) {                             \
+        for (int i = 0; i < count; i++) {                             \
+            LOAD;                                                     \
+            STAT;                                                     \
+        }                                                             \
+        if (width & 1) {                                              \
+            LOADEND;                                                  \
+            STATEND;                                                  \
+        }                                                             \
+    }                                                                 \
+    if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT)                  \
+        return 0;                                                     \
+                                                                      \
+    if (s->context) {                                                 \
+        for (int i = 0; i < count; i++) {                             \
+            LOAD;                                                     \
+            STAT;                                                     \
+            WRITE;                                                    \
+        }                                                             \
+        if (width & 1) {                                              \
+            LOADEND;                                                  \
+            STATEND;                                                  \
+            WRITEEND;                                                 \
+        }                                                             \
+    } else {                                                          \
+        for (int i = 0; i < count; i++) {                             \
+            LOAD;                                                     \
+            WRITE;                                                    \
+        }                                                             \
+        if (width & 1) {                                              \
+            LOADEND;                                                  \
+            WRITEEND;                                                 \
+        }                                                             \
+    }                                                                 \
+} while (0)
 
-    if (s->context) {
-        for (i = 0; i < count; i++) {
-            LOAD2;
-            STAT2;
-            WRITE2;
-        }
-        if (width&1) {
-            LOADEND;
-            STATEND;
-            WRITEEND;
-        }
-    } else {
-        for (i = 0; i < count; i++) {
-            LOAD2;
-            WRITE2;
-        }
-        if (width&1) {
-            LOADEND;
-            WRITEEND;
-        }
-    }
+    if (s->bps <= 8) {
+        ENCODE_PLANE(LOAD2, LOADEND, WRITE2, WRITEEND, STAT2, STATEND);
     } else if (s->bps <= 14) {
         int mask = s->n - 1;
-        if (s->flags & AV_CODEC_FLAG_PASS1) {
-            for (i = 0; i < count; i++) {
-                LOAD2_14;
-                STAT2;
-            }
-            if (width&1) {
-                LOADEND_14;
-                STATEND;
-            }
-        }
-        if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT)
-            return 0;
 
-        if (s->context) {
-            for (i = 0; i < count; i++) {
-                LOAD2_14;
-                STAT2;
-                WRITE2;
-            }
-            if (width&1) {
-                LOADEND_14;
-                STATEND;
-                WRITEEND;
-            }
-        } else {
-            for (i = 0; i < count; i++) {
-                LOAD2_14;
-                WRITE2;
-            }
-            if (width&1) {
-                LOADEND_14;
-                WRITEEND;
-            }
-        }
+        ENCODE_PLANE(LOAD2_14, LOADEND_14, WRITE2, WRITEEND, STAT2, STATEND);
     } else {
-        if (s->flags & AV_CODEC_FLAG_PASS1) {
-            for (i = 0; i < count; i++) {
-                LOAD2_16;
-                STAT2_16;
-            }
-            if (width&1) {
-                LOADEND_16;
-                STATEND_16;
-            }
-        }
-        if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT)
-            return 0;
-
-        if (s->context) {
-            for (i = 0; i < count; i++) {
-                LOAD2_16;
-                STAT2_16;
-                WRITE2_16;
-            }
-            if (width&1) {
-                LOADEND_16;
-                STATEND_16;
-                WRITEEND_16;
-            }
-        } else {
-            for (i = 0; i < count; i++) {
-                LOAD2_16;
-                WRITE2_16;
-            }
-            if (width&1) {
-                LOADEND_16;
-                WRITEEND_16;
-            }
-        }
+        ENCODE_PLANE(LOAD2_16, LOADEND_16, WRITE2_16, WRITEEND_16, STAT2_16, STATEND_16);
     }
 #undef LOAD2
 #undef STAT2
