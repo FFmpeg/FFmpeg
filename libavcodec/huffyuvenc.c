@@ -65,8 +65,10 @@ typedef struct HYuvEncContext {
     int context;
     int picture_number;
 
-    uint8_t *temp[3];
-    uint16_t *temp16[3];                    ///< identical to temp but 16bit type
+    union {
+        uint8_t  *temp[3];
+        uint16_t *temp16[3];
+    };
     uint64_t stats[4][MAX_VLC_N];
     uint8_t len[4][MAX_VLC_N];
     uint32_t bits[4][MAX_VLC_N];
@@ -436,7 +438,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->temp[i] = av_malloc(4 * avctx->width + 16);
         if (!s->temp[i])
             return AVERROR(ENOMEM);
-        s->temp16[i] = (uint16_t*)s->temp[i];
     }
 
     return 0;
@@ -1040,10 +1041,8 @@ static av_cold int encode_end(AVCodecContext *avctx)
 
     av_freep(&avctx->stats_out);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
         av_freep(&s->temp[i]);
-        s->temp16[i] = NULL;
-    }
 
     return 0;
 }

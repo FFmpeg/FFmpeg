@@ -70,8 +70,10 @@ typedef struct HYuvDecContext {
     int context;
     int last_slice_end;
 
-    uint8_t *temp[3];
-    uint16_t *temp16[3];                    ///< identical to temp but 16bit type
+    union {
+        uint8_t  *temp[3];
+        uint16_t *temp16[3];
+    };
     uint8_t len[4][MAX_VLC_N];
     uint32_t bits[4][MAX_VLC_N];
     uint32_t pix_bgr_map[1<<VLC_BITS];
@@ -323,10 +325,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
     HYuvDecContext *s = avctx->priv_data;
     int i;
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
         av_freep(&s->temp[i]);
-        s->temp16[i] = NULL;
-    }
 
     av_freep(&s->bitstream_buffer);
 
@@ -607,7 +607,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->temp[i] = av_malloc(4 * avctx->width + 16);
         if (!s->temp[i])
             return AVERROR(ENOMEM);
-        s->temp16[i] = (uint16_t*)s->temp[i];
     }
 
     return 0;
