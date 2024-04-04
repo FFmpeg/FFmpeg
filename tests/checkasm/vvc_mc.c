@@ -22,9 +22,9 @@
 #include <string.h>
 
 #include "checkasm.h"
-#include "libavcodec/vvc/vvc_ctu.h"
-#include "libavcodec/vvc/vvc_data.h"
-#include "libavcodec/vvc/vvcdsp.h"
+#include "libavcodec/vvc/ctu.h"
+#include "libavcodec/vvc/data.h"
+#include "libavcodec/vvc/dsp.h"
 
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"

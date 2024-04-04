@@ -20,10 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVC_MVS_H
-#define AVCODEC_VVC_VVC_MVS_H
+#ifndef AVCODEC_VVC_MVS_H
+#define AVCODEC_VVC_MVS_H
 
-#include "vvc_ctu.h"
+#include "ctu.h"
 
 void ff_vvc_round_mv(Mv *mv, int lshift, int rshift);
 void ff_vvc_clip_mv(Mv *mv);
@@ -45,4 +45,4 @@ MvField* ff_vvc_get_mvf(const VVCFrameContext *fc, const int x0, const int y0);
 void ff_vvc_set_mvf(const VVCLocalContext *lc, const int x0, const int y0, const int w, const int h, const MvField *mvf);
 void ff_vvc_set_intra_mvf(const VVCLocalContext *lc, int dmvr);
 
-#endif //AVCODEC_VVC_VVC_MVS_H
+#endif //AVCODEC_VVC_MVS_H

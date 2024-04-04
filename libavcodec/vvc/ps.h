@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVC_PS_H
-#define AVCODEC_VVC_VVC_PS_H
+#ifndef AVCODEC_VVC_PS_H
+#define AVCODEC_VVC_PS_H
 
 #include "libavcodec/cbs_h266.h"
 #include "libavcodec/vvc.h"
@@ -263,4 +263,4 @@ int ff_vvc_decode_sh(VVCSH *sh, const VVCFrameParamSets *ps, const CodedBitstrea
 void ff_vvc_frame_ps_free(VVCFrameParamSets *fps);
 void ff_vvc_ps_uninit(VVCParamSets *ps);
 
-#endif /* AVCODEC_VVC_VVC_PS_H */
+#endif /* AVCODEC_VVC_PS_H */

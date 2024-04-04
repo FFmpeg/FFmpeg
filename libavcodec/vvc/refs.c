@@ -27,7 +27,7 @@
 #include "libavcodec/refstruct.h"
 #include "libavcodec/thread.h"
 
-#include "vvc_refs.h"
+#include "refs.h"
 
 #define VVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define VVC_FRAME_FLAG_SHORT_REF (1 << 1)

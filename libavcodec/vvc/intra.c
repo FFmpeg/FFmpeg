@@ -22,10 +22,10 @@
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 
-#include "vvc_data.h"
-#include "vvc_inter.h"
-#include "vvc_intra.h"
-#include "vvc_itx_1d.h"
+#include "data.h"
+#include "inter.h"
+#include "intra.h"
+#include "itx_1d.h"
 
 static int is_cclm(enum IntraPredMode mode)
 {

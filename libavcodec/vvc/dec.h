@@ -21,14 +21,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVCDEC_H
-#define AVCODEC_VVC_VVCDEC_H
+#ifndef AVCODEC_VVC_DEC_H
+#define AVCODEC_VVC_DEC_H
 
 #include "libavcodec/videodsp.h"
 #include "libavcodec/vvc.h"
 
-#include "vvc_ps.h"
-#include "vvcdsp.h"
+#include "ps.h"
+#include "dsp.h"
 
 #define LUMA                    0
 #define CHROMA                  1
@@ -226,4 +226,4 @@ typedef struct VVCContext {
     int nb_delayed;         ///< delayed frames
 }  VVCContext ;
 
-#endif /* AVCODEC_VVC_VVCDEC_H */
+#endif /* AVCODEC_VVC_DEC_H */

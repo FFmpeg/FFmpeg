@@ -19,10 +19,10 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef AVCODEC_VVC_VVC_INTRA_H
-#define AVCODEC_VVC_VVC_INTRA_H
+#ifndef AVCODEC_VVC_INTRA_H
+#define AVCODEC_VVC_INTRA_H
 
-#include "vvc_ctu.h"
+#include "ctu.h"
 
 /**
  * reconstruct a CTU
@@ -46,4 +46,4 @@ int ff_vvc_intra_inv_angle_derive(int pred_mode);
 int ff_vvc_wide_angle_mode_mapping(const CodingUnit *cu,
     int tb_width, int tb_height, int c_idx, int pred_mode_intra);
 
-#endif // AVCODEC_VVC_VVC_INTRA_H
+#endif // AVCODEC_VVC_INTRA_H

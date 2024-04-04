@@ -21,10 +21,10 @@
  */
 #include "libavutil/frame.h"
 
-#include "vvc_data.h"
-#include "vvc_inter.h"
-#include "vvc_mvs.h"
-#include "vvc_refs.h"
+#include "data.h"
+#include "inter.h"
+#include "mvs.h"
+#include "refs.h"
 
 // +1 is enough, + 32 for asm alignment
 #define PROF_TEMP_OFFSET (MAX_PB_SIZE + 32)

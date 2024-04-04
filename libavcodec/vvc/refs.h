@@ -20,10 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVC_REFS_H
-#define AVCODEC_VVC_VVC_REFS_H
+#ifndef AVCODEC_VVC_REFS_H
+#define AVCODEC_VVC_REFS_H
 
-#include "vvcdec.h"
+#include "dec.h"
 
 int ff_vvc_output_frame(VVCContext *s, VVCFrameContext *fc, struct AVFrame *out, int no_output_of_prior_pics_flag, int flush);
 void ff_vvc_bump_frame(VVCContext *s, VVCFrameContext *fc);
@@ -55,4 +55,4 @@ void ff_vvc_report_frame_finished(VVCFrame *frame);
 void ff_vvc_report_progress(VVCFrame *frame, VVCProgress vp, int y);
 void ff_vvc_add_progress_listener(VVCFrame *frame, VVCProgressListener *l);
 
-#endif // AVCODEC_VVC_VVC_REFS_H
+#endif // AVCODEC_VVC_REFS_H

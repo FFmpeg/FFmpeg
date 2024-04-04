@@ -20,10 +20,10 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef AVCODEC_VVC_VVC_FILTER_H
-#define AVCODEC_VVC_VVC_FILTER_H
+#ifndef AVCODEC_VVC_FILTER_H
+#define AVCODEC_VVC_FILTER_H
 
-#include "vvcdec.h"
+#include "dec.h"
 
 /**
  * lmcs filter for the CTU
@@ -70,4 +70,4 @@ void ff_vvc_alf_copy_ctu_to_hv(VVCLocalContext* lc, int x0, int y0);
  */
 void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0);
 
-#endif // AVCODEC_VVC_VVC_CTU_H
+#endif // AVCODEC_VVC_CTU_H

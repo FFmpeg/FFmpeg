@@ -57,8 +57,8 @@
    Compact inverse discrete cosine transform circuit for MPEG video decoding.
  */
 
-#include "vvc_data.h"
-#include "vvc_itx_1d.h"
+#include "data.h"
+#include "itx_1d.h"
 #include "libavutil/avutil.h"
 
 #define G2(m)  ((nz >  2) ? (m) : 0)

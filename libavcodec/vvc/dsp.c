@@ -20,9 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "vvcdsp.h"
-#include "vvc_ctu.h"
-#include "vvc_itx_1d.h"
+#include "dsp.h"
+#include "ctu.h"
+#include "itx_1d.h"
 
 #define VVC_SIGN(v) (v < 0 ? -1 : !!v)
 
@@ -84,15 +84,15 @@ typedef struct IntraEdgeParams {
 #define BDOF_GRADIENT_SIZE      (BDOF_BLOCK_SIZE + BDOF_BORDER_EXT * 2)
 
 #define BIT_DEPTH 8
-#include "vvcdsp_template.c"
+#include "dsp_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 10
-#include "vvcdsp_template.c"
+#include "dsp_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 12
-#include "vvcdsp_template.c"
+#include "dsp_template.c"
 #undef BIT_DEPTH
 
 void ff_vvc_dsp_init(VVCDSPContext *vvcdsp, int bit_depth)

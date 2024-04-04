@@ -22,7 +22,7 @@
 
 #include "libavcodec/bit_depth_template.c"
 
-#include "vvc_intra.h"
+#include "intra.h"
 
 #define POS(x, y) src[(x) + stride * (y)]
 

@@ -24,11 +24,10 @@
 #include "config.h"
 
 #include "libavutil/cpu.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
-#include "libavcodec/vvc/vvcdec.h"
-#include "libavcodec/vvc/vvc_ctu.h"
-#include "libavcodec/vvc/vvcdsp.h"
+#include "libavcodec/vvc/dec.h"
+#include "libavcodec/vvc/ctu.h"
+#include "libavcodec/vvc/dsp.h"
 #include "libavcodec/x86/h26x/h2656dsp.h"
 
 #if ARCH_X86_64

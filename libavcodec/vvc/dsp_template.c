@@ -22,12 +22,12 @@
 #include "libavutil/frame.h"
 #include "libavcodec/bit_depth_template.c"
 
-#include "vvcdec.h"
-#include "vvc_data.h"
+#include "dec.h"
+#include "data.h"
 
-#include "vvc_inter_template.c"
-#include "vvc_intra_template.c"
-#include "vvc_filter_template.c"
+#include "inter_template.c"
+#include "intra_template.c"
+#include "filter_template.c"
 
 static void FUNC(add_residual)(uint8_t *_dst, const int *res,
     const int w, const int h, const ptrdiff_t _stride)

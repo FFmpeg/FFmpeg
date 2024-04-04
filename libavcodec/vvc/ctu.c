@@ -22,10 +22,10 @@
 
 #include "libavcodec/refstruct.h"
 
-#include "vvc_cabac.h"
-#include "vvc_ctu.h"
-#include "vvc_inter.h"
-#include "vvc_mvs.h"
+#include "cabac.h"
+#include "ctu.h"
+#include "inter.h"
+#include "mvs.h"
 
 #define PROF_TEMP_SIZE (PROF_BLOCK_SIZE) * sizeof(int16_t)
 

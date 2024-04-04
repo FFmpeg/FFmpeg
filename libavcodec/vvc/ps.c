@@ -25,9 +25,9 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavcodec/refstruct.h"
-#include "vvc_data.h"
-#include "vvc_ps.h"
-#include "vvcdec.h"
+#include "data.h"
+#include "ps.h"
+#include "dec.h"
 
 static int sps_map_pixel_format(VVCSPS *sps, void *log_ctx)
 {

@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVC_DATA_H
-#define AVCODEC_VVC_VVC_DATA_H
+#ifndef AVCODEC_VVC_DATA_H
+#define AVCODEC_VVC_DATA_H
 
 #include <stdint.h>
 
@@ -77,4 +77,4 @@ extern const uint8_t ff_vvc_alf_aps_class_to_filt_map[25];
 
 const uint8_t* ff_vvc_get_mip_matrix(const int size_id, const int mode_idx);
 
-#endif /* AVCODEC_VVC_VVC_DATA_H */
+#endif /* AVCODEC_VVC_DATA_H */

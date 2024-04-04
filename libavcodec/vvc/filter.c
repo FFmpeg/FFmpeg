@@ -21,10 +21,10 @@
  */
 #include "libavutil/frame.h"
 
-#include "vvc_ctu.h"
-#include "vvc_data.h"
-#include "vvc_filter.h"
-#include "vvc_refs.h"
+#include "ctu.h"
+#include "data.h"
+#include "filter.h"
+#include "refs.h"
 
 #define LEFT        0
 #define TOP         1

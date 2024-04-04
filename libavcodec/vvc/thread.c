@@ -26,12 +26,12 @@
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
 
-#include "vvc_thread.h"
-#include "vvc_ctu.h"
-#include "vvc_filter.h"
-#include "vvc_inter.h"
-#include "vvc_intra.h"
-#include "vvc_refs.h"
+#include "thread.h"
+#include "ctu.h"
+#include "filter.h"
+#include "inter.h"
+#include "intra.h"
+#include "refs.h"
 
 typedef struct ProgressListener {
     VVCProgressListener l;

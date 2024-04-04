@@ -21,9 +21,9 @@
  */
 #include "libavcodec/cabac_functions.h"
 
-#include "vvc_cabac.h"
-#include "vvc_ctu.h"
-#include "vvc_data.h"
+#include "cabac.h"
+#include "ctu.h"
+#include "data.h"
 
 #define CABAC_MAX_BIN 31
 

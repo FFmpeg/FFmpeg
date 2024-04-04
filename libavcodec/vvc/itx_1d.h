@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVC_ITX_1D_H
-#define AVCODEC_VVC_VVC_ITX_1D_H
+#ifndef AVCODEC_VVC_ITX_1D_H
+#define AVCODEC_VVC_ITX_1D_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -49,4 +49,4 @@ vvc_itx_1d_fn(ff_vvc_inv_dct8_32);
 void ff_vvc_inv_lfnst_1d(int *v, const int *u, int no_zero_size, int n_tr_s,
     int pred_mode_intra, int lfnst_idx, int log2_transform_range);
 
-#endif // AVCODEC_VVC_VVC_ITX_1D_H
+#endif // AVCODEC_VVC_ITX_1D_H

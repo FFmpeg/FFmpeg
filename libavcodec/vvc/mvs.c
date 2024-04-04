@@ -20,10 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "vvc_ctu.h"
-#include "vvc_data.h"
-#include "vvc_refs.h"
-#include "vvc_mvs.h"
+#include "ctu.h"
+#include "data.h"
+#include "refs.h"
+#include "mvs.h"
 
 #define IS_SAME_MV(a, b) (AV_RN64A(a) == AV_RN64A(b))
 

@@ -20,13 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVC_CTU_H
-#define AVCODEC_VVC_VVC_CTU_H
+#ifndef AVCODEC_VVC_CTU_H
+#define AVCODEC_VVC_CTU_H
 
 #include "libavcodec/cabac.h"
 #include "libavutil/mem_internal.h"
 
-#include "vvcdec.h"
+#include "dec.h"
 
 #define MAX_CTU_SIZE            128
 
@@ -483,4 +483,4 @@ void ff_vvc_ctu_free_cus(CTU *ctu);
 int ff_vvc_get_qPy(const VVCFrameContext *fc, int xc, int yc);
 void ff_vvc_ep_init_stat_coeff(EntryPoint *ep, int bit_depth, int persistent_rice_adaptation_enabled_flag);
 
-#endif // AVCODEC_VVC_VVC_CTU_H
+#endif // AVCODEC_VVC_CTU_H

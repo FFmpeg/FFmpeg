@@ -20,10 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_VVC_VVC_INTER_H
-#define AVCODEC_VVC_VVC_INTER_H
+#ifndef AVCODEC_VVC_INTER_H
+#define AVCODEC_VVC_INTER_H
 
-#include "vvc_ctu.h"
+#include "ctu.h"
 
 /**
  * Loop entire CTU to predict all inter coding blocks
@@ -39,4 +39,4 @@ int ff_vvc_predict_inter(VVCLocalContext *lc, int rs);
  */
 void ff_vvc_predict_ciip(VVCLocalContext *lc);
 
-#endif // AVCODEC_VVC_VVC_INTER_H
+#endif // AVCODEC_VVC_INTER_H

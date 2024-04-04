@@ -28,11 +28,11 @@
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
 
-#include "vvcdec.h"
-#include "vvc_ctu.h"
-#include "vvc_data.h"
-#include "vvc_refs.h"
-#include "vvc_thread.h"
+#include "dec.h"
+#include "ctu.h"
+#include "data.h"
+#include "refs.h"
+#include "thread.h"
 
 #define TAB_MAX 32
 

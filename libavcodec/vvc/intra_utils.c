@@ -25,10 +25,10 @@
 #include "libavutil/avassert.h"
 #include "libavutil/macros.h"
 #include "libavutil/common.h"
-#include "vvc_ctu.h"
-#include "vvc_intra.h"
-#include "vvc_ps.h"
-#include "vvcdec.h"
+#include "ctu.h"
+#include "intra.h"
+#include "ps.h"
+#include "dec.h"
 
 int ff_vvc_get_mip_size_id(const int w, const int h)
 {

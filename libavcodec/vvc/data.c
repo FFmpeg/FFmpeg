@@ -22,7 +22,7 @@
 
 #include "libavutil/avassert.h"
 
-#include "vvc_data.h"
+#include "data.h"
 
 const uint8_t ff_vvc_diag_scan_x[5][5][16*16] = {
     {
