@@ -31,6 +31,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/error.h"
 #include "libavutil/log.h"
 #include "libavutil/macros.h"
 
@@ -48,7 +49,7 @@ int ff_huffyuv_generate_bits_table(uint32_t *dst, const uint8_t *len_table, int 
     for (int i = FF_ARRAY_ELEMS(lens) - 1; i > 0; i--) {
         if ((lens[i] + codes[i]) & 1) {
             av_log(NULL, AV_LOG_ERROR, "Error generating huffman table\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         codes[i - 1] = (lens[i] + codes[i]) >> 1;
     }

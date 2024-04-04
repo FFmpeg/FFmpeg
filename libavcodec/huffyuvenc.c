@@ -232,9 +232,9 @@ static int store_huffman_tables(HYuvEncContext *s, uint8_t *buf)
         if ((ret = ff_huff_gen_len_table(s->len[i], s->stats[i], s->vlc_n, 0)) < 0)
             return ret;
 
-        if (ff_huffyuv_generate_bits_table(s->bits[i], s->len[i], s->vlc_n) < 0) {
-            return -1;
-        }
+        ret = ff_huffyuv_generate_bits_table(s->bits[i], s->len[i], s->vlc_n);
+        if (ret < 0)
+            return ret;
 
         size += store_table(s, s->len[i], buf + size);
     }
