@@ -989,37 +989,24 @@ static av_cold int encode_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(HYuvEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
-#define COMMON_OPTIONS \
-    { "non_deterministic", "Allow multithreading for e.g. context=1 at the expense of determinism", \
-      OFFSET(non_determ), AV_OPT_TYPE_BOOL, { .i64 = 0 }, \
-      0, 1, VE }, \
-    { "pred", "Prediction method", OFFSET(predictor), AV_OPT_TYPE_INT, { .i64 = LEFT }, LEFT, MEDIAN, VE, .unit = "pred" }, \
-        { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LEFT },   INT_MIN, INT_MAX, VE, .unit = "pred" }, \
-        { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PLANE },  INT_MIN, INT_MAX, VE, .unit = "pred" }, \
-        { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MEDIAN }, INT_MIN, INT_MAX, VE, .unit = "pred" }, \
-
-static const AVOption normal_options[] = {
-    COMMON_OPTIONS
-    { NULL },
-};
-
-static const AVOption ff_options[] = {
-    COMMON_OPTIONS
+static const AVOption options[] = {
+    /* ffvhuff-only options */
     { "context", "Set per-frame huffman tables", OFFSET(context), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, VE },
+    /* Common options */
+    { "non_deterministic", "Allow multithreading for e.g. context=1 at the expense of determinism",
+      OFFSET(non_determ), AV_OPT_TYPE_BOOL, { .i64 = 0 },
+      0, 1, VE },
+    { "pred", "Prediction method", OFFSET(predictor), AV_OPT_TYPE_INT, { .i64 = LEFT }, LEFT, MEDIAN, VE, .unit = "pred" },
+        { "left",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = LEFT },   INT_MIN, INT_MAX, VE, .unit = "pred" },
+        { "plane",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PLANE },  INT_MIN, INT_MAX, VE, .unit = "pred" },
+        { "median", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MEDIAN }, INT_MIN, INT_MAX, VE, .unit = "pred" },
     { NULL },
 };
 
 static const AVClass normal_class = {
     .class_name = "huffyuv",
     .item_name  = av_default_item_name,
-    .option     = normal_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-static const AVClass ff_class = {
-    .class_name = "ffvhuff",
-    .item_name  = av_default_item_name,
-    .option     = ff_options,
+    .option     = options + 1,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -1043,6 +1030,13 @@ const FFCodec ff_huffyuv_encoder = {
 };
 
 #if CONFIG_FFVHUFF_ENCODER
+static const AVClass ff_class = {
+    .class_name = "ffvhuff",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 const FFCodec ff_ffvhuff_encoder = {
     .p.name         = "ffvhuff",
     CODEC_LONG_NAME("Huffyuv FFmpeg variant"),
