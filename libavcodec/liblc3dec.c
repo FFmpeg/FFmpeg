@@ -34,7 +34,6 @@ typedef struct LibLC3DecContext {
     int frame_us, srate_hz, hr_mode;
     void *decoder_mem;
     lc3_decoder_t decoder[DECODER_MAX_CHANNELS];
-    int64_t length;
 } LibLC3DecContext;
 
 static av_cold int liblc3_decode_init(AVCodecContext *avctx)
@@ -57,7 +56,6 @@ static av_cold int liblc3_decode_init(AVCodecContext *avctx)
     liblc3->srate_hz = avctx->sample_rate;
     ep_mode          = AV_RL16(avctx->extradata + 2);
     liblc3->hr_mode  = AV_RL16(avctx->extradata + 4);
-    liblc3->length   = AV_RL32(avctx->extradata + 6);
     if (ep_mode != 0) {
         av_log(avctx, AV_LOG_ERROR,
                "Error protection mode is not supported.\n");
@@ -126,11 +124,7 @@ static int liblc3_decode(AVCodecContext *avctx, AVFrame *frame,
         in += nbytes;
     }
 
-    if (liblc3->length > 0) {
-        int64_t end_pts = liblc3->length + avctx->delay;
-        frame->nb_samples = FFMIN(frame->nb_samples,
-                                  FFMAX(end_pts - frame->pts, 0));
-    }
+    frame->nb_samples = FFMIN(frame->nb_samples, avpkt->duration);
 
     *got_frame_ptr = 1;
 
