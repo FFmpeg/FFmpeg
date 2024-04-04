@@ -902,6 +902,63 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     return 0;
 }
 
+static int ofilter_bind_ifilter(OutputFilter *ofilter, InputFilterPriv *ifp,
+                                const OutputFilterOptions *opts)
+{
+    OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
+
+    av_assert0(!ofilter->bound);
+    av_assert0(ofilter->type == ifp->type);
+
+    ofilter->bound = 1;
+    av_freep(&ofilter->linklabel);
+
+    ofp->name = av_strdup(opts->name);
+    if (!ofp->name)
+        return AVERROR(EINVAL);
+
+    av_strlcatf(ofp->log_name, sizeof(ofp->log_name), "->%s", ofp->name);
+
+    return 0;
+}
+
+static int ifilter_bind_fg(InputFilterPriv *ifp, FilterGraph *fg_src, int out_idx)
+{
+    FilterGraphPriv      *fgp = fgp_from_fg(ifp->ifilter.graph);
+    OutputFilter *ofilter_src = fg_src->outputs[out_idx];
+    OutputFilterOptions opts;
+    char name[32];
+    int ret;
+
+    av_assert0(!ifp->bound);
+    ifp->bound = 1;
+
+    if (ifp->type != ofilter_src->type) {
+        av_log(fgp, AV_LOG_ERROR, "Tried to connect %s output to %s input\n",
+               av_get_media_type_string(ofilter_src->type),
+               av_get_media_type_string(ifp->type));
+        return AVERROR(EINVAL);
+    }
+
+    ifp->type_src = ifp->type;
+
+    memset(&opts, 0, sizeof(opts));
+
+    snprintf(name, sizeof(name), "fg:%d:%d", fgp->fg.index, ifp->index);
+    opts.name = name;
+
+    ret = ofilter_bind_ifilter(ofilter_src, ifp, &opts);
+    if (ret < 0)
+        return ret;
+
+    ret = sch_connect(fgp->sch, SCH_FILTER_OUT(fg_src->index, out_idx),
+                                SCH_FILTER_IN(fgp->sch_idx, ifp->index));
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 static InputFilter *ifilter_alloc(FilterGraph *fg)
 {
     InputFilterPriv *ifp;
@@ -1213,12 +1270,38 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
                    ifilter->name);
         return ret;
     } else if (ifp->linklabel) {
-        // bind to an explicitly specified demuxer stream
         AVFormatContext *s;
         AVStream       *st = NULL;
         char *p;
-        int file_idx = strtol(ifp->linklabel, &p, 0);
+        int file_idx;
 
+        // try finding an unbound filtergraph output with this label
+        for (int i = 0; i < nb_filtergraphs; i++) {
+            FilterGraph *fg_src = filtergraphs[i];
+
+            if (fg == fg_src)
+                continue;
+
+            for (int j = 0; j < fg_src->nb_outputs; j++) {
+                OutputFilter *ofilter = fg_src->outputs[j];
+
+                if (!ofilter->bound && ofilter->linklabel &&
+                    !strcmp(ofilter->linklabel, ifp->linklabel)) {
+                    av_log(fg, AV_LOG_VERBOSE,
+                           "Binding input with label '%s' to filtergraph output %d:%d\n",
+                           ifp->linklabel, i, j);
+
+                    ret = ifilter_bind_fg(ifp, fg_src, j);
+                    if (ret < 0)
+                        av_log(fg, AV_LOG_ERROR, "Error binding filtergraph input %s\n",
+                               ifp->linklabel);
+                    return ret;
+                }
+            }
+        }
+
+        // bind to an explicitly specified demuxer stream
+        file_idx = strtol(ifp->linklabel, &p, 0);
         if (file_idx < 0 || file_idx >= nb_input_files) {
             av_log(fg, AV_LOG_FATAL, "Invalid file index %d in filtergraph description %s.\n",
                    file_idx, fgp->graph_desc);
@@ -1274,7 +1357,7 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
 
 static int bind_inputs(FilterGraph *fg)
 {
-    // bind filtergraph inputs to input streams
+    // bind filtergraph inputs to input streams or other filtergraphs
     for (int i = 0; i < fg->nb_inputs; i++) {
         InputFilterPriv *ifp = ifp_from_ifilter(fg->inputs[i]);
         int ret;

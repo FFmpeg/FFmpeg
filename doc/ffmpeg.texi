@@ -2145,13 +2145,61 @@ type -- see the @option{-filter} options. @var{filtergraph} is a description of
 the filtergraph, as described in the ``Filtergraph syntax'' section of the
 ffmpeg-filters manual.
 
-Input link labels must refer to either input streams or loopback decoders. For
-input streams, use the @code{[file_index:stream_specifier]} syntax (i.e. the
-same as @option{-map} uses). If @var{stream_specifier} matches multiple streams,
-the first one will be used.
+Inputs to a complex filtergraph may come from different source types,
+distinguished by the format of the corresponding link label:
+@itemize
+@item
+To connect an input stream, use @code{[file_index:stream_specifier]} (i.e. the
+same syntax as @option{-map}). If @var{stream_specifier} matches multiple
+streams, the first one will be used.
 
-For decoders, the link label must be [dec:@var{dec_idx}], where @var{dec_idx} is
+@item
+To connect a loopback decoder use [dec:@var{dec_idx}], where @var{dec_idx} is
 the index of the loopback decoder to be connected to given input.
+
+@item
+To connect an output from another complex filtergraph, use its link label. E.g
+the following example:
+
+@example
+ffmpeg -i input.mkv \
+  -filter_complex '[0:v]scale=size=hd1080,split=outputs=2[for_enc][orig_scaled]' \
+  -c:v libx264 -map '[for_enc]' output.mkv \
+  -dec 0:0 \
+  -filter_complex '[dec:0][orig_scaled]hstack[stacked]' \
+  -map '[stacked]' -c:v ffv1 comparison.mkv
+@end example
+
+reads an input video and
+@itemize
+@item
+(line 2) uses a complex filtergraph with one input and two outputs
+to scale the video to 1920x1080 and duplicate the result to both
+outputs;
+
+@item
+(line 3) encodes one scaled output with @code{libx264} and writes the result to
+@file{output.mkv};
+
+@item
+(line 4) decodes this encoded stream with a loopback decoder;
+
+@item
+(line 5) places the output of the loopback decoder (i.e. the
+@code{libx264}-encoded video) side by side with the scaled original input;
+
+@item
+(line 6) combined video is then losslessly encoded and written into
+@file{comparison.mkv}.
+
+@end itemize
+
+Note that the two filtergraphs cannot be combined into one, because then there
+would be a cycle in the transcoding pipeline (filtergraph output goes to
+encoding, from there to decoding, then back to the same graph), and such cycles
+are not allowed.
+
+@end itemize
 
 An unlabeled input will be connected to the first unused input stream of the
 matching type.
