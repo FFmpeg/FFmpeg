@@ -290,13 +290,13 @@ static int read_old_huffman_tables(HYuvDecContext *s)
 
     bytestream2_init(&gb, classic_shift_luma,
                      sizeof(classic_shift_luma));
-    if ((ret = read_len_table(s->len[0], &gb, 256)) < 0)
-        return ret;
+    ret = read_len_table(s->len[0], &gb, 256);
+    av_assert1(ret >= 0);
 
     bytestream2_init(&gb, classic_shift_chroma,
                      sizeof(classic_shift_chroma));
-    if ((ret = read_len_table(s->len[1], &gb, 256)) < 0)
-        return ret;
+    ret = read_len_table(s->len[1], &gb, 256);
+    av_assert1(ret >= 0);
 
     for (i = 0; i < 256; i++)
         s->bits[0][i] = classic_add_luma[i];
