@@ -23,8 +23,8 @@
 #include <stdint.h>
 
 typedef struct LLVidEncDSPContext {
-    void (*diff_bytes)(uint8_t *dst /* align 16 */,
-                       const uint8_t *src1 /* align 16 */,
+    void (*diff_bytes)(uint8_t *dst /* align 1 */,
+                       const uint8_t *src1 /* align 1 */,
                        const uint8_t *src2 /* align 1 */,
                        intptr_t w);
     /**
