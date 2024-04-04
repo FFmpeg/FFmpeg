@@ -166,7 +166,7 @@ static inline void dv_calc_mb_coordinates(const AVDVProfile *d, int chan,
     }
 }
 
-int ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d)
+void ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d)
 {
     int j, i, c, s, p;
 
@@ -185,6 +185,4 @@ int ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d)
             }
         }
     }
-
-    return 0;
 }

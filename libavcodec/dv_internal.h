@@ -32,7 +32,7 @@ typedef struct DVwork_chunk {
     uint16_t mb_coordinates[5];
 } DVwork_chunk;
 
-int ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d);
+void ff_dv_init_dynamic_tables(DVwork_chunk *work_chunks, const AVDVProfile *d);
 
 static inline int dv_work_pool_size(const AVDVProfile *d)
 {
