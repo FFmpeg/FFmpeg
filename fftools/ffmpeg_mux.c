@@ -370,10 +370,11 @@ fail:
     return ret;
 }
 
-static void thread_set_name(OutputFile *of)
+static void thread_set_name(Muxer *mux)
 {
     char name[16];
-    snprintf(name, sizeof(name), "mux%d:%s", of->index, of->format->name);
+    snprintf(name, sizeof(name), "mux%d:%s",
+             mux->of.index, mux->fc->oformat->name);
     ff_thread_setname(name);
 }
 
@@ -417,7 +418,7 @@ int muxer_thread(void *arg)
     if (ret < 0)
         goto finish;
 
-    thread_set_name(of);
+    thread_set_name(mux);
 
     while (1) {
         OutputStream *ost;
@@ -515,8 +516,10 @@ int print_sdp(const char *filename)
     if (!avc)
         return AVERROR(ENOMEM);
     for (int i = 0; i < nb_output_files; i++) {
-        if (!strcmp(output_files[i]->format->name, "rtp")) {
-            avc[j] = mux_from_of(output_files[i])->fc;
+        Muxer *mux = mux_from_of(output_files[i]);
+
+        if (!strcmp(mux->fc->oformat->name, "rtp")) {
+            avc[j] = mux->fc;
             j++;
         }
     }
@@ -756,7 +759,7 @@ int of_write_trailer(OutputFile *of)
 
     mux->last_filesize = filesize(fc->pb);
 
-    if (!(of->format->flags & AVFMT_NOFILE)) {
+    if (!(fc->oformat->flags & AVFMT_NOFILE)) {
         ret = avio_closep(&fc->pb);
         if (ret < 0) {
             av_log(mux, AV_LOG_ERROR, "Error closing file: %s\n", av_err2str(ret));

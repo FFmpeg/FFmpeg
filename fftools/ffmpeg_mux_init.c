@@ -3063,7 +3063,6 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     av_strlcat(mux->log_name, oc->oformat->name, sizeof(mux->log_name));
 
 
-    of->format = oc->oformat;
     if (recording_time != INT64_MAX)
         oc->duration = recording_time;
 

@@ -611,7 +611,6 @@ typedef struct OutputFile {
 
     int index;
 
-    const AVOutputFormat *format;
     const char           *url;
 
     OutputStream **streams;
