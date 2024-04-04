@@ -755,16 +755,15 @@ static inline int encode_bgra_bitstream(HYuvEncContext *s, int count, int planes
 }
 
 static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
-                        const AVFrame *pict, int *got_packet)
+                        const AVFrame *p, int *got_packet)
 {
     HYuvEncContext *s = avctx->priv_data;
     const int width = avctx->width;
     const int width2 = avctx->width >> 1;
     const int height = avctx->height;
-    const int fake_ystride = s->interlaced ? pict->linesize[0]*2  : pict->linesize[0];
-    const int fake_ustride = s->interlaced ? pict->linesize[1]*2  : pict->linesize[1];
-    const int fake_vstride = s->interlaced ? pict->linesize[2]*2  : pict->linesize[2];
-    const AVFrame * const p = pict;
+    const int fake_ystride = (1 + s->interlaced) * p->linesize[0];
+    const int fake_ustride = (1 + s->interlaced) * p->linesize[1];
+    const int fake_vstride = (1 + s->interlaced) * p->linesize[2];
     int i, j, size = 0, ret;
 
     if ((ret = ff_alloc_packet(avctx, pkt, width * height * 3 * 4 + FF_INPUT_BUFFER_MIN_SIZE)) < 0)
