@@ -582,6 +582,8 @@ typedef struct OutputStream {
     char *logfile_prefix;
     FILE *logfile;
 
+    // simple filtergraph feeding this stream, if any
+    FilterGraph  *fg_simple;
     OutputFilter *filter;
 
     AVDictionary *encoder_opts;
@@ -653,6 +655,7 @@ extern int        nb_input_files;
 extern OutputFile   **output_files;
 extern int         nb_output_files;
 
+// complex filtergraphs
 extern FilterGraph **filtergraphs;
 extern int        nb_filtergraphs;
 

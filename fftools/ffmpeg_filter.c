@@ -1009,16 +1009,25 @@ int fg_create(FilterGraph **pfg, char *graph_desc, Scheduler *sch)
     AVFilterGraph *graph;
     int ret = 0;
 
-    fgp = allocate_array_elem(&filtergraphs, sizeof(*fgp), &nb_filtergraphs);
+    fgp = av_mallocz(sizeof(*fgp));
     if (!fgp)
         return AVERROR(ENOMEM);
     fg = &fgp->fg;
 
-    if (pfg)
+    if (pfg) {
         *pfg = fg;
+        fg->index = -1;
+    } else {
+        ret = av_dynarray_add_nofree(&filtergraphs, &nb_filtergraphs, fgp);
+        if (ret < 0) {
+            av_freep(&fgp);
+            return ret;
+        }
+
+        fg->index = nb_filtergraphs - 1;
+    }
 
     fg->class       = &fg_class;
-    fg->index      = nb_filtergraphs - 1;
     fgp->graph_desc = graph_desc;
     fgp->disable_conversions = !auto_conversion_filters;
     fgp->sch                 = sch;
@@ -1135,6 +1144,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     ret = fg_create(&fg, graph_desc, sch);
     if (ret < 0)
         return ret;
+    ost->fg_simple = fg;
     fgp = fgp_from_fg(fg);
 
     fgp->is_simple = 1;

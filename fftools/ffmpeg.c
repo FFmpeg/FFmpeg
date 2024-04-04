@@ -787,6 +787,11 @@ static int check_keyboard_interaction(int64_t cur_time)
             (n = sscanf(buf, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &time, command, arg)) >= 3) {
             av_log(NULL, AV_LOG_DEBUG, "Processing command target:%s time:%f command:%s arg:%s",
                    target, time, command, arg);
+            for (OutputStream *ost = ost_iter(NULL); ost; ost = ost_iter(ost)) {
+                if (ost->fg_simple)
+                    fg_send_command(ost->fg_simple, time, target, command, arg,
+                                    key == 'C');
+            }
             for (i = 0; i < nb_filtergraphs; i++)
                 fg_send_command(filtergraphs[i], time, target, command, arg,
                                 key == 'C');

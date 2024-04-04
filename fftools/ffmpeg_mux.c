@@ -797,6 +797,7 @@ static void ost_free(OutputStream **post)
     ms = ms_from_ost(ost);
 
     enc_free(&ost->enc);
+    fg_free(&ost->fg_simple);
 
     if (ost->logfile) {
         if (fclose(ost->logfile))
