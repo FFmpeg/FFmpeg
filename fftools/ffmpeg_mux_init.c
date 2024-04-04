@@ -1827,7 +1827,7 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
         for (int j = 0; j < fg->nb_outputs; j++) {
             OutputFilter *ofilter = fg->outputs[j];
 
-            if (ofilter->linklabel || ofilter->ost)
+            if (ofilter->linklabel || ofilter->bound)
                 continue;
 
             auto_disable |= 1 << ofilter->type;

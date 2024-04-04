@@ -314,12 +314,12 @@ typedef struct InputFilter {
 typedef struct OutputFilter {
     const AVClass       *class;
 
-    struct OutputStream *ost;
     struct FilterGraph  *graph;
     uint8_t             *name;
 
     /* for filters that are not yet bound to an output stream,
      * this stores the output linklabel, if any */
+    int                  bound;
     uint8_t             *linklabel;
 
     char                *apad;

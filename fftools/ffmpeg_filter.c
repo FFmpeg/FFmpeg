@@ -806,10 +806,10 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     FilterGraphPriv *fgp = fgp_from_fg(fg);
     int ret;
 
-    av_assert0(!ofilter->ost);
+    av_assert0(!ofilter->bound);
     av_assert0(ofilter->type == ost->type);
 
-    ofilter->ost = ost;
+    ofilter->bound = 1;
     av_freep(&ofilter->linklabel);
 
     ofp->flags        = opts->flags;
@@ -1279,7 +1279,7 @@ int fg_finalise_bindings(FilterGraph *fg)
 
     for (int i = 0; i < fg->nb_outputs; i++) {
         OutputFilter *output = fg->outputs[i];
-        if (!output->ost) {
+        if (!output->bound) {
             av_log(filtergraphs[i], AV_LOG_FATAL,
                    "Filter %s has an unconnected output\n", output->name);
             return AVERROR(EINVAL);
