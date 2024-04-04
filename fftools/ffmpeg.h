@@ -620,7 +620,6 @@ typedef struct OutputFile {
     int64_t recording_time;  ///< desired length of the resulting file in microseconds == AV_TIME_BASE units
     int64_t start_time;      ///< start time in microseconds == AV_TIME_BASE units
 
-    int shortest;
     int bitexact;
 } OutputFile;
 

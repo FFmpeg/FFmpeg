@@ -1886,7 +1886,7 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
     }
 
     // handle -apad
-    if (mux->of.shortest) {
+    if (o->shortest) {
         int have_video = 0;
 
         for (unsigned i = 0; i < mux->of.nb_streams; i++)
@@ -1921,7 +1921,8 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
     return 0;
 }
 
-static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_us)
+static int setup_sync_queues(Muxer *mux, AVFormatContext *oc,
+                             int64_t buf_size_us, int shortest)
 {
     OutputFile *of = &mux->of;
     int nb_av_enc = 0, nb_audio_fs = 0, nb_interleaved = 0;
@@ -1947,7 +1948,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
         limit_frames_av_enc |= (ms->max_frames < INT64_MAX) && IS_AV_ENC(ost, type);
     }
 
-    if (!((nb_interleaved > 1 && of->shortest) ||
+    if (!((nb_interleaved > 1 && shortest) ||
           (nb_interleaved > 0 && limit_frames) ||
           nb_audio_fs))
         return 0;
@@ -1963,7 +1964,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
      * different encoders run in different threads and need external
      * synchronization, while muxer sync queues can be handled inside the muxer
      */
-    if ((of->shortest && nb_av_enc > 1) || limit_frames_av_enc || nb_audio_fs) {
+    if ((shortest && nb_av_enc > 1) || limit_frames_av_enc || nb_audio_fs) {
         int sq_idx, ret;
 
         sq_idx = sch_add_sq_enc(mux->sch, buf_size_us, mux);
@@ -1979,7 +1980,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
                 continue;
 
             ret = sch_sq_add_enc(mux->sch, sq_idx, ms->sch_idx_enc,
-                                 of->shortest || ms->max_frames < INT64_MAX,
+                                 shortest || ms->max_frames < INT64_MAX,
                                  ms->max_frames);
             if (ret < 0)
                 return ret;
@@ -2006,7 +2007,7 @@ static int setup_sync_queues(Muxer *mux, AVFormatContext *oc, int64_t buf_size_u
                 continue;
 
             ms->sq_idx_mux = sq_add_stream(mux->sq_mux,
-                                           of->shortest || ms->max_frames < INT64_MAX);
+                                           shortest || ms->max_frames < INT64_MAX);
             if (ms->sq_idx_mux < 0)
                 return ms->sq_idx_mux;
 
@@ -3043,7 +3044,6 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 
     of->recording_time = recording_time;
     of->start_time     = o->start_time;
-    of->shortest       = o->shortest;
 
     mux->limit_filesize    = o->limit_filesize;
     av_dict_copy(&mux->opts, o->g->format_opts, 0);
@@ -3159,7 +3159,8 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         return err;
     }
 
-    err = setup_sync_queues(mux, oc, o->shortest_buf_duration * AV_TIME_BASE);
+    err = setup_sync_queues(mux, oc, o->shortest_buf_duration * AV_TIME_BASE,
+                            o->shortest);
     if (err < 0) {
         av_log(mux, AV_LOG_FATAL, "Error setting up output sync queues\n");
         return err;
