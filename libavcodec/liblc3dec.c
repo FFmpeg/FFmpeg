@@ -46,6 +46,12 @@ static av_cold int liblc3_decode_init(AVCodecContext *avctx)
 
     if (avctx->extradata_size < 10)
         return AVERROR_INVALIDDATA;
+    if (channels < 0 || channels > DECODER_MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Invalid number of channels %d. Max %d channels are accepted\n",
+               channels, DECODER_MAX_CHANNES);
+        return AVERROR(EINVAL);
+    }
 
     liblc3->frame_us = AV_RL16(avctx->extradata + 0) * 10;
     liblc3->srate_hz = avctx->sample_rate;
