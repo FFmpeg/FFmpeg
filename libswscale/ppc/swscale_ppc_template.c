@@ -104,16 +104,6 @@ static void FUNC(hScale_real)(SwsContext *c, int16_t *dst, int dstW,
     register int i;
     LOCAL_ALIGNED(16, int, tempo, [4]);
 
-    if (filterSize % 4) {
-        for (i = 0; i < dstW; i++) {
-            register int j;
-            register int srcPos = filterPos[i];
-            register int val    = 0;
-            for (j = 0; j < filterSize; j++)
-                val += ((int)src[srcPos + j]) * filter[filterSize * i + j];
-            dst[i] = FFMIN(val >> 7, (1 << 15) - 1);
-        }
-    } else
         switch (filterSize) {
         case 4:
             for (i = 0; i < dstW; i++) {
@@ -175,48 +165,14 @@ static void FUNC(hScale_real)(SwsContext *c, int16_t *dst, int dstW,
         break;
 
         default:
-            for (i = 0; i < dstW; i++) {
-                register int j, av_unused offset = i * 2 * filterSize;
-                register int srcPos = filterPos[i];
-
-                vector signed int val_s, val_v = (vector signed int)vzero;
-                vector signed short av_unused filter_v0R;
-                vector unsigned char av_unused permF, av_unused src_v0, av_unused permS;
-                FIRST_LOAD(filter_v0R, offset, filter, permF);
-                FIRST_LOAD(src_v0, srcPos, src, permS);
-
-                for (j = 0; j < filterSize - 15; j += 16) {
-                    vector unsigned char av_unused src_v1, src_vF;
-                    vector signed short av_unused filter_v1R, av_unused filter_v2R,
-                                        filter_v0, filter_v1, src_vA, src_vB;
-                    vector signed int val_acc;
-                    LOAD_SRCV(srcPos, j, src, permS, src_v0, src_v1, src_vF);
-                    src_vA = // vec_unpackh sign-extends...
-                                                 (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
-                    src_vB = // vec_unpackh sign-extends...
-                                                 (vector signed short)(VEC_MERGEL((vector unsigned char)vzero, src_vF));
-                    GET_VFD(i, j, filter, filter_v0R, filter_v1R, permF, filter_v0, 0);
-                    GET_VFD(i, j, filter, filter_v1R, filter_v2R, permF, filter_v1, 16);
-
-                    val_acc = vec_msums(src_vA, filter_v0, val_v);
-                    val_v = vec_msums(src_vB, filter_v1, val_acc);
-                    UPDATE_PTR(filter_v2R, filter_v0R, src_v1, src_v0);
-                }
-
-                if (j < filterSize - 7) {
-                    // loading src_v0 is useless, it's already done above
-                    vector unsigned char av_unused src_v1, src_vF;
-                    vector signed short src_v, av_unused filter_v1R, filter_v;
-                    LOAD_SRCV8(srcPos, j, src, permS, src_v0, src_v1, src_vF);
-                    src_v = // vec_unpackh sign-extends...
-                            (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
-                    GET_VFD(i, j, filter, filter_v0R, filter_v1R, permF, filter_v, 0);
-                    val_v = vec_msums(src_v, filter_v, val_v);
-                }
-                val_s = vec_sums(val_v, vzero);
-
-                VEC_ST(val_s, 0, tempo);
-                dst[i] = FFMIN(tempo[3] >> 7, (1 << 15) - 1);
-            }
+        for (register int i = 0; i < dstW; i++) {
+            register int j;
+            register int srcPos = filterPos[i];
+            register int val    = 0;
+            for (j = 0; j < filterSize; j++)
+                val += ((int)src[srcPos + j]) * filter[filterSize * i + j];
+            dst[i] = FFMIN(val >> 7, (1 << 15) - 1);
+        }
+        break;
         }
 }
