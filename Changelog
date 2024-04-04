@@ -43,14 +43,14 @@ version 7.0:
 - dnn filter libtorch backend
 - Android content URIs protocol
 - AOMedia Film Grain Synthesis 1 (AFGS1)
-- RISC-V optimizations for AAC, FLAC, JPEG-2000,LPC, RV4.0, SVQ, VC1, VP8 and more
+- RISC-V optimizations for AAC, FLAC, JPEG-2000, LPC, RV4.0, SVQ, VC1, VP8, and more
 - Loongarch optimizations for HEVC decoding
 - Important AArch64 optimizations for HEVC
 - IAMF support inside MP4/ISOBMFF
 - Support for HEIF/AVIF still images and tiled still images
 - Dolby Vision profile 10 support in AV1
 - Support for Ambient Viewing Environment metadata in MP4/ISOBMFF
-- HDR10 metadata passthrough when encoding with libx264, libx265 and libsvtav1
+- HDR10 metadata passthrough when encoding with libx264, libx265, and libsvtav1
 
 
 version 6.1:
