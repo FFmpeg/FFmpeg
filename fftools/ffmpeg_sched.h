@@ -41,7 +41,8 @@
  * - filtergraphs, each containing zero or more inputs (0 in case the
  *   filtergraph contains a lavfi source filter), and one or more outputs; the
  *   inputs and outputs need not have matching media types;
- *   each filtergraph input receives decoded frames from some decoder;
+ *   each filtergraph input receives decoded frames from some decoder or another
+ *   filtergraph output;
  *   filtered frames from each output are sent to some encoder;
  * - encoders, which receive decoded frames from some decoder (subtitles) or
  *   some filtergraph output (audio/video), encode them, and send encoded
@@ -50,6 +51,9 @@
  *   receives encoded packets from some demuxed stream (streamcopy) or some
  *   encoder (transcoding); those packets are interleaved and written out by the
  *   muxer.
+ *
+ * The structure formed by the above components is a directed acyclic graph
+ * (absence of cycles is checked at startup).
  *
  * There must be at least one muxer instance, otherwise the transcode produces
  * no output and is meaningless. Otherwise, in a generic transcoding scenario
