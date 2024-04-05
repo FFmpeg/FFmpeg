@@ -3113,7 +3113,9 @@ Place global headers in extradata instead of every keyframe.
 
 @end table
 
-@item trellis
+@item gmc
+Enable the use of global motion compensation (GMC).  Default is 0
+(disabled).
 
 @item me_quality
 Set motion estimation quality level. Possible values in decreasing order of
@@ -3167,6 +3169,9 @@ When combined with @option{lumi_aq}, the resulting quality will not
 be better than any of the two specified individually. In other
 words, the resulting quality will be the worse one of the two
 effects.
+
+@item trellis
+Set rate-distortion optimal quantization.
 
 @item ssim
 Set structural similarity (SSIM) displaying method. Possible values:
