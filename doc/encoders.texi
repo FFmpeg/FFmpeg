@@ -3102,9 +3102,6 @@ Enable high quality AC prediction.
 @item gray
 Only encode grayscale.
 
-@item gmc
-Enable the use of global motion compensation (GMC).
-
 @item qpel
 Enable quarter-pixel motion compensation.
 
