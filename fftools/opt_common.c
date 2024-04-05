@@ -262,22 +262,36 @@ int show_buildconf(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-#define PRINT_CODEC_SUPPORTED(codec, field, type, list_name, term, get_name) \
-    if (codec->field) {                                                      \
-        const type *p = codec->field;                                        \
-                                                                             \
-        printf("    Supported " list_name ":");                              \
-        while (*p != term) {                                                 \
-            get_name(*p);                                                    \
-            printf(" %s", name);                                             \
-            p++;                                                             \
-        }                                                                    \
-        printf("\n");                                                        \
-    }                                                                        \
+#define PRINT_CODEC_SUPPORTED(codec, config, type, name, elem, fmt, ...)        \
+    do {                                                                        \
+        int num = 0;                                                            \
+        const type *elem = NULL;                                                \
+        avcodec_get_supported_config(NULL, codec, config, 0,                    \
+                                     (const void **) &elem, &num);              \
+        if (elem) {                                                             \
+            printf("    Supported " name ":");                                  \
+            for (int i = 0; i < num; i++) {                                     \
+                printf(" " fmt, __VA_ARGS__);                                   \
+                elem++;                                                         \
+            }                                                                   \
+            printf("\n");                                                       \
+        }                                                                       \
+    } while (0)
+
+static const char *get_channel_layout_desc(const AVChannelLayout *layout, AVBPrint *bp)
+{
+    int ret;
+    av_bprint_clear(bp);
+    ret = av_channel_layout_describe_bprint(layout, bp);
+    if (!av_bprint_is_complete(bp) || ret < 0)
+        return "unknown/invalid";
+    return bp->str;
+}
 
 static void print_codec(const AVCodec *c)
 {
     int encoder = av_codec_is_encoder(c);
+    AVBPrint desc;
 
     printf("%s %s [%s]:\n", encoder ? "Encoder" : "Decoder", c->name,
            c->long_name ? c->long_name : "");
@@ -343,35 +357,20 @@ static void print_codec(const AVCodec *c)
         printf("\n");
     }
 
-    if (c->supported_framerates) {
-        const AVRational *fps = c->supported_framerates;
+    PRINT_CODEC_SUPPORTED(c, AV_CODEC_CONFIG_FRAME_RATE, AVRational, "framerates",
+                          fps, "%d/%d", fps->num, fps->den);
+    PRINT_CODEC_SUPPORTED(c, AV_CODEC_CONFIG_PIX_FORMAT, enum AVPixelFormat,
+                          "pixel formats", fmt,  "%s", av_get_pix_fmt_name(*fmt));
+    PRINT_CODEC_SUPPORTED(c, AV_CODEC_CONFIG_SAMPLE_RATE, int, "sample rates",
+                          rate, "%d", *rate);
+    PRINT_CODEC_SUPPORTED(c, AV_CODEC_CONFIG_SAMPLE_FORMAT, enum AVSampleFormat,
+                          "sample formats", fmt, "%s", av_get_sample_fmt_name(*fmt));
 
-        printf("    Supported framerates:");
-        while (fps->num) {
-            printf(" %d/%d", fps->num, fps->den);
-            fps++;
-        }
-        printf("\n");
-    }
-    PRINT_CODEC_SUPPORTED(c, pix_fmts, enum AVPixelFormat, "pixel formats",
-                          AV_PIX_FMT_NONE, GET_PIX_FMT_NAME);
-    PRINT_CODEC_SUPPORTED(c, supported_samplerates, int, "sample rates", 0,
-                          GET_SAMPLE_RATE_NAME);
-    PRINT_CODEC_SUPPORTED(c, sample_fmts, enum AVSampleFormat, "sample formats",
-                          AV_SAMPLE_FMT_NONE, GET_SAMPLE_FMT_NAME);
-
-    if (c->ch_layouts) {
-        const AVChannelLayout *p = c->ch_layouts;
-
-        printf("    Supported channel layouts:");
-        while (p->nb_channels) {
-            char name[128];
-            av_channel_layout_describe(p, name, sizeof(name));
-            printf(" %s", name);
-            p++;
-        }
-        printf("\n");
-    }
+    av_bprint_init(&desc, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    PRINT_CODEC_SUPPORTED(c, AV_CODEC_CONFIG_CHANNEL_LAYOUT, AVChannelLayout,
+                          "channel layouts", layout, "%s",
+                          get_channel_layout_desc(layout, &desc));
+    av_bprint_finalize(&desc, NULL);
 
     if (c->priv_class) {
         show_help_children(c->priv_class,
@@ -566,8 +565,14 @@ static void show_help_bsf(const char *name)
     }
 
     printf("Bit stream filter %s\n", bsf->name);
-    PRINT_CODEC_SUPPORTED(bsf, codec_ids, enum AVCodecID, "codecs",
-                          AV_CODEC_ID_NONE, GET_CODEC_NAME);
+    if (bsf->codec_ids) {
+        const enum AVCodecID *id = bsf->codec_ids;
+        printf("    Supported codecs:");
+        while (*id != AV_CODEC_ID_NONE) {
+            printf(" %s", avcodec_descriptor_get(*id)->name);
+            id++;
+        }
+    }
     if (bsf->priv_class)
         show_help_children(bsf->priv_class, AV_OPT_FLAG_BSF_PARAM);
 }
