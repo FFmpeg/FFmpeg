@@ -2868,15 +2868,6 @@ static av_cold int ipu_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int ipu_decode_end(AVCodecContext *avctx)
-{
-    IPUContext *s = avctx->priv_data;
-
-    ff_mpv_common_end(&s->m);
-
-    return 0;
-}
-
 const FFCodec ff_ipu_decoder = {
     .p.name         = "ipu",
     CODEC_LONG_NAME("IPU Video"),
@@ -2885,7 +2876,5 @@ const FFCodec ff_ipu_decoder = {
     .priv_data_size = sizeof(IPUContext),
     .init           = ipu_decode_init,
     FF_CODEC_DECODE_CB(ipu_decode_frame),
-    .close          = ipu_decode_end,
     .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
