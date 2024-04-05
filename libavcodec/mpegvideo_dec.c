@@ -328,7 +328,7 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
     if (!ff_thread_can_start_frame(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Attempt to start a frame outside SETUP state\n");
-        return -1;
+        return AVERROR_BUG;
     }
 
     /* mark & release old frames */
