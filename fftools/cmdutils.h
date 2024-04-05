@@ -530,19 +530,6 @@ void *allocate_array_elem(void *array, size_t elem_size, int *nb_elems);
 #define GROW_ARRAY(array, nb_elems)\
     grow_array((void**)&array, sizeof(*array), &nb_elems, nb_elems + 1)
 
-#define GET_PIX_FMT_NAME(pix_fmt)\
-    const char *name = av_get_pix_fmt_name(pix_fmt);
-
-#define GET_CODEC_NAME(id)\
-    const char *name = avcodec_descriptor_get(id)->name;
-
-#define GET_SAMPLE_FMT_NAME(sample_fmt)\
-    const char *name = av_get_sample_fmt_name(sample_fmt)
-
-#define GET_SAMPLE_RATE_NAME(rate)\
-    char name[16];\
-    snprintf(name, sizeof(name), "%d", rate);
-
 double get_rotation(const int32_t *displaymatrix);
 
 /* read file contents into a string */

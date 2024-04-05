@@ -416,7 +416,7 @@ static void choose_ ## name (OutputFilterPriv *ofp, AVBPrint *bprint)          \
 }
 
 //DEF_CHOOSE_FORMAT(pix_fmts, enum AVPixelFormat, format, formats, AV_PIX_FMT_NONE,
-//                  GET_PIX_FMT_NAME)
+//                  av_get_pix_fmt_name)
 
 DEF_CHOOSE_FORMAT(sample_fmts, enum AVSampleFormat, format, formats,
                   AV_SAMPLE_FMT_NONE, "%s", av_get_sample_fmt_name)
