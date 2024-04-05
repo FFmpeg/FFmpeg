@@ -913,9 +913,48 @@ const FFCodec * codec_list[] = {
 static AVOnce av_codec_static_init = AV_ONCE_INIT;
 static void av_codec_init_static(void)
 {
+    int dummy;
     for (int i = 0; codec_list[i]; i++) {
-        if (codec_list[i]->init_static_data)
-            codec_list[i]->init_static_data((FFCodec*)codec_list[i]);
+        const FFCodec *codec = codec_list[i];
+        if (codec->init_static_data) {
+            codec->init_static_data((FFCodec*) codec);
+            continue;
+        }
+
+        /* Backward compatibility with deprecated public fields */
+        if (!codec->get_supported_config)
+            continue;
+
+FF_DISABLE_DEPRECATION_WARNINGS
+        switch (codec->p.type) {
+        case AVMEDIA_TYPE_VIDEO:
+            codec->get_supported_config(NULL, &codec->p,
+                                        AV_CODEC_CONFIG_PIX_FORMAT, 0,
+                                        (const void **) &codec->p.pix_fmts,
+                                        &dummy);
+            codec->get_supported_config(NULL, &codec->p,
+                                        AV_CODEC_CONFIG_FRAME_RATE, 0,
+                                        (const void **) &codec->p.supported_framerates,
+                                        &dummy);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            codec->get_supported_config(NULL, &codec->p,
+                                        AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,
+                                        (const void **) &codec->p.sample_fmts,
+                                        &dummy);
+            codec->get_supported_config(NULL, &codec->p,
+                                        AV_CODEC_CONFIG_SAMPLE_RATE, 0,
+                                        (const void **) &codec->p.supported_samplerates,
+                                        &dummy);
+            codec->get_supported_config(NULL, &codec->p,
+                                        AV_CODEC_CONFIG_CHANNEL_LAYOUT, 0,
+                                        (const void **) &codec->p.ch_layouts,
+                                        &dummy);
+            break;
+        default:
+            break;
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
     }
 }
 
