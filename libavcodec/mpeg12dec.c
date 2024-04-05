@@ -1303,7 +1303,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST *
                                                 (s->picture_structure == PICT_TOP_FIELD);
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 3; i++) {
                 if (s->picture_structure == PICT_BOTTOM_FIELD) {
                     s->current_picture.f->data[i] = FF_PTR_ADD(s->current_picture.f->data[i],
                                                                s->current_picture.f->linesize[i]);
@@ -1368,8 +1368,6 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
         if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     } else { // second field
-        int i;
-
         if (!s->current_picture_ptr) {
             av_log(s->avctx, AV_LOG_ERROR, "first field missing\n");
             return AVERROR_INVALIDDATA;
@@ -1383,7 +1381,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
             }
         }
 
-        for (i = 0; i < 4; i++) {
+        for (int i = 0; i < 3; i++) {
             s->current_picture.f->data[i] = s->current_picture_ptr->f->data[i];
             if (s->picture_structure == PICT_BOTTOM_FIELD)
                 s->current_picture.f->data[i] +=
