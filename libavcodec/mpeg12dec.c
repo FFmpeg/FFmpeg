@@ -1301,7 +1301,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         if (s->picture_structure != PICT_FRAME) {
             s->current_picture_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST *
-                ((s->picture_structure == PICT_TOP_FIELD) == s->first_field);
+                                                (s->picture_structure == PICT_TOP_FIELD);
 
             for (int i = 0; i < 4; i++) {
                 if (s->picture_structure == PICT_BOTTOM_FIELD) {
