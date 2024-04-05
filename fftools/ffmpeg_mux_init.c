@@ -952,6 +952,39 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
 
     snprintf(name, sizeof(name), "#%d:%d", mux->of.index, ost->index);
 
+    if (ost->type == AVMEDIA_TYPE_VIDEO) {
+        if (!keep_pix_fmt) {
+            ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                               AV_CODEC_CONFIG_PIX_FORMAT, 0,
+                                               (const void **) &opts.formats, NULL);
+            if (ret < 0)
+                return ret;
+        }
+        if (!ost->force_fps) {
+            ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                               AV_CODEC_CONFIG_FRAME_RATE, 0,
+                                               (const void **) &opts.frame_rates, NULL);
+            if (ret < 0)
+                return ret;
+        }
+    } else {
+        ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                           AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,
+                                           (const void **) &opts.formats, NULL);
+        if (ret < 0)
+            return ret;
+        ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                           AV_CODEC_CONFIG_SAMPLE_RATE, 0,
+                                           (const void **) &opts.sample_rates, NULL);
+        if (ret < 0)
+            return ret;
+        ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                           AV_CODEC_CONFIG_CHANNEL_LAYOUT, 0,
+                                           (const void **) &opts.ch_layouts, NULL);
+        if (ret < 0)
+            return ret;
+    }
+
     // MJPEG encoder exports a full list of supported pixel formats,
     // but the full-range ones are experimental-only.
     // Restrict the auto-conversion list unless -strict experimental
@@ -964,7 +997,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
               AV_PIX_FMT_NONE };
 
         if (enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)
-            opts.pix_fmts = mjpeg_formats;
+            opts.formats = mjpeg_formats;
     }
 
     if (threads_manual) {

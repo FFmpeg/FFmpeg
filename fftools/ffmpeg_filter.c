@@ -819,11 +819,8 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
         ofp->height     = opts->height;
         if (opts->format != AV_PIX_FMT_NONE) {
             ofp->format = opts->format;
-        } else if (opts->pix_fmts)
-            ofp->formats = opts->pix_fmts;
-        else if (opts->enc &&
-                 !(ofp->flags & OFILTER_FLAG_DISABLE_CONVERT))
-            ofp->formats = opts->enc->pix_fmts;
+        } else
+            ofp->formats = opts->formats;
 
         fgp->disable_conversions |= !!(ofp->flags & OFILTER_FLAG_DISABLE_CONVERT);
 
@@ -835,7 +832,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
         ofp->fps.framerate           = ost->frame_rate;
         ofp->fps.framerate_max       = ost->max_frame_rate;
         ofp->fps.framerate_supported = ost->force_fps || !opts->enc ?
-                                       NULL : opts->enc->supported_framerates;
+                                       NULL : opts->frame_rates;
 
         // reduce frame rate for mpeg4 to be within the spec limits
         if (opts->enc && opts->enc->id == AV_CODEC_ID_MPEG4)
@@ -847,21 +844,19 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     case AVMEDIA_TYPE_AUDIO:
         if (opts->format != AV_SAMPLE_FMT_NONE) {
             ofp->format = opts->format;
-        } else if (opts->enc) {
-            ofp->formats = opts->enc->sample_fmts;
+        } else {
+            ofp->formats = opts->formats;
         }
         if (opts->sample_rate) {
             ofp->sample_rate = opts->sample_rate;
-        } else if (opts->enc) {
-            ofp->sample_rates = opts->enc->supported_samplerates;
-        }
+        } else
+            ofp->sample_rates = opts->sample_rates;
         if (opts->ch_layout.nb_channels) {
-            int ret = set_channel_layout(ofp, opts->enc ? opts->enc->ch_layouts : NULL,
-                                         &opts->ch_layout);
+            int ret = set_channel_layout(ofp, opts->ch_layouts, &opts->ch_layout);
             if (ret < 0)
                 return ret;
-        } else if (opts->enc) {
-            ofp->ch_layouts = opts->enc->ch_layouts;
+        } else {
+            ofp->ch_layouts = opts->ch_layouts;
         }
         break;
     }
