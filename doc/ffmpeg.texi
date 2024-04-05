@@ -2143,7 +2143,8 @@ Define a complex filtergraph, i.e. one with arbitrary number of inputs and/or
 outputs. For simple graphs -- those with one input and one output of the same
 type -- see the @option{-filter} options. @var{filtergraph} is a description of
 the filtergraph, as described in the ``Filtergraph syntax'' section of the
-ffmpeg-filters manual.
+ffmpeg-filters manual. This option may be specified multiple times - each use
+creates a new complex filtergraph.
 
 Inputs to a complex filtergraph may come from different source types,
 distinguished by the format of the corresponding link label:
