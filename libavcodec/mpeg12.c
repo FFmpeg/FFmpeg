@@ -180,8 +180,6 @@ int ff_mpeg1_decode_block_intra(GetBitContext *gb,
     component = index <= 3 ? 0 : index - 4 + 1;
 
     diff = decode_dc(gb, component);
-    if (diff >= 0xffff)
-        return AVERROR_INVALIDDATA;
 
     dc  = last_dc[component];
     dc += diff;
