@@ -677,7 +677,6 @@ static av_cold int aom_init(AVCodecContext *avctx,
     struct aom_codec_enc_cfg enccfg = { 0 };
     aom_codec_flags_t flags =
         (avctx->flags & AV_CODEC_FLAG_PSNR) ? AOM_CODEC_USE_PSNR : 0;
-    aom_codec_flags_t flags = 0;
     AVCPBProperties *cpb_props;
     int res;
     aom_img_fmt_t img_fmt;
