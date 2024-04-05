@@ -511,13 +511,19 @@ static int fmt_in_list(const int *formats, int format)
 }
 
 static enum AVPixelFormat
-choose_pixel_fmt(const AVCodec *codec, enum AVPixelFormat target)
+choose_pixel_fmt(const AVCodecContext *avctx, enum AVPixelFormat target)
 {
-    const enum AVPixelFormat *p = codec->pix_fmts;
+    const enum AVPixelFormat *p;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(target);
     //FIXME: This should check for AV_PIX_FMT_FLAG_ALPHA after PAL8 pixel format without alpha is implemented
     int has_alpha = desc ? desc->nb_components % 2 == 0 : 0;
     enum AVPixelFormat best= AV_PIX_FMT_NONE;
+    int ret;
+
+    ret = avcodec_get_supported_config(avctx, NULL, AV_CODEC_CONFIG_PIX_FORMAT,
+                                       0, (const void **) &p, NULL);
+    if (ret < 0)
+        return AV_PIX_FMT_NONE;
 
     for (; *p != AV_PIX_FMT_NONE; p++) {
         best = av_find_best_pix_fmt_of_2(best, *p, target, has_alpha, NULL);
@@ -529,7 +535,7 @@ choose_pixel_fmt(const AVCodec *codec, enum AVPixelFormat target)
             av_log(NULL, AV_LOG_WARNING,
                    "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
                    av_get_pix_fmt_name(target),
-                   codec->name,
+                   avctx->codec->name,
                    av_get_pix_fmt_name(best));
         return best;
     }
@@ -538,14 +544,20 @@ choose_pixel_fmt(const AVCodec *codec, enum AVPixelFormat target)
 
 static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
 {
-    const enum AVPixelFormat *fmts = ost->enc_ctx->codec->pix_fmts;
+    const enum AVPixelFormat *fmts;
     enum AVPixelFormat fmt;
+    int ret;
 
     fmt = av_get_pix_fmt(name);
     if (fmt == AV_PIX_FMT_NONE) {
         av_log(ost, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", name);
         return AV_PIX_FMT_NONE;
     }
+
+    ret = avcodec_get_supported_config(ost->enc_ctx, NULL, AV_CODEC_CONFIG_PIX_FORMAT,
+                                       0, (const void **) &fmts, NULL);
+    if (ret < 0)
+        return AV_PIX_FMT_NONE;
 
     /* when the user specified-format is an alias for an endianness-specific
      * one (e.g. rgb48 -> rgb48be/le), it gets translated into the native
@@ -574,7 +586,7 @@ static enum AVPixelFormat pix_fmt_parse(OutputStream *ost, const char *name)
     }
 
     if (fmts && !fmt_in_list(fmts, fmt))
-        fmt = choose_pixel_fmt(ost->enc_ctx->codec, fmt);
+        fmt = choose_pixel_fmt(ost->enc_ctx, fmt);
 
     return fmt;
 }
