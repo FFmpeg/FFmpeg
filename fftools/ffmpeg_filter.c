@@ -1272,7 +1272,7 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
     return 0;
 }
 
-int fg_finalise_bindings(FilterGraph *fg)
+static int bind_inputs(FilterGraph *fg)
 {
     // bind filtergraph inputs to input streams
     for (int i = 0; i < fg->nb_inputs; i++) {
@@ -1287,14 +1287,33 @@ int fg_finalise_bindings(FilterGraph *fg)
             return ret;
     }
 
-    for (int i = 0; i < fg->nb_outputs; i++) {
-        OutputFilter *output = fg->outputs[i];
-        if (!output->bound) {
-            av_log(filtergraphs[i], AV_LOG_FATAL,
-                   "Filter %s has an unconnected output\n", output->name);
-            return AVERROR(EINVAL);
+    return 0;
+}
+
+int fg_finalise_bindings(void)
+{
+    int ret;
+
+    for (int i = 0; i < nb_filtergraphs; i++) {
+        ret = bind_inputs(filtergraphs[i]);
+        if (ret < 0)
+            return ret;
+    }
+
+    // check that all outputs were bound
+    for (int i = 0; i < nb_filtergraphs; i++) {
+        FilterGraph *fg = filtergraphs[i];
+
+        for (int j = 0; j < fg->nb_outputs; j++) {
+            OutputFilter *output = fg->outputs[j];
+            if (!output->bound) {
+                av_log(filtergraphs[j], AV_LOG_FATAL,
+                       "Filter %s has an unconnected output\n", output->name);
+                return AVERROR(EINVAL);
+            }
         }
     }
+
     return 0;
 }
 

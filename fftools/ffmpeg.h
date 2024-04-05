@@ -724,7 +724,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
                             char *graph_desc,
                             Scheduler *sch, unsigned sch_idx_enc,
                             const OutputFilterOptions *opts);
-int fg_finalise_bindings(FilterGraph *fg);
+int fg_finalise_bindings(void);
 
 /**
  * Get our axiliary frame data attached to the frame, allocating it

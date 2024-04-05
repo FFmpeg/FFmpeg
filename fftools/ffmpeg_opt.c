@@ -1264,12 +1264,10 @@ int ffmpeg_parse_options(int argc, char **argv, Scheduler *sch)
     }
 
     // bind unbound filtegraph inputs/outputs and check consistency
-    for (int i = 0; i < nb_filtergraphs; i++) {
-        ret = fg_finalise_bindings(filtergraphs[i]);
-        if (ret < 0) {
-            errmsg = "binding filtergraph inputs/outputs";
-            goto fail;
-        }
+    ret = fg_finalise_bindings();
+    if (ret < 0) {
+        errmsg = "binding filtergraph inputs/outputs";
+        goto fail;
     }
 
     correct_input_start_times();
