@@ -2717,6 +2717,14 @@ This muxer accepts a single @samp{jacosub} subtitles stream.
 For more information about the format, see
 @url{http://unicorn.us.com/jacosub/jscripts.html}.
 
+@section kvag
+Simon & Schuster Interactive VAG muxer.
+
+This custom VAG container is used by some Simon & Schuster Interactive
+games such as "Real War", and "Real War: Rogue States".
+
+This muxer accepts a single @samp{adpcm_ima_ssi} audio stream.
+
 @section matroska
 
 Matroska container muxer.
