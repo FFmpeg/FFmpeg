@@ -2709,6 +2709,14 @@ Corporation), to store internally developed codecs.
 This muxer accepts a single @samp{vp8}, @samp{vp9}, or @samp{av1}
 video stream.
 
+@section jacosub
+JACOsub subtitle format muxer.
+
+This muxer accepts a single @samp{jacosub} subtitles stream.
+
+For more information about the format, see
+@url{http://unicorn.us.com/jacosub/jscripts.html}.
+
 @section matroska
 
 Matroska container muxer.
