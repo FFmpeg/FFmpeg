@@ -2725,6 +2725,31 @@ games such as "Real War", and "Real War: Rogue States".
 
 This muxer accepts a single @samp{adpcm_ima_ssi} audio stream.
 
+@section lrc
+LRC lyrics file format muxer.
+
+LRC (short for LyRiCs) is a computer file format that synchronizes
+song lyrics with an audio file, such as MP3, Vorbis, or MIDI.
+
+This muxer accepts a single @samp{subrip} or @samp{text} subtitles stream.
+
+@subsection Metadata
+The following metadata tags are converted to the format corresponding
+metadata:
+
+@table @option
+@item title
+@item album
+@item artist
+@item author
+@item creator
+@item encoder
+@item encoder_version
+@end table
+
+If @samp{encoder_version} is not explicitly set, it is automatically
+set to the libavformat version.
+
 @section matroska
 
 Matroska container muxer.
