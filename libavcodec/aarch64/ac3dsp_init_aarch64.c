@@ -32,6 +32,10 @@ void ff_ac3_sum_square_butterfly_int32_neon(int64_t sum[4],
                                             const int32_t *coef0,
                                             const int32_t *coef1,
                                             int len);
+void ff_ac3_sum_square_butterfly_float_neon(float sum[4],
+                                            const float *coef0,
+                                            const float *coef1,
+                                            int len);
 
 av_cold void ff_ac3dsp_init_aarch64(AC3DSPContext *c)
 {
@@ -42,4 +46,5 @@ av_cold void ff_ac3dsp_init_aarch64(AC3DSPContext *c)
     c->extract_exponents = ff_ac3_extract_exponents_neon;
     c->float_to_fixed24 = ff_float_to_fixed24_neon;
     c->sum_square_butterfly_int32 = ff_ac3_sum_square_butterfly_int32_neon;
+    c->sum_square_butterfly_float = ff_ac3_sum_square_butterfly_float_neon;
 }

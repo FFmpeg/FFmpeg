@@ -165,6 +165,31 @@ static void check_ac3_sum_square_butterfly_int32(AC3DSPContext *c) {
     report("ac3_sum_square_butterfly_int32");
 }
 
+static void check_ac3_sum_square_butterfly_float(AC3DSPContext *c) {
+    LOCAL_ALIGNED_32(float, lt, [ELEMS]);
+    LOCAL_ALIGNED_32(float, rt, [ELEMS]);
+    LOCAL_ALIGNED_16(float, v1, [4]);
+    LOCAL_ALIGNED_16(float, v2, [4]);
+
+    declare_func(void, float[4], const float *, const float *, int);
+
+    randomize_float(lt, ELEMS);
+    randomize_float(rt, ELEMS);
+
+    if (check_func(c->sum_square_butterfly_float,
+                   "ac3_sum_square_bufferfly_float")) {
+        call_ref(v1, lt, rt, ELEMS);
+        call_new(v2, lt, rt, ELEMS);
+
+        if (!float_near_ulp_array(v1, v2, 10, 4))
+            fail();
+
+        bench_new(v2, lt, rt, ELEMS);
+    }
+
+    report("ac3_sum_square_butterfly_float");
+}
+
 void checkasm_check_ac3dsp(void)
 {
     AC3DSPContext c;
@@ -174,4 +199,5 @@ void checkasm_check_ac3dsp(void)
     check_ac3_extract_exponents(&c);
     check_float_to_fixed24(&c);
     check_ac3_sum_square_butterfly_int32(&c);
+    check_ac3_sum_square_butterfly_float(&c);
 }
