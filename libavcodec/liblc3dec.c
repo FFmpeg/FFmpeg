@@ -44,7 +44,7 @@ static av_cold int liblc3_decode_init(AVCodecContext *avctx)
     int ep_mode;
     unsigned decoder_size;
 
-    if (avctx->extradata_size < 10)
+    if (avctx->extradata_size < 6)
         return AVERROR_INVALIDDATA;
     if (channels < 0 || channels > DECODER_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR,
