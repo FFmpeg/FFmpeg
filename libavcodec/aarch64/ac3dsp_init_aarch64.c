@@ -25,6 +25,7 @@
 #include "libavcodec/ac3dsp.h"
 #include "config.h"
 
+void ff_ac3_exponent_min_neon(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 void ff_float_to_fixed24_neon(int32_t *dst, const float *src, size_t len);
 
 av_cold void ff_ac3dsp_init_aarch64(AC3DSPContext *c)
@@ -32,5 +33,6 @@ av_cold void ff_ac3dsp_init_aarch64(AC3DSPContext *c)
     int cpu_flags = av_get_cpu_flags();
     if (!have_neon(cpu_flags)) return;
 
+    c->ac3_exponent_min = ff_ac3_exponent_min_neon;
     c->float_to_fixed24 = ff_float_to_fixed24_neon;
 }

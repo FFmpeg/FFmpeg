@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ * Copyright (c) 2024 Geoff Hill <geoff@geoffhill.org>
  *
  * This file is part of FFmpeg.
  *
@@ -27,6 +28,14 @@
 
 #include "checkasm.h"
 
+#define randomize_exp(buf, len)        \
+    do {                               \
+        int i;                         \
+        for (i = 0; i < len; i++) {    \
+            buf[i] = (uint8_t)rnd();   \
+        }                              \
+    } while (0)
+
 #define randomize_float(buf, len)                               \
     do {                                                        \
         int i;                                                  \
@@ -35,6 +44,38 @@
             buf[i] = f;                                         \
         }                                                       \
     } while (0)
+
+static void check_ac3_exponent_min(AC3DSPContext *c) {
+#define MAX_COEFS 256
+#define MAX_CTXT 6
+#define EXP_SIZE (MAX_CTXT * MAX_COEFS)
+
+    LOCAL_ALIGNED_16(uint8_t, src, [EXP_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, v1, [EXP_SIZE]);
+    LOCAL_ALIGNED_16(uint8_t, v2, [EXP_SIZE]);
+    int n;
+
+    declare_func(void, uint8_t *, int, int);
+
+    for (n = 0; n < MAX_CTXT; ++n) {
+        if (check_func(c->ac3_exponent_min, "ac3_exponent_min_reuse%d", n)) {
+            randomize_exp(src, EXP_SIZE);
+
+            memcpy(v1, src, EXP_SIZE);
+            memcpy(v2, src, EXP_SIZE);
+
+            call_ref(v1, n, MAX_COEFS);
+            call_new(v2, n, MAX_COEFS);
+
+            if (memcmp(v1, v2, EXP_SIZE) != 0)
+                fail();
+
+            bench_new(v2, n, MAX_COEFS);
+        }
+    }
+
+    report("ac3_exponent_min");
+}
 
 static void check_float_to_fixed24(AC3DSPContext *c) {
 #define BUF_SIZE 1024
@@ -66,5 +107,6 @@ void checkasm_check_ac3dsp(void)
     AC3DSPContext c;
     ff_ac3dsp_init(&c);
 
+    check_ac3_exponent_min(&c);
     check_float_to_fixed24(&c);
 }
