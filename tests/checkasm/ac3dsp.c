@@ -19,6 +19,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdint.h>
 #include <string.h>
 
 #include "libavutil/mem.h"
@@ -34,6 +35,16 @@
         for (i = 0; i < len; i++) {    \
             buf[i] = (uint8_t)rnd();   \
         }                              \
+    } while (0)
+
+#define randomize_i24(buf, len)          \
+    do {                                 \
+        int i;                           \
+        for (i = 0; i < len; i++) {      \
+            int32_t v = (int32_t)rnd();  \
+            int32_t u = (v & 0xFFFFFF);  \
+            buf[i] = (v < 0) ? -u : u;   \
+        }                                \
     } while (0)
 
 #define randomize_float(buf, len)                               \
@@ -77,6 +88,32 @@ static void check_ac3_exponent_min(AC3DSPContext *c) {
     report("ac3_exponent_min");
 }
 
+static void check_ac3_extract_exponents(AC3DSPContext *c) {
+#define MAX_EXPS 3072
+    LOCAL_ALIGNED_16(int32_t, src, [MAX_EXPS]);
+    LOCAL_ALIGNED_16(uint8_t, v1, [MAX_EXPS]);
+    LOCAL_ALIGNED_16(uint8_t, v2, [MAX_EXPS]);
+    int n;
+
+    declare_func(void, uint8_t *, int32_t *, int);
+
+    for (n = 512; n <= MAX_EXPS; n += 256) {
+        if (check_func(c->extract_exponents, "ac3_extract_exponents_n%d", n)) {
+            randomize_i24(src, n);
+
+            call_ref(v1, src, n);
+            call_new(v2, src, n);
+
+            if (memcmp(v1, v2, n) != 0)
+                fail();
+
+            bench_new(v1, src, n);
+        }
+    }
+
+    report("ac3_extract_exponents");
+}
+
 static void check_float_to_fixed24(AC3DSPContext *c) {
 #define BUF_SIZE 1024
     LOCAL_ALIGNED_32(float, src, [BUF_SIZE]);
@@ -108,5 +145,6 @@ void checkasm_check_ac3dsp(void)
     ff_ac3dsp_init(&c);
 
     check_ac3_exponent_min(&c);
+    check_ac3_extract_exponents(&c);
     check_float_to_fixed24(&c);
 }
