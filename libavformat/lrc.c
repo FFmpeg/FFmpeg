@@ -1,5 +1,5 @@
 /*
- * LRC lyrics file format decoder
+ * LRC lyrics file format common structs
  * Copyright (c) 2014 StarBrilliant <m13253@hotmail.com>
  *
  * This file is part of FFmpeg.
