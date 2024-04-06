@@ -389,7 +389,9 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c)
     c->downmix               = NULL;
     c->downmix_fixed         = NULL;
 
-#if ARCH_ARM
+#if ARCH_AARCH64
+    ff_ac3dsp_init_aarch64(c);
+#elif ARCH_ARM
     ff_ac3dsp_init_arm(c);
 #elif ARCH_X86
     ff_ac3dsp_init_x86(c);
