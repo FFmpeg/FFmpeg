@@ -2751,13 +2751,11 @@ If @samp{encoder_version} is not explicitly set, it is automatically
 set to the libavformat version.
 
 @section matroska
-
 Matroska container muxer.
 
 This muxer implements the matroska and webm container specs.
 
 @subsection Metadata
-
 The recognized metadata settings in this muxer are:
 
 @table @option
@@ -2817,11 +2815,8 @@ ffmpeg -i sample_left_right_clip.mpg -an -c:v libvpx -metadata stereo_mode=left_
 @end example
 
 @subsection Options
-
-This muxer supports the following options:
-
 @table @option
-@item reserve_index_space
+@item reserve_index_space @var{index}
 By default, this muxer writes the index for seeking (called cues in Matroska
 terms) at the end of the file, because it cannot know in advance how much space
 to leave for the index at the beginning of the file. However for some use cases
@@ -2837,7 +2832,7 @@ A safe size for most use cases should be about 50kB per hour of video.
 Note that cues are only written if the output is seekable and this option will
 have no effect if it is not.
 
-@item cues_to_front
+@item cues_to_front @var{bool}
 If set, the muxer will write the index at the beginning of the file
 by shifting the main data if necessary. This can be combined with
 reserve_index_space in which case the data is only shifted if
@@ -2845,7 +2840,7 @@ the initially reserved space turns out to be insufficient.
 
 This option is ignored if the output is unseekable.
 
-@item default_mode
+@item default_mode @var{mode}
 This option controls how the FlagDefault of the output tracks will be set.
 It influences which tracks players should play by default. The default mode
 is @samp{passthrough}.
@@ -2865,12 +2860,11 @@ In this mode the FlagDefault is set if and only if the AV_DISPOSITION_DEFAULT
 flag is set in the disposition of the corresponding stream.
 @end table
 
-@item flipped_raw_rgb
+@item flipped_raw_rgb @var{bool}
 If set to true, store positive height for raw RGB bitmaps, which indicates
 bitmap is stored bottom-up. Note that this option does not flip the bitmap
 which has to be done manually beforehand, e.g. by using the vflip filter.
 Default is @var{false} and indicates bitmap is stored top down.
-
 @end table
 
 @anchor{md5}
