@@ -356,7 +356,6 @@ typedef struct H264Context {
     int chroma_x_shift, chroma_y_shift;
 
     int droppable;
-    int coded_picture_number;
 
     int context_initialized;
     int flags;

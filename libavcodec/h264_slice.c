@@ -388,7 +388,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->width_from_caller    = h1->width_from_caller;
     h->height_from_caller   = h1->height_from_caller;
-    h->coded_picture_number = h1->coded_picture_number;
     h->first_field          = h1->first_field;
     h->picture_structure    = h1->picture_structure;
     h->mb_aff_frame         = h1->mb_aff_frame;
