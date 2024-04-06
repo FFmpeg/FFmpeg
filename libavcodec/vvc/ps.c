@@ -219,14 +219,22 @@ fail:
     return NULL;
 }
 
-static int decode_sps(VVCParamSets *ps, const H266RawSPS *rsps, void *log_ctx)
+static int decode_sps(VVCParamSets *ps, const H266RawSPS *rsps, void *log_ctx, int is_clvss)
 {
     const int sps_id        = rsps->sps_seq_parameter_set_id;
     const VVCSPS *old_sps   = ps->sps_list[sps_id];
     const VVCSPS *sps;
 
-    if (old_sps && old_sps->r == rsps)
-        return 0;
+    if (is_clvss) {
+        ps->sps_id_used = 0;
+    }
+
+    if (old_sps) {
+        if (old_sps->r == rsps || !memcmp(old_sps->r, rsps, sizeof(*old_sps->r)))
+            return 0;
+        else if (ps->sps_id_used & (1 << sps_id))
+            return AVERROR_INVALIDDATA;
+    }
 
     sps = sps_alloc(rsps, log_ctx);
     if (!sps)
@@ -234,6 +242,7 @@ static int decode_sps(VVCParamSets *ps, const H266RawSPS *rsps, void *log_ctx)
 
     ff_refstruct_unref(&ps->sps_list[sps_id]);
     ps->sps_list[sps_id] = sps;
+    ps->sps_id_used |= (1 << sps_id);
 
     return 0;
 }
@@ -610,7 +619,7 @@ static int decode_pps(VVCParamSets *ps, const H266RawPPS *rpps)
     return ret;
 }
 
-static int decode_ps(VVCParamSets *ps, const CodedBitstreamH266Context *h266, void *log_ctx)
+static int decode_ps(VVCParamSets *ps, const CodedBitstreamH266Context *h266, void *log_ctx, int is_clvss)
 {
     const H266RawPictureHeader *ph = h266->ph;
     const H266RawPPS *rpps;
@@ -628,7 +637,7 @@ static int decode_ps(VVCParamSets *ps, const CodedBitstreamH266Context *h266, vo
     if (!rsps)
         return AVERROR_INVALIDDATA;
 
-    ret = decode_sps(ps, rsps, log_ctx);
+    ret = decode_sps(ps, rsps, log_ctx, is_clvss);
     if (ret < 0)
         return ret;
 
@@ -867,13 +876,16 @@ int ff_vvc_decode_frame_ps(VVCFrameParamSets *fps, struct VVCContext *s)
     int ret = 0;
     VVCParamSets *ps                        = &s->ps;
     const CodedBitstreamH266Context *h266   = s->cbc->priv_data;
+    int is_clvss;
 
-    ret = decode_ps(ps, h266, s->avctx);
+    decode_recovery_flag(s);
+    is_clvss = IS_CLVSS(s);
+
+    ret = decode_ps(ps, h266, s->avctx, is_clvss);
     if (ret < 0)
         return ret;
 
-    decode_recovery_flag(s);
-    ret = decode_frame_ps(fps, ps, h266, s->poc_tid0, IS_CLVSS(s));
+    ret = decode_frame_ps(fps, ps, h266, s->poc_tid0, is_clvss);
     decode_recovery_poc(s, &fps->ph);
     return ret;
 }

@@ -214,6 +214,9 @@ typedef struct VVCParamSets {
     const VVCALF            *alf_list[VVC_MAX_ALF_COUNT];       ///< RefStruct reference
     const H266RawAPS        *lmcs_list[VVC_MAX_LMCS_COUNT];     ///< RefStruct reference
     const VVCScalingList    *scaling_list[VVC_MAX_SL_COUNT];    ///< RefStruct reference
+
+    // Bit field of SPS IDs used in the current CVS
+    uint16_t                 sps_id_used;
 } VVCParamSets;
 
 typedef struct VVCFrameParamSets {
