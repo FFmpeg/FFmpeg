@@ -158,7 +158,7 @@ RDFTContext *av_rdft_init(int nbits, enum RDFTransformType trans)
         return NULL;
     }
 
-    s->stride = (trans == DFT_C2R) ? sizeof(float) : sizeof(AVComplexFloat);
+    s->stride = (trans == DFT_C2R) ? sizeof(AVComplexFloat) : sizeof(float);
     s->len = 1 << nbits;
     s->inv = trans == IDFT_C2R;
 
