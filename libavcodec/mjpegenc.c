@@ -640,7 +640,27 @@ static const AVClass mjpeg_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const FFCodec ff_mjpeg_encoder = {
+static int mjpeg_get_supported_config(const AVCodecContext *avctx,
+                                      const AVCodec *codec,
+                                      enum AVCodecConfig config,
+                                      unsigned flags, const void **out,
+                                      int *out_num)
+{
+    if (config == AV_CODEC_CONFIG_COLOR_RANGE) {
+        static const enum AVColorRange mjpeg_ranges[] = {
+            AVCOL_RANGE_MPEG, AVCOL_RANGE_JPEG, AVCOL_RANGE_UNSPECIFIED,
+        };
+        int strict = avctx ? avctx->strict_std_compliance : 0;
+        int index = strict > FF_COMPLIANCE_UNOFFICIAL ? 1 : 0;
+        *out = &mjpeg_ranges[index];
+        *out_num = FF_ARRAY_ELEMS(mjpeg_ranges) - index - 1;
+        return 0;
+    }
+
+    return ff_default_get_supported_config(avctx, codec, config, flags, out, out_num);
+}
+
+FFCodec ff_mjpeg_encoder = {
     .p.name         = "mjpeg",
     CODEC_LONG_NAME("MJPEG (Motion JPEG)"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
@@ -657,9 +677,9 @@ const FFCodec ff_mjpeg_encoder = {
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUV422P,  AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_NONE
     },
-    .color_ranges   = AVCOL_RANGE_MPEG | AVCOL_RANGE_JPEG,
     .p.priv_class   = &mjpeg_class,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mjpeg_profiles),
+    .get_supported_config = mjpeg_get_supported_config,
 };
 #endif
 
