@@ -2700,6 +2700,15 @@ computer-generated compositions.
 
 This muxer accepts a single audio stream containing PCM data.
 
+@section ivf
+On2 IVF muxer.
+
+IVF was developed by On2 Technologies (formerly known as Duck
+Corporation), to store internally developed codecs.
+
+This muxer accepts a single @samp{vp8}, @samp{vp9}, or @samp{av1}
+video stream.
+
 @section matroska
 
 Matroska container muxer.
