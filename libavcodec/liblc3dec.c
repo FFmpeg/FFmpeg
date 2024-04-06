@@ -49,7 +49,7 @@ static av_cold int liblc3_decode_init(AVCodecContext *avctx)
     if (channels < 0 || channels > DECODER_MAX_CHANNELS) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid number of channels %d. Max %d channels are accepted\n",
-               channels, DECODER_MAX_CHANNES);
+               channels, DECODER_MAX_CHANNELS);
         return AVERROR(EINVAL);
     }
 
