@@ -2893,10 +2893,15 @@ static int hevc_frame_start(HEVCContext *s)
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
 
+    ret = set_side_data(s);
+    if (ret < 0)
+        goto fail;
+
     if (s->ref->needs_fg &&
-        s->sei.common.film_grain_characteristics.present &&
-        !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
-                                             s->ref->frame->format)) {
+        ( s->sei.common.film_grain_characteristics.present &&
+          !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
+                                             s->ref->frame->format))
+          || !av_film_grain_params_select(s->ref->frame)) {
         av_log_once(s->avctx, AV_LOG_WARNING, AV_LOG_DEBUG, &s->film_grain_warning_shown,
                     "Unsupported film grain parameters. Ignoring film grain.\n");
         s->ref->needs_fg = 0;
@@ -2909,10 +2914,6 @@ static int hevc_frame_start(HEVCContext *s)
         if ((ret = ff_thread_get_buffer(s->avctx, s->ref->frame_grain, 0)) < 0)
             goto fail;
     }
-
-    ret = set_side_data(s);
-    if (ret < 0)
-        goto fail;
 
     s->frame->pict_type = 3 - s->sh.slice_type;
 
