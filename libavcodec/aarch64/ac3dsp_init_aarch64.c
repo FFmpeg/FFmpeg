@@ -28,6 +28,10 @@
 void ff_ac3_exponent_min_neon(uint8_t *exp, int num_reuse_blocks, int nb_coefs);
 void ff_ac3_extract_exponents_neon(uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_float_to_fixed24_neon(int32_t *dst, const float *src, size_t len);
+void ff_ac3_sum_square_butterfly_int32_neon(int64_t sum[4],
+                                            const int32_t *coef0,
+                                            const int32_t *coef1,
+                                            int len);
 
 av_cold void ff_ac3dsp_init_aarch64(AC3DSPContext *c)
 {
@@ -37,4 +41,5 @@ av_cold void ff_ac3dsp_init_aarch64(AC3DSPContext *c)
     c->ac3_exponent_min = ff_ac3_exponent_min_neon;
     c->extract_exponents = ff_ac3_extract_exponents_neon;
     c->float_to_fixed24 = ff_float_to_fixed24_neon;
+    c->sum_square_butterfly_int32 = ff_ac3_sum_square_butterfly_int32_neon;
 }

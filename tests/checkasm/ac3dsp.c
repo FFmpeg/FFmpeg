@@ -139,6 +139,32 @@ static void check_float_to_fixed24(AC3DSPContext *c) {
     report("float_to_fixed24");
 }
 
+static void check_ac3_sum_square_butterfly_int32(AC3DSPContext *c) {
+#define ELEMS 240
+    LOCAL_ALIGNED_16(int32_t, lt, [ELEMS]);
+    LOCAL_ALIGNED_16(int32_t, rt, [ELEMS]);
+    LOCAL_ALIGNED_16(uint64_t, v1, [4]);
+    LOCAL_ALIGNED_16(uint64_t, v2, [4]);
+
+    declare_func(void, int64_t[4], const int32_t *, const int32_t *, int);
+
+    randomize_i24(lt, ELEMS);
+    randomize_i24(rt, ELEMS);
+
+    if (check_func(c->sum_square_butterfly_int32,
+                   "ac3_sum_square_bufferfly_int32")) {
+        call_ref(v1, lt, rt, ELEMS);
+        call_new(v2, lt, rt, ELEMS);
+
+        if (memcmp(v1, v2, sizeof(int64_t[4])) != 0)
+            fail();
+
+        bench_new(v2, lt, rt, ELEMS);
+    }
+
+    report("ac3_sum_square_butterfly_int32");
+}
+
 void checkasm_check_ac3dsp(void)
 {
     AC3DSPContext c;
@@ -147,4 +173,5 @@ void checkasm_check_ac3dsp(void)
     check_ac3_exponent_min(&c);
     check_ac3_extract_exponents(&c);
     check_float_to_fixed24(&c);
+    check_ac3_sum_square_butterfly_int32(&c);
 }

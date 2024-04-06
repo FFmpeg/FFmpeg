@@ -64,3 +64,26 @@ function ff_float_to_fixed24_neon, export=1
         b.ne            1b
         ret
 endfunc
+
+function ff_ac3_sum_square_butterfly_int32_neon, export=1
+        movi            v0.2d, #0
+        movi            v1.2d, #0
+        movi            v2.2d, #0
+        movi            v3.2d, #0
+1:      ld1             {v4.2s}, [x1], #8
+        ld1             {v5.2s}, [x2], #8
+        add             v6.2s, v4.2s, v5.2s
+        sub             v7.2s, v4.2s, v5.2s
+        smlal           v0.2d, v4.2s, v4.2s
+        smlal           v1.2d, v5.2s, v5.2s
+        smlal           v2.2d, v6.2s, v6.2s
+        smlal           v3.2d, v7.2s, v7.2s
+        subs            w3, w3, #2
+        b.gt            1b
+        addp            d0, v0.2d
+        addp            d1, v1.2d
+        addp            d2, v2.2d
+        addp            d3, v3.2d
+        st1             {v0.1d-v3.1d}, [x0]
+        ret
+endfunc
