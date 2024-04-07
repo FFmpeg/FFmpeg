@@ -445,7 +445,7 @@ typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
 
-    HEVCLocalContext    **HEVClcList;
+    HEVCLocalContext    **local_ctx;
     HEVCLocalContext    *HEVClc;
 
     uint8_t             threads_type;

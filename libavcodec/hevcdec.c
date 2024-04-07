@@ -2697,14 +2697,14 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     }
 
     for (i = 1; i < s->threads_number; i++) {
-        if (s->HEVClcList[i])
+        if (s->local_ctx[i])
             continue;
-        s->HEVClcList[i] = av_mallocz(sizeof(HEVCLocalContext));
-        if (!s->HEVClcList[i])
+        s->local_ctx[i] = av_mallocz(sizeof(HEVCLocalContext));
+        if (!s->local_ctx[i])
             return AVERROR(ENOMEM);
-        s->HEVClcList[i]->logctx = s->avctx;
-        s->HEVClcList[i]->parent = s;
-        s->HEVClcList[i]->common_cabac_state = &s->cabac;
+        s->local_ctx[i]->logctx = s->avctx;
+        s->local_ctx[i]->parent = s;
+        s->local_ctx[i]->common_cabac_state = &s->cabac;
     }
 
     offset = (lc->gb.index >> 3);
@@ -2742,8 +2742,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     s->data = data;
 
     for (i = 1; i < s->threads_number; i++) {
-        s->HEVClcList[i]->first_qp_group = 1;
-        s->HEVClcList[i]->qp_y = s->HEVClc->qp_y;
+        s->local_ctx[i]->first_qp_group = 1;
+        s->local_ctx[i]->qp_y = s->HEVClc->qp_y;
     }
 
     atomic_store(&s->wpp_err, 0);
@@ -2756,7 +2756,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         return AVERROR(ENOMEM);
 
     if (s->ps.pps->entropy_coding_sync_enabled_flag)
-        s->avctx->execute2(s->avctx, hls_decode_entry_wpp, s->HEVClcList, ret, s->sh.num_entry_point_offsets + 1);
+        s->avctx->execute2(s->avctx, hls_decode_entry_wpp, s->local_ctx, ret, s->sh.num_entry_point_offsets + 1);
 
     for (i = 0; i <= s->sh.num_entry_point_offsets; i++)
         res += ret[i];
@@ -3472,13 +3472,13 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.offset);
     av_freep(&s->sh.size);
 
-    if (s->HEVClcList) {
+    if (s->local_ctx) {
         for (i = 1; i < s->threads_number; i++) {
-            av_freep(&s->HEVClcList[i]);
+            av_freep(&s->local_ctx[i]);
         }
     }
     av_freep(&s->HEVClc);
-    av_freep(&s->HEVClcList);
+    av_freep(&s->local_ctx);
 
     ff_h2645_packet_uninit(&s->pkt);
 
@@ -3495,13 +3495,13 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->avctx = avctx;
 
     s->HEVClc = av_mallocz(sizeof(HEVCLocalContext));
-    s->HEVClcList = av_mallocz(sizeof(HEVCLocalContext*) * s->threads_number);
-    if (!s->HEVClc || !s->HEVClcList)
+    s->local_ctx = av_mallocz(sizeof(HEVCLocalContext*) * s->threads_number);
+    if (!s->HEVClc || !s->local_ctx)
         return AVERROR(ENOMEM);
     s->HEVClc->parent = s;
     s->HEVClc->logctx = avctx;
     s->HEVClc->common_cabac_state = &s->cabac;
-    s->HEVClcList[0] = s->HEVClc;
+    s->local_ctx[0] = s->HEVClc;
 
     s->output_frame = av_frame_alloc();
     if (!s->output_frame)
