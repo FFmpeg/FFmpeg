@@ -134,13 +134,8 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
     put_bits(&s->pb,  2, 0);                        /* stream type = independent */
     put_bits(&s->pb,  3, 0);                        /* substream id = 0 */
     put_bits(&s->pb, 11, (s->frame_size / 2) - 1);  /* frame size */
-    if (s->bit_alloc.sr_shift) {
-        put_bits(&s->pb, 2, 0x3);                   /* fscod2 */
-        put_bits(&s->pb, 2, s->bit_alloc.sr_code);  /* sample rate code */
-    } else {
-        put_bits(&s->pb, 2, s->bit_alloc.sr_code);  /* sample rate code */
-        put_bits(&s->pb, 2, s->num_blks_code);      /* number of blocks */
-    }
+    put_bits(&s->pb, 2, s->bit_alloc.sr_code);      /* sample rate code */
+    put_bits(&s->pb, 2, s->num_blks_code);          /* number of blocks */
     put_bits(&s->pb, 3, s->channel_mode);           /* audio coding mode */
     put_bits(&s->pb, 1, s->lfe_on);                 /* LFE channel indicator */
     put_bits(&s->pb, 5, s->bitstream_id);           /* bitstream id (EAC3=16) */

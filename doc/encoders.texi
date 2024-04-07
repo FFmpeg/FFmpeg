@@ -144,8 +144,7 @@ If this option is unspecified it is set to @samp{aac_low}.
 
 AC-3 audio encoders.
 
-These encoders implement part of ATSC A/52:2010 and ETSI TS 102 366, as well as
-the undocumented RealAudio 3 (a.k.a. dnet).
+These encoders implement part of ATSC A/52:2010 and ETSI TS 102 366.
 
 The @var{ac3} encoder uses floating-point math, while the @var{ac3_fixed}
 encoder only uses fixed-point integer math. This does not mean that one is

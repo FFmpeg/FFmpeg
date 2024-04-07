@@ -874,8 +874,8 @@ static av_cold void bit_alloc_init(AC3EncodeContext *s)
     /* compute real values */
     /* currently none of these values change during encoding, so we can just
        set them once at initialization */
-    s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code] >> s->bit_alloc.sr_shift;
-    s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code] >> s->bit_alloc.sr_shift;
+    s->bit_alloc.slow_decay = ff_ac3_slow_decay_tab[s->slow_decay_code];
+    s->bit_alloc.fast_decay = ff_ac3_fast_decay_tab[s->fast_decay_code];
     s->bit_alloc.slow_gain  = ff_ac3_slow_gain_tab[s->slow_gain_code];
     s->bit_alloc.db_per_bit = ff_ac3_db_per_bit_tab[s->db_per_bit_code];
     s->bit_alloc.floor      = ff_ac3_floor_tab[s->floor_code];
@@ -1812,8 +1812,6 @@ static void dprint_options(AC3EncodeContext *s)
     switch (s->bitstream_id) {
     case  6: msg = "AC-3 (alt syntax)";       break;
     case  8: msg = "AC-3 (standard)";         break;
-    case  9: msg = "AC-3 (dnet half-rate)";   break;
-    case 10: msg = "AC-3 (dnet quater-rate)"; break;
     case 16: msg = "E-AC-3 (enhanced)";       break;
     default: msg = "ERROR";
     }
@@ -2132,18 +2130,8 @@ int ff_ac3_validate_metadata(AC3EncodeContext *s)
     }
 
     /* set bitstream id for alternate bitstream syntax */
-    if (!s->eac3 && (opt->extended_bsi_1 || opt->extended_bsi_2)) {
-        if (s->bitstream_id > 8 && s->bitstream_id < 11) {
-            if (!s->warned_alternate_bitstream) {
-                av_log(avctx, AV_LOG_WARNING, "alternate bitstream syntax is "
-                       "not compatible with reduced samplerates. writing of "
-                       "extended bitstream information will be disabled.\n");
-                s->warned_alternate_bitstream = 1;
-            }
-        } else {
-            s->bitstream_id = 6;
-        }
-    }
+    if (!s->eac3 && (opt->extended_bsi_1 || opt->extended_bsi_2))
+        s->bitstream_id = 6;
 
     return 0;
 }
@@ -2233,23 +2221,19 @@ static av_cold void set_channel_info(AVCodecContext *avctx)
 static av_cold int validate_options(AC3EncodeContext *s)
 {
     AVCodecContext *avctx = s->avctx;
-    int i, ret, max_sr;
+    int ret;
 
     set_channel_info(avctx);
 
-    /* validate sample rate */
-    /* note: max_sr could be changed from 2 to 5 for E-AC-3 once we find a
-             decoder that supports half sample rate so we can validate that
-             the generated files are correct. */
-    max_sr = s->eac3 ? 2 : 8;
-    for (i = 0; i <= max_sr; i++) {
-        if ((ff_ac3_sample_rate_tab[i % 3] >> (i / 3)) == avctx->sample_rate)
+    for (int i = 0;; i++) {
+        if (ff_ac3_sample_rate_tab[i] == avctx->sample_rate) {
+            s->bit_alloc.sr_code = i;
             break;
+        }
+        av_assert1(ff_ac3_sample_rate_tab[i] != 0);
     }
     s->sample_rate        = avctx->sample_rate;
-    s->bit_alloc.sr_shift = i / 3;
-    s->bit_alloc.sr_code  = i % 3;
-    s->bitstream_id       = s->eac3 ? 16 : 8 + s->bit_alloc.sr_shift;
+    s->bitstream_id       = s->eac3 ? 16 : 8;
 
     /* select a default bit rate if not set by the user */
     if (!avctx->bit_rate) {
@@ -2297,7 +2281,7 @@ static av_cold int validate_options(AC3EncodeContext *s)
            parameter selection */
         min_br_code = -1;
         min_br_dist = INT64_MAX;
-        for (i = 0; i < 19; i++) {
+        for (int i = 0; i < 19; i++) {
             long long br_dist = llabs(ff_ac3_bitrate_tab[i] * 1000 - avctx->bit_rate);
             if (br_dist < min_br_dist) {
                 min_br_dist = br_dist;
@@ -2313,8 +2297,8 @@ static av_cold int validate_options(AC3EncodeContext *s)
     } else {
         int best_br = 0, best_code = 0;
         long long best_diff = INT64_MAX;
-        for (i = 0; i < 19; i++) {
-            int br   = (ff_ac3_bitrate_tab[i] >> s->bit_alloc.sr_shift) * 1000;
+        for (int i = 0; i < 19; i++) {
+            int br   = ff_ac3_bitrate_tab[i] * 1000;
             long long diff = llabs(br - avctx->bit_rate);
             if (diff < best_diff) {
                 best_br   = br;
