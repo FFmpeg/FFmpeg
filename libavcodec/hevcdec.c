@@ -2526,9 +2526,8 @@ static void hls_decode_neighbour(HEVCLocalContext *lc, int x_ctb, int y_ctb,
     lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->ps.sps->ctb_width) && (s->ps.pps->tile_id[ctb_addr_ts] == s->ps.pps->tile_id[s->ps.pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->ps.sps->ctb_width]]));
 }
 
-static int hls_decode_entry(AVCodecContext *avctxt, void *arg)
+static int hls_decode_entry(HEVCContext *s)
 {
-    HEVCContext *s  = avctxt->priv_data;
     HEVCLocalContext *const lc = s->HEVClc;
     int ctb_size    = 1 << s->ps.sps->log2_ctb_size;
     int more_data   = 1;
@@ -2588,13 +2587,6 @@ static int hls_decode_entry(AVCodecContext *avctxt, void *arg)
     return ctb_addr_ts;
 }
 
-static int hls_slice_data(HEVCContext *s)
-{
-    int ret = 0;
-
-    s->avctx->execute(s->avctx, hls_decode_entry, NULL, &ret , 1, 0);
-    return ret;
-}
 static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
                                 int job, int self_id)
 {
@@ -3133,7 +3125,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
                 ctb_addr_ts = hls_slice_data_wpp(s, nal);
             else
-                ctb_addr_ts = hls_slice_data(s);
+                ctb_addr_ts = hls_decode_entry(s);
             if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
                 ret = hevc_frame_end(s);
                 if (ret < 0)
