@@ -2224,9 +2224,6 @@ static av_cold int set_channel_info(AVCodecContext *avctx)
     s->has_surround =  s->channel_mode & 0x04;
 
     s->channel_map  = ac3_enc_channel_map[s->channel_mode][s->lfe_on];
-    if (s->lfe_on)
-        mask |= AV_CH_LOW_FREQUENCY;
-    av_channel_layout_from_mask(&avctx->ch_layout, mask);
 
     return 0;
 }
