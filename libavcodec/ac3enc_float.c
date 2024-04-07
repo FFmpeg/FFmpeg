@@ -107,7 +107,6 @@ av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
 
     s->encode_frame            = encode_frame;
     s->mdct_init               = ac3_float_mdct_init;
-    s->allocate_sample_buffers = allocate_sample_buffers;
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);

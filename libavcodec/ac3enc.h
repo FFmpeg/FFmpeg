@@ -232,8 +232,8 @@ typedef struct AC3EncodeContext {
     int frame_bits;                         ///< all frame bits except exponents and mantissas
     int exponent_bits;                      ///< number of bits used for exponents
 
-    SampleType *windowed_samples;
-    SampleType **planar_samples;
+    void *windowed_samples;
+    uint8_t **planar_samples;
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
     CoefType *mdct_coef_buffer;
@@ -259,9 +259,6 @@ typedef struct AC3EncodeContext {
 
     /* fixed vs. float function pointers */
     int  (*mdct_init)(struct AC3EncodeContext *s);
-
-    /* fixed vs. float templated function pointers */
-    int  (*allocate_sample_buffers)(struct AC3EncodeContext *s);
 
     /* AC-3 vs. E-AC-3 function pointers */
     void (*output_frame_header)(struct AC3EncodeContext *s);

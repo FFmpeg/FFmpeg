@@ -52,6 +52,9 @@
 #include "ac3enc.h"
 #include "eac3enc.h"
 
+#define SAMPLETYPE_SIZE(ctx) (sizeof(float) == sizeof(int32_t) ? sizeof(float) : \
+                                  (ctx)->fixed_point ? sizeof(int32_t) : sizeof(float))
+
 typedef struct AC3Mant {
     int16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
     int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
@@ -2430,9 +2433,20 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
     int channels = s->channels + 1; /* includes coupling channel */
     int channel_blocks = channels * s->num_blocks;
     int total_coefs    = AC3_MAX_COEFS * channel_blocks;
+    const unsigned sampletype_size = SAMPLETYPE_SIZE(s);
 
-    if (s->allocate_sample_buffers(s))
+    if (!(s->windowed_samples = av_malloc(sampletype_size * AC3_WINDOW_SIZE)))
         return AVERROR(ENOMEM);
+
+    if (!FF_ALLOCZ_TYPED_ARRAY(s->planar_samples,  s->channels))
+        return AVERROR(ENOMEM);
+
+    for (int ch = 0; ch < s->channels; ch++) {
+        s->planar_samples[ch] = av_mallocz((AC3_FRAME_SIZE + AC3_BLOCK_SIZE) *
+                                                  sampletype_size);
+        if (!s->planar_samples[ch])
+            return AVERROR(ENOMEM);
+    }
 
     if (!FF_ALLOC_TYPED_ARRAY(s->bap_buffer,         total_coefs)          ||
         !FF_ALLOC_TYPED_ARRAY(s->bap1_buffer,        total_coefs)          ||

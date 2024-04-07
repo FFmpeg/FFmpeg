@@ -104,7 +104,6 @@ static av_cold int ac3_fixed_encode_init(AVCodecContext *avctx)
     s->fixed_point = 1;
     s->encode_frame            = encode_frame;
     s->mdct_init               = ac3_fixed_mdct_init;
-    s->allocate_sample_buffers = allocate_sample_buffers;
     return ff_ac3_encode_init(avctx);
 }
 
