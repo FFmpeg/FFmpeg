@@ -2246,10 +2246,6 @@ static av_cold int validate_options(AC3EncodeContext *s)
         if ((ff_ac3_sample_rate_tab[i % 3] >> (i / 3)) == avctx->sample_rate)
             break;
     }
-    if (i > max_sr) {
-        av_log(avctx, AV_LOG_ERROR, "invalid sample rate\n");
-        return AVERROR(EINVAL);
-    }
     s->sample_rate        = avctx->sample_rate;
     s->bit_alloc.sr_shift = i / 3;
     s->bit_alloc.sr_code  = i % 3;
