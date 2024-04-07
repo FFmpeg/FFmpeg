@@ -2199,10 +2199,8 @@ static av_cold void set_channel_info(AVCodecContext *avctx)
     s->channels     = channels;
     s->fbw_channels = channels - s->lfe_on;
     s->lfe_channel  = s->lfe_on ? s->fbw_channels + 1 : -1;
-    if (s->lfe_on)
-        mask -= AV_CH_LOW_FREQUENCY;
 
-    switch (mask) {
+    switch (mask & ~AV_CH_LOW_FREQUENCY) {
     case AV_CH_LAYOUT_MONO:           s->channel_mode = AC3_CHMODE_MONO;   break;
     case AV_CH_LAYOUT_STEREO:         s->channel_mode = AC3_CHMODE_STEREO; break;
     case AV_CH_LAYOUT_SURROUND:       s->channel_mode = AC3_CHMODE_3F;     break;
