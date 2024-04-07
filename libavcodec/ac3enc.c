@@ -2555,8 +2555,6 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    s->eac3 = avctx->codec_id == AV_CODEC_ID_EAC3;
-
     ret = validate_options(s);
     if (ret)
         return ret;
@@ -2579,11 +2577,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         s->crc_inv[1] = pow_poly((CRC16_POLY >> 1), (8 * frame_size_58) - 16, CRC16_POLY);
     }
 
-    if (CONFIG_EAC3_ENCODER && s->eac3) {
-        static AVOnce init_static_once_eac3 = AV_ONCE_INIT;
-        ff_thread_once(&init_static_once_eac3, ff_eac3_exponent_init);
-        s->output_frame_header = ff_eac3_output_frame_header;
-    } else
+    if (!s->output_frame_header)
         s->output_frame_header = ac3_output_frame_header;
 
     set_bandwidth(s);

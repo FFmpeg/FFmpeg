@@ -30,11 +30,6 @@
 #include "ac3enc.h"
 
 /**
- * Initialize E-AC-3 exponent tables.
- */
-void ff_eac3_exponent_init(void);
-
-/**
  * Determine frame exponent strategy use and indices.
  */
 void ff_eac3_get_frame_exp_strategy(AC3EncodeContext *s);
@@ -45,10 +40,5 @@ void ff_eac3_get_frame_exp_strategy(AC3EncodeContext *s);
  * whether they will be implicitly already known by the decoder.
  */
 void ff_eac3_set_cpl_states(AC3EncodeContext *s);
-
-/**
- * Write the E-AC-3 frame header to the output bitstream.
- */
-void ff_eac3_output_frame_header(AC3EncodeContext *s);
 
 #endif /* AVCODEC_EAC3ENC_H */
