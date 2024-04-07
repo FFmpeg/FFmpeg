@@ -74,7 +74,7 @@ static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl)
  * @param s  AC-3 encoder private context
  * @return   0 on success, negative error code on failure
  */
-static av_cold int ac3_fixed_mdct_init(AC3EncodeContext *s)
+static av_cold int ac3_fixed_mdct_init(AVCodecContext *avctx, AC3EncodeContext *s)
 {
     float fwin[AC3_BLOCK_SIZE];
     const float scale = -1.0f;
@@ -89,7 +89,7 @@ static av_cold int ac3_fixed_mdct_init(AC3EncodeContext *s)
 
     s->mdct_window = iwin;
 
-    s->fdsp = avpriv_alloc_fixed_dsp(s->avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
@@ -101,9 +101,15 @@ static av_cold int ac3_fixed_mdct_init(AC3EncodeContext *s)
 static av_cold int ac3_fixed_encode_init(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
+    int ret;
+
     s->fixed_point = 1;
     s->encode_frame            = encode_frame;
-    s->mdct_init               = ac3_fixed_mdct_init;
+
+    ret = ac3_fixed_mdct_init(avctx, s);
+    if (ret < 0)
+        return ret;
+
     return ff_ac3_encode_init(avctx);
 }
 

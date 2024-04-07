@@ -102,12 +102,17 @@ static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
 av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
+    int ret;
 
     s->encode_frame            = encode_frame;
-    s->mdct_init               = ac3_float_mdct_init;
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
+
+    ret = ac3_float_mdct_init(s);
+    if (ret < 0)
+        return ret;
+
     return ff_ac3_encode_init(avctx);
 }
 

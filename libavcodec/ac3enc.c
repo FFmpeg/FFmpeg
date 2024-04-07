@@ -2590,10 +2590,6 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     bit_alloc_init(s);
 
-    ret = s->mdct_init(s);
-    if (ret)
-        return ret;
-
     ret = allocate_buffers(s);
     if (ret)
         return ret;

@@ -257,9 +257,6 @@ typedef struct AC3EncodeContext {
     /** fixed vs. float function pointers */
     void (*encode_frame)(struct AC3EncodeContext *s);
 
-    /* fixed vs. float function pointers */
-    int  (*mdct_init)(struct AC3EncodeContext *s);
-
     /* AC-3 vs. E-AC-3 function pointers */
     void (*output_frame_header)(struct AC3EncodeContext *s);
 } AC3EncodeContext;
