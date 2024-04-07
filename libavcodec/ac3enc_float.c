@@ -88,10 +88,8 @@ static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
 {
     const float scale = -2.0 / AC3_WINDOW_SIZE;
     float *window = av_malloc_array(AC3_BLOCK_SIZE, sizeof(*window));
-    if (!window) {
-        av_log(s->avctx, AV_LOG_ERROR, "Cannot allocate memory.\n");
+    if (!window)
         return AVERROR(ENOMEM);
-    }
 
     ff_kbd_window_init(window, 5.0, AC3_BLOCK_SIZE);
     s->mdct_window = window;
