@@ -20,80 +20,90 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <assert.h>
+
 #include "libavutil/avstring.h"
 #include "internal.h"
 #include "img2.h"
 
+#define IMG_TAGS(TAG)               \
+    TAG(MJPEG,           jpeg     ) \
+    TAG(MJPEG,           jpg      ) \
+    TAG(MJPEG,           jps      ) \
+    TAG(MJPEG,           mpo      ) \
+    TAG(LJPEG,           ljpg     ) \
+    TAG(JPEGLS,          jls      ) \
+    TAG(PNG,             png      ) \
+    TAG(PNG,             pns      ) \
+    TAG(PNG,             mng      ) \
+    TAG(PPM,             ppm      ) \
+    TAG(PPM,             pnm      ) \
+    TAG(PGM,             pgm      ) \
+    TAG(PGMYUV,          pgmyuv   ) \
+    TAG(PBM,             pbm      ) \
+    TAG(PAM,             pam      ) \
+    TAG(PFM,             pfm      ) \
+    TAG(PHM,             phm      ) \
+    TAG(CRI,             cri      ) \
+    TAG(ALIAS_PIX,       pix      ) \
+    TAG(DDS,             dds      ) \
+    TAG(MPEG1VIDEO,      mpg1-img ) \
+    TAG(MPEG2VIDEO,      mpg2-img ) \
+    TAG(MPEG4,           mpg4-img ) \
+    TAG(RAWVIDEO,        y        ) \
+    TAG(RAWVIDEO,        raw      ) \
+    TAG(BMP,             bmp      ) \
+    TAG(TARGA,           tga      ) \
+    TAG(TIFF,            tiff     ) \
+    TAG(TIFF,            tif      ) \
+    TAG(TIFF,            dng      ) \
+    TAG(SGI,             sgi      ) \
+    TAG(PTX,             ptx      ) \
+    TAG(PHOTOCD,         pcd      ) \
+    TAG(PCX,             pcx      ) \
+    TAG(QDRAW,           pic      ) \
+    TAG(QDRAW,           pct      ) \
+    TAG(QDRAW,           pict     ) \
+    TAG(SUNRAST,         sun      ) \
+    TAG(SUNRAST,         ras      ) \
+    TAG(SUNRAST,         rs       ) \
+    TAG(SUNRAST,         im1      ) \
+    TAG(SUNRAST,         im8      ) \
+    TAG(SUNRAST,         im24     ) \
+    TAG(SUNRAST,         im32     ) \
+    TAG(SUNRAST,         sunras   ) \
+    TAG(SVG,             svg      ) \
+    TAG(SVG,             svgz     ) \
+    TAG(JPEG2000,        j2c      ) \
+    TAG(JPEG2000,        jp2      ) \
+    TAG(JPEG2000,        jpc      ) \
+    TAG(JPEG2000,        j2k      ) \
+    TAG(DPX,             dpx      ) \
+    TAG(EXR,             exr      ) \
+    TAG(PICTOR,          pic      ) \
+    TAG(V210X,           yuv10    ) \
+    TAG(WEBP,            webp     ) \
+    TAG(XBM,             xbm      ) \
+    TAG(XPM,             xpm      ) \
+    TAG(XFACE,           xface    ) \
+    TAG(XWD,             xwd      ) \
+    TAG(GEM,             img      ) \
+    TAG(GEM,             ximg     ) \
+    TAG(GEM,             timg     ) \
+    TAG(VBN,             vbn      ) \
+    TAG(JPEGXL,          jxl      ) \
+    TAG(QOI,             qoi      ) \
+    TAG(RADIANCE_HDR,    hdr      ) \
+    TAG(WBMP,            wbmp     ) \
+    TAG(NONE,                     )
+
+#define LENGTH_CHECK(CODECID, STR) \
+    static_assert(sizeof(#STR) <= sizeof(ff_img_tags->str), #STR " does not fit into IdStrMap.str\n");
+IMG_TAGS(LENGTH_CHECK)
+
 const IdStrMap ff_img_tags[] = {
-    { AV_CODEC_ID_MJPEG,      "jpeg"     },
-    { AV_CODEC_ID_MJPEG,      "jpg"      },
-    { AV_CODEC_ID_MJPEG,      "jps"      },
-    { AV_CODEC_ID_MJPEG,      "mpo"      },
-    { AV_CODEC_ID_LJPEG,      "ljpg"     },
-    { AV_CODEC_ID_JPEGLS,     "jls"      },
-    { AV_CODEC_ID_PNG,        "png"      },
-    { AV_CODEC_ID_PNG,        "pns"      },
-    { AV_CODEC_ID_PNG,        "mng"      },
-    { AV_CODEC_ID_PPM,        "ppm"      },
-    { AV_CODEC_ID_PPM,        "pnm"      },
-    { AV_CODEC_ID_PGM,        "pgm"      },
-    { AV_CODEC_ID_PGMYUV,     "pgmyuv"   },
-    { AV_CODEC_ID_PBM,        "pbm"      },
-    { AV_CODEC_ID_PAM,        "pam"      },
-    { AV_CODEC_ID_PFM,        "pfm"      },
-    { AV_CODEC_ID_PHM,        "phm"      },
-    { AV_CODEC_ID_CRI,        "cri"      },
-    { AV_CODEC_ID_ALIAS_PIX,  "pix"      },
-    { AV_CODEC_ID_DDS,        "dds"      },
-    { AV_CODEC_ID_MPEG1VIDEO, "mpg1-img" },
-    { AV_CODEC_ID_MPEG2VIDEO, "mpg2-img" },
-    { AV_CODEC_ID_MPEG4,      "mpg4-img" },
-    { AV_CODEC_ID_RAWVIDEO,   "y"        },
-    { AV_CODEC_ID_RAWVIDEO,   "raw"      },
-    { AV_CODEC_ID_BMP,        "bmp"      },
-    { AV_CODEC_ID_TARGA,      "tga"      },
-    { AV_CODEC_ID_TIFF,       "tiff"     },
-    { AV_CODEC_ID_TIFF,       "tif"      },
-    { AV_CODEC_ID_TIFF,       "dng"      },
-    { AV_CODEC_ID_SGI,        "sgi"      },
-    { AV_CODEC_ID_PTX,        "ptx"      },
-    { AV_CODEC_ID_PHOTOCD,    "pcd"      },
-    { AV_CODEC_ID_PCX,        "pcx"      },
-    { AV_CODEC_ID_QDRAW,      "pic"      },
-    { AV_CODEC_ID_QDRAW,      "pct"      },
-    { AV_CODEC_ID_QDRAW,      "pict"     },
-    { AV_CODEC_ID_SUNRAST,    "sun"      },
-    { AV_CODEC_ID_SUNRAST,    "ras"      },
-    { AV_CODEC_ID_SUNRAST,    "rs"       },
-    { AV_CODEC_ID_SUNRAST,    "im1"      },
-    { AV_CODEC_ID_SUNRAST,    "im8"      },
-    { AV_CODEC_ID_SUNRAST,    "im24"     },
-    { AV_CODEC_ID_SUNRAST,    "im32"     },
-    { AV_CODEC_ID_SUNRAST,    "sunras"   },
-    { AV_CODEC_ID_SVG,        "svg"      },
-    { AV_CODEC_ID_SVG,        "svgz"     },
-    { AV_CODEC_ID_JPEG2000,   "j2c"      },
-    { AV_CODEC_ID_JPEG2000,   "jp2"      },
-    { AV_CODEC_ID_JPEG2000,   "jpc"      },
-    { AV_CODEC_ID_JPEG2000,   "j2k"      },
-    { AV_CODEC_ID_DPX,        "dpx"      },
-    { AV_CODEC_ID_EXR,        "exr"      },
-    { AV_CODEC_ID_PICTOR,     "pic"      },
-    { AV_CODEC_ID_V210X,      "yuv10"    },
-    { AV_CODEC_ID_WEBP,       "webp"     },
-    { AV_CODEC_ID_XBM,        "xbm"      },
-    { AV_CODEC_ID_XPM,        "xpm"      },
-    { AV_CODEC_ID_XFACE,      "xface"    },
-    { AV_CODEC_ID_XWD,        "xwd"      },
-    { AV_CODEC_ID_GEM,        "img"      },
-    { AV_CODEC_ID_GEM,        "ximg"     },
-    { AV_CODEC_ID_GEM,        "timg"     },
-    { AV_CODEC_ID_VBN,        "vbn"      },
-    { AV_CODEC_ID_JPEGXL,     "jxl"      },
-    { AV_CODEC_ID_QOI,        "qoi"      },
-    { AV_CODEC_ID_RADIANCE_HDR, "hdr"    },
-    { AV_CODEC_ID_WBMP,       "wbmp"     },
-    { AV_CODEC_ID_NONE,       NULL       }
+#define TAG(CODECID, STR) { AV_CODEC_ID_ ## CODECID, #STR },
+IMG_TAGS(TAG)
 };
 
 static enum AVCodecID str2id(const IdStrMap *tags, const char *str)
