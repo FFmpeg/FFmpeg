@@ -2192,17 +2192,13 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
 static av_cold int set_channel_info(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
+    uint64_t mask = av_channel_layout_subset(&avctx->ch_layout, ~(uint64_t)0);
     int channels = avctx->ch_layout.nb_channels;
-    uint64_t mask = avctx->ch_layout.u.mask;
 
     if (channels < 1 || channels > AC3_MAX_CHANNELS)
         return AVERROR(EINVAL);
     if (mask > 0x7FF)
         return AVERROR(EINVAL);
-
-    if (!mask)
-        av_channel_layout_default(&avctx->ch_layout, channels);
-    mask = avctx->ch_layout.u.mask;
 
     s->lfe_on       = !!(mask & AV_CH_LOW_FREQUENCY);
     s->channels     = channels;
