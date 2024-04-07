@@ -39,29 +39,6 @@
 
 
 /*
- * Copy input samples.
- * Channels are reordered from FFmpeg's default order to AC-3 order.
- */
-static void copy_input_samples(AC3EncodeContext *s, SampleType **samples)
-{
-    int ch;
-
-    /* copy and remap input samples */
-    for (ch = 0; ch < s->channels; ch++) {
-        /* copy last 256 samples of previous frame to the start of the current frame */
-        memcpy(&s->planar_samples[ch][0],
-               (SampleType*)s->planar_samples[ch] + AC3_BLOCK_SIZE * s->num_blocks,
-               AC3_BLOCK_SIZE * sizeof(SampleType));
-
-        /* copy new samples for current frame */
-        memcpy((SampleType*)s->planar_samples[ch] + AC3_BLOCK_SIZE,
-               samples[s->channel_map[ch]],
-               AC3_BLOCK_SIZE * s->num_blocks * sizeof(SampleType));
-    }
-}
-
-
-/*
  * Apply the MDCT to input samples to generate frequency coefficients.
  * This applies the KBD window and normalizes the input to reduce precision
  * loss due to fixed-point calculations.
@@ -353,10 +330,8 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 }
 
 
-static void encode_frame(AC3EncodeContext *s, const AVFrame *frame)
+static void encode_frame(AC3EncodeContext *s)
 {
-    copy_input_samples(s, (SampleType **)frame->extended_data);
-
     apply_mdct(s);
 
     s->cpl_on = s->cpl_enabled;
