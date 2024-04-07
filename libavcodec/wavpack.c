@@ -1526,10 +1526,10 @@ static int wavpack_decode_block(AVCodecContext *avctx, AVFrame *frame, int block
         }
 
         /* clear DSD state if stream properties change */
-        if (new_ch_layout.nb_channels != wc->dsd_channels ||
-            av_channel_layout_compare(&new_ch_layout, &avctx->ch_layout) ||
-            new_samplerate != avctx->sample_rate    ||
-            !!got_dsd      != !!wc->dsdctx) {
+        if ((wc->dsdctx && !got_dsd) ||
+            got_dsd && (new_ch_layout.nb_channels != wc->dsd_channels ||
+                        av_channel_layout_compare(&new_ch_layout, &avctx->ch_layout) ||
+                        new_samplerate != avctx->sample_rate)) {
             ret = wv_dsd_reset(wc, got_dsd ? new_ch_layout.nb_channels : 0);
             if (ret < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Error reinitializing the DSD context\n");
