@@ -963,6 +963,8 @@ static av_cold void vvc_decode_flush(AVCodecContext *avctx)
         ff_vvc_flush_dpb(last);
     }
 
+    s->ps->sps_id_used = 0;
+
     s->eos = 1;
 }
 
