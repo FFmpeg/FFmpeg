@@ -30,7 +30,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
-#include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/crc.h"
 #include "libavutil/emms.h"
@@ -1807,17 +1806,18 @@ static void dprint_options(AC3EncodeContext *s)
 #ifdef DEBUG
     AVCodecContext *avctx = s->avctx;
     AC3EncOptions *opt = &s->options;
+    const char *msg;
     char strbuf[32];
 
     switch (s->bitstream_id) {
-    case  6:  av_strlcpy(strbuf, "AC-3 (alt syntax)",       32); break;
-    case  8:  av_strlcpy(strbuf, "AC-3 (standard)",         32); break;
-    case  9:  av_strlcpy(strbuf, "AC-3 (dnet half-rate)",   32); break;
-    case 10:  av_strlcpy(strbuf, "AC-3 (dnet quater-rate)", 32); break;
-    case 16:  av_strlcpy(strbuf, "E-AC-3 (enhanced)",       32); break;
-    default: snprintf(strbuf, 32, "ERROR");
+    case  6: msg = "AC-3 (alt syntax)";       break;
+    case  8: msg = "AC-3 (standard)";         break;
+    case  9: msg = "AC-3 (dnet half-rate)";   break;
+    case 10: msg = "AC-3 (dnet quater-rate)"; break;
+    case 16: msg = "E-AC-3 (enhanced)";       break;
+    default: msg = "ERROR";
     }
-    ff_dlog(avctx, "bitstream_id: %s (%d)\n", strbuf, s->bitstream_id);
+    ff_dlog(avctx, "bitstream_id: %s (%d)\n", msg, s->bitstream_id);
     ff_dlog(avctx, "sample_fmt: %s\n", av_get_sample_fmt_name(avctx->sample_fmt));
     av_channel_layout_describe(&avctx->ch_layout, strbuf, sizeof(strbuf));
     ff_dlog(avctx, "channel_layout: %s\n", strbuf);
@@ -1842,12 +1842,14 @@ static void dprint_options(AC3EncodeContext *s)
     if (opt->audio_production_info) {
         ff_dlog(avctx, "mixing_level: %ddB\n", opt->mixing_level);
         switch (opt->room_type) {
-        case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
-        case AC3ENC_OPT_LARGE_ROOM:    av_strlcpy(strbuf, "large", 32);        break;
-        case AC3ENC_OPT_SMALL_ROOM:    av_strlcpy(strbuf, "small", 32);        break;
-        default: snprintf(strbuf, 32, "ERROR (%d)", opt->room_type);
+        case AC3ENC_OPT_NOT_INDICATED: msg = "notindicated"; break;
+        case AC3ENC_OPT_LARGE_ROOM:    msg = "large";        break;
+        case AC3ENC_OPT_SMALL_ROOM:    msg = "small";        break;
+        default:
+            snprintf(strbuf, sizeof(strbuf), "ERROR (%d)", opt->room_type);
+            msg = strbuf;
         }
-        ff_dlog(avctx, "room_type: %s\n", strbuf);
+        ff_dlog(avctx, "room_type: %s\n", msg);
     } else {
         ff_dlog(avctx, "mixing_level: {not written}\n");
         ff_dlog(avctx, "room_type: {not written}\n");
@@ -1856,12 +1858,14 @@ static void dprint_options(AC3EncodeContext *s)
     ff_dlog(avctx, "dialnorm: %ddB\n", opt->dialogue_level);
     if (s->channel_mode == AC3_CHMODE_STEREO) {
         switch (opt->dolby_surround_mode) {
-        case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
-        case AC3ENC_OPT_MODE_ON:       av_strlcpy(strbuf, "on", 32);           break;
-        case AC3ENC_OPT_MODE_OFF:      av_strlcpy(strbuf, "off", 32);          break;
-        default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_mode);
+        case AC3ENC_OPT_NOT_INDICATED: msg = "notindicated"; break;
+        case AC3ENC_OPT_MODE_ON:       msg = "on";           break;
+        case AC3ENC_OPT_MODE_OFF:      msg = "off";          break;
+        default:
+            snprintf(strbuf, sizeof(strbuf), "ERROR (%d)", opt->dolby_surround_mode);
+            msg = strbuf;
         }
-        ff_dlog(avctx, "dsur_mode: %s\n", strbuf);
+        ff_dlog(avctx, "dsur_mode: %s\n", msg);
     } else {
         ff_dlog(avctx, "dsur_mode: {not written}\n");
     }
@@ -1870,12 +1874,14 @@ static void dprint_options(AC3EncodeContext *s)
     if (s->bitstream_id == 6) {
         if (opt->extended_bsi_1) {
             switch (opt->preferred_stereo_downmix) {
-            case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
-            case AC3ENC_OPT_DOWNMIX_LTRT:  av_strlcpy(strbuf, "ltrt", 32);         break;
-            case AC3ENC_OPT_DOWNMIX_LORO:  av_strlcpy(strbuf, "loro", 32);         break;
-            default: snprintf(strbuf, 32, "ERROR (%d)", opt->preferred_stereo_downmix);
+            case AC3ENC_OPT_NOT_INDICATED: msg = "notindicated"; break;
+            case AC3ENC_OPT_DOWNMIX_LTRT:  msg = "ltrt";         break;
+            case AC3ENC_OPT_DOWNMIX_LORO:  msg = "loro";         break;
+            default:
+                snprintf(strbuf, sizeof(strbuf), "ERROR (%d)", opt->preferred_stereo_downmix);
+                msg = strbuf;
             }
-            ff_dlog(avctx, "dmix_mode: %s\n", strbuf);
+            ff_dlog(avctx, "dmix_mode: %s\n", msg);
             ff_dlog(avctx, "ltrt_cmixlev: %0.3f (%d)\n",
                     opt->ltrt_center_mix_level, s->ltrt_center_mix_level);
             ff_dlog(avctx, "ltrt_surmixlev: %0.3f (%d)\n",
@@ -1889,26 +1895,32 @@ static void dprint_options(AC3EncodeContext *s)
         }
         if (opt->extended_bsi_2) {
             switch (opt->dolby_surround_ex_mode) {
-            case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
-            case AC3ENC_OPT_MODE_ON:       av_strlcpy(strbuf, "on", 32);           break;
-            case AC3ENC_OPT_MODE_OFF:      av_strlcpy(strbuf, "off", 32);          break;
-            default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_surround_ex_mode);
+            case AC3ENC_OPT_NOT_INDICATED: msg = "notindicated"; break;
+            case AC3ENC_OPT_MODE_ON:       msg = "on";           break;
+            case AC3ENC_OPT_MODE_OFF:      msg = "off";          break;
+            default:
+                snprintf(strbuf, sizeof(strbuf), "ERROR (%d)", opt->dolby_surround_ex_mode);
+                msg = strbuf;
             }
-            ff_dlog(avctx, "dsurex_mode: %s\n", strbuf);
+            ff_dlog(avctx, "dsurex_mode: %s\n", msg);
             switch (opt->dolby_headphone_mode) {
-            case AC3ENC_OPT_NOT_INDICATED: av_strlcpy(strbuf, "notindicated", 32); break;
-            case AC3ENC_OPT_MODE_ON:       av_strlcpy(strbuf, "on", 32);           break;
-            case AC3ENC_OPT_MODE_OFF:      av_strlcpy(strbuf, "off", 32);          break;
-            default: snprintf(strbuf, 32, "ERROR (%d)", opt->dolby_headphone_mode);
+            case AC3ENC_OPT_NOT_INDICATED: msg = "notindicated"; break;
+            case AC3ENC_OPT_MODE_ON:       msg = "on";           break;
+            case AC3ENC_OPT_MODE_OFF:      msg = "off";          break;
+            default:
+                snprintf(strbuf, sizeof(strbuf), "ERROR (%d)", opt->dolby_headphone_mode);
+                msg = strbuf;
             }
-            ff_dlog(avctx, "dheadphone_mode: %s\n", strbuf);
+            ff_dlog(avctx, "dheadphone_mode: %s\n", msg);
 
             switch (opt->ad_converter_type) {
-            case AC3ENC_OPT_ADCONV_STANDARD: av_strlcpy(strbuf, "standard", 32); break;
-            case AC3ENC_OPT_ADCONV_HDCD:     av_strlcpy(strbuf, "hdcd", 32);     break;
-            default: snprintf(strbuf, 32, "ERROR (%d)", opt->ad_converter_type);
+            case AC3ENC_OPT_ADCONV_STANDARD: msg = "standard"; break;
+            case AC3ENC_OPT_ADCONV_HDCD:     msg = "hdcd";     break;
+            default:
+                snprintf(strbuf, sizeof(strbuf), "ERROR (%d)", opt->ad_converter_type);
+                msg = strbuf;
             }
-            ff_dlog(avctx, "ad_conv_type: %s\n", strbuf);
+            ff_dlog(avctx, "ad_conv_type: %s\n", msg);
         } else {
             ff_dlog(avctx, "extended bitstream info 2: {not written}\n");
         }
