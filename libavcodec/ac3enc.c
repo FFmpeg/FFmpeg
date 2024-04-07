@@ -2189,16 +2189,11 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
 /*
  * Set channel information during initialization.
  */
-static av_cold int set_channel_info(AVCodecContext *avctx)
+static av_cold void set_channel_info(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
     uint64_t mask = av_channel_layout_subset(&avctx->ch_layout, ~(uint64_t)0);
     int channels = avctx->ch_layout.nb_channels;
-
-    if (channels < 1 || channels > AC3_MAX_CHANNELS)
-        return AVERROR(EINVAL);
-    if (mask > 0x7FF)
-        return AVERROR(EINVAL);
 
     s->lfe_on       = !!(mask & AV_CH_LOW_FREQUENCY);
     s->channels     = channels;
@@ -2217,15 +2212,11 @@ static av_cold int set_channel_info(AVCodecContext *avctx)
     case AV_CH_LAYOUT_2_2:            s->channel_mode = AC3_CHMODE_2F2R;   break;
     case AV_CH_LAYOUT_5POINT0:
     case AV_CH_LAYOUT_5POINT0_BACK:   s->channel_mode = AC3_CHMODE_3F2R;   break;
-    default:
-        return AVERROR(EINVAL);
     }
     s->has_center   = (s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO;
     s->has_surround =  s->channel_mode & 0x04;
 
     s->channel_map  = ac3_enc_channel_map[s->channel_mode][s->lfe_on];
-
-    return 0;
 }
 
 
@@ -2234,17 +2225,7 @@ static av_cold int validate_options(AC3EncodeContext *s)
     AVCodecContext *avctx = s->avctx;
     int i, ret, max_sr;
 
-    /* validate channel layout */
-    if (!avctx->ch_layout.nb_channels) {
-        av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The "
-                                      "encoder will guess the layout, but it "
-                                      "might be incorrect.\n");
-    }
-    ret = set_channel_info(avctx);
-    if (ret) {
-        av_log(avctx, AV_LOG_ERROR, "invalid channel layout\n");
-        return ret;
-    }
+    set_channel_info(avctx);
 
     /* validate sample rate */
     /* note: max_sr could be changed from 2 to 5 for E-AC-3 once we find a
