@@ -1011,6 +1011,8 @@ static int wv_dsd_reset(WavpackContext *s, int channels)
     for (i = 0; i < channels; i++)
         memset(s->dsdctx[i].buf, 0x69, sizeof(s->dsdctx[i].buf));
 
+    ff_init_dsd_data();
+
     return 0;
 }
 
@@ -1533,7 +1535,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, AVFrame *frame, int block
                 av_log(avctx, AV_LOG_ERROR, "Error reinitializing the DSD context\n");
                 return ret;
             }
-            ff_init_dsd_data();
         }
         av_channel_layout_copy(&avctx->ch_layout, &new_ch_layout);
         avctx->sample_rate         = new_samplerate;
