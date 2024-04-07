@@ -315,7 +315,7 @@ static void validate_mix_level(void *log_ctx, const char *opt_name,
  *
  * @param s  AC-3 encoder private context
  */
-int ff_ac3_validate_metadata(AC3EncodeContext *s)
+static int ac3_validate_metadata(AC3EncodeContext *s)
 {
     AVCodecContext *avctx = s->avctx;
     AC3EncOptions *opt = &s->options;
@@ -488,7 +488,7 @@ int ff_ac3_validate_metadata(AC3EncodeContext *s)
  *
  * @param s  AC-3 encoder private context
  */
-void ff_ac3_adjust_frame_size(AC3EncodeContext *s)
+static void ac3_adjust_frame_size(AC3EncodeContext *s)
 {
     while (s->bits_written >= s->bit_rate && s->samples_written >= s->sample_rate) {
         s->bits_written    -= s->bit_rate;
@@ -1984,9 +1984,16 @@ int ff_ac3_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     AC3EncodeContext *const s = avctx->priv_data;
     int ret;
 
-    ret = s->encode_frame(s, frame);
-    if (ret < 0)
-        return ret;
+    if (s->options.allow_per_frame_metadata) {
+        ret = ac3_validate_metadata(s);
+        if (ret)
+            return ret;
+    }
+
+    if (s->bit_alloc.sr_code == 1 || s->eac3)
+        ac3_adjust_frame_size(s);
+
+    s->encode_frame(s, frame);
 
     ac3_apply_rematrixing(s);
 
@@ -2328,7 +2335,7 @@ static av_cold int validate_options(AC3EncodeContext *s)
     if (s->cutoff > (s->sample_rate >> 1))
         s->cutoff = s->sample_rate >> 1;
 
-    ret = ff_ac3_validate_metadata(s);
+    ret = ac3_validate_metadata(s);
     if (ret)
         return ret;
 

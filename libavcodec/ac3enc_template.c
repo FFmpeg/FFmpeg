@@ -371,19 +371,8 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 }
 
 
-static int encode_frame(AC3EncodeContext *s, const AVFrame *frame)
+static void encode_frame(AC3EncodeContext *s, const AVFrame *frame)
 {
-    int ret;
-
-    if (s->options.allow_per_frame_metadata) {
-        ret = ff_ac3_validate_metadata(s);
-        if (ret)
-            return ret;
-    }
-
-    if (s->bit_alloc.sr_code == 1 || (AC3ENC_FLOAT && s->eac3))
-        ff_ac3_adjust_frame_size(s);
-
     copy_input_samples(s, (SampleType **)frame->extended_data);
 
     apply_mdct(s);
@@ -399,6 +388,4 @@ static int encode_frame(AC3EncodeContext *s, const AVFrame *frame)
 #if AC3ENC_FLOAT
     scale_coefficients(s);
 #endif
-
-    return 0;
 }

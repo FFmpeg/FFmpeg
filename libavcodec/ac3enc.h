@@ -255,7 +255,7 @@ typedef struct AC3EncodeContext {
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
 
     /** fixed vs. float function pointers */
-    int (*encode_frame)(struct AC3EncodeContext *s, const AVFrame *frame);
+    void (*encode_frame)(struct AC3EncodeContext *s, const AVFrame *frame);
 
     /* fixed vs. float function pointers */
     int  (*mdct_init)(struct AC3EncodeContext *s);
@@ -277,9 +277,6 @@ int ff_ac3_float_encode_init(AVCodecContext *avctx);
 
 int ff_ac3_encode_close(AVCodecContext *avctx);
 
-int ff_ac3_validate_metadata(AC3EncodeContext *s);
-
-void ff_ac3_adjust_frame_size(AC3EncodeContext *s);
 
 void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s);
 
