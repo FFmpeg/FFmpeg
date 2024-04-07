@@ -1000,7 +1000,8 @@ static int wv_dsd_reset(WavpackContext *s, int channels)
     if (!channels)
         return 0;
 
-    if (channels > INT_MAX / sizeof(*s->dsdctx))
+    if (WV_MAX_CHANNELS > SIZE_MAX / sizeof(*s->dsdctx) &&
+        channels > SIZE_MAX / sizeof(*s->dsdctx))
         return AVERROR(EINVAL);
 
     s->dsdctx = ff_refstruct_allocz(channels * sizeof(*s->dsdctx));
@@ -1433,6 +1434,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, AVFrame *frame, int block
                 av_log(avctx, AV_LOG_ERROR, "Invalid channel info size %d\n",
                        size);
             }
+            av_assert1(chan <= WV_MAX_CHANNELS);
             break;
         case WP_ID_SAMPLE_RATE:
             if (size != 3) {
@@ -1524,6 +1526,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, AVFrame *frame, int block
         } else {
             av_channel_layout_default(&new_ch_layout, s->stereo + 1);
         }
+        av_assert1(new_ch_layout.nb_channels <= WV_MAX_CHANNELS);
 
         /* clear DSD state if stream properties change */
         if ((wc->dsdctx && !got_dsd) ||
