@@ -439,13 +439,17 @@ typedef struct HEVCLocalContext {
     /* properties of the boundary of the current CTB for the purposes
      * of the deblocking filter */
     int boundary_flags;
+
+    // an array of these structs is used for per-thread state - pad its size
+    // to avoid false sharing
+    char padding[128];
 } HEVCLocalContext;
 
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
 
-    HEVCLocalContext    **local_ctx;
+    HEVCLocalContext     *local_ctx;
     unsigned           nb_local_ctx;
 
     HEVCLocalContext    *HEVClc;
