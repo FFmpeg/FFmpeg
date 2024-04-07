@@ -2697,11 +2697,13 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     }
 
     for (i = 1; i < s->threads_number; i++) {
-        if (s->local_ctx[i])
+        if (i < s->nb_local_ctx)
             continue;
         s->local_ctx[i] = av_mallocz(sizeof(HEVCLocalContext));
         if (!s->local_ctx[i])
             return AVERROR(ENOMEM);
+        s->nb_local_ctx++;
+
         s->local_ctx[i]->logctx = s->avctx;
         s->local_ctx[i]->parent = s;
         s->local_ctx[i]->common_cabac_state = &s->cabac;
@@ -3473,7 +3475,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_freep(&s->sh.size);
 
     if (s->local_ctx) {
-        for (i = 1; i < s->threads_number; i++) {
+        for (i = 1; i < s->nb_local_ctx; i++) {
             av_freep(&s->local_ctx[i]);
         }
     }
@@ -3502,6 +3504,7 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->HEVClc->logctx = avctx;
     s->HEVClc->common_cabac_state = &s->cabac;
     s->local_ctx[0] = s->HEVClc;
+    s->nb_local_ctx = 1;
 
     s->output_frame = av_frame_alloc();
     if (!s->output_frame)
