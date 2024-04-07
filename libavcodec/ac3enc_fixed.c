@@ -102,6 +102,7 @@ static av_cold int ac3_fixed_encode_init(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
     s->fixed_point = 1;
+    s->encode_frame            = encode_frame;
     s->mdct_init               = ac3_fixed_mdct_init;
     s->allocate_sample_buffers = allocate_sample_buffers;
     return ff_ac3_encode_init(avctx);
@@ -116,7 +117,7 @@ const FFCodec ff_ac3_fixed_encoder = {
     .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ac3_fixed_encode_init,
-    FF_CODEC_ENCODE_CB(ff_ac3_fixed_encode_frame),
+    FF_CODEC_ENCODE_CB(ff_ac3_encode_frame),
     .close           = ff_ac3_encode_close,
     .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S32P,
                                                       AV_SAMPLE_FMT_NONE },

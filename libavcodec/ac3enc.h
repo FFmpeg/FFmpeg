@@ -49,7 +49,6 @@
 
 #if AC3ENC_FLOAT
 #include "libavutil/float_dsp.h"
-#define AC3_NAME(x) ff_ac3_float_ ## x
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
 #define COEF_MIN (-16777215.0/16777216.0)
 #define COEF_MAX ( 16777215.0/16777216.0)
@@ -59,7 +58,6 @@ typedef float CoefType;
 typedef float CoefSumType;
 #else
 #include "libavutil/fixed_dsp.h"
-#define AC3_NAME(x) ff_ac3_fixed_ ## x
 #define MAC_COEF(d,a,b) MAC64(d,a,b)
 #define COEF_MIN -16777215
 #define COEF_MAX  16777215
@@ -256,6 +254,9 @@ typedef struct AC3EncodeContext {
     uint8_t *ref_bap     [AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< bit allocation pointers (bap)
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
 
+    /** fixed vs. float function pointers */
+    int (*encode_frame)(struct AC3EncodeContext *s, const AVFrame *frame);
+
     /* fixed vs. float function pointers */
     int  (*mdct_init)(struct AC3EncodeContext *s);
 
@@ -282,14 +283,7 @@ void ff_ac3_adjust_frame_size(AC3EncodeContext *s);
 
 void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s);
 
-int ff_ac3_encode_frame_common_end(AVCodecContext *avctx, AVPacket *avpkt,
-                                   const AVFrame *frame, int *got_packet_ptr);
-
-/* prototypes for functions in ac3enc_template.c */
-
-int ff_ac3_fixed_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
-                              const AVFrame *frame, int *got_packet_ptr);
-int ff_ac3_float_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
-                              const AVFrame *frame, int *got_packet_ptr);
+int ff_ac3_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                        const AVFrame *frame, int *got_packet_ptr);
 
 #endif /* AVCODEC_AC3ENC_H */

@@ -371,10 +371,8 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 }
 
 
-int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
-                           const AVFrame *frame, int *got_packet_ptr)
+static int encode_frame(AC3EncodeContext *s, const AVFrame *frame)
 {
-    AC3EncodeContext *s = avctx->priv_data;
     int ret;
 
     if (s->options.allow_per_frame_metadata) {
@@ -402,5 +400,5 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, AVPacket *avpkt,
     scale_coefficients(s);
 #endif
 
-    return ff_ac3_encode_frame_common_end(avctx, avpkt, frame, got_packet_ptr);
+    return 0;
 }

@@ -1769,11 +1769,15 @@ static void ac3_output_frame(AC3EncodeContext *s, unsigned char *frame)
     output_frame_end(s);
 }
 
-int ff_ac3_encode_frame_common_end(AVCodecContext *avctx, AVPacket *avpkt,
-                                   const AVFrame *frame, int *got_packet_ptr)
+int ff_ac3_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
+                        const AVFrame *frame, int *got_packet_ptr)
 {
     AC3EncodeContext *const s = avctx->priv_data;
     int ret;
+
+    ret = s->encode_frame(s, frame);
+    if (ret < 0)
+        return ret;
 
     ac3_apply_rematrixing(s);
 

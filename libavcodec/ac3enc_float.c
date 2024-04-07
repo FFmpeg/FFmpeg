@@ -104,6 +104,8 @@ static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
 av_cold int ff_ac3_float_encode_init(AVCodecContext *avctx)
 {
     AC3EncodeContext *s = avctx->priv_data;
+
+    s->encode_frame            = encode_frame;
     s->mdct_init               = ac3_float_mdct_init;
     s->allocate_sample_buffers = allocate_sample_buffers;
     s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
@@ -120,7 +122,7 @@ const FFCodec ff_ac3_encoder = {
     .p.capabilities  = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size  = sizeof(AC3EncodeContext),
     .init            = ff_ac3_float_encode_init,
-    FF_CODEC_ENCODE_CB(ff_ac3_float_encode_frame),
+    FF_CODEC_ENCODE_CB(ff_ac3_encode_frame),
     .close           = ff_ac3_encode_close,
     .p.sample_fmts   = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
