@@ -934,6 +934,8 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
                             enc_ctx->pix_fmt : enc_ctx->sample_fmt,
         .width            = enc_ctx->width,
         .height           = enc_ctx->height,
+        .color_space      = enc_ctx->colorspace,
+        .color_range      = enc_ctx->color_range,
         .vsync_method     = vsync_method,
         .sample_rate      = enc_ctx->sample_rate,
         .ch_layout        = enc_ctx->ch_layout,
@@ -967,6 +969,16 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
             if (ret < 0)
                 return ret;
         }
+        ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                           AV_CODEC_CONFIG_COLOR_SPACE, 0,
+                                           (const void **) &opts.color_spaces, NULL);
+        if (ret < 0)
+            return ret;
+        ret = avcodec_get_supported_config(enc_ctx, NULL,
+                                           AV_CODEC_CONFIG_COLOR_RANGE, 0,
+                                           (const void **) &opts.color_ranges, NULL);
+        if (ret < 0)
+            return ret;
     } else {
         ret = avcodec_get_supported_config(enc_ctx, NULL,
                                            AV_CODEC_CONFIG_SAMPLE_FORMAT, 0,

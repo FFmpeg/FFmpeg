@@ -304,6 +304,8 @@ typedef struct OutputFilterOptions {
     int                 format;
     int                 width;
     int                 height;
+    enum AVColorSpace   color_space;
+    enum AVColorRange   color_range;
 
     enum VideoSyncMethod vsync_method;
 
@@ -314,6 +316,8 @@ typedef struct OutputFilterOptions {
     const int                *sample_rates;
     const AVChannelLayout    *ch_layouts;
     const AVRational         *frame_rates;
+    const enum AVColorSpace  *color_spaces;
+    const enum AVColorRange  *color_ranges;
 } OutputFilterOptions;
 
 typedef struct InputFilter {
