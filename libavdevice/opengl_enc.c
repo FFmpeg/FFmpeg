@@ -1067,7 +1067,7 @@ static av_cold int opengl_write_header(AVFormatContext *h)
         av_log(opengl, AV_LOG_WARNING,
             "The opengl output device is deprecated due to being fundamentally incompatible with libavformat API. "
             "For monitoring purposes in ffmpeg you can output to a file or use pipes and a video player.\n"
-            "Example: ffmpeg -i INPUT -f nut -c:v rawvideo - | ffplay -\n"
+            "Example: ffmpeg -i INPUT -f nut -c:v rawvideo - | ffplay -loglevel warning -vf setpts=0 -\n"
         );
         opengl->warned = 1;
     }

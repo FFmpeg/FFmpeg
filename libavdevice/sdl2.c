@@ -167,7 +167,7 @@ static int sdl2_write_header(AVFormatContext *s)
         av_log(sdl, AV_LOG_WARNING,
             "The sdl output device is deprecated due to being fundamentally incompatible with libavformat API. "
             "For monitoring purposes in ffmpeg you can output to a file or use pipes and a video player.\n"
-            "Example: ffmpeg -i INPUT -f nut -c:v rawvideo - | ffplay -\n"
+            "Example: ffmpeg -i INPUT -f nut -c:v rawvideo - | ffplay -loglevel warning -vf setpts=0 -\n"
         );
         sdl->warned = 1;
     }
