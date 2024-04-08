@@ -1196,12 +1196,12 @@ static void sh_deblock_offsets(VVCSH *sh)
     const H266RawSliceHeader *r = sh->r;
 
     if (!r->sh_deblocking_filter_disabled_flag) {
-        sh->deblock.beta_offset[LUMA] = r->sh_luma_beta_offset_div2 << 1;
-        sh->deblock.tc_offset[LUMA]   = r->sh_luma_tc_offset_div2 << 1;
-        sh->deblock.beta_offset[CB]   = r->sh_cb_beta_offset_div2 << 1;
-        sh->deblock.tc_offset[CB]     = r->sh_cb_tc_offset_div2 << 1;
-        sh->deblock.beta_offset[CR]   = r->sh_cr_beta_offset_div2 << 1;
-        sh->deblock.tc_offset[CR]     = r->sh_cr_tc_offset_div2 << 1;
+        sh->deblock.beta_offset[LUMA] = r->sh_luma_beta_offset_div2 * 2;
+        sh->deblock.tc_offset[LUMA]   = r->sh_luma_tc_offset_div2 * 2;
+        sh->deblock.beta_offset[CB]   = r->sh_cb_beta_offset_div2 * 2;
+        sh->deblock.tc_offset[CB]     = r->sh_cb_tc_offset_div2 * 2;
+        sh->deblock.beta_offset[CR]   = r->sh_cr_beta_offset_div2 * 2;
+        sh->deblock.tc_offset[CR]     = r->sh_cr_tc_offset_div2 * 2;
     }
 }
 
