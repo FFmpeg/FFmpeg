@@ -191,8 +191,8 @@ static void set_parser_ctx(AVCodecParserContext *s, AVCodecContext *avctx,
 
     if (sps->sps_ptl_dpb_hrd_params_present_flag &&
         sps->sps_timing_hrd_params_present_flag) {
-        int num = sps->sps_general_timing_hrd_parameters.num_units_in_tick;
-        int den = sps->sps_general_timing_hrd_parameters.time_scale;
+        uint32_t num = sps->sps_general_timing_hrd_parameters.num_units_in_tick;
+        uint32_t den = sps->sps_general_timing_hrd_parameters.time_scale;
 
         if (num != 0 && den != 0)
             av_reduce(&avctx->framerate.den, &avctx->framerate.num,
