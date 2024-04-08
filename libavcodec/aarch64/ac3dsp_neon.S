@@ -103,17 +103,9 @@ function ff_ac3_sum_square_butterfly_float_neon, export=1
         fmla            v3.4s, v17.4s, v17.4s
         subs            w3, w3, #4
         b.gt            1b
-        faddp           v0.4s, v0.4s, v0.4s
-        faddp           v0.2s, v0.2s, v0.2s
-        st1             {v0.s}[0], [x0], #4
-        faddp           v1.4s, v1.4s, v1.4s
-        faddp           v1.2s, v1.2s, v1.2s
-        st1             {v1.s}[0], [x0], #4
-        faddp           v2.4s, v2.4s, v2.4s
-        faddp           v2.2s, v2.2s, v2.2s
-        st1             {v2.s}[0], [x0], #4
-        faddp           v3.4s, v3.4s, v3.4s
-        faddp           v3.2s, v3.2s, v3.2s
-        st1             {v3.s}[0], [x0]
+        faddp           v0.4s, v0.4s, v1.4s
+        faddp           v2.4s, v2.4s, v3.4s
+        faddp           v0.4s, v0.4s, v2.4s
+        st1             {v0.4s}, [x0]
         ret
 endfunc
