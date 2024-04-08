@@ -1198,8 +1198,8 @@ static int load_input_picture(MpegEncContext *s, const AVFrame *pic_arg)
                 ptrdiff_t dst_stride = i ? s->uvlinesize : s->linesize;
                 int h_shift = i ? s->chroma_x_shift : 0;
                 int v_shift = i ? s->chroma_y_shift : 0;
-                int w = s->width  >> h_shift;
-                int h = s->height >> v_shift;
+                int w = AV_CEIL_RSHIFT(s->width , h_shift);
+                int h = AV_CEIL_RSHIFT(s->height, v_shift);
                 const uint8_t *src = pic_arg->data[i];
                 uint8_t *dst = pic->f->data[i];
                 int vpad = 16;
