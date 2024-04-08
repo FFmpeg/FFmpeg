@@ -128,7 +128,7 @@ static void vp8_release_frame(VP8Frame *f)
     ff_progress_frame_unref(&f->tf);
 }
 
-static void vp8_decode_flush_impl(AVCodecContext *avctx, int free_mem)
+static av_cold void vp8_decode_flush_impl(AVCodecContext *avctx, int free_mem)
 {
     VP8Context *s = avctx->priv_data;
     int i;
@@ -144,7 +144,7 @@ static void vp8_decode_flush_impl(AVCodecContext *avctx, int free_mem)
         FF_HW_SIMPLE_CALL(avctx, flush);
 }
 
-static void vp8_decode_flush(AVCodecContext *avctx)
+static av_cold void vp8_decode_flush(AVCodecContext *avctx)
 {
     vp8_decode_flush_impl(avctx, 0);
 }
