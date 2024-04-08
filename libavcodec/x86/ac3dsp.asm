@@ -43,7 +43,7 @@ SECTION .text
 
 %macro AC3_EXPONENT_MIN 0
 cglobal ac3_exponent_min, 3, 4, 2, exp, reuse_blks, expn, offset
-    shl  reuse_blksq, 8
+    shl  reuse_blksd, 8
     jz .end
     LOOP_ALIGN
 .nextexp:
@@ -57,7 +57,7 @@ cglobal ac3_exponent_min, 3, 4, 2, exp, reuse_blks, expn, offset
     jae .nextblk
     mova      [expq], m0
     add         expq, mmsize
-    sub        expnq, mmsize
+    sub        expnd, mmsize
     jg .nextexp
 .end:
     RET
@@ -71,7 +71,7 @@ AC3_EXPONENT_MIN
 %undef LOOP_ALIGN
 
 ;-----------------------------------------------------------------------------
-; void ff_float_to_fixed24(int32_t *dst, const float *src, unsigned int len)
+; void ff_float_to_fixed24(int32_t *dst, const float *src, size_t len)
 ;-----------------------------------------------------------------------------
 
 INIT_XMM sse2
@@ -217,6 +217,7 @@ cglobal ac3_compute_mantissa_size, 1, 2, 4, mant_cnt, sum
 
 %macro AC3_EXTRACT_EXPONENTS 0
 cglobal ac3_extract_exponents, 3, 3, 4, exp, coef, len
+    movsxdifnidn lenq, lend
     add     expq, lenq
     lea    coefq, [coefq+4*lenq]
     neg     lenq
