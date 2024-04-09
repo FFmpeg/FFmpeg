@@ -497,9 +497,11 @@ static void ep_init_cabac_decoder(SliceContext *sc, const int index,
             skipped++;
         }
         size = end - start;
+        size = av_clip(size, 0, get_bits_left(gb) / 8);
     } else {
         size = get_bits_left(gb) / 8;
     }
+    av_assert0(gb->buffer + get_bits_count(gb) / 8 + size <= gb->buffer_end);
     ff_init_cabac_decoder (&ep->cc, gb->buffer + get_bits_count(gb) / 8, size);
     skip_bits(gb, size * 8);
 }
