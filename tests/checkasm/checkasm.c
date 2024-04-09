@@ -742,6 +742,9 @@ static int bench_init_linux(void)
         .disabled       = 1, // start counting only on demand
         .exclude_kernel = 1,
         .exclude_hv     = 1,
+#if !ARCH_X86
+        .exclude_guest  = 1,
+#endif
     };
 
     printf("benchmarking with Linux Perf Monitoring API\n");
