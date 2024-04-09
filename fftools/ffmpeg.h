@@ -710,8 +710,10 @@ void term_exit(void);
 
 void show_usage(void);
 
+int check_avoptions_used(const AVDictionary *opts, const AVDictionary *opts_used,
+                         void *logctx, int decode);
+
 int assert_file_overwrite(const char *filename);
-AVDictionary *strip_specifiers(const AVDictionary *dict);
 int find_codec(void *logctx, const char *name,
                enum AVMediaType type, int encoder, const AVCodec **codec);
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global);

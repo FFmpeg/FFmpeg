@@ -99,6 +99,9 @@ typedef struct Muxer {
 
     AVDictionary           *opts;
 
+    // used to validate that all encoder avoptions have been actually used
+    AVDictionary           *enc_opts_used;
+
     /* filesize limit expressed in bytes */
     int64_t                 limit_filesize;
     atomic_int_least64_t    last_filesize;

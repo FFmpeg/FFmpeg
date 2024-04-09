@@ -151,24 +151,6 @@ static int show_hwaccels(void *optctx, const char *opt, const char *arg)
     return 0;
 }
 
-/* return a copy of the input with the stream specifiers removed from the keys */
-AVDictionary *strip_specifiers(const AVDictionary *dict)
-{
-    const AVDictionaryEntry *e = NULL;
-    AVDictionary    *ret = NULL;
-
-    while ((e = av_dict_iterate(dict, e))) {
-        char *p = strchr(e->key, ':');
-
-        if (p)
-            *p = 0;
-        av_dict_set(&ret, e->key, e->value, 0);
-        if (p)
-            *p = ':';
-    }
-    return ret;
-}
-
 const char *opt_match_per_type_str(const SpecifierOptList *sol,
                                    char mediatype)
 {

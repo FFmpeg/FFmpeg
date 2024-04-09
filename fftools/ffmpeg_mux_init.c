@@ -1160,7 +1160,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         const char *enc_time_base = NULL;
 
         ret = filter_codec_opts(o->g->codec_opts, enc->codec_id,
-                                oc, st, enc->codec, &ost->encoder_opts);
+                                oc, st, enc->codec, &ost->encoder_opts,
+                                &mux->enc_opts_used);
         if (ret < 0)
             return ret;
 
@@ -1265,7 +1266,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         }
     } else {
         ret = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st,
-                                NULL, &ost->encoder_opts);
+                                NULL, &ost->encoder_opts,
+                                &mux->enc_opts_used);
         if (ret < 0)
             return ret;
     }
@@ -3118,53 +3120,6 @@ static int process_forced_keyframes(Muxer *mux, const OptionsContext *o)
     return 0;
 }
 
-static int validate_enc_avopt(Muxer *mux, const AVDictionary *codec_avopt)
-{
-    const AVClass *class  = avcodec_get_class();
-    const AVClass *fclass = avformat_get_class();
-    const OutputFile *of = &mux->of;
-
-    AVDictionary *unused_opts;
-    const AVDictionaryEntry *e;
-
-    unused_opts = strip_specifiers(codec_avopt);
-    for (int i = 0; i < of->nb_streams; i++) {
-        e = NULL;
-        while ((e = av_dict_iterate(of->streams[i]->encoder_opts, e)))
-            av_dict_set(&unused_opts, e->key, NULL, 0);
-    }
-
-    e = NULL;
-    while ((e = av_dict_iterate(unused_opts, e))) {
-        const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
-                                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
-        const AVOption *foption = av_opt_find(&fclass, e->key, NULL, 0,
-                                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
-        if (!option || foption)
-            continue;
-
-        if (!(option->flags & AV_OPT_FLAG_ENCODING_PARAM)) {
-            av_log(mux, AV_LOG_ERROR, "Codec AVOption %s (%s) is not an "
-                   "encoding option.\n", e->key, option->help ? option->help : "");
-            av_dict_free(&unused_opts);
-            return AVERROR(EINVAL);
-        }
-
-        // gop_timecode is injected by generic code but not always used
-        if (!strcmp(e->key, "gop_timecode"))
-            continue;
-
-        av_log(mux, AV_LOG_WARNING, "Codec AVOption %s (%s) has not been used "
-               "for any stream. The most likely reason is either wrong type "
-               "(e.g. a video option with no video streams) or that it is a "
-               "private option of some encoder which was not actually used for "
-               "any stream.\n", e->key, option->help ? option->help : "");
-    }
-    av_dict_free(&unused_opts);
-
-    return 0;
-}
-
 static const char *output_file_item_name(void *obj)
 {
     const Muxer *mux = obj;
@@ -3272,7 +3227,8 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         return err;
 
     /* check if all codec options have been used */
-    err = validate_enc_avopt(mux, o->g->codec_opts);
+    err = check_avoptions_used(o->g->codec_opts, mux->enc_opts_used, mux, 0);
+    av_dict_free(&mux->enc_opts_used);
     if (err < 0)
         return err;
 

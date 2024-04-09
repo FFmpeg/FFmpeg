@@ -1207,7 +1207,7 @@ static DemuxStream *demux_stream_alloc(Demuxer *d, AVStream *st)
     return ds;
 }
 
-static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
+static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictionary **opts_used)
 {
     AVFormatContext *ic = d->f.ctx;
     AVCodecParameters *par = st->codecpar;
@@ -1334,7 +1334,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 
     if (ist->dec) {
         ret = filter_codec_opts(o->g->codec_opts, ist->st->codecpar->codec_id,
-                                ic, st, ist->dec, &ds->decoder_opts);
+                                ic, st, ist->dec, &ds->decoder_opts, opts_used);
         if (ret < 0)
             return ret;
     }
@@ -1553,8 +1553,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     const AVInputFormat *file_iformat = NULL;
     int err, i, ret = 0;
     int64_t timestamp;
-    AVDictionary *unused_opts = NULL;
-    const AVDictionaryEntry *e = NULL;
+    AVDictionary *opts_used = NULL;
     const char*    video_codec_name = NULL;
     const char*    audio_codec_name = NULL;
     const char* subtitle_codec_name = NULL;
@@ -1826,48 +1825,21 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 
     /* Add all the streams from the given input file to the demuxer */
     for (int i = 0; i < ic->nb_streams; i++) {
-        ret = ist_add(o, d, ic->streams[i]);
-        if (ret < 0)
+        ret = ist_add(o, d, ic->streams[i], &opts_used);
+        if (ret < 0) {
+            av_dict_free(&opts_used);
             return ret;
+        }
     }
 
     /* dump the file content */
     av_dump_format(ic, f->index, filename, 0);
 
     /* check if all codec options have been used */
-    unused_opts = strip_specifiers(o->g->codec_opts);
-    for (i = 0; i < f->nb_streams; i++) {
-        DemuxStream *ds = ds_from_ist(f->streams[i]);
-        e = NULL;
-        while ((e = av_dict_iterate(ds->decoder_opts, e)))
-            av_dict_set(&unused_opts, e->key, NULL, 0);
-    }
-
-    e = NULL;
-    while ((e = av_dict_iterate(unused_opts, e))) {
-        const AVClass *class = avcodec_get_class();
-        const AVOption *option = av_opt_find(&class, e->key, NULL, 0,
-                                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
-        const AVClass *fclass = avformat_get_class();
-        const AVOption *foption = av_opt_find(&fclass, e->key, NULL, 0,
-                                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
-        if (!option || foption)
-            continue;
-
-
-        if (!(option->flags & AV_OPT_FLAG_DECODING_PARAM)) {
-            av_log(d, AV_LOG_ERROR, "Codec AVOption %s (%s) is not a decoding "
-                   "option.\n", e->key, option->help ? option->help : "");
-            return AVERROR(EINVAL);
-        }
-
-        av_log(d, AV_LOG_WARNING, "Codec AVOption %s (%s) has not been used "
-               "for any stream. The most likely reason is either wrong type "
-               "(e.g. a video option with no video streams) or that it is a "
-               "private option of some decoder which was not actually used "
-               "for any stream.\n", e->key, option->help ? option->help : "");
-    }
-    av_dict_free(&unused_opts);
+    ret = check_avoptions_used(o->g->codec_opts, opts_used, d, 1);
+    av_dict_free(&opts_used);
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < o->dump_attachment.nb_opt; i++) {
         int j;

@@ -2673,7 +2673,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         avctx->flags2 |= AV_CODEC_FLAG2_FAST;
 
     ret = filter_codec_opts(codec_opts, avctx->codec_id, ic,
-                            ic->streams[stream_index], codec, &opts);
+                            ic->streams[stream_index], codec, &opts, NULL);
     if (ret < 0)
         goto fail;
 

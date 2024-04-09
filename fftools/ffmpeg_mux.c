@@ -864,6 +864,7 @@ void of_free(OutputFile **pof)
     av_freep(&mux->sch_stream_idx);
 
     av_dict_free(&mux->opts);
+    av_dict_free(&mux->enc_opts_used);
 
     av_packet_free(&mux->sq_pkt);
 

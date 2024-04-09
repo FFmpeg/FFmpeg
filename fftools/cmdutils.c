@@ -986,7 +986,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
 
 int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
                       AVFormatContext *s, AVStream *st, const AVCodec *codec,
-                      AVDictionary **dst)
+                      AVDictionary **dst, AVDictionary **opts_used)
 {
     AVDictionary    *ret = NULL;
     const AVDictionaryEntry *t = NULL;
@@ -1013,6 +1013,7 @@ int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
     while (t = av_dict_iterate(opts, t)) {
         const AVClass *priv_class;
         char *p = strchr(t->key, ':');
+        int used = 0;
 
         /* check stream specification in opt name */
         if (p) {
@@ -1030,15 +1031,21 @@ int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
             !codec ||
             ((priv_class = codec->priv_class) &&
              av_opt_find(&priv_class, t->key, NULL, flags,
-                         AV_OPT_SEARCH_FAKE_OBJ)))
+                         AV_OPT_SEARCH_FAKE_OBJ))) {
             av_dict_set(&ret, t->key, t->value, 0);
-        else if (t->key[0] == prefix &&
+            used = 1;
+        } else if (t->key[0] == prefix &&
                  av_opt_find(&cc, t->key + 1, NULL, flags,
-                             AV_OPT_SEARCH_FAKE_OBJ))
+                             AV_OPT_SEARCH_FAKE_OBJ)) {
             av_dict_set(&ret, t->key + 1, t->value, 0);
+            used = 1;
+        }
 
         if (p)
             *p = ':';
+
+        if (used && opts_used)
+            av_dict_set(opts_used, t->key, "", 0);
     }
 
     *dst = ret;
@@ -1063,7 +1070,7 @@ int setup_find_stream_info_opts(AVFormatContext *s,
 
     for (int i = 0; i < s->nb_streams; i++) {
         ret = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
-                                s, s->streams[i], NULL, &opts[i]);
+                                s, s->streams[i], NULL, &opts[i], NULL);
         if (ret < 0)
             goto fail;
     }

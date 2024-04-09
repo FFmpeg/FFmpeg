@@ -3927,7 +3927,7 @@ static int open_input_file(InputFile *ifile, const char *filename,
             AVDictionary *opts;
 
             err = filter_codec_opts(codec_opts, stream->codecpar->codec_id,
-                                    fmt_ctx, stream, codec, &opts);
+                                    fmt_ctx, stream, codec, &opts, NULL);
             if (err < 0)
                 exit(1);
 

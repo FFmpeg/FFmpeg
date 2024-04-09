@@ -474,6 +474,56 @@ const FrameData *packet_data_c(AVPacket *pkt)
     return ret < 0 ? NULL : (const FrameData*)pkt->opaque_ref->data;
 }
 
+int check_avoptions_used(const AVDictionary *opts, const AVDictionary *opts_used,
+                         void *logctx, int decode)
+{
+    const AVClass  *class = avcodec_get_class();
+    const AVClass *fclass = avformat_get_class();
+
+    const int flag = decode ? AV_OPT_FLAG_DECODING_PARAM :
+                              AV_OPT_FLAG_ENCODING_PARAM;
+    const AVDictionaryEntry *e = NULL;
+
+    while ((e = av_dict_iterate(opts, e))) {
+        const AVOption *option, *foption;
+        char *optname, *p;
+
+        if (av_dict_get(opts_used, e->key, NULL, 0))
+            continue;
+
+        optname = av_strdup(e->key);
+        if (!optname)
+            return AVERROR(ENOMEM);
+
+        p = strchr(optname, ':');
+        if (p)
+            *p = 0;
+
+        option = av_opt_find(&class, optname, NULL, 0,
+                             AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
+        foption = av_opt_find(&fclass, optname, NULL, 0,
+                              AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ);
+        av_freep(&optname);
+        if (!option || foption)
+            continue;
+
+        if (!(option->flags & flag)) {
+            av_log(logctx, AV_LOG_ERROR, "Codec AVOption %s (%s) is not a %s "
+                   "option.\n", e->key, option->help ? option->help : "",
+                   decode ? "decoding" : "encoding");
+            return AVERROR(EINVAL);
+        }
+
+        av_log(logctx, AV_LOG_WARNING, "Codec AVOption %s (%s) has not been used "
+               "for any stream. The most likely reason is either wrong type "
+               "(e.g. a video option with no video streams) or that it is a "
+               "private option of some decoder which was not actually used "
+               "for any stream.\n", e->key, option->help ? option->help : "");
+    }
+
+    return 0;
+}
+
 void update_benchmark(const char *fmt, ...)
 {
     if (do_benchmark_all) {
