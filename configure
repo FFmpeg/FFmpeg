@@ -4737,7 +4737,7 @@ chmod +x $TMPE
 
 # make sure we can execute files in $TMPDIR
 cat > $TMPSH 2>> $logfile <<EOF
-#! /bin/sh
+#!/bin/sh
 EOF
 chmod +x $TMPSH >> $logfile 2>&1
 if ! $TMPSH >> $logfile 2>&1; then

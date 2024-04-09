@@ -1,4 +1,4 @@
-#! /usr/bin/env perl
+#!/usr/bin/env perl
 
 # This script will print the dependency of a Texinfo file to stdout.
 # texidep.pl <src-path> <input.texi> <output.ext>
