@@ -416,7 +416,7 @@ static const uint8_t* derive_scale_m(const VVCLocalContext *lc, const TransformB
 static av_always_inline int scale_coeff(const TransformBlock *tb, int coeff,
     const int scale, const int scale_m, const int log2_transform_range)
 {
-    coeff = (coeff * scale * scale_m + tb->bd_offset) >> tb->bd_shift;
+    coeff = ((int64_t) coeff * scale * scale_m + tb->bd_offset) >> tb->bd_shift;
     coeff = av_clip_intp2(coeff, log2_transform_range);
     return coeff;
 }
