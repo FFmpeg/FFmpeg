@@ -486,6 +486,7 @@ static int eb_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
     SvtContext           *svt_enc = avctx->priv_data;
     EbBufferHeaderType  *headerPtr = svt_enc->in_buf;
+    EbErrorType svt_ret;
     int ret;
 
     if (!frame) {
@@ -524,7 +525,9 @@ static int eb_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     if (avctx->gop_size == 1)
         headerPtr->pic_type = EB_AV1_KEY_PICTURE;
 
-    svt_av1_enc_send_picture(svt_enc->svt_handle, headerPtr);
+    svt_ret = svt_av1_enc_send_picture(svt_enc->svt_handle, headerPtr);
+    if (svt_ret != EB_ErrorNone)
+        return svt_print_error(avctx, svt_ret, "Error sending a frame to encoder");
 
     return 0;
 }
@@ -579,6 +582,8 @@ static int eb_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     svt_ret = svt_av1_enc_get_packet(svt_enc->svt_handle, &headerPtr, svt_enc->eos_flag);
     if (svt_ret == EB_NoErrorEmptyQueue)
         return AVERROR(EAGAIN);
+    else if (svt_ret != EB_ErrorNone)
+        return svt_print_error(avctx, svt_ret, "Error getting an output packet from encoder");
 
 #if SVT_AV1_CHECK_VERSION(2, 0, 0)
     if (headerPtr->flags & EB_BUFFERFLAG_EOS) {
