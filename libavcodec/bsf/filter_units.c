@@ -21,9 +21,9 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "cbs.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/cbs.h"
 
 
 typedef struct FilterUnitsContext {

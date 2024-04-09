@@ -22,16 +22,16 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "cbs.h"
-#include "cbs_bsf.h"
-#include "cbs_h264.h"
-#include "cbs_sei.h"
-#include "h264.h"
-#include "h264_levels.h"
-#include "h2645data.h"
-#include "sei.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/cbs.h"
+#include "libavcodec/cbs_bsf.h"
+#include "libavcodec/cbs_h264.h"
+#include "libavcodec/cbs_sei.h"
+#include "libavcodec/h264.h"
+#include "libavcodec/h264_levels.h"
+#include "libavcodec/h2645data.h"
+#include "libavcodec/sei.h"
 
 enum {
     FLIP_HORIZONTAL = 1,

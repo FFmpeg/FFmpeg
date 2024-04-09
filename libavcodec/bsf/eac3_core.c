@@ -18,10 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "get_bits.h"
-#include "ac3_parser_internal.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/get_bits.h"
+#include "libavcodec/ac3_parser_internal.h"
 
 static int eac3_core_filter(AVBSFContext *ctx, AVPacket *pkt)
 {

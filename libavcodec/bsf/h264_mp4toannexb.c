@@ -25,11 +25,11 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 
-#include "bsf.h"
-#include "bsf_internal.h"
-#include "bytestream.h"
-#include "defs.h"
-#include "h264.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
+#include "libavcodec/bytestream.h"
+#include "libavcodec/defs.h"
+#include "libavcodec/h264.h"
 
 typedef struct H264BSFContext {
     uint8_t *sps;

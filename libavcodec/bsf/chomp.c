@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "bsf.h"
-#include "bsf_internal.h"
+#include "libavcodec/bsf.h"
+#include "libavcodec/bsf_internal.h"
 
 static int chomp_filter(AVBSFContext *ctx, AVPacket *pkt)
 {

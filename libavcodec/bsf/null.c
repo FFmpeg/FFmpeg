@@ -21,7 +21,7 @@
  * Null bitstream filter -- pass the input through unchanged.
  */
 
-#include "bsf_internal.h"
+#include "libavcodec/bsf_internal.h"
 
 const FFBitStreamFilter ff_null_bsf = {
     .p.name         = "null",
