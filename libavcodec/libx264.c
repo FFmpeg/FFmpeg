@@ -270,11 +270,9 @@ static void reconfig_encoder(AVCodecContext *ctx, const AVFrame *frame)
         case AV_STEREO3D_FRAMESEQUENCE:
             fpa_type = 5;
             break;
-#if X264_BUILD >= 145
         case AV_STEREO3D_2D:
             fpa_type = 6;
             break;
-#endif
         default:
             fpa_type = -1;
             break;
@@ -394,14 +392,14 @@ static int setup_mb_info(AVCodecContext *ctx, x264_picture_t *pic,
     return 0;
 }
 
-static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic, int bit_depth,
+static int setup_roi(AVCodecContext *ctx, x264_picture_t *pic,
                      const AVFrame *frame, const uint8_t *data, size_t size)
 {
     X264Context *x4 = ctx->priv_data;
 
     int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
     int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
-    int qp_range = 51 + 6 * (bit_depth - 8);
+    int qp_range = 51 + 6 * (x4->params.i_bitdepth - 8);
     int nb_rois;
     const AVRegionOfInterest *roi;
     uint32_t roi_size;
@@ -476,7 +474,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
     x264_sei_t     *sei = &pic->extra_sei;
     unsigned int sei_data_size = 0;
     int64_t wallclock = 0;
-    int bit_depth, ret;
+    int ret;
     AVFrameSideData *sd;
     AVFrameSideData *mbinfo_sd;
 
@@ -486,12 +484,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 
     x264_picture_init(pic);
     pic->img.i_csp   = x4->params.i_csp;
-#if X264_BUILD >= 153
-    bit_depth = x4->params.i_bitdepth;
-#else
-    bit_depth = x264_bit_depth;
-#endif
-    if (bit_depth > 8)
+    if (x4->params.i_bitdepth > 8)
         pic->img.i_csp |= X264_CSP_HIGH_DEPTH;
     pic->img.i_plane = av_pix_fmt_count_planes(ctx->pix_fmt);
 
@@ -564,7 +557,7 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 
     sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
     if (sd) {
-        ret = setup_roi(ctx, pic, bit_depth, frame, sd->data, sd->size);
+        ret = setup_roi(ctx, pic, frame, sd->data, sd->size);
         if (ret < 0)
             goto fail;
     }
@@ -1109,9 +1102,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.p_log_private        = avctx;
     x4->params.i_log_level          = X264_LOG_DEBUG;
     x4->params.i_csp                = convert_pix_fmt(avctx->pix_fmt);
-#if X264_BUILD >= 153
     x4->params.i_bitdepth           = av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth;
-#endif
 
     PARSE_X264_OPT("weightp", wpredp);
 
@@ -1180,11 +1171,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
     else if (x4->params.i_level_idc > 0) {
         int i;
         int mbn = AV_CEIL_RSHIFT(avctx->width, 4) * AV_CEIL_RSHIFT(avctx->height, 4);
-        int scale = X264_BUILD < 129 ? 384 : 1;
 
         for (i = 0; i<x264_levels[i].level_idc; i++)
             if (x264_levels[i].level_idc == x4->params.i_level_idc)
-                x4->params.i_frame_reference = av_clip(x264_levels[i].dpb / mbn / scale, 1, x4->params.i_frame_reference);
+                x4->params.i_frame_reference = av_clip(x264_levels[i].dpb / mbn, 1, x4->params.i_frame_reference);
     }
 
     if (avctx->trellis >= 0)
@@ -1228,12 +1218,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_vfr_input = 0;
     }
     if (x4->avcintra_class >= 0)
-#if X264_BUILD >= 142
         x4->params.i_avcintra_class = x4->avcintra_class;
-#else
-        av_log(avctx, AV_LOG_ERROR,
-               "x264 too old for AVC Intra, at least version 142 needed\n");
-#endif
 
     if (x4->avcintra_class > 200) {
 #if X264_BUILD < 164
@@ -1395,11 +1380,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-#if X264_BUILD >= 142
     /* Separate headers not supported in AVC-Intra mode */
     if (x4->avcintra_class >= 0)
         x4->params.b_repeat_headers = 1;
-#endif
 
     {
         AVDictionaryEntry *en = NULL;
@@ -1513,18 +1496,6 @@ static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
 };
 #endif
 
-#if X264_BUILD < 153
-static av_cold void X264_init_static(FFCodec *codec)
-{
-    if (x264_bit_depth == 8)
-        codec->p.pix_fmts = pix_fmts_8bit;
-    else if (x264_bit_depth == 9)
-        codec->p.pix_fmts = pix_fmts_9bit;
-    else if (x264_bit_depth == 10)
-        codec->p.pix_fmts = pix_fmts_10bit;
-}
-#endif
-
 #define OFFSET(x) offsetof(X264Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
@@ -1544,9 +1515,7 @@ static const AVOption options[] = {
     { "none",          NULL,                              0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_NONE},         INT_MIN, INT_MAX, VE, .unit = "aq_mode" },
     { "variance",      "Variance AQ (complexity mask)",   0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, .unit = "aq_mode" },
     { "autovariance",  "Auto-variance AQ",                0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, .unit = "aq_mode" },
-#if X264_BUILD >= 144
     { "autovariance-biased", "Auto-variance AQ with bias to dark scenes", 0, AV_OPT_TYPE_CONST, {.i64 = X264_AQ_AUTOVARIANCE_BIASED}, INT_MIN, INT_MAX, VE, .unit = "aq_mode" },
-#endif
     { "aq-strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), AV_OPT_TYPE_FLOAT, {.dbl = -1}, -1, FLT_MAX, VE},
     { "psy",           "Use psychovisual optimizations.",                 OFFSET(psy),           AV_OPT_TYPE_BOOL,   { .i64 = -1 }, -1, 1, VE },
     { "psy-rd",        "Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.", OFFSET(psy_rd), AV_OPT_TYPE_STRING,  {0 }, 0, 0, VE},
@@ -1644,10 +1613,7 @@ static const AVClass x264_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#if X264_BUILD >= 153
-const
-#endif
-FFCodec ff_libx264_encoder = {
+const FFCodec ff_libx264_encoder = {
     .p.name           = "libx264",
     CODEC_LONG_NAME("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .p.type           = AVMEDIA_TYPE_VIDEO,
@@ -1665,11 +1631,7 @@ FFCodec ff_libx264_encoder = {
     .flush            = X264_flush,
     .close            = X264_close,
     .defaults         = x264_defaults,
-#if X264_BUILD < 153
-    .init_static_data = X264_init_static,
-#else
     .p.pix_fmts       = pix_fmts_all,
-#endif
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP | FF_CODEC_CAP_AUTO_THREADS
 #if X264_BUILD < 158
                       | FF_CODEC_CAP_NOT_INIT_THREADSAFE
