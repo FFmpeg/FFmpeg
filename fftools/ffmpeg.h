@@ -586,8 +586,6 @@ typedef struct OutputStream {
     FilterGraph  *fg_simple;
     OutputFilter *filter;
 
-    AVDictionary *encoder_opts;
-
     char *attachment_filename;
 
     /* stats */

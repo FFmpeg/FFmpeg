@@ -905,7 +905,7 @@ static int new_stream_subtitle(Muxer *mux, const OptionsContext *o,
     return 0;
 }
 
-static int streamcopy_init(const Muxer *mux, OutputStream *ost)
+static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **encoder_opts)
 {
     MuxStream           *ms         = ms_from_ost(ost);
 
@@ -928,7 +928,7 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost)
 
     ret = avcodec_parameters_to_context(codec_ctx, ist->par);
     if (ret >= 0)
-        ret = av_opt_set_dict(codec_ctx, &ost->encoder_opts);
+        ret = av_opt_set_dict(codec_ctx, encoder_opts);
     if (ret < 0) {
         av_log(ost, AV_LOG_FATAL,
                "Error setting up codec context options.\n");
@@ -1039,6 +1039,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     OutputStream *ost;
     const AVCodec *enc;
     AVStream *st;
+    AVDictionary *encoder_opts = NULL;
     int ret = 0, keep_pix_fmt = 0, autoscale = 1;
     int threads_manual = 0;
     AVRational enc_tb = { 0, 0 };
@@ -1160,10 +1161,10 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         const char *enc_time_base = NULL;
 
         ret = filter_codec_opts(o->g->codec_opts, enc->codec_id,
-                                oc, st, enc->codec, &ost->encoder_opts,
+                                oc, st, enc->codec, &encoder_opts,
                                 &mux->enc_opts_used);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         MATCH_PER_STREAM_OPT(presets, str, preset, oc, st);
 
@@ -1187,7 +1188,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                     break;
                 }
                 *arg++ = 0;
-                av_dict_set(&ost->encoder_opts, buf, arg, AV_DICT_DONT_OVERWRITE);
+                av_dict_set(&encoder_opts, buf, arg, AV_DICT_DONT_OVERWRITE);
             } while (!s->eof_reached);
             av_bprint_finalize(&bprint, NULL);
             avio_closep(&s);
@@ -1195,7 +1196,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         if (ret) {
             av_log(ost, AV_LOG_FATAL,
                    "Preset %s specified, but could not be opened.\n", preset);
-            return ret;
+            goto fail;
         }
 
         MATCH_PER_STREAM_OPT(enc_stats_pre, str, enc_stats_pre, oc, st);
@@ -1207,7 +1208,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
             ret = enc_stats_init(ost, &ost->enc_stats_pre, 1, enc_stats_pre, format);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
 
         MATCH_PER_STREAM_OPT(enc_stats_post, str, enc_stats_post, oc, st);
@@ -1219,7 +1220,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
             ret = enc_stats_init(ost, &ost->enc_stats_post, 0, enc_stats_post, format);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
 
         MATCH_PER_STREAM_OPT(mux_stats, str, mux_stats, oc, st);
@@ -1231,7 +1232,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
             ret = enc_stats_init(ost, &ms->stats, 0, mux_stats, format);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
 
         MATCH_PER_STREAM_OPT(enc_time_bases, str, enc_time_base, oc, st);
@@ -1253,7 +1254,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 #endif
                     ) {
                     av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", enc_time_base);
-                    return ret < 0 ? ret : AVERROR(EINVAL);
+                    ret = ret < 0 ? ret : AVERROR(EINVAL);
+                    goto fail;
                 }
 #if FFMPEG_OPT_ENC_TIME_BASE_NUM
                 if (q.num < 0)
@@ -1265,28 +1267,28 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             enc_tb = q;
         }
 
-        threads_manual = !!av_dict_get(ost->encoder_opts, "threads", NULL, 0);
+        threads_manual = !!av_dict_get(encoder_opts, "threads", NULL, 0);
 
-        ret = av_opt_set_dict2(ost->enc_ctx, &ost->encoder_opts, AV_OPT_SEARCH_CHILDREN);
+        ret = av_opt_set_dict2(ost->enc_ctx, &encoder_opts, AV_OPT_SEARCH_CHILDREN);
         if (ret < 0) {
             av_log(ost, AV_LOG_ERROR, "Error applying encoder options: %s\n",
                    av_err2str(ret));
-            return ret;
+            goto fail;
         }
 
-        ret = check_avoptions(ost->encoder_opts);
+        ret = check_avoptions(encoder_opts);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         // default to automatic thread count
         if (!threads_manual)
             ost->enc_ctx->thread_count = 0;
     } else {
         ret = filter_codec_opts(o->g->codec_opts, AV_CODEC_ID_NONE, oc, st,
-                                NULL, &ost->encoder_opts,
+                                NULL, &encoder_opts,
                                 &mux->enc_opts_used);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
 
@@ -1302,7 +1304,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         if (av_parse_ratio(&q, time_base, INT_MAX, 0, NULL) < 0 ||
             q.num <= 0 || q.den <= 0) {
             av_log(ost, AV_LOG_FATAL, "Invalid time base: %s\n", time_base);
-            return AVERROR(EINVAL);
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
         st->time_base = q;
     }
@@ -1325,7 +1328,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         ret = av_bsf_list_parse_str(bsfs, &ms->bsf_ctx);
         if (ret < 0) {
             av_log(ost, AV_LOG_ERROR, "Error parsing bitstream filter sequence '%s': %s\n", bsfs, av_err2str(ret));
-            return ret;
+            goto fail;
         }
     }
 
@@ -1378,12 +1381,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     case AVMEDIA_TYPE_SUBTITLE:   ret = new_stream_subtitle  (mux, o, ost); break;
     }
     if (ret < 0)
-        return ret;
+        goto fail;
 
     if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO) {
         ret = ost_get_filters(o, oc, ost, &filters);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     if (ost->enc &&
@@ -1431,7 +1434,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         if (threads_manual) {
             ret = av_opt_get(ost->enc_ctx, "threads", 0, (uint8_t**)&opts.nb_threads);
             if (ret < 0)
-                return ret;
+                goto fail;
         }
 
         if (ofilter) {
@@ -1443,18 +1446,19 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         }
         av_freep(&opts.nb_threads);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
                                     SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
         if (ret < 0)
-            return ret;
+            goto fail;
     } else if (ost->ist) {
         int sched_idx = ist_output_add(ost->ist, ost);
         if (sched_idx < 0) {
             av_log(ost, AV_LOG_ERROR,
                    "Error binding an input stream\n");
-            return sched_idx;
+            ret = sched_idx;
+            goto fail;
         }
         ms->sch_idx_src = sched_idx;
 
@@ -1462,24 +1466,24 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             ret = sch_connect(mux->sch, SCH_DEC(sched_idx),
                                         SCH_ENC(ms->sch_idx_enc));
             if (ret < 0)
-                return ret;
+                goto fail;
 
             ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
                                         SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
             if (ret < 0)
-                return ret;
+                goto fail;
         } else {
             ret = sch_connect(mux->sch, SCH_DSTREAM(ost->ist->file->index, sched_idx),
                                         SCH_MSTREAM(ost->file->index, ms->sch_idx));
             if (ret < 0)
-                return ret;
+                goto fail;
         }
     }
 
     if (ost->ist && !ost->enc) {
-        ret = streamcopy_init(mux, ost);
+        ret = streamcopy_init(mux, ost, &encoder_opts);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     // copy estimated duration as a hint to the muxer
@@ -1491,7 +1495,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     if (post)
         *post = ost;
 
-    return 0;
+    ret = 0;
+
+fail:
+    av_dict_free(&encoder_opts);
+
+    return ret;
 }
 
 static int map_auto_video(Muxer *mux, const OptionsContext *o)

@@ -812,7 +812,6 @@ static void ost_free(OutputStream **post)
     av_packet_free(&ms->bsf_pkt);
 
     av_packet_free(&ms->pkt);
-    av_dict_free(&ost->encoder_opts);
 
     av_freep(&ost->kf.pts);
     av_expr_free(ost->kf.pexpr);
