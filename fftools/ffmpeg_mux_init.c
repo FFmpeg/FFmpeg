@@ -916,6 +916,82 @@ static int new_stream_subtitle(Muxer *mux, const OptionsContext *o,
     return 0;
 }
 
+static int
+ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
+                const OptionsContext *o, char *filters,
+                AVRational enc_tb, enum VideoSyncMethod vsync_method,
+                int keep_pix_fmt, int autoscale, int threads_manual)
+{
+    OutputStream       *ost = &ms->ost;
+    AVCodecContext *enc_ctx = ost->enc_ctx;
+    char name[16];
+    int ret;
+
+    OutputFilterOptions opts = {
+        .enc              = enc_ctx->codec,
+        .name             = name,
+        .format           = (ost->type == AVMEDIA_TYPE_VIDEO) ?
+                            enc_ctx->pix_fmt : enc_ctx->sample_fmt,
+        .width            = enc_ctx->width,
+        .height           = enc_ctx->height,
+        .vsync_method     = vsync_method,
+        .sample_rate      = enc_ctx->sample_rate,
+        .ch_layout        = enc_ctx->ch_layout,
+        .sws_opts         = o->g->sws_dict,
+        .swr_opts         = o->g->swr_opts,
+        .output_tb        = enc_tb,
+        .trim_start_us    = mux->of.start_time,
+        .trim_duration_us = mux->of.recording_time,
+        .ts_offset        = mux->of.start_time == AV_NOPTS_VALUE ?
+                            0 : mux->of.start_time,
+
+        .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt |
+                 OFILTER_FLAG_AUTOSCALE       * !!autoscale    |
+                 OFILTER_FLAG_AUDIO_24BIT * !!(av_get_exact_bits_per_sample(enc_ctx->codec_id) == 24),
+    };
+
+    snprintf(name, sizeof(name), "#%d:%d", mux->of.index, ost->index);
+
+    // MJPEG encoder exports a full list of supported pixel formats,
+    // but the full-range ones are experimental-only.
+    // Restrict the auto-conversion list unless -strict experimental
+    // has been specified.
+    if (!strcmp(enc_ctx->codec->name, "mjpeg")) {
+        // FIXME: YUV420P etc. are actually supported with full color range,
+        // yet the latter information isn't available here.
+        static const enum AVPixelFormat mjpeg_formats[] =
+            { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
+              AV_PIX_FMT_NONE };
+
+        if (enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)
+            opts.pix_fmts = mjpeg_formats;
+    }
+
+    if (threads_manual) {
+        ret = av_opt_get(enc_ctx, "threads", 0, (uint8_t**)&opts.nb_threads);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (ofilter) {
+        ost->filter = ofilter;
+        ret = ofilter_bind_ost(ofilter, ost, ms->sch_idx_enc, &opts);
+    } else {
+        ret = init_simple_filtergraph(ost->ist, ost, filters,
+                                      mux->sch, ms->sch_idx_enc, &opts);
+    }
+    av_freep(&opts.nb_threads);
+    if (ret < 0)
+        return ret;
+
+    ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
+                                SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
+    if (ret < 0)
+        return ret;
+
+    return ret;
+}
+
 static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **encoder_opts)
 {
     MuxStream           *ms         = ms_from_ost(ost);
@@ -1397,65 +1473,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
-        char name[16];
-        OutputFilterOptions opts = {
-            .enc = enc,
-            .name        = name,
-            .format      = (type == AVMEDIA_TYPE_VIDEO) ?
-                           ost->enc_ctx->pix_fmt : ost->enc_ctx->sample_fmt,
-            .width       = ost->enc_ctx->width,
-            .height      = ost->enc_ctx->height,
-            .vsync_method = vsync_method,
-            .sample_rate = ost->enc_ctx->sample_rate,
-            .ch_layout   = ost->enc_ctx->ch_layout,
-            .sws_opts    = o->g->sws_dict,
-            .swr_opts    = o->g->swr_opts,
-            .output_tb = enc_tb,
-            .trim_start_us    = mux->of.start_time,
-            .trim_duration_us = mux->of.recording_time,
-            .ts_offset = mux->of.start_time == AV_NOPTS_VALUE ?
-                         0 : mux->of.start_time,
-            .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt |
-                     OFILTER_FLAG_AUTOSCALE       * !!autoscale    |
-                     OFILTER_FLAG_AUDIO_24BIT * !!(av_get_exact_bits_per_sample(ost->enc_ctx->codec_id) == 24),
-        };
-
-        snprintf(name, sizeof(name), "#%d:%d", mux->of.index, ost->index);
-
-        // MJPEG encoder exports a full list of supported pixel formats,
-        // but the full-range ones are experimental-only.
-        // Restrict the auto-conversion list unless -strict experimental
-        // has been specified.
-        if (!strcmp(enc->name, "mjpeg")) {
-            // FIXME: YUV420P etc. are actually supported with full color range,
-            // yet the latter information isn't available here.
-            static const enum AVPixelFormat mjpeg_formats[] =
-                { AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P,
-                  AV_PIX_FMT_NONE };
-
-            if (ost->enc_ctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL)
-                opts.pix_fmts = mjpeg_formats;
-        }
-
-        if (threads_manual) {
-            ret = av_opt_get(ost->enc_ctx, "threads", 0, (uint8_t**)&opts.nb_threads);
-            if (ret < 0)
-                goto fail;
-        }
-
-        if (ofilter) {
-            ost->filter       = ofilter;
-            ret = ofilter_bind_ost(ofilter, ost, ms->sch_idx_enc, &opts);
-        } else {
-            ret = init_simple_filtergraph(ost->ist, ost, filters,
-                                          mux->sch, ms->sch_idx_enc, &opts);
-        }
-        av_freep(&opts.nb_threads);
-        if (ret < 0)
-            goto fail;
-
-        ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
-                                    SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
+        ret = ost_bind_filter(mux, ms, ofilter, o, filters, enc_tb, vsync_method,
+                              keep_pix_fmt, autoscale, threads_manual);
         if (ret < 0)
             goto fail;
     } else if (ost->ist) {
