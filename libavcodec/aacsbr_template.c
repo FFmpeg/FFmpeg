@@ -36,6 +36,7 @@
 #include "aac/aacdec_tab.h"
 #include "avcodec.h"
 #include "libavutil/qsort.h"
+#include "libavutil/mem.h"
 
 static av_cold void aacsbr_tableinit(void)
 {
