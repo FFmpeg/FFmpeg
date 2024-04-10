@@ -351,6 +351,8 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
             pal->PredictorPaletteEntries[i][j] = sps->sps_palette_predictor_initializer[i][j];
 
     for (int i = 0; i < sps->nb_st_rps; i++) {
+        const ShortTermRPS *st_rps = &sps->st_rps[i];
+
         str[i] = (StdVideoH265ShortTermRefPicSet) {
             .flags = (StdVideoH265ShortTermRefPicSetFlags) {
                 .inter_ref_pic_set_prediction_flag = sps->st_rps[i].rps_predict,
@@ -375,13 +377,14 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
             str[i].used_by_curr_pic_flag |= sps->st_rps[i].used[j] << j;
 
         for (int j = 0; j < str[i].num_negative_pics; j++) {
-            str[i].delta_poc_s0_minus1[j] = sps->st_rps[i].delta_poc_s0[j] - 1;
+            str[i].delta_poc_s0_minus1[j] = st_rps->delta_poc[j] - (j ? st_rps->delta_poc[j - 1] : 0) - 1;
             str[i].used_by_curr_pic_s0_flag |= sps->st_rps[i].used[j] << j;
         }
 
         for (int j = 0; j < str[i].num_positive_pics; j++) {
-            str[i].delta_poc_s1_minus1[j] = sps->st_rps[i].delta_poc_s1[j] - 1;
-            str[i].used_by_curr_pic_s0_flag |= sps->st_rps[i].used[str[i].num_negative_pics + j] << j;
+            str[i].delta_poc_s1_minus1[j] = st_rps->delta_poc[st_rps->num_negative_pics + j] -
+                                            (j ? st_rps->delta_poc[st_rps->num_negative_pics + j - 1] : 0) - 1;
+            str[i].used_by_curr_pic_s1_flag |= sps->st_rps[i].used[str[i].num_negative_pics + j] << j;
         }
     }
 

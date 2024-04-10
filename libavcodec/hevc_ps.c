@@ -213,7 +213,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
             int prev = 0;
 
             for (i = 0; i < rps->num_negative_pics; i++) {
-                delta_poc = rps->delta_poc_s0[i] = get_ue_golomb_long(gb) + 1;
+                delta_poc = get_ue_golomb_long(gb) + 1;
                 if (delta_poc < 1 || delta_poc > 32768) {
                     av_log(avctx, AV_LOG_ERROR,
                         "Invalid value of delta_poc: %d\n",
@@ -226,7 +226,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
             }
             prev = 0;
             for (i = 0; i < nb_positive_pics; i++) {
-                delta_poc = rps->delta_poc_s1[i] = get_ue_golomb_long(gb) + 1;
+                delta_poc = get_ue_golomb_long(gb) + 1;
                 if (delta_poc < 1 || delta_poc > 32768) {
                     av_log(avctx, AV_LOG_ERROR,
                         "Invalid value of delta_poc: %d\n",
