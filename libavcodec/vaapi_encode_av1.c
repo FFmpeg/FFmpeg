@@ -23,6 +23,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/mastering_display_metadata.h"
 
 #include "cbs_av1.h"
 #include "put_bits.h"
@@ -662,6 +663,51 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
     }
 
     priv->nb_mh = 0;
+
+    if (pic->type == PICTURE_TYPE_IDR) {
+        AVFrameSideData *sd =
+            av_frame_get_side_data(pic->input_image,
+                                   AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+        if (sd) {
+            AVMasteringDisplayMetadata *mdm =
+                (AVMasteringDisplayMetadata *)sd->data;
+            if (mdm->has_primaries && mdm->has_luminance) {
+                AV1RawOBU              *obu = &priv->mh[priv->nb_mh++];
+                AV1RawMetadata          *md = &obu->obu.metadata;
+                AV1RawMetadataHDRMDCV *mdcv = &md->metadata.hdr_mdcv;
+                const int        chroma_den = 1 << 16;
+                const int      max_luma_den = 1 << 8;
+                const int      min_luma_den = 1 << 14;
+
+                memset(obu, 0, sizeof(*obu));
+                obu->header.obu_type = AV1_OBU_METADATA;
+                md->metadata_type = AV1_METADATA_TYPE_HDR_MDCV;
+
+                for (i = 0; i < 3; i++) {
+                    mdcv->primary_chromaticity_x[i] =
+                        av_rescale(mdm->display_primaries[i][0].num, chroma_den,
+                                   mdm->display_primaries[i][0].den);
+                    mdcv->primary_chromaticity_y[i] =
+                        av_rescale(mdm->display_primaries[i][1].num, chroma_den,
+                                   mdm->display_primaries[i][1].den);
+                }
+
+                mdcv->white_point_chromaticity_x =
+                    av_rescale(mdm->white_point[0].num, chroma_den,
+                               mdm->white_point[0].den);
+                mdcv->white_point_chromaticity_y =
+                    av_rescale(mdm->white_point[1].num, chroma_den,
+                               mdm->white_point[1].den);
+
+                mdcv->luminance_max =
+                    av_rescale(mdm->max_luminance.num, max_luma_den,
+                               mdm->max_luminance.den);
+                mdcv->luminance_min =
+                    av_rescale(mdm->min_luminance.num, min_luma_den,
+                               mdm->min_luminance.den);
+            }
+        }
+    }
 
 end:
     ff_cbs_fragment_reset(obu);
