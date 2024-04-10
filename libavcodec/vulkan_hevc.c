@@ -386,11 +386,10 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
     }
 
     *ltr = (StdVideoH265LongTermRefPicsSps) {
-        .used_by_curr_pic_lt_sps_flag = 0x0,
+        .used_by_curr_pic_lt_sps_flag = sps->used_by_curr_pic_lt,
     };
 
     for (int i = 0; i < sps->num_long_term_ref_pics_sps; i++) {
-        ltr->used_by_curr_pic_lt_sps_flag |= sps->used_by_curr_pic_lt_sps_flag[i] << i;
         ltr->lt_ref_pic_poc_lsb_sps[i]     = sps->lt_ref_pic_poc_lsb_sps[i];
     }
 

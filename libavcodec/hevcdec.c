@@ -295,7 +295,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
                 lt_idx_sps = get_bits(gb, av_ceil_log2(sps->num_long_term_ref_pics_sps));
 
             rps->poc[i]  = sps->lt_ref_pic_poc_lsb_sps[lt_idx_sps];
-            rps->used[i] = sps->used_by_curr_pic_lt_sps_flag[lt_idx_sps];
+            rps->used[i] = !!(sps->used_by_curr_pic_lt & (1 << lt_idx_sps));
         } else {
             rps->poc[i]  = get_bits(gb, sps->log2_max_poc_lsb);
             rps->used[i] = get_bits1(gb);

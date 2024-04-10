@@ -230,7 +230,7 @@ typedef struct HEVCSPS {
 
     uint8_t long_term_ref_pics_present_flag;
     uint16_t lt_ref_pic_poc_lsb_sps[HEVC_MAX_LONG_TERM_REF_PICS];
-    uint8_t used_by_curr_pic_lt_sps_flag[HEVC_MAX_LONG_TERM_REF_PICS];
+    uint32_t used_by_curr_pic_lt;
     uint8_t num_long_term_ref_pics_sps;
 
     struct {
