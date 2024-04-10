@@ -171,12 +171,12 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
         .pic_fields.bits = {
             .chroma_format_idc                          = sps->chroma_format_idc,
             .tiles_enabled_flag                         = pps->tiles_enabled_flag,
-            .separate_colour_plane_flag                 = sps->separate_colour_plane_flag,
-            .pcm_enabled_flag                           = sps->pcm_enabled_flag,
-            .scaling_list_enabled_flag                  = sps->scaling_list_enable_flag,
+            .separate_colour_plane_flag                 = sps->separate_colour_plane,
+            .pcm_enabled_flag                           = sps->pcm_enabled,
+            .scaling_list_enabled_flag                  = sps->scaling_list_enabled,
             .transform_skip_enabled_flag                = pps->transform_skip_enabled_flag,
-            .amp_enabled_flag                           = sps->amp_enabled_flag,
-            .strong_intra_smoothing_enabled_flag        = sps->sps_strong_intra_smoothing_enable_flag,
+            .amp_enabled_flag                           = sps->amp_enabled,
+            .strong_intra_smoothing_enabled_flag        = sps->strong_intra_smoothing_enabled,
             .sign_data_hiding_enabled_flag              = pps->sign_data_hiding_flag,
             .constrained_intra_pred_flag                = pps->constrained_intra_pred_flag,
             .cu_qp_delta_enabled_flag                   = pps->cu_qp_delta_enabled_flag,
@@ -186,12 +186,12 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
             .entropy_coding_sync_enabled_flag           = pps->entropy_coding_sync_enabled_flag,
             .pps_loop_filter_across_slices_enabled_flag = pps->seq_loop_filter_across_slices_enabled_flag,
             .loop_filter_across_tiles_enabled_flag      = pps->loop_filter_across_tiles_enabled_flag,
-            .pcm_loop_filter_disabled_flag              = sps->pcm.loop_filter_disable_flag,
+            .pcm_loop_filter_disabled_flag              = sps->pcm_loop_filter_disabled,
         },
         .slice_parsing_fields.bits = {
             .lists_modification_present_flag             = pps->lists_modification_present_flag,
-            .long_term_ref_pics_present_flag             = sps->long_term_ref_pics_present_flag,
-            .sps_temporal_mvp_enabled_flag               = sps->sps_temporal_mvp_enabled_flag,
+            .long_term_ref_pics_present_flag             = sps->long_term_ref_pics_present,
+            .sps_temporal_mvp_enabled_flag               = sps->temporal_mvp_enabled,
             .cabac_init_present_flag                     = pps->cabac_init_present_flag,
             .output_flag_present_flag                    = pps->output_flag_present_flag,
             .dependent_slice_segments_enabled_flag       = pps->dependent_slice_segments_enabled_flag,
@@ -231,15 +231,15 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
         avctx->profile == AV_PROFILE_HEVC_SCC) {
         pic->pic_param.rext = (VAPictureParameterBufferHEVCRext) {
             .range_extension_pic_fields.bits  = {
-                .transform_skip_rotation_enabled_flag       = sps->transform_skip_rotation_enabled_flag,
-                .transform_skip_context_enabled_flag        = sps->transform_skip_context_enabled_flag,
-                .implicit_rdpcm_enabled_flag                = sps->implicit_rdpcm_enabled_flag,
-                .explicit_rdpcm_enabled_flag                = sps->explicit_rdpcm_enabled_flag,
-                .extended_precision_processing_flag         = sps->extended_precision_processing_flag,
-                .intra_smoothing_disabled_flag              = sps->intra_smoothing_disabled_flag,
-                .high_precision_offsets_enabled_flag        = sps->high_precision_offsets_enabled_flag,
-                .persistent_rice_adaptation_enabled_flag    = sps->persistent_rice_adaptation_enabled_flag,
-                .cabac_bypass_alignment_enabled_flag        = sps->cabac_bypass_alignment_enabled_flag,
+                .transform_skip_rotation_enabled_flag       = sps->transform_skip_rotation_enabled,
+                .transform_skip_context_enabled_flag        = sps->transform_skip_context_enabled,
+                .implicit_rdpcm_enabled_flag                = sps->implicit_rdpcm_enabled,
+                .explicit_rdpcm_enabled_flag                = sps->explicit_rdpcm_enabled,
+                .extended_precision_processing_flag         = sps->extended_precision_processing,
+                .intra_smoothing_disabled_flag              = sps->intra_smoothing_disabled,
+                .high_precision_offsets_enabled_flag        = sps->high_precision_offsets_enabled,
+                .persistent_rice_adaptation_enabled_flag    = sps->persistent_rice_adaptation_enabled,
+                .cabac_bypass_alignment_enabled_flag        = sps->cabac_bypass_alignment_enabled,
                 .cross_component_prediction_enabled_flag    = pps->cross_component_prediction_enabled_flag,
                 .chroma_qp_offset_list_enabled_flag         = pps->chroma_qp_offset_list_enabled_flag,
             },
@@ -258,7 +258,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
 
     pre_palette_size = pps->pps_palette_predictor_initializers_present_flag ?
                        pps->pps_num_palette_predictor_initializers :
-                       (sps->sps_palette_predictor_initializers_present_flag ?
+                       (sps->palette_predictor_initializers_present ?
                        sps->sps_num_palette_predictor_initializers :
                        0);
 
@@ -266,9 +266,9 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
         pic->pic_param.scc = (VAPictureParameterBufferHEVCScc) {
             .screen_content_pic_fields.bits = {
                 .pps_curr_pic_ref_enabled_flag              = pps->pps_curr_pic_ref_enabled_flag,
-                .palette_mode_enabled_flag                  = sps->palette_mode_enabled_flag,
+                .palette_mode_enabled_flag                  = sps->palette_mode_enabled,
                 .motion_vector_resolution_control_idc       = sps->motion_vector_resolution_control_idc,
-                .intra_boundary_filtering_disabled_flag     = sps->intra_boundary_filtering_disabled_flag,
+                .intra_boundary_filtering_disabled_flag     = sps->intra_boundary_filtering_disabled,
                 .residual_adaptive_colour_transform_enabled_flag
                                                             = pps->residual_adaptive_colour_transform_enabled_flag,
                 .pps_slice_act_qp_offsets_present_flag      = pps->pps_slice_act_qp_offsets_present_flag,
@@ -305,7 +305,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
 
     if (pps->scaling_list_data_present_flag)
         scaling_list = &pps->scaling_list;
-    else if (sps->scaling_list_enable_flag)
+    else if (sps->scaling_list_enabled)
         scaling_list = &sps->scaling_list;
 
     if (scaling_list) {

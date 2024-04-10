@@ -272,7 +272,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     int i;
 
     rps->nb_refs = 0;
-    if (!sps->long_term_ref_pics_present_flag)
+    if (!sps->long_term_ref_pics_present)
         return 0;
 
     if (sps->num_long_term_ref_pics_sps > 0)
@@ -705,7 +705,7 @@ static int hls_slice_header(HEVCContext *s)
         if (s->ps.pps->output_flag_present_flag)
             sh->pic_output_flag = get_bits1(gb);
 
-        if (s->ps.sps->separate_colour_plane_flag)
+        if (s->ps.sps->separate_colour_plane)
             sh->colour_plane_id = get_bits(gb, 2);
 
         if (!IS_IDR(s)) {
@@ -753,7 +753,7 @@ static int hls_slice_header(HEVCContext *s)
             }
             sh->long_term_ref_pic_set_size = pos - get_bits_left(gb);
 
-            if (s->ps.sps->sps_temporal_mvp_enabled_flag)
+            if (s->ps.sps->temporal_mvp_enabled)
                 sh->slice_temporal_mvp_enabled_flag = get_bits1(gb);
             else
                 sh->slice_temporal_mvp_enabled_flag = 0;
@@ -2294,7 +2294,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s, int x0, i
         }
 
         if (lc->cu.pred_mode == MODE_INTRA) {
-            if (lc->cu.part_mode == PART_2Nx2N && s->ps.sps->pcm_enabled_flag &&
+            if (lc->cu.part_mode == PART_2Nx2N && s->ps.sps->pcm_enabled &&
                 log2_cb_size >= s->ps.sps->pcm.log2_min_pcm_cb_size &&
                 log2_cb_size <= s->ps.sps->pcm.log2_max_pcm_cb_size) {
                 pcm_flag = ff_hevc_pcm_flag_decode(lc);
@@ -2302,7 +2302,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s, int x0, i
             if (pcm_flag) {
                 intra_prediction_unit_default_value(lc, x0, y0, log2_cb_size);
                 ret = hls_pcm_sample(lc, x0, y0, log2_cb_size);
-                if (s->ps.sps->pcm.loop_filter_disable_flag)
+                if (s->ps.sps->pcm_loop_filter_disabled)
                     set_deblocking_bypass(s, x0, y0, log2_cb_size);
 
                 if (ret < 0)

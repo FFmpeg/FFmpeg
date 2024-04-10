@@ -2369,7 +2369,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
     top[-1] = left[-1];
 
 
-    if (!s->ps.sps->intra_smoothing_disabled_flag
+    if (!s->ps.sps->intra_smoothing_disabled
         && (c_idx == 0 || s->ps.sps->chroma_format_idc == 3)) {
         if (mode != INTRA_DC && 16 != 4) {
             int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
@@ -2886,7 +2886,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
     top[-1] = left[-1];
 
 
-    if (!s->ps.sps->intra_smoothing_disabled_flag
+    if (!s->ps.sps->intra_smoothing_disabled
         && (c_idx == 0 || s->ps.sps->chroma_format_idc == 3)) {
         if (mode != INTRA_DC && 32 != 4) {
             int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
@@ -2901,7 +2901,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                      0 ? ((int) (mode - 26U)) : (-((int) (mode - 26U))))));
             if (min_dist_vert_hor > intra_hor_ver_dist_thresh[5 - 3]) {
                 int threshold = 1 << (8 - 5);
-                if (s->ps.sps->sps_strong_intra_smoothing_enable_flag
+                if (s->ps.sps->strong_intra_smoothing_enabled
                     && c_idx == 0
                     && ((top[-1] + top[63] - 2 * top[31]) >=
                         0 ? (top[-1] + top[63] -

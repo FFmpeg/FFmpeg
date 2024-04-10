@@ -224,7 +224,7 @@ static void restore_tqb_pixels(const HEVCContext *s,
                                int x0, int y0, int width, int height, int c_idx)
 {
     if ( s->ps.pps->transquant_bypass_enable_flag ||
-            (s->ps.sps->pcm.loop_filter_disable_flag && s->ps.sps->pcm_enabled_flag)) {
+            (s->ps.sps->pcm_loop_filter_disabled && s->ps.sps->pcm_enabled)) {
         int x, y;
         int min_pu_size  = 1 << s->ps.sps->log2_min_pu_size;
         int hshift       = s->ps.sps->hshift[c_idx];
@@ -330,7 +330,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCContext *s, int x, in
             copy_CTB_to_hv(s, src, stride_src, x0, y0, width, height, c_idx,
                            x_ctb, y_ctb);
             if (s->ps.pps->transquant_bypass_enable_flag ||
-                (s->ps.sps->pcm.loop_filter_disable_flag && s->ps.sps->pcm_enabled_flag)) {
+                (s->ps.sps->pcm_loop_filter_disabled && s->ps.sps->pcm_enabled)) {
                 dst = lc->edge_emu_buffer;
                 stride_dst = 2*MAX_PB_SIZE;
                 copy_CTB(dst, src, width << s->ps.sps->pixel_shift, height, stride_dst, stride_src);
@@ -500,8 +500,8 @@ static void deblocking_filter_CTB(const HEVCContext *s, int x0, int y0)
     int cur_beta_offset = s->deblock[ctb].beta_offset;
     int left_tc_offset, left_beta_offset;
     int tc_offset, beta_offset;
-    int pcmf = (s->ps.sps->pcm_enabled_flag &&
-                s->ps.sps->pcm.loop_filter_disable_flag) ||
+    int pcmf = (s->ps.sps->pcm_enabled &&
+                s->ps.sps->pcm_loop_filter_disabled) ||
                s->ps.pps->transquant_bypass_enable_flag;
 
     if (x0) {

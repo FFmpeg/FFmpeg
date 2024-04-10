@@ -285,14 +285,14 @@ do {                                  \
     top[-1] = left[-1];
 
     // Filtering process
-    if (!s->ps.sps->intra_smoothing_disabled_flag && (c_idx == 0  || s->ps.sps->chroma_format_idc == 3)) {
+    if (!s->ps.sps->intra_smoothing_disabled && (c_idx == 0  || s->ps.sps->chroma_format_idc == 3)) {
         if (mode != INTRA_DC && size != 4){
             int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
             int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),
                                           FFABS((int)(mode - 10U)));
             if (min_dist_vert_hor > intra_hor_ver_dist_thresh[log2_size - 3]) {
                 int threshold = 1 << (BIT_DEPTH - 5);
-                if (s->ps.sps->sps_strong_intra_smoothing_enable_flag && c_idx == 0 &&
+                if (s->ps.sps->strong_intra_smoothing_enabled && c_idx == 0 &&
                     log2_size == 5 &&
                     FFABS(top[-1]  + top[63]  - 2 * top[31])  < threshold &&
                     FFABS(left[-1] + left[63] - 2 * left[31]) < threshold) {

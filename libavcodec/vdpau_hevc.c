@@ -53,7 +53,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
 
     /* SPS */
     info->chroma_format_idc = sps->chroma_format_idc;
-    info->separate_colour_plane_flag = sps->separate_colour_plane_flag;
+    info->separate_colour_plane_flag = sps->separate_colour_plane;
     info->pic_width_in_luma_samples = sps->width;
     info->pic_height_in_luma_samples = sps->height;
     info->bit_depth_luma_minus8 = sps->bit_depth - 8;
@@ -68,7 +68,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
     info->log2_diff_max_min_transform_block_size = sps->log2_max_trafo_size - sps->log2_min_tb_size;
     info->max_transform_hierarchy_depth_inter = sps->max_transform_hierarchy_depth_inter;
     info->max_transform_hierarchy_depth_intra = sps->max_transform_hierarchy_depth_intra;
-    info->scaling_list_enabled_flag = sps->scaling_list_enable_flag;
+    info->scaling_list_enabled_flag = sps->scaling_list_enabled;
     /* Scaling lists, in diagonal order, to be used for this frame. */
     for (size_t i = 0; i < 6; i++) {
         for (size_t j = 0; j < 16; j++) {
@@ -100,9 +100,9 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
             info->ScalingListDCCoeff32x32[i] = sl->sl_dc[1][i * 3];
         }
     }
-    info->amp_enabled_flag = sps->amp_enabled_flag;
+    info->amp_enabled_flag = sps->amp_enabled;
     info->sample_adaptive_offset_enabled_flag = sps->sao_enabled;
-    info->pcm_enabled_flag = sps->pcm_enabled_flag;
+    info->pcm_enabled_flag = sps->pcm_enabled;
     if (info->pcm_enabled_flag) {
         /* Only needs to be set if pcm_enabled_flag is set. Ignored otherwise. */
         info->pcm_sample_bit_depth_luma_minus1 = sps->pcm.bit_depth - 1;
@@ -113,17 +113,17 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
         /* Only needs to be set if pcm_enabled_flag is set. Ignored otherwise. */
         info->log2_diff_max_min_pcm_luma_coding_block_size = sps->pcm.log2_max_pcm_cb_size - sps->pcm.log2_min_pcm_cb_size;
         /* Only needs to be set if pcm_enabled_flag is set. Ignored otherwise. */
-        info->pcm_loop_filter_disabled_flag = sps->pcm.loop_filter_disable_flag;
+        info->pcm_loop_filter_disabled_flag = sps->pcm_loop_filter_disabled;
     }
     /* Per spec, when zero, assume short_term_ref_pic_set_sps_flag
        is also zero. */
     info->num_short_term_ref_pic_sets = sps->nb_st_rps;
-    info->long_term_ref_pics_present_flag = sps->long_term_ref_pics_present_flag;
+    info->long_term_ref_pics_present_flag = sps->long_term_ref_pics_present;
     /* Only needed if long_term_ref_pics_present_flag is set. Ignored
        otherwise. */
     info->num_long_term_ref_pics_sps = sps->num_long_term_ref_pics_sps;
-    info->sps_temporal_mvp_enabled_flag = sps->sps_temporal_mvp_enabled_flag;
-    info->strong_intra_smoothing_enabled_flag = sps->sps_strong_intra_smoothing_enable_flag;
+    info->sps_temporal_mvp_enabled_flag = sps->temporal_mvp_enabled;
+    info->strong_intra_smoothing_enabled_flag = sps->strong_intra_smoothing_enabled;
 
     /* Copy the HEVC Picture Parameter Set bitstream fields. */
     info->dependent_slice_segments_enabled_flag = pps->dependent_slice_segments_enabled_flag;
@@ -360,17 +360,17 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
     }
 
 #ifdef VDP_YCBCR_FORMAT_Y_U_V_444
-    if (sps->sps_range_extension_flag) {
+    if (sps->range_extension) {
         info2->sps_range_extension_flag             = 1;
-        info2->transformSkipRotationEnableFlag      = sps->transform_skip_rotation_enabled_flag;
-        info2->transformSkipContextEnableFlag       = sps->transform_skip_context_enabled_flag;
-        info2->implicitRdpcmEnableFlag              = sps->implicit_rdpcm_enabled_flag;
-        info2->explicitRdpcmEnableFlag              = sps->explicit_rdpcm_enabled_flag;
-        info2->extendedPrecisionProcessingFlag      = sps->extended_precision_processing_flag;
-        info2->intraSmoothingDisabledFlag           = sps->intra_smoothing_disabled_flag;
-        info2->highPrecisionOffsetsEnableFlag       = sps->high_precision_offsets_enabled_flag;
-        info2->persistentRiceAdaptationEnableFlag   = sps->persistent_rice_adaptation_enabled_flag;
-        info2->cabacBypassAlignmentEnableFlag       = sps->cabac_bypass_alignment_enabled_flag;
+        info2->transformSkipRotationEnableFlag      = sps->transform_skip_rotation_enabled;
+        info2->transformSkipContextEnableFlag       = sps->transform_skip_context_enabled;
+        info2->implicitRdpcmEnableFlag              = sps->implicit_rdpcm_enabled;
+        info2->explicitRdpcmEnableFlag              = sps->explicit_rdpcm_enabled;
+        info2->extendedPrecisionProcessingFlag      = sps->extended_precision_processing;
+        info2->intraSmoothingDisabledFlag           = sps->intra_smoothing_disabled;
+        info2->highPrecisionOffsetsEnableFlag       = sps->high_precision_offsets_enabled;
+        info2->persistentRiceAdaptationEnableFlag   = sps->persistent_rice_adaptation_enabled;
+        info2->cabacBypassAlignmentEnableFlag       = sps->cabac_bypass_alignment_enabled;
     } else {
         info2->sps_range_extension_flag = 0;
     }

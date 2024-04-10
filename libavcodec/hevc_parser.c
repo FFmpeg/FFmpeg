@@ -150,7 +150,7 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
     if (ps->pps->output_flag_present_flag)
         skip_bits1(gb); // pic_output_flag
 
-    if (ps->sps->separate_colour_plane_flag)
+    if (ps->sps->separate_colour_plane)
         skip_bits(gb, 2);   // colour_plane_id
 
     if (!IS_IDR_NAL(nal)) {

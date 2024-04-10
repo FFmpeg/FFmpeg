@@ -188,11 +188,9 @@ typedef struct ScalingList {
 typedef struct HEVCSPS {
     unsigned vps_id;
     int chroma_format_idc;
-    uint8_t separate_colour_plane_flag;
 
     HEVCWindow output_window;
 
-    uint8_t conformance_window_flag;
     HEVCWindow pic_conf_win;
 
     HEVCHdrParams hdr;
@@ -203,32 +201,23 @@ typedef struct HEVCSPS {
     enum AVPixelFormat pix_fmt;
 
     unsigned int log2_max_poc_lsb;
-    int pcm_enabled_flag;
 
-    uint8_t sublayer_ordering_info_flag;
     int max_sub_layers;
     struct {
         int max_dec_pic_buffering;
         int num_reorder_pics;
         int max_latency_increase;
     } temporal_layer[HEVC_MAX_SUB_LAYERS];
-    uint8_t temporal_id_nesting_flag;
 
     int vui_present;
     VUI vui;
     PTL ptl;
 
-    uint8_t sps_extension_present_flag;
-    uint8_t scaling_list_enable_flag;
     ScalingList scaling_list;
 
     unsigned int nb_st_rps;
     ShortTermRPS st_rps[HEVC_MAX_SHORT_TERM_REF_PIC_SETS];
 
-    uint8_t amp_enabled_flag;
-    uint8_t sao_enabled;
-
-    uint8_t long_term_ref_pics_present_flag;
     uint16_t lt_ref_pic_poc_lsb_sps[HEVC_MAX_LONG_TERM_REF_PICS];
     uint32_t used_by_curr_pic_lt;
     uint8_t num_long_term_ref_pics_sps;
@@ -238,10 +227,7 @@ typedef struct HEVCSPS {
         uint8_t bit_depth_chroma;
         unsigned int log2_min_pcm_cb_size;
         unsigned int log2_max_pcm_cb_size;
-        uint8_t loop_filter_disable_flag;
     } pcm;
-    uint8_t sps_temporal_mvp_enabled_flag;
-    uint8_t sps_strong_intra_smoothing_enable_flag;
 
     unsigned int log2_min_cb_size;
     unsigned int log2_diff_max_min_coding_block_size;
@@ -254,30 +240,44 @@ typedef struct HEVCSPS {
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
 
-    int sps_range_extension_flag;
-    int transform_skip_rotation_enabled_flag;
-    int transform_skip_context_enabled_flag;
-    int implicit_rdpcm_enabled_flag;
-    int explicit_rdpcm_enabled_flag;
-    int extended_precision_processing_flag;
-    int intra_smoothing_disabled_flag;
-    int high_precision_offsets_enabled_flag;
-    int persistent_rice_adaptation_enabled_flag;
-    int cabac_bypass_alignment_enabled_flag;
+    uint8_t separate_colour_plane;
+    uint8_t conformance_window;
+    uint8_t pcm_enabled;
+    uint8_t pcm_loop_filter_disabled;
+    uint8_t sublayer_ordering_info;
+    uint8_t temporal_id_nesting;
+    uint8_t extension_present;
+    uint8_t scaling_list_enabled;
+    uint8_t amp_enabled;
+    uint8_t sao_enabled;
+    uint8_t long_term_ref_pics_present;
+    uint8_t temporal_mvp_enabled;
+    uint8_t strong_intra_smoothing_enabled;
+    uint8_t range_extension;
+    uint8_t transform_skip_rotation_enabled;
+    uint8_t transform_skip_context_enabled;
+    uint8_t implicit_rdpcm_enabled;
+    uint8_t explicit_rdpcm_enabled;
+    uint8_t extended_precision_processing;
+    uint8_t intra_smoothing_disabled;
+    uint8_t high_precision_offsets_enabled;
+    uint8_t persistent_rice_adaptation_enabled;
+    uint8_t cabac_bypass_alignment_enabled;
 
-    int sps_multilayer_extension_flag;
-    int sps_3d_extension_flag;
+    uint8_t multilayer_extension;
+    uint8_t sps_3d_extension;
 
-    int sps_scc_extension_flag;
-    int sps_curr_pic_ref_enabled_flag;
-    int palette_mode_enabled_flag;
+    uint8_t scc_extension;
+    uint8_t curr_pic_ref_enabled;
+    uint8_t palette_mode_enabled;
+    uint8_t palette_predictor_initializers_present;
+    uint8_t intra_boundary_filtering_disabled;
+
     int palette_max_size;
     int delta_palette_max_predictor_size;
-    int sps_palette_predictor_initializers_present_flag;
     int sps_num_palette_predictor_initializers;
     int sps_palette_predictor_initializer[3][HEVC_MAX_PALETTE_PREDICTOR_SIZE];
     int motion_vector_resolution_control_idc;
-    int intra_boundary_filtering_disabled_flag;
 
     ///< coded frame dimension in various units
     int width;

@@ -72,7 +72,7 @@ void ff_dxva2_hevc_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACo
     pp->PicHeightInMinCbsY = sps->min_cb_height;
 
     pp->wFormatAndSequenceInfoFlags = (sps->chroma_format_idc             <<  0) |
-                                      (sps->separate_colour_plane_flag    <<  2) |
+                                      (sps->separate_colour_plane         <<  2) |
                                       ((sps->bit_depth - 8)               <<  3) |
                                       ((sps->bit_depth - 8)               <<  6) |
                                       ((sps->log2_max_poc_lsb - 4)        <<  9) |
@@ -99,18 +99,18 @@ void ff_dxva2_hevc_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACo
         pp->wNumBitsForShortTermRPSInSlice       = h->sh.short_term_ref_pic_set_size;
     }
 
-    pp->dwCodingParamToolFlags = (sps->scaling_list_enable_flag                  <<  0) |
-                                 (sps->amp_enabled_flag                          <<  1) |
+    pp->dwCodingParamToolFlags = (sps->scaling_list_enabled                      <<  0) |
+                                 (sps->amp_enabled                               <<  1) |
                                  (sps->sao_enabled                               <<  2) |
-                                 (sps->pcm_enabled_flag                          <<  3) |
-                                 ((sps->pcm_enabled_flag ? (sps->pcm.bit_depth - 1) : 0)            <<  4) |
-                                 ((sps->pcm_enabled_flag ? (sps->pcm.bit_depth_chroma - 1) : 0)     <<  8) |
-                                 ((sps->pcm_enabled_flag ? (sps->pcm.log2_min_pcm_cb_size - 3) : 0) << 12) |
-                                 ((sps->pcm_enabled_flag ? (sps->pcm.log2_max_pcm_cb_size - sps->pcm.log2_min_pcm_cb_size) : 0) << 14) |
-                                 (sps->pcm.loop_filter_disable_flag              << 16) |
-                                 (sps->long_term_ref_pics_present_flag           << 17) |
-                                 (sps->sps_temporal_mvp_enabled_flag             << 18) |
-                                 (sps->sps_strong_intra_smoothing_enable_flag    << 19) |
+                                 (sps->pcm_enabled                               <<  3) |
+                                 ((sps->pcm_enabled      ? (sps->pcm.bit_depth - 1) : 0)            <<  4) |
+                                 ((sps->pcm_enabled      ? (sps->pcm.bit_depth_chroma - 1) : 0)     <<  8) |
+                                 ((sps->pcm_enabled      ? (sps->pcm.log2_min_pcm_cb_size - 3) : 0) << 12) |
+                                 ((sps->pcm_enabled      ? (sps->pcm.log2_max_pcm_cb_size - sps->pcm.log2_min_pcm_cb_size) : 0) << 14) |
+                                 (sps->pcm_loop_filter_disabled                  << 16) |
+                                 (sps->long_term_ref_pics_present                << 17) |
+                                 (sps->temporal_mvp_enabled                      << 18) |
+                                 (sps->strong_intra_smoothing_enabled            << 19) |
                                  (pps->dependent_slice_segments_enabled_flag     << 20) |
                                  (pps->output_flag_present_flag                  << 21) |
                                  (pps->num_extra_slice_header_bits               << 22) |
