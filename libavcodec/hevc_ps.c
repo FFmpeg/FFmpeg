@@ -107,6 +107,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
     int k  = 0;
     int i;
 
+    rps->used        = 0;
     rps->rps_predict = 0;
 
     if (rps != sps->st_rps && sps->nb_st_rps)
@@ -114,6 +115,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
 
     if (rps->rps_predict) {
         const ShortTermRPS *rps_ridx;
+        uint8_t used[32] = { 0 };
         int delta_rps;
 
         if (is_slice_header) {
@@ -139,13 +141,13 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
         }
         delta_rps      = (1 - (rps->delta_rps_sign << 1)) * rps->abs_delta_rps;
         for (i = 0; i <= rps_ridx->num_delta_pocs; i++) {
-            int used = rps->used[k] = get_bits1(gb);
+            used[k] = get_bits1(gb);
 
             rps->use_delta_flag = 0;
-            if (!used)
+            if (!used[k])
                 rps->use_delta_flag = get_bits1(gb);
 
-            if (used || rps->use_delta_flag) {
+            if (used[k] || rps->use_delta_flag) {
                 if (i < rps_ridx->num_delta_pocs)
                     delta_poc = delta_rps + rps_ridx->delta_poc[i];
                 else
@@ -157,7 +159,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
             }
         }
 
-        if (k >= FF_ARRAY_ELEMS(rps->used)) {
+        if (k >= FF_ARRAY_ELEMS(used)) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid num_delta_pocs: %d\n", k);
             return AVERROR_INVALIDDATA;
@@ -167,35 +169,38 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
         rps->num_negative_pics = k0;
         // sort in increasing order (smallest first)
         if (rps->num_delta_pocs != 0) {
-            int used, tmp;
+            int u, tmp;
             for (i = 1; i < rps->num_delta_pocs; i++) {
                 delta_poc = rps->delta_poc[i];
-                used      = rps->used[i];
+                u         = used[i];
                 for (k = i - 1; k >= 0; k--) {
                     tmp = rps->delta_poc[k];
                     if (delta_poc < tmp) {
                         rps->delta_poc[k + 1] = tmp;
-                        rps->used[k + 1]      = rps->used[k];
+                        used[k + 1]           = used[k];
                         rps->delta_poc[k]     = delta_poc;
-                        rps->used[k]          = used;
+                        used[k]               = u;
                     }
                 }
             }
         }
         if ((rps->num_negative_pics >> 1) != 0) {
-            int used;
+            int u;
             k = rps->num_negative_pics - 1;
             // flip the negative values to largest first
             for (i = 0; i < rps->num_negative_pics >> 1; i++) {
                 delta_poc         = rps->delta_poc[i];
-                used              = rps->used[i];
+                u                 = used[i];
                 rps->delta_poc[i] = rps->delta_poc[k];
-                rps->used[i]      = rps->used[k];
+                used[i]           = used[k];
                 rps->delta_poc[k] = delta_poc;
-                rps->used[k]      = used;
+                used[k]           = u;
                 k--;
             }
         }
+
+        for (unsigned i = 0; i < FF_ARRAY_ELEMS(used); i++)
+            rps->used |= used[i] * (1 << i);
     } else {
         unsigned int nb_positive_pics;
 
@@ -222,7 +227,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                 }
                 prev -= delta_poc;
                 rps->delta_poc[i] = prev;
-                rps->used[i]      = get_bits1(gb);
+                rps->used        |= get_bits1(gb) * (1 << i);
             }
             prev = 0;
             for (i = 0; i < nb_positive_pics; i++) {
@@ -235,7 +240,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
                 }
                 prev += delta_poc;
                 rps->delta_poc[rps->num_negative_pics + i] = prev;
-                rps->used[rps->num_negative_pics + i]      = get_bits1(gb);
+                rps->used                                 |= get_bits1(gb) * (1 << (rps->num_negative_pics + i));
             }
         }
     }

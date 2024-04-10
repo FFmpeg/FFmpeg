@@ -79,7 +79,7 @@ typedef struct ShortTermRPS {
     int num_delta_pocs;
     int rps_idx_num_delta_pocs;
     int32_t delta_poc[32];
-    uint8_t used[32];
+    uint32_t used;
 } ShortTermRPS;
 
 typedef struct HEVCWindow {

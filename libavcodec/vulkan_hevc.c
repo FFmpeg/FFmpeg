@@ -373,19 +373,16 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
 
         /* NOTE: This is the predicted, and *reordered* version.
          * Probably incorrect, but the spec doesn't say which version to use. */
-        for (int j = 0; j < sps->st_rps[i].num_delta_pocs; j++)
-            str[i].used_by_curr_pic_flag |= sps->st_rps[i].used[j] << j;
+        str[i].used_by_curr_pic_flag = st_rps->used;
+        str[i].used_by_curr_pic_s0_flag = av_mod_uintp2(st_rps->used, str[i].num_negative_pics);
+        str[i].used_by_curr_pic_s1_flag = st_rps->used >> str[i].num_negative_pics;
 
-        for (int j = 0; j < str[i].num_negative_pics; j++) {
+        for (int j = 0; j < str[i].num_negative_pics; j++)
             str[i].delta_poc_s0_minus1[j] = st_rps->delta_poc[j] - (j ? st_rps->delta_poc[j - 1] : 0) - 1;
-            str[i].used_by_curr_pic_s0_flag |= sps->st_rps[i].used[j] << j;
-        }
 
-        for (int j = 0; j < str[i].num_positive_pics; j++) {
+        for (int j = 0; j < str[i].num_positive_pics; j++)
             str[i].delta_poc_s1_minus1[j] = st_rps->delta_poc[st_rps->num_negative_pics + j] -
                                             (j ? st_rps->delta_poc[st_rps->num_negative_pics + j - 1] : 0) - 1;
-            str[i].used_by_curr_pic_s1_flag |= sps->st_rps[i].used[str[i].num_negative_pics + j] << j;
-        }
     }
 
     *ltr = (StdVideoH265LongTermRefPicsSps) {

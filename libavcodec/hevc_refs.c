@@ -497,7 +497,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
         int poc = s->poc + short_rps->delta_poc[i];
         int list;
 
-        if (!short_rps->used[i])
+        if (!(short_rps->used & (1 << i)))
             list = ST_FOLL;
         else if (i < short_rps->num_negative_pics)
             list = ST_CURR_BEF;
@@ -536,9 +536,9 @@ int ff_hevc_frame_nb_refs(const HEVCContext *s)
 
     if (rps) {
         for (i = 0; i < rps->num_negative_pics; i++)
-            ret += !!rps->used[i];
+            ret += !!(rps->used & (1 << i));
         for (; i < rps->num_delta_pocs; i++)
-            ret += !!rps->used[i];
+            ret += !!(rps->used & (1 << i));
     }
 
     if (long_rps) {
