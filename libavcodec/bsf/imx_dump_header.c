@@ -25,9 +25,9 @@
  * modifies bitstream to fit in mov and be decoded by final cut pro decoder
  */
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/bytestream.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "bytestream.h"
 
 
 static int imx_dump_header(AVBSFContext *ctx, AVPacket *out)

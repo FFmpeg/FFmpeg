@@ -26,8 +26,8 @@
 #include "libavutil/opt.h"
 #include "libavutil/eval.h"
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
+#include "bsf.h"
+#include "bsf_internal.h"
 
 static const char *const var_names[] = {
     "N",           ///< frame number (starting at zero)

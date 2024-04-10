@@ -22,9 +22,9 @@
 #include "libavutil/avutil.h"
 #include "libavutil/log.h"
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/cbs.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "cbs.h"
 
 
 typedef struct TraceHeadersContext {

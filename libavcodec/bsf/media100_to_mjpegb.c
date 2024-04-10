@@ -25,9 +25,9 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/bytestream.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "bytestream.h"
 
 static av_cold int init(AVBSFContext *ctx)
 {

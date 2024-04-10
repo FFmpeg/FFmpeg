@@ -18,13 +18,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "libavutil/mem.h"
-#include "libavcodec/get_bits.h"
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
+#include "get_bits.h"
+#include "bsf.h"
+#include "bsf_internal.h"
 
-#include "libavcodec/evc.h"
-#include "libavcodec/evc_parse.h"
-#include "libavcodec/evc_ps.h"
+#include "evc.h"
+#include "evc_parse.h"
+#include "evc_ps.h"
 
 // Access unit data
 typedef struct AccessUnitBuffer {

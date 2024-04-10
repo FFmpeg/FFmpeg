@@ -21,9 +21,9 @@
 
 #include "libavutil/avassert.h"
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/get_bits.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "get_bits.h"
 
 #define MAX_CACHE 8
 typedef struct VP9BSFContext {

@@ -20,8 +20,8 @@
 
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
+#include "bsf.h"
+#include "bsf_internal.h"
 
 static int text2movsub(AVBSFContext *ctx, AVPacket *out)
 {

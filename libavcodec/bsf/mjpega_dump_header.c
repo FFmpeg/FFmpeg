@@ -25,10 +25,10 @@
  * modifies bitstream to be decoded by quicktime
  */
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/bytestream.h"
-#include "libavcodec/mjpeg.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "bytestream.h"
+#include "mjpeg.h"
 
 
 static int mjpega_dump_header(AVBSFContext *ctx, AVPacket *out)

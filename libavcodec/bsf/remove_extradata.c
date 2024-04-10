@@ -21,13 +21,13 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
-#include "libavcodec/av1_parse.h"
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/h264.h"
-#include "libavcodec/hevc.h"
-#include "libavcodec/startcode.h"
-#include "libavcodec/vc1_common.h"
+#include "av1_parse.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "h264.h"
+#include "hevc.h"
+#include "startcode.h"
+#include "vc1_common.h"
 
 enum RemoveFreq {
     REMOVE_FREQ_KEYFRAME,

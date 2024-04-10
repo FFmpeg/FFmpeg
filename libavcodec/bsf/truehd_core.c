@@ -18,11 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/get_bits.h"
-#include "libavcodec/mlp_parse.h"
-#include "libavcodec/mlp.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "get_bits.h"
+#include "mlp_parse.h"
+#include "mlp.h"
 
 typedef struct AccessUnit {
     uint8_t bits[4];

@@ -19,12 +19,12 @@
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/cbs.h"
-#include "libavcodec/cbs_bsf.h"
-#include "libavcodec/cbs_h266.h"
-#include "libavcodec/vvc.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "cbs.h"
+#include "cbs_bsf.h"
+#include "cbs_h266.h"
+#include "vvc.h"
 
 #define IS_H266_SLICE(nut) (nut <= VVC_RASL_NUT || (nut >= VVC_IDR_W_RADL && nut <= VVC_GDR_NUT))
 

@@ -28,12 +28,12 @@
 #include "libavutil/mem.h"
 #include "libavutil/tree.h"
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/cbs.h"
-#include "libavcodec/cbs_h264.h"
-#include "libavcodec/h264_parse.h"
-#include "libavcodec/h264_ps.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "cbs.h"
+#include "cbs_h264.h"
+#include "h264_parse.h"
+#include "h264_ps.h"
 
 typedef struct DTS2PTSNode {
     int64_t      dts;

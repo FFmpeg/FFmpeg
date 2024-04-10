@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
-#include "libavcodec/mpeg4videodefs.h"
-#include "libavcodec/startcode.h"
+#include "bsf.h"
+#include "bsf_internal.h"
+#include "mpeg4videodefs.h"
+#include "startcode.h"
 
 typedef struct UnpackBFramesBSFContext {
     AVBufferRef *b_frame_ref;

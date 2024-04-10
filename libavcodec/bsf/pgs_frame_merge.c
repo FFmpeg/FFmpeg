@@ -30,8 +30,8 @@
 #include "libavutil/attributes.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
-#include "libavcodec/bsf.h"
-#include "libavcodec/bsf_internal.h"
+#include "bsf.h"
+#include "bsf_internal.h"
 
 enum PGSSegmentType {
     PALETTE_SEGMENT         = 0x14,
