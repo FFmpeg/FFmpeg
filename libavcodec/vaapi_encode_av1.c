@@ -41,6 +41,8 @@ typedef struct VAAPIEncodeAV1Context {
     VAAPIEncodeContext common;
     AV1RawOBU sh; /**< sequence header.*/
     AV1RawOBU fh; /**< frame header.*/
+    AV1RawOBU mh[4]; /**< metadata header.*/
+    int nb_mh;
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_obu;
     VAConfigAttribValEncAV1 attr;
@@ -659,6 +661,8 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
                                                2 : 1));
     }
 
+    priv->nb_mh = 0;
+
 end:
     ff_cbs_fragment_reset(obu);
     return ret;
@@ -735,6 +739,39 @@ end:
     return ret;
 }
 
+static int vaapi_encode_av1_write_extra_header(AVCodecContext *avctx,
+                                               VAAPIEncodePicture *pic,
+                                               int index, int *type,
+                                               char *data, size_t *data_len)
+{
+    VAAPIEncodeAV1Context  *priv = avctx->priv_data;
+    CodedBitstreamFragment *obu  = &priv->current_obu;
+    AV1RawOBU *mh_obu;
+    char mh_data[MAX_PARAM_BUFFER_SIZE];
+    size_t mh_data_len;
+    int ret = 0;
+
+    if (index >= priv->nb_mh)
+        return AVERROR_EOF;
+
+    mh_obu = &priv->mh[index];
+    ret = vaapi_encode_av1_add_obu(avctx, obu, AV1_OBU_METADATA, mh_obu);
+    if (ret < 0)
+        goto end;
+
+    ret = vaapi_encode_av1_write_obu(avctx, mh_data, &mh_data_len, obu);
+    if (ret < 0)
+        goto end;
+
+    memcpy(data, mh_data, MAX_PARAM_BUFFER_SIZE * sizeof(char));
+    *data_len = mh_data_len;
+    *type = VAEncPackedHeaderRawData;
+
+end:
+    ff_cbs_fragment_reset(obu);
+    return ret;
+}
+
 static const VAAPIEncodeProfile vaapi_encode_av1_profiles[] = {
     { AV_PROFILE_AV1_MAIN,  8, 3, 1, 1, VAProfileAV1Profile0 },
     { AV_PROFILE_AV1_MAIN, 10, 3, 1, 1, VAProfileAV1Profile0 },
@@ -762,6 +799,8 @@ static const VAAPIEncodeType vaapi_encode_type_av1 = {
 
     .slice_params_size = sizeof(VAEncTileGroupBufferAV1),
     .init_slice_params = &vaapi_encode_av1_init_slice_params,
+
+    .write_extra_header     = &vaapi_encode_av1_write_extra_header,
 };
 
 static av_cold int vaapi_encode_av1_init(AVCodecContext *avctx)
@@ -776,7 +815,8 @@ static av_cold int vaapi_encode_av1_init(AVCodecContext *avctx)
 
     ctx->desired_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE |
-        VA_ENC_PACKED_HEADER_PICTURE;
+        VA_ENC_PACKED_HEADER_PICTURE |
+        VA_ENC_PACKED_HEADER_MISC;      // Metadata
 
     if (avctx->profile == AV_PROFILE_UNKNOWN)
         avctx->profile = priv->profile;
