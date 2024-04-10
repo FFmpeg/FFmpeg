@@ -197,7 +197,8 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
             }
         }
     } else {
-        unsigned int prev, nb_positive_pics;
+        unsigned int nb_positive_pics;
+
         rps->num_negative_pics = get_ue_golomb_long(gb);
         nb_positive_pics       = get_ue_golomb_long(gb);
 
@@ -209,7 +210,8 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
 
         rps->num_delta_pocs = rps->num_negative_pics + nb_positive_pics;
         if (rps->num_delta_pocs) {
-            prev = 0;
+            int prev = 0;
+
             for (i = 0; i < rps->num_negative_pics; i++) {
                 delta_poc = rps->delta_poc_s0[i] = get_ue_golomb_long(gb) + 1;
                 if (delta_poc < 1 || delta_poc > 32768) {
