@@ -143,11 +143,11 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
         for (i = 0; i <= rps_ridx->num_delta_pocs; i++) {
             used[k] = get_bits1(gb);
 
-            rps->use_delta_flag = 0;
+            rps->use_delta = 0;
             if (!used[k])
-                rps->use_delta_flag = get_bits1(gb);
+                rps->use_delta = get_bits1(gb);
 
-            if (used[k] || rps->use_delta_flag) {
+            if (used[k] || rps->use_delta) {
                 if (i < rps_ridx->num_delta_pocs)
                     delta_poc = delta_rps + rps_ridx->delta_poc[i];
                 else
