@@ -707,6 +707,21 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
                                mdm->min_luminance.den);
             }
         }
+
+        sd = av_frame_get_side_data(pic->input_image,
+                                    AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+        if (sd) {
+            AVContentLightMetadata *cllm = (AVContentLightMetadata *)sd->data;
+            AV1RawOBU               *obu = &priv->mh[priv->nb_mh++];
+            AV1RawMetadata           *md = &obu->obu.metadata;
+            AV1RawMetadataHDRCLL    *cll = &md->metadata.hdr_cll;
+
+            memset(obu, 0, sizeof(*obu));
+            obu->header.obu_type = AV1_OBU_METADATA;
+            md->metadata_type    = AV1_METADATA_TYPE_HDR_CLL;
+            cll->max_cll         = cllm->MaxCLL;
+            cll->max_fall        = cllm->MaxFALL;
+        }
     }
 
 end:
