@@ -811,6 +811,7 @@ static AVFrameSideData *replace_side_data_from_buf(AVFrameSideData *dst,
         return NULL;
 
     av_dict_free(&dst->metadata);
+    av_buffer_unref(&dst->buf);
     dst->buf  = buf;
     dst->data = buf->data;
     dst->size = buf->size;
