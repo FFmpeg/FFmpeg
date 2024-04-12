@@ -279,6 +279,11 @@ int main(void)
             if (av_opt_serialize(&test_ctx, 0, 0, &buf, '=', ',') >= 0) {
                 printf("%s\n", buf);
                 av_free(buf);
+                if (av_opt_serialize(&test_ctx, 0, AV_OPT_SERIALIZE_SKIP_DEFAULTS, &buf, '=', ',') >= 0) {
+                    if (strlen(buf))
+                        printf("%s\n", buf);
+                    av_free(buf);
+                }
             }
         }
         av_opt_free(&test_ctx);
