@@ -100,6 +100,20 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
  */
 int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame);
 
+/***************************************************
+ * The following section is for internal use only. *
+ ***************************************************/
+
+typedef struct DOVIVdr {
+    AVDOVIDataMapping mapping;
+    AVDOVIColorMetadata color;
+} DOVIVdr;
+
+enum {
+    RPU_COEFF_FIXED = 0,
+    RPU_COEFF_FLOAT = 1,
+};
+
 /**
  * Internal helper function to guess the correct DV profile for HEVC.
  *
