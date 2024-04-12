@@ -1696,6 +1696,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ctx->weighted_pred == 1)
         ctx->init_encode_params.enableWeightedPrediction = 1;
 
+#ifdef NVENC_HAVE_SPLIT_FRAME_ENCODING
+    ctx->init_encode_params.splitEncodeMode = ctx->split_encode_mode;
+
+    if (ctx->split_encode_mode != NV_ENC_SPLIT_DISABLE_MODE) {
+        if (avctx->codec->id == AV_CODEC_ID_HEVC && ctx->weighted_pred == 1)
+            av_log(avctx, AV_LOG_WARNING, "Split encoding not supported with weighted prediction enabled.\n");
+    }
+#endif
+
     if (ctx->bluray_compat) {
         ctx->aud = 1;
         ctx->dpb_size = FFMIN(FFMAX(avctx->refs, 0), 6);
