@@ -2816,14 +2816,14 @@ ffmpeg -i sample_left_right_clip.mpg -an -c:v libvpx -metadata stereo_mode=left_
 
 @subsection Options
 @table @option
-@item reserve_index_space @var{index}
+@item reserve_index_space @var{size}
 By default, this muxer writes the index for seeking (called cues in Matroska
 terms) at the end of the file, because it cannot know in advance how much space
 to leave for the index at the beginning of the file. However for some use cases
 -- e.g.  streaming where seeking is possible but slow -- it is useful to put the
 index at the beginning of the file.
 
-If this option is set to a non-zero value, the muxer will reserve a given amount
+If this option is set to a non-zero value, the muxer will reserve @var{size} bytes
 of space in the file header and then try to write the cues there when the muxing
 finishes. If the reserved space does not suffice, no Cues will be written, the
 file will be finalized and writing the trailer will return an error.
