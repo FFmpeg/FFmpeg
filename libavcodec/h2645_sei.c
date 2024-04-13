@@ -587,38 +587,61 @@ static int h2645_sei_to_side_data(AVCodecContext *avctx, H2645SEI *sei,
             return ret;
 
         if (metadata) {
+            metadata->has_luminance = 1;
+            metadata->has_primaries = 1;
+
             for (i = 0; i < 3; i++) {
                 const int j = mapping[i];
                 metadata->display_primaries[i][0].num = sei->mastering_display.display_primaries[j][0];
                 metadata->display_primaries[i][0].den = chroma_den;
+                metadata->has_primaries &= sei->mastering_display.display_primaries[j][0] >= 5 &&
+                                           sei->mastering_display.display_primaries[j][0] <= 37000;
+
                 metadata->display_primaries[i][1].num = sei->mastering_display.display_primaries[j][1];
                 metadata->display_primaries[i][1].den = chroma_den;
+                metadata->has_primaries &= sei->mastering_display.display_primaries[j][1] >= 5 &&
+                                           sei->mastering_display.display_primaries[j][1] <= 42000;
             }
             metadata->white_point[0].num = sei->mastering_display.white_point[0];
             metadata->white_point[0].den = chroma_den;
+            metadata->has_primaries &= sei->mastering_display.white_point[0] >= 5 &&
+                                       sei->mastering_display.white_point[0] <= 37000;
+
             metadata->white_point[1].num = sei->mastering_display.white_point[1];
             metadata->white_point[1].den = chroma_den;
+            metadata->has_primaries &= sei->mastering_display.white_point[1] >= 5 &&
+                                       sei->mastering_display.white_point[1] <= 42000;
 
             metadata->max_luminance.num = sei->mastering_display.max_luminance;
             metadata->max_luminance.den = luma_den;
+            metadata->has_luminance &= sei->mastering_display.max_luminance >= 50000 &&
+                                       sei->mastering_display.max_luminance <= 100000000;
+
             metadata->min_luminance.num = sei->mastering_display.min_luminance;
             metadata->min_luminance.den = luma_den;
-            metadata->has_luminance = 1;
-            metadata->has_primaries = 1;
+            metadata->has_luminance &= sei->mastering_display.min_luminance >= 1 &&
+                                       sei->mastering_display.min_luminance <= 50000 &&
+                                       sei->mastering_display.min_luminance <
+                                       sei->mastering_display.max_luminance;
 
-            av_log(avctx, AV_LOG_DEBUG, "Mastering Display Metadata:\n");
-            av_log(avctx, AV_LOG_DEBUG,
-                   "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f)\n",
-                   av_q2d(metadata->display_primaries[0][0]),
-                   av_q2d(metadata->display_primaries[0][1]),
-                   av_q2d(metadata->display_primaries[1][0]),
-                   av_q2d(metadata->display_primaries[1][1]),
-                   av_q2d(metadata->display_primaries[2][0]),
-                   av_q2d(metadata->display_primaries[2][1]),
-                   av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]));
-            av_log(avctx, AV_LOG_DEBUG,
-                   "min_luminance=%f, max_luminance=%f\n",
-                   av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+            if (metadata->has_luminance || metadata->has_primaries)
+                av_log(avctx, AV_LOG_DEBUG, "Mastering Display Metadata:\n");
+            if (metadata->has_primaries) {
+                av_log(avctx, AV_LOG_DEBUG,
+                       "r(%5.4f,%5.4f) g(%5.4f,%5.4f) b(%5.4f %5.4f) wp(%5.4f, %5.4f)\n",
+                       av_q2d(metadata->display_primaries[0][0]),
+                       av_q2d(metadata->display_primaries[0][1]),
+                       av_q2d(metadata->display_primaries[1][0]),
+                       av_q2d(metadata->display_primaries[1][1]),
+                       av_q2d(metadata->display_primaries[2][0]),
+                       av_q2d(metadata->display_primaries[2][1]),
+                       av_q2d(metadata->white_point[0]), av_q2d(metadata->white_point[1]));
+            }
+            if (metadata->has_luminance) {
+                av_log(avctx, AV_LOG_DEBUG,
+                       "min_luminance=%f, max_luminance=%f\n",
+                       av_q2d(metadata->min_luminance), av_q2d(metadata->max_luminance));
+            }
         }
     }
 
