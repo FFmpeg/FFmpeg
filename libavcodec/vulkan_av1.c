@@ -76,7 +76,7 @@ static int vk_av1_fill_pict(AVCodecContext *avctx, const AV1Frame **ref_src,
                             StdVideoDecodeAV1ReferenceInfo *vkav1_std_ref,
                             VkVideoDecodeAV1DpbSlotInfoKHR *vkav1_ref, /* Goes in ^ */
                             const AV1Frame *pic, int is_current, int has_grain,
-                            int *saved_order_hints)
+                            const uint8_t *saved_order_hints)
 {
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     AV1VulkanDecodePicture *hp = pic->hwaccel_picture_private;
@@ -242,7 +242,6 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
 
     const AV1RawFrameHeader *frame_header = s->raw_frame_header;
     const AV1RawFilmGrainParams *film_grain = &s->cur_frame.film_grain;
-    CodedBitstreamAV1Context *cbs_ctx = (CodedBitstreamAV1Context *)(s->cbc->priv_data);
 
     const int apply_grain = !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
                             film_grain->apply_grain;
@@ -272,7 +271,7 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
 
     ap->ref_frame_sign_bias_mask = 0x0;
     for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
-        ap->ref_frame_sign_bias_mask |= cbs_ctx->ref_frame_sign_bias[i] << i;
+        ap->ref_frame_sign_bias_mask |= pic->ref_frame_sign_bias[i] << i;
 
     for (int i = 0; i < STD_VIDEO_AV1_REFS_PER_FRAME; i++) {
         const int idx = pic->raw_frame_header->ref_frame_idx[i];
@@ -294,7 +293,7 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
 
         err = vk_av1_fill_pict(avctx, &ap->ref_src[ref_count], &vp->ref_slots[ref_count],
                                &vp->refs[ref_count], &ap->std_refs[ref_count], &ap->vkav1_refs[ref_count],
-                               ref_frame, 0, 0, cbs_ctx->ref[idx].saved_order_hints);
+                               ref_frame, 0, 0, ref_frame->order_hints);
         if (err < 0)
             return err;
 
@@ -491,22 +490,20 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
         }
     }
 
-    for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
+    for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++) {
+        ap->std_pic_info.OrderHints[i] = pic->order_hints[i];
         ap->loop_filter.loop_filter_ref_deltas[i] = frame_header->loop_filter_ref_deltas[i];
+        ap->global_motion.GmType[i] = s->cur_frame.gm_type[i];
+        for (int j = 0; j < STD_VIDEO_AV1_GLOBAL_MOTION_PARAMS; j++) {
+            ap->global_motion.gm_params[i][j] = s->cur_frame.gm_params[i][j];
+        }
+    }
 
     for (int i = 0; i < STD_VIDEO_AV1_MAX_CDEF_FILTER_STRENGTHS; i++) {
         ap->cdef.cdef_y_pri_strength[i] = frame_header->cdef_y_pri_strength[i];
         ap->cdef.cdef_y_sec_strength[i] = frame_header->cdef_y_sec_strength[i];
         ap->cdef.cdef_uv_pri_strength[i] = frame_header->cdef_uv_pri_strength[i];
         ap->cdef.cdef_uv_sec_strength[i] = frame_header->cdef_uv_sec_strength[i];
-    }
-
-    for (int i = 0; i < STD_VIDEO_AV1_NUM_REF_FRAMES; i++) {
-        ap->std_pic_info.OrderHints[i] = frame_header->ref_order_hint[i];
-        ap->global_motion.GmType[i] = s->cur_frame.gm_type[i];
-        for (int j = 0; j < STD_VIDEO_AV1_GLOBAL_MOTION_PARAMS; j++) {
-            ap->global_motion.gm_params[i][j] = s->cur_frame.gm_params[i][j];
-        }
     }
 
     if (apply_grain) {
