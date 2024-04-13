@@ -182,20 +182,22 @@ static int parse_points_str(AVFilterContext *ctx, struct keypoint **points, cons
         if (point->x < 0 || point->x > 1 || point->y < 0 || point->y > 1) {
             av_log(ctx, AV_LOG_ERROR, "Invalid key point coordinates (%f;%f), "
                    "x and y must be in the [0;1] range.\n", point->x, point->y);
+            av_free(point);
             return AVERROR(EINVAL);
         }
-        if (!*points)
-            *points = point;
         if (last) {
             if ((int)(last->x * scale) >= (int)(point->x * scale)) {
                 av_log(ctx, AV_LOG_ERROR, "Key point coordinates (%f;%f) "
                        "and (%f;%f) are too close from each other or not "
                        "strictly increasing on the x-axis\n",
                        last->x, last->y, point->x, point->y);
+                av_free(point);
                 return AVERROR(EINVAL);
             }
             last->next = point;
         }
+        if (!*points)
+            *points = point;
         last = point;
     }
 
