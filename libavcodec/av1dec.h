@@ -53,6 +53,14 @@ typedef struct AV1Frame {
     AV1RawFilmGrainParams film_grain;
 
     uint8_t coded_lossless;
+
+    // OrderHint for this frame.
+    uint8_t order_hint;
+    // RefFrameSignBias[] used when decoding this frame.
+    uint8_t ref_frame_sign_bias[AV1_TOTAL_REFS_PER_FRAME];
+    // OrderHints[] when this is the current frame, otherwise
+    // SavedOrderHints[s][] when is the reference frame in slot s.
+    uint8_t order_hints[AV1_TOTAL_REFS_PER_FRAME];
 } AV1Frame;
 
 typedef struct TileGroupInfo {
