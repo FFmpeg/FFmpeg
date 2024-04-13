@@ -449,3 +449,10 @@ Setting options string 'a_very_long_option_name_that_will_need_to_be_ellipsized_
 Setting 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here' to value '42'
 Option 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here' not found
 Error 'a_very_long_option_name_that_will_need_to_be_ellipsized_around_here=42'
+
+Testing av_opt_find2()
+OK    'num'
+Error 'num64'
+Error 'child_num'
+OK    'child_num'
+Error 'foo'

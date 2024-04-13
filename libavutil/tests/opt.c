@@ -409,5 +409,54 @@ int main(void)
         av_opt_free(&test_ctx);
     }
 
+    printf("\nTesting av_opt_find2()\n");
+    {
+        TestContext test_ctx = { 0 };
+        ChildContext child_ctx = { 0 };
+        void *target;
+        const AVOption *opt;
+
+        test_ctx.class = &test_class;
+        child_ctx.class = &child_class;
+        test_ctx.child = &child_ctx;
+
+        av_log_set_level(AV_LOG_QUIET);
+
+        // Should succeed. num exists and has opt_flags 1
+        opt = av_opt_find2(&test_ctx, "num", NULL, 1, 0, &target);
+        if (opt && target == &test_ctx)
+            printf("OK    '%s'\n", opt->name);
+        else
+            printf("Error 'num'\n");
+
+        // Should fail. num64 exists but has opt_flags 1, not 2
+        opt = av_opt_find(&test_ctx, "num64", NULL, 2, 0);
+        if (opt)
+            printf("OK    '%s'\n", opt->name);
+        else
+            printf("Error 'num64'\n");
+
+        // Should fail. child_num exists but in a child object we're not searching
+        opt = av_opt_find(&test_ctx, "child_num", NULL, 0, 0);
+        if (opt)
+            printf("OK    '%s'\n", opt->name);
+        else
+            printf("Error 'child_num'\n");
+
+        // Should succeed. child_num exists in a child object we're searching
+        opt = av_opt_find2(&test_ctx, "child_num", NULL, 0, AV_OPT_SEARCH_CHILDREN, &target);
+        if (opt && target == &child_ctx)
+            printf("OK    '%s'\n", opt->name);
+        else
+            printf("Error 'child_num'\n");
+
+        // Should fail. foo doesn't exist
+        opt = av_opt_find(&test_ctx, "foo", NULL, 0, 0);
+        if (opt)
+            printf("OK    '%s'\n", opt->name);
+        else
+            printf("Error 'foo'\n");
+    }
+
     return 0;
 }
