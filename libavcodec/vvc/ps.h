@@ -69,7 +69,7 @@ typedef struct VVCSPS {
     uint8_t     bit_depth;                                          ///< BitDepth
     uint8_t     qp_bd_offset;                                       ///< QpBdOffset
     uint8_t     ctb_log2_size_y;                                    ///< CtbLog2SizeY
-    uint8_t     ctb_size_y;                                         ///< CtbSizeY
+    uint16_t    ctb_size_y;                                         ///< CtbSizeY
     uint8_t     min_cb_log2_size_y;                                 ///< MinCbLog2SizeY
     uint8_t     min_cb_size_y;                                      ///< MinCbSizeY
     uint8_t     max_tb_size_y;                                      ///< MaxTbSizeY
