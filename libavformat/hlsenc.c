@@ -2757,6 +2757,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
             filename = av_asprintf("%s", oc->url);
         }
         if (!filename) {
+            av_dict_free(&options);
             av_freep(&old_filename);
             return AVERROR(ENOMEM);
         }
