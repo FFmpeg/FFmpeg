@@ -8137,8 +8137,8 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
     size -= 4;
 
     if (version < 2) {
-        av_log(c->fc, AV_LOG_ERROR, "infe: version < 2 not supported\n");
-        return AVERROR_PATCHWELCOME;
+        avpriv_report_missing_feature(c->fc, "infe version < 2");
+        return 1;
     }
 
     item_id = version > 2 ? avio_rb32(pb) : avio_rb16(pb);
@@ -8209,6 +8209,8 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         ret = mov_read_infe(c, pb, infe, i);
         if (ret < 0)
             return ret;
+        if (ret)
+            return 0;
     }
 
     c->found_iinf = 1;
@@ -9508,14 +9510,15 @@ static int mov_read_header(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "error reading header\n");
             return err;
         }
-    } while ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mov->found_moov && !mov->found_iloc && !mov->moov_retry++);
-    if (!mov->found_moov && !mov->found_iloc) {
+    } while ((pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+             !mov->found_moov && (!mov->found_iloc || !mov->found_iinf) && !mov->moov_retry++);
+    if (!mov->found_moov && !mov->found_iloc && !mov->found_iinf) {
         av_log(s, AV_LOG_ERROR, "moov atom not found\n");
         return AVERROR_INVALIDDATA;
     }
     av_log(mov->fc, AV_LOG_TRACE, "on_parse_exit_offset=%"PRId64"\n", avio_tell(pb));
 
-    if (mov->found_iloc) {
+    if (mov->found_iloc && mov->found_iinf) {
         for (i = 0; i < mov->nb_heif_item; i++) {
             HEIFItem *item = &mov->heif_item[i];
             MOVStreamContext *sc;
