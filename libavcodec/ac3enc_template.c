@@ -37,6 +37,11 @@
 #include "ac3enc.h"
 #include "eac3enc.h"
 
+#if AC3ENC_FLOAT
+#define RENAME(element) element ## _float
+#else
+#define RENAME(element) element ## _fixed
+#endif
 
 /*
  * Apply the MDCT to input samples to generate frequency coefficients.
@@ -51,15 +56,16 @@ static void apply_mdct(AC3EncodeContext *s)
         for (blk = 0; blk < s->num_blocks; blk++) {
             AC3Block *block = &s->blocks[blk];
             const SampleType *input_samples = (SampleType*)s->planar_samples[ch] + blk * AC3_BLOCK_SIZE;
+            SampleType *windowed_samples = s->RENAME(windowed_samples);
 
-            s->fdsp->vector_fmul(s->windowed_samples, input_samples,
+            s->fdsp->vector_fmul(windowed_samples, input_samples,
                                  s->mdct_window, AC3_BLOCK_SIZE);
-            s->fdsp->vector_fmul_reverse((SampleType*)s->windowed_samples + AC3_BLOCK_SIZE,
+            s->fdsp->vector_fmul_reverse(windowed_samples + AC3_BLOCK_SIZE,
                                          &input_samples[AC3_BLOCK_SIZE],
                                          s->mdct_window, AC3_BLOCK_SIZE);
 
             s->tx_fn(s->tx, block->mdct_coef[ch+1],
-                     s->windowed_samples, sizeof(float));
+                     windowed_samples, sizeof(*windowed_samples));
         }
     }
 }

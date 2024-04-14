@@ -2184,7 +2184,6 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
     AC3EncodeContext *s = avctx->priv_data;
 
     av_freep(&s->mdct_window);
-    av_freep(&s->windowed_samples);
     if (s->planar_samples)
         for (ch = 0; ch < s->channels; ch++)
             av_freep(&s->planar_samples[ch]);
@@ -2458,9 +2457,6 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
     int channel_blocks = channels * s->num_blocks;
     int total_coefs    = AC3_MAX_COEFS * channel_blocks;
     const unsigned sampletype_size = SAMPLETYPE_SIZE(s);
-
-    if (!(s->windowed_samples = av_malloc(sampletype_size * AC3_WINDOW_SIZE)))
-        return AVERROR(ENOMEM);
 
     if (!FF_ALLOCZ_TYPED_ARRAY(s->planar_samples,  s->channels))
         return AVERROR(ENOMEM);

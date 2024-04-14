@@ -30,6 +30,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/tx.h"
 
@@ -232,7 +233,6 @@ typedef struct AC3EncodeContext {
     int frame_bits;                         ///< all frame bits except exponents and mantissas
     int exponent_bits;                      ///< number of bits used for exponents
 
-    void *windowed_samples;
     uint8_t **planar_samples;
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
@@ -259,6 +259,11 @@ typedef struct AC3EncodeContext {
 
     /* AC-3 vs. E-AC-3 function pointers */
     void (*output_frame_header)(struct AC3EncodeContext *s);
+
+    union {
+        DECLARE_ALIGNED(32, float,   windowed_samples_float)[AC3_WINDOW_SIZE];
+        DECLARE_ALIGNED(32, int32_t, windowed_samples_fixed)[AC3_WINDOW_SIZE];
+    };
 } AC3EncodeContext;
 
 extern const AVChannelLayout ff_ac3_ch_layouts[19];
