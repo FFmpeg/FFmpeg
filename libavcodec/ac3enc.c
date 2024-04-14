@@ -2183,7 +2183,6 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
     int blk, ch;
     AC3EncodeContext *s = avctx->priv_data;
 
-    av_freep(&s->mdct_window);
     if (s->planar_samples)
         for (ch = 0; ch < s->channels; ch++)
             av_freep(&s->planar_samples[ch]);

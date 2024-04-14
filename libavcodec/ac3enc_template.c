@@ -59,10 +59,10 @@ static void apply_mdct(AC3EncodeContext *s)
             SampleType *windowed_samples = s->RENAME(windowed_samples);
 
             s->fdsp->vector_fmul(windowed_samples, input_samples,
-                                 s->mdct_window, AC3_BLOCK_SIZE);
+                                 s->RENAME(mdct_window), AC3_BLOCK_SIZE);
             s->fdsp->vector_fmul_reverse(windowed_samples + AC3_BLOCK_SIZE,
                                          &input_samples[AC3_BLOCK_SIZE],
-                                         s->mdct_window, AC3_BLOCK_SIZE);
+                                         s->RENAME(mdct_window), AC3_BLOCK_SIZE);
 
             s->tx_fn(s->tx, block->mdct_coef[ch+1],
                      windowed_samples, sizeof(*windowed_samples));

@@ -27,7 +27,6 @@
  */
 
 #define AC3ENC_FLOAT 1
-#include "libavutil/mem.h"
 #include "audiodsp.h"
 #include "ac3enc.h"
 #include "codec_internal.h"
@@ -87,12 +86,8 @@ static void sum_square_butterfly(AC3EncodeContext *s, float sum[4],
 static av_cold int ac3_float_mdct_init(AC3EncodeContext *s)
 {
     const float scale = -2.0 / AC3_WINDOW_SIZE;
-    float *window = av_malloc_array(AC3_BLOCK_SIZE, sizeof(*window));
-    if (!window)
-        return AVERROR(ENOMEM);
 
-    ff_kbd_window_init(window, 5.0, AC3_BLOCK_SIZE);
-    s->mdct_window = window;
+    ff_kbd_window_init(s->mdct_window_float, 5.0, AC3_BLOCK_SIZE);
 
     return av_tx_init(&s->tx, &s->tx_fn, AV_TX_FLOAT_MDCT, 0,
                       AC3_BLOCK_SIZE, &scale, 0);

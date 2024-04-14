@@ -27,7 +27,6 @@
  */
 
 #define AC3ENC_FLOAT 0
-#include "libavutil/mem.h"
 #include "audiodsp.h"
 #include "ac3enc.h"
 #include "codec_internal.h"
@@ -79,15 +78,11 @@ static av_cold int ac3_fixed_mdct_init(AVCodecContext *avctx, AC3EncodeContext *
     float fwin[AC3_BLOCK_SIZE];
     const float scale = -1.0f;
 
-    int32_t *iwin = av_malloc_array(AC3_BLOCK_SIZE, sizeof(*iwin));
-    if (!iwin)
-        return AVERROR(ENOMEM);
+    int32_t *iwin = s->mdct_window_fixed;
 
     ff_kbd_window_init(fwin, 5.0, AC3_BLOCK_SIZE);
     for (int i = 0; i < AC3_BLOCK_SIZE; i++)
         iwin[i] = lrintf(fwin[i] * (1 << 22));
-
-    s->mdct_window = iwin;
 
     s->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!s->fdsp)

@@ -169,7 +169,6 @@ typedef struct AC3EncodeContext {
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     AVTXContext *tx;                        ///< FFT context for MDCT calculation
     av_tx_fn tx_fn;
-    const SampleType *mdct_window;          ///< MDCT window function array
 
     AC3Block blocks[AC3_MAX_BLOCKS];        ///< per-block info
 
@@ -260,6 +259,10 @@ typedef struct AC3EncodeContext {
     /* AC-3 vs. E-AC-3 function pointers */
     void (*output_frame_header)(struct AC3EncodeContext *s);
 
+    union {
+        DECLARE_ALIGNED(32, float,   mdct_window_float)[AC3_BLOCK_SIZE];
+        DECLARE_ALIGNED(32, int32_t, mdct_window_fixed)[AC3_BLOCK_SIZE];
+    };
     union {
         DECLARE_ALIGNED(32, float,   windowed_samples_float)[AC3_WINDOW_SIZE];
         DECLARE_ALIGNED(32, int32_t, windowed_samples_fixed)[AC3_WINDOW_SIZE];
