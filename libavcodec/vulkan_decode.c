@@ -1115,6 +1115,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     FFVulkanFunctions *vk;
     const VkVideoProfileInfoKHR *profile;
     const FFVulkanDecodeDescriptor *vk_desc;
+    const VkPhysicalDeviceDriverProperties *driver_props;
 
     VkVideoDecodeH264SessionParametersCreateInfoKHR h264_params = {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_CREATE_INFO_KHR,
@@ -1275,6 +1276,14 @@ int ff_vk_decode_init(AVCodecContext *avctx)
                ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
+
+    driver_props = &dec->shared_ctx->s.driver_props;
+    if (driver_props->driverID == VK_DRIVER_ID_NVIDIA_PROPRIETARY &&
+        driver_props->conformanceVersion.major == 1 &&
+        driver_props->conformanceVersion.minor == 3 &&
+        driver_props->conformanceVersion.subminor == 8 &&
+        driver_props->conformanceVersion.patch < 3)
+        dec->quirk_av1_offset = 1;
 
     ff_vk_decode_flush(avctx);
 
