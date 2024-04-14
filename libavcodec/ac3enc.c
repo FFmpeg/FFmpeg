@@ -503,28 +503,6 @@ static void ac3_adjust_frame_size(AC3EncodeContext *s)
     s->samples_written += AC3_BLOCK_SIZE * s->num_blocks;
 }
 
-/*
- * Copy input samples.
- * Channels are reordered from FFmpeg's default order to AC-3 order.
- */
-static void copy_input_samples(AC3EncodeContext *s, uint8_t * const *samples)
-{
-    const unsigned sampletype_size = SAMPLETYPE_SIZE(s);
-
-    /* copy and remap input samples */
-    for (int ch = 0; ch < s->channels; ch++) {
-        /* copy last 256 samples of previous frame to the start of the current frame */
-        memcpy(&s->planar_samples[ch][0],
-               s->planar_samples[ch] + AC3_BLOCK_SIZE * sampletype_size * s->num_blocks,
-               AC3_BLOCK_SIZE * sampletype_size);
-
-        /* copy new samples for current frame */
-        memcpy(s->planar_samples[ch] + AC3_BLOCK_SIZE * sampletype_size,
-               samples[s->channel_map[ch]],
-               sampletype_size * AC3_BLOCK_SIZE * s->num_blocks);
-    }
-}
-
 /**
  * Set the initial coupling strategy parameters prior to coupling analysis.
  *
@@ -2018,9 +1996,7 @@ int ff_ac3_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     if (s->bit_alloc.sr_code == 1 || s->eac3)
         ac3_adjust_frame_size(s);
 
-    copy_input_samples(s, frame->extended_data);
-
-    s->encode_frame(s);
+    s->encode_frame(s, frame->extended_data);
 
     ac3_apply_rematrixing(s);
 
@@ -2442,8 +2418,7 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
     const unsigned sampletype_size = SAMPLETYPE_SIZE(s);
 
     for (int ch = 0; ch < s->channels; ch++) {
-        s->planar_samples[ch] = av_mallocz((AC3_FRAME_SIZE + AC3_BLOCK_SIZE) *
-                                                  sampletype_size);
+        s->planar_samples[ch] = av_mallocz(AC3_BLOCK_SIZE * sampletype_size);
         if (!s->planar_samples[ch])
             return AVERROR(ENOMEM);
     }
