@@ -2194,8 +2194,7 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
     av_freep(&s->band_psd_buffer);
     av_freep(&s->mask_buffer);
     av_freep(&s->qmant_buffer);
-    av_freep(&s->cpl_coord_exp_buffer);
-    av_freep(&s->cpl_coord_mant_buffer);
+    av_freep(&s->cpl_coord_buffer);
     av_freep(&s->fdsp);
 
     av_tx_uninit(&s->tx);
@@ -2439,6 +2438,7 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
     int channels = s->channels + 1; /* includes coupling channel */
     int channel_blocks = channels * s->num_blocks;
     int total_coefs    = AC3_MAX_COEFS * channel_blocks;
+    uint8_t *cpl_coord_mant_buffer;
     const unsigned sampletype_size = SAMPLETYPE_SIZE(s);
 
     for (int ch = 0; ch < s->channels; ch++) {
@@ -2464,9 +2464,9 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
             return AVERROR(ENOMEM);
     }
     if (s->cpl_enabled) {
-        if (!FF_ALLOC_TYPED_ARRAY(s->cpl_coord_exp_buffer,  channel_blocks * 16) ||
-            !FF_ALLOC_TYPED_ARRAY(s->cpl_coord_mant_buffer, channel_blocks * 16))
+        if (!FF_ALLOC_TYPED_ARRAY(s->cpl_coord_buffer, channel_blocks * 32))
             return AVERROR(ENOMEM);
+        cpl_coord_mant_buffer = s->cpl_coord_buffer + 16 * channel_blocks;
     }
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block = &s->blocks[blk];
@@ -2479,8 +2479,8 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
             block->mask[ch]        = &s->mask_buffer       [64            * (blk * channels + ch)];
             block->qmant[ch]       = &s->qmant_buffer      [AC3_MAX_COEFS * (blk * channels + ch)];
             if (s->cpl_enabled) {
-                block->cpl_coord_exp[ch]  = &s->cpl_coord_exp_buffer [16  * (blk * channels + ch)];
-                block->cpl_coord_mant[ch] = &s->cpl_coord_mant_buffer[16  * (blk * channels + ch)];
+                block->cpl_coord_exp[ch]  = &s->cpl_coord_buffer [16  * (blk * channels + ch)];
+                block->cpl_coord_mant[ch] = &cpl_coord_mant_buffer[16  * (blk * channels + ch)];
             }
 
             /* arrangement: channel, block, coeff */

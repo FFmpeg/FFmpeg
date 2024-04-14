@@ -243,8 +243,7 @@ typedef struct AC3EncodeContext {
     int16_t *band_psd_buffer;
     int16_t *mask_buffer;
     int16_t *qmant_buffer;
-    uint8_t *cpl_coord_exp_buffer;
-    uint8_t *cpl_coord_mant_buffer;
+    uint8_t *cpl_coord_buffer;
 
     uint8_t exp_strategy[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< exponent strategies
     uint8_t frame_exp_strategy[AC3_MAX_CHANNELS];           ///< frame exp strategy index
