@@ -97,9 +97,14 @@ static int vk_av1_fill_pict(AVCodecContext *avctx, const AV1Frame **ref_src,
         .RefFrameSignBias = hp->ref_frame_sign_bias_mask,
     };
 
-    if (saved_order_hints)
-        for (int i = 0; i < AV1_TOTAL_REFS_PER_FRAME; i++)
-            vkav1_std_ref->SavedOrderHints[i] = saved_order_hints[i];
+    if (saved_order_hints) {
+        if (dec->quirk_av1_offset)
+            for (int i = 1; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
+                vkav1_std_ref->SavedOrderHints[i - 1] = saved_order_hints[i];
+        else
+            for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
+                vkav1_std_ref->SavedOrderHints[i] = saved_order_hints[i];
+    }
 
     *vkav1_ref = (VkVideoDecodeAV1DpbSlotInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_DPB_SLOT_INFO_KHR,
@@ -490,8 +495,14 @@ static int vk_av1_start_frame(AVCodecContext          *avctx,
         }
     }
 
+    if (dec->quirk_av1_offset)
+        for (int i = 1; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
+            ap->std_pic_info.OrderHints[i - 1] = pic->order_hints[i];
+    else
+        for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++)
+            ap->std_pic_info.OrderHints[i] = pic->order_hints[i];
+
     for (int i = 0; i < STD_VIDEO_AV1_TOTAL_REFS_PER_FRAME; i++) {
-        ap->std_pic_info.OrderHints[i] = pic->order_hints[i];
         ap->loop_filter.loop_filter_ref_deltas[i] = frame_header->loop_filter_ref_deltas[i];
         ap->global_motion.GmType[i] = s->cur_frame.gm_type[i];
         for (int j = 0; j < STD_VIDEO_AV1_GLOBAL_MOTION_PARAMS; j++) {
