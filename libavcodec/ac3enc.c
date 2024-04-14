@@ -2459,6 +2459,10 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
         !FF_ALLOC_TYPED_ARRAY(s->qmant_buffer,       total_coefs))
         return AVERROR(ENOMEM);
 
+    if (!s->fixed_point) {
+        if (!FF_ALLOCZ_TYPED_ARRAY(s->fixed_coef_buffer, total_coefs))
+            return AVERROR(ENOMEM);
+    }
     if (s->cpl_enabled) {
         if (!FF_ALLOC_TYPED_ARRAY(s->cpl_coord_exp_buffer,  channel_blocks * 16) ||
             !FF_ALLOC_TYPED_ARRAY(s->cpl_coord_mant_buffer, channel_blocks * 16))
@@ -2482,24 +2486,10 @@ static av_cold int allocate_buffers(AC3EncodeContext *s)
             /* arrangement: channel, block, coeff */
             block->exp[ch]         = &s->exp_buffer        [AC3_MAX_COEFS * (s->num_blocks * ch + blk)];
             block->mdct_coef[ch]   = &s->mdct_coef_buffer  [AC3_MAX_COEFS * (s->num_blocks * ch + blk)];
-        }
-    }
-
-    if (!s->fixed_point) {
-        if (!FF_ALLOCZ_TYPED_ARRAY(s->fixed_coef_buffer, total_coefs))
-            return AVERROR(ENOMEM);
-        for (blk = 0; blk < s->num_blocks; blk++) {
-            AC3Block *block = &s->blocks[blk];
-
-            for (ch = 0; ch < channels; ch++)
-                block->fixed_coef[ch] = &s->fixed_coef_buffer[AC3_MAX_COEFS * (s->num_blocks * ch + blk)];
-        }
-    } else {
-        for (blk = 0; blk < s->num_blocks; blk++) {
-            AC3Block *block = &s->blocks[blk];
-
-            for (ch = 0; ch < channels; ch++)
+            if (s->fixed_point)
                 block->fixed_coef[ch] = (int32_t *)block->mdct_coef[ch];
+            else
+                block->fixed_coef[ch] = &s->fixed_coef_buffer[AC3_MAX_COEFS * (s->num_blocks * ch + blk)];
         }
     }
 
