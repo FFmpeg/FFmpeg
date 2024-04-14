@@ -127,16 +127,16 @@ typedef struct AC3EncOptions {
  * Data for a single audio block.
  */
 typedef struct AC3Block {
-    CoefType **mdct_coef;                       ///< MDCT coefficients
-    int32_t  **fixed_coef;                      ///< fixed-point MDCT coefficients
-    uint8_t  **exp;                             ///< original exponents
-    uint8_t  **grouped_exp;                     ///< grouped exponents
-    int16_t  **psd;                             ///< psd per frequency bin
-    int16_t  **band_psd;                        ///< psd per critical band
-    int16_t  **mask;                            ///< masking curve
-    uint16_t **qmant;                           ///< quantized mantissas
-    uint8_t  **cpl_coord_exp;                   ///< coupling coord exponents           (cplcoexp)
-    uint8_t  **cpl_coord_mant;                  ///< coupling coord mantissas           (cplcomant)
+    CoefType *mdct_coef[AC3_MAX_CHANNELS];      ///< MDCT coefficients
+    int32_t  *fixed_coef[AC3_MAX_CHANNELS];     ///< fixed-point MDCT coefficients
+    uint8_t  *exp[AC3_MAX_CHANNELS];            ///< original exponents
+    uint8_t  *grouped_exp[AC3_MAX_CHANNELS];    ///< grouped exponents
+    int16_t  *psd[AC3_MAX_CHANNELS];            ///< psd per frequency bin
+    int16_t  *band_psd[AC3_MAX_CHANNELS];       ///< psd per critical band
+    int16_t  *mask[AC3_MAX_CHANNELS];           ///< masking curve
+    uint16_t *qmant[AC3_MAX_CHANNELS];          ///< quantized mantissas
+    uint8_t  *cpl_coord_exp[AC3_MAX_CHANNELS];  ///< coupling coord exponents           (cplcoexp)
+    uint8_t  *cpl_coord_mant[AC3_MAX_CHANNELS]; ///< coupling coord mantissas           (cplcomant)
     uint8_t  new_rematrixing_strategy;          ///< send new rematrixing flags in this block
     int      num_rematrixing_bands;             ///< number of rematrixing bands
     uint8_t  rematrixing_flags[4];              ///< rematrixing flags
@@ -232,7 +232,7 @@ typedef struct AC3EncodeContext {
     int frame_bits;                         ///< all frame bits except exponents and mantissas
     int exponent_bits;                      ///< number of bits used for exponents
 
-    uint8_t **planar_samples;
+    uint8_t *planar_samples[AC3_MAX_CHANNELS - 1];
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
     CoefType *mdct_coef_buffer;
