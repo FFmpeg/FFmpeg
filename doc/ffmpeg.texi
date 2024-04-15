@@ -663,10 +663,11 @@ Not all muxers support embedded thumbnails, and those who do, only support a few
 Creates a program with the specified @var{title}, @var{program_num} and adds the specified
 @var{stream}(s) to it.
 
-@item -stream_group type=@var{type}:st=@var{stream}[:st=@var{stream}][:stg=@var{stream_group}][:id=@var{stream_group_id}...] (@emph{output})
+@item -stream_group [map=@var{input_file_id}=@var{stream_group}][type=@var{type}:]st=@var{stream}[:st=@var{stream}][:stg=@var{stream_group}][:id=@var{stream_group_id}...] (@emph{output})
 
-Creates a stream group of the specified @var{type}, @var{stream_group_id} and adds the specified
-@var{stream}(s) and/or previously defined @var{stream_group}(s) to it.
+Creates a stream group of the specified @var{type} and @var{stream_group_id}, or by
+@var{map}ping an input group, adding the specified @var{stream}(s) and/or previously
+defined @var{stream_group}(s) to it.
 
 @var{type} can be one of the following:
 @table @option
@@ -862,6 +863,27 @@ all sub-mix element's @var{annotations}s
 @end table
 
 @end table
+
+E.g. to create an scalable 5.1 IAMF file from several WAV input files
+@example
+ffmpeg -i front.wav -i back.wav -i center.wav -i lfe.wav
+-map 0:0 -map 1:0 -map 2:0 -map 3:0 -c:a opus
+-stream_group type=iamf_audio_element:id=1:st=0:st=1:st=2:st=3,
+demixing=parameter_id=998,
+recon_gain=parameter_id=101,
+layer=ch_layout=stereo,
+layer=ch_layout=5.1,
+-stream_group type=iamf_mix_presentation:id=2:stg=0:annotations=en-us=Mix_Presentation,
+submix=parameter_id=100:parameter_rate=48000|element=stg=0:parameter_id=100:annotations=en-us=Scalable_Submix|layout=sound_system=stereo|layout=sound_system=5.1
+-streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 output.iamf
+@end example
+
+To copy the two stream groups (Audio Element and Mix Presentation) from an input IAMF file with four
+streams into an mp4 output
+@example
+ffmpeg -i input.iamf -c:a copy -stream_group map=0=0:st=0:st=1:st=2:st=3 -stream_group map=0=1:stg=0
+-streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 output.mp4
+@end example
 
 @item -target @var{type} (@emph{output})
 Specify target file type (@code{vcd}, @code{svcd}, @code{dvd}, @code{dv},

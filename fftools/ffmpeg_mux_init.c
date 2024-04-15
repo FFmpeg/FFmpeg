@@ -2232,11 +2232,137 @@ fail:
     return ret;
 }
 
+static int of_serialize_options(Muxer *mux, void *obj, AVBPrint *bp)
+{
+    char *ptr;
+    int ret;
+
+    ret = av_opt_serialize(obj, 0, AV_OPT_SERIALIZE_SKIP_DEFAULTS | AV_OPT_SERIALIZE_SEARCH_CHILDREN,
+                           &ptr, '=', ':');
+    if (ret < 0) {
+        av_log(mux, AV_LOG_ERROR, "Failed to serialize group\n");
+        return ret;
+    }
+
+    av_bprintf(bp, "%s", ptr);
+    ret = strlen(ptr);
+    av_free(ptr);
+
+    return ret;
+}
+
+#define SERIALIZE(parent, child) do {                   \
+    ret = of_serialize_options(mux, parent->child, bp); \
+    if (ret < 0)                                        \
+        return ret;                                     \
+} while (0)
+
+#define SERIALIZE_LOOP(parent, child, suffix, separator) do {            \
+    for (int j = 0; j < parent->nb_## child ## suffix; j++) {            \
+        av_bprintf(bp, separator#child "=");                             \
+        SERIALIZE(parent, child ## suffix[j]);                           \
+    }                                                                    \
+} while (0)
+
+static int64_t get_stream_group_index_from_id(Muxer *mux, int64_t id)
+{
+    AVFormatContext *oc = mux->fc;
+
+    for (unsigned i = 0; i < oc->nb_stream_groups; i++)
+        if (oc->stream_groups[i]->id == id)
+            return oc->stream_groups[i]->index;
+
+    return AVERROR(EINVAL);
+}
+
+static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const char *map)
+{
+    AVStreamGroup *stg;
+    int ret, file_idx, stream_idx;
+    char *ptr;
+
+    file_idx = strtol(map, &ptr, 0);
+    if (file_idx >= nb_input_files || file_idx < 0 || map == ptr) {
+        av_log(mux, AV_LOG_ERROR, "Invalid input file index: %d.\n", file_idx);
+        return AVERROR(EINVAL);
+    }
+
+    stream_idx = strtol(*ptr == '=' ? ptr + 1 : ptr, &ptr, 0);
+    if (*ptr || stream_idx >= input_files[file_idx]->ctx->nb_stream_groups || stream_idx < 0) {
+        av_log(mux, AV_LOG_ERROR, "Invalid input stream group index: %d.\n", stream_idx);
+        return AVERROR(EINVAL);
+    }
+
+    stg = input_files[file_idx]->ctx->stream_groups[stream_idx];
+    ret = of_serialize_options(mux, stg, bp);
+    if (ret < 0)
+       return ret;
+
+    ret = av_dict_parse_string(dict, bp->str, "=", ":", 0);
+    if (ret < 0)
+        av_log(mux, AV_LOG_ERROR, "Error parsing mapped group specification %s\n", ptr);
+    av_dict_set_int(dict, "type", stg->type, 0);
+
+    av_log(mux, AV_LOG_VERBOSE, "stg %s\n", bp->str);
+    av_bprint_clear(bp);
+    switch(stg->type) {
+    case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT: {
+        AVIAMFAudioElement *audio_element = stg->params.iamf_audio_element;
+
+        if (audio_element->demixing_info) {
+            av_bprintf(bp, ",demixing=");
+            SERIALIZE(audio_element, demixing_info);
+        }
+        if (audio_element->recon_gain_info) {
+            av_bprintf(bp, ",recon_gain=");
+            SERIALIZE(audio_element, recon_gain_info);
+        }
+        SERIALIZE_LOOP(audio_element, layer, s, ",");
+        break;
+    }
+    case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION: {
+        AVIAMFMixPresentation *mix = stg->params.iamf_mix_presentation;
+
+        for (int i = 0; i < mix->nb_submixes; i++) {
+            AVIAMFSubmix *submix = mix->submixes[i];
+
+            av_bprintf(bp, ",submix=");
+            SERIALIZE(mix, submixes[i]);
+            for (int j = 0; j < submix->nb_elements; j++) {
+                AVIAMFSubmixElement *element = submix->elements[j];
+                int64_t id = get_stream_group_index_from_id(mux, element->audio_element_id);
+
+                if (id < 0) {
+                    av_log(mux, AV_LOG_ERROR, "Invalid or missing stream group index in"
+                                              "submix element");
+                    return id;
+                }
+
+                av_bprintf(bp, "|element=");
+                SERIALIZE(submix, elements[j]);
+                if (ret)
+                    av_bprintf(bp, ":");
+                av_bprintf(bp, "stg=%"PRId64, id);
+            }
+            SERIALIZE_LOOP(submix, layout, s, "|");
+        }
+        break;
+    }
+    default:
+        av_log(mux, AV_LOG_ERROR, "Unsupported mapped group type %d.\n", stg->type);
+        ret = AVERROR(EINVAL);
+        break;
+    }
+    av_log(mux, AV_LOG_VERBOSE, "extra %s\n", bp->str);
+    return 0;
+}
+
 static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
 {
     AVFormatContext *oc = mux->fc;
     AVStreamGroup *stg;
     AVDictionary *dict = NULL, *tmp = NULL;
+    char *mapped_string = NULL;
     const AVDictionaryEntry *e;
     const AVOption opts[] = {
         { "type", "Set group type", offsetof(AVStreamGroup, type), AV_OPT_TYPE_INT,
@@ -2262,8 +2388,31 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
         return ret;
     }
 
+    av_dict_copy(&tmp, dict, 0);
+    e = av_dict_get(dict, "map", NULL, 0);
+    if (e) {
+        AVBPrint bp;
+
+        if (ptr) {
+            av_log(mux, AV_LOG_ERROR, "Unexpected extra parameters when mapping a"
+                                      " stream group\n");
+            ret = AVERROR(EINVAL);
+            goto end;
+        }
+
+        av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
+        ret = of_map_group(mux, &tmp, &bp, e->value);
+        if (ret < 0) {
+            av_bprint_finalize(&bp, NULL);
+            goto end;
+        }
+
+        av_bprint_finalize(&bp, &mapped_string);
+        ptr = mapped_string;
+    }
+
     // "type" is not a user settable AVOption in AVStreamGroup, so handle it here
-    e = av_dict_get(dict, "type", NULL, 0);
+    e = av_dict_get(tmp, "type", NULL, 0);
     if (!e) {
         av_log(mux, AV_LOG_ERROR, "No type specified for Stream Group in \"%s\"\n", token);
         ret = AVERROR(EINVAL);
@@ -2278,7 +2427,6 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
         goto end;
     }
 
-    av_dict_copy(&tmp, dict, 0);
     stg = avformat_stream_group_create(oc, type, &tmp);
     if (!stg) {
         ret = AVERROR(ENOMEM);
@@ -2331,6 +2479,7 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
 
     // make sure that nothing but "st" and "stg" entries are left in the dict
     e = NULL;
+    av_dict_set(&tmp, "map", NULL, 0);
     av_dict_set(&tmp, "type", NULL, 0);
     while (e = av_dict_iterate(tmp, e)) {
         if (!strcmp(e->key, "st") || !strcmp(e->key, "stg"))
@@ -2343,6 +2492,7 @@ static int of_parse_group_token(Muxer *mux, const char *token, char *ptr)
 
     ret = 0;
 end:
+    av_free(mapped_string);
     av_dict_free(&dict);
     av_dict_free(&tmp);
 
