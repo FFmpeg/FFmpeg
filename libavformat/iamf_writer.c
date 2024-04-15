@@ -275,6 +275,17 @@ int ff_iamf_add_audio_element(IAMFContext *iamf, const AVStreamGroup *stg, void 
         }
     }
 
+    for (int i = 0; i < audio_element->nb_substreams; i++) {
+        for (int j = i + 1; j < audio_element->nb_substreams; j++)
+            if (audio_element->substreams[i].audio_substream_id ==
+                audio_element->substreams[j].audio_substream_id) {
+                av_log(log_ctx, AV_LOG_ERROR, "Duplicate id %u in streams %u and %u from stream group %u\n",
+                       audio_element->substreams[i].audio_substream_id, i, j, stg->index);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+    }
+
     if (iamf_audio_element->demixing_info) {
         AVIAMFParamDefinition *param = iamf_audio_element->demixing_info;
         const IAMFParamDefinition *param_definition = ff_iamf_get_param_definition(iamf, param->parameter_id);
