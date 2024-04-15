@@ -1,6 +1,88 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 5.1.5:
+ fate/subtitles: Ignore line endings for sub-scc test
+ avformat/mxfdec: Check index_edit_rate
+ swscale/utils: Fix xInc overflow
+ avformat/isom: Uninit layout in ff_mp4_read_dec_config_descr()
+ avcodec/exr: Dont use 64bits to hold 6bits
+ avcodec/exr: Check for remaining bits in huf_unpack_enc_table()
+ avformat/mpegts: Reset local nb_prg on add_program() failure
+ avformat/aiffdec: Check for previously set channels
+ avformat/mxfdec: Make edit_unit_byte_count unsigned
+ avformat/movenc: Check that cts fits in 32bit
+ avformat/mxfdec: Check first case of offset_temp computation for overflow
+ avfilter/vf_signature: Dont crash on no frames
+ avformat/westwood_vqa: Fix 2g packets
+ avformat/matroskadec: Check timescale
+ avformat/wavdec: satuarte next_tag_ofs, data_end
+ avformat/sbgdec: Check for negative duration
+ avformat/rpl: Use 64bit for total_audio_size and check it
+ avformat/timecode: use 64bit for intermediate for rounding in fps_from_frame_rate()
+ avformat/mov: use 64bit for intermediate for rounding
+ avformat/jacosubdec: Use 64bit for abs
+ avformat/concatdec: Check user_duration sum
+ avcodec/truemotion1: Height not being a multiple of 4 is unsupported
+ avcodec/hcadec: do not set hfr_group_count to invalid values
+ avformat/concatdec: clip outpoint - inpoint overflow in get_best_effort_duration()
+ avformat/jacosubdec: clarify code
+ avformat/cafdec: Check that data chunk end fits within 64bit
+ avformat/iff: Saturate avio_tell() + 12
+ avformat/dxa: Adjust order of operations around block align
+ avformat/cafdec: dont seek beyond 64bit
+ avformat/id3v2: read_uslt() check for the amount read
+ avcodec/proresenc_kostya: Remove bug similarity text
+ avcodec/vorbisdec: Check remaining data in vorbis_residue_decode_internal()
+ avformat/concatdec: Check in and outpoints to be to produce a positive representable duration
+ libswscale/utils: Fix bayer to yuvj
+ swscale/swscale: Check srcSliceH for bayer
+ swscale/utils: Allocate more dithererror
+ avcodec/indeo3: Round dimensions up in allocate_frame_buffers()
+ avutil/rational: Document what is to be expected from av_d2q() of doubles representing rational numbers
+ avfilter/signature_lookup: Do not dereference NULL pointers after malloc failure
+ avfilter/signature_lookup: dont leave uncleared pointers in sll_free()
+ avcodec/mpegvideo_enc: Use ptrdiff_t for stride
+ libavformat/hlsenc.c: Populate OTI using AAC profile in write_codec_attr.
+ avcodec/mpegvideo_enc: Dont copy beyond the image
+ avfilter/vf_minterpolate: Check pts before division
+ avformat/flacdec: Avoid double AVERRORS
+ avfilter/vf_vidstabdetect: Avoid double AVERRORS
+ avfilter/vf_swaprect: round coordinates down
+ avfilter/vf_swaprect: Use height for vertical variables
+ avfilter/vf_swaprect: assert that rectangles are within memory
+ avfilter/af_alimiter: Check nextpos before use
+ avfilter/f_reverse: Apply PTS compensation only when pts is available
+ avfilter/af_stereowiden: Check length
+ avfilter/vf_weave: Fix odd height handling
+ avfilter/vf_gradfun: Do not overread last line
+ avfilter/avf_showspectrum: fix off by 1 error
+ avformat/mov: do not set sign bit for chunk_offsets
+ avcodec/jpeglsdec: Check Jpeg-LS LSE
+ configure: Enable section_data_rel_ro for FreeBSD and NetBSD aarch64 / arm
+ avcodec/av1dec: Fix resolving zero divisor
+ avformat/mov: Ignore duplicate ftyp
+ avformat/mov: Fix integer overflow in mov_read_packet().
+ avformat/mov: Check if a key is longer than the atom containing it
+ avfilter/buffersrc: fix overriding unknown channel layouts with negotiated one
+ avfilter/af_channelmap: disallow channel index 64
+ avfilter/af_channelmap: fix mapping if in_channel was a string but out_channel was not specified
+ avfilter/af_channelmap: fix error message if FL source channel was missing
+ avcodec/nvdec: reset bitstream_len/nb_slices when resetting bitstream pointer
+ avformat/mov: don't abort on duplicate Mastering Display Metadata boxes
+ fftools/ffplay: use correct buffersink channel layout parameters
+ swresample/resample: fix rounding errors with filter_size=1 and phase_shift=0
+ avformat/mxfdec: remove resolve_strong_ref usage with AnyType
+ avformat/libsrt: use SRT_EPOLL_IN for waiting for an incoming connection
+ avformat/mxfdec: do not use AnyType when resolving Descriptors and MultipleDescriptors
+ avformat/mxfdec: move resolving Descriptors to the multi descriptor resolve function
+ avcodec/av1dec: fix matrix coefficients exposed by codec context
+ avformat/mov_chan: never override number of channels based on chan atom
+ avformat/mov_chan: do not assume channels are in native order
+ avcodec/nvdec: don't free NVDECContext->bitstream
+ fftools/ffmpeg_enc: apply -top to individual encoded frames
+ fftools/ffprobe: support 2D arrays in print_list_fmt()
+
 version 5.1.4:
  avcodec/4xm: Check for cfrm exhaustion
  avformat/mov: Disallow FTYP after streams
