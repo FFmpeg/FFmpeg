@@ -186,16 +186,6 @@ const FFInputFormat ff_lc3_demuxer = {
 
 #if CONFIG_LC3_MUXER
 
-static av_cold int lc3_muxer_init(AVFormatContext *s)
-{
-    if (s->nb_streams != 1) {
-        av_log(s, AV_LOG_ERROR, "This muxer only supports a single stream.\n");
-        return AVERROR(EINVAL);
-    }
-
-    return 0;
-}
-
 static int lc3_write_header(AVFormatContext *s)
 {
     AVStream *st = s->streams[0];
@@ -243,8 +233,10 @@ const FFOutputFormat ff_lc3_muxer = {
     .p.extensions  = "lc3",
     .p.audio_codec = AV_CODEC_ID_LC3,
     .p.video_codec = AV_CODEC_ID_NONE,
+    .p.subtitle_codec = AV_CODEC_ID_NONE,
     .p.flags       = AVFMT_NOTIMESTAMPS,
-    .init          = lc3_muxer_init,
+    .flags_internal   = FF_OFMT_FLAG_MAX_ONE_OF_EACH |
+                        FF_OFMT_FLAG_ONLY_DEFAULT_CODECS,
     .write_header  = lc3_write_header,
     .write_packet  = lc3_write_packet,
 };
