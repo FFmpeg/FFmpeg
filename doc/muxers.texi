@@ -2846,8 +2846,44 @@ the initially reserved space turns out to be insufficient.
 
 This option is ignored if the output is unseekable.
 
+@item cluster_size_limit @var{size}
+Store at most the provided amount of bytes in a cluster.
+
+If not specified, the limit is set automatically to a sensible
+hardcoded fixed value.
+
+@item cluster_time_limit @var{duration}
+Store at most the provided number of milliseconds in a cluster.
+
+If not specified, the limit is set automatically to a sensible
+hardcoded fixed value.
+
+@item dash @var{bool}
+Create a WebM file conforming to WebM DASH specification. By default
+it is set to @code{false}.
+
+@item dash_track_number @var{index}
+Track number for the DASH stream. By default it is set to @code{1}.
+
+@item live @var{bool}
+Write files assuming it is a live stream. By default it is set to
+@code{false}.
+
+@item allow_raw_vfw @var{bool}
+Allow raw VFW mode. By default it is set to @code{false}.
+
+@item flipped_raw_rgb @var{bool}
+If set to @code{true}, store positive height for raw RGB bitmaps, which indicates
+bitmap is stored bottom-up. Note that this option does not flip the bitmap
+which has to be done manually beforehand, e.g. by using the @samp{vflip} filter.
+Default is @code{false} and indicates bitmap is stored top down.
+
+@item write_crc32 @var{bool}
+Write a CRC32 element inside every Level 1 element. By default it is
+set to @code{true}. This option is ignored for WebM.
+
 @item default_mode @var{mode}
-This option controls how the FlagDefault of the output tracks will be set.
+Control how the FlagDefault of the output tracks will be set.
 It influences which tracks players should play by default. The default mode
 is @samp{passthrough}.
 @table @samp
@@ -2865,12 +2901,6 @@ disposition default exists, no subtitle track will be marked as default.
 In this mode the FlagDefault is set if and only if the AV_DISPOSITION_DEFAULT
 flag is set in the disposition of the corresponding stream.
 @end table
-
-@item flipped_raw_rgb @var{bool}
-If set to true, store positive height for raw RGB bitmaps, which indicates
-bitmap is stored bottom-up. Note that this option does not flip the bitmap
-which has to be done manually beforehand, e.g. by using the vflip filter.
-Default is @var{false} and indicates bitmap is stored top down.
 @end table
 
 @anchor{md5}
