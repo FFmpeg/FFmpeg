@@ -2933,6 +2933,15 @@ MicroDVD subtitle format muxer.
 
 This muxer accepts a single @samp{microdvd} subtitles stream.
 
+@section mmf
+Synthetic music Mobile Application Format (SMAF) format muxer.
+
+SMAF is a music data format specified by Yamaha for portable
+electronic devices, such as mobile phones and personal digital
+assistants.
+
+This muxer accepts a single @samp{adpcm_yamaha} audio stream.
+
 @section mp3
 
 The MP3 muxer writes a raw MP3 stream with the following optional features:
