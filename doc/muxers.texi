@@ -2905,26 +2905,28 @@ flag is set in the disposition of the corresponding stream.
 
 @anchor{md5}
 @section md5
-
 MD5 testing format.
 
 This is a variant of the @ref{hash} muxer. Unlike that muxer, it
 defaults to using the MD5 hash function.
 
-@subsection Examples
+See also the @ref{hash} and @ref{framemd5} muxers.
 
+@subsection Examples
+@itemize
+@item
 To compute the MD5 hash of the input converted to raw
 audio and video, and store it in the file @file{out.md5}:
 @example
 ffmpeg -i INPUT -f md5 out.md5
 @end example
 
-You can print the MD5 to stdout with the command:
+@item
+To print the MD5 hash to stdout:
 @example
 ffmpeg -i INPUT -f md5 -
 @end example
-
-See also the @ref{hash} and @ref{framemd5} muxers.
+@end itemize
 
 @section mp3
 
