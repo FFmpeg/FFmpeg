@@ -32,6 +32,8 @@
 
 #include "hevc.h"
 
+#define HEVC_VPS_MAX_LAYERS 2
+
 typedef struct HEVCSublayerHdrParams {
     uint32_t bit_rate_value_minus1[HEVC_MAX_CPB_CNT];
     uint32_t cpb_size_value_minus1[HEVC_MAX_CPB_CNT];
@@ -153,6 +155,19 @@ typedef struct PTL {
     uint8_t sub_layer_level_present_flag[HEVC_MAX_SUB_LAYERS];
 } PTL;
 
+typedef struct RepFormat {
+    uint16_t pic_width_in_luma_samples;
+    uint16_t pic_height_in_luma_samples;
+    uint8_t  chroma_format_idc;
+    uint8_t  separate_colour_plane_flag;
+    uint8_t  bit_depth_luma;    ///< bit_depth_vps_luma_minus8 + 8
+    uint8_t  bit_depth_chroma;  ///< bit_depth_vps_chroma_minus8 + 8
+    uint16_t conf_win_left_offset;
+    uint16_t conf_win_right_offset;
+    uint16_t conf_win_top_offset;
+    uint16_t conf_win_bottom_offset;
+} RepFormat;
+
 typedef struct HEVCVPS {
     unsigned int vps_id;
 
@@ -175,6 +190,53 @@ typedef struct HEVCVPS {
     int vps_num_hrd_parameters;
 
     HEVCHdrParams *hdr;
+
+    /* VPS extension */
+
+    /* Number of layers this VPS was parsed for, between 1 and
+     * min(HEVC_VPS_MAX_LAYERS, vps_max_layers).
+     *
+     * Note that vps_max_layers contains the layer count declared in the
+     * bitstream, while nb_layers contains the number of layers exported to
+     * users of this API (which may be smaller as we only support a subset of
+     * multilayer extensions).
+     *
+     * Arrays below documented as [layer_idx] have nb_layers valid entries.
+     */
+    int nb_layers;
+
+    // LayerIdxInVps[nuh_layer_id], i.e. a mapping of nuh_layer_id to VPS layer
+    // indices. Valid values are between 0 and HEVC_VPS_MAX_LAYERS. Entries for
+    // unmapped values of nuh_layer_id are set to -1.
+    int8_t layer_idx[HEVC_MAX_NUH_LAYER_ID + 1];
+
+    uint8_t layer_id_in_nuh[HEVC_VPS_MAX_LAYERS];
+
+    uint8_t default_ref_layers_active;
+    uint8_t max_one_active_ref_layer;
+    uint8_t poc_lsb_aligned;
+    // bitmask of poc_lsb_not_present[layer_idx]
+    uint8_t poc_lsb_not_present;
+
+    struct {
+        unsigned max_dec_pic_buffering; // max_vps_dec_pic_buffering_minus1 + 1
+        unsigned max_num_reorder_pics;  // max_vps_num_reorder_pics
+        unsigned max_latency_increase;  // max_vps_latency_increase_plus1 - 1
+    } dpb_size;
+
+    // ViewId[layer_idx]
+    uint16_t view_id[HEVC_VPS_MAX_LAYERS];
+
+    // NumOutputLayerSets
+    uint8_t num_output_layer_sets;
+    // Bitmasks specifying output layer sets. i-th bit set means layer with VPS
+    // index i is present in the layer set.
+    uint64_t ols[HEVC_VPS_MAX_LAYERS];
+
+    // NumDirectRefLayers[layer_idx]
+    uint8_t num_direct_ref_layers[HEVC_VPS_MAX_LAYERS];
+
+    RepFormat rep_format;
 
     uint8_t *data;
     int data_size;

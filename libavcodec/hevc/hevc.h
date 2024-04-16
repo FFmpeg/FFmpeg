@@ -100,11 +100,14 @@ enum HEVCSliceType {
 
 enum {
     // 7.4.3.1: vps_max_layers_minus1 is in [0, 62].
-    HEVC_MAX_LAYERS     = 63,
+    HEVC_MAX_LAYERS         = 63,
     // 7.4.3.1: vps_max_sub_layers_minus1 is in [0, 6].
-    HEVC_MAX_SUB_LAYERS = 7,
+    HEVC_MAX_SUB_LAYERS     = 7,
     // 7.4.3.1: vps_num_layer_sets_minus1 is in [0, 1023].
-    HEVC_MAX_LAYER_SETS = 1024,
+    HEVC_MAX_LAYER_SETS     = 1024,
+    // 7.4.3.1: vps_max_layer_id is in [0, 63].
+    HEVC_MAX_LAYER_ID       = 63,
+    HEVC_MAX_NUH_LAYER_ID   = 62,
 
     // 7.4.2.1: vps_video_parameter_set_id is u(4).
     HEVC_MAX_VPS_COUNT = 16,
