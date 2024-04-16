@@ -2928,6 +2928,11 @@ ffmpeg -i INPUT -f md5 -
 @end example
 @end itemize
 
+@section microdvd
+MicroDVD subtitle format muxer.
+
+This muxer accepts a single @samp{microdvd} subtitles stream.
+
 @section mp3
 
 The MP3 muxer writes a raw MP3 stream with the following optional features:
