@@ -16,18 +16,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
-
+#include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavcodec/aarch64/fdct.h"
-#include "libavcodec/aarch64/idct.h"
+#include "libavutil/aarch64/cpu.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/fdctdsp.h"
+#include "fdct.h"
 
-static const struct algo fdct_tab_arch[] = {
-    { "neon", ff_fdct_neon, FF_IDCT_PERM_NONE, AV_CPU_FLAG_NEON },
-    { 0 }
-};
+av_cold void ff_fdctdsp_init_aarch64(FDCTDSPContext *c, AVCodecContext *avctx,
+                                     unsigned high_bit_depth)
+{
+    int cpu_flags = av_get_cpu_flags();
 
-static const struct algo idct_tab_arch[] = {
-    { "SIMPLE-NEON", ff_simple_idct_neon, FF_IDCT_PERM_PARTTRANS, AV_CPU_FLAG_NEON },
-    { 0 }
-};
+    if (have_neon(cpu_flags)) {
+        if (!high_bit_depth) {
+            if (avctx->dct_algo == FF_DCT_AUTO ||
+                avctx->dct_algo == FF_DCT_NEON) {
+                c->fdct = ff_fdct_neon;
+            }
+        }
+    }
+}

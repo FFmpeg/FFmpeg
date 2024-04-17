@@ -158,6 +158,7 @@ static const AVOption avcodec_options[] = {
 {"mmx", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_MMX }, INT_MIN, INT_MAX, V|E, .unit = "dct"},
 {"altivec", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_ALTIVEC }, INT_MIN, INT_MAX, V|E, .unit = "dct"},
 {"faan", "floating point AAN DCT", 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_FAAN }, INT_MIN, INT_MAX, V|E, .unit = "dct"},
+{"neon", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = FF_DCT_NEON }, INT_MIN, INT_MAX, V|E, .unit = "dct"},
 {"lumi_mask", "compresses bright areas stronger than medium ones", OFFSET(lumi_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},
 {"tcplx_mask", "temporal complexity masking", OFFSET(temporal_cplx_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},
 {"scplx_mask", "spatial complexity masking", OFFSET(spatial_cplx_masking), AV_OPT_TYPE_FLOAT, {.dbl = 0 }, -FLT_MAX, FLT_MAX, V|E},

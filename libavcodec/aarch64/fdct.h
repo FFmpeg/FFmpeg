@@ -16,18 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config.h"
+#ifndef AVCODEC_AARCH64_FDCT_H
+#define AVCODEC_AARCH64_FDCT_H
 
-#include "libavutil/cpu.h"
-#include "libavcodec/aarch64/fdct.h"
-#include "libavcodec/aarch64/idct.h"
+#include <stdint.h>
 
-static const struct algo fdct_tab_arch[] = {
-    { "neon", ff_fdct_neon, FF_IDCT_PERM_NONE, AV_CPU_FLAG_NEON },
-    { 0 }
-};
+void ff_fdct_neon(int16_t *block);
 
-static const struct algo idct_tab_arch[] = {
-    { "SIMPLE-NEON", ff_simple_idct_neon, FF_IDCT_PERM_PARTTRANS, AV_CPU_FLAG_NEON },
-    { 0 }
-};
+#endif /* AVCODEC_AARCH64_FDCT_H */

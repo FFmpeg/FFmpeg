@@ -32,6 +32,8 @@ typedef struct FDCTDSPContext {
 
 FF_VISIBILITY_PUSH_HIDDEN
 void ff_fdctdsp_init(FDCTDSPContext *c, struct AVCodecContext *avctx);
+void ff_fdctdsp_init_aarch64(FDCTDSPContext *c, struct AVCodecContext *avctx,
+                             unsigned high_bit_depth);
 void ff_fdctdsp_init_ppc(FDCTDSPContext *c, struct AVCodecContext *avctx,
                          unsigned high_bit_depth);
 void ff_fdctdsp_init_x86(FDCTDSPContext *c, struct AVCodecContext *avctx,
