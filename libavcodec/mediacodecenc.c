@@ -352,9 +352,7 @@ bailout:
     return ret;
 }
 
-static int mediacodec_receive(AVCodecContext *avctx,
-                               AVPacket *pkt,
-                               int *got_packet)
+static int mediacodec_receive(AVCodecContext *avctx, AVPacket *pkt)
 {
     MediaCodecEncContext *s = avctx->priv_data;
     FFAMediaCodec *codec = s->codec;
@@ -400,7 +398,7 @@ static int mediacodec_receive(AVCodecContext *avctx,
         memcpy(s->extradata, out_buf + out_info.offset, out_info.size);
         ff_AMediaCodec_releaseOutputBuffer(codec, index, false);
         // try immediately
-        return mediacodec_receive(avctx, pkt, got_packet);
+        return mediacodec_receive(avctx, pkt);
     }
 
     ret = ff_get_encode_buffer(avctx, pkt, out_info.size + s->extradata_size, 0);
@@ -419,7 +417,6 @@ static int mediacodec_receive(AVCodecContext *avctx,
     if (out_info.flags & ff_AMediaCodec_getBufferFlagKeyFrame(codec))
         pkt->flags |= AV_PKT_FLAG_KEY;
     ret = 0;
-    *got_packet = 1;
 
     av_log(avctx, AV_LOG_TRACE, "receive packet pts %" PRId64 " dts %" PRId64
            " flags %d extradata %d\n",
@@ -510,7 +507,6 @@ static int mediacodec_encode(AVCodecContext *avctx, AVPacket *pkt)
 {
     MediaCodecEncContext *s = avctx->priv_data;
     int ret;
-    int got_packet = 0;
 
     // Return on three case:
     // 1. Serious error
@@ -525,7 +521,7 @@ static int mediacodec_encode(AVCodecContext *avctx, AVPacket *pkt)
                 return ret;
         }
 
-        ret = mediacodec_receive(avctx, pkt, &got_packet);
+        ret = mediacodec_receive(avctx, pkt);
         if (s->bsf) {
             if (!ret || ret == AVERROR_EOF)
                 ret = av_bsf_send_packet(s->bsf, pkt);
