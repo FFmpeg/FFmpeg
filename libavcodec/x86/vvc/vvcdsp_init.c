@@ -30,9 +30,42 @@
 #include "libavcodec/vvc/dsp.h"
 #include "libavcodec/x86/h26x/h2656dsp.h"
 
+#define PUT_PROTOTYPE(name, depth, opt) \
+void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride, int height, const int8_t *hf, const int8_t *vf, int width);
+
+#define PUT_PROTOTYPES(name, bitd, opt) \
+        PUT_PROTOTYPE(name##2,   bitd, opt) \
+        PUT_PROTOTYPE(name##4,   bitd, opt) \
+        PUT_PROTOTYPE(name##8,   bitd, opt) \
+        PUT_PROTOTYPE(name##12,  bitd, opt) \
+        PUT_PROTOTYPE(name##16,  bitd, opt) \
+        PUT_PROTOTYPE(name##24,  bitd, opt) \
+        PUT_PROTOTYPE(name##32,  bitd, opt) \
+        PUT_PROTOTYPE(name##48,  bitd, opt) \
+        PUT_PROTOTYPE(name##64,  bitd, opt) \
+        PUT_PROTOTYPE(name##128, bitd, opt)
+
+#define PUT_BPC_PROTOTYPES(name, opt) \
+    PUT_PROTOTYPES(name,  8, opt)     \
+    PUT_PROTOTYPES(name, 10, opt)     \
+    PUT_PROTOTYPES(name, 12, opt)
+
+#define PUT_TAP_PROTOTYPES(n, opt) \
+    PUT_BPC_PROTOTYPES(n##tap_h,  opt) \
+    PUT_BPC_PROTOTYPES(n##tap_v,  opt) \
+    PUT_BPC_PROTOTYPES(n##tap_hv, opt)
+
+PUT_BPC_PROTOTYPES(pixels, sse4)
+PUT_BPC_PROTOTYPES(pixels, avx2)
+
+PUT_TAP_PROTOTYPES(4, sse4)
+PUT_TAP_PROTOTYPES(8, sse4)
+PUT_TAP_PROTOTYPES(4, avx2)
+PUT_TAP_PROTOTYPES(8, avx2)
+
 #if ARCH_X86_64
 #define FW_PUT(name, depth, opt) \
-static void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride, \
+void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,        \
                                                  int height, const int8_t *hf, const int8_t *vf, int width)    \
 {                                                                                                              \
     ff_h2656_put_## name ## _ ## depth ## _##opt(dst, 2 * MAX_PB_SIZE, src, srcstride, height, hf, vf, width); \
