@@ -88,6 +88,7 @@ AVG_PROTOTYPES(10, avx2)
 AVG_PROTOTYPES(12, avx2)
 
 #if ARCH_X86_64
+#if HAVE_SSE4_EXTERNAL
 #define FW_PUT(name, depth, opt) \
 void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride,        \
                                                  int height, const int8_t *hf, const int8_t *vf, int width)    \
@@ -125,7 +126,9 @@ void ff_vvc_put_ ## name ## _ ## depth ## _##opt(int16_t *dst, const uint8_t *sr
 FW_PUT_SSE4( 8)
 FW_PUT_SSE4(10)
 FW_PUT_SSE4(12)
+#endif
 
+#if HAVE_AVX2_EXTERNAL
 #define FW_PUT_TAP_AVX2(n, bitd)        \
     FW_PUT(n ## tap_h32,   bitd, avx2)  \
     FW_PUT(n ## tap_h64,   bitd, avx2)  \
@@ -160,6 +163,25 @@ FW_PUT_AVX2(12)
 
 FW_PUT_16BPC_AVX2(10)
 FW_PUT_16BPC_AVX2(12)
+
+#define AVG_FUNCS(bpc, bd, opt)                                                                     \
+void bf(ff_vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                    \
+    const int16_t *src0, const int16_t *src1, int width, int height)                                \
+{                                                                                                   \
+    BF(ff_vvc_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height, (1 << bd)  - 1);           \
+}                                                                                                   \
+void bf(ff_vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                  \
+    const int16_t *src0, const int16_t *src1, int width, int height,                                \
+    int denom, int w0, int w1, int o0, int o1)                                                      \
+{                                                                                                   \
+    BF(ff_vvc_w_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height,                          \
+        denom, w0, w1, o0, o1, (1 << bd)  - 1);                                                     \
+}
+
+AVG_FUNCS(8,  8,  avx2)
+AVG_FUNCS(16, 10, avx2)
+AVG_FUNCS(16, 12, avx2)
+#endif
 
 #define PEL_LINK(dst, C, W, idx1, idx2, name, D, opt)                              \
     dst[C][W][idx1][idx2] = ff_vvc_put_## name ## _ ## D ## _##opt;                \
@@ -226,27 +248,9 @@ FW_PUT_16BPC_AVX2(12)
     MC_TAP_LINKS_16BPC_AVX2(LUMA,   8, bd);                          \
     MC_TAP_LINKS_16BPC_AVX2(CHROMA, 4, bd);
 
-#define AVG_FUNCS(bpc, bd, opt)                                                                     \
-void bf(ff_vvc_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                    \
-    const int16_t *src0, const int16_t *src1, int width, int height)                                \
-{                                                                                                   \
-    BF(ff_vvc_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height, (1 << bd)  - 1);           \
-}                                                                                                   \
-void bf(ff_vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                  \
-    const int16_t *src0, const int16_t *src1, int width, int height,                                \
-    int denom, int w0, int w1, int o0, int o1)                                                      \
-{                                                                                                   \
-    BF(ff_vvc_w_avg, bpc, opt)(dst, dst_stride, src0, src1, width, height,                          \
-        denom, w0, w1, o0, o1, (1 << bd)  - 1);                                                     \
-}
-
-AVG_FUNCS(8,  8,  avx2)
-AVG_FUNCS(16, 10, avx2)
-AVG_FUNCS(16, 12, avx2)
-
-#define AVG_INIT(bd, opt) do {                                          \
-    c->inter.avg    = bf(ff_vvc_avg, bd, opt);                          \
-    c->inter.w_avg  = bf(ff_vvc_w_avg, bd, opt);                        \
+#define AVG_INIT(bd, opt) do {                                       \
+    c->inter.avg    = bf(ff_vvc_avg, bd, opt);                       \
+    c->inter.w_avg  = bf(ff_vvc_w_avg, bd, opt);                     \
 } while (0)
 #endif
 
