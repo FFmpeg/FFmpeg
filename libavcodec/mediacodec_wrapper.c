@@ -365,6 +365,7 @@ int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx)
     (void)VP9Profile3HDR;
     (void)VP9Profile2HDR10Plus;
     (void)VP9Profile3HDR10Plus;
+    (void)MPEG4ProfileSimpleFace;
     (void)AV1ProfileMain10;
     (void)AV1ProfileMain10HDR10;
     (void)AV1ProfileMain10HDR10Plus;
