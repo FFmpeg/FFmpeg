@@ -24,7 +24,7 @@
 
 typedef struct IVFEncContext {
     unsigned frame_cnt;
-    uint64_t last_pts, sum_delta_pts, last_pkt_duration;
+    uint64_t last_pts, last_pkt_duration;
 } IVFEncContext;
 
 static int ivf_init(AVFormatContext *s)
@@ -80,8 +80,6 @@ static int ivf_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wl32(pb, pkt->size);
     avio_wl64(pb, pkt->pts);
     avio_write(pb, pkt->data, pkt->size);
-    if (ctx->frame_cnt)
-        ctx->sum_delta_pts += pkt->pts - ctx->last_pts;
     ctx->last_pkt_duration = pkt->duration;
     ctx->frame_cnt++;
     ctx->last_pts = pkt->pts;
