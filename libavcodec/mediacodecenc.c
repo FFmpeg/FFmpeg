@@ -705,6 +705,15 @@ static av_cold int mediacodec_close(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold void mediacodec_flush(AVCodecContext *avctx)
+{
+    MediaCodecEncContext *s = avctx->priv_data;
+    if (s->bsf)
+        av_bsf_flush(s->bsf);
+    av_frame_unref(s->frame);
+    ff_AMediaCodec_flush(s->codec);
+}
+
 static const AVCodecHWConfigInternal *const mediacodec_hw_configs[] = {
     &(const AVCodecHWConfigInternal) {
         .public          = {
@@ -755,13 +764,15 @@ const FFCodec ff_ ## short_name ## _mediacodec_encoder = {              \
     CODEC_LONG_NAME(long_name " Android MediaCodec encoder"),           \
     .p.type           = AVMEDIA_TYPE_VIDEO,                             \
     .p.id             = codec_id,                                       \
-    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY           \
-                        | AV_CODEC_CAP_HARDWARE,                        \
+    .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |         \
+                        AV_CODEC_CAP_HARDWARE |                         \
+                        AV_CODEC_CAP_ENCODER_FLUSH,                     \
     .priv_data_size   = sizeof(MediaCodecEncContext),                   \
     .p.pix_fmts       = avc_pix_fmts,                                   \
     .init             = mediacodec_init,                                \
     FF_CODEC_RECEIVE_PACKET_CB(mediacodec_encode),                      \
     .close            = mediacodec_close,                               \
+    .flush            = mediacodec_flush,                               \
     .p.priv_class     = &short_name ## _mediacodec_class,               \
     .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,                      \
     .p.wrapper_name = "mediacodec",                                     \
