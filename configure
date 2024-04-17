@@ -6645,7 +6645,7 @@ check_lib shell32  "windows.h shellapi.h" CommandLineToArgvW   -lshell32
 check_lib psapi    "windows.h psapi.h"    GetProcessMemoryInfo -lpsapi
 
 check_lib android android/native_window.h ANativeWindow_acquire -landroid
-check_lib mediandk "stdint.h media/NdkImage.h" AImage_delete -lmediandk
+check_lib mediandk "stdint.h media/NdkMediaFormat.h" AMediaFormat_new -lmediandk
 check_lib camera2ndk "stdbool.h stdint.h camera/NdkCameraManager.h" ACameraManager_create -lcamera2ndk
 
 enabled appkit       && check_apple_framework AppKit
