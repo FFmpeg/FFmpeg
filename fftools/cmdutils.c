@@ -311,7 +311,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
 
         *(int *)dst = num;
     } else if (po->type == OPT_TYPE_INT64) {
-        ret = parse_number(opt, arg, OPT_TYPE_INT64, INT64_MIN, INT64_MAX, &num);
+        ret = parse_number(opt, arg, OPT_TYPE_INT64, INT64_MIN, (double)INT64_MAX, &num);
         if (ret < 0)
             goto finish;
 
