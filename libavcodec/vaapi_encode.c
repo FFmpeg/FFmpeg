@@ -38,8 +38,6 @@ const AVCodecHWConfigInternal *const ff_vaapi_encode_hw_configs[] = {
     NULL,
 };
 
-static const char * const picture_type_name[] = { "IDR", "I", "P", "B" };
-
 static int vaapi_encode_make_packed_header(AVCodecContext *avctx,
                                            VAAPIEncodePicture *pic,
                                            int type, char *data, size_t bit_len)
@@ -277,7 +275,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_DEBUG, "Issuing encode for pic %"PRId64"/%"PRId64" "
            "as type %s.\n", pic->display_order, pic->encode_order,
-           picture_type_name[pic->type]);
+           ff_hw_base_encode_get_pictype_name(pic->type));
     if (pic->nb_refs[0] == 0 && pic->nb_refs[1] == 0) {
         av_log(avctx, AV_LOG_DEBUG, "No reference pictures.\n");
     } else {

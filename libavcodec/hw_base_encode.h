@@ -25,6 +25,12 @@
 #define MAX_ASYNC_DEPTH 64
 #define MAX_REFERENCE_LIST_NUM 2
 
+static inline const char *ff_hw_base_encode_get_pictype_name(const int type)
+{
+    const char * const picture_type_name[] = { "IDR", "I", "P", "B" };
+    return picture_type_name[type];
+}
+
 enum {
     FF_HW_PICTURE_TYPE_IDR = 0,
     FF_HW_PICTURE_TYPE_I   = 1,
