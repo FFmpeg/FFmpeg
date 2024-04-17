@@ -33,33 +33,26 @@
 
 #include "avcodec.h"
 #include "hwconfig.h"
+#include "hw_base_encode.h"
 
 struct VAAPIEncodeType;
 struct VAAPIEncodePicture;
 
+// Codec output packet without timestamp delay, which means the
+// output packet has same PTS and DTS.
+#define FLAG_TIMESTAMP_NO_DELAY 1 << 6
+
 enum {
     MAX_CONFIG_ATTRIBUTES  = 4,
     MAX_GLOBAL_PARAMS      = 4,
-    MAX_DPB_SIZE           = 16,
-    MAX_PICTURE_REFERENCES = 2,
-    MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
     // A.4.1: table A.6 allows at most 22 tile rows for any level.
     MAX_TILE_ROWS          = 22,
     // A.4.1: table A.6 allows at most 20 tile columns for any level.
     MAX_TILE_COLS          = 20,
-    MAX_ASYNC_DEPTH        = 64,
-    MAX_REFERENCE_LIST_NUM = 2,
 };
 
 extern const AVCodecHWConfigInternal *const ff_vaapi_encode_hw_configs[];
-
-enum {
-    PICTURE_TYPE_IDR = 0,
-    PICTURE_TYPE_I   = 1,
-    PICTURE_TYPE_P   = 2,
-    PICTURE_TYPE_B   = 3,
-};
 
 typedef struct VAAPIEncodeSlice {
     int             index;
@@ -193,7 +186,8 @@ typedef struct VAAPIEncodeRCMode {
 } VAAPIEncodeRCMode;
 
 typedef struct VAAPIEncodeContext {
-    const AVClass *class;
+    // Base context.
+    FFHWBaseEncodeContext base;
 
     // Codec-specific hooks.
     const struct VAAPIEncodeType *codec;
@@ -396,25 +390,6 @@ typedef struct VAAPIEncodeContext {
     /** Tail data of a pic, now only used for av1 repeat frame header. */
     AVPacket        *tail_pkt;
 } VAAPIEncodeContext;
-
-enum {
-    // Codec supports controlling the subdivision of pictures into slices.
-    FLAG_SLICE_CONTROL         = 1 << 0,
-    // Codec only supports constant quality (no rate control).
-    FLAG_CONSTANT_QUALITY_ONLY = 1 << 1,
-    // Codec is intra-only.
-    FLAG_INTRA_ONLY            = 1 << 2,
-    // Codec supports B-pictures.
-    FLAG_B_PICTURES            = 1 << 3,
-    // Codec supports referencing B-pictures.
-    FLAG_B_PICTURE_REFERENCES  = 1 << 4,
-    // Codec supports non-IDR key pictures (that is, key pictures do
-    // not necessarily empty the DPB).
-    FLAG_NON_IDR_KEY_PICTURES  = 1 << 5,
-    // Codec output packet without timestamp delay, which means the
-    // output packet has same PTS and DTS.
-    FLAG_TIMESTAMP_NO_DELAY    = 1 << 6,
-};
 
 typedef struct VAAPIEncodeType {
     // List of supported profiles and corresponding VAAPI profiles.
