@@ -534,7 +534,7 @@ static int mediacodec_encode(AVCodecContext *avctx, AVPacket *pkt)
                 return 0;
         }
 
-        if (ret != AVERROR(EAGAIN))
+        if (ret < 0 && ret != AVERROR(EAGAIN))
             return ret;
 
         if (!s->frame->buf[0]) {
