@@ -1276,6 +1276,7 @@ static av_cold int vaapi_encode_h264_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VAAPIEncodeH264Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_h264_options[] = {
+    HW_BASE_ENCODE_COMMON_OPTIONS,
     VAAPI_ENCODE_COMMON_OPTIONS,
     VAAPI_ENCODE_RC_OPTIONS,
 

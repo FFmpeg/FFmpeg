@@ -965,6 +965,7 @@ static av_cold int vaapi_encode_av1_close(AVCodecContext *avctx)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 
 static const AVOption vaapi_encode_av1_options[] = {
+    HW_BASE_ENCODE_COMMON_OPTIONS,
     VAAPI_ENCODE_COMMON_OPTIONS,
     VAAPI_ENCODE_RC_OPTIONS,
     { "profile", "Set profile (seq_profile)",

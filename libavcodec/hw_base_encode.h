@@ -50,7 +50,15 @@ enum {
 
 typedef struct FFHWBaseEncodeContext {
     const AVClass *class;
+
+    // Max number of frame buffered in encoder.
+    int             async_depth;
 } FFHWBaseEncodeContext;
 
-#endif /* AVCODEC_HW_BASE_ENCODE_H */
+#define HW_BASE_ENCODE_COMMON_OPTIONS \
+    { "async_depth", "Maximum processing parallelism. " \
+      "Increase this to improve single channel performance.", \
+      OFFSET(common.base.async_depth), AV_OPT_TYPE_INT, \
+      { .i64 = 2 }, 1, MAX_ASYNC_DEPTH, FLAGS }
 
+#endif /* AVCODEC_HW_BASE_ENCODE_H */

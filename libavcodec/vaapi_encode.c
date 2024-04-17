@@ -669,7 +669,8 @@ static int vaapi_encode_set_output_property(AVCodecContext *avctx,
                                             VAAPIEncodePicture *pic,
                                             AVPacket *pkt)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
 
     if (pic->type == FF_HW_PICTURE_TYPE_IDR)
         pkt->flags |= AV_PKT_FLAG_KEY;
@@ -699,7 +700,7 @@ static int vaapi_encode_set_output_property(AVCodecContext *avctx,
             pkt->dts = ctx->ts_ring[pic->encode_order] - ctx->dts_pts_diff;
     } else {
         pkt->dts = ctx->ts_ring[(pic->encode_order - ctx->decode_delay) %
-                                (3 * ctx->output_delay + ctx->async_depth)];
+                                (3 * ctx->output_delay + base_ctx->async_depth)];
     }
 
     return 0;
@@ -1320,6 +1321,7 @@ static int vaapi_encode_check_frame(AVCodecContext *avctx,
 
 static int vaapi_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
 {
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic;
     int err;
@@ -1365,7 +1367,7 @@ static int vaapi_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
             ctx->dts_pts_diff = pic->pts - ctx->first_pts;
         if (ctx->output_delay > 0)
             ctx->ts_ring[ctx->input_order %
-                        (3 * ctx->output_delay + ctx->async_depth)] = pic->pts;
+                        (3 * ctx->output_delay + base_ctx->async_depth)] = pic->pts;
 
         pic->display_order = ctx->input_order;
         ++ctx->input_order;
@@ -2773,7 +2775,8 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
 
 av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
     AVVAAPIFramesContext *recon_hwctx = NULL;
     VAStatus vas;
     int err;
@@ -2966,7 +2969,7 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     vas = vaSyncBuffer(ctx->hwctx->display, VA_INVALID_ID, 0);
     if (vas != VA_STATUS_ERROR_UNIMPLEMENTED) {
         ctx->has_sync_buffer_func = 1;
-        ctx->encode_fifo = av_fifo_alloc2(ctx->async_depth,
+        ctx->encode_fifo = av_fifo_alloc2(base_ctx->async_depth,
                                           sizeof(VAAPIEncodePicture *),
                                           0);
         if (!ctx->encode_fifo)

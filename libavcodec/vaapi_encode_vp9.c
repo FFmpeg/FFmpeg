@@ -273,6 +273,7 @@ static av_cold int vaapi_encode_vp9_init(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VAAPIEncodeVP9Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_vp9_options[] = {
+    HW_BASE_ENCODE_COMMON_OPTIONS,
     VAAPI_ENCODE_COMMON_OPTIONS,
     VAAPI_ENCODE_RC_OPTIONS,
 

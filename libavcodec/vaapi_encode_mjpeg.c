@@ -540,6 +540,7 @@ static av_cold int vaapi_encode_mjpeg_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VAAPIEncodeMJPEGContext, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_mjpeg_options[] = {
+    HW_BASE_ENCODE_COMMON_OPTIONS,
     VAAPI_ENCODE_COMMON_OPTIONS,
 
     { "jfif", "Include JFIF header",

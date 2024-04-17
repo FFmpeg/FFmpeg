@@ -374,8 +374,6 @@ typedef struct VAAPIEncodeContext {
     int             has_sync_buffer_func;
     // Store buffered pic
     AVFifo          *encode_fifo;
-    // Max number of frame buffered in encoder.
-    int             async_depth;
 
     /** Head data for current output pkt, used only for AV1. */
     //void  *header_data;
@@ -491,11 +489,6 @@ int ff_vaapi_encode_close(AVCodecContext *avctx);
       "Maximum B-frame reference depth", \
       OFFSET(common.desired_b_depth), AV_OPT_TYPE_INT, \
       { .i64 = 1 }, 1, INT_MAX, FLAGS }, \
-    { "async_depth", "Maximum processing parallelism. " \
-      "Increase this to improve single channel performance. This option " \
-      "doesn't work if driver doesn't implement vaSyncBuffer function.", \
-      OFFSET(common.async_depth), AV_OPT_TYPE_INT, \
-      { .i64 = 2 }, 1, MAX_ASYNC_DEPTH, FLAGS }, \
     { "max_frame_size", \
       "Maximum frame size (in bytes)",\
       OFFSET(common.max_frame_size), AV_OPT_TYPE_INT, \
