@@ -1828,25 +1828,8 @@ typedef struct FFAMediaFormatNdk {
     void *libmedia;
     AMediaFormat *impl;
 
-    AMediaFormat *(*new)(void);
-    media_status_t (*delete)(AMediaFormat*);
-
-    const char* (*toString)(AMediaFormat*);
-
-    bool (*getInt32)(AMediaFormat*, const char *name, int32_t *out);
-    bool (*getInt64)(AMediaFormat*, const char *name, int64_t *out);
-    bool (*getFloat)(AMediaFormat*, const char *name, float *out);
-    bool (*getSize)(AMediaFormat*, const char *name, size_t *out);
-    bool (*getBuffer)(AMediaFormat*, const char *name, void** data, size_t *size);
-    bool (*getString)(AMediaFormat*, const char *name, const char **out);
     bool (*getRect)(AMediaFormat *, const char *name,
                     int32_t *left, int32_t *top, int32_t *right, int32_t *bottom);
-
-    void (*setInt32)(AMediaFormat*, const char* name, int32_t value);
-    void (*setInt64)(AMediaFormat*, const char* name, int64_t value);
-    void (*setFloat)(AMediaFormat*, const char* name, float value);
-    void (*setString)(AMediaFormat*, const char* name, const char* value);
-    void (*setBuffer)(AMediaFormat*, const char* name, const void* data, size_t size);
     void (*setRect)(AMediaFormat *, const char *name,
                     int32_t left, int32_t top, int32_t right, int32_t bottom);
 } FFAMediaFormatNdk;
@@ -1857,34 +1840,6 @@ typedef struct FFAMediaCodecNdk {
     void *libmedia;
     AMediaCodec *impl;
     ANativeWindow *window;
-
-    AMediaCodec* (*createCodecByName)(const char *name);
-    AMediaCodec* (*createDecoderByType)(const char *mime_type);
-    AMediaCodec* (*createEncoderByType)(const char *mime_type);
-    media_status_t (*delete)(AMediaCodec*);
-
-    media_status_t (*configure)(AMediaCodec *,
-                                const AMediaFormat *format,
-                                ANativeWindow *surface,
-                                AMediaCrypto *crypto,
-                                uint32_t flags);
-    media_status_t (*start)(AMediaCodec*);
-    media_status_t (*stop)(AMediaCodec*);
-    media_status_t (*flush)(AMediaCodec*);
-
-    uint8_t* (*getInputBuffer)(AMediaCodec*, size_t idx, size_t *out_size);
-    uint8_t* (*getOutputBuffer)(AMediaCodec*, size_t idx, size_t *out_size);
-
-    ssize_t (*dequeueInputBuffer)(AMediaCodec*, int64_t timeoutUs);
-    media_status_t (*queueInputBuffer)(AMediaCodec*, size_t idx,
-                                       long offset, size_t size,
-                                       uint64_t time, uint32_t flags);
-
-    ssize_t (*dequeueOutputBuffer)(AMediaCodec*, AMediaCodecBufferInfo *info, int64_t timeoutUs);
-    AMediaFormat* (*getOutputFormat)(AMediaCodec*);
-
-    media_status_t (*releaseOutputBuffer)(AMediaCodec*, size_t idx, bool render);
-    media_status_t (*releaseOutputBufferAtTime)(AMediaCodec *mData, size_t idx, int64_t timestampNs);
 
     // Available since API level 28.
     media_status_t (*getName)(AMediaCodec*, char** out_name);
@@ -1925,38 +1880,15 @@ static FFAMediaFormat *mediaformat_ndk_create(AMediaFormat *impl)
 #define GET_OPTIONAL_SYMBOL(sym) \
     format->sym = dlsym(format->libmedia, "AMediaFormat_" #sym);
 
-#define GET_SYMBOL(sym)         \
-    GET_OPTIONAL_SYMBOL(sym)    \
-    if (!format->sym)           \
-        goto error;
-
-    GET_SYMBOL(new)
-    GET_SYMBOL(delete)
-
-    GET_SYMBOL(toString)
-
-    GET_SYMBOL(getInt32)
-    GET_SYMBOL(getInt64)
-    GET_SYMBOL(getFloat)
-    GET_SYMBOL(getSize)
-    GET_SYMBOL(getBuffer)
-    GET_SYMBOL(getString)
     GET_OPTIONAL_SYMBOL(getRect)
-
-    GET_SYMBOL(setInt32)
-    GET_SYMBOL(setInt64)
-    GET_SYMBOL(setFloat)
-    GET_SYMBOL(setString)
-    GET_SYMBOL(setBuffer)
     GET_OPTIONAL_SYMBOL(setRect)
 
-#undef GET_SYMBOL
 #undef GET_OPTIONAL_SYMBOL
 
     if (impl) {
         format->impl = impl;
     } else {
-        format->impl = format->new();
+        format->impl = AMediaFormat_new();
         if (!format->impl)
             goto error;
     }
@@ -1984,7 +1916,7 @@ static int mediaformat_ndk_delete(FFAMediaFormat* ctx)
 
     av_assert0(format->api.class == &amediaformat_ndk_class);
 
-    if (format->impl && (format->delete(format->impl) != AMEDIA_OK))
+    if (format->impl && (AMediaFormat_delete(format->impl) != AMEDIA_OK))
             ret = AVERROR_EXTERNAL;
     if (format->libmedia)
         dlclose(format->libmedia);
@@ -1996,39 +1928,39 @@ static int mediaformat_ndk_delete(FFAMediaFormat* ctx)
 static char* mediaformat_ndk_toString(FFAMediaFormat* ctx)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    const char *str = format->toString(format->impl);
+    const char *str = AMediaFormat_toString(format->impl);
     return av_strdup(str);
 }
 
 static int mediaformat_ndk_getInt32(FFAMediaFormat* ctx, const char *name, int32_t *out)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    return format->getInt32(format->impl, name, out);
+    return AMediaFormat_getInt32(format->impl, name, out);
 }
 
 static int mediaformat_ndk_getInt64(FFAMediaFormat* ctx, const char *name, int64_t *out)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    return format->getInt64(format->impl, name, out);
+    return AMediaFormat_getInt64(format->impl, name, out);
 }
 
 static int mediaformat_ndk_getFloat(FFAMediaFormat* ctx, const char *name, float *out)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    return format->getFloat(format->impl, name, out);
+    return AMediaFormat_getFloat(format->impl, name, out);
 }
 
 static int mediaformat_ndk_getBuffer(FFAMediaFormat* ctx, const char *name, void** data, size_t *size)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    return format->getBuffer(format->impl, name, data, size);
+    return AMediaFormat_getBuffer(format->impl, name, data, size);
 }
 
 static int mediaformat_ndk_getString(FFAMediaFormat* ctx, const char *name, const char **out)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
     const char *tmp = NULL;
-    int ret = format->getString(format->impl, name, &tmp);
+    int ret = AMediaFormat_getString(format->impl, name, &tmp);
 
     if (tmp)
         *out = av_strdup(tmp);
@@ -2047,31 +1979,31 @@ static int mediaformat_ndk_getRect(FFAMediaFormat *ctx, const char *name,
 static void mediaformat_ndk_setInt32(FFAMediaFormat* ctx, const char* name, int32_t value)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    format->setInt32(format->impl, name, value);
+    AMediaFormat_setInt32(format->impl, name, value);
 }
 
 static void mediaformat_ndk_setInt64(FFAMediaFormat* ctx, const char* name, int64_t value)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    format->setInt64(format->impl, name, value);
+    AMediaFormat_setInt64(format->impl, name, value);
 }
 
 static void mediaformat_ndk_setFloat(FFAMediaFormat* ctx, const char* name, float value)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    format->setFloat(format->impl, name, value);
+    AMediaFormat_setFloat(format->impl, name, value);
 }
 
 static void mediaformat_ndk_setString(FFAMediaFormat* ctx, const char* name, const char* value)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    format->setString(format->impl, name, value);
+    AMediaFormat_setString(format->impl, name, value);
 }
 
 static void mediaformat_ndk_setBuffer(FFAMediaFormat* ctx, const char* name, void* data, size_t size)
 {
     FFAMediaFormatNdk *format = (FFAMediaFormatNdk *)ctx;
-    format->setBuffer(format->impl, name, data, size);
+    AMediaFormat_setBuffer(format->impl, name, data, size);
 }
 
 static void mediaformat_ndk_setRect(FFAMediaFormat *ctx, const char *name,
@@ -2117,54 +2049,28 @@ static inline FFAMediaCodec *ndk_codec_create(int method, const char *arg) {
     if (!codec->libmedia)
         goto error;
 
-#define GET_SYMBOL(sym, required)                                   \
+#define GET_SYMBOL(sym)                                             \
     codec->sym = dlsym(codec->libmedia, "AMediaCodec_" #sym);       \
-    if (!codec->sym) {                                              \
-        av_log(codec, required ? AV_LOG_ERROR : AV_LOG_INFO,        \
-               #sym "() unavailable from %s\n", lib_name);          \
-        if (required)                                               \
-            goto error;                                             \
-    }
+    if (!codec->sym)                                                \
+        av_log(codec, AV_LOG_INFO, #sym "() unavailable from %s\n", lib_name);
 
-    GET_SYMBOL(createCodecByName, 1)
-    GET_SYMBOL(createDecoderByType, 1)
-    GET_SYMBOL(createEncoderByType, 1)
-    GET_SYMBOL(delete, 1)
+    GET_SYMBOL(getName)
+    GET_SYMBOL(releaseName)
 
-    GET_SYMBOL(configure, 1)
-    GET_SYMBOL(start, 1)
-    GET_SYMBOL(stop, 1)
-    GET_SYMBOL(flush, 1)
-
-    GET_SYMBOL(getInputBuffer, 1)
-    GET_SYMBOL(getOutputBuffer, 1)
-
-    GET_SYMBOL(dequeueInputBuffer, 1)
-    GET_SYMBOL(queueInputBuffer, 1)
-
-    GET_SYMBOL(dequeueOutputBuffer, 1)
-    GET_SYMBOL(getOutputFormat, 1)
-
-    GET_SYMBOL(releaseOutputBuffer, 1)
-    GET_SYMBOL(releaseOutputBufferAtTime, 1)
-
-    GET_SYMBOL(getName, 0)
-    GET_SYMBOL(releaseName, 0)
-
-    GET_SYMBOL(setInputSurface, 0)
-    GET_SYMBOL(signalEndOfInputStream, 0)
+    GET_SYMBOL(setInputSurface)
+    GET_SYMBOL(signalEndOfInputStream)
 
 #undef GET_SYMBOL
 
     switch (method) {
     case CREATE_CODEC_BY_NAME:
-        codec->impl = codec->createCodecByName(arg);
+        codec->impl = AMediaCodec_createCodecByName(arg);
         break;
     case CREATE_DECODER_BY_TYPE:
-        codec->impl = codec->createDecoderByType(arg);
+        codec->impl = AMediaCodec_createDecoderByType(arg);
         break;
     case CREATE_ENCODER_BY_TYPE:
-        codec->impl = codec->createEncoderByType(arg);
+        codec->impl = AMediaCodec_createEncoderByType(arg);
         break;
     default:
         av_assert0(0);
@@ -2201,7 +2107,7 @@ static int mediacodec_ndk_delete(FFAMediaCodec* ctx)
 
     av_assert0(codec->api.class == &amediacodec_ndk_class);
 
-    if (codec->impl && (codec->delete(codec->impl) != AMEDIA_OK))
+    if (codec->impl && (AMediaCodec_delete(codec->impl) != AMEDIA_OK))
         ret = AVERROR_EXTERNAL;
     if (codec->window)
         ANativeWindow_release(codec->window);
@@ -2246,7 +2152,7 @@ static int mediacodec_ndk_configure(FFAMediaCodec* ctx,
             return AVERROR_EXTERNAL;
         }
 
-        status = codec->configure(codec->impl, format->impl, NULL, NULL, flags);
+        status = AMediaCodec_configure(codec->impl, format->impl, NULL, NULL, flags);
         if (status != AMEDIA_OK) {
             av_log(codec, AV_LOG_ERROR, "Encoder configure failed, %d\n", status);
             return AVERROR_EXTERNAL;
@@ -2261,7 +2167,7 @@ static int mediacodec_ndk_configure(FFAMediaCodec* ctx,
             return AVERROR_EXTERNAL;
         }
     } else {
-        status = codec->configure(codec->impl, format->impl, native_window, NULL, flags);
+        status = AMediaCodec_configure(codec->impl, format->impl, native_window, NULL, flags);
         if (status != AMEDIA_OK) {
             av_log(codec, AV_LOG_ERROR, "Decoder configure failed, %d\n", status);
             return AVERROR_EXTERNAL;
@@ -2275,7 +2181,7 @@ static int mediacodec_ndk_configure(FFAMediaCodec* ctx,
 static int mediacodec_ndk_ ## method(FFAMediaCodec* ctx)                 \
 {                                                                        \
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;                   \
-    media_status_t status = codec->method(codec->impl);                  \
+    media_status_t status = AMediaCodec_ ## method (codec->impl);                  \
                                                                          \
     if (status != AMEDIA_OK) {                                           \
         av_log(codec, AV_LOG_ERROR, #method " failed, %d\n", status);    \
@@ -2292,19 +2198,19 @@ MEDIACODEC_NDK_WRAPPER(flush)
 static uint8_t* mediacodec_ndk_getInputBuffer(FFAMediaCodec* ctx, size_t idx, size_t *out_size)
 {
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
-    return codec->getInputBuffer(codec->impl, idx, out_size);
+    return AMediaCodec_getInputBuffer(codec->impl, idx, out_size);
 }
 
 static uint8_t* mediacodec_ndk_getOutputBuffer(FFAMediaCodec* ctx, size_t idx, size_t *out_size)
 {
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
-    return codec->getOutputBuffer(codec->impl, idx, out_size);
+    return AMediaCodec_getOutputBuffer(codec->impl, idx, out_size);
 }
 
 static ssize_t mediacodec_ndk_dequeueInputBuffer(FFAMediaCodec* ctx, int64_t timeoutUs)
 {
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
-    return codec->dequeueInputBuffer(codec->impl, timeoutUs);
+    return AMediaCodec_dequeueInputBuffer(codec->impl, timeoutUs);
 }
 
 static int mediacodec_ndk_queueInputBuffer(FFAMediaCodec *ctx, size_t idx,
@@ -2312,7 +2218,7 @@ static int mediacodec_ndk_queueInputBuffer(FFAMediaCodec *ctx, size_t idx,
                                            uint64_t time, uint32_t flags)
 {
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
-    return codec->queueInputBuffer(codec->impl, idx, offset, size, time, flags);
+    return AMediaCodec_queueInputBuffer(codec->impl, idx, offset, size, time, flags);
 }
 
 static ssize_t mediacodec_ndk_dequeueOutputBuffer(FFAMediaCodec* ctx, FFAMediaCodecBufferInfo *info, int64_t timeoutUs)
@@ -2321,7 +2227,7 @@ static ssize_t mediacodec_ndk_dequeueOutputBuffer(FFAMediaCodec* ctx, FFAMediaCo
     AMediaCodecBufferInfo buf_info = {0};
     ssize_t ret;
 
-    ret = codec->dequeueOutputBuffer(codec->impl, &buf_info, timeoutUs);
+    ret = AMediaCodec_dequeueOutputBuffer(codec->impl, &buf_info, timeoutUs);
     info->offset = buf_info.offset;
     info->size = buf_info.size;
     info->presentationTimeUs = buf_info.presentationTimeUs;
@@ -2333,7 +2239,7 @@ static ssize_t mediacodec_ndk_dequeueOutputBuffer(FFAMediaCodec* ctx, FFAMediaCo
 static FFAMediaFormat* mediacodec_ndk_getOutputFormat(FFAMediaCodec* ctx)
 {
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
-    AMediaFormat *format = codec->getOutputFormat(codec->impl);
+    AMediaFormat *format = AMediaCodec_getOutputFormat(codec->impl);
 
     if (!format)
         return NULL;
@@ -2345,7 +2251,7 @@ static int mediacodec_ndk_releaseOutputBuffer(FFAMediaCodec* ctx, size_t idx, in
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
     media_status_t status;
 
-    status = codec->releaseOutputBuffer(codec->impl, idx, render);
+    status = AMediaCodec_releaseOutputBuffer(codec->impl, idx, render);
     if (status != AMEDIA_OK) {
         av_log(codec, AV_LOG_ERROR, "release output buffer failed, %d\n", status);
         return AVERROR_EXTERNAL;
@@ -2359,7 +2265,7 @@ static int mediacodec_ndk_releaseOutputBufferAtTime(FFAMediaCodec *ctx, size_t i
     FFAMediaCodecNdk *codec = (FFAMediaCodecNdk *)ctx;
     media_status_t status;
 
-    status = codec->releaseOutputBufferAtTime(codec->impl, idx, timestampNs);
+    status = AMediaCodec_releaseOutputBufferAtTime(codec->impl, idx, timestampNs);
     if (status != AMEDIA_OK) {
         av_log(codec, AV_LOG_ERROR, "releaseOutputBufferAtTime failed, %d\n", status);
         return AVERROR_EXTERNAL;
