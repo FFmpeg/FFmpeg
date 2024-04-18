@@ -33,9 +33,11 @@
 
 typedef struct ScratchpadContext {
     uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
-    uint8_t *rd_scratchpad;       ///< scratchpad for rate distortion mb decision
     uint8_t *obmc_scratchpad;
-    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
+    union {
+        uint8_t *b_scratchpad;    ///< scratchpad used for writing into write only buffers
+        uint8_t *rd_scratchpad;   ///< scratchpad for rate distortion mb decision
+    };
     int      linesize;            ///< linesize that the buffers in this context have been allocated for
 } ScratchpadContext;
 

@@ -175,7 +175,6 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     sc->linesize = linesizeabs;
 
     me->temp            = me->scratchpad;
-    sc->rd_scratchpad   = me->scratchpad;
     sc->b_scratchpad    = me->scratchpad;
     sc->obmc_scratchpad = me->scratchpad + 16;
 

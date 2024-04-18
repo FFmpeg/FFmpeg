@@ -440,7 +440,6 @@ static void free_duplicate_context(MpegEncContext *s)
     av_freep(&s->sc.edge_emu_buffer);
     av_freep(&s->me.scratchpad);
     s->me.temp =
-    s->sc.rd_scratchpad =
     s->sc.b_scratchpad =
     s->sc.obmc_scratchpad = NULL;
     s->sc.linesize = 0;
