@@ -222,6 +222,7 @@ static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
 static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
                                                   VAAPIEncodePicture *vaapi_pic)
 {
+    FFHWBaseEncodeContext       *base_ctx = avctx->priv_data;
     VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
     const FFHWBaseEncodePicture      *pic = &vaapi_pic->base;
     JPEGRawFrameHeader                *fh = &priv->frame_header;
@@ -235,7 +236,7 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
 
     av_assert0(pic->type == FF_HW_PICTURE_TYPE_IDR);
 
-    desc = av_pix_fmt_desc_get(priv->common.input_frames->sw_format);
+    desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     av_assert0(desc);
     if (desc->flags & AV_PIX_FMT_FLAG_RGB)
         components = components_rgb;
@@ -437,10 +438,11 @@ static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
 
 static av_cold int vaapi_encode_mjpeg_get_encoder_caps(AVCodecContext *avctx)
 {
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
     VAAPIEncodeContext *ctx = avctx->priv_data;
     const AVPixFmtDescriptor *desc;
 
-    desc = av_pix_fmt_desc_get(ctx->input_frames->sw_format);
+    desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     av_assert0(desc);
 
     ctx->surface_width  = FFALIGN(avctx->width,  8 << desc->log2_chroma_w);

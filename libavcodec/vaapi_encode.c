@@ -314,7 +314,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_DEBUG, "Input surface is %#x.\n", pic->input_surface);
 
-    err = av_hwframe_get_buffer(ctx->recon_frames_ref, base_pic->recon_image, 0);
+    err = av_hwframe_get_buffer(base_ctx->recon_frames_ref, base_pic->recon_image, 0);
     if (err < 0) {
         err = AVERROR(ENOMEM);
         goto fail;
@@ -996,9 +996,10 @@ static const VAEntrypoint vaapi_encode_entrypoints_low_power[] = {
 
 static av_cold int vaapi_encode_profile_entrypoint(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAProfile    *va_profiles    = NULL;
-    VAEntrypoint *va_entrypoints = NULL;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
+    VAProfile       *va_profiles    = NULL;
+    VAEntrypoint    *va_entrypoints = NULL;
     VAStatus vas;
     const VAEntrypoint *usable_entrypoints;
     const VAAPIEncodeProfile *profile;
@@ -1021,10 +1022,10 @@ static av_cold int vaapi_encode_profile_entrypoint(AVCodecContext *avctx)
         usable_entrypoints = vaapi_encode_entrypoints_normal;
     }
 
-    desc = av_pix_fmt_desc_get(ctx->input_frames->sw_format);
+    desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     if (!desc) {
         av_log(avctx, AV_LOG_ERROR, "Invalid input pixfmt (%d).\n",
-               ctx->input_frames->sw_format);
+               base_ctx->input_frames->sw_format);
         return AVERROR(EINVAL);
     }
     depth = desc->comp[0].depth;
@@ -2131,20 +2132,21 @@ static int vaapi_encode_alloc_output_buffer(FFRefStructOpaque opaque, void *obj)
 
 static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
     AVVAAPIHWConfig *hwconfig = NULL;
     AVHWFramesConstraints *constraints = NULL;
     enum AVPixelFormat recon_format;
     int err, i;
 
-    hwconfig = av_hwdevice_hwconfig_alloc(ctx->device_ref);
+    hwconfig = av_hwdevice_hwconfig_alloc(base_ctx->device_ref);
     if (!hwconfig) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
     hwconfig->config_id = ctx->va_config;
 
-    constraints = av_hwdevice_get_hwframe_constraints(ctx->device_ref,
+    constraints = av_hwdevice_get_hwframe_constraints(base_ctx->device_ref,
                                                       hwconfig);
     if (!constraints) {
         err = AVERROR(ENOMEM);
@@ -2157,9 +2159,9 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
     recon_format = AV_PIX_FMT_NONE;
     if (constraints->valid_sw_formats) {
         for (i = 0; constraints->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
-            if (ctx->input_frames->sw_format ==
+            if (base_ctx->input_frames->sw_format ==
                 constraints->valid_sw_formats[i]) {
-                recon_format = ctx->input_frames->sw_format;
+                recon_format = base_ctx->input_frames->sw_format;
                 break;
             }
         }
@@ -2170,7 +2172,7 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
         }
     } else {
         // No idea what to use; copy input format.
-        recon_format = ctx->input_frames->sw_format;
+        recon_format = base_ctx->input_frames->sw_format;
     }
     av_log(avctx, AV_LOG_DEBUG, "Using %s as format of "
            "reconstructed frames.\n", av_get_pix_fmt_name(recon_format));
@@ -2191,19 +2193,19 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
     av_freep(&hwconfig);
     av_hwframe_constraints_free(&constraints);
 
-    ctx->recon_frames_ref = av_hwframe_ctx_alloc(ctx->device_ref);
-    if (!ctx->recon_frames_ref) {
+    base_ctx->recon_frames_ref = av_hwframe_ctx_alloc(base_ctx->device_ref);
+    if (!base_ctx->recon_frames_ref) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
-    ctx->recon_frames = (AVHWFramesContext*)ctx->recon_frames_ref->data;
+    base_ctx->recon_frames = (AVHWFramesContext*)base_ctx->recon_frames_ref->data;
 
-    ctx->recon_frames->format    = AV_PIX_FMT_VAAPI;
-    ctx->recon_frames->sw_format = recon_format;
-    ctx->recon_frames->width     = ctx->surface_width;
-    ctx->recon_frames->height    = ctx->surface_height;
+    base_ctx->recon_frames->format    = AV_PIX_FMT_VAAPI;
+    base_ctx->recon_frames->sw_format = recon_format;
+    base_ctx->recon_frames->width     = ctx->surface_width;
+    base_ctx->recon_frames->height    = ctx->surface_height;
 
-    err = av_hwframe_ctx_init(ctx->recon_frames_ref);
+    err = av_hwframe_ctx_init(base_ctx->recon_frames_ref);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to initialise reconstructed "
                "frame context: %d.\n", err);
@@ -2235,44 +2237,16 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     VAStatus vas;
     int err;
 
+    err = ff_hw_base_encode_init(avctx);
+    if (err < 0)
+        goto fail;
+
     ctx->va_config  = VA_INVALID_ID;
     ctx->va_context = VA_INVALID_ID;
 
     base_ctx->op = &vaapi_op;
 
-    /* If you add something that can fail above this av_frame_alloc(),
-     * modify ff_vaapi_encode_close() accordingly. */
-    base_ctx->frame = av_frame_alloc();
-    if (!base_ctx->frame) {
-        return AVERROR(ENOMEM);
-    }
-
-    if (!avctx->hw_frames_ctx) {
-        av_log(avctx, AV_LOG_ERROR, "A hardware frames reference is "
-               "required to associate the encoding device.\n");
-        return AVERROR(EINVAL);
-    }
-
-    ctx->input_frames_ref = av_buffer_ref(avctx->hw_frames_ctx);
-    if (!ctx->input_frames_ref) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-    ctx->input_frames = (AVHWFramesContext*)ctx->input_frames_ref->data;
-
-    ctx->device_ref = av_buffer_ref(ctx->input_frames->device_ref);
-    if (!ctx->device_ref) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-    ctx->device = (AVHWDeviceContext*)ctx->device_ref->data;
-    ctx->hwctx = ctx->device->hwctx;
-
-    base_ctx->tail_pkt = av_packet_alloc();
-    if (!base_ctx->tail_pkt) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
+    ctx->hwctx = base_ctx->device->hwctx;
 
     err = vaapi_encode_profile_entrypoint(avctx);
     if (err < 0)
@@ -2339,7 +2313,7 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     if (err < 0)
         goto fail;
 
-    recon_hwctx = ctx->recon_frames->hwctx;
+    recon_hwctx = base_ctx->recon_frames->hwctx;
     vas = vaCreateContext(ctx->hwctx->display, ctx->va_config,
                           ctx->surface_width, ctx->surface_height,
                           VA_PROGRESSIVE,
@@ -2467,16 +2441,10 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
         ctx->va_config = VA_INVALID_ID;
     }
 
-    av_frame_free(&base_ctx->frame);
-    av_packet_free(&base_ctx->tail_pkt);
-
     av_freep(&ctx->codec_sequence_params);
     av_freep(&ctx->codec_picture_params);
-    av_fifo_freep2(&base_ctx->encode_fifo);
 
-    av_buffer_unref(&ctx->recon_frames_ref);
-    av_buffer_unref(&ctx->input_frames_ref);
-    av_buffer_unref(&ctx->device_ref);
+    ff_hw_base_encode_close(avctx);
 
     return 0;
 }

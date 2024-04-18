@@ -592,3 +592,52 @@ end:
 
     return 0;
 }
+
+int ff_hw_base_encode_init(AVCodecContext *avctx)
+{
+    FFHWBaseEncodeContext *ctx = avctx->priv_data;
+
+    ctx->frame = av_frame_alloc();
+    if (!ctx->frame)
+        return AVERROR(ENOMEM);
+
+    if (!avctx->hw_frames_ctx) {
+        av_log(avctx, AV_LOG_ERROR, "A hardware frames reference is "
+               "required to associate the encoding device.\n");
+        return AVERROR(EINVAL);
+    }
+
+    ctx->input_frames_ref = av_buffer_ref(avctx->hw_frames_ctx);
+    if (!ctx->input_frames_ref)
+        return AVERROR(ENOMEM);
+
+    ctx->input_frames = (AVHWFramesContext *)ctx->input_frames_ref->data;
+
+    ctx->device_ref = av_buffer_ref(ctx->input_frames->device_ref);
+    if (!ctx->device_ref)
+        return AVERROR(ENOMEM);
+
+    ctx->device = (AVHWDeviceContext *)ctx->device_ref->data;
+
+    ctx->tail_pkt = av_packet_alloc();
+    if (!ctx->tail_pkt)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+int ff_hw_base_encode_close(AVCodecContext *avctx)
+{
+    FFHWBaseEncodeContext *ctx = avctx->priv_data;
+
+    av_fifo_freep2(&ctx->encode_fifo);
+
+    av_frame_free(&ctx->frame);
+    av_packet_free(&ctx->tail_pkt);
+
+    av_buffer_unref(&ctx->device_ref);
+    av_buffer_unref(&ctx->input_frames_ref);
+    av_buffer_unref(&ctx->recon_frames_ref);
+
+    return 0;
+}

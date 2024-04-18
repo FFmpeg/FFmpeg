@@ -308,7 +308,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     memset(sps, 0, sizeof(*sps));
     memset(pps, 0, sizeof(*pps));
 
-    desc = av_pix_fmt_desc_get(priv->common.input_frames->sw_format);
+    desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     av_assert0(desc);
     if (desc->nb_components == 1 || desc->log2_chroma_w != 1 || desc->log2_chroma_h != 1) {
         av_log(avctx, AV_LOG_ERROR, "Chroma format of input pixel format "

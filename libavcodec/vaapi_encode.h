@@ -219,17 +219,7 @@ typedef struct VAAPIEncodeContext {
     VAConfigID      va_config;
     VAContextID     va_context;
 
-    AVBufferRef    *device_ref;
-    AVHWDeviceContext *device;
     AVVAAPIDeviceContext *hwctx;
-
-    // The hardware frame context containing the input frames.
-    AVBufferRef    *input_frames_ref;
-    AVHWFramesContext *input_frames;
-
-    // The hardware frame context containing the reconstructed frames.
-    AVBufferRef    *recon_frames_ref;
-    AVHWFramesContext *recon_frames;
 
     // Pool of (reusable) bitstream output buffers.
     struct FFRefStructPool *output_buffer_pool;

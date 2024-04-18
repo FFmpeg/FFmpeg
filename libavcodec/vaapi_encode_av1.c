@@ -373,7 +373,7 @@ static int vaapi_encode_av1_init_sequence_params(AVCodecContext *avctx)
     memset(sh_obu, 0, sizeof(*sh_obu));
     sh_obu->header.obu_type = AV1_OBU_SEQUENCE_HEADER;
 
-    desc = av_pix_fmt_desc_get(priv->common.input_frames->sw_format);
+    desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     av_assert0(desc);
 
     sh->seq_profile  = avctx->profile;

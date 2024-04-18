@@ -19,6 +19,7 @@
 #ifndef AVCODEC_HW_BASE_ENCODE_H
 #define AVCODEC_HW_BASE_ENCODE_H
 
+#include "libavutil/hwcontext.h"
 #include "libavutil/fifo.h"
 
 #define MAX_DPB_SIZE 16
@@ -119,6 +120,18 @@ typedef struct FFHWBaseEncodeContext {
     // Hardware-specific hooks.
     const struct FFHWEncodePictureOperation *op;
 
+    // The hardware device context.
+    AVBufferRef    *device_ref;
+    AVHWDeviceContext *device;
+
+    // The hardware frame context containing the input frames.
+    AVBufferRef    *input_frames_ref;
+    AVHWFramesContext *input_frames;
+
+    // The hardware frame context containing the reconstructed frames.
+    AVBufferRef    *recon_frames_ref;
+    AVHWFramesContext *recon_frames;
+
     // Current encoding window, in display (input) order.
     FFHWBaseEncodePicture *pic_start, *pic_end;
     // The next picture to use as the previous reference picture in
@@ -184,6 +197,10 @@ typedef struct FFHWBaseEncodeContext {
 } FFHWBaseEncodeContext;
 
 int ff_hw_base_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
+
+int ff_hw_base_encode_init(AVCodecContext *avctx);
+
+int ff_hw_base_encode_close(AVCodecContext *avctx);
 
 #define HW_BASE_ENCODE_COMMON_OPTIONS \
     { "async_depth", "Maximum processing parallelism. " \
