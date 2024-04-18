@@ -785,6 +785,12 @@ static int decode_nal_unit(VVCContext *s, VVCFrameContext *fc, const H2645NAL *n
 
     s->temporal_id = nal->temporal_id;
 
+    if (nal->nuh_layer_id > 0) {
+        avpriv_report_missing_feature(fc->log_ctx,
+                "Decoding of multilayer bitstreams");
+        return AVERROR_PATCHWELCOME;
+    }
+
     switch (unit->type) {
     case VVC_VPS_NUT:
     case VVC_SPS_NUT:
