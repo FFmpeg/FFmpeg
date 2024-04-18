@@ -151,16 +151,8 @@ typedef struct VAAPIEncodeContext {
     // Codec-specific hooks.
     const struct VAAPIEncodeType *codec;
 
-    // Global options.
-
     // Use low power encoding mode.
     int             low_power;
-
-    // Number of I frames between IDR frames.
-    int             idr_interval;
-
-    // Desired B frame reference depth.
-    int             desired_b_depth;
 
     // Max Frame Size
     int             max_frame_size;
@@ -371,14 +363,6 @@ int ff_vaapi_encode_close(AVCodecContext *avctx);
       "may not support all encoding features)", \
       OFFSET(common.low_power), AV_OPT_TYPE_BOOL, \
       { .i64 = 0 }, 0, 1, FLAGS }, \
-    { "idr_interval", \
-      "Distance (in I-frames) between IDR frames", \
-      OFFSET(common.idr_interval), AV_OPT_TYPE_INT, \
-      { .i64 = 0 }, 0, INT_MAX, FLAGS }, \
-    { "b_depth", \
-      "Maximum B-frame reference depth", \
-      OFFSET(common.desired_b_depth), AV_OPT_TYPE_INT, \
-      { .i64 = 1 }, 1, INT_MAX, FLAGS }, \
     { "max_frame_size", \
       "Maximum frame size (in bytes)",\
       OFFSET(common.max_frame_size), AV_OPT_TYPE_INT, \

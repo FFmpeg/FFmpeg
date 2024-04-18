@@ -1638,7 +1638,7 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
     VAStatus vas;
     VAConfigAttrib attr = { VAConfigAttribEncMaxRefFrames };
     uint32_t ref_l0, ref_l1;
-    int prediction_pre_only;
+    int prediction_pre_only, err;
 
     vas = vaGetConfigAttributes(ctx->hwctx->display,
                                 ctx->va_profile,
@@ -1702,53 +1702,9 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
     }
 #endif
 
-    if (ctx->codec->flags & FF_HW_FLAG_INTRA_ONLY ||
-        avctx->gop_size <= 1) {
-        av_log(avctx, AV_LOG_VERBOSE, "Using intra frames only.\n");
-        base_ctx->gop_size = 1;
-    } else if (ref_l0 < 1) {
-        av_log(avctx, AV_LOG_ERROR, "Driver does not support any "
-               "reference frames.\n");
-        return AVERROR(EINVAL);
-    } else if (!(ctx->codec->flags & FF_HW_FLAG_B_PICTURES) ||
-               ref_l1 < 1 || avctx->max_b_frames < 1 ||
-               prediction_pre_only) {
-        if (base_ctx->p_to_gpb)
-           av_log(avctx, AV_LOG_VERBOSE, "Using intra and B-frames "
-                  "(supported references: %d / %d).\n",
-                  ref_l0, ref_l1);
-        else
-            av_log(avctx, AV_LOG_VERBOSE, "Using intra and P-frames "
-                   "(supported references: %d / %d).\n", ref_l0, ref_l1);
-        base_ctx->gop_size = avctx->gop_size;
-        base_ctx->p_per_i  = INT_MAX;
-        base_ctx->b_per_p  = 0;
-    } else {
-       if (base_ctx->p_to_gpb)
-           av_log(avctx, AV_LOG_VERBOSE, "Using intra and B-frames "
-                  "(supported references: %d / %d).\n",
-                  ref_l0, ref_l1);
-       else
-           av_log(avctx, AV_LOG_VERBOSE, "Using intra, P- and B-frames "
-                  "(supported references: %d / %d).\n", ref_l0, ref_l1);
-        base_ctx->gop_size = avctx->gop_size;
-        base_ctx->p_per_i  = INT_MAX;
-        base_ctx->b_per_p  = avctx->max_b_frames;
-        if (ctx->codec->flags & FF_HW_FLAG_B_PICTURE_REFERENCES) {
-            base_ctx->max_b_depth = FFMIN(ctx->desired_b_depth,
-                                          av_log2(base_ctx->b_per_p) + 1);
-        } else {
-            base_ctx->max_b_depth = 1;
-        }
-    }
-
-    if (ctx->codec->flags & FF_HW_FLAG_NON_IDR_KEY_PICTURES) {
-        base_ctx->closed_gop  = !!(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP);
-        base_ctx->gop_per_idr = ctx->idr_interval + 1;
-    } else {
-        base_ctx->closed_gop  = 1;
-        base_ctx->gop_per_idr = 1;
-    }
+    err = ff_hw_base_init_gop_structure(avctx, ref_l0, ref_l1, ctx->codec->flags, prediction_pre_only);
+    if (err < 0)
+        return err;
 
     return 0;
 }

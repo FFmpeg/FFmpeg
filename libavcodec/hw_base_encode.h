@@ -120,6 +120,14 @@ typedef struct FFHWBaseEncodeContext {
     // Hardware-specific hooks.
     const struct FFHWEncodePictureOperation *op;
 
+    // Global options.
+
+    // Number of I frames between IDR frames.
+    int             idr_interval;
+
+    // Desired B frame reference depth.
+    int             desired_b_depth;
+
     // The hardware device context.
     AVBufferRef    *device_ref;
     AVHWDeviceContext *device;
@@ -198,11 +206,22 @@ typedef struct FFHWBaseEncodeContext {
 
 int ff_hw_base_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 
+int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32_t ref_l1,
+                                  int flags, int prediction_pre_only);
+
 int ff_hw_base_encode_init(AVCodecContext *avctx);
 
 int ff_hw_base_encode_close(AVCodecContext *avctx);
 
 #define HW_BASE_ENCODE_COMMON_OPTIONS \
+    { "idr_interval", \
+      "Distance (in I-frames) between key frames", \
+      OFFSET(common.base.idr_interval), AV_OPT_TYPE_INT, \
+      { .i64 = 0 }, 0, INT_MAX, FLAGS }, \
+    { "b_depth", \
+      "Maximum B-frame reference depth", \
+      OFFSET(common.base.desired_b_depth), AV_OPT_TYPE_INT, \
+      { .i64 = 1 }, 1, INT_MAX, FLAGS }, \
     { "async_depth", "Maximum processing parallelism. " \
       "Increase this to improve single channel performance.", \
       OFFSET(common.base.async_depth), AV_OPT_TYPE_INT, \
