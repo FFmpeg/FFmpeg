@@ -360,6 +360,7 @@ static int vaapi_encode_av1_write_sequence_header(AVCodecContext *avctx,
 
 static int vaapi_encode_av1_init_sequence_params(AVCodecContext *avctx)
 {
+    FFHWBaseEncodeContext       *base_ctx = avctx->priv_data;
     VAAPIEncodeContext               *ctx = avctx->priv_data;
     VAAPIEncodeAV1Context           *priv = avctx->priv_data;
     AV1RawOBU                     *sh_obu = &priv->sh;
@@ -441,8 +442,8 @@ static int vaapi_encode_av1_init_sequence_params(AVCodecContext *avctx)
     vseq->seq_level_idx           = sh->seq_level_idx[0];
     vseq->seq_tier                = sh->seq_tier[0];
     vseq->order_hint_bits_minus_1 = sh->order_hint_bits_minus_1;
-    vseq->intra_period            = ctx->gop_size;
-    vseq->ip_period               = ctx->b_per_p + 1;
+    vseq->intra_period            = base_ctx->gop_size;
+    vseq->ip_period               = base_ctx->b_per_p + 1;
 
     vseq->seq_fields.bits.enable_order_hint = sh->enable_order_hint;
 
@@ -465,16 +466,17 @@ end:
 }
 
 static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
-                                                VAAPIEncodePicture *pic)
+                                                VAAPIEncodePicture *vaapi_pic)
 {
     VAAPIEncodeContext              *ctx = avctx->priv_data;
     VAAPIEncodeAV1Context          *priv = avctx->priv_data;
+    const FFHWBaseEncodePicture     *pic = &vaapi_pic->base;
     VAAPIEncodeAV1Picture          *hpic = pic->priv_data;
     AV1RawOBU                    *fh_obu = &priv->fh;
     AV1RawFrameHeader                *fh = &fh_obu->obu.frame.header;
-    VAEncPictureParameterBufferAV1 *vpic = pic->codec_picture_params;
+    VAEncPictureParameterBufferAV1 *vpic = vaapi_pic->codec_picture_params;
     CodedBitstreamFragment          *obu = &priv->current_obu;
-    VAAPIEncodePicture    *ref;
+    FFHWBaseEncodePicture *ref;
     VAAPIEncodeAV1Picture *href;
     int slot, i;
     int ret;
@@ -482,8 +484,8 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
         { 1, 0, 0, 0, -1, 0, -1, -1 };
 
     memset(fh_obu, 0, sizeof(*fh_obu));
-    pic->nb_slices = priv->tile_groups;
-    pic->non_independent_frame = pic->encode_order < pic->display_order;
+    vaapi_pic->nb_slices = priv->tile_groups;
+    vaapi_pic->non_independent_frame = pic->encode_order < pic->display_order;
     fh_obu->header.obu_type = AV1_OBU_FRAME_HEADER;
     fh_obu->header.obu_has_size_field = 1;
 
@@ -601,8 +603,8 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
     vpic->frame_width_minus_1  = fh->frame_width_minus_1;
     vpic->frame_height_minus_1 = fh->frame_height_minus_1;
     vpic->primary_ref_frame    = fh->primary_ref_frame;
-    vpic->reconstructed_frame  = pic->recon_surface;
-    vpic->coded_buf            = pic->output_buffer;
+    vpic->reconstructed_frame  = vaapi_pic->recon_surface;
+    vpic->coded_buf            = vaapi_pic->output_buffer;
     vpic->tile_cols            = fh->tile_cols;
     vpic->tile_rows            = fh->tile_rows;
     vpic->order_hint           = fh->order_hint;
@@ -630,12 +632,12 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
 
     for (i = 0; i < MAX_REFERENCE_LIST_NUM; i++) {
         for (int j = 0; j < pic->nb_refs[i]; j++) {
-            VAAPIEncodePicture *ref_pic = pic->refs[i][j];
+            FFHWBaseEncodePicture *ref_pic = pic->refs[i][j];
 
             slot = ((VAAPIEncodeAV1Picture*)ref_pic->priv_data)->slot;
             av_assert0(vpic->reference_frames[slot] == VA_INVALID_SURFACE);
 
-            vpic->reference_frames[slot] = ref_pic->recon_surface;
+            vpic->reference_frames[slot] = ((VAAPIEncodePicture *)ref_pic)->recon_surface;
         }
     }
 
@@ -752,7 +754,7 @@ static int vaapi_encode_av1_init_slice_params(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_av1_write_picture_header(AVCodecContext *avctx,
-                                                 VAAPIEncodePicture *pic,
+                                                 VAAPIEncodePicture *vaapi_pic,
                                                  char *data, size_t *data_len)
 {
     VAAPIEncodeAV1Context     *priv = avctx->priv_data;
@@ -760,10 +762,11 @@ static int vaapi_encode_av1_write_picture_header(AVCodecContext *avctx,
     CodedBitstreamAV1Context *cbctx = priv->cbc->priv_data;
     AV1RawOBU               *fh_obu = &priv->fh;
     AV1RawFrameHeader       *rep_fh = &fh_obu->obu.frame_header;
+    const FFHWBaseEncodePicture *pic = &vaapi_pic->base;
     VAAPIEncodeAV1Picture *href;
     int ret = 0;
 
-    pic->tail_size = 0;
+    vaapi_pic->tail_size = 0;
     /** Pack repeat frame header. */
     if (pic->display_order > pic->encode_order) {
         memset(fh_obu, 0, sizeof(*fh_obu));
@@ -785,11 +788,11 @@ static int vaapi_encode_av1_write_picture_header(AVCodecContext *avctx,
         if (ret < 0)
             goto end;
 
-        ret = vaapi_encode_av1_write_obu(avctx, pic->tail_data, &pic->tail_size, obu);
+        ret = vaapi_encode_av1_write_obu(avctx, vaapi_pic->tail_data, &vaapi_pic->tail_size, obu);
         if (ret < 0)
             goto end;
 
-        pic->tail_size /= 8;
+        vaapi_pic->tail_size /= 8;
     }
 
     memcpy(data, &priv->fh_data, MAX_PARAM_BUFFER_SIZE * sizeof(char));
@@ -1038,7 +1041,7 @@ const FFCodec ff_av1_vaapi_encoder = {
     .p.id           = AV_CODEC_ID_AV1,
     .priv_data_size = sizeof(VAAPIEncodeAV1Context),
     .init           = &vaapi_encode_av1_init,
-    FF_CODEC_RECEIVE_PACKET_CB(&ff_vaapi_encode_receive_packet),
+    FF_CODEC_RECEIVE_PACKET_CB(&ff_hw_base_encode_receive_packet),
     .close          = &vaapi_encode_av1_close,
     .p.priv_class   = &vaapi_encode_av1_class,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |

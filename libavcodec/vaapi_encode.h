@@ -29,7 +29,6 @@
 
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_vaapi.h"
-#include "libavutil/fifo.h"
 
 #include "avcodec.h"
 #include "hwconfig.h"
@@ -64,16 +63,7 @@ typedef struct VAAPIEncodeSlice {
 } VAAPIEncodeSlice;
 
 typedef struct VAAPIEncodePicture {
-    struct VAAPIEncodePicture *next;
-
-    int64_t         display_order;
-    int64_t         encode_order;
-    int64_t         pts;
-    int64_t         duration;
-    int             force_idr;
-
-    void           *opaque;
-    AVBufferRef    *opaque_ref;
+    FFHWBaseEncodePicture base;
 
 #if VA_CHECK_VERSION(1, 0, 0)
     // ROI regions.
@@ -82,15 +72,7 @@ typedef struct VAAPIEncodePicture {
     void           *roi;
 #endif
 
-    int             type;
-    int             b_depth;
-    int             encode_issued;
-    int             encode_complete;
-
-    AVFrame        *input_image;
     VASurfaceID     input_surface;
-
-    AVFrame        *recon_image;
     VASurfaceID     recon_surface;
 
     int          nb_param_buffers;
@@ -100,30 +82,7 @@ typedef struct VAAPIEncodePicture {
     VABufferID     *output_buffer_ref;
     VABufferID      output_buffer;
 
-    void           *priv_data;
     void           *codec_picture_params;
-
-    // Whether this picture is a reference picture.
-    int             is_reference;
-
-    // The contents of the DPB after this picture has been decoded.
-    // This will contain the picture itself if it is a reference picture,
-    // but not if it isn't.
-    int                     nb_dpb_pics;
-    struct VAAPIEncodePicture *dpb[MAX_DPB_SIZE];
-    // The reference pictures used in decoding this picture. If they are
-    // used by later pictures they will also appear in the DPB. ref[0][] for
-    // previous reference frames. ref[1][] for future reference frames.
-    int                     nb_refs[MAX_REFERENCE_LIST_NUM];
-    struct VAAPIEncodePicture *refs[MAX_REFERENCE_LIST_NUM][MAX_PICTURE_REFERENCES];
-    // The previous reference picture in encode order.  Must be in at least
-    // one of the reference list and DPB list.
-    struct VAAPIEncodePicture *prev;
-    // Reference count for other pictures referring to this one through
-    // the above pointers, directly from incomplete pictures and indirectly
-    // through completed pictures.
-    int             ref_count[2];
-    int             ref_removed[2];
 
     int          nb_slices;
     VAAPIEncodeSlice *slices;
@@ -298,30 +257,6 @@ typedef struct VAAPIEncodeContext {
     // structure (VAEncPictureParameterBuffer*).
     void           *codec_picture_params;
 
-    // Current encoding window, in display (input) order.
-    VAAPIEncodePicture *pic_start, *pic_end;
-    // The next picture to use as the previous reference picture in
-    // encoding order. Order from small to large in encoding order.
-    VAAPIEncodePicture *next_prev[MAX_PICTURE_REFERENCES];
-    int                 nb_next_prev;
-
-    // Next input order index (display order).
-    int64_t         input_order;
-    // Number of frames that output is behind input.
-    int64_t         output_delay;
-    // Next encode order index.
-    int64_t         encode_order;
-    // Number of frames decode output will need to be delayed.
-    int64_t         decode_delay;
-    // Next output order index (in encode order).
-    int64_t         output_order;
-
-    // Timestamp handling.
-    int64_t         first_pts;
-    int64_t         dts_pts_diff;
-    int64_t         ts_ring[MAX_REORDER_DELAY * 3 +
-                            MAX_ASYNC_DEPTH];
-
     // Slice structure.
     int slice_block_rows;
     int slice_block_cols;
@@ -340,40 +275,11 @@ typedef struct VAAPIEncodeContext {
     // Location of the i-th tile row boundary.
     int row_bd[MAX_TILE_ROWS + 1];
 
-    // Frame type decision.
-    int gop_size;
-    int closed_gop;
-    int gop_per_idr;
-    int p_per_i;
-    int max_b_depth;
-    int b_per_p;
-    int force_idr;
-    int idr_counter;
-    int gop_counter;
-    int end_of_stream;
-    int p_to_gpb;
-
-    // Whether the driver supports ROI at all.
-    int             roi_allowed;
     // Maximum number of regions supported by the driver.
     int             roi_max_regions;
     // Quantisation range for offset calculations.  Set by codec-specific
     // code, as it may change based on parameters.
     int             roi_quant_range;
-
-    // The encoder does not support cropping information, so warn about
-    // it the first time we encounter any nonzero crop fields.
-    int             crop_warned;
-    // If the driver does not support ROI then warn the first time we
-    // encounter a frame with ROI side data.
-    int             roi_warned;
-
-    AVFrame         *frame;
-
-    // Whether the driver support vaSyncBuffer
-    int             has_sync_buffer_func;
-    // Store buffered pic
-    AVFifo          *encode_fifo;
 
     /** Head data for current output pkt, used only for AV1. */
     //void  *header_data;
@@ -384,9 +290,6 @@ typedef struct VAAPIEncodeContext {
      * This is a RefStruct reference.
      */
     VABufferID     *coded_buffer_ref;
-
-    /** Tail data of a pic, now only used for av1 repeat frame header. */
-    AVPacket        *tail_pkt;
 } VAAPIEncodeContext;
 
 typedef struct VAAPIEncodeType {
@@ -467,9 +370,6 @@ typedef struct VAAPIEncodeType {
                                  int index, int *type,
                                  char *data, size_t *data_len);
 } VAAPIEncodeType;
-
-
-int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 int ff_vaapi_encode_init(AVCodecContext *avctx);
 int ff_vaapi_encode_close(AVCodecContext *avctx);

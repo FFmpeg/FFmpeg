@@ -220,12 +220,13 @@ static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
-                                                  VAAPIEncodePicture *pic)
+                                                  VAAPIEncodePicture *vaapi_pic)
 {
     VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
+    const FFHWBaseEncodePicture      *pic = &vaapi_pic->base;
     JPEGRawFrameHeader                *fh = &priv->frame_header;
     JPEGRawScanHeader                 *sh = &priv->scan.header;
-    VAEncPictureParameterBufferJPEG *vpic = pic->codec_picture_params;
+    VAEncPictureParameterBufferJPEG *vpic = vaapi_pic->codec_picture_params;
     const AVPixFmtDescriptor *desc;
     const uint8_t components_rgb[3] = { 'R', 'G', 'B' };
     const uint8_t components_yuv[3] = {  1,   2,   3  };
@@ -377,8 +378,8 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
 
 
     *vpic = (VAEncPictureParameterBufferJPEG) {
-        .reconstructed_picture = pic->recon_surface,
-        .coded_buf             = pic->output_buffer,
+        .reconstructed_picture = vaapi_pic->recon_surface,
+        .coded_buf             = vaapi_pic->output_buffer,
 
         .picture_width  = fh->X,
         .picture_height = fh->Y,
@@ -406,7 +407,7 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
         vpic->quantiser_table_selector[i] = fh->Tq[i];
     }
 
-    pic->nb_slices = 1;
+    vaapi_pic->nb_slices = 1;
 
     return 0;
 }
@@ -572,7 +573,7 @@ const FFCodec ff_mjpeg_vaapi_encoder = {
     .p.id           = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(VAAPIEncodeMJPEGContext),
     .init           = &vaapi_encode_mjpeg_init,
-    FF_CODEC_RECEIVE_PACKET_CB(&ff_vaapi_encode_receive_packet),
+    FF_CODEC_RECEIVE_PACKET_CB(&ff_hw_base_encode_receive_packet),
     .close          = &vaapi_encode_mjpeg_close,
     .p.priv_class   = &vaapi_encode_mjpeg_class,
     .p.capabilities = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DR1 |

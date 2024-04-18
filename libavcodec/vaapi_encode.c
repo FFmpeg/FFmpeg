@@ -138,22 +138,26 @@ static int vaapi_encode_make_misc_param_buffer(AVCodecContext *avctx,
 static int vaapi_encode_wait(AVCodecContext *avctx,
                              VAAPIEncodePicture *pic)
 {
+#if VA_CHECK_VERSION(1, 9, 0)
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+#endif
     VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodePicture *base_pic = &pic->base;
     VAStatus vas;
 
-    av_assert0(pic->encode_issued);
+    av_assert0(base_pic->encode_issued);
 
-    if (pic->encode_complete) {
+    if (base_pic->encode_complete) {
         // Already waited for this picture.
         return 0;
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Sync to pic %"PRId64"/%"PRId64" "
-           "(input surface %#x).\n", pic->display_order,
-           pic->encode_order, pic->input_surface);
+           "(input surface %#x).\n", base_pic->display_order,
+           base_pic->encode_order, pic->input_surface);
 
 #if VA_CHECK_VERSION(1, 9, 0)
-    if (ctx->has_sync_buffer_func) {
+    if (base_ctx->async_encode) {
         vas = vaSyncBuffer(ctx->hwctx->display,
                            pic->output_buffer,
                            VA_TIMEOUT_INFINITE);
@@ -174,9 +178,9 @@ static int vaapi_encode_wait(AVCodecContext *avctx,
     }
 
     // Input is definitely finished with now.
-    av_frame_free(&pic->input_image);
+    av_frame_free(&base_pic->input_image);
 
-    pic->encode_complete = 1;
+    base_pic->encode_complete = 1;
     return 0;
 }
 
@@ -263,9 +267,11 @@ static int vaapi_encode_make_tile_slice(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_issue(AVCodecContext *avctx,
-                              VAAPIEncodePicture *pic)
+                              const FFHWBaseEncodePicture *base_pic)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
+    VAAPIEncodePicture *pic = (VAAPIEncodePicture*)base_pic;
     VAAPIEncodeSlice *slice;
     VAStatus vas;
     int err, i;
@@ -274,52 +280,46 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     av_unused AVFrameSideData *sd;
 
     av_log(avctx, AV_LOG_DEBUG, "Issuing encode for pic %"PRId64"/%"PRId64" "
-           "as type %s.\n", pic->display_order, pic->encode_order,
-           ff_hw_base_encode_get_pictype_name(pic->type));
-    if (pic->nb_refs[0] == 0 && pic->nb_refs[1] == 0) {
+           "as type %s.\n", base_pic->display_order, base_pic->encode_order,
+           ff_hw_base_encode_get_pictype_name(base_pic->type));
+    if (base_pic->nb_refs[0] == 0 && base_pic->nb_refs[1] == 0) {
         av_log(avctx, AV_LOG_DEBUG, "No reference pictures.\n");
     } else {
         av_log(avctx, AV_LOG_DEBUG, "L0 refers to");
-        for (i = 0; i < pic->nb_refs[0]; i++) {
+        for (i = 0; i < base_pic->nb_refs[0]; i++) {
             av_log(avctx, AV_LOG_DEBUG, " %"PRId64"/%"PRId64,
-                   pic->refs[0][i]->display_order, pic->refs[0][i]->encode_order);
+                   base_pic->refs[0][i]->display_order, base_pic->refs[0][i]->encode_order);
         }
         av_log(avctx, AV_LOG_DEBUG, ".\n");
 
-        if (pic->nb_refs[1]) {
+        if (base_pic->nb_refs[1]) {
             av_log(avctx, AV_LOG_DEBUG, "L1 refers to");
-            for (i = 0; i < pic->nb_refs[1]; i++) {
+            for (i = 0; i < base_pic->nb_refs[1]; i++) {
                 av_log(avctx, AV_LOG_DEBUG, " %"PRId64"/%"PRId64,
-                       pic->refs[1][i]->display_order, pic->refs[1][i]->encode_order);
+                       base_pic->refs[1][i]->display_order, base_pic->refs[1][i]->encode_order);
             }
             av_log(avctx, AV_LOG_DEBUG, ".\n");
         }
     }
 
-    av_assert0(!pic->encode_issued);
-    for (i = 0; i < pic->nb_refs[0]; i++) {
-        av_assert0(pic->refs[0][i]);
-        av_assert0(pic->refs[0][i]->encode_issued);
+    av_assert0(!base_pic->encode_issued);
+    for (i = 0; i < base_pic->nb_refs[0]; i++) {
+        av_assert0(base_pic->refs[0][i]);
+        av_assert0(base_pic->refs[0][i]->encode_issued);
     }
-    for (i = 0; i < pic->nb_refs[1]; i++) {
-        av_assert0(pic->refs[1][i]);
-        av_assert0(pic->refs[1][i]->encode_issued);
+    for (i = 0; i < base_pic->nb_refs[1]; i++) {
+        av_assert0(base_pic->refs[1][i]);
+        av_assert0(base_pic->refs[1][i]->encode_issued);
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Input surface is %#x.\n", pic->input_surface);
 
-    pic->recon_image = av_frame_alloc();
-    if (!pic->recon_image) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
-    err = av_hwframe_get_buffer(ctx->recon_frames_ref, pic->recon_image, 0);
+    err = av_hwframe_get_buffer(ctx->recon_frames_ref, base_pic->recon_image, 0);
     if (err < 0) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
-    pic->recon_surface = (VASurfaceID)(uintptr_t)pic->recon_image->data[3];
+    pic->recon_surface = (VASurfaceID)(uintptr_t)base_pic->recon_image->data[3];
     av_log(avctx, AV_LOG_DEBUG, "Recon surface is %#x.\n", pic->recon_surface);
 
     pic->output_buffer_ref = ff_refstruct_pool_get(ctx->output_buffer_pool);
@@ -343,7 +343,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
 
     pic->nb_param_buffers = 0;
 
-    if (pic->type == FF_HW_PICTURE_TYPE_IDR && ctx->codec->init_sequence_params) {
+    if (base_pic->type == FF_HW_PICTURE_TYPE_IDR && ctx->codec->init_sequence_params) {
         err = vaapi_encode_make_param_buffer(avctx, pic,
                                              VAEncSequenceParameterBufferType,
                                              ctx->codec_sequence_params,
@@ -352,7 +352,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
             goto fail;
     }
 
-    if (pic->type == FF_HW_PICTURE_TYPE_IDR) {
+    if (base_pic->type == FF_HW_PICTURE_TYPE_IDR) {
         for (i = 0; i < ctx->nb_global_params; i++) {
             err = vaapi_encode_make_misc_param_buffer(avctx, pic,
                                                       ctx->global_params_type[i],
@@ -389,7 +389,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     }
 #endif
 
-    if (pic->type == FF_HW_PICTURE_TYPE_IDR) {
+    if (base_pic->type == FF_HW_PICTURE_TYPE_IDR) {
         if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_SEQUENCE &&
             ctx->codec->write_sequence_header) {
             bit_len = 8 * sizeof(data);
@@ -529,9 +529,9 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     }
 
 #if VA_CHECK_VERSION(1, 0, 0)
-    sd = av_frame_get_side_data(pic->input_image,
+    sd = av_frame_get_side_data(base_pic->input_image,
                                 AV_FRAME_DATA_REGIONS_OF_INTEREST);
-    if (sd && ctx->roi_allowed) {
+    if (sd && base_ctx->roi_allowed) {
         const AVRegionOfInterest *roi;
         uint32_t roi_size;
         VAEncMiscParameterBufferROI param_roi;
@@ -542,11 +542,11 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         av_assert0(roi_size && sd->size % roi_size == 0);
         nb_roi = sd->size / roi_size;
         if (nb_roi > ctx->roi_max_regions) {
-            if (!ctx->roi_warned) {
+            if (!base_ctx->roi_warned) {
                 av_log(avctx, AV_LOG_WARNING, "More ROIs set than "
                        "supported by driver (%d > %d).\n",
                        nb_roi, ctx->roi_max_regions);
-                ctx->roi_warned = 1;
+                base_ctx->roi_warned = 1;
             }
             nb_roi = ctx->roi_max_regions;
         }
@@ -639,8 +639,6 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    pic->encode_issued = 1;
-
     return 0;
 
 fail_with_picture:
@@ -657,14 +655,13 @@ fail_at_end:
     av_freep(&pic->param_buffers);
     av_freep(&pic->slices);
     av_freep(&pic->roi);
-    av_frame_free(&pic->recon_image);
     ff_refstruct_unref(&pic->output_buffer_ref);
     pic->output_buffer = VA_INVALID_ID;
     return err;
 }
 
 static int vaapi_encode_set_output_property(AVCodecContext *avctx,
-                                            VAAPIEncodePicture *pic,
+                                            FFHWBaseEncodePicture *pic,
                                             AVPacket *pkt)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
@@ -689,16 +686,16 @@ static int vaapi_encode_set_output_property(AVCodecContext *avctx,
         return 0;
     }
 
-    if (ctx->output_delay == 0) {
+    if (base_ctx->output_delay == 0) {
         pkt->dts = pkt->pts;
-    } else if (pic->encode_order < ctx->decode_delay) {
-        if (ctx->ts_ring[pic->encode_order] < INT64_MIN + ctx->dts_pts_diff)
+    } else if (pic->encode_order < base_ctx->decode_delay) {
+        if (base_ctx->ts_ring[pic->encode_order] < INT64_MIN + base_ctx->dts_pts_diff)
             pkt->dts = INT64_MIN;
         else
-            pkt->dts = ctx->ts_ring[pic->encode_order] - ctx->dts_pts_diff;
+            pkt->dts = base_ctx->ts_ring[pic->encode_order] - base_ctx->dts_pts_diff;
     } else {
-        pkt->dts = ctx->ts_ring[(pic->encode_order - ctx->decode_delay) %
-                                (3 * ctx->output_delay + base_ctx->async_depth)];
+        pkt->dts = base_ctx->ts_ring[(pic->encode_order - base_ctx->decode_delay) %
+                                     (3 * base_ctx->output_delay + base_ctx->async_depth)];
     }
 
     return 0;
@@ -817,9 +814,11 @@ end:
 }
 
 static int vaapi_encode_output(AVCodecContext *avctx,
-                               VAAPIEncodePicture *pic, AVPacket *pkt)
+                               const FFHWBaseEncodePicture *base_pic, AVPacket *pkt)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
+    VAAPIEncodePicture         *pic = (VAAPIEncodePicture*)base_pic;
     AVPacket *pkt_ptr = pkt;
     int err;
 
@@ -832,17 +831,17 @@ static int vaapi_encode_output(AVCodecContext *avctx,
         ctx->coded_buffer_ref = ff_refstruct_ref(pic->output_buffer_ref);
 
         if (pic->tail_size) {
-            if (ctx->tail_pkt->size) {
+            if (base_ctx->tail_pkt->size) {
                 err = AVERROR_BUG;
                 goto end;
             }
 
-            err = ff_get_encode_buffer(avctx, ctx->tail_pkt, pic->tail_size, 0);
+            err = ff_get_encode_buffer(avctx, base_ctx->tail_pkt, pic->tail_size, 0);
             if (err < 0)
                 goto end;
 
-            memcpy(ctx->tail_pkt->data, pic->tail_data, pic->tail_size);
-            pkt_ptr = ctx->tail_pkt;
+            memcpy(base_ctx->tail_pkt->data, pic->tail_data, pic->tail_size);
+            pkt_ptr = base_ctx->tail_pkt;
         }
     } else {
         err = vaapi_encode_get_coded_data(avctx, pic, pkt);
@@ -851,9 +850,9 @@ static int vaapi_encode_output(AVCodecContext *avctx,
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Output read for pic %"PRId64"/%"PRId64".\n",
-           pic->display_order, pic->encode_order);
+           base_pic->display_order, base_pic->encode_order);
 
-    vaapi_encode_set_output_property(avctx, pic, pkt_ptr);
+    vaapi_encode_set_output_property(avctx, (FFHWBaseEncodePicture*)pic, pkt_ptr);
 
 end:
     ff_refstruct_unref(&pic->output_buffer_ref);
@@ -864,12 +863,14 @@ end:
 static int vaapi_encode_discard(AVCodecContext *avctx,
                                 VAAPIEncodePicture *pic)
 {
+    FFHWBaseEncodePicture *base_pic = &pic->base;
+
     vaapi_encode_wait(avctx, pic);
 
     if (pic->output_buffer_ref) {
         av_log(avctx, AV_LOG_DEBUG, "Discard output for pic "
                "%"PRId64"/%"PRId64".\n",
-               pic->display_order, pic->encode_order);
+               base_pic->display_order, base_pic->encode_order);
 
         ff_refstruct_unref(&pic->output_buffer_ref);
         pic->output_buffer = VA_INVALID_ID;
@@ -878,8 +879,8 @@ static int vaapi_encode_discard(AVCodecContext *avctx,
     return 0;
 }
 
-static VAAPIEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx,
-                                              const AVFrame *frame)
+static FFHWBaseEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx,
+                                                 const AVFrame *frame)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic;
@@ -889,8 +890,8 @@ static VAAPIEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx,
         return NULL;
 
     if (ctx->codec->picture_priv_data_size > 0) {
-        pic->priv_data = av_mallocz(ctx->codec->picture_priv_data_size);
-        if (!pic->priv_data) {
+        pic->base.priv_data = av_mallocz(ctx->codec->picture_priv_data_size);
+        if (!pic->base.priv_data) {
             av_freep(&pic);
             return NULL;
         }
@@ -900,15 +901,16 @@ static VAAPIEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx,
     pic->recon_surface = VA_INVALID_ID;
     pic->output_buffer = VA_INVALID_ID;
 
-    return pic;
+    return &pic->base;
 }
 
 static int vaapi_encode_free(AVCodecContext *avctx,
-                             VAAPIEncodePicture *pic)
+                             FFHWBaseEncodePicture *base_pic)
 {
+    VAAPIEncodePicture *pic = (VAAPIEncodePicture*)base_pic;
     int i;
 
-    if (pic->encode_issued)
+    if (base_pic->encode_issued)
         vaapi_encode_discard(avctx, pic);
 
     if (pic->slices) {
@@ -916,579 +918,21 @@ static int vaapi_encode_free(AVCodecContext *avctx,
             av_freep(&pic->slices[i].codec_slice_params);
     }
 
-    av_frame_free(&pic->input_image);
-    av_frame_free(&pic->recon_image);
+    av_frame_free(&base_pic->input_image);
+    av_frame_free(&base_pic->recon_image);
 
-    av_buffer_unref(&pic->opaque_ref);
+    av_buffer_unref(&base_pic->opaque_ref);
 
     av_freep(&pic->param_buffers);
     av_freep(&pic->slices);
     // Output buffer should already be destroyed.
     av_assert0(pic->output_buffer == VA_INVALID_ID);
 
-    av_freep(&pic->priv_data);
+    av_freep(&base_pic->priv_data);
     av_freep(&pic->codec_picture_params);
     av_freep(&pic->roi);
 
     av_free(pic);
-
-    return 0;
-}
-
-static void vaapi_encode_add_ref(AVCodecContext *avctx,
-                                 VAAPIEncodePicture *pic,
-                                 VAAPIEncodePicture *target,
-                                 int is_ref, int in_dpb, int prev)
-{
-    int refs = 0;
-
-    if (is_ref) {
-        av_assert0(pic != target);
-        av_assert0(pic->nb_refs[0] < MAX_PICTURE_REFERENCES &&
-                   pic->nb_refs[1] < MAX_PICTURE_REFERENCES);
-        if (target->display_order < pic->display_order)
-            pic->refs[0][pic->nb_refs[0]++] = target;
-        else
-            pic->refs[1][pic->nb_refs[1]++] = target;
-        ++refs;
-    }
-
-    if (in_dpb) {
-        av_assert0(pic->nb_dpb_pics < MAX_DPB_SIZE);
-        pic->dpb[pic->nb_dpb_pics++] = target;
-        ++refs;
-    }
-
-    if (prev) {
-        av_assert0(!pic->prev);
-        pic->prev = target;
-        ++refs;
-    }
-
-    target->ref_count[0] += refs;
-    target->ref_count[1] += refs;
-}
-
-static void vaapi_encode_remove_refs(AVCodecContext *avctx,
-                                     VAAPIEncodePicture *pic,
-                                     int level)
-{
-    int i;
-
-    if (pic->ref_removed[level])
-        return;
-
-    for (i = 0; i < pic->nb_refs[0]; i++) {
-        av_assert0(pic->refs[0][i]);
-        --pic->refs[0][i]->ref_count[level];
-        av_assert0(pic->refs[0][i]->ref_count[level] >= 0);
-    }
-
-    for (i = 0; i < pic->nb_refs[1]; i++) {
-        av_assert0(pic->refs[1][i]);
-        --pic->refs[1][i]->ref_count[level];
-        av_assert0(pic->refs[1][i]->ref_count[level] >= 0);
-    }
-
-    for (i = 0; i < pic->nb_dpb_pics; i++) {
-        av_assert0(pic->dpb[i]);
-        --pic->dpb[i]->ref_count[level];
-        av_assert0(pic->dpb[i]->ref_count[level] >= 0);
-    }
-
-    av_assert0(pic->prev || pic->type == FF_HW_PICTURE_TYPE_IDR);
-    if (pic->prev) {
-        --pic->prev->ref_count[level];
-        av_assert0(pic->prev->ref_count[level] >= 0);
-    }
-
-    pic->ref_removed[level] = 1;
-}
-
-static void vaapi_encode_set_b_pictures(AVCodecContext *avctx,
-                                        VAAPIEncodePicture *start,
-                                        VAAPIEncodePicture *end,
-                                        VAAPIEncodePicture *prev,
-                                        int current_depth,
-                                        VAAPIEncodePicture **last)
-{
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic, *next, *ref;
-    int i, len;
-
-    av_assert0(start && end && start != end && start->next != end);
-
-    // If we are at the maximum depth then encode all pictures as
-    // non-referenced B-pictures.  Also do this if there is exactly one
-    // picture left, since there will be nothing to reference it.
-    if (current_depth == ctx->max_b_depth || start->next->next == end) {
-        for (pic = start->next; pic; pic = pic->next) {
-            if (pic == end)
-                break;
-            pic->type    = FF_HW_PICTURE_TYPE_B;
-            pic->b_depth = current_depth;
-
-            vaapi_encode_add_ref(avctx, pic, start, 1, 1, 0);
-            vaapi_encode_add_ref(avctx, pic, end,   1, 1, 0);
-            vaapi_encode_add_ref(avctx, pic, prev,  0, 0, 1);
-
-            for (ref = end->refs[1][0]; ref; ref = ref->refs[1][0])
-                vaapi_encode_add_ref(avctx, pic, ref, 0, 1, 0);
-        }
-        *last = prev;
-
-    } else {
-        // Split the current list at the midpoint with a referenced
-        // B-picture, then descend into each side separately.
-        len = 0;
-        for (pic = start->next; pic != end; pic = pic->next)
-            ++len;
-        for (pic = start->next, i = 1; 2 * i < len; pic = pic->next, i++);
-
-        pic->type    = FF_HW_PICTURE_TYPE_B;
-        pic->b_depth = current_depth;
-
-        pic->is_reference = 1;
-
-        vaapi_encode_add_ref(avctx, pic, pic,   0, 1, 0);
-        vaapi_encode_add_ref(avctx, pic, start, 1, 1, 0);
-        vaapi_encode_add_ref(avctx, pic, end,   1, 1, 0);
-        vaapi_encode_add_ref(avctx, pic, prev,  0, 0, 1);
-
-        for (ref = end->refs[1][0]; ref; ref = ref->refs[1][0])
-            vaapi_encode_add_ref(avctx, pic, ref, 0, 1, 0);
-
-        if (i > 1)
-            vaapi_encode_set_b_pictures(avctx, start, pic, pic,
-                                        current_depth + 1, &next);
-        else
-            next = pic;
-
-        vaapi_encode_set_b_pictures(avctx, pic, end, next,
-                                    current_depth + 1, last);
-    }
-}
-
-static void vaapi_encode_add_next_prev(AVCodecContext *avctx,
-                                       VAAPIEncodePicture *pic)
-{
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    int i;
-
-    if (!pic)
-        return;
-
-    if (pic->type == FF_HW_PICTURE_TYPE_IDR) {
-        for (i = 0; i < ctx->nb_next_prev; i++) {
-            --ctx->next_prev[i]->ref_count[0];
-            ctx->next_prev[i] = NULL;
-        }
-        ctx->next_prev[0] = pic;
-        ++pic->ref_count[0];
-        ctx->nb_next_prev = 1;
-
-        return;
-    }
-
-    if (ctx->nb_next_prev < MAX_PICTURE_REFERENCES) {
-        ctx->next_prev[ctx->nb_next_prev++] = pic;
-        ++pic->ref_count[0];
-    } else {
-        --ctx->next_prev[0]->ref_count[0];
-        for (i = 0; i < MAX_PICTURE_REFERENCES - 1; i++)
-            ctx->next_prev[i] = ctx->next_prev[i + 1];
-        ctx->next_prev[i] = pic;
-        ++pic->ref_count[0];
-    }
-}
-
-static int vaapi_encode_pick_next(AVCodecContext *avctx,
-                                  VAAPIEncodePicture **pic_out)
-{
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic = NULL, *prev = NULL, *next, *start;
-    int i, b_counter, closed_gop_end;
-
-    // If there are any B-frames already queued, the next one to encode
-    // is the earliest not-yet-issued frame for which all references are
-    // available.
-    for (pic = ctx->pic_start; pic; pic = pic->next) {
-        if (pic->encode_issued)
-            continue;
-        if (pic->type != FF_HW_PICTURE_TYPE_B)
-            continue;
-        for (i = 0; i < pic->nb_refs[0]; i++) {
-            if (!pic->refs[0][i]->encode_issued)
-                break;
-        }
-        if (i != pic->nb_refs[0])
-            continue;
-
-        for (i = 0; i < pic->nb_refs[1]; i++) {
-            if (!pic->refs[1][i]->encode_issued)
-                break;
-        }
-        if (i == pic->nb_refs[1])
-            break;
-    }
-
-    if (pic) {
-        av_log(avctx, AV_LOG_DEBUG, "Pick B-picture at depth %d to "
-               "encode next.\n", pic->b_depth);
-        *pic_out = pic;
-        return 0;
-    }
-
-    // Find the B-per-Pth available picture to become the next picture
-    // on the top layer.
-    start = NULL;
-    b_counter = 0;
-    closed_gop_end = ctx->closed_gop ||
-                     ctx->idr_counter == ctx->gop_per_idr;
-    for (pic = ctx->pic_start; pic; pic = next) {
-        next = pic->next;
-        if (pic->encode_issued) {
-            start = pic;
-            continue;
-        }
-        // If the next available picture is force-IDR, encode it to start
-        // a new GOP immediately.
-        if (pic->force_idr)
-            break;
-        if (b_counter == ctx->b_per_p)
-            break;
-        // If this picture ends a closed GOP or starts a new GOP then it
-        // needs to be in the top layer.
-        if (ctx->gop_counter + b_counter + closed_gop_end >= ctx->gop_size)
-            break;
-        // If the picture after this one is force-IDR, we need to encode
-        // this one in the top layer.
-        if (next && next->force_idr)
-            break;
-        ++b_counter;
-    }
-
-    // At the end of the stream the last picture must be in the top layer.
-    if (!pic && ctx->end_of_stream) {
-        --b_counter;
-        pic = ctx->pic_end;
-        if (pic->encode_complete)
-            return AVERROR_EOF;
-        else if (pic->encode_issued)
-            return AVERROR(EAGAIN);
-    }
-
-    if (!pic) {
-        av_log(avctx, AV_LOG_DEBUG, "Pick nothing to encode next - "
-               "need more input for reference pictures.\n");
-        return AVERROR(EAGAIN);
-    }
-    if (ctx->input_order <= ctx->decode_delay && !ctx->end_of_stream) {
-        av_log(avctx, AV_LOG_DEBUG, "Pick nothing to encode next - "
-               "need more input for timestamps.\n");
-        return AVERROR(EAGAIN);
-    }
-
-    if (pic->force_idr) {
-        av_log(avctx, AV_LOG_DEBUG, "Pick forced IDR-picture to "
-               "encode next.\n");
-        pic->type = FF_HW_PICTURE_TYPE_IDR;
-        ctx->idr_counter = 1;
-        ctx->gop_counter = 1;
-
-    } else if (ctx->gop_counter + b_counter >= ctx->gop_size) {
-        if (ctx->idr_counter == ctx->gop_per_idr) {
-            av_log(avctx, AV_LOG_DEBUG, "Pick new-GOP IDR-picture to "
-                   "encode next.\n");
-            pic->type = FF_HW_PICTURE_TYPE_IDR;
-            ctx->idr_counter = 1;
-        } else {
-            av_log(avctx, AV_LOG_DEBUG, "Pick new-GOP I-picture to "
-                   "encode next.\n");
-            pic->type = FF_HW_PICTURE_TYPE_I;
-            ++ctx->idr_counter;
-        }
-        ctx->gop_counter = 1;
-
-    } else {
-        if (ctx->gop_counter + b_counter + closed_gop_end == ctx->gop_size) {
-            av_log(avctx, AV_LOG_DEBUG, "Pick group-end P-picture to "
-                   "encode next.\n");
-        } else {
-            av_log(avctx, AV_LOG_DEBUG, "Pick normal P-picture to "
-                   "encode next.\n");
-        }
-        pic->type = FF_HW_PICTURE_TYPE_P;
-        av_assert0(start);
-        ctx->gop_counter += 1 + b_counter;
-    }
-    pic->is_reference = 1;
-    *pic_out = pic;
-
-    vaapi_encode_add_ref(avctx, pic, pic, 0, 1, 0);
-    if (pic->type != FF_HW_PICTURE_TYPE_IDR) {
-        // TODO: apply both previous and forward multi reference for all vaapi encoders.
-        // And L0/L1 reference frame number can be set dynamically through query
-        // VAConfigAttribEncMaxRefFrames attribute.
-        if (avctx->codec_id == AV_CODEC_ID_AV1) {
-            for (i = 0; i < ctx->nb_next_prev; i++)
-                vaapi_encode_add_ref(avctx, pic, ctx->next_prev[i],
-                                     pic->type == FF_HW_PICTURE_TYPE_P,
-                                     b_counter > 0, 0);
-        } else
-            vaapi_encode_add_ref(avctx, pic, start,
-                                 pic->type == FF_HW_PICTURE_TYPE_P,
-                                 b_counter > 0, 0);
-
-        vaapi_encode_add_ref(avctx, pic, ctx->next_prev[ctx->nb_next_prev - 1], 0, 0, 1);
-    }
-
-    if (b_counter > 0) {
-        vaapi_encode_set_b_pictures(avctx, start, pic, pic, 1,
-                                    &prev);
-    } else {
-        prev = pic;
-    }
-    vaapi_encode_add_next_prev(avctx, prev);
-
-    return 0;
-}
-
-static int vaapi_encode_clear_old(AVCodecContext *avctx)
-{
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic, *prev, *next;
-
-    av_assert0(ctx->pic_start);
-
-    // Remove direct references once each picture is complete.
-    for (pic = ctx->pic_start; pic; pic = pic->next) {
-        if (pic->encode_complete && pic->next)
-            vaapi_encode_remove_refs(avctx, pic, 0);
-    }
-
-    // Remove indirect references once a picture has no direct references.
-    for (pic = ctx->pic_start; pic; pic = pic->next) {
-        if (pic->encode_complete && pic->ref_count[0] == 0)
-            vaapi_encode_remove_refs(avctx, pic, 1);
-    }
-
-    // Clear out all complete pictures with no remaining references.
-    prev = NULL;
-    for (pic = ctx->pic_start; pic; pic = next) {
-        next = pic->next;
-        if (pic->encode_complete && pic->ref_count[1] == 0) {
-            av_assert0(pic->ref_removed[0] && pic->ref_removed[1]);
-            if (prev)
-                prev->next = next;
-            else
-                ctx->pic_start = next;
-            vaapi_encode_free(avctx, pic);
-        } else {
-            prev = pic;
-        }
-    }
-
-    return 0;
-}
-
-static int vaapi_encode_check_frame(AVCodecContext *avctx,
-                                    const AVFrame *frame)
-{
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-
-    if ((frame->crop_top  || frame->crop_bottom ||
-         frame->crop_left || frame->crop_right) && !ctx->crop_warned) {
-        av_log(avctx, AV_LOG_WARNING, "Cropping information on input "
-               "frames ignored due to lack of API support.\n");
-        ctx->crop_warned = 1;
-    }
-
-    if (!ctx->roi_allowed) {
-        AVFrameSideData *sd =
-            av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
-
-        if (sd && !ctx->roi_warned) {
-            av_log(avctx, AV_LOG_WARNING, "ROI side data on input "
-                   "frames ignored due to lack of driver support.\n");
-            ctx->roi_warned = 1;
-        }
-    }
-
-    return 0;
-}
-
-static int vaapi_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
-{
-    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic;
-    int err;
-
-    if (frame) {
-        av_log(avctx, AV_LOG_DEBUG, "Input frame: %ux%u (%"PRId64").\n",
-               frame->width, frame->height, frame->pts);
-
-        err = vaapi_encode_check_frame(avctx, frame);
-        if (err < 0)
-            return err;
-
-        pic = vaapi_encode_alloc(avctx, frame);
-        if (!pic)
-            return AVERROR(ENOMEM);
-
-        pic->input_image = av_frame_alloc();
-        if (!pic->input_image) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        if (ctx->input_order == 0 || frame->pict_type == AV_PICTURE_TYPE_I)
-            pic->force_idr = 1;
-
-        pic->pts = frame->pts;
-        pic->duration = frame->duration;
-
-        if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-            err = av_buffer_replace(&pic->opaque_ref, frame->opaque_ref);
-            if (err < 0)
-                goto fail;
-
-            pic->opaque = frame->opaque;
-        }
-
-        av_frame_move_ref(pic->input_image, frame);
-
-        if (ctx->input_order == 0)
-            ctx->first_pts = pic->pts;
-        if (ctx->input_order == ctx->decode_delay)
-            ctx->dts_pts_diff = pic->pts - ctx->first_pts;
-        if (ctx->output_delay > 0)
-            ctx->ts_ring[ctx->input_order %
-                        (3 * ctx->output_delay + base_ctx->async_depth)] = pic->pts;
-
-        pic->display_order = ctx->input_order;
-        ++ctx->input_order;
-
-        if (ctx->pic_start) {
-            ctx->pic_end->next = pic;
-            ctx->pic_end       = pic;
-        } else {
-            ctx->pic_start     = pic;
-            ctx->pic_end       = pic;
-        }
-
-    } else {
-        ctx->end_of_stream = 1;
-
-        // Fix timestamps if we hit end-of-stream before the initial decode
-        // delay has elapsed.
-        if (ctx->input_order < ctx->decode_delay)
-            ctx->dts_pts_diff = ctx->pic_end->pts - ctx->first_pts;
-    }
-
-    return 0;
-
-fail:
-    vaapi_encode_free(avctx, pic);
-    return err;
-}
-
-int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
-{
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic = NULL;
-    AVFrame *frame = ctx->frame;
-    int err;
-
-start:
-    /** if no B frame before repeat P frame, sent repeat P frame out. */
-    if (ctx->tail_pkt->size) {
-        for (VAAPIEncodePicture *tmp = ctx->pic_start; tmp; tmp = tmp->next) {
-            if (tmp->type == FF_HW_PICTURE_TYPE_B && tmp->pts < ctx->tail_pkt->pts)
-                break;
-            else if (!tmp->next) {
-                av_packet_move_ref(pkt, ctx->tail_pkt);
-                goto end;
-            }
-        }
-    }
-
-    err = ff_encode_get_frame(avctx, frame);
-    if (err < 0 && err != AVERROR_EOF)
-        return err;
-
-    if (err == AVERROR_EOF)
-        frame = NULL;
-
-    err = vaapi_encode_send_frame(avctx, frame);
-    if (err < 0)
-        return err;
-
-    if (!ctx->pic_start) {
-        if (ctx->end_of_stream)
-            return AVERROR_EOF;
-        else
-            return AVERROR(EAGAIN);
-    }
-
-    if (ctx->has_sync_buffer_func) {
-        if (av_fifo_can_write(ctx->encode_fifo)) {
-            err = vaapi_encode_pick_next(avctx, &pic);
-            if (!err) {
-                av_assert0(pic);
-                pic->encode_order = ctx->encode_order +
-                    av_fifo_can_read(ctx->encode_fifo);
-                err = vaapi_encode_issue(avctx, pic);
-                if (err < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Encode failed: %d.\n", err);
-                    return err;
-                }
-                av_fifo_write(ctx->encode_fifo, &pic, 1);
-            }
-        }
-
-        if (!av_fifo_can_read(ctx->encode_fifo))
-            return err;
-
-        // More frames can be buffered
-        if (av_fifo_can_write(ctx->encode_fifo) && !ctx->end_of_stream)
-            return AVERROR(EAGAIN);
-
-        av_fifo_read(ctx->encode_fifo, &pic, 1);
-        ctx->encode_order = pic->encode_order + 1;
-    } else {
-        err = vaapi_encode_pick_next(avctx, &pic);
-        if (err < 0)
-            return err;
-        av_assert0(pic);
-
-        pic->encode_order = ctx->encode_order++;
-
-        err = vaapi_encode_issue(avctx, pic);
-        if (err < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Encode failed: %d.\n", err);
-            return err;
-        }
-    }
-
-    err = vaapi_encode_output(avctx, pic, pkt);
-    if (err < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Output failed: %d.\n", err);
-        return err;
-    }
-
-    ctx->output_order = pic->encode_order;
-    vaapi_encode_clear_old(avctx);
-
-    /** loop to get an available pkt in encoder flushing. */
-    if (ctx->end_of_stream && !pkt->size)
-        goto start;
-
-end:
-    if (pkt->size)
-        av_log(avctx, AV_LOG_DEBUG, "Output packet: pts %"PRId64", dts %"PRId64", "
-               "size %d bytes.\n", pkt->pts, pkt->dts, pkt->size);
 
     return 0;
 }
@@ -2188,7 +1632,8 @@ static av_cold int vaapi_encode_init_max_frame_size(AVCodecContext *avctx)
 
 static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
     VAStatus vas;
     VAConfigAttrib attr = { VAConfigAttribEncMaxRefFrames };
     uint32_t ref_l0, ref_l1;
@@ -2211,7 +1656,7 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
         ref_l1 = attr.value >> 16 & 0xffff;
     }
 
-    ctx->p_to_gpb = 0;
+    base_ctx->p_to_gpb = 0;
     prediction_pre_only = 0;
 
 #if VA_CHECK_VERSION(1, 9, 0)
@@ -2247,7 +1692,7 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
 
             if (attr.value & VA_PREDICTION_DIRECTION_BI_NOT_EMPTY) {
                 if (ref_l0 > 0 && ref_l1 > 0) {
-                    ctx->p_to_gpb = 1;
+                    base_ctx->p_to_gpb = 1;
                     av_log(avctx, AV_LOG_VERBOSE, "Driver does not support P-frames, "
                            "replacing them with B-frames.\n");
                 }
@@ -2259,7 +1704,7 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
     if (ctx->codec->flags & FF_HW_FLAG_INTRA_ONLY ||
         avctx->gop_size <= 1) {
         av_log(avctx, AV_LOG_VERBOSE, "Using intra frames only.\n");
-        ctx->gop_size = 1;
+        base_ctx->gop_size = 1;
     } else if (ref_l0 < 1) {
         av_log(avctx, AV_LOG_ERROR, "Driver does not support any "
                "reference frames.\n");
@@ -2267,41 +1712,41 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
     } else if (!(ctx->codec->flags & FF_HW_FLAG_B_PICTURES) ||
                ref_l1 < 1 || avctx->max_b_frames < 1 ||
                prediction_pre_only) {
-        if (ctx->p_to_gpb)
+        if (base_ctx->p_to_gpb)
            av_log(avctx, AV_LOG_VERBOSE, "Using intra and B-frames "
                   "(supported references: %d / %d).\n",
                   ref_l0, ref_l1);
         else
             av_log(avctx, AV_LOG_VERBOSE, "Using intra and P-frames "
                    "(supported references: %d / %d).\n", ref_l0, ref_l1);
-        ctx->gop_size = avctx->gop_size;
-        ctx->p_per_i  = INT_MAX;
-        ctx->b_per_p  = 0;
+        base_ctx->gop_size = avctx->gop_size;
+        base_ctx->p_per_i  = INT_MAX;
+        base_ctx->b_per_p  = 0;
     } else {
-       if (ctx->p_to_gpb)
+       if (base_ctx->p_to_gpb)
            av_log(avctx, AV_LOG_VERBOSE, "Using intra and B-frames "
                   "(supported references: %d / %d).\n",
                   ref_l0, ref_l1);
        else
            av_log(avctx, AV_LOG_VERBOSE, "Using intra, P- and B-frames "
                   "(supported references: %d / %d).\n", ref_l0, ref_l1);
-        ctx->gop_size = avctx->gop_size;
-        ctx->p_per_i  = INT_MAX;
-        ctx->b_per_p  = avctx->max_b_frames;
+        base_ctx->gop_size = avctx->gop_size;
+        base_ctx->p_per_i  = INT_MAX;
+        base_ctx->b_per_p  = avctx->max_b_frames;
         if (ctx->codec->flags & FF_HW_FLAG_B_PICTURE_REFERENCES) {
-            ctx->max_b_depth = FFMIN(ctx->desired_b_depth,
-                                     av_log2(ctx->b_per_p) + 1);
+            base_ctx->max_b_depth = FFMIN(ctx->desired_b_depth,
+                                          av_log2(base_ctx->b_per_p) + 1);
         } else {
-            ctx->max_b_depth = 1;
+            base_ctx->max_b_depth = 1;
         }
     }
 
     if (ctx->codec->flags & FF_HW_FLAG_NON_IDR_KEY_PICTURES) {
-        ctx->closed_gop  = !!(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP);
-        ctx->gop_per_idr = ctx->idr_interval + 1;
+        base_ctx->closed_gop  = !!(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP);
+        base_ctx->gop_per_idr = ctx->idr_interval + 1;
     } else {
-        ctx->closed_gop  = 1;
-        ctx->gop_per_idr = 1;
+        base_ctx->closed_gop  = 1;
+        base_ctx->gop_per_idr = 1;
     }
 
     return 0;
@@ -2614,7 +2059,8 @@ static av_cold int vaapi_encode_init_quality(AVCodecContext *avctx)
 static av_cold int vaapi_encode_init_roi(AVCodecContext *avctx)
 {
 #if VA_CHECK_VERSION(1, 0, 0)
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
     VAStatus vas;
     VAConfigAttrib attr = { VAConfigAttribEncROI };
 
@@ -2629,14 +2075,14 @@ static av_cold int vaapi_encode_init_roi(AVCodecContext *avctx)
     }
 
     if (attr.value == VA_ATTRIB_NOT_SUPPORTED) {
-        ctx->roi_allowed = 0;
+        base_ctx->roi_allowed = 0;
     } else {
         VAConfigAttribValEncROI roi = {
             .value = attr.value,
         };
 
         ctx->roi_max_regions = roi.bits.num_roi_regions;
-        ctx->roi_allowed = ctx->roi_max_regions > 0 &&
+        base_ctx->roi_allowed = ctx->roi_max_regions > 0 &&
             (ctx->va_rc_mode == VA_RC_CQP ||
              roi.bits.roi_rc_qp_delta_support);
     }
@@ -2771,6 +2217,16 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
     return err;
 }
 
+static const FFHWEncodePictureOperation vaapi_op = {
+    .alloc  = &vaapi_encode_alloc,
+
+    .issue  = &vaapi_encode_issue,
+
+    .output = &vaapi_encode_output,
+
+    .free   = &vaapi_encode_free,
+};
+
 av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
@@ -2782,10 +2238,12 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->va_config  = VA_INVALID_ID;
     ctx->va_context = VA_INVALID_ID;
 
+    base_ctx->op = &vaapi_op;
+
     /* If you add something that can fail above this av_frame_alloc(),
      * modify ff_vaapi_encode_close() accordingly. */
-    ctx->frame = av_frame_alloc();
-    if (!ctx->frame) {
+    base_ctx->frame = av_frame_alloc();
+    if (!base_ctx->frame) {
         return AVERROR(ENOMEM);
     }
 
@@ -2810,8 +2268,8 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->device = (AVHWDeviceContext*)ctx->device_ref->data;
     ctx->hwctx = ctx->device->hwctx;
 
-    ctx->tail_pkt = av_packet_alloc();
-    if (!ctx->tail_pkt) {
+    base_ctx->tail_pkt = av_packet_alloc();
+    if (!base_ctx->tail_pkt) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
@@ -2910,8 +2368,8 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
             goto fail;
     }
 
-    ctx->output_delay = ctx->b_per_p;
-    ctx->decode_delay = ctx->max_b_depth;
+    base_ctx->output_delay = base_ctx->b_per_p;
+    base_ctx->decode_delay = base_ctx->max_b_depth;
 
     if (ctx->codec->sequence_params_size > 0) {
         ctx->codec_sequence_params =
@@ -2966,11 +2424,11 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     // check vaSyncBuffer function
     vas = vaSyncBuffer(ctx->hwctx->display, VA_INVALID_ID, 0);
     if (vas != VA_STATUS_ERROR_UNIMPLEMENTED) {
-        ctx->has_sync_buffer_func = 1;
-        ctx->encode_fifo = av_fifo_alloc2(base_ctx->async_depth,
-                                          sizeof(VAAPIEncodePicture *),
-                                          0);
-        if (!ctx->encode_fifo)
+        base_ctx->async_encode = 1;
+        base_ctx->encode_fifo = av_fifo_alloc2(base_ctx->async_depth,
+                                               sizeof(VAAPIEncodePicture*),
+                                               0);
+        if (!base_ctx->encode_fifo)
             return AVERROR(ENOMEM);
     }
 #endif
@@ -2983,15 +2441,16 @@ fail:
 
 av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic, *next;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
+    FFHWBaseEncodePicture *pic, *next;
 
     /* We check ctx->frame to know whether ff_vaapi_encode_init()
      * has been called and va_config/va_context initialized. */
-    if (!ctx->frame)
+    if (!base_ctx->frame)
         return 0;
 
-    for (pic = ctx->pic_start; pic; pic = next) {
+    for (pic = base_ctx->pic_start; pic; pic = next) {
         next = pic->next;
         vaapi_encode_free(avctx, pic);
     }
@@ -3008,12 +2467,12 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
         ctx->va_config = VA_INVALID_ID;
     }
 
-    av_frame_free(&ctx->frame);
-    av_packet_free(&ctx->tail_pkt);
+    av_frame_free(&base_ctx->frame);
+    av_packet_free(&base_ctx->tail_pkt);
 
     av_freep(&ctx->codec_sequence_params);
     av_freep(&ctx->codec_picture_params);
-    av_fifo_freep2(&ctx->encode_fifo);
+    av_fifo_freep2(&base_ctx->encode_fifo);
 
     av_buffer_unref(&ctx->recon_frames_ref);
     av_buffer_unref(&ctx->input_frames_ref);
