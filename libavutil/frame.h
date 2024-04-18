@@ -369,8 +369,7 @@ typedef struct AVRegionOfInterest {
  * to the end with a minor bump.
  *
  * Fields can be accessed through AVOptions, the name string used, matches the
- * C structure field name for fields accessible through AVOptions. The AVClass
- * for AVFrame can be obtained from avcodec_get_frame_class()
+ * C structure field name for fields accessible through AVOptions.
  */
 typedef struct AVFrame {
 #define AV_NUM_DATA_POINTERS 8
