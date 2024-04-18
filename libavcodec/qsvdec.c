@@ -441,6 +441,11 @@ static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q,
     param->ExtParam    = q->ext_buffers;
     param->NumExtParam = q->nb_ext_buffers;
 
+    if (param->mfx.FrameInfo.FrameRateExtN == 0 || param->mfx.FrameInfo.FrameRateExtD == 0) {
+        param->mfx.FrameInfo.FrameRateExtN = 25;
+        param->mfx.FrameInfo.FrameRateExtD = 1;
+    }
+
 #if QSV_VERSION_ATLEAST(1, 34)
     if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 34) && avctx->codec_id == AV_CODEC_ID_AV1)
         param->mfx.FilmGrain = (avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) ? 0 : param->mfx.FilmGrain;
