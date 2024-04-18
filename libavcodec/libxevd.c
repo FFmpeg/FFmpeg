@@ -413,6 +413,10 @@ static int libxevd_receive_frame(AVCodecContext *avctx, AVFrame *frame)
                             return  AVERROR(EAGAIN);
                         }
                     } else {
+                        if (stat.stype == XEVD_ST_I) {
+                            frame->pict_type = AV_PICTURE_TYPE_I;
+                            frame->flags |= AV_FRAME_FLAG_KEY;
+                        }
                         return libxevd_return_frame(avctx, frame, imgb, &pkt_au);
                     }
                 }
