@@ -506,6 +506,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_RTV1,         MKTAG('R', 'T', 'V', '1') },
     { AV_CODEC_ID_VMIX,         MKTAG('V', 'M', 'X', '1') },
     { AV_CODEC_ID_LEAD,         MKTAG('L', 'E', 'A', 'D') },
+    { AV_CODEC_ID_EVC,          MKTAG('e', 'v', 'c', '1') },
     { AV_CODEC_ID_NONE,         0 }
 };
 
