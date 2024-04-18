@@ -204,6 +204,9 @@ typedef struct FFHWBaseEncodeContext {
     AVPacket        *tail_pkt;
 } FFHWBaseEncodeContext;
 
+int ff_hw_base_encode_set_output_property(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
+                                          AVPacket *pkt, int flag_no_delay);
+
 int ff_hw_base_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32_t ref_l1,

@@ -660,47 +660,6 @@ fail_at_end:
     return err;
 }
 
-static int vaapi_encode_set_output_property(AVCodecContext *avctx,
-                                            FFHWBaseEncodePicture *pic,
-                                            AVPacket *pkt)
-{
-    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
-    VAAPIEncodeContext         *ctx = avctx->priv_data;
-
-    if (pic->type == FF_HW_PICTURE_TYPE_IDR)
-        pkt->flags |= AV_PKT_FLAG_KEY;
-
-    pkt->pts = pic->pts;
-    pkt->duration = pic->duration;
-
-    // for no-delay encoders this is handled in generic codec
-    if (avctx->codec->capabilities & AV_CODEC_CAP_DELAY &&
-        avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
-        pkt->opaque     = pic->opaque;
-        pkt->opaque_ref = pic->opaque_ref;
-        pic->opaque_ref = NULL;
-    }
-
-    if (ctx->codec->flags & FLAG_TIMESTAMP_NO_DELAY) {
-        pkt->dts = pkt->pts;
-        return 0;
-    }
-
-    if (base_ctx->output_delay == 0) {
-        pkt->dts = pkt->pts;
-    } else if (pic->encode_order < base_ctx->decode_delay) {
-        if (base_ctx->ts_ring[pic->encode_order] < INT64_MIN + base_ctx->dts_pts_diff)
-            pkt->dts = INT64_MIN;
-        else
-            pkt->dts = base_ctx->ts_ring[pic->encode_order] - base_ctx->dts_pts_diff;
-    } else {
-        pkt->dts = base_ctx->ts_ring[(pic->encode_order - base_ctx->decode_delay) %
-                                     (3 * base_ctx->output_delay + base_ctx->async_depth)];
-    }
-
-    return 0;
-}
-
 static int vaapi_encode_get_coded_buffer_size(AVCodecContext *avctx, VABufferID buf_id)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
@@ -852,7 +811,8 @@ static int vaapi_encode_output(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_DEBUG, "Output read for pic %"PRId64"/%"PRId64".\n",
            base_pic->display_order, base_pic->encode_order);
 
-    vaapi_encode_set_output_property(avctx, (FFHWBaseEncodePicture*)pic, pkt_ptr);
+    ff_hw_base_encode_set_output_property(avctx, (FFHWBaseEncodePicture*)base_pic, pkt_ptr,
+                                          ctx->codec->flags & FLAG_TIMESTAMP_NO_DELAY);
 
 end:
     ff_refstruct_unref(&pic->output_buffer_ref);

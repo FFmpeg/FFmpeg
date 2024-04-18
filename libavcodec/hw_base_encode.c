@@ -488,6 +488,46 @@ fail:
     return err;
 }
 
+int ff_hw_base_encode_set_output_property(AVCodecContext *avctx,
+                                          FFHWBaseEncodePicture *pic,
+                                          AVPacket *pkt, int flag_no_delay)
+{
+    FFHWBaseEncodeContext *ctx = avctx->priv_data;
+
+    if (pic->type == FF_HW_PICTURE_TYPE_IDR)
+        pkt->flags |= AV_PKT_FLAG_KEY;
+
+    pkt->pts = pic->pts;
+    pkt->duration = pic->duration;
+
+    // for no-delay encoders this is handled in generic codec
+    if (avctx->codec->capabilities & AV_CODEC_CAP_DELAY &&
+        avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
+        pkt->opaque          = pic->opaque;
+        pkt->opaque_ref      = pic->opaque_ref;
+        pic->opaque_ref = NULL;
+    }
+
+    if (flag_no_delay) {
+        pkt->dts = pkt->pts;
+        return 0;
+    }
+
+    if (ctx->output_delay == 0) {
+        pkt->dts = pkt->pts;
+    } else if (pic->encode_order < ctx->decode_delay) {
+        if (ctx->ts_ring[pic->encode_order] < INT64_MIN + ctx->dts_pts_diff)
+            pkt->dts = INT64_MIN;
+        else
+            pkt->dts = ctx->ts_ring[pic->encode_order] - ctx->dts_pts_diff;
+    } else {
+        pkt->dts = ctx->ts_ring[(pic->encode_order - ctx->decode_delay) %
+                                (3 * ctx->output_delay + ctx->async_depth)];
+    }
+
+    return 0;
+}
+
 int ff_hw_base_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
 {
     FFHWBaseEncodeContext *ctx = avctx->priv_data;
