@@ -128,6 +128,16 @@ typedef struct FFHWBaseEncodeContext {
     // Desired B frame reference depth.
     int             desired_b_depth;
 
+    // The required size of surfaces.  This is probably the input
+    // size (AVCodecContext.width|height) aligned up to whatever
+    // block size is required by the codec.
+    int             surface_width;
+    int             surface_height;
+
+    // The block size for slice calculations.
+    int             slice_block_width;
+    int             slice_block_height;
+
     // The hardware device context.
     AVBufferRef    *device_ref;
     AVHWDeviceContext *device;
@@ -211,6 +221,8 @@ int ff_hw_base_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 
 int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32_t ref_l1,
                                   int flags, int prediction_pre_only);
+
+int ff_hw_base_get_recon_format(AVCodecContext *avctx, const void *hwconfig, enum AVPixelFormat *fmt);
 
 int ff_hw_base_encode_init(AVCodecContext *avctx);
 

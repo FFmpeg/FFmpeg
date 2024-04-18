@@ -353,7 +353,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         const H265LevelDescriptor *level;
 
         level = ff_h265_guess_level(ptl, avctx->bit_rate,
-                                    ctx->surface_width, ctx->surface_height,
+                                    base_ctx->surface_width, base_ctx->surface_height,
                                     ctx->nb_slices, ctx->tile_rows, ctx->tile_cols,
                                     (base_ctx->b_per_p > 0) + 1);
         if (level) {
@@ -411,18 +411,18 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     sps->chroma_format_idc          = chroma_format;
     sps->separate_colour_plane_flag = 0;
 
-    sps->pic_width_in_luma_samples  = ctx->surface_width;
-    sps->pic_height_in_luma_samples = ctx->surface_height;
+    sps->pic_width_in_luma_samples  = base_ctx->surface_width;
+    sps->pic_height_in_luma_samples = base_ctx->surface_height;
 
-    if (avctx->width  != ctx->surface_width ||
-        avctx->height != ctx->surface_height) {
+    if (avctx->width  != base_ctx->surface_width ||
+        avctx->height != base_ctx->surface_height) {
         sps->conformance_window_flag = 1;
         sps->conf_win_left_offset   = 0;
         sps->conf_win_right_offset  =
-            (ctx->surface_width - avctx->width) >> desc->log2_chroma_w;
+            (base_ctx->surface_width - avctx->width) >> desc->log2_chroma_w;
         sps->conf_win_top_offset    = 0;
         sps->conf_win_bottom_offset =
-            (ctx->surface_height - avctx->height) >> desc->log2_chroma_h;
+            (base_ctx->surface_height - avctx->height) >> desc->log2_chroma_h;
     } else {
         sps->conformance_window_flag = 0;
     }
@@ -1198,11 +1198,12 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 
 static av_cold int vaapi_encode_h265_get_encoder_caps(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeH265Context    *priv = avctx->priv_data;
 
 #if VA_CHECK_VERSION(1, 13, 0)
     {
+        VAAPIEncodeContext *ctx = avctx->priv_data;
         VAConfigAttribValEncHEVCBlockSizes block_size;
         VAConfigAttrib attr;
         VAStatus vas;
@@ -1250,10 +1251,10 @@ static av_cold int vaapi_encode_h265_get_encoder_caps(AVCodecContext *avctx)
            "min CB size %dx%d.\n", priv->ctu_size, priv->ctu_size,
            priv->min_cb_size, priv->min_cb_size);
 
-    ctx->surface_width  = FFALIGN(avctx->width,  priv->min_cb_size);
-    ctx->surface_height = FFALIGN(avctx->height, priv->min_cb_size);
+    base_ctx->surface_width  = FFALIGN(avctx->width,  priv->min_cb_size);
+    base_ctx->surface_height = FFALIGN(avctx->height, priv->min_cb_size);
 
-    ctx->slice_block_width = ctx->slice_block_height = priv->ctu_size;
+    base_ctx->slice_block_width = base_ctx->slice_block_height = priv->ctu_size;
 
     return 0;
 }

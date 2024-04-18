@@ -190,11 +190,11 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
 
 static av_cold int vaapi_encode_vp9_get_encoder_caps(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
 
     // Surfaces must be aligned to 64x64 superblock boundaries.
-    ctx->surface_width  = FFALIGN(avctx->width,  64);
-    ctx->surface_height = FFALIGN(avctx->height, 64);
+    base_ctx->surface_width  = FFALIGN(avctx->width,  64);
+    base_ctx->surface_height = FFALIGN(avctx->height, 64);
 
     return 0;
 }

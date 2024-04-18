@@ -171,16 +171,6 @@ typedef struct VAAPIEncodeContext {
     // Desired packed headers.
     unsigned int    desired_packed_headers;
 
-    // The required size of surfaces.  This is probably the input
-    // size (AVCodecContext.width|height) aligned up to whatever
-    // block size is required by the codec.
-    int             surface_width;
-    int             surface_height;
-
-    // The block size for slice calculations.
-    int             slice_block_width;
-    int             slice_block_height;
-
     // Everything above this point must be set before calling
     // ff_vaapi_encode_init().
 

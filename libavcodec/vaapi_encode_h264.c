@@ -1205,8 +1205,9 @@ static const VAAPIEncodeType vaapi_encode_type_h264 = {
 
 static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeContext         *ctx = avctx->priv_data;
+    VAAPIEncodeH264Context    *priv = avctx->priv_data;
 
     ctx->codec = &vaapi_encode_type_h264;
 
@@ -1254,10 +1255,10 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
         VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
         VA_ENC_PACKED_HEADER_MISC;      // SEI.
 
-    ctx->surface_width  = FFALIGN(avctx->width,  16);
-    ctx->surface_height = FFALIGN(avctx->height, 16);
+    base_ctx->surface_width  = FFALIGN(avctx->width,  16);
+    base_ctx->surface_height = FFALIGN(avctx->height, 16);
 
-    ctx->slice_block_height = ctx->slice_block_width = 16;
+    base_ctx->slice_block_height = base_ctx->slice_block_width = 16;
 
     if (priv->qp > 0)
         ctx->explicit_qp = priv->qp;

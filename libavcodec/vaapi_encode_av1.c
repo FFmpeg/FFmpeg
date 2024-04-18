@@ -112,12 +112,12 @@ static void vaapi_encode_av1_trace_write_log(void *ctx,
 
 static av_cold int vaapi_encode_av1_get_encoder_caps(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodeAV1Context *priv = avctx->priv_data;
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
+    VAAPIEncodeAV1Context     *priv = avctx->priv_data;
 
     // Surfaces must be aligned to superblock boundaries.
-    ctx->surface_width  = FFALIGN(avctx->width,  priv->use_128x128_superblock ? 128 : 64);
-    ctx->surface_height = FFALIGN(avctx->height, priv->use_128x128_superblock ? 128 : 64);
+    base_ctx->surface_width  = FFALIGN(avctx->width,  priv->use_128x128_superblock ? 128 : 64);
+    base_ctx->surface_height = FFALIGN(avctx->height, priv->use_128x128_superblock ? 128 : 64);
 
     return 0;
 }
@@ -425,7 +425,7 @@ static int vaapi_encode_av1_init_sequence_params(AVCodecContext *avctx)
             framerate = 0;
 
         level = ff_av1_guess_level(avctx->bit_rate, priv->tier,
-                                   ctx->surface_width, ctx->surface_height,
+                                   base_ctx->surface_width, base_ctx->surface_height,
                                    priv->tile_rows * priv->tile_cols,
                                    priv->tile_cols, framerate);
         if (level) {

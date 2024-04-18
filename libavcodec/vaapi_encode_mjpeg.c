@@ -439,14 +439,13 @@ static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
 static av_cold int vaapi_encode_mjpeg_get_encoder_caps(AVCodecContext *avctx)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
-    VAAPIEncodeContext *ctx = avctx->priv_data;
     const AVPixFmtDescriptor *desc;
 
     desc = av_pix_fmt_desc_get(base_ctx->input_frames->sw_format);
     av_assert0(desc);
 
-    ctx->surface_width  = FFALIGN(avctx->width,  8 << desc->log2_chroma_w);
-    ctx->surface_height = FFALIGN(avctx->height, 8 << desc->log2_chroma_h);
+    base_ctx->surface_width  = FFALIGN(avctx->width,  8 << desc->log2_chroma_w);
+    base_ctx->surface_height = FFALIGN(avctx->height, 8 << desc->log2_chroma_h);
 
     return 0;
 }

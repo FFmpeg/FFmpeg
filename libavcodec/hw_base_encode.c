@@ -687,6 +687,64 @@ int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32
     return 0;
 }
 
+int ff_hw_base_get_recon_format(AVCodecContext *avctx, const void *hwconfig, enum AVPixelFormat *fmt)
+{
+    FFHWBaseEncodeContext *ctx = avctx->priv_data;
+    AVHWFramesConstraints *constraints = NULL;
+    enum AVPixelFormat recon_format;
+    int err, i;
+
+    constraints = av_hwdevice_get_hwframe_constraints(ctx->device_ref,
+                                                      hwconfig);
+    if (!constraints) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    // Probably we can use the input surface format as the surface format
+    // of the reconstructed frames.  If not, we just pick the first (only?)
+    // format in the valid list and hope that it all works.
+    recon_format = AV_PIX_FMT_NONE;
+    if (constraints->valid_sw_formats) {
+        for (i = 0; constraints->valid_sw_formats[i] != AV_PIX_FMT_NONE; i++) {
+            if (ctx->input_frames->sw_format ==
+                constraints->valid_sw_formats[i]) {
+                recon_format = ctx->input_frames->sw_format;
+                break;
+            }
+        }
+        if (recon_format == AV_PIX_FMT_NONE) {
+            // No match.  Just use the first in the supported list and
+            // hope for the best.
+            recon_format = constraints->valid_sw_formats[0];
+        }
+    } else {
+        // No idea what to use; copy input format.
+        recon_format = ctx->input_frames->sw_format;
+    }
+    av_log(avctx, AV_LOG_DEBUG, "Using %s as format of "
+           "reconstructed frames.\n", av_get_pix_fmt_name(recon_format));
+
+    if (ctx->surface_width  < constraints->min_width  ||
+        ctx->surface_height < constraints->min_height ||
+        ctx->surface_width  > constraints->max_width ||
+        ctx->surface_height > constraints->max_height) {
+        av_log(avctx, AV_LOG_ERROR, "Hardware does not support encoding at "
+               "size %dx%d (constraints: width %d-%d height %d-%d).\n",
+               ctx->surface_width, ctx->surface_height,
+               constraints->min_width,  constraints->max_width,
+               constraints->min_height, constraints->max_height);
+        err = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    *fmt = recon_format;
+    err = 0;
+fail:
+    av_hwframe_constraints_free(&constraints);
+    return err;
+}
+
 int ff_hw_base_encode_init(AVCodecContext *avctx)
 {
     FFHWBaseEncodeContext *ctx = avctx->priv_data;
