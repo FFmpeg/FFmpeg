@@ -731,6 +731,8 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
             av_packet_free(&ctx->internal->last_pkt_props);
             av_freep(&ctx->internal);
             av_buffer_unref(&ctx->hw_frames_ctx);
+            av_frame_side_data_free(&ctx->decoded_side_data,
+                                    &ctx->nb_decoded_side_data);
         }
 
         av_frame_free(&p->frame);
