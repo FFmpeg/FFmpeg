@@ -233,7 +233,7 @@ static int evcc_write(AVIOContext *pb, EVCDecoderConfigurationRecord *evcc)
     /* unsigned int(8) profile_idc */
     avio_w8(pb, evcc->profile_idc);
 
-    /* unsigned int(8) profile_idc */
+    /* unsigned int(8) level_idc */
     avio_w8(pb, evcc->level_idc);
 
     /* unsigned int(32) toolset_idc_h */
@@ -254,7 +254,7 @@ static int evcc_write(AVIOContext *pb, EVCDecoderConfigurationRecord *evcc)
     /* unsigned int(16) pic_width_in_luma_samples; */
     avio_wb16(pb, evcc->pic_width_in_luma_samples);
 
-    /* unsigned int(16) pic_width_in_luma_samples; */
+    /* unsigned int(16) pic_height_in_luma_samples; */
     avio_wb16(pb, evcc->pic_height_in_luma_samples);
 
     /*
