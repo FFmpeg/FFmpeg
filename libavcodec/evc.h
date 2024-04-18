@@ -106,14 +106,14 @@ enum EVCSliceType {
 };
 
 enum {
-    // 7.4.3.2: aps_video_parameter_set_id is u(4).
-    EVC_MAX_APS_COUNT = 32,
-
     // 7.4.3.1: sps_seq_parameter_set_id is in [0, 15].
     EVC_MAX_SPS_COUNT = 16,
 
     // 7.4.3.2: pps_pic_parameter_set_id is in [0, 63].
     EVC_MAX_PPS_COUNT = 64,
+
+    // 7.4.3.3: adaptional_parameter_set_id is in [0, 31].
+    EVC_MAX_APS_COUNT = 32,
 
     // 7.4.5: slice header slice_pic_parameter_set_id in [0, 63]
     EVC_MAX_SH_COUNT = 64,
