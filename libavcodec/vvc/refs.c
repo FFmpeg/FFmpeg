@@ -226,7 +226,7 @@ int ff_vvc_output_frame(VVCContext *s, VVCFrameContext *fc, AVFrame *out, const 
 
         /* wait for more frames before output */
         if (!flush && s->seq_output == s->seq_decode && sps &&
-            nb_output <= sps->r->sps_dpb_params.dpb_max_dec_pic_buffering_minus1[sps->r->sps_max_sublayers_minus1] + 1)
+            nb_output <= sps->r->sps_dpb_params.dpb_max_num_reorder_pics[sps->r->sps_max_sublayers_minus1])
             return 0;
 
         if (nb_output) {
