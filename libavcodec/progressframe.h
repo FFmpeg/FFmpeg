@@ -58,6 +58,18 @@
 
 struct AVCodecContext;
 
+/**
+ * The ProgressFrame structure.
+ * Hint: It is guaranteed that the AVFrame pointer is at the start
+ *       of ProgressFrame. This allows to use an unnamed
+ *       union {
+ *            struct {
+ *                AVFrame *f;
+ *            };
+ *            ProgressFrame pf;
+ *       };
+ *       to simplify accessing the embedded AVFrame.
+ */
 typedef struct ProgressFrame {
     struct AVFrame *f;
     struct ProgressInternal *progress;
