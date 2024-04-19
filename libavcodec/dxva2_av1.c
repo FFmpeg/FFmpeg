@@ -138,9 +138,9 @@ int ff_dxva2_av1_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACont
         int8_t ref_idx = frame_header->ref_frame_idx[i];
         AVFrame *ref_frame = h->ref[ref_idx].f;
 
-        pp->frame_refs[i].width  = ref_frame->width;
-        pp->frame_refs[i].height = ref_frame->height;
-        pp->frame_refs[i].Index  = ref_frame->buf[0] ? ref_idx : 0xFF;
+        pp->frame_refs[i].width  = ref_frame ? ref_frame->width  : 0;
+        pp->frame_refs[i].height = ref_frame ? ref_frame->height : 0;
+        pp->frame_refs[i].Index  = ref_frame ? ref_idx : 0xFF;
 
         /* Global Motion */
         pp->frame_refs[i].wminvalid = h->cur_frame.gm_invalid[AV1_REF_FRAME_LAST + i];
@@ -151,7 +151,7 @@ int ff_dxva2_av1_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACont
     }
     for (i = 0; i < AV1_NUM_REF_FRAMES; i++) {
         AVFrame *ref_frame = h->ref[i].f;
-        if (ref_frame->buf[0])
+        if (ref_frame)
             pp->RefFrameMapTextureIndex[i] = ff_dxva2_get_surface_index(avctx, ctx, ref_frame, 0);
     }
 

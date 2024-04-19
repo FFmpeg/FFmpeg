@@ -251,8 +251,8 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
         AVFrame *ref_frame = s->ref[ref_idx].f;
 
         ppc->ref_frame[i].index = ppc->ref_frame_map[ref_idx];
-        ppc->ref_frame[i].width = ref_frame->width;
-        ppc->ref_frame[i].height = ref_frame->height;
+        ppc->ref_frame[i].width  = ref_frame ? ref_frame->width  : 0;
+        ppc->ref_frame[i].height = ref_frame ? ref_frame->height : 0;
 
         /* Global Motion */
         ppc->global_motion[i].invalid = !frame_header->is_global[AV1_REF_FRAME_LAST + i];

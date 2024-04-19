@@ -32,9 +32,15 @@
 #include "cbs.h"
 #include "cbs_av1.h"
 #include "dovi_rpu.h"
+#include "progressframe.h"
 
 typedef struct AV1Frame {
-    AVFrame *f;
+    union {
+        struct {
+            struct AVFrame *f;
+        };
+        ProgressFrame pf;
+    };
 
     void *hwaccel_picture_private; ///< RefStruct reference
 

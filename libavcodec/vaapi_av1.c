@@ -46,7 +46,7 @@ typedef struct VAAPIAV1DecContext {
 
 static VASurfaceID vaapi_av1_surface_id(AV1Frame *vf)
 {
-    if (vf)
+    if (vf->f)
         return ff_vaapi_get_surface_id(vf->f);
     else
         return VA_INVALID_SURFACE;
@@ -132,7 +132,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
             goto fail;
         pic->output_surface = ff_vaapi_get_surface_id(ctx->tmp_frame);
     } else {
-        pic->output_surface = vaapi_av1_surface_id(&s->cur_frame);
+        pic->output_surface = ff_vaapi_get_surface_id(s->cur_frame.f);
     }
 
     memset(&pic_param, 0, sizeof(VADecPictureParameterBufferAV1));
@@ -142,7 +142,7 @@ static int vaapi_av1_start_frame(AVCodecContext *avctx,
         .bit_depth_idx              = bit_depth_idx,
         .matrix_coefficients        = seq->color_config.matrix_coefficients,
         .current_frame              = pic->output_surface,
-        .current_display_picture    = vaapi_av1_surface_id(&s->cur_frame),
+        .current_display_picture    = ff_vaapi_get_surface_id(s->cur_frame.f),
         .frame_width_minus1         = frame_header->frame_width_minus_1,
         .frame_height_minus1        = frame_header->frame_height_minus_1,
         .primary_ref_frame          = frame_header->primary_ref_frame,
