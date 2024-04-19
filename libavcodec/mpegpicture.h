@@ -25,7 +25,6 @@
 #include <stdint.h>
 
 #include "avcodec.h"
-#include "motion_est.h"
 #include "threadprogress.h"
 
 #define MPV_MAX_PLANES 3
@@ -35,6 +34,7 @@ typedef struct ScratchpadContext {
     uint8_t *edge_emu_buffer;     ///< temporary buffer for if MVs point to out-of-frame data
     uint8_t *obmc_scratchpad;
     union {
+        uint8_t *scratchpad_buf;  ///< the other *_scratchpad point into this buffer
         uint8_t *b_scratchpad;    ///< scratchpad used for writing into write only buffers
         uint8_t *rd_scratchpad;   ///< scratchpad for rate distortion mb decision
     };
@@ -121,7 +121,7 @@ struct FFRefStructPool *ff_mpv_alloc_pic_pool(int init_progress);
  * and set the MPVWorkPicture's fields.
  */
 int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVWorkPicture *pic,
-                                 MotionEstContext *me, ScratchpadContext *sc,
+                                 ScratchpadContext *sc,
                                  BufferPoolContext *pools, int mb_height);
 
 /**
@@ -133,8 +133,8 @@ int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVWorkPicture *pic,
 int ff_mpv_pic_check_linesize(void *logctx, const struct AVFrame *f,
                               ptrdiff_t *linesizep, ptrdiff_t *uvlinesizep);
 
-int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
-                            ScratchpadContext *sc, int linesize);
+int ff_mpv_framesize_alloc(AVCodecContext *avctx,
+                           ScratchpadContext *sc, int linesize);
 
 void ff_mpv_unref_picture(MPVWorkPicture *pic);
 void ff_mpv_workpic_from_pic(MPVWorkPicture *wpic, MPVPicture *pic);

@@ -543,14 +543,14 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
                s->rd_total / (double)(avctx->width * avctx->height *
                                       avctx->frame_num));
 
-    s->m.mb_type = NULL;
-    ff_mpv_common_end(&s->m);
-
     av_freep(&s->m.me.scratchpad);
     av_freep(&s->m.me.map);
     av_freep(&s->mb_type);
     av_freep(&s->dummy);
     av_freep(&s->scratchbuf);
+
+    s->m.mb_type = NULL;
+    ff_mpv_common_end(&s->m);
 
     for (i = 0; i < 3; i++) {
         av_freep(&s->motion_val8[i]);

@@ -155,8 +155,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     }
 
     // linesize-dependent scratch buffer allocation
-    ret = ff_mpeg_framesize_alloc(s->avctx, &s->me,
-                                  &s->sc, s1->linesize);
+    ret = ff_mpv_framesize_alloc(s->avctx, &s->sc, s1->linesize);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
                "scratch buffers.\n");
@@ -264,7 +263,7 @@ static int alloc_picture(MpegEncContext *s, MPVWorkPicture *dst, int reference)
     av_assert1(s->mb_height == s->buffer_pools.alloc_mb_height ||
                FFALIGN(s->mb_height, 2) == s->buffer_pools.alloc_mb_height);
     av_assert1(s->mb_stride == s->buffer_pools.alloc_mb_stride);
-    ret = ff_mpv_alloc_pic_accessories(s->avctx, dst, &s->me, &s->sc,
+    ret = ff_mpv_alloc_pic_accessories(s->avctx, dst, &s->sc,
                                        &s->buffer_pools, s->mb_height);
     if (ret < 0)
         goto fail;

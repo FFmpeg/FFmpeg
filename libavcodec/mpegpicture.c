@@ -25,7 +25,6 @@
 #include "libavutil/imgutils.h"
 
 #include "avcodec.h"
-#include "motion_est.h"
 #include "mpegpicture.h"
 #include "refstruct.h"
 
@@ -136,8 +135,8 @@ void ff_mpv_workpic_from_pic(MPVWorkPicture *wpic, MPVPicture *pic)
     set_workpic_from_pic(wpic, pic);
 }
 
-int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
-                            ScratchpadContext *sc, int linesize)
+int ff_mpv_framesize_alloc(AVCodecContext *avctx,
+                           ScratchpadContext *sc, int linesize)
 {
 #   define EMU_EDGE_HEIGHT (4 * 70)
     int linesizeabs = FFABS(linesize);
@@ -158,7 +157,7 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
         return AVERROR(ENOMEM);
 
     av_freep(&sc->edge_emu_buffer);
-    av_freep(&me->scratchpad);
+    av_freep(&sc->scratchpad_buf);
 
     // edge emu needs blocksize + filter length - 1
     // (= 17x17 for  halfpel / 21x21 for H.264)
@@ -167,16 +166,14 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
     if (!FF_ALLOCZ_TYPED_ARRAY(sc->edge_emu_buffer, alloc_size * EMU_EDGE_HEIGHT) ||
-        !FF_ALLOCZ_TYPED_ARRAY(me->scratchpad,      alloc_size * 4 * 16 * 2)) {
+        !FF_ALLOCZ_TYPED_ARRAY(sc->scratchpad_buf,  alloc_size * 4 * 16 * 2)) {
         sc->linesize = 0;
         av_freep(&sc->edge_emu_buffer);
         return AVERROR(ENOMEM);
     }
     sc->linesize = linesizeabs;
 
-    me->temp            = me->scratchpad;
-    sc->b_scratchpad    = me->scratchpad;
-    sc->obmc_scratchpad = me->scratchpad + 16;
+    sc->obmc_scratchpad = sc->scratchpad_buf + 16;
 
     return 0;
 }
@@ -238,14 +235,13 @@ static int alloc_picture_tables(BufferPoolContext *pools, MPVPicture *pic,
 }
 
 int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVWorkPicture *wpic,
-                                 MotionEstContext *me, ScratchpadContext *sc,
+                                 ScratchpadContext *sc,
                                  BufferPoolContext *pools, int mb_height)
 {
     MPVPicture *pic = wpic->ptr;
     int ret;
 
-    ret = ff_mpeg_framesize_alloc(avctx, me, sc,
-                                  pic->f->linesize[0]);
+    ret = ff_mpv_framesize_alloc(avctx, sc, pic->f->linesize[0]);
     if (ret < 0)
         goto fail;
 

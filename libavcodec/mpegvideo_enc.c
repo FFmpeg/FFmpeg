@@ -1663,12 +1663,13 @@ static int select_input_picture(MpegEncContext *s)
         av_assert1(s->mb_width  == s->buffer_pools.alloc_mb_width);
         av_assert1(s->mb_height == s->buffer_pools.alloc_mb_height);
         av_assert1(s->mb_stride == s->buffer_pools.alloc_mb_stride);
-        ret = ff_mpv_alloc_pic_accessories(s->avctx, &s->cur_pic, &s->me,
+        ret = ff_mpv_alloc_pic_accessories(s->avctx, &s->cur_pic,
                                            &s->sc, &s->buffer_pools, s->mb_height);
         if (ret < 0) {
             ff_mpv_unref_picture(&s->cur_pic);
             return ret;
         }
+        s->me.temp = s->me.scratchpad = s->sc.scratchpad_buf;
         s->picture_number = s->cur_pic.ptr->display_picture_number;
 
     }
@@ -3616,9 +3617,11 @@ static int encode_picture(MpegEncContext *s)
 
     s->mb_intra=0; //for the rate distortion & bit compare functions
     for(i=1; i<context_count; i++){
-        ret = ff_update_duplicate_context(s->thread_context[i], s);
+        MpegEncContext *const slice = s->thread_context[i];
+        ret = ff_update_duplicate_context(slice, s);
         if (ret < 0)
             return ret;
+        slice->me.temp = slice->me.scratchpad = slice->sc.scratchpad_buf;
     }
 
     /* Estimate motion for every MB */
