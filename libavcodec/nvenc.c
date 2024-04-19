@@ -514,7 +514,7 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_10BIT_ENCODE);
-    if (IS_10BIT(ctx->data_pix_fmt) && ret <= 0) {
+    if ((IS_10BIT(ctx->data_pix_fmt) || ctx->highbitdepth) && ret <= 0) {
         av_log(avctx, AV_LOG_WARNING, "10 bit encode not supported\n");
         return AVERROR(ENOSYS);
     }
@@ -1420,8 +1420,8 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
         break;
     }
 
-    // force setting profile as main10 if input is 10 bit
-    if (IS_10BIT(ctx->data_pix_fmt)) {
+    // force setting profile as main10 if input is 10 bit or if it should be encoded as 10 bit
+    if (IS_10BIT(ctx->data_pix_fmt) || ctx->highbitdepth) {
         cc->profileGUID = NV_ENC_HEVC_PROFILE_MAIN10_GUID;
         avctx->profile = AV_PROFILE_HEVC_MAIN_10;
     }
@@ -1435,8 +1435,8 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     hevc->chromaFormatIDC = IS_YUV444(ctx->data_pix_fmt) ? 3 : 1;
 
 #ifdef NVENC_HAVE_NEW_BIT_DEPTH_API
-    hevc->inputBitDepth = hevc->outputBitDepth =
-        IS_10BIT(ctx->data_pix_fmt) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
+    hevc->inputBitDepth = IS_10BIT(ctx->data_pix_fmt) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
+    hevc->outputBitDepth = (IS_10BIT(ctx->data_pix_fmt) || ctx->highbitdepth) ? NV_ENC_BIT_DEPTH_10 : NV_ENC_BIT_DEPTH_8;
 #else
     hevc->pixelBitDepthMinus8 = IS_10BIT(ctx->data_pix_fmt) ? 2 : 0;
 #endif
