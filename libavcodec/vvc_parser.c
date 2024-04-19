@@ -187,7 +187,6 @@ static void set_parser_ctx(AVCodecParserContext *s, AVCodecContext *avctx,
 
     avctx->has_b_frames = (sps->sps_max_sublayers_minus1 + 1) > 2 ? 2 :
                            sps->sps_max_sublayers_minus1;
-    avctx->max_b_frames = sps->sps_max_sublayers_minus1;
 
     if (sps->sps_ptl_dpb_hrd_params_present_flag &&
         sps->sps_timing_hrd_params_present_flag) {
