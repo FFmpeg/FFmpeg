@@ -2898,10 +2898,10 @@ static int hevc_frame_start(HEVCContext *s)
         goto fail;
 
     if (s->ref->needs_fg &&
-        ( s->sei.common.film_grain_characteristics.present &&
-          !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
-                                             s->ref->frame->format))
-          || !av_film_grain_params_select(s->ref->frame)) {
+        (s->sei.common.film_grain_characteristics.present &&
+         !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
+                                              s->ref->frame->format)
+         || !av_film_grain_params_select(s->ref->frame))) {
         av_log_once(s->avctx, AV_LOG_WARNING, AV_LOG_DEBUG, &s->film_grain_warning_shown,
                     "Unsupported film grain parameters. Ignoring film grain.\n");
         s->ref->needs_fg = 0;
