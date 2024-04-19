@@ -170,13 +170,11 @@ static int export_stream_params(const XevdContext *xectx, AVCodecContext *avctx)
     }
 
     // the function returns sps->num_reorder_pics
-    ret = xevd_config(xectx->id, XEVD_CFG_GET_MAX_CODING_DELAY, &avctx->max_b_frames, &size);
+    ret = xevd_config(xectx->id, XEVD_CFG_GET_MAX_CODING_DELAY, &avctx->has_b_frames, &size);
     if (XEVD_FAILED(ret)) {
         av_log(avctx, AV_LOG_ERROR, "Failed to get max_coding_delay\n");
         return AVERROR_EXTERNAL;
     }
-
-    avctx->has_b_frames = (avctx->max_b_frames) ? 1 : 0;
 
     return 0;
 }
