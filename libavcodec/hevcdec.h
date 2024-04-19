@@ -352,9 +352,13 @@ typedef struct DBParams {
 #define HEVC_SEQUENCE_COUNTER_INVALID (HEVC_SEQUENCE_COUNTER_MASK + 1)
 
 typedef struct HEVCFrame {
-    AVFrame *frame;
+    union {
+        struct {
+            AVFrame *frame;
+        };
+        ProgressFrame tf;
+    };
     AVFrame *frame_grain;
-    ProgressFrame tf;
     int needs_fg; /* 1 if grain needs to be applied by the decoder */
     MvField *tab_mvf;              ///< RefStruct reference
     RefPicList *refPicList;

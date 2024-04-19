@@ -3418,7 +3418,6 @@ static int hevc_ref_frame(HEVCFrame *dst, HEVCFrame *src)
     int ret;
 
     ff_progress_frame_ref(&dst->tf, &src->tf);
-    dst->frame = dst->tf.f;
 
     if (src->needs_fg) {
         ret = av_frame_ref(dst->frame_grain, src->frame_grain);

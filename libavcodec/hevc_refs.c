@@ -34,7 +34,6 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
     frame->flags &= ~flags;
     if (!frame->flags) {
         ff_progress_frame_unref(&frame->tf);
-        frame->frame = NULL;
         av_frame_unref(frame->frame_grain);
         frame->needs_fg = 0;
 
@@ -87,7 +86,6 @@ static HEVCFrame *alloc_frame(HEVCContext *s)
                                            AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
             return NULL;
-        frame->frame = frame->tf.f;
 
         frame->rpl = ff_refstruct_allocz(s->pkt.nb_nals * sizeof(*frame->rpl));
         if (!frame->rpl)
