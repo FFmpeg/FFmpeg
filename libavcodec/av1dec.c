@@ -683,16 +683,15 @@ static void av1_frame_unref(AV1Frame *f)
     f->coded_lossless = 0;
 }
 
-static void av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *src)
+static void av1_frame_replace(AV1Frame *dst, const AV1Frame *src)
 {
+    av_assert1(dst != src);
+
     ff_refstruct_replace(&dst->header_ref, src->header_ref);
 
     dst->raw_frame_header = src->raw_frame_header;
 
-    if (!src->f)
-        return;
-
-    ff_progress_frame_ref(&dst->pf, &src->pf);
+    ff_progress_frame_replace(&dst->pf, &src->pf);
 
     ff_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
@@ -1191,10 +1190,8 @@ static void update_reference_list(AVCodecContext *avctx)
     const AV1RawFrameHeader *header = s->raw_frame_header;
 
     for (int i = 0; i < AV1_NUM_REF_FRAMES; i++) {
-        if (header->refresh_frame_flags & (1 << i)) {
-            av1_frame_unref(&s->ref[i]);
-            av1_frame_ref(avctx, &s->ref[i], &s->cur_frame);
-        }
+        if (header->refresh_frame_flags & (1 << i))
+            av1_frame_replace(&s->ref[i], &s->cur_frame);
     }
 }
 
@@ -1324,10 +1321,8 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
                 s->raw_frame_header = &obu->obu.frame_header;
 
             if (s->raw_frame_header->show_existing_frame) {
-                av1_frame_unref(&s->cur_frame);
-
-                av1_frame_ref(avctx, &s->cur_frame,
-                              &s->ref[s->raw_frame_header->frame_to_show_map_idx]);
+                av1_frame_replace(&s->cur_frame,
+                                  &s->ref[s->raw_frame_header->frame_to_show_map_idx]);
 
                 update_reference_list(avctx);
 
