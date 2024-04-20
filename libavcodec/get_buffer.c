@@ -65,20 +65,15 @@ static void frame_pool_free(FFRefStructOpaque unused, void *obj)
 static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
 {
     FramePool *pool = avctx->internal->pool;
-    int i, ret, ch, planes;
-
-    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        int planar = av_sample_fmt_is_planar(frame->format);
-        ch     = frame->ch_layout.nb_channels;
-        planes = planar ? ch : 1;
-    }
+    int i, ret;
 
     if (pool && pool->format == frame->format) {
         if (avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
             pool->width == frame->width && pool->height == frame->height)
             return 0;
-        if (avctx->codec_type == AVMEDIA_TYPE_AUDIO && pool->planes == planes &&
-            pool->channels == ch && frame->nb_samples == pool->samples)
+        if (avctx->codec_type == AVMEDIA_TYPE_AUDIO &&
+            pool->channels == frame->ch_layout.nb_channels &&
+            frame->nb_samples == pool->samples)
             return 0;
     }
 
@@ -141,7 +136,8 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         break;
         }
     case AVMEDIA_TYPE_AUDIO: {
-        ret = av_samples_get_buffer_size(&pool->linesize[0], ch,
+        ret = av_samples_get_buffer_size(&pool->linesize[0],
+                                         frame->ch_layout.nb_channels,
                                          frame->nb_samples, frame->format, 0);
         if (ret < 0)
             goto fail;
@@ -153,9 +149,9 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         }
 
         pool->format     = frame->format;
-        pool->planes     = planes;
-        pool->channels   = ch;
+        pool->channels   = frame->ch_layout.nb_channels;
         pool->samples = frame->nb_samples;
+        pool->planes     = av_sample_fmt_is_planar(pool->format) ? pool->channels : 1;
         break;
         }
     default: av_assert0(0);
