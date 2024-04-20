@@ -250,6 +250,7 @@ int avcodec_parameters_to_context(AVCodecContext *codec,
     }
 
     av_freep(&codec->extradata);
+    codec->extradata_size = 0;
     if (par->extradata) {
         codec->extradata = av_mallocz(par->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!codec->extradata)
