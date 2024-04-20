@@ -593,13 +593,12 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
                 tmp += mv_table_size;
             }
         }
-    }
-
-    if (s->out_format == FMT_H263) {
-        /* cbp, ac_pred, pred_dir */
-        if (!(s->cbp_table        = av_mallocz(mb_array_size)) ||
-            !(s->pred_dir_table   = av_mallocz(mb_array_size)))
-            return AVERROR(ENOMEM);
+        if (s->codec_id == AV_CODEC_ID_MPEG4 && !s->encoding) {
+            /* cbp, pred_dir */
+            if (!(s->cbp_table      = av_mallocz(mb_array_size)) ||
+                !(s->pred_dir_table = av_mallocz(mb_array_size)))
+                return AVERROR(ENOMEM);
+        }
     }
 
     if (s->msmpeg4_version >= 3) {
