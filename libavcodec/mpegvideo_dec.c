@@ -167,18 +167,13 @@ do {\
     }
 
     // linesize-dependent scratch buffer allocation
-    if (!s->sc.edge_emu_buffer)
-        if (s1->linesize) {
-            if (ff_mpeg_framesize_alloc(s->avctx, &s->me,
-                                        &s->sc, s1->linesize) < 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
-                       "scratch buffers.\n");
-                return AVERROR(ENOMEM);
-            }
-        } else {
-            av_log(s->avctx, AV_LOG_ERROR, "Context scratch buffers could not "
-                   "be allocated due to unknown size.\n");
-        }
+    ret = ff_mpeg_framesize_alloc(s->avctx, &s->me,
+                                  &s->sc, s1->linesize);
+    if (ret < 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
+               "scratch buffers.\n");
+        return ret;
+    }
 
     // MPEG-2/interlacing info
     memcpy(&s->progressive_sequence, &s1->progressive_sequence,

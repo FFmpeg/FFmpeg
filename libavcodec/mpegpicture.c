@@ -89,18 +89,25 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize)
 {
 #   define EMU_EDGE_HEIGHT (4 * 70)
-    int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
+    int linesizeabs = FFABS(linesize);
+    int alloc_size = FFALIGN(linesizeabs + 64, 32);
+
+    if (linesizeabs <= sc->linesize)
+        return 0;
 
     if (avctx->hwaccel)
         return 0;
 
-    if (linesize < 24) {
+    if (linesizeabs < 24) {
         av_log(avctx, AV_LOG_ERROR, "Image too small, temporary buffers cannot function\n");
         return AVERROR_PATCHWELCOME;
     }
 
     if (av_image_check_size2(alloc_size, EMU_EDGE_HEIGHT, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx) < 0)
         return AVERROR(ENOMEM);
+
+    av_freep(&sc->edge_emu_buffer);
+    av_freep(&me->scratchpad);
 
     // edge emu needs blocksize + filter length - 1
     // (= 17x17 for  halfpel / 21x21 for H.264)
@@ -110,9 +117,11 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
     if (!FF_ALLOCZ_TYPED_ARRAY(sc->edge_emu_buffer, alloc_size * EMU_EDGE_HEIGHT) ||
         !FF_ALLOCZ_TYPED_ARRAY(me->scratchpad,      alloc_size * 4 * 16 * 2)) {
+        sc->linesize = 0;
         av_freep(&sc->edge_emu_buffer);
         return AVERROR(ENOMEM);
     }
+    sc->linesize = linesizeabs;
 
     me->temp            = me->scratchpad;
     sc->rd_scratchpad   = me->scratchpad;
@@ -149,9 +158,9 @@ static int handle_pic_linesizes(AVCodecContext *avctx, Picture *pic,
         return -1;
     }
 
-    if (!sc->edge_emu_buffer &&
-        (ret = ff_mpeg_framesize_alloc(avctx, me, sc,
-                                       pic->f->linesize[0])) < 0) {
+    ret = ff_mpeg_framesize_alloc(avctx, me, sc,
+                                  pic->f->linesize[0]);
+    if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "get_buffer() failed to allocate context scratch buffers.\n");
         ff_mpeg_unref_picture(pic);

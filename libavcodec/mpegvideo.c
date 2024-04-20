@@ -443,6 +443,7 @@ static void free_duplicate_context(MpegEncContext *s)
     s->sc.rd_scratchpad =
     s->sc.b_scratchpad =
     s->sc.obmc_scratchpad = NULL;
+    s->sc.linesize = 0;
 
     av_freep(&s->dct_error_sum);
     av_freep(&s->me.map);
@@ -464,12 +465,9 @@ static void free_duplicate_contexts(MpegEncContext *s)
 static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
 {
 #define COPY(a) bak->a = src->a
-    COPY(sc.edge_emu_buffer);
+    COPY(sc);
     COPY(me.scratchpad);
     COPY(me.temp);
-    COPY(sc.rd_scratchpad);
-    COPY(sc.b_scratchpad);
-    COPY(sc.obmc_scratchpad);
     COPY(me.map);
     COPY(me.score_map);
     COPY(blocks);
@@ -503,9 +501,9 @@ int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src)
         // exchange uv
         FFSWAP(void *, dst->pblocks[4], dst->pblocks[5]);
     }
-    if (!dst->sc.edge_emu_buffer &&
-        (ret = ff_mpeg_framesize_alloc(dst->avctx, &dst->me,
-                                       &dst->sc, dst->linesize)) < 0) {
+    ret = ff_mpeg_framesize_alloc(dst->avctx, &dst->me,
+                                  &dst->sc, dst->linesize);
+    if (ret < 0) {
         av_log(dst->avctx, AV_LOG_ERROR, "failed to allocate context "
                "scratch buffers.\n");
         return ret;
@@ -646,12 +644,9 @@ static void clear_context(MpegEncContext *s)
     s->ac_val[0] =
     s->ac_val[1] =
     s->ac_val[2] =NULL;
-    s->sc.edge_emu_buffer = NULL;
     s->me.scratchpad = NULL;
-    s->me.temp =
-    s->sc.rd_scratchpad =
-    s->sc.b_scratchpad =
-    s->sc.obmc_scratchpad = NULL;
+    s->me.temp = NULL;
+    memset(&s->sc, 0, sizeof(s->sc));
 
 
     s->bitstream_buffer = NULL;
