@@ -596,10 +596,15 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
     }
 
     if (s->out_format == FMT_H263) {
-        /* cbp values, cbp, ac_pred, pred_dir */
-        if (!(s->coded_block_base = av_mallocz(y_size + (s->mb_height&1)*2*s->b8_stride)) ||
-            !(s->cbp_table        = av_mallocz(mb_array_size)) ||
+        /* cbp, ac_pred, pred_dir */
+        if (!(s->cbp_table        = av_mallocz(mb_array_size)) ||
             !(s->pred_dir_table   = av_mallocz(mb_array_size)))
+            return AVERROR(ENOMEM);
+    }
+
+    if (s->msmpeg4_version >= 3) {
+        s->coded_block_base = av_mallocz(y_size + (s->mb_height&1)*2*s->b8_stride);
+        if (!s->coded_block_base)
             return AVERROR(ENOMEM);
         s->coded_block = s->coded_block_base + s->b8_stride + 1;
     }
