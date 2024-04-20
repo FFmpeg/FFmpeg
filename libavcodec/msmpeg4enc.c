@@ -389,7 +389,6 @@ void ff_msmpeg4_encode_mb(MpegEncContext * s,
 {
     int cbp, coded_cbp, i;
     int pred_x, pred_y;
-    uint8_t *coded_block;
 
     ff_msmpeg4_handle_slices(s);
 
@@ -449,20 +448,10 @@ void ff_msmpeg4_encode_mb(MpegEncContext * s,
     } else {
         /* compute cbp */
         cbp = 0;
-        coded_cbp = 0;
-        for (i = 0; i < 6; i++) {
-            int val, pred;
-            val = (s->block_last_index[i] >= 1);
+        for (int i = 0; i < 6; i++) {
+            int val = (s->block_last_index[i] >= 1);
             cbp |= val << (5 - i);
-            if (i < 4) {
-                /* predict value for close blocks only for luma */
-                pred = ff_msmpeg4_coded_block_pred(s, i, &coded_block);
-                *coded_block = val;
-                val = val ^ pred;
-            }
-            coded_cbp |= val << (5 - i);
         }
-
         if(s->msmpeg4_version<=2){
             if (s->pict_type == AV_PICTURE_TYPE_I) {
                 put_bits(&s->pb,
@@ -480,6 +469,18 @@ void ff_msmpeg4_encode_mb(MpegEncContext * s,
                      ff_h263_cbpy_tab[cbp>>2][0]);
         }else{
             if (s->pict_type == AV_PICTURE_TYPE_I) {
+                /* compute coded_cbp; the 0x3 corresponds to chroma cbp;
+                 * luma coded_cbp are set in the loop below */
+                coded_cbp = cbp & 0x3;
+                for (int i = 0; i < 4; i++) {
+                    uint8_t *coded_block;
+                    int pred = ff_msmpeg4_coded_block_pred(s, i, &coded_block);
+                    int val = (s->block_last_index[i] >= 1);
+                    *coded_block = val;
+                    val ^= pred;
+                    coded_cbp |= val << (5 - i);
+                }
+
                 put_bits(&s->pb,
                          ff_msmp4_mb_i_table[coded_cbp][1], ff_msmp4_mb_i_table[coded_cbp][0]);
             } else {
