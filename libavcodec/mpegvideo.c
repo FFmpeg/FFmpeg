@@ -808,7 +808,7 @@ void ff_mpv_common_end(MpegEncContext *s)
 
 
 /**
- * Clean dc, ac, coded_block for the current non-intra MB.
+ * Clean dc, ac for the current non-intra MB.
  */
 void ff_clean_intra_table_entries(MpegEncContext *s)
 {
@@ -822,12 +822,6 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     /* ac pred */
     memset(s->ac_val[0][xy       ], 0, 32 * sizeof(int16_t));
     memset(s->ac_val[0][xy + wrap], 0, 32 * sizeof(int16_t));
-    if (s->msmpeg4_version>=3) {
-        s->coded_block[xy           ] =
-        s->coded_block[xy + 1       ] =
-        s->coded_block[xy     + wrap] =
-        s->coded_block[xy + 1 + wrap] = 0;
-    }
     /* chroma */
     wrap = s->mb_stride;
     xy = s->mb_x + s->mb_y * wrap;
