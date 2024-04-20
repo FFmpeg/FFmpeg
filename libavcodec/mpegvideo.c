@@ -364,13 +364,7 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
 
 static int init_duplicate_context(MpegEncContext *s)
 {
-    int y_size = s->b8_stride * (2 * s->mb_height + 1);
-    int c_size = s->mb_stride * (s->mb_height + 1);
-    int yc_size = y_size + 2 * c_size;
     int i;
-
-    if (s->mb_height & 1)
-        yc_size += 2*s->b8_stride + 2*s->mb_stride;
 
     if (s->encoding) {
         s->me.map = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->me.map));
@@ -397,6 +391,11 @@ static int init_duplicate_context(MpegEncContext *s)
     }
 
     if (s->out_format == FMT_H263) {
+        int mb_height = s->msmpeg4_version == 6 /* VC-1 like */ ?
+                            FFALIGN(s->mb_height, 2) : s->mb_height;
+        int y_size = s->b8_stride * (2 * mb_height + 1);
+        int c_size = s->mb_stride * (mb_height + 1);
+        int yc_size = y_size + 2 * c_size;
         /* ac values */
         if (!FF_ALLOCZ_TYPED_ARRAY(s->ac_val_base,  yc_size))
             return AVERROR(ENOMEM);
@@ -538,17 +537,24 @@ void ff_mpv_common_defaults(MpegEncContext *s)
 int ff_mpv_init_context_frame(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
+    int mb_height;
 
     if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
     else
         s->mb_height = (s->height + 15) / 16;
 
+    /* VC-1 can change from being progressive to interlaced on a per-frame
+     * basis. We therefore allocate certain buffers so big that they work
+     * in both instances. */
+    mb_height = s->msmpeg4_version == 6 /* VC-1 like*/ ?
+                    FFALIGN(s->mb_height, 2) : s->mb_height;
+
     s->mb_width   = (s->width + 15) / 16;
     s->mb_stride  = s->mb_width + 1;
     s->b8_stride  = s->mb_width * 2 + 1;
-    mb_array_size = s->mb_height * s->mb_stride;
-    mv_table_size = (s->mb_height + 2) * s->mb_stride + 1;
+    mb_array_size = mb_height * s->mb_stride;
+    mv_table_size = (mb_height + 2) * s->mb_stride + 1;
 
     /* set default edge pos, will be overridden
      * in decode_header if needed */
@@ -564,12 +570,9 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
     s->block_wrap[4] =
     s->block_wrap[5] = s->mb_stride;
 
-    y_size  = s->b8_stride * (2 * s->mb_height + 1);
-    c_size  = s->mb_stride * (s->mb_height + 1);
+    y_size  = s->b8_stride * (2 * mb_height + 1);
+    c_size  = s->mb_stride * (mb_height + 1);
     yc_size = y_size + 2   * c_size;
-
-    if (s->mb_height & 1)
-        yc_size += 2*s->b8_stride + 2*s->mb_stride;
 
     if (!FF_ALLOCZ_TYPED_ARRAY(s->mb_index2xy, s->mb_num + 1))
         return AVERROR(ENOMEM);
@@ -602,7 +605,7 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
     }
 
     if (s->msmpeg4_version >= 3) {
-        s->coded_block_base = av_mallocz(y_size + (s->mb_height&1)*2*s->b8_stride);
+        s->coded_block_base = av_mallocz(y_size);
         if (!s->coded_block_base)
             return AVERROR(ENOMEM);
         s->coded_block = s->coded_block_base + s->b8_stride + 1;
