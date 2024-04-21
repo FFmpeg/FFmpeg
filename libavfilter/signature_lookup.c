@@ -496,10 +496,10 @@ static MatchingInfo evaluate_parameters(AVFilterContext *ctx, SignatureContext *
             continue; /* matching sequence is too short */
         if ((double) goodfcount / (double) fcount < sc->thit)
             continue;
-        if ((double) goodfcount*0.5 < FFMAX(gooda, goodb))
+        if ((double) goodfcount*0.5 <= FFMAX(gooda, goodb))
             continue;
 
-        meandist = (double) goodfcount / (double) distsum;
+        meandist = (double) distsum / (double) goodfcount;
 
         if (meandist < minmeandist ||
                 status == (STATUS_END_REACHED | STATUS_BEGIN_REACHED) ||
