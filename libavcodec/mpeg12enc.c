@@ -271,11 +271,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void put_header(MpegEncContext *s, int header)
+static void put_header(MpegEncContext *s, uint32_t header)
 {
     align_put_bits(&s->pb);
-    put_bits(&s->pb, 16, header >> 16);
-    put_sbits(&s->pb, 16, header);
+    put_bits32(&s->pb, header);
 }
 
 /* put sequence header if needed */
