@@ -2751,13 +2751,8 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     m->intra_vlc_format = !!(s->flags & 0x20);
     m->alternate_scan = !!(s->flags & 0x10);
 
-    if (s->flags & 0x10) {
-        ff_init_scantable(m->idsp.idct_permutation, &m->inter_scantable, ff_alternate_vertical_scan);
-        ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable, ff_alternate_vertical_scan);
-    } else {
-        ff_init_scantable(m->idsp.idct_permutation, &m->inter_scantable, ff_zigzag_direct);
-        ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable, ff_zigzag_direct);
-    }
+    ff_init_scantable(m->idsp.idct_permutation, &m->intra_scantable,
+                      s->flags & 0x10 ? ff_alternate_vertical_scan : ff_zigzag_direct);
 
     m->last_dc[0] = m->last_dc[1] = m->last_dc[2] = 1 << (7 + (s->flags & 3));
     m->qscale = 1;
@@ -2842,13 +2837,6 @@ static av_cold int ipu_decode_init(AVCodecContext *avctx)
         int v = ff_mpeg1_default_intra_matrix[i];
         m->intra_matrix[j]        = v;
         m->chroma_intra_matrix[j] = v;
-    }
-
-    for (int i = 0; i < 64; i++) {
-        int j = m->idsp.idct_permutation[i];
-        int v = ff_mpeg1_default_non_intra_matrix[i];
-        m->inter_matrix[j]        = v;
-        m->chroma_inter_matrix[j] = v;
     }
 
     return 0;
