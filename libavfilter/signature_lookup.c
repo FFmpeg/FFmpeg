@@ -448,14 +448,14 @@ static MatchingInfo evaluate_parameters(AVFilterContext *ctx, SignatureContext *
                 }
 
                 if (tolerancecount > 2) {
-                    a = aprev;
-                    b = bprev;
                     if (dir == DIR_NEXT) {
                         /* turn around */
                         a = infos->first;
                         b = infos->second;
                         dir = DIR_PREV;
                     } else {
+                        a = aprev;
+                        b = bprev;
                         break;
                     }
                 }
