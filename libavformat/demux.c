@@ -1319,6 +1319,8 @@ fail:
     return ret;
 }
 
+static int extract_extradata(FFFormatContext *si, AVStream *st, const AVPacket *pkt);
+
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     FFFormatContext *const si = ffformatcontext(s);
@@ -1371,6 +1373,16 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (ret < 0) {
                 av_packet_unref(pkt);
                 return ret;
+            }
+
+            if (!sti->avctx->extradata) {
+                sti->extract_extradata.inited = 0;
+
+                ret = extract_extradata(si, st, pkt);
+                if (ret < 0) {
+                    av_packet_unref(pkt);
+                    return ret;
+                }
             }
 
             sti->codec_desc = avcodec_descriptor_get(sti->avctx->codec_id);
@@ -2427,6 +2439,7 @@ static int extract_extradata_init(AVStream *st)
     if (!ret)
         goto finish;
 
+    av_bsf_free(&sti->extract_extradata.bsf);
     ret = av_bsf_alloc(f, &sti->extract_extradata.bsf);
     if (ret < 0)
         return ret;
