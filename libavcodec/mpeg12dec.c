@@ -2828,8 +2828,9 @@ static av_cold int ipu_decode_init(AVCodecContext *avctx)
     MpegEncContext *m = &s->m;
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    m->avctx       = avctx;
 
-    ff_mpv_decode_init(m, avctx);
+    ff_idctdsp_init(&m->idsp, avctx);
     ff_mpeg12_init_vlcs();
 
     for (int i = 0; i < 64; i++) {
