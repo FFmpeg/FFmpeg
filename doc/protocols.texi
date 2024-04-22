@@ -492,6 +492,10 @@ contains the last non-empty metadata packet sent by the server. It should be
 polled in regular intervals by applications interested in mid-stream metadata
 updates.
 
+@item metadata
+Set an exported dictionary containing Icecast metadata from the bitstream, if present.
+Only useful with the C API.
+
 @item auth_type
 
 Set HTTP authentication type. No option for Digest, since this method requires
@@ -519,6 +523,10 @@ Send an Expect: 100-continue header for POST. If set to 1 it will send, if set
 to 0 it won't, if set to -1 it will try to send if it is applicable. Default
 value is -1.
 
+@item location
+An exported dictionary containing the content location. Only useful with the C
+API.
+
 @item offset
 Set initial byte offset.
 
@@ -535,6 +543,9 @@ be given a Bad Request response.
 When unset the HTTP method is not checked for now. This will be replaced by
 autodetection in the future.
 
+@item reconnect
+Reconnect automatically when disconnected before EOF is hit.
+
 @item reconnect_at_eof
 If set then eof is treated like an error and causes reconnection, this is useful
 for live / endless streams.
@@ -550,7 +561,13 @@ include specific status codes (e.g. '503') or the strings '4xx' / '5xx'.
 If set then even streamed/non seekable streams will be reconnected on errors.
 
 @item reconnect_delay_max
-Sets the maximum delay in seconds after which to give up reconnecting
+Set the maximum delay in seconds after which to give up reconnecting.
+
+@item reconnect_max_retries
+Set the maximum number of times to retry a connection. Default unset.
+
+@item reconnect_delay_total_max
+Set the maximum total delay in seconds after which to give up reconnecting.
 
 @item listen
 If set to 1 enables experimental HTTP server. This can be used to send data when
@@ -577,6 +594,17 @@ ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{p
 # Client can also be done with wget:
 wget --post-file=somefile.ogg http://@var{server}:@var{port}
 @end example
+
+@item resource
+The resource requested by a client, when the experimental HTTP server is in use.
+
+@item reply_code
+The HTTP code returned to the client, when the experimental HTTP server is in use.
+
+@item short_seek_size
+Set the threshold, in bytes, for when a readahead should be prefered over a seek and
+new HTTP request. This is useful, for example, to make sure the same connection
+is used for reading large video packets with small audio packets in between.
 
 @end table
 
