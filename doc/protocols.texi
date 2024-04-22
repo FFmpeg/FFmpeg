@@ -569,6 +569,11 @@ Set the maximum number of times to retry a connection. Default unset.
 @item reconnect_delay_total_max
 Set the maximum total delay in seconds after which to give up reconnecting.
 
+@item respect_retry_after
+If enabled, and a Retry-After header is encountered, its requested reconnection
+delay will be honored, rather than using exponential backoff. Useful for 429 and
+503 errors. Default enabled.
+
 @item listen
 If set to 1 enables experimental HTTP server. This can be used to send data when
 used as an output option, or read data from a client with HTTP POST when used as

@@ -31,6 +31,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/getenv_utf8.h"
+#include "libavutil/macros.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/time.h"
@@ -138,6 +139,8 @@ typedef struct HTTPContext {
     char *new_location;
     AVDictionary *redirect_cache;
     uint64_t filesize_from_content_range;
+    int respect_retry_after;
+    unsigned int retry_after;
     int reconnect_max_retries;
     int reconnect_delay_total_max;
 } HTTPContext;
@@ -180,6 +183,7 @@ static const AVOption options[] = {
     { "reconnect_delay_max", "max reconnect delay in seconds after which to give up", OFFSET(reconnect_delay_max), AV_OPT_TYPE_INT, { .i64 = 120 }, 0, UINT_MAX/1000/1000, D },
     { "reconnect_max_retries", "the max number of times to retry a connection", OFFSET(reconnect_max_retries), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, D },
     { "reconnect_delay_total_max", "max total reconnect delay in seconds after which to give up", OFFSET(reconnect_delay_total_max), AV_OPT_TYPE_INT, { .i64 = 256 }, 0, UINT_MAX/1000/1000, D },
+    { "respect_retry_after", "respect the Retry-After header when retrying connections", OFFSET(respect_retry_after), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, D },
     { "listen", "listen on HTTP", OFFSET(listen), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 2, D | E },
     { "resource", "The resource requested by a client", OFFSET(resource), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { "reply_code", "The http status code to return to a client", OFFSET(reply_code), AV_OPT_TYPE_INT, { .i64 = 200}, INT_MIN, 599, E},
@@ -392,6 +396,14 @@ redo:
             (s->reconnect_max_retries >= 0 && conn_attempts > s->reconnect_max_retries) ||
             reconnect_delay_total > s->reconnect_delay_total_max)
             goto fail;
+
+        /* Both fields here are in seconds. */
+        if (s->respect_retry_after && s->retry_after > 0) {
+            reconnect_delay = s->retry_after;
+            if (reconnect_delay > s->reconnect_delay_max)
+                goto fail;
+            s->retry_after = 0;
+        }
 
         av_log(h, AV_LOG_WARNING, "Will reconnect at %"PRIu64" in %d second(s).\n", off, reconnect_delay);
         ret = ff_network_sleep_interruptible(1000U * 1000 * reconnect_delay, &h->interrupt_callback);
@@ -1241,6 +1253,18 @@ static int process_line(URLContext *h, char *line, int line_count, int *parsed_h
             parse_expires(s, p);
         } else if (!av_strcasecmp(tag, "Cache-Control")) {
             parse_cache_control(s, p);
+        } else if (!av_strcasecmp(tag, "Retry-After")) {
+            /* The header can be either an integer that represents seconds, or a date. */
+            struct tm tm;
+            int date_ret = parse_http_date(p, &tm);
+            if (!date_ret) {
+                time_t retry   = av_timegm(&tm);
+                int64_t now    = av_gettime() / 1000000;
+                int64_t diff   = ((int64_t) retry) - now;
+                s->retry_after = (unsigned int) FFMAX(0, diff);
+            } else {
+                s->retry_after = strtoul(p, NULL, 10);
+            }
         }
     }
     return 1;
