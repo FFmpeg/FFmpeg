@@ -286,6 +286,7 @@ static int http_should_reconnect(HTTPContext *s, int err)
     case AVERROR_HTTP_UNAUTHORIZED:
     case AVERROR_HTTP_FORBIDDEN:
     case AVERROR_HTTP_NOT_FOUND:
+    case AVERROR_HTTP_TOO_MANY_REQUESTS:
     case AVERROR_HTTP_OTHER_4XX:
         status_group = "4xx";
         break;
@@ -522,6 +523,7 @@ int ff_http_averror(int status_code, int default_averror)
         case 401: return AVERROR_HTTP_UNAUTHORIZED;
         case 403: return AVERROR_HTTP_FORBIDDEN;
         case 404: return AVERROR_HTTP_NOT_FOUND;
+        case 429: return AVERROR_HTTP_TOO_MANY_REQUESTS;
         default: break;
     }
     if (status_code >= 400 && status_code <= 499)
@@ -557,6 +559,11 @@ static int http_write_reply(URLContext* h, int status_code)
     case 404:
         reply_code = 404;
         reply_text = "Not Found";
+        break;
+    case AVERROR_HTTP_TOO_MANY_REQUESTS:
+    case 429:
+        reply_code = 429;
+        reply_text = "Too Many Requests";
         break;
     case 200:
         reply_code = 200;
