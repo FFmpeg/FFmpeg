@@ -373,8 +373,13 @@ static void order_hint_info(AV1DecContext *s)
         int ref_order_hint = s->ref[ref_slot].order_hint;
 
         frame->order_hints[ref_name] = ref_order_hint;
-        frame->ref_frame_sign_bias[ref_name] =
-            get_relative_dist(seq, ref_order_hint, frame->order_hint);
+        if (!seq->enable_order_hint) {
+            frame->ref_frame_sign_bias[ref_name] = 0;
+        } else {
+            frame->ref_frame_sign_bias[ref_name] =
+                get_relative_dist(seq, ref_order_hint,
+                                  frame->order_hint) > 0;
+        }
     }
 }
 
