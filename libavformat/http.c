@@ -356,7 +356,7 @@ static int http_open_cnx(URLContext *h, AVDictionary **options)
 {
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
-    int ret, attempts = 0, redirects = 0;
+    int ret, auth_attempts = 0, redirects = 0;
     int reconnect_delay = 0;
     uint64_t off;
     char *cached;
@@ -399,10 +399,10 @@ redo:
         goto redo;
     }
 
-    attempts++;
+    auth_attempts++;
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
-            s->auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
+            s->auth_state.auth_type != HTTP_AUTH_NONE && auth_attempts < 4) {
             ffurl_closep(&s->hd);
             goto redo;
         } else
@@ -410,7 +410,7 @@ redo:
     }
     if (s->http_code == 407) {
         if ((cur_proxy_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
-            s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 4) {
+            s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && auth_attempts < 4) {
             ffurl_closep(&s->hd);
             goto redo;
         } else
@@ -439,7 +439,7 @@ redo:
         /* Restart the authentication process with the new target, which
          * might use a different auth mechanism. */
         memset(&s->auth_state, 0, sizeof(s->auth_state));
-        attempts         = 0;
+        auth_attempts         = 0;
         goto redo;
     }
     return 0;
@@ -2071,7 +2071,7 @@ static int http_proxy_open(URLContext *h, const char *uri, int flags)
     char hostname[1024], hoststr[1024];
     char auth[1024], pathbuf[1024], *path;
     char lower_url[100];
-    int port, ret = 0, attempts = 0;
+    int port, ret = 0, auth_attempts = 0;
     HTTPAuthType cur_auth_type;
     char *authstr;
 
@@ -2131,10 +2131,10 @@ redo:
     if (ret < 0)
         goto fail;
 
-    attempts++;
+    auth_attempts++;
     if (s->http_code == 407 &&
         (cur_auth_type == HTTP_AUTH_NONE || s->proxy_auth_state.stale) &&
-        s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && attempts < 2) {
+        s->proxy_auth_state.auth_type != HTTP_AUTH_NONE && auth_attempts < 2) {
         ffurl_closep(&s->hd);
         goto redo;
     }
