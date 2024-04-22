@@ -1087,7 +1087,7 @@ static void parse_cache_control(HTTPContext *s, const char *p)
     }
 }
 
-static int process_line(URLContext *h, char *line, int line_count)
+static int process_line(URLContext *h, char *line, int line_count, int *parsed_http_code)
 {
     HTTPContext *s = h->priv_data;
     const char *auto_method =  h->flags & AVIO_FLAG_READ ? "POST" : "GET";
@@ -1166,6 +1166,8 @@ static int process_line(URLContext *h, char *line, int line_count)
             s->http_code = strtol(p, &end, 10);
 
             av_log(h, AV_LOG_TRACE, "http_code=%d\n", s->http_code);
+
+            *parsed_http_code = 1;
 
             if ((ret = check_http_code(h, s->http_code, end)) < 0)
                 return ret;
@@ -1339,7 +1341,7 @@ static int http_read_header(URLContext *h)
 {
     HTTPContext *s = h->priv_data;
     char line[MAX_URL_SIZE];
-    int err = 0;
+    int err = 0, http_err = 0;
 
     av_freep(&s->new_location);
     s->expires = 0;
@@ -1347,18 +1349,31 @@ static int http_read_header(URLContext *h)
     s->filesize_from_content_range = UINT64_MAX;
 
     for (;;) {
+        int parsed_http_code = 0;
+
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
             return err;
 
         av_log(h, AV_LOG_TRACE, "header='%s'\n", line);
 
-        err = process_line(h, line, s->line_count);
-        if (err < 0)
-            return err;
+        err = process_line(h, line, s->line_count, &parsed_http_code);
+        if (err < 0) {
+            if (parsed_http_code) {
+                http_err = err;
+            } else {
+                /* Prefer to return HTTP code error if we've already seen one. */
+                if (http_err)
+                    return http_err;
+                else
+                    return err;
+            }
+        }
         if (err == 0)
             break;
         s->line_count++;
     }
+    if (http_err)
+        return http_err;
 
     // filesize from Content-Range can always be used, even if using chunked Transfer-Encoding
     if (s->filesize_from_content_range != UINT64_MAX)
