@@ -883,8 +883,7 @@ static void mpeg4_encode_gop_header(MpegEncContext *s)
     int64_t hours, minutes, seconds;
     int64_t time;
 
-    put_bits(&s->pb, 16, 0);
-    put_bits(&s->pb, 16, GOP_STARTCODE);
+    put_bits32(&s->pb, GOP_STARTCODE);
 
     time = s->cur_pic.ptr->f->pts;
     if (s->reordered_input_picture[1])
@@ -933,13 +932,11 @@ static void mpeg4_encode_visual_object_header(MpegEncContext *s)
 
     // FIXME levels
 
-    put_bits(&s->pb, 16, 0);
-    put_bits(&s->pb, 16, VOS_STARTCODE);
+    put_bits32(&s->pb, VOS_STARTCODE);
 
     put_bits(&s->pb, 8, profile_and_level_indication);
 
-    put_bits(&s->pb, 16, 0);
-    put_bits(&s->pb, 16, VISUAL_OBJ_STARTCODE);
+    put_bits32(&s->pb, VISUAL_OBJ_STARTCODE);
 
     put_bits(&s->pb, 1, 1);
     put_bits(&s->pb, 4, vo_ver_id);
@@ -966,10 +963,8 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
         vo_type = SIMPLE_VO_TYPE;
     }
 
-    put_bits(&s->pb, 16, 0);
-    put_bits(&s->pb, 16, 0x100 + vo_number);        /* video obj */
-    put_bits(&s->pb, 16, 0);
-    put_bits(&s->pb, 16, 0x120 + vol_number);       /* video obj layer */
+    put_bits32(&s->pb, 0x100 + vo_number);        /* video obj */
+    put_bits32(&s->pb, 0x120 + vol_number);       /* video obj layer */
 
     put_bits(&s->pb, 1, 0);             /* random access vol */
     put_bits(&s->pb, 8, vo_type);       /* video obj type indication */
@@ -1046,8 +1041,7 @@ static void mpeg4_encode_vol_header(MpegEncContext *s,
 
     /* user data */
     if (!(s->avctx->flags & AV_CODEC_FLAG_BITEXACT)) {
-        put_bits(&s->pb, 16, 0);
-        put_bits(&s->pb, 16, 0x1B2);    /* user_data */
+        put_bits32(&s->pb, USER_DATA_STARTCODE);
         ff_put_string(&s->pb, LIBAVCODEC_IDENT, 0);
     }
 }
@@ -1071,8 +1065,7 @@ int ff_mpeg4_encode_picture_header(MpegEncContext *s)
 
     s->partitioned_frame = s->data_partitioning && s->pict_type != AV_PICTURE_TYPE_B;
 
-    put_bits(&s->pb, 16, 0);                /* vop header */
-    put_bits(&s->pb, 16, VOP_STARTCODE);    /* vop header */
+    put_bits32(&s->pb, VOP_STARTCODE);      /* vop header */
     put_bits(&s->pb, 2, s->pict_type - 1);  /* pict type: I = 0 , P = 1 */
 
     time_div  = FFUDIV(s->time, s->avctx->time_base.den);
