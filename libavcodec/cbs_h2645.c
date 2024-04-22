@@ -709,7 +709,11 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
 
             start = bytestream2_tell(&gbc);
             for(i = 0; i < num_nalus; i++) {
+                if (bytestream2_get_bytes_left(&gbc) < 2)
+                    return AVERROR_INVALIDDATA;
                 size = bytestream2_get_be16(&gbc);
+                if (bytestream2_get_bytes_left(&gbc) < size)
+                    return AVERROR_INVALIDDATA;
                 bytestream2_skip(&gbc, size);
             }
             end = bytestream2_tell(&gbc);
