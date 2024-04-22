@@ -2788,8 +2788,6 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                                                       m->intra_scantable.permutated,
                                                       m->last_dc, s->block[n],
                                                       n, m->qscale);
-                    if (ret >= 0)
-                        m->block_last_index[n] = ret;
                 } else {
                     ret = mpeg2_decode_block_intra(m, s->block[n], n);
                 }
