@@ -862,11 +862,9 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
  */
 void ff_mpeg4_stuffing(PutBitContext *pbc)
 {
-    int length;
-    put_bits(pbc, 1, 0);
-    length = (-put_bits_count(pbc)) & 7;
-    if (length)
-        put_bits(pbc, length, (1 << length) - 1);
+    int length = 8 - (put_bits_count(pbc) & 7);
+
+    put_bits(pbc, length, (1 << (length - 1)) - 1);
 }
 
 /* must be called before writing the header */
