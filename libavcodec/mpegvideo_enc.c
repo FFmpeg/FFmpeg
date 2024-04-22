@@ -84,7 +84,7 @@
 #define QMAT_SHIFT_MMX 16
 #define QMAT_SHIFT 21
 
-static int encode_picture(MpegEncContext *s);
+static int encode_picture(MpegEncContext *s, const AVPacket *pkt);
 static int dct_quantize_refine(MpegEncContext *s, int16_t *block, int16_t *weight, int16_t *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);
 static void denoise_dct_c(MpegEncContext *s, int16_t *block);
@@ -1669,7 +1669,6 @@ static int select_input_picture(MpegEncContext *s)
             ff_mpv_unref_picture(&s->cur_pic);
             return ret;
         }
-        s->me.temp = s->me.scratchpad = s->sc.scratchpad_buf;
         s->picture_number = s->cur_pic.ptr->display_picture_number;
 
     }
@@ -1755,7 +1754,7 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
                           const AVFrame *pic_arg, int *got_packet)
 {
     MpegEncContext *s = avctx->priv_data;
-    int i, stuffing_count, ret;
+    int stuffing_count, ret;
     int context_count = s->slice_context_count;
 
     ff_mpv_unref_picture(&s->cur_pic);
@@ -1791,21 +1790,11 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
             s->prev_mb_info = s->last_mb_info = s->mb_info_size = 0;
         }
 
-        for (i = 0; i < context_count; i++) {
-            int start_y = s->thread_context[i]->start_mb_y;
-            int   end_y = s->thread_context[i]->  end_mb_y;
-            int h       = s->mb_height;
-            uint8_t *start = pkt->data + (size_t)(((int64_t) pkt->size) * start_y / h);
-            uint8_t *end   = pkt->data + (size_t)(((int64_t) pkt->size) *   end_y / h);
-
-            init_put_bits(&s->thread_context[i]->pb, start, end - start);
-        }
-
         s->pict_type = s->new_pic->pict_type;
         //emms_c();
         frame_start(s);
 vbv_retry:
-        ret = encode_picture(s);
+        ret = encode_picture(s, pkt);
         if (growing_buffer) {
             av_assert0(s->pb.buf == avctx->internal->byte_buffer);
             pkt->data = s->pb.buf;
@@ -1848,10 +1837,6 @@ vbv_retry:
                 if (s->pict_type != AV_PICTURE_TYPE_B) {
                     s->time_base       = s->last_time_base;
                     s->last_non_b_time = s->time - s->pp_time;
-                }
-                for (i = 0; i < context_count; i++) {
-                    PutBitContext *pb = &s->thread_context[i]->pb;
-                    init_put_bits(pb, pb->buf, pb->buf_end - pb->buf);
                 }
                 s->vbv_ignore_qmax = 1;
                 av_log(avctx, AV_LOG_VERBOSE, "reencoding frame due to VBV\n");
@@ -3564,7 +3549,7 @@ static void set_frame_distances(MpegEncContext * s){
     }
 }
 
-static int encode_picture(MpegEncContext *s)
+static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
 {
     int i, ret;
     int bits;
@@ -3616,12 +3601,23 @@ static int encode_picture(MpegEncContext *s)
         return -1;
 
     s->mb_intra=0; //for the rate distortion & bit compare functions
-    for(i=1; i<context_count; i++){
+    for (int i = 0; i < context_count; i++) {
         MpegEncContext *const slice = s->thread_context[i];
-        ret = ff_update_duplicate_context(slice, s);
-        if (ret < 0)
-            return ret;
+        uint8_t *start, *end;
+        int h;
+
+        if (i) {
+            ret = ff_update_duplicate_context(slice, s);
+            if (ret < 0)
+                return ret;
+        }
         slice->me.temp = slice->me.scratchpad = slice->sc.scratchpad_buf;
+
+        h     = s->mb_height;
+        start = pkt->data + (size_t)(((int64_t) pkt->size) * slice->start_mb_y / h);
+        end   = pkt->data + (size_t)(((int64_t) pkt->size) * slice->  end_mb_y / h);
+
+        init_put_bits(&s->thread_context[i]->pb, start, end - start);
     }
 
     /* Estimate motion for every MB */
