@@ -794,6 +794,8 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     Mpeg1Context *s    = avctx->priv_data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
 
+    s2->out_format = FMT_MPEG1;
+
     if (   avctx->codec_tag != AV_RL32("VCR2")
         && avctx->codec_tag != AV_RL32("BW10"))
         avctx->coded_width = avctx->coded_height = 0; // do not trust dimensions from input
@@ -1859,7 +1861,6 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->chroma_format        = 1;
     s->codec_id             =
     s->avctx->codec_id      = AV_CODEC_ID_MPEG1VIDEO;
-    s->out_format           = FMT_MPEG1;
     if (s->avctx->flags & AV_CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;
 
@@ -1877,7 +1878,6 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     int i, v, ret;
 
     /* start new MPEG-1 context decoding */
-    s->out_format = FMT_MPEG1;
     if (s->context_initialized)
         ff_mpv_common_end(s);
 
