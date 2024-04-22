@@ -862,7 +862,7 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
         ofp->fps.vsync_method        = opts->vsync_method;
         ofp->fps.framerate           = ost->frame_rate;
         ofp->fps.framerate_max       = ost->max_frame_rate;
-        ofp->fps.framerate_supported = ost->force_fps && opts->enc ?
+        ofp->fps.framerate_supported = ost->force_fps || !opts->enc ?
                                        NULL : opts->enc->supported_framerates;
 
         // reduce frame rate for mpeg4 to be within the spec limits
