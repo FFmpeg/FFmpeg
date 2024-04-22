@@ -288,7 +288,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             hist[i] = 4 * hist[i];
     }
 
-    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+    ret = CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     if (ret < 0)
         return ret;
 
