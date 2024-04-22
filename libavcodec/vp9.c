@@ -1735,9 +1735,9 @@ static int vp9_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         if (ret < 0)
             goto fail;
     }
-    ff_progress_frame_report(&s->s.frames[CUR_FRAME].tf, INT_MAX);
 
 finish:
+    ff_progress_frame_report(&s->s.frames[CUR_FRAME].tf, INT_MAX);
     // ref frame setup
     for (int i = 0; i < 8; i++)
         ff_progress_frame_replace(&s->s.refs[i], &s->next_refs[i]);
