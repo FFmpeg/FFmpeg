@@ -1410,7 +1410,7 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
         if (r == AVERROR(EAGAIN) &&
             !oldest->frame_wanted_out && !oldesti->frame_blocked_in &&
             !oldesti->status_in)
-            ff_request_frame(oldest);
+            (void)ff_request_frame(oldest);
         else if (r < 0)
             return r;
     }
