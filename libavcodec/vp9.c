@@ -1761,9 +1761,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (ret < 0)
             goto fail;
     }
-    ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
 
 finish:
+    ff_thread_report_progress(&s->s.frames[CUR_FRAME].tf, INT_MAX, 0);
     // ref frame setup
     for (i = 0; i < 8; i++) {
         if (s->s.refs[i].f->buf[0])
