@@ -681,6 +681,7 @@ bailout:
         s->eof_sent = 0;
         ff_AMediaCodec_flush(s->codec);
     }
+    av_bsf_flush(s->bsf);
     av_packet_free(&pkt);
     return ret;
 }
