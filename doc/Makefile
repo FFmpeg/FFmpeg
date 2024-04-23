@@ -60,7 +60,7 @@ GENTEXI := $(GENTEXI:%=doc/avoptions_%.texi)
 
 $(GENTEXI): TAG = GENTEXI
 $(GENTEXI): doc/avoptions_%.texi: doc/print_options$(HOSTEXESUF)
-	$(M)doc/print_options $* > $@
+	$(M)doc/print_options$(HOSTEXESUF) $* > $@
 
 doc/%.html: TAG = HTML
 doc/%-all.html: TAG = HTML
