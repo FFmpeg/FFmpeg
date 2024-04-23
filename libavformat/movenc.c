@@ -6672,6 +6672,7 @@ static int mov_write_subtitle_end_packet(AVFormatContext *s,
 #if CONFIG_IAMFENC
 static int mov_build_iamf_packet(AVFormatContext *s, MOVTrack *trk, AVPacket *pkt)
 {
+    uint8_t *data;
     int ret;
 
     if (pkt->stream_index == trk->first_iamf_idx) {
@@ -6685,40 +6686,34 @@ static int mov_build_iamf_packet(AVFormatContext *s, MOVTrack *trk, AVPacket *pk
     if (ret < 0)
         return ret;
 
-    if (pkt->stream_index == trk->last_iamf_idx) {
-        uint8_t *data;
+    if (pkt->stream_index != trk->last_iamf_idx)
+        return AVERROR(EAGAIN);
 
-        ret = avio_close_dyn_buf(trk->iamf_buf, &data);
-        trk->iamf_buf = NULL;
-
-        if (!ret) {
-            if (pkt->size) {
-                // Either all or none of the packets for a single
-                // IA Sample may be empty.
-                av_log(s, AV_LOG_ERROR, "Unexpected packet from "
-                                        "stream #%d\n", pkt->stream_index);
-                ret = AVERROR_INVALIDDATA;
-            }
-            av_free(data);
-            return ret;
+    ret = avio_close_dyn_buf(trk->iamf_buf, &data);
+    trk->iamf_buf = NULL;
+    if (!ret) {
+        if (pkt->size) {
+            // Either all or none of the packets for a single
+            // IA Sample may be empty.
+            av_log(s, AV_LOG_ERROR, "Unexpected packet from "
+                                     "stream #%d\n", pkt->stream_index);
+            ret = AVERROR_INVALIDDATA;
         }
-        av_buffer_unref(&pkt->buf);
-        pkt->buf = av_buffer_create(data, ret, NULL, NULL, 0);
-        if (!pkt->buf) {
-            av_free(data);
-            return AVERROR(ENOMEM);
-        }
-        pkt->data = data;
-        pkt->size = ret;
-        pkt->stream_index = trk->first_iamf_idx;
+        av_free(data);
+        return ret;
+    }
 
-        ret = avio_open_dyn_buf(&trk->iamf_buf);
-        if (ret < 0)
-            return ret;
-    } else
-        ret = AVERROR(EAGAIN);
+    av_buffer_unref(&pkt->buf);
+    pkt->buf = av_buffer_create(data, ret, NULL, NULL, 0);
+    if (!pkt->buf) {
+        av_free(data);
+        return AVERROR(ENOMEM);
+    }
+    pkt->data = data;
+    pkt->size = ret;
+    pkt->stream_index = trk->first_iamf_idx;
 
-    return ret;
+    return avio_open_dyn_buf(&trk->iamf_buf);
 }
 #endif
 
