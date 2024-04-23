@@ -71,8 +71,16 @@ static const AVOption filt_name##_options[] = { \
     {   "S12M_TIMECOD",               "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_S12M_TIMECODE              }, 0, 0, FLAGS, .unit = "type" }, \
     {   "DYNAMIC_HDR_PLUS",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DYNAMIC_HDR_PLUS           }, 0, 0, FLAGS, .unit = "type" }, \
     {   "REGIONS_OF_INTEREST",        "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_REGIONS_OF_INTEREST        }, 0, 0, FLAGS, .unit = "type" }, \
-    {   "DETECTION_BOUNDING_BOXES",   "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DETECTION_BBOXES           }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "VIDEO_ENC_PARAMS",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_VIDEO_ENC_PARAMS           }, 0, 0, FLAGS, .unit = "type" }, \
     {   "SEI_UNREGISTERED",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_SEI_UNREGISTERED           }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "FILM_GRAIN_PARAMS",          "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_FILM_GRAIN_PARAMS          }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "DETECTION_BOUNDING_BOXES",   "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DETECTION_BBOXES           }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "DETECTION_BBOXES",           "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DETECTION_BBOXES           }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "DOVI_RPU_BUFFER",            "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DOVI_RPU_BUFFER            }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "DOVI_METADATA",              "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DOVI_METADATA              }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "DYNAMIC_HDR_VIVID",          "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_DYNAMIC_HDR_VIVID          }, 0, 0, FLAGS, .unit = "type" }, \
+    {   "AMBIENT_VIEWING_ENVIRONMENT","", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_AMBIENT_VIEWING_ENVIRONMENT}, 0, 0, FLAGS, .unit = "type" }, \
+    {   "VIDEO_HINT",                 "", 0,             AV_OPT_TYPE_CONST,  {.i64 = AV_FRAME_DATA_VIDEO_HINT                 }, 0, 0, FLAGS, .unit = "type" }, \
     { NULL } \
 }
 
