@@ -131,7 +131,7 @@ int ff_qsvvpp_init(AVFilterContext *avctx, QSVVPPParam *param);
 int ff_qsvvpp_close(AVFilterContext *avctx);
 
 /* vpp filter frame and call the cb if needed */
-int ff_qsvvpp_filter_frame(QSVVPPContext *vpp, AVFilterLink *inlink, AVFrame *frame);
+int ff_qsvvpp_filter_frame(QSVVPPContext *vpp, AVFilterLink *inlink, AVFrame *frame, AVFrame *propref);
 
 int ff_qsvvpp_print_iopattern(void *log_ctx, int mfx_iopattern,
                               const char *extra_string);

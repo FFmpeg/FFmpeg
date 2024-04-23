@@ -71,13 +71,16 @@ static int process_frame(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
     QSVVPPContext *qsv = fs->opaque;
-    AVFrame *frame = NULL;
+    AVFrame *frame = NULL, *propref = NULL;
     int ret = 0;
 
     for (int i = 0; i < ctx->nb_inputs; i++) {
         ret = ff_framesync_get_frame(fs, i, &frame, 0);
-        if (ret == 0)
-            ret = ff_qsvvpp_filter_frame(qsv, ctx->inputs[i], frame);
+        if (ret == 0) {
+            if (i == 0)
+                propref = frame;
+            ret = ff_qsvvpp_filter_frame(qsv, ctx->inputs[i], frame, propref);
+        }
         if (ret < 0 && ret != AVERROR(EAGAIN))
             break;
     }

@@ -441,11 +441,6 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
                 av_frame_free(&qsv_frame->frame);
                 return NULL;
             }
-
-            if (av_frame_copy_props(qsv_frame->frame, picref) < 0) {
-                av_frame_free(&qsv_frame->frame);
-                return NULL;
-            }
         } else
             qsv_frame->frame = av_frame_clone(picref);
 
@@ -494,12 +489,6 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFr
         if (!out_frame->frame)
             return NULL;
 
-        ret = av_frame_copy_props(out_frame->frame, in);
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to copy metadata fields from src to dst.\n");
-            return NULL;
-        }
-
         ret = av_hwframe_get_buffer(outlink->hw_frames_ctx, out_frame->frame, 0);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Can't allocate a surface.\n");
@@ -515,12 +504,6 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFr
                                                FFALIGN(outlink->h, 64));
         if (!out_frame->frame)
             return NULL;
-
-        ret = av_frame_copy_props(out_frame->frame, in);
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Failed to copy metadata fields from src to dst.\n");
-            return NULL;
-        }
 
         ret = map_frame_to_surface(out_frame->frame,
                                    &out_frame->surface);
@@ -958,7 +941,7 @@ int ff_qsvvpp_close(AVFilterContext *avctx)
     return 0;
 }
 
-int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picref)
+int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picref, AVFrame *propref)
 {
     AVFilterContext  *ctx     = inlink->dst;
     AVFilterLink     *outlink = ctx->outputs[0];
@@ -1015,6 +998,16 @@ int ff_qsvvpp_filter_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *picr
                 return AVERROR(EAGAIN);
             break;
         }
+
+        if (propref) {
+            ret1 = av_frame_copy_props(out_frame->frame, propref);
+            if (ret1 < 0) {
+                av_frame_free(&out_frame->frame);
+                av_log(ctx, AV_LOG_ERROR, "Failed to copy metadata fields from src to dst.\n");
+                return ret1;
+            }
+        }
+
         out_frame->frame->pts = av_rescale_q(out_frame->surface.Data.TimeStamp,
                                              default_tb, outlink->time_base);
 

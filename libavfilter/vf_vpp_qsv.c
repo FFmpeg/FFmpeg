@@ -748,7 +748,7 @@ static int activate(AVFilterContext *ctx)
 
     if (qsv->session) {
         if (in || qsv->eof) {
-            ret = ff_qsvvpp_filter_frame(qsv, inlink, in);
+            ret = ff_qsvvpp_filter_frame(qsv, inlink, in, in);
             av_frame_free(&in);
             if (ret == AVERROR(EAGAIN))
                 goto not_ready;
