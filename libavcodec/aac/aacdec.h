@@ -75,13 +75,13 @@ enum CouplingPoint {
     union {                             \
         int   RENAME_FIXED(name) elems; \
         float name       elems;         \
-    };
+    }
 
 #define INTFLOAT_ALIGNED_UNION(alignment, name, nb_elems)                \
     union {                                                              \
         DECLARE_ALIGNED(alignment, int,   RENAME_FIXED(name))[nb_elems]; \
         DECLARE_ALIGNED(alignment, float, name)[nb_elems];               \
-    };
+    }
 /**
  * Long Term Prediction
  */
