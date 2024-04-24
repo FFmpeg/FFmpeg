@@ -8,6 +8,7 @@ version <next>:
 - LC3/LC3plus demuxer and muxer
 - pad_vaapi, drawbox_vaapi filters
 - vf_scale supports secondary ref input and framesync options
+- vf_scale2ref deprecated
 
 
 version 7.0:

@@ -368,6 +368,9 @@ static av_cold int init(AVFilterContext *ctx)
     int64_t threads;
     int ret;
 
+    if (ctx->filter == &ff_vf_scale2ref)
+        av_log(ctx, AV_LOG_WARNING, "scale2ref is deprecated, use scale=rw:rh instead\n");
+
     if (scale->size_str && (scale->w_expr || scale->h_expr)) {
         av_log(ctx, AV_LOG_ERROR,
                "Size and width/height expressions cannot be set at the same time.\n");
