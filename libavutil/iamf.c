@@ -74,7 +74,7 @@ static const AVOption mix_gain_options[] = {
 };
 
 static const AVClass mix_gain_class = {
-    .class_name     = "AVIAMFSubmixElement",
+    .class_name     = "AVIAMFMixGain",
     .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .option         = mix_gain_options,
