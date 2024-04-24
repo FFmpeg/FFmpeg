@@ -29,6 +29,7 @@
 
 #include "avfilter.h"
 #include "formats.h"
+#include "framesync.h"
 #include "internal.h"
 #include "scale_eval.h"
 #include "video.h"
@@ -113,6 +114,7 @@ typedef struct ScaleContext {
     struct SwsContext *isws[2]; ///< software scaler context for interlaced material
     // context used for forwarding options to sws
     struct SwsContext *sws_opts;
+    FFFrameSync fs;
 
     /**
      * New dimensions. Special values are:
@@ -287,6 +289,8 @@ static av_cold int preinit(AVFilterContext *ctx)
     if (ret < 0)
         return ret;
 
+    ff_framesync_preinit(&scale->fs);
+
     return 0;
 }
 
@@ -301,6 +305,8 @@ static const int sws_colorspaces[] = {
     AVCOL_SPC_BT2020_NCL,
     -1
 };
+
+static int do_scale(FFFrameSync *fs);
 
 static av_cold int init(AVFilterContext *ctx)
 {
@@ -388,6 +394,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_expr_free(scale->w_pexpr);
     av_expr_free(scale->h_pexpr);
     scale->w_pexpr = scale->h_pexpr = NULL;
+    ff_framesync_uninit(&scale->fs);
     sws_freeContext(scale->sws_opts);
     sws_freeContext(scale->sws);
     sws_freeContext(scale->isws[0]);
@@ -677,6 +684,21 @@ static int config_props(AVFilterLink *outlink)
            flags_val);
     av_freep(&flags_val);
 
+    if (ctx->filter != &ff_vf_scale2ref) {
+        ret = ff_framesync_init(&scale->fs, ctx, ctx->nb_inputs);
+        if (ret < 0)
+            return ret;
+        scale->fs.on_event        = do_scale;
+        scale->fs.in[0].time_base = ctx->inputs[0]->time_base;
+        scale->fs.in[0].sync      = 1;
+        scale->fs.in[0].before    = EXT_STOP;
+        scale->fs.in[0].after     = EXT_STOP;
+
+        ret = ff_framesync_configure(&scale->fs);
+        if (ret < 0)
+            return ret;
+    }
+
     return 0;
 
 fail:
@@ -894,6 +916,26 @@ scale:
     return ret;
 }
 
+static int do_scale(FFFrameSync *fs)
+{
+    AVFilterContext *ctx = fs->parent;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *in, *out;
+    int ret;
+
+    ret = ff_framesync_get_frame(fs, 0, &in, 1);
+    if (ret < 0)
+        return ret;
+
+    ret = scale_frame(ctx->inputs[0], in, &out);
+    if (out) {
+        out->pts = av_rescale_q(fs->pts, fs->time_base, outlink->time_base);
+        return ff_filter_frame(outlink, out);
+    }
+
+    return ret;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     AVFilterContext *ctx = link->dst;
@@ -972,11 +1014,24 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     return ret;
 }
 
+static int activate(AVFilterContext *ctx)
+{
+    ScaleContext *scale = ctx->priv;
+    return ff_framesync_activate(&scale->fs);
+}
+
 static const AVClass *child_class_iterate(void **iter)
 {
-    const AVClass *c = *iter ? NULL : sws_get_class();
-    *iter = (void*)(uintptr_t)c;
-    return c;
+    switch ((uintptr_t) *iter) {
+    case 0:
+        *iter = (void*)(uintptr_t) 1;
+        return sws_get_class();
+    case 1:
+        *iter = (void*)(uintptr_t) 2;
+        return &ff_framesync_class;
+    }
+
+    return NULL;
 }
 
 static void *child_next(void *obj, void *prev)
@@ -984,6 +1039,8 @@ static void *child_next(void *obj, void *prev)
     ScaleContext *s = obj;
     if (!prev)
         return s->sws_opts;
+    if (prev == s->sws_opts)
+        return &s->fs;
     return NULL;
 }
 
@@ -1051,7 +1108,6 @@ static const AVFilterPad avfilter_vf_scale_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
 };
 
@@ -1074,6 +1130,7 @@ const AVFilter ff_vf_scale = {
     FILTER_INPUTS(avfilter_vf_scale_inputs),
     FILTER_OUTPUTS(avfilter_vf_scale_outputs),
     FILTER_QUERY_FUNC(query_formats),
+    .activate        = activate,
     .process_command = process_command,
 };
 

@@ -20989,8 +20989,8 @@ the next filter, the scale filter will convert the input to the
 requested format.
 
 @subsection Options
-The filter accepts the following options, or any of the options
-supported by the libswscale scaler.
+The filter accepts the following options, any of the options supported
+by the libswscale scaler, as well as any of the @ref{framesync} options.
 
 See @ref{scaler_options,,the ffmpeg-scaler manual,ffmpeg-scaler} for
 the complete list of scaler options.
