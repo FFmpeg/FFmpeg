@@ -137,11 +137,9 @@ static int decode_packet(AVCodecContext *dec, const AVPacket *pkt)
             ret = output_audio_frame(frame);
 
         av_frame_unref(frame);
-        if (ret < 0)
-            return ret;
     }
 
-    return 0;
+    return ret;
 }
 
 static int open_codec_context(int *stream_idx,
