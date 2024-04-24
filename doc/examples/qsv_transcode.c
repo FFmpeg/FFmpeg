@@ -76,8 +76,7 @@ static int str_to_dict(char* optstr, AVDictionary **opt)
         if (value == NULL)
             return AVERROR(EINVAL);
         av_dict_set(opt, key, value, 0);
-    } while(key != NULL);
-    return 0;
+    } while(1);
 }
 
 static int dynamic_set_parameter(AVCodecContext *avctx)
