@@ -173,6 +173,7 @@ static void dct8x8(int16_t *coef, int bit_depth)
 
 static void check_idct(void)
 {
+    static const int depths[5] = { 8, 9, 10, 12, 14 };
     LOCAL_ALIGNED_16(uint8_t, src,  [8 * 8 * 2]);
     LOCAL_ALIGNED_16(uint8_t, dst,  [8 * 8 * 2]);
     LOCAL_ALIGNED_16(uint8_t, dst0, [8 * 8 * 2]);
@@ -181,10 +182,11 @@ static void check_idct(void)
     LOCAL_ALIGNED_16(int16_t, subcoef0, [8 * 8 * 2]);
     LOCAL_ALIGNED_16(int16_t, subcoef1, [8 * 8 * 2]);
     H264DSPContext h;
-    int bit_depth, sz, align, dc;
+    int bit_depth, sz, align, dc, i;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *block, int stride);
 
-    for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
+    for (i = 0; i < FF_ARRAY_ELEMS(depths); i++) {
+        bit_depth = depths[i];
         ff_h264dsp_init(&h, bit_depth, 1);
         for (sz = 4; sz <= 8; sz += 4) {
             randomize_buffers();
