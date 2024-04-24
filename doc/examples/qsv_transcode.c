@@ -335,10 +335,8 @@ static int dec_enc(AVPacket *pkt, const AVCodec *enc_codec, char *optstr)
 
 fail:
         av_frame_free(&frame);
-        if (ret < 0)
-            return ret;
     }
-    return 0;
+    return ret;
 }
 
 int main(int argc, char **argv)
