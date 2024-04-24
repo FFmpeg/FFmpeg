@@ -2,7 +2,7 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
-2024-04-11 - xxxxxxxxxx - lavu 59.16.100 - opt.h
+2024-04-24 - 8616cfe0890 - lavu 59.16.100 - opt.h
   Add AV_OPT_SERIALIZE_SEARCH_CHILDREN.
 
 2024-04-11 - xxxxxxxxxx - lavc 61.5.102 - avcodec.h
