@@ -2303,7 +2303,6 @@ static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const cha
         av_log(mux, AV_LOG_ERROR, "Error parsing mapped group specification %s\n", ptr);
     av_dict_set_int(dict, "type", stg->type, 0);
 
-    av_log(mux, AV_LOG_VERBOSE, "stg %s\n", bp->str);
     av_bprint_clear(bp);
     switch(stg->type) {
     case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT: {
@@ -2353,7 +2352,6 @@ static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const cha
         ret = AVERROR(EINVAL);
         break;
     }
-    av_log(mux, AV_LOG_VERBOSE, "extra %s\n", bp->str);
     return 0;
 }
 
