@@ -33,6 +33,8 @@
  * for which we need this to be defined for them to work as expected. */
 #define USE_FIXED 1
 
+#include "config_components.h"
+
 #include <limits.h>
 #include <stddef.h>
 
@@ -1312,9 +1314,9 @@ static void decode_ltp(AACDecContext *ac, LongTermPrediction *ltp,
     int sfb;
 
     ltp->lag  = get_bits(gb, 11);
-    if (ac->is_fixed)
+    if (CONFIG_AAC_FIXED_DECODER && ac->is_fixed)
         ltp->coef_fixed = Q30(ff_ltp_coef[get_bits(gb, 3)]);
-    else
+    else if (CONFIG_AAC_DECODER)
         ltp->coef = ff_ltp_coef[get_bits(gb, 3)];
 
     for (sfb = 0; sfb < FFMIN(max_sfb, MAX_LTP_LONG_SFB); sfb++)
@@ -1623,9 +1625,9 @@ static int decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
                     tmp2_idx = 2 * coef_compress + coef_res;
 
                     for (i = 0; i < tns->order[w][filt]; i++) {
-                        if (ac->is_fixed)
+                        if (CONFIG_AAC_FIXED_DECODER && ac->is_fixed)
                             tns->coef_fixed[w][filt][i] = Q31(ff_tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)]);
-                        else
+                        else if (CONFIG_AAC_DECODER)
                             tns->coef[w][filt][i] = ff_tns_tmp2_map[tmp2_idx][get_bits(gb, coef_len)];
                     }
                 }
@@ -1974,9 +1976,9 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
             ac->avctx->profile = AV_PROFILE_AAC_HE;
         }
 
-        if (ac->is_fixed)
+        if (CONFIG_AAC_FIXED_DECODER && ac->is_fixed)
             res = ff_aac_sbr_decode_extension_fixed(ac, che, gb, crc_flag, cnt, elem_type);
-        else
+        else if (CONFIG_AAC_DECODER)
             res = ff_aac_sbr_decode_extension(ac, che, gb, crc_flag, cnt, elem_type);
 
 
@@ -2087,11 +2089,11 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                             ac->dsp.update_ltp(ac, &che->ch[1]);
                     }
                     if (ac->oc[1].m4ac.sbr > 0) {
-                        if (ac->is_fixed)
+                        if (CONFIG_AAC_FIXED_DECODER && ac->is_fixed)
                             ff_aac_sbr_apply_fixed(ac, che, type,
                                                    (void *)che->ch[0].output,
                                                    (void *)che->ch[1].output);
-                        else
+                        else if (CONFIG_AAC_DECODER)
                             ff_aac_sbr_apply(ac, che, type,
                                              (void *)che->ch[0].output,
                                              (void *)che->ch[1].output);
@@ -2550,6 +2552,7 @@ static const AVClass decoder_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+#if CONFIG_AAC_DECODER
 const FFCodec ff_aac_decoder = {
     .p.name          = "aac",
     CODEC_LONG_NAME("AAC (Advanced Audio Coding)"),
@@ -2569,7 +2572,9 @@ const FFCodec ff_aac_decoder = {
     .flush = flush,
     .p.profiles      = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
 };
+#endif
 
+#if CONFIG_AAC_FIXED_DECODER
 const FFCodec ff_aac_fixed_decoder = {
     .p.name          = "aac_fixed",
     CODEC_LONG_NAME("AAC (Advanced Audio Coding)"),
@@ -2589,3 +2594,4 @@ const FFCodec ff_aac_fixed_decoder = {
     .p.profiles      = NULL_IF_CONFIG_SMALL(ff_aac_profiles),
     .flush = flush,
 };
+#endif
