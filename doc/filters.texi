@@ -21562,7 +21562,33 @@ The position (byte offset) of the frame in the input stream, or NaN if
 this information is unavailable and/or meaningless (for example in case of synthetic video).
 Only available with @code{eval=frame}.
 Deprecated, do not use.
+
+@item ref_w, rw
+@item ref_h, rh
+@item ref_a
+@item ref_dar, rdar
+@item ref_n
+@item ref_t
+@item ref_pos
+Eqvuialent to the above, but for a second reference input. If any of these
+variables are present, this filter accepts two inputs.
 @end table
+
+@subsection Examples
+
+@itemize
+@item
+Scale a subtitle stream (sub) to match the main video (main) in size before overlaying
+@example
+'[main]split[a][b]; [ref][a]scale=rw:rh[c]; [b][c]overlay'
+@end example
+
+@item
+Scale a logo to 1/10th the height of a video, while preserving its display aspect ratio.
+@example
+[logo-in][video-in]scale=w=oh*dar:h=rh/10[logo-out]
+@end example
+@end itemize
 
 @section scale2ref
 
