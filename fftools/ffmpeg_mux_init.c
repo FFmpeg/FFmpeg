@@ -2257,6 +2257,15 @@ static int of_serialize_options(Muxer *mux, void *obj, AVBPrint *bp)
         return ret;                                     \
 } while (0)
 
+#define SERIALIZE_LOOP_SUBBLOCK(obj) do {                                \
+    for (int k = 0; k < obj->nb_subblocks; k++) {                        \
+        ret = of_serialize_options(mux,                                  \
+                  av_iamf_param_definition_get_subblock(obj, k), bp);    \
+        if (ret < 0)                                                     \
+            return ret;                                                  \
+    }                                                                    \
+} while (0)
+
 #define SERIALIZE_LOOP(parent, child, suffix, separator) do {            \
     for (int j = 0; j < parent->nb_## child ## suffix; j++) {            \
         av_bprintf(bp, separator#child "=");                             \
@@ -2309,12 +2318,20 @@ static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const cha
         AVIAMFAudioElement *audio_element = stg->params.iamf_audio_element;
 
         if (audio_element->demixing_info) {
+            AVIAMFParamDefinition *demixing_info = audio_element->demixing_info;
             av_bprintf(bp, ",demixing=");
             SERIALIZE(audio_element, demixing_info);
+            if (ret && demixing_info->nb_subblocks)
+                av_bprintf(bp, ":");
+            SERIALIZE_LOOP_SUBBLOCK(demixing_info);
         }
         if (audio_element->recon_gain_info) {
+            AVIAMFParamDefinition *recon_gain_info = audio_element->recon_gain_info;
             av_bprintf(bp, ",recon_gain=");
             SERIALIZE(audio_element, recon_gain_info);
+            if (ret && recon_gain_info->nb_subblocks)
+                av_bprintf(bp, ":");
+            SERIALIZE_LOOP_SUBBLOCK(recon_gain_info);
         }
         SERIALIZE_LOOP(audio_element, layer, s, ",");
         break;
@@ -2324,11 +2341,16 @@ static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const cha
 
         for (int i = 0; i < mix->nb_submixes; i++) {
             AVIAMFSubmix *submix = mix->submixes[i];
+            AVIAMFParamDefinition *output_mix_config = submix->output_mix_config;
 
             av_bprintf(bp, ",submix=");
             SERIALIZE(mix, submixes[i]);
+            if (ret && output_mix_config->nb_subblocks)
+                av_bprintf(bp, ":");
+            SERIALIZE_LOOP_SUBBLOCK(output_mix_config);
             for (int j = 0; j < submix->nb_elements; j++) {
                 AVIAMFSubmixElement *element = submix->elements[j];
+                AVIAMFParamDefinition *element_mix_config = element->element_mix_config;
                 int64_t id = get_stream_group_index_from_id(mux, element->audio_element_id);
 
                 if (id < 0) {
@@ -2339,6 +2361,9 @@ static int of_map_group(Muxer *mux, AVDictionary **dict, AVBPrint *bp, const cha
 
                 av_bprintf(bp, "|element=");
                 SERIALIZE(submix, elements[j]);
+                if (ret && element_mix_config->nb_subblocks)
+                    av_bprintf(bp, ":");
+                SERIALIZE_LOOP_SUBBLOCK(element_mix_config);
                 if (ret)
                     av_bprintf(bp, ":");
                 av_bprintf(bp, "stg=%"PRId64, id);

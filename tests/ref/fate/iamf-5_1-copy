@@ -155,7 +155,7 @@ duration=960
 constant_subblock_duration=960
 [PIECE]
 subblock_duration=960
-dmixp_mode=0
+dmixp_mode=1
 [/PIECE]
 [/SUBCOMPONENT]
 [SUBCOMPONENT]
