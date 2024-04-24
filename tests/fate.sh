@@ -30,14 +30,14 @@ lock(){
 checkout(){
     case "$repo" in
         file:*|/*) src="${repo#file:}"      ;;
-        git:*)     git clone --quiet --branch "$branch" "$repo" "$src" ;;
+        git:*|https:*) git clone --quiet --branch "$branch" "$repo" "$src" ;;
     esac
 }
 
 update()(
     cd ${src} || return
     case "$repo" in
-        git:*) git fetch --quiet --force && git reset --quiet --hard "origin/$branch" ;;
+        git:*|https:*) git fetch --quiet --force && git reset --quiet --hard "origin/$branch" ;;
     esac
 )
 
