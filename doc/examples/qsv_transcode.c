@@ -342,7 +342,7 @@ int main(int argc, char **argv)
 {
     const AVCodec *enc_codec;
     int ret = 0;
-    AVPacket *dec_pkt;
+    AVPacket *dec_pkt = NULL;
 
     if (argc < 5 || (argc - 5) % 2) {
         av_log(NULL, AV_LOG_ERROR, "Usage: %s <input file> <encoder> <output file>"
