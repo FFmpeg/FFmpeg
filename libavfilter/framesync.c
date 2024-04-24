@@ -51,7 +51,7 @@ static const AVOption framesync_options[] = {
             0, AV_OPT_TYPE_CONST, { .i64 = TS_NEAREST }, .flags = FLAGS, .unit = "ts_sync_mode" },
     { NULL }
 };
-static const AVClass framesync_class = {
+const AVClass ff_framesync_class = {
     .version                   = LIBAVUTIL_VERSION_INT,
     .class_name                = "framesync",
     .item_name                 = framesync_name,
@@ -62,7 +62,7 @@ static const AVClass framesync_class = {
 
 const AVClass *ff_framesync_child_class_iterate(void **iter)
 {
-    const AVClass *c = *iter ? NULL : &framesync_class;
+    const AVClass *c = *iter ? NULL : &ff_framesync_class;
     *iter = (void *)(uintptr_t)c;
     return c;
 }
@@ -79,7 +79,7 @@ void ff_framesync_preinit(FFFrameSync *fs)
 {
     if (fs->class)
         return;
-    fs->class  = &framesync_class;
+    fs->class  = &ff_framesync_class;
     av_opt_set_defaults(fs);
 }
 

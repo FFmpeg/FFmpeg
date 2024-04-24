@@ -316,6 +316,7 @@ int ff_framesync_dualinput_get(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
 int ff_framesync_dualinput_get_writable(FFFrameSync *fs, AVFrame **f0, AVFrame **f1);
 
 const AVClass *ff_framesync_child_class_iterate(void **iter);
+extern const AVClass ff_framesync_class;
 
 #define FRAMESYNC_DEFINE_PURE_CLASS(name, desc, func_prefix, options) \
 static const AVClass name##_class = {                                 \
