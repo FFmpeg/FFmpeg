@@ -56,7 +56,7 @@
 #define MAX_CACHED_REDIRECTS 32
 #define HTTP_SINGLE   1
 #define HTTP_MUTLI    2
-#define MAX_EXPIRY    19
+#define MAX_DATE_LEN  19
 #define WHITESPACES " \n\t\r"
 typedef enum {
     LOWER_PROTO,
@@ -913,29 +913,29 @@ static int parse_icy(HTTPContext *s, const char *tag, const char *p)
     return 0;
 }
 
-static int parse_set_cookie_expiry_time(const char *exp_str, struct tm *buf)
+static int parse_http_date(const char *date_str, struct tm *buf)
 {
-    char exp_buf[MAX_EXPIRY];
-    int i, j, exp_buf_len = MAX_EXPIRY-1;
-    char *expiry;
+    char date_buf[MAX_DATE_LEN];
+    int i, j, date_buf_len = MAX_DATE_LEN-1;
+    char *date;
 
     // strip off any punctuation or whitespace
-    for (i = 0, j = 0; exp_str[i] != '\0' && j < exp_buf_len; i++) {
-        if ((exp_str[i] >= '0' && exp_str[i] <= '9') ||
-            (exp_str[i] >= 'A' && exp_str[i] <= 'Z') ||
-            (exp_str[i] >= 'a' && exp_str[i] <= 'z')) {
-            exp_buf[j] = exp_str[i];
+    for (i = 0, j = 0; date_str[i] != '\0' && j < date_buf_len; i++) {
+        if ((date_str[i] >= '0' && date_str[i] <= '9') ||
+            (date_str[i] >= 'A' && date_str[i] <= 'Z') ||
+            (date_str[i] >= 'a' && date_str[i] <= 'z')) {
+            date_buf[j] = date_str[i];
             j++;
         }
     }
-    exp_buf[j] = '\0';
-    expiry = exp_buf;
+    date_buf[j] = '\0';
+    date = date_buf;
 
     // move the string beyond the day of week
-    while ((*expiry < '0' || *expiry > '9') && *expiry != '\0')
-        expiry++;
+    while ((*date < '0' || *date > '9') && *date != '\0')
+        date++;
 
-    return av_small_strptime(expiry, "%d%b%Y%H%M%S", buf) ? 0 : AVERROR(EINVAL);
+    return av_small_strptime(date, "%d%b%Y%H%M%S", buf) ? 0 : AVERROR(EINVAL);
 }
 
 static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
@@ -995,7 +995,7 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
     // ensure the cookie is not expired or older than an existing value
     if ((e = av_dict_get(new_params, "expires", NULL, 0)) && e->value) {
         struct tm new_tm = {0};
-        if (!parse_set_cookie_expiry_time(e->value, &new_tm)) {
+        if (!parse_http_date(e->value, &new_tm)) {
             AVDictionaryEntry *e2;
 
             // if the cookie has already expired ignore it
@@ -1012,7 +1012,7 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
                     e2 = av_dict_get(old_params, "expires", NULL, 0);
                     if (e2 && e2->value) {
                         struct tm old_tm = {0};
-                        if (!parse_set_cookie_expiry_time(e->value, &old_tm)) {
+                        if (!parse_http_date(e->value, &old_tm)) {
                             if (av_timegm(&new_tm) < av_timegm(&old_tm)) {
                                 av_dict_free(&new_params);
                                 av_dict_free(&old_params);
@@ -1064,7 +1064,7 @@ static void parse_expires(HTTPContext *s, const char *p)
 {
     struct tm tm;
 
-    if (!parse_set_cookie_expiry_time(p, &tm)) {
+    if (!parse_http_date(p, &tm)) {
         s->expires = av_timegm(&tm);
     }
 }
@@ -1295,7 +1295,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
         // if the cookie has expired, don't add it
         if ((e = av_dict_get(cookie_params, "expires", NULL, 0)) && e->value) {
             struct tm tm_buf = {0};
-            if (!parse_set_cookie_expiry_time(e->value, &tm_buf)) {
+            if (!parse_http_date(e->value, &tm_buf)) {
                 if (av_timegm(&tm_buf) < av_gettime() / 1000000)
                     goto skip_cookie;
             }
