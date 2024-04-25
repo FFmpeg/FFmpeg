@@ -124,11 +124,17 @@ static void task_init(VVCTask *t, VVCTaskStage stage, VVCFrameContext *fc, const
     atomic_store(&t->target_inter_score, 0);
 }
 
-static void task_init_parse(VVCTask *t, SliceContext *sc, EntryPoint *ep, const int ctu_idx)
+static int task_init_parse(VVCTask *t, SliceContext *sc, EntryPoint *ep, const int ctu_idx)
 {
+    if (t->sc) {
+        // the task already inited, error bitstream
+        return AVERROR_INVALIDDATA;
+    }
     t->sc      = sc;
     t->ep      = ep;
     t->ctu_idx = ctu_idx;
+
+    return 0;
 }
 
 static uint8_t task_add_score(VVCTask *t, const VVCTaskStage stage)
@@ -758,24 +764,35 @@ static void submit_entry_point(VVCContext *s, VVCFrameThread *ft, SliceContext *
     frame_thread_add_score(s, ft, t->rx, t->ry, VVC_TASK_STAGE_PARSE);
 }
 
-void ff_vvc_frame_submit(VVCContext *s, VVCFrameContext *fc)
+int ff_vvc_frame_submit(VVCContext *s, VVCFrameContext *fc)
 {
     VVCFrameThread *ft = fc->ft;
 
-    for (int i = 0; i < fc->nb_slices; i++) {
-        SliceContext *sc = fc->slices[i];
-        for (int j = 0; j < sc->nb_eps; j++) {
-            EntryPoint *ep = sc->eps + j;
-            for (int k = ep->ctu_start; k < ep->ctu_end; k++) {
-                const int rs = sc->sh.ctb_addr_in_curr_slice[k];
-                VVCTask *t   = ft->tasks + rs;
-
-                task_init_parse(t, sc, ep, k);
-                check_colocation(s, t);
+    // We'll handle this in two passes:
+    // Pass 0 to initialize tasks with parser, this will help detect bit stream error
+    // Pass 1 to shedule location check and submit the entry point
+    for (int pass = 0; pass < 2; pass++) {
+        for (int i = 0; i < fc->nb_slices; i++) {
+            SliceContext *sc = fc->slices[i];
+            for (int j = 0; j < sc->nb_eps; j++) {
+                EntryPoint *ep = sc->eps + j;
+                for (int k = ep->ctu_start; k < ep->ctu_end; k++) {
+                    const int rs = sc->sh.ctb_addr_in_curr_slice[k];
+                    VVCTask *t   = ft->tasks + rs;
+                    if (pass) {
+                        check_colocation(s, t);
+                    } else {
+                        const int ret = task_init_parse(t, sc, ep, k);
+                        if (ret < 0)
+                            return ret;
+                    }
+                }
+                if (pass)
+                    submit_entry_point(s, ft, sc, ep);
             }
-            submit_entry_point(s, ft, sc, ep);
         }
     }
+    return 0;
 }
 
 int ff_vvc_frame_wait(VVCContext *s, VVCFrameContext *fc)

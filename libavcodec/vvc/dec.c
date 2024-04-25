@@ -893,10 +893,16 @@ static int wait_delayed_frame(VVCContext *s, AVFrame *output, int *got_output)
 
 static int submit_frame(VVCContext *s, VVCFrameContext *fc, AVFrame *output, int *got_output)
 {
-    int ret;
+    int ret = ff_vvc_frame_submit(s, fc);
+
+    if (ret < 0) {
+        ff_vvc_report_frame_finished(fc->ref);
+        return ret;
+    }
+
     s->nb_frames++;
     s->nb_delayed++;
-    ff_vvc_frame_submit(s, fc);
+
     if (s->nb_delayed >= s->nb_fcs) {
         if ((ret = wait_delayed_frame(s, output, got_output)) < 0)
             return ret;
