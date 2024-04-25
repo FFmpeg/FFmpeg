@@ -39,12 +39,12 @@ fate-iamf-ambisonic_1: CMD = transcode wav $(SRC) iamf "-auto_conversion_filters
 
 FATE_IAMF_SAMPLES-$(call FRAMECRC, IAMF, OPUS) += fate-iamf-5_1-demux
 fate-iamf-5_1-demux: CMD = stream_demux iamf $(TARGET_SAMPLES)/iamf/test_000059.iamf "" \
-  "-c:a copy -map 0" \
+  "-c:a copy -frames:a 0 -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id:stream_group_stream_disposition"
 
 FATE_IAMF_SAMPLES-$(call REMUX, IAMF, OPUS_DECODER) += fate-iamf-5_1-copy
 fate-iamf-5_1-copy: CMD = stream_remux iamf $(TARGET_SAMPLES)/iamf/test_000059.iamf "" iamf \
-  "-map 0 -stream_group map=0=0:st=0:st=1:st=2:st=3 -stream_group map=0=1:stg=0 -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3" "" "-c:a copy -map 0" \
+  "-map 0 -stream_group map=0=0:st=0:st=1:st=2:st=3 -stream_group map=0=1:stg=0 -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3" "" "-c:a copy -frames:a 0 -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id:stream_group_stream_disposition"
 
 FATE_IAMF += $(FATE_IAMF-yes)
