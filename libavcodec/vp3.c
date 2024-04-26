@@ -2651,6 +2651,7 @@ static int vp3_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (avctx->skip_frame >= AVDISCARD_NONKEY && !s->keyframe)
         return buf_size;
 
+    ff_progress_frame_unref(&s->current_frame);
     ret = ff_progress_frame_get_buffer(avctx, &s->current_frame,
                                        AV_GET_BUFFER_FLAG_REF);
     if (ret < 0) {
