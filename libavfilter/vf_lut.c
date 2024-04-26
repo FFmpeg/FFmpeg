@@ -539,6 +539,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
+    av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
+                                       AV_SIDE_DATA_PROP_COLOR_DEPENDENT);
+
     if (s->is_rgb && s->is_16bit && !s->is_planar) {
         /* packed, 16-bit */
         PACKED_THREAD_DATA
