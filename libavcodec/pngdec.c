@@ -1027,7 +1027,7 @@ static int decode_fctl_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((sequence_number == 0 || !s->last_picture.f->data[0]) &&
+    if ((sequence_number == 0 || !s->last_picture.f) &&
         dispose_op == APNG_DISPOSE_OP_PREVIOUS) {
         // No previous frame to revert to for the first frame
         // Spec says to just treat it as a APNG_DISPOSE_OP_BACKGROUND
