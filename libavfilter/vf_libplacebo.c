@@ -20,6 +20,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
 #include "libavutil/file.h"
+#include "libavutil/frame.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -817,7 +818,7 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
 /* Construct and emit an output frame for a given timestamp */
 static int output_frame(AVFilterContext *ctx, int64_t pts)
 {
-    int err = 0, ok, changed_csp;
+    int err = 0, ok, changed;
     LibplaceboContext *s = ctx->priv;
     pl_options opts = s->opts;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -853,6 +854,7 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
          * output colorspace defaults */
         out->color_primaries = AVCOL_PRI_BT2020;
         out->color_trc = AVCOL_TRC_SMPTE2084;
+        changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
     }
 
     if (s->color_trc >= 0)
@@ -860,21 +862,13 @@ static int output_frame(AVFilterContext *ctx, int64_t pts)
     if (s->color_primaries >= 0)
         out->color_primaries = s->color_primaries;
 
-    changed_csp = ref->colorspace      != out->colorspace     ||
-                  ref->color_range     != out->color_range    ||
-                  ref->color_trc       != out->color_trc      ||
-                  ref->color_primaries != out->color_primaries;
-
     /* Strip side data if no longer relevant */
-    if (changed_csp) {
-        av_frame_remove_side_data(out, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_ICC_PROFILE);
-    }
-    if (s->apply_dovi || changed_csp) {
-        av_frame_remove_side_data(out, AV_FRAME_DATA_DOVI_RPU_BUFFER);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_DOVI_METADATA);
-    }
+    if (out->width != ref->width || out->height != ref->height)
+        changed |= AV_SIDE_DATA_PROP_SIZE_DEPENDENT;
+    if (ref->color_trc != out->color_trc || ref->color_primaries != out->color_primaries)
+        changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
+    av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data, changed);
+
     if (s->apply_filmgrain)
         av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
 
