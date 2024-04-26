@@ -25,6 +25,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/csp.h"
+#include "libavutil/frame.h"
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
@@ -750,6 +751,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     } else {
         out->color_trc   = s->user_trc;
     }
+
+    if (out->color_primaries != in->color_primaries || out->color_trc != in->color_trc) {
+        av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
+                                           AV_SIDE_DATA_PROP_COLOR_DEPENDENT);
+    }
+
     if (rgb_sz != s->rgb_sz) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(out->format);
         int uvw = in->width >> desc->log2_chroma_w;
