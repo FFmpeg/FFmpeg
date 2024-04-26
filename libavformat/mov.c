@@ -7928,6 +7928,7 @@ static int mov_read_SA3D(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVChannelLayout ch_layout = { 0 };
     int ret, i, version, type;
     int ambisonic_order, channel_order, normalization, channel_count;
+    int ambi_channels, non_diegetic_channels;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -7946,11 +7947,12 @@ static int mov_read_SA3D(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     type = avio_r8(pb);
-    if (type) {
+    if (type & 0x7f) {
         av_log(c->fc, AV_LOG_WARNING,
-               "Unsupported ambisonic type %d\n", type);
+               "Unsupported ambisonic type %d\n", type & 0x7f);
         return 0;
     }
+    non_diegetic_channels = (type >> 7) * 2; // head_locked_stereo
 
     ambisonic_order = avio_rb32(pb);
 
@@ -7970,12 +7972,14 @@ static int mov_read_SA3D(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     channel_count = avio_rb32(pb);
     if (ambisonic_order < 0 || ambisonic_order > 31 ||
-        channel_count != (ambisonic_order + 1LL) * (ambisonic_order + 1LL)) {
+        channel_count != ((ambisonic_order + 1LL) * (ambisonic_order + 1LL) +
+                           non_diegetic_channels)) {
         av_log(c->fc, AV_LOG_ERROR,
                "Invalid number of channels (%d / %d)\n",
                channel_count, ambisonic_order);
         return 0;
     }
+    ambi_channels = channel_count - non_diegetic_channels;
 
     ret = av_channel_layout_custom_init(&ch_layout, channel_count);
     if (ret < 0)
@@ -7990,7 +7994,10 @@ static int mov_read_SA3D(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             av_channel_layout_uninit(&ch_layout);
             return 0;
         }
-        ch_layout.u.map[i].id = AV_CHAN_AMBISONIC_BASE + channel;
+        if (channel >= ambi_channels)
+            ch_layout.u.map[i].id = channel - ambi_channels;
+        else
+            ch_layout.u.map[i].id = AV_CHAN_AMBISONIC_BASE + channel;
     }
 
     ret = av_channel_layout_retype(&ch_layout, 0, AV_CHANNEL_LAYOUT_RETYPE_FLAG_CANONICAL);
