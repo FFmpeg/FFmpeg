@@ -868,16 +868,14 @@ scale:
     if (scale->out_transfer != -1)
         out->color_trc = scale->out_transfer;
 
-    if (in->color_primaries != out->color_primaries ||
-        in->color_trc != out->color_trc)
-    {
-        av_frame_remove_side_data(out, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_DYNAMIC_HDR_PLUS);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_DYNAMIC_HDR_VIVID);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_ICC_PROFILE);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_DOVI_METADATA);
-        av_frame_remove_side_data(out, AV_FRAME_DATA_DOVI_RPU_BUFFER);
+    if (out->width != in->width || out->height != in->height) {
+        av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
+                                           AV_SIDE_DATA_PROP_SIZE_DEPENDENT);
+    }
+
+    if (in->color_primaries != out->color_primaries || in->color_trc != out->color_trc) {
+        av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
+                                           AV_SIDE_DATA_PROP_COLOR_DEPENDENT);
     }
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,

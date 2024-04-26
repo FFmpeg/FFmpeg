@@ -293,6 +293,11 @@ static int scale_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     if (err < 0)
         goto fail;
 
+    if (out->width != in->width || out->height != in->height) {
+        av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
+                                           AV_SIDE_DATA_PROP_SIZE_DEPENDENT);
+    }
+
     if (s->out_range != AVCOL_RANGE_UNSPECIFIED)
         out->color_range = s->out_range;
     if (s->vkctx.output_format != s->vkctx.input_format)

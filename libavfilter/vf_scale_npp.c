@@ -897,6 +897,11 @@ scale:
     if (ret < 0)
         return ret;
 
+    if (out->width != in->width || out->height != in->height) {
+        av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data,
+                                           AV_SIDE_DATA_PROP_SIZE_DEPENDENT);
+    }
+
     return 0;
 }
 
