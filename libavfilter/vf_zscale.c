@@ -781,7 +781,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     const AVPixFmtDescriptor *odesc = av_pix_fmt_desc_get(outlink->format);
     char buf[32];
-    int ret = 0;
+    int ret = 0, changed = 0;
     AVFrame *out = NULL;
     ThreadData td;
 
@@ -874,6 +874,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                   (int64_t)in->sample_aspect_ratio.num * outlink->h * link->w,
                   (int64_t)in->sample_aspect_ratio.den * outlink->w * link->h,
                   INT_MAX);
+
+        if (out->width != in->width || out->height != in->height)
+            changed |= AV_SIDE_DATA_PROP_SIZE_DEPENDENT;
+        if (out->color_trc != in->color_trc || out->color_primaries != in->color_primaries)
+            changed |= AV_SIDE_DATA_PROP_COLOR_DEPENDENT;
+        av_frame_side_data_remove_by_props(&out->side_data, &out->nb_side_data, changed);
 
         td.in = in;
         td.out = out;
