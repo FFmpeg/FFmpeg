@@ -2933,7 +2933,7 @@ static int set_dispositions(Muxer *mux, const OptionsContext *o)
 
         nb_streams[ost->type + 1]++;
 
-        MATCH_PER_STREAM_OPT(disposition, str, dispositions[i], ctx, ost->st);
+        MATCH_PER_STREAM_OPT_CLEAN(disposition, str, dispositions[i], ctx, ost->st, goto finish);
 
         have_manual |= !!dispositions[i];
 
