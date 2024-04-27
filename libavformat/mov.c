@@ -9440,7 +9440,8 @@ static int mov_parse_tiles(AVFormatContext *s)
                 break;
             }
 
-            if (k == grid->nb_tiles) {
+            if (k == mov->nb_heif_item) {
+                av_assert0(loop);
                 av_log(s, AV_LOG_WARNING, "HEIF item id %d referenced by grid id %d doesn't "
                                           "exist\n",
                        tile_id, grid->item->item_id);
