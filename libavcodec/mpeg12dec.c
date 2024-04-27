@@ -1372,6 +1372,9 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
                 return ret;
             }
         }
+        ret = ff_mpv_alloc_dummy_frames(s);
+        if (ret < 0)
+            return ret;
 
         for (int i = 0; i < 3; i++) {
             s->current_picture.f->data[i] = s->current_picture_ptr->f->data[i];
@@ -1727,7 +1730,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
  * Handle slice ends.
  * @return 1 if it seems to be the last slice
  */
-static int slice_end(AVCodecContext *avctx, AVFrame *pict)
+static int slice_end(AVCodecContext *avctx, AVFrame *pict, int *got_output)
 {
     Mpeg1Context *s1  = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -1758,14 +1761,16 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
                 return ret;
             ff_print_debug_info(s, s->current_picture_ptr, pict);
             ff_mpv_export_qp_table(s, pict, s->current_picture_ptr, FF_MPV_QSCALE_TYPE_MPEG2);
+            *got_output = 1;
         } else {
             /* latency of 1 frame for I- and P-frames */
-            if (s->last_picture_ptr) {
+            if (s->last_picture_ptr && !s->last_picture_ptr->dummy) {
                 int ret = av_frame_ref(pict, s->last_picture_ptr->f);
                 if (ret < 0)
                     return ret;
                 ff_print_debug_info(s, s->last_picture_ptr, pict);
                 ff_mpv_export_qp_table(s, pict, s->last_picture_ptr, FF_MPV_QSCALE_TYPE_MPEG2);
+                *got_output = 1;
             }
         }
 
@@ -2204,14 +2209,9 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                         s2->er.error_count += s2->thread_context[i]->er.error_count;
                 }
 
-                ret = slice_end(avctx, picture);
+                ret = slice_end(avctx, picture, got_output);
                 if (ret < 0)
                     return ret;
-                else if (ret) {
-                    // FIXME: merge with the stuff in mpeg_decode_slice
-                    if (s2->last_picture_ptr || s2->low_delay || s2->pict_type == AV_PICTURE_TYPE_B)
-                        *got_output = 1;
-                }
             }
             s2->pict_type = 0;
 
