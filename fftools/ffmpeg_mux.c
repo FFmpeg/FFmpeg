@@ -290,7 +290,7 @@ static int mux_packet_filter(Muxer *mux, MuxThreadContext *mt,
 {
     MuxStream *ms = ms_from_ost(ost);
     const char *err_msg;
-    int ret = 0;
+    int ret;
 
     if (pkt && !ost->enc) {
         ret = of_streamcopy(&mux->of, ost, pkt);
@@ -299,7 +299,6 @@ static int mux_packet_filter(Muxer *mux, MuxThreadContext *mt,
         else if (ret == AVERROR_EOF) {
             av_packet_unref(pkt);
             pkt = NULL;
-            ret = 0;
             *stream_eof = 1;
         } else if (ret < 0)
             goto fail;
