@@ -288,6 +288,8 @@ static int av_cold alloc_dummy_frame(MpegEncContext *s, Picture **picp, Picture 
     if (ret < 0)
         return ret;
 
+    pic->dummy = 1;
+
     ff_mpeg_unref_picture(wpic);
     ret = ff_mpeg_ref_picture(wpic, pic);
     if (ret < 0) {

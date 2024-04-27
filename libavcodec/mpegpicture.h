@@ -70,6 +70,7 @@ typedef struct Picture {
     /// RefStruct reference for hardware accelerator private data
     void *hwaccel_picture_private;
 
+    int dummy;                  ///< Picture is a dummy and should not be output
     int field_picture;          ///< whether or not the picture was encoded in separate fields
 
     int b_frame_score;

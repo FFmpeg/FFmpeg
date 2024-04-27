@@ -270,6 +270,7 @@ void ff_mpeg_unref_picture(Picture *pic)
     if (pic->needs_realloc)
         free_picture_tables(pic);
 
+    pic->dummy         = 0;
     pic->field_picture = 0;
     pic->b_frame_score = 0;
     pic->needs_realloc = 0;
@@ -331,6 +332,7 @@ int ff_mpeg_ref_picture(Picture *dst, Picture *src)
     ff_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
 
+    dst->dummy                   = src->dummy;
     dst->field_picture           = src->field_picture;
     dst->b_frame_score           = src->b_frame_score;
     dst->needs_realloc           = src->needs_realloc;
