@@ -84,6 +84,7 @@ typedef struct MOVParseTableEntry {
 
 static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom);
 static int mov_read_mfra(MOVContext *c, AVIOContext *f);
+static void mov_free_stream_context(AVFormatContext *s, AVStream *st);
 static int64_t add_ctts_entry(MOVCtts** ctts_data, unsigned int* ctts_count, unsigned int* allocated_size,
                               int count, int duration);
 
@@ -8160,6 +8161,7 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
 
     if (version < 2) {
         avpriv_report_missing_feature(c->fc, "infe version < 2");
+        avio_skip(pb, size);
         return 1;
     }
 
@@ -8203,7 +8205,7 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     HEIFItem *heif_item;
     int entry_count;
-    int version, ret;
+    int version, got_stream = 0, ret, i;
 
     if (c->found_iinf) {
         av_log(c->fc, AV_LOG_WARNING, "Duplicate iinf box found\n");
@@ -8223,20 +8225,33 @@ static int mov_read_iinf(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                sizeof(*c->heif_item) * (entry_count - c->nb_heif_item));
     c->nb_heif_item = FFMAX(c->nb_heif_item, entry_count);
 
-    for (int i = 0; i < entry_count; i++) {
+    for (i = 0; i < entry_count; i++) {
         MOVAtom infe;
 
         infe.size = avio_rb32(pb) - 8;
         infe.type = avio_rl32(pb);
         ret = mov_read_infe(c, pb, infe, i);
         if (ret < 0)
-            return ret;
-        if (ret)
-            return 0;
+            goto fail;
+        if (!ret)
+            got_stream = 1;
     }
 
-    c->found_iinf = 1;
+    c->found_iinf = got_stream;
     return 0;
+fail:
+    for (; i >= 0; i--) {
+        HEIFItem *item = &c->heif_item[i];
+
+        av_freep(&item->name);
+        if (!item->st)
+            continue;
+
+        mov_free_stream_context(c->fc, item->st);
+        ff_remove_stream(c->fc, item->st);
+        item->st = NULL;
+    }
+    return ret;
 }
 
 static int mov_read_iref_dimg(MOVContext *c, AVIOContext *pb, int version)
@@ -9583,6 +9598,10 @@ static int mov_read_header(AVFormatContext *s)
                 return err;
         }
     }
+    // prevent iloc and iinf boxes from being parsed while reading packets.
+    // this is needed because an iinf box may have been parsed but ignored
+    // for having old infe boxes which create no streams.
+    mov->found_iloc = mov->found_iinf = 1;
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         if (mov->nb_chapter_tracks > 0 && !mov->ignore_chapters)
