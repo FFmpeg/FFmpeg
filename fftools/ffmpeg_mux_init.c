@@ -3025,7 +3025,7 @@ static int parse_forced_key_frames(void *log, KeyframeForceCtx *kf,
             if (nb_ch > INT_MAX - size ||
                 !(pts = av_realloc_f(pts, size += nb_ch - 1,
                                      sizeof(*pts))))
-                return AVERROR(ENOMEM);
+                goto fail;
 
             if (p[8]) {
                 ret = av_parse_time(&t, p + 8, 1);
