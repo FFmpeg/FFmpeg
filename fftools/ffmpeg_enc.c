@@ -168,7 +168,7 @@ int enc_open(void *opaque, const AVFrame *frame)
     InputStream *ist = ost->ist;
     Encoder              *e = ost->enc;
     AVCodecContext *enc_ctx = ost->enc_ctx;
-    Decoder            *dec;
+    Decoder            *dec = NULL;
     const AVCodec      *enc = enc_ctx->codec;
     OutputFile          *of = ost->file;
     FrameData *fd;
