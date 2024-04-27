@@ -3843,8 +3843,13 @@ int main(int argc, char **argv)
         if (vk_renderer) {
             AVDictionary *dict = NULL;
 
-            if (vulkan_params)
-                av_dict_parse_string(&dict, vulkan_params, "=", ":", 0);
+            if (vulkan_params) {
+                int ret = av_dict_parse_string(&dict, vulkan_params, "=", ":", 0);
+                if (ret < 0) {
+                    av_log(NULL, AV_LOG_FATAL, "Failed to parse, %s\n", vulkan_params);
+                    do_exit(NULL);
+                }
+            }
             ret = vk_renderer_create(vk_renderer, window, dict);
             av_dict_free(&dict);
             if (ret < 0) {
