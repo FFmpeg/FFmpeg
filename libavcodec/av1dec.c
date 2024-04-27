@@ -730,6 +730,8 @@ static int av1_frame_ref(AVCodecContext *avctx, AV1Frame *dst, const AV1Frame *s
     memcpy(dst->order_hints, src->order_hints,
            sizeof(dst->order_hints));
 
+    dst->force_integer_mv = src->force_integer_mv;
+
     return 0;
 
 fail:
@@ -1287,6 +1289,11 @@ static int get_current_frame(AVCodecContext *avctx)
     coded_lossless_param(s);
     order_hint_info(s);
     load_grain_params(s);
+
+    s->cur_frame.force_integer_mv =
+        s->raw_frame_header->force_integer_mv ||
+        s->raw_frame_header->frame_type == AV1_FRAME_KEY ||
+        s->raw_frame_header->frame_type == AV1_FRAME_INTRA_ONLY;
 
     return ret;
 }
