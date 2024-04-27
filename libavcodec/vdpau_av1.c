@@ -91,9 +91,7 @@ static int vdpau_av1_start_frame(AVCodecContext *avctx,
     info->show_frame                   = frame_header->show_frame;
     info->disable_cdf_update           = frame_header->disable_cdf_update;
     info->allow_screen_content_tools   = frame_header->allow_screen_content_tools;
-    info->force_integer_mv             = frame_header->force_integer_mv ||
-                                    frame_header->frame_type == AV1_FRAME_INTRA_ONLY ||
-                                    frame_header->frame_type == AV1_FRAME_KEY;
+    info->force_integer_mv             = s->cur_frame.force_integer_mv;
     info->coded_denom                  = frame_header->coded_denom;
     info->allow_intrabc                = frame_header->allow_intrabc;
     info->allow_high_precision_mv      = frame_header->allow_high_precision_mv;
