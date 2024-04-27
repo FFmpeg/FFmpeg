@@ -281,14 +281,21 @@ fail:
     return ret;
 }
 
-static int av_cold alloc_dummy_frame(MpegEncContext *s, Picture **picp)
+static int av_cold alloc_dummy_frame(MpegEncContext *s, Picture **picp, Picture *wpic)
 {
     Picture *pic;
-    int ret = alloc_picture(s, picp, 1);
+    int ret = alloc_picture(s, &pic, 1);
     if (ret < 0)
         return ret;
 
-    pic = *picp;
+    ff_mpeg_unref_picture(wpic);
+    ret = ff_mpeg_ref_picture(wpic, pic);
+    if (ret < 0) {
+        ff_mpeg_unref_picture(pic);
+        return ret;
+    }
+
+    *picp = pic;
 
     ff_thread_report_progress(&pic->tf, INT_MAX, 0);
     ff_thread_report_progress(&pic->tf, INT_MAX, 1);
@@ -312,6 +319,45 @@ static void color_frame(AVFrame *frame, int luma)
         memset(frame->data[2] + frame->linesize[2] * i,
                0x80, AV_CEIL_RSHIFT(frame->width, h_chroma_shift));
     }
+}
+
+int ff_mpv_alloc_dummy_frames(MpegEncContext *s)
+{
+    AVCodecContext *avctx = s->avctx;
+    int ret;
+
+    if ((!s->last_picture_ptr || !s->last_picture_ptr->f->buf[0]) &&
+        (s->pict_type != AV_PICTURE_TYPE_I)) {
+        if (s->pict_type == AV_PICTURE_TYPE_B && s->next_picture_ptr && s->next_picture_ptr->f->buf[0])
+            av_log(avctx, AV_LOG_DEBUG,
+                   "allocating dummy last picture for B frame\n");
+        else if (s->codec_id != AV_CODEC_ID_H261 /* H.261 has no keyframes */ &&
+                 (s->picture_structure == PICT_FRAME || s->first_field))
+            av_log(avctx, AV_LOG_ERROR,
+                   "warning: first frame is no keyframe\n");
+
+        /* Allocate a dummy frame */
+        ret = alloc_dummy_frame(s, &s->last_picture_ptr, &s->last_picture);
+        if (ret < 0)
+            return ret;
+
+        if (!avctx->hwaccel) {
+            int luma_val = s->codec_id == AV_CODEC_ID_FLV1 || s->codec_id == AV_CODEC_ID_H263 ? 16 : 0x80;
+            color_frame(s->last_picture_ptr->f, luma_val);
+        }
+    }
+    if ((!s->next_picture_ptr || !s->next_picture_ptr->f->buf[0]) &&
+        s->pict_type == AV_PICTURE_TYPE_B) {
+        /* Allocate a dummy frame */
+        ret = alloc_dummy_frame(s, &s->next_picture_ptr, &s->next_picture);
+        if (ret < 0)
+            return ret;
+    }
+
+    av_assert0(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
+                                                 s->last_picture_ptr->f->buf[0]));
+
+    return 0;
 }
 
 /**
@@ -382,34 +428,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->current_picture_ptr ? s->current_picture_ptr->f->data[0] : NULL,
             s->pict_type, s->droppable);
 
-    if ((!s->last_picture_ptr || !s->last_picture_ptr->f->buf[0]) &&
-        (s->pict_type != AV_PICTURE_TYPE_I)) {
-        if (s->pict_type == AV_PICTURE_TYPE_B && s->next_picture_ptr && s->next_picture_ptr->f->buf[0])
-            av_log(avctx, AV_LOG_DEBUG,
-                   "allocating dummy last picture for B frame\n");
-        else if (s->codec_id != AV_CODEC_ID_H261)
-            av_log(avctx, AV_LOG_ERROR,
-                   "warning: first frame is no keyframe\n");
-
-        /* Allocate a dummy frame */
-        ret = alloc_dummy_frame(s, &s->last_picture_ptr);
-        if (ret < 0)
-            return ret;
-
-        if (!avctx->hwaccel) {
-            int luma_val = s->codec_id == AV_CODEC_ID_FLV1 || s->codec_id == AV_CODEC_ID_H263 ? 16 : 0x80;
-            color_frame(s->last_picture_ptr->f, luma_val);
-        }
-
-    }
-    if ((!s->next_picture_ptr || !s->next_picture_ptr->f->buf[0]) &&
-        s->pict_type == AV_PICTURE_TYPE_B) {
-        /* Allocate a dummy frame */
-        ret = alloc_dummy_frame(s, &s->next_picture_ptr);
-        if (ret < 0)
-            return ret;
-    }
-
     if (s->last_picture_ptr) {
         if (s->last_picture_ptr->f->buf[0] &&
             (ret = ff_mpeg_ref_picture(&s->last_picture,
@@ -423,8 +441,9 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             return ret;
     }
 
-    av_assert0(s->pict_type == AV_PICTURE_TYPE_I || (s->last_picture_ptr &&
-                                                 s->last_picture_ptr->f->buf[0]));
+    ret = ff_mpv_alloc_dummy_frames(s);
+    if (ret < 0)
+        return ret;
 
     /* set dequantizer, we can't do it during init as
      * it might change for MPEG-4 and we can't do it in the header
