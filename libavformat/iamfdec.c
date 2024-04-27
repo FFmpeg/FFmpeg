@@ -154,6 +154,9 @@ static int iamf_read_header(AVFormatContext *s)
         }
     }
 
+    if (!s->nb_streams)
+        return AVERROR_INVALIDDATA;
+
     return 0;
 }
 
