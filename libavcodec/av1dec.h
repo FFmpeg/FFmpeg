@@ -67,6 +67,12 @@ typedef struct AV1Frame {
     // OrderHints[] when this is the current frame, otherwise
     // SavedOrderHints[s][] when is the reference frame in slot s.
     uint8_t order_hints[AV1_TOTAL_REFS_PER_FRAME];
+
+    // force_integer_mv value at the end of the frame header parsing.
+    // This is not the same as the syntax element value in
+    // raw_frame_header because the specification parsing tables
+    // override the value on intra frames.
+    uint8_t force_integer_mv;
 } AV1Frame;
 
 typedef struct TileGroupInfo {
