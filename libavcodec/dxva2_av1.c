@@ -101,7 +101,7 @@ int ff_dxva2_av1_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACont
     pp->coding.dual_filter                  = seq->enable_dual_filter;
     pp->coding.jnt_comp                     = seq->enable_jnt_comp;
     pp->coding.screen_content_tools         = frame_header->allow_screen_content_tools;
-    pp->coding.integer_mv                   = frame_header->force_integer_mv || !(frame_header->frame_type & 1);
+    pp->coding.integer_mv                   = h->cur_frame.force_integer_mv;
     pp->coding.cdef                         = seq->enable_cdef;
     pp->coding.restoration                  = seq->enable_restoration;
     pp->coding.film_grain                   = seq->film_grain_params_present && !(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN);
