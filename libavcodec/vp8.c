@@ -107,8 +107,11 @@ static int vp8_alloc_frame(VP8Context *s, VP8Frame *f, int ref)
                                            ref ? AV_GET_BUFFER_FLAG_REF : 0);
     if (ret < 0)
         return ret;
-    if (!(f->seg_map = ff_refstruct_allocz(s->mb_width * s->mb_height)))
+    f->seg_map = ff_refstruct_allocz(s->mb_width * s->mb_height);
+    if (!f->seg_map) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
     ret = ff_hwaccel_frame_priv_alloc(s->avctx, &f->hwaccel_picture_private);
     if (ret < 0)
         goto fail;
