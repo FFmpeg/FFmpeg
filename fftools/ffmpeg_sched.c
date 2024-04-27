@@ -2174,7 +2174,7 @@ finish:
 int sch_dec_send(Scheduler *sch, unsigned dec_idx, AVFrame *frame)
 {
     SchDec *dec;
-    int ret = 0;
+    int ret;
     unsigned nb_done = 0;
 
     av_assert0(dec_idx < sch->nb_dec);
@@ -2201,7 +2201,6 @@ int sch_dec_send(Scheduler *sch, unsigned dec_idx, AVFrame *frame)
             av_frame_unref(to_send);
             if (ret == AVERROR_EOF) {
                 nb_done++;
-                ret = 0;
                 continue;
             }
             return ret;
