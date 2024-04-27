@@ -476,7 +476,7 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
 
     const FrameData *fd;
 
-    if ((frame && frame->opaque_ref) || (pkt && pkt->opaque_ref)) {
+    if (frame ? frame->opaque_ref : pkt->opaque_ref) {
         fd   = (const FrameData*)(frame ? frame->opaque_ref->data : pkt->opaque_ref->data);
         tbi  = fd->dec.tb;
         ptsi = fd->dec.pts;
