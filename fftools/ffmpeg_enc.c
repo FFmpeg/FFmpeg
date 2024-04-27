@@ -474,7 +474,7 @@ void enc_stats_write(OutputStream *ost, EncStats *es,
     AVRational  tbi = (AVRational){ 0, 1};
     int64_t    ptsi = INT64_MAX;
 
-    const FrameData *fd;
+    const FrameData *fd = NULL;
 
     if (frame ? frame->opaque_ref : pkt->opaque_ref) {
         fd   = (const FrameData*)(frame ? frame->opaque_ref->data : pkt->opaque_ref->data);
