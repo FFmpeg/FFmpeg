@@ -106,9 +106,7 @@ static int nvdec_av1_start_frame(AVCodecContext *avctx, const uint8_t *buffer, u
             .show_frame                   = frame_header->show_frame,
             .disable_cdf_update           = frame_header->disable_cdf_update,
             .allow_screen_content_tools   = frame_header->allow_screen_content_tools,
-            .force_integer_mv             = frame_header->force_integer_mv ||
-                                            frame_header->frame_type == AV1_FRAME_INTRA_ONLY ||
-                                            frame_header->frame_type == AV1_FRAME_KEY,
+            .force_integer_mv             = s->cur_frame.force_integer_mv,
             .coded_denom                  = frame_header->coded_denom,
             .allow_intrabc                = frame_header->allow_intrabc,
             .allow_high_precision_mv      = frame_header->allow_high_precision_mv,
