@@ -466,7 +466,6 @@ typedef struct MpegEncContext {
     int rtp_payload_size;
 
     uint8_t *ptr_lastgob;
-    int16_t (*pblocks[12])[64];
 
     int16_t (*block)[64]; ///< points to one of the following blocks
     int16_t (*blocks)[12][64]; // for HQ mode we need to keep the best block

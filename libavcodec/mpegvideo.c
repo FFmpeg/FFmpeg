@@ -365,8 +365,6 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
 
 static int init_duplicate_context(MpegEncContext *s)
 {
-    int i;
-
     if (s->encoding) {
         s->me.map = av_mallocz(2 * ME_MAP_SIZE * sizeof(*s->me.map));
         if (!s->me.map)
@@ -381,15 +379,6 @@ static int init_duplicate_context(MpegEncContext *s)
     if (!FF_ALLOCZ_TYPED_ARRAY(s->blocks,  1 + s->encoding))
         return AVERROR(ENOMEM);
     s->block = s->blocks[0];
-
-    for (i = 0; i < 12; i++) {
-        s->pblocks[i] = &s->block[i];
-    }
-
-    if (s->avctx->codec_tag == AV_RL32("VCR2")) {
-        // exchange uv
-        FFSWAP(void *, s->pblocks[4], s->pblocks[5]);
-    }
 
     if (s->out_format == FMT_H263) {
         int mb_height = s->msmpeg4_version == 6 /* VC-1 like */ ?
@@ -484,18 +473,12 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
 int ff_update_duplicate_context(MpegEncContext *dst, const MpegEncContext *src)
 {
     MpegEncContext bak;
-    int i, ret;
+    int ret;
     // FIXME copy only needed parts
     backup_duplicate_context(&bak, dst);
     memcpy(dst, src, sizeof(MpegEncContext));
     backup_duplicate_context(dst, &bak);
-    for (i = 0; i < 12; i++) {
-        dst->pblocks[i] = &dst->block[i];
-    }
-    if (dst->avctx->codec_tag == AV_RL32("VCR2")) {
-        // exchange uv
-        FFSWAP(void *, dst->pblocks[4], dst->pblocks[5]);
-    }
+
     ret = ff_mpv_framesize_alloc(dst->avctx, &dst->sc, dst->linesize);
     if (ret < 0) {
         av_log(dst->avctx, AV_LOG_ERROR, "failed to allocate context "
@@ -682,7 +665,6 @@ static void clear_context(MpegEncContext *s)
     s->dct_error_sum = NULL;
     s->block = NULL;
     s->blocks = NULL;
-    memset(s->pblocks, 0, sizeof(s->pblocks));
     s->ac_val_base = NULL;
     s->ac_val[0] =
     s->ac_val[1] =

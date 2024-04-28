@@ -535,14 +535,14 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
 
         if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
             for (i = 0; i < mb_block_count; i++)
-                if ((ret = mpeg2_decode_block_intra(s, *s->pblocks[i], i)) < 0)
+                if ((ret = mpeg2_decode_block_intra(s, s->block[i], i)) < 0)
                     return ret;
         } else {
             for (i = 0; i < 6; i++) {
                 ret = ff_mpeg1_decode_block_intra(&s->gb,
                                                   s->intra_matrix,
                                                   s->intra_scantable.permutated,
-                                                  s->last_dc, *s->pblocks[i],
+                                                  s->last_dc, s->block[i],
                                                   i, s->qscale);
                 if (ret < 0) {
                     av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n",
@@ -760,7 +760,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
 
                 for (i = 0; i < mb_block_count; i++) {
                     if (cbp & (1 << 11)) {
-                        if ((ret = mpeg2_decode_block_non_intra(s, *s->pblocks[i], i)) < 0)
+                        if ((ret = mpeg2_decode_block_non_intra(s, s->block[i], i)) < 0)
                             return ret;
                     } else {
                         s->block_last_index[i] = -1;
@@ -770,7 +770,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
             } else {
                 for (i = 0; i < 6; i++) {
                     if (cbp & 32) {
-                        if ((ret = mpeg1_decode_block_inter(s, *s->pblocks[i], i)) < 0)
+                        if ((ret = mpeg1_decode_block_inter(s, s->block[i], i)) < 0)
                             return ret;
                     } else {
                         s->block_last_index[i] = -1;
@@ -1279,6 +1279,7 @@ static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
 {
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     AVCodecContext *avctx = s->avctx;
+    int second_field = 0;
     int ret;
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
@@ -1362,6 +1363,7 @@ static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
         if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     } else { // second field
+        second_field = 1;
         if (!s->cur_pic.ptr) {
             av_log(s->avctx, AV_LOG_ERROR, "first field missing\n");
             return AVERROR_INVALIDDATA;
@@ -1389,6 +1391,16 @@ static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
     if (avctx->hwaccel) {
         if ((ret = FF_HW_CALL(avctx, start_frame, buf, buf_size)) < 0)
             return ret;
+    } else if (s->codec_tag == MKTAG('V', 'C', 'R', '2')) {
+        // Exchange UV
+        FFSWAP(uint8_t*,  s->cur_pic.data[1],     s->cur_pic.data[2]);
+        FFSWAP(ptrdiff_t, s->cur_pic.linesize[1], s->cur_pic.linesize[2]);
+        if (!second_field) {
+            FFSWAP(uint8_t*,  s->next_pic.data[1],     s->next_pic.data[2]);
+            FFSWAP(ptrdiff_t, s->next_pic.linesize[1], s->next_pic.linesize[2]);
+            FFSWAP(uint8_t*,  s->last_pic.data[1],     s->last_pic.data[2]);
+            FFSWAP(ptrdiff_t, s->last_pic.linesize[1], s->last_pic.linesize[2]);
+        }
     }
 
     return 0;
