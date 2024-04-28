@@ -114,13 +114,16 @@ void mpeg_motion_internal(MpegEncContext *s,
             uvsrc_y = src_y >> 1;
         }
     // Even chroma mv's are full pel in H261
-    } else if (!is_mpeg12 && s->out_format == FMT_H261) {
+    } else if (!CONFIG_SMALL && !is_mpeg12 ||
+               CONFIG_SMALL && s->out_format == FMT_H261) {
+        av_assert2(s->out_format == FMT_H261);
         mx      = motion_x / 4;
         my      = motion_y / 4;
         uvdxy   = 0;
         uvsrc_x = s->mb_x * 8 + mx;
         uvsrc_y = mb_y * 8 + my;
     } else {
+        av_assert2(s->out_format == FMT_MPEG1);
         if (s->chroma_y_shift) {
             mx      = motion_x / 2;
             my      = motion_y / 2;
@@ -820,6 +823,9 @@ void ff_mpv_motion(MpegEncContext *s,
                    op_pixels_func (*pix_op)[4],
                    qpel_mc_func (*qpix_op)[16])
 {
+    av_assert2(s->out_format == FMT_MPEG1 ||
+               s->out_format == FMT_H263  ||
+               s->out_format == FMT_H261);
     prefetch_motion(s, ref_picture, dir);
 
 #if !CONFIG_SMALL
