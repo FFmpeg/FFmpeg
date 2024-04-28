@@ -113,23 +113,23 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         break;
     case AV_CODEC_ID_MSMPEG4V1:
         s->h263_pred       = 1;
-        s->msmpeg4_version = 1;
+        s->msmpeg4_version = MSMP4_V1;
         break;
     case AV_CODEC_ID_MSMPEG4V2:
         s->h263_pred       = 1;
-        s->msmpeg4_version = 2;
+        s->msmpeg4_version = MSMP4_V2;
         break;
     case AV_CODEC_ID_MSMPEG4V3:
         s->h263_pred       = 1;
-        s->msmpeg4_version = 3;
+        s->msmpeg4_version = MSMP4_V3;
         break;
     case AV_CODEC_ID_WMV1:
         s->h263_pred       = 1;
-        s->msmpeg4_version = 4;
+        s->msmpeg4_version = MSMP4_WMV1;
         break;
     case AV_CODEC_ID_WMV2:
         s->h263_pred       = 1;
-        s->msmpeg4_version = 5;
+        s->msmpeg4_version = MSMP4_WMV2;
         break;
     case AV_CODEC_ID_H263I:
         break;
@@ -227,7 +227,7 @@ static int decode_slice(MpegEncContext *s)
 
     for (; s->mb_y < s->mb_height; s->mb_y++) {
         /* per-row end of slice checks */
-        if (s->msmpeg4_version) {
+        if (s->msmpeg4_version != MSMP4_UNUSED) {
             if (s->resync_mb_y + s->slice_height == s->mb_y) {
                 ff_er_add_slice(&s->er, s->resync_mb_x, s->resync_mb_y,
                                 s->mb_x - 1, s->mb_y, ER_MB_END);
@@ -236,7 +236,7 @@ static int decode_slice(MpegEncContext *s)
             }
         }
 
-        if (s->msmpeg4_version == 1) {
+        if (s->msmpeg4_version == MSMP4_V1) {
             s->last_dc[0] =
             s->last_dc[1] =
             s->last_dc[2] = 128;
@@ -375,12 +375,12 @@ static int decode_slice(MpegEncContext *s)
     }
 
     // handle formats which don't have unique end markers
-    if (s->msmpeg4_version || (s->workaround_bugs & FF_BUG_NO_PADDING)) { // FIXME perhaps solve this more cleanly
+    if (s->msmpeg4_version != MSMP4_UNUSED || (s->workaround_bugs & FF_BUG_NO_PADDING)) { // FIXME perhaps solve this more cleanly
         int left      = get_bits_left(&s->gb);
         int max_extra = 7;
 
         /* no markers in M$ crap */
-        if (s->msmpeg4_version && s->pict_type == AV_PICTURE_TYPE_I)
+        if (s->msmpeg4_version != MSMP4_UNUSED && s->pict_type == AV_PICTURE_TYPE_I)
             max_extra += 17;
 
         /* buggy padding but the frame should still end approximately at
@@ -474,10 +474,12 @@ retry:
         return ret;
 
     /* let's go :-) */
-    if (CONFIG_WMV2_DECODER && s->msmpeg4_version == 5) {
+    if (CONFIG_WMV2_DECODER && s->msmpeg4_version == MSMP4_WMV2) {
         ret = ff_wmv2_decode_picture_header(s);
-    } else if (CONFIG_MSMPEG4DEC && s->msmpeg4_version) {
+#if CONFIG_MSMPEG4DEC
+    } else if (s->msmpeg4_version != MSMP4_UNUSED) {
         ret = ff_msmpeg4_decode_picture_header(s);
+#endif
     } else if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
         ret = ff_mpeg4_decode_picture_header(avctx->priv_data, &s->gb, 0, 0);
         s->skipped_last_frame = (ret == FRAME_SKIPPED);
@@ -583,13 +585,15 @@ retry:
     /* the second part of the wmv2 header contains the MB skip bits which
      * are stored in current_picture->mb_type which is not available before
      * ff_mpv_frame_start() */
-    if (CONFIG_WMV2_DECODER && s->msmpeg4_version == 5) {
+#if CONFIG_WMV2_DECODER
+    if (s->msmpeg4_version == MSMP4_WMV2) {
         ret = ff_wmv2_decode_secondary_picture_header(s);
         if (ret < 0)
             return ret;
         if (ret == 1)
             goto frame_end;
     }
+#endif
 
     /* decode each macroblock */
     s->mb_x = 0;
@@ -597,7 +601,7 @@ retry:
 
     slice_ret = decode_slice(s);
     while (s->mb_y < s->mb_height) {
-        if (s->msmpeg4_version) {
+        if (s->msmpeg4_version != MSMP4_UNUSED) {
             if (s->slice_height == 0 || s->mb_x != 0 || slice_ret < 0 ||
                 (s->mb_y % s->slice_height) != 0 || get_bits_left(&s->gb) < 0)
                 break;
@@ -609,14 +613,14 @@ retry:
                 s->er.error_occurred = 1;
         }
 
-        if (s->msmpeg4_version < 4 && s->h263_pred)
+        if (s->msmpeg4_version < MSMP4_WMV1 && s->h263_pred)
             ff_mpeg4_clean_buffers(s);
 
         if (decode_slice(s) < 0)
             slice_ret = AVERROR_INVALIDDATA;
     }
 
-    if (s->msmpeg4_version && s->msmpeg4_version < 4 &&
+    if (s->msmpeg4_version != MSMP4_UNUSED && s->msmpeg4_version < MSMP4_WMV1 &&
         s->pict_type == AV_PICTURE_TYPE_I)
         if (!CONFIG_MSMPEG4DEC ||
             ff_msmpeg4_decode_ext_header(s, buf_size) < 0)

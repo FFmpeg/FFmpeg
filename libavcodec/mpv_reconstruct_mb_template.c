@@ -173,7 +173,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
             }
 
             /* add dct residue */
-            if (!(IS_MPEG12(s) || s->msmpeg4_version ||
+            if (!(IS_MPEG12(s) || s->msmpeg4_version != MSMP4_UNUSED ||
                   (s->codec_id == AV_CODEC_ID_MPEG4 && !s->mpeg_quant)))
 #endif /* !IS_ENCODER */
             {

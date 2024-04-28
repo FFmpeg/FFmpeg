@@ -381,7 +381,7 @@ static int init_duplicate_context(MpegEncContext *s)
     s->block = s->blocks[0];
 
     if (s->out_format == FMT_H263) {
-        int mb_height = s->msmpeg4_version == 6 /* VC-1 like */ ?
+        int mb_height = s->msmpeg4_version == MSMP4_VC1 ?
                             FFALIGN(s->mb_height, 2) : s->mb_height;
         int y_size = s->b8_stride * (2 * mb_height + 1);
         int c_size = s->mb_stride * (mb_height + 1);
@@ -535,7 +535,7 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
     /* VC-1 can change from being progressive to interlaced on a per-frame
      * basis. We therefore allocate certain buffers so big that they work
      * in both instances. */
-    mb_height = s->msmpeg4_version == 6 /* VC-1 like*/ ?
+    mb_height = s->msmpeg4_version == MSMP4_VC1 ?
                     FFALIGN(s->mb_height, 2) : s->mb_height;
 
     s->mb_width   = (s->width + 15) / 16;
@@ -602,7 +602,7 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
         }
     }
 
-    if (s->msmpeg4_version >= 3) {
+    if (s->msmpeg4_version >= MSMP4_V3) {
         s->coded_block_base = av_mallocz(y_size);
         if (!s->coded_block_base)
             return AVERROR(ENOMEM);

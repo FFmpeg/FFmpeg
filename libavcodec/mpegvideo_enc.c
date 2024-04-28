@@ -754,7 +754,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->out_format      = FMT_H263;
         s->h263_pred       = 1;
         s->unrestricted_mv = 1;
-        s->msmpeg4_version = 2;
+        s->msmpeg4_version = MSMP4_V2;
         avctx->delay       = 0;
         s->low_delay       = 1;
         break;
@@ -762,7 +762,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->out_format        = FMT_H263;
         s->h263_pred         = 1;
         s->unrestricted_mv   = 1;
-        s->msmpeg4_version   = 3;
+        s->msmpeg4_version   = MSMP4_V3;
         s->flipflop_rounding = 1;
         avctx->delay         = 0;
         s->low_delay         = 1;
@@ -771,7 +771,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->out_format        = FMT_H263;
         s->h263_pred         = 1;
         s->unrestricted_mv   = 1;
-        s->msmpeg4_version   = 4;
+        s->msmpeg4_version   = MSMP4_WMV1;
         s->flipflop_rounding = 1;
         avctx->delay         = 0;
         s->low_delay         = 1;
@@ -780,7 +780,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         s->out_format        = FMT_H263;
         s->h263_pred         = 1;
         s->unrestricted_mv   = 1;
-        s->msmpeg4_version   = 5;
+        s->msmpeg4_version   = MSMP4_WMV2;
         s->flipflop_rounding = 1;
         avctx->delay         = 0;
         s->low_delay         = 1;
@@ -916,8 +916,10 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(s);
-        if (CONFIG_MSMPEG4ENC && s->msmpeg4_version)
+#if CONFIG_MSMPEG4ENC
+        if (s->msmpeg4_version != MSMP4_UNUSED)
             ff_msmpeg4_encode_init(s);
+#endif
     }
 
     /* init q matrix */
@@ -3456,9 +3458,12 @@ static int encode_thread(AVCodecContext *c, void *arg){
         }
     }
 
+#if CONFIG_MSMPEG4ENC
     //not beautiful here but we must write it before flushing so it has to be here
-    if (CONFIG_MSMPEG4ENC && s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type == AV_PICTURE_TYPE_I)
+    if (s->msmpeg4_version != MSMP4_UNUSED && s->msmpeg4_version < MSMP4_WMV1 &&
+        s->pict_type == AV_PICTURE_TYPE_I)
         ff_msmpeg4_encode_ext_header(s);
+#endif
 
     write_slice_end(s);
 
@@ -3561,7 +3566,7 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
 
     /* we need to initialize some time vars before we can encode B-frames */
     // RAL: Condition added for MPEG1VIDEO
-    if (s->out_format == FMT_MPEG1 || (s->h263_pred && !s->msmpeg4_version))
+    if (s->out_format == FMT_MPEG1 || (s->h263_pred && s->msmpeg4_version == MSMP4_UNUSED))
         set_frame_distances(s);
     if(CONFIG_MPEG4_ENCODER && s->codec_id == AV_CODEC_ID_MPEG4)
         ff_set_mpeg4_time(s);
@@ -3571,8 +3576,7 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
 //    s->lambda= s->cur_pic.ptr->quality; //FIXME qscale / ... stuff for ME rate distortion
 
     if(s->pict_type==AV_PICTURE_TYPE_I){
-        if(s->msmpeg4_version >= 3) s->no_rounding=1;
-        else                        s->no_rounding=0;
+        s->no_rounding = s->msmpeg4_version >= MSMP4_V3;
     }else if(s->pict_type!=AV_PICTURE_TYPE_B){
         if(s->flipflop_rounding || s->codec_id == AV_CODEC_ID_H263P || s->codec_id == AV_CODEC_ID_MPEG4)
             s->no_rounding ^= 1;
@@ -3654,7 +3658,7 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
         s->pict_type= AV_PICTURE_TYPE_I;
         for(i=0; i<s->mb_stride*s->mb_height; i++)
             s->mb_type[i]= CANDIDATE_MB_TYPE_INTRA;
-        if(s->msmpeg4_version >= 3)
+        if (s->msmpeg4_version >= MSMP4_V3)
             s->no_rounding=1;
         ff_dlog(s, "Scene change detected, encoding as I Frame %"PRId64" %"PRId64"\n",
                 s->mb_var_sum, s->mc_mb_var_sum);
@@ -3798,8 +3802,10 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
     case FMT_H263:
         if (CONFIG_WMV2_ENCODER && s->codec_id == AV_CODEC_ID_WMV2)
             ff_wmv2_encode_picture_header(s);
-        else if (CONFIG_MSMPEG4ENC && s->msmpeg4_version)
+#if CONFIG_MSMPEG4ENC
+        else if (s->msmpeg4_version != MSMP4_UNUSED)
             ff_msmpeg4_encode_picture_header(s);
+#endif
         else if (CONFIG_MPEG4_ENCODER && s->h263_pred) {
             ret = ff_mpeg4_encode_picture_header(s);
             if (ret < 0)

@@ -610,7 +610,7 @@ av_cold void ff_vc1_init_common(VC1Context *v)
     s->out_format      = FMT_H263;
 
     s->h263_pred       = 1;
-    s->msmpeg4_version = 6;
+    s->msmpeg4_version = MSMP4_VC1;
 
     ff_vc1dsp_init(&v->vc1dsp);
 

@@ -1609,7 +1609,7 @@ int ff_get_best_fcode(MpegEncContext * s, const int16_t (*mv_table)[2], int type
         int best_fcode=-1;
         int best_score=-10000000;
 
-        if(s->msmpeg4_version)
+        if (s->msmpeg4_version != MSMP4_UNUSED)
             range= FFMIN(range, 16);
         else if(s->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL)
             range= FFMIN(range, 256);
@@ -1660,9 +1660,9 @@ void ff_fix_long_p_mvs(MpegEncContext * s, int type)
     int y, range;
     av_assert0(s->pict_type==AV_PICTURE_TYPE_P);
 
-    range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version) ? 8 : 16) << f_code);
+    range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version != MSMP4_UNUSED) ? 8 : 16) << f_code);
 
-    av_assert0(range <= 16 || !s->msmpeg4_version);
+    av_assert0(range <= 16 || s->msmpeg4_version == MSMP4_UNUSED);
     av_assert0(range <=256 || !(s->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->avctx->strict_std_compliance >= FF_COMPLIANCE_NORMAL));
 
     if(c->avctx->me_range && range > c->avctx->me_range) range= c->avctx->me_range;
@@ -1709,7 +1709,7 @@ void ff_fix_long_mvs(MpegEncContext * s, uint8_t *field_select_table, int field_
     int y, h_range, v_range;
 
     // RAL: 8 in MPEG-1, 16 in MPEG-4
-    int range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version) ? 8 : 16) << f_code);
+    int range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version != MSMP4_UNUSED) ? 8 : 16) << f_code);
 
     if(c->avctx->me_range && range > c->avctx->me_range) range= c->avctx->me_range;
 
