@@ -3862,8 +3862,8 @@ const FFCodec ff_mpeg4_decoder = {
     .p.id                  = AV_CODEC_ID_MPEG4,
     .priv_data_size        = sizeof(Mpeg4DecContext),
     .init                  = decode_init,
-    .close                 = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
+    .close                 = ff_mpv_decode_close,
     .p.capabilities        = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal         = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,

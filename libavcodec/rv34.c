@@ -1522,10 +1522,9 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 
     ff_h264_pred_init(&r->h, AV_CODEC_ID_RV40, 8, 1);
 
-    if ((ret = rv34_decoder_alloc(r)) < 0) {
-        ff_mpv_common_end(&r->s);
+    ret = rv34_decoder_alloc(r);
+    if (ret < 0)
         return ret;
-    }
 
     ff_thread_once(&init_static_once, rv34_init_tables);
 
@@ -1823,8 +1822,7 @@ av_cold int ff_rv34_decode_end(AVCodecContext *avctx)
 {
     RV34DecContext *r = avctx->priv_data;
 
-    ff_mpv_common_end(&r->s);
     rv34_decoder_free(r);
 
-    return 0;
+    return ff_mpv_decode_close(avctx);
 }

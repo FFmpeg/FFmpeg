@@ -416,14 +416,6 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int rv10_decode_end(AVCodecContext *avctx)
-{
-    MpegEncContext *s = avctx->priv_data;
-
-    ff_mpv_common_end(s);
-    return 0;
-}
-
 static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
                               int buf_size, int buf_size2, int whole_size)
 {
@@ -666,8 +658,8 @@ const FFCodec ff_rv10_decoder = {
     .p.id           = AV_CODEC_ID_RV10,
     .priv_data_size = sizeof(RVDecContext),
     .init           = rv10_decode_init,
-    .close          = rv10_decode_end,
     FF_CODEC_DECODE_CB(rv10_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
 };
@@ -679,8 +671,8 @@ const FFCodec ff_rv20_decoder = {
     .p.id           = AV_CODEC_ID_RV20,
     .priv_data_size = sizeof(RVDecContext),
     .init           = rv10_decode_init,
-    .close          = rv10_decode_end,
     FF_CODEC_DECODE_CB(rv10_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .flush          = ff_mpeg_flush,
     .p.max_lowres   = 3,

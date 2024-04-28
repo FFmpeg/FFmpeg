@@ -159,14 +159,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-av_cold int ff_h263_decode_end(AVCodecContext *avctx)
-{
-    MpegEncContext *s = avctx->priv_data;
-
-    ff_mpv_common_end(s);
-    return 0;
-}
-
 /**
  * Return the number of bytes consumed for building the current frame.
  */
@@ -702,8 +694,8 @@ const FFCodec ff_h263_decoder = {
     .p.id           = AV_CODEC_ID_H263,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_h263_decode_init,
-    .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
@@ -719,8 +711,8 @@ const FFCodec ff_h263p_decoder = {
     .p.id           = AV_CODEC_ID_H263P,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_h263_decode_init,
-    .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1 |
                       AV_CODEC_CAP_DELAY,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,

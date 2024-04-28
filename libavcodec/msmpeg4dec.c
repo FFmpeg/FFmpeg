@@ -28,6 +28,7 @@
 #include "codec_internal.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "msmpeg4.h"
 #include "msmpeg4dec.h"
 #include "libavutil/imgutils.h"
@@ -848,8 +849,8 @@ const FFCodec ff_msmpeg4v1_decoder = {
     .p.id           = AV_CODEC_ID_MSMPEG4V1,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_msmpeg4_decode_init,
-    .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,
@@ -862,8 +863,8 @@ const FFCodec ff_msmpeg4v2_decoder = {
     .p.id           = AV_CODEC_ID_MSMPEG4V2,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_msmpeg4_decode_init,
-    .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,
@@ -876,8 +877,8 @@ const FFCodec ff_msmpeg4v3_decoder = {
     .p.id           = AV_CODEC_ID_MSMPEG4V3,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_msmpeg4_decode_init,
-    .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,
@@ -890,8 +891,8 @@ const FFCodec ff_wmv1_decoder = {
     .p.id           = AV_CODEC_ID_WMV1,
     .priv_data_size = sizeof(MpegEncContext),
     .init           = ff_msmpeg4_decode_init,
-    .close          = ff_h263_decode_end,
     FF_CODEC_DECODE_CB(ff_h263_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DRAW_HORIZ_BAND | AV_CODEC_CAP_DR1,
     .caps_internal  = FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM,
     .p.max_lowres   = 3,

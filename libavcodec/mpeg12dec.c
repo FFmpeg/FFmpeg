@@ -2595,9 +2595,8 @@ static av_cold int mpeg_decode_end(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
 
-    ff_mpv_common_end(&s->mpeg_enc_ctx);
     av_buffer_unref(&s->a53_buf_ref);
-    return 0;
+    return ff_mpv_decode_close(avctx);
 }
 
 const FFCodec ff_mpeg1video_decoder = {

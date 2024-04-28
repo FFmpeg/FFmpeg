@@ -580,6 +580,7 @@ const FFCodec ff_rv40_decoder = {
     FF_CODEC_DECODE_CB(ff_rv34_decode_frame),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
                              AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal         = FF_CODEC_CAP_INIT_CLEANUP,
     .flush                 = ff_mpeg_flush,
     UPDATE_THREAD_CONTEXT(ff_rv34_decode_update_thread_context),
 };

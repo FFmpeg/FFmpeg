@@ -449,6 +449,8 @@ static enum AVPixelFormat vc1_get_format(AVCodecContext *avctx)
     return ff_get_format(avctx, vc1_hwaccel_pixfmt_list_420);
 }
 
+static void vc1_decode_reset(AVCodecContext *avctx);
+
 av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
 {
     VC1Context *const v = avctx->priv_data;
@@ -477,7 +479,7 @@ av_cold int ff_vc1_decode_init(AVCodecContext *avctx)
 
     ret = vc1_decode_init_alloc_tables(v);
     if (ret < 0) {
-        ff_vc1_decode_end(avctx);
+        vc1_decode_reset(avctx);
         return ret;
     }
     return 0;
@@ -774,10 +776,7 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/** Close a VC1/WMV3 decoder
- * @warning Initial try at using MpegEncContext stuff
- */
-av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
+static av_cold void vc1_decode_reset(AVCodecContext *avctx)
 {
     VC1Context *v = avctx->priv_data;
     int i;
@@ -803,9 +802,16 @@ av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
     av_freep(&v->is_intra_base); // FIXME use v->mb_type[]
     av_freep(&v->luma_mv_base);
     ff_intrax8_common_end(&v->x8);
-    return 0;
 }
 
+/**
+ * Close a MSS2/VC1/WMV3 decoder
+ */
+av_cold int ff_vc1_decode_end(AVCodecContext *avctx)
+{
+    vc1_decode_reset(avctx);
+    return ff_mpv_decode_close(avctx);
+}
 
 /** Decode a VC1/WMV3 frame
  * @todo TODO: Handle VC-1 IDUs (Transport level?)

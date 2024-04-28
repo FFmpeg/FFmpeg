@@ -660,15 +660,6 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     return get_consumed_bytes(s, buf_size);
 }
 
-static av_cold int h261_decode_end(AVCodecContext *avctx)
-{
-    H261DecContext *const h = avctx->priv_data;
-    MpegEncContext *s = &h->s;
-
-    ff_mpv_common_end(s);
-    return 0;
-}
-
 const FFCodec ff_h261_decoder = {
     .p.name         = "h261",
     CODEC_LONG_NAME("H.261"),
@@ -676,8 +667,8 @@ const FFCodec ff_h261_decoder = {
     .p.id           = AV_CODEC_ID_H261,
     .priv_data_size = sizeof(H261DecContext),
     .init           = h261_decode_init,
-    .close          = h261_decode_end,
     FF_CODEC_DECODE_CB(h261_decode_frame),
+    .close          = ff_mpv_decode_close,
     .p.capabilities = AV_CODEC_CAP_DR1,
     .p.max_lowres   = 3,
 };

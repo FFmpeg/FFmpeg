@@ -63,6 +63,7 @@ int ff_mpv_export_qp_table(const MpegEncContext *s, AVFrame *f,
 int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src);
 void ff_mpeg_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_mpeg_flush(AVCodecContext *avctx);
+int ff_mpv_decode_close(AVCodecContext *avctx);
 
 void ff_print_debug_info(const MpegEncContext *s, const MPVPicture *p, AVFrame *pict);
 

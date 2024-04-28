@@ -173,6 +173,14 @@ do {\
     return 0;
 }
 
+int ff_mpv_decode_close(AVCodecContext *avctx)
+{
+    MpegEncContext *s = avctx->priv_data;
+
+    ff_mpv_common_end(s);
+    return 0;
+}
+
 int ff_mpv_common_frame_size_change(MpegEncContext *s)
 {
     int err = 0;

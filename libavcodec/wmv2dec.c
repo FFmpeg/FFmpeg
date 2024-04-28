@@ -27,6 +27,7 @@
 #include "mathops.h"
 #include "mpegutils.h"
 #include "mpegvideo.h"
+#include "mpegvideodec.h"
 #include "msmpeg4.h"
 #include "msmpeg4_vc1_data.h"
 #include "msmpeg4dec.h"
@@ -584,7 +585,7 @@ static av_cold int wmv2_decode_end(AVCodecContext *avctx)
     WMV2DecContext *const w = avctx->priv_data;
 
     ff_intrax8_common_end(&w->x8);
-    return ff_h263_decode_end(avctx);
+    return ff_mpv_decode_close(avctx);
 }
 
 const FFCodec ff_wmv2_decoder = {
