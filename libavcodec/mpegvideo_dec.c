@@ -862,8 +862,8 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                                s->mv[dir][1][0], s->mv[dir][1][1],
                                block_s, mb_y);
         } else {
-            if (   s->picture_structure != s->field_select[dir][0] + 1 && s->pict_type != AV_PICTURE_TYPE_B && !s->first_field
-                || !ref_picture[0]) {
+            if (s->picture_structure != s->field_select[dir][0] + 1 &&
+                s->pict_type != AV_PICTURE_TYPE_B && !s->first_field) {
                 ref_picture = s->current_picture_ptr->f->data;
             }
             mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr,
@@ -877,9 +877,8 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
         for (int i = 0; i < 2; i++) {
             uint8_t *const *ref2picture;
 
-            if ((s->picture_structure == s->field_select[dir][i] + 1 ||
-                 s->pict_type == AV_PICTURE_TYPE_B || s->first_field) &&
-                ref_picture[0]) {
+            if (s->picture_structure == s->field_select[dir][i] + 1 ||
+                s->pict_type == AV_PICTURE_TYPE_B || s->first_field) {
                 ref2picture = ref_picture;
             } else {
                 ref2picture = s->current_picture_ptr->f->data;
@@ -910,9 +909,6 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                 pix_op = s->h264chroma.avg_h264_chroma_pixels_tab;
             }
         } else {
-            if (!ref_picture[0]) {
-                ref_picture = s->current_picture_ptr->f->data;
-            }
             for (int i = 0; i < 2; i++) {
                 mpeg_motion_lowres(s, dest_y, dest_cb, dest_cr,
                                    0, 0, s->picture_structure != i + 1,
