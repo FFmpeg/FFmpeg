@@ -1256,13 +1256,10 @@ static int mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     s->chroma_420_type            = get_bits1(&s->gb);
     s->progressive_frame          = get_bits1(&s->gb);
 
-    if (s->alternate_scan) {
-        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable, ff_alternate_vertical_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, ff_alternate_vertical_scan);
-    } else {
-        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable, ff_zigzag_direct);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, ff_zigzag_direct);
-    }
+    // We only initialize intra_scantable, as both scantables always coincide
+    // and all code therefore only uses the intra one.
+    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,
+                      s->alternate_scan ? ff_alternate_vertical_scan : ff_zigzag_direct);
 
     /* composite display not parsed */
     ff_dlog(s->avctx, "intra_dc_precision=%d\n", s->intra_dc_precision);
