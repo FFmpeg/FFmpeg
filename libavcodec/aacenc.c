@@ -538,11 +538,9 @@ static void adjust_frame_information(ChannelElement *cpe, int chans)
         maxsfb = 0;
         cpe->ch[ch].pulse.num_pulse = 0;
         for (w = 0; w < ics->num_windows; w += ics->group_len[w]) {
-            for (w2 =  0; w2 < ics->group_len[w]; w2++) {
-                for (cmaxsfb = ics->num_swb; cmaxsfb > 0 && cpe->ch[ch].zeroes[w*16+cmaxsfb-1]; cmaxsfb--)
-                    ;
-                maxsfb = FFMAX(maxsfb, cmaxsfb);
-            }
+            for (cmaxsfb = ics->num_swb; cmaxsfb > 0 && cpe->ch[ch].zeroes[w*16+cmaxsfb-1]; cmaxsfb--)
+                ;
+            maxsfb = FFMAX(maxsfb, cmaxsfb);
         }
         ics->max_sfb = maxsfb;
 
