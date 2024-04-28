@@ -1657,8 +1657,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx, AVFrame *pict,
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return AVERROR_INVALIDDATA;
     }
-    if ((!s->last_pic.ptr || !s->last_pic.ptr->f->data[0]) &&
-        si.type == AV_PICTURE_TYPE_B) {
+    if (!s->last_pic.ptr && si.type == AV_PICTURE_TYPE_B) {
         av_log(avctx, AV_LOG_ERROR, "Invalid decoder state: B-frame without "
                "reference data.\n");
         faulty_b = 1;

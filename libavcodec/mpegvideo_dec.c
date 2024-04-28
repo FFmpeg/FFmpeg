@@ -312,9 +312,10 @@ int ff_mpv_alloc_dummy_frames(MpegEncContext *s)
     AVCodecContext *avctx = s->avctx;
     int ret;
 
-    if ((!s->last_pic.ptr || !s->last_pic.ptr->f->buf[0]) &&
-        (s->pict_type != AV_PICTURE_TYPE_I)) {
-        if (s->pict_type == AV_PICTURE_TYPE_B && s->next_pic.ptr && s->next_pic.ptr->f->buf[0])
+    av_assert1(!s->last_pic.ptr || s->last_pic.ptr->f->buf[0]);
+    av_assert1(!s->next_pic.ptr || s->next_pic.ptr->f->buf[0]);
+    if (!s->last_pic.ptr && s->pict_type != AV_PICTURE_TYPE_I) {
+        if (s->pict_type == AV_PICTURE_TYPE_B && s->next_pic.ptr)
             av_log(avctx, AV_LOG_DEBUG,
                    "allocating dummy last picture for B frame\n");
         else if (s->codec_id != AV_CODEC_ID_H261 /* H.261 has no keyframes */ &&
@@ -332,8 +333,7 @@ int ff_mpv_alloc_dummy_frames(MpegEncContext *s)
             color_frame(s->last_pic.ptr->f, luma_val);
         }
     }
-    if ((!s->next_pic.ptr || !s->next_pic.ptr->f->buf[0]) &&
-        s->pict_type == AV_PICTURE_TYPE_B) {
+    if (!s->next_pic.ptr && s->pict_type == AV_PICTURE_TYPE_B) {
         /* Allocate a dummy frame */
         ret = alloc_dummy_frame(s, &s->next_pic);
         if (ret < 0)
