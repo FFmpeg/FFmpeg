@@ -1278,10 +1278,10 @@ static int mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
     return 0;
 }
 
-static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
+static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
 {
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
     AVCodecContext *avctx = s->avctx;
-    Mpeg1Context *s1      = (Mpeg1Context *) s;
     int ret;
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
@@ -2460,7 +2460,7 @@ static int decode_chunks(AVCodecContext *avctx, AVFrame *picture,
                 if (s->first_slice) {
                     skip_frame     = 0;
                     s->first_slice = 0;
-                    if ((ret = mpeg_field_start(s2, buf, buf_size)) < 0)
+                    if ((ret = mpeg_field_start(s, buf, buf_size)) < 0)
                         return ret;
                 }
                 if (!s2->cur_pic.ptr) {
