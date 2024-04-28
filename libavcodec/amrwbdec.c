@@ -26,6 +26,7 @@
 
 #include "config.h"
 
+#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/lfg.h"
@@ -554,6 +555,8 @@ static void decode_fixed_vector(float *fixed_vector, const uint16_t *pulse_hi,
             decode_6p_track(sig_pos[i], (int) pulse_lo[i] +
                            ((int) pulse_hi[i] << 11), 4, 1);
         break;
+    default:
+        av_assert2(0);
     }
 
     memset(fixed_vector, 0, sizeof(float) * AMRWB_SFR_SIZE);
