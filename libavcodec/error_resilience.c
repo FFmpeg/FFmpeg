@@ -948,18 +948,9 @@ void ff_er_frame_end(ERContext *s, int *decode_error_flags)
             s->ref_index[i]       = av_calloc(s->mb_stride * s->mb_height, 4 * sizeof(uint8_t));
             s->motion_val_base[i] = av_calloc(size + 4, 2 * sizeof(uint16_t));
             if (!s->ref_index[i] || !s->motion_val_base[i])
-                break;
+                goto cleanup;
             s->cur_pic.ref_index[i]  = s->ref_index[i];
             s->cur_pic.motion_val[i] = s->motion_val_base[i] + 4;
-        }
-        if (i < 2) {
-            for (i = 0; i < 2; i++) {
-                av_freep(&s->ref_index[i]);
-                av_freep(&s->motion_val_base[i]);
-                s->cur_pic.ref_index[i]  = NULL;
-                s->cur_pic.motion_val[i] = NULL;
-            }
-            return;
         }
     }
 
@@ -1344,14 +1335,15 @@ void ff_er_frame_end(ERContext *s, int *decode_error_flags)
             s->mbintra_table[mb_xy] = 1;
     }
 
+    memset(&s->cur_pic, 0, sizeof(ERPicture));
+    memset(&s->last_pic, 0, sizeof(ERPicture));
+    memset(&s->next_pic, 0, sizeof(ERPicture));
+
+cleanup:
     for (i = 0; i < 2; i++) {
         av_freep(&s->ref_index[i]);
         av_freep(&s->motion_val_base[i]);
         s->cur_pic.ref_index[i]  = NULL;
         s->cur_pic.motion_val[i] = NULL;
     }
-
-    memset(&s->cur_pic, 0, sizeof(ERPicture));
-    memset(&s->last_pic, 0, sizeof(ERPicture));
-    memset(&s->next_pic, 0, sizeof(ERPicture));
 }
