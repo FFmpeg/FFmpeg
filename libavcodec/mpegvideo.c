@@ -520,7 +520,6 @@ void ff_mpv_common_defaults(MpegEncContext *s)
     s->progressive_sequence  = 1;
     s->picture_structure     = PICT_FRAME;
 
-    s->coded_picture_number  = 0;
     s->picture_number        = 0;
 
     s->f_code                = 1;
