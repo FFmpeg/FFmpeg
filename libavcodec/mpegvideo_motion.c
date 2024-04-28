@@ -239,18 +239,18 @@ static void mpeg_motion_field(MpegEncContext *s, uint8_t *dest_y,
                               int bottom_field, int field_select,
                               uint8_t *const *ref_picture,
                               op_pixels_func (*pix_op)[4],
-                              int motion_x, int motion_y, int h, int mb_y)
+                              int motion_x, int motion_y, int mb_y)
 {
 #if !CONFIG_SMALL
     if (s->out_format == FMT_MPEG1)
         mpeg_motion_internal(s, dest_y, dest_cb, dest_cr, 1,
                              bottom_field, field_select, ref_picture, pix_op,
-                             motion_x, motion_y, h, 1, 0, mb_y);
+                             motion_x, motion_y, 8, 1, 0, mb_y);
     else
 #endif
         mpeg_motion_internal(s, dest_y, dest_cb, dest_cr, 1,
                              bottom_field, field_select, ref_picture, pix_op,
-                             motion_x, motion_y, h, 0, 0, mb_y);
+                             motion_x, motion_y, 8, 0, 0, mb_y);
 }
 
 // FIXME: SIMDify, avg variant, 16x16 version
@@ -738,12 +738,12 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                 mpeg_motion_field(s, dest_y, dest_cb, dest_cr,
                                   0, s->field_select[dir][0],
                                   ref_picture, pix_op,
-                                  s->mv[dir][0][0], s->mv[dir][0][1], 8, mb_y);
+                                  s->mv[dir][0][0], s->mv[dir][0][1], mb_y);
                 /* bottom field */
                 mpeg_motion_field(s, dest_y, dest_cb, dest_cr,
                                   1, s->field_select[dir][1],
                                   ref_picture, pix_op,
-                                  s->mv[dir][1][0], s->mv[dir][1][1], 8, mb_y);
+                                  s->mv[dir][1][0], s->mv[dir][1][1], mb_y);
             }
         } else {
             av_assert2(s->out_format == FMT_MPEG1);
@@ -790,7 +790,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                         mpeg_motion_field(s, dest_y, dest_cb, dest_cr,
                                           j, j ^ i, ref_picture, pix_op,
                                           s->mv[dir][2 * i + j][0],
-                                          s->mv[dir][2 * i + j][1], 8, mb_y);
+                                          s->mv[dir][2 * i + j][1], mb_y);
                     pix_op = s->hdsp.avg_pixels_tab;
                 }
             } else {
