@@ -719,7 +719,11 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                       dir, ref_picture, qpix_op, pix_op);
         break;
     case MV_TYPE_FIELD:
-        if (s->picture_structure == PICT_FRAME) {
+        // Only MPEG-1/2 can have a picture_structure != PICT_FRAME here.
+        if (!CONFIG_SMALL)
+            av_assert2(is_mpeg12 || s->picture_structure == PICT_FRAME);
+        if ((!CONFIG_SMALL && !is_mpeg12) ||
+            s->picture_structure == PICT_FRAME) {
             if (!is_mpeg12 && s->quarter_sample) {
                 for (i = 0; i < 2; i++)
                     qpel_motion(s, dest_y, dest_cb, dest_cr,
@@ -739,6 +743,7 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
                                   s->mv[dir][1][0], s->mv[dir][1][1], 8, mb_y);
             }
         } else {
+            av_assert2(s->out_format == FMT_MPEG1);
             if (s->picture_structure != s->field_select[dir][0] + 1 &&
                 s->pict_type != AV_PICTURE_TYPE_B && !s->first_field) {
                 ref_picture = s->current_picture_ptr->f->data;
