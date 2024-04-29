@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_RISCV_VP9DSP_RISCV_H
-#define AVCODEC_RISCV_VP9DSP_RISCV_H
+#ifndef AVCODEC_RISCV_VP9DSP_H
+#define AVCODEC_RISCV_VP9DSP_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -168,4 +168,4 @@ VP9_COPY_RISCV_RVI_FUNC(4);
 #undef VP9_BILINEAR_RISCV_RVV_FUNC
 #undef VP9_COPY_AVG_RISCV_RVV_FUNC
 
-#endif  // #ifndef AVCODEC_RISCV_VP9DSP_RISCV_H
+#endif  // #ifndef AVCODEC_RISCV_VP9DSP_H
