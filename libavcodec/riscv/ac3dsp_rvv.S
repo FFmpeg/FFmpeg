@@ -37,3 +37,44 @@ func ff_float_to_fixed24_rvv, zve32f
 
         ret
 endfunc
+
+#if __riscv_xlen >= 64
+func ff_sum_square_butterfly_int32_rvv, zve64x
+        vsetvli    t0, zero, e64, m8, ta, ma
+        vmv.v.x    v0, zero
+        vmv.v.x    v8, zero
+1:
+        vsetvli    t0, a3, e32, m2, tu, ma
+        vle32.v    v16, (a1)
+        sub        a3, a3, t0
+        vle32.v    v20, (a2)
+        sh2add     a1, t0, a1
+        vadd.vv    v24, v16, v20
+        sh2add     a2, t0, a2
+        vsub.vv    v28, v16, v20
+        vwmacc.vv  v0, v16, v16
+        vwmacc.vv  v4, v20, v20
+        vwmacc.vv  v8, v24, v24
+        vwmacc.vv  v12, v28, v28
+        bnez       a3, 1b
+
+        vsetvli    t0, zero, e64, m4, ta, ma
+        vmv.s.x    v16, zero
+        vmv.s.x    v17, zero
+        vredsum.vs v16, v0, v16
+        vmv.s.x    v18, zero
+        vredsum.vs v17, v4, v17
+        vmv.s.x    v19, zero
+        vredsum.vs v18, v8, v18
+        vmv.x.s    t0, v16
+        vredsum.vs v19, v12, v19
+        vmv.x.s    t1, v17
+        sd         t0,   (a0)
+        vmv.x.s    t2, v18
+        sd         t1,  8(a0)
+        vmv.x.s    t3, v19
+        sd         t2, 16(a0)
+        sd         t3, 24(a0)
+        ret
+endfunc
+#endif
