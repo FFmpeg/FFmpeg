@@ -31,7 +31,7 @@
 typedef struct KVAGHeader {
     uint32_t    magic;
     uint32_t    data_size;
-    uint32_t    sample_rate;
+    int    sample_rate;
     uint16_t    stereo;
 } KVAGHeader;
 
@@ -64,6 +64,9 @@ static int kvag_read_header(AVFormatContext *s)
     hdr.data_size               = AV_RL32(buf +  4);
     hdr.sample_rate             = AV_RL32(buf +  8);
     hdr.stereo                  = AV_RL16(buf + 12);
+
+    if (hdr.sample_rate <= 0)
+        return AVERROR_INVALIDDATA;
 
     par                         = st->codecpar;
     par->codec_type             = AVMEDIA_TYPE_AUDIO;
