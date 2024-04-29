@@ -639,6 +639,11 @@ static int concat_parse_script(AVFormatContext *avf)
         }
     }
 
+    if (!file) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     if (file->inpoint != AV_NOPTS_VALUE && file->outpoint != AV_NOPTS_VALUE) {
         if (file->inpoint  > file->outpoint ||
             file->outpoint - (uint64_t)file->inpoint > INT64_MAX)
