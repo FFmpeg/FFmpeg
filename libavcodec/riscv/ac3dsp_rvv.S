@@ -78,3 +78,42 @@ func ff_sum_square_butterfly_int32_rvv, zve64x
         ret
 endfunc
 #endif
+
+func ff_sum_square_butterfly_float_rvv, zve32f
+        vsetvli     t0, zero, e32, m8, ta, ma
+        vmv.v.x     v0, zero
+        vmv.v.x     v8, zero
+1:
+        vsetvli     t0, a3, e32, m4, tu, ma
+        vle32.v     v16, (a1)
+        sub         a3, a3, t0
+        vle32.v     v20, (a2)
+        sh2add      a1, t0, a1
+        vfadd.vv    v24, v16, v20
+        sh2add      a2, t0, a2
+        vfsub.vv    v28, v16, v20
+        vfmacc.vv   v0, v16, v16
+        vfmacc.vv   v4, v20, v20
+        vfmacc.vv   v8, v24, v24
+        vfmacc.vv   v12, v28, v28
+        bnez        a3, 1b
+
+        vsetvli     t0, zero, e32, m4, ta, ma
+        vmv.s.x     v16, zero
+        vmv.s.x     v17, zero
+        vfredsum.vs v16, v0, v16
+        vmv.s.x     v18, zero
+        vfredsum.vs v17, v4, v17
+        vmv.s.x     v19, zero
+        vfredsum.vs v18, v8, v18
+        vfmv.f.s    ft0, v16
+        vfredsum.vs v19, v12, v19
+        vfmv.f.s    ft1, v17
+        fsw         ft0,   (a0)
+        vfmv.f.s    ft2, v18
+        fsw         ft1,  4(a0)
+        vfmv.f.s    ft3, v19
+        fsw         ft2,  8(a0)
+        fsw         ft3, 12(a0)
+        ret
+endfunc

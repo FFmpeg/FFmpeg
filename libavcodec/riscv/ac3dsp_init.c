@@ -30,6 +30,8 @@ void ff_extract_exponents_rvb(uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_float_to_fixed24_rvv(int32_t *dst, const float *src, size_t len);
 void ff_sum_square_butterfly_int32_rvv(int64_t *, const int32_t *,
                                        const int32_t *, int);
+void ff_sum_square_butterfly_float_rvv(float *, const float *,
+                                       const float *, int);
 
 av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
 {
@@ -39,8 +41,10 @@ av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
     if (flags & AV_CPU_FLAG_RVB_ADDR) {
         if (flags & AV_CPU_FLAG_RVB_BASIC)
             c->extract_exponents = ff_extract_exponents_rvb;
-        if (flags & AV_CPU_FLAG_RVV_F32)
+        if (flags & AV_CPU_FLAG_RVV_F32) {
             c->float_to_fixed24 = ff_float_to_fixed24_rvv;
+            c->sum_square_butterfly_float = ff_sum_square_butterfly_float_rvv;
+        }
 # if __riscv_xlen >= 64
         if (flags & AV_CPU_FLAG_RVV_I64)
             c->sum_square_butterfly_int32 = ff_sum_square_butterfly_int32_rvv;
