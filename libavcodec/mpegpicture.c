@@ -223,6 +223,7 @@ static int alloc_picture_tables(BufferPoolContext *pools, MPVPicture *pic,
         for (int i = 0; i < 2; i++) {
             GET_BUFFER(ref_index,, [i]);
             GET_BUFFER(motion_val, _base, [i]);
+            pic->motion_val[i] = pic->motion_val_base[i] + 4;
         }
     }
 #undef GET_BUFFER
@@ -230,6 +231,9 @@ static int alloc_picture_tables(BufferPoolContext *pools, MPVPicture *pic,
     pic->mb_width  = pools->alloc_mb_width;
     pic->mb_height = mb_height;
     pic->mb_stride = pools->alloc_mb_stride;
+
+    pic->qscale_table = pic->qscale_table_base + 2 * pic->mb_stride + 1;
+    pic->mb_type      = pic->mb_type_base      + 2 * pic->mb_stride + 1;
 
     return 0;
 }
@@ -250,13 +254,6 @@ int ff_mpv_alloc_pic_accessories(AVCodecContext *avctx, MPVWorkPicture *wpic,
     if (ret < 0)
         goto fail;
 
-    pic->qscale_table = pic->qscale_table_base + 2 * pic->mb_stride + 1;
-    pic->mb_type      = pic->mb_type_base      + 2 * pic->mb_stride + 1;
-
-    if (pic->motion_val_base[0]) {
-        for (int i = 0; i < 2; i++)
-            pic->motion_val[i] = pic->motion_val_base[i] + 4;
-    }
     set_workpic_from_pic(wpic, pic);
 
     return 0;
