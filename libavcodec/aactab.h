@@ -64,6 +64,8 @@ DECLARE_ALIGNED(32, extern const float, ff_aac_eld_window_480)[1800];
 DECLARE_ALIGNED(32, extern const int,   ff_aac_eld_window_480_fixed)[1800];
 // @}
 
+extern const float ff_aac_deemph_weights[16];
+
 /* Initializes data shared between float decoder and encoder. */
 void ff_aac_float_common_init(void);
 
