@@ -441,10 +441,10 @@ static void check_unescape(void)
 
 static void check_mspel_pixels(void)
 {
-    LOCAL_ALIGNED_8(uint8_t, src0, [32 * 32]);
-    LOCAL_ALIGNED_8(uint8_t, src1, [32 * 32]);
-    LOCAL_ALIGNED_8(uint8_t, dst0, [32 * 32]);
-    LOCAL_ALIGNED_8(uint8_t, dst1, [32 * 32]);
+    LOCAL_ALIGNED_16(uint8_t, src0, [32 * 32]);
+    LOCAL_ALIGNED_16(uint8_t, src1, [32 * 32]);
+    LOCAL_ALIGNED_16(uint8_t, dst0, [32 * 32]);
+    LOCAL_ALIGNED_16(uint8_t, dst1, [32 * 32]);
 
     VC1DSPContext h;
 
