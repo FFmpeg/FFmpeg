@@ -60,7 +60,7 @@ av_cold void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags)
 
         if (!(flags & AV_CODEC_FLAG_BITEXACT)) {
             c->v_loop_filter = c->v_loop_filter_unaligned = ff_vp3_v_loop_filter_mmxext;
-            c->h_loop_filter = c->v_loop_filter_unaligned = ff_vp3_h_loop_filter_mmxext;
+            c->h_loop_filter = c->h_loop_filter_unaligned = ff_vp3_h_loop_filter_mmxext;
         }
     }
 
