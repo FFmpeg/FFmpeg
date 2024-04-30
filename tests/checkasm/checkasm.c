@@ -167,6 +167,9 @@ static const struct {
     #if CONFIG_RV34DSP
         { "rv34dsp", checkasm_check_rv34dsp },
     #endif
+    #if CONFIG_RV40_DECODER
+        { "rv40dsp", checkasm_check_rv40dsp },
+    #endif
     #if CONFIG_SVQ1_ENCODER
         { "svq1enc", checkasm_check_svq1enc },
     #endif
