@@ -709,6 +709,8 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c)
     ff_rv40dsp_init_aarch64(c);
 #elif ARCH_ARM
     ff_rv40dsp_init_arm(c);
+#elif ARCH_RISCV
+    ff_rv40dsp_init_riscv(c);
 #elif ARCH_X86
     ff_rv40dsp_init_x86(c);
 #endif
