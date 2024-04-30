@@ -245,7 +245,7 @@ static inline void put_se_coef(PutBitContext *pb, const AVDOVIRpuDataHeader *hdr
 
 static int av_q2den(AVRational q, int den)
 {
-    if (q.den == den)
+    if (!q.den || q.den == den)
         return q.num;
     q = av_mul_q(q, av_make_q(den, 1));
     return (q.num + (q.den >> 1)) / q.den;
