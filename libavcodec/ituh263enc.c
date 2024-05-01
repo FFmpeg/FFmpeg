@@ -512,7 +512,6 @@ void ff_h263_encode_mb(MpegEncContext * s,
                 s->misc_bits++;
                 s->last_bits++;
             }
-            s->skip_count++;
 
             return;
         }

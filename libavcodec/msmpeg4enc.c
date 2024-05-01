@@ -405,7 +405,6 @@ void ff_msmpeg4_encode_mb(MpegEncContext * s,
             put_bits(&s->pb, 1, 1);
             s->last_bits++;
             s->misc_bits++;
-            s->skip_count++;
 
             return;
         }

@@ -39,7 +39,7 @@ void ff_write_pass1_stats(MpegEncContext *s)
 {
     snprintf(s->avctx->stats_out, 256,
              "in:%d out:%d type:%d q:%d itex:%d ptex:%d mv:%d misc:%d "
-             "fcode:%d bcode:%d mc-var:%"PRId64" var:%"PRId64" icount:%d skipcount:%d hbits:%d;\n",
+             "fcode:%d bcode:%d mc-var:%"PRId64" var:%"PRId64" icount:%d hbits:%d;\n",
              s->current_picture_ptr->display_picture_number,
              s->current_picture_ptr->coded_picture_number,
              s->pict_type,
@@ -52,7 +52,7 @@ void ff_write_pass1_stats(MpegEncContext *s)
              s->b_code,
              s->mc_mb_var_sum,
              s->mb_var_sum,
-             s->i_count, s->skip_count,
+             s->i_count,
              s->header_bits);
 }
 
@@ -606,13 +606,17 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             av_assert0(picture_number < rcc->num_entries);
             rce = &rcc->entry[picture_number];
 
-            e += sscanf(p, " in:%*d out:%*d type:%d q:%f itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%"SCNd64" var:%"SCNd64" icount:%d skipcount:%d hbits:%d",
+            e += sscanf(p, " in:%*d out:%*d type:%d q:%f itex:%d ptex:%d "
+                        "mv:%d misc:%d "
+                        "fcode:%d bcode:%d "
+                        "mc-var:%"SCNd64" var:%"SCNd64" "
+                        "icount:%d hbits:%d",
                         &rce->pict_type, &rce->qscale, &rce->i_tex_bits, &rce->p_tex_bits,
                         &rce->mv_bits, &rce->misc_bits,
                         &rce->f_code, &rce->b_code,
                         &rce->mc_mb_var_sum, &rce->mb_var_sum,
-                        &rce->i_count, &rce->skip_count, &rce->header_bits);
-            if (e != 14) {
+                        &rce->i_count, &rce->header_bits);
+            if (e != 13) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "statistics are damaged at line %d, parser out=%d\n",
                        i, e);

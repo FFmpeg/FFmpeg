@@ -2532,7 +2532,6 @@ static inline void copy_context_before_encode(MpegEncContext *d,
     d->i_tex_bits= s->i_tex_bits;
     d->p_tex_bits= s->p_tex_bits;
     d->i_count= s->i_count;
-    d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
     d->last_bits= 0;
 
@@ -2561,7 +2560,6 @@ static inline void copy_context_after_encode(MpegEncContext *d,
     d->i_tex_bits= s->i_tex_bits;
     d->p_tex_bits= s->p_tex_bits;
     d->i_count= s->i_count;
-    d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
 
     d->mb_intra= s->mb_intra;
@@ -2875,7 +2873,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
     s->i_tex_bits=0;
     s->p_tex_bits=0;
     s->i_count=0;
-    s->skip_count=0;
 
     for(i=0; i<3; i++){
         /* init last dc values */
@@ -3504,7 +3501,6 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(i_tex_bits);
     MERGE(p_tex_bits);
     MERGE(i_count);
-    MERGE(skip_count);
     MERGE(misc_bits);
     MERGE(encoding_error[0]);
     MERGE(encoding_error[1]);

@@ -824,7 +824,6 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
                (s->mv[1][0][1] - s->last_mv[1][0][1])) : 0)) == 0))) {
         s->mb_skip_run++;
         s->qscale -= s->dquant;
-        s->skip_count++;
         s->misc_bits++;
         s->last_bits++;
         if (s->pict_type == AV_PICTURE_TYPE_P) {

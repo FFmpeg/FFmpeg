@@ -253,7 +253,6 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
         if ((cbp | mvd) == 0) {
             /* skip macroblock */
-            s->skip_count++;
             s->mb_skip_run++;
             s->last_mv[0][0][0] = 0;
             s->last_mv[0][0][1] = 0;

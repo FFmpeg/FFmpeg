@@ -50,7 +50,6 @@ typedef struct RateControlEntry{
     int64_t mc_mb_var_sum;
     int64_t mb_var_sum;
     int i_count;
-    int skip_count;
     int f_code;
     int b_code;
 }RateControlEntry;

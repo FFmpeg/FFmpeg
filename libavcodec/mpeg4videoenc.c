@@ -512,7 +512,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
             /* nothing to do if this MB was skipped in the next P-frame */
             if (s->next_picture.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]) {  // FIXME avoid DCT & ...
-                s->skip_count++;
                 s->mv[0][0][0] =
                 s->mv[0][0][1] =
                 s->mv[1][0][0] =
@@ -536,7 +535,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                     s->misc_bits++;
                     s->last_bits++;
                 }
-                s->skip_count++;
                 return;
             }
 
@@ -691,7 +689,6 @@ void ff_mpeg4_encode_mb(MpegEncContext *s, int16_t block[6][64],
                         s->misc_bits++;
                         s->last_bits++;
                     }
-                    s->skip_count++;
 
                     return;
                 }
