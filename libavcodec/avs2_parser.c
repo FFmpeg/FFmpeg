@@ -72,13 +72,15 @@ static void parse_avs2_seq_header(AVCodecParserContext *s, const uint8_t *buf,
     unsigned aspect_ratio;
     unsigned frame_rate_code;
     int low_delay;
+    av_unused int ret;
     // update buf_size_min if parse more deeper
     const int buf_size_min = 15;
 
     if (buf_size < buf_size_min)
         return;
 
-    init_get_bits8(&gb, buf, buf_size_min);
+    ret = init_get_bits8(&gb, buf, buf_size_min);
+    av_assert1(ret >= 0);
 
     s->key_frame = 1;
     s->pict_type = AV_PICTURE_TYPE_I;
