@@ -9667,25 +9667,7 @@ static int mov_read_header(AVFormatContext *s)
         }
     }
 
-    if (mov->trex_data) {
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            MOVStreamContext *sc = st->priv_data;
-            if (st->duration > 0) {
-                /* Akin to sc->data_size * 8 * sc->time_scale / st->duration but accounting for overflows. */
-                st->codecpar->bit_rate = av_rescale(sc->data_size, ((int64_t) sc->time_scale) * 8, st->duration);
-                if (st->codecpar->bit_rate == INT64_MIN) {
-                    av_log(s, AV_LOG_WARNING, "Overflow during bit rate calculation %"PRId64" * 8 * %d\n",
-                           sc->data_size, sc->time_scale);
-                    st->codecpar->bit_rate = 0;
-                    if (s->error_recognition & AV_EF_EXPLODE)
-                        return AVERROR_INVALIDDATA;
-                }
-            }
-        }
-    }
-
-    if (mov->use_mfra_for > 0) {
+    if (mov->trex_data || mov->use_mfra_for > 0) {
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
             MOVStreamContext *sc = st->priv_data;
