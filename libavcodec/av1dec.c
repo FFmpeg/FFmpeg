@@ -492,7 +492,7 @@ static enum AVPixelFormat get_sw_pixel_format(void *logctx,
             else if (bit_depth == 12)
                 pix_fmt = AV_PIX_FMT_YUV444P12;
             else
-                av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+                av_assert0(0);
         } else if (seq->color_config.subsampling_x == 1 &&
                    seq->color_config.subsampling_y == 0) {
             if (bit_depth == 8)
@@ -502,7 +502,7 @@ static enum AVPixelFormat get_sw_pixel_format(void *logctx,
             else if (bit_depth == 12)
                 pix_fmt = AV_PIX_FMT_YUV422P12;
             else
-                av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+                av_assert0(0);
         } else if (seq->color_config.subsampling_x == 1 &&
                    seq->color_config.subsampling_y == 1) {
             if (bit_depth == 8)
@@ -512,7 +512,7 @@ static enum AVPixelFormat get_sw_pixel_format(void *logctx,
             else if (bit_depth == 12)
                 pix_fmt = AV_PIX_FMT_YUV420P12;
             else
-                av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+                av_assert0(0);
         }
     } else {
         if (bit_depth == 8)
@@ -522,7 +522,7 @@ static enum AVPixelFormat get_sw_pixel_format(void *logctx,
         else if (bit_depth == 12)
             pix_fmt = AV_PIX_FMT_GRAY12;
         else
-            av_log(logctx, AV_LOG_WARNING, "Unknown AV1 pixel format.\n");
+            av_assert0(0);
     }
 
     return pix_fmt;
