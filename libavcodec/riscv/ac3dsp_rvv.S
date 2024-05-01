@@ -21,6 +21,28 @@
 #include "config.h"
 #include "libavutil/riscv/asm.S"
 
+func ff_ac3_exponent_min_rvv, zve32x
+        beqz     a1, 3f
+1:
+        vsetvli  t2, a2, e8, m8, ta, ma
+        vle8.v   v8, (a0)
+        addi     t0, a0, 256
+        sub      a2, a2, t2
+        mv       t1, a1
+2:
+        vle8.v   v16, (t0)
+        addi     t1, t1, -1
+        vminu.vv v8, v8, v16
+        addi     t0, t0, 256
+        bnez     t1, 2b
+
+        vse8.v   v8, (a0)
+        add      a0, a0, t2
+        bnez     a2, 1b
+3:
+        ret
+endfunc
+
 func ff_float_to_fixed24_rvv, zve32f
         li            t1, 1 << 24
         fcvt.s.w      f0, t1
