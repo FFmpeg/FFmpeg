@@ -379,7 +379,7 @@ static int cbs_av1_write_increment(CodedBitstreamContext *ctx, PutBitContext *pb
     }
 
     if (len > 0)
-        put_bits(pbc, len, (1 << len) - 1 - (value != range_max));
+        put_bits(pbc, len, (1U << len) - 1 - (value != range_max));
 
     return 0;
 }
