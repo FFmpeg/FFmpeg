@@ -1333,12 +1333,15 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
                 if (s->cur_frame.f) {
                     ret = set_output_frame(avctx, frame);
-                    if (ret < 0)
+                    if (ret < 0) {
                         av_log(avctx, AV_LOG_ERROR, "Set output frame error.\n");
+                        goto end;
+                    }
                 }
 
                 s->raw_frame_header = NULL;
                 i++;
+                ret = 0;
 
                 goto end;
             }
@@ -1439,17 +1442,20 @@ static int av1_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
             update_reference_list(avctx);
 
-            if (s->raw_frame_header->show_frame && s->cur_frame.f) {
-                ret = set_output_frame(avctx, frame);
-                if (ret < 0) {
-                    av_log(avctx, AV_LOG_ERROR, "Set output frame error\n");
-                    goto end;
-                }
-            }
-            raw_tile_group = NULL;
+            raw_tile_group      = NULL;
             s->raw_frame_header = NULL;
+
             if (show_frame) {
+                // cur_frame.f needn't exist due to skip_frame.
+                if (s->cur_frame.f) {
+                    ret = set_output_frame(avctx, frame);
+                    if (ret < 0) {
+                        av_log(avctx, AV_LOG_ERROR, "Set output frame error\n");
+                        goto end;
+                    }
+                }
                 i++;
+                ret = 0;
                 goto end;
             }
         }
