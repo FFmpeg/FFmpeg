@@ -469,7 +469,7 @@ static int get_tiles_info(AVCodecContext *avctx, const AV1RawTileGroup *tile_gro
 static enum AVPixelFormat get_sw_pixel_format(void *logctx,
                                               const AV1RawSequenceHeader *seq)
 {
-    uint8_t bit_depth;
+    int bit_depth;
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE;
 
     if (seq->seq_profile == 2 && seq->color_config.high_bitdepth)
