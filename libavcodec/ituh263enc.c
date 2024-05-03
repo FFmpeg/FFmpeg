@@ -692,6 +692,9 @@ void ff_h263_update_mb(MpegEncContext *s)
 {
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
+    if (s->current_picture.mbskip_table)
+        s->current_picture.mbskip_table[mb_xy] = s->mb_skipped;
+
     if (s->mv_type == MV_TYPE_8X8)
         s->current_picture.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_8x8;
     else if(s->mb_intra)

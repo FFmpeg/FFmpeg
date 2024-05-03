@@ -1594,9 +1594,11 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, int16_t block[6][64])
                 && ctx->vol_sprite_usage == GMC_SPRITE) {
                 s->mcsel      = 1;
                 s->mb_skipped = 0;
+                s->current_picture.mbskip_table[xy] = 0;
             } else {
                 s->mcsel      = 0;
                 s->mb_skipped = 1;
+                s->current_picture.mbskip_table[xy] = 1;
             }
         } else if (s->mb_intra) {
             s->ac_pred = IS_ACPRED(s->current_picture.mb_type[xy]);
@@ -1678,6 +1680,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                     s->mcsel       = 1;
                     s->mv[0][0][0] = get_amv(ctx, 0);
                     s->mv[0][0][1] = get_amv(ctx, 1);
+                    s->current_picture.mbskip_table[xy] = 0;
                     s->mb_skipped  = 0;
                 } else {
                     s->current_picture.mb_type[xy] = MB_TYPE_SKIP  |
@@ -1686,6 +1689,7 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                     s->mcsel       = 0;
                     s->mv[0][0][0] = 0;
                     s->mv[0][0][1] = 0;
+                    s->current_picture.mbskip_table[xy] = 1;
                     s->mb_skipped  = 1;
                 }
                 goto end;
