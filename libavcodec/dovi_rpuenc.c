@@ -133,7 +133,7 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
     if (!dv_profile || bl_compat_id < 0) {
         if (s->enable > 0) {
             av_log(s->logctx, AV_LOG_ERROR, "Dolby Vision enabled, but could "
-                   "not determine profile and compaatibility mode. Double-check "
+                   "not determine profile and compatibility mode. Double-check "
                    "colorspace and format settings for compatibility?\n");
             return AVERROR(EINVAL);
         }
