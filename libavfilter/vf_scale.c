@@ -442,8 +442,15 @@ static av_cold int init(AVFilterContext *ctx)
     if (!threads)
         av_opt_set_int(scale->sws_opts, "threads", ff_filter_get_nb_threads(ctx), 0);
 
-    if (ctx->filter != &ff_vf_scale2ref)
-        ctx->nb_inputs = scale->uses_ref ? 2 : 1;
+    if (ctx->filter != &ff_vf_scale2ref && scale->uses_ref) {
+        AVFilterPad pad = {
+            .name = "ref",
+            .type = AVMEDIA_TYPE_VIDEO,
+        };
+        ret = ff_append_inpad(ctx, &pad);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
@@ -1234,9 +1241,6 @@ static const AVFilterPad avfilter_vf_scale_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-    }, {
-        .name         = "ref",
-        .type         = AVMEDIA_TYPE_VIDEO,
     },
 };
 
@@ -1261,6 +1265,7 @@ const AVFilter ff_vf_scale = {
     FILTER_QUERY_FUNC(query_formats),
     .activate        = activate,
     .process_command = process_command,
+    .flags           = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
 
 static const AVFilterPad avfilter_vf_scale2ref_inputs[] = {
