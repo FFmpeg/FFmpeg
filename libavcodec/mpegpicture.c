@@ -238,6 +238,7 @@ int ff_alloc_picture(AVCodecContext *avctx, Picture *pic, MotionEstContext *me,
         goto fail;
 
     pic->mbskip_table = pic->mbskip_table_buf->data;
+    memset(pic->mbskip_table, 0, pic->mbskip_table_buf->size);
     pic->qscale_table = pic->qscale_table_buf->data + 2 * mb_stride + 1;
     pic->mb_type      = (uint32_t*)pic->mb_type_buf->data + 2 * mb_stride + 1;
 
