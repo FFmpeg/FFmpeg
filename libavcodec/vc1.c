@@ -583,21 +583,23 @@ int ff_vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContex
 
 static void rotate_luts(VC1Context *v)
 {
-#define ROTATE(DEF, L, N, C, A) do {                          \
-        if (v->s.pict_type == AV_PICTURE_TYPE_BI || v->s.pict_type == AV_PICTURE_TYPE_B) { \
-            C = A;                                            \
-        } else {                                              \
+    if (v->s.pict_type == AV_PICTURE_TYPE_BI || v->s.pict_type == AV_PICTURE_TYPE_B) {
+        v->curr_use_ic = &v->aux_use_ic;
+        v->curr_luty   = v->aux_luty;
+        v->curr_lutuv  = v->aux_lutuv;
+    } else {
+#define ROTATE(DEF, L, N, C) do {                             \
             DEF;                                              \
             memcpy(&tmp, L   , sizeof(tmp));                  \
             memcpy(L   , N   , sizeof(tmp));                  \
             memcpy(N   , &tmp, sizeof(tmp));                  \
             C = N;                                            \
-        }                                                     \
     } while(0)
 
-    ROTATE(int tmp,             &v->last_use_ic, &v->next_use_ic, v->curr_use_ic, &v->aux_use_ic);
-    ROTATE(uint8_t tmp[2][256], v->last_luty,   v->next_luty,   v->curr_luty,   v->aux_luty);
-    ROTATE(uint8_t tmp[2][256], v->last_lutuv,  v->next_lutuv,  v->curr_lutuv,  v->aux_lutuv);
+        ROTATE(int tmp,             &v->last_use_ic, &v->next_use_ic, v->curr_use_ic);
+        ROTATE(uint8_t tmp[2][256],  v->last_luty,    v->next_luty,   v->curr_luty);
+        ROTATE(uint8_t tmp[2][256],  v->last_lutuv,   v->next_lutuv,  v->curr_lutuv);
+    }
 
     INIT_LUT(32, 0, v->curr_luty[0], v->curr_lutuv[0], 0);
     INIT_LUT(32, 0, v->curr_luty[1], v->curr_lutuv[1], 0);
