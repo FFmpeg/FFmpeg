@@ -3324,8 +3324,8 @@ static int show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_id
         if (sar.num) {
             print_q("sample_aspect_ratio", sar, ':');
             av_reduce(&dar.num, &dar.den,
-                      par->width  * sar.num,
-                      par->height * sar.den,
+                      (int64_t) par->width  * sar.num,
+                      (int64_t) par->height * sar.den,
                       1024*1024);
             print_q("display_aspect_ratio", dar, ':');
         } else {
