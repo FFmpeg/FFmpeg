@@ -565,6 +565,8 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     set_ue_golomb(pb, vdr_rpu_id);
     s->mapping = &s->vdr[vdr_rpu_id]->mapping;
 
+    profile = s->cfg.dv_profile ? s->cfg.dv_profile : ff_dovi_guess_profile_hevc(hdr);
+
     if (!use_prev_vdr_rpu) {
         set_ue_golomb(pb, mapping->mapping_color_space);
         set_ue_golomb(pb, mapping->mapping_chroma_format_idc);
