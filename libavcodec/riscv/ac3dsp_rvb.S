@@ -21,6 +21,27 @@
 #include "config.h"
 #include "libavutil/riscv/asm.S"
 
+func ff_ac3_exponent_min_rvb, zbb
+        beqz    a1, 3f
+1:
+        addi    a2, a2, -1
+        lb      t3, (a0)
+        addi    t0, a0, 256
+        mv      t1, a1
+2:
+        lb      t4, (t0)
+        addi    t1, t1, -1
+        addi    t0, t0, 256
+        minu    t3, t3, t4
+        bnez    t1, 2b
+
+        sb      t3, (a0)
+        addi    a0, a0, 1
+        bnez    a2, 1b
+3:
+        ret
+endfunc
+
 func ff_extract_exponents_rvb, zbb
 1:
         lw       t0, (a1)

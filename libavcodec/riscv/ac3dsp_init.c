@@ -26,6 +26,7 @@
 #include "libavutil/cpu.h"
 #include "libavcodec/ac3dsp.h"
 
+void ff_ac3_exponent_min_rvb(uint8_t *exp, int, int);
 void ff_ac3_exponent_min_rvv(uint8_t *exp, int, int);
 void ff_extract_exponents_rvb(uint8_t *exp, int32_t *coef, int nb_coefs);
 void ff_float_to_fixed24_rvv(int32_t *dst, const float *src, size_t len);
@@ -39,6 +40,8 @@ av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
 #if HAVE_RV
     int flags = av_get_cpu_flags();
 
+    if (flags & AV_CPU_FLAG_RVB_BASIC)
+        c->ac3_exponent_min = ff_ac3_exponent_min_rvb;
     if (flags & AV_CPU_FLAG_RVV_I32)
         c->ac3_exponent_min = ff_ac3_exponent_min_rvv;
 
