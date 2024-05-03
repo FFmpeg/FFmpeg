@@ -56,7 +56,8 @@ void ff_h263_update_motion_val(MpegEncContext * s){
     const int wrap = s->b8_stride;
     const int xy = s->block_index[0];
 
-    s->current_picture.mbskip_table[mb_xy] = s->mb_skipped;
+    if (s->current_picture.mbskip_table)
+        s->current_picture.mbskip_table[mb_xy] = s->mb_skipped;
 
     if(s->mv_type != MV_TYPE_8X8){
         int motion_x, motion_y;

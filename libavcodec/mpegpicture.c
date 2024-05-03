@@ -138,10 +138,11 @@ static int alloc_picture_tables(BufferPoolContext *pools, Picture *pic,
     if (!pic->name ## buf_suffix idx_suffix) \
         return AVERROR(ENOMEM); \
 } while (0)
-    GET_BUFFER(mbskip_table,,);
     GET_BUFFER(qscale_table, _base,);
     GET_BUFFER(mb_type, _base,);
     if (pools->motion_val_pool) {
+        if (pools->mbskip_table_pool)
+            GET_BUFFER(mbskip_table,,);
         for (int i = 0; i < 2; i++) {
             GET_BUFFER(ref_index,, [i]);
             GET_BUFFER(motion_val, _base, [i]);

@@ -594,6 +594,12 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
 
     s->mb_index2xy[s->mb_height * s->mb_width] = (s->mb_height - 1) * s->mb_stride + s->mb_width; // FIXME really needed?
 
+#define ALLOC_POOL(name, size, flags) do { \
+    pools->name ##_pool = ff_refstruct_pool_alloc((size), (flags)); \
+    if (!pools->name ##_pool) \
+        return AVERROR(ENOMEM); \
+} while (0)
+
     if (s->codec_id == AV_CODEC_ID_MPEG4 ||
         (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME)) {
         /* interlaced direct mode decoding tables */
@@ -608,11 +614,15 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
                 tmp += mv_table_size;
             }
         }
-        if (s->codec_id == AV_CODEC_ID_MPEG4 && !s->encoding) {
+        if (s->codec_id == AV_CODEC_ID_MPEG4) {
+            ALLOC_POOL(mbskip_table, mb_array_size + 2,
+                       FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
+        if (!s->encoding) {
             /* cbp, pred_dir */
             if (!(s->cbp_table      = av_mallocz(mb_array_size)) ||
                 !(s->pred_dir_table = av_mallocz(mb_array_size)))
                 return AVERROR(ENOMEM);
+        }
         }
     }
 
@@ -642,13 +652,6 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
         return AVERROR(ENOMEM);
     memset(s->mbintra_table, 1, mb_array_size);
 
-#define ALLOC_POOL(name, size, flags) do { \
-    pools->name ##_pool = ff_refstruct_pool_alloc((size), (flags)); \
-    if (!pools->name ##_pool) \
-        return AVERROR(ENOMEM); \
-} while (0)
-
-    ALLOC_POOL(mbskip_table, mb_array_size + 2, FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
     ALLOC_POOL(qscale_table, mv_table_size, 0);
     ALLOC_POOL(mb_type, mv_table_size * sizeof(uint32_t), 0);
 
