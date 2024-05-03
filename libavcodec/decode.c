@@ -449,7 +449,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
         ret =  !got_frame ? AVERROR(EAGAIN)
                           : discard_samples(avctx, frame, discarded_samples);
-    }
+    } else
+        av_assert0(0);
 
     if (ret == AVERROR(EAGAIN))
         av_frame_unref(frame);
