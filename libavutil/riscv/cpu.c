@@ -31,12 +31,24 @@
 #endif
 #if HAVE_SYS_HWPROBE_H
 #include <sys/hwprobe.h>
+#elif HAVE_ASM_HWPROBE_H
+#include <asm/hwprobe.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
+static int __riscv_hwprobe(struct riscv_hwprobe *pairs, size_t pair_count,
+                           size_t cpu_count, unsigned long *cpus,
+                           unsigned int flags)
+{
+        return syscall(__NR_riscv_hwprobe, pairs, pair_count, cpu_count, cpus,
+                       flags);
+}
 #endif
 
 int ff_get_cpu_flags_riscv(void)
 {
     int ret = 0;
-#if HAVE_SYS_HWPROBE_H
+#if HAVE_SYS_HWPROBE_H || HAVE_ASM_HWPROBE_H
     struct riscv_hwprobe pairs[] = {
         { RISCV_HWPROBE_KEY_BASE_BEHAVIOR, 0 },
         { RISCV_HWPROBE_KEY_IMA_EXT_0, 0 },
@@ -47,13 +59,19 @@ int ff_get_cpu_flags_riscv(void)
             ret |= AV_CPU_FLAG_RVI;
         if (pairs[1].value & RISCV_HWPROBE_IMA_FD)
             ret |= AV_CPU_FLAG_RVF | AV_CPU_FLAG_RVD;
+#ifdef RISCV_HWPROBE_IMA_V
         if (pairs[1].value & RISCV_HWPROBE_IMA_V)
             ret |= AV_CPU_FLAG_RVV_I32 | AV_CPU_FLAG_RVV_I64
                  | AV_CPU_FLAG_RVV_F32 | AV_CPU_FLAG_RVV_F64;
+#endif
+#ifdef RISCV_HWPROBE_EXT_ZBA
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZBA)
             ret |= AV_CPU_FLAG_RVB_ADDR;
+#endif
+#ifdef RISCV_HWPROBE_EXT_ZBB
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZBB)
             ret |= AV_CPU_FLAG_RVB_BASIC;
+#endif
 #ifdef RISCV_HWPROBE_EXT_ZVBB
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZVBB)
             ret |= AV_CPU_FLAG_RV_ZVBB;
