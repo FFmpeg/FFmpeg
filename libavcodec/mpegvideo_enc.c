@@ -3314,7 +3314,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 if (CONFIG_H263_ENCODER &&
                     s->out_format == FMT_H263 && s->pict_type!=AV_PICTURE_TYPE_B)
-                    ff_h263_update_motion_val(s);
+                    ff_h263_update_mb(s);
 
                 if(next_block==0){ //FIXME 16 vs linesize16
                     s->hdsp.put_pixels_tab[0][0](s->dest[0], s->sc.rd_scratchpad                     , s->linesize  ,16);
@@ -3440,7 +3440,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 if (CONFIG_H263_ENCODER &&
                     s->out_format == FMT_H263 && s->pict_type!=AV_PICTURE_TYPE_B)
-                    ff_h263_update_motion_val(s);
+                    ff_h263_update_mb(s);
 
                 mpv_reconstruct_mb(s, s->block);
             }

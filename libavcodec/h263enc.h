@@ -36,7 +36,7 @@ void ff_init_qscale_tab(MpegEncContext *s);
 void ff_clean_h263_qscales(MpegEncContext *s);
 
 void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code);
-
+void ff_h263_update_mb(MpegEncContext *s);
 
 static inline int h263_get_motion_length(int val, int f_code)
 {

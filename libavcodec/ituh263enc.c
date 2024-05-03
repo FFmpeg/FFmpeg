@@ -688,6 +688,20 @@ void ff_h263_encode_mb(MpegEncContext * s,
     }
 }
 
+void ff_h263_update_mb(MpegEncContext *s)
+{
+    const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+
+    if (s->mv_type == MV_TYPE_8X8)
+        s->current_picture.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_8x8;
+    else if(s->mb_intra)
+        s->current_picture.mb_type[mb_xy] = MB_TYPE_INTRA;
+    else
+        s->current_picture.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_16x16;
+
+    ff_h263_update_motion_val(s);
+}
+
 void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code)
 {
     int range, bit_size, sign, code, bits;
