@@ -252,7 +252,7 @@ enum AVOptionType{
     AV_OPT_TYPE_DICT,
     AV_OPT_TYPE_UINT64,
     AV_OPT_TYPE_CONST,
-    AV_OPT_TYPE_IMAGE_SIZE, ///< offset must point to two consecutive integers
+    AV_OPT_TYPE_IMAGE_SIZE, ///< offset must point to two consecutive ints
     AV_OPT_TYPE_PIXEL_FMT,
     AV_OPT_TYPE_SAMPLE_FMT,
     AV_OPT_TYPE_VIDEO_RATE, ///< offset must point to AVRational
