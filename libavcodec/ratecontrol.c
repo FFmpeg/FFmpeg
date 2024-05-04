@@ -622,10 +622,9 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
             p = next;
         }
 
-        if (init_pass2(s) < 0) {
-            ff_rate_control_uninit(rcc);
-            return -1;
-        }
+        res = init_pass2(s);
+        if (res < 0)
+            return res;
     }
 
     if (!(s->avctx->flags & AV_CODEC_FLAG_PASS2)) {
