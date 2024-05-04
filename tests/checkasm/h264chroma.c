@@ -53,23 +53,23 @@ static void check_chroma_mc(void)
         randomize_buffers(bit_depth);
         for (int size = 0; size < 4; size++) {
 
-#define CHECK_CHROMA_MC(name)                                                                         \
-            do {                                                                                      \
-                if (check_func(h.name## _pixels_tab[size], #name "_mc%d_%d", 1 << size, bit_depth)) { \
-                    for (int x = 0; x < 2; x++) {                                                     \
-                        for (int y = 0; y < 2; y++) {                                                 \
-                            memcpy(dst0, src, 16 * 18 * SIZEOF_PIXEL);                                \
-                            memcpy(dst1, src, 16 * 18 * SIZEOF_PIXEL);                                \
-                            call_ref(dst0, src, 16 * SIZEOF_PIXEL, 16, x, y);                         \
-                            call_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                         \
-                            if (memcmp(dst0, dst1, 16 * 16 * SIZEOF_PIXEL)) {                         \
-                                fprintf(stderr, #name ": x:%i, y:%i\n", x, y);                        \
-                                fail();                                                               \
-                            }                                                                         \
-                            bench_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                        \
-                        }                                                                             \
-                    }                                                                                 \
-                }                                                                                     \
+#define CHECK_CHROMA_MC(name)                                                                             \
+            do {                                                                                          \
+                if (check_func(h.name## _pixels_tab[size], #name "_mc%d_%d", 1 << (3-size), bit_depth)) { \
+                    for (int x = 0; x < 2; x++) {                                                         \
+                        for (int y = 0; y < 2; y++) {                                                     \
+                            memcpy(dst0, src, 16 * 18 * SIZEOF_PIXEL);                                    \
+                            memcpy(dst1, src, 16 * 18 * SIZEOF_PIXEL);                                    \
+                            call_ref(dst0, src, 16 * SIZEOF_PIXEL, 16, x, y);                             \
+                            call_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                             \
+                            if (memcmp(dst0, dst1, 16 * 16 * SIZEOF_PIXEL)) {                             \
+                                fprintf(stderr, #name ": x:%i, y:%i\n", x, y);                            \
+                                fail();                                                                   \
+                            }                                                                             \
+                            bench_new(dst1, src, 16 * SIZEOF_PIXEL, 16, x, y);                            \
+                        }                                                                                 \
+                    }                                                                                     \
+                }                                                                                         \
             } while (0)
 
             CHECK_CHROMA_MC(put_h264_chroma);
