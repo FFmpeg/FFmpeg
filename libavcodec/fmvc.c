@@ -100,7 +100,6 @@ static int decode_type2(GetByteContext *gb, PutByteContext *pb)
                             continue;
                         }
                     }
-                    repeat = 0;
                 }
                 repeat = 1;
             }
