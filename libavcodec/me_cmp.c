@@ -751,7 +751,7 @@ static int quant_psnr8x8_c(MpegEncContext *s, const uint8_t *src1,
     memcpy(bak, temp, 64 * sizeof(int16_t));
 
     s->block_last_index[0 /* FIXME */] =
-        s->fast_dct_quantize(s, temp, 0 /* FIXME */, s->qscale, &i);
+        s->dct_quantize(s, temp, 0 /* FIXME */, s->qscale, &i);
     s->dct_unquantize_inter(s, temp, 0, s->qscale);
     ff_simple_idct_int16_8bit(temp); // FIXME
 
@@ -779,7 +779,7 @@ static int rd8x8_c(MpegEncContext *s, const uint8_t *src1, const uint8_t *src2,
 
     s->block_last_index[0 /* FIXME */] =
     last                               =
-        s->fast_dct_quantize(s, temp, 0 /* FIXME */, s->qscale, &i);
+        s->dct_quantize(s, temp, 0 /* FIXME */, s->qscale, &i);
 
     bits = 0;
 
@@ -849,7 +849,7 @@ static int bit8x8_c(MpegEncContext *s, const uint8_t *src1, const uint8_t *src2,
 
     s->block_last_index[0 /* FIXME */] =
     last                               =
-        s->fast_dct_quantize(s, temp, 0 /* FIXME */, s->qscale, &i);
+        s->dct_quantize(s, temp, 0 /* FIXME */, s->qscale, &i);
 
     bits = 0;
 

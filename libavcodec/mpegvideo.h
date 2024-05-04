@@ -501,7 +501,6 @@ typedef struct MpegEncContext {
     void (*dct_unquantize_inter)(struct MpegEncContext *s, // unquantizer to use (MPEG-4 can use both)
                            int16_t *block/*align 16*/, int n, int qscale);
     int (*dct_quantize)(struct MpegEncContext *s, int16_t *block/*align 16*/, int n, int qscale, int *overflow);
-    int (*fast_dct_quantize)(struct MpegEncContext *s, int16_t *block/*align 16*/, int n, int qscale, int *overflow);
     void (*denoise_dct)(struct MpegEncContext *s, int16_t *block);
 
     int mpv_flags;      ///< flags set by private options

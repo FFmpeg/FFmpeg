@@ -302,7 +302,6 @@ av_cold int ff_dct_encode_init(MpegEncContext *s)
     ff_dct_encode_init_x86(s);
 #endif
 
-    s->fast_dct_quantize = s->dct_quantize;
     if (s->avctx->trellis)
         s->dct_quantize  = dct_quantize_trellis_c;
 
