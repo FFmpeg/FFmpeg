@@ -694,6 +694,7 @@ av_cold void ff_rate_control_uninit(MpegEncContext *s)
     emms_c();
 
     av_expr_free(rcc->rc_eq_eval);
+    rcc->rc_eq_eval = NULL;
     av_freep(&rcc->entry);
 }
 
