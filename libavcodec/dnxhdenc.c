@@ -430,9 +430,6 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
     if (ctx->profile != AV_PROFILE_DNXHD)
         ff_videodsp_init(&ctx->m.vdsp, ctx->bit_depth);
 
-    if (!ctx->m.dct_quantize)
-        ctx->m.dct_quantize = ff_dct_quantize_c;
-
     if (ctx->is_444 || ctx->profile == AV_PROFILE_DNXHR_HQX) {
         ctx->m.dct_quantize     = dnxhd_10bit_dct_quantize_444;
         ctx->get_pixels_8x4_sym = dnxhd_10bit_get_pixels_8x4_sym;
