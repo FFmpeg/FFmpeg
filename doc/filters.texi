@@ -21342,7 +21342,7 @@ scale='trunc(ih*dar/2)*2:trunc(ih/2)*2',setsar=1/1
 
 @item
 Scale a subtitle stream (sub) to match the main video (main) in size before
-overlaying.
+overlaying. ("scale2ref")
 @example
 '[main]split[a][b]; [ref][a]scale=rw:rh[c]; [b][c]overlay'
 @end example
