@@ -148,7 +148,6 @@ void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 int ff_dct_encode_init(MpegEncContext *s);
 void ff_dct_encode_init_x86(MpegEncContext *s);
 
-int ff_dct_quantize_c(MpegEncContext *s, int16_t *block, int n, int qscale, int *overflow);
 void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                        const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra);
 
