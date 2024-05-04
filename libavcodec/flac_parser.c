@@ -359,6 +359,8 @@ static int check_header_mismatch(FLACParseContext  *fpc,
         for (i = 0; i < FLAC_MAX_SEQUENTIAL_HEADERS && curr != child; i++)
             curr = curr->next;
 
+        av_assert0(i < FLAC_MAX_SEQUENTIAL_HEADERS);
+
         if (header->link_penalty[i] < FLAC_HEADER_CRC_FAIL_PENALTY ||
             header->link_penalty[i] == FLAC_HEADER_NOT_PENALIZED_YET) {
             FLACHeaderMarker *start, *end;
