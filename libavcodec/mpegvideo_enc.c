@@ -291,7 +291,7 @@ static void mpv_encode_defaults(MpegEncContext *s)
     s->picture_in_gop_number = 0;
 }
 
-av_cold int ff_dct_encode_init(MpegEncContext *s)
+av_cold void ff_dct_encode_init(MpegEncContext *s)
 {
     s->dct_quantize = dct_quantize_c;
     s->denoise_dct  = denoise_dct_c;
@@ -304,8 +304,6 @@ av_cold int ff_dct_encode_init(MpegEncContext *s)
 
     if (s->avctx->trellis)
         s->dct_quantize  = dct_quantize_trellis_c;
-
-    return 0;
 }
 
 /* init video encoder */
