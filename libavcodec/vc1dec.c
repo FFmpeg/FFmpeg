@@ -1064,6 +1064,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     v->s.cur_pic_ptr->field_picture = v->field_mode;
     v->s.cur_pic_ptr->f->flags |= AV_FRAME_FLAG_INTERLACED * (v->fcm != PROGRESSIVE);
     v->s.cur_pic_ptr->f->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST * !!v->tff;
+    v->last_interlaced = v->s.last_pic_ptr ? v->s.last_pic_ptr->f->flags & AV_FRAME_FLAG_INTERLACED : 0;
+    v->next_interlaced = v->s.next_pic_ptr ? v->s.next_pic_ptr->f->flags & AV_FRAME_FLAG_INTERLACED : 0;
 
     // process pulldown flags
     s->cur_pic_ptr->f->repeat_pict = 0;

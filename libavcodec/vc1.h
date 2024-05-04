@@ -293,6 +293,7 @@ typedef struct VC1Context{
     uint8_t next_luty[2][256], next_lutuv[2][256];  ///< lookup tables used for intensity compensation
     uint8_t (*curr_luty)[256]  ,(*curr_lutuv)[256];
     int last_use_ic, *curr_use_ic, next_use_ic, aux_use_ic;
+    int last_interlaced, next_interlaced; ///< whether last_pic, next_pic is interlaced
     int rnd;                        ///< rounding control
     int cbptab;
 

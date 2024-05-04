@@ -233,7 +233,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
             luty  = v->last_luty;
             lutuv = v->last_lutuv;
             use_ic = v->last_use_ic;
-            interlace = !!(s->last_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+            interlace = v->last_interlaced;
         }
     } else {
         srcY = s->next_pic.data[0];
@@ -242,7 +242,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
         luty  = v->next_luty;
         lutuv = v->next_lutuv;
         use_ic = v->next_use_ic;
-        interlace = !!(s->next_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+        interlace = v->next_interlaced;
     }
 
     if (!srcY || !srcU) {
@@ -482,13 +482,13 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
             srcY = s->last_pic.data[0];
             luty = v->last_luty;
             use_ic = v->last_use_ic;
-            interlace = !!(s->last_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+            interlace = v->last_interlaced;
         }
     } else {
         srcY = s->next_pic.data[0];
         luty = v->next_luty;
         use_ic = v->next_use_ic;
-        interlace = !!(s->next_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+        interlace = v->next_interlaced;
     }
 
     if (!srcY) {
@@ -708,14 +708,14 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
             srcV = s->last_pic.data[2];
             lutuv = v->last_lutuv;
             use_ic = v->last_use_ic;
-            interlace = !!(s->last_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+            interlace = v->last_interlaced;
         }
     } else {
         srcU = s->next_pic.data[1];
         srcV = s->next_pic.data[2];
         lutuv = v->next_lutuv;
         use_ic = v->next_use_ic;
-        interlace = !!(s->next_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+        interlace = v->next_interlaced;
     }
 
     if (!srcU) {
@@ -884,13 +884,13 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
             srcV = s->next_pic.data[2];
             lutuv  = v->next_lutuv;
             use_ic = v->next_use_ic;
-            interlace = !!(s->next_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+            interlace = v->next_interlaced;
         } else {
             srcU = s->last_pic.data[1];
             srcV = s->last_pic.data[2];
             lutuv  = v->last_lutuv;
             use_ic = v->last_use_ic;
-            interlace = !!(s->last_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
+            interlace = v->last_interlaced;
         }
         if (!srcU)
             return;
@@ -1009,7 +1009,7 @@ void ff_vc1_interp_mc(VC1Context *v)
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     int use_ic = v->next_use_ic;
-    int interlace;
+    int interlace = v->next_interlaced;
     int linesize, uvlinesize;
 
     if (!v->field_mode && !v->s.next_pic.data[0])
@@ -1033,8 +1033,6 @@ void ff_vc1_interp_mc(VC1Context *v)
     srcY = s->next_pic.data[0];
     srcU = s->next_pic.data[1];
     srcV = s->next_pic.data[2];
-
-    interlace = !!(s->next_pic.f->flags & AV_FRAME_FLAG_INTERLACED);
 
     src_x   = s->mb_x * 16 + (mx   >> 2);
     src_y   = s->mb_y * 16 + (my   >> 2);
