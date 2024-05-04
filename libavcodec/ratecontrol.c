@@ -623,7 +623,7 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
         }
 
         if (init_pass2(s) < 0) {
-            ff_rate_control_uninit(s);
+            ff_rate_control_uninit(rcc);
             return -1;
         }
     }
@@ -688,9 +688,8 @@ av_cold int ff_rate_control_init(MpegEncContext *s)
     return 0;
 }
 
-av_cold void ff_rate_control_uninit(MpegEncContext *s)
+av_cold void ff_rate_control_uninit(RateControlContext *rcc)
 {
-    RateControlContext *rcc = &s->rc_context;
     emms_c();
 
     av_expr_free(rcc->rc_eq_eval);

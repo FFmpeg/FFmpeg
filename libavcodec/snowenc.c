@@ -2077,7 +2077,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     SnowContext *const s = &enc->com;
 
     ff_snow_common_end(s);
-    ff_rate_control_uninit(&enc->m);
+    ff_rate_control_uninit(&enc->m.rc_context);
     av_frame_free(&s->input_picture);
 
     for (int i = 0; i < MAX_REF_FRAMES; i++) {

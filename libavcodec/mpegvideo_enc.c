@@ -989,7 +989,7 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     int i;
 
-    ff_rate_control_uninit(s);
+    ff_rate_control_uninit(&s->rc_context);
 
     ff_mpv_common_end(s);
 
