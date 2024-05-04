@@ -293,16 +293,15 @@ static void mpv_encode_defaults(MpegEncContext *s)
 
 av_cold int ff_dct_encode_init(MpegEncContext *s)
 {
+    s->dct_quantize = dct_quantize_c;
+    s->denoise_dct  = denoise_dct_c;
+
 #if ARCH_MIPS
     ff_mpvenc_dct_init_mips(s);
 #elif ARCH_X86
     ff_dct_encode_init_x86(s);
 #endif
 
-    if (!s->dct_quantize)
-        s->dct_quantize = dct_quantize_c;
-    if (!s->denoise_dct)
-        s->denoise_dct  = denoise_dct_c;
     s->fast_dct_quantize = s->dct_quantize;
     if (s->avctx->trellis)
         s->dct_quantize  = dct_quantize_trellis_c;
