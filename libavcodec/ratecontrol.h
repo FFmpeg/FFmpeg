@@ -39,6 +39,9 @@ typedef struct Predictor{
 typedef struct RateControlEntry{
     int pict_type;
     float qscale;
+    int i_count;
+    int f_code;
+    int b_code;
     int mv_bits;
     int i_tex_bits;
     int p_tex_bits;
@@ -49,9 +52,6 @@ typedef struct RateControlEntry{
     float new_qscale;
     int64_t mc_mb_var_sum;
     int64_t mb_var_sum;
-    int i_count;
-    int f_code;
-    int b_code;
 }RateControlEntry;
 
 /**
