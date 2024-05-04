@@ -42,6 +42,7 @@
 #include "h263.h"
 #include "h263enc.h"
 #include "h263data.h"
+#include "h263dsp.h"
 #include "mathops.h"
 #include "mpegutils.h"
 #include "internal.h"
@@ -880,6 +881,10 @@ av_cold void ff_h263_encode_init(MpegEncContext *s)
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
+
+#if CONFIG_H263_ENCODER // Snow and SVQ1 call this
+    ff_h263dsp_init(&s->h263dsp);
+#endif
 
     ff_thread_once(&init_static_once, h263_encode_init_static);
 }

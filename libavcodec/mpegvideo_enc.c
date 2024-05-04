@@ -297,8 +297,6 @@ av_cold int ff_dct_encode_init(MpegEncContext *s)
     ff_dct_encode_init_x86(s);
 #endif
 
-    if (CONFIG_H263_ENCODER)
-        ff_h263dsp_init(&s->h263dsp);
     if (!s->dct_quantize)
         s->dct_quantize = dct_quantize_c;
     if (!s->denoise_dct)
