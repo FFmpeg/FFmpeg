@@ -616,7 +616,7 @@ int ff_mpv_init_context_frame(MpegEncContext *s)
         }
         if (s->codec_id == AV_CODEC_ID_MPEG4) {
             ALLOC_POOL(mbskip_table, mb_array_size + 2,
-                       FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME);
+                       !s->encoding ? FF_REFSTRUCT_POOL_FLAG_ZERO_EVERY_TIME : 0);
             if (!s->encoding) {
                 /* cbp, pred_dir */
                 if (!(s->cbp_table      = av_mallocz(mb_array_size)) ||
