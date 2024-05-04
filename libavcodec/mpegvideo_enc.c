@@ -2484,7 +2484,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
     }
 }
 
-static av_always_inline void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
+static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 {
     if (s->chroma_format == CHROMA_420)
         encode_mb_internal(s, motion_x, motion_y,  8, 8, 6, 1, 1, CHROMA_420);
@@ -2559,9 +2559,9 @@ static inline void copy_context_after_encode(MpegEncContext *d,
     d->esc3_level_length= s->esc3_level_length;
 }
 
-static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegEncContext *best,
-                           PutBitContext pb[2], PutBitContext pb2[2], PutBitContext tex_pb[2],
-                           int *dmin, int *next_block, int motion_x, int motion_y)
+static void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegEncContext *best,
+                         PutBitContext pb[2], PutBitContext pb2[2], PutBitContext tex_pb[2],
+                         int *dmin, int *next_block, int motion_x, int motion_y)
 {
     int score;
     uint8_t *dest_backup[3];
