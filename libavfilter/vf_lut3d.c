@@ -1111,6 +1111,8 @@ static const enum AVPixelFormat pix_fmts[] = {
     AV_PIX_FMT_NONE
 };
 
+#if CONFIG_LUT3D_FILTER || CONFIG_HALDCLUT_FILTER
+
 static int config_input(AVFilterLink *inlink)
 {
     int depth, is16bit, isfloat, planar;
@@ -1206,8 +1208,6 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
 
     return config_input(ctx->inputs[0]);
 }
-
-#if CONFIG_LUT3D_FILTER || CONFIG_HALDCLUT_FILTER
 
 /* These options are shared between several filters;
  * &lut3d_haldclut_options[COMMON_OPTIONS_OFFSET] must always
