@@ -26,7 +26,7 @@
 #include "libavcodec/x86/xvididct.h"
 #include "libavcodec/x86/simple_idct.h"
 
-#if (CONFIG_PRORES_DECODER || CONFIG_PRORES_LGPL_DECODER) && ARCH_X86_64 && HAVE_X86ASM
+#if CONFIG_PRORES_DECODER && ARCH_X86_64 && HAVE_X86ASM
 void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
                                 int16_t *block, int16_t *qmat);
 
@@ -70,7 +70,7 @@ static const struct algo idct_tab_arch[] = {
     { "XVID-SSE2",   ff_xvid_idct_sse2,   FF_IDCT_PERM_SSE2,   AV_CPU_FLAG_SSE2,   1 },
 #endif
 #endif /* CONFIG_MPEG4_DECODER && HAVE_X86ASM */
-#if (CONFIG_PRORES_DECODER || CONFIG_PRORES_LGPL_DECODER) && ARCH_X86_64 && HAVE_X86ASM
+#if CONFIG_PRORES_DECODER && ARCH_X86_64 && HAVE_X86ASM
     { "PR-SSE2",     ff_prores_idct_put_10_sse2_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_SSE2, 1 },
 # if HAVE_AVX_EXTERNAL
     { "PR-AVX",      ff_prores_idct_put_10_avx_wrap, FF_IDCT_PERM_TRANSPOSE, AV_CPU_FLAG_AVX, 1 },
