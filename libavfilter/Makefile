@@ -456,7 +456,7 @@ OBJS-$(CONFIG_ROBERTS_OPENCL_FILTER)         += vf_convolution_opencl.o opencl.o
                                                 opencl/convolution.o
 OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SAB_FILTER)                    += vf_sab.o
-OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o scale_eval.o
+OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o scale_eval.o framesync.o
 OBJS-$(CONFIG_SCALE_CUDA_FILTER)             += vf_scale_cuda.o scale_eval.o \
                                                 vf_scale_cuda.ptx.o cuda/load_helper.o
 OBJS-$(CONFIG_SCALE_NPP_FILTER)              += vf_scale_npp.o scale_eval.o
@@ -464,7 +464,7 @@ OBJS-$(CONFIG_SCALE_QSV_FILTER)              += vf_vpp_qsv.o
 OBJS-$(CONFIG_SCALE_VAAPI_FILTER)            += vf_scale_vaapi.o scale_eval.o vaapi_vpp.o
 OBJS-$(CONFIG_SCALE_VT_FILTER)               += vf_scale_vt.o scale_eval.o
 OBJS-$(CONFIG_SCALE_VULKAN_FILTER)           += vf_scale_vulkan.o vulkan.o vulkan_filter.o
-OBJS-$(CONFIG_SCALE2REF_FILTER)              += vf_scale.o scale_eval.o
+OBJS-$(CONFIG_SCALE2REF_FILTER)              += vf_scale.o scale_eval.o framesync.o
 OBJS-$(CONFIG_SCALE2REF_NPP_FILTER)          += vf_scale_npp.o scale_eval.o
 OBJS-$(CONFIG_SCDET_FILTER)                  += vf_scdet.o
 OBJS-$(CONFIG_SCHARR_FILTER)                 += vf_convolution.o
