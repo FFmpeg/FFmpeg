@@ -276,7 +276,8 @@ int ff_iamf_read_packet(AVFormatContext *s, IAMFDemuxContext *c,
         unsigned skip_samples, discard_padding;
         int ret, len, size, start_pos;
 
-        if ((ret = ffio_ensure_seekback(pb, FFMIN(MAX_IAMF_OBU_HEADER_SIZE, max_size))) < 0)
+        ret = ffio_ensure_seekback(pb, FFMIN(MAX_IAMF_OBU_HEADER_SIZE, max_size));
+        if (ret < 0)
             return ret;
         size = avio_read(pb, header, FFMIN(MAX_IAMF_OBU_HEADER_SIZE, max_size));
         if (size < 0)
