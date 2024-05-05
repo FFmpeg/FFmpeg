@@ -60,6 +60,10 @@ typedef struct XMedianContext {
     int (*median_frames)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } XMedianContext;
 
+#define OFFSET(x) offsetof(XMedianContext, x)
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define TFLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
+
 static const enum AVPixelFormat pixel_fmts[] = {
     AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_GRAY9,
@@ -360,10 +364,6 @@ static av_cold int xmedian_init(AVFilterContext *ctx)
 
     return init(ctx);
 }
-
-#define OFFSET(x) offsetof(XMedianContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
-#define TFLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption xmedian_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3},  3, 255, .flags = FLAGS },
