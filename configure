@@ -2874,6 +2874,7 @@ mpegvideoenc_select="aandcttables fdctdsp me_cmp mpegvideo pixblockdsp"
 msmpeg4dec_select="h263_decoder"
 msmpeg4enc_select="h263_encoder"
 vc1dsp_select="h264chroma qpeldsp startcode"
+wmv2dsp_select="qpeldsp"
 
 # decoders / encoders
 aac_decoder_select="adts_header mpeg4audio sinewin"
