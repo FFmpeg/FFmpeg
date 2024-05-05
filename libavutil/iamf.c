@@ -66,10 +66,10 @@ child_type *av_iamf_ ## parent_name ## _add_ ## child_name(parent_type *parent_n
 static const AVOption mix_gain_options[] = {
     { "subblock_duration", "set subblock_duration", OFFSET(subblock_duration), AV_OPT_TYPE_INT, {.i64 = 1 }, 1, UINT_MAX, FLAGS },
     { "animation_type", "set animation_type", OFFSET(animation_type), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 2, FLAGS },
-    { "start_point_value", "set start_point_value", OFFSET(animation_type), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
-    { "end_point_value", "set end_point_value", OFFSET(animation_type), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
-    { "control_point_value", "set control_point_value", OFFSET(animation_type), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
-    { "control_point_relative_time", "set control_point_relative_time", OFFSET(animation_type), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0.0, 1.0, FLAGS },
+    { "start_point_value", "set start_point_value", OFFSET(start_point_value), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
+    { "end_point_value", "set end_point_value", OFFSET(end_point_value), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
+    { "control_point_value", "set control_point_value", OFFSET(control_point_value), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, -128.0, 128.0, FLAGS },
+    { "control_point_relative_time", "set control_point_relative_time", OFFSET(control_point_relative_time), AV_OPT_TYPE_RATIONAL, {.dbl = 0 }, 0.0, 1.0, FLAGS },
     { NULL },
 };
 
