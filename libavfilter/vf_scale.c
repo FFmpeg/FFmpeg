@@ -766,6 +766,7 @@ static int config_props(AVFilterLink *outlink)
     av_freep(&flags_val);
 
     if (ctx->filter != &ff_vf_scale2ref) {
+        ff_framesync_uninit(&scale->fs);
         ret = ff_framesync_init(&scale->fs, ctx, ctx->nb_inputs);
         if (ret < 0)
             return ret;
