@@ -599,8 +599,7 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
         if (!sd)
             av_buffer_unref(&a53->buf_ref);
         a53->buf_ref = NULL;
-        if (avctx)
-            avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+        avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
     for (unsigned i = 0; i < sei->unregistered.nb_buf_ref; i++) {
@@ -686,8 +685,7 @@ int ff_h2645_sei_to_frame(AVFrame *frame, H2645SEI *sei,
         else
             fgc->present = fgc->persistence_flag;
 
-        if (avctx)
-            avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
+        avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
     }
 
     if (sei->ambient_viewing_environment.present) {
