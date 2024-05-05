@@ -697,6 +697,15 @@ const AVFilter ff_vsrc_testsrc = {
 
 #endif /* CONFIG_TESTSRC_FILTER */
 
+static void av_unused set_color(TestSourceContext *s, FFDrawColor *color, uint32_t argb)
+{
+    uint8_t rgba[4] = { (argb >> 16) & 0xFF,
+                        (argb >>  8) & 0xFF,
+                        (argb >>  0) & 0xFF,
+                        (argb >> 24) & 0xFF, };
+    ff_draw_color(&s->draw, color, rgba);
+}
+
 #if CONFIG_TESTSRC2_FILTER
 
 static const AVOption testsrc2_options[] = {
@@ -706,15 +715,6 @@ static const AVOption testsrc2_options[] = {
 };
 
 AVFILTER_DEFINE_CLASS(testsrc2);
-
-static void set_color(TestSourceContext *s, FFDrawColor *color, uint32_t argb)
-{
-    uint8_t rgba[4] = { (argb >> 16) & 0xFF,
-                        (argb >>  8) & 0xFF,
-                        (argb >>  0) & 0xFF,
-                        (argb >> 24) & 0xFF, };
-    ff_draw_color(&s->draw, color, rgba);
-}
 
 static uint32_t color_gradient(unsigned index)
 {
