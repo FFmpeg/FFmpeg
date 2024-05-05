@@ -167,6 +167,7 @@ OBJS-$(CONFIG_STEREOTOOLS_FILTER)            += af_stereotools.o
 OBJS-$(CONFIG_STEREOWIDEN_FILTER)            += af_stereowiden.o
 OBJS-$(CONFIG_SUPEREQUALIZER_FILTER)         += af_superequalizer.o
 OBJS-$(CONFIG_SURROUND_FILTER)               += af_surround.o
+OBJS-$(CONFIG_TILTSHELF_FILTER)              += af_biquads.o
 OBJS-$(CONFIG_TREBLE_FILTER)                 += af_biquads.o
 OBJS-$(CONFIG_TREMOLO_FILTER)                += af_tremolo.o
 OBJS-$(CONFIG_VIBRATO_FILTER)                += af_vibrato.o generate_wave_table.o
