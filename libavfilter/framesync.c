@@ -95,8 +95,11 @@ int ff_framesync_init(FFFrameSync *fs, AVFilterContext *parent, unsigned nb_in)
     fs->nb_in  = nb_in;
 
     fs->in = av_calloc(nb_in, sizeof(*fs->in));
-    if (!fs->in)
+    if (!fs->in) {
+        fs->nb_in = 0;
         return AVERROR(ENOMEM);
+    }
+
     return 0;
 }
 
