@@ -442,13 +442,16 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     if (c->fd < 0) {
         av_strstart(filename, "pipe:", &filename);
 
-        fd = strtol(filename, &final, 10);
-        if((filename == final) || *final ) {/* No digits found, or something like 10ab */
+        if (!*filename) {
             if (flags & AVIO_FLAG_WRITE) {
                 fd = 1;
             } else {
                 fd = 0;
             }
+        } else {
+            fd = strtol(filename, &final, 10);
+            if (*final) /* No digits found, or something like 10ab */
+                return AVERROR(EINVAL);
         }
         c->fd = fd;
     }
