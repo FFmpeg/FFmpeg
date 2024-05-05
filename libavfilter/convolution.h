@@ -119,7 +119,7 @@ static void filter16_sobel(uint8_t *dstp, int width,
     }
 }
 
-static av_unused void ff_sobel_init(ConvolutionContext *s, int depth, int nb_planes)
+static inline void ff_sobel_init(ConvolutionContext *s, int depth, int nb_planes)
 {
     for (int i = 0; i < 4; i++) {
         s->filter[i] = filter_sobel;
