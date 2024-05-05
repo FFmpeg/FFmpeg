@@ -89,7 +89,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         av_log_set_level(AV_LOG_PANIC);
     }
 
-    av_assert0(c->p.type == AVMEDIA_TYPE_VIDEO);
+    if (c->p.type != AVMEDIA_TYPE_VIDEO)
+        return 0;
 
     maxpixels = maxpixels_per_frame * maxiteration;
 
