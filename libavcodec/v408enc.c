@@ -20,9 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "config_components.h"
-
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "codec_internal.h"
 #include "encode.h"
@@ -72,7 +69,6 @@ static int v408_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static const enum AVPixelFormat pix_fmt[] = { AV_PIX_FMT_YUVA444P, AV_PIX_FMT_NONE };
 
-#if CONFIG_V408_ENCODER
 const FFCodec ff_v408_encoder = {
     .p.name       = "v408",
     CODEC_LONG_NAME("Uncompressed packed QT 4:4:4:4"),
@@ -83,4 +79,3 @@ const FFCodec ff_v408_encoder = {
     FF_CODEC_ENCODE_CB(v408_encode_frame),
     .p.pix_fmts   = pix_fmt,
 };
-#endif
