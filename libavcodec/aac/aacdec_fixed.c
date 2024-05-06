@@ -43,22 +43,22 @@
 #include "libavcodec/cbrt_data.h"
 #include "libavcodec/aacsbr.h"
 
-DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_long_1024))[1024];
-DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME2(aac_kbd_short_128))[128];
-DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME(aac_kbd_long_960))[960];
-DECLARE_ALIGNED(32, static INTFLOAT, AAC_RENAME(aac_kbd_short_120))[120];
+DECLARE_ALIGNED(32, static int, aac_kbd_long_1024_fixed)[1024];
+DECLARE_ALIGNED(32, static int, aac_kbd_short_128_fixed)[128];
+DECLARE_ALIGNED(32, static int, aac_kbd_long_960_fixed)[960];
+DECLARE_ALIGNED(32, static int, aac_kbd_short_120_fixed)[120];
 
 static void init_tables_fixed_fn(void)
 {
-    AAC_RENAME(ff_cbrt_tableinit)();
+    ff_cbrt_tableinit_fixed();
 
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_long_1024), 4.0, 1024);
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME2(aac_kbd_short_128), 6.0, 128);
+    ff_kbd_window_init_fixed(aac_kbd_long_1024_fixed, 4.0, 1024);
+    ff_kbd_window_init_fixed(aac_kbd_short_128_fixed, 6.0, 128);
 
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_long_960), 4.0, 960);
-    AAC_RENAME(ff_kbd_window_init)(AAC_RENAME(aac_kbd_short_120), 6.0, 120);
+    ff_kbd_window_init_fixed(aac_kbd_long_960_fixed, 4.0, 960);
+    ff_kbd_window_init_fixed(aac_kbd_short_120_fixed, 6.0, 120);
 
-    AAC_RENAME(ff_aac_sbr_init)();
+    ff_aac_sbr_init_fixed();
 
     init_sine_windows_fixed();
 }
