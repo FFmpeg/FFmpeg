@@ -37,13 +37,14 @@
 #include "golomb.h"
 #include "dirac_arith.h"
 #include "dirac_vlc.h"
-#include "mpegpicture.h"
 #include "mpegvideoencdsp.h"
 #include "dirac_dwt.h"
 #include "dirac.h"
 #include "diractab.h"
 #include "diracdsp.h"
 #include "videodsp.h"
+
+#define EDGE_WIDTH 16
 
 /**
  * The spec limits this to 3 for frame coding, but in practice can be as high as 6
