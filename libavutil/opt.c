@@ -2309,7 +2309,9 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
             if ((ret = av_channel_layout_from_string(&ch_layout, o->default_val.str)) < 0)
                 return ret;
         }
-        return !av_channel_layout_compare((AVChannelLayout *)dst, &ch_layout);
+        ret = !av_channel_layout_compare((AVChannelLayout *)dst, &ch_layout);
+        av_channel_layout_uninit(&ch_layout);
+        return ret;
     }
     case AV_OPT_TYPE_STRING:
         str = *(char **)dst;
