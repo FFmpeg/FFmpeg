@@ -1152,13 +1152,6 @@ static av_cold int init_dsp(AVCodecContext *avctx)
     const float *const scalep = is_fixed ? &scale_fixed : &scale_float;
     enum AVTXType tx_type = is_fixed ? AV_TX_INT32_MDCT : AV_TX_FLOAT_MDCT;
 
-    if (avctx->ch_layout.nb_channels > MAX_CHANNELS) {
-        av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    ac->random_state = 0x1f2e3d4c;
-
 #define MDCT_INIT(s, fn, len, sval)                                          \
     scale_fixed = (sval) * 128.0f;                                           \
     scale_float = (sval) / 32768.0f;                                         \
@@ -1240,6 +1233,13 @@ static av_cold int aac_decode_init_internal(AVCodecContext *avctx)
                 return AVERROR_INVALIDDATA;
         }
     }
+
+    if (avctx->ch_layout.nb_channels > MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    ac->random_state = 0x1f2e3d4c;
 
     return init_dsp(avctx);
 }
