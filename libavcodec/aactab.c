@@ -105,6 +105,7 @@ av_cold void ff_aac_float_common_init(void)
     static AVOnce init_static_once = AV_ONCE_INIT;
     ff_thread_once(&init_static_once, aac_float_common_init);
 }
+#endif
 
 const float ff_ltp_coef[8] = {
     0.570829, 0.696616, 0.813004, 0.911304,
@@ -144,7 +145,6 @@ const float * const ff_tns_tmp2_map[4] = {
     tns_tmp2_map_1_3,
     tns_tmp2_map_1_4
 };
-#endif
 
 const uint8_t ff_aac_num_swb_1024[] = {
     41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40
