@@ -949,6 +949,8 @@ int av_opt_set_chlayout(void *obj, const char *name,
 
     if (!o || !target_obj)
         return AVERROR_OPTION_NOT_FOUND;
+    if (o->flags & AV_OPT_FLAG_READONLY)
+        return AVERROR(EINVAL);
 
     dst = (AVChannelLayout*)((uint8_t*)target_obj + o->offset);
 
