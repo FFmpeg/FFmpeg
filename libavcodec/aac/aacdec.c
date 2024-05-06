@@ -42,6 +42,7 @@
 #include "aacdec_tab.h"
 
 #include "libavcodec/aac.h"
+#include "libavcodec/aac_defines.h"
 #include "libavcodec/aacsbr.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/adts_header.h"

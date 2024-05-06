@@ -31,7 +31,6 @@
 
 #include "get_bits.h"
 #include "aac/aacdec.h"
-#include "aac_defines.h"
 
 #include "libavutil/attributes_internal.h"
 
@@ -91,9 +90,9 @@ int ff_aac_sbr_decode_extension_fixed(AACDecContext *ac, ChannelElement *che,
 
 /** Apply one SBR element to one AAC element. */
 void ff_aac_sbr_apply(AACDecContext *ac, ChannelElement *che,
-                      int id_aac, INTFLOAT* L, INTFLOAT* R);
+                      int id_aac, float *L, float *R);
 void ff_aac_sbr_apply_fixed(AACDecContext *ac, ChannelElement *che,
-                            int id_aac, INTFLOAT* L, INTFLOAT* R);
+                            int id_aac, int *L, int *R);
 
 FF_VISIBILITY_POP_HIDDEN
 
