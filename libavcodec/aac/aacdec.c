@@ -2510,7 +2510,9 @@ static int aac_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     return buf_size > buf_offset ? buf_consumed : buf_size;
 }
 
+#if CONFIG_AAC_LATM_DECODER
 #include "aacdec_latm.h"
+#endif
 
 #define AACDEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
 #define OFF(field) offsetof(AACDecContext, field)
