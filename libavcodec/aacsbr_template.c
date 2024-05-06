@@ -1469,8 +1469,9 @@ static void sbr_env_estimate(AAC_FLOAT (*e_curr)[48], INTFLOAT X_high[64][40][2]
 }
 
 void AAC_RENAME(ff_aac_sbr_apply)(AACDecContext *ac, ChannelElement *che,
-                                  int id_aac, INTFLOAT* L, INTFLOAT* R)
+                                  int id_aac, void *L_, void *R_)
 {
+    INTFLOAT *L = L_, *R = R_;
     SpectralBandReplication *sbr = get_sbr(che);
     int downsampled = ac->oc[1].m4ac.ext_sample_rate < sbr->sample_rate;
     int ch;

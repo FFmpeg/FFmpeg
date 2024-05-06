@@ -149,11 +149,7 @@ static av_cold int che_configure(AACDecContext *ac,
         return AVERROR_INVALIDDATA;
     if (che_pos) {
         if (!ac->che[type][id]) {
-            int ret;
-            if (ac->is_fixed)
-                ret = ff_aac_sbr_ctx_alloc_init_fixed(ac, &ac->che[type][id], type);
-            else
-                ret = ff_aac_sbr_ctx_alloc_init(ac, &ac->che[type][id], type);
+            int ret = ac->proc.sbr_ctx_alloc_init(ac, &ac->che[type][id], type);
             if (ret < 0)
                 return ret;
         }
@@ -170,10 +166,7 @@ static av_cold int che_configure(AACDecContext *ac,
         }
     } else {
         if (ac->che[type][id]) {
-            if (ac->is_fixed)
-                ff_aac_sbr_ctx_close_fixed(ac->che[type][id]);
-            else
-                ff_aac_sbr_ctx_close(ac->che[type][id]);
+            ac->proc.sbr_ctx_close(ac->che[type][id]);
         }
         av_freep(&ac->che[type][id]);
     }
@@ -1114,14 +1107,11 @@ static int sample_rate_idx (int rate)
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
-    int is_fixed = ac->is_fixed;
-    void (*sbr_close)(ChannelElement *che) = is_fixed ? ff_aac_sbr_ctx_close_fixed :
-                                                        ff_aac_sbr_ctx_close;
 
     for (int type = 0; type < FF_ARRAY_ELEMS(ac->che); type++) {
         for (int i = 0; i < MAX_ELEM_ID; i++) {
             if (ac->che[type][i]) {
-                sbr_close(ac->che[type][i]);
+                ac->proc.sbr_ctx_close(ac->che[type][i]);
                 av_freep(&ac->che[type][i]);
             }
         }
@@ -1136,7 +1126,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     av_tx_uninit(&ac->mdct_ltp);
 
     // Compiler will optimize this branch away.
-    if (is_fixed)
+    if (ac->is_fixed)
         av_freep(&ac->RENAME_FIXED(fdsp));
     else
         av_freep(&ac->fdsp);
@@ -1946,11 +1936,7 @@ static int decode_extension_payload(AACDecContext *ac, GetBitContext *gb, int cn
             ac->avctx->profile = AV_PROFILE_AAC_HE;
         }
 
-        if (CONFIG_AAC_FIXED_DECODER && ac->is_fixed)
-            res = ff_aac_sbr_decode_extension_fixed(ac, che, gb, crc_flag, cnt, elem_type);
-        else if (CONFIG_AAC_DECODER)
-            res = ff_aac_sbr_decode_extension(ac, che, gb, crc_flag, cnt, elem_type);
-
+        ac->proc.sbr_decode_extension(ac, che, gb, crc_flag, cnt, elem_type);
 
         if (ac->oc[1].m4ac.ps == 1 && !ac->warned_he_aac_mono) {
             av_log(ac->avctx, AV_LOG_VERBOSE, "Treating HE-AAC mono as stereo.\n");
@@ -2059,14 +2045,9 @@ static void spectral_to_sample(AACDecContext *ac, int samples)
                             ac->dsp.update_ltp(ac, &che->ch[1]);
                     }
                     if (ac->oc[1].m4ac.sbr > 0) {
-                        if (CONFIG_AAC_FIXED_DECODER && ac->is_fixed)
-                            ff_aac_sbr_apply_fixed(ac, che, type,
-                                                   (void *)che->ch[0].output,
-                                                   (void *)che->ch[1].output);
-                        else if (CONFIG_AAC_DECODER)
-                            ff_aac_sbr_apply(ac, che, type,
-                                             (void *)che->ch[0].output,
-                                             (void *)che->ch[1].output);
+                        ac->proc.sbr_apply(ac, che, type,
+                                           che->ch[0].output,
+                                           che->ch[1].output);
                     }
                 }
                 if (type <= TYPE_CCE)

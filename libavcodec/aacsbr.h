@@ -90,9 +90,9 @@ int ff_aac_sbr_decode_extension_fixed(AACDecContext *ac, ChannelElement *che,
 
 /** Apply one SBR element to one AAC element. */
 void ff_aac_sbr_apply(AACDecContext *ac, ChannelElement *che,
-                      int id_aac, float *L, float *R);
+                      int id_aac, void /* float */ *L, void /* float */ *R);
 void ff_aac_sbr_apply_fixed(AACDecContext *ac, ChannelElement *che,
-                            int id_aac, int *L, int *R);
+                            int id_aac, void /* int */ *L, void /* int */ *R);
 
 FF_VISIBILITY_POP_HIDDEN
 

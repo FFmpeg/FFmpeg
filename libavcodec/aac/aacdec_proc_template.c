@@ -439,4 +439,10 @@ static av_cold void AAC_RENAME(aac_proc_init)(AACDecProc *aac_proc)
     SET(decode_spectrum_and_dequant);
     SET(decode_cce);
 #undef SET
+#define SET(member) aac_proc->member = AV_JOIN(ff_aac_, AAC_RENAME(member));
+    SET(sbr_ctx_alloc_init);
+    SET(sbr_decode_extension);
+    SET(sbr_apply);
+    SET(sbr_ctx_close);
+#undef SET
 }
