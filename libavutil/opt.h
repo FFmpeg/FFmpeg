@@ -797,6 +797,10 @@ int av_opt_set_image_size(void *obj, const char *name, int w, int h, int search_
 int av_opt_set_pixel_fmt (void *obj, const char *name, enum AVPixelFormat fmt, int search_flags);
 int av_opt_set_sample_fmt(void *obj, const char *name, enum AVSampleFormat fmt, int search_flags);
 int av_opt_set_video_rate(void *obj, const char *name, AVRational val, int search_flags);
+/**
+ * @note Any old chlayout present is discarded and replaced with a copy of the new one. The
+ * caller still owns layout and is responsible for uninitializing it.
+ */
 int av_opt_set_chlayout(void *obj, const char *name, const AVChannelLayout *layout, int search_flags);
 /**
  * @note Any old dictionary present is discarded and replaced with a copy of the new one. The
@@ -858,6 +862,10 @@ int av_opt_get_image_size(void *obj, const char *name, int search_flags, int *w_
 int av_opt_get_pixel_fmt (void *obj, const char *name, int search_flags, enum AVPixelFormat *out_fmt);
 int av_opt_get_sample_fmt(void *obj, const char *name, int search_flags, enum AVSampleFormat *out_fmt);
 int av_opt_get_video_rate(void *obj, const char *name, int search_flags, AVRational *out_val);
+/**
+ * @param[out] layout The returned layout is a copy of the actual value and must
+ * be freed with av_channel_layout_uninit() by the caller
+ */
 int av_opt_get_chlayout(void *obj, const char *name, int search_flags, AVChannelLayout *layout);
 /**
  * @param[out] out_val The returned dictionary is a copy of the actual value and must
