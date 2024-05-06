@@ -615,23 +615,26 @@ static void AAC_RENAME(apply_prediction)(AACDecContext *ac, SingleChannelElement
         reset_all_predictors(sce->AAC_RENAME(predictor_state));
 }
 
-static const AACDecDSP AAC_RENAME(aac_dsp) = {
-    .dequant_scalefactors = &AAC_RENAME(dequant_scalefactors),
-    .apply_mid_side_stereo = &AAC_RENAME(apply_mid_side_stereo),
-    .apply_intensity_stereo = &AAC_RENAME(apply_intensity_stereo),
-    .apply_tns = &AAC_RENAME(apply_tns),
-    .apply_ltp = &AAC_RENAME(apply_ltp),
-    .update_ltp = &AAC_RENAME(update_ltp),
+static av_cold void AAC_RENAME(aac_dsp_init)(AACDecDSP *aac_dsp)
+{
+#define SET(member) aac_dsp->member = AAC_RENAME(member)
+    SET(dequant_scalefactors);
+    SET(apply_mid_side_stereo);
+    SET(apply_intensity_stereo);
+    SET(apply_tns);
+    SET(apply_ltp);
+    SET(update_ltp);
 
-    .apply_prediction = AAC_RENAME(apply_prediction),
+    SET(apply_prediction);
 
-    .imdct_and_windowing = AAC_RENAME(imdct_and_windowing),
-    .imdct_and_windowing_960 = AAC_RENAME(imdct_and_windowing_960),
-    .imdct_and_windowing_ld = AAC_RENAME(imdct_and_windowing_ld),
-    .imdct_and_windowing_eld = AAC_RENAME(imdct_and_windowing_eld),
+    SET(imdct_and_windowing);
+    SET(imdct_and_windowing_960);
+    SET(imdct_and_windowing_ld);
+    SET(imdct_and_windowing_eld);
 
-    .apply_dependent_coupling = AAC_RENAME(apply_dependent_coupling),
-    .apply_independent_coupling = AAC_RENAME(apply_independent_coupling),
+    SET(apply_dependent_coupling);
+    SET(apply_independent_coupling);
 
-    .clip_output = AAC_RENAME(clip_output),
-};
+    SET(clip_output);
+#undef SET
+}

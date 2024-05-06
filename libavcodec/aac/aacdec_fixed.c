@@ -90,8 +90,8 @@ av_cold int ff_aac_decode_init_fixed(AVCodecContext *avctx)
     ac->is_fixed = 1;
     avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
 
-    ac->dsp  = aac_dsp_fixed;
-    ac->proc = aac_proc_fixed;
+    aac_dsp_init_fixed(&ac->dsp);
+    aac_proc_init_fixed(&ac->proc);
 
     ac->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!ac->fdsp)

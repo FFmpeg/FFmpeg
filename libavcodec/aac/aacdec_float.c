@@ -160,8 +160,8 @@ av_cold int ff_aac_decode_init_float(AVCodecContext *avctx)
     ac->is_fixed = 0;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
-    ac->dsp  = aac_dsp;
-    ac->proc = aac_proc;
+    aac_dsp_init(&ac->dsp);
+    aac_proc_init(&ac->proc);
 
     ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!ac->fdsp)
