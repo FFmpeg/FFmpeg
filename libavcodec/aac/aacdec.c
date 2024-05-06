@@ -1193,11 +1193,6 @@ static av_cold int aac_decode_init_internal(AVCodecContext *avctx)
     ac->avctx = avctx;
     ac->oc[1].m4ac.sample_rate = avctx->sample_rate;
 
-    if (ac->is_fixed)
-        avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
-    else
-        avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-
     if (avctx->extradata_size > 0) {
         if ((ret = decode_audio_specific_config(ac, ac->avctx, &ac->oc[1].m4ac,
                                                 avctx->extradata,
@@ -1247,14 +1242,20 @@ static av_cold int aac_decode_init_internal(AVCodecContext *avctx)
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
+
     ac->is_fixed = 0;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
+
     return aac_decode_init_internal(avctx);
 }
 
 static av_cold int aac_decode_init_fixed(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
+
     ac->is_fixed = 1;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+
     return aac_decode_init_internal(avctx);
 }
 
