@@ -531,7 +531,7 @@ static int output_configure(AACDecContext *ac,
     return 0;
 }
 
-static void flush(AVCodecContext *avctx)
+static av_cold void flush(AVCodecContext *avctx)
 {
     AACDecContext *ac= avctx->priv_data;
     int type, i, j;
