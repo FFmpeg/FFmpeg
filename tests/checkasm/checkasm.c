@@ -106,6 +106,9 @@ static const struct {
     #if CONFIG_EXR_DECODER
         { "exrdsp", checkasm_check_exrdsp },
     #endif
+    #if CONFIG_FDCTDSP
+        { "fdctdsp", checkasm_check_fdctdsp },
+    #endif
     #if CONFIG_FLAC_DECODER
         { "flacdsp", checkasm_check_flacdsp },
     #endif

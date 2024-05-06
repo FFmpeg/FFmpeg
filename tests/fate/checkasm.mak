@@ -8,6 +8,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-blockdsp                                  \
                 fate-checkasm-bswapdsp                                  \
                 fate-checkasm-exrdsp                                    \
+                fate-checkasm-fdctdsp                                   \
                 fate-checkasm-fixed_dsp                                 \
                 fate-checkasm-flacdsp                                   \
                 fate-checkasm-float_dsp                                 \
