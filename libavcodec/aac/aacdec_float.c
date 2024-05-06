@@ -64,6 +64,8 @@ static void init_tables_float_fn(void)
     AAC_RENAME(ff_init_ff_sine_windows)(9);
 
     AAC_RENAME(ff_aac_sbr_init)();
+
+    ff_aac_float_common_init();
 }
 
 static int init(AACDecContext *ac)
@@ -74,8 +76,6 @@ static int init(AACDecContext *ac)
     ac->fdsp = avpriv_float_dsp_alloc(ac->avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!ac->fdsp)
         return AVERROR(ENOMEM);
-
-    ff_aac_float_common_init();
 
     return 0;
 }
