@@ -934,9 +934,8 @@ int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val,
 
     dst = (AVDictionary **)(((uint8_t *)target_obj) + o->offset);
     av_dict_free(dst);
-    av_dict_copy(dst, val, 0);
 
-    return 0;
+    return av_dict_copy(dst, val, 0);
 }
 
 int av_opt_set_chlayout(void *obj, const char *name,
@@ -1348,9 +1347,8 @@ int av_opt_get_dict_val(void *obj, const char *name, int search_flags, AVDiction
         return AVERROR(EINVAL);
 
     src = *(AVDictionary **)(((uint8_t *)target_obj) + o->offset);
-    av_dict_copy(out_val, src, 0);
 
-    return 0;
+    return av_dict_copy(out_val, src, 0);
 }
 
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
