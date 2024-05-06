@@ -63,18 +63,6 @@ static void init_tables_fixed_fn(void)
     init_sine_windows_fixed();
 }
 
-static int init_fixed(AACDecContext *ac)
-{
-    static AVOnce init_fixed_once = AV_ONCE_INIT;
-    ff_thread_once(&init_fixed_once, init_tables_fixed_fn);
-
-    ac->fdsp = avpriv_alloc_fixed_dsp(ac->avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!ac->fdsp)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
 static const int cce_scale_fixed[8] = {
     Q30(1.0),          //2^(0/8)
     Q30(1.0905077327), //2^(1/8)
@@ -93,3 +81,23 @@ static const int cce_scale_fixed[8] = {
 #include "aacdec_fixed_prediction.h"
 #include "aacdec_dsp_template.c"
 #include "aacdec_proc_template.c"
+
+av_cold int ff_aac_decode_init_fixed(AVCodecContext *avctx)
+{
+    static AVOnce init_fixed_once = AV_ONCE_INIT;
+    AACDecContext *ac = avctx->priv_data;
+
+    ac->is_fixed = 1;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
+
+    ac->dsp  = aac_dsp_fixed;
+    ac->proc = aac_proc_fixed;
+
+    ac->fdsp = avpriv_alloc_fixed_dsp(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!ac->fdsp)
+        return AVERROR(ENOMEM);
+
+    ff_thread_once(&init_fixed_once, init_tables_fixed_fn);
+
+    return ff_aac_decode_init(avctx);
+}

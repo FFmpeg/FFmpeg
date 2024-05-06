@@ -1174,13 +1174,10 @@ static av_cold int init_dsp(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ac->dsp = is_fixed ? aac_dsp_fixed : aac_dsp;
-    ac->proc = is_fixed ? aac_proc_fixed : aac_proc;
-
-    return ac->dsp.init(ac);
+    return 0;
 }
 
-static av_cold int aac_decode_init_internal(AVCodecContext *avctx)
+av_cold int ff_aac_decode_init(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
     int ret;
@@ -1237,26 +1234,6 @@ static av_cold int aac_decode_init_internal(AVCodecContext *avctx)
     ac->random_state = 0x1f2e3d4c;
 
     return init_dsp(avctx);
-}
-
-static av_cold int aac_decode_init(AVCodecContext *avctx)
-{
-    AACDecContext *ac = avctx->priv_data;
-
-    ac->is_fixed = 0;
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
-
-    return aac_decode_init_internal(avctx);
-}
-
-static av_cold int aac_decode_init_fixed(AVCodecContext *avctx)
-{
-    AACDecContext *ac = avctx->priv_data;
-
-    ac->is_fixed = 1;
-    avctx->sample_fmt = AV_SAMPLE_FMT_S32P;
-
-    return aac_decode_init_internal(avctx);
 }
 
 /**
@@ -2555,7 +2532,7 @@ const FFCodec ff_aac_decoder = {
     .p.id            = AV_CODEC_ID_AAC,
     .p.priv_class    = &decoder_class,
     .priv_data_size  = sizeof(AACDecContext),
-    .init            = aac_decode_init,
+    .init            = ff_aac_decode_init_float,
     .close           = decode_close,
     FF_CODEC_DECODE_CB(aac_decode_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]) {
@@ -2577,7 +2554,7 @@ const FFCodec ff_aac_fixed_decoder = {
     .p.id            = AV_CODEC_ID_AAC,
     .p.priv_class    = &decoder_class,
     .priv_data_size  = sizeof(AACDecContext),
-    .init            = aac_decode_init_fixed,
+    .init            = ff_aac_decode_init_fixed,
     .close           = decode_close,
     FF_CODEC_DECODE_CB(aac_decode_frame),
     .p.sample_fmts   = (const enum AVSampleFormat[]) {

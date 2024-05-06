@@ -68,18 +68,6 @@ static void init_tables_float_fn(void)
     ff_aac_float_common_init();
 }
 
-static int init(AACDecContext *ac)
-{
-    static AVOnce init_float_once = AV_ONCE_INIT;
-    ff_thread_once(&init_float_once, init_tables_float_fn);
-
-    ac->fdsp = avpriv_float_dsp_alloc(ac->avctx->flags & AV_CODEC_FLAG_BITEXACT);
-    if (!ac->fdsp)
-        return AVERROR(ENOMEM);
-
-    return 0;
-}
-
 static const float cce_scale[] = {
     1.09050773266525765921, //2^(1/8)
     1.18920711500272106672, //2^(1/4)
@@ -163,3 +151,23 @@ static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
 #include "aacdec_float_prediction.h"
 #include "aacdec_dsp_template.c"
 #include "aacdec_proc_template.c"
+
+av_cold int ff_aac_decode_init_float(AVCodecContext *avctx)
+{
+    static AVOnce init_float_once = AV_ONCE_INIT;
+    AACDecContext *ac = avctx->priv_data;
+
+    ac->is_fixed = 0;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
+
+    ac->dsp  = aac_dsp;
+    ac->proc = aac_proc;
+
+    ac->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!ac->fdsp)
+        return AVERROR(ENOMEM);
+
+    ff_thread_once(&init_float_once, init_tables_float_fn);
+
+    return ff_aac_decode_init(avctx);
+}

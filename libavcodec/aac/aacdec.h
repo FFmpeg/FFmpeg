@@ -216,8 +216,6 @@ typedef struct AACDecProc {
  * DSP-specific primitives
  */
 typedef struct AACDecDSP {
-    int (*init)(AACDecContext *ac);
-
     void (*dequant_scalefactors)(SingleChannelElement *sce);
 
     void (*apply_mid_side_stereo)(AACDecContext *ac, ChannelElement *cpe);
@@ -339,12 +337,9 @@ struct AACDecContext {
 #define fdsp          RENAME_FIXED(fdsp)
 #endif
 
-extern const AACDecDSP aac_dsp;
-extern const AACDecDSP aac_dsp_fixed;
-
-extern const AACDecProc aac_proc;
-extern const AACDecProc aac_proc_fixed;
-
+int ff_aac_decode_init(struct AVCodecContext *avctx);
+int ff_aac_decode_init_float(struct AVCodecContext *avctx);
+int ff_aac_decode_init_fixed(struct AVCodecContext *avctx);
 int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                       GetBitContext *gb, int common_window, int scale_flag);
 

@@ -433,7 +433,7 @@ static int AAC_RENAME(decode_cce)(AACDecContext *ac, GetBitContext *gb, ChannelE
     return 0;
 }
 
-const AACDecProc AAC_RENAME(aac_proc) = {
+static const AACDecProc AAC_RENAME(aac_proc) = {
     .decode_spectrum_and_dequant = AAC_RENAME(decode_spectrum_and_dequant),
     .decode_cce = AAC_RENAME(decode_cce),
 };
