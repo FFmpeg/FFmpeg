@@ -61,7 +61,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/tx.h"
 #include "libavutil/version.h"
-#include "libavutil/thread.h"
 
 /*
  * supported tools
@@ -1112,12 +1111,6 @@ static int sample_rate_idx (int rate)
     else                    return 11;
 }
 
-static av_cold void aac_static_table_init(void)
-{
-    ff_aacdec_common_init_once();
-}
-static AVOnce aac_table_init = AV_ONCE_INIT;
-
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
@@ -1202,9 +1195,7 @@ static av_cold int aac_decode_init_internal(AVCodecContext *avctx)
     if (avctx->sample_rate > 96000)
         return AVERROR_INVALIDDATA;
 
-    ret = ff_thread_once(&aac_table_init, &aac_static_table_init);
-    if (ret != 0)
-        return AVERROR_UNKNOWN;
+    ff_aacdec_common_init_once();
 
     ac->avctx = avctx;
     ac->oc[1].m4ac.sample_rate = avctx->sample_rate;
