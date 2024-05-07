@@ -53,7 +53,7 @@ static const AVOption sr_options[] = {
     { NULL }
 };
 
-AVFILTER_DNN_DEFINE_CLASS(sr);
+AVFILTER_DNN_DEFINE_CLASS(sr, DNN_TF);
 
 static av_cold int init(AVFilterContext *context)
 {

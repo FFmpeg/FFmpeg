@@ -120,11 +120,16 @@ void *ff_dnn_child_next(DnnContext *obj, void *prev) {
     return NULL;
 }
 
-const AVClass *ff_dnn_child_class_iterate(void **iter)
+const AVClass *ff_dnn_child_class_iterate_with_mask(void **iter, uint32_t backend_mask)
 {
-    uintptr_t i = (uintptr_t) *iter;
+    for (uintptr_t i = (uintptr_t)*iter; i < FF_ARRAY_ELEMS(dnn_backend_info_list); i++) {
+        if (i > 0) {
+            const DNNModule *module = dnn_backend_info_list[i].module;
 
-    if (i < FF_ARRAY_ELEMS(dnn_backend_info_list)) {
+            if (!(module->type & backend_mask))
+                continue;
+        }
+
         *iter = (void *)(i + 1);
         return dnn_backend_info_list[i].class;
     }

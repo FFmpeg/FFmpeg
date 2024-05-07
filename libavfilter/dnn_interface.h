@@ -32,7 +32,11 @@
 
 #define DNN_GENERIC_ERROR FFERRTAG('D','N','N','!')
 
-typedef enum {DNN_TF = 1, DNN_OV, DNN_TH} DNNBackendType;
+typedef enum {
+    DNN_TF = 1,
+    DNN_OV = 1 << 1,
+    DNN_TH = 1 << 2
+} DNNBackendType;
 
 typedef enum {DNN_FLOAT = 1, DNN_UINT8 = 4} DNNDataType;
 
@@ -190,7 +194,7 @@ const DNNModule *ff_get_dnn_module(DNNBackendType backend_type, void *log_ctx);
 
 void ff_dnn_init_child_class(DnnContext *ctx);
 void *ff_dnn_child_next(DnnContext *obj, void *prev);
-const AVClass *ff_dnn_child_class_iterate(void **iter);
+const AVClass *ff_dnn_child_class_iterate_with_mask(void **iter, uint32_t backend_mask);
 
 static inline int dnn_get_width_idx_by_layout(DNNLayout layout)
 {

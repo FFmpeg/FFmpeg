@@ -84,7 +84,7 @@ static const AVOption dnn_detect_options[] = {
     { NULL }
 };
 
-AVFILTER_DNN_DEFINE_CLASS(dnn_detect);
+AVFILTER_DNN_DEFINE_CLASS(dnn_detect, DNN_TF | DNN_OV);
 
 static inline float sigmoid(float x) {
     return 1.f / (1.f + exp(-x));

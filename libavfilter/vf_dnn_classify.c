@@ -56,7 +56,7 @@ static const AVOption dnn_classify_options[] = {
     { NULL }
 };
 
-AVFILTER_DNN_DEFINE_CLASS(dnn_classify);
+AVFILTER_DNN_DEFINE_CLASS(dnn_classify, DNN_OV);
 
 static int dnn_classify_post_proc(AVFrame *frame, DNNData *output, uint32_t bbox_index, AVFilterContext *filter_ctx)
 {

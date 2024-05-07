@@ -49,7 +49,7 @@ static const AVOption derain_options[] = {
     { NULL }
 };
 
-AVFILTER_DNN_DEFINE_CLASS(derain);
+AVFILTER_DNN_DEFINE_CLASS(derain, DNN_TF);
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {

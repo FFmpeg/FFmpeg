@@ -26,6 +26,12 @@
 
 #include "dnn_interface.h"
 
+#define DNN_FILTER_CHILD_CLASS_ITERATE(name, backend_mask)                  \
+    static const AVClass *name##_child_class_iterate(void **iter)           \
+    {                                                                       \
+        return  ff_dnn_child_class_iterate_with_mask(iter, (backend_mask)); \
+    }
+
 #define AVFILTER_DNN_DEFINE_CLASS_EXT(name, desc, options) \
     static const AVClass name##_class = {       \
         .class_name = desc,                     \
@@ -34,10 +40,11 @@
         .version    = LIBAVUTIL_VERSION_INT,    \
         .category   = AV_CLASS_CATEGORY_FILTER,            \
         .child_next = ff_dnn_filter_child_next,            \
-        .child_class_iterate = ff_dnn_child_class_iterate, \
+        .child_class_iterate = name##_child_class_iterate, \
     }
 
-#define AVFILTER_DNN_DEFINE_CLASS(fname) \
+#define AVFILTER_DNN_DEFINE_CLASS(fname, backend_mask)      \
+    DNN_FILTER_CHILD_CLASS_ITERATE(fname, backend_mask)     \
     AVFILTER_DNN_DEFINE_CLASS_EXT(fname, #fname, fname##_options)
 
 void *ff_dnn_filter_child_next(void *obj, void *prev);
