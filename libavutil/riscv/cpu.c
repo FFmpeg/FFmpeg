@@ -54,6 +54,10 @@ int ff_get_cpu_flags_riscv(void)
             ret |= AV_CPU_FLAG_RVB_ADDR;
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZBB)
             ret |= AV_CPU_FLAG_RVB_BASIC;
+#ifdef RISCV_HWPROBE_EXT_ZVBB
+        if (pairs[1].value & RISCV_HWPROBE_EXT_ZVBB)
+            ret |= AV_CPU_FLAG_RV_ZVBB;
+#endif
     } else
 #endif
 #if HAVE_GETAUXVAL
@@ -105,6 +109,9 @@ int ff_get_cpu_flags_riscv(void)
     ret |= AV_CPU_FLAG_RVV_F64;
 #endif
 #endif
+#endif
+#ifdef __riscv_zvbb
+    ret |= AV_CPU_FLAG_RV_ZVBB;
 #endif
 
     return ret;
