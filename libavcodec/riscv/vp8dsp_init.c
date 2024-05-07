@@ -24,10 +24,32 @@
 #include "libavutil/cpu.h"
 #include "libavutil/riscv/cpu.h"
 #include "libavcodec/vp8dsp.h"
+#include "vp8dsp.h"
 
 void ff_vp8_idct_dc_add_rvv(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 void ff_vp8_idct_dc_add4y_rvv(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 void ff_vp8_idct_dc_add4uv_rvv(uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
+
+VP8_EPEL(16, rvi);
+VP8_EPEL(8,  rvi);
+VP8_EPEL(4,  rvi);
+
+av_cold void ff_vp78dsp_init_riscv(VP8DSPContext *c)
+{
+#if HAVE_RV
+    int flags = av_get_cpu_flags();
+    if (flags & AV_CPU_FLAG_RVI) {
+#if __riscv_xlen >= 64
+        c->put_vp8_epel_pixels_tab[0][0][0] = ff_put_vp8_pixels16_rvi;
+        c->put_vp8_epel_pixels_tab[1][0][0] = ff_put_vp8_pixels8_rvi;
+        c->put_vp8_bilinear_pixels_tab[0][0][0] = ff_put_vp8_pixels16_rvi;
+        c->put_vp8_bilinear_pixels_tab[1][0][0] = ff_put_vp8_pixels8_rvi;
+#endif
+        c->put_vp8_epel_pixels_tab[2][0][0] = ff_put_vp8_pixels4_rvi;
+        c->put_vp8_bilinear_pixels_tab[2][0][0] = ff_put_vp8_pixels4_rvi;
+    }
+#endif
+}
 
 av_cold void ff_vp8dsp_init_riscv(VP8DSPContext *c)
 {

@@ -681,6 +681,8 @@ av_cold void ff_vp78dsp_init(VP8DSPContext *dsp)
     ff_vp78dsp_init_arm(dsp);
 #elif ARCH_PPC
     ff_vp78dsp_init_ppc(dsp);
+#elif ARCH_RISCV
+    ff_vp78dsp_init_riscv(dsp);
 #elif ARCH_X86
     ff_vp78dsp_init_x86(dsp);
 #endif
