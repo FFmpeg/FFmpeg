@@ -29,11 +29,6 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
 
-typedef struct {
-    const char *name;
-    int size;
-} test;
-
 #define randomize_buffers(size)             \
     do {                                    \
         int i;                              \
@@ -58,18 +53,16 @@ do {                                                                \
 } while (0)
 
 static void check_fill(BlockDSPContext *h){
-    const test tests[] = {
-        {"fill_block_tab[0]", 16},
-        {"fill_block_tab[1]", 8},
-    };
-    LOCAL_ALIGNED_32(uint8_t, buf0, [16 * 16]);
-    LOCAL_ALIGNED_32(uint8_t, buf1, [16 * 16]);
+    LOCAL_ALIGNED_16(uint8_t, buf0_16, [16 * 16]);
+    LOCAL_ALIGNED_16(uint8_t, buf1_16, [16 * 16]);
 
-    for (size_t t = 0; t < FF_ARRAY_ELEMS(tests); ++t) {
-        int n = tests[t].size;
+    for (int t = 0; t < 2; ++t) {
+        uint8_t *buf0 = buf0_16 + t * /* force 8 byte alignment */ 8;
+        uint8_t *buf1 = buf1_16 + t * /* force 8 byte alignment */ 8;
+        int n = 16 - 8 * t;
         declare_func(void, uint8_t *block, uint8_t value,
                      ptrdiff_t line_size, int h);
-        if (check_func(h->fill_block_tab[t], "blockdsp.%s", tests[t].name)) {
+        if (check_func(h->fill_block_tab[t], "blockdsp.fill_block_tab[%d]", t)) {
             uint8_t value = rnd();
             memset(buf0, 0, sizeof(*buf0) * n * n);
             memset(buf1, 0, sizeof(*buf1) * n * n);
