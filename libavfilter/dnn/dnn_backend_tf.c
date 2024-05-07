@@ -36,19 +36,8 @@
 #include "safe_queue.h"
 #include <tensorflow/c/c_api.h>
 
-typedef struct TFOptions{
-    char *sess_config;
-    uint8_t async;
-    uint32_t nireq;
-} TFOptions;
-
-typedef struct TFContext {
-    const AVClass *class;
-    TFOptions options;
-} TFContext;
-
-typedef struct TFModel{
-    TFContext ctx;
+typedef struct TFModel {
+    DnnContext *ctx;
     DNNModel *model;
     TF_Graph *graph;
     TF_Session *session;
@@ -76,15 +65,13 @@ typedef struct TFRequestItem {
     DNNAsyncExecModule exec_module;
 } TFRequestItem;
 
-#define OFFSET(x) offsetof(TFContext, x)
+#define OFFSET(x) offsetof(TFOptions, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption dnn_tensorflow_options[] = {
-    { "sess_config", "config for SessionOptions", OFFSET(options.sess_config), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
-    DNN_BACKEND_COMMON_OPTIONS
+    { "sess_config", "config for SessionOptions", OFFSET(sess_config), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(dnn_tensorflow);
 
 static int execute_model_tf(TFRequestItem *request, Queue *lltask_queue);
 static void infer_completion_callback(void *args);
@@ -160,7 +147,7 @@ static int tf_start_inference(void *args)
     TFModel *tf_model = task->model;
 
     if (!request) {
-        av_log(&tf_model->ctx, AV_LOG_ERROR, "TFRequestItem is NULL\n");
+        av_log(tf_model->ctx, AV_LOG_ERROR, "TFRequestItem is NULL\n");
         return AVERROR(EINVAL);
     }
 
@@ -170,7 +157,7 @@ static int tf_start_inference(void *args)
                   task->nb_output, NULL, 0, NULL,
                   request->status);
     if (TF_GetCode(request->status) != TF_OK) {
-        av_log(&tf_model->ctx, AV_LOG_ERROR, "%s", TF_Message(request->status));
+        av_log(tf_model->ctx, AV_LOG_ERROR, "%s", TF_Message(request->status));
         return DNN_GENERIC_ERROR;
     }
     return 0;
@@ -198,7 +185,7 @@ static inline void destroy_request_item(TFRequestItem **arg) {
 static int extract_lltask_from_task(TaskItem *task, Queue *lltask_queue)
 {
     TFModel *tf_model = task->model;
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
     LastLevelTaskItem *lltask = av_malloc(sizeof(*lltask));
     if (!lltask) {
         av_log(ctx, AV_LOG_ERROR, "Unable to allocate space for LastLevelTaskItem\n");
@@ -278,7 +265,7 @@ static TF_Tensor *allocate_input_tensor(const DNNData *input)
 static int get_input_tf(void *model, DNNData *input, const char *input_name)
 {
     TFModel *tf_model = model;
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
     TF_Status *status;
     TF_DataType dt;
     int64_t dims[4];
@@ -328,7 +315,7 @@ static int get_output_tf(void *model, const char *input_name, int input_width, i
 {
     int ret;
     TFModel *tf_model = model;
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
     TaskItem task;
     TFRequestItem *request;
     DNNExecBaseParams exec_params = {
@@ -399,7 +386,7 @@ static int hex_to_data(uint8_t *data, const char *p)
 
 static int load_tf_model(TFModel *tf_model, const char *model_filename)
 {
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
     TF_Buffer *graph_def;
     TF_ImportGraphDefOptions *graph_opts;
     TF_SessionOptions *sess_opts;
@@ -408,7 +395,7 @@ static int load_tf_model(TFModel *tf_model, const char *model_filename)
     int sess_config_length = 0;
 
     // prepare the sess config data
-    if (tf_model->ctx.options.sess_config != NULL) {
+    if (ctx->tf_option.sess_config != NULL) {
         const char *config;
         /*
         tf_model->ctx.options.sess_config is hex to present the serialized proto
@@ -416,11 +403,11 @@ static int load_tf_model(TFModel *tf_model, const char *model_filename)
         proto in a python script, tools/python/tf_sess_config.py is a script example
         to generate the configs of sess_config.
         */
-        if (strncmp(tf_model->ctx.options.sess_config, "0x", 2) != 0) {
+        if (strncmp(ctx->tf_option.sess_config, "0x", 2) != 0) {
             av_log(ctx, AV_LOG_ERROR, "sess_config should start with '0x'\n");
             return AVERROR(EINVAL);
         }
-        config = tf_model->ctx.options.sess_config + 2;
+        config = ctx->tf_option.sess_config + 2;
         sess_config_length = hex_to_data(NULL, config);
 
         sess_config = av_mallocz(sess_config_length + AV_INPUT_BUFFER_PADDING_SIZE);
@@ -461,7 +448,7 @@ static int load_tf_model(TFModel *tf_model, const char *model_filename)
         if (TF_GetCode(tf_model->status) != TF_OK) {
             TF_DeleteSessionOptions(sess_opts);
             av_log(ctx, AV_LOG_ERROR, "Failed to set config for sess options with %s\n",
-                                      tf_model->ctx.options.sess_config);
+                                      ctx->tf_option.sess_config);
             return DNN_GENERIC_ERROR;
         }
     }
@@ -529,15 +516,14 @@ static void dnn_free_model_tf(DNNModel **model)
             TF_DeleteStatus(tf_model->status);
         }
         av_freep(&tf_model);
-        av_freep(model);
+        av_freep(&model);
     }
 }
 
-static DNNModel *dnn_load_model_tf(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx)
+static DNNModel *dnn_load_model_tf(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx)
 {
     DNNModel *model = NULL;
     TFModel *tf_model = NULL;
-    TFContext *ctx = NULL;
 
     model = av_mallocz(sizeof(DNNModel));
     if (!model){
@@ -551,23 +537,15 @@ static DNNModel *dnn_load_model_tf(const char *model_filename, DNNFunctionType f
     }
     model->model = tf_model;
     tf_model->model = model;
-    ctx = &tf_model->ctx;
-    ctx->class = &dnn_tensorflow_class;
+    tf_model->ctx = ctx;
 
-    //parse options
-    av_opt_set_defaults(ctx);
-    if (av_opt_set_from_string(ctx, options, NULL, "=", "&") < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to parse options \"%s\"\n", options);
+    if (load_tf_model(tf_model, ctx->model_filename) != 0){
+        av_log(ctx, AV_LOG_ERROR, "Failed to load TensorFlow model: \"%s\"\n", ctx->model_filename);
         goto err;
     }
 
-    if (load_tf_model(tf_model, model_filename) != 0){
-        av_log(ctx, AV_LOG_ERROR, "Failed to load TensorFlow model: \"%s\"\n", model_filename);
-        goto err;
-    }
-
-    if (ctx->options.nireq <= 0) {
-        ctx->options.nireq = av_cpu_count() / 2 + 1;
+    if (ctx->nireq <= 0) {
+        ctx->nireq = av_cpu_count() / 2 + 1;
     }
 
 #if !HAVE_PTHREAD_CANCEL
@@ -582,7 +560,7 @@ static DNNModel *dnn_load_model_tf(const char *model_filename, DNNFunctionType f
         goto err;
     }
 
-    for (int i = 0; i < ctx->options.nireq; i++) {
+    for (int i = 0; i < ctx->nireq; i++) {
         TFRequestItem *item = av_mallocz(sizeof(*item));
         if (!item) {
             goto err;
@@ -617,7 +595,6 @@ static DNNModel *dnn_load_model_tf(const char *model_filename, DNNFunctionType f
 
     model->get_input = &get_input_tf;
     model->get_output = &get_output_tf;
-    model->options = options;
     model->filter_ctx = filter_ctx;
     model->func_type = func_type;
 
@@ -632,7 +609,7 @@ static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
     LastLevelTaskItem *lltask;
     TaskItem *task;
     TFInferRequest *infer_request = NULL;
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
     int ret = 0;
 
     lltask = ff_queue_pop_front(tf_model->lltask_queue);
@@ -728,7 +705,7 @@ static void infer_completion_callback(void *args) {
     DNNData *outputs;
     TFInferRequest *infer_request = request->infer_request;
     TFModel *tf_model = task->model;
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
 
     outputs = av_calloc(task->nb_output, sizeof(*outputs));
     if (!outputs) {
@@ -787,7 +764,7 @@ err:
 static int execute_model_tf(TFRequestItem *request, Queue *lltask_queue)
 {
     TFModel *tf_model;
-    TFContext *ctx;
+    DnnContext *ctx;
     LastLevelTaskItem *lltask;
     TaskItem *task;
     int ret = 0;
@@ -800,7 +777,7 @@ static int execute_model_tf(TFRequestItem *request, Queue *lltask_queue)
     lltask = ff_queue_peek_front(lltask_queue);
     task = lltask->task;
     tf_model = task->model;
-    ctx = &tf_model->ctx;
+    ctx = tf_model->ctx;
 
     ret = fill_model_input_tf(tf_model, request);
     if (ret != 0) {
@@ -833,7 +810,7 @@ err:
 static int dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
     TFModel *tf_model = model->model;
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
     TaskItem *task;
     TFRequestItem *request;
     int ret = 0;
@@ -849,7 +826,7 @@ static int dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_p
         return AVERROR(ENOMEM);
     }
 
-    ret = ff_dnn_fill_task(task, exec_params, tf_model, ctx->options.async, 1);
+    ret = ff_dnn_fill_task(task, exec_params, tf_model, ctx->async, 1);
     if (ret != 0) {
         av_log(ctx, AV_LOG_ERROR, "Fill task with invalid parameter(s).\n");
         av_freep(&task);
@@ -887,7 +864,7 @@ static DNNAsyncStatusType dnn_get_result_tf(const DNNModel *model, AVFrame **in,
 static int dnn_flush_tf(const DNNModel *model)
 {
     TFModel *tf_model = model->model;
-    TFContext *ctx = &tf_model->ctx;
+    DnnContext *ctx = tf_model->ctx;
     TFRequestItem *request;
     int ret;
 
@@ -915,6 +892,7 @@ static int dnn_flush_tf(const DNNModel *model)
 }
 
 const DNNModule ff_dnn_backend_tf = {
+    .clazz          = DNN_DEFINE_CLASS(dnn_tensorflow),
     .load_model     = dnn_load_model_tf,
     .execute_model  = dnn_execute_model_tf,
     .get_result     = dnn_get_result_tf,

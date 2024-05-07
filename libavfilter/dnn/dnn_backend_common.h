@@ -28,9 +28,16 @@
 #include "../dnn_interface.h"
 #include "libavutil/thread.h"
 
-#define DNN_BACKEND_COMMON_OPTIONS \
-    { "nireq",           "number of request",             OFFSET(options.nireq),           AV_OPT_TYPE_INT,    { .i64 = 0 },     0, INT_MAX, FLAGS }, \
-    { "async",           "use DNN async inference",       OFFSET(options.async),           AV_OPT_TYPE_BOOL,   { .i64 = 1 },     0,       1, FLAGS },
+#define DNN_DEFINE_CLASS_EXT(name, desc, options) \
+    {                                           \
+        .class_name = desc,                     \
+        .item_name  = av_default_item_name,     \
+        .option     = options,                  \
+        .version    = LIBAVUTIL_VERSION_INT,    \
+        .category   = AV_CLASS_CATEGORY_FILTER, \
+    }
+#define DNN_DEFINE_CLASS(fname) \
+    DNN_DEFINE_CLASS_EXT(fname, #fname, fname##_options)
 
 // one task for one function call from dnn interface
 typedef struct TaskItem {

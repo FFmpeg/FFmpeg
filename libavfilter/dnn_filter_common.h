@@ -26,28 +26,23 @@
 
 #include "dnn_interface.h"
 
-typedef struct DnnContext {
-    char *model_filename;
-    DNNBackendType backend_type;
-    char *model_inputname;
-    char *model_outputnames_string;
-    char *backend_options;
-    int async;
+#define AVFILTER_DNN_DEFINE_CLASS_EXT(name, desc, options) \
+    static const AVClass name##_class = {       \
+        .class_name = desc,                     \
+        .item_name  = av_default_item_name,     \
+        .option     = options,                  \
+        .version    = LIBAVUTIL_VERSION_INT,    \
+        .category   = AV_CLASS_CATEGORY_FILTER,            \
+        .child_next = ff_dnn_filter_child_next,            \
+        .child_class_iterate = ff_dnn_child_class_iterate, \
+    }
 
-    char **model_outputnames;
-    uint32_t nb_outputs;
-    const DNNModule *dnn_module;
-    DNNModel *model;
-} DnnContext;
+#define AVFILTER_DNN_DEFINE_CLASS(fname) \
+    AVFILTER_DNN_DEFINE_CLASS_EXT(fname, #fname, fname##_options)
 
-#define DNN_COMMON_OPTIONS \
-    { "model",              "path to model file",         OFFSET(model_filename),   AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },\
-    { "input",              "input name of the model",    OFFSET(model_inputname),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },\
-    { "output",             "output name of the model",   OFFSET(model_outputnames_string), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS },\
-    { "backend_configs",    "backend configs",            OFFSET(backend_options),  AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },\
-    { "options", "backend configs (deprecated, use backend_configs)", OFFSET(backend_options),  AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, FLAGS | AV_OPT_FLAG_DEPRECATED},\
-    { "async",              "use DNN async inference (ignored, use backend_configs='async=1')",    OFFSET(async),            AV_OPT_TYPE_BOOL,      { .i64 = 1},     0, 1, FLAGS},
+void *ff_dnn_filter_child_next(void *obj, void *prev);
 
+int ff_dnn_filter_init_child_class(AVFilterContext *filter);
 
 int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx);
 int ff_dnn_set_frame_proc(DnnContext *ctx, FramePrePostProc pre_proc, FramePrePostProc post_proc);

@@ -50,14 +50,13 @@ static const AVOption dnn_classify_options[] = {
 #if (CONFIG_LIBOPENVINO == 1)
     { "openvino",    "openvino backend flag",      0,                        AV_OPT_TYPE_CONST,     { .i64 = DNN_OV },    0, 0, FLAGS, .unit = "backend" },
 #endif
-    DNN_COMMON_OPTIONS
     { "confidence",  "threshold of confidence",    OFFSET2(confidence),      AV_OPT_TYPE_FLOAT,     { .dbl = 0.5 },  0, 1, FLAGS},
     { "labels",      "path to labels file",        OFFSET2(labels_filename), AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { "target",      "which one to be classified", OFFSET2(target),          AV_OPT_TYPE_STRING,    { .str = NULL }, 0, 0, FLAGS },
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(dnn_classify);
+AVFILTER_DNN_DEFINE_CLASS(dnn_classify);
 
 static int dnn_classify_post_proc(AVFrame *frame, DNNData *output, uint32_t bbox_index, AVFilterContext *filter_ctx)
 {
@@ -299,6 +298,7 @@ const AVFilter ff_vf_dnn_classify = {
     .name          = "dnn_classify",
     .description   = NULL_IF_CONFIG_SMALL("Apply DNN classify filter to the input."),
     .priv_size     = sizeof(DnnClassifyContext),
+    .preinit       = ff_dnn_filter_init_child_class,
     .init          = dnn_classify_init,
     .uninit        = dnn_classify_uninit,
     FILTER_INPUTS(ff_video_default_filterpad),

@@ -93,8 +93,6 @@ typedef int (*ClassifyPostProc)(AVFrame *frame, DNNData *output, uint32_t bbox_i
 typedef struct DNNModel{
     // Stores model that can be different for different backends.
     void *model;
-    // Stores options when the model is executed by the backend
-    const char *options;
     // Stores FilterContext used for the interaction between AVFrame and DNNData
     AVFilterContext *filter_ctx;
     // Stores function type of the model
@@ -117,10 +115,65 @@ typedef struct DNNModel{
     ClassifyPostProc classify_post_proc;
 } DNNModel;
 
+typedef struct TFOptions{
+    const AVClass *clazz;
+
+    char *sess_config;
+} TFOptions;
+
+typedef struct OVOptions {
+    const AVClass *clazz;
+
+    int batch_size;
+    int input_resizable;
+    DNNLayout layout;
+    float scale;
+    float mean;
+} OVOptions;
+
+typedef struct THOptions {
+    const AVClass *clazz;
+    int optimize;
+} THOptions;
+
+typedef struct DNNModule DNNModule;
+
+typedef struct DnnContext {
+    const AVClass *clazz;
+
+    DNNModel *model;
+
+    char *model_filename;
+    DNNBackendType backend_type;
+    char *model_inputname;
+    char *model_outputnames_string;
+    char *backend_options;
+    int async;
+
+    char **model_outputnames;
+    uint32_t nb_outputs;
+    const DNNModule *dnn_module;
+
+    int nireq;
+    char *device;
+
+#if CONFIG_LIBTENSORFLOW
+    TFOptions tf_option;
+#endif
+
+#if CONFIG_LIBOPENVINO
+    OVOptions ov_option;
+#endif
+#if CONFIG_LIBTORCH
+    THOptions torch_option;
+#endif
+} DnnContext;
+
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
-typedef struct DNNModule{
+struct DNNModule {
+    const AVClass clazz;
     // Loads model and parameters from given file. Returns NULL if it is not possible.
-    DNNModel *(*load_model)(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx);
+    DNNModel *(*load_model)(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx);
     // Executes model with specified input and output. Returns the error code otherwise.
     int (*execute_model)(const DNNModel *model, DNNExecBaseParams *exec_params);
     // Retrieve inference result.
@@ -129,10 +182,14 @@ typedef struct DNNModule{
     int (*flush)(const DNNModel *model);
     // Frees memory allocated for model.
     void (*free_model)(DNNModel **model);
-} DNNModule;
+};
 
 // Initializes DNNModule depending on chosen backend.
 const DNNModule *ff_get_dnn_module(DNNBackendType backend_type, void *log_ctx);
+
+void ff_dnn_init_child_class(DnnContext *ctx);
+void *ff_dnn_child_next(DnnContext *obj, void *prev);
+const AVClass *ff_dnn_child_class_iterate(void **iter);
 
 static inline int dnn_get_width_idx_by_layout(DNNLayout layout)
 {

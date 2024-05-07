@@ -19,6 +19,7 @@
 #include "dnn_filter_common.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 
 #define MAX_SUPPORTED_OUTPUTS_NB 4
 
@@ -50,6 +51,23 @@ static char **separate_output_names(const char *expr, const char *val_sep, int *
     *separated_nb = val_num;
 
     return parsed_vals;
+}
+
+typedef struct DnnFilterBase {
+    const AVClass *class;
+    DnnContext dnnctx;
+} DnnFilterBase;
+
+int ff_dnn_filter_init_child_class(AVFilterContext *filter) {
+    DnnFilterBase *base = filter->priv;
+    ff_dnn_init_child_class(&base->dnnctx);
+    return 0;
+}
+
+void *ff_dnn_filter_child_next(void *obj, void *prev)
+{
+    DnnFilterBase *base = obj;
+    return ff_dnn_child_next(&base->dnnctx, prev);
 }
 
 int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx)
@@ -91,7 +109,25 @@ int ff_dnn_init(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *fil
         return AVERROR(EINVAL);
     }
 
-    ctx->model = (ctx->dnn_module->load_model)(ctx->model_filename, func_type, ctx->backend_options, filter_ctx);
+    if (ctx->backend_options) {
+        void *child = NULL;
+
+        av_log(filter_ctx, AV_LOG_WARNING,
+               "backend_configs is deprecated, please set backend options directly\n");
+        while (child = ff_dnn_child_next(ctx, child)) {
+            if (*(const AVClass **)child == &ctx->dnn_module->clazz) {
+                int ret = av_opt_set_from_string(child, ctx->backend_options,
+                                                 NULL, "=", "&");
+                if (ret < 0) {
+                    av_log(filter_ctx, AV_LOG_ERROR, "failed to parse options \"%s\"\n",
+                           ctx->backend_options);
+                    return ret;
+                }
+            }
+        }
+    }
+
+    ctx->model = (ctx->dnn_module->load_model)(ctx, func_type, filter_ctx);
     if (!ctx->model) {
         av_log(filter_ctx, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EINVAL);

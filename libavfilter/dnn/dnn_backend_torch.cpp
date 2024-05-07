@@ -36,18 +36,8 @@ extern "C" {
 #include "safe_queue.h"
 }
 
-typedef struct THOptions{
-    char *device_name;
-    int optimize;
-} THOptions;
-
-typedef struct THContext {
-    const AVClass *c_class;
-    THOptions options;
-} THContext;
-
 typedef struct THModel {
-    THContext ctx;
+    DnnContext *ctx;
     DNNModel *model;
     torch::jit::Module *jit_model;
     SafeQueue *request_queue;
@@ -67,20 +57,17 @@ typedef struct THRequestItem {
 } THRequestItem;
 
 
-#define OFFSET(x) offsetof(THContext, x)
+#define OFFSET(x) offsetof(THOptions, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption dnn_th_options[] = {
-    { "device", "device to run model", OFFSET(options.device_name), AV_OPT_TYPE_STRING, { .str = "cpu" }, 0, 0, FLAGS },
-    { "optimize", "turn on graph executor optimization", OFFSET(options.optimize), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS},
+    { "optimize", "turn on graph executor optimization", OFFSET(optimize), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS},
     { NULL }
 };
-
-AVFILTER_DEFINE_CLASS(dnn_th);
 
 static int extract_lltask_from_task(TaskItem *task, Queue *lltask_queue)
 {
     THModel *th_model = (THModel *)task->model;
-    THContext *ctx = &th_model->ctx;
+    DnnContext *ctx = th_model->ctx;
     LastLevelTaskItem *lltask = (LastLevelTaskItem *)av_malloc(sizeof(*lltask));
     if (!lltask) {
         av_log(ctx, AV_LOG_ERROR, "Failed to allocate memory for LastLevelTaskItem\n");
@@ -153,7 +140,6 @@ static void dnn_free_model_th(DNNModel **model)
     }
     ff_queue_destroy(th_model->task_queue);
     delete th_model->jit_model;
-    av_opt_free(&th_model->ctx);
     av_freep(&th_model);
     av_freep(model);
 }
@@ -181,7 +167,7 @@ static int fill_model_input_th(THModel *th_model, THRequestItem *request)
     TaskItem *task = NULL;
     THInferRequest *infer_request = NULL;
     DNNData input = { 0 };
-    THContext *ctx = &th_model->ctx;
+    DnnContext *ctx = th_model->ctx;
     int ret, width_idx, height_idx, channel_idx;
 
     lltask = (LastLevelTaskItem *)ff_queue_pop_front(th_model->lltask_queue);
@@ -241,7 +227,7 @@ static int th_start_inference(void *args)
     LastLevelTaskItem *lltask = NULL;
     TaskItem *task = NULL;
     THModel *th_model = NULL;
-    THContext *ctx = NULL;
+    DnnContext *ctx = NULL;
     std::vector<torch::jit::IValue> inputs;
     torch::NoGradGuard no_grad;
 
@@ -253,9 +239,9 @@ static int th_start_inference(void *args)
     lltask = request->lltask;
     task = lltask->task;
     th_model = (THModel *)task->model;
-    ctx = &th_model->ctx;
+    ctx = th_model->ctx;
 
-    if (ctx->options.optimize)
+    if (ctx->torch_option.optimize)
         torch::jit::setGraphExecutorOptimize(true);
     else
         torch::jit::setGraphExecutorOptimize(false);
@@ -292,7 +278,7 @@ static void infer_completion_callback(void *args) {
         outputs.dims[2] = sizes.at(2); // H
         outputs.dims[3] = sizes.at(3); // W
     } else {
-        avpriv_report_missing_feature(&th_model->ctx, "Support of this kind of model");
+        avpriv_report_missing_feature(th_model->ctx, "Support of this kind of model");
         goto err;
     }
 
@@ -304,7 +290,7 @@ static void infer_completion_callback(void *args) {
             if (th_model->model->frame_post_proc != NULL) {
                 th_model->model->frame_post_proc(task->out_frame, &outputs, th_model->model->filter_ctx);
             } else {
-                ff_proc_from_dnn_to_frame(task->out_frame, &outputs, &th_model->ctx);
+                ff_proc_from_dnn_to_frame(task->out_frame, &outputs, th_model->ctx);
             }
         } else {
             task->out_frame->width = outputs.dims[dnn_get_width_idx_by_layout(outputs.layout)];
@@ -312,7 +298,7 @@ static void infer_completion_callback(void *args) {
         }
         break;
     default:
-        avpriv_report_missing_feature(&th_model->ctx, "model function type %d", th_model->model->func_type);
+        avpriv_report_missing_feature(th_model->ctx, "model function type %d", th_model->model->func_type);
         goto err;
     }
     task->inference_done++;
@@ -322,7 +308,7 @@ err:
 
     if (ff_safe_queue_push_back(th_model->request_queue, request) < 0) {
         destroy_request_item(&request);
-        av_log(&th_model->ctx, AV_LOG_ERROR, "Unable to push back request_queue when failed to start inference.\n");
+        av_log(th_model->ctx, AV_LOG_ERROR, "Unable to push back request_queue when failed to start inference.\n");
     }
 }
 
@@ -352,7 +338,7 @@ static int execute_model_th(THRequestItem *request, Queue *lltask_queue)
         goto err;
     }
     if (task->async) {
-        avpriv_report_missing_feature(&th_model->ctx, "LibTorch async");
+        avpriv_report_missing_feature(th_model->ctx, "LibTorch async");
     } else {
         ret = th_start_inference((void *)(request));
         if (ret != 0) {
@@ -375,7 +361,7 @@ static int get_output_th(void *model, const char *input_name, int input_width, i
 {
     int ret = 0;
     THModel *th_model = (THModel*) model;
-    THContext *ctx = &th_model->ctx;
+    DnnContext *ctx = th_model->ctx;
     TaskItem task = { 0 };
     THRequestItem *request = NULL;
     DNNExecBaseParams exec_params = {
@@ -424,12 +410,12 @@ static THInferRequest *th_create_inference_request(void)
     return request;
 }
 
-static DNNModel *dnn_load_model_th(const char *model_filename, DNNFunctionType func_type, const char *options, AVFilterContext *filter_ctx)
+static DNNModel *dnn_load_model_th(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx)
 {
     DNNModel *model = NULL;
     THModel *th_model = NULL;
     THRequestItem *item = NULL;
-    THContext *ctx;
+    const char *device_name = ctx->device ? ctx->device : "cpu";
 
     model = (DNNModel *)av_mallocz(sizeof(DNNModel));
     if (!model) {
@@ -443,24 +429,17 @@ static DNNModel *dnn_load_model_th(const char *model_filename, DNNFunctionType f
     }
     th_model->model = model;
     model->model = th_model;
-    th_model->ctx.c_class = &dnn_th_class;
-    ctx = &th_model->ctx;
-    //parse options
-    av_opt_set_defaults(ctx);
-    if (av_opt_set_from_string(ctx, options, NULL, "=", "&") < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to parse options \"%s\"\n", options);
-        return NULL;
-    }
+    th_model->ctx = ctx;
 
-    c10::Device device = c10::Device(ctx->options.device_name);
+    c10::Device device = c10::Device(device_name);
     if (!device.is_cpu()) {
-        av_log(ctx, AV_LOG_ERROR, "Not supported device:\"%s\"\n", ctx->options.device_name);
+        av_log(ctx, AV_LOG_ERROR, "Not supported device:\"%s\"\n", device_name);
         goto fail;
     }
 
     try {
         th_model->jit_model = new torch::jit::Module;
-        (*th_model->jit_model) = torch::jit::load(model_filename);
+        (*th_model->jit_model) = torch::jit::load(ctx->model_filename);
     } catch (const c10::Error& e) {
         av_log(ctx, AV_LOG_ERROR, "Failed to load torch model\n");
         goto fail;
@@ -502,7 +481,6 @@ static DNNModel *dnn_load_model_th(const char *model_filename, DNNFunctionType f
 
     model->get_input = &get_input_th;
     model->get_output = &get_output_th;
-    model->options = NULL;
     model->filter_ctx = filter_ctx;
     model->func_type = func_type;
     return model;
@@ -519,7 +497,7 @@ fail:
 static int dnn_execute_model_th(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
     THModel *th_model = (THModel *)model->model;
-    THContext *ctx = &th_model->ctx;
+    DnnContext *ctx = th_model->ctx;
     TaskItem *task;
     THRequestItem *request;
     int ret = 0;
@@ -582,7 +560,7 @@ static int dnn_flush_th(const DNNModel *model)
 
     request = (THRequestItem *)ff_safe_queue_pop_front(th_model->request_queue);
     if (!request) {
-        av_log(&th_model->ctx, AV_LOG_ERROR, "unable to get infer request.\n");
+        av_log(th_model->ctx, AV_LOG_ERROR, "unable to get infer request.\n");
         return AVERROR(EINVAL);
     }
 
@@ -590,6 +568,7 @@ static int dnn_flush_th(const DNNModel *model)
 }
 
 extern const DNNModule ff_dnn_backend_torch = {
+    .clazz          = DNN_DEFINE_CLASS(dnn_th),
     .load_model     = dnn_load_model_th,
     .execute_model  = dnn_execute_model_th,
     .get_result     = dnn_get_result_th,

@@ -50,13 +50,10 @@ static const AVOption sr_options[] = {
     { "tensorflow", "tensorflow backend flag", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, .unit = "backend" },
 #endif
     { "scale_factor", "scale factor for SRCNN model", OFFSET(scale_factor), AV_OPT_TYPE_INT, { .i64 = 2 }, 2, 4, FLAGS },
-    { "model", "path to model file specifying network architecture and its parameters", OFFSET(dnnctx.model_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
-    { "input",       "input name of the model",     OFFSET(dnnctx.model_inputname),  AV_OPT_TYPE_STRING,    { .str = "x" },  0, 0, FLAGS },
-    { "output",      "output name of the model",    OFFSET(dnnctx.model_outputnames_string), AV_OPT_TYPE_STRING,    { .str = "y" },  0, 0, FLAGS },
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(sr);
+AVFILTER_DNN_DEFINE_CLASS(sr);
 
 static av_cold int init(AVFilterContext *context)
 {
@@ -192,6 +189,7 @@ const AVFilter ff_vf_sr = {
     .name          = "sr",
     .description   = NULL_IF_CONFIG_SMALL("Apply DNN-based image super resolution to the input."),
     .priv_size     = sizeof(SRContext),
+    .preinit       = ff_dnn_filter_init_child_class,
     .init          = init,
     .uninit        = uninit,
     FILTER_INPUTS(sr_inputs),
