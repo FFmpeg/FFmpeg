@@ -33,11 +33,13 @@
         vmv.v.x      v16, zero
         vle8.v       v8, (a3)
         avgdc        \size
-.elseif \type == left
+.else
+.ifc \type,left
         vmv.v.x      v16, zero
         vle8.v       v8, (a2)
         avgdc        \size
-.elseif \type == dc
+.else
+.ifc \type,dc
         vmv.v.x      v16, zero
         vle8.v       v8, (a2)
         vwredsumu.vs v16, v8, v16
@@ -45,6 +47,8 @@
         avgdc        \size
 .else
         li           t1, \type
+.endif
+.endif
 .endif
 .endm
 
@@ -87,7 +91,7 @@
 
 .macro func_dc name size type n restore ext
 func ff_\()\name\()_\()\size\()x\size\()_rvv, \ext
-.ifc \size,8
+.if \size == 8
         dc_e64 \type \size \n \restore
 .else
         dc_e32 \type \size \n \restore
