@@ -959,7 +959,6 @@ err:
     if (input_model_info)
         ov_preprocess_input_model_info_free(input_model_info);
 #endif
-    dnn_free_model_ov(&ov_model->model);
     return ret;
 }
 
