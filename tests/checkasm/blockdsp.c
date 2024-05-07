@@ -71,7 +71,8 @@ static void check_fill(BlockDSPContext *h){
                      ptrdiff_t line_size, int h);
         if (check_func(h->fill_block_tab[t], "blockdsp.%s", tests[t].name)) {
             uint8_t value = rnd();
-            randomize_buffers(tests[t].size);
+            memset(buf0, 0, sizeof(*buf0) * n * n);
+            memset(buf1, 0, sizeof(*buf1) * n * n);
             call_ref(buf0, value, n, n);
             call_new(buf1, value, n, n);
             if (memcmp(buf0, buf1, sizeof(*buf0) * n * n))
