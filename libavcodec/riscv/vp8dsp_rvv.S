@@ -20,6 +20,18 @@
 
 #include "libavutil/riscv/asm.S"
 
+.macro vsetvlstatic8 len
+.if \len <= 4
+        vsetivli        zero, \len, e8, mf4, ta, ma
+.elseif \len <= 8
+        vsetivli        zero, \len, e8, mf2, ta, ma
+.elseif \len <= 16
+        vsetivli        zero, \len, e8, m1, ta, ma
+.elseif \len <= 31
+        vsetivli        zero, \len, e8, m2, ta, ma
+.endif
+.endm
+
 .macro vp8_idct_dc_add
         vlse32.v      v0, (a0), a2
         lh            a5, 0(a1)
@@ -71,3 +83,40 @@ func ff_vp8_idct_dc_add4uv_rvv, zve32x
 
         ret
 endfunc
+
+.macro bilin_load dst len type mn
+.ifc \type,v
+        add             t5, a2, a3
+.else
+        addi            t5, a2, 1
+.endif
+        vle8.v          \dst, (a2)
+        vle8.v          v2, (t5)
+        vwmulu.vx       v28, \dst, t1
+        vwmaccu.vx      v28, \mn, v2
+        vwaddu.wx       v24, v28, t4
+        vnsra.wi        \dst, v24, 3
+.endm
+
+.macro put_vp8_bilin_h_v len type mn
+func ff_put_vp8_bilin\len\()_\type\()_rvv, zve32x
+        vsetvlstatic8   \len
+        li              t1, 8
+        li              t4, 4
+        sub             t1, t1, \mn
+1:
+        addi            a4, a4, -1
+        bilin_load      v0, \len, \type, \mn
+        vse8.v          v0, (a0)
+        add             a2, a2, a3
+        add             a0, a0, a1
+        bnez            a4, 1b
+
+        ret
+endfunc
+.endm
+
+.irp len 16,8,4
+put_vp8_bilin_h_v \len h a5
+put_vp8_bilin_h_v \len v a6
+.endr
