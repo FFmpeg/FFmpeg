@@ -207,7 +207,7 @@ func ff_ps_hybrid_synthesis_deint_rvv, zve64x
         ret
 endfunc
 
-func ff_ps_stereo_interpolate_rvv, zve32f
+func ff_ps_stereo_interpolate_rvv, zve32f, zbb
         vsetvli      t0, zero, e32, m2, ta, ma
         vid.v        v24
         flw          ft0,   (a2)

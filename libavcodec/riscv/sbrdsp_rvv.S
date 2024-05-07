@@ -290,16 +290,16 @@ endfunc
         ret
 .endm
 
-func ff_sbr_hf_apply_noise_0_rvv, zve32f
+func ff_sbr_hf_apply_noise_0_rvv, zve32f, zbb
         hf_apply_noise 0
 endfunc
 
-func ff_sbr_hf_apply_noise_3_rvv, zve32f
+func ff_sbr_hf_apply_noise_3_rvv, zve32f, zbb
        not     a4, a4 // invert parity of kx
        // fall through
 endfunc
 
-func ff_sbr_hf_apply_noise_1_rvv, zve32f
+func ff_sbr_hf_apply_noise_1_rvv, zve32f, zbb
         vsetvli t0, zero, e32, m4, ta, ma
         vid.v   v4
         vxor.vx v4, v4, a4
@@ -307,6 +307,6 @@ func ff_sbr_hf_apply_noise_1_rvv, zve32f
         hf_apply_noise 1
 endfunc
 
-func ff_sbr_hf_apply_noise_2_rvv, zve32f
+func ff_sbr_hf_apply_noise_2_rvv, zve32f, zbb
         hf_apply_noise 2
 endfunc

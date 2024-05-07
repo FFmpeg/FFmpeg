@@ -20,7 +20,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_opus_postfilter_rvv, zve32f
+func ff_opus_postfilter_rvv, zve32f, zbb
         flw     fa0, 0(a2) // g0
         slli    t1, a1, 2
         flw     fa1, 4(a2) // g1
