@@ -804,7 +804,7 @@ err:
     if (ff_safe_queue_push_back(tf_model->request_queue, request) < 0) {
         destroy_request_item(&request);
     }
-    dnn_free_model_tf(&tf_model->model);
+
     return ret;
 }
 
