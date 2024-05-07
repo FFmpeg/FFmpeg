@@ -119,7 +119,7 @@ static void dnn_free_model_th(DNNModel **model)
     if (!model || !*model)
         return;
 
-    th_model = (THModel *) (*model)->model;
+    th_model = (THModel *) (*model);
     while (ff_safe_queue_size(th_model->request_queue) != 0) {
         THRequestItem *item = (THRequestItem *)ff_safe_queue_pop_front(th_model->request_queue);
         destroy_request_item(&item);
@@ -144,7 +144,7 @@ static void dnn_free_model_th(DNNModel **model)
     *model = NULL;
 }
 
-static int get_input_th(void *model, DNNData *input, const char *input_name)
+static int get_input_th(DNNModel *model, DNNData *input, const char *input_name)
 {
     input->dt = DNN_FLOAT;
     input->order = DCO_RGB;
@@ -179,7 +179,7 @@ static int fill_model_input_th(THModel *th_model, THRequestItem *request)
     task = lltask->task;
     infer_request = request->infer_request;
 
-    ret = get_input_th(th_model, &input, NULL);
+    ret = get_input_th(&th_model->model, &input, NULL);
     if ( ret != 0) {
         goto err;
     }
@@ -356,7 +356,7 @@ err:
     return ret;
 }
 
-static int get_output_th(void *model, const char *input_name, int input_width, int input_height,
+static int get_output_th(DNNModel *model, const char *input_name, int input_width, int input_height,
                                    const char *output_name, int *output_width, int *output_height)
 {
     int ret = 0;
@@ -421,7 +421,6 @@ static DNNModel *dnn_load_model_th(DnnContext *ctx, DNNFunctionType func_type, A
     if (!th_model)
         return NULL;
     model = &th_model->model;
-    model->model = th_model;
     th_model->ctx = ctx;
 
     c10::Device device = c10::Device(device_name);
@@ -489,7 +488,7 @@ fail:
 
 static int dnn_execute_model_th(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
-    THModel *th_model = (THModel *)model->model;
+    THModel *th_model = (THModel *)model;
     DnnContext *ctx = th_model->ctx;
     TaskItem *task;
     THRequestItem *request;
@@ -538,13 +537,13 @@ static int dnn_execute_model_th(const DNNModel *model, DNNExecBaseParams *exec_p
 
 static DNNAsyncStatusType dnn_get_result_th(const DNNModel *model, AVFrame **in, AVFrame **out)
 {
-    THModel *th_model = (THModel *)model->model;
+    THModel *th_model = (THModel *)model;
     return ff_dnn_get_result_common(th_model->task_queue, in, out);
 }
 
 static int dnn_flush_th(const DNNModel *model)
 {
-    THModel *th_model = (THModel *)model->model;
+    THModel *th_model = (THModel *)model;
     THRequestItem *request;
 
     if (ff_queue_size(th_model->lltask_queue) == 0)

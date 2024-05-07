@@ -517,7 +517,7 @@ static void dnn_free_model_ov(DNNModel **model)
     if (!model || !*model)
         return;
 
-    ov_model = (*model)->model;
+    ov_model = (OVModel *)(*model);
     while (ff_safe_queue_size(ov_model->request_queue) != 0) {
         OVRequestItem *item = ff_safe_queue_pop_front(ov_model->request_queue);
         if (item && item->infer_request) {
@@ -1059,9 +1059,9 @@ err:
     return ret;
 }
 
-static int get_input_ov(void *model, DNNData *input, const char *input_name)
+static int get_input_ov(DNNModel *model, DNNData *input, const char *input_name)
 {
-    OVModel *ov_model = model;
+    OVModel *ov_model = (OVModel *)model;
     DnnContext *ctx = ov_model->ctx;
     int input_resizable = ctx->ov_option.input_resizable;
 
@@ -1255,7 +1255,7 @@ static int extract_lltask_from_task(DNNFunctionType func_type, TaskItem *task, Q
     }
 }
 
-static int get_output_ov(void *model, const char *input_name, int input_width, int input_height,
+static int get_output_ov(DNNModel *model, const char *input_name, int input_width, int input_height,
                                    const char *output_name, int *output_width, int *output_height)
 {
 #if HAVE_OPENVINO2
@@ -1268,7 +1268,7 @@ static int get_output_ov(void *model, const char *input_name, int input_width, i
     input_shapes_t input_shapes;
 #endif
     int ret;
-    OVModel *ov_model = model;
+    OVModel *ov_model = (OVModel *)model;
     DnnContext *ctx = ov_model->ctx;
     TaskItem task;
     OVRequestItem *request;
@@ -1383,7 +1383,6 @@ static DNNModel *dnn_load_model_ov(DnnContext *ctx, DNNFunctionType func_type, A
         return NULL;
     ov_model->ctx = ctx;
     model = &ov_model->model;
-    model->model = ov_model;
 
 #if HAVE_OPENVINO2
     status = ov_core_create(&core);
@@ -1470,7 +1469,7 @@ err:
 
 static int dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
-    OVModel *ov_model = model->model;
+    OVModel *ov_model = (OVModel *)model;
     DnnContext *ctx = ov_model->ctx;
     OVRequestItem *request;
     TaskItem *task;
@@ -1558,13 +1557,13 @@ static int dnn_execute_model_ov(const DNNModel *model, DNNExecBaseParams *exec_p
 
 static DNNAsyncStatusType dnn_get_result_ov(const DNNModel *model, AVFrame **in, AVFrame **out)
 {
-    OVModel *ov_model = model->model;
+    OVModel *ov_model = (OVModel *)model;
     return ff_dnn_get_result_common(ov_model->task_queue, in, out);
 }
 
 static int dnn_flush_ov(const DNNModel *model)
 {
-    OVModel *ov_model = model->model;
+    OVModel *ov_model = (OVModel *)model;
     DnnContext *ctx = ov_model->ctx;
     OVRequestItem *request;
 #if HAVE_OPENVINO2

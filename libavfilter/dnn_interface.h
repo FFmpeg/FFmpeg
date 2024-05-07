@@ -95,17 +95,15 @@ typedef int (*DetectPostProc)(AVFrame *frame, DNNData *output, uint32_t nb, AVFi
 typedef int (*ClassifyPostProc)(AVFrame *frame, DNNData *output, uint32_t bbox_index, AVFilterContext *filter_ctx);
 
 typedef struct DNNModel{
-    // Stores model that can be different for different backends.
-    void *model;
     // Stores FilterContext used for the interaction between AVFrame and DNNData
     AVFilterContext *filter_ctx;
     // Stores function type of the model
     DNNFunctionType func_type;
     // Gets model input information
     // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
-    int (*get_input)(void *model, DNNData *input, const char *input_name);
+    int (*get_input)(struct DNNModel *model, DNNData *input, const char *input_name);
     // Gets model output width/height with given input w/h
-    int (*get_output)(void *model, const char *input_name, int input_width, int input_height,
+    int (*get_output)(struct DNNModel *model, const char *input_name, int input_width, int input_height,
                                 const char *output_name, int *output_width, int *output_height);
     // set the pre process to transfer data from AVFrame to DNNData
     // the default implementation within DNN is used if it is not provided by the filter

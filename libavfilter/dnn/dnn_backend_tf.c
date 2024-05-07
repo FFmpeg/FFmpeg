@@ -262,9 +262,9 @@ static TF_Tensor *allocate_input_tensor(const DNNData *input)
                              input_dims[1] * input_dims[2] * input_dims[3] * size);
 }
 
-static int get_input_tf(void *model, DNNData *input, const char *input_name)
+static int get_input_tf(DNNModel *model, DNNData *input, const char *input_name)
 {
-    TFModel *tf_model = model;
+    TFModel *tf_model = (TFModel *)model;
     DnnContext *ctx = tf_model->ctx;
     TF_Status *status;
     TF_DataType dt;
@@ -310,11 +310,11 @@ static int get_input_tf(void *model, DNNData *input, const char *input_name)
     return 0;
 }
 
-static int get_output_tf(void *model, const char *input_name, int input_width, int input_height,
+static int get_output_tf(DNNModel *model, const char *input_name, int input_width, int input_height,
                                    const char *output_name, int *output_width, int *output_height)
 {
     int ret;
-    TFModel *tf_model = model;
+    TFModel *tf_model = (TFModel *)model;
     DnnContext *ctx = tf_model->ctx;
     TaskItem task;
     TFRequestItem *request;
@@ -486,7 +486,7 @@ static void dnn_free_model_tf(DNNModel **model)
     if (!model || !*model)
         return;
 
-    tf_model = (*model)->model;
+    tf_model = (TFModel *)(*model);
     while (ff_safe_queue_size(tf_model->request_queue) != 0) {
         TFRequestItem *item = ff_safe_queue_pop_front(tf_model->request_queue);
         destroy_request_item(&item);
@@ -530,7 +530,6 @@ static DNNModel *dnn_load_model_tf(DnnContext *ctx, DNNFunctionType func_type, A
     if (!tf_model)
         return NULL;
     model = &tf_model->model;
-    model->model = tf_model;
     tf_model->ctx = ctx;
 
     if (load_tf_model(tf_model, ctx->model_filename) != 0){
@@ -611,7 +610,7 @@ static int fill_model_input_tf(TFModel *tf_model, TFRequestItem *request) {
     task = lltask->task;
     request->lltask = lltask;
 
-    ret = get_input_tf(tf_model, &input, task->input_name);
+    ret = get_input_tf(&tf_model->model, &input, task->input_name);
     if (ret != 0) {
         goto err;
     }
@@ -803,7 +802,7 @@ err:
 
 static int dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_params)
 {
-    TFModel *tf_model = model->model;
+    TFModel *tf_model = (TFModel *)model;
     DnnContext *ctx = tf_model->ctx;
     TaskItem *task;
     TFRequestItem *request;
@@ -851,13 +850,13 @@ static int dnn_execute_model_tf(const DNNModel *model, DNNExecBaseParams *exec_p
 
 static DNNAsyncStatusType dnn_get_result_tf(const DNNModel *model, AVFrame **in, AVFrame **out)
 {
-    TFModel *tf_model = model->model;
+    TFModel *tf_model = (TFModel *)model;
     return ff_dnn_get_result_common(tf_model->task_queue, in, out);
 }
 
 static int dnn_flush_tf(const DNNModel *model)
 {
-    TFModel *tf_model = model->model;
+    TFModel *tf_model = (TFModel *)model;
     DnnContext *ctx = tf_model->ctx;
     TFRequestItem *request;
     int ret;
