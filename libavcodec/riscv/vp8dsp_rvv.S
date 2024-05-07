@@ -161,9 +161,13 @@ const subpel_filters
         .byte 0,  -1,  12, 123,  -6, 0
 endconst
 
-.macro epel_filter size
+.macro epel_filter size type
         lla             t2, subpel_filters
+.ifc \type,v
+        addi            t0, a6, -1
+.else
         addi            t0, a5, -1
+.endif
         li              t1, 6
         mul             t0, t0, t1
         add             t0, t0, t2
@@ -176,19 +180,25 @@ endconst
 .endif
 .endm
 
-.macro epel_load dst len size
-        addi            t6, a2, -1
-        addi            a7, a2, 1
+.macro epel_load dst len size type
+.ifc \type,v
+        mv              a5, a3
+.else
+        li              a5, 1
+.endif
+        sub             t6, a2, a5
+        add             a7, a2, a5
+
         vle8.v          v24, (a2)
         vle8.v          v22, (t6)
         vle8.v          v26, (a7)
-        addi            a7, a7, 1
+        add             a7, a7, a5
         vle8.v          v28, (a7)
         vwmulu.vx       v16, v24, t2
         vwmulu.vx       v20, v26, t3
 .ifc \size,6
-        addi            t6, t6, -1
-        addi            a7, a7, 1
+        sub             t6, t6, a5
+        add             a7, a7, a5
         vle8.v          v24, (t6)
         vle8.v          v26, (a7)
         vwmaccu.vx      v16, t0, v24
@@ -206,18 +216,18 @@ endconst
         vnclipu.wi      \dst, v24, 0
 .endm
 
-.macro epel_load_inc dst len size
-        epel_load       \dst \len \size
+.macro epel_load_inc dst len size type
+        epel_load       \dst \len \size \type
         add             a2, a2, a3
 .endm
 
 .macro epel len size type
 func ff_put_vp8_epel\len\()_\type\()\size\()_rvv, zve32x
-        epel_filter     \size
+        epel_filter     \size \type
         vsetvlstatic8   \len
 1:
         addi            a4, a4, -1
-        epel_load_inc   v30 \len \size
+        epel_load_inc   v30 \len \size \type
         vse8.v          v30, (a0)
         add             a0, a0, a1
         bnez            a4, 1b
@@ -232,4 +242,6 @@ put_vp8_bilin_h_v \len v a6
 put_vp8_bilin_hv \len
 epel \len 6 h
 epel \len 4 h
+epel \len 6 v
+epel \len 4 v
 .endr
