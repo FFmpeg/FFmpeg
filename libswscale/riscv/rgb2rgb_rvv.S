@@ -165,10 +165,10 @@ endfunc
         ret
 .endm
 
-func ff_uyvytoyuv422_rvv, zve32x
+func ff_uyvytoyuv422_rvv, zve32x, zbb
         yuy2_to_i422p v20, v16
 endfunc
 
-func ff_yuyvtoyuv422_rvv, zve32x
+func ff_yuyvtoyuv422_rvv, zve32x, zbb
         yuy2_to_i422p v16, v20
 endfunc
