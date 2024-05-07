@@ -90,6 +90,7 @@
 #define AV_CPU_FLAG_RVV_F64      (1 << 6) ///< Vectors of double's
 #define AV_CPU_FLAG_RVB_BASIC    (1 << 7) ///< Basic bit-manipulations
 #define AV_CPU_FLAG_RVB_ADDR     (1 << 8) ///< Address bit-manipulations
+#define AV_CPU_FLAG_RV_ZVBB      (1 << 9) ///< Vector basic bit-manipulations
 
 /**
  * Return the flags which specify extensions supported by the CPU.

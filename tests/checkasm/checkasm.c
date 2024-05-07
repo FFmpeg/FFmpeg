@@ -285,6 +285,7 @@ static const struct {
     { "RVVf32",   "rvv_f32",  AV_CPU_FLAG_RVV_F32 },
     { "RVVi64",   "rvv_i64",  AV_CPU_FLAG_RVV_I64 },
     { "RVVf64",   "rvv_f64",  AV_CPU_FLAG_RVV_F64 },
+    { "RV_Zvbb",  "rv_zvbb",  AV_CPU_FLAG_RV_ZVBB },
 #elif ARCH_MIPS
     { "MMI",      "mmi",      AV_CPU_FLAG_MMI },
     { "MSA",      "msa",      AV_CPU_FLAG_MSA },

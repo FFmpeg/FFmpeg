@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-05-10 - xxxxxxxxx - lavu 59.18.100 - cpu.h
+  Add AV_CPU_FLAG_RV_ZVBB.
+
 2024-05-04 - xxxxxxxxxx - lavu 59.17.100 - opt.h
   Add AV_OPT_TYPE_UINT and av_opt_eval_uint().
 
