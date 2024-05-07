@@ -29,14 +29,14 @@
 #include <sys/auxv.h>
 #define HWCAP_RV(letter) (1ul << ((letter) - 'A'))
 #endif
-#ifdef HAVE_SYS_HWPROBE_H
+#if HAVE_SYS_HWPROBE_H
 #include <sys/hwprobe.h>
 #endif
 
 int ff_get_cpu_flags_riscv(void)
 {
     int ret = 0;
-#ifdef HAVE_SYS_HWPROBE_H
+#if HAVE_SYS_HWPROBE_H
     struct riscv_hwprobe pairs[] = {
         { RISCV_HWPROBE_KEY_BASE_BEHAVIOR, 0 },
         { RISCV_HWPROBE_KEY_IMA_EXT_0, 0 },
