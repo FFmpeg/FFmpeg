@@ -32,6 +32,16 @@
 .endif
 .endm
 
+.macro vsetvlstatic16 len
+.if \len <= 4
+        vsetivli        zero, \len, e16, mf2, ta, ma
+.elseif \len <= 8
+        vsetivli        zero, \len, e16, m1, ta, ma
+.elseif \len <= 16
+        vsetivli        zero, \len, e16, m2, ta, ma
+.endif
+.endm
+
 .macro vp8_idct_dc_add
         vlse32.v      v0, (a0), a2
         lh            a5, 0(a1)
@@ -141,8 +151,85 @@ func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
 endfunc
 .endm
 
+const subpel_filters
+        .byte 0,  -6, 123,  12,  -1, 0
+        .byte 2, -11, 108,  36,  -8, 1
+        .byte 0,  -9,  93,  50,  -6, 0
+        .byte 3, -16,  77,  77, -16, 3
+        .byte 0,  -6,  50,  93,  -9, 0
+        .byte 1,  -8,  36, 108, -11, 2
+        .byte 0,  -1,  12, 123,  -6, 0
+endconst
+
+.macro epel_filter size
+        lla             t2, subpel_filters
+        addi            t0, a5, -1
+        li              t1, 6
+        mul             t0, t0, t1
+        add             t0, t0, t2
+        .irp n 1,2,3,4
+        lb              t\n, \n(t0)
+        .endr
+.ifc \size,6
+        lb              t5, 5(t0)
+        lb              t0, (t0)
+.endif
+.endm
+
+.macro epel_load dst len size
+        addi            t6, a2, -1
+        addi            a7, a2, 1
+        vle8.v          v24, (a2)
+        vle8.v          v22, (t6)
+        vle8.v          v26, (a7)
+        addi            a7, a7, 1
+        vle8.v          v28, (a7)
+        vwmulu.vx       v16, v24, t2
+        vwmulu.vx       v20, v26, t3
+.ifc \size,6
+        addi            t6, t6, -1
+        addi            a7, a7, 1
+        vle8.v          v24, (t6)
+        vle8.v          v26, (a7)
+        vwmaccu.vx      v16, t0, v24
+        vwmaccu.vx      v16, t5, v26
+.endif
+        li              t6, 64
+        vwmaccsu.vx     v16, t1, v22
+        vwmaccsu.vx     v16, t4, v28
+        vwadd.wx        v16, v16, t6
+        vsetvlstatic16  \len
+        vwadd.vv        v24, v16, v20
+        vnsra.wi        v24, v24, 7
+        vmax.vx         v24, v24, zero
+        vsetvlstatic8   \len
+        vnclipu.wi      \dst, v24, 0
+.endm
+
+.macro epel_load_inc dst len size
+        epel_load       \dst \len \size
+        add             a2, a2, a3
+.endm
+
+.macro epel len size type
+func ff_put_vp8_epel\len\()_\type\()\size\()_rvv, zve32x
+        epel_filter     \size
+        vsetvlstatic8   \len
+1:
+        addi            a4, a4, -1
+        epel_load_inc   v30 \len \size
+        vse8.v          v30, (a0)
+        add             a0, a0, a1
+        bnez            a4, 1b
+
+        ret
+endfunc
+.endm
+
 .irp len 16,8,4
 put_vp8_bilin_h_v \len h a5
 put_vp8_bilin_h_v \len v a6
 put_vp8_bilin_hv \len
+epel \len 6 h
+epel \len 4 h
 .endr
