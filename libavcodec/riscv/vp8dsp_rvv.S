@@ -116,7 +116,33 @@ func ff_put_vp8_bilin\len\()_\type\()_rvv, zve32x
 endfunc
 .endm
 
+.macro put_vp8_bilin_hv len
+func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
+        vsetvlstatic8   \len
+        li              t3, 8
+        sub             t1, t3, a5
+        sub             t2, t3, a6
+        li              t4, 4
+        bilin_load      v4, \len, h, a5
+        add             a2, a2, a3
+1:
+        addi            a4, a4, -1
+        vwmulu.vx       v20, v4, t2
+        bilin_load      v4, \len, h, a5
+        vwmaccu.vx      v20, a6, v4
+        vwaddu.wx       v24, v20, t4
+        vnsra.wi        v0, v24, 3
+        vse8.v          v0, (a0)
+        add             a2, a2, a3
+        add             a0, a0, a1
+        bnez            a4, 1b
+
+        ret
+endfunc
+.endm
+
 .irp len 16,8,4
 put_vp8_bilin_h_v \len h a5
 put_vp8_bilin_h_v \len v a6
+put_vp8_bilin_hv \len
 .endr
