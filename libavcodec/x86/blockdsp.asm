@@ -80,3 +80,36 @@ INIT_XMM sse
 CLEAR_BLOCKS 1
 INIT_YMM avx
 CLEAR_BLOCKS 1
+
+;-----------------------------------------
+; void ff_fill_block_tab_%1(uint8_t *block, uint8_t value,
+;                           ptrdiff_t line_size, int h);
+;-----------------------------------------
+%macro FILL_BLOCK_TAB 2
+cglobal fill_block_tab_%1, 4, 5, 1, block, value, stride, h, stride3
+    lea stride3q, [strideq + strideq * 2]
+%if cpuflag(avx2)
+    movd m0, valued
+    vpbroadcastb m0, m0
+%else
+    SPLATB_REG m0, value, x
+%endif
+.loop:
+    mov%2 [blockq], m0
+    mov%2 [blockq + strideq], m0
+    mov%2 [blockq + strideq * 2], m0
+    mov%2 [blockq + stride3q], m0
+    lea blockq, [blockq + strideq * 4]
+    sub hd, 4
+    jg .loop
+    RET
+%endmacro
+
+INIT_XMM sse2
+FILL_BLOCK_TAB 8, q
+FILL_BLOCK_TAB 16, a
+%if HAVE_AVX2_EXTERNAL
+INIT_XMM avx2
+FILL_BLOCK_TAB 8, q
+FILL_BLOCK_TAB 16, a
+%endif
