@@ -483,41 +483,42 @@ static void dnn_free_model_tf(DNNModel **model)
 {
     TFModel *tf_model;
 
-    if (*model){
-        tf_model = (*model)->model;
-        while (ff_safe_queue_size(tf_model->request_queue) != 0) {
-            TFRequestItem *item = ff_safe_queue_pop_front(tf_model->request_queue);
-            destroy_request_item(&item);
-        }
-        ff_safe_queue_destroy(tf_model->request_queue);
+    if (!model || !*model)
+        return;
 
-        while (ff_queue_size(tf_model->lltask_queue) != 0) {
-            LastLevelTaskItem *item = ff_queue_pop_front(tf_model->lltask_queue);
-            av_freep(&item);
-        }
-        ff_queue_destroy(tf_model->lltask_queue);
-
-        while (ff_queue_size(tf_model->task_queue) != 0) {
-            TaskItem *item = ff_queue_pop_front(tf_model->task_queue);
-            av_frame_free(&item->in_frame);
-            av_frame_free(&item->out_frame);
-            av_freep(&item);
-        }
-        ff_queue_destroy(tf_model->task_queue);
-
-        if (tf_model->graph){
-            TF_DeleteGraph(tf_model->graph);
-        }
-        if (tf_model->session){
-            TF_CloseSession(tf_model->session, tf_model->status);
-            TF_DeleteSession(tf_model->session, tf_model->status);
-        }
-        if (tf_model->status){
-            TF_DeleteStatus(tf_model->status);
-        }
-        av_freep(&tf_model);
-        av_freep(&model);
+    tf_model = (*model)->model;
+    while (ff_safe_queue_size(tf_model->request_queue) != 0) {
+        TFRequestItem *item = ff_safe_queue_pop_front(tf_model->request_queue);
+        destroy_request_item(&item);
     }
+    ff_safe_queue_destroy(tf_model->request_queue);
+
+    while (ff_queue_size(tf_model->lltask_queue) != 0) {
+        LastLevelTaskItem *item = ff_queue_pop_front(tf_model->lltask_queue);
+        av_freep(&item);
+    }
+    ff_queue_destroy(tf_model->lltask_queue);
+
+    while (ff_queue_size(tf_model->task_queue) != 0) {
+        TaskItem *item = ff_queue_pop_front(tf_model->task_queue);
+        av_frame_free(&item->in_frame);
+        av_frame_free(&item->out_frame);
+        av_freep(&item);
+    }
+    ff_queue_destroy(tf_model->task_queue);
+
+    if (tf_model->graph){
+        TF_DeleteGraph(tf_model->graph);
+    }
+    if (tf_model->session){
+        TF_CloseSession(tf_model->session, tf_model->status);
+        TF_DeleteSession(tf_model->session, tf_model->status);
+    }
+    if (tf_model->status){
+        TF_DeleteStatus(tf_model->status);
+    }
+    av_freep(&tf_model);
+    av_freep(&model);
 }
 
 static DNNModel *dnn_load_model_tf(DnnContext *ctx, DNNFunctionType func_type, AVFilterContext *filter_ctx)
