@@ -36,13 +36,16 @@
 #define HWD
 #endif
 
-        .macro func sym, ext=
+        .macro func sym, ext1=, ext2=
             .text
             .align 2
 
             .option push
-            .ifnb \ext
-            .option arch, +\ext
+            .ifnb \ext1
+            .option arch, +\ext1
+            .ifnb \ext2
+            .option arch, +\ext2
+            .endif
             .endif
 
             .global \sym
