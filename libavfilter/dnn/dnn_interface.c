@@ -81,25 +81,15 @@ static const DnnBackendInfo dnn_backend_info_list[] = {
 
 const DNNModule *ff_get_dnn_module(DNNBackendType backend_type, void *log_ctx)
 {
-    switch(backend_type){
-    #if (CONFIG_LIBTENSORFLOW == 1)
-    case DNN_TF:
-        return &ff_dnn_backend_tf;
-    #endif
-    #if (CONFIG_LIBOPENVINO == 1)
-    case DNN_OV:
-        return &ff_dnn_backend_openvino;
-    #endif
-    #if (CONFIG_LIBTORCH == 1)
-    case DNN_TH:
-        return &ff_dnn_backend_torch;
-    #endif
-    default:
-        av_log(log_ctx, AV_LOG_ERROR,
-                "Module backend_type %d is not supported or enabled.\n",
-                backend_type);
-        return NULL;
+    for (int i = 1; i < FF_ARRAY_ELEMS(dnn_backend_info_list); i++) {
+        if (dnn_backend_info_list[i].module->type == backend_type)
+            return dnn_backend_info_list[i].module;
     }
+
+    av_log(log_ctx, AV_LOG_ERROR,
+            "Module backend_type %d is not supported or enabled.\n",
+            backend_type);
+    return NULL;
 }
 
 void ff_dnn_init_child_class(DnnContext *ctx)

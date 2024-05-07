@@ -893,6 +893,7 @@ static int dnn_flush_tf(const DNNModel *model)
 
 const DNNModule ff_dnn_backend_tf = {
     .clazz          = DNN_DEFINE_CLASS(dnn_tensorflow),
+    .type           = DNN_TF,
     .load_model     = dnn_load_model_tf,
     .execute_model  = dnn_execute_model_tf,
     .get_result     = dnn_get_result_tf,

@@ -1622,6 +1622,7 @@ static int dnn_flush_ov(const DNNModel *model)
 
 const DNNModule ff_dnn_backend_openvino = {
     .clazz          = DNN_DEFINE_CLASS(dnn_openvino),
+    .type           = DNN_OV,
     .load_model     = dnn_load_model_ov,
     .execute_model  = dnn_execute_model_ov,
     .get_result     = dnn_get_result_ov,
