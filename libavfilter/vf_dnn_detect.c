@@ -807,11 +807,13 @@ static av_cold void dnn_detect_uninit(AVFilterContext *context)
     DnnDetectContext *ctx = context->priv;
     AVDetectionBBox *bbox;
     ff_dnn_uninit(&ctx->dnnctx);
-    while(av_fifo_can_read(ctx->bboxes_fifo)) {
-        av_fifo_read(ctx->bboxes_fifo, &bbox, 1);
-        av_freep(&bbox);
+    if (ctx->bboxes_fifo) {
+        while (av_fifo_can_read(ctx->bboxes_fifo)) {
+            av_fifo_read(ctx->bboxes_fifo, &bbox, 1);
+            av_freep(&bbox);
+        }
+        av_fifo_freep2(&ctx->bboxes_fifo);
     }
-    av_fifo_freep2(&ctx->bboxes_fifo);
     av_freep(&ctx->anchors);
     free_detect_labels(ctx);
 }
