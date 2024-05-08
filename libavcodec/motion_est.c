@@ -1127,9 +1127,6 @@ static int estimate_motion_b(MpegEncContext *s, int mb_x, int mb_y,
     const uint8_t * const mv_penalty = c->mv_penalty[f_code] + MAX_DMV;
     int mv_scale;
 
-    c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
-    c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
-    c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
     c->current_mv_penalty= mv_penalty;
 
     get_limits(s, 16*mb_x, 16*mb_y);
@@ -1495,7 +1492,6 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
                              int mb_x, int mb_y)
 {
     MotionEstContext * const c= &s->me;
-    const int penalty_factor= c->mb_penalty_factor;
     int fmin, bmin, dmin, fbmin, bimin, fimin;
     int type=0;
     const int xy = mb_y*s->mb_stride + mb_x;
@@ -1517,22 +1513,27 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         return;
     }
 
+    c->penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_cmp);
+    c->sub_penalty_factor= get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_sub_cmp);
+    c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
+
     if (s->codec_id == AV_CODEC_ID_MPEG4)
         dmin= direct_search(s, mb_x, mb_y);
     else
         dmin= INT_MAX;
+
 // FIXME penalty stuff for non-MPEG-4
     c->skip=0;
     fmin = estimate_motion_b(s, mb_x, mb_y, s->b_forw_mv_table, 0, s->f_code) +
-           3 * penalty_factor;
+           3 * c->mb_penalty_factor;
 
     c->skip=0;
     bmin = estimate_motion_b(s, mb_x, mb_y, s->b_back_mv_table, 2, s->b_code) +
-           2 * penalty_factor;
+           2 * c->mb_penalty_factor;
     ff_dlog(s, " %d %d ", s->b_forw_mv_table[xy][0], s->b_forw_mv_table[xy][1]);
 
     c->skip=0;
-    fbmin= bidir_refine(s, mb_x, mb_y) + penalty_factor;
+    fbmin= bidir_refine(s, mb_x, mb_y) + c->mb_penalty_factor;
     ff_dlog(s, "%d %d %d %d\n", dmin, fmin, bmin, fbmin);
 
     if (s->avctx->flags & AV_CODEC_FLAG_INTERLACED_ME) {
