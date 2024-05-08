@@ -93,14 +93,19 @@ typedef struct DPB {
  */
 static int dpb_add(DPB *dpb, const H264Picture *pic)
 {
-    int i;
+    int i, pic_frame_idx, merged = 0;
 
     if (dpb->size >= dpb->max_size)
         return -1;
 
+    pic_frame_idx = pic->long_ref ? pic->pic_id : pic->frame_num;
+
     for (i = 0; i < dpb->size; i++) {
         VAPictureH264 * const va_pic = &dpb->va_pics[i];
-        if (va_pic->picture_id == ff_vaapi_get_surface_id(pic->f)) {
+        int va_pic_long_ref = !!(va_pic->flags & VA_PICTURE_H264_LONG_TERM_REFERENCE);
+        if (va_pic->picture_id == ff_vaapi_get_surface_id(pic->f) &&
+            va_pic_long_ref == pic->long_ref &&
+            va_pic->frame_idx == pic_frame_idx) {
             VAPictureH264 temp_va_pic;
             fill_vaapi_pic(&temp_va_pic, pic, 0);
 
@@ -112,10 +117,13 @@ static int dpb_add(DPB *dpb, const H264Picture *pic)
                 } else {
                     va_pic->BottomFieldOrderCnt = temp_va_pic.BottomFieldOrderCnt;
                 }
+                merged = 1;
             }
-            return 0;
         }
     }
+
+    if (merged)
+        return 0;
 
     fill_vaapi_pic(&dpb->va_pics[dpb->size++], pic, 0);
     return 0;
