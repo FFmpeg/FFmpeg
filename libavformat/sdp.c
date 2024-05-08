@@ -202,6 +202,8 @@ static int extradata2psets(AVFormatContext *s, const AVCodecParameters *par,
             continue;
         }
         if (p != (psets + strlen(pset_string))) {
+            if (p - psets >= MAX_PSET_SIZE)
+                goto fail_in_loop;
             *p = ',';
             p++;
         }
@@ -212,6 +214,7 @@ static int extradata2psets(AVFormatContext *s, const AVCodecParameters *par,
         if (!av_base64_encode(p, MAX_PSET_SIZE - (p - psets), r, r1 - r)) {
             av_log(s, AV_LOG_ERROR, "Cannot Base64-encode %"PTRDIFF_SPECIFIER" %"PTRDIFF_SPECIFIER"!\n",
                    MAX_PSET_SIZE - (p - psets), r1 - r);
+fail_in_loop:
             av_free(psets);
             av_free(tmpbuf);
 
