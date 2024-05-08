@@ -1972,18 +1972,52 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     return 0;
 }
 
-static int qsv_frames_derive_to(AVHWFramesContext *dst_ctx,
-                                AVHWFramesContext *src_ctx, int flags)
+static int qsv_dynamic_frames_derive_to(AVHWFramesContext *dst_ctx,
+                                        AVHWFramesContext *src_ctx, int flags)
+{
+    QSVFramesContext *s = dst_ctx->hwctx;
+    AVQSVFramesContext *dst_hwctx = &s->p;
+    mfxFrameSurface1 mfx_surf1;
+
+    switch (src_ctx->device_ctx->type) {
+#if CONFIG_VAAPI
+    case AV_HWDEVICE_TYPE_VAAPI:
+        dst_hwctx->frame_type  = MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
+        break;
+#endif
+
+#if CONFIG_D3D11VA
+    case AV_HWDEVICE_TYPE_D3D11VA:
+    {
+        AVD3D11VAFramesContext *src_hwctx = src_ctx->hwctx;
+
+        if (src_hwctx->BindFlags & D3D11_BIND_RENDER_TARGET) {
+            dst_hwctx->frame_type |= MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET;
+        } else {
+            dst_hwctx->frame_type |= MFX_MEMTYPE_VIDEO_MEMORY_DECODER_TARGET;
+        }
+    }
+    break;
+#endif
+
+    default:
+        return AVERROR(ENOSYS);
+    }
+
+    memset(&mfx_surf1, 0, sizeof(mfx_surf1));
+    qsv_init_surface(dst_ctx, &mfx_surf1);
+    s->frame_info = mfx_surf1.Info;
+    dst_hwctx->info = &s->frame_info;
+    dst_hwctx->nb_surfaces = 0;
+    return 0;
+}
+
+static int qsv_fixed_frames_derive_to(AVHWFramesContext *dst_ctx,
+                                      AVHWFramesContext *src_ctx, int flags)
 {
     QSVFramesContext *s = dst_ctx->hwctx;
     AVQSVFramesContext *dst_hwctx = &s->p;
     int i;
-
-    if (src_ctx->initial_pool_size == 0) {
-        av_log(dst_ctx, AV_LOG_ERROR, "Only fixed-size pools can be "
-            "mapped to QSV frames.\n");
-        return AVERROR(EINVAL);
-    }
 
     switch (src_ctx->device_ctx->type) {
 #if CONFIG_VAAPI
@@ -2073,6 +2107,19 @@ static int qsv_frames_derive_to(AVHWFramesContext *dst_ctx,
     dst_hwctx->surfaces = s->surfaces_internal;
 
     return 0;
+}
+
+static int qsv_frames_derive_to(AVHWFramesContext *dst_ctx,
+                                AVHWFramesContext *src_ctx, int flags)
+{
+    if (src_ctx->initial_pool_size < 0) {
+        av_log(dst_ctx, AV_LOG_ERROR, "Invalid src frame pool. \n");
+        return AVERROR(EINVAL);
+    } else if (src_ctx->initial_pool_size == 0) {
+        return qsv_dynamic_frames_derive_to(dst_ctx, src_ctx, flags);
+    } else {
+        return qsv_fixed_frames_derive_to(dst_ctx, src_ctx, flags);
+    }
 }
 
 static int qsv_map_to(AVHWFramesContext *dst_ctx,
