@@ -308,7 +308,7 @@ static int fill_frameinfo_by_link(mfxFrameInfo *frameinfo, AVFilterLink *link)
 
         frames_ctx   = (AVHWFramesContext *)link->hw_frames_ctx->data;
         frames_hwctx = frames_ctx->hwctx;
-        *frameinfo   = frames_hwctx->surfaces[0].Info;
+        *frameinfo   = frames_hwctx->nb_surfaces ? frames_hwctx->surfaces[0].Info : *frames_hwctx->info;
     } else {
         pix_fmt = link->format;
         desc = av_pix_fmt_desc_get(pix_fmt);
