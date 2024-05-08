@@ -627,7 +627,7 @@ static mfxStatus frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
     QSVFramesContext       *s = ctx->hwctx;
     AVQSVFramesContext *hwctx = &s->p;
     mfxFrameInfo *i  = &req->Info;
-    mfxFrameInfo *i1 = &hwctx->surfaces[0].Info;
+    mfxFrameInfo *i1 = hwctx->nb_surfaces ? &hwctx->surfaces[0].Info : hwctx->info;
 
     if (!(req->Type & MFX_MEMTYPE_VIDEO_MEMORY_PROCESSOR_TARGET) ||
         !(req->Type & (MFX_MEMTYPE_FROM_VPPIN | MFX_MEMTYPE_FROM_VPPOUT)) ||
@@ -1207,7 +1207,7 @@ static int qsv_init_internal_session(AVHWFramesContext *ctx,
                               MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
     par.AsyncDepth = 1;
 
-    par.vpp.In = frames_hwctx->surfaces[0].Info;
+    par.vpp.In = frames_hwctx->nb_surfaces ? frames_hwctx->surfaces[0].Info : *frames_hwctx->info;
 
     /* Apparently VPP requires the frame rate to be set to some value, otherwise
      * init will fail (probably for the framerate conversion filter). Since we
