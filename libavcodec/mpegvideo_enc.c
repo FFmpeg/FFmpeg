@@ -1639,8 +1639,7 @@ static int select_input_picture(MpegEncContext *s)
 
     if (s->reordered_input_picture[0]) {
         s->reordered_input_picture[0]->reference =
-           s->reordered_input_picture[0]->f->pict_type !=
-               AV_PICTURE_TYPE_B ? 3 : 0;
+           s->reordered_input_picture[0]->f->pict_type != AV_PICTURE_TYPE_B;
 
         if (s->reordered_input_picture[0]->shared || s->avctx->rc_buffer_size) {
             // input is a shared pix, so we can't modify it -> allocate a new
