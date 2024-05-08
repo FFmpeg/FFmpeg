@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/frame.h"
+#include "libavutil/mem.h"
 #include "hwaccel_internal.h"
 #include "vaapi_decode.h"
 #include "internal.h"
@@ -42,6 +43,9 @@ typedef struct VAAPIAV1DecContext {
     */
     VAAPIAV1FrameRef ref_tab[AV1_NUM_REF_FRAMES];
     AVFrame *tmp_frame;
+
+    int nb_slice_params;
+    VASliceParameterBufferAV1 *slice_params;
 } VAAPIAV1DecContext;
 
 static VASurfaceID vaapi_av1_surface_id(AV1Frame *vf)
@@ -96,6 +100,8 @@ static int vaapi_av1_decode_uninit(AVCodecContext *avctx)
 
     for (int i = 0; i < FF_ARRAY_ELEMS(ctx->ref_tab); i++)
         av_frame_free(&ctx->ref_tab[i].frame);
+
+    av_freep(&ctx->slice_params);
 
     return ff_vaapi_decode_uninit(avctx);
 }
@@ -393,13 +399,24 @@ static int vaapi_av1_decode_slice(AVCodecContext *avctx,
 {
     const AV1DecContext *s = avctx->priv_data;
     VAAPIDecodePicture *pic = s->cur_frame.hwaccel_picture_private;
-    VASliceParameterBufferAV1 slice_param;
-    int err = 0;
+    VAAPIAV1DecContext *ctx = avctx->internal->hwaccel_priv_data;
+    int err, nb_params;
+
+    nb_params = s->tg_end - s->tg_start + 1;
+    if (ctx->nb_slice_params < nb_params) {
+        ctx->slice_params = av_realloc_array(ctx->slice_params,
+                                             nb_params,
+                                             sizeof(*ctx->slice_params));
+        if (!ctx->slice_params) {
+            ctx->nb_slice_params = 0;
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+        ctx->nb_slice_params = nb_params;
+    }
 
     for (int i = s->tg_start; i <= s->tg_end; i++) {
-        memset(&slice_param, 0, sizeof(VASliceParameterBufferAV1));
-
-        slice_param = (VASliceParameterBufferAV1) {
+        ctx->slice_params[i - s->tg_start] = (VASliceParameterBufferAV1) {
             .slice_data_size   = s->tile_group_info[i].tile_size,
             .slice_data_offset = s->tile_group_info[i].tile_offset,
             .slice_data_flag   = VA_SLICE_DATA_FLAG_ALL,
@@ -408,18 +425,20 @@ static int vaapi_av1_decode_slice(AVCodecContext *avctx,
             .tg_start          = s->tg_start,
             .tg_end            = s->tg_end,
         };
-
-        err = ff_vaapi_decode_make_slice_buffer(avctx, pic, &slice_param, 1,
-                                                sizeof(VASliceParameterBufferAV1),
-                                                buffer,
-                                                size);
-        if (err) {
-            ff_vaapi_decode_cancel(avctx, pic);
-            return err;
-        }
     }
 
+    err = ff_vaapi_decode_make_slice_buffer(avctx, pic, ctx->slice_params, nb_params,
+                                            sizeof(VASliceParameterBufferAV1),
+                                            buffer,
+                                            size);
+    if (err)
+        goto fail;
+
     return 0;
+
+fail:
+    ff_vaapi_decode_cancel(avctx, pic);
+    return err;
 }
 
 const FFHWAccel ff_av1_vaapi_hwaccel = {
