@@ -2122,8 +2122,8 @@ static int qsv_frames_derive_to(AVHWFramesContext *dst_ctx,
     }
 }
 
-static int qsv_map_to(AVHWFramesContext *dst_ctx,
-                      AVFrame *dst, const AVFrame *src, int flags)
+static int qsv_fixed_pool_map_to(AVHWFramesContext *dst_ctx,
+                                 AVFrame *dst, const AVFrame *src, int flags)
 {
     AVQSVFramesContext *hwctx = dst_ctx->hwctx;
     int i, err, index = -1;
@@ -2180,6 +2180,133 @@ static int qsv_map_to(AVHWFramesContext *dst_ctx,
     dst->data[3] = (uint8_t*)&hwctx->surfaces[index];
 
     return 0;
+}
+
+static void qsv_dynamic_pool_unmap(AVHWFramesContext *ctx, HWMapDescriptor *hwmap)
+{
+    mfxFrameSurface1 *surfaces_internal = (mfxFrameSurface1 *)hwmap->priv;
+    mfxHDLPair *handle_pairs_internal = (mfxHDLPair *)surfaces_internal->Data.MemId;
+    AVHWFramesContext *src_ctx = (AVHWFramesContext *)ffhwframesctx(ctx)->source_frames->data;
+
+    switch (src_ctx->format) {
+#if CONFIG_VAAPI
+    case AV_PIX_FMT_VAAPI:
+    {
+        av_freep(&handle_pairs_internal->first);
+
+        break;
+    }
+#endif
+
+#if CONFIG_D3D11VA
+    case AV_PIX_FMT_D3D11:
+    {
+        /* Do nothing */
+        break;
+    }
+#endif
+    default:
+        av_log(ctx, AV_LOG_ERROR, "Should not reach here. \n");
+        break;
+    }
+
+    av_freep(&handle_pairs_internal);
+    av_freep(&surfaces_internal);
+}
+
+static int qsv_dynamic_pool_map_to(AVHWFramesContext *dst_ctx,
+                                   AVFrame *dst, const AVFrame *src, int flags)
+{
+    mfxFrameSurface1 *surfaces_internal = NULL;
+    mfxHDLPair *handle_pairs_internal = NULL;
+    int ret = 0;
+
+    surfaces_internal = av_calloc(1, sizeof(*surfaces_internal));
+    if (!surfaces_internal) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    handle_pairs_internal = av_calloc(1, sizeof(*handle_pairs_internal));
+    if (!handle_pairs_internal) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    ret = qsv_init_surface(dst_ctx, surfaces_internal);
+    if (ret < 0)
+        goto fail;
+
+    switch (src->format) {
+#if CONFIG_VAAPI
+    case AV_PIX_FMT_VAAPI:
+    {
+        VASurfaceID *surface_id_internal;
+
+        surface_id_internal = av_calloc(1, sizeof(*surface_id_internal));
+        if (!surface_id_internal) {
+            ret =AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        *surface_id_internal = (VASurfaceID)(uintptr_t)src->data[3];
+        handle_pairs_internal->first = (mfxHDL)surface_id_internal;
+        handle_pairs_internal->second = (mfxMemId)MFX_INFINITE;
+
+        break;
+    }
+#endif
+
+#if CONFIG_D3D11VA
+    case AV_PIX_FMT_D3D11:
+    {
+        AVHWFramesContext *src_ctx = (AVHWFramesContext*)src->hw_frames_ctx->data;
+        AVD3D11VAFramesContext *src_hwctx = src_ctx->hwctx;
+
+        handle_pairs_internal->first = (mfxMemId)src->data[0];
+
+        if (src_hwctx->BindFlags & D3D11_BIND_RENDER_TARGET) {
+            handle_pairs_internal->second = (mfxMemId)MFX_INFINITE;
+        } else {
+            handle_pairs_internal->second = (mfxMemId)src->data[1];
+        }
+
+        break;
+    }
+#endif
+    default:
+        ret = AVERROR(ENOSYS);
+        goto fail;
+    }
+
+    surfaces_internal->Data.MemId = (mfxMemId)handle_pairs_internal;
+
+    ret = ff_hwframe_map_create(dst->hw_frames_ctx,
+                                dst, src, qsv_dynamic_pool_unmap, surfaces_internal);
+    if (ret)
+        goto fail;
+
+    dst->width   = src->width;
+    dst->height  = src->height;
+    dst->data[3] = (uint8_t*)surfaces_internal;
+
+    return 0;
+
+fail:
+    av_freep(&handle_pairs_internal);
+    av_freep(&surfaces_internal);
+    return ret;
+}
+
+static int qsv_map_to(AVHWFramesContext *dst_ctx,
+                      AVFrame *dst, const AVFrame *src, int flags)
+{
+    AVQSVFramesContext *hwctx = dst_ctx->hwctx;
+
+    if (hwctx->nb_surfaces)
+        return qsv_fixed_pool_map_to(dst_ctx, dst, src, flags);
+    else
+        return qsv_dynamic_pool_map_to(dst_ctx, dst, src, flags);
 }
 
 static int qsv_frames_get_constraints(AVHWDeviceContext *ctx,
