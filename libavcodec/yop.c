@@ -274,6 +274,7 @@ const FFCodec ff_yop_decoder = {
     CODEC_LONG_NAME("Psygnosis YOP Video"),
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_YOP,
+    .p.capabilities = AV_CODEC_CAP_DR1,
     .priv_data_size = sizeof(YopDecContext),
     .init           = yop_decode_init,
     .close          = yop_decode_close,
