@@ -3623,15 +3623,15 @@ static int encode_picture(MpegEncContext *s)
         s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
     }
 
+    if(ff_init_me(s)<0)
+        return -1;
+
     s->mb_intra=0; //for the rate distortion & bit compare functions
     for(i=1; i<context_count; i++){
         ret = ff_update_duplicate_context(s->thread_context[i], s);
         if (ret < 0)
             return ret;
     }
-
-    if(ff_init_me(s)<0)
-        return -1;
 
     /* Estimate motion for every MB */
     if(s->pict_type != AV_PICTURE_TYPE_I){
