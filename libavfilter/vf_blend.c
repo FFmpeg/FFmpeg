@@ -132,10 +132,12 @@ static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,     
                                const uint8_t *_bottom, ptrdiff_t bottom_linesize,    \
                                uint8_t *_dst, ptrdiff_t dst_linesize,                \
                                ptrdiff_t width, ptrdiff_t height,              \
-                               FilterParams *param, double *values, int starty) \
+                               FilterParams *param, SliceParams *sliceparam)   \
 {                                                                              \
     const type *top = (const type*)_top;                                       \
     const type *bottom = (const type*)_bottom;                                 \
+    double *values = sliceparam->values;                                       \
+    int starty = sliceparam->starty;                                           \
     type *dst = (type*)_dst;                                                   \
     AVExpr *e = param->e;                                                      \
     int y, x;                                                                  \
@@ -171,6 +173,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const uint8_t *bottom = td->bottom->data[td->plane];
     uint8_t *dst    = td->dst->data[td->plane];
     double values[VAR_VARS_NB];
+    SliceParams sliceparam = {.values = &values[0], .starty = slice_start};
 
     values[VAR_N]  = td->inlink->frame_count_out;
     values[VAR_T]  = td->dst->pts == AV_NOPTS_VALUE ? NAN : td->dst->pts * av_q2d(td->inlink->time_base);
@@ -185,7 +188,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                      td->bottom->linesize[td->plane],
                      dst + slice_start * td->dst->linesize[td->plane],
                      td->dst->linesize[td->plane],
-                     td->w, height, td->param, &values[0], slice_start);
+                     td->w, height, td->param, &sliceparam);
     return 0;
 }
 

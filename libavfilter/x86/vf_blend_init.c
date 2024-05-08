@@ -28,7 +28,7 @@ void ff_blend_##name##_##opt(const uint8_t *top, ptrdiff_t top_linesize,       \
                              const uint8_t *bottom, ptrdiff_t bottom_linesize, \
                              uint8_t *dst, ptrdiff_t dst_linesize,             \
                              ptrdiff_t width, ptrdiff_t height,                \
-                             struct FilterParams *param, double *values, int starty);
+                             FilterParams *param, SliceParams *sliceparam);
 
 BLEND_FUNC(addition, sse2)
 BLEND_FUNC(addition, avx2)

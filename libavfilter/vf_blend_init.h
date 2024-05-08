@@ -58,7 +58,7 @@ static void blend_copy ## src##_##depth(const uint8_t *top, ptrdiff_t top_linesi
                             const uint8_t *bottom, ptrdiff_t bottom_linesize,\
                             uint8_t *dst, ptrdiff_t dst_linesize,            \
                             ptrdiff_t width, ptrdiff_t height,               \
-                            FilterParams *param, double *values, int starty) \
+                            FilterParams *param, SliceParams *sliceparam)    \
 {                                                                            \
     av_image_copy_plane(dst, dst_linesize, src, src ## _linesize,            \
                         width * depth / 8, height);                          \
@@ -80,7 +80,7 @@ static void blend_normal_##name(const uint8_t *_top, ptrdiff_t top_linesize,    
                                 const uint8_t *_bottom, ptrdiff_t bottom_linesize,\
                                 uint8_t *_dst, ptrdiff_t dst_linesize,            \
                                 ptrdiff_t width, ptrdiff_t height,                \
-                                FilterParams *param, double *values, int starty)  \
+                                FilterParams *param, SliceParams *sliceparam)     \
 {                                                                                 \
     const type *top = (const type*)_top;                                          \
     const type *bottom = (const type*)_bottom;                                    \

@@ -69,6 +69,11 @@ enum BlendMode {
     BLEND_NB
 };
 
+typedef struct SliceParams {
+    double *values;
+    int starty;
+} SliceParams;
+
 typedef struct FilterParams {
     enum BlendMode mode;
     double opacity;
@@ -78,7 +83,7 @@ typedef struct FilterParams {
                   const uint8_t *bottom, ptrdiff_t bottom_linesize,
                   uint8_t *dst, ptrdiff_t dst_linesize,
                   ptrdiff_t width, ptrdiff_t height,
-                  struct FilterParams *param, double *values, int starty);
+                  struct FilterParams *param, SliceParams *sliceparam);
 } FilterParams;
 
 void ff_blend_init_x86(FilterParams *param, int depth);

@@ -91,7 +91,7 @@ static void fn0(NAME)(const uint8_t *_top, ptrdiff_t top_linesize, \
      const uint8_t *_bottom, ptrdiff_t bottom_linesize,       \
      uint8_t *_dst, ptrdiff_t dst_linesize,                   \
      ptrdiff_t width, ptrdiff_t height,                       \
-     FilterParams *param, double *values, int starty)         \
+     FilterParams *param, SliceParams *sliceparam)            \
 {                                                                                   \
     const PIXEL *top = (const PIXEL *)_top;                                         \
     const PIXEL *bottom = (const PIXEL *)_bottom;                                   \
