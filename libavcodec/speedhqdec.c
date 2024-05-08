@@ -424,6 +424,9 @@ static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
+    if (avctx->skip_frame >= AVDISCARD_ALL)
+        return avpkt->size;
+
     compute_quant_matrix(s->quant_matrix, 100 - quality);
 
     second_field_offset = AV_RL24(buf + 1);
