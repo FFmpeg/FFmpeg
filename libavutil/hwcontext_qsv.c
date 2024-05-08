@@ -118,7 +118,14 @@ typedef struct QSVFramesContext {
 #endif
     AVFrame realigned_upload_frame;
     AVFrame realigned_download_frame;
+
+    mfxFrameInfo frame_info;
 } QSVFramesContext;
+
+typedef struct QSVSurface {
+    mfxFrameSurface1 mfx_surface;
+    AVFrame *child_frame;
+} QSVSurface;
 
 static const struct {
     enum AVPixelFormat pix_fmt;
@@ -164,6 +171,8 @@ static const struct {
 extern int ff_qsv_get_surface_base_handle(mfxFrameSurface1 *surf,
                                           enum AVHWDeviceType base_dev_type,
                                           void **base_handle);
+
+static int qsv_init_surface(AVHWFramesContext *ctx, mfxFrameSurface1 *surf);
 
 /**
  * Caller needs to allocate enough space for base_handle pointer.
@@ -373,7 +382,32 @@ static void qsv_pool_release_dummy(void *opaque, uint8_t *data)
 {
 }
 
-static AVBufferRef *qsv_pool_alloc(void *opaque, size_t size)
+static void qsv_pool_release(void *opaque, uint8_t *data)
+{
+    AVHWFramesContext *ctx = (AVHWFramesContext*)opaque;
+    QSVFramesContext *s = ctx->hwctx;
+    QSVSurface *qsv_surface = (QSVSurface *)data;
+    mfxHDLPair *hdl_pair = (mfxHDLPair *)qsv_surface->mfx_surface.Data.MemId;
+    AVHWFramesContext *child_frames_ctx;
+
+    if (!s->child_frames_ref)
+        return;
+
+    child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
+    if (!child_frames_ctx->device_ctx)
+        return;
+
+#if CONFIG_VAAPI
+    if (child_frames_ctx->device_ctx->type == AV_HWDEVICE_TYPE_VAAPI)
+        av_freep(&hdl_pair->first);
+#endif
+
+    av_freep(&hdl_pair);
+    av_frame_free(&qsv_surface->child_frame);
+    av_freep(&qsv_surface);
+}
+
+static AVBufferRef *qsv_fixed_pool_alloc(void *opaque, size_t size)
 {
     AVHWFramesContext    *ctx = (AVHWFramesContext*)opaque;
     QSVFramesContext       *s = ctx->hwctx;
@@ -386,6 +420,104 @@ static AVBufferRef *qsv_pool_alloc(void *opaque, size_t size)
     }
 
     return NULL;
+}
+
+static AVBufferRef *qsv_dynamic_pool_alloc(void *opaque, size_t size)
+{
+    AVHWFramesContext    *ctx = (AVHWFramesContext*)opaque;
+    QSVFramesContext       *s = ctx->hwctx;
+    AVHWFramesContext *child_frames_ctx;
+    QSVSurface *qsv_surface = NULL;
+    mfxHDLPair *handle_pairs_internal = NULL;
+    int ret;
+
+    if (!s->child_frames_ref)
+        goto fail;
+
+    child_frames_ctx = (AVHWFramesContext*)s->child_frames_ref->data;
+    if (!child_frames_ctx->device_ctx)
+        goto fail;
+
+#if CONFIG_DXVA2
+    if (child_frames_ctx->device_ctx->type == AV_HWDEVICE_TYPE_DXVA2) {
+        av_log(ctx, AV_LOG_ERROR,
+               "QSV on dxva2 requires a fixed frame pool size\n");
+        goto fail;
+    }
+#endif
+
+    qsv_surface = av_calloc(1, sizeof(*qsv_surface));
+    if (!qsv_surface)
+        goto fail;
+
+    qsv_surface->child_frame = av_frame_alloc();
+    if (!qsv_surface->child_frame)
+        goto fail;
+
+    ret = av_hwframe_get_buffer(s->child_frames_ref, qsv_surface->child_frame, 0);
+    if (ret < 0)
+        goto fail;
+
+    handle_pairs_internal = av_calloc(1, sizeof(*handle_pairs_internal));
+    if (!handle_pairs_internal)
+        goto fail;
+
+    ret = qsv_init_surface(ctx, &qsv_surface->mfx_surface);
+    if (ret < 0)
+        goto fail;
+
+#if CONFIG_VAAPI
+    if (child_frames_ctx->device_ctx->type == AV_HWDEVICE_TYPE_VAAPI) {
+        VASurfaceID *surface_id_internal;
+
+        surface_id_internal = av_calloc(1, sizeof(*surface_id_internal));
+        if (!surface_id_internal)
+            goto fail;
+
+        *surface_id_internal = (VASurfaceID)(uintptr_t)qsv_surface->child_frame->data[3];
+        handle_pairs_internal->first = (mfxHDL)surface_id_internal;
+        handle_pairs_internal->second = (mfxMemId)MFX_INFINITE;
+    }
+#endif
+
+#if CONFIG_D3D11VA
+    if (child_frames_ctx->device_ctx->type == AV_HWDEVICE_TYPE_D3D11VA) {
+        AVD3D11VAFramesContext *child_frames_hwctx = child_frames_ctx->hwctx;
+        handle_pairs_internal->first = (mfxMemId)qsv_surface->child_frame->data[0];
+
+        if (child_frames_hwctx->BindFlags & D3D11_BIND_RENDER_TARGET)
+            handle_pairs_internal->second = (mfxMemId)MFX_INFINITE;
+        else
+            handle_pairs_internal->second = (mfxMemId)qsv_surface->child_frame->data[1];
+
+    }
+#endif
+
+    qsv_surface->mfx_surface.Data.MemId = (mfxMemId)handle_pairs_internal;
+    return av_buffer_create((uint8_t *)qsv_surface, sizeof(*qsv_surface),
+                            qsv_pool_release, ctx, 0);
+
+fail:
+    if (qsv_surface) {
+        av_frame_free(&qsv_surface->child_frame);
+    }
+
+    av_freep(&qsv_surface);
+    av_freep(&handle_pairs_internal);
+
+    return NULL;
+}
+
+static AVBufferRef *qsv_pool_alloc(void *opaque, size_t size)
+{
+    AVHWFramesContext    *ctx = (AVHWFramesContext*)opaque;
+    AVQSVFramesContext *hwctx = ctx->hwctx;
+
+    if (hwctx->nb_surfaces == 0) {
+        return qsv_dynamic_pool_alloc(opaque, size);
+    } else {
+        return qsv_fixed_pool_alloc(opaque, size);
+    }
 }
 
 static int qsv_init_child_ctx(AVHWFramesContext *ctx)
@@ -576,9 +708,28 @@ static int qsv_init_pool(AVHWFramesContext *ctx, uint32_t fourcc)
 
     int i, ret = 0;
 
-    if (ctx->initial_pool_size <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "QSV requires a fixed frame pool size\n");
+    if (ctx->initial_pool_size < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame pool size\n");
         return AVERROR(EINVAL);
+    } else if (ctx->initial_pool_size == 0) {
+        mfxFrameSurface1 mfx_surf1;
+
+        ret = qsv_init_child_ctx(ctx);
+        if (ret < 0)
+            return ret;
+
+        ffhwframesctx(ctx)->pool_internal = av_buffer_pool_init2(sizeof(mfxFrameSurface1),
+                                                                 ctx, qsv_pool_alloc, NULL);
+        if (!ffhwframesctx(ctx)->pool_internal)
+            return AVERROR(ENOMEM);
+
+        memset(&mfx_surf1, 0, sizeof(mfx_surf1));
+        qsv_init_surface(ctx, &mfx_surf1);
+        s->frame_info = mfx_surf1.Info;
+        frames_hwctx->info = &s->frame_info;
+        frames_hwctx->nb_surfaces = 0;
+
+        return 0;
     }
 
     s->handle_pairs_internal = av_calloc(ctx->initial_pool_size,
