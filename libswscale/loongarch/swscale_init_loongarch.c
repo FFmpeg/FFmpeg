@@ -41,6 +41,7 @@ av_cold void ff_sws_init_range_convert_loongarch(SwsContext *c)
             }
         }
     }
+#if HAVE_LASX
     if (have_lasx(cpu_flags)) {
         if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
             if (c->dstBpc <= 14) {
@@ -54,6 +55,7 @@ av_cold void ff_sws_init_range_convert_loongarch(SwsContext *c)
             }
         }
     }
+#endif // #if HAVE_LASX
 }
 
 av_cold void ff_sws_init_swscale_loongarch(SwsContext *c)
