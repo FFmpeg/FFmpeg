@@ -353,7 +353,7 @@ static int vaapi_hevc_end_frame(AVCodecContext *avctx)
     if (pic->last_size) {
         last_slice_param->LongSliceFlags.fields.LastSliceOfPic = 1;
         ret = ff_vaapi_decode_make_slice_buffer(avctx, &pic->pic,
-                                                &pic->last_slice_param, slice_param_size,
+                                                &pic->last_slice_param, 1, slice_param_size,
                                                 pic->last_buffer, pic->last_size);
         if (ret < 0)
             goto fail;
@@ -471,7 +471,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
 
     if (!sh->first_slice_in_pic_flag) {
         err = ff_vaapi_decode_make_slice_buffer(avctx, &pic->pic,
-                                                &pic->last_slice_param, slice_param_size,
+                                                &pic->last_slice_param, 1, slice_param_size,
                                                 pic->last_buffer, pic->last_size);
         pic->last_buffer = NULL;
         pic->last_size   = 0;
