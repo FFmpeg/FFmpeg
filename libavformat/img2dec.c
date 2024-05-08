@@ -25,6 +25,7 @@
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #include <sys/stat.h>
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
@@ -504,6 +505,7 @@ int ff_img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     pkt->flags       |= AV_PKT_FLAG_KEY;
     if (s->ts_from_file) {
         struct stat img_stat;
+        av_assert0(!s->is_pipe); // The ts_from_file option is not supported by piped input demuxers
         if (stat(filename, &img_stat)) {
             res = AVERROR(EIO);
             goto fail;
