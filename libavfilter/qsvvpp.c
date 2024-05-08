@@ -587,6 +587,26 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
     device_ctx   = (AVHWDeviceContext *)device_ref->data;
     device_hwctx = device_ctx->hwctx;
 
+    /* extract the properties of the "master" session given to us */
+    ret = MFXQueryIMPL(device_hwctx->session, &impl);
+    if (ret == MFX_ERR_NONE)
+        ret = MFXQueryVersion(device_hwctx->session, &ver);
+    if (ret != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error querying the session attributes\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    if (MFX_IMPL_VIA_VAAPI == MFX_IMPL_VIA_MASK(impl)) {
+        handle_type = MFX_HANDLE_VA_DISPLAY;
+    } else if (MFX_IMPL_VIA_D3D11 == MFX_IMPL_VIA_MASK(impl)) {
+        handle_type = MFX_HANDLE_D3D11_DEVICE;
+    } else if (MFX_IMPL_VIA_D3D9 == MFX_IMPL_VIA_MASK(impl)) {
+        handle_type = MFX_HANDLE_D3D9_DEVICE_MANAGER;
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Error unsupported handle type\n");
+        return AVERROR_UNKNOWN;
+    }
+
     if (outlink->format == AV_PIX_FMT_QSV) {
         AVHWFramesContext *out_frames_ctx;
         AVBufferRef *out_frames_ref = av_hwframe_ctx_alloc(device_ref);
@@ -608,9 +628,15 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         out_frames_ctx->width             = FFALIGN(outlink->w, 32);
         out_frames_ctx->height            = FFALIGN(outlink->h, 32);
         out_frames_ctx->sw_format         = s->out_sw_format;
-        out_frames_ctx->initial_pool_size = 64;
-        if (avctx->extra_hw_frames > 0)
-            out_frames_ctx->initial_pool_size += avctx->extra_hw_frames;
+
+        if (QSV_RUNTIME_VERSION_ATLEAST(ver, 2, 9) && handle_type != MFX_HANDLE_D3D9_DEVICE_MANAGER)
+            out_frames_ctx->initial_pool_size = 0;
+        else {
+            out_frames_ctx->initial_pool_size = 64;
+            if (avctx->extra_hw_frames > 0)
+                out_frames_ctx->initial_pool_size += avctx->extra_hw_frames;
+        }
+
         out_frames_hwctx->frame_type      = s->out_mem_mode;
 
         ret = av_hwframe_ctx_init(out_frames_ref);
@@ -635,26 +661,6 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         outlink->hw_frames_ctx = out_frames_ref;
     } else
         s->out_mem_mode = MFX_MEMTYPE_SYSTEM_MEMORY;
-
-    /* extract the properties of the "master" session given to us */
-    ret = MFXQueryIMPL(device_hwctx->session, &impl);
-    if (ret == MFX_ERR_NONE)
-        ret = MFXQueryVersion(device_hwctx->session, &ver);
-    if (ret != MFX_ERR_NONE) {
-        av_log(avctx, AV_LOG_ERROR, "Error querying the session attributes\n");
-        return AVERROR_UNKNOWN;
-    }
-
-    if (MFX_IMPL_VIA_VAAPI == MFX_IMPL_VIA_MASK(impl)) {
-        handle_type = MFX_HANDLE_VA_DISPLAY;
-    } else if (MFX_IMPL_VIA_D3D11 == MFX_IMPL_VIA_MASK(impl)) {
-        handle_type = MFX_HANDLE_D3D11_DEVICE;
-    } else if (MFX_IMPL_VIA_D3D9 == MFX_IMPL_VIA_MASK(impl)) {
-        handle_type = MFX_HANDLE_D3D9_DEVICE_MANAGER;
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "Error unsupported handle type\n");
-        return AVERROR_UNKNOWN;
-    }
 
     ret = MFXVideoCORE_GetHandle(device_hwctx->session, handle_type, &handle);
     if (ret < 0)
