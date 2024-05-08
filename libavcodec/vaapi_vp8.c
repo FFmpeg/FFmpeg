@@ -209,7 +209,7 @@ static int vaapi_vp8_decode_slice(AVCodecContext *avctx,
     for (i = 0; i < 8; i++)
         sp.partition_size[i+1] = s->coeff_partition_size[i];
 
-    err = ff_vaapi_decode_make_slice_buffer(avctx, pic, &sp, sizeof(sp), data, data_size);
+    err = ff_vaapi_decode_make_slice_buffer(avctx, pic, &sp, 1, sizeof(sp), data, data_size);
     if (err)
         goto fail;
 

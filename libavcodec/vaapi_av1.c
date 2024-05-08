@@ -409,7 +409,7 @@ static int vaapi_av1_decode_slice(AVCodecContext *avctx,
             .tg_end            = s->tg_end,
         };
 
-        err = ff_vaapi_decode_make_slice_buffer(avctx, pic, &slice_param,
+        err = ff_vaapi_decode_make_slice_buffer(avctx, pic, &slice_param, 1,
                                                 sizeof(VASliceParameterBufferAV1),
                                                 buffer,
                                                 size);

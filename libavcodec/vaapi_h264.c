@@ -375,7 +375,7 @@ static int vaapi_h264_decode_slice(AVCodecContext *avctx,
                                        slice_param.chroma_offset_l1);
 
     err = ff_vaapi_decode_make_slice_buffer(avctx, pic,
-                                            &slice_param, sizeof(slice_param),
+                                            &slice_param, 1, sizeof(slice_param),
                                             buffer, size);
     if (err) {
         ff_vaapi_decode_cancel(avctx, pic);
