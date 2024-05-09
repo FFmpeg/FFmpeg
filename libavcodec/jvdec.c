@@ -215,8 +215,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     }
 
     if (video_size) {
-        s->frame->flags |= AV_FRAME_FLAG_KEY;
-        s->frame->pict_type           = AV_PICTURE_TYPE_I;
 #if FF_API_PALETTE_HAS_CHANGED
 FF_DISABLE_DEPRECATION_WARNINGS
         s->frame->palette_has_changed = s->palette_has_changed;
