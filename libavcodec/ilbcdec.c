@@ -1092,12 +1092,6 @@ static void do_plc(int16_t *plc_residual,      /* (o) concealed residual */
 
         if (s->consPLICount * s->block_samples > 320) {
             use_gain = 29491;   /* 0.9 in Q15 */
-        } else if (s->consPLICount * s->block_samples > 640) {
-            use_gain = 22938;   /* 0.7 in Q15 */
-        } else if (s->consPLICount * s->block_samples > 960) {
-            use_gain = 16384;   /* 0.5 in Q15 */
-        } else if (s->consPLICount * s->block_samples > 1280) {
-            use_gain = 0;       /* 0.0 in Q15 */
         }
 
         /* Compute mixing factor of picth repeatition and noise:
