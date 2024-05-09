@@ -57,6 +57,20 @@
 typedef struct DecodeContext {
     AVCodecInternal avci;
 
+    /**
+     * This is set to AV_FRAME_FLAG_KEY for decoders of intra-only formats
+     * (those whose codec descriptor has AV_CODEC_PROP_INTRA_ONLY set)
+     * to set the flag generically.
+     */
+    int intra_only_flag;
+
+    /**
+     * This is set to AV_PICTURE_TYPE_I for intra only video decoders
+     * and to AV_PICTURE_TYPE_NONE for other decoders. It is used to set
+     * the AVFrame's pict_type before the decoder receives it.
+     */
+    enum AVPictureType initial_pict_type;
+
     /* to prevent infinite loop on errors when draining */
     int nb_draining_errors;
 
@@ -382,6 +396,7 @@ static int discard_samples(AVCodecContext *avctx, AVFrame *frame, int64_t *disca
 static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, int64_t *discarded_samples)
 {
     AVCodecInternal   *avci = avctx->internal;
+    DecodeContext     *dc = decode_ctx(avci);
     AVPacket     *const pkt = avci->in_pkt;
     const FFCodec *const codec = ffcodec(avctx->codec);
     int got_frame, consumed;
@@ -409,6 +424,8 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
     if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME) {
         consumed = ff_thread_decode_frame(avctx, frame, &got_frame, pkt);
     } else {
+        frame->pict_type = dc->initial_pict_type;
+        frame->flags    |= dc->intra_only_flag;
         consumed = codec->cb.decode(avctx, frame, &got_frame, pkt);
 
         if (!(codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
@@ -598,6 +615,8 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     av_assert0(!frame->buf[0]);
 
     if (codec->cb_type == FF_CODEC_CB_TYPE_RECEIVE_FRAME) {
+        frame->pict_type = dc->initial_pict_type;
+        frame->flags    |= dc->intra_only_flag;
         ret = codec->cb.receive_frame(avctx, frame);
         emms_c();
         if (!ret) {
@@ -627,8 +646,7 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
                 frame->width = avctx->width;
             if (!frame->height)
                 frame->height = avctx->height;
-        } else
-            frame->flags |= AV_FRAME_FLAG_KEY;
+        }
 
         ret = fill_frame_props(avctx, frame);
         if (ret < 0) {
@@ -1793,6 +1811,13 @@ int ff_decode_preinit(AVCodecContext *avctx)
     AVCodecInternal *avci = avctx->internal;
     DecodeContext     *dc = decode_ctx(avci);
     int ret = 0;
+
+    dc->initial_pict_type = AV_PICTURE_TYPE_NONE;
+    if (avctx->codec_descriptor->props & AV_CODEC_PROP_INTRA_ONLY) {
+        dc->intra_only_flag = AV_FRAME_FLAG_KEY;
+        if (avctx->codec_type == AVMEDIA_TYPE_VIDEO)
+            dc->initial_pict_type = AV_PICTURE_TYPE_I;
+    }
 
     /* if the decoder init function was already called previously,
      * free the already allocated subtitle_header before overwriting it */
