@@ -28,9 +28,14 @@
 int av_adts_header_parse(const uint8_t *buf, uint32_t *samples, uint8_t *frames)
 {
 #if CONFIG_ADTS_HEADER
+    uint8_t tmpbuf[AV_AAC_ADTS_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
     GetBitContext gb;
     AACADTSHeaderInfo hdr;
-    int err = init_get_bits8(&gb, buf, AV_AAC_ADTS_HEADER_SIZE);
+    int err;
+    if (!buf)
+        return AVERROR(EINVAL);
+    memcpy(tmpbuf, buf, AV_AAC_ADTS_HEADER_SIZE);
+    err = init_get_bits8(&gb, tmpbuf, AV_AAC_ADTS_HEADER_SIZE);
     if (err < 0)
         return err;
     err = ff_adts_header_parse(&gb, &hdr);
