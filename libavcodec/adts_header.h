@@ -23,7 +23,8 @@
 #ifndef AVCODEC_ADTS_HEADER_H
 #define AVCODEC_ADTS_HEADER_H
 
-#include "get_bits.h"
+#include "adts_parser.h"
+#include "defs.h"
 
 typedef enum {
     AAC_PARSE_ERROR_SYNC        = -0x1030c0a,
@@ -43,6 +44,8 @@ typedef struct AACADTSHeaderInfo {
     uint32_t frame_length;
 } AACADTSHeaderInfo;
 
+struct GetBitContext;
+
 /**
  * Parse the ADTS frame header to the end of the variable header, which is
  * the first 54 bits.
@@ -51,7 +54,14 @@ typedef struct AACADTSHeaderInfo {
  * @return the size in bytes of the header parsed on success and
  *         AAC_PARSE_ERROR_* values otherwise.
  */
-int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr);
+int ff_adts_header_parse(struct GetBitContext *gbc, AACADTSHeaderInfo *hdr);
+
+/**
+ * Wrapper around ff_adts_header_parse() for users that don't already have
+ * a suitable GetBitContext.
+ */
+int ff_adts_header_parse_buf(const uint8_t buf[AV_AAC_ADTS_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE],
+                             AACADTSHeaderInfo *hdr);
 
 /**
  * Parse the ADTS frame header contained in the buffer, which is

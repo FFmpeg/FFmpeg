@@ -24,24 +24,18 @@
 #include "aac_ac3_parser.h"
 #include "adts_header.h"
 #include "adts_parser.h"
-#include "get_bits.h"
-#include "mpeg4audio.h"
+#include "libavutil/intreadwrite.h"
 
 static int aac_sync(uint64_t state, int *need_next_header, int *new_frame_start)
 {
-    GetBitContext bits;
+    uint8_t tmp[8 + AV_INPUT_BUFFER_PADDING_SIZE];
     AACADTSHeaderInfo hdr;
     int size;
-    union {
-        uint64_t u64;
-        uint8_t  u8[8 + AV_INPUT_BUFFER_PADDING_SIZE];
-    } tmp;
 
-    tmp.u64 = av_be2ne64(state);
-    init_get_bits(&bits, tmp.u8 + 8 - AV_AAC_ADTS_HEADER_SIZE,
-                  AV_AAC_ADTS_HEADER_SIZE * 8);
+    AV_WB64(tmp, state);
 
-    if ((size = ff_adts_header_parse(&bits, &hdr)) < 0)
+    size = ff_adts_header_parse_buf(tmp + 8 - AV_AAC_ADTS_HEADER_SIZE, &hdr);
+    if (size < 0)
         return 0;
     *need_next_header = 0;
     *new_frame_start  = 1;

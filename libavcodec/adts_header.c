@@ -25,6 +25,7 @@
 #include "adts_parser.h"
 #include "get_bits.h"
 #include "mpeg4audio.h"
+#include "libavutil/avassert.h"
 
 int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
 {
@@ -70,4 +71,13 @@ int ff_adts_header_parse(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
     hdr->frame_length   = size;
 
     return size;
+}
+
+int ff_adts_header_parse_buf(const uint8_t buf[AV_AAC_ADTS_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE],
+                             AACADTSHeaderInfo *hdr)
+{
+    GetBitContext gb;
+    av_unused int ret = init_get_bits8(&gb, buf, AV_AAC_ADTS_HEADER_SIZE);
+    av_assert1(ret >= 0);
+    return ff_adts_header_parse(&gb, hdr);
 }
