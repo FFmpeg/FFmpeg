@@ -440,7 +440,6 @@ static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if ((ret = ff_thread_get_buffer(avctx, frame, 0)) < 0) {
         return ret;
     }
-    frame->flags |= AV_FRAME_FLAG_KEY;
 
     if (second_field_offset == 4 || second_field_offset == (buf_size-4)) {
         /*

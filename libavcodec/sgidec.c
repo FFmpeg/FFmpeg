@@ -248,8 +248,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
         MAP(2, 1);
         break;
     }
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->flags |= AV_FRAME_FLAG_KEY;
 
     /* Skip header. */
     bytestream2_seek(&g, SGI_HEADER_SIZE, SEEK_SET);

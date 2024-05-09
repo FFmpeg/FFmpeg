@@ -212,9 +212,6 @@ convert:
         }
     }
 
-    p->flags |= AV_FRAME_FLAG_KEY;
-    p->pict_type = AV_PICTURE_TYPE_I;
-
     *got_frame   = 1;
 
     return avpkt->size;

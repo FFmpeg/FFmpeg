@@ -69,7 +69,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    p->flags |= AV_FRAME_FLAG_KEY;
 
     if ((ret = init_get_bits8(&gb, buf + 8, buf_size - 8)) < 0)
         return ret;

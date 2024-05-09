@@ -461,9 +461,6 @@ static int cllc_decode_frame(AVCodecContext *avctx, AVFrame *pic,
         return AVERROR_INVALIDDATA;
     }
 
-    pic->flags |= AV_FRAME_FLAG_KEY;
-    pic->pict_type = AV_PICTURE_TYPE_I;
-
     *got_picture_ptr = 1;
 
     return avpkt->size;

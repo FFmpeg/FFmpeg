@@ -56,8 +56,6 @@ static int tmv_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_INVALIDDATA;
     }
 
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->flags |= AV_FRAME_FLAG_KEY;
     dst              = frame->data[0];
 
 #if FF_API_PALETTE_HAS_CHANGED

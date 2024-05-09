@@ -201,8 +201,6 @@ static int truemotion2rt_decode_frame(AVCodecContext *avctx, AVFrame *p,
         dst += p->linesize[2];
     }
 
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->flags |= AV_FRAME_FLAG_KEY;
     *got_frame = 1;
 
     return avpkt->size;

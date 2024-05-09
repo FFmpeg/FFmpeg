@@ -74,9 +74,6 @@ static int wbmp_decode_frame(AVCodecContext *avctx, AVFrame *p,
     else
         readbits(p->data[0], width, height, p->linesize[0], gb.buffer, gb.buffer_end - gb.buffer);
 
-    p->flags |= AV_FRAME_FLAG_KEY;
-    p->pict_type = AV_PICTURE_TYPE_I;
-
     *got_frame   = 1;
 
     return buf_size;

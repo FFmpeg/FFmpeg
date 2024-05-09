@@ -66,8 +66,6 @@ static int m101_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->flags |= AV_FRAME_FLAG_KEY;
     if ((avctx->extradata[3*4] & 3) != 3) {
         frame->flags |= AV_FRAME_FLAG_INTERLACED;
         if (avctx->extradata[3*4] & 1)

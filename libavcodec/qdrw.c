@@ -506,9 +506,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     if (*got_frame) {
-        p->pict_type = AV_PICTURE_TYPE_I;
-        p->flags |= AV_FRAME_FLAG_KEY;
-
         return avpkt->size;
     } else {
         av_log(avctx, AV_LOG_ERROR, "Frame contained no usable data\n");

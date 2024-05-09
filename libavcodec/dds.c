@@ -711,8 +711,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         run_postproc(avctx, frame);
 
     /* Frame is ready to be output. */
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->flags |= AV_FRAME_FLAG_KEY;
     *got_frame = 1;
 
     return avpkt->size;

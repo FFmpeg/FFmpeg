@@ -216,9 +216,6 @@ static int xwd_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
-    p->flags |= AV_FRAME_FLAG_KEY;
-    p->pict_type = AV_PICTURE_TYPE_I;
-
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         uint32_t *dst = (uint32_t *)p->data[1];
         uint8_t red, green, blue;

@@ -139,8 +139,6 @@ static int pgx_decode_frame(AVCodecContext *avctx, AVFrame *p,
         return AVERROR_INVALIDDATA;
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->flags |= AV_FRAME_FLAG_KEY;
     avctx->bits_per_raw_sample = depth;
     if (bpp == 8)
         write_frame_8(p, &g, width, height, sign, depth);

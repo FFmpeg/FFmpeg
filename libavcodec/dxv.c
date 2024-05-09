@@ -1048,8 +1048,6 @@ static int dxv_decode(AVCodecContext *avctx, AVFrame *frame,
     }
 
     /* Frame is ready to be output. */
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->flags |= AV_FRAME_FLAG_KEY;
     *got_frame = 1;
 
     return avpkt->size;

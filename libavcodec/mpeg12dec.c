@@ -2822,8 +2822,6 @@ static int ipu_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (get_bits_left(gb) != 32)
         return AVERROR_INVALIDDATA;
 
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->flags |= AV_FRAME_FLAG_KEY;
     *got_frame = 1;
 
     return avpkt->size;

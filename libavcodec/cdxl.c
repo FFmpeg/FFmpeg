@@ -306,8 +306,6 @@ static int cdxl_decode_frame(AVCodecContext *avctx, AVFrame *p,
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->flags |= AV_FRAME_FLAG_KEY;
 
     if (encoding) {
         av_fast_padded_malloc(&c->new_video, &c->new_video_size,

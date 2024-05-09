@@ -182,9 +182,6 @@ static int lead_decode_frame(AVCodecContext *avctx, AVFrame * frame,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    frame->flags |= AV_FRAME_FLAG_KEY;
-    frame->pict_type = AV_PICTURE_TYPE_I;
-
     av_fast_padded_malloc(&s->bitstream_buf, &s->bitstream_buf_size, avpkt->size - 8);
     if (!s->bitstream_buf)
         return AVERROR(ENOMEM);

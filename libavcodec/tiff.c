@@ -2381,7 +2381,6 @@ again:
         }
     }
 
-    p->flags |= AV_FRAME_FLAG_KEY;
     *got_frame = 1;
 
     return avpkt->size;

@@ -102,9 +102,6 @@ static int v410_decode_frame(AVCodecContext *avctx, AVFrame *pic,
     if ((ret = ff_thread_get_buffer(avctx, pic, 0)) < 0)
         return ret;
 
-    pic->flags |= AV_FRAME_FLAG_KEY;
-    pic->pict_type = AV_PICTURE_TYPE_I;
-
     td.buf = src;
     td.frame = pic;
     avctx->execute2(avctx, v410_decode_slice, &td, NULL, thread_count);

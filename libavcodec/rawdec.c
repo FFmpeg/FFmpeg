@@ -225,9 +225,6 @@ static int raw_decode(AVCodecContext *avctx, AVFrame *frame,
 
     need_copy = !avpkt->buf || context->is_1_2_4_8_bpp || context->is_yuv2 || context->is_lt_16bpp;
 
-    frame->pict_type        = AV_PICTURE_TYPE_I;
-    frame->flags |= AV_FRAME_FLAG_KEY;
-
     res = ff_decode_frame_props(avctx, frame);
     if (res < 0)
         return res;
