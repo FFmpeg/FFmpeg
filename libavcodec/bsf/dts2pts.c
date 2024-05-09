@@ -269,8 +269,8 @@ static int h264_filter(AVBSFContext *ctx)
             h264->sps.offset_for_non_ref_pic         = sps->offset_for_non_ref_pic;
             h264->sps.offset_for_top_to_bottom_field = sps->offset_for_top_to_bottom_field;
             h264->sps.poc_cycle_length               = sps->num_ref_frames_in_pic_order_cnt_cycle;
-            for (int i = 0; i < h264->sps.poc_cycle_length; i++)
-                h264->sps.offset_for_ref_frame[i] = sps->offset_for_ref_frame[i];
+            for (int j = 0; j < h264->sps.poc_cycle_length; j++)
+                h264->sps.offset_for_ref_frame[j] = sps->offset_for_ref_frame[j];
 
             h264->picture_structure = sps->frame_mbs_only_flag ? 3 :
                                       (header->field_pic_flag ?
