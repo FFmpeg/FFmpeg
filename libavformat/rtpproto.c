@@ -379,6 +379,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     return 0;
 
  fail:
+    ff_ip_reset_filters(&s->filters);
     ffurl_closep(&s->rtp_hd);
     ffurl_closep(&s->rtcp_hd);
     ffurl_closep(&s->fec_hd);
