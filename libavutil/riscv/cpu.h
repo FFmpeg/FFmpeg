@@ -22,6 +22,7 @@
 #define AVUTIL_RISCV_CPU_H
 
 #include "config.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include "libavutil/cpu.h"
 
@@ -42,4 +43,24 @@ static inline size_t ff_get_rv_vlenb(void)
     return vlenb;
 }
 #endif
+
+/**
+ * Checks that the vector bit-size is at least the given value.
+ * This is potentially undefined behaviour if vectors are not implemented.
+ */
+static inline bool ff_rv_vlen_least(unsigned int bits)
+{
+#ifdef __riscv_v_min_vlen
+    if (bits <= __riscv_min_vlen)
+        return true;
+#else
+    /*
+     * Vector lengths smaller than 128 bits are only possible in embedded cases
+     * and cannot be run-time detected, so we can assume 128 bits at least.
+     */
+    if (bits <= 128)
+        return true;
+#endif
+    return bits <= (8 * ff_get_rv_vlenb());
+}
 #endif
