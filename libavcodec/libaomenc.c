@@ -419,6 +419,7 @@ static av_cold int aom_free(AVCodecContext *avctx)
 #endif
 
     aom_codec_destroy(&ctx->encoder);
+    aom_img_remove_metadata(&ctx->rawimg);
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
@@ -1287,6 +1288,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
 
+        aom_img_remove_metadata(rawimg);
         sd = av_frame_get_side_data(frame, AV_FRAME_DATA_DOVI_METADATA);
         if (ctx->dovi.cfg.dv_profile && sd) {
             const AVDOVIMetadata *metadata = (const AVDOVIMetadata *)sd->data;
