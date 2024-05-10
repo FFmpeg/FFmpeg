@@ -522,14 +522,14 @@ static int set_ass_header(ARIBCaptionContext *ctx)
 
     av_freep(&avctx->subtitle_header);
     avctx->subtitle_header = av_asprintf(
-            "[Script Info]\r\n"
-            "ScriptType: v4.00+\r\n"
-            "PlayResX: %d\r\n"
-            "PlayResY: %d\r\n"
-            "WrapStyle: 2\r\n"      /* 2: no word wrapping */
-            "\r\n"
+            "[Script Info]\n"
+            "ScriptType: v4.00+\n"
+            "PlayResX: %d\n"
+            "PlayResY: %d\n"
+            "WrapStyle: 2\n"        /* 2: no word wrapping */
+            "\n"
 
-            "[V4+ Styles]\r\n"
+            "[V4+ Styles]\n"
              "Format: Name, "
              "Fontname, Fontsize, "
              "PrimaryColour, SecondaryColour, OutlineColour, BackColour, "
@@ -538,7 +538,7 @@ static int set_ass_header(ARIBCaptionContext *ctx)
              "Spacing, Angle, "
              "BorderStyle, Outline, Shadow, "
              "Alignment, MarginL, MarginR, MarginV, "
-             "Encoding\r\n"
+             "Encoding\n"
 
              "Style: "
              "Default,"             /* Name */
@@ -549,11 +549,11 @@ static int set_ass_header(ARIBCaptionContext *ctx)
              "0,0,"                 /* Spacing, Angle */
              "%d,%d,%d,"            /* BorderStyle, Outline, Shadow */
              "%d,10,10,10,"         /* Alignment, Margin[LRV] */
-             "0\r\n"                /* Encoding */
-             "\r\n"
+             "0\n"                  /* Encoding */
+             "\n"
 
-             "[Events]\r\n"
-             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\r\n",
+             "[Events]\n"
+             "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n",
             ctx->plane_width, ctx->plane_height,
             font_name, ctx->font_size,
             ASS_DEFAULT_COLOR, ASS_DEFAULT_COLOR,
