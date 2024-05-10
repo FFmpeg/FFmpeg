@@ -922,7 +922,9 @@ static int set_avcc_extradata(AVCodecContext *avctx, x264_nal_t *nal, int nnal)
          *
          * +4 to skip until sps id.
          */
-        init_get_bits8(&gbc, sps + 4, sps_nal->i_payload - 4 - 4);
+        ret = init_get_bits8(&gbc, sps + 4, sps_nal->i_payload - 4 - 4);
+        if (ret < 0)
+            return ret;
         // Skip sps id
         get_ue_golomb_31(&gbc);
         chroma_format_idc = get_ue_golomb_31(&gbc);
