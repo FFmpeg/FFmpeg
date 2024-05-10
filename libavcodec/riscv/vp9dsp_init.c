@@ -29,7 +29,7 @@ static av_cold void vp9dsp_intrapred_init_rvv(VP9DSPContext *dsp, int bpp)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (bpp == 8 && flags & AV_CPU_FLAG_RVV_I64 && ff_get_rv_vlenb() >= 16) {
+    if (bpp == 8 && flags & AV_CPU_FLAG_RVV_I64 && ff_rv_vlen_least(128)) {
         dsp->intra_pred[TX_8X8][DC_PRED] = ff_dc_8x8_rvv;
         dsp->intra_pred[TX_8X8][LEFT_DC_PRED] = ff_dc_left_8x8_rvv;
         dsp->intra_pred[TX_8X8][DC_127_PRED] = ff_dc_127_8x8_rvv;
@@ -38,7 +38,7 @@ static av_cold void vp9dsp_intrapred_init_rvv(VP9DSPContext *dsp, int bpp)
         dsp->intra_pred[TX_8X8][TOP_DC_PRED] = ff_dc_top_8x8_rvv;
     }
 
-    if (bpp == 8 && flags & AV_CPU_FLAG_RVV_I32 && ff_get_rv_vlenb() >= 16) {
+    if (bpp == 8 && flags & AV_CPU_FLAG_RVV_I32 && ff_rv_vlen_least(128)) {
         dsp->intra_pred[TX_32X32][DC_PRED] = ff_dc_32x32_rvv;
         dsp->intra_pred[TX_16X16][DC_PRED] = ff_dc_16x16_rvv;
         dsp->intra_pred[TX_32X32][LEFT_DC_PRED] = ff_dc_left_32x32_rvv;

@@ -34,7 +34,7 @@ av_cold void ff_g722dsp_init_riscv(G722DSPContext *dsp)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && ff_get_rv_vlenb() >= 16)
+    if ((flags & AV_CPU_FLAG_RVV_I32) && ff_rv_vlen_least(128))
         dsp->apply_qmf = ff_g722_apply_qmf_rvv;
 #endif
 }

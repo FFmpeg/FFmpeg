@@ -53,7 +53,7 @@ av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
             c->sum_square = ff_sbr_sum_square_rvv;
             c->hf_gen = ff_sbr_hf_gen_rvv;
             c->hf_g_filt = ff_sbr_hf_g_filt_rvv;
-            if (ff_get_rv_vlenb() <= 16) {
+            if (ff_rv_vlen_least(128)) {
                 c->hf_apply_noise[0] = ff_sbr_hf_apply_noise_0_rvv;
                 c->hf_apply_noise[2] = ff_sbr_hf_apply_noise_2_rvv;
                 if (flags & AV_CPU_FLAG_RVB_BASIC) {

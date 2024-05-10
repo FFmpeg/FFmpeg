@@ -82,7 +82,7 @@ av_cold void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_I32 && ff_get_rv_vlenb() >= 16) {
+    if (flags & AV_CPU_FLAG_RVV_I32 && ff_rv_vlen_least(128)) {
         c->pix_abs[0][0] = ff_pix_abs16_rvv;
         c->sad[0] = ff_pix_abs16_rvv;
         c->pix_abs[1][0] = ff_pix_abs8_rvv;

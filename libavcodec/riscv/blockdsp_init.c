@@ -37,7 +37,7 @@ av_cold void ff_blockdsp_init_riscv(BlockDSPContext *c)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_I64 && ff_get_rv_vlenb() >= 16) {
+    if (flags & AV_CPU_FLAG_RVV_I64 && ff_rv_vlen_least(128)) {
         c->clear_block = ff_clear_block_rvv;
         c->clear_blocks = ff_clear_blocks_rvv;
         c->fill_block_tab[0] = ff_fill_block16_rvv;
