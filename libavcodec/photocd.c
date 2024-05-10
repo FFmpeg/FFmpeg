@@ -331,9 +331,6 @@ static int photocd_decode_frame(AVCodecContext *avctx, AVFrame *p,
     if ((ret = ff_thread_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
-    p->pict_type = AV_PICTURE_TYPE_I;
-    p->flags |= AV_FRAME_FLAG_KEY;
-
     bytestream2_init(gb, avpkt->data, avpkt->size);
 
     if (s->resolution < 3) {

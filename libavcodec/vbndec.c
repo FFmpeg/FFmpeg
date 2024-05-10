@@ -151,9 +151,6 @@ static int vbn_decode_frame(AVCodecContext *avctx,
     if (ret < 0)
         goto out;
 
-    frame->pict_type = AV_PICTURE_TYPE_I;
-    frame->flags |= AV_FRAME_FLAG_KEY;
-
     if (format == VBN_FORMAT_RAW) {
         uint8_t *flipped = frame->data[0] + frame->linesize[0] * (frame->height - 1);
         av_image_copy_plane(flipped, -frame->linesize[0], image_buf ? image_buf : gb->buffer, linesize, linesize, frame->height);
