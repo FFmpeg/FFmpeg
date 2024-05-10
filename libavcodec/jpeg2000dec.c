@@ -835,9 +835,6 @@ static int get_tlm(Jpeg2000DecoderContext *s, int n)
         case 2:
             bytestream2_get_be16(&s->g);
             break;
-        case 3:
-            bytestream2_get_be32(&s->g);
-            break;
         }
         if (SP == 0) {
             bytestream2_get_be16(&s->g);
