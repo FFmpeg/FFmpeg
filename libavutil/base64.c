@@ -125,10 +125,12 @@ validity_check:
     }
 
 out3:
-    *dst++ = v >> 10;
+    if (end - dst)
+        *dst++ = v >> 10;
     v <<= 2;
 out2:
-    *dst++ = v >> 4;
+    if (end - dst)
+        *dst++ = v >> 4;
 out1:
 out0:
     return bits & 1 ? AVERROR_INVALIDDATA : out ? dst - out : 0;
