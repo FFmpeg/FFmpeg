@@ -45,7 +45,7 @@ av_cold void ff_vp78dsp_init_riscv(VP8DSPContext *c)
 {
 #if HAVE_RV
     int flags = av_get_cpu_flags();
-    if (flags & AV_CPU_FLAG_RVI) {
+    if (flags & AV_CPU_FLAG_RV_MISALIGNED) {
 #if __riscv_xlen >= 64
         c->put_vp8_epel_pixels_tab[0][0][0] = ff_put_vp8_pixels16_rvi;
         c->put_vp8_epel_pixels_tab[1][0][0] = ff_put_vp8_pixels8_rvi;
