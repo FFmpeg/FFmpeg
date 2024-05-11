@@ -52,6 +52,10 @@ static int rle_uncompress(GetByteContext *gb, PutByteContext *pb, GetByteContext
 
         if (run == 0) {
             run = bytestream2_get_le32(gb);
+
+            if (bytestream2_tell_p(pb) + width - w < run)
+                return AVERROR_INVALIDDATA;
+
             for (int j = 0; j < run; j++, w++) {
                 if (w == width) {
                     w = 0;
@@ -63,6 +67,10 @@ static int rle_uncompress(GetByteContext *gb, PutByteContext *pb, GetByteContext
             int pos = bytestream2_tell_p(pb);
 
             bytestream2_seek(gbp, pos, SEEK_SET);
+
+            if (pos + width - w < fill)
+                return AVERROR_INVALIDDATA;
+
             for (int j = 0; j < fill; j++, w++) {
                 if (w == width) {
                     w = 0;
@@ -74,6 +82,9 @@ static int rle_uncompress(GetByteContext *gb, PutByteContext *pb, GetByteContext
 
             intra = 0;
         } else {
+            if (bytestream2_tell_p(pb) + width - w < run)
+                return AVERROR_INVALIDDATA;
+
             for (int j = 0; j < run; j++, w++) {
                 if (w == width) {
                     w = 0;
