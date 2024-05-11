@@ -83,9 +83,8 @@ int ff_get_cpu_flags_riscv(void)
                 break;
             default:
         }
-    } else
-#endif
-#if HAVE_GETAUXVAL
+    }
+#elif HAVE_GETAUXVAL
     {
         const unsigned long hwcap = getauxval(AT_HWCAP);
 
