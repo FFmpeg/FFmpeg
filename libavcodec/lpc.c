@@ -244,8 +244,10 @@ int ff_lpc_calc_coefs(LPCContext *s,
         double av_uninit(weight);
         memset(var, 0, FFALIGN(MAX_LPC_ORDER+1,4)*sizeof(*var));
 
-        for(j=0; j<max_order; j++)
-            m[0].coeff[max_order-1][j] = -lpc[max_order-1][j];
+        /* Avoids initializing with an unused value when lpc_passes == 1 */
+        if (lpc_passes > 1)
+            for(j=0; j<max_order; j++)
+                m[0].coeff[max_order-1][j] = -lpc[max_order-1][j];
 
         for(; pass<lpc_passes; pass++){
             avpriv_init_lls(&m[pass&1], max_order);
