@@ -58,6 +58,7 @@ static void check_lpc(int pred_order)
 {
     int qlevel = rnd() % 16;
     LOCAL_ALIGNED_16(int32_t, coeffs, [32]);
+    LOCAL_ALIGNED_16(int32_t, dst,  [BUF_SIZE]);
     LOCAL_ALIGNED_16(int32_t, dst0, [BUF_SIZE]);
     LOCAL_ALIGNED_16(int32_t, dst1, [BUF_SIZE]);
 
@@ -66,14 +67,15 @@ static void check_lpc(int pred_order)
     for (int i = 0; i < 32; i++)
         coeffs[i] = rnd();
     for (int i = 0; i < BUF_SIZE; i++)
-        dst0[i] = rnd();
+        dst[i] = rnd();
 
-    memcpy(dst1, dst0, BUF_SIZE * sizeof (int32_t));
+    memcpy(dst0, dst, BUF_SIZE * sizeof (int32_t));
+    memcpy(dst1, dst, BUF_SIZE * sizeof (int32_t));
     call_ref(dst0, coeffs, pred_order, qlevel, BUF_SIZE);
     call_new(dst1, coeffs, pred_order, qlevel, BUF_SIZE);
     if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int32_t)) != 0)
        fail();
-    bench_new(dst1, coeffs, pred_order, qlevel, BUF_SIZE);
+    bench_new(dst, coeffs, pred_order, qlevel, BUF_SIZE);
 }
 
 void checkasm_check_flacdsp(void)
