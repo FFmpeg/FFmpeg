@@ -64,6 +64,16 @@ static int test_encode_decode(const uint8_t *data, unsigned int data_size,
         printf("Failed: decode to NULL buffer\n");
         return 1;
     }
+    if (data_size > 0 && (data2_size = av_base64_decode(data2, encoded, data_size - 1)) != data_size - 1) {
+        printf("Failed: out of array write\n"
+               "Encoded:\n%s\n", encoded);
+        return 1;
+    }
+    if (data_size > 1 && (data2_size = av_base64_decode(data2, encoded, data_size - 2)) != data_size - 2) {
+        printf("Failed: out of array write\n"
+               "Encoded:\n%s\n", encoded);
+        return 1;
+    }
     if (strlen(encoded)) {
         char *end = strchr(encoded, '=');
         if (!end)
