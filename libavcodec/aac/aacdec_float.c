@@ -79,6 +79,11 @@ static const float cce_scale[] = {
 #include "aacdec_tab.h"
 #include "libavutil/intfloat.h"
 
+#include "config.h"
+#if ARCH_ARM
+#include "libavcodec/arm/aac.h"
+#endif
+
 #ifndef VMUL2
 static inline float *VMUL2(float *dst, const float *v, unsigned idx,
                            const float *scale)
