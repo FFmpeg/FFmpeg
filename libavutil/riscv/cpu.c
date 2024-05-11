@@ -52,6 +52,7 @@ int ff_get_cpu_flags_riscv(void)
     struct riscv_hwprobe pairs[] = {
         { RISCV_HWPROBE_KEY_BASE_BEHAVIOR, 0 },
         { RISCV_HWPROBE_KEY_IMA_EXT_0, 0 },
+        { RISCV_HWPROBE_KEY_CPUPERF_0, 0 },
     };
 
     if (__riscv_hwprobe(pairs, FF_ARRAY_ELEMS(pairs), 0, NULL, 0) == 0) {
@@ -76,6 +77,8 @@ int ff_get_cpu_flags_riscv(void)
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZVBB)
             ret |= AV_CPU_FLAG_RV_ZVBB;
 #endif
+        if (pairs[2].value & RISCV_HWPROBE_MISALIGNED_FAST)
+            ret |= AV_CPU_FLAG_RV_MISALIGNED;
     } else
 #endif
 #if HAVE_GETAUXVAL
