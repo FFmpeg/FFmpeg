@@ -202,6 +202,8 @@ static int rpl_read_header(AVFormatContext *s)
         ast->codecpar->codec_type      = AVMEDIA_TYPE_AUDIO;
         ast->codecpar->codec_tag       = audio_format;
         ast->codecpar->sample_rate     = read_line_and_int(pb, &error);  // audio bitrate
+        if (ast->codecpar->sample_rate < 0)
+            return AVERROR_INVALIDDATA;
         channels                       = read_line_and_int(pb, &error);  // number of audio channels
         error |= read_line(pb, line, sizeof(line));
         ast->codecpar->bits_per_coded_sample = read_int(line, &endptr, &error);  // audio bits per sample
