@@ -341,6 +341,8 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
         ctx->sprite_shift[0]  = alpha + beta + rho - min_ab;
         ctx->sprite_shift[1]  = alpha + beta + rho - min_ab + 2;
         break;
+    default:
+        av_assert0(0);
     }
     /* try to simplify the situation */
     if (sprite_delta[0][0] == a << ctx->sprite_shift[0] &&
