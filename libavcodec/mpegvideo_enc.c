@@ -1433,7 +1433,7 @@ static int estimate_best_b_count(MpegEncContext *s)
                 goto fail;
             }
 
-            rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
+            rd += (out_size * (uint64_t)lambda2) >> (FF_LAMBDA_SHIFT - 3);
         }
 
         /* get the delayed frames */
@@ -1442,7 +1442,7 @@ static int estimate_best_b_count(MpegEncContext *s)
             ret = out_size;
             goto fail;
         }
-        rd += (out_size * lambda2) >> (FF_LAMBDA_SHIFT - 3);
+        rd += (out_size * (uint64_t)lambda2) >> (FF_LAMBDA_SHIFT - 3);
 
         rd += c->error[0] + c->error[1] + c->error[2];
 
