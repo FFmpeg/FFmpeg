@@ -115,6 +115,38 @@ func ff_flac_wasted32_rvv, zve32x
         ret
 endfunc
 
+func ff_flac_wasted33_rvv, zve64x
+        srli         t0, a2, 5
+        li           t1, 1
+        bnez         t0, 2f
+        sll          a2, t1, a2
+1:
+        vsetvli      t0, a3, e32, m4, ta, ma
+        vle32.v      v8, (a1)
+        sub          a3, a3, t0
+        vwmulsu.vx   v16, v8, a2
+        sh2add       a1, t0, a1
+        vse64.v      v16, (a0)
+        sh3add       a0, t0, a0
+        bnez         a3, 1b
+
+        ret
+
+2:      // Pessimistic case: wasted >= 32
+        vsetvli      t0, a3, e32, m4, ta, ma
+        vle32.v      v8, (a1)
+        sub          a3, a3, t0
+        vwcvtu.x.x.v v16, v8
+        sh2add       a1, t0, a1
+        vsetvli      zero, zero, e64, m8, ta, ma
+        vsll.vx      v16, v16, a2
+        vse64.v      v16, (a0)
+        sh3add       a0, t0, a0
+        bnez         a3, 2b
+
+        ret
+endfunc
+
 #if (__riscv_xlen == 64)
 func ff_flac_decorrelate_indep2_16_rvv, zve32x
         ld      a0,  (a0)

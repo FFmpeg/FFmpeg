@@ -32,6 +32,7 @@ void ff_flac_lpc32_rvv(int32_t *decoded, const int coeffs[32],
 void ff_flac_lpc32_rvv_simple(int32_t *decoded, const int coeffs[32],
                               int pred_order, int qlevel, int len);
 void ff_flac_wasted32_rvv(int32_t *, int shift, int len);
+void ff_flac_wasted33_rvv(int64_t *, const int32_t *, int shift, int len);
 void ff_flac_decorrelate_indep2_16_rvv(uint8_t **out, int32_t **in,
                                        int channels, int len, int shift);
 void ff_flac_decorrelate_indep4_16_rvv(uint8_t **out, int32_t **in,
@@ -83,6 +84,9 @@ av_cold void ff_flacdsp_init_riscv(FLACDSPContext *c, enum AVSampleFormat fmt,
 # endif
 
         c->wasted32 = ff_flac_wasted32_rvv;
+
+        if (flags & AV_CPU_FLAG_RVV_I64)
+            c->wasted33 = ff_flac_wasted33_rvv;
 
 # if (__riscv_xlen >= 64)
         switch (fmt) {
