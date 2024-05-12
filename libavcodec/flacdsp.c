@@ -84,6 +84,20 @@ static void flac_lpc_32_c(int32_t *decoded, const int coeffs[32],
 
 }
 
+static void flac_lpc_33_c(int64_t *decoded, const int32_t *residual,
+                          const int coeffs[32], int pred_order,
+                          int qlevel, int len)
+{
+    int i, j;
+
+    for (i = pred_order; i < len; i++, decoded++) {
+        int64_t sum = 0;
+        for (j = 0; j < pred_order; j++)
+            sum += (int64_t)coeffs[j] * (uint64_t)decoded[j];
+        decoded[j] = residual[i] + (sum >> qlevel);
+    }
+}
+
 static void flac_wasted_32_c(int32_t *decoded, int wasted, int len)
 {
     for (int i = 0; i < len; i++)
@@ -101,6 +115,7 @@ av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int cha
 {
     c->lpc16        = flac_lpc_16_c;
     c->lpc32        = flac_lpc_32_c;
+    c->lpc33        = flac_lpc_33_c;
 
     c->wasted32     = flac_wasted_32_c;
     c->wasted33     = flac_wasted_33_c;
