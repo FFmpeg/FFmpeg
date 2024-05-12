@@ -38,9 +38,9 @@ SECTION .text
 %endif
 %endmacro
 
-%macro LPC_32 1
+%macro LPC_32 3
 INIT_XMM %1
-cglobal flac_lpc_32, 5,6,5, decoded, coeffs, pred_order, qlevel, len, j
+cglobal flac_lpc_%2, 5,6,5, decoded, coeffs, pred_order, qlevel, len, j
     sub    lend, pred_orderd
     jle .ret
     movsxdifnidn pred_orderq, pred_orderd
@@ -67,14 +67,14 @@ ALIGN 16
     jl .loop_order
 .end_order:
     PMACSDQL m2, m0, m1, m2, m0
-    psrlq  m2, m4
+    %3     m2, m4
     movd   m0, [decodedq]
     paddd  m0, m2
     movd   [decodedq], m0
     sub  lend, 2
     jl .ret
     PMACSDQL m3, m1, m0, m3, m1
-    psrlq  m3, m4
+    %3     m3, m4
     movd   m1, [decodedq+4]
     paddd  m1, m3
     movd   [decodedq+4], m1
@@ -83,10 +83,11 @@ ALIGN 16
     RET
 %endmacro
 
+LPC_32 sse4, 16, psrad
+LPC_32 sse4, 32, psrlq
 %if HAVE_XOP_EXTERNAL
-LPC_32 xop
+LPC_32 xop,  32, psrlq
 %endif
-LPC_32 sse4
 
 ;----------------------------------------------------------------------------------
 ;void ff_flac_decorrelate_[lrm]s_16_sse2(uint8_t **out, int32_t **in, int channels,
