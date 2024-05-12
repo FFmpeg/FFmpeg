@@ -329,6 +329,14 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
         s->ildct_cmp[1] = me_cmp[4];
     }
 
+    if (avctx->mb_cmp == FF_CMP_NSSE) {
+        s->n_sse_cmp[0] = s->mecc.nsse[0];
+        s->n_sse_cmp[1] = s->mecc.nsse[1];
+    } else {
+        s->n_sse_cmp[0] = s->mecc.sse[0];
+        s->n_sse_cmp[1] = s->mecc.sse[1];
+    }
+
     return 0;
 }
 
@@ -2664,21 +2672,12 @@ static int sse_mb(MpegEncContext *s){
     if(s->mb_y*16 + 16 > s->height) h= s->height- s->mb_y*16;
 
     if(w==16 && h==16)
-      if(s->avctx->mb_cmp == FF_CMP_NSSE){
-        return s->mecc.nsse[0](s, s->new_pic->data[0] + s->mb_x * 16 + s->mb_y * s->linesize * 16,
+        return s->n_sse_cmp[0](s, s->new_pic->data[0] + s->mb_x * 16 + s->mb_y * s->linesize * 16,
                                s->dest[0], s->linesize, 16) +
-               s->mecc.nsse[1](s, s->new_pic->data[1] + s->mb_x * chroma_mb_w + s->mb_y * s->uvlinesize * chroma_mb_h,
+               s->n_sse_cmp[1](s, s->new_pic->data[1] + s->mb_x * chroma_mb_w + s->mb_y * s->uvlinesize * chroma_mb_h,
                                s->dest[1], s->uvlinesize, chroma_mb_h) +
-               s->mecc.nsse[1](s, s->new_pic->data[2] + s->mb_x * chroma_mb_w + s->mb_y * s->uvlinesize * chroma_mb_h,
+               s->n_sse_cmp[1](s, s->new_pic->data[2] + s->mb_x * chroma_mb_w + s->mb_y * s->uvlinesize * chroma_mb_h,
                                s->dest[2], s->uvlinesize, chroma_mb_h);
-      }else{
-        return s->mecc.sse[0](NULL, s->new_pic->data[0] + s->mb_x * 16 + s->mb_y * s->linesize * 16,
-                              s->dest[0], s->linesize, 16) +
-               s->mecc.sse[1](NULL, s->new_pic->data[1] + s->mb_x * chroma_mb_w + s->mb_y * s->uvlinesize * chroma_mb_h,
-                              s->dest[1], s->uvlinesize, chroma_mb_h) +
-               s->mecc.sse[1](NULL, s->new_pic->data[2] + s->mb_x * chroma_mb_w + s->mb_y * s->uvlinesize * chroma_mb_h,
-                              s->dest[2], s->uvlinesize, chroma_mb_h);
-      }
     else
         return  sse(s, s->new_pic->data[0] + s->mb_x * 16 + s->mb_y * s->linesize * 16,
                     s->dest[0], w, h, s->linesize) +

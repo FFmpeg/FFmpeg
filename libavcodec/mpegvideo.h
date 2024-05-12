@@ -507,6 +507,7 @@ typedef struct MpegEncContext {
     int quantizer_noise_shaping;
 
     me_cmp_func ildct_cmp[2]; ///< 0 = intra, 1 = non-intra
+    me_cmp_func n_sse_cmp[2]; ///< either SSE or NSSE cmp func
 
     /**
      * ratecontrol qmin qmax limiting method
