@@ -100,7 +100,22 @@ func ff_flac_lpc32_rvv_simple, zve64x
 
         ret
 endfunc
+#endif
 
+func ff_flac_wasted32_rvv, zve32x
+1:
+        vsetvli t0, a2, e32, m8, ta, ma
+        vle32.v v8, (a0)
+        sub     a2, a2, t0
+        vsll.vx v8, v8, a1
+        vse32.v v8, (a0)
+        sh2add  a0, t0, a0
+        bnez    a2, 1b
+
+        ret
+endfunc
+
+#if (__riscv_xlen == 64)
 func ff_flac_decorrelate_indep2_16_rvv, zve32x
         ld      a0,  (a0)
         ld      a2, 8(a1)
