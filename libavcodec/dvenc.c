@@ -96,15 +96,16 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 
     if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
         MECmpContext mecc;
+        me_cmp_func ildct_cmp[6];
 
         memset(&mecc,0, sizeof(mecc));
         ff_me_cmp_init(&mecc, avctx);
-        ret = ff_set_cmp(&mecc, mecc.ildct_cmp, avctx->ildct_cmp);
+        ret = ff_set_cmp(&mecc, ildct_cmp, avctx->ildct_cmp);
         if (ret < 0)
             return ret;
-        if (!mecc.ildct_cmp[5])
+        if (!ildct_cmp[5])
             return AVERROR(EINVAL);
-        s->ildct_cmp = mecc.ildct_cmp[5];
+        s->ildct_cmp = ildct_cmp[5];
     }
 
     memset(&fdsp,0, sizeof(fdsp));

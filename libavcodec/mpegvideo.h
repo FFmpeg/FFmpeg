@@ -506,6 +506,8 @@ typedef struct MpegEncContext {
     int mpv_flags;      ///< flags set by private options
     int quantizer_noise_shaping;
 
+    me_cmp_func ildct_cmp[2]; ///< 0 = intra, 1 = non-intra
+
     /**
      * ratecontrol qmin qmax limiting method
      * 0-> clipping, 1-> use a nice continuous function to limit qscale within qmin/qmax.

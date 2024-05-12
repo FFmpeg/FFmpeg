@@ -70,8 +70,6 @@ typedef struct MECmpContext {
     me_cmp_func dct_max[6];
     me_cmp_func dct264_sad[6];
 
-    me_cmp_func ildct_cmp[6]; // only width 16 used
-
     me_cmp_func pix_abs[2][4];
     me_cmp_func median_sad[6];
 } MECmpContext;

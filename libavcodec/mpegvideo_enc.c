@@ -319,6 +319,15 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
     if (ret < 0)
         return ret;
     s->frame_skip_cmp_fn = me_cmp[1];
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        ret = ff_set_cmp(&s->mecc, me_cmp, avctx->ildct_cmp);
+        if (ret < 0)
+            return ret;
+        if (!me_cmp[0] || !me_cmp[4])
+            return AVERROR(EINVAL);
+        s->ildct_cmp[0] = me_cmp[0];
+        s->ildct_cmp[1] = me_cmp[4];
+    }
 
     return 0;
 }
@@ -928,14 +937,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     }
 
     s->quant_precision = 5;
-
-    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
-        ret = ff_set_cmp(&s->mecc, s->mecc.ildct_cmp, avctx->ildct_cmp);
-        if (ret < 0)
-            return ret;
-        if (!s->mecc.ildct_cmp[0] || !s->mecc.ildct_cmp[4])
-            return AVERROR(EINVAL);
-    }
 
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(s);
@@ -2209,15 +2210,15 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             int progressive_score, interlaced_score;
 
             s->interlaced_dct = 0;
-            progressive_score = s->mecc.ildct_cmp[4](s, ptr_y, NULL, wrap_y, 8) +
-                                s->mecc.ildct_cmp[4](s, ptr_y + wrap_y * 8,
-                                                     NULL, wrap_y, 8) - 400;
+            progressive_score = s->ildct_cmp[1](s, ptr_y, NULL, wrap_y, 8) +
+                                s->ildct_cmp[1](s, ptr_y + wrap_y * 8,
+                                                NULL, wrap_y, 8) - 400;
 
             if (progressive_score > 0) {
-                interlaced_score = s->mecc.ildct_cmp[4](s, ptr_y,
-                                                        NULL, wrap_y * 2, 8) +
-                                   s->mecc.ildct_cmp[4](s, ptr_y + wrap_y,
-                                                        NULL, wrap_y * 2, 8);
+                interlaced_score = s->ildct_cmp[1](s, ptr_y,
+                                                   NULL, wrap_y * 2, 8) +
+                                   s->ildct_cmp[1](s, ptr_y + wrap_y,
+                                                   NULL, wrap_y * 2, 8);
                 if (progressive_score > interlaced_score) {
                     s->interlaced_dct = 1;
 
@@ -2288,20 +2289,20 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
             int progressive_score, interlaced_score;
 
             s->interlaced_dct = 0;
-            progressive_score = s->mecc.ildct_cmp[0](s, dest_y, ptr_y, wrap_y, 8) +
-                                s->mecc.ildct_cmp[0](s, dest_y + wrap_y * 8,
-                                                     ptr_y + wrap_y * 8,
-                                                     wrap_y, 8) - 400;
+            progressive_score = s->ildct_cmp[0](s, dest_y, ptr_y, wrap_y, 8) +
+                                s->ildct_cmp[0](s, dest_y + wrap_y * 8,
+                                                ptr_y + wrap_y * 8,
+                                                wrap_y, 8) - 400;
 
             if (s->avctx->ildct_cmp == FF_CMP_VSSE)
                 progressive_score -= 400;
 
             if (progressive_score > 0) {
-                interlaced_score = s->mecc.ildct_cmp[0](s, dest_y, ptr_y,
-                                                        wrap_y * 2, 8) +
-                                   s->mecc.ildct_cmp[0](s, dest_y + wrap_y,
-                                                        ptr_y + wrap_y,
-                                                        wrap_y * 2, 8);
+                interlaced_score = s->ildct_cmp[0](s, dest_y, ptr_y,
+                                                   wrap_y * 2, 8) +
+                                   s->ildct_cmp[0](s, dest_y + wrap_y,
+                                                   ptr_y + wrap_y,
+                                                   wrap_y * 2, 8);
 
                 if (progressive_score > interlaced_score) {
                     s->interlaced_dct = 1;
