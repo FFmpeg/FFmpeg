@@ -27,6 +27,7 @@
 #include "libavcodec/h264dsp.h"
 
 extern int ff_startcode_find_candidate_rvb(const uint8_t *, int);
+extern int ff_startcode_find_candidate_rvv(const uint8_t *, int);
 
 av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
                                    const int chroma_format_idc)
@@ -36,5 +37,9 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
 
     if (flags & AV_CPU_FLAG_RVB_BASIC)
         dsp->startcode_find_candidate = ff_startcode_find_candidate_rvb;
+# if HAVE_RVV
+    if (flags & AV_CPU_FLAG_RVV_I32)
+        dsp->startcode_find_candidate = ff_startcode_find_candidate_rvv;
+# endif
 #endif
 }

@@ -53,6 +53,7 @@ RVV-OBJS-$(CONFIG_RV34DSP) += riscv/rv34dsp_rvv.o
 OBJS-$(CONFIG_RV40_DECODER) += riscv/rv40dsp_init.o
 RVV-OBJS-$(CONFIG_RV40_DECODER) += riscv/rv40dsp_rvv.o
 RV-OBJS-$(CONFIG_STARTCODE) += riscv/startcode_rvb.o
+RVV-OBJS-$(CONFIG_STARTCODE) += riscv/startcode_rvv.o
 OBJS-$(CONFIG_SVQ1_ENCODER) += riscv/svqenc_init.o
 RVV-OBJS-$(CONFIG_SVQ1_ENCODER) += riscv/svqenc_rvv.o
 OBJS-$(CONFIG_TAK_DECODER) += riscv/takdsp_init.o

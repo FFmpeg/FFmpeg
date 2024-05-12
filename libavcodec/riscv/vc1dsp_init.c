@@ -34,6 +34,7 @@ void ff_put_pixels8x8_rvi(uint8_t *dst, const uint8_t *src, ptrdiff_t line_size,
 void ff_avg_pixels16x16_rvv(uint8_t *dst, const uint8_t *src, ptrdiff_t line_size, int rnd);
 void ff_avg_pixels8x8_rvv(uint8_t *dst, const uint8_t *src, ptrdiff_t line_size, int rnd);
 int ff_startcode_find_candidate_rvb(const uint8_t *, int);
+int ff_startcode_find_candidate_rvv(const uint8_t *, int);
 
 av_cold void ff_vc1dsp_init_riscv(VC1DSPContext *dsp)
 {
@@ -49,15 +50,18 @@ av_cold void ff_vc1dsp_init_riscv(VC1DSPContext *dsp)
     if (flags & AV_CPU_FLAG_RVB_BASIC)
         dsp->startcode_find_candidate = ff_startcode_find_candidate_rvb;
 # if HAVE_RVV
-    if (flags & AV_CPU_FLAG_RVV_I32 && ff_rv_vlen_least(128)) {
-        dsp->vc1_inv_trans_4x8_dc = ff_vc1_inv_trans_4x8_dc_rvv;
-        dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_rvv;
-        dsp->avg_vc1_mspel_pixels_tab[0][0] = ff_avg_pixels16x16_rvv;
-        if (flags & AV_CPU_FLAG_RVV_I64) {
-            dsp->vc1_inv_trans_8x8_dc = ff_vc1_inv_trans_8x8_dc_rvv;
-            dsp->vc1_inv_trans_8x4_dc = ff_vc1_inv_trans_8x4_dc_rvv;
-            dsp->avg_vc1_mspel_pixels_tab[1][0] = ff_avg_pixels8x8_rvv;
+    if (flags & AV_CPU_FLAG_RVV_I32) {
+        if (ff_rv_vlen_least(128)) {
+            dsp->vc1_inv_trans_4x8_dc = ff_vc1_inv_trans_4x8_dc_rvv;
+            dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_rvv;
+            dsp->avg_vc1_mspel_pixels_tab[0][0] = ff_avg_pixels16x16_rvv;
+            if (flags & AV_CPU_FLAG_RVV_I64) {
+                dsp->vc1_inv_trans_8x8_dc = ff_vc1_inv_trans_8x8_dc_rvv;
+                dsp->vc1_inv_trans_8x4_dc = ff_vc1_inv_trans_8x4_dc_rvv;
+                dsp->avg_vc1_mspel_pixels_tab[1][0] = ff_avg_pixels8x8_rvv;
+            }
         }
+        dsp->startcode_find_candidate = ff_startcode_find_candidate_rvv;
     }
 # endif
 #endif
