@@ -305,7 +305,7 @@ static int zero_cmp(MpegEncContext *s, const uint8_t *a, const uint8_t *b,
 static void zero_hpel(uint8_t *a, const uint8_t *b, ptrdiff_t stride, int h){
 }
 
-av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx, MECmpContext *mecc)
+av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx, const MECmpContext *mecc)
 {
     int cache_size = FFMIN(ME_MAP_SIZE>>ME_MAP_SHIFT, 1<<ME_MAP_SHIFT);
     int dia_size   = FFMAX(FFABS(avctx->dia_size) & 255, FFABS(avctx->pre_dia_size) & 255);
@@ -324,10 +324,10 @@ av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx, MECmpContext 
     if (cache_size < 2 * dia_size)
         av_log(avctx, AV_LOG_INFO, "ME_MAP size may be a little small for the selected diamond size\n");
 
-    ret  = ff_set_cmp(mecc, mecc->me_pre_cmp, avctx->me_pre_cmp);
-    ret |= ff_set_cmp(mecc, mecc->me_cmp,     avctx->me_cmp);
-    ret |= ff_set_cmp(mecc, mecc->me_sub_cmp, avctx->me_sub_cmp);
-    ret |= ff_set_cmp(mecc, mecc->mb_cmp,     avctx->mb_cmp);
+    ret  = ff_set_cmp(mecc, c->me_pre_cmp, avctx->me_pre_cmp);
+    ret |= ff_set_cmp(mecc, c->me_cmp,     avctx->me_cmp);
+    ret |= ff_set_cmp(mecc, c->me_sub_cmp, avctx->me_sub_cmp);
+    ret |= ff_set_cmp(mecc, c->mb_cmp,     avctx->mb_cmp);
     if (ret < 0)
         return ret;
 
@@ -354,10 +354,10 @@ av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx, MECmpContext 
      * not have yet, and even if we had, the motion estimation code
      * does not expect it. */
     if (avctx->codec_id != AV_CODEC_ID_SNOW) {
-        if ((avctx->me_cmp & FF_CMP_CHROMA) /* && !s->mecc.me_cmp[2] */)
-            mecc->me_cmp[2] = zero_cmp;
-        if ((avctx->me_sub_cmp & FF_CMP_CHROMA) && !mecc->me_sub_cmp[2])
-            mecc->me_sub_cmp[2] = zero_cmp;
+        if ((avctx->me_cmp & FF_CMP_CHROMA) /* && !c->me_cmp[2] */)
+            c->me_cmp[2] = zero_cmp;
+        if ((avctx->me_sub_cmp & FF_CMP_CHROMA) && !c->me_sub_cmp[2])
+            c->me_sub_cmp[2] = zero_cmp;
     }
 
     return 0;
@@ -649,7 +649,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
 
         dmin4= c->sub_motion_search(s, &mx4, &my4, dmin4, block, block, size, h);
 
-        if (s->mecc.me_sub_cmp[0] != s->mecc.mb_cmp[0]) {
+        if (c->me_sub_cmp[0] != c->mb_cmp[0]) {
             int dxy;
             const int offset= ((block&1) + (block>>1)*stride)*8;
             uint8_t *dest_y = c->scratchpad + offset;
@@ -691,11 +691,11 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
     if(same)
         return INT_MAX;
 
-    if (s->mecc.me_sub_cmp[0] != s->mecc.mb_cmp[0]) {
-        dmin_sum += s->mecc.mb_cmp[0](s,
-                                      s->new_pic->data[0] +
-                                      s->mb_x * 16 + s->mb_y * 16 * stride,
-                                      c->scratchpad, stride, 16);
+    if (c->me_sub_cmp[0] != c->mb_cmp[0]) {
+        dmin_sum += c->mb_cmp[0](s,
+                                 s->new_pic->data[0] +
+                                 s->mb_x * 16 + s->mb_y * 16 * stride,
+                                 c->scratchpad, stride, 16);
     }
 
     if(c->avctx->mb_cmp&FF_CMP_CHROMA){
@@ -717,8 +717,8 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
             s->hdsp.put_pixels_tab       [1][dxy](c->scratchpad + 8, s->last_pic.data[2] + offset, s->uvlinesize, 8);
         }
 
-        dmin_sum += s->mecc.mb_cmp[1](s, s->new_pic->data[1] + s->mb_x * 8 + s->mb_y * 8 * s->uvlinesize, c->scratchpad,     s->uvlinesize, 8);
-        dmin_sum += s->mecc.mb_cmp[1](s, s->new_pic->data[2] + s->mb_x * 8 + s->mb_y * 8 * s->uvlinesize, c->scratchpad + 8, s->uvlinesize, 8);
+        dmin_sum += c->mb_cmp[1](s, s->new_pic->data[1] + s->mb_x * 8 + s->mb_y * 8 * s->uvlinesize, c->scratchpad,     s->uvlinesize, 8);
+        dmin_sum += c->mb_cmp[1](s, s->new_pic->data[2] + s->mb_x * 8 + s->mb_y * 8 * s->uvlinesize, c->scratchpad + 8, s->uvlinesize, 8);
     }
 
     c->pred_x= mx;
@@ -814,7 +814,7 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
             mv_table[xy][0]= mx_i;
             mv_table[xy][1]= my_i;
 
-            if (s->mecc.me_sub_cmp[0] != s->mecc.mb_cmp[0]) {
+            if (c->me_sub_cmp[0] != c->mb_cmp[0]) {
                 int dxy;
 
                 //FIXME chroma ME
@@ -826,7 +826,7 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
                 }else{
                     s->hdsp.put_pixels_tab       [size][dxy](c->scratchpad, ref    , stride, h);
                 }
-                dmin = s->mecc.mb_cmp[size](s, c->src[block][0], c->scratchpad, stride, h);
+                dmin = c->mb_cmp[size](s, c->src[block][0], c->scratchpad, stride, h);
                 dmin+= (mv_penalty[mx_i-c->pred_x] + mv_penalty[my_i-c->pred_y] + 1)*c->mb_penalty_factor;
             }else
                 dmin+= c->mb_penalty_factor; //field_select bits
@@ -1049,7 +1049,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
                 *(uint32_t*)(&c->scratchpad[i*s->linesize+12]) = mean;
             }
 
-            intra_score= s->mecc.mb_cmp[0](s, c->scratchpad, pix, s->linesize, 16);
+            intra_score= c->mb_cmp[0](s, c->scratchpad, pix, s->linesize, 16);
         }
         intra_score += c->mb_penalty_factor*16 + s->intra_penalty;
 
@@ -1236,7 +1236,7 @@ static inline int check_bidir_mv(MpegEncContext * s,
 
     fbmin = (mv_penalty_f[motion_fx-pred_fx] + mv_penalty_f[motion_fy-pred_fy])*c->mb_penalty_factor
            +(mv_penalty_b[motion_bx-pred_bx] + mv_penalty_b[motion_by-pred_by])*c->mb_penalty_factor
-           + s->mecc.mb_cmp[size](s, src_data[0], dest_y, stride, h); // FIXME new_pic
+           + c->mb_cmp[size](s, src_data[0], dest_y, stride, h); // FIXME new_pic
 
     if(c->avctx->mb_cmp&FF_CMP_CHROMA){
     }

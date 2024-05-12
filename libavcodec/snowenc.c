@@ -832,12 +832,12 @@ static int get_block_rd(SnowEncContext *enc, int mb_x, int mb_y,
             distortion = 0;
             for(i=0; i<4; i++){
                 int off = sx+16*(i&1) + (sy+16*(i>>1))*ref_stride;
-                distortion += enc->mecc.me_cmp[0](&enc->m, src + off, dst + off, ref_stride, 16);
+                distortion += enc->m.me.me_cmp[0](&enc->m, src + off, dst + off, ref_stride, 16);
             }
         }
     }else{
         av_assert2(block_w==8);
-        distortion = enc->mecc.me_cmp[0](&enc->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
+        distortion = enc->m.me.me_cmp[0](&enc->m, src + sx + sy*ref_stride, dst + sx + sy*ref_stride, ref_stride, block_w*2);
     }
 
     if(plane_index==0){
@@ -903,7 +903,7 @@ static int get_4block_rd(SnowEncContext *enc, int mb_x, int mb_y, int plane_inde
         }
 
         av_assert1(block_w== 8 || block_w==16);
-        distortion += enc->mecc.me_cmp[block_w==8](&enc->m, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
+        distortion += enc->m.me.me_cmp[block_w==8](&enc->m, src + x + y*ref_stride, dst + x + y*ref_stride, ref_stride, block_h);
     }
 
     if(plane_index==0){

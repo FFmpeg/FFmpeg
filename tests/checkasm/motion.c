@@ -94,10 +94,6 @@ static void test_motion(const char *name, me_cmp_func test_func)
     XX(vsad)                                                                   \
     XX(vsse)                                                                   \
     XX(nsse)                                                                   \
-    XX(me_pre_cmp)                                                             \
-    XX(me_cmp)                                                                 \
-    XX(me_sub_cmp)                                                             \
-    XX(mb_cmp)                                                                 \
     XX(ildct_cmp)                                                              \
     XX(frame_skip_cmp)                                                         \
     XX(median_sad)

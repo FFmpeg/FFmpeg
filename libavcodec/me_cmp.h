@@ -70,10 +70,6 @@ typedef struct MECmpContext {
     me_cmp_func dct_max[6];
     me_cmp_func dct264_sad[6];
 
-    me_cmp_func me_pre_cmp[6];
-    me_cmp_func me_cmp[6];
-    me_cmp_func me_sub_cmp[6];
-    me_cmp_func mb_cmp[6];
     me_cmp_func ildct_cmp[6]; // only width 16 used
     me_cmp_func frame_skip_cmp[6]; // only width 8 used
 

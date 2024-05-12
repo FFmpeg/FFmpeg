@@ -84,6 +84,11 @@ typedef struct MotionEstContext {
     int64_t mb_var_sum_temp;
     int scene_change_score;
 
+    me_cmp_func me_pre_cmp[6];
+    me_cmp_func me_cmp[6];
+    me_cmp_func me_sub_cmp[6];
+    me_cmp_func mb_cmp[6];
+
     op_pixels_func(*hpel_put)[4];
     op_pixels_func(*hpel_avg)[4];
     qpel_mc_func(*qpel_put)[16];
@@ -110,7 +115,7 @@ static inline int ff_h263_round_chroma(int x)
  * Performs one-time initialization of the MotionEstContext.
  */
 int ff_me_init(MotionEstContext *c, struct AVCodecContext *avctx,
-               struct MECmpContext *mecc);
+               const struct MECmpContext *mecc);
 
 void ff_me_init_pic(struct MpegEncContext *s);
 
