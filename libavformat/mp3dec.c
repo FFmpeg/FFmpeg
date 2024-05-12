@@ -415,8 +415,8 @@ static int mp3_read_header(AVFormatContext *s)
             if (ret >= 0 && (header & MP3_MASK) == (header2 & MP3_MASK))
                 break;
         } else if (frame_size == CHECK_SEEK_FAILED) {
-            av_log(s, AV_LOG_ERROR, "Failed to read frame size: Could not seek to %"PRId64".\n", (int64_t) (i + 1024 + frame_size + 4));
-            return AVERROR(EINVAL);
+            av_log(s, AV_LOG_ERROR, "Failed to find two consecutive MPEG audio frames.\n");
+            return AVERROR_INVALIDDATA;
         }
     }
     if (i == 64 * 1024) {
