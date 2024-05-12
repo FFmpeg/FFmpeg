@@ -412,14 +412,8 @@ static int mp3_read_header(AVFormatContext *s)
         frame_size = check(s->pb, off + i, &header);
         if (frame_size > 0) {
             ret = check(s->pb, off + i + frame_size, &header2);
-            if (ret >= 0 &&
-                (header & MP3_MASK) == (header2 & MP3_MASK))
-            {
+            if (ret >= 0 && (header & MP3_MASK) == (header2 & MP3_MASK))
                 break;
-            } else if (ret == CHECK_SEEK_FAILED) {
-                av_log(s, AV_LOG_ERROR, "Invalid frame size (%d): Could not seek to %"PRId64".\n", frame_size, off + i + frame_size);
-                return AVERROR(EINVAL);
-            }
         } else if (frame_size == CHECK_SEEK_FAILED) {
             av_log(s, AV_LOG_ERROR, "Failed to read frame size: Could not seek to %"PRId64".\n", (int64_t) (i + 1024 + frame_size + 4));
             return AVERROR(EINVAL);
