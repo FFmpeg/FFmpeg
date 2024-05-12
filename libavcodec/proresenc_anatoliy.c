@@ -884,7 +884,8 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
             avctx->profile = AV_PROFILE_PRORES_4444;
             av_log(avctx, AV_LOG_INFO,
                    "encoding with ProRes 4444+ (ap4h) profile\n");
-        }
+        } else
+            av_assert0(0);
     } else if (avctx->profile < AV_PROFILE_PRORES_PROXY
             || avctx->profile > AV_PROFILE_PRORES_XQ) {
         av_log(
