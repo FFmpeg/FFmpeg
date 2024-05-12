@@ -83,6 +83,27 @@ static void check_lpc(int pred_order, int bps)
     bench_new(dst, coeffs, pred_order, qlevel, BUF_SIZE);
 }
 
+static void check_wasted32(void)
+{
+    int wasted = rnd() % 32;
+    LOCAL_ALIGNED_16(int32_t, dst,  [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int32_t, dst0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int32_t, dst1, [BUF_SIZE]);
+
+    declare_func(void, int32_t *, int, int);
+
+    for (int i = 0; i < BUF_SIZE; i++)
+        dst[i] = rnd();
+
+    memcpy(dst0, dst, BUF_SIZE * sizeof (int32_t));
+    memcpy(dst1, dst, BUF_SIZE * sizeof (int32_t));
+    call_ref(dst0, wasted, BUF_SIZE);
+    call_new(dst1, wasted, BUF_SIZE);
+    if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int32_t)) != 0)
+       fail();
+    bench_new(dst, wasted, BUF_SIZE);
+}
+
 void checkasm_check_flacdsp(void)
 {
     LOCAL_ALIGNED_16(uint8_t, ref_dst, [BUF_SIZE*MAX_CHANNELS]);
@@ -127,4 +148,9 @@ void checkasm_check_flacdsp(void)
             check_lpc(pred_orders[i], 32);
 
     report("lpc");
+
+    if (check_func(h.wasted32, "flac_wasted_32"))
+        check_wasted32();
+
+    report("wasted");
 }
