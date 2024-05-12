@@ -113,6 +113,31 @@ ALIGN 16
     jl .loop
     RET
 
+INIT_XMM sse4
+cglobal flac_wasted_33, 4,4,5, decoded, residuals, wasted, len
+    shl   lend, 2
+    lea   decodedq, [decodedq+lenq*2]
+    add   residualsq, lenq
+    neg   lenq
+    movd  m4, wastedd
+ALIGN 16
+.loop:
+    pmovsxdq  m0, [residualsq+lenq+mmsize*0]
+    pmovsxdq  m1, [residualsq+lenq+mmsize/2]
+    pmovsxdq  m2, [residualsq+lenq+mmsize*1]
+    pmovsxdq  m3, [residualsq+lenq+mmsize*1+mmsize/2]
+    psllq m0, m4
+    psllq m1, m4
+    psllq m2, m4
+    psllq m3, m4
+    mova  [decodedq+lenq*2+mmsize*0], m0
+    mova  [decodedq+lenq*2+mmsize*1], m1
+    mova  [decodedq+lenq*2+mmsize*2], m2
+    mova  [decodedq+lenq*2+mmsize*3], m3
+    add lenq, mmsize * 2
+    jl .loop
+    RET
+
 ;----------------------------------------------------------------------------------
 ;void ff_flac_decorrelate_[lrm]s_16_sse2(uint8_t **out, int32_t **in, int channels,
 ;                                                   int len, int shift);
