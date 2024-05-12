@@ -104,6 +104,25 @@ static void check_wasted32(void)
     bench_new(dst, wasted, BUF_SIZE);
 }
 
+static void check_wasted33(void)
+{
+    int wasted = rnd() % 33;
+    LOCAL_ALIGNED_16(int64_t, dst0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int64_t, dst1, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int32_t, residuals, [BUF_SIZE]);
+
+    declare_func(void, int64_t *, const int32_t *, int, int);
+
+    for (int i = 0; i < BUF_SIZE; i++)
+        residuals[i] = rnd();
+
+    call_ref(dst0, residuals, wasted, BUF_SIZE);
+    call_new(dst1, residuals, wasted, BUF_SIZE);
+    if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int64_t)) != 0)
+       fail();
+    bench_new(dst0, residuals, wasted, BUF_SIZE);
+}
+
 void checkasm_check_flacdsp(void)
 {
     LOCAL_ALIGNED_16(uint8_t, ref_dst, [BUF_SIZE*MAX_CHANNELS]);
@@ -151,6 +170,8 @@ void checkasm_check_flacdsp(void)
 
     if (check_func(h.wasted32, "flac_wasted_32"))
         check_wasted32();
+    if (check_func(h.wasted33, "flac_wasted_33"))
+        check_wasted33();
 
     report("wasted");
 }
