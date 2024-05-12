@@ -49,7 +49,7 @@ static void check_scalarproduct_and_madd_int16(LLAudDSPContext *c)
     randomize_buf(v1, BUF_SIZE);
     randomize_buf(v2, BUF_SIZE);
     randomize_buf(v3, BUF_SIZE);
-    mul = rnd();
+    mul = (int16_t)rnd();
 
     if (check_func(c->scalarproduct_and_madd_int16,
                    "scalarproduct_and_madd_int16")) {
@@ -84,7 +84,7 @@ static void check_scalarproduct_and_madd_int32(LLAudDSPContext *c)
     randomize_buf(v1, BUF_SIZE);
     randomize_buf(v2, BUF_SIZE);
     randomize_buf(v3, BUF_SIZE);
-    mul = rnd();
+    mul = (int16_t)rnd();
 
     if (check_func(c->scalarproduct_and_madd_int32,
                    "scalarproduct_and_madd_int32")) {
