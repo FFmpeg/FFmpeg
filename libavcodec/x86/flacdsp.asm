@@ -89,6 +89,30 @@ LPC_32 sse4, 32, psrlq
 LPC_32 xop,  32, psrlq
 %endif
 
+INIT_XMM sse2
+cglobal flac_wasted_32, 3,3,5, decoded, wasted, len
+    shl   lend, 2
+    add   decodedq, lenq
+    neg   lenq
+    movd  m4, wastedd
+ALIGN 16
+.loop:
+    mova  m0, [decodedq+lenq+mmsize*0]
+    mova  m1, [decodedq+lenq+mmsize*1]
+    mova  m2, [decodedq+lenq+mmsize*2]
+    mova  m3, [decodedq+lenq+mmsize*3]
+    pslld m0, m4
+    pslld m1, m4
+    pslld m2, m4
+    pslld m3, m4
+    mova  [decodedq+lenq+mmsize*0], m0
+    mova  [decodedq+lenq+mmsize*1], m1
+    mova  [decodedq+lenq+mmsize*2], m2
+    mova  [decodedq+lenq+mmsize*3], m3
+    add lenq, mmsize * 4
+    jl .loop
+    RET
+
 ;----------------------------------------------------------------------------------
 ;void ff_flac_decorrelate_[lrm]s_16_sse2(uint8_t **out, int32_t **in, int channels,
 ;                                                   int len, int shift);
