@@ -242,7 +242,9 @@ static int decode_blocks(AVCodecContext *avctx, AVFrame *p, ThreadFrame *frame,
 
         bytestream2_seek(&dgb, s->y_data_offset + row_offset, SEEK_SET);
 
-        init_get_bits8(&bit, dgb.buffer, bytestream2_get_bytes_left(&dgb));
+        ret = init_get_bits8(&bit, dgb.buffer, bytestream2_get_bytes_left(&dgb));
+        if (ret < 0)
+            return ret;
         for (int x = 0; x < avctx->width; x += 4) {
             unsigned item = bytestream2_get_le32(gb);
             unsigned y_min = item & 4095;
