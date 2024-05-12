@@ -70,7 +70,6 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 {
     DVEncContext *s = avctx->priv_data;
     FDCTDSPContext fdsp;
-    MECmpContext mecc;
     PixblockDSPContext pdsp;
     int ret;
 
@@ -95,19 +94,24 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 
     ff_dv_init_dynamic_tables(s->work_chunks, s->sys);
 
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        MECmpContext mecc;
+
+        memset(&mecc,0, sizeof(mecc));
+        ff_me_cmp_init(&mecc, avctx);
+        ret = ff_set_cmp(&mecc, mecc.ildct_cmp, avctx->ildct_cmp);
+        if (ret < 0)
+            return ret;
+        if (!mecc.ildct_cmp[5])
+            return AVERROR(EINVAL);
+        s->ildct_cmp = mecc.ildct_cmp[5];
+    }
+
     memset(&fdsp,0, sizeof(fdsp));
-    memset(&mecc,0, sizeof(mecc));
     memset(&pdsp,0, sizeof(pdsp));
     ff_fdctdsp_init(&fdsp, avctx);
-    ff_me_cmp_init(&mecc, avctx);
     ff_pixblockdsp_init(&pdsp, avctx);
-    ret = ff_set_cmp(&mecc, mecc.ildct_cmp, avctx->ildct_cmp);
-    if (ret < 0)
-        return AVERROR(EINVAL);
-
     s->get_pixels = pdsp.get_pixels;
-    s->ildct_cmp  = mecc.ildct_cmp[5];
-
     s->fdct[0]    = fdsp.fdct;
     s->fdct[1]    = fdsp.fdct248;
 
