@@ -305,7 +305,8 @@ static int zero_cmp(MpegEncContext *s, const uint8_t *a, const uint8_t *b,
 static void zero_hpel(uint8_t *a, const uint8_t *b, ptrdiff_t stride, int h){
 }
 
-av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx, const MECmpContext *mecc)
+av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx,
+                       const MECmpContext *mecc, int mpvenc)
 {
     int cache_size = FFMIN(ME_MAP_SIZE>>ME_MAP_SHIFT, 1<<ME_MAP_SHIFT);
     int dia_size   = FFMAX(FFABS(avctx->dia_size) & 255, FFABS(avctx->pre_dia_size) & 255);
@@ -324,10 +325,10 @@ av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx, const MECmpCo
     if (cache_size < 2 * dia_size)
         av_log(avctx, AV_LOG_INFO, "ME_MAP size may be a little small for the selected diamond size\n");
 
-    ret  = ff_set_cmp(mecc, c->me_pre_cmp, avctx->me_pre_cmp);
-    ret |= ff_set_cmp(mecc, c->me_cmp,     avctx->me_cmp);
-    ret |= ff_set_cmp(mecc, c->me_sub_cmp, avctx->me_sub_cmp);
-    ret |= ff_set_cmp(mecc, c->mb_cmp,     avctx->mb_cmp);
+    ret  = ff_set_cmp(mecc, c->me_pre_cmp, avctx->me_pre_cmp, mpvenc);
+    ret |= ff_set_cmp(mecc, c->me_cmp,     avctx->me_cmp,     mpvenc);
+    ret |= ff_set_cmp(mecc, c->me_sub_cmp, avctx->me_sub_cmp, mpvenc);
+    ret |= ff_set_cmp(mecc, c->mb_cmp,     avctx->mb_cmp,     mpvenc);
     if (ret < 0)
         return ret;
 

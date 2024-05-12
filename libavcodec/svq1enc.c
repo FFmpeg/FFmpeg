@@ -589,7 +589,7 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_me_cmp_init(&s->mecc, avctx);
-    ret = ff_me_init(&s->m.me, avctx, &s->mecc);
+    ret = ff_me_init(&s->m.me, avctx, &s->mecc, 0);
     if (ret < 0)
         return ret;
     ff_mpegvideoencdsp_init(&s->m.mpvencdsp, avctx);

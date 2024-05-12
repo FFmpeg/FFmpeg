@@ -83,7 +83,14 @@ void ff_me_cmp_init_riscv(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_x86(MECmpContext *c, AVCodecContext *avctx);
 void ff_me_cmp_init_mips(MECmpContext *c, AVCodecContext *avctx);
 
-int ff_set_cmp(const MECmpContext *c, me_cmp_func *cmp, int type);
+/**
+ * Fill the function pointer array cmp[6] with me_cmp_funcs from
+ * c based upon type. If mpvenc is not set, an error is returned
+ * if the type of comparison functions requires an initialized
+ * MpegEncContext.
+ */
+int ff_set_cmp(const MECmpContext *c, me_cmp_func *cmp,
+               int type, int mpvenc);
 
 void ff_dsputil_init_dwt(MECmpContext *c);
 

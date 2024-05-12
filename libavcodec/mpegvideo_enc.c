@@ -312,15 +312,15 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
     int ret;
 
     ff_me_cmp_init(&s->mecc, avctx);
-    ret = ff_me_init(&s->me, avctx, &s->mecc);
+    ret = ff_me_init(&s->me, avctx, &s->mecc, 1);
     if (ret < 0)
         return ret;
-    ret = ff_set_cmp(&s->mecc, me_cmp, s->frame_skip_cmp);
+    ret = ff_set_cmp(&s->mecc, me_cmp, s->frame_skip_cmp, 1);
     if (ret < 0)
         return ret;
     s->frame_skip_cmp_fn = me_cmp[1];
     if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
-        ret = ff_set_cmp(&s->mecc, me_cmp, avctx->ildct_cmp);
+        ret = ff_set_cmp(&s->mecc, me_cmp, avctx->ildct_cmp, 1);
         if (ret < 0)
             return ret;
         if (!me_cmp[0] || !me_cmp[4])

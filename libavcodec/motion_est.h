@@ -115,7 +115,7 @@ static inline int ff_h263_round_chroma(int x)
  * Performs one-time initialization of the MotionEstContext.
  */
 int ff_me_init(MotionEstContext *c, struct AVCodecContext *avctx,
-               const struct MECmpContext *mecc);
+               const struct MECmpContext *mecc, int mpvenc);
 
 void ff_me_init_pic(struct MpegEncContext *s);
 

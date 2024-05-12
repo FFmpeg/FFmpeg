@@ -217,7 +217,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     mcf(12,12)
 
     ff_me_cmp_init(&enc->mecc, avctx);
-    ret = ff_me_init(&enc->m.me, avctx, &enc->mecc);
+    ret = ff_me_init(&enc->m.me, avctx, &enc->mecc, 0);
     if (ret < 0)
         return ret;
     ff_mpegvideoencdsp_init(&enc->mpvencdsp, avctx);

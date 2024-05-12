@@ -20,6 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stddef.h>
+
 #include "libavutil/attributes.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem_internal.h"
@@ -473,74 +475,60 @@ static int zero_cmp(MpegEncContext *s, const uint8_t *a, const uint8_t *b,
     return 0;
 }
 
-int ff_set_cmp(const MECmpContext *c, me_cmp_func *cmp, int type)
+av_cold int ff_set_cmp(const MECmpContext *c, me_cmp_func *cmp, int type, int mpvenc)
 {
-    int ret = 0;
-    int i;
-
-    memset(cmp, 0, sizeof(void *) * 6);
-
-    for (i = 0; i < 6; i++) {
-        switch (type & 0xFF) {
-        case FF_CMP_SAD:
-            cmp[i] = c->sad[i];
-            break;
-        case FF_CMP_MEDIAN_SAD:
-            cmp[i] = c->median_sad[i];
-            break;
-        case FF_CMP_SATD:
-            cmp[i] = c->hadamard8_diff[i];
-            break;
-        case FF_CMP_SSE:
-            cmp[i] = c->sse[i];
-            break;
-        case FF_CMP_DCT:
-            cmp[i] = c->dct_sad[i];
-            break;
-        case FF_CMP_DCT264:
-            cmp[i] = c->dct264_sad[i];
-            break;
-        case FF_CMP_DCTMAX:
-            cmp[i] = c->dct_max[i];
-            break;
-        case FF_CMP_PSNR:
-            cmp[i] = c->quant_psnr[i];
-            break;
-        case FF_CMP_BIT:
-            cmp[i] = c->bit[i];
-            break;
-        case FF_CMP_RD:
-            cmp[i] = c->rd[i];
-            break;
-        case FF_CMP_VSAD:
-            cmp[i] = c->vsad[i];
-            break;
-        case FF_CMP_VSSE:
-            cmp[i] = c->vsse[i];
-            break;
-        case FF_CMP_ZERO:
-            cmp[i] = zero_cmp;
-            break;
-        case FF_CMP_NSSE:
-            cmp[i] = c->nsse[i];
-            break;
-#if CONFIG_DWT
-        case FF_CMP_W53:
-            cmp[i]= c->w53[i];
-            break;
-        case FF_CMP_W97:
-            cmp[i]= c->w97[i];
-            break;
-#endif
-        default:
-            av_log(NULL, AV_LOG_ERROR,
-                   "invalid cmp function selection\n");
-            ret = -1;
-            break;
-        }
+#define ENTRY(CMP_FLAG, ARRAY, MPVENC_ONLY)          \
+    [FF_CMP_ ## CMP_FLAG] = {                        \
+        .offset    = offsetof(MECmpContext, ARRAY),  \
+        .mpv_only  = MPVENC_ONLY,                    \
+        .available = 1,                              \
     }
+    static const struct {
+        char available;
+        char mpv_only;
+        uint16_t offset;
+    } cmp_func_list[] = {
+        ENTRY(SAD,        sad,            0),
+        ENTRY(SSE,        sse,            0),
+        ENTRY(SATD,       hadamard8_diff, 0),
+        ENTRY(DCT,        dct_sad,        1),
+        ENTRY(PSNR,       quant_psnr,     1),
+        ENTRY(BIT,        bit,            1),
+        ENTRY(RD,         rd,             1),
+        ENTRY(VSAD,       vsad,           0),
+        ENTRY(VSSE,       vsse,           0),
+        ENTRY(NSSE,       nsse,           0),
+#if CONFIG_SNOW_DECODER || CONFIG_SNOW_ENCODER
+        ENTRY(W53,        w53,            0),
+        ENTRY(W97,        w97,            0),
+#endif
+        ENTRY(DCTMAX,     dct_max,        1),
+#if CONFIG_GPL
+        ENTRY(DCT264,     dct264_sad,     1),
+#endif
+        ENTRY(MEDIAN_SAD, median_sad,     0),
+    };
+    const me_cmp_func *me_cmp_func_array;
 
-    return ret;
+    type &= 0xFF;
+
+    if (type == FF_CMP_ZERO) {
+        for (int i = 0; i < 6; i++)
+            cmp[i] = zero_cmp;
+        return 0;
+    }
+    if (type > FF_ARRAY_ELEMS(cmp_func_list) ||
+        !cmp_func_list[type].available ||
+        !mpvenc && cmp_func_list[type].mpv_only) {
+        av_log(NULL, AV_LOG_ERROR,
+               "invalid cmp function selection\n");
+        return AVERROR(EINVAL);
+    }
+    me_cmp_func_array = (const me_cmp_func*)(((const char*)c) + cmp_func_list[type].offset);
+    for (int i = 0; i < 6; i++)
+        cmp[i] = me_cmp_func_array[i];
+
+    return 0;
 }
 
 #define BUTTERFLY2(o1, o2, i1, i2)              \
