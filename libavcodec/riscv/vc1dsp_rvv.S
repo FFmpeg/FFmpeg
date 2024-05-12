@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ * Copyright (c) 2024 Rémi Denis-Courmont.
  *
  * This file is part of FFmpeg.
  *
@@ -158,4 +159,56 @@ func ff_avg_pixels8x8_rvv, zve64x
         vsse64.v      v16, (a0), a2
 
         ret
+endfunc
+
+func ff_vc1_unescape_buffer_rvv, zve32x
+        vsetivli       zero, 2, e8, m1, ta, ma
+        vmv.v.i        v8, -1
+        li             t4, 1
+        vmv.v.i        v12, -1
+        li             t3, -1
+        mv             t5, a2
+        blez           a1, 3f
+1:
+        vsetvli        t0, a1, e8, m4, ta, ma
+        vle8.v         v16, (a0)
+        vslideup.vi    v8, v16, 2
+        addi           t0, t0, -1 # we cannot fully process the last element
+        vslideup.vi    v12, v16, 1
+        vslide1down.vx v20, v16, t3
+        vsetvli        zero, t0, e8, m4, ta, ma
+        vmseq.vi       v0, v8, 0
+        vmseq.vi       v1, v12, 0
+        vmseq.vi       v2, v16, 3
+        vmand.mm       v0, v0, v1
+        vmsltu.vi      v3, v20, 4
+        vmand.mm       v0, v0, v2
+        vmand.mm       v0, v0, v3
+        vfirst.m       t2, v0
+        bgez           t2, 4f # found an escape byte?
+
+        vse8.v         v16, (a2)
+        addi           t2, t0, -2
+        add            a2, a2, t0
+2:
+        vslidedown.vx  v8, v16, t2
+        sub            a1, a1, t0
+        vslidedown.vi  v12, v8, 1
+        add            a0, a0, t0
+        bgtu           a1, t4, 1b // size > 1
+
+        lb             t0, (a0)
+        sb             t0, (a2) # copy last byte (cannot be escaped)
+        addi           a2, a2, 1
+3:
+        sub            a0, a2, t5
+        ret
+4:
+        vsetvli        zero, t2, e8, m4, ta, ma
+        vse8.v         v16, (a2)
+        addi           t0, t2, 1
+        add            a2, a2, t2
+        addi           t2, t2, -1
+        vsetvli        zero, t0, e8, m4, ta, ma
+        j              2b
 endfunc

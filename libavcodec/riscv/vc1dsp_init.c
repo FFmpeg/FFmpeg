@@ -35,6 +35,7 @@ void ff_avg_pixels16x16_rvv(uint8_t *dst, const uint8_t *src, ptrdiff_t line_siz
 void ff_avg_pixels8x8_rvv(uint8_t *dst, const uint8_t *src, ptrdiff_t line_size, int rnd);
 int ff_startcode_find_candidate_rvb(const uint8_t *, int);
 int ff_startcode_find_candidate_rvv(const uint8_t *, int);
+int ff_vc1_unescape_buffer_rvv(const uint8_t *, int, uint8_t *);
 
 av_cold void ff_vc1dsp_init_riscv(VC1DSPContext *dsp)
 {
@@ -62,6 +63,7 @@ av_cold void ff_vc1dsp_init_riscv(VC1DSPContext *dsp)
             }
         }
         dsp->startcode_find_candidate = ff_startcode_find_candidate_rvv;
+        dsp->vc1_unescape_buffer = ff_vc1_unescape_buffer_rvv;
     }
 # endif
 #endif
