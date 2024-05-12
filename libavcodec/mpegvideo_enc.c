@@ -308,12 +308,17 @@ av_cold void ff_dct_encode_init(MpegEncContext *s)
 
 static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
 {
+    me_cmp_func me_cmp[6];
     int ret;
 
     ff_me_cmp_init(&s->mecc, avctx);
     ret = ff_me_init(&s->me, avctx, &s->mecc);
     if (ret < 0)
         return ret;
+    ret = ff_set_cmp(&s->mecc, me_cmp, s->frame_skip_cmp);
+    if (ret < 0)
+        return ret;
+    s->frame_skip_cmp_fn = me_cmp[1];
 
     return 0;
 }
@@ -931,9 +936,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         if (!s->mecc.ildct_cmp[0] || !s->mecc.ildct_cmp[4])
             return AVERROR(EINVAL);
     }
-    ret = ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
-    if (ret < 0)
-        return AVERROR(EINVAL);
 
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(s);
@@ -1311,7 +1313,7 @@ static int skip_check(MpegEncContext *s, const MPVPicture *p, const MPVPicture *
                 int off = p->shared ? 0 : 16;
                 const uint8_t *dptr = p->f->data[plane] + 8 * (x + y * stride) + off;
                 const uint8_t *rptr = ref->f->data[plane] + 8 * (x + y * stride);
-                int v = s->mecc.frame_skip_cmp[1](s, dptr, rptr, stride, 8);
+                int v = s->frame_skip_cmp_fn(s, dptr, rptr, stride, 8);
 
                 switch (FFABS(s->frame_skip_exp)) {
                 case 0: score    =  FFMAX(score, v);          break;

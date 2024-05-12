@@ -95,7 +95,6 @@ static void test_motion(const char *name, me_cmp_func test_func)
     XX(vsse)                                                                   \
     XX(nsse)                                                                   \
     XX(ildct_cmp)                                                              \
-    XX(frame_skip_cmp)                                                         \
     XX(median_sad)
 
 // tests for functions not yet implemented
