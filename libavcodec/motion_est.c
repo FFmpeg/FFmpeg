@@ -332,6 +332,9 @@ av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx,
     if (ret < 0)
         return ret;
 
+    c->sse = mecc->sse[0];
+    memcpy(c->pix_abs, mecc->pix_abs, sizeof(c->pix_abs));
+
     c->flags     = get_flags(c, 0, avctx->me_cmp     & FF_CMP_CHROMA);
     c->sub_flags = get_flags(c, 0, avctx->me_sub_cmp & FF_CMP_CHROMA);
     c->mb_flags  = get_flags(c, 0, avctx->mb_cmp     & FF_CMP_CHROMA);
@@ -397,7 +400,7 @@ void ff_me_init_pic(MpegEncContext *s)
 
 #define CHECK_SAD_HALF_MV(suffix, x, y) \
 {\
-    d  = s->mecc.pix_abs[size][(x ? 1 : 0) + (y ? 2 : 0)](NULL, pix, ptr + ((x) >> 1), stride, h); \
+    d  = c->pix_abs[size][(x ? 1 : 0) + (y ? 2 : 0)](NULL, pix, ptr + ((x) >> 1), stride, h); \
     d += (mv_penalty[pen_x + x] + mv_penalty[pen_y + y])*penalty_factor;\
     COPY3_IF_LT(dminh, d, dx, x, dy, y)\
 }
@@ -973,7 +976,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     /* At this point (mx,my) are full-pell and the relative displacement */
     ppix = c->ref[0][0] + (my * s->linesize) + mx;
 
-    vard = s->mecc.sse[0](NULL, pix, ppix, s->linesize, 16);
+    vard = c->sse(NULL, pix, ppix, s->linesize, 16);
 
     s->mc_mb_var[s->mb_stride * mb_y + mb_x] = (vard+128)>>8;
     c->mc_mb_var_sum_temp += (vard+128)>>8;

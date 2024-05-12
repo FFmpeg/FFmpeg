@@ -373,7 +373,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.cur_pic.motion_val[0]   = s->motion_val8[plane] + 2;
         s->m.p_mv_table                      = s->motion_val16[plane] +
                                                s->m.mb_stride + 1;
-        s->m.mecc                            = s->mecc; // move
         ff_me_init_pic(&s->m);
 
         s->m.me.dia_size      = s->avctx->dia_size;

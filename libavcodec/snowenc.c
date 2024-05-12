@@ -1869,7 +1869,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         mpv->qscale = (mpv->lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
         enc->lambda2  = mpv->lambda2 = (mpv->lambda*mpv->lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
 
-        mpv->mecc = enc->mecc; //move
         mpv->qdsp = enc->qdsp; //move
         mpv->hdsp = s->hdsp;
         ff_me_init_pic(&enc->m);

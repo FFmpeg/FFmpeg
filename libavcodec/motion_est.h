@@ -89,6 +89,9 @@ typedef struct MotionEstContext {
     me_cmp_func me_sub_cmp[6];
     me_cmp_func mb_cmp[6];
 
+    me_cmp_func pix_abs[2][4];
+    me_cmp_func sse;
+
     op_pixels_func(*hpel_put)[4];
     op_pixels_func(*hpel_avg)[4];
     qpel_mc_func(*qpel_put)[16];
