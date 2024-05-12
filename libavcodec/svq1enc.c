@@ -374,7 +374,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.p_mv_table                      = s->motion_val16[plane] +
                                                s->m.mb_stride + 1;
         s->m.mecc                            = s->mecc; // move
-        ff_init_me(&s->m);
+        ff_me_init_pic(&s->m);
 
         s->m.me.dia_size      = s->avctx->dia_size;
         s->m.first_slice_line = 1;
@@ -589,6 +589,9 @@ static av_cold int svq1_encode_init(AVCodecContext *avctx)
 
     ff_hpeldsp_init(&s->hdsp, avctx->flags);
     ff_me_cmp_init(&s->mecc, avctx);
+    ret = ff_me_init(&s->m.me, avctx, &s->mecc);
+    if (ret < 0)
+        return ret;
     ff_mpegvideoencdsp_init(&s->m.mpvencdsp, avctx);
 
     s->current_picture = av_frame_alloc();

@@ -217,6 +217,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     mcf(12,12)
 
     ff_me_cmp_init(&enc->mecc, avctx);
+    ret = ff_me_init(&enc->m.me, avctx, &enc->mecc);
+    if (ret < 0)
+        return ret;
     ff_mpegvideoencdsp_init(&enc->mpvencdsp, avctx);
 
     ff_snow_alloc_blocks(s);
@@ -277,11 +280,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
                                            &s->chroma_v_shift);
     if (ret)
         return ret;
-
-    ret  = ff_set_cmp(&enc->mecc, enc->mecc.me_cmp, s->avctx->me_cmp);
-    ret |= ff_set_cmp(&enc->mecc, enc->mecc.me_sub_cmp, s->avctx->me_sub_cmp);
-    if (ret < 0)
-        return AVERROR(EINVAL);
 
     s->input_picture = av_frame_alloc();
     if (!s->input_picture)
@@ -1874,9 +1872,8 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         mpv->mecc = enc->mecc; //move
         mpv->qdsp = enc->qdsp; //move
         mpv->hdsp = s->hdsp;
-        ff_init_me(&enc->m);
+        ff_me_init_pic(&enc->m);
         s->hdsp = mpv->hdsp;
-        enc->mecc = mpv->mecc;
     }
 
     if (enc->pass1_rc) {

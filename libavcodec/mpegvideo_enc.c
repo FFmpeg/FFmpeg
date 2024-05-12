@@ -306,6 +306,18 @@ av_cold void ff_dct_encode_init(MpegEncContext *s)
         s->dct_quantize  = dct_quantize_trellis_c;
 }
 
+static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
+{
+    int ret;
+
+    ff_me_cmp_init(&s->mecc, avctx);
+    ret = ff_me_init(&s->me, avctx, &s->mecc);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 /* init video encoder */
 av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 {
@@ -810,9 +822,11 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         return ret;
 
     ff_fdctdsp_init(&s->fdsp, avctx);
-    ff_me_cmp_init(&s->mecc, avctx);
     ff_mpegvideoencdsp_init(&s->mpvencdsp, avctx);
     ff_pixblockdsp_init(&s->pdsp, avctx);
+    ret = me_cmp_init(s, avctx);
+    if (ret < 0)
+        return ret;
 
     if (!(avctx->stats_out = av_mallocz(256))               ||
         !FF_ALLOCZ_TYPED_ARRAY(s->q_intra_matrix,          32) ||
@@ -3603,8 +3617,7 @@ static int encode_picture(MpegEncContext *s, const AVPacket *pkt)
         s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
     }
 
-    if(ff_init_me(s)<0)
-        return -1;
+    ff_me_init_pic(s);
 
     s->mb_intra=0; //for the rate distortion & bit compare functions
     for (int i = 0; i < context_count; i++) {

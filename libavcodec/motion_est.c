@@ -305,45 +305,40 @@ static int zero_cmp(MpegEncContext *s, const uint8_t *a, const uint8_t *b,
 static void zero_hpel(uint8_t *a, const uint8_t *b, ptrdiff_t stride, int h){
 }
 
-int ff_init_me(MpegEncContext *s){
-    MotionEstContext * const c= &s->me;
-    int cache_size= FFMIN(ME_MAP_SIZE>>ME_MAP_SHIFT, 1<<ME_MAP_SHIFT);
-    int dia_size= FFMAX(FFABS(s->avctx->dia_size)&255, FFABS(s->avctx->pre_dia_size)&255);
+av_cold int ff_me_init(MotionEstContext *c, AVCodecContext *avctx, MECmpContext *mecc)
+{
+    int cache_size = FFMIN(ME_MAP_SIZE>>ME_MAP_SHIFT, 1<<ME_MAP_SHIFT);
+    int dia_size   = FFMAX(FFABS(avctx->dia_size) & 255, FFABS(avctx->pre_dia_size) & 255);
     int ret;
 
-    if(FFMIN(s->avctx->dia_size, s->avctx->pre_dia_size) < -FFMIN(ME_MAP_SIZE, MAX_SAB_SIZE)){
-        av_log(s->avctx, AV_LOG_ERROR, "ME_MAP size is too small for SAB diamond\n");
-        return -1;
+    if (FFMIN(avctx->dia_size, avctx->pre_dia_size) < -FFMIN(ME_MAP_SIZE, MAX_SAB_SIZE)) {
+        av_log(avctx, AV_LOG_ERROR, "ME_MAP size is too small for SAB diamond\n");
+        return AVERROR(EINVAL);
     }
 
-    c->avctx= s->avctx;
+    c->avctx = avctx;
 
-    if(s->codec_id == AV_CODEC_ID_H261)
-        c->avctx->me_sub_cmp = c->avctx->me_cmp;
+    if (avctx->codec_id == AV_CODEC_ID_H261)
+        avctx->me_sub_cmp = avctx->me_cmp;
 
-    if(cache_size < 2*dia_size && !c->stride){
-        av_log(s->avctx, AV_LOG_INFO, "ME_MAP size may be a little small for the selected diamond size\n");
-    }
+    if (cache_size < 2 * dia_size)
+        av_log(avctx, AV_LOG_INFO, "ME_MAP size may be a little small for the selected diamond size\n");
 
-    ret  = ff_set_cmp(&s->mecc, s->mecc.me_pre_cmp, c->avctx->me_pre_cmp);
-    ret |= ff_set_cmp(&s->mecc, s->mecc.me_cmp,     c->avctx->me_cmp);
-    ret |= ff_set_cmp(&s->mecc, s->mecc.me_sub_cmp, c->avctx->me_sub_cmp);
-    ret |= ff_set_cmp(&s->mecc, s->mecc.mb_cmp,     c->avctx->mb_cmp);
+    ret  = ff_set_cmp(mecc, mecc->me_pre_cmp, avctx->me_pre_cmp);
+    ret |= ff_set_cmp(mecc, mecc->me_cmp,     avctx->me_cmp);
+    ret |= ff_set_cmp(mecc, mecc->me_sub_cmp, avctx->me_sub_cmp);
+    ret |= ff_set_cmp(mecc, mecc->mb_cmp,     avctx->mb_cmp);
     if (ret < 0)
         return ret;
 
-    c->flags    = get_flags(c, 0, c->avctx->me_cmp    &FF_CMP_CHROMA);
-    c->sub_flags= get_flags(c, 0, c->avctx->me_sub_cmp&FF_CMP_CHROMA);
-    c->mb_flags = get_flags(c, 0, c->avctx->mb_cmp    &FF_CMP_CHROMA);
+    c->flags     = get_flags(c, 0, avctx->me_cmp     & FF_CMP_CHROMA);
+    c->sub_flags = get_flags(c, 0, avctx->me_sub_cmp & FF_CMP_CHROMA);
+    c->mb_flags  = get_flags(c, 0, avctx->mb_cmp     & FF_CMP_CHROMA);
 
-/*FIXME s->no_rounding b_type*/
-    if (s->avctx->flags & AV_CODEC_FLAG_QPEL) {
+    if (avctx->codec_id == AV_CODEC_ID_H261) {
+        c->sub_motion_search = no_sub_motion_search;
+    } else if (avctx->flags & AV_CODEC_FLAG_QPEL) {
         c->sub_motion_search= qpel_motion_search;
-        c->qpel_avg = s->qdsp.avg_qpel_pixels_tab;
-        if (s->no_rounding)
-            c->qpel_put = s->qdsp.put_no_rnd_qpel_pixels_tab;
-        else
-            c->qpel_put = s->qdsp.put_qpel_pixels_tab;
     }else{
         if(c->avctx->me_sub_cmp&FF_CMP_CHROMA)
             c->sub_motion_search= hpel_motion_search;
@@ -353,6 +348,32 @@ int ff_init_me(MpegEncContext *s){
             c->sub_motion_search= sad_hpel_motion_search; // 2050 vs. 2450 cycles
         else
             c->sub_motion_search= hpel_motion_search;
+    }
+
+    /* 8x8 fullpel search would need a 4x4 chroma compare, which we do
+     * not have yet, and even if we had, the motion estimation code
+     * does not expect it. */
+    if (avctx->codec_id != AV_CODEC_ID_SNOW) {
+        if ((avctx->me_cmp & FF_CMP_CHROMA) /* && !s->mecc.me_cmp[2] */)
+            mecc->me_cmp[2] = zero_cmp;
+        if ((avctx->me_sub_cmp & FF_CMP_CHROMA) && !mecc->me_sub_cmp[2])
+            mecc->me_sub_cmp[2] = zero_cmp;
+    }
+
+    return 0;
+}
+
+void ff_me_init_pic(MpegEncContext *s)
+{
+    MotionEstContext * const c= &s->me;
+
+/*FIXME s->no_rounding b_type*/
+    if (s->avctx->flags & AV_CODEC_FLAG_QPEL) {
+        c->qpel_avg = s->qdsp.avg_qpel_pixels_tab;
+        if (s->no_rounding)
+            c->qpel_put = s->qdsp.put_no_rnd_qpel_pixels_tab;
+        else
+            c->qpel_put = s->qdsp.put_qpel_pixels_tab;
     }
     c->hpel_avg = s->hdsp.avg_pixels_tab;
     if (s->no_rounding)
@@ -367,24 +388,10 @@ int ff_init_me(MpegEncContext *s){
         c->stride  = 16*s->mb_width + 32;
         c->uvstride=  8*s->mb_width + 16;
     }
-
-    /* 8x8 fullpel search would need a 4x4 chroma compare, which we do
-     * not have yet, and even if we had, the motion estimation code
-     * does not expect it. */
     if (s->codec_id != AV_CODEC_ID_SNOW) {
-        if ((c->avctx->me_cmp & FF_CMP_CHROMA) /* && !s->mecc.me_cmp[2] */)
-            s->mecc.me_cmp[2] = zero_cmp;
-        if ((c->avctx->me_sub_cmp & FF_CMP_CHROMA) && !s->mecc.me_sub_cmp[2])
-            s->mecc.me_sub_cmp[2] = zero_cmp;
         c->hpel_put[2][0]= c->hpel_put[2][1]=
         c->hpel_put[2][2]= c->hpel_put[2][3]= zero_hpel;
     }
-
-    if(s->codec_id == AV_CODEC_ID_H261){
-        c->sub_motion_search= no_sub_motion_search;
-    }
-
-    return 0;
 }
 
 #define CHECK_SAD_HALF_MV(suffix, x, y) \

@@ -25,6 +25,7 @@
 
 #include "avcodec.h"
 #include "hpeldsp.h"
+#include "me_cmp.h"
 #include "qpeldsp.h"
 
 struct MpegEncContext;
@@ -105,7 +106,13 @@ static inline int ff_h263_round_chroma(int x)
     return h263_chroma_roundtab[x & 0xf] + (x >> 3);
 }
 
-int ff_init_me(struct MpegEncContext *s);
+/**
+ * Performs one-time initialization of the MotionEstContext.
+ */
+int ff_me_init(MotionEstContext *c, struct AVCodecContext *avctx,
+               struct MECmpContext *mecc);
+
+void ff_me_init_pic(struct MpegEncContext *s);
 
 void ff_estimate_p_frame_motion(struct MpegEncContext *s, int mb_x, int mb_y);
 void ff_estimate_b_frame_motion(struct MpegEncContext *s, int mb_x, int mb_y);
