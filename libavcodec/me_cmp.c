@@ -653,7 +653,7 @@ static int dct_sad8x8_c(MpegEncContext *s, const uint8_t *src1,
 
     s->pdsp.diff_pixels_unaligned(temp, src1, src2, stride);
     s->fdsp.fdct(temp);
-    return s->mecc.sum_abs_dctelem(temp);
+    return s->sum_abs_dctelem(temp);
 }
 
 #if CONFIG_GPL
@@ -819,7 +819,7 @@ static int rd8x8_c(MpegEncContext *s, const uint8_t *src1, const uint8_t *src2,
 
     s->idsp.idct_add(lsrc2, 8, temp);
 
-    distortion = s->mecc.sse[1](NULL, lsrc2, lsrc1, 8, 8);
+    distortion = s->sse_cmp[1](NULL, lsrc2, lsrc1, 8, 8);
 
     return distortion + ((bits * s->qscale * s->qscale * 109 + 64) >> 7);
 }

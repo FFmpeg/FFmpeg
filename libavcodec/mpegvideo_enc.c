@@ -308,19 +308,20 @@ av_cold void ff_dct_encode_init(MpegEncContext *s)
 
 static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
 {
+    MECmpContext mecc;
     me_cmp_func me_cmp[6];
     int ret;
 
-    ff_me_cmp_init(&s->mecc, avctx);
-    ret = ff_me_init(&s->me, avctx, &s->mecc, 1);
+    ff_me_cmp_init(&mecc, avctx);
+    ret = ff_me_init(&s->me, avctx, &mecc, 1);
     if (ret < 0)
         return ret;
-    ret = ff_set_cmp(&s->mecc, me_cmp, s->frame_skip_cmp, 1);
+    ret = ff_set_cmp(&mecc, me_cmp, s->frame_skip_cmp, 1);
     if (ret < 0)
         return ret;
     s->frame_skip_cmp_fn = me_cmp[1];
     if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
-        ret = ff_set_cmp(&s->mecc, me_cmp, avctx->ildct_cmp, 1);
+        ret = ff_set_cmp(&mecc, me_cmp, avctx->ildct_cmp, 1);
         if (ret < 0)
             return ret;
         if (!me_cmp[0] || !me_cmp[4])
@@ -329,12 +330,18 @@ static av_cold int me_cmp_init(MpegEncContext *s, AVCodecContext *avctx)
         s->ildct_cmp[1] = me_cmp[4];
     }
 
+    s->sum_abs_dctelem = mecc.sum_abs_dctelem;
+
+    s->sse_cmp[0] = mecc.sse[0];
+    s->sse_cmp[1] = mecc.sse[1];
+    s->sad_cmp[0] = mecc.sad[0];
+    s->sad_cmp[1] = mecc.sad[1];
     if (avctx->mb_cmp == FF_CMP_NSSE) {
-        s->n_sse_cmp[0] = s->mecc.nsse[0];
-        s->n_sse_cmp[1] = s->mecc.nsse[1];
+        s->n_sse_cmp[0] = mecc.nsse[0];
+        s->n_sse_cmp[1] = mecc.nsse[1];
     } else {
-        s->n_sse_cmp[0] = s->mecc.sse[0];
-        s->n_sse_cmp[1] = s->mecc.sse[1];
+        s->n_sse_cmp[0] = mecc.sse[0];
+        s->n_sse_cmp[1] = mecc.sse[1];
     }
 
     return 0;
@@ -1123,8 +1130,8 @@ static int get_intra_count(MpegEncContext *s, const uint8_t *src,
     for (y = 0; y < h; y += 16) {
         for (x = 0; x < w; x += 16) {
             int offset = x + y * stride;
-            int sad  = s->mecc.sad[0](NULL, src + offset, ref + offset,
-                                      stride, 16);
+            int sad  = s->sad_cmp[0](NULL, src + offset, ref + offset,
+                                     stride, 16);
             int mean = (s->mpvencdsp.pix_sum(src + offset, stride) + 128) >> 8;
             int sae  = get_sae(src + offset, mean, stride);
 
@@ -2347,28 +2354,28 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         /* pre quantization */
         if (s->mc_mb_var[s->mb_stride * mb_y + mb_x] < 2 * s->qscale * s->qscale) {
             // FIXME optimize
-            if (s->mecc.sad[1](NULL, ptr_y, dest_y, wrap_y, 8) < 20 * s->qscale)
+            if (s->sad_cmp[1](NULL, ptr_y, dest_y, wrap_y, 8) < 20 * s->qscale)
                 skip_dct[0] = 1;
-            if (s->mecc.sad[1](NULL, ptr_y + 8, dest_y + 8, wrap_y, 8) < 20 * s->qscale)
+            if (s->sad_cmp[1](NULL, ptr_y + 8, dest_y + 8, wrap_y, 8) < 20 * s->qscale)
                 skip_dct[1] = 1;
-            if (s->mecc.sad[1](NULL, ptr_y + dct_offset, dest_y + dct_offset,
-                               wrap_y, 8) < 20 * s->qscale)
+            if (s->sad_cmp[1](NULL, ptr_y + dct_offset, dest_y + dct_offset,
+                              wrap_y, 8) < 20 * s->qscale)
                 skip_dct[2] = 1;
-            if (s->mecc.sad[1](NULL, ptr_y + dct_offset + 8, dest_y + dct_offset + 8,
-                               wrap_y, 8) < 20 * s->qscale)
+            if (s->sad_cmp[1](NULL, ptr_y + dct_offset + 8, dest_y + dct_offset + 8,
+                              wrap_y, 8) < 20 * s->qscale)
                 skip_dct[3] = 1;
-            if (s->mecc.sad[1](NULL, ptr_cb, dest_cb, wrap_c, 8) < 20 * s->qscale)
+            if (s->sad_cmp[1](NULL, ptr_cb, dest_cb, wrap_c, 8) < 20 * s->qscale)
                 skip_dct[4] = 1;
-            if (s->mecc.sad[1](NULL, ptr_cr, dest_cr, wrap_c, 8) < 20 * s->qscale)
+            if (s->sad_cmp[1](NULL, ptr_cr, dest_cr, wrap_c, 8) < 20 * s->qscale)
                 skip_dct[5] = 1;
             if (!chroma_y_shift) { /* 422 */
-                if (s->mecc.sad[1](NULL, ptr_cb + uv_dct_offset,
-                                   dest_cb + uv_dct_offset,
-                                   wrap_c, 8) < 20 * s->qscale)
+                if (s->sad_cmp[1](NULL, ptr_cb + uv_dct_offset,
+                                  dest_cb + uv_dct_offset,
+                                  wrap_c, 8) < 20 * s->qscale)
                     skip_dct[6] = 1;
-                if (s->mecc.sad[1](NULL, ptr_cr + uv_dct_offset,
-                                   dest_cr + uv_dct_offset,
-                                   wrap_c, 8) < 20 * s->qscale)
+                if (s->sad_cmp[1](NULL, ptr_cr + uv_dct_offset,
+                                  dest_cr + uv_dct_offset,
+                                  wrap_c, 8) < 20 * s->qscale)
                     skip_dct[7] = 1;
             }
         }
@@ -2647,9 +2654,9 @@ static int sse(MpegEncContext *s, const uint8_t *src1, const uint8_t *src2, int 
     int x,y;
 
     if(w==16 && h==16)
-        return s->mecc.sse[0](NULL, src1, src2, stride, 16);
+        return s->sse_cmp[0](NULL, src1, src2, stride, 16);
     else if(w==8 && h==8)
-        return s->mecc.sse[1](NULL, src1, src2, stride, 8);
+        return s->sse_cmp[1](NULL, src1, src2, stride, 8);
 
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){

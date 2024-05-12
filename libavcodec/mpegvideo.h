@@ -220,7 +220,6 @@ typedef struct MpegEncContext {
     H264ChromaContext h264chroma;
     HpelDSPContext hdsp;
     IDCTDSPContext idsp;
-    MECmpContext mecc;
     MpegvideoEncDSPContext mpvencdsp;
     PixblockDSPContext pdsp;
     QpelDSPContext qdsp;
@@ -508,6 +507,9 @@ typedef struct MpegEncContext {
 
     me_cmp_func ildct_cmp[2]; ///< 0 = intra, 1 = non-intra
     me_cmp_func n_sse_cmp[2]; ///< either SSE or NSSE cmp func
+    me_cmp_func sad_cmp[2];
+    me_cmp_func sse_cmp[2];
+    int (*sum_abs_dctelem)(const int16_t *block);
 
     /**
      * ratecontrol qmin qmax limiting method

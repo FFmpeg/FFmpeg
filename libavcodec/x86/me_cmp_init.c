@@ -94,7 +94,7 @@ static int nsse16_mmx(MpegEncContext *c, const uint8_t *pix1, const uint8_t *pix
     int score1, score2;
 
     if (c)
-        score1 = c->mecc.sse[0](c, pix1, pix2, stride, h);
+        score1 = c->sse_cmp[0](c, pix1, pix2, stride, h);
     else
         score1 = ff_sse16_mmx(c, pix1, pix2, stride, h);
     score2 = ff_hf_noise16_mmx(pix1, stride, h) + ff_hf_noise8_mmx(pix1+8, stride, h)
