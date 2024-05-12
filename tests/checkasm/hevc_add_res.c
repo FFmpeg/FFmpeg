@@ -50,7 +50,7 @@ static void compare_add_res(int size, ptrdiff_t stride, int overflow_test, int m
     LOCAL_ALIGNED_32(uint8_t, dst0, [32 * 32 * 2]);
     LOCAL_ALIGNED_32(uint8_t, dst1, [32 * 32 * 2]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *res, ptrdiff_t stride);
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, const int16_t *res, ptrdiff_t stride);
 
     randomize_buffers(res0, size);
     randomize_buffers2(dst0, size, mask);
