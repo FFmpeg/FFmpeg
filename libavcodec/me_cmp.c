@@ -995,6 +995,8 @@ WRAPPER8_16_SQ(bit8x8_c, bit16_c)
 
 av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
 {
+    memset(c, 0, sizeof(*c));
+
     c->sum_abs_dctelem = sum_abs_dctelem_c;
 
     /* TODO [0] 16  [1] 8 */

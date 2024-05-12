@@ -131,12 +131,10 @@ int main(int argc, char **argv)
     ctx = avcodec_alloc_context3(NULL);
     ctx->flags |= AV_CODEC_FLAG_BITEXACT;
     av_force_cpu_flags(0);
-    memset(&cctx, 0, sizeof(cctx));
     ff_me_cmp_init(&cctx, ctx);
     for (c = 0; c < flags_size; c++) {
         int x;
         av_force_cpu_flags(flags[c]);
-        memset(&mmxctx, 0, sizeof(mmxctx));
         ff_me_cmp_init(&mmxctx, ctx);
 
         for (x = 0; x < 2; x++) {

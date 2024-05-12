@@ -116,9 +116,6 @@ static void check_motion(void)
     AVCodecContext av_ctx = { .codec_id = AV_CODEC_ID_NONE, .flags = AV_CODEC_FLAG_BITEXACT };
     MECmpContext me_ctx;
 
-    memset(&me_ctx, 0, sizeof(me_ctx));
-
-
     ff_me_cmp_init(&me_ctx, &av_ctx);
 
     for (int i = 0; i < FF_ARRAY_ELEMS(me_ctx.pix_abs); i++) {

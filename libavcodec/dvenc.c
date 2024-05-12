@@ -98,7 +98,6 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
         MECmpContext mecc;
         me_cmp_func ildct_cmp[6];
 
-        memset(&mecc,0, sizeof(mecc));
         ff_me_cmp_init(&mecc, avctx);
         ret = ff_set_cmp(&mecc, ildct_cmp, avctx->ildct_cmp, 0);
         if (ret < 0)
