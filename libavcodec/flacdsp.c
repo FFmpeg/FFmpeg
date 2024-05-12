@@ -84,10 +84,26 @@ static void flac_lpc_32_c(int32_t *decoded, const int coeffs[32],
 
 }
 
+static void flac_wasted_32_c(int32_t *decoded, int wasted, int len)
+{
+    for (int i = 0; i < len; i++)
+        decoded[i] = (unsigned)decoded[i] << wasted;
+}
+
+static void flac_wasted_33_c(int64_t *decoded, const int32_t *residual,
+                             int wasted, int len)
+{
+    for (int i = 0; i < len; i++)
+        decoded[i] = (uint64_t)residual[i] << wasted;
+}
+
 av_cold void ff_flacdsp_init(FLACDSPContext *c, enum AVSampleFormat fmt, int channels)
 {
     c->lpc16        = flac_lpc_16_c;
     c->lpc32        = flac_lpc_32_c;
+
+    c->wasted32     = flac_wasted_32_c;
+    c->wasted33     = flac_wasted_33_c;
 
     switch (fmt) {
     case AV_SAMPLE_FMT_S32:

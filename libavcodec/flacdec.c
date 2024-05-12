@@ -602,13 +602,9 @@ static inline int decode_subframe(FLACContext *s, int channel)
 
     if (wasted) {
         if (wasted+bps == 33) {
-            int i;
-            for (i = 0; i < s->blocksize; i++)
-                s->decoded_33bps[i] = (uint64_t)decoded[i] << wasted;
+            s->dsp.wasted33(s->decoded_33bps, decoded, wasted, s->blocksize);
         } else if (wasted < 32) {
-            int i;
-            for (i = 0; i < s->blocksize; i++)
-                decoded[i] = (unsigned)decoded[i] << wasted;
+            s->dsp.wasted32(decoded, wasted, s->blocksize);
         }
     }
 
