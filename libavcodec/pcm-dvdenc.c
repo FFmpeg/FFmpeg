@@ -117,7 +117,7 @@ static int pcm_dvd_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
 {
     PCMDVDContext *s = avctx->priv_data;
     int samples = frame->nb_samples * avctx->ch_layout.nb_channels;
-    int64_t pkt_size = (frame->nb_samples / s->samples_per_block) * s->block_size + 3;
+    int64_t pkt_size = (int64_t)(frame->nb_samples / s->samples_per_block) * s->block_size + 3;
     int blocks = (pkt_size - 3) / s->block_size;
     const int16_t *src16;
     const int32_t *src32;
