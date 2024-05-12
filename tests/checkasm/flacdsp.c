@@ -83,6 +83,35 @@ static void check_lpc(int pred_order, int bps)
     bench_new(dst, coeffs, pred_order, qlevel, BUF_SIZE);
 }
 
+static void check_lpc33(int pred_order)
+{
+    int qlevel = rnd() % 16;
+    int coeff_prec = (rnd() % 15) + 1;
+    LOCAL_ALIGNED_16(int64_t, dst,  [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int64_t, dst0, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int64_t, dst1, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int32_t, residuals, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(int32_t, coeffs, [32]);
+
+    declare_func(void, int64_t *, const int32_t *, const int[32], int, int, int);
+
+    for (int i = 0; i < 32; i++)
+        coeffs[i] = sign_extend(rnd(), coeff_prec);
+
+    for (int i = 0; i < BUF_SIZE; i++) {
+        residuals[i] = sign_extend(rnd(), pred_order);
+        dst[i] = sign_extend64(((int64_t)rnd() << 1) | (rnd() & 1), 33);
+    }
+
+    memcpy(dst0, dst, BUF_SIZE * sizeof (int64_t));
+    memcpy(dst1, dst, BUF_SIZE * sizeof (int64_t));
+    call_ref(dst0, residuals, coeffs, pred_order, qlevel, BUF_SIZE);
+    call_new(dst1, residuals, coeffs, pred_order, qlevel, BUF_SIZE);
+    if (memcmp(dst0, dst1, BUF_SIZE * sizeof (int64_t)) != 0)
+       fail();
+    bench_new(dst, residuals, coeffs, pred_order, qlevel, BUF_SIZE);
+}
+
 static void check_wasted32(void)
 {
     int wasted = rnd() % 32;
@@ -165,6 +194,9 @@ void checkasm_check_flacdsp(void)
     for (i = 0; i < FF_ARRAY_ELEMS(pred_orders); i++)
         if (check_func(h.lpc32, "flac_lpc_32_%d", pred_orders[i]))
             check_lpc(pred_orders[i], 32);
+    for (i = 0; i < FF_ARRAY_ELEMS(pred_orders); i++)
+        if (check_func(h.lpc33, "flac_lpc_33_%d", pred_orders[i]))
+            check_lpc33(pred_orders[i]);
 
     report("lpc");
 
