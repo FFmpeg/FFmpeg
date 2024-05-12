@@ -488,6 +488,7 @@ Resamplers:
 Operating systems / CPU architectures
 =====================================
 
+*BSD                                    Brad Smith
 Alpha                                   Falk Hueffner
 MIPS                                    Manojkumar Bhosale, Shiyou Yin
 LoongArch                               Shiyou Yin
