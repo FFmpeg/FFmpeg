@@ -111,3 +111,51 @@ func ff_vc1_inv_trans_4x4_dc_rvv, zve32x
         vsse32.v      v0, (a0), a1
         ret
 endfunc
+
+.macro mspel_op op pos n1 n2
+        add           t1, \pos, a2
+        v\op\()e8.v   v\n1, (\pos)
+        sh1add        \pos, a2, \pos
+        v\op\()e8.v   v\n2, (t1)
+.endm
+
+.macro mspel_op_all op pos a1 a2 a3 a4 a5 a6 a7 a8 a9 a10 a11 a12 a13 a14 a15 a16
+        mspel_op      \op \pos \a1 \a2
+        mspel_op      \op \pos \a3 \a4
+        mspel_op      \op \pos \a5 \a6
+        mspel_op      \op \pos \a7 \a8
+        mspel_op      \op \pos \a9 \a10
+        mspel_op      \op \pos \a11 \a12
+        mspel_op      \op \pos \a13 \a14
+        mspel_op      \op \pos \a15 \a16
+.endm
+
+func ff_avg_pixels16x16_rvv, zve32x
+        csrwi         vxrm, 0
+        vsetivli      zero, 16, e8, m1, ta, ma
+        mspel_op_all  l a1 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+        mspel_op_all  l a0 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+        vsetvli       t0, zero, e8, m8, ta, ma
+        sub           a0, a0, a2
+        vaaddu.vv     v0, v0, v16
+        neg           a2, a2
+        vaaddu.vv     v8, v8, v24
+        vsetivli      zero, 16, e8, m1, ta, ma
+        mspel_op_all  s a0 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
+
+        ret
+endfunc
+
+func ff_avg_pixels8x8_rvv, zve64x
+        csrwi         vxrm, 0
+        li            t0, 64
+        vsetivli      zero, 8, e8, mf2, ta, ma
+        vlse64.v      v16, (a1), a2
+        vlse64.v      v8, (a0), a2
+        vsetvli       zero, t0, e8, m4, ta, ma
+        vaaddu.vv     v16, v16, v8
+        vsetivli      zero, 8, e8, mf2, ta, ma
+        vsse64.v      v16, (a0), a2
+
+        ret
+endfunc

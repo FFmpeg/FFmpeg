@@ -58,6 +58,7 @@ RVV-OBJS-$(CONFIG_TAK_DECODER) += riscv/takdsp_rvv.o
 OBJS-$(CONFIG_UTVIDEO_DECODER) += riscv/utvideodsp_init.o
 RVV-OBJS-$(CONFIG_UTVIDEO_DECODER) += riscv/utvideodsp_rvv.o
 OBJS-$(CONFIG_VC1DSP) += riscv/vc1dsp_init.o
+RV-OBJS-$(CONFIG_VC1DSP) += riscv/vc1dsp_rvi.o
 RVV-OBJS-$(CONFIG_VC1DSP) += riscv/vc1dsp_rvv.o
 OBJS-$(CONFIG_VP8DSP) += riscv/vp8dsp_init.o
 RV-OBJS-$(CONFIG_VP8DSP) += riscv/vp8dsp_rvi.o
