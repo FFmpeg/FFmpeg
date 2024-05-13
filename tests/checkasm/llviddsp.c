@@ -114,7 +114,7 @@ static void check_add_left_pred(LLVidDSPContext *c, int width, int acc, const ch
     uint8_t *dst1 = av_mallocz(width);
     uint8_t *src0 = av_calloc(width, sizeof(*src0));
     uint8_t *src1 = av_calloc(width, sizeof(*src1));
-    declare_func(int, uint8_t *dst, uint8_t *src, ptrdiff_t w, int acc);
+    declare_func(int, uint8_t *dst, const uint8_t *src, ptrdiff_t w, int acc);
 
     init_buffer(src0, src1, uint8_t, width);
 
@@ -143,7 +143,7 @@ static void check_add_left_pred_16(LLVidDSPContext *c, unsigned mask, int width,
     uint16_t *dst1 = av_calloc(width, sizeof(*dst1));
     uint16_t *src0 = av_calloc(width, sizeof(*src0));
     uint16_t *src1 = av_calloc(width, sizeof(*src1));
-    declare_func(int, uint16_t *dst, uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
+    declare_func(int, uint16_t *dst, const uint16_t *src, unsigned mask, ptrdiff_t w, unsigned acc);
 
     init_buffer(src0, src1, uint16_t, width);
 
