@@ -121,7 +121,8 @@ static void check_put_vvc_luma_uni(void)
 
     VVCDSPContext c;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride,  int height, const int8_t *hf, const int8_t *vf, int width);
+        const uint8_t *src, ptrdiff_t srcstride,  int height,
+        const int8_t *hf, const int8_t *vf, int width);
 
     for (int bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         ff_vvc_dsp_init(&c, bit_depth);
@@ -219,7 +220,8 @@ static void check_put_vvc_chroma_uni(void)
 
     VVCDSPContext c;
     declare_func(void, uint8_t *dst, ptrdiff_t dststride,
-        uint8_t *src, ptrdiff_t srcstride,  int height, const int8_t *hf, const int8_t *vf, int width);
+        const uint8_t *src, ptrdiff_t srcstride, int height,
+        const int8_t *hf, const int8_t *vf, int width);
 
     for (int bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         ff_vvc_dsp_init(&c, bit_depth);
