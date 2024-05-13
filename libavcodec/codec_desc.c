@@ -2641,6 +2641,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA HVQM4"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_ADPCM_IMA_PDA,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "adpcm_ima_pda",
+        .long_name = NULL_IF_CONFIG_SMALL("ADPCM IMA PlayDate"),
+        .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
+    },
 
     /* AMR */
     {

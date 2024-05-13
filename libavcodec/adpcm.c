@@ -1209,6 +1209,11 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
             buf_size = FFMIN(buf_size, avctx->block_align);
         nb_samples = (buf_size - 4 * ch) * 2 / ch;
         break;
+    case AV_CODEC_ID_ADPCM_IMA_PDA:
+        if (avctx->block_align > 0)
+            buf_size = FFMIN(buf_size, avctx->block_align);
+        nb_samples = (buf_size - 4 * ch) * 2 / ch;
+        break;
     CASE(ADPCM_IMA_WAV,
         int bsize = ff_adpcm_ima_block_sizes[avctx->bits_per_coded_sample - 2];
         int bsamples = ff_adpcm_ima_block_samples[avctx->bits_per_coded_sample - 2];
@@ -2204,6 +2209,25 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             }
         }
         ) /* End of CASE */
+    CASE(ADPCM_IMA_PDA,
+        for (int i = 0; i < channels; i++) {
+            c->status[i].predictor = sign_extend(bytestream2_get_le16u(&gb), 16);
+            c->status[i].step_index = bytestream2_get_byteu(&gb);
+            bytestream2_skipu(&gb, 1);
+            if (c->status[i].step_index > 88u) {
+                av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n",
+                       c->status[i].step_index);
+                return AVERROR_INVALIDDATA;
+            }
+        }
+
+        for (int n = nb_samples >> (1 - st); n > 0; n--) {
+            int v = bytestream2_get_byteu(&gb);
+
+            *samples++ = ff_adpcm_ima_qt_expand_nibble(&c->status[0 ], v >> 4 );
+            *samples++ = ff_adpcm_ima_qt_expand_nibble(&c->status[st], v & 0xf);
+        }
+        ) /* End of CASE */
     CASE(ADPCM_IMA_SMJPEG,
         for (int i = 0; i < channels; i++) {
             c->status[i].predictor = sign_extend(bytestream2_get_be16u(&gb), 16);
@@ -2706,6 +2730,7 @@ ADPCM_DECODER(ADPCM_IMA_ISS,     sample_fmts_s16,  adpcm_ima_iss,     "ADPCM IMA
 ADPCM_DECODER(ADPCM_IMA_MOFLEX,  sample_fmts_s16p, adpcm_ima_moflex,  "ADPCM IMA MobiClip MOFLEX")
 ADPCM_DECODER(ADPCM_IMA_MTF,     sample_fmts_s16,  adpcm_ima_mtf,     "ADPCM IMA Capcom's MT Framework")
 ADPCM_DECODER(ADPCM_IMA_OKI,     sample_fmts_s16,  adpcm_ima_oki,     "ADPCM IMA Dialogic OKI")
+ADPCM_DECODER(ADPCM_IMA_PDA,     sample_fmts_s16,  adpcm_ima_pda,     "ADPCM IMA PlayDate")
 ADPCM_DECODER(ADPCM_IMA_QT,      sample_fmts_s16p, adpcm_ima_qt,      "ADPCM IMA QuickTime")
 ADPCM_DECODER(ADPCM_IMA_RAD,     sample_fmts_s16,  adpcm_ima_rad,     "ADPCM IMA Radical")
 ADPCM_DECODER(ADPCM_IMA_SSI,     sample_fmts_s16,  adpcm_ima_ssi,     "ADPCM IMA Simon & Schuster Interactive")
