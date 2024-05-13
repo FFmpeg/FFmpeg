@@ -87,6 +87,27 @@ AVG_PROTOTYPES( 8, avx2)
 AVG_PROTOTYPES(10, avx2)
 AVG_PROTOTYPES(12, avx2)
 
+#define ALF_BPC_PROTOTYPES(bpc, opt)                                                                                     \
+void BF(ff_vvc_alf_filter_luma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                            \
+    const uint8_t *src, ptrdiff_t src_stride, ptrdiff_t width, ptrdiff_t height,                                         \
+    const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);                \
+void BF(ff_vvc_alf_filter_chroma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                          \
+    const uint8_t *src, ptrdiff_t src_stride, ptrdiff_t width, ptrdiff_t height,                                         \
+    const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);                \
+
+#define ALF_PROTOTYPES(bpc, bd, opt)                                                                                     \
+void bf(ff_vvc_alf_filter_luma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride,   \
+    int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos);                                \
+void bf(ff_vvc_alf_filter_chroma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, \
+    int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos);                                \
+
+ALF_BPC_PROTOTYPES(8,  avx2)
+ALF_BPC_PROTOTYPES(16, avx2)
+
+ALF_PROTOTYPES(8,  8,  avx2)
+ALF_PROTOTYPES(16, 10, avx2)
+ALF_PROTOTYPES(16, 12, avx2)
+
 #if ARCH_X86_64
 #if HAVE_SSE4_EXTERNAL
 #define FW_PUT(name, depth, opt) \
@@ -181,6 +202,26 @@ void bf(ff_vvc_w_avg, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride,              
 AVG_FUNCS(8,  8,  avx2)
 AVG_FUNCS(16, 10, avx2)
 AVG_FUNCS(16, 12, avx2)
+
+#define ALF_FUNCS(bpc, bd, opt)                                                                                          \
+void bf(ff_vvc_alf_filter_luma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride,   \
+    int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos)                                 \
+{                                                                                                                        \
+    const int param_stride  = (width >> 2) * ALF_NUM_COEFF_LUMA;                                                         \
+    BF(ff_vvc_alf_filter_luma, bpc, opt)(dst, dst_stride, src, src_stride, width, height,                                \
+        filter, clip, param_stride, vb_pos, (1 << bd)  - 1);                                                             \
+}                                                                                                                        \
+void bf(ff_vvc_alf_filter_chroma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, \
+    int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos)                                 \
+{                                                                                                                        \
+    BF(ff_vvc_alf_filter_chroma, bpc, opt)(dst, dst_stride, src, src_stride, width, height,                              \
+        filter, clip, 0, vb_pos,(1 << bd)  - 1);                                                                         \
+}                                                                                                                        \
+
+ALF_FUNCS(8,  8,  avx2)
+ALF_FUNCS(16, 10, avx2)
+ALF_FUNCS(16, 12, avx2)
+
 #endif
 
 #define PEL_LINK(dst, C, W, idx1, idx2, name, D, opt)                              \
@@ -252,6 +293,11 @@ AVG_FUNCS(16, 12, avx2)
     c->inter.avg    = bf(ff_vvc_avg, bd, opt);                       \
     c->inter.w_avg  = bf(ff_vvc_w_avg, bd, opt);                     \
 } while (0)
+
+#define ALF_INIT(bd) do {                                            \
+    c->alf.filter[LUMA]   = ff_vvc_alf_filter_luma_##bd##_avx2;      \
+    c->alf.filter[CHROMA] = ff_vvc_alf_filter_chroma_##bd##_avx2;    \
+} while (0)
 #endif
 
 void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
@@ -287,12 +333,15 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
     if (EXTERNAL_AVX2(cpu_flags)) {
         switch (bd) {
             case 8:
+                ALF_INIT(8);
                 AVG_INIT(8, avx2);
                 break;
             case 10:
+                ALF_INIT(10);
                 AVG_INIT(10, avx2);
                 break;
             case 12:
+                ALF_INIT(12);
                 AVG_INIT(12, avx2);
                 break;
             default:
