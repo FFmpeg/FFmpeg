@@ -26,7 +26,6 @@
 
 void ff_sbr_sum64x5_rvv(float *z);
 float ff_sbr_sum_square_rvv(float (*x)[2], int n);
-void ff_sbr_neg_odd_64_rvv(float *x);
 void ff_sbr_autocorrelate_rvv(const float x[40][2], float phi[3][2][2]);
 void ff_sbr_hf_gen_rvv(float (*X_high)[2], const float (*X_low)[2],
                        const float alpha0[2], const float alpha1[2],
@@ -64,9 +63,5 @@ av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
         }
         c->autocorrelate = ff_sbr_autocorrelate_rvv;
     }
-#if __riscv_xlen >= 64
-    if ((flags & AV_CPU_FLAG_RVV_I64) && (flags & AV_CPU_FLAG_RVB_ADDR))
-        c->neg_odd_64 = ff_sbr_neg_odd_64_rvv;
-#endif
 #endif
 }
