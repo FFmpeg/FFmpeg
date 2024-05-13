@@ -167,6 +167,9 @@ void ff_copy##SIZE##_rvi(uint8_t *dst, ptrdiff_t dststride,        \
                          const uint8_t *src, ptrdiff_t srcstride,  \
                          int h, int mx, int my);
 
+VP9_COPY_RISCV_RVI_FUNC(64);
+VP9_COPY_RISCV_RVI_FUNC(32);
+VP9_COPY_RISCV_RVI_FUNC(16);
 VP9_COPY_RISCV_RVI_FUNC(8);
 VP9_COPY_RISCV_RVI_FUNC(4);
 

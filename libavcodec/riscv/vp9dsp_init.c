@@ -24,6 +24,33 @@
 #include "libavcodec/vp9dsp.h"
 #include "vp9dsp.h"
 
+static av_cold void vp9dsp_mc_init_riscv(VP9DSPContext *dsp, int bpp)
+{
+#if HAVE_RV
+    int flags = av_get_cpu_flags();
+
+# if __riscv_xlen >= 64
+    if (bpp == 8 && (flags & AV_CPU_FLAG_RV_MISALIGNED)) {
+
+#define init_fpel(idx1, sz)                                           \
+    dsp->mc[idx1][FILTER_8TAP_SMOOTH ][0][0][0] = ff_copy##sz##_rvi;  \
+    dsp->mc[idx1][FILTER_8TAP_REGULAR][0][0][0] = ff_copy##sz##_rvi;  \
+    dsp->mc[idx1][FILTER_8TAP_SHARP  ][0][0][0] = ff_copy##sz##_rvi;  \
+    dsp->mc[idx1][FILTER_BILINEAR    ][0][0][0] = ff_copy##sz##_rvi
+
+    init_fpel(0, 64);
+    init_fpel(1, 32);
+    init_fpel(2, 16);
+    init_fpel(3, 8);
+    init_fpel(4, 4);
+
+#undef init_fpel
+    }
+# endif
+
+#endif
+}
+
 static av_cold void vp9dsp_intrapred_init_riscv(VP9DSPContext *dsp, int bpp)
 {
 #if HAVE_RV
@@ -67,4 +94,5 @@ static av_cold void vp9dsp_intrapred_init_riscv(VP9DSPContext *dsp, int bpp)
 av_cold void ff_vp9dsp_init_riscv(VP9DSPContext *dsp, int bpp, int bitexact)
 {
     vp9dsp_intrapred_init_riscv(dsp, bpp);
+    vp9dsp_mc_init_riscv(dsp, bpp);
 }
