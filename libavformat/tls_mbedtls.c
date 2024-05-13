@@ -328,6 +328,9 @@ static int handle_tls_error(URLContext *h, const char* func_name, int ret)
     switch (ret) {
     case MBEDTLS_ERR_SSL_WANT_READ:
     case MBEDTLS_ERR_SSL_WANT_WRITE:
+#ifdef MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET
+    case MBEDTLS_ERR_SSL_RECEIVED_NEW_SESSION_TICKET:
+#endif
         return AVERROR(EAGAIN);
     case MBEDTLS_ERR_NET_SEND_FAILED:
     case MBEDTLS_ERR_NET_RECV_FAILED:
