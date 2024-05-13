@@ -52,8 +52,8 @@ static void test_motion(const char *name, me_cmp_func test_func)
     LOCAL_ALIGNED_16(uint8_t, img2, [WIDTH * HEIGHT]);
 
     declare_func_emms(AV_CPU_FLAG_MMX, int, struct MpegEncContext *c,
-                      uint8_t *blk1 /* align width (8 or 16) */,
-                      uint8_t *blk2 /* align 1 */, ptrdiff_t stride,
+                      const uint8_t *blk1 /* align width (8 or 16) */,
+                      const uint8_t *blk2 /* align 1 */, ptrdiff_t stride,
                       int h);
 
     if (test_func == NULL) {
