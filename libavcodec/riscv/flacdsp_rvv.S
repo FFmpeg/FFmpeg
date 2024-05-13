@@ -44,7 +44,7 @@ func ff_flac_lpc16_rvv, zve32x
 endfunc
 
 #if (__riscv_xlen == 64)
-func ff_flac_lpc32_rvv, zve32x
+func ff_flac_lpc32_rvv, zve64x
         addi    t2, a2, -16
         ble     t2, zero, ff_flac_lpc32_rvv_simple
         vsetivli zero, 1, e64, m1, ta, ma
@@ -75,7 +75,7 @@ func ff_flac_lpc32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_lpc32_rvv_simple, zve32x
+func ff_flac_lpc32_rvv_simple, zve64x
         vsetivli zero, 1, e64, m1, ta, ma
         vmv.s.x v0, zero
         vsetvli zero, a2, e32, m4, ta, ma
