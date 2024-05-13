@@ -297,98 +297,98 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
             return AVERROR_INVALIDDATA;
     }
 
-        slice_begin = slice_offsets[slice_number];
-        slice_end = slice_offsets[slice_number + 1];
+    slice_begin = slice_offsets[slice_number];
+    slice_end = slice_offsets[slice_number + 1];
 
-        if ((ret = init_get_bits8(&gb, buf + slice_begin + 3, slice_end - slice_begin - 3)) < 0)
-            return ret;
+    if ((ret = init_get_bits8(&gb, buf + slice_begin + 3, slice_end - slice_begin - 3)) < 0)
+        return ret;
 
-        for (y = slice_number * 16 * line_stride; y < frame->height; y += line_stride * 64) {
-            uint8_t *dest_y, *dest_cb, *dest_cr, *dest_a;
-            int last_dc[4] = { 1024, 1024, 1024, 1024 };
-            uint8_t last_alpha[16];
+    for (y = slice_number * 16 * line_stride; y < frame->height; y += line_stride * 64) {
+        uint8_t *dest_y, *dest_cb, *dest_cr, *dest_a;
+        int last_dc[4] = { 1024, 1024, 1024, 1024 };
+        uint8_t last_alpha[16];
 
-            memset(last_alpha, 255, sizeof(last_alpha));
+        memset(last_alpha, 255, sizeof(last_alpha));
 
-            dest_y = frame->data[0] + frame->linesize[0] * (y + field_number);
-            if (s->subsampling == SHQ_SUBSAMPLING_420) {
-                dest_cb = frame->data[1] + frame->linesize[1] * (y/2 + field_number);
-                dest_cr = frame->data[2] + frame->linesize[2] * (y/2 + field_number);
-            } else {
-                dest_cb = frame->data[1] + frame->linesize[1] * (y + field_number);
-                dest_cr = frame->data[2] + frame->linesize[2] * (y + field_number);
-            }
-            if (s->alpha_type != SHQ_NO_ALPHA) {
-                dest_a = frame->data[3] + frame->linesize[3] * (y + field_number);
-            }
+        dest_y = frame->data[0] + frame->linesize[0] * (y + field_number);
+        if (s->subsampling == SHQ_SUBSAMPLING_420) {
+            dest_cb = frame->data[1] + frame->linesize[1] * (y/2 + field_number);
+            dest_cr = frame->data[2] + frame->linesize[2] * (y/2 + field_number);
+        } else {
+            dest_cb = frame->data[1] + frame->linesize[1] * (y + field_number);
+            dest_cr = frame->data[2] + frame->linesize[2] * (y + field_number);
+        }
+        if (s->alpha_type != SHQ_NO_ALPHA) {
+            dest_a = frame->data[3] + frame->linesize[3] * (y + field_number);
+        }
 
-            for (x = 0; x < frame->width - 8 * (s->subsampling != SHQ_SUBSAMPLING_444); x += 16) {
-                /* Decode the four luma blocks. */
-                if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y, linesize_y)) < 0)
+        for (x = 0; x < frame->width - 8 * (s->subsampling != SHQ_SUBSAMPLING_444); x += 16) {
+            /* Decode the four luma blocks. */
+            if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y, linesize_y)) < 0)
+                return ret;
+            if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y + 8, linesize_y)) < 0)
+                return ret;
+            if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y + 8 * linesize_y, linesize_y)) < 0)
+                return ret;
+            if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y + 8 * linesize_y + 8, linesize_y)) < 0)
+                return ret;
+
+            /*
+                * Decode the first chroma block. For 4:2:0, this is the only one;
+                * for 4:2:2, it's the top block; for 4:4:4, it's the top-left block.
+                */
+            if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb, linesize_cb)) < 0)
+                return ret;
+            if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr, linesize_cr)) < 0)
+                return ret;
+
+            if (s->subsampling != SHQ_SUBSAMPLING_420) {
+                /* For 4:2:2, this is the bottom block; for 4:4:4, it's the bottom-left block. */
+                if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb + 8 * linesize_cb, linesize_cb)) < 0)
                     return ret;
-                if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y + 8, linesize_y)) < 0)
-                    return ret;
-                if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y + 8 * linesize_y, linesize_y)) < 0)
-                    return ret;
-                if ((ret = decode_dct_block(s, &gb, last_dc, 0, dest_y + 8 * linesize_y + 8, linesize_y)) < 0)
+                if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr + 8 * linesize_cr, linesize_cr)) < 0)
                     return ret;
 
-                /*
-                 * Decode the first chroma block. For 4:2:0, this is the only one;
-                 * for 4:2:2, it's the top block; for 4:4:4, it's the top-left block.
-                 */
-                if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb, linesize_cb)) < 0)
-                    return ret;
-                if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr, linesize_cr)) < 0)
-                    return ret;
-
-                if (s->subsampling != SHQ_SUBSAMPLING_420) {
-                    /* For 4:2:2, this is the bottom block; for 4:4:4, it's the bottom-left block. */
-                    if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb + 8 * linesize_cb, linesize_cb)) < 0)
+                if (s->subsampling == SHQ_SUBSAMPLING_444) {
+                    /* Top-right and bottom-right blocks. */
+                    if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb + 8, linesize_cb)) < 0)
                         return ret;
-                    if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr + 8 * linesize_cr, linesize_cr)) < 0)
+                    if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr + 8, linesize_cr)) < 0)
+                        return ret;
+                    if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb + 8 * linesize_cb + 8, linesize_cb)) < 0)
+                        return ret;
+                    if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr + 8 * linesize_cr + 8, linesize_cr)) < 0)
                         return ret;
 
-                    if (s->subsampling == SHQ_SUBSAMPLING_444) {
-                        /* Top-right and bottom-right blocks. */
-                        if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb + 8, linesize_cb)) < 0)
-                            return ret;
-                        if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr + 8, linesize_cr)) < 0)
-                            return ret;
-                        if ((ret = decode_dct_block(s, &gb, last_dc, 1, dest_cb + 8 * linesize_cb + 8, linesize_cb)) < 0)
-                            return ret;
-                        if ((ret = decode_dct_block(s, &gb, last_dc, 2, dest_cr + 8 * linesize_cr + 8, linesize_cr)) < 0)
-                            return ret;
-
-                        dest_cb += 8;
-                        dest_cr += 8;
-                    }
+                    dest_cb += 8;
+                    dest_cr += 8;
                 }
-                dest_y += 16;
-                dest_cb += 8;
-                dest_cr += 8;
+            }
+            dest_y += 16;
+            dest_cb += 8;
+            dest_cr += 8;
 
-                if (s->alpha_type == SHQ_RLE_ALPHA) {
-                    /* Alpha coded using 16x8 RLE blocks. */
-                    if ((ret = decode_alpha_block(s, &gb, last_alpha, dest_a, linesize_a)) < 0)
-                        return ret;
-                    if ((ret = decode_alpha_block(s, &gb, last_alpha, dest_a + 8 * linesize_a, linesize_a)) < 0)
-                        return ret;
-                    dest_a += 16;
-                } else if (s->alpha_type == SHQ_DCT_ALPHA) {
-                    /* Alpha encoded exactly like luma. */
-                    if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a, linesize_a)) < 0)
-                        return ret;
-                    if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a + 8, linesize_a)) < 0)
-                        return ret;
-                    if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a + 8 * linesize_a, linesize_a)) < 0)
-                        return ret;
-                    if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a + 8 * linesize_a + 8, linesize_a)) < 0)
-                        return ret;
-                    dest_a += 16;
-                }
+            if (s->alpha_type == SHQ_RLE_ALPHA) {
+                /* Alpha coded using 16x8 RLE blocks. */
+                if ((ret = decode_alpha_block(s, &gb, last_alpha, dest_a, linesize_a)) < 0)
+                    return ret;
+                if ((ret = decode_alpha_block(s, &gb, last_alpha, dest_a + 8 * linesize_a, linesize_a)) < 0)
+                    return ret;
+                dest_a += 16;
+            } else if (s->alpha_type == SHQ_DCT_ALPHA) {
+                /* Alpha encoded exactly like luma. */
+                if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a, linesize_a)) < 0)
+                    return ret;
+                if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a + 8, linesize_a)) < 0)
+                    return ret;
+                if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a + 8 * linesize_a, linesize_a)) < 0)
+                    return ret;
+                if ((ret = decode_dct_block(s, &gb, last_dc, 3, dest_a + 8 * linesize_a + 8, linesize_a)) < 0)
+                    return ret;
+                dest_a += 16;
             }
         }
+    }
 
     if (s->subsampling != SHQ_SUBSAMPLING_444 && (frame->width & 15) && slice_number == 3)
         return decode_speedhq_border(s, &gb, frame, field_number, line_stride);
