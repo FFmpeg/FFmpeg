@@ -26,6 +26,9 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/x509_crt.h>
+#ifdef MBEDTLS_PSA_CRYPTO_C
+#include <psa/crypto.h>
+#endif
 
 #include "avformat.h"
 #include "internal.h"
@@ -186,6 +189,13 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
 
     if ((ret = ff_tls_open_underlying(shr, h, uri, options)) < 0)
         goto fail;
+
+#ifdef MBEDTLS_PSA_CRYPTO_C
+    if ((ret = psa_crypto_init()) != PSA_SUCCESS) {
+        av_log(h, AV_LOG_ERROR, "psa_crypto_init returned %d\n", ret);
+        goto fail;
+    }
+#endif
 
     mbedtls_ssl_init(&tls_ctx->ssl_context);
     mbedtls_ssl_config_init(&tls_ctx->ssl_config);
