@@ -269,7 +269,8 @@ static void check_mc(void)
     LOCAL_ALIGNED_16(uint8_t, dst1, [16 * 16]);
     VP8DSPContext d;
     int type, k, dx, dy;
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t, uint8_t *, ptrdiff_t, int, int, int);
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t,
+                      const uint8_t *, ptrdiff_t, int, int, int);
 
     ff_vp78dsp_init(&d);
 
