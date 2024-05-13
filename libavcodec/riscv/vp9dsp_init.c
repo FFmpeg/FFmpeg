@@ -24,11 +24,19 @@
 #include "libavcodec/vp9dsp.h"
 #include "vp9dsp.h"
 
-static av_cold void vp9dsp_intrapred_init_rvv(VP9DSPContext *dsp, int bpp)
+static av_cold void vp9dsp_intrapred_init_riscv(VP9DSPContext *dsp, int bpp)
 {
-#if HAVE_RVV
+#if HAVE_RV
     int flags = av_get_cpu_flags();
 
+# if __riscv_xlen >= 64
+    if (bpp == 8 && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+        dsp->intra_pred[TX_32X32][VERT_PRED] = ff_v_32x32_rvi;
+        dsp->intra_pred[TX_16X16][VERT_PRED] = ff_v_16x16_rvi;
+        dsp->intra_pred[TX_8X8][VERT_PRED] = ff_v_8x8_rvi;
+    }
+# endif
+#if HAVE_RVV
     if (bpp == 8 && flags & AV_CPU_FLAG_RVV_I64 && ff_rv_vlen_least(128)) {
         dsp->intra_pred[TX_8X8][DC_PRED] = ff_dc_8x8_rvv;
         dsp->intra_pred[TX_8X8][LEFT_DC_PRED] = ff_dc_left_8x8_rvv;
@@ -53,9 +61,10 @@ static av_cold void vp9dsp_intrapred_init_rvv(VP9DSPContext *dsp, int bpp)
         dsp->intra_pred[TX_16X16][TOP_DC_PRED] = ff_dc_top_16x16_rvv;
     }
 #endif
+#endif
 }
 
 av_cold void ff_vp9dsp_init_riscv(VP9DSPContext *dsp, int bpp, int bitexact)
 {
-    vp9dsp_intrapred_init_rvv(dsp, bpp);
+    vp9dsp_intrapred_init_riscv(dsp, bpp);
 }
