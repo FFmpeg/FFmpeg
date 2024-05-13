@@ -156,6 +156,11 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
     VAStatus vas;
     int err;
 
+    if (pic->nb_slices <= 0) {
+        err = AVERROR(EINVAL);
+        goto fail;
+    }
+
     av_log(avctx, AV_LOG_DEBUG, "Decode to surface %#x.\n",
            pic->output_surface);
 
