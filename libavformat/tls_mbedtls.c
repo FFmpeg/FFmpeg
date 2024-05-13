@@ -138,6 +138,9 @@ static void handle_handshake_error(URLContext *h, int ret)
     case MBEDTLS_ERR_SSL_HANDSHAKE_FAILURE:
         av_log(h, AV_LOG_ERROR, "TLS handshake failed.\n");
         break;
+    case MBEDTLS_ERR_SSL_BAD_PROTOCOL_VERSION:
+        av_log(h, AV_LOG_ERROR, "TLS protocol version mismatch.\n");
+        break;
 #endif
     case MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE:
         av_log(h, AV_LOG_ERROR, "A fatal alert message was received from the peer, has the peer a correct certificate?\n");
@@ -145,8 +148,14 @@ static void handle_handshake_error(URLContext *h, int ret)
     case MBEDTLS_ERR_SSL_CA_CHAIN_REQUIRED:
         av_log(h, AV_LOG_ERROR, "No CA chain is set, but required to operate. Was the CA correctly set?\n");
         break;
+    case MBEDTLS_ERR_SSL_INTERNAL_ERROR:
+        av_log(h, AV_LOG_ERROR, "Internal error encountered.\n");
+        break;
     case MBEDTLS_ERR_NET_CONN_RESET:
         av_log(h, AV_LOG_ERROR, "TLS handshake was aborted by peer.\n");
+        break;
+    case MBEDTLS_ERR_X509_CERT_VERIFY_FAILED:
+        av_log(h, AV_LOG_ERROR, "Certificate verification failed.\n");
         break;
     default:
         av_log(h, AV_LOG_ERROR, "mbedtls_ssl_handshake returned -0x%x\n", -ret);
