@@ -58,6 +58,8 @@ typedef struct SHQContext {
     enum { SHQ_SUBSAMPLING_420, SHQ_SUBSAMPLING_422, SHQ_SUBSAMPLING_444 }
         subsampling;
     enum { SHQ_NO_ALPHA, SHQ_RLE_ALPHA, SHQ_DCT_ALPHA } alpha_type;
+    AVPacket *avpkt;
+    uint32_t second_field_offset;
 } SHQContext;
 
 /* NOTE: The first element is always 16, unscaled. */
@@ -266,9 +268,10 @@ static int decode_speedhq_border(const SHQContext *s, GetBitContext *gb, AVFrame
     return 0;
 }
 
-static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf_size, AVFrame *frame, int field_number, int start, int end, int line_stride)
+static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf_size, AVFrame *frame, int field_number, int start, int end, int line_stride, int slice_number)
 {
-    int ret, slice_number, slice_offsets[5];
+    int ret, x, y, slice_offsets[5];
+    uint32_t slice_begin, slice_end;
     int linesize_y  = frame->linesize[0] * line_stride;
     int linesize_cb = frame->linesize[1] * line_stride;
     int linesize_cr = frame->linesize[2] * line_stride;
@@ -283,20 +286,16 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
 
     slice_offsets[0] = start;
     slice_offsets[4] = end;
-    for (slice_number = 1; slice_number < 4; slice_number++) {
+    for (x = 1; x < 4; x++) {
         uint32_t last_offset, slice_len;
 
-        last_offset = slice_offsets[slice_number - 1];
+        last_offset = slice_offsets[x - 1];
         slice_len = AV_RL24(buf + last_offset);
-        slice_offsets[slice_number] = last_offset + slice_len;
+        slice_offsets[x] = last_offset + slice_len;
 
-        if (slice_len < 3 || slice_offsets[slice_number] > end - 3)
+        if (slice_len < 3 || slice_offsets[x] > end - 3)
             return AVERROR_INVALIDDATA;
     }
-
-    for (slice_number = 0; slice_number < 4; slice_number++) {
-        uint32_t slice_begin, slice_end;
-        int x, y;
 
         slice_begin = slice_offsets[slice_number];
         slice_end = slice_offsets[slice_number + 1];
@@ -390,12 +389,32 @@ static int decode_speedhq_field(const SHQContext *s, const uint8_t *buf, int buf
                 }
             }
         }
-    }
 
-    if (s->subsampling != SHQ_SUBSAMPLING_444 && (frame->width & 15))
+    if (s->subsampling != SHQ_SUBSAMPLING_444 && (frame->width & 15) && slice_number == 3)
         return decode_speedhq_border(s, &gb, frame, field_number, line_stride);
 
     return 0;
+}
+
+static int decode_slice_progressive(AVCodecContext *avctx, void *arg, int jobnr, int threadnr)
+{
+    SHQContext *s = avctx->priv_data;
+    (void)threadnr;
+
+    return decode_speedhq_field(avctx->priv_data, s->avpkt->data, s->avpkt->size, arg, 0, 4, s->avpkt->size, 1, jobnr);
+}
+
+static int decode_slice_interlaced(AVCodecContext *avctx, void *arg, int jobnr, int threadnr)
+{
+    SHQContext *s = avctx->priv_data;
+    int field_number = jobnr / 4;
+    int slice_number = jobnr % 4;
+    (void)threadnr;
+
+    if (field_number == 0)
+        return decode_speedhq_field(avctx->priv_data, s->avpkt->data, s->avpkt->size, arg, 0, 4, s->second_field_offset, 2, slice_number);
+    else
+        return decode_speedhq_field(avctx->priv_data, s->avpkt->data, s->avpkt->size, arg, 1, s->second_field_offset, s->avpkt->size, 2, slice_number);
 }
 
 static void compute_quant_matrix(int *output, int qscale)
@@ -411,7 +430,6 @@ static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     const uint8_t *buf   = avpkt->data;
     int buf_size         = avpkt->size;
     uint8_t quality;
-    uint32_t second_field_offset;
     int ret;
 
     if (buf_size < 4 || avctx->width < 8 || avctx->width % 8 != 0)
@@ -429,8 +447,8 @@ static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
     compute_quant_matrix(s->quant_matrix, 100 - quality);
 
-    second_field_offset = AV_RL24(buf + 1);
-    if (second_field_offset >= buf_size - 3) {
+    s->second_field_offset = AV_RL24(buf + 1);
+    if (s->second_field_offset >= buf_size - 3) {
         return AVERROR_INVALIDDATA;
     }
 
@@ -441,7 +459,9 @@ static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         return ret;
     }
 
-    if (second_field_offset == 4 || second_field_offset == (buf_size-4)) {
+    s->avpkt = avpkt;
+
+    if (s->second_field_offset == 4 || s->second_field_offset == (buf_size-4)) {
         /*
          * Overlapping first and second fields is used to signal
          * encoding only a single field. In this case, "height"
@@ -451,12 +471,10 @@ static int speedhq_decode_frame(AVCodecContext *avctx, AVFrame *frame,
          * but this matches the convention used in NDI, which is
          * the primary user of this trick.
          */
-        if ((ret = decode_speedhq_field(s, buf, buf_size, frame, 0, 4, buf_size, 1)) < 0)
+        if ((ret = avctx->execute2(avctx, decode_slice_progressive, frame, NULL, 4)) < 0)
             return ret;
     } else {
-        if ((ret = decode_speedhq_field(s, buf, buf_size, frame, 0, 4, second_field_offset, 2)) < 0)
-            return ret;
-        if ((ret = decode_speedhq_field(s, buf, buf_size, frame, 1, second_field_offset, buf_size, 2)) < 0)
+        if ((ret = avctx->execute2(avctx, decode_slice_interlaced, frame, NULL, 8)) < 0)
             return ret;
     }
 
@@ -652,5 +670,5 @@ const FFCodec ff_speedhq_decoder = {
     .priv_data_size = sizeof(SHQContext),
     .init           = speedhq_decode_init,
     FF_CODEC_DECODE_CB(speedhq_decode_frame),
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_SLICE_THREADS,
 };
