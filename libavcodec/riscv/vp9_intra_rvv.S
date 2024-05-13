@@ -117,3 +117,59 @@ func_dc dc_left  8   left 3  0  zve64x
 func_dc dc_top   32  top  5  1  zve32x
 func_dc dc_top   16  top  4  1  zve32x
 func_dc dc_top   8   top  3  0  zve64x
+
+func ff_h_32x32_rvv, zve32x
+        li           t0, 32
+        addi         a2, a2, 31
+        vsetvli      zero, t0, e8, m2, ta, ma
+
+        .rept 2
+        .irp n 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
+        lbu          t1, (a2)
+        addi         a2, a2, -1
+        vmv.v.x      v\n, t1
+        .endr
+        .irp n 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
+        vse8.v       v\n, (a0)
+        add          a0, a0, a1
+        .endr
+        .endr
+
+        ret
+endfunc
+
+func ff_h_16x16_rvv, zve32x
+        addi         a2, a2, 15
+        vsetivli     zero, 16, e8, m1, ta, ma
+
+        .irp n 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+        lbu          t1, (a2)
+        addi         a2, a2, -1
+        vmv.v.x      v\n, t1
+        .endr
+        .irp n 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22
+        vse8.v       v\n, (a0)
+        add          a0, a0, a1
+        .endr
+        vse8.v       v23, (a0)
+
+        ret
+endfunc
+
+func ff_h_8x8_rvv, zve32x
+        addi         a2, a2, 7
+        vsetivli     zero, 8, e8, mf2, ta, ma
+
+        .irp n 8, 9, 10, 11, 12, 13, 14, 15
+        lbu          t1, (a2)
+        addi         a2, a2, -1
+        vmv.v.x      v\n, t1
+        .endr
+        .irp n 8, 9, 10, 11, 12, 13, 14
+        vse8.v       v\n, (a0)
+        add          a0, a0, a1
+        .endr
+        vse8.v       v15, (a0)
+
+        ret
+endfunc

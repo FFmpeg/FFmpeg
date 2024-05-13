@@ -86,6 +86,9 @@ static av_cold void vp9dsp_intrapred_init_riscv(VP9DSPContext *dsp, int bpp)
         dsp->intra_pred[TX_16X16][DC_129_PRED] = ff_dc_129_16x16_rvv;
         dsp->intra_pred[TX_32X32][TOP_DC_PRED] = ff_dc_top_32x32_rvv;
         dsp->intra_pred[TX_16X16][TOP_DC_PRED] = ff_dc_top_16x16_rvv;
+        dsp->intra_pred[TX_32X32][HOR_PRED] = ff_h_32x32_rvv;
+        dsp->intra_pred[TX_16X16][HOR_PRED] = ff_h_16x16_rvv;
+        dsp->intra_pred[TX_8X8][HOR_PRED] = ff_h_8x8_rvv;
     }
 #endif
 #endif
