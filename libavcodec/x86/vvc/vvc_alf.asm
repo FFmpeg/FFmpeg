@@ -40,8 +40,16 @@ PARAM_SHUFFE 1
 PARAM_SHUFFE 2
 PARAM_SHUFFE 3
 
+CLASSIFY_SHUFFE: times 2    db 2, 3, 0, 1, 6, 7, 4, 5, 10, 11, 8, 9, 14, 15, 12, 13
+TRANSPOSE_PERMUTE:          dd 0, 1, 4, 5, 2, 3, 6, 7
+ARG_VAR_SHUFFE: times 2     db 0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4
+
 dd448: times 8             dd 512 - 64
 dw64: times 8              dd 64
+dd2:  times 8              dd 2
+dw3:  times 8              dd 3
+dw5:  times 8              dd 5
+dd15: times 8              dd 15
 
 SECTION .text
 
@@ -432,10 +440,371 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x28, dst, dst_stride, src, src_s
     ALF_FILTER  %1, chroma
 %endmacro
 
+%define ALF_GRADIENT_BORDER 2
+%define ALF_BORDER_LUMA     3
+
+; ******************************
+; void ff_vvc_alf_classify_grad(int *gradient_sum, const uint8_t *src,
+;      ptrdiff_t src_stride,  intptr_t width, intptr_t height, intptr_t vb_pos);
+; ******************************
+%macro ALF_CLASSIFY_GRAD 1
+cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, width, height, vb_pos, \
+    x, y, s0, s1, s2, s3, vb_pos_below, src_stride3
+
+    lea         src_stride3q, [src_strideq * 2 + src_strideq]
+
+    lea        vb_pos_belowd, [vb_posd + ALF_GRADIENT_BORDER]
+
+    ; src = src - ALF_BORDER_LUMA * src_stride - ALF_BORDER_LUMA
+    sub                 srcq, src_stride3q
+    sub                 srcq, ALF_BORDER_LUMA * ps
+
+    add               widthd, ALF_GRADIENT_BORDER * 2
+    add              heightd, ALF_GRADIENT_BORDER * 2
+
+    xor                   yd, yd
+
+.loop_h:
+    xor                   xd,  xd
+    pxor                 m15, m15 ; prev
+    .loop_w:
+        lea              s0q, [srcq + xq * ps]
+        lea              s1q, [s0q + src_strideq]
+        lea              s2q, [s0q + 2 * src_strideq]
+        lea              s3q, [s0q + src_stride3q]
+
+        cmp               yd, vb_pos_belowd
+        cmove            s0q, s1q
+
+        cmp               yd, vb_posd
+        cmove            s3q, s2q
+
+        LOAD_PIXELS       m0, [s0q]
+        LOAD_PIXELS       m1, [s1q]
+        LOAD_PIXELS       m2, [s2q]
+        LOAD_PIXELS       m3, [s3q]
+
+        LOAD_PIXELS       m4, [s0q + 2 * ps]
+        LOAD_PIXELS       m5, [s1q + 2 * ps]
+        LOAD_PIXELS       m6, [s2q + 2 * ps]
+        LOAD_PIXELS       m7, [s3q + 2 * ps]
+
+        vpblendw          m8, m0, m1, 0xaa             ; nw
+        vpblendw          m9, m0, m5, 0x55             ; n
+        vpblendw         m10, m4, m5, 0xaa             ; ne
+        vpblendw         m11, m1, m2, 0xaa             ; w
+        vpblendw         m12, m5, m6, 0xaa             ; e
+        vpblendw         m13, m2, m3, 0xaa             ; sw
+        vpblendw         m14, m2, m7, 0x55             ; s
+
+        vpblendw          m0, m1, m6, 0x55
+        vpaddw            m0, m0                       ; c
+
+        movu              m1, [CLASSIFY_SHUFFE]
+        pshufb            m1, m0, m1                   ; d
+
+        vpaddw            m9, m14                      ; n + s
+        vpsubw            m9, m0                       ; (n + s) - c
+        vpabsw            m9, m9                       ; ver
+
+        vpaddw           m11, m12                      ; w + e
+        vpsubw           m11, m1                       ; (w + e) - d
+        vpabsw           m11, m11                      ; hor
+
+        vpblendw         m14, m6, m7, 0xaa             ; se
+        vpaddw            m8, m14                      ; nw + se
+        vpsubw            m8, m1                       ; (nw + se) - d
+        vpabsw            m8, m8                       ; di0
+
+        vpaddw           m10, m13                      ; ne + sw
+        vpsubw           m10, m1                       ; (nw + se) - d
+        vpabsw           m10, m10                      ; di1
+
+        phaddw            m9,  m11                     ; vh,  each word represent 2x2 pixels
+        phaddw            m8,  m10                     ; di,  each word represent 2x2 pixels
+        phaddw            m0,  m9, m8                  ; all = each word represent 4x2 pixels, order is v_h_d0_d1 x 4
+
+        vinserti128      m15, m15, xm0, 1
+        vpblendw          m1,  m0, m15, 0xaa           ; t
+
+        phaddw            m1,  m0                      ; each word represent 8x2 pixels, adjacent word share 4x2 pixels
+
+        vextracti128    xm15, m0, 1                    ; prev
+
+        movu [gradient_sumq], m1
+
+        add    gradient_sumq, 32
+        add               xd, 16
+        cmp               xd, widthd
+        jl           .loop_w
+
+    lea                 srcq, [srcq + 2 * src_strideq]
+    add                   yd, 2
+    cmp                   yd, heightd
+    jl               .loop_h
+    RET
+%endmacro
+
+; SAVE_CLASSIFY_PARAM_W16(dest, src)
+%macro SAVE_CLASSIFY_PARAM_W16 2
+    lea                   tempq, [%1q + xq]
+    movu                [tempq], xm%2
+    vperm2i128              m%2, m%2, m%2, 1
+    movu       [tempq + widthq], xm%2
+%endmacro
+
+; SAVE_CLASSIFY_PARAM_W8
+%macro SAVE_CLASSIFY_PARAM_W8 2
+    movq                   [%1], xm%2
+    vperm2i128              m%2, m%2, m%2, 1
+    movq          [%1 + widthq], xm%2
+%endmacro
+
+; SAVE_CLASSIFY_PARAM_W4
+%macro SAVE_CLASSIFY_PARAM_W4 2
+    movd                   [%1], xm%2
+    vperm2i128              m%2, m%2, m%2, 1
+    movd          [%1 + widthq], xm%2
+%endmacro
+
+; SAVE_CLASSIFY_PARAM_W(dest, src)
+%macro SAVE_CLASSIFY_PARAM_W 2
+    lea                  tempq, [%1q + xq]
+    cmp                     wd, 8
+    jl %%w4
+    SAVE_CLASSIFY_PARAM_W8 tempq, %2
+    vpermq                 m%2, m%2, 00010011b
+    add                  tempq, 8
+    cmp                     wd, 8
+    je                   %%end
+%%w4:
+    SAVE_CLASSIFY_PARAM_W4 tempq, %2
+%%end:
+%endmacro
+
+%macro ALF_CLASSIFY_H8 0
+    ; first line, sum of 16x4 pixels (includes borders)
+    lea            gradq, [gradient_sumq + 2 * xq]
+    movu              m0, [gradq]
+    movu              m1, [gradq + sum_strideq]
+    movu              m2, [gradq + 2 * sum_strideq]
+
+    pcmpeqb          m11, m11
+    movd            xm13, yd
+    vpbroadcastd     m13, xm13
+    movd            xm12, vb_posd
+    vpbroadcastd     m12, xm12
+    vpcmpeqd         m13, m12       ; y == vb_pos
+    pandn            m13, m11       ; y != vb_pos
+
+    vpbroadcastd     m14, [dw3]
+    pblendvb         m14, m14, [dd2], m13    ; ac
+
+    pblendvb          m3, m15, [gradq + sum_stride3q], m13
+
+    ; extent to dword to avoid overflow
+    vpunpcklwd        m4, m0, m15
+    vpunpckhwd        m5, m0, m15
+    vpunpcklwd        m6, m1, m15
+    vpunpckhwd        m7, m1, m15
+    vpunpcklwd        m8, m2, m15
+    vpunpckhwd        m9, m2, m15
+    vpunpcklwd       m10, m3, m15
+    vpunpckhwd       m11, m3, m15
+
+    vpaddd            m0, m4, m6
+    vpaddd            m1, m5, m7
+    vpaddd            m2, m8, m10
+    vpaddd            m3, m9, m11
+
+    ; sum of the first row
+    vpaddd            m0, m2           ; low
+    vpaddd            m1, m3           ; high
+
+    lea            gradq, [gradq + 2 * sum_strideq]
+
+    pblendvb         m10, m15, [gradq], m13
+
+    movu             m11, [gradq + sum_strideq]
+    movu             m12, [gradq + 2 * sum_strideq]
+    movu             m13, [gradq + sum_stride3q]
+
+    vpunpcklwd        m4,  m10, m15
+    vpunpckhwd        m5,  m10, m15
+    vpunpcklwd        m6,  m11, m15
+    vpunpckhwd        m7,  m11, m15
+    vpunpcklwd        m8,  m12, m15
+    vpunpckhwd        m9,  m12, m15
+    vpunpcklwd       m10,  m13, m15
+    vpunpckhwd       m11,  m13, m15
+
+    vpaddd            m2, m4, m6
+    vpaddd            m3, m5, m7
+    vpaddd            m4, m8, m10
+    vpaddd            m5, m9, m11
+
+    ; sum of the second row
+    vpaddd            m2, m4        ; low
+    vpaddd            m3, m5        ; high
+
+    vpunpckldq        m4, m0, m2
+    vpunpckhdq        m5, m0, m2
+    vpunpckldq        m6, m1, m3
+    vpunpckhdq        m7, m1, m3
+
+    ; each dword represent 4x2 alf blocks
+    ; the order is 01452367
+    vpunpckldq        m0, m4, m6         ; sum_v
+    vpunpckhdq        m1, m4, m6         ; sum_h
+    vpunpckldq        m2, m5, m7         ; sum_d0
+    vpunpckhdq        m3, m5, m7         ; sum_d1
+
+    vpcmpgtd          m4, m0, m1         ; dir_hv - 1
+    vpmaxsd           m5, m0, m1         ; hv1
+    vpminsd           m6, m0, m1         ; hv0
+
+    vpaddd            m0, m1;            ; sum_hv
+
+    vpcmpgtd          m7, m2, m3         ; dir_d - 1
+    vpmaxsd           m8, m2, m3         ; d1
+    vpminsd           m9, m2, m3         ; d0
+
+    ; *transpose_idx = dir_d * 2 + dir_hv;
+    vpbroadcastd     m10, [dw3]
+    vpaddd           m11, m7, m7
+    vpaddd           m11, m4
+    vpaddd           m10, m11
+    vpermq           m10, m10, 11011000b
+    SAVE_CLASSIFY_PARAM transpose_idx, 10
+
+    vpsrlq           m10, m8, 32
+    vpsrlq           m11, m6, 32
+    pmuldq           m12, m10, m11       ; d1 * hv0 high
+    vpsrlq            m1,  m9, 32
+    vpsrlq            m2,  m5, 32
+    pmuldq            m3,  m1, m2        ; d0 * hv1 high
+    vpcmpgtq         m10, m12, m3        ; dir1 - 1 high
+
+    pmuldq            m1, m8, m6         ; d1 * hv0 low
+    pmuldq            m2, m9, m5         ; d0 * hv1 low
+    vpcmpgtq          m1, m2             ; dir1 - 1 low
+
+    vpblendd          m1, m1, m10, 0xaa  ; dir1 - 1
+
+    pblendvb          m2, m5, m8, m1     ; hvd1
+    pblendvb          m3, m6, m9, m1     ; hvd0
+
+    movd             xm5, bit_depthd
+    vpbroadcastd      m5, xm5
+
+    ;*class_idx = arg_var[av_clip_uintp2(sum_hv * ac >> (BIT_DEPTH - 1), 4)];
+    vpmulld           m0, m14            ; sum_hv * ac
+    vpsrlvd           m0, m0, m5
+    vpminsd           m0, [dd15]
+    movu              m6, [ARG_VAR_SHUFFE]
+    pshufb            m6, m0             ; class_idx
+
+    vpbroadcastd     m10, [dw5]
+
+    ; if (hvd1 * 2 > 9 * hvd0)
+    ;   *class_idx += ((dir1 << 1) + 2) * 5;
+    ; else if (hvd1 > 2 * hvd0)
+    ;   *class_idx += ((dir1 << 1) + 1) * 5;
+    paddd             m7,  m3, m3
+    pcmpgtd           m7,  m2, m7        ; hvd1 > 2 * hvd0
+    pand              m7, m10
+    paddd             m6,  m7            ; class_idx
+
+    paddd             m8, m2, m2
+    vpslld            m9, m3, 3
+    paddd             m9, m3
+    pcmpgtd           m8, m9             ; hvd1 * 2 > 9 * hvd0
+    pand              m8, m10
+    paddd             m6, m8             ; class_idx
+
+    pandn             m1, m7
+    paddd             m1, m1             ; dir1 << 1
+    paddd             m6, m1             ; class_idx
+    vpermq            m6, m6, 11011000b
+
+    SAVE_CLASSIFY_PARAM class_idx, 6
+%endmacro
+
+%macro ALF_CLASSIFY_16x8 0
+%define SAVE_CLASSIFY_PARAM SAVE_CLASSIFY_PARAM_W16
+    ALF_CLASSIFY_H8
+%undef SAVE_CLASSIFY_PARAM
+%endmacro
+
+%macro ALF_CLASSIFY_Wx8 0
+%define SAVE_CLASSIFY_PARAM SAVE_CLASSIFY_PARAM_W
+    ALF_CLASSIFY_H8
+%undef SAVE_CLASSIFY_PARAM
+%endmacro
+
+; ******************************
+;void ff_vvc_alf_classify(int *class_idx, int *transpose_idx, const int *gradient_sum,
+;      intptr_t width, intptr_t height, intptr_t vb_pos, int *gradient_tmp, intptr_t bit_depth);
+; ******************************
+%macro ALF_CLASSIFY 1
+%define ps (%1 / 8)
+ALF_CLASSIFY_GRAD %1
+cglobal vvc_alf_classify_%1bpc, 7, 15, 16, class_idx, transpose_idx, gradient_sum, width, height, vb_pos, bit_depth, \
+    x, y, grad, sum_stride, sum_stride3, temp, w
+
+    sub       bit_depthq, 1
+
+    ; now we can use gradient to get class idx and transpose idx
+    lea      sum_strideq, [widthd + ALF_GRADIENT_BORDER * 2]
+    add      sum_strideq, 15
+    and      sum_strideq, ~15               ; align to 16
+    add      sum_strideq, sum_strideq       ; two rows a time
+
+    add    gradient_sumq, 8                 ; first 4 words are garbage
+
+    lea     sum_stride3q, [3 * sum_strideq]
+
+    xor               yd, yd
+    and          vb_posd, ~7                ; floor align to 8
+    pxor             m15, m15
+
+.loop_sum_h:
+    xor               xd,  xd
+    .loop_sum_w16:
+        lea           wd, [widthd]
+        sub           wd, xd
+        cmp           wd, 16
+        jl .loop_sum_w16_end
+
+        ALF_CLASSIFY_16x8
+
+        add           xd, 16
+        jmp .loop_sum_w16
+    .loop_sum_w16_end:
+
+    cmp               wd, 0
+    je   .loop_sum_w_end
+
+    ALF_CLASSIFY_Wx8
+
+.loop_sum_w_end:
+    lea    gradient_sumq, [gradient_sumq + 4 * sum_strideq]
+    lea   transpose_idxq, [transpose_idxq + 2 * widthq]
+    lea       class_idxq, [class_idxq + 2 * widthq]
+
+    add               yd, 8
+    cmp               yd, heightd
+    jl        .loop_sum_h
+
+    RET
+%endmacro
+
 %if ARCH_X86_64
 %if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 ALF_FILTER   16
 ALF_FILTER   8
+ALF_CLASSIFY 16
+ALF_CLASSIFY 8
 %endif
 %endif

@@ -94,12 +94,18 @@ void BF(ff_vvc_alf_filter_luma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,   
 void BF(ff_vvc_alf_filter_chroma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                          \
     const uint8_t *src, ptrdiff_t src_stride, ptrdiff_t width, ptrdiff_t height,                                         \
     const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);                \
+void BF(ff_vvc_alf_classify_grad, bpc, opt)(int *gradient_sum,                                                           \
+    const uint8_t *src, ptrdiff_t src_stride, intptr_t width, intptr_t height, intptr_t vb_pos);                         \
+void BF(ff_vvc_alf_classify, bpc, opt)(int *class_idx, int *transpose_idx, const int *gradient_sum,                      \
+    intptr_t width, intptr_t height, intptr_t vb_pos, intptr_t bit_depth);                                               \
 
 #define ALF_PROTOTYPES(bpc, bd, opt)                                                                                     \
 void bf(ff_vvc_alf_filter_luma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride,   \
     int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos);                                \
 void bf(ff_vvc_alf_filter_chroma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, \
     int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos);                                \
+void bf(ff_vvc_alf_classify, bd, opt)(int *class_idx, int *transpose_idx,                                                \
+    const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, int *gradient_tmp);                     \
 
 ALF_BPC_PROTOTYPES(8,  avx2)
 ALF_BPC_PROTOTYPES(16, avx2)
@@ -217,6 +223,12 @@ void bf(ff_vvc_alf_filter_chroma, bd, opt)(uint8_t *dst, ptrdiff_t dst_stride, c
     BF(ff_vvc_alf_filter_chroma, bpc, opt)(dst, dst_stride, src, src_stride, width, height,                              \
         filter, clip, 0, vb_pos,(1 << bd)  - 1);                                                                         \
 }                                                                                                                        \
+void bf(ff_vvc_alf_classify, bd, opt)(int *class_idx, int *transpose_idx,                                                \
+    const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, int *gradient_tmp)                      \
+{                                                                                                                        \
+    BF(ff_vvc_alf_classify_grad, bpc, opt)(gradient_tmp, src, src_stride, width, height, vb_pos);                        \
+    BF(ff_vvc_alf_classify, bpc, opt)(class_idx, transpose_idx, gradient_tmp, width, height, vb_pos, bd);                \
+}                                                                                                                        \
 
 ALF_FUNCS(8,  8,  avx2)
 ALF_FUNCS(16, 10, avx2)
@@ -297,6 +309,7 @@ ALF_FUNCS(16, 12, avx2)
 #define ALF_INIT(bd) do {                                            \
     c->alf.filter[LUMA]   = ff_vvc_alf_filter_luma_##bd##_avx2;      \
     c->alf.filter[CHROMA] = ff_vvc_alf_filter_chroma_##bd##_avx2;    \
+    c->alf.classify       = ff_vvc_alf_classify_##bd##_avx2;         \
 } while (0)
 #endif
 
