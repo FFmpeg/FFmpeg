@@ -167,7 +167,7 @@ extern AVLFG checkasm_lfg;
 
 static av_unused void *func_ref, *func_new;
 
-#define BENCH_RUNS 1000 /* Trade-off between accuracy and speed */
+extern uint64_t bench_runs;
 
 /* Decide whether or not the specified function needs to be tested */
 #define check_func(func, ...) (checkasm_save_context(), func_ref = checkasm_check_func((func_new = func), __VA_ARGS__))
@@ -336,10 +336,11 @@ typedef struct CheckasmPerf {
             av_unused const int sysfd = perf->sysfd;\
             func_type *tfunc = func_new;\
             uint64_t tsum = 0;\
-            int ti, tcount = 0;\
+            uint64_t ti, tcount = 0;\
             uint64_t t = 0; \
+            const uint64_t truns = bench_runs;\
             checkasm_set_signal_handler_state(1);\
-            for (ti = 0; ti < BENCH_RUNS; ti++) {\
+            for (ti = 0; ti < truns; ti++) {\
                 PERF_START(t);\
                 tfunc(__VA_ARGS__);\
                 tfunc(__VA_ARGS__);\

@@ -72,6 +72,9 @@
 void (*checkasm_checked_call)(void *func, int dummy, ...) = checkasm_checked_call_novfp;
 #endif
 
+/* Trade-off between speed and accuracy */
+uint64_t bench_runs = 1U << 10;
+
 /* List of tests to invoke */
 static const struct {
     const char *name;
@@ -820,7 +823,7 @@ static void bench_uninit(void)
 static int usage(const char *path)
 {
     fprintf(stderr,
-            "Usage: %s [--bench] [--test=<pattern>] [--verbose] [seed]\n",
+            "Usage: %s [--bench] [--runs=<ptwo>] [--test=<pattern>] [--verbose] [seed]\n",
             path);
     return 1;
 }
@@ -867,6 +870,17 @@ int main(int argc, char *argv[])
             state.test_name = arg + 7;
         } else if (!strcmp(arg, "--verbose") || !strcmp(arg, "-v")) {
             state.verbose = 1;
+        } else if (!strncmp(arg, "--runs=", 7)) {
+            l = strtoul(arg + 7, &end, 10);
+            if (*end == '\0') {
+                if (l > 30) {
+                    fprintf(stderr, "checkasm: error: runs exponent must be within the range 0 <= 30\n");
+                    usage(argv[0]);
+                }
+                bench_runs = 1U << l;
+            } else {
+                return usage(argv[0]);
+            }
         } else if ((l = strtoul(arg, &end, 10)) <= UINT_MAX &&
                    *end == '\0') {
             seed = l;
