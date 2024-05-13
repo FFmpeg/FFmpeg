@@ -26,6 +26,7 @@
 #include <mbedtls/platform.h>
 #include <mbedtls/ssl.h>
 #include <mbedtls/x509_crt.h>
+#include <mbedtls/debug.h>
 #ifdef MBEDTLS_PSA_CRYPTO_C
 #include <psa/crypto.h>
 #endif
@@ -36,6 +37,7 @@
 #include "tls.h"
 #include "libavutil/mem.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/avstring.h"
 
 typedef struct TLSContext {
     const AVClass *class;
@@ -110,6 +112,13 @@ static int mbedtls_recv(void *ctx, unsigned char *buf, size_t len)
         return MBEDTLS_ERR_SSL_BUFFER_TOO_SMALL;
 
     return handle_transport_error(h, "ffurl_read", MBEDTLS_ERR_SSL_WANT_READ, ret);
+}
+
+static void mbedtls_debug(void *ctx, int lvl, const char *file, int line, const char *msg)
+{
+    URLContext *h = (URLContext*) ctx;
+    int av_lvl = lvl >= 4 ? AV_LOG_TRACE : AV_LOG_DEBUG;
+    av_log(h, av_lvl, "%s:%d: %s", av_basename(file), line, msg);
 }
 
 static void handle_pk_parse_error(URLContext *h, int ret)
@@ -203,6 +212,14 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     mbedtls_ctr_drbg_init(&tls_ctx->ctr_drbg_context);
     mbedtls_x509_crt_init(&tls_ctx->ca_cert);
     mbedtls_pk_init(&tls_ctx->priv_key);
+
+    if (av_log_get_level() >= AV_LOG_DEBUG) {
+        mbedtls_ssl_conf_dbg(&tls_ctx->ssl_config, mbedtls_debug, shr->tcp);
+        /*
+         * Note: we can't call mbedtls_debug_set_threshold() here because
+         * it's global state. The user is thus expected to manage this.
+         */
+    }
 
     // load trusted CA
     if (shr->ca_file) {
