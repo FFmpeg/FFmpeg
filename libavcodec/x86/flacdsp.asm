@@ -29,7 +29,7 @@ vector:  db 0,1,4,5,8,9,12,13,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,
 
 SECTION .text
 
-%macro PMACSDQL 5
+%macro PMACSDQL 3
 %if cpuflag(xop)
     pmacsdql %1, %2, %3, %1
 %else
@@ -59,21 +59,21 @@ ALIGN 16
     test   jq, jq
     jz .end_order
 .loop_order:
-    PMACSDQL m2, m0, m1, m2, m0
+    PMACSDQL m2, m0, m1
     movd   m0, [decodedq+jq*4]
-    PMACSDQL m3, m1, m0, m3, m1
+    PMACSDQL m3, m1, m0
     movd   m1, [coeffsq+jq*4]
     inc    jq
     jl .loop_order
 .end_order:
-    PMACSDQL m2, m0, m1, m2, m0
+    PMACSDQL m2, m0, m1
     %3     m2, m4
     movd   m0, [decodedq]
     paddd  m0, m2
     movd   [decodedq], m0
     sub  lend, 2
     jl .ret
-    PMACSDQL m3, m1, m0, m3, m1
+    PMACSDQL m3, m1, m0
     %3     m3, m4
     movd   m1, [decodedq+4]
     paddd  m1, m3
