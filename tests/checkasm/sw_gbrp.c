@@ -76,7 +76,7 @@ static void check_output_yuv2gbrp(void)
     uint8_t *dst0[4];
     uint8_t *dst1[4];
 
-    declare_func(void, void *c, const int16_t *lumFilter,
+    declare_func(void, struct SwsContext *c, const int16_t *lumFilter,
                        const int16_t **lumSrcx, int lumFilterSize,
                        const int16_t *chrFilter, const int16_t **chrUSrcx,
                        const int16_t **chrVSrcx, int chrFilterSize,
@@ -202,10 +202,11 @@ static void check_input_planar_rgb_to_y(void)
 #define LARGEST_INPUT_SIZE 512
 #define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
-    uint8_t *src[4];
+    const uint8_t *src[4];
     int32_t rgb2yuv[9] = {0};
 
-    declare_func(void, uint8_t *dst, uint8_t *src[4], int w, int32_t *rgb2yuv);
+    declare_func(void, uint8_t *dst, const uint8_t *src[4],
+                       int w, int32_t *rgb2yuv, void *opaque);
 
     LOCAL_ALIGNED_8(int32_t, src_r, [LARGEST_INPUT_SIZE]);
     LOCAL_ALIGNED_8(int32_t, src_g, [LARGEST_INPUT_SIZE]);
@@ -243,13 +244,13 @@ static void check_input_planar_rgb_to_y(void)
                 memset(dst0_y, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
                 memset(dst1_y, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
 
-                call_ref(dst0_y, src, dstW, rgb2yuv);
-                call_new(dst1_y, src, dstW, rgb2yuv);
+                call_ref(dst0_y, src, dstW, rgb2yuv, NULL);
+                call_new(dst1_y, src, dstW, rgb2yuv, NULL);
 
                 if (memcmp(dst0_y, dst1_y, dstW * byte_size))
                     fail();
 
-                bench_new(dst1_y, src, dstW, rgb2yuv);
+                bench_new(dst1_y, src, dstW, rgb2yuv, NULL);
 
             }
         }
@@ -269,11 +270,11 @@ static void check_input_planar_rgb_to_uv(void)
 #define LARGEST_INPUT_SIZE 512
 #define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
-    uint8_t *src[4];
+    const uint8_t *src[4];
     int32_t rgb2yuv[9] = {0};
 
     declare_func(void, uint8_t *dstU, uint8_t *dstV,
-                       uint8_t *src[4], int w, int32_t *rgb2yuv);
+                       const uint8_t *src[4], int w, int32_t *rgb2yuv, void *opaque);
 
     LOCAL_ALIGNED_8(int32_t, src_r, [LARGEST_INPUT_SIZE]);
     LOCAL_ALIGNED_8(int32_t, src_g, [LARGEST_INPUT_SIZE]);
@@ -316,14 +317,14 @@ static void check_input_planar_rgb_to_uv(void)
                 memset(dst1_u, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
                 memset(dst1_v, 0xFF, LARGEST_INPUT_SIZE * sizeof(int32_t));
 
-                call_ref(dst0_u, dst0_v, src, dstW, rgb2yuv);
-                call_new(dst1_u, dst1_v, src, dstW, rgb2yuv);
+                call_ref(dst0_u, dst0_v, src, dstW, rgb2yuv, NULL);
+                call_new(dst1_u, dst1_v, src, dstW, rgb2yuv, NULL);
 
                 if (memcmp(dst0_u, dst1_u, dstW * byte_size) ||
                     memcmp(dst0_v, dst1_v, dstW * byte_size))
                     fail();
 
-                bench_new(dst1_u, dst1_v, src, dstW, rgb2yuv);
+                bench_new(dst1_u, dst1_v, src, dstW, rgb2yuv, NULL);
             }
         }
     }
@@ -342,10 +343,11 @@ static void check_input_planar_rgb_to_a(void)
 #define LARGEST_INPUT_SIZE 512
 #define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
-    uint8_t *src[4];
+    const uint8_t *src[4];
     int32_t rgb2yuv[9] = {0};
 
-    declare_func(void, uint8_t *dst, uint8_t *src[4], int w, int32_t *rgb2yuv);
+    declare_func(void, uint8_t *dst, const uint8_t *src[4],
+                       int w, int32_t *rgb2yuv, void *opaque);
 
     LOCAL_ALIGNED_8(int32_t, src_r, [LARGEST_INPUT_SIZE]);
     LOCAL_ALIGNED_8(int32_t, src_g, [LARGEST_INPUT_SIZE]);
@@ -386,12 +388,12 @@ static void check_input_planar_rgb_to_a(void)
                 memset(dst0_a, 0x00, LARGEST_INPUT_SIZE * sizeof(int32_t));
                 memset(dst1_a, 0x00, LARGEST_INPUT_SIZE * sizeof(int32_t));
 
-                call_ref(dst0_a, src, dstW, rgb2yuv);
-                call_new(dst1_a, src, dstW, rgb2yuv);
+                call_ref(dst0_a, src, dstW, rgb2yuv, NULL);
+                call_new(dst1_a, src, dstW, rgb2yuv, NULL);
 
                 if (memcmp(dst0_a, dst1_a, dstW * byte_size))
                     fail();
-                bench_new(dst1_a, src, dstW, rgb2yuv);
+                bench_new(dst1_a, src, dstW, rgb2yuv, NULL);
             }
         }
     }
