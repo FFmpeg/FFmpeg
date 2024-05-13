@@ -103,6 +103,33 @@ func ff_flac_lpc32_rvv_simple, zve64x, zbb
 
         ret
 endfunc
+
+func ff_flac_lpc33_rvv, zve64x, zbb
+        vtype_vli t0, a3, t1, e64, ta, ma
+        vsetvl  zero, a3, t0
+        vmv.s.x v0, zero
+        sh2add  a1, a3, a1
+        vle32.v v24, (a2)
+        sub     a5, a5, a3
+        vle64.v v16, (a0)
+        sh3add  a0, a3, a0
+        vsext.vf2 v8, v24
+1:
+        vmul.vv v24, v8, v16
+        lw      t0, (a1)
+        addi    a1, a1, 4
+        vredsum.vs v24, v24, v0
+        addi    a5, a5, -1
+        vmv.x.s t1, v24
+        sra     t1, t1, a4
+        add     t0, t0, t1
+        vslide1down.vx v16, v16, t0
+        sd      t0, (a0)
+        addi    a0, a0, 8
+        bnez    a5, 1b
+
+        ret
+endfunc
 #endif
 
 func ff_flac_wasted32_rvv, zve32x
