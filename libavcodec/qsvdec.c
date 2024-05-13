@@ -290,9 +290,12 @@ static int qsv_decode_init_context(AVCodecContext *avctx, QSVContext *q, mfxVide
 
     q->frame_info = param->mfx.FrameInfo;
 
-    if (!avctx->hw_frames_ctx)
-        q->pool = av_buffer_pool_init(av_image_get_buffer_size(avctx->pix_fmt,
-                    FFALIGN(avctx->width, 128), FFALIGN(avctx->height, 64), 1), av_buffer_allocz);
+    if (!avctx->hw_frames_ctx) {
+        ret = av_image_get_buffer_size(avctx->pix_fmt, FFALIGN(avctx->width, 128), FFALIGN(avctx->height, 64), 1);
+        if (ret < 0)
+            return ret;
+        q->pool = av_buffer_pool_init(ret, av_buffer_allocz);
+    }
     return 0;
 }
 
