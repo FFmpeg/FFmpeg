@@ -121,6 +121,47 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
     }
 }
 
+static void check_alf_classify(VVCDSPContext *c, const int bit_depth)
+{
+    LOCAL_ALIGNED_32(int, class_idx0, [SRC_BUF_SIZE]);
+    LOCAL_ALIGNED_32(int, transpose_idx0, [SRC_BUF_SIZE]);
+    LOCAL_ALIGNED_32(int, class_idx1, [SRC_BUF_SIZE]);
+    LOCAL_ALIGNED_32(int, transpose_idx1, [SRC_BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, src0, [SRC_BUF_SIZE]);
+    LOCAL_ALIGNED_32(uint8_t, src1, [SRC_BUF_SIZE]);
+    LOCAL_ALIGNED_32(int32_t, alf_gradient_tmp, [ALF_GRADIENT_SIZE * ALF_GRADIENT_SIZE * ALF_NUM_DIR]);
+
+    ptrdiff_t stride = SRC_PIXEL_STRIDE * SIZEOF_PIXEL;
+    int offset = (3 * SRC_PIXEL_STRIDE + 3) * SIZEOF_PIXEL;
+
+    declare_func_emms(AV_CPU_FLAG_AVX2, void, int *class_idx, int *transpose_idx,
+        const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, int *gradient_tmp);
+
+    randomize_buffers(src0, src1, SRC_BUF_SIZE);
+
+    for (int h = 4; h <= MAX_CTU_SIZE; h += 4) {
+        for (int w = 4; w <= MAX_CTU_SIZE; w += 4) {
+            const int id_size = w * h / ALF_BLOCK_SIZE / ALF_BLOCK_SIZE * sizeof(int);
+            const int vb_pos  = MAX_CTU_SIZE - ALF_BLOCK_SIZE;
+            if (check_func(c->alf.classify, "vvc_alf_classify_%dx%d_%d", w, h, bit_depth)) {
+                memset(class_idx0, 0, id_size);
+                memset(class_idx1, 0, id_size);
+                memset(transpose_idx0, 0, id_size);
+                memset(transpose_idx1, 0, id_size);
+                call_ref(class_idx0, transpose_idx0, src0 + offset, stride, w, h, vb_pos, alf_gradient_tmp);
+
+                call_new(class_idx1, transpose_idx1, src1 + offset, stride, w, h, vb_pos, alf_gradient_tmp);
+
+                if (memcmp(class_idx0, class_idx1, id_size))
+                    fail();
+                if (memcmp(transpose_idx0, transpose_idx1, id_size))
+                    fail();
+                bench_new(class_idx1, transpose_idx1, src1 + offset, stride, w, h, vb_pos, alf_gradient_tmp);
+            }
+        }
+    }
+}
+
 void checkasm_check_vvc_alf(void)
 {
     int bit_depth;
@@ -130,4 +171,10 @@ void checkasm_check_vvc_alf(void)
         check_alf_filter(&h, bit_depth);
     }
     report("alf_filter");
+
+    for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
+        ff_vvc_dsp_init(&h, bit_depth);
+        check_alf_classify(&h, bit_depth);
+    }
+    report("alf_classify");
 }
