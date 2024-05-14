@@ -351,6 +351,9 @@ int ff_aac_decode_init_fixed(AVCodecContext *avctx);
 int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                       GetBitContext *gb, int common_window, int scale_flag);
 
+int ff_aac_decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
+                      GetBitContext *gb, const IndividualChannelStream *ics);
+
 int ff_aac_set_default_channel_config(AACDecContext *ac, AVCodecContext *avctx,
                                       uint8_t (*layout_map)[3],
                                       int *tags,

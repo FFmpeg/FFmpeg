@@ -1542,7 +1542,7 @@ static int decode_pulses(Pulse *pulse, GetBitContext *gb,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
+int ff_aac_decode_tns(AACDecContext *ac, TemporalNoiseShaping *tns,
                       GetBitContext *gb, const IndividualChannelStream *ics)
 {
     int w, filt, i, coef_len, coef_res, coef_compress;
@@ -1690,7 +1690,7 @@ int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
         }
         tns->present = get_bits1(gb);
         if (tns->present && !er_syntax) {
-            ret = decode_tns(ac, tns, gb, ics);
+            ret = ff_aac_decode_tns(ac, tns, gb, ics);
             if (ret < 0)
                 goto fail;
         }
@@ -1704,7 +1704,7 @@ int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
         // I see no textual basis in the spec for this occurring after SSR gain
         // control, but this is what both reference and real implmentations do
         if (tns->present && er_syntax) {
-            ret = decode_tns(ac, tns, gb, ics);
+            ret = ff_aac_decode_tns(ac, tns, gb, ics);
             if (ret < 0)
                 goto fail;
         }
