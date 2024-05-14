@@ -104,6 +104,12 @@ av_cold int ff_speedhq_encode_init(MpegEncContext *s)
         return AVERROR(EINVAL);
     }
 
+    // border is not implemented correctly at the moment, see ticket #10078
+    if (s->width % 16) {
+        av_log(s, AV_LOG_ERROR, "width must be a multiple of 16\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->min_qcoeff = -2048;
     s->max_qcoeff = 2047;
 
