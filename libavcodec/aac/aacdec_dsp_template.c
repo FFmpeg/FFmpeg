@@ -41,47 +41,37 @@
 static void AAC_RENAME(dequant_scalefactors)(SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
-    const enum BandType *band_type = sce->band_type;
-    const int *band_type_run_end = sce->band_type_run_end;
     const int *sfo = sce->sfo;
     INTFLOAT *sf = sce->AAC_RENAME(sf);
 
-    int g, i, idx = 0;
-    for (g = 0; g < ics->num_window_groups; g++) {
-        for (i = 0; i < ics->max_sfb;) {
-            int run_end = band_type_run_end[idx];
-            switch (band_type[idx]) {
+    int idx = 0;
+    for (int g = 0; g < ics->num_window_groups; g++) {
+        for (int sfb = 0; sfb < ics->max_sfb; sfb++, idx++) {
+            switch (sce->band_type[g*ics->max_sfb + sfb]) {
             case ZERO_BT:
-                for (; i < run_end; i++, idx++)
-                    sf[idx] = FIXR(0.);
+                sf[idx] = FIXR(0.);
                 break;
             case INTENSITY_BT: /* fallthrough */
             case INTENSITY_BT2:
-                for (; i < run_end; i++, idx++) {
 #if USE_FIXED
-                    sf[idx] = 100 - sfo[idx];
+                sf[idx] = 100 - (sfo[idx] + 100);
 #else
-                    sf[idx] = ff_aac_pow2sf_tab[-sfo[idx] + POW_SF2_ZERO];
+                sf[idx] = ff_aac_pow2sf_tab[-sfo[idx] - 100 + POW_SF2_ZERO];
 #endif /* USE_FIXED */
-                }
                 break;
             case NOISE_BT:
-                for (; i < run_end; i++, idx++) {
 #if USE_FIXED
-                    sf[idx] = -(100 + sfo[idx]);
+                sf[idx] = -(100 + sfo[idx]);
 #else
-                    sf[idx] = -ff_aac_pow2sf_tab[sfo[idx] + POW_SF2_ZERO];
+                sf[idx] = -ff_aac_pow2sf_tab[sfo[idx] + POW_SF2_ZERO];
 #endif /* USE_FIXED */
-                }
                 break;
             default:
-                for (; i < run_end; i++, idx++) {
 #if USE_FIXED
-                    sf[idx] = -sfo[idx];
+                sf[idx] = -sfo[idx] - 100;
 #else
-                    sf[idx] = -ff_aac_pow2sf_tab[sfo[idx] - 100 + POW_SF2_ZERO];
+                sf[idx] = -ff_aac_pow2sf_tab[sfo[idx] + POW_SF2_ZERO];
 #endif /* USE_FIXED */
-                }
                 break;
             }
         }
@@ -96,25 +86,23 @@ static void AAC_RENAME(apply_mid_side_stereo)(AACDecContext *ac, ChannelElement 
     const IndividualChannelStream *ics = &cpe->ch[0].ics;
     INTFLOAT *ch0 = cpe->ch[0].AAC_RENAME(coeffs);
     INTFLOAT *ch1 = cpe->ch[1].AAC_RENAME(coeffs);
-    int g, i, group, idx = 0;
     const uint16_t *offsets = ics->swb_offset;
-    for (g = 0; g < ics->num_window_groups; g++) {
-        for (i = 0; i < ics->max_sfb; i++, idx++) {
+    for (int g = 0; g < ics->num_window_groups; g++) {
+        for (int sfb = 0; sfb < ics->max_sfb; sfb++) {
+            const int idx = g*ics->max_sfb + sfb;
             if (cpe->ms_mask[idx] &&
                 cpe->ch[0].band_type[idx] < NOISE_BT &&
                 cpe->ch[1].band_type[idx] < NOISE_BT) {
+                for (int group = 0; group < ics->group_len[g]; group++)
 #if USE_FIXED
-                for (group = 0; group < ics->group_len[g]; group++) {
-                    ac->fdsp->butterflies_fixed(ch0 + group * 128 + offsets[i],
-                                                ch1 + group * 128 + offsets[i],
-                                                offsets[i+1] - offsets[i]);
+                    ac->fdsp->butterflies_fixed(ch0 + group * 128 + offsets[sfb],
+                                                ch1 + group * 128 + offsets[sfb],
+                                                offsets[sfb+1] - offsets[sfb]);
 #else
-                for (group = 0; group < ics->group_len[g]; group++) {
-                    ac->fdsp->butterflies_float(ch0 + group * 128 + offsets[i],
-                                               ch1 + group * 128 + offsets[i],
-                                               offsets[i+1] - offsets[i]);
+                    ac->fdsp->butterflies_float(ch0 + group * 128 + offsets[sfb],
+                                                ch1 + group * 128 + offsets[sfb],
+                                                offsets[sfb+1] - offsets[sfb]);
 #endif /* USE_FIXED */
-                }
             }
         }
         ch0 += ics->group_len[g] * 128;
@@ -136,37 +124,30 @@ static void AAC_RENAME(apply_intensity_stereo)(AACDecContext *ac,
     SingleChannelElement         *sce1 = &cpe->ch[1];
     INTFLOAT *coef0 = cpe->ch[0].AAC_RENAME(coeffs), *coef1 = cpe->ch[1].AAC_RENAME(coeffs);
     const uint16_t *offsets = ics->swb_offset;
-    int g, group, i, idx = 0;
     int c;
     INTFLOAT scale;
-    for (g = 0; g < ics->num_window_groups; g++) {
-        for (i = 0; i < ics->max_sfb;) {
+    for (int g = 0; g < ics->num_window_groups; g++) {
+        for (int sfb = 0; sfb < ics->max_sfb; sfb++) {
+            const int idx = g*ics->max_sfb + sfb;
             if (sce1->band_type[idx] == INTENSITY_BT ||
                 sce1->band_type[idx] == INTENSITY_BT2) {
-                const int bt_run_end = sce1->band_type_run_end[idx];
-                for (; i < bt_run_end; i++, idx++) {
-                    c = -1 + 2 * (sce1->band_type[idx] - 14);
-                    if (ms_present)
-                        c *= 1 - 2 * cpe->ms_mask[idx];
-                    scale = c * sce1->AAC_RENAME(sf)[idx];
-                    for (group = 0; group < ics->group_len[g]; group++)
+                c = -1 + 2 * (sce1->band_type[idx] - 14);
+                if (ms_present)
+                    c *= 1 - 2 * cpe->ms_mask[idx];
+                scale = c * sce1->AAC_RENAME(sf)[idx];
+                for (int group = 0; group < ics->group_len[g]; group++)
 #if USE_FIXED
-                        subband_scale(coef1 + group * 128 + offsets[i],
-                                      coef0 + group * 128 + offsets[i],
-                                      scale,
-                                      23,
-                                      offsets[i + 1] - offsets[i] ,ac->avctx);
+                subband_scale(coef1 + group * 128 + offsets[sfb],
+                              coef0 + group * 128 + offsets[sfb],
+                              scale,
+                              23,
+                              offsets[sfb + 1] - offsets[sfb], ac->avctx);
 #else
-                        ac->fdsp->vector_fmul_scalar(coef1 + group * 128 + offsets[i],
-                                                    coef0 + group * 128 + offsets[i],
-                                                    scale,
-                                                    offsets[i + 1] - offsets[i]);
+                ac->fdsp->vector_fmul_scalar(coef1 + group * 128 + offsets[sfb],
+                                             coef0 + group * 128 + offsets[sfb],
+                                             scale,
+                                             offsets[sfb + 1] - offsets[sfb]);
 #endif /* USE_FIXED */
-                }
-            } else {
-                int bt_run_end = sce1->band_type_run_end[idx];
-                idx += bt_run_end - i;
-                i    = bt_run_end;
             }
         }
         coef0 += ics->group_len[g] * 128;

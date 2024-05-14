@@ -1412,13 +1412,13 @@ fail:
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_band_types(AACDecContext *ac, enum BandType band_type[120],
-                             int band_type_run_end[120], GetBitContext *gb,
-                             IndividualChannelStream *ics)
+static int decode_band_types(AACDecContext *ac, SingleChannelElement *sce,
+                             GetBitContext *gb)
 {
-    int g, idx = 0;
+    IndividualChannelStream *ics = &sce->ics;
     const int bits = (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) ? 3 : 5;
-    for (g = 0; g < ics->num_window_groups; g++) {
+
+    for (int g = 0; g < ics->num_window_groups; g++) {
         int k = 0;
         while (k < ics->max_sfb) {
             uint8_t sect_end = k;
@@ -1442,10 +1442,8 @@ static int decode_band_types(AACDecContext *ac, enum BandType band_type[120],
                     return AVERROR_INVALIDDATA;
                 }
             } while (sect_len_incr == (1 << bits) - 1);
-            for (; k < sect_end; k++) {
-                band_type        [idx]   = sect_band_type;
-                band_type_run_end[idx++] = sect_end;
-            }
+            for (; k < sect_end; k++)
+                sce->band_type[g*ics->max_sfb + k] = sect_band_type;
         }
     }
     return 0;
@@ -1461,69 +1459,59 @@ static int decode_band_types(AACDecContext *ac, enum BandType band_type[120],
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_scalefactors(AACDecContext *ac, int sfo[120],
-                               GetBitContext *gb,
-                               unsigned int global_gain,
-                               IndividualChannelStream *ics,
-                               enum BandType band_type[120],
-                               int band_type_run_end[120])
+static int decode_scalefactors(AACDecContext *ac, SingleChannelElement *sce,
+                               GetBitContext *gb, unsigned int global_gain)
 {
-    int g, i, idx = 0;
+    IndividualChannelStream *ics = &sce->ics;
     int offset[3] = { global_gain, global_gain - NOISE_OFFSET, 0 };
     int clipped_offset;
     int noise_flag = 1;
-    for (g = 0; g < ics->num_window_groups; g++) {
-        for (i = 0; i < ics->max_sfb;) {
-            int run_end = band_type_run_end[idx];
-            switch (band_type[idx]) {
+
+    for (int g = 0; g < ics->num_window_groups; g++) {
+        for (int sfb = 0; sfb < ics->max_sfb; sfb++) {
+            switch (sce->band_type[g*ics->max_sfb + sfb]) {
             case ZERO_BT:
-                for (; i < run_end; i++, idx++)
-                    sfo[idx] = 0;
+                sce->sfo[g*ics->max_sfb + sfb] = 0;
                 break;
             case INTENSITY_BT: /* fallthrough */
             case INTENSITY_BT2:
-                for (; i < run_end; i++, idx++) {
-                    offset[2] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
-                    clipped_offset = av_clip(offset[2], -155, 100);
-                    if (offset[2] != clipped_offset) {
-                        avpriv_request_sample(ac->avctx,
-                                              "If you heard an audible artifact, there may be a bug in the decoder. "
-                                              "Clipped intensity stereo position (%d -> %d)",
-                                              offset[2], clipped_offset);
-                    }
-                    sfo[idx] = clipped_offset;
+                offset[2] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
+                clipped_offset = av_clip(offset[2], -155, 100);
+                if (offset[2] != clipped_offset) {
+                    avpriv_request_sample(ac->avctx,
+                                          "If you heard an audible artifact, there may be a bug in the decoder. "
+                                          "Clipped intensity stereo position (%d -> %d)",
+                                          offset[2], clipped_offset);
                 }
+                sce->sfo[g*ics->max_sfb + sfb] = clipped_offset - 100;
                 break;
             case NOISE_BT:
-                for (; i < run_end; i++, idx++) {
-                    if (noise_flag-- > 0)
-                        offset[1] += get_bits(gb, NOISE_PRE_BITS) - NOISE_PRE;
-                    else
-                        offset[1] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
-                    clipped_offset = av_clip(offset[1], -100, 155);
-                    if (offset[1] != clipped_offset) {
-                        avpriv_request_sample(ac->avctx,
-                                              "If you heard an audible artifact, there may be a bug in the decoder. "
-                                              "Clipped noise gain (%d -> %d)",
-                                              offset[1], clipped_offset);
-                    }
-                    sfo[idx] = clipped_offset;
+                if (noise_flag-- > 0)
+                    offset[1] += get_bits(gb, NOISE_PRE_BITS) - NOISE_PRE;
+                else
+                    offset[1] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
+                clipped_offset = av_clip(offset[1], -100, 155);
+                if (offset[1] != clipped_offset) {
+                    avpriv_request_sample(ac->avctx,
+                                          "If you heard an audible artifact, there may be a bug in the decoder. "
+                                          "Clipped noise gain (%d -> %d)",
+                                          offset[1], clipped_offset);
                 }
+                sce->sfo[g*ics->max_sfb + sfb] = clipped_offset;
                 break;
             default:
-                for (; i < run_end; i++, idx++) {
-                    offset[0] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
-                    if (offset[0] > 255U) {
-                        av_log(ac->avctx, AV_LOG_ERROR,
-                               "Scalefactor (%d) out of range.\n", offset[0]);
-                        return AVERROR_INVALIDDATA;
-                    }
-                    sfo[idx] = offset[0];
+                offset[0] += get_vlc2(gb, ff_vlc_scalefactors, 7, 3) - SCALE_DIFF_ZERO;
+                if (offset[0] > 255U) {
+                    av_log(ac->avctx, AV_LOG_ERROR,
+                           "Scalefactor (%d) out of range.\n", offset[0]);
+                    return AVERROR_INVALIDDATA;
                 }
+                sce->sfo[g*ics->max_sfb + sfb] = offset[0] - 100;
                 break;
             }
         }
     }
+
     return 0;
 }
 
@@ -1680,11 +1668,9 @@ int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
             goto fail;
     }
 
-    if ((ret = decode_band_types(ac, sce->band_type,
-                                 sce->band_type_run_end, gb, ics)) < 0)
+    if ((ret = decode_band_types(ac, sce, gb)) < 0)
         goto fail;
-    if ((ret = decode_scalefactors(ac, sce->sfo, gb, global_gain, ics,
-                                   sce->band_type, sce->band_type_run_end)) < 0)
+    if ((ret = decode_scalefactors(ac, sce, gb, global_gain)) < 0)
         goto fail;
 
     ac->dsp.dequant_scalefactors(sce);
