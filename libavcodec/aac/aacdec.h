@@ -39,6 +39,7 @@
 #include "libavutil/tx.h"
 
 #include "libavcodec/aac.h"
+#include "libavcodec/avcodec.h"
 #include "libavcodec/mpeg4audio.h"
 
 typedef struct AACDecContext AACDecContext;
@@ -343,10 +344,22 @@ struct AACDecContext {
 #define fdsp          RENAME_FIXED(fdsp)
 #endif
 
-int ff_aac_decode_init(struct AVCodecContext *avctx);
-int ff_aac_decode_init_float(struct AVCodecContext *avctx);
-int ff_aac_decode_init_fixed(struct AVCodecContext *avctx);
+int ff_aac_decode_init(AVCodecContext *avctx);
+int ff_aac_decode_init_float(AVCodecContext *avctx);
+int ff_aac_decode_init_fixed(AVCodecContext *avctx);
+
 int ff_aac_decode_ics(AACDecContext *ac, SingleChannelElement *sce,
                       GetBitContext *gb, int common_window, int scale_flag);
+
+int ff_aac_set_default_channel_config(AACDecContext *ac, AVCodecContext *avctx,
+                                      uint8_t (*layout_map)[3],
+                                      int *tags,
+                                      int channel_config);
+
+int ff_aac_output_configure(AACDecContext *ac,
+                            uint8_t layout_map[MAX_ELEM_ID * 4][3], int tags,
+                            enum OCStatus oc_type, int get_new_frame);
+
+ChannelElement *ff_aac_get_che(AACDecContext *ac, int type, int elem_id);
 
 #endif /* AVCODEC_AAC_AACDEC_H */
