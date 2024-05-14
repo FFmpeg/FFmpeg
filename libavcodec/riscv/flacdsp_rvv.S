@@ -20,8 +20,9 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_flac_lpc16_rvv, zve32x
-        vsetvli zero, a2, e32, m8, ta, ma
+func ff_flac_lpc16_rvv, zve32x, zbb
+        vtype_vli t0, a2, t2, e32, ta, ma
+        vsetvl  zero, a2, t0
         vle32.v v8, (a1)
         sub     a4, a4, a2
         vle32.v v16, (a0)
