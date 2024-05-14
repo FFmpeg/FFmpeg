@@ -318,48 +318,41 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
 #if ARCH_X86_64
     const int cpu_flags = av_get_cpu_flags();
 
-    if (bd == 8) {
+    switch (bd) {
+    case 8:
         if (EXTERNAL_SSE4(cpu_flags)) {
             MC_LINK_SSE4(8);
         }
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            ALF_INIT(8);
+            AVG_INIT(8, avx2);
             MC_LINKS_AVX2(8);
         }
-    } else if (bd == 10) {
+        break;
+    case 10:
         if (EXTERNAL_SSE4(cpu_flags)) {
             MC_LINK_SSE4(10);
         }
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            ALF_INIT(10);
+            AVG_INIT(10, avx2);
             MC_LINKS_AVX2(10);
             MC_LINKS_16BPC_AVX2(10);
         }
-    } else if (bd == 12) {
+        break;
+    case 12:
         if (EXTERNAL_SSE4(cpu_flags)) {
             MC_LINK_SSE4(12);
         }
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+            ALF_INIT(12);
+            AVG_INIT(12, avx2);
             MC_LINKS_AVX2(12);
             MC_LINKS_16BPC_AVX2(12);
         }
-    }
-
-    if (EXTERNAL_AVX2(cpu_flags)) {
-        switch (bd) {
-            case 8:
-                ALF_INIT(8);
-                AVG_INIT(8, avx2);
-                break;
-            case 10:
-                ALF_INIT(10);
-                AVG_INIT(10, avx2);
-                break;
-            case 12:
-                ALF_INIT(12);
-                AVG_INIT(12, avx2);
-                break;
-            default:
-                break;
-        }
+        break;
+    default:
+        break;
     }
 #endif
 }
