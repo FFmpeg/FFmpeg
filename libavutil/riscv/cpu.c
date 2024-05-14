@@ -77,8 +77,12 @@ int ff_get_cpu_flags_riscv(void)
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZVBB)
             ret |= AV_CPU_FLAG_RV_ZVBB;
 #endif
-        if (pairs[2].value & RISCV_HWPROBE_MISALIGNED_FAST)
-            ret |= AV_CPU_FLAG_RV_MISALIGNED;
+        switch (pairs[2].value & RISCV_HWPROBE_MISALIGNED_MASK) {
+            case RISCV_HWPROBE_MISALIGNED_FAST:
+                ret |= AV_CPU_FLAG_RV_MISALIGNED;
+                break;
+            default:
+        }
     } else
 #endif
 #if HAVE_GETAUXVAL
