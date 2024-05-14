@@ -473,14 +473,13 @@ static int has_channel_names(const AVChannelLayout *channel_layout)
     return 0;
 }
 
-/**
- * If the layout is n-th order standard-order ambisonic, with optional
- * extra non-diegetic channels at the end, return the order.
- * Return a negative error code otherwise.
- */
-static int ambisonic_order(const AVChannelLayout *channel_layout)
+int av_channel_layout_ambisonic_order(const AVChannelLayout *channel_layout)
 {
     int i, highest_ambi, order;
+
+    if (channel_layout->order != AV_CHANNEL_ORDER_AMBISONIC &&
+        channel_layout->order != AV_CHANNEL_ORDER_CUSTOM)
+        return AVERROR(EINVAL);
 
     highest_ambi = -1;
     if (channel_layout->order == AV_CHANNEL_ORDER_AMBISONIC)
@@ -536,7 +535,7 @@ static enum AVChannelOrder canonical_order(AVChannelLayout *channel_layout)
     if (masked_description(channel_layout, 0) > 0)
         return AV_CHANNEL_ORDER_NATIVE;
 
-    order = ambisonic_order(channel_layout);
+    order = av_channel_layout_ambisonic_order(channel_layout);
     if (order >= 0 && masked_description(channel_layout, (order + 1) * (order + 1)) >= 0)
         return AV_CHANNEL_ORDER_AMBISONIC;
 
@@ -551,7 +550,7 @@ static enum AVChannelOrder canonical_order(AVChannelLayout *channel_layout)
 static int try_describe_ambisonic(AVBPrint *bp, const AVChannelLayout *channel_layout)
 {
     int nb_ambi_channels;
-    int order = ambisonic_order(channel_layout);
+    int order = av_channel_layout_ambisonic_order(channel_layout);
     if (order < 0)
         return order;
 
@@ -945,7 +944,7 @@ int av_channel_layout_retype(AVChannelLayout *channel_layout, enum AVChannelOrde
         if (channel_layout->order == AV_CHANNEL_ORDER_CUSTOM) {
             int64_t mask;
             int nb_channels = channel_layout->nb_channels;
-            int order = ambisonic_order(channel_layout);
+            int order = av_channel_layout_ambisonic_order(channel_layout);
             if (order < 0)
                 return AVERROR(ENOSYS);
             mask = masked_description(channel_layout, (order + 1) * (order + 1));

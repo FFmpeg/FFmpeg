@@ -680,6 +680,16 @@ int av_channel_layout_check(const AVChannelLayout *channel_layout);
 int av_channel_layout_compare(const AVChannelLayout *chl, const AVChannelLayout *chl1);
 
 /**
+ * Return the order if the layout is n-th order standard-order ambisonic.
+ * The presence of optional extra non-diegetic channels at the end is not taken
+ * into account.
+ *
+ * @param channel_layout input channel layout
+ * @return the order of the layout, a negative error code otherwise.
+ */
+int av_channel_layout_ambisonic_order(const AVChannelLayout *channel_layout);
+
+/**
  * The conversion must be lossless.
  */
 #define AV_CHANNEL_LAYOUT_RETYPE_FLAG_LOSSLESS (1 << 0)
