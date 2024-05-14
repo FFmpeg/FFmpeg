@@ -96,77 +96,145 @@
         .endm
 #endif
 
-        /* Convenience macro to load a Vector type (vtype) as immediate */
-        .macro  lvtypei rd, e, m=m1, tp=tu, mp=mu
+#if defined (__riscv_v_elen)
+# define RV_V_ELEN __riscv_v_elen
+#else
+/* Run-time detection of the V extension implies ELEN >= 64. */
+# define RV_V_ELEN 64
+#endif
+#if RV_V_ELEN == 32
+# define VSEW_MAX 2
+#else
+# define VSEW_MAX 3
+#endif
 
-        .ifc \e,e8
-        .equ ei, 0
+        .macro  parse_vtype ew, tp, mp
+        .ifc    \ew,e8
+        .equ    vsew, 0
         .else
-        .ifc \e,e16
-        .equ ei, 8
+        .ifc    \ew,e16
+        .equ    vsew, 1
         .else
-        .ifc \e,e32
-        .equ ei, 16
+        .ifc    \ew,e32
+        .equ    vsew, 2
         .else
-        .ifc \e,e64
-        .equ ei, 24
+        .ifc    \ew,e64
+        .equ    vsew, 3
         .else
-        .error "Unknown element type"
-        .endif
-        .endif
-        .endif
-        .endif
-
-        .ifc \m,m1
-        .equ mi, 0
-        .else
-        .ifc \m,m2
-        .equ mi, 1
-        .else
-        .ifc \m,m4
-        .equ mi, 2
-        .else
-        .ifc \m,m8
-        .equ mi, 3
-        .else
-        .ifc \m,mf8
-        .equ mi, 5
-        .else
-        .ifc \m,mf4
-        .equ mi, 6
-        .else
-        .ifc \m,mf2
-        .equ mi, 7
-        .else
-        .error "Unknown multiplier"
-        .equ mi, 3
-        .endif
-        .endif
-        .endif
+        .error  "Unknown element width \ew"
         .endif
         .endif
         .endif
         .endif
 
-        .ifc \tp,tu
-        .equ tpi, 0
+        .ifc    \tp,tu
+        .equ    tp, 0
         .else
-        .ifc \tp,ta
-        .equ tpi, 64
+        .ifc    \tp,ta
+        .equ    tp, 1
         .else
-        .error "Unknown tail policy"
+        .error  "Unknown tail policy \tp"
         .endif
         .endif
 
-        .ifc \mp,mu
-        .equ mpi, 0
+        .ifc    \mp,mu
+        .equ    mp, 0
         .else
-        .ifc \mp,ma
-        .equ mpi, 128
+        .ifc    \mp,ma
+        .equ    mp, 1
         .else
-        .error "Unknown mask policy"
+        .error  "Unknown mask policy \mp"
         .endif
         .endif
+        .endm
 
-        li      \rd, (ei | mi | tpi | mpi)
+        /**
+         * Gets the vector type with the smallest suitable LMUL value.
+         * @param[out] rd vector type destination register
+         * @param vl vector length constant
+         * @param ew element width: e8, e16, e32 or e64
+         * @param tp tail policy: tu or ta
+         * @param mp mask policty: mu or ma
+         */
+        .macro  vtype_ivli rd, avl, ew, tp=tu, mp=mu
+        .if     \avl <= 1
+        .equ    log2vl, 0
+        .elseif \avl <= 2
+        .equ    log2vl, 1
+        .elseif \avl <= 4
+        .equ    log2vl, 2
+        .elseif \avl <= 8
+        .equ    log2vl, 3
+        .elseif \avl <= 16
+        .equ    log2vl, 4
+        .elseif \avl <= 32
+        .equ    log2vl, 5
+        .elseif \avl <= 64
+        .equ    log2vl, 6
+        .elseif \avl <= 128
+        .equ    log2vl, 7
+        .else
+        .error  "Vector length \avl out of range"
+        .endif
+        parse_vtype \ew, \tp, \mp
+        csrr    \rd, vlenb
+        clz     \rd, \rd
+        addi    \rd, \rd, log2vl + 1 + VSEW_MAX - __riscv_xlen
+        max     \rd, \rd, zero // VLMUL must be >= VSEW - VSEW_MAX
+        .if     vsew < VSEW_MAX
+        addi    \rd, \rd, vsew - VSEW_MAX
+        andi    \rd, \rd, 7
+        .endif
+        ori     \rd, \rd, (vsew << 3) | (tp << 6) | (mp << 7)
+        .endm
+
+        /**
+         * Gets the vector type with the smallest suitable LMUL value.
+         * @param[out] rd vector type destination register
+         * @param rs vector length source register
+         * @param[out] tmp temporary register to be clobbered
+         * @param ew element width: e8, e16, e32 or e64
+         * @param tp tail policy: tu or ta
+         * @param mp mask policty: mu or ma
+         */
+        .macro  vtype_vli rd, rs, tmp, ew, tp=tu, mp=mu
+        parse_vtype \ew, \tp, \mp
+        /*
+         * The difference between the CLZ's notionally equals the VLMUL value
+         * for 4-bit elements. But we want the value for SEW_MAX-bit elements.
+         */
+        slli    \tmp, \rs, 1 + VSEW_MAX
+        csrr    \rd, vlenb
+        addi    \tmp, \tmp, -1
+        clz     \rd, \rd
+        clz     \tmp, \tmp
+        sub     \rd, \rd, \tmp
+        max     \rd, \rd, zero // VLMUL must be >= VSEW - VSEW_MAX
+        .if     vsew < VSEW_MAX
+        addi    \rd, \rd, vsew - VSEW_MAX
+        andi    \rd, \rd, 7
+        .endif
+        ori     \rd, \rd, (vsew << 3) | (tp << 6) | (mp << 7)
+        .endm
+
+        /**
+         * Widens a vector type.
+         * @param[out] rd widened vector type destination register
+         * @param rs vector type source register
+         * @param n number of times to widen (once by default)
+         */
+        .macro  vwtypei rd, rs, n=1
+        xori    \rd, \rs, 4
+        addi    \rd, \rd, (\n) * 011
+        xori    \rd, \rd, 4
+        .endm
+
+        /**
+         * Narrows a vector type.
+         * @param[out] rd narrowed vector type destination register
+         * @param rs vector type source register
+         * @param n number of times to narrow (once by default)
+         */
+        .macro  vntypei rd, rs, n=1
+        vwtypei \rd, \rs, -(\n)
         .endm
