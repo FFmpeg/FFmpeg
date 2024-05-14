@@ -74,10 +74,12 @@ void ff_aac_float_common_init(void);
  */
 extern const uint8_t ff_aac_num_swb_1024[];
 extern const uint8_t ff_aac_num_swb_960 [];
+extern const uint8_t ff_aac_num_swb_768 [];
 extern const uint8_t ff_aac_num_swb_512 [];
 extern const uint8_t ff_aac_num_swb_480 [];
 extern const uint8_t ff_aac_num_swb_128 [];
 extern const uint8_t ff_aac_num_swb_120 [];
+extern const uint8_t ff_aac_num_swb_96  [];
 // @}
 
 extern const uint8_t ff_aac_pred_sfb_max [];
@@ -101,10 +103,12 @@ extern const uint16_t ff_aac_ac_cf_m[64][17];
 
 extern const uint16_t * const ff_swb_offset_1024[13];
 extern const uint16_t * const ff_swb_offset_960 [13];
+extern const uint16_t * const ff_swb_offset_768 [13];
 extern const uint16_t * const ff_swb_offset_512 [13];
 extern const uint16_t * const ff_swb_offset_480 [13];
 extern const uint16_t * const ff_swb_offset_128 [13];
 extern const uint16_t * const ff_swb_offset_120 [13];
+extern const uint16_t * const ff_swb_offset_96  [13];
 
 extern const uint8_t ff_tns_max_bands_1024[13];
 extern const uint8_t ff_tns_max_bands_512 [13];
