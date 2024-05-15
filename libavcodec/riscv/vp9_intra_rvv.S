@@ -173,3 +173,121 @@ func ff_h_8x8_rvv, zve32x
 
         ret
 endfunc
+
+.macro tm_sum4 dst1, dst2, dst3, dst4, top, n1
+        lbu          t1, \n1(a2)
+        lbu          t2, (\n1-1)(a2)
+        lbu          t3, (\n1-2)(a2)
+        lbu          t4, (\n1-3)(a2)
+        sub          t1, t1, a4
+        sub          t2, t2, a4
+        sub          t3, t3, a4
+        sub          t4, t4, a4
+        vadd.vx      \dst1, \top, t1
+        vadd.vx      \dst2, \top, t2
+        vadd.vx      \dst3, \top, t3
+        vadd.vx      \dst4, \top, t4
+.endm
+
+func ff_tm_32x32_rvv, zve32x
+        lbu          a4, -1(a3)
+        li           t5, 32
+
+        .irp offset 31, 23, 15, 7
+        vsetvli      zero, t5, e16, m4, ta, ma
+        vle8.v       v8, (a3)
+        vzext.vf2    v28, v8
+
+        tm_sum4      v0, v4, v8, v12, v28, \offset
+        tm_sum4      v16, v20, v24, v28, v28, (\offset-4)
+
+        .irp n 0, 4, 8, 12, 16, 20, 24, 28
+        vmax.vx      v\n, v\n, zero
+        .endr
+
+        vsetvli      zero, zero, e8, m2, ta, ma
+        .irp n 0, 4, 8, 12, 16, 20, 24, 28
+        vnclipu.wi   v\n, v\n, 0
+        vse8.v       v\n, (a0)
+        add          a0, a0, a1
+        .endr
+        .endr
+
+        ret
+endfunc
+
+func ff_tm_16x16_rvv, zve32x
+        vsetivli      zero, 16, e16, m2, ta, ma
+        vle8.v        v8, (a3)
+        vzext.vf2     v30, v8
+        lbu           a4, -1(a3)
+
+        tm_sum4       v0, v2, v4, v6, v30, 15
+        tm_sum4       v8, v10, v12, v14, v30, 11
+        tm_sum4       v16, v18, v20, v22, v30, 7
+        tm_sum4       v24, v26, v28, v30, v30, 3
+
+        .irp n 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
+        vmax.vx      v\n, v\n, zero
+        .endr
+
+        vsetvli      zero, zero, e8, m1, ta, ma
+        .irp n 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28
+        vnclipu.wi   v\n, v\n, 0
+        vse8.v       v\n, (a0)
+        add          a0, a0, a1
+        .endr
+        vnclipu.wi   v30, v30, 0
+        vse8.v       v30, (a0)
+
+        ret
+endfunc
+
+func ff_tm_8x8_rvv, zve32x
+        vsetivli     zero, 8, e16, m1, ta, ma
+        vle8.v       v8, (a3)
+        vzext.vf2    v28, v8
+        lbu          a4, -1(a3)
+
+        tm_sum4      v16, v17, v18, v19, v28, 7
+        tm_sum4      v20, v21, v22, v23, v28, 3
+
+        .irp n 16, 17, 18, 19, 20, 21, 22, 23
+        vmax.vx      v\n, v\n, zero
+        .endr
+
+        vsetvli      zero, zero, e8, mf2, ta, ma
+        .irp n 16, 17, 18, 19, 20, 21, 22
+        vnclipu.wi   v\n, v\n, 0
+        vse8.v       v\n, (a0)
+        add          a0, a0, a1
+        .endr
+        vnclipu.wi   v24, v23, 0
+        vse8.v       v24, (a0)
+
+        ret
+endfunc
+
+func ff_tm_4x4_rvv, zve32x
+        vsetivli     zero, 4, e16, mf2, ta, ma
+        vle8.v       v8, (a3)
+        vzext.vf2    v28, v8
+        lbu          a4, -1(a3)
+
+        tm_sum4      v16, v17, v18, v19, v28, 3
+
+        .irp n 16, 17, 18, 19
+        vmax.vx      v\n, v\n, zero
+        .endr
+
+        vsetvli      zero, zero, e8, mf4, ta, ma
+        .irp n 16, 17, 18
+        vnclipu.wi   v\n, v\n, 0
+        vse8.v       v\n, (a0)
+        add          a0, a0, a1
+        .endr
+        vnclipu.wi   v24, v19, 0
+        vse8.v       v24, (a0)
+
+        ret
+endfunc

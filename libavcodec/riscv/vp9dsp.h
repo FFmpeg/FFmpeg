@@ -72,6 +72,14 @@ void ff_h_16x16_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
                     const uint8_t *a);
 void ff_h_8x8_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
                   const uint8_t *a);
+void ff_tm_32x32_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
+                     const uint8_t *a);
+void ff_tm_16x16_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
+                     const uint8_t *a);
+void ff_tm_8x8_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
+                   const uint8_t *a);
+void ff_tm_4x4_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
+                   const uint8_t *a);
 
 #define VP9_8TAP_RISCV_RVV_FUNC(SIZE, type, type_idx)                         \
 void ff_put_8tap_##type##_##SIZE##h_rvv(uint8_t *dst, ptrdiff_t dststride,   \
