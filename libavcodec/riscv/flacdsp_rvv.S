@@ -76,22 +76,24 @@ func ff_flac_lpc32_rvv, zve64x
         ret
 endfunc
 
-func ff_flac_lpc32_rvv_simple, zve64x
-        vsetivli zero, 1, e64, m1, ta, ma
+func ff_flac_lpc32_rvv_simple, zve64x, zbb
+        vtype_vli t3, a2, t1, e64, ta, ma
+        vntypei t2, t3
+        vsetvl  zero, a2, t3 // e64
         vmv.s.x v0, zero
-        vsetvli zero, a2, e32, m4, ta, ma
+        vsetvl  zero, zero, t2 // e32
         vle32.v v8, (a1)
         sub     a4, a4, a2
         vle32.v v16, (a0)
         sh2add  a0, a2, a0
 1:
         vwmul.vv v24, v8, v16
-        vsetvli zero, zero, e64, m8, ta, ma
+        vsetvl  zero, zero, t3 // e64
         vredsum.vs v24, v24, v0
         lw      t0, (a0)
         addi    a4, a4, -1
         vmv.x.s t1, v24
-        vsetvli zero, zero, e32, m4, ta, ma
+        vsetvl  zero, zero, t2 // e32
         sra     t1, t1, a3
         add     t0, t0, t1
         vslide1down.vx v16, v16, t0

@@ -71,17 +71,18 @@ av_cold void ff_flacdsp_init_riscv(FLACDSPContext *c, enum AVSampleFormat fmt,
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         int vlenb = ff_get_rv_vlenb();
 
-        if ((flags & AV_CPU_FLAG_RVB_BASIC) && vlenb >= 16)
+        if ((flags & AV_CPU_FLAG_RVB_BASIC) && vlenb >= 16) {
             c->lpc16 = ff_flac_lpc16_rvv;
 
 # if (__riscv_xlen >= 64)
-        if (flags & AV_CPU_FLAG_RVV_I64) {
-            if (vlenb > 16)
-                c->lpc32 = ff_flac_lpc32_rvv_simple;
-            else
-                c->lpc32 = ff_flac_lpc32_rvv;
-        }
+            if (flags & AV_CPU_FLAG_RVV_I64) {
+                if (vlenb > 16)
+                    c->lpc32 = ff_flac_lpc32_rvv_simple;
+                else
+                    c->lpc32 = ff_flac_lpc32_rvv;
+            }
 # endif
+        }
 
         c->wasted32 = ff_flac_wasted32_rvv;
 
