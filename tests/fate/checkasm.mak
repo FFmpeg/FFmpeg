@@ -59,6 +59,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-vorbisdsp                                 \
                 fate-checkasm-vp8dsp                                    \
                 fate-checkasm-vp9dsp                                    \
+                fate-checkasm-vvc_alf                                   \
                 fate-checkasm-vvc_mc                                    \
 
 $(FATE_CHECKASM): tests/checkasm/checkasm$(EXESUF)
