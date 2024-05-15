@@ -83,7 +83,7 @@ static void dct4x4_##size(dctcoef *coef)                                     \
     }                                                                        \
     for (y = 0; y < 4; y++) {                                                \
         for (x = 0; x < 4; x++) {                                            \
-            static const int scale[] = { 13107 * 10, 8066 * 13, 5243 * 16 }; \
+            const int64_t scale[] = { 13107 * 10, 8066 * 13, 5243 * 16 };    \
             const int idx = (y & 1) + (x & 1);                               \
             coef[y*4 + x] = (coef[y*4 + x] * scale[idx] + (1 << 14)) >> 15;  \
         }                                                                    \
