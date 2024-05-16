@@ -21,8 +21,10 @@
  */
 
 #include "libavcodec/get_bits.h"
+#include "libavcodec/put_bits.h"
 #include "libavcodec/golomb.h"
 #include "libavcodec/vvc.h"
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "avc.h"
@@ -185,7 +187,7 @@ static void vvcc_parse_ptl(GetBitContext *gb,
                            unsigned int profileTierPresentFlag,
                            unsigned int max_sub_layers_minus1)
 {
-    VVCCProfileTierLevel general_ptl;
+    VVCCProfileTierLevel general_ptl = { 0 };
     int j;
 
     if (profileTierPresentFlag) {
@@ -326,6 +328,7 @@ static int vvcc_parse_vps(GetBitContext *gb,
 
     for (int i = 0; i <= vps_num_ptls_minus1; i++)
         vvcc_parse_ptl(gb, vvcc, vps_pt_present_flag[i], vps_ptl_max_tid[i]);
+    vvcc->ptl_present_flag = 1;
 
     /* nothing useful for vvcc past this point */
     return 0;
@@ -356,8 +359,10 @@ static int vvcc_parse_sps(GetBitContext *gb,
     vvcc->chroma_format_idc = get_bits(gb, 2);
     sps_log2_ctu_size_minus5 = get_bits(gb, 2);
 
-    if (get_bits1(gb))          // sps_ptl_dpb_hrd_params_present_flag
+    if (get_bits1(gb)) {        // sps_ptl_dpb_hrd_params_present_flag
+        vvcc->ptl_present_flag = 1;
         vvcc_parse_ptl(gb, vvcc, 1, sps_max_sublayers_minus1);
+    }
 
     skip_bits1(gb);             // sps_gdr_enabled_flag
     if (get_bits(gb, 1))        // sps_ref_pic_resampling_enabled_flag
@@ -579,10 +584,6 @@ static void vvcc_init(VVCDecoderConfigurationRecord *vvcc)
 {
     memset(vvcc, 0, sizeof(VVCDecoderConfigurationRecord));
     vvcc->lengthSizeMinusOne = 3;       // 4 bytes
-
-    vvcc->ptl.num_bytes_constraint_info = 1;
-
-    vvcc->ptl_present_flag = 1;
 }
 
 static void vvcc_close(VVCDecoderConfigurationRecord *vvcc)
@@ -603,7 +604,6 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
 {
     uint8_t i;
     uint16_t j, vps_count = 0, sps_count = 0, pps_count = 0;
-    unsigned char *buf = NULL;
     /*
      * It's unclear how to properly compute these fields, so
      * let's always set them to values meaning 'unspecified'.
@@ -735,6 +735,10 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
     avio_w8(pb, vvcc->lengthSizeMinusOne << 1 | vvcc->ptl_present_flag | 0xf8);
 
     if (vvcc->ptl_present_flag) {
+        uint8_t buf[64];
+        PutBitContext pbc;
+
+        init_put_bits(&pbc, buf, sizeof(buf));
         /*
          * unsigned int(9) ols_idx;
          * unsigned int(3) num_sublayers;
@@ -766,15 +770,14 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
          * unsigned int (1) ptl_frame_only_constraint_flag
          * unsigned int (1) ptl_multilayer_enabled_flag
          * unsigned int (8*num_bytes_constraint_info -2) general_constraint_info */
-        buf =
-            (unsigned char *) malloc(sizeof(unsigned char) *
-                                     vvcc->ptl.num_bytes_constraint_info);
-        *buf = vvcc->ptl.ptl_frame_only_constraint_flag << vvcc->ptl.
-            num_bytes_constraint_info * 8 - 1 | vvcc->ptl.
-            ptl_multilayer_enabled_flag << vvcc->ptl.num_bytes_constraint_info *
-            8 - 2 | *vvcc->ptl.general_constraint_info >> 2;
-        avio_write(pb, buf, vvcc->ptl.num_bytes_constraint_info);
-        free(buf);
+        put_bits(&pbc, 1, vvcc->ptl.ptl_frame_only_constraint_flag);
+        put_bits(&pbc, 1, vvcc->ptl.ptl_multilayer_enabled_flag);
+        av_assert0(vvcc->ptl.num_bytes_constraint_info);
+        if (vvcc->ptl.num_bytes_constraint_info > 1)
+            ff_copy_bits(&pbc, vvcc->ptl.general_constraint_info, (vvcc->ptl.num_bytes_constraint_info - 1) * 8);
+        put_bits(&pbc, 6, vvcc->ptl.general_constraint_info[vvcc->ptl.num_bytes_constraint_info - 1] & 0x3f);
+        flush_put_bits(&pbc);
+        avio_write(pb, buf, put_bytes_count(&pbc, 1));
 
         if (vvcc->num_sublayers > 1) {
             uint8_t ptl_sublayer_level_present_flags = 0;
