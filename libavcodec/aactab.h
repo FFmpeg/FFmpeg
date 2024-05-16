@@ -115,4 +115,14 @@ extern const uint8_t ff_tns_max_bands_512 [13];
 extern const uint8_t ff_tns_max_bands_480 [13];
 extern const uint8_t ff_tns_max_bands_128 [13];
 
+/* [x][y], x == 1 -> frame len is 768 frames, y == 1 -> is eight_short */
+extern const uint8_t ff_usac_noise_fill_start_offset[2][2];
+
+extern const int ff_aac_usac_samplerate[32];
+
+/* Window type (only long+eight, start/stop/stopstart), sine+sine, kbd+kbd, sine+kbd, kbd+sine */
+extern const float ff_aac_usac_mdst_filt_cur[4 /* Window */][4 /* Shape */][7];
+/* Window type (everything/longstop+stopstart), sine or kbd */
+extern const float ff_aac_usac_mdst_filt_prev[2 /* Window */][2 /* sine/kbd */][7];
+
 #endif /* AVCODEC_AACTAB_H */

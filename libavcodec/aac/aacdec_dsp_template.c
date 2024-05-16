@@ -88,8 +88,8 @@ static void AAC_RENAME(apply_mid_side_stereo)(AACDecContext *ac, ChannelElement 
     INTFLOAT *ch1 = cpe->ch[1].AAC_RENAME(coeffs);
     const uint16_t *offsets = ics->swb_offset;
     for (int g = 0; g < ics->num_window_groups; g++) {
-        for (int sfb = 0; sfb < ics->max_sfb; sfb++) {
-            const int idx = g*ics->max_sfb + sfb;
+        for (int sfb = 0; sfb < cpe->max_sfb_ste; sfb++) {
+            const int idx = g*cpe->max_sfb_ste + sfb;
             if (cpe->ms_mask[idx] &&
                 cpe->ch[0].band_type[idx] < NOISE_BT &&
                 cpe->ch[1].band_type[idx] < NOISE_BT) {
