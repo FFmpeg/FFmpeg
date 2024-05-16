@@ -98,6 +98,8 @@ static av_cold void rv34_gen_vlc_ext(const uint8_t *bits, int size, VLC *vlc,
     uint16_t cw[MAX_VLC_SIZE];
     int maxbits;
 
+    av_assert1(size > 0);
+
     for (int i = 0; i < size; i++)
         counts[bits[i]]++;
 
