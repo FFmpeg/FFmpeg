@@ -35,7 +35,8 @@ av_cold void ff_huffyuvdsp_init_riscv(HuffYUVDSPContext *c,
 
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         c->add_int16 = ff_add_int16_rvv;
-        c->add_hfyu_left_pred_bgr32 = ff_add_hfyu_left_pred_bgr32_rvv;
+        if (flags & AV_CPU_FLAG_RVB_BASIC)
+            c->add_hfyu_left_pred_bgr32 = ff_add_hfyu_left_pred_bgr32_rvv;
     }
 #endif
 }
