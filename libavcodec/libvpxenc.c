@@ -684,7 +684,7 @@ static int vpx_ts_param_parse(VPxContext *ctx, struct vpx_codec_enc_cfg *enccfg,
         vp8_ts_parse_int_array(enccfg->ts_layer_id, value, value_len, VPX_TS_MAX_PERIODICITY);
     } else if (!strcmp(key, "ts_layering_mode")) {
         /* option for pre-defined temporal structures in function set_temporal_layer_pattern. */
-        ts_layering_mode = strtoul(value, &value, 4);
+        ts_layering_mode = strtoul(value, &value, 10);
     }
 
 #if (VPX_ENCODER_ABI_VERSION >= 12) && CONFIG_LIBVPX_VP9_ENCODER
