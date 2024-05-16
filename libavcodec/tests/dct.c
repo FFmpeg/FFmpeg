@@ -223,8 +223,8 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
             v = abs(err);
             if (v > err_inf)
                 err_inf = v;
-            err2_matrix[i] += v * v;
-            err2 += v * v;
+            err2_matrix[i] += v * (int64_t)v;
+            err2 += v * (int64_t)v;
             sysErr[i] += block[i] - block1[i];
             blockSumErr += v;
             if (abs(block[i]) > maxout)
