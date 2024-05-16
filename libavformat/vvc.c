@@ -79,7 +79,7 @@ typedef struct VVCCProfileTierLevel {
 // general_constraint_info
     uint8_t gci_present_flag;
     uint8_t gci_general_constraints[9];
-    uint8_t gci_num_reserved_bits;
+    uint8_t num_bytes_constraint_info;
 // end general_constraint_info
     uint8_t ptl_sublayer_level_present_flag[VVC_MAX_SUBLAYERS - 1];
     uint8_t sublayer_level_idc[VVC_MAX_SUBLAYERS - 1];
@@ -137,13 +137,12 @@ static void vvcc_update_ptl(VVCDecoderConfigurationRecord *vvcc,
      * Constraints Info
      */
     if (ptl->gci_present_flag) {
-        vvcc->ptl.num_bytes_constraint_info = 9;
+        vvcc->ptl.num_bytes_constraint_info = ptl->num_bytes_constraint_info;
         memcpy(&vvcc->ptl.general_constraint_info[0],
-               &ptl->gci_general_constraints[0], sizeof(uint8_t) * 9);
-
+               &ptl->gci_general_constraints[0], ptl->num_bytes_constraint_info);
     } else {
         vvcc->ptl.num_bytes_constraint_info = 1;
-        memset(&vvcc->ptl.general_constraint_info[0], 0, sizeof(uint8_t) * 9);
+        memset(&vvcc->ptl.general_constraint_info[0], 0, sizeof(vvcc->ptl.general_constraint_info));
     }
 
     /*
@@ -188,7 +187,6 @@ static void vvcc_parse_ptl(GetBitContext *gb,
                            unsigned int max_sub_layers_minus1)
 {
     VVCCProfileTierLevel general_ptl = { 0 };
-    int j;
 
     if (profileTierPresentFlag) {
         general_ptl.profile_idc = get_bits(gb, 7);
@@ -201,12 +199,14 @@ static void vvcc_parse_ptl(GetBitContext *gb,
     if (profileTierPresentFlag) {       // parse constraint info
         general_ptl.gci_present_flag = get_bits1(gb);
         if (general_ptl.gci_present_flag) {
+            int gci_num_reserved_bits, j;
             for (j = 0; j < 8; j++)
                 general_ptl.gci_general_constraints[j] = get_bits(gb, 8);
-            general_ptl.gci_general_constraints[8] = get_bits(gb, 7);
+            general_ptl.gci_general_constraints[j++] = get_bits(gb, 7);
 
-            general_ptl.gci_num_reserved_bits = get_bits(gb, 8);
-            skip_bits(gb, general_ptl.gci_num_reserved_bits);
+            gci_num_reserved_bits = get_bits(gb, 8);
+            general_ptl.num_bytes_constraint_info = j;
+            skip_bits(gb, gci_num_reserved_bits);
         }
         while (gb->index % 8 != 0)
             skip_bits1(gb);
