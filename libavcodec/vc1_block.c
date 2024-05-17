@@ -1607,10 +1607,6 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
                 if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                     continue;
                 v->vc1dsp.vc1_inv_trans_8x8(v->block[v->cur_blk_idx][block_map[i]]);
-                if (i < 4)
-                    off = (fieldtx) ? ((i & 1) * 8) + ((i & 2) >> 1) * s->linesize : (i & 1) * 8 + 4 * (i & 2) * s->linesize;
-                else
-                    off = 0;
                 block_cbp |= 0xf << (i << 2);
             }
 
