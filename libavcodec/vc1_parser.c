@@ -26,6 +26,7 @@
  */
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "parser.h"
 #include "vc1.h"
 #include "get_bits.h"
@@ -66,7 +67,9 @@ static void vc1_extract_header(AVCodecParserContext *s, AVCodecContext *avctx,
     GetBitContext gb;
     int ret;
     vpc->v.s.avctx = avctx;
-    init_get_bits8(&gb, buf, buf_size);
+    ret = init_get_bits8(&gb, buf, buf_size);
+    av_assert1(ret >= 0); // buf_size is bounded by UNESCAPED_THRESHOLD
+
     switch (vpc->prev_start_code) {
     case VC1_CODE_SEQHDR & 0xFF:
         ff_vc1_decode_sequence_header(avctx, &vpc->v, &gb);
