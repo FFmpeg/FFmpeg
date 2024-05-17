@@ -20,14 +20,16 @@
  */
 
 #include "avformat.h"
-#include "internal.h"
 #include "mux.h"
 #include "libavutil/opt.h"
+#include "libavutil/thread.h"
 #include <chromaprint.h>
 
 #define CPR_VERSION_INT AV_VERSION_INT(CHROMAPRINT_VERSION_MAJOR, \
                                        CHROMAPRINT_VERSION_MINOR, \
                                        CHROMAPRINT_VERSION_PATCH)
+
+static AVMutex chromaprint_mutex = AV_MUTEX_INITIALIZER;
 
 typedef enum FingerprintFormat {
     FINGERPRINT_RAW,
@@ -52,9 +54,9 @@ static void deinit(AVFormatContext *s)
     ChromaprintMuxContext *const cpr = s->priv_data;
 
     if (cpr->ctx) {
-        ff_lock_avformat();
+        ff_mutex_lock(&chromaprint_mutex);
         chromaprint_free(cpr->ctx);
-        ff_unlock_avformat();
+        ff_mutex_unlock(&chromaprint_mutex);
     }
 }
 
@@ -63,9 +65,9 @@ static av_cold int init(AVFormatContext *s)
     ChromaprintMuxContext *cpr = s->priv_data;
     AVStream *st;
 
-    ff_lock_avformat();
+    ff_mutex_lock(&chromaprint_mutex);
     cpr->ctx = chromaprint_new(cpr->algorithm);
-    ff_unlock_avformat();
+    ff_mutex_unlock(&chromaprint_mutex);
 
     if (!cpr->ctx) {
         av_log(s, AV_LOG_ERROR, "Failed to create chromaprint context.\n");

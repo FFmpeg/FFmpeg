@@ -25,15 +25,12 @@
 #include <gnutls/x509.h>
 
 #include "avformat.h"
-#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
 #include "tls.h"
-#include "libavcodec/internal.h"
-#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
+#include "libavutil/thread.h"
 
 #ifndef GNUTLS_VERSION_NUMBER
 #define GNUTLS_VERSION_NUMBER LIBGNUTLS_VERSION_NUMBER
@@ -41,7 +38,6 @@
 
 #if HAVE_THREADS && GNUTLS_VERSION_NUMBER <= 0x020b00
 #include <gcrypt.h>
-#include "libavutil/thread.h"
 GCRY_THREAD_OPTION_PTHREAD_IMPL;
 #endif
 
@@ -54,22 +50,24 @@ typedef struct TLSContext {
     int io_err;
 } TLSContext;
 
+static AVMutex gnutls_mutex = AV_MUTEX_INITIALIZER;
+
 void ff_gnutls_init(void)
 {
-    ff_lock_avformat();
+    ff_mutex_lock(&gnutls_mutex);
 #if HAVE_THREADS && GNUTLS_VERSION_NUMBER < 0x020b00
     if (gcry_control(GCRYCTL_ANY_INITIALIZATION_P) == 0)
         gcry_control(GCRYCTL_SET_THREAD_CBS, &gcry_threads_pthread);
 #endif
     gnutls_global_init();
-    ff_unlock_avformat();
+    ff_mutex_unlock(&gnutls_mutex);
 }
 
 void ff_gnutls_deinit(void)
 {
-    ff_lock_avformat();
+    ff_mutex_lock(&gnutls_mutex);
     gnutls_global_deinit();
-    ff_unlock_avformat();
+    ff_mutex_unlock(&gnutls_mutex);
 }
 
 static int print_tls_error(URLContext *h, int ret)

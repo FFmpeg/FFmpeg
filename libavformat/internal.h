@@ -727,9 +727,6 @@ struct AVBPrint;
  */
 int ff_bprint_to_codecpar_extradata(AVCodecParameters *par, struct AVBPrint *buf);
 
-int ff_lock_avformat(void);
-int ff_unlock_avformat(void);
-
 /**
  * Set AVFormatContext url field to the provided pointer. The pointer must
  * point to a valid string. The existing url field is freed if necessary. Also

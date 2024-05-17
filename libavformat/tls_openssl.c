@@ -19,17 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avformat.h"
-#include "internal.h"
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
 #include "tls.h"
-#include "libavutil/avstring.h"
-#include "libavutil/avutil.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/parseutils.h"
 #include "libavutil/thread.h"
 
 #include <openssl/bio.h>
@@ -48,6 +43,8 @@ typedef struct TLSContext {
 #endif
     int io_err;
 } TLSContext;
+
+static AVMutex openssl_mutex = AV_MUTEX_INITIALIZER;
 
 #if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
 #include <openssl/crypto.h>
@@ -69,7 +66,7 @@ static unsigned long openssl_thread_id(void)
 
 int ff_openssl_init(void)
 {
-    ff_lock_avformat();
+    ff_mutex_lock(&openssl_mutex);
     if (!openssl_init) {
         /* OpenSSL 1.0.2 or below, then you would use SSL_library_init. If you are
          * using OpenSSL 1.1.0 or above, then the library will initialize
@@ -85,7 +82,7 @@ int ff_openssl_init(void)
             int i;
             openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
             if (!openssl_mutexes) {
-                ff_unlock_avformat();
+                ff_mutex_unlock(&openssl_mutex);
                 return AVERROR(ENOMEM);
             }
 
@@ -99,14 +96,14 @@ int ff_openssl_init(void)
 #endif
     }
     openssl_init++;
-    ff_unlock_avformat();
+    ff_mutex_unlock(&openssl_mutex);
 
     return 0;
 }
 
 void ff_openssl_deinit(void)
 {
-    ff_lock_avformat();
+    ff_mutex_lock(&openssl_mutex);
     openssl_init--;
     if (!openssl_init) {
 #if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -119,7 +116,7 @@ void ff_openssl_deinit(void)
         }
 #endif
     }
-    ff_unlock_avformat();
+    ff_mutex_unlock(&openssl_mutex);
 }
 
 static int print_tls_error(URLContext *h, int ret)
