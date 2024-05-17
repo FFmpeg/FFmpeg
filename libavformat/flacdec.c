@@ -283,12 +283,6 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
     if (avio_seek(s->pb, *ppos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
 
-    parser = av_parser_init(st->codecpar->codec_id);
-    if (!parser){
-        return AV_NOPTS_VALUE;
-    }
-    parser->flags |= PARSER_FLAG_USE_CODEC_TS;
-
     if (!flac->parser_dec) {
         flac->parser_dec = avcodec_alloc_context3(NULL);
         if (!flac->parser_dec)
@@ -298,6 +292,11 @@ static av_unused int64_t flac_read_timestamp(AVFormatContext *s, int stream_inde
         if (ret < 0)
             return ret;
     }
+
+    parser = av_parser_init(st->codecpar->codec_id);
+    if (!parser)
+        return AV_NOPTS_VALUE;
+    parser->flags |= PARSER_FLAG_USE_CODEC_TS;
 
     for (;;){
         uint8_t *data;
