@@ -1634,63 +1634,63 @@ static void ac3_quantize_mantissas(AC3EncodeContext *s)
 /*
  * Write the AC-3 frame header to the output bitstream.
  */
-static void ac3_output_frame_header(AC3EncodeContext *s)
+static void ac3_output_frame_header(AC3EncodeContext *s, PutBitContext *pb)
 {
     AC3EncOptions *opt = &s->options;
 
-    put_bits(&s->pb, 16, 0x0b77);   /* frame header */
-    put_bits(&s->pb, 16, 0);        /* crc1: will be filled later */
-    put_bits(&s->pb, 2,  s->bit_alloc.sr_code);
-    put_bits(&s->pb, 6,  s->frame_size_code + (s->frame_size - s->frame_size_min) / 2);
-    put_bits(&s->pb, 5,  s->bitstream_id);
-    put_bits(&s->pb, 3,  s->bitstream_mode);
-    put_bits(&s->pb, 3,  s->channel_mode);
+    put_bits(pb, 16, 0x0b77);   /* frame header */
+    put_bits(pb, 16, 0);        /* crc1: will be filled later */
+    put_bits(pb, 2,  s->bit_alloc.sr_code);
+    put_bits(pb, 6,  s->frame_size_code + (s->frame_size - s->frame_size_min) / 2);
+    put_bits(pb, 5,  s->bitstream_id);
+    put_bits(pb, 3,  s->bitstream_mode);
+    put_bits(pb, 3,  s->channel_mode);
     if ((s->channel_mode & 0x01) && s->channel_mode != AC3_CHMODE_MONO)
-        put_bits(&s->pb, 2, s->center_mix_level);
+        put_bits(pb, 2, s->center_mix_level);
     if (s->channel_mode & 0x04)
-        put_bits(&s->pb, 2, s->surround_mix_level);
+        put_bits(pb, 2, s->surround_mix_level);
     if (s->channel_mode == AC3_CHMODE_STEREO)
-        put_bits(&s->pb, 2, opt->dolby_surround_mode);
-    put_bits(&s->pb, 1, s->lfe_on); /* LFE */
-    put_bits(&s->pb, 5, -opt->dialogue_level);
-    put_bits(&s->pb, 1, 0);         /* no compression control word */
-    put_bits(&s->pb, 1, 0);         /* no lang code */
-    put_bits(&s->pb, 1, opt->audio_production_info);
+        put_bits(pb, 2, opt->dolby_surround_mode);
+    put_bits(pb, 1, s->lfe_on); /* LFE */
+    put_bits(pb, 5, -opt->dialogue_level);
+    put_bits(pb, 1, 0);         /* no compression control word */
+    put_bits(pb, 1, 0);         /* no lang code */
+    put_bits(pb, 1, opt->audio_production_info);
     if (opt->audio_production_info) {
-        put_bits(&s->pb, 5, opt->mixing_level - 80);
-        put_bits(&s->pb, 2, opt->room_type);
+        put_bits(pb, 5, opt->mixing_level - 80);
+        put_bits(pb, 2, opt->room_type);
     }
-    put_bits(&s->pb, 1, opt->copyright);
-    put_bits(&s->pb, 1, opt->original);
+    put_bits(pb, 1, opt->copyright);
+    put_bits(pb, 1, opt->original);
     if (s->bitstream_id == 6) {
         /* alternate bit stream syntax */
-        put_bits(&s->pb, 1, opt->extended_bsi_1);
+        put_bits(pb, 1, opt->extended_bsi_1);
         if (opt->extended_bsi_1) {
-            put_bits(&s->pb, 2, opt->preferred_stereo_downmix);
-            put_bits(&s->pb, 3, s->ltrt_center_mix_level);
-            put_bits(&s->pb, 3, s->ltrt_surround_mix_level);
-            put_bits(&s->pb, 3, s->loro_center_mix_level);
-            put_bits(&s->pb, 3, s->loro_surround_mix_level);
+            put_bits(pb, 2, opt->preferred_stereo_downmix);
+            put_bits(pb, 3, s->ltrt_center_mix_level);
+            put_bits(pb, 3, s->ltrt_surround_mix_level);
+            put_bits(pb, 3, s->loro_center_mix_level);
+            put_bits(pb, 3, s->loro_surround_mix_level);
         }
-        put_bits(&s->pb, 1, opt->extended_bsi_2);
+        put_bits(pb, 1, opt->extended_bsi_2);
         if (opt->extended_bsi_2) {
-            put_bits(&s->pb, 2, opt->dolby_surround_ex_mode);
-            put_bits(&s->pb, 2, opt->dolby_headphone_mode);
-            put_bits(&s->pb, 1, opt->ad_converter_type);
-            put_bits(&s->pb, 9, 0);     /* xbsi2 and encinfo : reserved */
+            put_bits(pb, 2, opt->dolby_surround_ex_mode);
+            put_bits(pb, 2, opt->dolby_headphone_mode);
+            put_bits(pb, 1, opt->ad_converter_type);
+            put_bits(pb, 9, 0);     /* xbsi2 and encinfo : reserved */
         }
     } else {
-        put_bits(&s->pb, 1, 0);     /* no time code 1 */
-        put_bits(&s->pb, 1, 0);     /* no time code 2 */
+        put_bits(pb, 1, 0);     /* no time code 1 */
+        put_bits(pb, 1, 0);     /* no time code 2 */
     }
-    put_bits(&s->pb, 1, 0);         /* no additional bit stream info */
+    put_bits(pb, 1, 0);         /* no additional bit stream info */
 }
 
 
 /*
  * Write one audio block to the output bitstream.
  */
-static void output_audio_block(AC3EncodeContext *s, int blk)
+static void output_audio_block(AC3EncodeContext *s, PutBitContext *pb, int blk)
 {
     int ch, i, baie, bnd, got_cpl, av_uninit(ch0);
     AC3Block *block = &s->blocks[blk];
@@ -1698,48 +1698,48 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
     /* block switching */
     if (!s->eac3) {
         for (ch = 0; ch < s->fbw_channels; ch++)
-            put_bits(&s->pb, 1, 0);
+            put_bits(pb, 1, 0);
     }
 
     /* dither flags */
     if (!s->eac3) {
         for (ch = 0; ch < s->fbw_channels; ch++)
-            put_bits(&s->pb, 1, 1);
+            put_bits(pb, 1, 1);
     }
 
     /* dynamic range codes */
-    put_bits(&s->pb, 1, 0);
+    put_bits(pb, 1, 0);
 
     /* spectral extension */
     if (s->eac3)
-        put_bits(&s->pb, 1, 0);
+        put_bits(pb, 1, 0);
 
     /* channel coupling */
     if (!s->eac3)
-        put_bits(&s->pb, 1, block->new_cpl_strategy);
+        put_bits(pb, 1, block->new_cpl_strategy);
     if (block->new_cpl_strategy) {
         if (!s->eac3)
-            put_bits(&s->pb, 1, block->cpl_in_use);
+            put_bits(pb, 1, block->cpl_in_use);
         if (block->cpl_in_use) {
             int start_sub, end_sub;
             if (s->eac3)
-                put_bits(&s->pb, 1, 0); /* enhanced coupling */
+                put_bits(pb, 1, 0); /* enhanced coupling */
             if (!s->eac3 || s->channel_mode != AC3_CHMODE_STEREO) {
                 for (ch = 1; ch <= s->fbw_channels; ch++)
-                    put_bits(&s->pb, 1, block->channel_in_cpl[ch]);
+                    put_bits(pb, 1, block->channel_in_cpl[ch]);
             }
             if (s->channel_mode == AC3_CHMODE_STEREO)
-                put_bits(&s->pb, 1, 0); /* phase flags in use */
+                put_bits(pb, 1, 0); /* phase flags in use */
             start_sub = (s->start_freq[CPL_CH] - 37) / 12;
             end_sub   = (s->cpl_end_freq       - 37) / 12;
-            put_bits(&s->pb, 4, start_sub);
-            put_bits(&s->pb, 4, end_sub - 3);
+            put_bits(pb, 4, start_sub);
+            put_bits(pb, 4, end_sub - 3);
             /* coupling band structure */
             if (s->eac3) {
-                put_bits(&s->pb, 1, 0); /* use default */
+                put_bits(pb, 1, 0); /* use default */
             } else {
                 for (bnd = start_sub+1; bnd < end_sub; bnd++)
-                    put_bits(&s->pb, 1, ff_eac3_default_cpl_band_struct[bnd]);
+                    put_bits(pb, 1, ff_eac3_default_cpl_band_struct[bnd]);
             }
         }
     }
@@ -1749,12 +1749,12 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
         for (ch = 1; ch <= s->fbw_channels; ch++) {
             if (block->channel_in_cpl[ch]) {
                 if (!s->eac3 || block->new_cpl_coords[ch] != 2)
-                    put_bits(&s->pb, 1, block->new_cpl_coords[ch]);
+                    put_bits(pb, 1, block->new_cpl_coords[ch]);
                 if (block->new_cpl_coords[ch]) {
-                    put_bits(&s->pb, 2, block->cpl_master_exp[ch]);
+                    put_bits(pb, 2, block->cpl_master_exp[ch]);
                     for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
-                        put_bits(&s->pb, 4, block->cpl_coord_exp [ch][bnd]);
-                        put_bits(&s->pb, 4, block->cpl_coord_mant[ch][bnd]);
+                        put_bits(pb, 4, block->cpl_coord_exp [ch][bnd]);
+                        put_bits(pb, 4, block->cpl_coord_mant[ch][bnd]);
                     }
                 }
             }
@@ -1764,26 +1764,26 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
     /* stereo rematrixing */
     if (s->channel_mode == AC3_CHMODE_STEREO) {
         if (!s->eac3 || blk > 0)
-            put_bits(&s->pb, 1, block->new_rematrixing_strategy);
+            put_bits(pb, 1, block->new_rematrixing_strategy);
         if (block->new_rematrixing_strategy) {
             /* rematrixing flags */
             for (bnd = 0; bnd < block->num_rematrixing_bands; bnd++)
-                put_bits(&s->pb, 1, block->rematrixing_flags[bnd]);
+                put_bits(pb, 1, block->rematrixing_flags[bnd]);
         }
     }
 
     /* exponent strategy */
     if (!s->eac3) {
         for (ch = !block->cpl_in_use; ch <= s->fbw_channels; ch++)
-            put_bits(&s->pb, 2, s->exp_strategy[ch][blk]);
+            put_bits(pb, 2, s->exp_strategy[ch][blk]);
         if (s->lfe_on)
-            put_bits(&s->pb, 1, s->exp_strategy[s->lfe_channel][blk]);
+            put_bits(pb, 1, s->exp_strategy[s->lfe_channel][blk]);
     }
 
     /* bandwidth */
     for (ch = 1; ch <= s->fbw_channels; ch++) {
         if (s->exp_strategy[ch][blk] != EXP_REUSE && !block->channel_in_cpl[ch])
-            put_bits(&s->pb, 6, s->bandwidth_code);
+            put_bits(pb, 6, s->bandwidth_code);
     }
 
     /* exponents */
@@ -1795,58 +1795,58 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
             continue;
 
         /* DC exponent */
-        put_bits(&s->pb, 4, block->grouped_exp[ch][0] >> cpl);
+        put_bits(pb, 4, block->grouped_exp[ch][0] >> cpl);
 
         /* exponent groups */
         nb_groups = exponent_group_tab[cpl][s->exp_strategy[ch][blk]-1][block->end_freq[ch]-s->start_freq[ch]];
         for (i = 1; i <= nb_groups; i++)
-            put_bits(&s->pb, 7, block->grouped_exp[ch][i]);
+            put_bits(pb, 7, block->grouped_exp[ch][i]);
 
         /* gain range info */
         if (ch != s->lfe_channel && !cpl)
-            put_bits(&s->pb, 2, 0);
+            put_bits(pb, 2, 0);
     }
 
     /* bit allocation info */
     if (!s->eac3) {
         baie = (blk == 0);
-        put_bits(&s->pb, 1, baie);
+        put_bits(pb, 1, baie);
         if (baie) {
-            put_bits(&s->pb, 2, s->slow_decay_code);
-            put_bits(&s->pb, 2, s->fast_decay_code);
-            put_bits(&s->pb, 2, s->slow_gain_code);
-            put_bits(&s->pb, 2, s->db_per_bit_code);
-            put_bits(&s->pb, 3, s->floor_code);
+            put_bits(pb, 2, s->slow_decay_code);
+            put_bits(pb, 2, s->fast_decay_code);
+            put_bits(pb, 2, s->slow_gain_code);
+            put_bits(pb, 2, s->db_per_bit_code);
+            put_bits(pb, 3, s->floor_code);
         }
     }
 
     /* snr offset */
     if (!s->eac3) {
-        put_bits(&s->pb, 1, block->new_snr_offsets);
+        put_bits(pb, 1, block->new_snr_offsets);
         if (block->new_snr_offsets) {
-            put_bits(&s->pb, 6, s->coarse_snr_offset);
+            put_bits(pb, 6, s->coarse_snr_offset);
             for (ch = !block->cpl_in_use; ch <= s->channels; ch++) {
-                put_bits(&s->pb, 4, s->fine_snr_offset[ch]);
-                put_bits(&s->pb, 3, s->fast_gain_code[ch]);
+                put_bits(pb, 4, s->fine_snr_offset[ch]);
+                put_bits(pb, 3, s->fast_gain_code[ch]);
             }
         }
     } else {
-        put_bits(&s->pb, 1, 0); /* no converter snr offset */
+        put_bits(pb, 1, 0); /* no converter snr offset */
     }
 
     /* coupling leak */
     if (block->cpl_in_use) {
         if (!s->eac3 || block->new_cpl_leak != 2)
-            put_bits(&s->pb, 1, block->new_cpl_leak);
+            put_bits(pb, 1, block->new_cpl_leak);
         if (block->new_cpl_leak) {
-            put_bits(&s->pb, 3, s->bit_alloc.cpl_fast_leak);
-            put_bits(&s->pb, 3, s->bit_alloc.cpl_slow_leak);
+            put_bits(pb, 3, s->bit_alloc.cpl_fast_leak);
+            put_bits(pb, 3, s->bit_alloc.cpl_slow_leak);
         }
     }
 
     if (!s->eac3) {
-        put_bits(&s->pb, 1, 0); /* no delta bit allocation */
-        put_bits(&s->pb, 1, 0); /* no data to skip */
+        put_bits(pb, 1, 0); /* no delta bit allocation */
+        put_bits(pb, 1, 0); /* no data to skip */
     }
 
     /* mantissas */
@@ -1864,13 +1864,13 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
             b = s->ref_bap[ch][blk][i];
             switch (b) {
             case 0:                                          break;
-            case 1: if (q != 128) put_bits (&s->pb,   5, q); break;
-            case 2: if (q != 128) put_bits (&s->pb,   7, q); break;
-            case 3:               put_sbits(&s->pb,   3, q); break;
-            case 4: if (q != 128) put_bits (&s->pb,   7, q); break;
-            case 14:              put_sbits(&s->pb,  14, q); break;
-            case 15:              put_sbits(&s->pb,  16, q); break;
-            default:              put_sbits(&s->pb, b-1, q); break;
+            case 1: if (q != 128) put_bits (pb,   5, q); break;
+            case 2: if (q != 128) put_bits (pb,   7, q); break;
+            case 3:               put_sbits(pb,   3, q); break;
+            case 4: if (q != 128) put_bits (pb,   7, q); break;
+            case 14:              put_sbits(pb,  14, q); break;
+            case 15:              put_sbits(pb,  16, q); break;
+            default:              put_sbits(pb, b-1, q); break;
             }
         }
         if (ch == CPL_CH)
@@ -1917,7 +1917,7 @@ static unsigned int pow_poly(unsigned int a, unsigned int n, unsigned int poly)
 /*
  * Fill the end of the frame with 0's and compute the two CRCs.
  */
-static void output_frame_end(AC3EncodeContext *s)
+static void output_frame_end(AC3EncodeContext *s, PutBitContext *pb)
 {
     const AVCRC *crc_ctx = av_crc_get_table(AV_CRC_16_ANSI);
     int frame_size_58, pad_bytes, crc1, crc2, crc_inv;
@@ -1926,13 +1926,13 @@ static void output_frame_end(AC3EncodeContext *s)
     frame_size_58 = ((s->frame_size >> 2) + (s->frame_size >> 4)) << 1;
 
     /* pad the remainder of the frame with zeros */
-    av_assert2(s->frame_size * 8 - put_bits_count(&s->pb) >= 18);
-    flush_put_bits(&s->pb);
-    frame = s->pb.buf;
-    pad_bytes = s->frame_size - (put_bits_ptr(&s->pb) - frame) - 2;
+    av_assert2(s->frame_size * 8 - put_bits_count(pb) >= 18);
+    flush_put_bits(pb);
+    frame = pb->buf;
+    pad_bytes = s->frame_size - (put_bits_ptr(pb) - frame) - 2;
     av_assert2(pad_bytes >= 0);
     if (pad_bytes > 0)
-        memset(put_bits_ptr(&s->pb), 0, pad_bytes);
+        memset(put_bits_ptr(pb), 0, pad_bytes);
 
     if (s->eac3) {
         /* compute crc2 */
@@ -1969,16 +1969,17 @@ static void output_frame_end(AC3EncodeContext *s)
  */
 static void ac3_output_frame(AC3EncodeContext *s, unsigned char *frame)
 {
+    PutBitContext pb;
     int blk;
 
-    init_put_bits(&s->pb, frame, s->frame_size);
+    init_put_bits(&pb, frame, s->frame_size);
 
-    s->output_frame_header(s);
+    s->output_frame_header(s, &pb);
 
     for (blk = 0; blk < s->num_blocks; blk++)
-        output_audio_block(s, blk);
+        output_audio_block(s, &pb, blk);
 
-    output_frame_end(s);
+    output_frame_end(s, &pb);
 }
 
 int ff_ac3_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,

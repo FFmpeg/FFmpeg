@@ -41,7 +41,6 @@
 #include "codec_internal.h"
 #include "mathops.h"
 #include "me_cmp.h"
-#include "put_bits.h"
 #include "audiodsp.h"
 
 #ifndef AC3ENC_FLOAT
@@ -151,6 +150,8 @@ typedef struct AC3Block {
     int      end_freq[AC3_MAX_CHANNELS];        ///< end frequency bin                  (endmant)
 } AC3Block;
 
+struct PutBitContext;
+
 /**
  * AC-3 encoder private context.
  */
@@ -158,7 +159,6 @@ typedef struct AC3EncodeContext {
     AVClass *av_class;                      ///< AVClass used for AVOption
     AC3EncOptions options;                  ///< encoding options
     AVCodecContext *avctx;                  ///< parent AVCodecContext
-    PutBitContext pb;                       ///< bitstream writer context
     AudioDSPContext adsp;
 #if AC3ENC_FLOAT
     AVFloatDSPContext *fdsp;
@@ -256,7 +256,7 @@ typedef struct AC3EncodeContext {
     void (*encode_frame)(struct AC3EncodeContext *s, uint8_t * const *samples);
 
     /* AC-3 vs. E-AC-3 function pointers */
-    void (*output_frame_header)(struct AC3EncodeContext *s);
+    void (*output_frame_header)(struct AC3EncodeContext *s, struct PutBitContext *pb);
 
     union {
         DECLARE_ALIGNED(32, float,   mdct_window_float)[AC3_BLOCK_SIZE];
