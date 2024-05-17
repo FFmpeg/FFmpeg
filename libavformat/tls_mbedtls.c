@@ -269,6 +269,14 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         goto fail;
     }
 
+#ifdef MBEDTLS_SSL_PROTO_TLS1_3
+    // mbedTLS does not allow disabling certificate verification with TLSv1.3 (yes, really).
+    if (!shr->verify) {
+        av_log(h, AV_LOG_INFO, "Forcing TLSv1.2 because certificate verification is disabled\n");
+        mbedtls_ssl_conf_max_tls_version(&tls_ctx->ssl_config, MBEDTLS_SSL_VERSION_TLS1_2);
+    }
+#endif
+
     // not VERIFY_REQUIRED because we manually check after handshake
     mbedtls_ssl_conf_authmode(&tls_ctx->ssl_config,
                               shr->verify ? MBEDTLS_SSL_VERIFY_OPTIONAL : MBEDTLS_SSL_VERIFY_NONE);
