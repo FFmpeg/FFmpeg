@@ -1771,7 +1771,6 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(v->block[v->cur_blk_idx][block_map[i]]);
-            off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
             block_cbp |= 0xf << (i << 2);
         }
     } else {
