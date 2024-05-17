@@ -36,6 +36,7 @@
 #include "hwcontext_d3d11va.h"
 #endif
 #if CONFIG_DXVA2
+#include <initguid.h>
 #include "hwcontext_dxva2.h"
 #endif
 
@@ -735,9 +736,11 @@ static int qsv_d3d9_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
 #if CONFIG_DXVA2
     mfxStatus sts;
     IDirect3DDeviceManager9* devmgr = handle;
-    IDirect3DDevice9Ex *device = NULL;
+    IDirect3DDevice9 *device = NULL;
+    IDirect3DDevice9Ex *device_ex = NULL;
     HANDLE device_handle = 0;
     IDirect3D9Ex *d3d9ex = NULL;
+    IDirect3D9 *d3d9 = NULL;
     LUID luid;
     D3DDEVICE_CREATION_PARAMETERS params;
     HRESULT hr;
@@ -754,23 +757,38 @@ static int qsv_d3d9_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
         av_log(ctx, AV_LOG_ERROR, "Error LockDevice %d\n", hr);
         goto fail;
     }
-
-    hr = IDirect3DDevice9Ex_GetCreationParameters(device, &params);
+    hr = IDirect3DDevice9_QueryInterface(device, &IID_IDirect3DDevice9Ex, (void **)&device_ex);
+    IDirect3DDevice9_Release(device);
     if (FAILED(hr)) {
-        av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9_GetCreationParameters %d\n", hr);
+        av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9_QueryInterface %d\n", hr);
         goto unlock;
     }
 
-    hr = IDirect3DDevice9Ex_GetDirect3D(device, &d3d9ex);
+    hr = IDirect3DDevice9Ex_GetCreationParameters(device_ex, &params);
     if (FAILED(hr)) {
-        av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9Ex_GetAdapterLUID %d\n", hr);
+        av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9_GetCreationParameters %d\n", hr);
+        IDirect3DDevice9Ex_Release(device_ex);
+        goto unlock;
+    }
+
+    hr = IDirect3DDevice9Ex_GetDirect3D(device_ex, &d3d9);
+    if (FAILED(hr)) {
+        av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9Ex_GetDirect3D %d\n", hr);
+        IDirect3DDevice9Ex_Release(device_ex);
+        goto unlock;
+    }
+    hr = IDirect3D9_QueryInterface(d3d9, &IID_IDirect3D9Ex, (void **)&d3d9ex);
+    IDirect3D9_Release(d3d9);
+    if (FAILED(hr)) {
+        av_log(ctx, AV_LOG_ERROR, "Error IDirect3D9_QueryInterface3D %d\n", hr);
+        IDirect3DDevice9Ex_Release(device_ex);
         goto unlock;
     }
 
     hr = IDirect3D9Ex_GetAdapterLUID(d3d9ex, params.AdapterOrdinal, &luid);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Error IDirect3DDevice9Ex_GetAdapterLUID %d\n", hr);
-        goto unlock;
+        goto release;
     }
 
     impl_value.Type = MFX_VARIANT_TYPE_PTR;
@@ -780,10 +798,14 @@ static int qsv_d3d9_update_config(void *ctx, mfxHDL handle, mfxConfig cfg)
     if (sts != MFX_ERR_NONE) {
         av_log(ctx, AV_LOG_ERROR, "Error adding a MFX configuration"
                "DeviceLUID property: %d.\n", sts);
-        goto unlock;
+        goto release;
     }
 
     ret = 0;
+
+release:
+    IDirect3D9Ex_Release(d3d9ex);
+    IDirect3DDevice9Ex_Release(device_ex);
 
 unlock:
     IDirect3DDeviceManager9_UnlockDevice(devmgr, device_handle, FALSE);
@@ -1322,8 +1344,9 @@ static int qsv_frames_derive_from(AVHWFramesContext *dst_ctx,
     case AV_HWDEVICE_TYPE_D3D11VA:
         {
             D3D11_TEXTURE2D_DESC texDesc;
+            AVD3D11VAFramesContext *dst_hwctx;
             dst_ctx->initial_pool_size = src_ctx->initial_pool_size;
-            AVD3D11VAFramesContext *dst_hwctx = dst_ctx->hwctx;
+            dst_hwctx = dst_ctx->hwctx;
             dst_hwctx->texture_infos = av_calloc(src_hwctx->nb_surfaces,
                                                  sizeof(*dst_hwctx->texture_infos));
             if (!dst_hwctx->texture_infos)
