@@ -1198,10 +1198,10 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     FilterGraphPriv *fgp;
     int ret;
 
-    ret = fg_create(&fg, graph_desc, sch);
+    ret = fg_create(&ost->fg_simple, graph_desc, sch);
     if (ret < 0)
         return ret;
-    ost->fg_simple = fg;
+    fg  = ost->fg_simple;
     fgp = fgp_from_fg(fg);
 
     fgp->is_simple = 1;
