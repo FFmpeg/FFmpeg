@@ -70,32 +70,15 @@ typedef struct VVCDecoderConfigurationRecord {
     VVCCNALUnitArray *array;
 } VVCDecoderConfigurationRecord;
 
-typedef struct VVCCProfileTierLevel {
-    uint8_t profile_idc;
-    uint8_t tier_flag;
-    uint8_t general_level_idc;
-    uint8_t ptl_frame_only_constraint_flag;
-    uint8_t ptl_multilayer_enabled_flag;
-// general_constraint_info
-    uint8_t gci_present_flag;
-    uint8_t gci_general_constraints[9];
-    uint8_t num_bytes_constraint_info;
-// end general_constraint_info
-    uint8_t ptl_sublayer_level_present_flag[VVC_MAX_SUBLAYERS - 1];
-    uint8_t sublayer_level_idc[VVC_MAX_SUBLAYERS - 1];
-    uint8_t ptl_num_sub_profiles;
-    uint32_t general_sub_profile_idc[VVC_MAX_SUB_PROFILES];
-} VVCCProfileTierLevel;
-
 static void vvcc_update_ptl(VVCDecoderConfigurationRecord *vvcc,
-                            VVCCProfileTierLevel *ptl)
+                            VVCPTLRecord *ptl)
 {
     /*
      * The level indication general_level_idc must indicate a level of
      * capability equal to or greater than the highest level indicated for the
      * highest tier in all the parameter sets.
      */
-    if (vvcc->ptl.general_tier_flag < ptl->tier_flag)
+    if (vvcc->ptl.general_tier_flag < ptl->general_tier_flag)
         vvcc->ptl.general_level_idc = ptl->general_level_idc;
     else
         vvcc->ptl.general_level_idc =
@@ -106,7 +89,7 @@ static void vvcc_update_ptl(VVCDecoderConfigurationRecord *vvcc,
      * greater than the highest tier indicated in all the parameter sets.
      */
     vvcc->ptl.general_tier_flag =
-        FFMAX(vvcc->ptl.general_tier_flag, ptl->tier_flag);
+        FFMAX(vvcc->ptl.general_tier_flag, ptl->general_tier_flag);
 
     /*
      * The profile indication general_profile_idc must indicate a profile to
@@ -123,7 +106,7 @@ static void vvcc_update_ptl(VVCDecoderConfigurationRecord *vvcc,
      * Note: set the profile to the highest value for the sake of simplicity.
      */
     vvcc->ptl.general_profile_idc =
-        FFMAX(vvcc->ptl.general_profile_idc, ptl->profile_idc);
+        FFMAX(vvcc->ptl.general_profile_idc, ptl->general_profile_idc);
 
     /*
      * Each bit in flags may only be set if all
@@ -136,10 +119,10 @@ static void vvcc_update_ptl(VVCDecoderConfigurationRecord *vvcc,
     /*
      * Constraints Info
      */
-    if (ptl->gci_present_flag) {
+    if (ptl->num_bytes_constraint_info) {
         vvcc->ptl.num_bytes_constraint_info = ptl->num_bytes_constraint_info;
         memcpy(&vvcc->ptl.general_constraint_info[0],
-               &ptl->gci_general_constraints[0], ptl->num_bytes_constraint_info);
+               &ptl->general_constraint_info[0], ptl->num_bytes_constraint_info);
     } else {
         vvcc->ptl.num_bytes_constraint_info = 1;
         memset(&vvcc->ptl.general_constraint_info[0], 0, sizeof(vvcc->ptl.general_constraint_info));
@@ -186,23 +169,23 @@ static void vvcc_parse_ptl(GetBitContext *gb,
                            unsigned int profileTierPresentFlag,
                            unsigned int max_sub_layers_minus1)
 {
-    VVCCProfileTierLevel general_ptl = { 0 };
+    VVCPTLRecord general_ptl = { 0 };
 
     if (profileTierPresentFlag) {
-        general_ptl.profile_idc = get_bits(gb, 7);
-        general_ptl.tier_flag = get_bits1(gb);
+        general_ptl.general_profile_idc = get_bits(gb, 7);
+        general_ptl.general_tier_flag = get_bits1(gb);
     }
     general_ptl.general_level_idc = get_bits(gb, 8);
 
     general_ptl.ptl_frame_only_constraint_flag = get_bits1(gb);
     general_ptl.ptl_multilayer_enabled_flag = get_bits1(gb);
     if (profileTierPresentFlag) {       // parse constraint info
-        general_ptl.gci_present_flag = get_bits1(gb);
-        if (general_ptl.gci_present_flag) {
+        general_ptl.num_bytes_constraint_info = get_bits1(gb); // gci_present_flag
+        if (general_ptl.num_bytes_constraint_info) {
             int gci_num_reserved_bits, j;
             for (j = 0; j < 8; j++)
-                general_ptl.gci_general_constraints[j] = get_bits(gb, 8);
-            general_ptl.gci_general_constraints[j++] = get_bits(gb, 7);
+                general_ptl.general_constraint_info[j] = get_bits(gb, 8);
+            general_ptl.general_constraint_info[j++] = get_bits(gb, 7);
 
             gci_num_reserved_bits = get_bits(gb, 8);
             general_ptl.num_bytes_constraint_info = j;
