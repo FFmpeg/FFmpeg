@@ -190,6 +190,9 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
     ctx->size = avpicture_get_size(avctx->pix_fmt,
                                    avctx->width, avctx->height);
 
+    if (ctx->size < 0)
+        return ctx->size;
+
     ctx->val = av_malloc_array(ctx->size, sizeof(*ctx->val));
 
     if (!ctx->val) {
