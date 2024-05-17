@@ -23,15 +23,11 @@
 #include "os_support.h"
 #include "url.h"
 #include "tls.h"
-#include "libavutil/mem.h"
 #include "libavutil/opt.h"
-#include "libavutil/thread.h"
 
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-
-static int openssl_init;
 
 typedef struct TLSContext {
     const AVClass *class;
@@ -44,10 +40,22 @@ typedef struct TLSContext {
     int io_err;
 } TLSContext;
 
+/* OpenSSL 1.0.2 or below, then you would use SSL_library_init. If you are
+ * using OpenSSL 1.1.0 or above, then the library will initialize
+ * itself automatically.
+ * https://wiki.openssl.org/index.php/Library_Initialization
+ */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#include "libavutil/thread.h"
+
 static AVMutex openssl_mutex = AV_MUTEX_INITIALIZER;
 
-#if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
+static int openssl_init;
+
+#if HAVE_THREADS
 #include <openssl/crypto.h>
+#include "libavutil/mem.h"
+
 pthread_mutex_t *openssl_mutexes;
 static void openssl_lock(int mode, int type, const char *file, int line)
 {
@@ -68,16 +76,9 @@ int ff_openssl_init(void)
 {
     ff_mutex_lock(&openssl_mutex);
     if (!openssl_init) {
-        /* OpenSSL 1.0.2 or below, then you would use SSL_library_init. If you are
-         * using OpenSSL 1.1.0 or above, then the library will initialize
-         * itself automatically.
-         * https://wiki.openssl.org/index.php/Library_Initialization
-         */
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
         SSL_library_init();
         SSL_load_error_strings();
-#endif
-#if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
+#if HAVE_THREADS
         if (!CRYPTO_get_locking_callback()) {
             int i;
             openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
@@ -106,7 +107,7 @@ void ff_openssl_deinit(void)
     ff_mutex_lock(&openssl_mutex);
     openssl_init--;
     if (!openssl_init) {
-#if HAVE_THREADS && OPENSSL_VERSION_NUMBER < 0x10100000L
+#if HAVE_THREADS
         if (CRYPTO_get_locking_callback() == openssl_lock) {
             int i;
             CRYPTO_set_locking_callback(NULL);
@@ -118,6 +119,7 @@ void ff_openssl_deinit(void)
     }
     ff_mutex_unlock(&openssl_mutex);
 }
+#endif
 
 static int print_tls_error(URLContext *h, int ret)
 {
@@ -157,7 +159,9 @@ static int tls_close(URLContext *h)
     if (c->url_bio_method)
         BIO_meth_free(c->url_bio_method);
 #endif
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     ff_openssl_deinit();
+#endif
     return 0;
 }
 
@@ -253,8 +257,10 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     BIO *bio;
     int ret;
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     if ((ret = ff_openssl_init()) < 0)
         return ret;
+#endif
 
     if ((ret = ff_tls_open_underlying(c, h, uri, options)) < 0)
         goto fail;

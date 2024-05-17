@@ -18,7 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
 #include "config_components.h"
+
+#if CONFIG_TLS_PROTOCOL && CONFIG_OPENSSL
+#include <openssl/opensslv.h>
+#endif
 
 #include <fcntl.h>
 #include "network.h"
@@ -31,7 +36,7 @@
 int ff_tls_init(void)
 {
 #if CONFIG_TLS_PROTOCOL
-#if CONFIG_OPENSSL
+#if CONFIG_OPENSSL && OPENSSL_VERSION_NUMBER < 0x10100000L
     int ret;
     if ((ret = ff_openssl_init()) < 0)
         return ret;
@@ -46,7 +51,7 @@ int ff_tls_init(void)
 void ff_tls_deinit(void)
 {
 #if CONFIG_TLS_PROTOCOL
-#if CONFIG_OPENSSL
+#if CONFIG_OPENSSL && OPENSSL_VERSION_NUMBER < 0x10100000L
     ff_openssl_deinit();
 #endif
 #if CONFIG_GNUTLS
