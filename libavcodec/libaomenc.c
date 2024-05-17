@@ -970,9 +970,9 @@ static av_cold int aom_init(AVCodecContext *avctx,
 
 #if AOM_ENCODER_ABI_VERSION >= 23
     {
-        AVDictionaryEntry *en = NULL;
+        const AVDictionaryEntry *en = NULL;
 
-        while ((en = av_dict_get(ctx->aom_params, "", en, AV_DICT_IGNORE_SUFFIX))) {
+        while ((en = av_dict_iterate(ctx->aom_params, en))) {
             int ret = aom_codec_set_option(&ctx->encoder, en->key, en->value);
             if (ret != AOM_CODEC_OK) {
                 log_encoder_error(avctx, en->key);

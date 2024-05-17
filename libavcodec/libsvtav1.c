@@ -210,7 +210,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
 {
     SvtContext *svt_enc = avctx->priv_data;
     const AVPixFmtDescriptor *desc;
-    AVDictionaryEntry *en = NULL;
+    const AVDictionaryEntry av_unused *en = NULL;
 
     // Update param from options
     if (svt_enc->enc_mode >= -1)
@@ -326,7 +326,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     handle_side_data(avctx, param);
 
 #if SVT_AV1_CHECK_VERSION(0, 9, 1)
-    while ((en = av_dict_get(svt_enc->svtav1_opts, "", en, AV_DICT_IGNORE_SUFFIX))) {
+    while ((en = av_dict_iterate(svt_enc->svtav1_opts, en))) {
         EbErrorType ret = svt_av1_enc_parse_parameter(param, en->key, en->value);
         if (ret != EB_ErrorNone) {
             int level = (avctx->err_recognition & AV_EF_EXPLODE) ? AV_LOG_ERROR : AV_LOG_WARNING;
@@ -336,7 +336,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 #else
-    if ((en = av_dict_get(svt_enc->svtav1_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+    if (av_dict_count(svt_enc->svtav1_opts)) {
         int level = (avctx->err_recognition & AV_EF_EXPLODE) ? AV_LOG_ERROR : AV_LOG_WARNING;
         av_log(avctx, level, "svt-params needs libavcodec to be compiled with SVT-AV1 "
                              "headers >= 0.9.1.\n");

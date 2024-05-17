@@ -495,8 +495,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     {
-        AVDictionaryEntry *en = NULL;
-        while ((en = av_dict_get(ctx->x265_opts, "", en, AV_DICT_IGNORE_SUFFIX))) {
+        const AVDictionaryEntry *en = NULL;
+        while ((en = av_dict_iterate(ctx->x265_opts, en))) {
             int parse_ret = ctx->api->param_parse(ctx->params, en->key, en->value);
 
             switch (parse_ret) {

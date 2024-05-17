@@ -313,7 +313,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     }
 
     entry = NULL;
-    while (entry = av_dict_get(bsf_options, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
+    while (entry = av_dict_iterate(bsf_options, NULL)) {
         const char *spec = entry->key;
         if (*spec) {
             if (strspn(spec, slave_bsfs_spec_sep) != 1) {
@@ -390,7 +390,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 
     if (options) {
         entry = NULL;
-        while ((entry = av_dict_get(options, "", entry, AV_DICT_IGNORE_SUFFIX)))
+        while ((entry = av_dict_iterate(options, entry)))
             av_log(avf2, AV_LOG_ERROR, "Unknown option '%s'\n", entry->key);
         ret = AVERROR_OPTION_NOT_FOUND;
         goto end;

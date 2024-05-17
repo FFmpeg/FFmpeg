@@ -1385,8 +1385,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
         x4->params.b_repeat_headers = 1;
 
     {
-        AVDictionaryEntry *en = NULL;
-        while (en = av_dict_get(x4->x264_params, "", en, AV_DICT_IGNORE_SUFFIX)) {
+        const AVDictionaryEntry *en = NULL;
+        while (en = av_dict_iterate(x4->x264_params, en)) {
            if ((ret = x264_param_parse(&x4->params, en->key, en->value)) < 0) {
                av_log(avctx, AV_LOG_WARNING,
                       "Error parsing option '%s = %s'.\n",

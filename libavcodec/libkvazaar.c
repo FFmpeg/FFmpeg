@@ -111,8 +111,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ctx->kvz_params) {
         AVDictionary *dict = NULL;
         if (!av_dict_parse_string(&dict, ctx->kvz_params, "=", ",", 0)) {
-            AVDictionaryEntry *entry = NULL;
-            while ((entry = av_dict_get(dict, "", entry, AV_DICT_IGNORE_SUFFIX))) {
+            const AVDictionaryEntry *entry = NULL;
+            while ((entry = av_dict_iterate(dict, entry))) {
                 if (!api->config_parse(cfg, entry->key, entry->value)) {
                     av_log(avctx, AV_LOG_WARNING, "Invalid option: %s=%s.\n",
                            entry->key, entry->value);
