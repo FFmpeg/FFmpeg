@@ -132,6 +132,14 @@ enum {
 enum {
     AudioPacketTypeSequenceStart      = 0,
     AudioPacketTypeCodedFrames        = 1,
+    AudioPacketTypeMultichannelConfig = 4,
+    AudioPacketTypeMultitrack         = 5,
+};
+
+enum {
+    AudioChannelOrderUnspecified = 0,
+    AudioChannelOrderNative      = 1,
+    AudioChannelOrderCustom      = 2,
 };
 
 enum {

@@ -224,11 +224,32 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type, int track_idx
     return st;
 }
 
-static int flv_same_audio_codec(AVCodecParameters *apar, int flags)
+static int flv_same_audio_codec(AVCodecParameters *apar, int flags, uint32_t codec_fourcc)
 {
     int bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
     int flv_codecid           = flags & FLV_AUDIO_CODECID_MASK;
     int codec_id;
+
+    switch (codec_fourcc) {
+    case MKBETAG('m', 'p', '4', 'a'):
+        return apar->codec_id == AV_CODEC_ID_AAC;
+    case MKBETAG('O', 'p', 'u', 's'):
+        return apar->codec_id == AV_CODEC_ID_OPUS;
+    case MKBETAG('.', 'm', 'p', '3'):
+        return apar->codec_id == AV_CODEC_ID_MP3;
+    case MKBETAG('f', 'L', 'a', 'C'):
+        return apar->codec_id == AV_CODEC_ID_FLAC;
+    case MKBETAG('a', 'c', '-', '3'):
+        return apar->codec_id == AV_CODEC_ID_AC3;
+    case MKBETAG('e', 'c', '-', '3'):
+        return apar->codec_id == AV_CODEC_ID_EAC3;
+    case 0:
+        // Not enhanced flv, continue as normal.
+        break;
+    default:
+        // Unknown FOURCC
+        return 0;
+    }
 
     if (!apar->codec_id && !apar->codec_tag)
         return 1;
@@ -328,6 +349,24 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
         apar->sample_rate = 8000;
         apar->codec_id    = AV_CODEC_ID_PCM_ALAW;
         break;
+    case MKBETAG('m', 'p', '4', 'a'):
+        apar->codec_id = AV_CODEC_ID_AAC;
+        return;
+    case MKBETAG('O', 'p', 'u', 's'):
+        apar->codec_id = AV_CODEC_ID_OPUS;
+        return;
+    case MKBETAG('.', 'm', 'p', '3'):
+        apar->codec_id = AV_CODEC_ID_MP3;
+        return;
+    case MKBETAG('f', 'L', 'a', 'C'):
+        apar->codec_id = AV_CODEC_ID_FLAC;
+        return;
+    case MKBETAG('a', 'c', '-', '3'):
+        apar->codec_id = AV_CODEC_ID_AC3;
+        return;
+    case MKBETAG('e', 'c', '-', '3'):
+        apar->codec_id = AV_CODEC_ID_EAC3;
+        return;
     default:
         avpriv_request_sample(s, "Audio codec (%x)",
                flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
@@ -1249,7 +1288,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int multitrack = 0;
     int pkt_type = 0;
     uint8_t track_idx = 0;
-    uint32_t video_codec_id = 0;
+    uint32_t codec_id = 0;
 
 retry:
     /* pkt size is repeated at end. skip it */
@@ -1293,16 +1332,31 @@ retry:
         stream_type = FLV_STREAM_TYPE_AUDIO;
         flags    = avio_r8(s->pb);
         size--;
+
+        if ((flags & FLV_AUDIO_CODECID_MASK) == FLV_CODECID_EX_HEADER) {
+            enhanced_flv = 1;
+            pkt_type = flags & ~FLV_AUDIO_CODECID_MASK;
+
+            channels = 0;
+
+            if (pkt_type == AudioPacketTypeMultitrack) {
+                av_log(s, AV_LOG_ERROR, "Multitrack audio is unsupported!\n");
+                return AVERROR_PATCHWELCOME;
+            }
+
+            codec_id = avio_rb32(s->pb);
+            size -= 4;
+        }
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         stream_type = FLV_STREAM_TYPE_VIDEO;
         flags    = avio_r8(s->pb);
-        video_codec_id = flags & FLV_VIDEO_CODECID_MASK;
+        codec_id = flags & FLV_VIDEO_CODECID_MASK;
         /*
          * Reference Enhancing FLV 2023-03-v1.0.0-B.8
          * https://github.com/veovera/enhanced-rtmp/blob/main/enhanced-rtmp-v1.pdf
          * */
         enhanced_flv = (flags >> 7) & 1;
-        pkt_type = enhanced_flv ? video_codec_id : 0;
+        pkt_type = enhanced_flv ? codec_id : 0;
         size--;
 
         if (pkt_type == PacketTypeMultitrack) {
@@ -1320,7 +1374,7 @@ retry:
         }
 
         if (enhanced_flv) {
-            video_codec_id = avio_rb32(s->pb);
+            codec_id = avio_rb32(s->pb);
             size -= 4;
         }
         if (multitrack) {
@@ -1388,11 +1442,11 @@ skip:
         st = s->streams[i];
         if (stream_type == FLV_STREAM_TYPE_AUDIO) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags)))
+                (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags, codec_id)))
                 break;
         } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                (s->video_codec_id || flv_same_video_codec(st->codecpar, video_codec_id)) &&
+                (s->video_codec_id || flv_same_video_codec(st->codecpar, codec_id)) &&
                 st->id == track_idx)
                 break;
         } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
@@ -1461,7 +1515,7 @@ retry_duration:
         flv->searched_for_end = 1;
     }
 
-    if (stream_type == FLV_STREAM_TYPE_AUDIO) {
+    if (stream_type == FLV_STREAM_TYPE_AUDIO && !enhanced_flv) {
         int bits_per_coded_sample;
         channels = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
         sample_rate = 44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >>
@@ -1493,8 +1547,48 @@ retry_duration:
             sample_rate = par->sample_rate;
             avcodec_parameters_free(&par);
         }
+    } else if (stream_type == FLV_STREAM_TYPE_AUDIO) {
+        if (!st->codecpar->codec_id) {
+            flv_set_audio_codec(s, st, st->codecpar,
+                                codec_id ? codec_id : (flags & FLV_AUDIO_CODECID_MASK));
+            flv->last_sample_rate = 0;
+            flv->last_channels = 0;
+        }
+
+        // These are not signalled in the flags anymore
+        channels = 0;
+        sample_rate = 0;
+
+        if (pkt_type == AudioPacketTypeMultichannelConfig) {
+            int channel_order = avio_r8(s->pb);
+            channels = avio_r8(s->pb);
+            size -= 2;
+
+            if (channel_order == AudioChannelOrderCustom) {
+                for (i = 0; i < channels; i++) {
+                    avio_r8(s->pb); // audio channel mapping
+                    size--;
+                }
+            } else if (channel_order == AudioChannelOrderNative) {
+                avio_rb32(s->pb); // audio channel flags
+                size -= 4;
+            }
+
+            if (!av_channel_layout_check(&st->codecpar->ch_layout)) {
+                ///TODO: This can be much more sophisticated with above info.
+                av_channel_layout_default(&st->codecpar->ch_layout, channels);
+                flv->last_channels = channels;
+            }
+
+            if (channels != flv->last_channels) {
+                flv->last_channels = channels;
+                ff_add_param_change(pkt, channels, 0, 0, 0, 0);
+            }
+
+            goto leave;
+        }
     } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
-        int ret = flv_set_video_codec(s, st, video_codec_id, 1);
+        int ret = flv_set_video_codec(s, st, codec_id, 1);
         if (ret < 0)
             return ret;
         size -= ret;
@@ -1505,13 +1599,15 @@ retry_duration:
     }
 
     if (st->codecpar->codec_id == AV_CODEC_ID_AAC ||
+        st->codecpar->codec_id == AV_CODEC_ID_OPUS ||
+        st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
         st->codecpar->codec_id == AV_CODEC_ID_H264 ||
         st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
         st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
         st->codecpar->codec_id == AV_CODEC_ID_AV1 ||
         st->codecpar->codec_id == AV_CODEC_ID_VP9) {
         int type = 0;
-        if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO) {
+        if (enhanced_flv) {
             type = pkt_type;
         } else {
             type = avio_r8(s->pb);
@@ -1547,6 +1643,7 @@ retry_duration:
             size -= 3;
         }
         if (type == 0 && (!st->codecpar->extradata || st->codecpar->codec_id == AV_CODEC_ID_AAC ||
+            st->codecpar->codec_id == AV_CODEC_ID_OPUS || st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
             st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
             st->codecpar->codec_id == AV_CODEC_ID_AV1 || st->codecpar->codec_id == AV_CODEC_ID_VP9)) {
             AVDictionaryEntry *t;
@@ -1602,7 +1699,7 @@ retry_duration:
             flv->mt_extradata_sz[track_idx] = 0;
         }
     }
-    if (stream_type == FLV_STREAM_TYPE_AUDIO &&
+    if (stream_type == FLV_STREAM_TYPE_AUDIO && !enhanced_flv &&
                     (sample_rate != flv->last_sample_rate ||
                      channels    != flv->last_channels)) {
         flv->last_sample_rate = sample_rate;
