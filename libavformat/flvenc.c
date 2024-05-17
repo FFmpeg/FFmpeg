@@ -1070,11 +1070,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
                             || par->codec_id == AV_CODEC_ID_AC3
                             || par->codec_id == AV_CODEC_ID_EAC3;
 
-    if (par->codec_type == AVMEDIA_TYPE_AUDIO && !pkt->size) {
-        av_log(s, AV_LOG_WARNING, "Empty audio Packet\n");
-        return AVERROR(EINVAL);
-    }
-
     if (extended_audio)
         flags_size = 5;
     else if (par->codec_id == AV_CODEC_ID_VP6F || par->codec_id == AV_CODEC_ID_VP6A ||
@@ -1148,8 +1143,6 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         break;
     case AVMEDIA_TYPE_AUDIO:
         flags = get_audio_flags(s, par);
-
-        av_assert0(size);
 
         avio_w8(pb, FLV_TAG_TYPE_AUDIO);
         break;
