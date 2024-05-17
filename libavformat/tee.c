@@ -158,7 +158,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 {
     int i, ret;
     AVDictionary *options = NULL, *bsf_options = NULL;
-    AVDictionaryEntry *entry;
+    const AVDictionaryEntry *entry;
     char *filename;
     char *format = NULL, *select = NULL, *on_fail = NULL;
     char *use_fifo = NULL, *fifo_options_str = NULL;
@@ -172,15 +172,16 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
         return ret;
 
 #define CONSUME_OPTION(option, field, action) do {                      \
-        if ((entry = av_dict_get(options, option, NULL, 0))) {          \
-            field = entry->value;                                       \
+        AVDictionaryEntry *en = av_dict_get(options, option, NULL, 0);  \
+        if (en) {                                                       \
+            field = en->value;                                          \
             { action }                                                  \
             av_dict_set(&options, option, NULL, 0);                     \
         }                                                               \
     } while (0)
 #define STEAL_OPTION(option, field)                                     \
     CONSUME_OPTION(option, field,                                       \
-                   entry->value = NULL; /* prevent it from being freed */)
+                   en->value = NULL; /* prevent it from being freed */)
 #define PROCESS_OPTION(option, field, function, on_error)               \
     CONSUME_OPTION(option, field, if ((ret = function) < 0) { { on_error } goto end; })
 
