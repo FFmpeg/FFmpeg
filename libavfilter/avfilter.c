@@ -941,7 +941,7 @@ int avfilter_init_dict(AVFilterContext *ctx, AVDictionary **options)
 int avfilter_init_str(AVFilterContext *filter, const char *args)
 {
     AVDictionary *options = NULL;
-    AVDictionaryEntry *e;
+    const AVDictionaryEntry *e;
     int ret = 0;
 
     if (args && *args) {
@@ -954,7 +954,7 @@ int avfilter_init_str(AVFilterContext *filter, const char *args)
     if (ret < 0)
         goto fail;
 
-    if ((e = av_dict_get(options, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+    if ((e = av_dict_iterate(options, NULL))) {
         av_log(filter, AV_LOG_ERROR, "No such option: %s.\n", e->key);
         ret = AVERROR_OPTION_NOT_FOUND;
         goto fail;

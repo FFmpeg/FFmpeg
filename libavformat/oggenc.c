@@ -432,7 +432,7 @@ static int ogg_build_vp8_headers(AVFormatContext *s, AVStream *st,
     bytestream_put_be32(&p, st->time_base.num);
 
     /* optional second packet: VorbisComment */
-    if (av_dict_get(st->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
+    if (av_dict_count(st->metadata)) {
         p = ogg_write_vorbiscomment(7, bitexact, &oggstream->header_len[1], &st->metadata, 0, NULL, 0);
         if (!p)
             return AVERROR(ENOMEM);

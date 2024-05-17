@@ -484,8 +484,8 @@ void remove_avoptions(AVDictionary **a, AVDictionary *b)
 
 int check_avoptions(AVDictionary *m)
 {
-    const AVDictionaryEntry *t;
-    if ((t = av_dict_get(m, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+    const AVDictionaryEntry *t = av_dict_iterate(m, NULL);
+    if (t) {
         av_log(NULL, AV_LOG_FATAL, "Option %s not found.\n", t->key);
         return AVERROR_OPTION_NOT_FOUND;
     }

@@ -990,7 +990,7 @@ static int parse_set_cookie(const char *set_cookie, AVDictionary **dict)
 static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
 {
     AVDictionary *new_params = NULL;
-    AVDictionaryEntry *e, *cookie_entry;
+    const AVDictionaryEntry *e, *cookie_entry;
     char *eql, *name;
 
     // ensure the cookie is parsable
@@ -998,7 +998,7 @@ static int parse_cookie(HTTPContext *s, const char *p, AVDictionary **cookies)
         return -1;
 
     // if there is no cookie value there is nothing to parse
-    cookie_entry = av_dict_get(new_params, "", NULL, AV_DICT_IGNORE_SUFFIX);
+    cookie_entry = av_dict_iterate(new_params, NULL);
     if (!cookie_entry || !cookie_entry->value) {
         av_dict_free(&new_params);
         return -1;
@@ -1300,7 +1300,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
     *cookies = NULL;
     while ((cookie = av_strtok(next, "\n", &saveptr)) && !ret) {
         AVDictionary *cookie_params = NULL;
-        AVDictionaryEntry *cookie_entry, *e;
+        const AVDictionaryEntry *cookie_entry, *e;
 
         next = NULL;
         // store the cookie in a dict in case it is updated in the response
@@ -1312,7 +1312,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
             goto skip_cookie;
 
         // if the cookie has no value, skip it
-        cookie_entry = av_dict_get(cookie_params, "", NULL, AV_DICT_IGNORE_SUFFIX);
+        cookie_entry = av_dict_iterate(cookie_params, NULL);
         if (!cookie_entry || !cookie_entry->value)
             goto skip_cookie;
 

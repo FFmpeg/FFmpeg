@@ -119,7 +119,7 @@ static int adts_aac_read_header(AVFormatContext *s)
 
     ff_id3v1_read(s);
     if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
-        !av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
+        !av_dict_count(s->metadata)) {
         int64_t cur = avio_tell(s->pb);
         ff_ape_parse_tag(s);
         avio_seek(s->pb, cur, SEEK_SET);
