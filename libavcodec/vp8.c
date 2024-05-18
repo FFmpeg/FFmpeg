@@ -341,9 +341,8 @@ static int setup_partitions(VP8Context *s, const uint8_t *buf, int buf_size)
     }
 
     s->coeff_partition_size[i] = buf_size;
-    ff_vpx_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
 
-    return 0;
+    return ff_vpx_init_range_decoder(&s->coeff_partition[i], buf, buf_size);
 }
 
 static void vp7_get_quants(VP8Context *s)
