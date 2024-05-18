@@ -1386,9 +1386,30 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st)
 
         break;
     case AVMEDIA_TYPE_AUDIO: {
-        int guess_layout_max = INT_MAX;
-        MATCH_PER_STREAM_OPT(guess_layout_max, i, guess_layout_max, ic, st);
-        guess_input_channel_layout(ist, par, guess_layout_max);
+        char *ch_layout_str = NULL;
+        MATCH_PER_STREAM_OPT(audio_ch_layouts, str, ch_layout_str, ic, st);
+        if (ch_layout_str) {
+            AVChannelLayout ch_layout;
+            ret = av_channel_layout_from_string(&ch_layout, ch_layout_str);
+            if (ret < 0) {
+                av_log(ist, AV_LOG_ERROR, "Error parsing channel layout %s.\n", ch_layout_str);
+                return ret;
+            }
+            if (par->ch_layout.nb_channels <= 0 || par->ch_layout.nb_channels == ch_layout.nb_channels) {
+                av_channel_layout_uninit(&par->ch_layout);
+                par->ch_layout = ch_layout;
+            } else {
+                av_log(ist, AV_LOG_ERROR,
+                    "Specified channel layout '%s' has %d channels, but input has %d channels.\n",
+                    ch_layout_str, ch_layout.nb_channels, par->ch_layout.nb_channels);
+                av_channel_layout_uninit(&ch_layout);
+                return AVERROR(EINVAL);
+            }
+        } else {
+            int guess_layout_max = INT_MAX;
+            MATCH_PER_STREAM_OPT(guess_layout_max, i, guess_layout_max, ic, st);
+            guess_input_channel_layout(ist, par, guess_layout_max);
+        }
         break;
     }
     case AVMEDIA_TYPE_DATA:
