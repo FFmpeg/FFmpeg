@@ -1337,8 +1337,6 @@ retry:
             enhanced_flv = 1;
             pkt_type = flags & ~FLV_AUDIO_CODECID_MASK;
 
-            channels = 0;
-
             if (pkt_type == AudioPacketTypeMultitrack) {
                 av_log(s, AV_LOG_ERROR, "Multitrack audio is unsupported!\n");
                 return AVERROR_PATCHWELCOME;
@@ -1548,12 +1546,9 @@ retry_duration:
             avcodec_parameters_free(&par);
         }
     } else if (stream_type == FLV_STREAM_TYPE_AUDIO) {
-        if (!st->codecpar->codec_id) {
+        if (!st->codecpar->codec_id)
             flv_set_audio_codec(s, st, st->codecpar,
                                 codec_id ? codec_id : (flags & FLV_AUDIO_CODECID_MASK));
-            flv->last_sample_rate = 0;
-            flv->last_channels = 0;
-        }
 
         // These are not signalled in the flags anymore
         channels = 0;
@@ -1564,26 +1559,40 @@ retry_duration:
             channels = avio_r8(s->pb);
             size -= 2;
 
+            av_channel_layout_uninit(&st->codecpar->ch_layout);
+
             if (channel_order == AudioChannelOrderCustom) {
+                ret = av_channel_layout_custom_init(&st->codecpar->ch_layout, channels);
+                if (ret < 0)
+                    return ret;
+
                 for (i = 0; i < channels; i++) {
-                    avio_r8(s->pb); // audio channel mapping
+                    uint8_t id = avio_r8(s->pb);
                     size--;
+
+                    if (id < 18)
+                        st->codecpar->ch_layout.u.map[i].id = id;
+                    else if (id >= 18 && id <= 23)
+                        st->codecpar->ch_layout.u.map[i].id = id - 18 + AV_CHAN_LOW_FREQUENCY_2;
+                    else if (id == 0xFE)
+                        st->codecpar->ch_layout.u.map[i].id = AV_CHAN_UNUSED;
+                    else
+                        st->codecpar->ch_layout.u.map[i].id = AV_CHAN_UNKNOWN;
                 }
             } else if (channel_order == AudioChannelOrderNative) {
-                avio_rb32(s->pb); // audio channel flags
+                uint64_t mask = avio_rb32(s->pb);
                 size -= 4;
-            }
 
-            if (!av_channel_layout_check(&st->codecpar->ch_layout)) {
-                ///TODO: This can be much more sophisticated with above info.
+                // The first 18 entries in the mask match ours, but the remaining 6 entries start at AV_CHAN_LOW_FREQUENCY_2
+                mask = (mask & 0x3FFFF) | ((mask & 0xFC0000) << (AV_CHAN_LOW_FREQUENCY_2 - 18));
+                ret = av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
+                if (ret < 0)
+                    return ret;
+            } else {
                 av_channel_layout_default(&st->codecpar->ch_layout, channels);
-                flv->last_channels = channels;
             }
 
-            if (channels != flv->last_channels) {
-                flv->last_channels = channels;
-                ff_add_param_change(pkt, channels, 0, 0, 0, 0);
-            }
+            av_log(s, AV_LOG_DEBUG, "Set channel data from MultiChannel info.\n");
 
             goto leave;
         }
