@@ -538,7 +538,7 @@ static unsigned compute_bit_depth(uint16_t mask)
     return av_popcount(mask);
 }
 
-static int filter_frame8(AVFilterLink *link, AVFrame *in)
+static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
     AVFilterContext *ctx = link->dst;
     SignalstatsContext *s = ctx->priv;
@@ -563,20 +563,17 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     int accy, accu, accv;
     int accsat, acchue = 0;
     int medhue, maxhue;
-    int toty = 0, totu = 0, totv = 0, totsat=0;
-    int tothue = 0;
-    int dify = 0, difu = 0, difv = 0;
+    int64_t toty = 0, totu = 0, totv = 0, totsat=0;
+    int64_t tothue = 0;
+    int64_t dify = 0, difu = 0, difv = 0;
     uint16_t masky = 0, masku = 0, maskv = 0;
-    int ret;
+
     int filtot[FILT_NUMB] = {0};
     AVFrame *prev;
-
+    int ret;
     AVFrame *sat = s->frame_sat;
     AVFrame *hue = s->frame_hue;
-    const uint8_t *p_sat = sat->data[0];
-    const uint8_t *p_hue = hue->data[0];
-    const int lsz_sat = sat->linesize[0];
-    const int lsz_hue = hue->linesize[0];
+    const int hbd = s->depth > 8;
     ThreadDataHueSatMetrics td_huesat = {
         .src     = in,
         .dst_sat = sat,
@@ -602,11 +599,60 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
         }
     }
 
-    ff_filter_execute(ctx, compute_sat_hue_metrics8, &td_huesat,
+    ff_filter_execute(ctx, hbd ? compute_sat_hue_metrics16
+                               : compute_sat_hue_metrics8, &td_huesat,
                       NULL, FFMIN(s->chromah, ff_filter_get_nb_threads(ctx)));
 
-    // Calculate luma histogram and difference with previous frame or field.
     memset(s->histy, 0, s->maxsize * sizeof(*s->histy));
+    memset(s->histu, 0, s->maxsize * sizeof(*s->histu));
+    memset(s->histv, 0, s->maxsize * sizeof(*s->histv));
+    memset(s->histsat, 0, s->maxsize * sizeof(*s->histsat));
+
+    if (hbd) {
+    const uint16_t *p_sat = (uint16_t *)sat->data[0];
+    const uint16_t *p_hue = (uint16_t *)hue->data[0];
+    const int lsz_sat = sat->linesize[0] / 2;
+    const int lsz_hue = hue->linesize[0] / 2;
+    // Calculate luma histogram and difference with previous frame or field.
+    for (j = 0; j < link->h; j++) {
+        for (i = 0; i < link->w; i++) {
+            const int yuv = AV_RN16(in->data[0] + w + i * 2);
+
+            masky |= yuv;
+            histy[yuv]++;
+            dify += abs(yuv - (int)AV_RN16(prev->data[0] + pw + i * 2));
+        }
+        w  += in->linesize[0];
+        pw += prev->linesize[0];
+    }
+
+    // Calculate chroma histogram and difference with previous frame or field.
+    for (j = 0; j < s->chromah; j++) {
+        for (i = 0; i < s->chromaw; i++) {
+            const int yuvu = AV_RN16(in->data[1] + cw + i * 2);
+            const int yuvv = AV_RN16(in->data[2] + cw + i * 2);
+
+            masku |= yuvu;
+            maskv |= yuvv;
+            histu[yuvu]++;
+            difu += abs(yuvu - (int)AV_RN16(prev->data[1] + cpw + i * 2));
+            histv[yuvv]++;
+            difv += abs(yuvv - (int)AV_RN16(prev->data[2] + cpw + i * 2));
+
+            histsat[p_sat[i]]++;
+            histhue[((int16_t*)p_hue)[i]]++;
+        }
+        cw  += in->linesize[1];
+        cpw += prev->linesize[1];
+        p_sat += lsz_sat;
+        p_hue += lsz_hue;
+    }
+    } else {
+    const uint8_t *p_sat = sat->data[0];
+    const uint8_t *p_hue = hue->data[0];
+    const int lsz_sat = sat->linesize[0];
+    const int lsz_hue = hue->linesize[0];
+    // Calculate luma histogram and difference with previous frame or field.
     for (j = 0; j < link->h; j++) {
         for (i = 0; i < link->w; i++) {
             const int yuv = in->data[0][w + i];
@@ -620,9 +666,6 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     }
 
     // Calculate chroma histogram and difference with previous frame or field.
-    memset(s->histu, 0, s->maxsize * sizeof(*s->histu));
-    memset(s->histv, 0, s->maxsize * sizeof(*s->histv));
-    memset(s->histsat, 0, s->maxsize * sizeof(*s->histsat));
     for (j = 0; j < s->chromah; j++) {
         for (i = 0; i < s->chromaw; i++) {
             const int yuvu = in->data[1][cw+i];
@@ -643,6 +686,7 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
         p_sat += lsz_sat;
         p_hue += lsz_hue;
     }
+    }
 
     for (fil = 0; fil < FILT_NUMB; fil ++) {
         if (s->filters & 1<<fil) {
@@ -651,7 +695,7 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
                 .out = out != in && s->outfilter == fil ? out : NULL,
             };
             memset(s->jobs_rets, 0, s->nb_jobs * sizeof(*s->jobs_rets));
-            ff_filter_execute(ctx, filters_def[fil].process8,
+            ff_filter_execute(ctx, hbd ? filters_def[fil].process16 : filters_def[fil].process8,
                               &td, s->jobs_rets, s->nb_jobs);
             for (i = 0; i < s->nb_jobs; i++)
                 filtot[fil] += s->jobs_rets[i];
@@ -767,243 +811,6 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     if (in != out)
         av_frame_free(&in);
     return ff_filter_frame(outlink, out);
-}
-
-static int filter_frame16(AVFilterLink *link, AVFrame *in)
-{
-    AVFilterContext *ctx = link->dst;
-    SignalstatsContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out = in;
-    int i, j;
-    int  w = 0,  cw = 0, // in
-        pw = 0, cpw = 0; // prev
-    int fil;
-    char metabuf[128];
-    unsigned int *histy = s->histy,
-                 *histu = s->histu,
-                 *histv = s->histv,
-                 histhue[360] = {0},
-                 *histsat = s->histsat;
-    int miny  = -1, minu  = -1, minv  = -1;
-    int maxy  = -1, maxu  = -1, maxv  = -1;
-    int lowy  = -1, lowu  = -1, lowv  = -1;
-    int highy = -1, highu = -1, highv = -1;
-    int minsat = -1, maxsat = -1, lowsat = -1, highsat = -1;
-    int lowp, highp, clowp, chighp;
-    int accy, accu, accv;
-    int accsat, acchue = 0;
-    int medhue, maxhue;
-    int64_t toty = 0, totu = 0, totv = 0, totsat=0;
-    int64_t tothue = 0;
-    int64_t dify = 0, difu = 0, difv = 0;
-    uint16_t masky = 0, masku = 0, maskv = 0;
-
-    int filtot[FILT_NUMB] = {0};
-    AVFrame *prev;
-    int ret;
-    AVFrame *sat = s->frame_sat;
-    AVFrame *hue = s->frame_hue;
-    const uint16_t *p_sat = (uint16_t *)sat->data[0];
-    const uint16_t *p_hue = (uint16_t *)hue->data[0];
-    const int lsz_sat = sat->linesize[0] / 2;
-    const int lsz_hue = hue->linesize[0] / 2;
-    ThreadDataHueSatMetrics td_huesat = {
-        .src     = in,
-        .dst_sat = sat,
-        .dst_hue = hue,
-    };
-
-    if (!s->frame_prev)
-        s->frame_prev = av_frame_clone(in);
-
-    prev = s->frame_prev;
-
-    if (s->outfilter != FILTER_NONE) {
-        out = av_frame_clone(in);
-        if (!out) {
-            av_frame_free(&in);
-            return AVERROR(ENOMEM);
-        }
-        ret = ff_inlink_make_frame_writable(link, &out);
-        if (ret < 0) {
-            av_frame_free(&out);
-            av_frame_free(&in);
-            return ret;
-        }
-    }
-
-    ff_filter_execute(ctx, compute_sat_hue_metrics16, &td_huesat,
-                      NULL, FFMIN(s->chromah, ff_filter_get_nb_threads(ctx)));
-
-    // Calculate luma histogram and difference with previous frame or field.
-    memset(s->histy, 0, s->maxsize * sizeof(*s->histy));
-    for (j = 0; j < link->h; j++) {
-        for (i = 0; i < link->w; i++) {
-            const int yuv = AV_RN16(in->data[0] + w + i * 2);
-
-            masky |= yuv;
-            histy[yuv]++;
-            dify += abs(yuv - (int)AV_RN16(prev->data[0] + pw + i * 2));
-        }
-        w  += in->linesize[0];
-        pw += prev->linesize[0];
-    }
-
-    // Calculate chroma histogram and difference with previous frame or field.
-    memset(s->histu, 0, s->maxsize * sizeof(*s->histu));
-    memset(s->histv, 0, s->maxsize * sizeof(*s->histv));
-    memset(s->histsat, 0, s->maxsize * sizeof(*s->histsat));
-    for (j = 0; j < s->chromah; j++) {
-        for (i = 0; i < s->chromaw; i++) {
-            const int yuvu = AV_RN16(in->data[1] + cw + i * 2);
-            const int yuvv = AV_RN16(in->data[2] + cw + i * 2);
-
-            masku |= yuvu;
-            maskv |= yuvv;
-            histu[yuvu]++;
-            difu += abs(yuvu - (int)AV_RN16(prev->data[1] + cpw + i * 2));
-            histv[yuvv]++;
-            difv += abs(yuvv - (int)AV_RN16(prev->data[2] + cpw + i * 2));
-
-            histsat[p_sat[i]]++;
-            histhue[((int16_t*)p_hue)[i]]++;
-        }
-        cw  += in->linesize[1];
-        cpw += prev->linesize[1];
-        p_sat += lsz_sat;
-        p_hue += lsz_hue;
-    }
-
-    for (fil = 0; fil < FILT_NUMB; fil ++) {
-        if (s->filters & 1<<fil) {
-            ThreadData td = {
-                .in = in,
-                .out = out != in && s->outfilter == fil ? out : NULL,
-            };
-            memset(s->jobs_rets, 0, s->nb_jobs * sizeof(*s->jobs_rets));
-            ff_filter_execute(ctx, filters_def[fil].process16,
-                              &td, s->jobs_rets, s->nb_jobs);
-            for (i = 0; i < s->nb_jobs; i++)
-                filtot[fil] += s->jobs_rets[i];
-        }
-    }
-
-    // find low / high based on histogram percentile
-    // these only need to be calculated once.
-
-    lowp   = lrint(s->fs  * 10 / 100.);
-    highp  = lrint(s->fs  * 90 / 100.);
-    clowp  = lrint(s->cfs * 10 / 100.);
-    chighp = lrint(s->cfs * 90 / 100.);
-
-    accy = accu = accv = accsat = 0;
-    for (fil = 0; fil < s->maxsize; fil++) {
-        if (miny   < 0 && histy[fil])   miny = fil;
-        if (minu   < 0 && histu[fil])   minu = fil;
-        if (minv   < 0 && histv[fil])   minv = fil;
-        if (minsat < 0 && histsat[fil]) minsat = fil;
-
-        if (histy[fil])   maxy   = fil;
-        if (histu[fil])   maxu   = fil;
-        if (histv[fil])   maxv   = fil;
-        if (histsat[fil]) maxsat = fil;
-
-        toty   += histy[fil]   * fil;
-        totu   += histu[fil]   * fil;
-        totv   += histv[fil]   * fil;
-        totsat += histsat[fil] * fil;
-
-        accy   += histy[fil];
-        accu   += histu[fil];
-        accv   += histv[fil];
-        accsat += histsat[fil];
-
-        if (lowy   == -1 && accy   >=  lowp) lowy   = fil;
-        if (lowu   == -1 && accu   >= clowp) lowu   = fil;
-        if (lowv   == -1 && accv   >= clowp) lowv   = fil;
-        if (lowsat == -1 && accsat >= clowp) lowsat = fil;
-
-        if (highy   == -1 && accy   >=  highp) highy   = fil;
-        if (highu   == -1 && accu   >= chighp) highu   = fil;
-        if (highv   == -1 && accv   >= chighp) highv   = fil;
-        if (highsat == -1 && accsat >= chighp) highsat = fil;
-    }
-
-    maxhue = histhue[0];
-    medhue = -1;
-    for (fil = 0; fil < 360; fil++) {
-        tothue += histhue[fil] * fil;
-        acchue += histhue[fil];
-
-        if (medhue == -1 && acchue > s->cfs / 2)
-            medhue = fil;
-        if (histhue[fil] > maxhue) {
-            maxhue = histhue[fil];
-        }
-    }
-
-    av_frame_free(&s->frame_prev);
-    s->frame_prev = av_frame_clone(in);
-
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.YMIN", miny, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.YLOW", lowy, 0);
-    SET_META("YAVG",    "%g", 1.0 * toty / s->fs);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.YHIGH", highy, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.YMAX", maxy, 0);
-
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.UMIN", minu, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.ULOW", lowu, 0);
-    SET_META("UAVG",    "%g", 1.0 * totu / s->cfs);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.UHIGH", highu, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.UMAX", maxu, 0);
-
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.VMIN", minv, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.VLOW", lowv, 0);
-    SET_META("VAVG",    "%g", 1.0 * totv / s->cfs);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.VHIGH", highv, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.VMAX", maxv, 0);
-
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATMIN", minsat, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATLOW", lowsat, 0);
-    SET_META("SATAVG",  "%g", 1.0 * totsat / s->cfs);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATHIGH", highsat, 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATMAX", maxsat, 0);
-
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.HUEMED", medhue, 0);
-    SET_META("HUEAVG",  "%g", 1.0 * tothue / s->cfs);
-
-    SET_META("YDIF",    "%g", 1.0 * dify / s->fs);
-    SET_META("UDIF",    "%g", 1.0 * difu / s->cfs);
-    SET_META("VDIF",    "%g", 1.0 * difv / s->cfs);
-
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.YBITDEPTH", compute_bit_depth(masky), 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.UBITDEPTH", compute_bit_depth(masku), 0);
-    av_dict_set_int(&out->metadata, "lavfi.signalstats.VBITDEPTH", compute_bit_depth(maskv), 0);
-
-    for (fil = 0; fil < FILT_NUMB; fil ++) {
-        if (s->filters & 1<<fil) {
-            char metaname[128];
-            snprintf(metabuf,  sizeof(metabuf),  "%g", 1.0 * filtot[fil] / s->fs);
-            snprintf(metaname, sizeof(metaname), "lavfi.signalstats.%s", filters_def[fil].name);
-            av_dict_set(&out->metadata, metaname, metabuf, 0);
-        }
-    }
-
-    if (in != out)
-        av_frame_free(&in);
-    return ff_filter_frame(outlink, out);
-}
-
-static int filter_frame(AVFilterLink *link, AVFrame *in)
-{
-    AVFilterContext *ctx = link->dst;
-    SignalstatsContext *s = ctx->priv;
-
-    if (s->depth > 8)
-        return filter_frame16(link, in);
-    else
-        return filter_frame8(link, in);
 }
 
 static const AVFilterPad signalstats_inputs[] = {
