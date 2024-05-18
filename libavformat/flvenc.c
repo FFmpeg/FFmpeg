@@ -132,7 +132,7 @@ typedef struct FLVContext {
     int flags;
     int64_t *last_ts;
     int *metadata_pkt_written;
-    int *video_track_idx_map;
+    int *track_idx_map;
 } FLVContext;
 
 static int get_audio_flags(AVFormatContext *s, AVCodecParameters *par)
@@ -765,18 +765,32 @@ static int flv_get_multichannel_body_size(AVCodecParameters* par)
     return res;
 }
 
-static void flv_write_multichannel_header(AVFormatContext* s, AVCodecParameters* par, int64_t ts)
+static void flv_write_multichannel_header(AVFormatContext* s, AVCodecParameters* par, int64_t ts, int stream_index)
 {
     AVIOContext *pb = s->pb;
+    FLVContext *flv = s->priv_data;
+
+    int track_idx = flv->track_idx_map[stream_index];
     int data_size = flv_get_multichannel_body_size(par);
+    if (track_idx)
+        data_size += 2;
 
     avio_w8(pb, FLV_TAG_TYPE_AUDIO);
     avio_wb24(pb, data_size + 5); // size
     put_timestamp(pb, ts);
     avio_wb24(pb, 0); // streamid
 
-    avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeMultichannelConfig);
+    if (track_idx) {
+        avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeMultitrack);
+        avio_w8(pb, MultitrackTypeOneTrack | AudioPacketTypeMultichannelConfig);
+    } else {
+        avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeMultichannelConfig);
+    }
+
     write_codec_fourcc(pb, par->codec_id);
+
+    if (track_idx)
+        avio_w8(pb, track_idx);
 
     flv_write_multichannel_body(s, par);
 
@@ -787,6 +801,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
     int64_t data_size;
     AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
+    int track_idx = flv->track_idx_map[stream_index];
     int extended_flv = 0;
 
     if (par->codec_id == AV_CODEC_ID_AAC || par->codec_id == AV_CODEC_ID_H264
@@ -803,14 +818,25 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
         avio_wb24(pb, 0); // streamid
         pos = avio_tell(pb);
         if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
-            extended_flv = par->codec_id == AV_CODEC_ID_OPUS
-                                || par->codec_id == AV_CODEC_ID_FLAC
-                                || par->codec_id == AV_CODEC_ID_AC3
-                                || par->codec_id == AV_CODEC_ID_EAC3;
+            extended_flv = (par->codec_id == AV_CODEC_ID_AAC && track_idx)
+                                    || (par->codec_id == AV_CODEC_ID_MP3 && track_idx)
+                                    || par->codec_id == AV_CODEC_ID_OPUS
+                                    || par->codec_id == AV_CODEC_ID_FLAC
+                                    || par->codec_id == AV_CODEC_ID_AC3
+                                    || par->codec_id == AV_CODEC_ID_EAC3;
 
             if (extended_flv) {
-                avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeSequenceStart);
+                if (track_idx) {
+                    avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeMultitrack);
+                    avio_w8(pb, MultitrackTypeOneTrack | AudioPacketTypeSequenceStart);
+                } else {
+                    avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeSequenceStart);
+                }
+
                 write_codec_fourcc(pb, par->codec_id);
+
+                if (track_idx)
+                    avio_w8(pb, track_idx);
 
                 if (par->codec_id == AV_CODEC_ID_AAC) {
                     flv_write_aac_header(s, par);
@@ -825,7 +851,6 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
                 flv_write_aac_header(s, par);
             }
         } else {
-            int track_idx = flv->video_track_idx_map[stream_index];
             // If video stream has track_idx > 0 we need to send H.264 as extended video packet
             extended_flv = (par->codec_id == AV_CODEC_ID_H264 && track_idx) ||
                             par->codec_id == AV_CODEC_ID_HEVC ||
@@ -869,7 +894,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
     if (par->codec_type == AVMEDIA_TYPE_AUDIO && (extended_flv ||
         (av_channel_layout_compare(&par->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO) == 1 &&
          av_channel_layout_compare(&par->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO) == 1)))
-        flv_write_multichannel_header(s, par, ts);
+        flv_write_multichannel_header(s, par, ts, stream_index);
 }
 
 static int flv_append_keyframe_info(AVFormatContext *s, FLVContext *flv, double ts, int64_t pos)
@@ -931,13 +956,13 @@ static int shift_data(AVFormatContext *s)
 static int flv_init(struct AVFormatContext *s)
 {
     int i;
-    int video_ctr = 0;
+    int video_ctr = 0, audio_ctr = 0;
     FLVContext *flv = s->priv_data;
 
     flv->last_ts = av_calloc(s->nb_streams, sizeof(*flv->last_ts));
     flv->metadata_pkt_written = av_calloc(s->nb_streams, sizeof(*flv->metadata_pkt_written));
-    flv->video_track_idx_map = av_calloc(s->nb_streams, sizeof(*flv->video_track_idx_map));
-    if (!flv->last_ts || !flv->metadata_pkt_written || !flv->video_track_idx_map)
+    flv->track_idx_map = av_calloc(s->nb_streams, sizeof(*flv->track_idx_map));
+    if (!flv->last_ts || !flv->metadata_pkt_written || !flv->track_idx_map)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -949,7 +974,7 @@ static int flv_init(struct AVFormatContext *s)
                 s->streams[i]->avg_frame_rate.num) {
                 flv->framerate = av_q2d(s->streams[i]->avg_frame_rate);
             }
-            flv->video_track_idx_map[i] = video_ctr++;
+            flv->track_idx_map[i] = video_ctr++;
             if (flv->video_par && flv->flags & FLV_ADD_KEYFRAME_INDEX) {
                 av_log(s, AV_LOG_ERROR,
                        "at most one video stream is supported in flv with keyframe index\n");
@@ -980,12 +1005,22 @@ static int flv_init(struct AVFormatContext *s)
             }
             break;
         case AVMEDIA_TYPE_AUDIO:
-            if (flv->audio_par) {
-                av_log(s, AV_LOG_ERROR,
-                       "at most one audio stream is supported in flv\n");
+            if (audio_ctr &&
+                par->codec_id != AV_CODEC_ID_AAC &&
+                par->codec_id != AV_CODEC_ID_MP3 &&
+                par->codec_id != AV_CODEC_ID_OPUS &&
+                par->codec_id != AV_CODEC_ID_FLAC &&
+                par->codec_id != AV_CODEC_ID_AC3 &&
+                par->codec_id != AV_CODEC_ID_EAC3) {
+                av_log(s, AV_LOG_ERROR, "Unsupported multi-track codec.\n");
                 return AVERROR(EINVAL);
             }
-            flv->audio_par = par;
+            flv->track_idx_map[i] = audio_ctr++;
+            if (flv->audio_par)
+                av_log(s, AV_LOG_WARNING,
+                       "more than one audio stream is not supported by most flv demuxers.\n");
+            else
+                flv->audio_par = par;
             if (get_audio_flags(s, par) < 0)
                 return unsupported_codec(s, "Audio", par->codec_id);
             if (par->codec_id == AV_CODEC_ID_PCM_S16BE)
@@ -1157,9 +1192,11 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t frametype = pkt->flags & AV_PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
     int flags = -1, flags_size, ret = 0;
     int64_t cur_offset = avio_tell(pb);
-    int track_idx = flv->video_track_idx_map[pkt->stream_index];
+    int track_idx = flv->track_idx_map[pkt->stream_index];
 
-    int extended_audio = par->codec_id == AV_CODEC_ID_OPUS
+    int extended_audio = (par->codec_id == AV_CODEC_ID_AAC && track_idx)
+                            || (par->codec_id == AV_CODEC_ID_MP3 && track_idx)
+                            || par->codec_id == AV_CODEC_ID_OPUS
                             || par->codec_id == AV_CODEC_ID_FLAC
                             || par->codec_id == AV_CODEC_ID_AC3
                             || par->codec_id == AV_CODEC_ID_EAC3;
@@ -1176,8 +1213,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     else
         flags_size = 1;
 
-    if (par->codec_type == AVMEDIA_TYPE_VIDEO && track_idx)
-        flags_size += 2; // additional header bytes for multi-track video
+    if ((par->codec_type == AVMEDIA_TYPE_VIDEO || par->codec_type == AVMEDIA_TYPE_AUDIO) && track_idx)
+        flags_size += 2; // additional header bytes for multi-track flv
 
     if ((par->codec_id == AV_CODEC_ID_HEVC ||
         (par->codec_id == AV_CODEC_ID_H264 && track_idx))
@@ -1344,8 +1381,15 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (h2645 && pkttype == PacketTypeCodedFrames)
                 avio_wb24(pb, pkt->pts - pkt->dts);
         } else if (extended_audio) {
-            avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeCodedFrames);
+            if (track_idx) {
+                avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeMultitrack);
+                avio_w8(pb, MultitrackTypeOneTrack | AudioPacketTypeCodedFrames);
+            } else {
+                avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeCodedFrames);
+            }
             write_codec_fourcc(pb, par->codec_id);
+            if (track_idx)
+                avio_w8(pb, track_idx);
         } else {
             av_assert1(flags >= 0);
             avio_w8(pb, flags);
@@ -1435,7 +1479,7 @@ static void flv_deinit(AVFormatContext *s)
 
     av_freep(&flv->last_ts);
     av_freep(&flv->metadata_pkt_written);
-    av_freep(&flv->video_track_idx_map);
+    av_freep(&flv->track_idx_map);
 }
 
 static const AVOption options[] = {
