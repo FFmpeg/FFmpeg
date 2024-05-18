@@ -841,7 +841,6 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
     const CodedBitstreamH266Context *h266 = s->cbc->priv_data;
     CodedBitstreamFragment *frame         = &s->current_frame;
     int ret = 0;
-    int eos_at_start = 1;
     s->last_eos = s->eos;
     s->eos = 0;
 
@@ -857,10 +856,7 @@ static int decode_nal_units(VVCContext *s, VVCFrameContext *fc, AVPacket *avpkt)
         const CodedBitstreamUnit *unit = frame->units + i;
 
         if (unit->type == VVC_EOB_NUT || unit->type == VVC_EOS_NUT) {
-            if (eos_at_start)
-                s->last_eos = 1;
-            else
-                s->eos = 1;
+            s->last_eos = 1;
         } else {
             ret = decode_nal_unit(s, fc, nal, unit);
             if (ret < 0) {
