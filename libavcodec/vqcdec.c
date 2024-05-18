@@ -145,10 +145,13 @@ static int decode_vectors(VqcContext * s, const uint8_t * buf, int size, int wid
     GetBitContext gb;
     uint8_t * vectors = s->vectors;
     uint8_t * vectors_end = s->vectors + (width * height * 3) / 2;
+    int ret;
 
     memset(vectors, 0, 3 * width * height / 2);
 
-    init_get_bits8(&gb, buf, size);
+    ret = init_get_bits8(&gb, buf, size);
+    if (ret < 0)
+        return ret;
 
     for (int i = 0; i < 3 * width * height / 2 / 32; i++) {
         uint8_t * dst = vectors;
