@@ -143,9 +143,8 @@ static int handle_id3(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     ret = av_append_packet(s->pb, pkt, ff_id3v2_tag_len(pkt->data) - pkt->size);
-    if (ret < 0) {
+    if (ret < 0)
         return ret;
-    }
 
     ffio_init_read_context(&pb, pkt->data, pkt->size);
     ff_id3v2_read_dict(&pb.pub, &metadata, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
@@ -175,9 +174,8 @@ retry:
     if (ret < 0)
         return ret;
 
-    if (ret < ADTS_HEADER_SIZE) {
+    if (ret < ADTS_HEADER_SIZE)
         return AVERROR(EIO);
-    }
 
     if ((AV_RB16(pkt->data) >> 4) != 0xfff) {
         // Parse all the ID3 headers between frames
@@ -185,9 +183,8 @@ retry:
 
         av_assert2(append > 0);
         ret = av_append_packet(s->pb, pkt, append);
-        if (ret != append) {
+        if (ret != append)
             return AVERROR(EIO);
-        }
         if (!ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
             av_packet_unref(pkt);
             ret = adts_aac_resync(s);
@@ -200,9 +197,8 @@ retry:
     }
 
     fsize = (AV_RB32(pkt->data + 3) >> 13) & 0x1FFF;
-    if (fsize < ADTS_HEADER_SIZE) {
+    if (fsize < ADTS_HEADER_SIZE)
         return AVERROR_INVALIDDATA;
-    }
 
     ret = av_append_packet(s->pb, pkt, fsize - pkt->size);
 
