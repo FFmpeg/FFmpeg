@@ -171,7 +171,7 @@ endconst
         li              t1, 6
         mul             t0, t0, t1
         add             t0, t0, t2
-        .irp n 1,2,3,4
+        .irp n,1,2,3,4
         lb              t\n, \n(t0)
         .endr
 .ifc \size,6
@@ -236,7 +236,7 @@ func ff_put_vp8_epel\len\()_\type\()\size\()_rvv, zve32x
 endfunc
 .endm
 
-.irp len 16,8,4
+.irp len,16,8,4
 put_vp8_bilin_h_v \len h a5
 put_vp8_bilin_h_v \len v a6
 put_vp8_bilin_hv \len
