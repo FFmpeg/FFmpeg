@@ -2001,8 +2001,7 @@ static int vp4_mc_loop_filter(Vp3DecodeContext *s, int plane, int motion_x, int 
         x_offset = (-(x + 2) & 7) + 2;
         y_offset = (-(y + 2) & 7) + 2;
 
-        if (x_offset > 8 + x_subpel && y_offset > 8 + y_subpel)
-            return 0;
+        av_assert1(!(x_offset > 8 + x_subpel && y_offset > 8 + y_subpel));
 
         s->vdsp.emulated_edge_mc(loop, motion_source - stride - 1,
              loop_stride, stride,
