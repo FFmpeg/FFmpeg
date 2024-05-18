@@ -356,8 +356,15 @@ static int gen_connect(URLContext *s, RTMPContext *rt)
 
         while(fourcc_data - rt->enhanced_codecs < fourcc_str_len) {
             unsigned char fourcc[5];
-            if (!strncmp(fourcc_data, "hvc1", 4) ||
+            if (!strncmp(fourcc_data, "ac-3", 4) ||
                 !strncmp(fourcc_data, "av01", 4) ||
+                !strncmp(fourcc_data, "avc1", 4) ||
+                !strncmp(fourcc_data, "ec-3", 4) ||
+                !strncmp(fourcc_data, "fLaC", 4) ||
+                !strncmp(fourcc_data, "hvc1", 4) ||
+                !strncmp(fourcc_data, ".mp3", 4) ||
+                !strncmp(fourcc_data, "mp4a", 4) ||
+                !strncmp(fourcc_data, "Opus", 4) ||
                 !strncmp(fourcc_data, "vp09", 4)) {
                     av_strlcpy(fourcc, fourcc_data, sizeof(fourcc));
                     ff_amf_write_string(&p, fourcc);
