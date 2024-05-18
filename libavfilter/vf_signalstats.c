@@ -544,7 +544,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     SignalstatsContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out = in;
-    int i, j;
     int  w = 0,  cw = 0, // in
         pw = 0, cpw = 0; // prev
     int fil;
@@ -609,83 +608,83 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     memset(s->histsat, 0, s->maxsize * sizeof(*s->histsat));
 
     if (hbd) {
-    const uint16_t *p_sat = (uint16_t *)sat->data[0];
-    const uint16_t *p_hue = (uint16_t *)hue->data[0];
-    const int lsz_sat = sat->linesize[0] / 2;
-    const int lsz_hue = hue->linesize[0] / 2;
-    // Calculate luma histogram and difference with previous frame or field.
-    for (j = 0; j < link->h; j++) {
-        for (i = 0; i < link->w; i++) {
-            const int yuv = AV_RN16(in->data[0] + w + i * 2);
+        const uint16_t *p_sat = (uint16_t *)sat->data[0];
+        const uint16_t *p_hue = (uint16_t *)hue->data[0];
+        const int lsz_sat = sat->linesize[0] / 2;
+        const int lsz_hue = hue->linesize[0] / 2;
+        // Calculate luma histogram and difference with previous frame or field.
+        for (int j = 0; j < link->h; j++) {
+            for (int i = 0; i < link->w; i++) {
+                const int yuv = AV_RN16(in->data[0] + w + i * 2);
 
-            masky |= yuv;
-            histy[yuv]++;
-            dify += abs(yuv - (int)AV_RN16(prev->data[0] + pw + i * 2));
+                masky |= yuv;
+                histy[yuv]++;
+                dify += abs(yuv - (int)AV_RN16(prev->data[0] + pw + i * 2));
+            }
+            w  += in->linesize[0];
+            pw += prev->linesize[0];
         }
-        w  += in->linesize[0];
-        pw += prev->linesize[0];
-    }
 
-    // Calculate chroma histogram and difference with previous frame or field.
-    for (j = 0; j < s->chromah; j++) {
-        for (i = 0; i < s->chromaw; i++) {
-            const int yuvu = AV_RN16(in->data[1] + cw + i * 2);
-            const int yuvv = AV_RN16(in->data[2] + cw + i * 2);
+        // Calculate chroma histogram and difference with previous frame or field.
+        for (int j = 0; j < s->chromah; j++) {
+            for (int i = 0; i < s->chromaw; i++) {
+                const int yuvu = AV_RN16(in->data[1] + cw + i * 2);
+                const int yuvv = AV_RN16(in->data[2] + cw + i * 2);
 
-            masku |= yuvu;
-            maskv |= yuvv;
-            histu[yuvu]++;
-            difu += abs(yuvu - (int)AV_RN16(prev->data[1] + cpw + i * 2));
-            histv[yuvv]++;
-            difv += abs(yuvv - (int)AV_RN16(prev->data[2] + cpw + i * 2));
+                masku |= yuvu;
+                maskv |= yuvv;
+                histu[yuvu]++;
+                difu += abs(yuvu - (int)AV_RN16(prev->data[1] + cpw + i * 2));
+                histv[yuvv]++;
+                difv += abs(yuvv - (int)AV_RN16(prev->data[2] + cpw + i * 2));
 
-            histsat[p_sat[i]]++;
-            histhue[((int16_t*)p_hue)[i]]++;
+                histsat[p_sat[i]]++;
+                histhue[((int16_t*)p_hue)[i]]++;
+            }
+            cw  += in->linesize[1];
+            cpw += prev->linesize[1];
+            p_sat += lsz_sat;
+            p_hue += lsz_hue;
         }
-        cw  += in->linesize[1];
-        cpw += prev->linesize[1];
-        p_sat += lsz_sat;
-        p_hue += lsz_hue;
-    }
     } else {
-    const uint8_t *p_sat = sat->data[0];
-    const uint8_t *p_hue = hue->data[0];
-    const int lsz_sat = sat->linesize[0];
-    const int lsz_hue = hue->linesize[0];
-    // Calculate luma histogram and difference with previous frame or field.
-    for (j = 0; j < link->h; j++) {
-        for (i = 0; i < link->w; i++) {
-            const int yuv = in->data[0][w + i];
+        const uint8_t *p_sat = sat->data[0];
+        const uint8_t *p_hue = hue->data[0];
+        const int lsz_sat = sat->linesize[0];
+        const int lsz_hue = hue->linesize[0];
+        // Calculate luma histogram and difference with previous frame or field.
+        for (int j = 0; j < link->h; j++) {
+            for (int i = 0; i < link->w; i++) {
+                const int yuv = in->data[0][w + i];
 
-            masky |= yuv;
-            histy[yuv]++;
-            dify += abs(yuv - prev->data[0][pw + i]);
+                masky |= yuv;
+                histy[yuv]++;
+                dify += abs(yuv - prev->data[0][pw + i]);
+            }
+            w  += in->linesize[0];
+            pw += prev->linesize[0];
         }
-        w  += in->linesize[0];
-        pw += prev->linesize[0];
-    }
 
-    // Calculate chroma histogram and difference with previous frame or field.
-    for (j = 0; j < s->chromah; j++) {
-        for (i = 0; i < s->chromaw; i++) {
-            const int yuvu = in->data[1][cw+i];
-            const int yuvv = in->data[2][cw+i];
+        // Calculate chroma histogram and difference with previous frame or field.
+        for (int j = 0; j < s->chromah; j++) {
+            for (int i = 0; i < s->chromaw; i++) {
+                const int yuvu = in->data[1][cw+i];
+                const int yuvv = in->data[2][cw+i];
 
-            masku |= yuvu;
-            maskv |= yuvv;
-            histu[yuvu]++;
-            difu += abs(yuvu - prev->data[1][cpw+i]);
-            histv[yuvv]++;
-            difv += abs(yuvv - prev->data[2][cpw+i]);
+                masku |= yuvu;
+                maskv |= yuvv;
+                histu[yuvu]++;
+                difu += abs(yuvu - prev->data[1][cpw+i]);
+                histv[yuvv]++;
+                difv += abs(yuvv - prev->data[2][cpw+i]);
 
-            histsat[p_sat[i]]++;
-            histhue[((int16_t*)p_hue)[i]]++;
+                histsat[p_sat[i]]++;
+                histhue[((int16_t*)p_hue)[i]]++;
+            }
+            cw  += in->linesize[1];
+            cpw += prev->linesize[1];
+            p_sat += lsz_sat;
+            p_hue += lsz_hue;
         }
-        cw  += in->linesize[1];
-        cpw += prev->linesize[1];
-        p_sat += lsz_sat;
-        p_hue += lsz_hue;
-    }
     }
 
     for (fil = 0; fil < FILT_NUMB; fil ++) {
@@ -697,7 +696,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             memset(s->jobs_rets, 0, s->nb_jobs * sizeof(*s->jobs_rets));
             ff_filter_execute(ctx, hbd ? filters_def[fil].process16 : filters_def[fil].process8,
                               &td, s->jobs_rets, s->nb_jobs);
-            for (i = 0; i < s->nb_jobs; i++)
+            for (int i = 0; i < s->nb_jobs; i++)
                 filtot[fil] += s->jobs_rets[i];
         }
     }
