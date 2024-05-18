@@ -712,10 +712,82 @@ static void flv_write_aac_header(AVFormatContext* s, AVCodecParameters* par)
     avio_write(pb, par->extradata, par->extradata_size);
 }
 
+static void flv_write_multichannel_body(AVFormatContext* s, AVCodecParameters* par)
+{
+    AVIOContext *pb = s->pb;
+
+    switch (par->ch_layout.order) {
+    case AV_CHANNEL_ORDER_NATIVE:
+        avio_w8(pb, AudioChannelOrderNative);
+        break;
+    case AV_CHANNEL_ORDER_CUSTOM:
+        avio_w8(pb, AudioChannelOrderCustom);
+        break;
+    default:
+        avio_w8(pb, AudioChannelOrderUnspecified);
+        break;
+    }
+
+    avio_w8(pb, par->ch_layout.nb_channels);
+
+    if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE) {
+        // The first 18 entries are identical between FFmpeg and flv
+        uint32_t mask = par->ch_layout.u.mask & 0x03FFFF;
+        // The remaining 6 flv entries are in the right order, but start at AV_CHAN_LOW_FREQUENCY_2
+        mask |= (par->ch_layout.u.mask >> (AV_CHAN_LOW_FREQUENCY_2 - 18)) & 0xFC0000;
+
+        avio_wb32(pb, mask);
+    } else if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM) {
+        for (int i = 0; i < par->ch_layout.nb_channels; i++) {
+            enum AVChannel id = par->ch_layout.u.map[i].id;
+            if (id >= AV_CHAN_FRONT_LEFT && id <= AV_CHAN_TOP_BACK_RIGHT) {
+                avio_w8(pb, id - AV_CHAN_FRONT_LEFT + 0);
+            } else if (id >= AV_CHAN_LOW_FREQUENCY_2 && id <= AV_CHAN_BOTTOM_FRONT_RIGHT) {
+                avio_w8(pb, id - AV_CHAN_LOW_FREQUENCY_2 + 18);
+            } else if (id == AV_CHAN_UNUSED) {
+                avio_w8(pb, 0xFE);
+            } else {
+                avio_w8(pb, 0xFF); // unknown
+            }
+        }
+    }
+}
+
+static int flv_get_multichannel_body_size(AVCodecParameters* par)
+{
+    int res = 2;
+
+    if (par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE)
+        res += 4;
+    else if (par->ch_layout.order == AV_CHANNEL_ORDER_CUSTOM)
+        res += par->ch_layout.nb_channels;
+
+    return res;
+}
+
+static void flv_write_multichannel_header(AVFormatContext* s, AVCodecParameters* par, int64_t ts)
+{
+    AVIOContext *pb = s->pb;
+    int data_size = flv_get_multichannel_body_size(par);
+
+    avio_w8(pb, FLV_TAG_TYPE_AUDIO);
+    avio_wb24(pb, data_size + 5); // size
+    put_timestamp(pb, ts);
+    avio_wb24(pb, 0); // streamid
+
+    avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeMultichannelConfig);
+    write_codec_fourcc(pb, par->codec_id);
+
+    flv_write_multichannel_body(s, par);
+
+    avio_wb32(pb, data_size + 5 + 11); // previous tag size
+}
+
 static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, int64_t ts, int stream_index) {
     int64_t data_size;
     AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
+    int extended_flv = 0;
 
     if (par->codec_id == AV_CODEC_ID_AAC || par->codec_id == AV_CODEC_ID_H264
             || par->codec_id == AV_CODEC_ID_MPEG4 || par->codec_id == AV_CODEC_ID_HEVC
@@ -731,10 +803,10 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
         avio_wb24(pb, 0); // streamid
         pos = avio_tell(pb);
         if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
-            int extended_flv = par->codec_id == AV_CODEC_ID_OPUS
-                                    || par->codec_id == AV_CODEC_ID_FLAC
-                                    || par->codec_id == AV_CODEC_ID_AC3
-                                    || par->codec_id == AV_CODEC_ID_EAC3;
+            extended_flv = par->codec_id == AV_CODEC_ID_OPUS
+                                || par->codec_id == AV_CODEC_ID_FLAC
+                                || par->codec_id == AV_CODEC_ID_AC3
+                                || par->codec_id == AV_CODEC_ID_EAC3;
 
             if (extended_flv) {
                 avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeSequenceStart);
@@ -755,10 +827,10 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
         } else {
             int track_idx = flv->video_track_idx_map[stream_index];
             // If video stream has track_idx > 0 we need to send H.264 as extended video packet
-            int extended_flv = (par->codec_id == AV_CODEC_ID_H264 && track_idx) ||
-                                par->codec_id == AV_CODEC_ID_HEVC ||
-                                par->codec_id == AV_CODEC_ID_AV1 ||
-                                par->codec_id == AV_CODEC_ID_VP9;
+            extended_flv = (par->codec_id == AV_CODEC_ID_H264 && track_idx) ||
+                            par->codec_id == AV_CODEC_ID_HEVC ||
+                            par->codec_id == AV_CODEC_ID_AV1 ||
+                            par->codec_id == AV_CODEC_ID_VP9;
 
             if (extended_flv) {
                 if (track_idx) {
@@ -793,6 +865,11 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
         avio_skip(pb, data_size + 10 - 3);
         avio_wb32(pb, data_size + 11); // previous tag size
     }
+
+    if (par->codec_type == AVMEDIA_TYPE_AUDIO && (extended_flv ||
+        (av_channel_layout_compare(&par->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO) == 1 &&
+         av_channel_layout_compare(&par->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO) == 1)))
+        flv_write_multichannel_header(s, par, ts);
 }
 
 static int flv_append_keyframe_info(AVFormatContext *s, FLVContext *flv, double ts, int64_t pos)
