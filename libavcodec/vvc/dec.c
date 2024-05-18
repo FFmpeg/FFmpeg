@@ -514,6 +514,7 @@ static int slice_init_entry_points(SliceContext *sc,
     int nb_eps                = sh->r->num_entry_points + 1;
     int ctu_addr              = 0;
     GetBitContext gb;
+    int ret;
 
     if (sc->nb_eps != nb_eps) {
         eps_free(sc);
@@ -523,7 +524,9 @@ static int slice_init_entry_points(SliceContext *sc,
         sc->nb_eps = nb_eps;
     }
 
-    init_get_bits8(&gb, slice->data, slice->data_size);
+    ret = init_get_bits8(&gb, slice->data, slice->data_size);
+    if (ret < 0)
+        return ret;
     for (int i = 0; i < sc->nb_eps; i++)
     {
         EntryPoint *ep = sc->eps + i;
