@@ -1338,12 +1338,26 @@ retry:
             pkt_type = flags & ~FLV_AUDIO_CODECID_MASK;
 
             if (pkt_type == AudioPacketTypeMultitrack) {
-                av_log(s, AV_LOG_ERROR, "Multitrack audio is unsupported!\n");
-                return AVERROR_PATCHWELCOME;
+                uint8_t types = avio_r8(s->pb);
+                int multitrack_type = types >> 4;
+                pkt_type = types & 0xF;
+
+                if (multitrack_type != MultitrackTypeOneTrack) {
+                    av_log(s, AV_LOG_ERROR, "Audio multitrack types other than MultitrackTypeOneTrack are unsupported!\n");
+                    return AVERROR_PATCHWELCOME;
+                }
+
+                multitrack = 1;
+                size--;
             }
 
             codec_id = avio_rb32(s->pb);
             size -= 4;
+
+            if (multitrack) {
+                track_idx = avio_r8(s->pb);
+                size--;
+            }
         }
     } else if (type == FLV_TAG_TYPE_VIDEO) {
         stream_type = FLV_STREAM_TYPE_VIDEO;
@@ -1440,7 +1454,8 @@ skip:
         st = s->streams[i];
         if (stream_type == FLV_STREAM_TYPE_AUDIO) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags, codec_id)))
+                (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags, codec_id)) &&
+                st->id == track_idx)
                 break;
         } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
             if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
