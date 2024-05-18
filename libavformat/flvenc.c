@@ -493,6 +493,45 @@ static void write_metadata(AVFormatContext *s, unsigned int ts)
     avio_wb32(pb, flv->metadata_totalsize + 11);
 }
 
+static void write_codec_fourcc(AVIOContext *pb, enum AVCodecID codec_id)
+{
+    switch (codec_id) {
+    case AV_CODEC_ID_AAC:
+        avio_write(pb, "mp4a", 4);
+        return;
+    case AV_CODEC_ID_OPUS:
+        avio_write(pb, "Opus", 4);
+        return;
+    case AV_CODEC_ID_FLAC:
+        avio_write(pb, "fLaC", 4);
+        return;
+    case AV_CODEC_ID_MP3:
+        avio_write(pb, ".mp3", 4);
+        return;
+    case AV_CODEC_ID_AC3:
+        avio_write(pb, "ac-3", 4);
+        return;
+    case AV_CODEC_ID_EAC3:
+        avio_write(pb, "ec-3", 4);
+        return;
+    case AV_CODEC_ID_H264:
+        avio_write(pb, "avc1", 4);
+        return;
+    case AV_CODEC_ID_HEVC:
+        avio_write(pb, "hvc1", 4);
+        return;
+    case AV_CODEC_ID_AV1:
+        avio_write(pb, "av01", 4);
+        return;
+    case AV_CODEC_ID_VP9:
+        avio_write(pb, "vp09", 4);
+        return;
+    default:
+        av_log(NULL, AV_LOG_ERROR, "Invalid codec FourCC write requested.\n");
+        av_assert0(0);
+    }
+}
+
 static void flv_write_metadata_packet(AVFormatContext *s, AVCodecParameters *par, unsigned int ts, int stream_idx)
 {
     AVIOContext *pb = s->pb;
@@ -529,13 +568,8 @@ static void flv_write_metadata_packet(AVFormatContext *s, AVCodecParameters *par
         put_timestamp(pb, ts); //ts = pkt->dts, gen
         avio_wb24(pb, flv->reserved);
 
-        if (par->codec_id == AV_CODEC_ID_HEVC) {
-            avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeMetadata| FLV_FRAME_VIDEO_INFO_CMD); // ExVideoTagHeader mode with PacketTypeMetadata
-            avio_write(pb, "hvc1", 4);
-        } else if (par->codec_id == AV_CODEC_ID_AV1 || par->codec_id == AV_CODEC_ID_VP9) {
-            avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeMetadata| FLV_FRAME_VIDEO_INFO_CMD);
-            avio_write(pb, par->codec_id == AV_CODEC_ID_AV1 ? "av01" : "vp09", 4);
-        }
+        avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeMetadata | FLV_FRAME_VIDEO_INFO_CMD); // ExVideoTagHeader mode with PacketTypeMetadata
+        write_codec_fourcc(pb, par->codec_id);
 
         avio_w8(pb, AMF_DATA_TYPE_STRING);
         put_amf_string(pb, "colorInfo");
@@ -704,24 +738,14 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
 
             if (extended_flv) {
                 avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeSequenceStart);
+                write_codec_fourcc(pb, par->codec_id);
 
                 if (par->codec_id == AV_CODEC_ID_AAC) {
-                    avio_write(pb, "mp4a", 4);
                     flv_write_aac_header(s, par);
-                } else if (par->codec_id == AV_CODEC_ID_OPUS) {
-                    avio_write(pb, "Opus", 4);
+                } else if (par->codec_id == AV_CODEC_ID_OPUS || par->codec_id == AV_CODEC_ID_FLAC) {
                     av_assert0(par->extradata_size);
                     avio_write(pb, par->extradata, par->extradata_size);
-                } else if (par->codec_id == AV_CODEC_ID_FLAC) {
-                    avio_write(pb, "fLaC", 4);
-                    av_assert0(par->extradata_size);
-                    avio_write(pb, par->extradata, par->extradata_size);
-                } else if (par->codec_id == AV_CODEC_ID_MP3)
-                    avio_write(pb, ".mp3", 4);
-                else if (par->codec_id == AV_CODEC_ID_AC3)
-                    avio_write(pb, "ac-3", 4);
-                else if (par->codec_id == AV_CODEC_ID_EAC3)
-                    avio_write(pb, "ec-3", 4);
+                }
             } else if (par->codec_id == AV_CODEC_ID_AAC) {
                 avio_w8(pb, get_audio_flags(s, par));
                 avio_w8(pb, 0); // AAC sequence header
@@ -744,14 +768,7 @@ static void flv_write_codec_header(AVFormatContext* s, AVCodecParameters* par, i
                     avio_w8(pb, FLV_IS_EX_HEADER | PacketTypeSequenceStart | FLV_FRAME_KEY);
                 }
 
-                if (par->codec_id == AV_CODEC_ID_H264)
-                    avio_write(pb, "avc1", 4);
-                else if (par->codec_id == AV_CODEC_ID_HEVC)
-                    avio_write(pb, "hvc1", 4);
-                else if (par->codec_id == AV_CODEC_ID_AV1)
-                    avio_write(pb, "av01", 4);
-                else if (par->codec_id == AV_CODEC_ID_VP9)
-                    avio_write(pb, "vp09", 4);
+                write_codec_fourcc(pb, par->codec_id);
 
                 if (track_idx)
                     avio_w8(pb, track_idx);
@@ -1243,14 +1260,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_w8(pb, FLV_IS_EX_HEADER | pkttype | frametype);
             }
 
-            if (par->codec_id == AV_CODEC_ID_H264)
-                avio_write(pb, "avc1", 4);
-            else if (par->codec_id == AV_CODEC_ID_HEVC)
-                avio_write(pb, "hvc1", 4);
-            else if (par->codec_id == AV_CODEC_ID_AV1)
-                avio_write(pb, "av01", 4);
-            else if (par->codec_id == AV_CODEC_ID_VP9)
-                avio_write(pb, "vp09", 4);
+            write_codec_fourcc(pb, par->codec_id);
 
             if (track_idx)
                 avio_w8(pb, track_idx);
@@ -1258,19 +1268,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_wb24(pb, pkt->pts - pkt->dts);
         } else if (extended_audio) {
             avio_w8(pb, FLV_CODECID_EX_HEADER | AudioPacketTypeCodedFrames);
-
-            if (par->codec_id == AV_CODEC_ID_AAC)
-                avio_write(pb, "mp4a", 4);
-            else if (par->codec_id == AV_CODEC_ID_OPUS)
-                avio_write(pb, "Opus", 4);
-            else if (par->codec_id == AV_CODEC_ID_FLAC)
-                avio_write(pb, "fLaC", 4);
-            else if (par->codec_id == AV_CODEC_ID_MP3)
-                avio_write(pb, ".mp3", 4);
-            else if (par->codec_id == AV_CODEC_ID_AC3)
-                avio_write(pb, "ac-3", 4);
-            else if (par->codec_id == AV_CODEC_ID_EAC3)
-                avio_write(pb, "ec-3", 4);
+            write_codec_fourcc(pb, par->codec_id);
         } else {
             av_assert1(flags >= 0);
             avio_w8(pb, flags);
