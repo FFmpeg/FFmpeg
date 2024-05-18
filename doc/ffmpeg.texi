@@ -1719,12 +1719,21 @@ This is an alias for @code{-filter:a}, see the @ref{filter_option,,-filter optio
 @table @option
 @item -atag @var{fourcc/tag} (@emph{output})
 Force audio tag/fourcc. This is an alias for @code{-tag:a}.
+@item -ch_layout[:@var{stream_specifier}] @var{layout} (@emph{input/output,per-stream})
+Alias for @code{-channel_layout}.
+@item -channel_layout[:@var{stream_specifier}] @var{layout} (@emph{input/output,per-stream})
+Set the audio channel layout. For output streams it is set by default to the
+input channel layout. For input streams it overrides the channel layout of the
+input. Not all decoders respect the overridden channel layout. This option
+also sets the channel layout for audio grabbing devices and raw demuxers
+and is mapped to the corresponding demuxer option.
 @item -guess_layout_max @var{channels} (@emph{input,per-stream})
 If some input channel layout is not known, try to guess only if it
 corresponds to at most the specified number of channels. For example, 2
 tells to @command{ffmpeg} to recognize 1 channel as mono and 2 channels as
 stereo but not 6 channels as 5.1. The default is to always try to guess. Use
-0 to disable all guessing.
+0 to disable all guessing. Using the @code{-channel_layout} option to
+explicitly specify an input layout also disables guessing.
 @end table
 
 @section Subtitle options
