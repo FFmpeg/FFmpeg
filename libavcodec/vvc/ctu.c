@@ -1080,12 +1080,10 @@ static PredMode pred_mode_decode(VVCLocalContext *lc,
         }
         if (pred_mode_ibc_flag)
             pred_mode = MODE_IBC;
+        return pred_mode;
     } else {
-        pred_mode_flag = is_4x4 || mode_type == MODE_TYPE_INTRA ||
-            mode_type != MODE_TYPE_INTER || IS_I(rsh);
-        pred_mode = pred_mode_flag ? MODE_INTRA : MODE_INTER;
+        return MODE_INTRA;
     }
-    return pred_mode;
 }
 
 static void sbt_info(VVCLocalContext *lc, const VVCSPS *sps)
