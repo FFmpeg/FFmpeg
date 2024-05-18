@@ -224,8 +224,6 @@ static int vvcc_parse_vps(GetBitContext *gb,
     unsigned int vps_max_sublayers_minus1;
     unsigned int vps_default_ptl_dpb_hrd_max_tid_flag;
     unsigned int vps_all_independent_layers_flag;
-    unsigned int vps_each_layer_is_an_ols_flag;
-    unsigned int vps_ols_mode_idc;
 
     unsigned int vps_pt_present_flag[VVC_MAX_PTLS];
     unsigned int vps_ptl_max_tid[VVC_MAX_PTLS];
@@ -274,11 +272,13 @@ static int vvcc_parse_vps(GetBitContext *gb,
     }
 
     if (vps_max_layers_minus1 > 0) {
+        unsigned int vps_each_layer_is_an_ols_flag;
         if (vps_all_independent_layers_flag)
             vps_each_layer_is_an_ols_flag = get_bits1(gb);
         else
             vps_each_layer_is_an_ols_flag = 0;
         if (!vps_each_layer_is_an_ols_flag) {
+            unsigned int vps_ols_mode_idc;
             if (!vps_all_independent_layers_flag)
                 vps_ols_mode_idc = get_bits(gb, 2);
             else
@@ -293,8 +293,6 @@ static int vvcc_parse_vps(GetBitContext *gb,
             }
         }
         vps_num_ptls_minus1 = get_bits(gb, 8);
-    } else {
-        vps_each_layer_is_an_ols_flag = 0;
     }
 
     for (int i = 0; i <= vps_num_ptls_minus1; i++) {
