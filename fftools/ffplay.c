@@ -2858,6 +2858,7 @@ static int read_thread(void *arg)
     }
     if (scan_all_pmts_set)
         av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
+    remove_avoptions(&format_opts, codec_opts);
 
     ret = check_avoptions(format_opts);
     if (ret < 0)
