@@ -1878,8 +1878,6 @@ static int hls_coding_unit(VVCLocalContext *lc, int x0, int y0, int cb_width, in
         cu->lfnst_idx = lfnst_idx_decode(lc);
         cu->mts_idx = mts_idx_decode(lc);
         set_qp_c(lc);
-        if (ret < 0)
-            return ret;
     } else {
         ret = skipped_transform_tree_unit(lc);
         if (ret < 0)
