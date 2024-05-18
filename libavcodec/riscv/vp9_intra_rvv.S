@@ -206,7 +206,7 @@ func ff_tm_32x32_rvv, zve32x
         .endr
 
         vsetvli      zero, zero, e8, m2, ta, ma
-        .irp n 0, 4, 8, 12, 16, 20, 24, 28
+        .irp n, 0, 4, 8, 12, 16, 20, 24, 28
         vnclipu.wi   v\n, v\n, 0
         vse8.v       v\n, (a0)
         add          a0, a0, a1
