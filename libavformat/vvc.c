@@ -565,6 +565,8 @@ static void vvcc_init(VVCDecoderConfigurationRecord *vvcc)
 {
     memset(vvcc, 0, sizeof(VVCDecoderConfigurationRecord));
     vvcc->lengthSizeMinusOne = 3;       // 4 bytes
+    vvcc->ptl.ptl_frame_only_constraint_flag =
+    vvcc->ptl.ptl_multilayer_enabled_flag = 1;
 }
 
 static void vvcc_close(VVCDecoderConfigurationRecord *vvcc)
