@@ -473,26 +473,6 @@ const FrameData *packet_data_c(AVPacket *pkt)
     return ret < 0 ? NULL : (const FrameData*)pkt->opaque_ref->data;
 }
 
-void remove_avoptions(AVDictionary **a, AVDictionary *b)
-{
-    const AVDictionaryEntry *t = NULL;
-
-    while ((t = av_dict_iterate(b, t))) {
-        av_dict_set(a, t->key, NULL, AV_DICT_MATCH_CASE);
-    }
-}
-
-int check_avoptions(AVDictionary *m)
-{
-    const AVDictionaryEntry *t = av_dict_iterate(m, NULL);
-    if (t) {
-        av_log(NULL, AV_LOG_FATAL, "Option %s not found.\n", t->key);
-        return AVERROR_OPTION_NOT_FOUND;
-    }
-
-    return 0;
-}
-
 void update_benchmark(const char *fmt, ...)
 {
     if (do_benchmark_all) {

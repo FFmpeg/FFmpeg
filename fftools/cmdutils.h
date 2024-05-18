@@ -483,4 +483,10 @@ double get_rotation(const int32_t *displaymatrix);
 /* read file contents into a string */
 char *file_read(const char *filename);
 
+/* Remove keys in dictionary b from dictionary a */
+void remove_avoptions(AVDictionary **a, AVDictionary *b);
+
+/* Check if any keys exist in dictionary m */
+int check_avoptions(AVDictionary *m);
+
 #endif /* FFTOOLS_CMDUTILS_H */

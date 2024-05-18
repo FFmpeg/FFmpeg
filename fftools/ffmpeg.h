@@ -710,9 +710,6 @@ void term_exit(void);
 
 void show_usage(void);
 
-void remove_avoptions(AVDictionary **a, AVDictionary *b);
-int check_avoptions(AVDictionary *m);
-
 int assert_file_overwrite(const char *filename);
 AVDictionary *strip_specifiers(const AVDictionary *dict);
 int find_codec(void *logctx, const char *name,
