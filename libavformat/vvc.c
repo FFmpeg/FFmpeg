@@ -191,15 +191,13 @@ static void vvcc_parse_ptl(GetBitContext *gb,
             general_ptl.num_bytes_constraint_info = j;
             skip_bits(gb, gci_num_reserved_bits);
         }
-        while (gb->index % 8 != 0)
-            skip_bits1(gb);
+        align_get_bits(gb);
     }
 
     for (int i = max_sub_layers_minus1 - 1; i >= 0; i--)
         general_ptl.ptl_sublayer_level_present_flag[i] = get_bits1(gb);
 
-    while (gb->index % 8 != 0)
-        skip_bits1(gb);
+    align_get_bits(gb);
 
     for (int i = max_sub_layers_minus1 - 1; i >= 0; i--) {
         if (general_ptl.ptl_sublayer_level_present_flag[i])
@@ -307,8 +305,7 @@ static int vvcc_parse_vps(GetBitContext *gb,
             vps_ptl_max_tid[i] = vps_max_sublayers_minus1;
     }
 
-    while (gb->index % 8 != 0)
-        skip_bits1(gb);
+    align_get_bits(gb);
 
     for (int i = 0; i <= vps_num_ptls_minus1; i++)
         vvcc_parse_ptl(gb, vvcc, vps_pt_present_flag[i], vps_ptl_max_tid[i]);
