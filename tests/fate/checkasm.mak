@@ -14,6 +14,7 @@ FATE_CHECKASM = fate-checkasm-aacencdsp                                 \
                 fate-checkasm-float_dsp                                 \
                 fate-checkasm-fmtconvert                                \
                 fate-checkasm-g722dsp                                   \
+                fate-checkasm-h263dsp                                   \
                 fate-checkasm-h264chroma                                \
                 fate-checkasm-h264dsp                                   \
                 fate-checkasm-h264pred                                  \

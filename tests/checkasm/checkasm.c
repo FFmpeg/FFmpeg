@@ -121,6 +121,9 @@ static const struct {
     #if CONFIG_G722DSP
         { "g722dsp", checkasm_check_g722dsp },
     #endif
+    #if CONFIG_H263DSP
+        { "h263dsp", checkasm_check_h263dsp },
+    #endif
     #if CONFIG_H264CHROMA
         { "h264chroma", checkasm_check_h264chroma },
     #endif
