@@ -115,7 +115,7 @@ Objective-C where required for interacting with macOS-specific interfaces.
 
 @section Code formatting conventions
 
-There are the following guidelines regarding the indentation in files:
+There are the following guidelines regarding the code style in files:
 
 @itemize @bullet
 @item
@@ -134,6 +134,105 @@ and only if this improves readability.
 K&R coding style is used.
 @end itemize
 The presentation is one inspired by 'indent -i4 -kr -nut'.
+
+@subsection Examples
+Some notable examples to illustrate common code style in FFmpeg:
+
+@itemize @bullet
+
+@item
+Space around assignments and after
+@code{if}/@code{do}/@code{while}/@code{for} keywords:
+
+@example c, good
+// Good
+if (condition)
+    av_foo();
+@end example
+
+@example c, good
+// Good
+for (size_t i = 0; i < len; i++)
+    av_bar(i);
+@end example
+
+@example c, good
+// Good
+size_t size = 0;
+@end example
+
+However no spaces between the parentheses and condition, unless it helps
+readability of complex conditions, so the following should not be done:
+
+@example c, bad
+// Bad style
+if ( condition )
+    av_foo();
+@end example
+
+@item
+No unnecessary parentheses, unless it helps readability:
+
+@example c, good
+// Good
+int fields = ilace ? 2 : 1;
+@end example
+
+@item
+No braces around single-line blocks:
+
+@example c, good
+// Good
+if (bits_pixel == 24)
+    avctx->pix_fmt = AV_PIX_FMT_BGR24;
+else if (bits_pixel == 8)
+    avctx->pix_fmt = AV_PIX_FMT_GRAY8;
+else @{
+    av_log(avctx, AV_LOG_ERROR, "Invalid pixel format.\n");
+    return AVERROR_INVALIDDATA;
+@}
+@end example
+
+@item
+Avoid assignments in conditions where it makes sense:
+
+@example c, good
+// Good
+video_enc->chroma_intra_matrix = av_mallocz(sizeof(*video_enc->chroma_intra_matrix) * 64)
+if (!video_enc->chroma_intra_matrix)
+    return AVERROR(ENOMEM);
+@end example
+
+@example c, bad
+// Bad style
+if (!(video_enc->chroma_intra_matrix = av_mallocz(sizeof(*video_enc->chroma_intra_matrix) * 64)))
+    return AVERROR(ENOMEM);
+@end example
+
+@example c, good
+// Ok
+while ((entry = av_dict_iterate(options, entry)))
+    av_log(ctx, AV_LOG_INFO, "Item '%s': '%s'\n", entry->key, entry->value);
+@end example
+
+@item
+When declaring a pointer variable, the @code{*} goes with the variable not the type:
+
+@example c, good
+// Good
+AVStream *stream;
+@end example
+
+@example c, bad
+// Bad style
+AVStream* stream;
+@end example
+
+@end itemize
+
+If you work on a file that does not follow these guidelines consistently,
+change the parts that you are editing to follow these guidelines but do
+not make unrelated changes in the file to make it conform to these.
 
 @subsection Vim configuration
 In order to configure Vim to follow FFmpeg formatting conventions, paste
