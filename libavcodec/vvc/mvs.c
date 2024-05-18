@@ -412,12 +412,11 @@ void ff_vvc_store_sb_mvs(const VVCLocalContext *lc, PredictionUnit *pu)
     const int sbw = cu->cb_width / mi->num_sb_x;
     const int sbh = cu->cb_height / mi->num_sb_y;
     SubblockParams params[2];
-    MvField mvf;
+    MvField mvf = {0};
 
     mvf.pred_flag = mi->pred_flag;
     mvf.bcw_idx = mi->bcw_idx;
     mvf.hpel_if_idx = mi->hpel_if_idx;
-    mvf.ciip_flag = 0;
     for (int i = 0; i < 2; i++) {
         const PredFlag mask = i + 1;
         if (mi->pred_flag & mask) {
@@ -505,12 +504,11 @@ void ff_vvc_store_mvf(const VVCLocalContext *lc, const MvField *mvf)
 void ff_vvc_store_mv(const VVCLocalContext *lc, const MotionInfo *mi)
 {
     const CodingUnit *cu = lc->cu;
-    MvField mvf;
+    MvField mvf = {0};
 
     mvf.hpel_if_idx = mi->hpel_if_idx;
     mvf.bcw_idx = mi->bcw_idx;
     mvf.pred_flag = mi->pred_flag;
-    mvf.ciip_flag = 0;
 
     for (int i = 0; i < 2; i++) {
         const PredFlag mask = i + 1;
