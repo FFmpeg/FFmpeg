@@ -720,40 +720,40 @@ static int filter_frame8(AVFilterLink *link, AVFrame *in)
     av_dict_set(&out->metadata, "lavfi.signalstats." key, metabuf, 0);   \
 } while (0)
 
-    SET_META("YMIN",    "%d", miny);
-    SET_META("YLOW",    "%d", lowy);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YMIN", miny, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YLOW", lowy, 0);
     SET_META("YAVG",    "%g", 1.0 * toty / s->fs);
-    SET_META("YHIGH",   "%d", highy);
-    SET_META("YMAX",    "%d", maxy);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YHIGH", highy, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YMAX", maxy, 0);
 
-    SET_META("UMIN",    "%d", minu);
-    SET_META("ULOW",    "%d", lowu);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UMIN", minu, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.ULOW", lowu, 0);
     SET_META("UAVG",    "%g", 1.0 * totu / s->cfs);
-    SET_META("UHIGH",   "%d", highu);
-    SET_META("UMAX",    "%d", maxu);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UHIGH", highu, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UMAX", maxu, 0);
 
-    SET_META("VMIN",    "%d", minv);
-    SET_META("VLOW",    "%d", lowv);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VMIN", minv, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VLOW", lowv, 0);
     SET_META("VAVG",    "%g", 1.0 * totv / s->cfs);
-    SET_META("VHIGH",   "%d", highv);
-    SET_META("VMAX",    "%d", maxv);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VHIGH", highv, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VMAX", maxv, 0);
 
-    SET_META("SATMIN",  "%d", minsat);
-    SET_META("SATLOW",  "%d", lowsat);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATMIN", minsat, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATLOW", lowsat, 0);
     SET_META("SATAVG",  "%g", 1.0 * totsat / s->cfs);
-    SET_META("SATHIGH", "%d", highsat);
-    SET_META("SATMAX",  "%d", maxsat);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATHIGH", highsat, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATMAX", maxsat, 0);
 
-    SET_META("HUEMED",  "%d", medhue);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.HUEMED", medhue, 0);
     SET_META("HUEAVG",  "%g", 1.0 * tothue / s->cfs);
 
     SET_META("YDIF",    "%g", 1.0 * dify / s->fs);
     SET_META("UDIF",    "%g", 1.0 * difu / s->cfs);
     SET_META("VDIF",    "%g", 1.0 * difv / s->cfs);
 
-    SET_META("YBITDEPTH", "%d", compute_bit_depth(masky));
-    SET_META("UBITDEPTH", "%d", compute_bit_depth(masku));
-    SET_META("VBITDEPTH", "%d", compute_bit_depth(maskv));
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YBITDEPTH", compute_bit_depth(masky), 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UBITDEPTH", compute_bit_depth(masku), 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VBITDEPTH", compute_bit_depth(maskv), 0);
 
     for (fil = 0; fil < FILT_NUMB; fil ++) {
         if (s->filters & 1<<fil) {
@@ -946,40 +946,40 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
     av_frame_free(&s->frame_prev);
     s->frame_prev = av_frame_clone(in);
 
-    SET_META("YMIN",    "%d", miny);
-    SET_META("YLOW",    "%d", lowy);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YMIN", miny, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YLOW", lowy, 0);
     SET_META("YAVG",    "%g", 1.0 * toty / s->fs);
-    SET_META("YHIGH",   "%d", highy);
-    SET_META("YMAX",    "%d", maxy);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YHIGH", highy, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YMAX", maxy, 0);
 
-    SET_META("UMIN",    "%d", minu);
-    SET_META("ULOW",    "%d", lowu);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UMIN", minu, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.ULOW", lowu, 0);
     SET_META("UAVG",    "%g", 1.0 * totu / s->cfs);
-    SET_META("UHIGH",   "%d", highu);
-    SET_META("UMAX",    "%d", maxu);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UHIGH", highu, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UMAX", maxu, 0);
 
-    SET_META("VMIN",    "%d", minv);
-    SET_META("VLOW",    "%d", lowv);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VMIN", minv, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VLOW", lowv, 0);
     SET_META("VAVG",    "%g", 1.0 * totv / s->cfs);
-    SET_META("VHIGH",   "%d", highv);
-    SET_META("VMAX",    "%d", maxv);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VHIGH", highv, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VMAX", maxv, 0);
 
-    SET_META("SATMIN",  "%d", minsat);
-    SET_META("SATLOW",  "%d", lowsat);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATMIN", minsat, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATLOW", lowsat, 0);
     SET_META("SATAVG",  "%g", 1.0 * totsat / s->cfs);
-    SET_META("SATHIGH", "%d", highsat);
-    SET_META("SATMAX",  "%d", maxsat);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATHIGH", highsat, 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.SATMAX", maxsat, 0);
 
-    SET_META("HUEMED",  "%d", medhue);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.HUEMED", medhue, 0);
     SET_META("HUEAVG",  "%g", 1.0 * tothue / s->cfs);
 
     SET_META("YDIF",    "%g", 1.0 * dify / s->fs);
     SET_META("UDIF",    "%g", 1.0 * difu / s->cfs);
     SET_META("VDIF",    "%g", 1.0 * difv / s->cfs);
 
-    SET_META("YBITDEPTH", "%d", compute_bit_depth(masky));
-    SET_META("UBITDEPTH", "%d", compute_bit_depth(masku));
-    SET_META("VBITDEPTH", "%d", compute_bit_depth(maskv));
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.YBITDEPTH", compute_bit_depth(masky), 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.UBITDEPTH", compute_bit_depth(masku), 0);
+    av_dict_set_int(&out->metadata, "lavfi.signalstats.VBITDEPTH", compute_bit_depth(maskv), 0);
 
     for (fil = 0; fil < FILT_NUMB; fil ++) {
         if (s->filters & 1<<fil) {
