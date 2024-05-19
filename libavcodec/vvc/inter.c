@@ -151,6 +151,9 @@ static void emulated_edge_bilinear(const VVCLocalContext *lc, uint8_t *dst, cons
 #define EMULATED_EDGE_CHROMA(dst, src, src_stride, x_off, y_off)                    \
     emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, 1)
 
+#define MC_EMULATED_EDGE_DMVR(dst, src, src_stride, x_sb, y_sb, x_off, y_off)                               \
+    emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, is_chroma)
+
 #define EMULATED_EDGE_DMVR_LUMA(dst, src, src_stride, x_sb, y_sb, x_off, y_off)     \
     emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, 0)
 
@@ -269,85 +272,48 @@ static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride
     }
 }
 
-static void luma_mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
-    const AVFrame *ref0, const Mv *mv0, const int x_off, const int y_off, const int block_w, const int block_h,
-    const AVFrame *ref1, const Mv *mv1, const MvField *mvf, const int hf_idx, const int vf_idx,
-    const MvField *orig_mv, const int sb_bdof_flag)
+static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
+    const AVFrame *ref0, const AVFrame *ref1, const MvField *mvf, const MvField *orig_mv,
+    const int x_off, const int y_off, const int block_w, const int block_h, const int c_idx,
+    const int sb_bdof_flag, const int hf_idx, const int vf_idx)
 {
     const VVCFrameContext *fc   = lc->fc;
     const PredictionUnit *pu    = &lc->cu->pu;
+    const int hs                = fc->ps.sps->hshift[c_idx];
+    const int vs                = fc->ps.sps->vshift[c_idx];
     const int idx               = av_log2(block_w) - 1;
     const AVFrame *ref[]        = { ref0, ref1 };
     int16_t *tmp[]              = { lc->tmp + sb_bdof_flag * PROF_TEMP_OFFSET, lc->tmp1 + sb_bdof_flag * PROF_TEMP_OFFSET };
     int denom, w0, w1, o0, o1;
-    const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, LUMA, pu->dmvr_flag);
+    const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, pu->dmvr_flag);
+    const int is_chroma         = !!c_idx;
 
     for (int i = L0; i <= L1; i++) {
         const Mv *mv            = mvf->mv + i;
-        const int mx            = mv->x & 0xf;
-        const int my            = mv->y & 0xf;
-        const int ox            = x_off + (mv->x >> 4);
-        const int oy            = y_off + (mv->y >> 4);
-        ptrdiff_t src_stride    = ref[i]->linesize[0];
-        const uint8_t *src      = ref[i]->data[0] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
-        const int8_t *hf        = ff_vvc_inter_luma_filters[hf_idx][mx];
-        const int8_t *vf        = ff_vvc_inter_luma_filters[vf_idx][my];
-
-        if (pu->dmvr_flag) {
-            const int x_sb = x_off + (orig_mv->mv[i].x >> 4);
-            const int y_sb = y_off + (orig_mv->mv[i].y >> 4);
-
-            EMULATED_EDGE_DMVR_LUMA(lc->edge_emu_buffer, &src, &src_stride, x_sb, y_sb, ox, oy);
-        } else {
-            EMULATED_EDGE_LUMA(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
-        }
-        fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](tmp[i], src, src_stride, block_h, hf, vf, block_w);
-        if (sb_bdof_flag)
-            fc->vvcdsp.inter.bdof_fetch_samples(tmp[i], src, src_stride, mx, my, block_w, block_h);
-    }
-
-    if (sb_bdof_flag)
-        fc->vvcdsp.inter.apply_bdof(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
-    else if (weight_flag)
-        fc->vvcdsp.inter.w_avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h, denom, w0, w1, o0, o1);
-    else
-        fc->vvcdsp.inter.avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
-}
-
-static void chroma_mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
-    const AVFrame *ref0, const AVFrame *ref1, const int x_off, const int y_off,
-    const int block_w, const int block_h,  const MvField *mvf, const int c_idx,
-    const int hf_idx, const int vf_idx, const MvField *orig_mv, const int dmvr_flag, const int ciip_flag)
-{
-    const VVCFrameContext *fc   = lc->fc;
-    const int hs                = fc->ps.sps->hshift[1];
-    const int vs                = fc->ps.sps->vshift[1];
-    const int idx               = av_log2(block_w) - 1;
-    const AVFrame *ref[]        = { ref0, ref1 };
-    int16_t *tmp[]              = { lc->tmp, lc->tmp1 };
-    int denom, w0, w1, o0, o1;
-    const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, dmvr_flag);
-
-    for (int i = L0; i <= L1; i++) {
-        const Mv *mv            = mvf->mv + i;
-        const int mx            = av_mod_uintp2(mv->x, 4 + hs) << (1 - hs);
-        const int my            = av_mod_uintp2(mv->y, 4 + vs) << (1 - vs);
+        const int mx            = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
+        const int my            = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
         const int ox            = x_off + (mv->x >> (4 + hs));
         const int oy            = y_off + (mv->y >> (4 + vs));
         ptrdiff_t src_stride    = ref[i]->linesize[c_idx];
         const uint8_t *src      = ref[i]->data[c_idx] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
-        const int8_t *hf        = ff_vvc_inter_chroma_filters[hf_idx][mx];
-        const int8_t *vf        = ff_vvc_inter_chroma_filters[vf_idx][my];
-        if (dmvr_flag) {
+        const int8_t *hf        = INTER_FILTER(hf_idx, mx);
+        const int8_t *vf        = INTER_FILTER(vf_idx, my);
+
+        if (pu->dmvr_flag) {
             const int x_sb = x_off + (orig_mv->mv[i].x >> (4 + hs));
             const int y_sb = y_off + (orig_mv->mv[i].y >> (4 + vs));
-            EMULATED_EDGE_DMVR_CHROMA(lc->edge_emu_buffer,  &src, &src_stride, x_sb, y_sb, ox, oy);
+
+            MC_EMULATED_EDGE_DMVR(lc->edge_emu_buffer,  &src, &src_stride, x_sb, y_sb, ox, oy);
         } else {
-            EMULATED_EDGE_CHROMA(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
+            MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
         }
-        fc->vvcdsp.inter.put[CHROMA][idx][!!my][!!mx](tmp[i],  src, src_stride, block_h, hf, vf, block_w);
+        fc->vvcdsp.inter.put[is_chroma][idx][!!my][!!mx](tmp[i],  src, src_stride, block_h, hf, vf, block_w);
+        if (sb_bdof_flag)
+            fc->vvcdsp.inter.bdof_fetch_samples(tmp[i], src, src_stride, mx, my, block_w, block_h);
     }
-    if (weight_flag)
+    if (sb_bdof_flag)
+        fc->vvcdsp.inter.apply_bdof(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
+    else if (weight_flag)
         fc->vvcdsp.inter.w_avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h, denom, w0, w1, o0, o1);
     else
         fc->vvcdsp.inter.avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
@@ -546,9 +512,8 @@ static void pred_regular_luma(VVCLocalContext *lc, const int hf_idx, const int v
         mc_uni(lc, inter, inter_stride, ref[lx]->frame, mv,
             x0, y0, sbw, sbh, LUMA, hf_idx, vf_idx);
     } else {
-        luma_mc_bi(lc, inter, inter_stride, ref[0]->frame,
-            &mv->mv[0], x0, y0, sbw, sbh, ref[1]->frame, &mv->mv[1], mv,
-            hf_idx, vf_idx, orig_mv, sb_bdof_flag);
+        mc_bi(lc, inter, inter_stride, ref[0]->frame, ref[1]->frame, mv, orig_mv,
+            x0, y0, sbw, sbh, LUMA, sb_bdof_flag, hf_idx, vf_idx);
     }
 
     if (ciip_flag) {
@@ -605,11 +570,11 @@ static void pred_regular_chroma(VVCLocalContext *lc, const MvField *mv,
         if (!ref[0] || !ref[1])
             return;
 
-        chroma_mc_bi(lc, inter1, inter1_stride, ref[0]->frame, ref[1]->frame,
-            x0_c, y0_c, w_c, h_c, mv, CB, hf_idx, vf_idx, orig_mv, dmvr_flag, lc->cu->ciip_flag);
+        mc_bi(lc, inter1, inter1_stride, ref[0]->frame, ref[1]->frame, mv, orig_mv,
+            x0_c, y0_c, w_c, h_c, CB, 0, hf_idx, vf_idx);
 
-        chroma_mc_bi(lc, inter2, inter2_stride, ref[0]->frame, ref[1]->frame,
-            x0_c, y0_c, w_c, h_c, mv, CR, hf_idx, vf_idx, orig_mv, dmvr_flag, lc->cu->ciip_flag);
+        mc_bi(lc, inter2, inter2_stride, ref[0]->frame, ref[1]->frame, mv, orig_mv,
+            x0_c, y0_c, w_c, h_c, CR, 0, hf_idx, vf_idx);
 
     }
     if (do_ciip) {
