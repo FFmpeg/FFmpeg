@@ -31,33 +31,33 @@
 static const int bcw_w_lut[] = {4, 5, 3, 10, -2};
 
 static void subpic_offset(int *x_off, int *y_off,
-    const VVCSPS *sps, const VVCPPS *pps, const int subpic_idx, const int is_luma)
+    const VVCSPS *sps, const VVCPPS *pps, const int subpic_idx, const int is_chroma)
 {
-    *x_off -= pps->subpic_x[subpic_idx] >> sps->hshift[!is_luma];
-    *y_off -= pps->subpic_y[subpic_idx] >> sps->vshift[!is_luma];
+    *x_off -= pps->subpic_x[subpic_idx] >> sps->hshift[is_chroma];
+    *y_off -= pps->subpic_y[subpic_idx] >> sps->vshift[is_chroma];
 }
 
 static void subpic_width_height(int *pic_width, int *pic_height,
-    const VVCSPS *sps, const VVCPPS *pps, const int subpic_idx, const int is_luma)
+    const VVCSPS *sps, const VVCPPS *pps, const int subpic_idx, const int is_chroma)
 {
-    *pic_width  = pps->subpic_width[subpic_idx]  >> sps->hshift[!is_luma];
-    *pic_height = pps->subpic_height[subpic_idx] >> sps->vshift[!is_luma];
+    *pic_width  = pps->subpic_width[subpic_idx]  >> sps->hshift[is_chroma];
+    *pic_height = pps->subpic_height[subpic_idx] >> sps->vshift[is_chroma];
 }
 
 static int emulated_edge(const VVCLocalContext *lc, uint8_t *dst, const uint8_t **src, ptrdiff_t *src_stride,
-    int x_off, int y_off, const int block_w, const int block_h, const int is_luma)
+    int x_off, int y_off, const int block_w, const int block_h, const int is_chroma)
 {
     const VVCFrameContext *fc = lc->fc;
     const VVCSPS *sps         = fc->ps.sps;
     const VVCPPS *pps         = fc->ps.pps;
     const int subpic_idx      = lc->sc->sh.r->curr_subpic_idx;
-    const int extra_before    = is_luma ? LUMA_EXTRA_BEFORE : CHROMA_EXTRA_BEFORE;
-    const int extra_after     = is_luma ? LUMA_EXTRA_AFTER : CHROMA_EXTRA_AFTER;
-    const int extra           = is_luma ? LUMA_EXTRA : CHROMA_EXTRA;
+    const int extra_before    = is_chroma ? CHROMA_EXTRA_BEFORE : LUMA_EXTRA_BEFORE;
+    const int extra_after     = is_chroma ? CHROMA_EXTRA_AFTER : LUMA_EXTRA_AFTER;
+    const int extra           = is_chroma ? CHROMA_EXTRA : LUMA_EXTRA;
     int pic_width, pic_height;
 
-    subpic_offset(&x_off, &y_off, sps, pps, subpic_idx, is_luma);
-    subpic_width_height(&pic_width, &pic_height, sps, pps, subpic_idx, is_luma);
+    subpic_offset(&x_off, &y_off, sps, pps, subpic_idx, is_chroma);
+    subpic_width_height(&pic_width, &pic_height, sps, pps, subpic_idx, is_chroma);
 
     if (x_off < extra_before || y_off < extra_before ||
         x_off >= pic_width - block_w - extra_after ||
@@ -78,20 +78,20 @@ static int emulated_edge(const VVCLocalContext *lc, uint8_t *dst, const uint8_t 
 }
 
 static void emulated_edge_dmvr(const VVCLocalContext *lc, uint8_t *dst, const uint8_t **src, ptrdiff_t *src_stride,
-    int x_sb, int y_sb, int x_off,  int y_off, const int block_w, const int block_h, const int is_luma)
+    int x_sb, int y_sb, int x_off,  int y_off, const int block_w, const int block_h, const int is_chroma)
 {
     const VVCFrameContext *fc = lc->fc;
     const VVCSPS *sps         = fc->ps.sps;
     const VVCPPS *pps         = fc->ps.pps;
     const int subpic_idx      = lc->sc->sh.r->curr_subpic_idx;
-    const int extra_before    = is_luma ? LUMA_EXTRA_BEFORE : CHROMA_EXTRA_BEFORE;
-    const int extra_after     = is_luma ? LUMA_EXTRA_AFTER : CHROMA_EXTRA_AFTER;
-    const int extra           = is_luma ? LUMA_EXTRA : CHROMA_EXTRA;
+    const int extra_before    = is_chroma ? CHROMA_EXTRA_BEFORE : LUMA_EXTRA_BEFORE;
+    const int extra_after     = is_chroma ? CHROMA_EXTRA_AFTER : LUMA_EXTRA_AFTER;
+    const int extra           = is_chroma ? CHROMA_EXTRA : LUMA_EXTRA;
     int pic_width, pic_height;
 
-    subpic_offset(&x_off, &y_off, sps, pps, subpic_idx, is_luma);
-    subpic_offset(&x_sb, &y_sb, sps, pps, subpic_idx, is_luma);
-    subpic_width_height(&pic_width, &pic_height, sps, pps, subpic_idx, is_luma);
+    subpic_offset(&x_off, &y_off, sps, pps, subpic_idx, is_chroma);
+    subpic_offset(&x_sb, &y_sb, sps, pps, subpic_idx, is_chroma);
+    subpic_width_height(&pic_width, &pic_height, sps, pps, subpic_idx, is_chroma);
 
     if (x_off < extra_before || y_off < extra_before ||
         x_off >= pic_width - block_w - extra_after ||
@@ -124,8 +124,8 @@ static void emulated_edge_bilinear(const VVCLocalContext *lc, uint8_t *dst, cons
     const int subpic_idx      = lc->sc->sh.r->curr_subpic_idx;
     int pic_width, pic_height;
 
-    subpic_offset(&x_off, &y_off, sps, pps, subpic_idx, 1);
-    subpic_width_height(&pic_width, &pic_height, sps, pps, subpic_idx, 1);
+    subpic_offset(&x_off, &y_off, sps, pps, subpic_idx, 0);
+    subpic_width_height(&pic_width, &pic_height, sps, pps, subpic_idx, 0);
 
     if (x_off < BILINEAR_EXTRA_BEFORE || y_off < BILINEAR_EXTRA_BEFORE ||
         x_off >= pic_width - block_w - BILINEAR_EXTRA_AFTER ||
@@ -144,16 +144,16 @@ static void emulated_edge_bilinear(const VVCLocalContext *lc, uint8_t *dst, cons
 
 
 #define EMULATED_EDGE_LUMA(dst, src, src_stride, x_off, y_off)                      \
-    emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, 1)
-
-#define EMULATED_EDGE_CHROMA(dst, src, src_stride, x_off, y_off)                    \
     emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, 0)
 
+#define EMULATED_EDGE_CHROMA(dst, src, src_stride, x_off, y_off)                    \
+    emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, 1)
+
 #define EMULATED_EDGE_DMVR_LUMA(dst, src, src_stride, x_sb, y_sb, x_off, y_off)     \
-    emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, 1)
+    emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, 0)
 
 #define EMULATED_EDGE_DMVR_CHROMA(dst, src, src_stride, x_sb, y_sb, x_off, y_off)   \
-    emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, 0)
+    emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, 1)
 
 #define EMULATED_EDGE_BILINEAR(dst, src, src_stride, x_off, y_off)                  \
     emulated_edge_bilinear(lc, dst, src, src_stride, x_off, y_off, pred_w, pred_h)
