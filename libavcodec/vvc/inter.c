@@ -208,6 +208,7 @@ static void mc(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref, const Mv 
     int x_off, int y_off, const int block_w, const int block_h, const int c_idx)
 {
     const VVCFrameContext *fc   = lc->fc;
+    const PredictionUnit *pu    = &lc->cu->pu;
     const uint8_t *src          = ref->frame->data[c_idx];
     ptrdiff_t src_stride        = ref->frame->linesize[c_idx];
     const int is_chroma         = !!c_idx;
@@ -216,8 +217,9 @@ static void mc(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref, const Mv 
     const int idx               = av_log2(block_w) - 1;
     const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
     const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
-    const int8_t *hf            = INTER_FILTER(0, mx);
-    const int8_t *vf            = INTER_FILTER(0, my);
+    const int hpel_if_idx       = (is_chroma || pu->merge_gpm_flag) ? 0 : pu->mi.hpel_if_idx;
+    const int8_t *hf            = INTER_FILTER(hpel_if_idx, mx);
+    const int8_t *vf            = INTER_FILTER(hpel_if_idx, my);
 
     x_off += mv->x >> (4 + hs);
     y_off += mv->y >> (4 + vs);
@@ -229,9 +231,10 @@ static void mc(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref, const Mv 
 
 static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const VVCFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
-    const int c_idx, const int hf_idx, const int vf_idx)
+    const int c_idx)
 {
     const VVCFrameContext *fc   = lc->fc;
+    const PredictionUnit *pu    = &lc->cu->pu;
     const uint8_t *src          = ref->frame->data[c_idx];
     ptrdiff_t src_stride        = ref->frame->linesize[c_idx];
     const int lx                = mvf->pred_flag - PF_L0;
@@ -242,8 +245,9 @@ static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride
     const int is_chroma         = !!c_idx;
     const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
     const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
-    const int8_t *hf            = INTER_FILTER(hf_idx, mx);
-    const int8_t *vf            = INTER_FILTER(vf_idx, my);
+    const int hpel_if_idx       = is_chroma ? 0 : pu->mi.hpel_if_idx;
+    const int8_t *hf            = INTER_FILTER(hpel_if_idx, mx);
+    const int8_t *vf            = INTER_FILTER(hpel_if_idx, my);
     int denom, wx, ox;
 
     x_off += mv->x >> (4 + hs);
@@ -263,7 +267,7 @@ static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride
 static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const VVCFrame *ref0, const VVCFrame *ref1, const MvField *mvf, const MvField *orig_mv,
     const int x_off, const int y_off, const int block_w, const int block_h, const int c_idx,
-    const int sb_bdof_flag, const int hf_idx, const int vf_idx)
+    const int sb_bdof_flag)
 {
     const VVCFrameContext *fc   = lc->fc;
     const PredictionUnit *pu    = &lc->cu->pu;
@@ -275,6 +279,7 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     int denom, w0, w1, o0, o1;
     const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, pu->dmvr_flag);
     const int is_chroma         = !!c_idx;
+    const int hpel_if_idx       = is_chroma ? 0 : pu->mi.hpel_if_idx;
 
     for (int i = L0; i <= L1; i++) {
         const Mv *mv            = mvf->mv + i;
@@ -285,8 +290,8 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
         const VVCFrame *ref     = refs[i];
         ptrdiff_t src_stride    = ref->frame->linesize[c_idx];
         const uint8_t *src      = ref->frame->data[c_idx] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
-        const int8_t *hf        = INTER_FILTER(hf_idx, mx);
-        const int8_t *vf        = INTER_FILTER(vf_idx, my);
+        const int8_t *hf        = INTER_FILTER(hpel_if_idx, mx);
+        const int8_t *vf        = INTER_FILTER(hpel_if_idx, my);
 
         if (pu->dmvr_flag) {
             const int x_sb = x_off + (orig_mv->mv[i].x >> (4 + hs));
@@ -515,17 +520,15 @@ static void pred_regular(VVCLocalContext *lc, const MvField *mvf, const MvField 
         const int do_ciip            = lc->cu->ciip_flag && (is_luma || (w > 2));
         uint8_t *inter               = do_ciip ? (uint8_t *)lc->ciip_tmp : dst;
         const ptrdiff_t inter_stride = do_ciip ? (MAX_PB_SIZE * sizeof(uint16_t)) : dst_stride;
-        const int hf_idx             = is_luma ? lc->cu->pu.mi.hpel_if_idx : 0;
-        const int vf_idx             = is_luma ? lc->cu->pu.mi.hpel_if_idx : 0;
         const int do_bdof            = is_luma && sb_bdof_flag;
 
         if (mvf->pred_flag != PF_BI) {
             const int lx = mvf->pred_flag - PF_L0;
             mc_uni(lc, inter, inter_stride, refp[lx]->ref, mvf,
-                x, y, w, h, c_idx, hf_idx, vf_idx);
+                x, y, w, h, c_idx);
         } else {
             mc_bi(lc, inter, inter_stride, refp[L0]->ref, refp[L1]->ref, mvf, orig_mvf,
-                x, y, w, h, c_idx, do_bdof, hf_idx, vf_idx);
+                x, y, w, h, c_idx, do_bdof);
         }
         if (do_ciip) {
             const int intra_weight = ciip_derive_intra_weight(lc, x0, y0, sbw, sbh);
