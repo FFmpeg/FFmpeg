@@ -5,6 +5,8 @@ libavcodec/ilbcdec.c
 libavcodec/interplayacm.c
 libavcodec/log2_tab.c
 libavcodec/reverse.c
+libavcodec/riscv/startcode_rvb.S
+libavcodec/riscv/startcode_rvv.S
 libavdevice/file_open.c
 libavdevice/reverse.c
 libavfilter/af_arnndn.c
