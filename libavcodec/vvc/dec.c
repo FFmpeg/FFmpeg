@@ -576,6 +576,11 @@ static int ref_frame(VVCFrame *dst, const VVCFrame *src)
 
     dst->poc = src->poc;
     dst->ctb_count = src->ctb_count;
+
+    dst->scaling_win = src->scaling_win;
+    dst->ref_width   = src->ref_width;
+    dst->ref_height  = src->ref_height;
+
     dst->flags = src->flags;
     dst->sequence = src->sequence;
 

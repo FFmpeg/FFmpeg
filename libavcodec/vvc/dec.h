@@ -46,6 +46,10 @@ typedef struct VVCRefPic {
     struct VVCFrame *ref;
     int poc;
     int is_lt;                  // is long term reference
+
+    // for RPR
+    int is_scaled;              ///< RprConstraintsActiveFlag
+    int scale[2];               ///< RefPicScale[]
 } VVCRefPic;
 
 typedef struct RefPicList {
@@ -56,6 +60,13 @@ typedef struct RefPicList {
 typedef struct RefPicListTab {
     RefPicList refPicList[2];
 } RefPicListTab;
+
+typedef struct VVCWindow {
+    int16_t left_offset;
+    int16_t right_offset;
+    int16_t top_offset;
+    int16_t bottom_offset;
+} VVCWindow;
 
 typedef struct VVCFrame {
     struct AVFrame *frame;
@@ -70,6 +81,12 @@ typedef struct VVCFrame {
     int ctb_count;
 
     int poc;
+
+    //for RPR
+    VVCWindow scaling_win;                      ///< pps_scaling_win_left_offset * SubWithC,  pps_scaling_win_right_offset  * SubWithC,
+                                                ///< pps_scaling_win_top_offset  * SubHeigtC, pps_scaling_win_bottom_offset * SubHiehgtC
+    int ref_width;                              ///< CurrPicScalWinWidthL
+    int ref_height;                             ///< CurrPicScalWinHeightL
 
     struct VVCFrame *collocated_ref;
 
