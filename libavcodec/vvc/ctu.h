@@ -46,7 +46,8 @@
 #define MAX_QP                  63
 
 #define MAX_PB_SIZE             128
-#define EDGE_EMU_BUFFER_STRIDE  (MAX_PB_SIZE + 32)
+#define MAX_SCALING_RATIO       8
+#define EDGE_EMU_BUFFER_STRIDE  ((MAX_PB_SIZE + 32) * MAX_SCALING_RATIO)
 
 #define CHROMA_EXTRA_BEFORE     1
 #define CHROMA_EXTRA_AFTER      2
@@ -375,10 +376,8 @@ typedef struct VVCLocalContext {
     int     end_of_tiles_x;
     int     end_of_tiles_y;
 
-    /* +7 is for subpixel interpolation, *2 for high bit depths */
-    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
-    /* The extended size between the new edge emu buffer is abused by SAO */
-    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer2)[(MAX_PB_SIZE + 7) * EDGE_EMU_BUFFER_STRIDE * 2];
+    /* *2 for high bit depths */
+    DECLARE_ALIGNED(32, uint8_t, edge_emu_buffer)[EDGE_EMU_BUFFER_STRIDE * EDGE_EMU_BUFFER_STRIDE * 2];
     DECLARE_ALIGNED(32, int16_t, tmp)[MAX_PB_SIZE * MAX_PB_SIZE];
     DECLARE_ALIGNED(32, int16_t, tmp1)[MAX_PB_SIZE * MAX_PB_SIZE];
     DECLARE_ALIGNED(32, int16_t, tmp2)[MAX_PB_SIZE * MAX_PB_SIZE];
