@@ -297,7 +297,8 @@ static int derive_cb_prof_flag_lx(const VVCLocalContext *lc, const PredictionUni
         if (IS_SAME_MV(cp_mv, cp_mv + 1) && IS_SAME_MV(cp_mv, cp_mv + 2))
             return 0;
     }
-    //fixme: RprConstraintsActiveFlag
+    if (lc->sc->rpl[lx].refs[mi->ref_idx[lx]].is_scaled)
+        return 0;
     return 1;
 }
 
