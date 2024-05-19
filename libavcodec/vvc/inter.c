@@ -387,15 +387,15 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
         fc->vvcdsp.inter.avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
 }
 
-static int pred_get_refs(const VVCLocalContext *lc, VVCFrame *ref[2],  const MvField *mv)
+static int pred_get_refs(const VVCLocalContext *lc, VVCRefPic *refp[2], const MvField *mv)
 {
-    const RefPicList *rpl = lc->sc->rpl;
+    RefPicList *rpl = lc->sc->rpl;
 
     for (int mask = PF_L0; mask <= PF_L1; mask++) {
         if (mv->pred_flag & mask) {
             const int lx = mask - PF_L0;
-            ref[lx] = rpl[lx].refs[mv->ref_idx[lx]].ref;
-            if (!ref[lx])
+            refp[lx] = rpl[lx].refs + mv->ref_idx[lx];
+            if (!refp[lx]->ref)
                 return AVERROR_INVALIDDATA;
         }
     }
@@ -487,9 +487,9 @@ static void pred_regular(VVCLocalContext *lc, const MvField *mvf, const MvField 
 {
     const VVCFrameContext *fc = lc->fc;
     const int c_end           = fc->ps.sps->r->sps_chroma_format_idc ? CR : LUMA;
-    VVCFrame *ref[2];
+    VVCRefPic *refp[2];
 
-    if (pred_get_refs(lc, ref, mvf) < 0)
+    if (pred_get_refs(lc, refp, mvf) < 0)
         return;
 
     for (int c_idx = c_start; c_idx <= c_end; c_idx++) {
@@ -511,10 +511,10 @@ static void pred_regular(VVCLocalContext *lc, const MvField *mvf, const MvField 
 
         if (mvf->pred_flag != PF_BI) {
             const int lx = mvf->pred_flag - PF_L0;
-            mc_uni(lc, inter, inter_stride, ref[lx]->frame, mvf,
+            mc_uni(lc, inter, inter_stride, refp[lx]->ref->frame, mvf,
                 x, y, w, h, c_idx, hf_idx, vf_idx);
         } else {
-            mc_bi(lc, inter, inter_stride, ref[0]->frame, ref[1]->frame, mvf, orig_mvf,
+            mc_bi(lc, inter, inter_stride, refp[L0]->ref->frame, refp[L1]->ref->frame, mvf, orig_mvf,
                 x, y, w, h, c_idx, do_bdof, hf_idx, vf_idx);
         }
         if (do_ciip) {
@@ -660,10 +660,10 @@ static void derive_sb_mv(VVCLocalContext *lc, MvField *mv, MvField *orig_mv, int
     if (pu->bdof_flag)
         *sb_bdof_flag = 1;
     if (pu->dmvr_flag) {
-        VVCFrame* ref[2];
-        if (pred_get_refs(lc, ref, mv) < 0)
+        VVCRefPic *refp[2];
+        if (pred_get_refs(lc, refp, mv) < 0)
             return;
-        dmvr_mv_refine(lc, mv, orig_mv, sb_bdof_flag, ref[0]->frame, ref[1]->frame, x0, y0, sbw, sbh);
+        dmvr_mv_refine(lc, mv, orig_mv, sb_bdof_flag, refp[L0]->ref->frame, refp[L1]->ref->frame, x0, y0, sbw, sbh);
         set_dmvr_info(fc, x0, y0, sbw, sbh, mv);
     }
 }
@@ -734,18 +734,18 @@ static void pred_affine_blk(VVCLocalContext *lc)
 
             uint8_t *dst0 = POS(0, x, y);
             const MvField *mv = ff_vvc_get_mvf(fc, x, y);
-            VVCFrame *ref[2];
+            VVCRefPic *refp[2];
 
-            if (pred_get_refs(lc, ref, mv) < 0)
+            if (pred_get_refs(lc, refp, mv) < 0)
                 return;
 
             if (mi->pred_flag != PF_BI) {
                 const int lx = mi->pred_flag - PF_L0;
-                luma_prof_uni(lc, dst0, fc->frame->linesize[0], ref[lx]->frame,
+                luma_prof_uni(lc, dst0, fc->frame->linesize[LUMA], refp[lx]->ref->frame,
                     mv, x, y, sbw, sbh, pu->cb_prof_flag[lx],
                     pu->diff_mv_x[lx], pu->diff_mv_y[lx]);
             } else {
-                luma_prof_bi(lc, dst0, fc->frame->linesize[0], ref[0]->frame, ref[1]->frame,
+                luma_prof_bi(lc, dst0, fc->frame->linesize[LUMA], refp[L0]->ref->frame, refp[L1]->ref->frame,
                     mv, x, y, sbw, sbh);
             }
             if (fc->ps.sps->r->sps_chroma_format_idc) {
