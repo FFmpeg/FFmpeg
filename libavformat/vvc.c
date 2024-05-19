@@ -371,6 +371,7 @@ static int vvcc_parse_sps(GetBitContext *gb,
         const int tmp_height_val  = AV_CEIL_RSHIFT(sps_pic_height_max_in_luma_samples, ctb_log2_size_y);
         const int wlen            = av_ceil_log2(tmp_width_val);
         const int hlen            = av_ceil_log2(tmp_height_val);
+        unsigned int sps_subpic_id_len;
         if (sps_num_subpics_minus1 > 0) {       // sps_num_subpics_minus1
             sps_independent_subpics_flag = get_bits1(gb);
             sps_subpic_same_size_flag = get_bits1(gb);
@@ -390,11 +391,11 @@ static int vvcc_parse_sps(GetBitContext *gb,
                 skip_bits(gb, 2);       // sps_subpic_treated_as_pic_flag && sps_loop_filter_across_subpic_enabled_flag
             }
         }
-        get_ue_golomb_long(gb); // sps_subpic_id_len_minus1
+        sps_subpic_id_len = get_ue_golomb_long(gb) + 1;
         if (get_bits1(gb)) {    // sps_subpic_id_mapping_explicitly_signalled_flag
             if (get_bits1(gb))  // sps_subpic_id_mapping_present_flag
                 for (int i = 0; i <= sps_num_subpics_minus1; i++) {
-                    skip_bits1(gb);     // sps_subpic_id[i]
+                    skip_bits_long(gb, sps_subpic_id_len); // sps_subpic_id[i]
                 }
         }
     }
