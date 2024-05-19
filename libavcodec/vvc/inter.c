@@ -142,6 +142,8 @@ static void emulated_edge_bilinear(const VVCLocalContext *lc, uint8_t *dst, cons
     }
 }
 
+#define MC_EMULATED_EDGE(dst, src, src_stride, x_off, y_off)                               \
+    emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, is_chroma)
 
 #define EMULATED_EDGE_LUMA(dst, src, src_stride, x_off, y_off)                      \
     emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, 0)
@@ -209,47 +211,29 @@ static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
     return 1;
 }
 
-static void luma_mc(VVCLocalContext *lc, int16_t *dst, const AVFrame *ref, const Mv *mv,
-    int x_off, int y_off, const int block_w, const int block_h)
-{
-    const VVCFrameContext *fc   = lc->fc;
-    const uint8_t *src          = ref->data[0];
-    ptrdiff_t src_stride        = ref->linesize[0];
-    const int idx               = av_log2(block_w) - 1;
-    const int mx                = mv->x & 0xf;
-    const int my                = mv->y & 0xf;
-    const int8_t *hf            = ff_vvc_inter_luma_filters[0][mx];
-    const int8_t *vf            = ff_vvc_inter_luma_filters[0][my];
+#define INTER_FILTER(t, frac)  (is_chroma ? ff_vvc_inter_chroma_filters[t][frac] : ff_vvc_inter_luma_filters[t][frac])
 
-    x_off += mv->x >> 4;
-    y_off += mv->y >> 4;
-    src   += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
-
-    EMULATED_EDGE_LUMA(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
-
-    fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
-}
-
-static void chroma_mc(VVCLocalContext *lc, int16_t *dst, const AVFrame *ref, const Mv *mv,
+static void mc(VVCLocalContext *lc, int16_t *dst, const AVFrame *ref, const Mv *mv,
     int x_off, int y_off, const int block_w, const int block_h, const int c_idx)
 {
     const VVCFrameContext *fc   = lc->fc;
     const uint8_t *src          = ref->data[c_idx];
     ptrdiff_t src_stride        = ref->linesize[c_idx];
-    int hs                      = fc->ps.sps->hshift[c_idx];
-    int vs                      = fc->ps.sps->vshift[c_idx];
+    const int is_chroma         = !!c_idx;
+    const int hs                = fc->ps.sps->hshift[c_idx];
+    const int vs                = fc->ps.sps->vshift[c_idx];
     const int idx               = av_log2(block_w) - 1;
-    const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (1 - hs);
-    const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (1 - vs);
-    const int8_t *hf            = ff_vvc_inter_chroma_filters[0][mx];
-    const int8_t *vf            = ff_vvc_inter_chroma_filters[0][my];
+    const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
+    const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
+    const int8_t *hf            = INTER_FILTER(0, mx);
+    const int8_t *vf            = INTER_FILTER(0, my);
 
     x_off += mv->x >> (4 + hs);
     y_off += mv->y >> (4 + vs);
     src  += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
 
-    EMULATED_EDGE_CHROMA(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
-    fc->vvcdsp.inter.put[CHROMA][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
+    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
+    fc->vvcdsp.inter.put[is_chroma][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
 }
 
 static void luma_mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
@@ -543,10 +527,7 @@ static void pred_gpm_blk(VVCLocalContext *lc)
             VVCFrame *ref = lc->sc->rpl[lx].ref[mv->ref_idx[lx]];
             if (!ref)
                 return;
-            if (c_idx)
-                chroma_mc(lc, tmp[i], ref->frame, mv->mv + lx, x, y, width, height, c_idx);
-            else
-                luma_mc(lc, tmp[i], ref->frame, mv->mv + lx, x, y, width, height);
+            mc(lc, tmp[i], ref->frame, mv->mv + lx, x, y, width, height, c_idx);
         }
         fc->vvcdsp.inter.put_gpm(dst, dst_stride, width, height, tmp[0], tmp[1], weights, step_x, step_y);
     }
