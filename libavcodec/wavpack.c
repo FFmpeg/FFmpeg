@@ -1418,13 +1418,13 @@ static int wavpack_decode_block(AVCodecContext *avctx, AVFrame *frame, int block
                 chmask = bytestream2_get_le32(&gb);
                 break;
             case 4:
-                size = bytestream2_get_byte(&gb);
+                bytestream2_get_byte(&gb);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chan  += 1;
                 chmask = bytestream2_get_le24(&gb);
                 break;
             case 5:
-                size = bytestream2_get_byte(&gb);
+                bytestream2_get_byte(&gb);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
                 chan  += 1;
                 chmask = bytestream2_get_le32(&gb);
