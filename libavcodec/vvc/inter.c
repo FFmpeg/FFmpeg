@@ -347,40 +347,48 @@ static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst
     }
 }
 
+static void luma_prof(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref,
+    const Mv *mv , const int x_off, const int y_off, const int block_w, const int block_h, const int lx)
+{
+    const VVCFrameContext *fc = lc->fc;
+    const PredictionUnit *pu  = &lc->cu->pu;
+    const int mx              = mv->x & 0xf;
+    const int my              = mv->y & 0xf;
+    const int ox              = x_off + (mv->x >> 4);
+    const int oy              = y_off + (mv->y >> 4);
+    const int idx             = av_log2(block_w) - 1;
+    const int is_chroma       = 0;
+    uint16_t *prof_tmp        = lc->tmp2 + PROF_TEMP_OFFSET;
+    ptrdiff_t src_stride      = ref->frame->linesize[0];
+    const uint8_t *src        = ref->frame->data[0] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
+    const int8_t *hf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][mx];
+    const int8_t *vf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][my];
+
+    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
+    if (!pu->cb_prof_flag[lx]) {
+        fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
+    } else {
+        fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](prof_tmp, src, src_stride, AFFINE_MIN_BLOCK_SIZE, hf, vf, AFFINE_MIN_BLOCK_SIZE);
+        fc->vvcdsp.inter.fetch_samples(prof_tmp, src, src_stride, mx, my);
+        fc->vvcdsp.inter.apply_prof(dst, prof_tmp, pu->diff_mv_x[lx], pu->diff_mv_y[lx]);
+    }
+}
+
 static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const VVCFrame *ref0, const VVCFrame *ref1, const MvField *mvf, const int x_off, const int y_off,
     const int block_w, const int block_h)
 {
     const VVCFrameContext *fc   = lc->fc;
-    const PredictionUnit *pu    = &lc->cu->pu;
     const VVCFrame *refs[]      = { ref0, ref1 };
     int16_t *tmp[]              = { lc->tmp, lc->tmp1 };
-    uint16_t *prof_tmp          = lc->tmp2 + PROF_TEMP_OFFSET;
-    const int idx               = av_log2(block_w) - 1;
     int denom, w0, w1, o0, o1;
     const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, LUMA, 0);
-    const int is_chroma         = 0;
 
     for (int i = L0; i <= L1; i++) {
-        const Mv *mv            = mvf->mv + i;
-        const int mx            = mv->x & 0xf;
-        const int my            = mv->y & 0xf;
-        const int ox            = x_off + (mv->x >> 4);
-        const int oy            = y_off + (mv->y >> 4);
         const VVCFrame *ref     = refs[i];
-        ptrdiff_t src_stride    = ref->frame->linesize[LUMA];
-        const uint8_t *src      = ref->frame->data[LUMA] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
-        const int8_t *hf        = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][mx];
-        const int8_t *vf        = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][my];
+        const Mv *mv            = mvf->mv + i;
 
-        MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
-        if (!pu->cb_prof_flag[i]) {
-            fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](tmp[i], src, src_stride, block_h, hf, vf, block_w);
-        } else {
-            fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](prof_tmp, src, src_stride, AFFINE_MIN_BLOCK_SIZE, hf, vf, AFFINE_MIN_BLOCK_SIZE);
-            fc->vvcdsp.inter.fetch_samples(prof_tmp, src, src_stride, mx, my);
-            fc->vvcdsp.inter.apply_prof(tmp[i], prof_tmp, pu->diff_mv_x[i], pu->diff_mv_y[i]);
-        }
+        luma_prof(lc, tmp[i], ref, mv, x_off, y_off, block_w, block_h, i);
     }
 
     if (weight_flag)
