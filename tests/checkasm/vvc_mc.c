@@ -134,8 +134,8 @@ static void check_put_vvc_luma_uni(void)
                         const int idx       = av_log2(w) - 1;
                         const int mx        = rnd() % VVC_INTER_LUMA_FACTS;
                         const int my        = rnd() % VVC_INTER_LUMA_FACTS;
-                        const int8_t *hf    = ff_vvc_inter_luma_filters[rnd() % VVC_INTER_FILTER_TYPES][mx];
-                        const int8_t *vf    = ff_vvc_inter_luma_filters[rnd() % VVC_INTER_FILTER_TYPES][my];
+                        const int8_t *hf    = ff_vvc_inter_luma_filters[rnd() % VVC_INTER_LUMA_FILTER_TYPES][mx];
+                        const int8_t *vf    = ff_vvc_inter_luma_filters[rnd() % VVC_INTER_LUMA_FILTER_TYPES][my];
                         const char *type;
 
                         switch ((j << 1) | i) {
@@ -184,8 +184,8 @@ static void check_put_vvc_chroma(void)
                         const int idx       = av_log2(w) - 1;
                         const int mx        = rnd() % VVC_INTER_CHROMA_FACTS;
                         const int my        = rnd() % VVC_INTER_CHROMA_FACTS;
-                        const int8_t *hf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_FILTER_TYPES][mx];
-                        const int8_t *vf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_FILTER_TYPES][my];
+                        const int8_t *hf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_CHROMA_FILTER_TYPES][mx];
+                        const int8_t *vf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_CHROMA_FILTER_TYPES][my];
                         const char *type;
                         switch ((j << 1) | i) {
                             case 0: type = "put_chroma_pixels"; break; // 0 0
@@ -233,8 +233,8 @@ static void check_put_vvc_chroma_uni(void)
                         const int idx       = av_log2(w) - 1;
                         const int mx        = rnd() % VVC_INTER_CHROMA_FACTS;
                         const int my        = rnd() % VVC_INTER_CHROMA_FACTS;
-                        const int8_t *hf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_FILTER_TYPES][mx];
-                        const int8_t *vf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_FILTER_TYPES][my];
+                        const int8_t *hf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_CHROMA_FILTER_TYPES][mx];
+                        const int8_t *vf    = ff_vvc_inter_chroma_filters[rnd() % VVC_INTER_CHROMA_FILTER_TYPES][my];
                         const char *type;
 
                         switch ((j << 1) | i) {
