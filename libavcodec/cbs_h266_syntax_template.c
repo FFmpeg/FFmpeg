@@ -790,6 +790,21 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
         infer(vps_each_layer_is_an_ols_flag, 1);
         infer(vps_num_ptls_minus1, 0);
     }
+
+    for (i = 0; i <= current->vps_num_ptls_minus1; i++) {
+        if (i > 0)
+            flags(vps_pt_present_flag[i], 1, i);
+        else
+            infer(vps_pt_present_flag[i], 1);
+
+        if (!current->vps_default_ptl_dpb_hrd_max_tid_flag)
+            us(3, vps_ptl_max_tid[i], 0, current->vps_max_sublayers_minus1, 1, i);
+        else
+            infer(vps_ptl_max_tid[i], current->vps_max_sublayers_minus1);
+    }
+    while (byte_alignment(rw) != 0)
+        fixed(1, vps_ptl_alignment_zero_bit, 0);
+
     {
         //calc NumMultiLayerOlss
         int m;
@@ -915,19 +930,6 @@ static int FUNC(vps) (CodedBitstreamContext *ctx, RWContext *rw,
             return AVERROR_INVALIDDATA;
     }
 
-    for (i = 0; i <= current->vps_num_ptls_minus1; i++) {
-        if (i > 0)
-            flags(vps_pt_present_flag[i], 1, i);
-        else
-            infer(vps_pt_present_flag[i], 1);
-
-        if (!current->vps_default_ptl_dpb_hrd_max_tid_flag)
-            us(3, vps_ptl_max_tid[i], 0, current->vps_max_sublayers_minus1, 1, i);
-        else
-            infer(vps_ptl_max_tid[i], current->vps_max_sublayers_minus1);
-    }
-    while (byte_alignment(rw) != 0)
-        fixed(1, vps_ptl_alignment_zero_bit, 0);
     for (i = 0; i <= current->vps_num_ptls_minus1; i++) {
         CHECK(FUNC(profile_tier_level) (ctx, rw,
                                         current->vps_profile_tier_level + i,
