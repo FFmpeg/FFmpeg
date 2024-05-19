@@ -236,33 +236,35 @@ static void mc(VVCLocalContext *lc, int16_t *dst, const AVFrame *ref, const Mv *
     fc->vvcdsp.inter.put[is_chroma][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
 }
 
-static void luma_mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
+static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const AVFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
-    const int hf_idx, const int vf_idx)
+    const int c_idx, const int hf_idx, const int vf_idx)
 {
     const VVCFrameContext *fc   = lc->fc;
+    const uint8_t *src          = ref->data[c_idx];
+    ptrdiff_t src_stride        = ref->linesize[c_idx];
     const int lx                = mvf->pred_flag - PF_L0;
-    const Mv *mv                = mvf->mv + lx;
-    const uint8_t *src          = ref->data[0];
-    ptrdiff_t src_stride        = ref->linesize[0];
+    const int hs                = fc->ps.sps->hshift[c_idx];
+    const int vs                = fc->ps.sps->vshift[c_idx];
     const int idx               = av_log2(block_w) - 1;
-    const int mx                = mv->x & 0xf;
-    const int my                = mv->y & 0xf;
-    const int8_t *hf            = ff_vvc_inter_luma_filters[hf_idx][mx];
-    const int8_t *vf            = ff_vvc_inter_luma_filters[vf_idx][my];
+    const Mv *mv                = &mvf->mv[lx];
+    const int is_chroma         = !!c_idx;
+    const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
+    const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
+    const int8_t *hf            = INTER_FILTER(hf_idx, mx);
+    const int8_t *vf            = INTER_FILTER(vf_idx, my);
     int denom, wx, ox;
 
-    x_off += mv->x >> 4;
-    y_off += mv->y >> 4;
-    src   += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
+    x_off += mv->x >> (4 + hs);
+    y_off += mv->y >> (4 + vs);
+    src  += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
 
-    EMULATED_EDGE_LUMA(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
-
-    if (derive_weight_uni(&denom, &wx, &ox, lc, mvf, LUMA)) {
-        fc->vvcdsp.inter.put_uni_w[LUMA][idx][!!my][!!mx](dst, dst_stride, src, src_stride,
+    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
+    if (derive_weight_uni(&denom, &wx, &ox, lc, mvf, c_idx)) {
+        fc->vvcdsp.inter.put_uni_w[is_chroma][idx][!!my][!!mx](dst, dst_stride, src, src_stride,
             block_h, denom, wx, ox, hf, vf, block_w);
     } else {
-        fc->vvcdsp.inter.put_uni[LUMA][idx][!!my][!!mx](dst, dst_stride, src, src_stride,
+        fc->vvcdsp.inter.put_uni[is_chroma][idx][!!my][!!mx](dst, dst_stride, src, src_stride,
             block_h, hf, vf, block_w);
     }
 }
@@ -310,38 +312,6 @@ static void luma_mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_st
         fc->vvcdsp.inter.w_avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h, denom, w0, w1, o0, o1);
     else
         fc->vvcdsp.inter.avg(dst, dst_stride, tmp[L0], tmp[L1], block_w, block_h);
-}
-
-static void chroma_mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
-    const uint8_t *src, ptrdiff_t src_stride, int x_off, int y_off,
-    const int block_w, const int block_h, const MvField *mvf, const int c_idx,
-    const int hf_idx, const int vf_idx)
-{
-    const VVCFrameContext *fc   = lc->fc;
-    const int lx                = mvf->pred_flag - PF_L0;
-    const int hs                = fc->ps.sps->hshift[1];
-    const int vs                = fc->ps.sps->vshift[1];
-    const int idx               = av_log2(block_w) - 1;
-    const Mv *mv                = &mvf->mv[lx];
-    const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (1 - hs);
-    const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (1 - vs);
-    const int8_t *hf            = ff_vvc_inter_chroma_filters[hf_idx][mx];
-    const int8_t *vf            = ff_vvc_inter_chroma_filters[vf_idx][my];
-    int denom, wx, ox;
-
-    x_off += mv->x >> (4 + hs);
-    y_off += mv->y >> (4 + vs);
-    src  += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
-
-
-    EMULATED_EDGE_CHROMA(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
-    if (derive_weight_uni(&denom, &wx, &ox, lc, mvf, c_idx)) {
-        fc->vvcdsp.inter.put_uni_w[CHROMA][idx][!!my][!!mx](dst, dst_stride, src, src_stride,
-            block_h, denom, wx, ox, hf, vf, block_w);
-    } else {
-        fc->vvcdsp.inter.put_uni[CHROMA][idx][!!my][!!mx](dst, dst_stride, src, src_stride,
-            block_h, hf, vf, block_w);
-    }
 }
 
 static void chroma_mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
@@ -573,8 +543,8 @@ static void pred_regular_luma(VVCLocalContext *lc, const int hf_idx, const int v
 
     if (mv->pred_flag != PF_BI) {
         const int lx = mv->pred_flag - PF_L0;
-        luma_mc_uni(lc, inter, inter_stride, ref[lx]->frame,
-            mv, x0, y0, sbw, sbh, hf_idx, vf_idx);
+        mc_uni(lc, inter, inter_stride, ref[lx]->frame, mv,
+            x0, y0, sbw, sbh, LUMA, hf_idx, vf_idx);
     } else {
         luma_mc_bi(lc, inter, inter_stride, ref[0]->frame,
             &mv->mv[0], x0, y0, sbw, sbh, ref[1]->frame, &mv->mv[1], mv,
@@ -627,10 +597,10 @@ static void pred_regular_chroma(VVCLocalContext *lc, const MvField *mv,
         if (!ref[lx])
             return;
 
-        chroma_mc_uni(lc, inter1, inter1_stride, ref[lx]->frame->data[1], ref[lx]->frame->linesize[1],
-            x0_c, y0_c, w_c, h_c, mv, CB, hf_idx, vf_idx);
-        chroma_mc_uni(lc, inter2, inter2_stride, ref[lx]->frame->data[2], ref[lx]->frame->linesize[2],
-            x0_c, y0_c, w_c, h_c, mv, CR, hf_idx, vf_idx);
+        mc_uni(lc, inter1, inter1_stride, ref[lx]->frame, mv,
+            x0_c, y0_c, w_c, h_c, CB, hf_idx, vf_idx);
+        mc_uni(lc, inter2, inter2_stride, ref[lx]->frame, mv,
+            x0_c, y0_c, w_c, h_c, CR, hf_idx, vf_idx);
     } else {
         if (!ref[0] || !ref[1])
             return;
