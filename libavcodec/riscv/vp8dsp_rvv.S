@@ -161,26 +161,26 @@ const subpel_filters
         .byte 0,  -1,  12, 123,  -6, 0
 endconst
 
-.macro epel_filter size type
-        lla             t2, subpel_filters
+.macro epel_filter size type regtype
+        lla             \regtype\()2, subpel_filters
 .ifc \type,v
-        addi            t0, a6, -1
+        addi            \regtype\()0, a6, -1
 .else
-        addi            t0, a5, -1
+        addi            \regtype\()0, a5, -1
 .endif
-        li              t1, 6
-        mul             t0, t0, t1
-        add             t0, t0, t2
+        li              \regtype\()1, 6
+        mul             \regtype\()0, \regtype\()0, \regtype\()1
+        add             \regtype\()0, \regtype\()0, \regtype\()2
         .irp n,1,2,3,4
-        lb              t\n, \n(t0)
+        lb              \regtype\n, \n(\regtype\()0)
         .endr
 .ifc \size,6
-        lb              t5, 5(t0)
-        lb              t0, (t0)
+        lb              \regtype\()5, 5(\regtype\()0)
+        lb              \regtype\()0, (\regtype\()0)
 .endif
 .endm
 
-.macro epel_load dst len size type
+.macro epel_load dst len size type from_mem regtype
 .ifc \type,v
         mv              a5, a3
 .else
@@ -189,24 +189,35 @@ endconst
         sub             t6, a2, a5
         add             a7, a2, a5
 
+.if \from_mem
         vle8.v          v24, (a2)
         vle8.v          v22, (t6)
         vle8.v          v26, (a7)
         add             a7, a7, a5
         vle8.v          v28, (a7)
-        vwmulu.vx       v16, v24, t2
-        vwmulu.vx       v20, v26, t3
+        vwmulu.vx       v16, v24, \regtype\()2
+        vwmulu.vx       v20, v26, \regtype\()3
 .ifc \size,6
         sub             t6, t6, a5
         add             a7, a7, a5
         vle8.v          v24, (t6)
         vle8.v          v26, (a7)
-        vwmaccu.vx      v16, t0, v24
-        vwmaccu.vx      v16, t5, v26
+        vwmaccu.vx      v16, \regtype\()0, v24
+        vwmaccu.vx      v16, \regtype\()5, v26
+.endif
+        vwmaccsu.vx     v16, \regtype\()1, v22
+        vwmaccsu.vx     v16, \regtype\()4, v28
+.else
+        vwmulu.vx       v16, v4, \regtype\()2
+        vwmulu.vx       v20, v6, \regtype\()3
+        .ifc \size,6
+        vwmaccu.vx      v16, \regtype\()0, v0
+        vwmaccu.vx      v16, \regtype\()5, v10
+        .endif
+        vwmaccsu.vx     v16, \regtype\()1, v2
+        vwmaccsu.vx     v16, \regtype\()4, v8
 .endif
         li              t6, 64
-        vwmaccsu.vx     v16, t1, v22
-        vwmaccsu.vx     v16, t4, v28
         vwadd.wx        v16, v16, t6
         vsetvlstatic16  \len
         vwadd.vv        v24, v16, v20
@@ -216,21 +227,87 @@ endconst
         vnclipu.wi      \dst, v24, 0
 .endm
 
-.macro epel_load_inc dst len size type
-        epel_load       \dst \len \size \type
+.macro epel_load_inc dst len size type from_mem regtype
+        epel_load       \dst \len \size \type \from_mem \regtype
         add             a2, a2, a3
 .endm
 
 .macro epel len size type
 func ff_put_vp8_epel\len\()_\type\()\size\()_rvv, zve32x
-        epel_filter     \size \type
+        epel_filter     \size \type t
         vsetvlstatic8   \len
 1:
         addi            a4, a4, -1
-        epel_load_inc   v30 \len \size \type
+        epel_load_inc   v30 \len \size \type 1 t
         vse8.v          v30, (a0)
         add             a0, a0, a1
         bnez            a4, 1b
+
+        ret
+endfunc
+.endm
+
+.macro epel_hv len hsize vsize
+func ff_put_vp8_epel\len\()_h\hsize\()v\vsize\()_rvv, zve32x
+#if __riscv_xlen == 64
+        addi            sp, sp, -48
+        .irp n,0,1,2,3,4,5
+        sd              s\n, \n\()<<3(sp)
+        .endr
+#else
+        addi            sp, sp, -24
+        .irp n,0,1,2,3,4,5
+        sw              s\n, \n\()<<2(sp)
+        .endr
+#endif
+        sub             a2, a2, a3
+        epel_filter     \hsize h t
+        epel_filter     \vsize v s
+        vsetvlstatic8   \len
+.if \hsize == 6 || \vsize == 6
+        sub             a2, a2, a3
+        epel_load_inc   v0 \len \hsize h 1 t
+.endif
+        epel_load_inc   v2 \len \hsize h 1 t
+        epel_load_inc   v4 \len \hsize h 1 t
+        epel_load_inc   v6 \len \hsize h 1 t
+        epel_load_inc   v8 \len \hsize h 1 t
+.if \hsize == 6 || \vsize == 6
+        epel_load_inc   v10 \len \hsize h 1 t
+.endif
+        addi            a4, a4, -1
+1:
+        addi            a4, a4, -1
+        epel_load       v30 \len \vsize v 0 s
+        vse8.v          v30, (a0)
+.if \hsize == 6 || \vsize == 6
+        vmv.v.v         v0, v2
+.endif
+        vmv.v.v         v2, v4
+        vmv.v.v         v4, v6
+        vmv.v.v         v6, v8
+.if \hsize == 6 || \vsize == 6
+        vmv.v.v         v8, v10
+        epel_load_inc   v10 \len \hsize h 1 t
+.else
+        epel_load_inc   v8 \len 4 h 1 t
+.endif
+        add             a0, a0, a1
+        bnez            a4, 1b
+        epel_load       v30 \len \vsize v 0 s
+        vse8.v          v30, (a0)
+
+#if __riscv_xlen == 64
+        .irp n,0,1,2,3,4,5
+        ld              s\n, \n\()<<3(sp)
+        .endr
+        addi            sp, sp, 48
+#else
+        .irp n,0,1,2,3,4,5
+        lw              s\n, \n\()<<2(sp)
+        .endr
+        addi            sp, sp, 24
+#endif
 
         ret
 endfunc
@@ -244,4 +321,8 @@ epel \len 6 h
 epel \len 4 h
 epel \len 6 v
 epel \len 4 v
+epel_hv \len 6 6
+epel_hv \len 4 4
+epel_hv \len 6 4
+epel_hv \len 4 6
 .endr
