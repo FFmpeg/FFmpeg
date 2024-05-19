@@ -563,6 +563,9 @@ static int ref_frame(VVCFrame *dst, const VVCFrame *src)
     if (ret < 0)
         return ret;
 
+    ff_refstruct_replace(&dst->sps, src->sps);
+    ff_refstruct_replace(&dst->pps, src->pps);
+
     ff_refstruct_replace(&dst->progress, src->progress);
 
     ff_refstruct_replace(&dst->tab_dmvr_mvf, src->tab_dmvr_mvf);

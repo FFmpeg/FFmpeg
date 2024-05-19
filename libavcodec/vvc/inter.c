@@ -44,12 +44,12 @@ static void subpic_width_height(int *pic_width, int *pic_height,
     *pic_height = pps->subpic_height[subpic_idx] >> sps->vshift[is_chroma];
 }
 
-static int emulated_edge(const VVCLocalContext *lc, uint8_t *dst, const uint8_t **src, ptrdiff_t *src_stride,
+static int emulated_edge(const VVCLocalContext *lc, uint8_t *dst, const uint8_t **src, ptrdiff_t *src_stride, const VVCFrame *src_frame,
     int x_off, int y_off, const int block_w, const int block_h, const int is_chroma)
 {
     const VVCFrameContext *fc = lc->fc;
-    const VVCSPS *sps         = fc->ps.sps;
-    const VVCPPS *pps         = fc->ps.pps;
+    const VVCSPS *sps         = src_frame->sps;
+    const VVCPPS *pps         = src_frame->pps;
     const int subpic_idx      = lc->sc->sh.r->curr_subpic_idx;
     const int extra_before    = is_chroma ? CHROMA_EXTRA_BEFORE : LUMA_EXTRA_BEFORE;
     const int extra_after     = is_chroma ? CHROMA_EXTRA_AFTER : LUMA_EXTRA_AFTER;
@@ -143,7 +143,7 @@ static void emulated_edge_bilinear(const VVCLocalContext *lc, uint8_t *dst, cons
 }
 
 #define MC_EMULATED_EDGE(dst, src, src_stride, x_off, y_off)                                                \
-    emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, is_chroma)
+    emulated_edge(lc, dst, src, src_stride, ref, x_off, y_off, block_w, block_h, is_chroma)
 
 #define MC_EMULATED_EDGE_DMVR(dst, src, src_stride, x_sb, y_sb, x_off, y_off)                               \
     emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, is_chroma)
@@ -204,12 +204,12 @@ static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
 
 #define INTER_FILTER(t, frac)  (is_chroma ? ff_vvc_inter_chroma_filters[t][frac] : ff_vvc_inter_luma_filters[t][frac])
 
-static void mc(VVCLocalContext *lc, int16_t *dst, const AVFrame *ref, const Mv *mv,
+static void mc(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref, const Mv *mv,
     int x_off, int y_off, const int block_w, const int block_h, const int c_idx)
 {
     const VVCFrameContext *fc   = lc->fc;
-    const uint8_t *src          = ref->data[c_idx];
-    ptrdiff_t src_stride        = ref->linesize[c_idx];
+    const uint8_t *src          = ref->frame->data[c_idx];
+    ptrdiff_t src_stride        = ref->frame->linesize[c_idx];
     const int is_chroma         = !!c_idx;
     const int hs                = fc->ps.sps->hshift[c_idx];
     const int vs                = fc->ps.sps->vshift[c_idx];
@@ -228,12 +228,12 @@ static void mc(VVCLocalContext *lc, int16_t *dst, const AVFrame *ref, const Mv *
 }
 
 static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
-    const AVFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
+    const VVCFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
     const int c_idx, const int hf_idx, const int vf_idx)
 {
     const VVCFrameContext *fc   = lc->fc;
-    const uint8_t *src          = ref->data[c_idx];
-    ptrdiff_t src_stride        = ref->linesize[c_idx];
+    const uint8_t *src          = ref->frame->data[c_idx];
+    ptrdiff_t src_stride        = ref->frame->linesize[c_idx];
     const int lx                = mvf->pred_flag - PF_L0;
     const int hs                = fc->ps.sps->hshift[c_idx];
     const int vs                = fc->ps.sps->vshift[c_idx];
@@ -261,7 +261,7 @@ static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride
 }
 
 static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
-    const AVFrame *ref0, const AVFrame *ref1, const MvField *mvf, const MvField *orig_mv,
+    const VVCFrame *ref0, const VVCFrame *ref1, const MvField *mvf, const MvField *orig_mv,
     const int x_off, const int y_off, const int block_w, const int block_h, const int c_idx,
     const int sb_bdof_flag, const int hf_idx, const int vf_idx)
 {
@@ -270,7 +270,7 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const int hs                = fc->ps.sps->hshift[c_idx];
     const int vs                = fc->ps.sps->vshift[c_idx];
     const int idx               = av_log2(block_w) - 1;
-    const AVFrame *ref[]        = { ref0, ref1 };
+    const VVCFrame *refs[]      = { ref0, ref1 };
     int16_t *tmp[]              = { lc->tmp + sb_bdof_flag * PROF_TEMP_OFFSET, lc->tmp1 + sb_bdof_flag * PROF_TEMP_OFFSET };
     int denom, w0, w1, o0, o1;
     const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, pu->dmvr_flag);
@@ -282,8 +282,9 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
         const int my            = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
         const int ox            = x_off + (mv->x >> (4 + hs));
         const int oy            = y_off + (mv->y >> (4 + vs));
-        ptrdiff_t src_stride    = ref[i]->linesize[c_idx];
-        const uint8_t *src      = ref[i]->data[c_idx] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
+        const VVCFrame *ref     = refs[i];
+        ptrdiff_t src_stride    = ref->frame->linesize[c_idx];
+        const uint8_t *src      = ref->frame->data[c_idx] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
         const int8_t *hf        = INTER_FILTER(hf_idx, mx);
         const int8_t *vf        = INTER_FILTER(vf_idx, my);
 
@@ -308,12 +309,12 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
 }
 
 static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
-    const AVFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
+    const VVCFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
     const int cb_prof_flag, const int16_t *diff_mv_x, const int16_t *diff_mv_y)
 {
     const VVCFrameContext *fc   = lc->fc;
-    const uint8_t *src          = ref->data[0];
-    ptrdiff_t src_stride        = ref->linesize[0];
+    const uint8_t *src          = ref->frame->data[LUMA];
+    ptrdiff_t src_stride        = ref->frame->linesize[LUMA];
     uint16_t *prof_tmp          = lc->tmp + PROF_TEMP_OFFSET;
     const int idx               = av_log2(block_w) - 1;
     const int lx                = mvf->pred_flag - PF_L0;
@@ -347,12 +348,12 @@ static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst
 }
 
 static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
-    const AVFrame *ref0, const AVFrame *ref1, const MvField *mvf, const int x_off, const int y_off,
+    const VVCFrame *ref0, const VVCFrame *ref1, const MvField *mvf, const int x_off, const int y_off,
     const int block_w, const int block_h)
 {
     const VVCFrameContext *fc   = lc->fc;
     const PredictionUnit *pu    = &lc->cu->pu;
-    const AVFrame *ref[]        = { ref0, ref1 };
+    const VVCFrame *refs[]      = { ref0, ref1 };
     int16_t *tmp[]              = { lc->tmp, lc->tmp1 };
     uint16_t *prof_tmp          = lc->tmp2 + PROF_TEMP_OFFSET;
     const int idx               = av_log2(block_w) - 1;
@@ -366,8 +367,9 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
         const int my            = mv->y & 0xf;
         const int ox            = x_off + (mv->x >> 4);
         const int oy            = y_off + (mv->y >> 4);
-        ptrdiff_t src_stride    = ref[i]->linesize[0];
-        const uint8_t *src      = ref[i]->data[0] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
+        const VVCFrame *ref     = refs[i];
+        ptrdiff_t src_stride    = ref->frame->linesize[LUMA];
+        const uint8_t *src      = ref->frame->data[LUMA] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
         const int8_t *hf        = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][mx];
         const int8_t *vf        = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][my];
 
@@ -453,7 +455,7 @@ static void pred_gpm_blk(VVCLocalContext *lc)
             VVCFrame *ref = lc->sc->rpl[lx].refs[mv->ref_idx[lx]].ref;
             if (!ref)
                 return;
-            mc(lc, tmp[i], ref->frame, mv->mv + lx, x, y, width, height, c_idx);
+            mc(lc, tmp[i], ref, mv->mv + lx, x, y, width, height, c_idx);
         }
         fc->vvcdsp.inter.put_gpm(dst, dst_stride, width, height, tmp[0], tmp[1], weights, step_x, step_y);
     }
@@ -511,10 +513,10 @@ static void pred_regular(VVCLocalContext *lc, const MvField *mvf, const MvField 
 
         if (mvf->pred_flag != PF_BI) {
             const int lx = mvf->pred_flag - PF_L0;
-            mc_uni(lc, inter, inter_stride, refp[lx]->ref->frame, mvf,
+            mc_uni(lc, inter, inter_stride, refp[lx]->ref, mvf,
                 x, y, w, h, c_idx, hf_idx, vf_idx);
         } else {
-            mc_bi(lc, inter, inter_stride, refp[L0]->ref->frame, refp[L1]->ref->frame, mvf, orig_mvf,
+            mc_bi(lc, inter, inter_stride, refp[L0]->ref, refp[L1]->ref, mvf, orig_mvf,
                 x, y, w, h, c_idx, do_bdof, hf_idx, vf_idx);
         }
         if (do_ciip) {
@@ -741,11 +743,11 @@ static void pred_affine_blk(VVCLocalContext *lc)
 
             if (mi->pred_flag != PF_BI) {
                 const int lx = mi->pred_flag - PF_L0;
-                luma_prof_uni(lc, dst0, fc->frame->linesize[LUMA], refp[lx]->ref->frame,
+                luma_prof_uni(lc, dst0, fc->frame->linesize[LUMA], refp[lx]->ref,
                     mv, x, y, sbw, sbh, pu->cb_prof_flag[lx],
                     pu->diff_mv_x[lx], pu->diff_mv_y[lx]);
             } else {
-                luma_prof_bi(lc, dst0, fc->frame->linesize[LUMA], refp[L0]->ref->frame, refp[L1]->ref->frame,
+                luma_prof_bi(lc, dst0, fc->frame->linesize[LUMA], refp[L0]->ref, refp[L1]->ref,
                     mv, x, y, sbw, sbh);
             }
             if (fc->ps.sps->r->sps_chroma_format_idc) {

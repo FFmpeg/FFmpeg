@@ -60,6 +60,8 @@ typedef struct RefPicListTab {
 typedef struct VVCFrame {
     struct AVFrame *frame;
 
+    const VVCSPS *sps;                          ///< RefStruct reference
+    const VVCPPS *pps;                          ///< RefStruct reference
     struct MvField *tab_dmvr_mvf;               ///< RefStruct reference
     RefPicListTab **rpl_tab;                    ///< RefStruct reference
     RefPicListTab  *rpl;                        ///< RefStruct reference

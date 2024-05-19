@@ -52,6 +52,8 @@ void ff_vvc_unref_frame(VVCFrameContext *fc, VVCFrame *frame, int flags)
     frame->flags &= ~flags;
     if (!frame->flags) {
         av_frame_unref(frame->frame);
+        ff_refstruct_unref(&frame->sps);
+        ff_refstruct_unref(&frame->pps);
         ff_refstruct_unref(&frame->progress);
 
         ff_refstruct_unref(&frame->tab_dmvr_mvf);
@@ -118,6 +120,9 @@ static VVCFrame *alloc_frame(VVCContext *s, VVCFrameContext *fc)
         VVCFrame *frame = &fc->DPB[i];
         if (frame->frame->buf[0])
             continue;
+
+        frame->sps = ff_refstruct_ref_c(fc->ps.sps);
+        frame->pps = ff_refstruct_ref_c(fc->ps.pps);
 
         ret = ff_thread_get_buffer(s->avctx, frame->frame, AV_GET_BUFFER_FLAG_REF);
         if (ret < 0)
