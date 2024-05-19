@@ -482,98 +482,48 @@ static int ciip_derive_intra_weight(const VVCLocalContext *lc, const int x0, con
     return w;
 }
 
-static void pred_regular_luma(VVCLocalContext *lc, const int hf_idx, const int vf_idx, const MvField *mv,
-    const int x0, const int y0, const int sbw, const int sbh, const MvField *orig_mv, const int sb_bdof_flag)
+static void pred_regular(VVCLocalContext *lc, const MvField *mvf, const MvField *orig_mvf,
+    const int x0, const int y0, const int sbw, const int sbh, const int sb_bdof_flag, const int c_start)
 {
-    const SliceContext *sc          = lc->sc;
-    const VVCFrameContext *fc       = lc->fc;
-    const int ciip_flag             = lc->cu->ciip_flag;
-    uint8_t *dst                    = POS(0, x0, y0);
-    const ptrdiff_t dst_stride      = fc->frame->linesize[0];
-    uint8_t *inter                  = ciip_flag ? (uint8_t *)lc->ciip_tmp1 : dst;
-    const ptrdiff_t inter_stride    = ciip_flag ? (MAX_PB_SIZE * sizeof(uint16_t)) : dst_stride;
+    const VVCFrameContext *fc = lc->fc;
+    const int c_end           = fc->ps.sps->r->sps_chroma_format_idc ? CR : LUMA;
     VVCFrame *ref[2];
 
-    if (pred_get_refs(lc, ref, mv) < 0)
+    if (pred_get_refs(lc, ref, mvf) < 0)
         return;
 
-    if (mv->pred_flag != PF_BI) {
-        const int lx = mv->pred_flag - PF_L0;
-        mc_uni(lc, inter, inter_stride, ref[lx]->frame, mv,
-            x0, y0, sbw, sbh, LUMA, hf_idx, vf_idx);
-    } else {
-        mc_bi(lc, inter, inter_stride, ref[0]->frame, ref[1]->frame, mv, orig_mv,
-            x0, y0, sbw, sbh, LUMA, sb_bdof_flag, hf_idx, vf_idx);
-    }
+    for (int c_idx = c_start; c_idx <= c_end; c_idx++) {
+        uint8_t *dst                 = POS(c_idx, x0, y0);
+        const ptrdiff_t dst_stride   = fc->frame->linesize[c_idx];
+        const int hs                 = fc->ps.sps->hshift[c_idx];
+        const int vs                 = fc->ps.sps->vshift[c_idx];
+        const int x                  = x0 >> hs;
+        const int y                  = y0 >> vs;
+        const int w                  = sbw >> hs;
+        const int h                  = sbh >> vs;
+        const int is_luma            = !c_idx;
+        const int do_ciip            = lc->cu->ciip_flag && (is_luma || (w > 2));
+        uint8_t *inter               = do_ciip ? (uint8_t *)lc->ciip_tmp : dst;
+        const ptrdiff_t inter_stride = do_ciip ? (MAX_PB_SIZE * sizeof(uint16_t)) : dst_stride;
+        const int hf_idx             = is_luma ? lc->cu->pu.mi.hpel_if_idx : 0;
+        const int vf_idx             = is_luma ? lc->cu->pu.mi.hpel_if_idx : 0;
+        const int do_bdof            = is_luma && sb_bdof_flag;
 
-    if (ciip_flag) {
-        const int intra_weight = ciip_derive_intra_weight(lc, x0, y0, sbw, sbh);
-        fc->vvcdsp.intra.intra_pred(lc, x0, y0, sbw, sbh, 0);
-        if (sc->sh.r->sh_lmcs_used_flag)
-            fc->vvcdsp.lmcs.filter(inter, inter_stride, sbw, sbh, &fc->ps.lmcs.fwd_lut);
-        fc->vvcdsp.inter.put_ciip(dst, dst_stride, sbw, sbh, inter, inter_stride, intra_weight);
-
-    }
-}
-
-static void pred_regular_chroma(VVCLocalContext *lc, const MvField *mv,
-    const int x0, const int y0, const int sbw, const int sbh, const MvField *orig_mv, const int dmvr_flag)
-{
-    const VVCFrameContext *fc   = lc->fc;
-    const int hs                = fc->ps.sps->hshift[1];
-    const int vs                = fc->ps.sps->vshift[1];
-    const int x0_c              = x0 >> hs;
-    const int y0_c              = y0 >> vs;
-    const int w_c               = sbw >> hs;
-    const int h_c               = sbh >> vs;
-    const int do_ciip           = lc->cu->ciip_flag && (w_c > 2);
-
-    uint8_t* dst1               = POS(1, x0, y0);
-    uint8_t* dst2               = POS(2, x0, y0);
-    const ptrdiff_t dst1_stride = fc->frame->linesize[1];
-    const ptrdiff_t dst2_stride = fc->frame->linesize[2];
-
-    uint8_t *inter1 = do_ciip ? (uint8_t *)lc->ciip_tmp1 : dst1;
-    const ptrdiff_t inter1_stride = do_ciip ? (MAX_PB_SIZE * sizeof(uint16_t)) : dst1_stride;
-
-    uint8_t *inter2 = do_ciip ? (uint8_t *)lc->ciip_tmp2 : dst2;
-    const ptrdiff_t inter2_stride = do_ciip ? (MAX_PB_SIZE * sizeof(uint16_t)) : dst2_stride;
-
-    //fix me
-    const int hf_idx = 0;
-    const int vf_idx = 0;
-    VVCFrame *ref[2];
-
-    if (pred_get_refs(lc, ref, mv) < 0)
-        return;
-
-    if (mv->pred_flag != PF_BI) {
-        const int lx = mv->pred_flag - PF_L0;
-        if (!ref[lx])
-            return;
-
-        mc_uni(lc, inter1, inter1_stride, ref[lx]->frame, mv,
-            x0_c, y0_c, w_c, h_c, CB, hf_idx, vf_idx);
-        mc_uni(lc, inter2, inter2_stride, ref[lx]->frame, mv,
-            x0_c, y0_c, w_c, h_c, CR, hf_idx, vf_idx);
-    } else {
-        if (!ref[0] || !ref[1])
-            return;
-
-        mc_bi(lc, inter1, inter1_stride, ref[0]->frame, ref[1]->frame, mv, orig_mv,
-            x0_c, y0_c, w_c, h_c, CB, 0, hf_idx, vf_idx);
-
-        mc_bi(lc, inter2, inter2_stride, ref[0]->frame, ref[1]->frame, mv, orig_mv,
-            x0_c, y0_c, w_c, h_c, CR, 0, hf_idx, vf_idx);
-
-    }
-    if (do_ciip) {
-        const int intra_weight = ciip_derive_intra_weight(lc, x0, y0, sbw, sbh);
-        fc->vvcdsp.intra.intra_pred(lc, x0, y0, sbw, sbh, 1);
-        fc->vvcdsp.intra.intra_pred(lc, x0, y0, sbw, sbh, 2);
-        fc->vvcdsp.inter.put_ciip(dst1, dst1_stride, w_c, h_c, inter1, inter1_stride, intra_weight);
-        fc->vvcdsp.inter.put_ciip(dst2, dst2_stride, w_c, h_c, inter2, inter2_stride, intra_weight);
-
+        if (mvf->pred_flag != PF_BI) {
+            const int lx = mvf->pred_flag - PF_L0;
+            mc_uni(lc, inter, inter_stride, ref[lx]->frame, mvf,
+                x, y, w, h, c_idx, hf_idx, vf_idx);
+        } else {
+            mc_bi(lc, inter, inter_stride, ref[0]->frame, ref[1]->frame, mvf, orig_mvf,
+                x, y, w, h, c_idx, do_bdof, hf_idx, vf_idx);
+        }
+        if (do_ciip) {
+            const int intra_weight = ciip_derive_intra_weight(lc, x0, y0, sbw, sbh);
+            fc->vvcdsp.intra.intra_pred(lc, x0, y0, sbw, sbh, c_idx);
+            if (!c_idx && lc->sc->sh.r->sh_lmcs_used_flag)
+                fc->vvcdsp.lmcs.filter(inter, inter_stride, w, h, &fc->ps.lmcs.fwd_lut);
+            fc->vvcdsp.inter.put_ciip(dst, dst_stride, w, h, inter, inter_stride, intra_weight);
+        }
     }
 }
 
@@ -720,7 +670,6 @@ static void derive_sb_mv(VVCLocalContext *lc, MvField *mv, MvField *orig_mv, int
 
 static void pred_regular_blk(VVCLocalContext *lc, const int skip_ciip)
 {
-    const VVCFrameContext *fc   = lc->fc;
     const CodingUnit *cu        = lc->cu;
     PredictionUnit *pu          = &lc->cu->pu;
     const MotionInfo *mi        = &pu->mi;
@@ -742,9 +691,7 @@ static void pred_regular_blk(VVCLocalContext *lc, const int skip_ciip)
                 ff_vvc_set_neighbour_available(lc, x0, y0, sbw, sbh);
 
             derive_sb_mv(lc, &mv, &orig_mv, &sb_bdof_flag, x0, y0, sbw, sbh);
-            pred_regular_luma(lc, mi->hpel_if_idx, mi->hpel_if_idx, &mv, x0, y0, sbw, sbh, &orig_mv, sb_bdof_flag);
-            if (fc->ps.sps->r->sps_chroma_format_idc)
-                pred_regular_chroma(lc, &mv, x0, y0, sbw, sbh, &orig_mv, pu->dmvr_flag);
+            pred_regular(lc, &mv, &orig_mv, x0, y0, sbw, sbh, sb_bdof_flag, LUMA);
         }
     }
 }
@@ -804,9 +751,9 @@ static void pred_affine_blk(VVCLocalContext *lc)
             if (fc->ps.sps->r->sps_chroma_format_idc) {
                 if (!av_mod_uintp2(sby, vs) && !av_mod_uintp2(sbx, hs)) {
                     MvField mvc;
-                    derive_affine_mvc(&mvc, fc, mv, x, y, sbw, sbh);
-                    pred_regular_chroma(lc, &mvc, x, y, sbw<<hs, sbh<<vs, NULL, 0);
 
+                    derive_affine_mvc(&mvc, fc, mv, x, y, sbw, sbh);
+                    pred_regular(lc, &mvc, NULL, x, y, sbw << hs, sbh << vs, 0, CB);
                 }
             }
 
