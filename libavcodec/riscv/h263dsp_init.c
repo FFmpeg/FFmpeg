@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2022 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -16,21 +18,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_H263DSP_H
-#define AVCODEC_H263DSP_H
+#include "config.h"
 
-#include <stdint.h>
+#include "libavutil/attributes.h"
+#include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
+#include "libavcodec/h263dsp.h"
 
-extern const uint8_t ff_h263_loop_filter_strength[32];
+void ff_h263_h_loop_filter_rvv(uint8_t *src, int stride, int q);
+void ff_h263_v_loop_filter_rvv(uint8_t *src, int stride, int q);
 
-typedef struct H263DSPContext {
-    void (*h263_h_loop_filter)(uint8_t *src, int stride, int qscale);
-    void (*h263_v_loop_filter)(uint8_t *src, int stride, int qscale);
-} H263DSPContext;
+av_cold void ff_h263dsp_init_riscv(H263DSPContext *c)
+{
+#if HAVE_RVV
+    int flags = av_get_cpu_flags();
 
-void ff_h263dsp_init(H263DSPContext *ctx);
-void ff_h263dsp_init_riscv(H263DSPContext *ctx);
-void ff_h263dsp_init_x86(H263DSPContext *ctx);
-void ff_h263dsp_init_mips(H263DSPContext *ctx);
-
-#endif /* AVCODEC_H263DSP_H */
+    if ((flags & AV_CPU_FLAG_RVV_I32) && ff_rv_vlen_least(128)) {
+        c->h263_h_loop_filter = ff_h263_h_loop_filter_rvv;
+        c->h263_v_loop_filter = ff_h263_v_loop_filter_rvv;
+    }
+#endif
+}

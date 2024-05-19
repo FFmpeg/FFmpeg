@@ -119,7 +119,9 @@ av_cold void ff_h263dsp_init(H263DSPContext *ctx)
     ctx->h263_h_loop_filter = h263_h_loop_filter_c;
     ctx->h263_v_loop_filter = h263_v_loop_filter_c;
 
-#if ARCH_X86
+#if ARCH_RISCV
+    ff_h263dsp_init_riscv(ctx);
+#elif ARCH_X86
     ff_h263dsp_init_x86(ctx);
 #elif ARCH_MIPS
     ff_h263dsp_init_mips(ctx);
