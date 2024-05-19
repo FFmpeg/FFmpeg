@@ -321,9 +321,9 @@ static int boundary_strength(const VVCLocalContext *lc, const MvField *curr, con
 
     if (curr->pred_flag == PF_BI &&  neigh->pred_flag == PF_BI) {
         // same L0 and L1
-        if (rpl[0].list[curr->ref_idx[0]] == neigh_rpl[0].list[neigh->ref_idx[0]]  &&
-            rpl[0].list[curr->ref_idx[0]] == rpl[1].list[curr->ref_idx[1]] &&
-            neigh_rpl[0].list[neigh->ref_idx[0]] == neigh_rpl[1].list[neigh->ref_idx[1]]) {
+        if (rpl[L0].refs[curr->ref_idx[L0]].poc == neigh_rpl[L0].refs[neigh->ref_idx[L0]].poc  &&
+            rpl[L0].refs[curr->ref_idx[L0]].poc == rpl[L1].refs[curr->ref_idx[L1]].poc &&
+            neigh_rpl[L0].refs[neigh->ref_idx[L0]].poc == neigh_rpl[L1].refs[neigh->ref_idx[L1]].poc) {
             if ((FFABS(neigh->mv[0].x - curr->mv[0].x) >= 8 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 8 ||
                  FFABS(neigh->mv[1].x - curr->mv[1].x) >= 8 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 8) &&
                 (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 8 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 8 ||
@@ -331,15 +331,15 @@ static int boundary_strength(const VVCLocalContext *lc, const MvField *curr, con
                 return 1;
             else
                 return 0;
-        } else if (neigh_rpl[0].list[neigh->ref_idx[0]] == rpl[0].list[curr->ref_idx[0]] &&
-                   neigh_rpl[1].list[neigh->ref_idx[1]] == rpl[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_rpl[L0].refs[neigh->ref_idx[L0]].poc == rpl[L0].refs[curr->ref_idx[L0]].poc &&
+                   neigh_rpl[L1].refs[neigh->ref_idx[L1]].poc == rpl[L1].refs[curr->ref_idx[L1]].poc) {
             if (FFABS(neigh->mv[0].x - curr->mv[0].x) >= 8 || FFABS(neigh->mv[0].y - curr->mv[0].y) >= 8 ||
                 FFABS(neigh->mv[1].x - curr->mv[1].x) >= 8 || FFABS(neigh->mv[1].y - curr->mv[1].y) >= 8)
                 return 1;
             else
                 return 0;
-        } else if (neigh_rpl[1].list[neigh->ref_idx[1]] == rpl[0].list[curr->ref_idx[0]] &&
-                   neigh_rpl[0].list[neigh->ref_idx[0]] == rpl[1].list[curr->ref_idx[1]]) {
+        } else if (neigh_rpl[L1].refs[neigh->ref_idx[L1]].poc == rpl[L0].refs[curr->ref_idx[L0]].poc &&
+                   neigh_rpl[L0].refs[neigh->ref_idx[L0]].poc == rpl[L1].refs[curr->ref_idx[L1]].poc) {
             if (FFABS(neigh->mv[1].x - curr->mv[0].x) >= 8 || FFABS(neigh->mv[1].y - curr->mv[0].y) >= 8 ||
                 FFABS(neigh->mv[0].x - curr->mv[1].x) >= 8 || FFABS(neigh->mv[0].y - curr->mv[1].y) >= 8)
                 return 1;
@@ -354,18 +354,18 @@ static int boundary_strength(const VVCLocalContext *lc, const MvField *curr, con
 
         if (curr->pred_flag & 1) {
             A     = curr->mv[0];
-            ref_A = rpl[0].list[curr->ref_idx[0]];
+            ref_A = rpl[L0].refs[curr->ref_idx[L0]].poc;
         } else {
             A     = curr->mv[1];
-            ref_A = rpl[1].list[curr->ref_idx[1]];
+            ref_A = rpl[L1].refs[curr->ref_idx[L1]].poc;
         }
 
         if (neigh->pred_flag & 1) {
             B     = neigh->mv[0];
-            ref_B = neigh_rpl[0].list[neigh->ref_idx[0]];
+            ref_B = neigh_rpl[L0].refs[neigh->ref_idx[L0]].poc;
         } else {
             B     = neigh->mv[1];
-            ref_B = neigh_rpl[1].list[neigh->ref_idx[1]];
+            ref_B = neigh_rpl[L1].refs[neigh->ref_idx[L1]].poc;
         }
 
         if (ref_A == ref_B) {

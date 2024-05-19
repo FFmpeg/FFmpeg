@@ -1263,8 +1263,8 @@ static void derive_mmvd(const VVCLocalContext *lc, MvField *mvf, const Mv *mmvd_
         const RefPicList *rpl = sc->rpl;
         const int poc = lc->fc->ps.ph.poc;
         const int diff[] = {
-            poc - rpl[0].list[mvf->ref_idx[0]],
-            poc - rpl[1].list[mvf->ref_idx[1]]
+            poc - rpl[L0].refs[mvf->ref_idx[L0]].poc,
+            poc - rpl[L1].refs[mvf->ref_idx[L1]].poc
         };
         const int sign = FFSIGN(diff[0]) != FFSIGN(diff[1]);
 
@@ -1275,7 +1275,7 @@ static void derive_mmvd(const VVCLocalContext *lc, MvField *mvf, const Mv *mmvd_
             const int i = FFABS(diff[0]) < FFABS(diff[1]);
             const int o = !i;
             mmvd[i] = *mmvd_offset;
-            if (!rpl[0].isLongTerm[mvf->ref_idx[0]] && !rpl[1].isLongTerm[mvf->ref_idx[1]]) {
+            if (!rpl[L0].refs[mvf->ref_idx[L0]].is_lt && !rpl[L1].refs[mvf->ref_idx[L1]].is_lt) {
                 ff_vvc_mv_scale(&mmvd[o], mmvd_offset, diff[i], diff[o]);
             }
             else {
@@ -1699,8 +1699,8 @@ static void derive_dmvr_bdof_flag(const VVCLocalContext *lc, PredictionUnit *pu)
     pu->bdof_flag = 0;
 
     if (mi->pred_flag == PF_BI &&
-        (poc - rpl0->list[ref_idx[L0]] == rpl1->list[ref_idx[L1]] - poc) &&
-        !rpl0->isLongTerm[ref_idx[L0]] && !rpl1->isLongTerm[ref_idx[L1]] &&
+        (poc - rpl0->refs[ref_idx[L0]].poc == rpl1->refs[ref_idx[L1]].poc - poc) &&
+        !rpl0->refs[ref_idx[L0]].is_lt && !rpl1->refs[ref_idx[L1]].is_lt &&
         !cu->ciip_flag &&
         !mi->bcw_idx &&
         !w->weight_flag[L0][LUMA][mi->ref_idx[L0]] && !w->weight_flag[L1][LUMA][mi->ref_idx[L1]] &&

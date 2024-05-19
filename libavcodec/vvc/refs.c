@@ -352,7 +352,8 @@ static VVCFrame *generate_missing_ref(VVCContext *s, VVCFrameContext *fc, int po
 static int add_candidate_ref(VVCContext *s, VVCFrameContext *fc, RefPicList *list,
                              int poc, int ref_flag, uint8_t use_msb)
 {
-    VVCFrame *ref = find_ref_idx(s, fc, poc, use_msb);
+    VVCFrame *ref   = find_ref_idx(s, fc, poc, use_msb);
+    VVCRefPic *refp = &list->refs[list->nb_refs];
 
     if (ref == fc->ref || list->nb_refs >= VVC_MAX_REF_ENTRIES)
         return AVERROR_INVALIDDATA;
@@ -363,9 +364,9 @@ static int add_candidate_ref(VVCContext *s, VVCFrameContext *fc, RefPicList *lis
             return AVERROR(ENOMEM);
     }
 
-    list->list[list->nb_refs] = poc;
-    list->ref[list->nb_refs]  = ref;
-    list->isLongTerm[list->nb_refs] = ref_flag & VVC_FRAME_FLAG_LONG_REF;
+    refp->poc = poc;
+    refp->ref = ref;
+    refp->is_lt = ref_flag & VVC_FRAME_FLAG_LONG_REF;
     list->nb_refs++;
 
     mark_ref(ref, ref_flag);
@@ -463,7 +464,7 @@ int ff_vvc_slice_rpl(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
         }
         if ((!rsh->sh_collocated_from_l0_flag) == lx &&
             rsh->sh_collocated_ref_idx < rpl->nb_refs)
-            fc->ref->collocated_ref = rpl->ref[rsh->sh_collocated_ref_idx];
+            fc->ref->collocated_ref = rpl->refs[rsh->sh_collocated_ref_idx].ref;
     }
     return 0;
 }

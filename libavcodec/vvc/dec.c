@@ -403,8 +403,8 @@ static int8_t smvd_find(const VVCFrameContext *fc, const SliceContext *sc, int l
     int8_t idx                    = -1;
     int old_diff                  = -1;
     for (int i = 0; i < rsh->num_ref_idx_active[lx]; i++) {
-        if (!rpl->isLongTerm[i]) {
-            int diff = poc - rpl->list[i];
+        if (!rpl->refs[i].is_lt) {
+            int diff = poc - rpl->refs[i].poc;
             if (find(idx, diff, old_diff)) {
                 idx = i;
                 old_diff = diff;

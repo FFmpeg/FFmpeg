@@ -42,10 +42,14 @@
 #define L0                      0
 #define L1                      1
 
+typedef struct VVCRefPic {
+    struct VVCFrame *ref;
+    int poc;
+    int is_lt;                  // is long term reference
+} VVCRefPic;
+
 typedef struct RefPicList {
-    struct VVCFrame *ref[VVC_MAX_REF_ENTRIES];
-    int list[VVC_MAX_REF_ENTRIES];
-    int isLongTerm[VVC_MAX_REF_ENTRIES];
+    VVCRefPic refs[VVC_MAX_REF_ENTRIES];
     int nb_refs;
 } RefPicList;
 

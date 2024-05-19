@@ -394,7 +394,7 @@ static int pred_get_refs(const VVCLocalContext *lc, VVCFrame *ref[2],  const MvF
     for (int mask = PF_L0; mask <= PF_L1; mask++) {
         if (mv->pred_flag & mask) {
             const int lx = mask - PF_L0;
-            ref[lx] = rpl[lx].ref[mv->ref_idx[lx]];
+            ref[lx] = rpl[lx].refs[mv->ref_idx[lx]].ref;
             if (!ref[lx])
                 return AVERROR_INVALIDDATA;
         }
@@ -450,7 +450,7 @@ static void pred_gpm_blk(VVCLocalContext *lc)
         for (int i = 0; i < 2; i++) {
             const MvField *mv = pu->gpm_mv + i;
             const int lx = mv->pred_flag - PF_L0;
-            VVCFrame *ref = lc->sc->rpl[lx].ref[mv->ref_idx[lx]];
+            VVCFrame *ref = lc->sc->rpl[lx].refs[mv->ref_idx[lx]].ref;
             if (!ref)
                 return;
             mc(lc, tmp[i], ref->frame, mv->mv + lx, x, y, width, height, c_idx);

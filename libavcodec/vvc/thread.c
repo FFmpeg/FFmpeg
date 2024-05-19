@@ -294,7 +294,7 @@ static void schedule_inter(VVCContext *s, VVCFrameContext *fc, const SliceContex
         for (int lx = 0; lx < 2; lx++) {
             for (int i = 0; i < sh->r->num_ref_idx_active[lx]; i++) {
                 const int y = ctu->max_y[lx][i];
-                VVCFrame *ref = sc->rpl[lx].ref[i];
+                VVCFrame *ref = sc->rpl[lx].refs[i].ref;
                 if (ref && y >= 0)
                     add_progress_listener(ref, &t->listener[lx][i], t, s, VVC_PROGRESS_PIXEL, y + LUMA_EXTRA_AFTER);
             }

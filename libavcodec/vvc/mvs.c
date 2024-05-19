@@ -88,8 +88,8 @@ static int check_mvset(Mv *mvLXCol, Mv *mvCol,
                        const RefPicList *refPicList, int X, int refIdxLx,
                        const RefPicList *refPicList_col, int listCol, int refidxCol)
 {
-    int cur_lt = refPicList[X].isLongTerm[refIdxLx];
-    int col_lt = refPicList_col[listCol].isLongTerm[refidxCol];
+    int cur_lt = refPicList[X].refs[refIdxLx].is_lt;
+    int col_lt = refPicList_col[listCol].refs[refidxCol].is_lt;
     int col_poc_diff, cur_poc_diff;
 
     if (cur_lt != col_lt) {
@@ -98,8 +98,8 @@ static int check_mvset(Mv *mvLXCol, Mv *mvCol,
         return 0;
     }
 
-    col_poc_diff = colPic - refPicList_col[listCol].list[refidxCol];
-    cur_poc_diff = poc    - refPicList[X].list[refIdxLx];
+    col_poc_diff = colPic - refPicList_col[listCol].refs[refidxCol].poc;
+    cur_poc_diff = poc    - refPicList[X].refs[refIdxLx].poc;
 
     mv_compression(mvCol);
     if (cur_lt || col_poc_diff == cur_poc_diff) {
@@ -126,7 +126,7 @@ int ff_vvc_no_backward_pred_flag(const VVCLocalContext *lc)
 
     for (j = 0; j < 2; j++) {
         for (i = 0; i < lc->sc->sh.r->num_ref_idx_active[j]; i++) {
-            if (rpl[j].list[i] > lc->fc->ps.ph.poc) {
+            if (rpl[j].refs[i].poc > lc->fc->ps.ph.poc) {
                 check_diffpicount++;
                 break;
             }
@@ -1059,9 +1059,9 @@ static int sb_temporal_luma_motion_data(const VVCLocalContext *lc, const MvField
     colPic  = ref->poc;
 
     if (a1) {
-        if ((a1->pred_flag & PF_L0) && colPic == rpl[0].list[a1->ref_idx[0]])
+        if ((a1->pred_flag & PF_L0) && colPic == rpl[L0].refs[a1->ref_idx[L0]].poc)
             *temp_mv = a1->mv[0];
-        else if ((a1->pred_flag & PF_L1) && colPic == rpl[1].list[a1->ref_idx[1]])
+        else if ((a1->pred_flag & PF_L1) && colPic == rpl[L1].refs[a1->ref_idx[L1]].poc)
             *temp_mv = a1->mv[1];
         ff_vvc_round_mv(temp_mv, 0, 4);
     }
@@ -1418,16 +1418,16 @@ static int mvp_candidate(const VVCLocalContext *lc, const int x_cand, const int 
     const MvField* tab_mvf          = fc->tab.mvf;
     const MvField *mvf              = &TAB_MVF(x_cand, y_cand);
     const PredFlag maskx = lx + 1;
-    const int poc = rpl[lx].list[ref_idx[lx]];
+    const int poc = rpl[lx].refs[ref_idx[lx]].poc;
     int available = 0;
 
-    if ((mvf->pred_flag & maskx) && rpl[lx].list[mvf->ref_idx[lx]] == poc) {
+    if ((mvf->pred_flag & maskx) && rpl[lx].refs[mvf->ref_idx[lx]].poc == poc) {
         available = 1;
         *mv = mvf->mv[lx];
     } else {
         const int ly = !lx;
         const PredFlag masky = ly + 1;
-        if ((mvf->pred_flag & masky) && rpl[ly].list[mvf->ref_idx[ly]] == poc) {
+        if ((mvf->pred_flag & masky) && rpl[ly].refs[mvf->ref_idx[ly]].poc == poc) {
             available = 1;
             *mv = mvf->mv[ly];
         }
@@ -1450,15 +1450,15 @@ static int affine_mvp_candidate(const VVCLocalContext *lc,
         const MvField *mvf = &TAB_MVF(x_nb, y_nb);
         RefPicList* rpl = lc->sc->rpl;
         const PredFlag maskx = lx + 1;
-        const int poc = rpl[lx].list[ref_idx[lx]];
+        const int poc = rpl[lx].refs[ref_idx[lx]].poc;
 
-        if ((mvf->pred_flag & maskx) && rpl[lx].list[mvf->ref_idx[lx]] == poc) {
+        if ((mvf->pred_flag & maskx) && rpl[lx].refs[mvf->ref_idx[lx]].poc == poc) {
             available = 1;
             affine_cps_from_nb(lc, x_nb, y_nb, nbw, nbh, lx, cps, num_cp);
         } else {
             const int ly = !lx;
             const PredFlag masky = ly + 1;
-            if ((mvf->pred_flag & masky) && rpl[ly].list[mvf->ref_idx[ly]] == poc) {
+            if ((mvf->pred_flag & masky) && rpl[ly].refs[mvf->ref_idx[ly]].poc == poc) {
                 available = 1;
                 affine_cps_from_nb(lc, x_nb, y_nb, nbw, nbh, ly, cps, num_cp);
             }
@@ -1550,7 +1550,7 @@ static int mvp_history_candidates(const VVCLocalContext *lc,
 {
     const EntryPoint* ep            = lc->ep;
     const RefPicList* rpl           = lc->sc->rpl;
-    const int poc                   = rpl[lx].list[ref_idx];
+    const int poc                   = rpl[lx].refs[ref_idx].poc;
 
     if (ep->num_hmvp == 0)
         return 0;
@@ -1559,7 +1559,7 @@ static int mvp_history_candidates(const VVCLocalContext *lc,
         for (int j = 0; j < 2; j++) {
             const int ly = (j ? !lx : lx);
             PredFlag mask = PF_L0 + ly;
-            if ((h->pred_flag & mask) && poc == rpl[ly].list[h->ref_idx[ly]]) {
+            if ((h->pred_flag & mask) && poc == rpl[ly].refs[h->ref_idx[ly]].poc) {
                 if (mvp_lx_flag == num_cands) {
                     *mv = h->mv[ly];
                     ff_vvc_round_mv(mv, amvr_shift, amvr_shift);
@@ -1725,14 +1725,14 @@ static int affine_mvp_constructed_cp(NeighbourContext *ctx,
         if (check_available(n, ctx->lc, 0)) {
             const PredFlag maskx = lx + 1;
             const MvField* mvf = &TAB_MVF(n->x, n->y);
-            const int poc = rpl[lx].list[ref_idx];
-            if ((mvf->pred_flag & maskx) && rpl[lx].list[mvf->ref_idx[lx]] == poc) {
+            const int poc = rpl[lx].refs[ref_idx].poc;
+            if ((mvf->pred_flag & maskx) && rpl[lx].refs[mvf->ref_idx[lx]].poc == poc) {
                 available = 1;
                 *cp = mvf->mv[lx];
             } else {
                 const int ly = !lx;
                 const PredFlag masky = ly + 1;
-                if ((mvf->pred_flag & masky) && rpl[ly].list[mvf->ref_idx[ly]] == poc) {
+                if ((mvf->pred_flag & masky) && rpl[ly].refs[mvf->ref_idx[ly]].poc == poc) {
                     available = 1;
                     *cp = mvf->mv[ly];
                 }
