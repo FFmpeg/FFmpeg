@@ -142,25 +142,13 @@ static void emulated_edge_bilinear(const VVCLocalContext *lc, uint8_t *dst, cons
     }
 }
 
-#define MC_EMULATED_EDGE(dst, src, src_stride, x_off, y_off)                               \
+#define MC_EMULATED_EDGE(dst, src, src_stride, x_off, y_off)                                                \
     emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, is_chroma)
-
-#define EMULATED_EDGE_LUMA(dst, src, src_stride, x_off, y_off)                      \
-    emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, 0)
-
-#define EMULATED_EDGE_CHROMA(dst, src, src_stride, x_off, y_off)                    \
-    emulated_edge(lc, dst, src, src_stride, x_off, y_off, block_w, block_h, 1)
 
 #define MC_EMULATED_EDGE_DMVR(dst, src, src_stride, x_sb, y_sb, x_off, y_off)                               \
     emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, is_chroma)
 
-#define EMULATED_EDGE_DMVR_LUMA(dst, src, src_stride, x_sb, y_sb, x_off, y_off)     \
-    emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, 0)
-
-#define EMULATED_EDGE_DMVR_CHROMA(dst, src, src_stride, x_sb, y_sb, x_off, y_off)   \
-    emulated_edge_dmvr(lc, dst, src, src_stride, x_sb, y_sb, x_off, y_off, block_w, block_h, 1)
-
-#define EMULATED_EDGE_BILINEAR(dst, src, src_stride, x_off, y_off)                  \
+#define MC_EMULATED_EDGE_BILINEAR(dst, src, src_stride, x_off, y_off)                                       \
     emulated_edge_bilinear(lc, dst, src, src_stride, x_off, y_off, pred_w, pred_h)
 
 // part of 8.5.6.6 Weighted sample prediction process
@@ -336,12 +324,13 @@ static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst
     const int8_t *vf            = ff_vvc_inter_luma_filters[2][my];
     int denom, wx, ox;
     const int weight_flag       = derive_weight_uni(&denom, &wx, &ox, lc, mvf, LUMA);
+    const int is_chroma         = 0;
 
     x_off += mv->x >> 4;
     y_off += mv->y >> 4;
     src   += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
 
-    EMULATED_EDGE_LUMA(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
+    MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
     if (cb_prof_flag) {
         fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](prof_tmp, src, src_stride, AFFINE_MIN_BLOCK_SIZE, hf, vf, AFFINE_MIN_BLOCK_SIZE);
         fc->vvcdsp.inter.fetch_samples(prof_tmp, src, src_stride, mx, my);
@@ -369,6 +358,7 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
     const int idx               = av_log2(block_w) - 1;
     int denom, w0, w1, o0, o1;
     const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, LUMA, 0);
+    const int is_chroma         = 0;
 
     for (int i = L0; i <= L1; i++) {
         const Mv *mv            = mvf->mv + i;
@@ -381,7 +371,7 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
         const int8_t *hf        = ff_vvc_inter_luma_filters[2][mx];
         const int8_t *vf        = ff_vvc_inter_luma_filters[2][my];
 
-        EMULATED_EDGE_LUMA(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
+        MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
         if (!pu->cb_prof_flag[i]) {
             fc->vvcdsp.inter.put[LUMA][idx][!!my][!!mx](tmp[i], src, src_stride, block_h, hf, vf, block_w);
         } else {
@@ -654,7 +644,7 @@ static void dmvr_mv_refine(VVCLocalContext *lc, MvField *mvf, MvField *orig_mv, 
         const int oy            = y_off + (mv->y >> 4) - sr_range;
         ptrdiff_t src_stride    = ref[i]->linesize[LUMA];
         const uint8_t *src      = ref[i]->data[LUMA] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
-        EMULATED_EDGE_BILINEAR(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
+        MC_EMULATED_EDGE_BILINEAR(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
         fc->vvcdsp.inter.dmvr[!!my][!!mx](tmp[i], src, src_stride, pred_h, mx, my, pred_w);
     }
 
