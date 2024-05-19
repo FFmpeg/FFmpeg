@@ -1976,7 +1976,7 @@ static void encode_flush(WavPackEncodeContext *s)
                 put_bits(pb, 31, 0x7FFFFFFF);
                 cbits -= 31;
             } else {
-                put_bits(pb, cbits, (1 << cbits) - 1);
+                put_bits(pb, cbits, (1U << cbits) - 1);
                 cbits = 0;
             }
         } while (cbits);
@@ -2005,7 +2005,7 @@ static void encode_flush(WavPackEncodeContext *s)
                     put_bits(pb, 31, 0x7FFFFFFF);
                     cbits -= 31;
                 } else {
-                    put_bits(pb, cbits, (1 << cbits) - 1);
+                    put_bits(pb, cbits, (1U << cbits) - 1);
                     cbits = 0;
                 }
             } while (cbits);
