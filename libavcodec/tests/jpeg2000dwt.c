@@ -57,7 +57,7 @@ static int test_dwt(int *array, int *ref, int border[2][2], int decomp_levels, i
                     j, array[j], ref[j],decomp_levels, border[0][0], border[0][1], border[1][0], border[1][1]);
             return 2;
         }
-        err2 += (array[j] - ref[j]) * (array[j] - ref[j]);
+        err2 += (array[j] - ref[j]) * (int64_t)(array[j] - ref[j]);
         array[j] = ref[j];
     }
     ff_dwt_destroy(s);
