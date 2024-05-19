@@ -22,6 +22,165 @@
 
 #include "libavcodec/h26x/h2656_inter_template.c"
 
+#define TMP_STRIDE EDGE_EMU_BUFFER_STRIDE
+static void av_always_inline FUNC(put_scaled)(uint8_t *_dst, const ptrdiff_t _dst_stride,
+    const uint8_t *const _src, ptrdiff_t _src_stride, const int src_height,
+    const int _x, const int _y, const int dx, const int dy,
+    const int height, const int8_t *hf, const int8_t *vf, const int width, const int is_uni, const int is_chroma)
+{
+    int16_t tmp_array[TMP_STRIDE * MAX_PB_SIZE];
+    int16_t *tmp                 = tmp_array;
+    pixel *dst                   = (pixel*)_dst;
+    int16_t *dst16               = (int16_t*)_dst;
+    const ptrdiff_t dst_stride   = _dst_stride / sizeof(pixel);
+    const ptrdiff_t src_stride   = _src_stride / sizeof(pixel);
+    const int shift              = FFMAX(2, 14 - BIT_DEPTH);
+    const int offset             = 1 << (shift - 1);
+    const int taps               = is_chroma ? VVC_INTER_CHROMA_TAPS : VVC_INTER_LUMA_TAPS;
+    const int extra              = is_chroma ? CHROMA_EXTRA : LUMA_EXTRA;
+    const int extra_before       = is_chroma ? CHROMA_EXTRA_BEFORE : LUMA_EXTRA_BEFORE;
+    const int shift1             = 6 - is_chroma;
+    const int shift2             = 4 + is_chroma;
+    const int x0                 = SCALED_INT(_x);
+    const int y0                 = SCALED_INT(_y);
+
+    for (int i = 0; i < width; i++) {
+        const int tx         = _x + dx * i;
+        const int x          = SCALED_INT(tx) - x0;
+        const int mx         = av_mod_uintp2(tx >> shift1, shift2);
+        const int8_t *filter = hf + mx * taps;
+        const pixel *src     = (pixel*)_src - extra_before * src_stride;
+
+        for (int j = 0; j < src_height + extra; j++) {
+            tmp[j] = (is_chroma ? CHROMA_FILTER(src, 1) : LUMA_FILTER(src, 1)) >> (BIT_DEPTH - 8);
+            src += src_stride;
+        }
+        tmp += TMP_STRIDE;
+    }
+
+    for (int i = 0; i < height; i++) {
+        const int ty         = _y + dy * i;
+        const int x          = SCALED_INT(ty) - y0;
+        const int mx         = av_mod_uintp2(ty >> shift1, shift2);
+        const int8_t *filter = vf + mx * taps;
+
+        tmp = tmp_array + extra_before;
+        for (int j = 0; j < width; j++) {
+            const int val = (is_chroma ? CHROMA_FILTER(tmp, 1) : LUMA_FILTER(tmp, 1)) >> 6;
+            if (is_uni)
+                dst[j] = av_clip_pixel((val  + offset) >> shift);
+            else
+                dst16[j] = val;
+            tmp += TMP_STRIDE;
+        }
+        if (is_uni)
+            dst += dst_stride;
+        else
+            dst16 += dst_stride;
+    }
+}
+
+static void FUNC(put_luma_scaled)(int16_t *_dst,
+    const uint8_t *_src, ptrdiff_t _src_stride, const int src_height,
+    const int x, const int y, const int dx, const int dy,
+    const int height, const int8_t *hf, const int8_t *vf, const int width)
+{
+    FUNC(put_scaled)((uint8_t *)_dst, MAX_PB_SIZE * sizeof(pixel), _src, _src_stride, src_height, x, y, dx, dy, height, hf, vf, width, 0, 0);
+}
+
+static void FUNC(put_chroma_scaled)(int16_t *_dst,
+    const uint8_t *_src, ptrdiff_t _src_stride, const int src_height,
+    const int x, const int y, const int dx, const int dy,
+    const int height, const int8_t *hf, const int8_t *vf, const int width)
+{
+    FUNC(put_scaled)((uint8_t *)_dst, MAX_PB_SIZE * sizeof(pixel), _src, _src_stride, src_height, x, y, dx, dy, height, hf, vf, width, 0, 1);
+}
+
+static void FUNC(put_uni_luma_scaled)(uint8_t *_dst, const ptrdiff_t _dst_stride,
+    const uint8_t *_src, ptrdiff_t _src_stride, const int src_height,
+    const int x, const int y, const int dx, const int dy,
+    const int height, const int8_t *hf, const int8_t *vf, const int width)
+{
+    FUNC(put_scaled)(_dst, _dst_stride, _src, _src_stride, src_height, x, y, dx, dy, height, hf, vf, width, 1, 0);
+}
+
+static void FUNC(put_uni_chroma_scaled)(uint8_t *_dst, const ptrdiff_t _dst_stride,
+    const uint8_t *_src, ptrdiff_t _src_stride, const int src_height,
+    const int x, const int y, const int dx, const int dy,
+    const int height, const int8_t *hf, const int8_t *vf, const int width)
+{
+    FUNC(put_scaled)(_dst, _dst_stride, _src, _src_stride, src_height, x, y, dx, dy, height, hf, vf, width, 1, 1);
+}
+
+static void av_always_inline FUNC(put_uni_w_scaled)(uint8_t *_dst, const ptrdiff_t _dst_stride,
+    const uint8_t *const _src, ptrdiff_t _src_stride, const int src_height,
+    const int _x, const int _y, const int dx, const int dy, const int denom, const int wx, const int _ox,
+    const int height, const int8_t *hf, const int8_t *vf, const int width, const int is_chroma)
+{
+    int16_t tmp_array[TMP_STRIDE * MAX_PB_SIZE];
+    int16_t *tmp                 = tmp_array;
+    pixel *dst                   = (pixel*)_dst;
+    const ptrdiff_t dst_stride   = _dst_stride / sizeof(pixel);
+    const ptrdiff_t src_stride   = _src_stride / sizeof(pixel);
+    const int shift              = FFMAX(2, 14 - BIT_DEPTH);
+    const int offset             = 1 << (shift - 1);
+    const int ox                 = _ox * (1 << (BIT_DEPTH - 8));
+    const int taps               = is_chroma ? VVC_INTER_CHROMA_TAPS : VVC_INTER_LUMA_TAPS;
+    const int extra              = is_chroma ? CHROMA_EXTRA : LUMA_EXTRA;
+    const int extra_before       = is_chroma ? CHROMA_EXTRA_BEFORE : LUMA_EXTRA_BEFORE;
+    const int shift1             = 6 - is_chroma;
+    const int shift2             = 4 + is_chroma;
+    const int x0                 = SCALED_INT(_x);
+    const int y0                 = SCALED_INT(_y);
+
+    for (int i = 0; i < width; i++) {
+        const int tx         = _x + dx * i;
+        const int x          = SCALED_INT(tx) - x0;
+        const int mx         = av_mod_uintp2(tx >> shift1, shift2);
+        const int8_t *filter = hf + mx * taps;
+        const pixel *src     = (pixel*)_src - extra_before * src_stride;
+
+        for (int j = 0; j < src_height + extra; j++) {
+            tmp[j] = (is_chroma ? CHROMA_FILTER(src, 1) : LUMA_FILTER(src, 1)) >> (BIT_DEPTH - 8);
+            src += src_stride;
+        }
+        tmp += TMP_STRIDE;
+    }
+
+    for (int i = 0; i < height; i++) {
+        const int ty         = _y + dy * i;
+        const int x          = SCALED_INT(ty) - y0;
+        const int mx         = av_mod_uintp2(ty >> shift1, shift2);
+        const int8_t *filter = vf + mx * taps;
+
+        tmp = tmp_array + extra_before;
+        for (int j = 0; j < width; j++) {
+            const int val = (is_chroma ? CHROMA_FILTER(tmp, 1) : LUMA_FILTER(tmp, 1)) >> 6;
+            dst[j] = av_clip_pixel(((wx * val  + offset) >> shift) + ox);
+            tmp += TMP_STRIDE;
+        }
+        dst += dst_stride;
+    }
+}
+
+static void FUNC(put_uni_luma_w_scaled)(uint8_t *_dst, const ptrdiff_t _dst_stride,
+    const uint8_t *_src, ptrdiff_t _src_stride, const int src_height,
+    const int x, const int y, const int dx, const int dy, const int denom, const int wx, const int ox,
+    const int height, const int8_t *hf, const int8_t *vf, const int width)
+{
+    FUNC(put_uni_w_scaled)(_dst, _dst_stride, _src, _src_stride, src_height, x, y, dx, dy, denom, wx, ox, height, hf, vf, width, 0);
+}
+
+static void FUNC(put_uni_chroma_w_scaled)(uint8_t *_dst, const ptrdiff_t _dst_stride,
+    const uint8_t *_src, ptrdiff_t _src_stride, const int src_height,
+    const int x, const int y, const int dx, const int dy, const int denom, const int wx, const int ox,
+    const int height, const int8_t *hf, const int8_t *vf, const int width)
+{
+    FUNC(put_uni_w_scaled)(_dst, _dst_stride, _src, _src_stride, src_height, x, y, dx, dy,  denom, wx, ox, height, hf, vf, width, 1);
+}
+
+#undef TMP_STRIDE
+
 static void FUNC(avg)(uint8_t *_dst, const ptrdiff_t _dst_stride,
     const int16_t *src0, const int16_t *src1, const int width, const int height)
 {
@@ -439,6 +598,15 @@ static void FUNC(ff_vvc_inter_dsp_init)(VVCInterDSPContext *const inter)
 {
     FUNCS(LUMA, luma);
     FUNCS(CHROMA, chroma);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(inter->put_scaled[LUMA]); i++) {
+        inter->put_scaled[LUMA][i]         = FUNC(put_luma_scaled);
+        inter->put_scaled[CHROMA][i]       = FUNC(put_chroma_scaled);
+        inter->put_uni_scaled[LUMA][i]     = FUNC(put_uni_luma_scaled);
+        inter->put_uni_scaled[CHROMA][i]   = FUNC(put_uni_chroma_scaled);
+        inter->put_uni_w_scaled[LUMA][i]   = FUNC(put_uni_luma_w_scaled);
+        inter->put_uni_w_scaled[CHROMA][i] = FUNC(put_uni_chroma_w_scaled);
+    }
 
     inter->avg                  = FUNC(avg);
     inter->w_avg                = FUNC(w_avg);

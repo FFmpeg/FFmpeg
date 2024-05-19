@@ -58,6 +58,8 @@
 #define BILINEAR_EXTRA_AFTER    1
 #define BILINEAR_EXTRA          1
 
+#define SCALED_INT(pos) ((pos) >> 10)
+
 #define MAX_CONTROL_POINTS      3
 
 #define AFFINE_MIN_BLOCK_SIZE   4

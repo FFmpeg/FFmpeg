@@ -57,6 +57,19 @@ typedef struct VVCInterDSPContext {
         uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, int height,
         int denom, int wx, int ox, const int8_t *hf, const int8_t *vf, int width);
 
+    void (*put_scaled[2 /* luma, chroma */][7 /* log2(width) - 1 */])(
+        int16_t *dst, const uint8_t *src, ptrdiff_t src_stride, int src_height,
+        int x, int y, int dx, int dy, int height, const int8_t *hf, const int8_t *vf, int width);
+
+    void (*put_uni_scaled[2 /* luma, chroma */][7 /* log2(width) - 1 */])(
+        uint8_t *dst, const ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, int src_height,
+        int x, int y, int dx, int dy, int height, const int8_t *hf, const int8_t *vf, int width);
+
+    void (*put_uni_w_scaled[2 /* luma, chroma */][7 /* log2(width) - 1 */])(
+        uint8_t *dst, const ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride, int src_height,
+        int x, int y, int dx, int dy, int height, int denom, int wx, int ox, const int8_t *hf, const int8_t *vf,
+        int width);
+
     void (*avg)(uint8_t *dst, ptrdiff_t dst_stride,
         const int16_t *src0, const int16_t *src1, int width, int height);
 
