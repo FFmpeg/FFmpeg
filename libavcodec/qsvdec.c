@@ -137,26 +137,26 @@ static int qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame,
     if (ret < 0)
         return ret;
 
-    frame->width       = avctx->width;
-    frame->height      = avctx->height;
+    frame->width       = avctx->coded_width;
+    frame->height      = avctx->coded_height;
 
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_NV12:
-        frame->linesize[0] = FFALIGN(avctx->width, 128);
+        frame->linesize[0] = FFALIGN(avctx->coded_width, 128);
         break;
     case AV_PIX_FMT_P010:
     case AV_PIX_FMT_P012:
     case AV_PIX_FMT_YUYV422:
-        frame->linesize[0] = 2 * FFALIGN(avctx->width, 128);
+        frame->linesize[0] = 2 * FFALIGN(avctx->coded_width, 128);
         break;
     case AV_PIX_FMT_Y210:
     case AV_PIX_FMT_VUYX:
     case AV_PIX_FMT_XV30:
     case AV_PIX_FMT_Y212:
-        frame->linesize[0] = 4 * FFALIGN(avctx->width, 128);
+        frame->linesize[0] = 4 * FFALIGN(avctx->coded_width, 128);
         break;
     case AV_PIX_FMT_XV36:
-        frame->linesize[0] = 8 * FFALIGN(avctx->width, 128);
+        frame->linesize[0] = 8 * FFALIGN(avctx->coded_width, 128);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unsupported pixel format.\n");
@@ -173,7 +173,7 @@ static int qsv_get_continuous_buffer(AVCodecContext *avctx, AVFrame *frame,
         avctx->pix_fmt == AV_PIX_FMT_P012) {
         frame->linesize[1] = frame->linesize[0];
         frame->data[1] = frame->data[0] +
-            frame->linesize[0] * FFALIGN(avctx->height, 64);
+            frame->linesize[0] * FFALIGN(avctx->coded_height, 64);
     }
 
     ret = ff_attach_decode_data(frame);
@@ -413,7 +413,7 @@ static int qsv_decode_init_context(AVCodecContext *avctx, QSVContext *q, mfxVide
     q->frame_info = param->mfx.FrameInfo;
 
     if (!avctx->hw_frames_ctx) {
-        ret = av_image_get_buffer_size(avctx->pix_fmt, FFALIGN(avctx->width, 128), FFALIGN(avctx->height, 64), 1);
+        ret = av_image_get_buffer_size(avctx->pix_fmt, FFALIGN(avctx->coded_width, 128), FFALIGN(avctx->coded_height, 64), 1);
         if (ret < 0)
             return ret;
         q->pool = av_buffer_pool_init(ret, av_buffer_allocz);
