@@ -649,7 +649,7 @@ switch(c->dstBpc){ \
     }
 
 
-#define INPUT_PLANER_RGB_A_FUNC_CASE(fmt, name, opt)                  \
+#define INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(fmt, name, opt)          \
         case fmt:                                                     \
             c->readAlpPlanar = ff_planar_##name##_to_a_##opt;
 
@@ -672,15 +672,15 @@ switch(c->dstBpc){ \
             break;
 
 #define INPUT_PLANER_RGBAXX_YUVA_FUNC_CASE(rgb_fmt, rgba_fmt, name, opt) \
-        INPUT_PLANER_RGB_A_FUNC_CASE(rgba_fmt##LE,  name##le, opt)       \
+        INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(rgba_fmt##LE,  name##le, opt)       \
         INPUT_PLANER_RGB_YUV_FUNC_CASE(rgb_fmt##LE, name##le, opt)       \
-        INPUT_PLANER_RGB_A_FUNC_CASE(rgba_fmt##BE,  name##be, opt)       \
+        INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(rgba_fmt##BE,  name##be, opt)       \
         INPUT_PLANER_RGB_YUV_FUNC_CASE(rgb_fmt##BE, name##be, opt)
 
 #define INPUT_PLANER_RGBAXX_UVA_FUNC_CASE(rgb_fmt, rgba_fmt, name, opt) \
-        INPUT_PLANER_RGB_A_FUNC_CASE(rgba_fmt##LE, name##le, opt)       \
+        INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(rgba_fmt##LE, name##le, opt)       \
         INPUT_PLANER_RGB_UV_FUNC_CASE(rgb_fmt##LE, name##le, opt)       \
-        INPUT_PLANER_RGB_A_FUNC_CASE(rgba_fmt##BE, name##be, opt)       \
+        INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(rgba_fmt##BE, name##be, opt)       \
         INPUT_PLANER_RGB_UV_FUNC_CASE(rgb_fmt##BE, name##be, opt)
 
 #define INPUT_PLANER_RGBAXX_YUV_FUNC_CASE(rgb_fmt, rgba_fmt, name, opt)           \
@@ -696,7 +696,7 @@ switch(c->dstBpc){ \
         INPUT_PLANER_RGB_UV_FUNC_CASE(rgb_fmt##BE, name##be, opt)
 
 #define INPUT_PLANER_RGB_YUVA_ALL_CASES(opt)                                                     \
-        INPUT_PLANER_RGB_A_FUNC_CASE(      AV_PIX_FMT_GBRAP,                           rgb, opt) \
+        INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(AV_PIX_FMT_GBRAP,                         rgb, opt) \
         INPUT_PLANER_RGB_YUV_FUNC_CASE(    AV_PIX_FMT_GBRP,                            rgb, opt) \
         INPUT_PLANER_RGBXX_YUV_FUNC_CASE(  AV_PIX_FMT_GBRP9,                          rgb9, opt) \
         INPUT_PLANER_RGBAXX_YUVA_FUNC_CASE(AV_PIX_FMT_GBRP10,  AV_PIX_FMT_GBRAP10,   rgb10, opt) \
@@ -708,7 +708,7 @@ switch(c->dstBpc){ \
 
     if (EXTERNAL_SSE2(cpu_flags)) {
         switch (c->srcFormat) {
-        INPUT_PLANER_RGB_A_FUNC_CASE(      AV_PIX_FMT_GBRAP,                           rgb, sse2);
+        INPUT_PLANER_RGB_A_FUNC_CASE_NOBREAK(AV_PIX_FMT_GBRAP,                         rgb, sse2);
         INPUT_PLANER_RGB_UV_FUNC_CASE(     AV_PIX_FMT_GBRP,                            rgb, sse2);
         INPUT_PLANER_RGBXX_UV_FUNC_CASE(   AV_PIX_FMT_GBRP9,                          rgb9, sse2);
         INPUT_PLANER_RGBAXX_UVA_FUNC_CASE( AV_PIX_FMT_GBRP10,  AV_PIX_FMT_GBRAP10,   rgb10, sse2);
