@@ -1275,6 +1275,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FLVContext *flv = s->priv_data;
     int ret, i, size, flags;
+    int res = 0;
     enum FlvTagType type;
     int stream_type=-1;
     int64_t next, pos, meta_pos;
@@ -1289,6 +1290,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int pkt_type = 0;
     uint8_t track_idx = 0;
     uint32_t codec_id = 0;
+    int multitrack_type = MultitrackTypeOneTrack;
 
 retry:
     /* pkt size is repeated at end. skip it */
@@ -1339,13 +1341,8 @@ retry:
 
             if (pkt_type == AudioPacketTypeMultitrack) {
                 uint8_t types = avio_r8(s->pb);
-                int multitrack_type = types >> 4;
+                multitrack_type = types & 0xF0;
                 pkt_type = types & 0xF;
-
-                if (multitrack_type != MultitrackTypeOneTrack) {
-                    av_log(s, AV_LOG_ERROR, "Audio multitrack types other than MultitrackTypeOneTrack are unsupported!\n");
-                    return AVERROR_PATCHWELCOME;
-                }
 
                 multitrack = 1;
                 size--;
@@ -1373,13 +1370,8 @@ retry:
 
         if (pkt_type == PacketTypeMultitrack) {
             uint8_t types = avio_r8(s->pb);
-            int multitrack_type = types >> 4;
+            multitrack_type = types & 0xF0;
             pkt_type = types & 0xF;
-
-            if (multitrack_type != MultitrackTypeOneTrack) {
-                av_log(s, AV_LOG_ERROR, "Multitrack types other than MultitrackTypeOneTrack are unsupported!\n");
-                return AVERROR_PATCHWELCOME;
-            }
 
             multitrack = 1;
             size--;
@@ -1449,293 +1441,350 @@ skip:
         goto leave;
     }
 
-    /* now find stream */
-    for (i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
-        if (stream_type == FLV_STREAM_TYPE_AUDIO) {
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags, codec_id)) &&
-                st->id == track_idx)
-                break;
-        } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                (s->video_codec_id || flv_same_video_codec(st->codecpar, codec_id)) &&
-                st->id == track_idx)
-                break;
-        } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
-                break;
-        } else if (stream_type == FLV_STREAM_TYPE_DATA) {
-            if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
-                break;
-        }
-    }
-    if (i == s->nb_streams) {
-        static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_DATA};
-        st = create_stream(s, stream_types[stream_type], track_idx);
-        if (!st)
-            return AVERROR(ENOMEM);
-    }
-    av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
+    for (;;) {
+        int track_size = size;
 
-    if (flv->time_pos <= pos) {
-        dts += flv->time_offset;
-    }
-
-    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
-        ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
-         stream_type == FLV_STREAM_TYPE_AUDIO))
-        av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
-
-    if ((st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || stream_type == FLV_STREAM_TYPE_AUDIO)) ||
-        (st->discard >= AVDISCARD_BIDIR && ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && stream_type == FLV_STREAM_TYPE_VIDEO)) ||
-         st->discard >= AVDISCARD_ALL) {
-        avio_seek(s->pb, next, SEEK_SET);
-        ret = FFERROR_REDO;
-        goto leave;
-    }
-
-    // if not streamed and no duration from metadata then seek to end to find
-    // the duration from the timestamps
-    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
-        (!s->duration || s->duration == AV_NOPTS_VALUE) &&
-        !flv->searched_for_end) {
-        int final_size;
-        const int64_t pos   = avio_tell(s->pb);
-        // Read the last 4 bytes of the file, this should be the size of the
-        // previous FLV tag. Use the timestamp of its payload as duration.
-        int64_t fsize       = avio_size(s->pb);
-retry_duration:
-        avio_seek(s->pb, fsize - 4, SEEK_SET);
-        final_size = avio_rb32(s->pb);
-        if (final_size > 0 && final_size < fsize) {
-            // Seek to the start of the last FLV tag at position (fsize - 4 - final_size)
-            // but skip the byte indicating the type.
-            avio_seek(s->pb, fsize - 3 - final_size, SEEK_SET);
-            if (final_size == avio_rb24(s->pb) + 11) {
-                uint32_t ts = avio_rb24(s->pb);
-                ts         |= (unsigned)avio_r8(s->pb) << 24;
-                if (ts)
-                    s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
-                else if (fsize >= 8 && fsize - 8 >= final_size) {
-                    fsize -= final_size+4;
-                    goto retry_duration;
-                }
-            }
-        }
-
-        avio_seek(s->pb, pos, SEEK_SET);
-        flv->searched_for_end = 1;
-    }
-
-    if (stream_type == FLV_STREAM_TYPE_AUDIO && !enhanced_flv) {
-        int bits_per_coded_sample;
-        channels = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
-        sample_rate = 44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >>
-                                FLV_AUDIO_SAMPLERATE_OFFSET) >> 3;
-        bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
-        if (!av_channel_layout_check(&st->codecpar->ch_layout) ||
-            !st->codecpar->sample_rate ||
-            !st->codecpar->bits_per_coded_sample) {
-            av_channel_layout_default(&st->codecpar->ch_layout, channels);
-            st->codecpar->sample_rate           = sample_rate;
-            st->codecpar->bits_per_coded_sample = bits_per_coded_sample;
-        }
-        if (!st->codecpar->codec_id) {
-            flv_set_audio_codec(s, st, st->codecpar,
-                                flags & FLV_AUDIO_CODECID_MASK);
-            flv->last_sample_rate =
-            sample_rate           = st->codecpar->sample_rate;
-            flv->last_channels    =
-            channels              = st->codecpar->ch_layout.nb_channels;
-        } else {
-            AVCodecParameters *par = avcodec_parameters_alloc();
-            if (!par) {
-                ret = AVERROR(ENOMEM);
-                goto leave;
-            }
-            par->sample_rate = sample_rate;
-            par->bits_per_coded_sample = bits_per_coded_sample;
-            flv_set_audio_codec(s, st, par, flags & FLV_AUDIO_CODECID_MASK);
-            sample_rate = par->sample_rate;
-            avcodec_parameters_free(&par);
-        }
-    } else if (stream_type == FLV_STREAM_TYPE_AUDIO) {
-        if (!st->codecpar->codec_id)
-            flv_set_audio_codec(s, st, st->codecpar,
-                                codec_id ? codec_id : (flags & FLV_AUDIO_CODECID_MASK));
-
-        // These are not signalled in the flags anymore
-        channels = 0;
-        sample_rate = 0;
-
-        if (pkt_type == AudioPacketTypeMultichannelConfig) {
-            int channel_order = avio_r8(s->pb);
-            channels = avio_r8(s->pb);
-            size -= 2;
-
-            av_channel_layout_uninit(&st->codecpar->ch_layout);
-
-            if (channel_order == AudioChannelOrderCustom) {
-                ret = av_channel_layout_custom_init(&st->codecpar->ch_layout, channels);
-                if (ret < 0)
-                    return ret;
-
-                for (i = 0; i < channels; i++) {
-                    uint8_t id = avio_r8(s->pb);
-                    size--;
-
-                    if (id < 18)
-                        st->codecpar->ch_layout.u.map[i].id = id;
-                    else if (id >= 18 && id <= 23)
-                        st->codecpar->ch_layout.u.map[i].id = id - 18 + AV_CHAN_LOW_FREQUENCY_2;
-                    else if (id == 0xFE)
-                        st->codecpar->ch_layout.u.map[i].id = AV_CHAN_UNUSED;
-                    else
-                        st->codecpar->ch_layout.u.map[i].id = AV_CHAN_UNKNOWN;
-                }
-            } else if (channel_order == AudioChannelOrderNative) {
-                uint64_t mask = avio_rb32(s->pb);
-                size -= 4;
-
-                // The first 18 entries in the mask match ours, but the remaining 6 entries start at AV_CHAN_LOW_FREQUENCY_2
-                mask = (mask & 0x3FFFF) | ((mask & 0xFC0000) << (AV_CHAN_LOW_FREQUENCY_2 - 18));
-                ret = av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
-                if (ret < 0)
-                    return ret;
-            } else {
-                av_channel_layout_default(&st->codecpar->ch_layout, channels);
-            }
-
-            av_log(s, AV_LOG_DEBUG, "Set channel data from MultiChannel info.\n");
-
-            goto leave;
-        }
-    } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
-        int sret = flv_set_video_codec(s, st, codec_id, 1);
-        if (sret < 0)
-            return sret;
-        size -= sret;
-    } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
-        st->codecpar->codec_id = AV_CODEC_ID_TEXT;
-    } else if (stream_type == FLV_STREAM_TYPE_DATA) {
-        st->codecpar->codec_id = AV_CODEC_ID_NONE; // Opaque AMF data
-    }
-
-    if (st->codecpar->codec_id == AV_CODEC_ID_AAC ||
-        st->codecpar->codec_id == AV_CODEC_ID_OPUS ||
-        st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
-        st->codecpar->codec_id == AV_CODEC_ID_H264 ||
-        st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
-        st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
-        st->codecpar->codec_id == AV_CODEC_ID_AV1 ||
-        st->codecpar->codec_id == AV_CODEC_ID_VP9) {
-        int type = 0;
-        if (enhanced_flv) {
-            type = pkt_type;
-        } else {
-            type = avio_r8(s->pb);
-            size--;
-        }
-
-        if (size < 0) {
-            ret = AVERROR_INVALIDDATA;
-            goto leave;
-        }
-
-        if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO && flv->meta_color_info_flag) {
-            flv_update_video_color_info(s, st); // update av packet side data
-            flv->meta_color_info_flag = 0;
-        }
-
-        if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
-            (st->codecpar->codec_id == AV_CODEC_ID_H264 && (!enhanced_flv || type == PacketTypeCodedFrames)) ||
-            (st->codecpar->codec_id == AV_CODEC_ID_HEVC && type == PacketTypeCodedFrames)) {
-            // sign extension
-            int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
-            pts = av_sat_add64(dts, cts);
-            if (cts < 0) { // dts might be wrong
-                if (!flv->wrong_dts)
-                    av_log(s, AV_LOG_WARNING,
-                        "Negative cts, previous timestamps might be wrong.\n");
-                flv->wrong_dts = 1;
-            } else if (FFABS(dts - pts) > 1000*60*15) {
-                av_log(s, AV_LOG_WARNING,
-                       "invalid timestamps %"PRId64" %"PRId64"\n", dts, pts);
-                dts = pts = AV_NOPTS_VALUE;
-            }
+        if (multitrack_type != MultitrackTypeOneTrack) {
+            track_size = avio_rb24(s->pb);
             size -= 3;
         }
-        if (type == 0 && (!st->codecpar->extradata || st->codecpar->codec_id == AV_CODEC_ID_AAC ||
-            st->codecpar->codec_id == AV_CODEC_ID_OPUS || st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
-            st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
-            st->codecpar->codec_id == AV_CODEC_ID_AV1 || st->codecpar->codec_id == AV_CODEC_ID_VP9)) {
-            AVDictionaryEntry *t;
 
-            if (st->codecpar->extradata) {
-                if ((ret = flv_queue_extradata(flv, s->pb, multitrack ? track_idx : stream_type, size, multitrack)) < 0)
-                    return ret;
-                ret = FFERROR_REDO;
-                goto leave;
+        /* now find stream */
+        for (i = 0; i < s->nb_streams; i++) {
+            st = s->streams[i];
+            if (stream_type == FLV_STREAM_TYPE_AUDIO) {
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                    (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags, codec_id)) &&
+                    st->id == track_idx)
+                    break;
+            } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+                    (s->video_codec_id || flv_same_video_codec(st->codecpar, codec_id)) &&
+                    st->id == track_idx)
+                    break;
+            } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+                    break;
+            } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+                    break;
             }
-            if ((ret = flv_get_extradata(s, st, size)) < 0)
-                return ret;
+        }
+        if (i == s->nb_streams) {
+            static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_DATA};
+            st = create_stream(s, stream_types[stream_type], track_idx);
+            if (!st)
+                return AVERROR(ENOMEM);
+        }
+        av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
 
-            /* Workaround for buggy Omnia A/XE encoder */
-            t = av_dict_get(s->metadata, "Encoder", NULL, 0);
-            if (st->codecpar->codec_id == AV_CODEC_ID_AAC && t && !strcmp(t->value, "Omnia A/XE"))
-                st->codecpar->extradata_size = 2;
+        if (flv->time_pos <= pos) {
+            dts += flv->time_offset;
+        }
 
+        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+            ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+             stream_type == FLV_STREAM_TYPE_AUDIO))
+            av_add_index_entry(st, pos, dts, track_size, 0, AVINDEX_KEYFRAME);
+
+        if ((st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || stream_type == FLV_STREAM_TYPE_AUDIO)) ||
+            (st->discard >= AVDISCARD_BIDIR && ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && stream_type == FLV_STREAM_TYPE_VIDEO)) ||
+             st->discard >= AVDISCARD_ALL) {
+            avio_seek(s->pb, next, SEEK_SET);
             ret = FFERROR_REDO;
             goto leave;
         }
-    }
 
-    /* skip empty data packets */
-    if (!size) {
-        ret = FFERROR_REDO;
-        goto leave;
-    }
+        // if not streamed and no duration from metadata then seek to end to find
+        // the duration from the timestamps
+        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+            (!s->duration || s->duration == AV_NOPTS_VALUE) &&
+            !flv->searched_for_end) {
+            int final_size;
+            const int64_t pos   = avio_tell(s->pb);
+            // Read the last 4 bytes of the file, this should be the size of the
+            // previous FLV tag. Use the timestamp of its payload as duration.
+            int64_t fsize       = avio_size(s->pb);
+retry_duration:
+            avio_seek(s->pb, fsize - 4, SEEK_SET);
+            final_size = avio_rb32(s->pb);
+            if (final_size > 0 && final_size < fsize) {
+                // Seek to the start of the last FLV tag at position (fsize - 4 - final_size)
+                // but skip the byte indicating the type.
+                avio_seek(s->pb, fsize - 3 - final_size, SEEK_SET);
+                if (final_size == avio_rb24(s->pb) + 11) {
+                    uint32_t ts = avio_rb24(s->pb);
+                    ts         |= (unsigned)avio_r8(s->pb) << 24;
+                    if (ts)
+                        s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
+                    else if (fsize >= 8 && fsize - 8 >= final_size) {
+                        fsize -= final_size+4;
+                        goto retry_duration;
+                    }
+                }
+            }
 
-    ret = av_get_packet(s->pb, pkt, size);
-    if (ret < 0)
-        return ret;
-    pkt->dts          = dts;
-    pkt->pts          = pts == AV_NOPTS_VALUE ? dts : pts;
-    pkt->stream_index = st->index;
-    pkt->pos          = pos;
-    if (!multitrack && flv->new_extradata[stream_type]) {
-        int sret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
-                                           flv->new_extradata[stream_type],
-                                           flv->new_extradata_size[stream_type]);
-        if (sret >= 0) {
-            flv->new_extradata[stream_type]      = NULL;
-            flv->new_extradata_size[stream_type] = 0;
+            avio_seek(s->pb, pos, SEEK_SET);
+            flv->searched_for_end = 1;
         }
-    } else if (multitrack &&
-               flv->mt_extradata_cnt > track_idx &&
-               flv->mt_extradata[track_idx]) {
-        int sret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
-                                           flv->mt_extradata[track_idx],
-                                           flv->mt_extradata_sz[track_idx]);
-        if (sret >= 0) {
-            flv->mt_extradata[track_idx]      = NULL;
-            flv->mt_extradata_sz[track_idx] = 0;
+
+        if (stream_type == FLV_STREAM_TYPE_AUDIO && !enhanced_flv) {
+            int bits_per_coded_sample;
+            channels = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
+            sample_rate = 44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >>
+                                    FLV_AUDIO_SAMPLERATE_OFFSET) >> 3;
+            bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
+            if (!av_channel_layout_check(&st->codecpar->ch_layout) ||
+                !st->codecpar->sample_rate ||
+                !st->codecpar->bits_per_coded_sample) {
+                av_channel_layout_default(&st->codecpar->ch_layout, channels);
+                st->codecpar->sample_rate           = sample_rate;
+                st->codecpar->bits_per_coded_sample = bits_per_coded_sample;
+            }
+            if (!st->codecpar->codec_id) {
+                flv_set_audio_codec(s, st, st->codecpar,
+                                    flags & FLV_AUDIO_CODECID_MASK);
+                flv->last_sample_rate =
+                sample_rate           = st->codecpar->sample_rate;
+                flv->last_channels    =
+                channels              = st->codecpar->ch_layout.nb_channels;
+            } else {
+                AVCodecParameters *par = avcodec_parameters_alloc();
+                if (!par) {
+                    ret = AVERROR(ENOMEM);
+                    goto leave;
+                }
+                par->sample_rate = sample_rate;
+                par->bits_per_coded_sample = bits_per_coded_sample;
+                flv_set_audio_codec(s, st, par, flags & FLV_AUDIO_CODECID_MASK);
+                sample_rate = par->sample_rate;
+                avcodec_parameters_free(&par);
+            }
+        } else if (stream_type == FLV_STREAM_TYPE_AUDIO) {
+            if (!st->codecpar->codec_id)
+                flv_set_audio_codec(s, st, st->codecpar,
+                                    codec_id ? codec_id : (flags & FLV_AUDIO_CODECID_MASK));
+
+            // These are not signalled in the flags anymore
+            channels = 0;
+            sample_rate = 0;
+
+            if (pkt_type == AudioPacketTypeMultichannelConfig) {
+                int channel_order = avio_r8(s->pb);
+                channels = avio_r8(s->pb);
+                size -= 2;
+                track_size -= 2;
+
+                av_channel_layout_uninit(&st->codecpar->ch_layout);
+
+                if (channel_order == AudioChannelOrderCustom) {
+                    ret = av_channel_layout_custom_init(&st->codecpar->ch_layout, channels);
+                    if (ret < 0)
+                        return ret;
+
+                    for (i = 0; i < channels; i++) {
+                        uint8_t id = avio_r8(s->pb);
+                        size--;
+
+                        if (id < 18)
+                            st->codecpar->ch_layout.u.map[i].id = id;
+                        else if (id >= 18 && id <= 23)
+                            st->codecpar->ch_layout.u.map[i].id = id - 18 + AV_CHAN_LOW_FREQUENCY_2;
+                        else if (id == 0xFE)
+                            st->codecpar->ch_layout.u.map[i].id = AV_CHAN_UNUSED;
+                        else
+                            st->codecpar->ch_layout.u.map[i].id = AV_CHAN_UNKNOWN;
+                    }
+                } else if (channel_order == AudioChannelOrderNative) {
+                    uint64_t mask = avio_rb32(s->pb);
+                    size -= 4;
+                    track_size -= 4;
+
+                    // The first 18 entries in the mask match ours, but the remaining 6 entries start at AV_CHAN_LOW_FREQUENCY_2
+                    mask = (mask & 0x3FFFF) | ((mask & 0xFC0000) << (AV_CHAN_LOW_FREQUENCY_2 - 18));
+                    ret = av_channel_layout_from_mask(&st->codecpar->ch_layout, mask);
+                    if (ret < 0)
+                        return ret;
+                } else {
+                    av_channel_layout_default(&st->codecpar->ch_layout, channels);
+                }
+
+                av_log(s, AV_LOG_DEBUG, "Set channel data from MultiChannel info.\n");
+
+                goto leave;
+            }
+        } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
+            int sret = flv_set_video_codec(s, st, codec_id, 1);
+            if (sret < 0)
+                return sret;
+            size -= sret;
+            track_size -= sret;
+        } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
+            st->codecpar->codec_id = AV_CODEC_ID_TEXT;
+        } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+            st->codecpar->codec_id = AV_CODEC_ID_NONE; // Opaque AMF data
+        }
+
+        if (st->codecpar->codec_id == AV_CODEC_ID_AAC ||
+            st->codecpar->codec_id == AV_CODEC_ID_OPUS ||
+            st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
+            st->codecpar->codec_id == AV_CODEC_ID_H264 ||
+            st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
+            st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
+            st->codecpar->codec_id == AV_CODEC_ID_AV1 ||
+            st->codecpar->codec_id == AV_CODEC_ID_VP9) {
+            int type = 0;
+            if (enhanced_flv) {
+                type = pkt_type;
+            } else {
+                type = avio_r8(s->pb);
+                size--;
+                track_size--;
+            }
+
+            if (size < 0 || track_size < 0) {
+                ret = AVERROR_INVALIDDATA;
+                goto leave;
+            }
+
+            if (enhanced_flv && stream_type == FLV_STREAM_TYPE_VIDEO && flv->meta_color_info_flag) {
+                flv_update_video_color_info(s, st); // update av packet side data
+                flv->meta_color_info_flag = 0;
+            }
+
+            if (st->codecpar->codec_id == AV_CODEC_ID_MPEG4 ||
+                (st->codecpar->codec_id == AV_CODEC_ID_H264 && (!enhanced_flv || type == PacketTypeCodedFrames)) ||
+                (st->codecpar->codec_id == AV_CODEC_ID_HEVC && type == PacketTypeCodedFrames)) {
+                // sign extension
+                int32_t cts = (avio_rb24(s->pb) + 0xff800000) ^ 0xff800000;
+                pts = av_sat_add64(dts, cts);
+                if (cts < 0) { // dts might be wrong
+                    if (!flv->wrong_dts)
+                        av_log(s, AV_LOG_WARNING,
+                            "Negative cts, previous timestamps might be wrong.\n");
+                    flv->wrong_dts = 1;
+                } else if (FFABS(dts - pts) > 1000*60*15) {
+                    av_log(s, AV_LOG_WARNING,
+                           "invalid timestamps %"PRId64" %"PRId64"\n", dts, pts);
+                    dts = pts = AV_NOPTS_VALUE;
+                }
+                size -= 3;
+                track_size -= 3;
+            }
+            if (type == 0 && (!st->codecpar->extradata || st->codecpar->codec_id == AV_CODEC_ID_AAC ||
+                st->codecpar->codec_id == AV_CODEC_ID_OPUS || st->codecpar->codec_id == AV_CODEC_ID_FLAC ||
+                st->codecpar->codec_id == AV_CODEC_ID_H264 || st->codecpar->codec_id == AV_CODEC_ID_HEVC ||
+                st->codecpar->codec_id == AV_CODEC_ID_AV1 || st->codecpar->codec_id == AV_CODEC_ID_VP9)) {
+                AVDictionaryEntry *t;
+
+                if (st->codecpar->extradata) {
+                    if ((ret = flv_queue_extradata(flv, s->pb, multitrack ? track_idx : stream_type, track_size, multitrack)) < 0)
+                        return ret;
+                    ret = FFERROR_REDO;
+                    goto leave;
+                }
+                if ((ret = flv_get_extradata(s, st, track_size)) < 0)
+                    return ret;
+
+                /* Workaround for buggy Omnia A/XE encoder */
+                t = av_dict_get(s->metadata, "Encoder", NULL, 0);
+                if (st->codecpar->codec_id == AV_CODEC_ID_AAC && t && !strcmp(t->value, "Omnia A/XE"))
+                    st->codecpar->extradata_size = 2;
+
+                ret = FFERROR_REDO;
+                goto leave;
+            }
+        }
+
+        /* skip empty or broken data packets */
+        if (size <= 0 || track_size < 0) {
+            ret = FFERROR_REDO;
+            goto leave;
+        }
+
+        /* skip empty data track */
+        if (!track_size)
+            goto next_track;
+
+        ret = av_get_packet(s->pb, pkt, track_size);
+        if (ret < 0)
+            return ret;
+
+        track_size -= ret;
+        size -= ret;
+
+        pkt->dts          = dts;
+        pkt->pts          = pts == AV_NOPTS_VALUE ? dts : pts;
+        pkt->stream_index = st->index;
+        pkt->pos          = pos;
+        if (!multitrack && flv->new_extradata[stream_type]) {
+            ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                          flv->new_extradata[stream_type],
+                                          flv->new_extradata_size[stream_type]);
+            if (ret >= 0) {
+                flv->new_extradata[stream_type]      = NULL;
+                flv->new_extradata_size[stream_type] = 0;
+            }
+        } else if (multitrack &&
+                   flv->mt_extradata_cnt > track_idx &&
+                   flv->mt_extradata[track_idx]) {
+            ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                          flv->mt_extradata[track_idx],
+                                          flv->mt_extradata_sz[track_idx]);
+            if (ret >= 0) {
+                flv->mt_extradata[track_idx]      = NULL;
+                flv->mt_extradata_sz[track_idx] = 0;
+            }
+        }
+        if (stream_type == FLV_STREAM_TYPE_AUDIO && !enhanced_flv &&
+                        (sample_rate != flv->last_sample_rate ||
+                         channels    != flv->last_channels)) {
+            flv->last_sample_rate = sample_rate;
+            flv->last_channels    = channels;
+            ff_add_param_change(pkt, channels, 0, sample_rate, 0, 0);
+        }
+
+        if (stream_type == FLV_STREAM_TYPE_AUDIO ||
+            (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+            stream_type == FLV_STREAM_TYPE_SUBTITLE ||
+            stream_type == FLV_STREAM_TYPE_DATA)
+            pkt->flags |= AV_PKT_FLAG_KEY;
+
+        ret = ff_buffer_packet(s, pkt);
+        if (ret < 0)
+            return ret;
+        res = FFERROR_REDO;
+
+        if (track_size) {
+            av_log(s, AV_LOG_WARNING, "Track size mismatch: %d!\n", track_size);
+            avio_skip(s->pb, track_size);
+            size -= track_size;
+        }
+
+        if (!size)
+            break;
+
+next_track:
+        if (multitrack_type == MultitrackTypeOneTrack) {
+            av_log(s, AV_LOG_ERROR, "Attempted to read next track in single-track mode.\n");
+            ret = FFERROR_REDO;
+            goto leave;
+        }
+
+        if (multitrack_type == MultitrackTypeManyTracksManyCodecs) {
+            codec_id = avio_rb32(s->pb);
+            size -= 4;
+        }
+
+        track_idx = avio_r8(s->pb);
+        size--;
+
+        if (avio_feof(s->pb)) {
+            av_log(s, AV_LOG_WARNING, "Premature EOF\n");
+            /* return REDO so that any potentially queued up packages can be drained first */
+            return FFERROR_REDO;
         }
     }
-    if (stream_type == FLV_STREAM_TYPE_AUDIO && !enhanced_flv &&
-                    (sample_rate != flv->last_sample_rate ||
-                     channels    != flv->last_channels)) {
-        flv->last_sample_rate = sample_rate;
-        flv->last_channels    = channels;
-        ff_add_param_change(pkt, channels, 0, sample_rate, 0, 0);
-    }
-
-    if (stream_type == FLV_STREAM_TYPE_AUDIO ||
-        (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
-        stream_type == FLV_STREAM_TYPE_SUBTITLE ||
-        stream_type == FLV_STREAM_TYPE_DATA)
-        pkt->flags |= AV_PKT_FLAG_KEY;
 
 leave:
     last = avio_rb32(s->pb);
@@ -1757,7 +1806,7 @@ leave:
     if (ret >= 0)
         flv->last_ts = pkt->dts;
 
-    return ret;
+    return ret ? ret : res;
 }
 
 static int flv_read_seek(AVFormatContext *s, int stream_index,
