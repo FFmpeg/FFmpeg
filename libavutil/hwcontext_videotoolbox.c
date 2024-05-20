@@ -535,6 +535,7 @@ CFStringRef av_map_videotoolbox_color_trc_from_av(enum AVColorTransferCharacteri
 static int vt_pixbuf_set_colorspace(void *log_ctx,
                                     CVPixelBufferRef pixbuf, const AVFrame *src)
 {
+    CGColorSpaceRef colorspace = NULL;
     CFStringRef colormatrix = NULL, colorpri = NULL, colortrc = NULL;
     Float32 gamma = 0;
 
@@ -586,6 +587,21 @@ static int vt_pixbuf_set_colorspace(void *log_ctx,
         CFRelease(gamma_level);
     } else
         CVBufferRemoveAttachment(pixbuf, kCVImageBufferGammaLevelKey);
+
+    if (__builtin_available(macOS 10.8, iOS 10, *)) {
+        CFDictionaryRef attachments = CVBufferCopyAttachments(pixbuf, kCVAttachmentMode_ShouldPropagate);
+        if (attachments) {
+            colorspace = CVImageBufferCreateColorSpaceFromAttachments(attachments);
+            CFRelease(attachments);
+        }
+    }
+
+    if (colorspace) {
+        CVBufferSetAttachment(pixbuf, kCVImageBufferCGColorSpaceKey,
+            colorspace, kCVAttachmentMode_ShouldPropagate);
+        CFRelease(colorspace);
+    } else
+        CVBufferRemoveAttachment(pixbuf, kCVImageBufferCGColorSpaceKey);
 
     return 0;
 }
