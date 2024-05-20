@@ -1396,8 +1396,8 @@ retry:
 
         if (enhanced_flv && (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD) {
             if (pkt_type == PacketTypeMetadata) {
-                int ret = flv_parse_video_color_info(s, st, next);
-                av_log(s, AV_LOG_DEBUG, "enhanced flv parse metadata ret %d and skip\n", ret);
+                int sret = flv_parse_video_color_info(s, st, next);
+                av_log(s, AV_LOG_DEBUG, "enhanced flv parse metadata ret %d and skip\n", sret);
             }
             goto skip;
         } else if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD) {
@@ -1500,25 +1500,25 @@ skip:
     if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
         (!s->duration || s->duration == AV_NOPTS_VALUE) &&
         !flv->searched_for_end) {
-        int size;
+        int final_size;
         const int64_t pos   = avio_tell(s->pb);
         // Read the last 4 bytes of the file, this should be the size of the
         // previous FLV tag. Use the timestamp of its payload as duration.
         int64_t fsize       = avio_size(s->pb);
 retry_duration:
         avio_seek(s->pb, fsize - 4, SEEK_SET);
-        size = avio_rb32(s->pb);
-        if (size > 0 && size < fsize) {
-            // Seek to the start of the last FLV tag at position (fsize - 4 - size)
+        final_size = avio_rb32(s->pb);
+        if (final_size > 0 && final_size < fsize) {
+            // Seek to the start of the last FLV tag at position (fsize - 4 - final_size)
             // but skip the byte indicating the type.
-            avio_seek(s->pb, fsize - 3 - size, SEEK_SET);
-            if (size == avio_rb24(s->pb) + 11) {
+            avio_seek(s->pb, fsize - 3 - final_size, SEEK_SET);
+            if (final_size == avio_rb24(s->pb) + 11) {
                 uint32_t ts = avio_rb24(s->pb);
                 ts         |= (unsigned)avio_r8(s->pb) << 24;
                 if (ts)
                     s->duration = ts * (int64_t)AV_TIME_BASE / 1000;
-                else if (fsize >= 8 && fsize - 8 >= size) {
-                    fsize -= size+4;
+                else if (fsize >= 8 && fsize - 8 >= final_size) {
+                    fsize -= final_size+4;
                     goto retry_duration;
                 }
             }
@@ -1612,10 +1612,10 @@ retry_duration:
             goto leave;
         }
     } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
-        int ret = flv_set_video_codec(s, st, codec_id, 1);
-        if (ret < 0)
-            return ret;
-        size -= ret;
+        int sret = flv_set_video_codec(s, st, codec_id, 1);
+        if (sret < 0)
+            return sret;
+        size -= sret;
     } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
         st->codecpar->codec_id = AV_CODEC_ID_TEXT;
     } else if (stream_type == FLV_STREAM_TYPE_DATA) {
@@ -1705,20 +1705,20 @@ retry_duration:
     pkt->stream_index = st->index;
     pkt->pos          = pos;
     if (!multitrack && flv->new_extradata[stream_type]) {
-        int ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
-                                          flv->new_extradata[stream_type],
-                                          flv->new_extradata_size[stream_type]);
-        if (ret >= 0) {
+        int sret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                           flv->new_extradata[stream_type],
+                                           flv->new_extradata_size[stream_type]);
+        if (sret >= 0) {
             flv->new_extradata[stream_type]      = NULL;
             flv->new_extradata_size[stream_type] = 0;
         }
     } else if (multitrack &&
                flv->mt_extradata_cnt > track_idx &&
                flv->mt_extradata[track_idx]) {
-        int ret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
-                                          flv->mt_extradata[track_idx],
-                                          flv->mt_extradata_sz[track_idx]);
-        if (ret >= 0) {
+        int sret = av_packet_add_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                           flv->mt_extradata[track_idx],
+                                           flv->mt_extradata_sz[track_idx]);
+        if (sret >= 0) {
             flv->mt_extradata[track_idx]      = NULL;
             flv->mt_extradata_sz[track_idx] = 0;
         }
