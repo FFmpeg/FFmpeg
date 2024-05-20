@@ -216,6 +216,7 @@ int main(void)
     {
         TestContext test_ctx = { 0 };
         char *buf;
+        int ret;
         test_ctx.class = &test_class;
 
         av_log_set_level(AV_LOG_QUIET);
@@ -226,8 +227,10 @@ int main(void)
             av_opt_free(&test_ctx);
             memset(&test_ctx, 0, sizeof(test_ctx));
             test_ctx.class = &test_class;
-            av_set_options_string(&test_ctx, buf, "=", ",");
+            ret = av_set_options_string(&test_ctx, buf, "=", ",");
             av_free(buf);
+            if (ret < 0)
+                printf("Error ret '%d'\n", ret);
             if (av_opt_serialize(&test_ctx, 0, 0, &buf, '=', ',') >= 0) {
                 printf("%s\n", buf);
                 av_free(buf);
