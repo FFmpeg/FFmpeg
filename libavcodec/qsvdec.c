@@ -938,6 +938,10 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
             else
                 frame->flags &= ~AV_FRAME_FLAG_KEY;
         }
+        frame->crop_left   = outsurf->Info.CropX;
+        frame->crop_top    = outsurf->Info.CropY;
+        frame->crop_right  = outsurf->Info.Width - (outsurf->Info.CropX + outsurf->Info.CropW);
+        frame->crop_bottom = outsurf->Info.Height - (outsurf->Info.CropY + outsurf->Info.CropH);
 
         /* update the surface properties */
         if (avctx->pix_fmt == AV_PIX_FMT_QSV)
@@ -1227,7 +1231,7 @@ const FFCodec ff_##x##_qsv_decoder = { \
     .p.priv_class   = &x##_qsv_class, \
     .hw_configs     = qsv_hw_configs, \
     .p.wrapper_name = "qsv", \
-    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE, \
+    .caps_internal  = FF_CODEC_CAP_NOT_INIT_THREADSAFE | FF_CODEC_CAP_EXPORTS_CROPPING, \
 }; \
 
 #define DEFINE_QSV_DECODER(x, X, bsf_name) DEFINE_QSV_DECODER_WITH_OPTION(x, X, bsf_name, options)
