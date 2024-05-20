@@ -826,7 +826,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
     cbu  = (cbu * contrast * saturation) >> 32;
     cgu  = (cgu * contrast * saturation) >> 32;
     cgv  = (cgv * contrast * saturation) >> 32;
-    oy  -= 256 * brightness;
+    oy  -= 256LL * brightness;
 
     c->uOffset = 0x0400040004000400LL;
     c->vOffset = 0x0400040004000400LL;
