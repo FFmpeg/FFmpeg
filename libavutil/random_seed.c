@@ -158,10 +158,10 @@ int av_random_bytes(uint8_t* buf, size_t len)
 #elif CONFIG_OPENSSL
     if (RAND_bytes(buf, len) == 1)
         return 0;
-    err = AVERROR_EXTERNAL;
-#endif
-
+    return AVERROR_EXTERNAL;
+#else
     return err;
+#endif
 }
 
 uint32_t av_get_random_seed(void)
