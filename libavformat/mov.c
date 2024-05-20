@@ -3308,9 +3308,9 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     for (i = 0; i < entries; i++) {
         sc->sample_sizes[i] = get_bits_long(&gb, field_size);
-        if (sc->sample_sizes[i] < 0) {
+        if (sc->sample_sizes[i] > INT64_MAX - sc->data_size) {
             av_free(buf);
-            av_log(c->fc, AV_LOG_ERROR, "Invalid sample size %d\n", sc->sample_sizes[i]);
+            av_log(c->fc, AV_LOG_ERROR, "Sample size overflow in STSZ\n");
             return AVERROR_INVALIDDATA;
         }
         sc->data_size += sc->sample_sizes[i];

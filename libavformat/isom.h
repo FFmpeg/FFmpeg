@@ -193,7 +193,7 @@ typedef struct MOVStreamContext {
     unsigned int sample_size; ///< may contain value calculated from stsd or value from stsz atom
     unsigned int stsz_sample_size; ///< always contains sample size from stsz atom
     unsigned int sample_count;
-    int *sample_sizes;
+    unsigned int *sample_sizes;
     int keyframe_absent;
     unsigned int keyframe_count;
     int *keyframes;
