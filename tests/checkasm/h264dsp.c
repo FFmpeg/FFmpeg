@@ -362,7 +362,7 @@ static void check_loop_filter(void)
                                 tc0[j][0], tc0[j][1], tc0[j][2], tc0[j][3]); \
                         fail();                                         \
                     }                                                   \
-                    bench_new(dst1, 32, alphas[j], betas[j], tc0[j]);   \
+                    bench_new(dst1 + off, 32, alphas[j], betas[j], tc0[j]);\
                 }                                                       \
             }                                                           \
         } while (0)
@@ -421,7 +421,7 @@ static void check_loop_filter_intra(void)
                                 j, alphas[j], betas[j]);                \
                         fail();                                         \
                     }                                                   \
-                    bench_new(dst1, 32, alphas[j], betas[j]);           \
+                    bench_new(dst1 + off, 32, alphas[j], betas[j]);     \
                 }                                                       \
             }                                                           \
         } while (0)
