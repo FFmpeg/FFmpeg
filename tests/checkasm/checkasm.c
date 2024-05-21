@@ -281,6 +281,7 @@ static const struct {
     { "POWER8",   "power8",   AV_CPU_FLAG_POWER8 },
 #elif ARCH_RISCV
     { "RVI",      "rvi",      AV_CPU_FLAG_RVI },
+    { "misaligned", "misaligned", AV_CPU_FLAG_RV_MISALIGNED },
     { "RVF",      "rvf",      AV_CPU_FLAG_RVF },
     { "RVD",      "rvd",      AV_CPU_FLAG_RVD },
     { "RVBaddr",  "rvb_a",    AV_CPU_FLAG_RVB_ADDR },
@@ -290,7 +291,6 @@ static const struct {
     { "RVVi64",   "rvv_i64",  AV_CPU_FLAG_RVV_I64 },
     { "RVVf64",   "rvv_f64",  AV_CPU_FLAG_RVV_F64 },
     { "RV_Zvbb",  "rv_zvbb",  AV_CPU_FLAG_RV_ZVBB },
-    { "misaligned", "misaligned", AV_CPU_FLAG_RV_MISALIGNED },
 #elif ARCH_MIPS
     { "MMI",      "mmi",      AV_CPU_FLAG_MMI },
     { "MSA",      "msa",      AV_CPU_FLAG_MSA },
