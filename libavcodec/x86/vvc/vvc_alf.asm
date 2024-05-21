@@ -73,15 +73,15 @@ SECTION .text
     ;m%2 = 07 06 05 04
     ;m%3 = 11 10 09 08
 
-    vshufpd                 m%5, m%1, m%2, 0011b        ;06 02 05 01
-    vshufpd                 m%6, m%3, m%5, 1001b        ;06 10 01 09
+    shufpd                  m%5, m%1, m%2, 0011b        ;06 02 05 01
+    shufpd                  m%6, m%3, m%5, 1001b        ;06 10 01 09
 
-    vshufpd                 m%1, m%1, m%6, 1100b        ;06 03 09 00
-    vshufpd                 m%2, m%2, m%6, 0110b        ;10 07 01 04
-    vshufpd                 m%3, m%3, m%5, 0110b        ;02 11 05 08
+    shufpd                  m%1, m%1, m%6, 1100b        ;06 03 09 00
+    shufpd                  m%2, m%2, m%6, 0110b        ;10 07 01 04
+    shufpd                  m%3, m%3, m%5, 0110b        ;02 11 05 08
 
     vpermpd                 m%1, m%1, 01111000b         ;09 06 03 00
-    vshufpd                 m%2, m%2, m%2, 1001b        ;10 07 04 01
+    shufpd                  m%2, m%2, m%2, 1001b        ;10 07 04 01
     vpermpd                 m%3, m%3, 10000111b         ;11 08 05 02
 %endmacro
 
@@ -125,21 +125,21 @@ SECTION .text
     pxor             m11, m11
     psubw            m11, m12                                ;-clip
 
-    vpsubw            m9, m2
+    psubw             m9, m2
     CLIPW             m9, m11, m12
 
-    vpsubw           m10, m2
+    psubw            m10, m2
     CLIPW            m10, m11, m12
 
-    vpunpckhwd       m13, m9, m10
-    vpunpcklwd        m9, m9, m10
+    punpckhwd        m13, m9, m10
+    punpcklwd         m9, m9, m10
 
     pshufb           m12, filters, [param_shuffe_ %+ i]       ;filter
-    vpunpcklwd       m10, m12, m12
-    vpunpckhwd       m12, m12, m12
+    punpcklwd        m10, m12, m12
+    punpckhwd        m12, m12, m12
 
-    vpmaddwd          m9, m10
-    vpmaddwd         m12, m13
+    pmaddwd           m9, m10
+    pmaddwd          m12, m13
 
     paddd             m0, m9
     paddd             m1, m12
@@ -268,17 +268,17 @@ SECTION .text
     je         %%near_vb
 %endif
 %%no_vb:
-    vpsrad            m0, SHIFT
-    vpsrad            m1, SHIFT
+    psrad             m0, SHIFT
+    psrad             m1, SHIFT
     jmp      %%shift_end
 %%near_vb:
     vpbroadcastd      m9, [dd448]
     paddd             m0, m9
     paddd             m1, m9
-    vpsrad            m0, SHIFT + 3
-    vpsrad            m1, SHIFT + 3
+    psrad             m0, SHIFT + 3
+    psrad             m1, SHIFT + 3
 %%shift_end:
-    vpackssdw         m0, m0, m1
+    packssdw          m0, m0, m1
 %endmacro
 
 ; FILTER_VB(line)
@@ -320,7 +320,7 @@ SECTION .text
 %if ps == 2
     movu      %1, %2
 %else
-    vpmovzxbw %1, %2
+    pmovzxbw  %1, %2
 %endif
 %endmacro
 
@@ -329,7 +329,7 @@ SECTION .text
     %if ps == 2
         movu         %1, m%2
     %else
-        vpackuswb   m%2, m%2
+        packuswb    m%2, m%2
         vpermq      m%2, m%2, 0x8
         movu         %1, xm%2
     %endif
@@ -489,43 +489,43 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
         LOAD_PIXELS       m6, [s2q + 2 * ps]
         LOAD_PIXELS       m7, [s3q + 2 * ps]
 
-        vpblendw          m8, m0, m1, 0xaa             ; nw
-        vpblendw          m9, m0, m5, 0x55             ; n
-        vpblendw         m10, m4, m5, 0xaa             ; ne
-        vpblendw         m11, m1, m2, 0xaa             ; w
-        vpblendw         m12, m5, m6, 0xaa             ; e
-        vpblendw         m13, m2, m3, 0xaa             ; sw
-        vpblendw         m14, m2, m7, 0x55             ; s
+        pblendw           m8, m0, m1, 0xaa             ; nw
+        pblendw           m9, m0, m5, 0x55             ; n
+        pblendw          m10, m4, m5, 0xaa             ; ne
+        pblendw          m11, m1, m2, 0xaa             ; w
+        pblendw          m12, m5, m6, 0xaa             ; e
+        pblendw          m13, m2, m3, 0xaa             ; sw
+        pblendw          m14, m2, m7, 0x55             ; s
 
-        vpblendw          m0, m1, m6, 0x55
-        vpaddw            m0, m0                       ; c
+        pblendw           m0, m1, m6, 0x55
+        paddw             m0, m0                       ; c
 
         movu              m1, [CLASSIFY_SHUFFE]
         pshufb            m1, m0, m1                   ; d
 
-        vpaddw            m9, m14                      ; n + s
-        vpsubw            m9, m0                       ; (n + s) - c
-        vpabsw            m9, m9                       ; ver
+        paddw             m9, m14                      ; n + s
+        psubw             m9, m0                       ; (n + s) - c
+        pabsw             m9, m9                       ; ver
 
-        vpaddw           m11, m12                      ; w + e
-        vpsubw           m11, m1                       ; (w + e) - d
-        vpabsw           m11, m11                      ; hor
+        paddw            m11, m12                      ; w + e
+        psubw            m11, m1                       ; (w + e) - d
+        pabsw            m11, m11                      ; hor
 
-        vpblendw         m14, m6, m7, 0xaa             ; se
-        vpaddw            m8, m14                      ; nw + se
-        vpsubw            m8, m1                       ; (nw + se) - d
-        vpabsw            m8, m8                       ; di0
+        pblendw          m14, m6, m7, 0xaa             ; se
+        paddw             m8, m14                      ; nw + se
+        psubw             m8, m1                       ; (nw + se) - d
+        pabsw             m8, m8                       ; di0
 
-        vpaddw           m10, m13                      ; ne + sw
-        vpsubw           m10, m1                       ; (nw + se) - d
-        vpabsw           m10, m10                      ; di1
+        paddw            m10, m13                      ; ne + sw
+        psubw            m10, m1                       ; (nw + se) - d
+        pabsw            m10, m10                      ; di1
 
         phaddw            m9,  m11                     ; vh,  each word represent 2x2 pixels
         phaddw            m8,  m10                     ; di,  each word represent 2x2 pixels
         phaddw            m0,  m9, m8                  ; all = each word represent 4x2 pixels, order is v_h_d0_d1 x 4
 
         vinserti128      m15, m15, xm0, 1
-        vpblendw          m1,  m0, m15, 0xaa           ; t
+        pblendw           m1,  m0, m15, 0xaa           ; t
 
         phaddw            m1,  m0                      ; each word represent 8x2 pixels, adjacent word share 4x2 pixels
 
@@ -594,7 +594,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     vpbroadcastd     m13, xm13
     movd            xm12, vb_posd
     vpbroadcastd     m12, xm12
-    vpcmpeqd         m13, m12       ; y == vb_pos
+    pcmpeqd          m13, m12       ; y == vb_pos
     pandn            m13, m11       ; y != vb_pos
 
     vpbroadcastd     m14, [dw3]
@@ -603,23 +603,23 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     pblendvb          m3, m15, [gradq + sum_stride3q], m13
 
     ; extent to dword to avoid overflow
-    vpunpcklwd        m4, m0, m15
-    vpunpckhwd        m5, m0, m15
-    vpunpcklwd        m6, m1, m15
-    vpunpckhwd        m7, m1, m15
-    vpunpcklwd        m8, m2, m15
-    vpunpckhwd        m9, m2, m15
-    vpunpcklwd       m10, m3, m15
-    vpunpckhwd       m11, m3, m15
+    punpcklwd         m4, m0, m15
+    punpckhwd         m5, m0, m15
+    punpcklwd         m6, m1, m15
+    punpckhwd         m7, m1, m15
+    punpcklwd         m8, m2, m15
+    punpckhwd         m9, m2, m15
+    punpcklwd        m10, m3, m15
+    punpckhwd        m11, m3, m15
 
-    vpaddd            m0, m4, m6
-    vpaddd            m1, m5, m7
-    vpaddd            m2, m8, m10
-    vpaddd            m3, m9, m11
+    paddd             m0, m4, m6
+    paddd             m1, m5, m7
+    paddd             m2, m8, m10
+    paddd             m3, m9, m11
 
     ; sum of the first row
-    vpaddd            m0, m2           ; low
-    vpaddd            m1, m3           ; high
+    paddd             m0, m2           ; low
+    paddd             m1, m3           ; high
 
     lea            gradq, [gradq + 2 * sum_strideq]
 
@@ -629,65 +629,65 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     movu             m12, [gradq + 2 * sum_strideq]
     movu             m13, [gradq + sum_stride3q]
 
-    vpunpcklwd        m4,  m10, m15
-    vpunpckhwd        m5,  m10, m15
-    vpunpcklwd        m6,  m11, m15
-    vpunpckhwd        m7,  m11, m15
-    vpunpcklwd        m8,  m12, m15
-    vpunpckhwd        m9,  m12, m15
-    vpunpcklwd       m10,  m13, m15
-    vpunpckhwd       m11,  m13, m15
+    punpcklwd         m4,  m10, m15
+    punpckhwd         m5,  m10, m15
+    punpcklwd         m6,  m11, m15
+    punpckhwd         m7,  m11, m15
+    punpcklwd         m8,  m12, m15
+    punpckhwd         m9,  m12, m15
+    punpcklwd        m10,  m13, m15
+    punpckhwd        m11,  m13, m15
 
-    vpaddd            m2, m4, m6
-    vpaddd            m3, m5, m7
-    vpaddd            m4, m8, m10
-    vpaddd            m5, m9, m11
+    paddd             m2, m4, m6
+    paddd             m3, m5, m7
+    paddd             m4, m8, m10
+    paddd             m5, m9, m11
 
     ; sum of the second row
-    vpaddd            m2, m4        ; low
-    vpaddd            m3, m5        ; high
+    paddd             m2, m4        ; low
+    paddd             m3, m5        ; high
 
-    vpunpckldq        m4, m0, m2
-    vpunpckhdq        m5, m0, m2
-    vpunpckldq        m6, m1, m3
-    vpunpckhdq        m7, m1, m3
+    punpckldq         m4, m0, m2
+    punpckhdq         m5, m0, m2
+    punpckldq         m6, m1, m3
+    punpckhdq         m7, m1, m3
 
     ; each dword represent 4x2 alf blocks
     ; the order is 01452367
-    vpunpckldq        m0, m4, m6         ; sum_v
-    vpunpckhdq        m1, m4, m6         ; sum_h
-    vpunpckldq        m2, m5, m7         ; sum_d0
-    vpunpckhdq        m3, m5, m7         ; sum_d1
+    punpckldq         m0, m4, m6         ; sum_v
+    punpckhdq         m1, m4, m6         ; sum_h
+    punpckldq         m2, m5, m7         ; sum_d0
+    punpckhdq         m3, m5, m7         ; sum_d1
 
-    vpcmpgtd          m4, m0, m1         ; dir_hv - 1
-    vpmaxsd           m5, m0, m1         ; hv1
-    vpminsd           m6, m0, m1         ; hv0
+    pcmpgtd           m4, m0, m1         ; dir_hv - 1
+    pmaxsd            m5, m0, m1         ; hv1
+    pminsd            m6, m0, m1         ; hv0
 
-    vpaddd            m0, m1;            ; sum_hv
+    paddd             m0, m1;            ; sum_hv
 
-    vpcmpgtd          m7, m2, m3         ; dir_d - 1
-    vpmaxsd           m8, m2, m3         ; d1
-    vpminsd           m9, m2, m3         ; d0
+    pcmpgtd           m7, m2, m3         ; dir_d - 1
+    pmaxsd            m8, m2, m3         ; d1
+    pminsd            m9, m2, m3         ; d0
 
     ; *transpose_idx = dir_d * 2 + dir_hv;
     vpbroadcastd     m10, [dw3]
-    vpaddd           m11, m7, m7
-    vpaddd           m11, m4
-    vpaddd           m10, m11
+    paddd            m11, m7, m7
+    paddd            m11, m4
+    paddd            m10, m11
     vpermq           m10, m10, 11011000b
     SAVE_CLASSIFY_PARAM transpose_idx, 10
 
-    vpsrlq           m10, m8, 32
-    vpsrlq           m11, m6, 32
+    psrlq            m10, m8, 32
+    psrlq            m11, m6, 32
     pmuldq           m12, m10, m11       ; d1 * hv0 high
-    vpsrlq            m1,  m9, 32
-    vpsrlq            m2,  m5, 32
+    psrlq             m1,  m9, 32
+    psrlq             m2,  m5, 32
     pmuldq            m3,  m1, m2        ; d0 * hv1 high
-    vpcmpgtq         m10, m12, m3        ; dir1 - 1 high
+    pcmpgtq          m10, m12, m3        ; dir1 - 1 high
 
     pmuldq            m1, m8, m6         ; d1 * hv0 low
     pmuldq            m2, m9, m5         ; d0 * hv1 low
-    vpcmpgtq          m1, m2             ; dir1 - 1 low
+    pcmpgtq           m1, m2             ; dir1 - 1 low
 
     vpblendd          m1, m1, m10, 0xaa  ; dir1 - 1
 
@@ -698,9 +698,9 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     vpbroadcastd      m5, xm5
 
     ;*class_idx = arg_var[av_clip_uintp2(sum_hv * ac >> (BIT_DEPTH - 1), 4)];
-    vpmulld           m0, m14            ; sum_hv * ac
+    pmulld            m0, m14            ; sum_hv * ac
     vpsrlvd           m0, m0, m5
-    vpminsd           m0, [dd15]
+    pminsd            m0, [dd15]
     movu              m6, [ARG_VAR_SHUFFE]
     pshufb            m6, m0             ; class_idx
 
@@ -716,7 +716,7 @@ cglobal vvc_alf_classify_grad_%1bpc, 6, 14, 16, gradient_sum, src, src_stride, w
     paddd             m6,  m7            ; class_idx
 
     paddd             m8, m2, m2
-    vpslld            m9, m3, 3
+    pslld             m9, m3, 3
     paddd             m9, m3
     pcmpgtd           m8, m9             ; hvd1 * 2 > 9 * hvd0
     pand              m8, m10
