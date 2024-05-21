@@ -892,6 +892,9 @@ int main(int argc, char *argv[])
     fprintf(stderr, "checkasm: using random seed %u\n", seed);
     av_lfg_init(&checkasm_lfg, seed);
 
+    if (state.bench_pattern)
+        fprintf(stderr, "checkasm: bench runs %" PRIu64 " (1 << %i)\n", bench_runs, av_log2(bench_runs));
+
     check_cpu_flag(NULL, 0);
     for (i = 0; cpus[i].flag; i++)
         check_cpu_flag(cpus[i].name, cpus[i].flag);
