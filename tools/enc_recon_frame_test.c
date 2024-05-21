@@ -28,6 +28,7 @@
 #include "decode_simple.h"
 
 #include "libavutil/adler32.h"
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/error.h"
 #include "libavutil/frame.h"
@@ -87,6 +88,8 @@ static int frame_hash(FrameChecksum **pc, size_t *nb_c, int64_t ts,
         const uint8_t *data = frame->data[p];
         int linesize = av_image_get_linesize(frame->format, frame->width, p);
         uint32_t checksum = 0;
+
+        av_assert0(linesize >= 0);
 
         for (int j = 0; j < frame->height >> shift_v[p]; j++) {
             checksum = av_adler32_update(checksum, data, linesize);
