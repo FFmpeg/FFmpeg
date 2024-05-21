@@ -62,6 +62,14 @@ FATE_AAC += fate-aac-ap05_48
 fate-aac-ap05_48: CMD = pcm -i $(TARGET_SAMPLES)/aac/ap05_48.mp4
 fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
 
+FATE_AAC += fate-aac-fd_2_c1_ms_0x01
+fate-aac-fd_2_c1_ms_0x01: CMD = pcm -i $(TARGET_SAMPLES)/aac/Fd_2_c1_Ms_0x01.mp4
+fate-aac-fd_2_c1_ms_0x01: REF = $(SAMPLES)/aac/Fd_2_c1_Ms_0x01.s16
+
+FATE_AAC += fate-aac-fd_2_c1_ms_0x04
+fate-aac-fd_2_c1_ms_0x04: CMD = pcm -i $(TARGET_SAMPLES)/aac/Fd_2_c1_Ms_0x04.mp4
+fate-aac-fd_2_c1_ms_0x04: REF = $(SAMPLES)/aac/Fd_2_c1_Ms_0x04.s16
+
 FATE_AAC += fate-aac-er_ad6000np_44_ep0
 fate-aac-er_ad6000np_44_ep0: CMD = pcm -i $(TARGET_SAMPLES)/aac/er_ad6000np_44_ep0.mp4
 fate-aac-er_ad6000np_44_ep0: REF = $(SAMPLES)/aac/er_ad6000np_44.s16
