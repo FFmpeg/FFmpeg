@@ -103,7 +103,9 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
                     if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, w * SIZEOF_PIXEL))
                         fail();
                 }
-                bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
+                // Bench only square sizes, and ones with dimensions being a power of two.
+                if (w == h && (w & (w - 1)) == 0)
+                    bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
             }
             if (check_func(c->alf.filter[CHROMA], "vvc_alf_filter_chroma_%dx%d_%d", w, h, bit_depth)) {
                 const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_CHROMA;
@@ -115,7 +117,8 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
                     if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, w * SIZEOF_PIXEL))
                         fail();
                 }
-                bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
+                if (w == h && (w & (w - 1)) == 0)
+                    bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
             }
         }
     }
@@ -156,7 +159,9 @@ static void check_alf_classify(VVCDSPContext *c, const int bit_depth)
                     fail();
                 if (memcmp(transpose_idx0, transpose_idx1, id_size))
                     fail();
-                bench_new(class_idx1, transpose_idx1, src1 + offset, stride, w, h, vb_pos, alf_gradient_tmp);
+                // Bench only square sizes, and ones with dimensions being a power of two.
+                if (w == h && (w & (w - 1)) == 0)
+                    bench_new(class_idx1, transpose_idx1, src1 + offset, stride, w, h, vb_pos, alf_gradient_tmp);
             }
         }
     }
