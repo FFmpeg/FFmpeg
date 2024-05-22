@@ -273,8 +273,11 @@ static int dhav_read_header(AVFormatContext *s)
 {
     DHAVContext *dhav = s->priv_data;
     uint8_t signature[5];
+    int ret = ffio_ensure_seekback(s->pb, 5);
 
-    ffio_ensure_seekback(s->pb, 5);
+    if (ret < 0)
+        return ret;
+
     avio_read(s->pb, signature, sizeof(signature));
     if (!memcmp(signature, "DAHUA", 5)) {
         avio_skip(s->pb, 0x400 - 5);
