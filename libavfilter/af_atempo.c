@@ -244,18 +244,6 @@ static void yae_release_buffers(ATempoContext *atempo)
     av_tx_uninit(&atempo->complex_to_real);
 }
 
-/* av_realloc is not aligned enough; fortunately, the data does not need to
- * be preserved */
-#define RE_MALLOC_OR_FAIL(field, field_size, element_size)      \
-    do {                                                        \
-        av_freep(&field);                                       \
-        field = av_calloc(field_size, element_size);            \
-        if (!field) {                                           \
-            yae_release_buffers(atempo);                        \
-            return AVERROR(ENOMEM);                             \
-        }                                                       \
-    } while (0)
-
 /**
  * Prepare filter for processing audio data of given format,
  * sample rate and number of channels.
@@ -289,40 +277,51 @@ static int yae_reset(ATempoContext *atempo,
         nlevels++;
     }
 
+    /* av_realloc is not aligned enough, so simply discard all the old buffers
+     * (fortunately, their data does not need to be preserved) */
+    yae_release_buffers(atempo);
+
     // initialize audio fragment buffers:
-    RE_MALLOC_OR_FAIL(atempo->frag[0].data, atempo->window, atempo->stride);
-    RE_MALLOC_OR_FAIL(atempo->frag[1].data, atempo->window, atempo->stride);
-    RE_MALLOC_OR_FAIL(atempo->frag[0].xdat_in, (atempo->window + 1), sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->frag[1].xdat_in, (atempo->window + 1), sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->frag[0].xdat, (atempo->window + 1), sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->frag[1].xdat, (atempo->window + 1), sizeof(AVComplexFloat));
+    if (!(atempo->frag[0].data    = av_calloc(atempo->window, atempo->stride)) ||
+        !(atempo->frag[1].data    = av_calloc(atempo->window, atempo->stride)) ||
+        !(atempo->frag[0].xdat_in = av_calloc(atempo->window + 1, sizeof(AVComplexFloat))) ||
+        !(atempo->frag[1].xdat_in = av_calloc(atempo->window + 1, sizeof(AVComplexFloat))) ||
+        !(atempo->frag[0].xdat    = av_calloc(atempo->window + 1, sizeof(AVComplexFloat))) ||
+        !(atempo->frag[1].xdat    = av_calloc(atempo->window + 1, sizeof(AVComplexFloat)))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     // initialize rDFT contexts:
-    av_tx_uninit(&atempo->real_to_complex);
-    av_tx_uninit(&atempo->complex_to_real);
-
     ret = av_tx_init(&atempo->real_to_complex, &atempo->r2c_fn,
                      AV_TX_FLOAT_RDFT, 0, 1 << (nlevels + 1), &scale, 0);
-    if (ret < 0) {
-        yae_release_buffers(atempo);
-        return ret;
-    }
+    if (ret < 0)
+        goto fail;
 
     ret = av_tx_init(&atempo->complex_to_real, &atempo->c2r_fn,
                      AV_TX_FLOAT_RDFT, 1, 1 << (nlevels + 1), &iscale, 0);
-    if (ret < 0) {
-        yae_release_buffers(atempo);
-        return ret;
+    if (ret < 0)
+        goto fail;
+
+    if (!(atempo->correlation_in = av_calloc(atempo->window + 1, sizeof(AVComplexFloat))) ||
+        !(atempo->correlation    = av_calloc(atempo->window,     sizeof(AVComplexFloat)))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
-    RE_MALLOC_OR_FAIL(atempo->correlation_in, (atempo->window + 1), sizeof(AVComplexFloat));
-    RE_MALLOC_OR_FAIL(atempo->correlation, atempo->window, sizeof(AVComplexFloat));
-
     atempo->ring = atempo->window * 3;
-    RE_MALLOC_OR_FAIL(atempo->buffer, atempo->ring, atempo->stride);
+    atempo->buffer = av_calloc(atempo->ring, atempo->stride);
+    if (!atempo->buffer) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     // initialize the Hann window function:
-    RE_MALLOC_OR_FAIL(atempo->hann, atempo->window, sizeof(float));
+    atempo->hann = av_malloc_array(atempo->window, sizeof(float));
+    if (!atempo->hann) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     for (i = 0; i < atempo->window; i++) {
         double t = (double)i / (double)(atempo->window - 1);
@@ -330,8 +329,10 @@ static int yae_reset(ATempoContext *atempo,
         atempo->hann[i] = (float)h;
     }
 
-    yae_clear(atempo);
     return 0;
+fail:
+    yae_release_buffers(atempo);
+    return ret;
 }
 
 static int yae_update(AVFilterContext *ctx)
