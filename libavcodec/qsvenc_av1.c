@@ -25,6 +25,8 @@
 #include <mfxvideo.h>
 
 #include "libavutil/common.h"
+#include "libavutil/mastering_display_metadata.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
@@ -38,6 +40,75 @@ typedef struct QSVAV1EncContext {
     AVBSFContext *extra_data_bsf;
     QSVEncContext qsv;
 } QSVAV1EncContext;
+
+static int qsv_av1_set_encode_ctrl(AVCodecContext *avctx,
+                                   const AVFrame *frame, mfxEncodeCtrl *enc_ctrl)
+{
+    QSVAV1EncContext *q = avctx->priv_data;
+    AVFrameSideData *sd;
+
+    if (!frame || !QSV_RUNTIME_VERSION_ATLEAST(q->qsv.ver, 2, 11))
+        return 0;
+
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (sd) {
+        AVMasteringDisplayMetadata *mdm = (AVMasteringDisplayMetadata *)sd->data;
+        if (mdm->has_primaries && mdm->has_luminance) {
+            const int chroma_den   = 1 << 16;
+            const int max_luma_den = 1 << 8;
+            const int min_luma_den = 1 << 14;
+            mfxExtMasteringDisplayColourVolume *mdcv = av_mallocz(sizeof(*mdcv));
+            if (!mdcv)
+                return AVERROR(ENOMEM);
+
+            mdcv->Header.BufferId = MFX_EXTBUFF_MASTERING_DISPLAY_COLOUR_VOLUME;
+            mdcv->Header.BufferSz = sizeof(*mdcv);
+
+            for (int i = 0; i < 3; i++) {
+                mdcv->DisplayPrimariesX[i] =
+                    av_rescale(mdm->display_primaries[i][0].num, chroma_den,
+                               mdm->display_primaries[i][0].den);
+                mdcv->DisplayPrimariesY[i] =
+                    av_rescale(mdm->display_primaries[i][1].num, chroma_den,
+                               mdm->display_primaries[i][1].den);
+            }
+
+            mdcv->WhitePointX =
+                av_rescale(mdm->white_point[0].num, chroma_den,
+                           mdm->white_point[0].den);
+            mdcv->WhitePointY =
+                av_rescale(mdm->white_point[1].num, chroma_den,
+                           mdm->white_point[1].den);
+
+            mdcv->MaxDisplayMasteringLuminance =
+                av_rescale(mdm->max_luminance.num, max_luma_den,
+                           mdm->max_luminance.den);
+            mdcv->MinDisplayMasteringLuminance =
+                av_rescale(mdm->min_luminance.num, min_luma_den,
+                           mdm->min_luminance.den);
+
+            enc_ctrl->ExtParam[enc_ctrl->NumExtParam++] = (mfxExtBuffer *)mdcv;
+        }
+    }
+
+    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    if (sd) {
+        AVContentLightMetadata *clm = (AVContentLightMetadata *)sd->data;
+        mfxExtContentLightLevelInfo *clli = av_mallocz(sizeof(*clli));
+        if (!clli)
+            return AVERROR(ENOMEM);
+
+        clli->Header.BufferId = MFX_EXTBUFF_CONTENT_LIGHT_LEVEL_INFO;
+        clli->Header.BufferSz = sizeof(*clli);
+
+        clli->MaxContentLightLevel          = clm->MaxCLL;
+        clli->MaxPicAverageLightLevel       = clm->MaxFALL;
+
+        enc_ctrl->ExtParam[enc_ctrl->NumExtParam++] = (mfxExtBuffer *)clli;
+    }
+
+    return 0;
+}
 
 static av_cold int qsv_enc_init(AVCodecContext *avctx)
 {
@@ -60,6 +131,8 @@ static av_cold int qsv_enc_init(AVCodecContext *avctx)
         if (ret < 0)
            return ret;
     }
+
+    q->qsv.set_encode_ctrl_cb = qsv_av1_set_encode_ctrl;
 
     return ff_qsv_enc_init(avctx, &q->qsv);
 }
