@@ -1,15 +1,10 @@
 Files without standard license headers:
 libavcodec/file_open.c
-libavcodec/ilbcdata.h
-libavcodec/ilbcdec.c
 libavcodec/interplayacm.c
 libavcodec/log2_tab.c
 libavcodec/reverse.c
-libavcodec/riscv/startcode_rvb.S
-libavcodec/riscv/startcode_rvv.S
 libavdevice/file_open.c
 libavdevice/reverse.c
-libavfilter/af_arnndn.c
 libavfilter/file_open.c
 libavfilter/log2_tab.c
 libavformat/bitstream.c
