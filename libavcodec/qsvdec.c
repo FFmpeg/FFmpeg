@@ -538,7 +538,8 @@ static int alloc_frame(AVCodecContext *avctx, QSVContext *q, QSVFrame *frame)
 #endif
 
 #if QSV_VERSION_ATLEAST(1, 35)
-    if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 35) && avctx->codec_id == AV_CODEC_ID_HEVC) {
+    if ((QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 35) && avctx->codec_id == AV_CODEC_ID_HEVC) ||
+        (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 2, 9) && avctx->codec_id == AV_CODEC_ID_AV1)) {
         frame->mdcv.Header.BufferId = MFX_EXTBUFF_MASTERING_DISPLAY_COLOUR_VOLUME;
         frame->mdcv.Header.BufferSz = sizeof(frame->mdcv);
         // The data in mdcv is valid when this flag is 1
@@ -742,6 +743,45 @@ static int qsv_export_hdr_side_data(AVCodecContext *avctx, mfxExtMasteringDispla
     return 0;
 }
 
+static int qsv_export_hdr_side_data_av1(AVCodecContext *avctx, mfxExtMasteringDisplayColourVolume *mdcv,
+                                        mfxExtContentLightLevelInfo *clli, AVFrame *frame)
+{
+    if (mdcv->InsertPayloadToggle) {
+        AVMasteringDisplayMetadata *mastering = av_mastering_display_metadata_create_side_data(frame);
+        const int chroma_den   = 1 << 16;
+        const int max_luma_den = 1 << 8;
+        const int min_luma_den = 1 << 14;
+
+        if (!mastering)
+            return AVERROR(ENOMEM);
+
+        for (int i = 0; i < 3; i++) {
+            mastering->display_primaries[i][0] = av_make_q(mdcv->DisplayPrimariesX[i], chroma_den);
+            mastering->display_primaries[i][1] = av_make_q(mdcv->DisplayPrimariesY[i], chroma_den);
+        }
+
+        mastering->white_point[0] = av_make_q(mdcv->WhitePointX, chroma_den);
+        mastering->white_point[1] = av_make_q(mdcv->WhitePointY, chroma_den);
+
+        mastering->max_luminance = av_make_q(mdcv->MaxDisplayMasteringLuminance, max_luma_den);
+        mastering->min_luminance = av_make_q(mdcv->MinDisplayMasteringLuminance, min_luma_den);
+
+        mastering->has_luminance = 1;
+        mastering->has_primaries = 1;
+    }
+
+    if (clli->InsertPayloadToggle) {
+        AVContentLightMetadata *light = av_content_light_metadata_create_side_data(frame);
+        if (!light)
+            return AVERROR(ENOMEM);
+
+        light->MaxCLL  = clli->MaxContentLightLevel;
+        light->MaxFALL = clli->MaxPicAverageLightLevel;
+    }
+
+    return 0;
+}
+
 #endif
 
 static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
@@ -871,6 +911,12 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 35) && avctx->codec_id == AV_CODEC_ID_HEVC) {
             ret = qsv_export_hdr_side_data(avctx, &aframe.frame->mdcv, &aframe.frame->clli, frame);
 
+            if (ret < 0)
+                return ret;
+        }
+
+        if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 2, 9) && avctx->codec_id == AV_CODEC_ID_AV1) {
+            ret = qsv_export_hdr_side_data_av1(avctx, &aframe.frame->mdcv, &aframe.frame->clli, frame);
             if (ret < 0)
                 return ret;
         }
