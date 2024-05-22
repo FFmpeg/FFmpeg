@@ -269,6 +269,7 @@ static int yae_reset(ATempoContext *atempo,
     uint32_t nlevels  = 0;
     float scale = 1.f, iscale = 1.f;
     uint32_t pot;
+    int ret;
     int i;
 
     atempo->format   = format;
@@ -300,16 +301,18 @@ static int yae_reset(ATempoContext *atempo,
     av_tx_uninit(&atempo->real_to_complex);
     av_tx_uninit(&atempo->complex_to_real);
 
-    av_tx_init(&atempo->real_to_complex, &atempo->r2c_fn, AV_TX_FLOAT_RDFT, 0, 1 << (nlevels + 1), &scale, 0);
-    if (!atempo->real_to_complex) {
+    ret = av_tx_init(&atempo->real_to_complex, &atempo->r2c_fn,
+                     AV_TX_FLOAT_RDFT, 0, 1 << (nlevels + 1), &scale, 0);
+    if (ret < 0) {
         yae_release_buffers(atempo);
-        return AVERROR(ENOMEM);
+        return ret;
     }
 
-    av_tx_init(&atempo->complex_to_real, &atempo->c2r_fn, AV_TX_FLOAT_RDFT, 1, 1 << (nlevels + 1), &iscale, 0);
-    if (!atempo->complex_to_real) {
+    ret = av_tx_init(&atempo->complex_to_real, &atempo->c2r_fn,
+                     AV_TX_FLOAT_RDFT, 1, 1 << (nlevels + 1), &iscale, 0);
+    if (ret < 0) {
         yae_release_buffers(atempo);
-        return AVERROR(ENOMEM);
+        return ret;
     }
 
     RE_MALLOC_OR_FAIL(atempo->correlation_in, (atempo->window + 1), sizeof(AVComplexFloat));
