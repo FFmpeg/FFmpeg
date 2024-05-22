@@ -364,7 +364,9 @@ static int ogg_read_page(AVFormatContext *s, int *sid, int probing)
     ffio_init_checksum(bc, ff_crc04C11DB7_update, 0x4fa9b05f);
 
     /* To rewind if checksum is bad/check magic on switches - this is the max packet size */
-    ffio_ensure_seekback(bc, MAX_PAGE_SIZE);
+    ret = ffio_ensure_seekback(bc, MAX_PAGE_SIZE);
+    if (ret < 0)
+        return ret;
     start_pos = avio_tell(bc);
 
     version = avio_r8(bc);
