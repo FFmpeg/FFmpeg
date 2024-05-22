@@ -52,7 +52,7 @@ typedef struct CacheEntry {
     int size;
 } CacheEntry;
 
-typedef struct Context {
+typedef struct CacheContext {
     AVClass *class;
     int fd;
     char *filename;
@@ -65,7 +65,7 @@ typedef struct Context {
     URLContext *inner;
     int64_t cache_hit, cache_miss;
     int read_ahead_limit;
-} Context;
+} CacheContext;
 
 static int cmp(const void *key, const void *node)
 {
@@ -74,9 +74,9 @@ static int cmp(const void *key, const void *node)
 
 static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **options)
 {
+    CacheContext *c = h->priv_data;
     int ret;
     char *buffername;
-    Context *c= h->priv_data;
 
     av_strstart(arg, "cache:", &arg);
 
@@ -99,7 +99,7 @@ static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **
 
 static int add_entry(URLContext *h, const unsigned char *buf, int size)
 {
-    Context *c= h->priv_data;
+    CacheContext *c = h->priv_data;
     int64_t pos = -1;
     int ret;
     CacheEntry *entry = NULL, *next[2] = {NULL, NULL};
@@ -162,7 +162,7 @@ fail:
 
 static int cache_read(URLContext *h, unsigned char *buf, int size)
 {
-    Context *c= h->priv_data;
+    CacheContext *c = h->priv_data;
     CacheEntry *entry, *next[2] = {NULL, NULL};
     int64_t r;
 
@@ -227,7 +227,7 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
 
 static int64_t cache_seek(URLContext *h, int64_t pos, int whence)
 {
-    Context *c= h->priv_data;
+    CacheContext *c = h->priv_data;
     int64_t ret;
 
     if (whence == AVSEEK_SIZE) {
@@ -298,7 +298,7 @@ static int enu_free(void *opaque, void *elem)
 
 static int cache_close(URLContext *h)
 {
-    Context *c= h->priv_data;
+    CacheContext *c = h->priv_data;
     int ret;
 
     av_log(h, AV_LOG_INFO, "Statistics, cache hits:%"PRId64" cache misses:%"PRId64"\n",
@@ -318,7 +318,7 @@ static int cache_close(URLContext *h)
     return 0;
 }
 
-#define OFFSET(x) offsetof(Context, x)
+#define OFFSET(x) offsetof(CacheContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
@@ -339,6 +339,6 @@ const URLProtocol ff_cache_protocol = {
     .url_read            = cache_read,
     .url_seek            = cache_seek,
     .url_close           = cache_close,
-    .priv_data_size      = sizeof(Context),
+    .priv_data_size      = sizeof(CacheContext),
     .priv_data_class     = &cache_context_class,
 };
