@@ -83,7 +83,7 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
     ptrdiff_t dst_stride = DST_PIXEL_STRIDE * SIZEOF_PIXEL;
     int offset = (3 * SRC_PIXEL_STRIDE + 3) * SIZEOF_PIXEL;
 
-    declare_func_emms(AV_CPU_FLAG_AVX2, void, uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride,
+    declare_func(void, uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride,
         int width, int height, const int16_t *filter, const int16_t *clip, const int vb_pos);
 
     randomize_buffers(src0, src1, SRC_BUF_SIZE);
@@ -137,7 +137,7 @@ static void check_alf_classify(VVCDSPContext *c, const int bit_depth)
     ptrdiff_t stride = SRC_PIXEL_STRIDE * SIZEOF_PIXEL;
     int offset = (3 * SRC_PIXEL_STRIDE + 3) * SIZEOF_PIXEL;
 
-    declare_func_emms(AV_CPU_FLAG_AVX2, void, int *class_idx, int *transpose_idx,
+    declare_func(void, int *class_idx, int *transpose_idx,
         const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, int *gradient_tmp);
 
     randomize_buffers(src0, src1, SRC_BUF_SIZE);
