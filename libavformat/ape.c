@@ -293,7 +293,7 @@ static int ape_read_header(AVFormatContext * s)
         final_size -= final_size & 3;
     }
     if (file_size <= 0 || final_size <= 0)
-        final_size = ape->finalframeblocks * 8;
+        final_size = ape->finalframeblocks * 8LL;
     ape->frames[ape->totalframes - 1].size = final_size;
 
     for (i = 0; i < ape->totalframes; i++) {
