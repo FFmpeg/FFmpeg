@@ -931,9 +931,15 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         frame->flags |= AV_FRAME_FLAG_INTERLACED *
             !(outsurf->Info.PicStruct & MFX_PICSTRUCT_PROGRESSIVE);
         frame->pict_type = ff_qsv_map_pictype(aframe.frame->dec_info.FrameType);
-        //Key frame is IDR frame is only suitable for H264. For HEVC, IRAPs are key frames.
-        if (avctx->codec_id == AV_CODEC_ID_H264) {
+
+        if (avctx->codec_id == AV_CODEC_ID_H264 ||
+            avctx->codec_id == AV_CODEC_ID_HEVC) {
             if (aframe.frame->dec_info.FrameType & MFX_FRAMETYPE_IDR)
+                frame->flags |= AV_FRAME_FLAG_KEY;
+            else
+                frame->flags &= ~AV_FRAME_FLAG_KEY;
+        } else {
+            if (aframe.frame->dec_info.FrameType & MFX_FRAMETYPE_I)
                 frame->flags |= AV_FRAME_FLAG_KEY;
             else
                 frame->flags &= ~AV_FRAME_FLAG_KEY;
