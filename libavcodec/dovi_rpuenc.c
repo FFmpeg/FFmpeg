@@ -552,8 +552,9 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     put_bits(pb, 2, hdr->vdr_rpu_normalized_idc);
     put_bits(pb, 1, hdr->bl_video_full_range_flag);
     if ((hdr->rpu_format & 0x700) == 0) {
+        int ext_mapping_idc = (hdr->ext_mapping_idc_5_7 << 5) | hdr->ext_mapping_idc_0_4;
         set_ue_golomb(pb, hdr->bl_bit_depth - 8);
-        set_ue_golomb(pb, hdr->el_bit_depth - 8);
+        set_ue_golomb(pb, (ext_mapping_idc << 8) | (hdr->el_bit_depth - 8));
         set_ue_golomb(pb, hdr->vdr_bit_depth - 8);
         put_bits(pb, 1, hdr->spatial_resampling_filter_flag);
         put_bits(pb, 3, 0); /* reserved_zero_3bits */

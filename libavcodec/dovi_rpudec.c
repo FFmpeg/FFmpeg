@@ -58,7 +58,7 @@ int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame)
 
     /* Copy only the parts of these structs known to us at compiler-time. */
 #define COPY(t, a, b, last) memcpy(a, b, offsetof(t, last) + sizeof((b)->last))
-    COPY(AVDOVIRpuDataHeader, av_dovi_get_header(dovi), &s->header, disable_residual_flag);
+    COPY(AVDOVIRpuDataHeader, av_dovi_get_header(dovi), &s->header, ext_mapping_idc_5_7);
     COPY(AVDOVIDataMapping, av_dovi_get_mapping(dovi), s->mapping, nlq_pivots);
     COPY(AVDOVIColorMetadata, av_dovi_get_color(dovi), s->color, source_diagonal);
     ext_sz = FFMIN(sizeof(AVDOVIDmData), dovi->ext_block_size);
@@ -423,11 +423,17 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
             int el_bit_depth_minus8 = get_ue_golomb_31(gb);
             int vdr_bit_depth_minus8 = get_ue_golomb_31(gb);
             int reserved_zero_3bits;
+            /* ext_mapping_idc is in the upper 8 bits of el_bit_depth_minus8 */
+            int ext_mapping_idc = el_bit_depth_minus8 >> 8;
+            el_bit_depth_minus8 = el_bit_depth_minus8 & 0xFF;
             VALIDATE(bl_bit_depth_minus8, 0, 8);
             VALIDATE(el_bit_depth_minus8, 0, 8);
+            VALIDATE(ext_mapping_idc, 0, 0xFF);
             VALIDATE(vdr_bit_depth_minus8, 0, 8);
             hdr->bl_bit_depth = bl_bit_depth_minus8 + 8;
             hdr->el_bit_depth = el_bit_depth_minus8 + 8;
+            hdr->ext_mapping_idc_0_4 = ext_mapping_idc & 0x1f; /* 5 bits */
+            hdr->ext_mapping_idc_5_7 = ext_mapping_idc >> 5;
             hdr->vdr_bit_depth = vdr_bit_depth_minus8 + 8;
             hdr->spatial_resampling_filter_flag = get_bits1(gb);
             reserved_zero_3bits = get_bits(gb, 3);
