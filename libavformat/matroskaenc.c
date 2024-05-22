@@ -1250,7 +1250,9 @@ static int mkv_assemble_codecprivate(AVFormatContext *s, AVIOContext *dyn_cp,
             par->codec_tag = tag;
 
         /* Same comment as for ff_put_bmp_header applies here. */
-        ff_put_wav_header(s, dyn_cp, par, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
+        ret = ff_put_wav_header(s, dyn_cp, par, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
+        if (ret < 0)
+            return ret;
 #endif
     }
 
