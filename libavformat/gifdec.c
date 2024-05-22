@@ -85,7 +85,10 @@ static int gif_probe(const AVProbeData *p)
 
 static int resync(AVIOContext *pb)
 {
-    ffio_ensure_seekback(pb, 13);
+    int ret = ffio_ensure_seekback(pb, 13);
+    if (ret < 0)
+        return ret;
+
     for (int i = 0; i < 6; i++) {
         int b = avio_r8(pb);
         if (b != gif87a_sig[i] && b != gif89a_sig[i])
