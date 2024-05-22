@@ -311,6 +311,9 @@ ALF_FUNCS(16, 12, avx2)
     c->alf.filter[CHROMA] = ff_vvc_alf_filter_chroma_##bd##_avx2;    \
     c->alf.classify       = ff_vvc_alf_classify_##bd##_avx2;         \
 } while (0)
+
+int ff_vvc_sad_avx2(const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
+#define SAD_INIT() c->inter.sad = ff_vvc_sad_avx2
 #endif
 
 void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
@@ -327,6 +330,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             ALF_INIT(8);
             AVG_INIT(8, avx2);
             MC_LINKS_AVX2(8);
+            SAD_INIT();
         }
         break;
     case 10:
@@ -338,6 +342,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             AVG_INIT(10, avx2);
             MC_LINKS_AVX2(10);
             MC_LINKS_16BPC_AVX2(10);
+            SAD_INIT();
         }
         break;
     case 12:
@@ -349,6 +354,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             AVG_INIT(12, avx2);
             MC_LINKS_AVX2(12);
             MC_LINKS_16BPC_AVX2(12);
+            SAD_INIT();
         }
         break;
     default:
