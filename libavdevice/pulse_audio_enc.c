@@ -471,10 +471,11 @@ static av_cold int pulse_write_header(AVFormatContext *h)
     s->nonblocking = (h->flags & AVFMT_FLAG_NONBLOCK);
 
     if (s->buffer_duration) {
-        int64_t bytes = s->buffer_duration;
-        bytes *= st->codecpar->ch_layout.nb_channels * st->codecpar->sample_rate *
-                 av_get_bytes_per_sample(st->codecpar->format);
-        bytes /= 1000;
+        int64_t bytes = av_rescale(s->buffer_duration,
+                                   st->codecpar->ch_layout.nb_channels *
+                                    (int64_t)st->codecpar->sample_rate *
+                                    av_get_bytes_per_sample(st->codecpar->format),
+                                   1000);
         buffer_attributes.tlength = FFMAX(s->buffer_size, av_clip64(bytes, 0, UINT32_MAX - 1));
         av_log(s, AV_LOG_DEBUG,
                "Buffer duration: %ums recalculated into %"PRId64" bytes buffer.\n",
