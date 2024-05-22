@@ -43,6 +43,8 @@ static int ac4_probe(const AVProbeData *p)
             size += 4;
             if (buf[1] == 0x41)
                 size += 2;
+            if (left < size)
+                break;
             max_frames++;
             left -= size;
             buf += size;
