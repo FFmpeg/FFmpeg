@@ -10133,7 +10133,7 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 {
     MOVStreamContext *sc = st->priv_data;
     FFStream *const sti = ffstream(st);
-    int sample, time_sample, ret;
+    int sample, time_sample, ret, next_ts, requested_sample;
     unsigned int i;
 
     // Here we consider timestamp to be PTS, hence try to offset it so that we
@@ -10154,7 +10154,17 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
 
         if (!sample || can_seek_to_key_sample(st, sample, timestamp))
             break;
-        timestamp -= FFMAX(sc->min_sample_duration, 1);
+
+        next_ts = timestamp - FFMAX(sc->min_sample_duration, 1);
+        requested_sample = av_index_search_timestamp(st, next_ts, flags);
+
+        // If we've reached a different sample trying to find a good pts to
+        // seek to, give up searching because we'll end up seeking back to
+        // sample 0 on every seek.
+        if (!can_seek_to_key_sample(st, requested_sample, next_ts) && sample != requested_sample)
+            break;
+
+        timestamp = next_ts;
     }
 
     mov_current_sample_set(sc, sample);
