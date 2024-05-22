@@ -998,20 +998,20 @@ static av_cold void uninit(AVFilterContext *ctx)
     yae_release_buffers(atempo);
 }
 
-    // WSOLA necessitates an internal sliding window ring buffer
-    // for incoming audio stream.
-    //
-    // Planar sample formats are too cumbersome to store in a ring buffer,
-    // therefore planar sample formats are not supported.
-    //
-    static const enum AVSampleFormat sample_fmts[] = {
-        AV_SAMPLE_FMT_U8,
-        AV_SAMPLE_FMT_S16,
-        AV_SAMPLE_FMT_S32,
-        AV_SAMPLE_FMT_FLT,
-        AV_SAMPLE_FMT_DBL,
-        AV_SAMPLE_FMT_NONE
-    };
+// WSOLA necessitates an internal sliding window ring buffer
+// for incoming audio stream.
+//
+// Planar sample formats are too cumbersome to store in a ring buffer,
+// therefore planar sample formats are not supported.
+//
+static const enum AVSampleFormat sample_fmts[] = {
+    AV_SAMPLE_FMT_U8,
+    AV_SAMPLE_FMT_S16,
+    AV_SAMPLE_FMT_S32,
+    AV_SAMPLE_FMT_FLT,
+    AV_SAMPLE_FMT_DBL,
+    AV_SAMPLE_FMT_NONE
+};
 
 static int config_props(AVFilterLink *inlink)
 {
