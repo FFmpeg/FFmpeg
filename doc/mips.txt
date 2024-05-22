@@ -49,11 +49,6 @@ Files that have MIPS copyright notice in them:
       libm_mips.h
       softfloat_tables.h
 * libavcodec/mips/
-      aacdec_fixed.c
-      aacsbr_fixed.c
-      aacsbr_template.c
-      aaccoder_mips.c
-      aacpsy_mips.h
       ac3dsp_mips.c
       acelp_filters_mips.c
       acelp_vectors_mips.c
@@ -64,7 +59,6 @@ Files that have MIPS copyright notice in them:
       compute_antialias_fixed.h
       compute_antialias_float.h
       lsp_mips.h
-      dsputil_mips.c
       fmtconvert_mips.c
       iirfilter_mips.c
       mpegaudiodsp_mips_fixed.c
