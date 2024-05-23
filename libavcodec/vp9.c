@@ -715,6 +715,12 @@ static int decode_frame_header(AVCodecContext *avctx,
                 s->s.h.segmentation.feat[i].skip_enabled = get_bits1(&s->gb);
             }
         }
+    } else {
+        // Reset fields under segmentation switch if segmentation is disabled.
+        // This is necessary because some hwaccels don't ignore these fields
+        // if segmentation is disabled.
+        s->s.h.segmentation.temporal = 0;
+        s->s.h.segmentation.update_map = 0;
     }
 
     // set qmul[] based on Y/UV, AC/DC and segmentation Q idx deltas
