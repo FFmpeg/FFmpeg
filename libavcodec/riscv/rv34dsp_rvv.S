@@ -37,7 +37,6 @@ func ff_rv34_idct_dc_add_rvv, zve32x
         vlse32.v      v0, (a0), a1
         li            t1, 169
         mul           t1, t1, a2
-        li            a2, 255
         addi          t1, t1, 512
         srai          t1, t1, 10
         vsetivli      zero, 4*4, e16, m2, ta, ma
