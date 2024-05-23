@@ -94,7 +94,7 @@ func ff_vp8_idct_dc_add4uv_rvv, zve32x
         ret
 endfunc
 
-.macro bilin_load dst len type mn
+.macro bilin_load dst type mn
 .ifc \type,v
         add             t5, a2, a3
 .else
@@ -116,7 +116,7 @@ func ff_put_vp8_bilin\len\()_\type\()_rvv, zve32x
         sub             t1, t1, \mn
 1:
         addi            a4, a4, -1
-        bilin_load      v0, \len, \type, \mn
+        bilin_load      v0, \type, \mn
         vse8.v          v0, (a0)
         add             a2, a2, a3
         add             a0, a0, a1
@@ -133,12 +133,12 @@ func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
         sub             t1, t3, a5
         sub             t2, t3, a6
         li              t4, 4
-        bilin_load      v4, \len, h, a5
+        bilin_load      v4, h, a5
         add             a2, a2, a3
 1:
         addi            a4, a4, -1
         vwmulu.vx       v20, v4, t2
-        bilin_load      v4, \len, h, a5
+        bilin_load      v4, h, a5
         vwmaccu.vx      v20, a6, v4
         vwaddu.wx       v24, v20, t4
         vnsra.wi        v0, v24, 3
