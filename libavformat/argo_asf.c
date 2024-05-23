@@ -257,7 +257,7 @@ static int argo_asf_seek(AVFormatContext *s, int stream_index,
         return -1;
 
     offset = asf->fhdr.chunk_offset + ASF_CHUNK_HEADER_SIZE +
-             (block * st->codecpar->block_align);
+             block * (int64_t)st->codecpar->block_align;
 
     if ((offset = avio_seek(s->pb, offset, SEEK_SET)) < 0)
         return offset;
