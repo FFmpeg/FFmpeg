@@ -61,6 +61,7 @@ int main(int argc, char **argv)
     uint64_t val, val1;
     int32_t  sval, sval1;
     unsigned count;
+    int ret;
 
     /* generate random input, using a given or random seed */
     if (argc > 1)
@@ -74,7 +75,8 @@ int main(int argc, char **argv)
     for (unsigned i = 0; i < SIZE; i++)
         buf[i] = av_lfg_get(&lfg);
 
-    bits_init8   (&bc, buf, SIZE);
+    ret = bits_init8   (&bc, buf, SIZE);
+    av_assert0(ret >= 0);
     init_put_bits(&pb, dst, SIZE);
 
     /* use a random sequence of bitreading operations to transfer data
