@@ -2482,7 +2482,7 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
 
         if (frame->pict_type == AV_PICTURE_TYPE_I) {
             enc_ctrl->FrameType = MFX_FRAMETYPE_I | MFX_FRAMETYPE_REF;
-            if (q->forced_idr)
+            if ((frame->flags & AV_FRAME_FLAG_KEY) || q->forced_idr)
                 enc_ctrl->FrameType |= MFX_FRAMETYPE_IDR;
         }
     }
