@@ -456,6 +456,10 @@ will replace the current ones if the stream is already cropped.
 These fields are set in pixels.  Note that some sizes may not be
 representable if the chroma is subsampled (H.265 section 7.4.3.2.1).
 
+@item width
+@item height
+Set width and height after crop.
+
 @item level
 Set the level in the VPS and SPS.  See H.265 section A.4 and tables
 A.6 and A.7.

@@ -59,6 +59,8 @@ typedef struct H265MetadataContext {
     int crop_right;
     int crop_top;
     int crop_bottom;
+    int width;
+    int height;
 
     int level;
     int level_guess;
@@ -188,12 +190,94 @@ static int h265_metadata_update_vps(AVBSFContext *bsf,
     return 0;
 }
 
+static int h265_metadata_deduce_crop(AVBSFContext *bsf, const H265RawSPS *sps,
+                                     int *crop_left, int *crop_right,
+                                     int *crop_top, int *crop_bottom)
+{
+    const H265MetadataContext *ctx = bsf->priv_data;
+    int left = ctx->crop_left;
+    int right = ctx->crop_right;
+    int top = ctx->crop_top;
+    int bottom = ctx->crop_bottom;
+
+    if (ctx->width > 0) {
+        if (ctx->width > sps->pic_width_in_luma_samples) {
+            av_log(bsf, AV_LOG_ERROR,
+                   "The width option value %d is larger than picture width %d\n",
+                   ctx->width, sps->pic_width_in_luma_samples);
+            return AVERROR(EINVAL);
+        }
+
+        if (left < 0) {
+            if (right > 0)
+                left = sps->pic_width_in_luma_samples - ctx->width - right;
+            else
+                left = 0;
+        }
+
+        if (right < 0)
+            right = sps->pic_width_in_luma_samples - ctx->width - left;
+
+        if (left < 0 || right < 0 || (left + right + ctx->width) !=
+            sps->pic_width_in_luma_samples) {
+            av_log(bsf, AV_LOG_ERROR,
+                   "Invalid value for crop_left %d, crop_right %d, width after "
+                   "crop %d, with picture width %d\n",
+                   ctx->crop_left, ctx->crop_right, ctx->width,
+                   sps->pic_width_in_luma_samples);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    if (ctx->height > 0) {
+        if (ctx->height > sps->pic_height_in_luma_samples) {
+            av_log(bsf, AV_LOG_ERROR,
+                   "The height option value %d is larger than picture height %d\n",
+                   ctx->height, sps->pic_height_in_luma_samples);
+            return AVERROR(EINVAL);
+        }
+
+        if (top < 0) {
+            if (bottom > 0)
+                top = sps->pic_height_in_luma_samples - ctx->height - bottom;
+            else
+                top = 0;
+        }
+
+        if (bottom < 0)
+            bottom = sps->pic_height_in_luma_samples - ctx->height - top;
+
+        if (top < 0 || bottom < 0 || (top + bottom + ctx->height) !=
+            sps->pic_height_in_luma_samples) {
+            av_log(bsf, AV_LOG_ERROR,
+                   "Invalid value for crop_top %d, crop_bottom %d, height after "
+                   "crop %d, with picture height %d\n",
+                   ctx->crop_top, ctx->crop_bottom, ctx->height,
+                   sps->pic_height_in_luma_samples);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    *crop_left = left;
+    *crop_right = right;
+    *crop_top = top;
+    *crop_bottom = bottom;
+
+    return 0;
+}
+
 static int h265_metadata_update_sps(AVBSFContext *bsf,
                                     H265RawSPS *sps)
 {
     H265MetadataContext *ctx = bsf->priv_data;
     int need_vui = 0;
     int crop_unit_x, crop_unit_y;
+    /* Use local variables to avoid modifying context fields in case of video
+     * resolution changed. Crop doesn't work well with resolution change, this
+     * is the best we can do.
+     */
+    int crop_left, crop_right, crop_top, crop_bottom;
+    int ret;
 
     if (ctx->sample_aspect_ratio.num && ctx->sample_aspect_ratio.den) {
         int num, den, i;
@@ -290,6 +374,11 @@ static int h265_metadata_update_sps(AVBSFContext *bsf,
         }
     }
 
+    ret = h265_metadata_deduce_crop(bsf, sps, &crop_left, &crop_right,
+                                    &crop_top, &crop_bottom);
+    if (ret < 0)
+        return ret;
+
     if (sps->separate_colour_plane_flag || sps->chroma_format_idc == 0) {
         crop_unit_x = 1;
         crop_unit_y = 1;
@@ -298,14 +387,14 @@ static int h265_metadata_update_sps(AVBSFContext *bsf,
         crop_unit_y = 1 + (sps->chroma_format_idc < 2);
     }
 #define CROP(border, unit) do { \
-        if (ctx->crop_ ## border >= 0) { \
-            if (ctx->crop_ ## border % unit != 0) { \
+        if (crop_ ## border >= 0) { \
+            if (crop_ ## border % unit != 0) { \
                 av_log(bsf, AV_LOG_ERROR, "Invalid value for crop_%s: " \
                        "must be a multiple of %d.\n", #border, unit); \
                 return AVERROR(EINVAL); \
             } \
             sps->conf_win_ ## border ## _offset = \
-                ctx->crop_ ## border / unit; \
+                crop_ ## border / unit; \
             sps->conformance_window_flag = 1; \
         } \
     } while (0)
@@ -453,6 +542,12 @@ static const AVOption h265_metadata_options[] = {
         { .i64 = -1 }, -1, HEVC_MAX_HEIGHT, FLAGS },
     { "crop_bottom", "Set bottom border crop offset",
         OFFSET(crop_bottom), AV_OPT_TYPE_INT,
+        { .i64 = -1 }, -1, HEVC_MAX_HEIGHT, FLAGS },
+    { "width", "Set width after crop",
+        OFFSET(width), AV_OPT_TYPE_INT,
+        { .i64 = -1 }, -1, HEVC_MAX_WIDTH, FLAGS },
+    { "height", "Set height after crop",
+        OFFSET(height), AV_OPT_TYPE_INT,
         { .i64 = -1 }, -1, HEVC_MAX_HEIGHT, FLAGS },
 
     { "level", "Set level (tables A.6 and A.7)",
