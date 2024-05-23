@@ -234,7 +234,8 @@ static av_cold int mediacodec_init(AVCodecContext *avctx)
     ff_AMediaFormat_setString(format, "mime", codec_mime);
     // Workaround the alignment requirement of mediacodec. We can't do it
     // silently for AV_PIX_FMT_MEDIACODEC.
-    if (avctx->pix_fmt != AV_PIX_FMT_MEDIACODEC) {
+    if (avctx->pix_fmt != AV_PIX_FMT_MEDIACODEC &&
+        avctx->codec_id == AV_CODEC_ID_H264) {
         s->width = FFALIGN(avctx->width, 16);
         s->height = FFALIGN(avctx->height, 16);
     } else {
