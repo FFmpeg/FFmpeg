@@ -82,9 +82,9 @@ cglobal vvc_sad, 6, 9, 5, src1, src2, dx, dy, block_w, block_h, off1, off2, row_
     vvc_sad_8:
         .loop_height:
         movu              xm0, [src1q]
-        vinserti128        m0, [src1q + MAX_PB_SIZE * ROWS * 2], 1
+        vinserti128        m0, m0, [src1q + MAX_PB_SIZE * ROWS * 2], 1
         movu              xm1, [src2q]
-        vinserti128        m1, [src2q + MAX_PB_SIZE * ROWS * 2], 1
+        vinserti128        m1, m1, [src2q + MAX_PB_SIZE * ROWS * 2], 1
 
         MIN_MAX_SAD        m1, m0, m2
         pmaddwd            m1, m4
