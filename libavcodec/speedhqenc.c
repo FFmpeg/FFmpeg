@@ -27,6 +27,7 @@
  * SpeedHQ encoder.
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/thread.h"
 
 #include "avcodec.h"
@@ -259,7 +260,7 @@ static av_cold int speedhq_encode_init(AVCodecContext *avctx)
         avctx->codec_tag = MKTAG('S','H','Q','4');
         break;
     default:
-        av_assert0(0);
+        av_unreachable("Already checked via CODEC_PIXFMTS");
     }
 
     m->encode_picture_header = speedhq_encode_picture_header;
