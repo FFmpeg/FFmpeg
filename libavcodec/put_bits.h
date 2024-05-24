@@ -75,6 +75,16 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
 }
 
 /**
+ * Inform the compiler that a PutBitContext is flushed (i.e. if it has just
+ * been initialized or flushed). Undefined behaviour occurs if this is used
+ * with a PutBitContext for which this is not true.
+ */
+static inline void put_bits_assume_flushed(const PutBitContext *s)
+{
+    av_assume(s->bit_left == BUF_BITS);
+}
+
+/**
  * @return the total number of bits written to the bitstream.
  */
 static inline int put_bits_count(PutBitContext *s)
