@@ -364,7 +364,7 @@ int ff_wma_total_gain_to_bits(int total_gain)
         return  9;
 }
 
-int ff_wma_end(AVCodecContext *avctx)
+av_cold int ff_wma_end(AVCodecContext *avctx)
 {
     WMACodecContext *s = avctx->priv_data;
     int i;
