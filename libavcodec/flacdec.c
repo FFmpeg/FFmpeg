@@ -481,7 +481,7 @@ static int decode_subframe_lpc(FLACContext *s, int32_t *decoded, int pred_order,
 static int decode_subframe_lpc_33bps(FLACContext *s, int64_t *decoded,
                                      int32_t *residual, int pred_order)
 {
-    int i, j, ret;
+    int i, ret;
     int coeff_prec, qlevel;
     int coeffs[32];
 
