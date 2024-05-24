@@ -79,7 +79,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         AV_WL32(extradata, flags1);
         AV_WL16(extradata + 4, flags2);
     } else {
-        av_assert0(0);
+        av_unreachable("This function is only used with WMAV1/2 encoders");
     }
     avctx->extradata          = extradata;
     s->use_exp_vlc            = flags2 & 0x0001;
@@ -206,7 +206,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
 
     // FIXME remove duplication relative to decoder
     if (s->use_variable_block_len) {
-        av_assert0(0); // FIXME not implemented
+        av_unreachable("use_variable_block_len unimplemented, set to 0 during init");
     } else {
         /* fixed block len */
         s->next_block_len_bits = s->frame_len_bits;
@@ -306,7 +306,8 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
                 if (s->use_exp_vlc) {
                     encode_exp_vlc(s, ch, fixed_exp);
                 } else {
-                    av_assert0(0); // FIXME not implemented
+                    av_unreachable("use_exp_vlc always set to 1 during init");
+                    // FIXME not implemented
 //                    encode_exp_lsp(s, ch);
                 }
             }
@@ -365,7 +366,7 @@ static int encode_frame(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE],
     init_put_bits(&s->pb, buf, buf_size);
 
     if (s->use_bit_reservoir)
-        av_assert0(0); // FIXME not implemented
+        av_unreachable("use_bit_reseroir unimplemented, set to 0 during init");
     else if (encode_block(s, src_coefs, total_gain) < 0)
         return INT_MAX;
 
