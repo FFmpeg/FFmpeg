@@ -810,7 +810,7 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
         }
         break;
     default:
-        av_assert2(0);
+        av_unreachable("No other mpegvideo MV types exist");
     }
 }
 

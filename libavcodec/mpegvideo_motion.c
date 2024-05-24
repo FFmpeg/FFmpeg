@@ -813,7 +813,8 @@ static av_always_inline void mpv_motion_internal(MpegEncContext *s,
             }
             break;
         }
-    default: av_assert2(0);
+    default:
+        av_unreachable("No other mpegvideo MV types exist");
     }
 }
 
