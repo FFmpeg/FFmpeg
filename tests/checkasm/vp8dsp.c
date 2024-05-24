@@ -108,7 +108,7 @@ static void wht4x4(int16_t *coef)
     }
 }
 
-static void check_idct(void)
+static void check_idct(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(uint8_t, src,  [4 * 4]);
     LOCAL_ALIGNED_16(uint8_t, dst,  [4 * 4]);
@@ -117,17 +117,15 @@ static void check_idct(void)
     LOCAL_ALIGNED_16(int16_t, coef, [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, subcoef0, [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, subcoef1, [4 * 4]);
-    VP8DSPContext d;
     int dc;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t *block, ptrdiff_t stride);
 
-    ff_vp8dsp_init(&d);
     randomize_buffers(src, dst, 4, coef);
 
     dct4x4(coef);
 
     for (dc = 0; dc <= 1; dc++) {
-        void (*idct)(uint8_t *, int16_t *, ptrdiff_t) = dc ? d.vp8_idct_dc_add : d.vp8_idct_add;
+        void (*idct)(uint8_t *, int16_t *, ptrdiff_t) = dc ? d->vp8_idct_dc_add : d->vp8_idct_add;
 
         if (check_func(idct, "vp8_idct_%sadd", dc ? "dc_" : "")) {
             if (dc) {
@@ -153,7 +151,7 @@ static void check_idct(void)
     }
 }
 
-static void check_idct_dc4(void)
+static void check_idct_dc4(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(uint8_t, src,  [4 * 4 * 4]);
     LOCAL_ALIGNED_16(uint8_t, dst,  [4 * 4 * 4]);
@@ -162,14 +160,11 @@ static void check_idct_dc4(void)
     LOCAL_ALIGNED_16(int16_t, coef, [4], [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, subcoef0, [4], [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, subcoef1, [4], [4 * 4]);
-    VP8DSPContext d;
     int i, chroma;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *dst, int16_t block[4][16], ptrdiff_t stride);
 
-    ff_vp8dsp_init(&d);
-
     for (chroma = 0; chroma <= 1; chroma++) {
-        void (*idct4dc)(uint8_t *, int16_t[4][16], ptrdiff_t) = chroma ? d.vp8_idct_dc_add4uv : d.vp8_idct_dc_add4y;
+        void (*idct4dc)(uint8_t *, int16_t[4][16], ptrdiff_t) = chroma ? d->vp8_idct_dc_add4uv : d->vp8_idct_dc_add4y;
         if (check_func(idct4dc, "vp8_idct_dc_add4%s", chroma ? "uv" : "y")) {
             ptrdiff_t stride = chroma ? 8 : 16;
             int w      = chroma ? 2 : 4;
@@ -196,7 +191,7 @@ static void check_idct_dc4(void)
 
 }
 
-static void check_luma_dc_wht(void)
+static void check_luma_dc_wht(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(int16_t, dc, [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, dc0, [4 * 4]);
@@ -204,12 +199,9 @@ static void check_luma_dc_wht(void)
     int16_t block[4][4][16];
     LOCAL_ALIGNED_16(int16_t, block0, [4], [4][16]);
     LOCAL_ALIGNED_16(int16_t, block1, [4], [4][16]);
-    VP8DSPContext d;
     int dc_only;
     int blockx, blocky;
     declare_func_emms(AV_CPU_FLAG_MMX, void, int16_t block[4][4][16], int16_t dc[16]);
-
-    ff_vp8dsp_init(&d);
 
     for (blocky = 0; blocky < 4; blocky++) {
         for (blockx = 0; blockx < 4; blockx++) {
@@ -224,7 +216,7 @@ static void check_luma_dc_wht(void)
     wht4x4(dc);
 
     for (dc_only = 0; dc_only <= 1; dc_only++) {
-        void (*idct)(int16_t [4][4][16], int16_t [16]) = dc_only ? d.vp8_luma_dc_wht_dc : d.vp8_luma_dc_wht;
+        void (*idct)(int16_t [4][4][16], int16_t [16]) = dc_only ? d->vp8_luma_dc_wht_dc : d->vp8_luma_dc_wht;
 
         if (check_func(idct, "vp8_luma_dc_wht%s", dc_only ? "_dc" : "")) {
             if (dc_only) {
@@ -262,20 +254,16 @@ static void check_luma_dc_wht(void)
         }                                                 \
     } while (0)
 
-static void check_mc(void)
+static void check_mc(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(uint8_t, buf, [32 * 32]);
     LOCAL_ALIGNED_16(uint8_t, dst0, [16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, dst1, [16 * 16]);
-    VP8DSPContext d;
     int type, k, dx, dy;
     declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *, ptrdiff_t,
                       const uint8_t *, ptrdiff_t, int, int, int);
 
-    ff_vp78dsp_init(&d);
-
     for (type = 0; type < 2; type++) {
-        vp8_mc_func (*tab)[3][3] = type ? d.put_vp8_bilinear_pixels_tab : d.put_vp8_epel_pixels_tab;
         for (k = 1; k < 8; k++) {
             int hsize  = k / 3;
             int size   = 16 >> hsize;
@@ -283,6 +271,8 @@ static void check_mc(void)
             for (dy = 0; dy < 3; dy++) {
                 for (dx = 0; dx < 3; dx++) {
                     char str[100];
+                    vp8_mc_func func = (type ? d->put_vp8_bilinear_pixels_tab : d->put_vp8_epel_pixels_tab)[hsize][dy][dx];
+
                     if (dx || dy) {
                         if (type == 0) {
                             static const char *dx_names[] = { "", "h4", "h6" };
@@ -294,7 +284,8 @@ static void check_mc(void)
                     } else {
                         snprintf(str, sizeof(str), "pixels%d", size);
                     }
-                    if (check_func(tab[hsize][dy][dx], "vp8_put_%s", str)) {
+
+                    if (check_func(func, "vp8_put_%s", str)) {
                         int mx, my;
                         int i;
                         if (type == 0) {
@@ -377,16 +368,13 @@ static void fill_loopfilter_buffers(uint8_t *buf, ptrdiff_t stride, int w, int h
 #define randomize_buffers(buf, lineoff, str, force_hev) \
     randomize_loopfilter_buffers(lineoff, str, dir, flim_E, flim_I, hev_thresh, buf, force_hev)
 
-static void check_loopfilter_16y(void)
+static void check_loopfilter_16y(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(uint8_t, base0, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base1, [32 + 16 * 16]);
-    VP8DSPContext d;
     int dir, edge, force_hev;
     int flim_E = 20, flim_I = 10, hev_thresh = 7;
     declare_func(void, uint8_t *, ptrdiff_t, int, int, int);
-
-    ff_vp8dsp_init(&d);
 
     for (dir = 0; dir < 2; dir++) {
         int midoff = dir ? 4 * 16 : 4;
@@ -396,10 +384,10 @@ static void check_loopfilter_16y(void)
         for (edge = 0; edge < 2; edge++) {
             void (*func)(uint8_t *, ptrdiff_t, int, int, int) = NULL;
             switch (dir << 1 | edge) {
-            case (0 << 1) | 0: func = d.vp8_h_loop_filter16y; break;
-            case (1 << 1) | 0: func = d.vp8_v_loop_filter16y; break;
-            case (0 << 1) | 1: func = d.vp8_h_loop_filter16y_inner; break;
-            case (1 << 1) | 1: func = d.vp8_v_loop_filter16y_inner; break;
+            case (0 << 1) | 0: func = d->vp8_h_loop_filter16y; break;
+            case (1 << 1) | 0: func = d->vp8_v_loop_filter16y; break;
+            case (0 << 1) | 1: func = d->vp8_h_loop_filter16y_inner; break;
+            case (1 << 1) | 1: func = d->vp8_v_loop_filter16y_inner; break;
             }
             if (check_func(func, "vp8_loop_filter16y%s_%s", edge ? "_inner" : "", dir ? "v" : "h")) {
                 for (force_hev = -1; force_hev <= 1; force_hev++) {
@@ -421,18 +409,15 @@ static void check_loopfilter_16y(void)
     }
 }
 
-static void check_loopfilter_8uv(void)
+static void check_loopfilter_8uv(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(uint8_t, base0u, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base0v, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base1u, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base1v, [32 + 16 * 16]);
-    VP8DSPContext d;
     int dir, edge, force_hev;
     int flim_E = 20, flim_I = 10, hev_thresh = 7;
     declare_func(void, uint8_t *, uint8_t *, ptrdiff_t, int, int, int);
-
-    ff_vp8dsp_init(&d);
 
     for (dir = 0; dir < 2; dir++) {
         int midoff = dir ? 4 * 16 : 4;
@@ -444,10 +429,10 @@ static void check_loopfilter_8uv(void)
         for (edge = 0; edge < 2; edge++) {
             void (*func)(uint8_t *, uint8_t *, ptrdiff_t, int, int, int) = NULL;
             switch (dir << 1 | edge) {
-            case (0 << 1) | 0: func = d.vp8_h_loop_filter8uv; break;
-            case (1 << 1) | 0: func = d.vp8_v_loop_filter8uv; break;
-            case (0 << 1) | 1: func = d.vp8_h_loop_filter8uv_inner; break;
-            case (1 << 1) | 1: func = d.vp8_v_loop_filter8uv_inner; break;
+            case (0 << 1) | 0: func = d->vp8_h_loop_filter8uv; break;
+            case (1 << 1) | 0: func = d->vp8_v_loop_filter8uv; break;
+            case (0 << 1) | 1: func = d->vp8_h_loop_filter8uv_inner; break;
+            case (1 << 1) | 1: func = d->vp8_v_loop_filter8uv_inner; break;
             }
             if (check_func(func, "vp8_loop_filter8uv%s_%s", edge ? "_inner" : "", dir ? "v" : "h")) {
                 for (force_hev = -1; force_hev <= 1; force_hev++) {
@@ -474,23 +459,20 @@ static void check_loopfilter_8uv(void)
     }
 }
 
-static void check_loopfilter_simple(void)
+static void check_loopfilter_simple(VP8DSPContext *d)
 {
     LOCAL_ALIGNED_16(uint8_t, base0, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base1, [32 + 16 * 16]);
-    VP8DSPContext d;
     int dir;
     int flim_E = 20, flim_I = 30, hev_thresh = 0;
     declare_func(void, uint8_t *, ptrdiff_t, int);
-
-    ff_vp8dsp_init(&d);
 
     for (dir = 0; dir < 2; dir++) {
         int midoff = dir ? 4 * 16 : 4;
         int midoff_aligned = dir ? 4 * 16 : 16;
         uint8_t *buf0 = base0 + midoff_aligned;
         uint8_t *buf1 = base1 + midoff_aligned;
-        void (*func)(uint8_t *, ptrdiff_t, int) = dir ? d.vp8_v_loop_filter_simple : d.vp8_h_loop_filter_simple;
+        void (*func)(uint8_t *, ptrdiff_t, int) = dir ? d->vp8_v_loop_filter_simple : d->vp8_h_loop_filter_simple;
         if (check_func(func, "vp8_loop_filter_simple_%s", dir ? "v" : "h")) {
             fill_loopfilter_buffers(buf0 - midoff, 16, 16, 16);
             randomize_buffers(buf0, 0, 16, -1);
@@ -507,14 +489,18 @@ static void check_loopfilter_simple(void)
 
 void checkasm_check_vp8dsp(void)
 {
-    check_idct();
-    check_idct_dc4();
-    check_luma_dc_wht();
+    VP8DSPContext d;
+
+    ff_vp78dsp_init(&d);
+    ff_vp8dsp_init(&d);
+    check_idct(&d);
+    check_idct_dc4(&d);
+    check_luma_dc_wht(&d);
     report("idct");
-    check_mc();
+    check_mc(&d);
     report("mc");
-    check_loopfilter_16y();
-    check_loopfilter_8uv();
-    check_loopfilter_simple();
+    check_loopfilter_16y(&d);
+    check_loopfilter_8uv(&d);
+    check_loopfilter_simple(&d);
     report("loopfilter");
 }
