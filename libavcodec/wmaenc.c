@@ -425,7 +425,7 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
         put_bits(&s->pb, 8, 'N');
 
     flush_put_bits(&s->pb);
-    av_assert0(put_bits_ptr(&s->pb) - s->pb.buf == avctx->block_align);
+    av_assert0(put_bytes_output(&s->pb) == avctx->block_align);
 
     if (frame->pts != AV_NOPTS_VALUE)
         avpkt->pts = frame->pts - ff_samples_to_time_base(avctx, avctx->initial_padding);

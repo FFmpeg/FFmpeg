@@ -382,7 +382,7 @@ static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsig
     encode_acs(&pb, blocks, blocks_per_slice, qmat, scan);
 
     flush_put_bits(&pb);
-    return put_bits_ptr(&pb) - pb.buf;
+    return put_bytes_output(&pb);
 }
 
 static av_always_inline unsigned encode_slice_data(AVCodecContext *avctx,

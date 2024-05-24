@@ -124,7 +124,7 @@ static void put_swf_rect(AVIOContext *pb,
     put_bits(&p, nbits, ymax & mask);
 
     flush_put_bits(&p);
-    avio_write(pb, buf, put_bits_ptr(&p) - p.buf);
+    avio_write(pb, buf, put_bytes_output(&p));
 }
 
 static void put_swf_line_edge(PutBitContext *pb, int dx, int dy)
@@ -189,7 +189,7 @@ static void put_swf_matrix(AVIOContext *pb,
     put_bits(&p, nbits, ty);
 
     flush_put_bits(&p);
-    avio_write(pb, buf, put_bits_ptr(&p) - p.buf);
+    avio_write(pb, buf, put_bytes_output(&p));
 }
 
 static int swf_write_header(AVFormatContext *s)
@@ -323,7 +323,7 @@ static int swf_write_header(AVFormatContext *s)
         put_bits(&p, 5, 0);
 
         flush_put_bits(&p);
-        avio_write(pb, buf1, put_bits_ptr(&p) - p.buf);
+        avio_write(pb, buf1, put_bytes_output(&p));
 
         put_swf_end_tag(s);
     }
