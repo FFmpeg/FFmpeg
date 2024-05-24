@@ -1638,6 +1638,8 @@ static void ac3_output_frame_header(AC3EncodeContext *s, PutBitContext *pb)
 {
     AC3EncOptions *opt = &s->options;
 
+    put_bits_assume_flushed(pb);
+
     put_bits(pb, 16, 0x0b77);   /* frame header */
     put_bits(pb, 16, 0);        /* crc1: will be filled later */
     put_bits(pb, 2,  s->bit_alloc.sr_code);

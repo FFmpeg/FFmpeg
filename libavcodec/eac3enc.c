@@ -135,6 +135,8 @@ static void eac3_output_frame_header(AC3EncodeContext *s, PutBitContext *pb)
     int blk, ch;
     AC3EncOptions *opt = &s->options;
 
+    put_bits_assume_flushed(pb);
+
     put_bits(pb, 16, 0x0b77);                   /* sync word */
 
     /* BSI header */
