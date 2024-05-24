@@ -34,14 +34,93 @@
 #include "libavutil/frame.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/rational.h"
 
 #include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
 #include "internal.h"
-#include "af_afir.h"
 #include "af_afirdsp.h"
+
+#define MAX_IR_STREAMS 32
+
+typedef struct AudioFIRSegment {
+    int nb_partitions;
+    int part_size;
+    int block_size;
+    int fft_length;
+    int coeff_size;
+    int input_size;
+    int input_offset;
+
+    int *output_offset;
+    int *part_index;
+
+    AVFrame *sumin;
+    AVFrame *sumout;
+    AVFrame *blockout;
+    AVFrame *tempin;
+    AVFrame *tempout;
+    AVFrame *buffer;
+    AVFrame *coeff;
+    AVFrame *input;
+    AVFrame *output;
+
+    AVTXContext **ctx, **tx, **itx;
+    av_tx_fn ctx_fn, tx_fn, itx_fn;
+} AudioFIRSegment;
+
+typedef struct AudioFIRContext {
+    const AVClass *class;
+
+    float wet_gain;
+    float dry_gain;
+    float length;
+    int gtype;
+    float ir_norm;
+    float ir_link;
+    float ir_gain;
+    int ir_format;
+    int ir_load;
+    float max_ir_len;
+    int response;
+    int w, h;
+    AVRational frame_rate;
+    int ir_channel;
+    int minp;
+    int maxp;
+    int nb_irs;
+    int prev_selir;
+    int selir;
+    int precision;
+    int format;
+
+    int eof_coeffs[MAX_IR_STREAMS];
+    int have_coeffs[MAX_IR_STREAMS];
+    int nb_taps[MAX_IR_STREAMS];
+    int nb_segments[MAX_IR_STREAMS];
+    int max_offset[MAX_IR_STREAMS];
+    int nb_channels;
+    int one2many;
+    int prev_is_disabled;
+    int *loading;
+    double *ch_gain;
+
+    AudioFIRSegment seg[MAX_IR_STREAMS][1024];
+
+    AVFrame *in;
+    AVFrame *xfade[2];
+    AVFrame *fadein[2];
+    AVFrame *ir[MAX_IR_STREAMS];
+    AVFrame *norm_ir[MAX_IR_STREAMS];
+    int min_part_size;
+    int max_part_size;
+    int64_t pts;
+
+    AudioFIRDSPContext afirdsp;
+    AVFloatDSPContext *fdsp;
+} AudioFIRContext;
 
 #define DEPTH 32
 #include "afir_template.c"
