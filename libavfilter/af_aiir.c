@@ -820,7 +820,6 @@ static void solve(double *matrix, double *vector, int n, double *y, double *x, d
 static int convert_serial2parallel(AVFilterContext *ctx, int channels)
 {
     AudioIIRContext *s = ctx->priv;
-    int ret = 0;
 
     for (int ch = 0; ch < channels; ch++) {
         IIRChannel *iir = &s->iir[ch];
@@ -879,9 +878,6 @@ static int convert_serial2parallel(AVFilterContext *ctx, int channels)
         av_free(resp);
         av_free(M);
         av_free(W);
-
-        if (ret < 0)
-            return ret;
     }
 
     return 0;
