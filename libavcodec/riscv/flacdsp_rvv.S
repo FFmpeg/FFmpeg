@@ -55,11 +55,11 @@ func ff_flac_lpc32_rvv, zve32x
         vle32.v v16, (a0)
         sh2add  a0, a2, a0
 1:
-        vsetvli zero, a2, e32, m4, ta, ma
+        vsetvli t1, zero, e32, m4, ta, ma
         vwmul.vv v24, v8, v16
         vsetvli zero, t2, e32, m4, tu, ma
         vwmacc.vv v24, v12, v20
-        vsetvli zero, a2, e64, m8, ta, ma
+        vsetvli t1, zero, e64, m8, ta, ma
         vredsum.vs v24, v24, v0
         lw      t0, (a0)
         addi    a4, a4, -1
