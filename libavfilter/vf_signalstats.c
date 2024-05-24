@@ -721,10 +721,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         if (histv[fil])   maxv   = fil;
         if (histsat[fil]) maxsat = fil;
 
-        toty   += histy[fil]   * fil;
-        totu   += histu[fil]   * fil;
-        totv   += histv[fil]   * fil;
-        totsat += histsat[fil] * fil;
+        toty   += (uint64_t)histy[fil]   * fil;
+        totu   += (uint64_t)histu[fil]   * fil;
+        totv   += (uint64_t)histv[fil]   * fil;
+        totsat += (uint64_t)histsat[fil] * fil;
 
         accy   += histy[fil];
         accu   += histu[fil];
@@ -745,7 +745,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     maxhue = histhue[0];
     medhue = -1;
     for (fil = 0; fil < 360; fil++) {
-        tothue += histhue[fil] * fil;
+        tothue += (uint64_t)histhue[fil] * fil;
         acchue += histhue[fil];
 
         if (medhue == -1 && acchue > s->cfs / 2)
