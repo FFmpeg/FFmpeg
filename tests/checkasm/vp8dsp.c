@@ -18,8 +18,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <stdbool.h>
 #include <string.h>
 
+#include "config_components.h"
 #include "libavcodec/vp8dsp.h"
 
 #include "libavutil/common.h"
@@ -108,7 +110,7 @@ static void wht4x4(int16_t *coef)
     }
 }
 
-static void check_idct(VP8DSPContext *d)
+static void check_idct(VP8DSPContext *d, bool is_vp7)
 {
     LOCAL_ALIGNED_16(uint8_t, src,  [4 * 4]);
     LOCAL_ALIGNED_16(uint8_t, dst,  [4 * 4]);
@@ -127,7 +129,7 @@ static void check_idct(VP8DSPContext *d)
     for (dc = 0; dc <= 1; dc++) {
         void (*idct)(uint8_t *, int16_t *, ptrdiff_t) = dc ? d->vp8_idct_dc_add : d->vp8_idct_add;
 
-        if (check_func(idct, "vp8_idct_%sadd", dc ? "dc_" : "")) {
+        if (check_func(idct, "vp%d_idct_%sadd", 8 - is_vp7, dc ? "dc_" : "")) {
             if (dc) {
                 memset(subcoef0, 0, 4 * 4 * sizeof(int16_t));
                 subcoef0[0] = coef[0];
@@ -151,7 +153,7 @@ static void check_idct(VP8DSPContext *d)
     }
 }
 
-static void check_idct_dc4(VP8DSPContext *d)
+static void check_idct_dc4(VP8DSPContext *d, bool is_vp7)
 {
     LOCAL_ALIGNED_16(uint8_t, src,  [4 * 4 * 4]);
     LOCAL_ALIGNED_16(uint8_t, dst,  [4 * 4 * 4]);
@@ -165,7 +167,7 @@ static void check_idct_dc4(VP8DSPContext *d)
 
     for (chroma = 0; chroma <= 1; chroma++) {
         void (*idct4dc)(uint8_t *, int16_t[4][16], ptrdiff_t) = chroma ? d->vp8_idct_dc_add4uv : d->vp8_idct_dc_add4y;
-        if (check_func(idct4dc, "vp8_idct_dc_add4%s", chroma ? "uv" : "y")) {
+        if (check_func(idct4dc, "vp%d_idct_dc_add4%s", 8 - is_vp7, chroma ? "uv" : "y")) {
             ptrdiff_t stride = chroma ? 8 : 16;
             int w      = chroma ? 2 : 4;
             for (i = 0; i < 4; i++) {
@@ -191,7 +193,7 @@ static void check_idct_dc4(VP8DSPContext *d)
 
 }
 
-static void check_luma_dc_wht(VP8DSPContext *d)
+static void check_luma_dc_wht(VP8DSPContext *d, bool is_vp7)
 {
     LOCAL_ALIGNED_16(int16_t, dc, [4 * 4]);
     LOCAL_ALIGNED_16(int16_t, dc0, [4 * 4]);
@@ -218,7 +220,7 @@ static void check_luma_dc_wht(VP8DSPContext *d)
     for (dc_only = 0; dc_only <= 1; dc_only++) {
         void (*idct)(int16_t [4][4][16], int16_t [16]) = dc_only ? d->vp8_luma_dc_wht_dc : d->vp8_luma_dc_wht;
 
-        if (check_func(idct, "vp8_luma_dc_wht%s", dc_only ? "_dc" : "")) {
+        if (check_func(idct, "vp%d_luma_dc_wht%s", 8 - is_vp7, dc_only ? "_dc" : "")) {
             if (dc_only) {
                 memset(dc0, 0, 16 * sizeof(int16_t));
                 dc0[0] = dc[0];
@@ -368,7 +370,7 @@ static void fill_loopfilter_buffers(uint8_t *buf, ptrdiff_t stride, int w, int h
 #define randomize_buffers(buf, lineoff, str, force_hev) \
     randomize_loopfilter_buffers(lineoff, str, dir, flim_E, flim_I, hev_thresh, buf, force_hev)
 
-static void check_loopfilter_16y(VP8DSPContext *d)
+static void check_loopfilter_16y(VP8DSPContext *d, bool is_vp7)
 {
     LOCAL_ALIGNED_16(uint8_t, base0, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base1, [32 + 16 * 16]);
@@ -389,7 +391,7 @@ static void check_loopfilter_16y(VP8DSPContext *d)
             case (0 << 1) | 1: func = d->vp8_h_loop_filter16y_inner; break;
             case (1 << 1) | 1: func = d->vp8_v_loop_filter16y_inner; break;
             }
-            if (check_func(func, "vp8_loop_filter16y%s_%s", edge ? "_inner" : "", dir ? "v" : "h")) {
+            if (check_func(func, "vp%d_loop_filter16y%s_%s", 8 - is_vp7, edge ? "_inner" : "", dir ? "v" : "h")) {
                 for (force_hev = -1; force_hev <= 1; force_hev++) {
                     fill_loopfilter_buffers(buf0 - midoff, 16, 16, 16);
                     randomize_buffers(buf0, 0, 16, force_hev);
@@ -409,7 +411,7 @@ static void check_loopfilter_16y(VP8DSPContext *d)
     }
 }
 
-static void check_loopfilter_8uv(VP8DSPContext *d)
+static void check_loopfilter_8uv(VP8DSPContext *d, bool is_vp7)
 {
     LOCAL_ALIGNED_16(uint8_t, base0u, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base0v, [32 + 16 * 16]);
@@ -434,7 +436,7 @@ static void check_loopfilter_8uv(VP8DSPContext *d)
             case (0 << 1) | 1: func = d->vp8_h_loop_filter8uv_inner; break;
             case (1 << 1) | 1: func = d->vp8_v_loop_filter8uv_inner; break;
             }
-            if (check_func(func, "vp8_loop_filter8uv%s_%s", edge ? "_inner" : "", dir ? "v" : "h")) {
+            if (check_func(func, "vp%d_loop_filter8uv%s_%s", 8 - is_vp7, edge ? "_inner" : "", dir ? "v" : "h")) {
                 for (force_hev = -1; force_hev <= 1; force_hev++) {
                     fill_loopfilter_buffers(buf0u - midoff, 16, 16, 16);
                     fill_loopfilter_buffers(buf0v - midoff, 16, 16, 16);
@@ -459,7 +461,7 @@ static void check_loopfilter_8uv(VP8DSPContext *d)
     }
 }
 
-static void check_loopfilter_simple(VP8DSPContext *d)
+static void check_loopfilter_simple(VP8DSPContext *d, bool is_vp7)
 {
     LOCAL_ALIGNED_16(uint8_t, base0, [32 + 16 * 16]);
     LOCAL_ALIGNED_16(uint8_t, base1, [32 + 16 * 16]);
@@ -473,7 +475,7 @@ static void check_loopfilter_simple(VP8DSPContext *d)
         uint8_t *buf0 = base0 + midoff_aligned;
         uint8_t *buf1 = base1 + midoff_aligned;
         void (*func)(uint8_t *, ptrdiff_t, int) = dir ? d->vp8_v_loop_filter_simple : d->vp8_h_loop_filter_simple;
-        if (check_func(func, "vp8_loop_filter_simple_%s", dir ? "v" : "h")) {
+        if (check_func(func, "vp%d_loop_filter_simple_%s", 8 - is_vp7, dir ? "v" : "h")) {
             fill_loopfilter_buffers(buf0 - midoff, 16, 16, 16);
             randomize_buffers(buf0, 0, 16, -1);
             randomize_buffers(buf0, 8, 16, -1);
@@ -487,20 +489,33 @@ static void check_loopfilter_simple(VP8DSPContext *d)
     }
 }
 
+static void checkasm_check_vp78dsp(VP8DSPContext *d, bool is_vp7)
+{
+#if CONFIG_VP7_DECODER
+    if (is_vp7)
+        ff_vp7dsp_init(d);
+    else
+#endif
+        ff_vp8dsp_init(d);
+    check_idct(d, is_vp7);
+    check_idct_dc4(d, is_vp7);
+    check_luma_dc_wht(d, is_vp7);
+    report("idct");
+    check_loopfilter_16y(d, is_vp7);
+    check_loopfilter_8uv(d, is_vp7);
+    check_loopfilter_simple(d, is_vp7);
+    report("loopfilter");
+}
+
 void checkasm_check_vp8dsp(void)
 {
     VP8DSPContext d;
 
     ff_vp78dsp_init(&d);
-    ff_vp8dsp_init(&d);
-    check_idct(&d);
-    check_idct_dc4(&d);
-    check_luma_dc_wht(&d);
-    report("idct");
     check_mc(&d);
     report("mc");
-    check_loopfilter_16y(&d);
-    check_loopfilter_8uv(&d);
-    check_loopfilter_simple(&d);
-    report("loopfilter");
+    checkasm_check_vp78dsp(&d, false);
+#if CONFIG_VP7_DECODER
+    checkasm_check_vp78dsp(&d, true);
+#endif
 }
