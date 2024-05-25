@@ -424,23 +424,23 @@ static int vaapi_encode_mpeg2_init_picture_params(AVCodecContext *avctx,
     MPEG2RawPictureCodingExtension    *pce = &priv->picture_coding_extension.data.picture_coding;
     VAEncPictureParameterBufferMPEG2 *vpic = pic->codec_picture_params;
 
-    if (pic->type == PICTURE_TYPE_IDR || pic->type == PICTURE_TYPE_I) {
+    if (pic->type == FF_HW_PICTURE_TYPE_IDR || pic->type == FF_HW_PICTURE_TYPE_I) {
         ph->temporal_reference  = 0;
         ph->picture_coding_type = 1;
         priv->last_i_frame = pic->display_order;
     } else {
         ph->temporal_reference = pic->display_order - priv->last_i_frame;
-        ph->picture_coding_type = pic->type == PICTURE_TYPE_B ? 3 : 2;
+        ph->picture_coding_type = pic->type == FF_HW_PICTURE_TYPE_B ? 3 : 2;
     }
 
-    if (pic->type == PICTURE_TYPE_P || pic->type == PICTURE_TYPE_B) {
+    if (pic->type == FF_HW_PICTURE_TYPE_P || pic->type == FF_HW_PICTURE_TYPE_B) {
         pce->f_code[0][0] = priv->f_code_horizontal;
         pce->f_code[0][1] = priv->f_code_vertical;
     } else {
         pce->f_code[0][0] = 15;
         pce->f_code[0][1] = 15;
     }
-    if (pic->type == PICTURE_TYPE_B) {
+    if (pic->type == FF_HW_PICTURE_TYPE_B) {
         pce->f_code[1][0] = priv->f_code_horizontal;
         pce->f_code[1][1] = priv->f_code_vertical;
     } else {
@@ -452,15 +452,15 @@ static int vaapi_encode_mpeg2_init_picture_params(AVCodecContext *avctx,
     vpic->coded_buf             = pic->output_buffer;
 
     switch (pic->type) {
-    case PICTURE_TYPE_IDR:
-    case PICTURE_TYPE_I:
+    case FF_HW_PICTURE_TYPE_IDR:
+    case FF_HW_PICTURE_TYPE_I:
         vpic->picture_type = VAEncPictureTypeIntra;
         break;
-    case PICTURE_TYPE_P:
+    case FF_HW_PICTURE_TYPE_P:
         vpic->picture_type = VAEncPictureTypePredictive;
         vpic->forward_reference_picture = pic->refs[0][0]->recon_surface;
         break;
-    case PICTURE_TYPE_B:
+    case FF_HW_PICTURE_TYPE_B:
         vpic->picture_type = VAEncPictureTypeBidirectional;
         vpic->forward_reference_picture  = pic->refs[0][0]->recon_surface;
         vpic->backward_reference_picture = pic->refs[1][0]->recon_surface;
@@ -490,14 +490,14 @@ static int vaapi_encode_mpeg2_init_slice_params(AVCodecContext *avctx,
     vslice->num_macroblocks    = slice->block_size;
 
     switch (pic->type) {
-    case PICTURE_TYPE_IDR:
-    case PICTURE_TYPE_I:
+    case FF_HW_PICTURE_TYPE_IDR:
+    case FF_HW_PICTURE_TYPE_I:
         qp = priv->quant_i;
         break;
-    case PICTURE_TYPE_P:
+    case FF_HW_PICTURE_TYPE_P:
         qp = priv->quant_p;
         break;
-    case PICTURE_TYPE_B:
+    case FF_HW_PICTURE_TYPE_B:
         qp = priv->quant_b;
         break;
     default:
@@ -505,8 +505,8 @@ static int vaapi_encode_mpeg2_init_slice_params(AVCodecContext *avctx,
     }
 
     vslice->quantiser_scale_code = qp;
-    vslice->is_intra_slice = (pic->type == PICTURE_TYPE_IDR ||
-                              pic->type == PICTURE_TYPE_I);
+    vslice->is_intra_slice = (pic->type == FF_HW_PICTURE_TYPE_IDR ||
+                              pic->type == FF_HW_PICTURE_TYPE_I);
 
     return 0;
 }
@@ -566,7 +566,7 @@ static const VAAPIEncodeProfile vaapi_encode_mpeg2_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_mpeg2 = {
     .profiles              = vaapi_encode_mpeg2_profiles,
 
-    .flags                 = FLAG_B_PICTURES,
+    .flags                 = FF_HW_FLAG_B_PICTURES,
 
     .configure             = &vaapi_encode_mpeg2_configure,
 

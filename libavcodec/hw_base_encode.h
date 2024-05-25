@@ -26,26 +26,26 @@
 #define MAX_REFERENCE_LIST_NUM 2
 
 enum {
-    PICTURE_TYPE_IDR = 0,
-    PICTURE_TYPE_I   = 1,
-    PICTURE_TYPE_P   = 2,
-    PICTURE_TYPE_B   = 3,
+    FF_HW_PICTURE_TYPE_IDR = 0,
+    FF_HW_PICTURE_TYPE_I   = 1,
+    FF_HW_PICTURE_TYPE_P   = 2,
+    FF_HW_PICTURE_TYPE_B   = 3,
 };
 
 enum {
     // Codec supports controlling the subdivision of pictures into slices.
-    FLAG_SLICE_CONTROL         = 1 << 0,
+    FF_HW_FLAG_SLICE_CONTROL         = 1 << 0,
     // Codec only supports constant quality (no rate control).
-    FLAG_CONSTANT_QUALITY_ONLY = 1 << 1,
+    FF_HW_FLAG_CONSTANT_QUALITY_ONLY = 1 << 1,
     // Codec is intra-only.
-    FLAG_INTRA_ONLY            = 1 << 2,
+    FF_HW_FLAG_INTRA_ONLY            = 1 << 2,
     // Codec supports B-pictures.
-    FLAG_B_PICTURES            = 1 << 3,
+    FF_HW_FLAG_B_PICTURES            = 1 << 3,
     // Codec supports referencing B-pictures.
-    FLAG_B_PICTURE_REFERENCES  = 1 << 4,
+    FF_HW_FLAG_B_PICTURE_REFERENCES  = 1 << 4,
     // Codec supports non-IDR key pictures (that is, key pictures do
     // not necessarily empty the DPB).
-    FLAG_NON_IDR_KEY_PICTURES  = 1 << 5,
+    FF_HW_FLAG_NON_IDR_KEY_PICTURES  = 1 << 5,
 };
 
 typedef struct FFHWBaseEncodeContext {

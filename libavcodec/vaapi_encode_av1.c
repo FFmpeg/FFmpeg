@@ -488,7 +488,7 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
     fh_obu->header.obu_has_size_field = 1;
 
     switch (pic->type) {
-    case PICTURE_TYPE_IDR:
+    case FF_HW_PICTURE_TYPE_IDR:
         av_assert0(pic->nb_refs[0] == 0 || pic->nb_refs[1]);
         fh->frame_type = AV1_FRAME_KEY;
         fh->refresh_frame_flags = 0xFF;
@@ -496,7 +496,7 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
         hpic->slot = 0;
         hpic->last_idr_frame = pic->display_order;
         break;
-    case PICTURE_TYPE_P:
+    case FF_HW_PICTURE_TYPE_P:
         av_assert0(pic->nb_refs[0]);
         fh->frame_type = AV1_FRAME_INTER;
         fh->base_q_idx = priv->q_idx_p;
@@ -523,7 +523,7 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
             vpic->ref_frame_ctrl_l0.fields.search_idx1 = AV1_REF_FRAME_GOLDEN;
         }
         break;
-    case PICTURE_TYPE_B:
+    case FF_HW_PICTURE_TYPE_B:
         av_assert0(pic->nb_refs[0] && pic->nb_refs[1]);
         fh->frame_type = AV1_FRAME_INTER;
         fh->base_q_idx = priv->q_idx_b;
@@ -656,7 +656,7 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
         vpic->bit_offset_cdef_params         = priv->cdef_start_offset;
         vpic->size_in_bits_cdef_params       = priv->cdef_param_size;
         vpic->size_in_bits_frame_hdr_obu     = priv->fh_data_len;
-        vpic->byte_offset_frame_hdr_obu_size = (((pic->type == PICTURE_TYPE_IDR) ?
+        vpic->byte_offset_frame_hdr_obu_size = (((pic->type == FF_HW_PICTURE_TYPE_IDR) ?
                                                priv->sh_data_len / 8 : 0) +
                                                (fh_obu->header.obu_extension_flag ?
                                                2 : 1));
@@ -664,7 +664,7 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
 
     priv->nb_mh = 0;
 
-    if (pic->type == PICTURE_TYPE_IDR) {
+    if (pic->type == FF_HW_PICTURE_TYPE_IDR) {
         AVFrameSideData *sd =
             av_frame_get_side_data(pic->input_image,
                                    AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
@@ -841,7 +841,7 @@ static const VAAPIEncodeProfile vaapi_encode_av1_profiles[] = {
 
 static const VAAPIEncodeType vaapi_encode_type_av1 = {
     .profiles        = vaapi_encode_av1_profiles,
-    .flags           = FLAG_B_PICTURES | FLAG_TIMESTAMP_NO_DELAY,
+    .flags           = FF_HW_FLAG_B_PICTURES | FLAG_TIMESTAMP_NO_DELAY,
     .default_quality = 25,
 
     .get_encoder_caps = &vaapi_encode_av1_get_encoder_caps,

@@ -84,8 +84,8 @@ static int vaapi_encode_vp8_init_picture_params(AVCodecContext *avctx,
     vpic->coded_buf = pic->output_buffer;
 
     switch (pic->type) {
-    case PICTURE_TYPE_IDR:
-    case PICTURE_TYPE_I:
+    case FF_HW_PICTURE_TYPE_IDR:
+    case FF_HW_PICTURE_TYPE_I:
         av_assert0(pic->nb_refs[0] == 0 && pic->nb_refs[1] == 0);
         vpic->ref_flags.bits.force_kf = 1;
         vpic->ref_last_frame =
@@ -93,7 +93,7 @@ static int vaapi_encode_vp8_init_picture_params(AVCodecContext *avctx,
         vpic->ref_arf_frame  =
             VA_INVALID_SURFACE;
         break;
-    case PICTURE_TYPE_P:
+    case FF_HW_PICTURE_TYPE_P:
         av_assert0(!pic->nb_refs[1]);
         vpic->ref_flags.bits.no_ref_last = 0;
         vpic->ref_flags.bits.no_ref_gf   = 1;
@@ -107,7 +107,7 @@ static int vaapi_encode_vp8_init_picture_params(AVCodecContext *avctx,
         av_assert0(0 && "invalid picture type");
     }
 
-    vpic->pic_flags.bits.frame_type = (pic->type != PICTURE_TYPE_IDR);
+    vpic->pic_flags.bits.frame_type = (pic->type != FF_HW_PICTURE_TYPE_IDR);
     vpic->pic_flags.bits.show_frame = 1;
 
     vpic->pic_flags.bits.refresh_last            = 1;
@@ -145,7 +145,7 @@ static int vaapi_encode_vp8_write_quant_table(AVCodecContext *avctx,
 
     memset(&quant, 0, sizeof(quant));
 
-    if (pic->type == PICTURE_TYPE_P)
+    if (pic->type == FF_HW_PICTURE_TYPE_P)
         q = priv->q_index_p;
     else
         q = priv->q_index_i;

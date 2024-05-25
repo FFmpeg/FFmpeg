@@ -95,13 +95,13 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
     vpic->log2_tile_columns = num_tile_columns == 1 ? 0 : av_log2(num_tile_columns - 1) + 1;
 
     switch (pic->type) {
-    case PICTURE_TYPE_IDR:
+    case FF_HW_PICTURE_TYPE_IDR:
         av_assert0(pic->nb_refs[0] == 0 && pic->nb_refs[1] == 0);
         vpic->ref_flags.bits.force_kf = 1;
         vpic->refresh_frame_flags = 0xff;
         hpic->slot = 0;
         break;
-    case PICTURE_TYPE_P:
+    case FF_HW_PICTURE_TYPE_P:
         av_assert0(!pic->nb_refs[1]);
         {
             VAAPIEncodeVP9Picture *href = pic->refs[0][0]->priv_data;
@@ -119,7 +119,7 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
             vpic->ref_flags.bits.ref_last_sign_bias = 1;
         }
         break;
-    case PICTURE_TYPE_B:
+    case FF_HW_PICTURE_TYPE_B:
         av_assert0(pic->nb_refs[0] && pic->nb_refs[1]);
         {
             VAAPIEncodeVP9Picture *href0 = pic->refs[0][0]->priv_data,
@@ -167,12 +167,12 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
         }
     }
 
-    vpic->pic_flags.bits.frame_type = (pic->type != PICTURE_TYPE_IDR);
+    vpic->pic_flags.bits.frame_type = (pic->type != FF_HW_PICTURE_TYPE_IDR);
     vpic->pic_flags.bits.show_frame = pic->display_order <= pic->encode_order;
 
-    if (pic->type == PICTURE_TYPE_IDR)
+    if (pic->type == FF_HW_PICTURE_TYPE_IDR)
         vpic->luma_ac_qindex     = priv->q_idx_idr;
-    else if (pic->type == PICTURE_TYPE_P)
+    else if (pic->type == FF_HW_PICTURE_TYPE_P)
         vpic->luma_ac_qindex     = priv->q_idx_p;
     else
         vpic->luma_ac_qindex     = priv->q_idx_b;
@@ -239,8 +239,8 @@ static const VAAPIEncodeProfile vaapi_encode_vp9_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_vp9 = {
     .profiles              = vaapi_encode_vp9_profiles,
 
-    .flags                 = FLAG_B_PICTURES |
-                             FLAG_B_PICTURE_REFERENCES,
+    .flags                 = FF_HW_FLAG_B_PICTURES |
+                             FF_HW_FLAG_B_PICTURE_REFERENCES,
 
     .default_quality       = 100,
 

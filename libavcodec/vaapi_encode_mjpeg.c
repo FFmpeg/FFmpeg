@@ -232,7 +232,7 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
     const uint8_t *components;
     int t, i, quant_scale, len;
 
-    av_assert0(pic->type == PICTURE_TYPE_IDR);
+    av_assert0(pic->type == FF_HW_PICTURE_TYPE_IDR);
 
     desc = av_pix_fmt_desc_get(priv->common.input_frames->sw_format);
     av_assert0(desc);
@@ -494,8 +494,8 @@ static const VAAPIEncodeProfile vaapi_encode_mjpeg_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
     .profiles              = vaapi_encode_mjpeg_profiles,
 
-    .flags                 = FLAG_CONSTANT_QUALITY_ONLY |
-                             FLAG_INTRA_ONLY,
+    .flags                 = FF_HW_FLAG_CONSTANT_QUALITY_ONLY |
+                             FF_HW_FLAG_INTRA_ONLY,
 
     .get_encoder_caps      = &vaapi_encode_mjpeg_get_encoder_caps,
     .configure             = &vaapi_encode_mjpeg_configure,

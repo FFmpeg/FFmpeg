@@ -766,7 +766,7 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
     VAEncPictureParameterBufferHEVC *vpic = pic->codec_picture_params;
     int i, j = 0;
 
-    if (pic->type == PICTURE_TYPE_IDR) {
+    if (pic->type == FF_HW_PICTURE_TYPE_IDR) {
         av_assert0(pic->display_order == pic->encode_order);
 
         hpic->last_idr_frame = pic->display_order;
@@ -778,11 +778,11 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
         av_assert0(prev);
         hpic->last_idr_frame = hprev->last_idr_frame;
 
-        if (pic->type == PICTURE_TYPE_I) {
+        if (pic->type == FF_HW_PICTURE_TYPE_I) {
             hpic->slice_nal_unit = HEVC_NAL_CRA_NUT;
             hpic->slice_type     = HEVC_SLICE_I;
             hpic->pic_type       = 0;
-        } else if (pic->type == PICTURE_TYPE_P) {
+        } else if (pic->type == FF_HW_PICTURE_TYPE_P) {
             av_assert0(pic->refs[0]);
             hpic->slice_nal_unit = HEVC_NAL_TRAIL_R;
             hpic->slice_type     = HEVC_SLICE_P;
@@ -791,7 +791,7 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
             VAAPIEncodePicture *irap_ref;
             av_assert0(pic->refs[0][0] && pic->refs[1][0]);
             for (irap_ref = pic; irap_ref; irap_ref = irap_ref->refs[1][0]) {
-                if (irap_ref->type == PICTURE_TYPE_I)
+                if (irap_ref->type == FF_HW_PICTURE_TYPE_I)
                     break;
             }
             if (pic->b_depth == ctx->max_b_depth) {
@@ -827,7 +827,7 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
     // may force an IDR frame on the output where the medadata gets
     // changed on the input frame.
     if ((priv->sei & SEI_MASTERING_DISPLAY) &&
-        (pic->type == PICTURE_TYPE_I || pic->type == PICTURE_TYPE_IDR)) {
+        (pic->type == FF_HW_PICTURE_TYPE_I || pic->type == FF_HW_PICTURE_TYPE_IDR)) {
         AVFrameSideData *sd =
             av_frame_get_side_data(pic->input_image,
                                    AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
@@ -875,7 +875,7 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
     }
 
     if ((priv->sei & SEI_CONTENT_LIGHT_LEVEL) &&
-        (pic->type == PICTURE_TYPE_I || pic->type == PICTURE_TYPE_IDR)) {
+        (pic->type == FF_HW_PICTURE_TYPE_I || pic->type == FF_HW_PICTURE_TYPE_IDR)) {
         AVFrameSideData *sd =
             av_frame_get_side_data(pic->input_image,
                                    AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
@@ -947,19 +947,19 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
 
     vpic->pic_fields.bits.reference_pic_flag = pic->is_reference;
     switch (pic->type) {
-    case PICTURE_TYPE_IDR:
+    case FF_HW_PICTURE_TYPE_IDR:
         vpic->pic_fields.bits.idr_pic_flag       = 1;
         vpic->pic_fields.bits.coding_type        = 1;
         break;
-    case PICTURE_TYPE_I:
+    case FF_HW_PICTURE_TYPE_I:
         vpic->pic_fields.bits.idr_pic_flag       = 0;
         vpic->pic_fields.bits.coding_type        = 1;
         break;
-    case PICTURE_TYPE_P:
+    case FF_HW_PICTURE_TYPE_P:
         vpic->pic_fields.bits.idr_pic_flag       = 0;
         vpic->pic_fields.bits.coding_type        = 2;
         break;
-    case PICTURE_TYPE_B:
+    case FF_HW_PICTURE_TYPE_B:
         vpic->pic_fields.bits.idr_pic_flag       = 0;
         vpic->pic_fields.bits.coding_type        = 3;
         break;
@@ -1003,7 +1003,7 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
     sh->slice_pic_order_cnt_lsb = hpic->pic_order_cnt &
         (1 << (sps->log2_max_pic_order_cnt_lsb_minus4 + 4)) - 1;
 
-    if (pic->type != PICTURE_TYPE_IDR) {
+    if (pic->type != FF_HW_PICTURE_TYPE_IDR) {
         H265RawSTRefPicSet *rps;
         const VAAPIEncodeH265Picture *strp;
         int rps_poc[MAX_DPB_SIZE];
@@ -1110,9 +1110,9 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
     sh->slice_sao_luma_flag = sh->slice_sao_chroma_flag =
         sps->sample_adaptive_offset_enabled_flag;
 
-    if (pic->type == PICTURE_TYPE_B)
+    if (pic->type == FF_HW_PICTURE_TYPE_B)
         sh->slice_qp_delta = priv->fixed_qp_b - (pps->init_qp_minus26 + 26);
-    else if (pic->type == PICTURE_TYPE_P)
+    else if (pic->type == FF_HW_PICTURE_TYPE_P)
         sh->slice_qp_delta = priv->fixed_qp_p - (pps->init_qp_minus26 + 26);
     else
         sh->slice_qp_delta = priv->fixed_qp_idr - (pps->init_qp_minus26 + 26);
@@ -1169,20 +1169,20 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 
     if (pic->nb_refs[0]) {
         // Backward reference for P- or B-frame.
-        av_assert0(pic->type == PICTURE_TYPE_P ||
-                   pic->type == PICTURE_TYPE_B);
+        av_assert0(pic->type == FF_HW_PICTURE_TYPE_P ||
+                   pic->type == FF_HW_PICTURE_TYPE_B);
         vslice->ref_pic_list0[0] = vpic->reference_frames[0];
-        if (ctx->p_to_gpb && pic->type == PICTURE_TYPE_P)
+        if (ctx->p_to_gpb && pic->type == FF_HW_PICTURE_TYPE_P)
             // Reference for GPB B-frame, L0 == L1
             vslice->ref_pic_list1[0] = vpic->reference_frames[0];
     }
     if (pic->nb_refs[1]) {
         // Forward reference for B-frame.
-        av_assert0(pic->type == PICTURE_TYPE_B);
+        av_assert0(pic->type == FF_HW_PICTURE_TYPE_B);
         vslice->ref_pic_list1[0] = vpic->reference_frames[1];
     }
 
-    if (pic->type == PICTURE_TYPE_P && ctx->p_to_gpb) {
+    if (pic->type == FF_HW_PICTURE_TYPE_P && ctx->p_to_gpb) {
         vslice->slice_type = HEVC_SLICE_B;
         for (i = 0; i < FF_ARRAY_ELEMS(vslice->ref_pic_list0); i++) {
             vslice->ref_pic_list1[i].picture_id = vslice->ref_pic_list0[i].picture_id;
@@ -1322,10 +1322,10 @@ static const VAAPIEncodeProfile vaapi_encode_h265_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_h265 = {
     .profiles              = vaapi_encode_h265_profiles,
 
-    .flags                 = FLAG_SLICE_CONTROL |
-                             FLAG_B_PICTURES |
-                             FLAG_B_PICTURE_REFERENCES |
-                             FLAG_NON_IDR_KEY_PICTURES,
+    .flags                 = FF_HW_FLAG_SLICE_CONTROL |
+                             FF_HW_FLAG_B_PICTURES |
+                             FF_HW_FLAG_B_PICTURE_REFERENCES |
+                             FF_HW_FLAG_NON_IDR_KEY_PICTURES,
 
     .default_quality       = 25,
 
