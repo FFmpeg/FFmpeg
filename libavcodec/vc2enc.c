@@ -788,7 +788,7 @@ static int encode_slices(VC2EncContext *s)
     for (slice_y = 0; slice_y < s->num_y; slice_y++) {
         for (slice_x = 0; slice_x < s->num_x; slice_x++) {
             SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
-            init_put_bits(&args->pb, buf + skip, args->bytes+s->prefix_bytes);
+            init_put_bits(&args->pb, buf + skip, args->bytes);
             skip += args->bytes;
         }
     }
