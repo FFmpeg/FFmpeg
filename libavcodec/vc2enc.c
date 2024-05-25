@@ -106,7 +106,7 @@ typedef struct Plane {
 typedef struct SliceArgs {
     PutBitContext pb;
     int cache[DIRAC_MAX_QUANT_INDEX];
-    void *ctx;
+    struct VC2EncContext *ctx;
     int x;
     int y;
     int quant_idx;
@@ -116,7 +116,7 @@ typedef struct SliceArgs {
 } SliceArgs;
 
 typedef struct TransformArgs {
-    void *ctx;
+    struct VC2EncContext *ctx;
     Plane *plane;
     const void *idata;
     ptrdiff_t istride;
