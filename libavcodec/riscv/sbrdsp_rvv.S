@@ -228,9 +228,8 @@ func ff_sbr_hf_g_filt_rvv, zve32f
 endfunc
 
 .macro hf_apply_noise n
-        lla     a6, ff_sbr_noise_table
+        lla     a6, ff_sbr_noise_table + 8
         fmv.s.x ft0, zero
-        addi    a6, a6, 8
 1:
 .if \n & 1
         min     t0, t0, a5 // preserve parity of t0 for v4 sign injector
