@@ -67,7 +67,7 @@ static int fwse_read_header(AVFormatContext *s)
         par->channel_layout = AV_CH_LAYOUT_STEREO;
     st->duration = avio_rl32(pb);
     par->sample_rate = avio_rl32(pb);
-    if (par->sample_rate <= 0 || par->sample_rate > INT_MAX)
+    if (par->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
 
     par->block_align = 1;
