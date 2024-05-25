@@ -1582,8 +1582,6 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     ret = hlsenc_io_open(s, byterange_mode ? &hls->m3u8_out : &vs->out, temp_filename, &options);
     av_dict_free(&options);
     if (ret < 0) {
-        if (hls->ignore_io_errors)
-            ret = 0;
         goto fail;
     }
 
@@ -1641,8 +1639,6 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         ret = hlsenc_io_open(s, &hls->sub_m3u8_out, temp_vtt_filename, &options);
         av_dict_free(&options);
         if (ret < 0) {
-            if (hls->ignore_io_errors)
-                ret = 0;
             goto fail;
         }
         ff_hls_write_playlist_header(hls->sub_m3u8_out, hls->version, hls->allowcache,
