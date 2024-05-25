@@ -415,7 +415,6 @@ static int encode_superframe(AVCodecContext *avctx, AVPacket *avpkt,
         error = encode_frame(s, s->coefs, avpkt->data, avpkt->size, total_gain++);
     if (error > 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid input data or requested bitrate too low, cannot encode\n");
-        avpkt->size = 0;
         return AVERROR(EINVAL);
     }
     av_assert0((put_bits_count(&s->pb) & 7) == 0);
