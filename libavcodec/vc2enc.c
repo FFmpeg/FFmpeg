@@ -918,10 +918,8 @@ static int encode_frame(VC2EncContext *s, AVPacket *avpkt, const AVFrame *frame,
     if (field < 2) {
         ret = ff_get_encode_buffer(s->avctx, avpkt,
                                    max_frame_bytes << s->interlaced, 0);
-        if (ret) {
-            av_log(s->avctx, AV_LOG_ERROR, "Error getting output packet.\n");
+        if (ret < 0)
             return ret;
-        }
         init_put_bits(&s->pb, avpkt->data, avpkt->size);
     }
 
