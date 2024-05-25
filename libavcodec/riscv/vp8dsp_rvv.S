@@ -182,15 +182,14 @@ const subpel_filters
 endconst
 
 .macro epel_filter size type regtype
-        lla             \regtype\()2, subpel_filters
 .ifc \type,v
         addi            \regtype\()0, a6, -1
 .else
         addi            \regtype\()0, a5, -1
 .endif
-        li              \regtype\()1, 6
-        mul             \regtype\()0, \regtype\()0, \regtype\()1
-        add             \regtype\()0, \regtype\()0, \regtype\()2
+        lla             \regtype\()2, subpel_filters
+        sh1add          \regtype\()0, \regtype\()0, \regtype\()0
+        sh1add          \regtype\()0, \regtype\()0, \regtype\()2
         .irp n,1,2,3,4
         lb              \regtype\n, \n(\regtype\()0)
         .endr
