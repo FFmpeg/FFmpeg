@@ -75,6 +75,10 @@ static const struct channel_name channel_names[] = {
     [AV_CHAN_BOTTOM_FRONT_CENTER  ] = { "BFC",       "bottom front center"   },
     [AV_CHAN_BOTTOM_FRONT_LEFT    ] = { "BFL",       "bottom front left"     },
     [AV_CHAN_BOTTOM_FRONT_RIGHT   ] = { "BFR",       "bottom front right"    },
+    [AV_CHAN_SIDE_SURROUND_LEFT   ] = { "SSL",       "side surround left"    },
+    [AV_CHAN_SIDE_SURROUND_RIGHT  ] = { "SSR",       "side surround right"   },
+    [AV_CHAN_TOP_SURROUND_LEFT    ] = { "TTL",       "top surround left"     },
+    [AV_CHAN_TOP_SURROUND_RIGHT   ] = { "TTR",       "top surround right"    },
 };
 
 void av_channel_name_bprint(AVBPrint *bp, enum AVChannel channel_id)
