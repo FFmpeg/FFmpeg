@@ -108,9 +108,10 @@ endfunc
         vnsra.wi        \dst, v24, 3
 .endm
 
-.macro put_vp8_bilin_h_v len type mn
-func ff_put_vp8_bilin\len\()_\type\()_rvv, zve32x
-        vsetvlstatic8   \len
+.macro put_vp8_bilin_h_v type mn
+func ff_put_vp8_bilin4_\type\()_rvv, zve32x
+        vsetvlstatic8   4
+.Lbilin_\type:
         li              t1, 8
         li              t4, 4
         sub             t1, t1, \mn
@@ -126,9 +127,12 @@ func ff_put_vp8_bilin\len\()_\type\()_rvv, zve32x
 endfunc
 .endm
 
-.macro put_vp8_bilin_hv len
-func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
-        vsetvlstatic8   \len
+put_vp8_bilin_h_v h a5
+put_vp8_bilin_h_v v a6
+
+func ff_put_vp8_bilin4_hv_rvv, zve32x
+        vsetvlstatic8   4
+.Lbilin_hv:
         li              t3, 8
         sub             t1, t3, a5
         sub             t2, t3, a6
@@ -149,7 +153,23 @@ func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
 
         ret
 endfunc
-.endm
+
+.irp len,16,8
+func ff_put_vp8_bilin\len\()_h_rvv, zve32x
+        vsetvlstatic8 \len
+        j             .Lbilin_h
+endfunc
+
+func ff_put_vp8_bilin\len\()_v_rvv, zve32x
+        vsetvlstatic8 \len
+        j             .Lbilin_v
+endfunc
+
+func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
+        vsetvlstatic8 \len
+        j             .Lbilin_hv
+endfunc
+.endr
 
 const subpel_filters
         .byte 0,  -6, 123,  12,  -1, 0
@@ -314,9 +334,6 @@ endfunc
 .endm
 
 .irp len,16,8,4
-put_vp8_bilin_h_v \len h a5
-put_vp8_bilin_h_v \len v a6
-put_vp8_bilin_hv \len
 epel \len 6 h
 epel \len 4 h
 epel \len 6 v
