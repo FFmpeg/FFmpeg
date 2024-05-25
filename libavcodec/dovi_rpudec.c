@@ -142,7 +142,7 @@ static void parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
         dm->l2.trim_power = get_bits(gb, 12);
         dm->l2.trim_chroma_weight = get_bits(gb, 12);
         dm->l2.trim_saturation_gain = get_bits(gb, 12);
-        dm->l2.ms_weight = get_bits(gb, 13) - 8192;
+        dm->l2.ms_weight = get_sbits(gb, 13);
         break;
     case 4:
         dm->l4.anchor_pq = get_bits(gb, 12);
@@ -197,7 +197,7 @@ static void parse_ext_v2(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm,
         dm->l8.trim_power = get_bits(gb, 12);
         dm->l8.trim_chroma_weight = get_bits(gb, 12);
         dm->l8.trim_saturation_gain = get_bits(gb, 12);
-        dm->l8.ms_weight = get_bits(gb, 12) - 8192;
+        dm->l8.ms_weight = get_bits(gb, 12);
         if (ext_block_length < 12)
             break;
         dm->l8.target_mid_contrast = get_bits(gb, 12);

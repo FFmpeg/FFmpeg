@@ -276,7 +276,7 @@ static void generate_ext_v1(PutBitContext *pb, const AVDOVIDmData *dm)
         put_bits(pb, 12, dm->l2.trim_power);
         put_bits(pb, 12, dm->l2.trim_chroma_weight);
         put_bits(pb, 12, dm->l2.trim_saturation_gain);
-        put_bits(pb, 13, dm->l2.ms_weight + 8192);
+        put_sbits(pb, 13, dm->l2.ms_weight);
         break;
     case 4:
         put_bits(pb, 12, dm->l4.anchor_pq);
@@ -374,7 +374,7 @@ static void generate_ext_v2(PutBitContext *pb, const AVDOVIDmData *dm)
         put_bits(pb, 12, dm->l8.trim_power);
         put_bits(pb, 12, dm->l8.trim_chroma_weight);
         put_bits(pb, 12, dm->l8.trim_saturation_gain);
-        put_bits(pb, 12, dm->l8.ms_weight + 8192);
+        put_bits(pb, 12, dm->l8.ms_weight);
         if (ext_block_length < 12)
             break;
         put_bits(pb, 12, dm->l8.target_mid_contrast);
