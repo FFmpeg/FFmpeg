@@ -201,24 +201,33 @@ endconst
 
 .macro epel_load dst len size type from_mem regtype
 .ifc \type,v
-        mv              a5, a3
+        sub             t6, a2, a3
+        add             a7, a2, a3
 .else
-        li              a5, 1
+        addi            t6, a2, -1
+        addi            a7, a2, 1
 .endif
-        sub             t6, a2, a5
-        add             a7, a2, a5
 
 .if \from_mem
         vle8.v          v24, (a2)
         vle8.v          v22, (t6)
         vle8.v          v26, (a7)
-        add             a7, a7, a5
+.ifc \type,v
+        add             a7, a7, a3
+.else
+        addi            a7, a7, 1
+.endif
         vle8.v          v28, (a7)
         vwmulu.vx       v16, v24, \regtype\()2
         vwmulu.vx       v20, v26, \regtype\()3
 .ifc \size,6
-        sub             t6, t6, a5
-        add             a7, a7, a5
+.ifc \type,v
+        sub             t6, t6, a3
+        add             a7, a7, a3
+.else
+        addi            t6, t6, -1
+        addi            a7, a7, 1
+.endif
         vle8.v          v24, (t6)
         vle8.v          v26, (a7)
         vwmaccu.vx      v16, \regtype\()0, v24
