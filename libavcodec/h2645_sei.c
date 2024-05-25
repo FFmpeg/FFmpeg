@@ -619,10 +619,14 @@ static int h2645_sei_to_side_data(AVCodecContext *avctx, H2645SEI *sei,
 
             metadata->min_luminance.num = sei->mastering_display.min_luminance;
             metadata->min_luminance.den = luma_den;
-            metadata->has_luminance &= sei->mastering_display.min_luminance >= 1 &&
-                                       sei->mastering_display.min_luminance <= 50000 &&
+            metadata->has_luminance &= sei->mastering_display.min_luminance <= 50000 &&
                                        sei->mastering_display.min_luminance <
                                        sei->mastering_display.max_luminance;
+
+            /* Real (blu-ray) releases in the wild come with minimum luminance
+             * values of 0.000 cd/m2, so permit this edge case */
+            if (avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT)
+                metadata->has_luminance &= sei->mastering_display.min_luminance >= 1;
 
             if (metadata->has_luminance || metadata->has_primaries)
                 av_log(avctx, AV_LOG_DEBUG, "Mastering Display Metadata:\n");
