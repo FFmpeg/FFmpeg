@@ -190,7 +190,11 @@ int update_dimensions(VP8Context *s, int width, int height, int is_vp7)
             return AVERROR(ENOMEM);
         }
 #if HAVE_THREADS
-        pthread_mutex_init(&s->thread_data[i].lock, NULL);
+        ret = pthread_mutex_init(&s->thread_data[i].lock, NULL);
+        if (ret) {
+            free_buffers(s);
+            return AVERROR(ret);
+        }
         pthread_cond_init(&s->thread_data[i].cond, NULL);
 #endif
     }
