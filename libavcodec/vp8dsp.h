@@ -90,6 +90,8 @@ void ff_vp78dsp_init_ppc(VP8DSPContext *c);
 void ff_vp78dsp_init_riscv(VP8DSPContext *c);
 void ff_vp78dsp_init_x86(VP8DSPContext *c);
 
+void ff_vp7dsp_init_riscv(VP8DSPContext *c);
+
 void ff_vp8dsp_init(VP8DSPContext *c);
 void ff_vp8dsp_init_aarch64(VP8DSPContext *c);
 void ff_vp8dsp_init_arm(VP8DSPContext *c);
