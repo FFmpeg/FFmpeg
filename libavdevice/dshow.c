@@ -432,8 +432,8 @@ dshow_get_device_media_types(AVFormatContext *avctx, enum dshowDeviceType devtyp
             IEnumMediaTypes_Release(types);
         if (p)
             IKsPropertySet_Release(p);
-        if (pin)
-            IPin_Release(pin);
+
+        IPin_Release(pin);
     }
 
     IEnumPins_Release(pins);
