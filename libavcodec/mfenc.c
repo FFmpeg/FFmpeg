@@ -246,7 +246,7 @@ static int mf_sample_to_avpacket(AVCodecContext *avctx, IMFSample *sample, AVPac
     if ((ret = ff_get_encode_buffer(avctx, avpkt, len, 0)) < 0)
         return ret;
 
-    IMFSample_ConvertToContiguousBuffer(sample, &buffer);
+    hr = IMFSample_ConvertToContiguousBuffer(sample, &buffer);
     if (FAILED(hr))
         return AVERROR_EXTERNAL;
 
