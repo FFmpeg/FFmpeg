@@ -97,7 +97,7 @@ av_cold void ff_vp78dsp_init_riscv(VP8DSPContext *c)
         c->put_vp8_epel_pixels_tab[0][1][0] = ff_put_vp8_epel16_v4_rvv;
         c->put_vp8_epel_pixels_tab[1][1][0] = ff_put_vp8_epel8_v4_rvv;
         c->put_vp8_epel_pixels_tab[2][1][0] = ff_put_vp8_epel4_v4_rvv;
-
+#if __riscv_xlen <= 64
         c->put_vp8_epel_pixels_tab[0][2][2] = ff_put_vp8_epel16_h6v6_rvv;
         c->put_vp8_epel_pixels_tab[1][2][2] = ff_put_vp8_epel8_h6v6_rvv;
         c->put_vp8_epel_pixels_tab[2][2][2] = ff_put_vp8_epel4_h6v6_rvv;
@@ -110,6 +110,7 @@ av_cold void ff_vp78dsp_init_riscv(VP8DSPContext *c)
         c->put_vp8_epel_pixels_tab[0][1][2] = ff_put_vp8_epel16_h6v4_rvv;
         c->put_vp8_epel_pixels_tab[1][1][2] = ff_put_vp8_epel8_h6v4_rvv;
         c->put_vp8_epel_pixels_tab[2][1][2] = ff_put_vp8_epel4_h6v4_rvv;
+#endif
     }
 #endif
 #endif

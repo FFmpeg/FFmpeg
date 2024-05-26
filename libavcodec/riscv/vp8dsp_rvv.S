@@ -321,8 +321,10 @@ epel \len 6 h
 epel \len 4 h
 epel \len 6 v
 epel \len 4 v
+#if __riscv_xlen <= 64
 epel_hv \len 6 6
 epel_hv \len 4 4
 epel_hv \len 6 4
 epel_hv \len 4 6
+#endif
 .endr
