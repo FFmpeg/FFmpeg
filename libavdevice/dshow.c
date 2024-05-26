@@ -853,7 +853,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         av_log(avctx, AV_LOG_ERROR, "Could not create CaptureGraphBuilder2\n");
         goto error;
     }
-    ICaptureGraphBuilder2_SetFiltergraph(graph_builder2, graph);
+    r = ICaptureGraphBuilder2_SetFiltergraph(graph_builder2, graph);
     if (r != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not set graph for CaptureGraphBuilder2\n");
         goto error;
