@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2024 Institue of Software Chinese Academy of Sciences (ISCAS).
+ * Copyright © 2024 Rémi Denis-Courmont.
  *
  * This file is part of FFmpeg.
  *
@@ -41,6 +42,61 @@
         vsetivli        zero, \len, e16, m2, ta, ma
 .endif
 .endm
+
+#if __riscv_xlen >= 64
+func ff_vp8_luma_dc_wht_rvv, zve64x
+        vsetivli    zero, 1, e64, m1, ta, ma
+        vlseg4e64.v v4, (a1)
+        vsetivli    zero, 4, e16, mf2, ta, ma
+        vwadd.vv    v1, v5, v6
+        addi        t1, sp, -48
+        vwadd.vv    v0, v4, v7
+        addi        t2, sp, -32
+        vwsub.vv    v2, v5, v6
+        addi        t3, sp, -16
+        vwsub.vv    v3, v4, v7
+        addi        sp, sp, -64
+        vsetvli     zero, zero, e32, m1, ta, ma
+        vadd.vv     v4, v0, v1
+        vadd.vv     v5, v3, v2
+        vse32.v     v4, (sp)
+        vsub.vv     v6, v0, v1
+        vse32.v     v5, (t1)
+        vsub.vv     v7, v3, v2
+        vse32.v     v6, (t2)
+        vse32.v     v7, (t3)
+        vlseg4e32.v v4, (sp)
+        vadd.vv     v0, v4, v7
+        sd          zero,   (a1)
+        vadd.vv     v1, v5, v6
+        sd          zero,  8(a1)
+        vsub.vv     v2, v5, v6
+        sd          zero, 16(a1)
+        vsub.vv     v3, v4, v7
+        sd          zero, 24(a1)
+        vadd.vi     v0, v0, 3 # rounding mode not supported, do it manually
+        li          t0, 4 * 16 * 2
+        vadd.vi     v3, v3, 3
+        addi        t1, a0, 16 * 2
+        vadd.vv     v4, v0, v1
+        addi        t2, a0, 16 * 2 * 2
+        vadd.vv     v5, v3, v2
+        addi        t3, a0, 16 * 2 * 3
+        vsub.vv     v6, v0, v1
+        vsub.vv     v7, v3, v2
+        vsetvli     zero, zero, e16, mf2, ta, ma
+        vnsra.wi    v0, v4, 3
+        addi        sp, sp, 64
+        vnsra.wi    v1, v5, 3
+        vsse16.v    v0, (a0), t0
+        vnsra.wi    v2, v6, 3
+        vsse16.v    v1, (t1), t0
+        vnsra.wi    v3, v7, 3
+        vsse16.v    v2, (t2), t0
+        vsse16.v    v3, (t3), t0
+        ret
+endfunc
+#endif
 
 .macro vp8_idct_dc_add
         vlse32.v      v0, (a0), a2
