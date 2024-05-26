@@ -195,7 +195,11 @@ int update_dimensions(VP8Context *s, int width, int height, int is_vp7)
             free_buffers(s);
             return AVERROR(ret);
         }
-        pthread_cond_init(&s->thread_data[i].cond, NULL);
+        ret = pthread_cond_init(&s->thread_data[i].cond, NULL);
+        if (ret) {
+            free_buffers(s);
+            return AVERROR(ret);
+        }
 #endif
     }
 
