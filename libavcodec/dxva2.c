@@ -262,7 +262,7 @@ static int dxva_get_decoder_guid(AVCodecContext *avctx, void *service, void *sur
     *decoder_guid = ff_GUID_NULL;
     for (i = 0; dxva_modes[i].guid; i++) {
         const dxva_mode *mode = &dxva_modes[i];
-        int validate;
+        int validate = 0;
         if (!dxva_check_codec_compatibility(avctx, mode))
             continue;
 
