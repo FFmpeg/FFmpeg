@@ -1001,7 +1001,7 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                     "  ch=%2u, bits=%2u, rate=%6lu\n",
                     fx->nChannels, fx->wBitsPerSample, fx->nSamplesPerSec
                 );
-                continue;
+                goto next;
             }
             if (
                 (requested_sample_rate && requested_sample_rate != fx->nSamplesPerSec) ||
