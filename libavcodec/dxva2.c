@@ -800,7 +800,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
                            unsigned type, const void *data, unsigned size,
                            unsigned mb_count)
 {
-    void     *dxva_data;
+    void     *dxva_data = NULL;
     unsigned dxva_size;
     int      result;
     HRESULT hr = 0;
@@ -822,7 +822,7 @@ int ff_dxva2_commit_buffer(AVCodecContext *avctx,
                type, (unsigned)hr);
         return -1;
     }
-    if (size <= dxva_size) {
+    if (dxva_data && size <= dxva_size) {
         memcpy(dxva_data, data, size);
 
 #if CONFIG_D3D11VA
