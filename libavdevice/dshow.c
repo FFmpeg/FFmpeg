@@ -1370,7 +1370,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
             goto error;
         }
     }
-        if (ctx->device_filter[otherDevType]) {
+    if (ctx->device_filter[otherDevType]) {
         // avoid adding add two instances of the same device to the graph, one for video, one for audio
         // a few devices don't support this (could also do this check earlier to avoid double crossbars, etc. but they seem OK)
         if (strcmp(device_filter_unique_name, ctx->device_unique_name[otherDevType]) == 0) {
