@@ -506,9 +506,14 @@ int ff_vvc_slice_rpl(VVCContext *s, VVCFrameContext *fc, SliceContext *sc)
                 return ret;
             }
         }
-        if ((!rsh->sh_collocated_from_l0_flag) == lx &&
-            rsh->sh_collocated_ref_idx < rpl->nb_refs)
-            fc->ref->collocated_ref = rpl->refs[rsh->sh_collocated_ref_idx].ref;
+        if (ph->r->ph_temporal_mvp_enabled_flag &&
+            (!rsh->sh_collocated_from_l0_flag) == lx &&
+            rsh->sh_collocated_ref_idx < rpl->nb_refs) {
+            const VVCRefPic *refp = rpl->refs + rsh->sh_collocated_ref_idx;
+            if (refp->is_scaled || refp->ref->sps->ctb_log2_size_y != sps->ctb_log2_size_y)
+                return AVERROR_INVALIDDATA;
+            fc->ref->collocated_ref = refp->ref;
+        }
     }
     return 0;
 }
