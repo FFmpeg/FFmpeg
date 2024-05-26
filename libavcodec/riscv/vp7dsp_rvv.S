@@ -97,4 +97,33 @@ func ff_vp7_luma_dc_wht_rvv, zve32x
         vnclip.wi   v7, v3, 18
         jr          t0
 endfunc
+
+func ff_vp7_idct_add_rvv, zve32x
+        jal         t0, 1b
+        csrwi       vxrm, 2
+        vsetvli     zero, zero, e8, mf4, ta, ma
+        vle8.v      v12, (a0)
+        vle8.v      v13, (t1)
+        vwaddu.wv   v4, v4, v12
+        vle8.v      v14, (t2)
+        vwaddu.wv   v5, v5, v13
+        vle8.v      v15, (t3)
+        vwaddu.wv   v6, v6, v14
+        vwaddu.wv   v7, v7, v15
+        vsetvli     zero, zero, e16, mf2, ta, ma
+        vmax.vx     v4, v4, zero
+        vmax.vx     v5, v5, zero
+        vmax.vx     v6, v6, zero
+        vmax.vx     v7, v7, zero
+        vsetvli     zero, zero, e8, mf4, ta, ma
+        vnclipu.wi  v0, v4, 0
+        vnclipu.wi  v1, v5, 0
+        vse8.v      v0, (a0)
+        vnclipu.wi  v2, v6, 0
+        vse8.v      v1, (t1)
+        vnclipu.wi  v3, v7, 0
+        vse8.v      v2, (t2)
+        vse8.v      v3, (t3)
+        ret
+endfunc
 #endif

@@ -26,6 +26,7 @@
 #include "libavcodec/vp8dsp.h"
 
 void ff_vp7_luma_dc_wht_rvv(int16_t block[4][4][16], int16_t dc[16]);
+void ff_vp7_idct_add_rvv(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 
 av_cold void ff_vp7dsp_init_riscv(VP8DSPContext *c)
 {
@@ -37,6 +38,7 @@ av_cold void ff_vp7dsp_init_riscv(VP8DSPContext *c)
 #if __riscv_xlen >= 64
         c->vp8_luma_dc_wht = ff_vp7_luma_dc_wht_rvv;
 #endif
+        c->vp8_idct_add = ff_vp7_idct_add_rvv;
     }
 #endif
 }
