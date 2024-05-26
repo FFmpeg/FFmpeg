@@ -22,6 +22,15 @@
 
 #if __riscv_xlen >= 64
 func ff_vp7_luma_dc_wht_rvv, zve32x
+        li          a2, 4 * 16 * 2
+        li          a7, 16 * 2
+        jal         t0, 1f
+        vsse16.v    v4, (a0), a7
+        vsse16.v    v5, (t1), a7
+        vsse16.v    v6, (t2), a7
+        vsse16.v    v7, (t3), a7
+        ret
+1:
         csrwi       vxrm, 0
         li          t4, 12540
         vsetivli    zero, 4, e16, mf2, ta, ma
@@ -58,14 +67,14 @@ func ff_vp7_luma_dc_wht_rvv, zve32x
         vle16.v     v2, (t2)
         vle16.v     v3, (t3)
         vwmul.vx    v8, v1, t4
-        li          t0, 16 * 2
         vwmul.vx    v9, v3, t6
-        addi        t1, a0, 1 * 4 * 16 * 2
+        add         t1, a2, a0
         vwmul.vx    v10, v1, t6
-        addi        t2, a0, 2 * 4 * 16 * 2
+        sh1add      t2, a2, a0
         vwmul.vx    v11, v3, t4
-        addi        t3, a0, 3 * 4 * 16 * 2
+        sh1add      a2, a2, a2 # a2 *= 3
         vwadd.vv    v4, v0, v2
+        add         t3, a2, a0
         vwsub.vv    v5, v0, v2
         vsetvli     zero, zero, e32, m1, ta, ma
         vmul.vx     v4, v4, t5
@@ -86,10 +95,6 @@ func ff_vp7_luma_dc_wht_rvv, zve32x
         vnclip.wi   v5, v1, 18
         vnclip.wi   v6, v2, 18
         vnclip.wi   v7, v3, 18
-        vsse16.v    v4, (a0), t0
-        vsse16.v    v5, (t1), t0
-        vsse16.v    v6, (t2), t0
-        vsse16.v    v7, (t3), t0
-        ret
+        jr          t0
 endfunc
 #endif
