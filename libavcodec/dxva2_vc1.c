@@ -197,7 +197,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const unsigned start_code_size = avctx->codec_id == AV_CODEC_ID_VC1 ? sizeof(start_code) : 0;
     const unsigned mb_count = s->mb_width * (s->mb_height >> v->field_mode);
     DXVA_SliceInfo *slice = NULL;
-    void     *dxva_data_ptr;
+    void     *dxva_data_ptr = NULL;
     uint8_t  *dxva_data, *current, *end;
     unsigned dxva_size;
     unsigned padding;
@@ -223,6 +223,9 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
             return -1;
     }
 #endif
+
+    if (!dxva_data_ptr)
+        return -1;
 
     dxva_data = dxva_data_ptr;
     current = dxva_data;

@@ -354,7 +354,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const AV1DecContext *h = avctx->priv_data;
     AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     struct av1_dxva2_picture_context *ctx_pic = h->cur_frame.hwaccel_picture_private;
-    void     *dxva_data_ptr;
+    void     *dxva_data_ptr = NULL;
     uint8_t  *dxva_data;
     unsigned dxva_size;
     unsigned padding;
@@ -382,7 +382,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
 
     dxva_data = dxva_data_ptr;
 
-    if (ctx_pic->bitstream_size > dxva_size) {
+    if (!dxva_data || ctx_pic->bitstream_size > dxva_size) {
         av_log(avctx, AV_LOG_ERROR, "Bitstream size exceeds hardware buffer");
         return -1;
     }

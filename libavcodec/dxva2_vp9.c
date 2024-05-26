@@ -172,7 +172,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const VP9SharedContext *h = avctx->priv_data;
     AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     struct vp9_dxva2_picture_context *ctx_pic = h->frames[CUR_FRAME].hwaccel_picture_private;
-    void     *dxva_data_ptr;
+    void     *dxva_data_ptr = NULL;
     uint8_t  *dxva_data;
     unsigned dxva_size;
     unsigned padding;
@@ -200,7 +200,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
 
     dxva_data = dxva_data_ptr;
 
-    if (ctx_pic->slice.SliceBytesInBuffer > dxva_size) {
+    if (!dxva_data || ctx_pic->slice.SliceBytesInBuffer > dxva_size) {
         av_log(avctx, AV_LOG_ERROR, "Failed to build bitstream");
         return -1;
     }

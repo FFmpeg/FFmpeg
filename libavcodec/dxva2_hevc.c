@@ -248,7 +248,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const HEVCFrame *current_picture = h->cur_frame;
     struct hevc_dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_HEVC_Short *slice = NULL;
-    void     *dxva_data_ptr;
+    void     *dxva_data_ptr = NULL;
     uint8_t  *dxva_data, *current, *end;
     unsigned dxva_size;
     void     *slice_data;
@@ -277,6 +277,9 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
             return -1;
     }
 #endif
+
+    if (!dxva_data_ptr)
+        return -1;
 
     dxva_data = dxva_data_ptr;
     current = dxva_data;
