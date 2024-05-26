@@ -900,7 +900,7 @@ int ff_dxva2_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 #endif
     DECODER_BUFFER_DESC             *buffer = NULL, *buffer_slice = NULL;
     int result, runs = 0;
-    HRESULT hr;
+    HRESULT hr = -1;
     unsigned type;
     FFDXVASharedContext *sctx = DXVA_SHARED_CONTEXT(avctx);
 
