@@ -1546,7 +1546,10 @@ dshow_add_device(AVFormatContext *avctx,
 
     ctx->capture_filter[devtype]->stream_index = st->index;
 
-    ff_dshow_pin_ConnectionMediaType(ctx->capture_pin[devtype], &type);
+    if (ff_dshow_pin_ConnectionMediaType(ctx->capture_pin[devtype], &type) != S_OK) {
+        ret = AVERROR(EIO);
+        goto error;
+    }
     fmt_info = dshow_get_format_info(&type);
     if (!fmt_info) {
         ret = AVERROR(EIO);
