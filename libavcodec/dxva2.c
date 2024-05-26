@@ -111,7 +111,7 @@ static int dxva_get_decoder_configuration(AVCodecContext *avctx,
 
     for (i = 0; i < cfg_count; i++) {
         unsigned score;
-        UINT ConfigBitstreamRaw;
+        UINT ConfigBitstreamRaw = 0;
         GUID guidConfigBitstreamEncryption;
 
 #if CONFIG_D3D11VA
