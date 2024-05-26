@@ -135,7 +135,7 @@ long ff_dshow_filter_JoinFilterGraph(DShowFilter *this, IFilterGraph *graph,
 
     this->info.pGraph = graph;
     if (name)
-        wcscpy(this->info.achName, name);
+        wcscpy_s(this->info.achName, sizeof(this->info.achName) / sizeof(wchar_t), name);
 
     return S_OK;
 }
