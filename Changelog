@@ -14,6 +14,7 @@ version <next>:
 - xHE-AAC decoder
 - removed DEC Alpha DSP and support code
 - VVC encoding support via libvvenc
+- perlin video source
 
 
 version 7.0:

@@ -603,6 +603,7 @@ OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_testsrc.o
 OBJS-$(CONFIG_OPENCLSRC_FILTER)              += vf_program_opencl.o opencl.o
 OBJS-$(CONFIG_PAL75BARS_FILTER)              += vsrc_testsrc.o
 OBJS-$(CONFIG_PAL100BARS_FILTER)             += vsrc_testsrc.o
+OBJS-$(CONFIG_PERLIN_FILTER)                 += vsrc_perlin.o perlin.o
 OBJS-$(CONFIG_QRENCODE_FILTER)               += qrencode.o textutils.o
 OBJS-$(CONFIG_QRENCODESRC_FILTER)            += qrencode.o textutils.o
 OBJS-$(CONFIG_RGBTESTSRC_FILTER)             += vsrc_testsrc.o

@@ -17290,6 +17290,9 @@ The command accepts the same syntax of the corresponding option.
 If the specified expression is not valid, it is kept at its current
 value.
 
+@anchor{lutrgb}
+@anchor{lutyuv}
+@anchor{lut}
 @section lut, lutrgb, lutyuv
 
 Compute a look-up table for binding each pixel component input value
@@ -29278,6 +29281,103 @@ life=rule=S14/B34
 Full example with slow death effect (mold) using @command{ffplay}:
 @example
 ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_color=#00ff00,scale=1200:800:flags=16
+@end example
+@end itemize
+
+@section perlin
+Generate Perlin noise.
+
+Perlin noise is a kind of noise with local continuity in space. This
+can be used to generate patterns with continuity in space and time,
+e.g. to simulate smoke, fluids, or terrain.
+
+In case more than one octave is specified through the @option{octaves}
+option, Perlin noise is generated as a sum of components, each one
+with doubled frequency. In this case the @option{persistence} option
+specify the ratio of the amplitude with respect to the previous
+component. More octave components enable to specify more high
+frequency details in the generated noise (e.g. small size variations
+due to boulders in a generated terrain).
+
+@subsection Options
+@table @option
+
+@item size, s
+Specify the size (width and height) of the buffered video frames. For the
+syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+
+@item rate, r
+Specify the frame rate expected for the video stream, expressed as a
+number of frames per second.
+
+@item octaves
+Specify the total number of components making up the noise, each one
+with doubled frequency.
+
+@item persistence
+Set the ratio used to compute the amplitude of the next octave
+component with respect to the previous component amplitude.
+
+@item xscale
+@item yscale
+Define a scale factor used to multiple the x, y coordinates. This can
+be useful to define an effect with a pattern stretched along the x or
+y axis.
+
+@item tscale
+Define a scale factor used to multiple the time coordinate. This can
+be useful to change the time variation speed.
+
+@item random_mode
+Set random mode used to compute initial pattern.
+
+Supported values are:
+@table @option
+@item random
+Compute and use random seed.
+
+@item ken
+Use the predefined initial pattern defined by Ken Perlin in the
+original article, can be useful to compare the output with other
+sources.
+
+@item seed
+Use the value specified by @option{random_seed} option.
+@end table
+
+@item random_seed, seed
+When @option{random_mode} is set to @var{random_seed}, use this value
+to compute the initial pattern.
+@end table
+
+@subsection Examples
+@itemize
+@item
+Generate single component:
+@example
+perlin
+@end example
+
+@item
+Use Perlin noise with 7 components, each one with a halved contribution
+to total amplitude:
+@example
+perlin=octaves=7:persistence=0.5
+@end example
+
+@item
+Chain Perlin noise with the @ref{lutyuv} to generate a black&white
+effect:
+@example
+perlin=octaves=3:tscale=0.3,lutyuv=y='if(lt(val\,128)\,255\,0)'
+@end example
+
+@item
+Stretch noise along the y axis, and convert gray level to red-only
+signal:
+@example
+perlin=octaves=7:tscale=0.4:yscale=0.3,lutrgb=r=val:b=0:g=0
 @end example
 @end itemize
 

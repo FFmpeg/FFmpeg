@@ -569,6 +569,7 @@ extern const AVFilter ff_vsrc_openclsrc;
 extern const AVFilter ff_vsrc_qrencodesrc;
 extern const AVFilter ff_vsrc_pal75bars;
 extern const AVFilter ff_vsrc_pal100bars;
+extern const AVFilter ff_vsrc_perlin;
 extern const AVFilter ff_vsrc_rgbtestsrc;
 extern const AVFilter ff_vsrc_sierpinski;
 extern const AVFilter ff_vsrc_smptebars;
