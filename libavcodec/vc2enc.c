@@ -41,8 +41,9 @@
 typedef struct VC2BaseVideoFormat {
     enum AVPixelFormat pix_fmt;
     AVRational time_base;
-    int width, height, interlaced, level;
-    const char *name;
+    int width, height;
+    uint8_t interlaced, level;
+    char name[13];
 } VC2BaseVideoFormat;
 
 static const VC2BaseVideoFormat base_video_fmts[] = {
