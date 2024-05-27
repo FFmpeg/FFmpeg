@@ -87,6 +87,7 @@ func ff_lpc_apply_welch_window_rvv, zve64d
 endfunc
 
 func ff_lpc_compute_autocorr_rvv, zve64d
+        addi      a2, a2, 1
         li        t0, 1
         vsetvli   zero, a2, e64, m8, ta, ma
         fcvt.d.l  ft0, t0
