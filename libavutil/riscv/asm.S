@@ -196,18 +196,21 @@
          * @param ew element width: e8, e16, e32 or e64
          * @param tp tail policy: tu or ta
          * @param mp mask policty: mu or ma
+         * @param addend optional addend for the vector length register
          */
-        .macro  vtype_vli rd, rs, tmp, ew, tp=tu, mp=mu
+        .macro  vtype_vli rd, rs, tmp, ew, tp=tu, mp=mu, addend=0
         parse_vtype \ew, \tp, \mp
         /*
          * The difference between the CLZ's notionally equals the VLMUL value
          * for 4-bit elements. But we want the value for SEW_MAX-bit elements.
          */
         slli    \tmp, \rs, 1 + VSEW_MAX
+        .if \addend - 1
+        addi    \tmp, \tmp, \addend - 1
+        .endif
         csrr    \rd, vlenb
-        addi    \tmp, \tmp, -1
-        clz     \rd, \rd
         clz     \tmp, \tmp
+        clz     \rd, \rd
         sub     \rd, \rd, \tmp
         max     \rd, \rd, zero // VLMUL must be >= VSEW - VSEW_MAX
         .if     vsew < VSEW_MAX
