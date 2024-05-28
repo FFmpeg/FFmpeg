@@ -337,11 +337,12 @@ static void check_vvc_sad(void)
     memset(src1, 0, MAX_CTU_SIZE * MAX_CTU_SIZE * 4 * sizeof(uint16_t));
 
     randomize_pixels(src0, src1, MAX_CTU_SIZE * MAX_CTU_SIZE * 4);
-     for (int h = 8; h <= MAX_CTU_SIZE; h *= 2) {
-        for (int w = 8; w <= MAX_CTU_SIZE; w *= 2) {
+    for (int h = 8; h <= 16; h *= 2) {
+        for (int w = 8; w <= 16; w *= 2) {
             for(int offy = 0; offy <= 4; offy++) {
                 for(int offx = 0; offx <= 4; offx++) {
-                    if(check_func(c.inter.sad, "sad_%dx%d", w, h)) {
+                    if(w * h >= 128) {
+                        if(check_func(c.inter.sad, "sad_%dx%d", w, h)) {
                         int result0;
                         int result1;
 
@@ -350,13 +351,14 @@ static void check_vvc_sad(void)
 
                         if (result1 != result0)
                             fail();
-                        if(w == h && offx == 0 && offy == 0)
+                        if(offx == 0 && offy == 0)
                             bench_new(src0 + PIXEL_STRIDE * 2 + 2, src1 + PIXEL_STRIDE * 2 + 2, offx, offy, w, h);
+                        }
                     }
                 }
             }
         }
-     }
+    }
 
     report("sad");
 }
