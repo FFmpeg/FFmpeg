@@ -975,8 +975,8 @@ static int hls_slice_header(HEVCContext *s)
             av_freep(&sh->offset);
             av_freep(&sh->size);
             sh->entry_point_offset = av_malloc_array(sh->num_entry_point_offsets, sizeof(unsigned));
-            sh->offset = av_malloc_array(sh->num_entry_point_offsets, sizeof(int));
-            sh->size = av_malloc_array(sh->num_entry_point_offsets, sizeof(int));
+            sh->offset             = av_malloc_array(sh->num_entry_point_offsets + 1, sizeof(int));
+            sh->size               = av_malloc_array(sh->num_entry_point_offsets + 1, sizeof(int));
             if (!sh->entry_point_offset || !sh->offset || !sh->size) {
                 sh->num_entry_point_offsets = 0;
                 av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate memory\n");
@@ -2608,10 +2608,10 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
     int ret;
 
     if(ctb_row) {
-        ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row - 1], s->sh.size[ctb_row - 1]);
+        ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row], s->sh.size[ctb_row]);
         if (ret < 0)
             goto error;
-        ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[(ctb_row)-1], s->sh.size[ctb_row - 1]);
+        ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[ctb_row], s->sh.size[ctb_row]);
     }
 
     while(more_data && ctb_addr_ts < s->ps.sps->ctb_size) {
@@ -2738,8 +2738,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
                 cmpt++;
             }
         }
-        s->sh.size[i - 1] = s->sh.entry_point_offset[i] - cmpt;
-        s->sh.offset[i - 1] = offset;
+        s->sh.size[i]   = s->sh.entry_point_offset[i] - cmpt;
+        s->sh.offset[i] = offset;
 
     }
 
@@ -2748,8 +2748,11 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
         return AVERROR_INVALIDDATA;
     }
-    s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
-    s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
+    s->sh.size  [s->sh.num_entry_point_offsets] = length - offset;
+    s->sh.offset[s->sh.num_entry_point_offsets] = offset;
+
+    s->sh.offset[0] = s->sh.data_offset;
+    s->sh.size[0]   = s->sh.offset[1] - s->sh.offset[0];
 
     s->data = data;
 
