@@ -351,7 +351,7 @@ static int alloc_buffers(DiracContext *s, int stride)
     return 0;
 }
 
-static void free_sequence_buffers(DiracContext *s)
+static av_cold void free_sequence_buffers(DiracContext *s)
 {
     int i, j, k;
 
@@ -413,7 +413,7 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void dirac_decode_flush(AVCodecContext *avctx)
+static av_cold void dirac_decode_flush(AVCodecContext *avctx)
 {
     DiracContext *s = avctx->priv_data;
     free_sequence_buffers(s);
