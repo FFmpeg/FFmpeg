@@ -2742,16 +2742,15 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         s->sh.offset[i - 1] = offset;
 
     }
-    if (s->sh.num_entry_point_offsets != 0) {
-        offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
-        if (length < offset) {
-            av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
-            return AVERROR_INVALIDDATA;
-        }
-        s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
-        s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
 
+    offset += s->sh.entry_point_offset[s->sh.num_entry_point_offsets - 1] - cmpt;
+    if (length < offset) {
+        av_log(s->avctx, AV_LOG_ERROR, "entry_point_offset table is corrupted\n");
+        return AVERROR_INVALIDDATA;
     }
+    s->sh.size[s->sh.num_entry_point_offsets - 1] = length - offset;
+    s->sh.offset[s->sh.num_entry_point_offsets - 1] = offset;
+
     s->data = data;
 
     for (i = 1; i < s->threads_number; i++) {
