@@ -1041,7 +1041,7 @@ const FFCodec ff_av1_vaapi_encoder = {
     .p.id           = AV_CODEC_ID_AV1,
     .priv_data_size = sizeof(VAAPIEncodeAV1Context),
     .init           = &vaapi_encode_av1_init,
-    FF_CODEC_RECEIVE_PACKET_CB(&ff_hw_base_encode_receive_packet),
+    FF_CODEC_RECEIVE_PACKET_CB(&ff_vaapi_encode_receive_packet),
     .close          = &vaapi_encode_av1_close,
     .p.priv_class   = &vaapi_encode_av1_class,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |

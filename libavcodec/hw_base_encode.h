@@ -116,6 +116,7 @@ typedef struct FFHWEncodePictureOperation {
 
 typedef struct FFHWBaseEncodeContext {
     const AVClass *class;
+    void  *log_ctx;
 
     // Hardware-specific hooks.
     const struct FFHWEncodePictureOperation *op;
@@ -214,21 +215,23 @@ typedef struct FFHWBaseEncodeContext {
     AVPacket        *tail_pkt;
 } FFHWBaseEncodeContext;
 
-int ff_hw_base_encode_set_output_property(AVCodecContext *avctx, FFHWBaseEncodePicture *pic,
-                                          AVPacket *pkt, int flag_no_delay);
+int ff_hw_base_encode_set_output_property(FFHWBaseEncodeContext *ctx, AVCodecContext *avctx,
+                                          FFHWBaseEncodePicture *pic, AVPacket *pkt, int flag_no_delay);
 
-int ff_hw_base_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
+int ff_hw_base_encode_receive_packet(FFHWBaseEncodeContext *ctx, AVCodecContext *avctx, AVPacket *pkt);
 
-int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32_t ref_l1,
+int ff_hw_base_init_gop_structure(FFHWBaseEncodeContext *ctx, AVCodecContext *avctx,
+                                  uint32_t ref_l0, uint32_t ref_l1,
                                   int flags, int prediction_pre_only);
 
-int ff_hw_base_get_recon_format(AVCodecContext *avctx, const void *hwconfig, enum AVPixelFormat *fmt);
+int ff_hw_base_get_recon_format(FFHWBaseEncodeContext *ctx, const void *hwconfig,
+                                enum AVPixelFormat *fmt);
 
 int ff_hw_base_encode_free(FFHWBaseEncodePicture *pic);
 
-int ff_hw_base_encode_init(AVCodecContext *avctx);
+int ff_hw_base_encode_init(AVCodecContext *avctx, FFHWBaseEncodeContext *ctx);
 
-int ff_hw_base_encode_close(AVCodecContext *avctx);
+int ff_hw_base_encode_close(FFHWBaseEncodeContext *ctx);
 
 #define HW_BASE_ENCODE_COMMON_OPTIONS \
     { "idr_interval", \

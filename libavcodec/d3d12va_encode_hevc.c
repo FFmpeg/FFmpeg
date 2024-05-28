@@ -990,7 +990,7 @@ const FFCodec ff_hevc_d3d12va_encoder = {
     .p.id           = AV_CODEC_ID_HEVC,
     .priv_data_size = sizeof(D3D12VAEncodeHEVCContext),
     .init           = &d3d12va_encode_hevc_init,
-    FF_CODEC_RECEIVE_PACKET_CB(&ff_hw_base_encode_receive_packet),
+    FF_CODEC_RECEIVE_PACKET_CB(&ff_d3d12va_encode_receive_packet),
     .close          = &d3d12va_encode_hevc_close,
     .p.priv_class   = &d3d12va_encode_hevc_class,
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE |

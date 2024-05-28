@@ -313,6 +313,8 @@ typedef struct D3D12VAEncodeType {
                                  char *data, size_t *data_len);
 } D3D12VAEncodeType;
 
+int ff_d3d12va_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
+
 int ff_d3d12va_encode_init(AVCodecContext *avctx);
 int ff_d3d12va_encode_close(AVCodecContext *avctx);
 

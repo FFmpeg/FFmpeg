@@ -676,6 +676,7 @@ end:
 static int d3d12va_encode_output(AVCodecContext *avctx,
                                  const FFHWBaseEncodePicture *base_pic, AVPacket *pkt)
 {
+    FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
     D3D12VAEncodePicture *pic = (D3D12VAEncodePicture *)base_pic;
     AVPacket *pkt_ptr = pkt;
     int err;
@@ -691,7 +692,8 @@ static int d3d12va_encode_output(AVCodecContext *avctx,
     av_log(avctx, AV_LOG_DEBUG, "Output read for pic %"PRId64"/%"PRId64".\n",
            base_pic->display_order, base_pic->encode_order);
 
-    ff_hw_base_encode_set_output_property(avctx, (FFHWBaseEncodePicture *)base_pic, pkt_ptr, 0);
+    ff_hw_base_encode_set_output_property(base_ctx, avctx, (FFHWBaseEncodePicture *)base_pic,
+                                          pkt_ptr, 0);
 
     return 0;
 }
@@ -1119,7 +1121,7 @@ static int d3d12va_encode_init_gop_structure(AVCodecContext *avctx)
                "replacing them with B-frames.\n");
     }
 
-    err = ff_hw_base_init_gop_structure(avctx, ref_l0, ref_l1, ctx->codec->flags, 0);
+    err = ff_hw_base_init_gop_structure(base_ctx, avctx, ref_l0, ref_l1, ctx->codec->flags, 0);
     if (err < 0)
         return err;
 
@@ -1351,7 +1353,7 @@ static int d3d12va_encode_create_recon_frames(AVCodecContext *avctx)
     enum AVPixelFormat recon_format;
     int err;
 
-    err = ff_hw_base_get_recon_format(avctx, NULL, &recon_format);
+    err = ff_hw_base_get_recon_format(base_ctx, NULL, &recon_format);
     if (err < 0)
         return err;
 
@@ -1390,6 +1392,11 @@ static const FFHWEncodePictureOperation d3d12va_type = {
     .free   = &d3d12va_encode_free,
 };
 
+int ff_d3d12va_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
+{
+    return ff_hw_base_encode_receive_packet(avctx->priv_data, avctx, pkt);
+}
+
 int ff_d3d12va_encode_init(AVCodecContext *avctx)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
@@ -1398,7 +1405,7 @@ int ff_d3d12va_encode_init(AVCodecContext *avctx)
     int err;
     HRESULT hr;
 
-    err = ff_hw_base_encode_init(avctx);
+    err = ff_hw_base_encode_init(avctx, base_ctx);
     if (err < 0)
         goto fail;
 
@@ -1552,7 +1559,7 @@ int ff_d3d12va_encode_close(AVCodecContext *avctx)
     D3D12_OBJECT_RELEASE(ctx->video_device3);
     D3D12_OBJECT_RELEASE(ctx->device3);
 
-    ff_hw_base_encode_close(avctx);
+    ff_hw_base_encode_close(base_ctx);
 
     return 0;
 }

@@ -343,6 +343,8 @@ typedef struct VAAPIEncodeType {
                                  char *data, size_t *data_len);
 } VAAPIEncodeType;
 
+int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
+
 int ff_vaapi_encode_init(AVCodecContext *avctx);
 int ff_vaapi_encode_close(AVCodecContext *avctx);
 

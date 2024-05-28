@@ -94,14 +94,13 @@ static void hw_base_encode_remove_refs(FFHWBaseEncodePicture *pic, int level)
     pic->ref_removed[level] = 1;
 }
 
-static void hw_base_encode_set_b_pictures(AVCodecContext *avctx,
+static void hw_base_encode_set_b_pictures(FFHWBaseEncodeContext *ctx,
                                           FFHWBaseEncodePicture *start,
                                           FFHWBaseEncodePicture *end,
                                           FFHWBaseEncodePicture *prev,
                                           int current_depth,
                                           FFHWBaseEncodePicture **last)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
     FFHWBaseEncodePicture *pic, *next, *ref;
     int i, len;
 
@@ -148,20 +147,19 @@ static void hw_base_encode_set_b_pictures(AVCodecContext *avctx,
             hw_base_encode_add_ref(pic, ref, 0, 1, 0);
 
         if (i > 1)
-            hw_base_encode_set_b_pictures(avctx, start, pic, pic,
+            hw_base_encode_set_b_pictures(ctx, start, pic, pic,
                                           current_depth + 1, &next);
         else
             next = pic;
 
-        hw_base_encode_set_b_pictures(avctx, pic, end, next,
+        hw_base_encode_set_b_pictures(ctx, pic, end, next,
                                       current_depth + 1, last);
     }
 }
 
-static void hw_base_encode_add_next_prev(AVCodecContext *avctx,
+static void hw_base_encode_add_next_prev(FFHWBaseEncodeContext *ctx,
                                          FFHWBaseEncodePicture *pic)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
     int i;
 
     if (!pic)
@@ -192,9 +190,9 @@ static void hw_base_encode_add_next_prev(AVCodecContext *avctx,
 }
 
 static int hw_base_encode_pick_next(AVCodecContext *avctx,
+                                    FFHWBaseEncodeContext *ctx,
                                     FFHWBaseEncodePicture **pic_out)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
     FFHWBaseEncodePicture *pic = NULL, *prev = NULL, *next, *start;
     int i, b_counter, closed_gop_end;
 
@@ -333,19 +331,18 @@ static int hw_base_encode_pick_next(AVCodecContext *avctx,
     }
 
     if (b_counter > 0) {
-        hw_base_encode_set_b_pictures(avctx, start, pic, pic, 1,
+        hw_base_encode_set_b_pictures(ctx, start, pic, pic, 1,
                                       &prev);
     } else {
         prev = pic;
     }
-    hw_base_encode_add_next_prev(avctx, prev);
+    hw_base_encode_add_next_prev(ctx, prev);
 
     return 0;
 }
 
-static int hw_base_encode_clear_old(AVCodecContext *avctx)
+static int hw_base_encode_clear_old(AVCodecContext *avctx, FFHWBaseEncodeContext *ctx)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
     FFHWBaseEncodePicture *pic, *prev, *next;
 
     av_assert0(ctx->pic_start);
@@ -381,14 +378,12 @@ static int hw_base_encode_clear_old(AVCodecContext *avctx)
     return 0;
 }
 
-static int hw_base_encode_check_frame(AVCodecContext *avctx,
+static int hw_base_encode_check_frame(FFHWBaseEncodeContext *ctx,
                                       const AVFrame *frame)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
-
     if ((frame->crop_top  || frame->crop_bottom ||
          frame->crop_left || frame->crop_right) && !ctx->crop_warned) {
-        av_log(avctx, AV_LOG_WARNING, "Cropping information on input "
+        av_log(ctx->log_ctx, AV_LOG_WARNING, "Cropping information on input "
                "frames ignored due to lack of API support.\n");
         ctx->crop_warned = 1;
     }
@@ -398,7 +393,7 @@ static int hw_base_encode_check_frame(AVCodecContext *avctx,
             av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
 
         if (sd && !ctx->roi_warned) {
-            av_log(avctx, AV_LOG_WARNING, "ROI side data on input "
+            av_log(ctx->log_ctx, AV_LOG_WARNING, "ROI side data on input "
                    "frames ignored due to lack of driver support.\n");
             ctx->roi_warned = 1;
         }
@@ -407,9 +402,9 @@ static int hw_base_encode_check_frame(AVCodecContext *avctx,
     return 0;
 }
 
-static int hw_base_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
+static int hw_base_encode_send_frame(AVCodecContext *avctx, FFHWBaseEncodeContext *ctx,
+                                     AVFrame *frame)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
     FFHWBaseEncodePicture *pic;
     int err;
 
@@ -417,7 +412,7 @@ static int hw_base_encode_send_frame(AVCodecContext *avctx, AVFrame *frame)
         av_log(avctx, AV_LOG_DEBUG, "Input frame: %ux%u (%"PRId64").\n",
                frame->width, frame->height, frame->pts);
 
-        err = hw_base_encode_check_frame(avctx, frame);
+        err = hw_base_encode_check_frame(ctx, frame);
         if (err < 0)
             return err;
 
@@ -488,12 +483,11 @@ fail:
     return err;
 }
 
-int ff_hw_base_encode_set_output_property(AVCodecContext *avctx,
+int ff_hw_base_encode_set_output_property(FFHWBaseEncodeContext *ctx,
+                                          AVCodecContext *avctx,
                                           FFHWBaseEncodePicture *pic,
                                           AVPacket *pkt, int flag_no_delay)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
-
     if (pic->type == FF_HW_PICTURE_TYPE_IDR)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
@@ -528,9 +522,9 @@ int ff_hw_base_encode_set_output_property(AVCodecContext *avctx,
     return 0;
 }
 
-int ff_hw_base_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
+int ff_hw_base_encode_receive_packet(FFHWBaseEncodeContext *ctx,
+                                     AVCodecContext *avctx, AVPacket *pkt)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
     FFHWBaseEncodePicture *pic = NULL;
     AVFrame *frame = ctx->frame;
     int err;
@@ -558,7 +552,7 @@ start:
     if (err == AVERROR_EOF)
         frame = NULL;
 
-    err = hw_base_encode_send_frame(avctx, frame);
+    err = hw_base_encode_send_frame(avctx, ctx, frame);
     if (err < 0)
         return err;
 
@@ -571,7 +565,7 @@ start:
 
     if (ctx->async_encode) {
         if (av_fifo_can_write(ctx->encode_fifo)) {
-            err = hw_base_encode_pick_next(avctx, &pic);
+            err = hw_base_encode_pick_next(avctx, ctx, &pic);
             if (!err) {
                 av_assert0(pic);
                 pic->encode_order = ctx->encode_order +
@@ -596,7 +590,7 @@ start:
         av_fifo_read(ctx->encode_fifo, &pic, 1);
         ctx->encode_order = pic->encode_order + 1;
     } else {
-        err = hw_base_encode_pick_next(avctx, &pic);
+        err = hw_base_encode_pick_next(avctx, ctx, &pic);
         if (err < 0)
             return err;
         av_assert0(pic);
@@ -619,7 +613,7 @@ start:
     }
 
     ctx->output_order = pic->encode_order;
-    hw_base_encode_clear_old(avctx);
+    hw_base_encode_clear_old(avctx, ctx);
 
     /** loop to get an available pkt in encoder flushing. */
     if (ctx->end_of_stream && !pkt->size)
@@ -633,11 +627,10 @@ end:
     return 0;
 }
 
-int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32_t ref_l1,
+int ff_hw_base_init_gop_structure(FFHWBaseEncodeContext *ctx, AVCodecContext *avctx,
+                                  uint32_t ref_l0, uint32_t ref_l1,
                                   int flags, int prediction_pre_only)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
-
     if (flags & FF_HW_FLAG_INTRA_ONLY || avctx->gop_size <= 1) {
         av_log(avctx, AV_LOG_VERBOSE, "Using intra frames only.\n");
         ctx->gop_size = 1;
@@ -687,9 +680,9 @@ int ff_hw_base_init_gop_structure(AVCodecContext *avctx, uint32_t ref_l0, uint32
     return 0;
 }
 
-int ff_hw_base_get_recon_format(AVCodecContext *avctx, const void *hwconfig, enum AVPixelFormat *fmt)
+int ff_hw_base_get_recon_format(FFHWBaseEncodeContext *ctx, const void *hwconfig,
+                                enum AVPixelFormat *fmt)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
     AVHWFramesConstraints *constraints = NULL;
     enum AVPixelFormat recon_format;
     int err, i;
@@ -722,14 +715,14 @@ int ff_hw_base_get_recon_format(AVCodecContext *avctx, const void *hwconfig, enu
         // No idea what to use; copy input format.
         recon_format = ctx->input_frames->sw_format;
     }
-    av_log(avctx, AV_LOG_DEBUG, "Using %s as format of "
+    av_log(ctx->log_ctx, AV_LOG_DEBUG, "Using %s as format of "
            "reconstructed frames.\n", av_get_pix_fmt_name(recon_format));
 
     if (ctx->surface_width  < constraints->min_width  ||
         ctx->surface_height < constraints->min_height ||
         ctx->surface_width  > constraints->max_width ||
         ctx->surface_height > constraints->max_height) {
-        av_log(avctx, AV_LOG_ERROR, "Hardware does not support encoding at "
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Hardware does not support encoding at "
                "size %dx%d (constraints: width %d-%d height %d-%d).\n",
                ctx->surface_width, ctx->surface_height,
                constraints->min_width,  constraints->max_width,
@@ -756,9 +749,9 @@ int ff_hw_base_encode_free(FFHWBaseEncodePicture *pic)
     return 0;
 }
 
-int ff_hw_base_encode_init(AVCodecContext *avctx)
+int ff_hw_base_encode_init(AVCodecContext *avctx, FFHWBaseEncodeContext *ctx)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
+    ctx->log_ctx = (void *)avctx;
 
     ctx->frame = av_frame_alloc();
     if (!ctx->frame)
@@ -789,10 +782,8 @@ int ff_hw_base_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-int ff_hw_base_encode_close(AVCodecContext *avctx)
+int ff_hw_base_encode_close(FFHWBaseEncodeContext *ctx)
 {
-    FFHWBaseEncodeContext *ctx = avctx->priv_data;
-
     av_fifo_freep2(&ctx->encode_fifo);
 
     av_frame_free(&ctx->frame);
