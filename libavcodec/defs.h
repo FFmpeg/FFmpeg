@@ -160,6 +160,7 @@
 #define AV_PROFILE_HEVC_MAIN_10                     2
 #define AV_PROFILE_HEVC_MAIN_STILL_PICTURE          3
 #define AV_PROFILE_HEVC_REXT                        4
+#define AV_PROFILE_HEVC_MULTIVIEW_MAIN              6
 #define AV_PROFILE_HEVC_SCC                         9
 
 #define AV_PROFILE_VVC_MAIN_10                      1
