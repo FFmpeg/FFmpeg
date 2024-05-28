@@ -1711,6 +1711,9 @@ const OptionDef options[] = {
     { "autoscale",                  OPT_TYPE_BOOL,   OPT_VIDEO | OPT_PERSTREAM | OPT_EXPERT | OPT_OUTPUT,
         { .off = OFFSET(autoscale) },
         "automatically insert a scale filter at the end of the filter graph" },
+    { "apply_cropping",             OPT_TYPE_STRING, OPT_VIDEO | OPT_PERSTREAM | OPT_EXPERT | OPT_INPUT,
+        { .off = OFFSET(apply_cropping) },
+        "select the cropping to apply" },
     { "fix_sub_duration_heartbeat", OPT_TYPE_BOOL,   OPT_VIDEO | OPT_EXPERT | OPT_PERSTREAM | OPT_OUTPUT,
         { .off = OFFSET(fix_sub_duration_heartbeat) },
         "set this video output stream to be a heartbeat stream for "

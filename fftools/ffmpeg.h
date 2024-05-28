@@ -155,6 +155,7 @@ typedef struct OptionsContext {
     SpecifierOptList hwaccel_devices;
     SpecifierOptList hwaccel_output_formats;
     SpecifierOptList autorotate;
+    SpecifierOptList apply_cropping;
 
     /* output options */
     StreamMap *stream_maps;
@@ -239,6 +240,7 @@ enum IFilterFlags {
     IFILTER_FLAG_AUTOROTATE     = (1 << 0),
     IFILTER_FLAG_REINIT         = (1 << 1),
     IFILTER_FLAG_CFR            = (1 << 2),
+    IFILTER_FLAG_CROP           = (1 << 3),
 };
 
 typedef struct InputFilterOptions {
@@ -253,6 +255,11 @@ typedef struct InputFilterOptions {
      * Otherwise, this is an estimate that should not be relied upon to be
      * accurate */
     AVRational          framerate;
+
+    unsigned            crop_top;
+    unsigned            crop_bottom;
+    unsigned            crop_left;
+    unsigned            crop_right;
 
     int                 sub2video_width;
     int                 sub2video_height;
@@ -538,6 +545,13 @@ typedef struct KeyframeForceCtx {
 } KeyframeForceCtx;
 
 typedef struct Encoder Encoder;
+
+enum CroppingType {
+    CROP_DISABLED = 0,
+    CROP_ALL,
+    CROP_CODEC,
+    CROP_CONTAINER,
+};
 
 typedef struct OutputStream {
     const AVClass *class;

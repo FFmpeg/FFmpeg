@@ -1701,6 +1701,17 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
     desc = av_pix_fmt_desc_get(ifp->format);
     av_assert0(desc);
 
+    if ((ifp->opts.flags & IFILTER_FLAG_CROP)) {
+        char crop_buf[64];
+        snprintf(crop_buf, sizeof(crop_buf), "w=iw-%d-%d:h=ih-%d-%d:x=%d:y=%d",
+                 ifp->opts.crop_left, ifp->opts.crop_right,
+                 ifp->opts.crop_top, ifp->opts.crop_bottom,
+                 ifp->opts.crop_left, ifp->opts.crop_top);
+        ret = insert_filter(&last_filter, &pad_idx, "crop", crop_buf);
+        if (ret < 0)
+            return ret;
+    }
+
     // TODO: insert hwaccel enabled filters like transpose_vaapi into the graph
     ifp->displaymatrix_applied = 0;
     if ((ifp->opts.flags & IFILTER_FLAG_AUTOROTATE) &&

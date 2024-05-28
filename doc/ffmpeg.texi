@@ -1379,6 +1379,21 @@ Note that forcing too many keyframes is very harmful for the lookahead
 algorithms of certain encoders: using fixed-GOP options or similar
 would be more efficient.
 
+@item -apply_cropping[:@var{stream_specifier}] @var{source} (@emph{input,per-stream})
+Automatically crop the video after decoding according to file metadata.
+Default is @emph{all}.
+
+@table @option
+@item none (0)
+Don't apply any cropping metadata.
+@item all (1)
+Apply both codec and container level croppping. This is the default mode.
+@item codec (2)
+Apply codec level croppping.
+@item container (3)
+Apply container level croppping.
+@end table
+
 @item -copyinkf[:@var{stream_specifier}] (@emph{output,per-stream})
 When doing stream copy, copy also non-key frames found at the
 beginning.

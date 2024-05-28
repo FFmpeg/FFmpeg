@@ -66,6 +66,7 @@ typedef struct DemuxStream {
     int                      have_sub2video;
     int                      reinit_filters;
     int                      autorotate;
+    int                      apply_cropping;
 
 
     int                      wrap_correction_done;
@@ -1000,11 +1001,22 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
     ist->filters[ist->nb_filters - 1] = ifilter;
 
     if (ist->par->codec_type == AVMEDIA_TYPE_VIDEO) {
+        const AVPacketSideData *sd = av_packet_side_data_get(ist->par->coded_side_data,
+                                                             ist->par->nb_coded_side_data,
+                                                             AV_PKT_DATA_FRAME_CROPPING);
         if (ist->framerate.num > 0 && ist->framerate.den > 0) {
             opts->framerate = ist->framerate;
             opts->flags |= IFILTER_FLAG_CFR;
         } else
             opts->framerate = av_guess_frame_rate(d->f.ctx, ist->st, NULL);
+        if (sd && sd->size >= sizeof(uint32_t) * 4) {
+            opts->crop_top    = AV_RL32(sd->data +  0);
+            opts->crop_bottom = AV_RL32(sd->data +  4);
+            opts->crop_left   = AV_RL32(sd->data +  8);
+            opts->crop_right  = AV_RL32(sd->data + 12);
+            if (ds->apply_cropping && ds->apply_cropping != CROP_CODEC)
+                opts->flags |= IFILTER_FLAG_CROP;
+        }
     } else if (ist->par->codec_type == AVMEDIA_TYPE_SUBTITLE) {
         /* Compute the size of the canvas for the subtitles stream.
            If the subtitles codecpar has set a size, use it. Otherwise use the
@@ -1215,6 +1227,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     InputStream *ist;
     char *framerate = NULL, *hwaccel_device = NULL;
     const char *hwaccel = NULL;
+    const char *apply_cropping = NULL;
     char *hwaccel_output_format = NULL;
     char *codec_tag = NULL;
     char *bsfs = NULL;
@@ -1240,6 +1253,33 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
 
     ds->autorotate = 1;
     MATCH_PER_STREAM_OPT(autorotate, i, ds->autorotate, ic, st);
+
+    ds->apply_cropping = CROP_ALL;
+    MATCH_PER_STREAM_OPT(apply_cropping, str, apply_cropping, ic, st);
+    if (apply_cropping) {
+        const AVOption opts[] = {
+            { "apply_cropping", NULL, 0, AV_OPT_TYPE_INT,
+                    { .i64 = CROP_ALL }, CROP_DISABLED, CROP_CONTAINER, AV_OPT_FLAG_DECODING_PARAM, .unit = "apply_cropping" },
+                { "none",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = CROP_DISABLED  }, .unit = "apply_cropping" },
+                { "all",       NULL, 0, AV_OPT_TYPE_CONST, { .i64 = CROP_ALL       }, .unit = "apply_cropping" },
+                { "codec",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = CROP_CODEC     }, .unit = "apply_cropping" },
+                { "container", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = CROP_CONTAINER }, .unit = "apply_cropping" },
+            { NULL },
+        };
+        const AVClass class = {
+            .class_name = "apply_cropping",
+            .item_name  = av_default_item_name,
+            .option     = opts,
+            .version    = LIBAVUTIL_VERSION_INT,
+        };
+        const AVClass *pclass = &class;
+
+        ret = av_opt_eval_int(&pclass, opts, apply_cropping, &ds->apply_cropping);
+        if (ret < 0) {
+            av_log(ist, AV_LOG_ERROR, "Invalid apply_cropping value '%s'.\n", apply_cropping);
+            return ret;
+        }
+    }
 
     MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, ic, st);
     if (codec_tag) {
@@ -1361,6 +1401,9 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     }
 
     ds->dec_opts.flags |= DECODER_FLAG_BITEXACT * !!o->bitexact;
+
+    av_dict_set_int(&ds->decoder_opts, "apply_cropping",
+                    ds->apply_cropping && ds->apply_cropping != CROP_CONTAINER, 0);
 
     /* Attached pics are sparse, therefore we would not want to delay their decoding
      * till EOF. */
