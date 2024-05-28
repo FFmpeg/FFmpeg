@@ -1005,6 +1005,13 @@ static int hls_slice_header(HEVCContext *s)
             skip_bits(gb, 8);  // slice_header_extension_data_byte
     }
 
+    ret = get_bits1(gb);
+    if (!ret) {
+        av_log(s->avctx, AV_LOG_ERROR, "alignment_bit_equal_to_one=0\n");
+        return AVERROR_INVALIDDATA;
+    }
+    sh->data_offset = align_get_bits(gb) - gb->buffer;
+
     // Inferred parameters
     sh->slice_qp = 26U + s->ps.pps->pic_init_qp_minus26 + sh->slice_qp_delta;
     if (sh->slice_qp > 51 ||

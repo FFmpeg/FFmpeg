@@ -430,8 +430,6 @@ static int cabac_reinit(HEVCLocalContext *lc)
 static int cabac_init_decoder(HEVCLocalContext *lc)
 {
     GetBitContext *gb = &lc->gb;
-    skip_bits(gb, 1);
-    align_get_bits(gb);
     return ff_init_cabac_decoder(&lc->cc,
                           gb->buffer + get_bits_count(gb) / 8,
                           (get_bits_left(gb) + 7) / 8);

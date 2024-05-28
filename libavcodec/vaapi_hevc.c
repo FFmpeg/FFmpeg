@@ -485,9 +485,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
         .slice_data_size               = size,
         .slice_data_offset             = 0,
         .slice_data_flag               = VA_SLICE_DATA_FLAG_ALL,
-        /* Add 1 to the bits count here to account for the byte_alignment bit, which
-         * always is at least one bit and not accounted for otherwise. */
-        .slice_data_byte_offset        = (get_bits_count(&h->HEVClc->gb) + 1 + 7) / 8,
+        .slice_data_byte_offset        = sh->data_offset,
         .slice_segment_address         = sh->slice_segment_addr,
         .slice_qp_delta                = sh->slice_qp_delta,
         .slice_cb_qp_offset            = sh->slice_cb_qp_offset,
