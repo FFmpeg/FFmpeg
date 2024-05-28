@@ -403,11 +403,8 @@ static av_cold int dirac_decode_init(AVCodecContext *avctx)
 
     for (i = 0; i < MAX_FRAMES; i++) {
         s->all_frames[i].avframe = av_frame_alloc();
-        if (!s->all_frames[i].avframe) {
-            while (i > 0)
-                av_frame_free(&s->all_frames[--i].avframe);
+        if (!s->all_frames[i].avframe)
             return AVERROR(ENOMEM);
-        }
     }
     ret = ff_thread_once(&dirac_arith_init, ff_dirac_init_arith_tables);
     if (ret != 0)
@@ -429,7 +426,9 @@ static av_cold int dirac_decode_end(AVCodecContext *avctx)
     DiracContext *s = avctx->priv_data;
     int i;
 
-    dirac_decode_flush(avctx);
+    // Necessary in case dirac_decode_init() failed
+    if (s->all_frames[MAX_FRAMES - 1].avframe)
+        free_sequence_buffers(s);
     for (i = 0; i < MAX_FRAMES; i++)
         av_frame_free(&s->all_frames[i].avframe);
 
@@ -2371,4 +2370,5 @@ const FFCodec ff_dirac_decoder = {
     FF_CODEC_DECODE_CB(dirac_decode_frame),
     .p.capabilities = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_DR1,
     .flush          = dirac_decode_flush,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
