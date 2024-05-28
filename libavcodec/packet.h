@@ -327,6 +327,19 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_AMBIENT_VIEWING_ENVIRONMENT,
 
     /**
+     * The number of pixels to discard from the top/bottom/left/right border of the
+     * decoded frame to obtain the sub-rectangle intended for presentation.
+     *
+     * @code
+     * u32le crop_top
+     * u32le crop_bottom
+     * u32le crop_left
+     * u32le crop_right
+     * @endcode
+     */
+    AV_PKT_DATA_FRAME_CROPPING,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
