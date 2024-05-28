@@ -427,14 +427,6 @@ static int cabac_reinit(HEVCLocalContext *lc)
     return skip_bytes(&lc->cc, 0) == NULL ? AVERROR_INVALIDDATA : 0;
 }
 
-static int cabac_init_decoder(HEVCLocalContext *lc)
-{
-    GetBitContext *gb = &lc->gb;
-    return ff_init_cabac_decoder(&lc->cc,
-                          gb->buffer + get_bits_count(gb) / 8,
-                          (get_bits_left(gb) + 7) / 8);
-}
-
 static void cabac_init_state(HEVCLocalContext *lc, const HEVCContext *s)
 {
     int init_type = 2 - s->sh.slice_type;
@@ -459,12 +451,13 @@ static void cabac_init_state(HEVCLocalContext *lc, const HEVCContext *s)
         lc->stat_coeff[i] = 0;
 }
 
-int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts)
+int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts,
+                       const uint8_t *data, size_t size)
 {
     const HEVCContext *const s = lc->parent;
 
     if (ctb_addr_ts == s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs]) {
-        int ret = cabac_init_decoder(lc);
+        int ret = ff_init_cabac_decoder(&lc->cc, data, size);
         if (ret < 0)
             return ret;
         if (s->sh.dependent_slice_segment_flag == 0 ||
@@ -488,7 +481,7 @@ int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts)
             if (s->threads_number == 1)
                 ret = cabac_reinit(lc);
             else {
-                ret = cabac_init_decoder(lc);
+                ret = ff_init_cabac_decoder(&lc->cc, data, size);
             }
             if (ret < 0)
                 return ret;
@@ -501,7 +494,7 @@ int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts)
                 if (s->threads_number == 1)
                     ret = cabac_reinit(lc);
                 else {
-                    ret = cabac_init_decoder(lc);
+                    ret = ff_init_cabac_decoder(&lc->cc, data, size);
                 }
                 if (ret < 0)
                     return ret;

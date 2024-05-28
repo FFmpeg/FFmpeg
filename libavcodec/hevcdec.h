@@ -394,7 +394,6 @@ typedef struct HEVCLocalContext {
     void *logctx;
     const struct HEVCContext *parent;
 
-    GetBitContext gb;
     CABACContext cc;
 
     /**
@@ -583,7 +582,8 @@ int ff_hevc_frame_rps(HEVCContext *s);
 int ff_hevc_slice_rpl(HEVCContext *s);
 
 void ff_hevc_save_states(HEVCLocalContext *lc, int ctb_addr_ts);
-int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts);
+int ff_hevc_cabac_init(HEVCLocalContext *lc, int ctb_addr_ts,
+                       const uint8_t *data, size_t size);
 int ff_hevc_sao_merge_flag_decode(HEVCLocalContext *lc);
 int ff_hevc_sao_type_idx_decode(HEVCLocalContext *lc);
 int ff_hevc_sao_band_position_decode(HEVCLocalContext *lc);

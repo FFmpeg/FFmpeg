@@ -593,9 +593,8 @@ fail:
     return ret;
 }
 
-static int hls_slice_header(HEVCContext *s)
+static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
 {
-    GetBitContext *gb = &s->HEVClc->gb;
     SliceHeader *sh   = &s->sh;
     int i, ret;
 
@@ -2533,9 +2532,11 @@ static void hls_decode_neighbour(HEVCLocalContext *lc, int x_ctb, int y_ctb,
     lc->ctb_up_left_flag = ((x_ctb > 0) && (y_ctb > 0)  && (ctb_addr_in_slice-1 >= s->ps.sps->ctb_width) && (s->ps.pps->tile_id[ctb_addr_ts] == s->ps.pps->tile_id[s->ps.pps->ctb_addr_rs_to_ts[ctb_addr_rs-1 - s->ps.sps->ctb_width]]));
 }
 
-static int hls_decode_entry(HEVCContext *s)
+static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 {
     HEVCLocalContext *const lc = s->HEVClc;
+    const uint8_t *slice_data = gb->buffer + s->sh.data_offset;
+    const size_t   slice_size = gb->buffer_end - gb->buffer - s->sh.data_offset;
     int ctb_size    = 1 << s->ps.sps->log2_ctb_size;
     int more_data   = 1;
     int x_ctb       = 0;
@@ -2563,7 +2564,7 @@ static int hls_decode_entry(HEVCContext *s)
         y_ctb = (ctb_addr_rs / ((s->ps.sps->width + ctb_size - 1) >> s->ps.sps->log2_ctb_size)) << s->ps.sps->log2_ctb_size;
         hls_decode_neighbour(lc, x_ctb, y_ctb, ctb_addr_ts);
 
-        ret = ff_hevc_cabac_init(lc, ctb_addr_ts);
+        ret = ff_hevc_cabac_init(lc, ctb_addr_ts, slice_data, slice_size);
         if (ret < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
             return ret;
@@ -2605,14 +2606,14 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
     int ctb_addr_rs = s->sh.slice_ctb_addr_rs + ctb_row * ((s->ps.sps->width + ctb_size - 1) >> s->ps.sps->log2_ctb_size);
     int ctb_addr_ts = s->ps.pps->ctb_addr_rs_to_ts[ctb_addr_rs];
     int thread = ctb_row % s->threads_number;
+
+    const uint8_t *data      = s->data + s->sh.offset[ctb_row];
+    const size_t   data_size = s->sh.size[ctb_row];
+
     int ret;
 
-    if(ctb_row) {
-        ret = init_get_bits8(&lc->gb, s->data + s->sh.offset[ctb_row], s->sh.size[ctb_row]);
-        if (ret < 0)
-            goto error;
-        ff_init_cabac_decoder(&lc->cc, s->data + s->sh.offset[ctb_row], s->sh.size[ctb_row]);
-    }
+    if (ctb_row)
+        ff_init_cabac_decoder(&lc->cc, data, data_size);
 
     while(more_data && ctb_addr_ts < s->ps.sps->ctb_size) {
         int x_ctb = (ctb_addr_rs % s->ps.sps->ctb_width) << s->ps.sps->log2_ctb_size;
@@ -2630,7 +2631,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
             return 0;
         }
 
-        ret = ff_hevc_cabac_init(lc, ctb_addr_ts);
+        ret = ff_hevc_cabac_init(lc, ctb_addr_ts, data, data_size);
         if (ret < 0)
             goto error;
         hls_sao_param(lc, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
@@ -2681,7 +2682,6 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 {
     const uint8_t *data = nal->data;
     int length          = nal->size;
-    HEVCLocalContext *lc;
     int *ret;
     int64_t offset;
     int64_t startheader, cmpt = 0;
@@ -2719,8 +2719,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         s->nb_local_ctx = s->threads_number;
     }
 
-    lc     = &s->local_ctx[0];
-    offset = (lc->gb.index >> 3);
+    offset = s->sh.data_offset;
 
     for (j = 0, cmpt = 0, startheader = offset + s->sh.entry_point_offset[0]; j < nal->skipped_bytes; j++) {
         if (nal->skipped_bytes_pos[j] >= offset && nal->skipped_bytes_pos[j] < startheader) {
@@ -2981,11 +2980,9 @@ static int hevc_frame_end(HEVCContext *s)
 
 static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 {
-    HEVCLocalContext *lc = s->HEVClc;
-    GetBitContext *gb    = &lc->gb;
+    GetBitContext     gb = nal->gb;
     int ctb_addr_ts, ret;
 
-    *gb              = nal->gb;
     s->nal_unit_type = nal->type;
     s->temporal_id   = nal->temporal_id;
 
@@ -2997,7 +2994,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (ret < 0)
                 goto fail;
         }
-        ret = ff_hevc_decode_nal_vps(gb, s->avctx, &s->ps);
+        ret = ff_hevc_decode_nal_vps(&gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;
@@ -3008,7 +3005,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (ret < 0)
                 goto fail;
         }
-        ret = ff_hevc_decode_nal_sps(gb, s->avctx, &s->ps,
+        ret = ff_hevc_decode_nal_sps(&gb, s->avctx, &s->ps,
                                      s->apply_defdispwin);
         if (ret < 0)
             goto fail;
@@ -3020,7 +3017,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (ret < 0)
                 goto fail;
         }
-        ret = ff_hevc_decode_nal_pps(gb, s->avctx, &s->ps);
+        ret = ff_hevc_decode_nal_pps(&gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;
@@ -3032,7 +3029,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (ret < 0)
                 goto fail;
         }
-        ret = ff_hevc_decode_nal_sei(gb, s->avctx, &s->sei, &s->ps, s->nal_unit_type);
+        ret = ff_hevc_decode_nal_sei(&gb, s->avctx, &s->sei, &s->ps, s->nal_unit_type);
         if (ret < 0)
             goto fail;
         break;
@@ -3052,7 +3049,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_RADL_R:
     case HEVC_NAL_RASL_N:
     case HEVC_NAL_RASL_R:
-        ret = hls_slice_header(s);
+        ret = hls_slice_header(s, &gb);
         if (ret < 0)
             return ret;
         if (ret == 1) {
@@ -3134,7 +3131,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
                 ctb_addr_ts = hls_slice_data_wpp(s, nal);
             else
-                ctb_addr_ts = hls_decode_entry(s);
+                ctb_addr_ts = hls_decode_entry(s, &gb);
             if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
                 ret = hevc_frame_end(s);
                 if (ret < 0)
