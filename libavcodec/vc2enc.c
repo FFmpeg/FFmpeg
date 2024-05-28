@@ -105,9 +105,11 @@ typedef struct Plane {
 } Plane;
 
 typedef struct SliceArgs {
-    PutBitContext pb;
-    int cache[DIRAC_MAX_QUANT_INDEX];
     const struct VC2EncContext *ctx;
+    union {
+        int cache[DIRAC_MAX_QUANT_INDEX];
+        uint8_t *buf;
+    };
     int x;
     int y;
     int quant_idx;
@@ -724,9 +726,9 @@ static int calc_slice_sizes(VC2EncContext *s)
 /* VC-2 13.5.3 - hq_slice */
 static int encode_hq_slice(AVCodecContext *avctx, void *arg)
 {
-    SliceArgs *slice_dat = arg;
+    const SliceArgs *slice_dat = arg;
     const VC2EncContext *s = slice_dat->ctx;
-    PutBitContext *pb = &slice_dat->pb;
+    PutBitContext pb0, *const pb = &pb0;
     const int slice_x = slice_dat->x;
     const int slice_y = slice_dat->y;
     const int quant_idx = slice_dat->quant_idx;
@@ -735,8 +737,9 @@ static int encode_hq_slice(AVCodecContext *avctx, void *arg)
     int p, level, orientation;
 
     /* The reference decoder ignores it, and its typical length is 0 */
-    memset(put_bits_ptr(pb), 0, s->prefix_bytes);
-    skip_put_bytes(pb, s->prefix_bytes);
+    memset(slice_dat->buf, 0, s->prefix_bytes);
+
+    init_put_bits(pb, slice_dat->buf + s->prefix_bytes, slice_dat->bytes - s->prefix_bytes);
 
     put_bits(pb, 8, quant_idx);
 
@@ -789,7 +792,7 @@ static int encode_slices(VC2EncContext *s)
     for (slice_y = 0; slice_y < s->num_y; slice_y++) {
         for (slice_x = 0; slice_x < s->num_x; slice_x++) {
             SliceArgs *args = &enc_args[s->num_x*slice_y + slice_x];
-            init_put_bits(&args->pb, buf + skip, args->bytes);
+            args->buf = buf + skip;
             skip += args->bytes;
         }
     }
