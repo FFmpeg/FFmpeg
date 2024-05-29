@@ -53,39 +53,39 @@ static void init_vaapi_pic(VAPictureHEVC *va_pic)
 
 static void fill_vaapi_pic(VAPictureHEVC *va_pic, const HEVCFrame *pic, int rps_type)
 {
-    va_pic->picture_id    = ff_vaapi_get_surface_id(pic->frame);
+    va_pic->picture_id    = ff_vaapi_get_surface_id(pic->f);
     va_pic->pic_order_cnt = pic->poc;
     va_pic->flags         = rps_type;
 
     if (pic->flags & HEVC_FRAME_FLAG_LONG_REF)
         va_pic->flags |= VA_PICTURE_HEVC_LONG_TERM_REFERENCE;
 
-    if (pic->frame->flags & AV_FRAME_FLAG_INTERLACED) {
+    if (pic->f->flags & AV_FRAME_FLAG_INTERLACED) {
         va_pic->flags |= VA_PICTURE_HEVC_FIELD_PIC;
 
-        if (!(pic->frame->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST))
+        if (!(pic->f->flags & AV_FRAME_FLAG_TOP_FIELD_FIRST))
             va_pic->flags |= VA_PICTURE_HEVC_BOTTOM_FIELD;
     }
 }
 
 static int find_frame_rps_type(const HEVCContext *h, const HEVCFrame *pic)
 {
-    VASurfaceID pic_surf = ff_vaapi_get_surface_id(pic->frame);
+    VASurfaceID pic_surf = ff_vaapi_get_surface_id(pic->f);
     const HEVCFrame *current_picture = h->cur_frame;
     int i;
 
     for (i = 0; i < h->rps[ST_CURR_BEF].nb_refs; i++) {
-        if (pic_surf == ff_vaapi_get_surface_id(h->rps[ST_CURR_BEF].ref[i]->frame))
+        if (pic_surf == ff_vaapi_get_surface_id(h->rps[ST_CURR_BEF].ref[i]->f))
             return VA_PICTURE_HEVC_RPS_ST_CURR_BEFORE;
     }
 
     for (i = 0; i < h->rps[ST_CURR_AFT].nb_refs; i++) {
-        if (pic_surf == ff_vaapi_get_surface_id(h->rps[ST_CURR_AFT].ref[i]->frame))
+        if (pic_surf == ff_vaapi_get_surface_id(h->rps[ST_CURR_AFT].ref[i]->f))
             return VA_PICTURE_HEVC_RPS_ST_CURR_AFTER;
     }
 
     for (i = 0; i < h->rps[LT_CURR].nb_refs; i++) {
-        if (pic_surf == ff_vaapi_get_surface_id(h->rps[LT_CURR].ref[i]->frame))
+        if (pic_surf == ff_vaapi_get_surface_id(h->rps[LT_CURR].ref[i]->f))
             return VA_PICTURE_HEVC_RPS_LT_CURR;
     }
 
@@ -137,7 +137,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
 
     VAPictureParameterBufferHEVC *pic_param = (VAPictureParameterBufferHEVC *)&pic->pic_param;
 
-    pic->pic.output_surface = ff_vaapi_get_surface_id(h->cur_frame->frame);
+    pic->pic.output_surface = ff_vaapi_get_surface_id(h->cur_frame->f);
 
     *pic_param = (VAPictureParameterBufferHEVC) {
         .pic_width_in_luma_samples                    = sps->width,
@@ -445,7 +445,7 @@ static uint8_t get_ref_pic_index(const HEVCContext *h, const HEVCFrame *frame)
     for (i = 0; i < FF_ARRAY_ELEMS(pp->ReferenceFrames); i++) {
         VASurfaceID pid = pp->ReferenceFrames[i].picture_id;
         int poc = pp->ReferenceFrames[i].pic_order_cnt;
-        if (pid != VA_INVALID_ID && pid == ff_vaapi_get_surface_id(frame->frame) && poc == frame->poc)
+        if (pid != VA_INVALID_ID && pid == ff_vaapi_get_surface_id(frame->f) && poc == frame->poc)
             return i;
     }
 

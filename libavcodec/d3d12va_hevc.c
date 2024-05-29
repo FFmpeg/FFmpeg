@@ -156,7 +156,7 @@ static int d3d12va_hevc_end_frame(AVCodecContext *avctx)
     if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
         return -1;
 
-    return ff_d3d12va_common_end_frame(avctx, h->cur_frame->frame, &ctx_pic->pp, sizeof(ctx_pic->pp),
+    return ff_d3d12va_common_end_frame(avctx, h->cur_frame->f, &ctx_pic->pp, sizeof(ctx_pic->pp),
                scale ? &ctx_pic->qm : NULL, scale ? sizeof(ctx_pic->qm) : 0, update_input_arguments);
 }
 

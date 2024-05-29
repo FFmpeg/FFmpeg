@@ -355,7 +355,7 @@ typedef struct DBParams {
 typedef struct HEVCFrame {
     union {
         struct {
-            AVFrame *frame;
+            AVFrame *f;
         };
         ProgressFrame tf;
     };

@@ -1975,13 +1975,13 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
 
     if (current_mv.pred_flag & PF_L0) {
         ref0 = refPicList[0].ref[current_mv.ref_idx[0]];
-        if (!ref0 || !ref0->frame)
+        if (!ref0 || !ref0->f)
             return;
         hevc_await_progress(s, ref0, &current_mv.mv[0], y0, nPbH);
     }
     if (current_mv.pred_flag & PF_L1) {
         ref1 = refPicList[1].ref[current_mv.ref_idx[1]];
-        if (!ref1 || !ref1->frame)
+        if (!ref1 || !ref1->f)
             return;
         hevc_await_progress(s, ref1, &current_mv.mv[1], y0, nPbH);
     }
@@ -1992,16 +1992,16 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
         int nPbW_c = nPbW >> s->ps.sps->hshift[1];
         int nPbH_c = nPbH >> s->ps.sps->vshift[1];
 
-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->frame,
+        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref0->f,
                     &current_mv.mv[0], x0, y0, nPbW, nPbH,
                     s->sh.luma_weight_l0[current_mv.ref_idx[0]],
                     s->sh.luma_offset_l0[current_mv.ref_idx[0]]);
 
         if (s->ps.sps->chroma_format_idc) {
-            chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref0->frame->data[1], ref0->frame->linesize[1],
+            chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref0->f->data[1], ref0->f->linesize[1],
                           0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
                           s->sh.chroma_weight_l0[current_mv.ref_idx[0]][0], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][0]);
-            chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref0->frame->data[2], ref0->frame->linesize[2],
+            chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref0->f->data[2], ref0->f->linesize[2],
                           0, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
                           s->sh.chroma_weight_l0[current_mv.ref_idx[0]][1], s->sh.chroma_offset_l0[current_mv.ref_idx[0]][1]);
         }
@@ -2011,17 +2011,17 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
         int nPbW_c = nPbW >> s->ps.sps->hshift[1];
         int nPbH_c = nPbH >> s->ps.sps->vshift[1];
 
-        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->frame,
+        luma_mc_uni(lc, dst0, s->frame->linesize[0], ref1->f,
                     &current_mv.mv[1], x0, y0, nPbW, nPbH,
                     s->sh.luma_weight_l1[current_mv.ref_idx[1]],
                     s->sh.luma_offset_l1[current_mv.ref_idx[1]]);
 
         if (s->ps.sps->chroma_format_idc) {
-            chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref1->frame->data[1], ref1->frame->linesize[1],
+            chroma_mc_uni(lc, dst1, s->frame->linesize[1], ref1->f->data[1], ref1->f->linesize[1],
                           1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
                           s->sh.chroma_weight_l1[current_mv.ref_idx[1]][0], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][0]);
 
-            chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref1->frame->data[2], ref1->frame->linesize[2],
+            chroma_mc_uni(lc, dst2, s->frame->linesize[2], ref1->f->data[2], ref1->f->linesize[2],
                           1, x0_c, y0_c, nPbW_c, nPbH_c, &current_mv,
                           s->sh.chroma_weight_l1[current_mv.ref_idx[1]][1], s->sh.chroma_offset_l1[current_mv.ref_idx[1]][1]);
         }
@@ -2031,15 +2031,15 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
         int nPbW_c = nPbW >> s->ps.sps->hshift[1];
         int nPbH_c = nPbH >> s->ps.sps->vshift[1];
 
-        luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->frame,
+        luma_mc_bi(lc, dst0, s->frame->linesize[0], ref0->f,
                    &current_mv.mv[0], x0, y0, nPbW, nPbH,
-                   ref1->frame, &current_mv.mv[1], &current_mv);
+                   ref1->f, &current_mv.mv[1], &current_mv);
 
         if (s->ps.sps->chroma_format_idc) {
-            chroma_mc_bi(lc, dst1, s->frame->linesize[1], ref0->frame, ref1->frame,
+            chroma_mc_bi(lc, dst1, s->frame->linesize[1], ref0->f, ref1->f,
                          x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 0);
 
-            chroma_mc_bi(lc, dst2, s->frame->linesize[2], ref0->frame, ref1->frame,
+            chroma_mc_bi(lc, dst2, s->frame->linesize[2], ref0->f, ref1->f,
                          x0_c, y0_c, nPbW_c, nPbH_c, &current_mv, 1);
         }
     }
@@ -2780,7 +2780,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 
 static int set_side_data(HEVCContext *s)
 {
-    AVFrame *out = s->cur_frame->frame;
+    AVFrame *out = s->cur_frame->f;
     int ret;
 
     // Decrement the mastering display and content light level flag when IRAP
@@ -2896,9 +2896,9 @@ static int hevc_frame_start(HEVCContext *s)
     }
 
     if (IS_IRAP(s))
-        s->cur_frame->frame->flags |= AV_FRAME_FLAG_KEY;
+        s->cur_frame->f->flags |= AV_FRAME_FLAG_KEY;
     else
-        s->cur_frame->frame->flags &= ~AV_FRAME_FLAG_KEY;
+        s->cur_frame->f->flags &= ~AV_FRAME_FLAG_KEY;
 
     s->cur_frame->needs_fg = (s->sei.common.film_grain_characteristics.present ||
                               s->sei.common.aom_film_grain.enable) &&
@@ -2912,17 +2912,17 @@ static int hevc_frame_start(HEVCContext *s)
     if (s->cur_frame->needs_fg &&
         (s->sei.common.film_grain_characteristics.present &&
          !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
-                                              s->cur_frame->frame->format) ||
-         !av_film_grain_params_select(s->cur_frame->frame))) {
+                                              s->cur_frame->f->format) ||
+         !av_film_grain_params_select(s->cur_frame->f))) {
         av_log_once(s->avctx, AV_LOG_WARNING, AV_LOG_DEBUG, &s->film_grain_warning_shown,
                     "Unsupported film grain parameters. Ignoring film grain.\n");
         s->cur_frame->needs_fg = 0;
     }
 
     if (s->cur_frame->needs_fg) {
-        s->cur_frame->frame_grain->format = s->cur_frame->frame->format;
-        s->cur_frame->frame_grain->width  = s->cur_frame->frame->width;
-        s->cur_frame->frame_grain->height = s->cur_frame->frame->height;
+        s->cur_frame->frame_grain->format = s->cur_frame->f->format;
+        s->cur_frame->frame_grain->width  = s->cur_frame->f->width;
+        s->cur_frame->frame_grain->height = s->cur_frame->f->height;
         if ((ret = ff_thread_get_buffer(s->avctx, s->cur_frame->frame_grain, 0)) < 0)
             goto fail;
     }
@@ -2957,17 +2957,17 @@ static int hevc_frame_end(HEVCContext *s)
 
     if (out->needs_fg) {
         av_assert0(out->frame_grain->buf[0]);
-        fgp = av_film_grain_params_select(out->frame);
+        fgp = av_film_grain_params_select(out->f);
         switch (fgp->type) {
         case AV_FILM_GRAIN_PARAMS_NONE:
             av_assert0(0);
             return AVERROR_BUG;
         case AV_FILM_GRAIN_PARAMS_H274:
-            ret = ff_h274_apply_film_grain(out->frame_grain, out->frame,
+            ret = ff_h274_apply_film_grain(out->frame_grain, out->f,
                                            &s->h274db, fgp);
             break;
         case AV_FILM_GRAIN_PARAMS_AV1:
-            ret = ff_aom_apply_film_grain(out->frame_grain, out->frame, fgp);
+            ret = ff_aom_apply_film_grain(out->frame_grain, out->f, fgp);
             break;
         }
         av_assert1(ret >= 0);
@@ -3400,7 +3400,7 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         /* verify the SEI checksum */
         if (avctx->err_recognition & AV_EF_CRCCHECK && s->cur_frame && s->is_decoded &&
             s->sei.picture_hash.is_md5) {
-            ret = verify_md5(s, s->cur_frame->frame);
+            ret = verify_md5(s, s->cur_frame->f);
             if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
                 ff_hevc_unref_frame(s->cur_frame, ~0);
                 return ret;
@@ -3543,7 +3543,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         ff_hevc_unref_frame(&s->DPB[i], ~0);
-        if (s0->DPB[i].frame) {
+        if (s0->DPB[i].f) {
             ret = hevc_ref_frame(&s->DPB[i], &s0->DPB[i]);
             if (ret < 0)
                 return ret;

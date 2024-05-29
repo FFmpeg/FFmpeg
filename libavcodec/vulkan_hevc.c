@@ -139,7 +139,7 @@ static int vk_hevc_fill_pict(AVCodecContext *avctx, HEVCFrame **ref_src,
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vkpic = &hp->vp;
 
-    int err = ff_vk_decode_prepare_frame(dec, pic->frame, vkpic, is_current,
+    int err = ff_vk_decode_prepare_frame(dec, pic->f, vkpic, is_current,
                                          dec->dedicated_dpb);
     if (err < 0)
         return err;
@@ -160,7 +160,7 @@ static int vk_hevc_fill_pict(AVCodecContext *avctx, HEVCFrame **ref_src,
     *ref = (VkVideoPictureResourceInfoKHR) {
         .sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
         .codedOffset = (VkOffset2D){ 0, 0 },
-        .codedExtent = (VkExtent2D){ pic->frame->width, pic->frame->height },
+        .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
         .baseArrayLayer = dec->layered_dpb ? pic_id : 0,
         .imageViewBinding = vkpic->img_view_ref,
     };
@@ -837,7 +837,7 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
         .dstPictureResource = (VkVideoPictureResourceInfoKHR) {
             .sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
             .codedOffset = (VkOffset2D){ 0, 0 },
-            .codedExtent = (VkExtent2D){ pic->frame->width, pic->frame->height },
+            .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
             .baseArrayLayer = 0,
             .imageViewBinding = vp->img_view_out,
         },
@@ -904,14 +904,14 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
 
     for (int i = 0; i < vp->decode_info.referenceSlotCount; i++) {
         HEVCVulkanDecodePicture *rfhp = hp->ref_src[i]->hwaccel_picture_private;
-        rav[i] = hp->ref_src[i]->frame;
+        rav[i] = hp->ref_src[i]->f;
         rvp[i] = &rfhp->vp;
     }
 
     av_log(avctx, AV_LOG_VERBOSE, "Decoding frame, %"SIZE_SPECIFIER" bytes, %i slices\n",
            vp->slices_size, hp->h265_pic_info.sliceSegmentCount);
 
-    return ff_vk_decode_frame(avctx, pic->frame, vp, rav, rvp);
+    return ff_vk_decode_frame(avctx, pic->f, vp, rav, rvp);
 }
 
 static void vk_hevc_free_frame_priv(FFRefStructOpaque _hwctx, void *data)

@@ -248,7 +248,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
             }
             /* Array of video reference surfaces.
                Set any unused positions to VDP_INVALID_HANDLE. */
-            info->RefPics[j] = ff_vdpau_get_surface_id(frame->frame);
+            info->RefPics[j] = ff_vdpau_get_surface_id(frame->f);
             /* Array of picture order counts. These correspond to positions
                in the RefPics array. */
             info->PicOrderCntVal[j] = frame->poc;
@@ -295,7 +295,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
         HEVCFrame *frame = h->rps[ST_CURR_BEF].ref[i];
         if (frame) {
             uint8_t found = 0;
-            uintptr_t id = ff_vdpau_get_surface_id(frame->frame);
+            uintptr_t id = ff_vdpau_get_surface_id(frame->f);
             for (size_t k = 0; k < 16; k++) {
                 if (id == info->RefPics[k]) {
                     info->RefPicSetStCurrBefore[j] = k;
@@ -318,7 +318,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
         HEVCFrame *frame = h->rps[ST_CURR_AFT].ref[i];
         if (frame) {
             uint8_t found = 0;
-            uintptr_t id = ff_vdpau_get_surface_id(frame->frame);
+            uintptr_t id = ff_vdpau_get_surface_id(frame->f);
             for (size_t k = 0; k < 16; k++) {
                 if (id == info->RefPics[k]) {
                     info->RefPicSetStCurrAfter[j] = k;
@@ -341,7 +341,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
         HEVCFrame *frame = h->rps[LT_CURR].ref[i];
         if (frame) {
             uint8_t found = 0;
-            uintptr_t id = ff_vdpau_get_surface_id(frame->frame);
+            uintptr_t id = ff_vdpau_get_surface_id(frame->f);
             for (size_t k = 0; k < 16; k++) {
                 if (id == info->RefPics[k]) {
                     info->RefPicSetLtCurr[j] = k;
@@ -423,7 +423,7 @@ static int vdpau_hevc_end_frame(AVCodecContext *avctx)
     struct vdpau_picture_context *pic_ctx = h->cur_frame->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_common_end_frame(avctx, h->cur_frame->frame, pic_ctx);
+    val = ff_vdpau_common_end_frame(avctx, h->cur_frame->f, pic_ctx);
     if (val < 0)
         return val;
 
