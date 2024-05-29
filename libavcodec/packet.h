@@ -59,10 +59,6 @@ enum AVPacketSideDataType {
      * An AV_PKT_DATA_PARAM_CHANGE side data packet is laid out as follows:
      * @code
      * u32le param_flags
-     * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_COUNT)
-     *     s32le channel_count
-     * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_CHANNEL_LAYOUT)
-     *     u64le channel_layout
      * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_SAMPLE_RATE)
      *     s32le sample_rate
      * if (param_flags & AV_SIDE_DATA_PARAM_CHANGE_DIMENSIONS)
