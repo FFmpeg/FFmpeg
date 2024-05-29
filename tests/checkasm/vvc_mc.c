@@ -333,9 +333,6 @@ static void check_vvc_sad(void)
     declare_func(int, const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
 
     ff_vvc_dsp_init(&c, bit_depth);
-    memset(src0, 0, MAX_CTU_SIZE * MAX_CTU_SIZE * 4 * sizeof(uint16_t));
-    memset(src1, 0, MAX_CTU_SIZE * MAX_CTU_SIZE * 4 * sizeof(uint16_t));
-
     randomize_pixels(src0, src1, MAX_CTU_SIZE * MAX_CTU_SIZE * 4);
     for (int h = 8; h <= 16; h *= 2) {
         for (int w = 8; w <= 16; w *= 2) {
