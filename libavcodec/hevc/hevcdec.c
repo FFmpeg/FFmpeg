@@ -2985,49 +2985,37 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     s->nal_unit_type = nal->type;
     s->temporal_id   = nal->temporal_id;
 
+    if (FF_HW_HAS_CB(s->avctx, decode_params) &&
+        (s->nal_unit_type == HEVC_NAL_VPS ||
+         s->nal_unit_type == HEVC_NAL_SPS ||
+         s->nal_unit_type == HEVC_NAL_PPS ||
+         s->nal_unit_type == HEVC_NAL_SEI_PREFIX ||
+         s->nal_unit_type == HEVC_NAL_SEI_SUFFIX)) {
+        ret = FF_HW_CALL(s->avctx, decode_params,
+                         nal->type, nal->raw_data, nal->raw_size);
+        if (ret < 0)
+            goto fail;
+    }
+
     switch (s->nal_unit_type) {
     case HEVC_NAL_VPS:
-        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
-            ret = FF_HW_CALL(s->avctx, decode_params,
-                             nal->type, nal->raw_data, nal->raw_size);
-            if (ret < 0)
-                goto fail;
-        }
         ret = ff_hevc_decode_nal_vps(&gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;
     case HEVC_NAL_SPS:
-        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
-            ret = FF_HW_CALL(s->avctx, decode_params,
-                             nal->type, nal->raw_data, nal->raw_size);
-            if (ret < 0)
-                goto fail;
-        }
         ret = ff_hevc_decode_nal_sps(&gb, s->avctx, &s->ps,
                                      s->apply_defdispwin);
         if (ret < 0)
             goto fail;
         break;
     case HEVC_NAL_PPS:
-        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
-            ret = FF_HW_CALL(s->avctx, decode_params,
-                             nal->type, nal->raw_data, nal->raw_size);
-            if (ret < 0)
-                goto fail;
-        }
         ret = ff_hevc_decode_nal_pps(&gb, s->avctx, &s->ps);
         if (ret < 0)
             goto fail;
         break;
     case HEVC_NAL_SEI_PREFIX:
     case HEVC_NAL_SEI_SUFFIX:
-        if (FF_HW_HAS_CB(s->avctx, decode_params)) {
-            ret = FF_HW_CALL(s->avctx, decode_params,
-                             nal->type, nal->raw_data, nal->raw_size);
-            if (ret < 0)
-                goto fail;
-        }
         ret = ff_hevc_decode_nal_sei(&gb, s->avctx, &s->sei, &s->ps, s->nal_unit_type);
         if (ret < 0)
             goto fail;
