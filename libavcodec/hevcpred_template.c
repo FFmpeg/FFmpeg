@@ -33,7 +33,7 @@ static av_always_inline void FUNC(intra_pred)(HEVCLocalContext *lc, int x0, int 
 #define PU(x) \
     ((x) >> s->ps.sps->log2_min_pu_size)
 #define MVF(x, y) \
-    (s->ref->tab_mvf[(x) + (y) * min_pu_width])
+    (s->cur_frame->tab_mvf[(x) + (y) * min_pu_width])
 #define MVF_PU(x, y) \
     MVF(PU(x0 + ((x) * (1 << hshift))), PU(y0 + ((y) * (1 << vshift))))
 #define IS_INTRA(x, y) \

@@ -144,7 +144,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
         return AVERROR(ENOMEM);
 
     *frame = ref->frame;
-    s->ref = ref;
+    s->cur_frame = ref;
     s->collocated_ref = NULL;
 
     if (s->sh.pic_output_flag)
@@ -282,7 +282,7 @@ void ff_hevc_bump_frame(HEVCContext *s)
 
 static int init_slice_rpl(HEVCContext *s)
 {
-    HEVCFrame *frame = s->ref;
+    HEVCFrame *frame = s->cur_frame;
     int ctb_count    = frame->ctb_count;
     int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
     int i;
@@ -318,7 +318,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 
     for (list_idx = 0; list_idx < nb_list; list_idx++) {
         RefPicList  rpl_tmp = { { 0 } };
-        RefPicList *rpl     = &s->ref->refPicList[list_idx];
+        RefPicList *rpl     = &s->cur_frame->refPicList[list_idx];
 
         /* The order of the elements is
          * ST_CURR_BEF - ST_CURR_AFT - LT_CURR for the L0 and
@@ -340,8 +340,8 @@ int ff_hevc_slice_rpl(HEVCContext *s)
             }
             // Construct RefPicList0, RefPicList1 (8-8, 8-10)
             if (s->ps.pps->pps_curr_pic_ref_enabled_flag && rpl_tmp.nb_refs < HEVC_MAX_REFS) {
-                rpl_tmp.list[rpl_tmp.nb_refs]           = s->ref->poc;
-                rpl_tmp.ref[rpl_tmp.nb_refs]            = s->ref;
+                rpl_tmp.list[rpl_tmp.nb_refs]           = s->cur_frame->poc;
+                rpl_tmp.ref[rpl_tmp.nb_refs]            = s->cur_frame;
                 rpl_tmp.isLongTerm[rpl_tmp.nb_refs]     = 1;
                 rpl_tmp.nb_refs++;
             }
@@ -371,8 +371,8 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         if (s->ps.pps->pps_curr_pic_ref_enabled_flag &&
             !sh->rpl_modification_flag[list_idx] &&
             rpl_tmp.nb_refs > sh->nb_refs[L0]) {
-            rpl->list[sh->nb_refs[L0] - 1] = s->ref->poc;
-            rpl->ref[sh->nb_refs[L0] - 1]  = s->ref;
+            rpl->list[sh->nb_refs[L0] - 1] = s->cur_frame->poc;
+            rpl->ref[sh->nb_refs[L0] - 1]  = s->cur_frame;
         }
 
         if (sh->collocated_list == list_idx &&
@@ -448,7 +448,7 @@ static int add_candidate_ref(HEVCContext *s, RefPicList *list,
 {
     HEVCFrame *ref = find_ref_idx(s, poc, use_msb);
 
-    if (ref == s->ref || list->nb_refs >= HEVC_MAX_REFS)
+    if (ref == s->cur_frame || list->nb_refs >= HEVC_MAX_REFS)
         return AVERROR_INVALIDDATA;
 
     if (!ref) {
@@ -483,7 +483,7 @@ int ff_hevc_frame_rps(HEVCContext *s)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *frame = &s->DPB[i];
 
-        if (frame == s->ref)
+        if (frame == s->cur_frame)
             continue;
 
         mark_ref(frame, 0);

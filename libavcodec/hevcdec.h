@@ -481,7 +481,7 @@ typedef struct HEVCContext {
     DBParams *deblock;
     enum HEVCNALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
-    HEVCFrame *ref;
+    HEVCFrame *cur_frame;
     HEVCFrame *collocated_ref;
     HEVCFrame DPB[32];
     int poc;

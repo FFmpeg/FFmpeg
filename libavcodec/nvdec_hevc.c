@@ -84,11 +84,11 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
 
     int i, j, dpb_size, ret;
 
-    ret = ff_nvdec_start_frame(avctx, s->ref->frame);
+    ret = ff_nvdec_start_frame(avctx, s->cur_frame->frame);
     if (ret < 0)
         return ret;
 
-    fdd = (FrameDecodeData*)s->ref->frame->private_ref->data;
+    fdd = (FrameDecodeData*)s->cur_frame->frame->private_ref->data;
     cf  = (NVDECFrame*)fdd->hwaccel_priv;
 
     *pp = (CUVIDPICPARAMS) {
@@ -191,7 +191,7 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
             .NumPocStCurrBefore                           = s->rps[ST_CURR_BEF].nb_refs,
             .NumPocStCurrAfter                            = s->rps[ST_CURR_AFT].nb_refs,
             .NumPocLtCurr                                 = s->rps[LT_CURR].nb_refs,
-            .CurrPicOrderCntVal                           = s->ref->poc,
+            .CurrPicOrderCntVal                           = s->cur_frame->poc,
         },
     };
 

@@ -600,7 +600,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
 
     // Coded parameters
     sh->first_slice_in_pic_flag = get_bits1(gb);
-    if (s->ref && sh->first_slice_in_pic_flag) {
+    if (s->cur_frame && sh->first_slice_in_pic_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
         return 1; // This slice will be skipped later, do not corrupt state
     }
@@ -1935,8 +1935,8 @@ static void hls_prediction_unit(HEVCLocalContext *lc, int x0, int y0,
 
     int min_pu_width = s->ps.sps->min_pu_width;
 
-    MvField *tab_mvf = s->ref->tab_mvf;
-    const RefPicList *refPicList = s->ref->refPicList;
+    MvField *tab_mvf = s->cur_frame->tab_mvf;
+    const RefPicList *refPicList = s->cur_frame->refPicList;
     const HEVCFrame *ref0 = NULL, *ref1 = NULL;
     uint8_t *dst0 = POS(0, x0, y0);
     uint8_t *dst1 = POS(1, x0, y0);
@@ -2066,7 +2066,7 @@ static int luma_intra_pred_mode(HEVCLocalContext *lc, int x0, int y0, int pu_siz
 
     int y_ctb = (y0 >> (s->ps.sps->log2_ctb_size)) << (s->ps.sps->log2_ctb_size);
 
-    MvField *tab_mvf = s->ref->tab_mvf;
+    MvField *tab_mvf = s->cur_frame->tab_mvf;
     int intra_pred_mode;
     int candidate[3];
     int i, j;
@@ -2221,7 +2221,7 @@ static void intra_prediction_unit_default_value(HEVCLocalContext *lc,
     int pb_size          = 1 << log2_cb_size;
     int size_in_pus      = pb_size >> s->ps.sps->log2_min_pu_size;
     int min_pu_width     = s->ps.sps->min_pu_width;
-    MvField *tab_mvf     = s->ref->tab_mvf;
+    MvField *tab_mvf     = s->cur_frame->tab_mvf;
     int x_pu             = x0 >> s->ps.sps->log2_min_pu_size;
     int y_pu             = y0 >> s->ps.sps->log2_min_pu_size;
     int j, k;
@@ -2780,7 +2780,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 
 static int set_side_data(HEVCContext *s)
 {
-    AVFrame *out = s->ref->frame;
+    AVFrame *out = s->cur_frame->frame;
     int ret;
 
     // Decrement the mastering display and content light level flag when IRAP
@@ -2797,7 +2797,7 @@ static int set_side_data(HEVCContext *s)
     ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, s->avctx,
                                 &s->ps.sps->vui.common,
                                 s->ps.sps->bit_depth, s->ps.sps->bit_depth_chroma,
-                                s->ref->poc /* no poc_offset in HEVC */);
+                                s->cur_frame->poc /* no poc_offset in HEVC */);
     if (ret < 0)
         return ret;
 
@@ -2896,12 +2896,12 @@ static int hevc_frame_start(HEVCContext *s)
     }
 
     if (IS_IRAP(s))
-        s->ref->frame->flags |= AV_FRAME_FLAG_KEY;
+        s->cur_frame->frame->flags |= AV_FRAME_FLAG_KEY;
     else
-        s->ref->frame->flags &= ~AV_FRAME_FLAG_KEY;
+        s->cur_frame->frame->flags &= ~AV_FRAME_FLAG_KEY;
 
-    s->ref->needs_fg = (s->sei.common.film_grain_characteristics.present ||
-                        s->sei.common.aom_film_grain.enable) &&
+    s->cur_frame->needs_fg = (s->sei.common.film_grain_characteristics.present ||
+                              s->sei.common.aom_film_grain.enable) &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
 
@@ -2909,21 +2909,21 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
 
-    if (s->ref->needs_fg &&
+    if (s->cur_frame->needs_fg &&
         (s->sei.common.film_grain_characteristics.present &&
          !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
-                                              s->ref->frame->format)
-         || !av_film_grain_params_select(s->ref->frame))) {
+                                              s->cur_frame->frame->format) ||
+         !av_film_grain_params_select(s->cur_frame->frame))) {
         av_log_once(s->avctx, AV_LOG_WARNING, AV_LOG_DEBUG, &s->film_grain_warning_shown,
                     "Unsupported film grain parameters. Ignoring film grain.\n");
-        s->ref->needs_fg = 0;
+        s->cur_frame->needs_fg = 0;
     }
 
-    if (s->ref->needs_fg) {
-        s->ref->frame_grain->format = s->ref->frame->format;
-        s->ref->frame_grain->width = s->ref->frame->width;
-        s->ref->frame_grain->height = s->ref->frame->height;
-        if ((ret = ff_thread_get_buffer(s->avctx, s->ref->frame_grain, 0)) < 0)
+    if (s->cur_frame->needs_fg) {
+        s->cur_frame->frame_grain->format = s->cur_frame->frame->format;
+        s->cur_frame->frame_grain->width  = s->cur_frame->frame->width;
+        s->cur_frame->frame_grain->height = s->cur_frame->frame->height;
+        if ((ret = ff_thread_get_buffer(s->avctx, s->cur_frame->frame_grain, 0)) < 0)
             goto fail;
     }
 
@@ -2943,15 +2943,15 @@ static int hevc_frame_start(HEVCContext *s)
     return 0;
 
 fail:
-    if (s->ref)
-        ff_hevc_unref_frame(s->ref, ~0);
-    s->ref = s->collocated_ref = NULL;
+    if (s->cur_frame)
+        ff_hevc_unref_frame(s->cur_frame, ~0);
+    s->cur_frame = s->collocated_ref = NULL;
     return ret;
 }
 
 static int hevc_frame_end(HEVCContext *s)
 {
-    HEVCFrame *out = s->ref;
+    HEVCFrame *out = s->cur_frame;
     const AVFilmGrainParams *fgp;
     av_unused int ret;
 
@@ -3086,7 +3086,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
-        } else if (!s->ref) {
+        } else if (!s->cur_frame) {
             av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
             goto fail;
         }
@@ -3169,7 +3169,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     int i, ret = 0;
     int eos_at_start = 1;
 
-    s->ref = s->collocated_ref = NULL;
+    s->cur_frame = s->collocated_ref = NULL;
     s->last_eos = s->eos;
     s->eos = 0;
     s->overlap = 0;
@@ -3248,8 +3248,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
 
 fail:
-    if (s->ref && s->threads_type == FF_THREAD_FRAME)
-        ff_progress_frame_report(&s->ref->tf, INT_MAX);
+    if (s->cur_frame && s->threads_type == FF_THREAD_FRAME)
+        ff_progress_frame_report(&s->cur_frame->tf, INT_MAX);
 
     return ret;
 }
@@ -3384,25 +3384,25 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                    old, s->dovi_ctx.cfg.dv_profile);
     }
 
-    s->ref = s->collocated_ref = NULL;
+    s->cur_frame = s->collocated_ref = NULL;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
 
     if (avctx->hwaccel) {
-        if (s->ref && (ret = FF_HW_SIMPLE_CALL(avctx, end_frame)) < 0) {
+        if (s->cur_frame && (ret = FF_HW_SIMPLE_CALL(avctx, end_frame)) < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
-            ff_hevc_unref_frame(s->ref, ~0);
+            ff_hevc_unref_frame(s->cur_frame, ~0);
             return ret;
         }
     } else {
         /* verify the SEI checksum */
-        if (avctx->err_recognition & AV_EF_CRCCHECK && s->ref && s->is_decoded &&
+        if (avctx->err_recognition & AV_EF_CRCCHECK && s->cur_frame && s->is_decoded &&
             s->sei.picture_hash.is_md5) {
-            ret = verify_md5(s, s->ref->frame);
+            ret = verify_md5(s, s->cur_frame->frame);
             if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
-                ff_hevc_unref_frame(s->ref, ~0);
+                ff_hevc_unref_frame(s->cur_frame, ~0);
                 return ret;
             }
         }

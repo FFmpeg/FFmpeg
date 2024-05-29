@@ -71,7 +71,7 @@ static void fill_vaapi_pic(VAPictureHEVC *va_pic, const HEVCFrame *pic, int rps_
 static int find_frame_rps_type(const HEVCContext *h, const HEVCFrame *pic)
 {
     VASurfaceID pic_surf = ff_vaapi_get_surface_id(pic->frame);
-    const HEVCFrame *current_picture = h->ref;
+    const HEVCFrame *current_picture = h->cur_frame;
     int i;
 
     for (i = 0; i < h->rps[ST_CURR_BEF].nb_refs; i++) {
@@ -97,7 +97,7 @@ static int find_frame_rps_type(const HEVCContext *h, const HEVCFrame *pic)
 
 static void fill_vaapi_reference_frames(const HEVCContext *h, VAPictureParameterBufferHEVC *pp)
 {
-    const HEVCFrame *current_picture = h->ref;
+    const HEVCFrame *current_picture = h->cur_frame;
     int i, j, rps_type;
 
     for (i = 0, j = 0; i < FF_ARRAY_ELEMS(pp->ReferenceFrames); i++) {
@@ -124,7 +124,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
                                   av_unused uint32_t       size)
 {
     const HEVCContext        *h = avctx->priv_data;
-    VAAPIDecodePictureHEVC *pic = h->ref->hwaccel_picture_private;
+    VAAPIDecodePictureHEVC *pic = h->cur_frame->hwaccel_picture_private;
     const HEVCSPS          *sps = h->ps.sps;
     const HEVCPPS          *pps = h->ps.pps;
 
@@ -137,7 +137,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
 
     VAPictureParameterBufferHEVC *pic_param = (VAPictureParameterBufferHEVC *)&pic->pic_param;
 
-    pic->pic.output_surface = ff_vaapi_get_surface_id(h->ref->frame);
+    pic->pic.output_surface = ff_vaapi_get_surface_id(h->cur_frame->frame);
 
     *pic_param = (VAPictureParameterBufferHEVC) {
         .pic_width_in_luma_samples                    = sps->width,
@@ -206,7 +206,7 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
         },
     };
 
-    fill_vaapi_pic(&pic_param->CurrPic, h->ref, 0);
+    fill_vaapi_pic(&pic_param->CurrPic, h->cur_frame, 0);
     fill_vaapi_reference_frames(h, pic_param);
 
     if (pps->tiles_enabled_flag) {
@@ -343,7 +343,7 @@ fail:
 static int vaapi_hevc_end_frame(AVCodecContext *avctx)
 {
     const HEVCContext        *h = avctx->priv_data;
-    VAAPIDecodePictureHEVC *pic = h->ref->hwaccel_picture_private;
+    VAAPIDecodePictureHEVC *pic = h->cur_frame->hwaccel_picture_private;
     VASliceParameterBufferHEVC *last_slice_param = (VASliceParameterBufferHEVC *)&pic->last_slice_param;
     int ret;
 
@@ -435,7 +435,7 @@ static void fill_pred_weight_table(AVCodecContext *avctx,
 
 static uint8_t get_ref_pic_index(const HEVCContext *h, const HEVCFrame *frame)
 {
-    VAAPIDecodePictureHEVC *pic = h->ref->hwaccel_picture_private;
+    VAAPIDecodePictureHEVC *pic = h->cur_frame->hwaccel_picture_private;
     VAPictureParameterBufferHEVC *pp = (VAPictureParameterBufferHEVC *)&pic->pic_param;
     uint8_t i;
 
@@ -458,7 +458,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
 {
     const HEVCContext        *h = avctx->priv_data;
     const SliceHeader       *sh = &h->sh;
-    VAAPIDecodePictureHEVC *pic = h->ref->hwaccel_picture_private;
+    VAAPIDecodePictureHEVC *pic = h->cur_frame->hwaccel_picture_private;
     VASliceParameterBufferHEVC *last_slice_param = (VASliceParameterBufferHEVC *)&pic->last_slice_param;
 
     int slice_param_size = avctx->profile >= AV_PROFILE_HEVC_REXT ?
@@ -515,7 +515,7 @@ static int vaapi_hevc_decode_slice(AVCodecContext *avctx,
     memset(last_slice_param->RefPicList, 0xFF, sizeof(last_slice_param->RefPicList));
 
     for (list_idx = 0; list_idx < nb_list; list_idx++) {
-        RefPicList *rpl = &h->ref->refPicList[list_idx];
+        RefPicList *rpl = &h->cur_frame->refPicList[list_idx];
 
         for (i = 0; i < rpl->nb_refs; i++)
             last_slice_param->RefPicList[list_idx][i] = get_ref_pic_index(h, rpl->ref[i]);

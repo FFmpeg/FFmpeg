@@ -35,7 +35,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
 {
     HEVCContext *h = avctx->priv_data;
-    HEVCFrame *pic = h->ref;
+    HEVCFrame *pic = h->cur_frame;
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
 
     VdpPictureInfoHEVC *info = &pic_ctx->info.hevc;
@@ -238,7 +238,7 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
     }
     for (size_t i = 0, j = 0; i < FF_ARRAY_ELEMS(h->DPB); i++) {
         const HEVCFrame *frame = &h->DPB[i];
-        if (frame != h->ref && (frame->flags & (HEVC_FRAME_FLAG_LONG_REF |
+        if (frame != h->cur_frame && (frame->flags & (HEVC_FRAME_FLAG_LONG_REF |
                                                 HEVC_FRAME_FLAG_SHORT_REF))) {
             if (j > 15) {
                 av_log(avctx, AV_LOG_WARNING,
@@ -403,7 +403,7 @@ static int vdpau_hevc_decode_slice(AVCodecContext *avctx,
                                    const uint8_t *buffer, uint32_t size)
 {
     HEVCContext *h = avctx->priv_data;
-    struct vdpau_picture_context *pic_ctx = h->ref->hwaccel_picture_private;
+    struct vdpau_picture_context *pic_ctx = h->cur_frame->hwaccel_picture_private;
     int val;
 
     val = ff_vdpau_add_buffer(pic_ctx, start_code_prefix, 3);
@@ -420,10 +420,10 @@ static int vdpau_hevc_decode_slice(AVCodecContext *avctx,
 static int vdpau_hevc_end_frame(AVCodecContext *avctx)
 {
     HEVCContext *h = avctx->priv_data;
-    struct vdpau_picture_context *pic_ctx = h->ref->hwaccel_picture_private;
+    struct vdpau_picture_context *pic_ctx = h->cur_frame->hwaccel_picture_private;
     int val;
 
-    val = ff_vdpau_common_end_frame(avctx, h->ref->frame, pic_ctx);
+    val = ff_vdpau_common_end_frame(avctx, h->cur_frame->frame, pic_ctx);
     if (val < 0)
         return val;
 

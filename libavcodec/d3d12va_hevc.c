@@ -53,7 +53,7 @@ static int d3d12va_hevc_start_frame(AVCodecContext *avctx, av_unused const uint8
 {
     const HEVCContext        *h       = avctx->priv_data;
     D3D12VADecodeContext     *ctx     = D3D12VA_DECODE_CONTEXT(avctx);
-    HEVCDecodePictureContext *ctx_pic = h->ref->hwaccel_picture_private;
+    HEVCDecodePictureContext *ctx_pic = h->cur_frame->hwaccel_picture_private;
 
     if (!ctx)
         return -1;
@@ -76,7 +76,7 @@ static int d3d12va_hevc_start_frame(AVCodecContext *avctx, av_unused const uint8
 static int d3d12va_hevc_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, uint32_t size)
 {
     const HEVCContext        *h               = avctx->priv_data;
-    const HEVCFrame          *current_picture = h->ref;
+    const HEVCFrame          *current_picture = h->cur_frame;
     HEVCDecodePictureContext *ctx_pic         = current_picture->hwaccel_picture_private;
     unsigned position;
 
@@ -99,7 +99,7 @@ static int d3d12va_hevc_decode_slice(AVCodecContext *avctx, const uint8_t *buffe
 static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPUT_STREAM_ARGUMENTS *input_args, ID3D12Resource *buffer)
 {
     const HEVCContext        *h               = avctx->priv_data;
-    const HEVCFrame          *current_picture = h->ref;
+    const HEVCFrame          *current_picture = h->cur_frame;
     HEVCDecodePictureContext *ctx_pic         = current_picture->hwaccel_picture_private;
 
     int i;
@@ -149,14 +149,14 @@ static int update_input_arguments(AVCodecContext *avctx, D3D12_VIDEO_DECODE_INPU
 static int d3d12va_hevc_end_frame(AVCodecContext *avctx)
 {
     HEVCContext              *h       = avctx->priv_data;
-    HEVCDecodePictureContext *ctx_pic = h->ref->hwaccel_picture_private;
+    HEVCDecodePictureContext *ctx_pic = h->cur_frame->hwaccel_picture_private;
 
     int scale = ctx_pic->pp.dwCodingParamToolFlags & 1;
 
     if (ctx_pic->slice_count <= 0 || ctx_pic->bitstream_size <= 0)
         return -1;
 
-    return ff_d3d12va_common_end_frame(avctx, h->ref->frame, &ctx_pic->pp, sizeof(ctx_pic->pp),
+    return ff_d3d12va_common_end_frame(avctx, h->cur_frame->frame, &ctx_pic->pp, sizeof(ctx_pic->pp),
                scale ? &ctx_pic->qm : NULL, scale ? sizeof(ctx_pic->qm) : 0, update_input_arguments);
 }
 

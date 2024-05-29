@@ -165,7 +165,7 @@ static int derive_temporal_colocated_mvs(const HEVCContext *s, MvField temp_col,
                                          int refIdxLx, Mv *mvLXCol, int X,
                                          int colPic, const RefPicList *refPicList_col)
 {
-    const RefPicList *refPicList = s->ref->refPicList;
+    const RefPicList *refPicList = s->cur_frame->refPicList;
 
     if (temp_col.pred_flag == PF_INTRA)
         return 0;
@@ -291,8 +291,8 @@ static void derive_spatial_merge_candidates(HEVCLocalContext *lc, const HEVCCont
                                             int merge_idx,
                                             struct MvField mergecandlist[])
 {
-    const RefPicList *refPicList = s->ref->refPicList;
-    const MvField *tab_mvf       = s->ref->tab_mvf;
+    const RefPicList *refPicList = s->cur_frame->refPicList;
+    const MvField *tab_mvf       = s->cur_frame->tab_mvf;
 
     const int min_pu_width = s->ps.sps->min_pu_width;
 
@@ -514,8 +514,8 @@ static av_always_inline void dist_scale(const HEVCContext *s, Mv *mv,
                                         int min_pu_width, int x, int y,
                                         int elist, int ref_idx_curr, int ref_idx)
 {
-    const RefPicList *refPicList = s->ref->refPicList;
-    const MvField *tab_mvf       = s->ref->tab_mvf;
+    const RefPicList *refPicList = s->cur_frame->refPicList;
+    const MvField *tab_mvf       = s->cur_frame->tab_mvf;
     int ref_pic_elist      = refPicList[elist].list[TAB_MVF(x, y).ref_idx[elist]];
     int ref_pic_curr       = refPicList[ref_idx_curr].list[ref_idx];
 
@@ -530,10 +530,10 @@ static av_always_inline void dist_scale(const HEVCContext *s, Mv *mv,
 static int mv_mp_mode_mx(const HEVCContext *s, int x, int y, int pred_flag_index,
                          Mv *mv, int ref_idx_curr, int ref_idx)
 {
-    const MvField *tab_mvf = s->ref->tab_mvf;
+    const MvField *tab_mvf = s->cur_frame->tab_mvf;
     int min_pu_width = s->ps.sps->min_pu_width;
 
-    const RefPicList *refPicList = s->ref->refPicList;
+    const RefPicList *refPicList = s->cur_frame->refPicList;
 
     if (((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) &&
         refPicList[pred_flag_index].list[TAB_MVF(x, y).ref_idx[pred_flag_index]] == refPicList[ref_idx_curr].list[ref_idx]) {
@@ -546,10 +546,10 @@ static int mv_mp_mode_mx(const HEVCContext *s, int x, int y, int pred_flag_index
 static int mv_mp_mode_mx_lt(const HEVCContext *s, int x, int y, int pred_flag_index,
                             Mv *mv, int ref_idx_curr, int ref_idx)
 {
-    const MvField *tab_mvf = s->ref->tab_mvf;
+    const MvField *tab_mvf = s->cur_frame->tab_mvf;
     int min_pu_width = s->ps.sps->min_pu_width;
 
-    const RefPicList *refPicList = s->ref->refPicList;
+    const RefPicList *refPicList = s->cur_frame->refPicList;
 
     if ((TAB_MVF(x, y).pred_flag) & (1 << pred_flag_index)) {
         int currIsLongTerm     = refPicList[ref_idx_curr].isLongTerm[ref_idx];
@@ -586,7 +586,7 @@ void ff_hevc_luma_mv_mvp_mode(HEVCLocalContext *lc, int x0, int y0, int nPbW,
                               int mvp_lx_flag, int LX)
 {
     const HEVCContext *const s = lc->parent;
-    const MvField *const tab_mvf = s->ref->tab_mvf;
+    const MvField *const tab_mvf = s->cur_frame->tab_mvf;
     int isScaledFlag_L0 = 0;
     int availableFlagLXA0 = 1;
     int availableFlagLXB0 = 1;

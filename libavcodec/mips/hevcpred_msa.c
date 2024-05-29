@@ -1980,7 +1980,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_bottom_left = 0;
             for (i = 0; i < max; i += 2)
                 cand_bottom_left |=
-                    ((s->ref->tab_mvf[(x_left_pu) +
+                    ((s->cur_frame->tab_mvf[(x_left_pu) +
                                       (y_bottom_pu +
                                        i) * min_pu_width]).pred_flag ==
                      PF_INTRA);
@@ -1996,7 +1996,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_left = 0;
             for (i = 0; i < max; i += 2)
                 cand_left |=
-                    ((s->ref->tab_mvf[(x_left_pu) +
+                    ((s->cur_frame->tab_mvf[(x_left_pu) +
                                       (y_left_pu +
                                        i) * min_pu_width]).pred_flag ==
                      PF_INTRA);
@@ -2005,7 +2005,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             int x_left_pu = ((x0 - 1) >> s->ps.sps->log2_min_pu_size);
             int y_top_pu = ((y0 - 1) >> s->ps.sps->log2_min_pu_size);
             cand_up_left =
-                (s->ref->tab_mvf[(x_left_pu) +
+                (s->cur_frame->tab_mvf[(x_left_pu) +
                                  (y_top_pu) * min_pu_width]).pred_flag ==
                 PF_INTRA;
         }
@@ -2020,7 +2020,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_up = 0;
             for (i = 0; i < max; i += 2)
                 cand_up |=
-                    ((s->ref->tab_mvf[(x_top_pu + i) +
+                    ((s->cur_frame->tab_mvf[(x_top_pu + i) +
                                       (y_top_pu) *
                                       min_pu_width]).pred_flag == PF_INTRA);
         }
@@ -2036,7 +2036,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_up_right = 0;
             for (i = 0; i < max; i += 2)
                 cand_up_right |=
-                    ((s->ref->tab_mvf[(x_right_pu + i) +
+                    ((s->cur_frame->tab_mvf[(x_right_pu + i) +
                                       (y_top_pu) *
                                       min_pu_width]).pred_flag == PF_INTRA);
         }
@@ -2107,7 +2107,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             if (cand_bottom_left || cand_left || cand_up_left) {
                 while (j > -1
                        &&
-                       !((s->ref->tab_mvf[(((x0 +
+                       !((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((j) <<
@@ -2118,7 +2118,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                          PF_INTRA))
                     j--;
                 if (!
-                    ((s->ref->tab_mvf[(((x0 +
+                    ((s->cur_frame->tab_mvf[(((x0 +
                                          ((-1) << hshift)) >> s->ps.sps->
                                         log2_min_pu_size)) + (((y0 + ((j)
                                                                       <<
@@ -2129,7 +2129,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     j = 0;
                     while (j < size_max_x
                            &&
-                           !((s->ref->tab_mvf[(((x0 +
+                           !((s->cur_frame->tab_mvf[(((x0 +
                                                  ((j) << hshift)) >> s->ps.sps->
                                                 log2_min_pu_size)) + (((y0 +
                                                                         ((-1) <<
@@ -2142,7 +2142,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                         j++;
                     for (i = j; i > (j) - (j + 1); i--)
                         if (!
-                            ((s->ref->tab_mvf[(((x0 +
+                            ((s->cur_frame->tab_mvf[(((x0 +
                                                  ((i -
                                                    1) << hshift)) >> s->ps.sps->
                                                 log2_min_pu_size)) + (((y0 +
@@ -2160,7 +2160,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 j = 0;
                 while (j < size_max_x
                        &&
-                       !((s->ref->tab_mvf[(((x0 +
+                       !((s->cur_frame->tab_mvf[(((x0 +
                                              ((j) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 + ((-1)
                                                                           <<
@@ -2174,7 +2174,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     if (x0 > 0) {
                         for (i = j; i > (j) - (j + 1); i--)
                             if (!
-                                ((s->ref->tab_mvf[(((x0 +
+                                ((s->cur_frame->tab_mvf[(((x0 +
                                                      ((i -
                                                        1) << hshift)) >>
                                                     s->ps.sps->log2_min_pu_size))
@@ -2189,7 +2189,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     } else {
                         for (i = j; i > (j) - (j); i--)
                             if (!
-                                ((s->ref->tab_mvf[(((x0 +
+                                ((s->cur_frame->tab_mvf[(((x0 +
                                                      ((i -
                                                        1) << hshift)) >>
                                                     s->ps.sps->log2_min_pu_size))
@@ -2210,7 +2210,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 a = ((left[-1]) * 0x01010101U);
                 for (i = 0; i < (0) + (size_max_y); i += 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((i) <<
@@ -2239,7 +2239,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 for (i = (size_max_y - 1);
                      i > (size_max_y - 1) - (size_max_y); i -= 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((i -
@@ -2253,7 +2253,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     else
                         a = ((left[i - 3]) * 0x01010101U);
                 if (!
-                    ((s->ref->tab_mvf[(((x0 +
+                    ((s->cur_frame->tab_mvf[(((x0 +
                                          ((-1) << hshift)) >> s->ps.sps->
                                         log2_min_pu_size)) + (((y0 + ((-1)
                                                                       <<
@@ -2273,7 +2273,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 for (i = (size_max_y - 1);
                      i > (size_max_y - 1) - (size_max_y); i -= 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((i -
@@ -2292,7 +2292,7 @@ void ff_intra_pred_8_16x16_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 a = ((left[-1]) * 0x01010101U);
                 for (i = 0; i < (0) + (size_max_x); i += 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((i) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 + ((-1)
                                                                           <<
@@ -2497,7 +2497,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_bottom_left = 0;
             for (i = 0; i < max; i += 2)
                 cand_bottom_left |=
-                    ((s->ref->tab_mvf[(x_left_pu) +
+                    ((s->cur_frame->tab_mvf[(x_left_pu) +
                                       (y_bottom_pu +
                                        i) * min_pu_width]).pred_flag ==
                      PF_INTRA);
@@ -2513,7 +2513,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_left = 0;
             for (i = 0; i < max; i += 2)
                 cand_left |=
-                    ((s->ref->tab_mvf[(x_left_pu) +
+                    ((s->cur_frame->tab_mvf[(x_left_pu) +
                                       (y_left_pu +
                                        i) * min_pu_width]).pred_flag ==
                      PF_INTRA);
@@ -2522,7 +2522,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             int x_left_pu = ((x0 - 1) >> s->ps.sps->log2_min_pu_size);
             int y_top_pu = ((y0 - 1) >> s->ps.sps->log2_min_pu_size);
             cand_up_left =
-                (s->ref->tab_mvf[(x_left_pu) +
+                (s->cur_frame->tab_mvf[(x_left_pu) +
                                  (y_top_pu) * min_pu_width]).pred_flag ==
                 PF_INTRA;
         }
@@ -2537,7 +2537,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_up = 0;
             for (i = 0; i < max; i += 2)
                 cand_up |=
-                    ((s->ref->tab_mvf[(x_top_pu + i) +
+                    ((s->cur_frame->tab_mvf[(x_top_pu + i) +
                                       (y_top_pu) *
                                       min_pu_width]).pred_flag == PF_INTRA);
         }
@@ -2553,7 +2553,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             cand_up_right = 0;
             for (i = 0; i < max; i += 2)
                 cand_up_right |=
-                    ((s->ref->tab_mvf[(x_right_pu + i) +
+                    ((s->cur_frame->tab_mvf[(x_right_pu + i) +
                                       (y_top_pu) *
                                       min_pu_width]).pred_flag == PF_INTRA);
         }
@@ -2622,7 +2622,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
             if (cand_bottom_left || cand_left || cand_up_left) {
                 while (j > -1
                        &&
-                       !((s->ref->tab_mvf[(((x0 +
+                       !((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((j) <<
@@ -2633,7 +2633,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                          PF_INTRA))
                     j--;
                 if (!
-                    ((s->ref->tab_mvf[(((x0 +
+                    ((s->cur_frame->tab_mvf[(((x0 +
                                          ((-1) << hshift)) >> s->ps.sps->
                                         log2_min_pu_size)) + (((y0 + ((j)
                                                                       <<
@@ -2644,7 +2644,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     j = 0;
                     while (j < size_max_x
                            &&
-                           !((s->ref->tab_mvf[(((x0 +
+                           !((s->cur_frame->tab_mvf[(((x0 +
                                                  ((j) << hshift)) >> s->ps.sps->
                                                 log2_min_pu_size)) + (((y0 +
                                                                         ((-1) <<
@@ -2657,7 +2657,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                         j++;
                     for (i = j; i > (j) - (j + 1); i--)
                         if (!
-                            ((s->ref->tab_mvf[(((x0 +
+                            ((s->cur_frame->tab_mvf[(((x0 +
                                                  ((i -
                                                    1) << hshift)) >> s->ps.sps->
                                                 log2_min_pu_size)) + (((y0 +
@@ -2675,7 +2675,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 j = 0;
                 while (j < size_max_x
                        &&
-                       !((s->ref->tab_mvf[(((x0 +
+                       !((s->cur_frame->tab_mvf[(((x0 +
                                              ((j) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 + ((-1)
                                                                           <<
@@ -2689,7 +2689,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     if (x0 > 0) {
                         for (i = j; i > (j) - (j + 1); i--)
                             if (!
-                                ((s->ref->tab_mvf[(((x0 +
+                                ((s->cur_frame->tab_mvf[(((x0 +
                                                      ((i -
                                                        1) << hshift)) >>
                                                     s->ps.sps->log2_min_pu_size))
@@ -2704,7 +2704,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     } else {
                         for (i = j; i > (j) - (j); i--)
                             if (!
-                                ((s->ref->tab_mvf[(((x0 +
+                                ((s->cur_frame->tab_mvf[(((x0 +
                                                      ((i -
                                                        1) << hshift)) >>
                                                     s->ps.sps->log2_min_pu_size))
@@ -2725,7 +2725,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 a = ((left[-1]) * 0x01010101U);
                 for (i = 0; i < (0) + (size_max_y); i += 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((i) <<
@@ -2753,7 +2753,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 for (i = (size_max_y - 1);
                      i > (size_max_y - 1) - (size_max_y); i -= 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((i -
@@ -2767,7 +2767,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                     else
                         a = ((left[i - 3]) * 0x01010101U);
                 if (!
-                    ((s->ref->tab_mvf[(((x0 +
+                    ((s->cur_frame->tab_mvf[(((x0 +
                                          ((-1) << hshift)) >> s->ps.sps->
                                         log2_min_pu_size)) + (((y0 + ((-1)
                                                                       <<
@@ -2787,7 +2787,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 for (i = (size_max_y - 1);
                      i > (size_max_y - 1) - (size_max_y); i -= 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((-1) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 +
                                                                     ((i -
@@ -2806,7 +2806,7 @@ void ff_intra_pred_8_32x32_msa(HEVCLocalContext *lc, int x0, int y0, int c_idx)
                 a = ((left[-1]) * 0x01010101U);
                 for (i = 0; i < (0) + (size_max_x); i += 4)
                     if (!
-                        ((s->ref->tab_mvf[(((x0 +
+                        ((s->cur_frame->tab_mvf[(((x0 +
                                              ((i) << hshift)) >> s->ps.sps->
                                             log2_min_pu_size)) + (((y0 + ((-1)
                                                                           <<

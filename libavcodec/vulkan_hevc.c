@@ -731,7 +731,7 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
 {
     int err;
     HEVCContext *h = avctx->priv_data;
-    HEVCFrame *pic = h->ref;
+    HEVCFrame *pic = h->cur_frame;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
@@ -851,7 +851,7 @@ static int vk_hevc_decode_slice(AVCodecContext *avctx,
                                 uint32_t        size)
 {
     const HEVCContext *h = avctx->priv_data;
-    HEVCVulkanDecodePicture *hp = h->ref->hwaccel_picture_private;
+    HEVCVulkanDecodePicture *hp = h->cur_frame->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
 
     int err = ff_vk_decode_add_slice(avctx, vp, data, size, 1,
@@ -867,7 +867,7 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
 {
     const HEVCContext *h = avctx->priv_data;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
-    HEVCFrame *pic = h->ref;
+    HEVCFrame *pic = h->cur_frame;
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
     FFVulkanDecodePicture *rvp[HEVC_MAX_REFS] = { 0 };
