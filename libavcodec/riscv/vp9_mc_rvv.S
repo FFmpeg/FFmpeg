@@ -37,9 +37,9 @@
 .endm
 
 .macro copy_avg len
-func ff_avg\len\()_rvv, zve32x
+func ff_vp9_avg\len\()_rvv, zve32x
         csrwi           vxrm, 0
-        vsetvlstatic8   \len t0 64
+        vsetvlstatic8   \len, t0, 64
 1:
         vle8.v          v8, (a2)
         vle8.v          v16, (a0)

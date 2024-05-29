@@ -138,11 +138,11 @@ void ff_avg_bilin_##SIZE##hv_rvv(uint8_t *dst, ptrdiff_t dststride,        \
                                  int h, int mx, int my);
 
 #define VP9_COPY_AVG_RISCV_RVV_FUNC(SIZE)                           \
-void ff_copy##SIZE##_rvv(uint8_t *dst, ptrdiff_t dststride,        \
+void ff_vp9_copy##SIZE##_rvv(uint8_t *dst, ptrdiff_t dststride,    \
                          const uint8_t *src, ptrdiff_t srcstride,  \
                          int h, int mx, int my);                   \
                                                                    \
-void ff_avg##SIZE##_rvv(uint8_t *dst, ptrdiff_t dststride,         \
+void ff_vp9_avg##SIZE##_rvv(uint8_t *dst, ptrdiff_t dststride,     \
                         const uint8_t *src, ptrdiff_t srcstride,   \
                         int h, int mx, int my);
 
