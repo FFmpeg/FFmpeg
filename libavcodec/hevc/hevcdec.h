@@ -20,28 +20,29 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_HEVCDEC_H
-#define AVCODEC_HEVCDEC_H
+#ifndef AVCODEC_HEVC_HEVCDEC_H
+#define AVCODEC_HEVC_HEVCDEC_H
 
 #include <stdatomic.h>
 
 #include "libavutil/buffer.h"
 #include "libavutil/mem_internal.h"
 
-#include "avcodec.h"
-#include "bswapdsp.h"
-#include "cabac.h"
-#include "dovi_rpu.h"
-#include "get_bits.h"
-#include "hevcpred.h"
-#include "h2645_parse.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/bswapdsp.h"
+#include "libavcodec/cabac.h"
+#include "libavcodec/dovi_rpu.h"
+#include "libavcodec/get_bits.h"
+#include "libavcodec/h2645_parse.h"
+#include "libavcodec/h274.h"
+#include "libavcodec/progressframe.h"
+#include "libavcodec/videodsp.h"
+
+#include "dsp.h"
 #include "hevc.h"
-#include "hevc_ps.h"
-#include "hevc_sei.h"
-#include "hevcdsp.h"
-#include "h274.h"
-#include "progressframe.h"
-#include "videodsp.h"
+#include "pred.h"
+#include "ps.h"
+#include "sei.h"
 
 #define SHIFT_CTB_WPP 2
 
@@ -675,4 +676,4 @@ extern const uint8_t ff_hevc_qpel_extra_before[4];
 extern const uint8_t ff_hevc_qpel_extra_after[4];
 extern const uint8_t ff_hevc_qpel_extra[4];
 
-#endif /* AVCODEC_HEVCDEC_H */
+#endif /* AVCODEC_HEVC_HEVCDEC_H */

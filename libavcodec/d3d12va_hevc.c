@@ -24,8 +24,8 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/hwcontext_d3d12va_internal.h"
-#include "hevc_data.h"
-#include "hevcdec.h"
+#include "hevc/data.h"
+#include "hevc/hevcdec.h"
 #include "dxva2_internal.h"
 #include "d3d12va_decode.h"
 #include <dxva.h>

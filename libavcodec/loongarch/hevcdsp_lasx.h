@@ -22,7 +22,7 @@
 #ifndef AVCODEC_LOONGARCH_HEVCDSP_LASX_H
 #define AVCODEC_LOONGARCH_HEVCDSP_LASX_H
 
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc/dsp.h"
 
 #define PEL_UNI_W(PEL, DIR, WIDTH)                                       \
 void ff_hevc_put_hevc_##PEL##_uni_w_##DIR##WIDTH##_8_lasx(uint8_t *dst,  \

@@ -25,7 +25,7 @@
 #include "libavutil/common.h"
 
 #include "cabac_functions.h"
-#include "hevc_data.h"
+#include "data.h"
 #include "hevc.h"
 #include "hevcdec.h"
 

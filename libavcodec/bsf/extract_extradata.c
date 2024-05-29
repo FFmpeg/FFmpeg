@@ -29,10 +29,11 @@
 #include "bytestream.h"
 #include "h2645_parse.h"
 #include "h264.h"
-#include "hevc.h"
 #include "startcode.h"
 #include "vc1_common.h"
 #include "vvc.h"
+
+#include "hevc/hevc.h"
 
 typedef struct ExtractExtradataContext {
     const AVClass *class;

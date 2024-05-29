@@ -28,8 +28,8 @@
 #include "nvdec.h"
 #include "decode.h"
 #include "internal.h"
-#include "hevcdec.h"
-#include "hevc_data.h"
+#include "hevc/hevcdec.h"
+#include "hevc/data.h"
 #include "hwaccel_internal.h"
 
 static void dpb_add(CUVIDHEVCPICPARAMS *pp, int idx, const HEVCFrame *src)

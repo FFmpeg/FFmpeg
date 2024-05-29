@@ -22,7 +22,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/arm/cpu.h"
 
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc/dsp.h"
 #include "hevcdsp_arm.h"
 
 av_cold void ff_hevc_dsp_init_arm(HEVCDSPContext *c, const int bit_depth)

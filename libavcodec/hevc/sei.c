@@ -24,8 +24,8 @@
 
 #include "bytestream.h"
 #include "golomb.h"
-#include "hevc_ps.h"
-#include "hevc_sei.h"
+#include "ps.h"
+#include "sei.h"
 
 static int decode_nal_sei_decoded_picture_hash(HEVCSEIPictureHash *s,
                                                GetByteContext *gb)

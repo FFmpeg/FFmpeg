@@ -25,9 +25,9 @@
 
 #include "golomb.h"
 #include "hevc.h"
-#include "hevc_parse.h"
-#include "hevc_ps.h"
-#include "hevc_sei.h"
+#include "parse.h"
+#include "ps.h"
+#include "sei.h"
 #include "h2645_parse.h"
 #include "parser.h"
 

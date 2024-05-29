@@ -52,7 +52,7 @@
 #include "libavutil/uuid.h"
 #include "libavcodec/ac3tab.h"
 #include "libavcodec/flac.h"
-#include "libavcodec/hevc.h"
+#include "libavcodec/hevc/hevc.h"
 #include "libavcodec/mpegaudiodecheader.h"
 #include "libavcodec/mlp_parse.h"
 #include "avformat.h"

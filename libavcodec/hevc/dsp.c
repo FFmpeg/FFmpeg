@@ -22,7 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "hevcdsp.h"
+#include "dsp.h"
 
 static const int8_t transform[32][32] = {
     { 64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,  64,
@@ -110,19 +110,19 @@ DECLARE_ALIGNED(16, const int8_t, ff_hevc_qpel_filters)[4][16] = {
 };
 
 #define BIT_DEPTH 8
-#include "hevcdsp_template.c"
+#include "dsp_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 9
-#include "hevcdsp_template.c"
+#include "dsp_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 10
-#include "hevcdsp_template.c"
+#include "dsp_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 12
-#include "hevcdsp_template.c"
+#include "dsp_template.c"
 #undef BIT_DEPTH
 
 void ff_hevc_dsp_init(HEVCDSPContext *hevcdsp, int bit_depth)

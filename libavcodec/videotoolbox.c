@@ -33,7 +33,7 @@
 #include "decode.h"
 #include "internal.h"
 #include "h264dec.h"
-#include "hevcdec.h"
+#include "hevc/hevcdec.h"
 #include "hwaccel_internal.h"
 #include "mpegvideo.h"
 #include "proresdec.h"

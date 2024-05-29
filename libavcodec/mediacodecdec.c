@@ -38,7 +38,7 @@
 #include "decode.h"
 #include "h264_parse.h"
 #include "h264_ps.h"
-#include "hevc_parse.h"
+#include "hevc/parse.h"
 #include "hwconfig.h"
 #include "internal.h"
 #include "jni.h"

@@ -23,8 +23,8 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
-#include "hevc_data.h"
-#include "hevcdec.h"
+#include "hevc/data.h"
+#include "hevc/hevcdec.h"
 #include "hwaccel_internal.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"

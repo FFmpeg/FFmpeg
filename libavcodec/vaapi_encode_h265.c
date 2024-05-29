@@ -35,8 +35,9 @@
 #include "codec_internal.h"
 #include "h2645data.h"
 #include "h265_profile_level.h"
-#include "hevc.h"
 #include "vaapi_encode.h"
+
+#include "hevc/hevc.h"
 
 enum {
     SEI_MASTERING_DISPLAY       = 0x08,

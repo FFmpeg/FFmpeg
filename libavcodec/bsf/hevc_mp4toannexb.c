@@ -28,7 +28,8 @@
 #include "bsf_internal.h"
 #include "bytestream.h"
 #include "defs.h"
-#include "hevc.h"
+
+#include "hevc/hevc.h"
 
 #define MIN_HEVCC_LENGTH 23
 

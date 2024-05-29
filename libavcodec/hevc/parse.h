@@ -26,8 +26,8 @@
 
 #include <stdint.h>
 
-#include "hevc_ps.h"
-#include "hevc_sei.h"
+#include "ps.h"
+#include "sei.h"
 
 int ff_hevc_decode_extradata(const uint8_t *data, int size, HEVCParamSets *ps,
                              HEVCSEI *sei, int *is_nalff, int *nal_length_size,

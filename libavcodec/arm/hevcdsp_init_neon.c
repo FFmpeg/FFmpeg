@@ -20,7 +20,7 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/arm/cpu.h"
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc/dsp.h"
 #include "libavcodec/avcodec.h"
 #include "hevcdsp_arm.h"
 

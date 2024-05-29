@@ -22,12 +22,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_HEVCDSP_H
-#define AVCODEC_HEVCDSP_H
+#ifndef AVCODEC_HEVC_DSP_H
+#define AVCODEC_HEVC_DSP_H
 
 #include "libavutil/mem_internal.h"
 
-#include "get_bits.h"
+#include "libavcodec/get_bits.h"
 
 #define MAX_PB_SIZE 64
 
@@ -137,4 +137,4 @@ void ff_hevc_dsp_init_x86(HEVCDSPContext *c, const int bit_depth);
 void ff_hevc_dsp_init_mips(HEVCDSPContext *c, const int bit_depth);
 void ff_hevc_dsp_init_loongarch(HEVCDSPContext *c, const int bit_depth);
 
-#endif /* AVCODEC_HEVCDSP_H */
+#endif /* AVCODEC_HEVC_DSP_H */

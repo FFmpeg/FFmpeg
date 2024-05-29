@@ -17,9 +17,9 @@
  */
 
 #include "libavutil/mem.h"
-#include "hevcdec.h"
-#include "hevc_data.h"
-#include "hevc_ps.h"
+#include "hevc/hevcdec.h"
+#include "hevc/data.h"
+#include "hevc/ps.h"
 
 #include "vulkan_decode.h"
 

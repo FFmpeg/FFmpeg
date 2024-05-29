@@ -25,8 +25,8 @@
 #include "libavutil/avassert.h"
 
 #include "dxva2_internal.h"
-#include "hevc_data.h"
-#include "hevcdec.h"
+#include "hevc/data.h"
+#include "hevc/hevcdec.h"
 #include "hwaccel_internal.h"
 
 #define MAX_SLICES 256

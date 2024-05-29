@@ -24,7 +24,7 @@
 #include "hevcdec.h"
 
 #include "bit_depth_template.c"
-#include "hevcdsp.h"
+#include "dsp.h"
 #include "h26x/h2656_sao_template.c"
 #include "h26x/h2656_inter_template.c"
 

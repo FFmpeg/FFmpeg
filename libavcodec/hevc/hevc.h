@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_HEVC_H
-#define AVCODEC_HEVC_H
+#ifndef AVCODEC_HEVC_HEVC_H
+#define AVCODEC_HEVC_HEVC_H
 
 /**
  * Table 7-1 – NAL unit type codes and NAL unit type classes in
@@ -160,4 +160,4 @@ enum {
 };
 
 
-#endif /* AVCODEC_HEVC_H */
+#endif /* AVCODEC_HEVC_HEVC_H */

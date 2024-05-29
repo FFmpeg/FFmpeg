@@ -24,7 +24,8 @@
 
 #include "cbs_h2645.h"
 #include "cbs_sei.h"
-#include "hevc.h"
+
+#include "hevc/hevc.h"
 
 typedef struct H265RawNALUnitHeader {
     uint8_t nal_unit_type;

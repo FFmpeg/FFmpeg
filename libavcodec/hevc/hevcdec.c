@@ -43,7 +43,7 @@
 #include "decode.h"
 #include "golomb.h"
 #include "hevc.h"
-#include "hevc_parse.h"
+#include "parse.h"
 #include "hevcdec.h"
 #include "hwaccel_internal.h"
 #include "hwconfig.h"

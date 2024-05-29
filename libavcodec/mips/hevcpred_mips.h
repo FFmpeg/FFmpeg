@@ -21,7 +21,7 @@
 #ifndef AVCODEC_MIPS_HEVCPRED_MIPS_H
 #define AVCODEC_MIPS_HEVCPRED_MIPS_H
 
-#include "libavcodec/hevcpred.h"
+#include "libavcodec/hevc/pred.h"
 
 void ff_hevc_intra_pred_planar_0_msa(uint8_t *dst,
                                      const uint8_t *src_top,

@@ -21,7 +21,7 @@
 
 #include <string.h>
 #include "checkasm.h"
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc/dsp.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"

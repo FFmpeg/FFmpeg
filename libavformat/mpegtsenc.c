@@ -32,7 +32,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/defs.h"
 #include "libavcodec/h264.h"
-#include "libavcodec/hevc.h"
+#include "libavcodec/hevc/hevc.h"
 #include "libavcodec/vvc.h"
 #include "libavcodec/startcode.h"
 

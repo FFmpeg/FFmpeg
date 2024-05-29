@@ -27,8 +27,8 @@
 #include "libavutil/mem.h"
 #include "golomb.h"
 #include "h2645_vui.h"
-#include "hevc_data.h"
-#include "hevc_ps.h"
+#include "data.h"
+#include "ps.h"
 #include "refstruct.h"
 
 static const uint8_t default_scaling_list_intra[] = {

@@ -25,10 +25,11 @@
 
 #include "libavutil/buffer.h"
 
-#include "get_bits.h"
+#include "libavcodec/get_bits.h"
+#include "libavcodec/h2645_sei.h"
+#include "libavcodec/sei.h"
+
 #include "hevc.h"
-#include "h2645_sei.h"
-#include "sei.h"
 
 
 typedef enum {

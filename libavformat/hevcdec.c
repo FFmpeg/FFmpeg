@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/hevc.h"
+#include "libavcodec/hevc/hevc.h"
 
 #include "avformat.h"
 #include "rawdec.h"

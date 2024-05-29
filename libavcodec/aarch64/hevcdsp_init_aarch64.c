@@ -24,7 +24,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/aarch64/cpu.h"
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc/dsp.h"
 
 void ff_hevc_v_loop_filter_chroma_8_neon(uint8_t *_pix, ptrdiff_t _stride,
                                          const int *_tc, const uint8_t *_no_p, const uint8_t *_no_q);

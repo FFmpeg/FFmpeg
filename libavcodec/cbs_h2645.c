@@ -28,10 +28,10 @@
 #include "cbs_h266.h"
 #include "h264.h"
 #include "h2645_parse.h"
-#include "hevc.h"
 #include "refstruct.h"
 #include "vvc.h"
 
+#include "hevc/hevc.h"
 
 static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
                               const char *name, const int *subscripts,

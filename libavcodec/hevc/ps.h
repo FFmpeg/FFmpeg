@@ -26,9 +26,10 @@
 #include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
 
-#include "avcodec.h"
-#include "get_bits.h"
-#include "h2645_vui.h"
+#include "libavcodec/avcodec.h"
+#include "libavcodec/get_bits.h"
+#include "libavcodec/h2645_vui.h"
+
 #include "hevc.h"
 
 typedef struct HEVCSublayerHdrParams {

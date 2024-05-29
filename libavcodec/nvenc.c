@@ -23,7 +23,7 @@
 #include "config_components.h"
 
 #include "nvenc.h"
-#include "hevc_sei.h"
+#include "hevc/sei.h"
 #if CONFIG_AV1_NVENC_ENCODER
 #include "av1.h"
 #endif

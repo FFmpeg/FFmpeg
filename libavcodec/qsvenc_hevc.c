@@ -33,11 +33,12 @@
 #include "bytestream.h"
 #include "codec_internal.h"
 #include "get_bits.h"
-#include "hevc.h"
-#include "hevcdec.h"
 #include "h2645_parse.h"
 #include "qsv.h"
 #include "qsvenc.h"
+
+#include "hevc/hevc.h"
+#include "hevc/ps.h"
 
 enum LoadPlugin {
     LOAD_PLUGIN_NONE,

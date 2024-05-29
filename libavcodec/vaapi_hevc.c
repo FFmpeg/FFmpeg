@@ -24,11 +24,12 @@
 #include <va/va_dec_hevc.h>
 
 #include "avcodec.h"
-#include "hevcdec.h"
 #include "hwaccel_internal.h"
 #include "vaapi_decode.h"
 #include "vaapi_hevc.h"
 #include "h265_profile_level.h"
+
+#include "hevc/hevcdec.h"
 
 typedef struct VAAPIDecodePictureHEVC {
 #if VA_CHECK_VERSION(1, 2, 0)

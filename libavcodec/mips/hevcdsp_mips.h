@@ -21,7 +21,7 @@
 #ifndef AVCODEC_MIPS_HEVCDSP_MIPS_H
 #define AVCODEC_MIPS_HEVCDSP_MIPS_H
 
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc/dsp.h"
 
 #define MC(PEL, DIR, WIDTH)                                                 \
 void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_msa(int16_t *dst,            \

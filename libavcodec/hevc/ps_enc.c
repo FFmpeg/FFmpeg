@@ -19,7 +19,7 @@
  */
 
 #include "put_golomb.h"
-#include "hevc_ps.h"
+#include "ps.h"
 #include "put_bits.h"
 
 static void write_ptl_layer(PutBitContext *pb, PTLCommon *ptl)

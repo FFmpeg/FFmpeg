@@ -25,8 +25,9 @@
 #include "cbs_bsf.h"
 #include "cbs_h265.h"
 #include "h2645data.h"
-#include "hevc.h"
 #include "h265_profile_level.h"
+
+#include "hevc/hevc.h"
 
 enum {
     LEVEL_UNSET = -2,

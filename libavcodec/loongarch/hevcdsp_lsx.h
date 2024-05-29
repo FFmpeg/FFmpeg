@@ -23,7 +23,7 @@
 #ifndef AVCODEC_LOONGARCH_HEVCDSP_LSX_H
 #define AVCODEC_LOONGARCH_HEVCDSP_LSX_H
 
-#include "libavcodec/hevcdsp.h"
+#include "libavcodec/hevc/dsp.h"
 
 #define MC(PEL, DIR, WIDTH)                                               \
 void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_lsx(int16_t *dst,          \

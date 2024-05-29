@@ -27,10 +27,11 @@
 #include "libavutil/mem.h"
 
 #include "bytestream.h"
-#include "hevc.h"
 #include "h264.h"
 #include "h2645_parse.h"
 #include "vvc.h"
+
+#include "hevc/hevc.h"
 
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,
                           H2645RBSP *rbsp, H2645NAL *nal, int small_padding)

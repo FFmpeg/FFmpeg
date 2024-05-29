@@ -18,7 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/hevcdec.h"
+#include "libavcodec/hevc/dec.h"
 #include "libavutil/mips/generic_macros_msa.h"
 #include "hevcpred_mips.h"
 
