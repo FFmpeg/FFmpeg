@@ -132,6 +132,17 @@ float avpriv_scalarproduct_float_c(const float *v1, const float *v2, int len)
     return p;
 }
 
+double ff_scalarproduct_double_c(const double *v1, const double *v2,
+                                 size_t len)
+{
+    double p = 0.0;
+
+    for (size_t i = 0; i < len; i++)
+        p += v1[i] * v2[i];
+
+    return p;
+}
+
 av_cold AVFloatDSPContext *avpriv_float_dsp_alloc(int bit_exact)
 {
     AVFloatDSPContext *fdsp = av_mallocz(sizeof(AVFloatDSPContext));
@@ -149,6 +160,7 @@ av_cold AVFloatDSPContext *avpriv_float_dsp_alloc(int bit_exact)
     fdsp->vector_fmul_reverse = vector_fmul_reverse_c;
     fdsp->butterflies_float = butterflies_float_c;
     fdsp->scalarproduct_float = avpriv_scalarproduct_float_c;
+    fdsp->scalarproduct_double = ff_scalarproduct_double_c;
 
 #if ARCH_AARCH64
     ff_float_dsp_init_aarch64(fdsp);
