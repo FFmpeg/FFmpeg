@@ -278,6 +278,22 @@ static void test_scalarproduct_float(const float *src0, const float *src1)
     bench_new(src0, src1, LEN);
 }
 
+static void test_scalarproduct_double(const double *src0, const double *src1)
+{
+    double cprod, oprod;
+
+    declare_func_float(double, const double *, const double *, size_t);
+
+    cprod = call_ref(src0, src1, LEN);
+    oprod = call_new(src0, src1, LEN);
+    if (!double_near_abs_eps(cprod, oprod, ARBITRARY_SCALARPRODUCT_CONST)) {
+        fprintf(stderr, "%- .12f - %- .12f = % .12g\n",
+                cprod, oprod, cprod - oprod);
+        fail();
+    }
+    bench_new(src0, src1, LEN);
+}
+
 void checkasm_check_float_dsp(void)
 {
     LOCAL_ALIGNED_32(float,  src0,     [LEN]);
@@ -334,6 +350,9 @@ void checkasm_check_float_dsp(void)
     if (check_func(fdsp->scalarproduct_float, "scalarproduct_float"))
         test_scalarproduct_float(src3, src4);
     report("scalarproduct_float");
+    if (check_func(fdsp->scalarproduct_double, "scalarproduct_double"))
+        test_scalarproduct_double(dbl_src0, dbl_src1);
+    report("scalarproduct_double");
 
     av_freep(&fdsp);
 }
