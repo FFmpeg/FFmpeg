@@ -461,7 +461,6 @@ typedef struct HEVCContext {
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
 
-    AVFrame *frame;
     AVFrame *output_frame;
     uint8_t *sao_pixel_buffer_h[3];
     uint8_t *sao_pixel_buffer_v[3];
@@ -618,7 +617,7 @@ int ff_hevc_res_scale_sign_flag(HEVCLocalContext *lc, int idx);
  */
 int ff_hevc_frame_nb_refs(const HEVCContext *s);
 
-int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
+int ff_hevc_set_new_ref(HEVCContext *s, int poc);
 
 static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
 {

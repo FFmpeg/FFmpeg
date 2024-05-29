@@ -315,13 +315,13 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCContext *s, int x, in
     for (c_idx = 0; c_idx < (s->ps.sps->chroma_format_idc ? 3 : 1); c_idx++) {
         int x0       = x >> s->ps.sps->hshift[c_idx];
         int y0       = y >> s->ps.sps->vshift[c_idx];
-        ptrdiff_t stride_src = s->frame->linesize[c_idx];
+        ptrdiff_t stride_src = s->cur_frame->f->linesize[c_idx];
         int ctb_size_h = (1 << (s->ps.sps->log2_ctb_size)) >> s->ps.sps->hshift[c_idx];
         int ctb_size_v = (1 << (s->ps.sps->log2_ctb_size)) >> s->ps.sps->vshift[c_idx];
         int width    = FFMIN(ctb_size_h, (s->ps.sps->width  >> s->ps.sps->hshift[c_idx]) - x0);
         int height   = FFMIN(ctb_size_v, (s->ps.sps->height >> s->ps.sps->vshift[c_idx]) - y0);
         int tab      = sao_tab[(FFALIGN(width, 8) >> 3) - 1];
-        uint8_t *src = &s->frame->data[c_idx][y0 * stride_src + (x0 << s->ps.sps->pixel_shift)];
+        uint8_t *src = &s->cur_frame->f->data[c_idx][y0 * stride_src + (x0 << s->ps.sps->pixel_shift)];
         ptrdiff_t stride_dst;
         uint8_t *dst;
 
@@ -484,6 +484,9 @@ static int get_pcm(const HEVCContext *s, int x, int y)
 
 static void deblocking_filter_CTB(const HEVCContext *s, int x0, int y0)
 {
+    uint8_t **data     = s->cur_frame->f->data;
+    int      *linesize = s->cur_frame->f->linesize;
+
     uint8_t *src;
     int x, y;
     int chroma, beta;
@@ -537,18 +540,16 @@ static void deblocking_filter_CTB(const HEVCContext *s, int x0, int y0)
 
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
-                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->ps.sps->pixel_shift)];
+                src     = &data[LUMA][y * linesize[LUMA] + (x << s->ps.sps->pixel_shift)];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x - 1, y);
                     no_p[1] = get_pcm(s, x - 1, y + 4);
                     no_q[0] = get_pcm(s, x, y);
                     no_q[1] = get_pcm(s, x, y + 4);
-                    s->hevcdsp.hevc_v_loop_filter_luma_c(src,
-                                                         s->frame->linesize[LUMA],
+                    s->hevcdsp.hevc_v_loop_filter_luma_c(src, linesize[LUMA],
                                                          beta, tc, no_p, no_q);
                 } else
-                    s->hevcdsp.hevc_v_loop_filter_luma(src,
-                                                       s->frame->linesize[LUMA],
+                    s->hevcdsp.hevc_v_loop_filter_luma(src, linesize[LUMA],
                                                        beta, tc, no_p, no_q);
             }
         }
@@ -569,18 +570,16 @@ static void deblocking_filter_CTB(const HEVCContext *s, int x0, int y0)
                 beta = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
                 tc[0]   = bs0 ? TC_CALC(qp, bs0) : 0;
                 tc[1]   = bs1 ? TC_CALC(qp, bs1) : 0;
-                src     = &s->frame->data[LUMA][y * s->frame->linesize[LUMA] + (x << s->ps.sps->pixel_shift)];
+                src     = &data[LUMA][y * linesize[LUMA] + (x << s->ps.sps->pixel_shift)];
                 if (pcmf) {
                     no_p[0] = get_pcm(s, x, y - 1);
                     no_p[1] = get_pcm(s, x + 4, y - 1);
                     no_q[0] = get_pcm(s, x, y);
                     no_q[1] = get_pcm(s, x + 4, y);
-                    s->hevcdsp.hevc_h_loop_filter_luma_c(src,
-                                                         s->frame->linesize[LUMA],
+                    s->hevcdsp.hevc_h_loop_filter_luma_c(src, linesize[LUMA],
                                                          beta, tc, no_p, no_q);
                 } else
-                    s->hevcdsp.hevc_h_loop_filter_luma(src,
-                                                       s->frame->linesize[LUMA],
+                    s->hevcdsp.hevc_h_loop_filter_luma(src, linesize[LUMA],
                                                        beta, tc, no_p, no_q);
             }
         }
@@ -603,18 +602,16 @@ static void deblocking_filter_CTB(const HEVCContext *s, int x0, int y0)
 
                         c_tc[0] = (bs0 == 2) ? chroma_tc(s, qp0, chroma, tc_offset) : 0;
                         c_tc[1] = (bs1 == 2) ? chroma_tc(s, qp1, chroma, tc_offset) : 0;
-                        src       = &s->frame->data[chroma][(y >> s->ps.sps->vshift[chroma]) * s->frame->linesize[chroma] + ((x >> s->ps.sps->hshift[chroma]) << s->ps.sps->pixel_shift)];
+                        src       = &data[chroma][(y >> s->ps.sps->vshift[chroma]) * linesize[chroma] + ((x >> s->ps.sps->hshift[chroma]) << s->ps.sps->pixel_shift)];
                         if (pcmf) {
                             no_p[0] = get_pcm(s, x - 1, y);
                             no_p[1] = get_pcm(s, x - 1, y + (4 * v));
                             no_q[0] = get_pcm(s, x, y);
                             no_q[1] = get_pcm(s, x, y + (4 * v));
-                            s->hevcdsp.hevc_v_loop_filter_chroma_c(src,
-                                                                   s->frame->linesize[chroma],
+                            s->hevcdsp.hevc_v_loop_filter_chroma_c(src, linesize[chroma],
                                                                    c_tc, no_p, no_q);
                         } else
-                            s->hevcdsp.hevc_v_loop_filter_chroma(src,
-                                                                 s->frame->linesize[chroma],
+                            s->hevcdsp.hevc_v_loop_filter_chroma(src, linesize[chroma],
                                                                  c_tc, no_p, no_q);
                     }
                 }
@@ -636,18 +633,16 @@ static void deblocking_filter_CTB(const HEVCContext *s, int x0, int y0)
 
                         c_tc[0]   = bs0 == 2 ? chroma_tc(s, qp0, chroma, tc_offset)     : 0;
                         c_tc[1]   = bs1 == 2 ? chroma_tc(s, qp1, chroma, cur_tc_offset) : 0;
-                        src       = &s->frame->data[chroma][(y >> s->ps.sps->vshift[1]) * s->frame->linesize[chroma] + ((x >> s->ps.sps->hshift[1]) << s->ps.sps->pixel_shift)];
+                        src       = &data[chroma][(y >> s->ps.sps->vshift[1]) * linesize[chroma] + ((x >> s->ps.sps->hshift[1]) << s->ps.sps->pixel_shift)];
                         if (pcmf) {
                             no_p[0] = get_pcm(s, x,           y - 1);
                             no_p[1] = get_pcm(s, x + (4 * h), y - 1);
                             no_q[0] = get_pcm(s, x,           y);
                             no_q[1] = get_pcm(s, x + (4 * h), y);
-                            s->hevcdsp.hevc_h_loop_filter_chroma_c(src,
-                                                                   s->frame->linesize[chroma],
+                            s->hevcdsp.hevc_h_loop_filter_chroma_c(src, linesize[chroma],
                                                                    c_tc, no_p, no_q);
                         } else
-                            s->hevcdsp.hevc_h_loop_filter_chroma(src,
-                                                                 s->frame->linesize[chroma],
+                            s->hevcdsp.hevc_h_loop_filter_chroma(src, linesize[chroma],
                                                                  c_tc, no_p, no_q);
                     }
                 }

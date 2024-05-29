@@ -1002,10 +1002,10 @@ void ff_hevc_hls_residual_coding(HEVCLocalContext *lc, int x0, int y0,
 
     const uint8_t *scan_x_cg, *scan_y_cg, *scan_x_off, *scan_y_off;
 
-    ptrdiff_t stride = s->frame->linesize[c_idx];
+    ptrdiff_t stride = s->cur_frame->f->linesize[c_idx];
     int hshift = s->ps.sps->hshift[c_idx];
     int vshift = s->ps.sps->vshift[c_idx];
-    uint8_t *dst = &s->frame->data[c_idx][(y0 >> vshift) * stride +
+    uint8_t *dst = &s->cur_frame->f->data[c_idx][(y0 >> vshift) * stride +
                                           ((x0 >> hshift) << s->ps.sps->pixel_shift)];
     int16_t *coeffs = (int16_t*)(c_idx ? lc->edge_emu_buffer2 : lc->edge_emu_buffer);
     uint8_t significant_coeff_group_flag[8][8] = {{0}};

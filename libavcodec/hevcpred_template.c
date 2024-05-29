@@ -87,8 +87,8 @@ do {                                  \
 
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
 
-    ptrdiff_t stride = s->frame->linesize[c_idx] / sizeof(pixel);
-    pixel *src = (pixel*)s->frame->data[c_idx] + x + y * stride;
+    ptrdiff_t stride = s->cur_frame->f->linesize[c_idx] / sizeof(pixel);
+    pixel *src = (pixel*)s->cur_frame->f->data[c_idx] + x + y * stride;
 
     int min_pu_width = s->ps.sps->min_pu_width;
 

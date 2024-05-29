@@ -122,7 +122,7 @@ fail:
     return NULL;
 }
 
-int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
+int ff_hevc_set_new_ref(HEVCContext *s, int poc)
 {
     HEVCFrame *ref;
     int i;
@@ -143,7 +143,6 @@ int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc)
     if (!ref)
         return AVERROR(ENOMEM);
 
-    *frame = ref->f;
     s->cur_frame = ref;
     s->collocated_ref = NULL;
 
