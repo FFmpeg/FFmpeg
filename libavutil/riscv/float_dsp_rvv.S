@@ -249,3 +249,24 @@ NOHWD   mv       a2, a3
 
         ret
 endfunc
+
+func ff_scalarproduct_double_rvv, zve64f
+        vsetvli      t0, zero, e64, m8, ta, ma
+        vmv.v.x      v8, zero
+        vmv.s.x      v0, zero
+1:
+        vsetvli      t0, a2, e64, m8, tu, ma
+        vle64.v      v16, (a0)
+        sub          a2, a2, t0
+        vle64.v      v24, (a1)
+        sh3add       a0, t0, a0
+        vfmacc.vv    v8, v16, v24
+        sh3add       a1, t0, a1
+        bnez         a2, 1b
+
+        vsetvli      t0, zero, e64, m8, ta, ma
+        vfredusum.vs v0, v8, v0
+        vfmv.f.s     fa0, v0
+NOHWD   fmv.x.w      a0, fa0
+        ret
+endfunc

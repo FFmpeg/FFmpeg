@@ -46,6 +46,8 @@ void ff_vector_dmac_scalar_rvv(double *dst, const double *src, double mul,
                                 int len);
 void ff_vector_dmul_scalar_rvv(double *dst, const double *src, double mul,
                                 int len);
+double ff_scalarproduct_double_rvv(const double *v1, const double *v2,
+                                   size_t len);
 
 av_cold void ff_float_dsp_init_riscv(AVFloatDSPContext *fdsp)
 {
@@ -68,6 +70,7 @@ av_cold void ff_float_dsp_init_riscv(AVFloatDSPContext *fdsp)
             fdsp->vector_dmul = ff_vector_dmul_rvv;
             fdsp->vector_dmac_scalar = ff_vector_dmac_scalar_rvv;
             fdsp->vector_dmul_scalar = ff_vector_dmul_scalar_rvv;
+            fdsp->scalarproduct_double = ff_scalarproduct_double_rvv;
         }
     }
 #endif
