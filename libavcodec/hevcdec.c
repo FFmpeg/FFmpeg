@@ -1036,14 +1036,14 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
         return AVERROR_INVALIDDATA;
     }
 
-    s->HEVClc->first_qp_group = !s->sh.dependent_slice_segment_flag;
+    s->local_ctx[0].first_qp_group = !s->sh.dependent_slice_segment_flag;
 
     if (!s->ps.pps->cu_qp_delta_enabled_flag)
-        s->HEVClc->qp_y = s->sh.slice_qp;
+        s->local_ctx[0].qp_y = s->sh.slice_qp;
 
     s->slice_initialized = 1;
-    s->HEVClc->tu.cu_qp_offset_cb = 0;
-    s->HEVClc->tu.cu_qp_offset_cr = 0;
+    s->local_ctx[0].tu.cu_qp_offset_cb = 0;
+    s->local_ctx[0].tu.cu_qp_offset_cr = 0;
 
     return 0;
 }
@@ -2534,7 +2534,7 @@ static void hls_decode_neighbour(HEVCLocalContext *lc, int x_ctb, int y_ctb,
 
 static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 {
-    HEVCLocalContext *const lc = s->HEVClc;
+    HEVCLocalContext *const lc = &s->local_ctx[0];
     const uint8_t *slice_data = gb->buffer + s->sh.data_offset;
     const size_t   slice_size = gb->buffer_end - gb->buffer - s->sh.data_offset;
     int ctb_size    = 1 << s->ps.sps->log2_ctb_size;
@@ -2704,7 +2704,6 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         memcpy(tmp, s->local_ctx, sizeof(*s->local_ctx) * s->nb_local_ctx);
         av_free(s->local_ctx);
         s->local_ctx = tmp;
-        s->HEVClc    = &s->local_ctx[0];
 
         for (unsigned i = s->nb_local_ctx; i < s->threads_number; i++) {
             tmp = &s->local_ctx[i];
@@ -2757,7 +2756,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 
     for (i = 1; i < s->threads_number; i++) {
         s->local_ctx[i].first_qp_group = 1;
-        s->local_ctx[i].qp_y = s->HEVClc->qp_y;
+        s->local_ctx[i].qp_y = s->local_ctx[0].qp_y;
     }
 
     atomic_store(&s->wpp_err, 0);
@@ -2868,7 +2867,6 @@ static int set_side_data(HEVCContext *s)
 
 static int hevc_frame_start(HEVCContext *s)
 {
-    HEVCLocalContext *lc = s->HEVClc;
     int pic_size_in_ctb  = ((s->ps.sps->width  >> s->ps.sps->log2_min_cb_size) + 1) *
                            ((s->ps.sps->height >> s->ps.sps->log2_min_cb_size) + 1);
     int ret;
@@ -2885,7 +2883,7 @@ static int hevc_frame_start(HEVCContext *s)
     s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) || (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos);
 
     if (s->ps.pps->tiles_enabled_flag)
-        lc->end_of_tiles_x = s->ps.pps->column_width[0] << s->ps.sps->log2_ctb_size;
+        s->local_ctx[0].end_of_tiles_x = s->ps.pps->column_width[0] << s->ps.sps->log2_ctb_size;
 
     ret = ff_hevc_set_new_ref(s, &s->frame, s->poc);
     if (ret < 0)
@@ -3505,11 +3503,9 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     s->nb_local_ctx = 1;
 
-    s->HEVClc = &s->local_ctx[0];
-
-    s->HEVClc->parent = s;
-    s->HEVClc->logctx = avctx;
-    s->HEVClc->common_cabac_state = &s->cabac;
+    s->local_ctx[0].parent = s;
+    s->local_ctx[0].logctx = avctx;
+    s->local_ctx[0].common_cabac_state = &s->cabac;
 
     s->output_frame = av_frame_alloc();
     if (!s->output_frame)

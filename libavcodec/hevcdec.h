@@ -452,8 +452,6 @@ typedef struct HEVCContext {
     HEVCLocalContext     *local_ctx;
     unsigned           nb_local_ctx;
 
-    HEVCLocalContext    *HEVClc;
-
     uint8_t             threads_type;
     uint8_t             threads_number;
 
