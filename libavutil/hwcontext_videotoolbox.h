@@ -90,8 +90,15 @@ CFStringRef av_map_videotoolbox_color_primaries_from_av(enum AVColorPrimaries pr
 CFStringRef av_map_videotoolbox_color_trc_from_av(enum AVColorTransferCharacteristic trc);
 
 /**
- * Update a CVPixelBufferRef's metadata to based on an AVFrame.
- * Returns 0 if no known equivalent was found.
+ * Set CVPixelBufferRef's metadata based on an AVFrame.
+ *
+ * Sets/unsets the CVPixelBuffer attachments to match as closely as possible the
+ * AVFrame metadata. To prevent inconsistent attachments, the attachments for properties
+ * that could not be matched or are unspecified in the given AVFrame are unset. So if
+ * any attachments already covered by AVFrame metadata need to be set to a specific
+ * value, this should happen after calling this function.
+ *
+ * Returns < 0 in case of an error.
  */
 int av_vt_pixbuf_set_attachments(void *log_ctx,
                                  CVPixelBufferRef pixbuf, const struct AVFrame *src);
