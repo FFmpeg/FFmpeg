@@ -356,7 +356,8 @@ SECTION .text
 
     FILTER_VB         xq
 
-    paddw             m0, m2
+    ; sum += curr
+    paddsw             m0, m2
 
     ; clip to pixel
     CLIPW             m0, m14, m15
