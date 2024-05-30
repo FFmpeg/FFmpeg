@@ -1,6 +1,0 @@
-BFIN optimizations have been removed in
-commit 880e2aa23645ed9871c66ee1cbd00f93c72d2d73
-The last revission with the optimizations is fa4e17c14035ebf43130fb369e1728cdd98d0b72
-
-If you want to maintain these (or other) BFIN optimizations in ffmpeg, then please
-contact ffmpeg-devel@ffmpeg.org
