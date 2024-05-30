@@ -409,7 +409,7 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x28, dst, dst_stride, src, src_s
 .loop:
     push            srcq
     push            dstq
-    xor               xd, xd
+    xor               xq, xq
 
     .loop_w:
         LOAD_PARAMS
@@ -417,8 +417,8 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x28, dst, dst_stride, src, src_s
 
         add         srcq, 16 * ps
         add         dstq, 16 * ps
-        add           xd, 16
-        cmp           xd, widthd
+        add           xq, 16
+        cmp           xq, widthq
         jl       .loop_w
 
     pop             dstq
@@ -427,7 +427,7 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x28, dst, dst_stride, src, src_s
     lea             dstq, [dstq + 4 * dst_strideq]
 
     lea          filterq, [filterq + 2 * strideq]
-    lea            clipq, [clipq + 2 * strideq]
+    lea            clipq, [clipq   + 2 * strideq]
 
     sub          vb_posq, 4
     sub          heightq, 4
