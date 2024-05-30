@@ -2544,6 +2544,14 @@ static void print_pkt_side_data(WriterContext *w,
             const AVStereo3D *stereo = (AVStereo3D *)sd->data;
             print_str("type", av_stereo3d_type_name(stereo->type));
             print_int("inverted", !!(stereo->flags & AV_STEREO3D_FLAG_INVERT));
+            print_str("view", av_stereo3d_view_name(stereo->view));
+            print_str("primary_eye", av_stereo3d_primary_eye_name(stereo->primary_eye));
+            if (stereo->baseline)
+                print_int("baseline", stereo->baseline);
+            if (stereo->horizontal_disparity_adjustment.num && stereo->horizontal_disparity_adjustment.den)
+                print_q("horizontal_disparity_adjustment", stereo->horizontal_disparity_adjustment, '/');
+            if (stereo->horizontal_field_of_view)
+                print_int("horizontal_field_of_view", stereo->horizontal_field_of_view);
         } else if (sd->type == AV_PKT_DATA_SPHERICAL) {
             const AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
             print_str("projection", av_spherical_projection_name(spherical->projection));

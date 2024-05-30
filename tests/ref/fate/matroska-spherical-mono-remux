@@ -27,6 +27,8 @@ DISPOSITION:forced=1
 side_data_type=Stereo 3D
 type=2D
 inverted=0
+view=packed
+primary_eye=none
 [/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=Spherical Mapping
@@ -51,6 +53,8 @@ DISPOSITION:forced=0
 side_data_type=Stereo 3D
 type=2D
 inverted=0
+view=packed
+primary_eye=none
 [/SIDE_DATA]
 [SIDE_DATA]
 side_data_type=Spherical Mapping

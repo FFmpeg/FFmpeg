@@ -132,6 +132,8 @@ TAG:DURATION=00:00:10.000000000
 side_data_type=Stereo 3D
 type=side by side
 inverted=0
+view=packed
+primary_eye=none
 [/SIDE_DATA]
 [/STREAM]
 [STREAM]
@@ -147,6 +149,8 @@ TAG:DURATION=00:00:10.000000000
 side_data_type=Stereo 3D
 type=top and bottom
 inverted=1
+view=packed
+primary_eye=none
 [/SIDE_DATA]
 [/STREAM]
 [STREAM]
@@ -160,6 +164,8 @@ TAG:DURATION=00:00:10.000000000
 side_data_type=Stereo 3D
 type=interleaved lines
 inverted=1
+view=packed
+primary_eye=none
 [/SIDE_DATA]
 [/STREAM]
 [STREAM]
@@ -174,6 +180,8 @@ TAG:DURATION=00:00:10.000000000
 side_data_type=Stereo 3D
 type=interleaved columns
 inverted=1
+view=packed
+primary_eye=none
 [/SIDE_DATA]
 [/STREAM]
 [STREAM]

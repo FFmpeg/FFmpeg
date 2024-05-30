@@ -35,5 +35,7 @@ DISPOSITION:still_image=0
 side_data_type=Stereo 3D
 type=2D
 inverted=0
+view=packed
+primary_eye=none
 [/SIDE_DATA]
 [/STREAM]
