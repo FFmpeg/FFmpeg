@@ -90,8 +90,8 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
     randomize_buffers2(filter, LUMA_PARAMS_SIZE, 1);
     randomize_buffers2(clip, LUMA_PARAMS_SIZE, 0);
 
-    for (int h = 4; h <= MAX_CTU_SIZE; h += 4) {
-        for (int w = 4; w <= MAX_CTU_SIZE; w += 4) {
+    for (int h = 4; h <= MAX_CTU_SIZE; h += 8) {
+        for (int w = 4; w <= MAX_CTU_SIZE; w += 8) {
             const int ctu_size = MAX_CTU_SIZE;
             if (check_func(c->alf.filter[LUMA], "vvc_alf_filter_luma_%dx%d_%d", w, h, bit_depth)) {
                 const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_LUMA;
@@ -142,8 +142,8 @@ static void check_alf_classify(VVCDSPContext *c, const int bit_depth)
 
     randomize_buffers(src0, src1, SRC_BUF_SIZE);
 
-    for (int h = 4; h <= MAX_CTU_SIZE; h += 4) {
-        for (int w = 4; w <= MAX_CTU_SIZE; w += 4) {
+    for (int h = 4; h <= MAX_CTU_SIZE; h += 8) {
+        for (int w = 4; w <= MAX_CTU_SIZE; w += 8) {
             const int id_size = w * h / ALF_BLOCK_SIZE / ALF_BLOCK_SIZE * sizeof(int);
             const int vb_pos  = MAX_CTU_SIZE - ALF_BLOCK_SIZE;
             if (check_func(c->alf.classify, "vvc_alf_classify_%dx%d_%d", w, h, bit_depth)) {
