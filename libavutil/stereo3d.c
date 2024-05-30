@@ -55,6 +55,18 @@ static const char * const stereo3d_type_names[] = {
     [AV_STEREO3D_COLUMNS]             = "interleaved columns",
 };
 
+static const char * const stereo3d_view_names[] = {
+    [AV_STEREO3D_VIEW_PACKED] = "packed",
+    [AV_STEREO3D_VIEW_LEFT]   = "left",
+    [AV_STEREO3D_VIEW_RIGHT]  = "right",
+};
+
+static const char * const stereo3d_primary_eye_names[] = {
+    [AV_PRIMARY_EYE_NONE]  = "none",
+    [AV_PRIMARY_EYE_LEFT]  = "left",
+    [AV_PRIMARY_EYE_RIGHT] = "right",
+};
+
 const char *av_stereo3d_type_name(unsigned int type)
 {
     if (type >= FF_ARRAY_ELEMS(stereo3d_type_names))
@@ -69,6 +81,46 @@ int av_stereo3d_from_name(const char *name)
 
     for (i = 0; i < FF_ARRAY_ELEMS(stereo3d_type_names); i++) {
         if (av_strstart(name, stereo3d_type_names[i], NULL))
+            return i;
+    }
+
+    return -1;
+}
+
+const char *av_stereo3d_view_name(unsigned int view)
+{
+    if (view >= FF_ARRAY_ELEMS(stereo3d_view_names))
+        return "unknown";
+
+    return stereo3d_view_names[view];
+}
+
+int av_stereo3d_view_from_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(stereo3d_view_names); i++) {
+        if (av_strstart(name, stereo3d_view_names[i], NULL))
+            return i;
+    }
+
+    return -1;
+}
+
+const char *av_stereo3d_primary_eye_name(unsigned int eye)
+{
+    if (eye >= FF_ARRAY_ELEMS(stereo3d_primary_eye_names))
+        return "unknown";
+
+    return stereo3d_primary_eye_names[eye];
+}
+
+int av_stereo3d_primary_eye_from_name(const char *name)
+{
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(stereo3d_primary_eye_names); i++) {
+        if (av_strstart(name, stereo3d_primary_eye_names[i], NULL))
             return i;
     }
 

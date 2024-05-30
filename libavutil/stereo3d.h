@@ -159,6 +159,26 @@ enum AVStereo3DView {
 };
 
 /**
+ * List of possible primary eyes.
+ */
+enum AVStereo3DPrimaryEye {
+    /**
+     * Neither eye.
+     */
+    AV_PRIMARY_EYE_NONE,
+
+    /**
+     * Left eye.
+     */
+    AV_PRIMARY_EYE_LEFT,
+
+    /**
+     * Right eye
+     */
+    AV_PRIMARY_EYE_RIGHT,
+};
+
+/**
  * Inverted views, Right/Bottom represents the left view.
  */
 #define AV_STEREO3D_FLAG_INVERT     (1 << 0)
@@ -185,6 +205,28 @@ typedef struct AVStereo3D {
      * Determines which views are packed.
      */
     enum AVStereo3DView view;
+
+    /**
+     * Which eye is the primary eye when rendering in 2D.
+     */
+    enum AVStereo3DPrimaryEye primary_eye;
+
+    /**
+     * The distance between the centres of the lenses of the camera system,
+     * in micrometers. Zero if unset.
+     */
+    uint32_t baseline;
+
+    /**
+     * Relative shift of the left and right images, which changes the zero parallax plane.
+     * Range is -1.0 to 1.0. Zero if unset.
+     */
+    AVRational horizontal_disparity_adjustment;
+
+    /**
+     * Horizontal field of view in thousanths of a degree. Zero if unset.
+     */
+    uint32_t horizontal_field_of_view;
 } AVStereo3D;
 
 /**
@@ -221,6 +263,42 @@ const char *av_stereo3d_type_name(unsigned int type);
  * @return The AVStereo3DType value, or -1 if not found.
  */
 int av_stereo3d_from_name(const char *name);
+
+/**
+ * Provide a human-readable name of a given stereo3d view.
+ *
+ * @param type The input stereo3d view value.
+ *
+ * @return The name of the stereo3d view value, or "unknown".
+ */
+const char *av_stereo3d_view_name(unsigned int view);
+
+/**
+ * Get the AVStereo3DView form a human-readable name.
+ *
+ * @param name The input string.
+ *
+ * @return The AVStereo3DView value, or -1 if not found.
+ */
+int av_stereo3d_view_from_name(const char *name);
+
+/**
+ * Provide a human-readable name of a given stereo3d primary eye.
+ *
+ * @param type The input stereo3d primary eye value.
+ *
+ * @return The name of the stereo3d primary eye value, or "unknown".
+ */
+const char *av_stereo3d_primary_eye_name(unsigned int eye);
+
+/**
+ * Get the AVStereo3DPrimaryEye form a human-readable name.
+ *
+ * @param name The input string.
+ *
+ * @return The AVStereo3DPrimaryEye value, or -1 if not found.
+ */
+int av_stereo3d_primary_eye_from_name(const char *name);
 
 /**
  * @}
