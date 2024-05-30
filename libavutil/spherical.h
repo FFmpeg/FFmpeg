@@ -66,6 +66,22 @@ enum AVSphericalProjection {
      * the position of the current video in a larger surface.
      */
     AV_SPHERICAL_EQUIRECTANGULAR_TILE,
+
+    /**
+     * Video frame displays as a 180 degree equirectangular projection.
+     */
+    AV_SPHERICAL_HALF_EQUIRECTANGULAR,
+
+    /**
+     * Video frame displays on a flat, rectangular 2D surface.
+     */
+    AV_SPHERICAL_RECTILINEAR,
+
+    /**
+     * Fisheye projection (Apple).
+     * See: https://developer.apple.com/documentation/coremedia/cmprojectiontype/fisheye
+     */
+    AV_SPHERICAL_FISHEYE,
 };
 
 /**
