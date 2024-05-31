@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023 Institue of Software Chinese Academy of Sciences (ISCAS).
+ * Copyright © 2024 Rémi Denis-Courmont.
  *
  * This file is part of FFmpeg.
  *
@@ -35,4 +36,34 @@ func ff_abs_pow34_rvv, zve32f
         bnez         a2, 1b
 
         ret
+endfunc
+
+func ff_aac_quant_bands_rvv, zve32f
+NOHWF   fmv.w.x     fa0, a6
+NOHWF   fmv.w.x     fa1, a7
+        fcvt.s.w    ft0, a5
+        bnez        a4, .L1 # signed?
+        .irp signed, 0, 1
+.L\signed:
+        vsetvli     t0, a3, e32, m8, ta, ma
+        vle32.v     v16, (a2)
+        sub         a3, a3, t0
+        .if \signed
+        vle32.v     v8, (a1)
+        sh2add      a1, t0, a1
+        .endif
+        vfmul.vf    v16, v16, fa0
+        sh2add      a2, t0, a2
+        vfadd.vf    v16, v16, fa1
+        vfmin.vf    v16, v16, ft0
+        .if \signed
+        vfsgnjx.vv  v16, v16, v8
+        .endif
+        vfcvt.x.f.v v16, v16
+        vse32.v     v16, (a0)
+        sh2add      a0, t0, a0
+        bnez        a3, .L\signed
+
+        ret
+        .endr
 endfunc
