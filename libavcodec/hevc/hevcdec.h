@@ -655,12 +655,14 @@ void ff_hevc_luma_mv_mvp_mode(HEVCLocalContext *lc, const HEVCPPS *pps,
                               int nPbW, int nPbH, int log2_cb_size,
                               int part_idx, int merge_idx,
                               MvField *mv, int mvp_lx_flag, int LX);
-void ff_hevc_hls_filter(HEVCLocalContext *lc, int x, int y, int ctb_size);
-void ff_hevc_hls_filters(HEVCLocalContext *lc, int x_ctb, int y_ctb, int ctb_size);
-void ff_hevc_set_qPy(HEVCLocalContext *lc, int xBase, int yBase,
-                     int log2_cb_size);
-void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, int x0, int y0,
-                                           int log2_trafo_size);
+void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCPPS *pps,
+                        int x, int y, int ctb_size);
+void ff_hevc_hls_filters(HEVCLocalContext *lc, const HEVCPPS *pps,
+                         int x_ctb, int y_ctb, int ctb_size);
+void ff_hevc_set_qPy(HEVCLocalContext *lc, const HEVCPPS *pps,
+                     int xBase, int yBase, int log2_cb_size);
+void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *pps,
+                                           int x0, int y0, int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCLocalContext *lc);
 int ff_hevc_cu_qp_delta_abs(HEVCLocalContext *lc);
 int ff_hevc_cu_chroma_qp_offset_flag(HEVCLocalContext *lc);

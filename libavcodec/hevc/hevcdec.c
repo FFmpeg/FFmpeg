@@ -1189,7 +1189,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
                 return AVERROR_INVALIDDATA;
             }
 
-            ff_hevc_set_qPy(lc, cb_xBase, cb_yBase, log2_cb_size);
+            ff_hevc_set_qPy(lc, s->ps.pps, cb_xBase, cb_yBase, log2_cb_size);
         }
 
         if (s->sh.cu_chroma_qp_offset_enabled_flag && cbf_chroma &&
@@ -1485,7 +1485,7 @@ do {                                                                            
                 }
         }
         if (!s->sh.disable_deblocking_filter_flag) {
-            ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_trafo_size);
+            ff_hevc_deblocking_boundary_strengths(lc, s->ps.pps, x0, y0, log2_trafo_size);
             if (s->ps.pps->transquant_bypass_enable_flag &&
                 lc->cu.cu_transquant_bypass_flag)
                 set_deblocking_bypass(s, x0, y0, log2_trafo_size);
@@ -1514,7 +1514,7 @@ static int hls_pcm_sample(HEVCLocalContext *lc, int x0, int y0, int log2_cb_size
     int ret;
 
     if (!s->sh.disable_deblocking_filter_flag)
-        ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_cb_size);
+        ff_hevc_deblocking_boundary_strengths(lc, s->ps.pps, x0, y0, log2_cb_size);
 
     ret = init_get_bits(&gb, pcm, length);
     if (ret < 0)
@@ -2284,7 +2284,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s, int x0, i
         intra_prediction_unit_default_value(lc, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag)
-            ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_cb_size);
+            ff_hevc_deblocking_boundary_strengths(lc, s->ps.pps, x0, y0, log2_cb_size);
     } else {
         int pcm_flag = 0;
 
@@ -2372,13 +2372,13 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s, int x0, i
                     return ret;
             } else {
                 if (!s->sh.disable_deblocking_filter_flag)
-                    ff_hevc_deblocking_boundary_strengths(lc, x0, y0, log2_cb_size);
+                    ff_hevc_deblocking_boundary_strengths(lc, s->ps.pps, x0, y0, log2_cb_size);
             }
         }
     }
 
     if (s->ps.pps->cu_qp_delta_enabled_flag && lc->tu.is_cu_qp_delta_coded == 0)
-        ff_hevc_set_qPy(lc, x0, y0, log2_cb_size);
+        ff_hevc_set_qPy(lc, s->ps.pps, x0, y0, log2_cb_size);
 
     x = y_cb * min_cb_width + x_cb;
     for (y = 0; y < length; y++) {
@@ -2583,12 +2583,12 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 
         ctb_addr_ts++;
         ff_hevc_save_states(lc, ctb_addr_ts);
-        ff_hevc_hls_filters(lc, x_ctb, y_ctb, ctb_size);
+        ff_hevc_hls_filters(lc, s->ps.pps, x_ctb, y_ctb, ctb_size);
     }
 
     if (x_ctb + ctb_size >= s->ps.sps->width &&
         y_ctb + ctb_size >= s->ps.sps->height)
-        ff_hevc_hls_filter(lc, x_ctb, y_ctb, ctb_size);
+        ff_hevc_hls_filter(lc, s->ps.pps, x_ctb, y_ctb, ctb_size);
 
     return ctb_addr_ts;
 }
@@ -2644,7 +2644,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
 
         ff_hevc_save_states(lc, ctb_addr_ts);
         ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
-        ff_hevc_hls_filters(lc, x_ctb, y_ctb, ctb_size);
+        ff_hevc_hls_filters(lc, s->ps.pps, x_ctb, y_ctb, ctb_size);
 
         if (!more_data && (x_ctb+ctb_size) < s->ps.sps->width && ctb_row != s->sh.num_entry_point_offsets) {
             /* Casting const away here is safe, because it is an atomic operation. */
@@ -2654,7 +2654,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
         }
 
         if ((x_ctb+ctb_size) >= s->ps.sps->width && (y_ctb+ctb_size) >= s->ps.sps->height ) {
-            ff_hevc_hls_filter(lc, x_ctb, y_ctb, ctb_size);
+            ff_hevc_hls_filter(lc, s->ps.pps, x_ctb, y_ctb, ctb_size);
             ff_thread_report_progress2(s->avctx, ctb_row , thread, SHIFT_CTB_WPP);
             return ctb_addr_ts;
         }
