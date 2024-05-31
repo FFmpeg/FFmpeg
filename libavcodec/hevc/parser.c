@@ -80,12 +80,8 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
     }
     ps->pps = ps->pps_list[pps_id];
 
-    if (ps->pps->sps_id >= HEVC_MAX_SPS_COUNT || !ps->sps_list[ps->pps->sps_id]) {
-        av_log(avctx, AV_LOG_ERROR, "SPS id out of range: %d\n", ps->pps->sps_id);
-        return AVERROR_INVALIDDATA;
-    }
-    if (ps->sps != ps->sps_list[ps->pps->sps_id]) {
-        ps->sps  = ps->sps_list[ps->pps->sps_id];
+    if (ps->sps != ps->pps->sps) {
+        ps->sps  = ps->pps->sps;
         ps->vps  = ps->vps_list[ps->sps->vps_id];
     }
     ow  = &ps->sps->output_window;

@@ -625,8 +625,8 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
     if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
 
-    if (s->ps.sps != s->ps.sps_list[s->ps.pps->sps_id]) {
-        const HEVCSPS *sps = s->ps.sps_list[s->ps.pps->sps_id];
+    if (s->ps.sps != s->ps.pps->sps) {
+        const HEVCSPS *sps = s->ps.pps->sps;
         enum AVPixelFormat pix_fmt;
 
         ff_hevc_clear_refs(s);

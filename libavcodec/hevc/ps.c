@@ -1363,6 +1363,8 @@ static void hevc_pps_free(FFRefStructOpaque unused, void *obj)
 {
     HEVCPPS *pps = obj;
 
+    ff_refstruct_unref(&pps->sps);
+
     av_freep(&pps->column_width);
     av_freep(&pps->row_height);
     av_freep(&pps->col_bd);
@@ -1827,6 +1829,8 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     }
     sps = ps->sps_list[pps->sps_id];
     vps = ps->vps_list[sps->vps_id];
+
+    pps->sps = ff_refstruct_ref_c(sps);
 
     pps->dependent_slice_segments_enabled_flag = get_bits1(gb);
     pps->output_flag_present_flag              = get_bits1(gb);
