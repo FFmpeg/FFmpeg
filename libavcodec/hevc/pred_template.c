@@ -27,11 +27,13 @@
 
 #define POS(x, y) src[(x) + stride * (y)]
 
-static av_always_inline void FUNC(intra_pred)(HEVCLocalContext *lc, int x0, int y0,
+static av_always_inline void FUNC(intra_pred)(HEVCLocalContext *lc,
+                                              const HEVCPPS *pps,
+                                              int x0, int y0,
                                               int log2_size, int c_idx)
 {
 #define PU(x) \
-    ((x) >> s->ps.sps->log2_min_pu_size)
+    ((x) >> sps->log2_min_pu_size)
 #define MVF(x, y) \
     (s->cur_frame->tab_mvf[(x) + (y) * min_pu_width])
 #define MVF_PU(x, y) \
@@ -39,7 +41,7 @@ static av_always_inline void FUNC(intra_pred)(HEVCLocalContext *lc, int x0, int 
 #define IS_INTRA(x, y) \
     (MVF_PU(x, y).pred_flag == PF_INTRA)
 #define MIN_TB_ADDR_ZS(x, y) \
-    s->ps.pps->min_tb_addr_zs[(y) * (s->ps.sps->tb_mask+2) + (x)]
+    pps->min_tb_addr_zs[(y) * (sps->tb_mask+2) + (x)]
 #define EXTEND(ptr, val, len)         \
 do {                                  \
     pixel4 pix = PIXEL_SPLAT_X4(val); \
@@ -70,27 +72,28 @@ do {                                  \
             else                                                               \
                 a = PIXEL_SPLAT_X4(ptr[i + 3])
 
+    const HEVCSPS   *const sps = pps->sps;
     const HEVCContext *const s = lc->parent;
     int i;
-    int hshift = s->ps.sps->hshift[c_idx];
-    int vshift = s->ps.sps->vshift[c_idx];
+    int hshift = sps->hshift[c_idx];
+    int vshift = sps->vshift[c_idx];
     int size = (1 << log2_size);
     int size_in_luma_h = size << hshift;
-    int size_in_tbs_h  = size_in_luma_h >> s->ps.sps->log2_min_tb_size;
+    int size_in_tbs_h  = size_in_luma_h >> sps->log2_min_tb_size;
     int size_in_luma_v = size << vshift;
-    int size_in_tbs_v  = size_in_luma_v >> s->ps.sps->log2_min_tb_size;
+    int size_in_tbs_v  = size_in_luma_v >> sps->log2_min_tb_size;
     int x = x0 >> hshift;
     int y = y0 >> vshift;
-    int x_tb = (x0 >> s->ps.sps->log2_min_tb_size) & s->ps.sps->tb_mask;
-    int y_tb = (y0 >> s->ps.sps->log2_min_tb_size) & s->ps.sps->tb_mask;
-    int spin = c_idx && !size_in_tbs_v && ((2 * y0) & (1 << s->ps.sps->log2_min_tb_size));
+    int x_tb = (x0 >> sps->log2_min_tb_size) & sps->tb_mask;
+    int y_tb = (y0 >> sps->log2_min_tb_size) & sps->tb_mask;
+    int spin = c_idx && !size_in_tbs_v && ((2 * y0) & (1 << sps->log2_min_tb_size));
 
     int cur_tb_addr = MIN_TB_ADDR_ZS(x_tb, y_tb);
 
     ptrdiff_t stride = s->cur_frame->f->linesize[c_idx] / sizeof(pixel);
     pixel *src = (pixel*)s->cur_frame->f->data[c_idx] + x + y * stride;
 
-    int min_pu_width = s->ps.sps->min_pu_width;
+    int min_pu_width = sps->min_pu_width;
 
     enum IntraPredMode mode = c_idx ? lc->tu.intra_pred_mode_c :
                               lc->tu.intra_pred_mode;
@@ -104,28 +107,28 @@ do {                                  \
     pixel  *top           = top_array  + 1;
     pixel  *filtered_left = filtered_left_array + 1;
     pixel  *filtered_top  = filtered_top_array  + 1;
-    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS( x_tb - 1, (y_tb + size_in_tbs_v + spin) & s->ps.sps->tb_mask);
+    int cand_bottom_left = lc->na.cand_bottom_left && cur_tb_addr > MIN_TB_ADDR_ZS( x_tb - 1, (y_tb + size_in_tbs_v + spin) & sps->tb_mask);
     int cand_left        = lc->na.cand_left;
     int cand_up_left     = lc->na.cand_up_left;
     int cand_up          = lc->na.cand_up;
-    int cand_up_right    = lc->na.cand_up_right && !spin && cur_tb_addr > MIN_TB_ADDR_ZS((x_tb + size_in_tbs_h) & s->ps.sps->tb_mask, y_tb - 1);
+    int cand_up_right    = lc->na.cand_up_right && !spin && cur_tb_addr > MIN_TB_ADDR_ZS((x_tb + size_in_tbs_h) & sps->tb_mask, y_tb - 1);
 
-    int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma_v, s->ps.sps->height) -
+    int bottom_left_size = (FFMIN(y0 + 2 * size_in_luma_v, sps->height) -
                            (y0 + size_in_luma_v)) >> vshift;
-    int top_right_size   = (FFMIN(x0 + 2 * size_in_luma_h, s->ps.sps->width) -
+    int top_right_size   = (FFMIN(x0 + 2 * size_in_luma_h, sps->width) -
                            (x0 + size_in_luma_h)) >> hshift;
 
-    if (s->ps.pps->constrained_intra_pred_flag == 1) {
+    if (pps->constrained_intra_pred_flag == 1) {
         int size_in_luma_pu_v = PU(size_in_luma_v);
         int size_in_luma_pu_h = PU(size_in_luma_h);
-        int on_pu_edge_x    = !av_mod_uintp2(x0, s->ps.sps->log2_min_pu_size);
-        int on_pu_edge_y    = !av_mod_uintp2(y0, s->ps.sps->log2_min_pu_size);
+        int on_pu_edge_x    = !av_mod_uintp2(x0, sps->log2_min_pu_size);
+        int on_pu_edge_y    = !av_mod_uintp2(y0, sps->log2_min_pu_size);
         if (!size_in_luma_pu_h)
             size_in_luma_pu_h++;
         if (cand_bottom_left == 1 && on_pu_edge_x) {
             int x_left_pu   = PU(x0 - 1);
             int y_bottom_pu = PU(y0 + size_in_luma_v);
-            int max = FFMIN(size_in_luma_pu_v, s->ps.sps->min_pu_height - y_bottom_pu);
+            int max = FFMIN(size_in_luma_pu_v, sps->min_pu_height - y_bottom_pu);
             cand_bottom_left = 0;
             for (i = 0; i < max; i += 2)
                 cand_bottom_left |= (MVF(x_left_pu, y_bottom_pu + i).pred_flag == PF_INTRA);
@@ -133,7 +136,7 @@ do {                                  \
         if (cand_left == 1 && on_pu_edge_x) {
             int x_left_pu   = PU(x0 - 1);
             int y_left_pu   = PU(y0);
-            int max = FFMIN(size_in_luma_pu_v, s->ps.sps->min_pu_height - y_left_pu);
+            int max = FFMIN(size_in_luma_pu_v, sps->min_pu_height - y_left_pu);
             cand_left = 0;
             for (i = 0; i < max; i += 2)
                 cand_left |= (MVF(x_left_pu, y_left_pu + i).pred_flag == PF_INTRA);
@@ -146,7 +149,7 @@ do {                                  \
         if (cand_up == 1 && on_pu_edge_y) {
             int x_top_pu    = PU(x0);
             int y_top_pu    = PU(y0 - 1);
-            int max = FFMIN(size_in_luma_pu_h, s->ps.sps->min_pu_width - x_top_pu);
+            int max = FFMIN(size_in_luma_pu_h, sps->min_pu_width - x_top_pu);
             cand_up = 0;
             for (i = 0; i < max; i += 2)
                 cand_up |= (MVF(x_top_pu + i, y_top_pu).pred_flag == PF_INTRA);
@@ -154,7 +157,7 @@ do {                                  \
         if (cand_up_right == 1 && on_pu_edge_y) {
             int y_top_pu    = PU(y0 - 1);
             int x_right_pu  = PU(x0 + size_in_luma_h);
-            int max = FFMIN(size_in_luma_pu_h, s->ps.sps->min_pu_width - x_right_pu);
+            int max = FFMIN(size_in_luma_pu_h, sps->min_pu_width - x_right_pu);
             cand_up_right = 0;
             for (i = 0; i < max; i += 2)
                 cand_up_right |= (MVF(x_right_pu + i, y_top_pu).pred_flag == PF_INTRA);
@@ -184,20 +187,20 @@ do {                                  \
                size - bottom_left_size);
     }
 
-    if (s->ps.pps->constrained_intra_pred_flag == 1) {
+    if (pps->constrained_intra_pred_flag == 1) {
         if (cand_bottom_left || cand_left || cand_up_left || cand_up || cand_up_right) {
-            int size_max_x = x0 + ((2 * size) << hshift) < s->ps.sps->width ?
-                                    2 * size : (s->ps.sps->width - x0) >> hshift;
-            int size_max_y = y0 + ((2 * size) << vshift) < s->ps.sps->height ?
-                                    2 * size : (s->ps.sps->height - y0) >> vshift;
+            int size_max_x = x0 + ((2 * size) << hshift) < sps->width ?
+                                    2 * size : (sps->width - x0) >> hshift;
+            int size_max_y = y0 + ((2 * size) << vshift) < sps->height ?
+                                    2 * size : (sps->height - y0) >> vshift;
             int j = size + (cand_bottom_left? bottom_left_size: 0) -1;
             if (!cand_up_right) {
-                size_max_x = x0 + ((size) << hshift) < s->ps.sps->width ?
-                                                    size : (s->ps.sps->width - x0) >> hshift;
+                size_max_x = x0 + ((size) << hshift) < sps->width ?
+                             size : (sps->width - x0) >> hshift;
             }
             if (!cand_bottom_left) {
-                size_max_y = y0 + (( size) << vshift) < s->ps.sps->height ?
-                                                     size : (s->ps.sps->height - y0) >> vshift;
+                size_max_y = y0 + (( size) << vshift) < sps->height ?
+                                                     size : (sps->height - y0) >> vshift;
             }
             if (cand_bottom_left || cand_left || cand_up_left) {
                 while (j > -1 && !IS_INTRA(-1, j))
@@ -285,14 +288,14 @@ do {                                  \
     top[-1] = left[-1];
 
     // Filtering process
-    if (!s->ps.sps->intra_smoothing_disabled && (c_idx == 0  || s->ps.sps->chroma_format_idc == 3)) {
+    if (!sps->intra_smoothing_disabled && (c_idx == 0  || sps->chroma_format_idc == 3)) {
         if (mode != INTRA_DC && size != 4){
             int intra_hor_ver_dist_thresh[] = { 7, 1, 0 };
             int min_dist_vert_hor = FFMIN(FFABS((int)(mode - 26U)),
                                           FFABS((int)(mode - 10U)));
             if (min_dist_vert_hor > intra_hor_ver_dist_thresh[log2_size - 3]) {
                 int threshold = 1 << (BIT_DEPTH - 5);
-                if (s->ps.sps->strong_intra_smoothing_enabled && c_idx == 0 &&
+                if (sps->strong_intra_smoothing_enabled && c_idx == 0 &&
                     log2_size == 5 &&
                     FFABS(top[-1]  + top[63]  - 2 * top[31])  < threshold &&
                     FFABS(left[-1] + left[63] - 2 * left[31]) < threshold) {
@@ -343,9 +346,10 @@ do {                                  \
 }
 
 #define INTRA_PRED(size)                                                            \
-static void FUNC(intra_pred_ ## size)(HEVCLocalContext *lc, int x0, int y0, int c_idx) \
+static void FUNC(intra_pred_ ## size)(HEVCLocalContext *lc, const HEVCPPS *pps,     \
+                                      int x0, int y0, int c_idx)                    \
 {                                                                                   \
-    FUNC(intra_pred)(lc, x0, y0, size, c_idx);                                      \
+    FUNC(intra_pred)(lc, pps, x0, y0, size, c_idx);                                 \
 }
 
 INTRA_PRED(2)
