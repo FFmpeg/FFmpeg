@@ -567,6 +567,58 @@ cglobal scalarproduct_float, 3,5,8, v1, v2, size, len, offset
 %endif
     RET
 
+;---------------------------------------------------------------------------------
+; double scalarproduct_double(const double *v1, const double *v2, size_t len)
+;---------------------------------------------------------------------------------
+%macro SCALARPRODUCT_DOUBLE 0
+cglobal scalarproduct_double, 3,3,8, v1, v2, offset
+    shl offsetq, 3
+    add     v1q, offsetq
+    add     v2q, offsetq
+    neg offsetq
+    xorpd    m0, m0
+    xorpd    m1, m1
+    movapd   m2, m0
+    movapd   m3, m1
+align 16
+.loop:
+    movapd   m4, [v1q+offsetq+mmsize*0]
+    movapd   m5, [v1q+offsetq+mmsize*1]
+    movapd   m6, [v1q+offsetq+mmsize*2]
+    movapd   m7, [v1q+offsetq+mmsize*3]
+    mulpd    m4, [v2q+offsetq+mmsize*0]
+    mulpd    m5, [v2q+offsetq+mmsize*1]
+    mulpd    m6, [v2q+offsetq+mmsize*2]
+    mulpd    m7, [v2q+offsetq+mmsize*3]
+    addpd    m0, m4
+    addpd    m1, m5
+    addpd    m2, m6
+    addpd    m3, m7
+    add offsetq, mmsize*4
+    jl .loop
+    addpd    m0, m1
+    addpd    m2, m3
+    addpd    m0, m2
+%if mmsize == 32
+    vextractf128 xm1, m0, 1
+    addpd   xm0, xm1
+%endif
+    movhlps xm1, xm0
+    addsd   xm0, xm1
+%if ARCH_X86_64 == 0
+    movsd   r0m, xm0
+    fld qword r0m
+%endif
+    RET
+%endmacro
+
+INIT_XMM sse2
+SCALARPRODUCT_DOUBLE
+%if HAVE_AVX_EXTERNAL
+INIT_YMM avx
+SCALARPRODUCT_DOUBLE
+%endif
+
 ;-----------------------------------------------------------------------------
 ; void ff_butterflies_float(float *src0, float *src1, int len);
 ;-----------------------------------------------------------------------------
