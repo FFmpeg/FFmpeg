@@ -82,7 +82,7 @@ static int hevc_parse_slice_header(AVCodecParserContext *s, H2645NAL *nal,
 
     if (ps->sps != ps->pps->sps) {
         ps->sps  = ps->pps->sps;
-        ps->vps  = ps->vps_list[ps->sps->vps_id];
+        ps->vps  = ps->sps->vps;
     }
     ow  = &ps->sps->output_window;
 

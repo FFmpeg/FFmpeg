@@ -319,8 +319,7 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
 static void export_stream_params(HEVCContext *s, const HEVCSPS *sps)
 {
     AVCodecContext *avctx = s->avctx;
-    const HEVCParamSets *ps = &s->ps;
-    const HEVCVPS *vps = ps->vps_list[sps->vps_id];
+    const HEVCVPS    *vps = sps->vps;
     const HEVCWindow *ow = &sps->output_window;
     unsigned int num = 0, den = 0;
 
@@ -575,7 +574,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps,
     }
 
     s->ps.sps = sps;
-    s->ps.vps = s->ps.vps_list[s->ps.sps->vps_id];
+    s->ps.vps = sps->vps;
 
     return 0;
 
