@@ -55,7 +55,7 @@ static void test_window(int len)
         }
     }
 
-    bench_new(src, len, dst1);
+    bench_new(src, 4608 + (len & 1), dst1);
 }
 
 static void test_compute_autocorr(ptrdiff_t len, int lag)
