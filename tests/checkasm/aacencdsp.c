@@ -22,7 +22,9 @@
 
 #include "libavutil/mem_internal.h"
 
+#include "libavcodec/aacenc_utils.h"
 #include "libavcodec/aacencdsp.h"
+#include "libavcodec/aactab.h"
 
 #include "checkasm.h"
 
@@ -34,6 +36,8 @@
             buf[i] = f;                                         \
         }                                                       \
     } while (0)
+
+#define randomize_elem(tab) (tab[rnd() % FF_ARRAY_ELEMS(tab)])
 
 static void test_abs_pow34(AACEncDSPContext *s)
 {
@@ -60,6 +64,38 @@ static void test_abs_pow34(AACEncDSPContext *s)
     report("abs_pow34");
 }
 
+static void test_quant_bands(AACEncDSPContext *s)
+{
+    int maxval = randomize_elem(aac_cb_maxval);
+    float q34 = randomize_elem(ff_aac_pow34sf_tab);
+    float rounding = (rnd() & 1) ? ROUND_TO_ZERO : ROUND_STANDARD;
+    LOCAL_ALIGNED_16(float, in, [BUF_SIZE]);
+    LOCAL_ALIGNED_16(float, scaled, [BUF_SIZE]);
+
+    declare_func(void, int *, const float *, const float *, int, int, int,
+                 const float, const float);
+
+    randomize_float(in, BUF_SIZE);
+    randomize_float(scaled, BUF_SIZE);
+
+    for (int sign = 0; sign <= 1; sign++) {
+        if (check_func(s->quant_bands, "quant_bands_%s",
+                       sign ? "signed" : "unsigned")) {
+            LOCAL_ALIGNED_16(int, out, [BUF_SIZE]);
+            LOCAL_ALIGNED_16(int, out2, [BUF_SIZE]);
+
+            call_ref(out, in, scaled, BUF_SIZE, sign, maxval, q34, rounding);
+            call_new(out2, in, scaled, BUF_SIZE, sign, maxval, q34, rounding);
+
+            if (memcmp(out, out2, BUF_SIZE * sizeof (int)))
+                fail();
+
+            bench_new(out, in, scaled, BUF_SIZE, sign, maxval, q34, rounding);
+        }
+    }
+
+    report("quant_bands");
+}
 
 void checkasm_check_aacencdsp(void)
 {
@@ -67,4 +103,5 @@ void checkasm_check_aacencdsp(void)
     ff_aacenc_dsp_init(&s);
 
     test_abs_pow34(&s);
+    test_quant_bands(&s);
 }
