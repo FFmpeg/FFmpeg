@@ -1097,7 +1097,7 @@ static void hls_sao_param(HEVCLocalContext *lc, int rx, int ry)
             continue;
 
         for (i = 0; i < 4; i++)
-            SET_SAO(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(lc));
+            SET_SAO(offset_abs[c_idx][i], ff_hevc_sao_offset_abs_decode(lc, s->ps.sps->bit_depth));
 
         if (sao->type_idx[c_idx] == SAO_BAND) {
             for (i = 0; i < 4; i++) {
@@ -1198,7 +1198,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
             if (cu_chroma_qp_offset_flag) {
                 int cu_chroma_qp_offset_idx  = 0;
                 if (s->ps.pps->chroma_qp_offset_list_len_minus1 > 0) {
-                    cu_chroma_qp_offset_idx = ff_hevc_cu_chroma_qp_offset_idx(lc);
+                    cu_chroma_qp_offset_idx = ff_hevc_cu_chroma_qp_offset_idx(lc, s->ps.pps->chroma_qp_offset_list_len_minus1);
                     av_log(s->avctx, AV_LOG_ERROR,
                         "cu_chroma_qp_offset_idx not yet tested.\n");
                 }
@@ -1232,7 +1232,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
         lc->tu.cross_pf = 0;
 
         if (cbf_luma)
-            ff_hevc_hls_residual_coding(lc, x0, y0, log2_trafo_size, scan_idx, 0);
+            ff_hevc_hls_residual_coding(lc, s->ps.pps, x0, y0, log2_trafo_size, scan_idx, 0);
         if (s->ps.sps->chroma_format_idc && (log2_trafo_size > 2 || s->ps.sps->chroma_format_idc == 3)) {
             int trafo_size_h = 1 << (log2_trafo_size_c + s->ps.sps->hshift[1]);
             int trafo_size_v = 1 << (log2_trafo_size_c + s->ps.sps->vshift[1]);
@@ -1250,7 +1250,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size_c - 2](lc, x0, y0 + (i << log2_trafo_size_c), 1);
                 }
                 if (cbf_cb[i])
-                    ff_hevc_hls_residual_coding(lc, x0, y0 + (i << log2_trafo_size_c),
+                    ff_hevc_hls_residual_coding(lc, s->ps.pps, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 1);
                 else
                     if (lc->tu.cross_pf) {
@@ -1280,7 +1280,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size_c - 2](lc, x0, y0 + (i << log2_trafo_size_c), 2);
                 }
                 if (cbf_cr[i])
-                    ff_hevc_hls_residual_coding(lc, x0, y0 + (i << log2_trafo_size_c),
+                    ff_hevc_hls_residual_coding(lc, s->ps.pps, x0, y0 + (i << log2_trafo_size_c),
                                                 log2_trafo_size_c, scan_idx_c, 2);
                 else
                     if (lc->tu.cross_pf) {
@@ -1309,7 +1309,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size - 2](lc, xBase, yBase + (i << log2_trafo_size), 1);
                 }
                 if (cbf_cb[i])
-                    ff_hevc_hls_residual_coding(lc, xBase, yBase + (i << log2_trafo_size),
+                    ff_hevc_hls_residual_coding(lc, s->ps.pps, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 1);
             }
             for (i = 0; i < (s->ps.sps->chroma_format_idc == 2 ? 2 : 1); i++) {
@@ -1319,7 +1319,7 @@ static int hls_transform_unit(HEVCLocalContext *lc, int x0, int y0,
                     s->hpc.intra_pred[log2_trafo_size - 2](lc, xBase, yBase + (i << log2_trafo_size), 2);
                 }
                 if (cbf_cr[i])
-                    ff_hevc_hls_residual_coding(lc, xBase, yBase + (i << log2_trafo_size),
+                    ff_hevc_hls_residual_coding(lc, s->ps.pps, xBase, yBase + (i << log2_trafo_size),
                                                 log2_trafo_size, scan_idx_c, 2);
             }
         }
@@ -2263,7 +2263,10 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s, int x0, i
         lc->cu.cu_transquant_bypass_flag = 0;
 
     if (s->sh.slice_type != HEVC_SLICE_I) {
-        uint8_t skip_flag = ff_hevc_skip_flag_decode(lc, x0, y0, x_cb, y_cb);
+        const int x0b = av_mod_uintp2(x0, s->ps.sps->log2_ctb_size);
+        const int y0b = av_mod_uintp2(y0, s->ps.sps->log2_ctb_size);
+        uint8_t skip_flag = ff_hevc_skip_flag_decode(lc, x0b, y0b, x_cb, y_cb,
+                                                     min_cb_width);
 
         x = y_cb * min_cb_width + x_cb;
         for (y = 0; y < length; y++) {
@@ -2292,7 +2295,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s, int x0, i
             lc->cu.pred_mode = ff_hevc_pred_mode_decode(lc);
         if (lc->cu.pred_mode != MODE_INTRA ||
             log2_cb_size == s->ps.sps->log2_min_cb_size) {
-            lc->cu.part_mode        = ff_hevc_part_mode_decode(lc, log2_cb_size);
+            lc->cu.part_mode        = ff_hevc_part_mode_decode(lc, s->ps.sps, log2_cb_size);
             lc->cu.intra_split_flag = lc->cu.part_mode == PART_NxN &&
                                       lc->cu.pred_mode == MODE_INTRA;
         }
@@ -2408,7 +2411,7 @@ static int hls_coding_quadtree(HEVCLocalContext *lc, int x0, int y0,
     if (x0 + cb_size <= s->ps.sps->width  &&
         y0 + cb_size <= s->ps.sps->height &&
         log2_cb_size > s->ps.sps->log2_min_cb_size) {
-        split_cu = ff_hevc_split_coding_unit_flag_decode(lc, cb_depth, x0, y0);
+        split_cu = ff_hevc_split_coding_unit_flag_decode(lc, s->ps.sps, cb_depth, x0, y0);
     } else {
         split_cu = (log2_cb_size > s->ps.sps->log2_min_cb_size);
     }
@@ -2562,7 +2565,7 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
         y_ctb = (ctb_addr_rs / ((s->ps.sps->width + ctb_size - 1) >> s->ps.sps->log2_ctb_size)) << s->ps.sps->log2_ctb_size;
         hls_decode_neighbour(lc, x_ctb, y_ctb, ctb_addr_ts);
 
-        ret = ff_hevc_cabac_init(lc, ctb_addr_ts, slice_data, slice_size);
+        ret = ff_hevc_cabac_init(lc, s->ps.pps, ctb_addr_ts, slice_data, slice_size);
         if (ret < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
             return ret;
@@ -2582,7 +2585,7 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 
 
         ctb_addr_ts++;
-        ff_hevc_save_states(lc, ctb_addr_ts);
+        ff_hevc_save_states(lc, s->ps.pps, ctb_addr_ts);
         ff_hevc_hls_filters(lc, s->ps.pps, x_ctb, y_ctb, ctb_size);
     }
 
@@ -2629,7 +2632,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
             return 0;
         }
 
-        ret = ff_hevc_cabac_init(lc, ctb_addr_ts, data, data_size);
+        ret = ff_hevc_cabac_init(lc, s->ps.pps, ctb_addr_ts, data, data_size);
         if (ret < 0)
             goto error;
         hls_sao_param(lc, x_ctb >> s->ps.sps->log2_ctb_size, y_ctb >> s->ps.sps->log2_ctb_size);
@@ -2642,7 +2645,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
 
         ctb_addr_ts++;
 
-        ff_hevc_save_states(lc, ctb_addr_ts);
+        ff_hevc_save_states(lc, s->ps.pps, ctb_addr_ts);
         ff_thread_report_progress2(s->avctx, ctb_row, thread, 1);
         ff_hevc_hls_filters(lc, s->ps.pps, x_ctb, y_ctb, ctb_size);
 
