@@ -645,11 +645,13 @@ void ff_hevc_bump_frame(HEVCContext *s);
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags);
 
 void ff_hevc_set_neighbour_available(HEVCLocalContext *lc, int x0, int y0,
-                                     int nPbW, int nPbH);
-void ff_hevc_luma_mv_merge_mode(HEVCLocalContext *lc, int x0, int y0,
+                                     int nPbW, int nPbH, int log2_ctb_size);
+void ff_hevc_luma_mv_merge_mode(HEVCLocalContext *lc, const HEVCPPS *pps,
+                                int x0, int y0,
                                 int nPbW, int nPbH, int log2_cb_size,
                                 int part_idx, int merge_idx, MvField *mv);
-void ff_hevc_luma_mv_mvp_mode(HEVCLocalContext *lc, int x0, int y0,
+void ff_hevc_luma_mv_mvp_mode(HEVCLocalContext *lc, const HEVCPPS *pps,
+                              int x0, int y0,
                               int nPbW, int nPbH, int log2_cb_size,
                               int part_idx, int merge_idx,
                               MvField *mv, int mvp_lx_flag, int LX);
