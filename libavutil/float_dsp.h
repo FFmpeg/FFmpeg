@@ -194,11 +194,11 @@ typedef struct AVFloatDSPContext {
      * Calculate the scalar product of two vectors of doubles.
      *
      * @param v1  first vector
-     *             constraints: 32-byte aligned
+     *            constraints: 32-byte aligned
      * @param v2  second vector
-     *             constraints: 32-byte aligned
+     *            constraints: 32-byte aligned
      * @param len length of vectors
-     *             constraints: 32-byte aligned
+     *            constraints: multiple of 16
      *
      * @return inner product of the vectors
      */
