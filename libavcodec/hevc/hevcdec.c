@@ -260,8 +260,8 @@ static int pred_weight_table(SliceHeader *sh, void *logctx,
     return 0;
 }
 
-static int decode_lt_rps(HEVCContext *s, const HEVCSPS *sps, LongTermRPS *rps,
-                         GetBitContext *gb)
+static int decode_lt_rps(const HEVCSPS *sps, LongTermRPS *rps,
+                         GetBitContext *gb, int cur_poc, int poc_lsb)
 {
     int max_poc_lsb    = 1 << sps->log2_max_poc_lsb;
     int prev_delta_msb = 0;
@@ -306,7 +306,7 @@ static int decode_lt_rps(HEVCContext *s, const HEVCSPS *sps, LongTermRPS *rps,
             if (i && i != nb_sps)
                 delta += prev_delta_msb;
 
-            poc = rps->poc[i] + s->poc - delta * max_poc_lsb - s->sh.pic_order_cnt_lsb;
+            poc = rps->poc[i] + cur_poc - delta * max_poc_lsb - poc_lsb;
             if (poc != (int32_t)poc)
                 return AVERROR_INVALIDDATA;
             rps->poc[i] = poc;
@@ -744,7 +744,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
             sh->short_term_ref_pic_set_size = pos - get_bits_left(gb);
 
             pos = get_bits_left(gb);
-            ret = decode_lt_rps(s, sps, &sh->long_term_rps, gb);
+            ret = decode_lt_rps(sps, &sh->long_term_rps, gb, s->poc, sh->pic_order_cnt_lsb);
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_WARNING, "Invalid long term RPS.\n");
                 if (s->avctx->err_recognition & AV_EF_EXPLODE)
