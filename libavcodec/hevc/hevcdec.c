@@ -3369,7 +3369,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                    old, s->dovi_ctx.cfg.dv_profile);
     }
 
-    s->cur_frame = s->collocated_ref = NULL;
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
