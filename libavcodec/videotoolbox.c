@@ -349,7 +349,7 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
      */
     AV_W8(p + 21, 0                             << 6 |
                   sps->max_sub_layers           << 3 |
-                  sps->temporal_id_nesting_flag << 2 |
+                  sps->temporal_id_nesting      << 2 |
                   3);
 
     /* unsigned int(8) numOfArrays; */
