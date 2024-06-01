@@ -98,6 +98,29 @@ func ff_vp8_luma_dc_wht_rvv, zve64x
 endfunc
 #endif
 
+func ff_vp8_idct_dc_add_rvv, zve32x
+        lh      a3, (a1)
+        addi    a3, a3, 4
+        srai    a3, a3, 3
+        # fall through
+endfunc
+
+func ff_vp78_idct_dc_add_rvv, zve32x
+        csrwi      vxrm, 0
+        vsetivli   zero, 4, e8, mf4, ta, ma
+        sh         zero, (a1)
+        vlse32.v   v8, (a0), a2
+        vsetivli   zero, 16, e16, m2, ta, ma
+        vzext.vf2  v16, v8
+        vadd.vx    v16, v16, a3
+        vmax.vx    v16, v16, zero
+        vsetvli    zero, zero, e8, m1, ta, ma
+        vnclipu.wi v8, v16, 0
+        vsetivli   zero, 4, e8, mf4, ta, ma
+        vsse32.v   v8, (a0), a2
+        ret
+endfunc
+
 .macro vp8_idct_dc_add
         vlse32.v      v0, (a0), a2
         lh            a5, 0(a1)
@@ -119,13 +142,6 @@ endfunc
         addi          a0, a0, 4
         addi          a1, a1, 32
 .endm
-
-func ff_vp8_idct_dc_add_rvv, zve32x
-        vsetivli      zero, 4, e8, mf4, ta, ma
-        vp8_idct_dc_add
-
-        ret
-endfunc
 
 func ff_vp8_idct_dc_add4y_rvv, zve32x
         vsetivli      zero, 4, e8, mf4, ta, ma

@@ -27,6 +27,15 @@
 
 void ff_vp7_luma_dc_wht_rvv(int16_t block[4][4][16], int16_t dc[16]);
 void ff_vp7_idct_add_rvv(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
+void ff_vp78_idct_dc_add_rvv(uint8_t *, int16_t block[16], ptrdiff_t, int dc);
+
+static void ff_vp7_idct_dc_add_rvv(uint8_t *dst, int16_t block[16],
+                                   ptrdiff_t stride)
+{
+    int dc = (23170 * (23170 * block[0] >> 14) + 0x20000) >> 18;
+
+    ff_vp78_idct_dc_add_rvv(dst, block, stride, dc);
+}
 
 av_cold void ff_vp7dsp_init_riscv(VP8DSPContext *c)
 {
@@ -37,8 +46,9 @@ av_cold void ff_vp7dsp_init_riscv(VP8DSPContext *c)
         ff_rv_vlen_least(128)) {
 #if __riscv_xlen >= 64
         c->vp8_luma_dc_wht = ff_vp7_luma_dc_wht_rvv;
-#endif
         c->vp8_idct_add = ff_vp7_idct_add_rvv;
+#endif
+        c->vp8_idct_dc_add = ff_vp7_idct_dc_add_rvv;
     }
 #endif
 }
