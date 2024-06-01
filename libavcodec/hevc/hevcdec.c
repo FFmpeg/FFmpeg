@@ -3206,9 +3206,13 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 
     return 0;
 fail:
-    if (s->avctx->err_recognition & AV_EF_EXPLODE)
-        return ret;
-    return 0;
+    if (ret == AVERROR_INVALIDDATA &&
+        !(s->avctx->err_recognition & AV_EF_EXPLODE)) {
+        av_log(s->avctx, AV_LOG_WARNING,
+               "Skipping invalid undecodable NALU: %d\n", s->nal_unit_type);
+        return 0;
+    }
+    return ret;
 }
 
 static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
