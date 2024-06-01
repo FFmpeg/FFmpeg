@@ -453,9 +453,6 @@ typedef struct HEVCContext {
     HEVCLocalContext     *local_ctx;
     unsigned           nb_local_ctx;
 
-    uint8_t             threads_type;
-    uint8_t             threads_number;
-
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
 

@@ -968,8 +968,6 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
                 unsigned val = get_bits_long(gb, offset_len);
                 sh->entry_point_offset[i] = val + 1; // +1; // +1 to get the size
             }
-            if (s->threads_number > 1 && (pps->num_tile_rows > 1 || pps->num_tile_columns > 1))
-                s->threads_number = 1;
         }
     }
 
@@ -1870,7 +1868,7 @@ static void chroma_mc_bi(HEVCLocalContext *lc,
 static void hevc_await_progress(const HEVCContext *s, const HEVCFrame *ref,
                                 const Mv *mv, int y0, int height)
 {
-    if (s->threads_type == FF_THREAD_FRAME ) {
+    if (s->avctx->active_thread_type == FF_THREAD_FRAME ) {
         int y = FFMAX(0, (mv->y >> 2) + y0 + height + 9);
 
         ff_progress_frame_await(&ref->tf, y);
@@ -2631,7 +2629,7 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
     return ctb_addr_ts;
 }
 
-static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
+static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
                                 int job, int self_id)
 {
     HEVCLocalContext *lc = &((HEVCLocalContext*)hevc_lclist)[self_id];
@@ -2643,7 +2641,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
     int ctb_row = job;
     int ctb_addr_rs = s->sh.slice_ctb_addr_rs + ctb_row * ((sps->width + ctb_size - 1) >> sps->log2_ctb_size);
     int ctb_addr_ts = pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-    int thread = ctb_row % s->threads_number;
+    int thread = ctb_row % avctx->thread_count;
 
     const uint8_t *data      = s->data + s->sh.offset[ctb_row];
     const size_t   data_size = s->sh.size[ctb_row];
@@ -2736,8 +2734,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         return AVERROR_INVALIDDATA;
     }
 
-    if (s->threads_number > s->nb_local_ctx) {
-        HEVCLocalContext *tmp = av_malloc_array(s->threads_number, sizeof(*s->local_ctx));
+    if (s->avctx->thread_count > s->nb_local_ctx) {
+        HEVCLocalContext *tmp = av_malloc_array(s->avctx->thread_count, sizeof(*s->local_ctx));
 
         if (!tmp)
             return AVERROR(ENOMEM);
@@ -2746,7 +2744,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
         av_free(s->local_ctx);
         s->local_ctx = tmp;
 
-        for (unsigned i = s->nb_local_ctx; i < s->threads_number; i++) {
+        for (unsigned i = s->nb_local_ctx; i < s->avctx->thread_count; i++) {
             tmp = &s->local_ctx[i];
 
             memset(tmp, 0, sizeof(*tmp));
@@ -2756,7 +2754,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
             tmp->common_cabac_state = &s->cabac;
         }
 
-        s->nb_local_ctx = s->threads_number;
+        s->nb_local_ctx = s->avctx->thread_count;
     }
 
     offset = s->sh.data_offset;
@@ -2795,7 +2793,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 
     s->data = data;
 
-    for (i = 1; i < s->threads_number; i++) {
+    for (i = 1; i < s->nb_local_ctx; i++) {
         s->local_ctx[i].first_qp_group = 1;
         s->local_ctx[i].qp_y = s->local_ctx[0].qp_y;
     }
@@ -3157,7 +3155,9 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
                 goto fail;
             }
 
-            if (s->threads_number > 1 && s->sh.num_entry_point_offsets > 0)
+            if (s->avctx->active_thread_type == FF_THREAD_SLICE  &&
+                s->sh.num_entry_point_offsets > 0                &&
+                s->pps->num_tile_rows == 1 && s->pps->num_tile_columns == 1)
                 ctb_addr_ts = hls_slice_data_wpp(s, nal);
             else
                 ctb_addr_ts = hls_decode_entry(s, &gb);
@@ -3282,7 +3282,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
 
 fail:
-    if (s->cur_frame && s->threads_type == FF_THREAD_FRAME)
+    if (s->cur_frame && s->avctx->active_thread_type == FF_THREAD_FRAME)
         ff_progress_frame_report(&s->cur_frame->tf, INT_MAX);
 
     return ret;
@@ -3610,9 +3610,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->is_nalff        = s0->is_nalff;
     s->nal_length_size = s0->nal_length_size;
 
-    s->threads_number      = s0->threads_number;
-    s->threads_type        = s0->threads_type;
-
     s->film_grain_warning_shown = s0->film_grain_warning_shown;
 
     if (s0->eos) {
@@ -3660,17 +3657,10 @@ static av_cold int hevc_decode_init(AVCodecContext *avctx)
     int ret;
 
     if (avctx->active_thread_type & FF_THREAD_SLICE) {
-        s->threads_number = avctx->thread_count;
         ret = ff_slice_thread_init_progress(avctx);
         if (ret < 0)
             return ret;
-    } else
-        s->threads_number = 1;
-
-    if((avctx->active_thread_type & FF_THREAD_FRAME) && avctx->thread_count > 1)
-        s->threads_type = FF_THREAD_FRAME;
-    else
-        s->threads_type = FF_THREAD_SLICE;
+    }
 
     ret = hevc_init_context(avctx);
     if (ret < 0)

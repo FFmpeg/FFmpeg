@@ -892,15 +892,15 @@ void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCPPS *pps,
             sao_filter_CTB(lc, s, pps, sps, x - ctb_size, y);
         if (y && x_end) {
             sao_filter_CTB(lc, s, pps, sps, x, y - ctb_size);
-            if (s->threads_type & FF_THREAD_FRAME )
+            if (s->avctx->active_thread_type & FF_THREAD_FRAME )
                 ff_progress_frame_report(&s->cur_frame->tf, y);
         }
         if (x_end && y_end) {
             sao_filter_CTB(lc, s, pps, sps, x , y);
-            if (s->threads_type & FF_THREAD_FRAME )
+            if (s->avctx->active_thread_type & FF_THREAD_FRAME )
                 ff_progress_frame_report(&s->cur_frame->tf, y + ctb_size);
         }
-    } else if (s->threads_type & FF_THREAD_FRAME && x_end)
+    } else if (s->avctx->active_thread_type & FF_THREAD_FRAME && x_end)
         ff_progress_frame_report(&s->cur_frame->tf, y + ctb_size - 4);
 }
 

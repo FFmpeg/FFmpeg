@@ -435,7 +435,7 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     frame->sequence = HEVC_SEQUENCE_COUNTER_INVALID;
     frame->flags    = 0;
 
-    if (s->threads_type == FF_THREAD_FRAME)
+    if (s->avctx->active_thread_type == FF_THREAD_FRAME)
         ff_progress_frame_report(&frame->tf, INT_MAX);
 
     return frame;
