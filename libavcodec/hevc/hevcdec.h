@@ -532,7 +532,6 @@ typedef struct HEVCContext {
     /** The target for the common_cabac_state of the local contexts. */
     HEVCCABACState cabac;
 
-    int enable_parallel_tiles;
     atomic_int wpp_err;
 
     const uint8_t *data;
