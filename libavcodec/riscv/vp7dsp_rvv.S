@@ -127,3 +127,19 @@ func ff_vp7_idct_add_rvv, zve32x
         ret
 endfunc
 #endif
+
+func ff_vp7_idct_dc_add4y_rvv, zve32x
+        li       t0, 32
+        vsetivli zero, 4, e16, mf2, ta, ma
+        li       t1, 23170
+        vlse16.v v8, (a1), t0 # block[0..3][0]
+        vwmul.vx v0, v8, t1
+        li       t2, 0x20000
+        vsetvli  zero, zero, e32, m1, ta, ma
+        vsra.vi  v0, v0, 14
+        vmul.vx  v0, v0, t1
+        vadd.vx  v0, v0, t2
+        vsetvli  zero, zero, e16, mf2, ta, ma
+        vnsra.wi v8, v0, 18   # 4x DC
+        tail     ff_vp78_idct_dc_add4y_rvv
+endfunc
