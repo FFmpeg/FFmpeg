@@ -132,31 +132,25 @@ endfunc
 .endm
 
 func ff_avg_pixels16x16_rvv, zve32x
-        csrwi         vxrm, 0
-        vsetivli      zero, 16, e8, m1, ta, ma
-        mspel_op_all  l a1 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-        mspel_op_all  l a0 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
-        vsetvli       t0, zero, e8, m8, ta, ma
-        sub           a0, a0, a2
-        vaaddu.vv     v0, v0, v16
-        neg           a2, a2
-        vaaddu.vv     v8, v8, v24
-        vsetivli      zero, 16, e8, m1, ta, ma
-        mspel_op_all  s a0 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0
-
-        ret
+        li       t0, 16
+        vsetivli zero, 16, e8, m1, ta, ma
+        j        1f
 endfunc
 
-func ff_avg_pixels8x8_rvv, zve64x
-        csrwi         vxrm, 0
-        li            t0, 64
-        vsetivli      zero, 8, e8, mf2, ta, ma
-        vlse64.v      v16, (a1), a2
-        vlse64.v      v8, (a0), a2
-        vsetvli       zero, t0, e8, m4, ta, ma
-        vaaddu.vv     v16, v16, v8
-        vsetivli      zero, 8, e8, mf2, ta, ma
-        vsse64.v      v16, (a0), a2
+func ff_avg_pixels8x8_rvv, zve32x
+        li        t0, 8
+        vsetivli  zero, 8, e8, mf2, ta, ma
+1:
+        csrwi     vxrm, 0
+2:
+        vle8.v    v16, (a1)
+        addi      t0, t0, -1
+        vle8.v    v8, (a0)
+        add       a1, a1, a2
+        vaaddu.vv v16, v16, v8
+        vse8.v    v16, (a0)
+        add       a0, a0, a2
+        bnez      t0, 2b
 
         ret
 endfunc
