@@ -2599,7 +2599,7 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
         y_ctb = (ctb_addr_rs / ((sps->width + ctb_size - 1) >> sps->log2_ctb_size)) << sps->log2_ctb_size;
         hls_decode_neighbour(lc, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
 
-        ret = ff_hevc_cabac_init(lc, pps, ctb_addr_ts, slice_data, slice_size);
+        ret = ff_hevc_cabac_init(lc, pps, ctb_addr_ts, slice_data, slice_size, 0);
         if (ret < 0) {
             s->tab_slice_address[ctb_addr_rs] = -1;
             return ret;
@@ -2669,7 +2669,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
             return 0;
         }
 
-        ret = ff_hevc_cabac_init(lc, pps, ctb_addr_ts, data, data_size);
+        ret = ff_hevc_cabac_init(lc, pps, ctb_addr_ts, data, data_size, 1);
         if (ret < 0)
             goto error;
         hls_sao_param(lc, pps, sps,

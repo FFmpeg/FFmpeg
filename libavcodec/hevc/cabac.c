@@ -452,7 +452,8 @@ static void cabac_init_state(HEVCLocalContext *lc, const HEVCContext *s)
 }
 
 int ff_hevc_cabac_init(HEVCLocalContext *lc, const HEVCPPS *pps,
-                       int ctb_addr_ts, const uint8_t *data, size_t size)
+                       int ctb_addr_ts, const uint8_t *data, size_t size,
+                       int is_wpp)
 {
     const HEVCContext *const s = lc->parent;
     const HEVCSPS   *const sps = pps->sps;
@@ -479,7 +480,7 @@ int ff_hevc_cabac_init(HEVCLocalContext *lc, const HEVCPPS *pps,
         if (pps->tiles_enabled_flag &&
             pps->tile_id[ctb_addr_ts] != pps->tile_id[ctb_addr_ts - 1]) {
             int ret;
-            if (s->threads_number == 1)
+            if (!is_wpp)
                 ret = cabac_reinit(lc);
             else {
                 ret = ff_init_cabac_decoder(&lc->cc, data, size);
@@ -492,7 +493,7 @@ int ff_hevc_cabac_init(HEVCLocalContext *lc, const HEVCPPS *pps,
             if (ctb_addr_ts % sps->ctb_width == 0) {
                 int ret;
                 get_cabac_terminate(&lc->cc);
-                if (s->threads_number == 1)
+                if (!is_wpp)
                     ret = cabac_reinit(lc);
                 else {
                     ret = ff_init_cabac_decoder(&lc->cc, data, size);
