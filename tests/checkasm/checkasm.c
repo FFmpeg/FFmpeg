@@ -41,6 +41,9 @@
 #if HAVE_IO_H
 #include <io.h>
 #endif
+#if HAVE_PRCTL
+#include <sys/prctl.h>
+#endif
 
 #if defined(_WIN32) && !defined(SIGBUS)
 /* non-standard, use the same value as mingw-w64 */
@@ -846,6 +849,9 @@ int main(int argc, char *argv[])
     sigaction(SIGFPE,  &signal_handler_act, NULL);
     sigaction(SIGILL,  &signal_handler_act, NULL);
     sigaction(SIGSEGV, &signal_handler_act, NULL);
+#endif
+#if HAVE_PRCTL && defined(PR_SET_UNALIGN)
+    prctl(PR_SET_UNALIGN, PR_UNALIGN_SIGBUS);
 #endif
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
     if (have_vfp(av_get_cpu_flags()) || have_neon(av_get_cpu_flags()))
