@@ -648,10 +648,6 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
         s->max_ra     = INT_MAX;
     }
 
-    ret = export_stream_params_from_sei(s);
-    if (ret < 0)
-        return ret;
-
     sh->dependent_slice_segment_flag = 0;
     if (!sh->first_slice_in_pic_flag) {
         int slice_address_length;
@@ -2964,6 +2960,10 @@ static int hevc_frame_start(HEVCContext *s)
                               s->sei.common.aom_film_grain.enable) &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
+
+    ret = export_stream_params_from_sei(s);
+    if (ret < 0)
+        return ret;
 
     ret = set_side_data(s);
     if (ret < 0)
