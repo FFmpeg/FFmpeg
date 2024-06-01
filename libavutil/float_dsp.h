@@ -179,8 +179,11 @@ typedef struct AVFloatDSPContext {
      * a vector of doubles.
      *
      * @param dst  output vector
+     *             constraints: 32-byte aligned
      * @param src0 first input vector
+     *             constraints: 32-byte aligned
      * @param src1 second input vector
+     *             constraints: 32-byte aligned
      * @param len  number of elements in the input
      *             constraints: multiple of 16
      */
