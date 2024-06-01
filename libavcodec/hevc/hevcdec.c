@@ -2925,7 +2925,9 @@ static int hevc_frame_start(HEVCContext *s)
     s->is_decoded        = 0;
     s->first_nal_type    = s->nal_unit_type;
 
-    s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) || (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos);
+    if (IS_IRAP(s))
+        s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) ||
+                                 (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos);
 
     /* 8.3.1 */
     if (s->temporal_id == 0 &&

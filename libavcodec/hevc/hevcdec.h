@@ -493,6 +493,7 @@ typedef struct HEVCContext {
     int overlap;
 
     int is_decoded;
+    // NoRaslOutputFlag associated with the last IRAP frame
     int no_rasl_output_flag;
 
     HEVCPredContext hpc;
