@@ -451,7 +451,6 @@ typedef struct HEVCParamSets {
     /* currently active parameter sets */
     const HEVCVPS *vps;
     const HEVCSPS *sps;
-    const HEVCPPS *pps;
 } HEVCParamSets;
 
 /**

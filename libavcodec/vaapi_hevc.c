@@ -90,7 +90,7 @@ static int find_frame_rps_type(const HEVCContext *h, const HEVCFrame *pic)
             return VA_PICTURE_HEVC_RPS_LT_CURR;
     }
 
-    if (h->ps.pps->pps_curr_pic_ref_enabled_flag && current_picture->poc == pic->poc)
+    if (h->pps->pps_curr_pic_ref_enabled_flag && current_picture->poc == pic->poc)
         return VA_PICTURE_HEVC_LONG_TERM_REFERENCE;
 
     return 0;
@@ -105,7 +105,7 @@ static void fill_vaapi_reference_frames(const HEVCContext *h, VAPictureParameter
         const HEVCFrame *frame = NULL;
 
         while (!frame && j < FF_ARRAY_ELEMS(h->DPB)) {
-            if ((&h->DPB[j] != current_picture || h->ps.pps->pps_curr_pic_ref_enabled_flag) &&
+            if ((&h->DPB[j] != current_picture || h->pps->pps_curr_pic_ref_enabled_flag) &&
                 (h->DPB[j].flags & (HEVC_FRAME_FLAG_LONG_REF | HEVC_FRAME_FLAG_SHORT_REF)))
                 frame = &h->DPB[j];
             j++;
@@ -126,8 +126,8 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
 {
     const HEVCContext        *h = avctx->priv_data;
     VAAPIDecodePictureHEVC *pic = h->cur_frame->hwaccel_picture_private;
-    const HEVCSPS          *sps = h->ps.sps;
-    const HEVCPPS          *pps = h->ps.pps;
+    const HEVCPPS          *pps = h->pps;
+    const HEVCSPS          *sps = pps->sps;
 
     const ScalingList *scaling_list = NULL;
     int pic_param_size, err, i;
@@ -399,8 +399,8 @@ static void fill_pred_weight_table(AVCodecContext *avctx,
     slice_param->luma_log2_weight_denom         = 0;
 
     if (sh->slice_type == HEVC_SLICE_I ||
-        (sh->slice_type == HEVC_SLICE_P && !h->ps.pps->weighted_pred_flag) ||
-        (sh->slice_type == HEVC_SLICE_B && !h->ps.pps->weighted_bipred_flag))
+        (sh->slice_type == HEVC_SLICE_P && !h->pps->weighted_pred_flag) ||
+        (sh->slice_type == HEVC_SLICE_B && !h->pps->weighted_bipred_flag))
         return;
 
     slice_param->luma_log2_weight_denom = sh->luma_log2_weight_denom;

@@ -233,9 +233,9 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
 {
     HEVCContext *h = avctx->priv_data;
     int i, num_vps = 0, num_sps = 0, num_pps = 0;
-    const HEVCVPS *vps = h->ps.vps;
-    const HEVCSPS *sps = h->ps.sps;
-    const HEVCPPS *pps = h->ps.pps;
+    const HEVCPPS *pps = h->pps;
+    const HEVCSPS *sps = pps->sps;
+    const HEVCVPS *vps = sps->vps;
     PTLCommon ptlc = vps->ptl.general_ptl;
     VUI vui = sps->vui;
     uint8_t parallelismType;

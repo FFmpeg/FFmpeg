@@ -44,8 +44,8 @@ static void dpb_add(CUVIDHEVCPICPARAMS *pp, int idx, const HEVCFrame *src)
 
 static void fill_scaling_lists(CUVIDHEVCPICPARAMS *ppc, const HEVCContext *s)
 {
-    const ScalingList *sl = s->ps.pps->scaling_list_data_present_flag ?
-                            &s->ps.pps->scaling_list : &s->ps.sps->scaling_list;
+    const ScalingList *sl = s->pps->scaling_list_data_present_flag ?
+                            &s->pps->scaling_list : &s->pps->sps->scaling_list;
     int i, j, pos;
 
     for (i = 0; i < 6; i++) {
@@ -73,8 +73,8 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
 {
     const HEVCContext *s = avctx->priv_data;
-    const HEVCPPS *pps = s->ps.pps;
-    const HEVCSPS *sps = s->ps.sps;
+    const HEVCPPS *pps = s->pps;
+    const HEVCSPS *sps = pps->sps;
 
     NVDECContext       *ctx = avctx->internal->hwaccel_priv_data;
     CUVIDPICPARAMS      *pp = &ctx->pic_params;
@@ -300,7 +300,7 @@ static int nvdec_hevc_frame_params(AVCodecContext *avctx,
                                    AVBufferRef *hw_frames_ctx)
 {
     const HEVCContext *s = avctx->priv_data;
-    const HEVCSPS *sps = s->ps.sps;
+    const HEVCSPS *sps = s->pps->sps;
     return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering + 1, 1);
 }
 

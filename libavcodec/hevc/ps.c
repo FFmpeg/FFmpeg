@@ -61,13 +61,6 @@ static const uint8_t hevc_sub_height_c[] = {
     1, 2, 1, 1
 };
 
-static void remove_pps(HEVCParamSets *s, int id)
-{
-    if (s->pps == s->pps_list[id])
-        s->pps = NULL;
-    ff_refstruct_unref(&s->pps_list[id]);
-}
-
 static void remove_sps(HEVCParamSets *s, int id)
 {
     int i;
@@ -78,7 +71,7 @@ static void remove_sps(HEVCParamSets *s, int id)
         /* drop all PPS that depend on this SPS */
         for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
             if (s->pps_list[i] && s->pps_list[i]->sps_id == id)
-                remove_pps(s, i);
+                ff_refstruct_unref(&s->pps_list[i]);
 
         av_assert0(!(s->sps_list[id] && s->sps == s->sps_list[id]));
         ff_refstruct_unref(&s->sps_list[id]);
@@ -2035,7 +2028,7 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
                "Overread PPS by %d bits\n", -get_bits_left(gb));
     }
 
-    remove_pps(ps, pps_id);
+    ff_refstruct_unref(&ps->pps_list[pps_id]);
     ps->pps_list[pps_id] = pps;
 
     return 0;
@@ -2057,7 +2050,6 @@ void ff_hevc_ps_uninit(HEVCParamSets *ps)
         ff_refstruct_unref(&ps->pps_list[i]);
 
     ps->sps = NULL;
-    ps->pps = NULL;
     ps->vps = NULL;
 }
 

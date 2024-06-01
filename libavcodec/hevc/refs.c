@@ -54,7 +54,7 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
     int x_cb         = x0 >> s->ps.sps->log2_ctb_size;
     int y_cb         = y0 >> s->ps.sps->log2_ctb_size;
     int pic_width_cb = s->ps.sps->ctb_width;
-    int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
+    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
     return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
 }
 
@@ -283,7 +283,7 @@ static int init_slice_rpl(HEVCContext *s)
 {
     HEVCFrame *frame = s->cur_frame;
     int ctb_count    = frame->ctb_count;
-    int ctb_addr_ts  = s->ps.pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
+    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[s->sh.slice_segment_addr];
     int i;
 
     if (s->slice_idx >= frame->nb_rpl_elems)
@@ -310,7 +310,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         return ret;
 
     if (!(s->rps[ST_CURR_BEF].nb_refs + s->rps[ST_CURR_AFT].nb_refs +
-          s->rps[LT_CURR].nb_refs) && !s->ps.pps->pps_curr_pic_ref_enabled_flag) {
+          s->rps[LT_CURR].nb_refs) && !s->pps->pps_curr_pic_ref_enabled_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Zero refs in the frame RPS.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -338,7 +338,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
                 }
             }
             // Construct RefPicList0, RefPicList1 (8-8, 8-10)
-            if (s->ps.pps->pps_curr_pic_ref_enabled_flag && rpl_tmp.nb_refs < HEVC_MAX_REFS) {
+            if (s->pps->pps_curr_pic_ref_enabled_flag && rpl_tmp.nb_refs < HEVC_MAX_REFS) {
                 rpl_tmp.list[rpl_tmp.nb_refs]           = s->cur_frame->poc;
                 rpl_tmp.ref[rpl_tmp.nb_refs]            = s->cur_frame;
                 rpl_tmp.isLongTerm[rpl_tmp.nb_refs]     = 1;
@@ -367,7 +367,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         }
 
         // 8-9
-        if (s->ps.pps->pps_curr_pic_ref_enabled_flag &&
+        if (s->pps->pps_curr_pic_ref_enabled_flag &&
             !sh->rpl_modification_flag[list_idx] &&
             rpl_tmp.nb_refs > sh->nb_refs[L0]) {
             rpl->list[sh->nb_refs[L0] - 1] = s->cur_frame->poc;
@@ -545,7 +545,7 @@ int ff_hevc_frame_nb_refs(const HEVCContext *s)
             ret += !!long_rps->used[i];
     }
 
-    if (s->ps.pps->pps_curr_pic_ref_enabled_flag)
+    if (s->pps->pps_curr_pic_ref_enabled_flag)
         ret++;
 
     return ret;

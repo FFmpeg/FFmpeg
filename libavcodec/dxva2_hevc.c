@@ -62,8 +62,8 @@ void ff_dxva2_hevc_fill_picture_parameters(const AVCodecContext *avctx, AVDXVACo
 {
     const HEVCContext *h = avctx->priv_data;
     const HEVCFrame *current_picture = h->cur_frame;
-    const HEVCSPS *sps = h->ps.sps;
-    const HEVCPPS *pps = h->ps.pps;
+    const HEVCPPS *pps = h->pps;
+    const HEVCSPS *sps = pps->sps;
     int i, j;
 
     memset(pp, 0, sizeof(*pp));
@@ -205,8 +205,8 @@ void ff_dxva2_hevc_fill_scaling_lists(const AVCodecContext *avctx, AVDXVAContext
 {
     const HEVCContext *h = avctx->priv_data;
     unsigned i, j, pos;
-    const ScalingList *sl = h->ps.pps->scaling_list_data_present_flag ?
-                            &h->ps.pps->scaling_list : &h->ps.sps->scaling_list;
+    const ScalingList *sl = h->pps->scaling_list_data_present_flag ?
+                            &h->pps->scaling_list : &h->pps->sps->scaling_list;
 
     memset(qm, 0, sizeof(*qm));
     for (i = 0; i < 6; i++) {

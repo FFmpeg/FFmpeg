@@ -618,12 +618,12 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
         return AVERROR_INVALIDDATA;
     }
     if (!sh->first_slice_in_pic_flag &&
-        s->ps.pps != s->ps.pps_list[sh->pps_id]) {
+        s->pps != s->ps.pps_list[sh->pps_id]) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
         return AVERROR_INVALIDDATA;
     }
-    s->ps.pps = s->ps.pps_list[sh->pps_id];
-    pps = s->ps.pps;
+    ff_refstruct_replace(&s->pps, s->ps.pps_list[sh->pps_id]);
+    pps = s->pps;
     sps = pps->sps;
 
     if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
@@ -2588,7 +2588,7 @@ static void hls_decode_neighbour(HEVCLocalContext *lc,
 static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 {
     HEVCLocalContext *const lc = &s->local_ctx[0];
-    const HEVCPPS   *const pps = s->ps.pps;
+    const HEVCPPS   *const pps = s->pps;
     const HEVCSPS   *const sps = pps->sps;
     const uint8_t *slice_data = gb->buffer + s->sh.data_offset;
     const size_t   slice_size = gb->buffer_end - gb->buffer - s->sh.data_offset;
@@ -2656,7 +2656,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctxt, void *hevc_lclist,
 {
     HEVCLocalContext *lc = &((HEVCLocalContext*)hevc_lclist)[self_id];
     const HEVCContext *const s = lc->parent;
-    const HEVCPPS   *const pps = s->ps.pps;
+    const HEVCPPS   *const pps = s->pps;
     const HEVCSPS   *const sps = pps->sps;
     int ctb_size    = 1 << sps->log2_ctb_size;
     int more_data   = 1;
@@ -2739,7 +2739,7 @@ error:
 
 static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 {
-    const HEVCPPS *const pps = s->ps.pps;
+    const HEVCPPS *const pps = s->pps;
     const HEVCSPS *const sps = pps->sps;
     const uint8_t *data = nal->data;
     int length          = nal->size;
@@ -2928,7 +2928,7 @@ static int set_side_data(HEVCContext *s)
 
 static int hevc_frame_start(HEVCContext *s)
 {
-    const HEVCPPS *const pps = s->ps.pps;
+    const HEVCPPS *const pps = s->pps;
     const HEVCSPS *const sps = pps->sps;
     int pic_size_in_ctb  = ((sps->width  >> sps->log2_min_cb_size) + 1) *
                            ((sps->height >> sps->log2_min_cb_size) + 1);
@@ -3510,6 +3510,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
+    ff_refstruct_unref(&s->pps);
+
     ff_dovi_ctx_unref(&s->dovi_ctx);
     av_buffer_unref(&s->rpu_buf);
 
@@ -3610,6 +3612,9 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ps.pps_list); i++)
         ff_refstruct_replace(&s->ps.pps_list[i], s0->ps.pps_list[i]);
+
+    // PPS do not persist between frames
+    ff_refstruct_unref(&s->pps);
 
     if (s->ps.sps != s0->ps.sps)
         if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)

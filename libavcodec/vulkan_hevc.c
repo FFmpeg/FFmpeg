@@ -735,8 +735,8 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vp = &hp->vp;
-    const HEVCSPS *sps = h->ps.sps;
-    const HEVCPPS *pps = h->ps.pps;
+    const HEVCPPS *pps = h->pps;
+    const HEVCSPS *sps = pps->sps;
     int nb_refs = 0;
 
     if (!dec->session_params) {
@@ -878,8 +878,8 @@ static int vk_hevc_end_frame(AVCodecContext *avctx)
         return 0;
 
     if (!dec->session_params) {
-        const HEVCSPS *sps = h->ps.sps;
-        const HEVCPPS *pps = h->ps.pps;
+        const HEVCPPS *pps = h->pps;
+        const HEVCSPS *sps = pps->sps;
 
         if (!pps) {
             unsigned int pps_id = h->sh.pps_id;
