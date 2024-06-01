@@ -795,7 +795,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
 
             sh->rpl_modification_flag[0] = 0;
             sh->rpl_modification_flag[1] = 0;
-            nb_refs = ff_hevc_frame_nb_refs(s);
+            nb_refs = ff_hevc_frame_nb_refs(sh, pps);
             if (!nb_refs) {
                 av_log(s->avctx, AV_LOG_ERROR, "Zero refs for a frame with P or B slices.\n");
                 return AVERROR_INVALIDDATA;

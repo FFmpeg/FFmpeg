@@ -526,12 +526,12 @@ fail:
     return ret;
 }
 
-int ff_hevc_frame_nb_refs(const HEVCContext *s)
+int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps)
 {
     int ret = 0;
     int i;
-    const ShortTermRPS *rps = s->sh.short_term_rps;
-    const LongTermRPS *long_rps = &s->sh.long_term_rps;
+    const ShortTermRPS     *rps = sh->short_term_rps;
+    const LongTermRPS *long_rps = &sh->long_term_rps;
 
     if (rps) {
         for (i = 0; i < rps->num_negative_pics; i++)
@@ -545,7 +545,7 @@ int ff_hevc_frame_nb_refs(const HEVCContext *s)
             ret += !!long_rps->used[i];
     }
 
-    if (s->pps->pps_curr_pic_ref_enabled_flag)
+    if (pps->pps_curr_pic_ref_enabled_flag)
         ret++;
 
     return ret;

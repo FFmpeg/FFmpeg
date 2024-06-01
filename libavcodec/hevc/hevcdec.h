@@ -614,7 +614,7 @@ int ff_hevc_res_scale_sign_flag(HEVCLocalContext *lc, int idx);
 /**
  * Get the number of candidate references for the current frame.
  */
-int ff_hevc_frame_nb_refs(const HEVCContext *s);
+int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps);
 
 int ff_hevc_set_new_ref(HEVCContext *s, int poc);
 
