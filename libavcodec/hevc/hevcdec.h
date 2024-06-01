@@ -209,6 +209,7 @@ typedef struct SliceHeader {
     enum HEVCSliceType slice_type;
 
     int pic_order_cnt_lsb;
+    int poc;
 
     uint8_t first_slice_in_pic_flag;
     uint8_t dependent_slice_segment_flag;

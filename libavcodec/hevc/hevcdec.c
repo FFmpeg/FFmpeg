@@ -706,14 +706,14 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
 
             sh->pic_order_cnt_lsb = get_bits(gb, sps->log2_max_poc_lsb);
             poc = ff_hevc_compute_poc(sps, s->poc_tid0, sh->pic_order_cnt_lsb, s->nal_unit_type);
-            if (!sh->first_slice_in_pic_flag && poc != s->poc) {
+            if (!sh->first_slice_in_pic_flag && poc != sh->poc) {
                 av_log(s->avctx, AV_LOG_WARNING,
-                       "Ignoring POC change between slices: %d -> %d\n", s->poc, poc);
+                       "Ignoring POC change between slices: %d -> %d\n", poc, sh->poc);
                 if (s->avctx->err_recognition & AV_EF_EXPLODE)
                     return AVERROR_INVALIDDATA;
-                poc = s->poc;
+                poc = sh->poc;
             }
-            s->poc = poc;
+            sh->poc = poc;
 
             sh->short_term_ref_pic_set_sps_flag = get_bits1(gb);
             pos = get_bits_left(gb);
@@ -738,7 +738,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
             sh->short_term_ref_pic_set_size = pos - get_bits_left(gb);
 
             pos = get_bits_left(gb);
-            ret = decode_lt_rps(sps, &sh->long_term_rps, gb, s->poc, sh->pic_order_cnt_lsb);
+            ret = decode_lt_rps(sps, &sh->long_term_rps, gb, sh->poc, sh->pic_order_cnt_lsb);
             if (ret < 0) {
                 av_log(s->avctx, AV_LOG_WARNING, "Invalid long term RPS.\n");
                 if (s->avctx->err_recognition & AV_EF_EXPLODE)
@@ -751,7 +751,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
             else
                 sh->slice_temporal_mvp_enabled_flag = 0;
         } else {
-            s->poc                              = 0;
+            sh->poc                             = 0;
             sh->pic_order_cnt_lsb               = 0;
             sh->short_term_ref_pic_set_sps_flag = 0;
             sh->short_term_ref_pic_set_size     = 0;
@@ -2920,6 +2920,7 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->is_decoded        = 0;
     s->first_nal_type    = s->nal_unit_type;
+    s->poc               = s->sh.poc;
 
     if (IS_IRAP(s))
         s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) ||
