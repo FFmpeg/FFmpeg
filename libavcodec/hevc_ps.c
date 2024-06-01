@@ -200,7 +200,7 @@ int ff_hevc_decode_short_term_rps(GetBitContext *gb, AVCodecContext *avctx,
         }
 
         for (unsigned i = 0; i < FF_ARRAY_ELEMS(used); i++)
-            rps->used |= used[i] * (1 << i);
+            rps->used |= (uint32_t)used[i] << i;
     } else {
         unsigned int nb_positive_pics;
 
