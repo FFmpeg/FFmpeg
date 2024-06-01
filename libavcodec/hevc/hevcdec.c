@@ -711,7 +711,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
             int poc, pos;
 
             sh->pic_order_cnt_lsb = get_bits(gb, sps->log2_max_poc_lsb);
-            poc = ff_hevc_compute_poc(sps, s->pocTid0, sh->pic_order_cnt_lsb, s->nal_unit_type);
+            poc = ff_hevc_compute_poc(sps, s->poc_tid0, sh->pic_order_cnt_lsb, s->nal_unit_type);
             if (!sh->first_slice_in_pic_flag && poc != s->poc) {
                 av_log(s->avctx, AV_LOG_WARNING,
                        "Ignoring POC change between slices: %d -> %d\n", s->poc, poc);
@@ -765,17 +765,6 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
             sh->long_term_ref_pic_set_size      = 0;
             sh->slice_temporal_mvp_enabled_flag = 0;
         }
-
-        /* 8.3.1 */
-        if (sh->first_slice_in_pic_flag && s->temporal_id == 0 &&
-            s->nal_unit_type != HEVC_NAL_TRAIL_N &&
-            s->nal_unit_type != HEVC_NAL_TSA_N   &&
-            s->nal_unit_type != HEVC_NAL_STSA_N  &&
-            s->nal_unit_type != HEVC_NAL_RADL_N  &&
-            s->nal_unit_type != HEVC_NAL_RADL_R  &&
-            s->nal_unit_type != HEVC_NAL_RASL_N  &&
-            s->nal_unit_type != HEVC_NAL_RASL_R)
-            s->pocTid0 = s->poc;
 
         if (sps->sao_enabled) {
             sh->slice_sample_adaptive_offset_flag[0] = get_bits1(gb);
@@ -2942,6 +2931,17 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->no_rasl_output_flag = IS_IDR(s) || IS_BLA(s) || (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos);
 
+    /* 8.3.1 */
+    if (s->temporal_id == 0 &&
+        s->nal_unit_type != HEVC_NAL_TRAIL_N &&
+        s->nal_unit_type != HEVC_NAL_TSA_N   &&
+        s->nal_unit_type != HEVC_NAL_STSA_N  &&
+        s->nal_unit_type != HEVC_NAL_RADL_N  &&
+        s->nal_unit_type != HEVC_NAL_RADL_R  &&
+        s->nal_unit_type != HEVC_NAL_RASL_N  &&
+        s->nal_unit_type != HEVC_NAL_RASL_R)
+        s->poc_tid0 = s->poc;
+
     if (pps->tiles_enabled_flag)
         s->local_ctx[0].end_of_tiles_x = pps->column_width[0] << sps->log2_ctb_size;
 
@@ -3623,7 +3623,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
-    s->pocTid0    = s0->pocTid0;
+    s->poc_tid0   = s0->poc_tid0;
     s->max_ra     = s0->max_ra;
     s->eos        = s0->eos;
     s->no_rasl_output_flag = s0->no_rasl_output_flag;

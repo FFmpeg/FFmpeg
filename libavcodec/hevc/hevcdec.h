@@ -483,7 +483,7 @@ typedef struct HEVCContext {
     HEVCFrame *collocated_ref;
     HEVCFrame DPB[32];
     int poc;
-    int pocTid0;
+    int poc_tid0;
     int slice_idx; ///< number of the slice being currently decoded
     int eos;       ///< current packet contains an EOS/EOB NAL
     int last_eos;  ///< last packet contains an EOS/EOB NAL
