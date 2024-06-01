@@ -81,8 +81,8 @@ static void test_quant_bands(AACEncDSPContext *s)
     for (int sign = 0; sign <= 1; sign++) {
         if (check_func(s->quant_bands, "quant_bands_%s",
                        sign ? "signed" : "unsigned")) {
-            LOCAL_ALIGNED_16(int, out, [BUF_SIZE]);
-            LOCAL_ALIGNED_16(int, out2, [BUF_SIZE]);
+            LOCAL_ALIGNED_32(int, out, [BUF_SIZE]);
+            LOCAL_ALIGNED_32(int, out2, [BUF_SIZE]);
 
             call_ref(out, in, scaled, BUF_SIZE, sign, maxval, q34, rounding);
             call_new(out2, in, scaled, BUF_SIZE, sign, maxval, q34, rounding);

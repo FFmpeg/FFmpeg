@@ -53,8 +53,19 @@ cglobal abs_pow34, 3, 3, 3, out, in, size
 ;                           int size, int is_signed, int maxval, const float Q34,
 ;                           const float rounding)
 ;*******************************************************************
-INIT_XMM sse2
+%macro AAC_QUANTIZE_BANDS 0
 cglobal aac_quantize_bands, 5, 5, 6, out, in, scaled, size, is_signed, maxval, Q34, rounding
+%if mmsize == 32
+    vbroadcastss m0, Q34m
+    vbroadcastss m1, roundingm
+%if UNIX64 == 0
+    cvtsi2ss xm3, dword maxvalm
+%else
+    cvtsi2ss xm3, maxvald
+%endif
+    shufps   xm3, xm3, xm3, 0
+    vinsertf128 m3, m3, xm3, 1
+%else ; mmsize == 16
 %if UNIX64 == 0
     movss     m0, Q34m
     movss     m1, roundingm
@@ -65,9 +76,13 @@ cglobal aac_quantize_bands, 5, 5, 6, out, in, scaled, size, is_signed, maxval, Q
     shufps    m0, m0, 0
     shufps    m1, m1, 0
     shufps    m3, m3, 0
+%endif
     shl       is_signedd, 31
-    movd      m4, is_signedd
-    shufps    m4, m4, 0
+    movd     xm4, is_signedd
+    shufps   xm4, xm4, xm4, 0
+%if mmsize == 32
+    vinsertf128 m4, m4, xm4, 1
+%endif
     shl       sized,   2
     add       inq, sizeq
     add       outq, sizeq
@@ -84,3 +99,9 @@ cglobal aac_quantize_bands, 5, 5, 6, out, in, scaled, size, is_signed, maxval, Q
     add       sizeq, mmsize
     jl       .loop
     RET
+%endmacro
+
+INIT_XMM sse2
+AAC_QUANTIZE_BANDS
+INIT_YMM avx
+AAC_QUANTIZE_BANDS
