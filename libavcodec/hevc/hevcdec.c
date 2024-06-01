@@ -3115,7 +3115,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
                 ctb_addr_ts = hls_slice_data_wpp(s, nal);
             else
                 ctb_addr_ts = hls_decode_entry(s, &gb);
-            if (ctb_addr_ts >= (s->ps.sps->ctb_width * s->ps.sps->ctb_height)) {
+            if (ctb_addr_ts >= s->cur_frame->ctb_count) {
                 ret = hevc_frame_end(s);
                 if (ret < 0)
                     goto fail;
