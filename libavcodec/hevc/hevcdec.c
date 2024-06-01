@@ -605,7 +605,6 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
 
     if ((IS_IDR(s) || IS_BLA(s)) && sh->first_slice_in_pic_flag) {
         s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        s->max_ra     = INT_MAX;
         if (IS_IDR(s))
             ff_hevc_clear_refs(s);
     }
@@ -645,7 +644,6 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
         s->avctx->pix_fmt = pix_fmt;
 
         s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        s->max_ra     = INT_MAX;
     }
 
     sh->dependent_slice_segment_flag = 0;
@@ -3106,32 +3104,15 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         }
 
 
-        if (
-            (s->avctx->skip_frame >= AVDISCARD_BIDIR && s->sh.slice_type == HEVC_SLICE_B) ||
+        if ((s->avctx->skip_frame >= AVDISCARD_BIDIR && s->sh.slice_type == HEVC_SLICE_B) ||
             (s->avctx->skip_frame >= AVDISCARD_NONINTRA && s->sh.slice_type != HEVC_SLICE_I) ||
-            (s->avctx->skip_frame >= AVDISCARD_NONKEY && !IS_IRAP(s))) {
+            (s->avctx->skip_frame >= AVDISCARD_NONKEY && !IS_IRAP(s)) ||
+            ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
+             s->no_rasl_output_flag)) {
             break;
         }
 
         if (s->sh.first_slice_in_pic_flag) {
-            if (s->max_ra == INT_MAX) {
-                if (s->nal_unit_type == HEVC_NAL_CRA_NUT || IS_BLA(s)) {
-                    s->max_ra = s->poc;
-                } else {
-                    if (IS_IDR(s))
-                        s->max_ra = INT_MIN;
-                }
-            }
-
-            if ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
-                s->poc <= s->max_ra) {
-                s->is_decoded = 0;
-                break;
-            } else {
-                if (s->nal_unit_type == HEVC_NAL_RASL_R && s->poc > s->max_ra)
-                    s->max_ra = INT_MIN;
-            }
-
             s->overlap ++;
             ret = hevc_frame_start(s);
             if (ret < 0)
@@ -3196,7 +3177,6 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_EOS_NUT:
     case HEVC_NAL_EOB_NUT:
         s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        s->max_ra     = INT_MAX;
         break;
     case HEVC_NAL_AUD:
     case HEVC_NAL_FD_NUT:
@@ -3572,8 +3552,6 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
             return AVERROR(ENOMEM);
     }
 
-    s->max_ra = INT_MAX;
-
     s->md5_ctx = av_md5_alloc();
     if (!s->md5_ctx)
         return AVERROR(ENOMEM);
@@ -3626,7 +3604,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->seq_decode = s0->seq_decode;
     s->seq_output = s0->seq_output;
     s->poc_tid0   = s0->poc_tid0;
-    s->max_ra     = s0->max_ra;
     s->eos        = s0->eos;
     s->no_rasl_output_flag = s0->no_rasl_output_flag;
 
@@ -3640,7 +3617,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     if (s0->eos) {
         s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        s->max_ra = INT_MAX;
     }
 
     ret = ff_h2645_sei_ctx_replace(&s->sei.common, &s0->sei.common);
@@ -3734,7 +3710,6 @@ static void hevc_decode_flush(AVCodecContext *avctx)
     ff_hevc_reset_sei(&s->sei);
     ff_dovi_ctx_flush(&s->dovi_ctx);
     av_buffer_unref(&s->rpu_buf);
-    s->max_ra = INT_MAX;
     s->eos = 1;
 
     if (FF_HW_HAS_CB(avctx, flush))

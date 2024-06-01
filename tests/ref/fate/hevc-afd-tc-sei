@@ -202,3 +202,39 @@ value=00:00:00:00
 [/TIMECODE]
 [/SIDE_DATA]
 [/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=Active format description
+active_format=8
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=SMPTE 12-1 timecode
+[TIMECODE]
+value=00:00:00:00
+[/TIMECODE]
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=Active format description
+active_format=8
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=SMPTE 12-1 timecode
+[TIMECODE]
+value=00:00:00:00
+[/TIMECODE]
+[/SIDE_DATA]
+[/FRAME]
+[FRAME]
+[SIDE_DATA]
+side_data_type=Active format description
+active_format=8
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=SMPTE 12-1 timecode
+[TIMECODE]
+value=00:00:00:00
+[/TIMECODE]
+[/SIDE_DATA]
+[/FRAME]
