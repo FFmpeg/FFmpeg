@@ -20,28 +20,14 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/mips/cpu.h"
-#include "h263dsp_mips.h"
+#include "libavcodec/mpegvideoenc.h"
 #include "mpegvideo_mips.h"
 
-av_cold void ff_mpv_common_init_mips(MpegEncContext *s)
+av_cold void ff_mpvenc_dct_init_mips(MpegEncContext *s)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (have_mmi(cpu_flags)) {
-        s->dct_unquantize_h263_intra = ff_dct_unquantize_h263_intra_mmi;
-        s->dct_unquantize_h263_inter = ff_dct_unquantize_h263_inter_mmi;
-        s->dct_unquantize_mpeg1_intra = ff_dct_unquantize_mpeg1_intra_mmi;
-        s->dct_unquantize_mpeg1_inter = ff_dct_unquantize_mpeg1_inter_mmi;
-
-        if (!(s->avctx->flags & AV_CODEC_FLAG_BITEXACT))
-            if (!s->q_scale_type)
-                s->dct_unquantize_mpeg2_intra = ff_dct_unquantize_mpeg2_intra_mmi;
-    }
-
-    if (have_msa(cpu_flags)) {
-        s->dct_unquantize_h263_intra = ff_dct_unquantize_h263_intra_msa;
-        s->dct_unquantize_h263_inter = ff_dct_unquantize_h263_inter_msa;
-        if (!s->q_scale_type)
-            s->dct_unquantize_mpeg2_inter = ff_dct_unquantize_mpeg2_inter_msa;
+        s->denoise_dct = ff_denoise_dct_mmi;
     }
 }

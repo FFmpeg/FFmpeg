@@ -293,7 +293,9 @@ static void mpv_encode_defaults(MpegEncContext *s)
 
 av_cold int ff_dct_encode_init(MpegEncContext *s)
 {
-#if ARCH_X86
+#if ARCH_MIPS
+    ff_mpvenc_dct_init_mips(s);
+#elif ARCH_X86
     ff_dct_encode_init_x86(s);
 #endif
 

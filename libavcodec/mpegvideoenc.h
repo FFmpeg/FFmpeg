@@ -146,6 +146,7 @@ int ff_mpv_reallocate_putbitbuffer(MpegEncContext *s, size_t threshold, size_t s
 void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix);
 
 int ff_dct_encode_init(MpegEncContext *s);
+void ff_mpvenc_dct_init_mips(MpegEncContext *s);
 void ff_dct_encode_init_x86(MpegEncContext *s);
 
 void ff_convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],
