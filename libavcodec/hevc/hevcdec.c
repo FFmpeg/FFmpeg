@@ -1014,14 +1014,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
         return AVERROR_INVALIDDATA;
     }
 
-    s->local_ctx[0].first_qp_group = !s->sh.dependent_slice_segment_flag;
-
-    if (!pps->cu_qp_delta_enabled_flag)
-        s->local_ctx[0].qp_y = s->sh.slice_qp;
-
     s->slice_initialized = 1;
-    s->local_ctx[0].tu.cu_qp_offset_cb = 0;
-    s->local_ctx[0].tu.cu_qp_offset_cr = 0;
 
     return 0;
 }
@@ -2817,6 +2810,14 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
             return AVERROR_INVALIDDATA;
         }
     }
+
+    s->local_ctx[0].first_qp_group = !s->sh.dependent_slice_segment_flag;
+
+    if (!pps->cu_qp_delta_enabled_flag)
+        s->local_ctx[0].qp_y = s->sh.slice_qp;
+
+    s->local_ctx[0].tu.cu_qp_offset_cb = 0;
+    s->local_ctx[0].tu.cu_qp_offset_cr = 0;
 
     if (s->avctx->active_thread_type == FF_THREAD_SLICE  &&
         s->sh.num_entry_point_offsets > 0                &&
