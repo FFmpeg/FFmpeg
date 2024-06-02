@@ -127,9 +127,10 @@ static int get_jaccarddist(SignatureContext *sc, CoarseSignature *first, CoarseS
 {
     int jaccarddist, i, composdist = 0, cwthcount = 0;
     for (i = 0; i < 5; i++) {
-        if ((jaccarddist = intersection_word(first->data[i], second->data[i])) > 0) {
+        if ((jaccarddist = (1 << 16) * intersection_word(first->data[i], second->data[i])) > 0) {
             jaccarddist /= union_word(first->data[i], second->data[i]);
         }
+        jaccarddist = (1 << 16) - jaccarddist;
         if (jaccarddist >= sc->thworddist) {
             if (++cwthcount > 2) {
                 /* more than half (5/2) of distances are too wide */
