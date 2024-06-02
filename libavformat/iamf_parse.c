@@ -1078,8 +1078,6 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
         case IAMF_OBU_IA_MIX_PRESENTATION:
             ret = mix_presentation_obu(log_ctx, c, pb, obu_size);
             break;
-        case IAMF_OBU_IA_TEMPORAL_DELIMITER:
-            break;
         default: {
             int64_t offset = avio_skip(pb, obu_size);
             if (offset < 0)
