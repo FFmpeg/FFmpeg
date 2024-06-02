@@ -682,7 +682,7 @@ number) in @file{libavcodec/version.h} or @file{libavformat/version.h}?
 Did you register it in @file{allcodecs.c} or @file{allformats.c}?
 
 @item
-Did you add the AVCodecID to @file{avcodec.h}?
+Did you add the AVCodecID to @file{codec_id.h}?
 When adding new codec IDs, also add an entry to the codec descriptor
 list in @file{libavcodec/codec_desc.c}.
 
@@ -697,7 +697,7 @@ already being compiled by some other rule, like a raw demuxer.
 
 @item
 Did you add an entry to the table of supported formats or codecs in
-@file{doc/general.texi}?
+@file{doc/general_contents.texi}?
 
 @item
 Did you add an entry in the Changelog?
