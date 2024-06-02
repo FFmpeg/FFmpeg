@@ -110,6 +110,9 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         avctx->chroma_sample_location = AVCHROMA_LOC_CENTER;
         break;
     case AV_CODEC_ID_MPEG4:
+        // dct_unquantize_inter is only used with MPEG-2 quantizers,
+        // so we can already set dct_unquantize_inter here once and for all.
+        s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
         break;
     case AV_CODEC_ID_MSMPEG4V1:
         s->h263_pred       = 1;
@@ -523,6 +526,11 @@ retry:
             goto retry;
         if (s->studio_profile != (s->idsp.idct == NULL))
             ff_mpv_idct_init(s);
+        if (s->mpeg_quant) {
+            s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
+        } else {
+            s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
+        }
     }
 
     /* After H.263 & MPEG-4 header decode we have the height, width,

@@ -59,6 +59,13 @@ int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
     s->codec_tag       = ff_toupper4(avctx->codec_tag);
 
     ff_mpv_idct_init(s);
+
+    // dct_unquantize defaults for H.261 and H.263;
+    // they might change on a per-frame basis for MPEG-4.
+    // Unused by the MPEG-1/2 decoders.
+    s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
+    s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
+
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
 
     if (s->picture_pool)  // VC-1 can call this multiple times
@@ -392,20 +399,6 @@ int ff_mpv_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     ret = ff_mpv_alloc_dummy_frames(s);
     if (ret < 0)
         return ret;
-
-    /* set dequantizer, we can't do it during init as
-     * it might change for MPEG-4 and we can't do it in the header
-     * decode as init is not called for MPEG-4 there yet */
-    if (s->mpeg_quant || s->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-        s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
-        s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
-    } else if (s->out_format == FMT_H263 || s->out_format == FMT_H261) {
-        s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
-        s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
-    } else {
-        s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
-        s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
-    }
 
     if (s->avctx->debug & FF_DEBUG_NOMC)
         color_frame(s->cur_pic.ptr->f, 0x80);
