@@ -415,8 +415,7 @@ static int h261_decode_mb(H261DecContext *h)
     // Read mtype
     com->mtype = get_vlc2(&s->gb, h261_mtype_vlc, H261_MTYPE_VLC_BITS, 2);
     if (com->mtype < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Invalid mtype index %d\n",
-               com->mtype);
+        av_log(s->avctx, AV_LOG_ERROR, "Invalid mtype index\n");
         return SLICE_ERROR;
     }
 
