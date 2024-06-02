@@ -1002,7 +1002,8 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
 
     sh->slice_ctb_addr_rs = sh->slice_segment_addr;
 
-    if (!s->sh.slice_ctb_addr_rs && s->sh.dependent_slice_segment_flag) {
+    if (sh->dependent_slice_segment_flag &&
+        (!sh->slice_ctb_addr_rs || !pps->ctb_addr_rs_to_ts[sh->slice_ctb_addr_rs])) {
         av_log(s->avctx, AV_LOG_ERROR, "Impossible slice segment.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -2576,11 +2577,6 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
     int y_ctb       = 0;
     int ctb_addr_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
     int ret;
-
-    if (!ctb_addr_ts && s->sh.dependent_slice_segment_flag) {
-        av_log(s->avctx, AV_LOG_ERROR, "Impossible initial tile.\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     if (s->sh.dependent_slice_segment_flag) {
         int prev_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
