@@ -134,7 +134,7 @@ func ff_vp7_idct_dc_add4y_rvv, zve32x
         li       t1, 23170
         vlse16.v v8, (a1), t0 # block[0..3][0]
         vwmul.vx v0, v8, t1
-        li       t2, 0x20000
+        li       t2, 0x20000 - (128 << 18)
         vsetvli  zero, zero, e32, m1, ta, ma
         vsra.vi  v0, v0, 14
         vmul.vx  v0, v0, t1
