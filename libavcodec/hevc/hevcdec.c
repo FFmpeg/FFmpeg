@@ -665,11 +665,9 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
 
         if (!sh->dependent_slice_segment_flag) {
             sh->slice_addr = sh->slice_segment_addr;
-            s->slice_idx++;
         }
     } else {
         sh->slice_segment_addr = sh->slice_addr = 0;
-        s->slice_idx           = 0;
         s->slice_initialized   = 0;
     }
 
@@ -2801,6 +2799,7 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
 {
     const HEVCPPS *pps = s->pps;
+    int ret;
 
     if (s->sh.dependent_slice_segment_flag) {
         int ctb_addr_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
@@ -2808,6 +2807,15 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
         if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
             av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
             return AVERROR_INVALIDDATA;
+        }
+    }
+
+    if (!s->sh.dependent_slice_segment_flag && s->sh.slice_type != HEVC_SLICE_I) {
+        ret = ff_hevc_slice_rpl(s);
+        if (ret < 0) {
+            av_log(s->avctx, AV_LOG_WARNING,
+                   "Error constructing the reference lists for the current slice.\n");
+            return ret;
         }
     }
 
@@ -2827,6 +2835,8 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
 
     s->local_ctx[0].tu.cu_qp_offset_cb = 0;
     s->local_ctx[0].tu.cu_qp_offset_cr = 0;
+
+    s->slice_idx += !s->sh.dependent_slice_segment_flag;
 
     if (s->avctx->active_thread_type == FF_THREAD_SLICE  &&
         s->sh.num_entry_point_offsets > 0                &&
@@ -2938,6 +2948,7 @@ static int hevc_frame_start(HEVCContext *s)
     memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
 
     s->is_decoded        = 0;
+    s->slice_idx         = 0;
     s->first_nal_type    = s->nal_unit_type;
     s->poc               = s->sh.poc;
 
@@ -3149,16 +3160,6 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
                    "Non-matching NAL types of the VCL NALUs: %d %d\n",
                    s->first_nal_type, s->nal_unit_type);
             return AVERROR_INVALIDDATA;
-        }
-
-        if (!s->sh.dependent_slice_segment_flag &&
-            s->sh.slice_type != HEVC_SLICE_I) {
-            ret = ff_hevc_slice_rpl(s);
-            if (ret < 0) {
-                av_log(s->avctx, AV_LOG_WARNING,
-                       "Error constructing the reference lists for the current slice.\n");
-                goto fail;
-            }
         }
 
         ctb_addr_ts = decode_slice_data(s, nal, &gb);
