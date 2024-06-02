@@ -94,7 +94,10 @@ static int zmq_proto_open(URLContext *h, const char *uri, int flags)
         return AVERROR_EXTERNAL;
     }
 
-    av_strstart(uri, "zmq:", &uri);
+    if (av_strstart(uri, "zmq:", &uri)) {
+        av_log(h, AV_LOG_ERROR, "URL %s lacks prefix\n", uri);
+        return AVERROR(EINVAL);
+    }
 
     /*publish during write*/
     if (h->flags & AVIO_FLAG_WRITE) {
