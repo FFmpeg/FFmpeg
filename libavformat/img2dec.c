@@ -795,11 +795,13 @@ static int jpeg_probe(const AVProbeData *p)
             state = EOI;
             break;
         case APP0:
-            if (AV_RL32(&b[i + 4]) == MKTAG('J','F','I','F'))
+            if (c == APP0 && AV_RL32(&b[i + 4]) == MKTAG('J','F','I','F'))
                 got_header = 1;
+            /* fallthrough */
         case APP1:
-            if (AV_RL32(&b[i + 4]) == MKTAG('E','x','i','f'))
+            if (c == APP1 && AV_RL32(&b[i + 4]) == MKTAG('E','x','i','f'))
                 got_header = 1;
+            /* fallthrough */
         case APP2:
         case APP3:
         case APP4:
