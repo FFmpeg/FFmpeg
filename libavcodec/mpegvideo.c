@@ -273,7 +273,7 @@ static void gray8(uint8_t *dst, const uint8_t *src, ptrdiff_t linesize, int h)
 }
 
 /* init common dct for both encoder and decoder */
-static av_cold void dct_init(MpegEncContext *s)
+static av_cold void dsp_init(MpegEncContext *s)
 {
     ff_blockdsp_init(&s->bdsp);
     ff_hpeldsp_init(&s->hdsp, s->avctx->flags);
@@ -291,29 +291,6 @@ static av_cold void dct_init(MpegEncContext *s)
             s->hdsp.put_no_rnd_pixels_tab[1][i] = gray8;
         }
     }
-
-    s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
-    s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
-    s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
-    s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_c;
-    s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_c;
-    if (s->avctx->flags & AV_CODEC_FLAG_BITEXACT)
-        s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
-    s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
-
-#if HAVE_INTRINSICS_NEON
-    ff_mpv_common_init_neon(s);
-#endif
-
-#if ARCH_ARM
-    ff_mpv_common_init_arm(s);
-#elif ARCH_PPC
-    ff_mpv_common_init_ppc(s);
-#elif ARCH_X86
-    ff_mpv_common_init_x86(s);
-#elif ARCH_MIPS
-    ff_mpv_common_init_mips(s);
-#endif
 }
 
 av_cold void ff_init_scantable(const uint8_t *permutation, ScanTable *st,
@@ -357,6 +334,29 @@ av_cold void ff_mpv_idct_init(MpegEncContext *s)
                          s->idsp.idct_permutation);
     ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
                          s->idsp.idct_permutation);
+
+    s->dct_unquantize_h263_intra  = dct_unquantize_h263_intra_c;
+    s->dct_unquantize_h263_inter  = dct_unquantize_h263_inter_c;
+    s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
+    s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_c;
+    s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_c;
+    if (s->avctx->flags & AV_CODEC_FLAG_BITEXACT)
+        s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_bitexact;
+    s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
+
+#if HAVE_INTRINSICS_NEON
+    ff_mpv_common_init_neon(s);
+#endif
+
+#if ARCH_ARM
+    ff_mpv_common_init_arm(s);
+#elif ARCH_PPC
+    ff_mpv_common_init_ppc(s);
+#elif ARCH_X86
+    ff_mpv_common_init_x86(s);
+#elif ARCH_MIPS
+    ff_mpv_common_init_mips(s);
+#endif
 }
 
 static int init_duplicate_context(MpegEncContext *s)
@@ -716,7 +716,7 @@ av_cold int ff_mpv_common_init(MpegEncContext *s)
         av_image_check_size(s->width, s->height, 0, s->avctx))
         return AVERROR(EINVAL);
 
-    dct_init(s);
+    dsp_init(s);
 
     /* set chroma shifts */
     ret = av_pix_fmt_get_chroma_sub_sample(s->avctx->pix_fmt,
