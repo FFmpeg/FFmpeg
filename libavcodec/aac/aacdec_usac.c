@@ -1338,7 +1338,7 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
         if (get_bits1(gb)) { /* fac_data_present */
             const uint16_t len_8 = usac->core_frame_len / 8;
             const uint16_t len_16 = usac->core_frame_len / 16;
-            const uint16_t fac_len = ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE ? len_8 : len_16;
+            const uint16_t fac_len = ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE ? len_16 : len_8;
             ret = ff_aac_parse_fac_data(ue, gb, 1, fac_len);
             if (ret < 0)
                 return ret;
