@@ -104,7 +104,9 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
                             y, picture_structure, h);
 }
 
-static char get_type_mv_char(int mb_type)
+#define HAS_MV_EXT(mb_type, flags, dir) ((mb_type) & flags[(dir)])
+
+static char get_type_mv_char(int mb_type, const int mb_type_mv_flags[2])
 {
     // Type & MV direction
     if (IS_PCM(mb_type))
@@ -125,12 +127,12 @@ static char get_type_mv_char(int mb_type)
         return 'G';
     else if (IS_SKIP(mb_type))
         return 'S';
-    else if (!USES_LIST(mb_type, 1))
+    else if (!HAS_MV_EXT(mb_type, 1, mb_type_mv_flags))
         return '>';
-    else if (!USES_LIST(mb_type, 0))
+    else if (!HAS_MV_EXT(mb_type, 0, mb_type_mv_flags))
         return '<';
     else {
-        av_assert2(USES_LIST(mb_type, 0) && USES_LIST(mb_type, 1));
+        av_assert2(HAS_MV_EXT(mb_type, 0, mb_type_mv_flags) && HAS_MV_EXT(mb_type, 1, mb_type_mv_flags));
         return 'X';
     }
 }
@@ -162,12 +164,15 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
                           const int8_t *qscale_table, int16_t (*const motion_val[2])[2],
                           int mb_width, int mb_height, int mb_stride, int quarter_sample)
 {
+    const int is_h264 = avctx->codec_id == AV_CODEC_ID_H264;
+    const int mb_type_mv_flags[2] = { is_h264 ? MB_TYPE_L0 : MB_TYPE_FORWARD_MV,
+                                      is_h264 ? MB_TYPE_L1 : MB_TYPE_BACKWARD_MV };
+
     if ((avctx->export_side_data & AV_CODEC_EXPORT_DATA_MVS) && mbtype_table && motion_val[0]) {
         const int shift = 1 + quarter_sample;
         const int scale = 1 << shift;
-        const int mv_sample_log2 = avctx->codec_id == AV_CODEC_ID_H264 ? 2 : 1;
-        const int mv_stride      = (mb_width << mv_sample_log2) +
-                                   (avctx->codec->id == AV_CODEC_ID_H264 ? 0 : 1);
+        const int mv_sample_log2 = is_h264 ? 2 : 1;
+        const int mv_stride      = (mb_width << mv_sample_log2) + !is_h264;
         int mb_x, mb_y, mbcount = 0;
 
         /* size is width * height * 2 * 4 where 2 is for directions and 4 is
@@ -180,7 +185,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
             for (mb_x = 0; mb_x < mb_width; mb_x++) {
                 int i, direction, mb_type = mbtype_table[mb_x + mb_y * mb_stride];
                 for (direction = 0; direction < 2; direction++) {
-                    if (!USES_LIST(mb_type, direction))
+                    if (!HAS_MV_EXT(mb_type, direction, mb_type_mv_flags))
                         continue;
                     if (IS_8X8(mb_type)) {
                         for (i = 0; i < 4; i++) {
@@ -299,7 +304,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
                     int mb_type = mbtype_table[x + y * mb_stride];
 
                     av_bprintf(&buf, "%c%c%c",
-                           get_type_mv_char(mb_type),
+                           get_type_mv_char(mb_type, mb_type_mv_flags),
                            get_segmentation_char(mb_type),
                            get_interlacement_char(mb_type));
                 }

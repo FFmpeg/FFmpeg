@@ -112,7 +112,7 @@ static int parse_mb_skip(WMV2DecContext *w)
         for (mb_y = 0; mb_y < s->mb_height; mb_y++)
             for (mb_x = 0; mb_x < s->mb_width; mb_x++)
                 mb_type[mb_y * s->mb_stride + mb_x] =
-                    MB_TYPE_16x16 | MB_TYPE_L0;
+                    MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
         break;
     case SKIP_TYPE_MPEG:
         if (get_bits_left(&s->gb) < s->mb_height * s->mb_width)
@@ -120,7 +120,7 @@ static int parse_mb_skip(WMV2DecContext *w)
         for (mb_y = 0; mb_y < s->mb_height; mb_y++)
             for (mb_x = 0; mb_x < s->mb_width; mb_x++)
                 mb_type[mb_y * s->mb_stride + mb_x] =
-                    (get_bits1(&s->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_L0;
+                    (get_bits1(&s->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
         break;
     case SKIP_TYPE_ROW:
         for (mb_y = 0; mb_y < s->mb_height; mb_y++) {
@@ -129,11 +129,11 @@ static int parse_mb_skip(WMV2DecContext *w)
             if (get_bits1(&s->gb)) {
                 for (mb_x = 0; mb_x < s->mb_width; mb_x++)
                     mb_type[mb_y * s->mb_stride + mb_x] =
-                        MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
+                        MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             } else {
                 for (mb_x = 0; mb_x < s->mb_width; mb_x++)
                     mb_type[mb_y * s->mb_stride + mb_x] =
-                        (get_bits1(&s->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_L0;
+                        (get_bits1(&s->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             }
         }
         break;
@@ -144,11 +144,11 @@ static int parse_mb_skip(WMV2DecContext *w)
             if (get_bits1(&s->gb)) {
                 for (mb_y = 0; mb_y < s->mb_height; mb_y++)
                     mb_type[mb_y * s->mb_stride + mb_x] =
-                        MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
+                        MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             } else {
                 for (mb_y = 0; mb_y < s->mb_height; mb_y++)
                     mb_type[mb_y * s->mb_stride + mb_x] =
-                        (get_bits1(&s->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_L0;
+                        (get_bits1(&s->gb) ? MB_TYPE_SKIP : 0) | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
             }
         }
         break;

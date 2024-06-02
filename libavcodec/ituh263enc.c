@@ -697,11 +697,11 @@ void ff_h263_update_mb(MpegEncContext *s)
         s->cur_pic.mbskip_table[mb_xy] = s->mb_skipped;
 
     if (s->mv_type == MV_TYPE_8X8)
-        s->cur_pic.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_8x8;
+        s->cur_pic.mb_type[mb_xy] = MB_TYPE_FORWARD_MV | MB_TYPE_8x8;
     else if(s->mb_intra)
         s->cur_pic.mb_type[mb_xy] = MB_TYPE_INTRA;
     else
-        s->cur_pic.mb_type[mb_xy] = MB_TYPE_L0 | MB_TYPE_16x16;
+        s->cur_pic.mb_type[mb_xy] = MB_TYPE_FORWARD_MV | MB_TYPE_16x16;
 
     ff_h263_update_motion_val(s);
 }

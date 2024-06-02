@@ -47,6 +47,10 @@
 #define MB_TYPE_DIRECT2    (1 <<  8) // FIXME
 #define MB_TYPE_CBP        (1 << 10)
 #define MB_TYPE_QUANT      (1 << 11)
+#define MB_TYPE_FORWARD_MV (1 << 12)
+#define MB_TYPE_BACKWARD_MV (1 << 13)
+#define MB_TYPE_BIDIR_MV   (MB_TYPE_FORWARD_MV | MB_TYPE_BACKWARD_MV)
+// MB_TYPE_P[01]L[01], MB_TYPE_L[01] and MB_TYPE_L0L1 are H.264 only.
 #define MB_TYPE_P0L0       (1 << 12)
 #define MB_TYPE_P1L0       (1 << 13)
 #define MB_TYPE_P0L1       (1 << 14)
@@ -90,6 +94,12 @@
 #define USES_LIST(a, list) ((a) & ((MB_TYPE_P0L0 | MB_TYPE_P1L0) << (2 * (list))))
 
 #define HAS_CBP(a)       ((a) & MB_TYPE_CBP)
+#define HAS_FORWARD_MV(a)  ((a) & MB_TYPE_FORWARD_MV)
+#define HAS_BACKWARD_MV(a) ((a) & MB_TYPE_BACKWARD_MV)
+// dir == 0 means forward, dir == 1 is backward
+#define HAS_MV(a, dir)     ((a) & (MB_TYPE_FORWARD_MV << (dir)))
+
+#define MB_TYPE_MV_2_MV_DIR(a) (((a) >> 12) & (MV_DIR_FORWARD | MV_DIR_BACKWARD))
 
 /**
  * Draw a horizontal band if supported.

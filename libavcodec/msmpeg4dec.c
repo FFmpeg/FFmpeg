@@ -120,7 +120,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
                 s->mb_skipped = 1;
-                *mb_type_ptr = MB_TYPE_SKIP | MB_TYPE_L0 | MB_TYPE_16x16;
+                *mb_type_ptr = MB_TYPE_SKIP | MB_TYPE_FORWARD_MV | MB_TYPE_16x16;
                 return 0;
             }
         }
@@ -170,7 +170,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, int16_t block[6][64])
         s->mv_type = MV_TYPE_16X16;
         s->mv[0][0][0] = mx;
         s->mv[0][0][1] = my;
-        *mb_type_ptr = MB_TYPE_L0 | MB_TYPE_16x16;
+        *mb_type_ptr = MB_TYPE_FORWARD_MV | MB_TYPE_16x16;
     } else {
         int v;
         if (s->msmpeg4_version == MSMP4_V2) {
@@ -226,7 +226,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
                 s->mb_skipped = 1;
-                *mb_type_ptr = MB_TYPE_SKIP | MB_TYPE_L0 | MB_TYPE_16x16;
+                *mb_type_ptr = MB_TYPE_SKIP | MB_TYPE_FORWARD_MV | MB_TYPE_16x16;
 
                 return 0;
             }
@@ -265,7 +265,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
         s->mv_type = MV_TYPE_16X16;
         s->mv[0][0][0] = mx;
         s->mv[0][0][1] = my;
-        *mb_type_ptr = MB_TYPE_L0 | MB_TYPE_16x16;
+        *mb_type_ptr = MB_TYPE_FORWARD_MV | MB_TYPE_16x16;
     } else {
         ff_dlog(s, "I at %d %d %d %06X\n", s->mb_x, s->mb_y,
                 ((cbp & 3) ? 1 : 0) +((cbp & 0x3C)? 2 : 0),

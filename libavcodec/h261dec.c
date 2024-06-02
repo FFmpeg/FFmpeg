@@ -232,7 +232,7 @@ static int h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
 
         s->mv_dir                      = MV_DIR_FORWARD;
         s->mv_type                     = MV_TYPE_16X16;
-        s->cur_pic.mb_type[xy] = MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
+        s->cur_pic.mb_type[xy] = MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
         s->mv[0][0][0]                 = 0;
         s->mv[0][0][1]                 = 0;
         s->mb_skipped                  = 1;
@@ -460,7 +460,7 @@ static int h261_decode_mb(H261DecContext *h)
     //set motion vectors
     s->mv_dir                      = MV_DIR_FORWARD;
     s->mv_type                     = MV_TYPE_16X16;
-    s->cur_pic.mb_type[xy] = MB_TYPE_16x16 | MB_TYPE_L0;
+    s->cur_pic.mb_type[xy] = MB_TYPE_16x16 | MB_TYPE_FORWARD_MV;
     s->mv[0][0][0]                 = h->current_mv_x * 2; // gets divided by 2 in motion compensation
     s->mv[0][0][1]                 = h->current_mv_y * 2;
 

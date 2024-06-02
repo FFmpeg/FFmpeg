@@ -902,6 +902,7 @@ void ff_er_frame_end(ERContext *s, int *decode_error_flags)
     int threshold = 50;
     int is_intra_likely;
     int size = s->b8_stride * 2 * s->mb_height;
+    int guessed_mb_type;
 
     /* We do not support ER of field pictures yet,
      * though it should not crash if enabled. */
@@ -1117,16 +1118,15 @@ void ff_er_frame_end(ERContext *s, int *decode_error_flags)
     is_intra_likely = is_intra_more_likely(s);
 
     /* set unknown mb-type to most likely */
+    guessed_mb_type = is_intra_likely ? MB_TYPE_INTRA4x4 :
+                         (MB_TYPE_16x16 | (s->avctx->codec_id == AV_CODEC_ID_H264 ? MB_TYPE_L0 : MB_TYPE_FORWARD_MV));
     for (i = 0; i < s->mb_num; i++) {
         const int mb_xy = s->mb_index2xy[i];
         int error = s->error_status_table[mb_xy];
         if (!((error & ER_DC_ERROR) && (error & ER_MV_ERROR)))
             continue;
 
-        if (is_intra_likely)
-            s->cur_pic.mb_type[mb_xy] = MB_TYPE_INTRA4x4;
-        else
-            s->cur_pic.mb_type[mb_xy] = MB_TYPE_16x16 | MB_TYPE_L0;
+        s->cur_pic.mb_type[mb_xy] = guessed_mb_type;
     }
 
     // change inter to intra blocks if no reference frames are available

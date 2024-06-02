@@ -59,16 +59,16 @@ static inline void ZERO8x2(void* dst, int stride)
 static const int rv34_mb_type_to_lavc[12] = {
     MB_TYPE_INTRA,
     MB_TYPE_INTRA16x16              | MB_TYPE_SEPARATE_DC,
-    MB_TYPE_16x16   | MB_TYPE_L0,
-    MB_TYPE_8x8     | MB_TYPE_L0,
-    MB_TYPE_16x16   | MB_TYPE_L0,
-    MB_TYPE_16x16   | MB_TYPE_L1,
+    MB_TYPE_16x16   | MB_TYPE_FORWARD_MV,
+    MB_TYPE_8x8     | MB_TYPE_FORWARD_MV,
+    MB_TYPE_16x16   | MB_TYPE_FORWARD_MV,
+    MB_TYPE_16x16   | MB_TYPE_BACKWARD_MV,
     MB_TYPE_SKIP,
     MB_TYPE_DIRECT2 | MB_TYPE_16x16,
-    MB_TYPE_16x8    | MB_TYPE_L0,
-    MB_TYPE_8x16    | MB_TYPE_L0,
-    MB_TYPE_16x16   | MB_TYPE_L0L1,
-    MB_TYPE_16x16   | MB_TYPE_L0    | MB_TYPE_SEPARATE_DC
+    MB_TYPE_16x8    | MB_TYPE_FORWARD_MV,
+    MB_TYPE_8x16    | MB_TYPE_FORWARD_MV,
+    MB_TYPE_16x16   | MB_TYPE_BIDIR_MV,
+    MB_TYPE_16x16   | MB_TYPE_FORWARD_MV | MB_TYPE_SEPARATE_DC
 };
 
 
@@ -568,7 +568,7 @@ static void rv34_pred_mv_b(RV34DecContext *r, int block_type, int dir)
     int mx, my;
     int i, j;
     MPVWorkPicture *cur_pic = &s->cur_pic;
-    const int mask = dir ? MB_TYPE_L1 : MB_TYPE_L0;
+    const int mask = dir ? MB_TYPE_BACKWARD_MV : MB_TYPE_FORWARD_MV;
     int type = cur_pic->mb_type[mb_pos];
 
     if((r->avail_cache[6-1] & type) & mask){
