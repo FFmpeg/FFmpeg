@@ -2578,14 +2578,6 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
     int ctb_addr_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
     int ret;
 
-    if (s->sh.dependent_slice_segment_flag) {
-        int prev_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
-        if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
-            av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
-            return AVERROR_INVALIDDATA;
-        }
-    }
-
     while (more_data && ctb_addr_ts < sps->ctb_size) {
         int ctb_addr_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts];
 
@@ -2811,6 +2803,27 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
 
     av_free(ret);
     return res;
+}
+
+static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
+{
+    const HEVCPPS *pps = s->pps;
+
+    if (s->sh.dependent_slice_segment_flag) {
+        int ctb_addr_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+        int prev_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
+        if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
+            av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
+            return AVERROR_INVALIDDATA;
+        }
+    }
+
+    if (s->avctx->active_thread_type == FF_THREAD_SLICE  &&
+        s->sh.num_entry_point_offsets > 0                &&
+        pps->num_tile_rows == 1 && pps->num_tile_columns == 1)
+        return hls_slice_data_wpp(s, nal);
+
+    return hls_decode_entry(s, gb);
 }
 
 static int set_side_data(HEVCContext *s)
@@ -3152,12 +3165,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
                 goto fail;
             }
 
-            if (s->avctx->active_thread_type == FF_THREAD_SLICE  &&
-                s->sh.num_entry_point_offsets > 0                &&
-                s->pps->num_tile_rows == 1 && s->pps->num_tile_columns == 1)
-                ctb_addr_ts = hls_slice_data_wpp(s, nal);
-            else
-                ctb_addr_ts = hls_decode_entry(s, &gb);
+            ctb_addr_ts = decode_slice_data(s, nal, &gb);
             if (ctb_addr_ts >= s->cur_frame->ctb_count) {
                 ret = hevc_frame_end(s);
                 if (ret < 0)
