@@ -311,7 +311,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     int ret, idx;
     uint8_t freq_idx;
     uint8_t channel_config_idx;
-    int nb_elements;
+    int nb_channels = 0;
     int samplerate;
     int sbr_ratio;
     MPEG4AudioConfig *m4ac = &oc->m4ac;
@@ -358,7 +358,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     channel_config_idx = get_bits(gb, 5); /* channelConfigurationIndex */
     if (!channel_config_idx) {
         /* UsacChannelConfig() */
-        uint8_t nb_channels = get_escaped_value(gb, 5, 8, 16); /* numOutChannels */
+        nb_channels = get_escaped_value(gb, 5, 8, 16); /* numOutChannels */
         if (nb_channels >= 64)
             return AVERROR(EINVAL);
 
@@ -385,9 +385,14 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         if (ret < 0)
             return ret;
     } else {
+        int nb_elements;
         if ((ret = ff_aac_set_default_channel_config(ac, avctx, layout_map,
                                                      &nb_elements, channel_config_idx)))
             return ret;
+
+        /* Fill in the number of expected channels */
+        for (int i = 0; i < nb_elements; i++)
+            nb_channels += layout_map[i][0] == TYPE_CPE ? 2 : 1;
     }
 
     /* UsacDecoderConfig */
@@ -404,6 +409,13 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         memset(e, 0, sizeof(*e));
 
         e->type = get_bits(gb, 2); /* usacElementType */
+        if (e->type != ID_USAC_EXT &&
+            (elem_id[0] + elem_id[1] + elem_id[2] + 1) > nb_channels) {
+            av_log(ac->avctx, AV_LOG_ERROR, "Too many channels for the channel "
+                                            "configuration\n");
+            return AVERROR(EINVAL);
+        }
+
         av_log(ac->avctx, AV_LOG_DEBUG, "Element present: idx %i, type %i\n",
                i, e->type);
 
