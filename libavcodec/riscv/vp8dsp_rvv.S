@@ -194,28 +194,6 @@ func ff_vp78_idct_dc_add4uv_rvv, zve64x
         ret
 endfunc
 
-.macro vp8_idct_dc_add
-        vlse32.v      v0, (a0), a2
-        lh            a5, 0(a1)
-        sh            zero, 0(a1)
-        addi          a5, a5, 4
-        srai          t1, a5, 3
-        vsetivli      zero, 4*4, e16, m2, ta, ma
-        vzext.vf2     v2, v0
-        vadd.vx       v2, v2, t1
-        vmax.vx       v2, v2, zero
-        vsetvli       zero, zero, e8, m1, ta, ma
-        vnclipu.wi    v0, v2, 0
-        vsetivli      zero, 4, e8, mf4, ta, ma
-        vsse32.v      v0, (a0), a2
-.endm
-
-.macro vp8_idct_dc_addy
-        vp8_idct_dc_add
-        addi          a0, a0, 4
-        addi          a1, a1, 32
-.endm
-
 .macro bilin_load dst type mn
 .ifc \type,v
         add             t5, a2, a3
