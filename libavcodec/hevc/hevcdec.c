@@ -3006,7 +3006,11 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         goto fail;
 
-    if (!s->avctx->hwaccel)
+    if (s->avctx->hwaccel) {
+        ret = FF_HW_CALL(s->avctx, start_frame, NULL, 0);
+        if (ret < 0)
+            goto fail;
+    } else
         ff_thread_finish_setup(s->avctx);
 
     return 0;
@@ -3146,12 +3150,6 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
                        "Error constructing the reference lists for the current slice.\n");
                 goto fail;
             }
-        }
-
-        if (s->sh.first_slice_in_pic_flag && s->avctx->hwaccel) {
-            ret = FF_HW_CALL(s->avctx, start_frame, NULL, 0);
-            if (ret < 0)
-                goto fail;
         }
 
         if (s->avctx->hwaccel) {
