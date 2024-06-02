@@ -109,7 +109,7 @@ static char get_type_mv_char(int mb_type)
     // Type & MV direction
     if (IS_PCM(mb_type))
         return 'P';
-    else if (IS_INTRA(mb_type) && IS_ACPRED(mb_type))
+    else if (IS_ACPRED(mb_type))
         return 'A';
     else if (IS_INTRA4x4(mb_type))
         return 'i';
