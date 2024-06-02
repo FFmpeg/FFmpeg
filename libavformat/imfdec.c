@@ -700,11 +700,8 @@ static int imf_read_header(AVFormatContext *s)
 static IMFVirtualTrackPlaybackCtx *get_next_track_with_minimum_timestamp(AVFormatContext *s)
 {
     IMFContext *c = s->priv_data;
-    IMFVirtualTrackPlaybackCtx *track;
+    IMFVirtualTrackPlaybackCtx *track = NULL;
     AVRational minimum_timestamp = av_make_q(INT32_MAX, 1);
-
-    if (!c->track_count)
-        return NULL;
 
     for (uint32_t i = c->track_count; i > 0; i--) {
         av_log(s, AV_LOG_TRACE, "Compare track %d timestamp " AVRATIONAL_FORMAT
