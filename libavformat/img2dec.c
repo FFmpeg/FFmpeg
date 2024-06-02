@@ -794,7 +794,6 @@ static int jpeg_probe(const AVProbeData *p)
                 return 0;
             state = EOI;
             break;
-        case DQT:
         case APP0:
             if (AV_RL32(&b[i + 4]) == MKTAG('J','F','I','F'))
                 got_header = 1;
@@ -815,6 +814,7 @@ static int jpeg_probe(const AVProbeData *p)
         case APP13:
         case APP14:
         case APP15:
+        case DQT: /* fallthrough */
         case COM:
             i += AV_RB16(&b[i + 2]) + 1;
             break;
