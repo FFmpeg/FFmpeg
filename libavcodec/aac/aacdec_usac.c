@@ -393,6 +393,11 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     /* UsacDecoderConfig */
     elem_id[0] = elem_id[1] = elem_id[2] = 0;
     usac->nb_elems = get_escaped_value(gb, 4, 8, 16) + 1;
+    if (usac->nb_elems > 64) {
+        av_log(ac->avctx, AV_LOG_ERROR, "Too many elements: %i\n",
+               usac->nb_elems);
+        return AVERROR(EINVAL);
+    }
 
     for (int i = 0; i < usac->nb_elems; i++) {
         AACUsacElemConfig *e = &usac->elems[i];
