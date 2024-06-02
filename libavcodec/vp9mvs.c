@@ -294,7 +294,8 @@ void ff_vp9_fill_mv(VP9TileData *td, VP9mv *mv, int mode, int sb)
     VP9Block *b = td->b;
 
     if (mode == ZEROMV) {
-        AV_ZERO64(mv);
+        AV_ZERO32(&mv[0]);
+        AV_ZERO32(&mv[1]);
     } else {
         int hp;
 
