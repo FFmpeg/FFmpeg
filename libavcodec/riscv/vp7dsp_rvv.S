@@ -128,7 +128,8 @@ func ff_vp7_idct_add_rvv, zve32x
 endfunc
 #endif
 
-func ff_vp7_idct_dc_add4y_rvv, zve32x
+.irp type, y, uv
+func ff_vp7_idct_dc_add4\type\()_rvv, zve32x
         li       t0, 32
         vsetivli zero, 4, e16, mf2, ta, ma
         li       t1, 23170
@@ -141,5 +142,6 @@ func ff_vp7_idct_dc_add4y_rvv, zve32x
         vadd.vx  v0, v0, t2
         vsetvli  zero, zero, e16, mf2, ta, ma
         vnsra.wi v8, v0, 18   # 4x DC
-        tail     ff_vp78_idct_dc_add4y_rvv
+        tail     ff_vp78_idct_dc_add4\type\()_rvv
 endfunc
+.endr

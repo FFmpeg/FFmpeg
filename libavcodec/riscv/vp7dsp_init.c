@@ -29,6 +29,7 @@ void ff_vp7_luma_dc_wht_rvv(int16_t block[4][4][16], int16_t dc[16]);
 void ff_vp7_idct_add_rvv(uint8_t *dst, int16_t block[16], ptrdiff_t stride);
 void ff_vp78_idct_dc_add_rvv(uint8_t *, int16_t block[16], ptrdiff_t, int dc);
 void ff_vp7_idct_dc_add4y_rvv(uint8_t *dst, int16_t block[4][16], ptrdiff_t);
+void ff_vp7_idct_dc_add4uv_rvv(uint8_t *dst, int16_t block[4][16], ptrdiff_t);
 
 static void ff_vp7_idct_dc_add_rvv(uint8_t *dst, int16_t block[16],
                                    ptrdiff_t stride)
@@ -51,6 +52,8 @@ av_cold void ff_vp7dsp_init_riscv(VP8DSPContext *c)
 #endif
         c->vp8_idct_dc_add = ff_vp7_idct_dc_add_rvv;
         c->vp8_idct_dc_add4y  = ff_vp7_idct_dc_add4y_rvv;
+        if (flags & AV_CPU_FLAG_RVV_I64)
+            c->vp8_idct_dc_add4uv = ff_vp7_idct_dc_add4uv_rvv;
     }
 #endif
 }

@@ -131,9 +131,8 @@ av_cold void ff_vp8dsp_init_riscv(VP8DSPContext *c)
 #endif
         c->vp8_idct_dc_add = ff_vp8_idct_dc_add_rvv;
         c->vp8_idct_dc_add4y = ff_vp8_idct_dc_add4y_rvv;
-        if (flags & AV_CPU_FLAG_RVB_ADDR) {
+        if (flags & AV_CPU_FLAG_RVV_I64)
             c->vp8_idct_dc_add4uv = ff_vp8_idct_dc_add4uv_rvv;
-        }
     }
 #endif
 }
