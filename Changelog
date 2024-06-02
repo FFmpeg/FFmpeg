@@ -11,6 +11,7 @@ version <next>:
 - vf_scale2ref deprecated
 - qsv_params option added for QSV encoders
 - VVC decoder compatible with DVB test content
+- xHE-AAC decoder
 
 
 version 7.0:
