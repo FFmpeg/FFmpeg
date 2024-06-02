@@ -540,7 +540,7 @@ static int decode_spectrum_and_dequant_ac(AACDecContext *s, float coef[1024],
     c = ff_aac_ac_map_process(state, reset, N);
 
     /* Backup reader for rolling back by 14 bits at the end */
-    gb2 = (GetBitContext)*gb;
+    gb2 = *gb;
     gb_count = get_bits_count(&gb2);
 
     for (i = 0; i < len/2; i++) {
