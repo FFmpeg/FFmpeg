@@ -38,7 +38,7 @@ static inline uint32_t get_escaped_value(GetBitContext *gb, int nb1, int nb2, in
         return val;
 
     val += val2 = get_bits(gb, nb2);
-    if (val2 == ((1 << nb2) - 1))
+    if (nb3 && (val2 == ((1 << nb2) - 1)))
         val += get_bits(gb, nb3);
 
     return val;
