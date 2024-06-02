@@ -2811,6 +2811,15 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
         }
     }
 
+    if (s->avctx->hwaccel)
+        return FF_HW_CALL(s->avctx, decode_slice, nal->raw_data, nal->raw_size);
+
+    if (s->avctx->profile == AV_PROFILE_HEVC_SCC) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "SCC profile is not yet implemented in hevc native decoder.\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     s->local_ctx[0].first_qp_group = !s->sh.dependent_slice_segment_flag;
 
     if (!pps->cu_qp_delta_enabled_flag)
@@ -3152,30 +3161,17 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
             }
         }
 
-        if (s->avctx->hwaccel) {
-            ret = FF_HW_CALL(s->avctx, decode_slice, nal->raw_data, nal->raw_size);
+        ctb_addr_ts = decode_slice_data(s, nal, &gb);
+        if (ctb_addr_ts >= s->cur_frame->ctb_count) {
+            ret = hevc_frame_end(s);
             if (ret < 0)
                 goto fail;
-        } else {
-            if (s->avctx->profile == AV_PROFILE_HEVC_SCC) {
-                av_log(s->avctx, AV_LOG_ERROR,
-                       "SCC profile is not yet implemented in hevc native decoder.\n");
-                ret = AVERROR_PATCHWELCOME;
-                goto fail;
-            }
+            s->is_decoded = 1;
+        }
 
-            ctb_addr_ts = decode_slice_data(s, nal, &gb);
-            if (ctb_addr_ts >= s->cur_frame->ctb_count) {
-                ret = hevc_frame_end(s);
-                if (ret < 0)
-                    goto fail;
-                s->is_decoded = 1;
-            }
-
-            if (ctb_addr_ts < 0) {
-                ret = ctb_addr_ts;
-                goto fail;
-            }
+        if (ctb_addr_ts < 0) {
+            ret = ctb_addr_ts;
+            goto fail;
         }
         break;
     case HEVC_NAL_EOS_NUT:
