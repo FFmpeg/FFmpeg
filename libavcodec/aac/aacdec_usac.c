@@ -1396,7 +1396,7 @@ static int parse_audio_preroll(AACDecContext *ac, GetBitContext *gb)
         if (au_len*8 > tmp_buf_size) {
             uint8_t *tmp2;
             tmp_buf = tmp_buf == temp_data ? NULL : tmp_buf;
-            tmp2 = realloc(tmp_buf, au_len*8);
+            tmp2 = av_realloc_array(tmp_buf, au_len, 8);
             if (!tmp2) {
                 if (tmp_buf != temp_data)
                     av_free(tmp_buf);
