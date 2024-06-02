@@ -359,7 +359,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     if (!channel_config_idx) {
         /* UsacChannelConfig() */
         nb_channels = get_escaped_value(gb, 5, 8, 16); /* numOutChannels */
-        if (nb_channels >= 64)
+        if (nb_channels > 64)
             return AVERROR(EINVAL);
 
         av_channel_layout_uninit(&ac->oc[1].ch_layout);
