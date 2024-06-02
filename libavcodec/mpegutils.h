@@ -45,8 +45,8 @@
 #define MB_TYPE_8x8        (1 <<  6)
 #define MB_TYPE_INTERLACED (1 <<  7)
 #define MB_TYPE_DIRECT2    (1 <<  8) // FIXME
-#define MB_TYPE_GMC        (1 << 10)
-#define MB_TYPE_SKIP       (1 << 11)
+#define MB_TYPE_CBP        (1 << 10)
+#define MB_TYPE_QUANT      (1 << 11)
 #define MB_TYPE_P0L0       (1 << 12)
 #define MB_TYPE_P1L0       (1 << 13)
 #define MB_TYPE_P0L1       (1 << 14)
@@ -54,8 +54,8 @@
 #define MB_TYPE_L0         (MB_TYPE_P0L0 | MB_TYPE_P1L0)
 #define MB_TYPE_L1         (MB_TYPE_P0L1 | MB_TYPE_P1L1)
 #define MB_TYPE_L0L1       (MB_TYPE_L0   | MB_TYPE_L1)
-#define MB_TYPE_QUANT      (1 << 16)
-#define MB_TYPE_CBP        (1 << 17)
+#define MB_TYPE_GMC        (1 << 16)
+#define MB_TYPE_SKIP       (1 << 17)
 #define MB_TYPE_ACPRED     (1 << 18)
 
 #define MB_TYPE_INTRA    MB_TYPE_INTRA4x4 // default mb_type if there is just one type
