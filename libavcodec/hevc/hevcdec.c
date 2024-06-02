@@ -84,10 +84,6 @@ static void pic_arrays_free(HEVCContext *s)
     av_freep(&s->horizontal_bs);
     av_freep(&s->vertical_bs);
 
-    av_freep(&s->sh.entry_point_offset);
-    av_freep(&s->sh.size);
-    av_freep(&s->sh.offset);
-
     ff_refstruct_pool_uninit(&s->tab_mvf_pool);
     ff_refstruct_pool_uninit(&s->rpl_tab_pool);
 }
