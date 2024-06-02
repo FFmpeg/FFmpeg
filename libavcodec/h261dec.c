@@ -67,9 +67,10 @@ static av_cold void h261_decode_init_static(void)
     VLC_INIT_STATIC_TABLE(h261_mba_vlc, H261_MBA_VLC_BITS, 35,
                           ff_h261_mba_bits, 1, 1,
                           ff_h261_mba_code, 1, 1, 0);
-    VLC_INIT_STATIC_TABLE(h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
-                          ff_h261_mtype_bits, 1, 1,
-                          ff_h261_mtype_code, 1, 1, 0);
+    VLC_INIT_STATIC_SPARSE_TABLE(h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
+                                 ff_h261_mtype_bits, 1, 1,
+                                 ff_h261_mtype_code, 1, 1,
+                                 ff_h261_mtype_map,  2, 2, 0);
     VLC_INIT_STATIC_TABLE(h261_mv_vlc, H261_MV_VLC_BITS, 17,
                           &ff_h261_mv_tab[0][1], 2, 1,
                           &ff_h261_mv_tab[0][0], 2, 1, 0);
@@ -418,8 +419,6 @@ static int h261_decode_mb(H261DecContext *h)
                com->mtype);
         return SLICE_ERROR;
     }
-    av_assert0(com->mtype < FF_ARRAY_ELEMS(ff_h261_mtype_map));
-    com->mtype = ff_h261_mtype_map[com->mtype];
 
     // Read mquant
     if (IS_QUANT(com->mtype))

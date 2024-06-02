@@ -72,7 +72,7 @@ const uint8_t ff_h261_mtype_bits[10] = {
     2, 6
 };
 
-const int ff_h261_mtype_map[10] = {
+const uint16_t ff_h261_mtype_map[10] = {
     MB_TYPE_INTRA4x4,
     MB_TYPE_INTRA4x4 | MB_TYPE_QUANT,
     MB_TYPE_CBP,
