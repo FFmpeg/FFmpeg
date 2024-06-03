@@ -85,12 +85,8 @@ enum {
     iso_Lc   = AV_CHAN_FRONT_LEFT_OF_CENTER,
     iso_Rc   = AV_CHAN_FRONT_RIGHT_OF_CENTER,
     iso_Cs   = AV_CHAN_BACK_CENTER,
-    /* Side and surround are not exactly the same, but in order to have
-     * consistent 5.1/7.1 layouts we map them to the side channels. */
     iso_Ls   = AV_CHAN_SIDE_LEFT,
-    iso_Lss  = AV_CHAN_SIDE_LEFT,
     iso_Rs   = AV_CHAN_SIDE_RIGHT,
-    iso_Rss  = AV_CHAN_SIDE_RIGHT,
     iso_Ts   = AV_CHAN_TOP_CENTER,
     iso_Lv   = AV_CHAN_TOP_FRONT_LEFT,
     iso_Cv   = AV_CHAN_TOP_FRONT_CENTER,
@@ -110,6 +106,8 @@ enum {
     iso_Cb   = AV_CHAN_BOTTOM_FRONT_CENTER,
     iso_Lb   = AV_CHAN_BOTTOM_FRONT_LEFT,
     iso_Rb   = AV_CHAN_BOTTOM_FRONT_RIGHT,
+    iso_Lss  = AV_CHAN_SIDE_SURROUND_LEFT,
+    iso_Rss  = AV_CHAN_SIDE_SURROUND_RIGHT,
     /* The following have no exact counterparts */
     iso_Lvs  = AV_CHAN_NONE,
     iso_Rvs  = AV_CHAN_NONE,
@@ -622,12 +620,10 @@ static const enum AVChannel iso_channel_position[] = {
     AV_CHAN_LOW_FREQUENCY,
 
     // 4: left surround
-    // TODO
-    AV_CHAN_NONE,
+    AV_CHAN_SIDE_LEFT,
 
     // 5: right surround
-    // TODO
-    AV_CHAN_NONE,
+    AV_CHAN_SIDE_RIGHT,
 
     // 6: left front centre
     AV_CHAN_FRONT_LEFT_OF_CENTER,
@@ -651,10 +647,10 @@ static const enum AVChannel iso_channel_position[] = {
     AV_CHAN_SURROUND_DIRECT_RIGHT,
 
     // 13: left side surround
-    AV_CHAN_SIDE_LEFT,
+    AV_CHAN_SIDE_SURROUND_LEFT,
 
     // 14: right side surround
-    AV_CHAN_SIDE_RIGHT,
+    AV_CHAN_SIDE_SURROUND_RIGHT,
 
     // 15: left wide front
     AV_CHAN_WIDE_LEFT,
@@ -702,12 +698,10 @@ static const enum AVChannel iso_channel_position[] = {
     AV_CHAN_BOTTOM_FRONT_CENTER,
 
     // 30: left vertical height surround
-    // TODO
-    AV_CHAN_NONE,
+    AV_CHAN_TOP_SURROUND_LEFT,
 
     // 31: right vertical height surround
-    // TODO
-    AV_CHAN_NONE,
+    AV_CHAN_TOP_SURROUND_RIGHT,
 
     // 32, 33, 34, 35, reserved
     AV_CHAN_NONE,
