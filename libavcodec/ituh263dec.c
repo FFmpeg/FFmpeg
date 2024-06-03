@@ -59,7 +59,7 @@
 #define H263_MBTYPE_B_VLC_BITS 6
 #define CBPC_B_VLC_BITS 3
 
-static const int h263_mb_type_b_map[15]= {
+static const int16_t h263_mb_type_b_map[15]= {
     MB_TYPE_DIRECT2 | MB_TYPE_BIDIR_MV,
     MB_TYPE_DIRECT2 | MB_TYPE_BIDIR_MV    | MB_TYPE_CBP,
     MB_TYPE_DIRECT2 | MB_TYPE_BIDIR_MV    | MB_TYPE_CBP | MB_TYPE_QUANT,
@@ -125,9 +125,10 @@ static av_cold void h263_decode_init_vlc(void)
     ff_h263_init_rl_inter();
     VLC_INIT_RL(ff_h263_rl_inter, 554);
     INIT_FIRST_VLC_RL(ff_rl_intra_aic, 554);
-    VLC_INIT_STATIC_TABLE(h263_mbtype_b_vlc, H263_MBTYPE_B_VLC_BITS, 15,
-                          &ff_h263_mbtype_b_tab[0][1], 2, 1,
-                          &ff_h263_mbtype_b_tab[0][0], 2, 1, 0);
+    VLC_INIT_STATIC_SPARSE_TABLE(h263_mbtype_b_vlc, H263_MBTYPE_B_VLC_BITS, 15,
+                                 &ff_h263_mbtype_b_tab[0][1], 2, 1,
+                                 &ff_h263_mbtype_b_tab[0][0], 2, 1,
+                                 h263_mb_type_b_map, 2, 2, 0);
     VLC_INIT_STATIC_TABLE(cbpc_b_vlc, CBPC_B_VLC_BITS, 4,
                           &ff_cbpc_b_tab[0][1], 2, 1,
                           &ff_cbpc_b_tab[0][0], 2, 1, 0);
@@ -911,8 +912,6 @@ int ff_h263_decode_mb(MpegEncContext *s,
                 av_log(s->avctx, AV_LOG_ERROR, "b mb_type damaged at %d %d\n", s->mb_x, s->mb_y);
                 return SLICE_ERROR;
             }
-
-            mb_type= h263_mb_type_b_map[ mb_type ];
         }while(!mb_type);
 
         s->mb_intra = IS_INTRA(mb_type);
