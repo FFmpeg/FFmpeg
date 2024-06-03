@@ -3135,17 +3135,14 @@ static int hevc_frame_end(HEVCContext *s)
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "hardware accelerator failed to decode picture\n");
-            ff_hevc_unref_frame(s->cur_frame, ~0);
             return ret;
         }
     } else {
         if (s->avctx->err_recognition & AV_EF_CRCCHECK &&
             s->sei.picture_hash.is_md5) {
             ret = verify_md5(s, s->cur_frame->f);
-            if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE) {
-                ff_hevc_unref_frame(s->cur_frame, ~0);
+            if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE)
                 return ret;
-            }
         }
     }
     s->sei.picture_hash.is_md5 = 0;
