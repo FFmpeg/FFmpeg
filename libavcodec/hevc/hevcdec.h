@@ -487,7 +487,6 @@ typedef struct HEVCContext {
     int last_eos;  ///< last packet contains an EOS/EOB NAL
     int bs_width;
     int bs_height;
-    int overlap;
 
     int is_decoded;
     // NoRaslOutputFlag associated with the last IRAP frame
