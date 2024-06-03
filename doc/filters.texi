@@ -23543,11 +23543,12 @@ tile=3x2:nb_frames=5:padding=7:margin=2
 @end itemize
 
 @section tiltandshift
+Apply tilt-and-shift effet.
 
 What happens when you invert time and space?
 
 Normally a video is composed of several frames that represent a different
-instant of time and shows a scence that evolves in the space captured by the
+instant of time and shows a scene that evolves in the space captured by the
 frame. This filter is the antipode of that concept, taking inspiration by
 tilt and shift photography.
 
@@ -23556,13 +23557,13 @@ and this is obtained by placing a slice of pixels from each frame into a single
 one. However, since there are no infinite-width frames, this is done up the
 width of the input frame, and a video is recomposed by shifting away one
 column for each subsequent frame. In order to map space to time, the filter
-tilts each input frame as well, so that motion is preseved. This is accomplished
+tilts each input frame as well, so that motion is preserved. This is accomplished
 by progressively selecting a different column from each input frame.
 
-The end result is a sort of inverted parralax, so that far away objects move
+The end result is a sort of inverted parallax, so that far away objects move
 much faster that the ones in the front. The ideal conditions for this video
 effect are when there is either very little motion and the backgroud is static,
-or when there is a lot of motion and a very wide depth of field (eg. wide
+or when there is a lot of motion and a very wide depth of field (e.g. wide
 panorama, while moving on a train).
 
 The filter accepts the following parameters:
