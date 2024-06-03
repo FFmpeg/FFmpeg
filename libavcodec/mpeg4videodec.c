@@ -67,7 +67,7 @@ static VLCElem studio_chroma_dc[528];
 
 static const uint8_t mpeg4_block_count[4] = { 0, 6, 8, 12 };
 
-static const int mb_type_b_map[4] = {
+static const int16_t mb_type_b_map[4] = {
     MB_TYPE_DIRECT2     | MB_TYPE_BIDIR_MV,
     MB_TYPE_BIDIR_MV    | MB_TYPE_16x16,
     MB_TYPE_BACKWARD_MV | MB_TYPE_16x16,
@@ -1845,7 +1845,6 @@ static int mpeg4_decode_mb(MpegEncContext *s, int16_t block[6][64])
                 av_log(s->avctx, AV_LOG_ERROR, "illegal MB_type\n");
                 return AVERROR_INVALIDDATA;
             }
-            mb_type = mb_type_b_map[mb_type];
             if (modb2) {
                 cbp = 0;
             } else {
@@ -3794,9 +3793,10 @@ static av_cold void mpeg4_init_static(void)
     VLC_INIT_STATIC_TABLE_FROM_LENGTHS(sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
                                        ff_sprite_trajectory_lens, 1,
                                        NULL, 0, 0, 0, 0);
-    VLC_INIT_STATIC_TABLE(mb_type_b_vlc, MB_TYPE_B_VLC_BITS, 4,
-                          &ff_mb_type_b_tab[0][1], 2, 1,
-                          &ff_mb_type_b_tab[0][0], 2, 1, 0);
+    VLC_INIT_STATIC_SPARSE_TABLE(mb_type_b_vlc, MB_TYPE_B_VLC_BITS, 4,
+                                 &ff_mb_type_b_tab[0][1], 2, 1,
+                                 &ff_mb_type_b_tab[0][0], 2, 1,
+                                 mb_type_b_map, 2, 2, 0);
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
