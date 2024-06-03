@@ -214,7 +214,8 @@ static void pixel_buffer_nz_tl_init(TabList *l, VVCFrameContext *fc)
     const int c_end      = chroma_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
     const int changed    = fc->tab.sz.chroma_format_idc != chroma_idc ||
         fc->tab.sz.width != width || fc->tab.sz.height != height ||
-        fc->tab.sz.ctu_width != ctu_width || fc->tab.sz.ctu_height != ctu_height;
+        fc->tab.sz.ctu_width != ctu_width || fc->tab.sz.ctu_height != ctu_height ||
+        fc->tab.sz.pixel_shift != ps;
 
     tl_init(l, 0, changed);
 
