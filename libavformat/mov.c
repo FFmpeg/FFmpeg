@@ -3389,12 +3389,12 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             corrected_dts += sample_duration * sample_count;
         }
 
-        current_dts += sc->stts_data[i].duration * sample_count;
+        current_dts += sc->stts_data[i].duration * (int64_t)sample_count;
 
         if (current_dts > corrected_dts) {
             int64_t drift = (current_dts - corrected_dts)/FFMAX(sample_count, 1);
             uint32_t correction = (sc->stts_data[i].duration > drift) ? drift : sc->stts_data[i].duration - 1;
-            current_dts -= correction * sample_count;
+            current_dts -= correction * (uint64_t)sample_count;
             sc->stts_data[i].duration -= correction;
         }
 
