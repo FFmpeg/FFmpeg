@@ -604,11 +604,6 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
         return 1; // This slice will be skipped later, do not corrupt state
     }
 
-    if ((IS_IDR(s) || IS_BLA(s)) && sh->first_slice_in_pic_flag) {
-        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        if (IS_IDR(s))
-            ff_hevc_clear_refs(s);
-    }
     sh->no_output_of_prior_pics_flag = 0;
     if (IS_IRAP(s))
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
@@ -2948,6 +2943,12 @@ static int hevc_frame_start(HEVCContext *s)
     memset(s->cbf_luma,      0, sps->min_tb_width * sps->min_tb_height);
     memset(s->is_pcm,        0, (sps->min_pu_width + 1) * (sps->min_pu_height + 1));
     memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
+
+    if ((IS_IDR(s) || IS_BLA(s))) {
+        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
+        if (IS_IDR(s))
+            ff_hevc_clear_refs(s);
+    }
 
     s->is_decoded        = 0;
     s->slice_idx         = 0;
