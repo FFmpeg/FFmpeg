@@ -296,7 +296,9 @@ static int config_props(AVFilterLink *outlink)
     double res;
     char *expr;
 
-    ff_draw_init(&rot->draw, inlink->format, 0);
+    ret = ff_draw_init(&rot->draw, inlink->format, 0);
+    if (ret < 0)
+        return ret;
     ff_draw_color(&rot->draw, &rot->color, rot->fillcolor);
 
     rot->hsub = pixdesc->log2_chroma_w;
