@@ -3065,10 +3065,60 @@ static int hevc_frame_end(HEVCContext *s)
     return 0;
 }
 
+static int decode_slice(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
+{
+    int ret;
+
+    ret = hls_slice_header(&s->sh, s, gb);
+    if (ret < 0)
+        return ret;
+
+    if ((s->avctx->skip_frame >= AVDISCARD_BIDIR && s->sh.slice_type == HEVC_SLICE_B) ||
+        (s->avctx->skip_frame >= AVDISCARD_NONINTRA && s->sh.slice_type != HEVC_SLICE_I) ||
+        (s->avctx->skip_frame >= AVDISCARD_NONKEY && !IS_IRAP(s)) ||
+        ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
+         s->no_rasl_output_flag)) {
+        return 0;
+    }
+
+    if (s->sh.first_slice_in_pic_flag) {
+        if (s->cur_frame) {
+            av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        ret = hevc_frame_start(s);
+        if (ret < 0)
+            return ret;
+    } else if (!s->cur_frame) {
+        av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (s->nal_unit_type != s->first_nal_type) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Non-matching NAL types of the VCL NALUs: %d %d\n",
+               s->first_nal_type, s->nal_unit_type);
+        return AVERROR_INVALIDDATA;
+    }
+
+    ret = decode_slice_data(s, nal, gb);
+    if (ret < 0)
+        return ret;
+    if (ret >= s->cur_frame->ctb_count) {
+        ret = hevc_frame_end(s);
+        if (ret < 0)
+            return ret;
+        s->is_decoded = 1;
+    }
+
+    return 0;
+}
+
 static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 {
     GetBitContext     gb = nal->gb;
-    int ctb_addr_ts, ret;
+    int ret;
 
     s->nal_unit_type = nal->type;
     s->temporal_id   = nal->temporal_id;
@@ -3124,52 +3174,9 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_RADL_R:
     case HEVC_NAL_RASL_N:
     case HEVC_NAL_RASL_R:
-        ret = hls_slice_header(&s->sh, s, &gb);
+        ret = decode_slice(s, nal, &gb);
         if (ret < 0)
-            return ret;
-
-        if ((s->avctx->skip_frame >= AVDISCARD_BIDIR && s->sh.slice_type == HEVC_SLICE_B) ||
-            (s->avctx->skip_frame >= AVDISCARD_NONINTRA && s->sh.slice_type != HEVC_SLICE_I) ||
-            (s->avctx->skip_frame >= AVDISCARD_NONKEY && !IS_IRAP(s)) ||
-            ((s->nal_unit_type == HEVC_NAL_RASL_R || s->nal_unit_type == HEVC_NAL_RASL_N) &&
-             s->no_rasl_output_flag)) {
-            break;
-        }
-
-        if (s->sh.first_slice_in_pic_flag) {
-            if (s->cur_frame) {
-                av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
-                ret = AVERROR_INVALIDDATA;
-                goto fail;
-            }
-
-            ret = hevc_frame_start(s);
-            if (ret < 0)
-                return ret;
-        } else if (!s->cur_frame) {
-            av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
             goto fail;
-        }
-
-        if (s->nal_unit_type != s->first_nal_type) {
-            av_log(s->avctx, AV_LOG_ERROR,
-                   "Non-matching NAL types of the VCL NALUs: %d %d\n",
-                   s->first_nal_type, s->nal_unit_type);
-            return AVERROR_INVALIDDATA;
-        }
-
-        ctb_addr_ts = decode_slice_data(s, nal, &gb);
-        if (ctb_addr_ts >= s->cur_frame->ctb_count) {
-            ret = hevc_frame_end(s);
-            if (ret < 0)
-                goto fail;
-            s->is_decoded = 1;
-        }
-
-        if (ctb_addr_ts < 0) {
-            ret = ctb_addr_ts;
-            goto fail;
-        }
         break;
     case HEVC_NAL_EOS_NUT:
     case HEVC_NAL_EOB_NUT:
