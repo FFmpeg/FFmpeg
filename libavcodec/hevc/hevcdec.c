@@ -598,10 +598,6 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
 
     // Coded parameters
     sh->first_slice_in_pic_flag = get_bits1(gb);
-    if (s->cur_frame && sh->first_slice_in_pic_flag) {
-        av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
-        return 1; // This slice will be skipped later, do not corrupt state
-    }
 
     sh->no_output_of_prior_pics_flag = 0;
     if (IS_IRAP(s))
@@ -3131,10 +3127,6 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         ret = hls_slice_header(&s->sh, s, &gb);
         if (ret < 0)
             return ret;
-        if (ret == 1) {
-            ret = AVERROR_INVALIDDATA;
-            goto fail;
-        }
 
         if ((s->avctx->skip_frame >= AVDISCARD_BIDIR && s->sh.slice_type == HEVC_SLICE_B) ||
             (s->avctx->skip_frame >= AVDISCARD_NONINTRA && s->sh.slice_type != HEVC_SLICE_I) ||
@@ -3145,6 +3137,12 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         }
 
         if (s->sh.first_slice_in_pic_flag) {
+            if (s->cur_frame) {
+                av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+
             s->overlap ++;
             ret = hevc_frame_start(s);
             if (ret < 0)
