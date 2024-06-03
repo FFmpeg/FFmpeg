@@ -1567,7 +1567,7 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
             if (!che) {
                 av_log(ac->avctx, AV_LOG_ERROR,
                        "channel element %d.%d is not allocated\n",
-                       TYPE_SCE, nb_ch_el - 1);
+                       TYPE_CPE, nb_ch_el - 1);
                 return AVERROR_INVALIDDATA;
             }
 
