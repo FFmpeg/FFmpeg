@@ -607,125 +607,51 @@ out:
 
 /* ISO/IEC 23001-8, table 8 */
 static const enum AVChannel iso_channel_position[] = {
-    // 0: left front
-    AV_CHAN_FRONT_LEFT,
+     [0] = AV_CHAN_FRONT_LEFT,              // left front
+     [1] = AV_CHAN_FRONT_RIGHT,             // right front
+     [2] = AV_CHAN_FRONT_CENTER,            // centre front
+     [3] = AV_CHAN_LOW_FREQUENCY,           // low frequency enhancement
+     [4] = AV_CHAN_SIDE_LEFT,               // left surround
+     [5] = AV_CHAN_SIDE_RIGHT,              // right surround
+     [6] = AV_CHAN_FRONT_LEFT_OF_CENTER,    // left front centre
+     [7] = AV_CHAN_FRONT_RIGHT_OF_CENTER,   // right front centre
+     [8] = AV_CHAN_BACK_LEFT,               // rear surround left
+     [9] = AV_CHAN_BACK_RIGHT,              // rear surround right
+    [10] = AV_CHAN_BACK_CENTER,             // rear centre
+    [11] = AV_CHAN_SURROUND_DIRECT_LEFT,    // left surround direct
+    [12] = AV_CHAN_SURROUND_DIRECT_RIGHT,   // right surround direct
+    [13] = AV_CHAN_SIDE_SURROUND_LEFT,      // left side surround
+    [14] = AV_CHAN_SIDE_SURROUND_RIGHT,     // right side surround
+    [15] = AV_CHAN_WIDE_LEFT,               // left wide front
+    [16] = AV_CHAN_WIDE_RIGHT,              // right wide front
+    [17] = AV_CHAN_TOP_FRONT_LEFT,          // left front vertical height
+    [18] = AV_CHAN_TOP_FRONT_RIGHT,         // right front vertical height
+    [19] = AV_CHAN_TOP_FRONT_CENTER,        // centre front vertical height
+    [20] = AV_CHAN_TOP_BACK_LEFT,           // left surround vertical height rear
+    [21] = AV_CHAN_TOP_BACK_RIGHT,          // right surround vertical height rear
+    [22] = AV_CHAN_TOP_BACK_CENTER,         // centre vertical height rear
+    [23] = AV_CHAN_TOP_SIDE_LEFT,           // left vertical height side surround
+    [24] = AV_CHAN_TOP_SIDE_RIGHT,          // right vertical height side surround
+    [25] = AV_CHAN_TOP_CENTER,              // top centre surround
+    [26] = AV_CHAN_LOW_FREQUENCY_2,         // low frequency enhancement 2
+    [27] = AV_CHAN_BOTTOM_FRONT_LEFT,       // left front vertical bottom
+    [28] = AV_CHAN_BOTTOM_FRONT_RIGHT,      // right front vertical bottom
+    [29] = AV_CHAN_BOTTOM_FRONT_CENTER,     // centre front vertical bottom
+    [30] = AV_CHAN_TOP_SURROUND_LEFT,       // left vertical height surround
+    [31] = AV_CHAN_TOP_SURROUND_RIGHT,      // right vertical height surround
 
-    // 1: right front
-    AV_CHAN_FRONT_RIGHT,
+    [32] = AV_CHAN_NONE,                    // reserved
+    [33] = AV_CHAN_NONE,                    // reserved
+    [34] = AV_CHAN_NONE,                    // reserved
+    [35] = AV_CHAN_NONE,                    // reserved
 
-    // 2: centre front
-    AV_CHAN_FRONT_CENTER,
-
-    // 3: low frequence enhancement
-    AV_CHAN_LOW_FREQUENCY,
-
-    // 4: left surround
-    AV_CHAN_SIDE_LEFT,
-
-    // 5: right surround
-    AV_CHAN_SIDE_RIGHT,
-
-    // 6: left front centre
-    AV_CHAN_FRONT_LEFT_OF_CENTER,
-
-    // 7: right front centre
-    AV_CHAN_FRONT_RIGHT_OF_CENTER,
-
-    // 8: rear surround left
-    AV_CHAN_BACK_LEFT,
-
-    // 9: rear surround right
-    AV_CHAN_BACK_RIGHT,
-
-    // 10: rear centre
-    AV_CHAN_BACK_CENTER,
-
-    // 11: left surround direct
-    AV_CHAN_SURROUND_DIRECT_LEFT,
-
-    // 12: right surround direct
-    AV_CHAN_SURROUND_DIRECT_RIGHT,
-
-    // 13: left side surround
-    AV_CHAN_SIDE_SURROUND_LEFT,
-
-    // 14: right side surround
-    AV_CHAN_SIDE_SURROUND_RIGHT,
-
-    // 15: left wide front
-    AV_CHAN_WIDE_LEFT,
-
-    // 16: right wide front
-    AV_CHAN_WIDE_RIGHT,
-
-    // 17: left front vertical height
-    AV_CHAN_TOP_FRONT_LEFT,
-
-    // 18: right front vertical height
-    AV_CHAN_TOP_FRONT_RIGHT,
-
-    // 19: centre front vertical height
-    AV_CHAN_TOP_FRONT_CENTER,
-
-    // 20: left surround vertical height rear
-    AV_CHAN_TOP_BACK_LEFT,
-
-    // 21: right surround vertical height rear
-    AV_CHAN_TOP_BACK_RIGHT,
-
-    // 22: centre vertical height rear
-    AV_CHAN_TOP_BACK_CENTER,
-
-    // 23: left vertical height side surround
-    AV_CHAN_TOP_SIDE_LEFT,
-
-    // 24: right vertical height side surround
-    AV_CHAN_TOP_SIDE_RIGHT,
-
-    // 25: top centre surround
-    AV_CHAN_TOP_CENTER,
-
-    // 26: low frequency enhancement 2
-    AV_CHAN_LOW_FREQUENCY_2,
-
-    // 27: left front vertical bottom
-    AV_CHAN_BOTTOM_FRONT_LEFT,
-
-    // 28: right front vertical bottom
-    AV_CHAN_BOTTOM_FRONT_RIGHT,
-
-    // 29: centre front vertical bottom
-    AV_CHAN_BOTTOM_FRONT_CENTER,
-
-    // 30: left vertical height surround
-    AV_CHAN_TOP_SURROUND_LEFT,
-
-    // 31: right vertical height surround
-    AV_CHAN_TOP_SURROUND_RIGHT,
-
-    // 32, 33, 34, 35, reserved
-    AV_CHAN_NONE,
-    AV_CHAN_NONE,
-    AV_CHAN_NONE,
-    AV_CHAN_NONE,
-
-    // 36: low frequency enhancement 3
-    AV_CHAN_NONE,
-
-    // 37: left edge of screen
-    AV_CHAN_NONE,
-    // 38: right edge of screen
-    AV_CHAN_NONE,
-    // 39: half-way between centre of screen and left edge of screen
-    AV_CHAN_NONE,
-    // 40: half-way between centre of screen and right edge of screen
-    AV_CHAN_NONE,
-
-    // 41: left back surround
-    AV_CHAN_NONE,
-
-    // 42: right back surround
-    AV_CHAN_NONE,
+    [36] = AV_CHAN_NONE,                    // low frequency enhancement 3
+    [37] = AV_CHAN_NONE,                    // left edge of screen
+    [38] = AV_CHAN_NONE,                    // right edge of screen
+    [39] = AV_CHAN_NONE,                    // half-way between centre of screen and left edge of screen
+    [40] = AV_CHAN_NONE,                    // half-way between centre of screen and right edge of screen
+    [41] = AV_CHAN_NONE,                    // left back surround
+    [42] = AV_CHAN_NONE,                    // right back surround
 
     // 43 - 125: reserved
     // 126: explicit position
