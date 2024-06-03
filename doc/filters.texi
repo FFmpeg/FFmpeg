@@ -11092,8 +11092,8 @@ By default, a component curve is defined by the two points @var{(0;0)} and
 "adjusted" to its own value, which means no change to the image.
 
 The filter allows you to redefine these two points and add some more. A new
-curve will be define to pass smoothly through all these new coordinates. The
-new defined points needs to be strictly increasing over the x-axis, and their
+curve will be defined to pass smoothly through all these new coordinates. The
+new defined points need to be strictly increasing over the x-axis, and their
 @var{x} and @var{y} values must be in the @var{[0;1]} interval. The curve is
 formed by using a natural or monotonic cubic spline interpolation, depending
 on the @var{interp} option (default: @code{natural}). The @code{natural}
