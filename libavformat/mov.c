@@ -3386,7 +3386,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             sc->stts_data[i].duration = 1;
             corrected_dts += (delta_magnitude < 0 ? (int64_t)delta_magnitude : 1) * sample_count;
         } else {
-            corrected_dts += sample_duration * sample_count;
+            corrected_dts += sample_duration * (int64_t)sample_count;
         }
 
         current_dts += sc->stts_data[i].duration * (int64_t)sample_count;
