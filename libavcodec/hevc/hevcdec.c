@@ -589,9 +589,8 @@ fail:
     return ret;
 }
 
-static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
+static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext *gb)
 {
-    SliceHeader *sh   = &s->sh;
     const HEVCPPS *pps;
     const HEVCSPS *sps;
     unsigned pps_id;
@@ -647,12 +646,9 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
         }
     } else {
         sh->slice_segment_addr = sh->slice_addr = 0;
-        s->slice_initialized   = 0;
     }
 
     if (!sh->dependent_slice_segment_flag) {
-        s->slice_initialized = 0;
-
         for (i = 0; i < pps->num_extra_slice_header_bits; i++)
             skip_bits(gb, 1);  // slice_reserved_undetermined_flag[]
 
@@ -990,8 +986,6 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
                "Overread slice header by %d bits\n", -get_bits_left(gb));
         return AVERROR_INVALIDDATA;
     }
-
-    s->slice_initialized = 1;
 
     return 0;
 }
@@ -2798,6 +2792,8 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
         }
     }
 
+    s->slice_initialized = 1;
+
     if (s->avctx->hwaccel)
         return FF_HW_CALL(s->avctx, decode_slice, nal->raw_data, nal->raw_size);
 
@@ -3042,6 +3038,7 @@ fail:
     if (s->cur_frame)
         ff_hevc_unref_frame(s->cur_frame, ~0);
     s->cur_frame = s->collocated_ref = NULL;
+    s->slice_initialized = 0;
     return ret;
 }
 
@@ -3131,14 +3128,13 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_RADL_R:
     case HEVC_NAL_RASL_N:
     case HEVC_NAL_RASL_R:
-        ret = hls_slice_header(s, &gb);
+        ret = hls_slice_header(&s->sh, s, &gb);
         if (ret < 0)
             return ret;
         if (ret == 1) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
         }
-
 
         if ((s->avctx->skip_frame >= AVDISCARD_BIDIR && s->sh.slice_type == HEVC_SLICE_B) ||
             (s->avctx->skip_frame >= AVDISCARD_NONINTRA && s->sh.slice_type != HEVC_SLICE_I) ||
@@ -3211,6 +3207,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->last_eos = s->eos;
     s->eos = 0;
     s->overlap = 0;
+    s->slice_initialized = 0;
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
