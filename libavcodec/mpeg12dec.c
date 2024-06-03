@@ -93,32 +93,6 @@ typedef struct Mpeg1Context {
     int64_t timecode_frame_start;  /*< GOP timecode frame start number, in non drop frame format */
 } Mpeg1Context;
 
-#define MB_TYPE_ZERO_MV   0x20000000
-
-static const uint32_t ptype2mb_type[7] = {
-                    MB_TYPE_INTRA,
-                    MB_TYPE_FORWARD_MV | MB_TYPE_CBP | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
-                    MB_TYPE_FORWARD_MV,
-                    MB_TYPE_FORWARD_MV | MB_TYPE_CBP,
-    MB_TYPE_QUANT | MB_TYPE_INTRA,
-    MB_TYPE_QUANT | MB_TYPE_FORWARD_MV | MB_TYPE_CBP | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
-    MB_TYPE_QUANT | MB_TYPE_FORWARD_MV | MB_TYPE_CBP,
-};
-
-static const uint32_t btype2mb_type[11] = {
-                    MB_TYPE_INTRA,
-                    MB_TYPE_BACKWARD_MV,
-                    MB_TYPE_BACKWARD_MV | MB_TYPE_CBP,
-                    MB_TYPE_FORWARD_MV,
-                    MB_TYPE_FORWARD_MV  | MB_TYPE_CBP,
-                    MB_TYPE_BIDIR_MV,
-                    MB_TYPE_BIDIR_MV    | MB_TYPE_CBP,
-    MB_TYPE_QUANT | MB_TYPE_INTRA,
-    MB_TYPE_QUANT | MB_TYPE_BACKWARD_MV | MB_TYPE_CBP,
-    MB_TYPE_QUANT | MB_TYPE_FORWARD_MV  | MB_TYPE_CBP,
-    MB_TYPE_QUANT | MB_TYPE_BIDIR_MV    | MB_TYPE_CBP,
-};
-
 /* as H.263, but only 17 codes */
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
 {
@@ -483,7 +457,6 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                    "Invalid mb type in P-frame at %d %d\n", s->mb_x, s->mb_y);
             return AVERROR_INVALIDDATA;
         }
-        mb_type = ptype2mb_type[mb_type];
         break;
     case AV_PICTURE_TYPE_B:
         mb_type = get_vlc2(&s->gb, ff_mb_btype_vlc, MB_BTYPE_VLC_BITS, 1);
@@ -492,7 +465,6 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
                    "Invalid mb type in B-frame at %d %d\n", s->mb_x, s->mb_y);
             return AVERROR_INVALIDDATA;
         }
-        mb_type = btype2mb_type[mb_type];
         break;
     }
     ff_tlog(s->avctx, "mb_type=%x\n", mb_type);

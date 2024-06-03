@@ -25,6 +25,8 @@
 #include "get_bits.h"
 #include "mpeg12vlc.h"
 
+#define MB_TYPE_ZERO_MV   MB_TYPE_CODEC_SPECIFIC
+
 static inline int decode_dc(GetBitContext *gb, int component)
 {
     int code, diff;
