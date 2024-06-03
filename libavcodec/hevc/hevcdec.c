@@ -594,6 +594,7 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
     SliceHeader *sh   = &s->sh;
     const HEVCPPS *pps;
     const HEVCSPS *sps;
+    unsigned pps_id;
     int i, ret;
 
     // Coded parameters
@@ -612,39 +613,22 @@ static int hls_slice_header(HEVCContext *s, GetBitContext *gb)
     if (IS_IRAP(s))
         sh->no_output_of_prior_pics_flag = get_bits1(gb);
 
-    sh->pps_id = get_ue_golomb_long(gb);
-    if (sh->pps_id >= HEVC_MAX_PPS_COUNT || !s->ps.pps_list[sh->pps_id]) {
-        av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", sh->pps_id);
+    pps_id = get_ue_golomb_long(gb);
+    if (pps_id >= HEVC_MAX_PPS_COUNT || !s->ps.pps_list[pps_id]) {
+        av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", pps_id);
         return AVERROR_INVALIDDATA;
     }
-    if (!sh->first_slice_in_pic_flag &&
-        s->pps != s->ps.pps_list[sh->pps_id]) {
+    if (!sh->first_slice_in_pic_flag && pps_id != sh->pps_id) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
         return AVERROR_INVALIDDATA;
     }
-    ff_refstruct_replace(&s->pps, s->ps.pps_list[sh->pps_id]);
-    pps = s->pps;
+    sh->pps_id = pps_id;
+
+    pps = s->ps.pps_list[pps_id];
     sps = pps->sps;
 
     if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
-
-    if (s->ps.sps != sps) {
-        enum AVPixelFormat pix_fmt;
-
-        ff_hevc_clear_refs(s);
-
-        ret = set_sps(s, sps, sps->pix_fmt);
-        if (ret < 0)
-            return ret;
-
-        pix_fmt = get_format(s, sps);
-        if (pix_fmt < 0)
-            return pix_fmt;
-        s->avctx->pix_fmt = pix_fmt;
-
-        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-    }
 
     sh->dependent_slice_segment_flag = 0;
     if (!sh->first_slice_in_pic_flag) {
@@ -2935,11 +2919,29 @@ static int set_side_data(HEVCContext *s)
 
 static int hevc_frame_start(HEVCContext *s)
 {
-    const HEVCPPS *const pps = s->pps;
+    const HEVCPPS *const pps = s->ps.pps_list[s->sh.pps_id];
     const HEVCSPS *const sps = pps->sps;
     int pic_size_in_ctb  = ((sps->width  >> sps->log2_min_cb_size) + 1) *
                            ((sps->height >> sps->log2_min_cb_size) + 1);
     int ret;
+
+    ff_refstruct_replace(&s->pps, pps);
+    if (s->ps.sps != sps) {
+        enum AVPixelFormat pix_fmt;
+
+        ff_hevc_clear_refs(s);
+
+        ret = set_sps(s, sps, sps->pix_fmt);
+        if (ret < 0)
+            return ret;
+
+        pix_fmt = get_format(s, sps);
+        if (pix_fmt < 0)
+            return pix_fmt;
+        s->avctx->pix_fmt = pix_fmt;
+
+        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
+    }
 
     memset(s->horizontal_bs, 0, s->bs_width * s->bs_height);
     memset(s->vertical_bs,   0, s->bs_width * s->bs_height);
