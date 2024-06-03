@@ -2942,7 +2942,6 @@ static int hevc_frame_start(HEVCContext *s)
             ff_hevc_clear_refs(s);
     }
 
-    s->is_decoded        = 0;
     s->slice_idx         = 0;
     s->first_nal_type    = s->nal_unit_type;
     s->poc               = s->sh.poc;
@@ -3038,6 +3037,75 @@ fail:
     return ret;
 }
 
+static int verify_md5(HEVCContext *s, AVFrame *frame)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+    char msg_buf[4 * (50 + 2 * 2 * 16 /* MD5-size */)];
+    int pixel_shift;
+    int err = 0;
+    int i, j;
+
+    if (!desc)
+        return AVERROR(EINVAL);
+
+    pixel_shift = desc->comp[0].depth > 8;
+
+    /* the checksums are LE, so we have to byteswap for >8bpp formats
+     * on BE arches */
+#if HAVE_BIGENDIAN
+    if (pixel_shift && !s->checksum_buf) {
+        av_fast_malloc(&s->checksum_buf, &s->checksum_buf_size,
+                       FFMAX3(frame->linesize[0], frame->linesize[1],
+                              frame->linesize[2]));
+        if (!s->checksum_buf)
+            return AVERROR(ENOMEM);
+    }
+#endif
+
+    msg_buf[0] = '\0';
+    for (i = 0; frame->data[i]; i++) {
+        int width  = s->avctx->coded_width;
+        int height = s->avctx->coded_height;
+        int w = (i == 1 || i == 2) ? (width  >> desc->log2_chroma_w) : width;
+        int h = (i == 1 || i == 2) ? (height >> desc->log2_chroma_h) : height;
+        uint8_t md5[16];
+
+        av_md5_init(s->md5_ctx);
+        for (j = 0; j < h; j++) {
+            const uint8_t *src = frame->data[i] + j * frame->linesize[i];
+#if HAVE_BIGENDIAN
+            if (pixel_shift) {
+                s->bdsp.bswap16_buf((uint16_t *) s->checksum_buf,
+                                    (const uint16_t *) src, w);
+                src = s->checksum_buf;
+            }
+#endif
+            av_md5_update(s->md5_ctx, src, w << pixel_shift);
+        }
+        av_md5_final(s->md5_ctx, md5);
+
+#define MD5_PRI "%016" PRIx64 "%016" PRIx64
+#define MD5_PRI_ARG(buf) AV_RB64(buf), AV_RB64((const uint8_t*)(buf) + 8)
+
+        if (!memcmp(md5, s->sei.picture_hash.md5[i], 16)) {
+            av_strlcatf(msg_buf, sizeof(msg_buf),
+                        "plane %d - correct " MD5_PRI "; ",
+                        i, MD5_PRI_ARG(md5));
+        } else {
+            av_strlcatf(msg_buf, sizeof(msg_buf),
+                       "mismatching checksum of plane %d - " MD5_PRI " != " MD5_PRI "; ",
+                        i, MD5_PRI_ARG(md5), MD5_PRI_ARG(s->sei.picture_hash.md5[i]));
+            err = AVERROR_INVALIDDATA;
+        }
+    }
+
+    av_log(s->avctx, err < 0 ? AV_LOG_ERROR : AV_LOG_DEBUG,
+           "Verifying checksum for frame with POC %d: %s\n",
+           s->poc, msg_buf);
+
+    return err;
+    }
+
 static int hevc_frame_end(HEVCContext *s)
 {
     HEVCFrame *out = s->cur_frame;
@@ -3061,6 +3129,28 @@ static int hevc_frame_end(HEVCContext *s)
         }
         av_assert1(ret >= 0);
     }
+
+    if (s->avctx->hwaccel) {
+        ret = FF_HW_SIMPLE_CALL(s->avctx, end_frame);
+        if (ret < 0) {
+            av_log(s->avctx, AV_LOG_ERROR,
+                   "hardware accelerator failed to decode picture\n");
+            ff_hevc_unref_frame(s->cur_frame, ~0);
+            return ret;
+        }
+    } else {
+        if (s->avctx->err_recognition & AV_EF_CRCCHECK &&
+            s->sei.picture_hash.is_md5) {
+            ret = verify_md5(s, s->cur_frame->f);
+            if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE) {
+                ff_hevc_unref_frame(s->cur_frame, ~0);
+                return ret;
+            }
+        }
+    }
+    s->sei.picture_hash.is_md5 = 0;
+
+    av_log(s->avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
 
     return 0;
 }
@@ -3109,7 +3199,6 @@ static int decode_slice(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
         ret = hevc_frame_end(s);
         if (ret < 0)
             return ret;
-        s->is_decoded = 1;
     }
 
     return 0;
@@ -3290,75 +3379,6 @@ fail:
     return ret;
 }
 
-static int verify_md5(HEVCContext *s, AVFrame *frame)
-{
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-    char msg_buf[4 * (50 + 2 * 2 * 16 /* MD5-size */)];
-    int pixel_shift;
-    int err = 0;
-    int i, j;
-
-    if (!desc)
-        return AVERROR(EINVAL);
-
-    pixel_shift = desc->comp[0].depth > 8;
-
-    /* the checksums are LE, so we have to byteswap for >8bpp formats
-     * on BE arches */
-#if HAVE_BIGENDIAN
-    if (pixel_shift && !s->checksum_buf) {
-        av_fast_malloc(&s->checksum_buf, &s->checksum_buf_size,
-                       FFMAX3(frame->linesize[0], frame->linesize[1],
-                              frame->linesize[2]));
-        if (!s->checksum_buf)
-            return AVERROR(ENOMEM);
-    }
-#endif
-
-    msg_buf[0] = '\0';
-    for (i = 0; frame->data[i]; i++) {
-        int width  = s->avctx->coded_width;
-        int height = s->avctx->coded_height;
-        int w = (i == 1 || i == 2) ? (width  >> desc->log2_chroma_w) : width;
-        int h = (i == 1 || i == 2) ? (height >> desc->log2_chroma_h) : height;
-        uint8_t md5[16];
-
-        av_md5_init(s->md5_ctx);
-        for (j = 0; j < h; j++) {
-            const uint8_t *src = frame->data[i] + j * frame->linesize[i];
-#if HAVE_BIGENDIAN
-            if (pixel_shift) {
-                s->bdsp.bswap16_buf((uint16_t *) s->checksum_buf,
-                                    (const uint16_t *) src, w);
-                src = s->checksum_buf;
-            }
-#endif
-            av_md5_update(s->md5_ctx, src, w << pixel_shift);
-        }
-        av_md5_final(s->md5_ctx, md5);
-
-#define MD5_PRI "%016" PRIx64 "%016" PRIx64
-#define MD5_PRI_ARG(buf) AV_RB64(buf), AV_RB64((const uint8_t*)(buf) + 8)
-
-        if (!memcmp(md5, s->sei.picture_hash.md5[i], 16)) {
-            av_strlcatf(msg_buf, sizeof(msg_buf),
-                        "plane %d - correct " MD5_PRI "; ",
-                        i, MD5_PRI_ARG(md5));
-        } else {
-            av_strlcatf(msg_buf, sizeof(msg_buf),
-                       "mismatching checksum of plane %d - " MD5_PRI " != " MD5_PRI "; ",
-                        i, MD5_PRI_ARG(md5), MD5_PRI_ARG(s->sei.picture_hash.md5[i]));
-            err = AVERROR_INVALIDDATA;
-        }
-    }
-
-    av_log(s->avctx, err < 0 ? AV_LOG_ERROR : AV_LOG_DEBUG,
-           "Verifying checksum for frame with POC %d: %s\n",
-           s->poc, msg_buf);
-
-    return err;
-}
-
 static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length, int first)
 {
     int ret, i;
@@ -3423,31 +3443,6 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     ret    = decode_nal_units(s, avpkt->data, avpkt->size);
     if (ret < 0)
         return ret;
-
-    if (avctx->hwaccel) {
-        if (s->cur_frame && (ret = FF_HW_SIMPLE_CALL(avctx, end_frame)) < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "hardware accelerator failed to decode picture\n");
-            ff_hevc_unref_frame(s->cur_frame, ~0);
-            return ret;
-        }
-    } else {
-        /* verify the SEI checksum */
-        if (avctx->err_recognition & AV_EF_CRCCHECK && s->cur_frame && s->is_decoded &&
-            s->sei.picture_hash.is_md5) {
-            ret = verify_md5(s, s->cur_frame->f);
-            if (ret < 0 && avctx->err_recognition & AV_EF_EXPLODE) {
-                ff_hevc_unref_frame(s->cur_frame, ~0);
-                return ret;
-            }
-        }
-    }
-    s->sei.picture_hash.is_md5 = 0;
-
-    if (s->is_decoded) {
-        av_log(avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
-        s->is_decoded = 0;
-    }
 
     if (s->output_frame->buf[0]) {
         av_frame_move_ref(rframe, s->output_frame);

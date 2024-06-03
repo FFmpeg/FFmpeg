@@ -488,7 +488,6 @@ typedef struct HEVCContext {
     int bs_width;
     int bs_height;
 
-    int is_decoded;
     // NoRaslOutputFlag associated with the last IRAP frame
     int no_rasl_output_flag;
 
