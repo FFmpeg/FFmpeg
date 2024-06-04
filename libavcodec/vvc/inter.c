@@ -57,6 +57,8 @@ static void emulated_edge(const VVCLocalContext *lc, uint8_t *dst,
     const int dmvr_clip       = x_sb != x_off || y_sb != y_off;
     int pic_width, pic_height;
 
+    *src  += y_off * *src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
+
     subpic_offset(&x_off, &y_off, sps, pps, subpic_idx, is_chroma);
     subpic_offset(&x_sb, &y_sb, sps, pps, subpic_idx, is_chroma);
     subpic_width_height(&pic_width, &pic_height, sps, pps, subpic_idx, is_chroma);
@@ -170,7 +172,6 @@ static void mc(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref, const Mv 
 
     x_off += mv->x >> (4 + hs);
     y_off += mv->y >> (4 + vs);
-    src  += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
 
     MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
     fc->vvcdsp.inter.put[is_chroma][idx][!!my][!!mx](dst, src, src_stride, block_h, hf, vf, block_w);
@@ -199,7 +200,6 @@ static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride
 
     x_off += mv->x >> (4 + hs);
     y_off += mv->y >> (4 + vs);
-    src  += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
 
     MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
     if (derive_weight_uni(&denom, &wx, &ox, lc, mvf, c_idx)) {
@@ -236,7 +236,7 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
         const int oy            = y_off + (mv->y >> (4 + vs));
         const VVCFrame *ref     = refs[i];
         ptrdiff_t src_stride    = ref->frame->linesize[c_idx];
-        const uint8_t *src      = ref->frame->data[c_idx] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
+        const uint8_t *src      = ref->frame->data[c_idx];
         const int8_t *hf        = INTER_FILTER(hpel_if_idx, mx);
         const int8_t *vf        = INTER_FILTER(hpel_if_idx, my);
 
@@ -306,7 +306,6 @@ static void scaled_ref_pos_and_step(const VVCLocalContext *lc, const VVCRefPic *
 static void emulated_edge_scaled(VVCLocalContext *lc, const uint8_t **src, ptrdiff_t *src_stride, int *src_height,
     const VVCFrame *ref, const int x, const int y, const int dx, const int dy, const int w, const int h, const int is_chroma)
 {
-    const VVCFrameContext *fc = lc->fc;
     const int x_off           = SCALED_INT(x);
     const int y_off           = SCALED_INT(y);
     const int x_end           = SCALED_INT(x + w * dx);
@@ -315,8 +314,6 @@ static void emulated_edge_scaled(VVCLocalContext *lc, const uint8_t **src, ptrdi
     const int y_last          = SCALED_INT(y + (h - 1) * dy);
     const int block_w         = x_end - x_off + (x_end == x_last);
     const int block_h         = *src_height = y_end - y_off + (y_end == y_last);
-
-    *src  += y_off * *src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
 
     MC_EMULATED_EDGE(lc->edge_emu_buffer, src, src_stride, x_off, y_off);
 }
@@ -414,7 +411,6 @@ static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst
 
     x_off += mv->x >> 4;
     y_off += mv->y >> 4;
-    src   += y_off * src_stride + (x_off * (1 << fc->ps.sps->pixel_shift));
 
     MC_EMULATED_EDGE(lc->edge_emu_buffer, &src, &src_stride, x_off, y_off);
     if (cb_prof_flag) {
@@ -444,8 +440,8 @@ static void luma_prof(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref,
     const int idx             = av_log2(block_w) - 1;
     const int is_chroma       = 0;
     uint16_t *prof_tmp        = lc->tmp2 + PROF_TEMP_OFFSET;
-    ptrdiff_t src_stride      = ref->frame->linesize[0];
-    const uint8_t *src        = ref->frame->data[0] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
+    ptrdiff_t src_stride      = ref->frame->linesize[LUMA];
+    const uint8_t *src        = ref->frame->data[LUMA];
     const int8_t *hf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][mx];
     const int8_t *vf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][my];
 
@@ -704,7 +700,7 @@ static void dmvr_mv_refine(VVCLocalContext *lc, MvField *mvf, MvField *orig_mv, 
         const int oy            = y_off + (mv->y >> 4) - sr_range;
         const VVCFrame *ref     = refs[i];
         ptrdiff_t src_stride    = ref->frame->linesize[LUMA];
-        const uint8_t *src      = ref->frame->data[LUMA] + oy * src_stride + (ox * (1 << fc->ps.sps->pixel_shift));
+        const uint8_t *src      = ref->frame->data[LUMA];
         MC_EMULATED_EDGE_BILINEAR(lc->edge_emu_buffer, &src, &src_stride, ox, oy);
         fc->vvcdsp.inter.dmvr[!!my][!!mx](tmp[i], src, src_stride, pred_h, mx, my, pred_w);
     }
