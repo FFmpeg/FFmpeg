@@ -80,11 +80,10 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
           s->avctx->mb_decision != FF_MB_DECISION_RD))  // FIXME precalc
 #endif /* IS_ENCODER */
     {
-        uint8_t *dest_y, *dest_cb, *dest_cr;
+        uint8_t *dest_y = s->dest[0], *dest_cb = s->dest[1], *dest_cr = s->dest[2];
         int dct_linesize, dct_offset;
         const int linesize   = s->cur_pic.linesize[0]; //not s->linesize as this would be wrong for field pics
         const int uvlinesize = s->cur_pic.linesize[1];
-        const int readable   = IS_ENCODER || lowres_flag || s->pict_type != AV_PICTURE_TYPE_B;
         const int block_size = lowres_flag ? 8 >> s->avctx->lowres : 8;
 
         /* avoid copy if macroblock skipped in last frame too */
@@ -105,16 +104,6 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
 
         dct_linesize = linesize << s->interlaced_dct;
         dct_offset   = s->interlaced_dct ? linesize : linesize * block_size;
-
-        if (readable) {
-            dest_y  = s->dest[0];
-            dest_cb = s->dest[1];
-            dest_cr = s->dest[2];
-        } else {
-            dest_y  = s->sc.b_scratchpad;
-            dest_cb = s->sc.b_scratchpad + 16 * linesize;
-            dest_cr = s->sc.b_scratchpad + 32 * linesize;
-        }
 
         if (!s->mb_intra) {
             /* motion handling */
@@ -169,7 +158,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 if(  (s->avctx->skip_idct >= AVDISCARD_NONREF && s->pict_type == AV_PICTURE_TYPE_B)
                    ||(s->avctx->skip_idct >= AVDISCARD_NONKEY && s->pict_type != AV_PICTURE_TYPE_I)
                    || s->avctx->skip_idct >= AVDISCARD_ALL)
-                    goto skip_idct;
+                    return;
             }
 
             /* add dct residue */
@@ -287,14 +276,6 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                         }
                     }
                 } //gray
-            }
-        }
-skip_idct:
-        if (!readable) {
-            s->hdsp.put_pixels_tab[0][0](s->dest[0], dest_y, linesize, 16);
-            if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
-                s->hdsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[1], dest_cb, uvlinesize, 16 >> s->chroma_y_shift);
-                s->hdsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[2], dest_cr, uvlinesize, 16 >> s->chroma_y_shift);
             }
 #endif /* !IS_ENCODER */
         }

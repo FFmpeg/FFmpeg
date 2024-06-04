@@ -35,7 +35,6 @@ typedef struct ScratchpadContext {
     uint8_t *obmc_scratchpad;
     union {
         uint8_t *scratchpad_buf;  ///< the other *_scratchpad point into this buffer
-        uint8_t *b_scratchpad;    ///< scratchpad used for writing into write only buffers
         uint8_t *rd_scratchpad;   ///< scratchpad for rate distortion mb decision
     };
     int      linesize;            ///< linesize that the buffers in this context have been allocated for
