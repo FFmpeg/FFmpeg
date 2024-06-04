@@ -562,7 +562,7 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) &&
         avctx->mb_decision != FF_MB_DECISION_RD) {
-        av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=2\n");
+        av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=rd\n");
         return AVERROR(EINVAL);
     }
 
