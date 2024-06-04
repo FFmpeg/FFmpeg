@@ -127,14 +127,14 @@ static void emulated_edge(const VVCLocalContext *lc, uint8_t *dst,
 static int derive_weight_uni(int *denom, int *wx, int *ox,
     const VVCLocalContext *lc, const MvField *mvf, const int c_idx)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const VVCPPS *pps           = fc->ps.pps;
-    const VVCSH *sh             = &lc->sc->sh;
-    const int weight_flag       = (IS_P(sh->r) && pps->r->pps_weighted_pred_flag) ||
+    const VVCFrameContext *fc = lc->fc;
+    const VVCPPS *pps         = fc->ps.pps;
+    const VVCSH *sh           = &lc->sc->sh;
+    const int weight_flag     = (IS_P(sh->r) && pps->r->pps_weighted_pred_flag) ||
                                   (IS_B(sh->r) && pps->r->pps_weighted_bipred_flag);
     if (weight_flag) {
-        const int lx                = mvf->pred_flag - PF_L0;
-        const PredWeightTable *w    = pps->r->pps_wp_info_in_ph_flag ? &fc->ps.ph.pwt : &sh->pwt;
+        const int lx             = mvf->pred_flag - PF_L0;
+        const PredWeightTable *w = pps->r->pps_wp_info_in_ph_flag ? &fc->ps.ph.pwt : &sh->pwt;
 
         *denom = w->log2_denom[c_idx > 0];
         *wx = w->weight[lx][c_idx][mvf->ref_idx[lx]];
@@ -147,11 +147,11 @@ static int derive_weight_uni(int *denom, int *wx, int *ox,
 static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
     const VVCLocalContext *lc, const MvField *mvf, const int c_idx, const int dmvr_flag)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const VVCPPS *pps           = fc->ps.pps;
-    const VVCSH *sh             = &lc->sc->sh;
-    const int bcw_idx           = mvf->bcw_idx;
-    const int weight_flag       = (IS_P(sh->r) && pps->r->pps_weighted_pred_flag) ||
+    const VVCFrameContext *fc = lc->fc;
+    const VVCPPS *pps         = fc->ps.pps;
+    const VVCSH *sh           = &lc->sc->sh;
+    const int bcw_idx         = mvf->bcw_idx;
+    const int weight_flag     = (IS_P(sh->r) && pps->r->pps_weighted_pred_flag) ||
                                   (IS_B(sh->r) && pps->r->pps_weighted_bipred_flag && !dmvr_flag);
     if ((!weight_flag && !bcw_idx) || (bcw_idx && lc->cu->ciip_flag))
         return 0;
@@ -162,7 +162,7 @@ static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
         *w0 = 8 - *w1;
         *o0 = *o1 = 0;
     } else {
-        const VVCPPS *pps = fc->ps.pps;
+        const VVCPPS *pps        = fc->ps.pps;
         const PredWeightTable *w = pps->r->pps_wp_info_in_ph_flag ? &fc->ps.ph.pwt : &sh->pwt;
 
         *denom = w->log2_denom[c_idx > 0];
@@ -179,20 +179,20 @@ static int derive_weight(int *denom, int *w0, int *w1, int *o0, int *o1,
 static void mc(VVCLocalContext *lc, int16_t *dst, const VVCFrame *ref, const Mv *mv,
     int x_off, int y_off, const int block_w, const int block_h, const int c_idx)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const PredictionUnit *pu    = &lc->cu->pu;
-    const uint8_t *src          = ref->frame->data[c_idx];
-    ptrdiff_t src_stride        = ref->frame->linesize[c_idx];
-    const int is_chroma         = !!c_idx;
-    const int hs                = fc->ps.sps->hshift[c_idx];
-    const int vs                = fc->ps.sps->vshift[c_idx];
-    const int idx               = av_log2(block_w) - 1;
-    const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
-    const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
-    const int hpel_if_idx       = (is_chroma || pu->merge_gpm_flag) ? 0 : pu->mi.hpel_if_idx;
-    const int8_t *hf            = INTER_FILTER(hpel_if_idx, mx);
-    const int8_t *vf            = INTER_FILTER(hpel_if_idx, my);
-    const int wrap_enabled      = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
+    const VVCFrameContext *fc = lc->fc;
+    const PredictionUnit *pu  = &lc->cu->pu;
+    const uint8_t *src        = ref->frame->data[c_idx];
+    ptrdiff_t src_stride      = ref->frame->linesize[c_idx];
+    const int is_chroma       = !!c_idx;
+    const int hs              = fc->ps.sps->hshift[c_idx];
+    const int vs              = fc->ps.sps->vshift[c_idx];
+    const int idx             = av_log2(block_w) - 1;
+    const intptr_t mx         = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
+    const intptr_t my         = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
+    const int hpel_if_idx     = (is_chroma || pu->merge_gpm_flag) ? 0 : pu->mi.hpel_if_idx;
+    const int8_t *hf          = INTER_FILTER(hpel_if_idx, mx);
+    const int8_t *vf          = INTER_FILTER(hpel_if_idx, my);
+    const int wrap_enabled    = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
 
     x_off += mv->x >> (4 + hs);
     y_off += mv->y >> (4 + vs);
@@ -205,22 +205,22 @@ static void mc_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride
     const VVCFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
     const int c_idx)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const PredictionUnit *pu    = &lc->cu->pu;
-    const uint8_t *src          = ref->frame->data[c_idx];
-    ptrdiff_t src_stride        = ref->frame->linesize[c_idx];
-    const int lx                = mvf->pred_flag - PF_L0;
-    const int hs                = fc->ps.sps->hshift[c_idx];
-    const int vs                = fc->ps.sps->vshift[c_idx];
-    const int idx               = av_log2(block_w) - 1;
-    const Mv *mv                = &mvf->mv[lx];
-    const int is_chroma         = !!c_idx;
-    const intptr_t mx           = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
-    const intptr_t my           = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
-    const int hpel_if_idx       = is_chroma ? 0 : pu->mi.hpel_if_idx;
-    const int8_t *hf            = INTER_FILTER(hpel_if_idx, mx);
-    const int8_t *vf            = INTER_FILTER(hpel_if_idx, my);
-    const int wrap_enabled      = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
+    const VVCFrameContext *fc = lc->fc;
+    const PredictionUnit *pu  = &lc->cu->pu;
+    const uint8_t *src        = ref->frame->data[c_idx];
+    ptrdiff_t src_stride      = ref->frame->linesize[c_idx];
+    const int lx              = mvf->pred_flag - PF_L0;
+    const int hs              = fc->ps.sps->hshift[c_idx];
+    const int vs              = fc->ps.sps->vshift[c_idx];
+    const int idx             = av_log2(block_w) - 1;
+    const Mv *mv              = &mvf->mv[lx];
+    const int is_chroma       = !!c_idx;
+    const intptr_t mx         = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
+    const intptr_t my         = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
+    const int hpel_if_idx     = is_chroma ? 0 : pu->mi.hpel_if_idx;
+    const int8_t *hf          = INTER_FILTER(hpel_if_idx, mx);
+    const int8_t *vf          = INTER_FILTER(hpel_if_idx, my);
+    const int wrap_enabled    = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
     int denom, wx, ox;
 
     x_off += mv->x >> (4 + hs);
@@ -241,30 +241,30 @@ static void mc_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
     const int x_off, const int y_off, const int block_w, const int block_h, const int c_idx,
     const int sb_bdof_flag)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const PredictionUnit *pu    = &lc->cu->pu;
-    const int hs                = fc->ps.sps->hshift[c_idx];
-    const int vs                = fc->ps.sps->vshift[c_idx];
-    const int idx               = av_log2(block_w) - 1;
-    const VVCFrame *refs[]      = { ref0, ref1 };
-    int16_t *tmp[]              = { lc->tmp + sb_bdof_flag * PROF_TEMP_OFFSET, lc->tmp1 + sb_bdof_flag * PROF_TEMP_OFFSET };
+    const VVCFrameContext *fc = lc->fc;
+    const PredictionUnit *pu  = &lc->cu->pu;
+    const int hs              = fc->ps.sps->hshift[c_idx];
+    const int vs              = fc->ps.sps->vshift[c_idx];
+    const int idx             = av_log2(block_w) - 1;
+    const VVCFrame *refs[]    = { ref0, ref1 };
+    int16_t *tmp[]            = { lc->tmp + sb_bdof_flag * PROF_TEMP_OFFSET, lc->tmp1 + sb_bdof_flag * PROF_TEMP_OFFSET };
     int denom, w0, w1, o0, o1;
-    const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, pu->dmvr_flag);
-    const int is_chroma         = !!c_idx;
-    const int hpel_if_idx       = is_chroma ? 0 : pu->mi.hpel_if_idx;
+    const int weight_flag     = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, c_idx, pu->dmvr_flag);
+    const int is_chroma       = !!c_idx;
+    const int hpel_if_idx     = is_chroma ? 0 : pu->mi.hpel_if_idx;
 
     for (int i = L0; i <= L1; i++) {
-        const Mv *mv            = mvf->mv + i;
-        const int mx            = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
-        const int my            = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
-        const int ox            = x_off + (mv->x >> (4 + hs));
-        const int oy            = y_off + (mv->y >> (4 + vs));
-        const VVCFrame *ref     = refs[i];
-        ptrdiff_t src_stride    = ref->frame->linesize[c_idx];
-        const uint8_t *src      = ref->frame->data[c_idx];
-        const int8_t *hf        = INTER_FILTER(hpel_if_idx, mx);
-        const int8_t *vf        = INTER_FILTER(hpel_if_idx, my);
-        const int wrap_enabled  = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
+        const Mv *mv           = mvf->mv + i;
+        const int mx           = av_mod_uintp2(mv->x, 4 + hs) << (is_chroma - hs);
+        const int my           = av_mod_uintp2(mv->y, 4 + vs) << (is_chroma - vs);
+        const int ox           = x_off + (mv->x >> (4 + hs));
+        const int oy           = y_off + (mv->y >> (4 + vs));
+        const VVCFrame *ref    = refs[i];
+        ptrdiff_t src_stride   = ref->frame->linesize[c_idx];
+        const uint8_t *src     = ref->frame->data[c_idx];
+        const int8_t *hf       = INTER_FILTER(hpel_if_idx, mx);
+        const int8_t *vf       = INTER_FILTER(hpel_if_idx, my);
+        const int wrap_enabled = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
 
         if (pu->dmvr_flag) {
             const int x_sb = x_off + (orig_mv->mv[i].x >> (4 + hs));
@@ -332,15 +332,15 @@ static void scaled_ref_pos_and_step(const VVCLocalContext *lc, const VVCRefPic *
 static void emulated_edge_scaled(VVCLocalContext *lc, const uint8_t **src, ptrdiff_t *src_stride, int *src_height,
     const VVCFrame *ref, const int x, const int y, const int dx, const int dy, const int w, const int h, const int is_chroma)
 {
-    const int x_off           = SCALED_INT(x);
-    const int y_off           = SCALED_INT(y);
-    const int x_end           = SCALED_INT(x + w * dx);
-    const int y_end           = SCALED_INT(y + h * dy);
-    const int x_last          = SCALED_INT(x + (w - 1) * dx);
-    const int y_last          = SCALED_INT(y + (h - 1) * dy);
-    const int block_w         = x_end - x_off + (x_end == x_last);
-    const int block_h         = *src_height = y_end - y_off + (y_end == y_last);
-    const int wrap_enabled    = 0;
+    const int x_off         = SCALED_INT(x);
+    const int y_off         = SCALED_INT(y);
+    const int x_end         = SCALED_INT(x + w * dx);
+    const int y_end         = SCALED_INT(y + h * dy);
+    const int x_last        = SCALED_INT(x + (w - 1) * dx);
+    const int y_last        = SCALED_INT(y + (h - 1) * dy);
+    const int block_w       = x_end - x_off + (x_end == x_last);
+    const int block_h       = *src_height = y_end - y_off + (y_end == y_last);
+    const int wrap_enabled  = 0;
 
     MC_EMULATED_EDGE(lc->edge_emu_buffer, src, src_stride, x_off, y_off);
 }
@@ -421,21 +421,21 @@ static void luma_prof_uni(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst
     const VVCFrame *ref, const MvField *mvf, int x_off, int y_off, const int block_w, const int block_h,
     const int cb_prof_flag, const int16_t *diff_mv_x, const int16_t *diff_mv_y)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const uint8_t *src          = ref->frame->data[LUMA];
-    ptrdiff_t src_stride        = ref->frame->linesize[LUMA];
-    uint16_t *prof_tmp          = lc->tmp + PROF_TEMP_OFFSET;
-    const int idx               = av_log2(block_w) - 1;
-    const int lx                = mvf->pred_flag - PF_L0;
-    const Mv *mv                = mvf->mv + lx;
-    const int mx                = mv->x & 0xf;
-    const int my                = mv->y & 0xf;
-    const int8_t *hf            = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][mx];
-    const int8_t *vf            = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][my];
+    const VVCFrameContext *fc = lc->fc;
+    const uint8_t *src        = ref->frame->data[LUMA];
+    ptrdiff_t src_stride      = ref->frame->linesize[LUMA];
+    uint16_t *prof_tmp        = lc->tmp + PROF_TEMP_OFFSET;
+    const int idx             = av_log2(block_w) - 1;
+    const int lx              = mvf->pred_flag - PF_L0;
+    const Mv *mv              = mvf->mv + lx;
+    const int mx              = mv->x & 0xf;
+    const int my              = mv->y & 0xf;
+    const int8_t *hf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][mx];
+    const int8_t *vf          = ff_vvc_inter_luma_filters[VVC_INTER_LUMA_FILTER_TYPE_AFFINE][my];
     int denom, wx, ox;
-    const int weight_flag       = derive_weight_uni(&denom, &wx, &ox, lc, mvf, LUMA);
-    const int wrap_enabled      = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
-    const int is_chroma         = 0;
+    const int weight_flag     = derive_weight_uni(&denom, &wx, &ox, lc, mvf, LUMA);
+    const int wrap_enabled    = fc->ps.pps->r->pps_ref_wraparound_enabled_flag;
+    const int is_chroma       = 0;
 
     x_off += mv->x >> 4;
     y_off += mv->y >> 4;
@@ -488,11 +488,11 @@ static void luma_prof_bi(VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_
     const VVCRefPic *ref0, const VVCRefPic *ref1, const MvField *mvf, const int x_off, const int y_off,
     const int block_w, const int block_h)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const VVCRefPic *refps[]    = { ref0, ref1 };
-    int16_t *tmp[]              = { lc->tmp, lc->tmp1 };
+    const VVCFrameContext *fc = lc->fc;
+    const VVCRefPic *refps[]  = { ref0, ref1 };
+    int16_t *tmp[]            = { lc->tmp, lc->tmp1 };
     int denom, w0, w1, o0, o1;
-    const int weight_flag       = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, LUMA, 0);
+    const int weight_flag     = derive_weight(&denom, &w0, &w1, &o0, &o1, lc, mvf, LUMA, 0);
 
     for (int i = L0; i <= L1; i++) {
         const VVCRefPic *refp = refps[i];
@@ -531,16 +531,16 @@ static int pred_get_refs(const VVCLocalContext *lc, VVCRefPic *refp[2], const Mv
 
 static void pred_gpm_blk(VVCLocalContext *lc)
 {
-    const VVCFrameContext *fc  = lc->fc;
-    const CodingUnit *cu       = lc->cu;
-    const PredictionUnit *pu   = &cu->pu;
+    const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
+    const PredictionUnit *pu  = &cu->pu;
 
     const uint8_t angle_idx   = ff_vvc_gpm_angle_idx[pu->gpm_partition_idx];
     const uint8_t weights_idx = ff_vvc_gpm_angle_to_weights_idx[angle_idx];
-    const int w = av_log2(cu->cb_width) - 3;
-    const int h = av_log2(cu->cb_height) - 3;
-    const uint8_t off_x = ff_vvc_gpm_weights_offset_x[pu->gpm_partition_idx][h][w];
-    const uint8_t off_y = ff_vvc_gpm_weights_offset_y[pu->gpm_partition_idx][h][w];
+    const int w               = av_log2(cu->cb_width) - 3;
+    const int h               = av_log2(cu->cb_height) - 3;
+    const uint8_t off_x       = ff_vvc_gpm_weights_offset_x[pu->gpm_partition_idx][h][w];
+    const uint8_t off_y       = ff_vvc_gpm_weights_offset_y[pu->gpm_partition_idx][h][w];
     const uint8_t mirror_type = ff_vvc_gpm_angle_to_mirror[angle_idx];
     const uint8_t *weights;
 
@@ -549,13 +549,13 @@ static void pred_gpm_blk(VVCLocalContext *lc)
     int16_t *tmp[2] = {lc->tmp, lc->tmp1};
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
-        const int hs     = fc->ps.sps->hshift[c_idx];
-        const int vs     = fc->ps.sps->vshift[c_idx];
-        const int x      = lc->cu->x0  >> hs;
-        const int y      = lc->cu->y0  >> vs;
-        const int width  = cu->cb_width >> hs;
-        const int height = cu->cb_height >> vs;
-        uint8_t *dst = POS(c_idx, lc->cu->x0, lc->cu->y0);
+        const int hs         = fc->ps.sps->hshift[c_idx];
+        const int vs         = fc->ps.sps->vshift[c_idx];
+        const int x          = lc->cu->x0  >> hs;
+        const int y          = lc->cu->y0  >> vs;
+        const int width      = cu->cb_width >> hs;
+        const int height     = cu->cb_height >> vs;
+        uint8_t *dst         = POS(c_idx, lc->cu->x0, lc->cu->y0);
         ptrdiff_t dst_stride = fc->frame->linesize[c_idx];
 
         int step_x = 1 << hs;
@@ -572,8 +572,9 @@ static void pred_gpm_blk(VVCLocalContext *lc)
 
         for (int i = 0; i < 2; i++) {
             const MvField *mv = pu->gpm_mv + i;
-            const int lx = mv->pred_flag - PF_L0;
-            VVCRefPic *refp = lc->sc->rpl[lx].refs + mv->ref_idx[lx];
+            const int lx      = mv->pred_flag - PF_L0;
+            VVCRefPic *refp   = lc->sc->rpl[lx].refs + mv->ref_idx[lx];
+
             if (!refp->ref)
                 return;
             if (refp->is_scaled)
@@ -589,15 +590,14 @@ static void pred_gpm_blk(VVCLocalContext *lc)
 static int ciip_derive_intra_weight(const VVCLocalContext *lc, const int x0, const int y0,
     const int width, const int height)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const VVCSPS *sps           = fc->ps.sps;
-    const int x0b               = av_mod_uintp2(x0, sps->ctb_log2_size_y);
-    const int y0b               = av_mod_uintp2(y0, sps->ctb_log2_size_y);
-    const int available_l       = lc->ctb_left_flag || x0b;
-    const int available_u       = lc->ctb_up_flag || y0b;
-    const int min_pu_width      = fc->ps.pps->min_pu_width;
-
-    int w = 1;
+    const VVCFrameContext *fc = lc->fc;
+    const VVCSPS *sps         = fc->ps.sps;
+    const int x0b             = av_mod_uintp2(x0, sps->ctb_log2_size_y);
+    const int y0b             = av_mod_uintp2(y0, sps->ctb_log2_size_y);
+    const int available_l     = lc->ctb_left_flag || x0b;
+    const int available_u     = lc->ctb_up_flag || y0b;
+    const int min_pu_width    = fc->ps.pps->min_pu_width;
+    int w                     = 1;
 
     if (available_u &&fc->tab.mvf[((y0 - 1) >> MIN_PU_LOG2) * min_pu_width + ((x0 - 1 + width)>> MIN_PU_LOG2)].pred_flag == PF_INTRA)
         w++;
@@ -709,10 +709,10 @@ static int parametric_mv_refine(const int *sad, const int stride)
 static void dmvr_mv_refine(VVCLocalContext *lc, MvField *mvf, MvField *orig_mv, int *sb_bdof_flag,
     const VVCFrame *ref0, const VVCFrame *ref1, const int x_off, const int y_off, const int block_w, const int block_h)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const int sr_range          = 2;
-    const VVCFrame *refs[]       = { ref0, ref1 };
-    int16_t *tmp[]              = { lc->tmp, lc->tmp1 };
+    const VVCFrameContext *fc = lc->fc;
+    const int sr_range        = 2;
+    const VVCFrame *refs[]    = { ref0, ref1 };
+    int16_t *tmp[]            = { lc->tmp, lc->tmp1 };
     int sad[SAD_ARRAY_SIZE][SAD_ARRAY_SIZE];
     int min_dx, min_dy, min_sad, dx, dy;
 
@@ -808,9 +808,9 @@ static void derive_sb_mv(VVCLocalContext *lc, MvField *mv, MvField *orig_mv, int
 
 static void pred_regular_blk(VVCLocalContext *lc, const int skip_ciip)
 {
-    const CodingUnit *cu        = lc->cu;
-    PredictionUnit *pu          = &lc->cu->pu;
-    const MotionInfo *mi        = &pu->mi;
+    const CodingUnit *cu = lc->cu;
+    PredictionUnit *pu   = &lc->cu->pu;
+    const MotionInfo *mi = &pu->mi;
     MvField mv, orig_mv;
     int sbw, sbh, sb_bdof_flag = 0;
 
@@ -854,17 +854,17 @@ static void derive_affine_mvc(MvField *mvc, const VVCFrameContext *fc, const MvF
 
 static void pred_affine_blk(VVCLocalContext *lc)
 {
-    const VVCFrameContext *fc  = lc->fc;
-    const CodingUnit *cu       = lc->cu;
-    const PredictionUnit *pu   = &cu->pu;
-    const MotionInfo *mi       = &pu->mi;
-    const int x0   = cu->x0;
-    const int y0   = cu->y0;
-    const int sbw  = cu->cb_width / mi->num_sb_x;
-    const int sbh  = cu->cb_height / mi->num_sb_y;
-    const int hs = fc->ps.sps->hshift[1];
-    const int vs = fc->ps.sps->vshift[1];
-    const int dst_stride = fc->frame->linesize[LUMA];
+    const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
+    const PredictionUnit *pu  = &cu->pu;
+    const MotionInfo *mi      = &pu->mi;
+    const int x0              = cu->x0;
+    const int y0              = cu->y0;
+    const int sbw             = cu->cb_width / mi->num_sb_x;
+    const int sbh             = cu->cb_height / mi->num_sb_y;
+    const int hs              = fc->ps.sps->hshift[1];
+    const int vs              = fc->ps.sps->vshift[1];
+    const int dst_stride      = fc->frame->linesize[LUMA];
 
     for (int sby = 0; sby < mi->num_sb_y; sby++) {
         for (int sbx = 0; sbx < mi->num_sb_x; sbx++) {
@@ -905,9 +905,9 @@ static void pred_affine_blk(VVCLocalContext *lc)
 
 static void predict_inter(VVCLocalContext *lc)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const CodingUnit *cu        = lc->cu;
-    const PredictionUnit *pu    = &cu->pu;
+    const VVCFrameContext *fc = lc->fc;
+    const CodingUnit *cu      = lc->cu;
+    const PredictionUnit *pu  = &cu->pu;
 
     if (pu->merge_gpm_flag)
         pred_gpm_blk(lc);
@@ -929,9 +929,9 @@ static int has_inter_luma(const CodingUnit *cu)
 
 int ff_vvc_predict_inter(VVCLocalContext *lc, const int rs)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const CTU *ctu              = fc->tab.ctus + rs;
-    CodingUnit *cu              = ctu->cus;
+    const VVCFrameContext *fc = lc->fc;
+    const CTU *ctu            = fc->tab.ctus + rs;
+    CodingUnit *cu            = ctu->cus;
 
     while (cu) {
         lc->cu = cu;
