@@ -95,20 +95,97 @@ static void emulated_edge_no_wrap(const VVCLocalContext *lc, uint8_t *dst,
     }
 }
 
+static void emulated_half(const VVCLocalContext *lc, uint8_t *dst, const ptrdiff_t dst_stride,
+    const uint8_t *src, const ptrdiff_t src_stride, const int ps,
+    int x_off, int y_off, const int block_w, const int block_h,
+    const VVCRect *subpic,const VVCRect *half_sb, const int dmvr_clip)
+{
+    const VVCFrameContext *fc = lc->fc;
+    int pic_width, pic_height;
+
+    src += y_off * src_stride + x_off * (1 << ps);
+
+    clip_to_subpic(&x_off, &y_off, &pic_width, &pic_height, subpic, half_sb, dmvr_clip);
+
+    fc->vdsp.emulated_edge_mc(dst, src, dst_stride, src_stride,
+        block_w, block_h, x_off, y_off, pic_width, pic_height);
+}
+
+static void sb_set_lr(VVCRect *sb, const int l, const int r)
+{
+    sb->l = l;
+    sb->r = r;
+}
+
+static void sb_wrap(VVCRect *sb, const int wrap)
+{
+    sb_set_lr(sb, sb->l + wrap, sb->r + wrap);
+}
+
 static void emulated_edge(const VVCLocalContext *lc, uint8_t *dst,
     const uint8_t **src, ptrdiff_t *src_stride, const VVCFrame *src_frame,
     int x_sb, int y_sb, int x_off, int y_off, int block_w, int block_h, const int wrap_enabled,
     const int is_chroma, const int extra_before, const int extra_after)
 {
+    const VVCSPS *sps          = src_frame->sps;
+    const VVCPPS *pps          = src_frame->pps;
+    const int ps               = sps->pixel_shift;
     const int subpic_idx       = lc->sc->sh.r->curr_subpic_idx;
+    const int extra            = extra_before + extra_after;
     const int dmvr_clip        = x_sb != x_off || y_sb != y_off;
+    const int dmvr_left        = FFMAX(x_off, x_sb) - extra_before;
+    const int dmvr_right       = FFMIN(x_off, x_sb) + block_w + extra_after;
+    const int left             = x_off - extra_before;
+    const int top              = y_off - extra_before;
+    const int pic_width        = pps->width >> sps->hshift[is_chroma];
+    const int wrap             = pps->ref_wraparound_offset << (sps->min_cb_log2_size_y - sps->hshift[is_chroma]);
+    const ptrdiff_t dst_stride = EDGE_EMU_BUFFER_STRIDE << ps;
     VVCRect sb                 = { x_sb - extra_before, y_sb - extra_before, x_sb + block_w + extra_after, y_sb + block_h + extra_after };
     VVCRect subpic;
 
     subpic_get_rect(&subpic, src_frame, subpic_idx, is_chroma);
 
-    return emulated_edge_no_wrap(lc, dst, src, src_stride,
-        x_off, y_off, block_w, block_h, extra_before, extra_after, &subpic, &sb, dmvr_clip);
+    if (!wrap_enabled || (dmvr_left >= 0 && dmvr_right <= pic_width)) {
+        return emulated_edge_no_wrap(lc, dst, src, src_stride,
+            x_off, y_off, block_w, block_h, extra_before, extra_after, &subpic, &sb, dmvr_clip);
+    }
+    if (dmvr_right <= 0) {
+        sb_wrap(&sb, wrap);
+        return emulated_edge_no_wrap(lc, dst, src, src_stride,
+            x_off + wrap, y_off, block_w, block_h, extra_before, extra_after, &subpic, &sb, dmvr_clip);
+    }
+    if (dmvr_left >= pic_width) {
+        sb_wrap(&sb, -wrap);
+        return emulated_edge_no_wrap(lc, dst, src, src_stride,
+            x_off - wrap, y_off, block_w, block_h, extra_before, extra_after, &subpic, &sb, dmvr_clip);
+    }
+
+    block_w += extra;
+    block_h += extra;
+
+    // half block are wrapped
+    if (dmvr_left < 0 ) {
+        const int w     = -left;
+        VVCRect half_sb = { sb.l + wrap, sb.t, 0 + wrap, sb.b };
+        emulated_half(lc, dst, dst_stride, *src, *src_stride, ps,
+            left + wrap, top, w, block_h, &subpic, &half_sb, dmvr_clip);
+
+        sb_set_lr(&half_sb, 0, sb.r);
+        emulated_half(lc, dst +  (w << ps), dst_stride, *src, *src_stride, ps,
+            0, top, block_w - w, block_h, &subpic, &half_sb, dmvr_clip);
+    } else {
+        const int w     = pic_width - left;
+        VVCRect half_sb = { sb.l, sb.t, pic_width, sb.b };
+        emulated_half(lc, dst, dst_stride, *src, *src_stride, ps,
+            left, top, w, block_h, &subpic, &half_sb, dmvr_clip);
+
+        sb_set_lr(&half_sb, pic_width - wrap, sb.r - wrap);
+        emulated_half(lc, dst +  (w << ps), dst_stride, *src, *src_stride, ps,
+            pic_width - wrap , top, block_w - w, block_h, &subpic, &half_sb, dmvr_clip);
+    }
+
+    *src = dst + extra_before * dst_stride + (extra_before << ps);
+    *src_stride = dst_stride;
 }
 
 #define MC_EMULATED_EDGE(dst, src, src_stride, x_off, y_off)                                                                    \
