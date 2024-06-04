@@ -3405,22 +3405,25 @@ static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length, int f
     return 0;
 }
 
-static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
-                             int *got_output, AVPacket *avpkt)
+static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 {
+    HEVCContext        *s = avctx->priv_data;
+    AVCodecInternal *avci = avctx->internal;
+    AVPacket       *avpkt = avci->in_pkt;
+
     int ret;
     uint8_t *sd;
     size_t sd_size;
-    HEVCContext *s = avctx->priv_data;
 
-    if (!avpkt->size) {
-        ret = ff_hevc_output_frame(s, rframe, 1);
+    av_packet_unref(avpkt);
+    ret = ff_decode_get_packet(avctx, avpkt);
+    if (ret == AVERROR_EOF) {
+        ret = ff_hevc_output_frame(s, frame, 1);
         if (ret < 0)
             return ret;
-
-        *got_output = ret;
-        return 0;
-    }
+        return (ret > 0) ? 0 : AVERROR_EOF;
+    } else if (ret < 0)
+        return ret;
 
     sd = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, &sd_size);
     if (sd && sd_size > 0) {
@@ -3444,11 +3447,11 @@ static int hevc_decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         return ret;
 
     if (s->output_frame->buf[0]) {
-        av_frame_move_ref(rframe, s->output_frame);
-        *got_output = 1;
+        av_frame_move_ref(frame, s->output_frame);
+        return 0;
     }
 
-    return avpkt->size;
+    return AVERROR(EAGAIN);
 }
 
 static int hevc_ref_frame(HEVCFrame *dst, const HEVCFrame *src)
@@ -3725,7 +3728,7 @@ const FFCodec ff_hevc_decoder = {
     .p.priv_class          = &hevc_decoder_class,
     .init                  = hevc_decode_init,
     .close                 = hevc_decode_free,
-    FF_CODEC_DECODE_CB(hevc_decode_frame),
+    FF_CODEC_RECEIVE_FRAME_CB(hevc_receive_frame),
     .flush                 = hevc_decode_flush,
     UPDATE_THREAD_CONTEXT(hevc_update_thread_context),
     .p.capabilities        = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
