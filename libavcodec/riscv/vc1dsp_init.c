@@ -32,6 +32,7 @@ void ff_vc1_inv_trans_4x8_rvv(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_8x4_dc_rvv(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_8x4_rvv(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_vc1_inv_trans_4x4_dc_rvv(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vc1_inv_trans_4x4_rvv(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 void ff_put_pixels16x16_rvi(uint8_t *dst, const uint8_t *src, ptrdiff_t line_size, int rnd);
 void ff_put_pixels8x8_rvi(uint8_t *dst, const uint8_t *src, ptrdiff_t line_size, int rnd);
 void ff_avg_pixels16x16_rvv(uint8_t *dst, const uint8_t *src, ptrdiff_t line_size, int rnd);
@@ -59,6 +60,7 @@ av_cold void ff_vc1dsp_init_riscv(VC1DSPContext *dsp)
             dsp->vc1_inv_trans_8x8 = ff_vc1_inv_trans_8x8_rvv;
             dsp->vc1_inv_trans_8x4 = ff_vc1_inv_trans_8x4_rvv;
             dsp->vc1_inv_trans_4x8 = ff_vc1_inv_trans_4x8_rvv;
+            dsp->vc1_inv_trans_4x4 = ff_vc1_inv_trans_4x4_rvv;
             dsp->vc1_inv_trans_4x8_dc = ff_vc1_inv_trans_4x8_dc_rvv;
             dsp->vc1_inv_trans_4x4_dc = ff_vc1_inv_trans_4x4_dc_rvv;
             dsp->avg_vc1_mspel_pixels_tab[0][0] = ff_avg_pixels16x16_rvv;
