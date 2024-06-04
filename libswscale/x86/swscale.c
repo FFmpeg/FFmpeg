@@ -321,6 +321,8 @@ void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
 INPUT_FUNCS(sse2);
 INPUT_FUNCS(ssse3);
 INPUT_FUNCS(avx);
+INPUT_FUNC(rgb24, avx2);
+INPUT_FUNC(bgr24, avx2);
 
 #if ARCH_X86_64
 #define YUV2NV_DECL(fmt, opt) \
@@ -634,6 +636,11 @@ switch(c->dstBpc){ \
     }
 
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        if (ARCH_X86_64)
+            switch (c->srcFormat) {
+            case_rgb(rgb24, RGB24, avx2);
+            case_rgb(bgr24, BGR24, avx2);
+            }
         switch (c->dstFormat) {
         case AV_PIX_FMT_NV12:
         case AV_PIX_FMT_NV24:
