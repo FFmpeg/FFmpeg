@@ -296,6 +296,83 @@ func ff_vc1_inv_trans_8x4_rvv, zve32x
         ret
 endfunc
 
+func ff_vc1_inv_trans_4x8_rvv, zve32x
+        li           a3, 8 * 2
+        csrwi        vxrm, 0
+        vsetivli     zero, 8, e16, m1, ta, ma
+        vlsseg4e16.v v0, (a2), a3
+        li           t1, 3
+        jal          t0, ff_vc1_inv_trans_4_rvv
+        addi         t1, a2, 1 * 8 * 2
+        vse16.v      v0, (a2)
+        addi         t2, a2, 2 * 8 * 2
+        vse16.v      v1, (t1)
+        addi         t3, a2, 3 * 8 * 2
+        vse16.v      v2, (t2)
+        vse16.v      v3, (t3)
+        vsetivli     zero, 4, e16, mf2, ta, ma
+        vlseg8e16.v  v0, (a2)
+        jal          t0, ff_vc1_inv_trans_8_rvv
+        vadd.vi      v4, v4, 1
+        add          t0, a1, a0
+        vadd.vi      v5, v5, 1
+        vadd.vi      v6, v6, 1
+        add          t1, a1, t0
+        vadd.vi      v7, v7, 1
+        vssra.vi     v0, v0, 7
+        add          t2, a1, t1
+        vssra.vi     v1, v1, 7
+        vssra.vi     v2, v2, 7
+        add          t3, a1, t2
+        vssra.vi     v3, v3, 7
+        vssra.vi     v4, v4, 7
+        add          t4, a1, t3
+        vssra.vi     v5, v5, 7
+        vssra.vi     v6, v6, 7
+        add          t5, a1, t4
+        vssra.vi     v7, v7, 7
+        vle8.v       v8, (a0)
+        add          t6, a1, t5
+        vle8.v       v9, (t0)
+        vle8.v       v10, (t1)
+        vle8.v       v11, (t2)
+        vle8.v       v12, (t3)
+        vle8.v       v13, (t4)
+        vle8.v       v14, (t5)
+        vle8.v       v15, (t6)
+        vsetvli      zero, zero, e8, mf4, ta, ma
+        vwaddu.wv    v0, v0, v8
+        vwaddu.wv    v1, v1, v9
+        vwaddu.wv    v2, v2, v10
+        vwaddu.wv    v3, v3, v11
+        vwaddu.wv    v4, v4, v12
+        vwaddu.wv    v5, v5, v13
+        vwaddu.wv    v6, v6, v14
+        vwaddu.wv    v7, v7, v15
+        vsetvli      zero, zero, e16, mf2, ta, ma
+        .irp    n,0,1,2,3,4,5,6,7
+        vmax.vx      v\n, v\n, zero
+        .endr
+        vsetvli      zero, zero, e8, mf4, ta, ma
+        vnclipu.wi   v8, v0, 0
+        vnclipu.wi   v9, v1, 0
+        vse8.v       v8, (a0)
+        vnclipu.wi   v10, v2, 0
+        vse8.v       v9, (t0)
+        vnclipu.wi   v11, v3, 0
+        vse8.v       v10, (t1)
+        vnclipu.wi   v12, v4, 0
+        vse8.v       v11, (t2)
+        vnclipu.wi   v13, v5, 0
+        vse8.v       v12, (t3)
+        vnclipu.wi   v14, v6, 0
+        vse8.v       v13, (t4)
+        vnclipu.wi   v15, v7, 0
+        vse8.v       v14, (t5)
+        vse8.v       v15, (t6)
+        ret
+endfunc
+
 .macro mspel_op op pos n1 n2
         add           t1, \pos, a2
         v\op\()e8.v   v\n1, (\pos)
