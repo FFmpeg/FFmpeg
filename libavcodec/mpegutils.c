@@ -57,6 +57,7 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
                         int first_field, int low_delay)
 {
     const int field_pic = picture_structure != PICT_FRAME;
+    const AVPixFmtDescriptor *desc;
     const AVFrame *src;
     int offset[AV_NUM_DATA_POINTERS];
 
@@ -82,21 +83,13 @@ void ff_draw_horiz_band(AVCodecContext *avctx,
     else
         return;
 
-    if (cur->pict_type == AV_PICTURE_TYPE_B &&
-        picture_structure == PICT_FRAME &&
-        avctx->codec_id != AV_CODEC_ID_SVQ3) {
-        for (int i = 0; i < AV_NUM_DATA_POINTERS; i++)
-            offset[i] = 0;
-    } else {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-        int vshift = desc->log2_chroma_h;
+    desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
-        offset[0] = y * src->linesize[0];
-        offset[1] =
-        offset[2] = (y >> vshift) * src->linesize[1];
-        for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
-            offset[i] = 0;
-    }
+    offset[0] = y * src->linesize[0];
+    offset[1] =
+    offset[2] = (y >> desc->log2_chroma_h) * src->linesize[1];
+    for (int i = 3; i < AV_NUM_DATA_POINTERS; i++)
+        offset[i] = 0;
 
     emms_c();
 
