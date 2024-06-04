@@ -160,14 +160,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
                s1->bitstream_buffer_size);
     }
 
-    // linesize-dependent scratch buffer allocation
-    ret = ff_mpv_framesize_alloc(s->avctx, &s->sc, s1->linesize);
-    if (ret < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "Failed to allocate context "
-               "scratch buffers.\n");
-        return ret;
-    }
-
     // MPEG-2/interlacing info
     memcpy(&s->progressive_sequence, &s1->progressive_sequence,
            (char *) &s1->rtp_mode - (char *) &s1->progressive_sequence);
