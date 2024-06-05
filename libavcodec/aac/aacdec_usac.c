@@ -447,6 +447,9 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
             /* LFE has no need for any configuration */
             e->tw_mdct = 0;
             e->noise_fill = 0;
+            layout_map[i][0] = TYPE_LFE;
+            layout_map[i][1] = i;
+            layout_map[i][2] = AAC_CHANNEL_LFE;
             elem_id[2]++;
             break;
         case ID_USAC_EXT: /* EXT */
