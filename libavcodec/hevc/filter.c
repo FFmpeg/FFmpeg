@@ -281,7 +281,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCLayerContext *l,
     uint8_t vert_edge[]      = { 0, 0 };
     uint8_t horiz_edge[]     = { 0, 0 };
     uint8_t diag_edge[]      = { 0, 0, 0, 0 };
-    uint8_t lfase            = CTB(s->filter_slice_edges, x_ctb, y_ctb);
+    uint8_t lfase            = CTB(l->filter_slice_edges, x_ctb, y_ctb);
     uint8_t no_tile_filter   = pps->tiles_enabled_flag &&
                                !pps->loop_filter_across_tiles_enabled_flag;
     uint8_t restore          = no_tile_filter || !lfase;
