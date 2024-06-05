@@ -68,49 +68,51 @@ int avpriv_mpeg4audio_get_config2(MPEG4AudioConfig *c, const uint8_t *buf,
                                   int size, int sync_extension, void *logctx);
 
 enum AudioObjectType {
-    AOT_NULL,
+    AOT_NULL = 0,
                                // Support?                Name
-    AOT_AAC_MAIN,              ///< Y                       Main
-    AOT_AAC_LC,                ///< Y                       Low Complexity
-    AOT_AAC_SSR,               ///< N (code in SoC repo)    Scalable Sample Rate
-    AOT_AAC_LTP,               ///< Y                       Long Term Prediction
-    AOT_SBR,                   ///< Y                       Spectral Band Replication
-    AOT_AAC_SCALABLE,          ///< N                       Scalable
-    AOT_TWINVQ,                ///< N                       Twin Vector Quantizer
-    AOT_CELP,                  ///< N                       Code Excited Linear Prediction
-    AOT_HVXC,                  ///< N                       Harmonic Vector eXcitation Coding
+    AOT_AAC_MAIN         =  1, ///< Y                       Main
+    AOT_AAC_LC           =  2, ///< Y                       Low Complexity
+    AOT_AAC_SSR          =  3, ///< N (code in SoC repo)    Scalable Sample Rate
+    AOT_AAC_LTP          =  4, ///< Y                       Long Term Prediction
+    AOT_SBR              =  5, ///< Y                       Spectral Band Replication
+    AOT_AAC_SCALABLE     =  6, ///< N                       Scalable
+    AOT_TWINVQ           =  7, ///< N                       Twin Vector Quantizer
+    AOT_CELP             =  8, ///< N                       Code Excited Linear Prediction
+    AOT_HVXC             =  9, ///< N                       Harmonic Vector eXcitation Coding
+
     AOT_TTSI             = 12, ///< N                       Text-To-Speech Interface
-    AOT_MAINSYNTH,             ///< N                       Main Synthesis
-    AOT_WAVESYNTH,             ///< N                       Wavetable Synthesis
-    AOT_MIDI,                  ///< N                       General MIDI
-    AOT_SAFX,                  ///< N                       Algorithmic Synthesis and Audio Effects
-    AOT_ER_AAC_LC,             ///< N                       Error Resilient Low Complexity
+    AOT_MAINSYNTH        = 13, ///< N                       Main Synthesis
+    AOT_WAVESYNTH        = 14, ///< N                       Wavetable Synthesis
+    AOT_MIDI             = 15, ///< N                       General MIDI
+    AOT_SAFX             = 16, ///< N                       Algorithmic Synthesis and Audio Effects
+    AOT_ER_AAC_LC        = 17, ///< N                       Error Resilient Low Complexity
+
     AOT_ER_AAC_LTP       = 19, ///< N                       Error Resilient Long Term Prediction
-    AOT_ER_AAC_SCALABLE,       ///< N                       Error Resilient Scalable
-    AOT_ER_TWINVQ,             ///< N                       Error Resilient Twin Vector Quantizer
-    AOT_ER_BSAC,               ///< N                       Error Resilient Bit-Sliced Arithmetic Coding
-    AOT_ER_AAC_LD,             ///< N                       Error Resilient Low Delay
-    AOT_ER_CELP,               ///< N                       Error Resilient Code Excited Linear Prediction
-    AOT_ER_HVXC,               ///< N                       Error Resilient Harmonic Vector eXcitation Coding
-    AOT_ER_HILN,               ///< N                       Error Resilient Harmonic and Individual Lines plus Noise
-    AOT_ER_PARAM,              ///< N                       Error Resilient Parametric
-    AOT_SSC,                   ///< N                       SinuSoidal Coding
-    AOT_PS,                    ///< N                       Parametric Stereo
-    AOT_SURROUND,              ///< N                       MPEG Surround
-    AOT_ESCAPE,                ///< Y                       Escape Value
-    AOT_L1,                    ///< Y                       Layer 1
-    AOT_L2,                    ///< Y                       Layer 2
-    AOT_L3,                    ///< Y                       Layer 3
-    AOT_DST,                   ///< N                       Direct Stream Transfer
-    AOT_ALS,                   ///< Y                       Audio LosslesS
-    AOT_SLS,                   ///< N                       Scalable LosslesS
-    AOT_SLS_NON_CORE,          ///< N                       Scalable LosslesS (non core)
-    AOT_ER_AAC_ELD,            ///< N                       Error Resilient Enhanced Low Delay
-    AOT_SMR_SIMPLE,            ///< N                       Symbolic Music Representation Simple
-    AOT_SMR_MAIN,              ///< N                       Symbolic Music Representation Main
-    AOT_USAC,                  ///< Y                       Unified Speech and Audio Coding
-    AOT_SAOC,                  ///< N                       Spatial Audio Object Coding
-    AOT_LD_SURROUND,           ///< N                       Low Delay MPEG Surround
+    AOT_ER_AAC_SCALABLE  = 20, ///< N                       Error Resilient Scalable
+    AOT_ER_TWINVQ        = 21, ///< N                       Error Resilient Twin Vector Quantizer
+    AOT_ER_BSAC          = 22, ///< N                       Error Resilient Bit-Sliced Arithmetic Coding
+    AOT_ER_AAC_LD        = 23, ///< N                       Error Resilient Low Delay
+    AOT_ER_CELP          = 24, ///< N                       Error Resilient Code Excited Linear Prediction
+    AOT_ER_HVXC          = 25, ///< N                       Error Resilient Harmonic Vector eXcitation Coding
+    AOT_ER_HILN          = 26, ///< N                       Error Resilient Harmonic and Individual Lines plus Noise
+    AOT_ER_PARAM         = 27, ///< N                       Error Resilient Parametric
+    AOT_SSC              = 28, ///< N                       SinuSoidal Coding
+    AOT_PS               = 29, ///< N                       Parametric Stereo
+    AOT_SURROUND         = 30, ///< N                       MPEG Surround
+    AOT_ESCAPE           = 31, ///< Y                       Escape Value
+    AOT_L1               = 32, ///< Y                       Layer 1
+    AOT_L2               = 33, ///< Y                       Layer 2
+    AOT_L3               = 34, ///< Y                       Layer 3
+    AOT_DST              = 35, ///< N                       Direct Stream Transfer
+    AOT_ALS              = 36, ///< Y                       Audio LosslesS
+    AOT_SLS              = 37, ///< N                       Scalable LosslesS
+    AOT_SLS_NON_CORE     = 38, ///< N                       Scalable LosslesS (non core)
+    AOT_ER_AAC_ELD       = 39, ///< N                       Error Resilient Enhanced Low Delay
+    AOT_SMR_SIMPLE       = 40, ///< N                       Symbolic Music Representation Simple
+    AOT_SMR_MAIN         = 41, ///< N                       Symbolic Music Representation Main
+    AOT_USAC             = 42, ///< Y                       Unified Speech and Audio Coding
+    AOT_SAOC             = 43, ///< N                       Spatial Audio Object Coding
+    AOT_LD_SURROUND      = 44, ///< N                       Low Delay MPEG Surround
 };
 
 #define MAX_PCE_SIZE 320 ///<Maximum size of a PCE including the 3-bit ID_PCE
