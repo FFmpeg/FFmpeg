@@ -1837,10 +1837,6 @@ static void RENAME(deinterleaveBytes)(const uint8_t *src, uint8_t *dst1, uint8_t
         dst1 += dst1Stride;
         dst2 += dst2Stride;
     }
-    __asm__(
-            SFENCE"     \n\t"
-            ::: "memory"
-            );
 }
 #endif /* COMPILE_TEMPLATE_SSE2 && HAVE_X86ASM */
 #endif /* !COMPILE_TEMPLATE_AVX || HAVE_AVX_EXTERNAL */
