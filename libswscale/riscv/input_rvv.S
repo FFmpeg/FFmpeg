@@ -53,3 +53,49 @@ func ff_rgb24ToY_rvv, zve32x
 
         ret
 endfunc
+
+func ff_bgr24ToUV_rvv, zve32x
+        lw      t1, 20(a6) # BU
+        lw      t4, 32(a6) # BV
+        lw      t3, 12(a6) # RU
+        lw      t6, 24(a6) # RV
+        j       1f
+endfunc
+
+func ff_rgb24ToUV_rvv, zve32x
+        lw      t1, 12(a6) # RU
+        lw      t4, 24(a6) # RV
+        lw      t3, 20(a6) # BU
+        lw      t6, 32(a6) # BV
+1:
+        lw      t2, 16(a6) # GU
+        lw      t5, 28(a6) # GV
+        li      a7, (256 << (15 - 1)) + (1 << (15 - 7))
+2:
+        vsetvli    t0, a5, e32, m8, ta, ma
+        vlseg3e8.v v0, (a3)
+        sub        a5, a5, t0
+        vzext.vf4  v16, v0
+        sh1add     a6, t0, t0
+        vzext.vf4  v24, v2
+        vmul.vx    v8, v16, t1
+        add        a3, a6, a3
+        vmul.vx    v16, v16, t4
+        vmacc.vx   v8, t2, v24
+        vmacc.vx   v16, t5, v24
+        vzext.vf4  v24, v4
+        vadd.vx    v8, v8, a7
+        vadd.vx    v16, v16, a7
+        vmacc.vx   v8, t3, v24
+        vmacc.vx   v16, t6, v24
+        vsetvli    zero, zero, e16, m4, ta, ma
+        vnsra.wi   v0, v8, 15 - 6
+        vnsra.wi   v4, v16, 15 - 6
+        vse16.v    v0, (a0)
+        sh1add     a0, t0, a0
+        vse16.v    v4, (a1)
+        sh1add     a1, t0, a1
+        bnez       a5, 2b
+
+        ret
+endfunc
