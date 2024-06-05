@@ -66,9 +66,9 @@ static const uint8_t hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3,
  */
 
 /* free everything allocated  by pic_arrays_init() */
-static void pic_arrays_free(HEVCContext *s)
+static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
 {
-    av_freep(&s->sao);
+    av_freep(&l->sao);
     av_freep(&s->deblock);
 
     av_freep(&s->skip_flag);
@@ -103,9 +103,9 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     l->bs_width  = (width  >> 2) + 1;
     l->bs_height = (height >> 2) + 1;
 
-    s->sao           = av_calloc(ctb_count, sizeof(*s->sao));
+    l->sao           = av_calloc(ctb_count, sizeof(*l->sao));
     s->deblock       = av_calloc(ctb_count, sizeof(*s->deblock));
-    if (!s->sao || !s->deblock)
+    if (!l->sao || !s->deblock)
         goto fail;
 
     s->skip_flag    = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
@@ -140,7 +140,7 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     return 0;
 
 fail:
-    pic_arrays_free(s);
+    pic_arrays_free(s, l);
     return AVERROR(ENOMEM);
 }
 
@@ -531,7 +531,7 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
 {
     int ret, i;
 
-    pic_arrays_free(s);
+    pic_arrays_free(s, l);
     s->ps.sps = NULL;
     ff_refstruct_unref(&s->vps);
 
@@ -576,7 +576,7 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
     return 0;
 
 fail:
-    pic_arrays_free(s);
+    pic_arrays_free(s, l);
     for (i = 0; i < 3; i++) {
         av_freep(&s->sao_pixel_buffer_h[i]);
         av_freep(&s->sao_pixel_buffer_v[i]);
@@ -990,21 +990,21 @@ do {                                                    \
     if (!sao_merge_up_flag && !sao_merge_left_flag)     \
         sao->elem = value;                              \
     else if (sao_merge_left_flag)                       \
-        sao->elem = CTB(s->sao, rx-1, ry).elem;         \
+        sao->elem = CTB(l->sao, rx-1, ry).elem;         \
     else if (sao_merge_up_flag)                         \
-        sao->elem = CTB(s->sao, rx, ry-1).elem;         \
+        sao->elem = CTB(l->sao, rx, ry-1).elem;         \
     else                                                \
         sao->elem = 0;                                  \
 } while (0)
 
-static void hls_sao_param(HEVCLocalContext *lc,
+static void hls_sao_param(HEVCLocalContext *lc, const HEVCLayerContext *l,
                           const HEVCPPS *pps, const HEVCSPS *sps,
                           int rx, int ry)
 {
     const HEVCContext *const s = lc->parent;
     int sao_merge_left_flag = 0;
     int sao_merge_up_flag   = 0;
-    SAOParams *sao          = &CTB(s->sao, rx, ry);
+    SAOParams *sao          = &CTB(l->sao, rx, ry);
     int c_idx, i;
 
     if (s->sh.slice_sample_adaptive_offset_flag[0] ||
@@ -2556,7 +2556,7 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
             return ret;
         }
 
-        hls_sao_param(lc, pps, sps,
+        hls_sao_param(lc, l, pps, sps,
                       x_ctb >> sps->log2_ctb_size, y_ctb >> sps->log2_ctb_size);
 
         s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
@@ -2624,7 +2624,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
         ret = ff_hevc_cabac_init(lc, pps, ctb_addr_ts, data, data_size, 1);
         if (ret < 0)
             goto error;
-        hls_sao_param(lc, pps, sps,
+        hls_sao_param(lc, l, pps, sps,
                       x_ctb >> sps->log2_ctb_size, y_ctb >> sps->log2_ctb_size);
         more_data = hls_coding_quadtree(lc, l, pps, sps, x_ctb, y_ctb, sps->log2_ctb_size, 0);
 
@@ -3518,7 +3518,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     HEVCContext       *s = avctx->priv_data;
     int i;
 
-    pic_arrays_free(s);
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++)
+        pic_arrays_free(s, &s->layers[i]);
 
     ff_refstruct_unref(&s->vps);
     ff_refstruct_unref(&s->pps);
