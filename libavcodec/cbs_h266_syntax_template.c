@@ -3426,7 +3426,7 @@ static int FUNC(slice_header) (CodedBitstreamContext *ctx, RWContext *rw,
         current->num_entry_points--;
         if (current->num_entry_points > VVC_MAX_ENTRY_POINTS) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many entry points: "
-                   "%" PRIu16 ".\n", current->num_entry_points);
+                   "%" PRIu32 ".\n", current->num_entry_points);
             return AVERROR_PATCHWELCOME;
         }
         if (current->num_entry_points > 0) {
