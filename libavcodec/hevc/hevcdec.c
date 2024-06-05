@@ -75,7 +75,7 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->tab_ct_depth);
 
     av_freep(&s->tab_ipm);
-    av_freep(&s->cbf_luma);
+    av_freep(&l->cbf_luma);
     av_freep(&s->is_pcm);
 
     av_freep(&s->qp_y_tab);
@@ -113,10 +113,10 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     if (!l->skip_flag || !l->tab_ct_depth)
         goto fail;
 
-    s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
+    l->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
     s->tab_ipm  = av_mallocz(min_pu_size);
     s->is_pcm   = av_malloc_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
-    if (!s->tab_ipm || !s->cbf_luma || !s->is_pcm)
+    if (!s->tab_ipm || !l->cbf_luma || !s->is_pcm)
         goto fail;
 
     s->filter_slice_edges = av_mallocz(ctb_count);
@@ -1431,7 +1431,7 @@ do {                                                                            
                 for (j = 0; j < (1 << log2_trafo_size); j += min_tu_size) {
                     int x_tu = (x0 + j) >> log2_min_tu_size;
                     int y_tu = (y0 + i) >> log2_min_tu_size;
-                    s->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
+                    l->cbf_luma[y_tu * min_tu_width + x_tu] = 1;
                 }
         }
         if (!s->sh.disable_deblocking_filter_flag) {
@@ -2951,7 +2951,7 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
 
     memset(s->horizontal_bs, 0, l->bs_width * l->bs_height);
     memset(s->vertical_bs,   0, l->bs_width * l->bs_height);
-    memset(s->cbf_luma,      0, sps->min_tb_width * sps->min_tb_height);
+    memset(l->cbf_luma,      0, sps->min_tb_width * sps->min_tb_height);
     memset(s->is_pcm,        0, (sps->min_pu_width + 1) * (sps->min_pu_height + 1));
     memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
 

@@ -777,8 +777,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                 int x_tu = (x0 + i) >> log2_min_tu_size;
                 const MvField *top  = &tab_mvf[yp_pu * min_pu_width + x_pu];
                 const MvField *curr = &tab_mvf[yq_pu * min_pu_width + x_pu];
-                uint8_t top_cbf_luma  = s->cbf_luma[yp_tu * min_tu_width + x_tu];
-                uint8_t curr_cbf_luma = s->cbf_luma[yq_tu * min_tu_width + x_tu];
+                uint8_t top_cbf_luma  = l->cbf_luma[yp_tu * min_tu_width + x_tu];
+                uint8_t curr_cbf_luma = l->cbf_luma[yq_tu * min_tu_width + x_tu];
 
                 if (curr->pred_flag == PF_INTRA || top->pred_flag == PF_INTRA)
                     bs = 2;
@@ -815,8 +815,8 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
                 int y_tu      = (y0 + i) >> log2_min_tu_size;
                 const MvField *left = &tab_mvf[y_pu * min_pu_width + xp_pu];
                 const MvField *curr = &tab_mvf[y_pu * min_pu_width + xq_pu];
-                uint8_t left_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xp_tu];
-                uint8_t curr_cbf_luma = s->cbf_luma[y_tu * min_tu_width + xq_tu];
+                uint8_t left_cbf_luma = l->cbf_luma[y_tu * min_tu_width + xp_tu];
+                uint8_t curr_cbf_luma = l->cbf_luma[y_tu * min_tu_width + xq_tu];
 
                 if (curr->pred_flag == PF_INTRA || left->pred_flag == PF_INTRA)
                     bs = 2;
