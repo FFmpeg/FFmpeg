@@ -31,7 +31,7 @@
 #define AVCODEC_AAC_H
 
 #define MAX_CHANNELS 64
-#define MAX_ELEM_ID 16
+#define MAX_ELEM_ID 64
 
 #define TNS_MAX_ORDER 20
 #define MAX_LTP_LONG_SFB 40
