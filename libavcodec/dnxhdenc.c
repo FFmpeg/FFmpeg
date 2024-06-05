@@ -908,8 +908,6 @@ static int dnxhd_encode_thread(AVCodecContext *avctx, void *arg,
             dnxhd_encode_block(pb, ctx, block, last_index, n);
         }
     }
-    if (put_bits_count(pb) & 31)
-        put_bits(pb, 32 - (put_bits_count(pb) & 31), 0);
     flush_put_bits(pb);
     memset(put_bits_ptr(pb), 0, put_bytes_left(pb, 0));
     return 0;
