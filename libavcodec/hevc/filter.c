@@ -515,8 +515,8 @@ static void deblocking_filter_CTB(const HEVCContext *s, const HEVCLayerContext *
     int ctb_size        = 1 << log2_ctb_size;
     int ctb             = (x0 >> log2_ctb_size) +
                           (y0 >> log2_ctb_size) * sps->ctb_width;
-    int cur_tc_offset   = s->deblock[ctb].tc_offset;
-    int cur_beta_offset = s->deblock[ctb].beta_offset;
+    int cur_tc_offset   = l->deblock[ctb].tc_offset;
+    int cur_beta_offset = l->deblock[ctb].beta_offset;
     int left_tc_offset, left_beta_offset;
     int tc_offset, beta_offset;
     int pcmf = (sps->pcm_enabled &&
@@ -524,8 +524,8 @@ static void deblocking_filter_CTB(const HEVCContext *s, const HEVCLayerContext *
                pps->transquant_bypass_enable_flag;
 
     if (x0) {
-        left_tc_offset   = s->deblock[ctb - 1].tc_offset;
-        left_beta_offset = s->deblock[ctb - 1].beta_offset;
+        left_tc_offset   = l->deblock[ctb - 1].tc_offset;
+        left_beta_offset = l->deblock[ctb - 1].beta_offset;
     } else {
         left_tc_offset   = 0;
         left_beta_offset = 0;

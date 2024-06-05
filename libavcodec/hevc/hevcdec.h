@@ -445,6 +445,7 @@ typedef struct HEVCLayerContext {
     int                     bs_height;
 
     SAOParams              *sao;
+    DBParams               *deblock;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -478,7 +479,6 @@ typedef struct HEVCContext {
     const HEVCVPS *vps; ///< RefStruct reference
     const HEVCPPS *pps; ///< RefStruct reference
     SliceHeader sh;
-    DBParams *deblock;
     enum HEVCNALUnitType nal_unit_type;
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *cur_frame;

@@ -69,7 +69,7 @@ static const uint8_t hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3,
 static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
 {
     av_freep(&l->sao);
-    av_freep(&s->deblock);
+    av_freep(&l->deblock);
 
     av_freep(&s->skip_flag);
     av_freep(&s->tab_ct_depth);
@@ -104,8 +104,8 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     l->bs_height = (height >> 2) + 1;
 
     l->sao           = av_calloc(ctb_count, sizeof(*l->sao));
-    s->deblock       = av_calloc(ctb_count, sizeof(*s->deblock));
-    if (!l->sao || !s->deblock)
+    l->deblock       = av_calloc(ctb_count, sizeof(*l->deblock));
+    if (!l->sao || !l->deblock)
         goto fail;
 
     s->skip_flag    = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
@@ -2559,8 +2559,8 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
         hls_sao_param(lc, l, pps, sps,
                       x_ctb >> sps->log2_ctb_size, y_ctb >> sps->log2_ctb_size);
 
-        s->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
-        s->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        l->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
+        l->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
         s->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
 
         more_data = hls_coding_quadtree(lc, l, pps, sps, x_ctb, y_ctb, sps->log2_ctb_size, 0);
