@@ -570,16 +570,15 @@ int ff_hevc_cu_transquant_bypass_flag_decode(HEVCLocalContext *lc)
     return GET_CABAC(CU_TRANSQUANT_BYPASS_FLAG_OFFSET);
 }
 
-int ff_hevc_skip_flag_decode(HEVCLocalContext *lc, int x0, int y0,
-                             int x_cb, int y_cb, int min_cb_width)
+int ff_hevc_skip_flag_decode(HEVCLocalContext *lc, uint8_t *skip_flag,
+                             int x0, int y0, int x_cb, int y_cb, int min_cb_width)
 {
-    const HEVCContext *const s = lc->parent;
     int inc = 0;
 
     if (lc->ctb_left_flag || x0)
-        inc = !!SAMPLE_CTB(s->skip_flag, x_cb - 1, y_cb);
+        inc = !!SAMPLE_CTB(skip_flag, x_cb - 1, y_cb);
     if (lc->ctb_up_flag || y0)
-        inc += !!SAMPLE_CTB(s->skip_flag, x_cb, y_cb - 1);
+        inc += !!SAMPLE_CTB(skip_flag, x_cb, y_cb - 1);
 
     return GET_CABAC(SKIP_FLAG_OFFSET + inc);
 }

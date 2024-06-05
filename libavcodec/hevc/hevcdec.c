@@ -71,7 +71,7 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->sao);
     av_freep(&l->deblock);
 
-    av_freep(&s->skip_flag);
+    av_freep(&l->skip_flag);
     av_freep(&s->tab_ct_depth);
 
     av_freep(&s->tab_ipm);
@@ -108,9 +108,9 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     if (!l->sao || !l->deblock)
         goto fail;
 
-    s->skip_flag    = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
+    l->skip_flag    = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
     s->tab_ct_depth = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
-    if (!s->skip_flag || !s->tab_ct_depth)
+    if (!l->skip_flag || !s->tab_ct_depth)
         goto fail;
 
     s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
@@ -1882,6 +1882,7 @@ static void hevc_luma_mv_mvp_mode(HEVCLocalContext *lc,
 }
 
 static void hls_prediction_unit(HEVCLocalContext *lc,
+                                const HEVCLayerContext *l,
                                 const HEVCPPS *pps, const HEVCSPS *sps,
                                 int x0, int y0, int nPbW, int nPbH,
                                 int log2_cb_size, int partIdx, int idx)
@@ -1909,7 +1910,7 @@ static void hls_prediction_unit(HEVCLocalContext *lc,
     int x_pu, y_pu;
     int i, j;
 
-    int skip_flag = SAMPLE_CTB(s->skip_flag, x_cb, y_cb);
+    int skip_flag = SAMPLE_CTB(l->skip_flag, x_cb, y_cb);
 
     if (!skip_flag)
         lc->pu.merge_flag = ff_hevc_merge_flag_decode(lc);
@@ -2221,7 +2222,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
     lc->cu.part_mode        = PART_2Nx2N;
     lc->cu.intra_split_flag = 0;
 
-    SAMPLE_CTB(s->skip_flag, x_cb, y_cb) = 0;
+    SAMPLE_CTB(l->skip_flag, x_cb, y_cb) = 0;
     for (x = 0; x < 4; x++)
         lc->pu.intra_pred_mode[x] = 1;
     if (pps->transquant_bypass_enable_flag) {
@@ -2234,25 +2235,26 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
     if (s->sh.slice_type != HEVC_SLICE_I) {
         const int x0b = av_zero_extend(x0, sps->log2_ctb_size);
         const int y0b = av_zero_extend(y0, sps->log2_ctb_size);
-        uint8_t skip_flag = ff_hevc_skip_flag_decode(lc, x0b, y0b, x_cb, y_cb,
+        uint8_t skip_flag = ff_hevc_skip_flag_decode(lc, l->skip_flag,
+                                                     x0b, y0b, x_cb, y_cb,
                                                      min_cb_width);
 
         x = y_cb * min_cb_width + x_cb;
         for (y = 0; y < length; y++) {
-            memset(&s->skip_flag[x], skip_flag, length);
+            memset(&l->skip_flag[x], skip_flag, length);
             x += min_cb_width;
         }
         lc->cu.pred_mode = skip_flag ? MODE_SKIP : MODE_INTER;
     } else {
         x = y_cb * min_cb_width + x_cb;
         for (y = 0; y < length; y++) {
-            memset(&s->skip_flag[x], 0, length);
+            memset(&l->skip_flag[x], 0, length);
             x += min_cb_width;
         }
     }
 
-    if (SAMPLE_CTB(s->skip_flag, x_cb, y_cb)) {
-        hls_prediction_unit(lc, pps, sps,
+    if (SAMPLE_CTB(l->skip_flag, x_cb, y_cb)) {
+        hls_prediction_unit(lc, l, pps, sps,
                             x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
         intra_prediction_unit_default_value(lc, sps, x0, y0, log2_cb_size);
 
@@ -2291,53 +2293,53 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
             intra_prediction_unit_default_value(lc, sps, x0, y0, log2_cb_size);
             switch (lc->cu.part_mode) {
             case PART_2Nx2N:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
                 break;
             case PART_2NxN:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0, y0,               cb_size, cb_size / 2, log2_cb_size, 0, idx);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0, y0 + cb_size / 2, cb_size, cb_size / 2, log2_cb_size, 1, idx);
                 break;
             case PART_Nx2N:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0,               y0, cb_size / 2, cb_size, log2_cb_size, 0, idx - 1);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0 + cb_size / 2, y0, cb_size / 2, cb_size, log2_cb_size, 1, idx - 1);
                 break;
             case PART_2NxnU:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0, y0,               cb_size, cb_size     / 4, log2_cb_size, 0, idx);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0, y0 + cb_size / 4, cb_size, cb_size * 3 / 4, log2_cb_size, 1, idx);
                 break;
             case PART_2NxnD:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0, y0,                   cb_size, cb_size * 3 / 4, log2_cb_size, 0, idx);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0, y0 + cb_size * 3 / 4, cb_size, cb_size     / 4, log2_cb_size, 1, idx);
                 break;
             case PART_nLx2N:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0,               y0, cb_size     / 4, cb_size, log2_cb_size, 0, idx - 2);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0 + cb_size / 4, y0, cb_size * 3 / 4, cb_size, log2_cb_size, 1, idx - 2);
                 break;
             case PART_nRx2N:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0,                   y0, cb_size * 3 / 4, cb_size, log2_cb_size, 0, idx - 2);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0 + cb_size * 3 / 4, y0, cb_size     / 4, cb_size, log2_cb_size, 1, idx - 2);
                 break;
             case PART_NxN:
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0,               y0,               cb_size / 2, cb_size / 2, log2_cb_size, 0, idx - 1);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0 + cb_size / 2, y0,               cb_size / 2, cb_size / 2, log2_cb_size, 1, idx - 1);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0,               y0 + cb_size / 2, cb_size / 2, cb_size / 2, log2_cb_size, 2, idx - 1);
-                hls_prediction_unit(lc, pps, sps,
+                hls_prediction_unit(lc, l, pps, sps,
                                     x0 + cb_size / 2, y0 + cb_size / 2, cb_size / 2, cb_size / 2, log2_cb_size, 3, idx - 1);
                 break;
             }

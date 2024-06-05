@@ -446,6 +446,9 @@ typedef struct HEVCLayerContext {
 
     SAOParams              *sao;
     DBParams               *deblock;
+
+    //  CU
+    uint8_t                *skip_flag;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -504,7 +507,6 @@ typedef struct HEVCContext {
     int32_t *tab_slice_address;
 
     //  CU
-    uint8_t *skip_flag;
     uint8_t *tab_ct_depth;
     // PU
     uint8_t *tab_ipm;
@@ -579,8 +581,8 @@ int ff_hevc_sao_offset_sign_decode(HEVCLocalContext *lc);
 int ff_hevc_sao_eo_class_decode(HEVCLocalContext *lc);
 int ff_hevc_end_of_slice_flag_decode(HEVCLocalContext *lc);
 int ff_hevc_cu_transquant_bypass_flag_decode(HEVCLocalContext *lc);
-int ff_hevc_skip_flag_decode(HEVCLocalContext *lc, int x0, int y0,
-                             int x_cb, int y_cb, int min_cb_width);
+int ff_hevc_skip_flag_decode(HEVCLocalContext *lc, uint8_t *skip_flag,
+                             int x0, int y0, int x_cb, int y_cb, int min_cb_width);
 int ff_hevc_pred_mode_decode(HEVCLocalContext *lc);
 int ff_hevc_split_coding_unit_flag_decode(HEVCLocalContext *lc, const HEVCSPS *sps,
                                           int ct_depth, int x0, int y0);
