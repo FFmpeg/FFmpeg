@@ -465,6 +465,9 @@ typedef struct HEVCLayerContext {
 
     uint8_t                *horizontal_bs;
     uint8_t                *vertical_bs;
+
+    struct FFRefStructPool *tab_mvf_pool;
+    struct FFRefStructPool *rpl_tab_pool;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -488,9 +491,6 @@ typedef struct HEVCContext {
     HEVCParamSets ps;
     HEVCSEI sei;
     struct AVMD5 *md5_ctx;
-
-    struct FFRefStructPool *tab_mvf_pool;
-    struct FFRefStructPool *rpl_tab_pool;
 
     ///< candidate references for the current frame
     RefPicList rps[5];

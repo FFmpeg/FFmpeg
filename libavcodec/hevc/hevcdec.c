@@ -66,7 +66,7 @@ static const uint8_t hevc_pel_weight[65] = { [2] = 0, [4] = 1, [6] = 2, [8] = 3,
  */
 
 /* free everything allocated  by pic_arrays_init() */
-static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
+static void pic_arrays_free(HEVCLayerContext *l)
 {
     av_freep(&l->sao);
     av_freep(&l->deblock);
@@ -85,12 +85,12 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->horizontal_bs);
     av_freep(&l->vertical_bs);
 
-    ff_refstruct_pool_uninit(&s->tab_mvf_pool);
-    ff_refstruct_pool_uninit(&s->rpl_tab_pool);
+    ff_refstruct_pool_uninit(&l->tab_mvf_pool);
+    ff_refstruct_pool_uninit(&l->rpl_tab_pool);
 }
 
 /* allocate arrays that depend on frame dimensions */
-static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
+static int pic_arrays_init(HEVCLayerContext *l, const HEVCSPS *sps)
 {
     int log2_min_cb_size = sps->log2_min_cb_size;
     int width            = sps->width;
@@ -132,15 +132,15 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     if (!l->horizontal_bs || !l->vertical_bs)
         goto fail;
 
-    s->tab_mvf_pool = ff_refstruct_pool_alloc(min_pu_size * sizeof(MvField), 0);
-    s->rpl_tab_pool = ff_refstruct_pool_alloc(ctb_count * sizeof(RefPicListTab), 0);
-    if (!s->tab_mvf_pool || !s->rpl_tab_pool)
+    l->tab_mvf_pool = ff_refstruct_pool_alloc(min_pu_size * sizeof(MvField), 0);
+    l->rpl_tab_pool = ff_refstruct_pool_alloc(ctb_count   * sizeof(RefPicListTab), 0);
+    if (!l->tab_mvf_pool || !l->rpl_tab_pool)
         goto fail;
 
     return 0;
 
 fail:
-    pic_arrays_free(s, l);
+    pic_arrays_free(l);
     return AVERROR(ENOMEM);
 }
 
@@ -531,14 +531,14 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
 {
     int ret, i;
 
-    pic_arrays_free(s, l);
+    pic_arrays_free(l);
     s->ps.sps = NULL;
     ff_refstruct_unref(&s->vps);
 
     if (!sps)
         return 0;
 
-    ret = pic_arrays_init(s, l, sps);
+    ret = pic_arrays_init(l, sps);
     if (ret < 0)
         goto fail;
 
@@ -576,7 +576,7 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
     return 0;
 
 fail:
-    pic_arrays_free(s, l);
+    pic_arrays_free(l);
     for (i = 0; i < 3; i++) {
         av_freep(&s->sao_pixel_buffer_h[i]);
         av_freep(&s->sao_pixel_buffer_v[i]);
@@ -3529,7 +3529,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     int i;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++)
-        pic_arrays_free(s, &s->layers[i]);
+        pic_arrays_free(&s->layers[i]);
 
     ff_refstruct_unref(&s->vps);
     ff_refstruct_unref(&s->pps);

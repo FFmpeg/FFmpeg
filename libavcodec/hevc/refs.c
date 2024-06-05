@@ -95,11 +95,11 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
             goto fail;
         frame->nb_rpl_elems = s->pkt.nb_nals;
 
-        frame->tab_mvf = ff_refstruct_pool_get(s->tab_mvf_pool);
+        frame->tab_mvf = ff_refstruct_pool_get(l->tab_mvf_pool);
         if (!frame->tab_mvf)
             goto fail;
 
-        frame->rpl_tab = ff_refstruct_pool_get(s->rpl_tab_pool);
+        frame->rpl_tab = ff_refstruct_pool_get(l->rpl_tab_pool);
         if (!frame->rpl_tab)
             goto fail;
         frame->ctb_count = s->ps.sps->ctb_width * s->ps.sps->ctb_height;
