@@ -739,7 +739,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
                      ost->logfile_prefix ? ost->logfile_prefix :
                                            DEFAULT_PASS_LOGFILENAME_PREFIX,
                      ost_idx);
-            if (!strcmp(ost->enc_ctx->codec->name, "libx264")) {
+            if (!strcmp(ost->enc_ctx->codec->name, "libx264") || !strcmp(ost->enc_ctx->codec->name, "libvvenc")) {
                 av_dict_set(&ost->encoder_opts, "stats", logfilename, AV_DICT_DONT_OVERWRITE);
             } else {
                 if (video_enc->flags & AV_CODEC_FLAG_PASS2) {

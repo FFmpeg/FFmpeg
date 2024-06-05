@@ -2378,6 +2378,70 @@ Indicates frame duration
 For more information about libvpx see:
 @url{http://www.webmproject.org/}
 
+@section libvvenc
+
+VVenC H.266/VVC encoder wrapper.
+
+This encoder requires the presence of the libvvenc headers and library
+during configuration. You need to explicitly configure the build with
+@option{--enable-libvvenc}.
+
+The VVenC project website is at
+@url{https://github.com/fraunhoferhhi/vvenc}.
+
+@subsection Supported Pixel Formats
+
+VVenC supports only 10-bit color spaces as input. But the internal (encoded)
+bit depth can be set to 8-bit or 10-bit at runtime.
+
+@subsection Options
+
+@table @option
+@item b
+Sets target video bitrate.
+
+@item g
+Set the GOP size. Currently support for g=1 (Intra only) or default.
+
+@item preset
+Set the VVenC preset.
+
+@item levelidc
+Set level idc.
+
+@item tier
+Set vvc tier.
+
+@item qp
+Set constant quantization parameter.
+
+@item subopt @var{boolean}
+Set subjective (perceptually motivated) optimization. Default is 1 (on).
+
+@item bitdepth8 @var{boolean}
+Set 8bit coding mode instead of using 10bit. Default is 0 (off).
+
+@item period
+set (intra) refresh period in seconds.
+
+@item vvenc-params
+Set vvenc options using a list of @var{key}=@var{value} couples separated
+by ":". See @command{vvencapp --fullhelp} or @command{vvencFFapp --fullhelp} for a list of options.
+
+For example, the options might be provided as:
+
+@example
+intraperiod=64:decodingrefreshtype=idr:poc0idr=1:internalbitdepth=8
+@end example
+
+For example the encoding options might be provided with @option{-vvenc-params}:
+
+@example
+ffmpeg -i input -c:v libvvenc -b 1M -vvenc-params intraperiod=64:decodingrefreshtype=idr:poc0idr=1:internalbitdepth=8 output.mp4
+@end example
+
+@end table
+
 @section libwebp
 
 libwebp WebP Image encoder wrapper

@@ -13,6 +13,7 @@ version <next>:
 - VVC decoder compatible with DVB test content
 - xHE-AAC decoder
 - removed DEC Alpha DSP and support code
+- VVC encoding support via libvvenc
 
 
 version 7.0:
