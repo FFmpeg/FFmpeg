@@ -72,7 +72,7 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->deblock);
 
     av_freep(&l->skip_flag);
-    av_freep(&s->tab_ct_depth);
+    av_freep(&l->tab_ct_depth);
 
     av_freep(&s->tab_ipm);
     av_freep(&s->cbf_luma);
@@ -109,8 +109,8 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
         goto fail;
 
     l->skip_flag    = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
-    s->tab_ct_depth = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
-    if (!l->skip_flag || !s->tab_ct_depth)
+    l->tab_ct_depth = av_malloc_array(sps->min_cb_height, sps->min_cb_width);
+    if (!l->skip_flag || !l->tab_ct_depth)
         goto fail;
 
     s->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
@@ -2383,7 +2383,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
         lc->qPy_pred = lc->qp_y;
     }
 
-    set_ct_depth(sps, s->tab_ct_depth, x0, y0, log2_cb_size, lc->ct_depth);
+    set_ct_depth(sps, l->tab_ct_depth, x0, y0, log2_cb_size, lc->ct_depth);
 
     return 0;
 }
@@ -2403,7 +2403,8 @@ static int hls_coding_quadtree(HEVCLocalContext *lc,
     if (x0 + cb_size <= sps->width  &&
         y0 + cb_size <= sps->height &&
         log2_cb_size > sps->log2_min_cb_size) {
-        split_cu = ff_hevc_split_coding_unit_flag_decode(lc, sps, cb_depth, x0, y0);
+        split_cu = ff_hevc_split_coding_unit_flag_decode(lc, l->tab_ct_depth,
+                                                         sps, cb_depth, x0, y0);
     } else {
         split_cu = (log2_cb_size > sps->log2_min_cb_size);
     }
