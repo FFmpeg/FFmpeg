@@ -371,8 +371,6 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         for (int i = 0; i < nb_channels; i++) {
             AVChannelCustom *cm = &ac->oc[1].ch_layout.u.map[i];
             cm->id = usac_ch_pos_to_av[get_bits(gb, 5)]; /* bsOutputChannelPos */
-            if (cm->id == AV_CHAN_NONE)
-                cm->id = AV_CHAN_UNKNOWN;
         }
 
         ret = av_channel_layout_retype(&ac->oc[1].ch_layout,
