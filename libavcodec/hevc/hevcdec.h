@@ -458,6 +458,8 @@ typedef struct HEVCLayerContext {
 
     // CTB-level flags affecting loop filter operation
     uint8_t                *filter_slice_edges;
+
+    int32_t                *tab_slice_address;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -512,8 +514,6 @@ typedef struct HEVCContext {
     int8_t *qp_y_tab;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
-
-    int32_t *tab_slice_address;
 
     /** used on BE to byteswap the lines for checksumming */
     uint8_t *checksum_buf;

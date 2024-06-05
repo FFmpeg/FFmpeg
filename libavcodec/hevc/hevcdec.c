@@ -79,7 +79,7 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->is_pcm);
 
     av_freep(&s->qp_y_tab);
-    av_freep(&s->tab_slice_address);
+    av_freep(&l->tab_slice_address);
     av_freep(&l->filter_slice_edges);
 
     av_freep(&s->horizontal_bs);
@@ -120,11 +120,11 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
         goto fail;
 
     l->filter_slice_edges = av_mallocz(ctb_count);
-    s->tab_slice_address  = av_malloc_array(pic_size_in_ctb,
-                                      sizeof(*s->tab_slice_address));
+    l->tab_slice_address  = av_malloc_array(pic_size_in_ctb,
+                                      sizeof(*l->tab_slice_address));
     s->qp_y_tab           = av_malloc_array(pic_size_in_ctb,
                                       sizeof(*s->qp_y_tab));
-    if (!s->qp_y_tab || !l->filter_slice_edges || !s->tab_slice_address)
+    if (!s->qp_y_tab || !l->filter_slice_edges || !l->tab_slice_address)
         goto fail;
 
     s->horizontal_bs = av_calloc(l->bs_width, l->bs_height);
@@ -2486,6 +2486,7 @@ static int hls_coding_quadtree(HEVCLocalContext *lc,
 }
 
 static void hls_decode_neighbour(HEVCLocalContext *lc,
+                                 const HEVCLayerContext *l,
                                  const HEVCPPS *pps, const HEVCSPS *sps,
                                  int x_ctb, int y_ctb, int ctb_addr_ts)
 {
@@ -2494,7 +2495,7 @@ static void hls_decode_neighbour(HEVCLocalContext *lc,
     int ctb_addr_rs       = pps->ctb_addr_ts_to_rs[ctb_addr_ts];
     int ctb_addr_in_slice = ctb_addr_rs - s->sh.slice_addr;
 
-    s->tab_slice_address[ctb_addr_rs] = s->sh.slice_addr;
+    l->tab_slice_address[ctb_addr_rs] = s->sh.slice_addr;
 
     if (pps->entropy_coding_sync_enabled_flag) {
         if (x_ctb == 0 && (y_ctb & (ctb_size - 1)) == 0)
@@ -2516,11 +2517,11 @@ static void hls_decode_neighbour(HEVCLocalContext *lc,
     if (pps->tiles_enabled_flag) {
         if (x_ctb > 0 && pps->tile_id[ctb_addr_ts] != pps->tile_id[pps->ctb_addr_rs_to_ts[ctb_addr_rs - 1]])
             lc->boundary_flags |= BOUNDARY_LEFT_TILE;
-        if (x_ctb > 0 && s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - 1])
+        if (x_ctb > 0 && l->tab_slice_address[ctb_addr_rs] != l->tab_slice_address[ctb_addr_rs - 1])
             lc->boundary_flags |= BOUNDARY_LEFT_SLICE;
         if (y_ctb > 0 && pps->tile_id[ctb_addr_ts] != pps->tile_id[pps->ctb_addr_rs_to_ts[ctb_addr_rs - sps->ctb_width]])
             lc->boundary_flags |= BOUNDARY_UPPER_TILE;
-        if (y_ctb > 0 && s->tab_slice_address[ctb_addr_rs] != s->tab_slice_address[ctb_addr_rs - sps->ctb_width])
+        if (y_ctb > 0 && l->tab_slice_address[ctb_addr_rs] != l->tab_slice_address[ctb_addr_rs - sps->ctb_width])
             lc->boundary_flags |= BOUNDARY_UPPER_SLICE;
     } else {
         if (ctb_addr_in_slice <= 0)
@@ -2555,11 +2556,11 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 
         x_ctb = (ctb_addr_rs % ((sps->width + ctb_size - 1) >> sps->log2_ctb_size)) << sps->log2_ctb_size;
         y_ctb = (ctb_addr_rs / ((sps->width + ctb_size - 1) >> sps->log2_ctb_size)) << sps->log2_ctb_size;
-        hls_decode_neighbour(lc, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
+        hls_decode_neighbour(lc, l, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
 
         ret = ff_hevc_cabac_init(lc, pps, ctb_addr_ts, slice_data, slice_size, 0);
         if (ret < 0) {
-            s->tab_slice_address[ctb_addr_rs] = -1;
+            l->tab_slice_address[ctb_addr_rs] = -1;
             return ret;
         }
 
@@ -2572,7 +2573,7 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 
         more_data = hls_coding_quadtree(lc, l, pps, sps, x_ctb, y_ctb, sps->log2_ctb_size, 0);
         if (more_data < 0) {
-            s->tab_slice_address[ctb_addr_rs] = -1;
+            l->tab_slice_address[ctb_addr_rs] = -1;
             return more_data;
         }
 
@@ -2616,7 +2617,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
         int x_ctb = (ctb_addr_rs % sps->ctb_width) << sps->log2_ctb_size;
         int y_ctb = (ctb_addr_rs / sps->ctb_width) << sps->log2_ctb_size;
 
-        hls_decode_neighbour(lc, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
+        hls_decode_neighbour(lc, l, pps, sps, x_ctb, y_ctb, ctb_addr_ts);
 
         ff_thread_await_progress2(s->avctx, ctb_row, thread, SHIFT_CTB_WPP);
 
@@ -2669,7 +2670,7 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
 
     return 0;
 error:
-    s->tab_slice_address[ctb_addr_rs] = -1;
+    l->tab_slice_address[ctb_addr_rs] = -1;
     /* Casting const away here is safe, because it is an atomic operation. */
     atomic_store((atomic_int*)&s->wpp_err, 1);
     ff_thread_report_progress2(s->avctx, ctb_row ,thread, SHIFT_CTB_WPP);
@@ -2778,7 +2779,8 @@ static int hls_slice_data_wpp(HEVCContext *s, const H2645NAL *nal)
     return res;
 }
 
-static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
+static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
+                             const H2645NAL *nal, GetBitContext *gb)
 {
     const HEVCPPS *pps = s->pps;
     int ret;
@@ -2809,7 +2811,7 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
     if (s->sh.dependent_slice_segment_flag) {
         int ctb_addr_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
         int prev_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
-        if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
+        if (l->tab_slice_address[prev_rs] != s->sh.slice_addr) {
             av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
             return AVERROR_INVALIDDATA;
         }
@@ -2957,7 +2959,7 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
     memset(s->vertical_bs,   0, l->bs_width * l->bs_height);
     memset(l->cbf_luma,      0, sps->min_tb_width * sps->min_tb_height);
     memset(l->is_pcm,        0, (sps->min_pu_width + 1) * (sps->min_pu_height + 1));
-    memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
+    memset(l->tab_slice_address, -1, pic_size_in_ctb * sizeof(*l->tab_slice_address));
 
     if (IS_IDR(s))
         ff_hevc_clear_refs(l);
@@ -3221,7 +3223,7 @@ static int decode_slice(HEVCContext *s, HEVCLayerContext *l,
         return AVERROR_INVALIDDATA;
     }
 
-    ret = decode_slice_data(s, nal, gb);
+    ret = decode_slice_data(s, l, nal, gb);
     if (ret < 0)
         return ret;
 
