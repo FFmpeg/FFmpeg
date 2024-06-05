@@ -709,9 +709,8 @@ void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code)
     int range, bit_size, sign, code, bits;
 
     if (val == 0) {
-        /* zero vector */
-        code = 0;
-        put_bits(pb, ff_mvtab[code][1], ff_mvtab[code][0]);
+        /* zero vector -- corresponds to ff_mvtab[0] */
+        put_bits(pb, 1, 1);
     } else {
         bit_size = f_code - 1;
         range = 1 << bit_size;
@@ -741,7 +740,7 @@ static av_cold void init_mv_penalty_and_fcode(void)
         for(mv=-MAX_DMV; mv<=MAX_DMV; mv++){
             int len;
 
-            if(mv==0) len= ff_mvtab[0][1];
+            if (mv==0) len = 1; // ff_mvtab[0][1]
             else{
                 int val, bit_size, code;
 
@@ -755,7 +754,7 @@ static av_cold void init_mv_penalty_and_fcode(void)
                 if(code<33){
                     len= ff_mvtab[code][1] + 1 + bit_size;
                 }else{
-                    len= ff_mvtab[32][1] + av_log2(code>>5) + 2 + bit_size;
+                    len = 12 /* ff_mvtab[32][1] */ + av_log2(code>>5) + 2 + bit_size;
                 }
             }
 
