@@ -53,7 +53,7 @@ static void check_shuffle_bytes(void * func, const char * report)
     LOCAL_ALIGNED_32(uint8_t, dst0, [MAX_STRIDE]);
     LOCAL_ALIGNED_32(uint8_t, dst1, [MAX_STRIDE]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, const uint8_t *src, uint8_t *dst, int src_size);
+    declare_func(void, const uint8_t *src, uint8_t *dst, int src_size);
 
     memset(dst0, 0, MAX_STRIDE);
     memset(dst1, 0, MAX_STRIDE);
@@ -84,9 +84,9 @@ static void check_uyvy_to_422p(void)
     LOCAL_ALIGNED_32(uint8_t, dst_v_0, [(MAX_STRIDE/2) * MAX_HEIGHT]);
     LOCAL_ALIGNED_32(uint8_t, dst_v_1, [(MAX_STRIDE/2) * MAX_HEIGHT]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                      const uint8_t *src, int width, int height,
-                      int lumStride, int chromStride, int srcStride);
+    declare_func(void, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                 const uint8_t *src, int width, int height,
+                 int lumStride, int chromStride, int srcStride);
 
     randomize_buffers(src0, MAX_STRIDE * MAX_HEIGHT * 2);
     memcpy(src1, src0, MAX_STRIDE * MAX_HEIGHT * 2);
@@ -127,8 +127,8 @@ static void check_interleave_bytes(void)
     uint8_t *dst0 = dst0_buf + 2;
     uint8_t *dst1 = dst1_buf + 2;
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, const uint8_t *, const uint8_t *,
-                                       uint8_t *, int, int, int, int, int);
+    declare_func(void, const uint8_t *, const uint8_t *,
+                 uint8_t *, int, int, int, int, int);
 
     randomize_buffers(src0, MAX_STRIDE * MAX_HEIGHT);
     randomize_buffers(src1, MAX_STRIDE * MAX_HEIGHT);
