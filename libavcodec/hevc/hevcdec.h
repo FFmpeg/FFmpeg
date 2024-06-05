@@ -466,6 +466,9 @@ typedef struct HEVCLayerContext {
     uint8_t                *horizontal_bs;
     uint8_t                *vertical_bs;
 
+    uint8_t                *sao_pixel_buffer_h[3];
+    uint8_t                *sao_pixel_buffer_v[3];
+
     struct FFRefStructPool *tab_mvf_pool;
     struct FFRefStructPool *rpl_tab_pool;
 } HEVCLayerContext;
@@ -485,8 +488,6 @@ typedef struct HEVCContext {
     uint8_t slice_initialized;
 
     struct ContainerFifo *output_fifo;
-    uint8_t *sao_pixel_buffer_h[3];
-    uint8_t *sao_pixel_buffer_v[3];
 
     HEVCParamSets ps;
     HEVCSEI sei;

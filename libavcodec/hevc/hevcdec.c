@@ -85,6 +85,11 @@ static void pic_arrays_free(HEVCLayerContext *l)
     av_freep(&l->horizontal_bs);
     av_freep(&l->vertical_bs);
 
+    for (int i = 0; i < 3; i++) {
+        av_freep(&l->sao_pixel_buffer_h[i]);
+        av_freep(&l->sao_pixel_buffer_v[i]);
+    }
+
     ff_refstruct_pool_uninit(&l->tab_mvf_pool);
     ff_refstruct_pool_uninit(&l->rpl_tab_pool);
 }
@@ -136,6 +141,24 @@ static int pic_arrays_init(HEVCLayerContext *l, const HEVCSPS *sps)
     l->rpl_tab_pool = ff_refstruct_pool_alloc(ctb_count   * sizeof(RefPicListTab), 0);
     if (!l->tab_mvf_pool || !l->rpl_tab_pool)
         goto fail;
+
+    if (sps->sao_enabled) {
+        int c_count = (sps->chroma_format_idc != 0) ? 3 : 1;
+
+        for (int c_idx = 0; c_idx < c_count; c_idx++) {
+            int w = sps->width >> sps->hshift[c_idx];
+            int h = sps->height >> sps->vshift[c_idx];
+            l->sao_pixel_buffer_h[c_idx] =
+                av_malloc((w * 2 * sps->ctb_height) <<
+                          sps->pixel_shift);
+            l->sao_pixel_buffer_v[c_idx] =
+                av_malloc((h * 2 * sps->ctb_width) <<
+                          sps->pixel_shift);
+            if (!l->sao_pixel_buffer_h[c_idx] ||
+                !l->sao_pixel_buffer_v[c_idx])
+                goto fail;
+        }
+    }
 
     return 0;
 
@@ -529,7 +552,7 @@ static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
 
 static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
 {
-    int ret, i;
+    int ret;
 
     pic_arrays_free(l);
     s->ps.sps = NULL;
@@ -546,30 +569,6 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
 
-    for (i = 0; i < 3; i++) {
-        av_freep(&s->sao_pixel_buffer_h[i]);
-        av_freep(&s->sao_pixel_buffer_v[i]);
-    }
-
-    if (sps->sao_enabled && !s->avctx->hwaccel) {
-        int c_count = (sps->chroma_format_idc != 0) ? 3 : 1;
-        int c_idx;
-
-        for(c_idx = 0; c_idx < c_count; c_idx++) {
-            int w = sps->width >> sps->hshift[c_idx];
-            int h = sps->height >> sps->vshift[c_idx];
-            s->sao_pixel_buffer_h[c_idx] =
-                av_malloc((w * 2 * sps->ctb_height) <<
-                          sps->pixel_shift);
-            s->sao_pixel_buffer_v[c_idx] =
-                av_malloc((h * 2 * sps->ctb_width) <<
-                          sps->pixel_shift);
-            if (!s->sao_pixel_buffer_h[c_idx] ||
-                !s->sao_pixel_buffer_v[c_idx])
-                goto fail;
-        }
-    }
-
     s->ps.sps = sps;
     s->vps    = ff_refstruct_ref_c(sps->vps);
 
@@ -577,10 +576,6 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
 
 fail:
     pic_arrays_free(l);
-    for (i = 0; i < 3; i++) {
-        av_freep(&s->sao_pixel_buffer_h[i]);
-        av_freep(&s->sao_pixel_buffer_v[i]);
-    }
     s->ps.sps = NULL;
     return ret;
 }
@@ -3526,7 +3521,6 @@ static int hevc_ref_frame(HEVCFrame *dst, const HEVCFrame *src)
 static av_cold int hevc_decode_free(AVCodecContext *avctx)
 {
     HEVCContext       *s = avctx->priv_data;
-    int i;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++)
         pic_arrays_free(&s->layers[i]);
@@ -3538,11 +3532,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_buffer_unref(&s->rpu_buf);
 
     av_freep(&s->md5_ctx);
-
-    for (i = 0; i < 3; i++) {
-        av_freep(&s->sao_pixel_buffer_h[i]);
-        av_freep(&s->sao_pixel_buffer_v[i]);
-    }
 
     ff_container_fifo_free(&s->output_fifo);
 

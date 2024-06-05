@@ -204,7 +204,7 @@ static void copy_vert(uint8_t *dst, const uint8_t *src,
     }
 }
 
-static void copy_CTB_to_hv(const HEVCContext *s, const HEVCSPS *sps,
+static void copy_CTB_to_hv(const HEVCLayerContext *l, const HEVCSPS *sps,
                            const uint8_t *src,
                            ptrdiff_t stride_src, int x, int y, int width, int height,
                            int c_idx, int x_ctb, int y_ctb)
@@ -214,15 +214,15 @@ static void copy_CTB_to_hv(const HEVCContext *s, const HEVCSPS *sps,
     int h = sps->height >> sps->vshift[c_idx];
 
     /* copy horizontal edges */
-    memcpy(s->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb) * w + x) << sh),
+    memcpy(l->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb) * w + x) << sh),
         src, width << sh);
-    memcpy(s->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb + 1) * w + x) << sh),
+    memcpy(l->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb + 1) * w + x) << sh),
         src + stride_src * (height - 1), width << sh);
 
     /* copy vertical edges */
-    copy_vert(s->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb) * h + y) << sh), src, sh, height, 1 << sh, stride_src);
+    copy_vert(l->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb) * h + y) << sh), src, sh, height, 1 << sh, stride_src);
 
-    copy_vert(s->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb + 1) * h + y) << sh), src + ((width - 1) << sh), sh, height, 1 << sh, stride_src);
+    copy_vert(l->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb + 1) * h + y) << sh), src + ((width - 1) << sh), sh, height, 1 << sh, stride_src);
 }
 
 static void restore_tqb_pixels(const HEVCLayerContext *l,
@@ -343,7 +343,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCLayerContext *l,
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
-            copy_CTB_to_hv(s, sps, src, stride_src, x0, y0, width, height, c_idx,
+            copy_CTB_to_hv(l, sps, src, stride_src, x0, y0, width, height, c_idx,
                            x_ctb, y_ctb);
             if (pps->transquant_bypass_enable_flag ||
                 (sps->pcm_loop_filter_disabled && sps->pcm_enabled)) {
@@ -385,7 +385,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCLayerContext *l,
 
                 dst1 = dst - stride_dst - (left << sh);
                 src1[0] = src - stride_src - (left << sh);
-                src1[1] = s->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb - 1) * w + x0 - left) << sh);
+                src1[1] = l->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb - 1) * w + x0 - left) << sh);
                 pos = 0;
                 if (left) {
                     src_idx = (CTB(l->sao, x_ctb-1, y_ctb-1).type_idx[c_idx] ==
@@ -412,7 +412,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCLayerContext *l,
 
                 dst1 = dst + height * stride_dst - (left << sh);
                 src1[0] = src + height * stride_src - (left << sh);
-                src1[1] = s->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb + 2) * w + x0 - left) << sh);
+                src1[1] = l->sao_pixel_buffer_h[c_idx] + (((2 * y_ctb + 2) * w + x0 - left) << sh);
                 pos = 0;
                 if (left) {
                     src_idx = (CTB(l->sao, x_ctb-1, y_ctb+1).type_idx[c_idx] ==
@@ -434,7 +434,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCLayerContext *l,
             if (!left_edge) {
                 if (CTB(l->sao, x_ctb-1, y_ctb).type_idx[c_idx] == SAO_APPLIED) {
                     copy_vert(dst - (1 << sh),
-                              s->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb - 1) * h + y0) << sh),
+                              l->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb - 1) * h + y0) << sh),
                               sh, height, stride_dst, 1 << sh);
                 } else {
                     left_pixels = 1;
@@ -444,7 +444,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCLayerContext *l,
             if (!right_edge) {
                 if (CTB(l->sao, x_ctb+1, y_ctb).type_idx[c_idx] == SAO_APPLIED) {
                     copy_vert(dst + (width << sh),
-                              s->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb + 2) * h + y0) << sh),
+                              l->sao_pixel_buffer_v[c_idx] + (((2 * x_ctb + 2) * h + y0) << sh),
                               sh, height, stride_dst, 1 << sh);
                 } else {
                     right_pixels = 1;
@@ -456,7 +456,7 @@ static void sao_filter_CTB(HEVCLocalContext *lc, const HEVCLayerContext *l,
                      (width + left_pixels + right_pixels) << sh,
                      height, stride_dst, stride_src);
 
-            copy_CTB_to_hv(s, sps, src, stride_src, x0, y0, width, height, c_idx,
+            copy_CTB_to_hv(l, sps, src, stride_src, x0, y0, width, height, c_idx,
                            x_ctb, y_ctb);
             s->hevcdsp.sao_edge_filter[tab](src, dst, stride_src, sao->offset_val[c_idx],
                                             sao->eo_class[c_idx], width, height);
