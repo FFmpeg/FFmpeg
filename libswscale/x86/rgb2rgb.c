@@ -100,13 +100,6 @@ DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
 #define RENAME(a) a ## _sse2
 #include "rgb2rgb_template.c"
 
-//AVX versions
-#undef RENAME
-#undef COMPILE_TEMPLATE_AVX
-#define COMPILE_TEMPLATE_AVX 1
-#define RENAME(a) a ## _avx
-#include "rgb2rgb_template.c"
-
 /*
  RGB15->RGB16 original by Strepto/Astral
  ported to gcc & bugfixed : A'rpi
@@ -138,6 +131,33 @@ void ff_uyvytoyuv422_avx(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                          int lumStride, int chromStride, int srcStride);
 #endif
 
+#define DEINTERLEAVE_BYTES(cpuext)                                            \
+void ff_nv12ToUV_ ## cpuext(uint8_t *dstU, uint8_t *dstV,                     \
+                           const uint8_t *unused,                             \
+                           const uint8_t *src1,                               \
+                           const uint8_t *src2,                               \
+                           int w,                                             \
+                           uint32_t *unused2,                                 \
+                           void *opq);                                        \
+static void deinterleave_bytes_ ## cpuext(const uint8_t *src, uint8_t *dst1, uint8_t *dst2, \
+                                          int width, int height, int srcStride, \
+                                          int dst1Stride, int dst2Stride)     \
+{                                                                             \
+    for (int h = 0; h < height; h++) {                                        \
+        ff_nv12ToUV_ ## cpuext(dst1, dst2, NULL, src, NULL, width, NULL, NULL); \
+        src  += srcStride;                                                    \
+        dst1 += dst1Stride;                                                   \
+        dst2 += dst2Stride;                                                   \
+    }                                                                         \
+}
+
+#if HAVE_SSE2_EXTERNAL
+DEINTERLEAVE_BYTES(sse2)
+#endif
+#if HAVE_AVX_EXTERNAL
+DEINTERLEAVE_BYTES(avx)
+#endif
+
 av_cold void rgb2rgb_init_x86(void)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -147,18 +167,19 @@ av_cold void rgb2rgb_init_x86(void)
         rgb2rgb_init_mmxext();
     if (INLINE_SSE2(cpu_flags))
         rgb2rgb_init_sse2();
-    if (INLINE_AVX(cpu_flags))
-        rgb2rgb_init_avx();
 #endif /* HAVE_INLINE_ASM */
 
     if (EXTERNAL_MMXEXT(cpu_flags)) {
         shuffle_bytes_2103 = ff_shuffle_bytes_2103_mmxext;
     }
+#if HAVE_SSE2_EXTERNAL
     if (EXTERNAL_SSE2(cpu_flags)) {
 #if ARCH_X86_64
         uyvytoyuv422 = ff_uyvytoyuv422_sse2;
 #endif
+        deinterleaveBytes = deinterleave_bytes_sse2;
     }
+#endif
     if (EXTERNAL_SSSE3(cpu_flags)) {
         shuffle_bytes_0321 = ff_shuffle_bytes_0321_ssse3;
         shuffle_bytes_2103 = ff_shuffle_bytes_2103_ssse3;
@@ -166,16 +187,19 @@ av_cold void rgb2rgb_init_x86(void)
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_ssse3;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_ssse3;
     }
+#if HAVE_AVX_EXTERNAL
+    if (EXTERNAL_AVX(cpu_flags)) {
+        deinterleaveBytes = deinterleave_bytes_avx;
 #if ARCH_X86_64
+        uyvytoyuv422 = ff_uyvytoyuv422_avx;
+    }
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         shuffle_bytes_0321 = ff_shuffle_bytes_0321_avx2;
         shuffle_bytes_2103 = ff_shuffle_bytes_2103_avx2;
         shuffle_bytes_1230 = ff_shuffle_bytes_1230_avx2;
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_avx2;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_avx2;
-    }
-    if (EXTERNAL_AVX(cpu_flags)) {
-        uyvytoyuv422 = ff_uyvytoyuv422_avx;
+#endif
     }
 #endif
 }

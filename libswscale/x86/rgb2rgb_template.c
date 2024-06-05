@@ -1816,31 +1816,6 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
 }
 #endif /* !COMPILE_TEMPLATE_AVX && COMPILE_TEMPLATE_SSE2 */
 
-#if !COMPILE_TEMPLATE_AVX || HAVE_AVX_EXTERNAL
-#if COMPILE_TEMPLATE_SSE2 && HAVE_X86ASM
-void RENAME(ff_nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
-                         const uint8_t *unused,
-                         const uint8_t *src1,
-                         const uint8_t *src2,
-                         int w,
-                         uint32_t *unused2,
-                         void *opq);
-static void RENAME(deinterleaveBytes)(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
-                                      int width, int height, int srcStride,
-                                      int dst1Stride, int dst2Stride)
-{
-    int h;
-
-    for (h = 0; h < height; h++) {
-        RENAME(ff_nv12ToUV)(dst1, dst2, NULL, src, NULL, width, NULL, NULL);
-        src  += srcStride;
-        dst1 += dst1Stride;
-        dst2 += dst2Stride;
-    }
-}
-#endif /* COMPILE_TEMPLATE_SSE2 && HAVE_X86ASM */
-#endif /* !COMPILE_TEMPLATE_AVX || HAVE_AVX_EXTERNAL */
-
 #if !COMPILE_TEMPLATE_SSE2
 static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                                        uint8_t *dst1, uint8_t *dst2,
@@ -2441,9 +2416,4 @@ static av_cold void RENAME(rgb2rgb_init)(void)
 #if !COMPILE_TEMPLATE_AVX && COMPILE_TEMPLATE_SSE2
     interleaveBytes    = RENAME(interleaveBytes);
 #endif /* !COMPILE_TEMPLATE_AVX && COMPILE_TEMPLATE_SSE2 */
-#if !COMPILE_TEMPLATE_AVX || HAVE_AVX_EXTERNAL
-#if COMPILE_TEMPLATE_SSE2 && HAVE_X86ASM
-    deinterleaveBytes  = RENAME(deinterleaveBytes);
-#endif
-#endif
 }
