@@ -82,8 +82,8 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->tab_slice_address);
     av_freep(&l->filter_slice_edges);
 
-    av_freep(&s->horizontal_bs);
-    av_freep(&s->vertical_bs);
+    av_freep(&l->horizontal_bs);
+    av_freep(&l->vertical_bs);
 
     ff_refstruct_pool_uninit(&s->tab_mvf_pool);
     ff_refstruct_pool_uninit(&s->rpl_tab_pool);
@@ -127,9 +127,9 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     if (!l->qp_y_tab || !l->filter_slice_edges || !l->tab_slice_address)
         goto fail;
 
-    s->horizontal_bs = av_calloc(l->bs_width, l->bs_height);
-    s->vertical_bs   = av_calloc(l->bs_width, l->bs_height);
-    if (!s->horizontal_bs || !s->vertical_bs)
+    l->horizontal_bs = av_calloc(l->bs_width, l->bs_height);
+    l->vertical_bs   = av_calloc(l->bs_width, l->bs_height);
+    if (!l->horizontal_bs || !l->vertical_bs)
         goto fail;
 
     s->tab_mvf_pool = ff_refstruct_pool_alloc(min_pu_size * sizeof(MvField), 0);
@@ -2956,8 +2956,8 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
         new_sequence = 1;
     }
 
-    memset(s->horizontal_bs, 0, l->bs_width * l->bs_height);
-    memset(s->vertical_bs,   0, l->bs_width * l->bs_height);
+    memset(l->horizontal_bs, 0, l->bs_width * l->bs_height);
+    memset(l->vertical_bs,   0, l->bs_width * l->bs_height);
     memset(l->cbf_luma,      0, sps->min_tb_width * sps->min_tb_height);
     memset(l->is_pcm,        0, (sps->min_pu_width + 1) * (sps->min_pu_height + 1));
     memset(l->tab_slice_address, -1, pic_size_in_ctb * sizeof(*l->tab_slice_address));

@@ -462,6 +462,9 @@ typedef struct HEVCLayerContext {
     int32_t                *tab_slice_address;
 
     int8_t                 *qp_y_tab;
+
+    uint8_t                *horizontal_bs;
+    uint8_t                *vertical_bs;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -513,8 +516,6 @@ typedef struct HEVCContext {
     VideoDSPContext vdsp;
     BswapDSPContext bdsp;
     H274FilmGrainDatabase h274db;
-    uint8_t *horizontal_bs;
-    uint8_t *vertical_bs;
 
     /** used on BE to byteswap the lines for checksumming */
     uint8_t *checksum_buf;
