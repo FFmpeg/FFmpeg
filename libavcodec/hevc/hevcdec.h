@@ -440,6 +440,9 @@ typedef struct HEVCLocalContext {
 
 typedef struct HEVCLayerContext {
     HEVCFrame               DPB[32];
+
+    int                     bs_width;
+    int                     bs_height;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -484,8 +487,6 @@ typedef struct HEVCContext {
     int slice_idx; ///< number of the slice being currently decoded
     int eos;       ///< current packet contains an EOS/EOB NAL
     int last_eos;  ///< last packet contains an EOS/EOB NAL
-    int bs_width;
-    int bs_height;
 
     // NoRaslOutputFlag associated with the last IRAP frame
     int no_rasl_output_flag;
@@ -649,13 +650,16 @@ void ff_hevc_luma_mv_mvp_mode(HEVCLocalContext *lc, const HEVCPPS *pps,
                               int nPbW, int nPbH, int log2_cb_size,
                               int part_idx, int merge_idx,
                               MvField *mv, int mvp_lx_flag, int LX);
-void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCPPS *pps,
+void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                        const HEVCPPS *pps,
                         int x, int y, int ctb_size);
-void ff_hevc_hls_filters(HEVCLocalContext *lc, const HEVCPPS *pps,
+void ff_hevc_hls_filters(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                         const HEVCPPS *pps,
                          int x_ctb, int y_ctb, int ctb_size);
 void ff_hevc_set_qPy(HEVCLocalContext *lc, const HEVCPPS *pps,
                      int xBase, int yBase, int log2_cb_size);
-void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCPPS *pps,
+void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                                           const HEVCPPS *pps,
                                            int x0, int y0, int log2_trafo_size);
 int ff_hevc_cu_qp_delta_sign_flag(HEVCLocalContext *lc);
 int ff_hevc_cu_qp_delta_abs(HEVCLocalContext *lc);
