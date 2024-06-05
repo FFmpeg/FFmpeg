@@ -187,11 +187,16 @@ static const int input_sizes[] = {8, 128, 1080, MAX_LINE_SIZE};
 static const enum AVPixelFormat rgb_formats[] = {
         AV_PIX_FMT_RGB24,
         AV_PIX_FMT_BGR24,
+        AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_ABGR,
+        AV_PIX_FMT_ARGB,
 };
 
 static void check_rgb_to_y(struct SwsContext *ctx)
 {
-    LOCAL_ALIGNED_32(uint8_t, src, [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_32(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_32(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
     LOCAL_ALIGNED_32(uint8_t, dst0_y, [MAX_LINE_SIZE * 2]);
     LOCAL_ALIGNED_32(uint8_t, dst1_y, [MAX_LINE_SIZE * 2]);
 
@@ -199,7 +204,8 @@ static void check_rgb_to_y(struct SwsContext *ctx)
                  const uint8_t *unused1, const uint8_t *unused2, int width,
                  uint32_t *rgb2yuv, void *opq);
 
-    randomize_buffers(src, MAX_LINE_SIZE * 3);
+    randomize_buffers(src24, MAX_LINE_SIZE * 3);
+    randomize_buffers(src32, MAX_LINE_SIZE * 4);
 
     for (int i = 0; i < FF_ARRAY_ELEMS(rgb_formats); i++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(rgb_formats[i]);
@@ -211,6 +217,7 @@ static void check_rgb_to_y(struct SwsContext *ctx)
             int w = input_sizes[j];
 
             if (check_func(ctx->lumToYV12, "%s_to_y_%d", desc->name, w)) {
+                const uint8_t *src = desc->nb_components == 3 ? src24 : src32;
                 memset(dst0_y, 0xFA, MAX_LINE_SIZE * 2);
                 memset(dst1_y, 0xFA, MAX_LINE_SIZE * 2);
 
@@ -220,7 +227,10 @@ static void check_rgb_to_y(struct SwsContext *ctx)
                 if (memcmp(dst0_y, dst1_y, w * 2))
                     fail();
 
-                bench_new(dst1_y, src, NULL, NULL, w, ctx->input_rgb2yuv_table, NULL);
+                if (desc->nb_components == 3 ||
+                    // only bench native endian formats
+                    (ctx->srcFormat == AV_PIX_FMT_RGB32 || ctx->srcFormat == AV_PIX_FMT_RGB32_1))
+                    bench_new(dst1_y, src, NULL, NULL, w, ctx->input_rgb2yuv_table, NULL);
             }
         }
     }
@@ -228,7 +238,8 @@ static void check_rgb_to_y(struct SwsContext *ctx)
 
 static void check_rgb_to_uv(struct SwsContext *ctx)
 {
-    LOCAL_ALIGNED_32(uint8_t, src, [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_32(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_32(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
     LOCAL_ALIGNED_32(uint8_t, dst0_u, [MAX_LINE_SIZE * 2]);
     LOCAL_ALIGNED_32(uint8_t, dst0_v, [MAX_LINE_SIZE * 2]);
     LOCAL_ALIGNED_32(uint8_t, dst1_u, [MAX_LINE_SIZE * 2]);
@@ -238,7 +249,8 @@ static void check_rgb_to_uv(struct SwsContext *ctx)
                  const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
                  int width, uint32_t *pal, void *opq);
 
-    randomize_buffers(src, MAX_LINE_SIZE * 3);
+    randomize_buffers(src24, MAX_LINE_SIZE * 3);
+    randomize_buffers(src32, MAX_LINE_SIZE * 4);
 
     for (int i = 0; i < 2 * FF_ARRAY_ELEMS(rgb_formats); i++) {
         enum AVPixelFormat src_fmt = rgb_formats[i / 2];
@@ -255,6 +267,7 @@ static void check_rgb_to_uv(struct SwsContext *ctx)
             if (check_func(ctx->chrToYV12, "%s_to_uv%s_%d", desc->name,
                            ctx->chrSrcHSubSample ? "_half" : "",
                            input_sizes[j])) {
+                const uint8_t *src = desc->nb_components == 3 ? src24 : src32;
                 memset(dst0_u, 0xFF, MAX_LINE_SIZE * 2);
                 memset(dst0_v, 0xFF, MAX_LINE_SIZE * 2);
                 memset(dst1_u, 0xFF, MAX_LINE_SIZE * 2);
@@ -266,7 +279,10 @@ static void check_rgb_to_uv(struct SwsContext *ctx)
                 if (memcmp(dst0_u, dst1_u, w * 2) || memcmp(dst0_v, dst1_v, w * 2))
                     fail();
 
-                bench_new(dst1_u, dst1_v, NULL, src, src, w, ctx->input_rgb2yuv_table, NULL);
+                if (desc->nb_components == 3 ||
+                    // only bench native endian formats
+                    (ctx->srcFormat == AV_PIX_FMT_RGB32 || ctx->srcFormat == AV_PIX_FMT_RGB32_1))
+                    bench_new(dst1_u, dst1_v, NULL, src, src, w, ctx->input_rgb2yuv_table, NULL);
             }
         }
     }
