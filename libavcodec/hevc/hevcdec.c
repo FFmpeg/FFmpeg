@@ -533,7 +533,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 
     pic_arrays_free(s);
     s->ps.sps = NULL;
-    s->ps.vps = NULL;
+    ff_refstruct_unref(&s->vps);
 
     if (!sps)
         return 0;
@@ -571,7 +571,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     }
 
     s->ps.sps = sps;
-    s->ps.vps = sps->vps;
+    s->vps    = ff_refstruct_ref_c(sps->vps);
 
     return 0;
 
@@ -2911,6 +2911,12 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
     int new_sequence = IS_IDR(s) || IS_BLA(s) || s->last_eos;
     int ret;
 
+    if (sps->vps != s->vps && l != &s->layers[0]) {
+        av_log(s->avctx, AV_LOG_ERROR, "VPS changed in a non-base layer\n");
+        set_sps(s, NULL, AV_PIX_FMT_NONE);
+        return AVERROR_INVALIDDATA;
+    }
+
     ff_refstruct_replace(&s->pps, pps);
     if (s->ps.sps != sps) {
         enum AVPixelFormat pix_fmt;
@@ -3505,6 +3511,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     pic_arrays_free(s);
 
+    ff_refstruct_unref(&s->vps);
     ff_refstruct_unref(&s->pps);
 
     ff_dovi_ctx_unref(&s->dovi_ctx);

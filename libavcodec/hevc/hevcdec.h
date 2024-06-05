@@ -470,6 +470,7 @@ typedef struct HEVCContext {
     ///< candidate references for the current frame
     RefPicList rps[5];
 
+    const HEVCVPS *vps; ///< RefStruct reference
     const HEVCPPS *pps; ///< RefStruct reference
     SliceHeader sh;
     SAOParams *sao;

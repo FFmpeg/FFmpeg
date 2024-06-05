@@ -83,9 +83,6 @@ static void remove_vps(HEVCParamSets *s, int id)
 {
     int i;
     if (s->vps_list[id]) {
-        if (s->vps == s->vps_list[id])
-            s->vps = NULL;
-
         for (i = 0; i < FF_ARRAY_ELEMS(s->sps_list); i++)
             if (s->sps_list[i] && s->sps_list[i]->vps_id == id)
                 remove_sps(s, i);
@@ -2050,7 +2047,6 @@ void ff_hevc_ps_uninit(HEVCParamSets *ps)
         ff_refstruct_unref(&ps->pps_list[i]);
 
     ps->sps = NULL;
-    ps->vps = NULL;
 }
 
 int ff_hevc_compute_poc(const HEVCSPS *sps, int pocTid0, int poc_lsb, int nal_unit_type)
