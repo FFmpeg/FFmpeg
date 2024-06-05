@@ -453,6 +453,7 @@ typedef struct HEVCLayerContext {
 
     // PU
     uint8_t                *cbf_luma; // cbf_luma of colocated TU
+    uint8_t                *tab_ipm;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -511,7 +512,6 @@ typedef struct HEVCContext {
     int32_t *tab_slice_address;
 
     // PU
-    uint8_t *tab_ipm;
 
     uint8_t *is_pcm;
 

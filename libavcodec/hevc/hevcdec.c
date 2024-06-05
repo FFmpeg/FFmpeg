@@ -74,7 +74,7 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->skip_flag);
     av_freep(&l->tab_ct_depth);
 
-    av_freep(&s->tab_ipm);
+    av_freep(&l->tab_ipm);
     av_freep(&l->cbf_luma);
     av_freep(&s->is_pcm);
 
@@ -114,9 +114,9 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
         goto fail;
 
     l->cbf_luma = av_malloc_array(sps->min_tb_width, sps->min_tb_height);
-    s->tab_ipm  = av_mallocz(min_pu_size);
+    l->tab_ipm  = av_mallocz(min_pu_size);
     s->is_pcm   = av_malloc_array(sps->min_pu_width + 1, sps->min_pu_height + 1);
-    if (!s->tab_ipm || !l->cbf_luma || !s->is_pcm)
+    if (!l->tab_ipm || !l->cbf_luma || !s->is_pcm)
         goto fail;
 
     s->filter_slice_edges = av_mallocz(ctb_count);
@@ -2010,7 +2010,8 @@ static void hls_prediction_unit(HEVCLocalContext *lc,
 /**
  * 8.4.1
  */
-static int luma_intra_pred_mode(HEVCLocalContext *lc, const HEVCSPS *sps,
+static int luma_intra_pred_mode(HEVCLocalContext *lc, const HEVCLayerContext *l,
+                                const HEVCSPS *sps,
                                 int x0, int y0, int pu_size,
                                 int prev_intra_luma_pred_flag)
 {
@@ -2023,9 +2024,9 @@ static int luma_intra_pred_mode(HEVCLocalContext *lc, const HEVCSPS *sps,
     int y0b              = av_zero_extend(y0, sps->log2_ctb_size);
 
     int cand_up   = (lc->ctb_up_flag || y0b) ?
-                    s->tab_ipm[(y_pu - 1) * min_pu_width + x_pu] : INTRA_DC;
+                    l->tab_ipm[(y_pu - 1) * min_pu_width + x_pu] : INTRA_DC;
     int cand_left = (lc->ctb_left_flag || x0b) ?
-                    s->tab_ipm[y_pu * min_pu_width + x_pu - 1]   : INTRA_DC;
+                    l->tab_ipm[y_pu * min_pu_width + x_pu - 1]   : INTRA_DC;
 
     int y_ctb = (y0 >> (sps->log2_ctb_size)) << (sps->log2_ctb_size);
 
@@ -2080,7 +2081,7 @@ static int luma_intra_pred_mode(HEVCLocalContext *lc, const HEVCSPS *sps,
     if (!size_in_pus)
         size_in_pus = 1;
     for (i = 0; i < size_in_pus; i++) {
-        memset(&s->tab_ipm[(y_pu + i) * min_pu_width + x_pu],
+        memset(&l->tab_ipm[(y_pu + i) * min_pu_width + x_pu],
                intra_pred_mode, size_in_pus);
 
         for (j = 0; j < size_in_pus; j++) {
@@ -2109,7 +2110,8 @@ static const uint8_t tab_mode_idx[] = {
      0,  1,  2,  2,  2,  2,  3,  5,  7,  8, 10, 12, 13, 15, 17, 18, 19, 20,
     21, 22, 23, 23, 24, 24, 25, 25, 26, 27, 27, 28, 28, 29, 29, 30, 31};
 
-static void intra_prediction_unit(HEVCLocalContext *lc, const HEVCSPS *sps,
+static void intra_prediction_unit(HEVCLocalContext *lc,
+                                  const HEVCLayerContext *l, const HEVCSPS *sps,
                                   int x0, int y0,
                                   int log2_cb_size)
 {
@@ -2133,7 +2135,8 @@ static void intra_prediction_unit(HEVCLocalContext *lc, const HEVCSPS *sps,
                 lc->pu.rem_intra_luma_pred_mode = ff_hevc_rem_intra_luma_pred_mode_decode(lc);
 
             lc->pu.intra_pred_mode[2 * i + j] =
-                luma_intra_pred_mode(lc, sps, x0 + pb_size * j, y0 + pb_size * i, pb_size,
+                luma_intra_pred_mode(lc, l, sps,
+                                     x0 + pb_size * j, y0 + pb_size * i, pb_size,
                                      prev_intra_luma_pred_flag[2 * i + j]);
         }
     }
@@ -2178,6 +2181,7 @@ static void intra_prediction_unit(HEVCLocalContext *lc, const HEVCSPS *sps,
 }
 
 static void intra_prediction_unit_default_value(HEVCLocalContext *lc,
+                                                const HEVCLayerContext *l,
                                                 const HEVCSPS *sps,
                                                 int x0, int y0,
                                                 int log2_cb_size)
@@ -2194,7 +2198,7 @@ static void intra_prediction_unit_default_value(HEVCLocalContext *lc,
     if (size_in_pus == 0)
         size_in_pus = 1;
     for (j = 0; j < size_in_pus; j++)
-        memset(&s->tab_ipm[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
+        memset(&l->tab_ipm[(y_pu + j) * min_pu_width + x_pu], INTRA_DC, size_in_pus);
     if (lc->cu.pred_mode == MODE_INTRA)
         for (j = 0; j < size_in_pus; j++)
             for (k = 0; k < size_in_pus; k++)
@@ -2256,7 +2260,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
     if (SAMPLE_CTB(l->skip_flag, x_cb, y_cb)) {
         hls_prediction_unit(lc, l, pps, sps,
                             x0, y0, cb_size, cb_size, log2_cb_size, 0, idx);
-        intra_prediction_unit_default_value(lc, sps, x0, y0, log2_cb_size);
+        intra_prediction_unit_default_value(lc, l, sps, x0, y0, log2_cb_size);
 
         if (!s->sh.disable_deblocking_filter_flag)
             ff_hevc_deblocking_boundary_strengths(lc, l, pps, x0, y0, log2_cb_size);
@@ -2279,7 +2283,7 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
                 pcm_flag = ff_hevc_pcm_flag_decode(lc);
             }
             if (pcm_flag) {
-                intra_prediction_unit_default_value(lc, sps, x0, y0, log2_cb_size);
+                intra_prediction_unit_default_value(lc, l, sps, x0, y0, log2_cb_size);
                 ret = hls_pcm_sample(lc, l, pps, x0, y0, log2_cb_size);
                 if (sps->pcm_loop_filter_disabled)
                     set_deblocking_bypass(s, sps, x0, y0, log2_cb_size);
@@ -2287,10 +2291,10 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
                 if (ret < 0)
                     return ret;
             } else {
-                intra_prediction_unit(lc, sps, x0, y0, log2_cb_size);
+                intra_prediction_unit(lc, l, sps, x0, y0, log2_cb_size);
             }
         } else {
-            intra_prediction_unit_default_value(lc, sps, x0, y0, log2_cb_size);
+            intra_prediction_unit_default_value(lc, l, sps, x0, y0, log2_cb_size);
             switch (lc->cu.part_mode) {
             case PART_2Nx2N:
                 hls_prediction_unit(lc, l, pps, sps,
