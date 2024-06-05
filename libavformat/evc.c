@@ -208,15 +208,15 @@ static int evcc_write(AVIOContext *pb, EVCDecoderConfigurationRecord *evcc)
         if(array->numNalus == 0)
             continue;
 
-        av_log(NULL, AV_LOG_TRACE, "array_completeness[%"PRIu8"]:               %"PRIu8"\n",
+        av_log(NULL, AV_LOG_TRACE, "array_completeness[%u]:               %"PRIu8"\n",
                i, array->array_completeness);
-        av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%"PRIu8"]:                    %"PRIu8"\n",
+        av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%u]:                    %"PRIu8"\n",
                i, array->NAL_unit_type);
-        av_log(NULL, AV_LOG_TRACE, "numNalus[%"PRIu8"]:                         %"PRIu16"\n",
+        av_log(NULL, AV_LOG_TRACE, "numNalus[%u]:                         %"PRIu16"\n",
                i, array->numNalus);
         for ( unsigned j = 0; j < array->numNalus; j++)
             av_log(NULL, AV_LOG_TRACE,
-                   "nalUnitLength[%"PRIu8"][%"PRIu16"]:                 %"PRIu16"\n",
+                   "nalUnitLength[%u][%u]:                 %"PRIu16"\n",
                    i, j, array->nalUnitLength[j]);
     }
 
