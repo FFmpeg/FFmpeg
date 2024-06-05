@@ -731,6 +731,7 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
 {
     int err;
     HEVCContext *h = avctx->priv_data;
+    HEVCLayerContext *l = &h->layers[h->cur_layer];
     HEVCFrame *pic = h->cur_frame;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     HEVCVulkanDecodePicture *hp = pic->hwaccel_picture_private;
@@ -762,8 +763,8 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     };
 
     /* Fill in references */
-    for (int i = 0; i < FF_ARRAY_ELEMS(h->DPB); i++) {
-        const HEVCFrame *ref = &h->DPB[i];
+    for (int i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
+        const HEVCFrame *ref = &l->DPB[i];
         int idx = nb_refs;
 
         if (!(ref->flags & (HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF)))
@@ -790,8 +791,8 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     memset(hp->h265pic.RefPicSetStCurrBefore, 0xff, 8);
     for (int i = 0; i < h->rps[ST_CURR_BEF].nb_refs; i++) {
         HEVCFrame *frame = h->rps[ST_CURR_BEF].ref[i];
-        for (int j = 0; j < FF_ARRAY_ELEMS(h->DPB); j++) {
-            const HEVCFrame *ref = &h->DPB[j];
+        for (int j = 0; j < FF_ARRAY_ELEMS(l->DPB); j++) {
+            const HEVCFrame *ref = &l->DPB[j];
             if (ref == frame) {
                 hp->h265pic.RefPicSetStCurrBefore[i] = j;
                 break;
@@ -801,8 +802,8 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     memset(hp->h265pic.RefPicSetStCurrAfter, 0xff, 8);
     for (int i = 0; i < h->rps[ST_CURR_AFT].nb_refs; i++) {
         HEVCFrame *frame = h->rps[ST_CURR_AFT].ref[i];
-        for (int j = 0; j < FF_ARRAY_ELEMS(h->DPB); j++) {
-            const HEVCFrame *ref = &h->DPB[j];
+        for (int j = 0; j < FF_ARRAY_ELEMS(l->DPB); j++) {
+            const HEVCFrame *ref = &l->DPB[j];
             if (ref == frame) {
                 hp->h265pic.RefPicSetStCurrAfter[i] = j;
                 break;
@@ -812,8 +813,8 @@ static int vk_hevc_start_frame(AVCodecContext          *avctx,
     memset(hp->h265pic.RefPicSetLtCurr, 0xff, 8);
     for (int i = 0; i < h->rps[LT_CURR].nb_refs; i++) {
         HEVCFrame *frame = h->rps[LT_CURR].ref[i];
-        for (int j = 0; j < FF_ARRAY_ELEMS(h->DPB); j++) {
-            const HEVCFrame *ref = &h->DPB[j];
+        for (int j = 0; j < FF_ARRAY_ELEMS(l->DPB); j++) {
+            const HEVCFrame *ref = &l->DPB[j];
             if (ref == frame) {
                 hp->h265pic.RefPicSetLtCurr[i] = j;
                 break;

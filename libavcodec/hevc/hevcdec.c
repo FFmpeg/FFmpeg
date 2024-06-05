@@ -2902,7 +2902,7 @@ static int set_side_data(HEVCContext *s)
     return 0;
 }
 
-static int hevc_frame_start(HEVCContext *s)
+static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
 {
     const HEVCPPS *const pps = s->ps.pps_list[s->sh.pps_id];
     const HEVCSPS *const sps = pps->sps;
@@ -2915,7 +2915,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (s->ps.sps != sps) {
         enum AVPixelFormat pix_fmt;
 
-        ff_hevc_clear_refs(s);
+        ff_hevc_clear_refs(l);
 
         ret = set_sps(s, sps);
         if (ret < 0)
@@ -2938,7 +2938,7 @@ static int hevc_frame_start(HEVCContext *s)
     memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
 
     if (IS_IDR(s))
-        ff_hevc_clear_refs(s);
+        ff_hevc_clear_refs(l);
 
     s->slice_idx         = 0;
     s->first_nal_type    = s->nal_unit_type;
@@ -2963,7 +2963,7 @@ static int hevc_frame_start(HEVCContext *s)
         s->local_ctx[0].end_of_tiles_x = pps->column_width[0] << sps->log2_ctb_size;
 
     if (new_sequence) {
-        ret = ff_hevc_output_frames(s, 0, 0, s->sh.no_output_of_prior_pics_flag);
+        ret = ff_hevc_output_frames(s, l, 0, 0, s->sh.no_output_of_prior_pics_flag);
         if (ret < 0)
             return ret;
     }
@@ -2972,11 +2972,11 @@ static int hevc_frame_start(HEVCContext *s)
     if (ret < 0)
         return ret;
 
-    ret = ff_hevc_set_new_ref(s, s->poc);
+    ret = ff_hevc_set_new_ref(s, l, s->poc);
     if (ret < 0)
         goto fail;
 
-    ret = ff_hevc_frame_rps(s);
+    ret = ff_hevc_frame_rps(s, l);
     if (ret < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Error constructing the frame RPS.\n");
         goto fail;
@@ -3020,7 +3020,7 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->cur_frame->f->pict_type = 3 - s->sh.slice_type;
 
-    ret = ff_hevc_output_frames(s, sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics,
+    ret = ff_hevc_output_frames(s, l, sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics,
                                 sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering, 0);
     if (ret < 0)
         goto fail;
@@ -3158,7 +3158,8 @@ static int hevc_frame_end(HEVCContext *s)
     return 0;
 }
 
-static int decode_slice(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
+static int decode_slice(HEVCContext *s, HEVCLayerContext *l,
+                        const H2645NAL *nal, GetBitContext *gb)
 {
     int ret;
 
@@ -3183,7 +3184,7 @@ static int decode_slice(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
             return AVERROR_INVALIDDATA;
         }
 
-        ret = hevc_frame_start(s);
+        ret = hevc_frame_start(s, l);
         if (ret < 0)
             return ret;
     } else if (!s->cur_frame) {
@@ -3207,6 +3208,7 @@ static int decode_slice(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
 
 static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
 {
+    HEVCLayerContext  *l = &s->layers[0];
     GetBitContext     gb = nal->gb;
     int ret;
 
@@ -3264,7 +3266,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_RADL_R:
     case HEVC_NAL_RASL_N:
     case HEVC_NAL_RASL_R:
-        ret = decode_slice(s, nal, &gb);
+        ret = decode_slice(s, l, nal, &gb);
         if (ret < 0)
             goto fail;
         break;
@@ -3427,7 +3429,7 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     av_packet_unref(avpkt);
     ret = ff_decode_get_packet(avctx, avpkt);
     if (ret == AVERROR_EOF) {
-        ret = ff_hevc_output_frames(s, 0, 0, 0);
+        ret = ff_hevc_output_frames(s, &s->layers[0], 0, 0, 0);
         if (ret < 0)
             return ret;
         goto do_output;
@@ -3517,9 +3519,12 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 
     ff_container_fifo_free(&s->output_fifo);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame(&s->DPB[i], ~0);
-        av_frame_free(&s->DPB[i].frame_grain);
+    for (int layer = 0; layer < FF_ARRAY_ELEMS(s->layers); layer++) {
+        HEVCLayerContext *l = &s->layers[layer];
+        for (int i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
+            ff_hevc_unref_frame(&l->DPB[i], ~0);
+            av_frame_free(&l->DPB[i].frame_grain);
+        }
     }
 
     ff_hevc_ps_uninit(&s->ps);
@@ -3540,7 +3545,6 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 static av_cold int hevc_init_context(AVCodecContext *avctx)
 {
     HEVCContext *s = avctx->priv_data;
-    int i;
 
     s->avctx = avctx;
 
@@ -3557,10 +3561,13 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     if (!s->output_fifo)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        s->DPB[i].frame_grain = av_frame_alloc();
-        if (!s->DPB[i].frame_grain)
-            return AVERROR(ENOMEM);
+    for (int layer = 0; layer < FF_ARRAY_ELEMS(s->layers); layer++) {
+        HEVCLayerContext *l = &s->layers[layer];
+        for (int i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
+            l->DPB[i].frame_grain = av_frame_alloc();
+            if (!l->DPB[i].frame_grain)
+                return AVERROR(ENOMEM);
+        }
     }
 
     s->md5_ctx = av_md5_alloc();
@@ -3583,14 +3590,18 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 {
     HEVCContext *s  = dst->priv_data;
     HEVCContext *s0 = src->priv_data;
-    int i, ret;
+    int ret;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        ff_hevc_unref_frame(&s->DPB[i], ~0);
-        if (s0->DPB[i].f) {
-            ret = hevc_ref_frame(&s->DPB[i], &s0->DPB[i]);
-            if (ret < 0)
-                return ret;
+    for (int layer = 0; layer < FF_ARRAY_ELEMS(s->layers); layer++) {
+        HEVCLayerContext        *l = &s->layers[layer];
+        const HEVCLayerContext *l0 = &s0->layers[layer];
+        for (int i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
+            ff_hevc_unref_frame(&l->DPB[i], ~0);
+            if (l0->DPB[i].f) {
+                ret = hevc_ref_frame(&l->DPB[i], &l0->DPB[i]);
+                if (ret < 0)
+                    return ret;
+            }
         }
     }
 

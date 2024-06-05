@@ -438,12 +438,20 @@ typedef struct HEVCLocalContext {
     char padding[128];
 } HEVCLocalContext;
 
+typedef struct HEVCLayerContext {
+    HEVCFrame               DPB[32];
+} HEVCLayerContext;
+
 typedef struct HEVCContext {
     const AVClass *c;  // needed by private avoptions
     AVCodecContext *avctx;
 
     HEVCLocalContext     *local_ctx;
     unsigned           nb_local_ctx;
+
+    HEVCLayerContext      layers[1];
+    // index in layers of the layer currently being decoded
+    unsigned              cur_layer;
 
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
@@ -470,7 +478,6 @@ typedef struct HEVCContext {
     int temporal_id;  ///< temporal_id_plus1 - 1
     HEVCFrame *cur_frame;
     HEVCFrame *collocated_ref;
-    HEVCFrame DPB[32];
     int poc;
     int poc_tid0;
     int slice_idx; ///< number of the slice being currently decoded
@@ -536,7 +543,7 @@ typedef struct HEVCContext {
 /**
  * Mark all frames in DPB as unused for reference.
  */
-void ff_hevc_clear_refs(HEVCContext *s);
+void ff_hevc_clear_refs(HEVCLayerContext *l);
 
 /**
  * Drop all frames currently in DPB.
@@ -549,7 +556,7 @@ const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s, const HEVCFrame *fr
 /**
  * Construct the reference picture sets for the current frame.
  */
-int ff_hevc_frame_rps(HEVCContext *s);
+int ff_hevc_frame_rps(HEVCContext *s, HEVCLayerContext *l);
 
 /**
  * Construct the reference picture list(s) for the current slice.
@@ -597,7 +604,7 @@ int ff_hevc_res_scale_sign_flag(HEVCLocalContext *lc, int idx);
  */
 int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps);
 
-int ff_hevc_set_new_ref(HEVCContext *s, int poc);
+int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc);
 
 static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
 {
@@ -625,8 +632,8 @@ static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
  * @param max_dpb maximum number of any frames that can be present in the DPB
  *                before output is triggered
  */
-int ff_hevc_output_frames(HEVCContext *s, unsigned max_output,
-                          unsigned max_dpb, int discard);
+int ff_hevc_output_frames(HEVCContext *s, HEVCLayerContext *l,
+                          unsigned max_output, unsigned max_dpb, int discard);
 
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags);
 

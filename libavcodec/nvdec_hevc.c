@@ -73,6 +73,7 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
                                   const uint8_t *buffer, uint32_t size)
 {
     const HEVCContext *s = avctx->priv_data;
+    const HEVCLayerContext *l = &s->layers[s->cur_layer];
     const HEVCPPS *pps = s->pps;
     const HEVCSPS *sps = pps->sps;
 
@@ -225,8 +226,8 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
     }
 
     dpb_size = 0;
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        const HEVCFrame *ref = &s->DPB[i];
+    for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
+        const HEVCFrame *ref = &l->DPB[i];
         if (!(ref->flags & (HEVC_FRAME_FLAG_SHORT_REF | HEVC_FRAME_FLAG_LONG_REF)))
             continue;
         if (dpb_size >= FF_ARRAY_ELEMS(ppc->RefPicIdx)) {
