@@ -527,17 +527,17 @@ static int vvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
     if (vvcc->arrays[array_idx].num_nalus == 1)
         vvcc->num_of_arrays++;
 
-        if (nal_type == VVC_VPS_NUT)
-            ret = vvcc_parse_vps(&gbc, vvcc);
-        else if (nal_type == VVC_SPS_NUT)
-            ret = vvcc_parse_sps(&gbc, vvcc);
-        else if (nal_type == VVC_PPS_NUT)
-            ret = vvcc_parse_pps(&gbc, vvcc);
-        else if (nal_type == VVC_OPI_NUT) {
-            // not yet supported
-        }
-        if (ret < 0)
-            goto end;
+    if (nal_type == VVC_VPS_NUT)
+        ret = vvcc_parse_vps(&gbc, vvcc);
+    else if (nal_type == VVC_SPS_NUT)
+        ret = vvcc_parse_sps(&gbc, vvcc);
+    else if (nal_type == VVC_PPS_NUT)
+        ret = vvcc_parse_pps(&gbc, vvcc);
+    else if (nal_type == VVC_OPI_NUT) {
+        // not yet supported
+    }
+    if (ret < 0)
+        goto end;
 
   end:
     av_free(rbsp_buf);
