@@ -22,8 +22,11 @@
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem_internal.h"
+#include "libavutil/pixdesc.h"
 
 #include "libswscale/rgb2rgb.h"
+#include "libswscale/swscale.h"
+#include "libswscale/swscale_internal.h"
 
 #include "checkasm.h"
 
@@ -179,8 +182,100 @@ static void check_interleave_bytes(void)
     }
 }
 
+#define MAX_LINE_SIZE 1920
+static const int input_sizes[] = {8, 128, 1080, MAX_LINE_SIZE};
+static const enum AVPixelFormat rgb_formats[] = {
+        AV_PIX_FMT_RGB24,
+        AV_PIX_FMT_BGR24,
+};
+
+static void check_rgb_to_y(struct SwsContext *ctx)
+{
+    LOCAL_ALIGNED_32(uint8_t, src, [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_32(uint8_t, dst0_y, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1_y, [MAX_LINE_SIZE * 2]);
+
+    declare_func(void, uint8_t *dst, const uint8_t *src,
+                 const uint8_t *unused1, const uint8_t *unused2, int width,
+                 uint32_t *rgb2yuv, void *opq);
+
+    randomize_buffers(src, MAX_LINE_SIZE * 3);
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(rgb_formats); i++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(rgb_formats[i]);
+
+        ctx->srcFormat = rgb_formats[i];
+        ff_sws_init_scale(ctx);
+
+        for (int j = 0; j < FF_ARRAY_ELEMS(input_sizes); j++) {
+            int w = input_sizes[j];
+
+            if (check_func(ctx->lumToYV12, "%s_to_y_%d", desc->name, w)) {
+                memset(dst0_y, 0xFA, MAX_LINE_SIZE * 2);
+                memset(dst1_y, 0xFA, MAX_LINE_SIZE * 2);
+
+                call_ref(dst0_y, src, NULL, NULL, w, ctx->input_rgb2yuv_table, NULL);
+                call_new(dst1_y, src, NULL, NULL, w, ctx->input_rgb2yuv_table, NULL);
+
+                if (memcmp(dst0_y, dst1_y, w * 2))
+                    fail();
+
+                bench_new(dst1_y, src, NULL, NULL, w, ctx->input_rgb2yuv_table, NULL);
+            }
+        }
+    }
+}
+
+static void check_rgb_to_uv(struct SwsContext *ctx)
+{
+    LOCAL_ALIGNED_32(uint8_t, src, [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_32(uint8_t, dst0_u, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst0_v, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1_u, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_32(uint8_t, dst1_v, [MAX_LINE_SIZE * 2]);
+
+    declare_func(void, uint8_t *dstU, uint8_t *dstV,
+                 const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
+                 int width, uint32_t *pal, void *opq);
+
+    randomize_buffers(src, MAX_LINE_SIZE * 3);
+
+    for (int i = 0; i < 2 * FF_ARRAY_ELEMS(rgb_formats); i++) {
+        enum AVPixelFormat src_fmt = rgb_formats[i / 2];
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(src_fmt);
+
+        ctx->chrSrcHSubSample = (i % 2) ? 0 : 1;
+        ctx->srcFormat = src_fmt;
+        ctx->dstFormat = ctx->chrSrcHSubSample ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV444P;
+        ff_sws_init_scale(ctx);
+
+        for (int j = 0; j < FF_ARRAY_ELEMS(input_sizes); j++) {
+            int w = input_sizes[j] >> ctx->chrSrcHSubSample;
+
+            if (check_func(ctx->chrToYV12, "%s_to_uv%s_%d", desc->name,
+                           ctx->chrSrcHSubSample ? "_half" : "",
+                           input_sizes[j])) {
+                memset(dst0_u, 0xFF, MAX_LINE_SIZE * 2);
+                memset(dst0_v, 0xFF, MAX_LINE_SIZE * 2);
+                memset(dst1_u, 0xFF, MAX_LINE_SIZE * 2);
+                memset(dst1_v, 0xFF, MAX_LINE_SIZE * 2);
+
+                call_ref(dst0_u, dst0_v, NULL, src, src, w, ctx->input_rgb2yuv_table, NULL);
+                call_new(dst1_u, dst1_v, NULL, src, src, w, ctx->input_rgb2yuv_table, NULL);
+
+                if (memcmp(dst0_u, dst1_u, w * 2) || memcmp(dst0_v, dst1_v, w * 2))
+                    fail();
+
+                bench_new(dst1_u, dst1_v, NULL, src, src, w, ctx->input_rgb2yuv_table, NULL);
+            }
+        }
+    }
+}
+
 void checkasm_check_sw_rgb(void)
 {
+    struct SwsContext *ctx;
+
     ff_sws_rgb2rgb_init();
 
     check_shuffle_bytes(shuffle_bytes_2103, "shuffle_bytes_2103");
@@ -203,4 +298,18 @@ void checkasm_check_sw_rgb(void)
 
     check_interleave_bytes();
     report("interleave_bytes");
+
+    ctx = sws_getContext(MAX_LINE_SIZE, MAX_LINE_SIZE, AV_PIX_FMT_RGB24,
+                         MAX_LINE_SIZE, MAX_LINE_SIZE, AV_PIX_FMT_YUV420P,
+                         SWS_ACCURATE_RND | SWS_BITEXACT, NULL, NULL, NULL);
+    if (!ctx)
+        fail();
+
+    check_rgb_to_y(ctx);
+    report("rgb_to_y");
+
+    check_rgb_to_uv(ctx);
+    report("rgb_to_uv");
+
+    sws_freeContext(ctx);
 }
