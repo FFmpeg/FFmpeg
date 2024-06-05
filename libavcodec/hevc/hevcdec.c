@@ -78,7 +78,7 @@ static void pic_arrays_free(HEVCContext *s, HEVCLayerContext *l)
     av_freep(&l->cbf_luma);
     av_freep(&l->is_pcm);
 
-    av_freep(&s->qp_y_tab);
+    av_freep(&l->qp_y_tab);
     av_freep(&l->tab_slice_address);
     av_freep(&l->filter_slice_edges);
 
@@ -122,9 +122,9 @@ static int pic_arrays_init(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *s
     l->filter_slice_edges = av_mallocz(ctb_count);
     l->tab_slice_address  = av_malloc_array(pic_size_in_ctb,
                                       sizeof(*l->tab_slice_address));
-    s->qp_y_tab           = av_malloc_array(pic_size_in_ctb,
-                                      sizeof(*s->qp_y_tab));
-    if (!s->qp_y_tab || !l->filter_slice_edges || !l->tab_slice_address)
+    l->qp_y_tab           = av_malloc_array(pic_size_in_ctb,
+                                      sizeof(*l->qp_y_tab));
+    if (!l->qp_y_tab || !l->filter_slice_edges || !l->tab_slice_address)
         goto fail;
 
     s->horizontal_bs = av_calloc(l->bs_width, l->bs_height);
@@ -1090,6 +1090,7 @@ static int hls_cross_component_pred(HEVCLocalContext *lc, int idx)
 }
 
 static int hls_transform_unit(HEVCLocalContext *lc,
+                              const HEVCLayerContext *l,
                               const HEVCPPS *pps, const HEVCSPS *sps,
                               int x0, int y0,
                               int xBase, int yBase, int cb_xBase, int cb_yBase,
@@ -1133,7 +1134,7 @@ static int hls_transform_unit(HEVCLocalContext *lc,
                 return AVERROR_INVALIDDATA;
             }
 
-            ff_hevc_set_qPy(lc, pps, cb_xBase, cb_yBase, log2_cb_size);
+            ff_hevc_set_qPy(lc, l, pps, cb_xBase, cb_yBase, log2_cb_size);
         }
 
         if (s->sh.cu_chroma_qp_offset_enabled_flag && cbf_chroma &&
@@ -1418,7 +1419,7 @@ do {                                                                            
             cbf_luma = ff_hevc_cbf_luma_decode(lc, trafo_depth);
         }
 
-        ret = hls_transform_unit(lc, pps, sps,
+        ret = hls_transform_unit(lc, l, pps, sps,
                                  x0, y0, xBase, yBase, cb_xBase, cb_yBase,
                                  log2_cb_size, log2_trafo_size,
                                  blk_idx, cbf_luma, cbf_cb, cbf_cr);
@@ -2374,11 +2375,11 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
     }
 
     if (pps->cu_qp_delta_enabled_flag && lc->tu.is_cu_qp_delta_coded == 0)
-        ff_hevc_set_qPy(lc, pps, x0, y0, log2_cb_size);
+        ff_hevc_set_qPy(lc, l, pps, x0, y0, log2_cb_size);
 
     x = y_cb * min_cb_width + x_cb;
     for (y = 0; y < length; y++) {
-        memset(&s->qp_y_tab[x], lc->qp_y, length);
+        memset(&l->qp_y_tab[x], lc->qp_y, length);
         x += min_cb_width;
     }
 

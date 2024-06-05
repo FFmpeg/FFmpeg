@@ -460,6 +460,8 @@ typedef struct HEVCLayerContext {
     uint8_t                *filter_slice_edges;
 
     int32_t                *tab_slice_address;
+
+    int8_t                 *qp_y_tab;
 } HEVCLayerContext;
 
 typedef struct HEVCContext {
@@ -511,7 +513,6 @@ typedef struct HEVCContext {
     VideoDSPContext vdsp;
     BswapDSPContext bdsp;
     H274FilmGrainDatabase h274db;
-    int8_t *qp_y_tab;
     uint8_t *horizontal_bs;
     uint8_t *vertical_bs;
 
@@ -658,7 +659,8 @@ void ff_hevc_hls_filter(HEVCLocalContext *lc, const HEVCLayerContext *l,
 void ff_hevc_hls_filters(HEVCLocalContext *lc, const HEVCLayerContext *l,
                          const HEVCPPS *pps,
                          int x_ctb, int y_ctb, int ctb_size);
-void ff_hevc_set_qPy(HEVCLocalContext *lc, const HEVCPPS *pps,
+void ff_hevc_set_qPy(HEVCLocalContext *lc,
+                     const HEVCLayerContext *l, const HEVCPPS *pps,
                      int xBase, int yBase, int log2_cb_size);
 void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayerContext *l,
                                            const HEVCPPS *pps,
