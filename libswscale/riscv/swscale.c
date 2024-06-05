@@ -25,10 +25,16 @@ void ff_bgr24ToY_rvv(uint8_t *dst, const uint8_t *src, const uint8_t *,
                      const uint8_t *, int width, uint32_t *coeffs, void *);
 void ff_bgr24ToUV_rvv(uint8_t *, uint8_t *, const uint8_t *, const uint8_t *,
                       const uint8_t *, int width, uint32_t *coeffs, void *);
+void ff_bgr24ToUV_half_rvv(uint8_t *, uint8_t *, const uint8_t *,
+                           const uint8_t *, const uint8_t *, int width,
+                           uint32_t *coeffs, void *);
 void ff_rgb24ToY_rvv(uint8_t *dst, const uint8_t *src, const uint8_t *,
                      const uint8_t *, int width, uint32_t *coeffs, void *);
 void ff_rgb24ToUV_rvv(uint8_t *, uint8_t *, const uint8_t *, const uint8_t *,
                       const uint8_t *, int width, uint32_t *coeffs, void *);
+void ff_rgb24ToUV_half_rvv(uint8_t *, uint8_t *, const uint8_t *,
+                           const uint8_t *, const uint8_t *, int width,
+                           uint32_t *coeffs, void *);
 
 av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
 {
@@ -39,13 +45,17 @@ av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
         switch (c->srcFormat) {
             case AV_PIX_FMT_BGR24:
                 c->lumToYV12 = ff_bgr24ToY_rvv;
-                if (!c->chrSrcHSubSample)
+                if (c->chrSrcHSubSample)
+                    c->chrToYV12 = ff_bgr24ToUV_half_rvv;
+                else
                     c->chrToYV12 = ff_bgr24ToUV_rvv;
                 break;
 
             case AV_PIX_FMT_RGB24:
                 c->lumToYV12 = ff_rgb24ToY_rvv;
-                if (!c->chrSrcHSubSample)
+                if (c->chrSrcHSubSample)
+                    c->chrToYV12 = ff_rgb24ToUV_half_rvv;
+                else
                     c->chrToYV12 = ff_rgb24ToUV_rvv;
                 break;
         }
