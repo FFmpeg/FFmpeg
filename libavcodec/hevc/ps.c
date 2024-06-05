@@ -1425,8 +1425,6 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
         if (sps->multilayer_extension) {
             skip_bits1(gb); // inter_view_mv_vert_constraint_flag
-            av_log(avctx, AV_LOG_WARNING,
-                   "sps_multilayer_extension_flag not yet implemented\n");
         }
 
         if (sps->sps_3d_extension) {
