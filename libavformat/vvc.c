@@ -761,7 +761,7 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
             ff_copy_bits(&pbc, vvcc->ptl.general_constraint_info, (vvcc->ptl.num_bytes_constraint_info - 1) * 8);
         put_bits(&pbc, 6, vvcc->ptl.general_constraint_info[vvcc->ptl.num_bytes_constraint_info - 1] & 0x3f);
         flush_put_bits(&pbc);
-        avio_write(pb, buf, put_bytes_count(&pbc, 1));
+        avio_write(pb, buf, put_bytes_output(&pbc));
 
         if (vvcc->num_sublayers > 1) {
             uint8_t ptl_sublayer_level_present_flags = 0;
