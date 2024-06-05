@@ -401,6 +401,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     if (usac->nb_elems > 64) {
         av_log(ac->avctx, AV_LOG_ERROR, "Too many elements: %i\n",
                usac->nb_elems);
+        usac->nb_elems = 0;
         return AVERROR(EINVAL);
     }
 
@@ -413,6 +414,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
             (elem_id[0] + elem_id[1] + elem_id[2] + 1) > nb_channels) {
             av_log(ac->avctx, AV_LOG_ERROR, "Too many channels for the channel "
                                             "configuration\n");
+            usac->nb_elems = 0;
             return AVERROR(EINVAL);
         }
 
@@ -458,6 +460,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     ret = ff_aac_output_configure(ac, layout_map, elem_id[0] + elem_id[1] + elem_id[2], OC_GLOBAL_HDR, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Unable to parse channel config!\n");
+        usac->nb_elems = 0;
         return ret;
     }
 
