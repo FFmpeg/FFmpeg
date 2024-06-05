@@ -73,6 +73,7 @@
 #define AV_PROFILE_AAC_HE_V2       28
 #define AV_PROFILE_AAC_LD          22
 #define AV_PROFILE_AAC_ELD         38
+#define AV_PROFILE_AAC_USAC        41
 #define AV_PROFILE_MPEG2_AAC_LOW  128
 #define AV_PROFILE_MPEG2_AAC_HE   131
 

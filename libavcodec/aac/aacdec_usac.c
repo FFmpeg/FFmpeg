@@ -494,6 +494,8 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         }
     }
 
+    ac->avctx->profile = AV_PROFILE_AAC_USAC;
+
     ret = ff_aac_usac_reset_state(ac, oc);
     if (ret < 0)
         return ret;
@@ -1532,6 +1534,8 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
 
     ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
                             ac->oc[1].status, 0);
+
+    ac->avctx->profile = AV_PROFILE_AAC_USAC;
 
     indep_flag = get_bits1(gb);
 
