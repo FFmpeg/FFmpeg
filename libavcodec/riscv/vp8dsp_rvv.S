@@ -98,6 +98,65 @@ func ff_vp8_luma_dc_wht_rvv, zve64x
 endfunc
 #endif
 
+func ff_vp8_idct_add_rvv, zve32x
+        csrwi       vxrm, 0
+        vsetivli    zero, 4, e16, mf2, ta, ma
+        addi        a3, a1, 1 * 4 * 2
+        addi        a4, a1, 2 * 4 * 2
+        addi        a5, a1, 3 * 4 * 2
+        li          t1, 20091
+        li          t2, 35468
+        jal         t0, 1f
+        vsseg4e16.v v0, (a1)
+        jal         t0, 1f
+        vlsseg4e8.v v4, (a0), a2
+        vssra.vi    v0, v0, 3
+        sd          zero,   (a1)
+        vssra.vi    v1, v1, 3
+        sd          zero,  8(a1)
+        vssra.vi    v2, v2, 3
+        sd          zero, 16(a1)
+        vssra.vi    v3, v3, 3
+        sd          zero, 24(a1)
+        vsetvli     zero, zero, e8, mf4, ta, ma
+        vwaddu.wv   v0, v0, v4
+        vwaddu.wv   v1, v1, v5
+        vwaddu.wv   v2, v2, v6
+        vwaddu.wv   v3, v3, v7
+        vsetvli     zero, zero, e16, mf2, ta, ma
+        vmax.vx     v0, v0, zero
+        vmax.vx     v1, v1, zero
+        vmax.vx     v2, v2, zero
+        vmax.vx     v3, v3, zero
+        vsetvli     zero, zero, e8, mf4, ta, ma
+        vnclipu.wi  v4, v0, 0
+        vnclipu.wi  v5, v1, 0
+        vnclipu.wi  v6, v2, 0
+        vnclipu.wi  v7, v3, 0
+        vssseg4e8.v v4, (a0), a2
+        ret
+1:
+        vle16.v    v0, (a1)
+        vle16.v    v2, (a4)
+        vle16.v    v1, (a3)
+        vle16.v    v3, (a5)
+        vadd.vv    v4, v0, v2 # t0
+        vsub.vv    v5, v0, v2 # t1
+        vmulhsu.vx v8, v3, t1
+        vmulhsu.vx v6, v1, t2
+        vadd.vv    v8, v8, v3
+        vmulhsu.vx v7, v1, t1
+        vmulhsu.vx v9, v3, t2
+        vadd.vv    v7, v7, v1
+        vsub.vv    v6, v6, v8 # t2
+        vadd.vv    v7, v7, v9 # t3
+        vadd.vv    v1, v5, v6
+        vsub.vv    v2, v5, v6
+        vadd.vv    v0, v4, v7
+        vsub.vv    v3, v4, v7
+        jr         t0
+endfunc
+
 func ff_vp8_idct_dc_add_rvv, zve32x
         lh      a3, (a1)
         addi    a3, a3, 4
