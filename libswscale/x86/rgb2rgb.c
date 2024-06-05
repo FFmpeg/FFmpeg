@@ -2363,6 +2363,9 @@ void ff_uyvytoyuv422_sse2(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 void ff_uyvytoyuv422_avx(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                          const uint8_t *src, int width, int height,
                          int lumStride, int chromStride, int srcStride);
+void ff_uyvytoyuv422_avx2(uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+                          const uint8_t *src, int width, int height,
+                          int lumStride, int chromStride, int srcStride);
 #endif
 
 #define DEINTERLEAVE_BYTES(cpuext)                                            \
@@ -2434,6 +2437,9 @@ av_cold void rgb2rgb_init_x86(void)
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_avx2;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_avx2;
 #endif
+    }
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
+        uyvytoyuv422 = ff_uyvytoyuv422_avx2;
     }
 #endif
 }

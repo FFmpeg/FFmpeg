@@ -34,13 +34,16 @@ pb_shuffle3210: db 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
 
 SECTION .text
 
-%macro RSHIFT_COPY 3
+%macro RSHIFT_COPY 5
 ; %1 dst ; %2 src ; %3 shift
-%if cpuflag(avx)
-    psrldq  %1, %2, %3
+%if mmsize == 32
+    vperm2i128 %1, %2, %3, %5
+    RSHIFT         %1, %4
+%elif cpuflag(avx)
+    psrldq  %1, %2, %4
 %else
     mova           %1, %2
-    RSHIFT         %1, %3
+    RSHIFT         %1, %4
 %endif
 %endmacro
 
@@ -233,26 +236,37 @@ cglobal uyvytoyuv422, 9, 14, 8, ydst, udst, vdst, src, w, h, lum_stride, chrom_s
     jge .end_line
 
     .loop_simd:
+%if mmsize == 32
+        movu   xm2, [srcq + wtwoq         ]
+        movu   xm3, [srcq + wtwoq + 16    ]
+        movu   xm4, [srcq + wtwoq + 16 * 2]
+        movu   xm5, [srcq + wtwoq + 16 * 3]
+        vinserti128 m2, m2, [srcq + wtwoq + 16 * 4], 1
+        vinserti128 m3, m3, [srcq + wtwoq + 16 * 5], 1
+        vinserti128 m4, m4, [srcq + wtwoq + 16 * 6], 1
+        vinserti128 m5, m5, [srcq + wtwoq + 16 * 7], 1
+%else
         movu    m2, [srcq + wtwoq             ]
         movu    m3, [srcq + wtwoq + mmsize    ]
         movu    m4, [srcq + wtwoq + mmsize * 2]
         movu    m5, [srcq + wtwoq + mmsize * 3]
+%endif
 
         ; extract y part 1
-        RSHIFT_COPY    m6, m2, 1 ; UYVY UYVY -> YVYU YVY...
+        RSHIFT_COPY    m6, m2, m4, 1, 0x20 ; UYVY UYVY -> YVYU YVY...
         pand           m6, m1; YxYx YxYx...
 
-        RSHIFT_COPY    m7, m3, 1 ; UYVY UYVY -> YVYU YVY...
+        RSHIFT_COPY    m7, m3, m5, 1, 0x20 ; UYVY UYVY -> YVYU YVY...
         pand           m7, m1 ; YxYx YxYx...
 
         packuswb       m6, m7 ; YYYY YYYY...
         movu [ydstq + wq], m6
 
         ; extract y part 2
-        RSHIFT_COPY    m6, m4, 1 ; UYVY UYVY -> YVYU YVY...
+        RSHIFT_COPY    m6, m4, m2, 1, 0x13 ; UYVY UYVY -> YVYU YVY...
         pand           m6, m1; YxYx YxYx...
 
-        RSHIFT_COPY    m7, m5, 1 ; UYVY UYVY -> YVYU YVY...
+        RSHIFT_COPY    m7, m5, m3, 1, 0x13 ; UYVY UYVY -> YVYU YVY...
         pand           m7, m1 ; YxYx YxYx...
 
         packuswb                m6, m7 ; YYYY YYYY...
@@ -308,5 +322,7 @@ INIT_XMM sse2
 UYVY_TO_YUV422
 
 INIT_XMM avx
+UYVY_TO_YUV422
+INIT_YMM avx2
 UYVY_TO_YUV422
 %endif
