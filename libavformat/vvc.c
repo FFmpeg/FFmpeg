@@ -32,6 +32,16 @@
 #include "avio_internal.h"
 #include "vvc.h"
 
+enum {
+    OPI_INDEX,
+    VPS_INDEX,
+    SPS_INDEX,
+    PPS_INDEX,
+    SEI_PREFIX_INDEX,
+    SEI_SUFFIX_INDEX,
+    NB_ARRAYS
+};
+
 typedef struct VVCCNALUnitArray {
     uint8_t array_completeness;
     uint8_t NAL_unit_type;
@@ -67,7 +77,7 @@ typedef struct VVCDecoderConfigurationRecord {
     uint16_t max_picture_height;
     uint16_t avg_frame_rate;
     uint8_t num_of_arrays;
-    VVCCNALUnitArray *array;
+    VVCCNALUnitArray arrays[NB_ARRAYS];
 } VVCDecoderConfigurationRecord;
 
 static void vvcc_update_ptl(VVCDecoderConfigurationRecord *vvcc,
@@ -432,32 +442,11 @@ static void nal_unit_parse_header(GetBitContext *gb, uint8_t *nal_type)
 
 static int vvcc_array_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
                                    uint8_t nal_type, int ps_array_completeness,
-                                   VVCDecoderConfigurationRecord *vvcc)
+                                   VVCCNALUnitArray *array)
 {
     int ret;
-    uint8_t index;
     uint16_t num_nalus;
-    VVCCNALUnitArray *array;
 
-    for (index = 0; index < vvcc->num_of_arrays; index++)
-        if (vvcc->array[index].NAL_unit_type == nal_type)
-            break;
-
-    if (index >= vvcc->num_of_arrays) {
-        uint8_t i;
-
-        ret =
-            av_reallocp_array(&vvcc->array, index + 1,
-                              sizeof(VVCCNALUnitArray));
-        if (ret < 0)
-            return ret;
-
-        for (i = vvcc->num_of_arrays; i <= index; i++)
-            memset(&vvcc->array[i], 0, sizeof(VVCCNALUnitArray));
-        vvcc->num_of_arrays = index + 1;
-    }
-
-    array = &vvcc->array[index];
     num_nalus = array->num_nalus;
 
     ret = av_reallocp_array(&array->nal_unit, num_nalus + 1, sizeof(uint8_t *));
@@ -504,7 +493,8 @@ static int vvcc_array_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
 
 static int vvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
                              int ps_array_completeness,
-                             VVCDecoderConfigurationRecord *vvcc)
+                             VVCDecoderConfigurationRecord *vvcc,
+                             unsigned array_idx)
 {
     int ret = 0;
     GetBitContext gbc;
@@ -529,18 +519,15 @@ static int vvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
      * vvcc. Perhaps the SEI playload type should be checked
      * and non-declarative SEI messages discarded?
      */
-    switch (nal_type) {
-    case VVC_OPI_NUT:
-    case VVC_VPS_NUT:
-    case VVC_SPS_NUT:
-    case VVC_PPS_NUT:
-    case VVC_PREFIX_SEI_NUT:
-    case VVC_SUFFIX_SEI_NUT:
-        ret = vvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
-                                      ps_array_completeness, vvcc);
-        if (ret < 0)
-            goto end;
-        else if (nal_type == VVC_VPS_NUT)
+    ret = vvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
+                                  ps_array_completeness,
+                                  &vvcc->arrays[array_idx]);
+    if (ret < 0)
+        goto end;
+    if (vvcc->arrays[array_idx].num_nalus == 1)
+        vvcc->num_of_arrays++;
+
+        if (nal_type == VVC_VPS_NUT)
             ret = vvcc_parse_vps(&gbc, vvcc);
         else if (nal_type == VVC_SPS_NUT)
             ret = vvcc_parse_sps(&gbc, vvcc);
@@ -551,11 +538,6 @@ static int vvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
         }
         if (ret < 0)
             goto end;
-        break;
-    default:
-        ret = AVERROR_INVALIDDATA;
-        goto end;
-    }
 
   end:
     av_free(rbsp_buf);
@@ -572,22 +554,21 @@ static void vvcc_init(VVCDecoderConfigurationRecord *vvcc)
 
 static void vvcc_close(VVCDecoderConfigurationRecord *vvcc)
 {
-    uint8_t i;
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(vvcc->arrays); i++) {
+        VVCCNALUnitArray *const array = &vvcc->arrays[i];
 
-    for (i = 0; i < vvcc->num_of_arrays; i++) {
-        vvcc->array[i].num_nalus = 0;
-        av_freep(&vvcc->array[i].nal_unit);
-        av_freep(&vvcc->array[i].nal_unit_length);
+        array->num_nalus = 0;
+        av_freep(&array->nal_unit);
+        av_freep(&array->nal_unit_length);
     }
 
     vvcc->num_of_arrays = 0;
-    av_freep(&vvcc->array);
 }
 
 static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
 {
     uint8_t i;
-    uint16_t j, vps_count = 0, sps_count = 0, pps_count = 0;
+    uint16_t vps_count = 0, sps_count = 0, pps_count = 0;
     /*
      * It's unclear how to properly compute these fields, so
      * let's always set them to values meaning 'unspecified'.
@@ -672,40 +653,33 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
     av_log(NULL, AV_LOG_TRACE,
            "num_of_arrays:                       %" PRIu8 "\n",
            vvcc->num_of_arrays);
-    for (i = 0; i < vvcc->num_of_arrays; i++) {
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(vvcc->arrays); i++) {
+        const VVCCNALUnitArray *const array = &vvcc->arrays[i];
+
+        if (array->num_nalus == 0)
+            continue;
+
         av_log(NULL, AV_LOG_TRACE,
-               "array_completeness[%" PRIu8 "]:               %" PRIu8 "\n", i,
-               vvcc->array[i].array_completeness);
+               "array_completeness[%u]:               %" PRIu8 "\n", i,
+               array->array_completeness);
         av_log(NULL, AV_LOG_TRACE,
-               "NAL_unit_type[%" PRIu8 "]:                    %" PRIu8 "\n", i,
-               vvcc->array[i].NAL_unit_type);
+               "NAL_unit_type[%u]:                    %" PRIu8 "\n", i,
+               array->NAL_unit_type);
         av_log(NULL, AV_LOG_TRACE,
-               "num_nalus[%" PRIu8 "]:                        %" PRIu16 "\n", i,
-               vvcc->array[i].num_nalus);
-        for (j = 0; j < vvcc->array[i].num_nalus; j++)
+               "num_nalus[%u]:                        %" PRIu16 "\n", i,
+               array->num_nalus);
+        for (unsigned j = 0; j < array->num_nalus; j++)
             av_log(NULL, AV_LOG_TRACE,
-                   "nal_unit_length[%" PRIu8 "][%" PRIu16 "]:               %"
-                   PRIu16 "\n", i, j, vvcc->array[i].nal_unit_length[j]);
+                   "nal_unit_length[%u][%u]:               %"
+                   PRIu16 "\n", i, j, array->nal_unit_length[j]);
     }
 
     /*
      * We need at least one of each: VPS and SPS.
      */
-    for (i = 0; i < vvcc->num_of_arrays; i++)
-        switch (vvcc->array[i].NAL_unit_type) {
-        case VVC_VPS_NUT:
-            vps_count += vvcc->array[i].num_nalus;
-            break;
-        case VVC_SPS_NUT:
-            sps_count += vvcc->array[i].num_nalus;
-            break;
-        case VVC_PPS_NUT:
-            pps_count += vvcc->array[i].num_nalus;
-            break;
-        default:
-            break;
-        }
-
+    vps_count = vvcc->arrays[VPS_INDEX].num_nalus;
+    sps_count = vvcc->arrays[SPS_INDEX].num_nalus;
+    pps_count = vvcc->arrays[PPS_INDEX].num_nalus;
     if (vps_count > VVC_MAX_VPS_COUNT)
         return AVERROR_INVALIDDATA;
     if (!sps_count || sps_count > VVC_MAX_SPS_COUNT)
@@ -804,25 +778,29 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
     /* unsigned int(8) num_of_arrays; */
     avio_w8(pb, vvcc->num_of_arrays);
 
-    for (i = 0; i < vvcc->num_of_arrays; i++) {
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(vvcc->arrays); i++) {
+        const VVCCNALUnitArray *const array = &vvcc->arrays[i];
+
+        if (!array->num_nalus)
+            continue;
         /*
          * bit(1) array_completeness;
          * unsigned int(2) reserved = 0;
          * unsigned int(5) NAL_unit_type;
          */
-        avio_w8(pb, vvcc->array[i].array_completeness << 7 |
-                vvcc->array[i].NAL_unit_type & 0x1f);
+        avio_w8(pb, array->array_completeness << 7 |
+                array->NAL_unit_type & 0x1f);
         /* unsigned int(16) num_nalus; */
-        if (vvcc->array[i].NAL_unit_type != VVC_DCI_NUT &&
-            vvcc->array[i].NAL_unit_type != VVC_OPI_NUT)
-            avio_wb16(pb, vvcc->array[i].num_nalus);
-        for (j = 0; j < vvcc->array[i].num_nalus; j++) {
+        if (array->NAL_unit_type != VVC_DCI_NUT &&
+            array->NAL_unit_type != VVC_OPI_NUT)
+            avio_wb16(pb, array->num_nalus);
+        for (int j = 0; j < array->num_nalus; j++) {
             /* unsigned int(16) nal_unit_length; */
-            avio_wb16(pb, vvcc->array[i].nal_unit_length[j]);
+            avio_wb16(pb, array->nal_unit_length[j]);
 
             /* bit(8*nal_unit_length) nal_unit; */
-            avio_write(pb, vvcc->array[i].nal_unit[j],
-                       vvcc->array[i].nal_unit_length[j]);
+            avio_write(pb, array->nal_unit[j],
+                       array->nal_unit_length[j]);
         }
     }
 
@@ -932,19 +910,18 @@ int ff_isom_write_vvcc(AVIOContext *pb, const uint8_t *data,
 
         buf += 4;
 
-        switch (type) {
-        case VVC_OPI_NUT:
-        case VVC_VPS_NUT:
-        case VVC_SPS_NUT:
-        case VVC_PPS_NUT:
-        case VVC_PREFIX_SEI_NUT:
-        case VVC_SUFFIX_SEI_NUT:
-            ret = vvcc_add_nal_unit(buf, len, ps_array_completeness, &vvcc);
-            if (ret < 0)
-                goto end;
-            break;
-        default:
-            break;
+        for (unsigned i = 0; i < FF_ARRAY_ELEMS(vvcc.arrays); i++) {
+            static const uint8_t array_idx_to_type[] =
+                { VVC_OPI_NUT, VVC_VPS_NUT, VVC_SPS_NUT,
+                  VVC_PPS_NUT, VVC_PREFIX_SEI_NUT, VVC_SUFFIX_SEI_NUT };
+
+            if (type == array_idx_to_type[i]) {
+                ret = vvcc_add_nal_unit(buf, len, ps_array_completeness,
+                                        &vvcc, i);
+                if (ret < 0)
+                    goto end;
+                break;
+            }
         }
 
         buf += len;
