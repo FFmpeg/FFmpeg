@@ -321,6 +321,10 @@ void ff_ ## fmt ## ToUV_ ## opt(uint8_t *dstU, uint8_t *dstV, \
 INPUT_FUNCS(sse2);
 INPUT_FUNCS(ssse3);
 INPUT_FUNCS(avx);
+INPUT_FUNC(rgba, avx2);
+INPUT_FUNC(bgra, avx2);
+INPUT_FUNC(argb, avx2);
+INPUT_FUNC(abgr, avx2);
 INPUT_FUNC(rgb24, avx2);
 INPUT_FUNC(bgr24, avx2);
 
@@ -640,6 +644,10 @@ switch(c->dstBpc){ \
             switch (c->srcFormat) {
             case_rgb(rgb24, RGB24, avx2);
             case_rgb(bgr24, BGR24, avx2);
+            case_rgb(bgra,  BGRA,  avx2);
+            case_rgb(rgba,  RGBA,  avx2);
+            case_rgb(abgr,  ABGR,  avx2);
+            case_rgb(argb,  ARGB,  avx2);
             }
         switch (c->dstFormat) {
         case AV_PIX_FMT_NV12:
