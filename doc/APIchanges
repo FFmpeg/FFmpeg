@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-06-08 - xxxxxxxxxx - lavc 61.7.100 - defs.h
+  Add AV_PROFILE_AAC_USAC.
+
 2024-06-02 - xxxxxxxxxx - lavu 59.21.100 - channel_layout.h
   Add AV_CHAN_SIDE_SURROUND_RIGHT and AV_CH_SIDE_SURROUND_LEFT.
   Add AV_CHAN_SIDE_SURROUND_RIGHT and AV_CH_SIDE_SURROUND_RIGHT.
