@@ -211,7 +211,7 @@ static int derive_temporal_colocated_mvs(const HEVCContext *s, MvField temp_col,
 #define DERIVE_TEMPORAL_COLOCATED_MVS                                   \
     derive_temporal_colocated_mvs(s, temp_col,                          \
                                   refIdxLx, mvLXCol, X, colPic,         \
-                                  ff_hevc_get_ref_list(s, ref, x, y))
+                                  ff_hevc_get_ref_list(ref, x, y))
 
 /*
  * 8.5.3.1.7  temporal luma motion vector prediction

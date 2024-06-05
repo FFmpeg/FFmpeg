@@ -767,7 +767,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
 
     if (boundary_upper) {
         const RefPicList *rpl_top = (lc->boundary_flags & BOUNDARY_UPPER_SLICE) ?
-                                    ff_hevc_get_ref_list(s, s->cur_frame, x0, y0 - 1) :
+                                    ff_hevc_get_ref_list(s->cur_frame, x0, y0 - 1) :
                                     s->cur_frame->refPicList;
         int yp_pu = (y0 - 1) >> log2_min_pu_size;
         int yq_pu =  y0      >> log2_min_pu_size;
@@ -805,7 +805,7 @@ void ff_hevc_deblocking_boundary_strengths(HEVCLocalContext *lc, const HEVCLayer
 
     if (boundary_left) {
         const RefPicList *rpl_left = (lc->boundary_flags & BOUNDARY_LEFT_SLICE) ?
-                                     ff_hevc_get_ref_list(s, s->cur_frame, x0 - 1, y0) :
+                                     ff_hevc_get_ref_list(s->cur_frame, x0 - 1, y0) :
                                      s->cur_frame->refPicList;
         int xp_pu = (x0 - 1) >> log2_min_pu_size;
         int xq_pu =  x0      >> log2_min_pu_size;

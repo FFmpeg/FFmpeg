@@ -366,6 +366,7 @@ typedef struct HEVCFrame {
     int ctb_count;
     int poc;
 
+    const HEVCPPS *pps;            ///< RefStruct reference
     RefPicListTab *rpl;            ///< RefStruct reference
     int nb_rpl_elems;
 
@@ -556,8 +557,7 @@ void ff_hevc_clear_refs(HEVCLayerContext *l);
  */
 void ff_hevc_flush_dpb(HEVCContext *s);
 
-const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s, const HEVCFrame *frame,
-                                       int x0, int y0);
+const RefPicList *ff_hevc_get_ref_list(const HEVCFrame *frame, int x0, int y0);
 
 /**
  * Construct the reference picture sets for the current frame.

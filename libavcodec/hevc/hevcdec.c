@@ -3503,6 +3503,7 @@ static int hevc_ref_frame(HEVCFrame *dst, const HEVCFrame *src)
         dst->needs_fg = 1;
     }
 
+    dst->pps     = ff_refstruct_ref_c(src->pps);
     dst->tab_mvf = ff_refstruct_ref(src->tab_mvf);
     dst->rpl_tab = ff_refstruct_ref(src->rpl_tab);
     dst->rpl = ff_refstruct_ref(src->rpl);

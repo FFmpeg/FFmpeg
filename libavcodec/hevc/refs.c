@@ -38,6 +38,7 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
         av_frame_unref(frame->frame_grain);
         frame->needs_fg = 0;
 
+        ff_refstruct_unref(&frame->pps);
         ff_refstruct_unref(&frame->tab_mvf);
 
         ff_refstruct_unref(&frame->rpl);
@@ -49,13 +50,13 @@ void ff_hevc_unref_frame(HEVCFrame *frame, int flags)
     }
 }
 
-const RefPicList *ff_hevc_get_ref_list(const HEVCContext *s,
-                                       const HEVCFrame *ref, int x0, int y0)
+const RefPicList *ff_hevc_get_ref_list(const HEVCFrame *ref, int x0, int y0)
 {
-    int x_cb         = x0 >> s->ps.sps->log2_ctb_size;
-    int y_cb         = y0 >> s->ps.sps->log2_ctb_size;
-    int pic_width_cb = s->ps.sps->ctb_width;
-    int ctb_addr_ts  = s->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
+    const HEVCSPS *sps = ref->pps->sps;
+    int x_cb         = x0 >> sps->log2_ctb_size;
+    int y_cb         = y0 >> sps->log2_ctb_size;
+    int pic_width_cb = sps->ctb_width;
+    int ctb_addr_ts  = ref->pps->ctb_addr_rs_to_ts[y_cb * pic_width_cb + x_cb];
     return &ref->rpl_tab[ctb_addr_ts]->refPicList[0];
 }
 
@@ -115,6 +116,8 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
         ret = ff_hwaccel_frame_priv_alloc(s->avctx, &frame->hwaccel_picture_private);
         if (ret < 0)
             goto fail;
+
+        frame->pps = ff_refstruct_ref_c(s->pps);
 
         return frame;
 fail:
