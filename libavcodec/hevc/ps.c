@@ -66,15 +66,11 @@ static void remove_sps(HEVCParamSets *s, int id)
 {
     int i;
     if (s->sps_list[id]) {
-        if (s->sps == s->sps_list[id])
-            s->sps = NULL;
-
         /* drop all PPS that depend on this SPS */
         for (i = 0; i < FF_ARRAY_ELEMS(s->pps_list); i++)
             if (s->pps_list[i] && s->pps_list[i]->sps_id == id)
                 ff_refstruct_unref(&s->pps_list[i]);
 
-        av_assert0(!(s->sps_list[id] && s->sps == s->sps_list[id]));
         ff_refstruct_unref(&s->sps_list[id]);
     }
 }
@@ -2045,8 +2041,6 @@ void ff_hevc_ps_uninit(HEVCParamSets *ps)
         ff_refstruct_unref(&ps->sps_list[i]);
     for (i = 0; i < FF_ARRAY_ELEMS(ps->pps_list); i++)
         ff_refstruct_unref(&ps->pps_list[i]);
-
-    ps->sps = NULL;
 }
 
 int ff_hevc_compute_poc(const HEVCSPS *sps, int pocTid0, int poc_lsb, int nal_unit_type)

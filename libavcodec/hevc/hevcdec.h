@@ -442,6 +442,8 @@ typedef struct HEVCLocalContext {
 typedef struct HEVCLayerContext {
     HEVCFrame               DPB[32];
 
+    const HEVCSPS          *sps; // RefStruct reference
+
     int                     bs_width;
     int                     bs_height;
 

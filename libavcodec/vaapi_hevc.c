@@ -407,7 +407,7 @@ static void fill_pred_weight_table(AVCodecContext *avctx,
 
     slice_param->luma_log2_weight_denom = sh->luma_log2_weight_denom;
 
-    if (h->ps.sps->chroma_format_idc) {
+    if (h->pps->sps->chroma_format_idc) {
         slice_param->delta_chroma_log2_weight_denom = sh->chroma_log2_weight_denom - sh->luma_log2_weight_denom;
     }
 
@@ -596,7 +596,7 @@ static int ptl_convert(const PTLCommon *general_ptl, H265RawProfileTierLevel *h2
 VAProfile ff_vaapi_parse_hevc_rext_scc_profile(AVCodecContext *avctx)
 {
     const HEVCContext *h = avctx->priv_data;
-    const HEVCSPS *sps = h->ps.sps;
+    const HEVCSPS *sps = h->pps->sps;
     const PTL *ptl = &sps->ptl;
     const PTLCommon *general_ptl = &ptl->general_ptl;
     const H265ProfileDescriptor *profile;

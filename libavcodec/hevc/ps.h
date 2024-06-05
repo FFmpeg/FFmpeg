@@ -447,9 +447,6 @@ typedef struct HEVCParamSets {
     const HEVCVPS *vps_list[HEVC_MAX_VPS_COUNT]; ///< RefStruct references
     const HEVCSPS *sps_list[HEVC_MAX_SPS_COUNT]; ///< RefStruct references
     const HEVCPPS *pps_list[HEVC_MAX_PPS_COUNT]; ///< RefStruct references
-
-    /* currently active parameter sets */
-    const HEVCSPS *sps;
 } HEVCParamSets;
 
 /**

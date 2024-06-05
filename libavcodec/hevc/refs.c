@@ -103,7 +103,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
         frame->rpl_tab = ff_refstruct_pool_get(l->rpl_tab_pool);
         if (!frame->rpl_tab)
             goto fail;
-        frame->ctb_count = s->ps.sps->ctb_width * s->ps.sps->ctb_height;
+        frame->ctb_count = l->sps->ctb_width * l->sps->ctb_height;
         for (j = 0; j < frame->ctb_count; j++)
             frame->rpl_tab[j] = frame->rpl;
 
@@ -157,10 +157,10 @@ int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc)
         ref->flags = HEVC_FRAME_FLAG_SHORT_REF;
 
     ref->poc      = poc;
-    ref->f->crop_left   = s->ps.sps->output_window.left_offset;
-    ref->f->crop_right  = s->ps.sps->output_window.right_offset;
-    ref->f->crop_top    = s->ps.sps->output_window.top_offset;
-    ref->f->crop_bottom = s->ps.sps->output_window.bottom_offset;
+    ref->f->crop_left   = l->sps->output_window.left_offset;
+    ref->f->crop_right  = l->sps->output_window.right_offset;
+    ref->f->crop_top    = l->sps->output_window.top_offset;
+    ref->f->crop_bottom = l->sps->output_window.bottom_offset;
 
     return 0;
 }
@@ -321,7 +321,7 @@ int ff_hevc_slice_rpl(HEVCContext *s)
 static HEVCFrame *find_ref_idx(HEVCContext *s, HEVCLayerContext *l,
                                int poc, uint8_t use_msb)
 {
-    int mask = use_msb ? ~0 : (1 << s->ps.sps->log2_max_poc_lsb) - 1;
+    int mask = use_msb ? ~0 : (1 << l->sps->log2_max_poc_lsb) - 1;
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
@@ -354,16 +354,16 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, HEVCLayerContext *l, int 
         return NULL;
 
     if (!s->avctx->hwaccel) {
-        if (!s->ps.sps->pixel_shift) {
+        if (!l->sps->pixel_shift) {
             for (i = 0; frame->f->data[i]; i++)
-                memset(frame->f->data[i], 1 << (s->ps.sps->bit_depth - 1),
-                       frame->f->linesize[i] * AV_CEIL_RSHIFT(s->ps.sps->height, s->ps.sps->vshift[i]));
+                memset(frame->f->data[i], 1 << (l->sps->bit_depth - 1),
+                       frame->f->linesize[i] * AV_CEIL_RSHIFT(l->sps->height, l->sps->vshift[i]));
         } else {
             for (i = 0; frame->f->data[i]; i++)
-                for (y = 0; y < (s->ps.sps->height >> s->ps.sps->vshift[i]); y++) {
+                for (y = 0; y < (l->sps->height >> l->sps->vshift[i]); y++) {
                     uint8_t *dst = frame->f->data[i] + y * frame->f->linesize[i];
-                    AV_WN16(dst, 1 << (s->ps.sps->bit_depth - 1));
-                    av_memcpy_backptr(dst + 2, 2, 2*(s->ps.sps->width >> s->ps.sps->hshift[i]) - 2);
+                    AV_WN16(dst, 1 << (l->sps->bit_depth - 1));
+                    av_memcpy_backptr(dst + 2, 2, 2*(l->sps->width >> l->sps->hshift[i]) - 2);
                 }
         }
     }

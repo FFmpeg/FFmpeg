@@ -555,7 +555,7 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
     int ret;
 
     pic_arrays_free(l);
-    s->ps.sps = NULL;
+    ff_refstruct_unref(&l->sps);
     ff_refstruct_unref(&s->vps);
 
     if (!sps)
@@ -569,14 +569,14 @@ static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
 
-    s->ps.sps = sps;
+    l->sps    = ff_refstruct_ref_c(sps);
     s->vps    = ff_refstruct_ref_c(sps->vps);
 
     return 0;
 
 fail:
     pic_arrays_free(l);
-    s->ps.sps = NULL;
+    ff_refstruct_unref(&l->sps);
     return ret;
 }
 
@@ -2831,6 +2831,7 @@ static int decode_slice_data(HEVCContext *s, const HEVCLayerContext *l,
 
 static int set_side_data(HEVCContext *s)
 {
+    const HEVCSPS *sps = s->cur_frame->pps->sps;
     AVFrame *out = s->cur_frame->f;
     int ret;
 
@@ -2846,8 +2847,8 @@ static int set_side_data(HEVCContext *s)
     }
 
     ret = ff_h2645_sei_to_frame(out, &s->sei.common, AV_CODEC_ID_HEVC, s->avctx,
-                                &s->ps.sps->vui.common,
-                                s->ps.sps->bit_depth, s->ps.sps->bit_depth_chroma,
+                                &sps->vui.common,
+                                sps->bit_depth, sps->bit_depth_chroma,
                                 s->cur_frame->poc /* no poc_offset in HEVC */);
     if (ret < 0)
         return ret;
@@ -2932,7 +2933,7 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
     }
 
     ff_refstruct_replace(&s->pps, pps);
-    if (s->ps.sps != sps) {
+    if (l->sps != sps) {
         enum AVPixelFormat pix_fmt;
 
         ff_hevc_clear_refs(l);
@@ -3523,8 +3524,10 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
 {
     HEVCContext       *s = avctx->priv_data;
 
-    for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++)
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++) {
         pic_arrays_free(&s->layers[i]);
+        ff_refstruct_unref(&s->layers[i].sps);
+    }
 
     ff_refstruct_unref(&s->vps);
     ff_refstruct_unref(&s->pps);
@@ -3620,10 +3623,14 @@ static int hevc_update_thread_context(AVCodecContext *dst,
                     return ret;
             }
         }
+
+        if (l->sps != l0->sps) {
+            ret = set_sps(s, l, l0->sps);
+            if (ret < 0)
+                return ret;
+        }
     }
 
-    if (s->ps.sps != s0->ps.sps)
-        s->ps.sps = NULL;
     for (int i = 0; i < FF_ARRAY_ELEMS(s->ps.vps_list); i++)
         ff_refstruct_replace(&s->ps.vps_list[i], s0->ps.vps_list[i]);
 
@@ -3635,10 +3642,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     // PPS do not persist between frames
     ff_refstruct_unref(&s->pps);
-
-    if (s->ps.sps != s0->ps.sps)
-        if ((ret = set_sps(s, &s->layers[0], s0->ps.sps)) < 0)
-            return ret;
 
     s->poc_tid0   = s0->poc_tid0;
     s->eos        = s0->eos;

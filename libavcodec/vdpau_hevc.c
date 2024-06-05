@@ -470,7 +470,7 @@ static int ptl_convert(const PTLCommon *general_ptl, H265RawProfileTierLevel *h2
 static int vdpau_hevc_parse_rext_profile(AVCodecContext *avctx, VdpDecoderProfile *vdp_profile)
 {
     const HEVCContext *h = avctx->priv_data;
-    const HEVCSPS *sps = h->ps.sps;
+    const HEVCSPS *sps = h->pps->sps;
     const PTL *ptl = &sps->ptl;
     const PTLCommon *general_ptl = &ptl->general_ptl;
     const H265ProfileDescriptor *profile;
