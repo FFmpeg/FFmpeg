@@ -757,8 +757,8 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
         put_bits(&pbc, 1, vvcc->ptl.ptl_frame_only_constraint_flag);
         put_bits(&pbc, 1, vvcc->ptl.ptl_multilayer_enabled_flag);
         av_assert0(vvcc->ptl.num_bytes_constraint_info);
-        if (vvcc->ptl.num_bytes_constraint_info > 1)
-            ff_copy_bits(&pbc, vvcc->ptl.general_constraint_info, (vvcc->ptl.num_bytes_constraint_info - 1) * 8);
+        for (int i = 0; i < vvcc->ptl.num_bytes_constraint_info - 1; i++)
+            put_bits(&pbc, 8, vvcc->ptl.general_constraint_info[i]);
         put_bits(&pbc, 6, vvcc->ptl.general_constraint_info[vvcc->ptl.num_bytes_constraint_info - 1] & 0x3f);
         flush_put_bits(&pbc);
         avio_write(pb, buf, put_bytes_output(&pbc));

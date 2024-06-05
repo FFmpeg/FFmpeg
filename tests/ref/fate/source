@@ -7,7 +7,6 @@ libavdevice/file_open.c
 libavdevice/reverse.c
 libavfilter/file_open.c
 libavfilter/log2_tab.c
-libavformat/bitstream.c
 libavformat/file_open.c
 libavformat/golomb_tab.c
 libavformat/log2_tab.c
