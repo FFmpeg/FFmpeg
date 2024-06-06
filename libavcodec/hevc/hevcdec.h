@@ -215,6 +215,7 @@ typedef struct SliceHeader {
     uint8_t dependent_slice_segment_flag;
     uint8_t pic_output_flag;
     uint8_t colour_plane_id;
+    uint8_t inter_layer_pred;
 
     ///< RPS coded in the slice header itself is stored here
     int short_term_ref_pic_set_sps_flag;

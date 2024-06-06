@@ -584,7 +584,8 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
 {
     const HEVCPPS *pps;
     const HEVCSPS *sps;
-    unsigned pps_id;
+    const HEVCVPS *vps;
+    unsigned pps_id, layer_idx;
     int i, ret;
 
     // Coded parameters
@@ -607,6 +608,8 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
 
     pps = s->ps.pps_list[pps_id];
     sps = pps->sps;
+    vps = sps->vps;
+    layer_idx = vps->layer_idx[s->nuh_layer_id];
 
     if (s->nal_unit_type == HEVC_NAL_CRA_NUT && s->last_eos == 1)
         sh->no_output_of_prior_pics_flag = 1;
@@ -652,7 +655,8 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
             return AVERROR_INVALIDDATA;
         }
         if (IS_IRAP(s) && sh->slice_type != HEVC_SLICE_I &&
-            !pps->pps_curr_pic_ref_enabled_flag) {
+            !pps->pps_curr_pic_ref_enabled_flag &&
+            s->nuh_layer_id == 0) {
             av_log(s->avctx, AV_LOG_ERROR, "Inter slices in an IRAP frame.\n");
             return AVERROR_INVALIDDATA;
         }
@@ -665,8 +669,10 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
         if (sps->separate_colour_plane)
             sh->colour_plane_id = get_bits(gb, 2);
 
-        if (!IS_IDR(s)) {
-            int poc, pos;
+        if (!IS_IDR(s) ||
+            (s->nuh_layer_id > 0 &&
+             !(vps->poc_lsb_not_present & (1 << layer_idx)))) {
+            int poc;
 
             sh->pic_order_cnt_lsb = get_bits(gb, sps->log2_max_poc_lsb);
             poc = ff_hevc_compute_poc(sps, s->poc_tid0, sh->pic_order_cnt_lsb, s->nal_unit_type);
@@ -678,6 +684,10 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
                 poc = sh->poc;
             }
             sh->poc = poc;
+        }
+
+        if (!IS_IDR(s)) {
+            int pos;
 
             sh->short_term_ref_pic_set_sps_flag = get_bits1(gb);
             pos = get_bits_left(gb);
@@ -722,6 +732,23 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
             sh->short_term_rps                  = NULL;
             sh->long_term_ref_pic_set_size      = 0;
             sh->slice_temporal_mvp_enabled_flag = 0;
+        }
+
+        sh->inter_layer_pred = 0;
+        if (s->nuh_layer_id > 0) {
+            int num_direct_ref_layers = vps->num_direct_ref_layers[layer_idx];
+
+            if (vps->default_ref_layers_active)
+                sh->inter_layer_pred = !!num_direct_ref_layers;
+            else if (num_direct_ref_layers) {
+                sh->inter_layer_pred = get_bits1(gb);
+
+                if (sh->inter_layer_pred && num_direct_ref_layers > 1) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "NumDirectRefLayers>1 not supported\n");
+                    return AVERROR_PATCHWELCOME;
+                }
+            }
         }
 
         if (sps->sao_enabled) {
@@ -3238,6 +3265,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     int ret;
 
     s->nal_unit_type = nal->type;
+    s->nuh_layer_id  = nal->nuh_layer_id;
     s->temporal_id   = nal->temporal_id;
 
     if (FF_HW_HAS_CB(s->avctx, decode_params) &&
