@@ -3260,7 +3260,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         break;
     case HEVC_NAL_SPS:
         ret = ff_hevc_decode_nal_sps(&gb, s->avctx, &s->ps,
-                                     s->apply_defdispwin);
+                                     nal->nuh_layer_id, s->apply_defdispwin);
         if (ret < 0)
             goto fail;
         break;

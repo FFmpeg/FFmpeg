@@ -521,13 +521,14 @@ typedef struct HEVCParamSets {
  *                 to an existing VPS
  */
 int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
-                      int apply_defdispwin, const HEVCVPS * const *vps_list,
-                      AVCodecContext *avctx);
+                      unsigned nuh_layer_id, int apply_defdispwin,
+                      const HEVCVPS * const *vps_list, AVCodecContext *avctx);
 
 int ff_hevc_decode_nal_vps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps);
 int ff_hevc_decode_nal_sps(GetBitContext *gb, AVCodecContext *avctx,
-                           HEVCParamSets *ps, int apply_defdispwin);
+                           HEVCParamSets *ps, unsigned nuh_layer_id,
+                           int apply_defdispwin);
 int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
                            HEVCParamSets *ps);
 

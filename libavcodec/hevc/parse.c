@@ -49,7 +49,8 @@ static int hevc_decode_nal_units(const uint8_t *buf, int buf_size, HEVCParamSets
                 goto done;
             break;
         case HEVC_NAL_SPS:
-            ret = ff_hevc_decode_nal_sps(&nal->gb, logctx, ps, apply_defdispwin);
+            ret = ff_hevc_decode_nal_sps(&nal->gb, logctx, ps,
+                                         nal->nuh_layer_id, apply_defdispwin);
             if (ret < 0)
                 goto done;
             break;

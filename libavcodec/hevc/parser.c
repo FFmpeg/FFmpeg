@@ -209,7 +209,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
             ff_hevc_decode_nal_vps(gb, avctx, ps);
             break;
         case HEVC_NAL_SPS:
-            ff_hevc_decode_nal_sps(gb, avctx, ps, 1);
+            ff_hevc_decode_nal_sps(gb, avctx, ps, nal->nuh_layer_id, 1);
             break;
         case HEVC_NAL_PPS:
             ff_hevc_decode_nal_pps(gb, avctx, ps);
