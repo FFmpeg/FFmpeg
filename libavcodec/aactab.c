@@ -1985,6 +1985,10 @@ const uint8_t ff_tns_max_bands_1024[] = {
     31, 31, 34, 40, 42, 51, 46, 46, 42, 42, 42, 39, 39
 };
 
+const uint8_t ff_tns_max_bands_usac_1024[] = {
+    31, 31, 34, 40, 42, 51, 47, 47, 43, 43, 43, 40, 40
+};
+
 const uint8_t ff_tns_max_bands_512[] = {
     0, 0, 0, 31, 32, 37, 31, 31, 0, 0, 0, 0, 0
 };
@@ -1995,6 +1999,10 @@ const uint8_t ff_tns_max_bands_480[] = {
 
 const uint8_t ff_tns_max_bands_128[] = {
     9, 9, 10, 14, 14, 14, 14, 14, 14, 14, 14, 14, 14
+};
+
+const uint8_t ff_tns_max_bands_usac_128[] = {
+    9, 9, 10, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15
 };
 // @}
 

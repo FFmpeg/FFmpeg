@@ -115,6 +115,9 @@ extern const uint8_t ff_tns_max_bands_512 [13];
 extern const uint8_t ff_tns_max_bands_480 [13];
 extern const uint8_t ff_tns_max_bands_128 [13];
 
+extern const uint8_t ff_tns_max_bands_usac_1024[13];
+extern const uint8_t ff_tns_max_bands_usac_128[13];
+
 /* [x][y], x == 1 -> frame len is 768 frames, y == 1 -> is eight_short */
 extern const uint8_t ff_usac_noise_fill_start_offset[2][2];
 

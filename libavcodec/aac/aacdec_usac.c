@@ -757,7 +757,7 @@ static int setup_sce(AACDecContext *ac, SingleChannelElement *sce,
             ics->swb_offset = ff_swb_offset_128[usac->rate_idx];
             ics->num_swb = ff_aac_num_swb_128[usac->rate_idx];
         }
-        ics->tns_max_bands = ff_tns_max_bands_128[usac->rate_idx];
+        ics->tns_max_bands = ff_tns_max_bands_usac_128[usac->rate_idx];
 
         /* Setup scalefactor grouping. 7 bit mask. */
         ics->num_window_groups = 0;
@@ -780,7 +780,7 @@ static int setup_sce(AACDecContext *ac, SingleChannelElement *sce,
             ics->swb_offset = ff_swb_offset_1024[usac->rate_idx];
             ics->num_swb = ff_aac_num_swb_1024[usac->rate_idx];
         }
-        ics->tns_max_bands = ff_tns_max_bands_1024[usac->rate_idx];
+        ics->tns_max_bands = ff_tns_max_bands_usac_1024[usac->rate_idx];
 
         ics->group_len[0] = 1;
         ics->num_window_groups = 1;
