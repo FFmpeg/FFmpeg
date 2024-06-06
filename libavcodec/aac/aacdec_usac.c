@@ -876,14 +876,14 @@ static int decode_usac_stereo_info(AACDecContext *ac, AACUSACConfig *usac,
         return AVERROR_PATCHWELCOME;
     }
 
+    us->tns_on_lr = 0;
     sce1->tns.present = sce2->tns.present = 0;
     if (tns_active) {
-        av_unused int tns_on_lr;
         int common_tns = 0;
         if (us->common_window)
             common_tns = get_bits1(gb);
 
-        tns_on_lr = get_bits1(gb);
+        us->tns_on_lr = get_bits1(gb);
         if (common_tns) {
             ret = ff_aac_decode_tns(ac, &sce1->tns, gb, ics1);
             if (ret < 0)
@@ -1214,6 +1214,14 @@ static void spectrum_decode(AACDecContext *ac, AACUSACConfig *usac,
     }
 
     if (nb_channels > 1 && us->common_window) {
+        for (int ch = 0; ch < nb_channels; ch++) {
+            SingleChannelElement *sce = &cpe->ch[ch];
+
+            /* Apply TNS, if the tns_on_lr bit is not set. */
+            if (sce->tns.present && !us->tns_on_lr)
+                ac->dsp.apply_tns(sce->coeffs, &sce->tns, &sce->ics, 1);
+        }
+
         if (us->ms_mask_mode == 3) {
             const float *filt;
             complex_stereo_downmix_cur(ac, cpe, us->dmix_re);
@@ -1248,8 +1256,8 @@ static void spectrum_decode(AACDecContext *ac, AACUSACConfig *usac,
     for (int ch = 0; ch < nb_channels; ch++) {
         SingleChannelElement *sce = &cpe->ch[ch];
 
-        /* Apply TNS */
-        if (sce->tns.present)
+        /* Apply TNS, if it hasn't been applied yet. */
+        if (sce->tns.present && ((nb_channels == 1) || (us->tns_on_lr)))
             ac->dsp.apply_tns(sce->coeffs, &sce->tns, &sce->ics, 1);
 
         ac->oc[1].m4ac.frame_length_short ? ac->dsp.imdct_and_windowing_768(ac, sce) :

@@ -230,6 +230,7 @@ typedef struct SingleChannelElement {
 typedef struct AACUsacStereo {
     uint8_t common_window;
     uint8_t common_tw;
+    uint8_t tns_on_lr; ///< Apply TNS before M/S and stereo prediction
 
     uint8_t ms_mask_mode;
     uint8_t config_idx;
