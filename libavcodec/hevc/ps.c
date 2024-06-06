@@ -1185,10 +1185,10 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     }
 
     if (!multi_layer_ext) {
-    sps->temporal_id_nesting = get_bits(gb, 1);
+        sps->temporal_id_nesting = get_bits(gb, 1);
 
-    if ((ret = parse_ptl(gb, avctx, 1, &sps->ptl, sps->max_sub_layers)) < 0)
-        return ret;
+        if ((ret = parse_ptl(gb, avctx, 1, &sps->ptl, sps->max_sub_layers)) < 0)
+            return ret;
     } else {
         sps->temporal_id_nesting = sps->max_sub_layers > 1 ?
                                    sps->vps->vps_max_sub_layers : 1;
@@ -1222,69 +1222,69 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         sps->pic_conf_win.bottom_offset = rf->conf_win_bottom_offset;
 
     } else {
-    sps->chroma_format_idc = get_ue_golomb_long(gb);
-    if (sps->chroma_format_idc > 3U) {
-        av_log(avctx, AV_LOG_ERROR, "chroma_format_idc %d is invalid\n", sps->chroma_format_idc);
-        return AVERROR_INVALIDDATA;
-    }
-
-    if (sps->chroma_format_idc == 3)
-        sps->separate_colour_plane = get_bits1(gb);
-
-    if (sps->separate_colour_plane)
-        sps->chroma_format_idc = 0;
-
-    sps->width  = get_ue_golomb_long(gb);
-    sps->height = get_ue_golomb_long(gb);
-    if ((ret = av_image_check_size(sps->width,
-                                   sps->height, 0, avctx)) < 0)
-        return ret;
-
-    sps->conformance_window = get_bits1(gb);
-    if (sps->conformance_window) {
-        int vert_mult  = hevc_sub_height_c[sps->chroma_format_idc];
-        int horiz_mult = hevc_sub_width_c[sps->chroma_format_idc];
-        sps->pic_conf_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
-        sps->pic_conf_win.right_offset  = get_ue_golomb_long(gb) * horiz_mult;
-        sps->pic_conf_win.top_offset    = get_ue_golomb_long(gb) *  vert_mult;
-        sps->pic_conf_win.bottom_offset = get_ue_golomb_long(gb) *  vert_mult;
-
-        if (avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) {
-            av_log(avctx, AV_LOG_DEBUG,
-                   "discarding sps conformance window, "
-                   "original values are l:%u r:%u t:%u b:%u\n",
-                   sps->pic_conf_win.left_offset,
-                   sps->pic_conf_win.right_offset,
-                   sps->pic_conf_win.top_offset,
-                   sps->pic_conf_win.bottom_offset);
-
-            sps->pic_conf_win.left_offset   =
-            sps->pic_conf_win.right_offset  =
-            sps->pic_conf_win.top_offset    =
-            sps->pic_conf_win.bottom_offset = 0;
+        sps->chroma_format_idc = get_ue_golomb_long(gb);
+        if (sps->chroma_format_idc > 3U) {
+            av_log(avctx, AV_LOG_ERROR, "chroma_format_idc %d is invalid\n", sps->chroma_format_idc);
+            return AVERROR_INVALIDDATA;
         }
-    }
 
-    sps->bit_depth = get_ue_golomb_31(gb) + 8;
-    if (sps->bit_depth > 16) {
-        av_log(avctx, AV_LOG_ERROR, "Luma bit depth (%d) is out of range\n",
-               sps->bit_depth);
-        return AVERROR_INVALIDDATA;
-    }
-    bit_depth_chroma = get_ue_golomb_31(gb) + 8;
-    if (bit_depth_chroma > 16) {
-        av_log(avctx, AV_LOG_ERROR, "Chroma bit depth (%d) is out of range\n",
-               bit_depth_chroma);
-        return AVERROR_INVALIDDATA;
-    }
-    if (sps->chroma_format_idc && bit_depth_chroma != sps->bit_depth) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Luma bit depth (%d) is different from chroma bit depth (%d), "
-               "this is unsupported.\n",
-               sps->bit_depth, bit_depth_chroma);
-        return AVERROR_INVALIDDATA;
-    }
-    sps->bit_depth_chroma = bit_depth_chroma;
+        if (sps->chroma_format_idc == 3)
+            sps->separate_colour_plane = get_bits1(gb);
+
+        if (sps->separate_colour_plane)
+            sps->chroma_format_idc = 0;
+
+        sps->width  = get_ue_golomb_long(gb);
+        sps->height = get_ue_golomb_long(gb);
+        if ((ret = av_image_check_size(sps->width,
+                                       sps->height, 0, avctx)) < 0)
+            return ret;
+
+        sps->conformance_window = get_bits1(gb);
+        if (sps->conformance_window) {
+            int vert_mult  = hevc_sub_height_c[sps->chroma_format_idc];
+            int horiz_mult = hevc_sub_width_c[sps->chroma_format_idc];
+            sps->pic_conf_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
+            sps->pic_conf_win.right_offset  = get_ue_golomb_long(gb) * horiz_mult;
+            sps->pic_conf_win.top_offset    = get_ue_golomb_long(gb) *  vert_mult;
+            sps->pic_conf_win.bottom_offset = get_ue_golomb_long(gb) *  vert_mult;
+
+            if (avctx->flags2 & AV_CODEC_FLAG2_IGNORE_CROP) {
+                av_log(avctx, AV_LOG_DEBUG,
+                       "discarding sps conformance window, "
+                       "original values are l:%u r:%u t:%u b:%u\n",
+                       sps->pic_conf_win.left_offset,
+                       sps->pic_conf_win.right_offset,
+                       sps->pic_conf_win.top_offset,
+                       sps->pic_conf_win.bottom_offset);
+
+                sps->pic_conf_win.left_offset   =
+                sps->pic_conf_win.right_offset  =
+                sps->pic_conf_win.top_offset    =
+                sps->pic_conf_win.bottom_offset = 0;
+            }
+        }
+
+        sps->bit_depth = get_ue_golomb_31(gb) + 8;
+        if (sps->bit_depth > 16) {
+            av_log(avctx, AV_LOG_ERROR, "Luma bit depth (%d) is out of range\n",
+                   sps->bit_depth);
+            return AVERROR_INVALIDDATA;
+        }
+        bit_depth_chroma = get_ue_golomb_31(gb) + 8;
+        if (bit_depth_chroma > 16) {
+            av_log(avctx, AV_LOG_ERROR, "Chroma bit depth (%d) is out of range\n",
+                   bit_depth_chroma);
+            return AVERROR_INVALIDDATA;
+        }
+        if (sps->chroma_format_idc && bit_depth_chroma != sps->bit_depth) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Luma bit depth (%d) is different from chroma bit depth (%d), "
+                   "this is unsupported.\n",
+                   sps->bit_depth, bit_depth_chroma);
+            return AVERROR_INVALIDDATA;
+        }
+        sps->bit_depth_chroma = bit_depth_chroma;
     }
 
     sps->output_window = sps->pic_conf_win;
@@ -1301,37 +1301,37 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
     }
 
     if (!multi_layer_ext) {
-    int start;
+        int start;
 
-    sps->sublayer_ordering_info = get_bits1(gb);
-    start = sps->sublayer_ordering_info ? 0 : sps->max_sub_layers - 1;
-    for (i = start; i < sps->max_sub_layers; i++) {
-        sps->temporal_layer[i].max_dec_pic_buffering = get_ue_golomb_long(gb) + 1;
-        sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb_long(gb);
-        sps->temporal_layer[i].max_latency_increase  = get_ue_golomb_long(gb) - 1;
-        if (sps->temporal_layer[i].max_dec_pic_buffering > (unsigned)HEVC_MAX_DPB_SIZE) {
-            av_log(avctx, AV_LOG_ERROR, "sps_max_dec_pic_buffering_minus1 out of range: %d\n",
-                   sps->temporal_layer[i].max_dec_pic_buffering - 1U);
-            return AVERROR_INVALIDDATA;
-        }
-        if (sps->temporal_layer[i].num_reorder_pics > sps->temporal_layer[i].max_dec_pic_buffering - 1) {
-            av_log(avctx, AV_LOG_WARNING, "sps_max_num_reorder_pics out of range: %d\n",
-                   sps->temporal_layer[i].num_reorder_pics);
-            if (avctx->err_recognition & AV_EF_EXPLODE ||
-                sps->temporal_layer[i].num_reorder_pics > HEVC_MAX_DPB_SIZE - 1) {
+        sps->sublayer_ordering_info = get_bits1(gb);
+        start = sps->sublayer_ordering_info ? 0 : sps->max_sub_layers - 1;
+        for (i = start; i < sps->max_sub_layers; i++) {
+            sps->temporal_layer[i].max_dec_pic_buffering = get_ue_golomb_long(gb) + 1;
+            sps->temporal_layer[i].num_reorder_pics      = get_ue_golomb_long(gb);
+            sps->temporal_layer[i].max_latency_increase  = get_ue_golomb_long(gb) - 1;
+            if (sps->temporal_layer[i].max_dec_pic_buffering > (unsigned)HEVC_MAX_DPB_SIZE) {
+                av_log(avctx, AV_LOG_ERROR, "sps_max_dec_pic_buffering_minus1 out of range: %d\n",
+                       sps->temporal_layer[i].max_dec_pic_buffering - 1U);
                 return AVERROR_INVALIDDATA;
             }
-            sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[i].num_reorder_pics + 1;
+            if (sps->temporal_layer[i].num_reorder_pics > sps->temporal_layer[i].max_dec_pic_buffering - 1) {
+                av_log(avctx, AV_LOG_WARNING, "sps_max_num_reorder_pics out of range: %d\n",
+                       sps->temporal_layer[i].num_reorder_pics);
+                if (avctx->err_recognition & AV_EF_EXPLODE ||
+                    sps->temporal_layer[i].num_reorder_pics > HEVC_MAX_DPB_SIZE - 1) {
+                    return AVERROR_INVALIDDATA;
+                }
+                sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[i].num_reorder_pics + 1;
+            }
         }
-    }
 
-    if (!sps->sublayer_ordering_info) {
-        for (i = 0; i < start; i++) {
-            sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[start].max_dec_pic_buffering;
-            sps->temporal_layer[i].num_reorder_pics      = sps->temporal_layer[start].num_reorder_pics;
-            sps->temporal_layer[i].max_latency_increase  = sps->temporal_layer[start].max_latency_increase;
+        if (!sps->sublayer_ordering_info) {
+            for (i = 0; i < start; i++) {
+                sps->temporal_layer[i].max_dec_pic_buffering = sps->temporal_layer[start].max_dec_pic_buffering;
+                sps->temporal_layer[i].num_reorder_pics      = sps->temporal_layer[start].num_reorder_pics;
+                sps->temporal_layer[i].max_latency_increase  = sps->temporal_layer[start].max_latency_increase;
+            }
         }
-    }
     } else {
         for (int i = 0; i < sps->max_sub_layers; i++) {
             sps->temporal_layer[i].max_dec_pic_buffering = sps->vps->dpb_size.max_dec_pic_buffering;
