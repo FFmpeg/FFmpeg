@@ -2284,6 +2284,48 @@ SEI_FUNC(sei_alpha_channel_info, (CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+SEI_FUNC(sei_3d_reference_displays_info, (CodedBitstreamContext *ctx, RWContext *rw,
+                                          H265RawSEI3DReferenceDisplaysInfo *current,
+                                          SEIMessageState *sei))
+{
+    int length;
+    int err, i;
+
+    HEADER("Three Dimensional Reference Displays Information");
+
+    ue(prec_ref_display_width, 0, 31);
+    flag(ref_viewing_distance_flag);
+    if (current->ref_viewing_distance_flag)
+        ue(prec_ref_viewing_dist, 0, 31);
+    ue(num_ref_displays_minus1, 0, 31);
+    for (i = 0; i <= current->num_ref_displays_minus1; i++) {
+        ues(left_view_id[i], 0, UINT8_MAX, 1, i);
+        ues(right_view_id[i], 0, UINT8_MAX, 1, i);
+        us(6, exponent_ref_display_width[i], 0, 62, 1, i);
+        if (!current->exponent_ref_display_width[i])
+            length = FFMAX(0, (int)current->prec_ref_display_width - 30);
+        else
+            length = FFMAX(0, (int)current->exponent_ref_display_width[i] +
+                              (int)current->prec_ref_display_width - 31);
+        ubs(length, mantissa_ref_display_width[i], 1, i);
+        if (current->ref_viewing_distance_flag) {
+            us(6, exponent_ref_viewing_distance[i], 0, 62, 1, i);
+            if (!current->exponent_ref_viewing_distance[i])
+                length = FFMAX(0, (int)current->prec_ref_viewing_dist - 30);
+            else
+                length = FFMAX(0, (int)current->exponent_ref_viewing_distance[i] +
+                                  (int)current->prec_ref_viewing_dist - 31);
+            ubs(length, mantissa_ref_viewing_distance[i], 1, i);
+        }
+        flags(additional_shift_present_flag[i], 1, i);
+        if (current->additional_shift_present_flag[i])
+            us(10, num_sample_shift_plus512[i], 0, 1023, 1, i);
+    }
+    flag(three_dimensional_reference_displays_extension_flag);
+
+    return 0;
+}
+
 static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
                      H265RawSEI *current, int prefix)
 {

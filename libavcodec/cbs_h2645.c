@@ -2275,6 +2275,12 @@ static const SEIMessageTypeDescriptor cbs_sei_h265_types[] = {
         sizeof(H265RawSEIAlphaChannelInfo),
         SEI_MESSAGE_RW(h265, sei_alpha_channel_info),
     },
+    {
+        SEI_TYPE_THREE_DIMENSIONAL_REFERENCE_DISPLAYS_INFO,
+        1, 0,
+        sizeof(H265RawSEI3DReferenceDisplaysInfo),
+        SEI_MESSAGE_RW(h265, sei_3d_reference_displays_info),
+    },
     SEI_MESSAGE_TYPE_END
 };
 

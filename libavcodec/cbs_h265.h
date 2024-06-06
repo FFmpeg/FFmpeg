@@ -720,6 +720,22 @@ typedef struct H265RawSEIAlphaChannelInfo {
     uint8_t  alpha_channel_clip_type_flag;
 } H265RawSEIAlphaChannelInfo;
 
+typedef struct H265RawSEI3DReferenceDisplaysInfo {
+    uint8_t prec_ref_display_width;
+    uint8_t ref_viewing_distance_flag;
+    uint8_t prec_ref_viewing_dist;
+    uint8_t num_ref_displays_minus1;
+    uint8_t left_view_id[31];
+    uint8_t right_view_id[31];
+    uint8_t exponent_ref_display_width[31];
+    uint8_t mantissa_ref_display_width[31];
+    uint8_t exponent_ref_viewing_distance[31];
+    uint8_t mantissa_ref_viewing_distance[31];
+    uint8_t additional_shift_present_flag[31];
+    uint16_t num_sample_shift_plus512[31];
+    uint8_t three_dimensional_reference_displays_extension_flag;
+} H265RawSEI3DReferenceDisplaysInfo;
+
 typedef struct H265RawSEI {
     H265RawNALUnitHeader nal_unit_header;
     SEIRawMessageList    message_list;
