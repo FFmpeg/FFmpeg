@@ -142,7 +142,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     // B-frame info
     s->max_b_frames = s1->max_b_frames;
     s->low_delay    = s1->low_delay;
-    s->droppable    = s1->droppable;
 
     // DivX handling (doesn't work)
     s->divx_packed  = s1->divx_packed;
