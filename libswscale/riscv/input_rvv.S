@@ -149,3 +149,48 @@ func ff_rgb24ToUV_half_rvv, zve32x
 
         ret
 endfunc
+
+        .macro  rgba_input chr0, chr1, high
+func ff_\chr1\()ToY_rvv, zve32x
+        lw      t1, 8(a5) # BY
+        lw      t3, 0(a5) # RY
+        j       1f
+endfunc
+
+func ff_\chr0\()ToY_rvv, zve32x
+        lw      t1, 0(a5) # RY
+        lw      t3, 8(a5) # BY
+1:
+        lw      t2, 4(a5) # GY
+        li      t4, (32 << (15 - 1)) + (1 << (15 - 7))
+        li      t5, 0xff
+2:
+        vsetvli   t0, a4, e32, m8, ta, ma
+        vle32.v   v0, (a1)
+        sub       a4, a4, t0
+        .if     \high
+        vsrl.vi   v8, v0, 24
+        .else
+        vand.vx   v8, v0, t5
+        .endif
+        sh2add    a1, t0, a1
+        vsrl.vi   v16, v0, 8 * (1 + \high)
+        vmul.vx   v24, v8, t1
+        vand.vx   v16, v16, t5
+        vsrl.vi   v8, v0, 8 * (2 - \high)
+        vmacc.vx  v24, t2, v16
+        vand.vx   v8, v8, t5
+        vadd.vx   v24, v24, t4
+        vmacc.vx  v24, t3, v8
+        vsetvli   zero, zero, e16, m4, ta, ma
+        vnsra.wi  v0, v24, 15 - 6
+        vse16.v   v0, (a0)
+        sh1add    a0, t0, a0
+        bnez      a4, 2b
+
+        ret
+endfunc
+        .endm
+
+rgba_input rgba32, bgra32, 0
+rgba_input abgr32, argb32, 1

@@ -21,20 +21,22 @@
 #include "libavutil/riscv/cpu.h"
 #include "libswscale/swscale_internal.h"
 
-void ff_bgr24ToY_rvv(uint8_t *dst, const uint8_t *src, const uint8_t *,
-                     const uint8_t *, int width, uint32_t *coeffs, void *);
-void ff_bgr24ToUV_rvv(uint8_t *, uint8_t *, const uint8_t *, const uint8_t *,
-                      const uint8_t *, int width, uint32_t *coeffs, void *);
-void ff_bgr24ToUV_half_rvv(uint8_t *, uint8_t *, const uint8_t *,
-                           const uint8_t *, const uint8_t *, int width,
-                           uint32_t *coeffs, void *);
-void ff_rgb24ToY_rvv(uint8_t *dst, const uint8_t *src, const uint8_t *,
-                     const uint8_t *, int width, uint32_t *coeffs, void *);
-void ff_rgb24ToUV_rvv(uint8_t *, uint8_t *, const uint8_t *, const uint8_t *,
-                      const uint8_t *, int width, uint32_t *coeffs, void *);
-void ff_rgb24ToUV_half_rvv(uint8_t *, uint8_t *, const uint8_t *,
-                           const uint8_t *, const uint8_t *, int width,
-                           uint32_t *coeffs, void *);
+#define RVV_INPUT(name) \
+void ff_##name##ToY_rvv(uint8_t *dst, const uint8_t *src, const uint8_t *, \
+                        const uint8_t *, int w, uint32_t *coeffs, void *); \
+void ff_##name##ToUV_rvv(uint8_t *, uint8_t *, const uint8_t *, \
+                         const uint8_t *, const uint8_t *, int w, \
+                         uint32_t *coeffs, void *); \
+void ff_##name##ToUV_half_rvv(uint8_t *, uint8_t *, const uint8_t *, \
+                              const uint8_t *, const uint8_t *, int w, \
+                              uint32_t *coeffs, void *)
+
+RVV_INPUT(abgr32);
+RVV_INPUT(argb32);
+RVV_INPUT(bgr24);
+RVV_INPUT(bgra32);
+RVV_INPUT(rgb24);
+RVV_INPUT(rgba32);
 
 av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
 {
@@ -43,6 +45,14 @@ av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
 
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         switch (c->srcFormat) {
+            case AV_PIX_FMT_ABGR:
+                c->lumToYV12 = ff_abgr32ToY_rvv;
+                break;
+
+            case AV_PIX_FMT_ARGB:
+                c->lumToYV12 = ff_argb32ToY_rvv;
+                break;
+
             case AV_PIX_FMT_BGR24:
                 c->lumToYV12 = ff_bgr24ToY_rvv;
                 if (c->chrSrcHSubSample)
@@ -51,12 +61,20 @@ av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
                     c->chrToYV12 = ff_bgr24ToUV_rvv;
                 break;
 
+            case AV_PIX_FMT_BGRA:
+                c->lumToYV12 = ff_bgra32ToY_rvv;
+                break;
+
             case AV_PIX_FMT_RGB24:
                 c->lumToYV12 = ff_rgb24ToY_rvv;
                 if (c->chrSrcHSubSample)
                     c->chrToYV12 = ff_rgb24ToUV_half_rvv;
                 else
                     c->chrToYV12 = ff_rgb24ToUV_rvv;
+                break;
+
+            case AV_PIX_FMT_RGBA:
+                c->lumToYV12 = ff_rgba32ToY_rvv;
                 break;
         }
     }
