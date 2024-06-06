@@ -248,11 +248,15 @@ typedef struct H265RawSPS {
     uint8_t sps_video_parameter_set_id;
 
     uint8_t sps_max_sub_layers_minus1;
+    uint8_t sps_ext_or_max_sub_layers_minus1;
     uint8_t sps_temporal_id_nesting_flag;
 
     H265RawProfileTierLevel profile_tier_level;
 
     uint8_t sps_seq_parameter_set_id;
+
+    uint8_t update_rep_format_flag;
+    uint8_t sps_rep_format_idx;
 
     uint8_t chroma_format_idc;
     uint8_t separate_colour_plane_flag;
@@ -284,6 +288,8 @@ typedef struct H265RawSPS {
     uint8_t max_transform_hierarchy_depth_intra;
 
     uint8_t scaling_list_enabled_flag;
+    uint8_t sps_infer_scaling_list_flag;
+    uint8_t sps_scaling_list_ref_layer_id;
     uint8_t sps_scaling_list_data_present_flag;
     H265RawScalingList scaling_list;
 
@@ -342,6 +348,9 @@ typedef struct H265RawSPS {
 
     uint8_t motion_vector_resolution_control_idc;
     uint8_t intra_boundary_filtering_disable_flag;
+
+    // Multilayer extension.
+    uint8_t inter_view_mv_vert_constraint_flag;
 } H265RawSPS;
 
 typedef struct H265RawPPS {

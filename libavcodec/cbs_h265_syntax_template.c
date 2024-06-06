@@ -747,6 +747,16 @@ static int FUNC(sps_scc_extension)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(sps_multilayer_extension)(CodedBitstreamContext *ctx, RWContext *rw,
+                                          H265RawSPS *current)
+{
+    int err;
+
+    flag(inter_view_mv_vert_constraint_flag);
+
+    return 0;
+}
+
 static int FUNC(vui_parameters_default)(CodedBitstreamContext *ctx,
                                         RWContext *rw, H265RawVUI *current,
                                         H265RawSPS *sps)
@@ -781,6 +791,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     int err, i;
     unsigned int min_cb_log2_size_y, ctb_log2_size_y,
                  min_cb_size_y,   min_tb_log2_size_y;
+    unsigned int multi_layer_ext_sps_flag;
 
     HEADER("Sequence Parameter Set");
 
@@ -794,7 +805,17 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         return AVERROR_INVALIDDATA;
     }
 
+    if (current->nal_unit_header.nuh_layer_id == 0)
     u(3, sps_max_sub_layers_minus1, 0, vps->vps_max_sub_layers_minus1);
+    else {
+        u(3, sps_ext_or_max_sub_layers_minus1, 0, HEVC_MAX_SUB_LAYERS);
+        infer(sps_max_sub_layers_minus1, current->sps_ext_or_max_sub_layers_minus1 == HEVC_MAX_SUB_LAYERS
+                                         ? vps->vps_max_sub_layers_minus1
+                                         : current->sps_ext_or_max_sub_layers_minus1);
+    }
+    multi_layer_ext_sps_flag = current->nal_unit_header.nuh_layer_id &&
+                               current->sps_ext_or_max_sub_layers_minus1 == HEVC_MAX_SUB_LAYERS;
+    if (!multi_layer_ext_sps_flag) {
     flag(sps_temporal_id_nesting_flag);
 
     if (vps->vps_temporal_id_nesting_flag &&
@@ -814,9 +835,20 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     CHECK(FUNC(profile_tier_level)(ctx, rw, &current->profile_tier_level,
                                    1, current->sps_max_sub_layers_minus1));
+    } else {
+        if (current->sps_max_sub_layers_minus1 > 0)
+            infer(sps_temporal_id_nesting_flag, vps->vps_temporal_id_nesting_flag);
+        else
+            infer(sps_temporal_id_nesting_flag, 1);
+    }
 
     ue(sps_seq_parameter_set_id, 0, 15);
 
+    if (multi_layer_ext_sps_flag) {
+        flag(update_rep_format_flag);
+        if (current->update_rep_format_flag)
+            ub(8, sps_rep_format_idx);
+    } else {
     ue(chroma_format_idc, 0, 3);
     if (current->chroma_format_idc == 3)
         flag(separate_colour_plane_flag);
@@ -841,9 +873,11 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     ue(bit_depth_luma_minus8,   0, 8);
     ue(bit_depth_chroma_minus8, 0, 8);
+    }
 
     ue(log2_max_pic_order_cnt_lsb_minus4, 0, 12);
 
+    if (!multi_layer_ext_sps_flag) {
     flag(sps_sub_layer_ordering_info_present_flag);
     for (i = (current->sps_sub_layer_ordering_info_present_flag ?
               0 : current->sps_max_sub_layers_minus1);
@@ -864,6 +898,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
             infer(sps_max_latency_increase_plus1[i],
                   current->sps_max_latency_increase_plus1[current->sps_max_sub_layers_minus1]);
         }
+    }
     }
 
     ue(log2_min_luma_coding_block_size_minus3,   0, 3);
@@ -895,9 +930,17 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(scaling_list_enabled_flag);
     if (current->scaling_list_enabled_flag) {
+        if (multi_layer_ext_sps_flag)
+            flag(sps_infer_scaling_list_flag);
+        else
+            infer(sps_infer_scaling_list_flag, 0);
+        if (current->sps_infer_scaling_list_flag)
+            ub(6, sps_scaling_list_ref_layer_id);
+        else {
         flag(sps_scaling_list_data_present_flag);
         if (current->sps_scaling_list_data_present_flag)
             CHECK(FUNC(scaling_list_data)(ctx, rw, &current->scaling_list));
+        }
     } else {
         infer(sps_scaling_list_data_present_flag, 0);
     }
@@ -955,7 +998,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     if (current->sps_range_extension_flag)
         CHECK(FUNC(sps_range_extension)(ctx, rw, current));
     if (current->sps_multilayer_extension_flag)
-        return AVERROR_PATCHWELCOME;
+        CHECK(FUNC(sps_multilayer_extension)(ctx, rw, current));
     if (current->sps_3d_extension_flag)
         return AVERROR_PATCHWELCOME;
     if (current->sps_scc_extension_flag)

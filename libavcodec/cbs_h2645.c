@@ -499,7 +499,8 @@ static int cbs_h2645_fragment_add_nals(CodedBitstreamContext *ctx,
         size_t size = nal->size;
         enum AVCodecID codec_id = ctx->codec->codec_id;
 
-        if (codec_id != AV_CODEC_ID_VVC && nal->nuh_layer_id > 0)
+        if (codec_id == AV_CODEC_ID_HEVC && nal->nuh_layer_id > 0 &&
+            (nal->type < HEVC_NAL_VPS || nal->type > HEVC_NAL_PPS))
             continue;
 
         // Remove trailing zeroes.
