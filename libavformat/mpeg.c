@@ -71,6 +71,9 @@ static int mpegps_probe(const AVProbeData *p)
             int pes  = endpes <= i && check_pes(p->buf + i, p->buf + p->buf_size);
             int pack = check_pack_header(p->buf + i);
 
+            if (len > INT_MAX - i)
+                break;
+
             if (code == SYSTEM_HEADER_START_CODE)
                 sys++;
             else if (code == PACK_START_CODE && pack)
