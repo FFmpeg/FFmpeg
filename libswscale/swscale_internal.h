@@ -698,6 +698,7 @@ void ff_updateMMXDitherTables(SwsContext *c, int dstY);
 
 av_cold void ff_sws_init_range_convert(SwsContext *c);
 av_cold void ff_sws_init_range_convert_loongarch(SwsContext *c);
+av_cold void ff_sws_init_range_convert_x86(SwsContext *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_ppc(SwsContext *c);
