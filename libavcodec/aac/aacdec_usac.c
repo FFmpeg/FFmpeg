@@ -572,8 +572,14 @@ static int decode_spectrum_and_dequant_ac(AACDecContext *s, float coef[1024],
     int gb_count;
     GetBitContext gb2;
 
-    ff_aac_ac_init(&ac, gb);
     c = ff_aac_ac_map_process(state, reset, N);
+
+    if (!len) {
+        ff_aac_ac_finish(state, 0, N);
+        return 0;
+    }
+
+    ff_aac_ac_init(&ac, gb);
 
     /* Backup reader for rolling back by 14 bits at the end */
     gb2 = *gb;
