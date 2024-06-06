@@ -163,12 +163,11 @@ func ff_flac_wasted33_rvv, zve64x
         ret
 
 2:      // Pessimistic case: wasted >= 32
-        vsetvli      t0, a3, e32, m4, ta, ma
+        vsetvli      t0, a3, e64, m8, ta, ma
         vle32.v      v8, (a1)
         sub          a3, a3, t0
-        vwcvtu.x.x.v v16, v8
+        vsext.vf2    v16, v8
         sh2add       a1, t0, a1
-        vsetvli      zero, zero, e64, m8, ta, ma
         vsll.vx      v16, v16, a2
         vse64.v      v16, (a0)
         sh3add       a0, t0, a0
