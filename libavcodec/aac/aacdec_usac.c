@@ -877,7 +877,7 @@ static int decode_usac_stereo_info(AACDecContext *ac, AACUSACConfig *usac,
     }
 
     us->tns_on_lr = 0;
-    sce1->tns.present = sce2->tns.present = 0;
+    ue1->tns_data_present = ue2->tns_data_present = 0;
     if (tns_active) {
         int common_tns = 0;
         if (us->common_window)
@@ -889,15 +889,17 @@ static int decode_usac_stereo_info(AACDecContext *ac, AACUSACConfig *usac,
             if (ret < 0)
                 return ret;
             memcpy(&sce2->tns, &sce1->tns, sizeof(sce1->tns));
-            sce2->tns.present = 0;
-            sce1->tns.present = 0;
+            sce2->tns.present = 1;
+            sce1->tns.present = 1;
+            ue1->tns_data_present = 0;
+            ue2->tns_data_present = 0;
         } else {
             if (get_bits1(gb)) {
-                sce2->tns.present = 1;
-                sce1->tns.present = 1;
+                ue1->tns_data_present = 1;
+                ue2->tns_data_present = 1;
             } else {
-                sce2->tns.present = get_bits1(gb);
-                sce1->tns.present = !sce2->tns.present;
+                ue2->tns_data_present = get_bits1(gb);
+                ue1->tns_data_present = !ue2->tns_data_present;
             }
         }
     }
@@ -1277,11 +1279,13 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
     uint8_t global_gain;
 
     us->common_window = 0;
-    che->ch[0].tns.present = che->ch[1].tns.present = 0;
 
     for (int ch = 0; ch < nb_channels; ch++) {
         SingleChannelElement *sce = &che->ch[ch];
         AACUsacElemData *ue = &sce->ue;
+
+        sce->tns.present = 0;
+        ue->tns_data_present = 0;
 
         ue->core_mode = get_bits1(gb);
     }
@@ -1306,7 +1310,7 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
 
         if ((nb_channels == 1) ||
             (che->ch[0].ue.core_mode != che->ch[1].ue.core_mode))
-            sce->tns.present = get_bits1(gb);
+            ue->tns_data_present = get_bits1(gb);
 
         /* fd_channel_stream */
         global_gain = get_bits(gb, 8);
@@ -1351,7 +1355,8 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
 
         ac->dsp.dequant_scalefactors(sce);
 
-        if (sce->tns.present) {
+        if (ue->tns_data_present) {
+            sce->tns.present = 1;
             ret = ff_aac_decode_tns(ac, &sce->tns, gb, ics);
             if (ret < 0)
                 return ret;

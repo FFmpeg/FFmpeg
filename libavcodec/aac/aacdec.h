@@ -125,6 +125,7 @@ typedef struct LongTermPrediction {
 typedef struct AACUsacElemData {
     uint8_t core_mode;
     uint8_t scale_factor_grouping;
+    uint8_t tns_data_present;
 
     /* Timewarping ratio */
 #define NUM_TW_NODES 16
