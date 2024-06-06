@@ -930,7 +930,7 @@ static void apply_noise_fill(AACDecContext *ac, SingleChannelElement *sce,
     float *coef;
     IndividualChannelStream *ics = &sce->ics;
 
-    float noise_val = pow(2, (ue->noise.level - 14)/3);
+    float noise_val = powf(2, ((float)ue->noise.level - 14.0f)/3.0f);
     int noise_offset = ue->noise.offset - 16;
     int band_off;
 
