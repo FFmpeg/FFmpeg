@@ -47,13 +47,17 @@ av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
         switch (c->srcFormat) {
             case AV_PIX_FMT_ABGR:
                 c->lumToYV12 = ff_abgr32ToY_rvv;
-                if (!c->chrSrcHSubSample)
+                if (c->chrSrcHSubSample)
+                    c->chrToYV12 = ff_abgr32ToUV_half_rvv;
+                else
                     c->chrToYV12 = ff_abgr32ToUV_rvv;
                 break;
 
             case AV_PIX_FMT_ARGB:
                 c->lumToYV12 = ff_argb32ToY_rvv;
-                if (!c->chrSrcHSubSample)
+                if (c->chrSrcHSubSample)
+                    c->chrToYV12 = ff_argb32ToUV_half_rvv;
+                else
                     c->chrToYV12 = ff_argb32ToUV_rvv;
                 break;
 
@@ -67,7 +71,9 @@ av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
 
             case AV_PIX_FMT_BGRA:
                 c->lumToYV12 = ff_bgra32ToY_rvv;
-                if (!c->chrSrcHSubSample)
+                if (c->chrSrcHSubSample)
+                    c->chrToYV12 = ff_bgra32ToUV_half_rvv;
+                else
                     c->chrToYV12 = ff_bgra32ToUV_rvv;
                 break;
 
@@ -81,7 +87,9 @@ av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
 
             case AV_PIX_FMT_RGBA:
                 c->lumToYV12 = ff_rgba32ToY_rvv;
-                if (!c->chrSrcHSubSample)
+                if (c->chrSrcHSubSample)
+                    c->chrToYV12 = ff_rgba32ToUV_half_rvv;
+                else
                     c->chrToYV12 = ff_rgba32ToUV_rvv;
                 break;
         }
