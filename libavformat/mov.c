@@ -10486,7 +10486,7 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
         // If we've reached a different sample trying to find a good pts to
         // seek to, give up searching because we'll end up seeking back to
         // sample 0 on every seek.
-        if (!can_seek_to_key_sample(st, requested_sample, next_ts) && sample != requested_sample)
+        if (sample != requested_sample && !can_seek_to_key_sample(st, requested_sample, next_ts))
             break;
 
         timestamp = next_ts;
