@@ -37,36 +37,11 @@ void ff_clean_h263_qscales(MpegEncContext *s);
 void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code);
 void ff_h263_update_mb(MpegEncContext *s);
 
-static inline int h263_get_motion_length(int val, int f_code)
-{
-    int bit_size, code, sign;
-
-    if (val == 0) {
-        return 1; /* ff_mvtab[0][1] */
-    } else {
-        bit_size = f_code - 1;
-        /* modulo encoding */
-        val  = sign_extend(val, 6 + bit_size);
-        sign = val >> 31;
-        val  = (val ^ sign) - sign; /* val = FFABS(val) */
-        val--;
-        code = (val >> bit_size) + 1;
-
-        return ff_mvtab[code][1] + 1 + bit_size;
-    }
-}
-
 static inline void ff_h263_encode_motion_vector(MpegEncContext * s,
                                                 int x, int y, int f_code)
 {
-    if (s->avctx->flags2 & AV_CODEC_FLAG2_NO_OUTPUT) {
-        skip_put_bits(&s->pb,
-                      h263_get_motion_length(x, f_code) +
-                      h263_get_motion_length(y, f_code));
-    } else {
-        ff_h263_encode_motion(&s->pb, x, f_code);
-        ff_h263_encode_motion(&s->pb, y, f_code);
-    }
+    ff_h263_encode_motion(&s->pb, x, f_code);
+    ff_h263_encode_motion(&s->pb, y, f_code);
 }
 
 static inline int get_p_cbp(MpegEncContext * s,
