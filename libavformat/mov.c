@@ -8157,6 +8157,53 @@ static int mov_read_dvcc_dvvc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return ff_isom_parse_dvcc_dvvc(c->fc, st, buf, read_size);
 }
 
+static int mov_read_lhvc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    uint8_t *buf;
+    int ret, old_size, num_arrays;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    if (!st->codecpar->extradata_size)
+        // TODO: handle lhvC when present before hvcC
+        return 0;
+
+    if (atom.size < 6 || st->codecpar->extradata_size < 23)
+        return AVERROR_INVALIDDATA;
+
+    buf = av_malloc(atom.size + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!buf)
+        return AVERROR(ENOMEM);
+    memset(buf + atom.size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+    ret = ffio_read_size(pb, buf, atom.size);
+    if (ret < 0) {
+        av_free(buf);
+        av_log(c->fc, AV_LOG_WARNING, "lhvC atom truncated\n");
+        return 0;
+    }
+
+    num_arrays = buf[5];
+    old_size = st->codecpar->extradata_size;
+    atom.size -= 8 /* account for mov_realloc_extradata offseting */
+               + 6 /* lhvC bytes before the arrays*/;
+
+    ret = mov_realloc_extradata(st->codecpar, atom);
+    if (ret < 0) {
+        av_free(buf);
+        return ret;
+    }
+
+    st->codecpar->extradata[22] += num_arrays;
+    memcpy(st->codecpar->extradata + old_size, buf + 6, atom.size + 8);
+
+    av_free(buf);
+    return 0;
+}
+
 static int mov_read_kind(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVFormatContext *ctx = c->fc;
@@ -8952,6 +8999,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('i','p','r','p'), mov_read_iprp },
 { MKTAG('i','i','n','f'), mov_read_iinf },
 { MKTAG('a','m','v','e'), mov_read_amve }, /* ambient viewing environment box */
+{ MKTAG('l','h','v','C'), mov_read_lhvc },
 #if CONFIG_IAMFDEC
 { MKTAG('i','a','c','b'), mov_read_iacb },
 #endif
