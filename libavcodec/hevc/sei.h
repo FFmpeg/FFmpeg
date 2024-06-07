@@ -79,12 +79,29 @@ typedef struct HEVCSEITimeCode {
     int32_t  time_offset_value[3];
 } HEVCSEITimeCode;
 
+typedef struct HEVCSEITDRDI {
+    uint8_t prec_ref_display_width;
+    uint8_t ref_viewing_distance_flag;
+    uint8_t prec_ref_viewing_dist;
+    uint8_t num_ref_displays;
+    uint16_t left_view_id[31];
+    uint16_t right_view_id[31];
+    uint8_t exponent_ref_display_width[31];
+    uint8_t mantissa_ref_display_width[31];
+    uint8_t exponent_ref_viewing_distance[31];
+    uint8_t mantissa_ref_viewing_distance[31];
+    uint8_t additional_shift_present_flag[31];
+    int16_t num_sample_shift[31];
+    uint8_t three_dimensional_reference_displays_extension_flag;
+} HEVCSEITDRDI;
+
 typedef struct HEVCSEI {
     H2645SEI common;
     HEVCSEIPictureHash picture_hash;
     HEVCSEIPictureTiming picture_timing;
     int active_seq_parameter_set_id;
     HEVCSEITimeCode timecode;
+    HEVCSEITDRDI tdrdi;
 } HEVCSEI;
 
 struct HEVCParamSets;
