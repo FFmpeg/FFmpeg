@@ -691,6 +691,10 @@ static int decode_usac_stereo_cplx(AACDecContext *ac, AACUsacStereo *us,
     if (!indep_flag)
         delta_code_time = get_bits1(gb);
 
+    /* Alpha values must be zeroed out if pred_used is 0. */
+    memset(us->alpha_q_re, 0, sizeof(us->alpha_q_re));
+    memset(us->alpha_q_im, 0, sizeof(us->alpha_q_im));
+
     /* TODO: shouldn't be needed */
     for (int g = 0; g < num_window_groups; g++) {
         for (int sfb = 0; sfb < cpe->max_sfb_ste; sfb += SFB_PER_PRED_BAND) {
