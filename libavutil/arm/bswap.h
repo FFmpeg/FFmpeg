@@ -45,26 +45,6 @@ static av_always_inline av_const unsigned av_bswap16(unsigned x)
     return y;
 }
 #endif
-
-#if AV_GCC_VERSION_AT_MOST(4,4)
-#define av_bswap32 av_bswap32
-static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
-{
-    uint32_t y;
-#if HAVE_ARMV6_INLINE
-    __asm__("rev %0, %1" : "=r"(y) : "r"(x));
-#else
-    uint32_t t;
-    __asm__ ("eor %1, %2, %2, ror #16 \n\t"
-             "bic %1, %1, #0xFF0000   \n\t"
-             "mov %0, %2, ror #8      \n\t"
-             "eor %0, %0, %1, lsr #8  \n\t"
-             : "=r"(y), "=&r"(t) : "r"(x));
-#endif /* HAVE_ARMV6_INLINE */
-    return y;
-}
-#endif /* AV_GCC_VERSION_AT_MOST(4,4) */
-
 #endif /* __ARMCC_VERSION */
 
 #endif /* AVUTIL_ARM_BSWAP_H */
