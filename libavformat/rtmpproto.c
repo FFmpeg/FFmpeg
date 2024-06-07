@@ -2668,7 +2668,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags, AVDictionary **o
     }
     if (!strcmp(proto, "rtmpt") || !strcmp(proto, "rtmpts")) {
         if (!strcmp(proto, "rtmpts"))
-            av_dict_set(opts, "ffrtmphttp_tls", "1", 1);
+            av_dict_set(opts, "ffrtmphttp_tls", "1", AV_DICT_MATCH_CASE);
 
         /* open the http tunneling connection */
         ff_url_join(buf, sizeof(buf), "ffrtmphttp", NULL, hostname, port, NULL);
