@@ -658,7 +658,9 @@ static int decode_spectrum_and_dequant_ac(AACDecContext *s, float coef[1024],
 
 static int decode_usac_stereo_cplx(AACDecContext *ac, AACUsacStereo *us,
                                    ChannelElement *cpe, GetBitContext *gb,
-                                   int num_window_groups, int indep_flag)
+                                   int num_window_groups,
+                                   int prev_num_window_groups,
+                                   int indep_flag)
 {
     int delta_code_time;
     IndividualChannelStream *ics = &cpe->ch[0].ics;
@@ -696,15 +698,18 @@ static int decode_usac_stereo_cplx(AACDecContext *ac, AACUsacStereo *us,
             float last_alpha_q_im = 0;
             if (delta_code_time) {
                 if (g) {
-                    last_alpha_q_re = us->prev_alpha_q_re[(g - 1)*cpe->max_sfb_ste + sfb];
-                    last_alpha_q_im = us->prev_alpha_q_im[(g - 1)*cpe->max_sfb_ste + sfb];
-                } else if ((ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) &&
-                           ics->window_sequence[1] == EIGHT_SHORT_SEQUENCE ||
-                           ics->window_sequence[1] == EIGHT_SHORT_SEQUENCE) {
+                    /* Transient, after the first group - use the current frame,
+                     * previous window, alpha values. */
+                    last_alpha_q_re = us->alpha_q_re[(g - 1)*cpe->max_sfb_ste + sfb];
+                    last_alpha_q_im = us->alpha_q_im[(g - 1)*cpe->max_sfb_ste + sfb];
+                } else if (!g &&
+                           (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) &&
+                           (ics->window_sequence[1] == EIGHT_SHORT_SEQUENCE)) {
                     /* The spec doesn't explicitly mention this, but it doesn't make
                      * any other sense otherwise! */
-                    last_alpha_q_re = us->prev_alpha_q_re[7*cpe->max_sfb_ste + sfb];
-                    last_alpha_q_im = us->prev_alpha_q_im[7*cpe->max_sfb_ste + sfb];
+                    const int wg = prev_num_window_groups - 1;
+                    last_alpha_q_re = us->prev_alpha_q_re[wg*cpe->max_sfb_ste + sfb];
+                    last_alpha_q_im = us->prev_alpha_q_im[wg*cpe->max_sfb_ste + sfb];
                 } else {
                     last_alpha_q_re = us->prev_alpha_q_re[g*cpe->max_sfb_ste + sfb];
                     last_alpha_q_im = us->prev_alpha_q_im[g*cpe->max_sfb_ste + sfb];
@@ -749,6 +754,7 @@ static int setup_sce(AACDecContext *ac, SingleChannelElement *sce,
     IndividualChannelStream *ics = &sce->ics;
 
     /* Setup window parameters */
+    ics->prev_num_window_groups = FFMAX(ics->num_window_groups, 1);
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         if (usac->core_frame_len == 768) {
             ics->swb_offset = ff_swb_offset_96[usac->rate_idx];
@@ -869,7 +875,9 @@ static int decode_usac_stereo_info(AACDecContext *ac, AACUSACConfig *usac,
             memset(cpe->ms_mask, 0xFF, sizeof(cpe->ms_mask));
         } else if ((us->ms_mask_mode == 3) && !ec->stereo_config_index) {
             ret = decode_usac_stereo_cplx(ac, us, cpe, gb,
-                                          ics1->num_window_groups, indep_flag);
+                                          ics1->num_window_groups,
+                                          ics1->prev_num_window_groups,
+                                          indep_flag);
             if (ret < 0)
                 return ret;
         }

@@ -164,6 +164,7 @@ typedef struct IndividualChannelStream {
     enum WindowSequence window_sequence[2];
     uint8_t use_kb_window[2];   ///< If set, use Kaiser-Bessel window, otherwise use a sine window.
     int num_window_groups;
+    int prev_num_window_groups; ///< Previous frame's number of window groups
     uint8_t group_len[8];
     LongTermPrediction ltp;
     const uint16_t *swb_offset; ///< table of offsets to the lowest spectral coefficient of a scalefactor band, sfb, for a particular window

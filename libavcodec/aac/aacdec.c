@@ -1334,6 +1334,7 @@ static int decode_ics_info(AACDecContext *ac, IndividualChannelStream *ics,
         ics->use_kb_window[1]   = ics->use_kb_window[0];
         ics->use_kb_window[0]   = get_bits1(gb);
     }
+    ics->prev_num_window_groups = FFMAX(ics->num_window_groups, 1);
     ics->num_window_groups  = 1;
     ics->group_len[0]       = 1;
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
