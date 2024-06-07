@@ -3430,21 +3430,8 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         s->q_scale_type = get_bits1(gb);
     }
 
-    if (s->alternate_scan) {
-        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_alternate_vertical_scan);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_alternate_vertical_scan);
-        ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_vertical_scan,
-                             s->idsp.idct_permutation);
-        ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
-                             s->idsp.idct_permutation);
-    } else {
-        ff_init_scantable(s->idsp.idct_permutation, &s->inter_scantable,   ff_zigzag_direct);
-        ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,   ff_zigzag_direct);
-        ff_permute_scantable(s->permutated_intra_h_scantable, ff_alternate_horizontal_scan,
-                             s->idsp.idct_permutation);
-        ff_permute_scantable(s->permutated_intra_v_scantable, ff_alternate_vertical_scan,
-                             s->idsp.idct_permutation);
-    }
+    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable,
+                      s->alternate_scan ? ff_alternate_vertical_scan : ff_zigzag_direct);
 
     mpeg4_load_default_matrices(s);
 
