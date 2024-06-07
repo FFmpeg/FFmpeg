@@ -2146,7 +2146,6 @@ ARCH_LIST="
     ppc64
     riscv
     s390
-    sh4
     sparc
     sparc64
     tilegx
@@ -5248,9 +5247,6 @@ case "$arch" in
     ;;
     s390|s390x)
         arch="s390"
-    ;;
-    sh4|sh)
-        arch="sh4"
     ;;
     sun4*|sparc*)
         arch="sparc"
