@@ -949,8 +949,7 @@ static int mpeg4_decode_partition_a(Mpeg4DecContext *ctx)
             int dir = 0;
 
             mb_num++;
-            ff_update_block_index(s, s->avctx->bits_per_raw_sample,
-                                  s->avctx->lowres, s->chroma_x_shift);
+            ff_update_block_index(s, 8, s->avctx->lowres, 1);
             if (s->mb_x == s->resync_mb_x && s->mb_y == s->resync_mb_y + 1)
                 s->first_slice_line = 0;
 
@@ -1141,8 +1140,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count)
             const int xy = s->mb_x + s->mb_y * s->mb_stride;
 
             mb_num++;
-            ff_update_block_index(s, s->avctx->bits_per_raw_sample,
-                                  s->avctx->lowres, s->chroma_x_shift);
+            ff_update_block_index(s, 8, s->avctx->lowres, 1);
             if (s->mb_x == s->resync_mb_x && s->mb_y == s->resync_mb_y + 1)
                 s->first_slice_line = 0;
 
