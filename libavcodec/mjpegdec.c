@@ -843,9 +843,8 @@ static int decode_block(MJpegDecodeContext *s, int16_t *block, int component,
         return AVERROR_INVALIDDATA;
     }
     val = val * (unsigned)quant_matrix[0] + s->last_dc[component];
-    val = av_clip_int16(val);
     s->last_dc[component] = val;
-    block[0] = val;
+    block[0] = av_clip_int16(val);
     /* AC coefs */
     i = 0;
     {OPEN_READER(re, &s->gb);
