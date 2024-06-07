@@ -24,13 +24,7 @@
 #include <stdint.h>
 #include "config.h"
 
-#if defined(__APPLE__)
-
-#include <mach/mach_time.h>
-
-#define AV_READ_TIME mach_absolute_time
-
-#elif HAVE_INLINE_ASM
+#if HAVE_INLINE_ASM && !defined(__APPLE__)
 
 #define AV_READ_TIME read_time
 
