@@ -2675,12 +2675,11 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
     }
 
     // do frame decode
-    s->mb_x             = s->mb_y = 0;
     s->mb_intra         = 1;
     s->first_slice_line = 1;
+    s->mb_x             = 0;
     s->mb_y             = s->start_mb_y;
     if (s->start_mb_y) {
-        s->mb_x = 0;
         init_block_index(v);
         memset(&s->coded_block[s->block_index[0] - s->b8_stride], 0,
                (1 + s->b8_stride) * sizeof(*s->coded_block));
