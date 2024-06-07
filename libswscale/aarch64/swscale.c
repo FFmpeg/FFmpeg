@@ -201,6 +201,20 @@ void ff_yuv2plane1_8_neon(
     default: break;                                                     \
     }
 
+void ff_rgb24ToY_neon(uint8_t *_dst, const uint8_t *src, const uint8_t *unused1,
+                      const uint8_t *unused2, int width,
+                      uint32_t *rgb2yuv, void *opq);
+
+void ff_rgb24ToUV_neon(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0,
+                       const uint8_t *src1,
+                       const uint8_t *src2, int width, uint32_t *rgb2yuv,
+                       void *opq);
+
+void ff_rgb24ToUV_half_neon(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0,
+                       const uint8_t *src1,
+                       const uint8_t *src2, int width, uint32_t *rgb2yuv,
+                       void *opq);
+
 av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -211,6 +225,17 @@ av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, neon);
         if (c->dstBpc == 8) {
             c->yuv2planeX = ff_yuv2planeX_8_neon;
+        }
+        switch (c->srcFormat) {
+        case AV_PIX_FMT_RGB24:
+            c->lumToYV12 = ff_rgb24ToY_neon;
+            if (c->chrSrcHSubSample)
+                c->chrToYV12 = ff_rgb24ToUV_half_neon;
+            else
+                c->chrToYV12 = ff_rgb24ToUV_neon;
+            break;
+        default:
+            break;
         }
     }
 }
