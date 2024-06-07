@@ -46,6 +46,8 @@
 #include "macos_kperf.h"
 #elif HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
+#elif HAVE_CLOCK_GETTIME
+#include <time.h>
 #endif
 
 #include "common.h"
@@ -70,6 +72,14 @@
 #       define AV_READ_TIME gethrtime
 #   elif HAVE_MACH_ABSOLUTE_TIME
 #       define AV_READ_TIME mach_absolute_time
+#   elif HAVE_CLOCK_GETTIME && defined(CLOCK_MONOTONIC)
+        static inline int64_t ff_read_time(void)
+        {
+            struct timespec ts;
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            return ts.tv_sec * INT64_C(1000000000) + ts.tv_nsec;
+        }
+#       define AV_READ_TIME ff_read_time
 #   endif
 #endif
 
