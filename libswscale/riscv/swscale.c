@@ -21,6 +21,33 @@
 #include "libavutil/riscv/cpu.h"
 #include "libswscale/swscale_internal.h"
 
+void ff_range_lum_to_jpeg_16_rvv(int16_t *, int);
+void ff_range_chr_to_jpeg_16_rvv(int16_t *, int16_t *, int);
+void ff_range_lum_from_jpeg_16_rvv(int16_t *, int);
+void ff_range_chr_from_jpeg_16_rvv(int16_t *, int16_t *, int);
+
+av_cold static void ff_sws_init_range_convert_riscv(SwsContext *c, int flags)
+{
+#if HAVE_RVV
+    static const struct {
+        void (*lum)(int16_t *, int);
+        void (*chr)(int16_t *, int16_t *, int);
+    } convs[2] = {
+        { ff_range_lum_to_jpeg_16_rvv, ff_range_chr_to_jpeg_16_rvv },
+        { ff_range_lum_from_jpeg_16_rvv, ff_range_chr_from_jpeg_16_rvv },
+    };
+
+    if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat) &&
+        c->dstBpc <= 14 &&
+        (flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+        bool from = c->srcRange != 0;
+
+        c->lumConvertRange = convs[from].lum;
+        c->chrConvertRange = convs[from].chr;
+    }
+#endif
+}
+
 #define RVV_INPUT(name) \
 void ff_##name##ToY_rvv(uint8_t *dst, const uint8_t *src, const uint8_t *, \
                         const uint8_t *, int w, uint32_t *coeffs, void *); \
@@ -40,9 +67,9 @@ RVV_INPUT(rgba32);
 
 av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
 {
-#if HAVE_RVV
     int flags = av_get_cpu_flags();
 
+#if HAVE_RVV
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
         switch (c->srcFormat) {
             case AV_PIX_FMT_ABGR:
@@ -95,4 +122,5 @@ av_cold void ff_sws_init_swscale_riscv(SwsContext *c)
         }
     }
 #endif
+    ff_sws_init_range_convert_riscv(c, flags);
 }
