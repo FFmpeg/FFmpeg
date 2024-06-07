@@ -429,7 +429,6 @@ static int amf_tag_skip(GetByteContext *gb)
 {
     AMFDataType type;
     unsigned nb   = -1;
-    int parse_key = 1;
 
     if (bytestream2_get_bytes_left(gb) < 1)
         return -1;
@@ -454,13 +453,12 @@ static int amf_tag_skip(GetByteContext *gb)
         bytestream2_skip(gb, 10);
         return 0;
     case AMF_DATA_TYPE_ARRAY:
-        parse_key = 0;
     case AMF_DATA_TYPE_MIXEDARRAY:
         nb = bytestream2_get_be32(gb);
     case AMF_DATA_TYPE_OBJECT:
-        while (nb-- > 0 || type != AMF_DATA_TYPE_ARRAY) {
+        while (type != AMF_DATA_TYPE_ARRAY || nb-- > 0) {
             int t;
-            if (parse_key) {
+            if (type != AMF_DATA_TYPE_ARRAY) {
                 int size = bytestream2_get_be16(gb);
                 if (!size) {
                     bytestream2_get_byte(gb);
