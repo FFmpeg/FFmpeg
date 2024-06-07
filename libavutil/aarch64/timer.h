@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "config.h"
 
-#if HAVE_INLINE_ASM && !defined(__APPLE__)
+#if HAVE_INLINE_ASM
 
 #define AV_READ_TIME read_time
 
@@ -33,7 +33,16 @@ static inline uint64_t read_time(void)
     uint64_t cycle_counter;
     __asm__ volatile(
         "isb                   \t\n"
+#if defined(__ANDROID__) || defined(__APPLE__)
+        // cntvct_el0 has lower resolution than pmccntr_el0, but is usually
+        // accessible from user space by default.
+        "mrs %0, cntvct_el0        "
+#else
+        // pmccntr_el0 has higher resolution, but is usually not accessible
+        // from user space by default (but access can be enabled with a custom
+        // kernel module).
         "mrs %0, pmccntr_el0       "
+#endif
         : "=r"(cycle_counter) :: "memory" );
 
     return cycle_counter;
