@@ -71,7 +71,7 @@ static void check_add_bytes(LLVidDSPContext *c, int width)
 }
 
 static void check_add_median_pred(LLVidDSPContext *c, int width) {
-    int A0, A1, B0, B1;
+    int a0, a1, b0, b1;
     uint8_t *dst0 = av_mallocz(width);
     uint8_t *dst1 = av_mallocz(width);
     uint8_t *src0  = av_calloc(width, sizeof(*src0));
@@ -85,18 +85,18 @@ static void check_add_median_pred(LLVidDSPContext *c, int width) {
     init_buffer(src0, src1, uint8_t, width);
     init_buffer(diff0, diff1, uint8_t, width);
 
-    A0 = rnd() & 0xFF;
-    B0 = rnd() & 0xFF;
-    A1 = A0;
-    B1 = B0;
+    a0 = rnd() & 0xFF;
+    b0 = rnd() & 0xFF;
+    a1 = a0;
+    b1 = b0;
 
 
     if (check_func(c->add_median_pred, "add_median_pred")) {
-        call_ref(dst0, src0, diff0, width, &A0, &B0);
-        call_new(dst1, src1, diff1, width, &A1, &B1);
-        if (memcmp(dst0, dst1, width) || (A0 != A1) || (B0 != B1))
+        call_ref(dst0, src0, diff0, width, &a0, &b0);
+        call_new(dst1, src1, diff1, width, &a1, &b1);
+        if (memcmp(dst0, dst1, width) || (a0 != a1) || (b0 != b1))
             fail();
-        bench_new(dst1, src1, diff1, width, &A1, &B1);
+        bench_new(dst1, src1, diff1, width, &a1, &b1);
     }
 
     av_free(src0);
