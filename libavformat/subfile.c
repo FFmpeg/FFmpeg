@@ -128,6 +128,8 @@ static int64_t subfile_seek(URLContext *h, int64_t pos, int whence)
     case SEEK_END:
         new_pos = c->end + c->pos;
         break;
+    default:
+        av_assert0(0);
     }
     if (new_pos < c->start)
         return AVERROR(EINVAL);
