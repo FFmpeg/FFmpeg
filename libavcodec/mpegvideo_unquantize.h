@@ -55,6 +55,7 @@ void ff_mpv_unquantize_init(MPVUnquantDSPContext *s,
 void ff_mpv_unquantize_init_arm (MPVUnquantDSPContext *s, int bitexact);
 void ff_mpv_unquantize_init_neon(MPVUnquantDSPContext *s, int bitexact);
 void ff_mpv_unquantize_init_ppc (MPVUnquantDSPContext *s, int bitexact);
+void ff_mpv_unquantize_init_riscv(MPVUnquantDSPContext *s, int bitexact);
 void ff_mpv_unquantize_init_x86 (MPVUnquantDSPContext *s, int bitexact);
 void ff_mpv_unquantize_init_mips(MPVUnquantDSPContext *s, int bitexact,
                                  int q_scale_type);

@@ -280,6 +280,8 @@ av_cold void ff_mpv_unquantize_init(MPVUnquantDSPContext *s,
     ff_mpv_unquantize_init_arm(s, bitexact);
 #elif ARCH_PPC
     ff_mpv_unquantize_init_ppc(s, bitexact);
+#elif ARCH_RISCV
+    ff_mpv_unquantize_init_riscv(s, bitexact);
 #elif ARCH_X86
     ff_mpv_unquantize_init_x86(s, bitexact);
 #elif ARCH_MIPS
