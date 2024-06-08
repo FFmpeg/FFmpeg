@@ -675,7 +675,7 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
     }
 
     /*
-     * We need at least one of each: VPS and SPS.
+     * We need at least one of each: SPS and PPS.
      */
     vps_count = vvcc->arrays[VPS_INDEX].num_nalus;
     sps_count = vvcc->arrays[SPS_INDEX].num_nalus;
