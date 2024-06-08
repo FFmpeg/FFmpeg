@@ -78,13 +78,10 @@ static av_cold int mm_decode_init(AVCodecContext *avctx)
 
 static void mm_decode_pal(MmContext *s)
 {
-    int i;
-
-    bytestream2_skip(&s->gb, 4);
-    for (i = 0; i < 128; i++) {
-        s->palette[i] = 0xFFU << 24 | bytestream2_get_be24(&s->gb);
-        s->palette[i+128] = s->palette[i]<<2;
-    }
+    int start = bytestream2_get_le16(&s->gb);
+    int count = bytestream2_get_le16(&s->gb);
+    for (int i = 0; i < count; i++)
+        s->palette[start+i] = 0xFFU << 24 | (bytestream2_get_be24(&s->gb) << 2);
 }
 
 /**
