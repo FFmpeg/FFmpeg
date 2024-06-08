@@ -73,6 +73,107 @@ static av_always_inline av_const int av_clip_intp2_rvi(int a, int p)
 }
 
 #if defined (__GNUC__) || defined (__clang__)
+static inline av_const int ff_ctz_rv(int x)
+{
+#if HAVE_RV && !defined(__riscv_zbb)
+    if (!__builtin_constant_p(x) &&
+        __builtin_expect(ff_rv_zbb_support(), true)) {
+        int y;
+
+        __asm__ (
+            ".option push\n"
+            ".option arch, +zbb\n"
+#if __riscv_xlen >= 64
+            "ctzw    %0, %1\n"
+#else
+            "ctz     %0, %1\n"
+#endif
+            ".option pop" : "=r" (y) : "r" (x));
+        if (y > 32)
+            __builtin_unreachable();
+        return y;
+    }
+#endif
+    return __builtin_ctz(x);
+}
+#define ff_ctz ff_ctz_rv
+
+static inline av_const int ff_ctzll_rv(long long x)
+{
+#if HAVE_RV && !defined(__riscv_zbb) && __riscv_xlen == 64
+    if (!__builtin_constant_p(x) &&
+        __builtin_expect(ff_rv_zbb_support(), true)) {
+        int y;
+
+        __asm__ (
+            ".option push\n"
+            ".option arch, +zbb\n"
+            "ctz     %0, %1\n"
+            ".option pop" : "=r" (y) : "r" (x));
+        if (y > 64)
+            __builtin_unreachable();
+        return y;
+    }
+#endif
+    return __builtin_ctzll(x);
+}
+#define ff_ctzll ff_ctzll_rv
+
+static inline av_const int ff_clz_rv(int x)
+{
+#if HAVE_RV && !defined(__riscv_zbb)
+    if (!__builtin_constant_p(x) &&
+        __builtin_expect(ff_rv_zbb_support(), true)) {
+        int y;
+
+        __asm__ (
+            ".option push\n"
+            ".option arch, +zbb\n"
+#if __riscv_xlen >= 64
+            "clzw    %0, %1\n"
+#else
+            "clz     %0, %1\n"
+#endif
+            ".option pop" : "=r" (y) : "r" (x));
+        if (y > 32)
+            __builtin_unreachable();
+        return y;
+    }
+#endif
+    return __builtin_clz(x);
+}
+#define ff_clz ff_clz_rv
+
+#if __riscv_xlen == 64
+static inline av_const int ff_clzll_rv(long long x)
+{
+#if HAVE_RV && !defined(__riscv_zbb)
+    if (!__builtin_constant_p(x) &&
+        __builtin_expect(ff_rv_zbb_support(), true)) {
+        int y;
+
+        __asm__ (
+            ".option push\n"
+            ".option arch, +zbb\n"
+            "clz     %0, %1\n"
+            ".option pop" : "=r" (y) : "r" (x));
+        if (y > 64)
+            __builtin_unreachable();
+        return y;
+    }
+#endif
+    return __builtin_clzll(x);
+}
+#define ff_clz ff_clz_rv
+#endif
+
+static inline av_const int ff_log2_rv(unsigned int x)
+{
+    return 31 - ff_clz_rv(x | 1);
+}
+#define ff_log2 ff_log2_rv
+#define ff_log2_16bit ff_log2_rv
+
 static inline av_const int av_popcount_rv(unsigned int x)
 {
 #if HAVE_RV && !defined(__riscv_zbb)
