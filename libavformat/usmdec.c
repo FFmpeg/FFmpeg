@@ -119,7 +119,7 @@ static int parse_utf(AVFormatContext *s, AVIOContext *pb,
     for (int i = 0; i < nb_items; i++) {
         GetByteContext *xgb;
         uint8_t key[256];
-        int64_t value;
+        int64_t value = -1;
         int n = 0;
 
         type = bytestream2_get_byte(&gb);
