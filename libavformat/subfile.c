@@ -18,6 +18,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "url.h"
@@ -135,6 +136,8 @@ static int64_t subfile_seek(URLContext *h, int64_t pos, int whence)
     case SEEK_END:
         new_pos = end + pos;
         break;
+    default:
+        av_assert0(0);
     }
     if (new_pos < c->start)
         return AVERROR(EINVAL);
