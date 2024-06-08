@@ -59,7 +59,7 @@ NOHWF   fmv.w.x     fa1, a7
         .if \signed
         vfsgnjx.vv  v16, v16, v8
         .endif
-        vfcvt.x.f.v v16, v16
+        vfcvt.rtz.x.f.v v16, v16
         vse32.v     v16, (a0)
         sh2add      a0, t0, a0
         bnez        a3, .L\signed
