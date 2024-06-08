@@ -895,7 +895,7 @@ static inline int mpeg4_decode_dc(MpegEncContext *s, int n, int *dir_ptr)
     else
         code = get_vlc2(&s->gb, dc_chrom, DC_VLC_BITS, 1);
 
-    if (code < 0 || code > 9 /* && s->nbit < 9 */) {
+    if (code < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "illegal dc vlc\n");
         return AVERROR_INVALIDDATA;
     }
