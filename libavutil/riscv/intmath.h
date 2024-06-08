@@ -1,4 +1,6 @@
 /*
+ * Copyright © 2022-2024 Rémi Denis-Courmont.
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -23,6 +25,7 @@
 
 #include "config.h"
 #include "libavutil/attributes.h"
+#include "libavutil/riscv/cpu.h"
 
 /*
  * The compiler is forced to sign-extend the result anyhow, so it is faster to
@@ -70,12 +73,74 @@ static av_always_inline av_const int av_clip_intp2_rvi(int a, int p)
 }
 
 #if defined (__GNUC__) || defined (__clang__)
-#define av_popcount   __builtin_popcount
-#if (__riscv_xlen >= 64)
-#define av_popcount64 __builtin_popcountl
+static inline av_const int av_popcount_rv(unsigned int x)
+{
+#if HAVE_RV && !defined(__riscv_zbb)
+    if (!__builtin_constant_p(x) &&
+        __builtin_expect(ff_rv_zbb_support(), true)) {
+        int y;
+
+        __asm__ (
+            ".option push\n"
+            ".option arch, +zbb\n"
+#if __riscv_xlen >= 64
+            "cpopw   %0, %1\n"
 #else
-#define av_popcount64 __builtin_popcountll
+            "cpop    %0, %1\n"
 #endif
+            ".option pop" : "=r" (y) : "r" (x));
+        if (y > 32)
+            __builtin_unreachable();
+        return y;
+    }
+#endif
+    return __builtin_popcount(x);
+}
+#define av_popcount av_popcount_rv
+
+static inline av_const int av_popcount64_rv(uint64_t x)
+{
+#if HAVE_RV && !defined(__riscv_zbb) && __riscv_xlen >= 64
+    if (!__builtin_constant_p(x) &&
+        __builtin_expect(ff_rv_zbb_support(), true)) {
+        int y;
+
+        __asm__ (
+            ".option push\n"
+            ".option arch, +zbb\n"
+            "cpop    %0, %1\n"
+            ".option pop" : "=r" (y) : "r" (x));
+        if (y > 64)
+            __builtin_unreachable();
+        return y;
+    }
+#endif
+    return __builtin_popcountl(x);
+}
+#define av_popcount64 av_popcount64_rv
+
+static inline av_const int av_parity_rv(unsigned int x)
+{
+#if HAVE_RV && !defined(__riscv_zbb)
+    if (!__builtin_constant_p(x) &&
+        __builtin_expect(ff_rv_zbb_support(), true)) {
+        int y;
+
+        __asm__ (
+            ".option push\n"
+            ".option arch, +zbb\n"
+#if __riscv_xlen >= 64
+            "cpopw   %0, %1\n"
+#else
+            "cpop    %0, %1\n"
+#endif
+            ".option pop" : "=r" (y) : "r" (x));
+        return y & 1;
+    }
+#endif
+    return __builtin_parity(x);
+}
+#define av_parity av_parity_rv
 #endif
 
 #endif /* AVUTIL_RISCV_INTMATH_H */
