@@ -1463,7 +1463,9 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
 
     ff_init_block_index(s);
     while(!check_slice_end(r, s)) {
-        ff_update_block_index(s, 8, 0, 1);
+        s->dest[0] += 16;
+        s->dest[1] += 8;
+        s->dest[2] += 8;
 
         if(r->si.type)
             res = rv34_decode_inter_macroblock(r, r->intra_types + s->mb_x * 4 + 4);
