@@ -567,7 +567,6 @@ static void vvcc_close(VVCDecoderConfigurationRecord *vvcc)
 
 static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
 {
-    uint8_t i;
     uint16_t vps_count = 0, sps_count = 0, pps_count = 0;
     /*
      * It's unclear how to properly compute these fields, so
@@ -615,18 +614,18 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
     av_log(NULL, AV_LOG_TRACE,
            "ptl_multilayer_enabled_flag:         %" PRIu8 "\n",
            vvcc->ptl.ptl_multilayer_enabled_flag);
-    for (i = 0; i < vvcc->ptl.num_bytes_constraint_info; i++) {
+    for (int i = 0; i < vvcc->ptl.num_bytes_constraint_info; i++) {
         av_log(NULL, AV_LOG_TRACE,
                "general_constraint_info[%d]:          %" PRIu8 "\n", i,
                vvcc->ptl.general_constraint_info[i]);
     }
 
-    for (i = 0; i < vvcc->num_sublayers - 1; i++) {
+    for (int i = 0; i < vvcc->num_sublayers - 1; i++) {
         av_log(NULL, AV_LOG_TRACE,
-               "ptl_sublayer_level_present_flag[%" PRIu8 "]:  %" PRIu8 "\n", i,
+               "ptl_sublayer_level_present_flag[%d]:  %" PRIu8 "\n", i,
                vvcc->ptl.ptl_sublayer_level_present_flag[i]);
         av_log(NULL, AV_LOG_TRACE,
-               "sublayer_level_idc[%" PRIu8 "]: %" PRIu8 "\n", i,
+               "sublayer_level_idc[%d]: %" PRIu8 "\n", i,
                vvcc->ptl.sublayer_level_idc[i]);
     }
 
@@ -634,9 +633,9 @@ static int vvcc_write(AVIOContext *pb, VVCDecoderConfigurationRecord *vvcc)
            "num_sub_profiles:                    %" PRIu8 "\n",
            vvcc->ptl.ptl_num_sub_profiles);
 
-    for (i = 0; i < vvcc->ptl.ptl_num_sub_profiles; i++) {
+    for (unsigned i = 0; i < vvcc->ptl.ptl_num_sub_profiles; i++) {
         av_log(NULL, AV_LOG_TRACE,
-               "general_sub_profile_idc[%" PRIu8 "]:         %" PRIx32 "\n", i,
+               "general_sub_profile_idc[%u]:         %" PRIx32 "\n", i,
                vvcc->ptl.general_sub_profile_idc[i]);
     }
 
