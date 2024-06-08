@@ -40,17 +40,20 @@
 #define MM_PREAMBLE_SIZE    6
 
 #define MM_TYPE_HEADER      0x0
+#define MM_TYPE_RAW         0x2
 #define MM_TYPE_INTER       0x5
 #define MM_TYPE_INTRA       0x8
 #define MM_TYPE_INTRA_HH    0xc
 #define MM_TYPE_INTER_HH    0xd
 #define MM_TYPE_INTRA_HHV   0xe
 #define MM_TYPE_INTER_HHV   0xf
+#define MM_TYPE_AUDIO2      0x14
 #define MM_TYPE_AUDIO       0x15
 #define MM_TYPE_PALETTE     0x31
 
 #define MM_HEADER_LEN_V     0x16    /* video only */
 #define MM_HEADER_LEN_AV    0x18    /* video + audio */
+#define MM_HEADER_LEN_AV2   0x1a
 
 #define MM_PALETTE_COUNT    128
 #define MM_PALETTE_SIZE     (MM_PALETTE_COUNT*3)
@@ -68,7 +71,7 @@ static int probe(const AVProbeData *p)
     if (AV_RL16(&p->buf[0]) != MM_TYPE_HEADER)
         return 0;
     len = AV_RL32(&p->buf[2]);
-    if (len != MM_HEADER_LEN_V && len != MM_HEADER_LEN_AV)
+    if (len != MM_HEADER_LEN_V && len != MM_HEADER_LEN_AV && len != MM_HEADER_LEN_AV2)
         return 0;
     fps = AV_RL16(&p->buf[8]);
     w = AV_RL16(&p->buf[12]);
@@ -118,7 +121,7 @@ static int read_header(AVFormatContext *s)
     avpriv_set_pts_info(st, 64, 1, frame_rate);
 
     /* audio stream */
-    if (length == MM_HEADER_LEN_AV) {
+    if (length >= MM_HEADER_LEN_AV) {
         st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
@@ -154,6 +157,7 @@ static int read_packet(AVFormatContext *s,
         length = AV_RL16(&preamble[2]);
 
         switch(type) {
+        case MM_TYPE_RAW :
         case MM_TYPE_PALETTE :
         case MM_TYPE_INTER :
         case MM_TYPE_INTRA :
@@ -186,6 +190,7 @@ static int read_packet(AVFormatContext *s,
 
         default :
             av_log(s, AV_LOG_INFO, "unknown chunk type 0x%x\n", type);
+        case MM_TYPE_AUDIO2 :
             avio_skip(pb, length);
         }
     }
