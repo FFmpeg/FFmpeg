@@ -1430,6 +1430,8 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     char cmd[2048];
     const char *trans_pref;
 
+    memset(&reply1, 0, sizeof(reply1));
+
     if (rt->transport == RTSP_TRANSPORT_RDT)
         trans_pref = "x-pn-tng";
     else if (rt->transport == RTSP_TRANSPORT_RAW)
