@@ -3,16 +3,21 @@ libavcodec/file_open.c
 libavcodec/interplayacm.c
 libavcodec/log2_tab.c
 libavcodec/reverse.c
+libavcodec/riscv/cpu_common.c
 libavdevice/file_open.c
 libavdevice/reverse.c
+libavdevice/riscv/cpu_common.c
 libavfilter/file_open.c
 libavfilter/log2_tab.c
+libavfilter/riscv/cpu_common.c
 libavformat/file_open.c
 libavformat/golomb_tab.c
 libavformat/log2_tab.c
 libavformat/rangecoder_dec.c
+libavformat/riscv/cpu_common.c
 libswresample/log2_tab.c
 libswscale/log2_tab.c
+libswscale/riscv/cpu_common.c
 tools/uncoded_frame.c
 tools/yuvcmp.c
 Headers without standard inclusion guards:

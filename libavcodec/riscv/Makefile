@@ -77,3 +77,5 @@ RVV-OBJS-$(CONFIG_VP9_DECODER) += riscv/vp9_intra_rvv.o \
                                   riscv/vp9_mc_rvv.o
 OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_init.o
 RVV-OBJS-$(CONFIG_VORBIS_DECODER) += riscv/vorbisdsp_rvv.o
+
+SHLIBOBJS += riscv/cpu_common.o

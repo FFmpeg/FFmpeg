@@ -24,7 +24,21 @@
 #include "config.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include "libavutil/attributes_internal.h"
 #include "libavutil/cpu.h"
+
+#ifndef __riscv_zbb
+extern attribute_visibility_hidden bool ff_rv_zbb_supported;
+#endif
+
+static inline av_const bool ff_rv_zbb_support(void)
+{
+#ifndef __riscv_zbb
+    return ff_rv_zbb_supported;
+#else
+    return true;
+#endif
+}
 
 #if HAVE_RVV
 /**
