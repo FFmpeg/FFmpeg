@@ -388,7 +388,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
     SECURITY_STATUS sspi_ret = SEC_E_OK;
     SecBuffer inbuf[4];
     SecBufferDesc inbuf_desc;
-    int size, ret;
+    int size, ret = 0;
     int min_enc_buf_size = len + SCHANNEL_FREE_BUFFER_SIZE;
 
     /* If we have some left-over data from previous network activity,
