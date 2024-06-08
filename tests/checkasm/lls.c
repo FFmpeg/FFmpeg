@@ -82,8 +82,8 @@ void checkasm_check_lls(void)
     static const unsigned char counts[] = { 8, 12, MAX_VARS, };
 
     for (size_t i = 0; i < FF_ARRAY_ELEMS(counts); i++) {
-        LOCAL_ALIGNED_32(double, var, [MAX_VARS]);
-        LOCAL_ALIGNED_32(double, param, [MAX_VARS]);
+        LOCAL_ALIGNED_32(double, var, [MAX_VARS_ALIGN]);
+        LOCAL_ALIGNED_32(double, param, [FFALIGN(MAX_VARS+2,4)]);
         LLSModel lls;
 
         avpriv_init_lls(&lls, counts[i]);
@@ -95,7 +95,7 @@ void checkasm_check_lls(void)
         for (size_t j = 0; j <= i; j++)
             if (check_func(lls.evaluate_lls, "evaluate_lls_%d_%d", counts[i],
                            counts[j]))
-                test_evaluate(&lls, param, counts[j]);
+                test_evaluate(&lls, param + 1, counts[j]);
     }
     report("lls");
 }
