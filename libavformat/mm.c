@@ -180,7 +180,8 @@ static int read_packet(AVFormatContext *s,
             if ((ret = av_get_packet(s->pb, pkt, length)) < 0)
                 return ret;
             pkt->stream_index = 1;
-            pkt->pts = mm->audio_pts++;
+            pkt->pts = mm->audio_pts;
+            mm->audio_pts += length;
             return 0;
 
         default :
