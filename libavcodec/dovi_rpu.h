@@ -75,7 +75,7 @@ typedef struct DOVIContext {
      * Private fields internal to dovi_rpu.c
      */
     AVDOVIColorMetadata *dm; ///< RefStruct
-    struct DOVIVdr *vdr[DOVI_MAX_DM_ID+1]; ///< RefStruct references
+    AVDOVIDataMapping *vdr[DOVI_MAX_DM_ID+1]; ///< RefStruct references
     uint8_t *rpu_buf; ///< temporary buffer
     unsigned rpu_buf_sz;
 
@@ -126,11 +126,6 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx);
 /***************************************************
  * The following section is for internal use only. *
  ***************************************************/
-
-typedef struct DOVIVdr {
-    AVDOVIDataMapping mapping;
-    AVDOVIColorMetadata color;
-} DOVIVdr;
 
 enum {
     RPU_COEFF_FIXED = 0,

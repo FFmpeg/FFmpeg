@@ -465,18 +465,18 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
                    prev_vdr_rpu_id);
             goto fail;
         }
-        s->mapping = &s->vdr[prev_vdr_rpu_id]->mapping;
+        s->mapping = s->vdr[prev_vdr_rpu_id];
     } else {
         AVDOVIDataMapping *mapping;
         int vdr_rpu_id = get_ue_golomb_31(gb);
         VALIDATE(vdr_rpu_id, 0, DOVI_MAX_DM_ID);
         if (!s->vdr[vdr_rpu_id]) {
-            s->vdr[vdr_rpu_id] = ff_refstruct_allocz(sizeof(DOVIVdr));
+            s->vdr[vdr_rpu_id] = ff_refstruct_allocz(sizeof(AVDOVIDataMapping));
             if (!s->vdr[vdr_rpu_id])
                 return AVERROR(ENOMEM);
         }
 
-        s->mapping = mapping = &s->vdr[vdr_rpu_id]->mapping;
+        s->mapping = mapping = s->vdr[vdr_rpu_id];
         mapping->vdr_rpu_id = vdr_rpu_id;
         mapping->mapping_color_space = get_ue_golomb_31(gb);
         mapping->mapping_chroma_format_idc = get_ue_golomb_31(gb);
