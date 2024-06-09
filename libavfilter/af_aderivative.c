@@ -150,6 +150,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->prev = ff_get_audio_buffer(inlink, 1);
         if (!s->prev) {
             av_frame_free(&in);
+            av_frame_free(&out);
             return AVERROR(ENOMEM);
         }
     }
