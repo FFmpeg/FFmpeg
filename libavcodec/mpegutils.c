@@ -153,7 +153,7 @@ static char get_interlacement_char(int mb_type)
 }
 
 void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
-                          const uint8_t *mbskip_table, const uint32_t *mbtype_table,
+                          const uint32_t *mbtype_table,
                           const int8_t *qscale_table, int16_t (*const motion_val[2])[2],
                           int mb_width, int mb_height, int mb_stride, int quarter_sample)
 {
@@ -248,7 +248,7 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
         return;
 
 
-    if (avctx->debug & (FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)) {
+    if (avctx->debug & (FF_DEBUG_QP | FF_DEBUG_MB_TYPE)) {
         int x,y;
         AVBPrint buf;
         int n;
@@ -267,8 +267,6 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
         av_bprint_chars(&buf, ' ', margin_left);
 
         n = 0;
-        if (avctx->debug & FF_DEBUG_SKIP)
-            n++;
         if (avctx->debug & FF_DEBUG_QP)
             n += 2;
         if (avctx->debug & FF_DEBUG_MB_TYPE)
@@ -284,12 +282,6 @@ void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict,
             for (x = 0; x < mb_width; x++) {
                 if (x == 0)
                     av_bprintf(&buf, "%*d ", margin_left - 1, y << 4);
-                if (avctx->debug & FF_DEBUG_SKIP) {
-                    int count = mbskip_table ? mbskip_table[x + y * mb_stride] : 0;
-                    if (count > 9)
-                        count = 9;
-                    av_bprintf(&buf, "%1d", count);
-                }
                 if (avctx->debug & FF_DEBUG_QP) {
                     av_bprintf(&buf, "%2d", qscale_table[x + y * mb_stride]);
                 }
