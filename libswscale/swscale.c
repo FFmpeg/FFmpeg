@@ -1175,7 +1175,7 @@ int sws_receive_slice(struct SwsContext *c, unsigned int slice_start,
     }
 
     for (int i = 0; i < FF_ARRAY_ELEMS(dst); i++) {
-        ptrdiff_t offset = c->frame_dst->linesize[i] * (slice_start >> c->chrDstVSubSample);
+        ptrdiff_t offset = c->frame_dst->linesize[i] * (ptrdiff_t)(slice_start >> c->chrDstVSubSample);
         dst[i] = FF_PTR_ADD(c->frame_dst->data[i], offset);
     }
 
@@ -1236,7 +1236,7 @@ void ff_sws_slice_worker(void *priv, int jobnr, int threadnr,
         for (int i = 0; i < FF_ARRAY_ELEMS(dst) && parent->frame_dst->data[i]; i++) {
             const int vshift = (i == 1 || i == 2) ? c->chrDstVSubSample : 0;
             const ptrdiff_t offset = parent->frame_dst->linesize[i] *
-                ((slice_start + parent->dst_slice_start) >> vshift);
+                (ptrdiff_t)((slice_start + parent->dst_slice_start) >> vshift);
 
             dst[i] = parent->frame_dst->data[i] + offset;
         }
