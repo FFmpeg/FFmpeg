@@ -39,8 +39,6 @@ extern const uint8_t ff_zigzag_scan[16+1];
 
 #if   ARCH_ARM
 #   include "arm/mathops.h"
-#elif ARCH_AVR32
-#   include "avr32/mathops.h"
 #elif ARCH_MIPS
 #   include "mips/mathops.h"
 #elif ARCH_PPC

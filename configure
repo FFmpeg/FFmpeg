@@ -2129,9 +2129,6 @@ AUTODETECT_LIBS="
 ARCH_LIST="
     aarch64
     arm
-    avr32
-    avr32_ap
-    avr32_uc
     bfin
     ia64
     loongarch
@@ -2815,7 +2812,7 @@ done
 
 aligned_stack_if_any="aarch64 ppc x86"
 fast_64bit_if_any="aarch64 ia64 mips64 parisc64 ppc64 riscv64 sparc64 x86_64"
-fast_clz_if_any="aarch64 avr32 mips ppc x86"
+fast_clz_if_any="aarch64 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
 simd_align_16_if_any="altivec neon sse"
 simd_align_32_if_any="avx"
@@ -5338,27 +5335,6 @@ elif enabled arm; then
     esac
 
     test_cflags -mfp16-format=ieee && add_cflags -mfp16-format=ieee
-
-elif enabled avr32; then
-
-    case $cpu in
-        ap7[02]0[0-2])
-            subarch="avr32_ap"
-            cpuflags="-mpart=$cpu"
-        ;;
-        ap)
-            subarch="avr32_ap"
-            cpuflags="-march=$cpu"
-        ;;
-        uc3[ab]*)
-            subarch="avr32_uc"
-            cpuflags="-mcpu=$cpu"
-        ;;
-        uc)
-            subarch="avr32_uc"
-            cpuflags="-march=$cpu"
-        ;;
-    esac
 
 elif enabled bfin; then
 
