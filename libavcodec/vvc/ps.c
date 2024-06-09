@@ -101,9 +101,14 @@ static int sps_chroma_qp_table(VVCSPS *sps)
 
         qp_out[0] = qp_in[0] = r->sps_qp_table_start_minus26[i] + 26;
         for (int j = 0; j < num_points_in_qp_table; j++ ) {
+            const uint8_t delta_qp_out = (r->sps_delta_qp_in_val_minus1[i][j] ^ r->sps_delta_qp_diff_val[i][j]);
             delta_qp_in[j] = r->sps_delta_qp_in_val_minus1[i][j] + 1;
+            // Note: we cannot check qp_{in,out}[j+1] here as qp_*[j] + delta_qp_*
+            //       may not fit in an 8-bit signed integer.
+            if (qp_in[j] + delta_qp_in[j] > 63 || qp_out[j] + delta_qp_out > 63)
+                return AVERROR(EINVAL);
             qp_in[j+1] = qp_in[j] + delta_qp_in[j];
-            qp_out[j+1] = qp_out[j] + (r->sps_delta_qp_in_val_minus1[i][j] ^ r->sps_delta_qp_diff_val[i][j]);
+            qp_out[j+1] = qp_out[j] + delta_qp_out;
         }
         sps->chroma_qp_table[i][qp_in[0] + off] = qp_out[0];
         for (int k = qp_in[0] - 1 + off; k >= 0; k--)
@@ -186,8 +191,11 @@ static int sps_derive(VVCSPS *sps, void *log_ctx)
     sps_inter(sps);
     sps_partition_constraints(sps);
     sps_ladf(sps);
-    if (r->sps_chroma_format_idc != 0)
-        sps_chroma_qp_table(sps);
+    if (r->sps_chroma_format_idc != 0) {
+        ret = sps_chroma_qp_table(sps);
+        if (ret < 0)
+            return ret;
+    }
 
     return 0;
 }
