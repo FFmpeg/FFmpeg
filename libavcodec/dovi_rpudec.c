@@ -580,25 +580,25 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         int current_dm_id = get_ue_golomb_31(gb);
         VALIDATE(affected_dm_id, 0, DOVI_MAX_DM_ID);
         VALIDATE(current_dm_id, 0, DOVI_MAX_DM_ID);
-        if (!s->vdr[affected_dm_id]) {
-            s->vdr[affected_dm_id] = ff_refstruct_allocz(sizeof(DOVIVdr));
-            if (!s->vdr[affected_dm_id])
+        if (affected_dm_id != current_dm_id) {
+            /* The spec does not explain these fields at all, and there is
+             * a lack of samples to understand how they're supposed to work,
+             * so just assert them being equal for now */
+            avpriv_request_sample(s->logctx, "affected/current_dm_metadata_id "
+                "mismatch? %u != %u\n", affected_dm_id, current_dm_id);
+            ff_dovi_ctx_unref(s);
+            return AVERROR_PATCHWELCOME;
+        }
+
+        if (!s->dm) {
+            s->dm = ff_refstruct_allocz(sizeof(AVDOVIColorMetadata));
+            if (!s->dm) {
+                ff_dovi_ctx_unref(s);
                 return AVERROR(ENOMEM);
+            }
         }
 
-        if (!s->vdr[current_dm_id]) {
-            av_log(s->logctx, AV_LOG_ERROR, "Unknown previous RPU DM ID: %u\n",
-                   current_dm_id);
-            goto fail;
-        }
-
-        /* Update current pointer based on current_dm_id */
-        vdr = s->vdr[current_dm_id];
-        s->color = &vdr->color;
-
-        /* Update values of affected_dm_id */
-        vdr = s->vdr[affected_dm_id];
-        color = &vdr->color;
+        s->color = color = s->dm;
         color->dm_metadata_id = affected_dm_id;
         color->scene_refresh_flag = get_ue_golomb_31(gb);
         for (int i = 0; i < 9; i++)

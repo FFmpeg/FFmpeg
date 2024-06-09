@@ -479,12 +479,6 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
             return AVERROR(ENOMEM);
     }
 
-    if (!s->vdr[color->dm_metadata_id]) {
-        s->vdr[color->dm_metadata_id] = ff_refstruct_allocz(sizeof(DOVIVdr));
-        if (!s->vdr[color->dm_metadata_id])
-            return AVERROR(ENOMEM);
-    }
-
     num_ext_blocks_v1 = num_ext_blocks_v2 = 0;
     for (int i = 0; i < metadata->num_ext_blocks; i++) {
         const AVDOVIDmData *dm = av_dovi_get_ext(metadata, i);
@@ -514,6 +508,12 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
 
     vdr_dm_metadata_present = memcmp(color, &ff_dovi_color_default, sizeof(*color));
     use_prev_vdr_rpu = !memcmp(&s->vdr[vdr_rpu_id]->mapping, mapping, sizeof(*mapping));
+
+    if (vdr_dm_metadata_present && !s->dm) {
+        s->dm = ff_refstruct_allocz(sizeof(AVDOVIColorMetadata));
+        if (!s->dm)
+            return AVERROR(ENOMEM);
+    }
 
     buffer_size = 12 /* vdr seq info */ + 5 /* CRC32 + terminator */;
     buffer_size += num_ext_blocks_v1 * 13;
@@ -655,8 +655,8 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         put_bits(pb, 12, color->source_max_pq);
         put_bits(pb, 10, color->source_diagonal);
 
-        memcpy(&s->vdr[color->dm_metadata_id]->color, color, sizeof(*color));
-        s->color = &s->vdr[color->dm_metadata_id]->color;
+        memcpy(s->dm, color, sizeof(*color));
+        s->color = s->dm;
     } else {
         s->color = &ff_dovi_color_default;
     }
