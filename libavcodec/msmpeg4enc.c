@@ -71,8 +71,7 @@ void ff_msmpeg4_code012(PutBitContext *pb, int n)
     if (n == 0) {
         put_bits(pb, 1, 0);
     } else {
-        put_bits(pb, 1, 1);
-        put_bits(pb, 1, (n >= 2));
+        put_bits(pb, 2, 2 | (n >= 2));
     }
 }
 
