@@ -190,6 +190,7 @@ static AVBufferRef *wrap_texture_buf(AVHWFramesContext *ctx, ID3D11Texture2D *te
                                                    sizeof(*frames_hwctx->texture_infos));
         if (!frames_hwctx->texture_infos) {
             ID3D11Texture2D_Release(tex);
+            av_free(desc);
             return NULL;
         }
         s->nb_surfaces = s->nb_surfaces_used + 1;
