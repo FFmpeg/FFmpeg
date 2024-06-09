@@ -305,9 +305,7 @@ static av_cold int dct_init(MpegEncContext *s)
     ff_mpv_common_init_neon(s);
 #endif
 
-#if ARCH_ALPHA
-    ff_mpv_common_init_axp(s);
-#elif ARCH_ARM
+#if ARCH_ARM
     ff_mpv_common_init_arm(s);
 #elif ARCH_PPC
     ff_mpv_common_init_ppc(s);

@@ -12,6 +12,7 @@ version <next>:
 - qsv_params option added for QSV encoders
 - VVC decoder compatible with DVB test content
 - xHE-AAC decoder
+- removed DEC Alpha DSP and support code
 
 
 version 7.0:

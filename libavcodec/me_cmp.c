@@ -1058,8 +1058,6 @@ av_cold void ff_me_cmp_init(MECmpContext *c, AVCodecContext *avctx)
 
 #if ARCH_AARCH64
     ff_me_cmp_init_aarch64(c, avctx);
-#elif ARCH_ALPHA
-    ff_me_cmp_init_alpha(c, avctx);
 #elif ARCH_ARM
     ff_me_cmp_init_arm(c, avctx);
 #elif ARCH_PPC

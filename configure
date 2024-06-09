@@ -2128,7 +2128,6 @@ AUTODETECT_LIBS="
 
 ARCH_LIST="
     aarch64
-    alpha
     arm
     avr32
     avr32_ap
@@ -2815,8 +2814,8 @@ for ext in $(filter_out mmx $ARCH_EXT_LIST_X86_SIMD); do
 done
 
 aligned_stack_if_any="aarch64 ppc x86"
-fast_64bit_if_any="aarch64 alpha ia64 mips64 parisc64 ppc64 riscv64 sparc64 x86_64"
-fast_clz_if_any="aarch64 alpha avr32 mips ppc x86"
+fast_64bit_if_any="aarch64 ia64 mips64 parisc64 ppc64 riscv64 sparc64 x86_64"
+fast_clz_if_any="aarch64 avr32 mips ppc x86"
 fast_unaligned_if_any="aarch64 ppc x86"
 simd_align_16_if_any="altivec neon sse"
 simd_align_32_if_any="avx"
@@ -5274,10 +5273,6 @@ if enabled aarch64; then
         ;;
     esac
 
-elif enabled alpha; then
-
-    cpuflags="-mcpu=$cpu"
-
 elif enabled arm; then
 
     check_arm_arch() {
@@ -5659,7 +5654,7 @@ check_64bit(){
 }
 
 case "$arch" in
-    aarch64|alpha|ia64)
+    aarch64|ia64)
         enabled shared && enable_weak pic
     ;;
     loongarch)
@@ -6237,10 +6232,6 @@ if enabled aarch64; then
         is_in $v $archext_list && continue
         enabled_any ${v}_external ${v}_inline || disable $v
     done
-
-elif enabled alpha; then
-
-    check_cflags -mieee
 
 elif enabled arm; then
 

@@ -294,8 +294,6 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
 
 #if ARCH_AARCH64
     ff_idctdsp_init_aarch64(c, avctx, high_bit_depth);
-#elif ARCH_ALPHA
-    ff_idctdsp_init_alpha(c, avctx, high_bit_depth);
 #elif ARCH_ARM
     ff_idctdsp_init_arm(c, avctx, high_bit_depth);
 #elif ARCH_PPC

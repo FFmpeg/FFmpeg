@@ -357,8 +357,6 @@ av_cold void ff_hpeldsp_init(HpelDSPContext *c, int flags)
 
 #if ARCH_AARCH64
     ff_hpeldsp_init_aarch64(c, flags);
-#elif ARCH_ALPHA
-    ff_hpeldsp_init_alpha(c, flags);
 #elif ARCH_ARM
     ff_hpeldsp_init_arm(c, flags);
 #elif ARCH_PPC
