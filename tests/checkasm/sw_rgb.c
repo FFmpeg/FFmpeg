@@ -195,8 +195,8 @@ static const enum AVPixelFormat rgb_formats[] = {
 
 static void check_rgb_to_y(struct SwsContext *ctx)
 {
-    LOCAL_ALIGNED_32(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
-    LOCAL_ALIGNED_32(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
+    LOCAL_ALIGNED_16(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_16(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
     LOCAL_ALIGNED_32(uint8_t, dst0_y, [MAX_LINE_SIZE * 2]);
     LOCAL_ALIGNED_32(uint8_t, dst1_y, [MAX_LINE_SIZE * 2]);
 
@@ -238,12 +238,12 @@ static void check_rgb_to_y(struct SwsContext *ctx)
 
 static void check_rgb_to_uv(struct SwsContext *ctx)
 {
-    LOCAL_ALIGNED_32(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
-    LOCAL_ALIGNED_32(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
-    LOCAL_ALIGNED_32(uint8_t, dst0_u, [MAX_LINE_SIZE * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst0_v, [MAX_LINE_SIZE * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst1_u, [MAX_LINE_SIZE * 2]);
-    LOCAL_ALIGNED_32(uint8_t, dst1_v, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_16(uint8_t, src24,  [MAX_LINE_SIZE * 3]);
+    LOCAL_ALIGNED_16(uint8_t, src32,  [MAX_LINE_SIZE * 4]);
+    LOCAL_ALIGNED_16(uint8_t, dst0_u, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst0_v, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst1_u, [MAX_LINE_SIZE * 2]);
+    LOCAL_ALIGNED_16(uint8_t, dst1_v, [MAX_LINE_SIZE * 2]);
 
     declare_func(void, uint8_t *dstU, uint8_t *dstV,
                  const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
