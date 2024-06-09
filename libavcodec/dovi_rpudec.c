@@ -424,6 +424,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
             int bl_bit_depth_minus8 = get_ue_golomb_31(gb);
             int el_bit_depth_minus8 = get_ue_golomb_31(gb);
             int vdr_bit_depth_minus8 = get_ue_golomb_31(gb);
+            int reserved_zero_3bits;
             VALIDATE(bl_bit_depth_minus8, 0, 8);
             VALIDATE(el_bit_depth_minus8, 0, 8);
             VALIDATE(vdr_bit_depth_minus8, 0, 8);
@@ -431,7 +432,8 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
             hdr->el_bit_depth = el_bit_depth_minus8 + 8;
             hdr->vdr_bit_depth = vdr_bit_depth_minus8 + 8;
             hdr->spatial_resampling_filter_flag = get_bits1(gb);
-            skip_bits(gb, 3); /* reserved_zero_3bits */
+            reserved_zero_3bits = get_bits(gb, 3);
+            VALIDATE(reserved_zero_3bits, 0, 0);
             hdr->el_spatial_resampling_filter_flag = get_bits1(gb);
             hdr->disable_residual_flag = get_bits1(gb);
         }
