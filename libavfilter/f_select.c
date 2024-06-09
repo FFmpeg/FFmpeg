@@ -93,6 +93,8 @@ static const char *const var_names[] = {
     "ih",                ///< ih: Represents the height of the input video frame.
     "iw",                ///< iw: Represents the width of the input video frame.
 
+    "view",
+
     NULL
 };
 
@@ -149,6 +151,8 @@ enum var_name {
 
     VAR_IH,
     VAR_IW,
+
+    VAR_VIEW,
 
     VAR_VARS_NB
 };
@@ -343,6 +347,7 @@ static void select_frame(AVFilterContext *ctx, AVFrame *frame)
     SelectContext *select = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     FilterLink      *inl = ff_filter_link(inlink);
+    const AVFrameSideData *sd;
     double res;
 
     if (isnan(select->var_values[VAR_START_PTS]))
@@ -381,6 +386,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             snprintf(buf, sizeof(buf), "%f", select->var_values[VAR_SCENE]);
             av_dict_set(&frame->metadata, "lavfi.scene_score", buf, 0);
         }
+
+        sd = av_frame_side_data_get(frame->side_data, frame->nb_side_data,
+                                    AV_FRAME_DATA_VIEW_ID);
+        select->var_values[VAR_VIEW] = sd ? *(int*)sd->data : NAN;
         break;
     }
 

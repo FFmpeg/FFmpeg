@@ -31111,6 +31111,9 @@ Represents the width of the input video frame.
 @item ih @emph{(video only)}
 Represents the height of the input video frame.
 
+@item view @emph{(video only)}
+View ID for multi-view video.
+
 @end table
 
 The default value of the select expression is "1".
