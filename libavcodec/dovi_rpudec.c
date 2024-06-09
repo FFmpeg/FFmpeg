@@ -456,7 +456,12 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     if (use_prev_vdr_rpu) {
         int prev_vdr_rpu_id = get_ue_golomb_31(gb);
         VALIDATE(prev_vdr_rpu_id, 0, DOVI_MAX_DM_ID);
+        if (!s->vdr[prev_vdr_rpu_id])
+            prev_vdr_rpu_id = 0;
         if (!s->vdr[prev_vdr_rpu_id]) {
+            /* FIXME: Technically, the spec says that in this case we should
+             * synthesize "neutral" vdr metadata, but easier to just error
+             * out as this corner case is not hit in practice */
             av_log(s->logctx, AV_LOG_ERROR, "Unknown previous RPU ID: %u\n",
                    prev_vdr_rpu_id);
             goto fail;
