@@ -55,27 +55,30 @@ cglobal abs_pow34, 3, 3, 3, out, in, size
 ;*******************************************************************
 %macro AAC_QUANTIZE_BANDS 0
 cglobal aac_quantize_bands, 5, 5, 6, out, in, scaled, size, is_signed, maxval, Q34, rounding
+%if UNIX64 == 0
 %if mmsize == 32
     vbroadcastss m0, Q34m
     vbroadcastss m1, roundingm
-%if UNIX64 == 0
-    cvtsi2ss xm3, dword maxvalm
 %else
-    cvtsi2ss xm3, maxvald
-%endif
-    shufps   xm3, xm3, xm3, 0
-    vinsertf128 m3, m3, xm3, 1
-%else ; mmsize == 16
-%if UNIX64 == 0
     movss     m0, Q34m
     movss     m1, roundingm
-    cvtsi2ss  m3, dword maxvalm
-%else
-    cvtsi2ss  m3, maxvald
-%endif
     shufps    m0, m0, 0
     shufps    m1, m1, 0
-    shufps    m3, m3, 0
+%endif
+    cvtsi2ss xm3, dword maxvalm
+    shufps   xm3, xm3, xm3, 0
+%else ; UNIX64
+    shufps   xm0, xm0, 0
+    shufps   xm1, xm1, 0
+    cvtsi2ss xm3, maxvald
+    shufps   xm3, xm3, xm3, 0
+%if mmsize == 32
+    vinsertf128 m0, m0, xm0, 1
+    vinsertf128 m1, m1, xm1, 1
+%endif
+%endif
+%if mmsize == 32
+    vinsertf128 m3, m3, xm3, 1
 %endif
     shl       is_signedd, 31
     movd     xm4, is_signedd
