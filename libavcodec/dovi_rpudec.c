@@ -628,6 +628,8 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         color->source_min_pq = get_bits(gb, 12);
         color->source_max_pq = get_bits(gb, 12);
         color->source_diagonal = get_bits(gb, 10);
+    } else {
+        s->color = &ff_dovi_color_default;
     }
 
     /* Parse extension blocks */

@@ -157,4 +157,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
  */
 int ff_dovi_guess_profile_hevc(const AVDOVIRpuDataHeader *hdr);
 
+/* Default values for AVDOVIColorMetadata */
+extern const AVDOVIColorMetadata ff_dovi_color_default;
+
 #endif /* AVCODEC_DOVI_RPU_H */

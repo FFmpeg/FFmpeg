@@ -441,7 +441,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     const AVDOVIRpuDataHeader *hdr;
     const AVDOVIDataMapping *mapping;
     const AVDOVIColorMetadata *color;
-    int vdr_dm_metadata_changed, vdr_rpu_id, use_prev_vdr_rpu, profile,
+    int vdr_dm_metadata_present, vdr_rpu_id, use_prev_vdr_rpu, profile,
         buffer_size, rpu_size, pad, zero_run;
     int num_ext_blocks_v1, num_ext_blocks_v2;
     uint32_t crc;
@@ -512,7 +512,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         }
     }
 
-    vdr_dm_metadata_changed = !s->color || memcmp(s->color, color, sizeof(*color));
+    vdr_dm_metadata_present = memcmp(color, &ff_dovi_color_default, sizeof(*color));
     use_prev_vdr_rpu = !memcmp(&s->vdr[vdr_rpu_id]->mapping, mapping, sizeof(*mapping));
 
     buffer_size = 12 /* vdr seq info */ + 5 /* CRC32 + terminator */;
@@ -529,7 +529,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
             }
         }
     }
-    if (vdr_dm_metadata_changed)
+    if (vdr_dm_metadata_present)
         buffer_size += 67;
 
     av_fast_padded_malloc(&s->rpu_buf, &s->rpu_buf_sz, buffer_size);
@@ -560,7 +560,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     }
     s->header = *hdr;
 
-    put_bits(pb, 1, vdr_dm_metadata_changed);
+    put_bits(pb, 1, vdr_dm_metadata_present);
     put_bits(pb, 1, use_prev_vdr_rpu);
     set_ue_golomb(pb, vdr_rpu_id);
     s->mapping = &s->vdr[vdr_rpu_id]->mapping;
@@ -632,7 +632,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         memcpy(&s->vdr[vdr_rpu_id]->mapping, mapping, sizeof(*mapping));
     }
 
-    if (vdr_dm_metadata_changed) {
+    if (vdr_dm_metadata_present) {
         const int denom = profile == 4 ? (1 << 30) : (1 << 28);
         set_ue_golomb(pb, color->dm_metadata_id); /* affected_dm_id */
         set_ue_golomb(pb, color->dm_metadata_id); /* current_dm_id */
@@ -657,6 +657,8 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
 
         memcpy(&s->vdr[color->dm_metadata_id]->color, color, sizeof(*color));
         s->color = &s->vdr[color->dm_metadata_id]->color;
+    } else {
+        s->color = &ff_dovi_color_default;
     }
 
     set_ue_golomb(pb, num_ext_blocks_v1);

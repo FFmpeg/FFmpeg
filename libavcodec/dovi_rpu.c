@@ -86,3 +86,46 @@ int ff_dovi_guess_profile_hevc(const AVDOVIRpuDataHeader *hdr)
 
     return 0; /* unknown */
 }
+
+const AVDOVIColorMetadata ff_dovi_color_default = {
+    .dm_metadata_id     = 0,
+    .scene_refresh_flag = 0,
+    .ycc_to_rgb_matrix = {
+        {  9575, 8192 },
+        {     0, 8192 },
+        { 14742, 8192 },
+        {  9575, 8192 },
+        {  1754, 8192 },
+        {  4383, 8192 },
+        {  9575, 8192 },
+        { 17372, 8192 },
+        {     0, 8192 },
+    },
+    .ycc_to_rgb_offset = {
+        { 1, 4 },
+        { 2, 1 },
+        { 2, 1 },
+    },
+    .rgb_to_lms_matrix = {
+        {  5845, 16384 },
+        {  9702, 16384 },
+        {   837, 16384 },
+        {  2568, 16384 },
+        { 12256, 16384 },
+        {  1561, 16384 },
+        {     0, 16384 },
+        {   679, 16384 },
+        { 15705, 16384 },
+    },
+    .signal_eotf            = 39322,
+    .signal_eotf_param0     = 15867,
+    .signal_eotf_param1     = 228,
+    .signal_eotf_param2     = 1383604,
+    .signal_bit_depth       = 14,
+    .signal_color_space     = 0,
+    .signal_chroma_format   = 0,
+    .signal_full_range_flag = 1,
+    .source_min_pq          = 62,
+    .source_max_pq          = 3696,
+    .source_diagonal        = 42,
+};
