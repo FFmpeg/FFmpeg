@@ -2432,10 +2432,10 @@ av_cold void rgb2rgb_init_x86(void)
         shuffle_bytes_1230 = ff_shuffle_bytes_1230_avx2;
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_avx2;
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_avx2;
-#endif
     }
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         uyvytoyuv422 = ff_uyvytoyuv422_avx2;
+#endif
     }
 #endif
 }
