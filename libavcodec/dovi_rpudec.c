@@ -123,7 +123,8 @@ static inline unsigned get_variable_bits(GetBitContext *gb, int n)
         if (VAR < MIN || VAR > MAX) {                                           \
             av_log(s->logctx, AV_LOG_ERROR, "RPU validation failed: "           \
                    #MIN" <= "#VAR" = %d <= "#MAX"\n", (int) VAR);               \
-            goto fail;                                                          \
+            ff_dovi_ctx_unref(s);                                               \
+            return AVERROR_INVALIDDATA;                                         \
         }                                                                       \
     } while (0)
 
@@ -173,9 +174,6 @@ static int parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
     }
 
     return 0;
-
-fail:
-    return AVERROR_INVALIDDATA;
 }
 
 static AVCIExy get_cie_xy(GetBitContext *gb)
@@ -318,7 +316,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     uint8_t profile;
 
     if (rpu_size < 5)
-        goto fail;
+        return AVERROR_INVALIDDATA;
 
     /* Container */
     if (s->cfg.dv_profile == 10 /* dav1.10 */) {
@@ -372,7 +370,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     }
 
     if (!rpu_size || rpu[rpu_size - 1] != 0x80)
-        goto fail;
+        return AVERROR_INVALIDDATA;
 
     if (err_recognition & AV_EF_CRCCHECK) {
         uint32_t crc = av_bswap32(av_crc(av_crc_get_table(AV_CRC_32_IEEE),
@@ -380,7 +378,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         if (crc) {
             av_log(s->logctx, AV_LOG_ERROR, "RPU CRC mismatch: %X\n", crc);
             if (err_recognition & AV_EF_EXPLODE)
-                goto fail;
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -451,7 +449,8 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     profile = s->cfg.dv_profile ? s->cfg.dv_profile : ff_dovi_guess_profile_hevc(hdr);
     if (profile == 5 && use_nlq) {
         av_log(s->logctx, AV_LOG_ERROR, "Profile 5 RPUs should not use NLQ\n");
-        goto fail;
+        ff_dovi_ctx_unref(s);
+        return AVERROR_INVALIDDATA;
     }
 
     if (use_prev_vdr_rpu) {
@@ -465,7 +464,8 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
              * out as this corner case is not hit in practice */
             av_log(s->logctx, AV_LOG_ERROR, "Unknown previous RPU ID: %u\n",
                    prev_vdr_rpu_id);
-            goto fail;
+            ff_dovi_ctx_unref(s);
+            return AVERROR_INVALIDDATA;
         }
         s->mapping = s->vdr[prev_vdr_rpu_id];
     } else {
@@ -474,8 +474,10 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         VALIDATE(vdr_rpu_id, 0, DOVI_MAX_DM_ID);
         if (!s->vdr[vdr_rpu_id]) {
             s->vdr[vdr_rpu_id] = ff_refstruct_allocz(sizeof(AVDOVIDataMapping));
-            if (!s->vdr[vdr_rpu_id])
+            if (!s->vdr[vdr_rpu_id]) {
+                ff_dovi_ctx_unref(s);
                 return AVERROR(ENOMEM);
+            }
         }
 
         s->mapping = mapping = s->vdr[vdr_rpu_id];
@@ -647,8 +649,4 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     }
 
     return 0;
-
-fail:
-    ff_dovi_ctx_unref(s); /* don't leak potentially invalid state */
-    return AVERROR_INVALIDDATA;
 }
