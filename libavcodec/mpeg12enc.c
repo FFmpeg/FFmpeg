@@ -137,16 +137,15 @@ av_cold void ff_mpeg1_init_uni_ac_vlc(const int8_t max_level[],
 }
 
 #if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
-static int find_frame_rate_index(MPEG12EncContext *mpeg12)
+static int find_frame_rate_index(AVCodecContext *avctx, MPEG12EncContext *mpeg12)
 {
-    MpegEncContext *const s = &mpeg12->mpeg;
     int i;
     AVRational bestq = (AVRational) {0, 0};
     AVRational ext;
-    AVRational target = av_inv_q(s->avctx->time_base);
+    AVRational target = av_inv_q(avctx->time_base);
 
     for (i = 1; i < 14; i++) {
-        if (s->avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL &&
+        if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL &&
             i >= 9)
             break;
 
@@ -154,7 +153,7 @@ static int find_frame_rate_index(MPEG12EncContext *mpeg12)
             for (ext.den=1; ext.den <= 32; ext.den++) {
                 AVRational q = av_mul_q(ext, ff_mpeg12_frame_rate_tab[i]);
 
-                if (s->codec_id != AV_CODEC_ID_MPEG2VIDEO && (ext.den!=1 || ext.num!=1))
+                if (avctx->codec_id != AV_CODEC_ID_MPEG2VIDEO && (ext.den!=1 || ext.num!=1))
                     continue;
                 if (av_gcd(ext.den, ext.num) != 1)
                     continue;
@@ -236,7 +235,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if ((ret = ff_mpv_encode_init(avctx)) < 0)
         return ret;
 
-    if (find_frame_rate_index(mpeg12) < 0) {
+    if (find_frame_rate_index(avctx, mpeg12) < 0) {
         if (avctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
                    avctx->time_base.den, avctx->time_base.num);
