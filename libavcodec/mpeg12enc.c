@@ -180,7 +180,6 @@ static int find_frame_rate_index(MPEG12EncContext *mpeg12)
 static av_cold int encode_init(AVCodecContext *avctx)
 {
     MPEG12EncContext *const mpeg12 = avctx->priv_data;
-    MpegEncContext *const s = &mpeg12->mpeg;
     int ret;
     int max_size = avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO ? 16383 : 4095;
 
@@ -259,7 +258,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (mpeg12->tc_opt_str) {
         AVRational rate = ff_mpeg12_frame_rate_tab[mpeg12->frame_rate_index];
-        int ret = av_timecode_init_from_string(&mpeg12->tc, rate, mpeg12->tc_opt_str, s);
+        int ret = av_timecode_init_from_string(&mpeg12->tc, rate, mpeg12->tc_opt_str, avctx);
         if (ret < 0)
             return ret;
         mpeg12->drop_frame_timecode  = !!(mpeg12->tc.flags & AV_TIMECODE_FLAG_DROPFRAME);
