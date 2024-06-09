@@ -796,14 +796,59 @@ static int ph_max_num_subblock_merge_cand(const H266RawSPS *sps, const H266RawPi
     return sps->sps_sbtmvp_enabled_flag && ph->ph_temporal_mvp_enabled_flag;
 }
 
+static int ph_vb_pos(uint16_t *vbs, uint8_t *num_vbs, const uint16_t *pos_minus_1, const uint8_t num_pos, uint16_t max, const int ctb_size_y)
+{
+    max = FF_CEIL_RSHIFT(max, 3) - 2;
+    for (int i = 0; i < num_pos; i++) {
+        if (pos_minus_1[i] > max)
+            return AVERROR_INVALIDDATA;
+
+        vbs[i] = (pos_minus_1[i] + 1) << 3;
+
+        // The distance between any two vertical virtual boundaries shall be greater than or equal to CtbSizeY luma samples
+        if (i && vbs[i] < vbs[i - 1] + ctb_size_y)
+            return AVERROR_INVALIDDATA;
+    }
+    *num_vbs = num_pos;
+
+    return 0;
+}
+
+#define VBF(f) (sps->sps_virtual_boundaries_present_flag ? sps->sps_##f : ph->r->ph_##f)
+#define VBFS(c, d) VBF(virtual_boundary_pos_##c##_minus1), VBF(num_##d##_virtual_boundaries)
+
+static int ph_vb(VVCPH *ph, const H266RawSPS *sps, const H266RawPPS *pps)
+{
+    const int ctb_size_y = 1 << (sps->sps_log2_ctu_size_minus5 + 5);
+    int ret;
+
+    if (!sps->sps_virtual_boundaries_enabled_flag)
+        return 0;
+
+    ret = ph_vb_pos(ph->vb_pos_x, &ph->num_ver_vbs, VBFS(x, ver), pps->pps_pic_width_in_luma_samples, ctb_size_y);
+    if (ret < 0)
+        return ret;
+
+    ret = ph_vb_pos(ph->vb_pos_y, &ph->num_hor_vbs, VBFS(y, hor), pps->pps_pic_height_in_luma_samples, ctb_size_y);
+    if (ret < 0)
+        return ret;
+
+    return 0;
+}
+
 static int ph_derive(VVCPH *ph, const H266RawSPS *sps, const H266RawPPS *pps, const int poc_tid0, const int is_clvss)
 {
+    int ret;
     ph->max_num_subblock_merge_cand = ph_max_num_subblock_merge_cand(sps, ph->r);
 
     ph->poc = ph_compute_poc(ph->r, sps, poc_tid0, is_clvss);
 
     if (pps->pps_wp_info_in_ph_flag)
         pred_weight_table(&ph->pwt, &ph->r->ph_pred_weight_table);
+
+    ret = ph_vb(ph, sps, pps);
+    if (ret < 0)
+        return ret;
 
     return 0;
 }
