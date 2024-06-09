@@ -1562,13 +1562,13 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         flag(sps_virtual_boundaries_present_flag);
         if (current->sps_virtual_boundaries_present_flag) {
             ue(sps_num_ver_virtual_boundaries,
-               0, current->sps_pic_width_max_in_luma_samples <= 8 ? 0 : 3);
+               0, current->sps_pic_width_max_in_luma_samples <= 8 ? 0 : VVC_MAX_VBS);
             for (i = 0; i < current->sps_num_ver_virtual_boundaries; i++)
                 ues(sps_virtual_boundary_pos_x_minus1[i],
                     0, (current->sps_pic_width_max_in_luma_samples + 7) / 8 - 2,
                     1, i);
             ue(sps_num_hor_virtual_boundaries,
-               0, current->sps_pic_height_max_in_luma_samples <= 8 ? 0 : 3);
+               0, current->sps_pic_height_max_in_luma_samples <= 8 ? 0 : VVC_MAX_VBS);
             for (i = 0; i < current->sps_num_hor_virtual_boundaries; i++)
                 ues(sps_virtual_boundary_pos_y_minus1[i],
                     0, (current->sps_pic_height_max_in_luma_samples + 7) /
@@ -2714,13 +2714,13 @@ static int FUNC(picture_header) (CodedBitstreamContext *ctx, RWContext *rw,
         flag(ph_virtual_boundaries_present_flag);
         if (current->ph_virtual_boundaries_present_flag) {
             ue(ph_num_ver_virtual_boundaries,
-               0, pps->pps_pic_width_in_luma_samples <= 8 ? 0 : 3);
+               0, pps->pps_pic_width_in_luma_samples <= 8 ? 0 : VVC_MAX_VBS);
             for (i = 0; i < current->ph_num_ver_virtual_boundaries; i++) {
                 ues(ph_virtual_boundary_pos_x_minus1[i],
                     0, (pps->pps_pic_width_in_luma_samples + 7) / 8 - 2, 1, i);
             }
             ue(ph_num_hor_virtual_boundaries,
-               0, pps->pps_pic_height_in_luma_samples <= 8 ? 0 : 3);
+               0, pps->pps_pic_height_in_luma_samples <= 8 ? 0 : VVC_MAX_VBS);
             for (i = 0; i < current->ph_num_hor_virtual_boundaries; i++) {
                 ues(ph_virtual_boundary_pos_y_minus1[i],
                     0, (pps->pps_pic_height_in_luma_samples + 7) / 8 - 2, 1, i);

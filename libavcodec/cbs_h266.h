@@ -464,9 +464,9 @@ typedef struct H266RawSPS {
     uint8_t  sps_virtual_boundaries_enabled_flag;
     uint8_t  sps_virtual_boundaries_present_flag;
     uint8_t  sps_num_ver_virtual_boundaries;
-    uint16_t sps_virtual_boundary_pos_x_minus1[3];
+    uint16_t sps_virtual_boundary_pos_x_minus1[VVC_MAX_VBS];
     uint8_t  sps_num_hor_virtual_boundaries;
-    uint16_t sps_virtual_boundary_pos_y_minus1[3];
+    uint16_t sps_virtual_boundary_pos_y_minus1[VVC_MAX_VBS];
 
     uint8_t  sps_timing_hrd_params_present_flag;
     uint8_t  sps_sublayer_cpb_params_present_flag;
@@ -703,9 +703,9 @@ typedef struct  H266RawPictureHeader {
 
     uint8_t  ph_virtual_boundaries_present_flag;
     uint8_t  ph_num_ver_virtual_boundaries;
-    uint16_t ph_virtual_boundary_pos_x_minus1[3];
+    uint16_t ph_virtual_boundary_pos_x_minus1[VVC_MAX_VBS];
     uint8_t  ph_num_hor_virtual_boundaries;
-    uint16_t ph_virtual_boundary_pos_y_minus1[3];
+    uint16_t ph_virtual_boundary_pos_y_minus1[VVC_MAX_VBS];
 
     uint8_t  ph_pic_output_flag;
     H266RefPicLists ph_ref_pic_lists;
