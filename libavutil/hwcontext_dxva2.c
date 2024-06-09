@@ -133,7 +133,7 @@ static AVBufferRef *dxva2_pool_alloc(void *opaque, buffer_size_t size)
     if (s->nb_surfaces_used < hwctx->nb_surfaces) {
         s->nb_surfaces_used++;
         return av_buffer_create((uint8_t*)s->surfaces_internal[s->nb_surfaces_used - 1],
-                                sizeof(*hwctx->surfaces), dxva2_pool_release_dummy, 0, 0);
+                                sizeof(**hwctx->surfaces), dxva2_pool_release_dummy, 0, 0);
     }
 
     return NULL;
