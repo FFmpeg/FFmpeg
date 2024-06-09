@@ -308,7 +308,6 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
 {
     AVDOVIRpuDataHeader *hdr = &s->header;
     GetBitContext *gb = &(GetBitContext){0};
-    DOVIVdr *vdr;
     int ret;
 
     uint8_t rpu_type;
@@ -466,9 +465,9 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
                    prev_vdr_rpu_id);
             goto fail;
         }
-        vdr = s->vdr[prev_vdr_rpu_id];
-        s->mapping = &vdr->mapping;
+        s->mapping = &s->vdr[prev_vdr_rpu_id]->mapping;
     } else {
+        AVDOVIDataMapping *mapping;
         int vdr_rpu_id = get_ue_golomb_31(gb);
         VALIDATE(vdr_rpu_id, 0, DOVI_MAX_DM_ID);
         if (!s->vdr[vdr_rpu_id]) {
@@ -477,15 +476,13 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
                 return AVERROR(ENOMEM);
         }
 
-        vdr = s->vdr[vdr_rpu_id];
-        s->mapping = &vdr->mapping;
-
-        vdr->mapping.vdr_rpu_id = vdr_rpu_id;
-        vdr->mapping.mapping_color_space = get_ue_golomb_31(gb);
-        vdr->mapping.mapping_chroma_format_idc = get_ue_golomb_31(gb);
+        s->mapping = mapping = &s->vdr[vdr_rpu_id]->mapping;
+        mapping->vdr_rpu_id = vdr_rpu_id;
+        mapping->mapping_color_space = get_ue_golomb_31(gb);
+        mapping->mapping_chroma_format_idc = get_ue_golomb_31(gb);
 
         for (int c = 0; c < 3; c++) {
-            AVDOVIReshapingCurve *curve = &vdr->mapping.curves[c];
+            AVDOVIReshapingCurve *curve = &mapping->curves[c];
             int num_pivots_minus_2 = get_ue_golomb_31(gb);
             int pivot = 0;
 
@@ -499,28 +496,28 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
 
         if (use_nlq) {
             int nlq_pivot = 0;
-            vdr->mapping.nlq_method_idc = get_bits(gb, 3);
+            mapping->nlq_method_idc = get_bits(gb, 3);
 
             for (int i = 0; i < 2; i++) {
                 nlq_pivot += get_bits(gb, hdr->bl_bit_depth);
-                vdr->mapping.nlq_pivots[i] = av_clip_uint16(nlq_pivot);
+                mapping->nlq_pivots[i] = av_clip_uint16(nlq_pivot);
             }
 
             /**
              * The patent mentions another legal value, NLQ_MU_LAW, but it's
              * not documented anywhere how to parse or apply that type of NLQ.
              */
-            VALIDATE(vdr->mapping.nlq_method_idc, 0, AV_DOVI_NLQ_LINEAR_DZ);
+            VALIDATE(mapping->nlq_method_idc, 0, AV_DOVI_NLQ_LINEAR_DZ);
         } else {
-            vdr->mapping.nlq_method_idc = AV_DOVI_NLQ_NONE;
+            mapping->nlq_method_idc = AV_DOVI_NLQ_NONE;
         }
 
-        vdr->mapping.num_x_partitions = get_ue_golomb_long(gb) + 1;
-        vdr->mapping.num_y_partitions = get_ue_golomb_long(gb) + 1;
+        mapping->num_x_partitions = get_ue_golomb_long(gb) + 1;
+        mapping->num_y_partitions = get_ue_golomb_long(gb) + 1;
         /* End of rpu_data_header(), start of vdr_rpu_data_payload() */
 
         for (int c = 0; c < 3; c++) {
-            AVDOVIReshapingCurve *curve = &vdr->mapping.curves[c];
+            AVDOVIReshapingCurve *curve = &mapping->curves[c];
             for (int i = 0; i < curve->num_pivots - 1; i++) {
                 int mapping_idc = get_ue_golomb_31(gb);
                 VALIDATE(mapping_idc, 0, 1);
@@ -561,10 +558,10 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
 
         if (use_nlq) {
             for (int c = 0; c < 3; c++) {
-                AVDOVINLQParams *nlq = &vdr->mapping.nlq[c];
+                AVDOVINLQParams *nlq = &mapping->nlq[c];
                 nlq->nlq_offset = get_bits(gb, hdr->el_bit_depth);
                 nlq->vdr_in_max = get_ue_coef(gb, hdr);
-                switch (vdr->mapping.nlq_method_idc) {
+                switch (mapping->nlq_method_idc) {
                 case AV_DOVI_NLQ_LINEAR_DZ:
                     nlq->linear_deadzone_slope = get_ue_coef(gb, hdr);
                     nlq->linear_deadzone_threshold = get_ue_coef(gb, hdr);
