@@ -146,18 +146,21 @@ static void emulated_edge(const VVCLocalContext *lc, uint8_t *dst,
     subpic_get_rect(&subpic, src_frame, subpic_idx, is_chroma);
 
     if (!wrap_enabled || (dmvr_left >= 0 && dmvr_right <= pic_width)) {
-        return emulated_edge_no_wrap(lc, dst, src, src_stride,
+        emulated_edge_no_wrap(lc, dst, src, src_stride,
             x_off, y_off, block_w, block_h, extra_before, extra_after, &subpic, &sb, dmvr_clip);
+        return;
     }
     if (dmvr_right <= 0) {
         sb_wrap(&sb, wrap);
-        return emulated_edge_no_wrap(lc, dst, src, src_stride,
+        emulated_edge_no_wrap(lc, dst, src, src_stride,
             x_off + wrap, y_off, block_w, block_h, extra_before, extra_after, &subpic, &sb, dmvr_clip);
+        return;
     }
     if (dmvr_left >= pic_width) {
         sb_wrap(&sb, -wrap);
-        return emulated_edge_no_wrap(lc, dst, src, src_stride,
+        emulated_edge_no_wrap(lc, dst, src, src_stride,
             x_off - wrap, y_off, block_w, block_h, extra_before, extra_after, &subpic, &sb, dmvr_clip);
+        return;
     }
 
     block_w += extra;
