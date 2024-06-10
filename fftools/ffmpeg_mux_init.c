@@ -3022,10 +3022,14 @@ static int parse_forced_key_frames(void *log, KeyframeForceCtx *kf,
             unsigned int    nb_ch = mux->fc->nb_chapters;
             int j;
 
-            if (nb_ch > INT_MAX - size ||
-                !(pts = av_realloc_f(pts, size += nb_ch - 1,
-                                     sizeof(*pts))))
+            if (nb_ch > INT_MAX - size) {
+                ret = AVERROR(ERANGE);
                 goto fail;
+            }
+            size += nb_ch - 1;
+            pts = av_realloc_f(pts, size, sizeof(*pts));
+            if (!pts)
+                return AVERROR(ENOMEM);
 
             if (p[8]) {
                 ret = av_parse_time(&t, p + 8, 1);
