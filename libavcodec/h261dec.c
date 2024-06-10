@@ -166,31 +166,6 @@ static int h261_decode_gob_header(H261DecContext *h)
 }
 
 /**
- * Decode the group of blocks / video packet header.
- * @return <0 if no resync found
- */
-static int h261_resync(H261DecContext *h)
-{
-    MpegEncContext *const s = &h->s;
-    int ret;
-
-    if (h->gob_start_code_skipped) {
-        ret = h261_decode_gob_header(h);
-        if (ret >= 0)
-            return 0;
-    } else {
-        if (show_bits(&s->gb, 15) == 0) {
-            ret = h261_decode_gob_header(h);
-            if (ret >= 0)
-                return 0;
-        }
-        // OK, it is not where it is supposed to be ...
-    }
-
-    return -1;
-}
-
-/**
  * Decode skipped macroblocks.
  * @return 0
  */
@@ -626,7 +601,7 @@ static int h261_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     s->mb_y = 0;
 
     while (h->gob_number < (s->mb_height == 18 ? 12 : 5)) {
-        if (h261_resync(h) < 0)
+        if (h261_decode_gob_header(h) < 0)
             break;
         h261_decode_gob(h);
     }
