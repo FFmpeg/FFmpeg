@@ -22,7 +22,7 @@
  *
  * Split an audio stream into per-channel streams.
  */
-
+#include "libavutil/avassert.h"
 #include "libavutil/attributes.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/internal.h"
@@ -161,6 +161,8 @@ static int filter_frame(AVFilterLink *outlink, AVFrame *buf)
     const int i = FF_OUTLINK_IDX(outlink);
     enum AVChannel channel = av_channel_layout_channel_from_index(&buf->ch_layout, s->map[i]);
     int ret;
+
+    av_assert1(channel >= 0);
 
     AVFrame *buf_out = av_frame_clone(buf);
     if (!buf_out)
