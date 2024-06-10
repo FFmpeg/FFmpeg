@@ -246,8 +246,11 @@ static int try_push_frame(AVFilterContext *ctx, int nb_samples)
                                     av_make_q(1, outlink->sample_rate),
                                     outlink->time_base);
 
-    if ((ret = av_channel_layout_copy(&outbuf->ch_layout, &outlink->ch_layout)) < 0)
+    if ((ret = av_channel_layout_copy(&outbuf->ch_layout, &outlink->ch_layout)) < 0) {
+        free_frames(s->nb_inputs, inbuf);
+        av_frame_free(&outbuf);
         return ret;
+    }
 
     while (nb_samples) {
         /* Unroll the most common sample formats: speed +~350% for the loop,
