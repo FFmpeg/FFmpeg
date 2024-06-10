@@ -14,6 +14,7 @@ VVC_SAMPLES_10BIT =       \
     POC_A_1               \
     PPS_B_1               \
     RAP_A_1               \
+    RPR_A_4               \
     SAO_A_3               \
     SCALING_A_1           \
     SLICES_A_3            \
