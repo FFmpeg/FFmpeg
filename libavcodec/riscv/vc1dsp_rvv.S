@@ -303,15 +303,24 @@ func ff_vc1_inv_trans_4x8_rvv, zve32x
         vlsseg4e16.v v0, (a2), a3
         li           t1, 3
         jal          t0, ff_vc1_inv_trans_4_rvv
-        addi         t1, a2, 1 * 8 * 2
-        vse16.v      v0, (a2)
-        addi         t2, a2, 2 * 8 * 2
-        vse16.v      v1, (t1)
-        addi         t3, a2, 3 * 8 * 2
-        vse16.v      v2, (t2)
-        vse16.v      v3, (t3)
+        vssseg4e16.v v0, (a2), a3
         vsetivli     zero, 4, e16, mf2, ta, ma
-        vlseg8e16.v  v0, (a2)
+        addi         t1, a2, 1 * 8 * 2
+        vle16.v      v0, (a2)
+        addi         t2, a2, 2 * 8 * 2
+        vle16.v      v1, (t1)
+        addi         t3, a2, 3 * 8 * 2
+        vle16.v      v2, (t2)
+        addi         t4, a2, 4 * 8 * 2
+        vle16.v      v3, (t3)
+        addi         t5, a2, 5 * 8 * 2
+        vle16.v      v4, (t4)
+        addi         t6, a2, 6 * 8 * 2
+        vle16.v      v5, (t5)
+        addi         t1, a2, 7 * 8 * 2
+        vle16.v      v6, (t6)
+        vle16.v      v7, (t1)
+
         jal          t0, ff_vc1_inv_trans_8_rvv
         vadd.vi      v4, v4, 1
         add          t0, a1, a0
