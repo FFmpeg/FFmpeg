@@ -126,6 +126,14 @@ static av_cold int init(AVFilterContext *ctx)
     if (ret < 0)
         goto fail;
 
+    if (pan->nb_output_channels > MAX_CHANNELS) {
+        av_log(ctx, AV_LOG_ERROR,
+               "af_pan supports a maximum of %d channels. "
+               "Feel free to ask for a higher limit.\n", MAX_CHANNELS);
+        ret = AVERROR_PATCHWELCOME;
+        goto fail;
+    }
+
     /* parse channel specifications */
     while ((arg = arg0 = av_strtok(NULL, "|", &tokenizer))) {
         int used_in_ch[MAX_CHANNELS] = {0};
