@@ -1825,6 +1825,8 @@ int ff_mpv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
             s->mb_info_ptr = av_packet_new_side_data(pkt,
                                  AV_PKT_DATA_H263_MB_INFO,
                                  s->mb_width*s->mb_height*12);
+            if (!s->mb_info_ptr)
+                return AVERROR(ENOMEM);
             s->prev_mb_info = s->last_mb_info = s->mb_info_size = 0;
         }
 
