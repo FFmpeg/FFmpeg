@@ -380,12 +380,12 @@ func ff_vc1_inv_trans_4x4_rvv, zve32x
         vlsseg4e16.v v0, (a2), a3
         li           t1, 3
         jal          t0, ff_vc1_inv_trans_4_rvv
-        vsseg4e16.v  v0, (a2)
-        addi         t1, a2, 1 * 4 * 2
+        vssseg4e16.v v0, (a2), a3
+        addi         t1, a2, 2 * 4 * 2
         vle16.v      v0, (a2)
-        addi         t2, a2, 2 * 4 * 2
+        addi         t2, a2, 4 * 4 * 2
         vle16.v      v1, (t1)
-        addi         t3, a2, 3 * 4 * 2
+        addi         t3, a2, 6 * 4 * 2
         vle16.v      v2, (t2)
         vle16.v      v3, (t3)
         li           t1, 7
