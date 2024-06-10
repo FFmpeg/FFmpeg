@@ -25,6 +25,7 @@
 
 #include <float.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/cpu.h"
 #include "libavutil/tx.h"
 #include "libavutil/avstring.h"
@@ -247,6 +248,8 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg, int selir,
         iscale.d = 1.0 / sqrt(2.0 * part_size);
         tx_type  = AV_TX_DOUBLE_RDFT;
         break;
+    default:
+        av_assert1(0);
     }
 
     for (int ch = 0; ch < ctx->inputs[0]->ch_layout.nb_channels && part_size >= 1; ch++) {
