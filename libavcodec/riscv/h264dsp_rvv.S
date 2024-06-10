@@ -1,4 +1,7 @@
 /*
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2024 J. Dekker <jdek@itanimul.li>
  * Copyright © 2024 Rémi Denis-Courmont.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -323,3 +326,105 @@ func ff_h264_h_loop_filter_luma_mbaff_8_rvv, zve32x
         vssseg6e8.v v8, (a0), a1
         ret
 endfunc
+
+.macro idct_dc_add8 width
+func ff_h264_idct\width\()_dc_add_8_rvv, zve64x, zba
+.if \width == 8
+        vsetivli        zero, \width, e16, m1, ta, ma
+.else
+        vsetivli        zero, \width, e16, mf2, ta, ma
+.endif
+        lh              a3, 0(a1)
+        addi            a3, a3, 32
+        srai            a3, a3, 6
+        sh              zero, 0(a1)
+.if \width == 8
+        vlse64.v        v24, (a0), a2
+        vsetvli         t0, zero, e16, m8, ta, ma
+.else
+        vlse32.v        v24, (a0), a2
+        vsetvli         t0, zero, e16, m4, ta, ma
+.endif
+        vzext.vf2       v0, v24
+        vadd.vx         v0, v0, a3
+        vmax.vx         v0, v0, zero
+.if \width == 8
+        vsetvli         zero, zero, e8, m4, ta, ma
+.else
+        vsetvli         zero, zero, e8, m2, ta, ma
+.endif
+        vnclipu.wi      v24, v0, 0
+        vsetivli        zero, \width, e8, m1, ta, ma
+.if \width == 8
+        vsse64.v        v24, (a0), a2
+.else
+        vsse32.v        v24, (a0), a2
+.endif
+        ret
+endfunc
+.endm
+
+idct_dc_add8 4
+idct_dc_add8 8
+
+.macro idct_dc_add width
+func ff_h264_idct\width\()_dc_add_16_rvv, zve64x, zba
+        vsetivli        zero, \width, e16, m1, ta, ma
+        lw              a3, 0(a1)
+        addi            a3, a3, 32
+        srai            a3, a3, 6
+        sw              zero, 0(a1)
+        add             t4, a0, a2
+        sh1add          t5, a2, a0
+        sh1add          t6, a2, t4
+.if \width == 8
+        sh2add          t0, a2, a0
+        sh2add          t1, a2, t4
+        sh2add          t2, a2, t5
+        sh2add          t3, a2, t6
+.endif
+        vle16.v         v0, (a0)
+        vle16.v         v1, (t4)
+        vle16.v         v2, (t5)
+        vle16.v         v3, (t6)
+.if \width == 8
+        vle16.v         v4, (t0)
+        vle16.v         v5, (t1)
+        vle16.v         v6, (t2)
+        vle16.v         v7, (t3)
+        vsetvli         a6, zero, e16, m8, ta, ma
+.else
+        vsetvli         a6, zero, e16, m4, ta, ma
+.endif
+        vadd.vx         v0, v0, a3
+        vmax.vx         v0, v0, zero
+        vmin.vx         v0, v0, a5
+        vsetivli        zero, \width, e16, m1, ta, ma
+        vse16.v         v0, (a0)
+        vse16.v         v1, (t4)
+        vse16.v         v2, (t5)
+        vse16.v         v3, (t6)
+.if \width == 8
+        vse16.v         v4, (t0)
+        vse16.v         v5, (t1)
+        vse16.v         v6, (t2)
+        vse16.v         v7, (t3)
+.endif
+        ret
+endfunc
+.endm
+
+idct_dc_add 4
+idct_dc_add 8
+
+.irp depth,9,10,12,14
+func ff_h264_idct4_dc_add_\depth\()_rvv, zve64x
+        li              a5, (1 << \depth) - 1
+        j               ff_h264_idct4_dc_add_16_rvv
+endfunc
+
+func ff_h264_idct8_dc_add_\depth\()_rvv, zve64x
+        li              a5, (1 << \depth) - 1
+        j               ff_h264_idct8_dc_add_16_rvv
+endfunc
+.endr
