@@ -393,6 +393,7 @@ DISPOSITION:descriptions=1
 DISPOSITION:metadata=0
 DISPOSITION:dependent=0
 DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
 [/STREAM]
 [STREAM]
 index=1
@@ -415,6 +416,7 @@ DISPOSITION:descriptions=0
 DISPOSITION:metadata=1
 DISPOSITION:dependent=0
 DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
 [/STREAM]
 [STREAM]
 index=2
@@ -437,6 +439,7 @@ DISPOSITION:descriptions=0
 DISPOSITION:metadata=0
 DISPOSITION:dependent=0
 DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
 [/STREAM]
 [STREAM]
 index=3
@@ -459,4 +462,5 @@ DISPOSITION:descriptions=0
 DISPOSITION:metadata=0
 DISPOSITION:dependent=0
 DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
 [/STREAM]

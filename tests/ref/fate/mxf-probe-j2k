@@ -55,6 +55,7 @@ DISPOSITION:descriptions=0
 DISPOSITION:metadata=0
 DISPOSITION:dependent=0
 DISPOSITION:still_image=0
+DISPOSITION:multilayer=0
 TAG:file_package_umid=0x060A2B340101010501010F201300000035E05073878E4B2FB69D2369F25ADFC9
 TAG:file_package_name=File Package: SMPTE ST 422 / ST 2067-5 frame wrapping of JPEG 2000 codestreams
 TAG:track_name=Image Track

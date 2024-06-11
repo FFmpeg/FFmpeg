@@ -599,6 +599,7 @@ descriptions=0
 metadata=0
 dependent=0
 still_image=0
+multilayer=0
 
 [streams.stream.0.tags]
 E=mc²
@@ -663,6 +664,7 @@ descriptions=0
 metadata=0
 dependent=0
 still_image=0
+multilayer=0
 
 [streams.stream.1.tags]
 title=foobar
@@ -728,6 +730,7 @@ descriptions=0
 metadata=0
 dependent=0
 still_image=0
+multilayer=0
 
 [streams.stream.2.tags]
 encoder=Lavc rawvideo

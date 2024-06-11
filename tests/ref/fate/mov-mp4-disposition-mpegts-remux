@@ -44,7 +44,8 @@ adb3b95c07a5f3e0c86641dd62f01dae *tests/data/fate/mov-mp4-disposition-mpegts-rem
                 "descriptions": 0,
                 "metadata": 0,
                 "dependent": 0,
-                "still_image": 0
+                "still_image": 0,
+                "multilayer": 0
             },
             "side_data_list": [
                 {
@@ -72,7 +73,8 @@ adb3b95c07a5f3e0c86641dd62f01dae *tests/data/fate/mov-mp4-disposition-mpegts-rem
                 "descriptions": 1,
                 "metadata": 0,
                 "dependent": 0,
-                "still_image": 0
+                "still_image": 0,
+                "multilayer": 0
             },
             "side_data_list": [
                 {

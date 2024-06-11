@@ -219,7 +219,8 @@ const AVClass *avformat_get_class(void)
         { "descriptions",       .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_DESCRIPTIONS      },    .unit = "disposition" }, \
         { "metadata",           .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_METADATA          },    .unit = "disposition" }, \
         { "dependent",          .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_DEPENDENT         },    .unit = "disposition" }, \
-        { "still_image",        .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_STILL_IMAGE       },    .unit = "disposition" }
+        { "still_image",        .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_STILL_IMAGE       },    .unit = "disposition" }, \
+        { "multilayer",         .type = AV_OPT_TYPE_CONST, { .i64 = AV_DISPOSITION_MULTILAYER        },    .unit = "disposition" }
 
 static const AVOption stream_options[] = {
     DISPOSITION_OPT(AVStream),

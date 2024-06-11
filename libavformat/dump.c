@@ -564,6 +564,8 @@ static void dump_disposition(int disposition, int log_level)
         av_log(NULL, log_level, " (still image)");
     if (disposition & AV_DISPOSITION_NON_DIEGETIC)
         av_log(NULL, log_level, " (non-diegetic)");
+    if (disposition & AV_DISPOSITION_MULTILAYER)
+        av_log(NULL, log_level, " (multilayer)");
 }
 
 /* "user interface" functions */
