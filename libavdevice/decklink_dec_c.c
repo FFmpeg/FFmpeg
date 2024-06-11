@@ -95,12 +95,16 @@ static const AVOption options[] = {
     { "reference",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_REFERENCE}, 0, 0, DEC, .unit = "pts_source"},
     { "wallclock",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_WALLCLOCK}, 0, 0, DEC, .unit = "pts_source"},
     { "abs_wallclock", NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = PTS_SRC_ABS_WALLCLOCK}, 0, 0, DEC, .unit = "pts_source"},
-    { "draw_bars",     "draw bars on signal loss" , OFFSET(draw_bars),    AV_OPT_TYPE_BOOL,  { .i64 = 1}, 0, 1, DEC },
+    { "draw_bars",     "use option signal_loss_action instead" , OFFSET(draw_bars),    AV_OPT_TYPE_BOOL,  { .i64 = 1}, 0, 1, DEC | AV_OPT_FLAG_DEPRECATED },
     { "queue_size",    "input queue buffer size",   OFFSET(queue_size),   AV_OPT_TYPE_INT64, { .i64 = (1024 * 1024 * 1024)}, 0, INT64_MAX, DEC },
     { "audio_depth",   "audio bitdepth (16 or 32)", OFFSET(audio_depth),  AV_OPT_TYPE_INT,   { .i64 = 16}, 16, 32, DEC },
     { "decklink_copyts", "copy timestamps, do not remove the initial offset", OFFSET(copyts), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
     { "timestamp_align", "capture start time alignment (in seconds)", OFFSET(timestamp_align), AV_OPT_TYPE_DURATION, { .i64 = 0 }, 0, INT_MAX, DEC },
     { "wait_for_tc",     "drop frames till a frame with timecode is received. TC format must be set", OFFSET(wait_for_tc), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
+    { "signal_loss_action", "action on signal loss", OFFSET(signal_loss_action), AV_OPT_TYPE_INT, { .i64 = SIGNAL_LOSS_BARS }, SIGNAL_LOSS_NONE, SIGNAL_LOSS_BARS, DEC, .unit = "signal_loss_action" },
+    { "none", "do not do anything (usually leads to black frames)", 0,  AV_OPT_TYPE_CONST, { .i64 = SIGNAL_LOSS_NONE }, 0, 0, DEC, .unit = "signal_loss_action"},
+    { "bars", "draw color bars (only supported for 8-bit signals)", 0,  AV_OPT_TYPE_CONST, { .i64 = SIGNAL_LOSS_BARS }, 0, 0, DEC, .unit = "signal_loss_action"},
+    { "repeat", "repeat the last video frame", 0,  AV_OPT_TYPE_CONST, { .i64 = SIGNAL_LOSS_REPEAT }, 0, 0, DEC, .unit = "signal_loss_action"},
     { NULL },
 };
 

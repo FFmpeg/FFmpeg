@@ -147,6 +147,7 @@ struct decklink_ctx {
     DecklinkPtsSource video_pts_source;
     int draw_bars;
     BMDPixelFormat raw_format;
+    DecklinkSignalLossAction signal_loss_action;
 
     int frames_preroll;
     int frames_buffer;

@@ -396,6 +396,22 @@ Defaults to @samp{audio}.
 @item draw_bars
 If set to @samp{true}, color bars are drawn in the event of a signal loss.
 Defaults to @samp{true}.
+This option is deprecated, please use the @code{signal_loss_action} option.
+
+@item signal_loss_action
+Sets the action to take in the event of a signal loss. Accepts one of the
+following values:
+
+@table @option
+@item 1, none
+Do nothing on signal loss. This usually results in black frames.
+@item 2, bars
+Draw color bars on signal loss. Only supported for 8-bit input signals.
+@item 3, repeat
+Repeat the last video frame on signal loss.
+@end table
+
+Defaults to @samp{bars}.
 
 @item queue_size
 Sets maximum input buffer size in bytes. If the buffering reaches this value,
