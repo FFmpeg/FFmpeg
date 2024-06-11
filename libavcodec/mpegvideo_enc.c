@@ -910,8 +910,14 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     s->quant_precision = 5;
 
-    ret  = ff_set_cmp(&s->mecc, s->mecc.ildct_cmp,      avctx->ildct_cmp);
-    ret |= ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
+    if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
+        ret = ff_set_cmp(&s->mecc, s->mecc.ildct_cmp, avctx->ildct_cmp);
+        if (ret < 0)
+            return ret;
+        if (!s->mecc.ildct_cmp[0] || !s->mecc.ildct_cmp[4])
+            return AVERROR(EINVAL);
+    }
+    ret = ff_set_cmp(&s->mecc, s->mecc.frame_skip_cmp, s->frame_skip_cmp);
     if (ret < 0)
         return AVERROR(EINVAL);
 
