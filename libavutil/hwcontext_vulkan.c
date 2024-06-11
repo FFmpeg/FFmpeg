@@ -2511,7 +2511,7 @@ static inline VkFormat drm_to_vulkan_fmt(uint32_t drm_fourcc)
 }
 
 static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **frame,
-                                          const AVFrame *src)
+                                          const AVFrame *src, int flags)
 {
     int err = 0;
     VkResult ret;
@@ -2580,8 +2580,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .flags                 = 0x0,
             .tiling                = VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT,
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED, /* specs say so */
-            .usage                 = VK_IMAGE_USAGE_SAMPLED_BIT |
-                                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+            .usage                 = 0x0, /* filled in below */
             .samples               = VK_SAMPLE_COUNT_1_BIT,
             .pQueueFamilyIndices   = p->img_qfs,
             .queueFamilyIndexCount = p->nb_img_qfs,
@@ -2618,6 +2617,13 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .usage  = create_info.usage,
             .flags  = create_info.flags,
         };
+
+        if (flags & AV_HWFRAME_MAP_READ)
+            create_info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT |
+                                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        if (flags & AV_HWFRAME_MAP_WRITE)
+            create_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT |
+                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         /* Check if importing is possible for this combination of parameters */
         ret = vk->GetPhysicalDeviceImageFormatProperties2(hwctx->phys_dev,
@@ -2788,7 +2794,7 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
     int err = 0;
     AVVkFrame *f;
 
-    if ((err = vulkan_map_from_drm_frame_desc(hwfc, &f, src)))
+    if ((err = vulkan_map_from_drm_frame_desc(hwfc, &f, src, flags)))
         return err;
 
     /* The unmapping function will free this */
