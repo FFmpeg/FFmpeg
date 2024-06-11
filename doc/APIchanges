@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-06-13 - xxxxxxxxxx - lavu 59.22.100 - common.h
+  Deprecate av_mod_uintp2[_c]() and replace it with av_zero_extend[_c]().
+
 2024-06-08 - xxxxxxxxxx - lavc 61.7.100 - defs.h
   Add AV_PROFILE_AAC_USAC.
 

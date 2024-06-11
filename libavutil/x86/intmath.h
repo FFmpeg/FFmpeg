@@ -82,13 +82,13 @@ static av_always_inline av_const int ff_ctzll_x86(long long v)
 #if defined(__BMI2__)
 
 #if AV_GCC_VERSION_AT_LEAST(5,1)
-#define av_mod_uintp2 __builtin_ia32_bzhi_si
+#define av_zero_extend __builtin_ia32_bzhi_si
 #elif HAVE_INLINE_ASM
 /* GCC releases before 5.1.0 have a broken bzhi builtin, so for those we
  * implement it using inline assembly
  */
-#define av_mod_uintp2 av_mod_uintp2_bmi2
-static av_always_inline av_const unsigned av_mod_uintp2_bmi2(unsigned a, unsigned p)
+#define av_zero_extend av_zero_extend_bmi2
+static av_always_inline av_const unsigned av_zero_extend_bmi2(unsigned a, unsigned p)
 {
     if (av_builtin_constant_p(p))
         return a & ((1 << p) - 1);
