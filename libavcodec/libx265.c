@@ -948,7 +948,7 @@ static const AVOption options[] = {
     { "tune",        "set the x265 tune parameter",                                                 OFFSET(tune),      AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "profile",     "set the x265 profile",                                                        OFFSET(profile),   AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "udu_sei",     "Use user data unregistered SEI if available",                                 OFFSET(udu_sei),   AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
-    { "a53cc",       "Use A53 Closed Captions (if available)",                                      OFFSET(a53_cc),    AV_OPT_TYPE_BOOL,   { .i64 = 1 }, 0, 1, VE },
+    { "a53cc",       "Use A53 Closed Captions (if available)",                                      OFFSET(a53_cc),    AV_OPT_TYPE_BOOL,   { .i64 = 0 }, 0, 1, VE },
     { "x265-params", "set the x265 configuration using a :-separated list of key=value parameters", OFFSET(x265_opts), AV_OPT_TYPE_DICT,   { 0 }, 0, 0, VE },
 #if X265_BUILD >= 167
     { "dolbyvision", "Enable Dolby Vision RPU coding", OFFSET(dovi.enable), AV_OPT_TYPE_BOOL, {.i64 = FF_DOVI_AUTOMATIC }, -1, 1, VE, .unit = "dovi" },
