@@ -43,8 +43,8 @@ static const uint8_t l0_l1_cand_idx[12][2] = {
 void ff_hevc_set_neighbour_available(HEVCLocalContext *lc, int x0, int y0,
                                      int nPbW, int nPbH, int log2_ctb_size)
 {
-    int x0b = av_mod_uintp2(x0, log2_ctb_size);
-    int y0b = av_mod_uintp2(y0, log2_ctb_size);
+    int x0b = av_zero_extend(x0, log2_ctb_size);
+    int y0b = av_zero_extend(y0, log2_ctb_size);
 
     lc->na.cand_up       = (lc->ctb_up_flag   || y0b);
     lc->na.cand_left     = (lc->ctb_left_flag || x0b);

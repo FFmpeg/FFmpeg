@@ -1679,8 +1679,8 @@ static void chroma_mc_uni(HEVCLocalContext *lc,
     int idx              = hevc_pel_weight[block_w];
     int hshift           = sps->hshift[1];
     int vshift           = sps->vshift[1];
-    intptr_t mx          = av_mod_uintp2(mv->x, 2 + hshift);
-    intptr_t my          = av_mod_uintp2(mv->y, 2 + vshift);
+    intptr_t mx          = av_zero_extend(mv->x, 2 + hshift);
+    intptr_t my          = av_zero_extend(mv->y, 2 + vshift);
     intptr_t _mx         = mx << (1 - hshift);
     intptr_t _my         = my << (1 - vshift);
     int emu              = src0 == s->cur_frame->f->data[1] || src0 == s->cur_frame->f->data[2];
@@ -1753,10 +1753,10 @@ static void chroma_mc_bi(HEVCLocalContext *lc,
     int hshift = sps->hshift[1];
     int vshift = sps->vshift[1];
 
-    intptr_t mx0 = av_mod_uintp2(mv0->x, 2 + hshift);
-    intptr_t my0 = av_mod_uintp2(mv0->y, 2 + vshift);
-    intptr_t mx1 = av_mod_uintp2(mv1->x, 2 + hshift);
-    intptr_t my1 = av_mod_uintp2(mv1->y, 2 + vshift);
+    intptr_t mx0 = av_zero_extend(mv0->x, 2 + hshift);
+    intptr_t my0 = av_zero_extend(mv0->y, 2 + vshift);
+    intptr_t mx1 = av_zero_extend(mv1->x, 2 + hshift);
+    intptr_t my1 = av_zero_extend(mv1->y, 2 + vshift);
     intptr_t _mx0 = mx0 << (1 - hshift);
     intptr_t _my0 = my0 << (1 - vshift);
     intptr_t _mx1 = mx1 << (1 - hshift);
@@ -2020,8 +2020,8 @@ static int luma_intra_pred_mode(HEVCLocalContext *lc, const HEVCSPS *sps,
     int y_pu             = y0 >> sps->log2_min_pu_size;
     int min_pu_width     = sps->min_pu_width;
     int size_in_pus      = pu_size >> sps->log2_min_pu_size;
-    int x0b              = av_mod_uintp2(x0, sps->log2_ctb_size);
-    int y0b              = av_mod_uintp2(y0, sps->log2_ctb_size);
+    int x0b              = av_zero_extend(x0, sps->log2_ctb_size);
+    int y0b              = av_zero_extend(y0, sps->log2_ctb_size);
 
     int cand_up   = (lc->ctb_up_flag || y0b) ?
                     s->tab_ipm[(y_pu - 1) * min_pu_width + x_pu] : INTRA_DC;
@@ -2233,8 +2233,8 @@ static int hls_coding_unit(HEVCLocalContext *lc, const HEVCContext *s,
         lc->cu.cu_transquant_bypass_flag = 0;
 
     if (s->sh.slice_type != HEVC_SLICE_I) {
-        const int x0b = av_mod_uintp2(x0, sps->log2_ctb_size);
-        const int y0b = av_mod_uintp2(y0, sps->log2_ctb_size);
+        const int x0b = av_zero_extend(x0, sps->log2_ctb_size);
+        const int y0b = av_zero_extend(y0, sps->log2_ctb_size);
         uint8_t skip_flag = ff_hevc_skip_flag_decode(lc, x0b, y0b, x_cb, y_cb,
                                                      min_cb_width);
 

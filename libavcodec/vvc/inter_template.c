@@ -47,7 +47,7 @@ static void av_always_inline FUNC(put_scaled)(uint8_t *_dst, const ptrdiff_t _ds
     for (int i = 0; i < width; i++) {
         const int tx         = _x + dx * i;
         const int x          = SCALED_INT(tx) - x0;
-        const int mx         = av_mod_uintp2(tx >> shift1, shift2);
+        const int mx         = av_zero_extend(tx >> shift1, shift2);
         const int8_t *filter = hf + mx * taps;
         const pixel *src     = (pixel*)_src - extra_before * src_stride;
 
@@ -61,7 +61,7 @@ static void av_always_inline FUNC(put_scaled)(uint8_t *_dst, const ptrdiff_t _ds
     for (int i = 0; i < height; i++) {
         const int ty         = _y + dy * i;
         const int x          = SCALED_INT(ty) - y0;
-        const int mx         = av_mod_uintp2(ty >> shift1, shift2);
+        const int mx         = av_zero_extend(ty >> shift1, shift2);
         const int8_t *filter = vf + mx * taps;
 
         tmp = tmp_array + extra_before;
@@ -136,7 +136,7 @@ static void av_always_inline FUNC(put_uni_w_scaled)(uint8_t *_dst, const ptrdiff
     for (int i = 0; i < width; i++) {
         const int tx         = _x + dx * i;
         const int x          = SCALED_INT(tx) - x0;
-        const int mx         = av_mod_uintp2(tx >> shift1, shift2);
+        const int mx         = av_zero_extend(tx >> shift1, shift2);
         const int8_t *filter = hf + mx * taps;
         const pixel *src     = (pixel*)_src - extra_before * src_stride;
 
@@ -150,7 +150,7 @@ static void av_always_inline FUNC(put_uni_w_scaled)(uint8_t *_dst, const ptrdiff
     for (int i = 0; i < height; i++) {
         const int ty         = _y + dy * i;
         const int x          = SCALED_INT(ty) - y0;
-        const int mx         = av_mod_uintp2(ty >> shift1, shift2);
+        const int mx         = av_zero_extend(ty >> shift1, shift2);
         const int8_t *filter = vf + mx * taps;
 
         tmp = tmp_array + extra_before;

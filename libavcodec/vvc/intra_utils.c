@@ -100,7 +100,7 @@ int ff_vvc_get_top_available(const VVCLocalContext *lc, const int x, const int y
     const int vs = sps->vshift[c_idx];
     const int log2_ctb_size_v   = sps->ctb_log2_size_y - vs;
     const int end_of_ctb_x      = ((lc->cu->x0 >> sps->ctb_log2_size_y) + 1) << sps->ctb_log2_size_y;
-    const int y0b               = av_mod_uintp2(y, log2_ctb_size_v);
+    const int y0b               = av_zero_extend(y, log2_ctb_size_v);
     const int max_x             = FFMIN(fc->ps.pps->width, end_of_ctb_x) >> hs;
     const ReconstructedArea *a;
     int px = x;
@@ -130,7 +130,7 @@ int ff_vvc_get_left_available(const VVCLocalContext *lc, const int x, const int 
     const int hs = sps->hshift[c_idx];
     const int vs = sps->vshift[c_idx];
     const int log2_ctb_size_h   =  sps->ctb_log2_size_y - hs;
-    const int x0b               = av_mod_uintp2(x, log2_ctb_size_h);
+    const int x0b               = av_zero_extend(x, log2_ctb_size_h);
     const int end_of_ctb_y      = ((lc->cu->y0 >> sps->ctb_log2_size_y) + 1) << sps->ctb_log2_size_y;
     const int max_y             = FFMIN(fc->ps.pps->height, end_of_ctb_y) >> vs;
     const ReconstructedArea *a;

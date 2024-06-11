@@ -734,7 +734,7 @@ static void decode_qu_spectra(GetBitContext *gb, const Atrac3pSpecCodeTab *tab,
                 val = get_vlc2(gb, vlc_tab->table, vlc_tab->bits, 1);
 
                 for (i = 0; i < num_coeffs; i++) {
-                    cf = av_mod_uintp2(val, bits);
+                    cf = av_zero_extend(val, bits);
                     if (is_signed)
                         cf = sign_extend(cf, bits);
                     else if (cf && get_bits1(gb))

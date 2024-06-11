@@ -282,7 +282,7 @@ static inline void put_sbits(PutBitContext *pb, int n, int32_t value)
 {
     av_assert2(n >= 0 && n <= 31);
 
-    put_bits(pb, n, av_mod_uintp2(value, n));
+    put_bits(pb, n, av_zero_extend(value, n));
 }
 
 /**

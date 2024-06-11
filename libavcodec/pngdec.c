@@ -1018,7 +1018,7 @@ static int decode_trns_chunk(AVCodecContext *avctx, PNGDecContext *s,
 
         for (i = 0; i < length / 2; i++) {
             /* only use the least significant bits */
-            v = av_mod_uintp2(bytestream2_get_be16(gb), s->bit_depth);
+            v = av_zero_extend(bytestream2_get_be16(gb), s->bit_depth);
 
             if (s->bit_depth > 8)
                 AV_WB16(&s->transparent_color_be[2 * i], v);

@@ -99,7 +99,7 @@ static av_always_inline void FUNC(cclm_select_luma)(const VVCFrameContext *fc,
 {
     const VVCSPS *sps = fc->ps.sps;
 
-    const int b_ctu_boundary = !av_mod_uintp2(y0, sps->ctb_log2_size_y);
+    const int b_ctu_boundary = !av_zero_extend(y0, sps->ctb_log2_size_y);
     const int hs = sps->hshift[1];
     const int vs = sps->vshift[1];
     const ptrdiff_t stride = fc->frame->linesize[0] / sizeof(pixel);

@@ -1258,8 +1258,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
     sps->qp_bd_offset = 6 * (sps->bit_depth - 8);
 
-    if (av_mod_uintp2(sps->width, sps->log2_min_cb_size) ||
-        av_mod_uintp2(sps->height, sps->log2_min_cb_size)) {
+    if (av_zero_extend(sps->width, sps->log2_min_cb_size) ||
+        av_zero_extend(sps->height, sps->log2_min_cb_size)) {
         av_log(avctx, AV_LOG_ERROR, "Invalid coded frame dimensions.\n");
         return AVERROR_INVALIDDATA;
     }

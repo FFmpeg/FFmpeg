@@ -567,7 +567,7 @@ static av_always_inline void dnxhd_encode_dc(PutBitContext *pb, DNXHDEncContext 
     }
     put_bits(pb, ctx->cid_table->dc_bits[nbits] + nbits,
              (ctx->cid_table->dc_codes[nbits] << nbits) +
-             av_mod_uintp2(diff, nbits));
+             av_zero_extend(diff, nbits));
 }
 
 static av_always_inline

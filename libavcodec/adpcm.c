@@ -493,7 +493,7 @@ static inline int16_t adpcm_ima_wav_expand_nibble(ADPCMChannelStatus *c, GetBitC
     step_index = av_clip(step_index, 0, 88);
 
     sign = nibble & (1 << shift);
-    delta = av_mod_uintp2(nibble, shift);
+    delta = av_zero_extend(nibble, shift);
     diff = ((2 * delta + 1) * step) >> shift;
     predictor = c->predictor;
     if (sign) predictor -= diff;

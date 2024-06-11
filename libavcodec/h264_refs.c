@@ -791,7 +791,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
     for (int i = 0; i < h->short_ref_count; i++) {
         H264Picture *pic = h->short_ref[i];
         if (pic->invalid_gap) {
-            int d = av_mod_uintp2(h->cur_pic_ptr->frame_num - pic->frame_num, h->ps.sps->log2_max_frame_num);
+            int d = av_zero_extend(h->cur_pic_ptr->frame_num - pic->frame_num, h->ps.sps->log2_max_frame_num);
             if (d > h->ps.sps->ref_frame_count)
                 remove_short(h, pic->frame_num, 0);
         }

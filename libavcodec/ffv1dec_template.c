@@ -121,7 +121,7 @@ static av_always_inline int RENAME(decode_line)(FFV1Context *s, int w,
         if (sign)
             diff = -(unsigned)diff;
 
-        sample[1][x] = av_mod_uintp2(RENAME(predict)(sample[1] + x, sample[0] + x) + (SUINT)diff, bits);
+        sample[1][x] = av_zero_extend(RENAME(predict)(sample[1] + x, sample[0] + x) + (SUINT)diff, bits);
     }
     s->run_index = run_index;
     return 0;

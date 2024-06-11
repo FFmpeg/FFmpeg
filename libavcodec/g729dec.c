@@ -536,7 +536,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
 
             if (frame_erasure) {
                 ctx->rand_value = g729_prng(ctx->rand_value);
-                fc_indexes   = av_mod_uintp2(ctx->rand_value, format->fc_indexes_bits);
+                fc_indexes   = av_zero_extend(ctx->rand_value, format->fc_indexes_bits);
 
                 ctx->rand_value = g729_prng(ctx->rand_value);
                 pulses_signs = ctx->rand_value;

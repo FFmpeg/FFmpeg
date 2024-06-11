@@ -549,7 +549,7 @@ static int is_a0_available(const VVCLocalContext *lc, const CodingUnit *cu)
 {
     const VVCFrameContext *fc   = lc->fc;
     const VVCSPS *sps           = fc->ps.sps;
-    const int x0b               = av_mod_uintp2(cu->x0, sps->ctb_log2_size_y);
+    const int x0b               = av_zero_extend(cu->x0, sps->ctb_log2_size_y);
     int cand_bottom_left;
 
     if (!x0b && !lc->ctb_left_flag) {

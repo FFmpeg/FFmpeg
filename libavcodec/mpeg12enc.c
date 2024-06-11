@@ -692,12 +692,12 @@ static inline void encode_dc(MpegEncContext *s, int diff, int component)
             put_bits(&s->pb,
                      ff_mpeg12_vlc_dc_lum_bits[index] + index,
                      (ff_mpeg12_vlc_dc_lum_code[index] << index) +
-                     av_mod_uintp2(diff, index));
+                     av_zero_extend(diff, index));
         else
             put_bits(&s->pb,
                      ff_mpeg12_vlc_dc_chroma_bits[index] + index,
                      (ff_mpeg12_vlc_dc_chroma_code[index] << index) +
-                     av_mod_uintp2(diff, index));
+                     av_zero_extend(diff, index));
     } else {
         if (component == 0)
             put_bits(&s->pb,
@@ -1098,12 +1098,12 @@ static av_cold void mpeg12_encode_init_static(void)
 
         bits = ff_mpeg12_vlc_dc_lum_bits[index] + index;
         code = (ff_mpeg12_vlc_dc_lum_code[index] << index) +
-               av_mod_uintp2(diff, index);
+               av_zero_extend(diff, index);
         mpeg1_lum_dc_uni[i + 255] = bits + (code << 8);
 
         bits = ff_mpeg12_vlc_dc_chroma_bits[index] + index;
         code = (ff_mpeg12_vlc_dc_chroma_code[index] << index) +
-               av_mod_uintp2(diff, index);
+               av_zero_extend(diff, index);
         mpeg1_chr_dc_uni[i + 255] = bits + (code << 8);
     }
 

@@ -642,8 +642,8 @@ int ff_hevc_split_coding_unit_flag_decode(HEVCLocalContext *lc, const HEVCSPS *s
 {
     const HEVCContext *const s = lc->parent;
     int inc = 0, depth_left = 0, depth_top = 0;
-    int x0b  = av_mod_uintp2(x0, sps->log2_ctb_size);
-    int y0b  = av_mod_uintp2(y0, sps->log2_ctb_size);
+    int x0b  = av_zero_extend(x0, sps->log2_ctb_size);
+    int y0b  = av_zero_extend(y0, sps->log2_ctb_size);
     int x_cb = x0 >> sps->log2_min_cb_size;
     int y_cb = y0 >> sps->log2_min_cb_size;
 

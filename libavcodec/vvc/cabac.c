@@ -954,8 +954,8 @@ void get_left_top(const VVCLocalContext *lc, uint8_t *left, uint8_t *top,
     const VVCFrameContext *fc = lc->fc;
     const VVCSPS *sps         = fc->ps.sps;
     const int min_cb_width    = fc->ps.pps->min_cb_width;
-    const int x0b = av_mod_uintp2(x0, sps->ctb_log2_size_y);
-    const int y0b = av_mod_uintp2(y0, sps->ctb_log2_size_y);
+    const int x0b = av_zero_extend(x0, sps->ctb_log2_size_y);
+    const int y0b = av_zero_extend(y0, sps->ctb_log2_size_y);
     const int x_cb = x0 >> sps->min_cb_log2_size_y;
     const int y_cb = y0 >> sps->min_cb_log2_size_y;
 
@@ -1132,8 +1132,8 @@ static int mtt_split_cu_vertical_flag_decode(VVCLocalContext *lc, const int x0, 
             const VVCFrameContext *fc = lc->fc;
             const VVCSPS *sps         = fc->ps.sps;
             const int min_cb_width    = fc->ps.pps->min_cb_width;
-            const int x0b             = av_mod_uintp2(x0, sps->ctb_log2_size_y);
-            const int y0b             = av_mod_uintp2(y0, sps->ctb_log2_size_y);
+            const int x0b             = av_zero_extend(x0, sps->ctb_log2_size_y);
+            const int y0b             = av_zero_extend(y0, sps->ctb_log2_size_y);
             const int x_cb            = x0 >> sps->min_cb_log2_size_y;
             const int y_cb            = y0 >> sps->min_cb_log2_size_y;
             const int available_a     = lc->ctb_up_flag || y0b;

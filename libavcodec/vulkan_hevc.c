@@ -374,7 +374,7 @@ static void set_sps(const HEVCSPS *sps, int sps_idx,
         /* NOTE: This is the predicted, and *reordered* version.
          * Probably incorrect, but the spec doesn't say which version to use. */
         str[i].used_by_curr_pic_flag = st_rps->used;
-        str[i].used_by_curr_pic_s0_flag = av_mod_uintp2(st_rps->used, str[i].num_negative_pics);
+        str[i].used_by_curr_pic_s0_flag = av_zero_extend(st_rps->used, str[i].num_negative_pics);
         str[i].used_by_curr_pic_s1_flag = st_rps->used >> str[i].num_negative_pics;
 
         for (int j = 0; j < str[i].num_negative_pics; j++)

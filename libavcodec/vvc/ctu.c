@@ -713,8 +713,8 @@ static enum IntraPredMode luma_intra_pred_mode(VVCLocalContext* lc, const int in
         const int x_b           = (x0 + cu->cb_width - 1) >> sps->min_cb_log2_size_y;
         const int y_b           = (y0 - 1) >> sps->min_cb_log2_size_y;
         int min_cb_width        = fc->ps.pps->min_cb_width;
-        int x0b                 = av_mod_uintp2(x0, sps->ctb_log2_size_y);
-        int y0b                 = av_mod_uintp2(y0, sps->ctb_log2_size_y);
+        int x0b                 = av_zero_extend(x0, sps->ctb_log2_size_y);
+        int y0b                 = av_zero_extend(y0, sps->ctb_log2_size_y);
         const int available_l   = lc->ctb_left_flag || x0b;
         const int available_u   = lc->ctb_up_flag || y0b;
 
@@ -2508,8 +2508,8 @@ void ff_vvc_set_neighbour_available(VVCLocalContext *lc,
     const int x0, const int y0, const int w, const int h)
 {
     const int log2_ctb_size = lc->fc->ps.sps->ctb_log2_size_y;
-    const int x0b = av_mod_uintp2(x0, log2_ctb_size);
-    const int y0b = av_mod_uintp2(y0, log2_ctb_size);
+    const int x0b = av_zero_extend(x0, log2_ctb_size);
+    const int y0b = av_zero_extend(y0, log2_ctb_size);
 
     lc->na.cand_up       = (lc->ctb_up_flag   || y0b);
     lc->na.cand_left     = (lc->ctb_left_flag || x0b);
