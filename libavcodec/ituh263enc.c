@@ -274,8 +274,6 @@ void ff_clean_h263_qscales(MpegEncContext *s){
     int i;
     int8_t * const qscale_table = s->cur_pic.qscale_table;
 
-    ff_init_qscale_tab(s);
-
     for(i=1; i<s->mb_num; i++){
         if(qscale_table[ s->mb_index2xy[i] ] - qscale_table[ s->mb_index2xy[i-1] ] >2)
             qscale_table[ s->mb_index2xy[i] ]= qscale_table[ s->mb_index2xy[i-1] ]+2;

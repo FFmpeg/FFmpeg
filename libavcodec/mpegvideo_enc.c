@@ -237,7 +237,7 @@ void ff_write_quant_matrix(PutBitContext *pb, uint16_t *matrix)
 /**
  * init s->cur_pic.qscale_table from s->lambda_table
  */
-void ff_init_qscale_tab(MpegEncContext *s)
+static void init_qscale_tab(MpegEncContext *s)
 {
     int8_t * const qscale_table = s->cur_pic.qscale_table;
     int i;
@@ -3542,6 +3542,8 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
     }
 
     if(s->adaptive_quant){
+        init_qscale_tab(s);
+
         switch(s->codec_id){
         case AV_CODEC_ID_MPEG4:
             if (CONFIG_MPEG4_ENCODER)
@@ -3553,8 +3555,6 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
             if (CONFIG_H263_ENCODER)
                 ff_clean_h263_qscales(s);
             break;
-        default:
-            ff_init_qscale_tab(s);
         }
 
         s->lambda= s->lambda_table[0];

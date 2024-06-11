@@ -32,7 +32,6 @@ void ff_h263_encode_mb(MpegEncContext *s,
                        int motion_x, int motion_y);
 void ff_h263_encode_mba(MpegEncContext *s);
 
-void ff_init_qscale_tab(MpegEncContext *s);
 void ff_clean_h263_qscales(MpegEncContext *s);
 
 void ff_h263_encode_motion(PutBitContext *pb, int val, int f_code);
