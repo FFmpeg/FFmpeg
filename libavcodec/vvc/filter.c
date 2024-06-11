@@ -414,9 +414,6 @@ static void vvc_deblock_subblock_bs(const VVCLocalContext *lc,
     const RefPicList *rpl      = lc->sc->rpl;
     int stridea                = fc->ps.pps->min_pu_width;
     int strideb                = 1;
-    uint8_t *tab_bs            = vertical ? fc->tab.vertical_bs[LUMA] : fc->tab.horizontal_bs[LUMA];
-    uint8_t *tab_max_len_p     = vertical ? fc->tab.vertical_p : fc->tab.horizontal_p;
-    uint8_t *tab_max_len_q     = vertical ? fc->tab.vertical_q : fc->tab.horizontal_q;
     const int log2_min_pu_size = MIN_PU_LOG2;
 
     if (!vertical) {
@@ -442,7 +439,7 @@ static void vvc_deblock_subblock_bs(const VVCLocalContext *lc,
             if (!vertical)
                 FFSWAP(int, x, y);
 
-            TAB_BS(tab_bs, x, y) = bs;
+            TAB_BS(fc->tab.bs[vertical][LUMA], x, y) = bs;
 
             if (i == 4 || i == width - 4)
                 max_len_p = max_len_q = 1;
@@ -451,8 +448,8 @@ static void vvc_deblock_subblock_bs(const VVCLocalContext *lc,
             else
                 max_len_p = max_len_q = 3;
 
-            TAB_MAX_LEN(tab_max_len_p, x, y) = max_len_p;
-            TAB_MAX_LEN(tab_max_len_q, x, y) = max_len_q;
+            TAB_MAX_LEN(fc->tab.max_len_p[vertical], x, y) = max_len_p;
+            TAB_MAX_LEN(fc->tab.max_len_q[vertical], x, y) = max_len_q;
         }
     }
 }
@@ -562,9 +559,6 @@ static void vvc_deblock_bs_luma(const VVCLocalContext *lc,
         const int flag          = vertical ? BOUNDARY_LEFT_SLICE : BOUNDARY_UPPER_SLICE;
         const RefPicList *rpl_p =
             (lc->boundary_flags & flag) ? ff_vvc_get_ref_list(fc, fc->ref, x0 - vertical, y0 - !vertical) : lc->sc->rpl;
-        uint8_t *tab_bs         = vertical ? fc->tab.vertical_bs[LUMA] : fc->tab.horizontal_bs[LUMA];
-        uint8_t *tab_max_len_p  = vertical ? fc->tab.vertical_p : fc->tab.horizontal_p;
-        uint8_t *tab_max_len_q  = vertical ? fc->tab.vertical_q : fc->tab.horizontal_q;
 
         for (int i = 0; i < size; i += 4) {
             const int x = x0 + i * !vertical;
@@ -572,11 +566,11 @@ static void vvc_deblock_bs_luma(const VVCLocalContext *lc,
             uint8_t max_len_p, max_len_q;
             const int bs = deblock_bs(lc, x - vertical, y - !vertical, x, y, rpl_p, LUMA, off, has_sb);
 
-            TAB_BS(tab_bs, x, y) = bs;
+            TAB_BS(fc->tab.bs[vertical][LUMA], x, y) = bs;
 
             derive_max_filter_length_luma(fc, x, y, is_intra, has_sb, vertical, &max_len_p, &max_len_q);
-            TAB_MAX_LEN(tab_max_len_p, x, y) = max_len_p;
-            TAB_MAX_LEN(tab_max_len_q, x, y) = max_len_q;
+            TAB_MAX_LEN(fc->tab.max_len_p[vertical], x, y) = max_len_p;
+            TAB_MAX_LEN(fc->tab.max_len_q[vertical], x, y) = max_len_q;
         }
     }
 
@@ -598,14 +592,12 @@ static void vvc_deblock_bs_chroma(const VVCLocalContext *lc,
         const int size = vertical ? height : width;
 
         for (int c_idx = CB; c_idx <= CR; c_idx++) {
-            uint8_t *tab_bs = (vertical ? fc->tab.vertical_bs : fc->tab.horizontal_bs)[c_idx];
-
             for (int i = 0; i < size; i += 2) {
                 const int x  = x0 + i * !vertical;
                 const int y  = y0 + i * vertical;
                 const int bs = deblock_bs(lc, x - vertical, y - !vertical, x, y, NULL, c_idx, 0, 0);
 
-                TAB_BS(tab_bs, x, y) = bs;
+                TAB_BS(fc->tab.bs[vertical][c_idx], x, y) = bs;
             }
         }
     }
@@ -645,10 +637,8 @@ static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0
 static void max_filter_length_luma(const VVCFrameContext *fc, const int qx, const int qy,
                                    const int vertical, uint8_t *max_len_p, uint8_t *max_len_q)
 {
-    const uint8_t *tab_len_p = vertical ? fc->tab.vertical_p : fc->tab.horizontal_p;
-    const uint8_t *tab_len_q = vertical ? fc->tab.vertical_q : fc->tab.horizontal_q;
-    *max_len_p = TAB_MAX_LEN(tab_len_p, qx, qy);
-    *max_len_q = TAB_MAX_LEN(tab_len_q, qx, qy);
+    *max_len_p = TAB_MAX_LEN(fc->tab.max_len_p[vertical], qx, qy);
+    *max_len_q = TAB_MAX_LEN(fc->tab.max_len_q[vertical], qx, qy);
 }
 
 //part of 8.8.3.3 Derivation process of transform block boundary
@@ -758,7 +748,7 @@ void ff_vvc_deblock_vertical(const VVCLocalContext *lc, const int x0, const int 
 
                 for (int i = 0; i < DEBLOCK_STEP >> (2 - vs); i++) {
                     const int dy = i << 2;
-                    bs[i] = (y + dy < y_end) ? TAB_BS(fc->tab.vertical_bs[c_idx], x, y + dy) : 0;
+                    bs[i] = (y + dy < y_end) ? TAB_BS(fc->tab.bs[1][c_idx], x, y + dy) : 0;
                     if (bs[i]) {
                         src = &fc->frame->data[c_idx][((y + dy) >> vs) * fc->frame->linesize[c_idx] + ((x >> hs) << fc->ps.sps->pixel_shift)];
                         qp = get_qp(fc, src, x, y + dy, c_idx, 1);
@@ -831,7 +821,7 @@ void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, const int x0, const in
                 for (int i = 0; i < DEBLOCK_STEP >> (2 - hs); i++) {
                     const int dx = i << 2;
 
-                    bs[i] = (x + dx < x_end) ? TAB_BS(fc->tab.horizontal_bs[c_idx], x + dx, y) : 0;
+                    bs[i] = (x + dx < x_end) ? TAB_BS(fc->tab.bs[0][c_idx], x + dx, y) : 0;
                     if (bs[i]) {
                         src = &fc->frame->data[c_idx][(y >> vs) * fc->frame->linesize[c_idx] + (((x + dx)>> hs) << fc->ps.sps->pixel_shift)];
                         qp = get_qp(fc, src, x + dx, y, c_idx, 0);

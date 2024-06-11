@@ -178,12 +178,9 @@ typedef struct VVCFrameContext {
         uint8_t *tb_height[2];
         uint8_t *pcmf[2];
 
-        uint8_t *horizontal_bs[VVC_MAX_SAMPLE_ARRAYS];
-        uint8_t *vertical_bs[VVC_MAX_SAMPLE_ARRAYS];
-        uint8_t *horizontal_p;                          ///< horizontal maxFilterLengthPs for luma
-        uint8_t *horizontal_q;                          ///< horizontal maxFilterLengthQs for luma
-        uint8_t *vertical_p;                            ///< vertical   maxFilterLengthPs for luma
-        uint8_t *vertical_q;                            ///< vertical   maxFilterLengthQs for luma
+        uint8_t *bs[2][VVC_MAX_SAMPLE_ARRAYS];          ///< horizontal, vertical boundary filtering strength
+        uint8_t *max_len_p[2];                          ///< horizontal, vertical maxFilterLengthPs for luma
+        uint8_t *max_len_q[2];                          ///< horizontal, vertical maxFilterLengthQs for luma
 
         uint8_t *sao_pixel_buffer_h[VVC_MAX_SAMPLE_ARRAYS];
         uint8_t *sao_pixel_buffer_v[VVC_MAX_SAMPLE_ARRAYS];

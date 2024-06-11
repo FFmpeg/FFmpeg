@@ -191,14 +191,12 @@ static void bs_tl_init(TabList *l, VVCFrameContext *fc)
 
     tl_init(l, 1, changed);
 
-    for (int i = 0; i < VVC_MAX_SAMPLE_ARRAYS; i++) {
-        TL_ADD(horizontal_bs[i], bs_count);
-        TL_ADD(vertical_bs[i],   bs_count);
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < VVC_MAX_SAMPLE_ARRAYS; j++)
+            TL_ADD(bs[i][j], bs_count);
+        TL_ADD(max_len_p[i], bs_count);
+        TL_ADD(max_len_q[i], bs_count);
     }
-    TL_ADD(horizontal_q, bs_count);
-    TL_ADD(horizontal_p, bs_count);
-    TL_ADD(vertical_p,   bs_count);
-    TL_ADD(vertical_q,   bs_count);
 }
 
 static void pixel_buffer_nz_tl_init(TabList *l, VVCFrameContext *fc)
