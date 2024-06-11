@@ -172,7 +172,8 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 add_dequant_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
 
                 if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
-                    if (s->chroma_y_shift) {
+                    av_assert2(IS_ENCODER || s->chroma_y_shift);
+                    if (!IS_ENCODER || s->chroma_y_shift) {
                         add_dequant_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
                         add_dequant_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
                     } else {
