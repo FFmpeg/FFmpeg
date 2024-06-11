@@ -161,6 +161,7 @@ func ff_vc1_inv_trans_8_rvv, zve32x
         vsll.vi v23, v7, 4
         vsub.vv v20, v20, v21
         vsub.vv v22, v22, v23
+        srli    t2, t1, 2
         vadd.vv v0, v28, v16
         vadd.vv v19, v20, v22 # t4
         vadd.vv v1, v29, v17
@@ -170,6 +171,14 @@ func ff_vc1_inv_trans_8_rvv, zve32x
         vsub.vv v5, v30, v18
         vsub.vv v6, v29, v17
         vsub.vv v7, v28, v16
+        beqz    t2, 1f # faster than 4x add t2=zero
+        .irp    n,4,5,6,7
+        vadd.vi v\n, v\n, 1
+        .endr
+1:
+        .irp n,0,1,2,3,4,5,6,7
+        vssra.vx v\n, v\n, t1
+        .endr
         jr      t0
 endfunc
 
@@ -216,35 +225,22 @@ func ff_vc1_inv_trans_8x8_rvv, zve32x
         addi     a7, a0, 7 * 8 * 2
         vle16.v  v6, (a6)
         vle16.v  v7, (a7)
+        li       t1, 3
         jal      t0, ff_vc1_inv_trans_8_rvv
-        .irp n,0,1,2,3,4,5,6,7
-        vssra.vi v\n, v\n, 3
-        .endr
         vsseg8e16.v v0, (a0)
         .irp n,0,1,2,3,4,5,6,7
         vle16.v  v\n, (a\n)
         .endr
+        li       t1, 7
         jal      t0, ff_vc1_inv_trans_8_rvv
-        vadd.vi  v4, v4, 1
-        vadd.vi  v5, v5, 1
-        vssra.vi v4, v4, 7
-        vssra.vi v5, v5, 7
-        vse16.v  v4, (a4)
-        vadd.vi  v6, v6, 1
-        vse16.v  v5, (a5)
-        vadd.vi  v7, v7, 1
-        vssra.vi v6, v6, 7
-        vssra.vi v7, v7, 7
-        vse16.v  v6, (a6)
-        vssra.vi v0, v0, 7
-        vse16.v  v7, (a7)
-        vssra.vi v1, v1, 7
         vse16.v  v0, (a0)
-        vssra.vi v2, v2, 7
         vse16.v  v1, (a1)
-        vssra.vi v3, v3, 7
         vse16.v  v2, (a2)
         vse16.v  v3, (a3)
+        vse16.v  v4, (a4)
+        vse16.v  v5, (a5)
+        vse16.v  v6, (a6)
+        vse16.v  v7, (a7)
         ret
 endfunc
 
@@ -252,6 +248,7 @@ func ff_vc1_inv_trans_8x4_rvv, zve32x
         csrwi       vxrm, 0
         vsetivli    zero, 4, e16, mf2, ta, ma
         vlseg8e16.v v0, (a2)
+        li          t1, 3
         jal         t0, ff_vc1_inv_trans_8_rvv
         vsseg8e16.v v0, (a2)
         addi        a3, a2, 1 * 8 * 2
@@ -262,10 +259,6 @@ func ff_vc1_inv_trans_8x4_rvv, zve32x
         addi        a5, a2, 3 * 8 * 2
         vle16.v     v2, (a4)
         vle16.v     v3, (a5)
-        .irp    n,0,1,2,3
-        # shift 4 vectors of 8 elems after transpose instead of 8 of 4
-        vssra.vi    v\n, v\n, 3
-        .endr
         li          t1, 7
         jal         t0, ff_vc1_inv_trans_4_rvv
         add         a3, a1, a0
@@ -320,33 +313,21 @@ func ff_vc1_inv_trans_4x8_rvv, zve32x
         addi         t1, a2, 7 * 8 * 2
         vle16.v      v6, (t6)
         vle16.v      v7, (t1)
-
+        li           t1, 7
         jal          t0, ff_vc1_inv_trans_8_rvv
-        vadd.vi      v4, v4, 1
         add          t0, a1, a0
-        vadd.vi      v5, v5, 1
-        vadd.vi      v6, v6, 1
-        add          t1, a1, t0
-        vadd.vi      v7, v7, 1
-        vssra.vi     v0, v0, 7
-        add          t2, a1, t1
-        vssra.vi     v1, v1, 7
-        vssra.vi     v2, v2, 7
-        add          t3, a1, t2
-        vssra.vi     v3, v3, 7
-        vssra.vi     v4, v4, 7
-        add          t4, a1, t3
-        vssra.vi     v5, v5, 7
-        vssra.vi     v6, v6, 7
-        add          t5, a1, t4
-        vssra.vi     v7, v7, 7
         vle8.v       v8, (a0)
-        add          t6, a1, t5
+        add          t1, a1, t0
         vle8.v       v9, (t0)
+        add          t2, a1, t1
         vle8.v       v10, (t1)
+        add          t3, a1, t2
         vle8.v       v11, (t2)
+        add          t4, a1, t3
         vle8.v       v12, (t3)
+        add          t5, a1, t4
         vle8.v       v13, (t4)
+        add          t6, a1, t5
         vle8.v       v14, (t5)
         vle8.v       v15, (t6)
         vsetvli      zero, zero, e8, mf4, ta, ma
