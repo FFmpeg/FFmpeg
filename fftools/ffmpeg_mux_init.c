@@ -3146,6 +3146,7 @@ static int validate_enc_avopt(Muxer *mux, const AVDictionary *codec_avopt)
         if (!(option->flags & AV_OPT_FLAG_ENCODING_PARAM)) {
             av_log(mux, AV_LOG_ERROR, "Codec AVOption %s (%s) is not an "
                    "encoding option.\n", e->key, option->help ? option->help : "");
+            av_dict_free(&unused_opts);
             return AVERROR(EINVAL);
         }
 
