@@ -296,20 +296,13 @@ static av_cold void dsp_init(MpegEncContext *s)
 av_cold void ff_init_scantable(const uint8_t *permutation, ScanTable *st,
                                const uint8_t *src_scantable)
 {
-    int end;
-
     st->scantable = src_scantable;
 
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0, end = -1; i < 64; i++) {
         int j = src_scantable[i];
         st->permutated[i] = permutation[j];
-    }
-
-    end = -1;
-    for (int i = 0; i < 64; i++) {
-        int j = st->permutated[i];
-        if (j > end)
-            end = j;
+        if (permutation[j] > end)
+            end = permutation[j];
         st->raster_end[i] = end;
     }
 }
