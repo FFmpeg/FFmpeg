@@ -215,6 +215,26 @@ void ff_rgb24ToUV_half_neon(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unuse
                        const uint8_t *src2, int width, uint32_t *rgb2yuv,
                        void *opq);
 
+void ff_lumRangeFromJpeg_neon(int16_t *dst, int width);
+void ff_chrRangeFromJpeg_neon(int16_t *dstU, int16_t *dstV, int width);
+void ff_lumRangeToJpeg_neon(int16_t *dst, int width);
+void ff_chrRangeToJpeg_neon(int16_t *dstU, int16_t *dstV, int width);
+
+av_cold void ff_sws_init_range_convert_aarch64(SwsContext *c)
+{
+    if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
+        if (c->dstBpc <= 14) {
+            if (c->srcRange) {
+                c->lumConvertRange = ff_lumRangeFromJpeg_neon;
+                c->chrConvertRange = ff_chrRangeFromJpeg_neon;
+            } else {
+                c->lumConvertRange = ff_lumRangeToJpeg_neon;
+                c->chrConvertRange = ff_chrRangeToJpeg_neon;
+            }
+        }
+    }
+}
+
 av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -237,5 +257,6 @@ av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
         default:
             break;
         }
+        ff_sws_init_range_convert_aarch64(c);
     }
 }
