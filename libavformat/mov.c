@@ -8200,6 +8200,8 @@ static int mov_read_lhvc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->codecpar->extradata[22] += num_arrays;
     memcpy(st->codecpar->extradata + old_size, buf + 6, atom.size + 8);
 
+    st->disposition |= AV_DISPOSITION_MULTILAYER;
+
     av_free(buf);
     return 0;
 }
