@@ -1000,6 +1000,8 @@ static int config_output(AVFilterLink *outlink)
     s->auto_frame_rate = av_make_q(inlink->sample_rate, s->hop_size);
     if (strcmp(s->rate_str, "auto")) {
         ret = av_parse_video_rate(&s->frame_rate, s->rate_str);
+        if (ret < 0)
+            return ret;
     } else {
         s->frame_rate = s->auto_frame_rate;
     }
