@@ -586,56 +586,33 @@ static void vvc_deblock_bs_luma(const VVCLocalContext *lc,
     }
 }
 
-static void vvc_deblock_bs_luma_vertical(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height, const int rs)
-{
-    vvc_deblock_bs_luma(lc, x0, y0, width, height, rs, 1);
-}
-
-static void vvc_deblock_bs_luma_horizontal(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height, const int rs)
-{
-    vvc_deblock_bs_luma(lc, x0, y0, width, height, rs, 0);
-}
-
-static void vvc_deblock_bs_chroma_vertical(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height, const int rs)
+static void vvc_deblock_bs_chroma(const VVCLocalContext *lc,
+    const int x0, const int y0, const int width, const int height, const int rs, const int vertical)
 {
     const VVCFrameContext *fc = lc->fc;
-    const int boundary_left = deblock_is_boundary(lc,
-         x0 > 0 && !(x0 & ((CHROMA_GRID << fc->ps.sps->hshift[CHROMA]) - 1)), x0, rs, 1);
+    const int shift           = (vertical ? fc->ps.sps->hshift : fc->ps.sps->vshift)[CHROMA];
+    const int mask            = (CHROMA_GRID << shift) - 1;
+    const int pos             = vertical ? x0 : y0;
 
-    if (boundary_left) {
-        for (int i = 0; i < height; i += 2) {
-            for (int c_idx = CB; c_idx <= CR; c_idx++) {
-                const int bs = deblock_bs(lc, x0 - 1, y0 + i, x0, y0 + i, NULL, c_idx, 0, 0);
+    if (deblock_is_boundary(lc, pos > 0 && !(pos & mask), pos, rs, vertical)) {
+        const int size = vertical ? height : width;
 
-                TAB_BS(fc->tab.vertical_bs[c_idx], x0, (y0 + i)) = bs;
-            }
-        }
-    }
-}
+        for (int c_idx = CB; c_idx <= CR; c_idx++) {
+            uint8_t *tab_bs = (vertical ? fc->tab.vertical_bs : fc->tab.horizontal_bs)[c_idx];
 
-static void vvc_deblock_bs_chroma_horizontal(const VVCLocalContext *lc,
-    const int x0, const int y0, const int width, const int height, const int rs)
-{
-    const VVCFrameContext *fc = lc->fc;
-    const int boundary_upper  = deblock_is_boundary(lc,
-        y0 > 0 && !(y0 & ((CHROMA_GRID << fc->ps.sps->vshift[CHROMA]) - 1)), y0, rs, 0);
+            for (int i = 0; i < size; i += 2) {
+                const int x  = x0 + i * !vertical;
+                const int y  = y0 + i * vertical;
+                const int bs = deblock_bs(lc, x - vertical, y - !vertical, x, y, NULL, c_idx, 0, 0);
 
-    if (boundary_upper) {
-        for (int i = 0; i < width; i += 2) {
-            for (int c_idx = CB; c_idx <= CR; c_idx++) {
-                const int bs = deblock_bs(lc, x0 + i, y0 - 1, x0 + i, y0, NULL, c_idx, 0, 0);
-
-                TAB_BS(fc->tab.horizontal_bs[c_idx], x0 + i, y0) = bs;
+                TAB_BS(tab_bs, x, y) = bs;
             }
         }
     }
 }
 
 typedef void (*deblock_bs_fn)(const VVCLocalContext *lc, const int x0, const int y0,
-    const int width, const int height, const int rs);
+    const int width, const int height, const int rs, const int vertical);
 
 static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0, const int rs, const int vertical)
 {
@@ -645,9 +622,8 @@ static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0
     const int ctb_size = sps->ctb_size_y;
     const int x_end    = FFMIN(x0 + ctb_size, pps->width) >> MIN_TU_LOG2;
     const int y_end    = FFMIN(y0 + ctb_size, pps->height) >> MIN_TU_LOG2;
-    deblock_bs_fn deblock_bs[2][2] = {
-        { vvc_deblock_bs_luma_horizontal, vvc_deblock_bs_chroma_horizontal },
-        { vvc_deblock_bs_luma_vertical,   vvc_deblock_bs_chroma_vertical   }
+    deblock_bs_fn deblock_bs[] = {
+        vvc_deblock_bs_luma, vvc_deblock_bs_chroma
     };
 
     for (int is_chroma = 0; is_chroma <= 1; is_chroma++) {
@@ -657,8 +633,8 @@ static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0
             for (int x = x0 >> MIN_TU_LOG2; x < x_end; x++) {
                 const int off = y * fc->ps.pps->min_tu_width + x;
                 if ((fc->tab.tb_pos_x0[is_chroma][off] >> MIN_TU_LOG2) == x && (fc->tab.tb_pos_y0[is_chroma][off] >> MIN_TU_LOG2) == y) {
-                    deblock_bs[vertical][is_chroma](lc, x << MIN_TU_LOG2, y << MIN_TU_LOG2,
-                        fc->tab.tb_width[is_chroma][off] << hs, fc->tab.tb_height[is_chroma][off] << vs, rs);
+                    deblock_bs[is_chroma](lc, x << MIN_TU_LOG2, y << MIN_TU_LOG2,
+                        fc->tab.tb_width[is_chroma][off] << hs, fc->tab.tb_height[is_chroma][off] << vs, rs, vertical);
                 }
             }
         }
