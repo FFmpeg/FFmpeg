@@ -251,6 +251,7 @@ static const struct {
 #endif
 #if CONFIG_SWSCALE
     { "sw_gbrp", checkasm_check_sw_gbrp },
+    { "sw_range_convert", checkasm_check_sw_range_convert },
     { "sw_rgb", checkasm_check_sw_rgb },
     { "sw_scale", checkasm_check_sw_scale },
 #endif

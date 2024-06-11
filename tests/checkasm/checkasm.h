@@ -119,6 +119,7 @@ void checkasm_check_rv40dsp(void);
 void checkasm_check_svq1enc(void);
 void checkasm_check_synth_filter(void);
 void checkasm_check_sw_gbrp(void);
+void checkasm_check_sw_range_convert(void);
 void checkasm_check_sw_rgb(void);
 void checkasm_check_sw_scale(void);
 void checkasm_check_takdsp(void);
