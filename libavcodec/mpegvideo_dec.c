@@ -483,10 +483,12 @@ static inline int hpel_motion_lowres(MpegEncContext *s,
                                      int motion_x, int motion_y)
 {
     const int lowres   = s->avctx->lowres;
-    const int op_index = FFMIN(lowres, 3);
+    const int op_index = lowres;
     const int s_mask   = (2 << lowres) - 1;
     int emu = 0;
     int sx, sy;
+
+    av_assert2(op_index <= 3);
 
     if (s->quarter_sample) {
         motion_x /= 2;
@@ -536,12 +538,15 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     int mx, my, src_x, src_y, uvsrc_x, uvsrc_y, sx, sy, uvsx, uvsy;
     ptrdiff_t uvlinesize, linesize;
     const int lowres     = s->avctx->lowres;
-    const int op_index   = FFMIN(lowres - 1 + s->chroma_x_shift, 3);
+    const int op_index   = lowres - 1 + s->chroma_x_shift;
     const int block_s    = 8 >> lowres;
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres;
     const int v_edge_pos = s->v_edge_pos >> lowres;
     int hc = s->chroma_y_shift ? (h+1-bottom_field)>>1 : h;
+
+    av_assert2(op_index <= 3);
+
     linesize   = s->cur_pic.linesize[0] << field_based;
     uvlinesize = s->cur_pic.linesize[1] << field_based;
 
@@ -666,7 +671,7 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
                                             int mx, int my)
 {
     const int lowres     = s->avctx->lowres;
-    const int op_index   = FFMIN(lowres, 3);
+    const int op_index   = lowres;
     const int block_s    = 8 >> lowres;
     const int s_mask     = (2 << lowres) - 1;
     const int h_edge_pos = s->h_edge_pos >> lowres + 1;
@@ -674,6 +679,8 @@ static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
     int emu = 0, src_x, src_y, sx, sy;
     ptrdiff_t offset;
     const uint8_t *ptr;
+
+    av_assert2(op_index <= 3);
 
     if (s->quarter_sample) {
         mx /= 2;
