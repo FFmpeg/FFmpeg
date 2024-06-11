@@ -187,7 +187,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                 }
             }
 #if !IS_ENCODER
-              else if (is_mpeg12 == DEFINITELY_MPEG12 || (s->codec_id != AV_CODEC_ID_WMV2)) {
+              else if (is_mpeg12 == DEFINITELY_MPEG12 || lowres_flag || (s->codec_id != AV_CODEC_ID_WMV2)) {
                 add_dct(s, block[0], 0, dest_y                          , dct_linesize);
                 add_dct(s, block[1], 1, dest_y              + block_size, dct_linesize);
                 add_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize);
