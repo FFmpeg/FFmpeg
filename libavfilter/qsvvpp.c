@@ -1099,11 +1099,6 @@ int ff_qsvvpp_create_mfx_session(void *ctx,
     if (sts < 0)
         return ff_qsvvpp_print_error(ctx, sts,
                                      "Error creating a MFX session");
-    else if (sts > 0) {
-        ff_qsvvpp_print_warning(ctx, sts,
-                                "Warning in MFX session creation");
-        return AVERROR_UNKNOWN;
-    }
 
     *psession = session;
 
