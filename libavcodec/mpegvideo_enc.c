@@ -2163,11 +2163,11 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s,
         const int mb_xy = mb_x + mb_y * s->mb_stride;
 
         s->lambda = s->lambda_table[mb_xy];
-        update_qscale(s);
+        s->lambda2 = (s->lambda * s->lambda + FF_LAMBDA_SCALE / 2) >>
+                     FF_LAMBDA_SHIFT;
 
         if (!(s->mpv_flags & FF_MPV_FLAG_QP_RD)) {
-            s->qscale = s->cur_pic.qscale_table[mb_xy];
-            s->dquant = s->qscale - last_qp;
+            s->dquant = s->cur_pic.qscale_table[mb_xy] - last_qp;
 
             if (s->out_format == FMT_H263) {
                 s->dquant = av_clip(s->dquant, -2, 2);
