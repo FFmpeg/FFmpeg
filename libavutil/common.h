@@ -286,11 +286,14 @@ static av_always_inline av_const unsigned av_clip_uintp2_c(int a, int p)
 /**
  * Clear high bits from an unsigned integer starting with specific bit position
  * @param  a value to clip
- * @param  p bit position to clip at
+ * @param  p bit position to clip at. Must be between 0 and 31.
  * @return clipped value
  */
 static av_always_inline av_const unsigned av_zero_extend_c(unsigned a, unsigned p)
 {
+#if defined(HAVE_AV_CONFIG_H) && defined(ASSERT_LEVEL) && ASSERT_LEVEL >= 2
+    if (p > 31) abort();
+#endif
     return a & ((1U << p) - 1);
 }
 
