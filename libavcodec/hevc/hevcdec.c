@@ -3192,11 +3192,6 @@ static int decode_slice(HEVCContext *s, const H2645NAL *nal, GetBitContext *gb)
     ret = decode_slice_data(s, nal, gb);
     if (ret < 0)
         return ret;
-    if (ret >= s->cur_frame->ctb_count) {
-        ret = hevc_frame_end(s);
-        if (ret < 0)
-            return ret;
-    }
 
     return 0;
 }
@@ -3370,8 +3365,13 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
 
 fail:
-    if (s->cur_frame && s->avctx->active_thread_type == FF_THREAD_FRAME)
-        ff_progress_frame_report(&s->cur_frame->tf, INT_MAX);
+    if (s->cur_frame) {
+        if (ret >= 0)
+            ret = hevc_frame_end(s);
+
+        if (s->avctx->active_thread_type == FF_THREAD_FRAME)
+            ff_progress_frame_report(&s->cur_frame->tf, INT_MAX);
+    }
 
     return ret;
 }
