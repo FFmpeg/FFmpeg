@@ -560,10 +560,9 @@ static int decode_usac_scale_factors(AACDecContext *ac,
  *
  * @return  Returns error status. 0 - OK, !0 - error
  */
-static int decode_spectrum_and_dequant_ac(AACDecContext *s, float coef[1024],
-                                          GetBitContext *gb, const float sf[120],
-                                          AACArithState *state, int reset,
-                                          uint16_t len, uint16_t N)
+static int decode_spectrum_ac(AACDecContext *s, float coef[1024],
+                              GetBitContext *gb, AACArithState *state,
+                              int reset, uint16_t len, uint16_t N)
 {
     AACArith ac;
     int i, a, b;
@@ -1396,10 +1395,8 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
             else
                 N = usac->core_frame_len;
 
-            ret = decode_spectrum_and_dequant_ac(ac, sce->coeffs + win*128, gb,
-                                                 sce->sf, &ue->ac,
-                                                 arith_reset_flag && (win == 0),
-                                                 lg, N);
+            ret = decode_spectrum_ac(ac, sce->coeffs + win*128, gb, &ue->ac,
+                                     arith_reset_flag && (win == 0), lg, N);
             if (ret < 0)
                 return ret;
         }
