@@ -971,7 +971,7 @@ static void apply_noise_fill(AACDecContext *ac, SingleChannelElement *sce,
             }
 
             if (band_quantized_to_zero)
-                sce->sf[g*ics->max_sfb + sfb] += noise_offset;
+                sce->sfo[g*ics->max_sfb + sfb] += noise_offset;
         }
         coef += g_len << 7;
     }
@@ -986,6 +986,9 @@ static void spectrum_scale(AACDecContext *ac, SingleChannelElement *sce,
     /* Synthesise noise */
     if (ue->noise.level)
         apply_noise_fill(ac, sce, ue);
+
+    /* Noise filling may apply an offset to the scalefactor offset */
+    ac->dsp.dequant_scalefactors(sce);
 
     /* Apply scalefactors */
     coef = sce->coeffs;
@@ -1370,8 +1373,6 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
         ret = decode_usac_scale_factors(ac, sce, gb, global_gain);
         if (ret < 0)
             return ret;
-
-        ac->dsp.dequant_scalefactors(sce);
 
         if (ue->tns_data_present) {
             sce->tns.present = 1;
