@@ -690,10 +690,6 @@ static int decode_usac_stereo_cplx(AACDecContext *ac, AACUsacStereo *us,
     if (!indep_flag)
         delta_code_time = get_bits1(gb);
 
-    /* Alpha values must be zeroed out if pred_used is 0. */
-    memset(us->alpha_q_re, 0, sizeof(us->alpha_q_re));
-    memset(us->alpha_q_im, 0, sizeof(us->alpha_q_im));
-
     /* TODO: shouldn't be needed */
     for (int g = 0; g < num_window_groups; g++) {
         for (int sfb = 0; sfb < cpe->max_sfb_ste; sfb += SFB_PER_PRED_BAND) {
@@ -827,6 +823,11 @@ static int decode_usac_stereo_info(AACDecContext *ac, AACUSACConfig *usac,
 
     us->common_window = 0;
     us->common_tw = 0;
+
+    /* Alpha values must always be zeroed out for the current frame,
+     * as they are propagated to the next frame and may be used. */
+    memset(us->alpha_q_re, 0, sizeof(us->alpha_q_re));
+    memset(us->alpha_q_im, 0, sizeof(us->alpha_q_im));
 
     if (!(!ue1->core_mode && !ue2->core_mode))
         return 0;
