@@ -24,7 +24,7 @@
 do {                                           \
     double bmg[2], stddev = 10.0;              \
                                                \
-    for (size_t i = 0; i < MAX_VARS; i += 2) { \
+    for (size_t i = 0; i < MAX_VARS_ALIGN; i += 2) { \
         av_bmg_get(&checkasm_lfg, bmg);        \
         buf[i]     = bmg[0] * stddev;          \
         buf[i + 1] = bmg[1] * stddev;          \
