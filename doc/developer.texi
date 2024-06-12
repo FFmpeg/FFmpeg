@@ -638,6 +638,11 @@ patch is inline or attached per mail.
 You can check @url{https://patchwork.ffmpeg.org}, if your patch does not show up, its mime type
 likely was wrong.
 
+@subheading How to setup git send-email?
+
+Please see @url{https://git-send-email.io/}.
+For gmail additionally see @url{https://shallowsky.com/blog/tech/email/gmail-app-passwds.html}.
+
 @subheading Sending patches from email clients
 Using @code{git send-email} might not be desirable for everyone. The
 following trick allows to send patches via email clients in a safe
