@@ -822,8 +822,11 @@ extern const FFCodec ff_idf_decoder;
 
 /* external libraries, that shouldn't be used by default if one of the
  * above is available */
+extern const FFCodec ff_aac_mediacodec_decoder;
 extern const FFCodec ff_aac_mf_encoder;
 extern const FFCodec ff_ac3_mf_encoder;
+extern const FFCodec ff_amrnb_mediacodec_decoder;
+extern const FFCodec ff_amrwb_mediacodec_decoder;
 extern const FFCodec ff_h263_v4l2m2m_encoder;
 extern const FFCodec ff_libaom_av1_decoder;
 /* hwaccel hooks only, so prefer external decoders */
@@ -863,6 +866,7 @@ extern const FFCodec ff_mjpeg_cuvid_decoder;
 extern const FFCodec ff_mjpeg_qsv_encoder;
 extern const FFCodec ff_mjpeg_qsv_decoder;
 extern const FFCodec ff_mjpeg_vaapi_encoder;
+extern const FFCodec ff_mp3_mediacodec_decoder;
 extern const FFCodec ff_mp3_mf_encoder;
 extern const FFCodec ff_mpeg1_cuvid_decoder;
 extern const FFCodec ff_mpeg2_cuvid_decoder;

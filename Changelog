@@ -18,6 +18,7 @@ version <next>:
 - D3D12VA HEVC encoder
 - Cropping metadata parsing and writing in Matroska and MP4/MOV de/muxers
 - Intel QSV-accelerated VVC decoding
+- MediaCodec AAC/AMR-NB/AMR-WB/MP3 decoding
 
 
 version 7.0:
