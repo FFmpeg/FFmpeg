@@ -47,8 +47,8 @@ typedef struct AverageBlurOpenCLContext {
     FilterParam luma_param;
     FilterParam chroma_param;
     FilterParam alpha_param;
-    int radius[4];
-    int power[4];
+    int radius[AV_VIDEO_MAX_PLANES];
+    int power[AV_VIDEO_MAX_PLANES];
 
 } AverageBlurOpenCLContext;
 
@@ -101,7 +101,7 @@ static int avgblur_opencl_make_filter_params(AVFilterLink *inlink)
         s->radiusV = s->radiusH;
     }
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < AV_VIDEO_MAX_PLANES; i++) {
         s->power[i] = 1;
     }
     return 0;
@@ -133,7 +133,7 @@ static int boxblur_opencl_make_filter_params(AVFilterLink *inlink)
     s->power[U] = s->power[V] = s->chroma_param.power;
     s->power[A] = s->alpha_param.power;
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < AV_VIDEO_MAX_PLANES; i++) {
         if (s->power[i] == 0) {
             s->power[i] = 1;
             s->radius[i] = 0;
@@ -191,7 +191,7 @@ static int avgblur_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
         goto fail;
     }
 
-    for (p = 0; p < FF_ARRAY_ELEMS(output->data); p++) {
+    for (p = 0; p < FFMIN(FF_ARRAY_ELEMS(output->data), AV_VIDEO_MAX_PLANES); p++) {
         src = (cl_mem) input->data[p];
         dst = (cl_mem) output->data[p];
         inter = (cl_mem)intermediate->data[p];
