@@ -835,6 +835,11 @@ static int decode_usac_stereo_info(AACDecContext *ac, AACUSACConfig *usac,
     tns_active = get_bits1(gb);
     us->common_window = get_bits1(gb);
 
+    if (!us->common_window || indep_flag) {
+        memset(us->prev_alpha_q_re, 0, sizeof(us->prev_alpha_q_re));
+        memset(us->prev_alpha_q_im, 0, sizeof(us->prev_alpha_q_im));
+    }
+
     if (us->common_window) {
         /* ics_info() */
         ics1->window_sequence[1] = ics1->window_sequence[0];
@@ -844,6 +849,20 @@ static int decode_usac_stereo_info(AACDecContext *ac, AACUSACConfig *usac,
         ics1->use_kb_window[1] = ics1->use_kb_window[0];
         ics2->use_kb_window[1] = ics2->use_kb_window[0];
         ics1->use_kb_window[0] = ics2->use_kb_window[0] = get_bits1(gb);
+
+        /* If there's a change in the transform sequence, zero out last frame's
+         * stereo prediction coefficients */
+        if ((ics1->window_sequence[0] == EIGHT_SHORT_SEQUENCE &&
+             ics1->window_sequence[1] != EIGHT_SHORT_SEQUENCE) ||
+            (ics1->window_sequence[1] == EIGHT_SHORT_SEQUENCE &&
+             ics1->window_sequence[0] != EIGHT_SHORT_SEQUENCE) ||
+            (ics2->window_sequence[0] == EIGHT_SHORT_SEQUENCE &&
+             ics2->window_sequence[1] != EIGHT_SHORT_SEQUENCE) ||
+            (ics2->window_sequence[1] == EIGHT_SHORT_SEQUENCE &&
+             ics2->window_sequence[0] != EIGHT_SHORT_SEQUENCE)) {
+            memset(us->prev_alpha_q_re, 0, sizeof(us->prev_alpha_q_re));
+            memset(us->prev_alpha_q_im, 0, sizeof(us->prev_alpha_q_im));
+        }
 
         if (ics1->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
             ics1->max_sfb = ics2->max_sfb = get_bits(gb, 4);
