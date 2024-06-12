@@ -613,17 +613,22 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
     av_assert0(!frame->buf[0]);
 
     if (codec->cb_type == FF_CODEC_CB_TYPE_RECEIVE_FRAME) {
+        while (1) {
         frame->pict_type = dc->initial_pict_type;
         frame->flags    |= dc->intra_only_flag;
         ret = codec->cb.receive_frame(avctx, frame);
         emms_c();
         if (!ret) {
-            if (avctx->codec->type == AVMEDIA_TYPE_VIDEO)
-                ret = (frame->flags & AV_FRAME_FLAG_DISCARD) ? AVERROR(EAGAIN) : 0;
-            else if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
+            if (avctx->codec->type == AVMEDIA_TYPE_AUDIO) {
                 int64_t discarded_samples = 0;
                 ret = discard_samples(avctx, frame, &discarded_samples);
             }
+            if (ret == AVERROR(EAGAIN) || (frame->flags & AV_FRAME_FLAG_DISCARD)) {
+                av_frame_unref(frame);
+                continue;
+            }
+        }
+        break;
         }
     } else
         ret = decode_simple_receive_frame(avctx, frame);
