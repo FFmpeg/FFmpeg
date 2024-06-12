@@ -34,6 +34,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/stereo3d.h"
 #include "libavutil/timecode.h"
 
 #include "aom_film_grain.h"
@@ -417,6 +418,109 @@ static int export_stream_params_from_sei(HEVCContext *s)
     return 0;
 }
 
+static int export_multilayer(HEVCContext *s, const HEVCVPS *vps)
+{
+    const HEVCSEITDRDI *tdrdi = &s->sei.tdrdi;
+
+    av_freep(&s->view_ids_available);
+    s->nb_view_ids_available = 0;
+    av_freep(&s->view_pos_available);
+    s->nb_view_pos_available = 0;
+
+    // don't export anything in the trivial case (1 layer, view id=0)
+    if (vps->nb_layers < 2 && !vps->view_id[0])
+        return 0;
+
+    s->view_ids_available = av_calloc(vps->nb_layers, sizeof(*s->view_ids_available));
+    if (!s->view_ids_available)
+        return AVERROR(ENOMEM);
+
+    if (tdrdi->num_ref_displays) {
+        s->view_pos_available = av_calloc(vps->nb_layers, sizeof(*s->view_pos_available));
+        if (!s->view_pos_available)
+            return AVERROR(ENOMEM);
+    }
+
+    for (int i = 0; i < vps->nb_layers; i++) {
+        s->view_ids_available[i] = vps->view_id[i];
+
+        if (s->view_pos_available) {
+            s->view_pos_available[i] = vps->view_id[i] == tdrdi->left_view_id[0]  ?
+                                       AV_STEREO3D_VIEW_LEFT                      :
+                                       vps->view_id[i] == tdrdi->right_view_id[0] ?
+                                       AV_STEREO3D_VIEW_RIGHT : AV_STEREO3D_VIEW_UNSPEC;
+        }
+    }
+    s->nb_view_ids_available = vps->nb_layers;
+    s->nb_view_pos_available = s->view_pos_available ? vps->nb_layers : 0;
+
+    return 0;
+}
+
+static int setup_multilayer(HEVCContext *s, const HEVCVPS *vps)
+{
+    unsigned layers_active_output = 0, highest_layer;
+
+    s->layers_active_output = 1;
+    s->layers_active_decode = 1;
+
+    // nothing requested - decode base layer only
+    if (!s->nb_view_ids)
+        return 0;
+
+    if (s->nb_view_ids == 1 && s->view_ids[0] == -1) {
+        layers_active_output = (1 << vps->nb_layers) - 1;
+    } else {
+        for (int i = 0; i < s->nb_view_ids; i++) {
+            int view_id   = s->view_ids[i];
+            int layer_idx = -1;
+
+            if (view_id < 0) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Invalid view ID requested: %d\n", view_id);
+                return AVERROR(EINVAL);
+            }
+
+            for (int j = 0; j < vps->nb_layers; j++) {
+                if (vps->view_id[j] == view_id) {
+                    layer_idx = j;
+                    break;
+                }
+            }
+            if (layer_idx < 0) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "View ID %d not present in VPS\n", view_id);
+                return AVERROR(EINVAL);
+            }
+            layers_active_output |= 1 << layer_idx;
+        }
+    }
+
+    if (!layers_active_output) {
+        av_log(s->avctx, AV_LOG_ERROR, "No layers selected\n");
+        return AVERROR_BUG;
+    }
+
+    highest_layer = ff_log2(layers_active_output);
+    if (highest_layer >= FF_ARRAY_ELEMS(s->layers)) {
+        av_log(s->avctx, AV_LOG_ERROR,
+               "Too many layers requested: %u\n", layers_active_output);
+        return AVERROR(EINVAL);
+    }
+
+    /* Assume a higher layer depends on all the lower ones.
+     * This is enforced in VPS parsing currently, this logic will need
+     * to be changed if we want to support more complex dependency structures.
+     */
+    s->layers_active_decode = (1 << (highest_layer + 1)) - 1;
+    s->layers_active_output = layers_active_output;
+
+    av_log(s->avctx, AV_LOG_DEBUG, "decode/output layers: %x/%x\n",
+           s->layers_active_decode, s->layers_active_output);
+
+    return 0;
+}
+
 static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
 {
 #define HWACCEL_MAX (CONFIG_HEVC_DXVA2_HWACCEL + \
@@ -428,6 +532,7 @@ static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
                      CONFIG_HEVC_VDPAU_HWACCEL + \
                      CONFIG_HEVC_VULKAN_HWACCEL)
     enum AVPixelFormat pix_fmts[HWACCEL_MAX + 2], *fmt = pix_fmts;
+    int ret;
 
     switch (sps->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
@@ -547,7 +652,23 @@ static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
     *fmt++ = sps->pix_fmt;
     *fmt = AV_PIX_FMT_NONE;
 
-    return ff_get_format(s->avctx, pix_fmts);
+    // export multilayer information from active VPS to the caller,
+    // so it is available in get_format()
+    ret = export_multilayer(s, sps->vps);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_get_format(s->avctx, pix_fmts);
+    if (ret < 0)
+        return ret;
+    s->avctx->pix_fmt = ret;
+
+    // set up multilayer decoding, if requested by caller
+    ret = setup_multilayer(s, sps->vps);
+    if (ret < 0)
+        return ret;
+
+    return 0;
 }
 
 static int set_sps(HEVCContext *s, HEVCLayerContext *l, const HEVCSPS *sps)
@@ -2948,13 +3069,60 @@ static int set_side_data(HEVCContext *s)
     return 0;
 }
 
-static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
+static int find_finish_setup_nal(const HEVCContext *s)
+{
+    int nal_idx = 0;
+
+    for (int i = nal_idx; i < s->pkt.nb_nals; i++) {
+        const H2645NAL *nal = &s->pkt.nals[i];
+        const int  layer_id = nal->nuh_layer_id;
+        GetBitContext    gb = nal->gb;
+
+        if (layer_id > HEVC_MAX_NUH_LAYER_ID || s->vps->layer_idx[layer_id] < 0 ||
+            !(s->layers_active_decode & (1 << s->vps->layer_idx[layer_id])))
+            continue;
+
+        switch (nal->type) {
+        case HEVC_NAL_TRAIL_R:
+        case HEVC_NAL_TRAIL_N:
+        case HEVC_NAL_TSA_N:
+        case HEVC_NAL_TSA_R:
+        case HEVC_NAL_STSA_N:
+        case HEVC_NAL_STSA_R:
+        case HEVC_NAL_BLA_W_LP:
+        case HEVC_NAL_BLA_W_RADL:
+        case HEVC_NAL_BLA_N_LP:
+        case HEVC_NAL_IDR_W_RADL:
+        case HEVC_NAL_IDR_N_LP:
+        case HEVC_NAL_CRA_NUT:
+        case HEVC_NAL_RADL_N:
+        case HEVC_NAL_RADL_R:
+        case HEVC_NAL_RASL_N:
+        case HEVC_NAL_RASL_R:
+            if (!get_bits1(&gb)) // first_slice_segment_in_pic_flag
+                continue;
+        case HEVC_NAL_VPS:
+        case HEVC_NAL_SPS:
+        case HEVC_NAL_PPS:
+            nal_idx = i;
+            break;
+        }
+    }
+
+    return nal_idx;
+}
+
+static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
+                            unsigned nal_idx)
 {
     const HEVCPPS *const pps = s->ps.pps_list[s->sh.pps_id];
     const HEVCSPS *const sps = pps->sps;
     int pic_size_in_ctb  = ((sps->width  >> sps->log2_min_cb_size) + 1) *
                            ((sps->height >> sps->log2_min_cb_size) + 1);
-    int new_sequence = IS_IDR(s) || IS_BLA(s) || s->last_eos;
+    int new_sequence = (l == &s->layers[0]) &&
+                       (IS_IDR(s) || IS_BLA(s) || s->last_eos);
+    int prev_layers_active_decode = s->layers_active_decode;
+    int prev_layers_active_output = s->layers_active_output;
     int ret;
 
     if (sps->vps != s->vps && l != &s->layers[0]) {
@@ -2965,7 +3133,32 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
 
     ff_refstruct_replace(&s->pps, pps);
     if (l->sps != sps) {
-        enum AVPixelFormat pix_fmt;
+        const HEVCSPS *sps_base = s->layers[0].sps;
+        enum AVPixelFormat pix_fmt = sps->pix_fmt;
+
+        if (l != &s->layers[0]) {
+            if (!sps_base) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Access unit starts with a non-base layer frame\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            // Files produced by Vision Pro lack VPS extension VUI,
+            // so the secondary layer has no range information.
+            // This check avoids failing in such a case.
+            if (sps_base->pix_fmt == AV_PIX_FMT_YUVJ420P &&
+                sps->pix_fmt == AV_PIX_FMT_YUV420P       &&
+                !sps->vui.common.video_signal_type_present_flag)
+                pix_fmt = sps_base->pix_fmt;
+
+            if (pix_fmt     != sps_base->pix_fmt ||
+                sps->width  != sps_base->width   ||
+                sps->height != sps_base->height) {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Base/non-base layer SPS have unsupported parameter combination\n");
+                return AVERROR(ENOSYS);
+            }
+        }
 
         ff_hevc_clear_refs(l);
 
@@ -2973,14 +3166,17 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
         if (ret < 0)
             return ret;
 
-        export_stream_params(s, sps);
+        if (l == &s->layers[0]) {
+            export_stream_params(s, sps);
 
-        pix_fmt = get_format(s, sps);
-        if (pix_fmt < 0)
-            return pix_fmt;
-        s->avctx->pix_fmt = pix_fmt;
+            ret = get_format(s, sps);
+            if (ret < 0) {
+                set_sps(s, l, NULL);
+                return ret;
+            }
 
-        new_sequence = 1;
+            new_sequence = 1;
+        }
     }
 
     memset(l->horizontal_bs, 0, l->bs_width * l->bs_height);
@@ -3015,7 +3211,8 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
         s->local_ctx[0].end_of_tiles_x = pps->column_width[0] << sps->log2_ctb_size;
 
     if (new_sequence) {
-        ret = ff_hevc_output_frames(s, l, 0, 0, s->sh.no_output_of_prior_pics_flag);
+        ret = ff_hevc_output_frames(s, prev_layers_active_decode, prev_layers_active_output,
+                                    0, 0, s->sh.no_output_of_prior_pics_flag);
         if (ret < 0)
             return ret;
     }
@@ -3072,7 +3269,8 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
 
     s->cur_frame->f->pict_type = 3 - s->sh.slice_type;
 
-    ret = ff_hevc_output_frames(s, l, sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics,
+    ret = ff_hevc_output_frames(s, s->layers_active_decode, s->layers_active_output,
+                                sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics,
                                 sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering, 0);
     if (ret < 0)
         goto fail;
@@ -3083,13 +3281,21 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l)
             goto fail;
     }
 
-    ff_thread_finish_setup(s->avctx);
+    // after starting the base-layer frame we know which layers will be decoded,
+    // so we can now figure out which NALUs to wait for before we can call
+    // ff_thread_finish_setup()
+    if (l == &s->layers[0])
+        s->finish_setup_nal_idx = find_finish_setup_nal(s);
+
+    if (nal_idx >= s->finish_setup_nal_idx)
+        ff_thread_finish_setup(s->avctx);
 
     return 0;
 
 fail:
-    if (s->cur_frame)
-        ff_hevc_unref_frame(s->cur_frame, ~0);
+    if (l->cur_frame)
+        ff_hevc_unref_frame(l->cur_frame, ~0);
+    l->cur_frame = NULL;
     s->cur_frame = s->collocated_ref = NULL;
     s->slice_initialized = 0;
     return ret;
@@ -3164,9 +3370,9 @@ static int verify_md5(HEVCContext *s, AVFrame *frame)
     return err;
     }
 
-static int hevc_frame_end(HEVCContext *s)
+static int hevc_frame_end(HEVCContext *s, HEVCLayerContext *l)
 {
-    HEVCFrame *out = s->cur_frame;
+    HEVCFrame *out = l->cur_frame;
     const AVFilmGrainParams *fgp;
     av_unused int ret;
 
@@ -3198,22 +3404,31 @@ static int hevc_frame_end(HEVCContext *s)
     } else {
         if (s->avctx->err_recognition & AV_EF_CRCCHECK &&
             s->sei.picture_hash.is_md5) {
-            ret = verify_md5(s, s->cur_frame->f);
+            ret = verify_md5(s, out->f);
             if (ret < 0 && s->avctx->err_recognition & AV_EF_EXPLODE)
                 return ret;
         }
     }
     s->sei.picture_hash.is_md5 = 0;
 
-    av_log(s->avctx, AV_LOG_DEBUG, "Decoded frame with POC %d.\n", s->poc);
+    av_log(s->avctx, AV_LOG_DEBUG, "Decoded frame with POC %zu/%d.\n",
+           l - s->layers, s->poc);
 
     return 0;
 }
 
-static int decode_slice(HEVCContext *s, HEVCLayerContext *l,
-                        const H2645NAL *nal, GetBitContext *gb)
+static int decode_slice(HEVCContext *s, unsigned nal_idx, GetBitContext *gb)
 {
+    const int layer_idx = s->vps ? s->vps->layer_idx[s->nuh_layer_id] : 0;
+    HEVCLayerContext *l;
     int ret;
+
+    // skip layers not requested to be decoded
+    // layers_active_decode can only change while decoding a base-layer frame,
+    // so we can check it for non-base layers
+    if (layer_idx < 0 ||
+        (s->nuh_layer_id > 0 && !(s->layers_active_decode & (1 << layer_idx))))
+        return 0;
 
     ret = hls_slice_header(&s->sh, s, gb);
     if (ret < 0) {
@@ -3230,16 +3445,25 @@ static int decode_slice(HEVCContext *s, HEVCLayerContext *l,
         return 0;
     }
 
+    // switching to a new layer, mark previous layer's frame (if any) as done
+    if (s->cur_layer != layer_idx &&
+        s->layers[s->cur_layer].cur_frame &&
+        s->avctx->active_thread_type == FF_THREAD_FRAME)
+        ff_progress_frame_report(&s->layers[s->cur_layer].cur_frame->tf, INT_MAX);
+
+    s->cur_layer = layer_idx;
+    l = &s->layers[s->cur_layer];
+
     if (s->sh.first_slice_in_pic_flag) {
-        if (s->cur_frame) {
+        if (l->cur_frame) {
             av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
             return AVERROR_INVALIDDATA;
         }
 
-        ret = hevc_frame_start(s, l);
+        ret = hevc_frame_start(s, l, nal_idx);
         if (ret < 0)
             return ret;
-    } else if (!s->cur_frame) {
+    } else if (!l->cur_frame) {
         av_log(s->avctx, AV_LOG_ERROR, "First slice in a frame missing.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -3251,16 +3475,16 @@ static int decode_slice(HEVCContext *s, HEVCLayerContext *l,
         return AVERROR_INVALIDDATA;
     }
 
-    ret = decode_slice_data(s, l, nal, gb);
+    ret = decode_slice_data(s, l, &s->pkt.nals[nal_idx], gb);
     if (ret < 0)
         return ret;
 
     return 0;
 }
 
-static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
+static int decode_nal_unit(HEVCContext *s, unsigned nal_idx)
 {
-    HEVCLayerContext  *l = &s->layers[0];
+    H2645NAL *nal = &s->pkt.nals[nal_idx];
     GetBitContext     gb = nal->gb;
     int ret;
 
@@ -3319,7 +3543,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_RADL_R:
     case HEVC_NAL_RASL_N:
     case HEVC_NAL_RASL_R:
-        ret = decode_slice(s, l, nal, &gb);
+        ret = decode_slice(s, nal_idx, &gb);
         if (ret < 0)
             goto fail;
         break;
@@ -3420,11 +3644,10 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
         H2645NAL *nal = &s->pkt.nals[i];
 
         if (s->avctx->skip_frame >= AVDISCARD_ALL ||
-            (s->avctx->skip_frame >= AVDISCARD_NONREF
-            && ff_hevc_nal_is_nonref(nal->type)) || nal->nuh_layer_id > 0)
+            (s->avctx->skip_frame >= AVDISCARD_NONREF && ff_hevc_nal_is_nonref(nal->type)))
             continue;
 
-        ret = decode_nal_unit(s, nal);
+        ret = decode_nal_unit(s, i);
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
@@ -3433,12 +3656,17 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     }
 
 fail:
-    if (s->cur_frame) {
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++) {
+        HEVCLayerContext *l = &s->layers[i];
+
+        if (!l->cur_frame)
+            continue;
+
         if (ret >= 0)
-            ret = hevc_frame_end(s);
+            ret = hevc_frame_end(s, l);
 
         if (s->avctx->active_thread_type == FF_THREAD_FRAME)
-            ff_progress_frame_report(&s->cur_frame->tf, INT_MAX);
+            ff_progress_frame_report(&l->cur_frame->tf, INT_MAX);
     }
 
     return ret;
@@ -3459,6 +3687,11 @@ static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length, int f
         if (first && s->ps.sps_list[i]) {
             const HEVCSPS *sps = s->ps.sps_list[i];
             export_stream_params(s, sps);
+
+            ret = export_multilayer(s, sps->vps);
+            if (ret < 0)
+                return ret;
+
             break;
         }
     }
@@ -3489,7 +3722,8 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     av_packet_unref(avpkt);
     ret = ff_decode_get_packet(avctx, avpkt);
     if (ret == AVERROR_EOF) {
-        ret = ff_hevc_output_frames(s, &s->layers[0], 0, 0, 0);
+        ret = ff_hevc_output_frames(s, s->layers_active_decode,
+                                    s->layers_active_output, 0, 0, 0);
         if (ret < 0)
             return ret;
         goto do_output;
@@ -3554,6 +3788,8 @@ static int hevc_ref_frame(HEVCFrame *dst, const HEVCFrame *src)
     dst->poc        = src->poc;
     dst->ctb_count  = src->ctb_count;
     dst->flags      = src->flags;
+
+    dst->base_layer_frame = src->base_layer_frame;
 
     ff_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
@@ -3690,8 +3926,23 @@ static int hevc_update_thread_context(AVCodecContext *dst,
 
     s->is_nalff        = s0->is_nalff;
     s->nal_length_size = s0->nal_length_size;
+    s->layers_active_decode = s0->layers_active_decode;
+    s->layers_active_output = s0->layers_active_output;
 
     s->film_grain_warning_shown = s0->film_grain_warning_shown;
+
+    if (s->nb_view_ids != s0->nb_view_ids ||
+        memcmp(s->view_ids, s0->view_ids, sizeof(*s->view_ids) * s->nb_view_ids)) {
+        av_freep(&s->view_ids);
+        s->nb_view_ids = 0;
+
+        if (s0->nb_view_ids) {
+            s->view_ids = av_memdup(s0->view_ids, s0->nb_view_ids * sizeof(*s0->view_ids));
+            if (!s->view_ids)
+                return AVERROR(ENOMEM);
+            s->nb_view_ids = s0->nb_view_ids;
+        }
+    }
 
     ret = ff_h2645_sei_ctx_replace(&s->sei.common, &s0->sei.common);
     if (ret < 0)
@@ -3787,6 +4038,19 @@ static const AVOption options[] = {
         AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
     { "strict-displaywin", "stricly apply default display window size", OFFSET(apply_defdispwin),
         AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, PAR },
+    { "view_ids", "Array of view IDs that should be decoded and output; a single -1 to decode all views",
+        .offset = OFFSET(view_ids), .type = AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY,
+        .min = -1, .max = INT_MAX, .flags = PAR },
+    { "view_ids_available", "Array of available view IDs is exported here",
+        .offset = OFFSET(view_ids_available), .type = AV_OPT_TYPE_UINT | AV_OPT_TYPE_FLAG_ARRAY,
+        .flags = PAR | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
+    { "view_pos_available", "Array of view positions for view_ids_available is exported here, as AVStereo3DView",
+        .offset = OFFSET(view_pos_available), .type = AV_OPT_TYPE_UINT | AV_OPT_TYPE_FLAG_ARRAY,
+        .flags = PAR | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY, .unit = "view_pos" },
+        { "unspecified", .type = AV_OPT_TYPE_CONST, .default_val = { .i64 = AV_STEREO3D_VIEW_UNSPEC }, .unit = "view_pos" },
+        { "left",        .type = AV_OPT_TYPE_CONST, .default_val = { .i64 = AV_STEREO3D_VIEW_LEFT },   .unit = "view_pos" },
+        { "right",       .type = AV_OPT_TYPE_CONST, .default_val = { .i64 = AV_STEREO3D_VIEW_RIGHT },  .unit = "view_pos" },
+
     { NULL },
 };
 

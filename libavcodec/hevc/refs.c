@@ -80,6 +80,8 @@ void ff_hevc_flush_dpb(HEVCContext *s)
 
 static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
 {
+    const HEVCVPS *vps = l->sps->vps;
+    const int  view_id = vps->view_id[s->cur_layer];
     int i, j, ret;
     for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
         HEVCFrame *frame = &l->DPB[i];
@@ -97,6 +99,17 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
                                                   AV_FRAME_DATA_LCEVC, &lcevc->info);
             if (ret < 0)
                 goto fail;
+        }
+
+        // add view ID side data if it's nontrivial
+        if (vps->nb_layers > 1 || view_id) {
+            AVFrameSideData *sd = av_frame_side_data_new(&frame->f->side_data,
+                                                         &frame->f->nb_side_data,
+                                                         AV_FRAME_DATA_VIEW_ID,
+                                                         sizeof(int), 0);
+            if (!sd)
+                goto fail;
+            *(int*)sd->data = view_id;
         }
 
         ret = ff_progress_frame_get_buffer(s->avctx, &frame->tf,
@@ -165,6 +178,9 @@ int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc)
     l->cur_frame = ref;
     s->collocated_ref = NULL;
 
+    ref->base_layer_frame = (l != &s->layers[0] && s->layers[0].cur_frame) ?
+                            s->layers[0].cur_frame - s->layers[0].DPB : -1;
+
     if (s->sh.pic_output_flag)
         ref->flags = HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_SHORT_REF;
     else
@@ -189,33 +205,49 @@ static void unref_missing_refs(HEVCLayerContext *l)
     }
 }
 
-int ff_hevc_output_frames(HEVCContext *s, HEVCLayerContext *l,
+int ff_hevc_output_frames(HEVCContext *s,
+                          unsigned layers_active_decode, unsigned layers_active_output,
                           unsigned max_output, unsigned max_dpb, int discard)
 {
     while (1) {
-        int nb_dpb    = 0;
+        int nb_dpb[HEVC_VPS_MAX_LAYERS] = { 0 };
         int nb_output = 0;
         int min_poc   = INT_MAX;
-        int i, min_idx, ret = 0;
+        int min_layer = -1;
+        int min_idx, ret = 0;
 
-        for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
-            HEVCFrame *frame = &l->DPB[i];
-            if (frame->flags & HEVC_FRAME_FLAG_OUTPUT) {
-                nb_output++;
-                if (frame->poc < min_poc || nb_output == 1) {
-                    min_poc = frame->poc;
-                    min_idx = i;
+        for (int layer = 0; layer < FF_ARRAY_ELEMS(s->layers); layer++) {
+            HEVCLayerContext *l = &s->layers[layer];
+
+            if (!(layers_active_decode & (1 << layer)))
+                continue;
+
+            for (int i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
+                HEVCFrame *frame = &l->DPB[i];
+                if (frame->flags & HEVC_FRAME_FLAG_OUTPUT) {
+                    // nb_output counts AUs with an output-pending frame
+                    // in at least one layer
+                    if (!(frame->base_layer_frame >= 0 &&
+                          (s->layers[0].DPB[frame->base_layer_frame].flags & HEVC_FRAME_FLAG_OUTPUT)))
+                        nb_output++;
+                    if (min_layer < 0 || frame->poc < min_poc) {
+                        min_poc = frame->poc;
+                        min_idx = i;
+                        min_layer = layer;
+                    }
                 }
+                nb_dpb[layer] += !!frame->flags;
             }
-            nb_dpb += !!frame->flags;
         }
 
         if (nb_output > max_output ||
-            (nb_output && nb_dpb > max_dpb)) {
-            HEVCFrame *frame = &l->DPB[min_idx];
+            (nb_output &&
+             (nb_dpb[0] > max_dpb || nb_dpb[1] > max_dpb))) {
+            HEVCFrame *frame = &s->layers[min_layer].DPB[min_idx];
             AVFrame *f = frame->needs_fg ? frame->frame_grain : frame->f;
+            int output = !discard && (layers_active_output & (1 << min_layer));
 
-            if (!discard) {
+            if (output) {
                 f->pkt_dts = s->pkt_dts;
                 ret = ff_container_fifo_write(s->output_fifo, f);
             }
@@ -223,8 +255,8 @@ int ff_hevc_output_frames(HEVCContext *s, HEVCLayerContext *l,
             if (ret < 0)
                 return ret;
 
-            av_log(s->avctx, AV_LOG_DEBUG, "%s frame with POC %d.\n",
-                   discard ? "Discarded" : "Output", frame->poc);
+            av_log(s->avctx, AV_LOG_DEBUG, "%s frame with POC %d/%d.\n",
+                   output ? "Output" : "Discarded", min_layer, frame->poc);
             continue;
         }
         return 0;

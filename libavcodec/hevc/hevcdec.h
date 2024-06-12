@@ -375,6 +375,10 @@ typedef struct HEVCFrame {
 
     void *hwaccel_picture_private; ///< RefStruct reference
 
+    // for secondary-layer frames, this is the DPB index of the base-layer frame
+    // from the same AU, if it exists, otherwise -1
+    int base_layer_frame;
+
     /**
      * A combination of HEVC_FRAME_FLAG_*
      */
@@ -487,9 +491,13 @@ typedef struct HEVCContext {
     HEVCLocalContext     *local_ctx;
     unsigned           nb_local_ctx;
 
-    HEVCLayerContext      layers[1];
-    // index in layers of the layer currently being decoded
+    // per-layer decoding state, addressed by VPS layer indices
+    HEVCLayerContext      layers[HEVC_VPS_MAX_LAYERS];
+    // VPS index of the layer currently being decoded
     unsigned              cur_layer;
+    // bitmask of layer indices that are active for decoding/output
+    unsigned              layers_active_decode;
+    unsigned              layers_active_output;
 
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
@@ -539,10 +547,23 @@ typedef struct HEVCContext {
     H2645Packet pkt;
     // type of the first VCL NAL of the current frame
     enum HEVCNALUnitType first_nal_type;
+    // index in pkt.nals of the NAL unit after which we can call
+    // ff_thread_finish_setup()
+    unsigned finish_setup_nal_idx;
 
     int is_nalff;           ///< this flag is != 0 if bitstream is encapsulated
                             ///< as a format defined in 14496-15
     int apply_defdispwin;
+
+    // multi-layer AVOptions
+    int         *view_ids;
+    unsigned  nb_view_ids;
+
+    unsigned    *view_ids_available;
+    unsigned  nb_view_ids_available;
+
+    unsigned    *view_pos_available;
+    unsigned  nb_view_pos_available;
 
     int nal_length_size;    ///< Number of bytes used for nal length (1, 2 or 4)
     int nuh_layer_id;
@@ -644,12 +665,14 @@ static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
  * Find frames in the DPB that are ready for output and either write them to the
  * output FIFO or drop their output flag, depending on the value of discard.
  *
- * @param max_output maximum number of output-pending frames that can be
- *                   present in the DPB before output is triggered
+ * @param max_output maximum number of AUs with an output-pending frame in at
+ *                   least one layer that can be present in the DPB before output
+ *                   is triggered
  * @param max_dpb maximum number of any frames that can be present in the DPB
- *                before output is triggered
+ *                for any layer before output is triggered
  */
-int ff_hevc_output_frames(HEVCContext *s, HEVCLayerContext *l,
+int ff_hevc_output_frames(HEVCContext *s,
+                          unsigned layers_active_decode, unsigned layers_active_output,
                           unsigned max_output, unsigned max_dpb, int discard);
 
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags);

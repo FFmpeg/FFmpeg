@@ -38,6 +38,51 @@ Select an operating point of a scalable AV1 bitstream (0 - 31). Default is 0.
 
 @end table
 
+@section hevc
+HEVC (AKA ITU-T H.265 or ISO/IEC 23008-2) decoder.
+
+The decoder supports MV-HEVC multiview streams with at most two views. Views to
+be output are selected by supplying a list of view IDs to the decoder (the
+@option{view_ids} option). This option may be set either statically before
+decoder init, or from the @code{get_format()} callback - useful for the case
+when the view count or IDs change dynamically during decoding.
+
+Only the base layer is decoded by default.
+
+Note that if you are using the @code{ffmpeg} CLI tool, you should be using view
+specifiers as documented in its manual, rather than the options documented here.
+
+@subsection Options
+
+@table @option
+
+@item view_ids (MV-HEVC)
+Specify a list of view IDs that should be output. This option can also be set to
+a single '-1', which will cause all views defined in the VPS to be decoded and
+output.
+
+@item view_ids_available (MV-HEVC)
+This option may be read by the caller to retrieve an array of view IDs available
+in the active VPS. The array is empty for single-layer video.
+
+The value of this option is guaranteed to be accurate when read from the
+@code{get_format()} callback. It may also be set at other times (e.g. after
+opening the decoder), but the value is informational only and may be incorrect
+(e.g. when the stream contains multiple distinct VPS NALUs).
+
+@item view_pos_available (MV-HEVC)
+This option may be read by the caller to retrieve an array of view positions
+(left, right, or unspecified) available in the active VPS, as
+@code{AVStereo3DView} values. When the array is available, its elements apply to
+the corresponding elements of @option{view_ids_available}, i.e.
+@code{view_pos_available[i]} contains the position of view with ID
+@code{view_ids_available[i]}.
+
+Same validity restrictions as for @option{view_ids_available} apply to
+this option.
+
+@end table
+
 @section rawvideo
 
 Raw video decoder.

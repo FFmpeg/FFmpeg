@@ -26,6 +26,7 @@ version <next>:
 - stream specifiers in fftools can now match by stream disposition
 - LCEVC enhancement data exporting in H.26x and MP4/ISOBMFF
 - LCEVC filter
+- MV-HEVC decoding
 
 
 version 7.0:
