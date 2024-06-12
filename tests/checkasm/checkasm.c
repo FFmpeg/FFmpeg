@@ -823,8 +823,7 @@ static int bench_init(void)
 static void bench_uninit(void)
 {
 #if CONFIG_LINUX_PERF
-    if (state.sysfd > 0)
-        close(state.sysfd);
+    close(state.sysfd);
 #endif
 }
 
