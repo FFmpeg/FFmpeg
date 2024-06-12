@@ -526,8 +526,7 @@ static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
     return ff_get_format(s->avctx, pix_fmts);
 }
 
-static int set_sps(HEVCContext *s, const HEVCSPS *sps,
-                   enum AVPixelFormat pix_fmt)
+static int set_sps(HEVCContext *s, const HEVCSPS *sps)
 {
     int ret, i;
 
@@ -543,8 +542,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps,
         goto fail;
 
     export_stream_params(s, sps);
-
-    s->avctx->pix_fmt = pix_fmt;
 
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
@@ -2918,7 +2915,7 @@ static int hevc_frame_start(HEVCContext *s)
 
         ff_hevc_clear_refs(s);
 
-        ret = set_sps(s, sps, sps->pix_fmt);
+        ret = set_sps(s, sps);
         if (ret < 0)
             return ret;
 
@@ -3592,7 +3589,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     ff_refstruct_unref(&s->pps);
 
     if (s->ps.sps != s0->ps.sps)
-        if ((ret = set_sps(s, s0->ps.sps, src->pix_fmt)) < 0)
+        if ((ret = set_sps(s, s0->ps.sps)) < 0)
             return ret;
 
     s->seq_decode = s0->seq_decode;
