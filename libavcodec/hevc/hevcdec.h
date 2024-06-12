@@ -84,6 +84,8 @@ enum RPSType {
     ST_FOLL,
     LT_CURR,
     LT_FOLL,
+    INTER_LAYER0,
+    INTER_LAYER1,
     NB_RPS_TYPE,
 };
 
@@ -442,6 +444,7 @@ typedef struct HEVCLocalContext {
 
 typedef struct HEVCLayerContext {
     HEVCFrame               DPB[32];
+    HEVCFrame              *cur_frame;
 
     const HEVCSPS          *sps; // RefStruct reference
 
@@ -498,7 +501,7 @@ typedef struct HEVCContext {
     struct AVMD5 *md5_ctx;
 
     ///< candidate references for the current frame
-    RefPicList rps[5];
+    RefPicList rps[NB_RPS_TYPE];
 
     const HEVCVPS *vps; ///< RefStruct reference
     const HEVCPPS *pps; ///< RefStruct reference
@@ -615,7 +618,8 @@ int ff_hevc_res_scale_sign_flag(HEVCLocalContext *lc, int idx);
 /**
  * Get the number of candidate references for the current frame.
  */
-int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps);
+int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps,
+                          unsigned layer_idx);
 
 int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc);
 

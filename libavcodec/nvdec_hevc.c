@@ -188,7 +188,7 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
 
             .NumBitsForShortTermRPSInSlice                = s->sh.short_term_rps ? s->sh.short_term_ref_pic_set_size : 0,
             .NumDeltaPocsOfRefRpsIdx                      = s->sh.short_term_rps ? s->sh.short_term_rps->rps_idx_num_delta_pocs : 0,
-            .NumPocTotalCurr                              = ff_hevc_frame_nb_refs(&s->sh, pps),
+            .NumPocTotalCurr                              = ff_hevc_frame_nb_refs(&s->sh, pps, s->cur_layer),
             .NumPocStCurrBefore                           = s->rps[ST_CURR_BEF].nb_refs,
             .NumPocStCurrAfter                            = s->rps[ST_CURR_AFT].nb_refs,
             .NumPocLtCurr                                 = s->rps[LT_CURR].nb_refs,

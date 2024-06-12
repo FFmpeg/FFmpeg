@@ -784,7 +784,7 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
 
             sh->rpl_modification_flag[0] = 0;
             sh->rpl_modification_flag[1] = 0;
-            nb_refs = ff_hevc_frame_nb_refs(sh, pps);
+            nb_refs = ff_hevc_frame_nb_refs(sh, pps, layer_idx);
             if (!nb_refs) {
                 av_log(s->avctx, AV_LOG_ERROR, "Zero refs for a frame with P or B slices.\n");
                 return AVERROR_INVALIDDATA;
@@ -3355,6 +3355,11 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->last_eos = s->eos;
     s->eos = 0;
     s->slice_initialized = 0;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(s->layers); i++) {
+        HEVCLayerContext *l = &s->layers[i];
+        l->cur_frame = NULL;
+    }
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */

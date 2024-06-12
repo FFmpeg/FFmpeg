@@ -162,6 +162,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, HEVCLayerContext *l, int poc)
         return AVERROR(ENOMEM);
 
     s->cur_frame = ref;
+    l->cur_frame = ref;
     s->collocated_ref = NULL;
 
     if (s->sh.pic_output_flag)
@@ -261,7 +262,9 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         return ret;
 
     if (!(s->rps[ST_CURR_BEF].nb_refs + s->rps[ST_CURR_AFT].nb_refs +
-          s->rps[LT_CURR].nb_refs) && !s->pps->pps_curr_pic_ref_enabled_flag) {
+          s->rps[LT_CURR].nb_refs +
+          s->rps[INTER_LAYER0].nb_refs + s->rps[INTER_LAYER1].nb_refs) &&
+        !s->pps->pps_curr_pic_ref_enabled_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Zero refs in the frame RPS.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -271,11 +274,14 @@ int ff_hevc_slice_rpl(HEVCContext *s)
         RefPicList *rpl     = &s->cur_frame->refPicList[list_idx];
 
         /* The order of the elements is
-         * ST_CURR_BEF - ST_CURR_AFT - LT_CURR for the L0 and
-         * ST_CURR_AFT - ST_CURR_BEF - LT_CURR for the L1 */
-        int cand_lists[3] = { list_idx ? ST_CURR_AFT : ST_CURR_BEF,
-                              list_idx ? ST_CURR_BEF : ST_CURR_AFT,
-                              LT_CURR };
+         * ST_CURR_BEF - INTER_LAYER0 - ST_CURR_AFT - LT_CURR - INTER_LAYER1 for the L0 and
+         * ST_CURR_AFT - INTER_LAYER1 - ST_CURR_BEF - LT_CURR - INTER_LAYER0 for the L1 */
+        int cand_lists[] = { list_idx ? ST_CURR_AFT : ST_CURR_BEF,
+                             list_idx ? INTER_LAYER1 : INTER_LAYER0,
+                             list_idx ? ST_CURR_BEF : ST_CURR_AFT,
+                             LT_CURR,
+                             list_idx ? INTER_LAYER0 : INTER_LAYER1
+        };
 
         /* concatenate the candidate lists for the current frame */
         while (rpl_tmp.nb_refs < sh->nb_refs[list_idx]) {
@@ -284,7 +290,11 @@ int ff_hevc_slice_rpl(HEVCContext *s)
                 for (j = 0; j < rps->nb_refs && rpl_tmp.nb_refs < HEVC_MAX_REFS; j++) {
                     rpl_tmp.list[rpl_tmp.nb_refs]       = rps->list[j];
                     rpl_tmp.ref[rpl_tmp.nb_refs]        = rps->ref[j];
-                    rpl_tmp.isLongTerm[rpl_tmp.nb_refs] = i == 2;
+                    // multiview inter-layer refs are treated as long-term here,
+                    // cf. G.8.1.3
+                    rpl_tmp.isLongTerm[rpl_tmp.nb_refs] = cand_lists[i] == LT_CURR ||
+                                                          cand_lists[i] == INTER_LAYER0 ||
+                                                          cand_lists[i] == INTER_LAYER1;
                     rpl_tmp.nb_refs++;
                 }
             }
@@ -423,11 +433,6 @@ int ff_hevc_frame_rps(HEVCContext *s, HEVCLayerContext *l)
     RefPicList               *rps = s->rps;
     int i, ret = 0;
 
-    if (!short_rps) {
-        rps[0].nb_refs = rps[1].nb_refs = 0;
-        return 0;
-    }
-
     unref_missing_refs(l);
 
     /* clear the reference flags on all frames except the current one */
@@ -442,6 +447,9 @@ int ff_hevc_frame_rps(HEVCContext *s, HEVCLayerContext *l)
 
     for (i = 0; i < NB_RPS_TYPE; i++)
         rps[i].nb_refs = 0;
+
+    if (!short_rps)
+        goto inter_layer;
 
     /* add the short refs */
     for (i = 0; i < short_rps->num_delta_pocs; i++) {
@@ -472,6 +480,24 @@ int ff_hevc_frame_rps(HEVCContext *s, HEVCLayerContext *l)
             goto fail;
     }
 
+inter_layer:
+    /* add inter-layer refs */
+    if (s->sh.inter_layer_pred) {
+        HEVCLayerContext *l0 = &s->layers[0];
+
+        av_assert0(l != l0);
+
+        /* Given the assumption of at most two layers, refPicSet0Flag is
+         * always 1, so only RefPicSetInterLayer0 can ever contain a frame. */
+        if (l0->cur_frame) {
+            // inter-layer refs are treated as short-term here, cf. F.8.1.6
+            ret = add_candidate_ref(s, l0, &rps[INTER_LAYER0], l0->cur_frame->poc,
+                                    HEVC_FRAME_FLAG_SHORT_REF, 1);
+            if (ret < 0)
+                goto fail;
+        }
+    }
+
 fail:
     /* release any frames that are now unused */
     for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++)
@@ -480,7 +506,8 @@ fail:
     return ret;
 }
 
-int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps)
+int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps,
+                          unsigned layer_idx)
 {
     int ret = 0;
     int i;
@@ -497,6 +524,11 @@ int ff_hevc_frame_nb_refs(const SliceHeader *sh, const HEVCPPS *pps)
     if (long_rps) {
         for (i = 0; i < long_rps->nb_refs; i++)
             ret += !!long_rps->used[i];
+    }
+
+    if (sh->inter_layer_pred) {
+        av_assert0(pps->sps->vps->num_direct_ref_layers[layer_idx] < 2);
+        ret++;
     }
 
     if (pps->pps_curr_pic_ref_enabled_flag)
