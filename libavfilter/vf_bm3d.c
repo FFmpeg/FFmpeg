@@ -279,7 +279,7 @@ static void do_block_matching_multi(BM3DContext *s, const uint8_t *src, int src_
                                     int r_y, int r_x, int plane, int jobnr)
 {
     SliceContext *sc = &s->slices[jobnr];
-    double MSE2SSE = s->group_size * s->block_size * s->block_size * src_range * src_range / (s->max * s->max);
+    double MSE2SSE = s->group_size * s->block_size * s->block_size * src_range * src_range / (double)(s->max * s->max);
     double distMul = 1. / MSE2SSE;
     double th_sse = th_mse * MSE2SSE;
     int i, index = sc->nb_match_blocks;
