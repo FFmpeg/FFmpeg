@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "error_resilience.h"
 #include "mpegvideo.h"
@@ -67,6 +68,8 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
 {
     MpegEncContext *s = opaque;
 
+    av_assert1(!mb_intra);
+
     s->mv_dir     = mv_dir;
     s->mv_type    = mv_type;
     s->mb_intra   = mb_intra;
@@ -76,9 +79,9 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     s->mcsel      = 0;
     memcpy(s->mv, mv, sizeof(*mv));
 
-    s->bdsp.clear_blocks(s->block[0]);
-    if (!s->chroma_y_shift)
-        s->bdsp.clear_blocks(s->block[6]);
+    // The following disables the IDCT.
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(s->block_last_index); i++)
+        s->block_last_index[i] = -1;
 
     s->dest[0] = s->cur_pic.data[0] +
                  s->mb_y * 16 * s->linesize +
