@@ -712,144 +712,79 @@ static int get_qp(const VVCFrameContext *fc, const uint8_t *src, const int x, co
     return get_qp_c(fc, x, y, c_idx, vertical);
 }
 
-void ff_vvc_deblock_vertical(const VVCLocalContext *lc, const int x0, const int y0, const int rs)
+static void vvc_deblock(const VVCLocalContext *lc, int x0, int y0, const int rs, const int vertical)
 {
-    VVCFrameContext *fc = lc->fc;
-    const VVCSPS *sps   = fc->ps.sps;
-    const int c_end     = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
-    uint8_t *src;
-    int x, y, qp;
+    VVCFrameContext *fc    = lc->fc;
+    const VVCSPS *sps      = fc->ps.sps;
+    const int c_end        = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
+    const int ctb_size     = fc->ps.sps->ctb_size_y;
+    const DBParams *params = fc->tab.deblock + rs;
+    int x_end              = FFMIN(x0 + ctb_size, fc->ps.pps->width);
+    int y_end              = FFMIN(y0 + ctb_size, fc->ps.pps->height);
 
     //not use this yet, may needed by plt.
-    const uint8_t no_p[4] = { 0 };
-    const uint8_t no_q[4] = { 0 } ;
+    const uint8_t no_p[4]  = { 0 };
+    const uint8_t no_q[4]  = { 0 } ;
 
-    const int ctb_log2_size_y = fc->ps.sps->ctb_log2_size_y;
-    int x_end, y_end;
-    const int ctb_size = 1 << ctb_log2_size_y;
-    const DBParams *params = fc->tab.deblock + rs;
+    vvc_deblock_bs(lc, x0, y0, rs, vertical);
 
-    vvc_deblock_bs(lc, x0, y0, rs, 1);
-
-    x_end = x0 + ctb_size;
-    if (x_end > fc->ps.pps->width)
-        x_end = fc->ps.pps->width;
-    y_end = y0 + ctb_size;
-    if (y_end > fc->ps.pps->height)
-        y_end = fc->ps.pps->height;
+    if (!vertical) {
+        FFSWAP(int, x_end, y_end);
+        FFSWAP(int, x0, y0);
+    }
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
-        const int hs          = sps->hshift[c_idx];
-        const int vs          = sps->vshift[c_idx];
+        const int hs          = (vertical ? sps->hshift : sps->vshift)[c_idx];
+        const int vs          = (vertical ? sps->vshift : sps->hshift)[c_idx];
         const int grid        = c_idx ? (CHROMA_GRID << hs) : LUMA_GRID;
         const int tc_offset   = params->tc_offset[c_idx];
         const int beta_offset = params->beta_offset[c_idx];
+        const int src_stride  = fc->frame->linesize[c_idx];
 
-        for (y = y0; y < y_end; y += (DEBLOCK_STEP << vs)) {
-            for (x = x0 ? x0 : grid; x < x_end; x += grid) {
-                int32_t bs[4], beta[4], tc[4], all_zero_bs = 1;
+        for (int y = y0; y < y_end; y += (DEBLOCK_STEP << vs)) {
+            for (int x = x0 ? x0 : grid; x < x_end; x += grid) {
+                const uint8_t horizontal_ctu_edge = !vertical && !(x % ctb_size);
+                int32_t bs[4], beta[4], tc[4] = { }, all_zero_bs = 1;
                 uint8_t max_len_p[4], max_len_q[4];
 
                 for (int i = 0; i < DEBLOCK_STEP >> (2 - vs); i++) {
-                    const int dy = i << 2;
-                    bs[i] = (y + dy < y_end) ? TAB_BS(fc->tab.bs[1][c_idx], x, y + dy) : 0;
+                    int tx         = x;
+                    int ty         = y + (i << 2);
+                    const int end  = ty >= y_end;
+
+                    if (!vertical)
+                        FFSWAP(int, tx, ty);
+
+                    bs[i] = end ? 0 : TAB_BS(fc->tab.bs[vertical][c_idx], tx, ty);
                     if (bs[i]) {
-                        src = POS(c_idx, x, y + dy);
-                        qp = get_qp(fc, src, x, y + dy, c_idx, 1);
-
+                        const int qp = get_qp(fc, POS(c_idx, tx, ty), tx, ty, c_idx, vertical);
                         beta[i] = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
-
-                        max_filter_length(fc, x, y + dy, c_idx, 1, 0, bs[i], &max_len_p[i], &max_len_q[i]);
+                        tc[i] = TC_CALC(qp, bs[i]) ;
+                        max_filter_length(fc, tx, ty, c_idx, vertical, horizontal_ctu_edge, bs[i], &max_len_p[i], &max_len_q[i]);
                         all_zero_bs = 0;
                     }
-                    tc[i] = bs[i] ? TC_CALC(qp, bs[i]) : 0;
                 }
 
                 if (!all_zero_bs) {
-                    src = POS(c_idx, x, y);
-                    if (!c_idx) {
-                        fc->vvcdsp.lf.filter_luma[1](src, fc->frame->linesize[c_idx],
-                            beta, tc, no_p, no_q, max_len_p, max_len_q, 0);
-                    } else {
-                        fc->vvcdsp.lf.filter_chroma[1](src, fc->frame->linesize[c_idx],
-                            beta, tc, no_p, no_q, max_len_p, max_len_q, vs);
-                    }
+                    uint8_t *src = vertical ? POS(c_idx, x, y) : POS(c_idx, y, x);
+                    if (!c_idx)
+                        fc->vvcdsp.lf.filter_luma[vertical](src, src_stride, beta, tc, no_p, no_q, max_len_p, max_len_q, horizontal_ctu_edge);
+                    else
+                        fc->vvcdsp.lf.filter_chroma[vertical](src, src_stride, beta, tc, no_p, no_q, max_len_p, max_len_q, vs);
                 }
             }
         }
     }
 }
 
+void ff_vvc_deblock_vertical(const VVCLocalContext *lc, const int x0, const int y0, const int rs)
+{
+    vvc_deblock(lc, x0, y0, rs, 1);
+}
+
 void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, const int x0, const int y0, const int rs)
 {
-    VVCFrameContext *fc = lc->fc;
-    const VVCSPS *sps   = fc->ps.sps;
-    const int c_end     = fc->ps.sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
-    uint8_t* src;
-    int x, y, qp;
-
-    //not use this yet, may needed by plt.
-    const uint8_t no_p[4] = { 0 };
-    const uint8_t no_q[4] = { 0 } ;
-
-    const int ctb_log2_size_y = fc->ps.sps->ctb_log2_size_y;
-    int x_end, y_end;
-    const int ctb_size = 1 << ctb_log2_size_y;
-    const DBParams *params = fc->tab.deblock + rs;
-
-    vvc_deblock_bs(lc, x0, y0, rs, 0);
-
-    x_end = x0 + ctb_size;
-    if (x_end > fc->ps.pps->width)
-        x_end = fc->ps.pps->width;
-    y_end = y0 + ctb_size;
-    if (y_end > fc->ps.pps->height)
-        y_end = fc->ps.pps->height;
-
-    for (int c_idx = 0; c_idx < c_end; c_idx++) {
-        const int hs          = sps->hshift[c_idx];
-        const int vs          = sps->vshift[c_idx];
-        const int grid        = c_idx ? (CHROMA_GRID << vs) : LUMA_GRID;
-        const int beta_offset = params->beta_offset[c_idx];
-        const int tc_offset   = params->tc_offset[c_idx];
-
-        for (y = y0; y < y_end; y += grid) {
-            const uint8_t horizontal_ctu_edge = !(y % fc->ps.sps->ctb_size_y);
-            if (!y)
-                continue;
-
-            for (x = x0 ? x0: 0; x < x_end; x += (DEBLOCK_STEP << hs)) {
-                int32_t bs[4], beta[4], tc[4], all_zero_bs = 1;
-                uint8_t max_len_p[4], max_len_q[4];
-
-                for (int i = 0; i < DEBLOCK_STEP >> (2 - hs); i++) {
-                    const int dx = i << 2;
-
-                    bs[i] = (x + dx < x_end) ? TAB_BS(fc->tab.bs[0][c_idx], x + dx, y) : 0;
-                    if (bs[i]) {
-                        src = POS(c_idx, x + dx, y);
-                        qp = get_qp(fc, src, x + dx, y, c_idx, 0);
-
-                        beta[i] = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
-
-                        max_filter_length(fc, x + dx, y, c_idx, 0, horizontal_ctu_edge, bs[i], &max_len_p[i], &max_len_q[i]);
-                        all_zero_bs = 0;
-                    }
-                    tc[i] = bs[i] ? TC_CALC(qp, bs[i]) : 0;
-                }
-                if (!all_zero_bs) {
-                    src = POS(c_idx, x, y);
-                    if (!c_idx) {
-                        fc->vvcdsp.lf.filter_luma[0](src, fc->frame->linesize[c_idx],
-                            beta, tc, no_p, no_q, max_len_p, max_len_q, horizontal_ctu_edge);
-                    } else {
-                        fc->vvcdsp.lf.filter_chroma[0](src, fc->frame->linesize[c_idx],
-                            beta, tc, no_p, no_q, max_len_p, max_len_q, hs);
-                    }
-                }
-            }
-        }
-    }
+    vvc_deblock(lc, x0, y0, rs, 0);
 }
 
 static void alf_copy_border(uint8_t *dst, const uint8_t *src,
