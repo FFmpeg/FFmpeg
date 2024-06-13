@@ -1101,7 +1101,7 @@ static void mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
        }
     }
 
-    mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12);
+    mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12_H261);
 }
 
 static int get_sae(const uint8_t *src, int ref, int stride)

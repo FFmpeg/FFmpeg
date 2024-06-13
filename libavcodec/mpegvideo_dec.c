@@ -927,15 +927,16 @@ void ff_mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
        }
     }
 
+    av_assert2((s->out_format <= FMT_H261) == (s->out_format == FMT_H261 || s->out_format == FMT_MPEG1));
     if (!s->avctx->lowres) {
 #if !CONFIG_SMALL
-        if (s->out_format == FMT_MPEG1)
-            mpv_reconstruct_mb_internal(s, block, 0, DEFINITELY_MPEG12);
+        if (s->out_format <= FMT_H261)
+            mpv_reconstruct_mb_internal(s, block, 0, DEFINITELY_MPEG12_H261);
         else
-            mpv_reconstruct_mb_internal(s, block, 0, NOT_MPEG12);
+            mpv_reconstruct_mb_internal(s, block, 0, NOT_MPEG12_H261);
 #else
-        mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12);
+        mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12_H261);
 #endif
     } else
-        mpv_reconstruct_mb_internal(s, block, 1, MAY_BE_MPEG12);
+        mpv_reconstruct_mb_internal(s, block, 1, MAY_BE_MPEG12_H261);
 }

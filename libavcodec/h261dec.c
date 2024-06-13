@@ -244,6 +244,7 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
     int level, i, j, run;
     const RLTable *rl = &ff_h261_rl_tcoeff;
     const uint8_t *scan_table;
+    const int qmul = s->qscale << 1, qadd = (s->qscale - 1) | 1;
 
     /* For the variable length encoding there are two code tables, one being
      * used for the first transmitted LEVEL in INTER, INTER + MC and
@@ -265,7 +266,7 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
          * being coded as 1111 1111. */
         if (level == 255)
             level = 128;
-        block[0] = level;
+        block[0] = level * s->y_dc_scale;
         i        = 1;
     } else if (coded) {
         // Run  Level   Code
@@ -276,7 +277,8 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
         i = 0;
         if (check & 0x2) {
             skip_bits(&s->gb, 2);
-            block[0] = (check & 0x1) ? -1 : 1;
+            block[0] = qmul + qadd;
+            block[0] *= (check & 0x1) ? -1 : 1;
             i        = 1;
         }
     } else {
@@ -306,10 +308,15 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
             run   = SHOW_UBITS(re, &s->gb, 6) + 1;
             SKIP_CACHE(re, &s->gb, 6);
             level = SHOW_SBITS(re, &s->gb, 8);
+            if (level > 0)
+                level = level * qmul + qadd;
+            else if (level < 0)
+                level = level * qmul - qadd;
             SKIP_COUNTER(re, &s->gb, 6 + 8);
         } else if (level == 0) {
             break;
         } else {
+            level = level * qmul + qadd;
             if (SHOW_UBITS(re, &s->gb, 1))
                 level = -level;
             SKIP_COUNTER(re, &s->gb, 1);
