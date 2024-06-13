@@ -712,7 +712,7 @@ static int minimize_error(
             total_err += deshake_ctx->ransac_err[j];
         }
 
-        if (total_err < best_err) {
+        if (i == 0 || total_err < best_err) {
             for (int mi = 0; mi < 6; ++mi) {
                 best_model[mi] = model[mi];
             }
