@@ -87,6 +87,8 @@ static av_cold int h261_decode_init(AVCodecContext *avctx)
     MpegEncContext *const s = &h->s;
     int ret;
 
+    avctx->framerate = (AVRational) { 30000, 1001 };
+
     s->private_ctx = &h->common;
     // set defaults
     ret = ff_mpv_decode_init(s, avctx);
@@ -472,8 +474,6 @@ static int h261_decode_picture_header(H261DecContext *h)
 
     /* temporal reference */
     skip_bits(&s->gb, 5); /* picture timestamp */
-
-    s->avctx->framerate = (AVRational) { 30000, 1001 };
 
     /* PTYPE starts here */
     skip_bits1(&s->gb); /* split screen off */
