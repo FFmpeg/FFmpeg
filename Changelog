@@ -2,6 +2,81 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 5.1.5:
+ doc/developer: Provide information about git send-email and gmail
+ avfilter/vf_rotate: Check ff_draw_init2() return value
+ avformat/mov: Use int64_t in intermediate for corrected_dts
+ avformat/mov: Use 64bit in intermediate for current_dts
+ avformat/matroskadec: Assert that num_levels is non negative
+ avformat/libzmq: Check av_strstart()
+ avformat/img2dec: Little JFIF / Exif cleanup
+ avformat/img2dec: Move DQT after unrelated if()
+ avdevice/xcbgrab: Check sscanf() return
+ fftools/cmdutils: Add protective () to FLAGS
+ avformat/sdp: Check before appending ","
+ avcodec/ilbcdec: Remove dead code
+ avcodec/vp8: Check cond init
+ avcodec/vp8: Check mutex init
+ avcodec/pcm-dvdenc: 64bit pkt-size
+ avcodec/notchlc: Check init_get_bits8() for failure
+ avcodec/tests/dct: Use 64bit in intermediate for error computation
+ avcodec/scpr3: Check add_dec() for failure
+ avcodec/rv34: assert that size is not 0 in rv34_gen_vlc_ext()
+ avcodec/wavpackenc: Use unsigned for potential 31bit shift
+ avcodec/tests/jpeg2000dwt: Use 64bit in comparission
+ avcodec/tests/jpeg2000dwt: Use 64bit in err2 computation
+ avformat/fwse: Remove always false expression
+ avcodec/sga: Make it clear that the return is intentionally not checked
+ avformat/asfdec_f: Use 64bit for preroll computation
+ avformat/argo_asf: Use 64bit in offset intermediate
+ avformat/ape: Use 64bit for final frame size
+ avdevice/pulse_audio_enc: Use av_rescale() to avoid integer overflow
+ avcodec/tiff: Assert init_get_bits8() success in unpack_gray()
+ avcodec/tiff: Assert init_get_bits8() success in horizontal_fill()
+ swscale/yuv2rgb: Use 64bit for brightness computation
+ swscale/x86/swscale: use a clearer name for INPUT_PLANER_RGB_A_FUNC_CASE
+ avutil/tests/opt: Check av_set_options_string() for failure
+ avutil/tests/dict: Check av_dict_set() before get for failure
+ avdevice/dshow: fix badly indented line
+ avformat/demux: resurrect dead stores
+ avcodec/mscc & mwsc: Check loop counts before use
+ avcodec/mpegvideo_enc: Fix potential overflow in RD
+ avcodec/mpeg4videodec: assert impossible wrap points
+ avcodec/mpeg12dec: Use 64bit in bit computation
+ avcodec/vble: Check av_image_get_buffer_size() for failure
+ avcodec/vp3: Replace check by assert
+ avcodec/jpeg2000dec: remove ST=3 case
+ avcodec/qsvdec: Check av_image_get_buffer_size() for failure
+ avcodec/exr: Fix preview overflow
+ avcodec/fmvc: remove dead assignment
+ avcodec/h264_slice: Remove dead sps check
+ avcodec/lpc: copy levenson coeffs only when they have been computed
+ avutil/tests/base64: Check with too short output array
+ libavutil/base64: Try not to write over the array end
+ avcodec/cbs_av1: Avoid shift overflow
+ fftools/ffplay: Check return of swr_alloc_set_opts2()
+ tools/opt_common: Check for malloc failure
+ doc/examples/demux_decode: Simplify loop
+ avformat/concatdec: Check file
+ avcodec/mpegvideo_enc: Fix 1 line and one column images
+ swscale/output: Fix integer overflow in yuv2rgba64_full_1_c_template()
+ swscale/output: Fix integer overflow in yuv2rgba64_1_c_template
+ avcodec/avs3_parser: assert the return value of init_get_bits()
+ avcodec/avs2_parser: Assert init_get_bits8() success with const size 15
+ avformat/mxfdec: Check body_offset
+ avformat/kvag: Check sample_rate
+ avcodec/ac3_parser: Check init_get_bits8() for failure
+ avcodec/pngdec: Check last AVFrame before deref
+ avcodec/hevcdec: Check ref frame
+ doc/examples/vaapi_transcode: Simplify loop
+ avfilter/vf_thumbnail_cuda: Set ret before checking it
+ avfilter/signature_lookup: Dont copy uninitialized stuff around
+ avfilter/signature_lookup: Fix 2 differences to the refernce SW
+ (origin/release/5.1, github/release/5.1) lavc/vp9: reset segmentation fields when segmentation isn't enabled
+ configure: enable ffnvcodec, nvenc, nvdec for FreeBSD
+ avcodec/x86/vp3dsp_init: Set correct function pointer, fix crash
+ avutil/ppc/cpu: Also use the machdep.altivec sysctl on NetBSD
+ lavd/v4l2: Use proper field type for second parameter of ioctl() with BSD's
+ Update for 5.1.5
  fate/subtitles: Ignore line endings for sub-scc test
  avformat/mxfdec: Check index_edit_rate
  swscale/utils: Fix xInc overflow
