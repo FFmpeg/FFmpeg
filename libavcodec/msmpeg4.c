@@ -41,7 +41,6 @@
 #include "mpeg4videodata.h"
 #include "msmpeg4data.h"
 #include "msmpeg4_vc1_data.h"
-#include "mpegvideodata.h"
 
 /*
  * You can also call this codec: MPEG-4 with a twist!
@@ -122,8 +121,7 @@ av_cold void ff_msmpeg4_common_init(MpegEncContext *s)
     switch(s->msmpeg4_version){
     case MSMP4_V1:
     case MSMP4_V2:
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+        // Correct *_dc_scale_tables (ff_mpeg1_dc_scale_table) is the default
         break;
     case MSMP4_V3:
         if(s->workaround_bugs){

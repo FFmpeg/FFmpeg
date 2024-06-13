@@ -34,7 +34,6 @@
 #include "mpegvideo.h"
 #include "h261.h"
 #include "h261enc.h"
-#include "mpegvideodata.h"
 #include "mpegvideoenc.h"
 
 static uint8_t uni_h261_rl_len [64*64*2*2];
@@ -388,8 +387,6 @@ av_cold int ff_h261_encode_init(MpegEncContext *s)
 
     s->min_qcoeff       = -127;
     s->max_qcoeff       = 127;
-    s->y_dc_scale_table =
-    s->c_dc_scale_table = ff_mpeg1_dc_scale_table;
     s->ac_esc_length    = 6+6+8;
 
     s->intra_ac_vlc_length      = s->inter_ac_vlc_length      = uni_h261_rl_len;
