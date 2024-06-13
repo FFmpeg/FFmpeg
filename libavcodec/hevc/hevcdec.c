@@ -3029,8 +3029,9 @@ static int hevc_frame_start(HEVCContext *s)
         ret = FF_HW_CALL(s->avctx, start_frame, NULL, 0);
         if (ret < 0)
             goto fail;
-    } else
-        ff_thread_finish_setup(s->avctx);
+    }
+
+    ff_thread_finish_setup(s->avctx);
 
     return 0;
 
