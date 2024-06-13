@@ -1387,8 +1387,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *input_frame)
     size_t global_work[2];
     int64_t duration;
     cl_mem src, transformed, dst;
-    cl_mem transforms[3];
-    CropInfo crops[3];
+    cl_mem transforms[AV_VIDEO_MAX_PLANES];
+    CropInfo crops[AV_VIDEO_MAX_PLANES];
     cl_event transform_event, crop_upscale_event;
     DebugMatches debug_matches;
     cl_int num_model_matches;
@@ -1518,7 +1518,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *input_frame)
     transforms[0] = deshake_ctx->transform_y;
     transforms[1] = transforms[2] = deshake_ctx->transform_uv;
 
-    for (int p = 0; p < FF_ARRAY_ELEMS(transformed_frame->data); p++) {
+    for (int p = 0; p < AV_VIDEO_MAX_PLANES; p++) {
         // Transform all of the planes appropriately
         src = (cl_mem)input_frame->data[p];
         transformed = (cl_mem)transformed_frame->data[p];
@@ -1619,7 +1619,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *input_frame)
         crops[0] = deshake_ctx->crop_y;
         crops[1] = crops[2] = deshake_ctx->crop_uv;
 
-        for (int p = 0; p < FF_ARRAY_ELEMS(cropped_frame->data); p++) {
+        for (int p = 0; p < AV_VIDEO_MAX_PLANES; p++) {
             // Crop all of the planes appropriately
             dst = (cl_mem)cropped_frame->data[p];
             transformed = (cl_mem)transformed_frame->data[p];
