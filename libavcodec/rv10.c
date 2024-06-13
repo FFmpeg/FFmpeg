@@ -498,12 +498,6 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
     s->rv10_first_dc_coded[0] = 0;
     s->rv10_first_dc_coded[1] = 0;
     s->rv10_first_dc_coded[2] = 0;
-    s->block_wrap[0] =
-    s->block_wrap[1] =
-    s->block_wrap[2] =
-    s->block_wrap[3] = s->b8_stride;
-    s->block_wrap[4] =
-    s->block_wrap[5] = s->mb_stride;
     ff_init_block_index(s);
 
     /* decode each macroblock */
