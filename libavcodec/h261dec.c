@@ -208,10 +208,6 @@ static int h261_decode_mb_skipped(H261DecContext *h, int mba1, int mba2)
     return 0;
 }
 
-static const int mvmap[17] = {
-    0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16
-};
-
 static int decode_mv_component(GetBitContext *gb, int v)
 {
     int mv_diff = get_vlc2(gb, h261_mv_vlc, H261_MV_VLC_BITS, 2);
@@ -220,9 +216,7 @@ static int decode_mv_component(GetBitContext *gb, int v)
     if (mv_diff < 0)
         return v;
 
-    mv_diff = mvmap[mv_diff];
-
-    if (mv_diff && !get_bits1(gb))
+    if (mv_diff && get_bits1(gb))
         mv_diff = -mv_diff;
 
     v += mv_diff;
