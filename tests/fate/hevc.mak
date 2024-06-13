@@ -178,7 +178,14 @@ HEVC_SAMPLES_444_12BIT =        \
     PERSIST_RPARAM_A_RExt_Sony_3\
     $(if $(CONFIG_LARGE_TESTS), $(HEVC_SAMPLES_444_12BIT_LARGE))
 
-FATE_HEVC_VARS := 8BIT 10BIT 422_10BIT 422_10BIN 444_8BIT 444_12BIT
+HEVC_SAMPLES_MULTIVIEW =    \
+    MVHEVCS_A               \
+    MVHEVCS_B               \
+    MVHEVCS_E               \
+    MVHEVCS_F               \
+
+
+FATE_HEVC_VARS := 8BIT 10BIT 422_10BIT 422_10BIN 444_8BIT 444_12BIT MULTIVIEW
 $(foreach VAR,$(FATE_HEVC_VARS), $(eval HEVC_TESTS_$(VAR) := $(addprefix fate-hevc-conformance-, $(HEVC_SAMPLES_$(VAR)))))
 
 # equivalent bitstreams
@@ -202,6 +209,8 @@ $(HEVC_TESTS_422_10BIT) $(HEVC_TESTS_422_10BIN): SCALE_OPTS := -pix_fmt yuv422p1
 $(HEVC_TESTS_444_12BIT): SCALE_OPTS := -pix_fmt yuv444p12le -vf scale
 fate-hevc-conformance-%: CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bit $(SCALE_OPTS)
 $(HEVC_TESTS_422_10BIN): CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bin $(SCALE_OPTS)
+$(HEVC_TESTS_MULTIVIEW): CMD = framecrc -i $(TARGET_SAMPLES)/hevc-conformance/$(subst fate-hevc-conformance-,,$(@)).bit \
+	-pix_fmt yuv420p -map "0:view:0" -map "0:view:1" -vf setpts=N
 
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER) += $(HEVC_TESTS_8BIT) $(HEVC_TESTS_444_8BIT)
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) +=         \
@@ -209,6 +218,8 @@ FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) +=         \
                                                     $(HEVC_TESTS_422_10BIT) \
                                                     $(HEVC_TESTS_422_10BIN) \
                                                     $(HEVC_TESTS_444_12BIT) \
+
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) += $(HEVC_TESTS_MULTIVIEW)
 
 fate-hevc-paramchange-yuv420p-yuv420p10: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/paramchange_yuv420p_yuv420p10.hevc -fps_mode passthrough -sws_flags area+accurate_rnd+bitexact
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER LARGE_TESTS) += fate-hevc-paramchange-yuv420p-yuv420p10
