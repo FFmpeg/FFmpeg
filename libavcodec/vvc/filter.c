@@ -34,6 +34,10 @@
 
 #define DEFAULT_INTRA_TC_OFFSET 2
 
+#define POS(c_idx, x, y)                                                                        \
+    &fc->frame->data[c_idx][((y) >> fc->ps.sps->vshift[c_idx]) * fc->frame->linesize[c_idx] +   \
+        (((x) >> fc->ps.sps->hshift[c_idx]) << fc->ps.sps->pixel_shift)]
+
 //Table 43 Derivation of threshold variables beta' and tc' from input Q
 static const uint16_t tctable[66] = {
       0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
@@ -135,7 +139,7 @@ static void sao_copy_ctb_to_hv(VVCLocalContext *lc, const int rx, const int ry, 
         const int ctb_size_v       = ctb_size_y >> fc->ps.sps->vshift[c_idx];
         const int width            = FFMIN(ctb_size_h, (fc->ps.pps->width  >> fc->ps.sps->hshift[c_idx]) - x);
         const int height           = FFMIN(ctb_size_v, (fc->ps.pps->height >> fc->ps.sps->vshift[c_idx]) - y);
-        const uint8_t *src          = &fc->frame->data[c_idx][y * src_stride + (x << fc->ps.sps->pixel_shift)];
+        const uint8_t *src         = POS(c_idx, x0, y0);
         copy_ctb_to_hv(fc, src, src_stride, x, y, width, height, c_idx, rx, ry, top);
     }
 }
@@ -225,7 +229,7 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
         int width    = FFMIN(ctb_size_h, (fc->ps.pps->width  >> fc->ps.sps->hshift[c_idx]) - x0);
         int height   = FFMIN(ctb_size_v, (fc->ps.pps->height >> fc->ps.sps->vshift[c_idx]) - y0);
         int tab      = sao_tab[(FFALIGN(width, 8) >> 3) - 1];
-        uint8_t *src = &fc->frame->data[c_idx][y0 * src_stride + (x0 << fc->ps.sps->pixel_shift)];
+        uint8_t *src = POS(c_idx, x, y);
         ptrdiff_t dst_stride;
         uint8_t *dst;
 
@@ -750,7 +754,7 @@ void ff_vvc_deblock_vertical(const VVCLocalContext *lc, const int x0, const int 
                     const int dy = i << 2;
                     bs[i] = (y + dy < y_end) ? TAB_BS(fc->tab.bs[1][c_idx], x, y + dy) : 0;
                     if (bs[i]) {
-                        src = &fc->frame->data[c_idx][((y + dy) >> vs) * fc->frame->linesize[c_idx] + ((x >> hs) << fc->ps.sps->pixel_shift)];
+                        src = POS(c_idx, x, y + dy);
                         qp = get_qp(fc, src, x, y + dy, c_idx, 1);
 
                         beta[i] = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
@@ -762,7 +766,7 @@ void ff_vvc_deblock_vertical(const VVCLocalContext *lc, const int x0, const int 
                 }
 
                 if (!all_zero_bs) {
-                    src = &fc->frame->data[c_idx][(y >> vs) * fc->frame->linesize[c_idx] + ((x >> hs) << fc->ps.sps->pixel_shift)];
+                    src = POS(c_idx, x, y);
                     if (!c_idx) {
                         fc->vvcdsp.lf.filter_luma[1](src, fc->frame->linesize[c_idx],
                             beta, tc, no_p, no_q, max_len_p, max_len_q, 0);
@@ -823,7 +827,7 @@ void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, const int x0, const in
 
                     bs[i] = (x + dx < x_end) ? TAB_BS(fc->tab.bs[0][c_idx], x + dx, y) : 0;
                     if (bs[i]) {
-                        src = &fc->frame->data[c_idx][(y >> vs) * fc->frame->linesize[c_idx] + (((x + dx)>> hs) << fc->ps.sps->pixel_shift)];
+                        src = POS(c_idx, x + dx, y);
                         qp = get_qp(fc, src, x + dx, y, c_idx, 0);
 
                         beta[i] = betatable[av_clip(qp + beta_offset, 0, MAX_QP)];
@@ -834,7 +838,7 @@ void ff_vvc_deblock_horizontal(const VVCLocalContext *lc, const int x0, const in
                     tc[i] = bs[i] ? TC_CALC(qp, bs[i]) : 0;
                 }
                 if (!all_zero_bs) {
-                    src = &fc->frame->data[c_idx][(y >> vs) * fc->frame->linesize[c_idx] + ((x >> hs) << fc->ps.sps->pixel_shift)];
+                    src = POS(c_idx, x, y);
                     if (!c_idx) {
                         fc->vvcdsp.lf.filter_luma[0](src, fc->frame->linesize[c_idx],
                             beta, tc, no_p, no_q, max_len_p, max_len_q, horizontal_ctu_edge);
@@ -1079,7 +1083,6 @@ void ff_vvc_alf_copy_ctu_to_hv(VVCLocalContext* lc, const int x0, const int y0)
     const int rx         = x0 >> fc->ps.sps->ctb_log2_size_y;
     const int ry         = y0 >> fc->ps.sps->ctb_log2_size_y;
     const int ctb_size_y = fc->ps.sps->ctb_size_y;
-    const int ps         = fc->ps.sps->pixel_shift;
     const int c_end      = fc->ps.sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
@@ -1091,7 +1094,7 @@ void ff_vvc_alf_copy_ctu_to_hv(VVCLocalContext* lc, const int x0, const int y0)
         const int height = FFMIN(fc->ps.pps->height - y0, ctb_size_y) >> vs;
 
         const int src_stride = fc->frame->linesize[c_idx];
-        uint8_t* src = &fc->frame->data[c_idx][y * src_stride + (x << ps)];
+        uint8_t *src = POS(c_idx, x0, y0);
 
         alf_copy_ctb_to_hv(fc, src, src_stride, x, y, width, height, rx, ry, c_idx);
     }
@@ -1146,7 +1149,7 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
         const int width  = FFMIN(pic_width  - x, ctb_size_h);
         const int height = FFMIN(pic_height - y, ctb_size_v);
         const int src_stride = fc->frame->linesize[c_idx];
-        uint8_t *src = &fc->frame->data[c_idx][y * src_stride + (x << ps)];
+        uint8_t *src = POS(c_idx, x0, y0);
         uint8_t *padded;
 
         if (alf->ctb_flag[c_idx] || (!c_idx && (alf->ctb_cc_idc[0] || alf->ctb_cc_idc[1]))) {
@@ -1181,7 +1184,7 @@ void ff_vvc_lmcs_filter(const VVCLocalContext *lc, const int x, const int y)
     const int ctb_size = fc->ps.sps->ctb_size_y;
     const int width    = FFMIN(fc->ps.pps->width  - x, ctb_size);
     const int height   = FFMIN(fc->ps.pps->height - y, ctb_size);
-    uint8_t *data      = fc->frame->data[LUMA] + y * fc->frame->linesize[LUMA] + (x << fc->ps.sps->pixel_shift);
+    uint8_t *data      = POS(LUMA, x, y);
     if (sc->sh.r->sh_lmcs_used_flag)
         fc->vvcdsp.lmcs.filter(data, fc->frame->linesize[LUMA], width, height, &fc->ps.lmcs.inv_lut);
 }
