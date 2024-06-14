@@ -109,7 +109,16 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
                       int err_recognition);
 
 /**
+ * Get the decoded AVDOVIMetadata. Ownership passes to the caller.
+ *
+ * Returns the size of *out_metadata, a negative error code, or 0 if no
+ * metadata is available to return.
+ */
+int ff_dovi_get_metadata(DOVIContext *s, AVDOVIMetadata **out_metadata);
+
+/**
  * Attach the decoded AVDOVIMetadata as side data to an AVFrame.
+ * Returns 0 or a negative error code.
  */
 int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame);
 
