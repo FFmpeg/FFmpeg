@@ -506,6 +506,12 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         }
     }
 
+    if (metadata->num_ext_blocks && !s->ext_blocks) {
+        s->ext_blocks = ff_refstruct_allocz(sizeof(AVDOVIDmData) * AV_DOVI_MAX_EXT_BLOCKS);
+        if (!s->ext_blocks)
+            return AVERROR(ENOMEM);
+    }
+
     vdr_dm_metadata_present = memcmp(color, &ff_dovi_color_default, sizeof(*color));
     use_prev_vdr_rpu = !memcmp(s->vdr[vdr_rpu_id], mapping, sizeof(*mapping));
     if (num_ext_blocks_v1 || num_ext_blocks_v2)
@@ -636,6 +642,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     }
 
     if (vdr_dm_metadata_present) {
+        size_t ext_sz;
         const int denom = profile == 4 ? (1 << 30) : (1 << 28);
         set_ue_golomb(pb, color->dm_metadata_id); /* affected_dm_id */
         set_ue_golomb(pb, color->dm_metadata_id); /* current_dm_id */
@@ -673,6 +680,11 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
             for (int i = 0; i < metadata->num_ext_blocks; i++)
                 generate_ext_v2(pb, av_dovi_get_ext(metadata, i));
         }
+
+        ext_sz = FFMIN(sizeof(AVDOVIDmData), metadata->ext_block_size);
+        for (int i = 0; i < metadata->num_ext_blocks; i++)
+            memcpy(&s->ext_blocks[i], av_dovi_get_ext(metadata, i), ext_sz);
+        s->num_ext_blocks = metadata->num_ext_blocks;
     } else {
         s->color = &ff_dovi_color_default;
         s->num_ext_blocks = 0;
