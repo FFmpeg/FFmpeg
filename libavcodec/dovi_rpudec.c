@@ -127,7 +127,7 @@ static inline unsigned get_variable_bits(GetBitContext *gb, int n)
         }                                                                       \
     } while (0)
 
-static void parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
+static int parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
 {
     switch (dm->level) {
     case 1:
@@ -170,6 +170,8 @@ static void parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
         av_log(s->logctx, AV_LOG_WARNING,
                "Unknown Dolby Vision DM v1 level: %u\n", dm->level);
     }
+
+    return 0;
 }
 
 static AVCIExy get_cie_xy(GetBitContext *gb)
@@ -181,8 +183,8 @@ static AVCIExy get_cie_xy(GetBitContext *gb)
     return xy;
 }
 
-static void parse_ext_v2(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm,
-                         int ext_block_length)
+static int parse_ext_v2(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm,
+                        int ext_block_length)
 {
     switch (dm->level) {
     case 3:
@@ -254,11 +256,13 @@ static void parse_ext_v2(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm,
         av_log(s->logctx, AV_LOG_WARNING,
                "Unknown Dolby Vision DM v2 level: %u\n", dm->level);
     }
+
+    return 0;
 }
 
 static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver)
 {
-    int num_ext_blocks, ext_block_length, start_pos, parsed_bits;
+    int num_ext_blocks, ext_block_length, start_pos, parsed_bits, ret;
 
     num_ext_blocks = get_ue_golomb_31(gb);
     align_get_bits(gb);
@@ -278,9 +282,13 @@ static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver)
         start_pos = get_bits_count(gb);
 
         switch (ver) {
-        case 1: parse_ext_v1(s, gb, dm); break;
-        case 2: parse_ext_v2(s, gb, dm, ext_block_length); break;
+        case 1: ret = parse_ext_v1(s, gb, dm); break;
+        case 2: ret = parse_ext_v2(s, gb, dm, ext_block_length); break;
+        default: return AVERROR_BUG;
         }
+
+        if (ret < 0)
+            return ret;
 
         parsed_bits = get_bits_count(gb) - start_pos;
         if (parsed_bits > ext_block_length * 8)
