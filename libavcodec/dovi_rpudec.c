@@ -143,6 +143,7 @@ static int parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
         dm->l2.trim_chroma_weight = get_bits(gb, 12);
         dm->l2.trim_saturation_gain = get_bits(gb, 12);
         dm->l2.ms_weight = get_sbits(gb, 13);
+        VALIDATE(dm->l2.ms_weight, -1, 4095);
         break;
     case 4:
         dm->l4.anchor_pq = get_bits(gb, 12);
@@ -172,6 +173,9 @@ static int parse_ext_v1(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm)
     }
 
     return 0;
+
+fail:
+    return AVERROR_INVALIDDATA;
 }
 
 static AVCIExy get_cie_xy(GetBitContext *gb)
