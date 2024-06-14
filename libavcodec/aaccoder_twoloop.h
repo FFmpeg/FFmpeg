@@ -101,7 +101,7 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
      */
     float sfoffs = av_clipf(log2f(120.0f / lambda) * 4.0f, -5, 10);
 
-    int fflag, minscaler, maxscaler, nminscaler;
+    int fflag, minscaler, nminscaler;
     int its  = 0;
     int maxits = 30;
     int allz = 0;
@@ -572,12 +572,10 @@ static void search_for_quantizers_twoloop(AVCodecContext *avctx,
         }
 
         minscaler = SCALE_MAX_POS;
-        maxscaler = 0;
         for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
             for (g = 0;  g < sce->ics.num_swb; g++) {
                 if (!sce->zeroes[w*16+g]) {
                     minscaler = FFMIN(minscaler, sce->sf_idx[w*16+g]);
-                    maxscaler = FFMAX(maxscaler, sce->sf_idx[w*16+g]);
                 }
             }
         }
