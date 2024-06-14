@@ -1,6 +1,6 @@
-0730145aa317d800cb4bde0e3a38bb8d *tests/data/fate/matroska-dovi-write-config8.matroska
+3bd4b07d5af6153516e4c0e66a71c8c9 *tests/data/fate/matroska-dovi-write-config8.matroska
 3600607 tests/data/fate/matroska-dovi-write-config8.matroska
-#extradata 0:      551, 0xa18acf66
+#extradata 0:      551, 0xb1ddcd66
 #extradata 1:        2, 0x00340022
 #tb 0: 1/1000
 #media_type 0: video

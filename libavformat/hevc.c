@@ -40,12 +40,15 @@ enum {
     NB_ARRAYS
 };
 
+#define FLAG_ARRAY_COMPLETENESS (1 << 0)
+#define FLAG_IS_NALFF           (1 << 1)
+
 typedef struct HVCCNALUnitArray {
     uint8_t  array_completeness;
     uint8_t  NAL_unit_type;
     uint16_t numNalus;
     uint16_t *nalUnitLength;
-    uint8_t  **nalUnit;
+    const uint8_t **nalUnit;
 } HVCCNALUnitArray;
 
 typedef struct HEVCDecoderConfigurationRecord {
@@ -654,24 +657,26 @@ static int hvcc_parse_pps(GetBitContext *gb,
     return 0;
 }
 
-static void nal_unit_parse_header(GetBitContext *gb, uint8_t *nal_type)
+static void nal_unit_parse_header(GetBitContext *gb, uint8_t *nal_type,
+                                  uint8_t *nuh_layer_id)
 {
     skip_bits1(gb); // forbidden_zero_bit
 
     *nal_type = get_bits(gb, 6);
+    *nuh_layer_id = get_bits(gb, 6);
 
     /*
-     * nuh_layer_id          u(6)
      * nuh_temporal_id_plus1 u(3)
      */
-    skip_bits(gb, 9);
+    skip_bits(gb, 3);
 }
 
-static int hvcc_array_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
-                                   uint8_t nal_type, int ps_array_completeness,
+static int hvcc_array_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
+                                   uint8_t nal_type, int flags,
                                    HVCCNALUnitArray *array)
 {
     int ret;
+    int ps_array_completeness = !!(flags & FLAG_ARRAY_COMPLETENESS);
     uint16_t numNalus = array->numNalus;
 
     ret = av_reallocp_array(&array->nalUnit, numNalus + 1, sizeof(uint8_t*));
@@ -699,14 +704,14 @@ static int hvcc_array_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
     return 0;
 }
 
-static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
-                             int ps_array_completeness,
+static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
                              HEVCDecoderConfigurationRecord *hvcc,
-                             unsigned array_idx)
+                             int flags, unsigned array_idx)
 {
     int ret = 0;
+    int is_nalff = !!(flags & FLAG_IS_NALFF);
     GetBitContext gbc;
-    uint8_t nal_type;
+    uint8_t nal_type, nuh_layer_id;
     uint8_t *rbsp_buf;
     uint32_t rbsp_size;
 
@@ -720,7 +725,9 @@ static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
     if (ret < 0)
         goto end;
 
-    nal_unit_parse_header(&gbc, &nal_type);
+    nal_unit_parse_header(&gbc, &nal_type, &nuh_layer_id);
+    if (nuh_layer_id > 0)
+        goto end;
 
     /*
      * Note: only 'declarative' SEI messages are allowed in
@@ -728,12 +735,17 @@ static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
      * and non-declarative SEI messages discarded?
      */
     ret = hvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
-                                  ps_array_completeness,
+                                  flags,
                                   &hvcc->arrays[array_idx]);
     if (ret < 0)
         goto end;
     if (hvcc->arrays[array_idx].numNalus == 1)
         hvcc->numOfArrays++;
+
+    /* Don't parse parameter sets. We already have the needed information*/
+    if (is_nalff)
+        goto end;
+
     if (nal_type == HEVC_NAL_VPS)
         ret = hvcc_parse_vps(&gbc, hvcc);
     else if (nal_type == HEVC_NAL_SPS)
@@ -1041,20 +1053,100 @@ int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
     return 0;
 }
 
+static int hvcc_parse_nal_unit(const uint8_t *buf, uint32_t len, int type,
+                               HEVCDecoderConfigurationRecord *hvcc,
+                               int flags)
+{
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
+        static const uint8_t array_idx_to_type[] =
+            { HEVC_NAL_VPS, HEVC_NAL_SPS, HEVC_NAL_PPS,
+              HEVC_NAL_SEI_PREFIX, HEVC_NAL_SEI_SUFFIX };
+
+        if (type == array_idx_to_type[i]) {
+            int ret = hvcc_add_nal_unit(buf, len, hvcc, flags, i);
+            if (ret < 0)
+                return ret;
+            break;
+        }
+    }
+
+    return 0;
+}
+
 int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
                        int size, int ps_array_completeness)
 {
     HEVCDecoderConfigurationRecord hvcc;
-    uint8_t *buf, *end, *start;
+    uint8_t *buf, *end, *start = NULL;
+    int flags = !!ps_array_completeness * FLAG_ARRAY_COMPLETENESS;
     int ret;
 
     if (size < 6) {
         /* We can't write a valid hvcC from the provided data */
         return AVERROR_INVALIDDATA;
     } else if (*data == 1) {
-        /* Data is already hvcC-formatted */
-        avio_write(pb, data, size);
-        return 0;
+        /* Data is already hvcC-formatted. Parse the arrays to skip any NALU
+           with nuh_layer_id > 0 */
+        GetBitContext gbc;
+        int num_arrays;
+
+        if (size < 23)
+            return AVERROR_INVALIDDATA;
+
+        ret = init_get_bits8(&gbc, data, size);
+        if (ret < 0)
+            return ret;
+
+        hvcc_init(&hvcc);
+        skip_bits(&gbc, 8); // hvcc.configurationVersion
+        hvcc.general_profile_space = get_bits(&gbc, 2);
+        hvcc.general_tier_flag = get_bits1(&gbc);
+        hvcc.general_profile_idc = get_bits(&gbc, 5);
+        hvcc.general_profile_compatibility_flags = get_bits_long(&gbc, 32);
+        hvcc.general_constraint_indicator_flags = get_bits64(&gbc, 48);
+        hvcc.general_level_idc = get_bits(&gbc, 8);
+        skip_bits(&gbc, 4); // reserved
+        hvcc.min_spatial_segmentation_idc = get_bits(&gbc, 12);
+        skip_bits(&gbc, 6); // reserved
+        hvcc.parallelismType = get_bits(&gbc, 2);
+        skip_bits(&gbc, 6); // reserved
+        hvcc.chromaFormat = get_bits(&gbc, 2);
+        skip_bits(&gbc, 5); // reserved
+        hvcc.bitDepthLumaMinus8 = get_bits(&gbc, 3);
+        skip_bits(&gbc, 5); // reserved
+        hvcc.bitDepthChromaMinus8 = get_bits(&gbc, 3);
+        hvcc.avgFrameRate = get_bits(&gbc, 16);
+        hvcc.constantFrameRate = get_bits(&gbc, 2);
+        hvcc.numTemporalLayers = get_bits(&gbc, 3);
+        hvcc.temporalIdNested = get_bits1(&gbc);
+        hvcc.lengthSizeMinusOne = get_bits(&gbc, 2);
+
+        flags |= FLAG_IS_NALFF;
+
+        num_arrays = get_bits(&gbc, 8);
+        for (int i = 0; i < num_arrays; i++) {
+            int type, num_nalus;
+
+            skip_bits(&gbc, 2);
+            type = get_bits(&gbc, 6);
+            num_nalus = get_bits(&gbc, 16);
+            for (int j = 0; j < num_nalus; j++) {
+                int len = get_bits(&gbc, 16);
+
+                if (len > (get_bits_left(&gbc) / 8))
+                    goto end;
+
+                ret = hvcc_parse_nal_unit(data + get_bits_count(&gbc) / 8,
+                                          len, type, &hvcc, flags);
+                if (ret < 0)
+                    goto end;
+
+                skip_bits_long(&gbc, len * 8);
+            }
+        }
+
+        ret = hvcc_write(pb, &hvcc);
+        goto end;
     } else if (!(AV_RB24(data) == 1 || AV_RB32(data) == 1)) {
         /* Not a valid Annex B start code prefix */
         return AVERROR_INVALIDDATA;
@@ -1075,19 +1167,9 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
 
         buf += 4;
 
-        for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc.arrays); i++) {
-            static const uint8_t array_idx_to_type[] =
-                { HEVC_NAL_VPS, HEVC_NAL_SPS, HEVC_NAL_PPS,
-                  HEVC_NAL_SEI_PREFIX, HEVC_NAL_SEI_SUFFIX };
-
-            if (type == array_idx_to_type[i]) {
-                ret = hvcc_add_nal_unit(buf, len, ps_array_completeness,
-                                        &hvcc, i);
-                if (ret < 0)
-                    goto end;
-                break;
-            }
-        }
+        ret = hvcc_parse_nal_unit(buf, len, type, &hvcc, flags);
+        if (ret < 0)
+            goto end;
 
         buf += len;
     }

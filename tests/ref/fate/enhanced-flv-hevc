@@ -1,6 +1,6 @@
-0da54607064548fa1aae5695751f189c *tests/data/fate/enhanced-flv-hevc.flv
+565cf155790db391137f81f619448477 *tests/data/fate/enhanced-flv-hevc.flv
 3603038 tests/data/fate/enhanced-flv-hevc.flv
-#extradata 0:      551, 0xa18acf66
+#extradata 0:      551, 0xb1ddcd66
 #extradata 1:        2, 0x00340022
 #tb 0: 1/1000
 #media_type 0: video

@@ -79,7 +79,8 @@ int ff_hevc_annexb2mp4_buf(const uint8_t *buf_in, uint8_t **buf_out,
                            int *size, int filter_ps, int *ps_count);
 
 /**
- * Writes HEVC extradata (parameter sets, declarative SEI NAL units) to the
+ * Writes HEVC extradata (parameter sets and declarative SEI NAL units with
+ * nuh_layer_id == 0, as a HEVCDecoderConfigurationRecord) to the
  * provided AVIOContext.
  *
  * If the extradata is Annex B format, it gets converted to hvcC format before
