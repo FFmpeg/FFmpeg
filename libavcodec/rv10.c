@@ -385,11 +385,11 @@ static av_cold int rv10_decode_init(AVCodecContext *avctx)
     case 2:
         if (minor_ver >= 2) {
             s->low_delay           = 0;
-            s->avctx->has_b_frames = 1;
+            avctx->has_b_frames = 1;
         }
         break;
     default:
-        av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", rv->sub_id);
+        av_log(avctx, AV_LOG_ERROR, "unknown header %X\n", rv->sub_id);
         avpriv_request_sample(avctx, "RV1/2 version");
         return AVERROR_PATCHWELCOME;
     }
