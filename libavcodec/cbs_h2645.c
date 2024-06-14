@@ -789,8 +789,27 @@ static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
 }
 
 cbs_h266_replace_ps(6, VPS, vps, vps_video_parameter_set_id)
-cbs_h266_replace_ps(6, SPS, sps, sps_seq_parameter_set_id)
 cbs_h266_replace_ps(6, PPS, pps, pps_pic_parameter_set_id)
+
+static int cbs_h266_replace_sps(CodedBitstreamContext *ctx,
+                                CodedBitstreamUnit *unit)
+{
+    CodedBitstreamH266Context *priv = ctx->priv_data;
+    H266RawSPS *sps = unit->content;
+    unsigned int id = sps->sps_seq_parameter_set_id;
+    int err = ff_cbs_make_unit_refcounted(ctx, unit);
+    if (err < 0)
+        return err;
+    av_assert0(unit->content_ref);
+    if (priv->sps[id] && memcmp(priv->sps[id], unit->content_ref, sizeof(*priv->sps[id]))) {
+        for (unsigned int i = 0; i < VVC_MAX_PPS_COUNT; i++) {
+            if (priv->pps[i] && priv->pps[i]->pps_seq_parameter_set_id == id)
+                ff_refstruct_unref(&priv->pps[i]);
+        }
+    }
+    ff_refstruct_replace(&priv->sps[id], unit->content_ref);
+    return 0;
+}
 
 static int cbs_h266_replace_ph(CodedBitstreamContext *ctx,
                                CodedBitstreamUnit *unit,
