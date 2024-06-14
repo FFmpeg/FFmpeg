@@ -101,6 +101,29 @@ Remove zero padding at the end of a packet.
 Extract the core from a DCA/DTS stream, dropping extensions such as
 DTS-HD.
 
+@section dovi_rpu
+
+Manipulate Dolby Vision metadata in a HEVC/AV1 bitstream, optionally enabling
+metadata compression.
+
+@table @option
+@item strip
+If enabled, strip all Dolby Vision metadata (configuration record + RPU data
+blocks) from the stream.
+@item compression
+Which compression level to enable.
+@table @samp
+@item none
+No metadata compression.
+@item limited
+Limited metadata compression scheme. Should be compatible with most devices.
+This is the default.
+@item extended
+Extended metadata compression. Devices are not required to support this. Note
+that this level currently behaves the same as @samp{limited} in libavcodec.
+@end table
+@end table
+
 @section dump_extra
 
 Add extradata to the beginning of the filtered packets except when
