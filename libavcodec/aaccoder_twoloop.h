@@ -53,8 +53,6 @@
 /** Frequency in Hz for lower limit of noise substitution **/
 #define NOISE_LOW_LIMIT 4000
 
-#define sclip(x) av_clip(x,60,218)
-
 /* Reflects the cost to change codebooks */
 static inline int ff_pns_bits(SingleChannelElement *sce, int w, int g)
 {
