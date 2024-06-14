@@ -135,6 +135,8 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         s->msmpeg4_version = MSMP4_WMV2;
         break;
     case AV_CODEC_ID_H263I:
+    case AV_CODEC_ID_RV10:
+    case AV_CODEC_ID_RV20:
         break;
     case AV_CODEC_ID_FLV1:
         s->h263_flv = 1;
