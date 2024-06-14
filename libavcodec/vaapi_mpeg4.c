@@ -74,7 +74,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
             .resync_marker_disable        = !ctx->resync_marker,
         },
         .no_of_sprite_warping_points      = ctx->num_sprite_warping_points,
-        .quant_precision                  = s->quant_precision,
+        .quant_precision                  = ctx->quant_precision,
         .vop_fields.bits = {
             .vop_coding_type              = s->pict_type - AV_PICTURE_TYPE_I,
             .backward_reference_vop_coding_type =

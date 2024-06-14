@@ -384,7 +384,6 @@ typedef struct MpegEncContext {
     uint16_t pp_field_time;
     uint16_t pb_field_time;         ///< like above, just for interlaced
     int mcsel;
-    int quant_precision;
     int quarter_sample;              ///< 1->qpel, 0->half pel ME/MC
     int data_partitioning;           ///< data partitioning flag from header
     int partitioned_frame;           ///< is current frame partitioned

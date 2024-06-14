@@ -99,7 +99,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    s->quant_precision = 5;
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;
 

@@ -951,8 +951,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
             s->h263_slice_structured = 1;
     }
 
-    s->quant_precision = 5;
-
     if (CONFIG_H263_ENCODER && s->out_format == FMT_H263) {
         ff_h263_encode_init(s);
 #if CONFIG_MSMPEG4ENC

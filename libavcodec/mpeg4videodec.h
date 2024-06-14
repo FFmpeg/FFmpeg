@@ -60,6 +60,8 @@ typedef struct Mpeg4DecContext {
     int enhancement_type;
     int scalability;
 
+    int quant_precision;
+
     /// QP above which the ac VLC should be used for intra dc
     int intra_dc_threshold;
 

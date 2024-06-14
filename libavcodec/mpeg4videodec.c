@@ -728,7 +728,7 @@ int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx)
     s->mb_y = mb_num / s->mb_width;
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
-        int qscale = get_bits(&s->gb, s->quant_precision);
+        int qscale = get_bits(&s->gb, ctx->quant_precision);
         if (qscale)
             s->chroma_qscale = s->qscale = qscale;
     }
@@ -2706,17 +2706,16 @@ static int decode_vol_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         // FIXME sadct disable bit if verid!=1 && shape not rect
 
         if (get_bits1(gb) == 1) {                   /* not_8_bit */
-            s->quant_precision = get_bits(gb, 4);   /* quant_precision */
+            ctx->quant_precision = get_bits(gb, 4); /* quant_precision */
             if (get_bits(gb, 4) != 8)               /* bits_per_pixel */
                 av_log(s->avctx, AV_LOG_ERROR, "N-bit not supported\n");
-            if (s->quant_precision != 5)
+            if (ctx->quant_precision != 5)
                 av_log(s->avctx, AV_LOG_ERROR,
-                       "quant precision %d\n", s->quant_precision);
-            if (s->quant_precision<3 || s->quant_precision>9) {
-                s->quant_precision = 5;
-            }
+                       "quant precision %d\n", ctx->quant_precision);
+            if (ctx->quant_precision < 3 || ctx->quant_precision > 9)
+                ctx->quant_precision = 5;
         } else {
-            s->quant_precision = 5;
+            ctx->quant_precision = 5;
         }
 
         // FIXME a bunch of grayscale shape things
@@ -2904,7 +2903,7 @@ no_cplx_est:
         av_log(s->avctx, AV_LOG_DEBUG, "tb %d/%d, tincrbits:%d, qp_prec:%d, ps:%d, low_delay:%d  %s%s%s%s\n",
                s->avctx->framerate.den, s->avctx->framerate.num,
                ctx->time_increment_bits,
-               s->quant_precision,
+               ctx->quant_precision,
                s->progressive_sequence,
                s->low_delay,
                ctx->scalability ? "scalability " :"" , s->quarter_sample ? "qpel " : "",
@@ -3286,7 +3285,7 @@ static int decode_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb,
     }
 
     if (ctx->shape != BIN_ONLY_SHAPE) {
-        s->chroma_qscale = s->qscale = get_bits(gb, s->quant_precision);
+        s->chroma_qscale = s->qscale = get_bits(gb, ctx->quant_precision);
         if (s->qscale == 0) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "Error, header damaged or not MPEG-4 header (qscale=0)\n");
@@ -3798,6 +3797,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->low_delay = 0; /* default, might be overridden in the vol header during header parsing */
     s->decode_mb = mpeg4_decode_mb;
     ctx->time_increment_bits = 4; /* default value for broken headers */
+    ctx->quant_precision     = 5;
 
     avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
 
