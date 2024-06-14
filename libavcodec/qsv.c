@@ -73,6 +73,10 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
     case AV_CODEC_ID_AV1:
         return MFX_CODEC_AV1;
 #endif
+#if QSV_VERSION_ATLEAST(2, 11)
+    case AV_CODEC_ID_VVC:
+        return MFX_CODEC_VVC;
+#endif
 
     default:
         break;

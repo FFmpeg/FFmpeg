@@ -157,7 +157,7 @@ Force to use a specific number of threads
 @section QSV Decoders
 
 The family of Intel QuickSync Video decoders (VC1, MPEG-2, H.264, HEVC,
-JPEG/MJPEG, VP8, VP9, AV1).
+JPEG/MJPEG, VP8, VP9, AV1, VVC).
 
 @subsection Common Options
 

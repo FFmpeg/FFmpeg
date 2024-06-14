@@ -933,7 +933,8 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         frame->pict_type = ff_qsv_map_pictype(aframe.frame->dec_info.FrameType);
 
         if (avctx->codec_id == AV_CODEC_ID_H264 ||
-            avctx->codec_id == AV_CODEC_ID_HEVC) {
+            avctx->codec_id == AV_CODEC_ID_HEVC ||
+            avctx->codec_id == AV_CODEC_ID_VVC) {
             if (aframe.frame->dec_info.FrameType & MFX_FRAMETYPE_IDR)
                 frame->flags |= AV_FRAME_FLAG_KEY;
             else
@@ -1299,4 +1300,8 @@ DEFINE_QSV_DECODER(vp9, VP9, NULL)
 
 #if CONFIG_AV1_QSV_DECODER
 DEFINE_QSV_DECODER(av1, AV1, NULL)
+#endif
+
+#if CONFIG_VVC_QSV_DECODER
+DEFINE_QSV_DECODER(vvc, VVC, NULL)
 #endif
