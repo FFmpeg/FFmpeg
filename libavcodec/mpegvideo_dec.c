@@ -60,12 +60,6 @@ int ff_mpv_decode_init(MpegEncContext *s, AVCodecContext *avctx)
 
     ff_mpv_idct_init(s);
 
-    // dct_unquantize defaults for H.261 and H.263;
-    // they might change on a per-frame basis for MPEG-4.
-    // Unused by the MPEG-1/2 decoders.
-    s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
-    s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
-
     ff_h264chroma_init(&s->h264chroma, 8); //for lowres
 
     if (s->picture_pool)  // VC-1 can call this multiple times

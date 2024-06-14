@@ -102,6 +102,11 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     s->decode_mb       = ff_h263_decode_mb;
     s->low_delay       = 1;
 
+    // dct_unquantize defaults for H.263;
+    // they might change on a per-frame basis for MPEG-4.
+    s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
+    s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
+
     /* select sub codec */
     switch (avctx->codec->id) {
     case AV_CODEC_ID_H263:
