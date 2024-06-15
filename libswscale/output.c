@@ -1925,9 +1925,9 @@ static av_always_inline void yuv2rgb_write_full(SwsContext *c,
     Y -= c->yuv2rgb_y_offset;
     Y *= c->yuv2rgb_y_coeff;
     Y += 1 << 21;
-    R = (unsigned)Y + V*c->yuv2rgb_v2r_coeff;
-    G = (unsigned)Y + V*c->yuv2rgb_v2g_coeff + U*c->yuv2rgb_u2g_coeff;
-    B = (unsigned)Y +                          U*c->yuv2rgb_u2b_coeff;
+    R = (unsigned)Y + V*(unsigned)c->yuv2rgb_v2r_coeff;
+    G = (unsigned)Y + V*(unsigned)c->yuv2rgb_v2g_coeff + U*(unsigned)c->yuv2rgb_u2g_coeff;
+    B = (unsigned)Y +                                    U*(unsigned)c->yuv2rgb_u2b_coeff;
     if ((R | G | B) & 0xC0000000) {
         R = av_clip_uintp2(R, 30);
         G = av_clip_uintp2(G, 30);
