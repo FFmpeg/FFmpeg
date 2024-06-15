@@ -155,70 +155,81 @@ void ff_vvc_sao_copy_ctb_to_hv(VVCLocalContext *lc, const int rx, const int ry, 
         sao_copy_ctb_to_hv(lc, rx, ry, 0);
 }
 
+static int sao_can_cross_slices(const VVCFrameContext *fc, const int rx, const int ry, const int dx, const int dy)
+{
+    const uint8_t lfase = fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag;
+
+    return lfase || CTB(fc->tab.slice_idx, rx, ry) == CTB(fc->tab.slice_idx, rx + dx, ry + dy);
+}
+
+static void sao_get_edges(uint8_t vert_edge[2], uint8_t horiz_edge[2], uint8_t diag_edge[4], int *restore,
+    const VVCLocalContext *lc, const int edges[4], const int rx, const int ry)
+{
+    const VVCFrameContext *fc      = lc->fc;
+    const VVCSPS *sps              = fc->ps.sps;
+    const H266RawSPS *rsps         = sps->r;
+    const VVCPPS *pps              = fc->ps.pps;
+    const int subpic_idx           = lc->sc->sh.r->curr_subpic_idx;
+    const uint8_t lfase            = fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag;
+    const uint8_t no_tile_filter   = pps->r->num_tiles_in_pic > 1 && !pps->r->pps_loop_filter_across_tiles_enabled_flag;
+    const uint8_t no_subpic_filter = rsps->sps_num_subpics_minus1 && !rsps->sps_loop_filter_across_subpic_enabled_flag[subpic_idx];
+    uint8_t lf_edge[] = { 0, 0, 0, 0 };
+
+    *restore = no_subpic_filter || no_tile_filter || !lfase;
+
+    if (!*restore)
+        return;
+
+    if (!edges[LEFT]) {
+        lf_edge[LEFT]  = no_tile_filter && pps->ctb_to_col_bd[rx] == rx;
+        lf_edge[LEFT] |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_x[subpic_idx] == rx;
+        vert_edge[0]   = !sao_can_cross_slices(fc, rx, ry, -1, 0) || lf_edge[LEFT];
+    }
+    if (!edges[RIGHT]) {
+        lf_edge[RIGHT]  = no_tile_filter && pps->ctb_to_col_bd[rx] != pps->ctb_to_col_bd[rx + 1];
+        lf_edge[RIGHT] |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_x[subpic_idx] + rsps->sps_subpic_width_minus1[subpic_idx] == rx;
+        vert_edge[1]    = !sao_can_cross_slices(fc, rx, ry, 1, 0) || lf_edge[RIGHT];
+    }
+    if (!edges[TOP]) {
+        lf_edge[TOP]   = no_tile_filter && pps->ctb_to_row_bd[ry] == ry;
+        lf_edge[TOP]  |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_y[subpic_idx] == ry;
+        horiz_edge[0]  = !sao_can_cross_slices(fc, rx, ry, 0, -1) || lf_edge[TOP];
+    }
+    if (!edges[BOTTOM]) {
+        lf_edge[BOTTOM]  = no_tile_filter && pps->ctb_to_row_bd[ry] != pps->ctb_to_row_bd[ry + 1];
+        lf_edge[BOTTOM] |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_y[subpic_idx] + rsps->sps_subpic_height_minus1[subpic_idx] == ry;
+        horiz_edge[1]    = !sao_can_cross_slices(fc, rx, ry, 0, 1) || lf_edge[BOTTOM];
+    }
+
+    if (!edges[LEFT] && !edges[TOP])
+        diag_edge[0] = !sao_can_cross_slices(fc, rx, ry, -1, -1) || lf_edge[LEFT] || lf_edge[TOP];
+
+    if (!edges[TOP] && !edges[RIGHT])
+        diag_edge[1] = !sao_can_cross_slices(fc, rx, ry,  1, -1) || lf_edge[RIGHT] || lf_edge[TOP];
+
+    if (!edges[RIGHT] && !edges[BOTTOM])
+        diag_edge[2] = !sao_can_cross_slices(fc, rx, ry,  1,  1) || lf_edge[RIGHT] || lf_edge[BOTTOM];
+
+    if (!edges[LEFT] && !edges[BOTTOM])
+        diag_edge[3] = !sao_can_cross_slices(fc, rx, ry, -1,  1) || lf_edge[LEFT] || lf_edge[BOTTOM];
+}
+
 void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
 {
     VVCFrameContext *fc  = lc->fc;
     const int ctb_size_y = fc->ps.sps->ctb_size_y;
     static const uint8_t sao_tab[16] = { 0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8 };
-    int c_idx;
+    int c_idx, restore;
     const int rx         = x >> fc->ps.sps->ctb_log2_size_y;
     const int ry         = y >> fc->ps.sps->ctb_log2_size_y;
     int edges[4]         = { !rx, !ry, rx == fc->ps.pps->ctb_width - 1, ry == fc->ps.pps->ctb_height - 1 };
     const SAOParams *sao = &CTB(fc->tab.sao, rx, ry);
     // flags indicating unfilterable edges
-    uint8_t vert_edge[]          = { 0, 0 };
-    uint8_t horiz_edge[]         = { 0, 0 };
-    uint8_t diag_edge[]          = { 0, 0, 0, 0 };
-    uint8_t tile_edge[]          = { 0, 0, 0, 0 };
-    uint8_t subpic_edge[]        = { 0, 0, 0, 0 };
-    const int subpic_idx         = lc->sc->sh.r->curr_subpic_idx;
-    const uint8_t lfase          = fc->ps.pps->r->pps_loop_filter_across_slices_enabled_flag;
-    const uint8_t no_tile_filter = fc->ps.pps->r->num_tiles_in_pic > 1 &&
-                               !fc->ps.pps->r->pps_loop_filter_across_tiles_enabled_flag;
-    const uint8_t no_subpic_filter = fc->ps.sps->r->sps_num_subpics_minus1 &&
-        !fc->ps.sps->r->sps_loop_filter_across_subpic_enabled_flag[subpic_idx];
-    const uint8_t restore        = no_subpic_filter || no_tile_filter || !lfase;
+    uint8_t vert_edge[]  = { 0, 0 };
+    uint8_t horiz_edge[] = { 0, 0 };
+    uint8_t diag_edge[]  = { 0, 0, 0, 0 };
 
-    if (restore) {
-        if (!edges[LEFT]) {
-            tile_edge[LEFT]   = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] == rx;
-            subpic_edge[LEFT] = no_subpic_filter && fc->ps.sps->r->sps_subpic_ctu_top_left_x[subpic_idx] == rx;
-            vert_edge[0]      = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry)) || tile_edge[LEFT] || subpic_edge[LEFT];
-        }
-        if (!edges[RIGHT]) {
-            tile_edge[RIGHT]   = no_tile_filter && fc->ps.pps->ctb_to_col_bd[rx] != fc->ps.pps->ctb_to_col_bd[rx + 1];
-            subpic_edge[RIGHT] = no_subpic_filter &&
-                fc->ps.sps->r->sps_subpic_ctu_top_left_x[subpic_idx] + fc->ps.sps->r->sps_subpic_width_minus1[subpic_idx] == rx;
-            vert_edge[1]       = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry)) || tile_edge[RIGHT] || subpic_edge[RIGHT];
-        }
-        if (!edges[TOP]) {
-            tile_edge[TOP]   = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] == ry;
-            subpic_edge[TOP] = no_subpic_filter && fc->ps.sps->r->sps_subpic_ctu_top_left_y[subpic_idx] == ry;
-            horiz_edge[0]    = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry - 1)) || tile_edge[TOP] || subpic_edge[TOP];
-        }
-        if (!edges[BOTTOM]) {
-            tile_edge[BOTTOM]   = no_tile_filter && fc->ps.pps->ctb_to_row_bd[ry] != fc->ps.pps->ctb_to_row_bd[ry + 1];
-            subpic_edge[BOTTOM] = no_subpic_filter &&
-                fc->ps.sps->r->sps_subpic_ctu_top_left_y[subpic_idx] + fc->ps.sps->r->sps_subpic_height_minus1[subpic_idx] == ry;
-            horiz_edge[1]       = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry + 1)) || tile_edge[BOTTOM] || subpic_edge[BOTTOM];
-        }
-        if (!edges[LEFT] && !edges[TOP]) {
-            diag_edge[0] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry - 1)) ||
-                tile_edge[LEFT] || tile_edge[TOP] || subpic_edge[LEFT] || subpic_edge[TOP];
-        }
-        if (!edges[TOP] && !edges[RIGHT]) {
-            diag_edge[1] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry - 1)) ||
-                tile_edge[RIGHT] || tile_edge[TOP] || subpic_edge[TOP] || subpic_edge[RIGHT];
-        }
-        if (!edges[RIGHT] && !edges[BOTTOM]) {
-            diag_edge[2] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry + 1)) ||
-                tile_edge[RIGHT] || tile_edge[BOTTOM] || subpic_edge[RIGHT] || subpic_edge[BOTTOM];
-        }
-        if (!edges[LEFT] && !edges[BOTTOM]) {
-            diag_edge[3] = (!lfase && CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx - 1, ry + 1)) ||
-                tile_edge[LEFT] || tile_edge[BOTTOM] || subpic_edge[LEFT] || subpic_edge[BOTTOM];
-        }
-    }
+    sao_get_edges(vert_edge, horiz_edge, diag_edge, &restore, lc, edges, rx, ry);
 
     for (c_idx = 0; c_idx < (fc->ps.sps->r->sps_chroma_format_idc ? 3 : 1); c_idx++) {
         int x0       = x >> fc->ps.sps->hshift[c_idx];
