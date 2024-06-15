@@ -40,15 +40,20 @@ enum {
     NB_ARRAYS
 };
 
+
 #define FLAG_ARRAY_COMPLETENESS (1 << 0)
 #define FLAG_IS_NALFF           (1 << 1)
+
+typedef struct HVCCNALUnit {
+    uint16_t nalUnitLength;
+    const uint8_t *nalUnit;
+} HVCCNALUnit;
 
 typedef struct HVCCNALUnitArray {
     uint8_t  array_completeness;
     uint8_t  NAL_unit_type;
     uint16_t numNalus;
-    uint16_t *nalUnitLength;
-    const uint8_t **nalUnit;
+    HVCCNALUnit *nal;
 } HVCCNALUnitArray;
 
 typedef struct HEVCDecoderConfigurationRecord {
@@ -674,19 +679,17 @@ static void nal_unit_parse_header(GetBitContext *gb, uint8_t *nal_type,
 static int hvcc_array_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
                                    HVCCNALUnitArray *array)
 {
+    HVCCNALUnit *nal;
     int ret;
     uint16_t numNalus = array->numNalus;
 
-    ret = av_reallocp_array(&array->nalUnit, numNalus + 1, sizeof(uint8_t*));
+    ret = av_reallocp_array(&array->nal, numNalus + 1, sizeof(*array->nal));
     if (ret < 0)
         return ret;
 
-    ret = av_reallocp_array(&array->nalUnitLength, numNalus + 1, sizeof(uint16_t));
-    if (ret < 0)
-        return ret;
-
-    array->nalUnit      [numNalus] = nal_buf;
-    array->nalUnitLength[numNalus] = nal_size;
+    nal = &array->nal[numNalus];
+    nal->nalUnit       = nal_buf;
+    nal->nalUnitLength = nal_size;
     array->numNalus++;
 
     return 0;
@@ -785,8 +788,7 @@ static void hvcc_close(HEVCDecoderConfigurationRecord *hvcc)
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
         HVCCNALUnitArray *const array = &hvcc->arrays[i];
         array->numNalus = 0;
-        av_freep(&array->nalUnit);
-        av_freep(&array->nalUnitLength);
+        av_freep(&array->nal);
     }
 }
 
@@ -871,7 +873,7 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
         for (unsigned k = 0; k < array->numNalus; k++)
             av_log(NULL, AV_LOG_TRACE,
                     "nalUnitLength[%u][%u]:                 %"PRIu16"\n",
-                   j, k, array->nalUnitLength[k]);
+                   j, k, array->nal[k].nalUnitLength);
         j++;
     }
 
@@ -972,12 +974,13 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
         avio_wb16(pb, array->numNalus);
 
         for (unsigned j = 0; j < array->numNalus; j++) {
+            HVCCNALUnit *nal = &array->nal[j];
+
             /* unsigned int(16) nalUnitLength; */
-            avio_wb16(pb, array->nalUnitLength[j]);
+            avio_wb16(pb, nal->nalUnitLength);
 
             /* bit(8*nalUnitLength) nalUnit; */
-            avio_write(pb, array->nalUnit[j],
-                       array->nalUnitLength[j]);
+            avio_write(pb, nal->nalUnit, nal->nalUnitLength);
         }
     }
 
