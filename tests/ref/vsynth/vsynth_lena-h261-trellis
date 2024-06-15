@@ -1,4 +1,4 @@
-41522be50f14b7fff6b1fb8d10b1ff00 *tests/data/fate/vsynth_lena-h261-trellis.avi
-184586 tests/data/fate/vsynth_lena-h261-trellis.avi
-f9df8cd110a2f3d9706dd2f29a1d0a89 *tests/data/fate/vsynth_lena-h261-trellis.out.rawvideo
-stddev:    6.32 PSNR: 32.11 MAXDIFF:   89 bytes:  7603200/  7603200
+aa3e00ffeb48a23452bb1c5b0dde9e77 *tests/data/fate/vsynth_lena-h261-trellis.avi
+167808 tests/data/fate/vsynth_lena-h261-trellis.avi
+055f8805df2bb21ef6752dc944e7828d *tests/data/fate/vsynth_lena-h261-trellis.out.rawvideo
+stddev:    6.43 PSNR: 31.96 MAXDIFF:   87 bytes:  7603200/  7603200

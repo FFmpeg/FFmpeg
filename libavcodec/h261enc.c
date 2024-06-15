@@ -38,14 +38,15 @@
 
 #define H261_MAX_RUN   26
 #define H261_MAX_LEVEL 15
+#define H261_ESC_LEN   (6 + 6 + 8)
 
 static struct VLCLUT {
     uint8_t len;
     uint16_t code;
 } vlc_lut[H261_MAX_RUN + 1][32 /* 0..2 * H261_MAX_LEN are used */];
 
-static uint8_t uni_h261_rl_len [64*64*2*2];
-#define UNI_ENC_INDEX(last,run,level) ((last)*128*64 + (run)*128 + (level))
+static uint8_t uni_h261_rl_len     [64 * 128];
+static uint8_t uni_h261_rl_len_last[64 * 128];
 
 typedef struct H261EncContext {
     MpegEncContext s;
@@ -320,51 +321,10 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
     }
 }
 
-static av_cold void init_uni_h261_rl_tab(const RLTable *rl, uint8_t *len_tab)
-{
-    int slevel, run, last;
-
-    av_assert0(MAX_LEVEL >= 64);
-    av_assert0(MAX_RUN   >= 63);
-
-    for(slevel=-64; slevel<64; slevel++){
-        if(slevel==0) continue;
-        for(run=0; run<64; run++){
-            for(last=0; last<=1; last++){
-                const int index= UNI_ENC_INDEX(last, run, slevel+64);
-                int level= slevel < 0 ? -slevel : slevel;
-                int len, code;
-
-                len_tab[index]= 100;
-
-                /* ESC0 */
-                code= get_rl_index(rl, 0, run, level);
-                len=  rl->table_vlc[code][1] + 1;
-                if(last)
-                    len += 2;
-
-                if(code!=rl->n && len < len_tab[index]){
-                    len_tab [index]= len;
-                }
-                /* ESC */
-                len = rl->table_vlc[rl->n][1];
-                if(last)
-                    len += 2;
-
-                if(len < len_tab[index]){
-                    len_tab [index]= len;
-                }
-            }
-        }
-    }
-}
-
 static av_cold void h261_encode_init_static(void)
 {
-    static uint8_t h261_rl_table_store[2][2 * MAX_RUN + MAX_LEVEL + 3];
-
-    ff_rl_init(&ff_h261_rl_tcoeff, h261_rl_table_store);
-    init_uni_h261_rl_tab(&ff_h261_rl_tcoeff, uni_h261_rl_len);
+    memset(uni_h261_rl_len,      H261_ESC_LEN, sizeof(uni_h261_rl_len));
+    memset(uni_h261_rl_len_last, H261_ESC_LEN + 2 /* EOB */, sizeof(uni_h261_rl_len_last));
 
     // The following loop is over the ordinary elements, not EOB or escape.
     for (size_t i = 1; i < FF_ARRAY_ELEMS(ff_h261_tcoeff_vlc) - 1; i++) {
@@ -375,6 +335,11 @@ static av_cold void h261_encode_init_static(void)
 
         vlc_lut[run][H261_MAX_LEVEL + level] = (struct VLCLUT){ len, code << 1 };
         vlc_lut[run][H261_MAX_LEVEL - level] = (struct VLCLUT){ len, (code << 1) | 1 };
+
+        uni_h261_rl_len     [UNI_AC_ENC_INDEX(run, 64 + level)] = len;
+        uni_h261_rl_len     [UNI_AC_ENC_INDEX(run, 64 - level)] = len;
+        uni_h261_rl_len_last[UNI_AC_ENC_INDEX(run, 64 + level)] = len + 2;
+        uni_h261_rl_len_last[UNI_AC_ENC_INDEX(run, 64 - level)] = len + 2;
     }
 }
 
@@ -398,10 +363,10 @@ av_cold int ff_h261_encode_init(MpegEncContext *s)
 
     s->min_qcoeff       = -127;
     s->max_qcoeff       = 127;
-    s->ac_esc_length    = 6+6+8;
+    s->ac_esc_length    = H261_ESC_LEN;
 
     s->intra_ac_vlc_length      = s->inter_ac_vlc_length      = uni_h261_rl_len;
-    s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len + 128*64;
+    s->intra_ac_vlc_last_length = s->inter_ac_vlc_last_length = uni_h261_rl_len_last;
     ff_thread_once(&init_static_once, h261_encode_init_static);
 
     return 0;
