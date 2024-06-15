@@ -84,7 +84,7 @@ static int aea_read_header(AVFormatContext *s)
     st->codecpar->sample_rate    = 44100;
     st->codecpar->bit_rate       = 146000 * channels;
 
-    if (channels != 1 && channels != 2) {
+    if (channels < 1 || channels > 8) {
         av_log(s, AV_LOG_ERROR, "Channels %d not supported!\n", channels);
         return AVERROR_INVALIDDATA;
     }

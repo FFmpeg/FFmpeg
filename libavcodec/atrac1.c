@@ -49,7 +49,7 @@
 #define AT1_SU_SAMPLES   512                ///< number of samples in a sound unit
 #define AT1_FRAME_SIZE   AT1_SU_SIZE * 2
 #define AT1_SU_MAX_BITS  AT1_SU_SIZE * 8
-#define AT1_MAX_CHANNELS 2
+#define AT1_MAX_CHANNELS 8
 
 #define AT1_QMF_BANDS    3
 #define IDX_LOW_BAND     0
@@ -339,7 +339,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     AVFloatDSPContext *fdsp;
     int channels = avctx->ch_layout.nb_channels;
     float scale = -1.0 / (1 << 15);
-    int ret;
+    int ret, ch;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
@@ -380,10 +380,10 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     q->bands[2] = q->high;
 
     /* Prepare the mdct overlap buffers */
-    q->SUs[0].spectrum[0] = q->SUs[0].spec1;
-    q->SUs[0].spectrum[1] = q->SUs[0].spec2;
-    q->SUs[1].spectrum[0] = q->SUs[1].spec1;
-    q->SUs[1].spectrum[1] = q->SUs[1].spec2;
+    for (ch = 0; ch < AT1_MAX_CHANNELS; ch++) {
+        q->SUs[ch].spectrum[0] = q->SUs[ch].spec1;
+        q->SUs[ch].spectrum[1] = q->SUs[ch].spec2;
+    }
 
     return 0;
 }
