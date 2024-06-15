@@ -36,6 +36,14 @@
 #include "h261enc.h"
 #include "mpegvideoenc.h"
 
+#define H261_MAX_RUN   26
+#define H261_MAX_LEVEL 15
+
+static struct VLCLUT {
+    uint8_t len;
+    uint16_t code;
+} vlc_lut[H261_MAX_RUN + 1][32 /* 0..2 * H261_MAX_LEN are used */];
+
 static uint8_t uni_h261_rl_len [64*64*2*2];
 #define UNI_ENC_INDEX(last,run,level) ((last)*128*64 + (run)*128 + (level))
 
@@ -165,10 +173,8 @@ static inline int get_cbp(MpegEncContext *s, int16_t block[6][64])
 static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
 {
     MpegEncContext *const s = &h->s;
-    int level, run, i, j, last_index, last_non_zero, sign, slevel, code;
-    const RLTable *rl;
+    int level, run, i, j, last_index, last_non_zero;
 
-    rl = &ff_h261_rl_tcoeff;
     if (s->mb_intra) {
         /* DC coef */
         level = block[0];
@@ -204,24 +210,18 @@ static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
         level = block[j];
         if (level) {
             run    = i - last_non_zero - 1;
-            sign   = 0;
-            slevel = level;
-            if (level < 0) {
-                sign  = 1;
-                level = -level;
-            }
-            code = get_rl_index(rl, 0 /*no last in H.261, EOB is used*/,
-                                run, level);
-            if (run == 0 && level < 16)
-                code += 1;
-            put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
-            if (code == rl->n) {
-                put_bits(&s->pb, 6, run);
-                av_assert1(slevel != 0);
-                av_assert1(level <= 127);
-                put_sbits(&s->pb, 8, slevel);
+
+            if (run <= H261_MAX_RUN &&
+                (unsigned)(level + H261_MAX_LEVEL) <= 2 * H261_MAX_LEVEL &&
+                vlc_lut[run][level + H261_MAX_LEVEL].len) {
+                put_bits(&s->pb, vlc_lut[run][level + H261_MAX_LEVEL].len,
+                         vlc_lut[run][level + H261_MAX_LEVEL].code);
             } else {
-                put_bits(&s->pb, 1, sign);
+                /* Escape */
+                put_bits(&s->pb, 6 + 6, (1 << 6) | run);
+                av_assert1(level != 0);
+                av_assert1(FFABS(level) <= 127);
+                put_sbits(&s->pb, 8, level);
             }
             last_non_zero = i;
         }
@@ -365,6 +365,17 @@ static av_cold void h261_encode_init_static(void)
 
     ff_rl_init(&ff_h261_rl_tcoeff, h261_rl_table_store);
     init_uni_h261_rl_tab(&ff_h261_rl_tcoeff, uni_h261_rl_len);
+
+    // The following loop is over the ordinary elements, not EOB or escape.
+    for (size_t i = 1; i < FF_ARRAY_ELEMS(ff_h261_tcoeff_vlc) - 1; i++) {
+        unsigned run   = ff_h261_tcoeff_run[i];
+        unsigned level = ff_h261_tcoeff_level[i];
+        unsigned len   = ff_h261_tcoeff_vlc[i][1] + 1 /* sign */;
+        unsigned code  = ff_h261_tcoeff_vlc[i][0];
+
+        vlc_lut[run][H261_MAX_LEVEL + level] = (struct VLCLUT){ len, code << 1 };
+        vlc_lut[run][H261_MAX_LEVEL - level] = (struct VLCLUT){ len, (code << 1) | 1 };
+    }
 }
 
 av_cold int ff_h261_encode_init(MpegEncContext *s)
