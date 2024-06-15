@@ -672,11 +672,9 @@ static void nal_unit_parse_header(GetBitContext *gb, uint8_t *nal_type,
 }
 
 static int hvcc_array_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
-                                   uint8_t nal_type, int flags,
                                    HVCCNALUnitArray *array)
 {
     int ret;
-    int ps_array_completeness = !!(flags & FLAG_ARRAY_COMPLETENESS);
     uint16_t numNalus = array->numNalus;
 
     ret = av_reallocp_array(&array->nalUnit, numNalus + 1, sizeof(uint8_t*));
@@ -689,17 +687,7 @@ static int hvcc_array_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
 
     array->nalUnit      [numNalus] = nal_buf;
     array->nalUnitLength[numNalus] = nal_size;
-    array->NAL_unit_type           = nal_type;
     array->numNalus++;
-
-    /*
-     * When the sample entry name is ‘hvc1’, the default and mandatory value of
-     * array_completeness is 1 for arrays of all types of parameter sets, and 0
-     * for all other arrays. When the sample entry name is ‘hev1’, the default
-     * value of array_completeness is 0 for all arrays.
-     */
-    if (nal_type == HEVC_NAL_VPS || nal_type == HEVC_NAL_SPS || nal_type == HEVC_NAL_PPS)
-        array->array_completeness = ps_array_completeness;
 
     return 0;
 }
@@ -710,6 +698,8 @@ static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
 {
     int ret = 0;
     int is_nalff = !!(flags & FLAG_IS_NALFF);
+    int ps_array_completeness = !!(flags & FLAG_ARRAY_COMPLETENESS);
+    HVCCNALUnitArray *const array = &hvcc->arrays[array_idx];
     GetBitContext gbc;
     uint8_t nal_type, nuh_layer_id;
     uint8_t *rbsp_buf;
@@ -734,13 +724,23 @@ static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
      * hvcC. Perhaps the SEI playload type should be checked
      * and non-declarative SEI messages discarded?
      */
-    ret = hvcc_array_add_nal_unit(nal_buf, nal_size, nal_type,
-                                  flags,
-                                  &hvcc->arrays[array_idx]);
+    ret = hvcc_array_add_nal_unit(nal_buf, nal_size, array);
     if (ret < 0)
         goto end;
-    if (hvcc->arrays[array_idx].numNalus == 1)
+    if (array->numNalus == 1) {
         hvcc->numOfArrays++;
+        array->NAL_unit_type = nal_type;
+
+        /*
+         * When the sample entry name is ‘hvc1’, the default and mandatory value of
+         * array_completeness is 1 for arrays of all types of parameter sets, and 0
+         * for all other arrays. When the sample entry name is ‘hev1’, the default
+         * value of array_completeness is 0 for all arrays.
+         */
+        if (nal_type == HEVC_NAL_VPS || nal_type == HEVC_NAL_SPS ||
+            nal_type == HEVC_NAL_PPS)
+            array->array_completeness = ps_array_completeness;
+    }
 
     /* Don't parse parameter sets. We already have the needed information*/
     if (is_nalff)
