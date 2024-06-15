@@ -1160,8 +1160,8 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
             Y2 += (1 << 13) - (1 << 29);
 
             if (hasAlpha) {
-                A1 = abuf0[i * 2    ] << 11;
-                A2 = abuf0[i * 2 + 1] << 11;
+                A1 = abuf0[i * 2    ] * (1 << 11);
+                A2 = abuf0[i * 2 + 1] * (1 << 11);
 
                 A1 += 1 << 13;
                 A2 += 1 << 13;
@@ -1206,8 +1206,8 @@ yuv2rgba64_1_c_template(SwsContext *c, const int32_t *buf0,
             Y2 += (1 << 13) - (1 << 29);
 
             if (hasAlpha) {
-                A1 = abuf0[i * 2    ] << 11;
-                A2 = abuf0[i * 2 + 1] << 11;
+                A1 = abuf0[i * 2    ] * (1 << 11);
+                A2 = abuf0[i * 2 + 1] * (1 << 11);
 
                 A1 += 1 << 13;
                 A2 += 1 << 13;
@@ -1375,7 +1375,7 @@ yuv2rgba64_full_1_c_template(SwsContext *c, const int32_t *buf0,
             Y += (1 << 13) - (1 << 29);
 
             if (hasAlpha) {
-                A = abuf0[i] << 11;
+                A = abuf0[i] * (1 << 11);
 
                 A += 1 << 13;
             }
@@ -1408,7 +1408,7 @@ yuv2rgba64_full_1_c_template(SwsContext *c, const int32_t *buf0,
             Y += (1 << 13) - (1 << 29);
 
             if (hasAlpha) {
-                A = abuf0[i] << 11;
+                A = abuf0[i] * (1 << 11);
 
                 A += 1 << 13;
             }
