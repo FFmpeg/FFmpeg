@@ -104,7 +104,7 @@ const uint8_t ff_h261_cbp_tab[63][2] = {
 };
 
 // H.261 VLC table for transform coefficients
-static const uint16_t h261_tcoeff_vlc[65][2] = {
+const uint16_t ff_h261_tcoeff_vlc[65][2] = {
     {  0x2,  2 }, {  0x3,  2 }, {  0x4,  4 }, {  0x5,  5 },
     {  0x6,  7 }, { 0x26,  8 }, { 0x21,  8 }, {  0xa, 10 },
     { 0x1d, 12 }, { 0x18, 12 }, { 0x13, 12 }, { 0x10, 12 },
@@ -124,7 +124,7 @@ static const uint16_t h261_tcoeff_vlc[65][2] = {
     {  0x1,  6 }  // escape
 };
 
-static const int8_t h261_tcoeff_level[64] = {
+const int8_t ff_h261_tcoeff_level[64] = {
     0, 1,  2,  3,  4,  5,  6,  7,
     8, 9, 10, 11, 12, 13, 14, 15,
     1, 2,  3,  4,  5,  6,  7,  1,
@@ -135,7 +135,7 @@ static const int8_t h261_tcoeff_level[64] = {
     1, 1,  1,  1,  1,  1,  1,  1
 };
 
-static const int8_t h261_tcoeff_run[64] = {
+const int8_t ff_h261_tcoeff_run[64] = {
      0,
      0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  1,
@@ -150,7 +150,7 @@ static const int8_t h261_tcoeff_run[64] = {
 RLTable ff_h261_rl_tcoeff = {
     64,
     64,
-    h261_tcoeff_vlc,
-    h261_tcoeff_run,
-    h261_tcoeff_level,
+    ff_h261_tcoeff_vlc,
+    ff_h261_tcoeff_run,
+    ff_h261_tcoeff_level,
 };

@@ -50,6 +50,10 @@ extern const uint8_t ff_h261_mv_tab[17][2];
 extern const uint8_t ff_h261_cbp_tab[63][2];
 extern RLTable ff_h261_rl_tcoeff;
 
+extern const uint16_t ff_h261_tcoeff_vlc[65][2];
+extern const int8_t ff_h261_tcoeff_level[64];
+extern const int8_t ff_h261_tcoeff_run[64];
+
 void ff_h261_loop_filter(MpegEncContext *s);
 
 #endif /* AVCODEC_H261_H */
