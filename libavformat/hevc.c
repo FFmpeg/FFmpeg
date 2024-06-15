@@ -45,6 +45,8 @@ enum {
 #define FLAG_IS_NALFF           (1 << 1)
 
 typedef struct HVCCNALUnit {
+    uint8_t nuh_layer_id;
+    uint8_t parameter_set_id;
     uint16_t nalUnitLength;
     const uint8_t *nalUnit;
 } HVCCNALUnit;
@@ -378,17 +380,17 @@ static void skip_sub_layer_ordering_info(GetBitContext *gb)
     get_ue_golomb_long(gb); // max_latency_increase_plus1
 }
 
-static int hvcc_parse_vps(GetBitContext *gb,
+static int hvcc_parse_vps(GetBitContext *gb, HVCCNALUnit *nal,
                           HEVCDecoderConfigurationRecord *hvcc)
 {
     unsigned int vps_max_sub_layers_minus1;
 
+    nal->parameter_set_id = get_bits(gb, 4);
     /*
-     * vps_video_parameter_set_id u(4)
      * vps_reserved_three_2bits   u(2)
      * vps_max_layers_minus1      u(6)
      */
-    skip_bits(gb, 12);
+    skip_bits(gb, 8);
 
     vps_max_sub_layers_minus1 = get_bits(gb, 3);
 
@@ -501,7 +503,7 @@ static int parse_rps(GetBitContext *gb, unsigned int rps_idx,
     return 0;
 }
 
-static int hvcc_parse_sps(GetBitContext *gb,
+static int hvcc_parse_sps(GetBitContext *gb, HVCCNALUnit *nal,
                           HEVCDecoderConfigurationRecord *hvcc)
 {
     unsigned int i, sps_max_sub_layers_minus1, log2_max_pic_order_cnt_lsb_minus4;
@@ -526,7 +528,7 @@ static int hvcc_parse_sps(GetBitContext *gb,
 
     hvcc_parse_ptl(gb, hvcc, sps_max_sub_layers_minus1);
 
-    get_ue_golomb_long(gb); // sps_seq_parameter_set_id
+    nal->parameter_set_id = get_ue_golomb_long(gb);
 
     hvcc->chromaFormat = get_ue_golomb_long(gb);
 
@@ -605,12 +607,12 @@ static int hvcc_parse_sps(GetBitContext *gb,
     return 0;
 }
 
-static int hvcc_parse_pps(GetBitContext *gb,
+static int hvcc_parse_pps(GetBitContext *gb, HVCCNALUnit *nal,
                           HEVCDecoderConfigurationRecord *hvcc)
 {
     uint8_t tiles_enabled_flag, entropy_coding_sync_enabled_flag;
 
-    get_ue_golomb_long(gb); // pps_pic_parameter_set_id
+    nal->parameter_set_id = get_ue_golomb_long(gb); // pps_pic_parameter_set_id
     get_ue_golomb_long(gb); // pps_seq_parameter_set_id
 
     /*
@@ -703,6 +705,7 @@ static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
     int is_nalff = !!(flags & FLAG_IS_NALFF);
     int ps_array_completeness = !!(flags & FLAG_ARRAY_COMPLETENESS);
     HVCCNALUnitArray *const array = &hvcc->arrays[array_idx];
+    HVCCNALUnit *nal;
     GetBitContext gbc;
     uint8_t nal_type, nuh_layer_id;
     uint8_t *rbsp_buf;
@@ -745,16 +748,19 @@ static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
             array->array_completeness = ps_array_completeness;
     }
 
+    nal = &array->nal[array->numNalus-1];
+    nal->nuh_layer_id = nuh_layer_id;
+
     /* Don't parse parameter sets. We already have the needed information*/
     if (is_nalff)
         goto end;
 
     if (nal_type == HEVC_NAL_VPS)
-        ret = hvcc_parse_vps(&gbc, hvcc);
+        ret = hvcc_parse_vps(&gbc, nal, hvcc);
     else if (nal_type == HEVC_NAL_SPS)
-        ret = hvcc_parse_sps(&gbc, hvcc);
+        ret = hvcc_parse_sps(&gbc, nal, hvcc);
     else if (nal_type == HEVC_NAL_PPS)
-        ret = hvcc_parse_pps(&gbc, hvcc);
+        ret = hvcc_parse_pps(&gbc, nal, hvcc);
     if (ret < 0)
         goto end;
 
