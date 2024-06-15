@@ -1557,6 +1557,26 @@ static int mov_write_hvcc_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
+static int mov_write_lhvc_tag(AVIOContext *pb, MOVTrack *track)
+{
+    int64_t pos = avio_tell(pb);
+    int ret;
+
+    avio_wb32(pb, 0);
+    ffio_wfourcc(pb, "lhvC");
+    if (track->tag == MKTAG('h','v','c','1'))
+        ret = ff_isom_write_lhvc(pb, track->vos_data, track->vos_len, 1);
+    else
+        ret = ff_isom_write_lhvc(pb, track->vos_data, track->vos_len, 0);
+
+    if (ret < 0) {
+        avio_seek(pb, pos, SEEK_SET);
+        return ret;
+    }
+
+    return update_size(pb, pos);
+}
+
 static int mov_write_evcc_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -2523,9 +2543,14 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     } else if (track->par->codec_id == AV_CODEC_ID_DNXHD) {
         mov_write_avid_tag(pb, track);
         avid = 1;
-    } else if (track->par->codec_id == AV_CODEC_ID_HEVC)
+    } else if (track->par->codec_id == AV_CODEC_ID_HEVC) {
         mov_write_hvcc_tag(pb, track);
-    else if (track->par->codec_id == AV_CODEC_ID_VVC)
+        if (track->st->disposition & AV_DISPOSITION_MULTILAYER) {
+            ret = mov_write_lhvc_tag(pb, track);
+            if (ret < 0)
+                av_log(mov->fc, AV_LOG_WARNING, "Not writing 'lhvC' atom for multilayer stream.\n");
+        }
+    } else if (track->par->codec_id == AV_CODEC_ID_VVC)
         mov_write_vvcc_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_H264 && !TAG_IS_AVCI(track->tag)) {
         mov_write_avcc_tag(pb, track);
