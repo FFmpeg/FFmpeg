@@ -133,8 +133,8 @@ static void h261_encode_motion(PutBitContext *pb, int val)
 {
     int sign, code;
     if (val == 0) {
-        code = 0;
-        put_bits(pb, ff_h261_mv_tab[code][1], ff_h261_mv_tab[code][0]);
+        // Corresponds to ff_h261_mv_tab[0]
+        put_bits(pb, 1, 1);
     } else {
         if (val > 15)
             val -= 32;
@@ -227,7 +227,7 @@ static void h261_encode_block(H261EncContext *h, int16_t *block, int n)
         }
     }
     if (last_index > -1)
-        put_bits(&s->pb, rl->table_vlc[0][1], rl->table_vlc[0][0]); // EOB
+        put_bits(&s->pb, 2, 0x2); // EOB
 }
 
 void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
