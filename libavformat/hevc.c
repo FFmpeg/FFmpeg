@@ -43,12 +43,16 @@ enum {
 
 #define FLAG_ARRAY_COMPLETENESS (1 << 0)
 #define FLAG_IS_NALFF           (1 << 1)
+#define FLAG_IS_LHVC            (1 << 2)
 
 typedef struct HVCCNALUnit {
     uint8_t nuh_layer_id;
     uint8_t parameter_set_id;
     uint16_t nalUnitLength;
     const uint8_t *nalUnit;
+
+    // VPS
+    uint8_t vps_max_sub_layers_minus1;
 } HVCCNALUnit;
 
 typedef struct HVCCNALUnitArray {
@@ -383,8 +387,6 @@ static void skip_sub_layer_ordering_info(GetBitContext *gb)
 static int hvcc_parse_vps(GetBitContext *gb, HVCCNALUnit *nal,
                           HEVCDecoderConfigurationRecord *hvcc)
 {
-    unsigned int vps_max_sub_layers_minus1;
-
     nal->parameter_set_id = get_bits(gb, 4);
     /*
      * vps_reserved_three_2bits   u(2)
@@ -392,7 +394,7 @@ static int hvcc_parse_vps(GetBitContext *gb, HVCCNALUnit *nal,
      */
     skip_bits(gb, 8);
 
-    vps_max_sub_layers_minus1 = get_bits(gb, 3);
+    nal->vps_max_sub_layers_minus1 = get_bits(gb, 3);
 
     /*
      * numTemporalLayers greater than 1 indicates that the stream to which this
@@ -403,7 +405,7 @@ static int hvcc_parse_vps(GetBitContext *gb, HVCCNALUnit *nal,
      * that it is unknown whether the stream is temporally scalable.
      */
     hvcc->numTemporalLayers = FFMAX(hvcc->numTemporalLayers,
-                                    vps_max_sub_layers_minus1 + 1);
+                                    nal->vps_max_sub_layers_minus1 + 1);
 
     /*
      * vps_temporal_id_nesting_flag u(1)
@@ -411,7 +413,7 @@ static int hvcc_parse_vps(GetBitContext *gb, HVCCNALUnit *nal,
      */
     skip_bits(gb, 17);
 
-    hvcc_parse_ptl(gb, hvcc, vps_max_sub_layers_minus1);
+    hvcc_parse_ptl(gb, hvcc, nal->vps_max_sub_layers_minus1);
 
     /* nothing useful for hvcC past this point */
     return 0;
@@ -508,10 +510,33 @@ static int hvcc_parse_sps(GetBitContext *gb, HVCCNALUnit *nal,
 {
     unsigned int i, sps_max_sub_layers_minus1, log2_max_pic_order_cnt_lsb_minus4;
     unsigned int num_short_term_ref_pic_sets, num_delta_pocs[HEVC_MAX_SHORT_TERM_REF_PIC_SETS];
+    unsigned int sps_ext_or_max_sub_layers_minus1, multi_layer_ext_sps_flag;
 
-    skip_bits(gb, 4); // sps_video_parameter_set_id
+    unsigned int sps_video_parameter_set_id = get_bits(gb, 4);
 
-    sps_max_sub_layers_minus1 = get_bits (gb, 3);
+    if (nal->nuh_layer_id == 0) {
+        sps_ext_or_max_sub_layers_minus1 = 0;
+        sps_max_sub_layers_minus1 = get_bits(gb, 3);
+    } else {
+        sps_ext_or_max_sub_layers_minus1 = get_bits(gb, 3);
+        if (sps_ext_or_max_sub_layers_minus1 == 7) {
+            const HVCCNALUnitArray *array = &hvcc->arrays[VPS_INDEX];
+            const HVCCNALUnit *vps = NULL;
+
+            for (i = 0; i < array->numNalus; i++)
+                if (sps_video_parameter_set_id == array->nal[i].parameter_set_id) {
+                    vps = &array->nal[i];
+                    break;
+                }
+            if (!vps)
+                return AVERROR_INVALIDDATA;
+
+            sps_max_sub_layers_minus1 = vps->vps_max_sub_layers_minus1;
+        } else
+            sps_max_sub_layers_minus1 = sps_ext_or_max_sub_layers_minus1;
+    }
+    multi_layer_ext_sps_flag = nal->nuh_layer_id &&
+                               sps_ext_or_max_sub_layers_minus1 == 7;
 
     /*
      * numTemporalLayers greater than 1 indicates that the stream to which this
@@ -524,12 +549,17 @@ static int hvcc_parse_sps(GetBitContext *gb, HVCCNALUnit *nal,
     hvcc->numTemporalLayers = FFMAX(hvcc->numTemporalLayers,
                                     sps_max_sub_layers_minus1 + 1);
 
-    hvcc->temporalIdNested = get_bits1(gb);
-
-    hvcc_parse_ptl(gb, hvcc, sps_max_sub_layers_minus1);
+    if (!multi_layer_ext_sps_flag) {
+        hvcc->temporalIdNested = get_bits1(gb);
+        hvcc_parse_ptl(gb, hvcc, sps_max_sub_layers_minus1);
+    }
 
     nal->parameter_set_id = get_ue_golomb_long(gb);
 
+    if (multi_layer_ext_sps_flag) {
+        if (get_bits1(gb)) // update_rep_format_flag
+            skip_bits(gb, 8); // sps_rep_format_idx
+    } else {
     hvcc->chromaFormat = get_ue_golomb_long(gb);
 
     if (hvcc->chromaFormat == 3)
@@ -547,12 +577,15 @@ static int hvcc_parse_sps(GetBitContext *gb, HVCCNALUnit *nal,
 
     hvcc->bitDepthLumaMinus8          = get_ue_golomb_long(gb);
     hvcc->bitDepthChromaMinus8        = get_ue_golomb_long(gb);
+    }
     log2_max_pic_order_cnt_lsb_minus4 = get_ue_golomb_long(gb);
 
+    if (!multi_layer_ext_sps_flag) {
     /* sps_sub_layer_ordering_info_present_flag */
     i = get_bits1(gb) ? 0 : sps_max_sub_layers_minus1;
     for (; i <= sps_max_sub_layers_minus1; i++)
         skip_sub_layer_ordering_info(gb);
+    }
 
     get_ue_golomb_long(gb); // log2_min_luma_coding_block_size_minus3
     get_ue_golomb_long(gb); // log2_diff_max_min_luma_coding_block_size
@@ -561,9 +594,15 @@ static int hvcc_parse_sps(GetBitContext *gb, HVCCNALUnit *nal,
     get_ue_golomb_long(gb); // max_transform_hierarchy_depth_inter
     get_ue_golomb_long(gb); // max_transform_hierarchy_depth_intra
 
-    if (get_bits1(gb) && // scaling_list_enabled_flag
-        get_bits1(gb))   // sps_scaling_list_data_present_flag
-        skip_scaling_list_data(gb);
+    if (get_bits1(gb)) { // scaling_list_enabled_flag
+        int sps_infer_scaling_list_flag = 0;
+        if (multi_layer_ext_sps_flag)
+            sps_infer_scaling_list_flag = get_bits1(gb);
+        if (sps_infer_scaling_list_flag)
+            skip_bits(gb, 6);   // sps_scaling_list_ref_layer_id
+        else if (get_bits1(gb)) // sps_scaling_list_data_present_flag
+            skip_scaling_list_data(gb);
+    }
 
     skip_bits1(gb); // amp_enabled_flag
     skip_bits1(gb); // sample_adaptive_offset_enabled_flag
@@ -703,6 +742,7 @@ static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
 {
     int ret = 0;
     int is_nalff = !!(flags & FLAG_IS_NALFF);
+    int is_lhvc = !!(flags & FLAG_IS_LHVC);
     int ps_array_completeness = !!(flags & FLAG_ARRAY_COMPLETENESS);
     HVCCNALUnitArray *const array = &hvcc->arrays[array_idx];
     HVCCNALUnit *nal;
@@ -722,7 +762,7 @@ static int hvcc_add_nal_unit(const uint8_t *nal_buf, uint32_t nal_size,
         goto end;
 
     nal_unit_parse_header(&gbc, &nal_type, &nuh_layer_id);
-    if (nuh_layer_id > 0)
+    if (!is_lhvc && nuh_layer_id > 0)
         goto end;
 
     /*
@@ -798,9 +838,12 @@ static void hvcc_close(HEVCDecoderConfigurationRecord *hvcc)
     }
 }
 
-static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
+static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
+                      int flags)
 {
-    uint16_t vps_count, sps_count, pps_count;
+    uint16_t numNalus[NB_ARRAYS] = { 0 };
+    int is_lhvc = !!(flags & FLAG_IS_LHVC);
+    int numOfArrays = 0;
 
     /*
      * We only support writing HEVCDecoderConfigurationRecord version 1.
@@ -826,10 +869,32 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
      * let's always set them to values meaning 'unspecified'.
      */
     hvcc->avgFrameRate      = 0;
-    hvcc->constantFrameRate = 0;
+    /*
+     * lhvC doesn't store this field. It instead reserves the bits, setting them
+     * to '11'b.
+     */
+    hvcc->constantFrameRate = is_lhvc * 0x3;
 
+    /*
+     * Skip all NALUs with nuh_layer_id == 0 if writing lhvC. We do it here and
+     * not before parsing them as some parameter sets with nuh_layer_id > 0
+     * may reference base layer parameters sets.
+     */
+    for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
+        const HVCCNALUnitArray *const array = &hvcc->arrays[i];
+
+        if (array->numNalus == 0)
+            continue;
+
+        for (unsigned j = 0; j < array->numNalus; j++)
+            numNalus[i] += !is_lhvc || (array->nal[j].nuh_layer_id != 0);
+        numOfArrays += (numNalus[i] > 0);
+    }
+
+    av_log(NULL, AV_LOG_TRACE,  "%s\n", is_lhvc ? "lhvC" : "hvcC");
     av_log(NULL, AV_LOG_TRACE,  "configurationVersion:                %"PRIu8"\n",
             hvcc->configurationVersion);
+    if (!is_lhvc) {
     av_log(NULL, AV_LOG_TRACE,  "general_profile_space:               %"PRIu8"\n",
             hvcc->general_profile_space);
     av_log(NULL, AV_LOG_TRACE,  "general_tier_flag:                   %"PRIu8"\n",
@@ -842,10 +907,12 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
             hvcc->general_constraint_indicator_flags);
     av_log(NULL, AV_LOG_TRACE,  "general_level_idc:                   %"PRIu8"\n",
             hvcc->general_level_idc);
+    }
     av_log(NULL, AV_LOG_TRACE,  "min_spatial_segmentation_idc:        %"PRIu16"\n",
             hvcc->min_spatial_segmentation_idc);
     av_log(NULL, AV_LOG_TRACE,  "parallelismType:                     %"PRIu8"\n",
             hvcc->parallelismType);
+    if (!is_lhvc) {
     av_log(NULL, AV_LOG_TRACE,  "chromaFormat:                        %"PRIu8"\n",
             hvcc->chromaFormat);
     av_log(NULL, AV_LOG_TRACE,  "bitDepthLumaMinus8:                  %"PRIu8"\n",
@@ -856,6 +923,7 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
             hvcc->avgFrameRate);
     av_log(NULL, AV_LOG_TRACE,  "constantFrameRate:                   %"PRIu8"\n",
             hvcc->constantFrameRate);
+    }
     av_log(NULL, AV_LOG_TRACE,  "numTemporalLayers:                   %"PRIu8"\n",
             hvcc->numTemporalLayers);
     av_log(NULL, AV_LOG_TRACE,  "temporalIdNested:                    %"PRIu8"\n",
@@ -863,11 +931,11 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
     av_log(NULL, AV_LOG_TRACE,  "lengthSizeMinusOne:                  %"PRIu8"\n",
             hvcc->lengthSizeMinusOne);
     av_log(NULL, AV_LOG_TRACE,  "numOfArrays:                         %"PRIu8"\n",
-            hvcc->numOfArrays);
+            numOfArrays);
     for (unsigned i = 0, j = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
         const HVCCNALUnitArray *const array = &hvcc->arrays[i];
 
-        if (array->numNalus == 0)
+        if (numNalus[i] == 0)
             continue;
 
         av_log(NULL, AV_LOG_TRACE, "array_completeness[%u]:               %"PRIu8"\n",
@@ -875,28 +943,31 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
         av_log(NULL, AV_LOG_TRACE, "NAL_unit_type[%u]:                    %"PRIu8"\n",
                j, array->NAL_unit_type);
         av_log(NULL, AV_LOG_TRACE, "numNalus[%u]:                         %"PRIu16"\n",
-               j, array->numNalus);
-        for (unsigned k = 0; k < array->numNalus; k++)
+               j, numNalus[i]);
+        for (unsigned k = 0; k < array->numNalus; k++) {
+            if (is_lhvc && array->nal[k].nuh_layer_id == 0)
+                continue;
+
             av_log(NULL, AV_LOG_TRACE,
                     "nalUnitLength[%u][%u]:                 %"PRIu16"\n",
                    j, k, array->nal[k].nalUnitLength);
+        }
         j++;
     }
 
     /*
      * We need at least one of each: VPS, SPS and PPS.
      */
-    vps_count = hvcc->arrays[VPS_INDEX].numNalus;
-    sps_count = hvcc->arrays[SPS_INDEX].numNalus;
-    pps_count = hvcc->arrays[PPS_INDEX].numNalus;
-    if (!vps_count || vps_count > HEVC_MAX_VPS_COUNT ||
-        !sps_count || sps_count > HEVC_MAX_SPS_COUNT ||
-        !pps_count || pps_count > HEVC_MAX_PPS_COUNT)
+    if ((!numNalus[VPS_INDEX] || numNalus[VPS_INDEX] > HEVC_MAX_VPS_COUNT) && !is_lhvc)
+        return AVERROR_INVALIDDATA;
+    if (!numNalus[SPS_INDEX] || numNalus[SPS_INDEX] > HEVC_MAX_SPS_COUNT ||
+        !numNalus[PPS_INDEX] || numNalus[PPS_INDEX] > HEVC_MAX_PPS_COUNT)
         return AVERROR_INVALIDDATA;
 
     /* unsigned int(8) configurationVersion = 1; */
     avio_w8(pb, hvcc->configurationVersion);
 
+    if (!is_lhvc) {
     /*
      * unsigned int(2) general_profile_space;
      * unsigned int(1) general_tier_flag;
@@ -915,6 +986,7 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
 
     /* unsigned int(8) general_level_idc; */
     avio_w8(pb, hvcc->general_level_idc);
+    }
 
     /*
      * bit(4) reserved = '1111'b;
@@ -928,6 +1000,7 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
      */
     avio_w8(pb, hvcc->parallelismType | 0xfc);
 
+    if (!is_lhvc) {
     /*
      * bit(6) reserved = '111111'b;
      * unsigned int(2) chromaFormat;
@@ -948,9 +1021,13 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
 
     /* bit(16) avgFrameRate; */
     avio_wb16(pb, hvcc->avgFrameRate);
+    }
 
     /*
+     * if (!is_lhvc)
      * bit(2) constantFrameRate;
+     * else
+     *     bit(2) reserved = '11'b;
      * bit(3) numTemporalLayers;
      * bit(1) temporalIdNested;
      * unsigned int(2) lengthSizeMinusOne;
@@ -961,12 +1038,12 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
                 hvcc->lengthSizeMinusOne);
 
     /* unsigned int(8) numOfArrays; */
-    avio_w8(pb, hvcc->numOfArrays);
+    avio_w8(pb, numOfArrays);
 
     for (unsigned i = 0; i < FF_ARRAY_ELEMS(hvcc->arrays); i++) {
         const HVCCNALUnitArray *const array = &hvcc->arrays[i];
 
-        if (!array->numNalus)
+        if (!numNalus[i])
             continue;
         /*
          * bit(1) array_completeness;
@@ -977,10 +1054,13 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc)
                     array->NAL_unit_type & 0x3f);
 
         /* unsigned int(16) numNalus; */
-        avio_wb16(pb, array->numNalus);
+        avio_wb16(pb, numNalus[i]);
 
         for (unsigned j = 0; j < array->numNalus; j++) {
             HVCCNALUnit *nal = &array->nal[j];
+
+            if (is_lhvc && nal->nuh_layer_id == 0)
+                continue;
 
             /* unsigned int(16) nalUnitLength; */
             avio_wb16(pb, nal->nalUnitLength);
@@ -1082,12 +1162,11 @@ static int hvcc_parse_nal_unit(const uint8_t *buf, uint32_t len, int type,
     return 0;
 }
 
-int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
-                       int size, int ps_array_completeness)
+static int write_configuration_record(AVIOContext *pb, const uint8_t *data,
+                                      int size, int flags)
 {
     HEVCDecoderConfigurationRecord hvcc;
     uint8_t *buf, *end, *start = NULL;
-    int flags = !!ps_array_completeness * FLAG_ARRAY_COMPLETENESS;
     int ret;
 
     if (size < 6) {
@@ -1154,7 +1233,7 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
             }
         }
 
-        ret = hvcc_write(pb, &hvcc);
+        ret = hvcc_write(pb, &hvcc, flags);
         goto end;
     } else if (!(AV_RB24(data) == 1 || AV_RB32(data) == 1)) {
         /* Not a valid Annex B start code prefix */
@@ -1183,10 +1262,24 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
         buf += len;
     }
 
-    ret = hvcc_write(pb, &hvcc);
+    ret = hvcc_write(pb, &hvcc, flags);
 
 end:
     hvcc_close(&hvcc);
     av_free(start);
     return ret;
+}
+
+int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
+                       int size, int ps_array_completeness)
+{
+    return write_configuration_record(pb, data, size,
+                                      !!ps_array_completeness * FLAG_ARRAY_COMPLETENESS);
+}
+
+int ff_isom_write_lhvc(AVIOContext *pb, const uint8_t *data,
+                       int size, int ps_array_completeness)
+{
+    return write_configuration_record(pb, data, size,
+                                      (!!ps_array_completeness * FLAG_ARRAY_COMPLETENESS) | FLAG_IS_LHVC);
 }
