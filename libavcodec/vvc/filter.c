@@ -55,6 +55,29 @@ static const uint8_t betatable[64] = {
      58,  60,  62,  64,  66,  68,  70,  72,  74,  76,  78,  80,  82,  84,  86,  88,
 };
 
+static int get_virtual_boundary(const VVCFrameContext *fc, const int ctu_pos, const int vertical)
+{
+    const VVCSPS *sps    = fc->ps.sps;
+    const VVCPH *ph      = &fc->ps.ph;
+    const uint16_t *vbs  = vertical ? ph->vb_pos_x    : ph->vb_pos_y;
+    const uint8_t nb_vbs = vertical ? ph->num_ver_vbs : ph->num_hor_vbs;
+    const int pos        = ctu_pos << sps->ctb_log2_size_y;
+
+    if (sps->r->sps_virtual_boundaries_enabled_flag) {
+        for (int i = 0; i < nb_vbs; i++) {
+            const int o = vbs[i] - pos;
+            if (o >= 0 && o < sps->ctb_size_y)
+                return vbs[i];
+        }
+    }
+    return 0;
+}
+
+static int is_virtual_boundary(const VVCFrameContext *fc, const int pos, const int vertical)
+{
+    return get_virtual_boundary(fc, pos >> fc->ps.sps->ctb_log2_size_y, vertical) == pos;
+}
+
 static int get_qPc(const VVCFrameContext *fc, const int x0, const int y0, const int chroma)
 {
     const int x            = x0 >> MIN_TU_LOG2;
@@ -429,6 +452,7 @@ static void vvc_deblock_subblock_bs(const VVCLocalContext *lc,
 
     // bs for TU internal vertical PU boundaries
     for (int i = 8 - ((x0 - cb) % 8); i < width; i += 8) {
+        const int is_vb = is_virtual_boundary(fc, x0 + i, vertical);
         const int xp_pu = (x0 + i - 1) >> log2_min_pu_size;
         const int xq_pu = (x0 + i)     >> log2_min_pu_size;
 
@@ -436,7 +460,7 @@ static void vvc_deblock_subblock_bs(const VVCLocalContext *lc,
             const int y_pu       = (y0 + j) >> log2_min_pu_size;
             const MvField *mvf_p = &tab_mvf[y_pu * stridea + xp_pu * strideb];
             const MvField *mvf_q = &tab_mvf[y_pu * stridea + xq_pu * strideb];
-            const int bs         = boundary_strength(lc, mvf_q, mvf_p, rpl);
+            const int bs         = is_vb ? 0 : boundary_strength(lc, mvf_q, mvf_p, rpl);
             int x                = x0 + i;
             int y                = y0 + j;
             uint8_t max_len_p = 0, max_len_q = 0;
@@ -557,6 +581,7 @@ static void vvc_deblock_bs_luma(const VVCLocalContext *lc,
             (x0 >> log2_min_pu_size)].pred_flag == PF_INTRA;
 
     if (deblock_is_boundary(lc, pos > 0 && !(pos & mask), pos, rs, vertical)) {
+        const int is_vb         = is_virtual_boundary(fc, pos, vertical);
         const int size          = vertical ? height : width;
         const int off           = cb - pos;
         const int cb_size       = (vertical ? fc->tab.cb_width : fc->tab.cb_height)[LUMA][off_q];
@@ -569,7 +594,7 @@ static void vvc_deblock_bs_luma(const VVCLocalContext *lc,
             const int x = x0 + i * !vertical;
             const int y = y0 + i * vertical;
             uint8_t max_len_p, max_len_q;
-            const int bs = deblock_bs(lc, x - vertical, y - !vertical, x, y, rpl_p, LUMA, off, has_sb);
+            const int bs = is_vb ? 0 : deblock_bs(lc, x - vertical, y - !vertical, x, y, rpl_p, LUMA, off, has_sb);
 
             TAB_BS(fc->tab.bs[vertical][LUMA], x, y) = bs;
 
@@ -594,13 +619,14 @@ static void vvc_deblock_bs_chroma(const VVCLocalContext *lc,
     const int pos             = vertical ? x0 : y0;
 
     if (deblock_is_boundary(lc, pos > 0 && !(pos & mask), pos, rs, vertical)) {
-        const int size = vertical ? height : width;
+        const int is_vb = is_virtual_boundary(fc, pos, vertical);
+        const int size  = vertical ? height : width;
 
         for (int c_idx = CB; c_idx <= CR; c_idx++) {
             for (int i = 0; i < size; i += 2) {
                 const int x  = x0 + i * !vertical;
                 const int y  = y0 + i * vertical;
-                const int bs = deblock_bs(lc, x - vertical, y - !vertical, x, y, NULL, c_idx, 0, 0);
+                const int bs = is_vb ? 0 : deblock_bs(lc, x - vertical, y - !vertical, x, y, NULL, c_idx, 0, 0);
 
                 TAB_BS(fc->tab.bs[vertical][c_idx], x, y) = bs;
             }
