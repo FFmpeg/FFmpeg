@@ -3914,8 +3914,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     int coeff_count[64];
     int qmul, qadd, start_i, last_non_zero, i, dc;
     const int esc_length= s->ac_esc_length;
-    uint8_t * length;
-    uint8_t * last_length;
+    const uint8_t *length, *last_length;
     const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
     int mpeg2_qscale;
 
