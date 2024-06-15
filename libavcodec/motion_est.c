@@ -537,7 +537,7 @@ static inline void set_p_mv_tables(MpegEncContext * s, int mx, int my, int mv4)
 /**
  * get fullpel ME search limits.
  */
-static inline void get_limits(MpegEncContext *s, int x, int y)
+static inline void get_limits(MpegEncContext *s, int x, int y, int bframe)
 {
     MotionEstContext * const c= &s->me;
     int range= c->avctx->me_range >> (1 + !!(c->flags&FLAG_QPEL));
@@ -551,7 +551,7 @@ static inline void get_limits(MpegEncContext *s, int x, int y)
         c->ymin = - y - 16;
         c->xmax = - x + s->width;
         c->ymax = - y + s->height;
-    } else if (s->out_format == FMT_H261){
+    } else if (!(av_builtin_constant_p(bframe) && bframe) && s->out_format == FMT_H261){
         // Search range of H.261 is different from other codec standards
         c->xmin = (x > 15) ? - 15 : 0;
         c->ymin = (y > 15) ? - 15 : 0;
@@ -921,7 +921,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     c->mb_penalty_factor = get_penalty_factor(s->lambda, s->lambda2, c->avctx->mb_cmp);
     c->current_mv_penalty= c->mv_penalty[s->f_code] + MAX_DMV;
 
-    get_limits(s, 16*mb_x, 16*mb_y);
+    get_limits(s, 16*mb_x, 16*mb_y, 0);
     c->skip=0;
 
     /* intra / predictive decision */
@@ -1088,7 +1088,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     c->pre_penalty_factor    = get_penalty_factor(s->lambda, s->lambda2, c->avctx->me_pre_cmp);
     c->current_mv_penalty= c->mv_penalty[s->f_code] + MAX_DMV;
 
-    get_limits(s, 16*mb_x, 16*mb_y);
+    get_limits(s, 16*mb_x, 16*mb_y, 0);
     c->skip=0;
 
     P_LEFT[0]       = s->p_mv_table[xy + 1][0];
@@ -1140,7 +1140,7 @@ static int estimate_motion_b(MpegEncContext *s, int mb_x, int mb_y,
 
     c->current_mv_penalty= mv_penalty;
 
-    get_limits(s, 16*mb_x, 16*mb_y);
+    get_limits(s, 16*mb_x, 16*mb_y, 1);
 
     if (s->motion_est != FF_ME_ZERO) {
         P_LEFT[0] = mv_table[mot_xy - 1][0];
@@ -1489,7 +1489,7 @@ static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)
     if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
         dmin= get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
 
-    get_limits(s, 16*mb_x, 16*mb_y); //restore c->?min/max, maybe not needed
+    get_limits(s, 16*mb_x, 16*mb_y, 1); //restore c->?min/max, maybe not needed
 
     mv_table[mot_xy][0]= mx;
     mv_table[mot_xy][1]= my;
@@ -1509,7 +1509,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
     init_ref(c, s->new_pic->data, s->last_pic.data,
              s->next_pic.data, 16 * mb_x, 16 * mb_y, 2);
 
-    get_limits(s, 16*mb_x, 16*mb_y);
+    get_limits(s, 16*mb_x, 16*mb_y, 1);
 
     c->skip=0;
 
