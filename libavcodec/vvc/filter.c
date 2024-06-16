@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "libavutil/frame.h"
+#include "libavutil/imgutils.h"
 
 #include "ctu.h"
 #include "data.h"
@@ -198,7 +199,7 @@ static void sao_get_edges(uint8_t vert_edge[2], uint8_t horiz_edge[2], uint8_t d
     const uint8_t no_subpic_filter = rsps->sps_num_subpics_minus1 && !rsps->sps_loop_filter_across_subpic_enabled_flag[subpic_idx];
     uint8_t lf_edge[] = { 0, 0, 0, 0 };
 
-    *restore = no_subpic_filter || no_tile_filter || !lfase;
+    *restore = no_subpic_filter || no_tile_filter || !lfase || rsps->sps_virtual_boundaries_enabled_flag;
 
     if (!*restore)
         return;
@@ -206,21 +207,25 @@ static void sao_get_edges(uint8_t vert_edge[2], uint8_t horiz_edge[2], uint8_t d
     if (!edges[LEFT]) {
         lf_edge[LEFT]  = no_tile_filter && pps->ctb_to_col_bd[rx] == rx;
         lf_edge[LEFT] |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_x[subpic_idx] == rx;
+        lf_edge[LEFT] |= is_virtual_boundary(fc, rx << sps->ctb_log2_size_y, 1);
         vert_edge[0]   = !sao_can_cross_slices(fc, rx, ry, -1, 0) || lf_edge[LEFT];
     }
     if (!edges[RIGHT]) {
         lf_edge[RIGHT]  = no_tile_filter && pps->ctb_to_col_bd[rx] != pps->ctb_to_col_bd[rx + 1];
         lf_edge[RIGHT] |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_x[subpic_idx] + rsps->sps_subpic_width_minus1[subpic_idx] == rx;
+        lf_edge[RIGHT] |= is_virtual_boundary(fc, (rx + 1) << sps->ctb_log2_size_y, 1);
         vert_edge[1]    = !sao_can_cross_slices(fc, rx, ry, 1, 0) || lf_edge[RIGHT];
     }
     if (!edges[TOP]) {
         lf_edge[TOP]   = no_tile_filter && pps->ctb_to_row_bd[ry] == ry;
         lf_edge[TOP]  |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_y[subpic_idx] == ry;
+        lf_edge[TOP]  |= is_virtual_boundary(fc, ry << sps->ctb_log2_size_y, 0);
         horiz_edge[0]  = !sao_can_cross_slices(fc, rx, ry, 0, -1) || lf_edge[TOP];
     }
     if (!edges[BOTTOM]) {
         lf_edge[BOTTOM]  = no_tile_filter && pps->ctb_to_row_bd[ry] != pps->ctb_to_row_bd[ry + 1];
         lf_edge[BOTTOM] |= no_subpic_filter && rsps->sps_subpic_ctu_top_left_y[subpic_idx] + rsps->sps_subpic_height_minus1[subpic_idx] == ry;
+        lf_edge[BOTTOM] |= is_virtual_boundary(fc, (ry + 1) << sps->ctb_log2_size_y, 0);
         horiz_edge[1]    = !sao_can_cross_slices(fc, rx, ry, 0, 1) || lf_edge[BOTTOM];
     }
 
@@ -285,6 +290,24 @@ static void sao_extends_edges(uint8_t *dst, const ptrdiff_t dst_stride,
     copy_ctb(dst, src, width << ps, height, dst_stride, src_stride);
 }
 
+static void sao_restore_vb(uint8_t *dst, ptrdiff_t dst_stride, const uint8_t *src, ptrdiff_t src_stride,
+    const int width, const int height, const int vb_pos, const int ps, const int vertical)
+{
+    int w = 2;
+    int h = (vertical ? height : width);
+    int dx = vb_pos - 1;
+    int dy = 0;
+
+    if (!vertical) {
+        FFSWAP(int, w, h);
+        FFSWAP(int, dx, dy);
+    }
+    dst += dy * dst_stride +(dx << ps);
+    src += dy * src_stride +(dx << ps);
+
+    av_image_copy_plane(dst, dst_stride, src, src_stride, w << ps, h);
+}
+
 void ff_vvc_sao_filter(VVCLocalContext *lc, int x0, int y0)
 {
     VVCFrameContext *fc  = lc->fc;
@@ -297,7 +320,12 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x0, int y0)
     uint8_t vert_edge[]  = { 0, 0 };
     uint8_t horiz_edge[] = { 0, 0 };
     uint8_t diag_edge[]  = { 0, 0, 0, 0 };
-    int restore;
+    int restore, vb_x = 0, vb_y = 0;;
+
+    if (sps->r->sps_virtual_boundaries_enabled_flag) {
+        vb_x = get_virtual_boundary(fc, rx, 1);
+        vb_y = get_virtual_boundary(fc, ry, 0);
+    }
 
     sao_get_edges(vert_edge, horiz_edge, diag_edge, &restore, lc, edges, rx, ry);
 
@@ -305,9 +333,13 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x0, int y0)
         static const uint8_t sao_tab[16] = { 0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8 };
         const ptrdiff_t src_stride       = fc->frame->linesize[c_idx];
         uint8_t *src                     = POS(c_idx, x0, y0);
-        const int width                  = FFMIN(sps->ctb_size_y, fc->ps.pps->width - x0) >> sps->hshift[c_idx];
-        const int height                 = FFMIN(sps->ctb_size_y, fc->ps.pps->height - y0) >> sps->vshift[c_idx];
+        const int hs                     = sps->hshift[c_idx];
+        const int vs                     = sps->vshift[c_idx];
+        const int ps                     = sps->pixel_shift;
+        const int width                  = FFMIN(sps->ctb_size_y, fc->ps.pps->width  - x0) >> hs;
+        const int height                 = FFMIN(sps->ctb_size_y, fc->ps.pps->height - y0) >> vs;
         const int tab                    = sao_tab[(FFALIGN(width, 8) >> 3) - 1];
+        const int sao_eo_class           = sao->eo_class[c_idx];
 
         switch (sao->type_idx[c_idx]) {
             case SAO_BAND:
@@ -325,6 +357,12 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x0, int y0)
                     sao->eo_class[c_idx], width, height);
                 fc->vvcdsp.sao.edge_restore[restore](src, dst, src_stride, dst_stride,
                     sao, edges, width, height, c_idx, vert_edge, horiz_edge, diag_edge);
+
+                if (vb_x > x0 &&  sao_eo_class != SAO_EO_VERT)
+                    sao_restore_vb(src, src_stride, dst, dst_stride, width, height, (vb_x - x0) >> hs, ps, 1);
+                if (vb_y > y0 &&  sao_eo_class != SAO_EO_HORIZ)
+                    sao_restore_vb(src, src_stride, dst, dst_stride, width, height, (vb_y - y0) >> vs, ps, 0);
+
                 break;
             }
         }
