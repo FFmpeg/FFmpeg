@@ -122,6 +122,7 @@ void checkasm_check_sw_gbrp(void);
 void checkasm_check_sw_range_convert(void);
 void checkasm_check_sw_rgb(void);
 void checkasm_check_sw_scale(void);
+void checkasm_check_sw_yuv2rgb(void);
 void checkasm_check_takdsp(void);
 void checkasm_check_utvideodsp(void);
 void checkasm_check_v210dec(void);
