@@ -25,7 +25,7 @@
 #include "libavcodec/get_bits.h"
 
 typedef struct AACArithState {
-    uint8_t last[512 /* 2048 / 4 */];
+    uint8_t last[512 /* 2048 / 4 */ + 1];
     int last_len;
     uint8_t cur[4];
     uint16_t state_pre;
