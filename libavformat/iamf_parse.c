@@ -330,7 +330,7 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
     nb_layers = avio_r8(pb) >> 5; // get_bits(&gb, 3);
     // skip_bits(&gb, 5); //reserved
 
-    if (nb_layers > 6)
+    if (nb_layers > 6 || nb_layers == 0)
         return AVERROR_INVALIDDATA;
 
     audio_element->layers = av_calloc(nb_layers, sizeof(*audio_element->layers));
