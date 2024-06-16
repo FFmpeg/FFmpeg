@@ -31,7 +31,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     avctx->bits_per_coded_sample = 32;
     if (avctx->width > 0)
-        avctx->bit_rate = ff_guess_coded_bitrate(avctx) * aligned_width / avctx->width;
+        avctx->bit_rate = av_rescale(ff_guess_coded_bitrate(avctx), aligned_width, avctx->width);
 
     return 0;
 }
