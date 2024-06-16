@@ -28,7 +28,6 @@
 #define AVCODEC_IIRFILTER_H
 
 #include <stddef.h>
-#include <stdint.h>
 
 struct FFIIRFilterCoeffs;
 struct FFIIRFilterState;
@@ -113,19 +112,5 @@ void ff_iir_filter_free_coeffsp(struct FFIIRFilterCoeffs **coeffs);
  * @param state pointer to pointer allocated with ff_iir_filter_init_state()
  */
 void ff_iir_filter_free_statep(struct FFIIRFilterState **state);
-
-/**
- * Perform IIR filtering on signed 16-bit input samples.
- *
- * @param coeffs pointer to filter coefficients
- * @param state  pointer to filter state
- * @param size   input length
- * @param src    source samples
- * @param sstep  source stride
- * @param dst    filtered samples (destination may be the same as input)
- * @param dstep  destination stride
- */
-void ff_iir_filter(const struct FFIIRFilterCoeffs *coeffs, struct FFIIRFilterState *state,
-                   int size, const int16_t *src, ptrdiff_t sstep, int16_t *dst, ptrdiff_t dstep);
 
 #endif /* AVCODEC_IIRFILTER_H */

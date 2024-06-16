@@ -23,9 +23,24 @@
 #include "libavutil/libm.h"
 
 #include "libavcodec/iirfilter.h"
+#include "libavcodec/iirfilter.c"
 
 #define FILT_ORDER 4
 #define SIZE 1024
+
+static void iir_filter_int16(const struct FFIIRFilterCoeffs *c,
+                             struct FFIIRFilterState *s, int size,
+                             const int16_t *src, ptrdiff_t sstep,
+                             int16_t *dst, ptrdiff_t dstep)
+{
+    if (c->order == 2) {
+        FILTER_O2(int16_t, S16)
+    } else if (c->order == 4) {
+        FILTER_BW_O4(int16_t, S16)
+    } else {
+        FILTER_DIRECT_FORM_II(int16_t, S16)
+    }
+}
 
 int main(void)
 {
@@ -43,7 +58,7 @@ int main(void)
     for (i = 0; i < SIZE; i++)
         x[i] = lrint(0.75 * INT16_MAX * sin(0.5 * M_PI * i * i / SIZE));
 
-    ff_iir_filter(fcoeffs, fstate, SIZE, x, 1, y, 1);
+    iir_filter_int16(fcoeffs, fstate, SIZE, x, 1, y, 1);
 
     for (i = 0; i < SIZE; i++)
         printf("%6d %6d\n", x[i], y[i]);
