@@ -42,6 +42,9 @@ fate-jpeg2000dec-p0_08: CMD = framecrc -flags +bitexact -auto_conversion_filters
 FATE_JPEG2000DEC += fate-jpeg2000dec-p0_09
 fate-jpeg2000dec-p0_09: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/jpeg2000/itu-iso/codestreams_profile0/p0_09.j2k
 
+FATE_JPEG2000DEC += fate-jpeg2000dec-p0_10
+fate-jpeg2000dec-p0_10: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/jpeg2000/itu-iso/codestreams_profile0/p0_10.j2k
+
 FATE_JPEG2000DEC += fate-jpeg2000dec-p0_11
 fate-jpeg2000dec-p0_11: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/jpeg2000/itu-iso/codestreams_profile0/p0_11.j2k
 
