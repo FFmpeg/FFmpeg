@@ -31,6 +31,7 @@
 
 #include "avformat.h"
 #include "avc.h"
+#include "nal.h"
 #include "rtpenc.h"
 
 static void flush_buffered(AVFormatContext *s1, int last)
@@ -185,20 +186,20 @@ void ff_rtp_send_h264_hevc(AVFormatContext *s1, const uint8_t *buf1, int size)
     s->timestamp = s->cur_timestamp;
     s->buf_ptr   = s->buf;
     if (s->nal_length_size)
-        r = ff_avc_mp4_find_startcode(buf1, end, s->nal_length_size) ? buf1 : end;
+        r = ff_nal_mp4_find_startcode(buf1, end, s->nal_length_size) ? buf1 : end;
     else
-        r = ff_avc_find_startcode(buf1, end);
+        r = ff_nal_find_startcode(buf1, end);
     while (r < end) {
         const uint8_t *r1;
 
         if (s->nal_length_size) {
-            r1 = ff_avc_mp4_find_startcode(r, end, s->nal_length_size);
+            r1 = ff_nal_mp4_find_startcode(r, end, s->nal_length_size);
             if (!r1)
                 r1 = end;
             r += s->nal_length_size;
         } else {
             while (!*(r++));
-            r1 = ff_avc_find_startcode(r, end);
+            r1 = ff_nal_find_startcode(r, end);
         }
         nal_send(s1, r, r1 - r, r1 == end);
         r = r1;

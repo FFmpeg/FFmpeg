@@ -24,6 +24,7 @@
 #include "avio_internal.h"
 #include "movenc.h"
 #include "avc.h"
+#include "nal.h"
 
 static int auxiliary_info_alloc_size(MOVMuxCencContext* ctx, int size)
 {
@@ -204,13 +205,13 @@ int ff_mov_cenc_avc_parse_nal_units(MOVMuxCencContext* ctx, AVIOContext *pb,
     }
 
     size = 0;
-    nal_start = ff_avc_find_startcode(p, end);
+    nal_start = ff_nal_find_startcode(p, end);
     for (;;) {
         while (nal_start < end && !*(nal_start++));
         if (nal_start == end)
             break;
 
-        nal_end = ff_avc_find_startcode(nal_start, end);
+        nal_end = ff_nal_find_startcode(nal_start, end);
 
         avio_wb32(pb, nal_end - nal_start);
         avio_w8(pb, *nal_start);

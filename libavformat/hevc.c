@@ -27,6 +27,7 @@
 #include "avio.h"
 #include "avio_internal.h"
 #include "hevc.h"
+#include "nal.h"
 
 #define MAX_SPATIAL_SEGMENTATION 4096 // max. value of u(12) field
 
@@ -978,11 +979,11 @@ int ff_hevc_annexb2mp4(AVIOContext *pb, const uint8_t *buf_in,
     uint8_t *buf, *end, *start = NULL;
 
     if (!filter_ps) {
-        ret = ff_avc_parse_nal_units(pb, buf_in, size);
+        ret = ff_nal_parse_units(pb, buf_in, size);
         goto end;
     }
 
-    ret = ff_avc_parse_nal_units_buf(buf_in, &start, &size);
+    ret = ff_nal_parse_units_buf(buf_in, &start, &size);
     if (ret < 0)
         goto end;
 
@@ -1059,7 +1060,7 @@ int ff_isom_write_hvcc(AVIOContext *pb, const uint8_t *data,
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_avc_parse_nal_units_buf(data, &start, &size);
+    ret = ff_nal_parse_units_buf(data, &start, &size);
     if (ret < 0)
         return ret;
 

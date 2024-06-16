@@ -60,6 +60,7 @@
 #include "avio_internal.h"
 #include "internal.h"
 #include "avc.h"
+#include "nal.h"
 #include "mux.h"
 #include "mxf.h"
 #include "config.h"
@@ -2477,7 +2478,7 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
             if (mxf->header_written)
                 break;
 
-            nal_end = ff_avc_find_startcode(buf, buf_end);
+            nal_end = ff_nal_find_startcode(buf, buf_end);
             ret = ff_avc_decode_sps(sps, buf, nal_end - buf);
             if (ret < 0) {
                 av_log(s, AV_LOG_ERROR, "error parsing sps\n");

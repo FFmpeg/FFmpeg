@@ -50,6 +50,7 @@
 #endif
 #include "hlsplaylist.h"
 #include "internal.h"
+#include "nal.h"
 #include "mux.h"
 #include "os_support.h"
 #include "url.h"

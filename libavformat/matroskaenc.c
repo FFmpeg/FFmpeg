@@ -33,6 +33,7 @@
 #include "flacenc.h"
 #include "internal.h"
 #include "isom.h"
+#include "nal.h"
 #include "matroska.h"
 #include "mux.h"
 #include "riff.h"
