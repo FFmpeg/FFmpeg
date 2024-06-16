@@ -68,9 +68,9 @@ typedef struct SBRData {
     unsigned           bs_frame_class;
     unsigned           bs_add_harmonic_flag;
     AAC_SIGNE          bs_num_env;
-    uint8_t            bs_freq_res[7];
+    uint8_t            bs_freq_res[9];
     AAC_SIGNE          bs_num_noise;
-    uint8_t            bs_df_env[5];
+    uint8_t            bs_df_env[9];
     uint8_t            bs_df_noise[2];
     uint8_t            bs_invf_mode[2][5];
     uint8_t            bs_add_harmonic[48];
@@ -95,21 +95,24 @@ typedef struct SBRData {
     DECLARE_ALIGNED(16, INTFLOAT, Y)[2][38][64][2];
     DECLARE_ALIGNED(16, AAC_FLOAT, g_temp)[42][48];
     AAC_FLOAT          q_temp[42][48];
-    uint8_t            s_indexmapped[8][48];
+    uint8_t            s_indexmapped[9][48];
     ///Envelope scalefactors
-    uint8_t            env_facs_q[6][48];
-    AAC_FLOAT          env_facs[6][48];
+    uint8_t            env_facs_q[9][48];
+    AAC_FLOAT          env_facs[9][48];
     ///Noise scalefactors
     uint8_t            noise_facs_q[3][5];
     AAC_FLOAT          noise_facs[3][5];
     ///Envelope time borders
-    uint8_t            t_env[8];
+    uint8_t            t_env[9];
     ///Envelope time border of the last envelope of the previous frame
     uint8_t            t_env_num_env_old;
     ///Noise time borders
     uint8_t            t_q[3];
     unsigned           f_indexnoise;
     unsigned           f_indexsine;
+    //inter_tes (USAC)
+    uint8_t            temp_shape[6];
+    uint8_t            temp_shape_mode[6];
     /** @} */
 } SBRData;
 
@@ -142,9 +145,12 @@ struct SpectralBandReplication {
     int                start;
     int                ready_for_dequant;
     int                id_aac;
+    int                usac;
+    int                inter_tes; // USAC-only
     int                reset;
     SpectrumParameters spectrum_params;
     int                bs_amp_res_header;
+    int                bs_sbr_preprocessing; // USAC-only
     /**
      * @name Variables associated with bs_header_extra_2
      * @{
@@ -196,18 +202,18 @@ struct SpectralBandReplication {
     ///First coefficient used to filter the subband signals
     DECLARE_ALIGNED(16, INTFLOAT, alpha1)[64][2];
     ///Dequantized envelope scalefactors, remapped
-    AAC_FLOAT          e_origmapped[7][48];
+    AAC_FLOAT          e_origmapped[8][48];
     ///Dequantized noise scalefactors, remapped
-    AAC_FLOAT          q_mapped[7][48];
+    AAC_FLOAT          q_mapped[8][48];
     ///Sinusoidal presence, remapped
-    uint8_t            s_mapped[7][48];
+    uint8_t            s_mapped[8][48];
     ///Estimated envelope
-    AAC_FLOAT          e_curr[7][48];
+    AAC_FLOAT          e_curr[8][48];
     ///Amplitude adjusted noise scalefactors
-    AAC_FLOAT          q_m[7][48];
+    AAC_FLOAT          q_m[8][48];
     ///Sinusoidal levels
-    AAC_FLOAT          s_m[7][48];
-    AAC_FLOAT          gain[7][48];
+    AAC_FLOAT          s_m[8][48];
+    AAC_FLOAT          gain[8][48];
     DECLARE_ALIGNED(32, INTFLOAT, qmf_filter_scratch)[5][64];
     AVTXContext       *mdct_ana;
     av_tx_fn           mdct_ana_fn;

@@ -23,6 +23,8 @@
 #include "aacdec_lpd.h"
 #include "aacdec_ac.h"
 
+#include "libavcodec/aacsbr.h"
+
 #include "libavcodec/aactab.h"
 #include "libavutil/mem.h"
 #include "libavcodec/mpeg4audio.h"
@@ -145,7 +147,8 @@ static int decode_loudness_set(AACDecContext *ac, AACUSACConfig *usac,
     return 0;
 }
 
-static void decode_usac_sbr_data(AACUsacElemConfig *e, GetBitContext *gb)
+static int decode_usac_sbr_data(AACDecContext *ac,
+                                AACUsacElemConfig *e, GetBitContext *gb)
 {
     uint8_t header_extra1;
     uint8_t header_extra2;
@@ -153,6 +156,10 @@ static void decode_usac_sbr_data(AACUsacElemConfig *e, GetBitContext *gb)
     e->sbr.harmonic_sbr = get_bits1(gb); /* harmonicSBR */
     e->sbr.bs_intertes = get_bits1(gb); /* bs_interTes */
     e->sbr.bs_pvc = get_bits1(gb); /* bs_pvc */
+    if (e->sbr.harmonic_sbr || e->sbr.bs_intertes || e->sbr.bs_pvc) {
+        avpriv_report_missing_feature(ac->avctx, "AAC USAC eSBR");
+        return AVERROR_PATCHWELCOME;
+    }
 
     e->sbr.dflt.start_freq = get_bits(gb, 4); /* dflt_start_freq */
     e->sbr.dflt.stop_freq = get_bits(gb, 4); /* dflt_stop_freq */
@@ -179,6 +186,8 @@ static void decode_usac_sbr_data(AACUsacElemConfig *e, GetBitContext *gb)
         e->sbr.dflt.interpol_freq = get_bits1(gb); /* dflt_interpol_freq */
         e->sbr.dflt.smoothing_mode = get_bits1(gb); /* dflt_smoothing_mode */
     }
+
+    return 0;
 }
 
 static void decode_usac_element_core(AACUsacElemConfig *e,
@@ -190,13 +199,17 @@ static void decode_usac_element_core(AACUsacElemConfig *e,
     e->sbr.ratio = sbr_ratio;
 }
 
-static void decode_usac_element_pair(AACUsacElemConfig *e, GetBitContext *gb)
+static int decode_usac_element_pair(AACDecContext *ac,
+                                    AACUsacElemConfig *e, GetBitContext *gb)
 {
     e->stereo_config_index = 0;
     if (e->sbr.ratio) {
-        decode_usac_sbr_data(e, gb);
+        int ret = decode_usac_sbr_data(ac, e, gb);
+        if (ret < 0)
+            return ret;
         e->stereo_config_index = get_bits(gb, 2);
     }
+
     if (e->stereo_config_index) {
         e->mps.freq_res = get_bits(gb, 3); /* bsFreqRes */
         e->mps.fixed_gain = get_bits(gb, 3); /* bsFixedGainDMX */
@@ -216,6 +229,8 @@ static void decode_usac_element_pair(AACUsacElemConfig *e, GetBitContext *gb)
         if (e->mps.temp_shape_config == 2)
             e->mps.env_quant_mode = get_bits1(gb); /* bsEnvQuantMode */
     }
+
+    return 0;
 }
 
 static int decode_usac_extension(AACDecContext *ac, AACUsacElemConfig *e,
@@ -294,6 +309,9 @@ int ff_aac_usac_reset_state(AACDecContext *ac, OutputConfiguration *oc)
             AACUsacStereo *us = &che->us;
             memset(us, 0, sizeof(*us));
 
+            if (e->sbr.ratio)
+                ff_aac_sbr_config_usac(ac, che, e);
+
             for (int j = 0; j < ch; j++) {
                 SingleChannelElement *sce = &che->ch[ch];
                 AACUsacElemData *ue = &sce->ue;
@@ -320,6 +338,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     uint8_t freq_idx;
     uint8_t channel_config_idx;
     int nb_channels = 0;
+    int ratio_mult, ratio_dec;
     int samplerate;
     int sbr_ratio;
     MPEG4AudioConfig *m4ac = &oc->m4ac;
@@ -340,8 +359,6 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
             return AVERROR(EINVAL);
     }
 
-    m4ac->sample_rate = avctx->sample_rate = samplerate;
-
     usac->core_sbr_frame_len_idx = get_bits(gb, 3); /* coreSbrFrameLengthIndex */
     m4ac->frame_length_short = usac->core_sbr_frame_len_idx == 0 ||
                                usac->core_sbr_frame_len_idx == 2;
@@ -354,7 +371,26 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
                 usac->core_sbr_frame_len_idx == 4 ? 1 :
                 0;
 
+    if (sbr_ratio == 2) {
+        ratio_mult = 8;
+        ratio_dec = 3;
+    } else if (sbr_ratio == 3) {
+        ratio_mult = 2;
+        ratio_dec = 1;
+    } else if (sbr_ratio == 4) {
+        ratio_mult = 4;
+        ratio_dec = 1;
+    } else {
+        ratio_mult = 1;
+        ratio_dec = 1;
+    }
+
+    avctx->sample_rate = samplerate;
+    m4ac->ext_sample_rate = samplerate;
+    m4ac->sample_rate = (samplerate * ratio_dec) / ratio_mult;
+
     m4ac->sampling_index = ff_aac_sample_rate_idx(m4ac->sample_rate);
+    m4ac->sbr = sbr_ratio > 0;
 
     channel_config_idx = get_bits(gb, 5); /* channelConfigurationIndex */
     if (!channel_config_idx) {
@@ -426,8 +462,11 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         case ID_USAC_SCE: /* SCE */
             /* UsacCoreConfig */
             decode_usac_element_core(e, gb, sbr_ratio);
-            if (e->sbr.ratio > 0)
-                decode_usac_sbr_data(e, gb);
+            if (e->sbr.ratio > 0) {
+                ret = decode_usac_sbr_data(ac, e, gb);
+                if (ret < 0)
+                    return ret;
+            }
             layout_map[map_count][0] = TYPE_SCE;
             layout_map[map_count][1] = elem_id[0]++;
             if (!map_pos_set)
@@ -437,7 +476,9 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
         case ID_USAC_CPE: /* UsacChannelPairElementConf */
             /* UsacCoreConfig */
             decode_usac_element_core(e, gb, sbr_ratio);
-            decode_usac_element_pair(e, gb);
+            ret = decode_usac_element_pair(ac, e, gb);
+            if (ret < 0)
+                return ret;
             layout_map[map_count][0] = TYPE_CPE;
             layout_map[map_count][1] = elem_id[1]++;
             if (!map_pos_set)
@@ -1307,13 +1348,14 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
     int ret;
     int arith_reset_flag;
     AACUsacStereo *us = &che->us;
+    int core_nb_channels = nb_channels;
 
     /* Local symbols */
     uint8_t global_gain;
 
     us->common_window = 0;
 
-    for (int ch = 0; ch < nb_channels; ch++) {
+    for (int ch = 0; ch < core_nb_channels; ch++) {
         SingleChannelElement *sce = &che->ch[ch];
         AACUsacElemData *ue = &sce->ue;
 
@@ -1323,13 +1365,16 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
         ue->core_mode = get_bits1(gb);
     }
 
-    if (nb_channels == 2) {
+    if (nb_channels > 1 && ec->stereo_config_index == 1)
+        core_nb_channels = 1;
+
+    if (core_nb_channels == 2) {
         ret = decode_usac_stereo_info(ac, usac, ec, che, gb, indep_flag);
         if (ret)
             return ret;
     }
 
-    for (int ch = 0; ch < nb_channels; ch++) {
+    for (int ch = 0; ch < core_nb_channels; ch++) {
         SingleChannelElement *sce = &che->ch[ch];
         IndividualChannelStream *ics = &sce->ics;
         AACUsacElemData *ue = &sce->ue;
@@ -1341,7 +1386,7 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
             continue;
         }
 
-        if ((nb_channels == 1) ||
+        if ((core_nb_channels == 1) ||
             (che->ch[0].ue.core_mode != che->ch[1].ue.core_mode))
             ue->tns_data_present = get_bits1(gb);
 
@@ -1424,7 +1469,29 @@ static int decode_usac_core_coder(AACDecContext *ac, AACUSACConfig *usac,
         }
     }
 
-    spectrum_decode(ac, usac, che, nb_channels);
+    if (ec->sbr.ratio) {
+        int sbr_ch = nb_channels;
+        if (nb_channels == 2 &&
+            !(ec->stereo_config_index == 0 || ec->stereo_config_index == 3))
+            sbr_ch = 1;
+
+        ret = ff_aac_sbr_decode_usac_data(ac, che, ec, gb, sbr_ch, indep_flag);
+        if (ret < 0)
+            return ret;
+
+        if (ec->stereo_config_index) {
+            avpriv_report_missing_feature(ac->avctx, "AAC USAC Mps212");
+            return AVERROR_PATCHWELCOME;
+        }
+    }
+
+    spectrum_decode(ac, usac, che, core_nb_channels);
+
+    if (ac->oc[1].m4ac.sbr > 0) {
+        ac->proc.sbr_apply(ac, che, nb_channels == 2 ? TYPE_CPE : TYPE_SCE,
+                           che->ch[0].output,
+                           che->ch[1].output);
+    }
 
     return 0;
 }
@@ -1591,8 +1658,28 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
     int indep_flag, samples = 0;
     int audio_found = 0;
     int elem_id[3 /* SCE, CPE, LFE */] = { 0, 0, 0 };
-
     AVFrame *frame = ac->frame;
+
+    int ratio_mult, ratio_dec;
+    AACUSACConfig *usac = &ac->oc[1].usac;
+    int sbr_ratio = usac->core_sbr_frame_len_idx == 2 ? 2 :
+                    usac->core_sbr_frame_len_idx == 3 ? 3 :
+                    usac->core_sbr_frame_len_idx == 4 ? 1 :
+                    0;
+
+    if (sbr_ratio == 2) {
+        ratio_mult = 8;
+        ratio_dec = 3;
+    } else if (sbr_ratio == 3) {
+        ratio_mult = 2;
+        ratio_dec = 1;
+    } else if (sbr_ratio == 4) {
+        ratio_mult = 4;
+        ratio_dec = 1;
+    } else {
+        ratio_mult = 1;
+        ratio_dec = 1;
+    }
 
     ff_aac_output_configure(ac, ac->oc[1].layout_map, ac->oc[1].layout_map_tags,
                             ac->oc[1].status, 0);
@@ -1660,8 +1747,10 @@ int ff_aac_usac_decode_frame(AVCodecContext *avctx, AACDecContext *ac,
     if (audio_found)
         samples = ac->oc[1].m4ac.frame_length_short ? 768 : 1024;
 
+    samples = (samples * ratio_mult) / ratio_dec;
+
     if (ac->oc[1].status && audio_found) {
-        avctx->sample_rate = ac->oc[1].m4ac.sample_rate;
+        avctx->sample_rate = ac->oc[1].m4ac.ext_sample_rate;
         avctx->frame_size = samples;
         ac->oc[1].status = OC_LOCKED;
     }

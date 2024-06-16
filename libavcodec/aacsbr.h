@@ -88,6 +88,17 @@ int ff_aac_sbr_decode_extension(AACDecContext *ac, ChannelElement *che,
 int ff_aac_sbr_decode_extension_fixed(AACDecContext *ac, ChannelElement *che,
                                       GetBitContext *gb, int crc, int cnt, int id_aac);
 
+/** Due to channel allocation not being known upon SBR parameter transmission,
+ * supply the parameters separately.
+ * Functionally identical to ff_aac_sbr_decode_extension() */
+int ff_aac_sbr_config_usac(AACDecContext *ac, ChannelElement *che,
+                           AACUsacElemConfig *ue);
+
+/** Decode frame SBR data, USAC. */
+int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
+                                AACUsacElemConfig *ue, GetBitContext *gb,
+                                int sbr_ch, int indep_flag);
+
 /** Apply one SBR element to one AAC element. */
 void ff_aac_sbr_apply(AACDecContext *ac, ChannelElement *che,
                       int id_aac, void /* float */ *L, void /* float */ *R);
