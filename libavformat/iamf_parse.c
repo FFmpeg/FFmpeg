@@ -355,6 +355,9 @@ static int scalable_channel_layout_config(void *s, AVIOContext *pb,
         substream_count = avio_r8(pb);
         coupled_substream_count = avio_r8(pb);
 
+        if (substream_count + k > audio_element->nb_substreams)
+            return AVERROR_INVALIDDATA;
+
         audio_element->layers[i].substream_count         = substream_count;
         audio_element->layers[i].coupled_substream_count = coupled_substream_count;
         if (output_gain_is_present_flag) {
