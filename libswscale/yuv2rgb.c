@@ -593,45 +593,45 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
             return yuv2rgb_c_1_ordered_dither;
         }
     } else {
-    switch (c->dstFormat) {
-    case AV_PIX_FMT_BGR48BE:
-    case AV_PIX_FMT_BGR48LE:
-        return yuv2rgb_c_bgr48;
-    case AV_PIX_FMT_RGB48BE:
-    case AV_PIX_FMT_RGB48LE:
-        return yuv2rgb_c_48;
-    case AV_PIX_FMT_ARGB:
-    case AV_PIX_FMT_ABGR:
-        if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat))
-            return yuva2argb_c;
-    case AV_PIX_FMT_RGBA:
-    case AV_PIX_FMT_BGRA:
-        return (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) ? yuva2rgba_c : yuv2rgb_c_32;
-    case AV_PIX_FMT_RGB24:
-        return yuv2rgb_c_24_rgb;
-    case AV_PIX_FMT_BGR24:
-        return yuv2rgb_c_24_bgr;
-    case AV_PIX_FMT_RGB565:
-    case AV_PIX_FMT_BGR565:
-        return yuv2rgb_c_16_ordered_dither;
-    case AV_PIX_FMT_RGB555:
-    case AV_PIX_FMT_BGR555:
-        return yuv2rgb_c_15_ordered_dither;
-    case AV_PIX_FMT_RGB444:
-    case AV_PIX_FMT_BGR444:
-        return yuv2rgb_c_12_ordered_dither;
-    case AV_PIX_FMT_RGB8:
-    case AV_PIX_FMT_BGR8:
-        return yuv2rgb_c_8_ordered_dither;
-    case AV_PIX_FMT_RGB4:
-    case AV_PIX_FMT_BGR4:
-        return yuv2rgb_c_4_ordered_dither;
-    case AV_PIX_FMT_RGB4_BYTE:
-    case AV_PIX_FMT_BGR4_BYTE:
-        return yuv2rgb_c_4b_ordered_dither;
-    case AV_PIX_FMT_MONOBLACK:
-        return yuv2rgb_c_1_ordered_dither;
-    }
+        switch (c->dstFormat) {
+        case AV_PIX_FMT_BGR48BE:
+        case AV_PIX_FMT_BGR48LE:
+            return yuv2rgb_c_bgr48;
+        case AV_PIX_FMT_RGB48BE:
+        case AV_PIX_FMT_RGB48LE:
+            return yuv2rgb_c_48;
+        case AV_PIX_FMT_ARGB:
+        case AV_PIX_FMT_ABGR:
+            if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat))
+                return yuva2argb_c;
+        case AV_PIX_FMT_RGBA:
+        case AV_PIX_FMT_BGRA:
+            return (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat)) ? yuva2rgba_c : yuv2rgb_c_32;
+        case AV_PIX_FMT_RGB24:
+            return yuv2rgb_c_24_rgb;
+        case AV_PIX_FMT_BGR24:
+            return yuv2rgb_c_24_bgr;
+        case AV_PIX_FMT_RGB565:
+        case AV_PIX_FMT_BGR565:
+            return yuv2rgb_c_16_ordered_dither;
+        case AV_PIX_FMT_RGB555:
+        case AV_PIX_FMT_BGR555:
+            return yuv2rgb_c_15_ordered_dither;
+        case AV_PIX_FMT_RGB444:
+        case AV_PIX_FMT_BGR444:
+            return yuv2rgb_c_12_ordered_dither;
+        case AV_PIX_FMT_RGB8:
+        case AV_PIX_FMT_BGR8:
+            return yuv2rgb_c_8_ordered_dither;
+        case AV_PIX_FMT_RGB4:
+        case AV_PIX_FMT_BGR4:
+            return yuv2rgb_c_4_ordered_dither;
+        case AV_PIX_FMT_RGB4_BYTE:
+        case AV_PIX_FMT_BGR4_BYTE:
+            return yuv2rgb_c_4b_ordered_dither;
+        case AV_PIX_FMT_MONOBLACK:
+            return yuv2rgb_c_1_ordered_dither;
+        }
     }
     return NULL;
 }
