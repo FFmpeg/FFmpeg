@@ -316,7 +316,7 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
                               GetBitContext *gb, OutputConfiguration *oc,
                               int channel_config)
 {
-    int ret, idx;
+    int ret;
     uint8_t freq_idx;
     uint8_t channel_config_idx;
     int nb_channels = 0;
@@ -334,20 +334,10 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     freq_idx = get_bits(gb, 5); /* usacSamplingFrequencyIndex */
     if (freq_idx == 0x1f) {
         samplerate = get_bits(gb, 24); /* usacSamplingFrequency */
-
-        /* Try to match up an index for the custom sample rate.
-         * TODO: not sure if correct */
-        for (idx = 0; idx < /* FF_ARRAY_ELEMS(ff_aac_usac_samplerate) */ 32; idx++) {
-            if (ff_aac_usac_samplerate[idx] >= samplerate)
-                break;
-        }
-        idx = FFMIN(idx, /* FF_ARRAY_ELEMS(ff_aac_usac_samplerate) */ 32 - 1);
-        usac->rate_idx = idx;
     } else {
         samplerate = ff_aac_usac_samplerate[freq_idx];
         if (samplerate < 0)
             return AVERROR(EINVAL);
-        usac->rate_idx = freq_idx;
     }
 
     m4ac->sample_rate = avctx->sample_rate = samplerate;
@@ -363,6 +353,8 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
                 usac->core_sbr_frame_len_idx == 3 ? 3 :
                 usac->core_sbr_frame_len_idx == 4 ? 1 :
                 0;
+
+    m4ac->sampling_index = ff_aac_sample_rate_idx(m4ac->sample_rate);
 
     channel_config_idx = get_bits(gb, 5); /* channelConfigurationIndex */
     if (!channel_config_idx) {
@@ -751,18 +743,19 @@ static int setup_sce(AACDecContext *ac, SingleChannelElement *sce,
 {
     AACUsacElemData *ue = &sce->ue;
     IndividualChannelStream *ics = &sce->ics;
+    const int sampling_index = ac->oc[1].m4ac.sampling_index;
 
     /* Setup window parameters */
     ics->prev_num_window_groups = FFMAX(ics->num_window_groups, 1);
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
         if (usac->core_frame_len == 768) {
-            ics->swb_offset = ff_swb_offset_96[usac->rate_idx];
-            ics->num_swb = ff_aac_num_swb_96[usac->rate_idx];
+            ics->swb_offset = ff_swb_offset_96[sampling_index];
+            ics->num_swb = ff_aac_num_swb_96[sampling_index];
         } else {
-            ics->swb_offset = ff_swb_offset_128[usac->rate_idx];
-            ics->num_swb = ff_aac_num_swb_128[usac->rate_idx];
+            ics->swb_offset = ff_swb_offset_128[sampling_index];
+            ics->num_swb = ff_aac_num_swb_128[sampling_index];
         }
-        ics->tns_max_bands = ff_tns_max_bands_usac_128[usac->rate_idx];
+        ics->tns_max_bands = ff_tns_max_bands_usac_128[sampling_index];
 
         /* Setup scalefactor grouping. 7 bit mask. */
         ics->num_window_groups = 0;
@@ -779,13 +772,13 @@ static int setup_sce(AACDecContext *ac, SingleChannelElement *sce,
         ics->num_windows = 8;
     } else {
         if (usac->core_frame_len == 768) {
-            ics->swb_offset = ff_swb_offset_768[usac->rate_idx];
-            ics->num_swb = ff_aac_num_swb_768[usac->rate_idx];
+            ics->swb_offset = ff_swb_offset_768[sampling_index];
+            ics->num_swb = ff_aac_num_swb_768[sampling_index];
         } else {
-            ics->swb_offset = ff_swb_offset_1024[usac->rate_idx];
-            ics->num_swb = ff_aac_num_swb_1024[usac->rate_idx];
+            ics->swb_offset = ff_swb_offset_1024[sampling_index];
+            ics->num_swb = ff_aac_num_swb_1024[sampling_index];
         }
-        ics->tns_max_bands = ff_tns_max_bands_usac_1024[usac->rate_idx];
+        ics->tns_max_bands = ff_tns_max_bands_usac_1024[sampling_index];
 
         ics->group_len[0] = 1;
         ics->num_window_groups = 1;

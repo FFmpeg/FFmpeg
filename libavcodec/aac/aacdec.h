@@ -350,7 +350,6 @@ typedef struct AACUsacElemConfig {
 
 typedef struct AACUSACConfig {
     uint8_t core_sbr_frame_len_idx; /* coreSbrFrameLengthIndex */
-    uint8_t rate_idx;
     uint16_t core_frame_len;
     uint16_t stream_identifier;
 
