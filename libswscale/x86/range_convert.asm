@@ -127,8 +127,10 @@ CHRCONVERTRANGE chrRangeToJpeg,   chr_to_mult,   chr_to_offset,   chr_to_shift
 LUMCONVERTRANGE lumRangeFromJpeg, lum_from_mult, lum_from_offset, lum_from_shift
 CHRCONVERTRANGE chrRangeFromJpeg, chr_from_mult, chr_from_offset, chr_from_shift
 
+%if HAVE_AVX2_EXTERNAL
 INIT_YMM avx2
 LUMCONVERTRANGE lumRangeToJpeg,   lum_to_mult,   lum_to_offset,   lum_to_shift
 CHRCONVERTRANGE chrRangeToJpeg,   chr_to_mult,   chr_to_offset,   chr_to_shift
 LUMCONVERTRANGE lumRangeFromJpeg, lum_from_mult, lum_from_offset, lum_from_shift
 CHRCONVERTRANGE chrRangeFromJpeg, chr_from_mult, chr_from_offset, chr_from_shift
+%endif
