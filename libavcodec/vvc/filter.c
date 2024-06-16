@@ -237,10 +237,12 @@ static void sao_copy_hor(uint8_t *dst, const ptrdiff_t dst_stride,
 
 static void sao_extends_edges(uint8_t *dst, const ptrdiff_t dst_stride,
     const uint8_t *src, const ptrdiff_t src_stride, const int width, const int height,
-    const VVCFrameContext *fc, const int x, const int y, const int rx, const int ry, const int edges[4], const int c_idx)
+    const VVCFrameContext *fc, const int x0, const int y0, const int rx, const int ry, const int edges[4], const int c_idx)
 {
     const uint8_t *sao_h = fc->tab.sao_pixel_buffer_h[c_idx];
     const uint8_t *sao_v = fc->tab.sao_pixel_buffer_v[c_idx];
+    const int x          = x0 >> fc->ps.sps->hshift[c_idx];
+    const int y          = y0 >> fc->ps.sps->vshift[c_idx];
     const int w          = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
     const int h          = fc->ps.pps->height >> fc->ps.sps->vshift[c_idx];
     const int ps         = fc->ps.sps->pixel_shift;
@@ -260,14 +262,14 @@ static void sao_extends_edges(uint8_t *dst, const ptrdiff_t dst_stride,
     copy_ctb(dst, src, width << ps, height, dst_stride, src_stride);
 }
 
-void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
+void ff_vvc_sao_filter(VVCLocalContext *lc, int x0, int y0)
 {
     VVCFrameContext *fc  = lc->fc;
-    const int ctb_size_y = fc->ps.sps->ctb_size_y;
+    const VVCSPS *sps    = fc->ps.sps;
     static const uint8_t sao_tab[16] = { 0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8 };
     int c_idx, restore;
-    const int rx         = x >> fc->ps.sps->ctb_log2_size_y;
-    const int ry         = y >> fc->ps.sps->ctb_log2_size_y;
+    const int rx         = x0 >> sps->ctb_log2_size_y;
+    const int ry         = y0 >> sps->ctb_log2_size_y;
     int edges[4]         = { !rx, !ry, rx == fc->ps.pps->ctb_width - 1, ry == fc->ps.pps->ctb_height - 1 };
     const SAOParams *sao = &CTB(fc->tab.sao, rx, ry);
     // flags indicating unfilterable edges
@@ -277,16 +279,12 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
 
     sao_get_edges(vert_edge, horiz_edge, diag_edge, &restore, lc, edges, rx, ry);
 
-    for (c_idx = 0; c_idx < (fc->ps.sps->r->sps_chroma_format_idc ? 3 : 1); c_idx++) {
-        int x0       = x >> fc->ps.sps->hshift[c_idx];
-        int y0       = y >> fc->ps.sps->vshift[c_idx];
+    for (c_idx = 0; c_idx < (sps->r->sps_chroma_format_idc ? 3 : 1); c_idx++) {
         ptrdiff_t src_stride = fc->frame->linesize[c_idx];
-        int ctb_size_h = ctb_size_y >> fc->ps.sps->hshift[c_idx];
-        int ctb_size_v = ctb_size_y >> fc->ps.sps->vshift[c_idx];
-        int width    = FFMIN(ctb_size_h, (fc->ps.pps->width  >> fc->ps.sps->hshift[c_idx]) - x0);
-        int height   = FFMIN(ctb_size_v, (fc->ps.pps->height >> fc->ps.sps->vshift[c_idx]) - y0);
+        const int width  = FFMIN(sps->ctb_size_y, fc->ps.pps->width - x0) >> sps->hshift[c_idx];
+        const int height = FFMIN(sps->ctb_size_y, fc->ps.pps->height - y0) >> sps->vshift[c_idx];
         int tab      = sao_tab[(FFALIGN(width, 8) >> 3) - 1];
-        uint8_t *src = POS(c_idx, x, y);
+        uint8_t *src = POS(c_idx, x0, y0);
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
