@@ -1095,22 +1095,6 @@ static int decode_audio_specific_config(AACDecContext *ac,
                                            sync_extension);
 }
 
-static int sample_rate_idx (int rate)
-{
-         if (92017 <= rate) return 0;
-    else if (75132 <= rate) return 1;
-    else if (55426 <= rate) return 2;
-    else if (46009 <= rate) return 3;
-    else if (37566 <= rate) return 4;
-    else if (27713 <= rate) return 5;
-    else if (23004 <= rate) return 6;
-    else if (18783 <= rate) return 7;
-    else if (13856 <= rate) return 8;
-    else if (11502 <= rate) return 9;
-    else if (9391  <= rate) return 10;
-    else                    return 11;
-}
-
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     AACDecContext *ac = avctx->priv_data;
@@ -1211,7 +1195,7 @@ av_cold int ff_aac_decode_init(AVCodecContext *avctx)
         uint8_t layout_map[MAX_ELEM_ID*4][3];
         int layout_map_tags;
 
-        sr = sample_rate_idx(avctx->sample_rate);
+        sr = ff_aac_sample_rate_idx(avctx->sample_rate);
         ac->oc[1].m4ac.sampling_index = sr;
         ac->oc[1].m4ac.channels = avctx->ch_layout.nb_channels;
         ac->oc[1].m4ac.sbr = -1;
