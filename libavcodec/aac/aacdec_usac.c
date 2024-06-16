@@ -162,11 +162,11 @@ static void decode_usac_sbr_data(AACUsacElemConfig *e, GetBitContext *gb)
 
     e->sbr.dflt.freq_scale = 2;
     e->sbr.dflt.alter_scale = 1;
-    e->sbr.dflt.noise_scale = 2;
+    e->sbr.dflt.noise_bands = 2;
     if (header_extra1) {
         e->sbr.dflt.freq_scale = get_bits(gb, 2); /* dflt_freq_scale */
         e->sbr.dflt.alter_scale = get_bits1(gb); /* dflt_alter_scale */
-        e->sbr.dflt.noise_scale = get_bits(gb, 2); /* dflt_noise_scale */
+        e->sbr.dflt.noise_bands = get_bits(gb, 2); /* dflt_noise_bands */
     }
 
     e->sbr.dflt.limiter_bands = 2;
