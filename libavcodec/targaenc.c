@@ -21,6 +21,7 @@
 
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -88,10 +89,11 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     TargaContext *s = avctx->priv_data;
     int bpp, picsize, datasize = -1, ret, i;
     uint8_t *out;
+    int maxpal = 32*32;
 
     picsize = av_image_get_buffer_size(avctx->pix_fmt,
                                        avctx->width, avctx->height, 1);
-    if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45, 0)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, picsize + 45 + maxpal, 0)) < 0)
         return ret;
 
     /* zero out the header and only set applicable fields */
@@ -124,6 +126,7 @@ static int targa_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             AV_WL24(pkt->data + 18 + 3 * i, *(uint32_t *)(p->data[1] + i * 4));
             }
         out += 32 * pal_bpp;        /* skip past the palette we just output */
+        av_assert0(32 * pal_bpp <= maxpal);
         break;
         }
     case AV_PIX_FMT_GRAY8:
