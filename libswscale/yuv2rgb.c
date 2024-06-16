@@ -172,10 +172,6 @@ const int *sws_getCoefficients(int colorspace)
         return srcSliceH;                           \
     }
 
-#define CLOSEYUV2RGBFUNC(dst_delta)                 \
-    ENDYUV2RGBLINE(dst_delta, 0)                    \
-    ENDYUV2RGBFUNC()
-
 YUV2RGBFUNC(yuv2rgb_c_48, uint8_t, 0)
     LOADCHROMA(0);
     PUTRGB48(dst_1, py_1, 0);
@@ -432,7 +428,27 @@ YUV2RGBFUNC(yuv2rgb_c_16_ordered_dither, uint16_t, 0)
     LOADCHROMA(3);
     PUTRGB16(dst_2, py_2, 3, 6 + 8);
     PUTRGB16(dst_1, py_1, 3, 6);
-CLOSEYUV2RGBFUNC(8)
+ENDYUV2RGBLINE(8, 0)
+    const uint8_t *d16 = ff_dither_2x2_8[y & 1];
+    const uint8_t *e16 = ff_dither_2x2_4[y & 1];
+    const uint8_t *f16 = ff_dither_2x2_8[(y & 1)^1];
+
+    LOADCHROMA(0);
+    PUTRGB16(dst_1, py_1, 0, 0);
+    PUTRGB16(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB16(dst_2, py_2, 1, 2 + 8);
+    PUTRGB16(dst_1, py_1, 1, 2);
+ENDYUV2RGBLINE(8, 1)
+    const uint8_t *d16 = ff_dither_2x2_8[y & 1];
+    const uint8_t *e16 = ff_dither_2x2_4[y & 1];
+    const uint8_t *f16 = ff_dither_2x2_8[(y & 1)^1];
+
+    LOADCHROMA(0);
+    PUTRGB16(dst_1, py_1, 0, 0);
+    PUTRGB16(dst_2, py_2, 0, 0 + 8);
+ENDYUV2RGBFUNC()
 
 YUV2RGBFUNC(yuv2rgb_c_15_ordered_dither, uint16_t, 0)
     const uint8_t *d16 = ff_dither_2x2_8[y & 1];
@@ -462,7 +478,25 @@ YUV2RGBFUNC(yuv2rgb_c_15_ordered_dither, uint16_t, 0)
     LOADCHROMA(3);
     PUTRGB15(dst_2, py_2, 3, 6 + 8);
     PUTRGB15(dst_1, py_1, 3, 6);
-CLOSEYUV2RGBFUNC(8)
+ENDYUV2RGBLINE(8, 0)
+    const uint8_t *d16 = ff_dither_2x2_8[y & 1];
+    const uint8_t *e16 = ff_dither_2x2_8[(y & 1)^1];
+
+    LOADCHROMA(0);
+    PUTRGB15(dst_1, py_1, 0, 0);
+    PUTRGB15(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB15(dst_2, py_2, 1, 2 + 8);
+    PUTRGB15(dst_1, py_1, 1, 2);
+ENDYUV2RGBLINE(8, 1)
+    const uint8_t *d16 = ff_dither_2x2_8[y & 1];
+    const uint8_t *e16 = ff_dither_2x2_8[(y & 1)^1];
+
+    LOADCHROMA(0);
+    PUTRGB15(dst_1, py_1, 0, 0);
+    PUTRGB15(dst_2, py_2, 0, 0 + 8);
+ENDYUV2RGBFUNC()
 
 // r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_12_ordered_dither, uint16_t, 0)
@@ -493,7 +527,23 @@ YUV2RGBFUNC(yuv2rgb_c_12_ordered_dither, uint16_t, 0)
     LOADCHROMA(3);
     PUTRGB12(dst_2, py_2, 3, 6 + 8);
     PUTRGB12(dst_1, py_1, 3, 6);
-CLOSEYUV2RGBFUNC(8)
+ENDYUV2RGBLINE(8, 0)
+    const uint8_t *d16 = ff_dither_4x4_16[y & 3];
+
+    LOADCHROMA(0);
+    PUTRGB12(dst_1, py_1, 0, 0);
+    PUTRGB12(dst_2, py_2, 0, 0 + 8);
+
+    LOADCHROMA(1);
+    PUTRGB12(dst_2, py_2, 1, 2 + 8);
+    PUTRGB12(dst_1, py_1, 1, 2);
+ENDYUV2RGBLINE(8, 1)
+    const uint8_t *d16 = ff_dither_4x4_16[y & 3];
+
+    LOADCHROMA(0);
+    PUTRGB12(dst_1, py_1, 0, 0);
+    PUTRGB12(dst_2, py_2, 0, 0 + 8);
+ENDYUV2RGBFUNC()
 
 // r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t, 0)
@@ -672,7 +722,42 @@ YUV2RGBFUNC(yuv2rgb_c_1_ordered_dither, uint8_t, 0)
 
     dst_1[0] = out_1;
     dst_2[0] = out_2;
-CLOSEYUV2RGBFUNC(1)
+
+    py_1  += 8;
+    py_2  += 8;
+    dst_1 += 1;
+    dst_2 += 1;
+    }
+    if (c->dstW & 7) {
+        int av_unused Y, U, V;
+        int pixels_left = c->dstW & 7;
+    const uint8_t *d128 = ff_dither_8x8_220[yd & 7];
+    char out_1 = 0, out_2 = 0;
+    g = c->table_gU[128 + YUVRGB_TABLE_HEADROOM] + c->table_gV[128 + YUVRGB_TABLE_HEADROOM];
+
+#define PUTRGB1_OR00(out, src, i, o)                \
+    if (pixels_left) {                              \
+        PUTRGB1(out, src, i, o)                     \
+        pixels_left--;                              \
+    } else {                                        \
+        out <<= 2;                                  \
+    }
+
+    PUTRGB1_OR00(out_1, py_1, 0, 0);
+    PUTRGB1_OR00(out_2, py_2, 0, 0 + 8);
+
+    PUTRGB1_OR00(out_2, py_2, 1, 2 + 8);
+    PUTRGB1_OR00(out_1, py_1, 1, 2);
+
+    PUTRGB1_OR00(out_1, py_1, 2, 4);
+    PUTRGB1_OR00(out_2, py_2, 2, 4 + 8);
+
+    PUTRGB1_OR00(out_2, py_2, 3, 6 + 8);
+    PUTRGB1_OR00(out_1, py_1, 3, 6);
+
+    dst_1[0] = out_1;
+    dst_2[0] = out_2;
+ENDYUV2RGBFUNC()
 
 SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
 {
