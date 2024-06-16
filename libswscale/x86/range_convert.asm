@@ -52,21 +52,21 @@ SECTION .text
 ;-----------------------------------------------------------------------------
 
 %macro LUMCONVERTRANGE 4
-cglobal %1, 2, 2, 7, dst, width
+cglobal %1, 2, 2, 5, dst, width
     shl          widthd, 1
-    VBROADCASTI128   m4, [%2]
-    VBROADCASTI128   m5, [%3]
-    pxor             m6, m6
+    VBROADCASTI128   m2, [%2]
+    VBROADCASTI128   m3, [%3]
+    pxor             m4, m4
     add            dstq, widthq
     neg          widthq
 .loop:
     movu             m0, [dstq+widthq]
-    punpckhwd        m1, m0, m6
-    punpcklwd        m0, m6
-    pmaddwd          m0, m4
-    pmaddwd          m1, m4
-    paddd            m0, m5
-    paddd            m1, m5
+    punpckhwd        m1, m0, m4
+    punpcklwd        m0, m4
+    pmaddwd          m0, m2
+    pmaddwd          m1, m2
+    paddd            m0, m3
+    paddd            m1, m3
     psrad            m0, %4
     psrad            m1, %4
     packssdw         m0, m1
