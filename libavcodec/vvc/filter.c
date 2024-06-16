@@ -214,6 +214,52 @@ static void sao_get_edges(uint8_t vert_edge[2], uint8_t horiz_edge[2], uint8_t d
         diag_edge[3] = !sao_can_cross_slices(fc, rx, ry, -1,  1) || lf_edge[LEFT] || lf_edge[BOTTOM];
 }
 
+static void sao_copy_hor(uint8_t *dst, const ptrdiff_t dst_stride,
+    const uint8_t *src, const ptrdiff_t src_stride, const int width, const int edges[4], const int ps)
+{
+    const int left      = 1 - edges[LEFT];
+    const int right     = 1 - edges[RIGHT];
+    int pos             = 0;
+
+    src -= left << ps;
+    dst -= left << ps;
+
+    if (left) {
+        copy_pixel(dst, src, ps);
+        pos += (1 << ps);
+    }
+    memcpy(dst + pos, src + pos, width << ps);
+    if (right) {
+        pos += width << ps;
+        copy_pixel(dst + pos, src + pos, ps);
+    }
+}
+
+static void sao_extends_edges(uint8_t *dst, const ptrdiff_t dst_stride,
+    const uint8_t *src, const ptrdiff_t src_stride, const int width, const int height,
+    const VVCFrameContext *fc, const int x, const int y, const int rx, const int ry, const int edges[4], const int c_idx)
+{
+    const uint8_t *sao_h = fc->tab.sao_pixel_buffer_h[c_idx];
+    const uint8_t *sao_v = fc->tab.sao_pixel_buffer_v[c_idx];
+    const int w          = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
+    const int h          = fc->ps.pps->height >> fc->ps.sps->vshift[c_idx];
+    const int ps         = fc->ps.sps->pixel_shift;
+
+    if (!edges[TOP])
+        sao_copy_hor(dst - dst_stride, dst_stride, sao_h + (((2 * ry - 1) * w + x) << ps), src_stride, width, edges, ps);
+
+    if (!edges[BOTTOM])
+        sao_copy_hor(dst + height * dst_stride, dst_stride, sao_h + (((2 * ry + 2) * w + x) << ps), src_stride, width, edges, ps);
+
+    if (!edges[LEFT])
+        copy_vert(dst - (1 << ps), sao_v + (((2 * rx - 1) * h + y) << ps), ps, height, dst_stride, 1 << ps);
+
+    if (!edges[RIGHT])
+        copy_vert(dst + (width << ps), sao_v + (((2 * rx + 2) * h + y) << ps),  ps, height, dst_stride, 1 << ps);
+
+    copy_ctb(dst, src, width << ps, height, dst_stride, src_stride);
+}
+
 void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
 {
     VVCFrameContext *fc  = lc->fc;
@@ -241,8 +287,6 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
         int height   = FFMIN(ctb_size_v, (fc->ps.pps->height >> fc->ps.sps->vshift[c_idx]) - y0);
         int tab      = sao_tab[(FFALIGN(width, 8) >> 3) - 1];
         uint8_t *src = POS(c_idx, x, y);
-        ptrdiff_t dst_stride;
-        uint8_t *dst;
 
         switch (sao->type_idx[c_idx]) {
         case SAO_BAND:
@@ -251,63 +295,11 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x, int y)
             break;
         case SAO_EDGE:
         {
-            const int w = fc->ps.pps->width >> fc->ps.sps->hshift[c_idx];
-            const int h = fc->ps.pps->height >> fc->ps.sps->vshift[c_idx];
-            const int sh = fc->ps.sps->pixel_shift;
+            const ptrdiff_t dst_stride = 2 * MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE;
+            uint8_t *dst               = lc->sao_buffer + dst_stride + AV_INPUT_BUFFER_PADDING_SIZE;
 
-            dst_stride = 2*MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE;
-            dst = lc->sao_buffer + dst_stride + AV_INPUT_BUFFER_PADDING_SIZE;
+            sao_extends_edges(dst, dst_stride, src, src_stride, width, height, fc, x0, y0, rx, ry, edges, c_idx);
 
-            if (!edges[TOP]) {
-                const int left = 1 - edges[LEFT];
-                const int right = 1 - edges[RIGHT];
-                const uint8_t *src1;
-                uint8_t *dst1;
-                int pos = 0;
-
-                dst1 = dst - dst_stride - (left << sh);
-                src1 = fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * ry - 1) * w + x0 - left) << sh);
-                if (left) {
-                    copy_pixel(dst1, src1, sh);
-                    pos += (1 << sh);
-                }
-                memcpy(dst1 + pos, src1 + pos, width << sh);
-                if (right) {
-                    pos += width << sh;
-                    copy_pixel(dst1 + pos, src1 + pos, sh);
-                }
-            }
-            if (!edges[BOTTOM]) {
-                const int left = 1 - edges[LEFT];
-                const int right = 1 - edges[RIGHT];
-                const uint8_t *src1;
-                uint8_t *dst1;
-                int pos = 0;
-
-                dst1 = dst + height * dst_stride - (left << sh);
-                src1 = fc->tab.sao_pixel_buffer_h[c_idx] + (((2 * ry + 2) * w + x0 - left) << sh);
-                if (left) {
-                    copy_pixel(dst1, src1, sh);
-                    pos += (1 << sh);
-                }
-                memcpy(dst1 + pos, src1 + pos, width << sh);
-                if (right) {
-                    pos += width << sh;
-                    copy_pixel(dst1 + pos, src1 + pos, sh);
-                }
-            }
-            if (!edges[LEFT]) {
-                copy_vert(dst - (1 << sh),
-                    fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * rx - 1) * h + y0) << sh),
-                    sh, height, dst_stride, 1 << sh);
-            }
-            if (!edges[RIGHT]) {
-                copy_vert(dst + (width << sh),
-                    fc->tab.sao_pixel_buffer_v[c_idx] + (((2 * rx + 2) * h + y0) << sh),
-                    sh, height, dst_stride, 1 << sh);
-            }
-
-            copy_ctb(dst, src,  width << sh, height, dst_stride, src_stride);
             fc->vvcdsp.sao.edge_filter[tab](src, dst, src_stride, sao->offset_val[c_idx],
                 sao->eo_class[c_idx], width, height);
             fc->vvcdsp.sao.edge_restore[restore](src, dst, src_stride, dst_stride,
