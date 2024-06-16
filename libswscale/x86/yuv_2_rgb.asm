@@ -38,12 +38,6 @@ pb_e0:   times 16 db 224
 pb_03:   times 16 db 3
 pb_07:   times 16 db 7
 
-mask_1101: dw -1, -1,  0, -1
-mask_0010: dw  0,  0, -1,  0
-mask_0110: dw  0, -1, -1,  0
-mask_1001: dw -1,  0,  0, -1
-mask_0100: dw  0, -1,  0,  0
-
 SECTION .text
 
 ;-----------------------------------------------------------------------------
@@ -54,14 +48,6 @@ SECTION .text
 ; B = Y + ((ubCoff * (u - 128)) >> 8)
 ;
 ;-----------------------------------------------------------------------------
-
-%macro MOV_H2L 1
-%if mmsize == 8
-    psrlq %1, 32
-%else ; mmsize == 16
-    psrldq %1, 8
-%endif
-%endmacro
 
 %macro yuv2rgb_fn 3
 
@@ -91,18 +77,6 @@ SECTION .text
 %define m_blue m1
 %endif
 
-%if mmsize == 8
-%define time_num 1
-%define reg_num 8
-%define y_offset [pointer_c_ditherq + 8  * 8]
-%define u_offset [pointer_c_ditherq + 9  * 8]
-%define v_offset [pointer_c_ditherq + 10 * 8]
-%define ug_coff  [pointer_c_ditherq + 7  * 8]
-%define vg_coff  [pointer_c_ditherq + 6  * 8]
-%define y_coff   [pointer_c_ditherq + 3  * 8]
-%define ub_coff  [pointer_c_ditherq + 5  * 8]
-%define vr_coff  [pointer_c_ditherq + 4  * 8]
-%elif mmsize == 16
 %define time_num 2
 %if ARCH_X86_32
 %define reg_num 8
@@ -125,13 +99,11 @@ SECTION .text
 %define ub_coff  m14
 %define vr_coff  m15
 %endif ; ARCH_X86_32/64
-%endif ; coeff define mmsize == 8/16
 
 cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
 
 %if ARCH_X86_64
     movsxd indexq, indexd
-%if mmsize == 16
     VBROADCASTSD y_offset, [pointer_c_ditherq + 8  * 8]
     VBROADCASTSD u_offset, [pointer_c_ditherq + 9  * 8]
     VBROADCASTSD v_offset, [pointer_c_ditherq + 10 * 8]
@@ -140,7 +112,6 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     VBROADCASTSD y_coff,   [pointer_c_ditherq + 3  * 8]
     VBROADCASTSD ub_coff,  [pointer_c_ditherq + 5  * 8]
     VBROADCASTSD vr_coff,  [pointer_c_ditherq + 4  * 8]
-%endif
 %endif
 .loop0:
     movu m_y, [py_2indexq + 2 * indexq]
@@ -157,7 +128,7 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     psllw m1, 3
     psllw m6, 3
     psllw m7, 3
-%if (ARCH_X86_32 && mmsize == 16)
+%if ARCH_X86_32
     VBROADCASTSD m2, mu_offset
     VBROADCASTSD m3, mv_offset
     VBROADCASTSD m4, my_offset
@@ -176,7 +147,7 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     pmulhw m0, m5
     VBROADCASTSD m4, mvr_coff
     pmulhw m1, m4
-%else ; ARCH_X86_64 || mmsize == 8
+%else ; ARCH_X86_64
     psubsw m0, u_offset ; U = U - 128
     psubsw m1, v_offset ; V = V - 128
     psubw  m6, y_offset
@@ -207,49 +178,10 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     packuswb m2, m7 ; G0 G2 G4 G6 ... G1 G3 G5 G7 ...
     mova m3, m_red
     mova m6, m_blue
-    MOV_H2L m_red
+    psrldq m_red, 8
     punpcklbw m3, m2     ; R0 G0 R2 G2 R4 G4 R6 G6 R8 G8 ...
     punpcklbw m6, m_red  ; B0 R1 B2 R3 B4 R5 B6 R7 B8 R9 ...
-    mova m5, m3
     punpckhbw m2, m_blue ; G1 B1 G3 B3 G5 B5 G7 B7 G9 B9 ...
-%if  mmsize == 8
-    punpcklwd m3 ,m6     ; R0 G0 B0 R1 R2 G2 B2 R3
-    punpckhwd m5, m6     ; R4 G4 B4 R5 R6 G6 B6 R7
-%if cpuflag(mmxext)
-    pshufw m1, m2, 0xc6
-    pshufw m6, m3, 0x84
-    pshufw m7, m5, 0x38
-    pand m6, [mask_1101] ; R0 G0 B0 R1 -- -- R2 G2
-    movq m0, m1
-    pand m7, [mask_0110] ; -- -- R6 G6 B6 R7 -- --
-    movq m2, m1
-    pand m1, [mask_0100] ; -- -- G3 B3 -- -- -- --
-    psrlq m3, 48         ; B2 R3 -- -- -- -- -- --
-    pand m0, [mask_0010] ; -- -- -- -- G1 B1 -- --
-    psllq m5, 32         ; -- -- -- -- R4 G4 B4 R5
-    pand m2, [mask_1001] ; G5 B5 -- -- -- -- G7 B7
-    por m1, m3
-    por m0, m6
-    por m1, m5
-    por m2, m7
-    movntq [imageq], m0
-    movntq [imageq + 8], m1
-    movntq [imageq + 16], m2
-%else ; cpuflag(mmx)
-    movd [imageq], m3      ; R0 G0 R2 G2
-    movd [imageq + 4], m2  ; G1 B1
-    psrlq m3, 32
-    psrlq m2, 16
-    movd [imageq + 6], m3  ; R2 G2 B2 R3
-    movd [imageq + 10], m2 ; G3 B3
-    psrlq m2, 16
-    movd [imageq + 12], m5 ; R4 G4 B4 R5
-    movd [imageq + 16], m2 ; G5 B5
-    psrlq m5, 32
-    movd [imageq + 20], m2 ; -- -- G7 B7
-    movd [imageq + 18], m5 ; R6 G6 B6 R7
-%endif ; cpuflag
-%else ; mmsize == 16
     pshufb m3, [rgb24_shuf1] ; r0  g0  r6  g6  r12 g12 r2  g2  r8  g8  r14 g14 r4  g4  r10 g10
     pshufb m6, [rgb24_shuf2] ; b10 r11 b0  r1  b6  r7  b12 r13 b2  r3  b8  r9  b14 r15 b4  r5
     pshufb m2, [rgb24_shuf3] ; g5  b5  g11 b11 g1  b1  g7  b7  g13 b13 g3  b3  g9  b9  g15 b15
@@ -274,7 +206,6 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     movu [imageq], m0
     movu [imageq + 16], m1
     movu [imageq + 32], m2
-%endif ; mmsize = 16
 %else ; PACK RGB15/16/32
     packuswb m0, m1
     packuswb m3, m5
@@ -309,18 +240,12 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     movu [imageq + 24 * time_num], m_alpha
 %else ; PACK RGB15/16
 %define depth 2
-%if cpuflag(ssse3)
     %define red_dither m3
     %define green_dither m4
     %define blue_dither m5
     VBROADCASTSD red_dither,   [pointer_c_ditherq + 0 * 8]
     VBROADCASTSD green_dither, [pointer_c_ditherq + 1 * 8]
     VBROADCASTSD blue_dither,  [pointer_c_ditherq + 2 * 8]
-%else ; cpuflag(mmx/mmxext)
-%define blue_dither  [pointer_c_ditherq + 2  * 8]
-%define green_dither [pointer_c_ditherq + 1  * 8]
-%define red_dither   [pointer_c_ditherq + 0  * 8]
-%endif
 %if %3 == 15
 %define gmask pb_03
 %define isRGB15 1
@@ -357,18 +282,6 @@ js .loop0
 RET
 
 %endmacro
-
-INIT_MMX mmx
-yuv2rgb_fn yuv,  rgb, 32
-yuv2rgb_fn yuv,  bgr, 32
-yuv2rgb_fn yuva, rgb, 32
-yuv2rgb_fn yuva, bgr, 32
-yuv2rgb_fn yuv,  rgb, 15
-yuv2rgb_fn yuv,  rgb, 16
-
-INIT_MMX mmxext
-yuv2rgb_fn yuv, rgb, 24
-yuv2rgb_fn yuv, bgr, 24
 
 INIT_XMM ssse3
 yuv2rgb_fn yuv,  rgb, 24
