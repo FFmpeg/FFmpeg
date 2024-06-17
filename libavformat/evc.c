@@ -60,7 +60,6 @@ typedef struct EVCDecoderConfigurationRecord {
     uint8_t  bit_depth_chroma_minus8;       // 3 bits
     uint16_t pic_width_in_luma_samples;     // 16 bits
     uint16_t pic_height_in_luma_samples;    // 16 bits
-    uint8_t  reserved;                      // 6 bits '000000'b
     uint8_t  lengthSizeMinusOne;            // 2 bits
     uint8_t  num_of_arrays;                 // 8 bits
     EVCNALUnitArray arrays[NB_ARRAYS];
