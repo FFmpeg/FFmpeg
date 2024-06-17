@@ -1118,8 +1118,6 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
             alf_filter_cc(lc, src, padded, src_stride, padded_stride, c_idx,
                 width, height, hs, vs, (ctb_size_v << vs) - ALF_VB_POS_ABOVE_LUMA, alf);
         }
-
-        alf->applied[c_idx] = 1;
     }
 }
 
