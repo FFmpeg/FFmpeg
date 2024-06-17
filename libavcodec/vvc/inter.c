@@ -30,13 +30,6 @@
 #define PROF_TEMP_OFFSET (MAX_PB_SIZE + 32)
 static const int bcw_w_lut[] = {4, 5, 3, 10, -2};
 
-typedef struct VVCRect {
-    int l;                  // left
-    int t;                  // top
-    int r;                  // right
-    int b;                  // bottom
-} VVCRect;
-
 static void subpic_get_rect(VVCRect *r, const VVCFrame *src_frame, const int subpic_idx, const int is_chroma)
 {
     const VVCSPS *sps = src_frame->sps;

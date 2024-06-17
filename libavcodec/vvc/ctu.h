@@ -463,6 +463,13 @@ typedef struct ALFParams {
     uint8_t ctb_cc_idc[2];              ///< alf_ctb_cc_cb_idc, alf_ctb_cc_cr_idc
 } ALFParams;
 
+typedef struct VVCRect {
+    int l;                  // left
+    int t;                  // top
+    int r;                  // right
+    int b;                  // bottom
+} VVCRect;
+
 /**
  * parse a CTU
  * @param lc local context for CTU

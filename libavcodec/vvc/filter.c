@@ -56,6 +56,9 @@ static const uint8_t betatable[64] = {
      58,  60,  62,  64,  66,  68,  70,  72,  74,  76,  78,  80,  82,  84,  86,  88,
 };
 
+// One vertical and one horizontal virtual boundary in a CTU at most. The CTU will be divided into 4 subblocks.
+#define MAX_VBBS 4
+
 static int get_virtual_boundary(const VVCFrameContext *fc, const int ctu_pos, const int vertical)
 {
     const VVCSPS *sps    = fc->ps.sps;
@@ -1129,58 +1132,107 @@ static void alf_get_edges(const VVCLocalContext *lc, int edges[MAX_EDGES], const
         edges[RIGHT]  = edges[RIGHT]  || fc->ps.sps->r->sps_subpic_ctu_top_left_x[subpic_idx] + fc->ps.sps->r->sps_subpic_width_minus1[subpic_idx] == rx;
         edges[BOTTOM] = edges[BOTTOM] || fc->ps.sps->r->sps_subpic_ctu_top_left_y[subpic_idx] + fc->ps.sps->r->sps_subpic_height_minus1[subpic_idx] == ry;
     }
+
+    if (sps->r->sps_virtual_boundaries_enabled_flag) {
+        edges[LEFT]   = edges[LEFT]   || is_virtual_boundary(fc, rx << sps->ctb_log2_size_y, 1);
+        edges[TOP]    = edges[TOP]    || is_virtual_boundary(fc, ry << sps->ctb_log2_size_y, 0);
+        edges[RIGHT]  = edges[RIGHT]  || is_virtual_boundary(fc, (rx + 1) << sps->ctb_log2_size_y, 1);
+        edges[BOTTOM] = edges[BOTTOM] || is_virtual_boundary(fc, (ry + 1) << sps->ctb_log2_size_y, 0);
+    }
+}
+
+static void alf_init_subblock(VVCRect *sb, int sb_edges[MAX_EDGES], const VVCRect *b, const int edges[MAX_EDGES])
+{
+    *sb = *b;
+    memcpy(sb_edges, edges, sizeof(int) * MAX_EDGES);
+}
+
+static void alf_get_subblock(VVCRect *sb, int edges[MAX_EDGES], const int bx, const int by, const int vb_pos[2], const int has_vb[2])
+{
+    int *pos[] = { &sb->l, &sb->t, &sb->r, &sb->b };
+
+    for (int vertical = 0; vertical <= 1; vertical++) {
+        if (has_vb[vertical]) {
+            const int c = vertical ? (bx ? LEFT : RIGHT) : (by ? TOP : BOTTOM);
+            *pos[c] = vb_pos[vertical];
+            edges[c]  = 1;
+        }
+    }
+}
+
+static void alf_get_subblocks(const VVCLocalContext *lc, VVCRect sbs[MAX_VBBS], int sb_edges[MAX_VBBS][MAX_EDGES], int *nb_sbs,
+    const int x0, const int y0, const int rx, const int ry)
+{
+    VVCFrameContext *fc  = lc->fc;
+    const VVCSPS *sps    = fc->ps.sps;
+    const VVCPPS *pps    = fc->ps.pps;
+    const int ctu_size_y = sps->ctb_size_y;
+    const int vb_pos[]   = { get_virtual_boundary(fc, ry, 0),  get_virtual_boundary(fc, rx, 1) };
+    const int has_vb[]   = { vb_pos[0] > y0, vb_pos[1] > x0 };
+    const VVCRect b      = { x0, y0, FFMIN(x0 + ctu_size_y, pps->width), FFMIN(y0 + ctu_size_y, pps->height) };
+    int edges[MAX_EDGES] = { !rx, !ry, rx == pps->ctb_width - 1, ry == pps->ctb_height - 1 };
+    int i                = 0;
+
+    alf_get_edges(lc, edges, rx, ry);
+
+    for (int by = 0; by <= has_vb[0]; by++) {
+        for (int bx = 0; bx <= has_vb[1]; bx++, i++) {
+            alf_init_subblock(sbs + i, sb_edges[i], &b, edges);
+            alf_get_subblock(sbs + i, sb_edges[i], bx, by, vb_pos, has_vb);
+        }
+    }
+    *nb_sbs = i;
 }
 
 void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
 {
     VVCFrameContext *fc     = lc->fc;
     const VVCSPS *sps       = fc->ps.sps;
-    const VVCPPS *pps       = fc->ps.pps;
-    const int rx            = x0 >> fc->ps.sps->ctb_log2_size_y;
-    const int ry            = y0 >> fc->ps.sps->ctb_log2_size_y;
-    const int ctb_size_y    = fc->ps.sps->ctb_size_y;
-    const int ps            = fc->ps.sps->pixel_shift;
+    const int rx            = x0 >> sps->ctb_log2_size_y;
+    const int ry            = y0 >> sps->ctb_log2_size_y;
+    const int ps            = sps->pixel_shift;
     const int padded_stride = EDGE_EMU_BUFFER_STRIDE << ps;
     const int padded_offset = padded_stride * ALF_PADDING_SIZE + (ALF_PADDING_SIZE << ps);
     const int c_end         = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
+    const int ctu_end       = y0 + sps->ctb_size_y;
     const ALFParams *alf    = &CTB(fc->tab.alf, rx, ry);
-    int edges[MAX_EDGES]    = { rx == 0, ry == 0, rx == pps->ctb_width - 1, ry == pps->ctb_height - 1 };
+    int sb_edges[MAX_VBBS][MAX_EDGES], nb_sbs;
+    VVCRect sbs[MAX_VBBS];
 
-    alf_get_edges(lc, edges, rx, ry);
+    alf_get_subblocks(lc, sbs, sb_edges, &nb_sbs, x0, y0, rx, ry);
 
-    for (int c_idx = 0; c_idx < c_end; c_idx++) {
-        const int hs = fc->ps.sps->hshift[c_idx];
-        const int vs = fc->ps.sps->vshift[c_idx];
-        const int ctb_size_h = ctb_size_y >> hs;
-        const int ctb_size_v = ctb_size_y >> vs;
-        const int x = x0 >> hs;
-        const int y = y0 >> vs;
-        const int pic_width = fc->ps.pps->width >> hs;
-        const int pic_height = fc->ps.pps->height >> vs;
-        const int width  = FFMIN(pic_width  - x, ctb_size_h);
-        const int height = FFMIN(pic_height - y, ctb_size_v);
-        const int src_stride = fc->frame->linesize[c_idx];
-        uint8_t *src = POS(c_idx, x0, y0);
-        uint8_t *padded;
+    for (int i = 0; i < nb_sbs; i++) {
+        const VVCRect *sb = sbs + i;
+        for (int c_idx = 0; c_idx < c_end; c_idx++) {
+            const int hs         = fc->ps.sps->hshift[c_idx];
+            const int vs         = fc->ps.sps->vshift[c_idx];
+            const int x          = sb->l >> hs;
+            const int y          = sb->t >> vs;
+            const int width      = (sb->r - sb->l) >> hs;
+            const int height     = (sb->b - sb->t) >> vs;
+            const int src_stride = fc->frame->linesize[c_idx];
+            uint8_t *src         = POS(c_idx, sb->l, sb->t);
+            uint8_t *padded;
 
-        if (alf->ctb_flag[c_idx] || (!c_idx && (alf->ctb_cc_idc[0] || alf->ctb_cc_idc[1]))) {
-            padded = (c_idx ? lc->alf_buffer_chroma : lc->alf_buffer_luma) + padded_offset;
-            alf_prepare_buffer(fc, padded, src, x, y, rx, ry, width, height,
-                padded_stride, src_stride, c_idx, edges);
-        }
-        if (alf->ctb_flag[c_idx]) {
-            if (!c_idx)  {
-                alf_filter_luma(lc, src, padded, src_stride, padded_stride, x, y,
-                    width, height, y + ctb_size_v - ALF_VB_POS_ABOVE_LUMA, alf);
-            } else {
-                alf_filter_chroma(lc, src, padded, src_stride, padded_stride, c_idx,
-                    width, height, ctb_size_v - ALF_VB_POS_ABOVE_CHROMA, alf);
+            if (alf->ctb_flag[c_idx] || (!c_idx && (alf->ctb_cc_idc[0] || alf->ctb_cc_idc[1]))) {
+                padded = (c_idx ? lc->alf_buffer_chroma : lc->alf_buffer_luma) + padded_offset;
+                alf_prepare_buffer(fc, padded, src, x, y, rx, ry, width, height,
+                    padded_stride, src_stride, c_idx, sb_edges[i]);
             }
-        }
-        if (c_idx && alf->ctb_cc_idc[c_idx - 1]) {
-            padded = lc->alf_buffer_luma + padded_offset;
-            alf_filter_cc(lc, src, padded, src_stride, padded_stride, c_idx,
-                width, height, hs, vs, (ctb_size_v << vs) - ALF_VB_POS_ABOVE_LUMA, alf);
+            if (alf->ctb_flag[c_idx]) {
+                if (!c_idx)  {
+                    alf_filter_luma(lc, src, padded, src_stride, padded_stride, x, y,
+                        width, height, ctu_end - ALF_VB_POS_ABOVE_LUMA, alf);
+                } else {
+                    alf_filter_chroma(lc, src, padded, src_stride, padded_stride, c_idx,
+                        width, height, ((ctu_end - sb->t) >> vs) - ALF_VB_POS_ABOVE_CHROMA, alf);
+                }
+            }
+            if (c_idx && alf->ctb_cc_idc[c_idx - 1]) {
+                padded = lc->alf_buffer_luma + padded_offset;
+                alf_filter_cc(lc, src, padded, src_stride, padded_stride, c_idx,
+                    width, height, hs, vs, ctu_end - sb->t - ALF_VB_POS_ABOVE_LUMA, alf);
+            }
         }
     }
 }
