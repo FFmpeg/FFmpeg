@@ -936,6 +936,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
         wanted_bits = rce->expected_bits;
     } else {
         const MPVPicture *dts_pic;
+        double wanted_bits_double;
         rce = &local_rce;
 
         /* FIXME add a dts field to AVFrame and ensure it is set and use it
@@ -947,9 +948,14 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             dts_pic = s->last_pic.ptr;
 
         if (!dts_pic || dts_pic->f->pts == AV_NOPTS_VALUE)
-            wanted_bits = (uint64_t)(s->bit_rate * (double)picture_number / fps);
+            wanted_bits_double = s->bit_rate * (double)picture_number / fps;
         else
-            wanted_bits = (uint64_t)(s->bit_rate * (double)dts_pic->f->pts / fps);
+            wanted_bits_double = s->bit_rate * (double)dts_pic->f->pts / fps;
+        if (wanted_bits_double > INT64_MAX) {
+            av_log(s, AV_LOG_WARNING, "Bits exceed 64bit range\n");
+            wanted_bits = INT64_MAX;
+        } else
+            wanted_bits = (int64_t)wanted_bits_double;
     }
 
     diff = s->total_bits - wanted_bits;
