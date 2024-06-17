@@ -926,7 +926,7 @@ static void alf_prepare_buffer(VVCFrameContext *fc, uint8_t *_dst, const uint8_t
 #define ALF_MAX_FILTER_SIZE     (ALF_MAX_BLOCKS_IN_CTU * ALF_NUM_COEFF_LUMA)
 
 static void alf_get_coeff_and_clip(VVCLocalContext *lc, int16_t *coeff, int16_t *clip,
-    const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, ALFParams *alf)
+    const uint8_t *src, ptrdiff_t src_stride, int width, int height, int vb_pos, const ALFParams *alf)
 {
     const VVCFrameContext *fc     = lc->fc;
     const H266RawSliceHeader *rsh = lc->sc->sh.r;
@@ -957,7 +957,7 @@ static void alf_get_coeff_and_clip(VVCLocalContext *lc, int16_t *coeff, int16_t 
 
 static void alf_filter_luma(VVCLocalContext *lc, uint8_t *dst, const uint8_t *src,
     const ptrdiff_t dst_stride, const ptrdiff_t src_stride, const int x0, const int y0,
-    const int width, const int height, const int _vb_pos, ALFParams *alf)
+    const int width, const int height, const int _vb_pos, const ALFParams *alf)
 {
     const VVCFrameContext *fc = lc->fc;
     int vb_pos                = _vb_pos - y0;
@@ -981,7 +981,7 @@ static int alf_clip_from_idx(const VVCFrameContext *fc, const int idx)
 
 static void alf_filter_chroma(VVCLocalContext *lc, uint8_t *dst, const uint8_t *src,
     const ptrdiff_t dst_stride, const ptrdiff_t src_stride, const int c_idx,
-    const int width, const int height, const int vb_pos, ALFParams *alf)
+    const int width, const int height, const int vb_pos, const ALFParams *alf)
 {
     VVCFrameContext *fc           = lc->fc;
     const H266RawSliceHeader *rsh = lc->sc->sh.r;
@@ -998,7 +998,7 @@ static void alf_filter_chroma(VVCLocalContext *lc, uint8_t *dst, const uint8_t *
 
 static void alf_filter_cc(VVCLocalContext *lc, uint8_t *dst, const uint8_t *luma,
     const ptrdiff_t dst_stride, const ptrdiff_t luma_stride, const int c_idx,
-    const int width, const int height, const int hs, const int vs, const int vb_pos, ALFParams *alf)
+    const int width, const int height, const int hs, const int vs, const int vb_pos, const ALFParams *alf)
 {
     const VVCFrameContext *fc     = lc->fc;
     const H266RawSliceHeader *rsh = lc->sc->sh.r;
@@ -1079,7 +1079,7 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
     const int padded_stride = EDGE_EMU_BUFFER_STRIDE << ps;
     const int padded_offset = padded_stride * ALF_PADDING_SIZE + (ALF_PADDING_SIZE << ps);
     const int c_end         = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
-    ALFParams *alf          = &CTB(fc->tab.alf, rx, ry);
+    const ALFParams *alf    = &CTB(fc->tab.alf, rx, ry);
     int edges[MAX_EDGES]    = { rx == 0, ry == 0, rx == pps->ctb_width - 1, ry == pps->ctb_height - 1 };
 
     alf_get_edges(lc, edges, rx, ry);
