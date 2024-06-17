@@ -255,6 +255,9 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
         if (s->codec_id == AV_CODEC_ID_SVQ1) {
             w_align = 64;
             h_align = 64;
+        } else if (s->codec_id == AV_CODEC_ID_SNOW) {
+            w_align = 16;
+            h_align = 16;
         }
         break;
     case AV_PIX_FMT_RGB555:
