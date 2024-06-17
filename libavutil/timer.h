@@ -44,7 +44,9 @@
 
 #if CONFIG_MACOS_KPERF
 #include "macos_kperf.h"
-#elif HAVE_MACH_ABSOLUTE_TIME
+#endif
+
+#if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
 #elif HAVE_CLOCK_GETTIME
 #include <time.h>
