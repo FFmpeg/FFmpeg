@@ -67,14 +67,15 @@ KPERF_LIST
 #define KPC_CLASS_POWER_MASK        (1 << 2)
 #define KPC_CLASS_RAWPMU_MASK       (1 << 3)
 
-#define COUNTERS_COUNT 10
+#define KPC_MAX_COUNTERS 32
 #define CONFIG_COUNT 8
 #define KPC_MASK (KPC_CLASS_CONFIGURABLE_MASK | KPC_CLASS_FIXED_MASK)
 
 static void kperf_init(void)
 {
-    uint64_t config[COUNTERS_COUNT] = {0};
+    uint64_t config[CONFIG_COUNT] = {0};
     void *kperf = NULL;
+    uint32_t n;
 
     av_assert0(kperf = dlopen("/System/Library/PrivateFrameworks/kperf.framework/Versions/A/kperf", RTLD_LAZY));
 
@@ -82,8 +83,10 @@ static void kperf_init(void)
     KPERF_LIST
 #undef F
 
-    av_assert0(kpc_get_counter_count(KPC_MASK) == COUNTERS_COUNT);
-    av_assert0(kpc_get_config_count(KPC_MASK) == CONFIG_COUNT);
+    n = kpc_get_counter_count(KPC_MASK);
+    av_assert0(n <= KPC_MAX_COUNTERS);
+    n = kpc_get_config_count(KPC_MASK);
+    av_assert0(n <= CONFIG_COUNT);
 
     config[0] = CPMU_CORE_CYCLE | CFGWORD_EL0A64EN_MASK;
     // config[3] = CPMU_INST_BRANCH | CFGWORD_EL0A64EN_MASK;
@@ -104,8 +107,9 @@ void ff_kperf_init(void)
 
 uint64_t ff_kperf_cycles(void)
 {
-    uint64_t counters[COUNTERS_COUNT];
-    if (kpc_get_thread_counters(0, COUNTERS_COUNT, counters)) {
+    uint64_t counters[KPC_MAX_COUNTERS];
+
+    if (kpc_get_thread_counters(0, KPC_MAX_COUNTERS, counters)) {
         return -1;
     }
 
