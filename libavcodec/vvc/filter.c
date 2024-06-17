@@ -1036,6 +1036,37 @@ void ff_vvc_alf_copy_ctu_to_hv(VVCLocalContext* lc, const int x0, const int y0)
     }
 }
 
+static void alf_get_edges(const VVCLocalContext *lc, int edges[MAX_EDGES], const int rx, const int ry)
+{
+    VVCFrameContext *fc  = lc->fc;
+    const VVCSPS *sps    = fc->ps.sps;
+    const VVCPPS *pps    = fc->ps.pps;
+    const int subpic_idx = lc->sc->sh.r->curr_subpic_idx;
+
+    // we can't use |= instead of || in this function; |= is not a shortcut operator
+
+    if (!pps->r->pps_loop_filter_across_tiles_enabled_flag) {
+        edges[LEFT]   = edges[LEFT]   || (lc->boundary_flags & BOUNDARY_LEFT_TILE);
+        edges[TOP]    = edges[TOP]    || (lc->boundary_flags & BOUNDARY_UPPER_TILE);
+        edges[RIGHT]  = edges[RIGHT]  || pps->ctb_to_col_bd[rx] != pps->ctb_to_col_bd[rx + 1];
+        edges[BOTTOM] = edges[BOTTOM] || pps->ctb_to_row_bd[ry] != pps->ctb_to_row_bd[ry + 1];
+    }
+
+    if (!pps->r->pps_loop_filter_across_slices_enabled_flag) {
+        edges[LEFT]   = edges[LEFT]   || (lc->boundary_flags & BOUNDARY_LEFT_SLICE);
+        edges[TOP]    = edges[TOP]    || (lc->boundary_flags & BOUNDARY_UPPER_SLICE);
+        edges[RIGHT]  = edges[RIGHT]  || CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry);
+        edges[BOTTOM] = edges[BOTTOM] || CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry + 1);
+    }
+
+    if (!sps->r->sps_loop_filter_across_subpic_enabled_flag[subpic_idx]) {
+        edges[LEFT]   = edges[LEFT]   || (lc->boundary_flags & BOUNDARY_LEFT_SUBPIC);
+        edges[TOP]    = edges[TOP]    || (lc->boundary_flags & BOUNDARY_UPPER_SUBPIC);
+        edges[RIGHT]  = edges[RIGHT]  || fc->ps.sps->r->sps_subpic_ctu_top_left_x[subpic_idx] + fc->ps.sps->r->sps_subpic_width_minus1[subpic_idx] == rx;
+        edges[BOTTOM] = edges[BOTTOM] || fc->ps.sps->r->sps_subpic_ctu_top_left_y[subpic_idx] + fc->ps.sps->r->sps_subpic_height_minus1[subpic_idx] == ry;
+    }
+}
+
 void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
 {
     VVCFrameContext *fc     = lc->fc;
@@ -1047,31 +1078,11 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
     const int ps            = fc->ps.sps->pixel_shift;
     const int padded_stride = EDGE_EMU_BUFFER_STRIDE << ps;
     const int padded_offset = padded_stride * ALF_PADDING_SIZE + (ALF_PADDING_SIZE << ps);
-    const int c_end         = fc->ps.sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
-    const int subpic_idx    = lc->sc->sh.r->curr_subpic_idx;
+    const int c_end         = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
     ALFParams *alf          = &CTB(fc->tab.alf, rx, ry);
     int edges[MAX_EDGES]    = { rx == 0, ry == 0, rx == pps->ctb_width - 1, ry == pps->ctb_height - 1 };
 
-    if (!pps->r->pps_loop_filter_across_tiles_enabled_flag) {
-        edges[LEFT]   = edges[LEFT] || (lc->boundary_flags & BOUNDARY_LEFT_TILE);
-        edges[TOP]    = edges[TOP] || (lc->boundary_flags & BOUNDARY_UPPER_TILE);
-        edges[RIGHT]  = edges[RIGHT] || pps->ctb_to_col_bd[rx] != pps->ctb_to_col_bd[rx + 1];
-        edges[BOTTOM] = edges[BOTTOM] || pps->ctb_to_row_bd[ry] != pps->ctb_to_row_bd[ry + 1];
-    }
-
-    if (!pps->r->pps_loop_filter_across_slices_enabled_flag) {
-        edges[LEFT]   = edges[LEFT] || (lc->boundary_flags & BOUNDARY_LEFT_SLICE);
-        edges[TOP]    = edges[TOP] || (lc->boundary_flags & BOUNDARY_UPPER_SLICE);
-        edges[RIGHT]  = edges[RIGHT] || CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx + 1, ry);
-        edges[BOTTOM] = edges[BOTTOM] || CTB(fc->tab.slice_idx, rx, ry) != CTB(fc->tab.slice_idx, rx, ry + 1);
-    }
-
-    if (!sps->r->sps_loop_filter_across_subpic_enabled_flag[subpic_idx]) {
-        edges[LEFT]   = edges[LEFT] || (lc->boundary_flags & BOUNDARY_LEFT_SUBPIC);
-        edges[TOP]    = edges[TOP] || (lc->boundary_flags & BOUNDARY_UPPER_SUBPIC);
-        edges[RIGHT]  = edges[RIGHT] || fc->ps.sps->r->sps_subpic_ctu_top_left_x[subpic_idx] + fc->ps.sps->r->sps_subpic_width_minus1[subpic_idx] == rx;
-        edges[BOTTOM] = edges[BOTTOM] || fc->ps.sps->r->sps_subpic_ctu_top_left_y[subpic_idx] + fc->ps.sps->r->sps_subpic_height_minus1[subpic_idx] == ry;
-    }
+    alf_get_edges(lc, edges, rx, ry);
 
     for (int c_idx = 0; c_idx < c_end; c_idx++) {
         const int hs = fc->ps.sps->hshift[c_idx];
