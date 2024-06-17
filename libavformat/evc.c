@@ -257,10 +257,10 @@ static int evcc_write(AVIOContext *pb, EVCDecoderConfigurationRecord *evcc)
     avio_wb16(pb, evcc->pic_height_in_luma_samples);
 
     /*
-     * bit(6) reserved = '111111'b;
-     * unsigned int(2) chromaFormat;
+     * unsigned int(6) reserved = '000000'b;
+     * unsigned int(2) lengthSizeMinusOne;
      */
-    avio_w8(pb, evcc->lengthSizeMinusOne | 0xfc);
+    avio_w8(pb, evcc->lengthSizeMinusOne & 0x3);
 
     /* unsigned int(8) numOfArrays; */
     avio_w8(pb, evcc->num_of_arrays);
