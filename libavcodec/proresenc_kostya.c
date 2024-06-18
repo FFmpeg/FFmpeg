@@ -343,7 +343,7 @@ static void get_slice_data(ProresContext *ctx, const uint16_t *src,
 
 static void get_alpha_data(ProresContext *ctx, const uint16_t *src,
                            ptrdiff_t linesize, int x, int y, int w, int h,
-                           int16_t *blocks, int mbs_per_slice, int abits)
+                           uint16_t *blocks, int mbs_per_slice, int abits)
 {
     const int slice_width = 16 * mbs_per_slice;
     int i, j, copy_w, copy_h;
