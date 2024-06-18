@@ -69,7 +69,7 @@
 #define GLOBAL(x) x
 #define RIGHT_SHIFT(x, n) ((x) >> (n))
 #define MULTIPLY16C16(var,const) ((var)*(const))
-#define DESCALE(x,n)  RIGHT_SHIFT((x) + (1 << ((n) - 1)), n)
+#define DESCALE(x,n)  RIGHT_SHIFT((int)(x) + (1 << ((n) - 1)), n)
 
 
 /*
@@ -175,7 +175,7 @@
 #if BITS_IN_JSAMPLE == 8 && CONST_BITS<=13 && PASS1_BITS<=2
 #define MULTIPLY(var,const)  MULTIPLY16C16(var,const)
 #else
-#define MULTIPLY(var,const)  ((var) * (const))
+#define MULTIPLY(var,const)  (int)((var) * (unsigned)(const))
 #endif
 
 
@@ -261,7 +261,7 @@ FUNC(ff_jpeg_fdct_islow)(int16_t *data)
 {
   int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
   int tmp10, tmp11, tmp12, tmp13;
-  int z1, z2, z3, z4, z5;
+  unsigned z1, z2, z3, z4, z5;
   int16_t *dataptr;
   int ctr;
 
