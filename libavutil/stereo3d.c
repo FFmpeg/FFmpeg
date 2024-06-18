@@ -26,9 +26,20 @@
 #include "mem.h"
 #include "stereo3d.h"
 
+static void get_defaults(AVStereo3D *stereo)
+{
+    stereo->horizontal_disparity_adjustment = (AVRational) { 0, 1 };
+}
+
 AVStereo3D *av_stereo3d_alloc(void)
 {
-    return av_mallocz(sizeof(AVStereo3D));
+    AVStereo3D *stereo = av_mallocz(sizeof(AVStereo3D));
+    if (!stereo)
+        return NULL;
+
+    get_defaults(stereo);
+
+    return stereo;
 }
 
 AVStereo3D *av_stereo3d_create_side_data(AVFrame *frame)
@@ -40,6 +51,7 @@ AVStereo3D *av_stereo3d_create_side_data(AVFrame *frame)
         return NULL;
 
     memset(side_data->data, 0, sizeof(AVStereo3D));
+    get_defaults((AVStereo3D *)side_data->data);
 
     return (AVStereo3D *)side_data->data;
 }
