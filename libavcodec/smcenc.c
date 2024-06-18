@@ -184,8 +184,8 @@ static void smc_encode_stream(SMCContext *s, const AVFrame *frame,
             const ptrdiff_t offset = xpixel_ptr - src_pixels;
             const int sy = offset / stride;
             const int sx = offset % stride;
-            const int ny = sx < 4 ? sy - 4 : sy;
-            const int nx = sx < 4 ? width - 4 + (width & 3) : sx - 4;
+            const int ny = sx < 4 ? FFMAX(sy - 4, 0) : sy;
+            const int nx = sx < 4 ? FFMAX(width - 4 + (width & 3), 0) : sx - 4;
             const uint8_t *old_pixel_ptr = src_pixels + nx + ny * stride;
             int compare = 0;
 
