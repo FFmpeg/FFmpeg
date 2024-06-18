@@ -95,8 +95,9 @@ void ff_dovi_ctx_unref(DOVIContext *s);
 void ff_dovi_ctx_flush(DOVIContext *s);
 
 /**
- * Parse the contents of a Dovi RPU NAL and update the parsed values in the
- * DOVIContext struct.
+ * Parse the contents of a Dolby Vision RPU and update the parsed values in the
+ * DOVIContext struct. This function should receive the decoded unit payload,
+ * without any T.35 or NAL unit headers.
  *
  * Returns 0 or an error code.
  *

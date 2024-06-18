@@ -360,7 +360,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         emdf_protection = get_bits(gb, 5 + 12);
         VALIDATE(emdf_protection, 0x400, 0x400);
     } else {
-        /* NAL RBSP with prefix and trailing zeroes */
+        /* NAL unit with prefix and trailing zeroes */
         VALIDATE(rpu[0], 25, 25); /* NAL prefix */
         rpu++;
         rpu_size--;
