@@ -435,7 +435,7 @@ static void generate_ext_v2(PutBitContext *pb, const AVDOVIDmData *dm)
 }
 
 int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
-                         uint8_t **out_rpu, int *out_size)
+                         int flags, uint8_t **out_rpu, int *out_size)
 {
     PutBitContext *pb = &(PutBitContext){0};
     const AVDOVIRpuDataHeader *hdr;

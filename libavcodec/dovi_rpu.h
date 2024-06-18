@@ -135,7 +135,7 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx);
  * including the EMDF header (profile 10) or NAL encapsulation (otherwise).
  */
 int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
-                         uint8_t **out_rpu, int *out_size);
+                         int flags, uint8_t **out_rpu, int *out_size);
 
 
 /***************************************************

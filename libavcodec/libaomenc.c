@@ -1294,7 +1294,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             const AVDOVIMetadata *metadata = (const AVDOVIMetadata *)sd->data;
             uint8_t *t35;
             int size;
-            if ((res = ff_dovi_rpu_generate(&ctx->dovi, metadata, &t35, &size)) < 0)
+            if ((res = ff_dovi_rpu_generate(&ctx->dovi, metadata, 0, &t35, &size)) < 0)
                 return res;
             res = aom_img_add_metadata(rawimg, OBU_METADATA_TYPE_ITUT_T35,
                                        t35, size, AOM_MIF_ANY_FRAME);
