@@ -126,6 +126,7 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx);
 enum {
     FF_DOVI_WRAP_NAL        = 1 << 0, ///< wrap inside NAL RBSP
     FF_DOVI_WRAP_T35        = 1 << 1, ///< wrap inside T.35+EMDF
+    FF_DOVI_COMPRESS_RPU    = 1 << 2, ///< enable compression for this RPU
 };
 
 /**

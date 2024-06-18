@@ -444,6 +444,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     int vdr_dm_metadata_present, vdr_rpu_id, use_prev_vdr_rpu, profile,
         buffer_size, rpu_size, pad, zero_run;
     int num_ext_blocks_v1, num_ext_blocks_v2;
+    int dv_md_compression = s->cfg.dv_md_compression;
     uint32_t crc;
     uint8_t *dst;
     if (!metadata) {
@@ -463,6 +464,9 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         return AVERROR_INVALIDDATA;
     }
 
+    if (!(flags & FF_DOVI_COMPRESS_RPU))
+        dv_md_compression = AV_DOVI_COMPRESSION_NONE;
+
     vdr_rpu_id = mapping->vdr_rpu_id;
     use_prev_vdr_rpu = 0;
 
@@ -472,7 +476,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
             return AVERROR(ENOMEM);
     }
 
-    switch (s->cfg.dv_md_compression) {
+    switch (dv_md_compression) {
     case AV_DOVI_COMPRESSION_LIMITED:
         /* Limited metadata compression requires vdr_rpi_id == 0 */
         if (vdr_rpu_id != 0)
