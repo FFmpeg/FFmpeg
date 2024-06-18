@@ -92,13 +92,16 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
     if (left <= 0)
         return AVERROR_INVALIDDATA;
 
-    codec_config->extradata = av_malloc(left);
+    // We pad extradata here because avpriv_mpeg4audio_get_config2() needs it.
+    codec_config->extradata = av_malloc((size_t)left + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!codec_config->extradata)
         return AVERROR(ENOMEM);
 
     codec_config->extradata_size = avio_read(pb, codec_config->extradata, left);
     if (codec_config->extradata_size < left)
         return AVERROR_INVALIDDATA;
+    memset(codec_config->extradata + codec_config->extradata_size, 0,
+           AV_INPUT_BUFFER_PADDING_SIZE);
 
     ret = avpriv_mpeg4audio_get_config2(&cfg, codec_config->extradata,
                                         codec_config->extradata_size, 1, logctx);
