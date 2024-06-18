@@ -123,16 +123,20 @@ int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame);
  */
 int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx);
 
+enum {
+    FF_DOVI_WRAP_NAL        = 1 << 0, ///< wrap inside NAL RBSP
+    FF_DOVI_WRAP_T35        = 1 << 1, ///< wrap inside T.35+EMDF
+};
+
 /**
- * Synthesize a Dolby Vision RPU reflecting the current state. Note that this
- * assumes all previous calls to `ff_dovi_rpu_generate` have been appropriately
- * signalled, i.e. it will not re-send already transmitted redundant data.
+ * Synthesize a Dolby Vision RPU reflecting the current state. By default, the
+ * RPU is not encapsulated (see `flags` for more options). Note that this
+ * assumes all previous calls to `ff_dovi_rpu_generate` have been
+ * appropriately signalled, i.e. it will not re-send already transmitted
+ * redundant data.
  *
  * Mutates the internal state of DOVIContext to reflect the change.
  * Returns 0 or a negative error code.
- *
- * This generates a fully formed RPU ready for inclusion in the bitstream,
- * including the EMDF header (profile 10) or NAL encapsulation (otherwise).
  */
 int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
                          int flags, uint8_t **out_rpu, int *out_size);

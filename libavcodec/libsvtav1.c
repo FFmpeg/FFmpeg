@@ -541,7 +541,8 @@ static int eb_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         const AVDOVIMetadata *metadata = (const AVDOVIMetadata *)sd->data;
         uint8_t *t35;
         int size;
-        if ((ret = ff_dovi_rpu_generate(&svt_enc->dovi, metadata, 0, &t35, &size)) < 0)
+        if ((ret = ff_dovi_rpu_generate(&svt_enc->dovi, metadata, FF_DOVI_WRAP_T35,
+                                        &t35, &size)) < 0)
             return ret;
         ret = svt_add_metadata(headerPtr, EB_AV1_METADATA_TYPE_ITUT_T35, t35, size);
         av_free(t35);

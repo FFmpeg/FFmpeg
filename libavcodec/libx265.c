@@ -789,7 +789,7 @@ static int libx265_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         sd = av_frame_get_side_data(pic, AV_FRAME_DATA_DOVI_METADATA);
         if (ctx->dovi.cfg.dv_profile && sd) {
             const AVDOVIMetadata *metadata = (const AVDOVIMetadata *)sd->data;
-            ret = ff_dovi_rpu_generate(&ctx->dovi, metadata, 0,
+            ret = ff_dovi_rpu_generate(&ctx->dovi, metadata, FF_DOVI_WRAP_NAL,
                                        &x265pic.rpu.payload,
                                        &x265pic.rpu.payloadSize);
             if (ret < 0) {

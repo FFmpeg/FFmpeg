@@ -713,9 +713,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     flush_put_bits(pb);
 
     rpu_size = put_bytes_output(pb);
-    switch (s->cfg.dv_profile) {
-    case 10:
-        /* AV1 uses T.35 OBU with EMDF header */
+    if (flags & FF_DOVI_WRAP_T35) {
         *out_rpu = av_malloc(rpu_size + 15);
         if (!*out_rpu)
             return AVERROR(ENOMEM);
@@ -742,10 +740,8 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         flush_put_bits(pb);
         *out_size = put_bytes_output(pb);
         return 0;
-
-    case 5:
-    case 8:
-        *out_rpu = dst = av_malloc(1 + rpu_size * 3 / 2); /* worst case */
+    } else if (flags & FF_DOVI_WRAP_NAL) {
+        *out_rpu = dst = av_malloc(4 + rpu_size * 3 / 2); /* worst case */
         if (!*out_rpu)
             return AVERROR(ENOMEM);
         *dst++ = 25; /* NAL prefix */
@@ -768,10 +764,12 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         }
         *out_size = dst - *out_rpu;
         return 0;
-
-    default:
-        /* Should be unreachable */
-        av_assert0(0);
-        return AVERROR_BUG;
+    } else {
+        /* Return intermediate buffer directly */
+        *out_rpu = s->rpu_buf;
+        *out_size = rpu_size;
+        s->rpu_buf = NULL;
+        s->rpu_buf_sz = 0;
+        return 0;
     }
 }
