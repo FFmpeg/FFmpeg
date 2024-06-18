@@ -56,18 +56,23 @@ void ff_write_pass1_stats(MpegEncContext *s)
              s->header_bits);
 }
 
-static double get_fps(AVCodecContext *avctx)
+static AVRational get_fpsQ(AVCodecContext *avctx)
 {
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
-        return av_q2d(avctx->framerate);
+        return avctx->framerate;
 
 FF_DISABLE_DEPRECATION_WARNINGS
-    return 1.0 / av_q2d(avctx->time_base)
 #if FF_API_TICKS_PER_FRAME
-        / FFMAX(avctx->ticks_per_frame, 1)
+    return av_div_q((AVRational){1, FFMAX(avctx->ticks_per_frame, 1)}, avctx->time_base);
+#else
+    return av_inv_q(avctx->time_base);
 #endif
-        ;
 FF_ENABLE_DEPRECATION_WARNINGS
+}
+
+static double get_fps(AVCodecContext *avctx)
+{
+    return av_q2d(get_fpsQ(avctx));
 }
 
 static inline double qp2bits(const RateControlEntry *rce, double qp)
@@ -332,12 +337,13 @@ static int init_pass2(MpegEncContext *s)
     RateControlContext *rcc = &s->rc_context;
     AVCodecContext *a       = s->avctx;
     int i, toobig;
-    double fps             = get_fps(s->avctx);
+    AVRational fps         = get_fpsQ(s->avctx);
     double complexity[5]   = { 0 }; // approximate bits at quant=1
     uint64_t const_bits[5] = { 0 }; // quantizer independent bits
     uint64_t all_const_bits;
-    uint64_t all_available_bits = (uint64_t)(s->bit_rate *
-                                             (double)rcc->num_entries / fps);
+    uint64_t all_available_bits = av_rescale_q(s->bit_rate,
+                                               (AVRational){rcc->num_entries,1},
+                                               fps);
     double rate_factor          = 0;
     double step;
     const int filter_size = (int)(a->qblur * 4) | 1;
