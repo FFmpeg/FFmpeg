@@ -259,7 +259,16 @@ static void dump_stereo3d(void *ctx, const AVPacketSideData *sd, int log_level)
 
     stereo = (const AVStereo3D *)sd->data;
 
-    av_log(ctx, log_level, "%s", av_stereo3d_type_name(stereo->type));
+    av_log(ctx, log_level, "%s, view: %s, primary eye: %s",
+           av_stereo3d_type_name(stereo->type), av_stereo3d_view_name(stereo->view),
+           av_stereo3d_primary_eye_name(stereo->primary_eye));
+    if (stereo->baseline)
+        av_log(ctx, log_level, ", baseline: %"PRIu32"", stereo->baseline);
+    if (stereo->horizontal_disparity_adjustment.num && stereo->horizontal_disparity_adjustment.den)
+        av_log(ctx, log_level, ", horizontal_disparity_adjustment: %d/%d",
+               stereo->horizontal_disparity_adjustment.num, stereo->horizontal_disparity_adjustment.den);
+    if (stereo->horizontal_field_of_view)
+        av_log(ctx, log_level, ", horizontal_field_of_view: %"PRIu32"", stereo->horizontal_field_of_view);
 
     if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
         av_log(ctx, log_level, " (inverted)");
