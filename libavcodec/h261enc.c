@@ -39,6 +39,7 @@
 #define H261_MAX_RUN   26
 #define H261_MAX_LEVEL 15
 #define H261_ESC_LEN   (6 + 6 + 8)
+#define MV_TAB_OFFSET  32
 
 static struct VLCLUT {
     uint8_t len;
@@ -47,6 +48,7 @@ static struct VLCLUT {
 
 static uint8_t uni_h261_rl_len     [64 * 128];
 static uint8_t uni_h261_rl_len_last[64 * 128];
+static uint8_t h261_mv_codes[64][2];
 
 typedef struct H261EncContext {
     MpegEncContext s;
@@ -140,20 +142,8 @@ void ff_h261_reorder_mb_index(MpegEncContext *s)
 
 static void h261_encode_motion(PutBitContext *pb, int val)
 {
-    int sign, code;
-    if (val == 0) {
-        // Corresponds to ff_h261_mv_tab[0]
-        put_bits(pb, 1, 1);
-    } else {
-        if (val > 15)
-            val -= 32;
-        if (val < -16)
-            val += 32;
-        sign = val < 0;
-        code = sign ? -val : val;
-        put_bits(pb, ff_h261_mv_tab[code][1], ff_h261_mv_tab[code][0]);
-        put_bits(pb, 1, sign);
-    }
+    put_bits(pb, h261_mv_codes[MV_TAB_OFFSET + val][1],
+                 h261_mv_codes[MV_TAB_OFFSET + val][0]);
 }
 
 static inline int get_cbp(MpegEncContext *s, int16_t block[6][64])
@@ -323,6 +313,7 @@ void ff_h261_encode_mb(MpegEncContext *s, int16_t block[6][64],
 
 static av_cold void h261_encode_init_static(void)
 {
+    uint8_t (*const mv_codes)[2] = h261_mv_codes + MV_TAB_OFFSET;
     memset(uni_h261_rl_len,      H261_ESC_LEN, sizeof(uni_h261_rl_len));
     memset(uni_h261_rl_len_last, H261_ESC_LEN + 2 /* EOB */, sizeof(uni_h261_rl_len_last));
 
@@ -341,6 +332,20 @@ static av_cold void h261_encode_init_static(void)
         uni_h261_rl_len_last[UNI_AC_ENC_INDEX(run, 64 + level)] = len + 2;
         uni_h261_rl_len_last[UNI_AC_ENC_INDEX(run, 64 - level)] = len + 2;
     }
+
+    for (size_t i = 1;; i++) {
+        // sign-one MV codes; diff -16..-1, 16..31
+        mv_codes[32 - i][0] = mv_codes[-i][0] = (ff_h261_mv_tab[i][0] << 1) | 1 /* sign */;
+        mv_codes[32 - i][1] = mv_codes[-i][1] = ff_h261_mv_tab[i][1] + 1;
+        if (i == 16)
+            break;
+        // sign-zero MV codes: diff -31..-17, 1..15
+        mv_codes[i][0] = mv_codes[i - 32][0] = ff_h261_mv_tab[i][0] << 1;
+        mv_codes[i][1] = mv_codes[i - 32][1] = ff_h261_mv_tab[i][1] + 1;
+    }
+    // MV code for difference zero; has no sign
+    mv_codes[0][0] = 1;
+    mv_codes[0][1] = 1;
 }
 
 av_cold int ff_h261_encode_init(MpegEncContext *s)
