@@ -227,6 +227,7 @@ typedef struct MXFDescriptor {
     UID color_trc_ul;
     UID color_space_ul;
     AVMasteringDisplayMetadata *mastering;
+    size_t mastering_size;
     AVContentLightMetadata *coll;
     size_t coll_size;
 } MXFDescriptor;
@@ -1424,7 +1425,7 @@ static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int 
         }
         if (IS_KLV_KEY(uid, mxf_mastering_display_prefix)) {
             if (!descriptor->mastering) {
-                descriptor->mastering = av_mastering_display_metadata_alloc();
+                descriptor->mastering = av_mastering_display_metadata_alloc_size(&descriptor->mastering_size);
                 if (!descriptor->mastering)
                     return AVERROR(ENOMEM);
             }
@@ -2955,7 +2956,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (descriptor->mastering) {
                 if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
                                              AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
-                                             (uint8_t *)descriptor->mastering, sizeof(*descriptor->mastering), 0)) {
+                                             (uint8_t *)descriptor->mastering, descriptor->mastering_size, 0)) {
                     ret = AVERROR(ENOMEM);
                     goto fail_and_free;
                 }
