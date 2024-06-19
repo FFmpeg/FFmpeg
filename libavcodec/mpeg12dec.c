@@ -713,6 +713,7 @@ static int mpeg_decode_mb(MpegEncContext *s, int16_t block[12][64])
         }
 
         s->mb_intra = 0;
+        s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 128 << s->intra_dc_precision;
         if (HAS_CBP(mb_type)) {
             s->bdsp.clear_blocks(s->block[0]);
 
@@ -1631,6 +1632,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                 s->mb_intra = 0;
                 for (i = 0; i < 12; i++)
                     s->block_last_index[i] = -1;
+                s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 128 << s->intra_dc_precision;
                 if (s->picture_structure == PICT_FRAME)
                     s->mv_type = MV_TYPE_16X16;
                 else
