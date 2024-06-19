@@ -1067,6 +1067,8 @@ static av_always_inline void mpeg1_encode_mb_internal(MpegEncContext *s,
 void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
                         int motion_x, int motion_y)
 {
+    if (!s->mb_intra)
+        s->last_dc[0] = s->last_dc[1] = s->last_dc[2] = 128 << s->intra_dc_precision;
     if (s->chroma_format == CHROMA_420)
         mpeg1_encode_mb_internal(s, block, motion_x, motion_y, 6, 1);
     else

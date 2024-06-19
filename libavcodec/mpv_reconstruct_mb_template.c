@@ -66,10 +66,6 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
         if (is_mpeg12 != DEFINITELY_MPEG12_H261 && (s->h263_pred || s->h263_aic)) {
             if (s->mbintra_table[mb_xy])
                 ff_clean_intra_table_entries(s);
-        } else if (IS_ENCODER) {
-            s->last_dc[0] =
-            s->last_dc[1] =
-            s->last_dc[2] = 128 << s->intra_dc_precision;
         }
     } else if (is_mpeg12 != DEFINITELY_MPEG12_H261 && (s->h263_pred || s->h263_aic))
         s->mbintra_table[mb_xy] = 1;
