@@ -2324,15 +2324,15 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
     }
 
     if (has_mastering_primaries || has_mastering_luminance) {
-        AVMasteringDisplayMetadata *metadata;
-        AVPacketSideData *sd = av_packet_side_data_new(&st->codecpar->coded_side_data,
-                                                       &st->codecpar->nb_coded_side_data,
-                                                       AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
-                                                       sizeof(AVMasteringDisplayMetadata), 0);
-        if (!sd)
+        size_t size = 0;
+        AVMasteringDisplayMetadata *metadata = av_mastering_display_metadata_alloc_size(&size);
+        if (!metadata)
             return AVERROR(ENOMEM);
-        metadata = (AVMasteringDisplayMetadata*)sd->data;
-        memset(metadata, 0, sizeof(AVMasteringDisplayMetadata));
+        if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
+                                     AV_PKT_DATA_MASTERING_DISPLAY_METADATA, metadata, size, 0)) {
+            av_freep(&metadata);
+            return AVERROR(ENOMEM);
+        }
         if (has_mastering_primaries) {
             metadata->display_primaries[0][0] = av_d2q(mastering_meta->r_x, INT_MAX);
             metadata->display_primaries[0][1] = av_d2q(mastering_meta->r_y, INT_MAX);
