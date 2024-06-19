@@ -1348,7 +1348,7 @@ static void makelayers(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
     }
 }
 
-static int getcut(Jpeg2000Cblk *cblk, uint64_t lambda, int dwt_norm)
+static int getcut(Jpeg2000Cblk *cblk, uint64_t lambda)
 {
     int passno, res = 0;
     for (passno = 0; passno < cblk->npasses; passno++){
@@ -1360,7 +1360,7 @@ static int getcut(Jpeg2000Cblk *cblk, uint64_t lambda, int dwt_norm)
         dd = cblk->passes[passno].disto
            - (res ? cblk->passes[res-1].disto : 0);
 
-        if (((dd * dwt_norm) >> WMSEDEC_SHIFT) * dwt_norm >= dr * lambda)
+        if (dd  >= dr * lambda)
             res = passno+1;
     }
     return res;
@@ -1383,11 +1383,12 @@ static void truncpasses(Jpeg2000EncoderContext *s, Jpeg2000Tile *tile)
                     Jpeg2000Band *band = reslevel->band + bandno;
                     Jpeg2000Prec *prec = band->prec + precno;
 
+                    int64_t dwt_norm = dwt_norms[codsty->transform == FF_DWT53][bandpos][lev] * (int64_t)band->i_stepsize >> 15;
+                    int64_t lambda_prime = av_rescale(s->lambda, 1 << WMSEDEC_SHIFT, dwt_norm * dwt_norm);
                     for (cblkno = 0; cblkno < prec->nb_codeblocks_height * prec->nb_codeblocks_width; cblkno++){
                         Jpeg2000Cblk *cblk = prec->cblk + cblkno;
 
-                        cblk->ninclpasses = getcut(cblk, s->lambda,
-                                (int64_t)dwt_norms[codsty->transform == FF_DWT53][bandpos][lev] * (int64_t)band->i_stepsize >> 15);
+                        cblk->ninclpasses = getcut(cblk, lambda_prime);
                         cblk->layers[0].data_start = cblk->data;
                         cblk->layers[0].cum_passes = cblk->ninclpasses;
                         cblk->layers[0].npasses = cblk->ninclpasses;
