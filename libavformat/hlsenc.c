@@ -2659,7 +2659,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 vs->start_pos = new_start_pos;
             }
         } else {
-            vs->start_pos = new_start_pos;
+            vs->start_pos = 0;
             sls_flag_file_rename(hls, vs, old_filename);
             ret = hls_start(s, vs);
         }
