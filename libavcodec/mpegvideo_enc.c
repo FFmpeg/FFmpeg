@@ -1095,11 +1095,33 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-#define IS_ENCODER 1
-#include "mpv_reconstruct_mb_template.c"
+/* put block[] to dest[] */
+static inline void put_dct(MpegEncContext *s,
+                           int16_t *block, int i, uint8_t *dest, int line_size, int qscale)
+{
+    s->dct_unquantize_intra(s, block, i, qscale);
+    s->idsp.idct_put(dest, line_size, block);
+}
 
+static inline void add_dequant_dct(MpegEncContext *s,
+                           int16_t *block, int i, uint8_t *dest, int line_size, int qscale)
+{
+    if (s->block_last_index[i] >= 0) {
+        s->dct_unquantize_inter(s, block, i, qscale);
+
+        s->idsp.idct_add(dest, line_size, block);
+    }
+}
+
+/**
+ * Performs dequantization and IDCT (if necessary)
+ */
 static void mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
 {
+    const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+
+    s->cur_pic.qscale_table[mb_xy] = s->qscale;
+
     if (s->avctx->debug & FF_DEBUG_DCT_COEFF) {
        /* print DCT coefficients */
        av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
@@ -1112,7 +1134,60 @@ static void mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
        }
     }
 
-    mpv_reconstruct_mb_internal(s, block, 0, MAY_BE_MPEG12_H261);
+    if ((s->avctx->flags & AV_CODEC_FLAG_PSNR) || s->frame_skip_threshold || s->frame_skip_factor ||
+        !((s->intra_only || s->pict_type == AV_PICTURE_TYPE_B) &&
+          s->avctx->mb_decision != FF_MB_DECISION_RD)) { // FIXME precalc
+        uint8_t *dest_y = s->dest[0], *dest_cb = s->dest[1], *dest_cr = s->dest[2];
+        int dct_linesize, dct_offset;
+        const int linesize   = s->cur_pic.linesize[0];
+        const int uvlinesize = s->cur_pic.linesize[1];
+        const int block_size = 8;
+
+        dct_linesize = linesize << s->interlaced_dct;
+        dct_offset   = s->interlaced_dct ? linesize : linesize * block_size;
+
+        if (!s->mb_intra) {
+            /* No MC, as that was already done otherwise */
+                add_dequant_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
+                add_dequant_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
+                add_dequant_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
+                add_dequant_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
+
+                if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
+                    if (s->chroma_y_shift) {
+                        add_dequant_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
+                        add_dequant_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
+                    } else {
+                        dct_linesize >>= 1;
+                        dct_offset   >>= 1;
+                        add_dequant_dct(s, block[4], 4, dest_cb,              dct_linesize, s->chroma_qscale);
+                        add_dequant_dct(s, block[5], 5, dest_cr,              dct_linesize, s->chroma_qscale);
+                        add_dequant_dct(s, block[6], 6, dest_cb + dct_offset, dct_linesize, s->chroma_qscale);
+                        add_dequant_dct(s, block[7], 7, dest_cr + dct_offset, dct_linesize, s->chroma_qscale);
+                    }
+                }
+        } else {
+                /* dct only in intra block */
+                put_dct(s, block[0], 0, dest_y                          , dct_linesize, s->qscale);
+                put_dct(s, block[1], 1, dest_y              + block_size, dct_linesize, s->qscale);
+                put_dct(s, block[2], 2, dest_y + dct_offset             , dct_linesize, s->qscale);
+                put_dct(s, block[3], 3, dest_y + dct_offset + block_size, dct_linesize, s->qscale);
+
+                if (!CONFIG_GRAY || !(s->avctx->flags & AV_CODEC_FLAG_GRAY)) {
+                    if (s->chroma_y_shift) {
+                        put_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
+                        put_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
+                    } else {
+                        dct_offset >>=1;
+                        dct_linesize >>=1;
+                        put_dct(s, block[4], 4, dest_cb,              dct_linesize, s->chroma_qscale);
+                        put_dct(s, block[5], 5, dest_cr,              dct_linesize, s->chroma_qscale);
+                        put_dct(s, block[6], 6, dest_cb + dct_offset, dct_linesize, s->chroma_qscale);
+                        put_dct(s, block[7], 7, dest_cr + dct_offset, dct_linesize, s->chroma_qscale);
+                    }
+                }
+        }
+    }
 }
 
 static int get_sae(const uint8_t *src, int ref, int stride)
