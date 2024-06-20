@@ -3205,12 +3205,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s->mv[0][0][1] = 0;
                     encode_mb_hq(s, &backup_s, &best_s, pb, pb2, tex_pb,
                                  &dmin, &next_block, 0, 0);
-                    if(s->h263_pred || s->h263_aic){
-                        if(best_s.mb_intra)
-                            s->mbintra_table[mb_x + mb_y*s->mb_stride]=1;
-                        else
-                            ff_clean_intra_table_entries(s); //old mode?
-                    }
+                    s->mbintra_table[xy] = 1;
                 }
 
                 if ((s->mpv_flags & FF_MPV_FLAG_QP_RD) && dmin < INT_MAX) {
@@ -3357,6 +3352,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     s->mb_intra= 1;
                     motion_x= s->mv[0][0][0] = 0;
                     motion_y= s->mv[0][0][1] = 0;
+                    s->mbintra_table[xy] = 1;
                     break;
                 case CANDIDATE_MB_TYPE_INTER:
                     s->mv_dir = MV_DIR_FORWARD;
@@ -3471,7 +3467,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
             if(s->mb_intra /* && I,P,S_TYPE */){
                 s->p_mv_table[xy][0]=0;
                 s->p_mv_table[xy][1]=0;
-            }
+            } else if ((s->h263_pred || s->h263_aic) && s->mbintra_table[xy])
+                ff_clean_intra_table_entries(s);
 
             if (s->avctx->flags & AV_CODEC_FLAG_PSNR) {
                 int w= 16;
