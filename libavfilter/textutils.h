@@ -74,7 +74,7 @@ typedef struct FFExpandTextContext {
      * list of functions to use to expand sequences in the format
      * FUNCTION_NAME{PARAMS}
      */
-    FFExpandTextFunction *functions;
+    const FFExpandTextFunction *functions;
 
     /**
      * number of functions

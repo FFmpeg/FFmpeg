@@ -284,7 +284,7 @@ static int func_eval_expr_formatted(void *ctx, AVBPrint *bp, const char *functio
                                         argv[1][0], positions);
 }
 
-static FFExpandTextFunction expand_text_functions[] = {
+static const FFExpandTextFunction expand_text_functions[] = {
     { "expr",            1, 1, func_eval_expr },
     { "e",               1, 1, func_eval_expr },
     { "expr_formatted",  2, 3, func_eval_expr_formatted },

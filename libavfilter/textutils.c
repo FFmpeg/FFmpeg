@@ -36,7 +36,7 @@ static int ff_expand_text_function_internal(FFExpandTextContext *expand_text, AV
                                             char *name, unsigned argc, char **argv)
 {
     void *log_ctx = expand_text->log_ctx;
-    FFExpandTextFunction *functions = expand_text->functions;
+    const FFExpandTextFunction *functions = expand_text->functions;
     unsigned i;
 
     for (i = 0; i < expand_text->functions_nb; i++) {
