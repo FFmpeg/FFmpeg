@@ -79,7 +79,7 @@ static int ff_expand_text_function_internal(FFExpandTextContext *expand_text, AV
  * @return negative value corresponding to an AVERROR error code in case of
  * errors, a non-negative value otherwise
  */
-static int ff_expand_text_function(FFExpandTextContext *expand_text, AVBPrint *bp, char **rtext)
+static int ff_expand_text_function(FFExpandTextContext *expand_text, AVBPrint *bp, const char **rtext)
 {
     void *log_ctx = expand_text->log_ctx;
     const char *text = *rtext;
@@ -112,7 +112,7 @@ static int ff_expand_text_function(FFExpandTextContext *expand_text, AVBPrint *b
     if ((ret = ff_expand_text_function_internal(expand_text, bp, argv[0], argc - 1, argv + 1)) < 0)
         goto end;
     ret = 0;
-    *rtext = (char *)text + 1;
+    *rtext = text + 1;
 
 end:
     for (i = 0; i < argc; i++)
@@ -120,7 +120,7 @@ end:
     return ret;
 }
 
-int ff_expand_text(FFExpandTextContext *expand_text, char *text, AVBPrint *bp)
+int ff_expand_text(FFExpandTextContext *expand_text, const char *text, AVBPrint *bp)
 {
     int ret;
 

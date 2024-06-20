@@ -94,7 +94,7 @@ typedef struct FFExpandTextContext {
  * @return negative value corresponding to an AVERROR error code in case of
  * errors, a non-negative value otherwise
  */
-int ff_expand_text(FFExpandTextContext *expand_text, char *text, AVBPrint *bp);
+int ff_expand_text(FFExpandTextContext *expand_text, const char *text, AVBPrint *bp);
 
 /**
  * Print PTS representation to an AVBPrint object.
