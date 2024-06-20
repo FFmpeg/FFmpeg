@@ -272,6 +272,10 @@ FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) += fate-hevc-sm
 fate-hevc-pir: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/pir.hevc
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-pir
 
+# multiview stream, where the secondary layer has a nontrivial nuh_layer_id=6
+fate-hevc-mv-nuh-layer-id: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/mv_nuh_layer_id.bit -map 0:view:all
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-mv-nuh-layer-id
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 
