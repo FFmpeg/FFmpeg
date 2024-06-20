@@ -150,6 +150,11 @@ typedef struct VariantStream {
     int discontinuity;
     int reference_stream_index;
 
+    int64_t total_size;
+    double total_duration;
+    int64_t avg_bitrate;
+    int64_t max_bitrate;
+
     HLSSegment *segments;
     HLSSegment *last_segment;
     HLSSegment *old_segments;
@@ -1108,6 +1113,18 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     if (!en)
         return AVERROR(ENOMEM);
 
+    vs->total_size += size;
+    vs->total_duration += duration;
+    if (duration > 0.5) {
+        // Don't include the final, possibly very short segment in the
+        // calculation of the max bitrate.
+        int cur_bitrate = (int)(8 * size / duration);
+        if (cur_bitrate > vs->max_bitrate)
+            vs->max_bitrate = cur_bitrate;
+    }
+    if (vs->total_duration > 0)
+        vs->avg_bitrate = (int)(8 * vs->total_size / vs->total_duration);
+
     en->var_stream_idx = vs->var_stream_idx;
     ret = sls_flags_filename_process(s, hls, vs, en, duration, pos, size);
     if (ret < 0) {
@@ -1362,14 +1379,15 @@ static int64_t get_stream_bit_rate(AVStream *stream)
 }
 
 static int create_master_playlist(AVFormatContext *s,
-                                  VariantStream * const input_vs)
+                                  VariantStream * const input_vs,
+                                  int final)
 {
     HLSContext *hls = s->priv_data;
     VariantStream *vs, *temp_vs;
     AVStream *vid_st, *aud_st;
     AVDictionary *options = NULL;
     unsigned int i, j;
-    int ret, bandwidth;
+    int ret, bandwidth, avg_bandwidth;
     const char *m3u8_rel_name = NULL;
     const char *vtt_m3u8_rel_name = NULL;
     const char *ccgroup;
@@ -1389,8 +1407,8 @@ static int create_master_playlist(AVFormatContext *s,
                 return 0;
     } else {
          /* Keep publishing the master playlist at the configured rate */
-        if (&hls->var_streams[0] != input_vs || !hls->master_publish_rate ||
-            input_vs->number % hls->master_publish_rate)
+        if ((&hls->var_streams[0] != input_vs || !hls->master_publish_rate ||
+            input_vs->number % hls->master_publish_rate) && !final)
             return 0;
     }
 
@@ -1480,12 +1498,17 @@ static int create_master_playlist(AVFormatContext *s,
             }
         }
 
-        bandwidth = 0;
-        if (vid_st)
-            bandwidth += get_stream_bit_rate(vid_st);
-        if (aud_st)
-            bandwidth += get_stream_bit_rate(aud_st);
-        bandwidth += bandwidth / 10;
+        if (final) {
+            bandwidth = vs->max_bitrate;
+            avg_bandwidth = vs->avg_bitrate;
+        } else {
+            bandwidth = 0;
+            if (vid_st)
+                bandwidth += get_stream_bit_rate(vid_st);
+            if (aud_st)
+                bandwidth += get_stream_bit_rate(aud_st);
+            bandwidth += bandwidth / 10;
+        }
 
         ccgroup = NULL;
         if (vid_st && vs->ccgroup) {
@@ -1514,11 +1537,11 @@ static int create_master_playlist(AVFormatContext *s,
         }
 
         if (!hls->has_default_key || !hls->has_video_m3u8) {
-            ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, m3u8_rel_name,
+            ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, avg_bandwidth, m3u8_rel_name,
                     aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup, sgroup);
         } else {
             if (vid_st) {
-                ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, m3u8_rel_name,
+                ff_hls_write_stream_info(vid_st, hls->m3u8_out, bandwidth, avg_bandwidth, m3u8_rel_name,
                                          aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup, sgroup);
             }
         }
@@ -1671,7 +1694,7 @@ fail:
             ff_rename(temp_vtt_filename, vs->vtt_m3u8_name, s);
     }
     if (ret >= 0 && hls->master_pl_name)
-        if (create_master_playlist(s, vs) < 0)
+        if (create_master_playlist(s, vs, last) < 0)
             av_log(s, AV_LOG_WARNING, "Master playlist creation failed\n");
 
     return ret;
