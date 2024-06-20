@@ -324,18 +324,69 @@ SECTION .text
 %endif
 %endmacro
 
-; STORE_PIXELS(dst, src)
-%macro STORE_PIXELS 2
+; STORE_PIXELS_W16(dst, src)
+%macro STORE_PIXELS_W16 2
     %if ps == 2
-        movu         %1, m%2
+        movu       [%1],  m%2
     %else
-        packuswb    m%2, m%2
-        vpermq      m%2, m%2, 0x8
-        movu         %1, xm%2
+        movu       [%1], xm%2
     %endif
 %endmacro
 
-%macro FILTER_16x4 0
+%macro STORE_PIXELS_W8 2
+    %if ps == 2
+        movu       [%1], xm%2
+    %else
+        movq       [%1], xm%2
+    %endif
+%endmacro
+
+; STORE_PIXELS_W4(dst, src, offset)
+%macro STORE_PIXELS_W4 3
+    %if ps == 2
+        movq   [%1 + %3 * ps], xm%2
+    %else
+        movd        [%1 + %3], xm%2
+    %endif
+%endmacro
+
+%macro STORE_PIXELS_W8LE 3
+    cmp %3, 8
+    jl .w4
+    STORE_PIXELS_W8 %1, %2
+    cmp %3, 12
+    %if ps == 2
+        vpermq      m%2,  m%2, q0302
+    %else
+        vpermq      m%2,  m%2, q0101
+    %endif
+    jl .end
+    STORE_PIXELS_W4 %1, %2, 8
+    jmp .end
+.w4:
+    STORE_PIXELS_W4 %1, %2, 0
+.end:
+%endmacro
+
+; STORE_PIXELS(dst, src, width)
+%macro STORE_PIXELS 3
+    %if ps == 1
+        packuswb    m%2, m%2
+        vpermq      m%2, m%2, 0x8
+    %endif
+
+    %ifidn %3, 16
+        STORE_PIXELS_W16  %1, %2
+    %else
+        %if LUMA
+            STORE_PIXELS_W8   %1, %2
+        %else
+            STORE_PIXELS_W8LE %1, %2, %3
+        %endif
+    %endif
+%endmacro
+
+%macro FILTER_16x4 1
 %if LUMA
     push clipq
     push strideq
@@ -362,7 +413,7 @@ SECTION .text
     ; clip to pixel
     CLIPW             m0, m14, m15
 
-    STORE_PIXELS  [dstq], 0
+    STORE_PIXELS    dstq, 0, %1
 
     lea             srcq, [srcq + src_strideq]
     lea             dstq, [dstq + dst_strideq]
@@ -399,7 +450,7 @@ SECTION .text
 ;      const uint8_t *src, ptrdiff_t src_stride, const ptrdiff_t width, cosnt ptr_diff_t height,
 ;      const int16_t *filter, const int16_t *clip, ptrdiff_t stride, ptrdiff_t vb_pos, ptrdiff_t pixel_max);
 ; ******************************
-cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x28, dst, dst_stride, src, src_stride, width, height, filter, clip, stride, vb_pos, pixel_max, \
+cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x30, dst, dst_stride, src, src_stride, width, height, filter, clip, stride, vb_pos, pixel_max, \
     offset, x, s5, s6
 %define ps (%1 / 8) ; pixel size
     movd            xm15, pixel_maxd
@@ -409,18 +460,32 @@ cglobal vvc_alf_filter_%2_%1bpc, 11, 15, 16, 0-0x28, dst, dst_stride, src, src_s
 .loop:
     push            srcq
     push            dstq
+    push          widthq
     xor               xq, xq
 
     .loop_w:
+        cmp       widthq, 16
+        jl   .loop_w_end
+
         LOAD_PARAMS
-        FILTER_16x4
+        FILTER_16x4   16
 
         add         srcq, 16 * ps
         add         dstq, 16 * ps
         add           xq, 16
-        cmp           xq, widthq
-        jl       .loop_w
+        sub       widthq, 16
+        jmp      .loop_w
 
+.loop_w_end:
+    cmp           widthq, 0
+    je            .w_end
+
+    LOAD_PARAMS
+    FILTER_16x4  widthq
+
+.w_end:
+
+    pop           widthq
     pop             dstq
     pop             srcq
     lea             srcq, [srcq + 4 * src_strideq]
