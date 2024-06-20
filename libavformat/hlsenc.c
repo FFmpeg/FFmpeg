@@ -2587,6 +2587,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                     av_dict_free(&options);
                     return ret;
                 }
+                vs->size = range_length;
                 ret = hlsenc_io_close(s, &vs->out, filename);
                 if (ret < 0) {
                     av_log(s, AV_LOG_WARNING, "upload segment failed,"
