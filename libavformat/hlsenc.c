@@ -2380,7 +2380,7 @@ static int hls_init_file_resend(AVFormatContext *s, VariantStream *vs)
 
 static int64_t append_single_file(AVFormatContext *s, VariantStream *vs)
 {
-    int ret = 0;
+    int64_t ret = 0;
     int64_t read_byte = 0;
     int64_t total_size = 0;
     char *filename = NULL;
