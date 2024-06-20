@@ -271,6 +271,15 @@ static int decode_slice(MpegEncContext *s)
             ff_tlog(NULL, "Decoding MB at %dx%d\n", s->mb_x, s->mb_y);
             ret = s->decode_mb(s, s->block);
 
+            if (s->h263_pred || s->h263_aic) {
+                int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+                if (!s->mb_intra) {
+                    if (s->mbintra_table[mb_xy])
+                        ff_clean_intra_table_entries(s);
+                } else
+                    s->mbintra_table[mb_xy] = 1;
+            }
+
             if (s->pict_type != AV_PICTURE_TYPE_B)
                 ff_h263_update_motion_val(s);
 

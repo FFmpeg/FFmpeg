@@ -61,6 +61,7 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
 
     s->cur_pic.qscale_table[mb_xy] = s->qscale;
 
+#if IS_ENCODER
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
         if (is_mpeg12 != DEFINITELY_MPEG12_H261 && (s->h263_pred || s->h263_aic)) {
@@ -70,7 +71,6 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
     } else if (is_mpeg12 != DEFINITELY_MPEG12_H261 && (s->h263_pred || s->h263_aic))
         s->mbintra_table[mb_xy] = 1;
 
-#if IS_ENCODER
     if ((s->avctx->flags & AV_CODEC_FLAG_PSNR) || s->frame_skip_threshold || s->frame_skip_factor ||
         !((s->intra_only || s->pict_type == AV_PICTURE_TYPE_B) &&
           s->avctx->mb_decision != FF_MB_DECISION_RD))  // FIXME precalc
