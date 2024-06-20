@@ -40,6 +40,7 @@
 #include "bswapdsp.h"
 #include "cabac_functions.h"
 #include "codec_internal.h"
+#include "container_fifo.h"
 #include "decode.h"
 #include "golomb.h"
 #include "hevc.h"
@@ -3007,6 +3008,10 @@ static int hevc_frame_start(HEVCContext *s)
         s->cur_frame->frame_grain->height = s->cur_frame->f->height;
         if ((ret = ff_thread_get_buffer(s->avctx, s->cur_frame->frame_grain, 0)) < 0)
             goto fail;
+
+        ret = av_frame_copy_props(s->cur_frame->frame_grain, s->cur_frame->f);
+        if (ret < 0)
+            goto fail;
     }
 
     s->cur_frame->f->pict_type = 3 - s->sh.slice_type;
@@ -3014,8 +3019,7 @@ static int hevc_frame_start(HEVCContext *s)
     if (!IS_IRAP(s))
         ff_hevc_bump_frame(s);
 
-    av_frame_unref(s->output_frame);
-    ret = ff_hevc_output_frame(s, s->output_frame, 0);
+    ret = ff_hevc_output_frame(s, 0);
     if (ret < 0)
         goto fail;
 
@@ -3415,13 +3419,16 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     uint8_t *sd;
     size_t sd_size;
 
+    if (ff_container_fifo_can_read(s->output_fifo))
+        goto do_output;
+
     av_packet_unref(avpkt);
     ret = ff_decode_get_packet(avctx, avpkt);
     if (ret == AVERROR_EOF) {
-        ret = ff_hevc_output_frame(s, frame, 1);
+        ret = ff_hevc_output_frame(s, 1);
         if (ret < 0)
             return ret;
-        return (ret > 0) ? 0 : AVERROR_EOF;
+        goto do_output;
     } else if (ret < 0)
         return ret;
 
@@ -3446,12 +3453,15 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     if (ret < 0)
         return ret;
 
-    if (s->output_frame->buf[0]) {
-        av_frame_move_ref(frame, s->output_frame);
+do_output:
+    if (ff_container_fifo_read(s->output_fifo, frame) >= 0) {
+        if (!(avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN))
+            av_frame_remove_side_data(frame, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
+
         return 0;
     }
 
-    return AVERROR(EAGAIN);
+    return avci->draining ? AVERROR_EOF : AVERROR(EAGAIN);
 }
 
 static int hevc_ref_frame(HEVCFrame *dst, const HEVCFrame *src)
@@ -3503,7 +3513,8 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
         av_freep(&s->sao_pixel_buffer_h[i]);
         av_freep(&s->sao_pixel_buffer_v[i]);
     }
-    av_frame_free(&s->output_frame);
+
+    ff_container_fifo_free(&s->output_fifo);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         ff_hevc_unref_frame(&s->DPB[i], ~0);
@@ -3541,8 +3552,8 @@ static av_cold int hevc_init_context(AVCodecContext *avctx)
     s->local_ctx[0].logctx = avctx;
     s->local_ctx[0].common_cabac_state = &s->cabac;
 
-    s->output_frame = av_frame_alloc();
-    if (!s->output_frame)
+    s->output_fifo = ff_container_fifo_alloc_avframe(0);
+    if (!s->output_fifo)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {

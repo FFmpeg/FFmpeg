@@ -23,6 +23,7 @@
 
 #include "libavutil/mem.h"
 
+#include "container_fifo.h"
 #include "decode.h"
 #include "hevc.h"
 #include "hevcdec.h"
@@ -171,7 +172,7 @@ static void unref_missing_refs(HEVCContext *s)
     }
 }
 
-int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
+int ff_hevc_output_frame(HEVCContext *s, int flush)
 {
     if (IS_IRAP(s) && s->no_rasl_output_flag == 1) {
         const static int mask = HEVC_FRAME_FLAG_BUMPING | HEVC_FRAME_FLAG_OUTPUT;
@@ -211,19 +212,14 @@ int ff_hevc_output_frame(HEVCContext *s, AVFrame *out, int flush)
         if (nb_output) {
             HEVCFrame *frame = &s->DPB[min_idx];
 
-            ret = av_frame_ref(out, frame->needs_fg ? frame->frame_grain : frame->f);
+            ret = ff_container_fifo_write(s->output_fifo,
+                                          frame->needs_fg ? frame->frame_grain : frame->f);
             if (frame->flags & HEVC_FRAME_FLAG_BUMPING)
                 ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_BUMPING);
             else
                 ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT);
             if (ret < 0)
                 return ret;
-
-            if (frame->needs_fg && (ret = av_frame_copy_props(out, frame->f)) < 0)
-                return ret;
-
-            if (!(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN))
-                av_frame_remove_side_data(out, AV_FRAME_DATA_FILM_GRAIN_PARAMS);
 
             av_log(s->avctx, AV_LOG_DEBUG,
                    "Output frame with POC %d.\n", frame->poc);

@@ -457,7 +457,7 @@ typedef struct HEVCContext {
     /** 1 if the independent slice segment header was successfully parsed */
     uint8_t slice_initialized;
 
-    AVFrame *output_frame;
+    struct ContainerFifo *output_fifo;
     uint8_t *sao_pixel_buffer_h[3];
     uint8_t *sao_pixel_buffer_v[3];
 
@@ -636,7 +636,7 @@ static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
  * Find next frame in output order and put a reference to it in frame.
  * @return 1 if a frame was output, 0 otherwise
  */
-int ff_hevc_output_frame(HEVCContext *s, AVFrame *frame, int flush);
+int ff_hevc_output_frame(HEVCContext *s, int flush);
 
 void ff_hevc_bump_frame(HEVCContext *s);
 
