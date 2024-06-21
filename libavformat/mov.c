@@ -8938,6 +8938,11 @@ static int mov_read_iprp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         int item_id = version ? avio_rb32(pb) : avio_rb16(pb);
         int assoc_count = avio_r8(pb);
 
+        if (avio_feof(pb)) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
         for (int j = 0; j < assoc_count; j++) {
             MOVAtoms *ref;
             int index = avio_r8(pb) & 0x7f;
