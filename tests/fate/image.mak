@@ -589,6 +589,19 @@ FATE_WEBP-$(call DEMDEC, IMAGE2, WEBP) += $(FATE_WEBP)
 FATE_IMAGE_FRAMECRC += $(FATE_WEBP-yes)
 fate-webp: $(FATE_WEBP-yes)
 
+FATE_WEBP_ANIM += fate-webp-anim
+fate-webp-anim: CMD = framecrc -reinit_filter 0 -i $(TARGET_SAMPLES)/webp/anim.webp
+
+FATE_WEBP_ANIM += fate-webp-chfmt1
+fate-webp-chfmt1: CMD = framecrc -reinit_filter 0 -i $(TARGET_SAMPLES)/webp/anim_rgb_yuv.webp
+
+FATE_WEBP_ANIM += fate-webp-chfmt2
+fate-webp-chfmt2: CMD = framecrc -reinit_filter 0 -i $(TARGET_SAMPLES)/webp/anim_yuv_rgb.webp
+
+FATE_WEBP_ANIM-$(call DEMDEC, WEBP_ANIM, WEBP_ANIM) += $(FATE_WEBP_ANIM)
+FATE_IMAGE_FRAMECRC += $(FATE_WEBP_ANIM-yes)
+fate-webp: $(FATE_WEBP_ANIM-yes)
+
 FATE_IMAGE_FRAMECRC-$(call DEMDEC, IMAGE2, XFACE) += fate-xface
 fate-xface: CMD = framecrc -i $(TARGET_SAMPLES)/xface/lena.xface
 
