@@ -35,9 +35,11 @@
  * Exif metadata
  * ICC profile
  *
+ * @author Thilo Borgmann <thilo.borgmann _at_ mail.de>
+ * XMP metadata
+ *
  * Unimplemented:
  *   - Animation
- *   - XMP metadata
  */
 
 #include "libavutil/imgutils.h"
@@ -205,6 +207,7 @@ typedef struct WebPContext {
     int alpha_data_size;                /* alpha chunk data size */
     int has_exif;                       /* set after an EXIF chunk has been processed */
     int has_iccp;                       /* set after an ICCP chunk has been processed */
+    int has_xmp;                        /* set after an XMP chunk has been processed */
     int width;                          /* image width */
     int height;                         /* image height */
 
@@ -1350,6 +1353,7 @@ static int webp_decode_frame(AVCodecContext *avctx, AVFrame *p,
     s->has_alpha = 0;
     s->has_exif  = 0;
     s->has_iccp  = 0;
+    s->has_xmp   = 0;
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 
     if (bytestream2_get_bytes_left(&gb) < 12)
@@ -1509,11 +1513,34 @@ exif_end:
         }
         case MKTAG('A', 'N', 'I', 'M'):
         case MKTAG('A', 'N', 'M', 'F'):
-        case MKTAG('X', 'M', 'P', ' '):
             av_log(avctx, AV_LOG_WARNING, "skipping unsupported chunk: %s\n",
                    av_fourcc2str(chunk_type));
             bytestream2_skip(&gb, chunk_size);
             break;
+        case MKTAG('X', 'M', 'P', ' '): {
+            if (s->has_xmp) {
+                av_log(avctx, AV_LOG_VERBOSE, "Ignoring extra XMP chunk\n");
+                bytestream2_skip(&gb, chunk_size);
+                break;
+            }
+            if (!(vp8x_flags & VP8X_FLAG_XMP_METADATA))
+                av_log(avctx, AV_LOG_WARNING,
+                       "XMP chunk present, but XMP bit not set in the "
+                       "VP8X header\n");
+
+            s->has_xmp = 1;
+
+            // there are at least chunk_size bytes left to read
+            uint8_t *buffer = av_malloc(chunk_size + 1);
+            if (!buffer)
+                return AVERROR(ENOMEM);
+
+            bytestream2_get_buffer(&gb, buffer, chunk_size);
+            buffer[chunk_size] = '\0';
+
+            av_dict_set(&p->metadata, "xmp", buffer, AV_DICT_DONT_STRDUP_VAL);
+            break;
+        }
         default:
             av_log(avctx, AV_LOG_VERBOSE, "skipping unknown chunk: %s\n",
                    av_fourcc2str(chunk_type));
