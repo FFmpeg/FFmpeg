@@ -2767,7 +2767,14 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
 
 pe_cleanup:
     CVPixelBufferRelease(pix_buf);
-    vtenc_reset(vtctx);
+
+    if (status) {
+        vtenc_reset(vtctx);
+    } else if (vtctx->session) {
+        CFRelease(vtctx->session);
+        vtctx->session = NULL;
+    }
+
     vtctx->frame_ct_out = 0;
 
     av_assert0(status != 0 || (avctx->extradata && avctx->extradata_size > 0));
