@@ -2908,6 +2908,7 @@ static int hevc_frame_start(HEVCContext *s)
     const HEVCSPS *const sps = pps->sps;
     int pic_size_in_ctb  = ((sps->width  >> sps->log2_min_cb_size) + 1) *
                            ((sps->height >> sps->log2_min_cb_size) + 1);
+    int new_sequence = IS_IDR(s) || IS_BLA(s) || s->last_eos;
     int ret;
 
     ff_refstruct_replace(&s->pps, pps);
@@ -2927,7 +2928,7 @@ static int hevc_frame_start(HEVCContext *s)
             return pix_fmt;
         s->avctx->pix_fmt = pix_fmt;
 
-        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
+        new_sequence = 1;
     }
 
     memset(s->horizontal_bs, 0, s->bs_width * s->bs_height);
@@ -2936,11 +2937,8 @@ static int hevc_frame_start(HEVCContext *s)
     memset(s->is_pcm,        0, (sps->min_pu_width + 1) * (sps->min_pu_height + 1));
     memset(s->tab_slice_address, -1, pic_size_in_ctb * sizeof(*s->tab_slice_address));
 
-    if ((IS_IDR(s) || IS_BLA(s))) {
-        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        if (IS_IDR(s))
-            ff_hevc_clear_refs(s);
-    }
+    if (IS_IDR(s))
+        ff_hevc_clear_refs(s);
 
     s->slice_idx         = 0;
     s->first_nal_type    = s->nal_unit_type;
@@ -2963,6 +2961,12 @@ static int hevc_frame_start(HEVCContext *s)
 
     if (pps->tiles_enabled_flag)
         s->local_ctx[0].end_of_tiles_x = pps->column_width[0] << sps->log2_ctb_size;
+
+    if (new_sequence) {
+        ret = ff_hevc_output_frames(s, 0, 0, s->sh.no_output_of_prior_pics_flag);
+        if (ret < 0)
+            return ret;
+    }
 
     ret = export_stream_params_from_sei(s);
     if (ret < 0)
@@ -3016,10 +3020,8 @@ static int hevc_frame_start(HEVCContext *s)
 
     s->cur_frame->f->pict_type = 3 - s->sh.slice_type;
 
-    if (!IS_IRAP(s))
-        ff_hevc_bump_frame(s);
-
-    ret = ff_hevc_output_frame(s, 0);
+    ret = ff_hevc_output_frames(s, sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics,
+                                sps->temporal_layer[sps->max_sub_layers - 1].max_dec_pic_buffering, 0);
     if (ret < 0)
         goto fail;
 
@@ -3267,8 +3269,6 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         break;
     case HEVC_NAL_EOS_NUT:
     case HEVC_NAL_EOB_NUT:
-        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        break;
     case HEVC_NAL_AUD:
     case HEVC_NAL_FD_NUT:
     case HEVC_NAL_UNSPEC62:
@@ -3425,7 +3425,7 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     av_packet_unref(avpkt);
     ret = ff_decode_get_packet(avctx, avpkt);
     if (ret == AVERROR_EOF) {
-        ret = ff_hevc_output_frame(s, 1);
+        ret = ff_hevc_output_frames(s, 0, 0, 0);
         if (ret < 0)
             return ret;
         goto do_output;
@@ -3487,7 +3487,6 @@ static int hevc_ref_frame(HEVCFrame *dst, const HEVCFrame *src)
     dst->poc        = src->poc;
     dst->ctb_count  = src->ctb_count;
     dst->flags      = src->flags;
-    dst->sequence   = src->sequence;
 
     ff_refstruct_replace(&dst->hwaccel_picture_private,
                           src->hwaccel_picture_private);
@@ -3611,8 +3610,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
         if ((ret = set_sps(s, s0->ps.sps)) < 0)
             return ret;
 
-    s->seq_decode = s0->seq_decode;
-    s->seq_output = s0->seq_output;
     s->poc_tid0   = s0->poc_tid0;
     s->eos        = s0->eos;
     s->no_rasl_output_flag = s0->no_rasl_output_flag;
@@ -3621,10 +3618,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->nal_length_size = s0->nal_length_size;
 
     s->film_grain_warning_shown = s0->film_grain_warning_shown;
-
-    if (s0->eos) {
-        s->seq_decode = (s->seq_decode + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-    }
 
     ret = ff_h2645_sei_ctx_replace(&s->sei.common, &s0->sei.common);
     if (ret < 0)

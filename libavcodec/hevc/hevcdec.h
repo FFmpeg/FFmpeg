@@ -349,10 +349,7 @@ typedef struct DBParams {
 #define HEVC_FRAME_FLAG_OUTPUT    (1 << 0)
 #define HEVC_FRAME_FLAG_SHORT_REF (1 << 1)
 #define HEVC_FRAME_FLAG_LONG_REF  (1 << 2)
-#define HEVC_FRAME_FLAG_BUMPING   (1 << 3)
-
-#define HEVC_SEQUENCE_COUNTER_MASK 0xff
-#define HEVC_SEQUENCE_COUNTER_INVALID (HEVC_SEQUENCE_COUNTER_MASK + 1)
+#define HEVC_FRAME_FLAG_UNAVAILABLE (1 << 3)
 
 typedef struct HEVCFrame {
     union {
@@ -373,12 +370,6 @@ typedef struct HEVCFrame {
     int nb_rpl_elems;
 
     void *hwaccel_picture_private; ///< RefStruct reference
-
-    /**
-     * A sequence counter, so that old frames are output first
-     * after a POC reset
-     */
-    uint16_t sequence;
 
     /**
      * A combination of HEVC_FRAME_FLAG_*
@@ -518,13 +509,6 @@ typedef struct HEVCContext {
     uint8_t *checksum_buf;
     int      checksum_buf_size;
 
-    /**
-     * Sequence counters for decoded and output frames, so that old
-     * frames are output first after a POC reset
-     */
-    uint16_t seq_decode;
-    uint16_t seq_output;
-
     /** The target for the common_cabac_state of the local contexts. */
     HEVCCABACState cabac;
 
@@ -633,12 +617,16 @@ static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
 }
 
 /**
- * Find next frame in output order and put a reference to it in frame.
- * @return 1 if a frame was output, 0 otherwise
+ * Find frames in the DPB that are ready for output and either write them to the
+ * output FIFO or drop their output flag, depending on the value of discard.
+ *
+ * @param max_output maximum number of output-pending frames that can be
+ *                   present in the DPB before output is triggered
+ * @param max_dpb maximum number of any frames that can be present in the DPB
+ *                before output is triggered
  */
-int ff_hevc_output_frame(HEVCContext *s, int flush);
-
-void ff_hevc_bump_frame(HEVCContext *s);
+int ff_hevc_output_frames(HEVCContext *s, unsigned max_output,
+                          unsigned max_dpb, int discard);
 
 void ff_hevc_unref_frame(HEVCFrame *frame, int flags);
 

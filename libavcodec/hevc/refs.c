@@ -132,8 +132,7 @@ int ff_hevc_set_new_ref(HEVCContext *s, int poc)
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *frame = &s->DPB[i];
 
-        if (frame->f && frame->sequence == s->seq_decode &&
-            frame->poc == poc) {
+        if (frame->f && frame->poc == poc) {
             av_log(s->avctx, AV_LOG_ERROR, "Duplicate POC in a sequence: %d.\n",
                    poc);
             return AVERROR_INVALIDDATA;
@@ -153,7 +152,6 @@ int ff_hevc_set_new_ref(HEVCContext *s, int poc)
         ref->flags = HEVC_FRAME_FLAG_SHORT_REF;
 
     ref->poc      = poc;
-    ref->sequence = s->seq_decode;
     ref->f->crop_left   = s->ps.sps->output_window.left_offset;
     ref->f->crop_right  = s->ps.sps->output_window.right_offset;
     ref->f->crop_top    = s->ps.sps->output_window.top_offset;
@@ -166,112 +164,49 @@ static void unref_missing_refs(HEVCContext *s)
 {
     for (int i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
          HEVCFrame *frame = &s->DPB[i];
-         if (frame->sequence == HEVC_SEQUENCE_COUNTER_INVALID) {
+         if (frame->flags & HEVC_FRAME_FLAG_UNAVAILABLE) {
              ff_hevc_unref_frame(frame, ~0);
          }
     }
 }
 
-int ff_hevc_output_frame(HEVCContext *s, int flush)
+int ff_hevc_output_frames(HEVCContext *s, unsigned max_output,
+                          unsigned max_dpb, int discard)
 {
-    if (IS_IRAP(s) && s->no_rasl_output_flag == 1) {
-        const static int mask = HEVC_FRAME_FLAG_BUMPING | HEVC_FRAME_FLAG_OUTPUT;
-        for (int i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            HEVCFrame *frame = &s->DPB[i];
-            if ((frame->flags & mask) == HEVC_FRAME_FLAG_OUTPUT &&
-                frame->sequence != s->seq_decode) {
-                if (s->sh.no_output_of_prior_pics_flag == 1)
-                    ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT);
-                else
-                    frame->flags |= HEVC_FRAME_FLAG_BUMPING;
-            }
-        }
-    }
-    do {
+    while (1) {
+        int nb_dpb    = 0;
         int nb_output = 0;
         int min_poc   = INT_MAX;
         int i, min_idx, ret;
 
         for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
             HEVCFrame *frame = &s->DPB[i];
-            if ((frame->flags & HEVC_FRAME_FLAG_OUTPUT) &&
-                frame->sequence == s->seq_output) {
+            if (frame->flags & HEVC_FRAME_FLAG_OUTPUT) {
                 nb_output++;
                 if (frame->poc < min_poc || nb_output == 1) {
                     min_poc = frame->poc;
                     min_idx = i;
                 }
             }
+            nb_dpb += !!frame->flags;
         }
 
-        /* wait for more frames before output */
-        if (!flush && s->seq_output == s->seq_decode && s->ps.sps &&
-            nb_output <= s->ps.sps->temporal_layer[s->ps.sps->max_sub_layers - 1].num_reorder_pics)
-            return 0;
-
-        if (nb_output) {
+        if (nb_output > max_output ||
+            (nb_output && nb_dpb > max_dpb)) {
             HEVCFrame *frame = &s->DPB[min_idx];
 
-            ret = ff_container_fifo_write(s->output_fifo,
+            ret = discard ? 0 :
+                  ff_container_fifo_write(s->output_fifo,
                                           frame->needs_fg ? frame->frame_grain : frame->f);
-            if (frame->flags & HEVC_FRAME_FLAG_BUMPING)
-                ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT | HEVC_FRAME_FLAG_BUMPING);
-            else
-                ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT);
+            ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT);
             if (ret < 0)
                 return ret;
 
-            av_log(s->avctx, AV_LOG_DEBUG,
-                   "Output frame with POC %d.\n", frame->poc);
-            return 1;
+            av_log(s->avctx, AV_LOG_DEBUG, "%s frame with POC %d.\n",
+                   discard ? "Discarded" : "Output", frame->poc);
+            continue;
         }
-
-        if (s->seq_output != s->seq_decode)
-            s->seq_output = (s->seq_output + 1) & HEVC_SEQUENCE_COUNTER_MASK;
-        else
-            break;
-    } while (1);
-
-    return 0;
-}
-
-void ff_hevc_bump_frame(HEVCContext *s)
-{
-    int dpb = 0;
-    int min_poc = INT_MAX;
-    int i;
-
-    for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-        HEVCFrame *frame = &s->DPB[i];
-        if ((frame->flags) &&
-            frame->sequence == s->seq_output &&
-            frame->poc != s->poc) {
-            dpb++;
-        }
-    }
-
-    if (s->ps.sps && dpb >= s->ps.sps->temporal_layer[s->ps.sps->max_sub_layers - 1].max_dec_pic_buffering) {
-        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            HEVCFrame *frame = &s->DPB[i];
-            if ((frame->flags) &&
-                frame->sequence == s->seq_output &&
-                frame->poc != s->poc) {
-                if (frame->flags == HEVC_FRAME_FLAG_OUTPUT && frame->poc < min_poc) {
-                    min_poc = frame->poc;
-                }
-            }
-        }
-
-        for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
-            HEVCFrame *frame = &s->DPB[i];
-            if (frame->flags & HEVC_FRAME_FLAG_OUTPUT &&
-                frame->sequence == s->seq_output &&
-                frame->poc <= min_poc) {
-                frame->flags |= HEVC_FRAME_FLAG_BUMPING;
-            }
-        }
-
-        dpb--;
+        return 0;
     }
 }
 
@@ -385,7 +320,7 @@ static HEVCFrame *find_ref_idx(HEVCContext *s, int poc, uint8_t use_msb)
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->DPB); i++) {
         HEVCFrame *ref = &s->DPB[i];
-        if (ref->f && ref->sequence == s->seq_decode) {
+        if (ref->f) {
             if ((ref->poc & mask) == poc && (use_msb || ref->poc != s->poc))
                 return ref;
         }
@@ -428,8 +363,7 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
     }
 
     frame->poc      = poc;
-    frame->sequence = HEVC_SEQUENCE_COUNTER_INVALID;
-    frame->flags    = 0;
+    frame->flags    = HEVC_FRAME_FLAG_UNAVAILABLE;
 
     if (s->avctx->active_thread_type == FF_THREAD_FRAME)
         ff_progress_frame_report(&frame->tf, INT_MAX);
