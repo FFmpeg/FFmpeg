@@ -2195,6 +2195,17 @@ static inline int64_t rescale_rational(AVRational q, int b)
     return av_rescale(q.num, b, q.den);
 }
 
+static void mov_write_hfov_tag(AVFormatContext *s, AVIOContext *pb,
+                              const AVStereo3D *stereo3d)
+{
+    if (!stereo3d->horizontal_field_of_view.num)
+        return;
+
+    avio_wb32(pb, 12); /* size */
+    ffio_wfourcc(pb, "hfov");
+    avio_wb32(pb, rescale_rational(stereo3d->horizontal_field_of_view, 1000));
+}
+
 static void mov_write_vexu_proj_tag(AVFormatContext *s, AVIOContext *pb,
                                     const AVSphericalMapping *spherical_mapping)
 {
@@ -2770,6 +2781,8 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
 
         if (stereo3d || spherical_mapping)
             mov_write_vexu_tag(s, pb, stereo3d, spherical_mapping);
+        if (stereo3d)
+            mov_write_hfov_tag(s, pb, stereo3d);
     }
 
     if (track->mode == MODE_MP4) {
