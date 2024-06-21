@@ -99,7 +99,7 @@ static void parse_qn(GetBitContext *gb, int *qn, int nk_mode, int no_qn)
 static int parse_codebook_idx(GetBitContext *gb, uint32_t *kv,
                               int nk_mode, int no_qn)
 {
-    int idx, n, nk;
+    int n, nk;
 
     int qn[2];
     parse_qn(gb, qn, nk_mode, no_qn);
@@ -114,7 +114,7 @@ static int parse_codebook_idx(GetBitContext *gb, uint32_t *kv,
         }
     }
 
-    idx = get_bits(gb, 4*n);
+    skip_bits(gb, 4*n);
 
     if (nk > 0)
         for (int i = 0; i < 8; i++)
@@ -145,7 +145,6 @@ int ff_aac_ldp_parse_channel_stream(AACDecContext *ac, AACUSACConfig *usac,
     int k;
     const uint8_t *mod;
     int first_ldp_flag;
-    int first_tcx_flag;
 
     ce->ldp.acelp_core_mode = get_bits(gb, 3);
     ce->ldp.lpd_mode = get_bits(gb, 5);
@@ -157,7 +156,6 @@ int ff_aac_ldp_parse_channel_stream(AACDecContext *ac, AACUSACConfig *usac,
     mod = ff_aac_lpd_mode_tab[ce->ldp.lpd_mode];
 
     first_ldp_flag = !ce->ldp.core_mode_last;
-    first_tcx_flag = 1;
     if (first_ldp_flag)
         ce->ldp.last_lpd_mode = -1; /* last_ldp_mode is a **STATEFUL** value */
 
@@ -179,7 +177,6 @@ int ff_aac_ldp_parse_channel_stream(AACDecContext *ac, AACUSACConfig *usac,
 //            parse_tcx_coding();
             ce->ldp.last_lpd_mode = mod[k];
             k += (1 << (mod[k] - 1));
-            first_tcx_flag = 0;
         }
     }
 
