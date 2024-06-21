@@ -321,7 +321,7 @@ static int do_decode(AVCodecContext *avctx, AVFrame *frame, int decorrelate, int
             cb->prev = prev;
 
             if (downsample)
-                dst[n] *= 256;
+                dst[n] *= 256U;
 
             dst[E] = dst[D];
             dst[D] = dst[C];
