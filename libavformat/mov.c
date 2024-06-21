@@ -6548,7 +6548,7 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     uint32_t tag, baseline = 0;
     enum AVStereo3DView view = AV_STEREO3D_VIEW_PACKED;
     enum AVStereo3DPrimaryEye primary_eye = AV_PRIMARY_EYE_NONE;
-    AVRational horizontal_disparity_adjustment = { 0, 0 };
+    AVRational horizontal_disparity_adjustment = { 0, 1 };
 
     if (c->fc->nb_streams < 1)
         return 0;
