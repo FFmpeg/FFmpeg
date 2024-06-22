@@ -90,35 +90,41 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
     randomize_buffers2(filter, LUMA_PARAMS_SIZE, 1);
     randomize_buffers2(clip, LUMA_PARAMS_SIZE, 0);
 
-    for (int h = 4; h <= MAX_CTU_SIZE; h += 8) {
-        for (int w = 4; w <= MAX_CTU_SIZE; w += 8) {
+    for (int h = 4; h <= MAX_CTU_SIZE; h += 4) {
+        for (int w = 4; w <= MAX_CTU_SIZE; w += 4) {
             const int ctu_size = MAX_CTU_SIZE;
-            if (check_func(c->alf.filter[LUMA], "vvc_alf_filter_luma_%dx%d_%d", w, h, bit_depth)) {
-                const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_LUMA;
-                memset(dst0, 0, DST_BUF_SIZE);
-                memset(dst1, 0, DST_BUF_SIZE);
-                call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
-                call_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
-                for (int i = 0; i < h; i++) {
-                    if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, w * SIZEOF_PIXEL))
-                        fail();
+            //Both picture size and virtual boundaries are 8-aligned. For luma, we only need to check 8-aligned sizes.
+            if (!(w % 8) && !(h % 8)) {
+                if (check_func(c->alf.filter[LUMA], "vvc_alf_filter_luma_%dx%d_%d", w, h, bit_depth)) {
+                    const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_LUMA;
+                    memset(dst0, 0, DST_BUF_SIZE);
+                    memset(dst1, 0, DST_BUF_SIZE);
+                    call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
+                    call_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
+                    for (int i = 0; i < h; i++) {
+                        if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, w * SIZEOF_PIXEL))
+                            fail();
+                    }
+                    // Bench only square sizes, and ones with dimensions being a power of two.
+                    if (w == h && (w & (w - 1)) == 0)
+                        bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
                 }
-                // Bench only square sizes, and ones with dimensions being a power of two.
-                if (w == h && (w & (w - 1)) == 0)
-                    bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
             }
-            if (check_func(c->alf.filter[CHROMA], "vvc_alf_filter_chroma_%dx%d_%d", w, h, bit_depth)) {
-                const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_CHROMA;
-                memset(dst0, 0, DST_BUF_SIZE);
-                memset(dst1, 0, DST_BUF_SIZE);
-                call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
-                call_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
-                for (int i = 0; i < h; i++) {
-                    if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, w * SIZEOF_PIXEL))
-                        fail();
+            //For chroma, once it exceeds 64, it's not a 4:2:0 format, so we only need to check 8-aligned sizes as well.
+            if ((w <= 64 || !(w % 8)) && (h <= 64 || !(h % 8))) {
+                if (check_func(c->alf.filter[CHROMA], "vvc_alf_filter_chroma_%dx%d_%d", w, h, bit_depth)) {
+                    const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_CHROMA;
+                    memset(dst0, 0, DST_BUF_SIZE);
+                    memset(dst1, 0, DST_BUF_SIZE);
+                    call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
+                    call_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
+                    for (int i = 0; i < h; i++) {
+                        if (memcmp(dst0 + i * dst_stride, dst1 + i * dst_stride, w * SIZEOF_PIXEL))
+                            fail();
+                    }
+                    if (w == h && (w & (w - 1)) == 0)
+                        bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
                 }
-                if (w == h && (w & (w - 1)) == 0)
-                    bench_new(dst1, dst_stride, src1 + offset, src_stride, w, h, filter, clip, vb_pos);
             }
         }
     }
@@ -142,8 +148,9 @@ static void check_alf_classify(VVCDSPContext *c, const int bit_depth)
 
     randomize_buffers(src0, src1, SRC_BUF_SIZE);
 
-    for (int h = 4; h <= MAX_CTU_SIZE; h += 8) {
-        for (int w = 4; w <= MAX_CTU_SIZE; w += 8) {
+    //Both picture size and virtual boundaries are 8-aligned. Classify is luma only, we only need to check 8-aligned sizes.
+    for (int h = 8; h <= MAX_CTU_SIZE; h += 8) {
+        for (int w = 8; w <= MAX_CTU_SIZE; w += 8) {
             const int id_size = w * h / ALF_BLOCK_SIZE / ALF_BLOCK_SIZE * sizeof(int);
             const int vb_pos  = MAX_CTU_SIZE - ALF_BLOCK_SIZE;
             if (check_func(c->alf.classify, "vvc_alf_classify_%dx%d_%d", w, h, bit_depth)) {
