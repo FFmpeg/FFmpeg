@@ -6332,7 +6332,7 @@ static int mov_read_st3d(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     }
 
-    sc->stereo3d = av_stereo3d_alloc();
+    sc->stereo3d = av_stereo3d_alloc_size(&sc->stereo3d_size);
     if (!sc->stereo3d)
         return AVERROR(ENOMEM);
 
@@ -6691,7 +6691,7 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     if (!sc->stereo3d) {
-        sc->stereo3d = av_stereo3d_alloc();
+        sc->stereo3d = av_stereo3d_alloc_size(&sc->stereo3d_size);
         if (!sc->stereo3d)
             return AVERROR(ENOMEM);
     }
@@ -6777,7 +6777,7 @@ static int mov_read_hfov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 
     if (!sc->stereo3d) {
-        sc->stereo3d = av_stereo3d_alloc();
+        sc->stereo3d = av_stereo3d_alloc_size(&sc->stereo3d_size);
         if (!sc->stereo3d)
             return AVERROR(ENOMEM);
     }
@@ -6827,7 +6827,7 @@ static int mov_parse_uuid_spherical(MOVStreamContext *sc, AVIOContext *pb, size_
             else
                 mode = AV_STEREO3D_2D;
 
-            sc->stereo3d = av_stereo3d_alloc();
+            sc->stereo3d = av_stereo3d_alloc_size(&sc->stereo3d_size);
             if (!sc->stereo3d)
                 goto out;
 
@@ -10028,7 +10028,7 @@ static int mov_read_header(AVFormatContext *s)
             if (sc->stereo3d) {
                 if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
                                              AV_PKT_DATA_STEREO3D,
-                                             (uint8_t *)sc->stereo3d, sizeof(*sc->stereo3d), 0))
+                                             (uint8_t *)sc->stereo3d, sc->stereo3d_size, 0))
                     return AVERROR(ENOMEM);
 
                 sc->stereo3d = NULL;
