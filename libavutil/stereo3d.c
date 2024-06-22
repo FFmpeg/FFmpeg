@@ -74,6 +74,7 @@ static const char * const stereo3d_type_names[] = {
     [AV_STEREO3D_SIDEBYSIDE_QUINCUNX] = "side by side (quincunx subsampling)",
     [AV_STEREO3D_LINES]               = "interleaved lines",
     [AV_STEREO3D_COLUMNS]             = "interleaved columns",
+    [AV_STEREO3D_UNSPEC]              = "unspecified",
 };
 
 static const char * const stereo3d_view_names[] = {

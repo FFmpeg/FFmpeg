@@ -136,6 +136,11 @@ enum AVStereo3DType {
      * @endcode
      */
     AV_STEREO3D_COLUMNS,
+
+    /**
+     * Video is stereoscopic but the packing is unspecified.
+     */
+    AV_STEREO3D_UNSPEC,
 };
 
 /**
