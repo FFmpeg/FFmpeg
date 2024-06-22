@@ -238,6 +238,14 @@ typedef struct AVStereo3D {
 AVStereo3D *av_stereo3d_alloc(void);
 
 /**
+ * Allocate an AVStereo3D structure and set its fields to default values.
+ * The resulting struct can be freed using av_freep().
+ *
+ * @return An AVStereo3D filled with default values or NULL on failure.
+ */
+AVStereo3D *av_stereo3d_alloc_size(size_t *size);
+
+/**
  * Allocate a complete AVFrameSideData and add it to the frame.
  *
  * @param frame The frame which side data is added to.
