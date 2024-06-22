@@ -6546,7 +6546,8 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int size, flags = 0;
     int64_t remaining;
     uint32_t tag, baseline = 0;
-    enum AVStereo3DView view = AV_STEREO3D_VIEW_PACKED;
+    enum AVStereo3DView view = AV_STEREO3D_VIEW_UNSPEC;
+    enum AVStereo3DType type = AV_STEREO3D_2D;
     enum AVStereo3DPrimaryEye primary_eye = AV_PRIMARY_EYE_NONE;
     AVRational horizontal_disparity_adjustment = { 0, 1 };
 
@@ -6596,6 +6597,9 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 view = AV_STEREO3D_VIEW_LEFT;
             else if (has_right)
                 view = AV_STEREO3D_VIEW_RIGHT;
+            if (has_left || has_right)
+                type = AV_STEREO3D_UNSPEC;
+
             break;
         }
         case MKTAG('h','e','r','o'): {
@@ -6690,6 +6694,9 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR_INVALIDDATA;
     }
 
+    if (type == AV_STEREO3D_2D)
+        return 0;
+
     if (!sc->stereo3d) {
         sc->stereo3d = av_stereo3d_alloc_size(&sc->stereo3d_size);
         if (!sc->stereo3d)
@@ -6697,6 +6704,7 @@ static int mov_read_eyes(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     sc->stereo3d->flags                           = flags;
+    sc->stereo3d->type                            = type;
     sc->stereo3d->view                            = view;
     sc->stereo3d->primary_eye                     = primary_eye;
     sc->stereo3d->baseline                        = baseline;
