@@ -66,6 +66,14 @@ static const uint32_t pixel_mask[3] = { 0xffffffff, 0x03ff03ff, 0x0fff0fff };
         }                                                   \
     } while (0)
 
+static int get_alf_vb_pos(const int h, const int vb_pos_above)
+{
+    if (h == MAX_CTU_SIZE)
+        return MAX_CTU_SIZE - vb_pos_above;
+    // If h < MAX_CTU_SIZE and picture virtual boundaries are involved, ALF virtual boundaries can either be within or outside this ALF block.
+    return ((rnd() & 1) ? h : MAX_CTU_SIZE) - vb_pos_above;
+}
+
 static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
 {
     LOCAL_ALIGNED_32(uint8_t, dst0, [DST_BUF_SIZE]);
@@ -92,11 +100,10 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
 
     for (int h = 4; h <= MAX_CTU_SIZE; h += 4) {
         for (int w = 4; w <= MAX_CTU_SIZE; w += 4) {
-            const int ctu_size = MAX_CTU_SIZE;
             //Both picture size and virtual boundaries are 8-aligned. For luma, we only need to check 8-aligned sizes.
             if (!(w % 8) && !(h % 8)) {
                 if (check_func(c->alf.filter[LUMA], "vvc_alf_filter_luma_%dx%d_%d", w, h, bit_depth)) {
-                    const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_LUMA;
+                    const int vb_pos = get_alf_vb_pos(h, ALF_VB_POS_ABOVE_LUMA);
                     memset(dst0, 0, DST_BUF_SIZE);
                     memset(dst1, 0, DST_BUF_SIZE);
                     call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
@@ -113,7 +120,7 @@ static void check_alf_filter(VVCDSPContext *c, const int bit_depth)
             //For chroma, once it exceeds 64, it's not a 4:2:0 format, so we only need to check 8-aligned sizes as well.
             if ((w <= 64 || !(w % 8)) && (h <= 64 || !(h % 8))) {
                 if (check_func(c->alf.filter[CHROMA], "vvc_alf_filter_chroma_%dx%d_%d", w, h, bit_depth)) {
-                    const int vb_pos = ctu_size - ALF_VB_POS_ABOVE_CHROMA;
+                    const int vb_pos = get_alf_vb_pos(h, ALF_VB_POS_ABOVE_CHROMA);
                     memset(dst0, 0, DST_BUF_SIZE);
                     memset(dst1, 0, DST_BUF_SIZE);
                     call_ref(dst0, dst_stride, src0 + offset, src_stride, w, h, filter, clip, vb_pos);
@@ -152,7 +159,7 @@ static void check_alf_classify(VVCDSPContext *c, const int bit_depth)
     for (int h = 8; h <= MAX_CTU_SIZE; h += 8) {
         for (int w = 8; w <= MAX_CTU_SIZE; w += 8) {
             const int id_size = w * h / ALF_BLOCK_SIZE / ALF_BLOCK_SIZE * sizeof(int);
-            const int vb_pos  = MAX_CTU_SIZE - ALF_BLOCK_SIZE;
+            const int vb_pos  = get_alf_vb_pos(h, ALF_VB_POS_ABOVE_LUMA);
             if (check_func(c->alf.classify, "vvc_alf_classify_%dx%d_%d", w, h, bit_depth)) {
                 memset(class_idx0, 0, id_size);
                 memset(class_idx1, 0, id_size);
