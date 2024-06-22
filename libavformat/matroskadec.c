@@ -2253,8 +2253,9 @@ static int mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mo
         STEREOMODE_STEREO3D_MAPPING(STEREO_MODE_CONV, NOTHING)
     };
     AVStereo3D *stereo;
+    size_t size;
 
-    stereo = av_stereo3d_alloc();
+    stereo = av_stereo3d_alloc_size(&size);
     if (!stereo)
         return AVERROR(ENOMEM);
 
@@ -2262,7 +2263,7 @@ static int mkv_stereo3d_conv(AVStream *st, MatroskaVideoStereoModeType stereo_mo
     stereo->flags = stereo_mode_conv[stereo_mode].flags;
 
     if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
-                                 AV_PKT_DATA_STEREO3D, stereo, sizeof(*stereo), 0)) {
+                                 AV_PKT_DATA_STEREO3D, stereo, size, 0)) {
         av_freep(&stereo);
         return AVERROR(ENOMEM);
     }
