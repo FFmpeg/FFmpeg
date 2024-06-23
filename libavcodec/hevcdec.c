@@ -628,6 +628,10 @@ static int hls_slice_header(HEVCContext *s)
 
         if (s->ps.pps->dependent_slice_segments_enabled_flag)
             sh->dependent_slice_segment_flag = get_bits1(gb);
+        if (sh->dependent_slice_segment_flag && !s->slice_initialized) {
+            av_log(s->avctx, AV_LOG_ERROR, "Independent slice segment missing.\n");
+            return AVERROR_INVALIDDATA;
+        }
 
         slice_address_length = av_ceil_log2(s->ps.sps->ctb_width *
                                             s->ps.sps->ctb_height);
@@ -896,9 +900,6 @@ static int hls_slice_header(HEVCContext *s)
         } else {
             sh->slice_loop_filter_across_slices_enabled_flag = s->ps.pps->seq_loop_filter_across_slices_enabled_flag;
         }
-    } else if (!s->slice_initialized) {
-        av_log(s->avctx, AV_LOG_ERROR, "Independent slice segment missing.\n");
-        return AVERROR_INVALIDDATA;
     }
 
     sh->num_entry_point_offsets = 0;
@@ -3179,8 +3180,11 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
     case HEVC_NAL_RASL_N:
     case HEVC_NAL_RASL_R:
         ret = hls_slice_header(s);
-        if (ret < 0)
+        if (ret < 0) {
+            // hls_slice_header() does not cleanup on failure thus the state now is inconsistant so we cannot use it on depandant slices
+            s->slice_initialized = 0;
             return ret;
+        }
         if (ret == 1) {
             ret = AVERROR_INVALIDDATA;
             goto fail;
