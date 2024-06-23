@@ -1268,8 +1268,6 @@ int ff_aac_sbr_decode_usac_data(AACDecContext *ac, ChannelElement *che,
 
     sbr->ready_for_dequant = 1;
 
-    int start = get_bits_count(gb);
-
     if (sbr_ch == 1) { /* sbr_single_channel_element */
         /* if (harmonicSBR) ... */
 
