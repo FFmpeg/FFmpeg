@@ -348,6 +348,9 @@ int ff_aac_usac_config_decode(AACDecContext *ac, AVCodecContext *avctx,
     int map_pos_set = 0;
     uint8_t layout_map[MAX_ELEM_ID*4][3] = { 0 };
 
+    if (!ac)
+        return AVERROR_PATCHWELCOME;
+
     memset(usac, 0, sizeof(*usac));
 
     freq_idx = get_bits(gb, 5); /* usacSamplingFrequencyIndex */
