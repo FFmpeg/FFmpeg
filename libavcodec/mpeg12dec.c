@@ -73,7 +73,7 @@ typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
     int repeat_field;           /* true if we must repeat the field */
     AVPanScan pan_scan;         /* some temporary storage for the panscan */
-    AVStereo3D stereo3d;
+    enum AVStereo3DType stereo3d_type;
     int has_stereo3d;
     AVBufferRef *a53_buf_ref;
     enum Mpeg2ClosedCaptionsFormat cc_format;
@@ -1319,7 +1319,7 @@ static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
             if (!stereo)
                 return AVERROR(ENOMEM);
 
-            *stereo = s1->stereo3d;
+            stereo->type = s1->stereo3d_type;
             s1->has_stereo3d = 0;
         }
 
@@ -2118,16 +2118,16 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
 
             switch (S3D_video_format_type) {
             case 0x03:
-                s1->stereo3d.type = AV_STEREO3D_SIDEBYSIDE;
+                s1->stereo3d_type = AV_STEREO3D_SIDEBYSIDE;
                 break;
             case 0x04:
-                s1->stereo3d.type = AV_STEREO3D_TOPBOTTOM;
+                s1->stereo3d_type = AV_STEREO3D_TOPBOTTOM;
                 break;
             case 0x08:
-                s1->stereo3d.type = AV_STEREO3D_2D;
+                s1->stereo3d_type = AV_STEREO3D_2D;
                 break;
             case 0x23:
-                s1->stereo3d.type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
+                s1->stereo3d_type = AV_STEREO3D_SIDEBYSIDE_QUINCUNX;
                 break;
             }
         }
