@@ -594,7 +594,7 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
     FFIOContext b;
     AVIOContext *pbc;
     uint8_t *buf;
-    unsigned audio_element_id, codec_config_id, num_parameters;
+    unsigned audio_element_id, nb_substreams, codec_config_id, num_parameters;
     int audio_element_type, ret;
 
     buf = av_malloc(len);
@@ -649,14 +649,15 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
         goto fail;
     }
 
-    audio_element->nb_substreams = ffio_read_leb(pbc);
+    nb_substreams = ffio_read_leb(pbc);
     audio_element->codec_config_id = codec_config_id;
     audio_element->audio_element_id = audio_element_id;
-    audio_element->substreams = av_calloc(audio_element->nb_substreams, sizeof(*audio_element->substreams));
+    audio_element->substreams = av_calloc(nb_substreams, sizeof(*audio_element->substreams));
     if (!audio_element->substreams) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+    audio_element->nb_substreams = nb_substreams;
 
     element = audio_element->element = av_iamf_audio_element_alloc();
     if (!element) {
