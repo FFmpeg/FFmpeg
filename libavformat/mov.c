@@ -6782,7 +6782,8 @@ static int mov_read_hfov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return AVERROR(ENOMEM);
     }
 
-    sc->stereo3d->horizontal_field_of_view = avio_rb32(pb);
+    sc->stereo3d->horizontal_field_of_view.num = avio_rb32(pb);
+    sc->stereo3d->horizontal_field_of_view.den = 1000; // thousands of a degree
 
     return 0;
 }

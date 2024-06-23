@@ -2548,7 +2548,7 @@ static void print_pkt_side_data(WriterContext *w,
             print_str("primary_eye", av_stereo3d_primary_eye_name(stereo->primary_eye));
             print_int("baseline", stereo->baseline);
             print_q("horizontal_disparity_adjustment", stereo->horizontal_disparity_adjustment, '/');
-            print_int("horizontal_field_of_view", stereo->horizontal_field_of_view);
+            print_q("horizontal_field_of_view", stereo->horizontal_field_of_view, '/');
         } else if (sd->type == AV_PKT_DATA_SPHERICAL) {
             const AVSphericalMapping *spherical = (AVSphericalMapping *)sd->data;
             print_str("projection", av_spherical_projection_name(spherical->projection));

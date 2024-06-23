@@ -39,6 +39,6 @@ view=packed
 primary_eye=none
 baseline=0
 horizontal_disparity_adjustment=0/1
-horizontal_field_of_view=0
+horizontal_field_of_view=0/1
 [/SIDE_DATA]
 [/STREAM]

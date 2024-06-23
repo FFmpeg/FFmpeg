@@ -224,9 +224,9 @@ typedef struct AVStereo3D {
     AVRational horizontal_disparity_adjustment;
 
     /**
-     * Horizontal field of view in thousanths of a degree. Zero if unset.
+     * Horizontal field of view, in degrees. Zero if unset.
      */
-    uint32_t horizontal_field_of_view;
+    AVRational horizontal_field_of_view;
 } AVStereo3D;
 
 /**
