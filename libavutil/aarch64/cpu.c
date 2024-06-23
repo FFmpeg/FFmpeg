@@ -82,6 +82,44 @@ static int detect_flags(void)
     return flags;
 }
 
+#elif defined(__OpenBSD__)
+#include <machine/armreg.h>
+#include <machine/cpu.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+static int detect_flags(void)
+{
+    int flags = 0;
+
+#ifdef CPU_ID_AA64ISAR0
+    int mib[2];
+    uint64_t isar0;
+    uint64_t isar1;
+    size_t len;
+
+    mib[0] = CTL_MACHDEP;
+    mib[1] = CPU_ID_AA64ISAR0;
+    len = sizeof(isar0);
+    if (sysctl(mib, 2, &isar0, &len, NULL, 0) != -1) {
+        if (ID_AA64ISAR0_DP(isar0) >= ID_AA64ISAR0_DP_IMPL)
+            flags |= AV_CPU_FLAG_DOTPROD;
+    }
+
+    mib[0] = CTL_MACHDEP;
+    mib[1] = CPU_ID_AA64ISAR1;
+    len = sizeof(isar1);
+    if (sysctl(mib, 2, &isar1, &len, NULL, 0) != -1) {
+#ifdef ID_AA64ISAR1_I8MM_IMPL
+        if (ID_AA64ISAR1_I8MM(isar1) >= ID_AA64ISAR1_I8MM_IMPL)
+            flags |= AV_CPU_FLAG_I8MM;
+#endif
+    }
+#endif
+
+    return flags;
+}
+
 #elif defined(_WIN32)
 #include <windows.h>
 
