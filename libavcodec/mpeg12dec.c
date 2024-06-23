@@ -1278,8 +1278,6 @@ static int mpeg_field_start(Mpeg1Context *s1, const uint8_t *buf, int buf_size)
                                                     s->cur_pic.linesize[i]);
                 }
                 s->cur_pic.linesize[i]  *= 2;
-                s->last_pic.linesize[i] *= 2;
-                s->next_pic.linesize[i] *= 2;
             }
         }
 
