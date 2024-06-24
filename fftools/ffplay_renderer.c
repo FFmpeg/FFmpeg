@@ -766,7 +766,7 @@ static void destroy(VkRenderer *renderer)
         vkDestroySurfaceKHR = (PFN_vkDestroySurfaceKHR)
                 ctx->get_proc_addr(ctx->inst, "vkDestroySurfaceKHR");
         vkDestroySurfaceKHR(ctx->inst, ctx->vk_surface, NULL);
-        ctx->vk_surface = NULL;
+        ctx->vk_surface = VK_NULL_HANDLE;
     }
 
     av_buffer_unref(&ctx->hw_device_ref);
