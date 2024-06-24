@@ -20,7 +20,7 @@
 
 #include "libavutil/aarch64/asm.S"
 
-.macro rgb24_to_yuv_load_rgb, src
+.macro rgb_to_yuv_load_rgb src
         ld3             { v16.16b, v17.16b, v18.16b }, [\src]
         uxtl            v19.8h, v16.8b             // v19: r
         uxtl            v20.8h, v17.8b             // v20: g
@@ -30,7 +30,7 @@
         uxtl2           v24.8h, v18.16b            // v24: b
 .endm
 
-.macro rgb24_to_yuv_product, r, g, b, dst1, dst2, dst, coef0, coef1, coef2, right_shift
+.macro rgb_to_yuv_product r, g, b, dst1, dst2, dst, coef0, coef1, coef2, right_shift
         mov             \dst1\().16b, v6.16b                    // dst1 = const_offset
         mov             \dst2\().16b, v6.16b                    // dst2 = const_offset
         smlal           \dst1\().4s, \coef0\().4h, \r\().4h     // dst1 += rx * r
@@ -43,12 +43,20 @@
         sqshrn2         \dst\().8h, \dst2\().4s, \right_shift   // dst_higher_half = dst2 >> right_shift
 .endm
 
+function ff_bgr24ToY_neon, export=1
+        cmp             w4, #0                  // check width > 0
+        ldp             w12, w11, [x5]          // w12: ry, w11: gy
+        ldr             w10, [x5, #8]           // w10: by
+        b.gt            4f
+        ret
+endfunc
+
 function ff_rgb24ToY_neon, export=1
         cmp             w4, #0                  // check width > 0
         ldp             w10, w11, [x5]          // w10: ry, w11: gy
         ldr             w12, [x5, #8]           // w12: by
         b.le            3f
-
+4:
         mov             w9, #256                // w9 = 1 << (RGB2YUV_SHIFT - 7)
         movk            w9, #8, lsl #16         // w9 += 32 << (RGB2YUV_SHIFT - 1)
         dup             v6.4s, w9               // w9: const_offset
@@ -59,9 +67,9 @@ function ff_rgb24ToY_neon, export=1
         dup             v2.8h, w12
         b.lt            2f
 1:
-        rgb24_to_yuv_load_rgb x1
-        rgb24_to_yuv_product v19, v20, v21, v25, v26, v16, v0, v1, v2, #9
-        rgb24_to_yuv_product v22, v23, v24, v27, v28, v17, v0, v1, v2, #9
+        rgb_to_yuv_load_rgb x1
+        rgb_to_yuv_product v19, v20, v21, v25, v26, v16, v0, v1, v2, #9
+        rgb_to_yuv_product v22, v23, v24, v27, v28, v17, v0, v1, v2, #9
         sub             w4, w4, #16             // width -= 16
         add             x1, x1, #48             // src += 48
         cmp             w4, #16                 // width >= 16 ?
@@ -85,10 +93,7 @@ function ff_rgb24ToY_neon, export=1
         ret
 endfunc
 
-.macro rgb24_load_uv_coeff half
-        ldp             w10, w11, [x6, #12]     // w10: ru, w11: gu
-        ldp             w12, w13, [x6, #20]     // w12: bu, w13: rv
-        ldp             w14, w15, [x6, #28]     // w14: gv, w15: bv
+.macro rgb_set_uv_coeff half
     .if \half
         mov             w9, #512
         movk            w9, #128, lsl #16       // w9: const_offset
@@ -105,12 +110,26 @@ endfunc
         dup             v6.4s, w9
 .endm
 
+function ff_bgr24ToUV_half_neon, export=1
+        cmp             w5, #0          // check width > 0
+        b.le            3f
+
+        ldp             w12, w11, [x6, #12]
+        ldp             w10, w15, [x6, #20]
+        ldp             w14, w13, [x6, #28]
+        b               4f
+endfunc
+
 function ff_rgb24ToUV_half_neon, export=1
         cmp             w5, #0          // check width > 0
         b.le            3f
 
+        ldp             w10, w11, [x6, #12]     // w10: ru, w11: gu
+        ldp             w12, w13, [x6, #20]     // w12: bu, w13: rv
+        ldp             w14, w15, [x6, #28]     // w14: gv, w15: bv
+4:
         cmp             w5, #8
-        rgb24_load_uv_coeff half=1
+        rgb_set_uv_coeff half=1
         b.lt            2f
 1:
         ld3             { v16.16b, v17.16b, v18.16b }, [x3]
@@ -118,8 +137,8 @@ function ff_rgb24ToUV_half_neon, export=1
         uaddlp          v20.8h, v17.16b         // v20: g
         uaddlp          v21.8h, v18.16b         // v21: b
 
-        rgb24_to_yuv_product v19, v20, v21, v22, v23, v16, v0, v1, v2, #10
-        rgb24_to_yuv_product v19, v20, v21, v24, v25, v17, v3, v4, v5, #10
+        rgb_to_yuv_product v19, v20, v21, v22, v23, v16, v0, v1, v2, #10
+        rgb_to_yuv_product v19, v20, v21, v24, v25, v17, v3, v4, v5, #10
         sub             w5, w5, #8              // width -= 8
         add             x3, x3, #48             // src += 48
         cmp             w5, #8                  // width >= 8 ?
@@ -158,19 +177,33 @@ function ff_rgb24ToUV_half_neon, export=1
         ret
 endfunc
 
+function ff_bgr24ToUV_neon, export=1
+        cmp             w5, #0                  // check width > 0
+        b.le            3f
+
+        ldp             w12, w11, [x6, #12]
+        ldp             w10, w15, [x6, #20]
+        ldp             w14, w13, [x6, #28]
+        b               4f
+endfunc
+
 function ff_rgb24ToUV_neon, export=1
         cmp             w5, #0                  // check width > 0
         b.le            3f
 
+        ldp             w10, w11, [x6, #12]     // w10: ru, w11: gu
+        ldp             w12, w13, [x6, #20]     // w12: bu, w13: rv
+        ldp             w14, w15, [x6, #28]     // w14: gv, w15: bv
+4:
         cmp             w5, #16
-        rgb24_load_uv_coeff half=0
+        rgb_set_uv_coeff half=0
         b.lt            2f
 1:
-        rgb24_to_yuv_load_rgb x3
-        rgb24_to_yuv_product v19, v20, v21, v25, v26, v16, v0, v1, v2, #9
-        rgb24_to_yuv_product v22, v23, v24, v27, v28, v17, v0, v1, v2, #9
-        rgb24_to_yuv_product v19, v20, v21, v25, v26, v18, v3, v4, v5, #9
-        rgb24_to_yuv_product v22, v23, v24, v27, v28, v19, v3, v4, v5, #9
+        rgb_to_yuv_load_rgb x3
+        rgb_to_yuv_product v19, v20, v21, v25, v26, v16, v0, v1, v2, #9
+        rgb_to_yuv_product v22, v23, v24, v27, v28, v17, v0, v1, v2, #9
+        rgb_to_yuv_product v19, v20, v21, v25, v26, v18, v3, v4, v5, #9
+        rgb_to_yuv_product v22, v23, v24, v27, v28, v19, v3, v4, v5, #9
         sub             w5, w5, #16
         add             x3, x3, #48             // src += 48
         cmp             w5, #16
