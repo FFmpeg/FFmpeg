@@ -46,7 +46,7 @@ typedef struct AVTaskCallbacks {
 /**
  * Alloc executor
  * @param callbacks callback structure for executor
- * @param thread_count worker thread number
+ * @param thread_count worker thread number, 0 for run on caller's thread directly
  * @return return the executor
  */
 AVExecutor* av_executor_alloc(const AVTaskCallbacks *callbacks, int thread_count);
