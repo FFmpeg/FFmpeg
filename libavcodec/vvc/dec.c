@@ -1022,7 +1022,7 @@ static av_cold int vvc_decode_init(AVCodecContext *avctx)
     static AVOnce init_static_once = AV_ONCE_INIT;
     const int cpu_count            = av_cpu_count();
     const int delayed              = FFMIN(cpu_count, VVC_MAX_DELAYED_FRAMES);
-    const int thread_count         = avctx->thread_count ? avctx->thread_count : delayed;
+    int thread_count               = avctx->thread_count ? avctx->thread_count : delayed;
     int ret;
 
     s->avctx = avctx;
@@ -1049,6 +1049,8 @@ static av_cold int vvc_decode_init(AVCodecContext *avctx)
             return ret;
     }
 
+    if (thread_count == 1)
+        thread_count = 0;
     s->executor = ff_vvc_executor_alloc(s, thread_count);
     if (!s->executor)
         return AVERROR(ENOMEM);
