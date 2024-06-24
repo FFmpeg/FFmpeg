@@ -211,6 +211,8 @@ void ff_##name##ToUV_half_neon(uint8_t *, uint8_t *, const uint8_t *, \
                               const uint8_t *, const uint8_t *, int w, \
                               uint32_t *coeffs, void *)
 
+NEON_INPUT(abgr32);
+NEON_INPUT(argb32);
 NEON_INPUT(bgr24);
 NEON_INPUT(bgra32);
 NEON_INPUT(rgb24);
@@ -248,6 +250,21 @@ av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
             c->yuv2planeX = ff_yuv2planeX_8_neon;
         }
         switch (c->srcFormat) {
+        case AV_PIX_FMT_ABGR:
+            c->lumToYV12 = ff_abgr32ToY_neon;
+            if (c->chrSrcHSubSample)
+                c->chrToYV12 = ff_abgr32ToUV_half_neon;
+            else
+                c->chrToYV12 = ff_abgr32ToUV_neon;
+            break;
+
+        case AV_PIX_FMT_ARGB:
+            c->lumToYV12 = ff_argb32ToY_neon;
+            if (c->chrSrcHSubSample)
+                c->chrToYV12 = ff_argb32ToUV_half_neon;
+            else
+                c->chrToYV12 = ff_argb32ToUV_neon;
+            break;
         case AV_PIX_FMT_BGR24:
             c->lumToYV12 = ff_bgr24ToY_neon;
             if (c->chrSrcHSubSample)
