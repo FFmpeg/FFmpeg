@@ -2765,6 +2765,9 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
     const HEVCPPS *pps = s->pps;
     int ret;
 
+    if (!s->sh.first_slice_in_pic_flag)
+        s->slice_idx += !s->sh.dependent_slice_segment_flag;
+
     if (!s->sh.dependent_slice_segment_flag && s->sh.slice_type != HEVC_SLICE_I) {
         ret = ff_hevc_slice_rpl(s);
         if (ret < 0) {
@@ -2801,8 +2804,6 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
 
     s->local_ctx[0].tu.cu_qp_offset_cb = 0;
     s->local_ctx[0].tu.cu_qp_offset_cr = 0;
-
-    s->slice_idx += !s->sh.dependent_slice_segment_flag;
 
     if (s->avctx->active_thread_type == FF_THREAD_SLICE  &&
         s->sh.num_entry_point_offsets > 0                &&
