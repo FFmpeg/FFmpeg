@@ -420,7 +420,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
 
         if ((hdr->rpu_format & 0x700) == 0) {
             int bl_bit_depth_minus8 = get_ue_golomb_31(gb);
-            int el_bit_depth_minus8 = get_ue_golomb_31(gb);
+            int el_bit_depth_minus8 = get_ue_golomb_long(gb);
             int vdr_bit_depth_minus8 = get_ue_golomb_31(gb);
             int reserved_zero_3bits;
             /* ext_mapping_idc is in the upper 8 bits of el_bit_depth_minus8 */
