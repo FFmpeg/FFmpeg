@@ -2765,15 +2765,6 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
     const HEVCPPS *pps = s->pps;
     int ret;
 
-    if (s->sh.dependent_slice_segment_flag) {
-        int ctb_addr_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
-        int prev_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
-        if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
-            av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
-            return AVERROR_INVALIDDATA;
-        }
-    }
-
     if (!s->sh.dependent_slice_segment_flag && s->sh.slice_type != HEVC_SLICE_I) {
         ret = ff_hevc_slice_rpl(s);
         if (ret < 0) {
@@ -2792,6 +2783,15 @@ static int decode_slice_data(HEVCContext *s, const H2645NAL *nal, GetBitContext 
         av_log(s->avctx, AV_LOG_ERROR,
                "SCC profile is not yet implemented in hevc native decoder.\n");
         return AVERROR_PATCHWELCOME;
+    }
+
+    if (s->sh.dependent_slice_segment_flag) {
+        int ctb_addr_ts = pps->ctb_addr_rs_to_ts[s->sh.slice_ctb_addr_rs];
+        int prev_rs = pps->ctb_addr_ts_to_rs[ctb_addr_ts - 1];
+        if (s->tab_slice_address[prev_rs] != s->sh.slice_addr) {
+            av_log(s->avctx, AV_LOG_ERROR, "Previous slice segment missing\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     s->local_ctx[0].first_qp_group = !s->sh.dependent_slice_segment_flag;
