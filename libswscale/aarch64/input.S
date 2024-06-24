@@ -20,8 +20,12 @@
 
 #include "libavutil/aarch64/asm.S"
 
-.macro rgb_to_yuv_load_rgb src
+.macro rgb_to_yuv_load_rgb src, element=3
+    .if \element == 3
         ld3             { v16.16b, v17.16b, v18.16b }, [\src]
+    .else
+        ld4             { v16.16b, v17.16b, v18.16b, v19.16b }, [\src]
+    .endif
         uxtl            v19.8h, v16.8b             // v19: r
         uxtl            v20.8h, v17.8b             // v20: g
         uxtl            v21.8h, v18.8b             // v21: b
@@ -43,7 +47,8 @@
         sqshrn2         \dst\().8h, \dst2\().4s, \right_shift   // dst_higher_half = dst2 >> right_shift
 .endm
 
-function ff_bgr24ToY_neon, export=1
+.macro rgbToY_neon fmt_bgr, fmt_rgb, element
+function ff_\fmt_bgr\()ToY_neon, export=1
         cmp             w4, #0                  // check width > 0
         ldp             w12, w11, [x5]          // w12: ry, w11: gy
         ldr             w10, [x5, #8]           // w10: by
@@ -51,7 +56,7 @@ function ff_bgr24ToY_neon, export=1
         ret
 endfunc
 
-function ff_rgb24ToY_neon, export=1
+function ff_\fmt_rgb\()ToY_neon, export=1
         cmp             w4, #0                  // check width > 0
         ldp             w10, w11, [x5]          // w10: ry, w11: gy
         ldr             w12, [x5, #8]           // w12: by
@@ -67,11 +72,11 @@ function ff_rgb24ToY_neon, export=1
         dup             v2.8h, w12
         b.lt            2f
 1:
-        rgb_to_yuv_load_rgb x1
+        rgb_to_yuv_load_rgb x1, \element
         rgb_to_yuv_product v19, v20, v21, v25, v26, v16, v0, v1, v2, #9
         rgb_to_yuv_product v22, v23, v24, v27, v28, v17, v0, v1, v2, #9
         sub             w4, w4, #16             // width -= 16
-        add             x1, x1, #48             // src += 48
+        add             x1, x1, #(16*\element)
         cmp             w4, #16                 // width >= 16 ?
         stp             q16, q17, [x0], #32     // store to dst
         b.ge            1b
@@ -86,12 +91,17 @@ function ff_rgb24ToY_neon, export=1
         smaddl          x13, w15, w12, x13      // x13 += by * b
         asr             w13, w13, #9            // x13 >>= 9
         sub             w4, w4, #1              // width--
-        add             x1, x1, #3              // src += 3
+        add             x1, x1, #\element
         strh            w13, [x0], #2           // store to dst
         cbnz            w4, 2b
 3:
         ret
 endfunc
+.endm
+
+rgbToY_neon bgr24, rgb24, element=3
+
+rgbToY_neon bgra32, rgba32, element=4
 
 .macro rgb_set_uv_coeff half
     .if \half
@@ -110,7 +120,8 @@ endfunc
         dup             v6.4s, w9
 .endm
 
-function ff_bgr24ToUV_half_neon, export=1
+.macro rgbToUV_half_neon fmt_bgr, fmt_rgb, element
+function ff_\fmt_bgr\()ToUV_half_neon, export=1
         cmp             w5, #0          // check width > 0
         b.le            3f
 
@@ -120,7 +131,7 @@ function ff_bgr24ToUV_half_neon, export=1
         b               4f
 endfunc
 
-function ff_rgb24ToUV_half_neon, export=1
+function ff_\fmt_rgb\()ToUV_half_neon, export=1
         cmp             w5, #0          // check width > 0
         b.le            3f
 
@@ -132,7 +143,11 @@ function ff_rgb24ToUV_half_neon, export=1
         rgb_set_uv_coeff half=1
         b.lt            2f
 1:
+    .if \element == 3
         ld3             { v16.16b, v17.16b, v18.16b }, [x3]
+    .else
+        ld4             { v16.16b, v17.16b, v18.16b, v19.16b }, [x3]
+    .endif
         uaddlp          v19.8h, v16.16b         // v19: r
         uaddlp          v20.8h, v17.16b         // v20: g
         uaddlp          v21.8h, v18.16b         // v21: b
@@ -140,7 +155,7 @@ function ff_rgb24ToUV_half_neon, export=1
         rgb_to_yuv_product v19, v20, v21, v22, v23, v16, v0, v1, v2, #10
         rgb_to_yuv_product v19, v20, v21, v24, v25, v17, v3, v4, v5, #10
         sub             w5, w5, #8              // width -= 8
-        add             x3, x3, #48             // src += 48
+        add             x3, x3, #(16*\element)
         cmp             w5, #8                  // width >= 8 ?
         str             q16, [x0], #16          // store dst_u
         str             q17, [x1], #16          // store dst_v
@@ -148,9 +163,10 @@ function ff_rgb24ToUV_half_neon, export=1
         cbz             w5, 3f
 2:
         ldrb            w2, [x3]                // w2: r1
-        ldrb            w4, [x3, #3]            // w4: r2
+        ldrb            w4, [x3, #\element]     // w4: r2
         add             w2, w2, w4              // w2 = r1 + r2
 
+    .if \element == 3
         ldrb            w4, [x3, #1]            // w4: g1
         ldrb            w7, [x3, #4]            // w7: g2
         add             w4, w4, w7              // w4 = g1 + g2
@@ -158,6 +174,15 @@ function ff_rgb24ToUV_half_neon, export=1
         ldrb            w7, [x3, #2]            // w7: b1
         ldrb            w8, [x3, #5]            // w8: b2
         add             w7, w7, w8              // w7 = b1 + b2
+    .else
+        ldrb            w4, [x3, #1]            // w4: g1
+        ldrb            w7, [x3, #5]            // w7: g2
+        add             w4, w4, w7              // w4 = g1 + g2
+
+        ldrb            w7, [x3, #2]            // w7: b1
+        ldrb            w8, [x3, #6]            // w8: b2
+        add             w7, w7, w8              // w7 = b1 + b2
+    .endif
 
         smaddl          x8, w2, w10, x9         // dst_u = ru * r + const_offset
         smaddl          x8, w4, w11, x8         // dst_u += gu * g
@@ -170,14 +195,20 @@ function ff_rgb24ToUV_half_neon, export=1
         smaddl          x8, w7, w15, x8         // dst_v += bv * b
         asr             x8, x8, #10             // dst_v >>= 10
         sub             w5, w5, #1
-        add             x3, x3, #6              // src += 6
+        add             x3, x3, #(2*\element)
         strh            w8, [x1], #2            // store dst_v
         cbnz            w5, 2b
 3:
         ret
 endfunc
+.endm
 
-function ff_bgr24ToUV_neon, export=1
+rgbToUV_half_neon bgr24, rgb24, element=3
+
+rgbToUV_half_neon bgra32, rgba32, element=4
+
+.macro rgbToUV_neon fmt_bgr, fmt_rgb, element
+function ff_\fmt_bgr\()ToUV_neon, export=1
         cmp             w5, #0                  // check width > 0
         b.le            3f
 
@@ -187,7 +218,7 @@ function ff_bgr24ToUV_neon, export=1
         b               4f
 endfunc
 
-function ff_rgb24ToUV_neon, export=1
+function ff_\fmt_rgb\()ToUV_neon, export=1
         cmp             w5, #0                  // check width > 0
         b.le            3f
 
@@ -199,13 +230,13 @@ function ff_rgb24ToUV_neon, export=1
         rgb_set_uv_coeff half=0
         b.lt            2f
 1:
-        rgb_to_yuv_load_rgb x3
+        rgb_to_yuv_load_rgb x3, \element
         rgb_to_yuv_product v19, v20, v21, v25, v26, v16, v0, v1, v2, #9
         rgb_to_yuv_product v22, v23, v24, v27, v28, v17, v0, v1, v2, #9
         rgb_to_yuv_product v19, v20, v21, v25, v26, v18, v3, v4, v5, #9
         rgb_to_yuv_product v22, v23, v24, v27, v28, v19, v3, v4, v5, #9
         sub             w5, w5, #16
-        add             x3, x3, #48             // src += 48
+        add             x3, x3, #(16*\element)
         cmp             w5, #16
         stp             q16, q17, [x0], #32     // store to dst_u
         stp             q18, q19, [x1], #32     // store to dst_v
@@ -227,9 +258,14 @@ function ff_rgb24ToUV_neon, export=1
         smaddl          x8, w4, w15, x8         // x8 += bv * b
         asr             w8, w8, #9              // x8 >>= 9
         sub             w5, w5, #1              // width--
-        add             x3, x3, #3              // src += 3
+        add             x3, x3, #\element
         strh            w8, [x1], #2            // store to dst_v
         cbnz            w5, 2b
 3:
         ret
 endfunc
+.endm
+
+rgbToUV_neon bgr24, rgb24, element=3
+
+rgbToUV_neon bgra32, rgba32, element=4

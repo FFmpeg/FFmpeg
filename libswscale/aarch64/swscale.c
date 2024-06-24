@@ -212,7 +212,9 @@ void ff_##name##ToUV_half_neon(uint8_t *, uint8_t *, const uint8_t *, \
                               uint32_t *coeffs, void *)
 
 NEON_INPUT(bgr24);
+NEON_INPUT(bgra32);
 NEON_INPUT(rgb24);
+NEON_INPUT(rgba32);
 
 void ff_lumRangeFromJpeg_neon(int16_t *dst, int width);
 void ff_chrRangeFromJpeg_neon(int16_t *dstU, int16_t *dstV, int width);
@@ -253,12 +255,26 @@ av_cold void ff_sws_init_swscale_aarch64(SwsContext *c)
             else
                 c->chrToYV12 = ff_bgr24ToUV_neon;
             break;
+        case AV_PIX_FMT_BGRA:
+            c->lumToYV12 = ff_bgra32ToY_neon;
+            if (c->chrSrcHSubSample)
+                c->chrToYV12 = ff_bgra32ToUV_half_neon;
+            else
+                c->chrToYV12 = ff_bgra32ToUV_neon;
+            break;
         case AV_PIX_FMT_RGB24:
             c->lumToYV12 = ff_rgb24ToY_neon;
             if (c->chrSrcHSubSample)
                 c->chrToYV12 = ff_rgb24ToUV_half_neon;
             else
                 c->chrToYV12 = ff_rgb24ToUV_neon;
+            break;
+        case AV_PIX_FMT_RGBA:
+            c->lumToYV12 = ff_rgba32ToY_neon;
+            if (c->chrSrcHSubSample)
+                c->chrToYV12 = ff_rgba32ToUV_half_neon;
+            else
+                c->chrToYV12 = ff_rgba32ToUV_neon;
             break;
         default:
             break;
