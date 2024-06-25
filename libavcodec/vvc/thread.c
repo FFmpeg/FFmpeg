@@ -443,8 +443,11 @@ static int run_inter(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 {
     VVCFrameContext *fc = lc->fc;
     const CTU *ctu      = fc->tab.ctus + t->rs;
+    int ret;
 
-    ff_vvc_predict_inter(lc, t->rs);
+    ret = ff_vvc_predict_inter(lc, t->rs);
+    if (ret < 0)
+        return ret;
 
     if (ctu->has_dmvr)
         report_frame_progress(fc, t->ry, VVC_PROGRESS_MV);
@@ -454,9 +457,7 @@ static int run_inter(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 
 static int run_recon(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
 {
-    ff_vvc_reconstruct(lc, t->rs, t->rx, t->ry);
-
-    return 0;
+    return ff_vvc_reconstruct(lc, t->rs, t->rx, t->ry);
 }
 
 static int run_lmcs(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
