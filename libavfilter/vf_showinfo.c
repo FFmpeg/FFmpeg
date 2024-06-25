@@ -121,6 +121,16 @@ static void dump_stereo3d(AVFilterContext *ctx, const AVFrameSideData *sd)
 
     if (stereo->flags & AV_STEREO3D_FLAG_INVERT)
         av_log(ctx, AV_LOG_INFO, " (inverted)");
+
+    av_log(ctx, AV_LOG_INFO, ", view - %s, primary_eye - %s", av_stereo3d_view_name(stereo->view),
+                                                              av_stereo3d_primary_eye_name(stereo->primary_eye));
+    if (stereo->baseline)
+        av_log(ctx, AV_LOG_INFO, ", baseline: %"PRIu32"", stereo->baseline);
+    if (stereo->horizontal_disparity_adjustment.num && stereo->horizontal_disparity_adjustment.den)
+        av_log(ctx, AV_LOG_INFO, ", horizontal_disparity_adjustment: %0.4f",
+               av_q2d(stereo->horizontal_disparity_adjustment));
+    if (stereo->horizontal_field_of_view.num && stereo->horizontal_field_of_view.den)
+        av_log(ctx, AV_LOG_INFO, ", horizontal_field_of_view: %0.3f", av_q2d(stereo->horizontal_field_of_view));
 }
 
 static void dump_s12m_timecode(AVFilterContext *ctx, AVRational frame_rate, const AVFrameSideData *sd)
