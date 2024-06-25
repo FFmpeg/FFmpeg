@@ -3970,6 +3970,7 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->sei.common.mastering_display    = s0->sei.common.mastering_display;
     s->sei.common.content_light        = s0->sei.common.content_light;
     s->sei.common.aom_film_grain       = s0->sei.common.aom_film_grain;
+    s->sei.tdrdi                       = s0->sei.tdrdi;
 
     return 0;
 }

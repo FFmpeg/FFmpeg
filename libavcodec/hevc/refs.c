@@ -22,6 +22,7 @@
  */
 
 #include "libavutil/mem.h"
+#include "libavutil/stereo3d.h"
 
 #include "container_fifo.h"
 #include "decode.h"
@@ -103,6 +104,7 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
 
         // add view ID side data if it's nontrivial
         if (vps->nb_layers > 1 || view_id) {
+            HEVCSEITDRDI *tdrdi = &s->sei.tdrdi;
             AVFrameSideData *sd = av_frame_side_data_new(&frame->f->side_data,
                                                          &frame->f->nb_side_data,
                                                          AV_FRAME_DATA_VIEW_ID,
@@ -110,6 +112,22 @@ static HEVCFrame *alloc_frame(HEVCContext *s, HEVCLayerContext *l)
             if (!sd)
                 goto fail;
             *(int*)sd->data = view_id;
+
+            if (tdrdi->num_ref_displays) {
+                AVStereo3D *stereo_3d;
+
+                stereo_3d = av_stereo3d_create_side_data(frame->f);
+                if (!stereo_3d)
+                    goto fail;
+
+                stereo_3d->type = AV_STEREO3D_FRAMESEQUENCE;
+                if (tdrdi->left_view_id[0] == view_id)
+                    stereo_3d->view = AV_STEREO3D_VIEW_LEFT;
+                else if (tdrdi->right_view_id[0] == view_id)
+                    stereo_3d->view = AV_STEREO3D_VIEW_RIGHT;
+                else
+                    stereo_3d->view = AV_STEREO3D_VIEW_UNSPEC;
+            }
         }
 
         ret = ff_progress_frame_get_buffer(s->avctx, &frame->tf,
