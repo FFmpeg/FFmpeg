@@ -7012,7 +7012,7 @@ enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode "-lxavs $pthreads_extralibs $libm_extralibs"
 enabled libxavs2          && require_pkg_config libxavs2 "xavs2 >= 1.3.0" "stdint.h xavs2.h" xavs2_api_get
 enabled libxevd           && require_pkg_config libxevd "xevd >= 0.4.1" "xevd.h" xevd_decode
-enabled libxeve           && require_pkg_config libxeve "xeve >= 0.4.3" "xeve.h" xeve_encode
+enabled libxeve           && require_pkg_config libxeve "xeve >= 0.5.1" "xeve.h" xeve_encode
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config libzimg "zimg >= 2.7.0" zimg.h zimg_get_api_version
 enabled libzmq            && require_pkg_config libzmq "libzmq >= 4.2.1" zmq.h zmq_ctx_new
