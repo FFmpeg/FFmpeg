@@ -65,7 +65,7 @@ static inline size_t ff_get_rv_vlenb(void)
 static inline bool ff_rv_vlen_least(unsigned int bits)
 {
 #ifdef __riscv_v_min_vlen
-    if (bits <= __riscv_min_vlen)
+    if (bits <= __riscv_v_min_vlen)
         return true;
 #else
     /*
