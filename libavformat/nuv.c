@@ -165,7 +165,9 @@ static int nuv_header(AVFormatContext *s)
     int is_mythtv, width, height, v_packs, a_packs, ret;
     AVStream *vst = NULL, *ast = NULL;
 
-    avio_read(pb, id_string, 12);
+    if ((ret = ffio_read_size(pb, id_string, 12)) < 0)
+        return ret;
+
     is_mythtv = !memcmp(id_string, "MythTVVideo", 12);
     avio_skip(pb, 5);       // version string
     avio_skip(pb, 3);       // padding
