@@ -2964,6 +2964,10 @@ static int hevc_frame_start(HEVCContext *s)
     if (pps->tiles_enabled_flag)
         s->local_ctx[0].end_of_tiles_x = pps->column_width[0] << sps->log2_ctb_size;
 
+    ret = export_stream_params_from_sei(s);
+    if (ret < 0)
+        return ret;
+
     ret = ff_hevc_set_new_ref(s, s->poc);
     if (ret < 0)
         goto fail;
@@ -2983,10 +2987,6 @@ static int hevc_frame_start(HEVCContext *s)
                               s->sei.common.aom_film_grain.enable) &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
-
-    ret = export_stream_params_from_sei(s);
-    if (ret < 0)
-        return ret;
 
     ret = set_side_data(s);
     if (ret < 0)
