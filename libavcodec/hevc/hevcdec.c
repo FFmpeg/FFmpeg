@@ -3637,10 +3637,6 @@ static int hevc_update_thread_context(AVCodecContext *dst,
     s->sei.common.content_light        = s0->sei.common.content_light;
     s->sei.common.aom_film_grain       = s0->sei.common.aom_film_grain;
 
-    ret = export_stream_params_from_sei(s);
-    if (ret < 0)
-        return ret;
-
     return 0;
 }
 #endif
