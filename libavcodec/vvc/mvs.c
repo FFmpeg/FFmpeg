@@ -1695,17 +1695,34 @@ static void ibc_merge_candidates(VVCLocalContext *lc, const int merge_idx, Mv *m
     memset(mv, 0, sizeof(*mv));
 }
 
-void ff_vvc_mvp_ibc(VVCLocalContext *lc, const int mvp_l0_flag, const int amvr_shift, Mv *mv)
+static int ibc_check_mv(VVCLocalContext *lc, Mv *mv)
+{
+    const VVCFrameContext *fc = lc->fc;
+    const VVCSPS *sps         = lc->fc->ps.sps;
+    const CodingUnit *cu      = lc->cu;
+    const Mv *bv              = &cu->pu.mi.mv[L0][0];
+
+    if (sps->ctb_size_y < ((cu->y0 + (bv->y >> 4)) & (sps->ctb_size_y - 1)) + cu->cb_height) {
+        av_log(fc->log_ctx, AV_LOG_ERROR, "IBC region spans multiple CTBs.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
+int ff_vvc_mvp_ibc(VVCLocalContext *lc, const int mvp_l0_flag, const int amvr_shift, Mv *mv)
 {
     LOCAL_ALIGNED_8(Mv, mvp, [1]);
 
     ibc_merge_candidates(lc, mvp_l0_flag, mvp);
     ibc_add_mvp(mv, mvp, amvr_shift);
+    return ibc_check_mv(lc, mv);
 }
 
-void ff_vvc_luma_mv_merge_ibc(VVCLocalContext *lc, const int merge_idx, Mv *mv)
+int ff_vvc_luma_mv_merge_ibc(VVCLocalContext *lc, const int merge_idx, Mv *mv)
 {
     ibc_merge_candidates(lc, merge_idx, mv);
+    return ibc_check_mv(lc, mv);
 }
 
 static int affine_mvp_constructed_cp(NeighbourContext *ctx,
