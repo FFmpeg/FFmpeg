@@ -73,11 +73,6 @@ static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, const AVFrameSi
     const AVSphericalMapping *spherical = (const AVSphericalMapping *)sd->data;
     double yaw, pitch, roll;
 
-    if (sd->size < sizeof(*spherical)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
-        return;
-    }
-
     av_log(ctx, AV_LOG_INFO, "%s ", av_spherical_projection_name(spherical->projection));
 
     if (spherical->yaw || spherical->pitch || spherical->roll) {
