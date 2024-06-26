@@ -541,8 +541,6 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps)
     if (ret < 0)
         goto fail;
 
-    export_stream_params(s, sps);
-
     ff_hevc_pred_init(&s->hpc,     sps->bit_depth);
     ff_hevc_dsp_init (&s->hevcdsp, sps->bit_depth);
     ff_videodsp_init (&s->vdsp,    sps->bit_depth);
@@ -2918,6 +2916,8 @@ static int hevc_frame_start(HEVCContext *s)
         ret = set_sps(s, sps);
         if (ret < 0)
             return ret;
+
+        export_stream_params(s, sps);
 
         pix_fmt = get_format(s, sps);
         if (pix_fmt < 0)
