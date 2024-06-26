@@ -603,7 +603,7 @@ static int hls_slice_header(SliceHeader *sh, const HEVCContext *s, GetBitContext
         av_log(s->avctx, AV_LOG_ERROR, "PPS id out of range: %d\n", pps_id);
         return AVERROR_INVALIDDATA;
     }
-    if (!sh->first_slice_in_pic_flag && pps_id != sh->pps_id) {
+    if (!sh->first_slice_in_pic_flag && s->ps.pps_list[pps_id] != s->pps) {
         av_log(s->avctx, AV_LOG_ERROR, "PPS changed between slices.\n");
         return AVERROR_INVALIDDATA;
     }
