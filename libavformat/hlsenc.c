@@ -2504,6 +2504,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                                                           end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
         int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
+        double cur_duration;
 
         av_write_frame(oc, NULL); /* Flush any buffered data */
         new_start_pos = avio_tell(oc->pb);
@@ -2609,15 +2610,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(ENOMEM);
         }
 
-        if (vs->start_pos || hls->segment_type != SEGMENT_TYPE_FMP4) {
-            double cur_duration =  (double)(pkt->pts - vs->end_pts) * st->time_base.num / st->time_base.den;
-            ret = hls_append_segment(s, hls, vs, cur_duration, vs->start_pos, vs->size);
-            vs->end_pts = pkt->pts;
-            vs->duration = 0;
-            if (ret < 0) {
-                av_freep(&old_filename);
-                return ret;
-            }
+        cur_duration = (double)(pkt->pts - vs->end_pts) * st->time_base.num / st->time_base.den;
+        ret = hls_append_segment(s, hls, vs, cur_duration, vs->start_pos, vs->size);
+        vs->end_pts = pkt->pts;
+        vs->duration = 0;
+        if (ret < 0) {
+            av_freep(&old_filename);
+            return ret;
         }
 
         // if we're building a VOD playlist, skip writing the manifest multiple times, and just wait until the end
