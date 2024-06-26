@@ -108,14 +108,7 @@ static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, const AVFrameSi
 
 static void dump_stereo3d(AVFilterContext *ctx, const AVFrameSideData *sd)
 {
-    const AVStereo3D *stereo;
-
-    if (sd->size < sizeof(*stereo)) {
-        av_log(ctx, AV_LOG_ERROR, "invalid data\n");
-        return;
-    }
-
-    stereo = (const AVStereo3D *)sd->data;
+    const AVStereo3D *stereo = (const AVStereo3D *)sd->data;
 
     av_log(ctx, AV_LOG_INFO, "type - %s", av_stereo3d_type_name(stereo->type));
 
