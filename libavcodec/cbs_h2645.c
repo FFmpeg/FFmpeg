@@ -2129,6 +2129,12 @@ static const SEIMessageTypeDescriptor cbs_sei_common_types[] = {
         SEI_MESSAGE_RW(sei, user_data_unregistered),
     },
     {
+        SEI_TYPE_FRAME_PACKING_ARRANGEMENT,
+        1, 0,
+        sizeof(SEIRawFramePackingArrangement),
+        SEI_MESSAGE_RW(sei, frame_packing_arrangement),
+    },
+    {
         SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME,
         1, 0,
         sizeof(SEIRawMasteringDisplayColourVolume),
@@ -2185,6 +2191,12 @@ static const SEIMessageTypeDescriptor cbs_sei_h264_types[] = {
         1, 0,
         sizeof(H264RawFilmGrainCharacteristics),
         SEI_MESSAGE_RW(h264, film_grain_characteristics),
+    },
+    {
+        SEI_TYPE_FRAME_PACKING_ARRANGEMENT,
+        1, 0,
+        sizeof(H264RawSEIFramePackingArrangement),
+        SEI_MESSAGE_RW(h264, sei_frame_packing_arrangement),
     },
     {
         SEI_TYPE_DISPLAY_ORIENTATION,
@@ -2275,11 +2287,6 @@ const SEIMessageTypeDescriptor *ff_cbs_sei_find_type(CodedBitstreamContext *ctx,
     const SEIMessageTypeDescriptor *codec_list;
     int i;
 
-    for (i = 0; cbs_sei_common_types[i].type >= 0; i++) {
-        if (cbs_sei_common_types[i].type == payload_type)
-            return &cbs_sei_common_types[i];
-    }
-
     switch (ctx->codec->codec_id) {
     case AV_CODEC_ID_H264:
         codec_list = cbs_sei_h264_types;
@@ -2297,6 +2304,11 @@ const SEIMessageTypeDescriptor *ff_cbs_sei_find_type(CodedBitstreamContext *ctx,
     for (i = 0; codec_list[i].type >= 0; i++) {
         if (codec_list[i].type == payload_type)
             return &codec_list[i];
+    }
+
+    for (i = 0; cbs_sei_common_types[i].type >= 0; i++) {
+        if (cbs_sei_common_types[i].type == payload_type)
+            return &cbs_sei_common_types[i];
     }
 
     return NULL;

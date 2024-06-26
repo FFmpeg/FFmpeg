@@ -293,6 +293,26 @@ typedef struct H264RawFilmGrainCharacteristics {
     uint8_t      film_grain_characteristics_repetition_period;
 } H264RawFilmGrainCharacteristics;
 
+typedef struct H264RawSEIFramePackingArrangement {
+    uint32_t frame_packing_arrangement_id;
+    uint8_t frame_packing_arrangement_cancel_flag;
+    uint8_t frame_packing_arrangement_type;
+    uint8_t quincunx_sampling_flag;
+    uint8_t content_interpretation_type;
+    uint8_t spatial_flipping_flag;
+    uint8_t frame0_flipped_flag;
+    uint8_t field_views_flag;
+    uint8_t current_frame_is_frame0_flag;
+    uint8_t frame0_self_contained_flag;
+    uint8_t frame1_self_contained_flag;
+    uint8_t frame0_grid_position_x;
+    uint8_t frame0_grid_position_y;
+    uint8_t frame1_grid_position_x;
+    uint8_t frame1_grid_position_y;
+    uint16_t frame_packing_arrangement_repetition_period;
+    uint8_t frame_packing_arrangement_extension_flag;
+} H264RawSEIFramePackingArrangement;
+
 typedef struct H264RawSEIDisplayOrientation {
     uint8_t display_orientation_cancel_flag;
     uint8_t hor_flip;

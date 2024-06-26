@@ -94,6 +94,40 @@ SEI_FUNC(user_data_unregistered, (CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+SEI_FUNC(frame_packing_arrangement, (CodedBitstreamContext *ctx, RWContext *rw,
+                                     SEIRawFramePackingArrangement *current,
+                                     SEIMessageState *unused))
+{
+    int err;
+
+    HEADER("Frame Packing Arrangement");
+
+    ue(fp_arrangement_id, 0, MAX_UINT_BITS(31));
+    flag(fp_arrangement_cancel_flag);
+    if (!current->fp_arrangement_cancel_flag) {
+        u(7, fp_arrangement_type, 3, 5);
+        flag(fp_quincunx_sampling_flag);
+        u(6, fp_content_interpretation_type, 0, 2);
+        flag(fp_spatial_flipping_flag);
+        flag(fp_frame0_flipped_flag);
+        flag(fp_field_views_flag);
+        flag(fp_current_frame_is_frame0_flag);
+        flag(fp_frame0_self_contained_flag);
+        flag(fp_frame1_self_contained_flag);
+        if (!current->fp_quincunx_sampling_flag && current->fp_arrangement_type != 5) {
+            ub(4, fp_frame0_grid_position_x);
+            ub(4, fp_frame0_grid_position_y);
+            ub(4, fp_frame1_grid_position_x);
+            ub(4, fp_frame1_grid_position_y);
+        }
+        fixed(8, fp_arrangement_reserved_byte, 0);
+        flag(fp_arrangement_persistence_flag);
+    }
+    flag(fp_upsampled_aspect_ratio_flag);
+
+    return 0;
+}
+
 SEI_FUNC(mastering_display_colour_volume,
          (CodedBitstreamContext *ctx, RWContext *rw,
           SEIRawMasteringDisplayColourVolume *current,
