@@ -50,6 +50,12 @@ const struct fmt_map ff_fmt_conversion_table[] = {
     { AV_PIX_FMT_GRAY16LE,AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_Z16     },
 #endif
     { AV_PIX_FMT_NV12,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV12    },
+#ifdef V4L2_PIX_FMT_NV16
+    { AV_PIX_FMT_NV16,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV16    },
+#endif
+#ifdef V4L2_PIX_FMT_NV24
+    { AV_PIX_FMT_NV24,    AV_CODEC_ID_RAWVIDEO, V4L2_PIX_FMT_NV24    },
+#endif
     { AV_PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_MJPEG   },
     { AV_PIX_FMT_NONE,    AV_CODEC_ID_MJPEG,    V4L2_PIX_FMT_JPEG    },
 #ifdef V4L2_PIX_FMT_H264
