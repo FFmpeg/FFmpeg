@@ -812,7 +812,7 @@ static void vvc_deblock(const VVCLocalContext *lc, int x0, int y0, const int rs,
         for (int y = y0; y < y_end; y += (DEBLOCK_STEP << vs)) {
             for (int x = x0 ? x0 : grid; x < x_end; x += grid) {
                 const uint8_t horizontal_ctu_edge = !vertical && !(x % ctb_size);
-                int32_t bs[4], beta[4], tc[4] = { }, all_zero_bs = 1;
+                int32_t bs[4], beta[4], tc[4] = { 0 }, all_zero_bs = 1;
                 uint8_t max_len_p[4], max_len_q[4];
 
                 for (int i = 0; i < DEBLOCK_STEP >> (2 - vs); i++) {
