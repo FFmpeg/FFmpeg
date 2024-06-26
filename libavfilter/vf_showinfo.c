@@ -78,16 +78,7 @@ static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, const AVFrameSi
         return;
     }
 
-    if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR)
-        av_log(ctx, AV_LOG_INFO, "equirectangular ");
-    else if (spherical->projection == AV_SPHERICAL_CUBEMAP)
-        av_log(ctx, AV_LOG_INFO, "cubemap ");
-    else if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE)
-        av_log(ctx, AV_LOG_INFO, "tiled equirectangular ");
-    else {
-        av_log(ctx, AV_LOG_WARNING, "unknown\n");
-        return;
-    }
+    av_log(ctx, AV_LOG_INFO, "%s ", av_spherical_projection_name(spherical->projection));
 
     yaw = ((double)spherical->yaw) / (1 << 16);
     pitch = ((double)spherical->pitch) / (1 << 16);
