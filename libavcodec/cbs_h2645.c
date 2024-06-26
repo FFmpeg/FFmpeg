@@ -2135,6 +2135,12 @@ static const SEIMessageTypeDescriptor cbs_sei_common_types[] = {
         SEI_MESSAGE_RW(sei, frame_packing_arrangement),
     },
     {
+        SEI_TYPE_DECODED_PICTURE_HASH,
+        0, 1,
+        sizeof(SEIRawDecodedPictureHash),
+        SEI_MESSAGE_RW(sei, decoded_picture_hash),
+    },
+    {
         SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME,
         1, 0,
         sizeof(SEIRawMasteringDisplayColourVolume),
@@ -2272,12 +2278,6 @@ static const SEIMessageTypeDescriptor cbs_sei_h265_types[] = {
 };
 
 static const SEIMessageTypeDescriptor cbs_sei_h266_types[] = {
-    {
-        SEI_TYPE_DECODED_PICTURE_HASH,
-        0, 1,
-        sizeof(H266RawSEIDecodedPictureHash),
-        SEI_MESSAGE_RW(h266, sei_decoded_picture_hash),
-    },
     SEI_MESSAGE_TYPE_END
 };
 

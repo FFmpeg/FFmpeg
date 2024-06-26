@@ -848,16 +848,6 @@ typedef struct H266RawSlice {
     int          data_bit_start;
 } H266RawSlice;
 
-typedef struct H266RawSEIDecodedPictureHash {
-    uint8_t  dph_sei_hash_type;
-    uint8_t  dph_sei_single_component_flag;
-    uint8_t  dph_sei_picture_md5[3][16];
-    uint16_t dph_sei_picture_crc[3];
-    uint32_t dph_sei_picture_checksum[3];
-
-    uint8_t  dph_sei_reserved_zero_7bits;
-} H266RawSEIDecodedPictureHash;
-
 typedef struct H266RawSEI {
     H266RawNALUnitHeader nal_unit_header;
     SEIRawMessageList    message_list;

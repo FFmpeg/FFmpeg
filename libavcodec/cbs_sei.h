@@ -63,6 +63,16 @@ typedef struct SEIRawFramePackingArrangement {
     uint8_t fp_upsampled_aspect_ratio_flag;
 } SEIRawFramePackingArrangement;
 
+typedef struct SEIRawDecodedPictureHash {
+    uint8_t  dph_sei_hash_type;
+    uint8_t  dph_sei_single_component_flag;
+    uint8_t  dph_sei_picture_md5[3][16];
+    uint16_t dph_sei_picture_crc[3];
+    uint32_t dph_sei_picture_checksum[3];
+
+    uint8_t  dph_sei_reserved_zero_7bits;
+} SEIRawDecodedPictureHash;
+
 typedef struct SEIRawMasteringDisplayColourVolume {
     uint16_t display_primaries_x[3];
     uint16_t display_primaries_y[3];
