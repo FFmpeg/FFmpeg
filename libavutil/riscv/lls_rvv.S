@@ -26,7 +26,6 @@ func ff_lls_update_covariance_rvv, zve64d, zbb
         vle64.v       v8, (a1)
 1:
         vfmv.f.s      ft0, v8
-        vsetvl        zero, a2, t0
         vle64.v       v16, (a0)
         vfmacc.vf     v16, ft0, v8
         addi          a2, a2, -1
