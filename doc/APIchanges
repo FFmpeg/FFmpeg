@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-06-28 - xxxxxxxxxx - lavu 59.27.100 - stereo3d.h
+  Add AV_STEREO3D_UNSPEC and AV_STEREO3D_VIEW_UNSPEC.
+
 2024-06-25 - xxxxxxxxxx - lavu 59.26.100 - stereo3d.h
   Add av_stereo3d_alloc_size().
 
