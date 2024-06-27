@@ -814,8 +814,15 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                 (*p_nav_event) = nav_event;
 
                 return nav_len;
-            case DVDNAV_STILL_FRAME:
             case DVDNAV_WAIT:
+                if (dvdnav_wait_skip(state->dvdnav) != DVDNAV_STATUS_OK) {
+                    av_log(s, AV_LOG_ERROR, "Unable to skip WAIT event\n");
+
+                    goto end_dvdnav_error;
+                }
+
+                continue;
+            case DVDNAV_STILL_FRAME:
             case DVDNAV_HOP_CHANNEL:
             case DVDNAV_HIGHLIGHT:
                 if (state->in_ps)
@@ -824,14 +831,6 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                 if (nav_event == DVDNAV_STILL_FRAME) {
                     if (dvdnav_still_skip(state->dvdnav) != DVDNAV_STATUS_OK) {
                         av_log(s, AV_LOG_ERROR, "Unable to skip still image\n");
-
-                        goto end_dvdnav_error;
-                    }
-                }
-
-                if (nav_event == DVDNAV_WAIT) {
-                    if (dvdnav_wait_skip(state->dvdnav) != DVDNAV_STATUS_OK) {
-                        av_log(s, AV_LOG_ERROR, "Unable to skip WAIT event\n");
 
                         goto end_dvdnav_error;
                     }
