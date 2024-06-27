@@ -236,6 +236,7 @@ int ff_combine_frame(ParseContext *pc, int next,
         }
         pc->buffer = new_buffer;
         memcpy(&pc->buffer[pc->index], *buf, *buf_size);
+        memset(&pc->buffer[pc->index + *buf_size], 0, AV_INPUT_BUFFER_PADDING_SIZE);
         pc->index += *buf_size;
         return -1;
     }
