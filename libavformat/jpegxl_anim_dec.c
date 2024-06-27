@@ -124,6 +124,8 @@ static int jpegxl_anim_read_header(AVFormatContext *s)
         }
     }
 
+    memset(head + headsize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
     /* offset in bits of the animation header */
     ret = ff_jpegxl_parse_codestream_header(head, headsize, &meta, 0);
     if (ret < 0 || meta.animation_offset <= 0)
