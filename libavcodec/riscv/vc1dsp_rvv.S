@@ -202,13 +202,14 @@ func ff_vc1_inv_trans_4_rvv, zve32x
         vmul.vx v20, v1, t2
         vadd.vv v26, v14, v16 # t3
         vsub.vv v27, v18, v20 # t4
-        vadd.vv v0, v24, v26
-        vsub.vv v1, v25, v27
-        vadd.vv v2, v25, v27
-        vsub.vv v3, v24, v26
-        .irp    n,0,1,2,3
-        vssra.vx v\n, v\n, t1 # + 4 >> 3 or + 64 >> 7
-        .endr
+        vwadd.vv  v8, v24, v26
+        vwsub.vv  v10, v25, v27
+        vwadd.vv  v12, v25, v27
+        vwsub.vv  v14, v24, v26
+        vnclip.wx v0, v8, t1
+        vnclip.wx v1, v10, t1
+        vnclip.wx v2, v12, t1
+        vnclip.wx v3, v14, t1
         jr      t0
 endfunc
 
