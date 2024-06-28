@@ -24,7 +24,13 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
+#include "libavutil/riscv/cpu.h"
 #include "libavcodec/h264dsp.h"
+
+void ff_h264_v_loop_filter_luma_8_rvv(uint8_t *pix, ptrdiff_t stride,
+                                      int alpha, int beta, int8_t *tc0);
+void ff_h264_h_loop_filter_luma_8_rvv(uint8_t *pix, ptrdiff_t stride,
+                                      int alpha, int beta, int8_t *tc0);
 
 extern int ff_startcode_find_candidate_rvb(const uint8_t *, int);
 extern int ff_startcode_find_candidate_rvv(const uint8_t *, int);
@@ -38,8 +44,13 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
     if (flags & AV_CPU_FLAG_RVB_BASIC)
         dsp->startcode_find_candidate = ff_startcode_find_candidate_rvb;
 # if HAVE_RVV
-    if (flags & AV_CPU_FLAG_RVV_I32)
+    if (flags & AV_CPU_FLAG_RVV_I32) {
+        if (bit_depth == 8 && ff_rv_vlen_least(128)) {
+            dsp->h264_v_loop_filter_luma = ff_h264_v_loop_filter_luma_8_rvv;
+            dsp->h264_h_loop_filter_luma = ff_h264_h_loop_filter_luma_8_rvv;
+        }
         dsp->startcode_find_candidate = ff_startcode_find_candidate_rvv;
+    }
 # endif
 #endif
 }

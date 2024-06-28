@@ -1,0 +1,140 @@
+/*
+ * Copyright © 2024 Rémi Denis-Courmont.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
+ *    this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include "libavutil/riscv/asm.S"
+
+        .variant_cc ff_h264_loop_filter_luma_8_rvv
+func ff_h264_loop_filter_luma_8_rvv, zve32x
+        # p2: v8, p1: v9, p0: v10, q0: v11, q1: v12, q2: v13
+        # alpha: a2, beta: a3, tc_orig: v6
+        csrwi        vxrm, 0
+        vaaddu.vv    v14, v10, v11 # (p0 + q0 + 1) / 2
+        vwsubu.vv    v16, v9, v12
+        vwaddu.vv    v18, v8, v14
+        vwaddu.vv    v20, v13, v14
+        vnsra.wi     v24, v16, 2   # (p1 - q1) / 4
+        vnsrl.wi     v14, v18, 1
+        vnsrl.wi     v15, v20, 1
+        vneg.v       v5, v6        # -tc_orig
+        vwsubu.vv    v22, v11, v10 # q0 - p0
+        vwsubu.vv    v18, v14, v9
+        vwsubu.vv    v20, v15, v12
+        vwadd.wv     v16, v22, v24
+        vmsge.vi     v7, v6, 0     # tc_orig >= 0
+        vnclip.wi    v14, v18, 0
+        vnclip.wi    v15, v20, 0
+        vnclip.wi    v16, v16, 1   # clip8((q0 - p0 + (p1 - q1) / 4 + 1) >> 1)
+        vmin.vv      v14, v14, v6
+        vmin.vv      v15, v15, v6
+        vmax.vv      v14, v14, v5  # clip(p2 + ... - p1, +/-tc_orig)
+        vmax.vv      v15, v15, v5  # clip(q2 + ... - q1, +/-tc_orig)
+        vwsubu.vv    v20, v10, v11
+        vwsubu.vv    v24, v9, v10
+        vwsubu.vv    v26, v10, v9
+        vwsubu.vv    v28, v12, v11
+        vwsubu.vv    v30, v11, v12
+        vwsubu.vv    v0, v8, v10
+        vwsubu.vv    v2, v10, v8
+        vwsubu.vv    v4, v13, v11
+        vwsubu.vv    v18, v11, v13
+        vsetvli      zero, zero, e16, m2, ta, ma
+        vmax.vv      v20, v20, v22 # abs(p0 - q0)
+        vmax.vv      v24, v24, v26 # abs(p1 - p0)
+        vmax.vv      v28, v28, v30 # abs(q1 - q0)
+        vmax.vv      v22, v0, v2   # abs(p2 - p0)
+        vmax.vv      v26, v4, v18  # abs(q2 - q0)
+        vmslt.vx     v1, v20, a2
+        vmslt.vx     v2, v24, a3
+        vmand.mm     v7, v7, v1
+        vmslt.vx     v3, v28, a3
+        vmand.mm     v7, v7, v2
+        vmslt.vx     v0, v22, a3
+        vmand.mm     v7, v7, v3    # whether to update p0 and q0
+        vmslt.vx     v1, v26, a3
+        vmand.mm     v0, v0, v7
+        vsetvli      zero, zero, e8, m1, ta, mu
+        vadd.vi      v6, v6, 1, v0.t     # tc++
+        vadd.vv      v9, v9, v14, v0.t   # p1'
+        vmand.mm     v0, v1, v7
+        vadd.vi      v6, v6, 1, v0.t     # tc++
+        vadd.vv      v12, v12, v15, v0.t # q1'
+        vneg.v       v5, v6              # -tc
+        vmin.vv      v16, v16, v6
+        vwcvtu.x.x.v v18, v10
+        vmax.vv      v16, v16, v5
+        vwcvtu.x.x.v v20, v11
+        vwadd.wv     v18, v18, v16
+        vwsub.wv     v20, v20, v16
+        vmmv.m       v0, v7
+        vsetvli      zero, zero, e16, m2, ta, ma
+        vmax.vx      v18, v18, zero
+        vmax.vx      v20, v20, zero
+        vsetvli      zero, zero, e8, m1, ta, mu
+        vnclipu.wi   v10, v18, 0, v0.t   # p0'
+        vnclipu.wi   v11, v20, 0, v0.t   # q0'
+        jr           t0
+endfunc
+
+func ff_h264_v_loop_filter_luma_8_rvv, zve32x
+        vsetivli  zero, 4, e32, m1, ta, ma
+        vle8.v    v4, (a4)
+        li        t0, 0x01010101
+        vzext.vf4 v6, v4
+        sub       t3, a0, a1
+        vmul.vx   v6, v6, t0
+        vsetivli  zero, 16, e8, m1, ta, ma
+        vle8.v    v11, (a0)
+        sub       t2, t3, a1
+        vid.v     v0
+        vle8.v    v10, (t3)
+        sub       t1, t2, a1
+        vle8.v    v9, (t2)
+        add       t5, a0, a1
+        vle8.v    v8, (t1)
+        add       t6, t5, a1
+        vle8.v    v12, (t5)
+        vle8.v    v13, (t6)
+        jal       t0, ff_h264_loop_filter_luma_8_rvv
+        vse8.v    v9, (t2)
+        vse8.v    v10, (t3)
+        vse8.v    v11, (a0)
+        vse8.v    v12, (t5)
+        ret
+endfunc
+
+func ff_h264_h_loop_filter_luma_8_rvv, zve32x
+        vsetivli    zero, 4, e32, m1, ta, ma
+        vle8.v      v4, (a4)
+        li          t0, 0x01010101
+        vzext.vf4   v6, v4
+        addi        a0, a0, -3
+        vmul.vx     v6, v6, t0
+        vsetivli    zero, 16, e8, m1, ta, ma
+        vlsseg6e8.v v8, (a0), a1
+        jal         t0, ff_h264_loop_filter_luma_8_rvv
+        vssseg6e8.v v8, (a0), a1
+        ret
+endfunc
