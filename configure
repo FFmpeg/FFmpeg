@@ -7050,7 +7050,7 @@ enabled openal            && { check_pkg_config openal "openal >= 1.1" "AL/al.h"
                              { test_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                                die "ERROR: openal must be installed and version must be 1.1 or compatible"; }
 enabled opencl            && { check_pkg_config opencl OpenCL CL/cl.h clEnqueueNDRangeKernel ||
-                               check_lib opencl OpenCL/cl.h clEnqueueNDRangeKernel -Wl,-framework,OpenCL ||
+                               check_lib opencl OpenCL/cl.h clEnqueueNDRangeKernel "-framework OpenCL" ||
                                check_lib opencl CL/cl.h clEnqueueNDRangeKernel -lOpenCL ||
                                die "ERROR: opencl not found"; } &&
                              { test_cpp_condition "OpenCL/cl.h" "defined(CL_VERSION_1_2)" ||
@@ -7058,8 +7058,8 @@ enabled opencl            && { check_pkg_config opencl OpenCL CL/cl.h clEnqueueN
                                die "ERROR: opencl must be installed and version must be 1.2 or compatible"; }
 enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL" ||
                                check_lib opengl windows.h wglGetProcAddress "-lopengl32 -lgdi32" ||
-                               check_lib opengl OpenGL/gl3.h glGetError "-Wl,-framework,OpenGL" ||
-                               check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
+                               check_lib opengl OpenGL/gl3.h glGetError "-framework OpenGL" ||
+                               check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -framework OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
 enabled omx_rpi           && { test_code cc OMX_Core.h OMX_IndexConfigBrcmVideoRequestIFrame ||
@@ -7127,12 +7127,12 @@ if enabled decklink; then
 fi
 
 enabled securetransport &&
-    check_func SecIdentityCreate "-Wl,-framework,CoreFoundation -Wl,-framework,Security" &&
-    check_lib securetransport "Security/SecureTransport.h Security/Security.h" "SSLCreateContext" "-Wl,-framework,CoreFoundation -Wl,-framework,Security" ||
+    check_func SecIdentityCreate "-framework CoreFoundation -framework Security" &&
+    check_lib securetransport "Security/SecureTransport.h Security/Security.h" "SSLCreateContext" "-framework CoreFoundation -framework Security" ||
         disable securetransport
 
 enabled securetransport &&
-    check_func SecItemImport "-Wl,-framework,CoreFoundation -Wl,-framework,Security"
+    check_func SecItemImport "-framework CoreFoundation -framework Security"
 
 enabled schannel &&
     check_func_headers "windows.h security.h" InitializeSecurityContext -DSECURITY_WIN32 -lsecur32 &&
