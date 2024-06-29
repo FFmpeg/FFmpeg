@@ -3145,6 +3145,11 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVStreamContext *sc;
     unsigned int i, entries;
 
+    if (c->trak_index < 0) {
+        av_log(c->fc, AV_LOG_WARNING, "STSC outside TRAK\n");
+        return 0;
+    }
+
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
@@ -3241,6 +3246,11 @@ static int mov_read_stps(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVStreamContext *sc;
     unsigned i, entries;
 
+    if (c->trak_index < 0) {
+        av_log(c->fc, AV_LOG_WARNING, "STPS outside TRAK\n");
+        return 0;
+    }
+
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
@@ -3277,6 +3287,11 @@ static int mov_read_stss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     FFStream *sti;
     MOVStreamContext *sc;
     unsigned int i, entries;
+
+    if (c->trak_index < 0) {
+        av_log(c->fc, AV_LOG_WARNING, "STSS outside TRAK\n");
+        return 0;
+    }
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -3329,6 +3344,11 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     GetBitContext gb;
     unsigned char* buf;
     int ret;
+
+    if (c->trak_index < 0) {
+        av_log(c->fc, AV_LOG_WARNING, "STSZ outside TRAK\n");
+        return 0;
+    }
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -3418,6 +3438,11 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     int64_t total_sample_count = 0;
     int64_t current_dts = 0;
     int64_t corrected_dts = 0;
+
+    if (c->trak_index < 0) {
+        av_log(c->fc, AV_LOG_WARNING, "STTS outside TRAK\n");
+        return 0;
+    }
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -3574,6 +3599,11 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AVStream *st;
     MOVStreamContext *sc;
     unsigned int i, entries, ctts_count = 0;
+
+    if (c->trak_index < 0) {
+        av_log(c->fc, AV_LOG_WARNING, "CTTS outside TRAK\n");
+        return 0;
+    }
 
     if (c->fc->nb_streams < 1)
         return 0;
