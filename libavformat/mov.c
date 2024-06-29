@@ -10063,6 +10063,9 @@ static int mov_read_header(AVFormatContext *s)
             st->codecpar->width  = item->width;
             st->codecpar->height = item->height;
 
+            if (sc->sample_count != 1 || sc->chunk_count != 1)
+                return AVERROR_INVALIDDATA;
+
             sc->sample_sizes[0]  = item->extent_length;
             sc->chunk_offsets[0] = item->extent_offset + offset;
 
