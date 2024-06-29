@@ -725,7 +725,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
                 /* SSE = MSE * width * height / scale -> because of possible chroma downsampling */
                 sse[i] = (int64_t)floor(mse * plane_size + .5);
-            };
+            }
 
             errors = sse;
         }
