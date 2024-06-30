@@ -383,6 +383,7 @@ const FFCodec ff_h261_encoder = {
     .p.type         = AVMEDIA_TYPE_VIDEO,
     .p.id           = AV_CODEC_ID_H261,
     .p.priv_class   = &ff_mpv_enc_class,
+    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_data_size = sizeof(H261EncContext),
     .init           = ff_mpv_encode_init,
     FF_CODEC_ENCODE_CB(ff_mpv_encode_picture),
@@ -391,5 +392,4 @@ const FFCodec ff_h261_encoder = {
     .p.pix_fmts     = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
     .color_ranges   = AVCOL_RANGE_MPEG,
-    .p.capabilities = AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
 };
