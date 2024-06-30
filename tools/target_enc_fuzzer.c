@@ -96,6 +96,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     maxpixels = maxpixels_per_frame * maxiteration;
     switch (c->p.id) {
     case AV_CODEC_ID_A64_MULTI:         maxpixels  /= 65536;  break;
+    case AV_CODEC_ID_A64_MULTI5:        maxpixels  /= 65536;  break;
     }
 
     maxpixels_per_frame  = FFMIN(maxpixels_per_frame , maxpixels);
