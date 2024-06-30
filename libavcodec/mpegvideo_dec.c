@@ -404,7 +404,7 @@ void ff_print_debug_info(const MpegEncContext *s, const MPVPicture *p, AVFrame *
 {
     ff_print_debug_info2(s->avctx, pict, p->mb_type,
                          p->qscale_table, p->motion_val,
-                         s->mb_width, s->mb_height, s->mb_stride, s->quarter_sample);
+                         p->mb_width, p->mb_height, p->mb_stride, s->quarter_sample);
 }
 
 int ff_mpv_export_qp_table(const MpegEncContext *s, AVFrame *f,
