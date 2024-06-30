@@ -194,14 +194,12 @@ func ff_vc1_inv_trans_4_rvv, zve32x
         li      t4, 22
         vmul.vx v10, v2, t3
         li      t2, 10
-        vmul.vx v14, v1, t4
+        vmul.vx v26, v1, t4
+        vmul.vx v27, v3, t4
         vadd.vv v24, v8, v10  # t1
         vsub.vv v25, v8, v10  # t2
-        vmul.vx v16, v3, t2
-        vmul.vx v18, v3, t4
-        vmul.vx v20, v1, t2
-        vadd.vv v26, v14, v16 # t3
-        vsub.vv v27, v18, v20 # t4
+        vmacc.vx v26, t2, v3  # t3
+        vnmsac.vx v27, t2, v1 # t4
         vwadd.vv  v8, v24, v26
         vwsub.vv  v10, v25, v27
         vwadd.vv  v12, v25, v27
