@@ -193,6 +193,7 @@ static int file_check(URLContext *h, int mask)
     return ret;
 }
 
+#if CONFIG_FD_PROTOCOL || CONFIG_PIPE_PROTOCOL
 static int fd_dup(URLContext *h, int oldfd)
 {
     int newfd;
@@ -215,6 +216,7 @@ static int fd_dup(URLContext *h, int oldfd)
 #endif
     return newfd;
 }
+#endif
 
 static int file_close(URLContext *h)
 {
