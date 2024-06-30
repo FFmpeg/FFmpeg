@@ -194,14 +194,17 @@ void av_executor_execute(AVExecutor *e, AVTask *t)
     AVTaskCallbacks *cb = &e->cb;
     AVTask **prev;
 
-    ff_mutex_lock(&e->lock);
+    if (e->thread_count)
+        ff_mutex_lock(&e->lock);
     if (t) {
         for (prev = &e->tasks; *prev && cb->priority_higher(*prev, t); prev = &(*prev)->next)
             /* nothing */;
         add_task(prev, t);
     }
-    ff_cond_signal(&e->cond);
-    ff_mutex_unlock(&e->lock);
+    if (e->thread_count) {
+        ff_cond_signal(&e->cond);
+        ff_mutex_unlock(&e->lock);
+    }
 
     if (!e->thread_count || !HAVE_THREADS) {
         // We are running in a single-threaded environment, so we must handle all tasks ourselves
