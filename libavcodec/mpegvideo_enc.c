@@ -1118,10 +1118,6 @@ static inline void add_dequant_dct(MpegEncContext *s,
  */
 static void mpv_reconstruct_mb(MpegEncContext *s, int16_t block[12][64])
 {
-    const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
-
-    s->cur_pic.qscale_table[mb_xy] = s->qscale;
-
     if (s->avctx->debug & FF_DEBUG_DCT_COEFF) {
        /* print DCT coefficients */
        av_log(s->avctx, AV_LOG_DEBUG, "DCT coeffs of MB at %dx%d:\n", s->mb_x, s->mb_y);
@@ -3382,8 +3378,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
                 }
 
-                s->cur_pic.qscale_table[xy] = best_s.qscale;
-
                 copy_context_after_encode(s, &best_s);
 
                 pb_bits_count= put_bits_count(&s->pb);
@@ -3537,6 +3531,8 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 mpv_reconstruct_mb(s, s->block);
             }
+
+            s->cur_pic.qscale_table[xy] = s->qscale;
 
             /* clean the MV table in IPS frames for direct mode in B-frames */
             if(s->mb_intra /* && I,P,S_TYPE */){
