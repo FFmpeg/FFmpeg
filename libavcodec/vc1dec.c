@@ -1366,14 +1366,12 @@ image:
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
             if ((ret = av_frame_ref(pict, s->cur_pic.ptr->f)) < 0)
                 goto err;
-            if (!v->field_mode)
-                ff_print_debug_info(s, s->cur_pic.ptr, pict);
+            ff_print_debug_info(s, s->cur_pic.ptr, pict);
             *got_frame = 1;
         } else if (s->last_pic.ptr) {
             if ((ret = av_frame_ref(pict, s->last_pic.ptr->f)) < 0)
                 goto err;
-            if (!v->field_mode)
-                ff_print_debug_info(s, s->last_pic.ptr, pict);
+            ff_print_debug_info(s, s->last_pic.ptr, pict);
             *got_frame = 1;
         }
     }
