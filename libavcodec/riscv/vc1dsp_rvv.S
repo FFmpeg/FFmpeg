@@ -116,55 +116,46 @@ endfunc
         .variant_cc ff_vc1_inv_trans_8_rvv
 func ff_vc1_inv_trans_8_rvv, zve32x
         li      t4, 12
-        vsll.vi v18, v6, 4
+        vsll.vi v14, v6, 4
         li      t2, 6
-        vmul.vx v8, v0, t4
+        vsll.vi v12, v2, 4
         li      t5, 15
-        vmul.vx v10, v4, t4
+        vmul.vx v8, v0, t4
         li      t3, 9
         # t[2..5] = [6 9 12 15]
-        vsll.vi v12, v2, 4
-        vmul.vx v14, v6, t2
+        vmul.vx v10, v4, t4
         vmul.vx v16, v2, t2
-        vadd.vv v26, v12, v14 # t3
+        vmacc.vx  v12, t2, v6  # t3
+        vnmsac.vx v14, t2, v2 # -t4
         vadd.vv v24, v8, v10  # t1
         vsub.vv v25, v8, v10  # t2
-        vsub.vv v27, v16, v18 # t4
-        vadd.vv v28, v24, v26 # t5
-        vsub.vv v31, v24, v26 # t8
-        vadd.vv v29, v25, v27 # t6
-        vsub.vv v30, v25, v27 # t7
+        vadd.vv v28, v24, v12 # t5
+        vsub.vv v31, v24, v12 # t8
+        vsub.vv v29, v25, v14 # t6
+        vadd.vv v30, v25, v14 # t7
         vsll.vi v20, v1, 4
-        vmul.vx v21, v3, t5
-        vmul.vx v22, v5, t3
-        vsll.vi v23, v7, 2
-        vadd.vv v20, v20, v21
-        vadd.vv v22, v22, v23
+        vsll.vi v22, v7, 2
+        vmacc.vx  v20, t5, v3
+        vmacc.vx  v22, t3, v5
         vsll.vi v21, v3, 2
+        vsll.vi v23, v5, 4
         vadd.vv v24, v20, v22 # t1
-        vmul.vx v20, v1, t5
-        vsll.vi v22, v5, 4
-        vmul.vx v23, v7, t3
-        vsub.vv v20, v20, v21
-        vadd.vv v22, v22, v23
-        vsll.vi v21, v3, 4
-        vsub.vv v25, v20, v22 # t2
-        vmul.vx v20, v1, t3
+        vnmsac.vx v21, t5, v1
+        vmacc.vx  v23, t3, v7
+        vsll.vi v20, v3, 4
         vsll.vi v22, v5, 2
-        vmul.vx v23, v7, t5
-        vsub.vv v20, v20, v21
-        vadd.vv v22, v22, v23
-        vmul.vx v21, v3, t3
-        vadd.vv v26, v20, v22 # t3
-        vsll.vi v20, v1, 2
-        vmul.vx v22, v5, t5
+        vadd.vv v25, v21, v23 # -t2
+        vnmsac.vx v20, t3, v1
+        vmacc.vx v22, t5, v7
+        vsll.vi v21, v1, 2
         vsll.vi v23, v7, 4
-        vsub.vv v20, v20, v21
-        vsub.vv v22, v22, v23
-        vadd.vv v27, v20, v22 # t4
+        vsub.vv v26, v22, v20 # t3
+        vnmsac.vx v21, t3, v3
+        vnmsac.vx v23, t5, v5
         srli    t2, t1, 2
         vwadd.vv  v8, v28, v24
-        vwadd.vv  v10, v29, v25
+        vwsub.vv  v10, v29, v25
+        vsub.vv v27, v21, v23 # t4
         vwadd.vv  v12, v30, v26
         vwadd.vv  v14, v31, v27
         beqz    t2, 1f # faster than 4x add t2=zero
@@ -174,7 +165,7 @@ func ff_vc1_inv_trans_8_rvv, zve32x
 1:
         vwsub.vv  v16, v31, v27
         vwsub.vv  v18, v30, v26
-        vwsub.vv  v20, v29, v25
+        vwadd.vv  v20, v29, v25
         vwsub.vv  v22, v28, v24
         vnclip.wx v0, v8, t1
         vnclip.wx v1, v10, t1
