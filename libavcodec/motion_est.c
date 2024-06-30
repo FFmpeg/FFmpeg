@@ -661,18 +661,12 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
                 const uint8_t *ref = c->ref[block][0] + (mx4>>2) + (my4>>2)*stride;
                 dxy = ((my4 & 3) << 2) | (mx4 & 3);
 
-                if(s->no_rounding)
-                    s->qdsp.put_no_rnd_qpel_pixels_tab[1][dxy](dest_y, ref, stride);
-                else
-                    s->qdsp.put_qpel_pixels_tab[1][dxy](dest_y, ref, stride);
+                c->qpel_put[1][dxy](dest_y, ref, stride);
             }else{
                 const uint8_t *ref = c->ref[block][0] + (mx4>>1) + (my4>>1)*stride;
                 dxy = ((my4 & 1) << 1) | (mx4 & 1);
 
-                if(s->no_rounding)
-                    s->hdsp.put_no_rnd_pixels_tab[1][dxy](dest_y    , ref    , stride, h);
-                else
-                    s->hdsp.put_pixels_tab       [1][dxy](dest_y    , ref    , stride, h);
+                c->hpel_put[1][dxy](dest_y, ref, stride, h);
             }
             dmin_sum+= (mv_penalty[mx4-pred_x4] + mv_penalty[my4-pred_y4])*c->mb_penalty_factor;
         }else
@@ -713,13 +707,8 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
 
         offset= (s->mb_x*8 + (mx>>1)) + (s->mb_y*8 + (my>>1))*s->uvlinesize;
 
-        if(s->no_rounding){
-            s->hdsp.put_no_rnd_pixels_tab[1][dxy](c->scratchpad    , s->last_pic.data[1] + offset, s->uvlinesize, 8);
-            s->hdsp.put_no_rnd_pixels_tab[1][dxy](c->scratchpad + 8, s->last_pic.data[2] + offset, s->uvlinesize, 8);
-        }else{
-            s->hdsp.put_pixels_tab       [1][dxy](c->scratchpad    , s->last_pic.data[1] + offset, s->uvlinesize, 8);
-            s->hdsp.put_pixels_tab       [1][dxy](c->scratchpad + 8, s->last_pic.data[2] + offset, s->uvlinesize, 8);
-        }
+        c->hpel_put[1][dxy](c->scratchpad    , s->last_pic.data[1] + offset, s->uvlinesize, 8);
+        c->hpel_put[1][dxy](c->scratchpad + 8, s->last_pic.data[2] + offset, s->uvlinesize, 8);
 
         dmin_sum += c->mb_cmp[1](s, s->new_pic->data[1] + s->mb_x * 8 + s->mb_y * 8 * s->uvlinesize, c->scratchpad,     s->uvlinesize, 8);
         dmin_sum += c->mb_cmp[1](s, s->new_pic->data[2] + s->mb_x * 8 + s->mb_y * 8 * s->uvlinesize, c->scratchpad + 8, s->uvlinesize, 8);
@@ -825,11 +814,7 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
                 const uint8_t *ref = c->ref[field_select+ref_index][0] + (mx_i>>1) + (my_i>>1)*stride;
                 dxy = ((my_i & 1) << 1) | (mx_i & 1);
 
-                if(s->no_rounding){
-                    s->hdsp.put_no_rnd_pixels_tab[size][dxy](c->scratchpad, ref    , stride, h);
-                }else{
-                    s->hdsp.put_pixels_tab       [size][dxy](c->scratchpad, ref    , stride, h);
-                }
+                c->hpel_put[size][dxy](c->scratchpad, ref, stride, h);
                 dmin = c->mb_cmp[size](s, c->src[block][0], c->scratchpad, stride, h);
                 dmin+= (mv_penalty[mx_i-c->pred_x] + mv_penalty[my_i-c->pred_y] + 1)*c->mb_penalty_factor;
             }else
