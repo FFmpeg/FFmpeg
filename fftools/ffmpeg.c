@@ -492,8 +492,9 @@ static int read_key(void)
         }
         //Read it
         if(nchars != 0) {
-            read(0, &ch, 1);
-            return ch;
+            if (read(0, &ch, 1) == 1)
+                return ch;
+            return 0;
         }else{
             return -1;
         }
