@@ -170,5 +170,75 @@ func ff_h264_idct_add16intra_\depth\()_rvv, zve32x
         addi    sp, sp, 80
         ret
 endfunc
+
+func ff_h264_idct8_add4_\depth\()_rvv, zve32x
+        addi    sp, sp, -80
+        lla     t0, ff_h264_scan8
+        sd      s0,   (sp)
+        li      t1, 4 * 32 << (\depth > 8)
+        mv      s0, sp
+        li      t2, 4
+        sd      ra,  8(sp)
+        sd      s1, 16(sp)
+        sd      s2, 24(sp)
+        sd      s3, 32(sp)
+        sd      s4, 40(sp)
+        sd      s5, 48(sp)
+        sd      s6, 56(sp)
+        sd      s7, 64(sp)
+        vsetivli  zero, 4, e8, mf4, ta, ma
+        vlse8.v   v8, (t0), t2
+        vlse16.v  v16, (a2), t1
+        vluxei8.v v12, (a4), v8
+.if \depth == 8
+        vsetvli   zero, zero, e16, mf2, ta, ma
+.else
+        vsetvli   zero, zero, e32, m1, ta, ma
+.endif
+        vmsne.vi  v1, v16, 0
+        vsetvli   zero, zero, e8, mf4, ta, ma
+        vmseq.vi  v2, v12, 1
+        vmsne.vi  v0, v12, 0
+        vmand.mm  v1, v1, v2
+        vmv.x.s   s2, v0
+        vmv.x.s   s3, v1
+        li      s1, 4
+        mv      s4, a0
+        mv      s5, a1
+        mv      s6, a2
+        mv      s7, a3
+1:
+        andi    t0, s2, 1
+        addi    s1, s1, -1
+        srli    s2, s2, 1
+        beqz    t0, 3f     # if (nnz)
+        lw      t2, (s5)   # block_offset[i]
+        andi    t1, s3, 1
+        mv      a1, s6
+        mv      a2, s7
+        add     a0, s4, t2
+        beqz    t1, 2f    # if (nnz == 1 && block[i * 16])
+        call    ff_h264_idct8_dc_add_\depth\()_c
+        j       3f
+2:
+        call    ff_h264_idct8_add_\depth\()_c
+3:
+        srli    s3, s3, 1
+        addi    s5, s5, 4 * 4
+        addi    s6, s6, 4 * 16 * 2 << (\depth > 8)
+        bnez    s1, 1b
+
+        ld      s7, 64(sp)
+        ld      s6, 56(sp)
+        ld      s5, 48(sp)
+        ld      s4, 40(sp)
+        ld      s3, 32(sp)
+        ld      s2, 24(sp)
+        ld      s1, 16(sp)
+        ld      ra,  8(sp)
+        ld      s0,  0(sp)
+        addi    sp, sp, 80
+        ret
+endfunc
 .endr
 #endif
