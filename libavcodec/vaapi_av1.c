@@ -404,14 +404,15 @@ static int vaapi_av1_decode_slice(AVCodecContext *avctx,
 
     nb_params = s->tg_end - s->tg_start + 1;
     if (ctx->nb_slice_params < nb_params) {
-        ctx->slice_params = av_realloc_array(ctx->slice_params,
-                                             nb_params,
-                                             sizeof(*ctx->slice_params));
-        if (!ctx->slice_params) {
+        VASliceParameterBufferAV1 *tmp = av_realloc_array(ctx->slice_params,
+                                                          nb_params,
+                                                          sizeof(*ctx->slice_params));
+        if (!tmp) {
             ctx->nb_slice_params = 0;
             err = AVERROR(ENOMEM);
             goto fail;
         }
+        ctx->slice_params    = tmp;
         ctx->nb_slice_params = nb_params;
     }
 
