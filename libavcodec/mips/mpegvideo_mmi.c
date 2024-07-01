@@ -356,10 +356,7 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
 
     assert(s->block_last_index[n]>=0);
 
-    if (s->alternate_scan)
-        nCoeffs = 63;
-    else
-        nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
+    nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
 
     if (n < 4)
         block0 = block[0] * s->y_dc_scale;
