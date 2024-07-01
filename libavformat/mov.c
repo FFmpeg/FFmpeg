@@ -8456,7 +8456,8 @@ static int mov_read_iloc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
         for (int j = 0; j < extent_count; j++) {
             if (rb_size(pb, &extent_offset, offset_size) < 0 ||
-                rb_size(pb, &extent_length, length_size) < 0)
+                rb_size(pb, &extent_length, length_size) < 0 ||
+                base_offset > INT64_MAX - extent_offset)
                 return AVERROR_INVALIDDATA;
             if (offset_type == 1)
                 c->heif_item[i].is_idat_relative = 1;
