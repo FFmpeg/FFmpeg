@@ -8132,6 +8132,8 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
     version = avio_r8(pb);
     avio_rb24(pb);  // flags.
     size -= 4;
+    if (size < 0)
+        return AVERROR_INVALIDDATA;
 
     if (version < 2) {
         avpriv_report_missing_feature(c->fc, "infe version < 2");
@@ -8143,6 +8145,8 @@ static int mov_read_infe(MOVContext *c, AVIOContext *pb, MOVAtom atom, int idx)
     avio_rb16(pb); // item_protection_index
     item_type = avio_rl32(pb);
     size -= 8;
+    if (size < 1)
+        return AVERROR_INVALIDDATA;
 
     av_bprint_init(&item_name, 0, AV_BPRINT_SIZE_UNLIMITED);
     ret = ff_read_string_to_bprint_overwrite(pb, &item_name, size);
