@@ -799,8 +799,8 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
     }
     CLOSE_READER(re, &s->gb);
   }
- not_coded:
     if (s->mb_intra) {
+ not_coded:
         ff_mpeg4_pred_ac(s, block, n, dc_pred_dir);
         if (s->ac_pred) {
             i = 63; /* XXX: not optimal */
