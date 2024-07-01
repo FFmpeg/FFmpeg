@@ -37,6 +37,9 @@ void ff_h264_h_loop_filter_luma_mbaff_8_rvv(uint8_t *pix, ptrdiff_t stride,
 void ff_h264_idct_add16_8_rvv(uint8_t *dst, const int *blockoffset,
                               int16_t *block, int stride,
                               const uint8_t nnzc[5 * 8]);
+void ff_h264_idct_add16intra_8_rvv(uint8_t *dst, const int *blockoffset,
+                                   int16_t *block, int stride,
+                                   const uint8_t nnzc[5 * 8]);
 
 extern int ff_startcode_find_candidate_rvb(const uint8_t *, int);
 extern int ff_startcode_find_candidate_rvv(const uint8_t *, int);
@@ -59,6 +62,7 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
 
 #  if __riscv_xlen == 64
             dsp->h264_idct_add16 = ff_h264_idct_add16_8_rvv;
+            dsp->h264_idct_add16intra = ff_h264_idct_add16intra_8_rvv;
 #  endif
         }
         dsp->startcode_find_candidate = ff_startcode_find_candidate_rvv;
