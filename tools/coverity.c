@@ -31,6 +31,17 @@
 
 #define NULL (void *)0
 
+typedef long long int64_t;
+
+enum AVRounding {
+    AV_ROUND_ZERO     = 0,
+    AV_ROUND_INF      = 1,
+    AV_ROUND_DOWN     = 2,
+    AV_ROUND_UP       = 3,
+    AV_ROUND_NEAR_INF = 5,
+    AV_ROUND_PASS_MINMAX = 8192,
+};
+
 // Based on https://scan.coverity.com/models
 void *av_malloc(size_t size) {
     int has_memory;
@@ -77,3 +88,10 @@ void *av_free(void *ptr) {
     __coverity_mark_as_afm_freed__(ptr, "av_free");
 }
 
+
+int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd) {
+    __coverity_negative_sink__(b);
+    __coverity_negative_sink__(c);
+
+    return (double)a * (double)b / (double)c;
+}
