@@ -263,7 +263,7 @@ FATE_VCODEC-$(call ENCDEC, MPEG2VIDEO, MPEG2VIDEO MPEGVIDEO) += $(FATE_MPEG2)
 $(FATE_MPEG2:%=fate-vsynth\%-%): FMT    = mpeg2video
 $(FATE_MPEG2:%=fate-vsynth\%-%): CODEC  = mpeg2video
 
-fate-vsynth%-mpeg2:              ENCOPTS = -qscale 10
+fate-vsynth%-mpeg2:              ENCOPTS = -qscale 10 -alternate_scan 1
 fate-vsynth%-mpeg2-422:          ENCOPTS = -b:v 1000k                   \
                                            -bf 2                        \
                                            -trellis 1                   \
