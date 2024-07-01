@@ -806,7 +806,6 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
             i = 63; /* XXX: not optimal */
         }
     }
-    if (s->msmpeg4_version >= MSMP4_WMV1 && i > 0) i=63; //FIXME/XXX optimize
     s->block_last_index[n] = i;
 
     return 0;
