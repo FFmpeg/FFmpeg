@@ -875,6 +875,9 @@ static int dvdvideo_chapters_setup_simple(AVFormatContext *s)
     for (int i = chapter_start - 1; i < chapter_end; i++) {
         uint64_t time_effective = c->play_state.pgc_pg_times_est[i] - c->play_state.nav_pts;
 
+        if (time_effective - time_prev == 0)
+            continue;
+
         if (chapter_start != chapter_end &&
             !avpriv_new_chapter(s, i, DVDVIDEO_TIME_BASE_Q, time_prev, time_effective, NULL)) {
 
@@ -935,13 +938,16 @@ static int dvdvideo_chapters_setup_preindex(AVFormatContext *s)
                 continue;
         }
 
-        if (!avpriv_new_chapter(s, nb_chapters, DVDVIDEO_TIME_BASE_Q, cur_chapter_offset,
-                                cur_chapter_offset + cur_chapter_duration, NULL)) {
-            ret = AVERROR(ENOMEM);
-            goto end_close;
+        if (cur_chapter_duration > 0) {
+            if (!avpriv_new_chapter(s, nb_chapters, DVDVIDEO_TIME_BASE_Q, cur_chapter_offset,
+                                    cur_chapter_offset + cur_chapter_duration, NULL)) {
+                ret = AVERROR(ENOMEM);
+                goto end_close;
+            }
+
+            nb_chapters++;
         }
 
-        nb_chapters++;
         cur_chapter_offset += cur_chapter_duration;
         cur_chapter_duration = state.vobu_duration;
         last_ptt = state.ptt;
