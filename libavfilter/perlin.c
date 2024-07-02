@@ -129,7 +129,7 @@ int ff_perlin_init(FFPerlin *perlin, double period, int octaves, double persiste
         for (i = 0; i < 256; i++) {
             unsigned int random_idx = av_lfg_get(&lfg) % (256-i);
             uint8_t random_val = random_permutations[random_idx];
-            random_permutations[random_idx] = random_permutations[256-i];
+            random_permutations[random_idx] = random_permutations[255-i];
 
             perlin->permutations[i] = perlin->permutations[i+256] = random_val;
         }
