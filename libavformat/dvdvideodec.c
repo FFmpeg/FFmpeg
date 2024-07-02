@@ -1063,7 +1063,7 @@ static int dvdvideo_video_stream_setup(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
 
-    int ret = 0;
+    int ret;
     DVDVideoVTSVideoStreamEntry entry = {0};
     video_attr_t video_attr;
 
@@ -1224,7 +1224,7 @@ static int dvdvideo_audio_stream_add_all(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
 
-    int ret = 0;
+    int ret;
     int nb_streams;
 
     if (c->opt_menu)
@@ -1331,7 +1331,7 @@ static int dvdvideo_subp_stream_add_internal(AVFormatContext *s, uint32_t offset
                                              subp_attr_t subp_attr,
                                              enum DVDVideoSubpictureViewport viewport)
 {
-    int ret = 0;
+    int ret;
     DVDVideoPGCSubtitleStreamEntry entry = {0};
 
     entry.viewport = viewport;
@@ -1368,7 +1368,7 @@ static int dvdvideo_subp_stream_add_all(AVFormatContext *s)
 
 
     for (int i = 0; i < nb_streams; i++) {
-        int ret = 0;
+        int ret;
         uint32_t subp_control;
         subp_attr_t subp_attr;
         video_attr_t video_attr;
@@ -1476,7 +1476,7 @@ static int dvdvideo_subdemux_open(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
     extern const FFInputFormat ff_mpegps_demuxer;
-    int ret = 0;
+    int ret;
 
     if (!(c->mpeg_buf = av_mallocz(DVDVIDEO_BLOCK_SIZE)))
         return AVERROR(ENOMEM);
@@ -1511,7 +1511,7 @@ static int dvdvideo_read_header(AVFormatContext *s)
 {
     DVDVideoDemuxContext *c = s->priv_data;
 
-    int ret = 0;
+    int ret;
 
     if (c->opt_menu) {
         if (c->opt_region               ||
