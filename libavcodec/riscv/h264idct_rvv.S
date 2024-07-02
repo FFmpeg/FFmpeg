@@ -105,6 +105,69 @@ func ff_h264_idct_add_8_rvv, zve32x
         ret
 endfunc
 
+func ff_h264_idct_add_16_rvv, zve32x
+        csrwi       vxrm, 0
+        vsetivli    zero, 4, e32, m1, ta, ma
+        addi        t1, a1, 1 * 4 * 4
+        vle32.v     v0, (a1)
+        addi        t2, a1, 2 * 4 * 4
+        vle32.v     v1, (t1)
+        addi        t3, a1, 3 * 4 * 4
+        vle32.v     v2, (t2)
+        vle32.v     v3, (t3)
+        jal         t0, ff_h264_idct4_rvv
+        vse32.v     v0, (a1)
+        vse32.v     v1, (t1)
+        vse32.v     v2, (t2)
+        vse32.v     v3, (t3)
+        vlseg4e32.v v0, (a1)
+        .equ    offset, 0
+        .rept   512 / __riscv_xlen
+        sx      zero, offset(a1)
+        .equ    offset, offset + (__riscv_xlen / 8)
+        .endr
+        jal         t0, ff_h264_idct4_rvv
+        add         t1, a0, a2
+        vle16.v     v4, (a0)
+        add         t2, t1, a2
+        vle16.v     v5, (t1)
+        add         t3, t2, a2
+        vle16.v     v6, (t2)
+        vle16.v     v7, (t3)
+        .irp    n,0,1,2,3
+        vssra.vi    v\n, v\n, 6
+        .endr
+        vsetvli     zero, zero, e16, mf2, ta, ma
+        vwaddu.wv   v0, v0, v4
+        vwaddu.wv   v1, v1, v5
+        vwaddu.wv   v2, v2, v6
+        vwaddu.wv   v3, v3, v7
+        vsetvli     zero, zero, e32, m1, ta, ma
+        .irp    n,0,1,2,3
+        vmax.vx     v\n, v\n, zero
+        .endr
+        .irp    n,0,1,2,3
+        vmin.vx     v\n, v\n, a3
+        .endr
+        vsetvli     zero, zero, e16, mf2, ta, ma
+        vncvt.x.x.w v4, v0
+        vncvt.x.x.w v5, v1
+        vncvt.x.x.w v6, v2
+        vncvt.x.x.w v7, v3
+        vse16.v     v4, (a0)
+        vse16.v     v5, (t1)
+        vse16.v     v6, (t2)
+        vse16.v     v7, (t3)
+        ret
+endfunc
+
+.irp    depth, 9, 10, 12, 14
+func ff_h264_idct_add_\depth\()_rvv, zve32x
+        li      a3, (1 << \depth) - 1
+        j       ff_h264_idct_add_16_rvv
+endfunc
+.endr
+
         .variant_cc ff_h264_idct8_rvv
 func ff_h264_idct8_rvv, zve32x
         vsra.vi v9, v7, 1
