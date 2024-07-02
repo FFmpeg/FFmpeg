@@ -623,7 +623,6 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
     dvdnav_vts_change_event_t *e_vts;
     dvdnav_cell_change_event_t *e_cell;
     int cur_title, cur_pgcn, cur_pgn, cur_angle, cur_title_unused, cur_ptt, cur_nb_angles;
-    int is_cell_promising = 0;
     pci_t *e_pci;
     dsi_t *e_dsi;
 
@@ -705,23 +704,17 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                     continue;
 
                 e_cell = (dvdnav_cell_change_event_t *) nav_buf;
-                is_cell_promising = !c->opt_trim || dvdvideo_is_cell_promising(s, state->pgc, e_cell->cellN);
 
-                av_log(s, AV_LOG_DEBUG, "new cell: prev=%d new=%d promising=%d\n",
-                                        state->celln, e_cell->cellN, is_cell_promising);
+                av_log(s, AV_LOG_DEBUG, "new cell: prev=%d new=%d\n", state->celln, e_cell->cellN);
 
                 if (!state->in_ps && !state->in_pgc) {
                     if (cur_title == c->opt_title                        &&
                         (c->opt_pgc || cur_ptt == c->opt_chapter_start)  &&
                         cur_pgcn == state->pgcn                          &&
-                        cur_pgn == state->entry_pgn                      &&
-                        is_cell_promising) {
+                        cur_pgn == state->entry_pgn) {
 
                         state->in_pgc = 1;
                     }
-
-                    if (c->opt_trim && !is_cell_promising)
-                        av_log(s, AV_LOG_INFO, "Skipping padding cell #%d\n", e_cell->cellN);
                 } else if (state->celln >= e_cell->cellN || state->pgn > cur_pgn) {
                     return AVERROR_EOF;
                 }
@@ -764,6 +757,13 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                        e_pci->pci_gi.nv_pck_lbn, state->vobu_duration, state->nav_pts);
 
                 if (!state->in_ps) {
+                    if (c->opt_trim && !dvdvideo_is_cell_promising(s, state->pgc, state->celln)) {
+                        av_log(s, AV_LOG_INFO, "Skipping padding cell #%d\n", state->celln);
+
+                        i = 0;
+                        continue;
+                    }
+
                     av_log(s, AV_LOG_DEBUG, "navigation: locked to program stream\n");
 
                     state->in_ps = 1;
