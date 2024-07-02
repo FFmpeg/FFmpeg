@@ -330,7 +330,7 @@ fate-vsynth%-mpeg4-qprd:         ENCOPTS = -b 450k -bf 2 -trellis 1          \
                                            -flags +mv4 -mpv_flags +qp_rd+mv0 \
                                            -cmp 2 -subcmp 2 -mbd rd
 
-fate-vsynth%-mpeg4-rc:           ENCOPTS = -b 400k -bf 2
+fate-vsynth%-mpeg4-rc:           ENCOPTS = -b 400k -bf 2 -mpeg_quant 1
 
 fate-vsynth%-mpeg4-thread:       ENCOPTS = -b 500k -flags +mv4+aic         \
                                            -data_partitioning 1 -trellis 1 \
