@@ -19,6 +19,7 @@
 #ifndef AVCODEC_HW_BASE_ENCODE_H
 #define AVCODEC_HW_BASE_ENCODE_H
 
+#include "avcodec.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/fifo.h"
 
