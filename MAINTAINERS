@@ -260,6 +260,7 @@ Codecs:
 Hardware acceleration:
   dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
   d3d11va*                              Steve Lhomme
+  d3d12va_encode*                       Tong Wu
   mediacodec*                           Matthieu Bouron, Aman Gupta, Zhao Zhili
   vaapi*                                Haihao Xiang
   vaapi_encode*                         Mark Thompson, Haihao Xiang
