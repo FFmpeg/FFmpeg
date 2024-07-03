@@ -89,7 +89,6 @@ typedef struct FFV1Context {
     ProgressFrame picture, last_picture;
     struct FFV1Context *fsrc;
 
-    AVFrame *cur;
     const AVFrame *cur_enc_frame;
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice

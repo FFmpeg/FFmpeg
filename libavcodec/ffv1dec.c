@@ -163,7 +163,8 @@ static int decode_plane(FFV1Context *s, uint8_t *src,
     return 0;
 }
 
-static int decode_slice_header(const FFV1Context *f, FFV1Context *fs)
+static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
+                               AVFrame *frame)
 {
     RangeCoder *c = &fs->c;
     uint8_t state[CONTEXT_SIZE];
@@ -217,23 +218,23 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs)
 
     ps = get_symbol(c, state, 0);
     if (ps == 1) {
-        f->cur->flags |= AV_FRAME_FLAG_INTERLACED;
-        f->cur->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        frame->flags |= AV_FRAME_FLAG_INTERLACED;
+        frame->flags |= AV_FRAME_FLAG_TOP_FIELD_FIRST;
     } else if (ps == 2) {
-        f->cur->flags |= AV_FRAME_FLAG_INTERLACED;
-        f->cur->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        frame->flags |= AV_FRAME_FLAG_INTERLACED;
+        frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
     } else if (ps == 3) {
-        f->cur->flags &= ~AV_FRAME_FLAG_INTERLACED;
+        frame->flags &= ~AV_FRAME_FLAG_INTERLACED;
     }
-    f->cur->sample_aspect_ratio.num = get_symbol(c, state, 0);
-    f->cur->sample_aspect_ratio.den = get_symbol(c, state, 0);
+    frame->sample_aspect_ratio.num = get_symbol(c, state, 0);
+    frame->sample_aspect_ratio.den = get_symbol(c, state, 0);
 
     if (av_image_check_sar(f->width, f->height,
-                           f->cur->sample_aspect_ratio) < 0) {
+                           frame->sample_aspect_ratio) < 0) {
         av_log(f->avctx, AV_LOG_WARNING, "ignoring invalid SAR: %u/%u\n",
-               f->cur->sample_aspect_ratio.num,
-               f->cur->sample_aspect_ratio.den);
-        f->cur->sample_aspect_ratio = (AVRational){ 0, 1 };
+               frame->sample_aspect_ratio.num,
+               frame->sample_aspect_ratio.den);
+        frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     }
 
     if (fs->version > 3) {
@@ -258,7 +259,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     FFV1Context *f    = fs->avctx->priv_data;
     int width, height, x, y, ret;
     const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
-    AVFrame * const p = f->cur;
+    AVFrame * const p = f->picture.f;
     const int      si = (FFV1Context**)arg - f->slice_context;
 
     if (f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
@@ -299,7 +300,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     if (f->version > 2) {
         if (ff_ffv1_init_slice_state(f, fs) < 0)
             return AVERROR(ENOMEM);
-        if (decode_slice_header(f, fs) < 0) {
+        if (decode_slice_header(f, fs, p) < 0) {
             fs->slice_x = fs->slice_y = fs->slice_height = fs->slice_width = 0;
             fs->slice_damaged = 1;
             return AVERROR_INVALIDDATA;
@@ -307,7 +308,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     }
     if ((ret = ff_ffv1_init_slice_state(f, fs)) < 0)
         return ret;
-    if ((f->cur->flags & AV_FRAME_FLAG_KEY) || fs->slice_reset_contexts) {
+    if ((p->flags & AV_FRAME_FLAG_KEY) || fs->slice_reset_contexts) {
         ff_ffv1_clear_slice_state(f, fs);
     } else if (fs->slice_damaged) {
         return AVERROR_INVALIDDATA;
@@ -920,7 +921,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     if (ret < 0)
         return ret;
 
-    f->cur = p = f->picture.f;
+    p = f->picture.f;
 
     p->pict_type = AV_PICTURE_TYPE_I; //FIXME I vs. P
     p->flags     = (p->flags & ~AV_FRAME_FLAG_KEY) | key_frame;
