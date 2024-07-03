@@ -267,16 +267,14 @@ static int decode_slice(AVCodecContext *c, void *arg)
 
     if(f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY)) {
         FFV1Context *fssrc = f->fsrc->slice_context[si];
-        FFV1Context *fsdst = f->slice_context[si];
-        av_assert1(fsdst->plane_count == fssrc->plane_count);
-        av_assert1(fsdst == fs);
+        av_assert1(fs->plane_count == fssrc->plane_count);
 
         if (!(p->flags & AV_FRAME_FLAG_KEY))
-            fsdst->slice_damaged |= fssrc->slice_damaged;
+            fs->slice_damaged |= fssrc->slice_damaged;
 
         for (int i = 0; i < f->plane_count; i++) {
             PlaneContext *psrc = &fssrc->plane[i];
-            PlaneContext *pdst = &fsdst->plane[i];
+            PlaneContext *pdst = &fs->plane[i];
 
             av_free(pdst->state);
             av_free(pdst->vlc_state);
