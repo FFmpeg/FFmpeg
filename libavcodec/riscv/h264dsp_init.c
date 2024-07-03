@@ -35,6 +35,7 @@ void ff_h264_h_loop_filter_luma_mbaff_8_rvv(uint8_t *pix, ptrdiff_t stride,
                                             int alpha, int beta, int8_t *tc0);
 
 void ff_h264_idct_add_8_rvv(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_8_rvv(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct_add16_8_rvv(uint8_t *dst, const int *blockoffset,
                               int16_t *block, int stride,
                               const uint8_t nnzc[5 * 8]);
@@ -65,6 +66,7 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
                 ff_h264_h_loop_filter_luma_mbaff_8_rvv;
 
             dsp->h264_idct_add = ff_h264_idct_add_8_rvv;
+            dsp->h264_idct8_add = ff_h264_idct8_add_8_rvv;
 #  if __riscv_xlen == 64
             dsp->h264_idct_add16 = ff_h264_idct_add16_8_rvv;
             dsp->h264_idct_add16intra = ff_h264_idct_add16intra_8_rvv;

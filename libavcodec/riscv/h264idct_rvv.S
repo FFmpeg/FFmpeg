@@ -103,6 +103,137 @@ func ff_h264_idct_add_8_rvv, zve32x
         ret
 endfunc
 
+        .variant_cc ff_h264_idct8_rvv
+func ff_h264_idct8_rvv, zve32x
+        vsra.vi v9, v7, 1
+        vsra.vi v11, v3, 1
+        vsra.vi v12, v2, 1
+        vsra.vi v13, v5, 1
+        vsra.vi v14, v6, 1
+        vsra.vi v15, v1, 1
+        vadd.vv v9, v3, v9
+        vsub.vv v11, v1, v11
+        vsub.vv v13, v13, v1
+        vadd.vv v15, v3, v15
+        vsub.vv v9, v5, v9
+        vadd.vv v11, v11, v7
+        vadd.vv v13, v13, v7
+        vadd.vv v15, v15, v5
+        vadd.vv v8, v0, v4      # a0
+        vsub.vv v9, v9, v7      # a1
+        vsub.vv v10, v0, v4     # a2
+        vsub.vv v11, v11, v3    # a3
+        vsub.vv v12, v12, v6    # a4
+        vadd.vv v13, v13, v5    # a5
+        vadd.vv v14, v14, v2    # a6
+        vadd.vv v15, v15, v1    # a7
+        vsra.vi v7, v9, 2
+        vsra.vi v5, v11, 2
+        vsra.vi v3, v13, 2
+        vsra.vi v1, v15, 2
+        vadd.vv v0, v8, v14     # b0
+        vadd.vv v6, v10, v12    # b2
+        vsub.vv v2, v10, v12    # b4
+        vsub.vv v4, v8, v14     # b6
+        vsub.vv v8, v15, v7     # b7
+        vsub.vv v14, v5, v13    # b5
+        vadd.vv v12, v1, v9     # b1
+        vadd.vv v10, v11, v3    # b3
+        vadd.vv v1, v6, v14
+        vsub.vv v6, v6, v14
+        vsub.vv v7, v0, v8
+        vadd.vv v0, v0, v8
+        vsub.vv v5, v2, v10
+        vadd.vv v2, v2, v10
+        vadd.vv v3, v4, v12
+        vsub.vv v4, v4, v12
+        jr      t0
+endfunc
+
+func ff_h264_idct8_add_8_rvv, zve32x
+        csrwi       vxrm, 0
+.Lidct8_add_8_rvv:
+        vsetivli    zero, 8, e16, m1, ta, ma
+        addi        t1, a1, 1 * 8 * 2
+        vle16.v     v0, (a1)
+        addi        t2, a1, 2 * 8 * 2
+        vle16.v     v1, (t1)
+        addi        t3, a1, 3 * 8 * 2
+        vle16.v     v2, (t2)
+        addi        t4, a1, 4 * 8 * 2
+        vle16.v     v3, (t3)
+        addi        t5, a1, 5 * 8 * 2
+        vle16.v     v4, (t4)
+        addi        t6, a1, 6 * 8 * 2
+        vle16.v     v5, (t5)
+        addi        a7, a1, 7 * 8 * 2
+        vle16.v     v6, (t6)
+        vle16.v     v7, (a7)
+        jal         t0, ff_h264_idct8_rvv
+        vse16.v     v0, (a1)
+        vse16.v     v1, (t1)
+        vse16.v     v2, (t2)
+        vse16.v     v3, (t3)
+        vse16.v     v4, (t4)
+        vse16.v     v5, (t5)
+        vse16.v     v6, (t6)
+        vse16.v     v7, (a7)
+        vlseg8e16.v v0, (a1)
+        .rept   1024 / __riscv_xlen
+        sx      zero, ((__riscv_xlen / 8) * \+)(a1)
+        .endr
+        jal         t0, ff_h264_idct8_rvv
+        add         t1, a0, a2
+        vle8.v      v16, (a0)
+        add         t2, t1, a2
+        vle8.v      v17, (t1)
+        add         t3, t2, a2
+        vle8.v      v18, (t2)
+        add         t4, t3, a2
+        vle8.v      v19, (t3)
+        add         t5, t4, a2
+        vle8.v      v20, (t4)
+        add         t6, t5, a2
+        vle8.v      v21, (t5)
+        add         a7, t6, a2
+        vle8.v      v22, (t6)
+        vle8.v      v23, (a7)
+        .irp    n,0,1,2,3,4,5,6,7
+        vssra.vi    v\n, v\n, 6
+        .endr
+        vsetvli     zero, zero, e8, mf2, ta, ma
+        vwaddu.wv   v0, v0, v16
+        vwaddu.wv   v1, v1, v17
+        vwaddu.wv   v2, v2, v18
+        vwaddu.wv   v3, v3, v19
+        vwaddu.wv   v4, v4, v20
+        vwaddu.wv   v5, v5, v21
+        vwaddu.wv   v6, v6, v22
+        vwaddu.wv   v7, v7, v23
+        vsetvli     zero, zero, e16, m1, ta, ma
+        .irp    n,0,1,2,3,4,5,6,7
+        vmax.vx     v\n, v\n, zero
+        .endr
+        vsetvli     zero, zero, e8, mf2, ta, ma
+        vnclipu.wi  v16, v0, 0
+        vnclipu.wi  v17, v1, 0
+        vnclipu.wi  v18, v2, 0
+        vnclipu.wi  v19, v3, 0
+        vnclipu.wi  v20, v4, 0
+        vnclipu.wi  v21, v5, 0
+        vnclipu.wi  v22, v6, 0
+        vnclipu.wi  v23, v7, 0
+        vse8.v      v16, (a0)
+        vse8.v      v17, (t1)
+        vse8.v      v18, (t2)
+        vse8.v      v19, (t3)
+        vse8.v      v20, (t4)
+        vse8.v      v21, (t5)
+        vse8.v      v22, (t6)
+        vse8.v      v23, (a7)
+        ret
+endfunc
+
 const ff_h264_scan8
         .byte   014, 015, 024, 025, 016, 017, 026, 027
         .byte   034, 035, 044, 045, 036, 037, 046, 047
@@ -251,6 +382,7 @@ func ff_h264_idct_add16intra_\depth\()_rvv, zve32x
 endfunc
 
 func ff_h264_idct8_add4_\depth\()_rvv, zve32x
+        csrwi       vxrm, 0
         addi    sp, sp, -80
         lla     t0, ff_h264_scan8
         sd      s0,   (sp)
@@ -300,7 +432,7 @@ func ff_h264_idct8_add4_\depth\()_rvv, zve32x
         call    ff_h264_idct8_dc_add_\depth\()_c
         j       3f
 2:
-        call    ff_h264_idct8_add_\depth\()_c
+        call    .Lidct8_add_\depth\()_rvv
 3:
         srli    s3, s3, 1
         addi    s5, s5, 4 * 4
