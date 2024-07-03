@@ -259,10 +259,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     int width, height, x, y, ret;
     const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     AVFrame * const p = f->cur;
-    int si;
-
-    for( si=0; fs != f->slice_context[si]; si ++)
-        ;
+    const int      si = (FFV1Context**)arg - f->slice_context;
 
     if (f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
         ff_progress_frame_await(&f->last_picture, si);
