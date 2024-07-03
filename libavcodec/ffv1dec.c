@@ -1027,6 +1027,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     return buf_size;
 }
 
+#if HAVE_THREADS
 static void copy_fields(FFV1Context *fsdst, const FFV1Context *fssrc,
                         const FFV1Context *fsrc)
 {
@@ -1055,7 +1056,6 @@ static void copy_fields(FFV1Context *fsdst, const FFV1Context *fssrc,
     }
 }
 
-#if HAVE_THREADS
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     FFV1Context *fsrc = src->priv_data;
