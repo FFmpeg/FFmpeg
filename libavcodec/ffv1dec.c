@@ -46,7 +46,7 @@ static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
     if (get_rac(c, state + 0))
         return 0;
     else {
-        int i, e;
+        int e;
         unsigned a;
         e = 0;
         while (get_rac(c, state + 1 + FFMIN(e, 9))) { // 1..10
@@ -56,7 +56,7 @@ static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
         }
 
         a = 1;
-        for (i = e - 1; i >= 0; i--)
+        for (int i = e - 1; i >= 0; i--)
             a += a + get_rac(c, state + 22 + FFMIN(i, 9));  // 22..31
 
         e = -(is_signed && get_rac(c, state + 11 + FFMIN(e, 10))); // 11..21
@@ -167,7 +167,7 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs)
 {
     RangeCoder *c = &fs->c;
     uint8_t state[CONTEXT_SIZE];
-    unsigned ps, i, context_count;
+    unsigned ps, context_count;
     int sx, sy, sw, sh;
 
     memset(state, 128, sizeof(state));
@@ -197,7 +197,7 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs)
     if (fs->ac == AC_GOLOMB_RICE && fs->slice_width >= (1<<23))
         return AVERROR_INVALIDDATA;
 
-    for (i = 0; i < f->plane_count; i++) {
+    for (unsigned i = 0; i < f->plane_count; i++) {
         PlaneContext * const p = &fs->plane[i];
         int idx = get_symbol(c, state, 0);
         if (idx >= (unsigned)f->quant_table_count) {
@@ -259,7 +259,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     int width, height, x, y, ret;
     const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     AVFrame * const p = f->cur;
-    int i, si;
+    int si;
 
     for( si=0; fs != f->slice_context[si]; si ++)
         ;
@@ -276,7 +276,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
         if (!(p->flags & AV_FRAME_FLAG_KEY))
             fsdst->slice_damaged |= fssrc->slice_damaged;
 
-        for (i = 0; i < f->plane_count; i++) {
+        for (int i = 0; i < f->plane_count; i++) {
             PlaneContext *psrc = &fssrc->plane[i];
             PlaneContext *pdst = &fsdst->plane[i];
 
@@ -424,7 +424,7 @@ static int read_extra_header(FFV1Context *f)
 {
     RangeCoder *const c = &f->c;
     uint8_t state[CONTEXT_SIZE];
-    int i, j, k, ret;
+    int ret;
     uint8_t state2[32][CONTEXT_SIZE];
     unsigned crc = 0;
 
@@ -453,7 +453,7 @@ static int read_extra_header(FFV1Context *f)
     f->ac = get_symbol(c, state, 0);
 
     if (f->ac == AC_RANGE_CUSTOM_TAB) {
-        for (i = 1; i < 256; i++)
+        for (int i = 1; i < 256; i++)
             f->state_transition[i] = get_symbol(c, state, 1) + c->one_state[i];
     }
 
@@ -492,7 +492,7 @@ static int read_extra_header(FFV1Context *f)
         return AVERROR_INVALIDDATA;
     }
 
-    for (i = 0; i < f->quant_table_count; i++) {
+    for (int i = 0; i < f->quant_table_count; i++) {
         f->context_count[i] = read_quant_tables(c, f->quant_tables[i]);
         if (f->context_count[i] < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
@@ -502,10 +502,10 @@ static int read_extra_header(FFV1Context *f)
     if ((ret = ff_ffv1_allocate_initial_states(f)) < 0)
         return ret;
 
-    for (i = 0; i < f->quant_table_count; i++)
+    for (int i = 0; i < f->quant_table_count; i++)
         if (get_rac(c, state)) {
-            for (j = 0; j < f->context_count[i]; j++)
-                for (k = 0; k < CONTEXT_SIZE; k++) {
+            for (int j = 0; j < f->context_count[i]; j++)
+                for (int k = 0; k < CONTEXT_SIZE; k++) {
                     int pred = j ? f->initial_states[i][j - 1][k] : 128;
                     f->initial_states[i][j][k] =
                         (pred + get_symbol(c, state2[k], 1)) & 0xFF;
@@ -550,7 +550,7 @@ static int read_extra_header(FFV1Context *f)
 static int read_header(FFV1Context *f)
 {
     uint8_t state[CONTEXT_SIZE];
-    int i, j, context_count = -1; //-1 to avoid warning
+    int context_count = -1; //-1 to avoid warning
     RangeCoder *const c = &f->slice_context[0]->c;
 
     memset(state, 128, sizeof(state));
@@ -566,7 +566,7 @@ static int read_header(FFV1Context *f)
         f->ac = get_symbol(c, state, 0);
 
         if (f->ac == AC_RANGE_CUSTOM_TAB) {
-            for (i = 1; i < 256; i++) {
+            for (int i = 1; i < 256; i++) {
                 int st = get_symbol(c, state, 1) + c->one_state[i];
                 if (st < 1 || st > 255) {
                     av_log(f->avctx, AV_LOG_ERROR, "invalid state transition %d\n", st);
@@ -790,7 +790,7 @@ static int read_header(FFV1Context *f)
         return AVERROR_INVALIDDATA;
     }
 
-    for (j = 0; j < f->slice_count; j++) {
+    for (int j = 0; j < f->slice_count; j++) {
         FFV1Context *fs = f->slice_context[j];
         fs->ac            = f->ac;
         fs->packed_at_lsb = f->packed_at_lsb;
@@ -819,7 +819,7 @@ static int read_header(FFV1Context *f)
                         && (unsigned)fs->slice_y + (uint64_t)fs->slice_height <= f->height);
         }
 
-        for (i = 0; i < f->plane_count; i++) {
+        for (int i = 0; i < f->plane_count; i++) {
             PlaneContext *const p = &fs->plane[i];
 
             if (f->version == 2) {
@@ -874,7 +874,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     int buf_size        = avpkt->size;
     FFV1Context *f      = avctx->priv_data;
     RangeCoder *const c = &f->slice_context[0]->c;
-    int i, ret, key_frame;
+    int ret, key_frame;
     uint8_t keystate = 128;
     uint8_t *buf_p;
     AVFrame *p;
@@ -908,6 +908,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     } else {
         int w = avctx->width;
         int s = 1 + w / (1<<23);
+        int i;
 
         w /= s;
 
@@ -941,7 +942,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     ff_thread_finish_setup(avctx);
 
     buf_p = buf + buf_size;
-    for (i = f->slice_count - 1; i >= 0; i--) {
+    for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1Context *fs = f->slice_context[i];
         int trailer = 3 + 5*!!f->ec;
         int v;
@@ -991,15 +992,14 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                    f->slice_count,
                    sizeof(void*));
 
-    for (i = f->slice_count - 1; i >= 0; i--) {
+    for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1Context *fs = f->slice_context[i];
-        int j;
         if (fs->slice_damaged && f->last_picture.f) {
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             const uint8_t *src[4];
             uint8_t *dst[4];
             ff_progress_frame_await(&f->last_picture, INT_MAX);
-            for (j = 0; j < desc->nb_components; j++) {
+            for (int j = 0; j < desc->nb_components; j++) {
                 int pixshift = desc->comp[j].depth > 8;
                 int sh = (j == 1 || j == 2) ? f->chroma_h_shift : 0;
                 int sv = (j == 1 || j == 2) ? f->chroma_v_shift : 0;
@@ -1064,7 +1064,6 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     FFV1Context *fsrc = src->priv_data;
     FFV1Context *fdst = dst->priv_data;
-    int i;
 
     if (dst == src)
         return 0;
@@ -1075,7 +1074,7 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
            sizeof(fdst->state_transition));
     memcpy(fdst->quant_table, fsrc->quant_table, sizeof(fsrc->quant_table));
 
-    for (i = 0; i < fdst->num_h_slices * fdst->num_v_slices; i++) {
+    for (int i = 0; i < fdst->num_h_slices * fdst->num_v_slices; i++) {
         FFV1Context *fssrc = fsrc->slice_context[i];
         FFV1Context *fsdst = fdst->slice_context[i];
         copy_fields(fsdst, fssrc, fsrc);
