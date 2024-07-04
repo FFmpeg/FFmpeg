@@ -551,7 +551,11 @@ FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_PIXELIZE_FILTER) += fate-filter-pixeliz
 fate-filter-pixelize-max: CMD = video_filter "pixelize=mode=max"
 
 FATE_FILTER_VSYNTH_VIDEO_FILTER-$(CONFIG_TILTANDSHIFT_FILTER) += fate-filter-tiltandshift
+FATE_FILTER_VSYNTH_VIDEO_FILTER-$(call ALLYES, SCALE_FILTER TILTANDSHIFT_FILTER) += fate-filter-tiltandshift-410 fate-filter-tiltandshift-422 fate-filter-tiltandshift-444
 fate-filter-tiltandshift: CMD = framecrc -c:v pgmyuv -i $(SRC) -flags +bitexact -vf tiltandshift
+fate-filter-tiltandshift-410: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -flags +bitexact -vf format=yuv410p,tiltandshift
+fate-filter-tiltandshift-422: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -flags +bitexact -vf format=yuv422p,tiltandshift
+fate-filter-tiltandshift-444: CMD = framecrc -auto_conversion_filters -c:v pgmyuv -i $(SRC) -flags +bitexact -vf format=yuv444p,tiltandshift
 
 tests/pixfmts.mak: TAG = GEN
 tests/pixfmts.mak: ffmpeg$(PROGSSUF)$(EXESUF) | tests
