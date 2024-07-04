@@ -643,9 +643,19 @@ static void calc_chroma_pos(int *h_pos_out, int *v_pos_out, int chroma_loc,
         v_pos = v_pos_override;
 
     /* Fix vertical chroma position for interlaced frames */
-    if (v_sub == 1 && index > 0) {
-        v_pos += 256 * (index == 2); /* offset by one luma row for odd rows */
-        v_pos >>= 1; /* double luma row distance */
+    if (v_sub && index > 0) {
+        /* When vertically subsampling, chroma samples are effectively only
+         * placed next to even rows. To access them from the odd field, we need
+         * to account for this shift by offsetting the distance of one luma row.
+         *
+         * For 4x vertical subsampling (v_sub == 2), they are only placed
+         * next to every *other* even row, so we need to shift by three luma
+         * rows to get to the chroma sample. */
+        if (index == 2)
+            v_pos += (256 << v_sub) - 256;
+
+        /* Luma row distance is doubled for fields, so halve offsets */
+        v_pos >>= 1;
     }
 
     /* Explicitly strip chroma offsets when not subsampling, because it
