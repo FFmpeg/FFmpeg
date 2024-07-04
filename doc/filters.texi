@@ -22073,6 +22073,23 @@ Keep the same colorspace property (default).
 @item chroma-derived-c
 @item ictcp
 @end table
+
+@item chroma_location
+Set the chroma sample location.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same chroma location (default).
+
+@item unspecified, unknown
+@item left
+@item center
+@item topleft
+@item top
+@item bottomleft
+@item bottom
+@end table
 @end table
 
 @section sharpen_npp

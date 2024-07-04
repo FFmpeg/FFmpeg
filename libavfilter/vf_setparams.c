@@ -41,6 +41,7 @@ typedef struct SetParamsContext {
     int color_primaries;
     int color_trc;
     int colorspace;
+    int chroma_location;
 } SetParamsContext;
 
 #define OFFSET(x) offsetof(SetParamsContext, x)
@@ -119,6 +120,17 @@ static const AVOption setparams_options[] = {
     {"chroma-derived-c",           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_CHROMA_DERIVED_CL}, INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"ictcp",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_ICTCP},             INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
     {"ipt-c2",                     NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_IPT_C2},            INT_MIN, INT_MAX, FLAGS, .unit = "colorspace"},
+
+    {"chroma_location", "select chroma sample location", OFFSET(chroma_location), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCHROMA_LOC_NB-1, FLAGS, .unit = "chroma_location"},
+    {"auto", "keep the same chroma location",  0, AV_OPT_TYPE_CONST, {.i64=-1},                       0, 0, FLAGS, .unit = "chroma_location"},
+    {"unspecified",                      NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED}, 0, 0, FLAGS, .unit = "chroma_location"},
+    {"unknown",                          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED}, 0, 0, FLAGS, .unit = "chroma_location"},
+    {"left",                             NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_LEFT},        0, 0, FLAGS, .unit = "chroma_location"},
+    {"center",                           NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_CENTER},      0, 0, FLAGS, .unit = "chroma_location"},
+    {"topleft",                          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOPLEFT},     0, 0, FLAGS, .unit = "chroma_location"},
+    {"top",                              NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOP},         0, 0, FLAGS, .unit = "chroma_location"},
+    {"bottomleft",                       NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOMLEFT},  0, 0, FLAGS, .unit = "chroma_location"},
+    {"bottom",                           NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOM},      0, 0, FLAGS, .unit = "chroma_location"},
     {NULL}
 };
 
@@ -174,17 +186,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
             frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
     }
 
-    /* set range */
+    /* set straightforward parameters */
     if (s->color_range >= 0)
         frame->color_range = s->color_range;
-
-    /* set color prim, trc, space */
     if (s->color_primaries >= 0)
         frame->color_primaries = s->color_primaries;
     if (s->color_trc >= 0)
         frame->color_trc = s->color_trc;
     if (s->colorspace >= 0)
         frame->colorspace = s->colorspace;
+    if (s->chroma_location >= 0)
+        frame->chroma_location = s->chroma_location;
+
     return ff_filter_frame(ctx->outputs[0], frame);
 }
 
