@@ -21,11 +21,14 @@
 #include "config.h"
 
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/riscv/cpu.h"
 #include "libavcodec/h264dsp.h"
+
+extern const h264_weight_func ff_h264_weight_funcs_8_rvv[];
 
 void ff_h264_v_loop_filter_luma_8_rvv(uint8_t *pix, ptrdiff_t stride,
                                       int alpha, int beta, int8_t *tc0);
@@ -60,6 +63,10 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
 # if HAVE_RVV
     if (flags & AV_CPU_FLAG_RVV_I32) {
         if (bit_depth == 8 && ff_rv_vlen_least(128)) {
+            memcpy(dsp->weight_h264_pixels_tab,
+                   ff_h264_weight_funcs_8_rvv,
+                   sizeof (dsp->weight_h264_pixels_tab));
+
             dsp->h264_v_loop_filter_luma = ff_h264_v_loop_filter_luma_8_rvv;
             dsp->h264_h_loop_filter_luma = ff_h264_h_loop_filter_luma_8_rvv;
             dsp->h264_h_loop_filter_luma_mbaff =

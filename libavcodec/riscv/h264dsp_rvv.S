@@ -26,6 +26,89 @@
 
 #include "libavutil/riscv/asm.S"
 
+func ff_h264_weight_pixels_simple_8_rvv, zve32x
+        csrwi   vxrm, 0
+        sll     a5, a5, a3
+1:
+        vsetvli zero, a6, e32, m4, ta, ma
+        vle8.v  v8, (a0)
+        addi    a2, a2, -1
+        vmv.v.x v16, a5
+        vsetvli zero, zero, e16, m2, ta, ma
+        vzext.vf2   v24, v8
+        vwmaccsu.vx v16, a4, v24
+        vnclip.wx   v16, v16, a3
+        vmax.vx v16, v16, zero
+        vsetvli zero, zero, e8, m1, ta, ma
+        vnclipu.wi  v8, v16, 0
+        vse8.v  v8, (a0)
+        add     a0, a0, a1
+        bnez    a2, 1b
+
+        ret
+endfunc
+
+func ff_h264_weight_pixels_8_rvv, zve32x
+        csrwi   vxrm, 0
+        sll     a5, a5, a3
+1:
+        mv      t0, a0
+        mv      t6, a6
+2:
+        vsetvli t2, a2, e32, m8, ta, ma
+        vlsseg2e8.v v0, (t0), a1
+        addi    t6, t6, -2
+        vmv.v.x v16, a5
+        vmv.v.x v24, a5
+        vsetvli zero, zero, e16, m4, ta, ma
+        vzext.vf2   v8, v0
+        vzext.vf2   v12, v2
+        vwmaccsu.vx v16, a4, v8
+        vwmaccsu.vx v24, a4, v12
+        vnclip.wx   v8, v16, a3
+        vnclip.wx   v12, v24, a3
+        vmax.vx v8, v8, zero
+        vmax.vx v12, v12, zero
+        vsetvli zero, zero, e8, m2, ta, ma
+        vnclipu.wi  v0, v8, 0
+        vnclipu.wi  v2, v12, 0
+        vssseg2e8.v v0, (t0), a1
+        addi    t0, t0, 2
+        bnez    t6, 2b
+
+        mul     t3, a1, t2
+        sub     a2, a2, t2
+        add     a0, a0, t3
+        bnez    a2, 1b
+
+        ret
+endfunc
+
+.irp    w, 16, 8, 4, 2
+func ff_h264_weight_pixels\w\()_8_rvv, zve32x
+        li      a6, \w
+        .if     \w == 16
+        j       ff_h264_weight_pixels_simple_8_rvv
+        .else
+        j       ff_h264_weight_pixels_8_rvv
+        .endif
+endfunc
+.endr
+
+        .global ff_h264_weight_funcs_8_rvv
+        .hidden ff_h264_weight_funcs_8_rvv
+const ff_h264_weight_funcs_8_rvv
+        .irp    w, 16, 8, 4, 2
+#if __riscv_xlen == 32
+        .word   ff_h264_weight_pixels\w\()_8_rvv
+#elif __riscv_xlen == 64
+        .dword  ff_h264_weight_pixels\w\()_8_rvv
+#else
+        .qword  ff_h264_weight_pixels\w\()_8_rvv
+#endif
+        .endr
+endconst
+
         .variant_cc ff_h264_loop_filter_luma_8_rvv
 func ff_h264_loop_filter_luma_8_rvv, zve32x
         # p2: v8, p1: v9, p0: v10, q0: v11, q1: v12, q2: v13
