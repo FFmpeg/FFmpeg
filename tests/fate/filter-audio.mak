@@ -413,6 +413,7 @@ fate-filter-hdcd-s32p: CMP = oneline
 fate-filter-hdcd-s32p: REF = 0c5513e83eedaa10ab6fac9ddc173cf5
 
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, ATEMPO, WAV, PCM_S16LE, PCM_S16LE, WAV) += fate-filter-atempo
+fate-filter-atempo: tests/data/asynth-44100-1.wav
 fate-filter-atempo: CMD = framecrc -i $(TARGET_PATH)/tests/data/asynth-44100-1.wav -af "atempo=2.0" -ar 44100
 
 FATE_AFILTER-yes += fate-filter-formats
