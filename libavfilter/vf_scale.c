@@ -713,12 +713,18 @@ static int config_props(AVFilterLink *outlink)
              * chroma positions. MPEG chroma positions are used by convention.
              * Note that this works for both MPEG-1/JPEG and MPEG-2/4 chroma
              * locations, since they share a vertical alignment */
-            if (desc->log2_chroma_h == 1 && scale->in_v_chr_pos == -513) {
-                in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+            if (desc->log2_chroma_h == 1) {
+                if (in_v_chr_pos == -513)
+                    in_v_chr_pos = 128; /* explicitly default missing info */
+                in_v_chr_pos += 256 * (i == 2); /* offset by one luma row for odd rows */
+                in_v_chr_pos >>= i > 0; /* double luma row distance */
             }
 
-            if (outdesc->log2_chroma_h == 1 && scale->out_v_chr_pos == -513) {
-                out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+            if (outdesc->log2_chroma_h == 1) {
+                if (out_v_chr_pos == -513)
+                    out_v_chr_pos = 128;
+                out_v_chr_pos += 256 * (i == 2);
+                out_v_chr_pos >>= i > 0;
             }
 
             av_opt_set_int(s, "src_h_chr_pos", scale->in_h_chr_pos, 0);
