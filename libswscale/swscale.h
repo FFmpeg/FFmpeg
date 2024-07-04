@@ -82,11 +82,35 @@ const char *swscale_license(void);
 #define SWS_PRINT_INFO              0x1000
 
 //the following 3 flags are not completely implemented
-//internal chrominance subsampling info
+
+/**
+ * Perform full chroma upsampling when upscaling to RGB.
+ *
+ * For example, when converting 50x50 yuv420p to 100x100 rgba, setting this flag
+ * will scale the chroma plane from 25x25 to 100x100 (4:4:4), and then convert
+ * the 100x100 yuv444p image to rgba in the final output step.
+ *
+ * Without this flag, the chroma plane is instead scaled to 50x100 (4:2:2),
+ * with a single chroma sample being re-used for both of the horizontally
+ * adjacent RGBA output pixels.
+ */
 #define SWS_FULL_CHR_H_INT    0x2000
-//input subsampling info
+
+/**
+ * Perform full chroma interpolation when downscaling RGB sources.
+ *
+ * For example, when converting a 100x100 rgba source to 50x50 yuv444p, setting
+ * this flag will generate a 100x100 (4:4:4) chroma plane, which is then
+ * downscaled to the required 50x50.
+ *
+ * Without this flag, the chroma plane is instead generated at 50x100 (dropping
+ * every other pixel), before then being downscaled to the required 50x50
+ * resolution.
+ */
 #define SWS_FULL_CHR_H_INP    0x4000
+
 #define SWS_DIRECT_BGR        0x8000
+
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
 #define SWS_ERROR_DIFFUSION  0x800000
