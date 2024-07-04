@@ -169,6 +169,8 @@ typedef struct ScaleContext {
     int in_range;
     int out_range;
 
+    int in_chroma_loc;
+    int out_chroma_loc;
     int out_h_chr_pos;
     int out_v_chr_pos;
     int in_h_chr_pos;
@@ -618,6 +620,40 @@ fail:
     return ret;
 }
 
+static void calc_chroma_pos(int *h_pos_out, int *v_pos_out, int chroma_loc,
+                            int h_pos_override, int v_pos_override,
+                            int h_sub, int v_sub, int index)
+{
+    int h_pos, v_pos;
+
+    /* Explicitly default to center siting for compatibility with swscale */
+    if (chroma_loc == AVCHROMA_LOC_UNSPECIFIED)
+        chroma_loc = AVCHROMA_LOC_CENTER;
+
+    /* av_chroma_location_enum_to_pos() always gives us values in the range from
+     * 0 to 256, but we need to adjust this to the true value range of the
+     * subsampling grid, which may be larger for h/v_sub > 1 */
+    av_chroma_location_enum_to_pos(&h_pos, &v_pos, chroma_loc);
+    h_pos *= (1 << h_sub) - 1;
+    v_pos *= (1 << v_sub) - 1;
+
+    if (h_pos_override != -513)
+        h_pos = h_pos_override;
+    if (v_pos_override != -513)
+        v_pos = v_pos_override;
+
+    /* Fix vertical chroma position for interlaced frames */
+    if (v_sub == 1 && index > 0) {
+        v_pos += 256 * (index == 2); /* offset by one luma row for odd rows */
+        v_pos >>= 1; /* double luma row distance */
+    }
+
+    /* Explicitly strip chroma offsets when not subsampling, because it
+     * interferes with the operation of flags like SWS_FULL_CHR_H_INP */
+    *h_pos_out = h_sub ? h_pos : -513;
+    *v_pos_out = v_sub ? v_pos : -513;
+}
+
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -677,15 +713,16 @@ static int config_props(AVFilterLink *outlink)
         inlink0->h == outlink->h &&
         in_range == outlink->color_range &&
         in_colorspace == outlink->colorspace &&
-        inlink0->format == outlink->format)
+        inlink0->format == outlink->format &&
+        scale->in_chroma_loc == scale->out_chroma_loc)
         ;
     else {
         struct SwsContext **swscs[3] = {&scale->sws, &scale->isws[0], &scale->isws[1]};
         int i;
 
         for (i = 0; i < 3; i++) {
-            int in_v_chr_pos = scale->in_v_chr_pos, out_v_chr_pos = scale->out_v_chr_pos;
             int in_full, out_full, brightness, contrast, saturation;
+            int h_chr_pos, v_chr_pos;
             const int *inv_table, *table;
             struct SwsContext *const s = sws_alloc_context();
             if (!s)
@@ -709,28 +746,17 @@ static int config_props(AVFilterLink *outlink)
                 av_opt_set_int(s, "dst_range",
                                outlink->color_range == AVCOL_RANGE_JPEG, 0);
 
-            /* Override chroma location default settings to have the correct
-             * chroma positions. MPEG chroma positions are used by convention.
-             * Note that this works for both MPEG-1/JPEG and MPEG-2/4 chroma
-             * locations, since they share a vertical alignment */
-            if (desc->log2_chroma_h == 1) {
-                if (in_v_chr_pos == -513)
-                    in_v_chr_pos = 128; /* explicitly default missing info */
-                in_v_chr_pos += 256 * (i == 2); /* offset by one luma row for odd rows */
-                in_v_chr_pos >>= i > 0; /* double luma row distance */
-            }
+            calc_chroma_pos(&h_chr_pos, &v_chr_pos, scale->in_chroma_loc,
+                            scale->in_h_chr_pos, scale->in_v_chr_pos,
+                            desc->log2_chroma_w, desc->log2_chroma_h, i);
+            av_opt_set_int(s, "src_h_chr_pos", h_chr_pos, 0);
+            av_opt_set_int(s, "src_v_chr_pos", v_chr_pos, 0);
 
-            if (outdesc->log2_chroma_h == 1) {
-                if (out_v_chr_pos == -513)
-                    out_v_chr_pos = 128;
-                out_v_chr_pos += 256 * (i == 2);
-                out_v_chr_pos >>= i > 0;
-            }
-
-            av_opt_set_int(s, "src_h_chr_pos", scale->in_h_chr_pos, 0);
-            av_opt_set_int(s, "src_v_chr_pos", in_v_chr_pos, 0);
-            av_opt_set_int(s, "dst_h_chr_pos", scale->out_h_chr_pos, 0);
-            av_opt_set_int(s, "dst_v_chr_pos", out_v_chr_pos, 0);
+            calc_chroma_pos(&h_chr_pos, &v_chr_pos, scale->out_chroma_loc,
+                            scale->out_h_chr_pos, scale->out_v_chr_pos,
+                            outdesc->log2_chroma_w, outdesc->log2_chroma_h, i);
+            av_opt_set_int(s, "dst_h_chr_pos", h_chr_pos, 0);
+            av_opt_set_int(s, "dst_v_chr_pos", v_chr_pos, 0);
 
             if ((ret = sws_init_context(s, NULL, NULL)) < 0)
                 return ret;
@@ -995,6 +1021,8 @@ scale:
     out->height = outlink->h;
     out->color_range = outlink->color_range;
     out->colorspace = outlink->colorspace;
+    if (scale->out_chroma_loc != AVCHROMA_LOC_UNSPECIFIED)
+        out->chroma_location = scale->out_chroma_loc;
 
     if (scale->output_is_pal)
         avpriv_set_systematic_pal2((uint32_t*)out->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
@@ -1232,6 +1260,16 @@ static const AVOption scale_options[] = {
     { "mpeg",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, .unit = "range" },
     { "tv",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, .unit = "range" },
     { "pc",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG}, 0, 0, FLAGS, .unit = "range" },
+    { "in_chroma_loc",  "set input chroma sample location",  OFFSET(in_chroma_loc),  AV_OPT_TYPE_INT, { .i64 = AVCHROMA_LOC_UNSPECIFIED }, 0, AVCHROMA_LOC_NB-1, .flags = FLAGS, .unit = "chroma_loc" },
+    { "out_chroma_loc", "set output chroma sample location", OFFSET(out_chroma_loc), AV_OPT_TYPE_INT, { .i64 = AVCHROMA_LOC_UNSPECIFIED }, 0, AVCHROMA_LOC_NB-1, .flags = FLAGS, .unit = "chroma_loc" },
+        {"auto",          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED}, 0, 0, FLAGS, .unit = "chroma_loc"},
+        {"unknown",       NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_UNSPECIFIED}, 0, 0, FLAGS, .unit = "chroma_loc"},
+        {"left",          NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_LEFT},        0, 0, FLAGS, .unit = "chroma_loc"},
+        {"center",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_CENTER},      0, 0, FLAGS, .unit = "chroma_loc"},
+        {"topleft",       NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOPLEFT},     0, 0, FLAGS, .unit = "chroma_loc"},
+        {"top",           NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_TOP},         0, 0, FLAGS, .unit = "chroma_loc"},
+        {"bottomleft",    NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOMLEFT},  0, 0, FLAGS, .unit = "chroma_loc"},
+        {"bottom",        NULL, 0, AV_OPT_TYPE_CONST, {.i64=AVCHROMA_LOC_BOTTOM},      0, 0, FLAGS, .unit = "chroma_loc"},
     { "in_v_chr_pos",   "input vertical chroma position in luma grid/256"  ,   OFFSET(in_v_chr_pos),  AV_OPT_TYPE_INT, { .i64 = -513}, -513, 512, FLAGS },
     { "in_h_chr_pos",   "input horizontal chroma position in luma grid/256",   OFFSET(in_h_chr_pos),  AV_OPT_TYPE_INT, { .i64 = -513}, -513, 512, FLAGS },
     { "out_v_chr_pos",   "output vertical chroma position in luma grid/256"  , OFFSET(out_v_chr_pos), AV_OPT_TYPE_INT, { .i64 = -513}, -513, 512, FLAGS },

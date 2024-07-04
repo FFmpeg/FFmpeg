@@ -21137,6 +21137,21 @@ Set full range (0-255 in case of 8-bit luma).
 Set "MPEG" range (16-235 in case of 8-bit luma).
 @end table
 
+@item in_chroma_loc
+@item out_chroma_loc
+Set in/output chroma sample location. If not specified, center-sited chroma
+is used by default. Possible values:
+
+@table @samp
+@item auto, unknown
+@item left
+@item center
+@item topleft
+@item top
+@item bottomleft
+@item bottom
+@end table
+
 @item force_original_aspect_ratio
 Enable decreasing or increasing output video width or height if necessary to
 keep the original aspect ratio. Possible values:
