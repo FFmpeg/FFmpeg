@@ -164,7 +164,7 @@ static int decode_plane(FFV1Context *s, uint8_t *src,
 }
 
 static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
-                               AVFrame *frame)
+                               FFV1SliceContext *sc, AVFrame *frame)
 {
     RangeCoder *c = &fs->c;
     uint8_t state[CONTEXT_SIZE];
@@ -185,17 +185,17 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
     if (sx > f->num_h_slices - sw || sy > f->num_v_slices - sh)
         return AVERROR_INVALIDDATA;
 
-    fs->slice_x      =  sx       * (int64_t)f->width  / f->num_h_slices;
-    fs->slice_y      =  sy       * (int64_t)f->height / f->num_v_slices;
-    fs->slice_width  = (sx + sw) * (int64_t)f->width  / f->num_h_slices - fs->slice_x;
-    fs->slice_height = (sy + sh) * (int64_t)f->height / f->num_v_slices - fs->slice_y;
+    sc->slice_x      =  sx       * (int64_t)f->width  / f->num_h_slices;
+    sc->slice_y      =  sy       * (int64_t)f->height / f->num_v_slices;
+    sc->slice_width  = (sx + sw) * (int64_t)f->width  / f->num_h_slices - sc->slice_x;
+    sc->slice_height = (sy + sh) * (int64_t)f->height / f->num_v_slices - sc->slice_y;
 
-    av_assert0((unsigned)fs->slice_width  <= f->width &&
-                (unsigned)fs->slice_height <= f->height);
-    av_assert0 (   (unsigned)fs->slice_x + (uint64_t)fs->slice_width  <= f->width
-                && (unsigned)fs->slice_y + (uint64_t)fs->slice_height <= f->height);
+    av_assert0((unsigned)sc->slice_width  <= f->width &&
+                (unsigned)sc->slice_height <= f->height);
+    av_assert0 (   (unsigned)sc->slice_x + (uint64_t)sc->slice_width  <= f->width
+                && (unsigned)sc->slice_y + (uint64_t)sc->slice_height <= f->height);
 
-    if (fs->ac == AC_GOLOMB_RICE && fs->slice_width >= (1<<23))
+    if (fs->ac == AC_GOLOMB_RICE && sc->slice_width >= (1<<23))
         return AVERROR_INVALIDDATA;
 
     for (unsigned i = 0; i < f->plane_count; i++) {
@@ -261,6 +261,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     AVFrame * const p = f->picture.f;
     const int      si = (FFV1Context**)arg - f->slice_context;
+    FFV1SliceContext *sc = &f->slices[si];
 
     if (f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
         ff_progress_frame_await(&f->last_picture, si);
@@ -298,8 +299,8 @@ static int decode_slice(AVCodecContext *c, void *arg)
     if (f->version > 2) {
         if (ff_ffv1_init_slice_state(f, fs) < 0)
             return AVERROR(ENOMEM);
-        if (decode_slice_header(f, fs, p) < 0) {
-            fs->slice_x = fs->slice_y = fs->slice_height = fs->slice_width = 0;
+        if (decode_slice_header(f, fs, sc, p) < 0) {
+            sc->slice_x = sc->slice_y = sc->slice_height = sc->slice_width = 0;
             fs->slice_damaged = 1;
             return AVERROR_INVALIDDATA;
         }
@@ -312,10 +313,10 @@ static int decode_slice(AVCodecContext *c, void *arg)
         return AVERROR_INVALIDDATA;
     }
 
-    width  = fs->slice_width;
-    height = fs->slice_height;
-    x      = fs->slice_x;
-    y      = fs->slice_y;
+    width  = sc->slice_width;
+    height = sc->slice_height;
+    x      = sc->slice_x;
+    y      = sc->slice_y;
 
     if (fs->ac == AC_GOLOMB_RICE) {
         if (f->version == 3 && f->micro_version > 1 || f->version > 3)
@@ -788,6 +789,7 @@ static int read_header(FFV1Context *f)
 
     for (int j = 0; j < f->slice_count; j++) {
         FFV1Context *fs = f->slice_context[j];
+        FFV1SliceContext *sc = &f->slices[j];
         fs->ac            = f->ac;
         fs->packed_at_lsb = f->packed_at_lsb;
 
@@ -804,15 +806,15 @@ static int read_header(FFV1Context *f)
             if (sx > f->num_h_slices - sw || sy > f->num_v_slices - sh)
                 return AVERROR_INVALIDDATA;
 
-            fs->slice_x      =  sx       * (int64_t)f->width  / f->num_h_slices;
-            fs->slice_y      =  sy       * (int64_t)f->height / f->num_v_slices;
-            fs->slice_width  = (sx + sw) * (int64_t)f->width  / f->num_h_slices - fs->slice_x;
-            fs->slice_height = (sy + sh) * (int64_t)f->height / f->num_v_slices - fs->slice_y;
+            sc->slice_x      =  sx       * (int64_t)f->width  / f->num_h_slices;
+            sc->slice_y      =  sy       * (int64_t)f->height / f->num_v_slices;
+            sc->slice_width  = (sx + sw) * (int64_t)f->width  / f->num_h_slices - sc->slice_x;
+            sc->slice_height = (sy + sh) * (int64_t)f->height / f->num_v_slices - sc->slice_y;
 
-            av_assert0((unsigned)fs->slice_width  <= f->width &&
-                       (unsigned)fs->slice_height <= f->height);
-            av_assert0 (   (unsigned)fs->slice_x + (uint64_t)fs->slice_width  <= f->width
-                        && (unsigned)fs->slice_y + (uint64_t)fs->slice_height <= f->height);
+            av_assert0((unsigned)sc->slice_width  <= f->width &&
+                       (unsigned)sc->slice_height <= f->height);
+            av_assert0 (   (unsigned)sc->slice_x + (uint64_t)sc->slice_width  <= f->width
+                        && (unsigned)sc->slice_y + (uint64_t)sc->slice_height <= f->height);
         }
 
         for (int i = 0; i < f->plane_count; i++) {
@@ -990,6 +992,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1Context *fs = f->slice_context[i];
+        FFV1SliceContext *sc = &f->slices[i];
         if (fs->slice_damaged && f->last_picture.f) {
             const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(avctx->pix_fmt);
             const uint8_t *src[4];
@@ -1000,9 +1003,9 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 int sh = (j == 1 || j == 2) ? f->chroma_h_shift : 0;
                 int sv = (j == 1 || j == 2) ? f->chroma_v_shift : 0;
                 dst[j] = p->data[j] + p->linesize[j] *
-                         (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
+                         (sc->slice_y >> sv) + ((sc->slice_x >> sh) << pixshift);
                 src[j] = f->last_picture.f->data[j] + f->last_picture.f->linesize[j] *
-                         (fs->slice_y >> sv) + ((fs->slice_x >> sh) << pixshift);
+                         (sc->slice_y >> sv) + ((sc->slice_x >> sh) << pixshift);
 
             }
             if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
@@ -1012,8 +1015,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
             av_image_copy(dst, p->linesize, src,
                           f->last_picture.f->linesize,
                           avctx->pix_fmt,
-                          fs->slice_width,
-                          fs->slice_height);
+                          sc->slice_width,
+                          sc->slice_height);
         }
     }
     ff_progress_frame_report(&f->picture, INT_MAX);
@@ -1048,12 +1051,6 @@ static void copy_fields(FFV1Context *fsdst, const FFV1Context *fssrc,
 
     fsdst->packed_at_lsb       = fsrc->packed_at_lsb;
     fsdst->slice_count         = fsrc->slice_count;
-    if (fsrc->version<3){
-        fsdst->slice_x             = fssrc->slice_x;
-        fsdst->slice_y             = fssrc->slice_y;
-        fsdst->slice_width         = fssrc->slice_width;
-        fsdst->slice_height        = fssrc->slice_height;
-    }
 }
 
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
@@ -1073,7 +1070,18 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     for (int i = 0; i < fdst->num_h_slices * fdst->num_v_slices; i++) {
         FFV1Context *fssrc = fsrc->slice_context[i];
         FFV1Context *fsdst = fdst->slice_context[i];
+
+        FFV1SliceContext       *sc  = &fdst->slices[i];
+        const FFV1SliceContext *sc0 = &fsrc->slices[i];
+
         copy_fields(fsdst, fssrc, fsrc);
+
+        if (fsrc->version < 3) {
+            sc->slice_x             = sc0->slice_x;
+            sc->slice_y             = sc0->slice_y;
+            sc->slice_width         = sc0->slice_width;
+            sc->slice_height        = sc0->slice_height;
+        }
     }
     av_assert0(!fdst->plane[0].state);
     av_assert0(!fdst->sample_buffer);

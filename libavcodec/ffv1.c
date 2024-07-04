@@ -108,7 +108,12 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 
     av_assert0(max_slice_count > 0);
 
+    f->slices = av_calloc(max_slice_count, sizeof(*f->slices));
+    if (!f->slices)
+        return AVERROR(ENOMEM);
+
     for (i = 0; i < max_slice_count;) {
+        FFV1SliceContext *sc = &f->slices[i];
         int sx          = i % f->num_h_slices;
         int sy          = i / f->num_h_slices;
         int sxs         = f->avctx->width  *  sx      / f->num_h_slices;
@@ -124,10 +129,10 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
         memcpy(fs, f, sizeof(*fs));
         memset(fs->rc_stat2, 0, sizeof(fs->rc_stat2));
 
-        fs->slice_width  = sxe - sxs;
-        fs->slice_height = sye - sys;
-        fs->slice_x      = sxs;
-        fs->slice_y      = sys;
+        sc->slice_width  = sxe - sxs;
+        sc->slice_height = sye - sys;
+        sc->slice_x      = sxs;
+        sc->slice_y      = sys;
 
         fs->sample_buffer = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
                                       sizeof(*fs->sample_buffer));
@@ -216,6 +221,8 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
 
     for (i = 0; i < s->max_slice_count; i++)
         av_freep(&s->slice_context[i]);
+
+    av_freep(&s->slices);
 
     return 0;
 }

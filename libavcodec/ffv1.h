@@ -69,6 +69,13 @@ typedef struct PlaneContext {
 
 #define MAX_SLICES 1024
 
+typedef struct FFV1SliceContext {
+    int slice_width;
+    int slice_height;
+    int slice_x;
+    int slice_y;
+} FFV1SliceContext;
+
 typedef struct FFV1Context {
     AVClass *class;
     AVCodecContext *avctx;
@@ -123,14 +130,12 @@ typedef struct FFV1Context {
     int max_slice_count;
     int num_v_slices;
     int num_h_slices;
-    int slice_width;
-    int slice_height;
-    int slice_x;
-    int slice_y;
     int slice_reset_contexts;
     int slice_coding_mode;
     int slice_rct_by_coef;
     int slice_rct_ry_coef;
+
+    FFV1SliceContext *slices;
 } FFV1Context;
 
 int ff_ffv1_common_init(AVCodecContext *avctx);

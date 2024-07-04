@@ -370,7 +370,7 @@ static void write_header(FFV1Context *f)
     } else if (f->version < 3) {
         put_symbol(c, state, f->slice_count, 0);
         for (i = 0; i < f->slice_count; i++) {
-            FFV1Context *fs = f->slice_context[i];
+            FFV1SliceContext *fs = &f->slices[i];
             put_symbol(c, state,
                        (fs->slice_x      + 1) * f->num_h_slices / f->width, 0);
             put_symbol(c, state,
@@ -904,17 +904,18 @@ slices_ok:
     return 0;
 }
 
-static void encode_slice_header(FFV1Context *f, FFV1Context *fs)
+static void encode_slice_header(FFV1Context *f, FFV1Context *fs,
+                                FFV1SliceContext *sc)
 {
     RangeCoder *c = &fs->c;
     uint8_t state[CONTEXT_SIZE];
     int j;
     memset(state, 128, sizeof(state));
 
-    put_symbol(c, state, (fs->slice_x     +1)*f->num_h_slices / f->width   , 0);
-    put_symbol(c, state, (fs->slice_y     +1)*f->num_v_slices / f->height  , 0);
-    put_symbol(c, state, (fs->slice_width +1)*f->num_h_slices / f->width -1, 0);
-    put_symbol(c, state, (fs->slice_height+1)*f->num_v_slices / f->height-1, 0);
+    put_symbol(c, state, (sc->slice_x     +1)*f->num_h_slices / f->width   , 0);
+    put_symbol(c, state, (sc->slice_y     +1)*f->num_v_slices / f->height  , 0);
+    put_symbol(c, state, (sc->slice_width +1)*f->num_h_slices / f->width -1, 0);
+    put_symbol(c, state, (sc->slice_height+1)*f->num_v_slices / f->height-1, 0);
     for (j=0; j<f->plane_count; j++) {
         put_symbol(c, state, f->plane[j].quant_table_index, 0);
         av_assert0(f->plane[j].quant_table_index == f->context_model);
@@ -1023,10 +1024,12 @@ static int encode_slice(AVCodecContext *c, void *arg)
 {
     FFV1Context *fs  = *(void **)arg;
     FFV1Context *f   = fs->avctx->priv_data;
-    int width        = fs->slice_width;
-    int height       = fs->slice_height;
-    int x            = fs->slice_x;
-    int y            = fs->slice_y;
+    const int     si = (FFV1Context**)arg - f->slice_context;
+    FFV1SliceContext *sc = &f->slices[si];
+    int width        = sc->slice_width;
+    int height       = sc->slice_height;
+    int x            = sc->slice_x;
+    int y            = sc->slice_y;
     const AVFrame *const p = f->cur_enc_frame;
     const int ps     = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     int ret;
@@ -1048,7 +1051,7 @@ retry:
     if (f->key_frame)
         ff_ffv1_clear_slice_state(f, fs);
     if (f->version > 2) {
-        encode_slice_header(f, fs);
+        encode_slice_header(f, fs, sc);
     }
     if (fs->ac == AC_GOLOMB_RICE) {
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c, f->version > 2) : 0;
