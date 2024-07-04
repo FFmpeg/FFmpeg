@@ -39,8 +39,6 @@
 
 #if HAVE_X86ASM
 
-#define DITHER1XBPP // only for MMX
-
 //SSSE3 versions
 #undef RENAME
 #define RENAME(a) a ## _ssse3

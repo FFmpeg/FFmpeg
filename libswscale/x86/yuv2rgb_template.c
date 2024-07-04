@@ -75,11 +75,9 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, const uint8_t *src[],
 
     YUV2RGB_LOOP(2)
 
-#ifdef DITHER1XBPP
         c->blueDither  = ff_dither8[y       & 1];
         c->greenDither = ff_dither8[y       & 1];
         c->redDither   = ff_dither8[(y + 1) & 1];
-#endif
 
         RENAME(ff_yuv_420_rgb15)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }
@@ -95,11 +93,9 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, const uint8_t *src[],
 
     YUV2RGB_LOOP(2)
 
-#ifdef DITHER1XBPP
         c->blueDither  = ff_dither8[y       & 1];
         c->greenDither = ff_dither4[y       & 1];
         c->redDither   = ff_dither8[(y + 1) & 1];
-#endif
 
         RENAME(ff_yuv_420_rgb16)(index, image, pu - index, pv - index, &(c->redDither), py - 2 * index);
     }

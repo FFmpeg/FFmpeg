@@ -384,11 +384,9 @@ static void RENAME(yuv2rgb565_X_ar)(SwsContext *c, const int16_t *lumFilter,
     YSCALEYUV2RGBX
     "pxor %%mm7, %%mm7 \n\t"
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
     "paddusb "BLUE_DITHER"(%0), %%mm2\n\t"
     "paddusb "GREEN_DITHER"(%0), %%mm4\n\t"
     "paddusb "RED_DITHER"(%0), %%mm5\n\t"
-#endif
     WRITERGB16(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
@@ -408,11 +406,9 @@ static void RENAME(yuv2rgb565_X)(SwsContext *c, const int16_t *lumFilter,
     YSCALEYUV2RGBX
     "pxor %%mm7, %%mm7 \n\t"
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
     "paddusb "BLUE_DITHER"(%0), %%mm2  \n\t"
     "paddusb "GREEN_DITHER"(%0), %%mm4  \n\t"
     "paddusb "RED_DITHER"(%0), %%mm5  \n\t"
-#endif
     WRITERGB16(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
@@ -461,11 +457,9 @@ static void RENAME(yuv2rgb555_X_ar)(SwsContext *c, const int16_t *lumFilter,
     YSCALEYUV2RGBX
     "pxor %%mm7, %%mm7 \n\t"
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
     "paddusb "BLUE_DITHER"(%0), %%mm2\n\t"
     "paddusb "GREEN_DITHER"(%0), %%mm4\n\t"
     "paddusb "RED_DITHER"(%0), %%mm5\n\t"
-#endif
     WRITERGB15(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
@@ -485,11 +479,9 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     YSCALEYUV2RGBX
     "pxor %%mm7, %%mm7 \n\t"
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
     "paddusb "BLUE_DITHER"(%0), %%mm2  \n\t"
     "paddusb "GREEN_DITHER"(%0), %%mm4  \n\t"
     "paddusb "RED_DITHER"(%0), %%mm5  \n\t"
-#endif
     WRITERGB15(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
@@ -891,11 +883,9 @@ static void RENAME(yuv2rgb555_2)(SwsContext *c, const int16_t *buf[2],
         YSCALEYUV2RGB(%%FF_REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
         "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
         "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
         "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
-#endif
         WRITERGB15(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
         "pop %%"FF_REG_BP"                      \n\t"
         "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
@@ -920,11 +910,9 @@ static void RENAME(yuv2rgb565_2)(SwsContext *c, const int16_t *buf[2],
         YSCALEYUV2RGB(%%FF_REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
         "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
         "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
         "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
-#endif
         WRITERGB16(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
         "pop %%"FF_REG_BP"                      \n\t"
         "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
@@ -1240,11 +1228,9 @@ static void RENAME(yuv2rgb555_1)(SwsContext *c, const int16_t *buf0,
             YSCALEYUV2RGB1(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
             "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
             "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
-#endif
             WRITERGB15(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
             "pop %%"FF_REG_BP"                      \n\t"
             "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
@@ -1261,11 +1247,9 @@ static void RENAME(yuv2rgb555_1)(SwsContext *c, const int16_t *buf0,
             YSCALEYUV2RGB1b(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
             "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
             "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
-#endif
             WRITERGB15(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
             "pop %%"FF_REG_BP"                      \n\t"
             "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
@@ -1293,11 +1277,9 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
             YSCALEYUV2RGB1(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
             "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
             "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
-#endif
             WRITERGB16(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
             "pop %%"FF_REG_BP"                      \n\t"
             "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
@@ -1314,11 +1296,9 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
             YSCALEYUV2RGB1b(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
             "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
             "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
-#endif
             WRITERGB16(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
             "pop %%"FF_REG_BP"                      \n\t"
             "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"

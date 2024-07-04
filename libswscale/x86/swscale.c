@@ -40,8 +40,6 @@ const DECLARE_ALIGNED(8, uint64_t, ff_dither8)[2] = {
 
 #if HAVE_INLINE_ASM
 
-#define DITHER1XBPP
-
 DECLARE_ASM_CONST(8, uint64_t, bF8)=       0xF8F8F8F8F8F8F8F8LL;
 DECLARE_ASM_CONST(8, uint64_t, bFC)=       0xFCFCFCFCFCFCFCFCLL;
 

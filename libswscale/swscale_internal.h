@@ -46,8 +46,6 @@
 
 #define MAX_FILTER_SIZE SWS_MAX_FILTER_SIZE
 
-#define DITHER1XBPP
-
 #if HAVE_BIGENDIAN
 #define ALT32_CORR (-1)
 #else
