@@ -111,7 +111,6 @@ typedef struct DVDVideoPlaybackState {
     int                         in_ps;              /* if our navigator is in the program stream */
     int                         in_vts;             /* if our navigator is in the VTS */
     int64_t                     nav_pts;            /* PTS according to IFO, not frame-accurate */
-    int                         nb_cells_played;    /* number of cells played back so far */
     uint64_t                    pgc_duration_est;   /* estimated duration as reported by IFO */
     uint64_t                    pgc_elapsed;        /* the elapsed time of the PGC, cell-relative */
     int                         pgc_nb_pg_est;      /* number of PGs as reported by IFOs */
@@ -730,7 +729,6 @@ static int dvdvideo_play_next_ps_block(AVFormatContext *s, DVDVideoPlaybackState
                 state->celln = e_cell->cellN;
                 state->ptt = cur_ptt;
                 state->pgn = cur_pgn;
-                state->nb_cells_played++;
 
                 continue;
             case DVDNAV_NAV_PACKET:
