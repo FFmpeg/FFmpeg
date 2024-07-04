@@ -108,11 +108,6 @@ typedef struct ZScaleContext {
     char *w_expr;               ///< width  expression string
     char *h_expr;               ///< height expression string
 
-    int out_h_chr_pos;
-    int out_v_chr_pos;
-    int in_h_chr_pos;
-    int in_v_chr_pos;
-
     int first_time;
     int force_original_aspect_ratio;
 
