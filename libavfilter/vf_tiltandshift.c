@@ -175,14 +175,14 @@ static void copy_column(AVFilterLink *outlink,
     const uint8_t *src[4];
 
     dst[0] = dst_data[0] + ncol;
-    dst[1] = dst_data[1] + (ncol >> s->desc->log2_chroma_h);
-    dst[2] = dst_data[2] + (ncol >> s->desc->log2_chroma_h);
+    dst[1] = dst_data[1] + (ncol >> s->desc->log2_chroma_w);
+    dst[2] = dst_data[2] + (ncol >> s->desc->log2_chroma_w);
 
     if (!tilt)
         ncol = 0;
     src[0] = src_data[0] + ncol;
-    src[1] = src_data[1] + (ncol >> s->desc->log2_chroma_h);
-    src[2] = src_data[2] + (ncol >> s->desc->log2_chroma_h);
+    src[1] = src_data[1] + (ncol >> s->desc->log2_chroma_w);
+    src[2] = src_data[2] + (ncol >> s->desc->log2_chroma_w);
 
     av_image_copy(dst, dst_linesizes, src, src_linesizes, outlink->format, 1, outlink->h);
 }
