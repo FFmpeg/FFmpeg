@@ -260,6 +260,10 @@ static int64_t video_duration_estimate(const DecoderPriv *dp, const AVFrame *fra
     const int  ts_unreliable = dp->flags & DECODER_FLAG_TS_UNRELIABLE;
     const int      fr_forced = dp->flags & DECODER_FLAG_FRAMERATE_FORCED;
     int64_t codec_duration = 0;
+    // difference between this and last frame's timestamps
+    const int64_t ts_diff =
+        (frame->pts != AV_NOPTS_VALUE && dp->last_frame_pts != AV_NOPTS_VALUE) ?
+        frame->pts - dp->last_frame_pts : -1;
 
     // XXX lavf currently makes up frame durations when they are not provided by
     // the container. As there is no way to reliably distinguish real container
@@ -267,8 +271,13 @@ static int64_t video_duration_estimate(const DecoderPriv *dp, const AVFrame *fra
     // the container has timestamps. Eventually lavf should stop making up
     // durations, then this should be simplified.
 
+    // frame duration is unreliable (typically guessed by lavf) when it is equal
+    // to 1 and the actual duration of the last frame is more than 2x larger
+    const int duration_unreliable = frame->duration == 1 && ts_diff > 2 * frame->duration;
+
     // prefer frame duration for containers with timestamps
-    if (frame->duration > 0 && (!ts_unreliable || fr_forced))
+    if (fr_forced ||
+        (frame->duration > 0 && !ts_unreliable && !duration_unreliable))
         return frame->duration;
 
     if (dp->dec_ctx->framerate.den && dp->dec_ctx->framerate.num) {
@@ -285,9 +294,8 @@ static int64_t video_duration_estimate(const DecoderPriv *dp, const AVFrame *fra
 
     // when timestamps are available, repeat last frame's actual duration
     // (i.e. pts difference between this and last frame)
-    if (frame->pts != AV_NOPTS_VALUE && dp->last_frame_pts != AV_NOPTS_VALUE &&
-        frame->pts > dp->last_frame_pts)
-        return frame->pts - dp->last_frame_pts;
+    if (ts_diff > 0)
+        return ts_diff;
 
     // try frame/codec duration
     if (frame->duration > 0)
