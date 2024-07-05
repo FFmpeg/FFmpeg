@@ -546,11 +546,10 @@ start:
     }
 
     err = ff_encode_get_frame(avctx, frame);
-    if (err < 0 && err != AVERROR_EOF)
-        return err;
-
-    if (err == AVERROR_EOF)
+    if (err == AVERROR_EOF) {
         frame = NULL;
+    } else if (err < 0)
+        return err;
 
     err = hw_base_encode_send_frame(avctx, ctx, frame);
     if (err < 0)
