@@ -440,7 +440,7 @@ static int get_opcodes(GetByteContext *gb, uint32_t *table, uint8_t *dst, int op
 
     size_in_bits = bytestream2_get_le32(gb);
     endoffset = ((size_in_bits + 7) >> 3) - 4;
-    if (endoffset <= 0 || bytestream2_get_bytes_left(gb) < endoffset)
+    if ((int)endoffset <= 0 || bytestream2_get_bytes_left(gb) < endoffset)
         return AVERROR_INVALIDDATA;
 
     offset = endoffset;
