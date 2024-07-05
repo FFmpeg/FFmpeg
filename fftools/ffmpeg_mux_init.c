@@ -960,17 +960,12 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **e
     else
         ost->st->avg_frame_rate = ist->st->avg_frame_rate;
 
-    ret = avformat_transfer_internal_stream_timing_info(mux->fc->oformat,
-                                                        ost->st, ist->st, copy_tb);
-    if (ret < 0)
-        goto fail;
-
     // copy timebase while removing common factors
     if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0) {
         if (fr.num)
             ost->st->time_base = av_inv_q(fr);
         else
-            ost->st->time_base = av_add_q(av_stream_get_codec_timebase(ost->st), (AVRational){0, 1});
+            ost->st->time_base = av_add_q(ist->st->time_base, (AVRational){0, 1});
     }
 
     if (!ms->copy_prior_start) {

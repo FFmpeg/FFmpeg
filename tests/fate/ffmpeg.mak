@@ -146,7 +146,7 @@ fate-copy-trac236: CMD = transcode mov $(TARGET_SAMPLES)/mov/fcp_export8-236.mov
 
 FATE_STREAMCOPY-$(call TRANSCODE, RAWVIDEO MPEG2VIDEO, MXF, MPEGTS_DEMUXER MPEGVIDEO_PARSER MPEGAUDIO_PARSER MP2_DECODER ARESAMPLE_FILTER PCM_S16LE_DECODER) += fate-copy-trac4914
 fate-copy-trac4914: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
-                      mxf "-c:a pcm_s16le -af aresample -c:v copy"
+                      mxf "-c:a pcm_s16le -af aresample -c:v copy -time_base 1001/30000"
 
 FATE_STREAMCOPY-$(call TRANSCODE, RAWVIDEO MPEG2VIDEO, AVI, MPEGTS_DEMUXER MPEGVIDEO_PARSER MPEGAUDIO_PARSER EXTRACT_EXTRADATA_BSF MP2_DECODER ARESAMPLE_FILTER) += fate-copy-trac4914-avi
 fate-copy-trac4914-avi: CMD = transcode mpegts $(TARGET_SAMPLES)/mpeg2/xdcam8mp2-1s_small.ts\
