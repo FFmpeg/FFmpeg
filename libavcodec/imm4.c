@@ -220,12 +220,15 @@ static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame
 
     for (y = 0; y < avctx->height; y += 16) {
         for (x = 0; x < avctx->width; x += 16) {
-            unsigned flag, cbphi, cbplo;
+            unsigned flag, cbplo;
+            int cbphi;
 
             cbplo = get_vlc2(gb, cbplo_tab.table, CBPLO_VLC_BITS, 1);
             flag = get_bits1(gb);
 
             cbphi = get_cbphi(gb, 1);
+            if (cbphi < 0)
+                return cbphi;
 
             ret = decode_blocks(avctx, gb, cbplo | (cbphi << 2), 0, offset, flag);
             if (ret < 0)
@@ -273,7 +276,8 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
     for (y = 0; y < avctx->height; y += 16) {
         for (x = 0; x < avctx->width; x += 16) {
             int reverse, intra_block, value;
-            unsigned cbphi, cbplo, flag2 = 0;
+            unsigned cbplo, flag2 = 0;
+            int cbphi;
 
             if (get_bits1(gb)) {
                 copy_block16(frame->data[0] + y * frame->linesize[0] + x,
@@ -299,6 +303,9 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
 
             cbplo = value >> 4;
             cbphi = get_cbphi(gb, reverse);
+            if (cbphi < 0)
+                return cbphi;
+
             if (intra_block) {
                 ret = decode_blocks(avctx, gb, cbplo | (cbphi << 2), 0, offset, flag2);
                 if (ret < 0)
