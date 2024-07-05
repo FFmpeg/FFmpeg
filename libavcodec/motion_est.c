@@ -1442,7 +1442,7 @@ static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)
         s->b_direct_mv_table[mot_xy][0]= 0;
         s->b_direct_mv_table[mot_xy][1]= 0;
 
-        return 256*256*256*64;
+        return 256*256*256*64-1;
     }
 
     c->xmin= xmin;
