@@ -92,10 +92,15 @@ static inline int loco_get_rice(RICEContext *r)
     if (get_bits_left(&r->gb) < 1)
         return INT_MIN;
     v = get_ur_golomb_jpegls(&r->gb, loco_get_rice_param(r), INT_MAX, 0);
+    if (v == -1)
+        return INT_MIN;
     loco_update_rice_param(r, (v + 1) >> 1);
     if (!v) {
         if (r->save >= 0) {
-            r->run = get_ur_golomb_jpegls(&r->gb, 2, INT_MAX, 0);
+            int run = get_ur_golomb_jpegls(&r->gb, 2, INT_MAX, 0);
+            if (run == -1)
+                return INT_MIN;
+            r->run = run;
             if (r->run > 1)
                 r->save += r->run + 1;
             else
