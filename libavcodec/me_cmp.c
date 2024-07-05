@@ -517,7 +517,7 @@ av_cold int ff_set_cmp(const MECmpContext *c, me_cmp_func *cmp, int type, int mp
             cmp[i] = zero_cmp;
         return 0;
     }
-    if (type > FF_ARRAY_ELEMS(cmp_func_list) ||
+    if (type >= FF_ARRAY_ELEMS(cmp_func_list) ||
         !cmp_func_list[type].available ||
         !mpvenc && cmp_func_list[type].mpv_only) {
         av_log(NULL, AV_LOG_ERROR,
