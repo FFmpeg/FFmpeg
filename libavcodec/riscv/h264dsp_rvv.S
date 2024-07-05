@@ -48,6 +48,35 @@ func ff_h264_weight_pixels_simple_8_rvv, zve32x
         ret
 endfunc
 
+        .variant_cc ff_h264_biweight_pixels_simple_8_rvv
+func ff_h264_biweight_pixels_simple_8_rvv, zve32x
+        csrwi   vxrm, 2
+        addi    a7, a7, 1
+        ori     a7, a7, 1
+        sll     a7, a7, a4
+1:
+        vsetvli zero, t6, e32, m4, ta, ma
+        vle8.v  v8, (a0)
+        addi    a3, a3, -1
+        vle8.v  v12, (a1)
+        add     a1, a1, a2
+        vmv.v.x v16, a7
+        vsetvli zero, zero, e16, m2, ta, ma
+        vzext.vf2   v24, v8
+        vzext.vf2   v28, v12
+        vwmaccsu.vx v16, a5, v24
+        vwmaccsu.vx v16, a6, v28
+        vnclip.wx   v16, v16, a4
+        vmax.vx v16, v16, zero
+        vsetvli zero, zero, e8, m1, ta, ma
+        vnclipu.wi  v8, v16, 1
+        vse8.v  v8, (a0)
+        add     a0, a0, a2
+        bnez    a3, 1b
+
+        ret
+endfunc
+
 func ff_h264_weight_pixels_8_rvv, zve32x
         csrwi   vxrm, 0
         sll     a5, a5, a3
@@ -84,6 +113,53 @@ func ff_h264_weight_pixels_8_rvv, zve32x
         ret
 endfunc
 
+        .variant_cc ff_h264_biweight_pixels_8_rvv
+func ff_h264_biweight_pixels_8_rvv, zve32x
+        csrwi   vxrm, 2
+        addi    a7, a7, 1
+        ori     a7, a7, 1
+        sll     a7, a7, a4
+1:
+        mv      t0, a0
+        mv      t1, a1
+        mv      t5, t6
+2:
+        vsetvli t2, a3, e32, m8, ta, ma
+        vlsseg2e8.v v0, (t0), a2
+        vlsseg2e8.v v4, (t1), a2
+        addi    t5, t5, -2
+        vmv.v.x v16, a7
+        vmv.v.x v24, a7
+        vsetvli zero, zero, e16, m4, ta, ma
+        vzext.vf2   v8, v0
+        vzext.vf2   v12, v2
+        vwmaccsu.vx v16, a5, v8
+        vwmaccsu.vx v24, a5, v12
+        vzext.vf2   v8, v4
+        vzext.vf2   v12, v6
+        vwmaccsu.vx v16, a6, v8
+        vwmaccsu.vx v24, a6, v12
+        vnclip.wx   v8, v16, a4
+        vnclip.wx   v12, v24, a4
+        vmax.vx v8, v8, zero
+        vmax.vx v12, v12, zero
+        vsetvli zero, zero, e8, m2, ta, ma
+        vnclipu.wi  v0, v8, 1
+        vnclipu.wi  v2, v12, 1
+        vssseg2e8.v v0, (t0), a2
+        addi    t0, t0, 2
+        addi    t1, t1, 2
+        bnez    t5, 2b
+
+        mul     t3, a2, t2
+        sub     a3, a3, t2
+        add     a0, a0, t3
+        add     a1, a1, t3
+        bnez    a3, 1b
+
+        ret
+endfunc
+
 .irp    w, 16, 8, 4, 2
 func ff_h264_weight_pixels\w\()_8_rvv, zve32x
         li      a6, \w
@@ -91,6 +167,15 @@ func ff_h264_weight_pixels\w\()_8_rvv, zve32x
         j       ff_h264_weight_pixels_simple_8_rvv
         .else
         j       ff_h264_weight_pixels_8_rvv
+        .endif
+endfunc
+
+func ff_h264_biweight_pixels\w\()_8_rvv, zve32x
+        li      t6, \w
+        .if     \w == 16
+        j       ff_h264_biweight_pixels_simple_8_rvv
+        .else
+        j       ff_h264_biweight_pixels_8_rvv
         .endif
 endfunc
 .endr
@@ -101,10 +186,13 @@ const ff_h264_weight_funcs_8_rvv
         .irp    w, 16, 8, 4, 2
 #if __riscv_xlen == 32
         .word   ff_h264_weight_pixels\w\()_8_rvv
+        .word   ff_h264_biweight_pixels\w\()_8_rvv
 #elif __riscv_xlen == 64
         .dword  ff_h264_weight_pixels\w\()_8_rvv
+        .dword  ff_h264_biweight_pixels\w\()_8_rvv
 #else
         .qword  ff_h264_weight_pixels\w\()_8_rvv
+        .qword  ff_h264_biweight_pixels\w\()_8_rvv
 #endif
         .endr
 endconst
