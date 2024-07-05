@@ -411,7 +411,9 @@ typedef struct FFStream {
 
     const struct AVCodecDescriptor *codec_desc;
 
+#if FF_API_INTERNAL_TIMING
     AVRational transferred_mux_tb;
+#endif
 } FFStream;
 
 static av_always_inline FFStream *ffstream(AVStream *st)
