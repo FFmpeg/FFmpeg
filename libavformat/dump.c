@@ -390,10 +390,12 @@ static void dump_spherical(void *ctx, const AVCodecParameters *par,
 
     av_log(ctx, log_level, "%s ", av_spherical_projection_name(spherical->projection));
 
-    yaw = ((double)spherical->yaw) / (1 << 16);
-    pitch = ((double)spherical->pitch) / (1 << 16);
-    roll = ((double)spherical->roll) / (1 << 16);
-    av_log(ctx, log_level, "(%f/%f/%f) ", yaw, pitch, roll);
+    if (spherical->yaw || spherical->pitch || spherical->roll) {
+        yaw = ((double)spherical->yaw) / (1 << 16);
+        pitch = ((double)spherical->pitch) / (1 << 16);
+        roll = ((double)spherical->roll) / (1 << 16);
+        av_log(ctx, log_level, "(%f/%f/%f) ", yaw, pitch, roll);
+    }
 
     if (spherical->projection == AV_SPHERICAL_EQUIRECTANGULAR_TILE) {
         size_t l, t, r, b;
