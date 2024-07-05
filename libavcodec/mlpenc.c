@@ -1414,7 +1414,8 @@ static int estimate_coeff(MLPEncodeContext *ctx, MLPSubstream *s,
     int32_t maxl = INT32_MIN, maxr = INT32_MIN, minl = INT32_MAX, minr = INT32_MAX;
     int64_t summ = 0, sums = 0, suml = 0, sumr = 0, enl = 0, enr = 0;
     const int shift = 14 - ctx->rematrix_precision;
-    int32_t cf0, cf1, e[4], d[4], ml, mr;
+    int32_t cf0, cf1, e[4], d[4];
+    int64_t ml, mr;
     int i, count = 0;
 
     for (int j = 0; j <= ctx->cur_restart_interval; j++) {
@@ -1447,8 +1448,8 @@ static int estimate_coeff(MLPEncodeContext *ctx, MLPSubstream *s,
     summ -= FFABS(suml + sumr);
     sums -= FFABS(suml - sumr);
 
-    ml = maxl - minl;
-    mr = maxr - minr;
+    ml = maxl - (int64_t)minl;
+    mr = maxr - (int64_t)minr;
 
     if (!summ && !sums)
         return 0;
