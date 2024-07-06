@@ -1,4 +1,4 @@
-9a2104849cbcf03a612e5906ef4d264b *tests/data/fate/vsynth_lena-h261.avi
-191064 tests/data/fate/vsynth_lena-h261.avi
-08f65e9aeeeaf189548c2bb417d5114f *tests/data/fate/vsynth_lena-h261.out.rawvideo
-stddev:    6.37 PSNR: 32.03 MAXDIFF:   77 bytes:  7603200/  7603200
+8df0b15d97c0a17d2969d99f59b1f5e1 *tests/data/fate/vsynth_lena-h261.avi
+186570 tests/data/fate/vsynth_lena-h261.avi
+289b6e4eb9af602b87309552335d43ee *tests/data/fate/vsynth_lena-h261.out.rawvideo
+stddev:    5.92 PSNR: 32.68 MAXDIFF:   80 bytes:  7603200/  7603200
