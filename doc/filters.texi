@@ -29306,28 +29306,30 @@ due to boulders in a generated terrain).
 Specify the size (width and height) of the buffered video frames. For the
 syntax of this option, check the
 @ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{320x240}.
 
 @item rate, r
 Specify the frame rate expected for the video stream, expressed as a
-number of frames per second.
+number of frames per second. Default value is @code{25}.
 
 @item octaves
 Specify the total number of components making up the noise, each one
-with doubled frequency.
+with doubled frequency. Default value is @code{1}.
 
 @item persistence
 Set the ratio used to compute the amplitude of the next octave
-component with respect to the previous component amplitude.
+component with respect to the previous component amplitude. Default
+value is @code{1}.
 
 @item xscale
 @item yscale
 Define a scale factor used to multiple the x, y coordinates. This can
 be useful to define an effect with a pattern stretched along the x or
-y axis.
+y axis. Default value is @code{1}.
 
 @item tscale
 Define a scale factor used to multiple the time coordinate. This can
-be useful to change the time variation speed.
+be useful to change the time variation speed. Default value is @code{1}.
 
 @item random_mode
 Set random mode used to compute initial pattern.
@@ -29346,9 +29348,11 @@ sources.
 Use the value specified by @option{random_seed} option.
 @end table
 
+Default value is @code{random}.
+
 @item random_seed, seed
 When @option{random_mode} is set to @var{random_seed}, use this value
-to compute the initial pattern.
+to compute the initial pattern. Default value is @code{0}.
 @end table
 
 @subsection Examples
