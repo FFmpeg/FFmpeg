@@ -262,7 +262,7 @@ static int h261_decode_block(H261DecContext *h, int16_t *block, int n, int coded
          * being coded as 1111 1111. */
         if (level == 255)
             level = 128;
-        block[0] = level * s->y_dc_scale;
+        block[0] = level * 8;
         i        = 1;
     } else if (coded) {
         // Run  Level   Code
