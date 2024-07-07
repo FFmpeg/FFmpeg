@@ -227,7 +227,7 @@ typedef struct ExtraSEI {
 
 typedef struct BufNode {
     CMSampleBufferRef cm_buffer;
-    ExtraSEI *sei;
+    ExtraSEI sei;
     AVBufferRef *frame_buf;
     struct BufNode* next;
 } BufNode;
@@ -280,6 +280,18 @@ typedef struct VTEncContext {
     int power_efficient;
     int max_ref_frames;
 } VTEncContext;
+
+static void vtenc_free_buf_node(BufNode *info)
+{
+    if (!info)
+        return;
+
+    av_free(info->sei.data);
+    if (info->cm_buffer)
+        CFRelease(info->cm_buffer);
+    av_buffer_unref(&info->frame_buf);
+    av_free(info);
+}
 
 static int vt_dump_encoder(AVCodecContext *avctx)
 {
@@ -388,7 +400,7 @@ static void vtenc_reset(VTEncContext *vtctx)
     }
 }
 
-static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, ExtraSEI **sei)
+static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, ExtraSEI *sei)
 {
     BufNode *info;
 
@@ -426,14 +438,12 @@ static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, E
     pthread_mutex_unlock(&vtctx->lock);
 
     *buf = info->cm_buffer;
+    info->cm_buffer = NULL;
     if (sei && *buf) {
         *sei = info->sei;
-    } else if (info->sei) {
-        if (info->sei->data) av_free(info->sei->data);
-        av_free(info->sei);
+        info->sei = (ExtraSEI) {0};
     }
-    av_free(info);
-
+    vtenc_free_buf_node(info);
 
     return 0;
 }
@@ -713,23 +723,6 @@ static int set_extradata(AVCodecContext *avctx, CMSampleBufferRef sample_buffer)
     }
 
     return 0;
-}
-
-static void vtenc_free_buf_node(BufNode *info)
-{
-    if (!info)
-        return;
-
-    if (info->sei) {
-        av_free(info->sei->data);
-        av_free(info->sei);
-    }
-
-    if (info->cm_buffer)
-        CFRelease(info->cm_buffer);
-
-    av_buffer_unref(&info->frame_buf);
-    av_free(info);
 }
 
 static void vtenc_output_callback(
@@ -2589,7 +2582,6 @@ static int vtenc_send_frame(AVCodecContext *avctx,
     CVPixelBufferRef cv_img = NULL;
     AVFrameSideData *side_data = NULL;
     BufNode *node = av_mallocz(sizeof(*node));
-    ExtraSEI *sei = NULL;
     int status;
 
     if (!node)
@@ -2606,15 +2598,8 @@ static int vtenc_send_frame(AVCodecContext *avctx,
 #if CONFIG_ATSC_A53
     side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
     if (vtctx->a53_cc && side_data && side_data->size) {
-        sei = av_mallocz(sizeof(*sei));
-        if (!sei) {
-            status = AVERROR(ENOMEM);
-            goto out;
-        }
-        node->sei = sei;
-        status = ff_alloc_a53_sei(frame, 0, &sei->data, &sei->size);
+        status = ff_alloc_a53_sei(frame, 0, &node->sei.data, &node->sei.size);
         if (status < 0) {
-            av_free(sei);
             goto out;
         }
     }
@@ -2659,7 +2644,7 @@ static av_cold int vtenc_frame(
     bool get_frame;
     int status;
     CMSampleBufferRef buf = NULL;
-    ExtraSEI *sei = NULL;
+    ExtraSEI sei = {0};
 
     if (frame) {
         status = vtenc_send_frame(avctx, vtctx, frame);
@@ -2700,11 +2685,8 @@ static av_cold int vtenc_frame(
     if (status) goto end_nopkt;
     if (!buf)   goto end_nopkt;
 
-    status = vtenc_cm_to_avpacket(avctx, buf, pkt, sei);
-    if (sei) {
-        if (sei->data) av_free(sei->data);
-        av_free(sei);
-    }
+    status = vtenc_cm_to_avpacket(avctx, buf, pkt, sei.data ? &sei : NULL);
+    av_free(sei.data);
     CFRelease(buf);
     if (status) goto end_nopkt;
 
