@@ -115,9 +115,6 @@ typedef struct AviSynthContext {
     int error;
 
     uint32_t flags;
-
-    /* Linked list pointers. */
-    struct AviSynthContext *next;
 } AviSynthContext;
 
 static const int avs_planes_packed[1] = { 0 };
@@ -133,15 +130,7 @@ static const int avs_planes_rgba[4]   = { AVS_PLANAR_G, AVS_PLANAR_B,
 
 static AVMutex avisynth_mutex = AV_MUTEX_INITIALIZER;
 
-/* A conflict between C++ global objects, atexit, and dynamic loading requires
- * us to register our own atexit handler to prevent double freeing. */
 static AviSynthLibrary avs_library;
-static int avs_atexit_called        = 0;
-
-/* Linked list of AviSynthContexts. An atexit handler destroys this list. */
-static AviSynthContext *avs_ctx_list = NULL;
-
-static av_cold void avisynth_atexit_handler(void);
 
 static av_cold int avisynth_load_library(void)
 {
@@ -185,7 +174,6 @@ static av_cold int avisynth_load_library(void)
     LOAD_AVS_FUNC(avs_get_env_property, 1);
 #undef LOAD_AVS_FUNC
 
-    atexit(avisynth_atexit_handler);
     return 0;
 
 fail:
@@ -214,30 +202,11 @@ static av_cold int avisynth_context_create(AVFormatContext *s)
         }
     }
 
-    if (!avs_ctx_list) {
-        avs_ctx_list = avs;
-    } else {
-        avs->next    = avs_ctx_list;
-        avs_ctx_list = avs;
-    }
-
     return 0;
 }
 
 static av_cold void avisynth_context_destroy(AviSynthContext *avs)
 {
-    if (avs_atexit_called)
-        return;
-
-    if (avs == avs_ctx_list) {
-        avs_ctx_list = avs->next;
-    } else {
-        AviSynthContext *prev = avs_ctx_list;
-        while (prev->next != avs)
-            prev = prev->next;
-        prev->next = avs->next;
-    }
-
     if (avs->clip) {
         avs_library.avs_release_clip(avs->clip);
         avs->clip = NULL;
@@ -246,20 +215,6 @@ static av_cold void avisynth_context_destroy(AviSynthContext *avs)
         avs_library.avs_delete_script_environment(avs->env);
         avs->env = NULL;
     }
-}
-
-static av_cold void avisynth_atexit_handler(void)
-{
-    AviSynthContext *avs = avs_ctx_list;
-
-    while (avs) {
-        AviSynthContext *next = avs->next;
-        avisynth_context_destroy(avs);
-        avs = next;
-    }
-    dlclose(avs_library.library);
-
-    avs_atexit_called = 1;
 }
 
 /* Create AVStream from audio and video data. */
@@ -1134,6 +1089,7 @@ static av_cold int avisynth_read_close(AVFormatContext *s)
         return AVERROR_UNKNOWN;
 
     avisynth_context_destroy(s->priv_data);
+    dlclose(avs_library.library);
     ff_mutex_unlock(&avisynth_mutex);
     return 0;
 }
