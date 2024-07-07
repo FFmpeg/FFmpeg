@@ -310,7 +310,7 @@ void ff_vvc_bump_frame(VVCContext *s, VVCFrameContext *fc)
 
 static VVCFrame *find_ref_idx(VVCContext *s, VVCFrameContext *fc, int poc, uint8_t use_msb)
 {
-    const int mask = use_msb ? ~0 : fc->ps.sps->max_pic_order_cnt_lsb - 1;
+    const unsigned mask = use_msb ? ~0 : fc->ps.sps->max_pic_order_cnt_lsb - 1;
 
     for (int i = 0; i < FF_ARRAY_ELEMS(fc->DPB); i++) {
         VVCFrame *ref = &fc->DPB[i];
