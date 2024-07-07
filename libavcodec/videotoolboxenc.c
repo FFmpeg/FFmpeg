@@ -228,6 +228,7 @@ typedef struct ExtraSEI {
 typedef struct BufNode {
     CMSampleBufferRef cm_buffer;
     ExtraSEI *sei;
+    AVBufferRef *frame_buf;
     struct BufNode* next;
 } BufNode;
 
@@ -727,6 +728,7 @@ static void vtenc_free_buf_node(BufNode *info)
     if (info->cm_buffer)
         CFRelease(info->cm_buffer);
 
+    av_buffer_unref(&info->frame_buf);
     av_free(info);
 }
 
@@ -741,6 +743,7 @@ static void vtenc_output_callback(
     VTEncContext   *vtctx = avctx->priv_data;
     BufNode *info = sourceFrameCtx;
 
+    av_buffer_unref(&info->frame_buf);
     if (vtctx->async_error) {
         vtenc_free_buf_node(info);
         return;
@@ -2459,7 +2462,8 @@ static int copy_avframe_to_pixel_buffer(AVCodecContext   *avctx,
 
 static int create_cv_pixel_buffer(AVCodecContext   *avctx,
                                   const AVFrame    *frame,
-                                  CVPixelBufferRef *cv_img)
+                                  CVPixelBufferRef *cv_img,
+                                  BufNode          *node)
 {
     int plane_count;
     int color;
@@ -2478,6 +2482,12 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
         av_assert0(*cv_img);
 
         CFRetain(*cv_img);
+        if (frame->buf[0]) {
+            node->frame_buf = av_buffer_ref(frame->buf[0]);
+            if (!node->frame_buf)
+                return AVERROR(ENOMEM);
+        }
+
         return 0;
     }
 
@@ -2585,7 +2595,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
     if (!node)
         return AVERROR(ENOMEM);
 
-    status = create_cv_pixel_buffer(avctx, frame, &cv_img);
+    status = create_cv_pixel_buffer(avctx, frame, &cv_img, node);
     if (status)
         goto out;
 
