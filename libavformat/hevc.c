@@ -560,31 +560,31 @@ static int hvcc_parse_sps(GetBitContext *gb, HVCCNALUnit *nal,
         if (get_bits1(gb)) // update_rep_format_flag
             skip_bits(gb, 8); // sps_rep_format_idx
     } else {
-    hvcc->chromaFormat = get_ue_golomb_long(gb);
+        hvcc->chromaFormat = get_ue_golomb_long(gb);
 
-    if (hvcc->chromaFormat == 3)
-        skip_bits1(gb); // separate_colour_plane_flag
+        if (hvcc->chromaFormat == 3)
+            skip_bits1(gb); // separate_colour_plane_flag
 
-    get_ue_golomb_long(gb); // pic_width_in_luma_samples
-    get_ue_golomb_long(gb); // pic_height_in_luma_samples
+        get_ue_golomb_long(gb); // pic_width_in_luma_samples
+        get_ue_golomb_long(gb); // pic_height_in_luma_samples
 
-    if (get_bits1(gb)) {        // conformance_window_flag
-        get_ue_golomb_long(gb); // conf_win_left_offset
-        get_ue_golomb_long(gb); // conf_win_right_offset
-        get_ue_golomb_long(gb); // conf_win_top_offset
-        get_ue_golomb_long(gb); // conf_win_bottom_offset
-    }
+        if (get_bits1(gb)) {        // conformance_window_flag
+            get_ue_golomb_long(gb); // conf_win_left_offset
+            get_ue_golomb_long(gb); // conf_win_right_offset
+            get_ue_golomb_long(gb); // conf_win_top_offset
+            get_ue_golomb_long(gb); // conf_win_bottom_offset
+        }
 
-    hvcc->bitDepthLumaMinus8          = get_ue_golomb_long(gb);
-    hvcc->bitDepthChromaMinus8        = get_ue_golomb_long(gb);
+        hvcc->bitDepthLumaMinus8          = get_ue_golomb_long(gb);
+        hvcc->bitDepthChromaMinus8        = get_ue_golomb_long(gb);
     }
     log2_max_pic_order_cnt_lsb_minus4 = get_ue_golomb_long(gb);
 
     if (!multi_layer_ext_sps_flag) {
-    /* sps_sub_layer_ordering_info_present_flag */
-    i = get_bits1(gb) ? 0 : sps_max_sub_layers_minus1;
-    for (; i <= sps_max_sub_layers_minus1; i++)
-        skip_sub_layer_ordering_info(gb);
+        /* sps_sub_layer_ordering_info_present_flag */
+        i = get_bits1(gb) ? 0 : sps_max_sub_layers_minus1;
+        for (; i <= sps_max_sub_layers_minus1; i++)
+            skip_sub_layer_ordering_info(gb);
     }
 
     get_ue_golomb_long(gb); // log2_min_luma_coding_block_size_minus3
@@ -895,34 +895,34 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
     av_log(NULL, AV_LOG_TRACE,  "configurationVersion:                %"PRIu8"\n",
             hvcc->configurationVersion);
     if (!is_lhvc) {
-    av_log(NULL, AV_LOG_TRACE,  "general_profile_space:               %"PRIu8"\n",
-            hvcc->general_profile_space);
-    av_log(NULL, AV_LOG_TRACE,  "general_tier_flag:                   %"PRIu8"\n",
-            hvcc->general_tier_flag);
-    av_log(NULL, AV_LOG_TRACE,  "general_profile_idc:                 %"PRIu8"\n",
-            hvcc->general_profile_idc);
-    av_log(NULL, AV_LOG_TRACE, "general_profile_compatibility_flags: 0x%08"PRIx32"\n",
-            hvcc->general_profile_compatibility_flags);
-    av_log(NULL, AV_LOG_TRACE, "general_constraint_indicator_flags:  0x%012"PRIx64"\n",
-            hvcc->general_constraint_indicator_flags);
-    av_log(NULL, AV_LOG_TRACE,  "general_level_idc:                   %"PRIu8"\n",
-            hvcc->general_level_idc);
+        av_log(NULL, AV_LOG_TRACE,  "general_profile_space:               %"PRIu8"\n",
+                hvcc->general_profile_space);
+        av_log(NULL, AV_LOG_TRACE,  "general_tier_flag:                   %"PRIu8"\n",
+                hvcc->general_tier_flag);
+        av_log(NULL, AV_LOG_TRACE,  "general_profile_idc:                 %"PRIu8"\n",
+                hvcc->general_profile_idc);
+        av_log(NULL, AV_LOG_TRACE, "general_profile_compatibility_flags: 0x%08"PRIx32"\n",
+                hvcc->general_profile_compatibility_flags);
+        av_log(NULL, AV_LOG_TRACE, "general_constraint_indicator_flags:  0x%012"PRIx64"\n",
+                hvcc->general_constraint_indicator_flags);
+        av_log(NULL, AV_LOG_TRACE,  "general_level_idc:                   %"PRIu8"\n",
+                hvcc->general_level_idc);
     }
     av_log(NULL, AV_LOG_TRACE,  "min_spatial_segmentation_idc:        %"PRIu16"\n",
             hvcc->min_spatial_segmentation_idc);
     av_log(NULL, AV_LOG_TRACE,  "parallelismType:                     %"PRIu8"\n",
             hvcc->parallelismType);
     if (!is_lhvc) {
-    av_log(NULL, AV_LOG_TRACE,  "chromaFormat:                        %"PRIu8"\n",
-            hvcc->chromaFormat);
-    av_log(NULL, AV_LOG_TRACE,  "bitDepthLumaMinus8:                  %"PRIu8"\n",
-            hvcc->bitDepthLumaMinus8);
-    av_log(NULL, AV_LOG_TRACE,  "bitDepthChromaMinus8:                %"PRIu8"\n",
-            hvcc->bitDepthChromaMinus8);
-    av_log(NULL, AV_LOG_TRACE,  "avgFrameRate:                        %"PRIu16"\n",
-            hvcc->avgFrameRate);
-    av_log(NULL, AV_LOG_TRACE,  "constantFrameRate:                   %"PRIu8"\n",
-            hvcc->constantFrameRate);
+        av_log(NULL, AV_LOG_TRACE,  "chromaFormat:                        %"PRIu8"\n",
+                hvcc->chromaFormat);
+        av_log(NULL, AV_LOG_TRACE,  "bitDepthLumaMinus8:                  %"PRIu8"\n",
+                hvcc->bitDepthLumaMinus8);
+        av_log(NULL, AV_LOG_TRACE,  "bitDepthChromaMinus8:                %"PRIu8"\n",
+                hvcc->bitDepthChromaMinus8);
+        av_log(NULL, AV_LOG_TRACE,  "avgFrameRate:                        %"PRIu16"\n",
+                hvcc->avgFrameRate);
+        av_log(NULL, AV_LOG_TRACE,  "constantFrameRate:                   %"PRIu8"\n",
+                hvcc->constantFrameRate);
     }
     av_log(NULL, AV_LOG_TRACE,  "numTemporalLayers:                   %"PRIu8"\n",
             hvcc->numTemporalLayers);
@@ -968,24 +968,24 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
     avio_w8(pb, hvcc->configurationVersion);
 
     if (!is_lhvc) {
-    /*
-     * unsigned int(2) general_profile_space;
-     * unsigned int(1) general_tier_flag;
-     * unsigned int(5) general_profile_idc;
-     */
-    avio_w8(pb, hvcc->general_profile_space << 6 |
-                hvcc->general_tier_flag     << 5 |
-                hvcc->general_profile_idc);
+        /*
+         * unsigned int(2) general_profile_space;
+         * unsigned int(1) general_tier_flag;
+         * unsigned int(5) general_profile_idc;
+         */
+        avio_w8(pb, hvcc->general_profile_space << 6 |
+                    hvcc->general_tier_flag     << 5 |
+                    hvcc->general_profile_idc);
 
-    /* unsigned int(32) general_profile_compatibility_flags; */
-    avio_wb32(pb, hvcc->general_profile_compatibility_flags);
+        /* unsigned int(32) general_profile_compatibility_flags; */
+        avio_wb32(pb, hvcc->general_profile_compatibility_flags);
 
-    /* unsigned int(48) general_constraint_indicator_flags; */
-    avio_wb32(pb, hvcc->general_constraint_indicator_flags >> 16);
-    avio_wb16(pb, hvcc->general_constraint_indicator_flags);
+        /* unsigned int(48) general_constraint_indicator_flags; */
+        avio_wb32(pb, hvcc->general_constraint_indicator_flags >> 16);
+        avio_wb16(pb, hvcc->general_constraint_indicator_flags);
 
-    /* unsigned int(8) general_level_idc; */
-    avio_w8(pb, hvcc->general_level_idc);
+        /* unsigned int(8) general_level_idc; */
+        avio_w8(pb, hvcc->general_level_idc);
     }
 
     /*
@@ -1001,31 +1001,31 @@ static int hvcc_write(AVIOContext *pb, HEVCDecoderConfigurationRecord *hvcc,
     avio_w8(pb, hvcc->parallelismType | 0xfc);
 
     if (!is_lhvc) {
-    /*
-     * bit(6) reserved = '111111'b;
-     * unsigned int(2) chromaFormat;
-     */
-    avio_w8(pb, hvcc->chromaFormat | 0xfc);
+        /*
+         * bit(6) reserved = '111111'b;
+         * unsigned int(2) chromaFormat;
+         */
+        avio_w8(pb, hvcc->chromaFormat | 0xfc);
 
-    /*
-     * bit(5) reserved = '11111'b;
-     * unsigned int(3) bitDepthLumaMinus8;
-     */
-    avio_w8(pb, hvcc->bitDepthLumaMinus8 | 0xf8);
+        /*
+         * bit(5) reserved = '11111'b;
+         * unsigned int(3) bitDepthLumaMinus8;
+         */
+        avio_w8(pb, hvcc->bitDepthLumaMinus8 | 0xf8);
 
-    /*
-     * bit(5) reserved = '11111'b;
-     * unsigned int(3) bitDepthChromaMinus8;
-     */
-    avio_w8(pb, hvcc->bitDepthChromaMinus8 | 0xf8);
+        /*
+         * bit(5) reserved = '11111'b;
+         * unsigned int(3) bitDepthChromaMinus8;
+         */
+        avio_w8(pb, hvcc->bitDepthChromaMinus8 | 0xf8);
 
-    /* bit(16) avgFrameRate; */
-    avio_wb16(pb, hvcc->avgFrameRate);
+        /* bit(16) avgFrameRate; */
+        avio_wb16(pb, hvcc->avgFrameRate);
     }
 
     /*
      * if (!is_lhvc)
-     * bit(2) constantFrameRate;
+     *     bit(2) constantFrameRate;
      * else
      *     bit(2) reserved = '11'b;
      * bit(3) numTemporalLayers;
