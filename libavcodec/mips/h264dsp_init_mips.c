@@ -46,10 +46,6 @@ av_cold void ff_h264dsp_init_mips(H264DSPContext *c, const int bit_depth,
 
             c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_8_mmi;
 
-            if (chroma_format_idc > 1)
-                c->h264_chroma_dc_dequant_idct =
-                    ff_h264_chroma422_dc_dequant_idct_8_mmi;
-
             c->weight_h264_pixels_tab[0] = ff_h264_weight_pixels16_8_mmi;
             c->weight_h264_pixels_tab[1] = ff_h264_weight_pixels8_8_mmi;
             c->weight_h264_pixels_tab[2] = ff_h264_weight_pixels4_8_mmi;

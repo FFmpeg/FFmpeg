@@ -340,7 +340,6 @@ void ff_h264_idct_add8_422_8_mmi(uint8_t **dest, const int *block_offset,
         int16_t *block, int stride, const uint8_t nnzc[15*8]);
 void ff_h264_luma_dc_dequant_idct_8_mmi(int16_t *output, int16_t *input,
         int qmul);
-void ff_h264_chroma422_dc_dequant_idct_8_mmi(int16_t *block, int qmul);
 
 void ff_h264_weight_pixels16_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset);
