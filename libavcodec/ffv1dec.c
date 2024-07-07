@@ -126,7 +126,7 @@ static int decode_plane(FFV1Context *s, FFV1SliceContext *sc,
     sample[0] = sc->sample_buffer + 3;
     sample[1] = sc->sample_buffer + w + 6 + 3;
 
-    s->run_index = 0;
+    sc->run_index = 0;
 
     memset(sc->sample_buffer, 0, 2 * (w + 6) * sizeof(*sc->sample_buffer));
 
@@ -140,13 +140,13 @@ static int decode_plane(FFV1Context *s, FFV1SliceContext *sc,
         sample[0][w]  = sample[0][w - 1];
 
         if (s->avctx->bits_per_raw_sample <= 8) {
-            int ret = decode_line(s, w, sample, plane_index, 8);
+            int ret = decode_line(s, sc, w, sample, plane_index, 8);
             if (ret < 0)
                 return ret;
             for (x = 0; x < w; x++)
                 src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
-            int ret = decode_line(s, w, sample, plane_index, s->avctx->bits_per_raw_sample);
+            int ret = decode_line(s, sc, w, sample, plane_index, s->avctx->bits_per_raw_sample);
             if (ret < 0)
                 return ret;
             if (s->packed_at_lsb) {

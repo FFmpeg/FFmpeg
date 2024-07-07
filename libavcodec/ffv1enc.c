@@ -276,7 +276,7 @@ static int encode_plane(FFV1Context *s, FFV1SliceContext *sc,
     int x, y, i, ret;
     const int ring_size = s->context_model ? 3 : 2;
     int16_t *sample[3];
-    s->run_index = 0;
+    sc->run_index = 0;
 
     memset(sc->sample_buffer, 0, ring_size * (w + 6) * sizeof(*sc->sample_buffer));
 
@@ -289,7 +289,7 @@ static int encode_plane(FFV1Context *s, FFV1SliceContext *sc,
         if (s->bits_per_raw_sample <= 8) {
             for (x = 0; x < w; x++)
                 sample[0][x] = src[x * pixel_stride + stride * y];
-            if((ret = encode_line(s, w, sample, plane_index, 8)) < 0)
+            if((ret = encode_line(s, sc, w, sample, plane_index, 8)) < 0)
                 return ret;
         } else {
             if (s->packed_at_lsb) {
@@ -301,7 +301,7 @@ static int encode_plane(FFV1Context *s, FFV1SliceContext *sc,
                     sample[0][x] = ((uint16_t*)(src + stride*y))[x] >> (16 - s->bits_per_raw_sample);
                 }
             }
-            if((ret = encode_line(s, w, sample, plane_index, s->bits_per_raw_sample)) < 0)
+            if((ret = encode_line(s, sc, w, sample, plane_index, s->bits_per_raw_sample)) < 0)
                 return ret;
         }
     }

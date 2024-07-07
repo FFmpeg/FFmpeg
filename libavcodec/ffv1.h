@@ -77,6 +77,8 @@ typedef struct FFV1SliceContext {
     int slice_height;
     int slice_x;
     int slice_y;
+
+    int run_index;
 } FFV1SliceContext;
 
 typedef struct FFV1Context {
@@ -109,7 +111,6 @@ typedef struct FFV1Context {
     int context_count[MAX_QUANT_TABLES];
     uint8_t state_transition[256];
     uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
-    int run_index;
     int colorspace;
 
     int use32bit;

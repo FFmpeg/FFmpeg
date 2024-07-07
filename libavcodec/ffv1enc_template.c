@@ -22,14 +22,14 @@
 
 #include "ffv1_template.c"
 
-static av_always_inline int RENAME(encode_line)(FFV1Context *s, int w,
-                                                TYPE *sample[3],
-                                                int plane_index, int bits)
+static av_always_inline int
+RENAME(encode_line)(FFV1Context *s, FFV1SliceContext *sc,
+                    int w, TYPE *sample[3], int plane_index, int bits)
 {
     PlaneContext *const p = &s->plane[plane_index];
     RangeCoder *const c   = &s->c;
     int x;
-    int run_index = s->run_index;
+    int run_index = sc->run_index;
     int run_count = 0;
     int run_mode  = 0;
 
@@ -119,7 +119,7 @@ static av_always_inline int RENAME(encode_line)(FFV1Context *s, int w,
         if (run_count)
             put_bits(&s->pb, 1, 1);
     }
-    s->run_index = run_index;
+    sc->run_index = run_index;
 
     return 0;
 }
@@ -138,7 +138,7 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, FFV1SliceContext *sc,
     int transparency = s->transparency;
     int packed_size = (3 + transparency)*2;
 
-    s->run_index = 0;
+    sc->run_index = 0;
 
     memset(RENAME(sc->sample_buffer), 0, ring_size * MAX_PLANES *
            (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
@@ -193,9 +193,9 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, FFV1SliceContext *sc,
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
             if (lbd && s->slice_coding_mode == 0)
-                ret = RENAME(encode_line)(s, w, sample[p], (p + 1) / 2, 9);
+                ret = RENAME(encode_line)(s, sc, w, sample[p], (p + 1) / 2, 9);
             else
-                ret = RENAME(encode_line)(s, w, sample[p], (p + 1) / 2, bits + (s->slice_coding_mode != 1));
+                ret = RENAME(encode_line)(s, sc, w, sample[p], (p + 1) / 2, bits + (s->slice_coding_mode != 1));
             if (ret < 0)
                 return ret;
         }
