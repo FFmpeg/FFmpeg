@@ -757,7 +757,8 @@ try_again:
                                 else if (!strncmp(line + 7, "MAX ", 4)) vals = max;
                                 if (!vals)
                                     return AVERROR_INVALIDDATA;
-                                av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
+                                if (av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2) != 3)
+                                    return AVERROR_INVALIDDATA;
                                 av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
                                        min[0], min[1], min[2], max[0], max[1], max[2]);
                                 goto try_again;
@@ -1785,12 +1786,14 @@ try_again:
                         else if (!strncmp(line + 7, "MAX ", 4)) vals = max;
                         if (!vals)
                             return AVERROR_INVALIDDATA;
-                        av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
+                        if (av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2) != 3)
+                            return AVERROR_INVALIDDATA;
                         av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
                                min[0], min[1], min[2], max[0], max[1], max[2]);
                         goto try_again;
                     } else if (!strncmp(line, "LUT_1D_INPUT_RANGE ", 19)) {
-                        av_sscanf(line + 19, "%f %f", min, max);
+                        if (av_sscanf(line + 19, "%f %f", min, max) != 2)
+                            return AVERROR_INVALIDDATA;
                         min[1] = min[2] = min[0];
                         max[1] = max[2] = max[0];
                         goto try_again;
