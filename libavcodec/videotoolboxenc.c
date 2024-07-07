@@ -347,8 +347,7 @@ static void set_async_error(VTEncContext *vtctx, int err)
 
     while (info) {
         BufNode *next = info->next;
-        CFRelease(info->cm_buffer);
-        av_free(info);
+        vtenc_free_buf_node(info);
         info = next;
     }
 
@@ -438,19 +437,8 @@ static int vtenc_q_pop(VTEncContext *vtctx, bool wait, CMSampleBufferRef *buf, E
     return 0;
 }
 
-static void vtenc_q_push(VTEncContext *vtctx, CMSampleBufferRef buffer, ExtraSEI *sei)
+static void vtenc_q_push(VTEncContext *vtctx, BufNode *info)
 {
-    BufNode *info = av_malloc(sizeof(BufNode));
-    if (!info) {
-        set_async_error(vtctx, AVERROR(ENOMEM));
-        return;
-    }
-
-    CFRetain(buffer);
-    info->cm_buffer = buffer;
-    info->sei = sei;
-    info->next = NULL;
-
     pthread_mutex_lock(&vtctx->lock);
 
     if (!vtctx->q_head) {
@@ -726,6 +714,22 @@ static int set_extradata(AVCodecContext *avctx, CMSampleBufferRef sample_buffer)
     return 0;
 }
 
+static void vtenc_free_buf_node(BufNode *info)
+{
+    if (!info)
+        return;
+
+    if (info->sei) {
+        av_free(info->sei->data);
+        av_free(info->sei);
+    }
+
+    if (info->cm_buffer)
+        CFRelease(info->cm_buffer);
+
+    av_free(info);
+}
+
 static void vtenc_output_callback(
     void *ctx,
     void *sourceFrameCtx,
@@ -735,13 +739,15 @@ static void vtenc_output_callback(
 {
     AVCodecContext *avctx = ctx;
     VTEncContext   *vtctx = avctx->priv_data;
-    ExtraSEI *sei = sourceFrameCtx;
+    BufNode *info = sourceFrameCtx;
 
     if (vtctx->async_error) {
+        vtenc_free_buf_node(info);
         return;
     }
 
     if (status) {
+        vtenc_free_buf_node(info);
         av_log(avctx, AV_LOG_ERROR, "Error encoding frame: %d\n", (int)status);
         set_async_error(vtctx, AVERROR_EXTERNAL);
         return;
@@ -751,15 +757,19 @@ static void vtenc_output_callback(
         return;
     }
 
+    CFRetain(sample_buffer);
+    info->cm_buffer = sample_buffer;
+
     if (!avctx->extradata && (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)) {
         int set_status = set_extradata(avctx, sample_buffer);
         if (set_status) {
+            vtenc_free_buf_node(info);
             set_async_error(vtctx, set_status);
             return;
         }
     }
 
-    vtenc_q_push(vtctx, sample_buffer, sei);
+    vtenc_q_push(vtctx, info);
 }
 
 static int get_length_code_size(
@@ -2565,19 +2575,23 @@ static int vtenc_send_frame(AVCodecContext *avctx,
                             const AVFrame  *frame)
 {
     CMTime time;
-    CFDictionaryRef frame_dict;
+    CFDictionaryRef frame_dict = NULL;
     CVPixelBufferRef cv_img = NULL;
     AVFrameSideData *side_data = NULL;
+    BufNode *node = av_mallocz(sizeof(*node));
     ExtraSEI *sei = NULL;
-    int status = create_cv_pixel_buffer(avctx, frame, &cv_img);
+    int status;
 
-    if (status) return status;
+    if (!node)
+        return AVERROR(ENOMEM);
+
+    status = create_cv_pixel_buffer(avctx, frame, &cv_img);
+    if (status)
+        goto out;
 
     status = create_encoder_dict_h264(frame, &frame_dict);
-    if (status) {
-        CFRelease(cv_img);
-        return status;
-    }
+    if (status)
+        goto out;
 
 #if CONFIG_ATSC_A53
     side_data = av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC);
@@ -2587,6 +2601,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
             status = AVERROR(ENOMEM);
             goto out;
         }
+        node->sei = sei;
         status = ff_alloc_a53_sei(frame, 0, &sei->data, &sei->size);
         if (status < 0) {
             av_free(sei);
@@ -2602,7 +2617,7 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         time,
         kCMTimeInvalid,
         frame_dict,
-        sei,
+        node,
         NULL
     );
 
@@ -2616,7 +2631,10 @@ static int vtenc_send_frame(AVCodecContext *avctx,
 out:
     if (frame_dict)
         CFRelease(frame_dict);
-    CFRelease(cv_img);
+    if (cv_img)
+        CFRelease(cv_img);
+    if (status)
+        vtenc_free_buf_node(node);
 
     return status;
 }
@@ -2701,6 +2719,10 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     CVPixelBufferRef pix_buf = NULL;
     CMTime time;
     CMSampleBufferRef buf = NULL;
+    BufNode *node = av_mallocz(sizeof(*node));
+
+    if (!node)
+        return AVERROR(ENOMEM);
 
     status = vtenc_create_encoder(avctx,
                                   codec_type,
@@ -2736,7 +2758,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
                                              time,
                                              kCMTimeInvalid,
                                              NULL,
-                                             NULL,
+                                             node,
                                              NULL);
 
     if (status) {
@@ -2747,6 +2769,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
         status = AVERROR_EXTERNAL;
         goto pe_cleanup;
     }
+    node = NULL;
 
     //Populates extradata - output frames are flushed and param sets are available.
     status = VTCompressionSessionCompleteFrames(vtctx->session,
@@ -2780,6 +2803,8 @@ pe_cleanup:
     vtctx->frame_ct_out = 0;
 
     av_assert0(status != 0 || (avctx->extradata && avctx->extradata_size > 0));
+    if (!status)
+        vtenc_free_buf_node(node);
 
     return status;
 }
