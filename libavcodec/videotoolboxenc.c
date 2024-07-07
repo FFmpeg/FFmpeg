@@ -2585,14 +2585,13 @@ static int vtenc_send_frame(AVCodecContext *avctx,
     if (vtctx->a53_cc && side_data && side_data->size) {
         sei = av_mallocz(sizeof(*sei));
         if (!sei) {
-            av_log(avctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-        } else {
-            int ret = ff_alloc_a53_sei(frame, 0, &sei->data, &sei->size);
-            if (ret < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
-                av_free(sei);
-                sei = NULL;
-            }
+            status = AVERROR(ENOMEM);
+            goto out;
+        }
+        status = ff_alloc_a53_sei(frame, 0, &sei->data, &sei->size);
+        if (status < 0) {
+            av_free(sei);
+            goto out;
         }
     }
 #endif
@@ -2608,15 +2607,19 @@ static int vtenc_send_frame(AVCodecContext *avctx,
         NULL
     );
 
-    if (frame_dict) CFRelease(frame_dict);
-    CFRelease(cv_img);
-
     if (status) {
         av_log(avctx, AV_LOG_ERROR, "Error: cannot encode frame: %d\n", status);
-        return AVERROR_EXTERNAL;
+        status = AVERROR_EXTERNAL;
+        // Not necessary, just in case new code put after here
+        goto out;
     }
 
-    return 0;
+out:
+    if (frame_dict)
+        CFRelease(frame_dict);
+    CFRelease(cv_img);
+
+    return status;
 }
 
 static av_cold int vtenc_frame(
