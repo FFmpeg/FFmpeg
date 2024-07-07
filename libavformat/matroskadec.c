@@ -2965,7 +2965,8 @@ static int mkv_parse_video(MatroskaTrack *track, AVStream *st,
                                     &display_width_mul, &display_height_mul);
 
     if (track->video.display_unit < MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN) {
-        if (track->video.display_width && track->video.display_height &&
+        if (track->video.display_width       && track->video.display_height &&
+            track->video.display_width != -1 && track->video.display_height != -1 &&
             par->height  < INT64_MAX / track->video.display_width  / display_width_mul &&
             par->width   < INT64_MAX / track->video.display_height / display_height_mul)
             av_reduce(&st->sample_aspect_ratio.num,
@@ -3139,10 +3140,12 @@ static int matroska_parse_tracks(AVFormatContext *s)
                     track->default_duration = default_duration;
                 }
             }
-            if (track->video.display_width == -1)
-                track->video.display_width = track->video.pixel_width;
-            if (track->video.display_height == -1)
-                track->video.display_height = track->video.pixel_height;
+            if (track->video.display_unit == MATROSKA_VIDEO_DISPLAYUNIT_PIXELS) {
+                if (track->video.display_width == -1)
+                    track->video.display_width = track->video.pixel_width;
+                if (track->video.display_height == -1)
+                    track->video.display_height = track->video.pixel_height;
+            }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             if (!track->audio.out_samplerate)
                 track->audio.out_samplerate = track->audio.samplerate;
