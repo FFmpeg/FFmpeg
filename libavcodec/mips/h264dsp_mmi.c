@@ -1117,20 +1117,6 @@ void ff_h264_chroma422_dc_dequant_idct_8_mmi(int16_t *block, int qmul)
     block[112]= (t[7]*qmul + 128) >> 8;
 }
 
-void ff_h264_chroma_dc_dequant_idct_8_mmi(int16_t *block, int qmul)
-{
-    int a,b,c,d;
-
-    d = block[0] - block[16];
-    a = block[0] + block[16];
-    b = block[32] - block[48];
-    c = block[32] + block[48];
-    block[0] = ((a+c)*qmul) >> 7;
-    block[16]= ((d+b)*qmul) >> 7;
-    block[32]= ((a-c)*qmul) >> 7;
-    block[48]= ((d-b)*qmul) >> 7;
-}
-
 void ff_h264_weight_pixels16_8_mmi(uint8_t *block, ptrdiff_t stride, int height,
         int log2_denom, int weight, int offset)
 {

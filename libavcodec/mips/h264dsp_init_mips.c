@@ -46,10 +46,7 @@ av_cold void ff_h264dsp_init_mips(H264DSPContext *c, const int bit_depth,
 
             c->h264_luma_dc_dequant_idct = ff_h264_luma_dc_dequant_idct_8_mmi;
 
-            if (chroma_format_idc <= 1)
-                c->h264_chroma_dc_dequant_idct =
-                    ff_h264_chroma_dc_dequant_idct_8_mmi;
-            else
+            if (chroma_format_idc > 1)
                 c->h264_chroma_dc_dequant_idct =
                     ff_h264_chroma422_dc_dequant_idct_8_mmi;
 
