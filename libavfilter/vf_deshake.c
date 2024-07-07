@@ -478,8 +478,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     aligned = !((intptr_t)in->data[0] & 15 | in->linesize[0] & 15);
     deshake->sad = av_pixelutils_get_sad_fn(4, 4, aligned, deshake); // 16x16, 2nd source unaligned
-    if (!deshake->sad)
-        return AVERROR(EINVAL);
+    if (!deshake->sad) {
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
         // Find the most likely global motion for the current frame
