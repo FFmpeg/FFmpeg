@@ -229,7 +229,6 @@ typedef struct BufNode {
     CMSampleBufferRef cm_buffer;
     ExtraSEI *sei;
     struct BufNode* next;
-    int error;
 } BufNode;
 
 typedef struct VTEncContext {
