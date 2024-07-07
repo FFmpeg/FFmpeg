@@ -124,7 +124,8 @@ static av_always_inline int RENAME(encode_line)(FFV1Context *s, int w,
     return 0;
 }
 
-static int RENAME(encode_rgb_frame)(FFV1Context *s, const uint8_t *src[4],
+static int RENAME(encode_rgb_frame)(FFV1Context *s, FFV1SliceContext *sc,
+                                    const uint8_t *src[4],
                                     int w, int h, const int stride[4])
 {
     int x, y, p, i;
@@ -139,13 +140,13 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, const uint8_t *src[4],
 
     s->run_index = 0;
 
-    memset(RENAME(s->sample_buffer), 0, ring_size * MAX_PLANES *
-           (w + 6) * sizeof(*RENAME(s->sample_buffer)));
+    memset(RENAME(sc->sample_buffer), 0, ring_size * MAX_PLANES *
+           (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
 
     for (y = 0; y < h; y++) {
         for (i = 0; i < ring_size; i++)
             for (p = 0; p < MAX_PLANES; p++)
-                sample[p][i]= RENAME(s->sample_buffer) + p*ring_size*(w+6) + ((h+i-y)%ring_size)*(w+6) + 3;
+                sample[p][i]= RENAME(sc->sample_buffer) + p*ring_size*(w+6) + ((h+i-y)%ring_size)*(w+6) + 3;
 
         for (x = 0; x < w; x++) {
             int b, g, r, av_uninit(a);

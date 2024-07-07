@@ -127,7 +127,8 @@ static av_always_inline int RENAME(decode_line)(FFV1Context *s, int w,
     return 0;
 }
 
-static int RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int h, int stride[4])
+static int RENAME(decode_rgb_frame)(FFV1Context *s, FFV1SliceContext *sc,
+                                    uint8_t *src[4], int w, int h, int stride[4])
 {
     int x, y, p;
     TYPE *sample[4][2];
@@ -137,13 +138,13 @@ static int RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int 
     int transparency = s->transparency;
 
     for (x = 0; x < 4; x++) {
-        sample[x][0] = RENAME(s->sample_buffer) +  x * 2      * (w + 6) + 3;
-        sample[x][1] = RENAME(s->sample_buffer) + (x * 2 + 1) * (w + 6) + 3;
+        sample[x][0] = RENAME(sc->sample_buffer) +  x * 2      * (w + 6) + 3;
+        sample[x][1] = RENAME(sc->sample_buffer) + (x * 2 + 1) * (w + 6) + 3;
     }
 
     s->run_index = 0;
 
-    memset(RENAME(s->sample_buffer), 0, 8 * (w + 6) * sizeof(*RENAME(s->sample_buffer)));
+    memset(RENAME(sc->sample_buffer), 0, 8 * (w + 6) * sizeof(*RENAME(sc->sample_buffer)));
 
     for (y = 0; y < h; y++) {
         for (p = 0; p < 3 + transparency; p++) {

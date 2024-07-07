@@ -70,6 +70,9 @@ typedef struct PlaneContext {
 #define MAX_SLICES 1024
 
 typedef struct FFV1SliceContext {
+    int16_t *sample_buffer;
+    int32_t *sample_buffer32;
+
     int slice_width;
     int slice_height;
     int slice_x;
@@ -108,8 +111,6 @@ typedef struct FFV1Context {
     uint8_t (*initial_states[MAX_QUANT_TABLES])[32];
     int run_index;
     int colorspace;
-    int16_t *sample_buffer;
-    int32_t *sample_buffer32;
 
     int use32bit;
 

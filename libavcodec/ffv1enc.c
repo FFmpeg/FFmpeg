@@ -269,7 +269,8 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
 #define RENAME(name) name ## 32
 #include "ffv1enc_template.c"
 
-static int encode_plane(FFV1Context *s, const uint8_t *src, int w, int h,
+static int encode_plane(FFV1Context *s, FFV1SliceContext *sc,
+                        const uint8_t *src, int w, int h,
                          int stride, int plane_index, int pixel_stride)
 {
     int x, y, i, ret;
@@ -277,11 +278,11 @@ static int encode_plane(FFV1Context *s, const uint8_t *src, int w, int h,
     int16_t *sample[3];
     s->run_index = 0;
 
-    memset(s->sample_buffer, 0, ring_size * (w + 6) * sizeof(*s->sample_buffer));
+    memset(sc->sample_buffer, 0, ring_size * (w + 6) * sizeof(*sc->sample_buffer));
 
     for (y = 0; y < h; y++) {
         for (i = 0; i < ring_size; i++)
-            sample[i] = s->sample_buffer + (w + 6) * ((h + i - y) % ring_size) + 3;
+            sample[i] = sc->sample_buffer + (w + 6) * ((h + i - y) % ring_size) + 3;
 
         sample[0][-1]= sample[1][0  ];
         sample[1][ w]= sample[1][w-1];
@@ -938,7 +939,8 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs,
     }
 }
 
-static void choose_rct_params(FFV1Context *fs, const uint8_t *src[3], const int stride[3], int w, int h)
+static void choose_rct_params(FFV1Context *fs, FFV1SliceContext *sc,
+                              const uint8_t *src[3], const int stride[3], int w, int h)
 {
 #define NB_Y_COEFF 15
     static const int rct_y_coeff[15][2] = {
@@ -968,7 +970,7 @@ static void choose_rct_params(FFV1Context *fs, const uint8_t *src[3], const int 
     for (y = 0; y < h; y++) {
         int lastr=0, lastg=0, lastb=0;
         for (p = 0; p < 3; p++)
-            sample[p] = fs->sample_buffer + p*w;
+            sample[p] = sc->sample_buffer + p*w;
 
         for (x = 0; x < w; x++) {
             int b, g, r;
@@ -1041,7 +1043,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
 
     fs->slice_coding_mode = 0;
     if (f->version > 3) {
-        choose_rct_params(fs, planes, p->linesize, width, height);
+        choose_rct_params(fs, sc, planes, p->linesize, width, height);
     } else {
         fs->slice_rct_by_coef = 1;
         fs->slice_rct_ry_coef = 1;
@@ -1066,21 +1068,21 @@ retry:
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 
-        ret = encode_plane(fs, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
+        ret = encode_plane(fs, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
 
         if (f->chroma_planes) {
-            ret |= encode_plane(fs, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
-            ret |= encode_plane(fs, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
+            ret |= encode_plane(fs, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
+            ret |= encode_plane(fs, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
         if (fs->transparency)
-            ret |= encode_plane(fs, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1);
+            ret |= encode_plane(fs, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1);
     } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
-        ret  = encode_plane(fs, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
-        ret |= encode_plane(fs, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
+        ret  = encode_plane(fs, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
+        ret |= encode_plane(fs, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
     } else if (f->use32bit) {
-        ret = encode_rgb_frame32(fs, planes, width, height, p->linesize);
+        ret = encode_rgb_frame32(fs, sc, planes, width, height, p->linesize);
     } else {
-        ret = encode_rgb_frame(fs, planes, width, height, p->linesize);
+        ret = encode_rgb_frame(fs, sc, planes, width, height, p->linesize);
     }
 
     if (ret < 0) {
