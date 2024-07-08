@@ -496,9 +496,12 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = scale->w;
     outlink->h = scale->h;
 
-    ff_scale_adjust_dimensions(inlink, &outlink->w, &outlink->h,
+    ret = ff_scale_adjust_dimensions(inlink, &outlink->w, &outlink->h,
                                scale->force_original_aspect_ratio,
                                scale->force_divisible_by);
+
+    if (ret < 0)
+        goto fail;
 
     if (outlink->w > INT_MAX ||
         outlink->h > INT_MAX ||
