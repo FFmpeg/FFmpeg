@@ -1799,10 +1799,14 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
             return AVERROR(EINVAL);
         }
 
-        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPB, bottom);
-        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPT, top);
-        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPL, left);
-        ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPR, right);
+        if (bottom)
+            ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPB, bottom);
+        if (top)
+            ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPT, top);
+        if (left)
+            ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPL, left);
+        if (right)
+            ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOPIXELCROPR, right);
 
         cropped_width  -= left + right;
         cropped_height -= top + bottom;
