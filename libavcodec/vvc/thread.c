@@ -565,7 +565,7 @@ static void task_run_stage(VVCTask *t, VVCContext *s, VVCLocalContext *lc)
     VVCFrameContext *fc      = t->fc;
     VVCFrameThread *ft       = fc->ft;
     const VVCTaskStage stage = t->stage;
-    run_func run[] = {
+    static const run_func run[] = {
         run_parse,
         run_inter,
         run_recon,
