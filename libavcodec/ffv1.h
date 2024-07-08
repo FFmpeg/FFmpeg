@@ -59,7 +59,6 @@ typedef struct VlcState {
 } VlcState;
 
 typedef struct PlaneContext {
-    int16_t quant_table[MAX_CONTEXT_INPUTS][256];
     int quant_table_index;
     int context_count;
     uint8_t (*state)[CONTEXT_SIZE];

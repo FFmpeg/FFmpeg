@@ -23,7 +23,8 @@
 #include "ffv1_template.c"
 
 static av_always_inline int
-RENAME(encode_line)(FFV1Context *s, FFV1SliceContext *sc,
+RENAME(encode_line)(FFV1Context *f,
+                    FFV1Context *s, FFV1SliceContext *sc,
                     int w, TYPE *sample[3], int plane_index, int bits)
 {
     PlaneContext *const p = &s->plane[plane_index];
@@ -60,7 +61,8 @@ RENAME(encode_line)(FFV1Context *s, FFV1SliceContext *sc,
     for (x = 0; x < w; x++) {
         int diff, context;
 
-        context = RENAME(get_context)(p, sample[0] + x, sample[1] + x, sample[2] + x);
+        context = RENAME(get_context)(f->quant_tables[p->quant_table_index],
+                                      sample[0] + x, sample[1] + x, sample[2] + x);
         diff    = sample[0][x] - RENAME(predict)(sample[0] + x, sample[1] + x);
 
         if (context < 0) {
@@ -124,7 +126,8 @@ RENAME(encode_line)(FFV1Context *s, FFV1SliceContext *sc,
     return 0;
 }
 
-static int RENAME(encode_rgb_frame)(FFV1Context *s, FFV1SliceContext *sc,
+static int RENAME(encode_rgb_frame)(FFV1Context *f,
+                                    FFV1Context *s, FFV1SliceContext *sc,
                                     const uint8_t *src[4],
                                     int w, int h, const int stride[4])
 {
@@ -193,9 +196,9 @@ static int RENAME(encode_rgb_frame)(FFV1Context *s, FFV1SliceContext *sc,
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
             if (lbd && s->slice_coding_mode == 0)
-                ret = RENAME(encode_line)(s, sc, w, sample[p], (p + 1) / 2, 9);
+                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, 9);
             else
-                ret = RENAME(encode_line)(s, sc, w, sample[p], (p + 1) / 2, bits + (s->slice_coding_mode != 1));
+                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, bits + (s->slice_coding_mode != 1));
             if (ret < 0)
                 return ret;
         }

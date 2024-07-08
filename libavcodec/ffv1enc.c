@@ -269,7 +269,8 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState *const state,
 #define RENAME(name) name ## 32
 #include "ffv1enc_template.c"
 
-static int encode_plane(FFV1Context *s, FFV1SliceContext *sc,
+static int encode_plane(FFV1Context *f,
+                        FFV1Context *s, FFV1SliceContext *sc,
                         const uint8_t *src, int w, int h,
                          int stride, int plane_index, int pixel_stride)
 {
@@ -289,7 +290,7 @@ static int encode_plane(FFV1Context *s, FFV1SliceContext *sc,
         if (s->bits_per_raw_sample <= 8) {
             for (x = 0; x < w; x++)
                 sample[0][x] = src[x * pixel_stride + stride * y];
-            if((ret = encode_line(s, sc, w, sample, plane_index, 8)) < 0)
+            if((ret = encode_line(f, s, sc, w, sample, plane_index, 8)) < 0)
                 return ret;
         } else {
             if (s->packed_at_lsb) {
@@ -301,7 +302,7 @@ static int encode_plane(FFV1Context *s, FFV1SliceContext *sc,
                     sample[0][x] = ((uint16_t*)(src + stride*y))[x] >> (16 - s->bits_per_raw_sample);
                 }
             }
-            if((ret = encode_line(s, sc, w, sample, plane_index, s->bits_per_raw_sample)) < 0)
+            if((ret = encode_line(f, s, sc, w, sample, plane_index, s->bits_per_raw_sample)) < 0)
                 return ret;
         }
     }
@@ -741,7 +742,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
         p->quant_table_index = s->context_model;
         p->context_count     = s->context_count[p->quant_table_index];
-        memcpy(p->quant_table, s->quant_tables[p->quant_table_index], sizeof(p->quant_table));
     }
 
     if ((ret = ff_ffv1_allocate_initial_states(s)) < 0)
@@ -1066,21 +1066,21 @@ retry:
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
 
-        ret = encode_plane(fs, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
+        ret = encode_plane(f, fs, sc, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
 
         if (f->chroma_planes) {
-            ret |= encode_plane(fs, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
-            ret |= encode_plane(fs, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
+            ret |= encode_plane(f, fs, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
+            ret |= encode_plane(f, fs, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
         if (fs->transparency)
-            ret |= encode_plane(fs, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1);
+            ret |= encode_plane(f, fs, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1);
     } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
-        ret  = encode_plane(fs, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
-        ret |= encode_plane(fs, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
+        ret  = encode_plane(f, fs, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);
+        ret |= encode_plane(f, fs, sc, p->data[0] + 1 + ps*x + y*p->linesize[0], width, height, p->linesize[0], 1, 2);
     } else if (f->use32bit) {
-        ret = encode_rgb_frame32(fs, sc, planes, width, height, p->linesize);
+        ret = encode_rgb_frame32(f, fs, sc, planes, width, height, p->linesize);
     } else {
-        ret = encode_rgb_frame(fs, sc, planes, width, height, p->linesize);
+        ret = encode_rgb_frame(f, fs, sc, planes, width, height, p->linesize);
     }
 
     if (ret < 0) {

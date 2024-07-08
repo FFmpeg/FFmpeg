@@ -117,7 +117,8 @@ static int is_input_end(FFV1Context *s, GetBitContext *gb)
 #define RENAME(name) name ## 32
 #include "ffv1dec_template.c"
 
-static int decode_plane(FFV1Context *s, FFV1SliceContext *sc,
+static int decode_plane(FFV1Context *f,
+                        FFV1Context *s, FFV1SliceContext *sc,
                         GetBitContext *gb,
                         uint8_t *src, int w, int h, int stride, int plane_index,
                          int pixel_stride)
@@ -141,13 +142,13 @@ static int decode_plane(FFV1Context *s, FFV1SliceContext *sc,
         sample[0][w]  = sample[0][w - 1];
 
         if (s->avctx->bits_per_raw_sample <= 8) {
-            int ret = decode_line(s, sc, gb, w, sample, plane_index, 8);
+            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, 8);
             if (ret < 0)
                 return ret;
             for (x = 0; x < w; x++)
                 src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
-            int ret = decode_line(s, sc, gb, w, sample, plane_index, s->avctx->bits_per_raw_sample);
+            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, s->avctx->bits_per_raw_sample);
             if (ret < 0)
                 return ret;
             if (s->packed_at_lsb) {
@@ -207,7 +208,6 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
             return -1;
         }
         p->quant_table_index = idx;
-        memcpy(p->quant_table, f->quant_tables[idx], sizeof(p->quant_table));
         context_count = f->context_count[idx];
 
         if (p->context_count < context_count) {
@@ -335,29 +335,29 @@ static int decode_slice(AVCodecContext *c, void *arg)
         const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
-        decode_plane(fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
+        decode_plane(f, fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
 
         if (f->chroma_planes) {
-            decode_plane(fs, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
-            decode_plane(fs, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
+            decode_plane(f, fs, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
+            decode_plane(f, fs, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
         if (fs->transparency)
-            decode_plane(fs, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1);
+            decode_plane(f, fs, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1);
     } else if (f->colorspace == 0) {
-         decode_plane(fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
-         decode_plane(fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
+         decode_plane(f, fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
+         decode_plane(f, fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
     } else if (f->use32bit) {
         uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
                                p->data[2] + ps * x + y * p->linesize[2],
                                p->data[3] + ps * x + y * p->linesize[3] };
-        decode_rgb_frame32(fs, sc, &gb, planes, width, height, p->linesize);
+        decode_rgb_frame32(f, fs, sc, &gb, planes, width, height, p->linesize);
     } else {
         uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
                                p->data[2] + ps * x + y * p->linesize[2],
                                p->data[3] + ps * x + y * p->linesize[3] };
-        decode_rgb_frame(fs, sc, &gb, planes, width, height, p->linesize);
+        decode_rgb_frame(f, fs, sc, &gb, planes, width, height, p->linesize);
     }
     if (fs->ac != AC_GOLOMB_RICE && f->version > 2) {
         int v;
@@ -830,11 +830,7 @@ static int read_header(FFV1Context *f)
                     return AVERROR_INVALIDDATA;
                 }
                 p->quant_table_index = idx;
-                memcpy(p->quant_table, f->quant_tables[idx],
-                       sizeof(p->quant_table));
                 context_count = f->context_count[idx];
-            } else {
-                memcpy(p->quant_table, f->quant_tables[0], sizeof(p->quant_table));
             }
 
             if (f->version <= 2) {
