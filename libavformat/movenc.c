@@ -2351,18 +2351,31 @@ static int mov_write_dvcc_dvvc_tag(AVFormatContext *s, AVIOContext *pb, AVDOVIDe
     return 32; /* 8 + 24 */
 }
 
-static int mov_write_clap_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_clap_tag(AVIOContext *pb, MOVTrack *track,
+                              uint32_t top, uint32_t bottom,
+                              uint32_t left, uint32_t right)
 {
+    uint32_t cropped_width  = track->par->width - left - right;
+    uint32_t cropped_height = track->height - top - bottom;
+    AVRational horizOff =
+        av_sub_q((AVRational) { track->par->width - cropped_width, 2 },
+                 (AVRational) { left, 1 });
+    AVRational vertOff =
+        av_sub_q((AVRational) { track->height - cropped_height, 2 },
+                 (AVRational) { top, 1 });
+
     avio_wb32(pb, 40);
     ffio_wfourcc(pb, "clap");
-    avio_wb32(pb, track->par->width); /* apertureWidth_N */
-    avio_wb32(pb, 1); /* apertureWidth_D (= 1) */
-    avio_wb32(pb, track->height); /* apertureHeight_N */
-    avio_wb32(pb, 1); /* apertureHeight_D (= 1) */
-    avio_wb32(pb, 0); /* horizOff_N (= 0) */
-    avio_wb32(pb, 1); /* horizOff_D (= 1) */
-    avio_wb32(pb, 0); /* vertOff_N (= 0) */
-    avio_wb32(pb, 1); /* vertOff_D (= 1) */
+    avio_wb32(pb, cropped_width); /* apertureWidthN */
+    avio_wb32(pb, 1); /* apertureWidthD */
+    avio_wb32(pb, cropped_height); /* apertureHeightN */
+    avio_wb32(pb, 1); /* apertureHeightD */
+
+    avio_wb32(pb, -horizOff.num);
+    avio_wb32(pb, horizOff.den);
+    avio_wb32(pb, -vertOff.num);
+    avio_wb32(pb, vertOff.den);
+
     return 40;
 }
 
@@ -2590,6 +2603,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
 {
     int ret = AVERROR_BUG;
     int64_t pos = avio_tell(pb);
+    const AVPacketSideData *sd;
     char compressor_name[32] = { 0 };
     int avid = 0;
 
@@ -2763,7 +2777,6 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
 
     if (track->mode == MODE_MOV || (track->mode == MODE_MP4 &&
                                     mov->fc->strict_std_compliance <= FF_COMPLIANCE_UNOFFICIAL)) {
-        const AVPacketSideData *sd;
         const AVStereo3D *stereo3d = NULL;
         const AVSphericalMapping *spherical_mapping = NULL;
 
@@ -2800,9 +2813,24 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
         mov_write_pasp_tag(pb, track);
     }
 
-    if (uncompressed_ycbcr){
-        mov_write_clap_tag(pb, track);
-    }
+    sd = av_packet_side_data_get(track->st->codecpar->coded_side_data,
+                                 track->st->codecpar->nb_coded_side_data,
+                                 AV_PKT_DATA_FRAME_CROPPING);
+    if (sd && sd->size >= sizeof(uint32_t) * 4) {
+        uint64_t top    = AV_RL32(sd->data +  0);
+        uint64_t bottom = AV_RL32(sd->data +  4);
+        uint64_t left   = AV_RL32(sd->data +  8);
+        uint64_t right  = AV_RL32(sd->data + 12);
+
+        if ((left + right) >= track->par->width ||
+            (top + bottom) >= track->height) {
+            av_log(s, AV_LOG_ERROR, "Invalid cropping dimensions in stream side data\n");
+            return AVERROR(EINVAL);
+        }
+        if (top || bottom || left || right)
+            mov_write_clap_tag(pb, track, top, bottom, left, right);
+    } else if (uncompressed_ycbcr)
+        mov_write_clap_tag(pb, track, 0, 0, 0, 0);
 
     if (mov->encryption_scheme != MOV_ENC_NONE) {
         ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid);

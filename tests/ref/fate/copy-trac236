@@ -1,24 +1,24 @@
-34b0ad38518b0eb8464aff04e6d0e143 *tests/data/fate/copy-trac236.mov
-630878 tests/data/fate/copy-trac236.mov
+ca4068319c6586de757c1f6a592b31e5 *tests/data/fate/copy-trac236.mov
+630918 tests/data/fate/copy-trac236.mov
 #tb 0: 100/2997
 #media_type 0: video
 #codec_id 0: rawvideo
-#dimensions 0: 720x480
+#dimensions 0: 704x480
 #sar 0: 10/11
 #tb 1: 1/48000
 #media_type 1: audio
 #codec_id 1: pcm_s16le
 #sample_rate 1: 48000
 #channel_layout_name 1: stereo
-0,          0,          0,        1,   518400, 0x81ab2140
+0,          0,          0,        1,   506880, 0xc4d654e3
 1,          0,          0,     1024,     4096, 0x67dc99a3
 1,       1024,       1024,     1024,     4096, 0xf115a681
-0,          1,          1,        1,   518400, 0x81ab2140
+0,          1,          1,        1,   506880, 0xc4d654e3
 1,       2048,       2048,     1024,     4096, 0xf455b597
 1,       3072,       3072,     1024,     4096, 0x67dc99a3
-0,          2,          2,        1,   518400, 0x81ab2140
+0,          2,          2,        1,   506880, 0xc4d654e3
 1,       4096,       4096,     1024,     4096, 0xf115a681
-0,          3,          3,        1,   518400, 0x81ab2140
+0,          3,          3,        1,   506880, 0xc4d654e3
 1,       5120,       5120,     1024,     4096, 0xf455b597
 1,       6144,       6144,      759,     3036, 0xa291a36d
-0,          4,          4,        1,   518400, 0x81ab2140
+0,          4,          4,        1,   506880, 0xc4d654e3
