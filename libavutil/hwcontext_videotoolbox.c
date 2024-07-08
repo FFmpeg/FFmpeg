@@ -588,7 +588,7 @@ static int vt_pixbuf_set_colorspace(void *log_ctx,
     } else
         CVBufferRemoveAttachment(pixbuf, kCVImageBufferGammaLevelKey);
 
-    if (__builtin_available(macOS 10.8, iOS 10, *)) {
+    if (__builtin_available(macOS 12.0, iOS 15.0, *)) {
         CFDictionaryRef attachments = CVBufferCopyAttachments(pixbuf, kCVAttachmentMode_ShouldPropagate);
         if (attachments) {
             colorspace = CVImageBufferCreateColorSpaceFromAttachments(attachments);
