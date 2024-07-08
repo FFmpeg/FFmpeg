@@ -2628,6 +2628,11 @@ static void print_pkt_side_data(WriterContext *w,
             if (do_show_data)
                 writer_print_data(w, "data", sd->data, sd->size);
             writer_print_data_hash(w, "data_hash", sd->data, sd->size);
+        } else if (sd->type == AV_PKT_DATA_FRAME_CROPPING && sd->size >= sizeof(uint32_t) * 4) {
+            print_int("crop_top",    AV_RL32(sd->data));
+            print_int("crop_bottom", AV_RL32(sd->data + 4));
+            print_int("crop_left",   AV_RL32(sd->data + 8));
+            print_int("crop_right",  AV_RL32(sd->data + 12));
         } else if (sd->type == AV_PKT_DATA_AFD && sd->size > 0) {
             print_int("active_format", *sd->data);
         }
