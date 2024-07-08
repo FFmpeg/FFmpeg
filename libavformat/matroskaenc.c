@@ -1758,7 +1758,7 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
     uint8_t color_space[4], projection_private[20];
     const AVPacketSideData *sd;
     EBML_WRITER(MAX_FIELD_ORDER_ELEMS + MAX_STEREO_MODE_ELEMS      +
-                MAX_VIDEO_COLOR_ELEMS + MAX_VIDEO_PROJECTION_ELEMS + 8);
+                MAX_VIDEO_COLOR_ELEMS + MAX_VIDEO_PROJECTION_ELEMS + 12);
     int cropped_width = par->width, cropped_height = par->height;
     int ret;
 
