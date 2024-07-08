@@ -72,7 +72,6 @@ enum Mpeg2ClosedCaptionsFormat {
 
 typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
-    int repeat_field;           /* true if we must repeat the field */
     AVPanScan pan_scan;         /* some temporary storage for the panscan */
     enum AVStereo3DType stereo3d_type;
     int has_stereo3d;
@@ -781,7 +780,6 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
     ff_mpeg12_init_vlcs();
 
     s2->chroma_format              = 1;
-    s->repeat_field                = 0;
     avctx->color_range             = AVCOL_RANGE_MPEG;
     return 0;
 }
@@ -1050,8 +1048,6 @@ static int mpeg1_decode_picture(AVCodecContext *avctx, const uint8_t *buf,
         av_log(avctx, AV_LOG_DEBUG,
                "vbv_delay %d, ref %d type:%d\n", vbv_delay, ref, s->pict_type);
 
-    s->y_dc_scale = 8;
-    s->c_dc_scale = 8;
     return 0;
 }
 
