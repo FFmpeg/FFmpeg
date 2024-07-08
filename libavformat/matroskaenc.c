@@ -1369,7 +1369,7 @@ static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
                              (ypos >> 7) + 1);
     }
 
-    side_data = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+    side_data = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
                                         AV_PKT_DATA_CONTENT_LIGHT_LEVEL);
     if (side_data) {
         const AVContentLightMetadata *metadata = (AVContentLightMetadata *)side_data->data;
@@ -1379,7 +1379,7 @@ static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
                              metadata->MaxFALL);
     }
 
-    side_data = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+    side_data = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
                                         AV_PKT_DATA_MASTERING_DISPLAY_METADATA);
     if (side_data) {
         const AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)side_data->data;
@@ -1415,12 +1415,12 @@ static void mkv_write_video_color(EbmlWriter *writer, const AVStream *st,
 }
 
 #define MAX_VIDEO_PROJECTION_ELEMS 6
-static void mkv_handle_rotation(void *logctx, const AVStream *st,
+static void mkv_handle_rotation(void *logctx, const AVCodecParameters *par,
                                 double *yaw, double *roll)
 {
     const int32_t *matrix;
     const AVPacketSideData *side_data =
-        av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+        av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
                                 AV_PKT_DATA_DISPLAYMATRIX);
 
     if (!side_data)
@@ -1471,11 +1471,11 @@ ignore:
 }
 
 static int mkv_handle_spherical(void *logctx, EbmlWriter *writer,
-                                const AVStream *st, uint8_t private[],
+                                const AVCodecParameters *par, uint8_t private[],
                                 double *yaw, double *pitch, double *roll)
 {
-    const AVPacketSideData *sd = av_packet_side_data_get(st->codecpar->coded_side_data,
-                                                         st->codecpar->nb_coded_side_data,
+    const AVPacketSideData *sd = av_packet_side_data_get(par->coded_side_data,
+                                                         par->nb_coded_side_data,
                                                          AV_PKT_DATA_SPHERICAL);
     const AVSphericalMapping *spherical;
 
@@ -1531,16 +1531,17 @@ static int mkv_handle_spherical(void *logctx, EbmlWriter *writer,
 }
 
 static void mkv_write_video_projection(void *logctx, EbmlWriter *wr,
-                                       const AVStream *st, uint8_t private[])
+                                       const AVCodecParameters *par,
+                                       uint8_t private[])
 {
     double yaw = 0, pitch = 0, roll = 0;
     int ret;
 
     ebml_writer_open_master(wr, MATROSKA_ID_VIDEOPROJECTION);
 
-    ret = mkv_handle_spherical(logctx, wr, st, private, &yaw, &pitch, &roll);
+    ret = mkv_handle_spherical(logctx, wr, par, private, &yaw, &pitch, &roll);
     if (!ret)
-        mkv_handle_rotation(logctx, st, &yaw, &roll);
+        mkv_handle_rotation(logctx, par, &yaw, &roll);
 
     if (yaw)
         ebml_writer_add_float(wr, MATROSKA_ID_VIDEOPROJECTIONPOSEYAW, yaw);
@@ -1594,6 +1595,7 @@ static void mkv_write_field_order(EbmlWriter *writer, int is_webm,
 
 #define MAX_STEREO_MODE_ELEMS 1
 static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
+                                 const AVCodecParameters *par,
                                  const AVStream *st, int is_webm,
                                  int *h_width, int *h_height)
 {
@@ -1654,7 +1656,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, EbmlWriter *writer,
         };
         int fmt;
 
-        sd = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+        sd = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
                                      AV_PKT_DATA_STEREO3D);
         if (!sd)
             return 0;
@@ -1715,7 +1717,7 @@ static void mkv_write_blockadditionmapping(AVFormatContext *s, const MatroskaMux
         }
     }
 
-    sd = av_packet_side_data_get(st->codecpar->coded_side_data, st->codecpar->nb_coded_side_data,
+    sd = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data,
                                  AV_PKT_DATA_DOVI_CONF);
 
     if (!sd)
@@ -1771,7 +1773,7 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
 
     // check both side data and metadata for stereo information,
     // write the result to the bitstream if any is found
-    ret = mkv_write_stereo_mode(s, &writer, st, IS_WEBM(mkv),
+    ret = mkv_write_stereo_mode(s, &writer, par, st, IS_WEBM(mkv),
                                 &display_width_div,
                                 &display_height_div);
     if (ret < 0)
@@ -1782,8 +1784,8 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
          (tag = av_dict_get( s->metadata, "alpha_mode", NULL, 0))) && strtol(tag->value, NULL, 0))
         ebml_writer_add_uint(&writer, MATROSKA_ID_VIDEOALPHAMODE, 1);
 
-    sd = av_packet_side_data_get(st->codecpar->coded_side_data,
-                                 st->codecpar->nb_coded_side_data,
+    sd = av_packet_side_data_get(par->coded_side_data,
+                                 par->nb_coded_side_data,
                                  AV_PKT_DATA_FRAME_CROPPING);
     if (sd && sd->size == sizeof(uint32_t) * 4) {
         uint64_t top, bottom, left, right;
@@ -1855,7 +1857,7 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
                             color_space, sizeof(color_space));
     }
     mkv_write_video_color(&writer, st, par);
-    mkv_write_video_projection(s, &writer, st, projection_private);
+    mkv_write_video_projection(s, &writer, par, projection_private);
 
     return ebml_writer_write(&writer, pb);
 }
