@@ -367,7 +367,7 @@ static void write_header(FFV1Context *f)
         put_symbol(c, state, f->chroma_v_shift, 0);
         put_rac(c, state, f->transparency);
 
-        write_quant_tables(c, f->quant_table);
+        write_quant_tables(c, f->quant_tables[f->context_model]);
     } else if (f->version < 3) {
         put_symbol(c, state, f->slice_count, 0);
         for (i = 0; i < f->slice_count; i++) {
@@ -735,15 +735,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
     s->context_count[0] = (11 * 11 * 11        + 1) / 2;
     s->context_count[1] = (11 * 11 * 5 * 5 * 5 + 1) / 2;
-    memcpy(s->quant_table, s->quant_tables[s->context_model],
-           sizeof(s->quant_table));
 
     for (i = 0; i < s->plane_count; i++) {
         PlaneContext *const p = &s->plane[i];
 
-        memcpy(p->quant_table, s->quant_table, sizeof(p->quant_table));
         p->quant_table_index = s->context_model;
         p->context_count     = s->context_count[p->quant_table_index];
+        memcpy(p->quant_table, s->quant_tables[p->quant_table_index], sizeof(p->quant_table));
     }
 
     if ((ret = ff_ffv1_allocate_initial_states(s)) < 0)

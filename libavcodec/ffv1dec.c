@@ -764,7 +764,7 @@ static int read_header(FFV1Context *f)
     ff_dlog(f->avctx, "%d %d %d\n",
             f->chroma_h_shift, f->chroma_v_shift, f->avctx->pix_fmt);
     if (f->version < 2) {
-        context_count = read_quant_tables(c, f->quant_table);
+        context_count = read_quant_tables(c, f->quant_tables[0]);
         if (context_count < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
             return AVERROR_INVALIDDATA;
@@ -834,7 +834,7 @@ static int read_header(FFV1Context *f)
                        sizeof(p->quant_table));
                 context_count = f->context_count[idx];
             } else {
-                memcpy(p->quant_table, f->quant_table, sizeof(p->quant_table));
+                memcpy(p->quant_table, f->quant_tables[0], sizeof(p->quant_table));
             }
 
             if (f->version <= 2) {
@@ -1067,7 +1067,11 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     fdst->use32bit     = fsrc->use32bit;
     memcpy(fdst->state_transition, fsrc->state_transition,
            sizeof(fdst->state_transition));
-    memcpy(fdst->quant_table, fsrc->quant_table, sizeof(fsrc->quant_table));
+
+    // in version 1 there is a single per-keyframe quant table, so
+    // we need to propagate it between threads
+    if (fsrc->version < 2)
+        memcpy(fdst->quant_tables[0], fsrc->quant_tables[0], sizeof(fsrc->quant_tables[0]));
 
     for (int i = 0; i < fdst->num_h_slices * fdst->num_v_slices; i++) {
         FFV1Context *fssrc = fsrc->slice_context[i];
