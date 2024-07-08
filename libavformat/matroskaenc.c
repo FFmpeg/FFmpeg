@@ -1786,16 +1786,14 @@ static int mkv_write_track_video(AVFormatContext *s, MatroskaMuxContext *mkv,
                                  st->codecpar->nb_coded_side_data,
                                  AV_PKT_DATA_FRAME_CROPPING);
     if (sd && sd->size == sizeof(uint32_t) * 4) {
-        uint32_t top, bottom, left, right;
+        uint64_t top, bottom, left, right;
 
         top    = AV_RL32(sd->data +  0);
         bottom = AV_RL32(sd->data +  4);
         left   = AV_RL32(sd->data +  8);
         right  = AV_RL32(sd->data + 12);
 
-        if (left >= INT_MAX - right ||
-            top >= INT_MAX - bottom ||
-            (left + right) >= par->width ||
+        if ((left + right) >= par->width ||
             (top + bottom) >= par->height) {
             av_log(s, AV_LOG_ERROR, "Invalid cropping dimensions in stream side data\n");
             return AVERROR(EINVAL);
