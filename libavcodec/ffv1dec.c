@@ -270,7 +270,6 @@ static int decode_slice(AVCodecContext *c, void *arg)
 
     if(f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY)) {
         FFV1Context *fssrc = f->fsrc->slice_context[si];
-        av_assert1(fs->plane_count == fssrc->plane_count);
 
         if (!(p->flags & AV_FRAME_FLAG_KEY))
             fs->slice_damaged |= fssrc->slice_damaged;
@@ -330,7 +329,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     }
 
     av_assert1(width && height);
-    if (f->colorspace == 0 && (f->chroma_planes || !fs->transparency)) {
+    if (f->colorspace == 0 && (f->chroma_planes || !f->transparency)) {
         const int chroma_width  = AV_CEIL_RSHIFT(width,  f->chroma_h_shift);
         const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
@@ -341,7 +340,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
             decode_plane(f, fs, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
             decode_plane(f, fs, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
-        if (fs->transparency)
+        if (f->transparency)
             decode_plane(f, fs, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1);
     } else if (f->colorspace == 0) {
          decode_plane(f, fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);

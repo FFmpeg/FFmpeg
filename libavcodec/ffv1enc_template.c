@@ -138,7 +138,7 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f,
     int packed = !src[1];
     int bits   = s->bits_per_raw_sample > 0 ? s->bits_per_raw_sample : 8;
     int offset = 1 << bits;
-    int transparency = s->transparency;
+    int transparency = f->transparency;
     int packed_size = (3 + transparency)*2;
 
     sc->run_index = 0;

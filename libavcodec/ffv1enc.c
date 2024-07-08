@@ -1072,7 +1072,7 @@ retry:
             ret |= encode_plane(f, fs, sc, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
             ret |= encode_plane(f, fs, sc, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
-        if (fs->transparency)
+        if (f->transparency)
             ret |= encode_plane(f, fs, sc, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], 2, 1);
     } else if (c->pix_fmt == AV_PIX_FMT_YA8) {
         ret  = encode_plane(f, fs, sc, p->data[0] +     ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 2);

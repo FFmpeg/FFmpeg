@@ -56,8 +56,6 @@ av_cold int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs)
 {
     int j, i;
 
-    fs->plane_count  = f->plane_count;
-    fs->transparency = f->transparency;
     for (j = 0; j < f->plane_count; j++) {
         PlaneContext *const p = &fs->plane[j];
 

@@ -141,7 +141,7 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f,
     int lbd    = s->avctx->bits_per_raw_sample <= 8;
     int bits   = s->avctx->bits_per_raw_sample > 0 ? s->avctx->bits_per_raw_sample : 8;
     int offset = 1 << bits;
-    int transparency = s->transparency;
+    int transparency = f->transparency;
 
     for (x = 0; x < 4; x++) {
         sample[x][0] = RENAME(sc->sample_buffer) +  x * 2      * (w + 6) + 3;
