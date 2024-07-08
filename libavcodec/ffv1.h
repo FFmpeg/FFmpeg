@@ -85,7 +85,6 @@ typedef struct FFV1Context {
     AVClass *class;
     AVCodecContext *avctx;
     RangeCoder c;
-    GetBitContext gb;
     PutBitContext pb;
     uint64_t rc_stat[256][2];
     uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
