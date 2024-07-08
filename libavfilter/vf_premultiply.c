@@ -36,8 +36,8 @@ typedef struct ThreadData {
 
 typedef struct PreMultiplyContext {
     const AVClass *class;
-    int width[4], height[4];
-    int linesize[4];
+    int width[AV_VIDEO_MAX_PLANES], height[AV_VIDEO_MAX_PLANES];
+    int linesize[AV_VIDEO_MAX_PLANES];
     int nb_planes;
     int planes;
     int inverse;
@@ -45,7 +45,7 @@ typedef struct PreMultiplyContext {
     int half, depth, offset, max;
     FFFrameSync fs;
 
-    void (*premultiply[4])(const uint8_t *msrc, const uint8_t *asrc,
+    void (*premultiply[AV_VIDEO_MAX_PLANES])(const uint8_t *msrc, const uint8_t *asrc,
                            uint8_t *dst,
                            ptrdiff_t mlinesize, ptrdiff_t alinesize,
                            ptrdiff_t dlinesize,
