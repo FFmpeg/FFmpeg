@@ -201,7 +201,7 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
         return AVERROR_INVALIDDATA;
 
     for (unsigned i = 0; i < f->plane_count; i++) {
-        PlaneContext * const p = &fs->plane[i];
+        PlaneContext * const p = &sc->plane[i];
         int idx = get_symbol(c, state, 0);
         if (idx >= (unsigned)f->quant_table_count) {
             av_log(f->avctx, AV_LOG_ERROR, "quant_table_index out of range\n");
@@ -270,13 +270,14 @@ static int decode_slice(AVCodecContext *c, void *arg)
 
     if(f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY)) {
         FFV1Context *fssrc = f->fsrc->slice_context[si];
+        const FFV1SliceContext *scsrc = &f->fsrc->slices[si];
 
         if (!(p->flags & AV_FRAME_FLAG_KEY))
             fs->slice_damaged |= fssrc->slice_damaged;
 
         for (int i = 0; i < f->plane_count; i++) {
-            PlaneContext *psrc = &fssrc->plane[i];
-            PlaneContext *pdst = &fs->plane[i];
+            const PlaneContext *psrc = &scsrc->plane[i];
+            PlaneContext *pdst = &sc->plane[i];
 
             av_free(pdst->state);
             av_free(pdst->vlc_state);
@@ -298,7 +299,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     sc->slice_rct_ry_coef = 1;
 
     if (f->version > 2) {
-        if (ff_ffv1_init_slice_state(f, fs) < 0)
+        if (ff_ffv1_init_slice_state(f, fs, sc) < 0)
             return AVERROR(ENOMEM);
         if (decode_slice_header(f, fs, sc, p) < 0) {
             sc->slice_x = sc->slice_y = sc->slice_height = sc->slice_width = 0;
@@ -306,10 +307,10 @@ static int decode_slice(AVCodecContext *c, void *arg)
             return AVERROR_INVALIDDATA;
         }
     }
-    if ((ret = ff_ffv1_init_slice_state(f, fs)) < 0)
+    if ((ret = ff_ffv1_init_slice_state(f, fs, sc)) < 0)
         return ret;
     if ((p->flags & AV_FRAME_FLAG_KEY) || fs->slice_reset_contexts) {
-        ff_ffv1_clear_slice_state(f, fs);
+        ff_ffv1_clear_slice_state(f, sc);
     } else if (fs->slice_damaged) {
         return AVERROR_INVALIDDATA;
     }
@@ -818,7 +819,7 @@ static int read_header(FFV1Context *f)
         }
 
         for (int i = 0; i < f->plane_count; i++) {
-            PlaneContext *const p = &fs->plane[i];
+            PlaneContext *const p = &sc->plane[i];
 
             if (f->version == 2) {
                 int idx = get_symbol(c, state, 0);
@@ -1083,7 +1084,6 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
             sc->slice_height        = sc0->slice_height;
         }
     }
-    av_assert0(!fdst->plane[0].state);
 
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 

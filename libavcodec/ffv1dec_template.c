@@ -29,7 +29,7 @@ RENAME(decode_line)(FFV1Context *f,
                     int w, TYPE *sample[2], int plane_index, int bits,
                     int ac)
 {
-    PlaneContext *const p = &s->plane[plane_index];
+    PlaneContext *const p = &sc->plane[plane_index];
     RangeCoder *const c   = &s->c;
     const int16_t (*quant_table)[256] = f->quant_tables[p->quant_table_index];
     int x;

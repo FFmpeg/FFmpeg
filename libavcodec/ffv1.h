@@ -81,6 +81,7 @@ typedef struct FFV1SliceContext {
     int slice_rct_by_coef;
     int slice_rct_ry_coef;
 
+    PlaneContext plane[MAX_PLANES];
     PutBitContext pb;
 } FFV1SliceContext;
 
@@ -106,7 +107,6 @@ typedef struct FFV1Context {
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice
     int ac_byte_count;                   ///< number of bytes used for AC coding
-    PlaneContext plane[MAX_PLANES];
     int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
     int context_count[MAX_QUANT_TABLES];
     uint8_t state_transition[256];
@@ -138,11 +138,12 @@ typedef struct FFV1Context {
 } FFV1Context;
 
 int ff_ffv1_common_init(AVCodecContext *avctx);
-int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs);
+int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs,
+                             FFV1SliceContext *sc);
 int ff_ffv1_init_slices_state(FFV1Context *f);
 int ff_ffv1_init_slice_contexts(FFV1Context *f);
 int ff_ffv1_allocate_initial_states(FFV1Context *f);
-void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1Context *fs);
+void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
 int ff_ffv1_close(AVCodecContext *avctx);
 
 static av_always_inline int fold(int diff, int bits)

@@ -52,12 +52,13 @@ av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
     return 0;
 }
 
-av_cold int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs)
+av_cold int ff_ffv1_init_slice_state(const FFV1Context *f,
+                                     FFV1Context *fs, FFV1SliceContext *sc)
 {
     int j, i;
 
     for (j = 0; j < f->plane_count; j++) {
-        PlaneContext *const p = &fs->plane[j];
+        PlaneContext *const p = &sc->plane[j];
 
         if (f->ac != AC_GOLOMB_RICE) {
             if (!p->state)
@@ -94,7 +95,7 @@ av_cold int ff_ffv1_init_slices_state(FFV1Context *f)
     int i, ret;
     for (i = 0; i < f->max_slice_count; i++) {
         FFV1Context *fs = f->slice_context[i];
-        if ((ret = ff_ffv1_init_slice_state(f, fs)) < 0)
+        if ((ret = ff_ffv1_init_slice_state(f, fs, &f->slices[i])) < 0)
             return AVERROR(ENOMEM);
     }
     return 0;
@@ -160,12 +161,12 @@ int ff_ffv1_allocate_initial_states(FFV1Context *f)
     return 0;
 }
 
-void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1Context *fs)
+void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc)
 {
     int i, j;
 
     for (i = 0; i < f->plane_count; i++) {
-        PlaneContext *p = &fs->plane[i];
+        PlaneContext *p = &sc->plane[i];
 
         if (f->ac != AC_GOLOMB_RICE) {
             if (f->initial_states[p->quant_table_index]) {
@@ -191,17 +192,13 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
     int i, j;
 
     for (j = 0; j < s->max_slice_count; j++) {
-        FFV1Context *fs = s->slice_context[j];
         FFV1SliceContext *sc = &s->slices[j];
 
         av_freep(&sc->sample_buffer);
         av_freep(&sc->sample_buffer32);
 
-        if (!fs)
-            continue;
-
         for (i = 0; i < s->plane_count; i++) {
-            PlaneContext *p = &fs->plane[i];
+            PlaneContext *p = &sc->plane[i];
 
             av_freep(&p->state);
             av_freep(&p->vlc_state);

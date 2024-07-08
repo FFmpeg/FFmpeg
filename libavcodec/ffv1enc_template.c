@@ -28,7 +28,7 @@ RENAME(encode_line)(FFV1Context *f,
                     int w, TYPE *sample[3], int plane_index, int bits,
                     int ac)
 {
-    PlaneContext *const p = &s->plane[plane_index];
+    PlaneContext *const p = &sc->plane[plane_index];
     RangeCoder *const c   = &s->c;
     int x;
     int run_index = sc->run_index;

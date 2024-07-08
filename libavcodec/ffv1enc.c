@@ -385,8 +385,8 @@ static void write_header(FFV1Context *f)
                        (fs->slice_height + 1) * f->num_v_slices / f->height - 1,
                        0);
             for (j = 0; j < f->plane_count; j++) {
-                put_symbol(c, state, f->plane[j].quant_table_index, 0);
-                av_assert0(f->plane[j].quant_table_index == f->context_model);
+                put_symbol(c, state, fs->plane[j].quant_table_index, 0);
+                av_assert0(fs->plane[j].quant_table_index == f->context_model);
             }
         }
     }
@@ -738,13 +738,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->context_count[0] = (11 * 11 * 11        + 1) / 2;
     s->context_count[1] = (11 * 11 * 5 * 5 * 5 + 1) / 2;
 
-    for (i = 0; i < s->plane_count; i++) {
-        PlaneContext *const p = &s->plane[i];
-
-        p->quant_table_index = s->context_model;
-        p->context_count     = s->context_count[p->quant_table_index];
-    }
-
     if ((ret = ff_ffv1_allocate_initial_states(s)) < 0)
         return ret;
 
@@ -882,6 +875,16 @@ slices_ok:
     if ((ret = ff_ffv1_init_slice_contexts(s)) < 0)
         return ret;
     s->slice_count = s->max_slice_count;
+
+    for (int j = 0; j < s->slice_count; j++) {
+        for (int i = 0; i < s->plane_count; i++) {
+            PlaneContext *const p = &s->slices[j].plane[i];
+
+            p->quant_table_index = s->context_model;
+            p->context_count     = s->context_count[p->quant_table_index];
+        }
+    }
+
     if ((ret = ff_ffv1_init_slices_state(s)) < 0)
         return ret;
 
@@ -917,8 +920,8 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs,
     put_symbol(c, state, (sc->slice_width +1)*f->num_h_slices / f->width -1, 0);
     put_symbol(c, state, (sc->slice_height+1)*f->num_v_slices / f->height-1, 0);
     for (j=0; j<f->plane_count; j++) {
-        put_symbol(c, state, f->plane[j].quant_table_index, 0);
-        av_assert0(f->plane[j].quant_table_index == f->context_model);
+        put_symbol(c, state, sc->plane[j].quant_table_index, 0);
+        av_assert0(sc->plane[j].quant_table_index == f->context_model);
     }
     if (!(f->cur_enc_frame->flags & AV_FRAME_FLAG_INTERLACED))
         put_symbol(c, state, 3, 0);
@@ -929,7 +932,7 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs,
     if (f->version > 3) {
         put_rac(c, state, sc->slice_coding_mode == 1);
         if (sc->slice_coding_mode == 1)
-            ff_ffv1_clear_slice_state(f, fs);
+            ff_ffv1_clear_slice_state(f, sc);
         put_symbol(c, state, sc->slice_coding_mode, 0);
         if (sc->slice_coding_mode != 1) {
             put_symbol(c, state, sc->slice_rct_by_coef, 0);
@@ -1050,7 +1053,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
 
 retry:
     if (f->key_frame)
-        ff_ffv1_clear_slice_state(f, fs);
+        ff_ffv1_clear_slice_state(f, sc);
     if (f->version > 2) {
         encode_slice_header(f, fs, sc);
     }
