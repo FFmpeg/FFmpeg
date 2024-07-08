@@ -79,13 +79,14 @@ typedef struct FFV1SliceContext {
     int slice_y;
 
     int run_index;
+
+    PutBitContext pb;
 } FFV1SliceContext;
 
 typedef struct FFV1Context {
     AVClass *class;
     AVCodecContext *avctx;
     RangeCoder c;
-    PutBitContext pb;
     uint64_t rc_stat[256][2];
     uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
     int version;

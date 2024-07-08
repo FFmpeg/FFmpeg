@@ -1057,7 +1057,7 @@ retry:
     }
     if (fs->ac == AC_GOLOMB_RICE) {
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c, f->version > 2) : 0;
-        init_put_bits(&fs->pb,
+        init_put_bits(&sc->pb,
                       fs->c.bytestream_start + fs->ac_byte_count,
                       fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
     }
@@ -1209,13 +1209,14 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     buf_p = pkt->data;
     for (i = 0; i < f->slice_count; i++) {
         FFV1Context *fs = f->slice_context[i];
+        FFV1SliceContext *sc = &f->slices[i];
         int bytes;
 
         if (fs->ac != AC_GOLOMB_RICE) {
             bytes = ff_rac_terminate(&fs->c, 1);
         } else {
-            flush_put_bits(&fs->pb); // FIXME: nicer padding
-            bytes = fs->ac_byte_count + put_bytes_output(&fs->pb);
+            flush_put_bits(&sc->pb); // FIXME: nicer padding
+            bytes = fs->ac_byte_count + put_bytes_output(&sc->pb);
         }
         if (i > 0 || f->version > 2) {
             av_assert0(bytes < pkt->size / f->slice_count);

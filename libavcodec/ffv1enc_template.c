@@ -39,7 +39,7 @@ RENAME(encode_line)(FFV1Context *s, FFV1SliceContext *sc,
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if (put_bytes_left(&s->pb, 0) < w * 4) {
+        if (put_bytes_left(&sc->pb, 0) < w * 4) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return AVERROR_INVALIDDATA;
         }
@@ -86,10 +86,10 @@ RENAME(encode_line)(FFV1Context *s, FFV1SliceContext *sc,
                     while (run_count >= 1 << ff_log2_run[run_index]) {
                         run_count -= 1 << ff_log2_run[run_index];
                         run_index++;
-                        put_bits(&s->pb, 1, 1);
+                        put_bits(&sc->pb, 1, 1);
                     }
 
-                    put_bits(&s->pb, 1 + ff_log2_run[run_index], run_count);
+                    put_bits(&sc->pb, 1 + ff_log2_run[run_index], run_count);
                     if (run_index)
                         run_index--;
                     run_count = 0;
@@ -103,21 +103,21 @@ RENAME(encode_line)(FFV1Context *s, FFV1SliceContext *sc,
 
             ff_dlog(s->avctx, "count:%d index:%d, mode:%d, x:%d pos:%d\n",
                     run_count, run_index, run_mode, x,
-                    (int)put_bits_count(&s->pb));
+                    (int)put_bits_count(&sc->pb));
 
             if (run_mode == 0)
-                put_vlc_symbol(&s->pb, &p->vlc_state[context], diff, bits);
+                put_vlc_symbol(&sc->pb, &p->vlc_state[context], diff, bits);
         }
     }
     if (run_mode) {
         while (run_count >= 1 << ff_log2_run[run_index]) {
             run_count -= 1 << ff_log2_run[run_index];
             run_index++;
-            put_bits(&s->pb, 1, 1);
+            put_bits(&sc->pb, 1, 1);
         }
 
         if (run_count)
-            put_bits(&s->pb, 1, 1);
+            put_bits(&sc->pb, 1, 1);
     }
     sc->run_index = run_index;
 
