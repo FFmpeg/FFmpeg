@@ -788,25 +788,28 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     ub(4, sps_video_parameter_set_id);
     h265->active_vps = vps = h265->vps[current->sps_video_parameter_set_id];
+    if (!vps) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "VPS id %d not available.\n",
+               current->sps_video_parameter_set_id);
+        return AVERROR_INVALIDDATA;
+    }
 
-    u(3, sps_max_sub_layers_minus1, 0, HEVC_MAX_SUB_LAYERS - 1);
+    u(3, sps_max_sub_layers_minus1, 0, vps->vps_max_sub_layers_minus1);
     flag(sps_temporal_id_nesting_flag);
-    if (vps) {
-        if (vps->vps_max_sub_layers_minus1 > current->sps_max_sub_layers_minus1) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
-                   "sps_max_sub_layers_minus1 (%d) must be less than or equal to "
-                   "vps_max_sub_layers_minus1 (%d).\n",
-                   vps->vps_max_sub_layers_minus1,
-                   current->sps_max_sub_layers_minus1);
-            return AVERROR_INVALIDDATA;
-        }
-        if (vps->vps_temporal_id_nesting_flag &&
-            !current->sps_temporal_id_nesting_flag) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
-                   "sps_temporal_id_nesting_flag must be 1 if "
-                   "vps_temporal_id_nesting_flag is 1.\n");
-            return AVERROR_INVALIDDATA;
-        }
+
+    if (vps->vps_temporal_id_nesting_flag &&
+        !current->sps_temporal_id_nesting_flag) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
+               "sps_temporal_id_nesting_flag must be 1 if "
+               "vps_temporal_id_nesting_flag is 1.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (current->sps_max_sub_layers_minus1 == 0 &&
+        current->sps_temporal_id_nesting_flag != 1) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
+               "sps_temporal_id_nesting_flag must be 1 if "
+               "sps_max_sub_layers_minus1 is 0.\n");
+        return AVERROR_INVALIDDATA;
     }
 
     CHECK(FUNC(profile_tier_level)(ctx, rw, &current->profile_tier_level,
