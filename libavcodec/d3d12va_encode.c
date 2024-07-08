@@ -308,9 +308,9 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
         }
 
         pic->header_size = (int)bit_len / 8;
-        pic->header_size = pic->header_size % ctx->req.CompressedBitstreamBufferAccessAlignment ?
-                           FFALIGN(pic->header_size, ctx->req.CompressedBitstreamBufferAccessAlignment) :
-                           pic->header_size;
+        pic->aligned_header_size = pic->header_size % ctx->req.CompressedBitstreamBufferAccessAlignment ?
+                                   FFALIGN(pic->header_size, ctx->req.CompressedBitstreamBufferAccessAlignment) :
+                                   pic->header_size;
 
         hr = ID3D12Resource_Map(pic->output_buffer, 0, NULL, (void **)&ptr);
         if (FAILED(hr)) {
@@ -318,7 +318,7 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
             goto fail;
         }
 
-        memcpy(ptr, data, pic->header_size);
+        memcpy(ptr, data, pic->aligned_header_size);
         ID3D12Resource_Unmap(pic->output_buffer, 0, NULL);
     }
 
@@ -344,10 +344,10 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
 
     input_args.PictureControlDesc.PictureControlCodecData = pic->pic_ctl;
     input_args.PictureControlDesc.ReferenceFrames         = d3d12_refs;
-    input_args.CurrentFrameBitstreamMetadataSize          = pic->header_size;
+    input_args.CurrentFrameBitstreamMetadataSize          = pic->aligned_header_size;
 
     output_args.Bitstream.pBuffer                                    = pic->output_buffer;
-    output_args.Bitstream.FrameStartOffset                           = pic->header_size;
+    output_args.Bitstream.FrameStartOffset                           = pic->aligned_header_size;
     output_args.ReconstructedPicture.pReconstructedPicture           = pic->recon_surface->texture;
     output_args.ReconstructedPicture.ReconstructedPictureSubresource = 0;
     output_args.EncoderOutputMetadata.pBuffer                        = pic->encoded_metadata;
@@ -662,6 +662,12 @@ static int d3d12va_encode_get_coded_data(AVCodecContext *avctx,
     if (err < 0)
         goto end;
     ptr = pkt->data;
+
+    memcpy(ptr, mapped_data, pic->header_size);
+
+    ptr += pic->header_size;
+    mapped_data += pic->aligned_header_size;
+    total_size -= pic->header_size;
 
     memcpy(ptr, mapped_data, total_size);
 

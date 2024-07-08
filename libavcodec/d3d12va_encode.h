@@ -43,6 +43,7 @@ typedef struct D3D12VAEncodePicture {
     FFHWBaseEncodePicture base;
 
     int             header_size;
+    int             aligned_header_size;
 
     AVD3D12VAFrame *input_surface;
     AVD3D12VAFrame *recon_surface;
