@@ -94,10 +94,9 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState *const state,
     return ret;
 }
 
-static int is_input_end(FFV1Context *s, GetBitContext *gb)
+static int is_input_end(RangeCoder *c, GetBitContext *gb, int ac)
 {
-    if (s->ac != AC_GOLOMB_RICE) {
-        RangeCoder *const c = &s->c;
+    if (ac != AC_GOLOMB_RICE) {
         if (c->overread > MAX_OVERREAD)
             return AVERROR_INVALIDDATA;
     } else {
@@ -123,6 +122,7 @@ static int decode_plane(FFV1Context *f,
                         uint8_t *src, int w, int h, int stride, int plane_index,
                          int pixel_stride)
 {
+    const int ac = f->ac;
     int x, y;
     int16_t *sample[2];
     sample[0] = sc->sample_buffer + 3;
@@ -142,13 +142,13 @@ static int decode_plane(FFV1Context *f,
         sample[0][w]  = sample[0][w - 1];
 
         if (s->avctx->bits_per_raw_sample <= 8) {
-            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, 8);
+            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, 8, ac);
             if (ret < 0)
                 return ret;
             for (x = 0; x < w; x++)
                 src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
-            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, s->avctx->bits_per_raw_sample);
+            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, s->avctx->bits_per_raw_sample, ac);
             if (ret < 0)
                 return ret;
             if (s->packed_at_lsb) {
@@ -197,7 +197,7 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
     av_assert0 (   (unsigned)sc->slice_x + (uint64_t)sc->slice_width  <= f->width
                 && (unsigned)sc->slice_y + (uint64_t)sc->slice_height <= f->height);
 
-    if (fs->ac == AC_GOLOMB_RICE && sc->slice_width >= (1<<23))
+    if (f->ac == AC_GOLOMB_RICE && sc->slice_width >= (1<<23))
         return AVERROR_INVALIDDATA;
 
     for (unsigned i = 0; i < f->plane_count; i++) {
@@ -284,7 +284,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
             pdst->state = NULL;
             pdst->vlc_state = NULL;
 
-            if (fssrc->ac) {
+            if (f->ac) {
                 pdst->state = av_malloc_array(CONTEXT_SIZE,  psrc->context_count);
                 memcpy(pdst->state, psrc->state, CONTEXT_SIZE * psrc->context_count);
             } else {
@@ -319,7 +319,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     x      = sc->slice_x;
     y      = sc->slice_y;
 
-    if (fs->ac == AC_GOLOMB_RICE) {
+    if (f->ac == AC_GOLOMB_RICE) {
         if (f->version == 3 && f->micro_version > 1 || f->version > 3)
             get_rac(&fs->c, (uint8_t[]) { 129 });
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
@@ -358,7 +358,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
                                p->data[3] + ps * x + y * p->linesize[3] };
         decode_rgb_frame(f, fs, sc, &gb, planes, width, height, p->linesize);
     }
-    if (fs->ac != AC_GOLOMB_RICE && f->version > 2) {
+    if (f->ac != AC_GOLOMB_RICE && f->version > 2) {
         int v;
         get_rac(&fs->c, (uint8_t[]) { 129 });
         v = fs->c.bytestream_end - fs->c.bytestream - 2 - 5*f->ec;
@@ -791,7 +791,6 @@ static int read_header(FFV1Context *f)
     for (int j = 0; j < f->slice_count; j++) {
         FFV1Context *fs = f->slice_context[j];
         FFV1SliceContext *sc = &f->slices[j];
-        fs->ac            = f->ac;
         fs->packed_at_lsb = f->packed_at_lsb;
 
         fs->slice_damaged = 0;

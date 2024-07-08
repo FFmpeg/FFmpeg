@@ -275,6 +275,7 @@ static int encode_plane(FFV1Context *f,
                          int stride, int plane_index, int pixel_stride)
 {
     int x, y, i, ret;
+    const int ac = f->ac;
     const int ring_size = s->context_model ? 3 : 2;
     int16_t *sample[3];
     sc->run_index = 0;
@@ -290,7 +291,7 @@ static int encode_plane(FFV1Context *f,
         if (s->bits_per_raw_sample <= 8) {
             for (x = 0; x < w; x++)
                 sample[0][x] = src[x * pixel_stride + stride * y];
-            if((ret = encode_line(f, s, sc, w, sample, plane_index, 8)) < 0)
+            if((ret = encode_line(f, s, sc, w, sample, plane_index, 8, ac)) < 0)
                 return ret;
         } else {
             if (s->packed_at_lsb) {
@@ -302,7 +303,7 @@ static int encode_plane(FFV1Context *f,
                     sample[0][x] = ((uint16_t*)(src + stride*y))[x] >> (16 - s->bits_per_raw_sample);
                 }
             }
-            if((ret = encode_line(f, s, sc, w, sample, plane_index, s->bits_per_raw_sample)) < 0)
+            if((ret = encode_line(f, s, sc, w, sample, plane_index, s->bits_per_raw_sample, ac)) < 0)
                 return ret;
         }
     }
@@ -1053,7 +1054,7 @@ retry:
     if (f->version > 2) {
         encode_slice_header(f, fs, sc);
     }
-    if (fs->ac == AC_GOLOMB_RICE) {
+    if (f->ac == AC_GOLOMB_RICE) {
         fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c, f->version > 2) : 0;
         init_put_bits(&sc->pb,
                       fs->c.bytestream_start + fs->ac_byte_count,
@@ -1085,7 +1086,7 @@ retry:
 
     if (ret < 0) {
         av_assert0(sc->slice_coding_mode == 0);
-        if (fs->version < 4 || !fs->ac) {
+        if (fs->version < 4 || !f->ac) {
             av_log(c, AV_LOG_ERROR, "Buffer too small\n");
             return ret;
         }
@@ -1210,7 +1211,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         FFV1SliceContext *sc = &f->slices[i];
         int bytes;
 
-        if (fs->ac != AC_GOLOMB_RICE) {
+        if (f->ac != AC_GOLOMB_RICE) {
             bytes = ff_rac_terminate(&fs->c, 1);
         } else {
             flush_put_bits(&sc->pb); // FIXME: nicer padding

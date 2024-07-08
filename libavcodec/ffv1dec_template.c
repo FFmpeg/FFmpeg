@@ -26,7 +26,8 @@ static av_always_inline int
 RENAME(decode_line)(FFV1Context *f,
                     FFV1Context *s, FFV1SliceContext *sc,
                     GetBitContext *gb,
-                    int w, TYPE *sample[2], int plane_index, int bits)
+                    int w, TYPE *sample[2], int plane_index, int bits,
+                    int ac)
 {
     PlaneContext *const p = &s->plane[plane_index];
     RangeCoder *const c   = &s->c;
@@ -36,7 +37,7 @@ RENAME(decode_line)(FFV1Context *f,
     int run_mode  = 0;
     int run_index = sc->run_index;
 
-    if (is_input_end(s, gb))
+    if (is_input_end(c, gb, ac))
         return AVERROR_INVALIDDATA;
 
     if (sc->slice_coding_mode == 1) {
@@ -56,7 +57,7 @@ RENAME(decode_line)(FFV1Context *f,
         int diff, context, sign;
 
         if (!(x & 1023)) {
-            if (is_input_end(s, gb))
+            if (is_input_end(c, gb, ac))
                 return AVERROR_INVALIDDATA;
         }
 
@@ -70,7 +71,7 @@ RENAME(decode_line)(FFV1Context *f,
 
         av_assert2(context < p->context_count);
 
-        if (s->ac != AC_GOLOMB_RICE) {
+        if (ac != AC_GOLOMB_RICE) {
             diff = get_symbol_inline(c, p->state[context], 1);
         } else {
             if (context == 0 && run_mode == 0)
@@ -142,6 +143,7 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f,
     int bits   = s->avctx->bits_per_raw_sample > 0 ? s->avctx->bits_per_raw_sample : 8;
     int offset = 1 << bits;
     int transparency = f->transparency;
+    int ac = f->ac;
 
     for (x = 0; x < 4; x++) {
         sample[x][0] = RENAME(sc->sample_buffer) +  x * 2      * (w + 6) + 3;
@@ -163,9 +165,9 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f,
             sample[p][1][-1]= sample[p][0][0  ];
             sample[p][0][ w]= sample[p][0][w-1];
             if (lbd && sc->slice_coding_mode == 0)
-                ret = RENAME(decode_line)(f, s, sc, gb, w, sample[p], (p + 1)/2, 9);
+                ret = RENAME(decode_line)(f, s, sc, gb, w, sample[p], (p + 1)/2, 9, ac);
             else
-                ret = RENAME(decode_line)(f, s, sc, gb, w, sample[p], (p + 1)/2, bits + (sc->slice_coding_mode != 1));
+                ret = RENAME(decode_line)(f, s, sc, gb, w, sample[p], (p + 1)/2, bits + (sc->slice_coding_mode != 1), ac);
             if (ret < 0)
                 return ret;
         }

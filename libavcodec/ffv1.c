@@ -59,7 +59,7 @@ av_cold int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs)
     for (j = 0; j < f->plane_count; j++) {
         PlaneContext *const p = &fs->plane[j];
 
-        if (fs->ac != AC_GOLOMB_RICE) {
+        if (f->ac != AC_GOLOMB_RICE) {
             if (!p->state)
                 p->state = av_malloc_array(p->context_count, CONTEXT_SIZE *
                                      sizeof(uint8_t));
@@ -78,7 +78,7 @@ av_cold int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs)
         }
     }
 
-    if (fs->ac == AC_RANGE_CUSTOM_TAB) {
+    if (f->ac == AC_RANGE_CUSTOM_TAB) {
         //FIXME only redo if state_transition changed
         for (j = 1; j < 256; j++) {
             fs->c. one_state[      j] = f->state_transition[j];
@@ -167,7 +167,7 @@ void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1Context *fs)
     for (i = 0; i < f->plane_count; i++) {
         PlaneContext *p = &fs->plane[i];
 
-        if (fs->ac != AC_GOLOMB_RICE) {
+        if (f->ac != AC_GOLOMB_RICE) {
             if (f->initial_states[p->quant_table_index]) {
                 memcpy(p->state, f->initial_states[p->quant_table_index],
                        CONTEXT_SIZE * p->context_count);

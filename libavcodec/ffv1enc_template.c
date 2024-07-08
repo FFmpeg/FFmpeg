@@ -25,7 +25,8 @@
 static av_always_inline int
 RENAME(encode_line)(FFV1Context *f,
                     FFV1Context *s, FFV1SliceContext *sc,
-                    int w, TYPE *sample[3], int plane_index, int bits)
+                    int w, TYPE *sample[3], int plane_index, int bits,
+                    int ac)
 {
     PlaneContext *const p = &s->plane[plane_index];
     RangeCoder *const c   = &s->c;
@@ -34,7 +35,7 @@ RENAME(encode_line)(FFV1Context *f,
     int run_count = 0;
     int run_mode  = 0;
 
-    if (s->ac != AC_GOLOMB_RICE) {
+    if (ac != AC_GOLOMB_RICE) {
         if (c->bytestream_end - c->bytestream < w * 35) {
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return AVERROR_INVALIDDATA;
@@ -72,7 +73,7 @@ RENAME(encode_line)(FFV1Context *f,
 
         diff = fold(diff, bits);
 
-        if (s->ac != AC_GOLOMB_RICE) {
+        if (ac != AC_GOLOMB_RICE) {
             if (s->flags & AV_CODEC_FLAG_PASS1) {
                 put_symbol_inline(c, p->state[context], diff, 1, s->rc_stat,
                                   s->rc_stat2[p->quant_table_index][context]);
@@ -134,6 +135,7 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f,
     int x, y, p, i;
     const int ring_size = s->context_model ? 3 : 2;
     TYPE *sample[4][3];
+    const int ac = f->ac;
     int lbd    = s->bits_per_raw_sample <= 8;
     int packed = !src[1];
     int bits   = s->bits_per_raw_sample > 0 ? s->bits_per_raw_sample : 8;
@@ -196,9 +198,9 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f,
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
             if (lbd && sc->slice_coding_mode == 0)
-                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, 9);
+                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, 9, ac);
             else
-                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, bits + (sc->slice_coding_mode != 1));
+                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, bits + (sc->slice_coding_mode != 1), ac);
             if (ret < 0)
                 return ret;
         }
