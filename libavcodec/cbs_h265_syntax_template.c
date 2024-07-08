@@ -806,7 +806,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     if (current->nal_unit_header.nuh_layer_id == 0)
-    u(3, sps_max_sub_layers_minus1, 0, vps->vps_max_sub_layers_minus1);
+        u(3, sps_max_sub_layers_minus1, 0, vps->vps_max_sub_layers_minus1);
     else {
         u(3, sps_ext_or_max_sub_layers_minus1, 0, HEVC_MAX_SUB_LAYERS);
         infer(sps_max_sub_layers_minus1, current->sps_ext_or_max_sub_layers_minus1 == HEVC_MAX_SUB_LAYERS
@@ -816,25 +816,25 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     multi_layer_ext_sps_flag = current->nal_unit_header.nuh_layer_id &&
                                current->sps_ext_or_max_sub_layers_minus1 == HEVC_MAX_SUB_LAYERS;
     if (!multi_layer_ext_sps_flag) {
-    flag(sps_temporal_id_nesting_flag);
+        flag(sps_temporal_id_nesting_flag);
 
-    if (vps->vps_temporal_id_nesting_flag &&
-        !current->sps_temporal_id_nesting_flag) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
-               "sps_temporal_id_nesting_flag must be 1 if "
-               "vps_temporal_id_nesting_flag is 1.\n");
-        return AVERROR_INVALIDDATA;
-    }
-    if (current->sps_max_sub_layers_minus1 == 0 &&
-        current->sps_temporal_id_nesting_flag != 1) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
-               "sps_temporal_id_nesting_flag must be 1 if "
-               "sps_max_sub_layers_minus1 is 0.\n");
-        return AVERROR_INVALIDDATA;
-    }
+        if (vps->vps_temporal_id_nesting_flag &&
+            !current->sps_temporal_id_nesting_flag) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
+                   "sps_temporal_id_nesting_flag must be 1 if "
+                   "vps_temporal_id_nesting_flag is 1.\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (current->sps_max_sub_layers_minus1 == 0 &&
+            current->sps_temporal_id_nesting_flag != 1) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid stream: "
+                   "sps_temporal_id_nesting_flag must be 1 if "
+                   "sps_max_sub_layers_minus1 is 0.\n");
+            return AVERROR_INVALIDDATA;
+        }
 
-    CHECK(FUNC(profile_tier_level)(ctx, rw, &current->profile_tier_level,
-                                   1, current->sps_max_sub_layers_minus1));
+        CHECK(FUNC(profile_tier_level)(ctx, rw, &current->profile_tier_level,
+                                       1, current->sps_max_sub_layers_minus1));
     } else {
         if (current->sps_max_sub_layers_minus1 > 0)
             infer(sps_temporal_id_nesting_flag, vps->vps_temporal_id_nesting_flag);
@@ -849,56 +849,56 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         if (current->update_rep_format_flag)
             ub(8, sps_rep_format_idx);
     } else {
-    ue(chroma_format_idc, 0, 3);
-    if (current->chroma_format_idc == 3)
-        flag(separate_colour_plane_flag);
-    else
-        infer(separate_colour_plane_flag, 0);
+        ue(chroma_format_idc, 0, 3);
+        if (current->chroma_format_idc == 3)
+            flag(separate_colour_plane_flag);
+        else
+            infer(separate_colour_plane_flag, 0);
 
-    ue(pic_width_in_luma_samples,  1, HEVC_MAX_WIDTH);
-    ue(pic_height_in_luma_samples, 1, HEVC_MAX_HEIGHT);
+        ue(pic_width_in_luma_samples,  1, HEVC_MAX_WIDTH);
+        ue(pic_height_in_luma_samples, 1, HEVC_MAX_HEIGHT);
 
-    flag(conformance_window_flag);
-    if (current->conformance_window_flag) {
-        ue(conf_win_left_offset,   0, current->pic_width_in_luma_samples);
-        ue(conf_win_right_offset,  0, current->pic_width_in_luma_samples);
-        ue(conf_win_top_offset,    0, current->pic_height_in_luma_samples);
-        ue(conf_win_bottom_offset, 0, current->pic_height_in_luma_samples);
-    } else {
-        infer(conf_win_left_offset,   0);
-        infer(conf_win_right_offset,  0);
-        infer(conf_win_top_offset,    0);
-        infer(conf_win_bottom_offset, 0);
-    }
+        flag(conformance_window_flag);
+        if (current->conformance_window_flag) {
+            ue(conf_win_left_offset,   0, current->pic_width_in_luma_samples);
+            ue(conf_win_right_offset,  0, current->pic_width_in_luma_samples);
+            ue(conf_win_top_offset,    0, current->pic_height_in_luma_samples);
+            ue(conf_win_bottom_offset, 0, current->pic_height_in_luma_samples);
+        } else {
+            infer(conf_win_left_offset,   0);
+            infer(conf_win_right_offset,  0);
+            infer(conf_win_top_offset,    0);
+            infer(conf_win_bottom_offset, 0);
+        }
 
-    ue(bit_depth_luma_minus8,   0, 8);
-    ue(bit_depth_chroma_minus8, 0, 8);
+        ue(bit_depth_luma_minus8,   0, 8);
+        ue(bit_depth_chroma_minus8, 0, 8);
     }
 
     ue(log2_max_pic_order_cnt_lsb_minus4, 0, 12);
 
     if (!multi_layer_ext_sps_flag) {
-    flag(sps_sub_layer_ordering_info_present_flag);
-    for (i = (current->sps_sub_layer_ordering_info_present_flag ?
-              0 : current->sps_max_sub_layers_minus1);
-         i <= current->sps_max_sub_layers_minus1; i++) {
-        ues(sps_max_dec_pic_buffering_minus1[i],
-            0, HEVC_MAX_DPB_SIZE - 1,                        1, i);
-        ues(sps_max_num_reorder_pics[i],
-            0, current->sps_max_dec_pic_buffering_minus1[i], 1, i);
-        ues(sps_max_latency_increase_plus1[i],
-            0, UINT32_MAX - 1,                               1, i);
-    }
-    if (!current->sps_sub_layer_ordering_info_present_flag) {
-        for (i = 0; i < current->sps_max_sub_layers_minus1; i++) {
-            infer(sps_max_dec_pic_buffering_minus1[i],
-                  current->sps_max_dec_pic_buffering_minus1[current->sps_max_sub_layers_minus1]);
-            infer(sps_max_num_reorder_pics[i],
-                  current->sps_max_num_reorder_pics[current->sps_max_sub_layers_minus1]);
-            infer(sps_max_latency_increase_plus1[i],
-                  current->sps_max_latency_increase_plus1[current->sps_max_sub_layers_minus1]);
+        flag(sps_sub_layer_ordering_info_present_flag);
+        for (i = (current->sps_sub_layer_ordering_info_present_flag ?
+                  0 : current->sps_max_sub_layers_minus1);
+             i <= current->sps_max_sub_layers_minus1; i++) {
+            ues(sps_max_dec_pic_buffering_minus1[i],
+                0, HEVC_MAX_DPB_SIZE - 1,                        1, i);
+            ues(sps_max_num_reorder_pics[i],
+                0, current->sps_max_dec_pic_buffering_minus1[i], 1, i);
+            ues(sps_max_latency_increase_plus1[i],
+                0, UINT32_MAX - 1,                               1, i);
         }
-    }
+        if (!current->sps_sub_layer_ordering_info_present_flag) {
+            for (i = 0; i < current->sps_max_sub_layers_minus1; i++) {
+                infer(sps_max_dec_pic_buffering_minus1[i],
+                      current->sps_max_dec_pic_buffering_minus1[current->sps_max_sub_layers_minus1]);
+                infer(sps_max_num_reorder_pics[i],
+                      current->sps_max_num_reorder_pics[current->sps_max_sub_layers_minus1]);
+                infer(sps_max_latency_increase_plus1[i],
+                      current->sps_max_latency_increase_plus1[current->sps_max_sub_layers_minus1]);
+            }
+        }
     }
 
     ue(log2_min_luma_coding_block_size_minus3,   0, 3);
@@ -937,9 +937,9 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         if (current->sps_infer_scaling_list_flag)
             ub(6, sps_scaling_list_ref_layer_id);
         else {
-        flag(sps_scaling_list_data_present_flag);
-        if (current->sps_scaling_list_data_present_flag)
-            CHECK(FUNC(scaling_list_data)(ctx, rw, &current->scaling_list));
+            flag(sps_scaling_list_data_present_flag);
+            if (current->sps_scaling_list_data_present_flag)
+                CHECK(FUNC(scaling_list_data)(ctx, rw, &current->scaling_list));
         }
     } else {
         infer(sps_scaling_list_data_present_flag, 0);
