@@ -20,6 +20,8 @@
 
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "mem.h"
 #include "thread.h"
 
@@ -49,6 +51,7 @@ typedef struct ThreadInfo {
 struct AVExecutor {
     AVTaskCallbacks cb;
     int thread_count;
+    bool recursive;
 
     ThreadInfo *threads;
     uint8_t *local_contexts;
@@ -207,8 +210,12 @@ void av_executor_execute(AVExecutor *e, AVTask *t)
     }
 
     if (!e->thread_count || !HAVE_THREADS) {
+        if (e->recursive)
+            return;
+        e->recursive = true;
         // We are running in a single-threaded environment, so we must handle all tasks ourselves
         while (run_one_task(e, e->local_contexts))
             /* nothing */;
+        e->recursive = false;
     }
 }
