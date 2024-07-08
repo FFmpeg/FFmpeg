@@ -63,7 +63,6 @@ typedef struct PlaneContext {
     int context_count;
     uint8_t (*state)[CONTEXT_SIZE];
     VlcState *vlc_state;
-    uint8_t interlace_bit_state[2];
 } PlaneContext;
 
 #define MAX_SLICES 1024

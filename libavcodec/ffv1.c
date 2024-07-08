@@ -169,9 +169,6 @@ void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1Context *fs)
     for (i = 0; i < f->plane_count; i++) {
         PlaneContext *p = &fs->plane[i];
 
-        p->interlace_bit_state[0] = 128;
-        p->interlace_bit_state[1] = 128;
-
         if (fs->ac != AC_GOLOMB_RICE) {
             if (f->initial_states[p->quant_table_index]) {
                 memcpy(p->state, f->initial_states[p->quant_table_index],
