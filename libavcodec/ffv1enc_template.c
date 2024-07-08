@@ -46,7 +46,7 @@ RENAME(encode_line)(FFV1Context *f,
         }
     }
 
-    if (s->slice_coding_mode == 1) {
+    if (sc->slice_coding_mode == 1) {
         for (x = 0; x < w; x++) {
             int i;
             int v = sample[0][x];
@@ -178,10 +178,10 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f,
                 r = *((const uint16_t *)(src[2] + x*2 + stride[2]*y));
             }
 
-            if (s->slice_coding_mode != 1) {
+            if (sc->slice_coding_mode != 1) {
                 b -= g;
                 r -= g;
-                g += (b * s->slice_rct_by_coef + r * s->slice_rct_ry_coef) >> 2;
+                g += (b * sc->slice_rct_by_coef + r * sc->slice_rct_ry_coef) >> 2;
                 b += offset;
                 r += offset;
             }
@@ -195,10 +195,10 @@ static int RENAME(encode_rgb_frame)(FFV1Context *f,
             int ret;
             sample[p][0][-1] = sample[p][1][0  ];
             sample[p][1][ w] = sample[p][1][w-1];
-            if (lbd && s->slice_coding_mode == 0)
+            if (lbd && sc->slice_coding_mode == 0)
                 ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, 9);
             else
-                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, bits + (s->slice_coding_mode != 1));
+                ret = RENAME(encode_line)(f, s, sc, w, sample[p], (p + 1) / 2, bits + (sc->slice_coding_mode != 1));
             if (ret < 0)
                 return ret;
         }

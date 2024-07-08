@@ -39,7 +39,7 @@ RENAME(decode_line)(FFV1Context *f,
     if (is_input_end(s, gb))
         return AVERROR_INVALIDDATA;
 
-    if (s->slice_coding_mode == 1) {
+    if (sc->slice_coding_mode == 1) {
         int i;
         for (x = 0; x < w; x++) {
             int v = 0;
@@ -162,10 +162,10 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f,
 
             sample[p][1][-1]= sample[p][0][0  ];
             sample[p][0][ w]= sample[p][0][w-1];
-            if (lbd && s->slice_coding_mode == 0)
+            if (lbd && sc->slice_coding_mode == 0)
                 ret = RENAME(decode_line)(f, s, sc, gb, w, sample[p], (p + 1)/2, 9);
             else
-                ret = RENAME(decode_line)(f, s, sc, gb, w, sample[p], (p + 1)/2, bits + (s->slice_coding_mode != 1));
+                ret = RENAME(decode_line)(f, s, sc, gb, w, sample[p], (p + 1)/2, bits + (sc->slice_coding_mode != 1));
             if (ret < 0)
                 return ret;
         }
@@ -175,10 +175,10 @@ static int RENAME(decode_rgb_frame)(FFV1Context *f,
             int r = sample[2][1][x];
             int a = sample[3][1][x];
 
-            if (s->slice_coding_mode != 1) {
+            if (sc->slice_coding_mode != 1) {
                 b -= offset;
                 r -= offset;
-                g -= (b * s->slice_rct_by_coef + r * s->slice_rct_ry_coef) >> 2;
+                g -= (b * sc->slice_rct_by_coef + r * sc->slice_rct_ry_coef) >> 2;
                 b += g;
                 r += g;
             }

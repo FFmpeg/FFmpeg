@@ -926,13 +926,13 @@ static void encode_slice_header(FFV1Context *f, FFV1Context *fs,
     put_symbol(c, state, f->cur_enc_frame->sample_aspect_ratio.num, 0);
     put_symbol(c, state, f->cur_enc_frame->sample_aspect_ratio.den, 0);
     if (f->version > 3) {
-        put_rac(c, state, fs->slice_coding_mode == 1);
-        if (fs->slice_coding_mode == 1)
+        put_rac(c, state, sc->slice_coding_mode == 1);
+        if (sc->slice_coding_mode == 1)
             ff_ffv1_clear_slice_state(f, fs);
-        put_symbol(c, state, fs->slice_coding_mode, 0);
-        if (fs->slice_coding_mode != 1) {
-            put_symbol(c, state, fs->slice_rct_by_coef, 0);
-            put_symbol(c, state, fs->slice_rct_ry_coef, 0);
+        put_symbol(c, state, sc->slice_coding_mode, 0);
+        if (sc->slice_coding_mode != 1) {
+            put_symbol(c, state, sc->slice_rct_by_coef, 0);
+            put_symbol(c, state, sc->slice_rct_ry_coef, 0);
         }
     }
 }
@@ -1016,8 +1016,8 @@ static void choose_rct_params(FFV1Context *fs, FFV1SliceContext *sc,
             best = i;
     }
 
-    fs->slice_rct_by_coef = rct_y_coeff[best][1];
-    fs->slice_rct_ry_coef = rct_y_coeff[best][0];
+    sc->slice_rct_by_coef = rct_y_coeff[best][1];
+    sc->slice_rct_ry_coef = rct_y_coeff[best][0];
 }
 
 static int encode_slice(AVCodecContext *c, void *arg)
@@ -1039,12 +1039,12 @@ static int encode_slice(AVCodecContext *c, void *arg)
                                 p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL,
                                 p->data[3] ? p->data[3] + ps*x + y*p->linesize[3] : NULL};
 
-    fs->slice_coding_mode = 0;
+    sc->slice_coding_mode = 0;
     if (f->version > 3) {
         choose_rct_params(fs, sc, planes, p->linesize, width, height);
     } else {
-        fs->slice_rct_by_coef = 1;
-        fs->slice_rct_ry_coef = 1;
+        sc->slice_rct_by_coef = 1;
+        sc->slice_rct_ry_coef = 1;
     }
 
 retry:
@@ -1084,13 +1084,13 @@ retry:
     }
 
     if (ret < 0) {
-        av_assert0(fs->slice_coding_mode == 0);
+        av_assert0(sc->slice_coding_mode == 0);
         if (fs->version < 4 || !fs->ac) {
             av_log(c, AV_LOG_ERROR, "Buffer too small\n");
             return ret;
         }
         av_log(c, AV_LOG_DEBUG, "Coding slice as PCM\n");
-        fs->slice_coding_mode = 1;
+        sc->slice_coding_mode = 1;
         fs->c = c_bak;
         goto retry;
     }

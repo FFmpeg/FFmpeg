@@ -77,6 +77,9 @@ typedef struct FFV1SliceContext {
     int slice_y;
 
     int run_index;
+    int slice_coding_mode;
+    int slice_rct_by_coef;
+    int slice_rct_ry_coef;
 
     PutBitContext pb;
 } FFV1SliceContext;
@@ -130,9 +133,6 @@ typedef struct FFV1Context {
     int num_v_slices;
     int num_h_slices;
     int slice_reset_contexts;
-    int slice_coding_mode;
-    int slice_rct_by_coef;
-    int slice_rct_ry_coef;
 
     FFV1SliceContext *slices;
 } FFV1Context;
