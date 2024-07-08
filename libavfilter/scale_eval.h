@@ -41,7 +41,7 @@ int ff_scale_eval_dimensions(void *ctx,
  * force_original_aspect_ratio is set. force_divisible_by is used only when
  * force_original_aspect_ratio is set and must be at least 1.
  *
- * Returns 0.
+ * Returns negative error code on error or non negative on success
  */
 int ff_scale_adjust_dimensions(AVFilterLink *inlink,
     int *ret_w, int *ret_h,
