@@ -189,37 +189,14 @@ int ff_vk_load_props(FFVulkanContext *s)
 
 static int vk_qf_get_index(FFVulkanContext *s, VkQueueFlagBits dev_family, int *nb)
 {
-    int ret, num;
-
-    switch (dev_family) {
-    case VK_QUEUE_GRAPHICS_BIT:
-        ret = s->hwctx->queue_family_index;
-        num = s->hwctx->nb_graphics_queues;
-        break;
-    case VK_QUEUE_COMPUTE_BIT:
-        ret = s->hwctx->queue_family_comp_index;
-        num = s->hwctx->nb_comp_queues;
-        break;
-    case VK_QUEUE_TRANSFER_BIT:
-        ret = s->hwctx->queue_family_tx_index;
-        num = s->hwctx->nb_tx_queues;
-        break;
-    case VK_QUEUE_VIDEO_ENCODE_BIT_KHR:
-        ret = s->hwctx->queue_family_encode_index;
-        num = s->hwctx->nb_encode_queues;
-        break;
-    case VK_QUEUE_VIDEO_DECODE_BIT_KHR:
-        ret = s->hwctx->queue_family_decode_index;
-        num = s->hwctx->nb_decode_queues;
-        break;
-    default:
-        av_assert0(0); /* Should never happen */
+    for (int i = 0; i < s->hwctx->nb_qf; i++) {
+        if (s->hwctx->qf[i].flags & dev_family) {
+            *nb = s->hwctx->qf[i].num;
+            return s->hwctx->qf[i].idx;
+        }
     }
 
-    if (nb)
-        *nb = num;
-
-    return ret;
+    av_assert0(0); /* Should never happen */
 }
 
 int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
@@ -229,25 +206,20 @@ int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
     if (!s->nb_qfs) {
         s->nb_qfs = 0;
 
-        /* Simply fills in all unique queues into s->qfs */
-        if (s->hwctx->queue_family_index >= 0)
-            s->qfs[s->nb_qfs++] = s->hwctx->queue_family_index;
-        if (!s->nb_qfs || s->qfs[0] != s->hwctx->queue_family_tx_index)
-            s->qfs[s->nb_qfs++] = s->hwctx->queue_family_tx_index;
-        if (!s->nb_qfs || (s->qfs[0] != s->hwctx->queue_family_comp_index &&
-                           s->qfs[1] != s->hwctx->queue_family_comp_index))
-            s->qfs[s->nb_qfs++] = s->hwctx->queue_family_comp_index;
-        if (s->hwctx->queue_family_decode_index >= 0 &&
-             (s->qfs[0] != s->hwctx->queue_family_decode_index &&
-              s->qfs[1] != s->hwctx->queue_family_decode_index &&
-              s->qfs[2] != s->hwctx->queue_family_decode_index))
-            s->qfs[s->nb_qfs++] = s->hwctx->queue_family_decode_index;
-        if (s->hwctx->queue_family_encode_index >= 0 &&
-             (s->qfs[0] != s->hwctx->queue_family_encode_index &&
-              s->qfs[1] != s->hwctx->queue_family_encode_index &&
-              s->qfs[2] != s->hwctx->queue_family_encode_index &&
-              s->qfs[3] != s->hwctx->queue_family_encode_index))
-            s->qfs[s->nb_qfs++] = s->hwctx->queue_family_encode_index;
+        for (int i = 0; i < s->hwctx->nb_qf; i++) {
+            /* Skip duplicates */
+            int skip = 0;
+            for (int j = 0; j < s->nb_qfs; j++) {
+                if (s->qfs[j] == s->hwctx->qf[i].idx) {
+                    skip = 1;
+                    break;
+                }
+            }
+            if (skip)
+                continue;
+
+            s->qfs[s->nb_qfs++] = s->hwctx->qf[i].idx;
+        }
     }
 
     return (qf->queue_family = vk_qf_get_index(s, dev_family, &qf->nb_queues));

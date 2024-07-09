@@ -258,7 +258,7 @@ typedef struct FFVulkanContext {
     AVHWFramesContext     *frames;
     AVVulkanFramesContext *hwfc;
 
-    uint32_t               qfs[5];
+    uint32_t               qfs[64];
     int                    nb_qfs;
 
     /* Properties */
