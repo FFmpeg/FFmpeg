@@ -441,32 +441,32 @@ static int iamf_write_codec_config(const IAMFContext *iamf,
         avio_write(dyn_bc, codec_config->extradata, codec_config->extradata_size);
         break;
     case AV_CODEC_ID_PCM_S16LE:
-        avio_w8(dyn_bc, 0);
+        avio_w8(dyn_bc, 1);
         avio_w8(dyn_bc, 16);
         avio_wb32(dyn_bc, codec_config->sample_rate);
         break;
     case AV_CODEC_ID_PCM_S24LE:
-        avio_w8(dyn_bc, 0);
+        avio_w8(dyn_bc, 1);
         avio_w8(dyn_bc, 24);
         avio_wb32(dyn_bc, codec_config->sample_rate);
         break;
     case AV_CODEC_ID_PCM_S32LE:
-        avio_w8(dyn_bc, 0);
+        avio_w8(dyn_bc, 1);
         avio_w8(dyn_bc, 32);
         avio_wb32(dyn_bc, codec_config->sample_rate);
         break;
     case AV_CODEC_ID_PCM_S16BE:
-        avio_w8(dyn_bc, 1);
+        avio_w8(dyn_bc, 0);
         avio_w8(dyn_bc, 16);
         avio_wb32(dyn_bc, codec_config->sample_rate);
         break;
     case AV_CODEC_ID_PCM_S24BE:
-        avio_w8(dyn_bc, 1);
+        avio_w8(dyn_bc, 0);
         avio_w8(dyn_bc, 24);
         avio_wb32(dyn_bc, codec_config->sample_rate);
         break;
     case AV_CODEC_ID_PCM_S32BE:
-        avio_w8(dyn_bc, 1);
+        avio_w8(dyn_bc, 0);
         avio_w8(dyn_bc, 32);
         avio_wb32(dyn_bc, codec_config->sample_rate);
         break;
