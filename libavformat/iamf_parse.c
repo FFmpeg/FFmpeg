@@ -683,7 +683,7 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
         substream->codecpar->codec_id   = codec_config->codec_id;
         substream->codecpar->frame_size = codec_config->nb_samples;
         substream->codecpar->sample_rate = codec_config->sample_rate;
-        substream->codecpar->seek_preroll = codec_config->seek_preroll;
+        substream->codecpar->seek_preroll = -codec_config->seek_preroll * codec_config->nb_samples;
 
         switch(substream->codecpar->codec_id) {
         case AV_CODEC_ID_AAC:

@@ -72,6 +72,34 @@ static int update_extradata(IAMFCodecConfig *codec_config)
     return 0;
 }
 
+static int populate_audio_roll_distance(IAMFCodecConfig *codec_config)
+{
+    switch (codec_config->codec_id) {
+    case AV_CODEC_ID_OPUS:
+        if (!codec_config->nb_samples)
+            return AVERROR(EINVAL);
+        // ceil(3840 / nb_samples)
+        codec_config->seek_preroll = -(1 + ((3840 - 1) / codec_config->nb_samples));
+        break;
+    case AV_CODEC_ID_AAC:
+        codec_config->seek_preroll = -1;
+        break;
+    case AV_CODEC_ID_FLAC:
+    case AV_CODEC_ID_PCM_S16BE:
+    case AV_CODEC_ID_PCM_S24BE:
+    case AV_CODEC_ID_PCM_S32BE:
+    case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S24LE:
+    case AV_CODEC_ID_PCM_S32LE:
+        codec_config->seek_preroll = 0;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static int fill_codec_config(IAMFContext *iamf, const AVStreamGroup *stg,
                              IAMFCodecConfig *codec_config)
 {
@@ -83,7 +111,7 @@ static int fill_codec_config(IAMFContext *iamf, const AVStreamGroup *stg,
     codec_config->sample_rate = st->codecpar->sample_rate;
     codec_config->codec_tag = st->codecpar->codec_tag;
     codec_config->nb_samples = st->codecpar->frame_size;
-    codec_config->seek_preroll = st->codecpar->seek_preroll;
+    populate_audio_roll_distance(codec_config);
     if (st->codecpar->extradata_size) {
         codec_config->extradata = av_memdup(st->codecpar->extradata, st->codecpar->extradata_size);
         if (!codec_config->extradata)
