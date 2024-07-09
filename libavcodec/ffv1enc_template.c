@@ -29,7 +29,7 @@ RENAME(encode_line)(FFV1Context *f,
                     int ac)
 {
     PlaneContext *const p = &sc->plane[plane_index];
-    RangeCoder *const c   = &s->c;
+    RangeCoder *const c   = &sc->c;
     int x;
     int run_index = sc->run_index;
     int run_count = 0;

@@ -349,7 +349,7 @@ static void write_header(FFV1Context *f)
 {
     uint8_t state[CONTEXT_SIZE];
     int i, j;
-    RangeCoder *const c = &f->slice_context[0]->c;
+    RangeCoder *const c = &f->slices[0].c;
 
     memset(state, 128, sizeof(state));
 
@@ -394,7 +394,7 @@ static void write_header(FFV1Context *f)
 
 static int write_extradata(FFV1Context *f)
 {
-    RangeCoder *const c = &f->c;
+    RangeCoder c;
     uint8_t state[CONTEXT_SIZE];
     int i, j, k;
     uint8_t state2[32][CONTEXT_SIZE];
@@ -408,56 +408,56 @@ static int write_extradata(FFV1Context *f)
     f->avctx->extradata = av_malloc(f->avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!f->avctx->extradata)
         return AVERROR(ENOMEM);
-    ff_init_range_encoder(c, f->avctx->extradata, f->avctx->extradata_size);
-    ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
+    ff_init_range_encoder(&c, f->avctx->extradata, f->avctx->extradata_size);
+    ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
 
-    put_symbol(c, state, f->version, 0);
+    put_symbol(&c, state, f->version, 0);
     if (f->version > 2) {
         if (f->version == 3) {
             f->micro_version = 4;
         } else if (f->version == 4)
             f->micro_version = 2;
-        put_symbol(c, state, f->micro_version, 0);
+        put_symbol(&c, state, f->micro_version, 0);
     }
 
-    put_symbol(c, state, f->ac, 0);
+    put_symbol(&c, state, f->ac, 0);
     if (f->ac == AC_RANGE_CUSTOM_TAB)
         for (i = 1; i < 256; i++)
-            put_symbol(c, state, f->state_transition[i] - c->one_state[i], 1);
+            put_symbol(&c, state, f->state_transition[i] - c.one_state[i], 1);
 
-    put_symbol(c, state, f->colorspace, 0); // YUV cs type
-    put_symbol(c, state, f->bits_per_raw_sample, 0);
-    put_rac(c, state, f->chroma_planes);
-    put_symbol(c, state, f->chroma_h_shift, 0);
-    put_symbol(c, state, f->chroma_v_shift, 0);
-    put_rac(c, state, f->transparency);
-    put_symbol(c, state, f->num_h_slices - 1, 0);
-    put_symbol(c, state, f->num_v_slices - 1, 0);
+    put_symbol(&c, state, f->colorspace, 0); // YUV cs type
+    put_symbol(&c, state, f->bits_per_raw_sample, 0);
+    put_rac(&c, state, f->chroma_planes);
+    put_symbol(&c, state, f->chroma_h_shift, 0);
+    put_symbol(&c, state, f->chroma_v_shift, 0);
+    put_rac(&c, state, f->transparency);
+    put_symbol(&c, state, f->num_h_slices - 1, 0);
+    put_symbol(&c, state, f->num_v_slices - 1, 0);
 
-    put_symbol(c, state, f->quant_table_count, 0);
+    put_symbol(&c, state, f->quant_table_count, 0);
     for (i = 0; i < f->quant_table_count; i++)
-        write_quant_tables(c, f->quant_tables[i]);
+        write_quant_tables(&c, f->quant_tables[i]);
 
     for (i = 0; i < f->quant_table_count; i++) {
         if (contains_non_128(f->initial_states[i], f->context_count[i])) {
-            put_rac(c, state, 1);
+            put_rac(&c, state, 1);
             for (j = 0; j < f->context_count[i]; j++)
                 for (k = 0; k < CONTEXT_SIZE; k++) {
                     int pred = j ? f->initial_states[i][j - 1][k] : 128;
-                    put_symbol(c, state2[k],
+                    put_symbol(&c, state2[k],
                                (int8_t)(f->initial_states[i][j][k] - pred), 1);
                 }
         } else {
-            put_rac(c, state, 0);
+            put_rac(&c, state, 0);
         }
     }
 
     if (f->version > 2) {
-        put_symbol(c, state, f->ec, 0);
-        put_symbol(c, state, f->intra = (f->avctx->gop_size < 2), 0);
+        put_symbol(&c, state, f->ec, 0);
+        put_symbol(&c, state, f->intra = (f->avctx->gop_size < 2), 0);
     }
 
-    f->avctx->extradata_size = ff_rac_terminate(c, 0);
+    f->avctx->extradata_size = ff_rac_terminate(&c, 0);
     v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
     AV_WL32(f->avctx->extradata + f->avctx->extradata_size, v);
     f->avctx->extradata_size += 4;
@@ -883,6 +883,8 @@ slices_ok:
             p->quant_table_index = s->context_model;
             p->context_count     = s->context_count[p->quant_table_index];
         }
+
+        ff_build_rac_states(&s->slices[j].c, 0.05 * (1LL << 32), 256 - 8);
     }
 
     if ((ret = ff_ffv1_init_slices_state(s)) < 0)
@@ -910,7 +912,7 @@ slices_ok:
 static void encode_slice_header(FFV1Context *f, FFV1Context *fs,
                                 FFV1SliceContext *sc)
 {
-    RangeCoder *c = &fs->c;
+    RangeCoder *c = &sc->c;
     uint8_t state[CONTEXT_SIZE];
     int j;
     memset(state, 128, sizeof(state));
@@ -1037,7 +1039,7 @@ static int encode_slice(AVCodecContext *c, void *arg)
     const AVFrame *const p = f->cur_enc_frame;
     const int ps     = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     int ret;
-    RangeCoder c_bak = fs->c;
+    RangeCoder c_bak = sc->c;
     const uint8_t *planes[4] = {p->data[0] + ps*x + y*p->linesize[0],
                                 p->data[1] ? p->data[1] + ps*x + y*p->linesize[1] : NULL,
                                 p->data[2] ? p->data[2] + ps*x + y*p->linesize[2] : NULL,
@@ -1058,10 +1060,10 @@ retry:
         encode_slice_header(f, fs, sc);
     }
     if (f->ac == AC_GOLOMB_RICE) {
-        fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c, f->version > 2) : 0;
+        fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&sc->c, f->version > 2) : 0;
         init_put_bits(&sc->pb,
-                      fs->c.bytestream_start + fs->ac_byte_count,
-                      fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
+                      sc->c.bytestream_start + fs->ac_byte_count,
+                      sc->c.bytestream_end - sc->c.bytestream_start - fs->ac_byte_count);
     }
 
     if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
@@ -1095,7 +1097,7 @@ retry:
         }
         av_log(c, AV_LOG_DEBUG, "Coding slice as PCM\n");
         sc->slice_coding_mode = 1;
-        fs->c = c_bak;
+        sc->c = c_bak;
         goto retry;
     }
 
@@ -1106,7 +1108,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                         const AVFrame *pict, int *got_packet)
 {
     FFV1Context *f      = avctx->priv_data;
-    RangeCoder *const c = &f->slice_context[0]->c;
+    RangeCoder *const c = &f->slices[0].c;
     uint8_t keystate    = 128;
     uint8_t *buf_p;
     int i, ret;
@@ -1194,15 +1196,15 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     for (i = 0; i < f->slice_count; i++) {
-        FFV1Context *fs = f->slice_context[i];
+        FFV1SliceContext *sc = &f->slices[i];
         uint8_t *start  = pkt->data + pkt->size * (int64_t)i / f->slice_count;
         int len         = pkt->size / f->slice_count;
         if (i) {
-            ff_init_range_encoder(&fs->c, start, len);
+            ff_init_range_encoder(&sc->c, start, len);
         } else {
-            av_assert0(fs->c.bytestream_end >= fs->c.bytestream_start + len);
-            av_assert0(fs->c.bytestream < fs->c.bytestream_start + len);
-            fs->c.bytestream_end = fs->c.bytestream_start + len;
+            av_assert0(sc->c.bytestream_end >= sc->c.bytestream_start + len);
+            av_assert0(sc->c.bytestream < sc->c.bytestream_start + len);
+            sc->c.bytestream_end = sc->c.bytestream_start + len;
         }
     }
     avctx->execute(avctx, encode_slice, &f->slice_context[0], NULL,
@@ -1215,14 +1217,14 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         int bytes;
 
         if (f->ac != AC_GOLOMB_RICE) {
-            bytes = ff_rac_terminate(&fs->c, 1);
+            bytes = ff_rac_terminate(&sc->c, 1);
         } else {
             flush_put_bits(&sc->pb); // FIXME: nicer padding
             bytes = fs->ac_byte_count + put_bytes_output(&sc->pb);
         }
         if (i > 0 || f->version > 2) {
             av_assert0(bytes < pkt->size / f->slice_count);
-            memmove(buf_p, fs->c.bytestream_start, bytes);
+            memmove(buf_p, sc->c.bytestream_start, bytes);
             av_assert0(bytes < (1 << 24));
             AV_WB24(buf_p + bytes, bytes);
             bytes += 3;

@@ -30,7 +30,7 @@ RENAME(decode_line)(FFV1Context *f,
                     int ac)
 {
     PlaneContext *const p = &sc->plane[plane_index];
-    RangeCoder *const c   = &s->c;
+    RangeCoder *const c   = &sc->c;
     const int16_t (*quant_table)[256] = f->quant_tables[p->quant_table_index];
     int x;
     int run_count = 0;

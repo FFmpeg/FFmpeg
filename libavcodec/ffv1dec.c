@@ -168,7 +168,7 @@ static int decode_plane(FFV1Context *f,
 static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
                                FFV1SliceContext *sc, AVFrame *frame)
 {
-    RangeCoder *c = &fs->c;
+    RangeCoder *c = &sc->c;
     uint8_t state[CONTEXT_SIZE];
     unsigned ps, context_count;
     int sx, sy, sw, sh;
@@ -299,7 +299,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     sc->slice_rct_ry_coef = 1;
 
     if (f->version > 2) {
-        if (ff_ffv1_init_slice_state(f, fs, sc) < 0)
+        if (ff_ffv1_init_slice_state(f, sc) < 0)
             return AVERROR(ENOMEM);
         if (decode_slice_header(f, fs, sc, p) < 0) {
             sc->slice_x = sc->slice_y = sc->slice_height = sc->slice_width = 0;
@@ -307,7 +307,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
             return AVERROR_INVALIDDATA;
         }
     }
-    if ((ret = ff_ffv1_init_slice_state(f, fs, sc)) < 0)
+    if ((ret = ff_ffv1_init_slice_state(f, sc)) < 0)
         return ret;
     if ((p->flags & AV_FRAME_FLAG_KEY) || fs->slice_reset_contexts) {
         ff_ffv1_clear_slice_state(f, sc);
@@ -322,11 +322,11 @@ static int decode_slice(AVCodecContext *c, void *arg)
 
     if (f->ac == AC_GOLOMB_RICE) {
         if (f->version == 3 && f->micro_version > 1 || f->version > 3)
-            get_rac(&fs->c, (uint8_t[]) { 129 });
-        fs->ac_byte_count = f->version > 2 || (!x && !y) ? fs->c.bytestream - fs->c.bytestream_start - 1 : 0;
+            get_rac(&sc->c, (uint8_t[]) { 129 });
+        fs->ac_byte_count = f->version > 2 || (!x && !y) ? sc->c.bytestream - sc->c.bytestream_start - 1 : 0;
         init_get_bits(&gb,
-                      fs->c.bytestream_start + fs->ac_byte_count,
-                      (fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count) * 8);
+                      sc->c.bytestream_start + fs->ac_byte_count,
+                      (sc->c.bytestream_end - sc->c.bytestream_start - fs->ac_byte_count) * 8);
     }
 
     av_assert1(width && height);
@@ -361,8 +361,8 @@ static int decode_slice(AVCodecContext *c, void *arg)
     }
     if (f->ac != AC_GOLOMB_RICE && f->version > 2) {
         int v;
-        get_rac(&fs->c, (uint8_t[]) { 129 });
-        v = fs->c.bytestream_end - fs->c.bytestream - 2 - 5*f->ec;
+        get_rac(&sc->c, (uint8_t[]) { 129 });
+        v = sc->c.bytestream_end - sc->c.bytestream - 2 - 5*f->ec;
         if (v) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream end mismatching by %d\n", v);
             fs->slice_damaged = 1;
@@ -421,7 +421,7 @@ static int read_quant_tables(RangeCoder *c,
 
 static int read_extra_header(FFV1Context *f)
 {
-    RangeCoder *const c = &f->c;
+    RangeCoder c;
     uint8_t state[CONTEXT_SIZE];
     int ret;
     uint8_t state2[32][CONTEXT_SIZE];
@@ -430,10 +430,10 @@ static int read_extra_header(FFV1Context *f)
     memset(state2, 128, sizeof(state2));
     memset(state, 128, sizeof(state));
 
-    ff_init_range_decoder(c, f->avctx->extradata, f->avctx->extradata_size);
-    ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
+    ff_init_range_decoder(&c, f->avctx->extradata, f->avctx->extradata_size);
+    ff_build_rac_states(&c, 0.05 * (1LL << 32), 256 - 8);
 
-    f->version = get_symbol(c, state, 0);
+    f->version = get_symbol(&c, state, 0);
     if (f->version < 2) {
         av_log(f->avctx, AV_LOG_ERROR, "Invalid version in global header\n");
         return AVERROR_INVALIDDATA;
@@ -444,27 +444,27 @@ static int read_extra_header(FFV1Context *f)
         return AVERROR_PATCHWELCOME;
     }
     if (f->version > 2) {
-        c->bytestream_end -= 4;
-        f->micro_version = get_symbol(c, state, 0);
+        c.bytestream_end -= 4;
+        f->micro_version = get_symbol(&c, state, 0);
         if (f->micro_version < 0)
             return AVERROR_INVALIDDATA;
     }
-    f->ac = get_symbol(c, state, 0);
+    f->ac = get_symbol(&c, state, 0);
 
     if (f->ac == AC_RANGE_CUSTOM_TAB) {
         for (int i = 1; i < 256; i++)
-            f->state_transition[i] = get_symbol(c, state, 1) + c->one_state[i];
+            f->state_transition[i] = get_symbol(&c, state, 1) + c.one_state[i];
     }
 
-    f->colorspace                 = get_symbol(c, state, 0); //YUV cs type
-    f->avctx->bits_per_raw_sample = get_symbol(c, state, 0);
-    f->chroma_planes              = get_rac(c, state);
-    f->chroma_h_shift             = get_symbol(c, state, 0);
-    f->chroma_v_shift             = get_symbol(c, state, 0);
-    f->transparency               = get_rac(c, state);
+    f->colorspace                 = get_symbol(&c, state, 0); //YUV cs type
+    f->avctx->bits_per_raw_sample = get_symbol(&c, state, 0);
+    f->chroma_planes              = get_rac(&c, state);
+    f->chroma_h_shift             = get_symbol(&c, state, 0);
+    f->chroma_v_shift             = get_symbol(&c, state, 0);
+    f->transparency               = get_rac(&c, state);
     f->plane_count                = 1 + (f->chroma_planes || f->version<4) + f->transparency;
-    f->num_h_slices               = 1 + get_symbol(c, state, 0);
-    f->num_v_slices               = 1 + get_symbol(c, state, 0);
+    f->num_h_slices               = 1 + get_symbol(&c, state, 0);
+    f->num_v_slices               = 1 + get_symbol(&c, state, 0);
 
     if (f->chroma_h_shift > 4U || f->chroma_v_shift > 4U) {
         av_log(f->avctx, AV_LOG_ERROR, "chroma shift parameters %d %d are invalid\n",
@@ -484,7 +484,7 @@ static int read_extra_header(FFV1Context *f)
         return AVERROR_PATCHWELCOME;
     }
 
-    f->quant_table_count = get_symbol(c, state, 0);
+    f->quant_table_count = get_symbol(&c, state, 0);
     if (f->quant_table_count > (unsigned)MAX_QUANT_TABLES || !f->quant_table_count) {
         av_log(f->avctx, AV_LOG_ERROR, "quant table count %d is invalid\n", f->quant_table_count);
         f->quant_table_count = 0;
@@ -492,7 +492,7 @@ static int read_extra_header(FFV1Context *f)
     }
 
     for (int i = 0; i < f->quant_table_count; i++) {
-        f->context_count[i] = read_quant_tables(c, f->quant_tables[i]);
+        f->context_count[i] = read_quant_tables(&c, f->quant_tables[i]);
         if (f->context_count[i] < 0) {
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
             return AVERROR_INVALIDDATA;
@@ -502,19 +502,19 @@ static int read_extra_header(FFV1Context *f)
         return ret;
 
     for (int i = 0; i < f->quant_table_count; i++)
-        if (get_rac(c, state)) {
+        if (get_rac(&c, state)) {
             for (int j = 0; j < f->context_count[i]; j++)
                 for (int k = 0; k < CONTEXT_SIZE; k++) {
                     int pred = j ? f->initial_states[i][j - 1][k] : 128;
                     f->initial_states[i][j][k] =
-                        (pred + get_symbol(c, state2[k], 1)) & 0xFF;
+                        (pred + get_symbol(&c, state2[k], 1)) & 0xFF;
                 }
         }
 
     if (f->version > 2) {
-        f->ec = get_symbol(c, state, 0);
+        f->ec = get_symbol(&c, state, 0);
         if (f->micro_version > 2)
-            f->intra = get_symbol(c, state, 0);
+            f->intra = get_symbol(&c, state, 0);
     }
 
     if (f->version > 2) {
@@ -550,7 +550,7 @@ static int read_header(FFV1Context *f)
 {
     uint8_t state[CONTEXT_SIZE];
     int context_count = -1; //-1 to avoid warning
-    RangeCoder *const c = &f->slice_context[0]->c;
+    RangeCoder *const c = &f->slices[0].c;
 
     memset(state, 128, sizeof(state));
 
@@ -868,7 +868,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     uint8_t *buf        = avpkt->data;
     int buf_size        = avpkt->size;
     FFV1Context *f      = avctx->priv_data;
-    RangeCoder *const c = &f->slice_context[0]->c;
+    RangeCoder *const c = &f->slices[0].c;
     int ret, key_frame;
     uint8_t keystate = 128;
     uint8_t *buf_p;
@@ -939,6 +939,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
     buf_p = buf + buf_size;
     for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1Context *fs = f->slice_context[i];
+        FFV1SliceContext *sc = &f->slices[i];
         int trailer = 3 + 5*!!f->ec;
         int v;
 
@@ -973,9 +974,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         }
 
         if (i) {
-            ff_init_range_decoder(&fs->c, buf_p, v);
+            ff_init_range_decoder(&sc->c, buf_p, v);
+            ff_build_rac_states(&sc->c, 0.05 * (1LL << 32), 256 - 8);
         } else
-            fs->c.bytestream_end = buf_p + v;
+            sc->c.bytestream_end = buf_p + v;
 
         fs->avctx = avctx;
     }

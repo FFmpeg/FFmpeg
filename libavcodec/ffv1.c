@@ -53,7 +53,7 @@ av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
 }
 
 av_cold int ff_ffv1_init_slice_state(const FFV1Context *f,
-                                     FFV1Context *fs, FFV1SliceContext *sc)
+                                     FFV1SliceContext *sc)
 {
     int j, i;
 
@@ -82,8 +82,8 @@ av_cold int ff_ffv1_init_slice_state(const FFV1Context *f,
     if (f->ac == AC_RANGE_CUSTOM_TAB) {
         //FIXME only redo if state_transition changed
         for (j = 1; j < 256; j++) {
-            fs->c. one_state[      j] = f->state_transition[j];
-            fs->c.zero_state[256 - j] = 256 - fs->c.one_state[j];
+            sc->c. one_state[      j] = f->state_transition[j];
+            sc->c.zero_state[256 - j] = 256 - sc->c.one_state[j];
         }
     }
 
@@ -94,8 +94,7 @@ av_cold int ff_ffv1_init_slices_state(FFV1Context *f)
 {
     int i, ret;
     for (i = 0; i < f->max_slice_count; i++) {
-        FFV1Context *fs = f->slice_context[i];
-        if ((ret = ff_ffv1_init_slice_state(f, fs, &f->slices[i])) < 0)
+        if ((ret = ff_ffv1_init_slice_state(f, &f->slices[i])) < 0)
             return AVERROR(ENOMEM);
     }
     return 0;

@@ -83,12 +83,12 @@ typedef struct FFV1SliceContext {
 
     PlaneContext plane[MAX_PLANES];
     PutBitContext pb;
+    RangeCoder c;
 } FFV1SliceContext;
 
 typedef struct FFV1Context {
     AVClass *class;
     AVCodecContext *avctx;
-    RangeCoder c;
     uint64_t rc_stat[256][2];
     uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
     int version;
@@ -138,8 +138,7 @@ typedef struct FFV1Context {
 } FFV1Context;
 
 int ff_ffv1_common_init(AVCodecContext *avctx);
-int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1Context *fs,
-                             FFV1SliceContext *sc);
+int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
 int ff_ffv1_init_slices_state(FFV1Context *f);
 int ff_ffv1_init_slice_contexts(FFV1Context *f);
 int ff_ffv1_allocate_initial_states(FFV1Context *f);
