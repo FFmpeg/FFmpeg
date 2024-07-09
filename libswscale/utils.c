@@ -2042,6 +2042,7 @@ static int context_init_threaded(SwsContext *c,
         if (!c->slice_ctx[i])
             return AVERROR(ENOMEM);
 
+        c->nb_slice_ctx++;
         c->slice_ctx[i]->parent = c;
 
         ret = av_opt_copy((void*)c->slice_ctx[i], (void*)c);
@@ -2053,8 +2054,6 @@ static int context_init_threaded(SwsContext *c,
         ret = sws_init_single_context(c->slice_ctx[i], src_filter, dst_filter);
         if (ret < 0)
             return ret;
-
-        c->nb_slice_ctx++;
 
         if (c->slice_ctx[i]->dither == SWS_DITHER_ED) {
             av_log(c, AV_LOG_VERBOSE,
