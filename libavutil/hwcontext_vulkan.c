@@ -1423,12 +1423,13 @@ static void unlock_queue(AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t
 
 static int vulkan_device_init(AVHWDeviceContext *ctx)
 {
-    int err;
+    int err = 0;
     uint32_t qf_num;
     VulkanDevicePriv *p = ctx->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VkQueueFamilyProperties *qf;
+    VkQueueFamilyProperties2 *qf;
+    VkQueueFamilyVideoPropertiesKHR *qf_vid;
     int graph_index, comp_index, tx_index, enc_index, dec_index;
 
     /* Set device extension flags */
@@ -1474,37 +1475,52 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         return AVERROR_EXTERNAL;
     }
 
-    qf = av_malloc_array(qf_num, sizeof(VkQueueFamilyProperties));
+    qf = av_malloc_array(qf_num, sizeof(VkQueueFamilyProperties2));
     if (!qf)
         return AVERROR(ENOMEM);
 
-    vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &qf_num, qf);
+    qf_vid = av_malloc_array(qf_num, sizeof(VkQueueFamilyVideoPropertiesKHR));
+    if (!qf_vid) {
+        av_free(qf);
+        return AVERROR(ENOMEM);
+    }
+
+    for (uint32_t i = 0; i < qf_num; i++) {
+        qf_vid[i] = (VkQueueFamilyVideoPropertiesKHR) {
+            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,
+        };
+        qf[i] = (VkQueueFamilyProperties2) {
+            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,
+            .pNext = &qf_vid[i],
+        };
+    }
+
+    vk->GetPhysicalDeviceQueueFamilyProperties2(hwctx->phys_dev, &qf_num, qf);
 
     p->qf_mutex = av_calloc(qf_num, sizeof(*p->qf_mutex));
     if (!p->qf_mutex) {
-        av_free(qf);
-        return AVERROR(ENOMEM);
+        err = AVERROR(ENOMEM);
+        goto end;
     }
     p->nb_tot_qfs = qf_num;
 
     for (uint32_t i = 0; i < qf_num; i++) {
-        p->qf_mutex[i] = av_calloc(qf[i].queueCount, sizeof(**p->qf_mutex));
+        p->qf_mutex[i] = av_calloc(qf[i].queueFamilyProperties.queueCount,
+                                   sizeof(**p->qf_mutex));
         if (!p->qf_mutex[i]) {
-            av_free(qf);
-            return AVERROR(ENOMEM);
+            err = AVERROR(ENOMEM);
+            goto end;
         }
-        for (uint32_t j = 0; j < qf[i].queueCount; j++) {
+        for (uint32_t j = 0; j < qf[i].queueFamilyProperties.queueCount; j++) {
             err = pthread_mutex_init(&p->qf_mutex[i][j], NULL);
             if (err != 0) {
                 av_log(ctx, AV_LOG_ERROR, "pthread_mutex_init failed : %s\n",
                        av_err2str(err));
-                av_free(qf);
-                return AVERROR(err);
+                err = AVERROR(err);
+                goto end;
             }
         }
     }
-
-    av_free(qf);
 
     graph_index = hwctx->nb_graphics_queues ? hwctx->queue_family_index : -1;
     comp_index  = hwctx->nb_comp_queues ? hwctx->queue_family_comp_index : -1;
@@ -1517,13 +1533,15 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         if (ctx_qf < 0 && required) {                                                           \
             av_log(ctx, AV_LOG_ERROR, "%s queue family is required, but marked as missing"      \
                    " in the context!\n", type);                                                 \
-            return AVERROR(EINVAL);                                                             \
+            err = AVERROR(EINVAL);                                                              \
+            goto end;                                                                           \
         } else if (fidx < 0 || ctx_qf < 0) {                                                    \
             break;                                                                              \
         } else if (ctx_qf >= qf_num) {                                                          \
             av_log(ctx, AV_LOG_ERROR, "Invalid %s family index %i (device has %i families)!\n", \
                    type, ctx_qf, qf_num);                                                       \
-            return AVERROR(EINVAL);                                                             \
+            err = AVERROR(EINVAL);                                                              \
+            goto end;                                                                           \
         }                                                                                       \
                                                                                                 \
         av_log(ctx, AV_LOG_VERBOSE, "Using queue family %i (queues: %i)"                        \
@@ -1550,6 +1568,36 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
 
 #undef CHECK_QUEUE
 
+    /* Update the new queue family fields. If non-zero already,
+     * it means API users have set it. */
+    if (!hwctx->nb_qf) {
+#define ADD_QUEUE(ctx_qf, qc, flag)                                    \
+    do {                                                               \
+        if (ctx_qf != -1) {                                            \
+            hwctx->qf[hwctx->nb_qf++] = (AVVulkanDeviceQueueFamily) {  \
+                .idx = ctx_qf,                                         \
+                .num = qc,                                             \
+                .flags = flag,                                         \
+            };                                                         \
+        }                                                              \
+    } while (0)
+
+        ADD_QUEUE(hwctx->queue_family_index, hwctx->nb_graphics_queues, VK_QUEUE_GRAPHICS_BIT);
+        ADD_QUEUE(hwctx->queue_family_comp_index, hwctx->nb_comp_queues, VK_QUEUE_COMPUTE_BIT);
+        ADD_QUEUE(hwctx->queue_family_tx_index, hwctx->nb_tx_queues, VK_QUEUE_TRANSFER_BIT);
+        ADD_QUEUE(hwctx->queue_family_decode_index, hwctx->nb_decode_queues, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
+        ADD_QUEUE(hwctx->queue_family_encode_index, hwctx->nb_encode_queues, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
+#undef ADD_QUEUE
+    }
+
+    for (int i = 0; i < hwctx->nb_qf; i++) {
+        if (!hwctx->qf[i].video_caps &&
+            hwctx->qf[i].flags & (VK_QUEUE_VIDEO_DECODE_BIT_KHR |
+                                  VK_QUEUE_VIDEO_ENCODE_BIT_KHR)) {
+            hwctx->qf[i].video_caps = qf_vid[hwctx->qf[i].idx].videoCodecOperations;
+        }
+    }
+
     if (!hwctx->lock_queue)
         hwctx->lock_queue = lock_queue;
     if (!hwctx->unlock_queue)
@@ -1565,7 +1613,10 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
     ff_vk_qf_init(&p->vkctx, &p->compute_qf, VK_QUEUE_COMPUTE_BIT);
     ff_vk_qf_init(&p->vkctx, &p->transfer_qf, VK_QUEUE_TRANSFER_BIT);
 
-    return 0;
+end:
+    av_free(qf_vid);
+    av_free(qf);
+    return err;
 }
 
 static int vulkan_device_create(AVHWDeviceContext *ctx, const char *device,

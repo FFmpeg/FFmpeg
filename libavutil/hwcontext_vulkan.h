@@ -30,6 +30,20 @@
 
 typedef struct AVVkFrame AVVkFrame;
 
+typedef struct AVVulkanDeviceQueueFamily {
+    /* Queue family index */
+    int idx;
+    /* Number of queues in the queue family in use */
+    int num;
+    /* Queue family capabilities. Must be non-zero.
+     * Flags may be removed to indicate the queue family may not be used
+     * for a given purpose. */
+    VkQueueFlagBits flags;
+    /* Vulkan implementations are allowed to list multiple video queues
+     * which differ in what they can encode or decode. */
+    VkVideoCodecOperationFlagBitsKHR video_caps;
+} AVVulkanDeviceQueueFamily;
+
 /**
  * @file
  * API-specific header for AV_HWDEVICE_TYPE_VULKAN.
@@ -151,6 +165,17 @@ typedef struct AVVulkanDeviceContext {
      * Similar to lock_queue(), unlocks a queue. Must only be called after locking.
      */
     void (*unlock_queue)(struct AVHWDeviceContext *ctx, uint32_t queue_family, uint32_t index);
+
+    /**
+     * Queue families used. Must be preferentially ordered. List may contain
+     * duplicates.
+     *
+     * For compatibility reasons, all the enabled queue families listed above
+     * (queue_family_(tx/comp/encode/decode)_index) must also be included in
+     * this list until they're removed after deprecation.
+     */
+    AVVulkanDeviceQueueFamily qf[64];
+    int nb_qf;
 } AVVulkanDeviceContext;
 
 /**
