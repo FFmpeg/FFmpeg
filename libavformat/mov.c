@@ -1287,14 +1287,18 @@ static int mov_read_pasp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     const int num = avio_rb32(pb);
     const int den = avio_rb32(pb);
     AVStream *st;
+    MOVStreamContext *sc;
 
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
+    sc = st->priv_data;
+
+    av_log(c->fc, AV_LOG_TRACE, "pasp: hSpacing %d, vSpacing %d\n", num, den);
 
     if (den != 0) {
-        av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
-                  num, den, 32767);
+        sc->h_spacing = num;
+        sc->v_spacing = den;
     }
     return 0;
 }
@@ -5031,11 +5035,15 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     }
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (sc->h_spacing && sc->v_spacing)
+            av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
+                      sc->h_spacing, sc->v_spacing, INT_MAX);
         if (!st->sample_aspect_ratio.num && st->codecpar->width && st->codecpar->height &&
             sc->height && sc->width &&
             (st->codecpar->width != sc->width || st->codecpar->height != sc->height)) {
-            st->sample_aspect_ratio = av_d2q(((double)st->codecpar->height * sc->width) /
-                                             ((double)st->codecpar->width * sc->height), INT_MAX);
+            av_reduce(&st->sample_aspect_ratio.num, &st->sample_aspect_ratio.den,
+                      (int64_t)st->codecpar->height * sc->width,
+                      (int64_t)st->codecpar->width  * sc->height, INT_MAX);
         }
 
 #if FF_API_R_FRAME_RATE
