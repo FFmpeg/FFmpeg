@@ -869,17 +869,20 @@ static int scale_field(ScaleContext *scale, AVFrame *dst, AVFrame *src,
     return 0;
 }
 
-static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
+/* Takes over ownership of *frame_in, passes ownership of *frame_out to caller */
+static int scale_frame(AVFilterLink *link, AVFrame **frame_in,
+                       AVFrame **frame_out)
 {
     AVFilterContext *ctx = link->dst;
     ScaleContext *scale = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out;
+    AVFrame *out, *in = *frame_in;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     char buf[32];
     int ret;
     int frame_changed;
 
+    *frame_in = NULL;
     *frame_out = NULL;
     if (in->colorspace == AVCOL_SPC_YCGCO)
         av_log(link->dst, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
@@ -922,11 +925,11 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
 
             ret = scale_parse_expr(ctx, NULL, &scale->w_pexpr, "width", scale->w_expr);
             if (ret < 0)
-                return ret;
+                goto err;
 
             ret = scale_parse_expr(ctx, NULL, &scale->h_pexpr, "height", scale->h_expr);
             if (ret < 0)
-                return ret;
+                goto err;
         }
 
         if (ctx->filter == &ff_vf_scale2ref) {
@@ -957,7 +960,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         link->dst->inputs[0]->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
 
         if ((ret = config_props(outlink)) < 0)
-            return ret;
+            goto err;
     }
 
 scale:
@@ -971,10 +974,9 @@ scale:
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
-        av_frame_free(&in);
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto err;
     }
-    *frame_out = out;
 
     av_frame_copy_props(out, in);
     out->width  = outlink->w;
@@ -999,9 +1001,12 @@ scale:
         ret = sws_scale_frame(scale->sws, out, in);
     }
 
-    av_frame_free(&in);
     if (ret < 0)
-        av_frame_free(frame_out);
+        av_frame_free(&out);
+    *frame_out = out;
+
+err:
+    av_frame_free(&in);
     return ret;
 }
 
@@ -1058,7 +1063,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
     }
 
-    ret = scale_frame(ctx->inputs[0], in, &out);
+    ret = scale_frame(ctx->inputs[0], &in, &out);
     if (out) {
         out->pts = av_rescale_q(fs->pts, fs->time_base, outlink->time_base);
         return ff_filter_frame(outlink, out);
@@ -1077,7 +1082,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     AVFrame *out;
     int ret;
 
-    ret = scale_frame(link, in, &out);
+    ret = scale_frame(link, &in, &out);
     if (out)
         return ff_filter_frame(outlink, out);
 
