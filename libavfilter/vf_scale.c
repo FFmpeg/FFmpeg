@@ -883,7 +883,6 @@ static int scale_frame(AVFilterLink *link, AVFrame **frame_in,
     int frame_changed;
 
     *frame_in = NULL;
-    *frame_out = NULL;
     if (in->colorspace == AVCOL_SPC_YCGCO)
         av_log(link->dst, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
 
@@ -1064,14 +1063,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     ret = scale_frame(ctx->inputs[0], &in, &out);
-    if (out) {
-        out->pts = av_rescale_q(fs->pts, fs->time_base, outlink->time_base);
-        return ff_filter_frame(outlink, out);
-    }
+    if (ret < 0)
+        goto err;
+
+    av_assert0(out);
+    out->pts = av_rescale_q(fs->pts, fs->time_base, outlink->time_base);
+    return ff_filter_frame(outlink, out);
 
 err:
-    if (ret < 0)
-        av_frame_free(&in);
+    av_frame_free(&in);
     return ret;
 }
 
