@@ -588,13 +588,26 @@ static int vt_pixbuf_set_colorspace(void *log_ctx,
     } else
         CVBufferRemoveAttachment(pixbuf, kCVImageBufferGammaLevelKey);
 
-    if (__builtin_available(macOS 12.0, iOS 15.0, *)) {
-        CFDictionaryRef attachments = CVBufferCopyAttachments(pixbuf, kCVAttachmentMode_ShouldPropagate);
+#if (TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 100800) || \
+    (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000)
+    if (__builtin_available(macOS 10.8, iOS 10, *)) {
+        CFDictionaryRef attachments = NULL;
+        if (__builtin_available(macOS 12.0, iOS 15.0, *))
+            attachments = CVBufferCopyAttachments(pixbuf, kCVAttachmentMode_ShouldPropagate);
+#if (TARGET_OS_OSX && __MAC_OS_X_VERSION_MIN_REQUIRED <= 120000) || \
+    (TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED <= 150000)
+        else {
+            CFDictionaryRef tmp = CVBufferGetAttachments(pixbuf, kCVAttachmentMode_ShouldPropagate);
+            if (tmp)
+                attachments = CFDictionaryCreateCopy(NULL, tmp);
+        }
+#endif
         if (attachments) {
             colorspace = CVImageBufferCreateColorSpaceFromAttachments(attachments);
             CFRelease(attachments);
         }
     }
+#endif
 
     if (colorspace) {
         CVBufferSetAttachment(pixbuf, kCVImageBufferCGColorSpaceKey,
