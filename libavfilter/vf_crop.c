@@ -206,7 +206,7 @@ static int config_input(AVFilterLink *link)
         AVRational dar = av_mul_q(link->sample_aspect_ratio,
                                   (AVRational){ link->w, link->h });
         av_reduce(&s->out_sar.num, &s->out_sar.den,
-                  dar.num * s->h, dar.den * s->w, INT_MAX);
+                  (int64_t)dar.num * s->h, (int64_t)dar.den * s->w, INT_MAX);
     } else
         s->out_sar = link->sample_aspect_ratio;
 
