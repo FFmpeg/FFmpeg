@@ -100,9 +100,9 @@ const int *sws_getCoefficients(int colorspace)
 
 #define PUTRGBA(dst, ysrc, asrc, i, abase)                              \
     Y              = ysrc[2 * i];                                       \
-    dst[2 * i]     = r[Y] + g[Y] + b[Y] + (asrc[2 * i]     << abase);   \
+    dst[2 * i]     = r[Y] + g[Y] + b[Y] + ((uint32_t)(asrc[2 * i])     << abase);   \
     Y              = ysrc[2 * i + 1];                                   \
-    dst[2 * i + 1] = r[Y] + g[Y] + b[Y] + (asrc[2 * i + 1] << abase);
+    dst[2 * i + 1] = r[Y] + g[Y] + b[Y] + ((uint32_t)(asrc[2 * i + 1]) << abase);
 
 #define PUTRGB48(dst, src, asrc, i, abase)          \
     Y                = src[ 2 * i];                 \
