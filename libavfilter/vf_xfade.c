@@ -956,7 +956,7 @@ static void vertopen##name##_transition(AVFilterContext *ctx,                   
 {                                                                                    \
     XFadeContext *s = ctx->priv;                                                     \
     const int width = out->width;                                                    \
-    const float w2 = out->width / 2;                                                 \
+    const float w2 = out->width / 2.0;                                                 \
                                                                                      \
     for (int y = slice_start; y < slice_end; y++) {                                  \
         for (int x = 0; x < width; x++) {                                            \
@@ -984,7 +984,7 @@ static void vertclose##name##_transition(AVFilterContext *ctx,                  
     XFadeContext *s = ctx->priv;                                                     \
     const int nb_planes = s->nb_planes;                                              \
     const int width = out->width;                                                    \
-    const float w2 = out->width / 2;                                                 \
+    const float w2 = out->width / 2.0;                                                 \
                                                                                      \
     for (int y = slice_start; y < slice_end; y++) {                                  \
         for (int x = 0; x < width; x++) {                                            \
@@ -1012,7 +1012,7 @@ static void horzopen##name##_transition(AVFilterContext *ctx,                   
     XFadeContext *s = ctx->priv;                                                     \
     const int nb_planes = s->nb_planes;                                              \
     const int width = out->width;                                                    \
-    const float h2 = out->height / 2;                                                \
+    const float h2 = out->height / 2.0;                                                \
                                                                                      \
     for (int y = slice_start; y < slice_end; y++) {                                  \
         const float smooth = 2.f - fabsf((y - h2) / h2) - progress * 2.f;            \
@@ -1040,7 +1040,7 @@ static void horzclose##name##_transition(AVFilterContext *ctx,                  
     XFadeContext *s = ctx->priv;                                                     \
     const int nb_planes = s->nb_planes;                                              \
     const int width = out->width;                                                    \
-    const float h2 = out->height / 2;                                                \
+    const float h2 = out->height / 2.0;                                                \
                                                                                      \
     for (int y = slice_start; y < slice_end; y++) {                                  \
         const float smooth = 1.f + fabsf((y - h2) / h2) - progress * 2.f;            \
