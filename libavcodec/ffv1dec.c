@@ -116,8 +116,7 @@ static int is_input_end(RangeCoder *c, GetBitContext *gb, int ac)
 #define RENAME(name) name ## 32
 #include "ffv1dec_template.c"
 
-static int decode_plane(FFV1Context *f,
-                        FFV1Context *s, FFV1SliceContext *sc,
+static int decode_plane(FFV1Context *f, FFV1SliceContext *sc,
                         GetBitContext *gb,
                         uint8_t *src, int w, int h, int stride, int plane_index,
                          int pixel_stride)
@@ -141,23 +140,23 @@ static int decode_plane(FFV1Context *f,
         sample[1][-1] = sample[0][0];
         sample[0][w]  = sample[0][w - 1];
 
-        if (s->avctx->bits_per_raw_sample <= 8) {
-            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, 8, ac);
+        if (f->avctx->bits_per_raw_sample <= 8) {
+            int ret = decode_line(f, sc, gb, w, sample, plane_index, 8, ac);
             if (ret < 0)
                 return ret;
             for (x = 0; x < w; x++)
                 src[x*pixel_stride + stride * y] = sample[1][x];
         } else {
-            int ret = decode_line(f, s, sc, gb, w, sample, plane_index, s->avctx->bits_per_raw_sample, ac);
+            int ret = decode_line(f, sc, gb, w, sample, plane_index, f->avctx->bits_per_raw_sample, ac);
             if (ret < 0)
                 return ret;
-            if (s->packed_at_lsb) {
+            if (f->packed_at_lsb) {
                 for (x = 0; x < w; x++) {
                     ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x];
                 }
             } else {
                 for (x = 0; x < w; x++) {
-                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - s->avctx->bits_per_raw_sample) | ((uint16_t **)sample)[1][x] >> (2 * s->avctx->bits_per_raw_sample - 16);
+                    ((uint16_t*)(src + stride*y))[x*pixel_stride] = sample[1][x] << (16 - f->avctx->bits_per_raw_sample) | ((uint16_t **)sample)[1][x] >> (2 * f->avctx->bits_per_raw_sample - 16);
                 }
             }
         }
@@ -165,7 +164,7 @@ static int decode_plane(FFV1Context *f,
     return 0;
 }
 
-static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
+static int decode_slice_header(const FFV1Context *f,
                                FFV1SliceContext *sc, AVFrame *frame)
 {
     RangeCoder *c = &sc->c;
@@ -238,7 +237,7 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
         frame->sample_aspect_ratio = (AVRational){ 0, 1 };
     }
 
-    if (fs->version > 3) {
+    if (f->version > 3) {
         sc->slice_reset_contexts = get_rac(c, state);
         sc->slice_coding_mode = get_symbol(c, state, 0);
         if (sc->slice_coding_mode != 1) {
@@ -256,13 +255,12 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
 
 static int decode_slice(AVCodecContext *c, void *arg)
 {
-    FFV1Context *fs   = *(void **)arg;
-    FFV1Context *f    = fs->avctx->priv_data;
+    FFV1Context *f    = c->priv_data;
+    FFV1SliceContext *sc = arg;
     int width, height, x, y, ret;
     const int ps      = av_pix_fmt_desc_get(c->pix_fmt)->comp[0].step;
     AVFrame * const p = f->picture.f;
-    const int      si = (FFV1Context**)arg - f->slice_context;
-    FFV1SliceContext *sc = &f->slices[si];
+    const int      si = sc - f->slices;
     GetBitContext gb;
 
     if (f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
@@ -300,7 +298,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     if (f->version > 2) {
         if (ff_ffv1_init_slice_state(f, sc) < 0)
             return AVERROR(ENOMEM);
-        if (decode_slice_header(f, fs, sc, p) < 0) {
+        if (decode_slice_header(f, sc, p) < 0) {
             sc->slice_x = sc->slice_y = sc->slice_height = sc->slice_width = 0;
             sc->slice_damaged = 1;
             return AVERROR_INVALIDDATA;
@@ -334,29 +332,29 @@ static int decode_slice(AVCodecContext *c, void *arg)
         const int chroma_height = AV_CEIL_RSHIFT(height, f->chroma_v_shift);
         const int cx            = x >> f->chroma_h_shift;
         const int cy            = y >> f->chroma_v_shift;
-        decode_plane(f, fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
+        decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0], width, height, p->linesize[0], 0, 1);
 
         if (f->chroma_planes) {
-            decode_plane(f, fs, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
-            decode_plane(f, fs, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
+            decode_plane(f, sc, &gb, p->data[1] + ps*cx+cy*p->linesize[1], chroma_width, chroma_height, p->linesize[1], 1, 1);
+            decode_plane(f, sc, &gb, p->data[2] + ps*cx+cy*p->linesize[2], chroma_width, chroma_height, p->linesize[2], 1, 1);
         }
         if (f->transparency)
-            decode_plane(f, fs, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1);
+            decode_plane(f, sc, &gb, p->data[3] + ps*x + y*p->linesize[3], width, height, p->linesize[3], (f->version >= 4 && !f->chroma_planes) ? 1 : 2, 1);
     } else if (f->colorspace == 0) {
-         decode_plane(f, fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
-         decode_plane(f, fs, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
+         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0]    , width, height, p->linesize[0], 0, 2);
+         decode_plane(f, sc, &gb, p->data[0] + ps*x + y*p->linesize[0] + 1, width, height, p->linesize[0], 1, 2);
     } else if (f->use32bit) {
         uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
                                p->data[2] + ps * x + y * p->linesize[2],
                                p->data[3] + ps * x + y * p->linesize[3] };
-        decode_rgb_frame32(f, fs, sc, &gb, planes, width, height, p->linesize);
+        decode_rgb_frame32(f, sc, &gb, planes, width, height, p->linesize);
     } else {
         uint8_t *planes[4] = { p->data[0] + ps * x + y * p->linesize[0],
                                p->data[1] + ps * x + y * p->linesize[1],
                                p->data[2] + ps * x + y * p->linesize[2],
                                p->data[3] + ps * x + y * p->linesize[3] };
-        decode_rgb_frame(f, fs, sc, &gb, planes, width, height, p->linesize);
+        decode_rgb_frame(f, sc, &gb, planes, width, height, p->linesize);
     }
     if (f->ac != AC_GOLOMB_RICE && f->version > 2) {
         int v;
@@ -789,9 +787,7 @@ static int read_header(FFV1Context *f)
     }
 
     for (int j = 0; j < f->slice_count; j++) {
-        FFV1Context *fs = f->slice_context[j];
         FFV1SliceContext *sc = &f->slices[j];
-        fs->packed_at_lsb = f->packed_at_lsb;
 
         sc->slice_damaged = 0;
 
@@ -937,7 +933,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
     buf_p = buf + buf_size;
     for (int i = f->slice_count - 1; i >= 0; i--) {
-        FFV1Context *fs = f->slice_context[i];
         FFV1SliceContext *sc = &f->slices[i];
         int trailer = 3 + 5*!!f->ec;
         int v;
@@ -978,15 +973,14 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         } else
             sc->c.bytestream_end = buf_p + v;
 
-        fs->avctx = avctx;
     }
 
     avctx->execute(avctx,
                    decode_slice,
-                   &f->slice_context[0],
+                   f->slices,
                    NULL,
                    f->slice_count,
-                   sizeof(void*));
+                   sizeof(*f->slices));
 
     for (int i = f->slice_count - 1; i >= 0; i--) {
         FFV1SliceContext *sc = &f->slices[i];
@@ -1068,13 +1062,9 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         memcpy(fdst->quant_tables[0], fsrc->quant_tables[0], sizeof(fsrc->quant_tables[0]));
 
     for (int i = 0; i < fdst->num_h_slices * fdst->num_v_slices; i++) {
-        FFV1Context *fssrc = fsrc->slice_context[i];
-        FFV1Context *fsdst = fdst->slice_context[i];
-
         FFV1SliceContext       *sc  = &fdst->slices[i];
         const FFV1SliceContext *sc0 = &fsrc->slices[i];
 
-        copy_fields(fsdst, fssrc, fsrc);
         sc->slice_damaged = sc0->slice_damaged;
 
         if (fsrc->version < 3) {

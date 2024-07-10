@@ -141,7 +141,6 @@ typedef struct FFV1Context {
     int gob_count;
     int quant_table_count;
 
-    struct FFV1Context *slice_context[MAX_SLICES];
     int slice_count;
     int max_slice_count;
     int num_v_slices;

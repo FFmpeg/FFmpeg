@@ -102,7 +102,7 @@ av_cold int ff_ffv1_init_slices_state(FFV1Context *f)
 
 av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 {
-    int i, max_slice_count = f->num_h_slices * f->num_v_slices;
+    int max_slice_count = f->num_h_slices * f->num_v_slices;
 
     av_assert0(max_slice_count > 0);
 
@@ -112,7 +112,7 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 
     f->max_slice_count = max_slice_count;
 
-    for (i = 0; i < max_slice_count;) {
+    for (int i = 0; i < max_slice_count; i++) {
         FFV1SliceContext *sc = &f->slices[i];
         int sx          = i % f->num_h_slices;
         int sy          = i / f->num_h_slices;
@@ -120,22 +120,15 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
         int sxe         = f->avctx->width  * (sx + 1) / f->num_h_slices;
         int sys         = f->avctx->height *  sy      / f->num_v_slices;
         int sye         = f->avctx->height * (sy + 1) / f->num_v_slices;
-        FFV1Context *fs = av_mallocz(sizeof(*fs));
-
-        if (!fs)
-            return AVERROR(ENOMEM);
-
-        f->slice_context[i++] = fs;
-        memcpy(fs, f, sizeof(*fs));
 
         sc->slice_width  = sxe - sxs;
         sc->slice_height = sye - sys;
         sc->slice_x      = sxs;
         sc->slice_y      = sys;
 
-        sc->sample_buffer = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
+        sc->sample_buffer = av_malloc_array((f->width + 6), 3 * MAX_PLANES *
                                             sizeof(*sc->sample_buffer));
-        sc->sample_buffer32 = av_malloc_array((fs->width + 6), 3 * MAX_PLANES *
+        sc->sample_buffer32 = av_malloc_array((f->width + 6), 3 * MAX_PLANES *
                                               sizeof(*sc->sample_buffer32));
         if (!sc->sample_buffer || !sc->sample_buffer32)
             return AVERROR(ENOMEM);
@@ -212,9 +205,6 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
         }
         av_freep(&s->rc_stat2[j]);
     }
-
-    for (i = 0; i < s->max_slice_count; i++)
-        av_freep(&s->slice_context[i]);
 
     av_freep(&s->slices);
 
