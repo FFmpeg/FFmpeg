@@ -655,7 +655,7 @@ static void calc_input_response(WMAVoiceContext *s, float *lpcs_src,
         lpcs[n] = angle_mul * pwr;
 
         /* 70.57 =~ 1/log10(1.0331663) */
-        idx = av_clipf((pwr * gain_mul - 0.0295) * 70.570526123, 0, INT_MAX / 2);
+        idx = av_clipd((pwr * gain_mul - 0.0295) * 70.570526123, 0, INT_MAX / 2);
 
         if (idx > 127) { // fall back if index falls outside table range
             coeffs[n] = wmavoice_energy_table[127] *
