@@ -22,13 +22,13 @@
 #define AVUTIL_X86_INTREADWRITE_H
 
 #include <stdint.h>
+#include "config.h"
 #if HAVE_INTRINSICS_SSE && defined(__SSE__)
 #include <immintrin.h>
 #endif
 #if HAVE_INTRINSICS_SSE2 && defined(__SSE2__)
 #include <emmintrin.h>
 #endif
-#include "config.h"
 #include "libavutil/attributes.h"
 
 #if HAVE_INTRINSICS_SSE && defined(__SSE__)
