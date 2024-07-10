@@ -91,6 +91,7 @@ typedef struct FFV1SliceContext {
         // decoder-only
         struct {
             int slice_reset_contexts;
+            int slice_damaged;
         };
 
         // encoder-only
@@ -131,7 +132,6 @@ typedef struct FFV1Context {
 
     int ec;
     int intra;
-    int slice_damaged;
     int key_frame_ok;
     int context_model;
 
