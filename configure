@@ -2314,6 +2314,7 @@ HEADERS_LIST="
 
 INTRINSICS_LIST="
     intrinsics_neon
+    intrinsics_sse
     intrinsics_sse2
 "
 
@@ -2744,7 +2745,8 @@ armv6t2_deps="arm"
 armv8_deps="aarch64"
 neon_deps_any="aarch64 arm"
 intrinsics_neon_deps="neon"
-intrinsics_sse2_deps="sse2"
+intrinsics_sse_deps="sse"
+intrinsics_sse2_deps="sse2 intrinsics_sse"
 vfp_deps="arm"
 vfpv3_deps="vfp"
 setend_deps="arm"
@@ -6446,6 +6448,7 @@ elif enabled loongarch; then
 fi
 
 check_cc intrinsics_neon arm_neon.h "int16x8_t test = vdupq_n_s16(0)"
+check_cc intrinsics_sse immintrin.h "__m128 test = _mm_setzero_ps()"
 check_cc intrinsics_sse2 emmintrin.h "__m128i test = _mm_setzero_si128()"
 
 check_ldflags -Wl,--as-needed

@@ -22,29 +22,25 @@
 #define AVUTIL_X86_INTREADWRITE_H
 
 #include <stdint.h>
+#if HAVE_INTRINSICS_SSE
+#include <immintrin.h>
+#endif
 #if HAVE_INTRINSICS_SSE2
 #include <emmintrin.h>
 #endif
 #include "config.h"
 #include "libavutil/attributes.h"
 
-#if HAVE_MMX
-
-#ifdef __SSE__
+#if HAVE_INTRINSICS_SSE
 
 #define AV_COPY128 AV_COPY128
 static av_always_inline void AV_COPY128(void *d, const void *s)
 {
-    struct v {uint64_t v[2];};
-
-    __asm__("movaps   %1, %%xmm0  \n\t"
-            "movaps   %%xmm0, %0  \n\t"
-            : "=m"(*(struct v*)d)
-            : "m" (*(const struct v*)s)
-            : "xmm0");
+    __m128 tmp = _mm_load_ps(s);
+    _mm_store_ps(d, tmp);
 }
 
-#endif /* __SSE__ */
+#endif /* HAVE_INTRINSICS_SSE */
 
 #if HAVE_INTRINSICS_SSE2
 
@@ -56,7 +52,5 @@ static av_always_inline void AV_ZERO128(void *d)
 }
 
 #endif /* HAVE_INTRINSICS_SSE2 */
-
-#endif /* HAVE_MMX */
 
 #endif /* AVUTIL_X86_INTREADWRITE_H */
