@@ -51,9 +51,10 @@ int ff_dovi_get_metadata(DOVIContext *s, AVDOVIMetadata **out_metadata)
     if (s->ext_blocks) {
         const DOVIExt *ext = s->ext_blocks;
         size_t ext_sz = FFMIN(sizeof(AVDOVIDmData), dovi->ext_block_size);
-        for (int i = 0; i < ext->num_dm; i++)
-            memcpy(av_dovi_get_ext(dovi, i), &ext->dm[i], ext_sz);
-        dovi->num_ext_blocks = ext->num_dm;
+        for (int i = 0; i < ext->num_static; i++)
+            memcpy(av_dovi_get_ext(dovi, dovi->num_ext_blocks++), &ext->dm_static[i], ext_sz);
+        for (int i = 0; i < ext->num_dynamic; i++)
+            memcpy(av_dovi_get_ext(dovi, dovi->num_ext_blocks++), &ext->dm_dynamic[i], ext_sz);
     }
 
     *out_metadata = dovi;
@@ -296,15 +297,23 @@ static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver)
 
     while (num_ext_blocks--) {
         AVDOVIDmData *dm;
-
-        if (ext->num_dm >= FF_ARRAY_ELEMS(ext->dm))
-            return AVERROR_INVALIDDATA;
-        dm = &ext->dm[ext->num_dm++];
+        uint8_t level;
 
         ext_block_length = get_ue_golomb_31(gb);
-        dm->level = get_bits(gb, 8);
+        level = get_bits(gb, 8);
         start_pos = get_bits_count(gb);
 
+        if (ff_dovi_rpu_extension_is_static(level)) {
+            if (ext->num_static >= FF_ARRAY_ELEMS(ext->dm_static))
+                return AVERROR_INVALIDDATA;
+            dm = &ext->dm_static[ext->num_static++];
+        } else {
+            if (ext->num_dynamic >= FF_ARRAY_ELEMS(ext->dm_dynamic))
+                return AVERROR_INVALIDDATA;
+            dm = &ext->dm_dynamic[ext->num_dynamic++];
+        }
+
+        dm->level = level;
         switch (ver) {
         case 1: ret = parse_ext_v1(s, gb, dm); break;
         case 2: ret = parse_ext_v2(s, gb, dm, ext_block_length); break;
@@ -674,8 +683,10 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         color->source_diagonal = get_bits(gb, 10);
 
         /* Parse extension blocks */
-        if (s->ext_blocks)
-            s->ext_blocks->num_dm = 0;
+        if (s->ext_blocks) {
+            DOVIExt *ext = s->ext_blocks;
+            ext->num_static = ext->num_dynamic = 0;
+        }
         if ((ret = parse_ext_blocks(s, gb, 1)) < 0) {
             ff_dovi_ctx_unref(s);
             return ret;

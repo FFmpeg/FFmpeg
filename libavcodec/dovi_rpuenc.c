@@ -758,9 +758,14 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
 
         if (ext) {
             size_t ext_sz = FFMIN(sizeof(AVDOVIDmData), metadata->ext_block_size);
-            for (int i = 0; i < metadata->num_ext_blocks; i++)
-                memcpy(&ext->dm[i], av_dovi_get_ext(metadata, i), ext_sz);
-            ext->num_dm = metadata->num_ext_blocks;
+            ext->num_static = ext->num_dynamic = 0;
+            for (int i = 0; i < metadata->num_ext_blocks; i++) {
+                const AVDOVIDmData *dm = av_dovi_get_ext(metadata, i);
+                if (ff_dovi_rpu_extension_is_static(dm->level))
+                    memcpy(&ext->dm_static[ext->num_static++], dm, ext_sz);
+                else
+                    memcpy(&ext->dm_dynamic[ext->num_dynamic++], dm, ext_sz);
+            }
         }
     } else {
         s->color = &ff_dovi_color_default;

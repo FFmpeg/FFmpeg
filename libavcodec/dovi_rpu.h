@@ -33,8 +33,10 @@
 #define DOVI_MAX_DM_ID 15
 
 typedef struct DOVIExt {
-    AVDOVIDmData dm[AV_DOVI_MAX_EXT_BLOCKS];
-    int num_dm;
+    AVDOVIDmData dm_static[7];   ///< static extension blocks
+    AVDOVIDmData dm_dynamic[25]; ///< dynamic extension blocks
+    int num_static;
+    int num_dynamic;
 } DOVIExt;
 
 typedef struct DOVIContext {
@@ -190,5 +192,19 @@ int ff_dovi_guess_profile_hevc(const AVDOVIRpuDataHeader *hdr);
 
 /* Default values for AVDOVIColorMetadata */
 extern const AVDOVIColorMetadata ff_dovi_color_default;
+
+static inline int ff_dovi_rpu_extension_is_static(int level)
+{
+    switch (level) {
+    case 6:
+    case 10:
+    case 32: /* reserved as static by spec */
+    case 254:
+    case 255:
+        return 1;
+    default:
+        return 0;
+    }
+}
 
 #endif /* AVCODEC_DOVI_RPU_H */
