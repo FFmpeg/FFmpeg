@@ -3392,6 +3392,8 @@ static int barrelsplit_to_xyz(const V360Context *s,
             l_y =  0.5f;
             l_z = (-0.5f + vf) / scaleh;
             break;
+        default:
+            av_assert0(0);
         }
     }
 
