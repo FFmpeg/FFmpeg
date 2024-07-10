@@ -59,7 +59,7 @@ typedef struct UnsharpOpenCLContext {
         cl_int   size_y;
         cl_float amount;
         cl_float threshold;
-    } plane[4];
+    } plane[AV_VIDEO_MAX_PLANES];
 } UnsharpOpenCLContext;
 
 
