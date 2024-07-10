@@ -237,8 +237,10 @@ static int output_frame(AVFilterLink *outlink)
 
     // set correct timestamps and props as long as there is proper input
     ret = av_frame_copy_props(dst, s->input);
-    if (ret < 0)
+    if (ret < 0) {
+        av_frame_free(&dst);
         return ret;
+    }
 
     // discard frame at the top of the list since it has been fully processed
     list_remove_head(s);
