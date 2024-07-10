@@ -3787,6 +3787,8 @@ static int barrelsplit_to_xyz(const V360Context *s,
         case 3: // back bottom
             vf = (y * 2.f - 1.5f) / scaleh + 3.f - facef;
             break;
+        default:
+            av_assert0(0);
         }
         l_x = (0.5f - uf) / scalew;
         l_y =  0.5f * dir_vert;
