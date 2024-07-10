@@ -22,16 +22,16 @@
 #define AVUTIL_X86_INTREADWRITE_H
 
 #include <stdint.h>
-#if HAVE_INTRINSICS_SSE
+#if HAVE_INTRINSICS_SSE && defined(__SSE__)
 #include <immintrin.h>
 #endif
-#if HAVE_INTRINSICS_SSE2
+#if HAVE_INTRINSICS_SSE2 && defined(__SSE2__)
 #include <emmintrin.h>
 #endif
 #include "config.h"
 #include "libavutil/attributes.h"
 
-#if HAVE_INTRINSICS_SSE
+#if HAVE_INTRINSICS_SSE && defined(__SSE__)
 
 #define AV_COPY128 AV_COPY128
 static av_always_inline void AV_COPY128(void *d, const void *s)
@@ -40,9 +40,9 @@ static av_always_inline void AV_COPY128(void *d, const void *s)
     _mm_store_ps(d, tmp);
 }
 
-#endif /* HAVE_INTRINSICS_SSE */
+#endif /* HAVE_INTRINSICS_SSE && defined(__SSE__) */
 
-#if HAVE_INTRINSICS_SSE2
+#if HAVE_INTRINSICS_SSE2 && defined(__SSE2__)
 
 #define AV_ZERO128 AV_ZERO128
 static av_always_inline void AV_ZERO128(void *d)
@@ -51,6 +51,6 @@ static av_always_inline void AV_ZERO128(void *d)
     _mm_store_si128(d, zero);
 }
 
-#endif /* HAVE_INTRINSICS_SSE2 */
+#endif /* HAVE_INTRINSICS_SSE2 && defined(__SSE2__) */
 
 #endif /* AVUTIL_X86_INTREADWRITE_H */
