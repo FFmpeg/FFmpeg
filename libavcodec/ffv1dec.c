@@ -1022,27 +1022,6 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 }
 
 #if HAVE_THREADS
-static void copy_fields(FFV1Context *fsdst, const FFV1Context *fssrc,
-                        const FFV1Context *fsrc)
-{
-    fsdst->version             = fsrc->version;
-    fsdst->micro_version       = fsrc->micro_version;
-    fsdst->chroma_planes       = fsrc->chroma_planes;
-    fsdst->chroma_h_shift      = fsrc->chroma_h_shift;
-    fsdst->chroma_v_shift      = fsrc->chroma_v_shift;
-    fsdst->transparency        = fsrc->transparency;
-    fsdst->plane_count         = fsrc->plane_count;
-    fsdst->ac                  = fsrc->ac;
-    fsdst->colorspace          = fsrc->colorspace;
-
-    fsdst->ec                  = fsrc->ec;
-    fsdst->intra               = fsrc->intra;
-    fsdst->key_frame_ok        = fsrc->key_frame_ok;
-
-    fsdst->packed_at_lsb       = fsrc->packed_at_lsb;
-    fsdst->slice_count         = fsrc->slice_count;
-}
-
 static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     FFV1Context *fsrc = src->priv_data;
@@ -1051,7 +1030,22 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
     if (dst == src)
         return 0;
 
-    copy_fields(fdst, fsrc, fsrc);
+    fdst->version             = fsrc->version;
+    fdst->micro_version       = fsrc->micro_version;
+    fdst->chroma_planes       = fsrc->chroma_planes;
+    fdst->chroma_h_shift      = fsrc->chroma_h_shift;
+    fdst->chroma_v_shift      = fsrc->chroma_v_shift;
+    fdst->transparency        = fsrc->transparency;
+    fdst->plane_count         = fsrc->plane_count;
+    fdst->ac                  = fsrc->ac;
+    fdst->colorspace          = fsrc->colorspace;
+
+    fdst->ec                  = fsrc->ec;
+    fdst->intra               = fsrc->intra;
+    fdst->key_frame_ok        = fsrc->key_frame_ok;
+
+    fdst->packed_at_lsb       = fsrc->packed_at_lsb;
+    fdst->slice_count         = fsrc->slice_count;
     fdst->use32bit     = fsrc->use32bit;
     memcpy(fdst->state_transition, fsrc->state_transition,
            sizeof(fdst->state_transition));
