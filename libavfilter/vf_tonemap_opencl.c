@@ -343,8 +343,7 @@ static int tonemap_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
     int err;
     double peak = ctx->peak;
 
-    AVHWFramesContext *input_frames_ctx =
-        (AVHWFramesContext*)input->hw_frames_ctx->data;
+    AVHWFramesContext *input_frames_ctx;
 
     av_log(ctx, AV_LOG_DEBUG, "Filter input: %s, %ux%u (%"PRId64").\n",
            av_get_pix_fmt_name(input->format),
@@ -352,6 +351,7 @@ static int tonemap_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
 
     if (!input->hw_frames_ctx)
         return AVERROR(EINVAL);
+    input_frames_ctx = (AVHWFramesContext*)input->hw_frames_ctx->data;
 
     output = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!output) {
