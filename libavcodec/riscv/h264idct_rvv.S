@@ -68,8 +68,10 @@ func ff_h264_idct_add_8_rvv, zve32x
         vse16.v     v2, (t2)
         vse16.v     v3, (t3)
         vlseg4e16.v v0, (a1)
+        .equ    offset, 0
         .rept   256 / __riscv_xlen
-        sx      zero, ((__riscv_xlen / 8) * \+)(a1)
+        sx      zero, offset(a1)
+        .equ    offset, offset + (__riscv_xlen / 8)
         .endr
         jal         t0, ff_h264_idct4_rvv
         add         t1, a0, a2
@@ -179,8 +181,10 @@ func ff_h264_idct8_add_8_rvv, zve32x
         vse16.v     v6, (t6)
         vse16.v     v7, (a7)
         vlseg8e16.v v0, (a1)
+        .equ    offset, 0
         .rept   1024 / __riscv_xlen
-        sx      zero, ((__riscv_xlen / 8) * \+)(a1)
+        sx      zero, offset(a1)
+        .equ    offset, offset + (__riscv_xlen / 8)
         .endr
         jal         t0, ff_h264_idct8_rvv
         add         t1, a0, a2
