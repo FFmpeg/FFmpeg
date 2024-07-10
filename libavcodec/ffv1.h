@@ -86,8 +86,19 @@ typedef struct FFV1SliceContext {
     RangeCoder c;
 
     int ac_byte_count;                   ///< number of bytes used for AC coding
-    uint64_t rc_stat[256][2];
-    uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
+
+    union {
+        // decoder-only
+        struct {
+            int slice_reset_contexts;
+        };
+
+        // encoder-only
+        struct {
+            uint64_t rc_stat[256][2];
+            uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
+        };
+    };
 } FFV1SliceContext;
 
 typedef struct FFV1Context {
@@ -135,7 +146,6 @@ typedef struct FFV1Context {
     int max_slice_count;
     int num_v_slices;
     int num_h_slices;
-    int slice_reset_contexts;
 
     FFV1SliceContext *slices;
 } FFV1Context;

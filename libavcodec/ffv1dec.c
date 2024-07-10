@@ -239,7 +239,7 @@ static int decode_slice_header(const FFV1Context *f, FFV1Context *fs,
     }
 
     if (fs->version > 3) {
-        fs->slice_reset_contexts = get_rac(c, state);
+        sc->slice_reset_contexts = get_rac(c, state);
         sc->slice_coding_mode = get_symbol(c, state, 0);
         if (sc->slice_coding_mode != 1) {
             sc->slice_rct_by_coef = get_symbol(c, state, 0);
@@ -309,7 +309,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
     }
     if ((ret = ff_ffv1_init_slice_state(f, sc)) < 0)
         return ret;
-    if ((p->flags & AV_FRAME_FLAG_KEY) || fs->slice_reset_contexts) {
+    if ((p->flags & AV_FRAME_FLAG_KEY) || sc->slice_reset_contexts) {
         ff_ffv1_clear_slice_state(f, sc);
     } else if (fs->slice_damaged) {
         return AVERROR_INVALIDDATA;
