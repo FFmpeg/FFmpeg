@@ -84,6 +84,9 @@ typedef struct FFV1SliceContext {
     PlaneContext plane[MAX_PLANES];
     PutBitContext pb;
     RangeCoder c;
+
+    uint64_t rc_stat[256][2];
+    uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
 } FFV1SliceContext;
 
 typedef struct FFV1Context {

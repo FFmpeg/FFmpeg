@@ -75,8 +75,8 @@ RENAME(encode_line)(FFV1Context *f,
 
         if (ac != AC_GOLOMB_RICE) {
             if (s->flags & AV_CODEC_FLAG_PASS1) {
-                put_symbol_inline(c, p->state[context], diff, 1, s->rc_stat,
-                                  s->rc_stat2[p->quant_table_index][context]);
+                put_symbol_inline(c, p->state[context], diff, 1, sc->rc_stat,
+                                  sc->rc_stat2[p->quant_table_index][context]);
             } else {
                 put_symbol_inline(c, p->state[context], diff, 1, NULL, NULL);
             }

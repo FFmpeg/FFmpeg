@@ -897,11 +897,11 @@ slices_ok:
             return AVERROR(ENOMEM);
         for (i = 0; i < s->quant_table_count; i++)
             for (j = 0; j < s->max_slice_count; j++) {
-                FFV1Context *sf = s->slice_context[j];
-                av_assert0(!sf->rc_stat2[i]);
-                sf->rc_stat2[i] = av_mallocz(s->context_count[i] *
-                                             sizeof(*sf->rc_stat2[i]));
-                if (!sf->rc_stat2[i])
+                FFV1SliceContext *sc = &s->slices[j];
+                av_assert0(!sc->rc_stat2[i]);
+                sc->rc_stat2[i] = av_mallocz(s->context_count[i] *
+                                             sizeof(*sc->rc_stat2[i]));
+                if (!sc->rc_stat2[i])
                     return AVERROR(ENOMEM);
             }
     }
@@ -1127,16 +1127,16 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
             av_assert0(f->slice_count == f->max_slice_count);
             for (j = 0; j < f->slice_count; j++) {
-                FFV1Context *fs = f->slice_context[j];
+                const FFV1SliceContext *sc = &f->slices[j];
                 for (i = 0; i < 256; i++) {
-                    f->rc_stat[i][0] += fs->rc_stat[i][0];
-                    f->rc_stat[i][1] += fs->rc_stat[i][1];
+                    f->rc_stat[i][0] += sc->rc_stat[i][0];
+                    f->rc_stat[i][1] += sc->rc_stat[i][1];
                 }
                 for (i = 0; i < f->quant_table_count; i++) {
                     for (k = 0; k < f->context_count[i]; k++)
                         for (m = 0; m < 32; m++) {
-                            f->rc_stat2[i][k][m][0] += fs->rc_stat2[i][k][m][0];
-                            f->rc_stat2[i][k][m][1] += fs->rc_stat2[i][k][m][1];
+                            f->rc_stat2[i][k][m][0] += sc->rc_stat2[i][k][m][0];
+                            f->rc_stat2[i][k][m][1] += sc->rc_stat2[i][k][m][1];
                         }
                 }
             }

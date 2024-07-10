@@ -127,7 +127,6 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
 
         f->slice_context[i++] = fs;
         memcpy(fs, f, sizeof(*fs));
-        memset(fs->rc_stat2, 0, sizeof(fs->rc_stat2));
 
         sc->slice_width  = sxe - sxs;
         sc->slice_height = sye - sys;
@@ -208,9 +207,8 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
     for (j = 0; j < s->quant_table_count; j++) {
         av_freep(&s->initial_states[j]);
         for (i = 0; i < s->max_slice_count; i++) {
-            FFV1Context *sf = s->slice_context[i];
-            if (sf)
-                av_freep(&sf->rc_stat2[j]);
+            FFV1SliceContext *sc = &s->slices[i];
+            av_freep(&sc->rc_stat2[j]);
         }
         av_freep(&s->rc_stat2[j]);
     }
