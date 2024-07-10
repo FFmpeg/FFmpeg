@@ -301,26 +301,28 @@ typedef struct AVDOVIDmLevel255 {
 } AVDOVIDmLevel255;
 
 /**
- * Dolby Vision metadata extension block.
+ * Dolby Vision metadata extension block. Dynamic extension blocks may change
+ * from frame to frame, while static blocks are constant throughout the entire
+ * sequence.
  *
  * @note sizeof(AVDOVIDmData) is not part of the public API.
  */
 typedef struct AVDOVIDmData {
     uint8_t level; /* [1, 255] */
     union {
-        AVDOVIDmLevel1 l1;
-        AVDOVIDmLevel2 l2; /* may appear multiple times */
-        AVDOVIDmLevel3 l3;
-        AVDOVIDmLevel4 l4;
-        AVDOVIDmLevel5 l5;
-        AVDOVIDmLevel6 l6;
+        AVDOVIDmLevel1 l1; /* dynamic */
+        AVDOVIDmLevel2 l2; /* dynamic, may appear multiple times */
+        AVDOVIDmLevel3 l3; /* dynamic */
+        AVDOVIDmLevel4 l4; /* dynamic */
+        AVDOVIDmLevel5 l5; /* dynamic */
+        AVDOVIDmLevel6 l6; /* static */
         /* level 7 is currently unused */
-        AVDOVIDmLevel8 l8; /* may appear multiple times */
-        AVDOVIDmLevel9 l9;
-        AVDOVIDmLevel10 l10; /* may appear multiple times */
-        AVDOVIDmLevel11 l11;
-        AVDOVIDmLevel254 l254;
-        AVDOVIDmLevel255 l255;
+        AVDOVIDmLevel8 l8; /* dynamic, may appear multiple times */
+        AVDOVIDmLevel9 l9; /* dynamic */
+        AVDOVIDmLevel10 l10; /* static, may appear multiple times */
+        AVDOVIDmLevel11 l11; /* dynamic */
+        AVDOVIDmLevel254 l254; /* static */
+        AVDOVIDmLevel255 l255; /* static */
     };
 } AVDOVIDmData;
 
