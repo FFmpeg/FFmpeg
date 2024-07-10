@@ -1060,10 +1060,10 @@ retry:
         encode_slice_header(f, fs, sc);
     }
     if (f->ac == AC_GOLOMB_RICE) {
-        fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&sc->c, f->version > 2) : 0;
+        sc->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&sc->c, f->version > 2) : 0;
         init_put_bits(&sc->pb,
-                      sc->c.bytestream_start + fs->ac_byte_count,
-                      sc->c.bytestream_end - sc->c.bytestream_start - fs->ac_byte_count);
+                      sc->c.bytestream_start + sc->ac_byte_count,
+                      sc->c.bytestream_end - sc->c.bytestream_start - sc->ac_byte_count);
     }
 
     if (f->colorspace == 0 && c->pix_fmt != AV_PIX_FMT_YA8) {
@@ -1212,7 +1212,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     buf_p = pkt->data;
     for (i = 0; i < f->slice_count; i++) {
-        FFV1Context *fs = f->slice_context[i];
         FFV1SliceContext *sc = &f->slices[i];
         int bytes;
 
@@ -1220,7 +1219,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             bytes = ff_rac_terminate(&sc->c, 1);
         } else {
             flush_put_bits(&sc->pb); // FIXME: nicer padding
-            bytes = fs->ac_byte_count + put_bytes_output(&sc->pb);
+            bytes = sc->ac_byte_count + put_bytes_output(&sc->pb);
         }
         if (i > 0 || f->version > 2) {
             av_assert0(bytes < pkt->size / f->slice_count);

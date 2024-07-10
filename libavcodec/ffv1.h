@@ -85,6 +85,7 @@ typedef struct FFV1SliceContext {
     PutBitContext pb;
     RangeCoder c;
 
+    int ac_byte_count;                   ///< number of bytes used for AC coding
     uint64_t rc_stat[256][2];
     uint64_t (*rc_stat2[MAX_QUANT_TABLES])[32][2];
 } FFV1SliceContext;
@@ -109,7 +110,6 @@ typedef struct FFV1Context {
     const AVFrame *cur_enc_frame;
     int plane_count;
     int ac;                              ///< 1=range coder <-> 0=golomb rice
-    int ac_byte_count;                   ///< number of bytes used for AC coding
     int16_t quant_tables[MAX_QUANT_TABLES][MAX_CONTEXT_INPUTS][256];
     int context_count[MAX_QUANT_TABLES];
     uint8_t state_transition[256];

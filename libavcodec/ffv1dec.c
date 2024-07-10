@@ -323,10 +323,10 @@ static int decode_slice(AVCodecContext *c, void *arg)
     if (f->ac == AC_GOLOMB_RICE) {
         if (f->version == 3 && f->micro_version > 1 || f->version > 3)
             get_rac(&sc->c, (uint8_t[]) { 129 });
-        fs->ac_byte_count = f->version > 2 || (!x && !y) ? sc->c.bytestream - sc->c.bytestream_start - 1 : 0;
+        sc->ac_byte_count = f->version > 2 || (!x && !y) ? sc->c.bytestream - sc->c.bytestream_start - 1 : 0;
         init_get_bits(&gb,
-                      sc->c.bytestream_start + fs->ac_byte_count,
-                      (sc->c.bytestream_end - sc->c.bytestream_start - fs->ac_byte_count) * 8);
+                      sc->c.bytestream_start + sc->ac_byte_count,
+                      (sc->c.bytestream_end - sc->c.bytestream_start - sc->ac_byte_count) * 8);
     }
 
     av_assert1(width && height);
