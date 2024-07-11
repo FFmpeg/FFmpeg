@@ -223,6 +223,8 @@ static int xmv_read_header(AVFormatContext *s)
     /* Initialize the packet context */
 
     xmv->next_packet_offset = avio_tell(pb);
+    if (this_packet_size < xmv->next_packet_offset)
+        return AVERROR_INVALIDDATA;
     xmv->next_packet_size   = this_packet_size - xmv->next_packet_offset;
     xmv->stream_count       = xmv->audio_track_count + 1;
 
