@@ -2288,8 +2288,11 @@ static int xfade_activate(AVFilterContext *avctx)
         // Check if we are not yet transitioning, in which case
         // just request and forward the input frame.
         if (s->start_pts > s->pts) {
+            int ret;
             s->passthrough = 1;
-            ff_inlink_consume_frame(in_a, &s->xf[0]);
+            ret = ff_inlink_consume_frame(in_a, &s->xf[0]);
+            if (ret < 0)
+                return ret;
             return ff_filter_frame(outlink, s->xf[0]);
         }
         s->passthrough = 0;
@@ -2297,8 +2300,14 @@ static int xfade_activate(AVFilterContext *avctx)
         // We are transitioning, so we need a frame from second input
         if (ff_inlink_check_available_frame(in_b)) {
             int ret;
-            ff_inlink_consume_frame(avctx->inputs[0], &s->xf[0]);
-            ff_inlink_consume_frame(avctx->inputs[1], &s->xf[1]);
+            ret = ff_inlink_consume_frame(avctx->inputs[0], &s->xf[0]);
+            if (ret < 0)
+                return ret;
+            ret = ff_inlink_consume_frame(avctx->inputs[1], &s->xf[1]);
+            if (ret < 0) {
+                av_frame_free(&s->xf[0]);
+                return ret;
+            }
 
             // Calculate PTS offset to first input
             if (s->inputs_offset_pts == AV_NOPTS_VALUE)
