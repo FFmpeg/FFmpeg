@@ -122,13 +122,16 @@ static int read_header(AVFormatContext *avctx)
     s->chars_per_frame = FFMAX(av_q2d(st->time_base)*s->chars_per_frame, 1);
 
     if (avctx->pb->seekable & AVIO_SEEKABLE_NORMAL) {
-        s->fsize = avio_size(avctx->pb);
-        st->duration = (s->fsize + s->chars_per_frame - 1) / s->chars_per_frame;
+        int64_t fsize = avio_size(avctx->pb);
+        if (fsize > 0) {
+            s->fsize = fsize;
+            st->duration = (s->fsize + s->chars_per_frame - 1) / s->chars_per_frame;
 
-        if (ff_sauce_read(avctx, &s->fsize, 0, 0) < 0)
-            efi_read(avctx, s->fsize - 51);
+            if (ff_sauce_read(avctx, &s->fsize, 0, 0) < 0)
+                efi_read(avctx, s->fsize - 51);
 
-        avio_seek(avctx->pb, 0, SEEK_SET);
+            avio_seek(avctx->pb, 0, SEEK_SET);
+        }
     }
 
 fail:
