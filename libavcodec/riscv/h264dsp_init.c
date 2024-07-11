@@ -53,9 +53,13 @@ void ff_h264_idct8_add4_8_rvv(uint8_t *dst, const int *blockoffset,
                               const uint8_t nnzc[5 * 8]);
 
 void ff_h264_idct_add_9_rvv(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_9_rvv(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct_add_10_rvv(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_10_rvv(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct_add_12_rvv(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_12_rvv(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct_add_14_rvv(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_idct8_add_14_rvv(uint8_t *dst, int16_t *block, int stride);
 
 extern int ff_startcode_find_candidate_rvb(const uint8_t *, int);
 extern int ff_startcode_find_candidate_rvv(const uint8_t *, int);
@@ -94,14 +98,26 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
 #  endif
         }
 
-        if (bit_depth == 9 && zvl128b)
-            dsp->h264_idct_add = ff_h264_idct_add_9_rvv;
-        if (bit_depth == 10 && zvl128b)
-            dsp->h264_idct_add = ff_h264_idct_add_10_rvv;
-        if (bit_depth == 12 && zvl128b)
-            dsp->h264_idct_add = ff_h264_idct_add_12_rvv;
-        if (bit_depth == 14 && zvl128b)
-            dsp->h264_idct_add = ff_h264_idct_add_14_rvv;
+        if (bit_depth == 9) {
+            if (zvl128b)
+                dsp->h264_idct_add = ff_h264_idct_add_9_rvv;
+            dsp->h264_idct8_add = ff_h264_idct8_add_9_rvv;
+        }
+        if (bit_depth == 10) {
+            if (zvl128b)
+                dsp->h264_idct_add = ff_h264_idct_add_10_rvv;
+            dsp->h264_idct8_add = ff_h264_idct8_add_10_rvv;
+        }
+        if (bit_depth == 12) {
+            if (zvl128b)
+                dsp->h264_idct_add = ff_h264_idct_add_12_rvv;
+            dsp->h264_idct8_add = ff_h264_idct8_add_12_rvv;
+        }
+        if (bit_depth == 14) {
+            if (zvl128b)
+                dsp->h264_idct_add = ff_h264_idct_add_14_rvv;
+            dsp->h264_idct8_add = ff_h264_idct8_add_14_rvv;
+        }
 
         dsp->startcode_find_candidate = ff_startcode_find_candidate_rvv;
     }
