@@ -333,7 +333,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     char *str = NULL;
     const char *key = NULL;
     uint16_t langcode = 0;
-    uint32_t data_type = 0, str_size, str_size_alloc;
+    uint32_t data_type = 0, str_size_alloc;
+    uint64_t str_size;
     int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
     int raw = 0;
     int num = 0;
