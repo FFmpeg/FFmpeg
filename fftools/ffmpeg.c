@@ -309,8 +309,8 @@ const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 static void ffmpeg_cleanup(int ret)
 {
     if (do_benchmark) {
-        int maxrss = getmaxrss() / 1024;
-        av_log(NULL, AV_LOG_INFO, "bench: maxrss=%iKiB\n", maxrss);
+        int64_t maxrss = getmaxrss() / 1024;
+        av_log(NULL, AV_LOG_INFO, "bench: maxrss=%"PRId64"KiB\n", maxrss);
     }
 
     for (int i = 0; i < nb_filtergraphs; i++)
