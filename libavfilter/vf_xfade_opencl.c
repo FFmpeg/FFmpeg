@@ -293,7 +293,9 @@ static int xfade_opencl_activate(AVFilterContext *avctx)
             if (ctx->first_pts + ctx->offset_pts > ctx->xf[0]->pts) {
                 ctx->xf[0] = NULL;
                 ctx->need_second = 0;
-                ff_inlink_consume_frame(avctx->inputs[0], &in);
+                ret = ff_inlink_consume_frame(avctx->inputs[0], &in);
+                if (ret < 0)
+                    return ret;
                 return ff_filter_frame(outlink, in);
             }
 
@@ -302,8 +304,14 @@ static int xfade_opencl_activate(AVFilterContext *avctx)
     }
 
     if (ctx->xf[0] && ff_inlink_queued_frames(avctx->inputs[1]) > 0) {
-        ff_inlink_consume_frame(avctx->inputs[0], &ctx->xf[0]);
-        ff_inlink_consume_frame(avctx->inputs[1], &ctx->xf[1]);
+        ret = ff_inlink_consume_frame(avctx->inputs[0], &ctx->xf[0]);
+        if (ret < 0)
+            return ret;
+        ret = ff_inlink_consume_frame(avctx->inputs[1], &ctx->xf[1]);
+        if (ret < 0) {
+            av_frame_free(&ctx->xf[0]);
+            return ret;
+        }
 
         ctx->last_pts = ctx->xf[1]->pts;
         ctx->pts = ctx->xf[0]->pts;
