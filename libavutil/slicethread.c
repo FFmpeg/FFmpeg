@@ -102,6 +102,7 @@ int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
 {
     AVSliceThread *ctx;
     int nb_workers, i;
+    int ret;
 
     av_assert0(nb_threads >= 0);
     if (!nb_threads) {
@@ -135,16 +136,37 @@ int avpriv_slicethread_create(AVSliceThread **pctx, void *priv,
 
     atomic_init(&ctx->first_job, 0);
     atomic_init(&ctx->current_job, 0);
-    pthread_mutex_init(&ctx->done_mutex, NULL);
-    pthread_cond_init(&ctx->done_cond, NULL);
+    ret = pthread_mutex_init(&ctx->done_mutex, NULL);
+    if (ret) {
+        av_freep(&ctx->workers);
+        av_freep(pctx);
+        return AVERROR(ret);
+    }
+    ret = pthread_cond_init(&ctx->done_cond, NULL);
+    if (ret) {
+        ctx->nb_threads = main_func ? 0 : 1;
+        avpriv_slicethread_free(pctx);
+        return AVERROR(ret);
+    }
     ctx->done        = 0;
 
     for (i = 0; i < nb_workers; i++) {
         WorkerContext *w = &ctx->workers[i];
         int ret;
         w->ctx = ctx;
-        pthread_mutex_init(&w->mutex, NULL);
-        pthread_cond_init(&w->cond, NULL);
+        ret = pthread_mutex_init(&w->mutex, NULL);
+        if (ret) {
+            ctx->nb_threads = main_func ? i : i + 1;
+            avpriv_slicethread_free(pctx);
+            return AVERROR(ret);
+        }
+        ret = pthread_cond_init(&w->cond, NULL);
+        if (ret) {
+            pthread_mutex_destroy(&w->mutex);
+            ctx->nb_threads = main_func ? i : i + 1;
+            avpriv_slicethread_free(pctx);
+            return AVERROR(ret);
+        }
         pthread_mutex_lock(&w->mutex);
         w->done = 0;
 
