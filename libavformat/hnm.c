@@ -113,6 +113,8 @@ static int hnm_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (hnm->superchunk_remaining == 0) {
         /* parse next superchunk */
         superchunk_size = avio_rl24(pb);
+        if (superchunk_size < 4)
+            return AVERROR_INVALIDDATA;
         avio_skip(pb, 1);
 
         hnm->superchunk_remaining = superchunk_size - 4;
@@ -123,7 +125,7 @@ static int hnm_read_packet(AVFormatContext *s, AVPacket *pkt)
     chunk_id = avio_rl16(pb);
     avio_skip(pb, 2);
 
-    if (chunk_size > hnm->superchunk_remaining || !chunk_size) {
+    if (chunk_size > hnm->superchunk_remaining || chunk_size < 8) {
         av_log(s, AV_LOG_ERROR,
                "invalid chunk size: %"PRIu32", offset: %"PRId64"\n",
                chunk_size, avio_tell(pb));
