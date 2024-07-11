@@ -937,7 +937,7 @@ int av_frame_apply_cropping(AVFrame *frame, int flags)
         if (log2_crop_align < min_log2_align)
             return AVERROR_BUG;
 
-        if (min_log2_align < 5) {
+        if (min_log2_align < 5 && log2_crop_align != INT_MAX) {
             frame->crop_left &= ~((1 << (5 + log2_crop_align - min_log2_align)) - 1);
             calc_cropping_offsets(offsets, frame, desc);
         }
