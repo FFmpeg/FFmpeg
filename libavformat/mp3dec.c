@@ -137,9 +137,10 @@ static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration
     int fill_index = (mp3->usetoc || fast_seek) && duration > 0;
 
     if (!filesize &&
-        !(filesize = avio_size(s->pb))) {
+        (filesize = avio_size(s->pb)) <= 0) {
         av_log(s, AV_LOG_WARNING, "Cannot determine file size, skipping TOC table.\n");
         fill_index = 0;
+        filesize = 0;
     }
 
     for (i = 0; i < XING_TOC_COUNT; i++) {
