@@ -669,7 +669,6 @@ static double fffloatscan(FFFILE *f, int prec, int pok)
             while (i--) shunget(f);
             return NAN;
         }
-        return NAN;
     }
 
     if (i) {
