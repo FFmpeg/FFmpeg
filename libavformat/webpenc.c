@@ -190,7 +190,7 @@ static int webp_write_trailer(AVFormatContext *s)
 
         if (!ret) {
             filesize = avio_tell(s->pb);
-            if (avio_seek(s->pb, 4, SEEK_SET) == 4) {
+            if (filesize >= 8 && avio_seek(s->pb, 4, SEEK_SET) == 4) {
                 avio_wl32(s->pb, filesize - 8);
                 // Note: without the following, avio only writes 8 bytes to the file.
                 avio_seek(s->pb, filesize, SEEK_SET);
