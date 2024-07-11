@@ -250,7 +250,10 @@ AVBufferPool *av_buffer_pool_init2(buffer_size_t size, void *opaque,
     if (!pool)
         return NULL;
 
-    ff_mutex_init(&pool->mutex, NULL);
+    if (ff_mutex_init(&pool->mutex, NULL)) {
+        av_free(pool);
+        return NULL;
+    }
 
     pool->size      = size;
     pool->opaque    = opaque;
@@ -269,7 +272,10 @@ AVBufferPool *av_buffer_pool_init(buffer_size_t size, AVBufferRef* (*alloc)(buff
     if (!pool)
         return NULL;
 
-    ff_mutex_init(&pool->mutex, NULL);
+    if (ff_mutex_init(&pool->mutex, NULL)) {
+        av_free(pool);
+        return NULL;
+    }
 
     pool->size     = size;
     pool->alloc    = alloc ? alloc : av_buffer_alloc;
