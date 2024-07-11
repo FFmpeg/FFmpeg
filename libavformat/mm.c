@@ -94,7 +94,7 @@ static int read_header(AVFormatContext *s)
     type = avio_rl16(pb);
     length = avio_rl32(pb);
 
-    if (type != MM_TYPE_HEADER)
+    if (type != MM_TYPE_HEADER || length < 10)
         return AVERROR_INVALIDDATA;
 
     /* read header */
