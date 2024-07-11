@@ -81,7 +81,8 @@ typedef struct FFV1SliceContext {
     int slice_rct_by_coef;
     int slice_rct_ry_coef;
 
-    PlaneContext plane[MAX_PLANES];
+    // RefStruct reference, array of MAX_PLANES elements
+    PlaneContext *plane;
     PutBitContext pb;
     RangeCoder c;
 
@@ -153,6 +154,7 @@ int ff_ffv1_common_init(AVCodecContext *avctx);
 int ff_ffv1_init_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
 int ff_ffv1_init_slices_state(FFV1Context *f);
 int ff_ffv1_init_slice_contexts(FFV1Context *f);
+PlaneContext *ff_ffv1_planes_alloc(void);
 int ff_ffv1_allocate_initial_states(FFV1Context *f);
 void ff_ffv1_clear_slice_state(const FFV1Context *f, FFV1SliceContext *sc);
 int ff_ffv1_close(AVCodecContext *avctx);

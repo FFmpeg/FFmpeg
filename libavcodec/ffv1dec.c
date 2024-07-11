@@ -38,6 +38,7 @@
 #include "mathops.h"
 #include "ffv1.h"
 #include "progressframe.h"
+#include "refstruct.h"
 #include "thread.h"
 
 static inline av_flatten int get_symbol_inline(RangeCoder *c, uint8_t *state,
@@ -266,30 +267,11 @@ static int decode_slice(AVCodecContext *c, void *arg)
     if (f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
         ff_progress_frame_await(&f->last_picture, si);
 
-    if(f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY)) {
+    if (f->fsrc) {
         const FFV1SliceContext *scsrc = &f->fsrc->slices[si];
 
         if (!(p->flags & AV_FRAME_FLAG_KEY))
             sc->slice_damaged |= scsrc->slice_damaged;
-
-        for (int i = 0; i < f->plane_count; i++) {
-            const PlaneContext *psrc = &scsrc->plane[i];
-            PlaneContext *pdst = &sc->plane[i];
-
-            av_free(pdst->state);
-            av_free(pdst->vlc_state);
-            memcpy(pdst, psrc, sizeof(*pdst));
-            pdst->state = NULL;
-            pdst->vlc_state = NULL;
-
-            if (f->ac) {
-                pdst->state = av_malloc_array(CONTEXT_SIZE,  psrc->context_count);
-                memcpy(pdst->state, psrc->state, CONTEXT_SIZE * psrc->context_count);
-            } else {
-                pdst->vlc_state = av_malloc_array(sizeof(*pdst->vlc_state), psrc->context_count);
-                memcpy(pdst->vlc_state, psrc->vlc_state, sizeof(*pdst->vlc_state) * psrc->context_count);
-            }
-        }
     }
 
     sc->slice_rct_by_coef = 1;
@@ -813,6 +795,11 @@ static int read_header(FFV1Context *f)
                         && (unsigned)sc->slice_y + (uint64_t)sc->slice_height <= f->height);
         }
 
+        ff_refstruct_unref(&sc->plane);
+        sc->plane = ff_ffv1_planes_alloc();
+        if (!sc->plane)
+            return AVERROR(ENOMEM);
+
         for (int i = 0; i < f->plane_count; i++) {
             PlaneContext *const p = &sc->plane[i];
 
@@ -829,10 +816,6 @@ static int read_header(FFV1Context *f)
 
             if (f->version <= 2) {
                 av_assert0(context_count >= 0);
-                if (p->context_count < context_count) {
-                    av_freep(&p->state);
-                    av_freep(&p->vlc_state);
-                }
                 p->context_count = context_count;
             }
         }
@@ -1060,6 +1043,8 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         const FFV1SliceContext *sc0 = &fsrc->slices[i];
 
         sc->slice_damaged = sc0->slice_damaged;
+
+        ff_refstruct_replace(&sc->plane, sc0->plane);
 
         if (fsrc->version < 3) {
             sc->slice_x             = sc0->slice_x;

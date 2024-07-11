@@ -31,6 +31,7 @@
 
 #include "avcodec.h"
 #include "ffv1.h"
+#include "refstruct.h"
 
 av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
 {
@@ -50,6 +51,24 @@ av_cold int ff_ffv1_common_init(AVCodecContext *avctx)
     s->num_v_slices = 1;
 
     return 0;
+}
+
+static void planes_free(FFRefStructOpaque opaque, void *obj)
+{
+    PlaneContext *planes = obj;
+
+    for (int i = 0; i < MAX_PLANES; i++) {
+        PlaneContext *p = &planes[i];
+
+        av_freep(&p->state);
+        av_freep(&p->vlc_state);
+    }
+}
+
+PlaneContext* ff_ffv1_planes_alloc(void)
+{
+    return ff_refstruct_alloc_ext(sizeof(PlaneContext) * MAX_PLANES,
+                                  0, NULL, planes_free);
 }
 
 av_cold int ff_ffv1_init_slice_state(const FFV1Context *f,
@@ -132,6 +151,10 @@ av_cold int ff_ffv1_init_slice_contexts(FFV1Context *f)
                                               sizeof(*sc->sample_buffer32));
         if (!sc->sample_buffer || !sc->sample_buffer32)
             return AVERROR(ENOMEM);
+
+        sc->plane = ff_ffv1_planes_alloc();
+        if (!sc->plane)
+            return AVERROR(ENOMEM);
     }
 
     return 0;
@@ -188,12 +211,7 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
         av_freep(&sc->sample_buffer);
         av_freep(&sc->sample_buffer32);
 
-        for (i = 0; i < s->plane_count; i++) {
-            PlaneContext *p = &sc->plane[i];
-
-            av_freep(&p->state);
-            av_freep(&p->vlc_state);
-        }
+        ff_refstruct_unref(&sc->plane);
     }
 
     av_freep(&avctx->stats_out);
