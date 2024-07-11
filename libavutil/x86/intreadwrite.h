@@ -23,32 +23,25 @@
 
 #include <stdint.h>
 #include "config.h"
-#if HAVE_INTRINSICS_SSE && defined(__SSE__)
-#include <immintrin.h>
-#endif
 #if HAVE_INTRINSICS_SSE2 && defined(__SSE2__)
 #include <emmintrin.h>
 #endif
 #include "libavutil/attributes.h"
 
-#if HAVE_INTRINSICS_SSE && defined(__SSE__)
+#if HAVE_INTRINSICS_SSE2 && defined(__SSE2__)
 
 #define AV_COPY128 AV_COPY128
 static av_always_inline void AV_COPY128(void *d, const void *s)
 {
-    __m128 tmp = _mm_load_ps(s);
-    _mm_store_ps(d, tmp);
+    __m128i tmp = _mm_load_si128((const __m128i *)s);
+    _mm_store_si128((__m128i *)d, tmp);
 }
-
-#endif /* HAVE_INTRINSICS_SSE && defined(__SSE__) */
-
-#if HAVE_INTRINSICS_SSE2 && defined(__SSE2__)
 
 #define AV_ZERO128 AV_ZERO128
 static av_always_inline void AV_ZERO128(void *d)
 {
     __m128i zero = _mm_setzero_si128();
-    _mm_store_si128(d, zero);
+    _mm_store_si128((__m128i *)d, zero);
 }
 
 #endif /* HAVE_INTRINSICS_SSE2 && defined(__SSE2__) */
