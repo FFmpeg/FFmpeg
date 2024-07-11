@@ -198,6 +198,9 @@ static int sap_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     struct pollfd p = {fd, POLLIN, 0};
     uint8_t recvbuf[RTP_MAX_PACKET_LENGTH];
 
+    if (fd < 0)
+        return fd;
+
     if (sap->eof)
         return AVERROR_EOF;
 
