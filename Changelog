@@ -16,6 +16,7 @@ version <next>:
 - VVC encoding support via libvvenc
 - perlin video source
 - D3D12VA HEVC encoder
+- Cropping metadata parsing and writing in Matroska and MP4/MOV de/muxers
 
 version 7.0:
 - DXV DXT1 encoder
