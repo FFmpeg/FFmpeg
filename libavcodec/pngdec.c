@@ -1084,7 +1084,7 @@ static int decode_sbit_chunk(AVCodecContext *avctx, PNGDecContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    channels = ff_png_get_nb_channels(s->color_type);
+    channels = s->color_type & PNG_COLOR_MASK_PALETTE ? 3 : ff_png_get_nb_channels(s->color_type);
 
     if (bytestream2_get_bytes_left(gb) != channels)
         return AVERROR_INVALIDDATA;
