@@ -76,6 +76,7 @@ FATE_LAVF_CONTAINER_FATE-$(call ALLYES, IVF_DEMUXER AV1_DECODER AV1_PARSER MATRO
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, EVC_DEMUXER EVC_PARSER MOV_MUXER)      += evc.mp4
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, H264_DEMUXER H264_PARSER MOV_MUXER)    += h264.mp4
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, HEVC_DEMUXER HEVC_PARSER EXTRACT_EXTRADATA_BSF MOV_MUXER) += hevc.mp4
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MOV_DEMUXER MOV_MUXER)                 += mv_hevc.mov
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, VVC_DEMUXER VVC_PARSER MOV_MUXER)      += vvc.mp4
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGG_MUXER)          += vp3.ogg
 FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGV_MUXER)          += vp8.ogg
@@ -99,6 +100,7 @@ fate-lavf-fate-vvc.mp4: CMD = lavf_container_fate "vvc-conformance/VPS_A_3.bit" 
 fate-lavf-fate-vp3.ogg: CMD = lavf_container_fate "vp3/coeff_level64.mkv" "-idct auto"
 fate-lavf-fate-vp8.ogg: CMD = lavf_container_fate "vp8/RRSF49-short.webm" "" "-acodec copy"
 fate-lavf-fate-latm: CMD = lavf_container_fate "aac/al04_44.mp4" "" "-acodec copy"
+fate-lavf-fate-mv_hevc.mov: CMD = lavf_container_fate "hevc/multiview.mov" "" "-c:v copy"
 fate-lavf-fate-mp3: CMD = lavf_container_fate "mp3-conformance/he_32khz.bit" "" "-acodec copy"
 fate-lavf-fate-qtrle_mace6.mov: CMD = lavf_container_fate "qtrle/Animation-16Greys.mov" "-idct auto"
 fate-lavf-fate-cram.avi: CMD = lavf_container_fate "cram/toon.avi" "-idct auto"
