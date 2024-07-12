@@ -1407,6 +1407,31 @@ static av_cold int init(AVFilterContext *ctx)
     out_channel_layout = s->out_channel_layout.order == AV_CHANNEL_ORDER_NATIVE ?
                          s->out_channel_layout.u.mask : 0;
 
+    switch (out_channel_layout) {
+    case AV_CH_LAYOUT_MONO:
+    case AV_CH_LAYOUT_STEREO:
+    case AV_CH_LAYOUT_2POINT1:
+    case AV_CH_LAYOUT_2_1:
+    case AV_CH_LAYOUT_2_2:
+    case AV_CH_LAYOUT_SURROUND:
+    case AV_CH_LAYOUT_3POINT1:
+    case AV_CH_LAYOUT_QUAD:
+    case AV_CH_LAYOUT_4POINT0:
+    case AV_CH_LAYOUT_4POINT1:
+    case AV_CH_LAYOUT_5POINT0:
+    case AV_CH_LAYOUT_5POINT1:
+    case AV_CH_LAYOUT_5POINT0_BACK:
+    case AV_CH_LAYOUT_5POINT1_BACK:
+    case AV_CH_LAYOUT_6POINT0:
+    case AV_CH_LAYOUT_6POINT1:
+    case AV_CH_LAYOUT_7POINT0:
+    case AV_CH_LAYOUT_7POINT1:
+    case AV_CH_LAYOUT_OCTAGONAL:
+        break;
+    default:
+        goto fail;
+    }
+
     switch (in_channel_layout) {
     case AV_CH_LAYOUT_STEREO:
         s->filter = filter_stereo;
