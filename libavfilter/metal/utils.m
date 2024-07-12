@@ -28,18 +28,19 @@ void ff_metal_compute_encoder_dispatch(id<MTLDevice> device,
     NSUInteger w = pipeline.threadExecutionWidth;
     NSUInteger h = pipeline.maxTotalThreadsPerThreadgroup / w;
     MTLSize threadsPerThreadgroup = MTLSizeMake(w, h, 1);
-    BOOL fallback = YES;
     // MAC_OS_X_VERSION_10_15 is only defined on SDKs new enough to include its functionality (including iOS, tvOS, etc)
 #ifdef MAC_OS_X_VERSION_10_15
     if (@available(macOS 10.15, iOS 11, tvOS 14.5, *)) {
         if ([device supportsFamily:MTLGPUFamilyCommon3]) {
             MTLSize threadsPerGrid = MTLSizeMake(width, height, 1);
             [encoder dispatchThreads:threadsPerGrid threadsPerThreadgroup:threadsPerThreadgroup];
-            fallback = NO;
+            return;
         }
     }
 #endif
-    if (fallback) {
+
+    // Fallback path, if we took the above one we already returned so none of this is reached
+    {
         MTLSize threadgroups = MTLSizeMake((width + w - 1) / w,
                                            (height + h - 1) / h,
                                            1);
