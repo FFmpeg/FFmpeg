@@ -151,6 +151,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *outlink, AVFrame *buf)
 {
+    AVFrame *buf_out;
     AVFilterContext *ctx = outlink->src;
     ChannelSplitContext *s = ctx->priv;
     const int i = FF_OUTLINK_IDX(outlink);
@@ -159,7 +160,7 @@ static int filter_frame(AVFilterLink *outlink, AVFrame *buf)
 
     av_assert1(channel >= 0);
 
-    AVFrame *buf_out = av_frame_clone(buf);
+    buf_out = av_frame_clone(buf);
     if (!buf_out)
         return AVERROR(ENOMEM);
 
