@@ -102,19 +102,13 @@ static void list_filters(CoreImageContext *ctx)
         filter_categories = [NSArray arrayWithObjects:kCICategoryGenerator, nil];
     }
 
-    NSArray *filter_names = [CIFilter filterNamesInCategories:filter_categories];
-    NSEnumerator *filters = [filter_names objectEnumerator];
+    for (NSString *filter_name in [CIFilter filterNamesInCategories:filter_categories]) {
+        CIFilter *filter = [CIFilter filterWithName:filter_name];
+        NSDictionary<NSString *, id> *filter_attribs = [filter attributes];
 
-    NSString *filter_name;
-    while (filter_name = [filters nextObject]) {
         av_log(ctx, AV_LOG_INFO, "Filter: %s\n", [filter_name UTF8String]);
-        NSString *input;
 
-        CIFilter *filter             = [CIFilter filterWithName:filter_name];
-        NSDictionary *filter_attribs = [filter attributes]; // <nsstring, id>
-        NSArray      *filter_inputs  = [filter inputKeys];  // <nsstring>
-
-        for (input in filter_inputs) {
+        for (NSString *input in [filter inputKeys]) {
             NSDictionary *input_attribs = [filter_attribs valueForKey:input];
             NSString *input_class       = [input_attribs valueForKey:kCIAttributeClass];
             if ([input_class isEqualToString:@"NSNumber"]) {
