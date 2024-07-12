@@ -297,14 +297,18 @@ static int request_frame(AVFilterLink *link)
 
     frame->pts                 = ctx->pts;
     frame->duration            = 1;
+    frame->flags              |= AV_FRAME_FLAG_KEY;
+    frame->flags              &= ~AV_FRAME_FLAG_INTERLACED;
+
+FF_DISABLE_DEPRECATION_WARNINGS
 #if FF_API_FRAME_KEY
     frame->key_frame           = 1;
 #endif
-    frame->flags              |= AV_FRAME_FLAG_KEY;
 #if FF_API_INTERLACED_FRAME
     frame->interlaced_frame    = 0;
 #endif
-    frame->flags              &= ~AV_FRAME_FLAG_INTERLACED;
+FF_ENABLE_DEPRECATION_WARNINGS
+
     frame->pict_type           = AV_PICTURE_TYPE_I;
     frame->sample_aspect_ratio = ctx->sar;
 
