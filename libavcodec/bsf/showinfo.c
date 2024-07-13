@@ -23,6 +23,7 @@
 #include "bsf.h"
 #include "bsf_internal.h"
 
+#include "libavutil/adler32.h"
 #include "libavutil/log.h"
 #include "libavutil/timestamp.h"
 
@@ -33,23 +34,26 @@ typedef struct ShowinfoContext {
 static int showinfo_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     ShowinfoContext *priv = ctx->priv_data;
+    uint32_t crc;
     int ret;
 
     ret = ff_bsf_get_packet_ref(ctx, pkt);
     if (ret < 0)
         return ret;
 
+    crc = av_adler32_update(0, pkt->data, pkt->size);
     av_log(ctx, AV_LOG_INFO,
            "n:%7"PRIu64" "
            "size:%7d "
            "pts:%s pt:%s "
            "dts:%s dt:%s "
            "ds:%"PRId64" d:%s "
+           "adler32:0x%08"PRIx32
            "\n",
            priv->nb_packets, pkt->size,
            av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, &ctx->time_base_in),
            av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, &ctx->time_base_in),
-           pkt->duration, av_ts2timestr(pkt->duration, &ctx->time_base_in));
+           pkt->duration, av_ts2timestr(pkt->duration, &ctx->time_base_in), crc);
 
     priv->nb_packets++;
 
