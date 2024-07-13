@@ -63,6 +63,7 @@ void ff_h264_idct8_add_14_rvv(uint8_t *dst, int16_t *block, int stride);
 
 void ff_h264_add_pixels8_8_rvv(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_add_pixels4_8_rvv(uint8_t *dst, int16_t *block, int stride);
+void ff_h264_add_pixels8_16_rvv(uint8_t *dst, int16_t *block, int stride);
 void ff_h264_add_pixels4_16_rvv(uint8_t *dst, int16_t *block, int stride);
 
 extern int ff_startcode_find_candidate_rvb(const uint8_t *, int);
@@ -126,6 +127,7 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
             dsp->h264_idct8_add = ff_h264_idct8_add_14_rvv;
         }
         if (bit_depth > 8 && zvl128b) {
+            dsp->h264_add_pixels8_clear = ff_h264_add_pixels8_16_rvv;
             if (flags & AV_CPU_FLAG_RVV_I64)
                 dsp->h264_add_pixels4_clear = ff_h264_add_pixels4_16_rvv;
         }

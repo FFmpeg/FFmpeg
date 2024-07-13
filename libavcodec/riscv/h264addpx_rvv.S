@@ -87,3 +87,25 @@ func ff_h264_add_pixels8_8_rvv, zve64x
         vsse64.v        v8, (a0), a2
         ret
 endfunc
+
+func ff_h264_add_pixels8_16_rvv, zve32x
+        li      t0, 8
+        vsetivli    zero, 8, e16, m1, ta, ma
+1:
+        vle32.v     v16, (a1)
+        addi    t0, t0, -1
+        vle16.v     v8, (a0)
+        .equ    offset, 0
+        .rept   256 / __riscv_xlen
+        sx      zero, offset(a1)
+        .equ    offset, offset + (__riscv_xlen / 8)
+        .endr
+        vncvt.x.x.w v24, v16
+        addi    a1, a1, 8 * 4
+        vadd.vv     v8, v8, v24
+        vse16.v     v8, (a0)
+        add     a0, a0, a2
+        bnez    t0, 1b
+
+        ret
+endfunc
