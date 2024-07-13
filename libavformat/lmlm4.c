@@ -91,7 +91,6 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt)
     frame_type  = avio_rb16(pb);
     packet_size = avio_rb32(pb);
     padding     = -packet_size & 511;
-    frame_size  = packet_size - 8;
 
     if (frame_type > LMLM4_MPEG1L2 || frame_type == LMLM4_INVALID) {
         av_log(s, AV_LOG_ERROR, "invalid or unsupported frame_type\n");
@@ -102,6 +101,7 @@ static int lmlm4_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
     }
 
+    frame_size  = packet_size - 8;
     if ((ret = av_get_packet(pb, pkt, frame_size)) <= 0)
         return AVERROR(EIO);
 
