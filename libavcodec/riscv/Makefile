@@ -31,7 +31,8 @@ RVV-OBJS-$(CONFIG_H263DSP) += riscv/h263dsp_rvv.o
 OBJS-$(CONFIG_H264CHROMA) += riscv/h264_chroma_init_riscv.o
 RVV-OBJS-$(CONFIG_H264CHROMA) += riscv/h264_mc_chroma.o
 OBJS-$(CONFIG_H264DSP) += riscv/h264dsp_init.o
-RVV-OBJS-$(CONFIG_H264DSP) += riscv/h264dsp_rvv.o riscv/h264idct_rvv.o
+RVV-OBJS-$(CONFIG_H264DSP) += riscv/h264addpx_rvv.o riscv/h264dsp_rvv.o \
+                              riscv/h264idct_rvv.o
 OBJS-$(CONFIG_HUFFYUV_DECODER) += riscv/huffyuvdsp_init.o
 RVV-OBJS-$(CONFIG_HUFFYUV_DECODER) += riscv/huffyuvdsp_rvv.o
 OBJS-$(CONFIG_IDCTDSP) += riscv/idctdsp_init.o
