@@ -188,23 +188,32 @@ static void check_idct(void)
     for (i = 0; i < FF_ARRAY_ELEMS(depths); i++) {
         bit_depth = depths[i];
         ff_h264dsp_init(&h, bit_depth, 1);
-        for (sz = 4; sz <= 8; sz += 4) {
-            randomize_buffers(i);
 
-            if (sz == 4)
-                dct4x4(coef, bit_depth);
-            else
-                dct8x8(coef, bit_depth);
-
-            for (dc = 0; dc <= 1; dc++) {
+        for (dc = 0; dc <= 2; dc++) {
+            for (sz = 4; sz <= 8; sz += 4) {
                 void (*idct)(uint8_t *, int16_t *, int) = NULL;
-                switch ((sz << 1) | dc) {
-                case (4 << 1) | 0: idct = h.h264_idct_add; break;
-                case (4 << 1) | 1: idct = h.h264_idct_dc_add; break;
-                case (8 << 1) | 0: idct = h.h264_idct8_add; break;
-                case (8 << 1) | 1: idct = h.h264_idct8_dc_add; break;
+                const char fmts[3][28] = {
+                    "h264_idct%d_add_%dbpp", "h264_idct%d_dc_add_%dbpp",
+                    "h264_add_pixels%d_%dbpp",
+                };
+
+                randomize_buffers(i);
+
+                if (sz == 4)
+                    dct4x4(coef, bit_depth);
+                else
+                    dct8x8(coef, bit_depth);
+
+                switch ((sz << 2) | dc) {
+                case (4 << 2) | 0: idct = h.h264_idct_add; break;
+                case (4 << 2) | 1: idct = h.h264_idct_dc_add; break;
+                case (4 << 2) | 2: idct = h.h264_add_pixels4_clear; break;
+                case (8 << 2) | 0: idct = h.h264_idct8_add; break;
+                case (8 << 2) | 1: idct = h.h264_idct8_dc_add; break;
+                case (8 << 2) | 2: idct = h.h264_add_pixels8_clear; break;
                 }
-                if (check_func(idct, "h264_idct%d_add%s_%dbpp", sz, dc ? "_dc" : "", bit_depth)) {
+
+                if (check_func(idct, fmts[dc], sz, bit_depth)) {
                     for (align = 0; align < 16; align += sz * SIZEOF_PIXEL) {
                         uint8_t *dst1 = dst1_base + align;
                         if (dc) {
