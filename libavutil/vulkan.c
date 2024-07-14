@@ -1689,6 +1689,7 @@ int ff_vk_set_descriptor_buffer(FFVulkanContext *s, FFVulkanPipeline *pl,
         .type = desc_set->binding[bind].descriptorType,
     };
     VkDescriptorAddressInfoEXT desc_buf_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
         .address = addr,
         .range = len,
         .format = fmt,
