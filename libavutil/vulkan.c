@@ -1465,7 +1465,7 @@ static const struct descriptor_props {
 int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
                                       FFVkSPIRVShader *shd,
                                       FFVulkanDescriptorSetBinding *desc, int nb,
-                                      int read_only, int print_to_shader_only)
+                                      int singular, int print_to_shader_only)
 {
     VkResult ret;
     int has_sampler = 0;
@@ -1535,7 +1535,7 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
         vk->GetDescriptorSetLayoutBindingOffsetEXT(s->hwctx->act_dev, set->layout,
                                                    i, &set->binding_offset[i]);
 
-    set->read_only = read_only;
+    set->singular = singular;
     set->nb_bindings = nb;
     pl->nb_descriptor_sets++;
 
@@ -1592,7 +1592,7 @@ int ff_vk_exec_pipeline_register(FFVulkanContext *s, FFVkExecPool *pool,
 
     for (int i = 0; i < pl->nb_descriptor_sets; i++) {
         FFVulkanDescriptorSet *set = &pl->desc_set[i];
-        int nb = set->read_only ? 1 : pool->pool_size;
+        int nb = set->singular ? 1 : pool->pool_size;
 
         err = ff_vk_create_buf(s, &set->buf, set->aligned_size*nb,
                                NULL, NULL, set->usage,
@@ -1624,7 +1624,7 @@ static inline void update_set_descriptor(FFVulkanContext *s, FFVkExecContext *e,
                                          size_t desc_size)
 {
     FFVulkanFunctions *vk = &s->vkfn;
-    const size_t exec_offset = set->read_only ? 0 : set->aligned_size*e->idx;
+    const size_t exec_offset = set->singular ? 0 : set->aligned_size*e->idx;
     void *desc = set->desc_mem +                 /* Base */
                  exec_offset +                   /* Execution context */
                  set->binding_offset[bind_idx] + /* Descriptor binding */
@@ -1831,7 +1831,7 @@ void ff_vk_exec_bind_pipeline(FFVulkanContext *s, FFVkExecContext *e,
 
     if (pl->nb_descriptor_sets) {
         for (int i = 0; i < pl->nb_descriptor_sets; i++)
-            offsets[i] = pl->desc_set[i].read_only ? 0 : pl->desc_set[i].aligned_size*e->idx;
+            offsets[i] = pl->desc_set[i].singular ? 0 : pl->desc_set[i].aligned_size*e->idx;
 
         /* Bind descriptor buffers */
         vk->CmdBindDescriptorBuffersEXT(e->buf, pl->nb_descriptor_sets, pl->desc_bind);

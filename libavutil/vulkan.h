@@ -125,7 +125,8 @@ typedef struct FFVulkanDescriptorSet {
     VkDeviceSize *binding_offset;
     int nb_bindings;
 
-    int read_only;
+    /* Descriptor set is shared between all submissions */
+    int singular;
 } FFVulkanDescriptorSet;
 
 typedef struct FFVulkanPipeline {
@@ -463,7 +464,7 @@ void ff_vk_update_push_exec(FFVulkanContext *s, FFVkExecContext *e,
 int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
                                       FFVkSPIRVShader *shd,
                                       FFVulkanDescriptorSetBinding *desc, int nb,
-                                      int read_only, int print_to_shader_only);
+                                      int singular, int print_to_shader_only);
 
 /* Initialize/free a pipeline. */
 int ff_vk_init_compute_pipeline(FFVulkanContext *s, FFVulkanPipeline *pl,
