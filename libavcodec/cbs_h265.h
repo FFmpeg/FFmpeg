@@ -442,6 +442,46 @@ typedef struct H265RawPPS {
     uint8_t luma_bit_depth_entry_minus8;
     uint8_t chroma_bit_depth_entry_minus8;
     uint16_t pps_palette_predictor_initializers[3][128];
+
+    // Multilayer extension.
+    uint8_t poc_reset_info_present_flag;
+    uint8_t pps_infer_scaling_list_flag;
+    uint8_t pps_scaling_list_ref_layer_id;
+    uint8_t num_ref_loc_offsets;
+    uint8_t ref_loc_offset_layer_id[64];
+    uint8_t scaled_ref_layer_offset_present_flag[64];
+    int16_t scaled_ref_layer_left_offset[64];
+    int16_t scaled_ref_layer_top_offset[64];
+    int16_t scaled_ref_layer_right_offset[64];
+    int16_t scaled_ref_layer_bottom_offset[64];
+    uint8_t ref_region_offset_present_flag[64];
+    int16_t ref_region_left_offset[64];
+    int16_t ref_region_top_offset[64];
+    int16_t ref_region_right_offset[64];
+    int16_t ref_region_bottom_offset[64];
+    uint8_t resample_phase_set_present_flag[64];
+    uint8_t phase_hor_luma[64];
+    uint8_t phase_ver_luma[64];
+    uint8_t phase_hor_chroma_plus8[64];
+    uint8_t phase_ver_chroma_plus8[64];
+    uint8_t colour_mapping_enabled_flag;
+    uint8_t num_cm_ref_layers_minus1;
+    uint8_t cm_ref_layer_id[62];
+    uint8_t cm_octant_depth;
+    uint8_t cm_y_part_num_log2;
+    uint8_t luma_bit_depth_cm_input_minus8;
+    uint8_t chroma_bit_depth_cm_input_minus8;
+    uint8_t luma_bit_depth_cm_output_minus8;
+    uint8_t chroma_bit_depth_cm_output_minus8;
+    uint8_t cm_res_quant_bits;
+    uint8_t cm_delta_flc_bits_minus1;
+    int16_t cm_adapt_threshold_u_delta;
+    int16_t cm_adapt_threshold_v_delta;
+    uint8_t split_octant_flag[2];
+    uint8_t coded_res_flag[12][2][2][4];
+    uint8_t res_coeff_q[12][2][2][4][3];
+    uint32_t res_coeff_s[12][2][2][4][3];
+    uint8_t res_coeff_r[12][2][2][4][3];
 } H265RawPPS;
 
 typedef struct H265RawAUD {

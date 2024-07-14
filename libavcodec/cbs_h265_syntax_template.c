@@ -1039,6 +1039,167 @@ static int FUNC(pps_range_extension)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(colour_mapping_octants)(CodedBitstreamContext *ctx, RWContext *rw,
+                                        H265RawPPS *current, unsigned int inp_depth,
+                                        unsigned int idx_y, unsigned int idx_cb,
+                                        unsigned int idx_cr, unsigned int inp_length)
+{
+    int part_num_y, cm_res_bits;
+    int err;
+
+    part_num_y = 1 << current->cm_y_part_num_log2;
+
+    av_assert0(inp_depth <= 1);
+    if (inp_depth < current->cm_octant_depth)
+        flags(split_octant_flag[inp_depth], 1, inp_depth);
+    else
+        infer(split_octant_flag[inp_depth], 0);
+
+    if (current->split_octant_flag[inp_depth])
+        for (int k = 0; k < 2; k++)
+            for (int m = 0; m < 2; m++)
+                for (int n = 0; n < 2; n++)
+                    CHECK(FUNC(colour_mapping_octants)(ctx, rw, current, inp_depth + 1,
+                                                       idx_y + part_num_y * k * inp_length / 2,
+                                                       idx_cb + m * inp_length / 2,
+                                                       idx_cr + n * inp_length / 2,
+                                                       inp_length / 2));
+    else
+        for (int i = 0; i < part_num_y; i++) {
+            int idx_shift_y = idx_y + (i << (current->cm_octant_depth - inp_depth));
+            for (int j = 0; j < 4; j++) {
+                flags(coded_res_flag[idx_shift_y][idx_cb][idx_cr][j],
+                      4, idx_shift_y, idx_cb, idx_cr, j);
+                if (current->coded_res_flag[idx_shift_y][idx_cb][idx_cr][j]) {
+                    for (int c = 0; c < 3; c++) {
+                        ues(res_coeff_q[idx_shift_y][idx_cb][idx_cr][j][c], 0, 3,
+                            5, idx_shift_y, idx_cb, idx_cr, j, c);
+                        cm_res_bits = FFMAX(0, 10 + (current->luma_bit_depth_cm_input_minus8 + 8) -
+                                            (current->luma_bit_depth_cm_output_minus8 + 8) -
+                                            current->cm_res_quant_bits - (current->cm_delta_flc_bits_minus1 + 1));
+                        if (cm_res_bits)
+                            ubs(cm_res_bits, res_coeff_r[idx_shift_y][idx_cb][idx_cr][j][c],
+                                5, idx_shift_y, idx_cb, idx_cr, j, c);
+                        else
+                            infer(res_coeff_r[idx_shift_y][idx_cb][idx_cr][j][c], 0);
+                        if (current->res_coeff_q[idx_shift_y][idx_cb][idx_cr][j][c] ||
+                            current->res_coeff_r[idx_shift_y][idx_cb][idx_cr][j][c])
+                            ub(1, res_coeff_s[idx_shift_y][idx_cb][idx_cr][j][c]);
+                        else
+                            infer(res_coeff_s[idx_shift_y][idx_cb][idx_cr][j][c], 0);
+                    }
+                } else {
+                    for (int c = 0; c < 3; c++) {
+                        infer(res_coeff_q[idx_shift_y][idx_cb][idx_cr][j][c], 0);
+                        infer(res_coeff_r[idx_shift_y][idx_cb][idx_cr][j][c], 0);
+                        infer(res_coeff_s[idx_shift_y][idx_cb][idx_cr][j][c], 0);
+                    }
+                }
+            }
+        }
+
+    return 0;
+}
+
+static int FUNC(colour_mapping_table)(CodedBitstreamContext *ctx, RWContext *rw,
+                                      H265RawPPS *current)
+{
+    int err;
+
+    ue(num_cm_ref_layers_minus1, 0, 61);
+    for (int i = 0; i <= current->num_cm_ref_layers_minus1; i++)
+        ubs(6, cm_ref_layer_id[i], 1, i);
+
+    u(2, cm_octant_depth, 0, 1);
+    u(2, cm_y_part_num_log2, 0, 3 - current->cm_octant_depth);
+
+    ue(luma_bit_depth_cm_input_minus8, 0, 8);
+    ue(chroma_bit_depth_cm_input_minus8, 0, 8);
+    ue(luma_bit_depth_cm_output_minus8, 0, 8);
+    ue(chroma_bit_depth_cm_output_minus8, 0, 8);
+
+    ub(2, cm_res_quant_bits);
+    ub(2, cm_delta_flc_bits_minus1);
+
+    if (current->cm_octant_depth == 1) {
+        se(cm_adapt_threshold_u_delta, -32768, 32767);
+        se(cm_adapt_threshold_v_delta, -32768, 32767);
+    } else {
+        infer(cm_adapt_threshold_u_delta, 0);
+        infer(cm_adapt_threshold_v_delta, 0);
+    }
+
+    CHECK(FUNC(colour_mapping_octants)(ctx, rw, current, 0, 0, 0, 0, 1 << current->cm_octant_depth));
+
+    return 0;
+}
+
+static int FUNC(pps_multilayer_extension)(CodedBitstreamContext *ctx, RWContext *rw,
+                                          H265RawPPS *current)
+{
+    CodedBitstreamH265Context *h265 = ctx->priv_data;
+    const H265RawVPS *vps = h265->active_vps;
+    int offset;
+    int err, i;
+
+    flag(poc_reset_info_present_flag);
+    flag(pps_infer_scaling_list_flag);
+    if (current->pps_infer_scaling_list_flag)
+        ub(6, pps_scaling_list_ref_layer_id);
+
+    if (!vps) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "VPS missing for PPS Multilayer Extension.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    ue(num_ref_loc_offsets, 0, vps->vps_max_layers_minus1);
+    for (i = 0; i < current->num_ref_loc_offsets; i++) {
+        ubs(6, ref_loc_offset_layer_id[i], 1, i);
+        offset = current->ref_loc_offset_layer_id[i];
+        flags(scaled_ref_layer_offset_present_flag[i], 1, i);
+        if (current->scaled_ref_layer_offset_present_flag[i]) {
+            ses(scaled_ref_layer_left_offset[offset], -16384, 16383, 1, offset);
+            ses(scaled_ref_layer_top_offset[offset], -16384, 16383, 1, offset);
+            ses(scaled_ref_layer_right_offset[offset], -16384, 16383, 1, offset);
+            ses(scaled_ref_layer_bottom_offset[offset], -16384, 16383, 1, offset);
+        } else {
+            infer(scaled_ref_layer_left_offset[offset], 0);
+            infer(scaled_ref_layer_top_offset[offset], 0);
+            infer(scaled_ref_layer_right_offset[offset], 0);
+            infer(scaled_ref_layer_bottom_offset[offset], 0);
+        }
+        flags(ref_region_offset_present_flag[i], 1, i);
+        if (current->ref_region_offset_present_flag[i]) {
+            ses(ref_region_left_offset[offset], -16384, 16383, 1, offset);
+            ses(ref_region_top_offset[offset], -16384, 16383, 1, offset);
+            ses(ref_region_right_offset[offset], -16384, 16383, 1, offset);
+            ses(ref_region_bottom_offset[offset], -16384, 16383, 1, offset);
+        } else {
+            infer(ref_region_left_offset[offset], 0);
+            infer(ref_region_top_offset[offset], 0);
+            infer(ref_region_right_offset[offset], 0);
+            infer(ref_region_bottom_offset[offset], 0);
+        }
+        flags(resample_phase_set_present_flag[i], 1, i);
+        if (current->resample_phase_set_present_flag[i]) {
+            ues(phase_hor_luma[offset], 0, 31, 1, offset);
+            ues(phase_ver_luma[offset], 0, 31, 1, offset);
+            ues(phase_hor_chroma_plus8[offset], 0, 63, 1, offset);
+            ues(phase_ver_chroma_plus8[offset], 0, 63, 1, offset);
+        } else {
+            infer(phase_hor_luma[offset], 0);
+            infer(phase_ver_luma[offset], 0);
+            infer(phase_hor_chroma_plus8[offset], 8);
+        }
+    }
+
+    flag(colour_mapping_enabled_flag);
+    if (current->colour_mapping_enabled_flag)
+        CHECK(FUNC(colour_mapping_table)(ctx, rw, current));
+
+    return 0;
+}
+
 static int FUNC(pps_scc_extension)(CodedBitstreamContext *ctx, RWContext *rw,
                                    H265RawPPS *current)
 {
@@ -1189,7 +1350,7 @@ static int FUNC(pps)(CodedBitstreamContext *ctx, RWContext *rw,
     if (current->pps_range_extension_flag)
         CHECK(FUNC(pps_range_extension)(ctx, rw, current));
     if (current->pps_multilayer_extension_flag)
-        return AVERROR_PATCHWELCOME;
+        CHECK(FUNC(pps_multilayer_extension)(ctx, rw, current));
     if (current->pps_3d_extension_flag)
         return AVERROR_PATCHWELCOME;
     if (current->pps_scc_extension_flag)
