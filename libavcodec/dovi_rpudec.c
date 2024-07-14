@@ -289,7 +289,7 @@ static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver)
     num_ext_blocks = get_ue_golomb_31(gb);
     align_get_bits(gb);
 
-    if (!ext) {
+    if (num_ext_blocks && !ext) {
         ext = s->ext_blocks = ff_refstruct_allocz(sizeof(*s->ext_blocks));
         if (!ext)
             return AVERROR(ENOMEM);
