@@ -323,6 +323,7 @@ static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver,
             dm = &ext->dm_dynamic[ext->num_dynamic++];
         }
 
+        memset(dm, 0, sizeof(*dm));
         dm->level = level;
         switch (ver) {
         case 1: ret = parse_ext_v1(s, gb, dm); break;
