@@ -66,7 +66,6 @@ void ff_dovi_ctx_replace(DOVIContext *s, const DOVIContext *s0)
     for (int i = 0; i <= DOVI_MAX_DM_ID; i++)
         ff_refstruct_replace(&s->vdr[i], s0->vdr[i]);
     ff_refstruct_replace(&s->ext_blocks, s0->ext_blocks);
-    s->num_ext_blocks = s0->num_ext_blocks;
 }
 
 int ff_dovi_guess_profile_hevc(const AVDOVIRpuDataHeader *hdr)

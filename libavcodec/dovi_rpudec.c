@@ -33,7 +33,7 @@
 int ff_dovi_get_metadata(DOVIContext *s, AVDOVIMetadata **out_metadata)
 {
     AVDOVIMetadata *dovi;
-    size_t dovi_size, ext_sz;
+    size_t dovi_size;
 
     if (!s->mapping || !s->color)
         return 0; /* incomplete dovi metadata */
@@ -47,10 +47,14 @@ int ff_dovi_get_metadata(DOVIContext *s, AVDOVIMetadata **out_metadata)
     COPY(AVDOVIRpuDataHeader, av_dovi_get_header(dovi), &s->header, ext_mapping_idc_5_7);
     COPY(AVDOVIDataMapping, av_dovi_get_mapping(dovi), s->mapping, nlq_pivots);
     COPY(AVDOVIColorMetadata, av_dovi_get_color(dovi), s->color, source_diagonal);
-    ext_sz = FFMIN(sizeof(AVDOVIDmData), dovi->ext_block_size);
-    for (int i = 0; i < s->num_ext_blocks; i++)
-        memcpy(av_dovi_get_ext(dovi, i), &s->ext_blocks[i], ext_sz);
-    dovi->num_ext_blocks = s->num_ext_blocks;
+
+    if (s->ext_blocks) {
+        const DOVIExt *ext = s->ext_blocks;
+        size_t ext_sz = FFMIN(sizeof(AVDOVIDmData), dovi->ext_block_size);
+        for (int i = 0; i < ext->num_dm; i++)
+            memcpy(av_dovi_get_ext(dovi, i), &ext->dm[i], ext_sz);
+        dovi->num_ext_blocks = ext->num_dm;
+    }
 
     *out_metadata = dovi;
     return dovi_size;
@@ -279,20 +283,24 @@ static int parse_ext_v2(DOVIContext *s, GetBitContext *gb, AVDOVIDmData *dm,
 static int parse_ext_blocks(DOVIContext *s, GetBitContext *gb, int ver)
 {
     int num_ext_blocks, ext_block_length, start_pos, parsed_bits, ret;
+    DOVIExt *ext = s->ext_blocks;
 
     num_ext_blocks = get_ue_golomb_31(gb);
     align_get_bits(gb);
-    if (s->num_ext_blocks + num_ext_blocks > AV_DOVI_MAX_EXT_BLOCKS)
-        return AVERROR_INVALIDDATA;
 
-    if (!s->ext_blocks) {
-        s->ext_blocks = ff_refstruct_allocz(sizeof(AVDOVIDmData) * AV_DOVI_MAX_EXT_BLOCKS);
-        if (!s->ext_blocks)
+    if (!ext) {
+        ext = s->ext_blocks = ff_refstruct_allocz(sizeof(*s->ext_blocks));
+        if (!ext)
             return AVERROR(ENOMEM);
     }
 
     while (num_ext_blocks--) {
-        AVDOVIDmData *dm = &s->ext_blocks[s->num_ext_blocks++];
+        AVDOVIDmData *dm;
+
+        if (ext->num_dm >= FF_ARRAY_ELEMS(ext->dm))
+            return AVERROR_INVALIDDATA;
+        dm = &ext->dm[ext->num_dm++];
+
         ext_block_length = get_ue_golomb_31(gb);
         dm->level = get_bits(gb, 8);
         start_pos = get_bits_count(gb);
@@ -666,7 +674,8 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         color->source_diagonal = get_bits(gb, 10);
 
         /* Parse extension blocks */
-        s->num_ext_blocks = 0;
+        if (s->ext_blocks)
+            s->ext_blocks->num_dm = 0;
         if ((ret = parse_ext_blocks(s, gb, 1)) < 0) {
             ff_dovi_ctx_unref(s);
             return ret;
@@ -680,7 +689,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         }
     } else {
         s->color = &ff_dovi_color_default;
-        s->num_ext_blocks = 0;
+        ff_refstruct_unref(&s->ext_blocks);
     }
 
     return 0;

@@ -31,6 +31,12 @@
 #include "codec_par.h"
 
 #define DOVI_MAX_DM_ID 15
+
+typedef struct DOVIExt {
+    AVDOVIDmData dm[AV_DOVI_MAX_EXT_BLOCKS];
+    int num_dm;
+} DOVIExt;
+
 typedef struct DOVIContext {
     void *logctx;
 
@@ -70,8 +76,7 @@ typedef struct DOVIContext {
      * Currently active extension blocks, updates on every ff_dovi_rpu_parse()
      * or ff_dovi_rpu_generate().
      */
-    AVDOVIDmData *ext_blocks;
-    int num_ext_blocks;
+    DOVIExt *ext_blocks; ///< RefStruct, or NULL if no extension blocks
 
     /**
      * Private fields internal to dovi_rpu.c
