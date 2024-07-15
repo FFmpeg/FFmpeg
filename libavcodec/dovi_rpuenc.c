@@ -79,7 +79,20 @@ int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
     switch (codecpar->codec_id) {
     case AV_CODEC_ID_AV1:  dv_profile = 10; break;
     case AV_CODEC_ID_H264: dv_profile = 9;  break;
-    case AV_CODEC_ID_HEVC: dv_profile = hdr ? ff_dovi_guess_profile_hevc(hdr) : 8; break;
+    case AV_CODEC_ID_HEVC:
+        if (hdr) {
+            dv_profile = ff_dovi_guess_profile_hevc(hdr);
+            break;
+        }
+
+        /* This is likely to be proprietary IPTPQc2 */
+        if (codecpar->color_space == AVCOL_SPC_IPT_C2 ||
+            (codecpar->color_space == AVCOL_SPC_UNSPECIFIED &&
+             codecpar->color_trc == AVCOL_TRC_UNSPECIFIED))
+            dv_profile = 5;
+        else
+            dv_profile = 8;
+        break;
     default:
         /* No other encoder should be calling this! */
         av_assert0(0);
