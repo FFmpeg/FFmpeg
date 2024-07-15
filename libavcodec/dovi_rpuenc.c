@@ -52,11 +52,12 @@ static struct {
     [13] = {7680*4320*120u, 7680, 240, 800},
 };
 
-int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
+int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
+                          const AVDOVIMetadata *metadata,
+                          int strict_std_compliance)
 {
     AVDOVIDecoderConfigurationRecord *cfg;
     const AVDOVIRpuDataHeader *hdr = NULL;
-    const AVFrameSideData *sd;
     int dv_profile, dv_level, bl_compat_id = -1;
     size_t cfg_size;
     uint64_t pps;
@@ -64,16 +65,13 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
     if (!s->enable)
         goto skip;
 
-    sd = av_frame_side_data_get(avctx->decoded_side_data,
-                                avctx->nb_decoded_side_data, AV_FRAME_DATA_DOVI_METADATA);
-
-    if (sd)
-        hdr = av_dovi_get_header((const AVDOVIMetadata *) sd->data);
+    if (metadata)
+        hdr = av_dovi_get_header(metadata);
 
     if (s->enable == FF_DOVI_AUTOMATIC && !hdr)
         goto skip;
 
-    switch (avctx->codec_id) {
+    switch (codecpar->codec_id) {
     case AV_CODEC_ID_AV1:  dv_profile = 10; break;
     case AV_CODEC_ID_H264: dv_profile = 9;  break;
     case AV_CODEC_ID_HEVC: dv_profile = hdr ? ff_dovi_guess_profile_hevc(hdr) : 8; break;
@@ -83,12 +81,12 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
         return AVERROR_BUG;
     }
 
-    if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+    if (strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
         if (dv_profile == 9) {
-            if (avctx->pix_fmt != AV_PIX_FMT_YUV420P)
+            if (codecpar->format != AV_PIX_FMT_YUV420P)
                 dv_profile = 0;
         } else {
-            if (avctx->pix_fmt != AV_PIX_FMT_YUV420P10)
+            if (codecpar->format != AV_PIX_FMT_YUV420P10)
                 dv_profile = 0;
         }
     }
@@ -115,17 +113,17 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
         }
         /* fall through */
     case 8: /* HEVC (or AV1) with BL compatibility */
-        if (avctx->colorspace == AVCOL_SPC_BT2020_NCL &&
-            avctx->color_primaries == AVCOL_PRI_BT2020 &&
-            avctx->color_trc == AVCOL_TRC_SMPTE2084) {
+        if (codecpar->color_space == AVCOL_SPC_BT2020_NCL &&
+            codecpar->color_primaries == AVCOL_PRI_BT2020 &&
+            codecpar->color_trc == AVCOL_TRC_SMPTE2084) {
             bl_compat_id = 1;
-        } else if (avctx->colorspace == AVCOL_SPC_BT2020_NCL &&
-                   avctx->color_primaries == AVCOL_PRI_BT2020 &&
-                   avctx->color_trc == AVCOL_TRC_ARIB_STD_B67) {
+        } else if (codecpar->color_space == AVCOL_SPC_BT2020_NCL &&
+                   codecpar->color_primaries == AVCOL_PRI_BT2020 &&
+                   codecpar->color_trc == AVCOL_TRC_ARIB_STD_B67) {
             bl_compat_id = 4;
-        } else if (avctx->colorspace == AVCOL_SPC_BT709 &&
-                   avctx->color_primaries == AVCOL_PRI_BT709 &&
-                   avctx->color_trc == AVCOL_TRC_BT709) {
+        } else if (codecpar->color_space == AVCOL_SPC_BT709 &&
+                   codecpar->color_primaries == AVCOL_PRI_BT709 &&
+                   codecpar->color_trc == AVCOL_TRC_BT709) {
             bl_compat_id = 2;
         }
     }
@@ -140,9 +138,9 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
         goto skip;
     }
 
-    pps = avctx->width * avctx->height;
-    if (avctx->framerate.num) {
-        pps = pps * avctx->framerate.num / avctx->framerate.den;
+    pps = codecpar->width * codecpar->height;
+    if (codecpar->framerate.num) {
+        pps = pps * codecpar->framerate.num / codecpar->framerate.den;
     } else {
         pps *= 25; /* sanity fallback */
     }
@@ -151,7 +149,7 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
     for (int i = 1; i < FF_ARRAY_ELEMS(dv_levels); i++) {
         if (pps > dv_levels[i].pps)
             continue;
-        if (avctx->width > dv_levels[i].width)
+        if (codecpar->width > dv_levels[i].width)
             continue;
         /* In theory, we should also test the bitrate when known, and
          * distinguish between main and high tier. In practice, just ignore
@@ -162,14 +160,14 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
     }
 
     if (!dv_level) {
-        if (avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT) {
+        if (strict_std_compliance >= FF_COMPLIANCE_STRICT) {
             av_log(s->logctx, AV_LOG_ERROR, "Coded PPS (%"PRIu64") and width (%d) "
-                   "exceed Dolby Vision limitations\n", pps, avctx->width);
+                   "exceed Dolby Vision limitations\n", pps, codecpar->width);
             return AVERROR(EINVAL);
         } else {
             av_log(s->logctx, AV_LOG_WARNING, "Coded PPS (%"PRIu64") and width (%d) "
                    "exceed Dolby Vision limitations. Ignoring, resulting file "
-                   "may be non-conforming.\n", pps, avctx->width);
+                   "may be non-conforming.\n", pps, codecpar->width);
             dv_level = FF_ARRAY_ELEMS(dv_levels) - 1;
         }
     }
@@ -178,7 +176,8 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
     if (!cfg)
         return AVERROR(ENOMEM);
 
-    if (!av_packet_side_data_add(&avctx->coded_side_data, &avctx->nb_coded_side_data,
+    if (!av_packet_side_data_add(&codecpar->coded_side_data,
+                                 &codecpar->nb_coded_side_data,
                                  AV_PKT_DATA_DOVI_CONF, cfg, cfg_size, 0)) {
         av_free(cfg);
         return AVERROR(ENOMEM);
@@ -199,6 +198,36 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
 skip:
     s->cfg = (AVDOVIDecoderConfigurationRecord) {0};
     return 0;
+}
+
+int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
+{
+    int ret;
+    const AVFrameSideData *sd;
+    const AVDOVIMetadata *metadata = NULL;
+    AVCodecParameters *codecpar = avcodec_parameters_alloc();
+    if (!codecpar)
+        return AVERROR(ENOMEM);
+
+    ret = avcodec_parameters_from_context(codecpar, avctx);
+    if (ret < 0)
+        goto fail;
+
+    sd = av_frame_side_data_get(avctx->decoded_side_data,
+                                avctx->nb_decoded_side_data,
+                                AV_FRAME_DATA_DOVI_METADATA);
+    if (sd)
+        metadata = (const AVDOVIMetadata *) sd->data;
+
+    ret = ff_dovi_configure_ext(s, codecpar, metadata, avctx->strict_std_compliance);
+    if (ret < 0)
+        goto fail;
+
+    ret = avcodec_parameters_to_context(avctx, codecpar);
+
+fail:
+    avcodec_parameters_free(&codecpar);
+    return ret;
 }
 
 static inline void put_ue_coef(PutBitContext *pb, const AVDOVIRpuDataHeader *hdr,

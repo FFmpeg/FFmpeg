@@ -26,7 +26,9 @@
 
 #include "libavutil/dovi_meta.h"
 #include "libavutil/frame.h"
+
 #include "avcodec.h"
+#include "codec_par.h"
 
 #define DOVI_MAX_DM_ID 15
 typedef struct DOVIContext {
@@ -125,10 +127,22 @@ int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame);
 /**
  * Configure the encoder for Dolby Vision encoding. Generates a configuration
  * record in s->cfg, and attaches it to avctx->coded_side_data. Sets the correct
- * profile and compatibility ID based on the tagged AVCodecContext colorspace
+ * profile and compatibility ID based on the tagged AVCodecParameters colorspace
  * metadata, and the correct level based on the resolution and tagged framerate.
  *
+ * `metadata` should point to the first frame's RPU, if available. If absent,
+ * auto-detection will be performed, but this can sometimes lead to inaccurate
+ * results (in particular for HEVC streams with enhancement layers).
+ *
  * Returns 0 or a negative error code.
+ */
+int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
+                          const AVDOVIMetadata *metadata,
+                          int strict_std_compliance);
+
+/**
+ * Helper wrapper around `ff_dovi_configure_ext` which infers the codec
+ * parameters from an AVCodecContext.
  */
 int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx);
 
