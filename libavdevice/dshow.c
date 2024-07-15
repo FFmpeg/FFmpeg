@@ -645,7 +645,7 @@ static int dshow_get_device_list(AVFormatContext *avctx, AVDeviceInfoList *devic
     }
 
     ret = dshow_cycle_devices(avctx, devenum, VideoDevice, VideoSourceDevice, NULL, NULL, &device_list);
-    if (ret < S_OK)
+    if (ret < S_OK && ret != AVERROR(EIO))
         goto error;
     ret = dshow_cycle_devices(avctx, devenum, AudioDevice, AudioSourceDevice, NULL, NULL, &device_list);
 
