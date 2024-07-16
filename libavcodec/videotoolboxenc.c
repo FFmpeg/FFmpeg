@@ -262,7 +262,7 @@ typedef struct VTEncContext {
     int realtime;
     int frames_before;
     int frames_after;
-    bool constant_bit_rate;
+    int constant_bit_rate;
 
     int allow_sw;
     int require_sw;
