@@ -138,6 +138,7 @@ int ff_dovi_attach_side_data(DOVIContext *s, AVFrame *frame);
  */
 int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
                           const AVDOVIMetadata *metadata,
+                          enum AVDOVICompression compression,
                           int strict_std_compliance);
 
 /**

@@ -54,6 +54,7 @@ static struct {
 
 int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
                           const AVDOVIMetadata *metadata,
+                          enum AVDOVICompression compression,
                           int strict_std_compliance)
 {
     AVDOVIDecoderConfigurationRecord *cfg;
@@ -70,6 +71,10 @@ int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
 
     if (s->enable == FF_DOVI_AUTOMATIC && !hdr)
         goto skip;
+
+    if (compression == AV_DOVI_COMPRESSION_RESERVED ||
+        compression > AV_DOVI_COMPRESSION_EXTENDED)
+        return AVERROR(EINVAL);
 
     switch (codecpar->codec_id) {
     case AV_CODEC_ID_AV1:  dv_profile = 10; break;
@@ -138,6 +143,25 @@ int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
         goto skip;
     }
 
+    if (compression != AV_DOVI_COMPRESSION_NONE) {
+        if (dv_profile < 8 && strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
+            av_log(s->logctx, AV_LOG_ERROR, "Dolby Vision metadata compression "
+                   "is not permitted for profiles 7 and earlier. (dv_profile: %d, "
+                   "compression: %d)\n", dv_profile, compression);
+            return AVERROR(EINVAL);
+        } else if (compression == AV_DOVI_COMPRESSION_EXTENDED &&
+                   strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(s->logctx, AV_LOG_ERROR, "Dolby Vision extended metadata "
+                   "compression is experimental and not supported by "
+                   "devices.");
+            return AVERROR(EINVAL);
+        } else if (dv_profile == 8) {
+            av_log(s->logctx, AV_LOG_WARNING, "Dolby Vision metadata compression "
+                   "for profile 8 is known to be unsupported by many devices, "
+                   "use with caution.\n");
+        }
+    }
+
     pps = codecpar->width * codecpar->height;
     if (codecpar->framerate.num) {
         pps = pps * codecpar->framerate.num / codecpar->framerate.den;
@@ -191,6 +215,7 @@ int ff_dovi_configure_ext(DOVIContext *s, AVCodecParameters *codecpar,
     cfg->el_present_flag = 0;
     cfg->bl_present_flag = 1;
     cfg->dv_bl_signal_compatibility_id = bl_compat_id;
+    cfg->dv_md_compression = compression;
 
     s->cfg = *cfg;
     return 0;
@@ -219,7 +244,9 @@ int ff_dovi_configure(DOVIContext *s, AVCodecContext *avctx)
     if (sd)
         metadata = (const AVDOVIMetadata *) sd->data;
 
-    ret = ff_dovi_configure_ext(s, codecpar, metadata, avctx->strict_std_compliance);
+    /* Current encoders cannot handle metadata compression during encoding */
+    ret = ff_dovi_configure_ext(s, codecpar, metadata, AV_DOVI_COMPRESSION_NONE,
+                                avctx->strict_std_compliance);
     if (ret < 0)
         goto fail;
 
