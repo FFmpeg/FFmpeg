@@ -152,7 +152,7 @@ static int ipcm_decoder_config(IAMFCodecConfig *codec_config,
     };
     int sample_format = avio_r8(pb); // 0 = BE, 1 = LE
     int sample_size = (avio_r8(pb) / 8 - 2); // 16, 24, 32
-    if (sample_format > 1 || sample_size > 2 || codec_config->audio_roll_distance)
+    if (sample_format > 1 || sample_size > 2U || codec_config->audio_roll_distance)
         return AVERROR_INVALIDDATA;
 
     codec_config->codec_id = sample_fmt[sample_format][sample_size];
