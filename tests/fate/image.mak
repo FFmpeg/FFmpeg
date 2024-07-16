@@ -416,6 +416,12 @@ FATE_PNG_PROBE-$(call ALLYES, LCMS2) += fate-png-icc-parse
 fate-png-icc-parse: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_frames \
     -flags2 icc_profiles $(TARGET_SAMPLES)/png1/lena-int_rgb24.png
 
+FATE_PNG_TRANSCODE-$(call TRANSCODE, PNG HEVC, IMAGE2PIPE HEVC, \
+    IMAGE_PNG_PIPE_DEMUXER HEVC_PARSER PNG_DECODER SCALE_FILTER) += fate-png-mdcv
+fate-png-mdcv: CMD = transcode hevc $(TARGET_SAMPLES)/hevc/hdr10_plus_h265_sample.hevc image2pipe \
+    "-pix_fmt rgb24 -vf scale -c png" "" \
+    "-show_frames -show_entries frame=side_data_list -of flat"
+
 FATE_PNG-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG)
 FATE_PNG_PROBE-$(call DEMDEC, IMAGE2, PNG) += $(FATE_PNG_PROBE)
 FATE_IMAGE_FRAMECRC += $(FATE_PNG-yes)

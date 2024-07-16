@@ -1,0 +1,22 @@
+fc68fe6c8c72343b96d2695f6913995b *tests/data/fate/png-mdcv.image2pipe
+439248 tests/data/fate/png-mdcv.image2pipe
+#tb 0: 1/25
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 1280x720
+#sar 0: 0/1
+0,          0,          0,        1,  2764800, 0x2bfc7b42
+frames.frame.0.side_data_list.side_data.0.side_data_type="Content light level metadata"
+frames.frame.0.side_data_list.side_data.0.max_content=1000
+frames.frame.0.side_data_list.side_data.0.max_average=200
+frames.frame.0.side_data_list.side_data.1.side_data_type="Mastering display metadata"
+frames.frame.0.side_data_list.side_data.1.red_x="13250/50000"
+frames.frame.0.side_data_list.side_data.1.red_y="7500/50000"
+frames.frame.0.side_data_list.side_data.1.green_x="34000/50000"
+frames.frame.0.side_data_list.side_data.1.green_y="16000/50000"
+frames.frame.0.side_data_list.side_data.1.blue_x="2/50000"
+frames.frame.0.side_data_list.side_data.1.blue_y="0/50000"
+frames.frame.0.side_data_list.side_data.1.white_point_x="15635/50000"
+frames.frame.0.side_data_list.side_data.1.white_point_y="16450/50000"
+frames.frame.0.side_data_list.side_data.1.min_luminance="50/10000"
+frames.frame.0.side_data_list.side_data.1.max_luminance="10000000/10000"
