@@ -254,6 +254,16 @@ static int decode_slice_header(const FFV1Context *f,
     return 0;
 }
 
+static void slice_set_damaged(FFV1Context *f, FFV1SliceContext *sc)
+{
+    sc->slice_damaged = 1;
+
+    // only set this for frame threading, as for slice threading its value is
+    // not used and setting it would be a race
+    if (f->avctx->active_thread_type & FF_THREAD_FRAME)
+        f->frame_damaged = 1;
+}
+
 static int decode_slice(AVCodecContext *c, void *arg)
 {
     FFV1Context *f    = c->priv_data;
@@ -264,15 +274,11 @@ static int decode_slice(AVCodecContext *c, void *arg)
     const int      si = sc - f->slices;
     GetBitContext gb;
 
-    if (f->fsrc && !(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
+    if (!(p->flags & AV_FRAME_FLAG_KEY) && f->last_picture.f)
         ff_progress_frame_await(&f->last_picture, si);
 
-    if (f->fsrc) {
-        const FFV1SliceContext *scsrc = &f->fsrc->slices[si];
-
-        if (!(p->flags & AV_FRAME_FLAG_KEY))
-            sc->slice_damaged |= scsrc->slice_damaged;
-    }
+    if (f->slice_damaged[si])
+        slice_set_damaged(f, sc);
 
     sc->slice_rct_by_coef = 1;
     sc->slice_rct_ry_coef = 1;
@@ -282,7 +288,7 @@ static int decode_slice(AVCodecContext *c, void *arg)
             return AVERROR(ENOMEM);
         if (decode_slice_header(f, sc, p) < 0) {
             sc->slice_x = sc->slice_y = sc->slice_height = sc->slice_width = 0;
-            sc->slice_damaged = 1;
+            slice_set_damaged(f, sc);
             return AVERROR_INVALIDDATA;
         }
     }
@@ -344,11 +350,12 @@ static int decode_slice(AVCodecContext *c, void *arg)
         v = sc->c.bytestream_end - sc->c.bytestream - 2 - 5*f->ec;
         if (v) {
             av_log(f->avctx, AV_LOG_ERROR, "bytestream end mismatching by %d\n", v);
-            sc->slice_damaged = 1;
+            slice_set_damaged(f, sc);
         }
     }
 
-    ff_progress_frame_report(&f->picture, si);
+    if ((c->active_thread_type & FF_THREAD_FRAME) && !f->frame_damaged)
+        ff_progress_frame_report(&f->picture, si);
 
     return 0;
 }
@@ -768,10 +775,13 @@ static int read_header(FFV1Context *f)
         return AVERROR_INVALIDDATA;
     }
 
+    ff_refstruct_unref(&f->slice_damaged);
+    f->slice_damaged = ff_refstruct_allocz(f->slice_count * sizeof(*f->slice_damaged));
+    if (!f->slice_damaged)
+        return AVERROR(ENOMEM);
+
     for (int j = 0; j < f->slice_count; j++) {
         FFV1SliceContext *sc = &f->slices[j];
-
-        sc->slice_damaged = 0;
 
         if (f->version == 2) {
             int sx = get_symbol(c, state, 0);
@@ -857,6 +867,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
 
 
     f->avctx = avctx;
+    f->frame_damaged = 0;
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05 * (1LL << 32), 256 - 8);
 
@@ -920,6 +931,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         int trailer = 3 + 5*!!f->ec;
         int v;
 
+        sc->slice_damaged = 0;
+
         if (i || f->version > 2) {
             if (trailer > buf_p - buf) v = INT_MAX;
             else                       v = AV_RB24(buf_p-trailer) + trailer;
@@ -943,7 +956,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                 } else {
                     av_log(f->avctx, AV_LOG_ERROR, "\n");
                 }
-                sc->slice_damaged = 1;
+                slice_set_damaged(f, sc);
             }
             if (avctx->debug & FF_DEBUG_PICT_INFO) {
                 av_log(avctx, AV_LOG_DEBUG, "slice %d, CRC: 0x%08"PRIX32"\n", i, AV_RB32(buf_p + v - 4));
@@ -988,6 +1001,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                           avctx->pix_fmt,
                           sc->slice_width,
                           sc->slice_height);
+
+            f->slice_damaged[i] = 1;
         }
     }
     ff_progress_frame_report(&f->picture, INT_MAX);
@@ -1039,8 +1054,6 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         FFV1SliceContext       *sc  = &fdst->slices[i];
         const FFV1SliceContext *sc0 = &fsrc->slices[i];
 
-        sc->slice_damaged = sc0->slice_damaged;
-
         ff_refstruct_replace(&sc->plane, sc0->plane);
 
         if (fsrc->version < 3) {
@@ -1051,11 +1064,11 @@ static int update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
         }
     }
 
+    ff_refstruct_replace(&fdst->slice_damaged, fsrc->slice_damaged);
+
     av_assert1(fdst->max_slice_count == fsrc->max_slice_count);
 
     ff_progress_frame_replace(&fdst->picture, &fsrc->picture);
-
-    fdst->fsrc = fsrc;
 
     return 0;
 }

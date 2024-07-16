@@ -214,6 +214,8 @@ av_cold int ff_ffv1_close(AVCodecContext *avctx)
         ff_refstruct_unref(&sc->plane);
     }
 
+    ff_refstruct_unref(&s->slice_damaged);
+
     av_freep(&avctx->stats_out);
     for (j = 0; j < s->quant_table_count; j++) {
         av_freep(&s->initial_states[j]);

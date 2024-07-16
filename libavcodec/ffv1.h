@@ -118,7 +118,6 @@ typedef struct FFV1Context {
     int64_t picture_number;
     int key_frame;
     ProgressFrame picture, last_picture;
-    struct FFV1Context *fsrc;
 
     const AVFrame *cur_enc_frame;
     int plane_count;
@@ -148,6 +147,19 @@ typedef struct FFV1Context {
     int num_h_slices;
 
     FFV1SliceContext *slices;
+    /* RefStruct object, per-slice damage flags shared between frame threads.
+     *
+     * After a frame thread marks some slice as finished with
+     * ff_progress_frame_report(), the corresponding array element must not be
+     * accessed by this thread anymore, as from then on it is owned by the next
+     * thread.
+     */
+    uint8_t          *slice_damaged;
+    /* Frame damage flag, used to delay announcing progress, since ER is
+     * applied after all the slices are decoded.
+     * NOT shared between frame threads.
+     */
+    uint8_t           frame_damaged;
 } FFV1Context;
 
 int ff_ffv1_common_init(AVCodecContext *avctx);
