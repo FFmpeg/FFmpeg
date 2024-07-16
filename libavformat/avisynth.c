@@ -1085,12 +1085,8 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static av_cold int avisynth_read_close(AVFormatContext *s)
 {
-    if (ff_mutex_lock(&avisynth_mutex))
-        return AVERROR_UNKNOWN;
-
     avisynth_context_destroy(s->priv_data);
     dlclose(avs_library.library);
-    ff_mutex_unlock(&avisynth_mutex);
     return 0;
 }
 
