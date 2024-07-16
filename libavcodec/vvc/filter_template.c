@@ -77,7 +77,7 @@ static void FUNC(alf_filter_luma)(uint8_t *_dst, ptrdiff_t dst_stride, const uin
                 const int is_near_vb_below = (y + i >= vb_pos) && (y + i <= vb_pos);
                 const int is_near_vb = is_near_vb_above || is_near_vb_below;
 
-                if ((y + i < vb_pos) && ((y + i) >= vb_above)) {
+                if ((y + i < vb_pos) && ((y + i) > vb_above)) {
                     p1 = (y + i == vb_pos - 1) ? p0 : p1;
                     p3 = (y + i >= vb_pos - 2) ? p1 : p3;
                     p5 = (y + i >= vb_pos - 3) ? p3 : p5;
@@ -85,7 +85,7 @@ static void FUNC(alf_filter_luma)(uint8_t *_dst, ptrdiff_t dst_stride, const uin
                     p2 = (y + i == vb_pos - 1) ? p0 : p2;
                     p4 = (y + i >= vb_pos - 2) ? p2 : p4;
                     p6 = (y + i >= vb_pos - 3) ? p4 : p6;
-                } else if ((y + i >= vb_pos) && ((y + i) <= vb_below)) {
+                } else if ((y + i >= vb_pos) && ((y + i) < vb_below)) {
                     p2 = (y + i == vb_pos    ) ? p0 : p2;
                     p4 = (y + i <= vb_pos + 1) ? p2 : p4;
                     p6 = (y + i <= vb_pos + 2) ? p4 : p6;
