@@ -90,9 +90,13 @@ int ff_vk_load_props(FFVulkanContext *s)
     s->hprops = (VkPhysicalDeviceExternalMemoryHostPropertiesEXT) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT,
     };
+    s->optical_flow_props = (VkPhysicalDeviceOpticalFlowPropertiesNV) {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV,
+        .pNext = &s->hprops,
+    };
     s->coop_matrix_props = (VkPhysicalDeviceCooperativeMatrixPropertiesKHR) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR,
-        .pNext = &s->hprops,
+        .pNext = &s->optical_flow_props,
     };
     s->subgroup_props = (VkPhysicalDeviceSubgroupSizeControlProperties) {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_PROPERTIES,

@@ -46,6 +46,7 @@ typedef enum FFVulkanExtensions {
     FF_VK_EXT_VIDEO_DECODE_AV1       = 1ULL << 14, /* VK_KHR_video_decode_av1 */
     FF_VK_EXT_ATOMIC_FLOAT           = 1ULL << 15, /* VK_EXT_shader_atomic_float */
     FF_VK_EXT_COOP_MATRIX            = 1ULL << 16, /* VK_KHR_cooperative_matrix */
+    FF_VK_EXT_OPTICAL_FLOW           = 1ULL << 17, /* VK_NV_optical_flow */
 
     FF_VK_EXT_NO_FLAG                = 1ULL << 31,
 } FFVulkanExtensions;
@@ -208,6 +209,13 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroySamplerYcbcrConversion)             \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateSampler)                           \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroySampler)                          \
+                                                                                           \
+    /* Optical flow */                                                                     \
+    MACRO(1, 1, FF_VK_EXT_OPTICAL_FLOW,         BindOpticalFlowSessionImageNV)             \
+    MACRO(1, 1, FF_VK_EXT_OPTICAL_FLOW,         CmdOpticalFlowExecuteNV)                   \
+    MACRO(1, 1, FF_VK_EXT_OPTICAL_FLOW,         CreateOpticalFlowSessionNV)                \
+    MACRO(1, 1, FF_VK_EXT_OPTICAL_FLOW,         DestroyOpticalFlowSessionNV)               \
+    MACRO(1, 0, FF_VK_EXT_OPTICAL_FLOW,         GetPhysicalDeviceOpticalFlowImageFormatsNV)\
                                                                                          \
     /* Shaders */                                                                        \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateShaderModule)                      \
