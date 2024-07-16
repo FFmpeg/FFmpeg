@@ -57,11 +57,14 @@ int ff_isom_parse_dvcc_dvvc(void *logctx, AVStream *st,
 
     // Has enough remaining data
     if (size >= 5) {
-        dovi->dv_bl_signal_compatibility_id = ((*buf_ptr++) >> 4) & 0x0f; // 4 bits
+        uint8_t buf = *buf_ptr++;
+        dovi->dv_bl_signal_compatibility_id = (buf >> 4) & 0x0f; // 4 bits
+        dovi->dv_md_compression = (buf >> 2) & 0x03; // 2 bits
     } else {
         // 0 stands for None
         // Dolby Vision V1.2.93 profiles and levels
         dovi->dv_bl_signal_compatibility_id = 0;
+        dovi->dv_md_compression = AV_DOVI_COMPRESSION_NONE;
     }
 
     if (!av_packet_side_data_add(&st->codecpar->coded_side_data, &st->codecpar->nb_coded_side_data,
@@ -71,13 +74,14 @@ int ff_isom_parse_dvcc_dvvc(void *logctx, AVStream *st,
     }
 
     av_log(logctx, AV_LOG_TRACE, "DOVI in dvcC/dvvC/dvwC box, version: %d.%d, profile: %d, level: %d, "
-           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
+           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d, compression: %d\n",
            dovi->dv_version_major, dovi->dv_version_minor,
            dovi->dv_profile, dovi->dv_level,
            dovi->rpu_present_flag,
            dovi->el_present_flag,
            dovi->bl_present_flag,
-           dovi->dv_bl_signal_compatibility_id);
+           dovi->dv_bl_signal_compatibility_id,
+           dovi->dv_md_compression);
 
     return 0;
 }
@@ -97,8 +101,9 @@ void ff_isom_put_dvcc_dvvc(void *logctx, uint8_t out[ISOM_DVCC_DVVC_SIZE],
     put_bits(&pb, 1, !!dovi->el_present_flag);
     put_bits(&pb, 1, !!dovi->bl_present_flag);
     put_bits(&pb, 4, dovi->dv_bl_signal_compatibility_id & 0x0f);
+    put_bits(&pb, 2, dovi->dv_md_compression & 0x03);
 
-    put_bits(&pb, 28, 0); /* reserved */
+    put_bits(&pb, 26, 0); /* reserved */
     put_bits32(&pb, 0); /* reserved */
     put_bits32(&pb, 0); /* reserved */
     put_bits32(&pb, 0); /* reserved */
@@ -108,12 +113,14 @@ void ff_isom_put_dvcc_dvvc(void *logctx, uint8_t out[ISOM_DVCC_DVVC_SIZE],
 
     av_log(logctx, AV_LOG_DEBUG,
            "DOVI in %s box, version: %d.%d, profile: %d, level: %d, "
-           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d\n",
+           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d, "
+           "compression: %d\n",
            dovi->dv_profile > 10 ? "dvwC" : (dovi->dv_profile > 7 ? "dvvC" : "dvcC"),
            dovi->dv_version_major, dovi->dv_version_minor,
            dovi->dv_profile, dovi->dv_level,
            dovi->rpu_present_flag,
            dovi->el_present_flag,
            dovi->bl_present_flag,
-           dovi->dv_bl_signal_compatibility_id);
+           dovi->dv_bl_signal_compatibility_id,
+           dovi->dv_md_compression);
 }
