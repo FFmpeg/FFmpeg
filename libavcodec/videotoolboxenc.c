@@ -2933,6 +2933,7 @@ static const AVOption h264_options[] = {
 };
 
 static const FFCodecDefault vt_defaults[] = {
+        {"b",    "0"},
         {"qmin", "-1"},
         {"qmax", "-1"},
         {NULL},
