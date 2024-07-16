@@ -153,8 +153,6 @@ static void FUNC(alf_filter_chroma)(uint8_t* _dst, ptrdiff_t dst_stride, const u
             const pixel *s2 = s0 - src_stride;
             const pixel *s3 = s1 + src_stride;
             const pixel *s4 = s2 - src_stride;
-            const pixel *s5 = s3 + src_stride;
-            const pixel *s6 = s4 - src_stride;
 
             for (int i = 0; i < ALF_BLOCK_SIZE; i++) {
                 pixel *dst = (pixel *)_dst + (y + i) * dst_stride + x;
@@ -164,8 +162,6 @@ static void FUNC(alf_filter_chroma)(uint8_t* _dst, ptrdiff_t dst_stride, const u
                 const pixel *p2 = s2 + i * src_stride;
                 const pixel *p3 = s3 + i * src_stride;
                 const pixel *p4 = s4 + i * src_stride;
-                const pixel *p5 = s5 + i * src_stride;
-                const pixel *p6 = s6 + i * src_stride;
 
                 const int is_near_vb_above = (y + i <  vb_pos) && (y + i >= vb_pos - 1);
                 const int is_near_vb_below = (y + i >= vb_pos) && (y + i <= vb_pos);
@@ -174,19 +170,15 @@ static void FUNC(alf_filter_chroma)(uint8_t* _dst, ptrdiff_t dst_stride, const u
                 if ((y + i < vb_pos) && ((y + i) >= vb_above)) {
                     p1 = (y + i == vb_pos - 1) ? p0 : p1;
                     p3 = (y + i >= vb_pos - 2) ? p1 : p3;
-                    p5 = (y + i >= vb_pos - 3) ? p3 : p5;
 
                     p2 = (y + i == vb_pos - 1) ? p0 : p2;
                     p4 = (y + i >= vb_pos - 2) ? p2 : p4;
-                    p6 = (y + i >= vb_pos - 3) ? p4 : p6;
                 } else if ((y + i >= vb_pos) && ((y + i) <= vb_below)) {
                     p2 = (y + i == vb_pos    ) ? p0 : p2;
                     p4 = (y + i <= vb_pos + 1) ? p2 : p4;
-                    p6 = (y + i <= vb_pos + 2) ? p4 : p6;
 
                     p1 = (y + i == vb_pos    ) ? p0 : p1;
                     p3 = (y + i <= vb_pos + 1) ? p1 : p3;
-                    p5 = (y + i <= vb_pos + 2) ? p3 : p5;
                 }
 
                 for (int j = 0; j < ALF_BLOCK_SIZE; j++) {
@@ -212,8 +204,6 @@ static void FUNC(alf_filter_chroma)(uint8_t* _dst, ptrdiff_t dst_stride, const u
                     p2++;
                     p3++;
                     p4++;
-                    p5++;
-                    p6++;
                 }
             }
         }
