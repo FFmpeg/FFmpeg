@@ -314,6 +314,7 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
     uint8_t use_prev_vdr_rpu;
     uint8_t use_nlq;
     uint8_t profile;
+    uint8_t compression = s->cfg.dv_profile ? s->cfg.dv_md_compression : 0;
 
     if (rpu_size < 5)
         return AVERROR_INVALIDDATA;
@@ -457,6 +458,20 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
         av_log(s->logctx, AV_LOG_ERROR, "Profile 5 RPUs should not use NLQ\n");
         ff_dovi_ctx_unref(s);
         return AVERROR_INVALIDDATA;
+    }
+
+    if (err_recognition & (AV_EF_COMPLIANT | AV_EF_CAREFUL)) {
+        if (profile < 8 && compression) {
+            av_log(s->logctx, AV_LOG_ERROR, "Profile %d RPUs should not use "
+                   "metadata compression.", profile);
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (use_prev_vdr_rpu && !compression) {
+            av_log(s->logctx, AV_LOG_ERROR, "Uncompressed RPUs should not have "
+                   "use_prev_vdr_rpu=1\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if (use_prev_vdr_rpu) {
