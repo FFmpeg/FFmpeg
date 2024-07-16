@@ -422,9 +422,9 @@ func ff_h264_idct\width\()_dc_add_8_rvv, zve64x
 .else
         vsetivli        zero, \width, e8, mf4, ta, ma
 .endif
-        lh              a3, 0(a1)
-        addi            a3, a3, 32
-        srai            a3, a3, 6
+        lh              t0, 0(a1)
+        addi            t0, t0, 32
+        srai            t0, t0, 6
         sh              zero, 0(a1)
 .if \width == 8
         li              a6, \width * \width
@@ -435,7 +435,7 @@ func ff_h264_idct\width\()_dc_add_8_rvv, zve64x
         vsetivli        zero, \width * \width, e16, m2, ta, ma
 .endif
         vzext.vf2       v0, v24
-        vadd.vx         v0, v0, a3
+        vadd.vx         v0, v0, t0
         vmax.vx         v0, v0, zero
 .if \width == 8
         vsetvli         zero, zero, e8, m4, ta, ma
@@ -464,33 +464,33 @@ func ff_h264_idct\width\()_dc_add_16_rvv, zve64x, zba
 .else
         vsetivli        zero, \width, e16, mf2, ta, ma
 .endif
-        lw              a3, 0(a1)
-        addi            a3, a3, 32
-        srai            a3, a3, 6
+        lw              t0, 0(a1)
+        addi            t0, t0, 32
+        srai            t0, t0, 6
         sw              zero, 0(a1)
-        add             t4, a0, a2
-        sh1add          t5, a2, a0
-        sh1add          t6, a2, t4
+        add             t1, a0, a2
+        sh1add          t2, a2, a0
+        sh1add          t3, a2, t1
 .if \width == 8
-        sh2add          t0, a2, a0
-        sh2add          t1, a2, t4
-        sh2add          t2, a2, t5
-        sh2add          t3, a2, t6
+        sh2add          t4, a2, a0
+        sh2add          t5, a2, t1
+        sh2add          t6, a2, t2
+        sh2add          a7, a2, t3
 .endif
         vle16.v         v0, (a0)
-        vle16.v         v1, (t4)
-        vle16.v         v2, (t5)
-        vle16.v         v3, (t6)
+        vle16.v         v1, (t1)
+        vle16.v         v2, (t2)
+        vle16.v         v3, (t3)
 .if \width == 8
-        vle16.v         v4, (t0)
-        vle16.v         v5, (t1)
-        vle16.v         v6, (t2)
-        vle16.v         v7, (t3)
+        vle16.v         v4, (t4)
+        vle16.v         v5, (t5)
+        vle16.v         v6, (t6)
+        vle16.v         v7, (a7)
         vsetvli         a6, zero, e16, m8, ta, ma
 .else
         vsetvli         a6, zero, e16, m4, ta, ma
 .endif
-        vadd.vx         v0, v0, a3
+        vadd.vx         v0, v0, t0
         vmax.vx         v0, v0, zero
         vmin.vx         v0, v0, a5
 .if \width == 8
@@ -499,14 +499,14 @@ func ff_h264_idct\width\()_dc_add_16_rvv, zve64x, zba
         vsetivli        zero, \width, e16, mf2, ta, ma
 .endif
         vse16.v         v0, (a0)
-        vse16.v         v1, (t4)
-        vse16.v         v2, (t5)
-        vse16.v         v3, (t6)
+        vse16.v         v1, (t1)
+        vse16.v         v2, (t2)
+        vse16.v         v3, (t3)
 .if \width == 8
-        vse16.v         v4, (t0)
-        vse16.v         v5, (t1)
-        vse16.v         v6, (t2)
-        vse16.v         v7, (t3)
+        vse16.v         v4, (t4)
+        vse16.v         v5, (t5)
+        vse16.v         v6, (t6)
+        vse16.v         v7, (a7)
 .endif
         ret
 endfunc
@@ -536,17 +536,12 @@ endconst
 .macro  idct4_adds type, depth
 func ff_h264_idct_add\type\()_\depth\()_rvv, zve32x
         csrwi   vxrm, 0
-        addi    sp, sp, -64
+        addi    sp, sp, -16
         lla     t0, ff_h264_scan8
         sd      s0,   (sp)
         li      t1, 32 * (\depth / 8)
         mv      s0, sp
         sd      ra,  8(sp)
-        sd      s1, 16(sp)
-        sd      s2, 24(sp)
-        sd      s3, 32(sp)
-        sd      s4, 40(sp)
-        sd      s5, 48(sp)
         vsetivli  zero, 16, e8, m1, ta, ma
         vle8.v    v8, (t0)
 .if \depth == 8
@@ -570,23 +565,23 @@ func ff_h264_idct_add\type\()_\depth\()_rvv, zve32x
         vmand.mm  v1, v1, v2
 .endif
         vsetvli   zero, zero, e16, m2, ta, ma
-        vmv.x.s   s2, v0
-        vmv.x.s   s3, v1
-        li      s1, 16
-        mv      s4, a0
-        mv      s5, a1
+        vmv.x.s   a4, v0
+        vmv.x.s   a7, v1
+        mv      t4, a0
+        mv      t5, a1
         mv      a1, a2
         mv      a2, a3
+        li      a3, 16
 1:
-        andi    t0, s2, 1
-        addi    s1, s1, -1
-        srli    s2, s2, 1
+        andi    t0, a4, 1
+        addi    a3, a3, -1
+        srli    a4, a4, 1
 .ifc \type, 16
         beqz    t0, 3f     # if (nnz)
 .endif
-        lw      t2, (s5)   # block_offset[i]
-        andi    t1, s3, 1
-        add     a0, s4, t2
+        lw      t2, (t5)   # block_offset[i]
+        andi    t1, a7, 1
+        add     a0, t4, t2
 .ifc \type, 16
         bnez    t1, 2f     # if (nnz == 1 && block[i * 16])
 .else
@@ -600,19 +595,14 @@ func ff_h264_idct_add\type\()_\depth\()_rvv, zve32x
 .endif
         jal     ff_h264_idct4_dc_add_\depth\()_rvv
 3:
-        srli    s3, s3, 1
-        addi    s5, s5, 4
+        srli    a7, a7, 1
+        addi    t5, t5, 4
         addi    a1, a1, 16 * 2 * (\depth / 8)
-        bnez    s1, 1b
+        bnez    a3, 1b
 
-        ld      s5, 48(sp)
-        ld      s4, 40(sp)
-        ld      s3, 32(sp)
-        ld      s2, 24(sp)
-        ld      s1, 16(sp)
         ld      ra,  8(sp)
         ld      s0,  0(sp)
-        addi    sp, sp, 64
+        addi    sp, sp, 16
         ret
 endfunc
 .endm
