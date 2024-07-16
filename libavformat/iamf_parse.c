@@ -272,6 +272,9 @@ static int update_extradata(AVCodecParameters *codecpar)
     switch(codecpar->codec_id) {
     case AV_CODEC_ID_OPUS:
         AV_WB8(codecpar->extradata + 9, codecpar->ch_layout.nb_channels);
+        AV_WL16(codecpar->extradata + 10, AV_RB16(codecpar->extradata + 10)); // Byte swap pre-skip
+        AV_WL32(codecpar->extradata + 12, AV_RB32(codecpar->extradata + 12)); // Byte swap sample rate
+        AV_WL16(codecpar->extradata + 16, AV_RB16(codecpar->extradata + 16)); // Byte swap Output Gain
         break;
     case AV_CODEC_ID_AAC: {
         uint8_t buf[5];

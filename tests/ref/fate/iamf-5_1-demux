@@ -1,7 +1,7 @@
-#extradata 0:       19, 0x379c0490
-#extradata 1:       19, 0x379c0490
-#extradata 2:       19, 0x3792048f
-#extradata 3:       19, 0x3792048f
+#extradata 0:       19, 0x3a0e0490
+#extradata 1:       19, 0x3a0e0490
+#extradata 2:       19, 0x3a04048f
+#extradata 3:       19, 0x3a04048f
 #tb 0: 1/48000
 #media_type 0: audio
 #codec_id 0: opus
