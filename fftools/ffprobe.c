@@ -2603,6 +2603,7 @@ static void print_pkt_side_data(WriterContext *w,
             print_dynamic_hdr10_plus(w, metadata);
         } else if (sd->type == AV_PKT_DATA_DOVI_CONF) {
             AVDOVIDecoderConfigurationRecord *dovi = (AVDOVIDecoderConfigurationRecord *)sd->data;
+            const char *comp = "unknown";
             print_int("dv_version_major", dovi->dv_version_major);
             print_int("dv_version_minor", dovi->dv_version_minor);
             print_int("dv_profile", dovi->dv_profile);
@@ -2611,6 +2612,14 @@ static void print_pkt_side_data(WriterContext *w,
             print_int("el_present_flag", dovi->el_present_flag);
             print_int("bl_present_flag", dovi->bl_present_flag);
             print_int("dv_bl_signal_compatibility_id", dovi->dv_bl_signal_compatibility_id);
+            switch (dovi->dv_md_compression)
+            {
+                case AV_DOVI_COMPRESSION_NONE:     comp = "none";     break;
+                case AV_DOVI_COMPRESSION_LIMITED:  comp = "limited";  break;
+                case AV_DOVI_COMPRESSION_RESERVED: comp = "reserved"; break;
+                case AV_DOVI_COMPRESSION_EXTENDED: comp = "extended"; break;
+            }
+            print_str("dv_md_compression", comp);
         } else if (sd->type == AV_PKT_DATA_AUDIO_SERVICE_TYPE) {
             enum AVAudioServiceType *t = (enum AVAudioServiceType *)sd->data;
             print_int("service_type", *t);

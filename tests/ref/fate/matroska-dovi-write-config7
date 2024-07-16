@@ -45,5 +45,6 @@ rpu_present_flag=1
 el_present_flag=1
 bl_present_flag=0
 dv_bl_signal_compatibility_id=6
+dv_md_compression=none
 [/SIDE_DATA]
 [/STREAM]
