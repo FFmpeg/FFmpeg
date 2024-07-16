@@ -2932,6 +2932,12 @@ static const AVOption h264_options[] = {
     { NULL },
 };
 
+static const FFCodecDefault vt_defaults[] = {
+        {"qmin", "-1"},
+        {"qmax", "-1"},
+        {NULL},
+};
+
 static const AVClass h264_videotoolbox_class = {
     .class_name = "h264_videotoolbox",
     .item_name  = av_default_item_name,
@@ -2947,6 +2953,7 @@ const FFCodec ff_h264_videotoolbox_encoder = {
     .p.capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .priv_data_size   = sizeof(VTEncContext),
     .p.pix_fmts       = avc_pix_fmts,
+    .defaults         = vt_defaults,
     .init             = vtenc_init,
     FF_CODEC_ENCODE_CB(vtenc_frame),
     .close            = vtenc_close,
@@ -2984,6 +2991,7 @@ const FFCodec ff_hevc_videotoolbox_encoder = {
                         AV_CODEC_CAP_HARDWARE,
     .priv_data_size   = sizeof(VTEncContext),
     .p.pix_fmts       = hevc_pix_fmts,
+    .defaults         = vt_defaults,
     .init             = vtenc_init,
     FF_CODEC_ENCODE_CB(vtenc_frame),
     .close            = vtenc_close,
@@ -3023,6 +3031,7 @@ const FFCodec ff_prores_videotoolbox_encoder = {
                         AV_CODEC_CAP_HARDWARE,
     .priv_data_size   = sizeof(VTEncContext),
     .p.pix_fmts       = prores_pix_fmts,
+    .defaults         = vt_defaults,
     .init             = vtenc_init,
     FF_CODEC_ENCODE_CB(vtenc_frame),
     .close            = vtenc_close,
