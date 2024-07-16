@@ -416,13 +416,15 @@ static void dump_dovi_conf(void *ctx, const AVPacketSideData *sd,
         (const AVDOVIDecoderConfigurationRecord *)sd->data;
 
     av_log(ctx, log_level, "version: %d.%d, profile: %d, level: %d, "
-           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d",
+           "rpu flag: %d, el flag: %d, bl flag: %d, compatibility id: %d, "
+           "compression: %d",
            dovi->dv_version_major, dovi->dv_version_minor,
            dovi->dv_profile, dovi->dv_level,
            dovi->rpu_present_flag,
            dovi->el_present_flag,
            dovi->bl_present_flag,
-           dovi->dv_bl_signal_compatibility_id);
+           dovi->dv_bl_signal_compatibility_id,
+           dovi->dv_md_compression);
 }
 
 static void dump_s12m_timecode(void *ctx, const AVStream *st, const AVPacketSideData *sd,
