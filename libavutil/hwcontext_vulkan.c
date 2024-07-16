@@ -1028,16 +1028,22 @@ end:
 }
 
 /* Picks the least used qf with the fewest unneeded flags, or -1 if none found */
-static inline int pick_queue_family(VkQueueFamilyProperties *qf, uint32_t num_qf,
+static inline int pick_queue_family(VkQueueFamilyProperties2 *qf, uint32_t num_qf,
                                     VkQueueFlagBits flags)
 {
     int index = -1;
     uint32_t min_score = UINT32_MAX;
 
     for (int i = 0; i < num_qf; i++) {
-        const VkQueueFlagBits qflags = qf[i].queueFlags;
+        VkQueueFlagBits qflags = qf[i].queueFamilyProperties.queueFlags;
+
+        /* Per the spec, reporting transfer caps is optional for these 2 types */
+        if ((flags & VK_QUEUE_TRANSFER_BIT) &&
+            (qflags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)))
+            qflags |= VK_QUEUE_TRANSFER_BIT;
+
         if (qflags & flags) {
-            uint32_t score = av_popcount(qflags) + qf[i].timestampValidBits;
+            uint32_t score = av_popcount(qflags) + qf[i].queueFamilyProperties.timestampValidBits;
             if (score < min_score) {
                 index = i;
                 min_score = score;
@@ -1046,7 +1052,36 @@ static inline int pick_queue_family(VkQueueFamilyProperties *qf, uint32_t num_qf
     }
 
     if (index > -1)
-        qf[index].timestampValidBits++;
+        qf[index].queueFamilyProperties.timestampValidBits++;
+
+    return index;
+}
+
+static inline int pick_video_queue_family(VkQueueFamilyProperties2 *qf,
+                                          VkQueueFamilyVideoPropertiesKHR *qf_vid, uint32_t num_qf,
+                                          VkVideoCodecOperationFlagBitsKHR flags)
+{
+    int index = -1;
+    uint32_t min_score = UINT32_MAX;
+
+    for (int i = 0; i < num_qf; i++) {
+        const VkQueueFlagBits qflags = qf[i].queueFamilyProperties.queueFlags;
+        const VkQueueFlagBits vflags = qf_vid[i].videoCodecOperations;
+
+        if (!(qflags & (VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_VIDEO_DECODE_BIT_KHR)))
+            continue;
+
+        if (vflags & flags) {
+            uint32_t score = av_popcount(vflags) + qf[i].queueFamilyProperties.timestampValidBits;
+            if (score < min_score) {
+                index = i;
+                min_score = score;
+            }
+        }
+    }
+
+    if (index > -1)
+        qf[index].queueFamilyProperties.timestampValidBits++;
 
     return index;
 }
@@ -1054,12 +1089,12 @@ static inline int pick_queue_family(VkQueueFamilyProperties *qf, uint32_t num_qf
 static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
 {
     uint32_t num;
-    float *weights;
-    VkQueueFamilyProperties *qf = NULL;
     VulkanDevicePriv *p = ctx->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    int graph_index, comp_index, tx_index, enc_index, dec_index;
+
+    VkQueueFamilyProperties2 *qf = NULL;
+    VkQueueFamilyVideoPropertiesKHR *qf_vid = NULL;
 
     /* First get the number of queue families */
     vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &num, NULL);
@@ -1069,118 +1104,155 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     }
 
     /* Then allocate memory */
-    qf = av_malloc_array(num, sizeof(VkQueueFamilyProperties));
+    qf = av_malloc_array(num, sizeof(VkQueueFamilyProperties2));
     if (!qf)
         return AVERROR(ENOMEM);
 
+    qf_vid = av_malloc_array(num, sizeof(VkQueueFamilyVideoPropertiesKHR));
+    if (!qf_vid)
+        return AVERROR(ENOMEM);
+
+    for (uint32_t i = 0; i < num; i++) {
+        qf_vid[i] = (VkQueueFamilyVideoPropertiesKHR) {
+            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_VIDEO_PROPERTIES_KHR,
+        };
+        qf[i] = (VkQueueFamilyProperties2) {
+            .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2,
+            .pNext = &qf_vid[i],
+        };
+    }
+
     /* Finally retrieve the queue families */
-    vk->GetPhysicalDeviceQueueFamilyProperties(hwctx->phys_dev, &num, qf);
+    vk->GetPhysicalDeviceQueueFamilyProperties2(hwctx->phys_dev, &num, qf);
 
     av_log(ctx, AV_LOG_VERBOSE, "Queue families:\n");
     for (int i = 0; i < num; i++) {
         av_log(ctx, AV_LOG_VERBOSE, "    %i:%s%s%s%s%s%s%s (queues: %i)\n", i,
-               ((qf[i].queueFlags) & VK_QUEUE_GRAPHICS_BIT) ? " graphics" : "",
-               ((qf[i].queueFlags) & VK_QUEUE_COMPUTE_BIT) ? " compute" : "",
-               ((qf[i].queueFlags) & VK_QUEUE_TRANSFER_BIT) ? " transfer" : "",
-               ((qf[i].queueFlags) & VK_QUEUE_VIDEO_ENCODE_BIT_KHR) ? " encode" : "",
-               ((qf[i].queueFlags) & VK_QUEUE_VIDEO_DECODE_BIT_KHR) ? " decode" : "",
-               ((qf[i].queueFlags) & VK_QUEUE_SPARSE_BINDING_BIT) ? " sparse" : "",
-               ((qf[i].queueFlags) & VK_QUEUE_PROTECTED_BIT) ? " protected" : "",
-               qf[i].queueCount);
+               ((qf[i].queueFamilyProperties.queueFlags) & VK_QUEUE_GRAPHICS_BIT) ? " graphics" : "",
+               ((qf[i].queueFamilyProperties.queueFlags) & VK_QUEUE_COMPUTE_BIT) ? " compute" : "",
+               ((qf[i].queueFamilyProperties.queueFlags) & VK_QUEUE_TRANSFER_BIT) ? " transfer" : "",
+               ((qf[i].queueFamilyProperties.queueFlags) & VK_QUEUE_VIDEO_ENCODE_BIT_KHR) ? " encode" : "",
+               ((qf[i].queueFamilyProperties.queueFlags) & VK_QUEUE_VIDEO_DECODE_BIT_KHR) ? " decode" : "",
+               ((qf[i].queueFamilyProperties.queueFlags) & VK_QUEUE_SPARSE_BINDING_BIT) ? " sparse" : "",
+               ((qf[i].queueFamilyProperties.queueFlags) & VK_QUEUE_PROTECTED_BIT) ? " protected" : "",
+               qf[i].queueFamilyProperties.queueCount);
 
         /* We use this field to keep a score of how many times we've used that
          * queue family in order to make better choices. */
-        qf[i].timestampValidBits = 0;
+        qf[i].queueFamilyProperties.timestampValidBits = 0;
     }
+
+    hwctx->nb_qf = 0;
 
     /* Pick each queue family to use */
-    graph_index = pick_queue_family(qf, num, VK_QUEUE_GRAPHICS_BIT);
-    comp_index  = pick_queue_family(qf, num, VK_QUEUE_COMPUTE_BIT);
-    tx_index    = pick_queue_family(qf, num, VK_QUEUE_TRANSFER_BIT);
-    enc_index   = pick_queue_family(qf, num, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
-    dec_index   = pick_queue_family(qf, num, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
+#define PICK_QF(type, vid_op)                                            \
+    do {                                                                 \
+        uint32_t i;                                                      \
+        uint32_t idx;                                                    \
+                                                                         \
+        if (vid_op)                                                      \
+            idx = pick_video_queue_family(qf, qf_vid, num, vid_op);      \
+        else                                                             \
+            idx = pick_queue_family(qf, num, type);                      \
+                                                                         \
+        if (idx == -1)                                                   \
+            continue;                                                    \
+                                                                         \
+        for (i = 0; i < hwctx->nb_qf; i++) {                             \
+            if (hwctx->qf[i].idx == idx) {                               \
+                hwctx->qf[i].flags |= type;                              \
+                hwctx->qf[i].video_caps |= vid_op;                       \
+                break;                                                   \
+            }                                                            \
+        }                                                                \
+        if (i == hwctx->nb_qf) {                                         \
+            hwctx->qf[i].idx = idx;                                      \
+            hwctx->qf[i].num = qf[idx].queueFamilyProperties.queueCount; \
+            hwctx->qf[i].flags = type;                                   \
+            hwctx->qf[i].video_caps = vid_op;                            \
+            hwctx->nb_qf++;                                              \
+        }                                                                \
+    } while (0)
 
-    /* Signalling the transfer capabilities on a queue family is optional */
-    if (tx_index < 0) {
-        tx_index = pick_queue_family(qf, num, VK_QUEUE_COMPUTE_BIT);
-        if (tx_index < 0)
-            tx_index = pick_queue_family(qf, num, VK_QUEUE_GRAPHICS_BIT);
+    PICK_QF(VK_QUEUE_GRAPHICS_BIT, VK_VIDEO_CODEC_OPERATION_NONE_KHR);
+    PICK_QF(VK_QUEUE_COMPUTE_BIT, VK_VIDEO_CODEC_OPERATION_NONE_KHR);
+    PICK_QF(VK_QUEUE_TRANSFER_BIT, VK_VIDEO_CODEC_OPERATION_NONE_KHR);
+
+    PICK_QF(VK_QUEUE_VIDEO_ENCODE_BIT_KHR, VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR);
+    PICK_QF(VK_QUEUE_VIDEO_DECODE_BIT_KHR, VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR);
+
+    PICK_QF(VK_QUEUE_VIDEO_ENCODE_BIT_KHR, VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR);
+    PICK_QF(VK_QUEUE_VIDEO_DECODE_BIT_KHR, VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR);
+
+    PICK_QF(VK_QUEUE_VIDEO_DECODE_BIT_KHR, VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR);
+
+    av_free(qf);
+    av_free(qf_vid);
+
+#undef PICK_QF
+
+    cd->pQueueCreateInfos = av_malloc_array(hwctx->nb_qf,
+                                            sizeof(VkDeviceQueueCreateInfo));
+    if (!cd->pQueueCreateInfos)
+        return AVERROR(ENOMEM);
+
+    for (uint32_t i = 0; i < hwctx->nb_qf; i++) {
+        int dup = 0;
+        float *weights = NULL;
+        VkDeviceQueueCreateInfo *pc;
+        for (uint32_t j = 0; j < cd->queueCreateInfoCount; j++) {
+            if (hwctx->qf[i].idx == cd->pQueueCreateInfos[j].queueFamilyIndex) {
+                dup = 1;
+                break;
+            }
+        }
+        if (dup)
+            continue;
+
+        weights = av_malloc_array(hwctx->qf[i].num, sizeof(float));
+        if (!weights) {
+            for (uint32_t j = 0; j < cd->queueCreateInfoCount; j++)
+                av_free((void *)cd->pQueueCreateInfos[i].pQueuePriorities);
+            av_free((void *)cd->pQueueCreateInfos);
+            return AVERROR(ENOMEM);
+        }
+
+        for (uint32_t j = 0; j < hwctx->qf[i].num; j++)
+            weights[j] = 1.0;
+
+        pc = (VkDeviceQueueCreateInfo *)cd->pQueueCreateInfos;
+        pc[cd->queueCreateInfoCount++] = (VkDeviceQueueCreateInfo) {
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .queueFamilyIndex = hwctx->qf[i].idx,
+            .queueCount = hwctx->qf[i].num,
+            .pQueuePriorities = weights,
+        };
     }
 
+    /* Setup deprecated fields */
     hwctx->queue_family_index        = -1;
     hwctx->queue_family_comp_index   = -1;
     hwctx->queue_family_tx_index     = -1;
     hwctx->queue_family_encode_index = -1;
     hwctx->queue_family_decode_index = -1;
 
-#define SETUP_QUEUE(qf_idx)                                                    \
-    if (qf_idx > -1) {                                                         \
-        int fidx = qf_idx;                                                     \
-        int qc = qf[fidx].queueCount;                                          \
-        VkDeviceQueueCreateInfo *pc;                                           \
-                                                                               \
-        if (fidx == graph_index) {                                             \
-            hwctx->queue_family_index = fidx;                                  \
-            hwctx->nb_graphics_queues = qc;                                    \
-            graph_index = -1;                                                  \
-        }                                                                      \
-        if (fidx == comp_index) {                                              \
-            hwctx->queue_family_comp_index = fidx;                             \
-            hwctx->nb_comp_queues = qc;                                        \
-            comp_index = -1;                                                   \
-        }                                                                      \
-        if (fidx == tx_index) {                                                \
-            hwctx->queue_family_tx_index = fidx;                               \
-            hwctx->nb_tx_queues = qc;                                          \
-            tx_index = -1;                                                     \
-        }                                                                      \
-        if (fidx == enc_index) {                                               \
-            hwctx->queue_family_encode_index = fidx;                           \
-            hwctx->nb_encode_queues = qc;                                      \
-            enc_index = -1;                                                    \
-        }                                                                      \
-        if (fidx == dec_index) {                                               \
-            hwctx->queue_family_decode_index = fidx;                           \
-            hwctx->nb_decode_queues = qc;                                      \
-            dec_index = -1;                                                    \
-        }                                                                      \
-                                                                               \
-        pc = av_realloc((void *)cd->pQueueCreateInfos,                         \
-                        sizeof(*pc) * (cd->queueCreateInfoCount + 1));         \
-        if (!pc) {                                                             \
-            av_free(qf);                                                       \
-            return AVERROR(ENOMEM);                                            \
-        }                                                                      \
-        cd->pQueueCreateInfos = pc;                                            \
-        pc = &pc[cd->queueCreateInfoCount];                                    \
-                                                                               \
-        weights = av_malloc(qc * sizeof(float));                               \
-        if (!weights) {                                                        \
-            av_free(qf);                                                       \
-            return AVERROR(ENOMEM);                                            \
-        }                                                                      \
-                                                                               \
-        memset(pc, 0, sizeof(*pc));                                            \
-        pc->sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;     \
-        pc->queueFamilyIndex = fidx;                                           \
-        pc->queueCount       = qc;                                             \
-        pc->pQueuePriorities = weights;                                        \
-                                                                               \
-        for (int i = 0; i < qc; i++)                                           \
-            weights[i] = 1.0f / qc;                                            \
-                                                                               \
-        cd->queueCreateInfoCount++;                                            \
+#define SET_OLD_QF(field, nb_field, type)             \
+    do {                                              \
+        if (field < 0 && hwctx->qf[i].flags & type) { \
+            field = hwctx->qf[i].idx;                 \
+            nb_field = hwctx->qf[i].num;              \
+        }                                             \
+    } while (0)
+
+    for (uint32_t i = 0; i < hwctx->nb_qf; i++) {
+        SET_OLD_QF(hwctx->queue_family_index, hwctx->nb_graphics_queues, VK_QUEUE_GRAPHICS_BIT);
+        SET_OLD_QF(hwctx->queue_family_comp_index, hwctx->nb_comp_queues, VK_QUEUE_COMPUTE_BIT);
+        SET_OLD_QF(hwctx->queue_family_tx_index, hwctx->nb_tx_queues, VK_QUEUE_TRANSFER_BIT);
+        SET_OLD_QF(hwctx->queue_family_encode_index, hwctx->nb_encode_queues, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
+        SET_OLD_QF(hwctx->queue_family_decode_index, hwctx->nb_decode_queues, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
     }
 
-    SETUP_QUEUE(graph_index)
-    SETUP_QUEUE(comp_index)
-    SETUP_QUEUE(tx_index)
-    SETUP_QUEUE(enc_index)
-    SETUP_QUEUE(dec_index)
-
-#undef SETUP_QUEUE
-
-    av_free(qf);
+#undef SET_OLD_QF
 
     return 0;
 }
