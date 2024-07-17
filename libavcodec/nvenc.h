@@ -206,6 +206,9 @@ typedef struct NvencContext
     AVFifo *output_surface_queue;
     AVFifo *output_surface_ready_queue;
     AVFifo *timestamp_list;
+    // This is for DTS calculating, reset after flush
+    int64_t output_frame_num;
+    int64_t initial_delay_time;
 
     NV_ENC_SEI_PAYLOAD *sei_data;
     int sei_data_size;
