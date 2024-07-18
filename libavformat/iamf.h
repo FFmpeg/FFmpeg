@@ -68,7 +68,7 @@ typedef struct IAMFCodecConfig {
     enum AVCodecID codec_id;
     uint32_t codec_tag;
     unsigned nb_samples;
-    int seek_preroll;
+    int audio_roll_distance;
     int sample_rate;
     int extradata_size;
     uint8_t *extradata;
