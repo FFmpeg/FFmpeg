@@ -1703,7 +1703,7 @@ static int configure_input_video_filter(FilterGraph *fg, AVFilterGraph *graph,
 
     if ((ifp->opts.flags & IFILTER_FLAG_CROP)) {
         char crop_buf[64];
-        snprintf(crop_buf, sizeof(crop_buf), "w=iw-%d-%d:h=ih-%d-%d:x=%d:y=%d",
+        snprintf(crop_buf, sizeof(crop_buf), "w=iw-%u-%u:h=ih-%u-%u:x=%u:y=%u",
                  ifp->opts.crop_left, ifp->opts.crop_right,
                  ifp->opts.crop_top, ifp->opts.crop_bottom,
                  ifp->opts.crop_left, ifp->opts.crop_top);
