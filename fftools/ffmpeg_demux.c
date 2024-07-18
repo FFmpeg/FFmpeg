@@ -1014,7 +1014,8 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
             opts->crop_bottom = AV_RL32(sd->data +  4);
             opts->crop_left   = AV_RL32(sd->data +  8);
             opts->crop_right  = AV_RL32(sd->data + 12);
-            if (ds->apply_cropping && ds->apply_cropping != CROP_CODEC)
+            if (ds->apply_cropping && ds->apply_cropping != CROP_CODEC &&
+                (opts->crop_top | opts->crop_bottom | opts->crop_left | opts->crop_right))
                 opts->flags |= IFILTER_FLAG_CROP;
         }
     } else if (ist->par->codec_type == AVMEDIA_TYPE_SUBTITLE) {
