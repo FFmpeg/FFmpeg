@@ -416,22 +416,23 @@ endfunc
 .endr
 
 .macro idct_dc_add8 width
-func ff_h264_idct\width\()_dc_add_8_rvv, zve64x, zba
+func ff_h264_idct\width\()_dc_add_8_rvv, zve64x
 .if \width == 8
-        vsetivli        zero, \width, e16, m1, ta, ma
+        vsetivli        zero, \width, e8, mf2, ta, ma
 .else
-        vsetivli        zero, \width, e16, mf2, ta, ma
+        vsetivli        zero, \width, e8, mf4, ta, ma
 .endif
         lh              a3, 0(a1)
         addi            a3, a3, 32
         srai            a3, a3, 6
         sh              zero, 0(a1)
 .if \width == 8
+        li              a6, \width * \width
         vlse64.v        v24, (a0), a2
-        vsetvli         t0, zero, e16, m8, ta, ma
+        vsetvli         zero, a6, e16, m8, ta, ma
 .else
         vlse32.v        v24, (a0), a2
-        vsetvli         t0, zero, e16, m4, ta, ma
+        vsetivli        zero, \width * \width, e16, m2, ta, ma
 .endif
         vzext.vf2       v0, v24
         vadd.vx         v0, v0, a3
@@ -439,13 +440,14 @@ func ff_h264_idct\width\()_dc_add_8_rvv, zve64x, zba
 .if \width == 8
         vsetvli         zero, zero, e8, m4, ta, ma
 .else
-        vsetvli         zero, zero, e8, m2, ta, ma
+        vsetvli         zero, zero, e8, m1, ta, ma
 .endif
         vnclipu.wi      v24, v0, 0
-        vsetivli        zero, \width, e8, m1, ta, ma
 .if \width == 8
+        vsetivli        zero, \width, e8, mf2, ta, ma
         vsse64.v        v24, (a0), a2
 .else
+        vsetivli        zero, \width, e8, mf4, ta, ma
         vsse32.v        v24, (a0), a2
 .endif
         ret
@@ -457,7 +459,11 @@ idct_dc_add8 8
 
 .macro idct_dc_add width
 func ff_h264_idct\width\()_dc_add_16_rvv, zve64x, zba
+.if \width == 8
         vsetivli        zero, \width, e16, m1, ta, ma
+.else
+        vsetivli        zero, \width, e16, mf2, ta, ma
+.endif
         lw              a3, 0(a1)
         addi            a3, a3, 32
         srai            a3, a3, 6
@@ -487,7 +493,11 @@ func ff_h264_idct\width\()_dc_add_16_rvv, zve64x, zba
         vadd.vx         v0, v0, a3
         vmax.vx         v0, v0, zero
         vmin.vx         v0, v0, a5
+.if \width == 8
         vsetivli        zero, \width, e16, m1, ta, ma
+.else
+        vsetivli        zero, \width, e16, mf2, ta, ma
+.endif
         vse16.v         v0, (a0)
         vse16.v         v1, (t4)
         vse16.v         v2, (t5)
