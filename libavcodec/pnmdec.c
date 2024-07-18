@@ -256,7 +256,7 @@ static int pnm_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_PIX_FMT_GBRPF32:
-        if (avctx->width * avctx->height * 12 > s->bytestream_end - s->bytestream)
+        if (avctx->width * avctx->height * 12LL > s->bytestream_end - s->bytestream)
             return AVERROR_INVALIDDATA;
         scale = 1.f / s->scale;
         if (s->endian) {
