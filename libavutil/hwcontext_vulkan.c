@@ -129,6 +129,9 @@ typedef struct VulkanFramesPriv {
     FFVkExecPool upload_exec;
     FFVkExecPool download_exec;
 
+    /* Temporary buffer pools */
+    AVBufferPool *tmp;
+
     /* Modifier info list to free at uninit */
     VkImageDrmFormatModifierListCreateInfoEXT *modifier_info;
 } VulkanFramesPriv;
@@ -2425,6 +2428,8 @@ static void vulkan_frames_uninit(AVHWFramesContext *hwfc)
     ff_vk_exec_pool_free(&p->vkctx, &fp->compute_exec);
     ff_vk_exec_pool_free(&p->vkctx, &fp->upload_exec);
     ff_vk_exec_pool_free(&p->vkctx, &fp->download_exec);
+
+    av_buffer_pool_uninit(&fp->tmp);
 }
 
 static int vulkan_frames_init(AVHWFramesContext *hwfc)
@@ -3451,128 +3456,288 @@ static int vulkan_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
     return AVERROR(ENOSYS);
 }
 
-static size_t get_req_buffer_size(VulkanDevicePriv *p, int *stride, int height)
+static int copy_buffer_data(AVHWFramesContext *hwfc, AVBufferRef *buf,
+                            AVFrame *swf, VkBufferImageCopy *region,
+                            int planes, int upload)
 {
-    size_t size;
-    *stride = FFALIGN(*stride, p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
-    size = height*(*stride);
-    size = FFALIGN(size, p->props.properties.limits.minMemoryMapAlignment);
-    return size;
-}
-
-static int transfer_image_buf(AVHWFramesContext *hwfc, AVFrame *f,
-                              AVBufferRef **bufs, size_t *buf_offsets,
-                              const int *buf_stride, int w,
-                              int h, enum AVPixelFormat pix_fmt, int to_buf)
-{
-    int err;
-    AVVkFrame *frame = (AVVkFrame *)f->data[0];
-    VulkanFramesPriv *fp = hwfc->hwctx;
+    VkResult ret;
     VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
-    int nb_img_bar = 0;
+    AVVulkanDeviceContext *hwctx = &p->p;
 
-    const int nb_images = ff_vk_count_images(frame);
-    int pixfmt_planes = av_pix_fmt_count_planes(pix_fmt);
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    FFVkBuffer *vkbuf = (FFVkBuffer *)buf->data;
 
-    VkCommandBuffer cmd_buf;
-    FFVkExecContext *exec = ff_vk_exec_get(to_buf ? &fp->download_exec :
-                                                    &fp->upload_exec);
-    cmd_buf = exec->buf;
-    ff_vk_exec_start(&p->vkctx, exec);
+    const VkMappedMemoryRange flush_info = {
+        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = vkbuf->mem,
+        .size   = VK_WHOLE_SIZE,
+    };
 
-    err = ff_vk_exec_add_dep_buf(&p->vkctx, exec, bufs, pixfmt_planes, 1);
-    if (err < 0)
-        return err;
-
-    err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, f,
-                                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                                   VK_PIPELINE_STAGE_2_TRANSFER_BIT);
-    if (err < 0)
-        return err;
-
-    ff_vk_frame_barrier(&p->vkctx, exec, f, img_bar, &nb_img_bar,
-                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
-                        to_buf ? VK_ACCESS_TRANSFER_READ_BIT :
-                                 VK_ACCESS_TRANSFER_WRITE_BIT,
-                        to_buf ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
-                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                        VK_QUEUE_FAMILY_IGNORED);
-
-    vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
-            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-            .pImageMemoryBarriers = img_bar,
-            .imageMemoryBarrierCount = nb_img_bar,
-        });
-
-    /* Schedule a copy for each plane */
-    for (int i = 0; i < pixfmt_planes; i++) {
-        int idx = FFMIN(i, nb_images - 1);
-        VkImageAspectFlags plane_aspect[] = { VK_IMAGE_ASPECT_COLOR_BIT,
-                                              VK_IMAGE_ASPECT_PLANE_0_BIT,
-                                              VK_IMAGE_ASPECT_PLANE_1_BIT,
-                                              VK_IMAGE_ASPECT_PLANE_2_BIT, };
-
-        FFVkBuffer *vkbuf = (FFVkBuffer *)bufs[i]->data;
-        VkBufferImageCopy buf_reg = {
-            .bufferOffset = buf_offsets[i],
-            .bufferRowLength = buf_stride[i] / desc->comp[i].step,
-            .imageSubresource.layerCount = 1,
-            .imageSubresource.aspectMask = plane_aspect[(pixfmt_planes != nb_images) +
-                                                        i*(pixfmt_planes != nb_images)],
-            .imageOffset = { 0, 0, 0, },
-        };
-
-        uint32_t p_w, p_h;
-        get_plane_wh(&p_w, &p_h, pix_fmt, w, h, i);
-
-        buf_reg.bufferImageHeight = p_h;
-        buf_reg.imageExtent = (VkExtent3D){ p_w, p_h, 1, };
-
-        if (to_buf)
-            vk->CmdCopyImageToBuffer(cmd_buf, frame->img[idx],
-                                     img_bar[0].newLayout,
-                                     vkbuf->buf,
-                                     1, &buf_reg);
-        else
-            vk->CmdCopyBufferToImage(cmd_buf, vkbuf->buf, frame->img[idx],
-                                     img_bar[0].newLayout,
-                                     1, &buf_reg);
+    if (!(vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && !upload) {
+        ret = vk->InvalidateMappedMemoryRanges(hwctx->act_dev, 1,
+                                               &flush_info);
+        if (ret != VK_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to invalidate buffer data: %s\n",
+                   ff_vk_ret2str(ret));
+            return AVERROR_EXTERNAL;
+        }
     }
 
-    err = ff_vk_exec_submit(&p->vkctx, exec);
-    if (err < 0)
-        return err;
+    for (int i = 0; i < planes; i++)
+        av_image_copy_plane(vkbuf->mapped_mem + region[i].bufferOffset,
+                            region[i].bufferRowLength,
+                            swf->data[i],
+                            swf->linesize[i],
+                            swf->linesize[i],
+                            region[i].imageExtent.height);
 
-    ff_vk_exec_wait(&p->vkctx, exec);
+    if (!(vkbuf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) && upload) {
+        ret = vk->FlushMappedMemoryRanges(hwctx->act_dev, 1,
+                                          &flush_info);
+        if (ret != VK_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to flush buffer data: %s\n",
+                   ff_vk_ret2str(ret));
+            return AVERROR_EXTERNAL;
+        }
+    }
 
     return 0;
 }
 
-static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
-                                const AVFrame *swf, int from)
+static int get_plane_buf(AVHWFramesContext *hwfc, AVBufferRef **dst,
+                         AVFrame *swf, VkBufferImageCopy *region, int upload)
 {
-    int err = 0;
-    VkResult ret;
-    AVHWDeviceContext *dev_ctx = hwfc->device_ctx;
-    VulkanDevicePriv *p = dev_ctx->hwctx;
-    AVVulkanDeviceContext *hwctx = &p->p;
-    FFVulkanFunctions *vk = &p->vkctx.vkfn;
-
-    AVFrame tmp;
-    FFVkBuffer *vkbufs[AV_NUM_DATA_POINTERS];
-    AVBufferRef *bufs[AV_NUM_DATA_POINTERS] = { 0 };
-    size_t buf_offsets[AV_NUM_DATA_POINTERS] = { 0 };
-
-    uint32_t p_w, p_h;
+    int err;
+    VulkanFramesPriv *fp = hwfc->hwctx;
+    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
     const int planes = av_pix_fmt_count_planes(swf->format);
 
-    int host_mapped[AV_NUM_DATA_POINTERS] = { 0 };
-    const int map_host = !!(p->vkctx.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY);
+    size_t buf_offset = 0;
+    for (int i = 0; i < planes; i++) {
+        size_t size;
+        ptrdiff_t linesize = swf->linesize[i];
 
+        uint32_t p_w, p_h;
+        get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
+
+        linesize = FFALIGN(linesize,
+                           p->props.properties.limits.optimalBufferCopyRowPitchAlignment);
+        size = p_h*linesize;
+
+        region[i] = (VkBufferImageCopy) {
+            .bufferOffset = buf_offset,
+            .bufferRowLength = linesize,
+            .bufferImageHeight = p_h,
+            .imageSubresource.layerCount = 1,
+            .imageExtent = (VkExtent3D){ p_w, p_h, 1 },
+            /* Rest of the fields adjusted/filled in later */
+        };
+
+        buf_offset = FFALIGN(buf_offset + size,
+                             p->props.properties.limits.optimalBufferCopyOffsetAlignment);
+    }
+
+    err = ff_vk_get_pooled_buffer(&p->vkctx, &fp->tmp, dst,
+                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                  NULL, buf_offset,
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    if (err < 0)
+        return err;
+
+    return 0;
+}
+
+static int create_mapped_buffer(AVHWFramesContext *hwfc,
+                                FFVkBuffer *vkb, VkBufferUsageFlags usage,
+                                size_t size,
+                                VkExternalMemoryBufferCreateInfo *create_desc,
+                                VkImportMemoryHostPointerInfoEXT *import_desc,
+                                VkMemoryHostPointerPropertiesEXT props)
+{
+    int err;
+    VkResult ret;
+    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+    AVVulkanDeviceContext *hwctx = &p->p;
+
+    VkBufferCreateInfo buf_spawn = {
+        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .pNext       = create_desc,
+        .usage       = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .size        = size,
+    };
+    VkMemoryRequirements req = {
+        .size           = size,
+        .alignment      = p->hprops.minImportedHostPointerAlignment,
+        .memoryTypeBits = props.memoryTypeBits,
+    };
+
+    err = ff_vk_alloc_mem(&p->vkctx, &req,
+                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                          import_desc, &vkb->flags, &vkb->mem);
+    if (err < 0)
+        return err;
+
+    ret = vk->CreateBuffer(hwctx->act_dev, &buf_spawn, hwctx->alloc, &vkb->buf);
+    if (ret != VK_SUCCESS) {
+        vk->FreeMemory(hwctx->act_dev, vkb->mem, hwctx->alloc);
+        return AVERROR_EXTERNAL;
+    }
+
+    ret = vk->BindBufferMemory(hwctx->act_dev, vkb->buf, vkb->mem, 0);
+    if (ret != VK_SUCCESS) {
+        vk->FreeMemory(hwctx->act_dev, vkb->mem, hwctx->alloc);
+        vk->DestroyBuffer(hwctx->act_dev, vkb->buf, hwctx->alloc);
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}
+
+static void destroy_avvkbuf(void *opaque, uint8_t *data)
+{
+    FFVulkanContext *s = opaque;
+    FFVkBuffer *buf = (FFVkBuffer *)data;
+    ff_vk_free_buf(s, buf);
+    av_free(buf);
+}
+
+static int host_map_frame(AVHWFramesContext *hwfc, AVBufferRef **dst, int *nb_bufs,
+                          AVFrame *swf, VkBufferImageCopy *region, int upload)
+{
+    int err;
+    VkResult ret;
+    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+    AVVulkanDeviceContext *hwctx = &p->p;
+
+    const int planes = av_pix_fmt_count_planes(swf->format);
+
+    VkExternalMemoryBufferCreateInfo create_desc = {
+        .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
+        .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+    };
+    VkImportMemoryHostPointerInfoEXT import_desc = {
+        .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
+        .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
+    };
+    VkMemoryHostPointerPropertiesEXT props;
+
+    for (int i = 0; i < planes; i++) {
+        FFVkBuffer *vkb;
+        uint32_t p_w, p_h;
+        size_t offs;
+        size_t buffer_size;
+
+        /* We can't host map images with negative strides */
+        if (swf->linesize[i] < 0) {
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
+
+        /* Get the previous point at which mapping was possible and use it */
+        offs = (uintptr_t)swf->data[i] % p->hprops.minImportedHostPointerAlignment;
+        import_desc.pHostPointer = swf->data[i] - offs;
+
+        props = (VkMemoryHostPointerPropertiesEXT) {
+            VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
+        };
+        ret = vk->GetMemoryHostPointerPropertiesEXT(hwctx->act_dev,
+                                                    import_desc.handleType,
+                                                    import_desc.pHostPointer,
+                                                    &props);
+        if (!(ret == VK_SUCCESS && props.memoryTypeBits)) {
+            err = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        /* Buffer region for this plane */
+        region[i] = (VkBufferImageCopy) {
+            .bufferOffset = offs,
+            .bufferRowLength = swf->linesize[i],
+            .bufferImageHeight = p_h,
+            .imageSubresource.layerCount = 1,
+            .imageExtent = (VkExtent3D){ p_w, p_h, 1 },
+            /* Rest of the fields adjusted/filled in later */
+        };
+
+        /* Add the offset at the start, which gets ignored */
+        buffer_size = offs + swf->linesize[i]*p_h;
+        buffer_size = FFALIGN(buffer_size, p->props.properties.limits.minMemoryMapAlignment);
+
+        /* Create a buffer */
+        vkb = av_mallocz(sizeof(*vkb));
+        if (!vkb) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        err = create_mapped_buffer(hwfc, vkb,
+                                   upload ? VK_BUFFER_USAGE_TRANSFER_SRC_BIT :
+                                            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                   buffer_size, &create_desc, &import_desc,
+                                   props);
+        if (err < 0) {
+            av_free(vkb);
+            goto fail;
+        }
+
+        /* Create a ref */
+        dst[*nb_bufs] = av_buffer_create((uint8_t *)vkb, sizeof(*vkb),
+                                         destroy_avvkbuf, &p->vkctx, 0);
+        if (!dst[*nb_bufs]) {
+            destroy_avvkbuf(&p->vkctx, (uint8_t *)vkb);
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        (*nb_bufs)++;
+    }
+
+    return 0;
+
+fail:
+    for (int i = 0; i < (*nb_bufs); i++)
+        av_buffer_unref(&dst[i]);
+    return err;
+}
+
+static int vulkan_transfer_frame(AVHWFramesContext *hwfc,
+                                 AVFrame *swf, AVFrame *hwf,
+                                 int upload)
+{
+    int err;
+    VulkanFramesPriv *fp = hwfc->hwctx;
+    VulkanDevicePriv *p = hwfc->device_ctx->hwctx;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+
+    int host_mapped = 0;
+
+    AVVkFrame *hwf_vk = (AVVkFrame *)hwf->data[0];
+    VkBufferImageCopy region[AV_NUM_DATA_POINTERS]; // always one per plane
+
+    const int planes = av_pix_fmt_count_planes(swf->format);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(swf->format);
+    const int nb_images = ff_vk_count_images(hwf_vk);
+    static const VkImageAspectFlags plane_aspect[] = { VK_IMAGE_ASPECT_COLOR_BIT,
+                                                       VK_IMAGE_ASPECT_PLANE_0_BIT,
+                                                       VK_IMAGE_ASPECT_PLANE_1_BIT,
+                                                       VK_IMAGE_ASPECT_PLANE_2_BIT, };
+
+    VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
+    int nb_img_bar = 0;
+
+    AVBufferRef *bufs[AV_NUM_DATA_POINTERS];
+    int nb_bufs = 0;
+
+    VkCommandBuffer cmd_buf;
+    FFVkExecContext *exec;
+
+    /* Sanity checking */
     if ((swf->format != AV_PIX_FMT_NONE && !av_vkfmt_from_pixfmt(swf->format))) {
         av_log(hwfc, AV_LOG_ERROR, "Unsupported software frame pixel format!\n");
         return AVERROR(EINVAL);
@@ -3581,115 +3746,97 @@ static int vulkan_transfer_data(AVHWFramesContext *hwfc, const AVFrame *vkf,
     if (swf->width > hwfc->width || swf->height > hwfc->height)
         return AVERROR(EINVAL);
 
-    /* Create buffers */
-    for (int i = 0; i < planes; i++) {
-        size_t req_size;
+    /* Setup buffers first */
+    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_HOST_MEMORY) {
+        err = host_map_frame(hwfc, bufs, &nb_bufs, swf, region, upload);
+        if (err >= 0)
+            host_mapped = 1;
+    }
 
-        VkExternalMemoryBufferCreateInfo create_desc = {
-            .sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO,
-            .handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
-        };
-
-        VkImportMemoryHostPointerInfoEXT import_desc = {
-            .sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT,
-            .handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_ALLOCATION_BIT_EXT,
-        };
-
-        VkMemoryHostPointerPropertiesEXT p_props = {
-            .sType = VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT,
-        };
-
-        get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
-
-        tmp.linesize[i] = FFABS(swf->linesize[i]);
-
-        /* Do not map images with a negative stride */
-        if (map_host && swf->linesize[i] > 0) {
-            size_t offs;
-            offs = (uintptr_t)swf->data[i] % p->hprops.minImportedHostPointerAlignment;
-            import_desc.pHostPointer = swf->data[i] - offs;
-
-            /* We have to compensate for the few extra bytes of padding we
-             * completely ignore at the start */
-            req_size = FFALIGN(offs + tmp.linesize[i] * p_h,
-                               p->hprops.minImportedHostPointerAlignment);
-
-            ret = vk->GetMemoryHostPointerPropertiesEXT(hwctx->act_dev,
-                                                        import_desc.handleType,
-                                                        import_desc.pHostPointer,
-                                                        &p_props);
-            if (ret == VK_SUCCESS && p_props.memoryTypeBits) {
-                host_mapped[i] = 1;
-                buf_offsets[i] = offs;
-            }
-        }
-
-        if (!host_mapped[i])
-            req_size = get_req_buffer_size(p, &tmp.linesize[i], p_h);
-
-        err = ff_vk_create_avbuf(&p->vkctx, &bufs[i], req_size,
-                                host_mapped[i] ? &create_desc : NULL,
-                                host_mapped[i] ? &import_desc : NULL,
-                                from ? VK_BUFFER_USAGE_TRANSFER_DST_BIT :
-                                       VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                (host_mapped[i] ?
-                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT : 0x0));
+    if (!host_mapped) {
+        err = get_plane_buf(hwfc, &bufs[0], swf, region, upload);
         if (err < 0)
             goto end;
+        nb_bufs = 1;
 
-        vkbufs[i] = (FFVkBuffer *)bufs[i]->data;
+        if (upload) {
+            err = copy_buffer_data(hwfc, bufs[0], swf, region, planes, 1);
+            if (err < 0)
+                goto end;
+        }
     }
 
-    if (!from) {
-        /* Map, copy image TO buffer (which then goes to the VkImage), unmap */
-        if ((err = ff_vk_map_buffers(&p->vkctx, vkbufs, tmp.data, planes, 0)))
+    exec = ff_vk_exec_get(&fp->upload_exec);
+    cmd_buf = exec->buf;
+
+    ff_vk_exec_start(&p->vkctx, exec);
+
+    /* Prep destination Vulkan frame */
+    err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, hwf,
+                                   VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                                   VK_PIPELINE_STAGE_2_TRANSFER_BIT);
+    if (err < 0)
+        goto end;
+
+    /* No need to declare buf deps for synchronous transfers */
+    if (upload) {
+        err = ff_vk_exec_add_dep_buf(&p->vkctx, exec, bufs, nb_bufs, 1);
+        if (err < 0) {
+            ff_vk_exec_discard_deps(&p->vkctx, exec);
             goto end;
-
-        for (int i = 0; i < planes; i++) {
-            if (host_mapped[i])
-                continue;
-
-            get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
-
-            av_image_copy_plane(tmp.data[i], tmp.linesize[i],
-                                (const uint8_t *)swf->data[i], swf->linesize[i],
-                                FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
-                                p_h);
         }
-
-        if ((err = ff_vk_unmap_buffers(&p->vkctx, vkbufs, planes, 1)))
-            goto end;
     }
 
-    /* Copy buffers into/from image */
-    err = transfer_image_buf(hwfc, (AVFrame *)vkf, bufs, buf_offsets,
-                             tmp.linesize, swf->width, swf->height, swf->format,
-                             from);
+    ff_vk_frame_barrier(&p->vkctx, exec, hwf, img_bar, &nb_img_bar,
+                        VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                        VK_PIPELINE_STAGE_2_TRANSFER_BIT_KHR,
+                        upload ? VK_ACCESS_TRANSFER_WRITE_BIT :
+                                 VK_ACCESS_TRANSFER_READ_BIT,
+                        upload ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL :
+                                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                        VK_QUEUE_FAMILY_IGNORED);
 
-    if (from) {
-        /* Map, copy buffer (which came FROM the VkImage) to the frame, unmap */
-        if ((err = ff_vk_map_buffers(&p->vkctx, vkbufs, tmp.data, planes, 0)))
-            goto end;
+    vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
+            .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .pImageMemoryBarriers = img_bar,
+            .imageMemoryBarrierCount = nb_img_bar,
+    });
 
-        for (int i = 0; i < planes; i++) {
-            if (host_mapped[i])
-                continue;
+    for (int i = 0; i < planes; i++) {
+        int buf_idx = FFMIN(i, (nb_bufs - 1));
+        int img_idx = FFMIN(i, (nb_images - 1));
+        FFVkBuffer *vkbuf = (FFVkBuffer *)bufs[buf_idx]->data;
 
-            get_plane_wh(&p_w, &p_h, swf->format, swf->width, swf->height, i);
+        uint32_t orig_stride = region[i].bufferRowLength;
+        region[i].bufferRowLength /= desc->comp[i].step;
+        region[i].imageSubresource.aspectMask = plane_aspect[(planes != nb_images) +
+                                                             i*(planes != nb_images)];
 
-            av_image_copy_plane_uc_from(swf->data[i], swf->linesize[i],
-                                        (const uint8_t *)tmp.data[i], tmp.linesize[i],
-                                        FFMIN(tmp.linesize[i], FFABS(swf->linesize[i])),
-                                        p_h);
-        }
+        if (upload)
+            vk->CmdCopyBufferToImage(cmd_buf, vkbuf->buf,
+                                     hwf_vk->img[img_idx],
+                                     img_bar[img_idx].newLayout,
+                                     1, &region[i]);
+        else
+            vk->CmdCopyImageToBuffer(cmd_buf, hwf_vk->img[img_idx],
+                                     img_bar[img_idx].newLayout,
+                                     vkbuf->buf,
+                                     1, &region[i]);
 
-        if ((err = ff_vk_unmap_buffers(&p->vkctx, vkbufs, planes, 1)))
-            goto end;
+        region[i].bufferRowLength = orig_stride;
+    }
+
+    err = ff_vk_exec_submit(&p->vkctx, exec);
+    if (err < 0) {
+        ff_vk_exec_discard_deps(&p->vkctx, exec);
+    } else if (!upload) {
+        ff_vk_exec_wait(&p->vkctx, exec);
+        if (!host_mapped)
+            err = copy_buffer_data(hwfc, bufs[0], swf, region, planes, 0);
     }
 
 end:
-    for (int i = 0; i < planes; i++)
+    for (int i = 0; i < nb_bufs; i++)
         av_buffer_unref(&bufs[i]);
 
     return err;
@@ -3716,7 +3863,7 @@ static int vulkan_transfer_data_to(AVHWFramesContext *hwfc, AVFrame *dst,
         if (src->hw_frames_ctx)
             return AVERROR(ENOSYS);
         else
-            return vulkan_transfer_data(hwfc, dst, src, 0);
+            return vulkan_transfer_frame(hwfc, (AVFrame *)src, dst, 1);
     }
 }
 
@@ -3833,7 +3980,7 @@ static int vulkan_transfer_data_from(AVHWFramesContext *hwfc, AVFrame *dst,
         if (dst->hw_frames_ctx)
             return AVERROR(ENOSYS);
         else
-            return vulkan_transfer_data(hwfc, src, dst, 1);
+            return vulkan_transfer_frame(hwfc, dst, (AVFrame *)src, 0);
     }
 }
 

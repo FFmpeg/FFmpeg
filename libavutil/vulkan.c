@@ -809,11 +809,8 @@ int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
 
     ret = vk->AllocateMemory(s->hwctx->act_dev, &alloc_info,
                              s->hwctx->alloc, mem);
-    if (ret != VK_SUCCESS) {
-        av_log(s, AV_LOG_ERROR, "Failed to allocate memory: %s\n",
-               ff_vk_ret2str(ret));
+    if (ret != VK_SUCCESS)
         return AVERROR(ENOMEM);
-    }
 
     if (mem_flags)
         *mem_flags |= s->mprops.memoryTypes[index].propertyFlags;
