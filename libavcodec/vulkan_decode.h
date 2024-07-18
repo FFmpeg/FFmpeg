@@ -48,6 +48,8 @@ typedef struct FFVulkanDecodeShared {
     FFVkVideoCommon common;
     FFVkQueueFamilyCtx qf;
 
+    AVBufferPool *buf_pool;
+
     VkVideoCapabilitiesKHR caps;
     VkVideoDecodeCapabilitiesKHR dec_caps;
 

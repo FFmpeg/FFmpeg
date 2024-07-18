@@ -260,7 +260,7 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
     const int nb = *nb_slices;
     uint8_t *slices;
     uint32_t *slice_off;
-    FFVkVideoBuffer *vkbuf;
+    FFVkBuffer *vkbuf;
 
     size_t new_size = vp->slices_size + startcode_len + size +
                       ctx->caps.minBitstreamBufferSizeAlignment;
@@ -274,29 +274,38 @@ int ff_vk_decode_add_slice(AVCodecContext *avctx, FFVulkanDecodePicture *vp,
     *offsets = dec->slice_off = slice_off;
     slice_off[nb] = vp->slices_size;
 
-    vkbuf = vp->slices_buf ? (FFVkVideoBuffer *)vp->slices_buf->data : NULL;
-    if (!vkbuf || vkbuf->buf.size < new_size) {
+    vkbuf = vp->slices_buf ? (FFVkBuffer *)vp->slices_buf->data : NULL;
+    if (!vkbuf || vkbuf->size < new_size) {
         int err;
         AVBufferRef *new_ref;
-        FFVkVideoBuffer *new_buf;
-        err = ff_vk_video_get_buffer(&ctx->s, &ctx->common, &new_ref,
-                                     VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR,
-                                     ctx->s.hwfc->create_pnext, new_size);
+        FFVkBuffer *new_buf;
+
+        /* No point in requesting anything smaller. */
+        size_t buf_size = FFMAX(new_size, 1024*1024);
+
+        /* Align buffer to nearest power of two. Makes fragmentation management
+         * easier, and gives us ample headroom. */
+        buf_size = 2 << av_log2(buf_size);
+
+        err = ff_vk_get_pooled_buffer(&ctx->s, &ctx->buf_pool, &new_ref,
+                                      VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR,
+                                      ctx->s.hwfc->create_pnext, buf_size,
+                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
         if (err < 0)
             return err;
 
-        new_buf = (FFVkVideoBuffer *)new_ref->data;
+        new_buf = (FFVkBuffer *)new_ref->data;
 
         /* Copy data from the old buffer */
         if (vkbuf) {
-            memcpy(new_buf->mem, vkbuf->mem, vp->slices_size);
+            memcpy(new_buf->mapped_mem, vkbuf->mapped_mem, vp->slices_size);
             av_buffer_unref(&vp->slices_buf);
         }
 
         vp->slices_buf = new_ref;
         vkbuf = new_buf;
     }
-    slices = vkbuf->mem;
+    slices = vkbuf->mapped_mem;
 
     /* Startcode */
     memcpy(slices + vp->slices_size, startcode_prefix, startcode_len);
@@ -347,7 +356,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     int err;
     VkResult ret;
     VkCommandBuffer cmd_buf;
-    FFVkVideoBuffer *sd_buf;
+    FFVkBuffer *sd_buf;
 
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodeShared *ctx = dec->shared_ctx;
@@ -400,13 +409,13 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
                    "Result of previous frame decoding: %"PRId64"\n", prev_sub_res);
     }
 
-    sd_buf = (FFVkVideoBuffer *)vp->slices_buf->data;
+    sd_buf = (FFVkBuffer *)vp->slices_buf->data;
 
     /* Flush if needed */
-    if (!(sd_buf->buf.flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+    if (!(sd_buf->flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
         VkMappedMemoryRange flush_buf = {
             .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .memory = sd_buf->buf.mem,
+            .memory = sd_buf->mem,
             .offset = 0,
             .size = FFALIGN(vp->slices_size,
                             ctx->s.props.properties.limits.nonCoherentAtomSize),
@@ -420,7 +429,7 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    vp->decode_info.srcBuffer       = sd_buf->buf.buf;
+    vp->decode_info.srcBuffer       = sd_buf->buf;
     vp->decode_info.srcBufferOffset = 0;
     vp->decode_info.srcBufferRange  = data_size;
 
@@ -620,6 +629,8 @@ static void free_common(FFRefStructOpaque unused, void *obj)
         vk->DestroyVideoSessionParametersKHR(s->hwctx->act_dev,
                                              ctx->empty_session_params,
                                              s->hwctx->alloc);
+
+    av_buffer_pool_uninit(&ctx->buf_pool);
 
     ff_vk_video_common_uninit(s, &ctx->common);
 

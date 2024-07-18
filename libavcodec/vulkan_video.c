@@ -177,86 +177,6 @@ int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level)
     }
 }
 
-static void free_data_buf(void *opaque, uint8_t *data)
-{
-    FFVulkanContext *ctx = opaque;
-    FFVkVideoBuffer *buf = (FFVkVideoBuffer *)data;
-    ff_vk_unmap_buffer(ctx, &buf->buf, 0);
-    ff_vk_free_buf(ctx, &buf->buf);
-    av_free(data);
-}
-
-static AVBufferRef *alloc_data_buf(void *opaque, size_t size)
-{
-    AVBufferRef *ref;
-    uint8_t *buf = av_mallocz(size);
-    if (!buf)
-        return NULL;
-
-    ref = av_buffer_create(buf, size, free_data_buf, opaque, 0);
-    if (!ref)
-        av_free(buf);
-    return ref;
-}
-
-int ff_vk_video_get_buffer(FFVulkanContext *ctx, FFVkVideoCommon *s,
-                           AVBufferRef **buf, VkBufferUsageFlags usage,
-                           void *create_pNext, size_t size)
-{
-    int err;
-    AVBufferRef *ref;
-    FFVkVideoBuffer *data;
-
-    if (!s->buf_pool) {
-        s->buf_pool = av_buffer_pool_init2(sizeof(FFVkVideoBuffer), ctx,
-                                           alloc_data_buf, NULL);
-        if (!s->buf_pool)
-            return AVERROR(ENOMEM);
-    }
-
-    *buf = ref = av_buffer_pool_get(s->buf_pool);
-    if (!ref)
-        return AVERROR(ENOMEM);
-
-    data = (FFVkVideoBuffer *)ref->data;
-
-    if (data->buf.size >= size)
-        return 0;
-
-    /* No point in requesting anything smaller. */
-    size = FFMAX(size, 1024*1024);
-
-    /* Align buffer to nearest power of two. Makes fragmentation management
-     * easier, and gives us ample headroom. */
-    size--;
-    size |= size >>  1;
-    size |= size >>  2;
-    size |= size >>  4;
-    size |= size >>  8;
-    size |= size >> 16;
-    size++;
-
-    ff_vk_free_buf(ctx, &data->buf);
-    memset(data, 0, sizeof(FFVkVideoBuffer));
-
-    err = ff_vk_create_buf(ctx, &data->buf, size,
-                           create_pNext, NULL, usage,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    if (err < 0) {
-        av_buffer_unref(&ref);
-        return err;
-    }
-
-    /* Map the buffer */
-    err = ff_vk_map_buffer(ctx, &data->buf, &data->mem, 0);
-    if (err < 0) {
-        av_buffer_unref(&ref);
-        return err;
-    }
-
-    return 0;
-}
-
 av_cold void ff_vk_video_common_uninit(FFVulkanContext *s,
                                        FFVkVideoCommon *common)
 {
@@ -273,8 +193,6 @@ av_cold void ff_vk_video_common_uninit(FFVulkanContext *s,
             vk->FreeMemory(s->hwctx->act_dev, common->mem[i], s->hwctx->alloc);
 
     av_freep(&common->mem);
-
-    av_buffer_pool_uninit(&common->buf_pool);
 }
 
 av_cold int ff_vk_video_common_init(void *log, FFVulkanContext *s,

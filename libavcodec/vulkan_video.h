@@ -32,8 +32,6 @@ typedef struct FFVkVideoSession {
     VkVideoSessionKHR session;
     VkDeviceMemory *mem;
     uint32_t nb_mem;
-
-    AVBufferPool *buf_pool;
 } FFVkVideoCommon;
 
 /**
@@ -62,19 +60,6 @@ VkVideoComponentBitDepthFlagBitsKHR ff_vk_depth_from_av_depth(int depth);
  */
 int ff_vk_h264_level_to_av(StdVideoH264LevelIdc level);
 int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level);
-
-typedef struct FFVkVideoBuffer {
-    FFVkBuffer buf;
-    uint8_t *mem;
-} FFVkVideoBuffer;
-
-/**
- * Get a mapped FFVkPooledBuffer with a specific guaranteed minimum size
- * from a pool.
- */
-int ff_vk_video_get_buffer(FFVulkanContext *ctx, FFVkVideoCommon *s,
-                           AVBufferRef **buf, VkBufferUsageFlags usage,
-                           void *create_pNext, size_t size);
 
 /**
  * Initialize video session, allocating and binding necessary memory.
