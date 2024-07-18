@@ -464,10 +464,35 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     }
 
     vdr_rpu_id = mapping->vdr_rpu_id;
+    use_prev_vdr_rpu = 0;
+
     if (!s->vdr[vdr_rpu_id]) {
         s->vdr[vdr_rpu_id] = ff_refstruct_allocz(sizeof(AVDOVIDataMapping));
         if (!s->vdr[vdr_rpu_id])
             return AVERROR(ENOMEM);
+    }
+
+    switch (s->cfg.dv_md_compression) {
+    case AV_DOVI_COMPRESSION_LIMITED:
+        /* Limited metadata compression requires vdr_rpi_id == 0 */
+        if (vdr_rpu_id != 0)
+            break;
+        /* fall through */
+    case AV_DOVI_COMPRESSION_EXTENDED:
+        if (s->vdr[vdr_rpu_id])
+            use_prev_vdr_rpu = !memcmp(s->vdr[vdr_rpu_id], mapping, sizeof(*mapping));
+        break;
+    case AV_DOVI_COMPRESSION_RESERVED:
+        return AVERROR(EINVAL);
+    }
+
+    if (s->cfg.dv_md_compression != AV_DOVI_COMPRESSION_EXTENDED) {
+        /* Flush VDRs to avoid leaking old state; maintaining multiple VDR
+         * references requires extended compression */
+        for (int i = 0; i <= DOVI_MAX_DM_ID; i++) {
+            if (i != vdr_rpu_id)
+                ff_refstruct_unref(&s->vdr[i]);
+        }
     }
 
     num_ext_blocks_v1 = num_ext_blocks_v2 = 0;
@@ -504,7 +529,6 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
     }
 
     vdr_dm_metadata_present = memcmp(color, &ff_dovi_color_default, sizeof(*color));
-    use_prev_vdr_rpu = !memcmp(s->vdr[vdr_rpu_id], mapping, sizeof(*mapping));
     if (num_ext_blocks_v1 || num_ext_blocks_v2)
         vdr_dm_metadata_present = 1;
 
