@@ -463,16 +463,7 @@ int ff_dovi_rpu_generate(DOVIContext *s, const AVDOVIMetadata *metadata,
         return AVERROR_INVALIDDATA;
     }
 
-    vdr_rpu_id = -1;
-    for (int i = 0; i <= DOVI_MAX_DM_ID; i++) {
-        if (s->vdr[i] && !memcmp(s->vdr[i], mapping, sizeof(*mapping))) {
-            vdr_rpu_id = i;
-            break;
-        } else if (vdr_rpu_id < 0 && (!s->vdr[i] || i == DOVI_MAX_DM_ID)) {
-            vdr_rpu_id = i;
-        }
-    }
-
+    vdr_rpu_id = mapping->vdr_rpu_id;
     if (!s->vdr[vdr_rpu_id]) {
         s->vdr[vdr_rpu_id] = ff_refstruct_allocz(sizeof(AVDOVIDataMapping));
         if (!s->vdr[vdr_rpu_id])
