@@ -898,6 +898,11 @@ static int mov_read_iacb(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st = c->fc->streams[c->fc->nb_streams - 1];
     sc = st->priv_data;
 
+    if (st->codecpar->extradata) {
+        av_log(c->fc, AV_LOG_WARNING, "ignoring iacb\n");
+        return 0;
+    }
+
     sc->iamf = av_mallocz(sizeof(*sc->iamf));
     if (!sc->iamf)
         return AVERROR(ENOMEM);
