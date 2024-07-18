@@ -1262,6 +1262,9 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     bottom = st->codecpar->height - 1 - bottom;
     right  = st->codecpar->width  - 1 - right;
 
+    if (!(left | right | top | bottom))
+        return 0;
+
     if ((left + right) >= st->codecpar->width ||
         (top + bottom) >= st->codecpar->height)
         return AVERROR_INVALIDDATA;
