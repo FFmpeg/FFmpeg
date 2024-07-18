@@ -67,19 +67,6 @@
 #define CHECK_CU(x) FF_CUDA_CHECK_DL(cuda_cu, cu, x)
 #endif
 
-typedef struct VulkanQueueCtx {
-    VkFence fence;
-    VkQueue queue;
-    int was_synchronous;
-    int qf;
-    int qidx;
-
-    /* Buffer dependencies */
-    AVBufferRef **buf_deps;
-    int nb_buf_deps;
-    unsigned int buf_deps_alloc_size;
-} VulkanQueueCtx;
-
 typedef struct VulkanDevicePriv {
     /**
      * The public AVVulkanDeviceContext. See hwcontext_vulkan.h for it.
