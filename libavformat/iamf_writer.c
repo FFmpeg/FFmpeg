@@ -79,10 +79,10 @@ static int populate_audio_roll_distance(IAMFCodecConfig *codec_config)
         if (!codec_config->nb_samples)
             return AVERROR(EINVAL);
         // ceil(3840 / nb_samples)
-        codec_config->seek_preroll = -(1 + ((3840 - 1) / codec_config->nb_samples));
+        codec_config->audio_roll_distance = -(1 + ((3840 - 1) / codec_config->nb_samples));
         break;
     case AV_CODEC_ID_AAC:
-        codec_config->seek_preroll = -1;
+        codec_config->audio_roll_distance = -1;
         break;
     case AV_CODEC_ID_FLAC:
     case AV_CODEC_ID_PCM_S16BE:
@@ -91,7 +91,7 @@ static int populate_audio_roll_distance(IAMFCodecConfig *codec_config)
     case AV_CODEC_ID_PCM_S16LE:
     case AV_CODEC_ID_PCM_S24LE:
     case AV_CODEC_ID_PCM_S32LE:
-        codec_config->seek_preroll = 0;
+        codec_config->audio_roll_distance = 0;
         break;
     default:
         return AVERROR(EINVAL);
@@ -455,7 +455,7 @@ static int iamf_write_codec_config(const IAMFContext *iamf,
     avio_wl32(dyn_bc, codec_config->codec_tag);
 
     ffio_write_leb(dyn_bc, codec_config->nb_samples);
-    avio_wb16(dyn_bc, codec_config->seek_preroll);
+    avio_wb16(dyn_bc, codec_config->audio_roll_distance);
 
     switch(codec_config->codec_id) {
     case AV_CODEC_ID_OPUS:
