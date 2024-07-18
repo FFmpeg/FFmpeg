@@ -482,6 +482,10 @@ int ff_dovi_rpu_parse(DOVIContext *s, const uint8_t *rpu, size_t rpu_size,
             dm_compression = get_bits(gb, 3);
             hdr->el_spatial_resampling_filter_flag = get_bits1(gb);
             hdr->disable_residual_flag = get_bits1(gb);
+        } else {
+            avpriv_request_sample(s->logctx, "Unsupported RPU format 0x%x\n", hdr->rpu_format);
+            ff_dovi_ctx_unref(s);
+            return AVERROR_PATCHWELCOME;
         }
     } else {
         /* lack of documentation/samples */
