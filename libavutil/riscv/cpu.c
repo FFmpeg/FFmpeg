@@ -72,6 +72,12 @@ int ff_get_cpu_flags_riscv(void)
 #ifdef RISCV_HWPROBE_EXT_ZBB
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZBB)
             ret |= AV_CPU_FLAG_RVB_BASIC;
+#if defined (RISCV_HWPROBE_EXT_ZBA) && defined (RISCV_HWPROBE_EXT_ZBS)
+        if ((pairs[1].value & RISCV_HWPROBE_EXT_ZBA) &&
+            (pairs[1].value & RISCV_HWPROBE_EXT_ZBB) &&
+            (pairs[1].value & RISCV_HWPROBE_EXT_ZBS))
+            ret |= AV_CPU_FLAG_RVB;
+#endif
 #endif
 #ifdef RISCV_HWPROBE_EXT_ZVBB
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZVBB)
@@ -94,6 +100,9 @@ int ff_get_cpu_flags_riscv(void)
             ret |= AV_CPU_FLAG_RVF;
         if (hwcap & HWCAP_RV('D'))
             ret |= AV_CPU_FLAG_RVD;
+        if (hwcap & HWCAP_RV('B'))
+            ret |= AV_CPU_FLAG_RVB_ADDR | AV_CPU_FLAG_RVB_BASIC |
+                   AV_CPU_FLAG_RVB;
 
         /* The V extension implies all Zve* functional subsets */
         if (hwcap & HWCAP_RV('V'))
@@ -117,6 +126,10 @@ int ff_get_cpu_flags_riscv(void)
 #endif
 #ifdef __riscv_zbb
     ret |= AV_CPU_FLAG_RVB_BASIC;
+#endif
+#if defined (__riscv_b) || \
+    (defined (__riscv_zba) && defined (__riscv_zbb) && defined (__riscv_zbs))
+    ret |= AV_CPU_FLAG_RVB;
 #endif
 
     /* If RV-V is enabled statically at compile-time, check the details. */
