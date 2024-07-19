@@ -2116,8 +2116,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (sconf->floating) {
         ctx->acf               = av_malloc_array(avctx->channels, sizeof(*ctx->acf));
-        ctx->shift_value       = av_malloc_array(avctx->channels, sizeof(*ctx->shift_value));
-        ctx->last_shift_value  = av_malloc_array(avctx->channels, sizeof(*ctx->last_shift_value));
+        ctx->shift_value       = av_calloc(avctx->channels, sizeof(*ctx->shift_value));
+        ctx->last_shift_value  = av_calloc(avctx->channels, sizeof(*ctx->last_shift_value));
         ctx->last_acf_mantissa = av_malloc_array(avctx->channels, sizeof(*ctx->last_acf_mantissa));
         ctx->raw_mantissa      = av_mallocz_array(avctx->channels, sizeof(*ctx->raw_mantissa));
 
