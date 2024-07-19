@@ -834,6 +834,7 @@ static int setup_sce(AACDecContext *ac, SingleChannelElement *sce,
                "Number of scalefactor bands in group (%d) "
                "exceeds limit (%d).\n",
                ics->max_sfb, ics->num_swb);
+        ics->max_sfb = 0;
         return AVERROR(EINVAL);
     }
 
