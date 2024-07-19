@@ -98,13 +98,14 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
 
             dsp->h264_idct_add  = ff_h264_idct_add_8_rvv;
             dsp->h264_idct8_add = ff_h264_idct8_add_8_rvv;
+            dsp->h264_idct_dc_add = ff_h264_idct4_dc_add_8_rvv;
+            if (flags & AV_CPU_FLAG_RVB) {
+                dsp->h264_idct_add16      = ff_h264_idct_add16_8_rvv;
+                dsp->h264_idct_add16intra = ff_h264_idct_add16intra_8_rvv;
 #  if __riscv_xlen == 64
-            dsp->h264_idct_add16      = ff_h264_idct_add16_8_rvv;
-            dsp->h264_idct_add16intra = ff_h264_idct_add16intra_8_rvv;
-            dsp->h264_idct8_add4      = ff_h264_idct8_add4_8_rvv;
+                dsp->h264_idct8_add4      = ff_h264_idct8_add4_8_rvv;
 #  endif
-            if (flags & AV_CPU_FLAG_RVV_I32)
-                dsp->h264_idct_dc_add = ff_h264_idct4_dc_add_8_rvv;
+            }
             if (flags & AV_CPU_FLAG_RVV_I64) {
                 dsp->h264_add_pixels8_clear = ff_h264_add_pixels8_8_rvv;
                 dsp->h264_idct8_dc_add      = ff_h264_idct8_dc_add_8_rvv;
@@ -118,16 +119,16 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
                 dsp->h264_idct_add = ff_h264_idct_add_##depth##_rvv; \
             if (flags & AV_CPU_FLAG_RVB_ADDR) \
                 dsp->h264_idct8_add = ff_h264_idct8_add_##depth##_rvv; \
-            if (zvl128b && (flags & AV_CPU_FLAG_RVB_ADDR)) { \
+            if (zvl128b && (flags & AV_CPU_FLAG_RVB)) { \
                 dsp->h264_idct_dc_add  = ff_h264_idct4_dc_add_##depth##_rvv; \
                 dsp->h264_idct8_dc_add = ff_h264_idct8_dc_add_##depth##_rvv; \
+                if (__riscv_xlen == 64) { \
+                    dsp->h264_idct_add16 = ff_h264_idct_add16_##depth##_rvv; \
+                    dsp->h264_idct_add16intra = \
+                        ff_h264_idct_add16intra_##depth##_rvv; \
+                } \
             } \
-            if (__riscv_xlen == 64 && zvl128b) { \
-                dsp->h264_idct_add16 = ff_h264_idct_add16_##depth##_rvv; \
-                dsp->h264_idct_add16intra = \
-                    ff_h264_idct_add16intra_##depth##_rvv; \
-            } \
-            if (__riscv_xlen == 64 && (flags & AV_CPU_FLAG_RVB_ADDR)) \
+            if (__riscv_xlen == 64 && (flags & AV_CPU_FLAG_RVB)) \
                 dsp->h264_idct8_add4 = ff_h264_idct8_add4_##depth##_rvv; \
         }
 
