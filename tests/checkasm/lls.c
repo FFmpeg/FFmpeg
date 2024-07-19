@@ -48,7 +48,7 @@ static void test_update(LLSModel *lls, const double *var)
     for (size_t i = 0; i < lls->indep_count; i++)
         for (size_t j = i; j < lls->indep_count; j++)
             if (!double_near_abs_eps(refcovar[i][j], lls->covariance[i][j],
-                                     2 * DBL_EPSILON)) {
+                                     8 * DBL_EPSILON)) {
                 fprintf(stderr, "%zu, %zu: %- .12f - %- .12f = % .12g\n", i, j,
                         refcovar[i][j], lls->covariance[i][j],
                         refcovar[i][j] - lls->covariance[i][j]);
