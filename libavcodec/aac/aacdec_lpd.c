@@ -130,6 +130,9 @@ int ff_aac_parse_fac_data(AACUsacElemData *ce, GetBitContext *gb,
     if (use_gain)
         ce->fac.gain = get_bits(gb, 7);
 
+    if (len/8 > 8)
+        return AVERROR_PATCHWELCOME;
+
     for (int i = 0; i < len/8; i++) {
         ret = parse_codebook_idx(gb, ce->fac.kv[i], 1, 1);
         if (ret < 0)
