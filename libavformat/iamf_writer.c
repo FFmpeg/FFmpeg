@@ -39,7 +39,7 @@ static int update_extradata(IAMFCodecConfig *codec_config)
 
     switch(codec_config->codec_id) {
     case AV_CODEC_ID_OPUS:
-        if (codec_config->extradata_size < 19)
+        if (codec_config->extradata_size != 19)
             return AVERROR_INVALIDDATA;
         codec_config->extradata_size -= 8;
         AV_WB8(codec_config->extradata  + 0, AV_RL8(codec_config->extradata + 8)); // version
