@@ -490,7 +490,7 @@ static av_always_inline int decode_ac_coeffs(AVCodecContext *avctx, GetBitContex
 
     for (pos = block_mask;;) {
         bits_left = gb->size_in_bits - re_index;
-        if (!bits_left || (bits_left < 32 && !SHOW_UBITS(re, gb, bits_left)))
+        if (bits_left <= 0 || (bits_left < 32 && !SHOW_UBITS(re, gb, bits_left)))
             break;
 
         DECODE_CODEWORD(run, run_to_cb[FFMIN(run,  15)], LAST_SKIP_BITS);
