@@ -38,7 +38,7 @@ static int opus_decoder_config(IAMFCodecConfig *codec_config,
 {
     int left = len - avio_tell(pb);
 
-    if (left < 11)
+    if (left < 11 || codec_config->audio_roll_distance >= 0)
         return AVERROR_INVALIDDATA;
 
     codec_config->extradata = av_malloc(left + 8);
@@ -63,6 +63,9 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
     MPEG4AudioConfig cfg = { 0 };
     int object_type_id, codec_id, stream_type;
     int ret, tag, left;
+
+    if (codec_config->audio_roll_distance >= 0)
+        return AVERROR_INVALIDDATA;
 
     tag = avio_r8(pb);
     if (tag != MP4DecConfigDescrTag)
@@ -118,6 +121,9 @@ static int flac_decoder_config(IAMFCodecConfig *codec_config,
 {
     int left;
 
+    if (codec_config->audio_roll_distance)
+        return AVERROR_INVALIDDATA;
+
     avio_skip(pb, 4); // METADATA_BLOCK_HEADER
 
     left = len - avio_tell(pb);
@@ -146,7 +152,7 @@ static int ipcm_decoder_config(IAMFCodecConfig *codec_config,
     };
     int sample_format = avio_r8(pb); // 0 = BE, 1 = LE
     int sample_size = (avio_r8(pb) / 8 - 2); // 16, 24, 32
-    if (sample_format > 1 || sample_size > 2)
+    if (sample_format > 1 || sample_size > 2 || codec_config->audio_roll_distance)
         return AVERROR_INVALIDDATA;
 
     codec_config->codec_id = sample_fmt[sample_format][sample_size];
@@ -245,6 +251,12 @@ static int codec_config_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
     }
     if (ret < 0)
         goto fail;
+
+    if ((codec_config->nb_samples > INT_MAX) ||
+        (-codec_config->audio_roll_distance > INT_MAX / codec_config->nb_samples)) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     c->codec_configs[c->nb_codec_configs++] = codec_config;
 
