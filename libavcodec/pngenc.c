@@ -442,8 +442,9 @@ static int encode_headers(AVCodecContext *avctx, const AVFrame *pict)
     if (png_get_gama(pict->color_trc, s->buf))
         png_write_chunk(&s->bytestream, MKTAG('g', 'A', 'M', 'A'), s->buf, 4);
 
-    if (avctx->bits_per_raw_sample > 0 && avctx->bits_per_raw_sample < s->bit_depth) {
-        int len = ff_png_get_nb_channels(s->color_type);
+    if (avctx->bits_per_raw_sample > 0 &&
+            avctx->bits_per_raw_sample < (s->color_type & PNG_COLOR_MASK_PALETTE ? 8 : s->bit_depth)) {
+        int len = s->color_type & PNG_COLOR_MASK_PALETTE ? 3 : ff_png_get_nb_channels(s->color_type);
         memset(s->buf, avctx->bits_per_raw_sample, len);
         png_write_chunk(&s->bytestream, MKTAG('s', 'B', 'I', 'T'), s->buf, len);
     }
