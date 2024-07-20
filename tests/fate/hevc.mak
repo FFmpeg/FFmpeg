@@ -276,6 +276,16 @@ FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-pir
 fate-hevc-mv-nuh-layer-id: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/mv_nuh_layer_id.bit -map 0:view:all
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-mv-nuh-layer-id
 
+# NB: $\ at the end of line joins lines without adding whitespace;
+# this trick is recommended by GNU make manual
+fate-hevc-mv-switch: INPUT = \
+$(TARGET_SAMPLES)/hevc-conformance/LS_A_Orange_2.bit|$\
+$(TARGET_SAMPLES)/hevc/mv_nuh_layer_id.bit|$\
+$(TARGET_SAMPLES)/hevc-conformance/NoOutPrior_B_Qualcomm_1.bit|$\
+$(TARGET_SAMPLES)/hevc-conformance/MVHEVCS_A.bit
+fate-hevc-mv-switch: CMD = framecrc -i "concat:$(INPUT)" -fps_mode passthrough -map 0:vidx:0 -map 0:vidx:1
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, CONCAT_PROTOCOL) += fate-hevc-mv-switch
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 
