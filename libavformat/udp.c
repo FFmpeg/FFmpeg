@@ -107,8 +107,7 @@ typedef struct UDPContext {
     pthread_cond_t cond;
     int thread_started;
 #endif
-    uint8_t tmp_rx[UDP_MAX_PKT_SIZE+4];
-    uint8_t tmp_tx[UDP_MAX_PKT_SIZE+4];
+    uint8_t tmp[UDP_MAX_PKT_SIZE+4];
     int remaining_in_dg;
     char *localaddr;
     int timeout;
@@ -505,7 +504,7 @@ static void *circular_buffer_task_rx( void *_URLContext)
            see "General Information" / "Thread Cancelation Overview"
            in Single Unix. */
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
-        len = recvfrom(s->udp_fd, s->tmp_rx+4, sizeof(s->tmp_rx)-4, 0, (struct sockaddr *)&addr, &addr_len);
+        len = recvfrom(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0, (struct sockaddr *)&addr, &addr_len);
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
         pthread_mutex_lock(&s->mutex);
         if (len < 0) {
@@ -517,7 +516,7 @@ static void *circular_buffer_task_rx( void *_URLContext)
         }
         if (ff_ip_check_source_lists(&addr, &s->filters))
             continue;
-        AV_WL32(s->tmp_rx, len);
+        AV_WL32(s->tmp, len);
 
         if (av_fifo_can_write(s->fifo) < len + 4) {
             /* No Space left */
@@ -533,7 +532,7 @@ static void *circular_buffer_task_rx( void *_URLContext)
                 goto end;
             }
         }
-        av_fifo_write(s->fifo, s->tmp_rx, len + 4);
+        av_fifo_write(s->fifo, s->tmp, len + 4);
         pthread_cond_signal(&s->cond);
     }
 
@@ -582,9 +581,9 @@ static void *circular_buffer_task_tx( void *_URLContext)
         len = AV_RL32(tmp);
 
         av_assert0(len >= 0);
-        av_assert0(len <= sizeof(s->tmp_tx));
+        av_assert0(len <= sizeof(s->tmp));
 
-        av_fifo_read(s->fifo, s->tmp_tx, len);
+        av_fifo_read(s->fifo, s->tmp, len);
 
         pthread_mutex_unlock(&s->mutex);
 
@@ -608,7 +607,7 @@ static void *circular_buffer_task_tx( void *_URLContext)
             target_timestamp = start_timestamp + sent_bits * 1000000 / s->bitrate;
         }
 
-        p = s->tmp_tx;
+        p = s->tmp;
         while (len) {
             int ret;
             av_assert0(len > 0);
