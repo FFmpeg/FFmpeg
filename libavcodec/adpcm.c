@@ -262,7 +262,7 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         break;
     case AV_CODEC_ID_ADPCM_DTK:
     case AV_CODEC_ID_ADPCM_EA:
-        min_channels = 2;
+        min_channels = 1;
         break;
     case AV_CODEC_ID_ADPCM_AFC:
     case AV_CODEC_ID_ADPCM_EA_R1:
@@ -914,10 +914,12 @@ static int get_nb_samples(AVCodecContext *avctx, GetByteContext *gb,
         bytestream2_seek(gb, -8, SEEK_CUR);
         break;
     case AV_CODEC_ID_ADPCM_EA:
+        /* Stereo is 30 bytes per block */
+        /* Mono is 15 bytes per block */
         has_coded_samples = 1;
         *coded_samples  = bytestream2_get_le32(gb);
         *coded_samples -= *coded_samples % 28;
-        nb_samples      = (buf_size - 12) / 30 * 28;
+        nb_samples      = (buf_size - 12) / (ch == 2 ? 30 : 15) * 28;
         break;
     case AV_CODEC_ID_ADPCM_IMA_EA_EACS:
         has_coded_samples = 1;
@@ -1652,10 +1654,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
         int coeff1l, coeff2l, coeff1r, coeff2r;
         int shift_left, shift_right;
 
-        /* Each EA ADPCM frame has a 12-byte header followed by 30-byte pieces,
-           each coding 28 stereo samples. */
+        /* Each EA ADPCM frame has a 12-byte header followed by 30-byte (stereo) or 15-byte (mono) pieces,
+           each coding 28 stereo/mono samples. */
 
-        if (channels != 2)
+        if (channels != 2 && channels != 1)
             return AVERROR_INVALIDDATA;
 
         current_left_sample   = sign_extend(bytestream2_get_le16u(&gb), 16);
@@ -1670,11 +1672,16 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
             coeff1r = ea_adpcm_table[ byte & 0x0F];
             coeff2r = ea_adpcm_table[(byte & 0x0F) + 4];
 
-            byte = bytestream2_get_byteu(&gb);
-            shift_left  = 20 - (byte >> 4);
-            shift_right = 20 - (byte & 0x0F);
+            if (channels == 2){
+                byte = bytestream2_get_byteu(&gb);
+                shift_left = 20 - (byte >> 4);
+                shift_right = 20 - (byte & 0x0F);
+            } else{
+                /* Mono packs the shift into the coefficient byte's lower nibble instead */
+                shift_left = 20 - (byte & 0x0F);
+            }
 
-            for (int count2 = 0; count2 < 28; count2++) {
+            for (int count2 = 0; count2 < (channels == 2 ? 28 : 14); count2++) {
                 byte = bytestream2_get_byteu(&gb);
                 next_left_sample  = sign_extend(byte >> 4, 4) * (1 << shift_left);
                 next_right_sample = sign_extend(byte,      4) * (1 << shift_right);
@@ -1691,11 +1698,24 @@ static int adpcm_decode_frame(AVCodecContext *avctx, AVFrame *frame,
                 previous_right_sample = current_right_sample;
                 current_right_sample = av_clip_int16(next_right_sample);
                 *samples++ = current_left_sample;
-                *samples++ = current_right_sample;
+
+                if (channels == 2){
+                    *samples++ = current_right_sample;
+                } else {
+                    next_left_sample  = sign_extend(byte, 4) * (1 << shift_left);
+
+                    next_left_sample = (next_left_sample +
+                        (current_left_sample * coeff1l) +
+                        (previous_left_sample * coeff2l) + 0x80) >> 8;
+
+                    previous_left_sample = current_left_sample;
+                    current_left_sample = av_clip_int16(next_left_sample);
+
+                    *samples++ = current_left_sample;
+                }
             }
         }
-
-        bytestream2_skip(&gb, 2); // Skip terminating 0x0000
+        bytestream2_skip(&gb, channels == 2 ? 2 : 3); // Skip terminating NULs
         ) /* End of CASE */
     CASE(ADPCM_EA_MAXIS_XA,
         int coeff[2][2], shift[2];
