@@ -198,6 +198,10 @@ static int process_audio_header_elements(AVFormatContext *s)
             av_log(s, AV_LOG_DEBUG, "end of header block reached\n");
             in_header = 0;
             break;
+        case 0x1B:
+            ea->video.time_base = (AVRational) {1, read_arbitrary(pb)};
+            av_log(s, AV_LOG_DEBUG, "Setting framerate to %u\n", ea->video.time_base.den);
+            break;
         default:
             av_log(s, AV_LOG_DEBUG,
                    "header element 0x%02x set to 0x%08"PRIx32"\n",
@@ -325,7 +329,8 @@ static void process_video_header_mdec(AVFormatContext *s, VideoProperties *video
     avio_skip(pb, 4);
     video->width       = avio_rl16(pb);
     video->height      = avio_rl16(pb);
-    video->time_base   = (AVRational) { 1, 15 };
+    if (!video->time_base.num)
+        video->time_base   = (AVRational) { 1, 15 };
     video->codec = AV_CODEC_ID_MDEC;
 }
 
@@ -427,12 +432,14 @@ static int process_ea_header(AVFormatContext *s)
         case pQGT_TAG:
         case TGQs_TAG:
             ea->video.codec = AV_CODEC_ID_TGQ;
-            ea->video.time_base   = (AVRational) { 1, 15 };
+            if (!ea->video.time_base.num)
+                ea->video.time_base   = (AVRational) { 1, 15 };
             break;
 
         case pIQT_TAG:
             ea->video.codec = AV_CODEC_ID_TQI;
-            ea->video.time_base   = (AVRational) { 1, 15 };
+            if (!ea->video.time_base.num)
+                ea->video.time_base   = (AVRational) { 1, 15 };
             break;
 
         case MADk_TAG:
