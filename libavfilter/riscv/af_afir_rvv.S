@@ -21,7 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 //  void ff_fcmul_add(float *sum, const float *t, const float *c, int len)
-func ff_fcmul_add_rvv, zve64f
+func ff_fcmul_add_rvv, zve64f, zba
         li          t1, 32
 1:
         vsetvli     t0, a3, e32, m4, ta, ma
