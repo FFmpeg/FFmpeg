@@ -20,7 +20,7 @@
 
 #include "asm.S"
 
-func ff_vector_fmul_window_scaled_rvv, zve64x
+func ff_vector_fmul_window_scaled_rvv, zve64x, zba
         csrwi   vxrm, 0
         vsetvli t0, zero, e16, m1, ta, ma
         sh2add  a2, a4, a2
@@ -68,7 +68,7 @@ func ff_vector_fmul_window_scaled_rvv, zve64x
         ret
 endfunc
 
-func ff_vector_fmul_window_fixed_rvv, zve64x
+func ff_vector_fmul_window_fixed_rvv, zve64x, zba
         csrwi   vxrm, 0
         vsetvli t0, zero, e16, m1, ta, ma
         sh2add  a2, a4, a2
@@ -112,7 +112,7 @@ func ff_vector_fmul_window_fixed_rvv, zve64x
         ret
 endfunc
 
-func ff_vector_fmul_fixed_rvv, zve32x
+func ff_vector_fmul_fixed_rvv, zve32x, zba
         csrwi   vxrm, 0
 1:
         vsetvli t0, a3, e32, m4, ta, ma
@@ -129,7 +129,7 @@ func ff_vector_fmul_fixed_rvv, zve32x
         ret
 endfunc
 
-func ff_vector_fmul_reverse_fixed_rvv, zve32x
+func ff_vector_fmul_reverse_fixed_rvv, zve32x, zba
         csrwi   vxrm, 0
         // e16/m4 and e32/m8 are possible but slow the gathers down.
         vsetvli t0, zero, e16, m1, ta, ma
@@ -155,7 +155,7 @@ func ff_vector_fmul_reverse_fixed_rvv, zve32x
         ret
 endfunc
 
-func ff_vector_fmul_add_fixed_rvv, zve32x
+func ff_vector_fmul_add_fixed_rvv, zve32x, zba
         csrwi   vxrm, 0
 1:
         vsetvli t0, a4, e32, m8, ta, ma
@@ -175,7 +175,7 @@ func ff_vector_fmul_add_fixed_rvv, zve32x
         ret
 endfunc
 
-func ff_scalarproduct_fixed_rvv, zve64x
+func ff_scalarproduct_fixed_rvv, zve64x, zba
         li      t1, 1 << 30
         vsetvli t0, zero, e64, m8, ta, ma
         vmv.v.x v8, zero
@@ -198,7 +198,7 @@ func ff_scalarproduct_fixed_rvv, zve64x
 endfunc
 
 // (a0) = (a0) + (a1), (a1) = (a0) - (a1) [0..a2-1]
-func ff_butterflies_fixed_rvv, zve32x
+func ff_butterflies_fixed_rvv, zve32x, zba
 1:
         vsetvli t0, a2, e32, m4, ta, ma
         vle32.v v16, (a0)
