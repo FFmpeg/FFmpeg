@@ -50,14 +50,17 @@
 
         .macro func sym, exts:vararg
             .text
-            .align 2
             .option push
             archadd \exts
 
             .global \sym
             .hidden \sym
             .type   \sym, %function
+            .option push
+            .option norvc
+            .align  2
             \sym:
+            .option pop
 
             .macro endfunc
                 .size   \sym, . - \sym
