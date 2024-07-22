@@ -21,7 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 #if __riscv_xlen >= 64
-func ff_v_32x32_rvi
+func ff_v_32x32_rvi, zba
         ld           t0, (a3)
         ld           t1, 8(a3)
         ld           t2, 16(a3)
@@ -42,7 +42,7 @@ func ff_v_32x32_rvi
         ret
 endfunc
 
-func ff_v_16x16_rvi
+func ff_v_16x16_rvi, zba
         ld           t0, (a3)
         ld           t1, 8(a3)
         .rept 8
@@ -57,7 +57,7 @@ func ff_v_16x16_rvi
         ret
 endfunc
 
-func ff_v_8x8_rvi
+func ff_v_8x8_rvi, zba
         ld           t0, (a3)
         .rept 4
         add          a7, a0, a1

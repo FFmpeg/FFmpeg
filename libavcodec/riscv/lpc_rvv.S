@@ -21,7 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 #if __riscv_xlen >= 64
-func ff_lpc_apply_welch_window_rvv, zve64d
+func ff_lpc_apply_welch_window_rvv, zve64d, zba
         vsetvli   t0, zero, e64, m8, ta, ma
         vid.v     v0
         addi      t2, a1, -1
@@ -86,7 +86,7 @@ func ff_lpc_apply_welch_window_rvv, zve64d
         ret
 endfunc
 
-func ff_lpc_compute_autocorr_rvv, zve64d, zbb
+func ff_lpc_compute_autocorr_rvv, zve64d, b
         vtype_vli t1, a2, t2, e64, ta, ma, 1
         addi      a2, a2, 1
         li        t0, 1

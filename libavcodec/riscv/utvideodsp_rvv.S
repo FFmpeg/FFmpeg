@@ -20,7 +20,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_restore_rgb_planes_rvv, zve32x
+func ff_restore_rgb_planes_rvv, zve32x, zba
         li      t1, -0x80
         sub     a3, a3, a6
         sub     a4, a4, a6
@@ -52,7 +52,7 @@ func ff_restore_rgb_planes_rvv, zve32x
         ret
 endfunc
 
-func ff_restore_rgb_planes10_rvv, zve32x
+func ff_restore_rgb_planes10_rvv, zve32x, zba
         li      t1, -0x200
         li      t2, 0x3FF
         sub     a3, a3, a6

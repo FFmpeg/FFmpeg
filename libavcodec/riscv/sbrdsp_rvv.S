@@ -20,7 +20,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_sbr_sum64x5_rvv, zve32f
+func ff_sbr_sum64x5_rvv, zve32f, zba
         li      a5, 64
         addi    a1, a0, 64 * 4
         addi    a2, a0, 128 * 4
@@ -49,7 +49,7 @@ func ff_sbr_sum64x5_rvv, zve32f
         ret
 endfunc
 
-func ff_sbr_sum_square_rvv, zve32f
+func ff_sbr_sum_square_rvv, zve32f, zba
         vsetvli t0, zero, e32, m8, ta, ma
         slli    a1, a1, 1
         vmv.v.x v8, zero
@@ -157,7 +157,7 @@ func ff_sbr_autocorrelate_rvv, zve32f
         ret
 endfunc
 
-func ff_sbr_hf_gen_rvv, zve32f
+func ff_sbr_hf_gen_rvv, zve32f, zba
 NOHWF   fmv.w.x fa0, a4
 NOHWF   mv      a4, a5
 NOHWF   mv      a5, a6
@@ -207,7 +207,7 @@ NOHWF   mv      a5, a6
         ret
 endfunc
 
-func ff_sbr_hf_g_filt_rvv, zve32f
+func ff_sbr_hf_g_filt_rvv, zve32f, zba
         li      t1, 40 * 2 * 4
         sh3add  a1, a4, a1
 1:
@@ -272,16 +272,16 @@ endfunc
         ret
 .endm
 
-func ff_sbr_hf_apply_noise_0_rvv, zve32f, zbb
+func ff_sbr_hf_apply_noise_0_rvv, zve32f, b
         hf_apply_noise 0
 endfunc
 
-func ff_sbr_hf_apply_noise_3_rvv, zve32f, zbb
+func ff_sbr_hf_apply_noise_3_rvv, zve32f, b
        not     a4, a4 // invert parity of kx
        // fall through
 endfunc
 
-func ff_sbr_hf_apply_noise_1_rvv, zve32f, zbb
+func ff_sbr_hf_apply_noise_1_rvv, zve32f, b
         vsetvli t0, zero, e32, m4, ta, ma
         vid.v   v4
         vxor.vx v4, v4, a4
@@ -289,6 +289,6 @@ func ff_sbr_hf_apply_noise_1_rvv, zve32f, zbb
         hf_apply_noise 1
 endfunc
 
-func ff_sbr_hf_apply_noise_2_rvv, zve32f, zbb
+func ff_sbr_hf_apply_noise_2_rvv, zve32f, b
         hf_apply_noise 2
 endfunc

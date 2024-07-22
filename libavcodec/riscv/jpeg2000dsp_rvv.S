@@ -20,7 +20,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_ict_float_rvv, zve32f
+func ff_ict_float_rvv, zve32f, zba
         lla     t0, ff_jpeg2000_f_ict_params
         flw     ft0,  0(t0)
         flw     ft1,  4(t0)
@@ -48,7 +48,7 @@ func ff_ict_float_rvv, zve32f
         ret
 endfunc
 
-func ff_rct_int_rvv, zve32x
+func ff_rct_int_rvv, zve32x, zba
 1:
         vsetvli t0, a3, e32, m8, ta, ma
         vle32.v v16, (a1)

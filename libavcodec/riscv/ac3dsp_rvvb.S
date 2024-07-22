@@ -21,7 +21,7 @@
 #include "config.h"
 #include "libavutil/riscv/asm.S"
 
-func ff_extract_exponents_rvvb, zve32x, zvbb
+func ff_extract_exponents_rvvb, zve32x, zvbb, zba
 1:
         vsetvli     t0, a2, e32, m8, ta, ma
         vle32.v     v8, (a1)

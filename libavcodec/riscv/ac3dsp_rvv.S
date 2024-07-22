@@ -43,7 +43,7 @@ func ff_ac3_exponent_min_rvv, zve32x
         ret
 endfunc
 
-func ff_float_to_fixed24_rvv, zve32f
+func ff_float_to_fixed24_rvv, zve32f, zba
         li            t1, 1 << 24
         fcvt.s.w      f0, t1
 1:
@@ -61,7 +61,7 @@ func ff_float_to_fixed24_rvv, zve32f
 endfunc
 
 #if __riscv_xlen >= 64
-func ff_sum_square_butterfly_int32_rvv, zve64x
+func ff_sum_square_butterfly_int32_rvv, zve64x, zba
         vsetvli    t0, zero, e64, m8, ta, ma
         vmv.v.x    v0, zero
         vmv.v.x    v8, zero
@@ -101,7 +101,7 @@ func ff_sum_square_butterfly_int32_rvv, zve64x
 endfunc
 #endif
 
-func ff_sum_square_butterfly_float_rvv, zve32f
+func ff_sum_square_butterfly_float_rvv, zve32f, zba
         vsetvli     t0, zero, e32, m8, ta, ma
         vmv.v.x     v0, zero
         vmv.v.x     v8, zero

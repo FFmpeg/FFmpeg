@@ -20,7 +20,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_flac_lpc16_rvv, zve32x, zbb
+func ff_flac_lpc16_rvv, zve32x, b
         vtype_vli t0, a2, t2, e32, ta, ma
         vsetvl  zero, a2, t0
         vle32.v v8, (a1)
@@ -45,7 +45,7 @@ func ff_flac_lpc16_rvv, zve32x, zbb
 endfunc
 
 #if (__riscv_xlen == 64)
-func ff_flac_lpc32_rvv, zve64x
+func ff_flac_lpc32_rvv, zve64x, zba
         addi    t2, a2, -16
         ble     t2, zero, ff_flac_lpc32_rvv_simple
         vsetivli zero, 1, e64, m1, ta, ma
@@ -76,7 +76,7 @@ func ff_flac_lpc32_rvv, zve64x
         ret
 endfunc
 
-func ff_flac_lpc32_rvv_simple, zve64x, zbb
+func ff_flac_lpc32_rvv_simple, zve64x, b
         vtype_vli t3, a2, t1, e64, ta, ma
         vntypei t2, t3
         vsetvl  zero, a2, t3 // e64
@@ -104,7 +104,7 @@ func ff_flac_lpc32_rvv_simple, zve64x, zbb
         ret
 endfunc
 
-func ff_flac_lpc33_rvv, zve64x, zbb
+func ff_flac_lpc33_rvv, zve64x, b
         vtype_vli t0, a3, t1, e64, ta, ma
         vsetvl  zero, a3, t0
         vmv.s.x v0, zero
@@ -132,7 +132,7 @@ func ff_flac_lpc33_rvv, zve64x, zbb
 endfunc
 #endif
 
-func ff_flac_wasted32_rvv, zve32x
+func ff_flac_wasted32_rvv, zve32x, zba
 1:
         vsetvli t0, a2, e32, m8, ta, ma
         vle32.v v8, (a0)
@@ -145,7 +145,7 @@ func ff_flac_wasted32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_wasted33_rvv, zve64x
+func ff_flac_wasted33_rvv, zve64x, zba
         srli         t0, a2, 5
         li           t1, 1
         bnez         t0, 2f
@@ -177,7 +177,7 @@ func ff_flac_wasted33_rvv, zve64x
 endfunc
 
 #if (__riscv_xlen == 64)
-func ff_flac_decorrelate_indep2_16_rvv, zve32x
+func ff_flac_decorrelate_indep2_16_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)
@@ -200,7 +200,7 @@ func ff_flac_decorrelate_indep2_16_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_indep4_16_rvv, zve32x
+func ff_flac_decorrelate_indep4_16_rvv, zve32x, zba
         ld      a0,   (a0)
         ld      a2,  8(a1)
         ld      t1, 16(a1)
@@ -233,7 +233,7 @@ func ff_flac_decorrelate_indep4_16_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_indep6_16_rvv, zve32x
+func ff_flac_decorrelate_indep6_16_rvv, zve32x, zba
         ld      a0,   (a0)
         ld      a2,  8(a1)
         ld      t1, 16(a1)
@@ -278,7 +278,7 @@ func ff_flac_decorrelate_indep6_16_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_indep8_16_rvv, zve32x
+func ff_flac_decorrelate_indep8_16_rvv, zve32x, zba
         ld      a0,   (a0)
         ld      a2,  8(a1)
         ld      t1, 16(a1)
@@ -332,9 +332,7 @@ func ff_flac_decorrelate_indep8_16_rvv, zve32x
         ret
 endfunc
 
-
-
-func ff_flac_decorrelate_ls_16_rvv, zve32x
+func ff_flac_decorrelate_ls_16_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)
@@ -358,7 +356,7 @@ func ff_flac_decorrelate_ls_16_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_rs_16_rvv, zve32x
+func ff_flac_decorrelate_rs_16_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)
@@ -382,7 +380,7 @@ func ff_flac_decorrelate_rs_16_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_ms_16_rvv, zve32x
+func ff_flac_decorrelate_ms_16_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)
@@ -408,7 +406,7 @@ func ff_flac_decorrelate_ms_16_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_indep2_32_rvv, zve32x
+func ff_flac_decorrelate_indep2_32_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)
@@ -428,7 +426,7 @@ func ff_flac_decorrelate_indep2_32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_indep4_32_rvv, zve32x
+func ff_flac_decorrelate_indep4_32_rvv, zve32x, zba
         ld      a0,   (a0)
         ld      a2,  8(a1)
         ld      t1, 16(a1)
@@ -457,7 +455,7 @@ func ff_flac_decorrelate_indep4_32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_indep6_32_rvv, zve32x
+func ff_flac_decorrelate_indep6_32_rvv, zve32x, zba
         ld      a0,   (a0)
         ld      a2,  8(a1)
         ld      t1, 16(a1)
@@ -495,7 +493,7 @@ func ff_flac_decorrelate_indep6_32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_indep8_32_rvv, zve32x
+func ff_flac_decorrelate_indep8_32_rvv, zve32x, zba
         ld      a0,   (a0)
         ld      a2,  8(a1)
         ld      t1, 16(a1)
@@ -540,7 +538,7 @@ func ff_flac_decorrelate_indep8_32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_ls_32_rvv, zve32x
+func ff_flac_decorrelate_ls_32_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)
@@ -561,7 +559,7 @@ func ff_flac_decorrelate_ls_32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_rs_32_rvv, zve32x
+func ff_flac_decorrelate_rs_32_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)
@@ -582,7 +580,7 @@ func ff_flac_decorrelate_rs_32_rvv, zve32x
         ret
 endfunc
 
-func ff_flac_decorrelate_ms_32_rvv, zve32x
+func ff_flac_decorrelate_ms_32_rvv, zve32x, zba
         ld      a0,  (a0)
         ld      a2, 8(a1)
         ld      a1,  (a1)

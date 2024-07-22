@@ -21,7 +21,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_decorrelate_ls_rvv, zve32x
+func ff_decorrelate_ls_rvv, zve32x, zba
 1:
         vsetvli  t0, a2, e32, m8, ta, ma
         sub      a2, a2, t0
@@ -35,7 +35,7 @@ func ff_decorrelate_ls_rvv, zve32x
         ret
 endfunc
 
-func ff_decorrelate_sr_rvv, zve32x
+func ff_decorrelate_sr_rvv, zve32x, zba
 1:
         vsetvli  t0, a2, e32, m8, ta, ma
         vle32.v  v0, (a0)
@@ -49,7 +49,7 @@ func ff_decorrelate_sr_rvv, zve32x
         ret
 endfunc
 
-func ff_decorrelate_sm_rvv, zve32x
+func ff_decorrelate_sm_rvv, zve32x, zba
 1:
         vsetvli  t0, a2, e32, m8, ta, ma
         vle32.v  v8, (a1)
@@ -67,7 +67,7 @@ func ff_decorrelate_sm_rvv, zve32x
         ret
 endfunc
 
-func ff_decorrelate_sf_rvv, zve32x
+func ff_decorrelate_sf_rvv, zve32x, zba
         csrwi    vxrm, 0
 1:
         vsetvli  t0, a2, e32, m8, ta, ma

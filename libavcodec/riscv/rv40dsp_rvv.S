@@ -332,7 +332,7 @@
         ret
 .endm
 
-func ff_put_rv40_chroma_mc_rvv, zve32x
+func ff_put_rv40_chroma_mc_rvv, zve32x, zba
 11:
         li      a7, 3
         blt     a3, a7, 12f
@@ -341,7 +341,7 @@ func ff_put_rv40_chroma_mc_rvv, zve32x
         do_chroma_mc put 0
 endfunc
 
-func ff_avg_rv40_chroma_mc_rvv, zve32x
+func ff_avg_rv40_chroma_mc_rvv, zve32x, zba
 21:
         li      a7, 3
         blt     a3, a7, 22f

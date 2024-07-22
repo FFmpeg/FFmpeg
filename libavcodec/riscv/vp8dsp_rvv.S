@@ -440,7 +440,7 @@ endconst
 .endm
 
 .macro epel len size type
-func ff_put_vp8_epel\len\()_\type\()\size\()_rvv, zve32x
+func ff_put_vp8_epel\len\()_\type\()\size\()_rvv, zve32x, zba
         epel_filter     \size \type t
         vsetvlstatic8   \len
 1:
@@ -455,7 +455,7 @@ endfunc
 .endm
 
 .macro epel_hv len hsize vsize
-func ff_put_vp8_epel\len\()_h\hsize\()v\vsize\()_rvv, zve32x
+func ff_put_vp8_epel\len\()_h\hsize\()v\vsize\()_rvv, zve32x, zba
 #if __riscv_xlen == 64
         addi    sp, sp, -48
         .irp n,0,1,2,3,4,5

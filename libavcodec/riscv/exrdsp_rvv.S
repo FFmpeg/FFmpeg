@@ -20,7 +20,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_reorder_pixels_rvv, zve32x
+func ff_reorder_pixels_rvv, zve32x, zba
         srai    a2, a2, 1
         add     t1, a1, a2
 1:

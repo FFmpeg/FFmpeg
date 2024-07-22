@@ -20,7 +20,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_scalarproduct_int16_rvv, zve32x
+func ff_scalarproduct_int16_rvv, zve32x, zba
         vsetvli     t0, zero, e32, m8, ta, ma
         vmv.v.x     v8, zero
         vmv.s.x     v0, zero
@@ -40,7 +40,7 @@ func ff_scalarproduct_int16_rvv, zve32x
         ret
 endfunc
 
-func ff_vector_clip_int32_rvv, zve32x
+func ff_vector_clip_int32_rvv, zve32x, zba
 1:
         vsetvli t0, a4, e32, m8, ta, ma
         vle32.v v8, (a1)
@@ -55,7 +55,7 @@ func ff_vector_clip_int32_rvv, zve32x
         ret
 endfunc
 
-func ff_vector_clipf_rvv, zve32f
+func ff_vector_clipf_rvv, zve32f, zba
 NOHWF   fmv.w.x  fa0, a3
 NOHWF   fmv.w.x  fa1, a4
 1:

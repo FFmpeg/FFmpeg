@@ -21,7 +21,7 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_vc1_inv_trans_8x8_dc_rvv, zve64x
+func ff_vc1_inv_trans_8x8_dc_rvv, zve64x, zba
         lh            t2, (a2)
         vsetivli      zero, 8, e8, mf2, ta, ma
         vlse64.v      v0, (a0), a1
@@ -43,7 +43,7 @@ func ff_vc1_inv_trans_8x8_dc_rvv, zve64x
         ret
 endfunc
 
-func ff_vc1_inv_trans_4x8_dc_rvv, zve32x
+func ff_vc1_inv_trans_4x8_dc_rvv, zve32x, zba
         lh            t2, (a2)
         vsetivli      zero, 8, e8, mf2, ta, ma
         vlse32.v      v0, (a0), a1
@@ -67,7 +67,7 @@ func ff_vc1_inv_trans_4x8_dc_rvv, zve32x
         ret
 endfunc
 
-func ff_vc1_inv_trans_8x4_dc_rvv, zve64x
+func ff_vc1_inv_trans_8x4_dc_rvv, zve64x, zba
         lh            t2, (a2)
         vsetivli      zero, 4, e8, mf4, ta, ma
         vlse64.v      v0, (a0), a1

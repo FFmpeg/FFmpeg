@@ -21,7 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 #if __riscv_xlen >= 64
-func ff_vp7_luma_dc_wht_rvv, zve32x
+func ff_vp7_luma_dc_wht_rvv, zve32x, zba
         li          a2, 4 * 16 * 2
         li          a7, 16 * 2
         jal         t0, 1f

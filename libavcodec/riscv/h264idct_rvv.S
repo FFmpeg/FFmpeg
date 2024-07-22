@@ -298,7 +298,7 @@ func ff_h264_idct8_add_8_rvv, zve32x
         ret
 endfunc
 
-func ff_h264_idct8_add_16_rvv, zve32x
+func ff_h264_idct8_add_16_rvv, zve32x, zba
         csrwi   vxrm, 0
 .Lidct8_add_16_rvv:
         li      a4, 8
