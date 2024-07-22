@@ -982,10 +982,7 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
                          (sc->slice_y >> sv) + ((sc->slice_x >> sh) << pixshift);
 
             }
-            if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
-                dst[1] = p->data[1];
-                src[1] = f->last_picture.f->data[1];
-            }
+
             av_image_copy(dst, p->linesize, src,
                           f->last_picture.f->linesize,
                           avctx->pix_fmt,
