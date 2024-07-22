@@ -38,7 +38,12 @@
 
         .macro  archadd ext=, more:vararg
             .ifnb   \ext
-                .option arch, +\ext
+                .ifc    \ext, b
+                # B was defined later, is known to fewer assemblers.
+                archadd zba, zbb, zbs
+                .else
+                    .option arch, +\ext
+                .endif
                 archadd \more
             .endif
         .endm
