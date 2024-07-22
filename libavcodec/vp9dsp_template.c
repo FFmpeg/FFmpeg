@@ -1936,9 +1936,9 @@ static av_cold void vp9dsp_loopfilter_init(VP9DSPContext *dsp)
 
 #if BIT_DEPTH != 12
 
-static av_always_inline void copy_c(uint8_t *dst, ptrdiff_t dst_stride,
-                                    const uint8_t *src, ptrdiff_t src_stride,
-                                    int w, int h)
+static av_always_inline void copy_c(uint8_t *restrict dst, ptrdiff_t dst_stride,
+                                    const uint8_t *restrict src,
+                                    ptrdiff_t src_stride, int w, int h)
 {
     do {
         memcpy(dst, src, w * sizeof(pixel));
@@ -1948,9 +1948,9 @@ static av_always_inline void copy_c(uint8_t *dst, ptrdiff_t dst_stride,
     } while (--h);
 }
 
-static av_always_inline void avg_c(uint8_t *_dst, ptrdiff_t dst_stride,
-                                   const uint8_t *_src, ptrdiff_t src_stride,
-                                   int w, int h)
+static av_always_inline void avg_c(uint8_t *restrict _dst, ptrdiff_t dst_stride,
+                                   const uint8_t *restrict _src,
+                                   ptrdiff_t src_stride, int w, int h)
 {
     pixel *dst = (pixel *) _dst;
     const pixel *src = (const pixel *) _src;
