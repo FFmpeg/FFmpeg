@@ -21,6 +21,7 @@
 #include "asm.S"
 
 func ff_vector_fmul_window_scaled_rvv, zve64x, zba
+        lpad    0
         csrwi   vxrm, 0
         vsetvli t0, zero, e16, m1, ta, ma
         sh2add  a2, a4, a2
@@ -69,6 +70,7 @@ func ff_vector_fmul_window_scaled_rvv, zve64x, zba
 endfunc
 
 func ff_vector_fmul_window_fixed_rvv, zve64x, zba
+        lpad    0
         csrwi   vxrm, 0
         vsetvli t0, zero, e16, m1, ta, ma
         sh2add  a2, a4, a2
@@ -113,6 +115,7 @@ func ff_vector_fmul_window_fixed_rvv, zve64x, zba
 endfunc
 
 func ff_vector_fmul_fixed_rvv, zve32x, zba
+        lpad    0
         csrwi   vxrm, 0
 1:
         vsetvli t0, a3, e32, m4, ta, ma
@@ -156,6 +159,7 @@ func ff_vector_fmul_reverse_fixed_rvv, zve32x, zba
 endfunc
 
 func ff_vector_fmul_add_fixed_rvv, zve32x, zba
+        lpad    0
         csrwi   vxrm, 0
 1:
         vsetvli t0, a4, e32, m8, ta, ma
@@ -176,6 +180,7 @@ func ff_vector_fmul_add_fixed_rvv, zve32x, zba
 endfunc
 
 func ff_scalarproduct_fixed_rvv, zve64x, zba
+        lpad    0
         li      t1, 1 << 30
         vsetvli t0, zero, e64, m8, ta, ma
         vmv.v.x v8, zero
@@ -199,6 +204,7 @@ endfunc
 
 // (a0) = (a0) + (a1), (a1) = (a0) - (a1) [0..a2-1]
 func ff_butterflies_fixed_rvv, zve32x, zba
+        lpad    0
 1:
         vsetvli t0, a2, e32, m4, ta, ma
         vle32.v v16, (a0)

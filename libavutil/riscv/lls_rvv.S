@@ -21,6 +21,7 @@
 #include "asm.S"
 
 func ff_lls_update_covariance_rvv, zve64d, zbb
+        lpad    0
         vtype_vli     t0, a2, t1, e64, ta, ma
         vsetvl        zero, a2, t0
         vle64.v       v8, (a1)

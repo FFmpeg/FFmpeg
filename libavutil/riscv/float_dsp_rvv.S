@@ -22,6 +22,7 @@
 
 // (a0) = (a1) * (a2) [0..a3-1]
 func ff_vector_fmul_rvv, zve32f, zba
+        lpad    0
 1:
         vsetvli  t0, a3, e32, m8, ta, ma
         vle32.v  v16, (a1)
@@ -39,6 +40,7 @@ endfunc
 
 // (a0) += (a1) * fa0 [0..a2-1]
 func ff_vector_fmac_scalar_rvv, zve32f, zba
+        lpad    0
 NOHWF   fmv.w.x   fa0, a2
 NOHWF   mv        a2, a3
 1:
@@ -58,6 +60,7 @@ endfunc
 
 // (a0) = (a1) * fa0 [0..a2-1]
 func ff_vector_fmul_scalar_rvv, zve32f, zba
+        lpad    0
 NOHWF   fmv.w.x  fa0, a2
 NOHWF   mv       a2, a3
 1:
@@ -74,6 +77,7 @@ NOHWF   mv       a2, a3
 endfunc
 
 func ff_vector_fmul_window_rvv, zve32f, zba
+        lpad    0
         // a0: dst, a1: src0, a2: src1, a3: window, a4: length
         // e16/m2 and e32/m4 are possible but slower due to gather.
         vsetvli    t0, zero, e16, m1, ta, ma
@@ -114,6 +118,7 @@ endfunc
 
 // (a0) = (a1) * (a2) + (a3) [0..a4-1]
 func ff_vector_fmul_add_rvv, zve32f, zba
+        lpad    0
 1:
         vsetvli   t0, a4, e32, m8, ta, ma
         vle32.v   v8, (a1)
@@ -134,6 +139,7 @@ endfunc
 // TODO factor vrsub, separate last iteration?
 // (a0) = (a1) * reverse(a2) [0..a3-1]
 func ff_vector_fmul_reverse_rvv, zve32f, zba
+        lpad    0
         // e16/m4 and e32/m8 are possible but slower due to gather.
         vsetvli  t0, zero, e16, m1, ta, ma
         sh2add   a2, a3, a2
@@ -160,6 +166,7 @@ endfunc
 
 // (a0) = (a0) + (a1), (a1) = (a0) - (a1) [0..a2-1]
 func ff_butterflies_float_rvv, zve32f, zba
+        lpad    0
 1:
         vsetvli  t0, a2, e32, m8, ta, ma
         vle32.v  v16, (a0)
@@ -178,6 +185,7 @@ endfunc
 
 // a0 = (a0).(a1) [0..a2-1]
 func ff_scalarproduct_float_rvv, zve32f, zba
+        lpad    0
         vsetvli      t0, zero, e32, m8, ta, ma
         vmv.v.x      v8, zero
         vmv.s.x      v0, zero
@@ -200,6 +208,7 @@ endfunc
 
 // (a0) = (a1) * (a2) [0..a3-1]
 func ff_vector_dmul_rvv, zve64d, zba
+        lpad    0
 1:
         vsetvli  t0, a3, e64, m8, ta, ma
         vle64.v  v16, (a1)
@@ -217,6 +226,7 @@ endfunc
 
 // (a0) += (a1) * fa0 [0..a2-1]
 func ff_vector_dmac_scalar_rvv, zve64d, zba
+        lpad    0
 NOHWD   fmv.d.x   fa0, a2
 NOHWD   mv        a2, a3
 1:
@@ -235,6 +245,7 @@ endfunc
 
 // (a0) = (a1) * fa0 [0..a2-1]
 func ff_vector_dmul_scalar_rvv, zve64d, zba
+        lpad    0
 NOHWD   fmv.d.x  fa0, a2
 NOHWD   mv       a2, a3
 1:
@@ -251,6 +262,7 @@ NOHWD   mv       a2, a3
 endfunc
 
 func ff_scalarproduct_double_rvv, zve64f, zba
+        lpad    0
         vsetvli      t0, zero, e64, m8, ta, ma
         vmv.v.x      v8, zero
         vmv.s.x      v0, zero
