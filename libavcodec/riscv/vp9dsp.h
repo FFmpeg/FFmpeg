@@ -60,12 +60,6 @@ void ff_dc_129_16x16_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
                          const uint8_t *a);
 void ff_dc_129_8x8_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
                        const uint8_t *a);
-void ff_v_32x32_rvi(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
-                    const uint8_t *a);
-void ff_v_16x16_rvi(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
-                    const uint8_t *a);
-void ff_v_8x8_rvi(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
-                  const uint8_t *a);
 void ff_h_32x32_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
                     const uint8_t *a);
 void ff_h_16x16_rvv(uint8_t *dst, ptrdiff_t stride, const uint8_t *l,
