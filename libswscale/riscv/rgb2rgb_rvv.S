@@ -25,7 +25,7 @@ func ff_shuffle_bytes_0321_rvv, zve32x
         j       1f
 endfunc
 
-func ff_shuffle_bytes_2103_rvv, zve32x
+func ff_shuffle_bytes_2103_rvv, zve32x, zba
         li      t1, ~0x00ff00ff
 1:
         not     t2, t1
@@ -54,7 +54,7 @@ func ff_shuffle_bytes_1230_rvv, zve32x
         j       3f
 endfunc
 
-func ff_shuffle_bytes_3012_rvv, zve32x
+func ff_shuffle_bytes_3012_rvv, zve32x, zba
         li      t1, 8
         li      t2, 24
 3:
@@ -74,7 +74,7 @@ func ff_shuffle_bytes_3012_rvv, zve32x
         ret
 endfunc
 
-func ff_interleave_bytes_rvv, zve32x
+func ff_interleave_bytes_rvv, zve32x, zba
 1:
         mv      t0, a0
         mv      t1, a1
@@ -100,7 +100,7 @@ func ff_interleave_bytes_rvv, zve32x
         ret
 endfunc
 
-func ff_deinterleave_bytes_rvv, zve32x
+func ff_deinterleave_bytes_rvv, zve32x, zba
 1:
         mv      t0, a0
         mv      t1, a1
@@ -165,10 +165,10 @@ endfunc
         ret
 .endm
 
-func ff_uyvytoyuv422_rvv, zve32x, zbb
+func ff_uyvytoyuv422_rvv, zve32x, b
         yuy2_to_i422p v20, v16
 endfunc
 
-func ff_yuyvtoyuv422_rvv, zve32x, zbb
+func ff_yuyvtoyuv422_rvv, zve32x, b
         yuy2_to_i422p v16, v20
 endfunc

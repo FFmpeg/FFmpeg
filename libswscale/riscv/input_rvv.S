@@ -26,7 +26,7 @@ func ff_bgr24ToY_rvv, zve32x
         j       1f
 endfunc
 
-func ff_rgb24ToY_rvv, zve32x
+func ff_rgb24ToY_rvv, zve32x, zba
         lw      t1, 0(a5) # RY
         lw      t3, 8(a5) # BY
 1:
@@ -62,7 +62,7 @@ func ff_bgr24ToUV_rvv, zve32x
         j       1f
 endfunc
 
-func ff_rgb24ToUV_rvv, zve32x
+func ff_rgb24ToUV_rvv, zve32x, zba
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
@@ -108,7 +108,7 @@ func ff_bgr24ToUV_half_rvv, zve32x
         j       1f
 endfunc
 
-func ff_rgb24ToUV_half_rvv, zve32x
+func ff_rgb24ToUV_half_rvv, zve32x, zba
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
@@ -157,7 +157,7 @@ func ff_\chr1\()ToY_rvv, zve32x
         j       1f
 endfunc
 
-func ff_\chr0\()ToY_rvv, zve32x
+func ff_\chr0\()ToY_rvv, zve32x, zba
         lw      t1, 0(a5) # RY
         lw      t3, 8(a5) # BY
 1:
@@ -199,7 +199,7 @@ func ff_\chr1\()ToUV_rvv, zve32x
         j       1f
 endfunc
 
-func ff_\chr0\()ToUV_rvv, zve32x
+func ff_\chr0\()ToUV_rvv, zve32x, zba
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
@@ -251,7 +251,7 @@ func ff_\chr1\()ToUV_half_rvv, zve32x
         j       1f
 endfunc
 
-func ff_\chr0\()ToUV_half_rvv, zve32x
+func ff_\chr0\()ToUV_half_rvv, zve32x, zba
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
