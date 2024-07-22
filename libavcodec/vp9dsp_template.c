@@ -49,14 +49,22 @@ static void vert_8x8_c(uint8_t *restrict _dst, ptrdiff_t stride,
 {
     pixel *dst = (pixel *) _dst;
     const pixel *top = (const pixel *) _top;
+#if BIT_DEPTH == 8
+    uint64_t p8 = AV_RN64A(top);
+#else
     pixel4 p4a = AV_RN4PA(top + 0);
     pixel4 p4b = AV_RN4PA(top + 4);
+#endif
     int y;
 
     stride /= sizeof(pixel);
     for (y = 0; y < 8; y++) {
+#if BIT_DEPTH == 8
+        AV_WN64A(dst, p8);
+#else
         AV_WN4PA(dst + 0, p4a);
         AV_WN4PA(dst + 4, p4b);
+#endif
         dst += stride;
     }
 }
@@ -66,18 +74,28 @@ static void vert_16x16_c(uint8_t *restrict _dst, ptrdiff_t stride,
 {
     pixel *dst = (pixel *) _dst;
     const pixel *top = (const pixel *) _top;
+#if BIT_DEPTH == 8
+    uint64_t p8a = AV_RN64A(top);
+    uint64_t p8b = AV_RN64A(top + 8);
+#else
     pixel4 p4a = AV_RN4PA(top +  0);
     pixel4 p4b = AV_RN4PA(top +  4);
     pixel4 p4c = AV_RN4PA(top +  8);
     pixel4 p4d = AV_RN4PA(top + 12);
+#endif
     int y;
 
     stride /= sizeof(pixel);
     for (y = 0; y < 16; y++) {
+#if BIT_DEPTH == 8
+        AV_WN64A(dst +  0, p8a);
+        AV_WN64A(dst +  8, p8b);
+#else
         AV_WN4PA(dst +  0, p4a);
         AV_WN4PA(dst +  4, p4b);
         AV_WN4PA(dst +  8, p4c);
         AV_WN4PA(dst + 12, p4d);
+#endif
         dst += stride;
     }
 }
@@ -87,6 +105,12 @@ static void vert_32x32_c(uint8_t *restrict _dst, ptrdiff_t stride,
 {
     pixel *dst = (pixel *) _dst;
     const pixel *top = (const pixel *) _top;
+#if BIT_DEPTH == 8
+    uint64_t p8a = AV_RN64A(top);
+    uint64_t p8b = AV_RN64A(top + 8);
+    uint64_t p8c = AV_RN64A(top + 16);
+    uint64_t p8d = AV_RN64A(top + 24);
+#else
     pixel4 p4a = AV_RN4PA(top +  0);
     pixel4 p4b = AV_RN4PA(top +  4);
     pixel4 p4c = AV_RN4PA(top +  8);
@@ -95,10 +119,17 @@ static void vert_32x32_c(uint8_t *restrict _dst, ptrdiff_t stride,
     pixel4 p4f = AV_RN4PA(top + 20);
     pixel4 p4g = AV_RN4PA(top + 24);
     pixel4 p4h = AV_RN4PA(top + 28);
+#endif
     int y;
 
     stride /= sizeof(pixel);
     for (y = 0; y < 32; y++) {
+#if BIT_DEPTH == 8
+        AV_WN64A(dst +  0, p8a);
+        AV_WN64A(dst +  8, p8b);
+        AV_WN64A(dst + 16, p8c);
+        AV_WN64A(dst + 24, p8d);
+#else
         AV_WN4PA(dst +  0, p4a);
         AV_WN4PA(dst +  4, p4b);
         AV_WN4PA(dst +  8, p4c);
@@ -107,6 +138,7 @@ static void vert_32x32_c(uint8_t *restrict _dst, ptrdiff_t stride,
         AV_WN4PA(dst + 20, p4f);
         AV_WN4PA(dst + 24, p4g);
         AV_WN4PA(dst + 28, p4h);
+#endif
         dst += stride;
     }
 }
