@@ -86,6 +86,12 @@
             .endm
         .endm
 
+#if !defined (__riscv_zicfilp)
+        .macro  lpad    lpl
+        auipc   zero, \lpl
+        .endm
+#endif
+
 #if defined (__riscv_v_elen)
 # define RV_V_ELEN __riscv_v_elen
 #else
