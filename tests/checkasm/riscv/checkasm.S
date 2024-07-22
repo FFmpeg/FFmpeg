@@ -75,6 +75,8 @@ func checkasm_get_wrapper, v
         addi    sp, sp, 16
         ret
 
+        .option norvc
+        .align  2
 2:      /* <-- Entry point with the Vector extension --> */
         lpad    0
         /* Clobber the vectors */
@@ -92,6 +94,7 @@ func checkasm_get_wrapper, v
         csrwi   vxrm, 3      /* Rounding mode: round-to-odd */
         csrwi   vxsat, 1     /* Saturation:    encountered */
 
+        .align  2
 3:      /* <-- Entry point without the Vector extension --> */
         lpad    0
         /* Save RA, unallocatable and callee-saved registers */
