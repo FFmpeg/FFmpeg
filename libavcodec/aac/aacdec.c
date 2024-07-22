@@ -166,6 +166,7 @@ static av_cold int che_configure(AACDecContext *ac,
             ac->proc.sbr_ctx_close(ac->che[type][id]);
         }
         av_freep(&ac->che[type][id]);
+        memset(ac->output_element, 0, sizeof(ac->output_element));
     }
     return 0;
 }
