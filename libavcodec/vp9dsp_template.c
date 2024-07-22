@@ -30,7 +30,7 @@
 // FIXME see whether we can merge parts of this (perhaps at least 4x4 and 8x8)
 // back with h264pred.[ch]
 
-static void vert_4x4_c(uint8_t *_dst, ptrdiff_t stride,
+static void vert_4x4_c(uint8_t *restrict _dst, ptrdiff_t stride,
                        const uint8_t *left, const uint8_t *_top)
 {
     pixel *dst = (pixel *) _dst;
@@ -44,7 +44,7 @@ static void vert_4x4_c(uint8_t *_dst, ptrdiff_t stride,
     AV_WN4PA(dst + stride * 3, p4);
 }
 
-static void vert_8x8_c(uint8_t *_dst, ptrdiff_t stride,
+static void vert_8x8_c(uint8_t *restrict _dst, ptrdiff_t stride,
                        const uint8_t *left, const uint8_t *_top)
 {
     pixel *dst = (pixel *) _dst;
@@ -61,7 +61,7 @@ static void vert_8x8_c(uint8_t *_dst, ptrdiff_t stride,
     }
 }
 
-static void vert_16x16_c(uint8_t *_dst, ptrdiff_t stride,
+static void vert_16x16_c(uint8_t *restrict _dst, ptrdiff_t stride,
                          const uint8_t *left, const uint8_t *_top)
 {
     pixel *dst = (pixel *) _dst;
@@ -82,7 +82,7 @@ static void vert_16x16_c(uint8_t *_dst, ptrdiff_t stride,
     }
 }
 
-static void vert_32x32_c(uint8_t *_dst, ptrdiff_t stride,
+static void vert_32x32_c(uint8_t *restrict _dst, ptrdiff_t stride,
                          const uint8_t *left, const uint8_t *_top)
 {
     pixel *dst = (pixel *) _dst;
