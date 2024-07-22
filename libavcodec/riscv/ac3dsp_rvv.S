@@ -22,6 +22,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_ac3_exponent_min_rvv, zve32x
+        lpad    0
         beqz     a1, 3f
 1:
         vsetvli  t2, a2, e8, m8, ta, ma
@@ -44,6 +45,7 @@ func ff_ac3_exponent_min_rvv, zve32x
 endfunc
 
 func ff_float_to_fixed24_rvv, zve32f, zba
+        lpad    0
         li            t1, 1 << 24
         fcvt.s.w      f0, t1
 1:
@@ -62,6 +64,7 @@ endfunc
 
 #if __riscv_xlen >= 64
 func ff_sum_square_butterfly_int32_rvv, zve64x, zba
+        lpad    0
         vsetvli    t0, zero, e64, m8, ta, ma
         vmv.v.x    v0, zero
         vmv.v.x    v8, zero
@@ -102,6 +105,7 @@ endfunc
 #endif
 
 func ff_sum_square_butterfly_float_rvv, zve32f, zba
+        lpad    0
         vsetvli     t0, zero, e32, m8, ta, ma
         vmv.v.x     v0, zero
         vmv.v.x     v8, zero

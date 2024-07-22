@@ -45,6 +45,7 @@
 
 #if __riscv_xlen >= 64
 func ff_vp8_luma_dc_wht_rvv, zve64x
+        lpad    0
         vsetivli    zero, 1, e64, m1, ta, ma
         vlseg4e64.v v4, (a1)
         vsetivli    zero, 4, e16, mf2, ta, ma
@@ -99,6 +100,7 @@ endfunc
 #endif
 
 func ff_vp8_idct_add_rvv, zve32x
+        lpad    0
         csrwi       vxrm, 0
         vsetivli    zero, 4, e16, mf2, ta, ma
         addi        a3, a1, 1 * 4 * 2
@@ -158,6 +160,7 @@ func ff_vp8_idct_add_rvv, zve32x
 endfunc
 
 func ff_vp8_idct_dc_add_rvv, zve32x
+        lpad    0
         lh      a3, (a1)
         addi    a3, a3, 4
         srai    a3, a3, 3
@@ -182,6 +185,7 @@ func ff_vp78_idct_dc_add_rvv, zve32x
 endfunc
 
 func ff_vp8_idct_dc_add4y_rvv, zve32x
+        lpad    0
         li       t0, 32
         vsetivli zero, 4, e16, mf2, ta, ma
         li       t1, 4 - (128 << 3)
@@ -217,6 +221,7 @@ func ff_vp78_idct_dc_add4y_rvv, zve32x
 endfunc
 
 func ff_vp8_idct_dc_add4uv_rvv, zve32x
+        lpad    0
         li       t0, 32
         vsetivli zero, 4, e16, mf2, ta, ma
         li       t1, 4 - (128 << 3)
@@ -265,6 +270,7 @@ endfunc
 
 .macro put_vp8_bilin_h_v type mn
 func ff_put_vp8_bilin4_\type\()_rvv, zve32x
+        lpad    0
         vsetvlstatic8   4
 .Lbilin_\type:
         li              t1, 8
@@ -310,6 +316,7 @@ put_vp8_bilin_h_v h a5
 put_vp8_bilin_h_v v a6
 
 func ff_put_vp8_bilin4_hv_rvv, zve32x
+        lpad    0
         vsetvlstatic8   4
 .Lbilin_hv:
         li              t3, 8
@@ -335,16 +342,19 @@ endfunc
 
 .irp len,16,8
 func ff_put_vp8_bilin\len\()_h_rvv, zve32x
+        lpad    0
         vsetvlstatic8 \len
         j             .Lbilin_h
 endfunc
 
 func ff_put_vp8_bilin\len\()_v_rvv, zve32x
+        lpad    0
         vsetvlstatic8 \len
         j             .Lbilin_v
 endfunc
 
 func ff_put_vp8_bilin\len\()_hv_rvv, zve32x
+        lpad    0
         vsetvlstatic8 \len
         j             .Lbilin_hv
 endfunc
@@ -441,6 +451,7 @@ endconst
 
 .macro epel len size type
 func ff_put_vp8_epel\len\()_\type\()\size\()_rvv, zve32x, zba
+        lpad    0
         epel_filter     \size \type t
         vsetvlstatic8   \len
 1:
@@ -456,6 +467,7 @@ endfunc
 
 .macro epel_hv len hsize vsize
 func ff_put_vp8_epel\len\()_h\hsize\()v\vsize\()_rvv, zve32x, zba
+        lpad    0
 #if __riscv_xlen == 64
         addi    sp, sp, -48
         .irp n,0,1,2,3,4,5

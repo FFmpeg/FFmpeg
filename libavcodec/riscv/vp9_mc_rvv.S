@@ -38,6 +38,7 @@
 
 .macro copy_avg len
 func ff_vp9_avg\len\()_rvv, zve32x
+        lpad    0
         csrwi           vxrm, 0
         vsetvlstatic8   \len, t0, 64
 1:

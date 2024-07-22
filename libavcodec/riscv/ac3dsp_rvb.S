@@ -22,6 +22,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_ac3_exponent_min_rvb, zbb
+        lpad    0
         beqz    a1, 3f
 1:
         addi    a2, a2, -1
@@ -43,6 +44,7 @@ func ff_ac3_exponent_min_rvb, zbb
 endfunc
 
 func ff_extract_exponents_rvb, zbb
+        lpad    0
 1:
         lw       t0, (a1)
         addi     a0, a0, 1

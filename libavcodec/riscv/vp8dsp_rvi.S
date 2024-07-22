@@ -22,6 +22,7 @@
 
 #if __riscv_xlen >= 64
 func ff_put_vp8_pixels16_rvi
+        lpad    0
 1:
         addi          a4, a4, -1
         ld            t0, (a2)
@@ -36,6 +37,7 @@ func ff_put_vp8_pixels16_rvi
 endfunc
 
 func ff_put_vp8_pixels8_rvi
+        lpad    0
 1:
         addi          a4, a4, -1
         ld            t0, (a2)
@@ -49,6 +51,7 @@ endfunc
 #endif
 
 func ff_put_vp8_pixels4_rvi
+        lpad    0
 1:
         addi          a4, a4, -1
         lw            t0, (a2)

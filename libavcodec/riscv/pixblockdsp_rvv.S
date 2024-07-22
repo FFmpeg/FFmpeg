@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_get_pixels_8_rvv, zve64x
+        lpad    0
         vsetivli zero, 8, e8, mf2, ta, ma
         li      t0, 8 * 8
 1:
@@ -32,6 +33,7 @@ func ff_get_pixels_8_rvv, zve64x
 endfunc
 
 func ff_get_pixels_unaligned_8_rvv, zve64x
+        lpad    0
         andi    t1, a1, 7
         vsetivli zero, 8, e64, m4, ta, ma
         li      t0, 8 * 8
@@ -52,6 +54,7 @@ func ff_get_pixels_unaligned_8_rvv, zve64x
 endfunc
 
 func ff_diff_pixels_rvv, zve64x
+        lpad    0
         vsetivli zero, 8, e8, mf2, ta, ma
         li      t0, 8 * 8
         vlse64.v v16, (a1), a3
@@ -63,6 +66,7 @@ func ff_diff_pixels_rvv, zve64x
 endfunc
 
 func ff_diff_pixels_unaligned_rvv, zve32x
+        lpad    0
         vsetivli    zero, 8, e8, mf2, ta, ma
         vlsseg8e8.v v16, (a1), a3
         vlsseg8e8.v v24, (a2), a3

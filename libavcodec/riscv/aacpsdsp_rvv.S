@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_ps_add_squares_rvv, zve64f, zba
+        lpad    0
         li          t1, 32
 1:
         vsetvli     t0, a2, e32, m4, ta, ma
@@ -40,6 +41,7 @@ func ff_ps_add_squares_rvv, zve64f, zba
 endfunc
 
 func ff_ps_mul_pair_single_rvv, zve32f, zba
+        lpad    0
 1:
         vsetvli     t0, a3, e32, m4, ta, ma
         vlseg2e32.v v24, (a1)
@@ -57,6 +59,7 @@ func ff_ps_mul_pair_single_rvv, zve32f, zba
 endfunc
 
 func ff_ps_hybrid_analysis_rvv, zve32f
+        lpad    0
         /* We need 26 FP registers, for 20 scratch ones. Spill fs0-fs5. */
         addi    sp, sp, -48
         .irp n, 0, 1, 2, 3, 4, 5
@@ -135,6 +138,7 @@ NOHWD   flw     fs\n, (4 * \n)(sp)
 endfunc
 
 func ff_ps_hybrid_analysis_ileave_rvv, zve32x /* no zve32f here */, zba
+        lpad    0
         slli        t0, a2, 5 + 1 + 2 // ctz(32 * 2 * 4)
         sh2add      a1, a2, a1
         add         a0, a0, t0
@@ -208,6 +212,7 @@ func ff_ps_hybrid_synthesis_deint_rvv, zve64x, zba
 endfunc
 
 func ff_ps_stereo_interpolate_rvv, zve32f, b
+        lpad    0
         vsetvli      t0, zero, e32, m2, ta, ma
         vid.v        v24
         flw          ft0,   (a2)

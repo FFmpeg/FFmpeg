@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_put_pixels_clamped_rvv, zve64x
+        lpad    0
         li      t0, 8 * 8
         vsetvli zero, t0, e16, m8, ta, ma
         vle16.v v24, (a0)
@@ -35,6 +36,7 @@ func ff_put_pixels_clamped_rvv, zve64x
 endfunc
 
 func ff_put_signed_pixels_clamped_rvv, zve64x
+        lpad    0
         li      t0, 8 * 8
         vsetvli zero, t0, e8, m4, ta, ma
         vle16.v v24, (a0)
@@ -47,6 +49,7 @@ func ff_put_signed_pixels_clamped_rvv, zve64x
 endfunc
 
 func ff_add_pixels_clamped_rvv, zve64x
+        lpad    0
         vsetivli zero, 8, e8, mf2, ta, ma
         li      t0, 8 * 8
         vlse64.v v16, (a1), a2

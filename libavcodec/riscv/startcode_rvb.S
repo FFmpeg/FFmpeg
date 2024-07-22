@@ -37,6 +37,7 @@
         .endm
 
 func ff_startcode_find_candidate_rvb, zbb
+        lpad    0
         add     a1, a0, a1
 
         // Potentially unaligned head

@@ -351,21 +351,25 @@ func ff_avg_rv40_chroma_mc_rvv, zve32x, zba
 endfunc
 
 func ff_put_rv40_chroma_mc8_rvv, zve32x
+        lpad    0
         li      t6, 8
         j       11b
 endfunc
 
 func ff_put_rv40_chroma_mc4_rvv, zve32x
+        lpad    0
         li      t6, 4
         j       11b
 endfunc
 
 func ff_avg_rv40_chroma_mc8_rvv, zve32x
+        lpad    0
         li      t6, 8
         j       21b
 endfunc
 
 func ff_avg_rv40_chroma_mc4_rvv, zve32x
+        lpad    0
         li      t6, 4
         j       21b
 endfunc

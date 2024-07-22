@@ -325,6 +325,7 @@
         ret
 .endm
 
+        .variant_cc h264_put_chroma_mc_rvv
 func h264_put_chroma_mc_rvv, zve32x, zba
 11:
         li      a7, 3
@@ -334,6 +335,7 @@ func h264_put_chroma_mc_rvv, zve32x, zba
         do_chroma_mc put 0
 endfunc
 
+        .variant_cc h264_avg_chroma_mc_rvv
 func h264_avg_chroma_mc_rvv, zve32x, zba
 21:
         li      a7, 3
@@ -344,31 +346,37 @@ func h264_avg_chroma_mc_rvv, zve32x, zba
 endfunc
 
 func h264_put_chroma_mc8_rvv, zve32x
+        lpad    0
         li      t6, 8
         j       11b
 endfunc
 
 func h264_put_chroma_mc4_rvv, zve32x
+        lpad    0
         li      t6, 4
         j       11b
 endfunc
 
 func h264_put_chroma_mc2_rvv, zve32x
+        lpad    0
         li      t6, 2
         j       11b
 endfunc
 
 func h264_avg_chroma_mc8_rvv, zve32x
+        lpad    0
         li      t6, 8
         j       21b
 endfunc
 
 func h264_avg_chroma_mc4_rvv, zve32x
+        lpad    0
         li      t6, 4
         j       21b
 endfunc
 
 func h264_avg_chroma_mc2_rvv, zve32x
+        lpad    0
         li      t6, 2
         j       21b
 endfunc

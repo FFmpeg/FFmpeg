@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_vector_clipf_rvf, f
+        lpad    0
 NOHWF   fmv.w.x fa0, a3
 NOHWF   fmv.w.x fa1, a4
 1:

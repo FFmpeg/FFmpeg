@@ -27,6 +27,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_startcode_find_candidate_rvv, zve32x
+        lpad    0
         mv       t0, a0
 1:
         vsetvli  t1, a1, e8, m8, ta, ma

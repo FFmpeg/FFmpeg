@@ -37,6 +37,7 @@
         .endm
 
 func ff_h264_add_pixels4_8_rvv, zve32x
+        lpad    0
         vsetivli        zero, 4, e8, mf4, ta, ma
         vlse32.v        v8, (a0), a2
         vsetivli        zero, 4 * 4, e8, m1, ta, ma
@@ -54,6 +55,7 @@ func ff_h264_add_pixels4_8_rvv, zve32x
 endfunc
 
 func ff_h264_add_pixels4_16_rvv, zve64x
+        lpad    0
         vsetivli        zero, 4, e16, mf2, ta, ma
         vlse64.v        v8, (a0), a2
         vsetivli        zero, 4 * 4, e16, m2, ta, ma
@@ -71,6 +73,7 @@ func ff_h264_add_pixels4_16_rvv, zve64x
 endfunc
 
 func ff_h264_add_pixels8_8_rvv, zve64x
+        lpad    0
         li      t0, 8 * 8
         vsetivli        zero, 8, e8, mf2, ta, ma
         vlse64.v        v8, (a0), a2
@@ -89,6 +92,7 @@ func ff_h264_add_pixels8_8_rvv, zve64x
 endfunc
 
 func ff_h264_add_pixels8_16_rvv, zve32x
+        lpad    0
         li      t0, 8
         vsetivli    zero, 8, e16, m1, ta, ma
 1:

@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_llvid_add_bytes_rvv, zve32x
+        lpad    0
 1:
         vsetvli t0, a2, e8, m8, ta, ma
         vle8.v  v0, (a1)

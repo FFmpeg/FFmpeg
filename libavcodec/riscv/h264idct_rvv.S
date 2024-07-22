@@ -55,6 +55,7 @@ func ff_h264_idct4_rvv, zve32x
 endfunc
 
 func ff_h264_idct_add_8_rvv, zve32x
+        lpad    0
         csrwi       vxrm, 0
 .Lidct_add4_8_rvv:
         vsetivli    zero, 4, e16, mf2, ta, ma
@@ -213,6 +214,7 @@ func ff_h264_idct8_rvv, zve32x
 endfunc
 
 func ff_h264_idct8_add_8_rvv, zve32x
+        lpad    0
         csrwi       vxrm, 0
 .Lidct8_add_8_rvv:
         vsetivli    zero, 8, e16, m1, ta, ma
@@ -405,11 +407,13 @@ endfunc
 
 .irp    depth, 9, 10, 12, 14
 func ff_h264_idct_add_\depth\()_rvv, zve32x
+        lpad    0
         li      a5, (1 << \depth) - 1
         j       ff_h264_idct_add_16_rvv
 endfunc
 
 func ff_h264_idct8_add_\depth\()_rvv, zve32x
+        lpad    0
         li      a5, (1 << \depth) - 1
         j       ff_h264_idct8_add_16_rvv
 endfunc
@@ -417,6 +421,7 @@ endfunc
 
 .macro idct_dc_add8 width
 func ff_h264_idct\width\()_dc_add_8_rvv, zve64x
+        lpad    0
 .if \width == 8
         vsetivli        zero, \width, e8, mf2, ta, ma
 .else
@@ -517,11 +522,13 @@ idct_dc_add 8
 
 .irp depth,9,10,12,14
 func ff_h264_idct4_dc_add_\depth\()_rvv, zve64x
+        lpad    0
         li              a5, (1 << \depth) - 1
         j               ff_h264_idct4_dc_add_16_rvv
 endfunc
 
 func ff_h264_idct8_dc_add_\depth\()_rvv, zve64x
+        lpad    0
         li              a5, (1 << \depth) - 1
         j               ff_h264_idct8_dc_add_16_rvv
 endfunc
@@ -534,6 +541,9 @@ endconst
 
 .macro  idct4_adds type, depth
 func ff_h264_idct_add\type\()_\depth\()_rvv, zve32x, b
+.if \depth == 8
+        lpad    0
+.endif
         csrwi   vxrm, 0
         lla     t0, ff_h264_scan8
         li      t1, 32 * (\depth / 8)
@@ -609,6 +619,9 @@ idct4_adds 16intra, \depth
 
 #if (__riscv_xlen == 64)
 func ff_h264_idct8_add4_\depth\()_rvv, zve32x, b
+.if \depth == 8
+        lpad    0
+.endif
         csrwi       vxrm, 0
         addi    sp, sp, -48
         lla     t0, ff_h264_scan8
@@ -686,17 +699,20 @@ endfunc
 
 .irp    depth, 9, 10, 12, 14
 func ff_h264_idct_add16_\depth\()_rvv, zve32x
+        lpad    0
         li      a5, (1 << \depth) - 1
         j       ff_h264_idct_add16_16_rvv
 endfunc
 
 func ff_h264_idct_add16intra_\depth\()_rvv, zve32x
+        lpad    0
         li      a5, (1 << \depth) - 1
         j       ff_h264_idct_add16intra_16_rvv
 endfunc
 
 #if (__riscv_xlen == 64)
 func ff_h264_idct8_add4_\depth\()_rvv, zve32x
+        lpad    0
         li      a5, (1 << \depth) - 1
         j       ff_h264_idct8_add4_16_rvv
 endfunc

@@ -91,6 +91,7 @@
 
 .macro func_dc name size type n restore ext
 func ff_\()\name\()_\()\size\()x\size\()_rvv, \ext
+        lpad    0
 .if \size == 8
         dc_e64 \type \size \n \restore
 .else
@@ -119,6 +120,7 @@ func_dc dc_top   16  top  4  1  zve32x
 func_dc dc_top   8   top  3  0  zve64x
 
 func ff_h_32x32_rvv, zve32x
+        lpad    0
         li           t0, 32
         addi         a2, a2, 31
         vsetvli      zero, t0, e8, m2, ta, ma
@@ -139,6 +141,7 @@ func ff_h_32x32_rvv, zve32x
 endfunc
 
 func ff_h_16x16_rvv, zve32x
+        lpad    0
         addi         a2, a2, 15
         vsetivli     zero, 16, e8, m1, ta, ma
 
@@ -157,6 +160,7 @@ func ff_h_16x16_rvv, zve32x
 endfunc
 
 func ff_h_8x8_rvv, zve32x
+        lpad    0
         addi         a2, a2, 7
         vsetivli     zero, 8, e8, mf2, ta, ma
 
@@ -190,6 +194,7 @@ endfunc
 .endm
 
 func ff_tm_32x32_rvv, zve32x
+        lpad    0
         lbu          a4, -1(a3)
         li           t5, 32
 
@@ -244,6 +249,7 @@ func ff_tm_16x16_rvv, zve32x
 endfunc
 
 func ff_tm_8x8_rvv, zve32x
+        lpad    0
         vsetivli     zero, 8, e16, m1, ta, ma
         vle8.v       v8, (a3)
         vzext.vf2    v28, v8
@@ -269,6 +275,7 @@ func ff_tm_8x8_rvv, zve32x
 endfunc
 
 func ff_tm_4x4_rvv, zve32x
+        lpad    0
         vsetivli     zero, 4, e16, mf2, ta, ma
         vle8.v       v8, (a3)
         vzext.vf2    v28, v8

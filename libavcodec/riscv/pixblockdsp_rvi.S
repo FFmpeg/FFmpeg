@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_get_pixels_8_rvi
+        lpad    0
 .irp row, 0, 1, 2, 3, 4, 5, 6, 7
         ld      t0,    (a1)
         add     a1, a1, a2
@@ -47,6 +48,7 @@ func ff_get_pixels_8_rvi
 endfunc
 
 func ff_get_pixels_16_rvi
+        lpad    0
 .irp row, 0, 1, 2, 3, 4, 5, 6, 7
         ld      t0, 0(a1)
         ld      t1, 8(a1)

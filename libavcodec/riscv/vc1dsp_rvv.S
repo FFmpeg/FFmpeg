@@ -22,6 +22,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_vc1_inv_trans_8x8_dc_rvv, zve64x, zba
+        lpad    0
         lh            t2, (a2)
         vsetivli      zero, 8, e8, mf2, ta, ma
         vlse64.v      v0, (a0), a1
@@ -44,6 +45,7 @@ func ff_vc1_inv_trans_8x8_dc_rvv, zve64x, zba
 endfunc
 
 func ff_vc1_inv_trans_4x8_dc_rvv, zve32x, zba
+        lpad    0
         lh            t2, (a2)
         vsetivli      zero, 8, e8, mf2, ta, ma
         vlse32.v      v0, (a0), a1
@@ -68,6 +70,7 @@ func ff_vc1_inv_trans_4x8_dc_rvv, zve32x, zba
 endfunc
 
 func ff_vc1_inv_trans_8x4_dc_rvv, zve64x, zba
+        lpad    0
         lh            t2, (a2)
         vsetivli      zero, 4, e8, mf4, ta, ma
         vlse64.v      v0, (a0), a1
@@ -91,6 +94,7 @@ func ff_vc1_inv_trans_8x4_dc_rvv, zve64x, zba
 endfunc
 
 func ff_vc1_inv_trans_4x4_dc_rvv, zve32x
+        lpad    0
         lh            t2, (a2)
         vsetivli      zero, 4, e8, mf4, ta, ma
         vlse32.v      v0, (a0), a1
@@ -203,6 +207,7 @@ func ff_vc1_inv_trans_4_rvv, zve32x
 endfunc
 
 func ff_vc1_inv_trans_8x8_rvv, zve32x
+        lpad    0
         csrwi    vxrm, 0
         vsetivli zero, 8, e16, m1, ta, ma
         addi     a1, a0, 1 * 8 * 2
@@ -240,6 +245,7 @@ func ff_vc1_inv_trans_8x8_rvv, zve32x
 endfunc
 
 func ff_vc1_inv_trans_8x4_rvv, zve32x
+        lpad    0
         csrwi       vxrm, 0
         vsetivli    zero, 4, e16, mf2, ta, ma
         vlseg8e16.v v0, (a2)
@@ -285,6 +291,7 @@ func ff_vc1_inv_trans_8x4_rvv, zve32x
 endfunc
 
 func ff_vc1_inv_trans_4x8_rvv, zve32x
+        lpad    0
         li           a3, 8 * 2
         csrwi        vxrm, 0
         vsetivli     zero, 8, e16, m1, ta, ma
@@ -359,6 +366,7 @@ func ff_vc1_inv_trans_4x8_rvv, zve32x
 endfunc
 
 func ff_vc1_inv_trans_4x4_rvv, zve32x
+        lpad    0
         li           a3, 8 * 2
         csrwi        vxrm, 0
         vsetivli     zero, 4, e16, mf2, ta, ma
@@ -422,12 +430,14 @@ endfunc
 .endm
 
 func ff_avg_pixels16x16_rvv, zve32x
+        lpad    0
         li       t0, 16
         vsetivli zero, 16, e8, m1, ta, ma
         j        1f
 endfunc
 
 func ff_avg_pixels8x8_rvv, zve32x
+        lpad    0
         li        t0, 8
         vsetivli  zero, 8, e8, mf2, ta, ma
 1:
@@ -446,6 +456,7 @@ func ff_avg_pixels8x8_rvv, zve32x
 endfunc
 
 func ff_vc1_unescape_buffer_rvv, zve32x
+        lpad    0
         vsetivli       zero, 2, e8, m1, ta, ma
         vmv.v.i        v8, -1
         li             t4, 1

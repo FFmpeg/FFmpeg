@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_g722_apply_qmf_rvv, zve32x
+        lpad    0
         lla         t0, qmf_coeffs
         vsetivli    zero, 12, e16, m2, ta, ma
         vlseg2e16.v v28, (a0)

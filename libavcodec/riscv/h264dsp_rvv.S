@@ -164,6 +164,7 @@ endfunc
 
 .irp    w, 16, 8, 4, 2
 func ff_h264_weight_pixels\w\()_8_rvv, zve32x
+        lpad    0
         li      a6, \w
         .if     \w == 16
         j       ff_h264_weight_pixels_simple_8_rvv
@@ -173,6 +174,7 @@ func ff_h264_weight_pixels\w\()_8_rvv, zve32x
 endfunc
 
 func ff_h264_biweight_pixels\w\()_8_rvv, zve32x
+        lpad    0
         li      t6, \w
         .if     \w == 16
         j       ff_h264_biweight_pixels_simple_8_rvv
@@ -272,6 +274,7 @@ func ff_h264_loop_filter_luma_8_rvv, zve32x
 endfunc
 
 func ff_h264_v_loop_filter_luma_8_rvv, zve32x
+        lpad    0
         vsetivli  zero, 4, e32, m1, ta, ma
         vle8.v    v4, (a4)
         li        t0, 0x01010101
@@ -299,6 +302,7 @@ func ff_h264_v_loop_filter_luma_8_rvv, zve32x
 endfunc
 
 func ff_h264_h_loop_filter_luma_8_rvv, zve32x
+        lpad    0
         vsetivli    zero, 4, e32, m1, ta, ma
         vle8.v      v4, (a4)
         li          t0, 0x01010101
@@ -313,6 +317,7 @@ func ff_h264_h_loop_filter_luma_8_rvv, zve32x
 endfunc
 
 func ff_h264_h_loop_filter_luma_mbaff_8_rvv, zve32x
+        lpad    0
         vsetivli    zero, 4, e16, mf2, ta, ma
         vle8.v      v4, (a4)
         li          t0, 0x0101

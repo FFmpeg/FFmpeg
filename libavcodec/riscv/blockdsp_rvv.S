@@ -21,6 +21,7 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_clear_block_rvv, zve64x
+        lpad    0
         vsetivli      zero, 16, e64, m8, ta, ma
         vmv.v.i       v0, 0
         vse64.v       v0, (a0)
@@ -29,6 +30,7 @@ func ff_clear_block_rvv, zve64x
 endfunc
 
 func ff_clear_blocks_rvv, zve64x
+        lpad    0
         vsetivli      zero, 16, e64, m8, ta, ma
         vmv.v.i       v0, 0
 
@@ -42,6 +44,7 @@ func ff_clear_blocks_rvv, zve64x
 endfunc
 
 func ff_fill_block16_rvv, zve32x
+        lpad    0
         vsetivli      t0, 16, e8, m1, ta, ma
         vmv.v.x       v8, a1
 1:
@@ -54,6 +57,7 @@ func ff_fill_block16_rvv, zve32x
 endfunc
 
 func ff_fill_block8_rvv, zve64x
+        lpad    0
         vsetvli       t0, zero, e8, m4, ta, ma
         vmv.v.x       v8, a1
         vsetvli       t0, a3, e64, m4, ta, ma

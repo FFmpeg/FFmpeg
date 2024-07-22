@@ -23,6 +23,7 @@
         .option push
         .option norelax
 func ff_h263_h_loop_filter_rvv, zve32x
+        lpad    0
         addi        a0, a0, -2
         vsetivli    zero, 8, e8, mf2, ta, ma
         vlsseg4e8.v v8, (a0), a1
@@ -83,6 +84,7 @@ endfunc
         .option pop
 
 func ff_h263_v_loop_filter_rvv, zve32x
+        lpad    0
         sub         a4, a0, a1
         vsetivli    zero, 8, e8, mf2, ta, ma
         vle8.v      v10, (a0)
