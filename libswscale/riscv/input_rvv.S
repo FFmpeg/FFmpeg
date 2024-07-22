@@ -21,12 +21,14 @@
 #include "libavutil/riscv/asm.S"
 
 func ff_bgr24ToY_rvv, zve32x
+        lpad    0
         lw      t1, 8(a5) # BY
         lw      t3, 0(a5) # RY
         j       1f
 endfunc
 
 func ff_rgb24ToY_rvv, zve32x, zba
+        lpad    0
         lw      t1, 0(a5) # RY
         lw      t3, 8(a5) # BY
 1:
@@ -55,6 +57,7 @@ func ff_rgb24ToY_rvv, zve32x, zba
 endfunc
 
 func ff_bgr24ToUV_rvv, zve32x
+        lpad    0
         lw      t1, 20(a6) # BU
         lw      t4, 32(a6) # BV
         lw      t3, 12(a6) # RU
@@ -63,6 +66,7 @@ func ff_bgr24ToUV_rvv, zve32x
 endfunc
 
 func ff_rgb24ToUV_rvv, zve32x, zba
+        lpad    0
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
@@ -101,6 +105,7 @@ func ff_rgb24ToUV_rvv, zve32x, zba
 endfunc
 
 func ff_bgr24ToUV_half_rvv, zve32x
+        lpad    0
         lw      t1, 20(a6) # BU
         lw      t4, 32(a6) # BV
         lw      t3, 12(a6) # RU
@@ -109,6 +114,7 @@ func ff_bgr24ToUV_half_rvv, zve32x
 endfunc
 
 func ff_rgb24ToUV_half_rvv, zve32x, zba
+        lpad    0
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
@@ -152,12 +158,14 @@ endfunc
 
         .macro  rgba_input chr0, chr1, high
 func ff_\chr1\()ToY_rvv, zve32x
+        lpad    0
         lw      t1, 8(a5) # BY
         lw      t3, 0(a5) # RY
         j       1f
 endfunc
 
 func ff_\chr0\()ToY_rvv, zve32x, zba
+        lpad    0
         lw      t1, 0(a5) # RY
         lw      t3, 8(a5) # BY
 1:
@@ -192,6 +200,7 @@ func ff_\chr0\()ToY_rvv, zve32x, zba
 endfunc
 
 func ff_\chr1\()ToUV_rvv, zve32x
+        lpad    0
         lw      t1, 20(a6) # BU
         lw      t4, 32(a6) # BV
         lw      t3, 12(a6) # RU
@@ -200,6 +209,7 @@ func ff_\chr1\()ToUV_rvv, zve32x
 endfunc
 
 func ff_\chr0\()ToUV_rvv, zve32x, zba
+        lpad    0
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
@@ -244,6 +254,7 @@ func ff_\chr0\()ToUV_rvv, zve32x, zba
 endfunc
 
 func ff_\chr1\()ToUV_half_rvv, zve32x
+        lpad    0
         lw      t1, 20(a6) # BU
         lw      t4, 32(a6) # BV
         lw      t3, 12(a6) # RU
@@ -252,6 +263,7 @@ func ff_\chr1\()ToUV_half_rvv, zve32x
 endfunc
 
 func ff_\chr0\()ToUV_half_rvv, zve32x, zba
+        lpad    0
         lw      t1, 12(a6) # RU
         lw      t4, 24(a6) # RV
         lw      t3, 20(a6) # BU
