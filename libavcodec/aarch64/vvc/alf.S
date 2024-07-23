@@ -81,8 +81,8 @@
     .endif
         ldr             q0, [clip]                  // clip
         ldr             q1, [filter]                // filter
-        ldr             q22, [clip, #24]            // clip
-        ldr             q24, [filter, #24]          // filter
+        ldur            q22, [clip, #24]            // clip
+        ldur            q24, [filter, #24]          // filter
 
         ldr             x5, [pp]                    // x5: p0
         ldr             x6, [pp, #(5*8)]            // x6: p5
