@@ -95,7 +95,7 @@
     .else
         ldr             q5, [x5]                    // curr
     .endif
-        movi            v20.4s, 64
+        movi            v20.4s, #64
         cbz             is_near_vb, 1f
         shl             v20.4s, v20.4s, #3
 1:
@@ -220,7 +220,7 @@
     .else
         ldr             d5, [x5]                    // curr
     .endif
-        movi            v20.4s, 64
+        movi            v20.4s, #64
         cbz             is_near_vb, 1f
         shl             v20.4s, v20.4s, #3
 1:
@@ -267,12 +267,12 @@ function ff_alf_filter_luma_kernel_8_neon, export=1
 endfunc
 
 function ff_alf_filter_luma_kernel_12_neon, export=1
-        mov             w5, 4095
+        mov             w5, #4095
         b               1f
 endfunc
 
 function ff_alf_filter_luma_kernel_10_neon, export=1
-        mov             w5, 1023
+        mov             w5, #1023
 1:
         alf_filter_luma_kernel  2
 endfunc
@@ -282,12 +282,12 @@ function ff_alf_filter_chroma_kernel_8_neon, export=1
 endfunc
 
 function ff_alf_filter_chroma_kernel_12_neon, export=1
-        mov             w5, 4095
+        mov             w5, #4095
         b               1f
 endfunc
 
 function ff_alf_filter_chroma_kernel_10_neon, export=1
-        mov             w5, 1023
+        mov             w5, #1023
 1:
         alf_filter_chroma_kernel  2
 endfunc
