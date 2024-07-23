@@ -1053,6 +1053,14 @@ static int videotoolbox_hevc_start_frame(AVCodecContext *avctx,
                                          const uint8_t *buffer,
                                          uint32_t size)
 {
+    HEVCContext *h = avctx->priv_data;
+    AVFrame *frame = h->cur_frame->f;
+
+    frame->crop_right  = 0;
+    frame->crop_left   = 0;
+    frame->crop_top    = 0;
+    frame->crop_bottom = 0;
+
     return 0;
 }
 
@@ -1078,11 +1086,6 @@ static int videotoolbox_hevc_end_frame(AVCodecContext *avctx)
     AVFrame *frame = h->cur_frame->f;
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
     int ret;
-
-    h->output_frame->crop_right = 0;
-    h->output_frame->crop_left = 0;
-    h->output_frame->crop_top = 0;
-    h->output_frame->crop_bottom = 0;
 
     ret = ff_videotoolbox_common_end_frame(avctx, frame);
     vtctx->bitstream_size = 0;
