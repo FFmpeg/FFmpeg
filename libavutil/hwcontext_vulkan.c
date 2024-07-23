@@ -777,7 +777,7 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
         goto fail;
 
     if (debug_mode) {
-        VkValidationFeatureEnableEXT feat_list[] = {
+        static const VkValidationFeatureEnableEXT feat_list[] = {
             VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
             VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
             VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
