@@ -65,6 +65,9 @@ static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
     warn = shaderc_result_get_num_warnings(res);
     message = shaderc_result_get_error_message(res);
 
+    if (ret != shaderc_compilation_status_success && !err)
+        err = 1;
+
     loglevel = err ? AV_LOG_ERROR : warn ? AV_LOG_WARNING : AV_LOG_VERBOSE;
 
     ff_vk_shader_print(avctx, shd, loglevel);
