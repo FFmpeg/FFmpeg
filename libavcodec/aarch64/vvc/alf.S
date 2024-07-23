@@ -263,7 +263,7 @@
 .endm
 
 function ff_alf_filter_luma_kernel_8_neon, export=1
-        alf_filter_luma_kernel  1
+        alf_filter_luma_kernel 1
 endfunc
 
 function ff_alf_filter_luma_kernel_12_neon, export=1
@@ -274,11 +274,11 @@ endfunc
 function ff_alf_filter_luma_kernel_10_neon, export=1
         mov             w5, #1023
 1:
-        alf_filter_luma_kernel  2
+        alf_filter_luma_kernel 2
 endfunc
 
 function ff_alf_filter_chroma_kernel_8_neon, export=1
-        alf_filter_chroma_kernel  1
+        alf_filter_chroma_kernel 1
 endfunc
 
 function ff_alf_filter_chroma_kernel_12_neon, export=1
@@ -289,5 +289,5 @@ endfunc
 function ff_alf_filter_chroma_kernel_10_neon, export=1
         mov             w5, #1023
 1:
-        alf_filter_chroma_kernel  2
+        alf_filter_chroma_kernel 2
 endfunc
