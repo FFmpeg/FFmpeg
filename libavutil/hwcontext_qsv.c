@@ -1549,8 +1549,11 @@ static int qsv_frames_derive_from(AVHWFramesContext *dst_ctx,
                 dst_hwctx->texture_infos[i].texture = (ID3D11Texture2D*)pair->first;
                 dst_hwctx->texture_infos[i].index = pair->second == (mfxMemId)MFX_INFINITE ? (intptr_t)0 : (intptr_t)pair->second;
             }
-            ID3D11Texture2D_GetDesc(dst_hwctx->texture_infos[0].texture, &texDesc);
-            dst_hwctx->BindFlags = texDesc.BindFlags;
+            if (src_hwctx->nb_surfaces) {
+                ID3D11Texture2D_GetDesc(dst_hwctx->texture_infos[0].texture, &texDesc);
+                dst_hwctx->BindFlags = texDesc.BindFlags;
+            } else
+                dst_hwctx->BindFlags = qsv_get_d3d11va_bind_flags(src_hwctx->frame_type);
         }
         break;
 #endif
