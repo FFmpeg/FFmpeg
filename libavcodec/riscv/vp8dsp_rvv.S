@@ -457,14 +457,14 @@ endfunc
 .macro epel_hv len hsize vsize
 func ff_put_vp8_epel\len\()_h\hsize\()v\vsize\()_rvv, zve32x
 #if __riscv_xlen == 64
-        addi            sp, sp, -48
+        addi    sp, sp, -48
         .irp n,0,1,2,3,4,5
-        sd              s\n, \n\()<<3(sp)
+        sd      s\n, (\n * 8)(sp)
         .endr
 #else
-        addi            sp, sp, -24
+        addi    sp, sp, -32
         .irp n,0,1,2,3,4,5
-        sw              s\n, \n\()<<2(sp)
+        sw      s\n, (\n * 4)(sp)
         .endr
 #endif
         sub             a2, a2, a3
@@ -506,14 +506,14 @@ func ff_put_vp8_epel\len\()_h\hsize\()v\vsize\()_rvv, zve32x
 
 #if __riscv_xlen == 64
         .irp n,0,1,2,3,4,5
-        ld              s\n, \n\()<<3(sp)
+        ld      s\n, (\n * 8)(sp)
         .endr
-        addi            sp, sp, 48
+        addi    sp, sp, 48
 #else
         .irp n,0,1,2,3,4,5
-        lw              s\n, \n\()<<2(sp)
+        lw      s\n, (\n * 4)(sp)
         .endr
-        addi            sp, sp, 24
+        addi    sp, sp, 32
 #endif
 
         ret
