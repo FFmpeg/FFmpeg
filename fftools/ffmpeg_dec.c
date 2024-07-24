@@ -578,7 +578,7 @@ static int process_subtitle(DecoderPriv *dp, AVFrame *frame)
     if (!subtitle)
         return 0;
 
-    ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
+    ret = sch_dec_send(dp->sch, dp->sch_idx, 0, frame);
     if (ret < 0)
         av_frame_unref(frame);
 
@@ -620,7 +620,7 @@ static int transcode_subtitles(DecoderPriv *dp, const AVPacket *pkt,
         frame->time_base = pkt->time_base;
         frame->opaque    = (void*)(intptr_t)FRAME_OPAQUE_SUB_HEARTBEAT;
 
-        ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
+        ret = sch_dec_send(dp->sch, dp->sch_idx, 0, frame);
         return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
     } else if (pkt && (intptr_t)pkt->opaque == PKT_OPAQUE_FIX_SUB_DURATION) {
         return fix_sub_duration_heartbeat(dp, av_rescale_q(pkt->pts, pkt->time_base,
@@ -773,7 +773,7 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
 
         dp->dec.frames_decoded++;
 
-        ret = sch_dec_send(dp->sch, dp->sch_idx, frame);
+        ret = sch_dec_send(dp->sch, dp->sch_idx, 0, frame);
         if (ret < 0) {
             av_frame_unref(frame);
             return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
@@ -951,7 +951,7 @@ static int decoder_thread(void *arg)
                               dp->last_frame_pts + dp->last_frame_duration_est;
         dt.frame->time_base = dp->last_frame_tb;
 
-        ret = sch_dec_send(dp->sch, dp->sch_idx, dt.frame);
+        ret = sch_dec_send(dp->sch, dp->sch_idx, 0, dt.frame);
         if (ret < 0 && ret != AVERROR_EOF) {
             av_log(dp, AV_LOG_FATAL,
                    "Error signalling EOF timestamp: %s\n", av_err2str(ret));
@@ -1355,7 +1355,7 @@ int dec_create(const OptionsContext *o, const char *arg, Scheduler *sch)
         return ret;
     enc_idx = ret;
 
-    ret = sch_connect(sch, SCH_ENC(enc_idx), SCH_DEC(dp->sch_idx));
+    ret = sch_connect(sch, SCH_ENC(enc_idx), SCH_DEC_IN(dp->sch_idx));
     if (ret < 0)
         return ret;
 

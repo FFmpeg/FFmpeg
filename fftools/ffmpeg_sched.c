@@ -71,13 +71,19 @@ typedef struct SchTask {
     int                 thread_running;
 } SchTask;
 
+typedef struct SchDecOutput {
+    SchedulerNode      *dst;
+    uint8_t            *dst_finished;
+    unsigned         nb_dst;
+} SchDecOutput;
+
 typedef struct SchDec {
     const AVClass      *class;
 
     SchedulerNode       src;
-    SchedulerNode      *dst;
-    uint8_t            *dst_finished;
-    unsigned         nb_dst;
+
+    SchDecOutput       *outputs;
+    unsigned         nb_outputs;
 
     SchTask             task;
     // Queue for receiving input packets, one stream.
@@ -513,8 +519,14 @@ void sch_free(Scheduler **psch)
 
         av_thread_message_queue_free(&dec->queue_end_ts);
 
-        av_freep(&dec->dst);
-        av_freep(&dec->dst_finished);
+        for (unsigned j = 0; j < dec->nb_outputs; j++) {
+            SchDecOutput *o = &dec->outputs[j];
+
+            av_freep(&o->dst);
+            av_freep(&o->dst_finished);
+        }
+
+        av_freep(&dec->outputs);
 
         av_frame_free(&dec->send_frame);
     }
@@ -712,14 +724,28 @@ int sch_add_demux_stream(Scheduler *sch, unsigned demux_idx)
     return ret < 0 ? ret : d->nb_streams - 1;
 }
 
+int sch_add_dec_output(Scheduler *sch, unsigned dec_idx)
+{
+    SchDec *dec;
+    int ret;
+
+    av_assert0(dec_idx < sch->nb_dec);
+    dec = &sch->dec[dec_idx];
+
+    ret = GROW_ARRAY(dec->outputs, dec->nb_outputs);
+    if (ret < 0)
+        return ret;
+
+    return dec->nb_outputs - 1;
+}
+
 static const AVClass sch_dec_class = {
     .class_name                = "SchDec",
     .version                   = LIBAVUTIL_VERSION_INT,
     .parent_log_context_offset = offsetof(SchDec, task.func_arg),
 };
 
-int sch_add_dec(Scheduler *sch, SchThreadFunc func, void *ctx,
-                int send_end_ts)
+int sch_add_dec(Scheduler *sch, SchThreadFunc func, void *ctx, int send_end_ts)
 {
     const unsigned idx = sch->nb_dec;
 
@@ -738,6 +764,10 @@ int sch_add_dec(Scheduler *sch, SchThreadFunc func, void *ctx,
     dec->send_frame = av_frame_alloc();
     if (!dec->send_frame)
         return AVERROR(ENOMEM);
+
+    ret = sch_add_dec_output(sch, idx);
+    if (ret < 0)
+        return ret;
 
     ret = queue_alloc(&dec->queue, 1, 0, QUEUE_PACKETS);
     if (ret < 0)
@@ -943,15 +973,19 @@ int sch_connect(Scheduler *sch, SchedulerNode src, SchedulerNode dst)
         }
     case SCH_NODE_TYPE_DEC: {
         SchDec *dec;
+        SchDecOutput *o;
 
         av_assert0(src.idx < sch->nb_dec);
         dec = &sch->dec[src.idx];
 
-        ret = GROW_ARRAY(dec->dst, dec->nb_dst);
+        av_assert0(src.idx_stream < dec->nb_outputs);
+        o = &dec->outputs[src.idx_stream];
+
+        ret = GROW_ARRAY(o->dst, o->nb_dst);
         if (ret < 0)
             return ret;
 
-        dec->dst[dec->nb_dst - 1] = dst;
+        o->dst[o->nb_dst - 1] = dst;
 
         // decoded frames go to filters or encoding
         switch (dst.type) {
@@ -1417,15 +1451,20 @@ static int start_prepare(Scheduler *sch)
                    "Decoder not connected to a source\n");
             return AVERROR(EINVAL);
         }
-        if (!dec->nb_dst) {
-            av_log(dec, AV_LOG_ERROR,
-                   "Decoder not connected to any sink\n");
-            return AVERROR(EINVAL);
-        }
 
-        dec->dst_finished = av_calloc(dec->nb_dst, sizeof(*dec->dst_finished));
-        if (!dec->dst_finished)
-            return AVERROR(ENOMEM);
+        for (unsigned j = 0; j < dec->nb_outputs; j++) {
+            SchDecOutput *o = &dec->outputs[j];
+
+            if (!o->nb_dst) {
+                av_log(dec, AV_LOG_ERROR,
+                       "Decoder output %u not connected to any sink\n", j);
+                return AVERROR(EINVAL);
+            }
+
+            o->dst_finished = av_calloc(o->nb_dst, sizeof(*o->dst_finished));
+            if (!o->dst_finished)
+                return AVERROR(ENOMEM);
+        }
     }
 
     for (unsigned i = 0; i < sch->nb_enc; i++) {
@@ -2171,21 +2210,26 @@ finish:
     return AVERROR_EOF;
 }
 
-int sch_dec_send(Scheduler *sch, unsigned dec_idx, AVFrame *frame)
+int sch_dec_send(Scheduler *sch, unsigned dec_idx,
+                 unsigned out_idx, AVFrame *frame)
 {
     SchDec *dec;
+    SchDecOutput *o;
     int ret;
     unsigned nb_done = 0;
 
     av_assert0(dec_idx < sch->nb_dec);
     dec = &sch->dec[dec_idx];
 
-    for (unsigned i = 0; i < dec->nb_dst; i++) {
-        uint8_t *finished = &dec->dst_finished[i];
+    av_assert0(out_idx < dec->nb_outputs);
+    o = &dec->outputs[out_idx];
+
+    for (unsigned i = 0; i < o->nb_dst; i++) {
+        uint8_t *finished = &o->dst_finished[i];
         AVFrame *to_send  = frame;
 
         // sending a frame consumes it, so make a temporary reference if needed
-        if (i < dec->nb_dst - 1) {
+        if (i < o->nb_dst - 1) {
             to_send = dec->send_frame;
 
             // frame may sometimes contain props only,
@@ -2196,7 +2240,7 @@ int sch_dec_send(Scheduler *sch, unsigned dec_idx, AVFrame *frame)
                 return ret;
         }
 
-        ret = dec_send_to_dst(sch, dec->dst[i], finished, to_send);
+        ret = dec_send_to_dst(sch, o->dst[i], finished, to_send);
         if (ret < 0) {
             av_frame_unref(to_send);
             if (ret == AVERROR_EOF) {
@@ -2207,7 +2251,7 @@ int sch_dec_send(Scheduler *sch, unsigned dec_idx, AVFrame *frame)
         }
     }
 
-    return (nb_done == dec->nb_dst) ? AVERROR_EOF : 0;
+    return (nb_done == o->nb_dst) ? AVERROR_EOF : 0;
 }
 
 static int dec_done(Scheduler *sch, unsigned dec_idx)
@@ -2222,10 +2266,14 @@ static int dec_done(Scheduler *sch, unsigned dec_idx)
     if (dec->queue_end_ts)
         av_thread_message_queue_set_err_recv(dec->queue_end_ts, AVERROR_EOF);
 
-    for (unsigned i = 0; i < dec->nb_dst; i++) {
-        int err = dec_send_to_dst(sch, dec->dst[i], &dec->dst_finished[i], NULL);
-        if (err < 0 && err != AVERROR_EOF)
-            ret = err_merge(ret, err);
+    for (unsigned i = 0; i < dec->nb_outputs; i++) {
+        SchDecOutput *o = &dec->outputs[i];
+
+        for (unsigned j = 0; j < o->nb_dst; j++) {
+            int err = dec_send_to_dst(sch, o->dst[j], &o->dst_finished[j], NULL);
+            if (err < 0 && err != AVERROR_EOF)
+                ret = err_merge(ret, err);
+        }
     }
 
     return ret;

@@ -686,7 +686,7 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     if (dec_idx < 0)
         return dec_idx;
 
-    ret = sch_connect(fgp->sch, SCH_DEC(dec_idx),
+    ret = sch_connect(fgp->sch, SCH_DEC_OUT(dec_idx, 0),
                                 SCH_FILTER_IN(fgp->sch_idx, ifp->index));
     if (ret < 0)
         return ret;
@@ -732,7 +732,7 @@ static int ifilter_bind_dec(InputFilterPriv *ifp, Decoder *dec)
     if (dec_idx < 0)
         return dec_idx;
 
-    ret = sch_connect(fgp->sch, SCH_DEC(dec_idx),
+    ret = sch_connect(fgp->sch, SCH_DEC_OUT(dec_idx, 0),
                                 SCH_FILTER_IN(fgp->sch_idx, ifp->index));
     if (ret < 0)
         return ret;

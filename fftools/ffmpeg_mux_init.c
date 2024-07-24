@@ -1511,7 +1511,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         ms->sch_idx_src = sched_idx;
 
         if (ost->enc) {
-            ret = sch_connect(mux->sch, SCH_DEC(sched_idx),
+            ret = sch_connect(mux->sch, SCH_DEC_OUT(sched_idx, 0),
                                         SCH_ENC(ms->sch_idx_enc));
             if (ret < 0)
                 goto fail;

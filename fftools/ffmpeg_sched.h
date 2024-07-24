@@ -114,9 +114,12 @@ typedef int (*SchThreadFunc)(void *arg);
 #define SCH_MSTREAM(file, stream)                           \
     (SchedulerNode){ .type = SCH_NODE_TYPE_MUX,             \
                      .idx = file, .idx_stream = stream }
-#define SCH_DEC(decoder)                                    \
+#define SCH_DEC_IN(decoder)                                 \
     (SchedulerNode){ .type = SCH_NODE_TYPE_DEC,             \
-                    .idx = decoder }
+                     .idx = decoder }
+#define SCH_DEC_OUT(decoder, out_idx)                       \
+    (SchedulerNode){ .type = SCH_NODE_TYPE_DEC,             \
+                     .idx = decoder, .idx_stream = out_idx }
 #define SCH_ENC(encoder)                                    \
     (SchedulerNode){ .type = SCH_NODE_TYPE_ENC,             \
                     .idx = encoder }
@@ -178,8 +181,15 @@ int sch_add_demux_stream(Scheduler *sch, unsigned demux_idx);
  * @retval ">=0" Index of the newly-created decoder.
  * @retval "<0"  Error code.
  */
-int sch_add_dec(Scheduler *sch, SchThreadFunc func, void *ctx,
-                int send_end_ts);
+int sch_add_dec(Scheduler *sch, SchThreadFunc func, void *ctx, int send_end_ts);
+
+/**
+ * Add another output to decoder (e.g. for multiview video).
+ *
+ * @retval ">=0" Index of the newly-added decoder output.
+ * @retval "<0"  Error code.
+ */
+int sch_add_dec_output(Scheduler *sch, unsigned dec_idx);
 
 /**
  * Add a filtergraph to the scheduler.
@@ -379,7 +389,8 @@ int sch_dec_receive(Scheduler *sch, unsigned dec_idx, struct AVPacket *pkt);
  * @retval AVERROR_EOF all consumers are done, should terminate decoding
  * @retval "another negative error code" other failure
  */
-int sch_dec_send(Scheduler *sch, unsigned dec_idx, struct AVFrame *frame);
+int sch_dec_send(Scheduler *sch, unsigned dec_idx,
+                 unsigned out_idx, struct AVFrame *frame);
 
 /**
  * Called by filtergraph tasks to obtain frames for filtering. Will wait for a

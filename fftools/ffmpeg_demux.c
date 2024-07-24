@@ -954,7 +954,7 @@ static int ist_use(InputStream *ist, int decoding_needed)
         ds->sch_idx_dec = ret;
 
         ret = sch_connect(d->sch, SCH_DSTREAM(d->f.index, ds->sch_idx_stream),
-                                  SCH_DEC(ds->sch_idx_dec));
+                                  SCH_DEC_IN(ds->sch_idx_dec));
         if (ret < 0)
             return ret;
 
