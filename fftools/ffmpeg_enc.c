@@ -110,34 +110,35 @@ int enc_alloc(Encoder **penc, const AVCodec *codec,
     return 0;
 }
 
-static int hw_device_setup_for_encode(OutputStream *ost, AVBufferRef *frames_ref)
+static int hw_device_setup_for_encode(Encoder *e, AVCodecContext *enc_ctx,
+                                      AVBufferRef *frames_ref)
 {
     const AVCodecHWConfig *config;
     HWDevice *dev = NULL;
 
     if (frames_ref &&
         ((AVHWFramesContext*)frames_ref->data)->format ==
-        ost->enc_ctx->pix_fmt) {
+        enc_ctx->pix_fmt) {
         // Matching format, will try to use hw_frames_ctx.
     } else {
         frames_ref = NULL;
     }
 
     for (int i = 0;; i++) {
-        config = avcodec_get_hw_config(ost->enc_ctx->codec, i);
+        config = avcodec_get_hw_config(enc_ctx->codec, i);
         if (!config)
             break;
 
         if (frames_ref &&
             config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX &&
             (config->pix_fmt == AV_PIX_FMT_NONE ||
-             config->pix_fmt == ost->enc_ctx->pix_fmt)) {
-            av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using input "
+             config->pix_fmt == enc_ctx->pix_fmt)) {
+            av_log(e, AV_LOG_VERBOSE, "Using input "
                    "frames context (format %s) with %s encoder.\n",
-                   av_get_pix_fmt_name(ost->enc_ctx->pix_fmt),
-                   ost->enc_ctx->codec->name);
-            ost->enc_ctx->hw_frames_ctx = av_buffer_ref(frames_ref);
-            if (!ost->enc_ctx->hw_frames_ctx)
+                   av_get_pix_fmt_name(enc_ctx->pix_fmt),
+                   enc_ctx->codec->name);
+            enc_ctx->hw_frames_ctx = av_buffer_ref(frames_ref);
+            if (!enc_ctx->hw_frames_ctx)
                 return AVERROR(ENOMEM);
             return 0;
         }
@@ -148,11 +149,11 @@ static int hw_device_setup_for_encode(OutputStream *ost, AVBufferRef *frames_ref
     }
 
     if (dev) {
-        av_log(ost->enc_ctx, AV_LOG_VERBOSE, "Using device %s "
+        av_log(e, AV_LOG_VERBOSE, "Using device %s "
                "(type %s) with %s encoder.\n", dev->name,
-               av_hwdevice_get_type_name(dev->type), ost->enc_ctx->codec->name);
-        ost->enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
-        if (!ost->enc_ctx->hw_device_ctx)
+               av_hwdevice_get_type_name(dev->type), enc_ctx->codec->name);
+        enc_ctx->hw_device_ctx = av_buffer_ref(dev->device_ref);
+        if (!enc_ctx->hw_device_ctx)
             return AVERROR(ENOMEM);
     } else {
         // No device required, or no device available.
@@ -335,7 +336,7 @@ int enc_open(void *opaque, const AVFrame *frame)
 
     enc_ctx->flags |= AV_CODEC_FLAG_FRAME_DURATION;
 
-    ret = hw_device_setup_for_encode(ost, frame ? frame->hw_frames_ctx : NULL);
+    ret = hw_device_setup_for_encode(e, enc_ctx, frame ? frame->hw_frames_ctx : NULL);
     if (ret < 0) {
         av_log(e, AV_LOG_ERROR,
                "Encoding hardware device setup failed: %s\n", av_err2str(ret));
