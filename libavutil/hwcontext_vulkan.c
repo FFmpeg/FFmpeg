@@ -93,6 +93,7 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomic_float_features;
     VkPhysicalDeviceCooperativeMatrixFeaturesKHR coop_matrix_features;
     VkPhysicalDeviceOpticalFlowFeaturesNV optical_flow_features;
+    VkPhysicalDeviceShaderObjectFeaturesEXT shader_object_features;
 
     /* Queues */
     pthread_mutex_t **qf_mutex;
@@ -421,6 +422,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME,              FF_VK_EXT_ATOMIC_FLOAT           },
     { VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,               FF_VK_EXT_COOP_MATRIX            },
     { VK_NV_OPTICAL_FLOW_EXTENSION_NAME,                      FF_VK_EXT_OPTICAL_FLOW           },
+    { VK_EXT_SHADER_OBJECT_EXTENSION_NAME,                    FF_VK_EXT_SHADER_OBJECT          },
 
     /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               FF_VK_EXT_EXTERNAL_FD_MEMORY     },
@@ -1312,9 +1314,13 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
     };
+    VkPhysicalDeviceShaderObjectFeaturesEXT shader_object_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT,
+        .pNext = &timeline_features,
+    };
     VkPhysicalDeviceOpticalFlowFeaturesNV optical_flow_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV,
-        .pNext = &timeline_features,
+        .pNext = &shader_object_features,
     };
     VkPhysicalDeviceCooperativeMatrixFeaturesKHR coop_matrix_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR,
@@ -1364,7 +1370,9 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->coop_matrix_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR;
     p->coop_matrix_features.pNext = &p->optical_flow_features;
     p->optical_flow_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV;
-    p->optical_flow_features.pNext = NULL;
+    p->optical_flow_features.pNext = &p->shader_object_features;
+    p->shader_object_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+    p->shader_object_features.pNext = NULL;
 
     ctx->free = vulkan_device_free;
 
@@ -1431,6 +1439,8 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->coop_matrix_features.cooperativeMatrix = coop_matrix_features.cooperativeMatrix;
 
     p->optical_flow_features.opticalFlow = optical_flow_features.opticalFlow;
+
+    p->shader_object_features.shaderObject = shader_object_features.shaderObject;
 
     dev_info.pNext = &hwctx->device_features;
 

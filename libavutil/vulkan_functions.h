@@ -47,6 +47,7 @@ typedef enum FFVulkanExtensions {
     FF_VK_EXT_ATOMIC_FLOAT           = 1ULL << 15, /* VK_EXT_shader_atomic_float */
     FF_VK_EXT_COOP_MATRIX            = 1ULL << 16, /* VK_KHR_cooperative_matrix */
     FF_VK_EXT_OPTICAL_FLOW           = 1ULL << 17, /* VK_NV_optical_flow */
+    FF_VK_EXT_SHADER_OBJECT          = 1ULL << 18, /* VK_EXT_shader_object */
 
     FF_VK_EXT_NO_FLAG                = 1ULL << 31,
 } FFVulkanExtensions;
@@ -219,7 +220,11 @@ typedef enum FFVulkanExtensions {
                                                                                          \
     /* Shaders */                                                                        \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateShaderModule)                      \
-    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyShaderModule)
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyShaderModule)                       \
+    MACRO(1, 1, FF_VK_EXT_SHADER_OBJECT,        CmdBindShadersEXT)                         \
+    MACRO(1, 1, FF_VK_EXT_SHADER_OBJECT,        CreateShadersEXT)                          \
+    MACRO(1, 1, FF_VK_EXT_SHADER_OBJECT,        DestroyShaderEXT)                          \
+    MACRO(1, 1, FF_VK_EXT_SHADER_OBJECT,        GetShaderBinaryDataEXT)
 
 /* Macro containing every win32 specific function that we utilize in our codebase */
 #define FN_LIST_WIN32(MACRO)                                                             \
