@@ -273,7 +273,6 @@ int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
     AVFrame *frame;
     unsigned need_copy = 0, i;
     int64_t pts_next;
-    int ret;
 
     if (!fs->in[in].frame) {
         *rframe = NULL;
@@ -291,10 +290,6 @@ int ff_framesync_get_frame(FFFrameSync *fs, unsigned in, AVFrame **rframe,
         if (need_copy) {
             if (!(frame = av_frame_clone(frame)))
                 return AVERROR(ENOMEM);
-            if ((ret = ff_inlink_make_frame_writable(fs->parent->inputs[in], &frame)) < 0) {
-                av_frame_free(&frame);
-                return ret;
-            }
         } else {
             fs->in[in].frame = NULL;
         }
