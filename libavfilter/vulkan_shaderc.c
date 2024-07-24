@@ -51,6 +51,7 @@ static int shdc_shader_compile(FFVkSPIRVCompiler *ctx, void *avctx,
     shaderc_compile_options_set_target_env(opts, shaderc_target_env_vulkan,
                                            shaderc_env_version_vulkan_1_2);
     shaderc_compile_options_set_target_spirv(opts, shaderc_spirv_version_1_5);
+    shaderc_compile_options_set_generate_debug_info(opts);
     shaderc_compile_options_set_optimization_level(opts,
                                                    shaderc_optimization_level_performance);
 
