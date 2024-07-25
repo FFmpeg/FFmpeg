@@ -169,7 +169,6 @@ endfunc
 
 # a3 = DC
 func ff_vp78_idct_dc_add_rvv, zve32x
-        csrwi      vxrm, 0
         vsetivli   zero, 4, e8, mf4, ta, ma
         sh         zero, (a1)
         vlse32.v   v8, (a0), a2
