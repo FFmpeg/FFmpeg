@@ -17,10 +17,14 @@
  */
 
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "amfenc.h"
 #include "codec_internal.h"
+
+#define AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR_LOCAL                L"Av1WidthAlignmentFactor"          // amf_int64; default = 1
+#define AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR_LOCAL               L"Av1HeightAlignmentFactor"         // amf_int64; default = 1
 
 #define OFFSET(x) offsetof(AmfContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
@@ -168,6 +172,11 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
     AMFSize             framesize = AMFConstructSize(avctx->width, avctx->height);
 
 
+    //for av1 alignment and crop
+    uint32_t            crop_right  = 0;
+    uint32_t            crop_bottom = 0;
+    int                 width_alignment_factor  = -1;
+    int                 height_alignment_factor = -1;
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         framerate = AMFConstructRate(avctx->framerate.num, avctx->framerate.den);
@@ -481,6 +490,60 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     buffer->pVtbl->Release(buffer);
     var.pInterface->pVtbl->Release(var.pInterface);
+
+    //processing crop informaiton according to alignment
+    if (ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_CAP_WIDTH_ALIGNMENT_FACTOR_LOCAL, &var) != AMF_OK)
+        // assume older driver and Navi3x
+        width_alignment_factor = 64;
+    else
+        width_alignment_factor = (int)var.int64Value;
+
+    if (ctx->encoder->pVtbl->GetProperty(ctx->encoder, AMF_VIDEO_ENCODER_AV1_CAP_HEIGHT_ALIGNMENT_FACTOR_LOCAL, &var) != AMF_OK)
+        // assume older driver and Navi3x
+        height_alignment_factor = 16;
+    else
+        height_alignment_factor = (int)var.int64Value;
+
+    if (width_alignment_factor != -1 &&  height_alignment_factor != -1) {
+        if (avctx->width % width_alignment_factor != 0)
+            crop_right = width_alignment_factor - (avctx->width & (width_alignment_factor - 1));
+
+        if (avctx->height % height_alignment_factor != 0)
+            crop_bottom = height_alignment_factor - (avctx->height & (height_alignment_factor - 1));
+
+        // There is special processing for crop_bottom equal to 8 in hardware
+        if (crop_bottom == 8)
+            crop_bottom = 2;
+    }
+
+    if (crop_right != 0 || crop_bottom != 0) {
+        AVPacketSideData* sd_crop = av_realloc_array(avctx->coded_side_data, avctx->nb_coded_side_data + 1, sizeof(*sd_crop));
+        uint32_t* crop;
+
+        if (!sd_crop) {
+            av_log(ctx, AV_LOG_ERROR, "Can't allocate memory for amf av1 encoder crop information\n");
+            return AVERROR(ENOMEM);
+        }
+        avctx->coded_side_data = sd_crop;
+
+        crop = av_malloc(sizeof(uint32_t) * 4);
+        if (!crop) {
+            av_log(ctx, AV_LOG_ERROR, "Can't allocate memory for amf av1 encoder crop information\n");
+            return AVERROR(ENOMEM);
+        }
+
+        avctx->nb_coded_side_data++;
+
+        //top, bottom, left,right
+        AV_WL32(crop + 0, 0);
+        AV_WL32(crop + 1, crop_bottom);
+        AV_WL32(crop + 2, 0);
+        AV_WL32(crop + 3, crop_right);
+
+        avctx->coded_side_data[avctx->nb_coded_side_data - 1].type = AV_PKT_DATA_FRAME_CROPPING;
+        avctx->coded_side_data[avctx->nb_coded_side_data - 1].data = (uint8_t*)crop;
+        avctx->coded_side_data[avctx->nb_coded_side_data - 1].size = sizeof(uint32_t) * 4;
+    }
 
     return 0;
 }
