@@ -37,6 +37,13 @@ static av_always_inline void AV_COPY128(void *d, const void *s)
     _mm_store_si128((__m128i *)d, tmp);
 }
 
+#define AV_COPY128U AV_COPY128U
+static av_always_inline void AV_COPY128U(void *d, const void *s)
+{
+    __m128i tmp = _mm_loadu_si128((const __m128i *)s);
+    _mm_storeu_si128((__m128i *)d, tmp);
+}
+
 #define AV_ZERO128 AV_ZERO128
 static av_always_inline void AV_ZERO128(void *d)
 {
