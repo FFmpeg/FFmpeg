@@ -22,44 +22,9 @@
 #include "libavutil/common.h"
 #include "audiodsp.h"
 
-static inline float clipf_c_one(float a, uint32_t mini,
-                                uint32_t maxi, uint32_t maxisign)
-{
-    uint32_t ai = av_float2int(a);
-
-    if (ai > mini)
-        return av_int2float(mini);
-    else if ((ai ^ (1U << 31)) > maxisign)
-        return av_int2float(maxi);
-    else
-        return a;
-}
-
-static void vector_clipf_c_opposite_sign(float *dst, const float *src,
-                                         float min, float max, int len)
-{
-    uint32_t mini        = av_float2int(min);
-    uint32_t maxi        = av_float2int(max);
-    uint32_t maxisign    = maxi ^ (1U << 31);
-
-    for (int i = 0; i < len; i += 8) {
-        float tmp[8];
-
-        for (int j = 0; j < 8; j++)
-            tmp[j]= clipf_c_one(src[i + j], mini, maxi, maxisign);
-        for (int j = 0; j < 8; j++)
-            dst[i + j] = tmp[j];
-    }
-}
-
 static void vector_clipf_c(float *dst, const float *src, int len,
                            float min, float max)
 {
-    if (min < 0 && max > 0) {
-        vector_clipf_c_opposite_sign(dst, src, min, max, len);
-        return;
-    }
-
     for (int i = 0; i < len; i += 8) {
         float tmp[8];
 
