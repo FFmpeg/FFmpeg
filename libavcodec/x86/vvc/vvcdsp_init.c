@@ -87,6 +87,21 @@ AVG_PROTOTYPES( 8, avx2)
 AVG_PROTOTYPES(10, avx2)
 AVG_PROTOTYPES(12, avx2)
 
+
+#define DMVR_PROTOTYPES(bd, opt)                                                                    \
+void ff_vvc_dmvr_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,               \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+void ff_vvc_dmvr_h_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,             \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+void ff_vvc_dmvr_v_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,             \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+void ff_vvc_dmvr_hv_##bd##_##opt(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride,            \
+     int height, intptr_t mx, intptr_t my, int width);                                              \
+
+DMVR_PROTOTYPES( 8, avx2)
+DMVR_PROTOTYPES(10, avx2)
+DMVR_PROTOTYPES(12, avx2)
+
 #define ALF_BPC_PROTOTYPES(bpc, opt)                                                                                     \
 void BF(ff_vvc_alf_filter_luma, bpc, opt)(uint8_t *dst, ptrdiff_t dst_stride,                                            \
     const uint8_t *src, ptrdiff_t src_stride, ptrdiff_t width, ptrdiff_t height,                                         \
@@ -306,6 +321,13 @@ ALF_FUNCS(16, 12, avx2)
     c->inter.w_avg  = bf(ff_vvc_w_avg, bd, opt);                     \
 } while (0)
 
+#define DMVR_INIT(bd) do {                                           \
+    c->inter.dmvr[0][0]   = ff_vvc_dmvr_##bd##_avx2;                 \
+    c->inter.dmvr[0][1]   = ff_vvc_dmvr_h_##bd##_avx2;               \
+    c->inter.dmvr[1][0]   = ff_vvc_dmvr_v_##bd##_avx2;               \
+    c->inter.dmvr[1][1]   = ff_vvc_dmvr_hv_##bd##_avx2;              \
+} while (0)
+
 #define ALF_INIT(bd) do {                                            \
     c->alf.filter[LUMA]   = ff_vvc_alf_filter_luma_##bd##_avx2;      \
     c->alf.filter[CHROMA] = ff_vvc_alf_filter_chroma_##bd##_avx2;    \
@@ -330,6 +352,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             ALF_INIT(8);
             AVG_INIT(8, avx2);
             MC_LINKS_AVX2(8);
+            DMVR_INIT(8);
             SAD_INIT();
         }
         break;
@@ -342,6 +365,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             AVG_INIT(10, avx2);
             MC_LINKS_AVX2(10);
             MC_LINKS_16BPC_AVX2(10);
+            DMVR_INIT(10);
             SAD_INIT();
         }
         break;
@@ -354,6 +378,7 @@ void ff_vvc_dsp_init_x86(VVCDSPContext *const c, const int bd)
             AVG_INIT(12, avx2);
             MC_LINKS_AVX2(12);
             MC_LINKS_16BPC_AVX2(12);
+            DMVR_INIT(12);
             SAD_INIT();
         }
         break;
