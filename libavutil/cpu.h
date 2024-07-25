@@ -22,6 +22,7 @@
 #define AVUTIL_CPU_H
 
 #include <stddef.h>
+#include "version.h"
 
 #define AV_CPU_FLAG_FORCE    0x80000000 /* force usage of selected flags (OR) */
 
@@ -82,14 +83,18 @@
 
 // RISC-V extensions
 #define AV_CPU_FLAG_RVI          (1 << 0) ///< I (full GPR bank)
+#if FF_API_RISCV_FD_ZBA
 #define AV_CPU_FLAG_RVF          (1 << 1) ///< F (single precision FP)
 #define AV_CPU_FLAG_RVD          (1 << 2) ///< D (double precision FP)
+#endif
 #define AV_CPU_FLAG_RVV_I32      (1 << 3) ///< Vectors of 8/16/32-bit int's */
 #define AV_CPU_FLAG_RVV_F32      (1 << 4) ///< Vectors of float's */
 #define AV_CPU_FLAG_RVV_I64      (1 << 5) ///< Vectors of 64-bit int's */
 #define AV_CPU_FLAG_RVV_F64      (1 << 6) ///< Vectors of double's
 #define AV_CPU_FLAG_RVB_BASIC    (1 << 7) ///< Basic bit-manipulations
+#if FF_API_RISCV_FD_ZBA
 #define AV_CPU_FLAG_RVB_ADDR     (1 << 8) ///< Address bit-manipulations
+#endif
 #define AV_CPU_FLAG_RV_ZVBB      (1 << 9) ///< Vector basic bit-manipulations
 #define AV_CPU_FLAG_RV_MISALIGNED (1 <<10) ///< Fast misaligned accesses
 #define AV_CPU_FLAG_RVB          (1 <<11) ///< B (bit manipulations)

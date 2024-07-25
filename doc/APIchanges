@@ -2,6 +2,10 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-07-30 - xxxxxxxxx - lavu 59.32.100 - cpu.h
+  Deprecate AV_CPU_FLAG_RVF and AV_CPU_FLAG_RVD without replacement.
+  Deprecate AV_CPU_FLAG_RVB_ADDR, subsumed into AV_CPU_FLAG_RVB.
+
 2024-07-29 - xxxxxxxxx - lavu 59.31.100 - intreadwrite.h
   Add AV_{R,W}{L,B}{16,32}A and AV_{R,W}B64A.
 
