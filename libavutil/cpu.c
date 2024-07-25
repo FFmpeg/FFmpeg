@@ -184,8 +184,6 @@ int av_parse_cpu_caps(unsigned *flags, const char *s)
         { "lasx",     NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_LASX     },    .unit = "flags" },
 #elif ARCH_RISCV
         { "rvi",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVI      },    .unit = "flags" },
-        { "rvf",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVF      },    .unit = "flags" },
-        { "rvd",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVD      },    .unit = "flags" },
         { "rvb",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVB      },    .unit = "flags" },
         { "zve32x",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVV_I32  },    .unit = "flags" },
         { "zve32f",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = AV_CPU_FLAG_RVV_F32  },    .unit = "flags" },
