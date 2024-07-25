@@ -38,41 +38,35 @@ static inline float clipf_c_one(float a, uint32_t mini,
 static void vector_clipf_c_opposite_sign(float *dst, const float *src,
                                          float min, float max, int len)
 {
-    int i;
     uint32_t mini        = av_float2int(min);
     uint32_t maxi        = av_float2int(max);
     uint32_t maxisign    = maxi ^ (1U << 31);
 
-    for (i = 0; i < len; i += 8) {
-        dst[i + 0] = clipf_c_one(src[i + 0], mini, maxi, maxisign);
-        dst[i + 1] = clipf_c_one(src[i + 1], mini, maxi, maxisign);
-        dst[i + 2] = clipf_c_one(src[i + 2], mini, maxi, maxisign);
-        dst[i + 3] = clipf_c_one(src[i + 3], mini, maxi, maxisign);
-        dst[i + 4] = clipf_c_one(src[i + 4], mini, maxi, maxisign);
-        dst[i + 5] = clipf_c_one(src[i + 5], mini, maxi, maxisign);
-        dst[i + 6] = clipf_c_one(src[i + 6], mini, maxi, maxisign);
-        dst[i + 7] = clipf_c_one(src[i + 7], mini, maxi, maxisign);
+    for (int i = 0; i < len; i += 8) {
+        float tmp[8];
+
+        for (int j = 0; j < 8; j++)
+            tmp[j]= clipf_c_one(src[i + j], mini, maxi, maxisign);
+        for (int j = 0; j < 8; j++)
+            dst[i + j] = tmp[j];
     }
 }
 
 static void vector_clipf_c(float *dst, const float *src, int len,
                            float min, float max)
 {
-    int i;
-
     if (min < 0 && max > 0) {
         vector_clipf_c_opposite_sign(dst, src, min, max, len);
-    } else {
-        for (i = 0; i < len; i += 8) {
-            dst[i]     = av_clipf(src[i], min, max);
-            dst[i + 1] = av_clipf(src[i + 1], min, max);
-            dst[i + 2] = av_clipf(src[i + 2], min, max);
-            dst[i + 3] = av_clipf(src[i + 3], min, max);
-            dst[i + 4] = av_clipf(src[i + 4], min, max);
-            dst[i + 5] = av_clipf(src[i + 5], min, max);
-            dst[i + 6] = av_clipf(src[i + 6], min, max);
-            dst[i + 7] = av_clipf(src[i + 7], min, max);
-        }
+        return;
+    }
+
+    for (int i = 0; i < len; i += 8) {
+        float tmp[8];
+
+        for (int j = 0; j < 8; j++)
+            tmp[j]= av_clipf(src[i + j], min, max);
+        for (int j = 0; j < 8; j++)
+            dst[i + j] = tmp[j];
     }
 }
 
