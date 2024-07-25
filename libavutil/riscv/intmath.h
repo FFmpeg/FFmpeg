@@ -22,6 +22,7 @@
 #define AVUTIL_RISCV_INTMATH_H
 
 #include <stdint.h>
+#include <math.h>
 
 #include "config.h"
 #include "libavutil/attributes.h"
@@ -71,6 +72,24 @@ static av_always_inline av_const int av_clip_intp2_rvi(int a, int p)
         b = (a >> 31) ^ ((1 << p) - 1);
     return b;
 }
+
+#if defined (__riscv_f) || defined (__riscv_zfinx)
+#define av_clipf av_clipf_rvf
+static av_always_inline av_const float av_clipf_rvf(float a, float min,
+                                                    float max)
+{
+    return fminf(fmaxf(a, min), max);
+}
+#endif
+
+#if defined (__riscv_d) || defined (__riscv_zdinx)
+#define av_clipd av_clipd_rvd
+static av_always_inline av_const float av_clipd_rvd(double a, double min,
+                                                    double max)
+{
+    return fmin(fmax(a, min), max);
+}
+#endif
 
 #if defined (__GNUC__) || defined (__clang__)
 static inline av_const int ff_ctz_rv(int x)
