@@ -172,12 +172,18 @@ func ff_vp78_idct_dc_add_rvv, zve32x
         vsetivli   zero, 4, e8, mf4, ta, ma
         sh         zero, (a1)
         vlse32.v   v8, (a0), a2
-        vsetivli   zero, 16, e16, m2, ta, ma
-        vzext.vf2  v16, v8
-        vadd.vx    v16, v16, a3
-        vmax.vx    v16, v16, zero
-        vsetvli    zero, zero, e8, m1, ta, ma
-        vnclipu.wi v8, v16, 0
+        vsetivli   zero, 16, e8, m1, ta, ma
+        bgez       a3, 1f
+
+        # block[0] < 0
+        neg        a3, a3
+        vssubu.vx  v8, v8, a3
+        vsetivli   zero, 4, e8, mf4, ta, ma
+        vsse32.v   v8, (a0), a2
+        ret
+
+1:      # block[0] >= 0
+        vsaddu.vx  v8, v8, a3
         vsetivli   zero, 4, e8, mf4, ta, ma
         vsse32.v   v8, (a0), a2
         ret
