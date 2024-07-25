@@ -21,6 +21,7 @@
  */
 
 #include "libavcodec/h26x/h2656_inter_template.c"
+#include "libavutil/imgutils.h"
 
 #define TMP_STRIDE EDGE_EMU_BUFFER_STRIDE
 static void av_always_inline FUNC(put_scaled)(uint8_t *_dst, const ptrdiff_t _dst_stride,
@@ -483,6 +484,7 @@ static void FUNC(apply_bdof)(uint8_t *_dst, const ptrdiff_t _dst_stride, int16_t
 static void FUNC(dmvr)(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_stride,
     const int height, const intptr_t mx, const intptr_t my, const int width)
 {
+#if BIT_DEPTH != 10
     const pixel *src            = (const pixel *)_src;
     const ptrdiff_t src_stride  = _src_stride / sizeof(pixel);
 #if BIT_DEPTH > 10
@@ -491,7 +493,7 @@ static void FUNC(dmvr)(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_s
     #define DMVR_SHIFT(s)       (((s) + offset4) >> shift4)
 #else
     #define DMVR_SHIFT(s)       ((s) << (10 - BIT_DEPTH))
-#endif
+#endif // BIT_DEPTH > 10
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++)
@@ -500,6 +502,10 @@ static void FUNC(dmvr)(int16_t *dst, const uint8_t *_src, const ptrdiff_t _src_s
         dst += MAX_PB_SIZE;
     }
 #undef DMVR_SHIFT
+#else
+    av_image_copy_plane((uint8_t*)dst, sizeof(int16_t) * MAX_PB_SIZE, _src, _src_stride,
+        width * sizeof(pixel), height);
+#endif // BIT_DEPTH != 10
 }
 
 //8.5.3.2.2 Luma sample bilinear interpolation process
