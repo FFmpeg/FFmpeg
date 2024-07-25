@@ -98,8 +98,8 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
 
             dsp->h264_idct_add  = ff_h264_idct_add_8_rvv;
             dsp->h264_idct8_add = ff_h264_idct8_add_8_rvv;
-            dsp->h264_idct_dc_add = ff_h264_idct4_dc_add_8_rvv;
             if (flags & AV_CPU_FLAG_RVB) {
+                dsp->h264_idct_dc_add     = ff_h264_idct4_dc_add_8_rvv;
                 dsp->h264_idct_add16      = ff_h264_idct_add16_8_rvv;
                 dsp->h264_idct_add16intra = ff_h264_idct_add16intra_8_rvv;
 #  if __riscv_xlen == 64
@@ -108,7 +108,8 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
             }
             if (flags & AV_CPU_FLAG_RVV_I64) {
                 dsp->h264_add_pixels8_clear = ff_h264_add_pixels8_8_rvv;
-                dsp->h264_idct8_dc_add      = ff_h264_idct8_dc_add_8_rvv;
+                if (flags & AV_CPU_FLAG_RVB)
+                    dsp->h264_idct8_dc_add = ff_h264_idct8_dc_add_8_rvv;
             }
             dsp->h264_add_pixels4_clear = ff_h264_add_pixels4_8_rvv;
         }

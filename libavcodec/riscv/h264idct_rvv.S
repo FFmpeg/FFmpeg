@@ -420,7 +420,7 @@ endfunc
 .endr
 
 .macro idct_dc_add8 width
-func ff_h264_idct\width\()_dc_add_8_rvv, zve64x
+func ff_h264_idct\width\()_dc_add_8_rvv, zve64x, b
         lpad    0
 .if \width == 8
         vsetivli        zero, \width, e8, mf2, ta, ma
@@ -428,26 +428,34 @@ func ff_h264_idct\width\()_dc_add_8_rvv, zve64x
         vsetivli        zero, \width, e8, mf4, ta, ma
 .endif
         lh              t0, 0(a1)
+        li              t1, 255
         addi            t0, t0, 32
         srai            t0, t0, 6
         sh              zero, 0(a1)
 .if \width == 8
         li              a6, \width * \width
         vlse64.v        v24, (a0), a2
-        vsetvli         zero, a6, e16, m8, ta, ma
+        vsetvli         zero, a6, e8, m4, ta, ma
 .else
         vlse32.v        v24, (a0), a2
-        vsetivli        zero, \width * \width, e16, m2, ta, ma
+        vsetivli        zero, \width * \width, e8, m1, ta, ma
 .endif
-        vzext.vf2       v0, v24
-        vadd.vx         v0, v0, t0
-        vmax.vx         v0, v0, zero
-.if \width == 8
-        vsetvli         zero, zero, e8, m4, ta, ma
+        bgez            t0, 1f
+
+        neg             t0, t0
+        minu            t0, t0, t1
+        vssubu.vx       v24, v24, t0
+ .if \width == 8
+        vsetivli        zero, \width, e8, mf2, ta, ma
+        vsse64.v        v24, (a0), a2
 .else
-        vsetvli         zero, zero, e8, m1, ta, ma
+        vsetivli        zero, \width, e8, mf4, ta, ma
+        vsse32.v        v24, (a0), a2
 .endif
-        vnclipu.wi      v24, v0, 0
+        ret
+1:
+        minu            t0, t0, t1
+        vsaddu.vx       v24, v24, t0
 .if \width == 8
         vsetivli        zero, \width, e8, mf2, ta, ma
         vsse64.v        v24, (a0), a2
