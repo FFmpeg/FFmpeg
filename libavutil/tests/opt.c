@@ -300,6 +300,69 @@ int main(void)
         av_opt_free(&test2_ctx);
     }
 
+    printf("\nTesting av_opt_get_array()\n");
+    {
+        static const int int_array[] = { 5, 0, 42, 137, INT_MAX };
+
+        TestContext test_ctx = { 0 };
+
+        int     out_int   [FF_ARRAY_ELEMS(int_array)] = { 0 };
+        double  out_double[FF_ARRAY_ELEMS(int_array)] = { 0. };
+        char   *out_str   [FF_ARRAY_ELEMS(int_array)] = { NULL };
+        AVDictionary *out_dict[2] = { NULL };
+
+        int ret;
+
+        test_ctx.class = &test_class;
+
+        av_log_set_level(AV_LOG_QUIET);
+
+        av_opt_set_defaults(&test_ctx);
+
+        test_ctx.array_int    = av_memdup(int_array, sizeof(int_array));
+        test_ctx.nb_array_int = FF_ARRAY_ELEMS(int_array);
+
+        // retrieve as int
+        ret = av_opt_get_array(&test_ctx, "array_int", 0,
+                               1, 3, AV_OPT_TYPE_INT, out_int);
+        printf("av_opt_get_array(\"array_int\", 1, 3, INT)=%d -> [ %d, %d, %d ]\n",
+               ret, out_int[0], out_int[1], out_int[2]);
+
+        // retrieve as double
+        ret = av_opt_get_array(&test_ctx, "array_int", 0,
+                               3, 2, AV_OPT_TYPE_DOUBLE, out_double);
+        printf("av_opt_get_array(\"array_int\", 3, 2, DOUBLE)=%d -> [ %.2f, %.2f ]\n",
+               ret, out_double[0], out_double[1]);
+
+        // retrieve as str
+        ret = av_opt_get_array(&test_ctx, "array_int", 0,
+                               0, 5, AV_OPT_TYPE_STRING, out_str);
+        printf("av_opt_get_array(\"array_int\", 0, 5, STRING)=%d -> "
+               "[ %s, %s, %s, %s, %s ]\n", ret,
+               out_str[0], out_str[1], out_str[2], out_str[3], out_str[4]);
+
+        for (int i = 0; i < FF_ARRAY_ELEMS(out_str); i++)
+            av_freep(&out_str[i]);
+
+        ret = av_opt_get_array(&test_ctx, "array_dict", 0, 0, 2,
+                               AV_OPT_TYPE_DICT, out_dict);
+        printf("av_opt_get_array(\"array_dict\", 0, 2, DICT)=%d\n", ret);
+
+        for (int i = 0; i < test_ctx.nb_array_dict; i++) {
+            const AVDictionaryEntry *e = NULL;
+            while ((e = av_dict_iterate(test_ctx.array_dict[i], e))) {
+                const AVDictionaryEntry *e1 = av_dict_get(out_dict[i], e->key, NULL, 0);
+                if (!e1 || strcmp(e->value, e1->value)) {
+                    printf("mismatching dict entry %s: %s/%s\n",
+                           e->key, e->value, e1 ? e1->value : "<missing>");
+                }
+            }
+            av_dict_free(&out_dict[i]);
+        }
+
+        av_opt_free(&test_ctx);
+    }
+
     printf("\nTest av_opt_serialize()\n");
     {
         TestContext test_ctx = { 0 };

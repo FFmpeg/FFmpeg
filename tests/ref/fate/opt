@@ -154,6 +154,12 @@ av_opt_set("array_dict", NULL) -> 0
 array_dict=NULL; nb_array_dict=0
 av_opt_get("array_dict") -> NULL
 
+Testing av_opt_get_array()
+av_opt_get_array("array_int", 1, 3, INT)=0 -> [ 0, 42, 137 ]
+av_opt_get_array("array_int", 3, 2, DOUBLE)=0 -> [ 137.00, 2147483647.00 ]
+av_opt_get_array("array_int", 0, 5, STRING)=0 -> [ 5, 0, 42, 137, 2147483647 ]
+av_opt_get_array("array_dict", 0, 2, DICT)=0
+
 Test av_opt_serialize()
 num=0,unum=2147483648,toggle=1,rational=1/1,string=default,escape=\\\=\,,flags=0x00000001,size=200x300,pix_fmt=0bgr,sample_fmt=s16,video_rate=25/1,duration=0.001,color=0xffc0cbff,cl=hexagonal,bin=62696E00,bin1=,bin2=,num64=4294967296,flt=0.333333,dbl=0.333333,bool1=auto,bool2=true,bool3=false,dict1=,dict2=happy\=\\:-),array_int=,array_str=str0|str\\|1|str\\\\2,array_dict=k00\=v\\\\\\\\00:k01\=v\\\,01\,k10\=v\\\\\=1\\\\:0
 Setting entry with key 'num' to value '0'

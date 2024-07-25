@@ -121,9 +121,9 @@ static unsigned *opt_array_pcount(const void *parray)
     return (unsigned *)((const void * const *)parray + 1);
 }
 
-static void opt_free_elem(const AVOption *o, void *ptr)
+static void opt_free_elem(enum AVOptionType type, void *ptr)
 {
-    switch (TYPE_BASE(o->type)) {
+    switch (TYPE_BASE(type)) {
     case AV_OPT_TYPE_STRING:
     case AV_OPT_TYPE_BINARY:
         av_freep(ptr);
@@ -145,7 +145,7 @@ static void opt_free_elem(const AVOption *o, void *ptr)
 static void opt_free_array(const AVOption *o, void *parray, unsigned *count)
 {
     for (unsigned i = 0; i < *count; i++)
-        opt_free_elem(o, opt_array_pelem(o, *(void **)parray, i));
+        opt_free_elem(o->type, opt_array_pelem(o, *(void **)parray, i));
 
     av_freep(parray);
     *count = 0;
@@ -153,7 +153,7 @@ static void opt_free_array(const AVOption *o, void *parray, unsigned *count)
 
 static int read_number(const AVOption *o, const void *dst, double *num, int *den, int64_t *intnum)
 {
-    switch (o->type) {
+    switch (TYPE_BASE(o->type)) {
     case AV_OPT_TYPE_FLAGS:
         *intnum = *(unsigned int*)dst;
         return 0;
@@ -992,7 +992,7 @@ static void format_duration(char *buf, size_t size, int64_t d)
 }
 
 static int opt_get_elem(const AVOption *o, uint8_t **pbuf, size_t buf_len,
-                        void *dst, int search_flags)
+                        const void *dst, int search_flags)
 {
     int ret;
 
@@ -1920,7 +1920,7 @@ void av_opt_free(void *obj)
         if (o->type & AV_OPT_TYPE_FLAG_ARRAY)
             opt_free_array(o, pitem, opt_array_pcount(pitem));
         else
-            opt_free_elem(o, pitem);
+            opt_free_elem(o->type, pitem);
     }
 }
 
@@ -2134,6 +2134,113 @@ int av_opt_copy(void *dst, const void *src)
         if (err < 0)
             ret = err;
     }
+    return ret;
+}
+
+int av_opt_get_array_size(void *obj, const char *name, int search_flags,
+                          unsigned int *out_val)
+{
+    void *target_obj, *parray;
+    const AVOption *o;
+
+    o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (!(o->type & AV_OPT_TYPE_FLAG_ARRAY))
+        return AVERROR(EINVAL);
+
+    parray = (uint8_t *)target_obj + o->offset;
+    *out_val = *opt_array_pcount(parray);
+
+    return 0;
+}
+
+int av_opt_get_array(void *obj, const char *name, int search_flags,
+                     unsigned int start_elem, unsigned int nb_elems,
+                     enum AVOptionType out_type, void *out_val)
+{
+    const size_t elem_size_out = opt_elem_size[TYPE_BASE(out_type)];
+
+    const AVOption *o;
+    void *target_obj;
+
+    const void *parray;
+    unsigned array_size;
+
+    int ret;
+
+    o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (!(o->type & AV_OPT_TYPE_FLAG_ARRAY) ||
+        (out_type & AV_OPT_TYPE_FLAG_ARRAY))
+        return AVERROR(EINVAL);
+
+    parray     = (uint8_t *)target_obj + o->offset;
+    array_size = *opt_array_pcount(parray);
+
+    if (start_elem >= array_size ||
+        array_size - start_elem < nb_elems)
+        return AVERROR(EINVAL);
+
+    for (unsigned i = 0; i < nb_elems; i++) {
+        const void *src = opt_array_pelem(o, *(void**)parray, start_elem + i);
+        void       *dst = (uint8_t*)out_val + i * elem_size_out;
+
+        if (out_type == TYPE_BASE(o->type)) {
+            ret = opt_copy_elem(obj, out_type, dst, src);
+            if (ret < 0)
+                goto fail;
+        } else if (out_type == AV_OPT_TYPE_STRING) {
+            uint8_t buf[128], *out = buf;
+
+            ret = opt_get_elem(o, &out, sizeof(buf), src, search_flags);
+            if (ret < 0)
+                goto fail;
+
+            if (out == buf) {
+                out = av_strdup(buf);
+                if (!out) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+            }
+
+            *(uint8_t**)dst = out;
+        } else if (out_type == AV_OPT_TYPE_INT64    ||
+                   out_type == AV_OPT_TYPE_DOUBLE   ||
+                   out_type == AV_OPT_TYPE_RATIONAL) {
+            double     num = 1.0;
+            int        den = 1;
+            int64_t intnum = 1;
+            int ret;
+
+            ret = read_number(o, src, &num, &den, &intnum);
+            if (ret < 0)
+                goto fail;
+
+            switch (out_type) {
+            case AV_OPT_TYPE_INT64:
+                *(int64_t*)dst = (num == den) ?  intnum : num * intnum / den;
+                break;
+            case AV_OPT_TYPE_DOUBLE:
+                *(double*)dst = num * intnum / den;
+                break;
+            case AV_OPT_TYPE_RATIONAL:
+                *(AVRational*)dst = (num == 1.0 && (int)intnum == intnum) ?
+                                    (AVRational){ intnum, den }           :
+                                    av_d2q(num * intnum / den, 1<<24);
+                break;
+            default: av_assert0(0);
+            }
+        } else
+            return AVERROR(ENOSYS);
+    }
+
+    return 0;
+fail:
+    for (unsigned i = 0; i < nb_elems; i++)
+        opt_free_elem(out_type, (uint8_t*)out_val + i * elem_size_out);
     return ret;
 }
 

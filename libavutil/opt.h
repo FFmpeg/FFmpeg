@@ -944,6 +944,46 @@ int av_opt_get_chlayout(void *obj, const char *name, int search_flags, AVChannel
  * be freed with av_dict_free() by the caller
  */
 int av_opt_get_dict_val(void *obj, const char *name, int search_flags, AVDictionary **out_val);
+
+/**
+ * For an array-type option, get the number of elements in the array.
+ */
+int av_opt_get_array_size(void *obj, const char *name, int search_flags,
+                          unsigned int *out_val);
+
+/**
+ * For an array-type option, retrieve the values of one or more array elements.
+ *
+ * @param start_elem index of the first array element to retrieve
+ * @param nb_elems number of array elements to retrieve; start_elem+nb_elems
+ *                 must not be larger than array size as returned by
+ *                 av_opt_get_array_size()
+ *
+ * @param out_type Option type corresponding to the desired output.
+ *
+ *                 The array elements produced by this function will
+ *                 will be as if av_opt_getX() was called for each element,
+ *                 where X is specified by out_type. E.g. AV_OPT_TYPE_STRING
+ *                 corresponds to av_opt_get().
+ *
+ *                 Typically this should be the same as the scalarized type of
+ *                 the AVOption being retrieved, but certain conversions are
+ *                 also possible - the same as those done by the corresponding
+ *                 av_opt_get*() function. E.g. any option type can be retrieved
+ *                 as a string, numeric types can be retrieved as int64, double,
+ *                 or rational, etc.
+ *
+ * @param out_val  Array with nb_elems members into which the output will be
+ *                 written. The array type must match the underlying C type as
+ *                 documented for out_type, and be zeroed on entry to this
+ *                 function.
+ *
+ *                 For dynamically allocated types (strings, binary, dicts,
+ *                 etc.), the result is owned and freed by the caller.
+ */
+int av_opt_get_array(void *obj, const char *name, int search_flags,
+                     unsigned int start_elem, unsigned int nb_elems,
+                     enum AVOptionType out_type, void *out_val);
 /**
  * @}
  */
