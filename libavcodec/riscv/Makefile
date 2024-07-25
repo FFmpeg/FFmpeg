@@ -9,7 +9,6 @@ RVVB-OBJS-$(CONFIG_AC3DSP) += riscv/ac3dsp_rvvb.o
 OBJS-$(CONFIG_ALAC_DECODER) += riscv/alacdsp_init.o
 RVV-OBJS-$(CONFIG_ALAC_DECODER) += riscv/alacdsp_rvv.o
 OBJS-$(CONFIG_AUDIODSP) += riscv/audiodsp_init.o
-RV-OBJS-$(CONFIG_AUDIODSP) += riscv/audiodsp_rvf.o
 RVV-OBJS-$(CONFIG_AUDIODSP) += riscv/audiodsp_rvv.o
 OBJS-$(CONFIG_BLOCKDSP) += riscv/blockdsp_init.o
 RVV-OBJS-$(CONFIG_BLOCKDSP) += riscv/blockdsp_rvv.o
