@@ -539,9 +539,41 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #if AV_HAVE_BIGENDIAN
 #   define AV_RLA(s, p)    av_bswap##s(AV_RN##s##A(p))
 #   define AV_WLA(s, p, v) AV_WN##s##A(p, av_bswap##s(v))
+#   define AV_RBA(s, p)    AV_RN##s##A(p)
+#   define AV_WBA(s, p, v) AV_WN##s##A(p, v)
 #else
 #   define AV_RLA(s, p)    AV_RN##s##A(p)
 #   define AV_WLA(s, p, v) AV_WN##s##A(p, v)
+#   define AV_RBA(s, p)    av_bswap##s(AV_RN##s##A(p))
+#   define AV_WBA(s, p, v) AV_WN##s##A(p, av_bswap##s(v))
+#endif
+
+#ifndef AV_RL16A
+#   define AV_RL16A(p) AV_RLA(16, p)
+#endif
+#ifndef AV_WL16A
+#   define AV_WL16A(p, v) AV_WLA(16, p, v)
+#endif
+
+#ifndef AV_RB16A
+#   define AV_RB16A(p) AV_RBA(16, p)
+#endif
+#ifndef AV_WB16A
+#   define AV_WB16A(p, v) AV_WBA(16, p, v)
+#endif
+
+#ifndef AV_RL32A
+#   define AV_RL32A(p) AV_RLA(32, p)
+#endif
+#ifndef AV_WL32A
+#   define AV_WL32A(p, v) AV_WLA(32, p, v)
+#endif
+
+#ifndef AV_RB32A
+#   define AV_RB32A(p) AV_RBA(32, p)
+#endif
+#ifndef AV_WB32A
+#   define AV_WB32A(p, v) AV_WBA(32, p, v)
 #endif
 
 #ifndef AV_RL64A
@@ -549,6 +581,13 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #endif
 #ifndef AV_WL64A
 #   define AV_WL64A(p, v) AV_WLA(64, p, v)
+#endif
+
+#ifndef AV_RB64A
+#   define AV_RB64A(p) AV_RBA(64, p)
+#endif
+#ifndef AV_WB64A
+#   define AV_WB64A(p, v) AV_WBA(64, p, v)
 #endif
 
 /*
