@@ -1748,7 +1748,9 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 #if CONFIG_LIBDRM
             drmVersion *info;
             const AVDictionaryEntry *kernel_driver;
+            const AVDictionaryEntry *vendor_id;
             kernel_driver = av_dict_get(opts, "kernel_driver", NULL, 0);
+            vendor_id = av_dict_get(opts, "vendor_id", NULL, 0);
 #endif
             for (n = 0; n < max_devices; n++) {
                 snprintf(path, sizeof(path),
@@ -1803,6 +1805,33 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                     close(priv->drm_fd);
                     priv->drm_fd = -1;
                     continue;
+                } else if (vendor_id) {
+                    drmDevicePtr device;
+                    char drm_vendor[8];
+                    if (drmGetDevice(priv->drm_fd, &device)) {
+                        av_log(ctx, AV_LOG_VERBOSE,
+                               "Failed to get DRM device info for device %d.\n", n);
+                        close(priv->drm_fd);
+                        priv->drm_fd = -1;
+                        continue;
+                    }
+
+                    snprintf(drm_vendor, sizeof(drm_vendor), "0x%x", device->deviceinfo.pci->vendor_id);
+                    if (strcmp(vendor_id->value, drm_vendor)) {
+                        av_log(ctx, AV_LOG_VERBOSE, "Ignoring device %d "
+                               "with non-matching vendor id (%s).\n",
+                               n, vendor_id->value);
+                        drmFreeDevice(&device);
+                        close(priv->drm_fd);
+                        priv->drm_fd = -1;
+                        continue;
+                    }
+                    av_log(ctx, AV_LOG_VERBOSE, "Trying to use "
+                           "DRM render node for device %d, "
+                           "with matching vendor id (%s).\n",
+                           n, vendor_id->value);
+                    drmFreeDevice(&device);
+                    break;
                 }
                 drmFreeVersion(info);
 #endif

@@ -1458,6 +1458,11 @@ The following options are recognized:
 When @var{device} is not specified, use this option to specify the name of the kernel
 driver associated with the desired device. This option is available only when
 the hardware acceleration method @emph{drm} and @emph{vaapi} are enabled.
+@item vendor_id
+When @var{device} and @var{kernel_driver} are not specified, use this option to specify
+the vendor id associated with the desired device. This option is available only when the
+hardware acceleration method @emph{drm} and @emph{vaapi} are enabled and @emph{kernel_driver}
+is not specified.
 @end table
 
 Examples:
@@ -1473,6 +1478,9 @@ Create a vaapi device on DirectX adapter 1.
 
 @item -init_hw_device vaapi:,kernel_driver=i915
 Create a vaapi device on a device associated with kernel driver @samp{i915}.
+
+@item -init_hw_device vaapi:,vendor_id=0x8086
+Create a vaapi device on a device associated with vendor id @samp{0x8086}.
 @end table
 
 @item vdpau
