@@ -260,10 +260,6 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_IMA_AMV:
         max_channels = 1;
         break;
-    case AV_CODEC_ID_ADPCM_DTK:
-    case AV_CODEC_ID_ADPCM_EA:
-        min_channels = 1;
-        break;
     case AV_CODEC_ID_ADPCM_AFC:
     case AV_CODEC_ID_ADPCM_EA_R1:
     case AV_CODEC_ID_ADPCM_EA_R2:
