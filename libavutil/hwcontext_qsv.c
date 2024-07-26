@@ -2572,8 +2572,8 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
             // used on recent Intel hardware.  Set options to the VAAPI device
             // creation so that we should pick a usable setup by default if
             // possible, even when multiple devices and drivers are available.
-            av_dict_set(&child_device_opts, "kernel_driver", "i915", 0);
-            av_dict_set(&child_device_opts, "driver",        "iHD",  0);
+            av_dict_set(&child_device_opts, "vendor_id", "0x8086", 0);
+            av_dict_set(&child_device_opts, "driver",    "iHD",    0);
         }
         break;
 #endif
