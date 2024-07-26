@@ -1282,10 +1282,10 @@ static int mov_read_clap(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (!sd)
         return AVERROR(ENOMEM);
 
-    AV_WL32(sd->data,      top);
-    AV_WL32(sd->data + 4,  bottom);
-    AV_WL32(sd->data + 8,  left);
-    AV_WL32(sd->data + 12, right);
+    AV_WL32A(sd->data,      top);
+    AV_WL32A(sd->data + 4,  bottom);
+    AV_WL32A(sd->data + 8,  left);
+    AV_WL32A(sd->data + 12, right);
 
     return 0;
 }
@@ -8200,8 +8200,8 @@ static int mov_read_dops(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if ((ret = ff_alloc_extradata(st->codecpar, size)) < 0)
         return ret;
 
-    AV_WL32(st->codecpar->extradata, MKTAG('O','p','u','s'));
-    AV_WL32(st->codecpar->extradata + 4, MKTAG('H','e','a','d'));
+    AV_WL32A(st->codecpar->extradata, MKTAG('O','p','u','s'));
+    AV_WL32A(st->codecpar->extradata + 4, MKTAG('H','e','a','d'));
     AV_WB8(st->codecpar->extradata + 8, 1); /* OpusHead version */
     avio_read(pb, st->codecpar->extradata + 9, size - 9);
 
@@ -8209,10 +8209,10 @@ static int mov_read_dops(MOVContext *c, AVIOContext *pb, MOVAtom atom)
        little-endian; aside from the preceeding magic and version they're
        otherwise currently identical.  Data after output gain at offset 16
        doesn't need to be bytewapped. */
-    pre_skip = AV_RB16(st->codecpar->extradata + 10);
-    AV_WL16(st->codecpar->extradata + 10, pre_skip);
-    AV_WL32(st->codecpar->extradata + 12, AV_RB32(st->codecpar->extradata + 12));
-    AV_WL16(st->codecpar->extradata + 16, AV_RB16(st->codecpar->extradata + 16));
+    pre_skip = AV_RB16A(st->codecpar->extradata + 10);
+    AV_WL16A(st->codecpar->extradata + 10, pre_skip);
+    AV_WL32A(st->codecpar->extradata + 12, AV_RB32A(st->codecpar->extradata + 12));
+    AV_WL16A(st->codecpar->extradata + 16, AV_RB16A(st->codecpar->extradata + 16));
 
     st->codecpar->initial_padding = pre_skip;
     st->codecpar->seek_preroll = av_rescale_q(OPUS_SEEK_PREROLL_MS,
