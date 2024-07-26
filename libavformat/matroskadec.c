@@ -4059,9 +4059,9 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                             (AVRational){1, 1000000000},
                                             (AVRational){1, st->codecpar->sample_rate});
         if (discard_padding > 0) {
-            AV_WL32(side_data + 4, discard_padding);
+            AV_WL32A(side_data + 4, discard_padding);
         } else {
-            AV_WL32(side_data, -discard_padding);
+            AV_WL32A(side_data, -discard_padding);
         }
     }
 
