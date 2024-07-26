@@ -541,9 +541,12 @@ static int vp7_fade_frame(VP8Context *s, int alpha, int beta)
 
         /* preserve the golden frame, write a new previous frame */
         if (s->framep[VP8_FRAME_GOLDEN] == s->framep[VP8_FRAME_PREVIOUS]) {
-            s->framep[VP8_FRAME_PREVIOUS] = vp8_find_free_buffer(s);
-            if ((ret = vp8_alloc_frame(s, s->framep[VP8_FRAME_PREVIOUS], 1)) < 0)
+            VP8Frame *prev_frame = vp8_find_free_buffer(s);
+
+            ret = vp8_alloc_frame(s, prev_frame, 1);
+            if (ret < 0)
                 return ret;
+            s->framep[VP8_FRAME_PREVIOUS] = prev_frame;
 
             dst = s->framep[VP8_FRAME_PREVIOUS]->tf.f;
 
@@ -2675,8 +2678,6 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
             &s->frames[i] != s->framep[VP8_FRAME_ALTREF])
             vp8_release_frame(&s->frames[i]);
 
-    curframe = s->framep[VP8_FRAME_CURRENT] = vp8_find_free_buffer(s);
-
     if (!s->colorspace)
         avctx->colorspace = AVCOL_SPC_BT470BG;
     if (s->fullrange)
@@ -2697,8 +2698,10 @@ int vp78_decode_frame(AVCodecContext *avctx, AVFrame *rframe, int *got_frame,
         goto err;
     }
 
+    curframe = vp8_find_free_buffer(s);
     if ((ret = vp8_alloc_frame(s, curframe, referenced)) < 0)
         goto err;
+    s->framep[VP8_FRAME_CURRENT] = curframe;
     if (s->keyframe)
         curframe->tf.f->flags |= AV_FRAME_FLAG_KEY;
     else
