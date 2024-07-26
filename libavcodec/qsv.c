@@ -468,8 +468,8 @@ static int ff_qsv_set_display_handle(AVCodecContext *avctx, QSVSession *qs)
     AVVAAPIDeviceContext *hwctx;
     int ret;
 
-    av_dict_set(&child_device_opts, "kernel_driver", "i915", 0);
-    av_dict_set(&child_device_opts, "driver",        "iHD",  0);
+    av_dict_set(&child_device_opts, "vendor_id", "0x8086", 0);
+    av_dict_set(&child_device_opts, "driver",    "iHD",    0);
 
     ret = av_hwdevice_ctx_create(&qs->va_device_ref, AV_HWDEVICE_TYPE_VAAPI, NULL, child_device_opts, 0);
     av_dict_free(&child_device_opts);
