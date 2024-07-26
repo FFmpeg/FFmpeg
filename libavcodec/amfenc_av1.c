@@ -535,10 +535,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
         avctx->nb_coded_side_data++;
 
         //top, bottom, left,right
-        AV_WL32(crop + 0, 0);
-        AV_WL32(crop + 1, crop_bottom);
-        AV_WL32(crop + 2, 0);
-        AV_WL32(crop + 3, crop_right);
+        AV_WL32A(crop + 0, 0);
+        AV_WL32A(crop + 1, crop_bottom);
+        AV_WL32A(crop + 2, 0);
+        AV_WL32A(crop + 3, crop_right);
 
         avctx->coded_side_data[avctx->nb_coded_side_data - 1].type = AV_PKT_DATA_FRAME_CROPPING;
         avctx->coded_side_data[avctx->nb_coded_side_data - 1].data = (uint8_t*)crop;
