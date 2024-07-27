@@ -86,7 +86,6 @@ static const struct {
     { AV_CPU_FLAG_LASX,      "lasx"       },
 #elif ARCH_RISCV
     { AV_CPU_FLAG_RVI,       "rvi"        },
-    { AV_CPU_FLAG_RVB_ADDR,  "zba"        },
     { AV_CPU_FLAG_RVB_BASIC, "zbb"        },
     { AV_CPU_FLAG_RVB,       "rvb"        },
     { AV_CPU_FLAG_RVV_I32,   "zve32x"     },

@@ -63,10 +63,6 @@ int ff_get_cpu_flags_riscv(void)
             ret |= AV_CPU_FLAG_RVV_I32 | AV_CPU_FLAG_RVV_I64
                  | AV_CPU_FLAG_RVV_F32 | AV_CPU_FLAG_RVV_F64;
 #endif
-#ifdef RISCV_HWPROBE_EXT_ZBA
-        if (pairs[1].value & RISCV_HWPROBE_EXT_ZBA)
-            ret |= AV_CPU_FLAG_RVB_ADDR;
-#endif
 #ifdef RISCV_HWPROBE_EXT_ZBB
         if (pairs[1].value & RISCV_HWPROBE_EXT_ZBB)
             ret |= AV_CPU_FLAG_RVB_BASIC;
@@ -95,8 +91,7 @@ int ff_get_cpu_flags_riscv(void)
         if (hwcap & HWCAP_RV('I'))
             ret |= AV_CPU_FLAG_RVI;
         if (hwcap & HWCAP_RV('B'))
-            ret |= AV_CPU_FLAG_RVB_ADDR | AV_CPU_FLAG_RVB_BASIC |
-                   AV_CPU_FLAG_RVB;
+            ret |= AV_CPU_FLAG_RVB_BASIC | AV_CPU_FLAG_RVB;
 
         /* The V extension implies all Zve* functional subsets */
         if (hwcap & HWCAP_RV('V'))
@@ -109,9 +104,6 @@ int ff_get_cpu_flags_riscv(void)
     ret |= AV_CPU_FLAG_RVI;
 #endif
 
-#ifdef __riscv_zba
-    ret |= AV_CPU_FLAG_RVB_ADDR;
-#endif
 #ifdef __riscv_zbb
     ret |= AV_CPU_FLAG_RVB_BASIC;
 #endif
