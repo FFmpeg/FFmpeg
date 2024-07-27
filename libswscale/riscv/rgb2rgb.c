@@ -50,16 +50,14 @@ av_cold void rgb2rgb_init_riscv(void)
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_rvb;
 #endif
 #if HAVE_RVV
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB)) {
         shuffle_bytes_0321 = ff_shuffle_bytes_0321_rvv;
         shuffle_bytes_2103 = ff_shuffle_bytes_2103_rvv;
         shuffle_bytes_1230 = ff_shuffle_bytes_1230_rvv;
         shuffle_bytes_3012 = ff_shuffle_bytes_3012_rvv;
         interleaveBytes = ff_interleave_bytes_rvv;
-        if (flags & AV_CPU_FLAG_RVB_BASIC) {
-            uyvytoyuv422 = ff_uyvytoyuv422_rvv;
-            yuyvtoyuv422 = ff_yuyvtoyuv422_rvv;
-        }
+        uyvytoyuv422 = ff_uyvytoyuv422_rvv;
+        yuyvtoyuv422 = ff_yuyvtoyuv422_rvv;
     }
 #endif
 #endif
