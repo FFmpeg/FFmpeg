@@ -54,7 +54,7 @@ av_cold void ff_float_dsp_init_riscv(AVFloatDSPContext *fdsp)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVB_ADDR) {
+    if (flags & AV_CPU_FLAG_RVB) {
         if (flags & AV_CPU_FLAG_RVV_F32) {
             fdsp->vector_fmul = ff_vector_fmul_rvv;
             fdsp->vector_fmac_scalar = ff_vector_fmac_scalar_rvv;

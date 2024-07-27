@@ -47,9 +47,8 @@ av_cold void ff_init_lls_riscv(LLSModel *m)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVB_ADDR) && (flags & AV_CPU_FLAG_RVV_F64)) {
-        if ((flags & AV_CPU_FLAG_RVB_BASIC) &&
-            ff_get_rv_vlenb() > m->indep_count)
+    if ((flags & AV_CPU_FLAG_RVB) && (flags & AV_CPU_FLAG_RVV_F64)) {
+        if (ff_get_rv_vlenb() > m->indep_count)
             m->update_lls = ff_lls_update_rvv;
         m->evaluate_lls = ff_lls_evaluate_rvv;
     }
