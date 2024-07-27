@@ -31,8 +31,7 @@ av_cold void ff_exrdsp_init_riscv(ExrDSPContext *c)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB))
         c->reorder_pixels = ff_reorder_pixels_rvv;
-    }
 #endif
 }

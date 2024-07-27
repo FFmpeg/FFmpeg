@@ -70,10 +70,10 @@ av_cold void ff_flacdsp_init_riscv(FLACDSPContext *c, enum AVSampleFormat fmt,
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB)) {
         int vlenb = ff_get_rv_vlenb();
 
-        if ((flags & AV_CPU_FLAG_RVB_BASIC) && vlenb >= 16) {
+        if (vlenb >= 16) {
             c->lpc16 = ff_flac_lpc16_rvv;
 
 # if (__riscv_xlen >= 64)

@@ -44,7 +44,7 @@ av_cold void ff_vp7dsp_init_riscv(VP8DSPContext *c)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR) &&
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB) &&
         ff_rv_vlen_least(128)) {
 #if __riscv_xlen >= 64
         c->vp8_luma_dc_wht = ff_vp7_luma_dc_wht_rvv;

@@ -128,7 +128,7 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
         if (bit_depth == depth) { \
             if (zvl128b) \
                 dsp->h264_idct_add = ff_h264_idct_add_##depth##_rvv; \
-            if (flags & AV_CPU_FLAG_RVB_ADDR) \
+            if (flags & AV_CPU_FLAG_RVB) \
                 dsp->h264_idct8_add = ff_h264_idct8_add_##depth##_rvv; \
             if (zvl128b && (flags & AV_CPU_FLAG_RVB)) { \
                 dsp->h264_idct_dc_add  = ff_h264_idct4_dc_add_##depth##_rvv; \

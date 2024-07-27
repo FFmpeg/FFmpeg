@@ -38,7 +38,7 @@ av_cold void ff_utvideodsp_init_riscv(UTVideoDSPContext *c)
     if (flags & AV_CPU_FLAG_RVV_I32) {
         c->restore_rgb_planes = ff_restore_rgb_planes_rvv;
 
-        if (flags & AV_CPU_FLAG_RVB_ADDR)
+        if (flags & AV_CPU_FLAG_RVB)
             c->restore_rgb_planes10 = ff_restore_rgb_planes10_rvv;
    }
 #endif

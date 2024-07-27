@@ -33,7 +33,7 @@ av_cold void ff_svq1enc_init_riscv(SVQ1EncDSPContext *c)
     int flags = av_get_cpu_flags();
 
     if (flags & AV_CPU_FLAG_RVV_I32) {
-        if (flags & AV_CPU_FLAG_RVB_ADDR) {
+        if (flags & AV_CPU_FLAG_RVB) {
             c->ssd_int8_vs_int16 = ff_ssd_int8_vs_int16_rvv;
         }
     }

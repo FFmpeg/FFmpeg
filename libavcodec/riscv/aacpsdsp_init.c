@@ -42,20 +42,25 @@ av_cold void ff_psdsp_init_riscv(PSDSPContext *c)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_F32) {
-        c->hybrid_analysis = ff_ps_hybrid_analysis_rvv;
+    if (flags & AV_CPU_FLAG_RVV_I32) {
+        if (flags & AV_CPU_FLAG_RVV_F32) {
+            if (flags & AV_CPU_FLAG_RVB) {
+                if (flags & AV_CPU_FLAG_RVV_I64)
+                    c->add_squares = ff_ps_add_squares_rvv;
 
-        if (flags & AV_CPU_FLAG_RVB_ADDR) {
-            if (flags & AV_CPU_FLAG_RVV_I64) {
-                c->add_squares = ff_ps_add_squares_rvv;
-                c->hybrid_synthesis_deint = ff_ps_hybrid_synthesis_deint_rvv;
+                c->mul_pair_single = ff_ps_mul_pair_single_rvv;
             }
-            c->mul_pair_single = ff_ps_mul_pair_single_rvv;
-            c->stereo_interpolate[0] = ff_ps_stereo_interpolate_rvv;
+            c->hybrid_analysis = ff_ps_hybrid_analysis_rvv;
+        }
+
+        if (flags & AV_CPU_FLAG_RVB) {
+            c->hybrid_analysis_ileave = ff_ps_hybrid_analysis_ileave_rvv;
+
+            if (flags & AV_CPU_FLAG_RVV_I64)
+                c->hybrid_synthesis_deint = ff_ps_hybrid_synthesis_deint_rvv;
+            if (flags & AV_CPU_FLAG_RVV_F32)
+                c->stereo_interpolate[0] = ff_ps_stereo_interpolate_rvv;
         }
     }
-
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR))
-        c->hybrid_analysis_ileave = ff_ps_hybrid_analysis_ileave_rvv;
 #endif
 }

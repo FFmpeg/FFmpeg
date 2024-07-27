@@ -36,7 +36,7 @@ av_cold void ff_fmt_convert_init_riscv(FmtConvertContext *c)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_F32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+    if ((flags & AV_CPU_FLAG_RVV_F32) && (flags & AV_CPU_FLAG_RVB)) {
         c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_rvv;
         c->int32_to_float_fmul_array8 = ff_int32_to_float_fmul_array8_rvv;
     }

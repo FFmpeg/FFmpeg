@@ -38,7 +38,7 @@ av_cold void ff_h264chroma_init_riscv(H264ChromaContext *c, int bit_depth)
     int flags = av_get_cpu_flags();
 
     if (bit_depth == 8 && (flags & AV_CPU_FLAG_RVV_I32) &&
-        (flags & AV_CPU_FLAG_RVB_ADDR) && ff_rv_vlen_least(128)) {
+        (flags & AV_CPU_FLAG_RVB) && ff_rv_vlen_least(128)) {
         c->put_h264_chroma_pixels_tab[0] = h264_put_chroma_mc8_rvv;
         c->avg_h264_chroma_pixels_tab[0] = h264_avg_chroma_mc8_rvv;
         c->put_h264_chroma_pixels_tab[1] = h264_put_chroma_mc4_rvv;

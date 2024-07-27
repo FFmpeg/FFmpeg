@@ -41,7 +41,7 @@ av_cold void ff_alacdsp_init_riscv(ALACDSPContext *c)
 #if HAVE_RVV && (__riscv_xlen == 64)
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+    if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB)) {
         c->decorrelate_stereo = ff_alac_decorrelate_stereo_rvv;
         c->append_extra_bits[0] = ff_alac_append_extra_bits_mono_rvv;
         c->append_extra_bits[1] = ff_alac_append_extra_bits_stereo_rvv;

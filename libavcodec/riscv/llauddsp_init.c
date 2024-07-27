@@ -36,7 +36,7 @@ av_cold void ff_llauddsp_init_riscv(LLAudDSPContext *c)
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if ((flags & AV_CPU_FLAG_RVV_I32)  && (flags & AV_CPU_FLAG_RVB_ADDR)) {
+    if ((flags & AV_CPU_FLAG_RVV_I32)  && (flags & AV_CPU_FLAG_RVB)) {
         c->scalarproduct_and_madd_int16 = ff_scalarproduct_and_madd_int16_rvv;
         c->scalarproduct_and_madd_int32 = ff_scalarproduct_and_madd_int32_rvv;
     }

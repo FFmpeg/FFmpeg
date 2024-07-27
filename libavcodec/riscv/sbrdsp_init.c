@@ -47,7 +47,7 @@ av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
     int flags = av_get_cpu_flags();
 
     if (flags & AV_CPU_FLAG_RVV_F32) {
-        if (flags & AV_CPU_FLAG_RVB_ADDR) {
+        if (flags & AV_CPU_FLAG_RVB) {
             c->sum64x5 = ff_sbr_sum64x5_rvv;
             c->sum_square = ff_sbr_sum_square_rvv;
             c->hf_gen = ff_sbr_hf_gen_rvv;
@@ -55,10 +55,8 @@ av_cold void ff_sbrdsp_init_riscv(SBRDSPContext *c)
             if (ff_get_rv_vlenb() <= 32) {
                 c->hf_apply_noise[0] = ff_sbr_hf_apply_noise_0_rvv;
                 c->hf_apply_noise[2] = ff_sbr_hf_apply_noise_2_rvv;
-                if (flags & AV_CPU_FLAG_RVB_BASIC) {
-                    c->hf_apply_noise[1] = ff_sbr_hf_apply_noise_1_rvv;
-                    c->hf_apply_noise[3] = ff_sbr_hf_apply_noise_3_rvv;
-                }
+                c->hf_apply_noise[1] = ff_sbr_hf_apply_noise_1_rvv;
+                c->hf_apply_noise[3] = ff_sbr_hf_apply_noise_3_rvv;
             }
         }
         c->autocorrelate = ff_sbr_autocorrelate_rvv;

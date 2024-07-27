@@ -41,7 +41,7 @@ av_cold void ff_rv40dsp_init_riscv(RV34DSPContext *c)
     int flags = av_get_cpu_flags();
 
     if ((flags & AV_CPU_FLAG_RVV_I32) && ff_rv_vlen_least(128) &&
-        (flags & AV_CPU_FLAG_RVB_ADDR)) {
+        (flags & AV_CPU_FLAG_RVB)) {
         c->put_chroma_pixels_tab[0] = ff_put_rv40_chroma_mc8_rvv;
         c->put_chroma_pixels_tab[1] = ff_put_rv40_chroma_mc4_rvv;
         c->avg_chroma_pixels_tab[0] = ff_avg_rv40_chroma_mc8_rvv;
