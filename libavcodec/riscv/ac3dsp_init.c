@@ -41,26 +41,32 @@ av_cold void ff_ac3dsp_init_riscv(AC3DSPContext *c)
 #if HAVE_RV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVB_BASIC)
+    if (flags & AV_CPU_FLAG_RVB_BASIC) {
         c->ac3_exponent_min = ff_ac3_exponent_min_rvb;
-    if (flags & AV_CPU_FLAG_RVV_I32)
+        c->extract_exponents = ff_extract_exponents_rvb;
+    }
+
+# if HAVE_RVV
+    if (flags & AV_CPU_FLAG_RVV_I32) {
         c->ac3_exponent_min = ff_ac3_exponent_min_rvv;
 
-    if (flags & AV_CPU_FLAG_RVB_ADDR) {
-        if (flags & AV_CPU_FLAG_RVB_BASIC)
-            c->extract_exponents = ff_extract_exponents_rvb;
-# if HAVE_RV_ZVBB
-        if (flags & AV_CPU_FLAG_RV_ZVBB)
-            c->extract_exponents = ff_extract_exponents_rvvb;
+        if (flags & AV_CPU_FLAG_RVB) {
+#  if HAVE_RV_ZVBB
+            if (flags & AV_CPU_FLAG_RV_ZVBB)
+                c->extract_exponents = ff_extract_exponents_rvvb;
+#  endif
+            if (flags & AV_CPU_FLAG_RVV_F32) {
+                c->float_to_fixed24 = ff_float_to_fixed24_rvv;
+                c->sum_square_butterfly_float =
+                    ff_sum_square_butterfly_float_rvv;
+            }
+#  if __riscv_xlen >= 64
+            if (flags & AV_CPU_FLAG_RVV_I64)
+                c->sum_square_butterfly_int32 =
+                    ff_sum_square_butterfly_int32_rvv;
+#  endif
 # endif
-        if (flags & AV_CPU_FLAG_RVV_F32) {
-            c->float_to_fixed24 = ff_float_to_fixed24_rvv;
-            c->sum_square_butterfly_float = ff_sum_square_butterfly_float_rvv;
         }
-# if __riscv_xlen >= 64
-        if (flags & AV_CPU_FLAG_RVV_I64)
-            c->sum_square_butterfly_int32 = ff_sum_square_butterfly_int32_rvv;
-# endif
     }
 #endif
 }
