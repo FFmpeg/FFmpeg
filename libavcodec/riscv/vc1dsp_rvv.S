@@ -38,18 +38,20 @@ func ff_vc1_inv_trans_\cols\()x\rows\()_dc_rvv, zve64x, zba
 .endif
         addi    t2, t2, 64
         srai    t2, t2, 7
-.if \rows * \cols == 64
-        vsetvli     zero, t0, e16, m8, ta, ma
-.elseif \rows * \cols == 32
-        vsetvli     zero, t0, e16, m4, ta, ma
+.if \rows * \cols >= 32
+        vsetvli     zero, t0, e8, m\mat_lmul, ta, ma
 .else
-        vsetivli    zero, \rows * \cols, e16, m2, ta, ma
+        vsetivli    zero, \rows * \cols, e8, m\mat_lmul, ta, ma
 .endif
-        vzext.vf2   v8, v0
-        vadd.vx     v8, v8, t2
-        vmax.vx     v8, v8, zero
-        vsetvli     zero, zero, e8, m\mat_lmul, ta, ma
-        vnclipu.wi  v0, v8, 0
+        bgez    t2, 1f
+
+        neg     t2, t2
+        vssubu.vx   v0, v0, t2
+        vsetivli    zero, \rows, e8, m\row_lmul, ta, ma
+        vsse\w\().v v0, (a0), a1
+        ret
+1:
+        vsaddu.vx   v0, v0, t2
         vsetivli    zero, \rows, e8, m\row_lmul, ta, ma
         vsse\w\().v v0, (a0), a1
         ret
