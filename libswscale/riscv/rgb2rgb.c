@@ -46,7 +46,7 @@ av_cold void rgb2rgb_init_riscv(void)
     int flags = av_get_cpu_flags();
 
 #if (__riscv_xlen == 64)
-    if ((flags & AV_CPU_FLAG_RVB_BASIC) && (flags & AV_CPU_FLAG_RVB_ADDR))
+    if (flags & AV_CPU_FLAG_RVB_BASIC)
         shuffle_bytes_3210 = ff_shuffle_bytes_3210_rvb;
 #endif
 #if HAVE_RVV

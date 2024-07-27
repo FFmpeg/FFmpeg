@@ -20,21 +20,21 @@
 
 #if (__riscv_xlen >= 64)
         .macro  bswap32_rvb out, in, count
-        andi    t0, \count, 4
+        andi    t0, \count, 1
         beqz    t0, 1f
         /* Align input to 64-bit */
         lwu     t0, (\in)
         addi    \out, \out, 4
         rev8    t0, t0
-        addi    \count, \count, -1
+        addi    \count, \count, -4
         srli    t0, t0, __riscv_xlen - 32
         addi    \in, \in, 4
         sw      t0, -4(\out)
 1:
-        andi    t3, \count, -2
-        sh2add  \count, \count, \out
+        andi    t3, \count, -8
+        add     \count, \count, \out
         beqz    t3, 3f
-        sh2add  t3, t3, \out
+        add     t3, t3, \out
 2:      /* 2 elements (64 bits) at a time on a 64-bit boundary */
         ld      t0,  (\in)
         addi    \out, \out, 8
