@@ -21,101 +21,45 @@
 
 #include "libavutil/riscv/asm.S"
 
-func ff_vc1_inv_trans_8x8_dc_rvv, zve64x, zba
+.macro  inv_trans_dc rows, cols, w, mat_lmul, row_lmul
+func ff_vc1_inv_trans_\cols\()x\rows\()_dc_rvv, zve64x, zba
         lpad    0
-        lh            t2, (a2)
-        vsetivli      zero, 8, e8, mf2, ta, ma
-        vlse64.v      v0, (a0), a1
-        sh1add        t2, t2, t2
-        addi          t2, t2, 1
-        srai          t2, t2, 1
-        sh1add        t2, t2, t2
-        addi          t2, t2, 16
-        srai          t2, t2, 5
-        li            t0, 8*8
-        vsetvli       zero, t0, e16, m8, ta, ma
-        vzext.vf2     v8, v0
-        vadd.vx       v8, v8, t2
-        vmax.vx       v8, v8, zero
-        vsetvli       zero, zero, e8, m4, ta, ma
-        vnclipu.wi    v0, v8, 0
-        vsetivli      zero, 8, e8, mf2, ta, ma
-        vsse64.v      v0, (a0), a1
+        lh      t2, (a2)
+        li      a4, 22 - (5 * \cols) / 4
+        mul     t2, t2, a4
+        vsetivli    zero, \rows, e8, m\row_lmul, ta, ma
+        vlse\w\().v v0, (a0), a1
+        addi    t2, t2, 4
+        li      a5, 22 - (5 * \rows) / 4
+        srai    t2, t2, 3
+        mul     t2, t2, a5
+.if \cols * \rows >= 32
+        li      t0, \cols * \rows
+.endif
+        addi    t2, t2, 64
+        srai    t2, t2, 7
+.if \rows * \cols == 64
+        vsetvli     zero, t0, e16, m8, ta, ma
+.elseif \rows * \cols == 32
+        vsetvli     zero, t0, e16, m4, ta, ma
+.else
+        vsetivli    zero, \rows * \cols, e16, m2, ta, ma
+.endif
+        vzext.vf2   v8, v0
+        vadd.vx     v8, v8, t2
+        vmax.vx     v8, v8, zero
+        vsetvli     zero, zero, e8, m\mat_lmul, ta, ma
+        vnclipu.wi  v0, v8, 0
+        vsetivli    zero, \rows, e8, m\row_lmul, ta, ma
+        vsse\w\().v v0, (a0), a1
         ret
 endfunc
+.endm
 
-func ff_vc1_inv_trans_4x8_dc_rvv, zve32x, zba
-        lpad    0
-        lh            t2, (a2)
-        vsetivli      zero, 8, e8, mf2, ta, ma
-        vlse32.v      v0, (a0), a1
-        slli          t1, t2, 4
-        add           t2, t2, t1
-        addi          t2, t2, 4
-        srai          t2, t2, 3
-        sh1add        t2, t2, t2
-        slli          t2, t2, 2
-        addi          t2, t2, 64
-        srai          t2, t2, 7
-        li            t0, 4*8
-        vsetvli       zero, t0, e16, m4, ta, ma
-        vzext.vf2     v4, v0
-        vadd.vx       v4, v4, t2
-        vmax.vx       v4, v4, zero
-        vsetvli       zero, zero, e8, m2, ta, ma
-        vnclipu.wi    v0, v4, 0
-        vsetivli      zero, 8, e8, mf2, ta, ma
-        vsse32.v      v0, (a0), a1
-        ret
-endfunc
-
-func ff_vc1_inv_trans_8x4_dc_rvv, zve64x, zba
-        lpad    0
-        lh            t2, (a2)
-        vsetivli      zero, 4, e8, mf4, ta, ma
-        vlse64.v      v0, (a0), a1
-        sh1add        t2, t2, t2
-        addi          t2, t2, 1
-        srai          t2, t2, 1
-        slli          t1, t2, 4
-        add           t2, t2, t1
-        addi          t2, t2, 64
-        srai          t2, t2, 7
-        li            t0, 8*4
-        vsetvli       zero, t0, e16, m4, ta, ma
-        vzext.vf2     v4, v0
-        vadd.vx       v4, v4, t2
-        vmax.vx       v4, v4, zero
-        vsetvli       zero, zero, e8, m2, ta, ma
-        vnclipu.wi    v0, v4, 0
-        vsetivli      zero, 4, e8, mf4, ta, ma
-        vsse64.v      v0, (a0), a1
-        ret
-endfunc
-
-func ff_vc1_inv_trans_4x4_dc_rvv, zve32x
-        lpad    0
-        lh            t2, (a2)
-        vsetivli      zero, 4, e8, mf4, ta, ma
-        vlse32.v      v0, (a0), a1
-        slli          t1, t2, 4
-        add           t2, t2, t1
-        addi          t2, t2, 4
-        srai          t2, t2, 3
-        slli          t1, t2, 4
-        add           t2, t2, t1
-        addi          t2, t2, 64
-        srai          t2, t2, 7
-        vsetivli      zero, 4*4, e16, m2, ta, ma
-        vzext.vf2     v2, v0
-        vadd.vx       v2, v2, t2
-        vmax.vx       v2, v2, zero
-        vsetvli       zero, zero, e8, m1, ta, ma
-        vnclipu.wi    v0, v2, 0
-        vsetivli      zero, 4, e8, mf4, ta, ma
-        vsse32.v      v0, (a0), a1
-        ret
-endfunc
+inv_trans_dc 8, 8, 64, 4, f2
+inv_trans_dc 4, 8, 64, 2, f4
+inv_trans_dc 8, 4, 32, 2, f2
+inv_trans_dc 4, 4, 32, 1, f4
 
         .variant_cc ff_vc1_inv_trans_8_rvv
 func ff_vc1_inv_trans_8_rvv, zve32x
