@@ -372,8 +372,8 @@ void ff_vvc_sao_filter(VVCLocalContext *lc, int x0, int y0)
     }
 }
 
-#define TAB_BS(t, x, y)       (t)[((y) >> 2) * (fc->tab.sz.bs_width) + ((x) >> 2)]
-#define TAB_MAX_LEN(t, x, y)  (t)[((y) >> 2) * (fc->tab.sz.bs_width) + ((x) >> 2)]
+#define TAB_BS(t, x, y)       (t)[((y) >> MIN_TU_LOG2) * (fc->ps.pps->min_tu_width) + ((x) >> MIN_TU_LOG2)]
+#define TAB_MAX_LEN(t, x, y)  (t)[((y) >> MIN_TU_LOG2) * (fc->ps.pps->min_tu_width) + ((x) >> MIN_TU_LOG2)]
 
 //8 samples a time
 #define DEBLOCK_STEP            8
