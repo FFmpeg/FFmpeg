@@ -399,7 +399,6 @@ static void store_cp_mv(const VVCLocalContext *lc, const MotionInfo *mi, const i
             const int offset = (y_cb * min_cb_width + x_cb) * MAX_CONTROL_POINTS;
 
             memcpy(&fc->tab.cp_mv[lx][offset], mi->mv[lx], sizeof(Mv) * num_cp_mv);
-            SAMPLE_CTB(fc->tab.mmi, x_cb, y_cb) = mi->motion_model_idc;
         }
     }
 }

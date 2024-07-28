@@ -1234,9 +1234,12 @@ static CodingUnit* add_cu(VVCLocalContext *lc, const int x0, const int y0,
 
 static void set_cu_tabs(const VVCLocalContext *lc, const CodingUnit *cu)
 {
-    const VVCFrameContext *fc   = lc->fc;
-    const TransformUnit *tu     = cu->tus.head;
+    const VVCFrameContext *fc = lc->fc;
+    const PredictionUnit *pu  = &cu->pu;
+    const TransformUnit *tu   = cu->tus.head;
 
+    set_cb_tab(lc, fc->tab.mmi, pu->mi.motion_model_idc);
+    set_cb_tab(lc, fc->tab.msf, pu->merge_subblock_flag);
     if (cu->tree_type != DUAL_TREE_CHROMA)
         set_cb_tab(lc, fc->tab.skip, cu->skip_flag);
 
@@ -1325,7 +1328,6 @@ static void merge_data_subblock(VVCLocalContext *lc)
     PredictionUnit *pu          = &cu->pu;
     int merge_subblock_idx      = 0;
 
-    set_cb_tab(lc, fc->tab.msf, pu->merge_subblock_flag);
     if (ph->max_num_subblock_merge_cand > 1) {
         merge_subblock_idx = ff_vvc_merge_subblock_idx(lc, ph->max_num_subblock_merge_cand);
     }
