@@ -1003,8 +1003,7 @@ static int has_inter_luma(const CodingUnit *cu)
 int ff_vvc_predict_inter(VVCLocalContext *lc, const int rs)
 {
     const VVCFrameContext *fc = lc->fc;
-    const CTU *ctu            = fc->tab.ctus + rs;
-    CodingUnit *cu            = ctu->cus;
+    CodingUnit *cu            = fc->tab.cus[rs];
 
     while (cu) {
         lc->cu = cu;

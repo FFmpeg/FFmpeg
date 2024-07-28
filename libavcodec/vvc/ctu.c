@@ -1174,7 +1174,7 @@ static CodingUnit* alloc_cu(VVCLocalContext *lc, const int x0, const int y0)
     const VVCPPS *pps   = fc->ps.pps;
     const int rx        = x0 >> sps->ctb_log2_size_y;
     const int ry        = y0 >> sps->ctb_log2_size_y;
-    CTU *ctu            = fc->tab.ctus + ry * pps->ctb_width + rx;
+    CodingUnit **cus    = fc->tab.cus + ry * pps->ctb_width + rx;
     CodingUnit *cu      = ff_refstruct_pool_get(fc->cu_pool);
 
     if (!cu)
@@ -1184,7 +1184,7 @@ static CodingUnit* alloc_cu(VVCLocalContext *lc, const int x0, const int y0)
     if (lc->cu)
         lc->cu->next = cu;
     else
-        ctu->cus = cu;
+        *cus = cu;
     lc->cu = cu;
 
     return cu;
@@ -2429,7 +2429,9 @@ static void ctu_get_pred(VVCLocalContext *lc, const int rs)
     const VVCFrameContext *fc       = lc->fc;
     const H266RawSliceHeader *rsh   = lc->sc->sh.r;
     CTU *ctu                        = fc->tab.ctus + rs;
-    const CodingUnit *cu            = ctu->cus;
+    const CodingUnit *cu            = fc->tab.cus[rs];
+
+    ctu->has_dmvr = 0;
 
     if (IS_I(rsh))
         return;
@@ -2526,9 +2528,8 @@ void ff_vvc_set_neighbour_available(VVCLocalContext *lc,
     lc->na.cand_up_right = lc->na.cand_up_right_sap && (x0 + w) < lc->end_of_tiles_x;
 }
 
-void ff_vvc_ctu_free_cus(CTU *ctu)
+void ff_vvc_ctu_free_cus(CodingUnit **cus)
 {
-    CodingUnit **cus  = &ctu->cus;
     while (*cus) {
         CodingUnit *cu          = *cus;
         TransformUnit **head    = &cu->tus.head;

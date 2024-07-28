@@ -329,7 +329,6 @@ typedef struct CodingUnit {
 } CodingUnit;
 
 typedef struct CTU {
-    CodingUnit *cus;
     int max_y[2][VVC_MAX_REF_ENTRIES];
     int max_y_idx[2];
     int has_dmvr;
@@ -484,7 +483,7 @@ int ff_vvc_coding_tree_unit(VVCLocalContext *lc, int ctu_idx, int rs, int rx, in
 //utils
 void ff_vvc_set_neighbour_available(VVCLocalContext *lc, int x0, int y0, int w, int h);
 void ff_vvc_decode_neighbour(VVCLocalContext *lc, int x_ctb, int y_ctb, int rx, int ry, int rs);
-void ff_vvc_ctu_free_cus(CTU *ctu);
+void ff_vvc_ctu_free_cus(CodingUnit **cus);
 int ff_vvc_get_qPy(const VVCFrameContext *fc, int xc, int yc);
 void ff_vvc_ep_init_stat_coeff(EntryPoint *ep, int bit_depth, int persistent_rice_adaptation_enabled_flag);
 

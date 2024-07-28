@@ -91,17 +91,6 @@ static int tl_create(TabList *l)
     return 0;
 }
 
-static void ctu_tl_init(TabList *l, VVCFrameContext *fc)
-{
-    const VVCPPS *pps   = fc->ps.pps;
-    const int ctu_count = pps ? pps->ctb_count : 0;
-    const int changed   = fc->tab.sz.ctu_count != ctu_count;
-
-    tl_init(l, 1, changed);
-
-    TL_ADD(ctus,    ctu_count);
-}
-
 static void ctu_nz_tl_init(TabList *l, VVCFrameContext *fc)
 {
     const VVCSPS *sps   = fc->ps.sps;
@@ -112,6 +101,8 @@ static void ctu_nz_tl_init(TabList *l, VVCFrameContext *fc)
 
     tl_init(l, 0, changed);
 
+    TL_ADD(cus,     ctu_count);
+    TL_ADD(ctus,    ctu_count);
     TL_ADD(deblock, ctu_count);
     TL_ADD(sao,     ctu_count);
     TL_ADD(alf,     ctu_count);
@@ -307,7 +298,6 @@ typedef void (*tl_init_fn)(TabList *l, VVCFrameContext *fc);
 static int frame_context_for_each_tl(VVCFrameContext *fc, int (*unary_fn)(TabList *l))
 {
     const tl_init_fn init[] = {
-        ctu_tl_init,
         ctu_nz_tl_init,
         min_cb_tl_init,
         min_cb_nz_tl_init,
@@ -334,9 +324,9 @@ static int frame_context_for_each_tl(VVCFrameContext *fc, int (*unary_fn)(TabLis
 
 static void free_cus(VVCFrameContext *fc)
 {
-    if (fc->tab.ctus) {
+    if (fc->tab.cus) {
         for (int i = 0; i < fc->tab.sz.ctu_count; i++)
-            ff_vvc_ctu_free_cus(fc->tab.ctus + i);
+            ff_vvc_ctu_free_cus(fc->tab.cus + i);
     }
 }
 
@@ -363,6 +353,9 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
     ret = frame_context_for_each_tl(fc, tl_create);
     if (ret < 0)
         return ret;
+
+    // for error handling case, we may call free_cus before VVC_TASK_STAGE_INIT, so we need to set cus to 0 here
+    memset(fc->tab.cus, 0, sizeof(*fc->tab.cus) * ctu_count);
 
     memset(fc->tab.slice_idx, -1, sizeof(*fc->tab.slice_idx) * ctu_count);
 

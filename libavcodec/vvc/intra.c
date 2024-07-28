@@ -664,8 +664,7 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
     const VVCSPS *sps           = fc->ps.sps;
     const int x_ctb             = rx << sps->ctb_log2_size_y;
     const int y_ctb             = ry << sps->ctb_log2_size_y;
-    CTU *ctu                    = fc->tab.ctus + rs;
-    CodingUnit *cu              = ctu->cus;
+    CodingUnit *cu              = fc->tab.cus[rs];
     int ret                     = 0;
 
     lc->num_ras[0] = lc->num_ras[1] = 0;
@@ -691,7 +690,7 @@ int ff_vvc_reconstruct(VVCLocalContext *lc, const int rs, const int rx, const in
             ibc_fill_vir_buf(lc, cu);
         cu = cu->next;
     }
-    ff_vvc_ctu_free_cus(ctu);
+    ff_vvc_ctu_free_cus(fc->tab.cus + rs);
     return ret;
 }
 
