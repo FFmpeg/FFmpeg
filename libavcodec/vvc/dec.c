@@ -145,6 +145,8 @@ static void min_cb_nz_tl_init(TabList *l, VVCFrameContext *fc)
         TL_ADD(cp_mv[i],     pic_size_in_min_cb * MAX_CONTROL_POINTS);
         TL_ADD(cpm[i],       pic_size_in_min_cb);
     }
+    // For luma, qp can only change at the CU level, so the qp tab size is related to the CU.
+    TL_ADD(qp[LUMA], pic_size_in_min_cb);
 }
 
 static void min_pu_tl_init(TabList *l, VVCFrameContext *fc)
@@ -186,7 +188,6 @@ static void min_tu_tl_init(TabList *l, VVCFrameContext *fc)
 
     for (int i = 0; i < VVC_MAX_SAMPLE_ARRAYS; i++) {
         TL_ADD(tu_coded_flag[i], pic_size_in_min_tu);
-        TL_ADD(qp[i],            pic_size_in_min_tu);
 
         for (int vertical = 0; vertical < 2; vertical++)
             TL_ADD(bs[vertical][i], pic_size_in_min_tu);
@@ -212,6 +213,10 @@ static void min_tu_nz_tl_init(TabList *l, VVCFrameContext *fc)
         TL_ADD(max_len_p[vertical], pic_size_in_min_tu);
         TL_ADD(max_len_q[vertical], pic_size_in_min_tu);
     }
+
+    // For chroma, considering the joint CbCr, the QP tab size is related to the TU.
+    for (int i = CB; i < VVC_MAX_SAMPLE_ARRAYS; i++)
+        TL_ADD(qp[i], pic_size_in_min_tu);
 }
 
 static void pixel_buffer_nz_tl_init(TabList *l, VVCFrameContext *fc)
