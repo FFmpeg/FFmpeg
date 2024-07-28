@@ -115,6 +115,7 @@ typedef struct AviSynthContext {
     int error;
 
     uint32_t flags;
+    struct AviSynthLibrary avs_library;
 } AviSynthContext;
 
 static const int avs_planes_packed[1] = { 0 };
@@ -128,20 +129,16 @@ static const int avs_planes_yuva[4]   = { AVS_PLANAR_Y, AVS_PLANAR_U,
 static const int avs_planes_rgba[4]   = { AVS_PLANAR_G, AVS_PLANAR_B,
                                           AVS_PLANAR_R, AVS_PLANAR_A };
 
-static AVMutex avisynth_mutex = AV_MUTEX_INITIALIZER;
-
-static AviSynthLibrary avs_library;
-
-static av_cold int avisynth_load_library(void)
+static av_cold int avisynth_load_library(AviSynthContext *avs)
 {
-    avs_library.library = dlopen(AVISYNTH_LIB, RTLD_NOW | RTLD_LOCAL);
-    if (!avs_library.library)
+    avs->avs_library.library = dlopen(AVISYNTH_LIB, RTLD_NOW | RTLD_LOCAL);
+    if (!avs->avs_library.library)
         return AVERROR_UNKNOWN;
 
 #define LOAD_AVS_FUNC(name, continue_on_fail)                          \
-        avs_library.name = (name ## _func)                             \
-                           dlsym(avs_library.library, #name);          \
-        if (!continue_on_fail && !avs_library.name)                    \
+        avs->avs_library.name = (name ## _func)                             \
+                           dlsym(avs->avs_library.library, #name);          \
+        if (!continue_on_fail && !avs->avs_library.name)                    \
             goto fail;
 
     LOAD_AVS_FUNC(avs_bit_blt, 0);
@@ -177,7 +174,7 @@ static av_cold int avisynth_load_library(void)
     return 0;
 
 fail:
-    dlclose(avs_library.library);
+    dlclose(avs->avs_library.library);
     return AVERROR_UNKNOWN;
 }
 
@@ -189,13 +186,13 @@ static av_cold int avisynth_context_create(AVFormatContext *s)
     AviSynthContext *avs = s->priv_data;
     int ret;
 
-    if (!avs_library.library)
-        if (ret = avisynth_load_library())
+    if (!avs->avs_library.library)
+        if (ret = avisynth_load_library(avs))
             return ret;
 
-    avs->env = avs_library.avs_create_script_environment(3);
-    if (avs_library.avs_get_error) {
-        const char *error = avs_library.avs_get_error(avs->env);
+    avs->env = avs->avs_library.avs_create_script_environment(3);
+    if (avs->avs_library.avs_get_error) {
+        const char *error = avs->avs_library.avs_get_error(avs->env);
         if (error) {
             av_log(s, AV_LOG_ERROR, "%s\n", error);
             return AVERROR_UNKNOWN;
@@ -208,11 +205,11 @@ static av_cold int avisynth_context_create(AVFormatContext *s)
 static av_cold void avisynth_context_destroy(AviSynthContext *avs)
 {
     if (avs->clip) {
-        avs_library.avs_release_clip(avs->clip);
+        avs->avs_library.avs_release_clip(avs->clip);
         avs->clip = NULL;
     }
     if (avs->env) {
-        avs_library.avs_delete_script_environment(avs->env);
+        avs->avs_library.avs_delete_script_environment(avs->env);
         avs->env = NULL;
     }
 }
@@ -486,17 +483,17 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
      * version 9 at the minimum.  Technically, 8.1 works, but the time
      * distance between 8.1 and 9 is very small, so just restrict it to 9. */
 
-    if (avs_library.avs_get_version(avs->clip) >= 9) {
+    if (avs->avs_library.avs_get_version(avs->clip) >= 9) {
 
-        frame  = avs_library.avs_get_frame(avs->clip, 0);
-        avsmap = avs_library.avs_get_frame_props_ro(avs->env, frame);
+        frame  = avs->avs_library.avs_get_frame(avs->clip, 0);
+        avsmap = avs->avs_library.avs_get_frame_props_ro(avs->env, frame);
 
         /* Field order */
         if(avs->flags & AVISYNTH_FRAMEPROP_FIELD_ORDER) {
-            if(avs_library.avs_prop_get_type(avs->env, avsmap, "_FieldBased") == AVS_PROPTYPE_UNSET) {
+            if(avs->avs_library.avs_prop_get_type(avs->env, avsmap, "_FieldBased") == AVS_PROPTYPE_UNSET) {
                 st->codecpar->field_order = AV_FIELD_UNKNOWN;
             } else {
-                switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_FieldBased", 0, &error)) {
+                switch (avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_FieldBased", 0, &error)) {
                 case 0:
                     st->codecpar->field_order = AV_FIELD_PROGRESSIVE;
                     break;
@@ -514,10 +511,10 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
         /* Color Range */
         if(avs->flags & AVISYNTH_FRAMEPROP_RANGE) {
-            if(avs_library.avs_prop_get_type(avs->env, avsmap, "_ColorRange") == AVS_PROPTYPE_UNSET) {
+            if(avs->avs_library.avs_prop_get_type(avs->env, avsmap, "_ColorRange") == AVS_PROPTYPE_UNSET) {
                 st->codecpar->color_range = AVCOL_RANGE_UNSPECIFIED;
             } else {
-                switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ColorRange", 0, &error)) {
+                switch (avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_ColorRange", 0, &error)) {
                 case 0:
                     st->codecpar->color_range = AVCOL_RANGE_JPEG;
                     break;
@@ -532,7 +529,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
         /* Color Primaries */
         if(avs->flags & AVISYNTH_FRAMEPROP_PRIMARIES) {
-            switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Primaries", 0, &error)) {
+            switch (avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_Primaries", 0, &error)) {
             case 1:
                 st->codecpar->color_primaries = AVCOL_PRI_BT709;
                 break;
@@ -576,7 +573,7 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
         /* Color Transfer Characteristics */
         if(avs->flags & AVISYNTH_FRAMEPROP_TRANSFER) {
-            switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Transfer", 0, &error)) {
+            switch (avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_Transfer", 0, &error)) {
             case 1:
                 st->codecpar->color_trc = AVCOL_TRC_BT709;
                 break;
@@ -635,10 +632,10 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
         /* Matrix coefficients */
         if(avs->flags & AVISYNTH_FRAMEPROP_MATRIX) {
-            if(avs_library.avs_prop_get_type(avs->env, avsmap, "_Matrix") == AVS_PROPTYPE_UNSET) {
+            if(avs->avs_library.avs_prop_get_type(avs->env, avsmap, "_Matrix") == AVS_PROPTYPE_UNSET) {
                 st->codecpar->color_space = AVCOL_SPC_UNSPECIFIED;
             } else {
-                switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_Matrix", 0, &error)) {
+                switch (avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_Matrix", 0, &error)) {
                 case 0:
                     st->codecpar->color_space = AVCOL_SPC_RGB;
                     break;
@@ -689,10 +686,10 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
         /* Chroma Location */
         if(avs->flags & AVISYNTH_FRAMEPROP_CHROMA_LOCATION) {
-            if(avs_library.avs_prop_get_type(avs->env, avsmap, "_ChromaLocation") == AVS_PROPTYPE_UNSET) {
+            if(avs->avs_library.avs_prop_get_type(avs->env, avsmap, "_ChromaLocation") == AVS_PROPTYPE_UNSET) {
                 st->codecpar->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
             } else {
-                switch (avs_library.avs_prop_get_int(avs->env, avsmap, "_ChromaLocation", 0, &error)) {
+                switch (avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_ChromaLocation", 0, &error)) {
                 case 0:
                     st->codecpar->chroma_location = AVCHROMA_LOC_LEFT;
                     break;
@@ -719,12 +716,12 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
         /* Sample aspect ratio */
         if(avs->flags & AVISYNTH_FRAMEPROP_SAR) {
-            sar_num = avs_library.avs_prop_get_int(avs->env, avsmap, "_SARNum", 0, &error);
-            sar_den = avs_library.avs_prop_get_int(avs->env, avsmap, "_SARDen", 0, &error);
+            sar_num = avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_SARNum", 0, &error);
+            sar_den = avs->avs_library.avs_prop_get_int(avs->env, avsmap, "_SARDen", 0, &error);
             st->sample_aspect_ratio = (AVRational){ sar_num, sar_den };
         }
 
-        avs_library.avs_release_video_frame(frame);
+        avs->avs_library.avs_release_video_frame(frame);
     } else {
         st->codecpar->field_order = AV_FIELD_UNKNOWN;
         /* AviSynth works with frame-based video, detecting field order can
@@ -753,9 +750,9 @@ static int avisynth_create_stream_audio(AVFormatContext *s, AVStream *st)
     st->duration                        = avs->vi->num_audio_samples;
     avpriv_set_pts_info(st, 64, 1, avs->vi->audio_samples_per_second);
 
-    if (avs_library.avs_get_version(avs->clip) >= 10)
+    if (avs->avs_library.avs_get_version(avs->clip) >= 10)
         av_channel_layout_from_mask(&st->codecpar->ch_layout,
-                                    avs_library.avs_get_channel_mask(avs->vi));
+                                    avs->avs_library.avs_get_channel_mask(avs->vi));
 
     switch (avs->vi->sample_type) {
     case AVS_SAMPLE_INT8:
@@ -817,13 +814,13 @@ static int avisynth_open_file(AVFormatContext *s)
     if (ret = avisynth_context_create(s))
         return ret;
 
-    if (!avs_library.avs_check_version(avs->env, 7)) {
+    if (!avs->avs_library.avs_check_version(avs->env, 7)) {
         AVS_Value args[] = {
             avs_new_value_string(s->url),
             avs_new_value_bool(1) // filename is in UTF-8
         };
-        val = avs_library.avs_invoke(avs->env, "Import",
-                                     avs_new_value_array(args, 2), 0);
+        val = avs->avs_library.avs_invoke(avs->env, "Import",
+                                          avs_new_value_array(args, 2), 0);
     } else {
         AVS_Value arg;
 #ifdef _WIN32
@@ -837,7 +834,7 @@ static int avisynth_open_file(AVFormatContext *s)
 #else
         arg = avs_new_value_string(s->url);
 #endif
-        val = avs_library.avs_invoke(avs->env, "Import", arg, 0);
+        val = avs->avs_library.avs_invoke(avs->env, "Import", arg, 0);
 #ifdef _WIN32
         av_free(filename_ansi);
 #endif
@@ -854,14 +851,14 @@ static int avisynth_open_file(AVFormatContext *s)
         goto fail;
     }
 
-    avs->clip = avs_library.avs_take_clip(val, avs->env);
-    avs->vi   = avs_library.avs_get_video_info(avs->clip);
+    avs->clip = avs->avs_library.avs_take_clip(val, avs->env);
+    avs->vi   = avs->avs_library.avs_get_video_info(avs->clip);
 
     /* On Windows, FFmpeg supports AviSynth interface version 6 or higher.
      * This includes AviSynth 2.6 RC1 or higher, and AviSynth+ r1718 or higher,
      * and excludes 2.5 and the 2.6 alphas. */
 
-    if (avs_library.avs_get_version(avs->clip) < 6) {
+    if (avs->avs_library.avs_get_version(avs->clip) < 6) {
         av_log(s, AV_LOG_ERROR,
                "AviSynth version is too old. Please upgrade to either AviSynth 2.6 >= RC1 or AviSynth+ >= r1718.\n");
         ret = AVERROR_UNKNOWN;
@@ -869,7 +866,7 @@ static int avisynth_open_file(AVFormatContext *s)
     }
 
     /* Release the AVS_Value as it will go out of scope. */
-    avs_library.avs_release_value(val);
+    avs->avs_library.avs_release_value(val);
 
     if (ret = avisynth_create_stream(s))
         goto fail;
@@ -917,7 +914,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     if (discard)
         return 0;
 
-    bits = avs_library.avs_bits_per_pixel(avs->vi);
+    bits = avs->avs_library.avs_bits_per_pixel(avs->vi);
 
     /* Without the cast to int64_t, calculation overflows at about 9k x 9k
      * resolution. */
@@ -934,8 +931,8 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     pkt->duration = 1;
     pkt->stream_index = avs->curr_stream;
 
-    frame = avs_library.avs_get_frame(avs->clip, n);
-    error = avs_library.avs_clip_get_error(avs->clip);
+    frame = avs->avs_library.avs_get_frame(avs->clip, n);
+    error = avs->avs_library.avs_clip_get_error(avs->clip);
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
         avs->error = 1;
@@ -946,26 +943,26 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     dst_p = pkt->data;
     for (i = 0; i < avs->n_planes; i++) {
         plane = avs->planes[i];
-        src_p = avs_library.avs_get_read_ptr_p(frame, plane);
-        pitch = avs_library.avs_get_pitch_p(frame, plane);
+        src_p = avs->avs_library.avs_get_read_ptr_p(frame, plane);
+        pitch = avs->avs_library.avs_get_pitch_p(frame, plane);
 
-        rowsize     = avs_library.avs_get_row_size_p(frame, plane);
-        planeheight = avs_library.avs_get_height_p(frame, plane);
+        rowsize     = avs->avs_library.avs_get_row_size_p(frame, plane);
+        planeheight = avs->avs_library.avs_get_height_p(frame, plane);
 
         /* Flip RGB video. */
-        if (avs_library.avs_is_color_space(avs->vi, AVS_CS_BGR)   ||
-            avs_library.avs_is_color_space(avs->vi, AVS_CS_BGR48) ||
-            avs_library.avs_is_color_space(avs->vi, AVS_CS_BGR64)) {
+        if (avs->avs_library.avs_is_color_space(avs->vi, AVS_CS_BGR)   ||
+            avs->avs_library.avs_is_color_space(avs->vi, AVS_CS_BGR48) ||
+            avs->avs_library.avs_is_color_space(avs->vi, AVS_CS_BGR64)) {
             src_p = src_p + (planeheight - 1) * pitch;
             pitch = -pitch;
         }
 
-        avs_library.avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch,
-                                 rowsize, planeheight);
+        avs->avs_library.avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch,
+                                     rowsize, planeheight);
         dst_p += rowsize * planeheight;
     }
 
-    avs_library.avs_release_video_frame(frame);
+    avs->avs_library.avs_release_video_frame(frame);
     return 0;
 }
 
@@ -1025,8 +1022,8 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
     pkt->duration = samples;
     pkt->stream_index = avs->curr_stream;
 
-    avs_library.avs_get_audio(avs->clip, pkt->data, n, samples);
-    error = avs_library.avs_clip_get_error(avs->clip);
+    avs->avs_library.avs_get_audio(avs->clip, pkt->data, n, samples);
+    error = avs->avs_library.avs_clip_get_error(avs->clip);
     if (error) {
         av_log(s, AV_LOG_ERROR, "%s\n", error);
         avs->error = 1;
@@ -1040,16 +1037,9 @@ static av_cold int avisynth_read_header(AVFormatContext *s)
 {
     int ret;
 
-    // Calling library must implement a lock for thread-safe opens.
-    if (ff_mutex_lock(&avisynth_mutex))
-        return AVERROR_UNKNOWN;
-
-    if (ret = avisynth_open_file(s)) {
-        ff_mutex_unlock(&avisynth_mutex);
+    if (ret = avisynth_open_file(s))
         return ret;
-    }
 
-    ff_mutex_unlock(&avisynth_mutex);
     return 0;
 }
 
@@ -1085,8 +1075,13 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static av_cold int avisynth_read_close(AVFormatContext *s)
 {
-    avisynth_context_destroy(s->priv_data);
-    dlclose(avs_library.library);
+    AviSynthContext *avs = s->priv_data;
+
+    if (avs->avs_library.library) {
+        avisynth_context_destroy(s->priv_data);
+        dlclose(avs->avs_library.library);
+    }
+
     return 0;
 }
 
