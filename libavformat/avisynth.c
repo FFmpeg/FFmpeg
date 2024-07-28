@@ -118,17 +118,6 @@ typedef struct AviSynthContext {
     struct AviSynthLibrary avs_library;
 } AviSynthContext;
 
-static const int avs_planes_packed[1] = { 0 };
-static const int avs_planes_grey[1]   = { AVS_PLANAR_Y };
-static const int avs_planes_yuv[3]    = { AVS_PLANAR_Y, AVS_PLANAR_U,
-                                          AVS_PLANAR_V };
-static const int avs_planes_rgb[3]    = { AVS_PLANAR_G, AVS_PLANAR_B,
-                                          AVS_PLANAR_R };
-static const int avs_planes_yuva[4]   = { AVS_PLANAR_Y, AVS_PLANAR_U,
-                                          AVS_PLANAR_V, AVS_PLANAR_A };
-static const int avs_planes_rgba[4]   = { AVS_PLANAR_G, AVS_PLANAR_B,
-                                          AVS_PLANAR_R, AVS_PLANAR_A };
-
 static av_cold int avisynth_load_library(AviSynthContext *avs)
 {
     avs->avs_library.library = dlopen(AVISYNTH_LIB, RTLD_NOW | RTLD_LOCAL);
@@ -224,6 +213,17 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     int planar = 0; // 0: packed, 1: YUV, 2: Y8, 3: Planar RGB, 4: YUVA, 5: Planar RGBA
     int sar_num = 1;
     int sar_den = 1;
+
+    static const int avs_planes_packed[1] = { 0 };
+    static const int avs_planes_grey[1]   = { AVS_PLANAR_Y };
+    static const int avs_planes_yuv[3]    = { AVS_PLANAR_Y, AVS_PLANAR_U,
+                                              AVS_PLANAR_V };
+    static const int avs_planes_rgb[3]    = { AVS_PLANAR_G, AVS_PLANAR_B,
+                                              AVS_PLANAR_R };
+    static const int avs_planes_yuva[4]   = { AVS_PLANAR_Y, AVS_PLANAR_U,
+                                              AVS_PLANAR_V, AVS_PLANAR_A };
+    static const int avs_planes_rgba[4]   = { AVS_PLANAR_G, AVS_PLANAR_B,
+                                              AVS_PLANAR_R, AVS_PLANAR_A };
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
