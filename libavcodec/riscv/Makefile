@@ -16,6 +16,7 @@ RVV-OBJS-$(CONFIG_BLOCKDSP) += riscv/blockdsp_rvv.o
 OBJS-$(CONFIG_BSWAPDSP) += riscv/bswapdsp_init.o
 RV-OBJS-$(CONFIG_BSWAPDSP) += riscv/bswapdsp_rvb.o
 RVV-OBJS-$(CONFIG_BSWAPDSP) += riscv/bswapdsp_rvv.o
+RVVB-OBJS-$(CONFIG_BSWAPDSP) += riscv/bswapdsp_rvvb.o
 OBJS-$(CONFIG_EXR_DECODER) += riscv/exrdsp_init.o
 RVV-OBJS-$(CONFIG_EXR_DECODER) += riscv/exrdsp_rvv.o
 OBJS-$(CONFIG_FLAC_DECODER) += riscv/flacdsp_init.o
