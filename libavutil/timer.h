@@ -61,8 +61,6 @@
 #   include "arm/timer.h"
 #elif ARCH_PPC
 #   include "ppc/timer.h"
-#elif ARCH_RISCV
-#   include "riscv/timer.h"
 #elif ARCH_X86
 #   include "x86/timer.h"
 #elif ARCH_LOONGARCH
