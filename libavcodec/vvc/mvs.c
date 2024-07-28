@@ -614,7 +614,7 @@ static int check_available(Neighbour *n, const VVCLocalContext *lc, const int ch
     if (!n->checked) {
         n->checked = 1;
         n->available = !sps->r->sps_entropy_coding_sync_enabled_flag || ((n->x >> sps->ctb_log2_size_y) <= (cu->x0 >> sps->ctb_log2_size_y));
-        n->available &= cu->pred_mode == pred_flag_to_mode(TAB_MVF(n->x, n->y).pred_flag);
+        n->available &= is_available(fc, n->x, n->y) && cu->pred_mode == pred_flag_to_mode(TAB_MVF(n->x, n->y).pred_flag);
         if (check_mer)
             n->available &= !is_same_mer(fc, n->x, n->y, cu->x0, cu->y0);
     }

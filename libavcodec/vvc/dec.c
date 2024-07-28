@@ -159,6 +159,16 @@ static void min_pu_tl_init(TabList *l, VVCFrameContext *fc)
     TL_ADD(msf, pic_size_in_min_pu);
     TL_ADD(iaf, pic_size_in_min_pu);
     TL_ADD(mmi, pic_size_in_min_pu);
+}
+
+static void min_pu_nz_tl_init(TabList *l, VVCFrameContext *fc)
+{
+    const VVCPPS *pps            = fc->ps.pps;
+    const int pic_size_in_min_pu = pps ? pps->min_pu_width * pps->min_pu_height : 0;
+    const int changed            = fc->tab.sz.pic_size_in_min_pu != pic_size_in_min_pu;
+
+    tl_init(l, 0, changed);
+
     TL_ADD(mvf, pic_size_in_min_pu);
 }
 
@@ -302,6 +312,7 @@ static int frame_context_for_each_tl(VVCFrameContext *fc, int (*unary_fn)(TabLis
         min_cb_tl_init,
         min_cb_nz_tl_init,
         min_pu_tl_init,
+        min_pu_nz_tl_init,
         min_tu_tl_init,
         min_tu_nz_tl_init,
         pixel_buffer_nz_tl_init,
