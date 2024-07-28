@@ -1080,10 +1080,15 @@ static PredMode pred_mode_decode(VVCLocalContext *lc,
         }
         if (pred_mode_ibc_flag)
             pred_mode = MODE_IBC;
-        return pred_mode;
     } else {
-        return MODE_INTRA;
+        pred_mode = MODE_INTRA;
     }
+
+    set_cb_tab(lc, fc->tab.cpm[cu->ch_type], pred_mode);
+    if (tree_type == SINGLE_TREE)
+        set_cb_tab(lc, fc->tab.cpm[CHROMA], pred_mode);
+
+    return pred_mode;
 }
 
 static void sbt_info(VVCLocalContext *lc, const VVCSPS *sps)
@@ -1232,12 +1237,8 @@ static void set_cu_tabs(const VVCLocalContext *lc, const CodingUnit *cu)
     const VVCFrameContext *fc   = lc->fc;
     const TransformUnit *tu     = cu->tus.head;
 
-    if (cu->tree_type != DUAL_TREE_CHROMA) {
-        set_cb_tab(lc, fc->tab.cpm[LUMA], cu->pred_mode);
+    if (cu->tree_type != DUAL_TREE_CHROMA)
         set_cb_tab(lc, fc->tab.skip, cu->skip_flag);
-    }
-    if (fc->ps.sps->r->sps_chroma_format_idc && cu->tree_type != DUAL_TREE_LUMA)
-        set_cb_tab(lc, fc->tab.cpm[CHROMA], cu->pred_mode);
 
     while (tu) {
           for (int j = 0; j < tu->nb_tbs; j++) {
