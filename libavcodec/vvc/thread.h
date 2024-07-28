@@ -32,5 +32,6 @@ int ff_vvc_frame_thread_init(VVCFrameContext *fc);
 void ff_vvc_frame_thread_free(VVCFrameContext *fc);
 int ff_vvc_frame_submit(VVCContext *s, VVCFrameContext *fc);
 int ff_vvc_frame_wait(VVCContext *s, VVCFrameContext *fc);
+int ff_vvc_per_frame_init(VVCFrameContext *fc);
 
 #endif // AVCODEC_VVC_THREAD_H

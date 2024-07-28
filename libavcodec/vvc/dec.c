@@ -82,7 +82,13 @@ static int tl_create(TabList *l)
             if (!*t->tab)
                 return AVERROR(ENOMEM);
         }
-    } else if (l->zero) {
+    }
+    return 0;
+}
+
+static int tl_zero(TabList *l)
+{
+    if (l->zero) {
         for (int i = 0; i < l->nb_tabs; i++) {
             Tab *t = l->tabs + i;
             memset(*t->tab, 0, t->size);
@@ -402,6 +408,11 @@ static int pic_arrays_init(VVCContext *s, VVCFrameContext *fc)
     fc->tab.sz.pixel_shift        = sps->pixel_shift;
 
     return 0;
+}
+
+int ff_vvc_per_frame_init(VVCFrameContext *fc)
+{
+    return frame_context_for_each_tl(fc, tl_zero);
 }
 
 static int min_positive(const int idx, const int diff, const int min_diff)
