@@ -41,14 +41,17 @@ func ff_rv34_idct_dc_add_rvv, zve32x
         mul           t1, t1, a2
         addi          t1, t1, 512
         srai          t1, t1, 10
-        vsetivli      zero, 4*4, e16, m2, ta, ma
-        vzext.vf2     v2, v0
-        vadd.vx       v2, v2, t1
-        vmax.vx       v2, v2, zero
-        vsetvli       zero, zero, e8, m1, ta, ma
-        vnclipu.wi    v0, v2, 0
-        vsetivli      zero, 4, e8, mf4, ta, ma
-        vsse32.v      v0, (a0), a1
+        vsetivli    zero, 4*4, e8, m2, ta, ma
+        bgez    t1, 1f
 
+        neg     t1, t1
+        vssubu.vx   v0, v0, t1
+        vsetivli    zero, 4, e8, mf4, ta, ma
+        vsse32.v    v0, (a0), a1
+        ret
+1:
+        vsaddu.vx   v0, v0, t1
+        vsetivli    zero, 4, e8, mf4, ta, ma
+        vsse32.v    v0, (a0), a1
         ret
 endfunc
