@@ -385,14 +385,15 @@ static int task_priority_higher(const AVTask *_a, const AVTask *_b)
     const VVCTask *a = (const VVCTask*)_a;
     const VVCTask *b = (const VVCTask*)_b;
 
-    CHECK(a->fc->decode_order, b->fc->decode_order);             //decode order
 
-    if (a->stage == VVC_TASK_STAGE_PARSE || b->stage == VVC_TASK_STAGE_PARSE) {
+    if (a->stage <= VVC_TASK_STAGE_PARSE || b->stage <= VVC_TASK_STAGE_PARSE) {
         CHECK(a->stage, b->stage);
+        CHECK(a->fc->decode_order, b->fc->decode_order);           //decode order
         CHECK(a->ry, b->ry);
         return a->rx < b->rx;
     }
 
+    CHECK(a->fc->decode_order, b->fc->decode_order);              //decode order
     CHECK(a->rx + a->ry + a->stage, b->rx + b->ry + b->stage);    //zigzag with type
     CHECK(a->rx + a->ry, b->rx + b->ry);                          //zigzag
     return a->ry < b->ry;
