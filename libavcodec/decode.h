@@ -173,7 +173,7 @@ int ff_frame_new_side_data(const AVCodecContext *avctx, AVFrame *frame,
  */
 int ff_frame_new_side_data_from_buf(const AVCodecContext *avctx,
                                     AVFrame *frame, enum AVFrameSideDataType type,
-                                    AVBufferRef **buf, AVFrameSideData **sd);
+                                    AVBufferRef **buf);
 
 /**
  * Same as `ff_frame_new_side_data_from_buf`, but taking a AVFrameSideData

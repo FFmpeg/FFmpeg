@@ -1996,7 +1996,7 @@ finish:
 
 int ff_frame_new_side_data_from_buf(const AVCodecContext *avctx,
                                     AVFrame *frame, enum AVFrameSideDataType type,
-                                    AVBufferRef **buf, AVFrameSideData **psd)
+                                    AVBufferRef **buf)
 {
     return ff_frame_new_side_data_from_buf_ext(avctx,
                                                &frame->side_data, &frame->nb_side_data,

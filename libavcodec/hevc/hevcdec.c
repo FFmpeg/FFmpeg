@@ -2871,7 +2871,7 @@ static int set_side_data(HEVCContext *s)
         if (!info_ref)
             return AVERROR(ENOMEM);
 
-        ret = ff_frame_new_side_data_from_buf(s->avctx, out, AV_FRAME_DATA_DYNAMIC_HDR_PLUS, &info_ref, NULL);
+        ret = ff_frame_new_side_data_from_buf(s->avctx, out, AV_FRAME_DATA_DYNAMIC_HDR_PLUS, &info_ref);
         if (ret < 0)
             return ret;
     }

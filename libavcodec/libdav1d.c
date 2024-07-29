@@ -528,7 +528,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
                 if (!res)
                     break;
 
-                res = ff_frame_new_side_data_from_buf(c, frame, AV_FRAME_DATA_A53_CC, &buf, NULL);
+                res = ff_frame_new_side_data_from_buf(c, frame, AV_FRAME_DATA_A53_CC, &buf);
                 if (res < 0)
                     goto fail;
 

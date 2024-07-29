@@ -970,7 +970,7 @@ static int export_itut_t35(AVCodecContext *avctx, AVFrame *frame,
             if (!ret)
                 break;
 
-            ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_A53_CC, &buf, NULL);
+            ret = ff_frame_new_side_data_from_buf(avctx, frame, AV_FRAME_DATA_A53_CC, &buf);
             if (ret < 0)
                 return ret;
 
