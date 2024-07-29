@@ -25,7 +25,7 @@
 
 #include <limits.h>
 
-#include <VSScript4.h>
+#include <vapoursynth/VSScript4.h>
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
@@ -39,10 +39,25 @@
 #include "demux.h"
 #include "internal.h"
 
+/* Platform-specific directives. */
+#ifdef _WIN32
+  #include <windows.h>
+  #include "compat/w32dlfcn.h"
+  #include "libavutil/wchar_filename.h"
+  #undef EXTERN_C
+  #define VSSCRIPT_LIB "VSScript.dll"
+#else
+  #include <dlfcn.h>
+  #define VSSCRIPT_NAME "libvapoursynth-script"
+  #define VSSCRIPT_LIB VSSCRIPT_NAME SLIBSUF
+#endif
+
 struct VSState {
     const VSSCRIPTAPI *vssapi;
     VSScript *vss;
 };
+
+typedef const VSSCRIPTAPI *(*VSScriptGetAPIFunc)(int version);
 
 typedef struct VSContext {
     const AVClass *class;
@@ -51,6 +66,7 @@ typedef struct VSContext {
 
     const VSSCRIPTAPI *vssapi;
     const VSAPI *vsapi;
+    void *vslibrary;
 
     VSNode *outnode;
     int is_cfr;
@@ -69,6 +85,40 @@ static const AVOption options[] = {
     {"max_script_size",    "set max file size supported (in bytes)", OFFSET(max_script_size),    AV_OPT_TYPE_INT64, {.i64 = 1 * 1024 * 1024}, 0,    SIZE_MAX - 1, A|D},
     {NULL}
 };
+
+static av_cold void* vs_load_library(VSScriptGetAPIFunc *get_vssapi)
+{
+    void *vslibrary = NULL;
+#ifdef _WIN32
+    const HKEY hkeys[] = {HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
+    LONG r;
+    WCHAR vss_path[512];
+    DWORD buf_size = sizeof(vss_path) - 2;
+    char *vss_path_utf8;
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(hkeys); i++) {
+        if ((r = RegGetValueW(hkeys[i], L"SOFTWARE\\VapourSynth",
+                      L"VSScriptDLL", RRF_RT_REG_SZ, NULL,
+                      &vss_path, &buf_size)) == ERROR_SUCCESS)
+            break;
+    }
+    if (r == ERROR_SUCCESS && wchartoutf8(vss_path, &vss_path_utf8) == 0) {
+        vslibrary = dlopen(vss_path_utf8, RTLD_NOW | RTLD_GLOBAL);
+        av_free(vss_path_utf8);
+    }
+    else
+#endif
+    vslibrary = dlopen(VSSCRIPT_LIB, RTLD_NOW | RTLD_GLOBAL);
+
+    if (vslibrary != NULL) {
+        if (!(*get_vssapi = (VSScriptGetAPIFunc)dlsym(vslibrary, "getVSScriptAPI"))) {
+            dlclose(vslibrary);
+            return NULL;
+        }
+    }
+    return vslibrary;
+}
 
 static void free_vss_state(void *opaque, uint8_t *data)
 {
@@ -90,6 +140,9 @@ static av_cold int read_close_vs(AVFormatContext *s)
 
     vs->vsapi = NULL;
     vs->outnode = NULL;
+
+    if (vs->vslibrary)
+        dlclose(vs->vslibrary);
 
     return 0;
 }
@@ -170,6 +223,7 @@ static av_cold int read_header_vs(AVFormatContext *s)
     AVStream *st;
     AVIOContext *pb = s->pb;
     VSContext *vs = s->priv_data;
+    VSScriptGetAPIFunc get_vssapi;
     int64_t sz = avio_size(pb);
     char *buf = NULL;
     char dummy;
@@ -178,7 +232,14 @@ static av_cold int read_header_vs(AVFormatContext *s)
     struct VSState *vss_state;
     int err = 0;
 
-    if (!(vs->vssapi = getVSScriptAPI(VSSCRIPT_API_VERSION))) {
+    if (!(vs->vslibrary = vs_load_library(&get_vssapi))) {
+        av_log(s, AV_LOG_ERROR, "Could not open " VSSCRIPT_LIB ". "
+                                "Check VapourSynth installation.\n");
+        err = AVERROR_EXTERNAL;
+        goto done;
+    }
+
+    if (!(vs->vssapi = get_vssapi(VSSCRIPT_API_VERSION))) {
         av_log(s, AV_LOG_ERROR, "Failed to initialize VSScript (possibly PYTHONPATH not set).\n");
         err = AVERROR_EXTERNAL;
         goto done;
