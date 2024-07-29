@@ -80,6 +80,7 @@
             return ts.tv_sec * INT64_C(1000000000) + ts.tv_nsec;
         }
 #       define AV_READ_TIME ff_read_time
+#       define FF_TIMER_UNITS "ns"
 #   endif
 #endif
 
