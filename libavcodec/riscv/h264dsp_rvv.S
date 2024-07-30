@@ -32,17 +32,15 @@ func ff_h264_weight_pixels_simple_8_rvv, zve32x
         csrwi   vxrm, 0
         sll     a5, a5, a3
 1:
-        vsetvli zero, a6, e32, m4, ta, ma
+        vsetvli     zero, a6, e16, m2, ta, ma
         vle8.v  v8, (a0)
         addi    a2, a2, -1
-        vmv.v.x v16, a5
-        vsetvli zero, zero, e16, m2, ta, ma
         vzext.vf2   v24, v8
-        vwmaccsu.vx v16, a4, v24
-        vnclip.wx   v16, v16, a3
+        vmul.vx     v16, v24, a4
+        vsadd.vx    v16, v16, a5
         vmax.vx v16, v16, zero
         vsetvli zero, zero, e8, m1, ta, ma
-        vnclipu.wi  v8, v16, 0
+        vnclipu.wx  v8, v16, a3
         vse8.v  v8, (a0)
         add     a0, a0, a1
         bnez    a2, 1b
@@ -85,23 +83,20 @@ func ff_h264_weight_pixels_8_rvv, zve32x
         mv      t0, a0
         mv      t6, a6
 2:
-        vsetvli t2, a2, e32, m8, ta, ma
+        vsetvli     t2, a2, e16, m8, ta, ma
         vlsseg2e8.v v0, (t0), a1
         addi    t6, t6, -2
-        vmv.v.x v16, a5
-        vmv.v.x v24, a5
-        vsetvli zero, zero, e16, m4, ta, ma
-        vzext.vf2   v8, v0
-        vzext.vf2   v12, v2
-        vwmaccsu.vx v16, a4, v8
-        vwmaccsu.vx v24, a4, v12
-        vnclip.wx   v8, v16, a3
-        vnclip.wx   v12, v24, a3
-        vmax.vx v8, v8, zero
-        vmax.vx v12, v12, zero
-        vsetvli zero, zero, e8, m2, ta, ma
-        vnclipu.wi  v0, v8, 0
-        vnclipu.wi  v2, v12, 0
+        vzext.vf2   v16, v0
+        vzext.vf2   v24, v4
+        vmul.vx     v16, v16, a4
+        vmul.vx     v24, v24, a4
+        vsadd.vx    v16, v16, a5
+        vsadd.vx    v24, v24, a5
+        vmax.vx     v16, v16, zero
+        vmax.vx     v24, v24, zero
+        vsetvli     zero, zero, e8, m4, ta, ma
+        vnclipu.wx  v0, v16, a3
+        vnclipu.wx  v4, v24, a3
         vssseg2e8.v v0, (t0), a1
         addi    t0, t0, 2
         bnez    t6, 2b
