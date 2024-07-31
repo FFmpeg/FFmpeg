@@ -60,6 +60,7 @@ const enum AVPixelFormat ff_amf_pix_fmts[] = {
 #if CONFIG_DXVA2
     AV_PIX_FMT_DXVA2_VLD,
 #endif
+    AV_PIX_FMT_P010,
     AV_PIX_FMT_NONE
 };
 
@@ -72,6 +73,7 @@ static const FormatMap format_map[] =
 {
     { AV_PIX_FMT_NONE,       AMF_SURFACE_UNKNOWN },
     { AV_PIX_FMT_NV12,       AMF_SURFACE_NV12 },
+    { AV_PIX_FMT_P010,       AMF_SURFACE_P010 },
     { AV_PIX_FMT_BGR0,       AMF_SURFACE_BGRA },
     { AV_PIX_FMT_RGB0,       AMF_SURFACE_RGBA },
     { AV_PIX_FMT_GRAY8,      AMF_SURFACE_GRAY8 },
@@ -783,6 +785,41 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
         ret = 0;
     }
     return ret;
+}
+
+int ff_amf_get_color_profile(AVCodecContext *avctx)
+{
+    amf_int64 color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_UNKNOWN;
+    if (avctx->color_range == AVCOL_RANGE_JPEG) {
+        /// Color Space for Full (JPEG) Range
+        switch (avctx->colorspace) {
+        case AVCOL_SPC_SMPTE170M:
+            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_601;
+            break;
+        case AVCOL_SPC_BT709:
+            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_709;
+            break;
+        case AVCOL_SPC_BT2020_NCL:
+        case AVCOL_SPC_BT2020_CL:
+            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_FULL_2020;
+            break;
+        }
+    } else {
+        /// Color Space for Limited (MPEG) range
+        switch (avctx->colorspace) {
+        case AVCOL_SPC_SMPTE170M:
+            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_601;
+            break;
+        case AVCOL_SPC_BT709:
+            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_709;
+            break;
+        case AVCOL_SPC_BT2020_NCL:
+        case AVCOL_SPC_BT2020_CL:
+            color_profile = AMF_VIDEO_CONVERTER_COLOR_PROFILE_2020;
+            break;
+        }
+    }
+    return color_profile;
 }
 
 const AVCodecHWConfigInternal *const ff_amfenc_hw_configs[] = {

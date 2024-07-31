@@ -35,8 +35,9 @@ static const AVOption options[] = {
     { "high_quality",            "High quality usecase",                     0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_HEVC_USAGE_HIGH_QUALITY              }, 0, 0, VE, .unit = "usage" },
     { "lowlatency_high_quality", "Low latency yet high quality usecase",     0, AV_OPT_TYPE_CONST, {.i64 = AMF_VIDEO_ENCODER_HEVC_USAGE_LOW_LATENCY_HIGH_QUALITY  }, 0, 0, VE, .unit = "usage" },
 
+    { "profile",        "Set the profile",           OFFSET(profile),   AV_OPT_TYPE_INT,{ .i64 = -1 }, -1, AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10, VE, .unit = "profile" },
     { "main",           "", 0,                      AV_OPT_TYPE_CONST,{ .i64 = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN }, 0, 0, VE, .unit = "profile" },
-    { "profile",        "Set the profile",           OFFSET(profile),   AV_OPT_TYPE_INT,{ .i64 = -1 }, -1, AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN, VE, .unit = "profile" },
+    { "main10",         "", 0,                      AV_OPT_TYPE_CONST,{ .i64 = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10 }, 0, 0, VE, .unit = "profile" },
 
     { "profile_tier",   "Set the profile tier (default main)",      OFFSET(tier), AV_OPT_TYPE_INT,{ .i64 = -1 }, -1, AMF_VIDEO_ENCODER_HEVC_TIER_HIGH, VE, .unit = "tier" },
     { "main",           "", 0, AV_OPT_TYPE_CONST, { .i64 = AMF_VIDEO_ENCODER_HEVC_TIER_MAIN }, 0, 0, VE, .unit = "tier" },
@@ -165,6 +166,9 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
     AMFRate             framerate;
     AMFSize             framesize = AMFConstructSize(avctx->width, avctx->height);
     int                 deblocking_filter = (avctx->flags & AV_CODEC_FLAG_LOOP_FILTER) ? 1 : 0;
+    amf_int64           color_depth;
+    amf_int64           color_profile;
+    enum                AVPixelFormat pix_fmt;
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
         framerate = AMFConstructRate(avctx->framerate.num, avctx->framerate.den);
@@ -193,6 +197,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
     switch (avctx->profile) {
     case AV_PROFILE_HEVC_MAIN:
         profile = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN;
+        break;
+    case AV_PROFILE_HEVC_MAIN_10:
+        profile = AMF_VIDEO_ENCODER_HEVC_PROFILE_MAIN_10;
         break;
     default:
         break;
@@ -232,6 +239,28 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->sample_aspect_ratio.den && avctx->sample_aspect_ratio.num) {
         AMFRatio ratio = AMFConstructRatio(avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
         AMF_ASSIGN_PROPERTY_RATIO(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_ASPECT_RATIO, ratio);
+    }
+
+    color_profile = ff_amf_get_color_profile(avctx);
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PROFILE, color_profile);
+    /// Color Range (Support for older Drivers)
+    AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_NOMINAL_RANGE, !!(avctx->color_range == AVCOL_RANGE_JPEG));
+    /// Color Depth
+    color_depth = AMF_COLOR_BIT_DEPTH_8;
+    pix_fmt = avctx->hw_frames_ctx ? ((AVHWFramesContext*)avctx->hw_frames_ctx->data)->sw_format
+                                    : avctx->pix_fmt;
+    if (pix_fmt == AV_PIX_FMT_P010) {
+        color_depth = AMF_COLOR_BIT_DEPTH_10;
+    }
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_COLOR_BIT_DEPTH, color_depth);
+    if (color_depth == AMF_COLOR_BIT_DEPTH_8) {
+        /// Color Transfer Characteristics (AMF matches ISO/IEC)
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC, AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709);
+        /// Color Primaries (AMF matches ISO/IEC)
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES, AMF_COLOR_PRIMARIES_BT709);
+    } else {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_TRANSFER_CHARACTERISTIC, AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084);
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_OUTPUT_COLOR_PRIMARIES, AMF_COLOR_PRIMARIES_BT2020);
     }
 
     // Picture control properties
