@@ -84,8 +84,8 @@ static av_always_inline av_const float av_clipf_rvf(float a, float min,
 
 #if defined (__riscv_d) || defined (__riscv_zdinx)
 #define av_clipd av_clipd_rvd
-static av_always_inline av_const float av_clipd_rvd(double a, double min,
-                                                    double max)
+static av_always_inline av_const double av_clipd_rvd(double a, double min,
+                                                     double max)
 {
     return fmin(fmax(a, min), max);
 }
