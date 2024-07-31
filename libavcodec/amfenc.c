@@ -415,6 +415,10 @@ static int amf_init_encoder(AVCodecContext *avctx)
     else
         pix_fmt = avctx->pix_fmt;
 
+    if (pix_fmt == AV_PIX_FMT_P010) {
+        AMF_RETURN_IF_FALSE(ctx, ctx->version >= AMF_MAKE_FULL_VERSION(1, 4, 32, 0), AVERROR_UNKNOWN, "10-bit encoder is not supported by AMD GPU drivers versions lower than 23.30.\n");
+    }
+
     ctx->format = amf_av_to_amf_format(pix_fmt);
     AMF_RETURN_IF_FALSE(ctx, ctx->format != AMF_SURFACE_UNKNOWN, AVERROR(EINVAL),
                         "Format %s is not supported\n", av_get_pix_fmt_name(pix_fmt));
