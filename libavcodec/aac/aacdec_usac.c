@@ -265,6 +265,7 @@ static int decode_usac_extension(AACDecContext *ac, AACUsacElemConfig *e,
         /* No configuration needed - fallthrough (len should be 0) */
     default:
         skip_bits(gb, 8*ext_config_len);
+        e->ext.type = ID_EXT_ELE_FILL;
         break;
     };
 
