@@ -746,6 +746,8 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                         AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_INPUT_HDR_METADATA, hdrmeta_buffer); break;
                     case AV_CODEC_ID_HEVC:
                         AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_INPUT_HDR_METADATA, hdrmeta_buffer); break;
+                    case AV_CODEC_ID_AV1:
+                        AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_INPUT_HDR_METADATA, hdrmeta_buffer); break;
                     }
                     res = amf_set_property_buffer(surface, L"av_frame_hdrmeta", hdrmeta_buffer);
                     AMF_RETURN_IF_FALSE(avctx, res == AMF_OK, AVERROR_UNKNOWN, "SetProperty failed for \"av_frame_hdrmeta\" with error %d\n", res);

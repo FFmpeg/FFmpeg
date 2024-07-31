@@ -185,7 +185,9 @@ static av_cold int amf_encode_init_av1(AVCodecContext* avctx)
     AMFGuid             guid;
     AMFRate             framerate;
     AMFSize             framesize = AMFConstructSize(avctx->width, avctx->height);
-
+    amf_int64           color_depth;
+    amf_int64           color_profile;
+    enum                AVPixelFormat pix_fmt;
 
     //for av1 alignment and crop
     uint32_t            crop_right  = 0;
@@ -233,6 +235,30 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (profile !=  0) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_PROFILE, profile);
+    }
+
+    /// Color profile
+    color_profile = ff_amf_get_color_profile(avctx);
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PROFILE, color_profile);
+
+    /// Color Depth
+    pix_fmt = avctx->hw_frames_ctx ? ((AVHWFramesContext*)avctx->hw_frames_ctx->data)->sw_format
+                                : avctx->pix_fmt;
+    color_depth = AMF_COLOR_BIT_DEPTH_8;
+    if (pix_fmt == AV_PIX_FMT_P010) {
+        color_depth = AMF_COLOR_BIT_DEPTH_10;
+    }
+
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_COLOR_BIT_DEPTH, color_depth);
+    AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PROFILE, color_profile);
+    if (color_depth == AMF_COLOR_BIT_DEPTH_8) {
+        /// Color Transfer Characteristics (AMF matches ISO/IEC)
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_TRANSFER_CHARACTERISTIC, AMF_COLOR_TRANSFER_CHARACTERISTIC_BT709);
+        /// Color Primaries (AMF matches ISO/IEC)
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PRIMARIES, AMF_COLOR_PRIMARIES_BT709);
+    } else {
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_TRANSFER_CHARACTERISTIC, AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE2084);
+        AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_OUTPUT_COLOR_PRIMARIES, AMF_COLOR_PRIMARIES_BT2020);
     }
 
     profile_level = avctx->level;
