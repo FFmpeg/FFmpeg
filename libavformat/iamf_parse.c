@@ -252,7 +252,7 @@ static int codec_config_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
     if (ret < 0)
         goto fail;
 
-    if ((codec_config->nb_samples > INT_MAX) ||
+    if ((codec_config->nb_samples > INT_MAX) || codec_config->nb_samples <= 0 ||
         (-codec_config->audio_roll_distance > INT_MAX / codec_config->nb_samples)) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
