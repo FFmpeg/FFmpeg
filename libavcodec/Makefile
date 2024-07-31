@@ -1350,7 +1350,7 @@ $(GEN_HEADERS): $(SUBDIR)%_tables.h: $(SUBDIR)%_tablegen$(HOSTEXESUF)
 ifdef CONFIG_HARDCODED_TABLES
 $(SUBDIR)cbrt_data.o: $(SUBDIR)cbrt_tables.h
 $(SUBDIR)cbrt_data_fixed.o: $(SUBDIR)cbrt_fixed_tables.h
-$(SUBDIR)aacdec_fixed.o: $(SUBDIR)sinewin_fixed_tables.h
+$(SUBDIR)aac/aacdec_fixed.o: $(SUBDIR)sinewin_fixed_tables.h
 $(SUBDIR)aacps_float.o: $(SUBDIR)aacps_tables.h
 $(SUBDIR)aacps_fixed.o: $(SUBDIR)aacps_fixed_tables.h
 $(SUBDIR)dvenc.o: $(SUBDIR)dv_tables.h
