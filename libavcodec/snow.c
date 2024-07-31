@@ -428,7 +428,7 @@ av_cold int ff_snow_common_init(AVCodecContext *avctx){
         !FF_ALLOCZ_TYPED_ARRAY(s->spatial_dwt_buffer,  width * height) ||  //FIXME this does not belong here
         !FF_ALLOCZ_TYPED_ARRAY(s->temp_dwt_buffer,     width)          ||
         !FF_ALLOCZ_TYPED_ARRAY(s->temp_idwt_buffer,    width)          ||
-        !FF_ALLOCZ_TYPED_ARRAY(s->run_buffer, ((width + 1) >> 1) * ((height + 1) >> 1)))
+        !FF_ALLOCZ_TYPED_ARRAY(s->run_buffer, ((width + 1) >> 1) * ((height + 1) >> 1) + 1))
         return AVERROR(ENOMEM);
 
     for(i=0; i<MAX_REF_FRAMES; i++) {
