@@ -2,6 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 6.1.2
+ avcodec/snow: Fix off by 1 error in run_buffer
+ avcodec/utils: apply the same alignment to YUV410 as we do to YUV420 for snow
+ swscale: [loongarch] Fix checkasm-sw_yuv2rgb failure.
+ avcodec/pngenc: fix sBIT writing for indexed-color PNGs
+ avcodec/pngdec: use 8-bit sBIT cap for indexed PNGs per spec
+ avcodec/videotoolboxenc: Fix bitrate doesn't work as expected
+ Changelog: update
  avdevice/dshow: Don't skip audio devices if no video device is present
  avcodec/hdrenc: Allocate more space
  avcodec/cfhdenc: Height of 16 is not supported
