@@ -7510,7 +7510,9 @@ static int mov_create_dvd_sub_decoder_specific_info(MOVTrack *track,
 static int mov_init_iamf_track(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
-    MOVTrack *track = &mov->tracks[0]; // IAMF if present is always the first track
+    MOVTrack *track;
+    IAMFContext *iamf;
+    int first_iamf_idx = INT_MAX, last_iamf_idx = 0;
     int nb_audio_elements = 0, nb_mix_presentations = 0;
     int ret;
 
@@ -7532,24 +7534,24 @@ static int mov_init_iamf_track(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    track->iamf = av_mallocz(sizeof(*track->iamf));
-    if (!track->iamf)
+    iamf = av_mallocz(sizeof(*iamf));
+    if (!iamf)
         return AVERROR(ENOMEM);
+
 
     for (int i = 0; i < s->nb_stream_groups; i++) {
         const AVStreamGroup *stg = s->stream_groups[i];
         switch(stg->type) {
         case AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT:
             for (int j = 0; j < stg->nb_streams; j++) {
-                track->first_iamf_idx = FFMIN(stg->streams[j]->index, track->first_iamf_idx);
-                track->last_iamf_idx  = FFMAX(stg->streams[j]->index, track->last_iamf_idx);
-                stg->streams[j]->priv_data = track;
+                first_iamf_idx = FFMIN(stg->streams[j]->index, first_iamf_idx);
+                last_iamf_idx  = FFMAX(stg->streams[j]->index, last_iamf_idx);
             }
 
-            ret = ff_iamf_add_audio_element(track->iamf, stg, s);
+            ret = ff_iamf_add_audio_element(iamf, stg, s);
             break;
         case AV_STREAM_GROUP_PARAMS_IAMF_MIX_PRESENTATION:
-            ret = ff_iamf_add_mix_presentation(track->iamf, stg, s);
+            ret = ff_iamf_add_mix_presentation(iamf, stg, s);
             break;
         default:
             av_assert0(0);
@@ -7558,7 +7560,19 @@ static int mov_init_iamf_track(AVFormatContext *s)
             return ret;
     }
 
+    track = &mov->tracks[first_iamf_idx];
+    track->iamf = iamf;
+    track->first_iamf_idx = first_iamf_idx;
+    track->last_iamf_idx = last_iamf_idx;
     track->tag = MKTAG('i','a','m','f');
+
+    for (int i = 0; i < s->nb_stream_groups; i++) {
+        AVStreamGroup *stg = s->stream_groups[i];
+        if (stg->type != AV_STREAM_GROUP_PARAMS_IAMF_AUDIO_ELEMENT)
+            continue;
+        for (int j = 0; j < stg->nb_streams; j++)
+            stg->streams[j]->priv_data = track;
+    }
 
     ret = avio_open_dyn_buf(&track->iamf_buf);
     if (ret < 0)
@@ -7571,6 +7585,7 @@ static int mov_init_iamf_track(AVFormatContext *s)
 static int mov_init(AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
+    int has_iamf = 0;
     int i, ret;
 
     mov->fc = s;
@@ -7725,6 +7740,7 @@ static int mov_init(AVFormatContext *s)
             }
             st->priv_data = st;
         }
+        has_iamf = 1;
 
         if (!mov->nb_tracks) // We support one track for the entire IAMF structure
             mov->nb_tracks++;
@@ -7830,8 +7846,11 @@ static int mov_init(AVFormatContext *s)
     for (int j = 0, i = 0; j < s->nb_streams; j++) {
         AVStream *st = s->streams[j];
 
-        if (st != st->priv_data)
+        if (st != st->priv_data) {
+            if (has_iamf)
+                i += has_iamf--;
             continue;
+        }
         st->priv_data = &mov->tracks[i++];
     }
 
