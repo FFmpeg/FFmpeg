@@ -834,22 +834,39 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
     int ret = 0;
 
     enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_CUDA,
-                                       AV_PIX_FMT_NV12,
+                                       AV_PIX_FMT_NONE,
                                        AV_PIX_FMT_NONE };
 
     int probed_width = avctx->coded_width ? avctx->coded_width : 1280;
     int probed_height = avctx->coded_height ? avctx->coded_height : 720;
-    int probed_bit_depth = 8;
+    int probed_bit_depth = 8, is_yuv444 = 0;
 
     const AVPixFmtDescriptor *probe_desc = av_pix_fmt_desc_get(avctx->pix_fmt);
     if (probe_desc && probe_desc->nb_components)
         probed_bit_depth = probe_desc->comp[0].depth;
 
+    if (probe_desc && !probe_desc->log2_chroma_w && !probe_desc->log2_chroma_h)
+        is_yuv444 = 1;
+
+    // Pick pixel format based on bit depth and chroma sampling.
+    // Only 420 and 444 sampling are supported by HW so far, no need to check for 422.
+    switch (probed_bit_depth) {
+    case 10:
+        pix_fmts[1] = is_yuv444 ? AV_PIX_FMT_YUV444P16 : AV_PIX_FMT_P010;
+        break;
+    case 12:
+        pix_fmts[1] = is_yuv444 ? AV_PIX_FMT_YUV444P16 : AV_PIX_FMT_P016;
+        break;
+    default:
+        pix_fmts[1] = is_yuv444 ? AV_PIX_FMT_YUV444P : AV_PIX_FMT_NV12;
+        break;
+    }
+
     ctx->pkt = avctx->internal->in_pkt;
     // Accelerated transcoding scenarios with 'ffmpeg' require that the
     // pix_fmt be set to AV_PIX_FMT_CUDA early. The sw_pix_fmt, and the
     // pix_fmt for non-accelerated transcoding, do not need to be correct
-    // but need to be set to something. We arbitrarily pick NV12.
+    // but need to be set to something.
     ret = ff_get_format(avctx, pix_fmts);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "ff_get_format failed: %d\n", ret);
