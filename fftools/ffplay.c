@@ -1963,16 +1963,21 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         theta = get_rotation(displaymatrix);
 
         if (fabs(theta - 90) < 1.0) {
-            INSERT_FILT("transpose", "clock");
+            INSERT_FILT("transpose", displaymatrix[3] > 0 ? "cclock_flip" : "clock");
         } else if (fabs(theta - 180) < 1.0) {
-            INSERT_FILT("hflip", NULL);
-            INSERT_FILT("vflip", NULL);
+            if (displaymatrix[0] < 0)
+                INSERT_FILT("hflip", NULL);
+            if (displaymatrix[4] < 0)
+                INSERT_FILT("vflip", NULL);
         } else if (fabs(theta - 270) < 1.0) {
-            INSERT_FILT("transpose", "cclock");
+            INSERT_FILT("transpose", displaymatrix[3] < 0 ? "clock_flip" : "cclock");
         } else if (fabs(theta) > 1.0) {
             char rotate_buf[64];
             snprintf(rotate_buf, sizeof(rotate_buf), "%f*PI/180", theta);
             INSERT_FILT("rotate", rotate_buf);
+        } else {
+            if (displaymatrix && displaymatrix[4] < 0)
+                INSERT_FILT("vflip", NULL);
         }
     }
 
