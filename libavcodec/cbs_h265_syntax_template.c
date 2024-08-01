@@ -2307,7 +2307,10 @@ SEI_FUNC(sei_3d_reference_displays_info, (CodedBitstreamContext *ctx, RWContext 
         else
             length = FFMAX(0, (int)current->exponent_ref_display_width[i] +
                               (int)current->prec_ref_display_width - 31);
-        ubs(length, mantissa_ref_display_width[i], 1, i);
+        if (length)
+            ubs(length, mantissa_ref_display_width[i], 1, i);
+        else
+            infer(mantissa_ref_display_width[i], 0);
         if (current->ref_viewing_distance_flag) {
             us(6, exponent_ref_viewing_distance[i], 0, 62, 1, i);
             if (!current->exponent_ref_viewing_distance[i])
@@ -2315,7 +2318,10 @@ SEI_FUNC(sei_3d_reference_displays_info, (CodedBitstreamContext *ctx, RWContext 
             else
                 length = FFMAX(0, (int)current->exponent_ref_viewing_distance[i] +
                                   (int)current->prec_ref_viewing_dist - 31);
-            ubs(length, mantissa_ref_viewing_distance[i], 1, i);
+            if (length)
+                ubs(length, mantissa_ref_viewing_distance[i], 1, i);
+            else
+                infer(mantissa_ref_viewing_distance[i], 0);
         }
         flags(additional_shift_present_flag[i], 1, i);
         if (current->additional_shift_present_flag[i])
