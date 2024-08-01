@@ -1,5 +1,5 @@
-d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
-100588 tests/data/fate/mov-mp4-iamf-7_1_4.mp4
+d398cd7938efbe3dc570b407fe543a31 *tests/data/fate/mov-mp4-iamf-7_1_4-video-last.mp4
+416629 tests/data/fate/mov-mp4-iamf-7_1_4-video-last.mp4
 #extradata 0:       34, 0xafa70d5e
 #extradata 1:       34, 0xafa70d5e
 #extradata 2:       34, 0xaf7b0d5c
@@ -7,6 +7,7 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 #extradata 4:       34, 0xafa70d5e
 #extradata 5:       34, 0xafa70d5e
 #extradata 6:       34, 0xafa70d5e
+#extradata 7:       30, 0x47ab0576
 #tb 0: 1/44100
 #media_type 0: audio
 #codec_id 0: flac
@@ -42,6 +43,11 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 #codec_id 6: flac
 #sample_rate 6: 44100
 #channel_layout_name 6: stereo
+#tb 7: 1/12800
+#media_type 7: video
+#codec_id 7: mpeg4
+#dimensions 7: 352x288
+#sar 7: 1/1
 0,          0,          0,     4608,     1399, 0x6e89566e
 1,          0,          0,     4608,     1399, 0x6e89566e
 2,          0,          0,     4608,     1396, 0x0dcb5677
@@ -49,6 +55,9 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,          0,          0,     4608,     1399, 0x6e89566e
 5,          0,          0,     4608,     1399, 0x6e89566e
 6,          0,          0,     4608,     1399, 0x6e89566e
+7,          0,          0,      512,    42002, 0xef0e5124
+7,        512,        512,      512,    52619, 0xc794e830, F=0x0
+7,       1024,       1024,      512,    51242, 0xf2f6be7f, F=0x0
 0,       4608,       4608,     4608,     1442, 0x6c3c5b13
 1,       4608,       4608,     4608,     1442, 0x6c3c5b13
 2,       4608,       4608,     4608,     1439, 0xc46b5ac5
@@ -56,6 +65,9 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,       4608,       4608,     4608,     1442, 0x6c3c5b13
 5,       4608,       4608,     4608,     1442, 0x6c3c5b13
 6,       4608,       4608,     4608,     1442, 0x6c3c5b13
+7,       1536,       1536,      512,    49320, 0xe87a921f, F=0x0
+7,       2048,       2048,      512,    22461, 0xc858a20b, F=0x0
+7,       2560,       2560,      512,    16731, 0x04beb863, F=0x0
 0,       9216,       9216,     4608,     1380, 0xc497571b
 1,       9216,       9216,     4608,     1380, 0xc497571b
 2,       9216,       9216,     4608,     1377, 0x5b2a55fe
@@ -63,6 +75,8 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,       9216,       9216,     4608,     1380, 0xc497571b
 5,       9216,       9216,     4608,     1380, 0xc497571b
 6,       9216,       9216,     4608,     1380, 0xc497571b
+7,       3072,       3072,      512,     9983, 0x091aa8e8, F=0x0
+7,       3584,       3584,      512,     6991, 0xa0385313, F=0x0
 0,      13824,      13824,     4608,     1383, 0x48e9510f
 1,      13824,      13824,     4608,     1383, 0x48e9510f
 2,      13824,      13824,     4608,     1380, 0x045550d3
@@ -70,6 +84,9 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,      13824,      13824,     4608,     1383, 0x48e9510f
 5,      13824,      13824,     4608,     1383, 0x48e9510f
 6,      13824,      13824,     4608,     1383, 0x48e9510f
+7,       4096,       4096,      512,     5825, 0x3c97cfbc, F=0x0
+7,       4608,       4608,      512,     4331, 0xbaf5f982, F=0x0
+7,       5120,       5120,      512,     2541, 0xe018c3cb, F=0x0
 0,      18432,      18432,     4608,     1572, 0x9a514719
 1,      18432,      18432,     4608,     1572, 0x9a514719
 2,      18432,      18432,     4608,     1568, 0xa2bc45f4
@@ -77,6 +94,9 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,      18432,      18432,     4608,     1572, 0x9a514719
 5,      18432,      18432,     4608,     1572, 0x9a514719
 6,      18432,      18432,     4608,     1572, 0x9a514719
+7,       5632,       5632,      512,     2655, 0xf98af7a1, F=0x0
+7,       6144,       6144,      512,    13464, 0x33e5196f
+7,       6656,       6656,      512,     2587, 0x90e198aa, F=0x0
 0,      23040,      23040,     4608,     1391, 0x74ac5014
 1,      23040,      23040,     4608,     1391, 0x74ac5014
 2,      23040,      23040,     4608,     1388, 0x96c85007
@@ -84,6 +104,8 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,      23040,      23040,     4608,     1391, 0x74ac5014
 5,      23040,      23040,     4608,     1391, 0x74ac5014
 6,      23040,      23040,     4608,     1391, 0x74ac5014
+7,       7168,       7168,      512,     2313, 0x698c429b, F=0x0
+7,       7680,       7680,      512,     2123, 0x63a3f034, F=0x0
 0,      27648,      27648,     4608,     1422, 0x2f9d47c5
 1,      27648,      27648,     4608,     1422, 0x2f9d47c5
 2,      27648,      27648,     4608,     1419, 0x4d4d466a
@@ -91,6 +113,9 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,      27648,      27648,     4608,     1422, 0x2f9d47c5
 5,      27648,      27648,     4608,     1422, 0x2f9d47c5
 6,      27648,      27648,     4608,     1422, 0x2f9d47c5
+7,       8192,       8192,      512,     2222, 0x442b233d, F=0x0
+7,       8704,       8704,      512,     2332, 0x24c75b04, F=0x0
+7,       9216,       9216,      512,     2302, 0xa0fa2ee7, F=0x0
 0,      32256,      32256,     4608,     1768, 0x2a044b99
 1,      32256,      32256,     4608,     1768, 0x2a044b99
 2,      32256,      32256,     4608,     1765, 0xacb84b24
@@ -98,6 +123,8 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,      32256,      32256,     4608,     1768, 0x2a044b99
 5,      32256,      32256,     4608,     1768, 0x2a044b99
 6,      32256,      32256,     4608,     1768, 0x2a044b99
+7,       9728,       9728,      512,     1740, 0xdf772eb3, F=0x0
+7,      10240,      10240,      512,     1994, 0x8830ad23, F=0x0
 0,      36864,      36864,     4608,     1534, 0xb0b35a3f
 1,      36864,      36864,     4608,     1534, 0xb0b35a3f
 2,      36864,      36864,     4608,     1531, 0x996458aa
@@ -105,6 +132,9 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,      36864,      36864,     4608,     1534, 0xb0b35a3f
 5,      36864,      36864,     4608,     1534, 0xb0b35a3f
 6,      36864,      36864,     4608,     1534, 0xb0b35a3f
+7,      10752,      10752,      512,     1884, 0x2c567db6, F=0x0
+7,      11264,      11264,      512,     1880, 0x72237c52, F=0x0
+7,      11776,      11776,      512,     1970, 0x60708ff8, F=0x0
 0,      41472,      41472,     2628,      926, 0xc26a5eae
 1,      41472,      41472,     2628,      926, 0xc26a5eae
 2,      41472,      41472,     2628,      923, 0xa7225edf
@@ -112,6 +142,7 @@ d9ef5d14bbd37c5a06c1494cacdb8f29 *tests/data/fate/mov-mp4-iamf-7_1_4.mp4
 4,      41472,      41472,     2628,      926, 0xc26a5eae
 5,      41472,      41472,     2628,      926, 0xc26a5eae
 6,      41472,      41472,     2628,      926, 0xc26a5eae
+7,      12288,      12288,      512,    11659, 0x6bcb830e
 [STREAM_GROUP]
 index=0
 id=0x1
@@ -178,7 +209,7 @@ TAG:handler_name=SoundHandler
 TAG:vendor_id=[0][0][0][0]
 [STREAM]
 index=0
-id=0x0
+id=0x1
 DISPOSITION:default=1
 DISPOSITION:dub=0
 DISPOSITION:original=0
@@ -200,28 +231,6 @@ DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
 index=1
-id=0x1
-DISPOSITION:default=0
-DISPOSITION:dub=0
-DISPOSITION:original=0
-DISPOSITION:comment=0
-DISPOSITION:lyrics=0
-DISPOSITION:karaoke=0
-DISPOSITION:forced=0
-DISPOSITION:hearing_impaired=0
-DISPOSITION:visual_impaired=0
-DISPOSITION:clean_effects=0
-DISPOSITION:attached_pic=0
-DISPOSITION:timed_thumbnails=0
-DISPOSITION:non_diegetic=0
-DISPOSITION:captions=0
-DISPOSITION:descriptions=0
-DISPOSITION:metadata=0
-DISPOSITION:dependent=1
-DISPOSITION:still_image=0
-[/STREAM]
-[STREAM]
-index=2
 id=0x2
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -243,7 +252,7 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=3
+index=2
 id=0x3
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -265,7 +274,7 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=4
+index=3
 id=0x4
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -287,7 +296,7 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=5
+index=4
 id=0x5
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -309,8 +318,30 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=6
+index=5
 id=0x6
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+[/STREAM]
+[STREAM]
+index=6
+id=0x7
 DISPOSITION:default=0
 DISPOSITION:dub=0
 DISPOSITION:original=0
@@ -428,7 +459,7 @@ TAG:handler_name=SoundHandler
 TAG:vendor_id=[0][0][0][0]
 [STREAM]
 index=0
-id=0x0
+id=0x1
 DISPOSITION:default=1
 DISPOSITION:dub=0
 DISPOSITION:original=0
@@ -450,28 +481,6 @@ DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
 index=1
-id=0x1
-DISPOSITION:default=0
-DISPOSITION:dub=0
-DISPOSITION:original=0
-DISPOSITION:comment=0
-DISPOSITION:lyrics=0
-DISPOSITION:karaoke=0
-DISPOSITION:forced=0
-DISPOSITION:hearing_impaired=0
-DISPOSITION:visual_impaired=0
-DISPOSITION:clean_effects=0
-DISPOSITION:attached_pic=0
-DISPOSITION:timed_thumbnails=0
-DISPOSITION:non_diegetic=0
-DISPOSITION:captions=0
-DISPOSITION:descriptions=0
-DISPOSITION:metadata=0
-DISPOSITION:dependent=1
-DISPOSITION:still_image=0
-[/STREAM]
-[STREAM]
-index=2
 id=0x2
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -493,7 +502,7 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=3
+index=2
 id=0x3
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -515,7 +524,7 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=4
+index=3
 id=0x4
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -537,7 +546,7 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=5
+index=4
 id=0x5
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -559,7 +568,7 @@ DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
 [STREAM]
-index=6
+index=5
 id=0x6
 DISPOSITION:default=0
 DISPOSITION:dub=0
@@ -580,4 +589,58 @@ DISPOSITION:metadata=0
 DISPOSITION:dependent=1
 DISPOSITION:still_image=0
 [/STREAM]
+[STREAM]
+index=6
+id=0x7
+DISPOSITION:default=0
+DISPOSITION:dub=0
+DISPOSITION:original=0
+DISPOSITION:comment=0
+DISPOSITION:lyrics=0
+DISPOSITION:karaoke=0
+DISPOSITION:forced=0
+DISPOSITION:hearing_impaired=0
+DISPOSITION:visual_impaired=0
+DISPOSITION:clean_effects=0
+DISPOSITION:attached_pic=0
+DISPOSITION:timed_thumbnails=0
+DISPOSITION:non_diegetic=0
+DISPOSITION:captions=0
+DISPOSITION:descriptions=0
+DISPOSITION:metadata=0
+DISPOSITION:dependent=1
+DISPOSITION:still_image=0
+[/STREAM]
 [/STREAM_GROUP]
+[STREAM]
+index=0
+id=0x1
+[/STREAM]
+[STREAM]
+index=1
+id=0x2
+[/STREAM]
+[STREAM]
+index=2
+id=0x3
+[/STREAM]
+[STREAM]
+index=3
+id=0x4
+[/STREAM]
+[STREAM]
+index=4
+id=0x5
+[/STREAM]
+[STREAM]
+index=5
+id=0x6
+[/STREAM]
+[STREAM]
+index=6
+id=0x7
+[/STREAM]
+[STREAM]
+index=7
+id=0x8
+[/STREAM]
