@@ -597,7 +597,7 @@ static int vt_pixbuf_set_colorspace(void *log_ctx,
     colortrc = av_map_videotoolbox_color_trc_from_av(src->color_trc);
     if (colortrc)
         CVBufferSetAttachment(pixbuf, kCVImageBufferTransferFunctionKey,
-            colorpri, kCVAttachmentMode_ShouldPropagate);
+            colortrc, kCVAttachmentMode_ShouldPropagate);
     else {
         CVBufferRemoveAttachment(pixbuf, kCVImageBufferTransferFunctionKey);
         if (src->color_trc != AVCOL_TRC_UNSPECIFIED)
