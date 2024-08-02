@@ -1208,11 +1208,9 @@ static int graph_config_pointers(AVFilterGraph *graph, void *log_ctx)
     for (i = 0; i < graph->nb_filters; i++) {
         f = graph->filters[i];
         for (j = 0; j < f->nb_inputs; j++) {
-            f->inputs[j]->graph     = graph;
             ff_link_internal(f->inputs[j])->age_index  = -1;
         }
         for (j = 0; j < f->nb_outputs; j++) {
-            f->outputs[j]->graph    = graph;
             ff_link_internal(f->outputs[j])->age_index = -1;
         }
         if (!f->nb_outputs) {
