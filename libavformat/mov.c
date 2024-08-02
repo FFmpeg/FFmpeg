@@ -8143,15 +8143,19 @@ static int cenc_filter(MOVContext *mov, AVStream* st, MOVStreamContext *sc, AVPa
             return AVERROR_INVALIDDATA;
         }
 
+        encrypted_sample = NULL;
         if (!encryption_index->nb_encrypted_samples) {
             // Full-sample encryption with default settings.
             encrypted_sample = sc->cenc.default_encrypted_sample;
         } else if (encrypted_index >= 0 && encrypted_index < encryption_index->nb_encrypted_samples) {
             // Per-sample setting override.
             encrypted_sample = encryption_index->encrypted_samples[encrypted_index];
-            if (!encrypted_sample)
+            if (!encrypted_sample) {
                 encrypted_sample = sc->cenc.default_encrypted_sample;
-        } else {
+            }
+        }
+
+        if (!encrypted_sample) {
             av_log(mov->fc, AV_LOG_ERROR, "Incorrect number of samples in encryption info\n");
             return AVERROR_INVALIDDATA;
         }
