@@ -25,7 +25,7 @@
 func ff_prefetch_rv_zicbop, zicbop
 1:
         addi    a2, a2, -1
-        prefetch.r  (a0)
+        prefetch.r  0(a0)
         add     a0, a0, a1
         bnez    a2, 1b
 
