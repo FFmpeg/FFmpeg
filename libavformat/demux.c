@@ -3102,9 +3102,12 @@ find_stream_info_err:
             av_freep(&sti->info);
         }
 
-        err = codec_close(sti);
-        if (err < 0 && ret >= 0)
-            ret = err;
+        if (avcodec_is_open(sti->avctx)) {
+            err = codec_close(sti);
+            if (err < 0 && ret >= 0)
+                ret = err;
+        }
+
         av_bsf_free(&sti->extract_extradata.bsf);
     }
     if (ic->pb) {
