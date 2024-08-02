@@ -1,6 +1,236 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 7.0.2:
+ avcodec/snow: Fix off by 1 error in run_buffer
+ avcodec/utils: apply the same alignment to YUV410 as we do to YUV420 for snow
+ avformat/iamf_parse: Check for 0 samples
+ swscale: [loongarch] Fix checkasm-sw_yuv2rgb failure.
+ avcodec/aacps_tablegen_template: don't redefine CONFIG_HARDCODED_TABLES
+ avutil/hwcontext_vaapi: use the correct type for VASurfaceAttribExternalBuffers.buffers
+ avcodec/pcm-bluray/dvd: Use correct pointer types on BE
+ avcodec/pngenc: fix sBIT writing for indexed-color PNGs
+ avcodec/pngdec: use 8-bit sBIT cap for indexed PNGs per spec
+ avformat/mov: check that child boxes of trak are only present inside it
+ avformat/mov: check that sample and chunk count is 1 for HEIF
+ avcodec/videotoolboxenc: Fix bitrate doesn't work as expected
+ avdevice/dshow: Don't skip audio devices if no video device is present
+ avcodec/hdrenc: Allocate more space
+ avcodec/cfhdenc: Height of 16 is not supported
+ avcodec/cfhdenc: Allocate more space
+ avcodec/osq: fix integer overflow when applying factor
+ avcodec/osq: avoid using too large numbers for shifts and integers in update_residue_parameter()
+ avcodec/vaapi_encode: Check hwctx
+ avcodec/proresdec: Consider negative bits left
+ avcodec/alsdec: Clear shift_value
+ avcodec/hevc/hevcdec: Do not allow slices to depend on failed slices
+ avformat/mov: add an EOF check in IPRP
+ avfilter/vf_xfade: Check ff_inlink_consume_frame() for failure
+ avutil/slicethread: Check pthread_*_init() for failure
+ avutil/frame: Check log2_crop_align
+ avutil/buffer: Check ff_mutex_init() for failure
+ avformat/xmv: Check this_packet_size
+ avformat/webpenc: Check filesize in trailer
+ avformat/ty: rec_size seems to only need 32bit
+ avformat/tty: Check avio_size()
+ avformat/siff: Basic pkt_size check
+ avformat/sauce: Check avio_size() for failure
+ avformat/sapdec: Check ffurl_get_file_handle() for error
+ avformat/nsvdec: Check asize for PCM
+ avformat/mp3dec: Check header_filesize
+ avformat/mp3dec; Check for avio_size() failure
+ avformat/mov: Use 64bit for str_size
+ avformat/mm: Check length
+ avformat/hnm: Check *chunk_size
+ avformat/hlsenc: Check ret
+ avformat/bintext: Check avio_size() return
+ avformat/asfdec_o: Check size of index object
+ avfilter/vf_scale: Check ff_scale_adjust_dimensions() for failure
+ avfilter/scale_eval: Use 64bit, check values in ff_scale_adjust_dimensions()
+ avfilter/vf_lut3d: Check av_scanf()
+ avfilter/vf_elbg: Use unsigned for shifting into the top bit
+ avfilter/vf_premultiply: Use AV_PIX_MAX_PLANES
+ avfilter/vf_deshake_opencl: Ensure that the first iteration initializes the best variables
+ avformat/iamf_parse: Check for negative sample sizes
+ swscale/output: Fix integer overflows in yuv2rgba64_X_c_template
+ avformat/mxfdec: Reorder elements of expression in bisect loop
+ avutil/timecode: Use a 64bit framenum internally
+ avcodec/pnmdec: Use 64bit for input size check
+ avformat/mov: Check extradata in mov_read_iacb()
+ avcodec/mpeg12enc: Use av_rescale() in vbv_buffer_size computation
+ avcodec/utvideoenc: Use unsigned shift to build flags
+ avcodec/j2kenc: Merge dwt_norm into lambda
+ avcodec/vc2enc: Fix overflows with storing large values
+ avcodec/mpegvideo_enc: Do not duplicate pictures on shifting
+ avdevice/dshow_capture: Fix error handling in ff_dshow_##prefix##_Create()
+ avcodec/tiff: Check value on positive signed targets
+ avfilter/vf_convolution_opencl: Assert that the filter name is one of the filters
+ avfilter/vf_bm3d: Dont round MSE2SSE to an integer
+ avdevice/dshow: Remove NULL check on pin
+ avdevice/dshow: check ff_dshow_pin_ConnectionMediaType() for failure
+ avdevice/dshow: Check device_filter_unique_name before use
+ avdevice/dshow: Cleanup also on av_log case
+ avdevice/dshow_filter: Use wcscpy_s()
+ avcodec/flac_parser: Assert that we do not overrun the link_penalty array
+ avcodec/osq: avoid signed overflow in downsample path
+ avcodec/pixlet: Simplify pfx computation
+ avcodec/motion_est: Fix score squaring overflow
+ avcodec/mlpenc: Use 64 for ml, mr
+ avcodec/loco: Check loco_get_rice() for failure
+ avcodec/loco: check get_ur_golomb_jpegls() for failure
+ avcodec/leaddec: Check init_get_bits8() for failure
+ avcodec/imm4: check cbphi for error
+ avcodec/iff: Use signed count
+ avcodec/golomb: Assert that k is in the supported range for get_ur/sr_golomb()
+ avcodec/golomb: Document return for get_ur_golomb_jpegls() and get_sr_golomb_flac()
+ avcodec/dxv: Fix type in get_opcodes()
+ avcodec/cri: Check length
+ avcodec/xsubdec: Check parse_timecode()
+ avutil/imgutils: av_image_check_size2() ensure width and height fit in 32bit
+ avfilter/vf_tiltandshift: Free dst on error
+ doc/examples/mux: remove nop
+ avcodec/proresenc_kostya: use unsigned alpha for rotation
+ avformat/rtpenc_rfc4175: Use 64bit in computation if copy_offset
+ avformat/rtmpproto: Use AV_DICT_MATCH_CASE instead of litteral number
+ avformat/rtmppkt: Simplify and deobfuscate amf_tag_skip() slightly
+ avformat/rmdec: use 64bit for audio_framesize checks
+ avutil/wchar_filename: Correct sizeof
+ avutil/hwcontext_d3d11va: correct sizeof IDirect3DSurface9
+ avutil/hwcontext_d3d11va: Free AVD3D11FrameDescriptor on error
+ avutil/hwcontext_d3d11va: correct sizeof AVD3D11FrameDescriptor
+ avcodec/vvc/refs: Use unsigned mask
+ doc/examples/vaapi_encode: Try to check fwrite() for failure
+ avformat/usmdec: Initialize value
+ avformat/tls_schannel: Initialize ret
+ avformat/subfile: Assert that whence is a known case
+ avformat/subfile: Merge if into switch()
+ avformat/rtsp: Check that lower transport is handled in one of the if()
+ avformat/rtsp: initialize reply1
+ avformat/rtsp: use < 0 for error check
+ avformat/rtpenc_vc2hq: Check sizes
+ avfilter/af_aderivative: Free out on error
+ swscale/swscale: Use ptrdiff_t for linesize computations
+ avfilter/af_amerge: Cleanup on av_channel_layout_copy() failure
+ avfilter/af_afir: Assert format
+ avfilter/af_afftdn: Assert format
+ avfilter/af_pan: check nb_output_channels before use
+ cbs_av1: Reject thirty-two zero bits in uvlc code
+ avfilter/af_mcompand: compute half frequency in double
+ avfilter/af_channelsplit: Assert that av_channel_layout_channel_from_index() succeeds
+ avfilter/af_aresample: Cleanup on av_channel_layout_copy() failure
+ tools/coverity: Phase 1 study of anti-halicogenic for coverity av_rescale()
+ avfilter/vf_avgblur: Check plane instead of AVFrame
+ avfilter/drawutils: Fix depthb computation
+ avfilter/avf_showcwt: Check av_parse_video_rate() for failure
+ avformat/rdt: Check pkt_len
+ avformat/mpeg: Check len in mpegps_probe()
+ avformat/mxfenc: resurrects the error print
+ avdevice/dshow: Check ICaptureGraphBuilder2_SetFiltergraph() for failure
+ avcodec/mfenc: check IMFSample_ConvertToContiguousBuffer() for failure
+ avcodec/vc1_loopfilter: Factor duplicate code in vc1_b_h_intfi_loop_filter()
+ avcodec/vvc/ctu: Remove dead ret check
+ avcodec/vvc/dec: Remove constant eos_at_start
+ avformat/img2dec: assert no pipe on ts_from_file
+ avcodec/cbs_jpeg: Try to move the read entity to one side in a test
+ fftools/ffplay: Check vulkan_params
+ fftools/ffmpeg_enc: Initialize Decoder
+ fftools/ffmpeg_enc: Initialize fd
+ fftools/ffmpeg_enc: simplify opaque_ref check
+ avformat/mov: Check edit list for overflow
+ fftools/ffmpeg: Check read() for failure
+ avcodec/vvc/dec: Check ff_init_cabac_decoder() for failure
+ MAINTAINERS: Add Timo Rothenpieler to server admins
+ swscale/output: Avoid undefined overflow in yuv2rgb_write_full()
+ swscale/output: alpha can become negative after scaling, use multiply
+ avcodec/targaenc: Allocate space for the palette
+ avcodec/r210enc: Use av_rescale for bitrate
+ avcodec/jfdctint_template: Fewer integer anomalies
+ avcodec/snowenc: MV limits due to mv_penalty table size
+ tools/target_dec_fuzzer: Adjust threshold for MV30
+ tools/target_dec_fuzzer: Adjust threshold for jpeg2000
+ avformat/mxfdec: Check container_ul->desc before use
+ avcodec/libvpxenc: Cleanup on error
+ MAINTAINERS: Update the entries for the release maintainer for FFmpeg
+ doc/developer: Provide information about git send-email and gmail
+ avfilter/vf_rotate: Check ff_draw_init2() return value
+ avformat/mov: Use int64_t in intermediate for corrected_dts
+ avformat/mov: Use 64bit in intermediate for current_dts
+ avformat/matroskadec: Assert that num_levels is non negative
+ avformat/libzmq: Check av_strstart()
+ avformat/img2dec: Little JFIF / Exif cleanup
+ avformat/img2dec: Move DQT after unrelated if()
+ avformat/imfdec: Simplify get_next_track_with_minimum_timestamp()
+ avdevice/xcbgrab: Check sscanf() return
+ fftools/cmdutils: Add protective () to FLAGS
+ avformat/sdp: Check before appending ","
+ avcodec/libx264: Check init_get_bits8() return code
+ avcodec/ilbcdec: Remove dead code
+ avcodec/vp8: Check cond init
+ avcodec/vp8: Check mutex init
+ avcodec/proresenc_anatoliy: Assert that AV_PROFILE_UNKNOWN is replaced
+ avcodec/pcm-dvdenc: 64bit pkt-size
+ avcodec/notchlc: Check init_get_bits8() for failure
+ avcodec/tests/dct: Use 64bit in intermediate for error computation
+ avcodec/scpr3: Check add_dec() for failure
+ avcodec/rv34: assert that size is not 0 in rv34_gen_vlc_ext()
+ avcodec/wavpackenc: Use unsigned for potential 31bit shift
+ avcodec/vvc/mvs: Initialize mvf
+ avcodec/tests/jpeg2000dwt: Use 64bit in comparission
+ avcodec/tests/jpeg2000dwt: Use 64bit in err2 computation
+ avformat/fwse: Remove always false expression
+ avcodec/sga: Make it clear that the return is intentionally not checked
+ avformat/asfdec_f: Use 64bit for preroll computation
+ avformat/argo_asf: Use 64bit in offset intermediate
+ avformat/ape: Use 64bit for final frame size
+ avformat/ac4dec: Check remaining space in ac4_probe()
+ avdevice/pulse_audio_enc: Use av_rescale() to avoid integer overflow
+ avcodec/vlc: Cleanup on multi table alloc failure in ff_vlc_init_multi_from_lengths()
+ avcodec/tiff: Assert init_get_bits8() success in unpack_gray()
+ avcodec/tiff: Assert init_get_bits8() success in horizontal_fill()
+ tools/decode_simple: Check avcodec_send_packet() for errors on flushing
+ swscale/yuv2rgb: Use 64bit for brightness computation
+ swscale/x86/swscale: use a clearer name for INPUT_PLANER_RGB_A_FUNC_CASE
+ avutil/tests/opt: Check av_set_options_string() for failure
+ avutil/tests/dict: Check av_dict_set() before get for failure
+ avdevice/dshow: fix badly indented line
+ avformat/demux: resurrect dead stores
+ avcodec/tests/bitstream_template: Assert bits_init8() return
+ tools/enc_recon_frame_test: Assert that av_image_get_linesize() succeeds
+ avformat/iamf_writer: disallow Opus extradata with mapping family other than 0
+ avformat/iamf_parse: sanitize audio_roll_distance values
+ avformat/iamf: byteswap values in OpusHeader
+ avformat/iamf: rename Codec Config seek_preroll to audio_roll_distance
+ avformat/iamf_writer: fix coded audio_roll_distance values
+ avformat/iamf_writer: fix PCM endian-ness flag
+ avformat/movenc: fix channel count and samplerate fields for IAMF tracks
+ avformat/iamf_parse: keep substream count consistent
+ avformat/iamf_parse: add missing padding to AAC extradata
+ avformat/iamf_parse: 0 layers are not allowed
+ avformat/iamf_parse: consider nb_substreams when accessing substreams array
+ avformat/iamf_parse: Remove dead case
+ avcodec/png: more informative error message for invalid sBIT size
+ avcodec/pngdec: avoid erroring with sBIT on indexed-color images
+ avfilter/vf_tiltandshift: fix buffer offset for yuv422p input
+ avutil/timestamp: avoid possible FPE when 0 is passed to av_ts_make_time_string2()
+ avformat/mov: add more checks for infe atom size
+ avformat/mov: check for EOF inside the infe list parsing loop
+ avformat/mov: check extent_offset calculation for overflow
+ avformat/mov: check that iloc offset values fit on an int64_t
+ avcodec/pngenc: fix mDCv typo
+ avcodec/pngdec: fix mDCv typo
+ avcodec/nvenc: fix segfault in intra-only mode
+ avdevice/avfoundation: add external video devices
+ aarch64: Add OpenBSD runtime detection of dotprod and i8mm using sysctl
+ fftools/ffplay_renderer: use correct NULL value for Vulkan type
+ qsv: Initialize impl_value
+ avutil/hwcontext_qsv: fix GCC 14.1 warnings
+ avcodec/mediacodecenc: workaround the alignment requirement for H.265
+ avcodec/mediacodecenc: workaround the alignment requirement only for H.264
+ lavc/lpc: fix off-by-one in R-V V compute_autocorr
+ lavc/vp9: reset segmentation fields when segmentation isn't enabled
+ configure: enable ffnvcodec, nvenc, nvdec for FreeBSD
+ lavc/sbrdsp: fix potential overflow in noise table
+
 version 7.0.1:
  lavc/flacdsp: do not assume maximum R-V VL
  avformat/flacdec: Reorder allocations to avoid leak on error
