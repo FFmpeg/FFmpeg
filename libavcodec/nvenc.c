@@ -2361,7 +2361,7 @@ static int nvenc_set_timestamp(AVCodecContext *avctx,
                                AVPacket *pkt)
 {
     NvencContext *ctx = avctx->priv_data;
-    int delay;
+    unsigned int delay;
     int64_t delay_time;
 
     pkt->pts = params->outputTimeStamp;
