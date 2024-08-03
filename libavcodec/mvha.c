@@ -183,6 +183,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
                     av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", ret);
                     return AVERROR_EXTERNAL;
                 }
+                if (zstream->avail_out > 0)
+                    memset(zstream->next_out, 0, zstream->avail_out);
             }
         }
     } else if (type == MKTAG('H','U','F','Y')) {
