@@ -4944,11 +4944,15 @@ static int mov_setup_track_ids(MOVMuxContext *mov, AVFormatContext *s)
             mov->tracks[i].track_id = i >= mov->nb_streams ? ++next_generated_track_id : mov->tracks[i].st->id;
         }
     } else {
+        int last_track_id = 0;
         for (i = 0; i < mov->nb_tracks; i++) {
             if (mov->tracks[i].entry <= 0 && !(mov->flags & FF_MOV_FLAG_FRAGMENT))
                 continue;
 
-            mov->tracks[i].track_id = i + 1;
+            last_track_id =
+            mov->tracks[i].track_id = (mov->tracks[i].st
+                                       ? FFMAX(mov->tracks[i].st->index, last_track_id)
+                                       : FFMAX((i ? mov->tracks[i - 1].track_id : i), last_track_id)) + 1;
         }
     }
 
