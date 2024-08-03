@@ -378,6 +378,7 @@ static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
     if (size < 0)
         return size;
 
+    memset(header + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     len = read_obu_with_size(header, size, &obu_size, &type);
     if (len < 0) {
         av_log(c, AV_LOG_ERROR, "Failed to read obu\n");
