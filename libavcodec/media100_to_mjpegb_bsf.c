@@ -148,6 +148,7 @@ second_field:
     AV_WB32(out->data + second_field_offset + 36, sod_offset[1] - second_field_offset);
 
     out->size = bytestream2_tell_p(&pb);
+    memset(out->data + out->size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     ret = av_packet_copy_props(out, in);
     if (ret < 0)
