@@ -326,9 +326,6 @@ static int read_obu_with_size(const uint8_t *buf, int buf_size, int64_t *obu_siz
         skip_bits(&gb, 3);  // extension_header_reserved_3bits
     }
 
-    if (get_bits_left(&gb) < 8)
-        return AVERROR_INVALIDDATA;
-
     *obu_size  = get_leb128(&gb);
     if (*obu_size > INT_MAX)
         return AVERROR_INVALIDDATA;
@@ -382,6 +379,7 @@ static int obu_get_packet(AVFormatContext *s, AVPacket *pkt)
     if (size < 0)
         return size;
 
+    memset(header + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     len = read_obu_with_size(header, size, &obu_size, &type);
     if (len < 0) {
         av_log(c, AV_LOG_ERROR, "Failed to read obu\n");
