@@ -566,7 +566,9 @@ redo:
         static const unsigned char avs_seqh[4] = { 0, 0, 1, 0xb0 };
         unsigned char buf[8];
 
-        avio_read(s->pb, buf, 8);
+        ret = avio_read(s->pb, buf, 8);
+        if (ret != 8)
+            return AVERROR_INVALIDDATA;
         avio_seek(s->pb, -8, SEEK_CUR);
         if (!memcmp(buf, avs_seqh, 4) && (buf[6] != 0 || buf[7] != 1))
             codec_id = AV_CODEC_ID_CAVS;
