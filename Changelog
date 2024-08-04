@@ -3,6 +3,10 @@ releases are sorted from youngest to oldest.
 
 
 version 5.1.6:
+ avcodec/snow: Fix off by 1 error in run_buffer
+ avcodec/utils: apply the same alignment to YUV410 as we do to YUV420 for snow
+ swsresample/swresample: error out on invalid layouts
+ Update for 5.1.6
  avdevice/dshow: Don't skip audio devices if no video device is present
  avcodec/cfhdenc: Height of 16 is not supported
  avcodec/cfhdenc: Allocate more space
