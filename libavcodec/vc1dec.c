@@ -344,7 +344,7 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     if (!v->block || !v->cbp_base)
         goto error;
     v->cbp              = v->cbp_base + 2 * s->mb_stride;
-    v->ttblk_base       = av_malloc(sizeof(v->ttblk_base[0]) * 3 * s->mb_stride);
+    v->ttblk_base       = av_mallocz(sizeof(v->ttblk_base[0]) * 3 * s->mb_stride);
     if (!v->ttblk_base)
         goto error;
     v->ttblk            = v->ttblk_base + 2 * s->mb_stride;
@@ -358,7 +358,7 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
     v->luma_mv          = v->luma_mv_base + 2 * s->mb_stride;
 
     /* allocate block type info in that way so it could be used with s->block_index[] */
-    v->mb_type_base = av_malloc(s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
+    v->mb_type_base = av_mallocz(s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
     if (!v->mb_type_base)
         goto error;
     v->mb_type[0]   = v->mb_type_base + s->b8_stride + 1;
