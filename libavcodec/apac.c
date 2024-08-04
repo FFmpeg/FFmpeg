@@ -160,6 +160,7 @@ static int apac_decode(AVCodecContext *avctx, AVFrame *frame,
     buf                = &s->bitstream[s->bitstream_index];
     buf_size          += s->bitstream_size;
     s->bitstream_size  = buf_size;
+    memset(buf + buf_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     frame->nb_samples = s->bitstream_size * 16 * 8;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
