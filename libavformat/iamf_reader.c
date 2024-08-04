@@ -73,8 +73,8 @@ static int audio_frame_obu(AVFormatContext *s, const IAMFDemuxContext *c,
         uint8_t *side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_SKIP_SAMPLES, 10);
         if (!side_data)
             return AVERROR(ENOMEM);
-        AV_WL32(side_data, skip_samples);
-        AV_WL32(side_data + 4, discard_padding);
+        AV_WL32A(side_data, skip_samples);
+        AV_WL32A(side_data + 4, discard_padding);
     }
     if (c->mix) {
         uint8_t *side_data = av_packet_new_side_data(pkt, AV_PKT_DATA_IAMF_MIX_GAIN_PARAM, c->mix_size);

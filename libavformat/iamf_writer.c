@@ -42,12 +42,12 @@ static int update_extradata(IAMFCodecConfig *codec_config)
         if (codec_config->extradata_size != 19)
             return AVERROR_INVALIDDATA;
         codec_config->extradata_size -= 8;
-        AV_WB8(codec_config->extradata  + 0, AV_RL8(codec_config->extradata + 8)); // version
-        AV_WB8(codec_config->extradata  + 1, 2); // set channels to stereo
-        AV_WB16(codec_config->extradata + 2, AV_RL16(codec_config->extradata + 10)); // Byte swap pre-skip
-        AV_WB32(codec_config->extradata + 4, AV_RL32(codec_config->extradata + 12)); // Byte swap sample rate
-        AV_WB16(codec_config->extradata + 8, 0); // set Output Gain to 0
-        AV_WB8(codec_config->extradata + 10, AV_RL8(codec_config->extradata + 18)); // Mapping family
+        AV_WB8(codec_config->extradata   + 0,  AV_RL8(codec_config->extradata + 8)); // version
+        AV_WB8(codec_config->extradata   + 1,  2); // set channels to stereo
+        AV_WB16A(codec_config->extradata + 2,  AV_RL16A(codec_config->extradata + 10)); // Byte swap pre-skip
+        AV_WB32A(codec_config->extradata + 4,  AV_RL32A(codec_config->extradata + 12)); // Byte swap sample rate
+        AV_WB16A(codec_config->extradata + 8,  0); // set Output Gain to 0
+        AV_WB8(codec_config->extradata   + 10, AV_RL8(codec_config->extradata + 18)); // Mapping family
         break;
     case AV_CODEC_ID_FLAC: {
         uint8_t buf[13];

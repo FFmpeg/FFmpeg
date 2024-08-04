@@ -45,8 +45,8 @@ static int opus_decoder_config(IAMFCodecConfig *codec_config,
     if (!codec_config->extradata)
         return AVERROR(ENOMEM);
 
-    AV_WB32(codec_config->extradata, MKBETAG('O','p','u','s'));
-    AV_WB32(codec_config->extradata + 4, MKBETAG('H','e','a','d'));
+    AV_WB32A(codec_config->extradata,     MKBETAG('O','p','u','s'));
+    AV_WB32A(codec_config->extradata + 4, MKBETAG('H','e','a','d'));
     codec_config->extradata_size = avio_read(pb, codec_config->extradata + 8, left);
     if (codec_config->extradata_size < left)
         return AVERROR_INVALIDDATA;
@@ -283,10 +283,10 @@ static int update_extradata(AVCodecParameters *codecpar)
 
     switch(codecpar->codec_id) {
     case AV_CODEC_ID_OPUS:
-        AV_WB8(codecpar->extradata + 9, codecpar->ch_layout.nb_channels);
-        AV_WL16(codecpar->extradata + 10, AV_RB16(codecpar->extradata + 10)); // Byte swap pre-skip
-        AV_WL32(codecpar->extradata + 12, AV_RB32(codecpar->extradata + 12)); // Byte swap sample rate
-        AV_WL16(codecpar->extradata + 16, AV_RB16(codecpar->extradata + 16)); // Byte swap Output Gain
+        AV_WB8(codecpar->extradata   + 9,  codecpar->ch_layout.nb_channels);
+        AV_WL16A(codecpar->extradata + 10, AV_RB16A(codecpar->extradata + 10)); // Byte swap pre-skip
+        AV_WL32A(codecpar->extradata + 12, AV_RB32A(codecpar->extradata + 12)); // Byte swap sample rate
+        AV_WL16A(codecpar->extradata + 16, AV_RB16A(codecpar->extradata + 16)); // Byte swap Output Gain
         break;
     case AV_CODEC_ID_AAC: {
         uint8_t buf[5];
