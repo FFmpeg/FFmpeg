@@ -562,6 +562,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, AVFrame *frame,
     buf               = &s->bitstream[s->bitstream_index];
     buf_size         += s->bitstream_size;
     s->bitstream_size = buf_size;
+    memset(buf + buf_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     /* do not decode until buffer has at least max_framesize bytes or
      * the end of the file has been reached */
