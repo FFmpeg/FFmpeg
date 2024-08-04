@@ -2112,7 +2112,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         ctx->acf               = av_malloc_array(channels, sizeof(*ctx->acf));
         ctx->shift_value       = av_calloc(channels, sizeof(*ctx->shift_value));
         ctx->last_shift_value  = av_calloc(channels, sizeof(*ctx->last_shift_value));
-        ctx->last_acf_mantissa = av_malloc_array(channels, sizeof(*ctx->last_acf_mantissa));
+        ctx->last_acf_mantissa = av_calloc(channels, sizeof(*ctx->last_acf_mantissa));
         ctx->raw_mantissa      = av_calloc(channels, sizeof(*ctx->raw_mantissa));
 
         ctx->larray = av_malloc_array(ctx->cur_frame_length * 4, sizeof(*ctx->larray));
