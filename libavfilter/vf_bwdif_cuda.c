@@ -22,6 +22,8 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/cuda_check.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "yadif.h"
 
@@ -217,16 +219,17 @@ static av_cold void deint_cuda_uninit(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
+    FilterLink        *l = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     DeintCUDAContext *s  = ctx->priv;
 
-    if (!inlink->hw_frames_ctx) {
+    if (!l->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "A hardware frames reference is "
                "required to associate the processing device.\n");
         return AVERROR(EINVAL);
     }
 
-    s->input_frames_ref = av_buffer_ref(inlink->hw_frames_ctx);
+    s->input_frames_ref = av_buffer_ref(l->hw_frames_ctx);
     if (!s->input_frames_ref) {
         av_log(ctx, AV_LOG_ERROR, "A input frames reference create "
                "failed.\n");
@@ -239,6 +242,7 @@ static int config_input(AVFilterLink *inlink)
 
 static int config_output(AVFilterLink *link)
 {
+    FilterLink *l = ff_filter_link(link);
     AVHWFramesContext *output_frames;
     AVFilterContext *ctx = link->src;
     DeintCUDAContext *s = ctx->priv;
@@ -257,15 +261,15 @@ static int config_output(AVFilterLink *link)
     s->hwctx = ((AVHWDeviceContext*)s->device_ref->data)->hwctx;
     cu = s->hwctx->internal->cuda_dl;
 
-    link->hw_frames_ctx = av_hwframe_ctx_alloc(s->device_ref);
-    if (!link->hw_frames_ctx) {
+    l->hw_frames_ctx = av_hwframe_ctx_alloc(s->device_ref);
+    if (!l->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create HW frame context "
                "for output.\n");
         ret = AVERROR(ENOMEM);
         goto exit;
     }
 
-    output_frames = (AVHWFramesContext*)link->hw_frames_ctx->data;
+    output_frames = (AVHWFramesContext*)l->hw_frames_ctx->data;
 
     output_frames->format    = AV_PIX_FMT_CUDA;
     output_frames->sw_format = s->input_frames->sw_format;
@@ -278,7 +282,7 @@ static int config_output(AVFilterLink *link)
     if (ret < 0)
         goto exit;
 
-    ret = av_hwframe_ctx_init(link->hw_frames_ctx);
+    ret = av_hwframe_ctx_init(l->hw_frames_ctx);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialise CUDA frame "
                "context for output: %d\n", ret);

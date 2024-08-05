@@ -26,6 +26,7 @@
 #include "vulkan_spirv.h"
 #include "yadif.h"
 #include "internal.h"
+#include "filters.h"
 
 typedef struct BWDIFVulkanContext {
     YADIFContext yadif;
@@ -303,18 +304,19 @@ static void bwdif_vulkan_uninit(AVFilterContext *avctx)
 
 static int bwdif_vulkan_config_input(AVFilterLink *inlink)
 {
+    FilterLink *l = ff_filter_link(inlink);
     AVHWFramesContext *input_frames;
     AVFilterContext *avctx = inlink->dst;
     BWDIFVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
 
-    if (!inlink->hw_frames_ctx) {
+    if (!l->hw_frames_ctx) {
         av_log(inlink->dst, AV_LOG_ERROR, "Vulkan filtering requires a "
                "hardware frames context on the input.\n");
         return AVERROR(EINVAL);
     }
 
-    input_frames = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+    input_frames = (AVHWFramesContext *)l->hw_frames_ctx->data;
     if (input_frames->format != AV_PIX_FMT_VULKAN)
         return AVERROR(EINVAL);
 
@@ -323,7 +325,7 @@ static int bwdif_vulkan_config_input(AVFilterLink *inlink)
         return 0;
 
     /* Save the ref, without reffing it */
-    vkctx->input_frames_ref = inlink->hw_frames_ctx;
+    vkctx->input_frames_ref = l->hw_frames_ctx;
 
     /* Defaults */
     vkctx->output_format = input_frames->sw_format;
@@ -335,13 +337,14 @@ static int bwdif_vulkan_config_input(AVFilterLink *inlink)
 
 static int bwdif_vulkan_config_output(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     int err;
     AVFilterContext *avctx = outlink->src;
     BWDIFVulkanContext *s = avctx->priv;
     YADIFContext *y = &s->yadif;
     FFVulkanContext *vkctx = &s->vkctx;
 
-    av_buffer_unref(&outlink->hw_frames_ctx);
+    av_buffer_unref(&l->hw_frames_ctx);
 
     err = ff_vk_filter_init_context(avctx, vkctx, vkctx->input_frames_ref,
                                     vkctx->output_width, vkctx->output_height,
@@ -352,8 +355,8 @@ static int bwdif_vulkan_config_output(AVFilterLink *outlink)
     /* For logging */
     vkctx->class = y->class;
 
-    outlink->hw_frames_ctx = av_buffer_ref(vkctx->frames_ref);
-    if (!outlink->hw_frames_ctx)
+    l->hw_frames_ctx = av_buffer_ref(vkctx->frames_ref);
+    if (!l->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     err = ff_yadif_config_output_common(outlink);

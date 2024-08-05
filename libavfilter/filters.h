@@ -57,6 +57,14 @@ typedef struct FilterLink {
      * May be set by the link destination filter in its config_props().
      */
     int max_samples;
+
+    /**
+     * For hwaccel pixel formats, this should be a reference to the
+     * AVHWFramesContext describing the frames.
+     *
+     * May be set by the link source filter in its config_props().
+     */
+    AVBufferRef *hw_frames_ctx;
 } FilterLink;
 
 static inline FilterLink* ff_filter_link(AVFilterLink *link)

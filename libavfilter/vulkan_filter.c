@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "filters.h"
 #include "vulkan_filter.h"
 #include "libavutil/vulkan_loader.h"
 
@@ -165,17 +166,18 @@ skip:
 
 int ff_vk_filter_config_input(AVFilterLink *inlink)
 {
+    FilterLink *l = ff_filter_link(inlink);
     AVHWFramesContext *input_frames;
     AVFilterContext *avctx = inlink->dst;
     FFVulkanContext *s = inlink->dst->priv;
 
-    if (!inlink->hw_frames_ctx) {
+    if (!l->hw_frames_ctx) {
         av_log(inlink->dst, AV_LOG_ERROR, "Vulkan filtering requires a "
                "hardware frames context on the input.\n");
         return AVERROR(EINVAL);
     }
 
-    input_frames = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+    input_frames = (AVHWFramesContext *)l->hw_frames_ctx->data;
     if (input_frames->format != AV_PIX_FMT_VULKAN)
         return AVERROR(EINVAL);
 
@@ -184,7 +186,7 @@ int ff_vk_filter_config_input(AVFilterLink *inlink)
         return 0;
 
     /* Save the ref, without reffing it */
-    s->input_frames_ref = inlink->hw_frames_ctx;
+    s->input_frames_ref = l->hw_frames_ctx;
 
     /* Defaults */
     s->input_format = input_frames->sw_format;
@@ -198,9 +200,10 @@ int ff_vk_filter_config_input(AVFilterLink *inlink)
 int ff_vk_filter_config_output(AVFilterLink *outlink)
 {
     int err;
+    FilterLink *l = ff_filter_link(outlink);
     FFVulkanContext *s = outlink->src->priv;
 
-    av_buffer_unref(&outlink->hw_frames_ctx);
+    av_buffer_unref(&l->hw_frames_ctx);
 
     err = ff_vk_filter_init_context(outlink->src, s, s->input_frames_ref,
                                     s->output_width, s->output_height,
@@ -208,8 +211,8 @@ int ff_vk_filter_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    outlink->hw_frames_ctx = av_buffer_ref(s->frames_ref);
-    if (!outlink->hw_frames_ctx)
+    l->hw_frames_ctx = av_buffer_ref(s->frames_ref);
+    if (!l->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     outlink->w = s->output_width;

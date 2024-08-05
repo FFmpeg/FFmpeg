@@ -1188,6 +1188,7 @@ static inline AVRational max_q(AVRational a, AVRational b)
 static int libplacebo_config_output(AVFilterLink *outlink)
 {
     int err;
+    FilterLink          *l = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     LibplaceboContext *s   = avctx->priv;
     AVFilterLink *inlink   = outlink->src->inputs[0];
@@ -1253,7 +1254,7 @@ static int libplacebo_config_output(AVFilterLink *outlink)
         s->vkctx.output_format = s->out_format;
     }
     RET(ff_vk_filter_config_output(outlink));
-    hwfc = (AVHWFramesContext *) outlink->hw_frames_ctx->data;
+    hwfc = (AVHWFramesContext *)l->hw_frames_ctx->data;
     vkfc = hwfc->hwctx;
     vkfc->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 

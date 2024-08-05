@@ -206,6 +206,8 @@ static void link_free(AVFilterLink **link)
     ff_frame_pool_uninit(&li->frame_pool);
     av_channel_layout_uninit(&(*link)->ch_layout);
 
+    av_buffer_unref(&li->l.hw_frames_ctx);
+
     av_freep(link);
 }
 
@@ -411,13 +413,18 @@ int ff_filter_config_links(AVFilterContext *filter)
                     link->time_base = (AVRational) {1, link->sample_rate};
             }
 
-            if (link->src->nb_inputs && link->src->inputs[0]->hw_frames_ctx &&
+            if (link->src->nb_inputs &&
                 !(link->src->filter->flags_internal & FF_FILTER_FLAG_HWFRAME_AWARE)) {
-                av_assert0(!link->hw_frames_ctx &&
+                FilterLink *l0 = ff_filter_link(link->src->inputs[0]);
+
+                av_assert0(!li->l.hw_frames_ctx &&
                            "should not be set by non-hwframe-aware filter");
-                link->hw_frames_ctx = av_buffer_ref(link->src->inputs[0]->hw_frames_ctx);
-                if (!link->hw_frames_ctx)
-                    return AVERROR(ENOMEM);
+
+                if (l0->hw_frames_ctx) {
+                    li->l.hw_frames_ctx = av_buffer_ref(l0->hw_frames_ctx);
+                    if (!li->l.hw_frames_ctx)
+                        return AVERROR(ENOMEM);
+                }
             }
 
             if ((config_link = link->dstpad->config_props))
@@ -764,8 +771,6 @@ static void free_link(AVFilterLink *link)
         link->src->outputs[link->srcpad - link->src->output_pads] = NULL;
     if (link->dst)
         link->dst->inputs[link->dstpad - link->dst->input_pads] = NULL;
-
-    av_buffer_unref(&link->hw_frames_ctx);
 
     ff_formats_unref(&link->incfg.formats);
     ff_formats_unref(&link->outcfg.formats);
@@ -1615,12 +1620,13 @@ const AVClass *avfilter_get_class(void)
 int ff_filter_init_hw_frames(AVFilterContext *avctx, AVFilterLink *link,
                              int default_pool_size)
 {
+    FilterLink *l = ff_filter_link(link);
     AVHWFramesContext *frames;
 
     // Must already be set by caller.
-    av_assert0(link->hw_frames_ctx);
+    av_assert0(l->hw_frames_ctx);
 
-    frames = (AVHWFramesContext*)link->hw_frames_ctx->data;
+    frames = (AVHWFramesContext*)l->hw_frames_ctx->data;
 
     if (frames->initial_pool_size == 0) {
         // Dynamic allocation is necessarily supported.

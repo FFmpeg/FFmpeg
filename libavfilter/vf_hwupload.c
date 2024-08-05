@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -106,8 +107,10 @@ fail:
 
 static int hwupload_config_output(AVFilterLink *outlink)
 {
+    FilterLink       *outl = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     AVFilterLink   *inlink = avctx->inputs[0];
+    FilterLink        *inl = ff_filter_link(inlink);
     HWUploadContext   *ctx = avctx->priv;
     int err;
 
@@ -116,13 +119,13 @@ static int hwupload_config_output(AVFilterLink *outlink)
     if (inlink->format == outlink->format) {
         // The input is already a hardware format, so we just want to
         // pass through the input frames in their own hardware context.
-        if (!inlink->hw_frames_ctx) {
+        if (!inl->hw_frames_ctx) {
             av_log(ctx, AV_LOG_ERROR, "No input hwframe context.\n");
             return AVERROR(EINVAL);
         }
 
-        outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
-        if (!outlink->hw_frames_ctx)
+        outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
+        if (!outl->hw_frames_ctx)
             return AVERROR(ENOMEM);
 
         return 0;
@@ -138,9 +141,9 @@ static int hwupload_config_output(AVFilterLink *outlink)
            av_get_pix_fmt_name(inlink->format));
 
     ctx->hwframes->format    = outlink->format;
-    if (inlink->hw_frames_ctx) {
+    if (inl->hw_frames_ctx) {
         AVHWFramesContext *in_hwframe_ctx =
-            (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+            (AVHWFramesContext*)inl->hw_frames_ctx->data;
         ctx->hwframes->sw_format = in_hwframe_ctx->sw_format;
     } else {
         ctx->hwframes->sw_format = inlink->format;
@@ -155,8 +158,8 @@ static int hwupload_config_output(AVFilterLink *outlink)
     if (err < 0)
         goto fail;
 
-    outlink->hw_frames_ctx = av_buffer_ref(ctx->hwframes_ref);
-    if (!outlink->hw_frames_ctx) {
+    outl->hw_frames_ctx = av_buffer_ref(ctx->hwframes_ref);
+    if (!outl->hw_frames_ctx) {
         err = AVERROR(ENOMEM);
         goto fail;
     }

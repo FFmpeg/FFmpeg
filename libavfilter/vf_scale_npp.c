@@ -36,6 +36,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "scale_eval.h"
@@ -536,6 +537,8 @@ static int init_processing_chain(AVFilterContext *ctx, int in_width, int in_heig
                                  int out_width, int out_height)
 {
     NPPScaleContext *s = ctx->priv;
+    FilterLink    *inl = ff_filter_link(ctx->inputs[0]);
+    FilterLink   *outl = ff_filter_link(ctx->outputs[0]);
 
     AVHWFramesContext *in_frames_ctx;
 
@@ -547,11 +550,11 @@ static int init_processing_chain(AVFilterContext *ctx, int in_width, int in_heig
     int i, ret, last_stage = -1;
 
     /* check that we have a hw context */
-    if (!ctx->inputs[0]->hw_frames_ctx) {
+    if (!inl->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "No hw context provided on input\n");
         return AVERROR(EINVAL);
     }
-    in_frames_ctx = (AVHWFramesContext*)ctx->inputs[0]->hw_frames_ctx->data;
+    in_frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
     in_format     = in_frames_ctx->sw_format;
     out_format    = (s->format == AV_PIX_FMT_NONE) ? in_format : s->format;
 
@@ -629,11 +632,11 @@ static int init_processing_chain(AVFilterContext *ctx, int in_width, int in_heig
     }
 
     if (last_stage >= 0)
-        ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(s->stages[last_stage].frames_ctx);
+        outl->hw_frames_ctx = av_buffer_ref(s->stages[last_stage].frames_ctx);
     else
-        ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(ctx->inputs[0]->hw_frames_ctx);
+        outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
 
-    if (!ctx->outputs[0]->hw_frames_ctx)
+    if (!outl->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -686,8 +689,9 @@ fail:
 
 static int config_props_ref(AVFilterLink *outlink)
 {
+    FilterLink     *outl = ff_filter_link(outlink);
     AVFilterLink *inlink = outlink->src->inputs[1];
-    AVFilterContext *ctx = outlink->src;
+    FilterLink      *inl = ff_filter_link(inlink);
 
     outlink->w = inlink->w;
     outlink->h = inlink->h;
@@ -695,7 +699,7 @@ static int config_props_ref(AVFilterLink *outlink)
     outlink->time_base = inlink->time_base;
     outlink->frame_rate = inlink->frame_rate;
 
-    ctx->outputs[1]->hw_frames_ctx = av_buffer_ref(ctx->inputs[1]->hw_frames_ctx);
+    outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
 
     return 0;
 }
@@ -900,7 +904,8 @@ static int nppscale_filter_frame(AVFilterLink *link, AVFrame *in)
     AVFilterContext              *ctx = link->dst;
     NPPScaleContext                *s = ctx->priv;
     AVFilterLink             *outlink = ctx->outputs[0];
-    AVHWFramesContext     *frames_ctx = (AVHWFramesContext*)outlink->hw_frames_ctx->data;
+    FilterLink                     *l = ff_filter_link(outlink);
+    AVHWFramesContext     *frames_ctx = (AVHWFramesContext*)l->hw_frames_ctx->data;
     AVCUDADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
 
     AVFrame *out = NULL;

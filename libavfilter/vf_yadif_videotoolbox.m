@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "filters.h"
 #include "internal.h"
 #include "metal/utils.h"
 #include "yadif.h"
@@ -288,16 +289,17 @@ static av_cold int yadif_videotoolbox_init(AVFilterContext *ctx)
 
 static int do_config_input(AVFilterLink *inlink) API_AVAILABLE(macos(10.11), ios(8.0))
 {
+    FilterLink *l = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     YADIFVTContext *s = ctx->priv;
 
-    if (!inlink->hw_frames_ctx) {
+    if (!l->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "A hardware frames reference is "
                "required to associate the processing device.\n");
         return AVERROR(EINVAL);
     }
 
-    s->input_frames_ref = av_buffer_ref(inlink->hw_frames_ctx);
+    s->input_frames_ref = av_buffer_ref(l->hw_frames_ctx);
     if (!s->input_frames_ref) {
         av_log(ctx, AV_LOG_ERROR, "A input frames reference create "
                "failed.\n");
@@ -321,6 +323,7 @@ static int config_input(AVFilterLink *inlink)
 
 static int do_config_output(AVFilterLink *link) API_AVAILABLE(macos(10.11), ios(8.0))
 {
+    FilterLink *l = ff_filter_link(link);
     AVHWFramesContext *output_frames;
     AVFilterContext *ctx = link->src;
     YADIFVTContext *s = ctx->priv;
@@ -335,15 +338,15 @@ static int do_config_output(AVFilterLink *link) API_AVAILABLE(macos(10.11), ios(
         return AVERROR(ENOMEM);
     }
 
-    link->hw_frames_ctx = av_hwframe_ctx_alloc(s->device_ref);
-    if (!link->hw_frames_ctx) {
+    l->hw_frames_ctx = av_hwframe_ctx_alloc(s->device_ref);
+    if (!l->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create HW frame context "
                "for output.\n");
         ret = AVERROR(ENOMEM);
         goto exit;
     }
 
-    output_frames = (AVHWFramesContext*)link->hw_frames_ctx->data;
+    output_frames = (AVHWFramesContext*)l->hw_frames_ctx->data;
 
     output_frames->format    = AV_PIX_FMT_VIDEOTOOLBOX;
     output_frames->sw_format = s->input_frames->sw_format;
@@ -354,7 +357,7 @@ static int do_config_output(AVFilterLink *link) API_AVAILABLE(macos(10.11), ios(
     if (ret < 0)
         goto exit;
 
-    ret = av_hwframe_ctx_init(link->hw_frames_ctx);
+    ret = av_hwframe_ctx_init(l->hw_frames_ctx);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to initialise VideoToolbox frame "
                "context for output: %d\n", ret);

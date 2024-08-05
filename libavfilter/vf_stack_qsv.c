@@ -100,15 +100,16 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     StackQSVContext *sctx = ctx->priv;
     AVFilterLink *inlink0 = ctx->inputs[0];
+    FilterLink      *inl0 = ff_filter_link(inlink0);
     enum AVPixelFormat in_format;
     int depth = 8, ret;
     mfxVPPCompInputStream *is = sctx->comp_conf.InputStream;
 
     if (inlink0->format == AV_PIX_FMT_QSV) {
-         if (!inlink0->hw_frames_ctx || !inlink0->hw_frames_ctx->data)
+         if (!inl0->hw_frames_ctx || !inl0->hw_frames_ctx->data)
              return AVERROR(EINVAL);
 
-         in_format = ((AVHWFramesContext*)inlink0->hw_frames_ctx->data)->sw_format;
+         in_format = ((AVHWFramesContext*)inl0->hw_frames_ctx->data)->sw_format;
     } else
         in_format = inlink0->format;
 
@@ -116,10 +117,11 @@ static int config_output(AVFilterLink *outlink)
 
     for (int i = 1; i < sctx->base.nb_inputs; i++) {
         AVFilterLink *inlink = ctx->inputs[i];
+        FilterLink      *inl = ff_filter_link(inlink);
 
         if (inlink0->format == AV_PIX_FMT_QSV) {
-            AVHWFramesContext *hwfc0 = (AVHWFramesContext *)inlink0->hw_frames_ctx->data;
-            AVHWFramesContext *hwfc = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+            AVHWFramesContext *hwfc0 = (AVHWFramesContext *)inl0->hw_frames_ctx->data;
+            AVHWFramesContext *hwfc = (AVHWFramesContext *)inl->hw_frames_ctx->data;
 
             if (inlink0->format != inlink->format) {
                 av_log(ctx, AV_LOG_ERROR, "Mixing hardware and software pixel formats is not supported.\n");

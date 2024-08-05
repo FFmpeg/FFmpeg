@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -86,8 +87,10 @@ static int cudaupload_query_formats(AVFilterContext *ctx)
 
 static int cudaupload_config_output(AVFilterLink *outlink)
 {
+    FilterLink     *outl = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     CudaUploadContext *s = ctx->priv;
 
     AVHWFramesContext *hwframe_ctx;
@@ -100,8 +103,8 @@ static int cudaupload_config_output(AVFilterLink *outlink)
 
     hwframe_ctx            = (AVHWFramesContext*)s->hwframe->data;
     hwframe_ctx->format    = AV_PIX_FMT_CUDA;
-    if (inlink->hw_frames_ctx) {
-        AVHWFramesContext *in_hwframe_ctx = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+    if (inl->hw_frames_ctx) {
+        AVHWFramesContext *in_hwframe_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
         hwframe_ctx->sw_format = in_hwframe_ctx->sw_format;
     } else {
         hwframe_ctx->sw_format = inlink->format;
@@ -113,8 +116,8 @@ static int cudaupload_config_output(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    outlink->hw_frames_ctx = av_buffer_ref(s->hwframe);
-    if (!outlink->hw_frames_ctx)
+    outl->hw_frames_ctx = av_buffer_ref(s->hwframe);
+    if (!outl->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     return 0;

@@ -31,6 +31,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 #include "cuda/load_helper.h"
@@ -151,17 +152,19 @@ static int format_is_supported(enum AVPixelFormat fmt)
 static av_cold int init_processing_chain(AVFilterContext* ctx, int width,
                                          int height)
 {
+    FilterLink          *inl = ff_filter_link(ctx->inputs[0]);
+    FilterLink         *outl = ff_filter_link(ctx->outputs[0]);
     CUDAColorspaceContext* s = ctx->priv;
     AVHWFramesContext* in_frames_ctx;
 
     int ret;
 
-    if (!ctx->inputs[0]->hw_frames_ctx) {
+    if (!inl->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "No hw context provided on input\n");
         return AVERROR(EINVAL);
     }
 
-    in_frames_ctx = (AVHWFramesContext*)ctx->inputs[0]->hw_frames_ctx->data;
+    in_frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
     s->pix_fmt = in_frames_ctx->sw_format;
 
     if (!format_is_supported(s->pix_fmt)) {
@@ -181,8 +184,8 @@ static av_cold int init_processing_chain(AVFilterContext* ctx, int width,
     if (ret < 0)
         return ret;
 
-    ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
-    if (!ctx->outputs[0]->hw_frames_ctx)
+    outl->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
+    if (!outl->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -225,6 +228,7 @@ static av_cold int cudacolorspace_config_props(AVFilterLink* outlink)
 {
     AVFilterContext* ctx = outlink->src;
     AVFilterLink* inlink = outlink->src->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     CUDAColorspaceContext* s = ctx->priv;
     AVHWFramesContext* frames_ctx;
     AVCUDADeviceContext* device_hwctx;
@@ -237,7 +241,7 @@ static av_cold int cudacolorspace_config_props(AVFilterLink* outlink)
     if (ret < 0)
         return ret;
 
-    frames_ctx = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+    frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
     device_hwctx = frames_ctx->device_ctx->hwctx;
 
     s->hwctx = device_hwctx;

@@ -1112,6 +1112,7 @@ static int deshake_opencl_init(AVFilterContext *avctx)
     DeshakeOpenCLContext *ctx = avctx->priv;
     AVFilterLink *outlink = avctx->outputs[0];
     AVFilterLink *inlink = avctx->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     // Pointer to the host-side pattern buffer to be initialized and then copied
     // to the GPU
     PointPair *pattern_host = NULL;
@@ -1146,7 +1147,7 @@ static int deshake_opencl_init(AVFilterContext *avctx)
     const int descriptor_buf_size = image_grid_32 * (BREIFN / 8);
     const int features_buf_size = image_grid_32 * sizeof(cl_float2);
 
-    const AVHWFramesContext *hw_frames_ctx = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+    const AVHWFramesContext *hw_frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(hw_frames_ctx->sw_format);
 
     av_assert0(hw_frames_ctx);

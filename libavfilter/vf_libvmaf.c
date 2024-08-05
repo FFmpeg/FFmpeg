@@ -34,6 +34,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "formats.h"
 #include "framesync.h"
 #include "internal.h"
@@ -651,7 +652,8 @@ static int config_props_cuda(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     LIBVMAFContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    AVHWFramesContext *frames_ctx = (AVHWFramesContext*) inlink->hw_frames_ctx->data;
+    FilterLink      *inl = ff_filter_link(inlink);
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext*) inl->hw_frames_ctx->data;
     AVCUDADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
     CUcontext cu_ctx = device_hwctx->cuda_ctx;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frames_ctx->sw_format);
@@ -756,7 +758,8 @@ static int do_vmaf_cuda(FFFrameSync* fs)
     AVFilterContext* ctx = fs->parent;
     LIBVMAFContext* s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    AVHWFramesContext *frames_ctx = (AVHWFramesContext*) inlink->hw_frames_ctx->data;
+    FilterLink      *inl = ff_filter_link(inlink);
+    AVHWFramesContext *frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
     AVCUDADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
     VmafPicture pic_ref, pic_dist;
     AVFrame *ref, *dist;

@@ -266,6 +266,7 @@ static int testsrc_vulkan_activate(AVFilterContext *ctx)
 static int testsrc_vulkan_config_props(AVFilterLink *outlink)
 {
     int err;
+    FilterLink *l = ff_filter_link(outlink);
     TestSrcVulkanContext *s = outlink->src->priv;
     FFVulkanContext *vkctx = &s->vkctx;
 
@@ -284,8 +285,8 @@ static int testsrc_vulkan_config_props(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    outlink->hw_frames_ctx = av_buffer_ref(vkctx->frames_ref);
-    if (!outlink->hw_frames_ctx)
+    l->hw_frames_ctx = av_buffer_ref(vkctx->frames_ref);
+    if (!l->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     s->time_base = av_inv_q(s->frame_rate);

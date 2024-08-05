@@ -364,13 +364,13 @@ static int config_input(AVFilterLink *inlink)
 
 static mfxStatus get_mfx_version(const AVFilterContext *ctx, mfxVersion *mfx_version)
 {
-    const AVFilterLink *inlink = ctx->inputs[0];
+    const FilterLink *l = ff_filter_link(ctx->inputs[0]);
     AVBufferRef *device_ref;
     AVHWDeviceContext *device_ctx;
     AVQSVDeviceContext *device_hwctx;
 
-    if (inlink->hw_frames_ctx) {
-        AVHWFramesContext *frames_ctx = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+    if (l->hw_frames_ctx) {
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext *)l->hw_frames_ctx->data;
         device_ref = frames_ctx->device_ref;
     } else if (ctx->hw_device_ctx) {
         device_ref = ctx->hw_device_ctx;
@@ -524,6 +524,7 @@ static int vpp_set_frame_ext_params(AVFilterContext *ctx, const AVFrame *in, AVF
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink     *outl = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     VPPContext      *vpp = ctx->priv;
     QSVVPPParam     param = { NULL };
@@ -531,6 +532,7 @@ static int config_output(AVFilterLink *outlink)
     mfxExtBuffer    *ext_buf[ENH_FILTERS_COUNT];
     mfxVersion      mfx_version;
     AVFilterLink    *inlink = ctx->inputs[0];
+    FilterLink         *inl = ff_filter_link(inlink);
     enum AVPixelFormat in_format;
 
     outlink->w          = vpp->out_width;
@@ -552,10 +554,10 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (inlink->format == AV_PIX_FMT_QSV) {
-         if (!inlink->hw_frames_ctx || !inlink->hw_frames_ctx->data)
+         if (!inl->hw_frames_ctx || !inl->hw_frames_ctx->data)
              return AVERROR(EINVAL);
          else
-             in_format = ((AVHWFramesContext*)inlink->hw_frames_ctx->data)->sw_format;
+             in_format = ((AVHWFramesContext*)inl->hw_frames_ctx->data)->sw_format;
     } else
         in_format = inlink->format;
 
@@ -716,8 +718,8 @@ static int config_output(AVFilterLink *outlink)
     else {
         /* No MFX session is created in this case */
         av_log(ctx, AV_LOG_VERBOSE, "qsv vpp pass through mode.\n");
-        if (inlink->hw_frames_ctx)
-            outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
+        if (inl->hw_frames_ctx)
+            outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
     }
 
     return 0;

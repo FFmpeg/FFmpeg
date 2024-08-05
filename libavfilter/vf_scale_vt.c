@@ -24,6 +24,8 @@
 #include "libavutil/hwcontext_videotoolbox.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "scale_eval.h"
 #include "video.h"
@@ -174,9 +176,11 @@ fail:
 static int scale_vt_config_output(AVFilterLink *outlink)
 {
     int err;
+    FilterLink       *outl = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     ScaleVtContext *s  = avctx->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    FilterLink        *inl = ff_filter_link(inlink);
     AVHWFramesContext *hw_frame_ctx_in;
     AVHWFramesContext *hw_frame_ctx_out;
 
@@ -196,11 +200,11 @@ static int scale_vt_config_output(AVFilterLink *outlink)
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     }
 
-    hw_frame_ctx_in = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+    hw_frame_ctx_in = (AVHWFramesContext *)inl->hw_frames_ctx->data;
 
-    av_buffer_unref(&outlink->hw_frames_ctx);
-    outlink->hw_frames_ctx = av_hwframe_ctx_alloc(hw_frame_ctx_in->device_ref);
-    hw_frame_ctx_out = (AVHWFramesContext *)outlink->hw_frames_ctx->data;
+    av_buffer_unref(&outl->hw_frames_ctx);
+    outl->hw_frames_ctx = av_hwframe_ctx_alloc(hw_frame_ctx_in->device_ref);
+    hw_frame_ctx_out = (AVHWFramesContext *)outl->hw_frames_ctx->data;
     hw_frame_ctx_out->format = AV_PIX_FMT_VIDEOTOOLBOX;
     hw_frame_ctx_out->sw_format = hw_frame_ctx_in->sw_format;
     hw_frame_ctx_out->width = outlink->w;
@@ -210,7 +214,7 @@ static int scale_vt_config_output(AVFilterLink *outlink)
     if (err < 0)
         return err;
 
-    err = av_hwframe_ctx_init(outlink->hw_frames_ctx);
+    err = av_hwframe_ctx_init(outl->hw_frames_ctx);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "Failed to init videotoolbox frame context, %s\n",

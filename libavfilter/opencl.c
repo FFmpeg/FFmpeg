@@ -23,6 +23,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 
+#include "filters.h"
 #include "opencl.h"
 
 static int opencl_filter_set_device(AVFilterContext *avctx,
@@ -44,12 +45,13 @@ static int opencl_filter_set_device(AVFilterContext *avctx,
 
 int ff_opencl_filter_config_input(AVFilterLink *inlink)
 {
+    FilterLink            *l = ff_filter_link(inlink);
     AVFilterContext   *avctx = inlink->dst;
     OpenCLFilterContext *ctx = avctx->priv;
     AVHWFramesContext *input_frames;
     int err;
 
-    if (!inlink->hw_frames_ctx) {
+    if (!l->hw_frames_ctx) {
         av_log(avctx, AV_LOG_ERROR, "OpenCL filtering requires a "
                "hardware frames context on the input.\n");
         return AVERROR(EINVAL);
@@ -59,7 +61,7 @@ int ff_opencl_filter_config_input(AVFilterLink *inlink)
     if (avctx->inputs[0] != inlink)
         return 0;
 
-    input_frames = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+    input_frames = (AVHWFramesContext*)l->hw_frames_ctx->data;
     if (input_frames->format != AV_PIX_FMT_OPENCL)
         return AVERROR(EINVAL);
 
@@ -80,13 +82,14 @@ int ff_opencl_filter_config_input(AVFilterLink *inlink)
 
 int ff_opencl_filter_config_output(AVFilterLink *outlink)
 {
+    FilterLink            *l = ff_filter_link(outlink);
     AVFilterContext   *avctx = outlink->src;
     OpenCLFilterContext *ctx = avctx->priv;
     AVBufferRef       *output_frames_ref = NULL;
     AVHWFramesContext *output_frames;
     int err;
 
-    av_buffer_unref(&outlink->hw_frames_ctx);
+    av_buffer_unref(&l->hw_frames_ctx);
 
     if (!ctx->device_ref) {
         if (!avctx->hw_device_ctx) {
@@ -119,7 +122,7 @@ int ff_opencl_filter_config_output(AVFilterLink *outlink)
         goto fail;
     }
 
-    outlink->hw_frames_ctx = output_frames_ref;
+    l->hw_frames_ctx = output_frames_ref;
     outlink->w = ctx->output_width;
     outlink->h = ctx->output_height;
 

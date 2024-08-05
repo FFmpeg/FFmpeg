@@ -188,7 +188,12 @@ MAKE_AVFILTERLINK_ACCESSOR(enum AVColorRange, color_range)
 
 MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        )
 
-MAKE_AVFILTERLINK_ACCESSOR(AVBufferRef *    , hw_frames_ctx      )
+AVBufferRef* av_buffersink_get_hw_frames_ctx(const AVFilterContext *ctx)
+{
+    FilterLink *l = ff_filter_link(ctx->inputs[0]);
+    av_assert0(ctx->filter->activate == activate);
+    return l->hw_frames_ctx;
+}
 
 int av_buffersink_get_channels(const AVFilterContext *ctx)
 {

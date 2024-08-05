@@ -32,6 +32,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "scale_eval.h"
 #include "video.h"
@@ -221,6 +222,8 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
                                          int out_width, int out_height)
 {
     CUDAScaleContext *s = ctx->priv;
+    FilterLink     *inl = ff_filter_link(ctx->inputs[0]);
+    FilterLink    *outl = ff_filter_link(ctx->outputs[0]);
 
     AVHWFramesContext *in_frames_ctx;
 
@@ -229,11 +232,11 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
     int ret;
 
     /* check that we have a hw context */
-    if (!ctx->inputs[0]->hw_frames_ctx) {
+    if (!inl->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "No hw context provided on input\n");
         return AVERROR(EINVAL);
     }
-    in_frames_ctx = (AVHWFramesContext*)ctx->inputs[0]->hw_frames_ctx->data;
+    in_frames_ctx = (AVHWFramesContext*)inl->hw_frames_ctx->data;
     in_format     = in_frames_ctx->sw_format;
     out_format    = (s->format == AV_PIX_FMT_NONE) ? in_format : s->format;
 
@@ -251,7 +254,7 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
     set_format_info(ctx, in_format, out_format);
 
     if (s->passthrough && in_width == out_width && in_height == out_height && in_format == out_format) {
-        s->frames_ctx = av_buffer_ref(ctx->inputs[0]->hw_frames_ctx);
+        s->frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
         if (!s->frames_ctx)
             return AVERROR(ENOMEM);
     } else {
@@ -266,8 +269,8 @@ static av_cold int init_processing_chain(AVFilterContext *ctx, int in_width, int
             s->interp_algo = INTERP_ALGO_NEAREST;
     }
 
-    ctx->outputs[0]->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
-    if (!ctx->outputs[0]->hw_frames_ctx)
+    outl->hw_frames_ctx = av_buffer_ref(s->frames_ctx);
+    if (!outl->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     return 0;
@@ -348,6 +351,7 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     CUDAScaleContext *s  = ctx->priv;
     AVHWFramesContext     *frames_ctx;
     AVCUDADeviceContext *device_hwctx;
@@ -374,7 +378,7 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    frames_ctx   = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+    frames_ctx   = (AVHWFramesContext*)inl->hw_frames_ctx->data;
     device_hwctx = frames_ctx->device_ctx->hwctx;
 
     s->hwctx = device_hwctx;

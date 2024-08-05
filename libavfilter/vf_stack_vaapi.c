@@ -137,26 +137,28 @@ static int config_output(AVFilterLink *outlink)
     StackVAAPIContext *sctx = avctx->priv;
     VAAPIVPPContext *vppctx = avctx->priv;
     AVFilterLink *inlink0 = avctx->inputs[0];
+    FilterLink      *inl0 = ff_filter_link(inlink0);
     AVHWFramesContext *hwfc0 = NULL;
     int ret;
 
-    if (inlink0->format != AV_PIX_FMT_VAAPI || !inlink0->hw_frames_ctx || !inlink0->hw_frames_ctx->data) {
+    if (inlink0->format != AV_PIX_FMT_VAAPI || !inl0->hw_frames_ctx || !inl0->hw_frames_ctx->data) {
         av_log(avctx, AV_LOG_ERROR, "Software pixel format is not supported.\n");
         return AVERROR(EINVAL);
     }
 
-    hwfc0 = (AVHWFramesContext *)inlink0->hw_frames_ctx->data;
+    hwfc0 = (AVHWFramesContext *)inl0->hw_frames_ctx->data;
 
     for (int i = 1; i < sctx->base.nb_inputs; i++) {
         AVFilterLink *inlink = avctx->inputs[i];
+        FilterLink      *inl = ff_filter_link(inlink);
         AVHWFramesContext *hwfc = NULL;
 
-        if (inlink->format != AV_PIX_FMT_VAAPI || !inlink->hw_frames_ctx || !inlink->hw_frames_ctx->data) {
+        if (inlink->format != AV_PIX_FMT_VAAPI || !inl->hw_frames_ctx || !inl->hw_frames_ctx->data) {
             av_log(avctx, AV_LOG_ERROR, "Software pixel format is not supported.\n");
             return AVERROR(EINVAL);
         }
 
-        hwfc = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+        hwfc = (AVHWFramesContext *)inl->hw_frames_ctx->data;
 
         if (hwfc0->sw_format != hwfc->sw_format) {
             av_log(avctx, AV_LOG_ERROR, "All inputs should have the same underlying software pixel format.\n");

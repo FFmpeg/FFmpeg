@@ -641,12 +641,6 @@ struct AVFilterLink {
      * cleared when a frame is filtered.
      */
     int frame_wanted_out;
-
-    /**
-     * For hwaccel pixel formats, this should be a reference to the
-     * AVHWFramesContext describing the frames.
-     */
-    AVBufferRef *hw_frames_ctx;
 };
 
 /**

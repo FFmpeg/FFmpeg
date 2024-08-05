@@ -43,6 +43,7 @@
 #include "libavutil/hwcontext_d3d11va.h"
 #include "compat/w32dlfcn.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -854,6 +855,7 @@ fail:
 
 static int ddagrab_config_props(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     DdagrabContext *dda = avctx->priv;
     int ret;
@@ -915,8 +917,8 @@ static int ddagrab_config_props(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    outlink->hw_frames_ctx = av_buffer_ref(dda->frames_ref);
-    if (!outlink->hw_frames_ctx)
+    l->hw_frames_ctx = av_buffer_ref(dda->frames_ref);
+    if (!l->hw_frames_ctx)
         return AVERROR(ENOMEM);
 
     outlink->w = dda->width;

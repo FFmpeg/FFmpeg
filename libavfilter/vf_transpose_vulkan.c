@@ -23,6 +23,8 @@
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
 #include "vulkan_spirv.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "transpose.h"
 #include "video.h"
@@ -193,18 +195,20 @@ static av_cold void transpose_vulkan_uninit(AVFilterContext *avctx)
 
 static int config_props_output(AVFilterLink *outlink)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     TransposeVulkanContext *s = avctx->priv;
     FFVulkanContext *vkctx = &s->vkctx;
     AVFilterLink *inlink = avctx->inputs[0];
+    FilterLink *inl = ff_filter_link(inlink);
 
     if ((inlink->w >= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_LANDSCAPE) ||
         (inlink->w <= inlink->h && s->passthrough == TRANSPOSE_PT_TYPE_PORTRAIT)) {
         av_log(avctx, AV_LOG_VERBOSE,
                "w:%d h:%d -> w:%d h:%d (passthrough mode)\n",
                inlink->w, inlink->h, inlink->w, inlink->h);
-        outlink->hw_frames_ctx = av_buffer_ref(inlink->hw_frames_ctx);
-        return outlink->hw_frames_ctx ? 0 : AVERROR(ENOMEM);
+        outl->hw_frames_ctx = av_buffer_ref(inl->hw_frames_ctx);
+        return outl->hw_frames_ctx ? 0 : AVERROR(ENOMEM);
     } else {
         s->passthrough = TRANSPOSE_PT_TYPE_NONE;
     }

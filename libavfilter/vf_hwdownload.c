@@ -24,6 +24,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -50,18 +51,19 @@ static int hwdownload_query_formats(AVFilterContext *avctx)
 
 static int hwdownload_config_input(AVFilterLink *inlink)
 {
+    FilterLink          *l = ff_filter_link(inlink);
     AVFilterContext *avctx = inlink->dst;
     HWDownloadContext *ctx = avctx->priv;
 
     av_buffer_unref(&ctx->hwframes_ref);
 
-    if (!inlink->hw_frames_ctx) {
+    if (!l->hw_frames_ctx) {
         av_log(ctx, AV_LOG_ERROR, "The input must have a hardware frame "
                "reference.\n");
         return AVERROR(EINVAL);
     }
 
-    ctx->hwframes_ref = av_buffer_ref(inlink->hw_frames_ctx);
+    ctx->hwframes_ref = av_buffer_ref(l->hw_frames_ctx);
     if (!ctx->hwframes_ref)
         return AVERROR(ENOMEM);
 

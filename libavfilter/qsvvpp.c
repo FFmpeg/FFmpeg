@@ -28,6 +28,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "internal.h"
+#include "filters.h"
 #include "qsvvpp.h"
 #include "video.h"
 
@@ -303,10 +304,11 @@ static int fill_frameinfo_by_link(mfxFrameInfo *frameinfo, AVFilterLink *link)
     const AVPixFmtDescriptor *desc;
 
     if (link->format == AV_PIX_FMT_QSV) {
-        if (!link->hw_frames_ctx)
+        FilterLink *l = ff_filter_link(link);
+        if (!l->hw_frames_ctx)
             return AVERROR(EINVAL);
 
-        frames_ctx   = (AVHWFramesContext *)link->hw_frames_ctx->data;
+        frames_ctx   = (AVHWFramesContext *)l->hw_frames_ctx->data;
         frames_hwctx = frames_ctx->hwctx;
         *frameinfo   = frames_hwctx->nb_surfaces ? frames_hwctx->surfaces[0].Info : *frames_hwctx->info;
     } else {
@@ -472,6 +474,7 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
 /* get the output surface */
 static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFrame *in)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     QSVFrame        *out_frame;
     int              ret;
@@ -489,7 +492,7 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFr
         if (!out_frame->frame)
             return NULL;
 
-        ret = av_hwframe_get_buffer(outlink->hw_frames_ctx, out_frame->frame, 0);
+        ret = av_hwframe_get_buffer(l->hw_frames_ctx, out_frame->frame, 0);
         if (ret < 0) {
             av_log(ctx, AV_LOG_ERROR, "Can't allocate a surface.\n");
             return NULL;
@@ -546,7 +549,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
 {
     AVFilterLink                 *inlink = avctx->inputs[0];
+    FilterLink                      *inl = ff_filter_link(inlink);
     AVFilterLink                *outlink = avctx->outputs[0];
+    FilterLink                     *outl = ff_filter_link(outlink);
     AVQSVFramesContext  *in_frames_hwctx = NULL;
     AVQSVFramesContext *out_frames_hwctx = NULL;
 
@@ -559,8 +564,8 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
     mfxIMPL impl;
     int ret, i;
 
-    if (inlink->hw_frames_ctx) {
-        AVHWFramesContext *frames_ctx = (AVHWFramesContext *)inlink->hw_frames_ctx->data;
+    if (inl->hw_frames_ctx) {
+        AVHWFramesContext *frames_ctx = (AVHWFramesContext *)inl->hw_frames_ctx->data;
 
         device_ref      = frames_ctx->device_ref;
         in_frames_hwctx = frames_ctx->hwctx;
@@ -657,8 +662,8 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
             s->surface_ptrs_out[i] = out_frames_hwctx->surfaces + i;
         s->nb_surface_ptrs_out = out_frames_hwctx->nb_surfaces;
 
-        av_buffer_unref(&outlink->hw_frames_ctx);
-        outlink->hw_frames_ctx = out_frames_ref;
+        av_buffer_unref(&outl->hw_frames_ctx);
+        outl->hw_frames_ctx = out_frames_ref;
     } else
         s->out_mem_mode = MFX_MEMTYPE_SYSTEM_MEMORY;
 

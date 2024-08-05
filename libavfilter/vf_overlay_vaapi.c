@@ -21,6 +21,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 #include "vaapi_vpp.h"
@@ -256,12 +257,13 @@ fail:
 
 static int have_alpha_planar(AVFilterLink *link)
 {
+    FilterLink              *l = ff_filter_link(link);
     enum AVPixelFormat pix_fmt = link->format;
     const AVPixFmtDescriptor *desc;
     AVHWFramesContext *fctx;
 
     if (link->format == AV_PIX_FMT_VAAPI) {
-        fctx    = (AVHWFramesContext *)link->hw_frames_ctx->data;
+        fctx    = (AVHWFramesContext *)l->hw_frames_ctx->data;
         pix_fmt = fctx->sw_format;
     }
 
