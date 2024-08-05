@@ -1326,7 +1326,7 @@ static void heap_bubble_up(FFFilterGraph *graph,
 
     while (index) {
         int parent = (index - 1) >> 1;
-        if (links[parent]->l.current_pts_us >= li->l.current_pts_us)
+        if (links[parent]->l.pub.current_pts_us >= li->l.pub.current_pts_us)
             break;
         links[index] = links[parent];
         links[index]->age_index = index;
@@ -1348,9 +1348,9 @@ static void heap_bubble_down(FFFilterGraph *graph,
         if (child >= graph->sink_links_count)
             break;
         if (child + 1 < graph->sink_links_count &&
-            links[child + 1]->l.current_pts_us < links[child]->l.current_pts_us)
+            links[child + 1]->l.pub.current_pts_us < links[child]->l.pub.current_pts_us)
             child++;
-        if (li->l.current_pts_us < links[child]->l.current_pts_us)
+        if (li->l.pub.current_pts_us < links[child]->l.pub.current_pts_us)
             break;
         links[index] = links[child];
         links[index]->age_index = index;
@@ -1372,13 +1372,13 @@ int avfilter_graph_request_oldest(AVFilterGraph *graph)
 {
     FFFilterGraph *graphi = fffiltergraph(graph);
     FilterLinkInternal *oldesti = graphi->sink_links[0];
-    AVFilterLink *oldest = &oldesti->l;
+    AVFilterLink *oldest = &oldesti->l.pub;
     int64_t frame_count;
     int r;
 
     while (graphi->sink_links_count) {
         oldesti = graphi->sink_links[0];
-        oldest  = &oldesti->l;
+        oldest  = &oldesti->l.pub;
         if (oldest->dst->filter->activate) {
             r = av_buffersink_get_frame_flags(oldest->dst, NULL,
                                               AV_BUFFERSINK_FLAG_PEEK);

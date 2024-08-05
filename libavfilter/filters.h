@@ -34,6 +34,16 @@
 #define FFERROR_NOT_READY FFERRTAG('N','R','D','Y')
 
 /**
+ * Link properties exposed to filter code, but not external callers.
+ *
+ * Cf. AVFilterLink for public properties, FilterLinkInternal for
+ * properties private to the generic layer.
+ */
+typedef struct FilterLink {
+    AVFilterLink pub;
+} FilterLink;
+
+/**
  * Mark a filter ready and schedule it for activation.
  *
  * This is automatically done when something happens to the filter (queued

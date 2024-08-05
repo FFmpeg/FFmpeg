@@ -28,10 +28,11 @@
 #include <stdint.h>
 
 #include "avfilter.h"
+#include "filters.h"
 #include "framequeue.h"
 
 typedef struct FilterLinkInternal {
-    AVFilterLink l;
+    FilterLink l;
 
     struct FFFramePool *frame_pool;
 

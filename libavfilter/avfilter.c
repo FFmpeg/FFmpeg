@@ -176,7 +176,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     li = av_mallocz(sizeof(*li));
     if (!li)
         return AVERROR(ENOMEM);
-    link = &li->l;
+    link = &li->l.pub;
 
     src->outputs[srcpad] = dst->inputs[dstpad] = link;
 
@@ -222,7 +222,7 @@ int avfilter_config_links(AVFilterContext *filter)
 
 static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
 {
-    AVFilterLink *const link = &li->l;
+    AVFilterLink *const link = &li->l.pub;
 
     if (pts == AV_NOPTS_VALUE)
         return;
@@ -1077,7 +1077,7 @@ static int samples_ready(FilterLinkInternal *link, unsigned min)
 static int take_samples(FilterLinkInternal *li, unsigned min, unsigned max,
                         AVFrame **rframe)
 {
-    AVFilterLink *link = &li->l;
+    AVFilterLink *link = &li->l.pub;
     AVFrame *frame0, *frame, *buf;
     unsigned nb_samples, nb_frames, i, p;
     int ret;
@@ -1169,7 +1169,7 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
 
 static int forward_status_change(AVFilterContext *filter, FilterLinkInternal *li_in)
 {
-    AVFilterLink *in = &li_in->l;
+    AVFilterLink *in = &li_in->l.pub;
     unsigned out = 0, progress = 0;
     int ret;
 
@@ -1431,7 +1431,7 @@ int ff_inlink_check_available_samples(AVFilterLink *link, unsigned min)
 
 static void consume_update(FilterLinkInternal *li, const AVFrame *frame)
 {
-    AVFilterLink *const link = &li->l;
+    AVFilterLink *const link = &li->l.pub;
     update_link_current_pts(li, frame->pts);
     ff_inlink_process_commands(link, frame);
     if (link == link->dst->inputs[0])
