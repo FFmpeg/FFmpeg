@@ -349,13 +349,10 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
     CUDAScaleContext *s  = ctx->priv;
-    AVHWFramesContext     *frames_ctx = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
-    AVCUDADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
+    AVHWFramesContext     *frames_ctx;
+    AVCUDADeviceContext *device_hwctx;
     int w, h;
     int ret;
-
-    s->hwctx = device_hwctx;
-    s->cu_stream = s->hwctx->stream;
 
     if ((ret = ff_scale_eval_dimensions(s,
                                         s->w_expr, s->h_expr,
@@ -376,6 +373,12 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     ret = init_processing_chain(ctx, inlink->w, inlink->h, w, h);
     if (ret < 0)
         return ret;
+
+    frames_ctx   = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+    device_hwctx = frames_ctx->device_ctx->hwctx;
+
+    s->hwctx = device_hwctx;
+    s->cu_stream = s->hwctx->stream;
 
     if (inlink->sample_aspect_ratio.num) {
         outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h*inlink->w,
