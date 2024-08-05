@@ -626,21 +626,6 @@ struct AVFilterLink {
     AVRational frame_rate;
 
     /**
-     * Minimum number of samples to filter at once. If filter_frame() is
-     * called with fewer samples, it will accumulate them in fifo.
-     * This field and the related ones must not be changed after filtering
-     * has started.
-     * If 0, all related fields are ignored.
-     */
-    int min_samples;
-
-    /**
-     * Maximum number of samples to filter at once. If filter_frame() is
-     * called with more samples, it will split them.
-     */
-    int max_samples;
-
-    /**
      * Number of past frames sent through the link.
      */
     int64_t frame_count_in, frame_count_out;

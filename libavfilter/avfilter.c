@@ -1077,14 +1077,15 @@ static int samples_ready(FilterLinkInternal *link, unsigned min)
 static int take_samples(FilterLinkInternal *li, unsigned min, unsigned max,
                         AVFrame **rframe)
 {
-    AVFilterLink *link = &li->l.pub;
+    FilterLink *l = &li->l;
+    AVFilterLink *link = &l->pub;
     AVFrame *frame0, *frame, *buf;
     unsigned nb_samples, nb_frames, i, p;
     int ret;
 
     /* Note: this function relies on no format changes and must only be
        called with enough samples. */
-    av_assert1(samples_ready(li, link->min_samples));
+    av_assert1(samples_ready(li, l->min_samples));
     frame0 = frame = ff_framequeue_peek(&li->fifo, 0);
     if (!li->fifo.samples_skipped && frame->nb_samples >= min && frame->nb_samples <= max) {
         *rframe = ff_framequeue_take(&li->fifo);
@@ -1142,8 +1143,8 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
     int ret;
 
     av_assert1(ff_framequeue_queued_frames(&li->fifo));
-    ret = link->min_samples ?
-          ff_inlink_consume_samples(link, link->min_samples, link->max_samples, &frame) :
+    ret = li->l.min_samples ?
+          ff_inlink_consume_samples(link, li->l.min_samples, li->l.max_samples, &frame) :
           ff_inlink_consume_frame(link, &frame);
     av_assert1(ret);
     if (ret < 0) {
@@ -1218,8 +1219,8 @@ static int ff_filter_activate_default(AVFilterContext *filter)
     }
 
     for (i = 0; i < filter->nb_inputs; i++) {
-        if (samples_ready(ff_link_internal(filter->inputs[i]),
-                          filter->inputs[i]->min_samples)) {
+        FilterLinkInternal *li = ff_link_internal(filter->inputs[i]);
+        if (samples_ready(li, li->l.min_samples)) {
             return ff_filter_frame_to_filter(filter->inputs[i]);
         }
     }

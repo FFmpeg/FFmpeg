@@ -41,7 +41,28 @@
  */
 typedef struct FilterLink {
     AVFilterLink pub;
+
+    /**
+     * Minimum number of samples to filter at once.
+     *
+     * May be set by the link destination filter in its config_props().
+     * If 0, all related fields are ignored.
+     */
+    int min_samples;
+
+    /**
+     * Maximum number of samples to filter at once. If filter_frame() is
+     * called with more samples, it will split them.
+     *
+     * May be set by the link destination filter in its config_props().
+     */
+    int max_samples;
 } FilterLink;
+
+static inline FilterLink* ff_filter_link(AVFilterLink *link)
+{
+    return (FilterLink*)link;
+}
 
 /**
  * Mark a filter ready and schedule it for activation.

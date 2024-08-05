@@ -119,7 +119,8 @@ static int get_frame_internal(AVFilterContext *ctx, AVFrame *frame, int flags, i
 
 int attribute_align_arg av_buffersink_get_frame_flags(AVFilterContext *ctx, AVFrame *frame, int flags)
 {
-    return get_frame_internal(ctx, frame, flags, ctx->inputs[0]->min_samples);
+    return get_frame_internal(ctx, frame, flags,
+                              ff_filter_link(ctx->inputs[0])->min_samples);
 }
 
 int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
@@ -163,7 +164,7 @@ static int activate(AVFilterContext *ctx)
 
 void av_buffersink_set_frame_size(AVFilterContext *ctx, unsigned frame_size)
 {
-    AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *inlink = ff_filter_link(ctx->inputs[0]);
 
     inlink->min_samples = inlink->max_samples = frame_size;
 }
