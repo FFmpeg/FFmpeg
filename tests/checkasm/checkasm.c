@@ -366,6 +366,8 @@ static struct {
     const char *cpu_flag_name;
     const char *test_name;
     int verbose;
+    int csv;
+    int tsv;
     volatile sig_atomic_t catch_signals;
 } state;
 
@@ -590,7 +592,14 @@ static void print_benchs(CheckasmFunc *f)
                 CheckasmPerf *p = &v->perf;
                 if (p->iterations) {
                     int decicycles = (10*p->cycles/p->iterations - state.nop_time) / 4;
-                    printf("%s_%s: %d.%d\n", f->name, cpu_suffix(v->cpu), decicycles/10, decicycles%10);
+                    if (state.csv || state.tsv) {
+                        const char sep = state.csv ? ',' : '\t';
+                        printf("%s%c%s%c%d.%d\n", f->name, sep,
+                               cpu_suffix(v->cpu), sep,
+                               decicycles / 10, decicycles % 10);
+                    } else {
+                        printf("%s_%s: %d.%d\n", f->name, cpu_suffix(v->cpu), decicycles/10, decicycles%10);
+                    }
                 }
             } while ((v = v->next));
         }
@@ -833,7 +842,12 @@ static void bench_uninit(void)
 static int usage(const char *path)
 {
     fprintf(stderr,
-            "Usage: %s [--bench] [--runs=<ptwo>] [--test=<pattern>] [--verbose] [seed]\n",
+            "Usage: %s [options...] [seed]\n"
+            "  --test=<pattern> Run specific test.\n"
+            "  --bench          Run benchmark.\n"
+            "  --csv, --tsv     Output results in rows of comma or tab separated values.\n"
+            "  --runs=<ptwo>    Manual number of benchmark iterations to run 2**<ptwo>.\n"
+            "  --verbose        Increase verbosity.\n",
             path);
     return 1;
 }
@@ -881,6 +895,10 @@ int main(int argc, char *argv[])
                 state.bench_pattern = "";
         } else if (!strncmp(arg, "--test=", 7)) {
             state.test_name = arg + 7;
+        } else if (!strcmp(arg, "--csv")) {
+            state.csv = 1; state.tsv = 0;
+        } else if (!strcmp(arg, "--tsv")) {
+            state.csv = 0; state.tsv = 1;
         } else if (!strcmp(arg, "--verbose") || !strcmp(arg, "-v")) {
             state.verbose = 1;
         } else if (!strncmp(arg, "--runs=", 7)) {
