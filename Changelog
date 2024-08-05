@@ -3,6 +3,12 @@ releases are sorted from youngest to oldest.
 
 
 version 4.3.8:
+ avcodec/parser: ensure input padding is zeroed
+ avformat/img2dec: Clear padding data after EOF
+ avformat/wavdec: Check if there are 16 bytes before testing them
+ avcodec/snow: Fix off by 1 error in run_buffer
+ avcodec/utils: apply the same alignment to YUV410 as we do to YUV420 for snow
+ update for 4.3.8
  avcodec/diracdsp: Remove unused variable
  avcodec/vaapi_encode: Check hwctx
  avcodec/proresdec: Consider negative bits left
