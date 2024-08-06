@@ -128,7 +128,7 @@ static int fuzz_video_get_buffer(AVCodecContext *ctx, AVFrame *frame)
 
     frame->extended_data = frame->data;
     for (i = 0; i < 4 && size[i]; i++) {
-        frame->buf[i] = av_buffer_alloc(size[i]);
+        frame->buf[i] = av_buffer_allocz(size[i]);
         if (!frame->buf[i])
             goto fail;
         frame->data[i] = frame->buf[i]->data;
