@@ -185,7 +185,7 @@ static AVIOContext * wtvfile_open_sector(unsigned first_sector, uint64_t length,
         int nb_sectors1 = read_ints(s->pb, sectors1, WTV_SECTOR_SIZE / 4);
         int i;
 
-        wf->sectors = av_malloc_array(nb_sectors1, 1 << WTV_SECTOR_BITS);
+        wf->sectors = av_calloc(nb_sectors1, 1 << WTV_SECTOR_BITS);
         if (!wf->sectors) {
             av_free(wf);
             return NULL;
