@@ -229,7 +229,10 @@ int opt_match_per_stream_ ## name(void *logctx, const SpecifierOptList *sol,    
     return 0;                                                                           \
 }
 
-OPT_MATCH_PER_STREAM(str, const char *, OPT_TYPE_STRING, str);
+OPT_MATCH_PER_STREAM(str,   const char *, OPT_TYPE_STRING, str);
+OPT_MATCH_PER_STREAM(int,   int,          OPT_TYPE_INT,    i);
+OPT_MATCH_PER_STREAM(int64, int64_t,      OPT_TYPE_INT64,  i64);
+OPT_MATCH_PER_STREAM(dbl,   double,       OPT_TYPE_DOUBLE, dbl);
 
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global)
 {

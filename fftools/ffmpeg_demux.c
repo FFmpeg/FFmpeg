@@ -1153,11 +1153,18 @@ static int add_display_matrix_to_stream(const OptionsContext *o,
     double rotation = DBL_MAX;
     int hflip = -1, vflip = -1;
     int hflip_set = 0, vflip_set = 0, rotation_set = 0;
+    int ret;
     int32_t *buf;
 
-    MATCH_PER_STREAM_OPT(display_rotations, dbl, rotation, ctx, st);
-    MATCH_PER_STREAM_OPT(display_hflips,    i,   hflip,    ctx, st);
-    MATCH_PER_STREAM_OPT(display_vflips,    i,   vflip,    ctx, st);
+    ret = opt_match_per_stream_dbl(ist, &o->display_rotations, ctx, st, &rotation);
+    if (ret < 0)
+        return ret;
+    ret = opt_match_per_stream_int(ist, &o->display_hflips, ctx, st, &hflip);
+    if (ret < 0)
+        return ret;
+    ret = opt_match_per_stream_int(ist, &o->display_vflips, ctx, st, &vflip);
+    if (ret < 0)
+        return ret;
 
     rotation_set = rotation != DBL_MAX;
     hflip_set    = hflip != -1;
@@ -1255,10 +1262,14 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     ds->dec_opts.time_base = st->time_base;
 
     ds->ts_scale = 1.0;
-    MATCH_PER_STREAM_OPT(ts_scale, dbl, ds->ts_scale, ic, st);
+    ret = opt_match_per_stream_dbl(ist, &o->ts_scale, ic, st, &ds->ts_scale);
+    if (ret < 0)
+        return ret;
 
     ds->autorotate = 1;
-    MATCH_PER_STREAM_OPT(autorotate, i, ds->autorotate, ic, st);
+    ret = opt_match_per_stream_int(ist, &o->autorotate, ic, st, &ds->autorotate);
+    if (ret < 0)
+        return ret;
 
     ds->apply_cropping = CROP_ALL;
     ret = opt_match_per_stream_str(ist, &o->apply_cropping, ic, st, &apply_cropping);
@@ -1397,7 +1408,9 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     }
 
     ds->reinit_filters = -1;
-    MATCH_PER_STREAM_OPT(reinit_filters, i, ds->reinit_filters, ic, st);
+    ret = opt_match_per_stream_int(ist, &o->reinit_filters, ic, st, &ds->reinit_filters);
+    if (ret < 0)
+        return ret;
 
     ist->user_set_discard = AVDISCARD_NONE;
 
@@ -1445,7 +1458,9 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
 
 #if FFMPEG_OPT_TOP
         ist->top_field_first = -1;
-        MATCH_PER_STREAM_OPT(top_field_first, i, ist->top_field_first, ic, st);
+        ret = opt_match_per_stream_int(ist, &o->top_field_first, ic, st, &ist->top_field_first);
+        if (ret < 0)
+            return ret;
 #endif
 
         break;
@@ -1474,7 +1489,10 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
             }
         } else {
             int guess_layout_max = INT_MAX;
-            MATCH_PER_STREAM_OPT(guess_layout_max, i, guess_layout_max, ic, st);
+            ret = opt_match_per_stream_int(ist, &o->guess_layout_max, ic, st, &guess_layout_max);
+            if (ret < 0)
+                return ret;
+
             guess_input_channel_layout(ist, par, guess_layout_max);
         }
         break;
@@ -1482,7 +1500,10 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     case AVMEDIA_TYPE_DATA:
     case AVMEDIA_TYPE_SUBTITLE: {
         const char *canvas_size = NULL;
-        MATCH_PER_STREAM_OPT(fix_sub_duration, i, ist->fix_sub_duration, ic, st);
+
+        ret = opt_match_per_stream_int(ist, &o->fix_sub_duration, ic, st, &ist->fix_sub_duration);
+        if (ret < 0)
+            return ret;
 
         ret = opt_match_per_stream_str(ist, &o->canvas_sizes, ic, st, &canvas_size);
         if (ret < 0)

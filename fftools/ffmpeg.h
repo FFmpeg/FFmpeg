@@ -857,53 +857,16 @@ OutputStream *ost_iter(OutputStream *prev);
 
 void update_benchmark(const char *fmt, ...);
 
-#define SPECIFIER_OPT_FMT_str  "%s"
-#define SPECIFIER_OPT_FMT_i    "%i"
-#define SPECIFIER_OPT_FMT_i64  "%"PRId64
-#define SPECIFIER_OPT_FMT_ui64 "%"PRIu64
-#define SPECIFIER_OPT_FMT_f    "%f"
-#define SPECIFIER_OPT_FMT_dbl  "%lf"
-
-#define WARN_MULTIPLE_OPT_USAGE(optname, type, idx, st)\
-{\
-    char namestr[128] = "";\
-    const SpecifierOpt *so = &o->optname.opt[idx];\
-    const char *spec = so->specifier && so->specifier[0] ? so->specifier : "";\
-    snprintf(namestr, sizeof(namestr), "-%s", o->optname.opt_canon->name);\
-    if (o->optname.opt_canon->flags & OPT_HAS_ALT) {\
-        const char * const *names_alt = o->optname.opt_canon->u1.names_alt;\
-        for (int _i = 0; names_alt[_i]; _i++)\
-            av_strlcatf(namestr, sizeof(namestr), "/-%s", names_alt[_i]);\
-    }\
-    av_log(NULL, AV_LOG_WARNING, "Multiple %s options specified for stream %d, only the last option '-%s%s%s "SPECIFIER_OPT_FMT_##type"' will be used.\n",\
-           namestr, st->index, o->optname.opt_canon->name, spec[0] ? ":" : "", spec, so->u.type);\
-}
-
-#define MATCH_PER_STREAM_OPT_CLEAN(name, type, outvar, fmtctx, st, clean)\
-{\
-    int _ret, _matches = 0, _match_idx;\
-    for (int _i = 0; _i < o->name.nb_opt; _i++) {\
-        char *spec = o->name.opt[_i].specifier;\
-        if ((_ret = check_stream_specifier(fmtctx, st, spec)) > 0) {\
-            outvar = o->name.opt[_i].u.type;\
-            _match_idx = _i;\
-            _matches++;\
-        } else if (_ret < 0)\
-            clean;\
-    }\
-    if (_matches > 1 && o->name.opt_canon)\
-       WARN_MULTIPLE_OPT_USAGE(name, type, _match_idx, st);\
-}
-
-#define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
-{\
-    MATCH_PER_STREAM_OPT_CLEAN(name, type, outvar, fmtctx, st, return _ret)\
-}
-
 const char *opt_match_per_type_str(const SpecifierOptList *sol,
                                    char mediatype);
 int opt_match_per_stream_str(void *logctx, const SpecifierOptList *sol,
                              AVFormatContext *fc, AVStream *st, const char **out);
+int opt_match_per_stream_int(void *logctx, const SpecifierOptList *sol,
+                             AVFormatContext *fc, AVStream *st, int *out);
+int opt_match_per_stream_int64(void *logctx, const SpecifierOptList *sol,
+                               AVFormatContext *fc, AVStream *st, int64_t *out);
+int opt_match_per_stream_dbl(void *logctx, const SpecifierOptList *sol,
+                             AVFormatContext *fc, AVStream *st, double *out);
 
 int muxer_thread(void *arg);
 int encoder_thread(void *arg);

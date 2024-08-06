@@ -735,7 +735,9 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
         video_enc->rc_override_count = i;
 
         /* two pass mode */
-        MATCH_PER_STREAM_OPT(pass, i, do_pass, oc, st);
+        ret = opt_match_per_stream_int(ost, &o->pass, oc, st, &do_pass);
+        if (ret < 0)
+            return ret;
         if (do_pass) {
             if (do_pass & 1)
                 video_enc->flags |= AV_CODEC_FLAG_PASS1;
@@ -792,11 +794,15 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             }
         }
 
-        MATCH_PER_STREAM_OPT(force_fps, i, ost->force_fps, oc, st);
+        ret = opt_match_per_stream_int(ost, &o->force_fps, oc, st, &ost->force_fps);
+        if (ret < 0)
+            return ret;
 
 #if FFMPEG_OPT_TOP
         ost->top_field_first = -1;
-        MATCH_PER_STREAM_OPT(top_field_first, i, ost->top_field_first, oc, st);
+        ret = opt_match_per_stream_int(ost, &o->top_field_first, oc, st, &ost->top_field_first);
+        if (ret < 0)
+            return ret;
         if (ost->top_field_first >= 0)
             av_log(ost, AV_LOG_WARNING, "-top is deprecated, use the setfield filter instead\n");
 #endif
@@ -868,7 +874,9 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
         const char *sample_fmt = NULL;
         int ret;
 
-        MATCH_PER_STREAM_OPT(audio_channels, i, channels, oc, st);
+        ret = opt_match_per_stream_int(ost, &o->audio_channels, oc, st, &channels);
+        if (ret < 0)
+            return ret;
         if (channels) {
             audio_enc->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
             audio_enc->ch_layout.nb_channels = channels;
@@ -891,7 +899,9 @@ static int new_stream_audio(Muxer *mux, const OptionsContext *o,
             return AVERROR(EINVAL);
         }
 
-        MATCH_PER_STREAM_OPT(audio_sample_rate, i, audio_enc->sample_rate, oc, st);
+        ret = opt_match_per_stream_int(ost, &o->audio_sample_rate, oc, st, &audio_enc->sample_rate);
+        if (ret < 0)
+            return ret;
 
         ret = opt_match_per_stream_str(ost, &o->apad, oc, st, &ms->apad);
         if (ret < 0)
@@ -1205,7 +1215,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         if (ret < 0)
             goto fail;
 
-        MATCH_PER_STREAM_OPT(autoscale, i, autoscale, oc, st);
+        ret = opt_match_per_stream_int(ost, &o->autoscale, oc, st, &autoscale);
+        if (ret < 0)
+            goto fail;
         if (preset && (!(ret = get_preset_file_2(preset, enc->codec->name, &s)))) {
             AVBPrint bprint;
             av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -1351,7 +1363,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     ret = opt_match_per_stream_str(ost, &o->time_bases, oc, st, &time_base);
     if (ret < 0)
-        return ret;
+        goto fail;
     if (time_base) {
         AVRational q;
         if (av_parse_ratio(&q, time_base, INT_MAX, 0, NULL) < 0 ||
@@ -1364,7 +1376,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     }
 
     ms->max_frames = INT64_MAX;
-    MATCH_PER_STREAM_OPT(max_frames, i64, ms->max_frames, oc, st);
+    ret = opt_match_per_stream_int64(ost, &o->max_frames, oc, st, &ms->max_frames);
+    if (ret < 0)
+        return ret;
     for (int i = 0; i < o->max_frames.nb_opt; i++) {
         char *p = o->max_frames.opt[i].specifier;
         if (!*p && type != AVMEDIA_TYPE_VIDEO) {
@@ -1374,11 +1388,13 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     }
 
     ms->copy_prior_start = -1;
-    MATCH_PER_STREAM_OPT(copy_prior_start, i, ms->copy_prior_start, oc ,st);
+    ret = opt_match_per_stream_int(ost, &o->copy_prior_start, oc, st, &ms->copy_prior_start);
+    if (ret < 0)
+        goto fail;
 
     ret = opt_match_per_stream_str(ost, &o->bitstream_filters, oc, st, &bsfs);
     if (ret < 0)
-        return ret;
+        goto fail;
     if (bsfs && *bsfs) {
         ret = av_bsf_list_parse_str(bsfs, &ms->bsf_ctx);
         if (ret < 0) {
@@ -1389,7 +1405,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 
     ret = opt_match_per_stream_str(ost, &o->codec_tags, oc, st, &codec_tag);
     if (ret < 0)
-        return ret;
+        goto fail;
     if (codec_tag) {
         uint32_t tag = strtol(codec_tag, &next, 0);
         if (*next) {
@@ -1403,7 +1419,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             ost->enc_ctx->codec_tag = tag;
     }
 
-    MATCH_PER_STREAM_OPT(qscale, dbl, qscale, oc, st);
+    ret = opt_match_per_stream_dbl(ost, &o->qscale, oc, st, &qscale);
+    if (ret < 0)
+        return ret;
     if (ost->enc_ctx && qscale >= 0) {
         ost->enc_ctx->flags |= AV_CODEC_FLAG_QSCALE;
         ost->enc_ctx->global_quality = FF_QP2LAMBDA * qscale;
@@ -1413,24 +1431,37 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         int max_muxing_queue_size       = 128;
         int muxing_queue_data_threshold = 50 * 1024 * 1024;
 
-        MATCH_PER_STREAM_OPT(max_muxing_queue_size, i, max_muxing_queue_size, oc, st);
-        MATCH_PER_STREAM_OPT(muxing_queue_data_threshold, i, muxing_queue_data_threshold, oc, st);
+        ret = opt_match_per_stream_int(ost, &o->max_muxing_queue_size, oc, st,
+                                       &max_muxing_queue_size);
+        if (ret < 0)
+            goto fail;
+
+        ret = opt_match_per_stream_int(ost, &o->muxing_queue_data_threshold,
+                                       oc, st, &muxing_queue_data_threshold);
+        if (ret < 0)
+            goto fail;
 
         sch_mux_stream_buffering(mux->sch, mux->sch_idx, ms->sch_idx,
                                  max_muxing_queue_size, muxing_queue_data_threshold);
     }
 
-    MATCH_PER_STREAM_OPT(bits_per_raw_sample, i, ost->bits_per_raw_sample,
-                         oc, st);
+    ret = opt_match_per_stream_int(ost, &o->bits_per_raw_sample, oc, st,
+                                   &ost->bits_per_raw_sample);
+    if (ret < 0)
+        goto fail;
 
-    MATCH_PER_STREAM_OPT(fix_sub_duration_heartbeat, i, ost->fix_sub_duration_heartbeat,
-                         oc, st);
+    ret = opt_match_per_stream_int(ost, &o->fix_sub_duration_heartbeat,
+                                   oc, st, &ost->fix_sub_duration_heartbeat);
+    if (ret < 0)
+        goto fail;
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER && ost->enc_ctx)
         ost->enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
-    MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i,
-                         ms->copy_initial_nonkeyframes, oc, st);
+    ret = opt_match_per_stream_int(ost, &o->copy_initial_nonkeyframes,
+                                   oc, st, &ms->copy_initial_nonkeyframes);
+    if (ret < 0)
+        goto fail;
 
     switch (type) {
     case AVMEDIA_TYPE_VIDEO:      ret = new_stream_video     (mux, o, ost, &keep_pix_fmt, &vsync_method); break;
