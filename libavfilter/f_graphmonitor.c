@@ -288,7 +288,7 @@ static int draw_items(AVFilterContext *ctx,
     }
     if (flags & FLAG_RATE) {
         if (l->type == AVMEDIA_TYPE_VIDEO) {
-            len = snprintf(buffer, sizeof(buffer)-1, " | fps: %d/%d", l->frame_rate.num, l->frame_rate.den);
+            len = snprintf(buffer, sizeof(buffer)-1, " | fps: %d/%d", fl->frame_rate.num, fl->frame_rate.den);
         } else if (l->type == AVMEDIA_TYPE_AUDIO) {
             len = snprintf(buffer, sizeof(buffer)-1, " | samplerate: %d", l->sample_rate);
         }
@@ -538,6 +538,7 @@ static int activate(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     GraphMonitorContext *s = outlink->src->priv;
 
     s->white[0] = s->white[1] = s->white[2] = 255;
@@ -551,7 +552,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
-    outlink->frame_rate = s->frame_rate;
+    l->frame_rate = s->frame_rate;
     outlink->time_base = av_inv_q(s->frame_rate);
 
     return 0;

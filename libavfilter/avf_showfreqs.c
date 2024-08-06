@@ -150,6 +150,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowFreqsContext *s = ctx->priv;
@@ -223,8 +224,8 @@ static int config_output(AVFilterLink *outlink)
     if (!s->window)
         return AVERROR(ENOMEM);
 
-    outlink->frame_rate = s->frame_rate;
-    outlink->time_base = av_inv_q(outlink->frame_rate);
+    l->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(l->frame_rate);
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->w = s->w;
     outlink->h = s->h;

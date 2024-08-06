@@ -25,6 +25,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -283,14 +284,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static int config_props(AVFilterLink *inlink)
 {
     VignetteContext *s = inlink->dst->priv;
+    FilterLink *l = ff_filter_link(inlink);
     AVRational sar = inlink->sample_aspect_ratio;
 
     s->desc = av_pix_fmt_desc_get(inlink->format);
     s->var_values[VAR_W]  = inlink->w;
     s->var_values[VAR_H]  = inlink->h;
     s->var_values[VAR_TB] = av_q2d(inlink->time_base);
-    s->var_values[VAR_R]  = inlink->frame_rate.num == 0 || inlink->frame_rate.den == 0 ?
-        NAN : av_q2d(inlink->frame_rate);
+    s->var_values[VAR_R]  = l->frame_rate.num == 0 || l->frame_rate.den == 0 ?
+        NAN : av_q2d(l->frame_rate);
 
     if (!sar.num || !sar.den)
         sar.num = sar.den = 1;

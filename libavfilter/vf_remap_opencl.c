@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 #include "opencl.h"
@@ -233,6 +234,8 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *srclink = ctx->inputs[0];
     AVFilterLink *xlink = ctx->inputs[1];
     AVFilterLink *ylink = ctx->inputs[2];
+    FilterLink *il = ff_filter_link(srclink);
+    FilterLink *ol = ff_filter_link(outlink);
     FFFrameSyncIn *in;
     int ret;
 
@@ -248,7 +251,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = xlink->w;
     outlink->h = xlink->h;
     outlink->sample_aspect_ratio = srclink->sample_aspect_ratio;
-    outlink->frame_rate = srclink->frame_rate;
+    ol->frame_rate = il->frame_rate;
 
     ret = ff_framesync_init(&s->fs, ctx, 3);
     if (ret < 0)

@@ -25,6 +25,8 @@
 #include "libavutil/opt.h"
 #include "vulkan_filter.h"
 #include "vulkan_spirv.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "framesync.h"
 #include "blend.h"
@@ -299,9 +301,11 @@ static av_cold void uninit(AVFilterContext *avctx)
 static int config_props_output(AVFilterLink *outlink)
 {
     int err;
+    FilterLink *outl       = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     BlendVulkanContext *s = avctx->priv;
     AVFilterLink *toplink = avctx->inputs[IN_TOP];
+    FilterLink   *tl      = ff_filter_link(toplink);
     AVFilterLink *bottomlink = avctx->inputs[IN_BOTTOM];
 
     if (toplink->w != bottomlink->w || toplink->h != bottomlink->h) {
@@ -314,7 +318,7 @@ static int config_props_output(AVFilterLink *outlink)
     }
 
     outlink->sample_aspect_ratio = toplink->sample_aspect_ratio;
-    outlink->frame_rate = toplink->frame_rate;
+    outl->frame_rate = tl->frame_rate;
 
     RET(ff_vk_filter_config_output(outlink));
 

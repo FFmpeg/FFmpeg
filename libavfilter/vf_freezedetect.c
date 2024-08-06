@@ -146,6 +146,7 @@ static int activate(AVFilterContext *ctx)
     int ret;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink         *l = ff_filter_link(inlink);
     FreezeDetectContext *s = ctx->priv;
     AVFrame *frame;
 
@@ -162,7 +163,7 @@ static int activate(AVFilterContext *ctx)
         if (s->reference_frame) {
             int64_t duration;
             if (s->reference_frame->pts == AV_NOPTS_VALUE || frame->pts == AV_NOPTS_VALUE || frame->pts < s->reference_frame->pts)     // Discontinuity?
-                duration = inlink->frame_rate.num > 0 ? av_rescale_q(s->n - s->reference_n, av_inv_q(inlink->frame_rate), AV_TIME_BASE_Q) : 0;
+                duration = l->frame_rate.num > 0 ? av_rescale_q(s->n - s->reference_n, av_inv_q(l->frame_rate), AV_TIME_BASE_Q) : 0;
             else
                 duration = av_rescale_q(frame->pts - s->reference_frame->pts, inlink->time_base, AV_TIME_BASE_Q);
 

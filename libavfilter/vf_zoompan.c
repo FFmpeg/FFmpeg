@@ -125,13 +125,14 @@ static av_cold int init(AVFilterContext *ctx)
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    FilterLink *l = ff_filter_link(outlink);
     ZPContext *s = ctx->priv;
     int ret;
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->time_base = av_inv_q(s->framerate);
-    outlink->frame_rate = s->framerate;
+    l->frame_rate = s->framerate;
     s->desc = av_pix_fmt_desc_get(outlink->format);
     s->finished = 1;
 

@@ -924,7 +924,7 @@ static int ddagrab_config_props(AVFilterLink *outlink)
     outlink->w = dda->width;
     outlink->h = dda->height;
     outlink->time_base = (AVRational){1, TIMER_RES};
-    outlink->frame_rate = dda->framerate;
+    l->frame_rate = dda->framerate;
 
     return 0;
 }

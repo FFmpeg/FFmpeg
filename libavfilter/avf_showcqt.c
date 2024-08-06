@@ -1353,6 +1353,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowCQTContext *s = ctx->priv;
@@ -1365,7 +1366,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = s->height;
     s->format = outlink->format;
     outlink->sample_aspect_ratio = av_make_q(1, 1);
-    outlink->frame_rate = s->rate;
+    l->frame_rate = s->rate;
     outlink->time_base = av_inv_q(s->rate);
     av_log(ctx, AV_LOG_VERBOSE, "video: %dx%d %s %d/%d fps, bar_h = %d, axis_h = %d, sono_h = %d.\n",
            s->width, s->height, av_get_pix_fmt_name(s->format), s->rate.num, s->rate.den,

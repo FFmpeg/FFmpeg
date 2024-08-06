@@ -29,6 +29,7 @@
 
 #include "avfilter.h"
 #include "internal.h"
+#include "filters.h"
 #include "framesync.h"
 #include "video.h"
 
@@ -239,9 +240,11 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     XMedianContext *s = ctx->priv;
-    AVRational frame_rate = ctx->inputs[0]->frame_rate;
-    AVRational sar = ctx->inputs[0]->sample_aspect_ratio;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *il = ff_filter_link(inlink);
+    FilterLink *ol = ff_filter_link(outlink);
+    AVRational frame_rate = il->frame_rate;
+    AVRational sar = ctx->inputs[0]->sample_aspect_ratio;
     int height = ctx->inputs[0]->h;
     int width = ctx->inputs[0]->w;
     FFFrameSyncIn *in;
@@ -288,7 +291,7 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->w          = width;
     outlink->h          = height;
-    outlink->frame_rate = frame_rate;
+    ol->frame_rate      = frame_rate;
     outlink->sample_aspect_ratio = sar;
 
     if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)

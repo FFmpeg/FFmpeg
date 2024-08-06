@@ -41,6 +41,7 @@
 #include "avfilter.h"
 #include "drawutils.h"
 #include "internal.h"
+#include "filters.h"
 #include "formats.h"
 #include "textutils.h"
 #include "video.h"
@@ -586,6 +587,7 @@ AVFILTER_DEFINE_CLASS(qrencodesrc);
 
 static int qrencodesrc_config_props(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     QREncodeContext *qr = ctx->priv;
     int ret;
@@ -645,7 +647,7 @@ static int qrencodesrc_config_props(AVFilterLink *outlink)
     outlink->w = qr->rendered_padded_qrcode_width;
     outlink->h = qr->rendered_padded_qrcode_width;
     outlink->time_base = av_inv_q(qr->frame_rate);
-    outlink->frame_rate = qr->frame_rate;
+    l->frame_rate = qr->frame_rate;
 
     return 0;
 }

@@ -27,6 +27,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -364,7 +365,9 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     Stereo3DContext *s = ctx->priv;
-    AVRational fps = inlink->frame_rate;
+    FilterLink *il = ff_filter_link(inlink);
+    FilterLink *ol = ff_filter_link(outlink);
+    AVRational fps = il->frame_rate;
     AVRational tb = inlink->time_base;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     int ret;
@@ -577,7 +580,7 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->w = s->out.width;
     outlink->h = s->out.height;
-    outlink->frame_rate = fps;
+    ol->frame_rate = fps;
     outlink->time_base = tb;
     outlink->sample_aspect_ratio = s->aspect;
 

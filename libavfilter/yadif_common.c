@@ -21,6 +21,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include "yadif.h"
@@ -218,6 +219,8 @@ int ff_yadif_request_frame(AVFilterLink *link)
 int ff_yadif_config_output_common(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    FilterLink *il = ff_filter_link(ctx->inputs[0]);
+    FilterLink *ol = ff_filter_link(outlink);
     YADIFContext *yadif = ctx->priv;
     AVRational tb = ctx->inputs[0]->time_base;
     int ret;
@@ -239,12 +242,12 @@ int ff_yadif_config_output_common(AVFilterLink *outlink)
     }
 
     if(yadif->mode & 1)
-        outlink->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
+        ol->frame_rate = av_mul_q(il->frame_rate,
                                     (AVRational){2, 1});
     else
-        outlink->frame_rate = ctx->inputs[0]->frame_rate;
+        ol->frame_rate = il->frame_rate;
 
-    ret = ff_ccfifo_init(&yadif->cc_fifo, outlink->frame_rate, ctx);
+    ret = ff_ccfifo_init(&yadif->cc_fifo, ol->frame_rate, ctx);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
         return ret;

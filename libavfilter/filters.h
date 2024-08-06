@@ -71,6 +71,21 @@ typedef struct FilterLink {
     int max_samples;
 
     /**
+     * Frame rate of the stream on the link, or 1/0 if unknown or variable.
+     *
+     * May be set by the link source filter in its config_props(); if left to
+     * 0/0, will be automatically copied from the first input of the source
+     * filter if it exists.
+     *
+     * Sources should set it to the best estimation of the real frame rate.
+     * If the source frame rate is unknown or variable, set this to 1/0.
+     * Filters should update it if necessary depending on their function.
+     * Sinks can use it to set a default output frame rate.
+     * It is similar to the r_frame_rate field in AVStream.
+     */
+    AVRational frame_rate;
+
+    /**
      * For hwaccel pixel formats, this should be a reference to the
      * AVHWFramesContext describing the frames.
      *

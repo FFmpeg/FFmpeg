@@ -120,11 +120,13 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *outl     = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     ConcatContext *cat   = ctx->priv;
     unsigned out_no = FF_OUTLINK_IDX(outlink);
     unsigned in_no  = out_no, seg;
     AVFilterLink *inlink = ctx->inputs[in_no];
+    FilterLink *inl = ff_filter_link(inlink);
 
     /* enhancement: find a common one */
     outlink->time_base           = AV_TIME_BASE_Q;
@@ -132,15 +134,16 @@ static int config_output(AVFilterLink *outlink)
     outlink->h                   = inlink->h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->format              = inlink->format;
-    outlink->frame_rate          = inlink->frame_rate;
+    outl->frame_rate             = inl->frame_rate;
 
     for (seg = 1; seg < cat->nb_segments; seg++) {
         inlink = ctx->inputs[in_no + seg * ctx->nb_outputs];
-        if (outlink->frame_rate.num != inlink->frame_rate.num ||
-            outlink->frame_rate.den != inlink->frame_rate.den) {
+        inl    = ff_filter_link(inlink);
+        if (outl->frame_rate.num != inl->frame_rate.num ||
+            outl->frame_rate.den != inl->frame_rate.den) {
             av_log(ctx, AV_LOG_VERBOSE,
                     "Video inputs have different frame rates, output will be VFR\n");
-            outlink->frame_rate = av_make_q(1, 0);
+            outl->frame_rate = av_make_q(1, 0);
             break;
         }
     }

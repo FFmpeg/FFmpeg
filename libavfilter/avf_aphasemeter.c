@@ -142,14 +142,15 @@ static int config_video_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioPhaseMeterContext *s = ctx->priv;
+    FilterLink *l = ff_filter_link(outlink);
 
     s->last_pts = AV_NOPTS_VALUE;
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
-    outlink->frame_rate = s->frame_rate;
-    outlink->time_base = av_inv_q(outlink->frame_rate);
+    l->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(l->frame_rate);
 
     if (!strcmp(s->mpc_str, "none"))
         s->draw_median_phase = 0;

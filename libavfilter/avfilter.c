@@ -340,6 +340,7 @@ int ff_filter_config_links(AVFilterContext *filter)
         AVFilterLink *link = filter->inputs[i];
         AVFilterLink *inlink;
         FilterLinkInternal *li = ff_link_internal(link);
+        FilterLinkInternal *li_in;
 
         if (!link) continue;
         if (!link->src || !link->dst) {
@@ -349,6 +350,7 @@ int ff_filter_config_links(AVFilterContext *filter)
         }
 
         inlink = link->src->nb_inputs ? link->src->inputs[0] : NULL;
+        li_in  = inlink ? ff_link_internal(inlink) : NULL;
         li->l.current_pts =
         li->l.current_pts_us = AV_NOPTS_VALUE;
 
@@ -389,8 +391,8 @@ int ff_filter_config_links(AVFilterContext *filter)
                         inlink->sample_aspect_ratio : (AVRational){1,1};
 
                 if (inlink) {
-                    if (!link->frame_rate.num && !link->frame_rate.den)
-                        link->frame_rate = inlink->frame_rate;
+                    if (!li->l.frame_rate.num && !li->l.frame_rate.den)
+                        li->l.frame_rate = li_in->l.frame_rate;
                     if (!link->w)
                         link->w = inlink->w;
                     if (!link->h)

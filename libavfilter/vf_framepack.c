@@ -91,11 +91,14 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx  = outlink->src;
     FramepackContext *s   = outlink->src->priv;
+    FilterLink     *leftl = ff_filter_link(ctx->inputs[LEFT]);
+    FilterLink    *rightl = ff_filter_link(ctx->inputs[RIGHT]);
+    FilterLink        *ol = ff_filter_link(outlink);
 
     int width             = ctx->inputs[LEFT]->w;
     int height            = ctx->inputs[LEFT]->h;
     AVRational time_base  = ctx->inputs[LEFT]->time_base;
-    AVRational frame_rate = ctx->inputs[LEFT]->frame_rate;
+    AVRational frame_rate = leftl->frame_rate;
 
     // check size and fps match on the other input
     if (width  != ctx->inputs[RIGHT]->w ||
@@ -112,12 +115,12 @@ static int config_output(AVFilterLink *outlink)
                ctx->inputs[RIGHT]->time_base.num,
                ctx->inputs[RIGHT]->time_base.den);
         return AVERROR_INVALIDDATA;
-    } else if (av_cmp_q(frame_rate, ctx->inputs[RIGHT]->frame_rate) != 0) {
+    } else if (av_cmp_q(frame_rate, rightl->frame_rate) != 0) {
         av_log(ctx, AV_LOG_ERROR,
                "Left and right framerates differ (%d/%d vs %d/%d).\n",
                frame_rate.num, frame_rate.den,
-               ctx->inputs[RIGHT]->frame_rate.num,
-               ctx->inputs[RIGHT]->frame_rate.den);
+               rightl->frame_rate.num,
+               rightl->frame_rate.den);
         return AVERROR_INVALIDDATA;
     }
 
@@ -148,7 +151,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w          = width;
     outlink->h          = height;
     outlink->time_base  = time_base;
-    outlink->frame_rate = frame_rate;
+    ol->frame_rate      = frame_rate;
 
     return 0;
 }
@@ -312,6 +315,7 @@ static int try_push_frame(AVFilterContext *ctx)
 {
     FramepackContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink       *l = ff_filter_link(outlink);
     AVStereo3D *stereo;
     int ret, i;
 
@@ -323,8 +327,8 @@ static int try_push_frame(AVFilterContext *ctx)
         for (i = 0; i < 2; i++) {
             // set correct timestamps
             if (pts != AV_NOPTS_VALUE) {
-                s->input_views[i]->pts = i == 0 ? pts * 2 : pts * 2 + av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
-                s->input_views[i]->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+                s->input_views[i]->pts = i == 0 ? pts * 2 : pts * 2 + av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
+                s->input_views[i]->duration = av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
             }
 
             // set stereo3d side data

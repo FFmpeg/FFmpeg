@@ -178,12 +178,14 @@ static int config_props(AVFilterLink* outlink)
 {
     AVFilterContext *ctx    = outlink->src;
     AVFilterLink    *inlink = ctx->inputs[0];
+    FilterLink      *il     = ff_filter_link(inlink);
+    FilterLink      *ol     = ff_filter_link(outlink);
     FPSContext      *s      = ctx->priv;
 
     double var_values[VARS_NB], res;
     int ret;
 
-    var_values[VAR_SOURCE_FPS]    = av_q2d(inlink->frame_rate);
+    var_values[VAR_SOURCE_FPS]    = av_q2d(il->frame_rate);
     var_values[VAR_FPS_NTSC]      = ntsc_fps;
     var_values[VAR_FPS_PAL]       = pal_fps;
     var_values[VAR_FPS_FILM]      = film_fps;
@@ -194,8 +196,8 @@ static int config_props(AVFilterLink* outlink)
     if (ret < 0)
         return ret;
 
-    outlink->frame_rate = av_d2q(res, INT_MAX);
-    outlink->time_base  = av_inv_q(outlink->frame_rate);
+    ol->frame_rate      = av_d2q(res, INT_MAX);
+    outlink->time_base  = av_inv_q(ol->frame_rate);
 
     /* Calculate the input and output pts offsets for start_time */
     if (s->start_time != DBL_MAX && s->start_time != AV_NOPTS_VALUE) {
@@ -214,13 +216,13 @@ static int config_props(AVFilterLink* outlink)
                s->in_pts_off, s->out_pts_off, s->start_time);
     }
 
-    ret = ff_ccfifo_init(&s->cc_fifo, outlink->frame_rate, ctx);
+    ret = ff_ccfifo_init(&s->cc_fifo, ol->frame_rate, ctx);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
         return ret;
     }
 
-    av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", outlink->frame_rate.num, outlink->frame_rate.den);
+    av_log(ctx, AV_LOG_VERBOSE, "fps=%d/%d\n", ol->frame_rate.num, ol->frame_rate.den);
 
     return 0;
 }

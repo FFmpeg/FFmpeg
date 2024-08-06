@@ -1061,6 +1061,7 @@ static int plot_channel_log(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowSpectrumContext *s = ctx->priv;
@@ -1283,8 +1284,8 @@ static int config_output(AVFilterLink *outlink)
     } else {
         s->frame_rate = s->auto_frame_rate;
     }
-    outlink->frame_rate = s->frame_rate;
-    outlink->time_base = av_inv_q(outlink->frame_rate);
+    l->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(l->frame_rate);
 
     if (s->orientation == VERTICAL) {
         s->combine_buffer =

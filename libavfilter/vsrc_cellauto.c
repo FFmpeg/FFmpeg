@@ -33,6 +33,7 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/avstring.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -217,11 +218,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int config_props(AVFilterLink *outlink)
 {
     CellAutoContext *s = outlink->src->priv;
+    FilterLink *l = ff_filter_link(outlink);
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->time_base = av_inv_q(s->frame_rate);
-    outlink->frame_rate = s->frame_rate;
+    l->frame_rate = s->frame_rate;
 
     return 0;
 }

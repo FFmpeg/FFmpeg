@@ -450,6 +450,7 @@ static int movie_query_formats(AVFilterContext *ctx)
 
 static int movie_config_output_props(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     MovieContext *movie  = ctx->priv;
     unsigned out_id = FF_OUTLINK_IDX(outlink);
@@ -462,7 +463,7 @@ static int movie_config_output_props(AVFilterLink *outlink)
     case AVMEDIA_TYPE_VIDEO:
         outlink->w          = c->width;
         outlink->h          = c->height;
-        outlink->frame_rate = st->st->r_frame_rate;
+        l->frame_rate = st->st->r_frame_rate;
         break;
     case AVMEDIA_TYPE_AUDIO:
         break;

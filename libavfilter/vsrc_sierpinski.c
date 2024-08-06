@@ -24,6 +24,7 @@
  */
 
 #include "avfilter.h"
+#include "filters.h"
 #include "video.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
@@ -138,6 +139,7 @@ static int draw_carpet_slice(AVFilterContext *ctx, void *arg, int job, int nb_jo
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    FilterLink *l = ff_filter_link(outlink);
     SierpinskiContext *s = ctx->priv;
 
     if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
@@ -147,7 +149,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = s->h;
     outlink->time_base = av_inv_q(s->frame_rate);
     outlink->sample_aspect_ratio = (AVRational) {1, 1};
-    outlink->frame_rate = s->frame_rate;
+    l->frame_rate = s->frame_rate;
     if (s->seed == -1)
         s->seed = av_get_random_seed();
     av_lfg_init(&s->lfg, s->seed);

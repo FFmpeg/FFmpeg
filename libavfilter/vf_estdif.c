@@ -23,6 +23,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -133,13 +134,15 @@ static const enum AVPixelFormat pix_fmts[] = {
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink     *outl = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     ESTDIFContext *s = ctx->priv;
 
     outlink->time_base = av_mul_q(inlink->time_base, (AVRational){1, 2});
     if (s->mode)
-        outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){2, 1});
+        outl->frame_rate = av_mul_q(inl->frame_rate, (AVRational){2, 1});
 
     return 0;
 }
@@ -526,6 +529,7 @@ static int config_input(AVFilterLink *inlink)
 
 static int request_frame(AVFilterLink *link)
 {
+    FilterLink *l = ff_filter_link(link);
     AVFilterContext *ctx = link->src;
     ESTDIFContext *s = ctx->priv;
     int ret;
@@ -541,7 +545,7 @@ static int request_frame(AVFilterLink *link)
         if (!next)
             return AVERROR(ENOMEM);
 
-        next->pts = s->prev->pts + av_rescale_q(1, av_inv_q(ctx->outputs[0]->frame_rate),
+        next->pts = s->prev->pts + av_rescale_q(1, av_inv_q(l->frame_rate),
                                                 ctx->outputs[0]->time_base);
         s->eof = 1;
         ret = filter_frame(ctx->inputs[0], next);

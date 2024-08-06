@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include "w3fdif.h"
@@ -328,11 +329,13 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *il = ff_filter_link(inlink);
+    FilterLink *ol = ff_filter_link(outlink);
     W3FDIFContext *s = ctx->priv;
 
     outlink->time_base = av_mul_q(inlink->time_base, (AVRational){1, 2});
     if (s->mode)
-        outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){2, 1});
+        ol->frame_rate = av_mul_q(il->frame_rate, (AVRational){2, 1});
 
     return 0;
 }

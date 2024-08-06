@@ -26,6 +26,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -274,6 +275,7 @@ static av_cold int init(AVFilterContext *ctx)
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    FilterLink *l = ff_filter_link(outlink);
     MPTestContext *test = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(outlink->format);
 
@@ -283,7 +285,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = WIDTH;
     outlink->h = HEIGHT;
     outlink->time_base = av_inv_q(test->frame_rate);
-    outlink->frame_rate = test->frame_rate;
+    l->frame_rate = test->frame_rate;
 
     return 0;
 }

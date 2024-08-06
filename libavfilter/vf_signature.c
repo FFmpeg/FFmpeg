@@ -31,6 +31,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/file_open.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "signature.h"
 #include "signature_lookup.c"
@@ -726,9 +727,11 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink       *il = ff_filter_link(inlink);
+    FilterLink       *ol = ff_filter_link(outlink);
 
     outlink->time_base = inlink->time_base;
-    outlink->frame_rate = inlink->frame_rate;
+    ol->frame_rate = il->frame_rate;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->w = inlink->w;
     outlink->h = inlink->h;

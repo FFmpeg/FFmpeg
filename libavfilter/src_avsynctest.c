@@ -145,13 +145,14 @@ static av_cold int aconfig_props(AVFilterLink *outlink)
 
 static av_cold int config_props(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AVSyncTestContext *s = ctx->priv;
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->time_base = av_inv_q(s->frame_rate);
-    outlink->frame_rate = s->frame_rate;
+    l->frame_rate = s->frame_rate;
     outlink->sample_aspect_ratio = (AVRational) {1, 1};
     s->delay_min = av_mul_q(s->frame_rate, av_make_q(-1, 2));
     s->delay_max = av_mul_q(s->delay_min, av_make_q(-1, 1));

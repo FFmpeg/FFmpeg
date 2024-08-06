@@ -161,12 +161,13 @@ static int get_log_bin_sign(float in, int w)
 static int config_output(AVFilterLink *outlink)
 {
     AudioHistogramContext *s = outlink->src->priv;
+    FilterLink *l = ff_filter_link(outlink);
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
-    outlink->frame_rate = s->frame_rate;
-    outlink->time_base = av_inv_q(outlink->frame_rate);
+    l->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(l->frame_rate);
 
     s->histogram_h = s->h * s->phisto;
     s->ypos = s->h * s->phisto;

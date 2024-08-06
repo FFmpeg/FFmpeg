@@ -271,12 +271,13 @@ static int config_input(AVFilterLink *inlink)
 static int config_output(AVFilterLink *outlink)
 {
     AudioVectorScopeContext *s = outlink->src->priv;
+    FilterLink *l = ff_filter_link(outlink);
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
-    outlink->frame_rate = s->frame_rate;
-    outlink->time_base = av_inv_q(outlink->frame_rate);
+    l->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(l->frame_rate);
 
     s->prev_x = s->hw = s->w / 2;
     s->prev_y = s->hh = s->mode == POLAR ? s->h - 1 : s->h / 2;

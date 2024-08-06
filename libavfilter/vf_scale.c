@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "framesync.h"
 #include "internal.h"
@@ -800,12 +801,14 @@ fail:
 static int config_props_ref(AVFilterLink *outlink)
 {
     AVFilterLink *inlink = outlink->src->inputs[1];
+    FilterLink *il = ff_filter_link(inlink);
+    FilterLink *ol = ff_filter_link(outlink);
 
     outlink->w = inlink->w;
     outlink->h = inlink->h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->time_base = inlink->time_base;
-    outlink->frame_rate = inlink->frame_rate;
+    ol->frame_rate = il->frame_rate;
     outlink->colorspace = inlink->colorspace;
     outlink->color_range = inlink->color_range;
 

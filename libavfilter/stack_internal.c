@@ -52,9 +52,11 @@ static int init_framesync(AVFilterContext *avctx)
 
 static int config_comm_output(AVFilterLink *outlink)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     AVFilterContext *avctx = outlink->src;
     StackBaseContext *sctx = avctx->priv;
     AVFilterLink *inlink0 = avctx->inputs[0];
+    FilterLink *inl0 = ff_filter_link(inlink0);
     int width, height, ret;
 
     if (sctx->mode == STACK_H) {
@@ -197,16 +199,16 @@ static int config_comm_output(AVFilterLink *outlink)
 
     outlink->w = width;
     outlink->h = height;
-    outlink->frame_rate = inlink0->frame_rate;
+    outl->frame_rate = inl0->frame_rate;
     outlink->sample_aspect_ratio = inlink0->sample_aspect_ratio;
 
     for (int i = 1; i < sctx->nb_inputs; i++) {
-        AVFilterLink *inlink = avctx->inputs[i];
-        if (outlink->frame_rate.num != inlink->frame_rate.num ||
-            outlink->frame_rate.den != inlink->frame_rate.den) {
+        FilterLink *inlink = ff_filter_link(avctx->inputs[i]);
+        if (outl->frame_rate.num != inlink->frame_rate.num ||
+            outl->frame_rate.den != inlink->frame_rate.den) {
             av_log(avctx, AV_LOG_VERBOSE,
                     "Video inputs have different frame rates, output will be VFR\n");
-            outlink->frame_rate = av_make_q(1, 0);
+            outl->frame_rate = av_make_q(1, 0);
             break;
         }
     }

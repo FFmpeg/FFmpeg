@@ -27,6 +27,7 @@
 #include "libavutil/xga_font_data.h"
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -1434,14 +1435,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static int config_video(AVFilterLink *outlink)
 {
+    FilterLink *l = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AudioIIRContext *s = ctx->priv;
 
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->w = s->w;
     outlink->h = s->h;
-    outlink->frame_rate = s->rate;
-    outlink->time_base = av_inv_q(outlink->frame_rate);
+    l->frame_rate = s->rate;
+    outlink->time_base = av_inv_q(l->frame_rate);
 
     return 0;
 }

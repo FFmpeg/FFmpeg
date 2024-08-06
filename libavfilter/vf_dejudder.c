@@ -52,6 +52,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct DejudderContext {
@@ -78,12 +79,14 @@ AVFILTER_DEFINE_CLASS(dejudder);
 
 static int config_out_props(AVFilterLink *outlink)
 {
+    FilterLink     *outl = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     DejudderContext *s = ctx->priv;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
 
     outlink->time_base = av_mul_q(inlink->time_base, av_make_q(1, 2 * s->cycle));
-    outlink->frame_rate = av_mul_q(inlink->frame_rate, av_make_q(2 * s->cycle, 1));
+    outl->frame_rate = av_mul_q(inl->frame_rate, av_make_q(2 * s->cycle, 1));
 
     av_log(ctx, AV_LOG_VERBOSE, "cycle:%d\n", s->cycle);
 

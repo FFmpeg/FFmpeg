@@ -23,6 +23,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include "vaapi_vpp.h"
@@ -158,7 +159,9 @@ static int deint_vaapi_build_filter_params(AVFilterContext *avctx)
 
 static int deint_vaapi_config_output(AVFilterLink *outlink)
 {
+    FilterLink     *outl = ff_filter_link(outlink);
     AVFilterLink *inlink = outlink->src->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     AVFilterContext *avctx = outlink->src;
     DeintVAAPIContext *ctx = avctx->priv;
     int err;
@@ -168,8 +171,8 @@ static int deint_vaapi_config_output(AVFilterLink *outlink)
         return err;
     outlink->time_base  = av_mul_q(inlink->time_base,
                                    (AVRational) { 1, ctx->field_rate });
-    outlink->frame_rate = av_mul_q(inlink->frame_rate,
-                                   (AVRational) { ctx->field_rate, 1 });
+    outl->frame_rate = av_mul_q(inl->frame_rate,
+                                (AVRational) { ctx->field_rate, 1 });
 
     return 0;
 }

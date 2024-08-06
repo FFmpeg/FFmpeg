@@ -179,7 +179,6 @@ MAKE_AVFILTERLINK_ACCESSOR(enum AVMediaType , type               )
 MAKE_AVFILTERLINK_ACCESSOR(AVRational       , time_base          )
 MAKE_AVFILTERLINK_ACCESSOR(int              , format             )
 
-MAKE_AVFILTERLINK_ACCESSOR(AVRational       , frame_rate         )
 MAKE_AVFILTERLINK_ACCESSOR(int              , w                  )
 MAKE_AVFILTERLINK_ACCESSOR(int              , h                  )
 MAKE_AVFILTERLINK_ACCESSOR(AVRational       , sample_aspect_ratio)
@@ -187,6 +186,13 @@ MAKE_AVFILTERLINK_ACCESSOR(enum AVColorSpace, colorspace)
 MAKE_AVFILTERLINK_ACCESSOR(enum AVColorRange, color_range)
 
 MAKE_AVFILTERLINK_ACCESSOR(int              , sample_rate        )
+
+AVRational av_buffersink_get_frame_rate(const AVFilterContext *ctx)
+{
+    FilterLink *l = ff_filter_link(ctx->inputs[0]);
+    av_assert0(ctx->filter->activate == activate);
+    return l->frame_rate;
+}
 
 AVBufferRef* av_buffersink_get_hw_frames_ctx(const AVFilterContext *ctx)
 {

@@ -31,6 +31,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "tinterlace.h"
 #include "video.h"
@@ -212,6 +213,8 @@ static int config_out_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    FilterLink *il = ff_filter_link(inlink);
+    FilterLink *ol = ff_filter_link(outlink);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     TInterlaceContext *tinterlace = ctx->priv;
     int ret, i;
@@ -256,13 +259,13 @@ static int config_out_props(AVFilterLink *outlink)
     tinterlace->preout_time_base = inlink->time_base;
     if (tinterlace->mode == MODE_INTERLACEX2) {
         tinterlace->preout_time_base.den *= 2;
-        outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){2,1});
+        ol->frame_rate = av_mul_q(il->frame_rate, (AVRational){2,1});
         outlink->time_base  = av_mul_q(inlink->time_base , (AVRational){1,2});
     } else if (tinterlace->mode == MODE_MERGEX2) {
-        outlink->frame_rate = inlink->frame_rate;
+        ol->frame_rate = il->frame_rate;
         outlink->time_base  = inlink->time_base;
     } else if (tinterlace->mode != MODE_PAD) {
-        outlink->frame_rate = av_mul_q(inlink->frame_rate, (AVRational){1,2});
+        ol->frame_rate = av_mul_q(il->frame_rate, (AVRational){1,2});
         outlink->time_base  = av_mul_q(inlink->time_base , (AVRational){2,1});
     }
 
@@ -293,7 +296,7 @@ static int config_out_props(AVFilterLink *outlink)
 #endif
     }
 
-    ret = ff_ccfifo_init(&tinterlace->cc_fifo, outlink->frame_rate, ctx);
+    ret = ff_ccfifo_init(&tinterlace->cc_fifo, ol->frame_rate, ctx);
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failure to setup CC FIFO queue\n");
         return ret;
@@ -375,6 +378,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *l = ff_filter_link(outlink);
     TInterlaceContext *tinterlace = ctx->priv;
     AVFrame *cur, *next, *out;
     int field, tff, full, ret;
@@ -560,7 +564,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     out->pts = av_rescale_q(out->pts, tinterlace->preout_time_base, outlink->time_base);
-    out->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+    out->duration = av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
     ff_ccfifo_inject(&tinterlace->cc_fifo, out);
     ret = ff_filter_frame(outlink, out);
 

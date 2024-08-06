@@ -31,6 +31,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "vf_eq.h"
 #include "video.h"
@@ -197,11 +199,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int config_props(AVFilterLink *inlink)
 {
+    FilterLink *l = ff_filter_link(inlink);
     EQContext *eq = inlink->dst->priv;
 
     eq->var_values[VAR_N] = 0;
-    eq->var_values[VAR_R] = inlink->frame_rate.num == 0 || inlink->frame_rate.den == 0 ?
-        NAN : av_q2d(inlink->frame_rate);
+    eq->var_values[VAR_R] = l->frame_rate.num == 0 || l->frame_rate.den == 0 ?
+        NAN : av_q2d(l->frame_rate);
 
     return 0;
 }

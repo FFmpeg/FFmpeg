@@ -90,6 +90,7 @@ static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *inlink = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *l = ff_filter_link(outlink);
     TPadContext *s = ctx->priv;
     AVFrame *frame = NULL;
     int ret, status;
@@ -116,7 +117,7 @@ static int activate(AVFilterContext *ctx)
         ff_fill_rectangle(&s->draw, &s->color,
                           frame->data, frame->linesize,
                           0, 0, frame->width, frame->height);
-        duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+        duration = av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
         frame->pts = s->pts;
         frame->duration = duration;
         s->pts += duration;
@@ -136,7 +137,7 @@ static int activate(AVFilterContext *ctx)
         frame = av_frame_clone(s->cache_start);
         if (!frame)
             return AVERROR(ENOMEM);
-        duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+        duration = av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
         frame->pts = s->pts;
         frame->duration = duration;
         s->pts += duration;
@@ -182,7 +183,7 @@ static int activate(AVFilterContext *ctx)
             if (!frame)
                 return AVERROR(ENOMEM);
         }
-        duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+        duration = av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
         frame->pts = s->pts;
         frame->duration = duration;
         s->pts += duration;
@@ -200,6 +201,7 @@ static int activate(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
+    FilterLink *l = ff_filter_link(inlink);
     TPadContext *s = ctx->priv;
 
     if (needs_drawing(s)) {
@@ -208,9 +210,9 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (s->start_duration)
-        s->pad_start = av_rescale_q(s->start_duration, inlink->frame_rate, av_inv_q(AV_TIME_BASE_Q));
+        s->pad_start = av_rescale_q(s->start_duration, l->frame_rate, av_inv_q(AV_TIME_BASE_Q));
     if (s->stop_duration)
-        s->pad_stop = av_rescale_q(s->stop_duration, inlink->frame_rate, av_inv_q(AV_TIME_BASE_Q));
+        s->pad_stop = av_rescale_q(s->stop_duration, l->frame_rate, av_inv_q(AV_TIME_BASE_Q));
 
     return 0;
 }

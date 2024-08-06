@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
+#include "filters.h"
 #include "formats.h"
 #include "video.h"
 
@@ -95,11 +96,12 @@ static av_cold int init(AVFilterContext *ctx)
 static int config_props(AVFilterLink *outlink)
 {
     PerlinContext *perlin = outlink->src->priv;
+    FilterLink *l = ff_filter_link(outlink);
 
     outlink->w = perlin->w;
     outlink->h = perlin->h;
     outlink->time_base = av_inv_q(perlin->frame_rate);
-    outlink->frame_rate = perlin->frame_rate;
+    l->frame_rate = perlin->frame_rate;
 
     return 0;
 }

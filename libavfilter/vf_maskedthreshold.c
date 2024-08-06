@@ -22,6 +22,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include "framesync.h"
@@ -220,6 +221,8 @@ static int config_output(AVFilterLink *outlink)
     MaskedThresholdContext *s = ctx->priv;
     AVFilterLink *source = ctx->inputs[0];
     AVFilterLink *ref = ctx->inputs[1];
+    FilterLink *il = ff_filter_link(source);
+    FilterLink *ol = ff_filter_link(outlink);
     FFFrameSyncIn *in;
     int ret;
 
@@ -235,7 +238,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = source->w;
     outlink->h = source->h;
     outlink->sample_aspect_ratio = source->sample_aspect_ratio;
-    outlink->frame_rate = source->frame_rate;
+    ol->frame_rate = il->frame_rate;
 
     if ((ret = ff_framesync_init(&s->fs, ctx, 2)) < 0)
         return ret;

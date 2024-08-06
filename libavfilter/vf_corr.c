@@ -27,6 +27,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 
@@ -330,9 +331,11 @@ static int config_input_ref(AVFilterLink *inlink)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     CorrContext *s = ctx->priv;
     AVFilterLink *mainlink = ctx->inputs[0];
+    FilterLink *ml = ff_filter_link(mainlink);
     int ret;
 
     ret = ff_framesync_init_dualinput(&s->fs, ctx);
@@ -342,7 +345,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = mainlink->h;
     outlink->time_base = mainlink->time_base;
     outlink->sample_aspect_ratio = mainlink->sample_aspect_ratio;
-    outlink->frame_rate = mainlink->frame_rate;
+    outl->frame_rate = ml->frame_rate;
     if ((ret = ff_framesync_configure(&s->fs)) < 0)
         return ret;
 

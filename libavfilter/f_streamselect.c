@@ -98,11 +98,13 @@ static int activate(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *outl     = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     StreamSelectContext *s = ctx->priv;
     const int outlink_idx = FF_OUTLINK_IDX(outlink);
     const int inlink_idx  = s->map[outlink_idx];
     AVFilterLink *inlink = ctx->inputs[inlink_idx];
+    FilterLink      *inl = ff_filter_link(inlink);
     FFFrameSyncIn *in;
     int i, ret;
 
@@ -115,7 +117,7 @@ static int config_output(AVFilterLink *outlink)
         outlink->w = inlink->w;
         outlink->h = inlink->h;
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
-        outlink->frame_rate = inlink->frame_rate;
+        outl->frame_rate = inl->frame_rate;
         break;
     case AVMEDIA_TYPE_AUDIO:
         outlink->sample_rate    = inlink->sample_rate;

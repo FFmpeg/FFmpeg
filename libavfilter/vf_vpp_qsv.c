@@ -297,18 +297,19 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     VPPContext      *vpp = ctx->priv;
+    FilterLink      *inl = ff_filter_link(inlink);
     int              ret;
     int64_t          ow, oh;
 
     if (vpp->framerate.den == 0 || vpp->framerate.num == 0) {
-        vpp->framerate = inlink->frame_rate;
+        vpp->framerate = inl->frame_rate;
 
         if (vpp->deinterlace && vpp->field_rate)
-            vpp->framerate = av_mul_q(inlink->frame_rate,
+            vpp->framerate = av_mul_q(inl->frame_rate,
                                       (AVRational){ 2, 1 });
     }
 
-    if (av_cmp_q(vpp->framerate, inlink->frame_rate))
+    if (av_cmp_q(vpp->framerate, inl->frame_rate))
         vpp->use_frc = 1;
 
     ret = eval_expr(ctx);
@@ -533,11 +534,12 @@ static int config_output(AVFilterLink *outlink)
     mfxVersion      mfx_version;
     AVFilterLink    *inlink = ctx->inputs[0];
     FilterLink         *inl = ff_filter_link(inlink);
+    FilterLink          *ol = ff_filter_link(outlink);
     enum AVPixelFormat in_format;
 
     outlink->w          = vpp->out_width;
     outlink->h          = vpp->out_height;
-    outlink->frame_rate = vpp->framerate;
+    ol->frame_rate      = vpp->framerate;
     if (vpp->framerate.num == 0 || vpp->framerate.den == 0)
         outlink->time_base = inlink->time_base;
     else
@@ -768,11 +770,12 @@ static int activate(AVFilterContext *ctx)
     } else {
         /* No MFX session is created in pass-through mode */
         if (in) {
+            FilterLink *ol = ff_filter_link(outlink);
             if (in->pts != AV_NOPTS_VALUE)
                 in->pts = av_rescale_q(in->pts, inlink->time_base, outlink->time_base);
 
-            if (outlink->frame_rate.num && outlink->frame_rate.den)
-                in->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+            if (ol->frame_rate.num && ol->frame_rate.den)
+                in->duration = av_rescale_q(1, av_inv_q(ol->frame_rate), outlink->time_base);
             else
                 in->duration = 0;
 

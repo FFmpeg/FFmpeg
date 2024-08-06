@@ -298,7 +298,7 @@ static int testsrc_vulkan_config_props(AVFilterLink *outlink)
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = s->sar;
-    outlink->frame_rate = s->frame_rate;
+    l->frame_rate = s->frame_rate;
     outlink->time_base  = s->time_base;
 
     return 0;

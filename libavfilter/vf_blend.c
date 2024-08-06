@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "framesync.h"
 #include "internal.h"
 #include "vf_blend_init.h"
@@ -339,8 +340,10 @@ static int config_params(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *toplink = ctx->inputs[TOP];
+    FilterLink *tl = ff_filter_link(toplink);
     BlendContext *s = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(toplink->format);
     int ret;
@@ -362,7 +365,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = toplink->h;
     outlink->time_base = toplink->time_base;
     outlink->sample_aspect_ratio = toplink->sample_aspect_ratio;
-    outlink->frame_rate = toplink->frame_rate;
+    outl->frame_rate = tl->frame_rate;
 
     s->hsub = pix_desc->log2_chroma_w;
     s->vsub = pix_desc->log2_chroma_h;

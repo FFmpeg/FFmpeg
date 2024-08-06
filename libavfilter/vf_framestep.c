@@ -25,6 +25,7 @@
 
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -48,14 +49,16 @@ static int config_output_props(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     FrameStepContext *framestep = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink       *il = ff_filter_link(inlink);
+    FilterLink       *ol = ff_filter_link(outlink);
 
-    outlink->frame_rate =
-        av_div_q(inlink->frame_rate, (AVRational){framestep->frame_step, 1});
+    ol->frame_rate =
+        av_div_q(il->frame_rate, (AVRational){framestep->frame_step, 1});
 
     av_log(ctx, AV_LOG_VERBOSE, "step:%d frame_rate:%d/%d(%f) -> frame_rate:%d/%d(%f)\n",
            framestep->frame_step,
-           inlink->frame_rate.num, inlink->frame_rate.den, av_q2d(inlink->frame_rate),
-           outlink->frame_rate.num, outlink->frame_rate.den, av_q2d(outlink->frame_rate));
+           il->frame_rate.num, il->frame_rate.den, av_q2d(il->frame_rate),
+           ol->frame_rate.num, ol->frame_rate.den, av_q2d(ol->frame_rate));
     return 0;
 }
 

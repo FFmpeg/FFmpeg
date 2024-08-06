@@ -953,9 +953,11 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *outl     = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     BM3DContext *s = ctx->priv;
     AVFilterLink *src = ctx->inputs[0];
+    FilterLink  *srcl = ff_filter_link(src);
     AVFilterLink *ref;
     FFFrameSyncIn *in;
     int ret;
@@ -978,7 +980,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = src->h;
     outlink->time_base = src->time_base;
     outlink->sample_aspect_ratio = src->sample_aspect_ratio;
-    outlink->frame_rate = src->frame_rate;
+    outl->frame_rate = srcl->frame_rate;
 
     if (!s->ref)
         return 0;

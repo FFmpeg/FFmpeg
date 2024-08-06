@@ -277,6 +277,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink      *in1 = ctx->inputs[1];
     FilterLink         *l0 = ff_filter_link(in0);
     FilterLink         *l1 = ff_filter_link(in1);
+    FilterLink         *ol = ff_filter_link(outlink);
     int ret;
 
     av_log(ctx, AV_LOG_DEBUG, "Output is of %s.\n", av_get_pix_fmt_name(outlink->format));
@@ -298,8 +299,8 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->w          = vpp->var_values[VAR_MW];
     outlink->h          = vpp->var_values[VAR_MH];
-    outlink->frame_rate = in0->frame_rate;
-    outlink->time_base  = av_inv_q(outlink->frame_rate);
+    ol->frame_rate      = l0->frame_rate;
+    outlink->time_base  = av_inv_q(ol->frame_rate);
 
     ret = init_framesync(ctx);
     if (ret < 0)

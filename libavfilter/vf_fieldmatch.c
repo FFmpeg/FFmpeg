@@ -1046,16 +1046,18 @@ static av_cold void fieldmatch_uninit(AVFilterContext *ctx)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink     *outl  = ff_filter_link(outlink);
     AVFilterContext *ctx  = outlink->src;
     FieldMatchContext *fm = ctx->priv;
     const AVFilterLink *inlink =
         ctx->inputs[fm->ppsrc ? INPUT_CLEANSRC : INPUT_MAIN];
+    FilterLink *inl = ff_filter_link(ctx->inputs[fm->ppsrc ? INPUT_CLEANSRC : INPUT_MAIN]);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     fm->bpc = (desc->comp[0].depth + 7) / 8;
     outlink->time_base = inlink->time_base;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
-    outlink->frame_rate = inlink->frame_rate;
+    outl->frame_rate = inl->frame_rate;
     outlink->w = inlink->w;
     outlink->h = inlink->h;
     return 0;

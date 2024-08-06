@@ -376,6 +376,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl = ff_filter_link(outlink);
     LoopContext *s = ctx->priv;
     int64_t duration;
     int ret = 0;
@@ -394,7 +395,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             if (frame->duration)
                 duration = frame->duration;
             else
-                duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+                duration = av_rescale_q(1, av_inv_q(outl->frame_rate), outlink->time_base);
             s->duration += duration;
             s->pts_offset = s->duration;
             ret = ff_filter_frame(outlink, frame);

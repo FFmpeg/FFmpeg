@@ -520,7 +520,7 @@ static int config_props(AVFilterLink *link)
     }
 
     link->time_base = c->time_base;
-    link->frame_rate = c->frame_rate;
+    l->frame_rate = c->frame_rate;
     return 0;
 }
 

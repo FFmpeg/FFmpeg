@@ -1156,7 +1156,7 @@ static int deshake_opencl_init(AVFilterContext *avctx)
     ff_framequeue_global_init(&fqg);
     ff_framequeue_init(&ctx->fq, &fqg);
     ctx->eof = 0;
-    ctx->smooth_window = (int)(av_q2d(avctx->inputs[0]->frame_rate) * ctx->smooth_window_multiplier);
+    ctx->smooth_window = (int)(av_q2d(inl->frame_rate) * ctx->smooth_window_multiplier);
     ctx->curr_frame = 0;
 
     memset(&zeroed_ulong8, 0, sizeof(cl_ulong8));
@@ -1370,6 +1370,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *input_frame)
 {
     AVFilterContext *avctx = link->dst;
     AVFilterLink *outlink = avctx->outputs[0];
+    FilterLink      *outl = ff_filter_link(outlink);
     DeshakeOpenCLContext *deshake_ctx = avctx->priv;
     AVFrame *cropped_frame = NULL, *transformed_frame = NULL;
     int err;
@@ -1416,7 +1417,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *input_frame)
     if (input_frame->duration) {
         duration = input_frame->duration;
     } else {
-        duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+        duration = av_rescale_q(1, av_inv_q(outl->frame_rate), outlink->time_base);
     }
     deshake_ctx->duration = input_frame->pts + duration;
 

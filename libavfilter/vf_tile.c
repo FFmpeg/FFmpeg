@@ -28,6 +28,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "formats.h"
 #include "video.h"
 #include "internal.h"
@@ -121,6 +122,8 @@ static int config_props(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     TileContext *tile    = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *il = ff_filter_link(inlink);
+    FilterLink *ol = ff_filter_link(outlink);
     const unsigned total_margin_w = (tile->w - 1) * tile->padding + 2*tile->margin;
     const unsigned total_margin_h = (tile->h - 1) * tile->padding + 2*tile->margin;
 
@@ -137,8 +140,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = tile->w * inlink->w + total_margin_w;
     outlink->h = tile->h * inlink->h + total_margin_h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
-    outlink->frame_rate = av_mul_q(inlink->frame_rate,
-                                   av_make_q(1, tile->nb_frames - tile->overlap));
+    ol->frame_rate = av_mul_q(il->frame_rate, av_make_q(1, tile->nb_frames - tile->overlap));
     ff_draw_init2(&tile->draw, inlink->format, inlink->colorspace, inlink->color_range, 0);
     ff_draw_color(&tile->draw, &tile->blank, tile->rgba_color);
 

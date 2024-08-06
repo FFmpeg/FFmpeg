@@ -34,6 +34,8 @@ static int config_props_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     SeparateFieldsContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink       *il = ff_filter_link(inlink);
+    FilterLink       *ol = ff_filter_link(outlink);
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
@@ -44,8 +46,8 @@ static int config_props_output(AVFilterLink *outlink)
 
     outlink->time_base.num = inlink->time_base.num;
     outlink->time_base.den = inlink->time_base.den * 2;
-    outlink->frame_rate.num = inlink->frame_rate.num * 2;
-    outlink->frame_rate.den = inlink->frame_rate.den;
+    ol->frame_rate.num = il->frame_rate.num * 2;
+    ol->frame_rate.den = il->frame_rate.den;
     outlink->w = inlink->w;
     outlink->h = inlink->h / 2;
 

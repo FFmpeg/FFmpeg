@@ -24,6 +24,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include "framesync.h"
@@ -287,6 +288,8 @@ static int config_output(AVFilterLink *outlink)
     HysteresisContext *s = ctx->priv;
     AVFilterLink *base = ctx->inputs[0];
     AVFilterLink *alt = ctx->inputs[1];
+    FilterLink   *il = ff_filter_link(base);
+    FilterLink   *ol = ff_filter_link(outlink);
     FFFrameSyncIn *in;
     int ret;
 
@@ -303,7 +306,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w = base->w;
     outlink->h = base->h;
     outlink->sample_aspect_ratio = base->sample_aspect_ratio;
-    outlink->frame_rate = base->frame_rate;
+    ol->frame_rate = il->frame_rate;
 
     if ((ret = ff_framesync_init(&s->fs, ctx, 2)) < 0)
         return ret;

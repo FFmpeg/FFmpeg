@@ -46,6 +46,7 @@
 #include "avfilter.h"
 #include "drawutils.h"
 #include "filters.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -148,11 +149,12 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int config_props(AVFilterLink *outlink)
 {
     TestSourceContext *test = outlink->src->priv;
+    FilterLink *l = ff_filter_link(outlink);
 
     outlink->w = test->w;
     outlink->h = test->h;
     outlink->sample_aspect_ratio = test->sar;
-    outlink->frame_rate = test->frame_rate;
+    l->frame_rate = test->frame_rate;
     outlink->time_base  = test->time_base;
 
     return 0;

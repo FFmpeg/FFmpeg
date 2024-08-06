@@ -601,19 +601,6 @@ struct AVFilterLink {
     struct AVFilterGraph *graph;
 
     /**
-     * Frame rate of the stream on the link, or 1/0 if unknown or variable;
-     * if left to 0/0, will be automatically copied from the first input
-     * of the source filter if it exists.
-     *
-     * Sources should set it to the best estimation of the real frame rate.
-     * If the source frame rate is unknown or variable, set this to 1/0.
-     * Filters should update it if necessary depending on their function.
-     * Sinks can use it to set a default output frame rate.
-     * It is similar to the r_frame_rate field in AVStream.
-     */
-    AVRational frame_rate;
-
-    /**
      * Number of past frames sent through the link.
      */
     int64_t frame_count_in, frame_count_out;

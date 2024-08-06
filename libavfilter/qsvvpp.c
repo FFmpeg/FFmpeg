@@ -298,13 +298,13 @@ static int map_frame_to_surface(AVFrame *frame, mfxFrameSurface1 *surface)
 /* fill the surface info */
 static int fill_frameinfo_by_link(mfxFrameInfo *frameinfo, AVFilterLink *link)
 {
+    FilterLink *l = ff_filter_link(link);
     enum AVPixelFormat        pix_fmt;
     AVHWFramesContext        *frames_ctx;
     AVQSVFramesContext       *frames_hwctx;
     const AVPixFmtDescriptor *desc;
 
     if (link->format == AV_PIX_FMT_QSV) {
-        FilterLink *l = ff_filter_link(link);
         if (!l->hw_frames_ctx)
             return AVERROR(EINVAL);
 
@@ -336,8 +336,8 @@ static int fill_frameinfo_by_link(mfxFrameInfo *frameinfo, AVFilterLink *link)
 
     frameinfo->CropW          = link->w;
     frameinfo->CropH          = link->h;
-    frameinfo->FrameRateExtN  = link->frame_rate.num;
-    frameinfo->FrameRateExtD  = link->frame_rate.den;
+    frameinfo->FrameRateExtN  = l->frame_rate.num;
+    frameinfo->FrameRateExtD  = l->frame_rate.den;
 
     /* Apparently VPP in the SDK requires the frame rate to be set to some value, otherwise
      * init will fail */
@@ -514,8 +514,8 @@ static QSVFrame *query_frame(QSVVPPContext *s, AVFilterLink *outlink, const AVFr
             return NULL;
     }
 
-    if (outlink->frame_rate.num && outlink->frame_rate.den)
-        out_frame->frame->duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+    if (l->frame_rate.num && l->frame_rate.den)
+        out_frame->frame->duration = av_rescale_q(1, av_inv_q(l->frame_rate), outlink->time_base);
     else
         out_frame->frame->duration = 0;
 

@@ -128,9 +128,11 @@ static int config_input_main(AVFilterLink *inlink)
 
 static int config_output(AVFilterLink *outlink)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     AVFilterContext *ctx = outlink->src;
     AlphaMergeContext *s = ctx->priv;
     AVFilterLink *mainlink = ctx->inputs[0];
+    FilterLink *ml = ff_filter_link(mainlink);
     AVFilterLink *alphalink = ctx->inputs[1];
     int ret;
 
@@ -149,7 +151,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = mainlink->h;
     outlink->time_base = mainlink->time_base;
     outlink->sample_aspect_ratio = mainlink->sample_aspect_ratio;
-    outlink->frame_rate = mainlink->frame_rate;
+    outl->frame_rate = ml->frame_rate;
 
     return ff_framesync_configure(&s->fs);
 }

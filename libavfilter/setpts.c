@@ -131,6 +131,7 @@ static av_cold int init(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
+    FilterLink *l = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     SetPTSContext *setpts = ctx->priv;
 
@@ -142,8 +143,8 @@ static int config_input(AVFilterLink *inlink)
         setpts->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
     V(FRAME_RATE) = V(FR) =
-        inlink->frame_rate.num && inlink->frame_rate.den ?
-        av_q2d(inlink->frame_rate) : NAN;
+        l->frame_rate.num && l->frame_rate.den ?
+        av_q2d(l->frame_rate) : NAN;
 
     av_log(inlink->src, AV_LOG_VERBOSE, "TB:%f FRAME_RATE:%f SAMPLE_RATE:%f\n",
            V(TB), V(FRAME_RATE), V(SAMPLE_RATE));
@@ -152,7 +153,9 @@ static int config_input(AVFilterLink *inlink)
 
 static int config_output_video(AVFilterLink *outlink)
 {
-    outlink->frame_rate = (AVRational){ 1, 0 };
+    FilterLink *l = ff_filter_link(outlink);
+
+    l->frame_rate = (AVRational){ 1, 0 };
 
     return 0;
 }

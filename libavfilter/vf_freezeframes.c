@@ -52,6 +52,8 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *sourcelink = ctx->inputs[0];
     AVFilterLink *replacelink = ctx->inputs[1];
+    FilterLink       *il = ff_filter_link(sourcelink);
+    FilterLink       *ol = ff_filter_link(outlink);
 
     if (sourcelink->w != replacelink->w || sourcelink->h != replacelink->h) {
         av_log(ctx, AV_LOG_ERROR,
@@ -65,7 +67,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->h = sourcelink->h;
     outlink->time_base = sourcelink->time_base;
     outlink->sample_aspect_ratio = sourcelink->sample_aspect_ratio;
-    outlink->frame_rate = sourcelink->frame_rate;
+    ol->frame_rate = il->frame_rate;
 
     return 0;
 }

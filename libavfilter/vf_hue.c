@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -265,6 +266,7 @@ static const enum AVPixelFormat pix_fmts[] = {
 static int config_props(AVFilterLink *inlink)
 {
     HueContext *hue = inlink->dst->priv;
+    FilterLink   *l = ff_filter_link(inlink);
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     hue->hsub = desc->log2_chroma_w;
@@ -272,8 +274,8 @@ static int config_props(AVFilterLink *inlink)
 
     hue->var_values[VAR_N]  = 0;
     hue->var_values[VAR_TB] = av_q2d(inlink->time_base);
-    hue->var_values[VAR_R]  = inlink->frame_rate.num == 0 || inlink->frame_rate.den == 0 ?
-        NAN : av_q2d(inlink->frame_rate);
+    hue->var_values[VAR_R]  = l->frame_rate.num == 0 || l->frame_rate.den == 0 ?
+        NAN : av_q2d(l->frame_rate);
 
     return 0;
 }

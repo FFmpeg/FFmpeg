@@ -27,6 +27,7 @@
  */
 
 #include "avfilter.h"
+#include "filters.h"
 #include "video.h"
 #include "internal.h"
 #include "libavutil/imgutils.h"
@@ -151,6 +152,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
+    FilterLink *l = ff_filter_link(outlink);
     MBContext *s = ctx->priv;
 
     if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
@@ -159,7 +161,7 @@ static int config_props(AVFilterLink *outlink)
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->time_base = av_inv_q(s->frame_rate);
-    outlink->frame_rate = s->frame_rate;
+    l->frame_rate = s->frame_rate;
 
     return 0;
 }

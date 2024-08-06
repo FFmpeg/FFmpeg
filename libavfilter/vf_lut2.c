@@ -27,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -406,6 +407,8 @@ static int lut2_config_output(AVFilterLink *outlink)
     LUT2Context *s = ctx->priv;
     AVFilterLink *srcx = ctx->inputs[0];
     AVFilterLink *srcy = ctx->inputs[1];
+    FilterLink *il = ff_filter_link(srcx);
+    FilterLink *ol = ff_filter_link(outlink);
     FFFrameSyncIn *in;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     int hsub = desc->log2_chroma_w;
@@ -416,7 +419,7 @@ static int lut2_config_output(AVFilterLink *outlink)
     outlink->h = srcx->h;
     outlink->time_base = srcx->time_base;
     outlink->sample_aspect_ratio = srcx->sample_aspect_ratio;
-    outlink->frame_rate = srcx->frame_rate;
+    ol->frame_rate = il->frame_rate;
 
     s->nb_planes = av_pix_fmt_count_planes(outlink->format);
     s->height[1] = s->height[2] = AV_CEIL_RSHIFT(outlink->h, vsub);
