@@ -32,6 +32,7 @@ mask_dw25  : db  0,  0,  0,  0, -1, -1,  0,  0,  0,  0, -1, -1,  0,  0,  0,  0
 rgb24_shuf1: db  0,  1,  6,  7, 12, 13,  2,  3,  8,  9, 14, 15,  4,  5, 10, 11
 rgb24_shuf2: db 10, 11,  0,  1,  6,  7, 12, 13,  2,  3,  8,  9, 14, 15,  4,  5
 rgb24_shuf3: db  4,  5, 10, 11,  0,  1,  6,  7, 12, 13,  2,  3,  8,  9, 14, 15
+gbrp_shuf  : db  0,  8,  1,  9,  2, 10,  3, 11,  4, 12,  5, 13,  6, 14,  7, 15
 pw_00ff: times 8 dw 255
 pb_f8:   times 16 db 248
 pb_e0:   times 16 db 224
@@ -60,8 +61,13 @@ SECTION .text
     %define GPR_num 6
     %endif
 %else
+    %ifidn %2, gbrp
+    %define parameters index, image, dst_b, dst_r, pu_index, pv_index, pointer_c_dither, py_2index
+    %define GPR_num 8
+    %else
     %define parameters index, image, pu_index, pv_index, pointer_c_dither, py_2index
     %define GPR_num 6
+    %endif
 %endif
 
 %define m_green m2
@@ -172,10 +178,22 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     paddsw m2, m6 ; G0 G2 G4 G6 ...
 
 %if %3 == 24 ; PACK RGB24
-%define depth 3
     packuswb m0, m3 ; B0 B2 B4 B6 ... B1 B3 B5 B7 ...
     packuswb m1, m5 ; R0 R2 R4 R6 ... R1 R3 R5 R7 ...
     packuswb m2, m7 ; G0 G2 G4 G6 ... G1 G3 G5 G7 ...
+%ifidn %2, gbrp ; PLANAR GBRP
+%define depth 1
+    mova   m4, [gbrp_shuf]
+    pshufb m0, m4
+    pshufb m1, m4
+    pshufb m2, m4
+    movu [imageq], m2
+    movu [dst_bq], m0
+    movu [dst_rq], m1
+    add dst_bq, 8 * depth * time_num
+    add dst_rq, 8 * depth * time_num
+%else
+%define depth 3
     mova m3, m_red
     mova m6, m_blue
     psrldq m_red, 8
@@ -206,6 +224,7 @@ cglobal %1_420_%2%3, GPR_num, GPR_num, reg_num, parameters
     movu [imageq], m0
     movu [imageq + 16], m1
     movu [imageq + 32], m2
+%endif ; PLANAR GBRP
 %else ; PACK RGB15/16/32
     packuswb m0, m1
     packuswb m3, m5
@@ -292,3 +311,6 @@ yuv2rgb_fn yuva, rgb, 32
 yuv2rgb_fn yuva, bgr, 32
 yuv2rgb_fn yuv,  rgb, 15
 yuv2rgb_fn yuv,  rgb, 16
+%if ARCH_X86_64
+yuv2rgb_fn yuv,  gbrp, 24
+%endif

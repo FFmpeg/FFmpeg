@@ -79,6 +79,12 @@ extern void ff_yuva_420_rgb32_ssse3(x86_reg index, uint8_t *image, const uint8_t
 extern void ff_yuva_420_bgr32_ssse3(x86_reg index, uint8_t *image, const uint8_t *pu_index,
                                     const uint8_t *pv_index, const uint64_t *pointer_c_dither,
                                     const uint8_t *py_2index, const uint8_t *pa_2index);
+#if ARCH_X86_64
+extern void ff_yuv_420_gbrp24_ssse3(x86_reg index, uint8_t *image, uint8_t *dst_b, uint8_t *dst_r,
+                                    const uint8_t *pu_index, const uint8_t *pv_index,
+                                    const uint64_t *pointer_c_dither,
+                                    const uint8_t *py_2index);
+#endif
 
 static inline int yuv420_rgb15_ssse3(SwsContext *c, const uint8_t *src[],
                                      int srcStride[],
@@ -201,6 +207,35 @@ static inline int yuv420_bgr24_ssse3(SwsContext *c, const uint8_t *src[],
     return srcSliceH;
 }
 
+#if ARCH_X86_64
+static inline int yuv420_gbrp_ssse3(SwsContext *c, const uint8_t *src[],
+                                    int srcStride[],
+                                    int srcSliceY, int srcSliceH,
+                                    uint8_t *dst[], int dstStride[])
+{
+    int y, h_size, vshift;
+
+    h_size = (c->dstW + 7) & ~7;
+    if (h_size * 3 > FFABS(dstStride[0]))
+        h_size -= 8;
+
+    vshift = c->srcFormat != AV_PIX_FMT_YUV422P;
+
+    for (y = 0; y < srcSliceH; y++) {
+        uint8_t *dst_g    = dst[0] + (y + srcSliceY) * dstStride[0];
+        uint8_t *dst_b    = dst[1] + (y + srcSliceY) * dstStride[1];
+        uint8_t *dst_r    = dst[2] + (y + srcSliceY) * dstStride[2];
+        const uint8_t *py = src[0] +               y * srcStride[0];
+        const uint8_t *pu = src[1] +   (y >> vshift) * srcStride[1];
+        const uint8_t *pv = src[2] +   (y >> vshift) * srcStride[2];
+        x86_reg index = -h_size / 2;
+
+        ff_yuv_420_gbrp24_ssse3(index, dst_g, dst_b, dst_r, pu - index, pv - index, &(c->redDither), py - 2 * index);
+    }
+    return srcSliceH;
+}
+#endif
+
 #endif /* HAVE_X86ASM */
 
 av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
@@ -234,6 +269,10 @@ av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
             return yuv420_rgb16_ssse3;
         case AV_PIX_FMT_RGB555:
             return yuv420_rgb15_ssse3;
+#if ARCH_X86_64
+        case AV_PIX_FMT_GBRP:
+            return yuv420_gbrp_ssse3;
+#endif
         }
     }
 
