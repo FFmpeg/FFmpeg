@@ -43,6 +43,18 @@ typedef struct FilterLink {
     AVFilterLink pub;
 
     /**
+     * Current timestamp of the link, as defined by the most recent
+     * frame(s), in link time_base units.
+     */
+    int64_t current_pts;
+
+    /**
+     * Current timestamp of the link, as defined by the most recent
+     * frame(s), in AV_TIME_BASE units.
+     */
+    int64_t current_pts_us;
+
+    /**
      * Minimum number of samples to filter at once.
      *
      * May be set by the link destination filter in its config_props().

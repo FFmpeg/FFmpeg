@@ -228,8 +228,8 @@ static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
 
     if (pts == AV_NOPTS_VALUE)
         return;
-    link->current_pts = pts;
-    link->current_pts_us = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
+    li->l.current_pts = pts;
+    li->l.current_pts_us = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
     /* TODO use duration */
     if (link->graph && li->age_index >= 0)
         ff_avfilter_graph_update_heap(link->graph, li);
@@ -349,8 +349,8 @@ int ff_filter_config_links(AVFilterContext *filter)
         }
 
         inlink = link->src->nb_inputs ? link->src->inputs[0] : NULL;
-        link->current_pts =
-        link->current_pts_us = AV_NOPTS_VALUE;
+        li->l.current_pts =
+        li->l.current_pts_us = AV_NOPTS_VALUE;
 
         switch (li->init_state) {
         case AVLINK_INIT:
@@ -503,7 +503,7 @@ static int64_t guess_status_pts(AVFilterContext *ctx, int status, AVRational lin
     for (i = 0; i < ctx->nb_inputs; i++) {
         FilterLinkInternal * const li = ff_link_internal(ctx->inputs[i]);
         if (li->status_out == status)
-            r = FFMIN(r, av_rescale_q(ctx->inputs[i]->current_pts, ctx->inputs[i]->time_base, link_time_base));
+            r = FFMIN(r, av_rescale_q(li->l.current_pts, ctx->inputs[i]->time_base, link_time_base));
     }
     if (r < INT64_MAX)
         return r;
@@ -1396,7 +1396,7 @@ int ff_filter_activate(AVFilterContext *filter)
 int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts)
 {
     FilterLinkInternal * const li = ff_link_internal(link);
-    *rpts = link->current_pts;
+    *rpts = li->l.current_pts;
     if (ff_framequeue_queued_frames(&li->fifo))
         return *rstatus = 0;
     if (li->status_out)
@@ -1405,7 +1405,7 @@ int ff_inlink_acknowledge_status(AVFilterLink *link, int *rstatus, int64_t *rpts
         return *rstatus = 0;
     *rstatus = li->status_out = li->status_in;
     update_link_current_pts(li, li->status_in_pts);
-    *rpts = link->current_pts;
+    *rpts = li->l.current_pts;
     return 1;
 }
 

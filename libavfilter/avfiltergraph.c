@@ -1326,7 +1326,7 @@ static void heap_bubble_up(FFFilterGraph *graph,
 
     while (index) {
         int parent = (index - 1) >> 1;
-        if (links[parent]->l.pub.current_pts_us >= li->l.pub.current_pts_us)
+        if (links[parent]->l.current_pts_us >= li->l.current_pts_us)
             break;
         links[index] = links[parent];
         links[index]->age_index = index;
@@ -1348,9 +1348,9 @@ static void heap_bubble_down(FFFilterGraph *graph,
         if (child >= graph->sink_links_count)
             break;
         if (child + 1 < graph->sink_links_count &&
-            links[child + 1]->l.pub.current_pts_us < links[child]->l.pub.current_pts_us)
+            links[child + 1]->l.current_pts_us < links[child]->l.current_pts_us)
             child++;
-        if (li->l.pub.current_pts_us < links[child]->l.pub.current_pts_us)
+        if (li->l.current_pts_us < links[child]->l.current_pts_us)
             break;
         links[index] = links[child];
         links[index]->age_index = index;

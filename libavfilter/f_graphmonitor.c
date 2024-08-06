@@ -258,8 +258,9 @@ static int draw_items(AVFilterContext *ctx,
                       size_t frames)
 {
     GraphMonitorContext *s = ctx->priv;
+    FilterLink *fl = ff_filter_link(l);
     int64_t previous_pts_us = s->cache[s->cache_index].previous_pts_us;
-    int64_t current_pts_us = l->current_pts_us;
+    int64_t current_pts_us = fl->current_pts_us;
     const int flags = s->flags;
     const int mode = s->mode;
     char buffer[1024] = { 0 };
@@ -368,7 +369,7 @@ static int draw_items(AVFilterContext *ctx,
         xpos += len * 8;
     }
 
-    s->cache[s->cache_index].previous_pts_us = l->current_pts_us;
+    s->cache[s->cache_index].previous_pts_us = current_pts_us;
 
     if (s->cache_index + 1 >= s->cache_size / sizeof(*(s->cache))) {
         void *ptr = av_fast_realloc(s->cache, &s->cache_size, s->cache_size * 2);

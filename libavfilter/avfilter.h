@@ -601,18 +601,6 @@ struct AVFilterLink {
     struct AVFilterGraph *graph;
 
     /**
-     * Current timestamp of the link, as defined by the most recent
-     * frame(s), in link time_base units.
-     */
-    int64_t current_pts;
-
-    /**
-     * Current timestamp of the link, as defined by the most recent
-     * frame(s), in AV_TIME_BASE units.
-     */
-    int64_t current_pts_us;
-
-    /**
      * Frame rate of the stream on the link, or 1/0 if unknown or variable;
      * if left to 0/0, will be automatically copied from the first input
      * of the source filter if it exists.
