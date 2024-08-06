@@ -52,11 +52,41 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[], 
                                         c->yuv2rgb_y_coeff);                                \
 }                                                                                           \
 
+#define DECLARE_FF_YUVX_TO_GBRP_FUNCS(ifmt, ofmt)                                           \
+int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                              \
+                                 uint8_t *dst, int linesize,                                \
+                                 const uint8_t *srcY, int linesizeY,                        \
+                                 const uint8_t *srcU, int linesizeU,                        \
+                                 const uint8_t *srcV, int linesizeV,                        \
+                                 const int16_t *table,                                      \
+                                 int y_offset,                                              \
+                                 int y_coeff,                                               \
+                                 uint8_t *dst1, int linesize1,                              \
+                                 uint8_t *dst2, int linesize2);                             \
+                                                                                            \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
+                                           int srcStride[], int srcSliceY, int srcSliceH,   \
+                                           uint8_t *dst[], int dstStride[]) {               \
+    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
+                                                                                            \
+    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+                                        dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
+                                        src[0], srcStride[0],                               \
+                                        src[1], srcStride[1],                               \
+                                        src[2], srcStride[2],                               \
+                                        yuv2rgb_table,                                      \
+                                        c->yuv2rgb_y_offset >> 6,                           \
+                                        c->yuv2rgb_y_coeff,                                 \
+                                        dst[1] + srcSliceY * dstStride[1], dstStride[1],    \
+                                        dst[2] + srcSliceY * dstStride[2], dstStride[2]);   \
+}                                                                                           \
+
 #define DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuvx)                                             \
 DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, argb)                                                   \
 DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, rgba)                                                   \
 DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, abgr)                                                   \
 DECLARE_FF_YUVX_TO_RGBX_FUNCS(yuvx, bgra)                                                   \
+DECLARE_FF_YUVX_TO_GBRP_FUNCS(yuvx, gbrp)                                                   \
 
 DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuv420p)
 DECLARE_FF_YUVX_TO_ALL_RGBX_FUNCS(yuv422p)
@@ -83,11 +113,38 @@ static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[], 
                                         c->yuv2rgb_y_coeff);                                \
 }                                                                                           \
 
+#define DECLARE_FF_NVX_TO_GBRP_FUNCS(ifmt, ofmt)                                            \
+int ff_##ifmt##_to_##ofmt##_neon(int w, int h,                                              \
+                                 uint8_t *dst, int linesize,                                \
+                                 const uint8_t *srcY, int linesizeY,                        \
+                                 const uint8_t *srcC, int linesizeC,                        \
+                                 const int16_t *table,                                      \
+                                 int y_offset,                                              \
+                                 int y_coeff,                                               \
+                                 uint8_t *dst1, int linesize1,                              \
+                                 uint8_t *dst2, int linesize2);                             \
+                                                                                            \
+static int ifmt##_to_##ofmt##_neon_wrapper(SwsContext *c, const uint8_t *src[],             \
+                                           int srcStride[], int srcSliceY, int srcSliceH,   \
+                                           uint8_t *dst[], int dstStride[]) {               \
+    const int16_t yuv2rgb_table[] = { YUV_TO_RGB_TABLE };                                   \
+                                                                                            \
+    return ff_##ifmt##_to_##ofmt##_neon(c->srcW, srcSliceH,                                 \
+                                        dst[0] + srcSliceY * dstStride[0], dstStride[0],    \
+                                        src[0], srcStride[0], src[1], srcStride[1],         \
+                                        yuv2rgb_table,                                      \
+                                        c->yuv2rgb_y_offset >> 6,                           \
+                                        c->yuv2rgb_y_coeff,                                 \
+                                        dst[1] + srcSliceY * dstStride[1], dstStride[1],    \
+                                        dst[2] + srcSliceY * dstStride[2], dstStride[2]);   \
+}                                                                                           \
+
 #define DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nvx)                                               \
 DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, argb)                                                     \
 DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, rgba)                                                     \
 DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, abgr)                                                     \
 DECLARE_FF_NVX_TO_RGBX_FUNCS(nvx, bgra)                                                     \
+DECLARE_FF_NVX_TO_GBRP_FUNCS(nvx, gbrp)                                                     \
 
 DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv12)
 DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
@@ -110,6 +167,7 @@ DECLARE_FF_NVX_TO_ALL_RGBX_FUNCS(nv21)
     SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, rgba, RGBA, accurate_rnd);                            \
     SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, abgr, ABGR, accurate_rnd);                            \
     SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, bgra, BGRA, accurate_rnd);                            \
+    SET_FF_NVX_TO_RGBX_FUNC(nvx, NVX, gbrp, GBRP, accurate_rnd);                            \
 } while (0)
 
 static void get_unscaled_swscale_neon(SwsContext *c) {
