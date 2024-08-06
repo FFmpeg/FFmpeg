@@ -144,6 +144,7 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
 
 static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     LoopContext *s = ctx->priv;
@@ -158,7 +159,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
             int drain = 0;
 
             if (s->start < 0)
-                s->start = inlink->sample_count_out - written;
+                s->start = inl->sample_count_out - written;
 
             ret = av_audio_fifo_write(s->fifo, (void **)frame->extended_data, written);
             if (ret < 0)
@@ -374,6 +375,7 @@ static int push_frame(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     FilterLink *outl = ff_filter_link(outlink);
@@ -381,7 +383,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int64_t duration;
     int ret = 0;
 
-    if (((s->start >= 0 && inlink->frame_count_out >= s->start) ||
+    if (((s->start >= 0 && inl->frame_count_out >= s->start) ||
          (s->time_pts != AV_NOPTS_VALUE &&
           frame->pts >= s->time_pts)) &&
         s->size > 0 && s->loop != 0) {

@@ -207,10 +207,11 @@ static av_cold int config_props(AVFilterLink *outlink)
 static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl = ff_filter_link(outlink);
     SineContext *sine = ctx->priv;
     AVFrame *frame;
     double values[VAR_VARS_NB] = {
-        [VAR_N]   = outlink->frame_count_in,
+        [VAR_N]   = outl->frame_count_in,
         [VAR_PTS] = sine->pts,
         [VAR_T]   = sine->pts * av_q2d(outlink->time_base),
         [VAR_TB]  = av_q2d(outlink->time_base),

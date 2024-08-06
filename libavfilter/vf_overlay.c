@@ -36,6 +36,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
 #include "internal.h"
+#include "filters.h"
 #include "drawutils.h"
 #include "framesync.h"
 #include "video.h"
@@ -881,6 +882,7 @@ static int do_blend(FFFrameSync *fs)
     AVFrame *mainpic, *second;
     OverlayContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *inl = ff_filter_link(inlink);
     int ret;
 
     ret = ff_framesync_dualinput_get_writable(fs, &mainpic, &second);
@@ -891,7 +893,7 @@ static int do_blend(FFFrameSync *fs)
 
     if (s->eval_mode == EVAL_MODE_FRAME) {
 
-        s->var_values[VAR_N] = inlink->frame_count_out;
+        s->var_values[VAR_N] = inl->frame_count_out;
         s->var_values[VAR_T] = mainpic->pts == AV_NOPTS_VALUE ?
             NAN : mainpic->pts * av_q2d(inlink->time_base);
 #if FF_API_FRAME_PKT

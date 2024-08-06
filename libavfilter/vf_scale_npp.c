@@ -791,6 +791,7 @@ static int (*const nppscale_process[])(AVFilterContext *ctx, NPPScaleStageContex
 
 static int nppscale_scale(AVFilterLink *link, AVFrame *out, AVFrame *in)
 {
+    FilterLink *inl = ff_filter_link(link);
     AVFilterContext *ctx = link->dst;
     NPPScaleContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -840,7 +841,7 @@ static int nppscale_scale(AVFilterLink *link, AVFrame *out, AVFrame *in)
         }
 
         if (ctx->filter == &ff_vf_scale2ref_npp) {
-            s->var_values[VAR_S2R_MAIN_N] = link->frame_count_out;
+            s->var_values[VAR_S2R_MAIN_N] = inl->frame_count_out;
             s->var_values[VAR_S2R_MAIN_T] = TS2T(in->pts, link->time_base);
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -848,7 +849,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         } else {
-            s->var_values[VAR_N] = link->frame_count_out;
+            s->var_values[VAR_N] = inl->frame_count_out;
             s->var_values[VAR_T] = TS2T(in->pts, link->time_base);
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -947,6 +948,7 @@ fail:
 
 static int nppscale_filter_frame_ref(AVFilterLink *link, AVFrame *in)
 {
+    FilterLink *inl = ff_filter_link(link);
     NPPScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[1];
     int frame_changed;
@@ -968,7 +970,7 @@ static int nppscale_filter_frame_ref(AVFilterLink *link, AVFrame *in)
     }
 
     if (scale->eval_mode == EVAL_MODE_FRAME) {
-        scale->var_values[VAR_N] = link->frame_count_out;
+        scale->var_values[VAR_N] = inl->frame_count_out;
         scale->var_values[VAR_T] = TS2T(in->pts, link->time_base);
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS

@@ -71,6 +71,16 @@ typedef struct FilterLink {
     int max_samples;
 
     /**
+     * Number of past frames sent through the link.
+     */
+    int64_t frame_count_in, frame_count_out;
+
+    /**
+     * Number of past samples sent through the link.
+     */
+    int64_t sample_count_in, sample_count_out;
+
+    /**
      * Frame rate of the stream on the link, or 1/0 if unknown or variable.
      *
      * May be set by the link source filter in its config_props(); if left to

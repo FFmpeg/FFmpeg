@@ -308,33 +308,33 @@ static int draw_items(AVFilterContext *ctx,
         drawtext(out, xpos, ypos, buffer, len, frames > 0 ? frames >= 10 ? frames >= 50 ? s->red : s->yellow : s->green : s->white);
         xpos += len * 8;
     }
-    if ((flags & FLAG_FCIN) && (!(mode & MODE_NOZERO) || l->frame_count_in)) {
-        len = snprintf(buffer, sizeof(buffer)-1, " | in: %"PRId64, l->frame_count_in);
+    if ((flags & FLAG_FCIN) && (!(mode & MODE_NOZERO) || fl->frame_count_in)) {
+        len = snprintf(buffer, sizeof(buffer)-1, " | in: %"PRId64, fl->frame_count_in);
         drawtext(out, xpos, ypos, buffer, len, s->white);
         xpos += len * 8;
     }
-    if ((flags & FLAG_FCOUT) && (!(mode & MODE_NOZERO) || l->frame_count_out)) {
-        len = snprintf(buffer, sizeof(buffer)-1, " | out: %"PRId64, l->frame_count_out);
+    if ((flags & FLAG_FCOUT) && (!(mode & MODE_NOZERO) || fl->frame_count_out)) {
+        len = snprintf(buffer, sizeof(buffer)-1, " | out: %"PRId64, fl->frame_count_out);
         drawtext(out, xpos, ypos, buffer, len, s->white);
         xpos += len * 8;
     }
-    if ((flags & FLAG_FC_DELTA) && (!(mode & MODE_NOZERO) || (l->frame_count_in - l->frame_count_out))) {
-        len = snprintf(buffer, sizeof(buffer)-1, " | delta: %"PRId64, l->frame_count_in - l->frame_count_out);
+    if ((flags & FLAG_FC_DELTA) && (!(mode & MODE_NOZERO) || (fl->frame_count_in - fl->frame_count_out))) {
+        len = snprintf(buffer, sizeof(buffer)-1, " | delta: %"PRId64, fl->frame_count_in - fl->frame_count_out);
         drawtext(out, xpos, ypos, buffer, len, s->white);
         xpos += len * 8;
     }
-    if ((flags & FLAG_SCIN) && (!(mode & MODE_NOZERO) || l->sample_count_in)) {
-        len = snprintf(buffer, sizeof(buffer)-1, " | sin: %"PRId64, l->sample_count_in);
+    if ((flags & FLAG_SCIN) && (!(mode & MODE_NOZERO) || fl->sample_count_in)) {
+        len = snprintf(buffer, sizeof(buffer)-1, " | sin: %"PRId64, fl->sample_count_in);
         drawtext(out, xpos, ypos, buffer, len, s->white);
         xpos += len * 8;
     }
-    if ((flags & FLAG_SCOUT) && (!(mode & MODE_NOZERO) || l->sample_count_out)) {
-        len = snprintf(buffer, sizeof(buffer)-1, " | sout: %"PRId64, l->sample_count_out);
+    if ((flags & FLAG_SCOUT) && (!(mode & MODE_NOZERO) || fl->sample_count_out)) {
+        len = snprintf(buffer, sizeof(buffer)-1, " | sout: %"PRId64, fl->sample_count_out);
         drawtext(out, xpos, ypos, buffer, len, s->white);
         xpos += len * 8;
     }
-    if ((flags & FLAG_SC_DELTA) && (!(mode & MODE_NOZERO) || (l->sample_count_in - l->sample_count_out))) {
-        len = snprintf(buffer, sizeof(buffer)-1, " | sdelta: %"PRId64, l->sample_count_in - l->sample_count_out);
+    if ((flags & FLAG_SC_DELTA) && (!(mode & MODE_NOZERO) || (fl->sample_count_in - fl->sample_count_out))) {
+        len = snprintf(buffer, sizeof(buffer)-1, " | sdelta: %"PRId64, fl->sample_count_in - fl->sample_count_out);
         drawtext(out, xpos, ypos, buffer, len, s->white);
         xpos += len * 8;
     }

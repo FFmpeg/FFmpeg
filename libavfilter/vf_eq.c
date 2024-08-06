@@ -221,6 +221,7 @@ static const enum AVPixelFormat pixel_fmts_eq[] = {
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     EQContext *eq = ctx->priv;
@@ -237,7 +238,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
     desc = av_pix_fmt_desc_get(inlink->format);
 
-    eq->var_values[VAR_N]   = inlink->frame_count_out;
+    eq->var_values[VAR_N]   = inl->frame_count_out;
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
     {

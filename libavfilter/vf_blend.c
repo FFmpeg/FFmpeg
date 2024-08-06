@@ -174,10 +174,11 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const uint8_t *top    = td->top->data[td->plane];
     const uint8_t *bottom = td->bottom->data[td->plane];
     uint8_t *dst    = td->dst->data[td->plane];
+    FilterLink *inl = ff_filter_link(td->inlink);
     double values[VAR_VARS_NB];
     SliceParams sliceparam = {.values = &values[0], .starty = slice_start, .e = td->param->e ? td->param->e[jobnr] : NULL};
 
-    values[VAR_N]  = td->inlink->frame_count_out;
+    values[VAR_N]  = inl->frame_count_out;
     values[VAR_T]  = td->dst->pts == AV_NOPTS_VALUE ? NAN : td->dst->pts * av_q2d(td->inlink->time_base);
     values[VAR_W]  = td->w;
     values[VAR_H]  = td->h;

@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -442,6 +443,7 @@ static int config_input(AVFilterLink *inlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink      *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     FadeContext *s       = ctx->priv;
 
@@ -449,7 +451,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     if (s->fade_state == VF_FADE_WAITING) {
         s->factor=0;
         if (frame->pts >= s->start_time_pts
-            && inlink->frame_count_out >= s->start_frame) {
+            && inl->frame_count_out >= s->start_frame) {
             // Time to start fading
             s->fade_state = VF_FADE_FADING;
 
@@ -460,15 +462,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
             // Save start frame in case we are starting based on time and fading based on frames
             if (s->start_time_pts != 0 && s->start_frame == 0) {
-                s->start_frame = inlink->frame_count_out;
+                s->start_frame = inl->frame_count_out;
             }
         }
     }
     if (s->fade_state == VF_FADE_FADING) {
         if (s->duration_pts == 0) {
             // Fading based on frame count
-            s->factor = (inlink->frame_count_out - s->start_frame) * s->fade_per_frame;
-            if (inlink->frame_count_out > s->start_frame + s->nb_frames) {
+            s->factor = (inl->frame_count_out - s->start_frame) * s->fade_per_frame;
+            if (inl->frame_count_out > s->start_frame + s->nb_frames) {
                 s->fade_state = VF_FADE_DONE;
             }
 

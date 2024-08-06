@@ -363,6 +363,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl = ff_filter_link(outlink);
     AudioDRCContext *s = ctx->priv;
     AVFrame *out;
     int ret;
@@ -373,7 +374,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         goto fail;
     }
 
-    s->var_values[VAR_SN] = outlink->sample_count_in;
+    s->var_values[VAR_SN] = outl->sample_count_in;
     s->var_values[VAR_T] = s->var_values[VAR_SN] * (double)1/outlink->sample_rate;
 
     s->in = in;

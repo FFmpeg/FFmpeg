@@ -100,12 +100,13 @@ typedef struct ThreadData {
 static int weave_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *inl = ff_filter_link(inlink);
     WeaveContext *s = ctx->priv;
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
 
-    const int weave = (s->double_weave && !(inlink->frame_count_out & 1));
+    const int weave = (s->double_weave && !(inl->frame_count_out & 1));
     const int field1 = weave ? s->first_field : (!s->first_field);
     const int field2 = weave ? (!s->first_field) : s->first_field;
 

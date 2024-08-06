@@ -991,6 +991,7 @@ static int default_filter_frame(AVFilterLink *link, AVFrame *frame)
 
 static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
 {
+    FilterLink *l = ff_filter_link(link);
     int (*filter_frame)(AVFilterLink *, AVFrame *);
     AVFilterContext *dstctx = link->dst;
     AVFilterPad *dst = link->dstpad;
@@ -1012,7 +1013,7 @@ static int ff_filter_frame_framed(AVFilterLink *link, AVFrame *frame)
         (dstctx->filter->flags & AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC))
         filter_frame = default_filter_frame;
     ret = filter_frame(link, frame);
-    link->frame_count_out++;
+    l->frame_count_out++;
     return ret;
 
 fail:
@@ -1058,8 +1059,8 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
     }
 
     li->frame_blocked_in = link->frame_wanted_out = 0;
-    link->frame_count_in++;
-    link->sample_count_in += frame->nb_samples;
+    li->l.frame_count_in++;
+    li->l.sample_count_in += frame->nb_samples;
     filter_unblock(link->dst);
     ret = ff_framequeue_add(&li->fifo, frame);
     if (ret < 0) {
@@ -1163,7 +1164,7 @@ static int ff_filter_frame_to_filter(AVFilterLink *link)
     filter_unblock(dst);
     /* AVFilterPad.filter_frame() expect frame_count_out to have the value
        before the frame; ff_filter_frame_framed() will re-increment it. */
-    link->frame_count_out--;
+    li->l.frame_count_out--;
     ret = ff_filter_frame_framed(link, frame);
     if (ret < 0 && ret != li->status_out) {
         link_set_out_status(link, ret, AV_NOPTS_VALUE);
@@ -1444,8 +1445,8 @@ static void consume_update(FilterLinkInternal *li, const AVFrame *frame)
     ff_inlink_process_commands(link, frame);
     if (link == link->dst->inputs[0])
         link->dst->is_disabled = !ff_inlink_evaluate_timeline_at_frame(link, frame);
-    link->frame_count_out++;
-    link->sample_count_out += frame->nb_samples;
+    li->l.frame_count_out++;
+    li->l.sample_count_out += frame->nb_samples;
 }
 
 int ff_inlink_consume_frame(AVFilterLink *link, AVFrame **rframe)
@@ -1552,6 +1553,7 @@ int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame)
 
 int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame)
 {
+    FilterLink *l = ff_filter_link(link);
     AVFilterContext *dstctx = link->dst;
     int64_t pts = frame->pts;
 #if FF_API_FRAME_PKT
@@ -1563,7 +1565,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!dstctx->enable_str)
         return 1;
 
-    dstctx->var_values[VAR_N] = link->frame_count_out;
+    dstctx->var_values[VAR_N] = l->frame_count_out;
     dstctx->var_values[VAR_T] = pts == AV_NOPTS_VALUE ? NAN : pts * av_q2d(link->time_base);
     dstctx->var_values[VAR_W] = link->w;
     dstctx->var_values[VAR_H] = link->h;

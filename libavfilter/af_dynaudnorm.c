@@ -725,6 +725,7 @@ static void perform_compression(DynamicAudioNormalizerContext *s, AVFrame *frame
 
 static int analyze_frame(AVFilterContext *ctx, AVFilterLink *outlink, AVFrame **frame)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     DynamicAudioNormalizerContext *s = ctx->priv;
     AVFrame *analyze_frame;
 
@@ -780,7 +781,7 @@ static int analyze_frame(AVFilterContext *ctx, AVFilterLink *outlink, AVFrame **
         analyze_frame = *frame;
     }
 
-    s->var_values[VAR_SN] = outlink->sample_count_in;
+    s->var_values[VAR_SN] = outl->sample_count_in;
     s->var_values[VAR_T] = s->var_values[VAR_SN] * (double)1/outlink->sample_rate;
 
     if (s->channels_coupled) {

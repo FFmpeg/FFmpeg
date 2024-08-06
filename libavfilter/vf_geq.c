@@ -32,6 +32,8 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -453,13 +455,14 @@ static int slice_geq_filter(AVFilterContext *ctx, void *arg, int jobnr, int nb_j
 static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     int plane;
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     const int nb_threads = FFMIN(MAX_NB_THREADS, ff_filter_get_nb_threads(ctx));
     GEQContext *geq = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *out;
 
-    geq->values[VAR_N] = inlink->frame_count_out,
+    geq->values[VAR_N] = inl->frame_count_out,
     geq->values[VAR_T] = in->pts == AV_NOPTS_VALUE ? NAN : in->pts * av_q2d(inlink->time_base),
 
     geq->picref = in;

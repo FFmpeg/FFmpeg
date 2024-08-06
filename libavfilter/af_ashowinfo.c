@@ -38,6 +38,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct AShowInfoContext {
@@ -173,6 +174,7 @@ static void dump_unknown(AVFilterContext *ctx, AVFrameSideData *sd)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
+    FilterLink      *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     AShowInfoContext *s  = ctx->priv;
     char chlayout_str[128];
@@ -203,7 +205,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
            "n:%"PRId64" pts:%s pts_time:%s "
            "fmt:%s channels:%d chlayout:%s rate:%d nb_samples:%d "
            "checksum:%08"PRIX32" ",
-           inlink->frame_count_out,
+           inl->frame_count_out,
            av_ts2str(buf->pts), av_ts2timestr(buf->pts, &inlink->time_base),
            av_get_sample_fmt_name(buf->format), buf->ch_layout.nb_channels, chlayout_str,
            buf->sample_rate, buf->nb_samples,

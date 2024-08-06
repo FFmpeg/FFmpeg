@@ -26,6 +26,7 @@
 #include <stdio.h>
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -255,12 +256,13 @@ static int config_output(AVFilterLink *link)
 
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
+    FilterLink        *l = ff_filter_link(link);
     AVFilterContext *ctx = link->dst;
     CropContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     int i;
 
-    s->var_values[VAR_N] = link->frame_count_out;
+    s->var_values[VAR_N] = l->frame_count_out;
     s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(link->time_base);
 #if FF_API_FRAME_PKT

@@ -24,6 +24,8 @@
 
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -172,6 +174,7 @@ static float search(FOCContext *foc, int pass, int maxpass, int xmin, int xmax, 
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     FOCContext *foc = ctx->priv;
     float best_score;
@@ -208,7 +211,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_log(ctx, AV_LOG_INFO, "Found at n=%"PRId64" pts_time=%f x=%d y=%d with score=%f\n",
-           inlink->frame_count_out, TS2D(in->pts) * av_q2d(inlink->time_base),
+           inl->frame_count_out, TS2D(in->pts) * av_q2d(inlink->time_base),
            best_x, best_y, best_score);
     foc->last_x = best_x;
     foc->last_y = best_y;

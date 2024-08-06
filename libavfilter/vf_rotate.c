@@ -33,6 +33,7 @@
 
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -501,6 +502,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
@@ -515,7 +517,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    rot->var_values[VAR_N] = inlink->frame_count_out;
+    rot->var_values[VAR_N] = inl->frame_count_out;
     rot->var_values[VAR_T] = TS2T(in->pts, inlink->time_base);
     rot->angle = res = av_expr_eval(rot->angle_expr, rot->var_values, rot);
 

@@ -355,8 +355,9 @@ static void process_frame(AVFilterContext *ctx,
                           double *prior, double *prior_band_excit, int track_noise)
 {
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink      *outl = ff_filter_link(outlink);
     const double *abs_var = dnch->abs_var;
-    const double ratio = outlink->frame_count_out ? s->ratio : 1.0;
+    const double ratio = outl->frame_count_out ? s->ratio : 1.0;
     const double rratio = 1. - ratio;
     const int *bin2band = s->bin2band;
     double *noisy_data = dnch->noisy_data;

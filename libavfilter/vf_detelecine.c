@@ -193,6 +193,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl = ff_filter_link(outlink);
     DetelecineContext *s = ctx->priv;
     int i, len = 0, ret = 0, out = 0;
 
@@ -332,7 +333,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
         av_frame_copy_props(frame, inpicref);
         frame->pts = ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time) +
-                     av_rescale(outlink->frame_count_in, s->ts_unit.num,
+                     av_rescale(outl->frame_count_in, s->ts_unit.num,
                                 s->ts_unit.den);
         ret = ff_filter_frame(outlink, frame);
     }

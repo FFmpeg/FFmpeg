@@ -65,11 +65,12 @@ static int process_frame(FFFrameSync *fs)
 
     for (j = 0; j < ctx->nb_inputs; j++) {
         for (i = 0; i < s->nb_map; i++) {
+            FilterLink *outl = ff_filter_link(ctx->outputs[i]);
             if (s->map[i] == j) {
                 AVFrame *out;
 
                 if (s->is_audio && s->last_pts[j] == in[j]->pts &&
-                    ctx->outputs[i]->frame_count_in > 0)
+                    outl->frame_count_in > 0)
                     continue;
                 out = av_frame_clone(in[j]);
                 if (!out)

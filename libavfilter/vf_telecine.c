@@ -167,6 +167,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl = ff_filter_link(outlink);
     TelecineContext *s = ctx->priv;
     int i, len, ret = 0, nout = 0;
 
@@ -281,7 +282,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         else
             frame->flags &= ~AV_FRAME_FLAG_TOP_FIELD_FIRST;
         frame->pts = ((s->start_time == AV_NOPTS_VALUE) ? 0 : s->start_time) +
-                     av_rescale(outlink->frame_count_in, s->ts_unit.num,
+                     av_rescale(outl->frame_count_in, s->ts_unit.num,
                                 s->ts_unit.den);
         ret = ff_filter_frame(outlink, frame);
     }

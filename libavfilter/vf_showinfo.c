@@ -728,6 +728,7 @@ static void update_sample_stats(int depth, int be, const uint8_t *src, int len, 
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
@@ -761,7 +762,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            "n:%4"PRId64" pts:%7s pts_time:%-7s duration:%7"PRId64
            " duration_time:%-7s "
            "fmt:%s cl:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c ",
-           inlink->frame_count_out,
+           inl->frame_count_out,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base),
            frame->duration, av_ts2timestr(frame->duration, &inlink->time_base),
            desc->name, av_chroma_location_name(frame->chroma_location),

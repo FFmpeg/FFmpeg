@@ -162,6 +162,7 @@ static int current_segment_finished(AVFilterContext *ctx, AVFrame *frame)
 {
     SegmentContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     int ret = 0;
 
     if (s->use_timestamps) {
@@ -169,10 +170,10 @@ static int current_segment_finished(AVFilterContext *ctx, AVFrame *frame)
     } else {
         switch (inlink->type) {
         case AVMEDIA_TYPE_VIDEO:
-            ret = inlink->frame_count_out - 1 >= s->points[s->current_point];
+            ret = inl->frame_count_out - 1 >= s->points[s->current_point];
             break;
         case AVMEDIA_TYPE_AUDIO:
-            ret = inlink->sample_count_out - frame->nb_samples >= s->points[s->current_point];
+            ret = inl->sample_count_out - frame->nb_samples >= s->points[s->current_point];
             break;
         }
     }
@@ -183,6 +184,7 @@ static int current_segment_finished(AVFilterContext *ctx, AVFrame *frame)
 static int activate(AVFilterContext *ctx)
 {
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink      *inl = ff_filter_link(inlink);
     SegmentContext *s = ctx->priv;
     AVFrame *frame = NULL;
     int ret, status;
@@ -199,14 +201,14 @@ static int activate(AVFilterContext *ctx)
         ret = ff_inlink_consume_frame(inlink, &frame);
         break;
     case AVMEDIA_TYPE_AUDIO:
-        diff = s->points[s->current_point] - inlink->sample_count_out;
+        diff = s->points[s->current_point] - inl->sample_count_out;
         while (diff <= 0) {
             ff_outlink_set_status(ctx->outputs[s->current_point], AVERROR_EOF, s->last_pts);
             s->current_point++;
             if (s->current_point >= s->nb_points)
                 return AVERROR(EINVAL);
 
-            diff = s->points[s->current_point] - inlink->sample_count_out;
+            diff = s->points[s->current_point] - inl->sample_count_out;
         }
         if (s->use_timestamps) {
             max_samples = av_rescale_q(diff, av_make_q(1, inlink->sample_rate), inlink->time_base);

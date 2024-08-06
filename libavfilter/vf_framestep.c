@@ -64,9 +64,10 @@ static int config_output_props(AVFilterLink *outlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 {
+    FilterLink             *inl = ff_filter_link(inlink);
     FrameStepContext *framestep = inlink->dst->priv;
 
-    if (!(inlink->frame_count_out % framestep->frame_step)) {
+    if (!(inl->frame_count_out % framestep->frame_step)) {
         return ff_filter_frame(inlink->dst->outputs[0], ref);
     } else {
         av_frame_free(&ref);

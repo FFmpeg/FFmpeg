@@ -28,6 +28,7 @@
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
 #include "bbox.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct BBoxContext {
@@ -75,6 +76,7 @@ static const enum AVPixelFormat pix_fmts[] = {
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     BBoxContext *bbox = ctx->priv;
     FFBoundingBox box;
@@ -88,7 +90,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     h = box.y2 - box.y1 + 1;
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count_out,
+           "n:%"PRId64" pts:%s pts_time:%s", inl->frame_count_out,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {

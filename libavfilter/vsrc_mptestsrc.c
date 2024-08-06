@@ -292,12 +292,13 @@ static int config_props(AVFilterLink *outlink)
 
 static int request_frame(AVFilterLink *outlink)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     MPTestContext *test = outlink->src->priv;
     AVFrame *picref;
     int w = WIDTH, h = HEIGHT,
         cw = AV_CEIL_RSHIFT(w, test->hsub), ch = AV_CEIL_RSHIFT(h, test->vsub);
-    uint64_t frame = outlink->frame_count_in / test->max_frames;
-    uint64_t mod = outlink->frame_count_in % test->max_frames;
+    uint64_t frame = outl->frame_count_in / test->max_frames;
+    uint64_t mod = outl->frame_count_in % test->max_frames;
     enum test_type tt = test->test;
     int i;
 

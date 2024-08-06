@@ -742,6 +742,7 @@ static const AVFrame *ref_frame(const struct pl_frame_mix *mix)
 static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
                          struct pl_frame *target, double target_pts)
 {
+    FilterLink     *outl = ff_filter_link(ctx->outputs[0]);
     LibplaceboContext *s = ctx->priv;
     const AVFrame *ref = ref_frame(&in->mix);
 
@@ -761,7 +762,7 @@ static void update_crops(AVFilterContext *ctx, LibplaceboInput *in,
             av_q2d(in->link->sample_aspect_ratio) : 1.0;
         s->var_values[VAR_IN_T]   = s->var_values[VAR_T]  = image_pts;
         s->var_values[VAR_OUT_T]  = s->var_values[VAR_OT] = target_pts;
-        s->var_values[VAR_N]      = ctx->outputs[0]->frame_count_out;
+        s->var_values[VAR_N]      = outl->frame_count_out;
 
         /* Clear these explicitly to avoid leaking previous frames' state */
         s->var_values[VAR_CROP_W] = s->var_values[VAR_CW] = NAN;
@@ -1000,6 +1001,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
     int ret, ok = 0, retry = 0;
     LibplaceboContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl      = ff_filter_link(outlink);
     int64_t pts, out_pts;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
@@ -1012,7 +1014,7 @@ static int libplacebo_activate(AVFilterContext *ctx)
 
     if (ff_outlink_frame_wanted(outlink)) {
         if (s->fps.num) {
-            out_pts = outlink->frame_count_out;
+            out_pts = outl->frame_count_out;
         } else {
             /* Determine the PTS of the next frame from any active input */
             out_pts = INT64_MAX;

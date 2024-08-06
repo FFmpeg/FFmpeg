@@ -780,12 +780,13 @@ static int qrencode_query_formats(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     QREncodeContext *qr = ctx->priv;
     int ret;
 
-    V(n) = inlink->frame_count_out;
+    V(n) = inl->frame_count_out;
     V(t) = frame->pts == AV_NOPTS_VALUE ?
         NAN : frame->pts * av_q2d(inlink->time_base);
     V(pict_type) = frame->pict_type;

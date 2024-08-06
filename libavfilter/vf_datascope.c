@@ -25,6 +25,7 @@
 #include "libavutil/xga_font_data.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -1038,6 +1039,7 @@ static void draw_scope(OscilloscopeContext *s, int x0, int y0, int x1, int y1,
 
 static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx  = inlink->dst;
     OscilloscopeContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -1047,7 +1049,7 @@ static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int i, c;
 
     s->nb_values = 0;
-    draw_scope(s, s->x1, s->y1, s->x2, s->y2, frame, s->values, inlink->frame_count_in & 1);
+    draw_scope(s, s->x1, s->y1, s->x2, s->y2, frame, s->values, inl->frame_count_in & 1);
     ff_blend_rectangle(&s->draw, &s->dark, frame->data, frame->linesize,
                        frame->width, frame->height,
                        s->ox, s->oy, s->width, s->height + 20 * s->statistics);

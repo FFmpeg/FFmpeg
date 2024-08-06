@@ -150,12 +150,13 @@ static double get_natural_factor(const VignetteContext *s, int x, int y)
 
 static void update_context(VignetteContext *s, AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     int x, y;
     float *dst = s->fmap;
     int dst_linesize = s->fmap_linesize;
 
     if (frame) {
-        s->var_values[VAR_N]   = inlink->frame_count_out;
+        s->var_values[VAR_N]   = inl->frame_count_out;
         s->var_values[VAR_T]   = TS2T(frame->pts, inlink->time_base);
         s->var_values[VAR_PTS] = TS2D(frame->pts);
     } else {

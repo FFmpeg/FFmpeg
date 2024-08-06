@@ -89,6 +89,7 @@ static int query_formats(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     QuircContext *quirc = ctx->priv;
@@ -104,7 +105,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     codes_count = quirc_count(quirc->quirc);
     av_log(ctx, AV_LOG_VERBOSE,
-           "Found count %d codes in image #%ld\n", codes_count, inlink->frame_count_out);
+           "Found count %d codes in image #%ld\n", codes_count, inl->frame_count_out);
 
     if (codes_count) {
         int i, j;

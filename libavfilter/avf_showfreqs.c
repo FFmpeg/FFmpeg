@@ -298,6 +298,7 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
                              double a, int f, uint8_t fg[4], int *prev_y,
                              AVFrame *out, AVFilterLink *outlink)
 {
+    FilterLink *outl = ff_filter_link(outlink);
     const int w = s->w;
     const float min = s->minamp;
     const float avg = s->avg_data[ch][f];
@@ -337,12 +338,12 @@ static inline void plot_freq(ShowFreqsContext *s, int ch,
 
     switch (s->avg) {
     case 0:
-        y = s->avg_data[ch][f] = !outlink->frame_count_in ? y : FFMIN(0, y);
+        y = s->avg_data[ch][f] = !outl->frame_count_in ? y : FFMIN(0, y);
         break;
     case 1:
         break;
     default:
-        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outlink->frame_count_in + 1, s->avg) * (float)y);
+        s->avg_data[ch][f] = avg + y * (y - avg) / (FFMIN(outl->frame_count_in + 1, s->avg) * (float)y);
         y = av_clip(s->avg_data[ch][f], 0, outlink->h - 1);
         break;
     }

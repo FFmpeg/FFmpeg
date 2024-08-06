@@ -74,12 +74,14 @@ static int config_output(AVFilterLink *outlink)
 
 static int activate(AVFilterContext *ctx)
 {
+    FilterLink *inl0 = ff_filter_link(ctx->inputs[0]);
+    FilterLink *inl1 = ff_filter_link(ctx->inputs[1]);
     AVFilterLink *outlink = ctx->outputs[0];
     FreezeFramesContext *s = ctx->priv;
     AVFrame *frame = NULL;
-    int drop = ctx->inputs[0]->frame_count_out >= s->first &&
-               ctx->inputs[0]->frame_count_out <= s->last;
-    int replace = ctx->inputs[1]->frame_count_out == s->replace;
+    int drop = inl0->frame_count_out >= s->first &&
+               inl0->frame_count_out <= s->last;
+    int replace = inl1->frame_count_out == s->replace;
     int ret;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);

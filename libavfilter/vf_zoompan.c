@@ -156,6 +156,7 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
 {
     ZPContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl = ff_filter_link(outlink);
     AVFilterLink *inlink = ctx->inputs[0];
     int64_t pts = s->frame_count;
     int k, x, y, w, h, ret = 0;
@@ -172,7 +173,7 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     var_values[VAR_OUT_TIME] = pts * av_q2d(outlink->time_base);
     var_values[VAR_TIME] = var_values[VAR_OT] = var_values[VAR_OUT_TIME];
     var_values[VAR_FRAME] = i;
-    var_values[VAR_ON] = outlink->frame_count_in;
+    var_values[VAR_ON] = outl->frame_count_in;
 
     *zoom = av_expr_eval(s->zoom_expr, var_values, NULL);
 
@@ -260,7 +261,9 @@ static int activate(AVFilterContext *ctx)
 {
     ZPContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl = ff_filter_link(outlink);
     int status, ret = 0;
     int64_t pts;
 
@@ -283,8 +286,8 @@ static int activate(AVFilterContext *ctx)
         s->var_values[VAR_IN_H]  = s->var_values[VAR_IH] = s->in->height;
         s->var_values[VAR_OUT_W] = s->var_values[VAR_OW] = s->w;
         s->var_values[VAR_OUT_H] = s->var_values[VAR_OH] = s->h;
-        s->var_values[VAR_IN]    = inlink->frame_count_out - 1;
-        s->var_values[VAR_ON]    = outlink->frame_count_in;
+        s->var_values[VAR_IN]    = inl->frame_count_out - 1;
+        s->var_values[VAR_ON]    = outl->frame_count_in;
         s->var_values[VAR_PX]    = s->x;
         s->var_values[VAR_PY]    = s->y;
         s->var_values[VAR_X]     = 0;

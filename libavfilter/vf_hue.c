@@ -360,6 +360,7 @@ static void apply_lut10(HueContext *s,
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     HueContext *hue = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFrame *outpic;
@@ -381,7 +382,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
         av_frame_copy_props(outpic, inpic);
     }
 
-    hue->var_values[VAR_N]   = inlink->frame_count_out;
+    hue->var_values[VAR_N]   = inl->frame_count_out;
     hue->var_values[VAR_T]   = TS2T(inpic->pts, inlink->time_base);
     hue->var_values[VAR_PTS] = TS2D(inpic->pts);
 

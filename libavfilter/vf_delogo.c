@@ -33,6 +33,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 static const char * const var_names[] = {
@@ -286,6 +287,7 @@ static int config_input(AVFilterLink *inlink)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     DelogoContext *s = inlink->dst->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
@@ -297,7 +299,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVRational sar;
     int ret;
 
-    s->var_values[VAR_N] = inlink->frame_count_out;
+    s->var_values[VAR_N] = inl->frame_count_out;
     s->var_values[VAR_T] = TS2T(in->pts, inlink->time_base);
     s->x = av_expr_eval(s->x_pexpr, s->var_values, s);
     s->y = av_expr_eval(s->y_pexpr, s->var_values, s);

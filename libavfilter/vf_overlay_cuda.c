@@ -236,6 +236,7 @@ static int overlay_cuda_blend(FFFrameSync *fs)
     OverlayCUDAContext *ctx = avctx->priv;
     AVFilterLink *outlink = avctx->outputs[0];
     AVFilterLink *inlink = avctx->inputs[0];
+    FilterLink *inl = ff_filter_link(inlink);
 
     CudaFunctions *cu = ctx->hwctx->internal->cuda_dl;
     CUcontext dummy, cuda_ctx = ctx->hwctx->cuda_ctx;
@@ -270,7 +271,7 @@ static int overlay_cuda_blend(FFFrameSync *fs)
     }
 
     if (ctx->eval_mode == EVAL_MODE_FRAME) {
-        ctx->var_values[VAR_N] = inlink->frame_count_out;
+        ctx->var_values[VAR_N] = inl->frame_count_out;
         ctx->var_values[VAR_T] = input_main->pts == AV_NOPTS_VALUE ?
             NAN : input_main->pts * av_q2d(inlink->time_base);
 

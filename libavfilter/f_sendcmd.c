@@ -33,6 +33,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "audio.h"
 #include "video.h"
@@ -488,6 +489,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
 {
+    FilterLink *inl = ff_filter_link(inlink);
     AVFilterContext *ctx = inlink->dst;
     SendCmdContext *s = ctx->priv;
     int64_t ts;
@@ -535,7 +537,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *ref)
                         double end = TS2T(interval->end_ts, AV_TIME_BASE_Q);
                         double current = TS2T(ref->pts, inlink->time_base);
 
-                        var_values[VAR_N]   = inlink->frame_count_in;
+                        var_values[VAR_N]   = inl->frame_count_in;
 #if FF_API_FRAME_PKT
 FF_DISABLE_DEPRECATION_WARNINGS
                         var_values[VAR_POS] = ref->pkt_pos == -1 ? NAN : ref->pkt_pos;

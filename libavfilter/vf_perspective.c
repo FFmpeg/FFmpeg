@@ -26,6 +26,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
@@ -122,13 +123,15 @@ enum                                   { VAR_W, VAR_H, VAR_IN, VAR_ON, VAR_VARS_
 
 static int calc_persp_luts(AVFilterContext *ctx, AVFilterLink *inlink)
 {
+    FilterLink *inl       = ff_filter_link(inlink);
     PerspectiveContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    FilterLink *outl      = ff_filter_link(outlink);
     double (*ref)[2]      = s->ref;
 
     double values[VAR_VARS_NB] = { [VAR_W] = inlink->w, [VAR_H] = inlink->h,
-                                   [VAR_IN] = inlink->frame_count_out + 1,
-                                   [VAR_ON] = outlink->frame_count_in + 1 };
+                                   [VAR_IN] = inl->frame_count_out + 1,
+                                   [VAR_ON] = outl->frame_count_in + 1 };
     const int h = values[VAR_H];
     const int w = values[VAR_W];
     double x0, x1, x2, x3, x4, x5, x6, x7, x8, q;
