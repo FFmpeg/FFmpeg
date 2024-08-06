@@ -124,6 +124,16 @@ const int *sws_getCoefficients(int colorspace)
     dst_##l[12 * i +  8] = dst_##l[12 * i +  9] = g[Y]; \
     dst_##l[12 * i + 10] = dst_##l[12 * i + 11] = r[Y];
 
+#define PUTGBRP(l, i, abase)                        \
+    Y                   = py_##l[2 * i];            \
+    dst_##l [2 * i + 0] = g[Y];                     \
+    dst1_##l[2 * i + 0] = b[Y];                     \
+    dst2_##l[2 * i + 0] = r[Y];                     \
+    Y                   = py_##l[2 * i + 1];        \
+    dst_##l [2 * i + 1] = g[Y];                     \
+    dst1_##l[2 * i + 1] = b[Y];                     \
+    dst2_##l[2 * i + 1] = r[Y];
+
 #define YUV2RGBFUNC(func_name, dst_type, alpha, yuv422, nb_dst_planes)      \
     static int func_name(SwsContext *c, const uint8_t *src[],               \
                          int srcStride[], int srcSliceY, int srcSliceH,     \
@@ -519,6 +529,7 @@ YUV420FUNC(yuva2argb_c,      uint32_t, 1,  0, PUTRGBA,   8, 1)
 #endif
 YUV420FUNC(yuv2rgb_c_24_rgb, uint8_t,  0,  0, PUTRGB24, 24, 1)
 YUV420FUNC(yuv2rgb_c_24_bgr, uint8_t,  0,  0, PUTBGR24, 24, 1)
+YUV420FUNC(yuv420p_gbrp_c,   uint8_t,  0,  0, PUTGBRP,   8, 3)
 YUV420FUNC_DITHER(yuv2rgb_c_16_ordered_dither, uint16_t, LOADDITHER16,  PUTRGB16,  8)
 YUV420FUNC_DITHER(yuv2rgb_c_15_ordered_dither, uint16_t, LOADDITHER15,  PUTRGB15,  8)
 YUV420FUNC_DITHER(yuv2rgb_c_12_ordered_dither, uint16_t, LOADDITHER12,  PUTRGB12,  8)
@@ -539,6 +550,7 @@ YUV422FUNC(yuva422p_argb_c,  uint32_t, 1,  0, PUTRGBA,   8, 1)
 #endif
 YUV422FUNC(yuv422p_rgb24_c,  uint8_t,  0,  0, PUTRGB24, 24, 1)
 YUV422FUNC(yuv422p_bgr24_c,  uint8_t,  0,  0, PUTBGR24, 24, 1)
+YUV422FUNC(yuv422p_gbrp_c,   uint8_t,  0,  0, PUTGBRP,   8, 3)
 YUV422FUNC_DITHER(yuv422p_bgr16,     uint16_t, LOADDITHER16,  PUTRGB16,  8)
 YUV422FUNC_DITHER(yuv422p_bgr15,     uint16_t, LOADDITHER15,  PUTRGB15,  8)
 YUV422FUNC_DITHER(yuv422p_bgr12,     uint16_t, LOADDITHER12,  PUTRGB12,  8)
@@ -604,6 +616,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
             return yuv422p_bgr4_byte;
         case AV_PIX_FMT_MONOBLACK:
             return yuv2rgb_c_1_ordered_dither;
+        case AV_PIX_FMT_GBRP:
+            return yuv422p_gbrp_c;
         }
     } else {
         switch (c->dstFormat) {
@@ -644,6 +658,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
             return yuv2rgb_c_4b_ordered_dither;
         case AV_PIX_FMT_MONOBLACK:
             return yuv2rgb_c_1_ordered_dither;
+        case AV_PIX_FMT_GBRP:
+            return yuv420p_gbrp_c;
         }
     }
     return NULL;
