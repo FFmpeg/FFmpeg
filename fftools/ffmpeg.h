@@ -593,7 +593,7 @@ typedef struct OutputStream {
 
     KeyframeForceCtx kf;
 
-    char *logfile_prefix;
+    const char *logfile_prefix;
     FILE *logfile;
 
     // simple filtergraph feeding this stream, if any
@@ -902,6 +902,8 @@ void update_benchmark(const char *fmt, ...);
 
 const char *opt_match_per_type_str(const SpecifierOptList *sol,
                                    char mediatype);
+int opt_match_per_stream_str(void *logctx, const SpecifierOptList *sol,
+                             AVFormatContext *fc, AVStream *st, const char **out);
 
 int muxer_thread(void *arg);
 int encoder_thread(void *arg);

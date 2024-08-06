@@ -120,6 +120,9 @@ typedef struct SpecifierOptList {
 
     /* Canonical option definition that was parsed into this list. */
     const struct OptionDef *opt_canon;
+    /* Type corresponding to the field that should be used from SpecifierOpt.u.
+     * May not match the option type, e.g. OPT_TYPE_BOOL options are stored as
+     * int, so this field would be OPT_TYPE_INT for them */
     enum OptionType type;
 } SpecifierOptList;
 

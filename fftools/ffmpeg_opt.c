@@ -164,6 +164,73 @@ const char *opt_match_per_type_str(const SpecifierOptList *sol,
     return NULL;
 }
 
+static int opt_match_per_stream(void *logctx, enum OptionType type,
+                                const SpecifierOptList *sol,
+                                AVFormatContext *fc, AVStream *st)
+{
+    int matches = 0, match_idx = -1;
+
+    av_assert0((type == sol->type) || !sol->nb_opt);
+
+    for (int i = 0; i < sol->nb_opt; i++) {
+        const char *spec = sol->opt[i].specifier;
+        int ret = check_stream_specifier(fc, st, spec);
+        if (ret > 0) {
+            match_idx = i;
+            matches++;
+        } else if (ret < 0)
+            return ret;
+    }
+
+    if (matches > 1 && sol->opt_canon) {
+        const SpecifierOpt *so = &sol->opt[match_idx];
+        const char *spec = so->specifier && so->specifier[0] ? so->specifier : "";
+
+        char namestr[128] = "";
+        char optval_buf[32];
+        const char *optval = optval_buf;
+
+        snprintf(namestr, sizeof(namestr), "-%s", sol->opt_canon->name);
+        if (sol->opt_canon->flags & OPT_HAS_ALT) {
+            const char * const *names_alt = sol->opt_canon->u1.names_alt;
+            for (int i = 0; names_alt[i]; i++)
+                av_strlcatf(namestr, sizeof(namestr), "/-%s", names_alt[i]);
+        }
+
+        switch (sol->type) {
+        case OPT_TYPE_STRING: optval = so->u.str;                                             break;
+        case OPT_TYPE_INT:    snprintf(optval_buf, sizeof(optval_buf), "%d", so->u.i);        break;
+        case OPT_TYPE_INT64:  snprintf(optval_buf, sizeof(optval_buf), "%"PRId64, so->u.i64); break;
+        case OPT_TYPE_FLOAT:  snprintf(optval_buf, sizeof(optval_buf), "%f", so->u.f);        break;
+        case OPT_TYPE_DOUBLE: snprintf(optval_buf, sizeof(optval_buf), "%f", so->u.dbl);      break;
+        default: av_assert0(0);
+        }
+
+        av_log(logctx, AV_LOG_WARNING, "Multiple %s options specified for "
+               "stream %d, only the last option '-%s%s%s %s' will be used.\n",
+               namestr, st->index, sol->opt_canon->name, spec[0] ? ":" : "",
+               spec, optval);
+    }
+
+    return match_idx + 1;
+}
+
+#define OPT_MATCH_PER_STREAM(name, type, opt_type, m)                                   \
+int opt_match_per_stream_ ## name(void *logctx, const SpecifierOptList *sol,            \
+                                  AVFormatContext *fc, AVStream *st, type *out)         \
+{                                                                                       \
+    int ret = opt_match_per_stream(logctx, opt_type, sol, fc, st);                      \
+                                                                                        \
+    if (ret <= 0)                                                                       \
+        return ret;                                                                     \
+                                                                                        \
+    *out = sol->opt[ret - 1].u.m;                                                       \
+                                                                                        \
+    return 0;                                                                           \
+}
+
+OPT_MATCH_PER_STREAM(str, const char *, OPT_TYPE_STRING, str);
+
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global)
 {
     if      (!av_strcasecmp(arg, "cfr"))         *vsync_var = VSYNC_CFR;

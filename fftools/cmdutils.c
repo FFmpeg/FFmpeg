@@ -246,6 +246,8 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                 (uint8_t *)optctx + po->u.off : po->u.dst_ptr;
     char *arg_allocated = NULL;
 
+    enum OptionType so_type = po->type;
+
     SpecifierOptList *sol = NULL;
     double num;
     int ret = 0;
@@ -310,6 +312,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
             goto finish;
 
         *(int *)dst = num;
+        so_type = OPT_TYPE_INT;
     } else if (po->type == OPT_TYPE_INT64) {
         ret = parse_number(opt, arg, OPT_TYPE_INT64, INT64_MIN, (double)INT64_MAX, &num);
         if (ret < 0)
@@ -323,6 +326,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
                    opt, arg);
             goto finish;
         }
+        so_type = OPT_TYPE_INT64;
     } else if (po->type == OPT_TYPE_FLOAT) {
         ret = parse_number(opt, arg, OPT_TYPE_FLOAT, -INFINITY, INFINITY, &num);
         if (ret < 0)
@@ -352,7 +356,7 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
     }
 
     if (sol) {
-        sol->type = po->type;
+        sol->type = so_type;
         sol->opt_canon = (po->flags & OPT_HAS_CANON) ?
                          find_option(defs, po->u1.name_canon) : po;
     }

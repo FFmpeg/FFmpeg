@@ -79,7 +79,7 @@ typedef struct MuxStream {
     int             ts_drop;
 #endif
 
-    char           *apad;
+    const char     *apad;
 } MuxStream;
 
 typedef struct Muxer {
