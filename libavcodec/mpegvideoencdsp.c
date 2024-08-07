@@ -245,7 +245,9 @@ av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
 
     c->draw_edges = draw_edges_8_c;
 
-#if ARCH_ARM
+#if ARCH_AARCH64
+    ff_mpegvideoencdsp_init_aarch64(c, avctx);
+#elif ARCH_ARM
     ff_mpegvideoencdsp_init_arm(c, avctx);
 #elif ARCH_PPC
     ff_mpegvideoencdsp_init_ppc(c, avctx);
