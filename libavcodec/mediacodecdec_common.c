@@ -841,6 +841,18 @@ int ff_mediacodec_dec_flush(AVCodecContext *avctx, MediaCodecDecContext *s)
 
 int ff_mediacodec_dec_close(AVCodecContext *avctx, MediaCodecDecContext *s)
 {
+    if (!s)
+        return 0;
+
+    if (s->codec) {
+        if (atomic_load(&s->hw_buffer_count) == 0) {
+            ff_AMediaCodec_stop(s->codec);
+            av_log(avctx, AV_LOG_DEBUG, "MediaCodec %p stopped\n", s->codec);
+        } else {
+            av_log(avctx, AV_LOG_DEBUG, "Not stopping MediaCodec (there are buffers pending)\n");
+        }
+    }
+
     ff_mediacodec_dec_unref(s);
 
     return 0;
