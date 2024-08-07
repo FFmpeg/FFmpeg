@@ -29,6 +29,6 @@
 
 int ff_jpeg2000_decode_htj2k(const Jpeg2000DecoderContext *s, Jpeg2000CodingStyle *codsty,
                             Jpeg2000T1Context *t1, Jpeg2000Cblk *cblk, int width,
-                            int height, int magp, uint8_t roi_shift);
+                            int height, int M_b, uint8_t roi_shift);
 
 #endif /* AVCODEC_JPEG2000HTDEC_H */

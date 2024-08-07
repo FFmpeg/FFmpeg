@@ -391,6 +391,9 @@ static int get_siz(Jpeg2000DecoderContext *s)
         } else if (ncomponents == 1 && s->precision == 8) {
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY8;
             i = 0;
+        } else if (ncomponents == 1 && s->precision == 12) {
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
+            i = 0;
         }
     }
 
@@ -2204,7 +2207,7 @@ static inline int tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile 
                 Jpeg2000Band *band = rlevel->band + bandno;
                 int cblkno = 0, bandpos;
                 /* See Rec. ITU-T T.800, Equation E-2 */
-                int magp = quantsty->expn[subbandno] + quantsty->nguardbits - 1;
+                int M_b = quantsty->expn[subbandno] + quantsty->nguardbits - 1;
 
                 bandpos = bandno + (reslevelno > 0);
 
@@ -2212,8 +2215,8 @@ static inline int tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile 
                     band->coord[1][0] == band->coord[1][1])
                     continue;
 
-                if ((codsty->cblk_style & JPEG2000_CTSY_HTJ2K_F) && magp >= 31) {
-                    avpriv_request_sample(s->avctx, "JPEG2000_CTSY_HTJ2K_F and magp >= 31");
+                if ((codsty->cblk_style & JPEG2000_CTSY_HTJ2K_F) && M_b >= 31) {
+                    avpriv_request_sample(s->avctx, "JPEG2000_CTSY_HTJ2K_F and M_b >= 31");
                     return AVERROR_PATCHWELCOME;
                 }
 
@@ -2234,7 +2237,7 @@ static inline int tile_codeblocks(const Jpeg2000DecoderContext *s, Jpeg2000Tile 
                             ret = ff_jpeg2000_decode_htj2k(s, codsty, &t1, cblk,
                                                            cblk->coord[0][1] - cblk->coord[0][0],
                                                            cblk->coord[1][1] - cblk->coord[1][0],
-                                                           magp, comp->roi_shift);
+                                                           M_b, comp->roi_shift);
                         else
                             ret = decode_cblk(s, codsty, &t1, cblk,
                                               cblk->coord[0][1] - cblk->coord[0][0],
