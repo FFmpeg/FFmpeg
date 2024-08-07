@@ -980,220 +980,312 @@ FILE *get_preset_file(char *filename, size_t filename_size,
     return f;
 }
 
-/**
- * Matches a stream specifier (but ignores requested index).
- *
- * @param indexptr set to point to the requested stream index if there is one
- *
- * @return <0 on error
- *         0  if st is NOT a matching stream
- *         >0 if st is a matching stream
- */
-static int match_stream_specifier(const AVFormatContext *s, const AVStream *st,
-                                  const char *spec, const char **indexptr,
-                                  const AVStreamGroup **g, const AVProgram **p)
+
+void stream_specifier_uninit(StreamSpecifier *ss)
 {
-    int match = 1;                      /* Stores if the specifier matches so far. */
+    av_freep(&ss->meta_key);
+    av_freep(&ss->meta_val);
+    av_freep(&ss->remainder);
+
+    memset(ss, 0, sizeof(*ss));
+}
+
+int stream_specifier_parse(StreamSpecifier *ss, const char *spec,
+                           int allow_remainder, void *logctx)
+{
+    char *endptr;
+    int ret;
+
+    memset(ss, 0, sizeof(*ss));
+
+    ss->idx         = -1;
+    ss->media_type  = AVMEDIA_TYPE_UNKNOWN;
+    ss->stream_list = STREAM_LIST_ALL;
+
+    av_log(logctx, AV_LOG_TRACE, "Parsing stream specifier: %s\n", spec);
+
     while (*spec) {
         if (*spec <= '9' && *spec >= '0') { /* opt:index */
-            if (indexptr)
-                *indexptr = spec;
-            return match;
+            ss->idx = strtol(spec, &endptr, 0);
+
+            av_assert0(endptr > spec);
+            spec = endptr;
+
+            av_log(logctx, AV_LOG_TRACE,
+                   "Parsed index: %d; remainder: %s\n", ss->idx, spec);
+
+            // this terminates the specifier
+            break;
         } else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
                    *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
-            enum AVMediaType type;
-            int nopic = 0;
+            if (ss->media_type != AVMEDIA_TYPE_UNKNOWN) {
+                av_log(logctx, AV_LOG_ERROR, "Stream type specified multiple times\n");
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
 
             switch (*spec++) {
-            case 'v': type = AVMEDIA_TYPE_VIDEO;      break;
-            case 'a': type = AVMEDIA_TYPE_AUDIO;      break;
-            case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
-            case 'd': type = AVMEDIA_TYPE_DATA;       break;
-            case 't': type = AVMEDIA_TYPE_ATTACHMENT; break;
-            case 'V': type = AVMEDIA_TYPE_VIDEO; nopic = 1; break;
+            case 'v': ss->media_type = AVMEDIA_TYPE_VIDEO;      break;
+            case 'a': ss->media_type = AVMEDIA_TYPE_AUDIO;      break;
+            case 's': ss->media_type = AVMEDIA_TYPE_SUBTITLE;   break;
+            case 'd': ss->media_type = AVMEDIA_TYPE_DATA;       break;
+            case 't': ss->media_type = AVMEDIA_TYPE_ATTACHMENT; break;
+            case 'V': ss->media_type = AVMEDIA_TYPE_VIDEO;
+                      ss->no_apic    = 1;                       break;
             default:  av_assert0(0);
             }
-            if (*spec && *spec++ != ':')         /* If we are not at the end, then another specifier must follow. */
-                return AVERROR(EINVAL);
 
-            if (type != st->codecpar->codec_type)
-                match = 0;
-            if (nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC))
-                match = 0;
+            av_log(logctx, AV_LOG_TRACE, "Parsed media type: %s; remainder: %s\n",
+                   av_get_media_type_string(ss->media_type), spec);
         } else if (*spec == 'g' && *(spec + 1) == ':') {
-            int64_t group_idx = -1, group_id = -1;
-            int found = 0;
-            char *endptr;
+            if (ss->stream_list != STREAM_LIST_ALL)
+                goto multiple_stream_lists;
+
             spec += 2;
             if (*spec == '#' || (*spec == 'i' && *(spec + 1) == ':')) {
-                spec += 1 + (*spec == 'i');
-                group_id = strtol(spec, &endptr, 0);
-                if (spec == endptr || (*endptr && *endptr++ != ':'))
-                    return AVERROR(EINVAL);
-                spec = endptr;
-            } else {
-                group_idx = strtol(spec, &endptr, 0);
-                /* Disallow empty id and make sure that if we are not at the end, then another specifier must follow. */
-                if (spec == endptr || (*endptr && *endptr++ != ':'))
-                    return AVERROR(EINVAL);
-                spec = endptr;
-            }
-            if (match) {
-                if (group_id > 0) {
-                    for (unsigned i = 0; i < s->nb_stream_groups; i++) {
-                        if (group_id == s->stream_groups[i]->id) {
-                            group_idx = i;
-                            break;
-                        }
-                    }
-                }
-                if (group_idx < 0 || group_idx >= s->nb_stream_groups)
-                    return AVERROR(EINVAL);
-                for (unsigned j = 0; j < s->stream_groups[group_idx]->nb_streams; j++) {
-                    if (st->index == s->stream_groups[group_idx]->streams[j]->index) {
-                        found = 1;
-                        if (g)
-                            *g = s->stream_groups[group_idx];
-                        break;
-                    }
-                }
-            }
-            if (!found)
-                match = 0;
-        } else if (*spec == 'p' && *(spec + 1) == ':') {
-            int prog_id;
-            int found = 0;
-            char *endptr;
-            spec += 2;
-            prog_id = strtol(spec, &endptr, 0);
-            /* Disallow empty id and make sure that if we are not at the end, then another specifier must follow. */
-            if (spec == endptr || (*endptr && *endptr++ != ':'))
-                return AVERROR(EINVAL);
-            spec = endptr;
-            if (match) {
-                for (unsigned i = 0; i < s->nb_programs; i++) {
-                    if (s->programs[i]->id != prog_id)
-                        continue;
+                ss->stream_list = STREAM_LIST_GROUP_ID;
 
-                    for (unsigned j = 0; j < s->programs[i]->nb_stream_indexes; j++) {
-                        if (st->index == s->programs[i]->stream_index[j]) {
-                            found = 1;
-                            if (p)
-                                *p = s->programs[i];
-                            i = s->nb_programs;
-                            break;
-                        }
-                    }
-                }
+                spec += 1 + (*spec == 'i');
+            } else
+                ss->stream_list = STREAM_LIST_GROUP_IDX;
+
+            ss->list_id = strtol(spec, &endptr, 0);
+            if (spec == endptr) {
+                av_log(logctx, AV_LOG_ERROR, "Expected stream group idx/ID, got: %s\n", spec);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
-            if (!found)
-                match = 0;
+            spec = endptr;
+
+            av_log(logctx, AV_LOG_TRACE, "Parsed stream group %s: %"PRId64"; remainder: %s\n",
+                   ss->stream_list == STREAM_LIST_GROUP_ID ? "ID" : "index", ss->list_id, spec);
+        } else if (*spec == 'p' && *(spec + 1) == ':') {
+            if (ss->stream_list != STREAM_LIST_ALL)
+                goto multiple_stream_lists;
+
+            ss->stream_list = STREAM_LIST_PROGRAM;
+
+            spec += 2;
+            ss->list_id = strtol(spec, &endptr, 0);
+            if (spec == endptr) {
+                av_log(logctx, AV_LOG_ERROR, "Expected program ID, got: %s\n", spec);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            spec = endptr;
+
+            av_log(logctx, AV_LOG_TRACE,
+                   "Parsed program ID: %"PRId64"; remainder: %s\n", ss->list_id, spec);
         } else if (*spec == '#' ||
                    (*spec == 'i' && *(spec + 1) == ':')) {
-            int stream_id;
-            char *endptr;
+            if (ss->stream_list != STREAM_LIST_ALL)
+                goto multiple_stream_lists;
+
+            ss->stream_list = STREAM_LIST_STREAM_ID;
+
             spec += 1 + (*spec == 'i');
-            stream_id = strtol(spec, &endptr, 0);
-            if (spec == endptr || *endptr)                /* Disallow empty id and make sure we are at the end. */
-                return AVERROR(EINVAL);
-            return match && (stream_id == st->id);
+            ss->list_id = strtol(spec, &endptr, 0);
+            if (spec == endptr) {
+                av_log(logctx, AV_LOG_ERROR, "Expected stream ID, got: %s\n", spec);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+            spec = endptr;
+
+            av_log(logctx, AV_LOG_TRACE,
+                   "Parsed stream ID: %"PRId64"; remainder: %s\n", ss->list_id, spec);
+
+            // this terminates the specifier
+            break;
         } else if (*spec == 'm' && *(spec + 1) == ':') {
-            const AVDictionaryEntry *tag;
-            char *key, *val;
-            int ret;
+            av_assert0(!ss->meta_key && !ss->meta_val);
 
-            if (match) {
-                spec += 2;
-                val = strchr(spec, ':');
-
-                key = val ? av_strndup(spec, val - spec) : av_strdup(spec);
-                if (!key)
-                    return AVERROR(ENOMEM);
-
-                tag = av_dict_get(st->metadata, key, NULL, 0);
-                if (tag) {
-                    if (!val || !strcmp(tag->value, val + 1))
-                        ret = 1;
-                    else
-                        ret = 0;
-                } else
-                    ret = 0;
-
-                av_freep(&key);
+            spec += 2;
+            ss->meta_key = av_get_token(&spec, ":");
+            if (!ss->meta_key) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
             }
-            return match && ret;
-        } else if (*spec == 'u' && *(spec + 1) == '\0') {
-            const AVCodecParameters *par = st->codecpar;
-            int val;
-            switch (par->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:
-                val = par->sample_rate && par->ch_layout.nb_channels;
-                if (par->format == AV_SAMPLE_FMT_NONE)
-                    return 0;
-                break;
-            case AVMEDIA_TYPE_VIDEO:
-                val = par->width && par->height;
-                if (par->format == AV_PIX_FMT_NONE)
-                    return 0;
-                break;
-            case AVMEDIA_TYPE_UNKNOWN:
-                val = 0;
-                break;
-            default:
-                val = 1;
-                break;
+            if (*spec == ':') {
+                spec++;
+                ss->meta_val = av_get_token(&spec, ":");
+                if (!ss->meta_val) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
             }
-            return match && (par->codec_id != AV_CODEC_ID_NONE && val != 0);
-        } else {
-            return AVERROR(EINVAL);
+
+            av_log(logctx, AV_LOG_TRACE,
+                   "Parsed metadata: %s:%s; remainder: %s", ss->meta_key,
+                   ss->meta_val ? ss->meta_val : "<any value>", spec);
+
+            // this terminates the specifier
+            break;
+        } else if (*spec == 'u' && (*(spec + 1) == '\0' || *(spec + 1) == ':')) {
+            ss->usable_only = 1;
+            spec++;
+            av_log(logctx, AV_LOG_ERROR, "Parsed 'usable only'\n");
+
+            // this terminates the specifier
+            break;
+        } else
+            break;
+
+        if (*spec == ':')
+            spec++;
+    }
+
+    if (*spec) {
+        if (!allow_remainder) {
+            av_log(logctx, AV_LOG_ERROR,
+                   "Trailing garbage at the end of a stream specifier: %s\n",
+                   spec);
+            ret = AVERROR(EINVAL);
+            goto fail;
+        }
+
+        if (*spec == ':')
+            spec++;
+
+        ss->remainder = av_strdup(spec);
+        if (!ss->remainder) {
+            ret = AVERROR(EINVAL);
+            goto fail;
         }
     }
 
-    return match;
+    return 0;
+
+multiple_stream_lists:
+    av_log(logctx, AV_LOG_ERROR,
+           "Cannot combine multiple program/group designators in a "
+           "single stream specifier");
+    ret = AVERROR(EINVAL);
+
+fail:
+    stream_specifier_uninit(ss);
+    return ret;
+}
+
+unsigned stream_specifier_match(const StreamSpecifier *ss,
+                                const AVFormatContext *s, const AVStream *st,
+                                void *logctx)
+{
+    const AVStreamGroup *g = NULL;
+    const AVProgram *p = NULL;
+    int start_stream = 0, nb_streams;
+    int nb_matched = 0;
+
+    switch (ss->stream_list) {
+    case STREAM_LIST_STREAM_ID:
+        // <n-th> stream with given ID makes no sense and should be impossible to request
+        av_assert0(ss->idx < 0);
+        // return early if we know for sure the stream does not match
+        if (st->id != ss->list_id)
+            return 0;
+        start_stream = st->index;
+        nb_streams   = st->index + 1;
+        break;
+    case STREAM_LIST_ALL:
+        start_stream = ss->idx >= 0 ? 0 : st->index;
+        nb_streams   = st->index + 1;
+        break;
+    case STREAM_LIST_PROGRAM:
+        for (unsigned i = 0; i < s->nb_programs; i++) {
+            if (s->programs[i]->id == ss->list_id) {
+                p          = s->programs[i];
+                break;
+            }
+        }
+        if (!p) {
+            av_log(logctx, AV_LOG_WARNING, "No program with ID %"PRId64" exists,"
+                   " stream specifier can never match\n", ss->list_id);
+            return 0;
+        }
+        nb_streams = p->nb_stream_indexes;
+        break;
+    case STREAM_LIST_GROUP_ID:
+        for (unsigned i = 0; i < s->nb_stream_groups; i++) {
+            if (ss->list_id == s->stream_groups[i]->id) {
+                g = s->stream_groups[i];
+                break;
+            }
+        }
+        // fall-through
+    case STREAM_LIST_GROUP_IDX:
+        if (ss->stream_list == STREAM_LIST_GROUP_IDX &&
+            ss->list_id >= 0 && ss->list_id < s->nb_stream_groups)
+            g = s->stream_groups[ss->list_id];
+
+        if (!g) {
+            av_log(logctx, AV_LOG_WARNING, "No stream group with group %s %"
+                   PRId64" exists, stream specifier can never match\n",
+                   ss->stream_list == STREAM_LIST_GROUP_ID ? "ID" : "index",
+                   ss->list_id);
+            return 0;
+        }
+        nb_streams = g->nb_streams;
+        break;
+    default: av_assert0(0);
+    }
+
+    for (int i = start_stream; i < nb_streams; i++) {
+        const AVStream *candidate = s->streams[g ? g->streams[i]->index :
+                                               p ? p->stream_index[i]   : i];
+
+        if (ss->media_type != AVMEDIA_TYPE_UNKNOWN &&
+            (ss->media_type != candidate->codecpar->codec_type ||
+             (ss->no_apic && (candidate->disposition & AV_DISPOSITION_ATTACHED_PIC))))
+            continue;
+
+        if (ss->meta_key) {
+            const AVDictionaryEntry *tag = av_dict_get(candidate->metadata,
+                                                       ss->meta_key, NULL, 0);
+
+            if (!tag)
+                continue;
+            if (ss->meta_val && strcmp(tag->value, ss->meta_val))
+                continue;
+        }
+
+        if (ss->usable_only) {
+            const AVCodecParameters *par = candidate->codecpar;
+
+            switch (par->codec_type) {
+            case AVMEDIA_TYPE_AUDIO:
+                if (!par->sample_rate || !par->ch_layout.nb_channels ||
+                    par->format == AV_SAMPLE_FMT_NONE)
+                    continue;
+                break;
+            case AVMEDIA_TYPE_VIDEO:
+                if (!par->width || !par->height || par->format == AV_PIX_FMT_NONE)
+                    continue;
+                break;
+            case AVMEDIA_TYPE_UNKNOWN:
+                continue;
+            }
+        }
+
+        if (st == candidate)
+            return ss->idx < 0 || ss->idx == nb_matched;
+
+        nb_matched++;
+    }
+
+    return 0;
 }
 
 int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
 {
-    int ret, index;
-    char *endptr;
-    const char *indexptr = NULL;
-    const AVStreamGroup *g = NULL;
-    const AVProgram *p = NULL;
-    int nb_streams;
+    StreamSpecifier ss;
+    int ret;
 
-    ret = match_stream_specifier(s, st, spec, &indexptr, &g, &p);
+    ret = stream_specifier_parse(&ss, spec, 0, NULL);
     if (ret < 0)
-        goto error;
-
-    if (!indexptr)
         return ret;
 
-    index = strtol(indexptr, &endptr, 0);
-    if (*endptr) {                  /* We can't have anything after the requested index. */
-        ret = AVERROR(EINVAL);
-        goto error;
-    }
-
-    /* This is not really needed but saves us a loop for simple stream index specifiers. */
-    if (spec == indexptr)
-        return (index == st->index);
-
-    /* If we requested a matching stream index, we have to ensure st is that. */
-    nb_streams = g ? g->nb_streams : (p ? p->nb_stream_indexes : s->nb_streams);
-    for (int i = 0; i < nb_streams && index >= 0; i++) {
-        unsigned idx = g ? g->streams[i]->index : (p ? p->stream_index[i] : i);
-        const AVStream *candidate = s->streams[idx];
-        ret = match_stream_specifier(s, candidate, spec, NULL, NULL, NULL);
-        if (ret < 0)
-            goto error;
-        if (ret > 0 && index-- == 0 && st == candidate)
-            return 1;
-    }
-    return 0;
-
-error:
-    if (ret == AVERROR(EINVAL))
-        av_log(s, AV_LOG_ERROR, "Invalid stream specifier: %s.\n", spec);
+    ret = stream_specifier_match(&ss, s, st, NULL);
+    stream_specifier_uninit(&ss);
     return ret;
 }
 
