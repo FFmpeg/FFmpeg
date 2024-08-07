@@ -37,12 +37,14 @@
 
 enum Jpeg2000Markers {
     JPEG2000_SOC = 0xff4f, // start of codestream
+    JPEG2000_CAP = 0xff50, // extended capabilities
     JPEG2000_SIZ = 0xff51, // image and tile size
     JPEG2000_COD,          // coding style default
     JPEG2000_COC,          // coding style component
     JPEG2000_TLM = 0xff55, // tile-part length, main header
     JPEG2000_PLM = 0xff57, // packet length, main header
     JPEG2000_PLT,          // packet length, tile-part header
+    JPEG2000_CPF,          // corresponding profile
     JPEG2000_QCD = 0xff5c, // quantization default
     JPEG2000_QCC,          // quantization component
     JPEG2000_RGN,          // region of interest
@@ -56,6 +58,12 @@ enum Jpeg2000Markers {
     JPEG2000_EPH,          // end of packet header
     JPEG2000_SOD,          // start of data
     JPEG2000_EOC = 0xffd9, // end of codestream
+};
+
+enum JPEG2000_Ccap15_b14_15_params {
+    HTJ2K_HTONLY = 0,      // HTONLY, bit 14 and 15 are 0
+    HTJ2K_HTDECLARED,      // HTDECLARED, bit 14 = 1 and bit 15 = 0
+    HTJ2K_MIXED = 3,       // MIXED, bit 14 and 15 are 1
 };
 
 #define JPEG2000_SOP_FIXED_BYTES 0xFF910004
