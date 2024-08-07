@@ -117,7 +117,7 @@ typedef struct Jpeg2000DecoderContext {
     uint8_t         Ccap15_b12; // RGNFREE(= 0) or RGN(= 1)?
     uint8_t         Ccap15_b11; // HOMOGENEOUS(= 0) or HETEROGENEOUS(= 1) ?
     uint8_t         Ccap15_b05; // HTREV(= 0) or HTIRV(= 1) ?
-    uint8_t         HT_B; // MAGB value
+    uint8_t         HT_B; // The parameter B for MAGBp value (see Table 4 in the Rec. ITU-T T.814 | ISO/IEC 15444-15)
 
     /*options parameters*/
     int             reduction_factor;
