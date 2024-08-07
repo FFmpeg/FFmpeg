@@ -255,6 +255,7 @@ static const struct {
     { "sw_rgb", checkasm_check_sw_rgb },
     { "sw_scale", checkasm_check_sw_scale },
     { "sw_yuv2rgb", checkasm_check_sw_yuv2rgb },
+    { "sw_yuv2yuv", checkasm_check_sw_yuv2yuv },
 #endif
 #if CONFIG_AVUTIL
         { "fixed_dsp", checkasm_check_fixed_dsp },
