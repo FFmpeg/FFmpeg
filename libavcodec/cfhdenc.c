@@ -285,7 +285,7 @@ static av_cold int cfhd_encode_init(AVCodecContext *avctx)
         s->plane[i].dwt_buf =
             av_calloc(h8 * 8 * w8 * 8, sizeof(*s->plane[i].dwt_buf));
         s->plane[i].dwt_tmp =
-            av_malloc_array(h8 * 8 * w8 * 8, sizeof(*s->plane[i].dwt_tmp));
+            av_calloc(h8 * 8 * w8 * 8, sizeof(*s->plane[i].dwt_tmp));
         if (!s->plane[i].dwt_buf || !s->plane[i].dwt_tmp)
             return AVERROR(ENOMEM);
 
