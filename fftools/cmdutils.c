@@ -988,6 +988,12 @@ FILE *get_preset_file(char *filename, size_t filename_size,
     return f;
 }
 
+static int cmdutils_isalnum(char c)
+{
+    return (c >= '0' && c <= '9') ||
+           (c >= 'A' && c <= 'Z') ||
+           (c >= 'a' && c <= 'z');
+}
 
 void stream_specifier_uninit(StreamSpecifier *ss)
 {
@@ -1024,8 +1030,9 @@ int stream_specifier_parse(StreamSpecifier *ss, const char *spec,
 
             // this terminates the specifier
             break;
-        } else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
-                   *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
+        } else if ((*spec == 'v' || *spec == 'a' || *spec == 's' ||
+                    *spec == 'd' || *spec == 't' || *spec == 'V') &&
+                   !cmdutils_isalnum(*(spec + 1))) { /* opt:[vasdtV] */
             if (ss->media_type != AVMEDIA_TYPE_UNKNOWN) {
                 av_log(logctx, AV_LOG_ERROR, "Stream type specified multiple times\n");
                 ret = AVERROR(EINVAL);
