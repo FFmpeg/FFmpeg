@@ -427,22 +427,20 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
     StreamMap *m = NULL;
+    StreamSpecifier ss;
     int i, negative = 0, file_idx, disabled = 0;
-    int ret;
-    char *map, *p;
-    char *allow_unused;
+    int ret, allow_unused = 0;
+
+    memset(&ss, 0, sizeof(ss));
 
     if (*arg == '-') {
         negative = 1;
         arg++;
     }
-    map = av_strdup(arg);
-    if (!map)
-        return AVERROR(ENOMEM);
 
-    if (map[0] == '[') {
+    if (arg[0] == '[') {
         /* this mapping refers to lavfi output */
-        const char *c = map + 1;
+        const char *c = arg + 1;
 
         ret = GROW_ARRAY(o->stream_maps, o->nb_stream_maps);
         if (ret < 0)
@@ -451,33 +449,55 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
         m = &o->stream_maps[o->nb_stream_maps - 1];
         m->linklabel = av_get_token(&c, "]");
         if (!m->linklabel) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid output link label: %s.\n", map);
+            av_log(NULL, AV_LOG_ERROR, "Invalid output link label: %s.\n", arg);
             ret = AVERROR(EINVAL);
             goto fail;
         }
     } else {
-        if (allow_unused = strchr(map, '?'))
-            *allow_unused = 0;
-        file_idx = strtol(map, &p, 0);
+        char *endptr;
+
+        file_idx = strtol(arg, &endptr, 0);
         if (file_idx >= nb_input_files || file_idx < 0) {
             av_log(NULL, AV_LOG_FATAL, "Invalid input file index: %d.\n", file_idx);
             ret = AVERROR(EINVAL);
             goto fail;
         }
+        arg = endptr;
+
+        ret = stream_specifier_parse(&ss, *arg == ':' ? arg + 1 : arg, 1, NULL);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid stream specifier: %s\n", arg);
+            goto fail;
+        }
+
+        if (ss.remainder) {
+            if (!strcmp(ss.remainder, "?"))
+                allow_unused = 1;
+            else {
+                av_log(NULL, AV_LOG_ERROR, "Trailing garbage after stream specifier: %s\n",
+                       ss.remainder);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+        }
+
         if (negative)
             /* disable some already defined maps */
             for (i = 0; i < o->nb_stream_maps; i++) {
                 m = &o->stream_maps[i];
                 if (file_idx == m->file_index &&
-                    check_stream_specifier(input_files[m->file_index]->ctx,
+                    stream_specifier_match(&ss,
+                                           input_files[m->file_index]->ctx,
                                            input_files[m->file_index]->ctx->streams[m->stream_index],
-                                           *p == ':' ? p + 1 : p) > 0)
+                                           NULL))
                     m->disabled = 1;
             }
         else
             for (i = 0; i < input_files[file_idx]->nb_streams; i++) {
-                if (check_stream_specifier(input_files[file_idx]->ctx, input_files[file_idx]->ctx->streams[i],
-                            *p == ':' ? p + 1 : p) <= 0)
+                if (!stream_specifier_match(&ss,
+                                            input_files[file_idx]->ctx,
+                                            input_files[file_idx]->ctx->streams[i],
+                                            NULL))
                     continue;
                 if (input_files[file_idx]->streams[i]->user_set_discard == AVDISCARD_ALL) {
                     disabled = 1;
@@ -511,7 +531,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
     }
     ret = 0;
 fail:
-    av_freep(&map);
+    stream_specifier_uninit(&ss);
     return ret;
 }
 
