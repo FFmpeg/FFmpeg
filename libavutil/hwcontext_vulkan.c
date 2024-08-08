@@ -3541,7 +3541,8 @@ static int get_plane_buf(AVHWFramesContext *hwfc, AVBufferRef **dst,
                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                   NULL, buf_offset,
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                  VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
     if (err < 0)
         return err;
 
