@@ -159,7 +159,11 @@ unsigned stream_specifier_match(const StreamSpecifier *ss,
 void stream_specifier_uninit(StreamSpecifier *ss);
 
 typedef struct SpecifierOpt {
-    char *specifier;    /**< stream/chapter/program/... specifier */
+    // original specifier or empty string
+    char            *specifier;
+    // parsed specifier for OPT_FLAG_PERSTREAM options
+    StreamSpecifier  stream_spec;
+
     union {
         uint8_t *str;
         int        i;

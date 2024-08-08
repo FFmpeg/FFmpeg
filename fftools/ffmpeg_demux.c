@@ -1084,12 +1084,8 @@ static int choose_decoder(const OptionsContext *o, void *logctx,
 
 {
     const char *codec_name = NULL;
-    int ret;
 
-    ret = opt_match_per_stream_str(logctx, &o->codec_names, s, st, &codec_name);
-    if (ret < 0)
-        return ret;
-
+    opt_match_per_stream_str(logctx, &o->codec_names, s, st, &codec_name);
     if (codec_name) {
         int ret = find_codec(NULL, codec_name, st->codecpar->codec_type, 0, pcodec);
         if (ret < 0)
@@ -1153,18 +1149,11 @@ static int add_display_matrix_to_stream(const OptionsContext *o,
     double rotation = DBL_MAX;
     int hflip = -1, vflip = -1;
     int hflip_set = 0, vflip_set = 0, rotation_set = 0;
-    int ret;
     int32_t *buf;
 
-    ret = opt_match_per_stream_dbl(ist, &o->display_rotations, ctx, st, &rotation);
-    if (ret < 0)
-        return ret;
-    ret = opt_match_per_stream_int(ist, &o->display_hflips, ctx, st, &hflip);
-    if (ret < 0)
-        return ret;
-    ret = opt_match_per_stream_int(ist, &o->display_vflips, ctx, st, &vflip);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_dbl(ist, &o->display_rotations, ctx, st, &rotation);
+    opt_match_per_stream_int(ist, &o->display_hflips, ctx, st, &hflip);
+    opt_match_per_stream_int(ist, &o->display_vflips, ctx, st, &vflip);
 
     rotation_set = rotation != DBL_MAX;
     hflip_set    = hflip != -1;
@@ -1262,19 +1251,13 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     ds->dec_opts.time_base = st->time_base;
 
     ds->ts_scale = 1.0;
-    ret = opt_match_per_stream_dbl(ist, &o->ts_scale, ic, st, &ds->ts_scale);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_dbl(ist, &o->ts_scale, ic, st, &ds->ts_scale);
 
     ds->autorotate = 1;
-    ret = opt_match_per_stream_int(ist, &o->autorotate, ic, st, &ds->autorotate);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_int(ist, &o->autorotate, ic, st, &ds->autorotate);
 
     ds->apply_cropping = CROP_ALL;
-    ret = opt_match_per_stream_str(ist, &o->apply_cropping, ic, st, &apply_cropping);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_str(ist, &o->apply_cropping, ic, st, &apply_cropping);
     if (apply_cropping) {
         const AVOption opts[] = {
             { "apply_cropping", NULL, 0, AV_OPT_TYPE_INT,
@@ -1300,9 +1283,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
         }
     }
 
-    ret = opt_match_per_stream_str(ist, &o->codec_tags, ic, st, &codec_tag);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_str(ist, &o->codec_tags, ic, st, &codec_tag);
     if (codec_tag) {
         uint32_t tag = strtol(codec_tag, &next, 0);
         if (*next) {
@@ -1319,15 +1300,9 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
         if (ret < 0)
             return ret;
 
-        ret = opt_match_per_stream_str(ist, &o->hwaccels, ic, st, &hwaccel);
-        if (ret < 0)
-            return ret;
-
-        ret = opt_match_per_stream_str(ist, &o->hwaccel_output_formats, ic, st,
+        opt_match_per_stream_str(ist, &o->hwaccels, ic, st, &hwaccel);
+        opt_match_per_stream_str(ist, &o->hwaccel_output_formats, ic, st,
                                        &hwaccel_output_format);
-        if (ret < 0)
-            return ret;
-
         if (!hwaccel_output_format && hwaccel && !strcmp(hwaccel, "cuvid")) {
             av_log(ist, AV_LOG_WARNING,
                 "WARNING: defaulting hwaccel_output_format to cuda for compatibility "
@@ -1385,9 +1360,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
             }
         }
 
-        ret = opt_match_per_stream_str(ist, &o->hwaccel_devices, ic, st, &hwaccel_device);
-        if (ret < 0)
-            return ret;
+        opt_match_per_stream_str(ist, &o->hwaccel_devices, ic, st, &hwaccel_device);
         if (hwaccel_device) {
             ds->dec_opts.hwaccel_device = av_strdup(hwaccel_device);
             if (!ds->dec_opts.hwaccel_device)
@@ -1408,9 +1381,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     }
 
     ds->reinit_filters = -1;
-    ret = opt_match_per_stream_int(ist, &o->reinit_filters, ic, st, &ds->reinit_filters);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_int(ist, &o->reinit_filters, ic, st, &ds->reinit_filters);
 
     ist->user_set_discard = AVDISCARD_NONE;
 
@@ -1420,9 +1391,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
         (o->data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA))
             ist->user_set_discard = AVDISCARD_ALL;
 
-    ret = opt_match_per_stream_str(ist, &o->discard, ic, st, &discard_str);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_str(ist, &o->discard, ic, st, &discard_str);
     if (discard_str) {
         ret = av_opt_set(ist->st, "discard", discard_str, 0);
         if (ret  < 0) {
@@ -1444,9 +1413,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
 
     switch (par->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
-        ret = opt_match_per_stream_str(ist, &o->frame_rates, ic, st, &framerate);
-        if (ret < 0)
-            return ret;
+        opt_match_per_stream_str(ist, &o->frame_rates, ic, st, &framerate);
         if (framerate) {
             ret = av_parse_video_rate(&ist->framerate, framerate);
             if (ret < 0) {
@@ -1458,18 +1425,14 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
 
 #if FFMPEG_OPT_TOP
         ist->top_field_first = -1;
-        ret = opt_match_per_stream_int(ist, &o->top_field_first, ic, st, &ist->top_field_first);
-        if (ret < 0)
-            return ret;
+        opt_match_per_stream_int(ist, &o->top_field_first, ic, st, &ist->top_field_first);
 #endif
 
         break;
     case AVMEDIA_TYPE_AUDIO: {
         const char *ch_layout_str = NULL;
 
-        ret = opt_match_per_stream_str(ist, &o->audio_ch_layouts, ic, st, &ch_layout_str);
-        if (ret < 0)
-            return ret;
+        opt_match_per_stream_str(ist, &o->audio_ch_layouts, ic, st, &ch_layout_str);
         if (ch_layout_str) {
             AVChannelLayout ch_layout;
             ret = av_channel_layout_from_string(&ch_layout, ch_layout_str);
@@ -1489,10 +1452,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
             }
         } else {
             int guess_layout_max = INT_MAX;
-            ret = opt_match_per_stream_int(ist, &o->guess_layout_max, ic, st, &guess_layout_max);
-            if (ret < 0)
-                return ret;
-
+            opt_match_per_stream_int(ist, &o->guess_layout_max, ic, st, &guess_layout_max);
             guess_input_channel_layout(ist, par, guess_layout_max);
         }
         break;
@@ -1501,13 +1461,8 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     case AVMEDIA_TYPE_SUBTITLE: {
         const char *canvas_size = NULL;
 
-        ret = opt_match_per_stream_int(ist, &o->fix_sub_duration, ic, st, &ist->fix_sub_duration);
-        if (ret < 0)
-            return ret;
-
-        ret = opt_match_per_stream_str(ist, &o->canvas_sizes, ic, st, &canvas_size);
-        if (ret < 0)
-            return ret;
+        opt_match_per_stream_int(ist, &o->fix_sub_duration, ic, st, &ist->fix_sub_duration);
+        opt_match_per_stream_str(ist, &o->canvas_sizes, ic, st, &canvas_size);
         if (canvas_size) {
             ret = av_parse_video_size(&par->width, &par->height,
                                       canvas_size);
@@ -1537,9 +1492,7 @@ static int ist_add(const OptionsContext *o, Demuxer *d, AVStream *st, AVDictiona
     if (ist->st->sample_aspect_ratio.num)
         ist->par->sample_aspect_ratio = ist->st->sample_aspect_ratio;
 
-    ret = opt_match_per_stream_str(ist, &o->bitstream_filters, ic, st, &bsfs);
-    if (ret < 0)
-        return ret;
+    opt_match_per_stream_str(ist, &o->bitstream_filters, ic, st, &bsfs);
     if (bsfs) {
         ret = av_bsf_list_parse_str(bsfs, &ds->bsf);
         if (ret < 0) {

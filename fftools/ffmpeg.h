@@ -859,14 +859,14 @@ void update_benchmark(const char *fmt, ...);
 
 const char *opt_match_per_type_str(const SpecifierOptList *sol,
                                    char mediatype);
-int opt_match_per_stream_str(void *logctx, const SpecifierOptList *sol,
-                             AVFormatContext *fc, AVStream *st, const char **out);
-int opt_match_per_stream_int(void *logctx, const SpecifierOptList *sol,
-                             AVFormatContext *fc, AVStream *st, int *out);
-int opt_match_per_stream_int64(void *logctx, const SpecifierOptList *sol,
-                               AVFormatContext *fc, AVStream *st, int64_t *out);
-int opt_match_per_stream_dbl(void *logctx, const SpecifierOptList *sol,
-                             AVFormatContext *fc, AVStream *st, double *out);
+void opt_match_per_stream_str(void *logctx, const SpecifierOptList *sol,
+                              AVFormatContext *fc, AVStream *st, const char **out);
+void opt_match_per_stream_int(void *logctx, const SpecifierOptList *sol,
+                              AVFormatContext *fc, AVStream *st, int *out);
+void opt_match_per_stream_int64(void *logctx, const SpecifierOptList *sol,
+                                AVFormatContext *fc, AVStream *st, int64_t *out);
+void opt_match_per_stream_dbl(void *logctx, const SpecifierOptList *sol,
+                              AVFormatContext *fc, AVStream *st, double *out);
 
 int muxer_thread(void *arg);
 int encoder_thread(void *arg);

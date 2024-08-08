@@ -101,6 +101,8 @@ static void uninit_options(OptionsContext *o)
             SpecifierOptList *so = dst;
             for (int i = 0; i < so->nb_opt; i++) {
                 av_freep(&so->opt[i].specifier);
+                if (po->flags & OPT_FLAG_PERSTREAM)
+                    stream_specifier_uninit(&so->opt[i].stream_spec);
                 if (po->type == OPT_TYPE_STRING)
                     av_freep(&so->opt[i].u.str);
             }
@@ -164,22 +166,21 @@ const char *opt_match_per_type_str(const SpecifierOptList *sol,
     return NULL;
 }
 
-static int opt_match_per_stream(void *logctx, enum OptionType type,
-                                const SpecifierOptList *sol,
-                                AVFormatContext *fc, AVStream *st)
+static unsigned opt_match_per_stream(void *logctx, enum OptionType type,
+                                     const SpecifierOptList *sol,
+                                     AVFormatContext *fc, AVStream *st)
 {
     int matches = 0, match_idx = -1;
 
     av_assert0((type == sol->type) || !sol->nb_opt);
 
     for (int i = 0; i < sol->nb_opt; i++) {
-        const char *spec = sol->opt[i].specifier;
-        int ret = check_stream_specifier(fc, st, spec);
-        if (ret > 0) {
+        const StreamSpecifier *ss = &sol->opt[i].stream_spec;
+
+        if (stream_specifier_match(ss, fc, st, logctx)) {
             match_idx = i;
             matches++;
-        } else if (ret < 0)
-            return ret;
+        }
     }
 
     if (matches > 1 && sol->opt_canon) {
@@ -216,17 +217,12 @@ static int opt_match_per_stream(void *logctx, enum OptionType type,
 }
 
 #define OPT_MATCH_PER_STREAM(name, type, opt_type, m)                                   \
-int opt_match_per_stream_ ## name(void *logctx, const SpecifierOptList *sol,            \
-                                  AVFormatContext *fc, AVStream *st, type *out)         \
+void opt_match_per_stream_ ## name(void *logctx, const SpecifierOptList *sol,           \
+                                   AVFormatContext *fc, AVStream *st, type *out)        \
 {                                                                                       \
-    int ret = opt_match_per_stream(logctx, opt_type, sol, fc, st);                      \
-                                                                                        \
-    if (ret <= 0)                                                                       \
-        return ret;                                                                     \
-                                                                                        \
-    *out = sol->opt[ret - 1].u.m;                                                       \
-                                                                                        \
-    return 0;                                                                           \
+    unsigned ret = opt_match_per_stream(logctx, opt_type, sol, fc, st);                 \
+    if (ret > 0)                                                                        \
+        *out = sol->opt[ret - 1].u.m;                                                   \
 }
 
 OPT_MATCH_PER_STREAM(str,   const char *, OPT_TYPE_STRING, str);

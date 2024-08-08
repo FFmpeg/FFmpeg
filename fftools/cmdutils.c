@@ -288,6 +288,14 @@ static int write_option(void *optctx, const OptionDef *po, const char *opt,
             goto finish;
         }
         sol->opt[sol->nb_opt - 1].specifier = str;
+
+        if (po->flags & OPT_FLAG_PERSTREAM) {
+            ret = stream_specifier_parse(&sol->opt[sol->nb_opt - 1].stream_spec,
+                                         str, 0, NULL);
+            if (ret < 0)
+                goto finish;
+        }
+
         dst = &sol->opt[sol->nb_opt - 1].u;
     }
 
