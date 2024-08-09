@@ -122,9 +122,9 @@ static void fillPlane(uint8_t *plane, int stride, int width, int height, int y,
     }
 }
 
-static void copyPlane(const uint8_t *src, int srcStride,
-                      int srcSliceY, int srcSliceH, int width,
-                      uint8_t *dst, int dstStride)
+void ff_copyPlane(const uint8_t *src, int srcStride,
+                  int srcSliceY, int srcSliceH, int width,
+                  uint8_t *dst, int dstStride)
 {
     dst += dstStride * srcSliceY;
     if (dstStride == srcStride && srcStride > 0) {
@@ -146,8 +146,8 @@ static int planarToNv12Wrapper(SwsContext *c, const uint8_t *src[],
 {
     uint8_t *dst = dstParam[1] + dstStride[1] * srcSliceY / 2;
 
-    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
-              dstParam[0], dstStride[0]);
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+                 dstParam[0], dstStride[0]);
 
     if (c->dstFormat == AV_PIX_FMT_NV12)
         interleaveBytes(src[1], src[2], dst, c->chrSrcW, (srcSliceH + 1) / 2,
@@ -167,8 +167,8 @@ static int nv12ToPlanarWrapper(SwsContext *c, const uint8_t *src[],
     uint8_t *dst1 = dstParam[1] + dstStride[1] * srcSliceY / 2;
     uint8_t *dst2 = dstParam[2] + dstStride[2] * srcSliceY / 2;
 
-    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
-              dstParam[0], dstStride[0]);
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+                 dstParam[0], dstStride[0]);
 
     if (c->srcFormat == AV_PIX_FMT_NV12)
         deinterleaveBytes(src[1], dst1, dst2, c->chrSrcW, (srcSliceH + 1) / 2,
@@ -187,8 +187,8 @@ static int planarToNv24Wrapper(SwsContext *c, const uint8_t *src[],
 {
     uint8_t *dst = dstParam[1] + dstStride[1] * srcSliceY;
 
-    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
-              dstParam[0], dstStride[0]);
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+                 dstParam[0], dstStride[0]);
 
     if (c->dstFormat == AV_PIX_FMT_NV24)
         interleaveBytes(src[1], src[2], dst, c->chrSrcW, srcSliceH,
@@ -208,8 +208,8 @@ static int nv24ToPlanarWrapper(SwsContext *c, const uint8_t *src[],
     uint8_t *dst1 = dstParam[1] + dstStride[1] * srcSliceY;
     uint8_t *dst2 = dstParam[2] + dstStride[2] * srcSliceY;
 
-    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
-              dstParam[0], dstStride[0]);
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+                 dstParam[0], dstStride[0]);
 
     if (c->srcFormat == AV_PIX_FMT_NV24)
         deinterleaveBytes(src[1], dst1, dst2, c->chrSrcW, srcSliceH,
@@ -250,8 +250,8 @@ static int nv24ToYuv420Wrapper(SwsContext *c, const uint8_t *src[],
     uint8_t *dst1 = dstParam[1] + dstStride[1] * srcSliceY / 2;
     uint8_t *dst2 = dstParam[2] + dstStride[2] * srcSliceY / 2;
 
-    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
-              dstParam[0], dstStride[0]);
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+                 dstParam[0], dstStride[0]);
 
     if (c->srcFormat == AV_PIX_FMT_NV24)
         nv24_to_yuv420p_chroma(dst1, dstStride[1], dst2, dstStride[2],
@@ -1173,12 +1173,12 @@ static int planarRgbToplanarRgbWrapper(SwsContext *c,
                                        int srcSliceY, int srcSliceH,
                                        uint8_t *dst[], int dstStride[])
 {
-    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
-              dst[0], dstStride[0]);
-    copyPlane(src[1], srcStride[1], srcSliceY, srcSliceH, c->srcW,
-              dst[1], dstStride[1]);
-    copyPlane(src[2], srcStride[2], srcSliceY, srcSliceH, c->srcW,
-              dst[2], dstStride[2]);
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+                 dst[0], dstStride[0]);
+    ff_copyPlane(src[1], srcStride[1], srcSliceY, srcSliceH, c->srcW,
+                 dst[1], dstStride[1]);
+    ff_copyPlane(src[2], srcStride[2], srcSliceY, srcSliceH, c->srcW,
+                 dst[2], dstStride[2]);
     if (dst[3])
         fillPlane(dst[3], dstStride[3], c->srcW, srcSliceH, srcSliceY, 255);
 
@@ -1700,8 +1700,8 @@ static int yvu9ToYv12Wrapper(SwsContext *c, const uint8_t *src[],
                              int srcStride[], int srcSliceY, int srcSliceH,
                              uint8_t *dst[], int dstStride[])
 {
-    copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
-              dst[0], dstStride[0]);
+    ff_copyPlane(src[0], srcStride[0], srcSliceY, srcSliceH, c->srcW,
+                 dst[0], dstStride[0]);
 
     planar2x(src[1], dst[1] + dstStride[1] * (srcSliceY >> 1), c->chrSrcW,
              srcSliceH >> 2, srcStride[1], dstStride[1]);
