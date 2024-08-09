@@ -281,6 +281,15 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
     VkCommandPoolCreateInfo cqueue_create;
     VkCommandBufferAllocateInfo cbuf_create;
 
+    const VkQueryPoolVideoEncodeFeedbackCreateInfoKHR *ef = NULL;
+
+    if (query_type == VK_QUERY_TYPE_VIDEO_ENCODE_FEEDBACK_KHR) {
+        ef = ff_vk_find_struct(query_create_pnext,
+                               VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR);
+        if (!ef)
+            return AVERROR(EINVAL);
+    }
+
     /* Create command pool */
     cqueue_create = (VkCommandPoolCreateInfo) {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -338,21 +347,18 @@ int ff_vk_exec_pool_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
         }
 
         pool->nb_queries = nb_queries;
-        pool->query_status_stride = 2;
+        pool->query_status_stride = 1 + 1; /* One result, one status by default */
         pool->query_results = nb_queries;
-        pool->query_statuses = 0; /* if radv supports it, nb_queries; */
+        pool->query_statuses = nb_queries;
 
-#if 0 /* CONFIG_VULKAN_ENCODE */
         /* Video encode quieries produce two results per query */
         if (query_type == VK_QUERY_TYPE_VIDEO_ENCODE_FEEDBACK_KHR) {
-            pool->query_status_stride = 3; /* skip,skip,result,skip,skip,result */
-            pool->query_results *= 2;
-        } else
-#endif
-        if (query_type == VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR) {
+            int nb_results = av_popcount(ef->encodeFeedbackFlags);
+            pool->query_status_stride = nb_results + 1;
+            pool->query_results *= nb_results;
+        } else if (query_type == VK_QUERY_TYPE_RESULT_STATUS_ONLY_KHR) {
             pool->query_status_stride = 1;
             pool->query_results = 0;
-            pool->query_statuses = nb_queries;
         }
 
         pool->qd_size = (pool->query_results + pool->query_statuses)*(query_64bit ? 8 : 4);
@@ -444,7 +450,7 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
                                   e->query_idx,
                                   pool->nb_queries,
                                   pool->qd_size, e->query_data,
-                                  pool->query_64bit ? 8 : 4, qf);
+                                  pool->qd_size, qf);
     if (ret != VK_SUCCESS)
         return ret;
 
