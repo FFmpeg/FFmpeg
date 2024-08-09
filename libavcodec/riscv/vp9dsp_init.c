@@ -63,6 +63,27 @@ static av_cold void vp9dsp_mc_init_riscv(VP9DSPContext *dsp, int bpp)
     init_fpel(3, 8);
     init_fpel(4, 4);
 
+    dsp->mc[0][FILTER_BILINEAR ][0][0][1] = ff_put_vp9_bilin_64v_rvv;
+    dsp->mc[0][FILTER_BILINEAR ][0][1][0] = ff_put_vp9_bilin_64h_rvv;
+    dsp->mc[0][FILTER_BILINEAR ][1][0][1] = ff_avg_vp9_bilin_64v_rvv;
+    dsp->mc[0][FILTER_BILINEAR ][1][1][0] = ff_avg_vp9_bilin_64h_rvv;
+    dsp->mc[1][FILTER_BILINEAR ][0][0][1] = ff_put_vp9_bilin_32v_rvv;
+    dsp->mc[1][FILTER_BILINEAR ][0][1][0] = ff_put_vp9_bilin_32h_rvv;
+    dsp->mc[1][FILTER_BILINEAR ][1][0][1] = ff_avg_vp9_bilin_32v_rvv;
+    dsp->mc[1][FILTER_BILINEAR ][1][1][0] = ff_avg_vp9_bilin_32h_rvv;
+    dsp->mc[2][FILTER_BILINEAR ][0][0][1] = ff_put_vp9_bilin_16v_rvv;
+    dsp->mc[2][FILTER_BILINEAR ][0][1][0] = ff_put_vp9_bilin_16h_rvv;
+    dsp->mc[2][FILTER_BILINEAR ][1][0][1] = ff_avg_vp9_bilin_16v_rvv;
+    dsp->mc[2][FILTER_BILINEAR ][1][1][0] = ff_avg_vp9_bilin_16h_rvv;
+    dsp->mc[3][FILTER_BILINEAR ][0][0][1] = ff_put_vp9_bilin_8v_rvv;
+    dsp->mc[3][FILTER_BILINEAR ][0][1][0] = ff_put_vp9_bilin_8h_rvv;
+    dsp->mc[3][FILTER_BILINEAR ][1][0][1] = ff_avg_vp9_bilin_8v_rvv;
+    dsp->mc[3][FILTER_BILINEAR ][1][1][0] = ff_avg_vp9_bilin_8h_rvv;
+    dsp->mc[4][FILTER_BILINEAR ][0][0][1] = ff_put_vp9_bilin_4v_rvv;
+    dsp->mc[4][FILTER_BILINEAR ][0][1][0] = ff_put_vp9_bilin_4h_rvv;
+    dsp->mc[4][FILTER_BILINEAR ][1][0][1] = ff_avg_vp9_bilin_4v_rvv;
+    dsp->mc[4][FILTER_BILINEAR ][1][1][0] = ff_avg_vp9_bilin_4h_rvv;
+
 #undef init_fpel
     }
 #endif

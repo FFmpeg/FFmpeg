@@ -107,27 +107,27 @@ void ff_avg_8tap_##type##_##SIZE##hv_rvv(uint8_t *dst, ptrdiff_t dststride,  \
                                          int h, int mx, int my);
 
 #define VP9_BILINEAR_RISCV_RVV_FUNC(SIZE)                                   \
-void ff_put_bilin_##SIZE##h_rvv(uint8_t *dst, ptrdiff_t dststride,         \
+void ff_put_vp9_bilin_##SIZE##h_rvv(uint8_t *dst, ptrdiff_t dststride,     \
                                 const uint8_t *src, ptrdiff_t srcstride,   \
                                 int h, int mx, int my);                    \
                                                                            \
-void ff_put_bilin_##SIZE##v_rvv(uint8_t *dst, ptrdiff_t dststride,         \
+void ff_put_vp9_bilin_##SIZE##v_rvv(uint8_t *dst, ptrdiff_t dststride,     \
                                 const uint8_t *src, ptrdiff_t srcstride,   \
                                 int h, int mx, int my);                    \
                                                                            \
-void ff_put_bilin_##SIZE##hv_rvv(uint8_t *dst, ptrdiff_t dststride,        \
+void ff_put_vp9_bilin_##SIZE##hv_rvv(uint8_t *dst, ptrdiff_t dststride,    \
                                  const uint8_t *src, ptrdiff_t srcstride,  \
                                  int h, int mx, int my);                   \
                                                                            \
-void ff_avg_bilin_##SIZE##h_rvv(uint8_t *dst, ptrdiff_t dststride,         \
+void ff_avg_vp9_bilin_##SIZE##h_rvv(uint8_t *dst, ptrdiff_t dststride,     \
                                 const uint8_t *src, ptrdiff_t srcstride,   \
                                 int h, int mx, int my);                    \
                                                                            \
-void ff_avg_bilin_##SIZE##v_rvv(uint8_t *dst, ptrdiff_t dststride,         \
+void ff_avg_vp9_bilin_##SIZE##v_rvv(uint8_t *dst, ptrdiff_t dststride,     \
                                 const uint8_t *src, ptrdiff_t srcstride,   \
                                 int h, int mx, int my);                    \
                                                                            \
-void ff_avg_bilin_##SIZE##hv_rvv(uint8_t *dst, ptrdiff_t dststride,        \
+void ff_avg_vp9_bilin_##SIZE##hv_rvv(uint8_t *dst, ptrdiff_t dststride,    \
                                  const uint8_t *src, ptrdiff_t srcstride,  \
                                  int h, int mx, int my);
 
