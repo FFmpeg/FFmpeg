@@ -138,6 +138,48 @@ func ff_\op\()_vp9_bilin_64\type\()_rvv, zve32x
 endfunc
 .endm
 
+.macro bilin_hv op
+func ff_\op\()_vp9_bilin_64hv_rvv, zve32x
+        lpad    0
+        vsetvlstatic8   64, t0, 64
+.Lbilin_hv\op:
+.ifc \op,avg
+        csrwi           vxrm, 0
+.endif
+        neg             t1, a5
+        neg             t2, a6
+        li              t3, 8
+        bilin_load      v24, a5, h
+1:
+        addi            a4, a4, -2
+        bilin_load      v8, a5, h
+        vwmulu.vx       v16, v8, a6
+        vwmaccsu.vx     v16, t2, v24
+        vwadd.wx        v16, v16, t3
+        vnsra.wi        v16, v16, 4
+        vadd.vv         v12, v16, v24
+        add             t5, a0, a1
+        bilin_load      v24, a5, h
+        vwmulu.vx       v16, v24, a6
+        vwmaccsu.vx     v16, t2, v8
+        vwadd.wx        v16, v16, t3
+        vnsra.wi        v16, v16, 4
+        vadd.vv         v0, v16, v8
+.ifc \op,avg
+        vle8.v          v8, (a0)
+        vle8.v          v16, (t5)
+        vaaddu.vv       v12, v12, v8
+        vaaddu.vv       v0, v0, v16
+.endif
+        vse8.v          v12, (a0)
+        vse8.v          v0, (t5)
+        add             a0, t5, a1
+        bnez            a4, 1b
+
+        ret
+endfunc
+.endm
+
 .irp len, 64, 32, 16, 8, 4
         copy_avg \len
 .endr
@@ -146,6 +188,8 @@ bilin_h_v  put, h, a5
 bilin_h_v  avg, h, a5
 bilin_h_v  put, v, a6
 bilin_h_v  avg, v, a6
+bilin_hv   put
+bilin_hv   avg
 
 .macro func_bilin_h_v len, op, type
 func ff_\op\()_vp9_bilin_\len\()\type\()_rvv, zve32x
@@ -157,7 +201,7 @@ endfunc
 
 .irp len, 32, 16, 8, 4
         .irp op, put, avg
-                .irp type, h, v
+                .irp type, h, v, hv
                         func_bilin_h_v \len, \op, \type
                 .endr
         .endr
