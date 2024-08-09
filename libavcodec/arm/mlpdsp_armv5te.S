@@ -229,7 +229,7 @@ A .endif
   .endif
 
         // Begin loop
-01:
+1:
   .if TOTAL_TAPS == 0
         // Things simplify a lot in this case
         // In fact this could be pipelined further if it's worth it...
@@ -241,7 +241,7 @@ A .endif
         str     ST0, [PST, #-4]!
         str     ST0, [PST, #4 * (MAX_BLOCKSIZE + MAX_FIR_ORDER)]
         str     ST0, [PSAMP], #4 * MAX_CHANNELS
-        bne     01b
+        bne     1b
   .else
     .if \fir_taps & 1
       .set LOAD_REG, 1
@@ -333,7 +333,7 @@ T       orr     AC0, AC0, AC1
         str     ST3, [PST, #-4]!
         str     ST2, [PST, #4 * (MAX_BLOCKSIZE + MAX_FIR_ORDER)]
         str     ST3, [PSAMP], #4 * MAX_CHANNELS
-        bne     01b
+        bne     1b
   .endif
         b       99f
 
