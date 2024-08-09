@@ -249,6 +249,8 @@ av_cold void ff_mpegvideoencdsp_init(MpegvideoEncDSPContext *c,
     ff_mpegvideoencdsp_init_arm(c, avctx);
 #elif ARCH_PPC
     ff_mpegvideoencdsp_init_ppc(c, avctx);
+#elif ARCH_RISCV
+    ff_mpegvideoencdsp_init_riscv(c, avctx);
 #elif ARCH_X86
     ff_mpegvideoencdsp_init_x86(c, avctx);
 #elif ARCH_MIPS

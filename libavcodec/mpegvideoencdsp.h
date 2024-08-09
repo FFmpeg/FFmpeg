@@ -50,6 +50,8 @@ void ff_mpegvideoencdsp_init_arm(MpegvideoEncDSPContext *c,
                                  AVCodecContext *avctx);
 void ff_mpegvideoencdsp_init_ppc(MpegvideoEncDSPContext *c,
                                  AVCodecContext *avctx);
+void ff_mpegvideoencdsp_init_riscv(MpegvideoEncDSPContext *c,
+                                   AVCodecContext *avctx);
 void ff_mpegvideoencdsp_init_x86(MpegvideoEncDSPContext *c,
                                  AVCodecContext *avctx);
 void ff_mpegvideoencdsp_init_mips(MpegvideoEncDSPContext *c,
