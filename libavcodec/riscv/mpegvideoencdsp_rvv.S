@@ -44,3 +44,30 @@ func ff_pix_sum_rvv, zve64x, b
         zext.h      a0, a0
         ret
 endfunc
+
+func ff_pix_norm1_rvv, zve64x
+        lpad    0
+        li      t1, 16
+        vsetvli     t0, zero, e32, m8, ta, ma
+        vmv.v.x     v16, zero
+        vmv.s.x     v1, zero
+1:
+        vsetvli     t0, t1, e64, m2, ta, ma
+        vlsseg2e64.v    v8, (a0), a1
+        slli    t2, t0, 3
+        vsetvli     zero, t2, e8, m2, ta, ma
+        vwmulu.vv   v24, v8, v8
+        sub     t1, t1, t0
+        vwmulu.vv   v28, v10, v10
+        mul     t3, a1, t0
+        vsetvli     zero, zero, e16, m4, tu, ma
+        vwaddu.wv   v16, v16, v24
+        add     a0, t3, a0
+        vwaddu.wv   v16, v16, v28
+        bnez    t1, 1b
+
+        vsetvli     zero, zero, e32, m8, ta, ma
+        vredsum.vs  v1, v16, v1
+        vmv.x.s     a0, v1
+        ret
+endfunc
