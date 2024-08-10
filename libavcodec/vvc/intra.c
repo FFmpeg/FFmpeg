@@ -128,15 +128,15 @@ static void ilfnst_transform(const VVCLocalContext *lc, TransformBlock *tb)
 }
 
 //part of 8.7.4 Transformation process for scaled transform coefficients
-static void derive_transform_type(const VVCFrameContext *fc, const VVCLocalContext *lc, const TransformBlock *tb, enum TxType *trh, enum TxType *trv)
+static void derive_transform_type(const VVCFrameContext *fc, const VVCLocalContext *lc, const TransformBlock *tb, enum VVCTxType *trh, enum VVCTxType *trv)
 {
     const CodingUnit *cu = lc->cu;
-    static const enum TxType mts_to_trh[] = {DCT2, DST7, DCT8, DST7, DCT8};
-    static const enum TxType mts_to_trv[] = {DCT2, DST7, DST7, DCT8, DCT8};
+    static const enum VVCTxType mts_to_trh[] = { VVC_DCT2, VVC_DST7, VVC_DCT8, VVC_DST7, VVC_DCT8 };
+    static const enum VVCTxType mts_to_trv[] = { VVC_DCT2, VVC_DST7, VVC_DST7, VVC_DCT8, VVC_DCT8 };
     const VVCSPS *sps       = fc->ps.sps;
     int implicit_mts_enabled = 0;
     if (tb->c_idx || (cu->isp_split_type != ISP_NO_SPLIT && cu->lfnst_idx)) {
-        *trh = *trv = DCT2;
+        *trh = *trv = VVC_DCT2;
         return;
     }
 
@@ -152,11 +152,11 @@ static void derive_transform_type(const VVCFrameContext *fc, const VVCLocalConte
         const int w = tb->tb_width;
         const int h = tb->tb_height;
         if (cu->sbt_flag) {
-            *trh = (cu->sbt_horizontal_flag  || cu->sbt_pos_flag) ? DST7 : DCT8;
-            *trv = (!cu->sbt_horizontal_flag || cu->sbt_pos_flag) ? DST7 : DCT8;
+            *trh = (cu->sbt_horizontal_flag  || cu->sbt_pos_flag) ? VVC_DST7 : VVC_DCT8;
+            *trv = (!cu->sbt_horizontal_flag || cu->sbt_pos_flag) ? VVC_DST7 : VVC_DCT8;
         } else {
-            *trh = (w >= 4 && w <= 16) ? DST7 : DCT2;
-            *trv = (h >= 4 && h <= 16) ? DST7 : DCT2;
+            *trh = (w >= 4 && w <= 16) ? VVC_DST7 : VVC_DCT2;
+            *trv = (h >= 4 && h <= 16) ? VVC_DST7 : VVC_DCT2;
         }
         return;
     }
@@ -447,7 +447,7 @@ static void dequant(const VVCLocalContext *lc, const TransformUnit *tu, Transfor
 
 //transmatrix[0][0]
 #define DCT_A 64
-static void itx_2d(const VVCFrameContext *fc, TransformBlock *tb, const enum TxType trh, const enum TxType trv)
+static void itx_2d(const VVCFrameContext *fc, TransformBlock *tb, const enum VVCTxType trh, const enum VVCTxType trv)
 {
     const VVCSPS *sps   = fc->ps.sps;
     const int w         = tb->tb_width;
@@ -456,7 +456,7 @@ static void itx_2d(const VVCFrameContext *fc, TransformBlock *tb, const enum TxT
     const size_t nzh    = tb->max_scan_y + 1;
     const int shift[]   = { 7, 5 + sps->log2_transform_range - sps->bit_depth };
 
-    if (w == h && nzw == 1 && nzh == 1 && trh == DCT2 && trv == DCT2) {
+    if (w == h && nzw == 1 && nzh == 1 && trh == VVC_DCT2 && trv == VVC_DCT2) {
         const int add[] = { 1 << (shift[0] - 1), 1 << (shift[1] - 1) };
         const int t     = (tb->coeffs[0] * DCT_A + add[0]) >> shift[0];
         const int dc    = (t * DCT_A + add[1]) >> shift[1];
@@ -476,7 +476,7 @@ static void itx_2d(const VVCFrameContext *fc, TransformBlock *tb, const enum TxT
     scale(tb->coeffs, tb->coeffs, w, h, shift[1]);
 }
 
-static void itx_1d(const VVCFrameContext *fc, TransformBlock *tb, const enum TxType trh, const enum TxType trv)
+static void itx_1d(const VVCFrameContext *fc, TransformBlock *tb, const enum VVCTxType trh, const enum VVCTxType trv)
 {
     const VVCSPS *sps   = fc->ps.sps;
     const int w         = tb->tb_width;
@@ -484,7 +484,7 @@ static void itx_1d(const VVCFrameContext *fc, TransformBlock *tb, const enum TxT
     const size_t nzw    = tb->max_scan_x + 1;
     const size_t nzh    = tb->max_scan_y + 1;
 
-    if ((w > 1 && nzw == 1 && trh == DCT2) || (h > 1 && nzh == 1 && trv == DCT2)) {
+    if ((w > 1 && nzw == 1 && trh == VVC_DCT2) || (h > 1 && nzh == 1 && trv == VVC_DCT2)) {
         const int shift = 6 + sps->log2_transform_range - sps->bit_depth;
         const int add   = 1 << (shift - 1);
         const int dc    = (tb->coeffs[0] * DCT_A + add) >> shift;
@@ -542,7 +542,7 @@ static void itransform(VVCLocalContext *lc, TransformUnit *tu, const int tu_idx,
                 transform_bdpcm(tb, lc, cu);
             dequant(lc, tu, tb);
             if (!tb->ts) {
-                enum TxType trh, trv;
+                enum VVCTxType trh, trv;
 
                 if (cu->apply_lfnst_flag[c_idx])
                     ilfnst_transform(lc, tb);

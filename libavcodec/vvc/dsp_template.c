@@ -97,7 +97,7 @@ static void FUNC(transform_bdpcm)(int *coeffs, const int width, const int height
 static void FUNC(ff_vvc_itx_dsp_init)(VVCItxDSPContext *const itx)
 {
 #define VVC_ITX(TYPE, type, s)                                                  \
-        itx->itx[TYPE][TX_SIZE_##s]      = ff_vvc_inv_##type##_##s;             \
+        itx->itx[VVC_##TYPE][VVC_##TX_SIZE_##s]      = ff_vvc_inv_##type##_##s;             \
 
 #define VVC_ITX_COMMON(TYPE, type)                                              \
         VVC_ITX(TYPE, type, 4);                                                 \

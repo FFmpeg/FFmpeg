@@ -27,21 +27,21 @@
 #include <stdint.h>
 #include <stddef.h>
 
-enum TxType {
-    DCT2,
-    DST7,
-    DCT8,
-    N_TX_TYPE,
+enum VVCTxType {
+    VVC_DCT2,
+    VVC_DST7,
+    VVC_DCT8,
+    VVC_N_TX_TYPE,
 };
 
-enum TxSize {
-    TX_SIZE_2,
-    TX_SIZE_4,
-    TX_SIZE_8,
-    TX_SIZE_16,
-    TX_SIZE_32,
-    TX_SIZE_64,
-    N_TX_SIZE,
+enum VVCTxSize {
+    VVC_TX_SIZE_2,
+    VVC_TX_SIZE_4,
+    VVC_TX_SIZE_8,
+    VVC_TX_SIZE_16,
+    VVC_TX_SIZE_32,
+    VVC_TX_SIZE_64,
+    VVC_N_TX_SIZE,
 };
 
 typedef struct VVCInterDSPContext {
@@ -127,7 +127,7 @@ typedef struct VVCItxDSPContext {
     void (*add_residual_joint)(uint8_t *dst, const int *res, int width, int height, ptrdiff_t stride, int c_sign, int shift);
     void (*pred_residual_joint)(int *buf, int width, int height, int c_sign, int shift);
 
-    void (*itx[N_TX_TYPE][N_TX_SIZE])(int *coeffs, ptrdiff_t step, size_t nz);
+    void (*itx[VVC_N_TX_TYPE][VVC_N_TX_SIZE])(int *coeffs, ptrdiff_t step, size_t nz);
     void (*transform_bdpcm)(int *coeffs, int width, int height, int vertical, int log2_transform_range);
 } VVCItxDSPContext;
 
