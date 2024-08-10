@@ -576,7 +576,7 @@ static int vt_pixbuf_set_colorspace(void *log_ctx,
             colormatrix, kCVAttachmentMode_ShouldPropagate);
     else {
         CVBufferRemoveAttachment(pixbuf, kCVImageBufferYCbCrMatrixKey);
-        if (src->colorspace != AVCOL_SPC_UNSPECIFIED)
+        if (src->colorspace != AVCOL_SPC_UNSPECIFIED && src->colorspace != AVCOL_SPC_RGB)
             av_log(log_ctx, AV_LOG_WARNING,
                 "Color space %s is not supported.\n",
                 av_color_space_name(src->colorspace));
