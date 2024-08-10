@@ -88,7 +88,7 @@ int ff_vk_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 
         const VkVideoProfileInfoKHR *profile = get_video_profile(ctx, dst->codec_id);
         if (!profile) {
-            av_log(dst, AV_LOG_ERROR, "Video profile missing from frames context!");
+            av_log(dst, AV_LOG_ERROR, "Video profile missing from frames context!\n");
             return AVERROR(EINVAL);
         }
 
