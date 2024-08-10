@@ -923,9 +923,9 @@ static int vulkan_decode_get_profile(AVCodecContext *avctx, AVBufferRef *frames_
         return AVERROR_EXTERNAL;
     }
 
-    /* TODO: make dedicated_dpb tunable */
     dec->dedicated_dpb = !(dec_caps->flags & VK_VIDEO_DECODE_CAPABILITY_DPB_AND_OUTPUT_COINCIDE_BIT_KHR);
-    dec->layered_dpb = !(caps->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR);
+    dec->layered_dpb = !dec->dedicated_dpb ? 0 :
+                       !(caps->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR);
 
     if (dec->dedicated_dpb) {
         fmt_info.imageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
