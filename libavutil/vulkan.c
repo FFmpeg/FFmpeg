@@ -83,6 +83,25 @@ const char *ff_vk_ret2str(VkResult res)
 #undef CASE
 }
 
+static void load_enabled_qfs(FFVulkanContext *s)
+{
+    s->nb_qfs = 0;
+    for (int i = 0; i < s->hwctx->nb_qf; i++) {
+        /* Skip duplicates */
+        int skip = 0;
+        for (int j = 0; j < s->nb_qfs; j++) {
+            if (s->qfs[j] == s->hwctx->qf[i].idx) {
+                skip = 1;
+                break;
+            }
+        }
+        if (skip)
+            continue;
+
+        s->qfs[s->nb_qfs++] = s->hwctx->qf[i].idx;
+    }
+}
+
 int ff_vk_load_props(FFVulkanContext *s)
 {
     FFVulkanFunctions *vk = &s->vkfn;
@@ -130,6 +149,8 @@ int ff_vk_load_props(FFVulkanContext *s)
     vk->GetPhysicalDeviceProperties2(s->hwctx->phys_dev, &s->props);
     vk->GetPhysicalDeviceMemoryProperties(s->hwctx->phys_dev, &s->mprops);
     vk->GetPhysicalDeviceFeatures2(s->hwctx->phys_dev, &s->feats);
+
+    load_enabled_qfs(s);
 
     if (s->qf_props)
         return 0;
@@ -207,24 +228,8 @@ int ff_vk_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
                   VkQueueFlagBits dev_family)
 {
     /* Fill in queue families from context if not done yet */
-    if (!s->nb_qfs) {
-        s->nb_qfs = 0;
-
-        for (int i = 0; i < s->hwctx->nb_qf; i++) {
-            /* Skip duplicates */
-            int skip = 0;
-            for (int j = 0; j < s->nb_qfs; j++) {
-                if (s->qfs[j] == s->hwctx->qf[i].idx) {
-                    skip = 1;
-                    break;
-                }
-            }
-            if (skip)
-                continue;
-
-            s->qfs[s->nb_qfs++] = s->hwctx->qf[i].idx;
-        }
-    }
+    if (!s->nb_qfs)
+        load_enabled_qfs(s);
 
     return (qf->queue_family = vk_qf_get_index(s, dev_family, &qf->nb_queues));
 }
