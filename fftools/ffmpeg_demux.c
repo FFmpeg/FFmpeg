@@ -874,7 +874,8 @@ void ifile_close(InputFile **pf)
     av_freep(pf);
 }
 
-static int ist_use(InputStream *ist, int decoding_needed)
+static int ist_use(InputStream *ist, int decoding_needed,
+                   const ViewSpecifier *vs, SchedulerNode *src)
 {
     Demuxer      *d = demuxer_from_ifile(ist->file);
     DemuxStream *ds = ds_from_ist(ist);
@@ -961,15 +962,26 @@ static int ist_use(InputStream *ist, int decoding_needed)
         d->have_audio_dec |= is_audio;
     }
 
+    if (decoding_needed && ist->par->codec_type == AVMEDIA_TYPE_VIDEO) {
+        ret = dec_request_view(ist->decoder, vs, src);
+        if (ret < 0)
+            return ret;
+    } else {
+        *src = decoding_needed                             ?
+               SCH_DEC_OUT(ds->sch_idx_dec, 0)             :
+               SCH_DSTREAM(d->f.index, ds->sch_idx_stream);
+    }
+
     return 0;
 }
 
 int ist_output_add(InputStream *ist, OutputStream *ost)
 {
     DemuxStream *ds = ds_from_ist(ist);
+    SchedulerNode src;
     int ret;
 
-    ret = ist_use(ist, ost->enc ? DECODING_FOR_OST : 0);
+    ret = ist_use(ist, ost->enc ? DECODING_FOR_OST : 0, NULL, &src);
     if (ret < 0)
         return ret;
 
@@ -983,14 +995,16 @@ int ist_output_add(InputStream *ist, OutputStream *ost)
 }
 
 int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
-                   InputFilterOptions *opts)
+                   const ViewSpecifier *vs, InputFilterOptions *opts,
+                   SchedulerNode *src)
 {
     Demuxer      *d = demuxer_from_ifile(ist->file);
     DemuxStream *ds = ds_from_ist(ist);
     int64_t tsoffset = 0;
     int ret;
 
-    ret = ist_use(ist, is_simple ? DECODING_FOR_OST : DECODING_FOR_FILTER);
+    ret = ist_use(ist, is_simple ? DECODING_FOR_OST : DECODING_FOR_FILTER,
+                  vs, src);
     if (ret < 0)
         return ret;
 
@@ -1074,7 +1088,7 @@ int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
     opts->flags |= IFILTER_FLAG_AUTOROTATE * !!(ds->autorotate) |
                    IFILTER_FLAG_REINIT     * !!(ds->reinit_filters);
 
-    return ds->sch_idx_dec;
+    return 0;
 }
 
 static int choose_decoder(const OptionsContext *o, void *logctx,

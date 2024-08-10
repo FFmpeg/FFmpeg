@@ -46,6 +46,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/stereo3d.h"
 
 HWDevice *filter_hw_device;
 
@@ -227,6 +228,59 @@ OPT_MATCH_PER_STREAM(str,   const char *, OPT_TYPE_STRING, str);
 OPT_MATCH_PER_STREAM(int,   int,          OPT_TYPE_INT,    i);
 OPT_MATCH_PER_STREAM(int64, int64_t,      OPT_TYPE_INT64,  i64);
 OPT_MATCH_PER_STREAM(dbl,   double,       OPT_TYPE_DOUBLE, dbl);
+
+int view_specifier_parse(const char **pspec, ViewSpecifier *vs)
+{
+    const char *spec = *pspec;
+    char *endptr;
+
+    vs->type = VIEW_SPECIFIER_TYPE_NONE;
+
+    if (!strncmp(spec, "view:", 5)) {
+        spec += 5;
+
+        if (!strncmp(spec, "all", 3)) {
+            spec += 3;
+            vs->type = VIEW_SPECIFIER_TYPE_ALL;
+        } else {
+            vs->type = VIEW_SPECIFIER_TYPE_ID;
+            vs->val  = strtoul(spec, &endptr, 0);
+            if (endptr == spec) {
+                av_log(NULL, AV_LOG_ERROR, "Invalid view ID: %s\n", spec);
+                return AVERROR(EINVAL);
+            }
+            spec = endptr;
+        }
+    } else if (!strncmp(spec, "vidx:", 5)) {
+        spec += 5;
+        vs->type = VIEW_SPECIFIER_TYPE_IDX;
+        vs->val  = strtoul(spec, &endptr, 0);
+        if (endptr == spec) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid view index: %s\n", spec);
+            return AVERROR(EINVAL);
+        }
+        spec = endptr;
+    } else if (!strncmp(spec, "vpos:", 5)) {
+        spec += 5;
+        vs->type = VIEW_SPECIFIER_TYPE_POS;
+
+        if (!strncmp(spec, "left", 4) && !cmdutils_isalnum(spec[4])) {
+            spec += 4;
+            vs->val = AV_STEREO3D_VIEW_LEFT;
+        } else if (!strncmp(spec, "right", 5) && !cmdutils_isalnum(spec[5])) {
+            spec += 5;
+            vs->val = AV_STEREO3D_VIEW_RIGHT;
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Invalid view position: %s\n", spec);
+            return AVERROR(EINVAL);
+        }
+    } else
+        return 0;
+
+    *pspec = spec;
+
+    return 0;
+}
 
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global)
 {
@@ -452,6 +506,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
             goto fail;
         }
     } else {
+        ViewSpecifier vs;
         char *endptr;
 
         file_idx = strtol(arg, &endptr, 0);
@@ -468,12 +523,18 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
             goto fail;
         }
 
-        if (ss.remainder) {
-            if (!strcmp(ss.remainder, "?"))
+        arg = ss.remainder ? ss.remainder : "";
+
+        ret = view_specifier_parse(&arg, &vs);
+        if (ret < 0)
+            goto fail;
+
+        if (*arg) {
+            if (!strcmp(arg, "?"))
                 allow_unused = 1;
             else {
-                av_log(NULL, AV_LOG_ERROR, "Trailing garbage after stream specifier: %s\n",
-                       ss.remainder);
+                av_log(NULL, AV_LOG_ERROR,
+                       "Trailing garbage after stream specifier: %s\n", arg);
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
@@ -509,6 +570,7 @@ static int opt_map(void *optctx, const char *opt, const char *arg)
 
                 m->file_index   = file_idx;
                 m->stream_index = i;
+                m->vs           = vs;
             }
     }
 

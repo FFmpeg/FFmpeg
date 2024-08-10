@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdbit.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
@@ -25,6 +27,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
+#include "libavutil/stereo3d.h"
 #include "libavutil/time.h"
 #include "libavutil/timestamp.h"
 
@@ -39,6 +42,7 @@ typedef struct DecoderPriv {
     AVCodecContext     *dec_ctx;
 
     AVFrame            *frame;
+    AVFrame            *frame_tmp_ref;
     AVPacket           *pkt;
 
     // override output video sample aspect ratio with this value
@@ -77,6 +81,23 @@ typedef struct DecoderPriv {
     char                log_name[32];
     char               *parent_name;
 
+    // user specified decoder multiview options manually
+    int                 multiview_user_config;
+
+    struct {
+        ViewSpecifier   vs;
+        unsigned        out_idx;
+    }                  *views_requested;
+    int              nb_views_requested;
+
+    /* A map of view ID to decoder outputs.
+     * MUST NOT be accessed outside of get_format()/get_buffer() */
+    struct {
+        unsigned        id;
+        uintptr_t       out_mask;
+    }                  *view_map;
+    int              nb_view_map;
+
     struct {
         AVDictionary       *opts;
         const AVCodec      *codec;
@@ -106,6 +127,7 @@ void dec_free(Decoder **pdec)
     avcodec_free_context(&dp->dec_ctx);
 
     av_frame_free(&dp->frame);
+    av_frame_free(&dp->frame_tmp_ref);
     av_packet_free(&dp->pkt);
 
     av_dict_free(&dp->standalone_init.opts);
@@ -115,6 +137,9 @@ void dec_free(Decoder **pdec)
     av_frame_free(&dp->sub_heartbeat);
 
     av_freep(&dp->parent_name);
+
+    av_freep(&dp->views_requested);
+    av_freep(&dp->view_map);
 
     av_freep(pdec);
 }
@@ -357,7 +382,8 @@ fail:
     return err;
 }
 
-static int video_frame_process(DecoderPriv *dp, AVFrame *frame)
+static int video_frame_process(DecoderPriv *dp, AVFrame *frame,
+                               unsigned *outputs_mask)
 {
 #if FFMPEG_OPT_TOP
     if (dp->flags & DECODER_FLAG_TOP_FIELD_FIRST) {
@@ -418,6 +444,9 @@ static int video_frame_process(DecoderPriv *dp, AVFrame *frame)
             return ret;
         }
     }
+
+    if (frame->opaque)
+        *outputs_mask = (uintptr_t)frame->opaque;
 
     return 0;
 }
@@ -715,6 +744,7 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
 
     while (1) {
         FrameData *fd;
+        unsigned outputs_mask = 1;
 
         av_frame_unref(frame);
 
@@ -763,7 +793,7 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
 
             audio_ts_process(dp, frame);
         } else {
-            ret = video_frame_process(dp, frame);
+            ret = video_frame_process(dp, frame, &outputs_mask);
             if (ret < 0) {
                 av_log(dp, AV_LOG_FATAL,
                        "Error while processing the decoded data\n");
@@ -773,10 +803,28 @@ static int packet_decode(DecoderPriv *dp, AVPacket *pkt, AVFrame *frame)
 
         dp->dec.frames_decoded++;
 
-        ret = sch_dec_send(dp->sch, dp->sch_idx, 0, frame);
-        if (ret < 0) {
-            av_frame_unref(frame);
-            return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
+        for (int i = 0; i < stdc_count_ones(outputs_mask); i++) {
+            AVFrame *to_send = frame;
+            int pos;
+
+            av_assert0(outputs_mask);
+            pos = stdc_trailing_zeros(outputs_mask);
+            outputs_mask &= ~(1U << pos);
+
+            // this is not the last output and sch_dec_send() consumes the frame
+            // given to it, so make a temporary reference
+            if (outputs_mask) {
+                to_send = dp->frame_tmp_ref;
+                ret = av_frame_ref(to_send, frame);
+                if (ret < 0)
+                    return ret;
+            }
+
+            ret = sch_dec_send(dp->sch, dp->sch_idx, pos, to_send);
+            if (ret < 0) {
+                av_frame_unref(to_send);
+                return ret == AVERROR_EOF ? AVERROR_EXIT : ret;
+            }
         }
     }
 }
@@ -975,10 +1023,307 @@ finish:
     return ret;
 }
 
+int dec_request_view(Decoder *d, const ViewSpecifier *vs,
+                     SchedulerNode *src)
+{
+    DecoderPriv *dp = dp_from_dec(d);
+    unsigned out_idx = 0;
+    int ret;
+
+    if (dp->multiview_user_config) {
+        if (!vs || vs->type == VIEW_SPECIFIER_TYPE_NONE) {
+            *src = SCH_DEC_OUT(dp->sch_idx, 0);
+            return 0;
+        }
+
+        av_log(dp, AV_LOG_ERROR,
+               "Manually selecting views with -view_ids cannot be combined "
+               "with view selection via stream specifiers. It is strongly "
+               "recommended you always use stream specifiers only.\n");
+        return AVERROR(EINVAL);
+    }
+
+    // when multiview_user_config is not set, NONE specifier is treated
+    // as requesting the base view
+    vs = (vs && vs->type != VIEW_SPECIFIER_TYPE_NONE) ? vs :
+         &(ViewSpecifier){ .type = VIEW_SPECIFIER_TYPE_IDX, .val = 0 };
+
+    // check if the specifier matches an already-existing one
+    for (int i = 0; i < dp->nb_views_requested; i++) {
+        const ViewSpecifier *vs1 = &dp->views_requested[i].vs;
+
+        if (vs->type == vs1->type &&
+            (vs->type == VIEW_SPECIFIER_TYPE_ALL || vs->val == vs1->val)) {
+            *src = SCH_DEC_OUT(dp->sch_idx, dp->views_requested[i].out_idx);
+            return 0;
+        }
+    }
+
+    // we use a bitmask to map view IDs to decoder outputs, which
+    // limits the number of outputs allowed
+    if (dp->nb_views_requested >= sizeof(dp->view_map[0].out_mask) * 8) {
+        av_log(dp, AV_LOG_ERROR, "Too many view specifiers\n");
+        return AVERROR(ENOSYS);
+    }
+
+    ret = GROW_ARRAY(dp->views_requested, dp->nb_views_requested);
+    if (ret < 0)
+        return ret;
+
+    if (dp->nb_views_requested > 1) {
+        ret = sch_add_dec_output(dp->sch, dp->sch_idx);
+        if (ret < 0)
+            return ret;
+        out_idx = ret;
+    }
+
+    dp->views_requested[dp->nb_views_requested - 1].out_idx = out_idx;
+    dp->views_requested[dp->nb_views_requested - 1].vs      = *vs;
+
+    *src = SCH_DEC_OUT(dp->sch_idx,
+                       dp->views_requested[dp->nb_views_requested - 1].out_idx);
+
+    return 0;
+}
+
+static int multiview_setup(DecoderPriv *dp, AVCodecContext *dec_ctx)
+{
+    unsigned views_wanted = 0;
+
+    unsigned nb_view_ids_av, nb_view_ids;
+    unsigned *view_ids_av = NULL, *view_pos_av = NULL;
+    int      *view_ids    = NULL;
+    int ret;
+
+    // no views/only base view were requested - do nothing
+    if (!dp->nb_views_requested ||
+        (dp->nb_views_requested == 1                               &&
+         dp->views_requested[0].vs.type == VIEW_SPECIFIER_TYPE_IDX &&
+         dp->views_requested[0].vs.val  == 0))
+        return 0;
+
+    av_freep(&dp->view_map);
+    dp->nb_view_map = 0;
+
+    // retrieve views available in current CVS
+    ret = av_opt_get_array_size(dec_ctx, "view_ids_available",
+                                AV_OPT_SEARCH_CHILDREN, &nb_view_ids_av);
+    if (ret < 0) {
+        av_log(dp, AV_LOG_ERROR,
+               "Multiview decoding requested, but decoder '%s' does not "
+               "support it\n", dec_ctx->codec->name);
+        return AVERROR(ENOSYS);
+    }
+
+    if (nb_view_ids_av) {
+        unsigned nb_view_pos_av;
+
+        if (nb_view_ids_av >= sizeof(views_wanted) * 8) {
+            av_log(dp, AV_LOG_ERROR, "Too many views in video: %u\n", nb_view_ids_av);
+            ret = AVERROR(ENOSYS);
+            goto fail;
+        }
+
+        view_ids_av = av_calloc(nb_view_ids_av, sizeof(*view_ids_av));
+        if (!view_ids_av) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        ret = av_opt_get_array(dec_ctx, "view_ids_available",
+                               AV_OPT_SEARCH_CHILDREN, 0, nb_view_ids_av,
+                               AV_OPT_TYPE_UINT, view_ids_av);
+        if (ret < 0)
+            goto fail;
+
+        ret = av_opt_get_array_size(dec_ctx, "view_pos_available",
+                                    AV_OPT_SEARCH_CHILDREN, &nb_view_pos_av);
+        if (ret >= 0 && nb_view_pos_av == nb_view_ids_av) {
+            view_pos_av = av_calloc(nb_view_ids_av, sizeof(*view_pos_av));
+            if (!view_pos_av) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            ret = av_opt_get_array(dec_ctx, "view_pos_available",
+                                   AV_OPT_SEARCH_CHILDREN, 0, nb_view_ids_av,
+                                   AV_OPT_TYPE_UINT, view_pos_av);
+            if (ret < 0)
+                goto fail;
+        }
+    } else {
+        // assume there is a single view with ID=0
+        nb_view_ids_av = 1;
+        view_ids_av = av_calloc(nb_view_ids_av, sizeof(*view_ids_av));
+        view_pos_av = av_calloc(nb_view_ids_av, sizeof(*view_pos_av));
+        if (!view_ids_av || !view_pos_av) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        view_pos_av[0] = AV_STEREO3D_VIEW_UNSPEC;
+    }
+
+    dp->view_map = av_calloc(nb_view_ids_av, sizeof(*dp->view_map));
+    if (!dp->view_map) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+    dp->nb_view_map = nb_view_ids_av;
+
+    for (int i = 0; i < dp->nb_view_map; i++)
+        dp->view_map[i].id = view_ids_av[i];
+
+    // figure out which views should go to which output
+    for (int i = 0; i < dp->nb_views_requested; i++) {
+        const ViewSpecifier *vs = &dp->views_requested[i].vs;
+
+        switch (vs->type) {
+        case VIEW_SPECIFIER_TYPE_IDX:
+            if (vs->val >= nb_view_ids_av) {
+                av_log(dp, exit_on_error ? AV_LOG_ERROR : AV_LOG_WARNING,
+                       "View with index %u requested, but only %u views available "
+                       "in current video sequence (more views may or may not be "
+                       "available in later sequences).\n",
+                       vs->val, nb_view_ids_av);
+                if (exit_on_error) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+
+                continue;
+            }
+            views_wanted                   |= 1U   << vs->val;
+            dp->view_map[vs->val].out_mask |= 1ULL << i;
+
+            break;
+        case VIEW_SPECIFIER_TYPE_ID: {
+            int view_idx = -1;
+
+            for (unsigned j = 0; j < nb_view_ids_av; j++) {
+                if (view_ids_av[j] == vs->val) {
+                    view_idx = j;
+                    break;
+                }
+            }
+            if (view_idx < 0) {
+                av_log(dp, exit_on_error ? AV_LOG_ERROR : AV_LOG_WARNING,
+                       "View with ID %u requested, but is not available "
+                       "in the video sequence\n", vs->val);
+                if (exit_on_error) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+
+                continue;
+            }
+            views_wanted                    |= 1U   << view_idx;
+            dp->view_map[view_idx].out_mask |= 1ULL << i;
+
+            break;
+            }
+        case VIEW_SPECIFIER_TYPE_POS: {
+            int view_idx = -1;
+
+            for (unsigned j = 0; view_pos_av && j < nb_view_ids_av; j++) {
+                if (view_pos_av[j] == vs->val) {
+                    view_idx = j;
+                    break;
+                }
+            }
+            if (view_idx < 0) {
+                av_log(dp, exit_on_error ? AV_LOG_ERROR : AV_LOG_WARNING,
+                       "View position '%s' requested, but is not available "
+                       "in the video sequence\n", av_stereo3d_view_name(vs->val));
+                if (exit_on_error) {
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+
+                continue;
+            }
+            views_wanted                    |= 1U   << view_idx;
+            dp->view_map[view_idx].out_mask |= 1ULL << i;
+
+            break;
+            }
+        case VIEW_SPECIFIER_TYPE_ALL:
+            views_wanted |= (1U << nb_view_ids_av) - 1;
+
+            for (int j = 0; j < dp->nb_view_map; j++)
+                dp->view_map[j].out_mask |= 1ULL << i;
+
+            break;
+        }
+    }
+    if (!views_wanted) {
+        av_log(dp, AV_LOG_ERROR, "No views were selected for decoding\n");
+        ret = AVERROR(EINVAL);
+        goto fail;
+    }
+
+    // signal to decoder which views we want
+    nb_view_ids = stdc_count_ones(views_wanted);
+    view_ids = av_malloc_array(nb_view_ids, sizeof(*view_ids));
+    if (!view_ids) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    for (unsigned i = 0; i < nb_view_ids; i++) {
+        int pos;
+
+        av_assert0(views_wanted);
+        pos = stdc_trailing_zeros(views_wanted);
+        views_wanted &= ~(1U << pos);
+
+        view_ids[i] = view_ids_av[pos];
+    }
+
+    // unset view_ids in case we set it earlier
+    av_opt_set(dec_ctx, "view_ids", NULL, AV_OPT_SEARCH_CHILDREN);
+
+    ret = av_opt_set_array(dec_ctx, "view_ids", AV_OPT_SEARCH_CHILDREN,
+                           0, nb_view_ids, AV_OPT_TYPE_INT, view_ids);
+    if (ret < 0)
+        goto fail;
+
+    if (!dp->frame_tmp_ref) {
+        dp->frame_tmp_ref = av_frame_alloc();
+        if (!dp->frame_tmp_ref) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
+fail:
+    av_freep(&view_ids_av);
+    av_freep(&view_pos_av);
+    av_freep(&view_ids);
+
+    return ret;
+}
+
+static void multiview_check_manual(DecoderPriv *dp, const AVDictionary *dec_opts)
+{
+    if (av_dict_get(dec_opts, "view_ids", NULL, 0)) {
+        av_log(dp, AV_LOG_WARNING, "Manually selecting views with -view_ids "
+               "is not recommended, use view specifiers instead\n");
+        dp->multiview_user_config = 1;
+    }
+}
+
 static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat *pix_fmts)
 {
     DecoderPriv  *dp = s->opaque;
     const enum AVPixelFormat *p;
+    int ret;
+
+    ret = multiview_setup(dp, s);
+    if (ret < 0) {
+        av_log(dp, AV_LOG_ERROR, "Error setting up multiview decoding: %s\n",
+               av_err2str(ret));
+        return AV_PIX_FMT_NONE;
+    }
 
     for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(*p);
@@ -1007,6 +1352,26 @@ static enum AVPixelFormat get_format(AVCodecContext *s, const enum AVPixelFormat
     }
 
     return *p;
+}
+
+static int get_buffer(AVCodecContext *dec_ctx, AVFrame *frame, int flags)
+{
+    DecoderPriv *dp = dec_ctx->opaque;
+
+    // for multiview video, store the output mask in frame opaque
+    if (dp->nb_view_map) {
+        const AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_VIEW_ID);
+        int view_id = sd ? *(int*)sd->data : 0;
+
+        for (int i = 0; i < dp->nb_view_map; i++) {
+            if (dp->view_map[i].id == view_id) {
+                frame->opaque = (void*)dp->view_map[i].out_mask;
+                break;
+            }
+        }
+    }
+
+    return avcodec_default_get_buffer2(dec_ctx, frame, flags);
 }
 
 static HWDevice *hw_device_match_by_codec(const AVCodec *codec)
@@ -1202,6 +1567,7 @@ static int dec_open(DecoderPriv *dp, AVDictionary **dec_opts,
 
     dp->dec_ctx->opaque                = dp;
     dp->dec_ctx->get_format            = get_format;
+    dp->dec_ctx->get_buffer2           = get_buffer;
     dp->dec_ctx->pkt_timebase          = o->time_base;
 
     if (!av_dict_get(*dec_opts, "threads", NULL, 0))
@@ -1291,6 +1657,8 @@ int dec_init(Decoder **pdec, Scheduler *sch,
     if (ret < 0)
         return ret;
 
+    multiview_check_manual(dp, *dec_opts);
+
     ret = dec_open(dp, dec_opts, o, param_out);
     if (ret < 0)
         goto fail;
@@ -1363,6 +1731,8 @@ int dec_create(const OptionsContext *o, const char *arg, Scheduler *sch)
     if (ret < 0)
         return ret;
 
+    multiview_check_manual(dp, dp->standalone_init.opts);
+
     if (o->codec_names.nb_opt) {
         const char *name = o->codec_names.opt[o->codec_names.nb_opt - 1].u.str;
         dp->standalone_init.codec = avcodec_find_decoder_by_name(name);
@@ -1375,7 +1745,8 @@ int dec_create(const OptionsContext *o, const char *arg, Scheduler *sch)
     return 0;
 }
 
-int dec_filter_add(Decoder *d, InputFilter *ifilter, InputFilterOptions *opts)
+int dec_filter_add(Decoder *d, InputFilter *ifilter, InputFilterOptions *opts,
+                   const ViewSpecifier *vs, SchedulerNode *src)
 {
     DecoderPriv *dp = dp_from_dec(d);
     char name[16];
@@ -1385,5 +1756,5 @@ int dec_filter_add(Decoder *d, InputFilter *ifilter, InputFilterOptions *opts)
     if (!opts->name)
         return AVERROR(ENOMEM);
 
-    return dp->sch_idx;
+    return dec_request_view(d, vs, src);
 }

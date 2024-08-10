@@ -543,4 +543,6 @@ void remove_avoptions(AVDictionary **a, AVDictionary *b);
 /* Check if any keys exist in dictionary m */
 int check_avoptions(AVDictionary *m);
 
+int cmdutils_isalnum(char c);
+
 #endif /* FFTOOLS_CMDUTILS_H */

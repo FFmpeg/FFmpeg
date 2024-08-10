@@ -112,12 +112,32 @@ typedef struct HWDevice {
     AVBufferRef *device_ref;
 } HWDevice;
 
+enum ViewSpecifierType {
+    // no specifier given
+    VIEW_SPECIFIER_TYPE_NONE = 0,
+    // val is view index
+    VIEW_SPECIFIER_TYPE_IDX,
+    // val is view ID
+    VIEW_SPECIFIER_TYPE_ID,
+    // specify view by its position, val is AV_STEREO3D_VIEW_LEFT/RIGHT
+    VIEW_SPECIFIER_TYPE_POS,
+    // use all views, val is ignored
+    VIEW_SPECIFIER_TYPE_ALL,
+};
+
+typedef struct ViewSpecifier {
+    enum ViewSpecifierType type;
+    unsigned               val;
+} ViewSpecifier;
+
 /* select an input stream for an output stream */
 typedef struct StreamMap {
     int disabled;           /* 1 is this mapping is disabled by a negative map */
     int file_index;
     int stream_index;
     char *linklabel;       /* name of an output link, for mapping lavfi outputs */
+
+    ViewSpecifier vs;
 } StreamMap;
 
 typedef struct OptionsContext {
@@ -318,6 +338,10 @@ typedef struct OutputFilterOptions {
     const AVRational         *frame_rates;
     const enum AVColorSpace  *color_spaces;
     const enum AVColorRange  *color_ranges;
+
+    // for simple filtergraphs only, view specifier passed
+    // along to the decoder
+    const ViewSpecifier *vs;
 } OutputFilterOptions;
 
 typedef struct InputFilter {
@@ -817,7 +841,21 @@ void dec_free(Decoder **pdec);
  *
  * @param opts filtergraph input options, to be filled by this function
  */
-int dec_filter_add(Decoder *dec, InputFilter *ifilter, InputFilterOptions *opts);
+int dec_filter_add(Decoder *dec, InputFilter *ifilter, InputFilterOptions *opts,
+                   const ViewSpecifier *vs, SchedulerNode *src);
+
+/*
+ * For multiview video, request output of the view(s) determined by vs.
+ * May be called multiple times.
+ *
+ * If this function is never called, only the base view is output. If it is
+ * called at least once, only the views requested are output.
+ *
+ * @param src scheduler node from which the frames corresponding vs
+ *            will originate
+ */
+int dec_request_view(Decoder *dec, const ViewSpecifier *vs,
+                     SchedulerNode *src);
 
 int enc_alloc(Encoder **penc, const AVCodec *codec,
               Scheduler *sch, unsigned sch_idx);
@@ -847,7 +885,8 @@ void ifile_close(InputFile **f);
 
 int ist_output_add(InputStream *ist, OutputStream *ost);
 int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
-                   InputFilterOptions *opts);
+                   const ViewSpecifier *vs, InputFilterOptions *opts,
+                   SchedulerNode *src);
 
 /**
  * Find an unused input stream of given type.
@@ -874,6 +913,8 @@ void opt_match_per_stream_int64(void *logctx, const SpecifierOptList *sol,
                                 AVFormatContext *fc, AVStream *st, int64_t *out);
 void opt_match_per_stream_dbl(void *logctx, const SpecifierOptList *sol,
                               AVFormatContext *fc, AVStream *st, double *out);
+
+int view_specifier_parse(const char **pspec, ViewSpecifier *vs);
 
 int muxer_thread(void *arg);
 int encoder_thread(void *arg);

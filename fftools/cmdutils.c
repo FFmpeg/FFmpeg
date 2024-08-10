@@ -988,7 +988,7 @@ FILE *get_preset_file(char *filename, size_t filename_size,
     return f;
 }
 
-static int cmdutils_isalnum(char c)
+int cmdutils_isalnum(char c)
 {
     return (c >= '0' && c <= '9') ||
            (c >= 'A' && c <= 'Z') ||

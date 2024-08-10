@@ -659,11 +659,13 @@ static OutputFilter *ofilter_alloc(FilterGraph *fg, enum AVMediaType type)
     return ofilter;
 }
 
-static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
+static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist,
+                            const ViewSpecifier *vs)
 {
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     FilterGraphPriv *fgp = fgp_from_fg(ifilter->graph);
-    int ret, dec_idx;
+    SchedulerNode src;
+    int ret;
 
     av_assert0(!ifp->bound);
     ifp->bound = 1;
@@ -681,13 +683,13 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     if (!ifp->opts.fallback)
         return AVERROR(ENOMEM);
 
-    dec_idx = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph),
-                             &ifp->opts);
-    if (dec_idx < 0)
-        return dec_idx;
+    ret = ist_filter_add(ist, ifilter, filtergraph_is_simple(ifilter->graph),
+                         vs, &ifp->opts, &src);
+    if (ret < 0)
+        return ret;
 
-    ret = sch_connect(fgp->sch, SCH_DEC_OUT(dec_idx, 0),
-                                SCH_FILTER_IN(fgp->sch_idx, ifp->index));
+    ret = sch_connect(fgp->sch,
+                      src, SCH_FILTER_IN(fgp->sch_idx, ifp->index));
     if (ret < 0)
         return ret;
 
@@ -712,10 +714,12 @@ static int ifilter_bind_ist(InputFilter *ifilter, InputStream *ist)
     return 0;
 }
 
-static int ifilter_bind_dec(InputFilterPriv *ifp, Decoder *dec)
+static int ifilter_bind_dec(InputFilterPriv *ifp, Decoder *dec,
+                            const ViewSpecifier *vs)
 {
     FilterGraphPriv *fgp = fgp_from_fg(ifp->ifilter.graph);
-    int ret, dec_idx;
+    SchedulerNode src;
+    int ret;
 
     av_assert0(!ifp->bound);
     ifp->bound = 1;
@@ -728,12 +732,11 @@ static int ifilter_bind_dec(InputFilterPriv *ifp, Decoder *dec)
 
     ifp->type_src = ifp->type;
 
-    dec_idx = dec_filter_add(dec, &ifp->ifilter, &ifp->opts);
-    if (dec_idx < 0)
-        return dec_idx;
+    ret = dec_filter_add(dec, &ifp->ifilter, &ifp->opts, vs, &src);
+    if (ret < 0)
+        return ret;
 
-    ret = sch_connect(fgp->sch, SCH_DEC_OUT(dec_idx, 0),
-                                SCH_FILTER_IN(fgp->sch_idx, ifp->index));
+    ret = sch_connect(fgp->sch, src, SCH_FILTER_IN(fgp->sch_idx, ifp->index));
     if (ret < 0)
         return ret;
 
@@ -1216,7 +1219,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
 
     ost->filter = fg->outputs[0];
 
-    ret = ifilter_bind_ist(fg->inputs[0], ist);
+    ret = ifilter_bind_ist(fg->inputs[0], ist, opts->vs);
     if (ret < 0)
         return ret;
 
@@ -1240,28 +1243,38 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
     InputFilterPriv *ifp = ifp_from_ifilter(ifilter);
     InputStream *ist = NULL;
     enum AVMediaType type = ifp->type;
+    ViewSpecifier vs = { .type = VIEW_SPECIFIER_TYPE_NONE };
+    const char *spec;
+    char *p;
     int i, ret;
 
     if (ifp->linklabel && !strncmp(ifp->linklabel, "dec:", 4)) {
         // bind to a standalone decoder
         int dec_idx;
 
-        dec_idx = strtol(ifp->linklabel + 4, NULL, 0);
+        dec_idx = strtol(ifp->linklabel + 4, &p, 0);
         if (dec_idx < 0 || dec_idx >= nb_decoders) {
             av_log(fg, AV_LOG_ERROR, "Invalid decoder index %d in filtergraph description %s\n",
                    dec_idx, fgp->graph_desc);
             return AVERROR(EINVAL);
         }
 
-        ret = ifilter_bind_dec(ifp, decoders[dec_idx]);
+        if (type == AVMEDIA_TYPE_VIDEO) {
+            spec = *p == ':' ? p + 1 : p;
+            ret = view_specifier_parse(&spec, &vs);
+            if (ret < 0)
+                return ret;
+        }
+
+        ret = ifilter_bind_dec(ifp, decoders[dec_idx], &vs);
         if (ret < 0)
             av_log(fg, AV_LOG_ERROR, "Error binding a decoder to filtergraph input %s\n",
                    ifilter->name);
         return ret;
     } else if (ifp->linklabel) {
+        StreamSpecifier ss;
         AVFormatContext *s;
         AVStream       *st = NULL;
-        char *p;
         int file_idx;
 
         // try finding an unbound filtergraph output with this label
@@ -1298,17 +1311,33 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
         }
         s = input_files[file_idx]->ctx;
 
+        ret = stream_specifier_parse(&ss, *p == ':' ? p + 1 : p, 1, fg);
+        if (ret < 0) {
+            av_log(fg, AV_LOG_ERROR, "Invalid stream specifier: %s\n", p);
+            return ret;
+        }
+
+        if (type == AVMEDIA_TYPE_VIDEO) {
+            spec = ss.remainder ? ss.remainder : "";
+            ret = view_specifier_parse(&spec, &vs);
+            if (ret < 0) {
+                stream_specifier_uninit(&ss);
+                return ret;
+            }
+        }
+
         for (i = 0; i < s->nb_streams; i++) {
             enum AVMediaType stream_type = s->streams[i]->codecpar->codec_type;
             if (stream_type != type &&
                 !(stream_type == AVMEDIA_TYPE_SUBTITLE &&
                   type == AVMEDIA_TYPE_VIDEO /* sub2video hack */))
                 continue;
-            if (check_stream_specifier(s, s->streams[i], *p == ':' ? p + 1 : p) == 1) {
+            if (stream_specifier_match(&ss, s, s->streams[i], fg)) {
                 st = s->streams[i];
                 break;
             }
         }
+        stream_specifier_uninit(&ss);
         if (!st) {
             av_log(fg, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
                    "matches no streams.\n", p, fgp->graph_desc);
@@ -1333,7 +1362,7 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
     }
     av_assert0(ist);
 
-    ret = ifilter_bind_ist(ifilter, ist);
+    ret = ifilter_bind_ist(ifilter, ist, &vs);
     if (ret < 0) {
         av_log(fg, AV_LOG_ERROR,
                "Error binding an input stream to complex filtergraph input %s.\n",

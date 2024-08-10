@@ -918,7 +918,8 @@ static int
 ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
                 const OptionsContext *o, char *filters,
                 AVRational enc_tb, enum VideoSyncMethod vsync_method,
-                int keep_pix_fmt, int autoscale, int threads_manual)
+                int keep_pix_fmt, int autoscale, int threads_manual,
+                const ViewSpecifier *vs)
 {
     OutputStream       *ost = &ms->ost;
     AVCodecContext *enc_ctx = ost->enc_ctx;
@@ -944,6 +945,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
         .trim_duration_us = mux->of.recording_time,
         .ts_offset        = mux->of.start_time == AV_NOPTS_VALUE ?
                             0 : mux->of.start_time,
+        .vs               = vs,
 
         .flags = OFILTER_FLAG_DISABLE_CONVERT * !!keep_pix_fmt |
                  OFILTER_FLAG_AUTOSCALE       * !!autoscale    |
@@ -1138,7 +1140,7 @@ fail:
 }
 
 static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
-                   InputStream *ist, OutputFilter *ofilter,
+                   InputStream *ist, OutputFilter *ofilter, const ViewSpecifier *vs,
                    OutputStream **post)
 {
     AVFormatContext *oc = mux->fc;
@@ -1497,7 +1499,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         ret = ost_bind_filter(mux, ms, ofilter, o, filters, enc_tb, vsync_method,
-                              keep_pix_fmt, autoscale, threads_manual);
+                              keep_pix_fmt, autoscale, threads_manual, vs);
         if (ret < 0)
             goto fail;
     } else if (ost->ist) {
@@ -1599,7 +1601,7 @@ static int map_auto_video(Muxer *mux, const OptionsContext *o)
        }
     }
     if (best_ist)
-        return ost_add(mux, o, AVMEDIA_TYPE_VIDEO, best_ist, NULL, NULL);
+        return ost_add(mux, o, AVMEDIA_TYPE_VIDEO, best_ist, NULL, NULL, NULL);
 
     return 0;
 }
@@ -1643,7 +1645,7 @@ static int map_auto_audio(Muxer *mux, const OptionsContext *o)
        }
     }
     if (best_ist)
-        return ost_add(mux, o, AVMEDIA_TYPE_AUDIO, best_ist, NULL, NULL);
+        return ost_add(mux, o, AVMEDIA_TYPE_AUDIO, best_ist, NULL, NULL, NULL);
 
     return 0;
 }
@@ -1680,7 +1682,7 @@ static int map_auto_subtitle(Muxer *mux, const OptionsContext *o)
                 input_descriptor && output_descriptor &&
                 (!input_descriptor->props ||
                  !output_descriptor->props)) {
-                return ost_add(mux, o, AVMEDIA_TYPE_SUBTITLE, ist, NULL, NULL);
+                return ost_add(mux, o, AVMEDIA_TYPE_SUBTITLE, ist, NULL, NULL, NULL);
             }
         }
 
@@ -1701,7 +1703,7 @@ static int map_auto_data(Muxer *mux, const OptionsContext *o)
             continue;
         if (ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA &&
             ist->st->codecpar->codec_id == codec_id) {
-            int ret = ost_add(mux, o, AVMEDIA_TYPE_DATA, ist, NULL, NULL);
+            int ret = ost_add(mux, o, AVMEDIA_TYPE_DATA, ist, NULL, NULL, NULL);
             if (ret < 0)
                 return ret;
         }
@@ -1743,10 +1745,13 @@ loop_end:
         av_log(mux, AV_LOG_VERBOSE, "Creating output stream from an explicitly "
                "mapped complex filtergraph %d, output [%s]\n", fg->index, map->linklabel);
 
-        ret = ost_add(mux, o, ofilter->type, NULL, ofilter, NULL);
+        ret = ost_add(mux, o, ofilter->type, NULL, ofilter, NULL, NULL);
         if (ret < 0)
             return ret;
     } else {
+        const ViewSpecifier *vs = map->vs.type == VIEW_SPECIFIER_TYPE_NONE ?
+                                  NULL : &map->vs;
+
         ist = input_files[map->file_index]->streams[map->stream_index];
         if (ist->user_set_discard == AVDISCARD_ALL) {
             av_log(mux, AV_LOG_FATAL, "Stream #%d:%d is disabled and cannot be mapped.\n",
@@ -1777,7 +1782,14 @@ loop_end:
             return 0;
         }
 
-        ret = ost_add(mux, o, ist->st->codecpar->codec_type, ist, NULL, NULL);
+        if (vs && ist->st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+            av_log(mux, AV_LOG_ERROR,
+                   "View specifier given for mapping a %s input stream\n",
+                   av_get_media_type_string(ist->st->codecpar->codec_type));
+            return AVERROR(EINVAL);
+        }
+
+        ret = ost_add(mux, o, ist->st->codecpar->codec_type, ist, NULL, vs, NULL);
         if (ret < 0)
             return ret;
     }
@@ -1847,7 +1859,7 @@ read_fail:
             return AVERROR(ENOMEM);
         }
 
-        err = ost_add(mux, o, AVMEDIA_TYPE_ATTACHMENT, NULL, NULL, &ost);
+        err = ost_add(mux, o, AVMEDIA_TYPE_ATTACHMENT, NULL, NULL, NULL, &ost);
         if (err < 0) {
             av_free(attachment_filename);
             av_freep(&attachment);
@@ -1902,7 +1914,7 @@ static int create_streams(Muxer *mux, const OptionsContext *o)
                        av_get_media_type_string(ofilter->type));
             av_log(mux, AV_LOG_VERBOSE, "\n");
 
-            ret = ost_add(mux, o, ofilter->type, NULL, ofilter, NULL);
+            ret = ost_add(mux, o, ofilter->type, NULL, ofilter, NULL, NULL);
             if (ret < 0)
                 return ret;
         }

@@ -1799,7 +1799,7 @@ Set the size of the canvas used to render subtitles.
 @section Advanced options
 
 @table @option
-@item -map [-]@var{input_file_id}[:@var{stream_specifier}][?] | @var{[linklabel]} (@emph{output})
+@item -map [-]@var{input_file_id}[:@var{stream_specifier}][:@var{view_specifier}][?] | @var{[linklabel]} (@emph{output})
 
 Create one or more streams in the output file. This option has two forms for
 specifying the data source(s): the first selects one or more streams from some
@@ -1813,6 +1813,26 @@ only those streams that match the specifier are used (see the
 
 A @code{-} character before the stream identifier creates a "negative" mapping.
 It disables matching streams from already created mappings.
+
+An optional @var{view_specifier} may be given after the stream specifier, which
+for multiview video specifies the view to be used. The view specifier may have
+one of the following formats:
+@table @option
+@item view:@var{view_id}
+select a view by its ID; @var{view_id} may be set to 'all' to use all the views
+interleaved into one stream;
+
+@item vidx:@var{view_idx}
+select a view by its index; i.e. 0 is the base view, 1 is the first non-base
+view, etc.
+
+@item vpos:@var{position}
+select a view by its display position; @var{position} may be @code{left} or
+@code{right}
+@end table
+The default for transcoding is to only use the base view, i.e. the equivalent of
+@code{vidx:0}. For streamcopy, view specifiers are not supported and all views
+are always copied.
 
 A trailing @code{?} after the stream index will allow the map to be
 optional: if the map matches no streams the map will be ignored instead
@@ -2206,11 +2226,15 @@ distinguished by the format of the corresponding link label:
 @item
 To connect an input stream, use @code{[file_index:stream_specifier]} (i.e. the
 same syntax as @option{-map}). If @var{stream_specifier} matches multiple
-streams, the first one will be used.
+streams, the first one will be used. For multiview video, the stream specifier
+may be followed by the view specifier, see documentation for the @option{-map}
+option for its syntax.
 
 @item
 To connect a loopback decoder use [dec:@var{dec_idx}], where @var{dec_idx} is
-the index of the loopback decoder to be connected to given input.
+the index of the loopback decoder to be connected to given input. For multiview
+video, the decoder index may be followed by the view specifier, see
+documentation for the @option{-map} option for its syntax.
 
 @item
 To connect an output from another complex filtergraph, use its link label. E.g
