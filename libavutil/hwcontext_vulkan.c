@@ -1228,6 +1228,8 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
         };
     }
 
+#if FF_API_VULKAN_FIXED_QUEUES
+FF_DISABLE_DEPRECATION_WARNINGS
     /* Setup deprecated fields */
     hwctx->queue_family_index        = -1;
     hwctx->queue_family_comp_index   = -1;
@@ -1252,6 +1254,8 @@ static int setup_queue_families(AVHWDeviceContext *ctx, VkDeviceCreateInfo *cd)
     }
 
 #undef SET_OLD_QF
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     return 0;
 }
@@ -1611,6 +1615,8 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         }
     }
 
+#if FF_API_VULKAN_FIXED_QUEUES
+FF_DISABLE_DEPRECATION_WARNINGS
     graph_index = hwctx->nb_graphics_queues ? hwctx->queue_family_index : -1;
     comp_index  = hwctx->nb_comp_queues ? hwctx->queue_family_comp_index : -1;
     tx_index    = hwctx->nb_tx_queues ? hwctx->queue_family_tx_index : -1;
@@ -1678,6 +1684,8 @@ static int vulkan_device_init(AVHWDeviceContext *ctx)
         ADD_QUEUE(hwctx->queue_family_encode_index, hwctx->nb_encode_queues, VK_QUEUE_VIDEO_ENCODE_BIT_KHR);
 #undef ADD_QUEUE
     }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     for (int i = 0; i < hwctx->nb_qf; i++) {
         if (!hwctx->qf[i].video_caps &&
