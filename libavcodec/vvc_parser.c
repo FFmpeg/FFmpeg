@@ -185,9 +185,6 @@ static void set_parser_ctx(AVCodecParserContext *s, AVCodecContext *avctx,
     avctx->color_range =
         sps->vui.vui_full_range_flag ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
 
-    avctx->has_b_frames =
-        sps->sps_dpb_params.dpb_max_num_reorder_pics[sps->sps_max_sublayers_minus1];
-
     if (sps->sps_ptl_dpb_hrd_params_present_flag &&
         sps->sps_timing_hrd_params_present_flag) {
         uint32_t num = sps->sps_general_timing_hrd_parameters.num_units_in_tick;

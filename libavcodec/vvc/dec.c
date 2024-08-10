@@ -781,6 +781,7 @@ static void export_frame_params(VVCContext *s, const VVCFrameContext *fc)
     c->coded_height = pps->height;
     c->width        = pps->width  - ((pps->r->pps_conf_win_left_offset + pps->r->pps_conf_win_right_offset) << sps->hshift[CHROMA]);
     c->height       = pps->height - ((pps->r->pps_conf_win_top_offset + pps->r->pps_conf_win_bottom_offset) << sps->vshift[CHROMA]);
+    c->has_b_frames = sps->r->sps_dpb_params.dpb_max_num_reorder_pics[sps->r->sps_max_sublayers_minus1];
 }
 
 static int frame_setup(VVCFrameContext *fc, VVCContext *s)
