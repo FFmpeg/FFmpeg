@@ -245,10 +245,7 @@ void ff_inlink_set_status(AVFilterLink *link, int status);
 /**
  * Test if a frame is wanted on an output link.
  */
-static inline int ff_outlink_frame_wanted(AVFilterLink *link)
-{
-    return link->frame_wanted_out;
-}
+int ff_outlink_frame_wanted(AVFilterLink *link);
 
 /**
  * Get the status on an output link.

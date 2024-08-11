@@ -88,6 +88,7 @@ static int get_frame_internal(AVFilterContext *ctx, AVFrame *frame, int flags, i
 {
     BufferSinkContext *buf = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
+    FilterLinkInternal *li = ff_link_internal(inlink);
     int status, ret;
     AVFrame *cur_frame;
     int64_t pts;
@@ -107,7 +108,7 @@ static int get_frame_internal(AVFilterContext *ctx, AVFrame *frame, int flags, i
             return status;
         } else if ((flags & AV_BUFFERSINK_FLAG_NO_REQUEST)) {
             return AVERROR(EAGAIN);
-        } else if (inlink->frame_wanted_out) {
+        } else if (li->frame_wanted_out) {
             ret = ff_filter_graph_run_once(ctx->graph);
             if (ret < 0)
                 return ret;

@@ -599,13 +599,6 @@ struct AVFilterLink {
      * Graph the filter belongs to.
      */
     struct AVFilterGraph *graph;
-
-    /**
-     * True if a frame is currently wanted on the output of this filter.
-     * Set when ff_request_frame() is called by the output,
-     * cleared when a frame is filtered.
-     */
-    int frame_wanted_out;
 };
 
 /**

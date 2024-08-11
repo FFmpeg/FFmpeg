@@ -264,7 +264,7 @@ void ff_avfilter_link_set_in_status(AVFilterLink *link, int status, int64_t pts)
     av_assert0(!li->status_in);
     li->status_in = status;
     li->status_in_pts = pts;
-    link->frame_wanted_out = 0;
+    li->frame_wanted_out = 0;
     li->frame_blocked_in = 0;
     filter_unblock(link->dst);
     ff_filter_set_ready(link->dst, 200);
@@ -278,7 +278,7 @@ static void link_set_out_status(AVFilterLink *link, int status, int64_t pts)
 {
     FilterLinkInternal * const li = ff_link_internal(link);
 
-    av_assert0(!link->frame_wanted_out);
+    av_assert0(!li->frame_wanted_out);
     av_assert0(!li->status_out);
     li->status_out = status;
     if (pts != AV_NOPTS_VALUE)
@@ -481,7 +481,7 @@ int ff_request_frame(AVFilterLink *link)
         return li->status_out;
     if (li->status_in) {
         if (ff_framequeue_queued_frames(&li->fifo)) {
-            av_assert1(!link->frame_wanted_out);
+            av_assert1(!li->frame_wanted_out);
             av_assert1(link->dst->ready >= 300);
             return 0;
         } else {
@@ -492,7 +492,7 @@ int ff_request_frame(AVFilterLink *link)
             return li->status_out;
         }
     }
-    link->frame_wanted_out = 1;
+    li->frame_wanted_out = 1;
     ff_filter_set_ready(link->src, 100);
     return 0;
 }
@@ -1058,7 +1058,7 @@ int ff_filter_frame(AVFilterLink *link, AVFrame *frame)
                                        link->time_base);
     }
 
-    li->frame_blocked_in = link->frame_wanted_out = 0;
+    li->frame_blocked_in = li->frame_wanted_out = 0;
     li->l.frame_count_in++;
     li->l.sample_count_in += frame->nb_samples;
     filter_unblock(link->dst);
@@ -1241,7 +1241,7 @@ static int ff_filter_activate_default(AVFilterContext *filter)
     }
     for (i = 0; i < filter->nb_outputs; i++) {
         FilterLinkInternal * const li = ff_link_internal(filter->outputs[i]);
-        if (filter->outputs[i]->frame_wanted_out &&
+        if (li->frame_wanted_out &&
             !li->frame_blocked_in) {
             return ff_request_frame_to_filter(filter->outputs[i]);
         }
@@ -1581,7 +1581,7 @@ void ff_inlink_request_frame(AVFilterLink *link)
     av_unused FilterLinkInternal *li = ff_link_internal(link);
     av_assert1(!li->status_in);
     av_assert1(!li->status_out);
-    link->frame_wanted_out = 1;
+    li->frame_wanted_out = 1;
     ff_filter_set_ready(link->src, 100);
 }
 
@@ -1590,7 +1590,7 @@ void ff_inlink_set_status(AVFilterLink *link, int status)
     FilterLinkInternal * const li = ff_link_internal(link);
     if (li->status_out)
         return;
-    link->frame_wanted_out = 0;
+    li->frame_wanted_out = 0;
     li->frame_blocked_in = 0;
     link_set_out_status(link, status, AV_NOPTS_VALUE);
     while (ff_framequeue_queued_frames(&li->fifo)) {
@@ -1641,4 +1641,10 @@ int ff_filter_init_hw_frames(AVFilterContext *avctx, AVFilterLink *link,
     }
 
     return 0;
+}
+
+int ff_outlink_frame_wanted(AVFilterLink *link)
+{
+    FilterLinkInternal * const li = ff_link_internal(link);
+    return li->frame_wanted_out;
 }

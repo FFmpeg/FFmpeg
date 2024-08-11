@@ -68,6 +68,13 @@ typedef struct FilterLinkInternal {
     int status_out;
 
     /**
+     * True if a frame is currently wanted on the output of this filter.
+     * Set when ff_request_frame() is called by the output,
+     * cleared when a frame is filtered.
+     */
+    int frame_wanted_out;
+
+    /**
      * Index in the age array.
      */
     int age_index;
