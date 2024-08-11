@@ -454,6 +454,14 @@ static VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEX
     int l;
     AVHWDeviceContext *ctx = priv;
 
+    /* Ignore false positives */
+    switch (data->messageIdNumber) {
+    case 0x30f4ac70: /* VUID-VkImageCreateInfo-pNext-06811 */
+        return VK_FALSE;
+    default:
+        break;
+    }
+
     switch (severity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: l = AV_LOG_VERBOSE; break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:    l = AV_LOG_INFO;    break;
@@ -466,7 +474,7 @@ static VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEX
     for (int i = 0; i < data->cmdBufLabelCount; i++)
         av_log(ctx, l, "\t%i: %s\n", i, data->pCmdBufLabels[i].pLabelName);
 
-    return 0;
+    return VK_FALSE;
 }
 
 #define ADD_VAL_TO_LIST(list, count, val)                                      \
