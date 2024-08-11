@@ -106,7 +106,7 @@ void ff_filter_graph_remove_filter(AVFilterGraph *graph, AVFilterContext *filter
             filter->graph = NULL;
             for (j = 0; j<filter->nb_outputs; j++)
                 if (filter->outputs[j])
-                    filter->outputs[j]->graph = NULL;
+                    ff_filter_link(filter->outputs[j])->graph = NULL;
 
             return;
         }

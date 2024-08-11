@@ -567,7 +567,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                     av_log(ctx, AV_LOG_VERBOSE,
                            "Processing command #%d target:%s command:%s arg:%s\n",
                            cmd->index, cmd->target, cmd->command, cmd_arg);
-                    ret = avfilter_graph_send_command(inlink->graph,
+                    ret = avfilter_graph_send_command(inl->graph,
                                                       cmd->target, cmd->command, cmd_arg,
                                                       buf, sizeof(buf),
                                                       AVFILTER_CMD_FLAG_ONE);

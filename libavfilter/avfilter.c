@@ -185,7 +185,7 @@ int avfilter_link(AVFilterContext *src, unsigned srcpad,
     link->srcpad  = &src->output_pads[srcpad];
     link->dstpad  = &dst->input_pads[dstpad];
     link->type    = src->output_pads[srcpad].type;
-    link->graph   = src->graph;
+    li->l.graph   = src->graph;
     av_assert0(AV_PIX_FMT_NONE == -1 && AV_SAMPLE_FMT_NONE == -1);
     link->format  = -1;
     link->colorspace = AVCOL_SPC_UNSPECIFIED;
@@ -231,8 +231,8 @@ static void update_link_current_pts(FilterLinkInternal *li, int64_t pts)
     li->l.current_pts = pts;
     li->l.current_pts_us = av_rescale_q(pts, link->time_base, AV_TIME_BASE_Q);
     /* TODO use duration */
-    if (link->graph && li->age_index >= 0)
-        ff_avfilter_graph_update_heap(link->graph, li);
+    if (li->l.graph && li->age_index >= 0)
+        ff_avfilter_graph_update_heap(li->l.graph, li);
 }
 
 void ff_filter_set_ready(AVFilterContext *filter, unsigned priority)

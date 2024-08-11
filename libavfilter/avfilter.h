@@ -594,11 +594,6 @@ struct AVFilterLink {
      * Lists of supported formats / etc. supported by the output filter.
      */
     AVFilterFormatsConfig outcfg;
-
-    /**
-     * Graph the filter belongs to.
-     */
-    struct AVFilterGraph *graph;
 };
 
 /**

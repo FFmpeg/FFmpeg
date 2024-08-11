@@ -43,6 +43,11 @@ typedef struct FilterLink {
     AVFilterLink pub;
 
     /**
+     * Graph the filter belongs to.
+     */
+    struct AVFilterGraph *graph;
+
+    /**
      * Current timestamp of the link, as defined by the most recent
      * frame(s), in link time_base units.
      */
