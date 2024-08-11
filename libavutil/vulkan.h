@@ -291,6 +291,15 @@ static inline const void *ff_vk_find_struct(const void *chain, VkStructureType s
     return NULL;
 }
 
+static inline void ff_vk_link_struct(void *chain, const void *in)
+{
+    VkBaseOutStructure *out = chain;
+    while (out->pNext)
+        out = out->pNext;
+
+    out->pNext = (void *)in;
+}
+
 /* Identity mapping - r = r, b = b, g = g, a = a */
 extern const VkComponentMapping ff_comp_identity_map;
 

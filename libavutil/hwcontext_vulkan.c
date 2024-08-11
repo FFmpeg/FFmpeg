@@ -1369,17 +1369,27 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->device_features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
     p->device_features_1_2.pNext = &p->device_features_1_3;
     p->device_features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-    p->device_features_1_3.pNext = &p->desc_buf_features;
-    p->desc_buf_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT;
-    p->desc_buf_features.pNext = &p->atomic_float_features;
-    p->atomic_float_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
-    p->atomic_float_features.pNext = &p->coop_matrix_features;
-    p->coop_matrix_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR;
-    p->coop_matrix_features.pNext = &p->optical_flow_features;
-    p->optical_flow_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV;
-    p->optical_flow_features.pNext = &p->shader_object_features;
-    p->shader_object_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
-    p->shader_object_features.pNext = NULL;
+    p->device_features_1_3.pNext = NULL;
+
+#define OPT_CHAIN(EXT_FLAG, STRUCT_P, TYPE)                            \
+    do {                                                               \
+        if (p->vkctx.extensions & EXT_FLAG) {                          \
+            (STRUCT_P)->sType = TYPE;                                  \
+            ff_vk_link_struct(hwctx->device_features.pNext, STRUCT_P); \
+        }                                                              \
+    } while (0)
+
+    OPT_CHAIN(FF_VK_EXT_DESCRIPTOR_BUFFER, &p->desc_buf_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
+    OPT_CHAIN(FF_VK_EXT_ATOMIC_FLOAT, &p->atomic_float_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
+    OPT_CHAIN(FF_VK_EXT_COOP_MATRIX, &p->coop_matrix_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR);
+    OPT_CHAIN(FF_VK_EXT_SHADER_OBJECT, &p->shader_object_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
+    OPT_CHAIN(FF_VK_EXT_OPTICAL_FLOW, &p->optical_flow_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
+#undef OPT_CHAIN
 
     ctx->free = vulkan_device_free;
 
