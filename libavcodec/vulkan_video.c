@@ -177,6 +177,20 @@ int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level)
     }
 }
 
+int ff_vk_video_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
+                        VkQueueFlagBits family, VkVideoCodecOperationFlagBitsKHR caps)
+{
+    for (int i = 0; i < s->hwctx->nb_qf; i++) {
+        if ((s->hwctx->qf[i].flags & family) &&
+            (s->hwctx->qf[i].video_caps & caps)) {
+            qf->queue_family = s->hwctx->qf[i].idx;
+            qf->nb_queues = s->hwctx->qf[i].num;
+            return 0;
+        }
+    }
+    return AVERROR(ENOTSUP);
+}
+
 av_cold void ff_vk_video_common_uninit(FFVulkanContext *s,
                                        FFVkVideoCommon *common)
 {

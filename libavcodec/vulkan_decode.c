@@ -1118,7 +1118,7 @@ int ff_vk_decode_uninit(AVCodecContext *avctx)
 
 int ff_vk_decode_init(AVCodecContext *avctx)
 {
-    int err, qf, cxpos = 0, cypos = 0, nb_q = 0;
+    int err, cxpos = 0, cypos = 0, nb_q = 0;
     VkResult ret;
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
     FFVulkanDecodeShared *ctx;
@@ -1183,18 +1183,18 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         goto fail;
 
     /* Create queue context */
-    qf = ff_vk_qf_init(s, &ctx->qf, VK_QUEUE_VIDEO_DECODE_BIT_KHR);
-
     vk_desc = get_codecdesc(avctx->codec_id);
-    /* Check for support */
-    if (!(s->video_props[qf].videoCodecOperations & vk_desc->decode_op)) {
-        av_log(avctx, AV_LOG_ERROR, "Decoding %s not supported on the given "
-               "queue family %i!\n", avcodec_get_name(avctx->codec_id), qf);
-        return AVERROR(EINVAL);
+    err = ff_vk_video_qf_init(s, &ctx->qf,
+                              VK_QUEUE_VIDEO_DECODE_BIT_KHR,
+                              vk_desc->decode_op);
+    if (err < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Decoding of %s is not supported by this device\n",
+               avcodec_get_name(avctx->codec_id));
+        return err;
     }
 
     /* Enable queries if supported */
-    if (s->query_props[qf].queryResultStatusSupport)
+    if (s->query_props[ctx->qf.queue_family].queryResultStatusSupport)
         nb_q = 1;
 
     session_create.flags = 0x0;
