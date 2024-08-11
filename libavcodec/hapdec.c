@@ -310,6 +310,7 @@ static int hap_decode(AVCodecContext *avctx, AVFrame *frame,
             ret = av_reallocp(&ctx->tex_buf, ctx->tex_size);
             if (ret < 0)
                 return ret;
+            memset(ctx->tex_buf, 0, ctx->tex_size);
 
             avctx->execute2(avctx, decompress_chunks_thread, NULL,
                             ctx->chunk_results, ctx->chunk_count);
