@@ -4952,7 +4952,7 @@ static int mov_setup_track_ids(MOVMuxContext *mov, AVFormatContext *s)
             last_track_id =
             mov->tracks[i].track_id = (mov->tracks[i].st
                                        ? FFMAX(mov->tracks[i].st->index, last_track_id)
-                                       : FFMAX((i ? mov->tracks[i - 1].track_id : i), last_track_id)) + 1;
+                                       : FFMAX(i, last_track_id)) + 1;
         }
     }
 
