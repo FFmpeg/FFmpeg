@@ -276,6 +276,9 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
             return AVERROR_PATCHWELCOME;
         }
         break;
+    case AV_CODEC_ID_ADPCM_DTK:
+        min_channels = 2;
+        break;
     case AV_CODEC_ID_ADPCM_PSX:
         max_channels = 8;
         if (avctx->ch_layout.nb_channels <= 0 ||
