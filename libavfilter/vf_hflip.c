@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "hflip.h"
 #include "internal.h"

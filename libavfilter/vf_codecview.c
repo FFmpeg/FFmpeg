@@ -35,6 +35,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/video_enc_params.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "qp_table.h"
 #include "internal.h"
 #include "video.h"

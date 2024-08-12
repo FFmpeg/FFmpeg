@@ -30,6 +30,8 @@
 
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 

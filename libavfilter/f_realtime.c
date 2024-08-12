@@ -24,6 +24,7 @@
 #include "libavutil/time.h"
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include <float.h>

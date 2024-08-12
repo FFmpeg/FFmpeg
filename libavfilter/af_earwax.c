@@ -32,6 +32,7 @@
 #include "libavutil/channel_layout.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "formats.h"
 
 #define NUMTAPS 32

@@ -28,6 +28,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
+#include "filters.h"
 #include "internal.h"
 #include "qp_table.h"
 #include "video.h"

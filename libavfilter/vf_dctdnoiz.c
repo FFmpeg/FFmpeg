@@ -33,6 +33,8 @@
 #include "libavutil/mem.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/opt.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 

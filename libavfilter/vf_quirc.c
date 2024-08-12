@@ -27,6 +27,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "video.h"
 #include <quirc.h>

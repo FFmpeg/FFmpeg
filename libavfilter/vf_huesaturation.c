@@ -20,6 +20,7 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 

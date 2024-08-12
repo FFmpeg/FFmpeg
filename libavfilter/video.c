@@ -30,6 +30,7 @@
 
 #include "avfilter.h"
 #include "avfilter_internal.h"
+#include "filters.h"
 #include "framepool.h"
 #include "internal.h"
 #include "video.h"

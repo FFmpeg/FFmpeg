@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 
 typedef struct BiquadCoeffs {
     double a1, a2;

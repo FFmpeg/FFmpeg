@@ -31,6 +31,7 @@
 #include "libavutil/lfg.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "vf_noise.h"

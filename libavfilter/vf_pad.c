@@ -27,6 +27,7 @@
 #include <float.h>  /* DBL_MAX */
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"

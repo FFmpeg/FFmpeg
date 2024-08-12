@@ -47,6 +47,7 @@
 #include "libavutil/tx.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "internal.h"
 
 /**

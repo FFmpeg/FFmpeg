@@ -35,6 +35,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include "lut3d.h"

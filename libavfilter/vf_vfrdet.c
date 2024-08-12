@@ -20,6 +20,8 @@
 
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 

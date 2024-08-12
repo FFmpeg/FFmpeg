@@ -23,7 +23,7 @@
 #define AVFILTER_AUDIO_H
 
 #include "avfilter.h"
-#include "internal.h"
+#include "filters.h"
 
 /**
  * An AVFilterPad array whose only entry has name "default"

@@ -34,6 +34,7 @@
 #include "avfilter.h"
 #include "bwdifdsp.h"
 #include "ccfifo.h"
+#include "filters.h"
 #include "internal.h"
 #include "yadif.h"
 

@@ -40,6 +40,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "gradfun.h"
 #include "internal.h"
 #include "video.h"

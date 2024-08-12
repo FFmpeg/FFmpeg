@@ -24,6 +24,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 
 #define MAX_NB_COEFFS 16
 

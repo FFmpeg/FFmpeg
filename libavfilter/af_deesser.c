@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 
 typedef struct DeesserChannel {
     double s1, s2, s3;

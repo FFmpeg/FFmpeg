@@ -29,6 +29,7 @@
 #include "libavutil/random_seed.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
