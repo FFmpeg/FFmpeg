@@ -254,11 +254,13 @@ static int decode_palmapdata(AVCodecContext *avctx)
     const int bits = (s->nb_pal + 1) / 2;
     GetByteContext *gb = &s->gb;
     GetBitContext pm;
+    int ret;
 
     bytestream2_seek(gb, s->palmapdata_offset, SEEK_SET);
     if (bytestream2_get_bytes_left(gb) < s->palmapdata_size)
         return AVERROR_INVALIDDATA;
-    init_get_bits8(&pm, gb->buffer, s->palmapdata_size);
+    ret = init_get_bits8(&pm, gb->buffer, s->palmapdata_size);
+    av_assert1(ret >= 0);
 
     for (int y = 0; y < s->tiles_h; y++) {
         uint8_t *dst = s->palmapindex_data + y * s->tiles_w;
@@ -277,11 +279,13 @@ static int decode_tiledata(AVCodecContext *avctx)
     SGAVideoContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
     GetBitContext tm;
+    int ret;
 
     bytestream2_seek(gb, s->tiledata_offset, SEEK_SET);
     if (bytestream2_get_bytes_left(gb) < s->tiledata_size)
         return AVERROR_INVALIDDATA;
-    init_get_bits8(&tm, gb->buffer, s->tiledata_size);
+    ret = init_get_bits8(&tm, gb->buffer, s->tiledata_size);
+    av_assert1(ret >= 0);
 
     for (int n = 0; n < s->nb_tiles; n++) {
         uint8_t *dst = s->tileindex_data + n * 64;
