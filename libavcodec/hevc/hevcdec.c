@@ -412,8 +412,8 @@ static int export_stream_params_from_sei(HEVCContext *s)
         avctx->color_trc = s->sei.common.alternative_transfer.preferred_transfer_characteristics;
     }
 
-    if (s->sei.common.film_grain_characteristics.present ||
-        s->sei.common.aom_film_grain.enable)
+    if ((s->sei.common.film_grain_characteristics && s->sei.common.film_grain_characteristics->present) ||
+        (s->sei.common.aom_film_grain && s->sei.common.aom_film_grain->enable))
         avctx->properties |= FF_CODEC_PROPERTY_FILM_GRAIN;
 
     return 0;
@@ -3267,8 +3267,8 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
     else
         s->cur_frame->f->flags &= ~AV_FRAME_FLAG_KEY;
 
-    s->cur_frame->needs_fg = (s->sei.common.film_grain_characteristics.present ||
-                              s->sei.common.aom_film_grain.enable) &&
+    s->cur_frame->needs_fg = ((s->sei.common.film_grain_characteristics && s->sei.common.film_grain_characteristics->present) ||
+                              (s->sei.common.aom_film_grain && s->sei.common.aom_film_grain->enable)) &&
         !(s->avctx->export_side_data & AV_CODEC_EXPORT_DATA_FILM_GRAIN) &&
         !s->avctx->hwaccel;
 
@@ -3277,8 +3277,8 @@ static int hevc_frame_start(HEVCContext *s, HEVCLayerContext *l,
         goto fail;
 
     if (s->cur_frame->needs_fg &&
-        (s->sei.common.film_grain_characteristics.present &&
-         !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics.model_id,
+        (s->sei.common.film_grain_characteristics && s->sei.common.film_grain_characteristics->present &&
+         !ff_h274_film_grain_params_supported(s->sei.common.film_grain_characteristics->model_id,
                                               s->cur_frame->f->format) ||
          !av_film_grain_params_select(s->cur_frame->f))) {
         av_log_once(s->avctx, AV_LOG_WARNING, AV_LOG_DEBUG, &s->film_grain_warning_shown,
@@ -3415,8 +3415,13 @@ static int hevc_frame_end(HEVCContext *s, HEVCLayerContext *l)
             av_assert0(0);
             return AVERROR_BUG;
         case AV_FILM_GRAIN_PARAMS_H274:
+            if (!s->h274db) {
+                s->h274db = av_mallocz(sizeof(*s->h274db));
+                if (!s->h274db)
+                    return AVERROR(ENOMEM);
+            }
             ret = ff_h274_apply_film_grain(out->frame_grain, out->f,
-                                           &s->h274db, fgp);
+                                           s->h274db, fgp);
             break;
         case AV_FILM_GRAIN_PARAMS_AV1:
             ret = ff_aom_apply_film_grain(out->frame_grain, out->f, fgp);
@@ -3844,6 +3849,7 @@ static av_cold int hevc_decode_free(AVCodecContext *avctx)
     av_buffer_unref(&s->rpu_buf);
 
     av_freep(&s->md5_ctx);
+    av_freep(&s->h274db);
 
     ff_container_fifo_free(&s->output_fifo);
 

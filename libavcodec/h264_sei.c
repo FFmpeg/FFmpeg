@@ -55,7 +55,6 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->picture_timing.present      = 0;
     h->buffering_period.present    = 0;
     h->common.frame_packing.present       = 0;
-    h->common.film_grain_characteristics.present = 0;
     h->common.display_orientation.present = 0;
     h->common.afd.present                 =  0;
 
