@@ -1580,6 +1580,7 @@ int ff_vk_exec_pipeline_register(FFVulkanContext *s, FFVkExecPool *pool,
 
         err = ff_vk_create_buf(s, &set->buf, set->aligned_size*nb,
                                NULL, NULL, set->usage,
+                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         if (err < 0)
