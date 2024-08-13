@@ -1315,8 +1315,6 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             const char *format = "{fidx} {sidx} {n} {t}";
 
             opt_match_per_stream_str(ost, &o->enc_stats_pre_fmt, oc, st, &format);
-            if (ret < 0)
-                goto fail;
 
             ret = enc_stats_init(ost, &ost->enc_stats_pre, 1, enc_stats_pre, format);
             if (ret < 0)
