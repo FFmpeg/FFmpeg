@@ -749,20 +749,24 @@ post_skip :
 
             if (err > s->sixteen_color_thresh) { // DO SIXTEEN COLOR BLOCK
                 const uint16_t *row_ptr;
-                int y_size, rgb555;
+                int y_size, x_size, rgb555;
 
                 block_offset  = get_block_info(&bi, block_counter, 0);
                 pblock_offset = get_block_info(&bi, block_counter, 1);
 
                 row_ptr = &src_pixels[block_offset];
                 y_size = FFMIN(4, bi.image_height - bi.row * 4);
+                x_size = FFMIN(4, bi.image_width  - bi.col * 4);
 
                 for (int y = 0; y < y_size; y++) {
-                    for (int x = 0; x < 4; x++) {
+                    for (int x = 0; x < x_size; x++) {
                         rgb555 = row_ptr[x] & ~0x8000;
 
                         put_bits(&s->pb, 16, rgb555);
                     }
+                    for (int x = x_size; x < 4; x++)
+                        put_bits(&s->pb, 16, 0);
+
                     row_ptr += bi.rowstride;
                 }
 
