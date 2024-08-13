@@ -389,7 +389,7 @@ static struct {
 
     int cpu_flag;
     const char *cpu_flag_name;
-    const char *test_name;
+    const char *test_pattern;
     int verbose;
     int csv;
     int tsv;
@@ -775,6 +775,22 @@ static void signal_handler(int s) {
 }
 #endif
 
+/* Compares a string with a wildcard pattern. */
+static int wildstrcmp(const char *str, const char *pattern)
+{
+    const char *wild = strchr(pattern, '*');
+    if (wild) {
+        const size_t len = wild - pattern;
+        if (strncmp(str, pattern, len)) return 1;
+        while (*++wild == '*');
+        if (!*wild) return 0;
+        str += len;
+        while (*str && wildstrcmp(str, wild)) str++;
+        return !*str;
+    }
+    return strcmp(str, pattern);
+}
+
 /* Perform tests and benchmarks for the specified cpu flag if supported by the host */
 static void check_cpu_flag(const char *name, int flag)
 {
@@ -790,7 +806,7 @@ static void check_cpu_flag(const char *name, int flag)
 
         state.cpu_flag_name = name;
         for (i = 0; tests[i].func; i++) {
-            if (state.test_name && strcmp(tests[i].name, state.test_name))
+            if (state.test_pattern && wildstrcmp(tests[i].name, state.test_pattern))
                 continue;
             state.current_test_name = tests[i].name;
             tests[i].func();
@@ -935,9 +951,9 @@ int main(int argc, char *argv[])
                 state.bench_pattern = arg + 8;
                 state.bench_pattern_len = strlen(state.bench_pattern);
             } else
-                state.bench_pattern = "";
+                state.bench_pattern = "*";
         } else if (!strncmp(arg, "--test=", 7)) {
-            state.test_name = arg + 7;
+            state.test_pattern = arg + 7;
         } else if (!strcmp(arg, "--csv")) {
             state.csv = 1; state.tsv = 0;
         } else if (!strcmp(arg, "--tsv")) {
@@ -1041,7 +1057,7 @@ void *checkasm_check_func(void *func, const char *name, ...)
 int checkasm_bench_func(void)
 {
     return !state.num_failed && state.bench_pattern &&
-           !strncmp(state.current_func->name, state.bench_pattern, state.bench_pattern_len);
+           !wildstrcmp(state.current_func->name, state.bench_pattern);
 }
 
 /* Indicate that the current test has failed */
