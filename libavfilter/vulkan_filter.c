@@ -54,8 +54,8 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
         if (sw_format != frames_ctx->sw_format)
             goto skip;
 
-        /* Unusual tiling mismatch. Don't let linear through either. */
-        if (vk_frames->tiling != VK_IMAGE_TILING_OPTIMAL)
+        /* Don't let linear through. */
+        if (vk_frames->tiling == VK_IMAGE_TILING_LINEAR)
             goto skip;
 
         s->extensions = ff_vk_extensions_to_mask(vk_dev->enabled_dev_extensions,
