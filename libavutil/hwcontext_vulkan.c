@@ -3830,6 +3830,7 @@ static int host_map_frame(AVHWFramesContext *hwfc, AVBufferRef **dst, int *nb_bu
         /* Add the offset at the start, which gets ignored */
         buffer_size = offs + swf->linesize[i]*p_h;
         buffer_size = FFALIGN(buffer_size, p->props.properties.limits.minMemoryMapAlignment);
+        buffer_size = FFALIGN(buffer_size, p->hprops.minImportedHostPointerAlignment);
 
         /* Create a buffer */
         vkb = av_mallocz(sizeof(*vkb));
