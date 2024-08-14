@@ -55,6 +55,25 @@ func ff_try_8x8basis_rvv, zve32x, b
         ret
 endfunc
 
+func ff_add_8x8basis_rvv, zve32x, b
+        li      t1, 64
+        csrwi   vxrm, 0
+1:
+        vsetvli     t0, t1, e16, m4, ta, ma
+        vle16.v     v4, (a1)
+        sub     t1, t1, t0
+        vwmul.vx    v16, v4, a2
+        sh1add  a1, t0, a1
+        vle16.v     v8, (a0)
+        vnclip.wi   v4, v16, BASIS_SHIFT - RECON_SHIFT
+        vadd.vv     v4, v8, v4
+        vse16.v     v4, (a0)
+        sh1add  a0, t0, a0
+        bnez    t1, 1b
+
+        ret
+endfunc
+
 func ff_pix_sum_rvv, zve64x, b
         lpad    0
         vsetivli    t0, 16, e16, m1, ta, ma
