@@ -1081,6 +1081,7 @@ int ff_iamfdec_read_descriptors(IAMFContext *c, AVIOContext *pb,
         size = avio_read(pb, header, FFMIN(MAX_IAMF_OBU_HEADER_SIZE, max_size));
         if (size < 0)
             return size;
+        memset(header + size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
         len = ff_iamf_parse_obu_header(header, size, &obu_size, &start_pos, &type, NULL, NULL);
         if (len < 0 || obu_size > max_size) {
