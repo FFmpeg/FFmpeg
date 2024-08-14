@@ -16,6 +16,7 @@ A (CC <address>) after the name means that the maintainer prefers to be CC-ed on
 patches and related discussions.
 
 (L <address>) *Mailing list* that is relevant to this area
+(W <address>) *Web-page* with status/info
 
 Applications
 ============
