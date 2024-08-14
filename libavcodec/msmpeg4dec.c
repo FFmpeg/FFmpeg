@@ -628,7 +628,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, int16_t * block,
                               int n, int coded, const uint8_t *scan_table)
 {
     int level, i, last, run, run_diff;
-    int av_uninit(dc_pred_dir);
+    int dc_pred_dir = -1; //unused but its passed around, so it needs to be initialized
     const RLTable *rl;
     const RL_VLC_ELEM *rl_vlc;
     int qmul, qadd;
