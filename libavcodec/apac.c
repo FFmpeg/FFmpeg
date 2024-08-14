@@ -130,7 +130,7 @@ static int apac_decode(AVCodecContext *avctx, AVFrame *frame,
     APACContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
     int ret, n, buf_size, input_buf_size;
-    const uint8_t *buf;
+    uint8_t *buf;
     int nb_samples;
 
     if (!pkt->size && s->bitstream_size <= 0) {
