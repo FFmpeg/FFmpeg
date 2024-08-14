@@ -1198,7 +1198,7 @@ int ff_vk_decode_init(AVCodecContext *avctx)
         nb_q = 1;
 
     session_create.flags = 0x0;
-    session_create.queueFamilyIndex = s->hwctx->queue_family_decode_index;
+    session_create.queueFamilyIndex = ctx->qf.queue_family;
     session_create.maxCodedExtent = ctx->caps.maxCodedExtent;
     session_create.maxDpbSlots = ctx->caps.maxDpbSlots;
     session_create.maxActiveReferencePictures = ctx->caps.maxActiveReferencePictures;
