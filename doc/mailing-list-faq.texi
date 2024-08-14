@@ -157,9 +157,6 @@ Perform a site search using your favorite search engine. Example:
 
 You can ask for help in the official @t{#ffmpeg} IRC channel on Libera Chat.
 
-Some users prefer the third-party @url{http://www.ffmpeg-archive.org/, Nabble}
-interface which presents the mailing lists in a typical forum layout.
-
 There are also numerous third-party help sites such as
 @url{https://superuser.com/tags/ffmpeg, Super User} and
 @url{https://www.reddit.com/r/ffmpeg/, r/ffmpeg on reddit}.
