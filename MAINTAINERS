@@ -6,7 +6,12 @@ FFmpeg code.
 
 Please try to keep entries where you are the maintainer up to date!
 
-Names in () mean that the maintainer currently has no time to maintain the code.
+*Status*, one of the following:
+[X] Old code. Something tagged obsolete generally means it has been replaced by a better system and you should be using that.
+[0] No current maintainer [but maybe you could take the role as you write your new code].
+[1] It has a maintainer but they don't have time to do much other than throw the odd patch in.
+[2] Someone actually looks after it.
+
 A (CC <address>) after the name means that the maintainer prefers to be CC-ed on
 patches and related discussions.
 
