@@ -17,6 +17,8 @@ patches and related discussions.
 
 (L <address>) *Mailing list* that is relevant to this area
 (W <address>) *Web-page* with status/info
+(B <address>) URI for where to file *bugs*. A web-page with detailed bug
+              filing info, a direct bug tracker link, or a mailto: URI.
 
 Applications
 ============
