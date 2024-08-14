@@ -94,6 +94,7 @@ typedef struct VulkanDevicePriv {
     VkPhysicalDeviceCooperativeMatrixFeaturesKHR coop_matrix_features;
     VkPhysicalDeviceOpticalFlowFeaturesNV optical_flow_features;
     VkPhysicalDeviceShaderObjectFeaturesEXT shader_object_features;
+    VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maint_1_features;
 
     /* Queues */
     pthread_mutex_t **qf_mutex;
@@ -422,6 +423,7 @@ static const VulkanOptExtension optional_device_exts[] = {
     { VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME,               FF_VK_EXT_COOP_MATRIX            },
     { VK_NV_OPTICAL_FLOW_EXTENSION_NAME,                      FF_VK_EXT_OPTICAL_FLOW           },
     { VK_EXT_SHADER_OBJECT_EXTENSION_NAME,                    FF_VK_EXT_SHADER_OBJECT          },
+    { VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME,              FF_VK_EXT_VIDEO_MAINTENANCE_1    },
 
     /* Imports/exports */
     { VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME,               FF_VK_EXT_EXTERNAL_FD_MEMORY     },
@@ -1401,9 +1403,13 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     VkPhysicalDeviceTimelineSemaphoreFeatures timeline_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
     };
+    VkPhysicalDeviceVideoMaintenance1FeaturesKHR video_maint_1_features = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR,
+        .pNext = &timeline_features,
+    };
     VkPhysicalDeviceShaderObjectFeaturesEXT shader_object_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT,
-        .pNext = &timeline_features,
+        .pNext = &video_maint_1_features,
     };
     VkPhysicalDeviceOpticalFlowFeaturesNV optical_flow_features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV,
@@ -1498,6 +1504,8 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
     p->device_features_1_3.shaderZeroInitializeWorkgroupMemory = dev_features_1_3.shaderZeroInitializeWorkgroupMemory;
     p->device_features_1_3.dynamicRendering = dev_features_1_3.dynamicRendering;
 
+    p->video_maint_1_features.videoMaintenance1 = video_maint_1_features.videoMaintenance1;
+
     p->desc_buf_features.descriptorBuffer = desc_buf_features.descriptorBuffer;
     p->desc_buf_features.descriptorBufferPushDescriptors = desc_buf_features.descriptorBufferPushDescriptors;
 
@@ -1547,6 +1555,8 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
     OPT_CHAIN(FF_VK_EXT_OPTICAL_FLOW, &p->optical_flow_features,
               VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
+    OPT_CHAIN(FF_VK_EXT_VIDEO_MAINTENANCE_1, &p->video_maint_1_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR);
 #undef OPT_CHAIN
 
     /* Add the enabled features into the pnext chain of device creation */
