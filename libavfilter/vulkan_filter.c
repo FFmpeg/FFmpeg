@@ -37,6 +37,7 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
     if (frames_ref) {
         int no_storage = 0;
         FFVulkanFunctions *vk;
+        VkImageUsageFlagBits usage_req;
         const VkFormat *sub = av_vkfmt_from_pixfmt(sw_format);
 
         frames_ctx = (AVHWFramesContext *)frames_ref->data;
@@ -57,17 +58,40 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
         if (vk_frames->tiling != VK_IMAGE_TILING_OPTIMAL)
             goto skip;
 
-        /* Usage mismatch */
-        if ((vk_frames->usage & (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT)) !=
-                                (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT))
-            goto skip;
-
         s->extensions = ff_vk_extensions_to_mask(vk_dev->enabled_dev_extensions,
                                                  vk_dev->nb_enabled_dev_extensions);
+
+        /* More advanced format checks */
         err = ff_vk_load_functions(device_ctx, &s->vkfn, s->extensions, 1, 1);
         if (err < 0)
             return err;
         vk = &s->vkfn;
+
+        /* Usage mismatch */
+        usage_req = VK_IMAGE_USAGE_SAMPLED_BIT |
+                    VK_IMAGE_USAGE_STORAGE_BIT;
+
+        /* If format supports hardware encoding, make sure
+         * the context includes it. */
+        if (vk_frames->format[1] == VK_FORMAT_UNDEFINED &&
+            (s->extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
+                              FF_VK_EXT_VIDEO_MAINTENANCE_1))) {
+            VkFormatProperties3 fprops = {
+                .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3,
+            };
+            VkFormatProperties2 prop = {
+                .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2,
+                .pNext = &fprops,
+            };
+            vk->GetPhysicalDeviceFormatProperties2(vk_dev->phys_dev,
+                                                   vk_frames->format[0],
+                                                   &prop);
+            if (fprops.optimalTilingFeatures & VK_FORMAT_FEATURE_2_VIDEO_ENCODE_INPUT_BIT_KHR)
+                usage_req |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
+        }
+
+        if ((vk_frames->usage & usage_req) != usage_req)
+            goto skip;
 
         /* Check if the subformats can do storage */
         for (int i = 0; sub[i] != VK_FORMAT_UNDEFINED; i++) {
@@ -112,13 +136,6 @@ skip:
         frames_ctx->sw_format = sw_format;
         frames_ctx->width     = width;
         frames_ctx->height    = height;
-
-        vk_frames = frames_ctx->hwctx;
-        vk_frames->tiling = VK_IMAGE_TILING_OPTIMAL;
-        vk_frames->usage  = VK_IMAGE_USAGE_SAMPLED_BIT |
-                            VK_IMAGE_USAGE_STORAGE_BIT |
-                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                            VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         err = av_hwframe_ctx_init(frames_ref);
         if (err < 0) {

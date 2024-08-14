@@ -2632,6 +2632,12 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                                           VK_IMAGE_USAGE_STORAGE_BIT       |
                                           VK_IMAGE_USAGE_SAMPLED_BIT);
+
+        /* Enables encoding of images, if supported by format and extensions */
+        if ((supported_usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
+            (p->vkctx.extensions & (FF_VK_EXT_VIDEO_ENCODE_QUEUE |
+                                   FF_VK_EXT_VIDEO_MAINTENANCE_1)))
+            hwctx->usage |= VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
     }
 
     /* Image creation flags.
@@ -2647,6 +2653,28 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
             if ((fmt->vk_planes > 1) && (hwctx->format[0] == fmt->vkf))
                 hwctx->img_flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT |
                                     VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+        }
+    }
+
+    /* If the image has an ENCODE_SRC usage, and the maintenance1
+     * extension is supported, check if it has a profile list.
+     * If there's no profile list, or it has no encode operations,
+     * then allow creating the image with no specific profile. */
+    if ((hwctx->usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR) &&
+        p->video_maint_1_features.videoMaintenance1) {
+        const VkVideoProfileListInfoKHR *pl;
+        pl = ff_vk_find_struct(hwctx->create_pnext, VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR);
+        if (!pl) {
+            hwctx->img_flags |= VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR;
+        } else {
+            uint32_t i;
+            for (i = 0; i < pl->profileCount; i++) {
+                /* Video ops start at exactly 0x00010000 */
+                if (pl->pProfiles[i].videoCodecOperation & 0xFFFF0000)
+                    break;
+            }
+            if (i == pl->profileCount)
+                hwctx->img_flags |= VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR;
         }
     }
 
