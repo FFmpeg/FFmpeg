@@ -19,6 +19,10 @@ patches and related discussions.
 (W <address>) *Web-page* with status/info
 (B <address>) URI for where to file *bugs*. A web-page with detailed bug
               filing info, a direct bug tracker link, or a mailto: URI.
+(P <address>) *Subsystem Profile* document for more details submitting
+              patches to the given subsystem. This is either an in-tree file,
+              or a URI. See Documentation/maintainer/maintainer-entry-profile.rst
+              for details.
 
 Applications
 ============
