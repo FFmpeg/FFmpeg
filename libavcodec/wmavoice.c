@@ -1493,6 +1493,8 @@ static int synth_frame(AVCodecContext *ctx, GetBitContext *gb, int frame_idx,
     /* Parse frame type ("frame header"), see frame_descs */
     int bd_idx = s->vbm_tree[get_vlc2(gb, frame_type_vlc.table, 6, 3)], block_nsamples;
 
+    pitch[0] = INT_MAX;
+
     if (bd_idx < 0) {
         av_log(ctx, AV_LOG_ERROR,
                "Invalid frame type VLC code, skipping\n");
@@ -1609,6 +1611,9 @@ static int synth_frame(AVCodecContext *ctx, GetBitContext *gb, int frame_idx,
     if (s->do_apf) {
         double i_lsps[MAX_LSPS];
         float lpcs[MAX_LSPS];
+
+        if(frame_descs[bd_idx].fcb_type >= FCB_TYPE_AW_PULSES && pitch[0] == INT_MAX)
+            return AVERROR_INVALIDDATA;
 
         for (n = 0; n < s->lsps; n++) // LSF -> LSP
             i_lsps[n] = cos(0.5 * (prev_lsps[n] + lsps[n]));
