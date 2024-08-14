@@ -23,10 +23,10 @@ ffmpeg:
   ffmpeg.c                              Michael Niedermayer, Anton Khirnov
 
 ffplay:
-  ffplay.c                              Marton Balint
+  ffplay.c                          [2] Marton Balint
 
 ffprobe:
-  ffprobe.c                             Stefano Sabatini
+  ffprobe.c                         [2] Stefano Sabatini
 
 Commandline utility code:
   cmdutils.c, cmdutils.h                Michael Niedermayer
@@ -53,11 +53,11 @@ Communication
 website                                 Deby Barbara Lepage
 fate.ffmpeg.org                         Timothy Gu
 Trac bug tracker                        Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos
-Patchwork                               Andriy Gelman
+Patchwork                           [2] Andriy Gelman
 mailing lists                           Baptiste Coudurier
 Twitter                                 Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
-ffmpeg-security                         Andreas Cadhalpun, Carl Eugen Hoyos, Clément Bœsch, Michael Niedermayer, Reimar Doeffinger, rcombs, wm4
+ffmpeg-security                     [2] Michael Niedermayer, Reimar Doeffinger
 
 
 libavutil
@@ -74,22 +74,22 @@ Other:
   bswap.h
   des                                   Reimar Doeffinger
   dynarray.h                            Nicolas George
-  eval.c, eval.h                        Michael Niedermayer
+  eval.c, eval.h                    [2] Michael Niedermayer
   float_dsp                             Loren Merritt
   hash                                  Reimar Doeffinger
   hwcontext_cuda*                       Timo Rothenpieler
-  hwcontext_vulkan*                     Lynne
+  hwcontext_vulkan*                 [2] Lynne
   intfloat*                             Michael Niedermayer
   integer.c, integer.h                  Michael Niedermayer
   lzo                                   Reimar Doeffinger
-  mathematics.c, mathematics.h          Michael Niedermayer
-  mem.c, mem.h                          Michael Niedermayer
+  mathematics.c, mathematics.h      [2] Michael Niedermayer
+  mem.c, mem.h                      [2] Michael Niedermayer
   opencl.c, opencl.h                    Wei Gao
   opt.c, opt.h                          Michael Niedermayer
-  rational.c, rational.h                Michael Niedermayer
+  rational.c, rational.h            [2] Michael Niedermayer
   rc4                                   Reimar Doeffinger
   ripemd.c, ripemd.h                    James Almer
-  tx*                                   Lynne
+  tx*                               [2] Lynne
 
 
 libavcodec
@@ -114,17 +114,17 @@ Generic Parts:
     rangecoder.c, rangecoder.h          Michael Niedermayer
     lzw.*                               Michael Niedermayer
   floating point AAN DCT:
-    faandct.c, faandct.h                Michael Niedermayer
+    faandct.c, faandct.h            [2] Michael Niedermayer
   Golomb coding:
-    golomb.c, golomb.h                  Michael Niedermayer
+    golomb.c, golomb.h              [2] Michael Niedermayer
   motion estimation:
     motion*                             Michael Niedermayer
   rate control:
-    ratecontrol.c                       Michael Niedermayer
+    ratecontrol.c                   [2] Michael Niedermayer
   simple IDCT:
-    simple_idct.c, simple_idct.h        Michael Niedermayer
+    simple_idct.c, simple_idct.h    [2] Michael Niedermayer
   postprocessing:
-    libpostproc/*                       Michael Niedermayer
+    libpostproc/*                   [2] Michael Niedermayer
   table generation:
     tableprint.c, tableprint.h          Reimar Doeffinger
   fixed point FFT:
@@ -132,7 +132,7 @@ Generic Parts:
   Text Subtitles                        Clément Bœsch
 
 Codecs:
-  4xm.c                                 Michael Niedermayer
+  4xm.c                             [2] Michael Niedermayer
   8bps.c                                Roberto Togni
   8svx.c                                Jaikrishnan Menon
   aacenc*, aaccoder.c                   Rostislav Pehlivanov
@@ -168,7 +168,7 @@ Codecs:
   dvbsubdec.c                           Anshul Maheshwari
   eacmv*, eaidct*, eat*                 Peter Ross
   exif.c, exif.h                        Thilo Borgmann
-  ffv1*                                 Michael Niedermayer
+  ffv1*                             [2] Michael Niedermayer
   ffwavesynth.c                         Nicolas George
   fifo.c                                Jan Sebechlebsky
   flicvideo.c                           Mike Melanson
@@ -255,7 +255,7 @@ Codecs:
   vp8                                   David Conrad, Ronald Bultje
   vp9                                   Ronald Bultje
   vqavideo.c                            Mike Melanson
-  vvc                                   Nuo Mi
+  vvc                               [2] Nuo Mi
   wmaprodec.c                           Sascha Sommer
   wmavoice.c                            Ronald S. Bultje
   wmv2.c                                Michael Niedermayer
@@ -330,12 +330,12 @@ Filters:
   vf_mestimate.c                        Davinder Singh
   vf_minterpolate.c                     Davinder Singh
   vf_readvitc.c                         Tobias Rapp (CC t.rapp at noa-archive dot com)
-  vf_scale.c                            Michael Niedermayer
+  vf_scale.c                        [2] Michael Niedermayer
   vf_tonemap_opencl.c                   Ruiling Song
-  vf_yadif.c                            Michael Niedermayer
+  vf_yadif.c                        [2] Michael Niedermayer
 
 Sources:
-  vsrc_mandelbrot.c                     Michael Niedermayer
+  vsrc_mandelbrot.c                 [2] Michael Niedermayer
 
 dnn                                     Yejun Guo
 
@@ -481,27 +481,27 @@ libswresample
 =============
 
 Generic parts:
-  audioconvert.c                        Michael Niedermayer
-  dither.c                              Michael Niedermayer
-  rematrix*.c                           Michael Niedermayer
-  swresample*.c                         Michael Niedermayer
+  audioconvert.c                    [2] Michael Niedermayer
+  dither.c                          [2] Michael Niedermayer
+  rematrix*.c                       [2] Michael Niedermayer
+  swresample*.c                     [2] Michael Niedermayer
 
 Resamplers:
-  resample*.c                           Michael Niedermayer
+  resample*.c                       [2] Michael Niedermayer
   soxr_resample.c                       Rob Sykes
 
 
 Operating systems / CPU architectures
 =====================================
 
-*BSD                                    Brad Smith
-Alpha                                   Falk Hueffner
+*BSD                                [2] Brad Smith
+Alpha                               [0]
 MIPS                                    Manojkumar Bhosale, Shiyou Yin
-LoongArch                               Shiyou Yin
+LoongArch                           [2] Shiyou Yin
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Linux / PowerPC                         Lauri Kasanen
-RISC-V                                  Rémi Denis-Courmont
+RISC-V                              [2] Rémi Denis-Courmont
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
 Windows Cygwin                          Victor Paesa
 Windows MSVC                            Hendrik Leppkes
