@@ -23,6 +23,8 @@
 #include "libavutil/cpu.h"
 #include "libavcodec/mpegvideoencdsp.h"
 
+int ff_try_8x8basis_rvv(const int16_t rem[64], const int16_t weight[64],
+                        const int16_t basis[16], int scale);
 int ff_pix_sum_rvv(const uint8_t *pix, int line_size);
 int ff_pix_norm1_rvv(const uint8_t *pix, int line_size);
 
@@ -32,10 +34,15 @@ av_cold void ff_mpegvideoencdsp_init_riscv(MpegvideoEncDSPContext *c,
 #if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-    if (flags & AV_CPU_FLAG_RVV_I64) {
-        if ((flags & AV_CPU_FLAG_RVB) && ff_rv_vlen_least(128))
-            c->pix_sum = ff_pix_sum_rvv;
-        c->pix_norm1 = ff_pix_norm1_rvv;
+    if (flags & AV_CPU_FLAG_RVV_I32) {
+        if (flags & AV_CPU_FLAG_RVB)
+            c->try_8x8basis = ff_try_8x8basis_rvv;
+
+        if (flags & AV_CPU_FLAG_RVV_I64) {
+            if ((flags & AV_CPU_FLAG_RVB) && ff_rv_vlen_least(128))
+                c->pix_sum = ff_pix_sum_rvv;
+            c->pix_norm1 = ff_pix_norm1_rvv;
+        }
     }
 #endif
 }

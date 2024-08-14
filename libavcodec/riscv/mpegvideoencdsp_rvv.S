@@ -20,6 +20,41 @@
 
 #include "libavutil/riscv/asm.S"
 
+.equ    BASIS_SHIFT, 16
+.equ    RECON_SHIFT,  6
+
+func ff_try_8x8basis_rvv, zve32x, b
+        li      t1, 64
+        csrwi   vxrm, 0
+        vsetvli     t0, t1, e32, m8, ta, ma
+        vmv.v.x     v24, zero
+        vmv.s.x     v1, zero
+1:
+        vsetvli     zero, zero, e16, m4, ta, ma
+        vle16.v     v4, (a2)
+        sub     t1, t1, t0
+        vwmul.vx    v16, v4, a3
+        sh1add  a2, t0, a2
+        vle16.v     v8, (a0)
+        sh1add  a0, t0, a0
+        vnclip.wi   v4, v16, BASIS_SHIFT - RECON_SHIFT
+        vle16.v     v12, (a1)
+        sh1add  a1, t0, a1
+        vadd.vv     v4, v8, v4
+        vsra.vi     v4, v4, RECON_SHIFT
+        vwmul.vv    v16, v12, v4
+        vsetvli     zero, zero, e32, m8, ta, ma
+        vmul.vv     v16, v16, v16
+        vsra.vi     v16, v16, 4
+        vadd.vv     v24, v24, v16
+        bnez    t1, 1b
+
+        vredsum.vs  v1, v24, v1
+        vmv.x.s     a0, v1
+        srai    a0, a0, 2
+        ret
+endfunc
+
 func ff_pix_sum_rvv, zve64x, b
         lpad    0
         vsetivli    t0, 16, e16, m1, ta, ma
