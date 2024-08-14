@@ -715,7 +715,7 @@ static int get_dc(SnowEncContext *enc, int mb_x, int mb_y, int plane_index)
     }
     *b= backup;
 
-    return av_clip_uint8( ROUNDED_DIV(ab<<LOG2_OBMC_MAX, aa) ); //FIXME we should not need clipping
+    return av_clip_uint8( ROUNDED_DIV((int64_t)ab<<LOG2_OBMC_MAX, aa) ); //FIXME we should not need clipping
 }
 
 static inline int get_block_bits(SnowContext *s, int x, int y, int w){
