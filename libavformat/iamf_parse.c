@@ -636,6 +636,12 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
         }
 
     audio_element_type = avio_r8(pbc) >> 5;
+    if (audio_element_type > AV_IAMF_AUDIO_ELEMENT_TYPE_SCENE) {
+        av_log(s, AV_LOG_DEBUG, "Unknown audio_element_type referenced in an audio element. Ignoring\n");
+        ret = 0;
+        goto fail;
+    }
+
     codec_config_id = ffio_read_leb(pbc);
 
     codec_config = ff_iamf_get_codec_config(c, codec_config_id);
@@ -751,8 +757,7 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
         if (ret < 0)
             goto fail;
     } else {
-        unsigned audio_element_config_size = ffio_read_leb(pbc);
-        avio_skip(pbc, audio_element_config_size);
+        av_assert0(0);
     }
 
     c->audio_elements[c->nb_audio_elements++] = audio_element;
