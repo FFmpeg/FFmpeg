@@ -1442,35 +1442,6 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     };
 
-    hwctx->device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    hwctx->device_features.pNext = &p->device_features_1_1;
-    p->device_features_1_1.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-    p->device_features_1_1.pNext = &p->device_features_1_2;
-    p->device_features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-    p->device_features_1_2.pNext = &p->device_features_1_3;
-    p->device_features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-    p->device_features_1_3.pNext = NULL;
-
-#define OPT_CHAIN(EXT_FLAG, STRUCT_P, TYPE)                            \
-    do {                                                               \
-        if (p->vkctx.extensions & EXT_FLAG) {                          \
-            (STRUCT_P)->sType = TYPE;                                  \
-            ff_vk_link_struct(hwctx->device_features.pNext, STRUCT_P); \
-        }                                                              \
-    } while (0)
-
-    OPT_CHAIN(FF_VK_EXT_DESCRIPTOR_BUFFER, &p->desc_buf_features,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
-    OPT_CHAIN(FF_VK_EXT_ATOMIC_FLOAT, &p->atomic_float_features,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
-    OPT_CHAIN(FF_VK_EXT_COOP_MATRIX, &p->coop_matrix_features,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR);
-    OPT_CHAIN(FF_VK_EXT_SHADER_OBJECT, &p->shader_object_features,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
-    OPT_CHAIN(FF_VK_EXT_OPTICAL_FLOW, &p->optical_flow_features,
-              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
-#undef OPT_CHAIN
-
     ctx->free = vulkan_device_free;
 
     /* Create an instance if not given one */
@@ -1539,12 +1510,7 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
 
     p->shader_object_features.shaderObject = shader_object_features.shaderObject;
 
-    dev_info.pNext = &hwctx->device_features;
-
-    /* Setup queue family */
-    if ((err = setup_queue_families(ctx, &dev_info)))
-        goto end;
-
+    /* Find and enable extensions */
     if ((err = check_extensions(ctx, 1, opts, &dev_info.ppEnabledExtensionNames,
                                 &dev_info.enabledExtensionCount, 0))) {
         for (int i = 0; i < dev_info.queueCreateInfoCount; i++)
@@ -1552,6 +1518,43 @@ static int vulkan_device_create_internal(AVHWDeviceContext *ctx,
         av_free((void *)dev_info.pQueueCreateInfos);
         goto end;
     }
+
+    /* Setup enabled device features */
+    hwctx->device_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    hwctx->device_features.pNext = &p->device_features_1_1;
+    p->device_features_1_1.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    p->device_features_1_1.pNext = &p->device_features_1_2;
+    p->device_features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    p->device_features_1_2.pNext = &p->device_features_1_3;
+    p->device_features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+    p->device_features_1_3.pNext = NULL;
+
+#define OPT_CHAIN(EXT_FLAG, STRUCT_P, TYPE)                            \
+    do {                                                               \
+        if (p->vkctx.extensions & EXT_FLAG) {                          \
+            (STRUCT_P)->sType = TYPE;                                  \
+            ff_vk_link_struct(hwctx->device_features.pNext, STRUCT_P); \
+        }                                                              \
+    } while (0)
+
+    OPT_CHAIN(FF_VK_EXT_DESCRIPTOR_BUFFER, &p->desc_buf_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
+    OPT_CHAIN(FF_VK_EXT_ATOMIC_FLOAT, &p->atomic_float_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT);
+    OPT_CHAIN(FF_VK_EXT_COOP_MATRIX, &p->coop_matrix_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR);
+    OPT_CHAIN(FF_VK_EXT_SHADER_OBJECT, &p->shader_object_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
+    OPT_CHAIN(FF_VK_EXT_OPTICAL_FLOW, &p->optical_flow_features,
+              VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
+#undef OPT_CHAIN
+
+    /* Add the enabled features into the pnext chain of device creation */
+    dev_info.pNext = &hwctx->device_features;
+
+    /* Setup enabled queue families */
+    if ((err = setup_queue_families(ctx, &dev_info)))
+        goto end;
 
     ret = vk->CreateDevice(hwctx->phys_dev, &dev_info, hwctx->alloc,
                            &hwctx->act_dev);
