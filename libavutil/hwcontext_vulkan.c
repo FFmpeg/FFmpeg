@@ -498,8 +498,19 @@ static VkBool32 VKAPI_CALL vk_dbg_callback(VkDebugUtilsMessageSeverityFlagBitsEX
         av_free((void *)props);                                                \
     }
 
+enum FFVulkanDebugMode {
+    FF_VULKAN_DEBUG_NONE = 0,
+    /* Standard GPU-assisted validation */
+    FF_VULKAN_DEBUG_VALIDATE = 1,
+    /* Passes printfs in shaders to the debug callback */
+    FF_VULKAN_DEBUG_PRINTF = 2,
+    /* Enables extra printouts */
+    FF_VULKAN_DEBUG_PRACTICES = 3,
+};
+
 static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
-                            const char * const **dst, uint32_t *num, int debug)
+                            const char * const **dst, uint32_t *num,
+                            enum FFVulkanDebugMode debug_mode)
 {
     const char *tstr;
     const char **extension_names = NULL;
@@ -571,7 +582,10 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
         ADD_VAL_TO_LIST(extension_names, extensions_found, tstr);
     }
 
-    if (debug && !dev) {
+    if (!dev &&
+        ((debug_mode == FF_VULKAN_DEBUG_VALIDATE) ||
+         (debug_mode == FF_VULKAN_DEBUG_PRINTF) ||
+         (debug_mode == FF_VULKAN_DEBUG_PRACTICES))) {
         tstr = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
         found = 0;
         for (int j = 0; j < sup_ext_count; j++) {
@@ -627,20 +641,21 @@ fail:
     return err;
 }
 
-static int check_validation_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
-                                   const char * const **dst, uint32_t *num,
-                                   int *debug_mode)
+static int check_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
+                        const char * const **dst, uint32_t *num,
+                        enum FFVulkanDebugMode *debug_mode)
 {
-    static const char default_layer[] = { "VK_LAYER_KHRONOS_validation" };
-
-    int found = 0, err = 0;
+    int err = 0;
     VulkanDevicePriv *priv = ctx->hwctx;
     FFVulkanFunctions *vk = &priv->vkctx.vkfn;
+
+    static const char layer_standard_validation[] = { "VK_LAYER_KHRONOS_validation" };
+    int layer_standard_validation_found = 0;
 
     uint32_t sup_layer_count;
     VkLayerProperties *sup_layers;
 
-    AVDictionaryEntry *user_layers;
+    AVDictionaryEntry *user_layers = av_dict_get(opts, "layers", NULL, 0);
     char *user_layers_str = NULL;
     char *save, *token;
 
@@ -648,99 +663,136 @@ static int check_validation_layers(AVHWDeviceContext *ctx, AVDictionary *opts,
     uint32_t enabled_layers_count = 0;
 
     AVDictionaryEntry *debug_opt = av_dict_get(opts, "debug", NULL, 0);
-    int debug = debug_opt && strtol(debug_opt->value, NULL, 10);
+    enum FFVulkanDebugMode mode;
 
-    /* If `debug=0`, enable no layers at all. */
-    if (debug_opt && !debug)
-        return 0;
+    *debug_mode = mode = FF_VULKAN_DEBUG_NONE;
 
+    /* Get a list of all layers */
     vk->EnumerateInstanceLayerProperties(&sup_layer_count, NULL);
     sup_layers = av_malloc_array(sup_layer_count, sizeof(VkLayerProperties));
     if (!sup_layers)
         return AVERROR(ENOMEM);
     vk->EnumerateInstanceLayerProperties(&sup_layer_count, sup_layers);
 
-    av_log(ctx, AV_LOG_VERBOSE, "Supported validation layers:\n");
+    av_log(ctx, AV_LOG_VERBOSE, "Supported layers:\n");
     for (int i = 0; i < sup_layer_count; i++)
         av_log(ctx, AV_LOG_VERBOSE, "\t%s\n", sup_layers[i].layerName);
 
-    /* If `debug=1` is specified, enable the standard validation layer extension */
-    if (debug) {
-        *debug_mode = debug;
-        for (int i = 0; i < sup_layer_count; i++) {
-            if (!strcmp(default_layer, sup_layers[i].layerName)) {
-                found = 1;
-                av_log(ctx, AV_LOG_VERBOSE, "Default validation layer %s is enabled\n",
-                       default_layer);
-                ADD_VAL_TO_LIST(enabled_layers, enabled_layers_count, default_layer);
-                break;
-            }
-        }
-    }
-
-    user_layers = av_dict_get(opts, "validation_layers", NULL, 0);
-    if (!user_layers)
+    /* If no user layers or debug layers are given, return */
+    if (!debug_opt && !user_layers)
         goto end;
 
-    user_layers_str = av_strdup(user_layers->value);
-    if (!user_layers_str) {
-        err = AVERROR(ENOMEM);
-        goto fail;
+    /* Check for any properly supported validation layer */
+    if (debug_opt) {
+        if (!strcmp(debug_opt->value, "printf")) {
+            mode = FF_VULKAN_DEBUG_PRINTF;
+        } else if (!strcmp(debug_opt->value, "validate")) {
+            mode = FF_VULKAN_DEBUG_VALIDATE;
+        } else if (!strcmp(debug_opt->value, "practices")) {
+            mode = FF_VULKAN_DEBUG_PRACTICES;
+        } else {
+            char *end_ptr = NULL;
+            int idx = strtol(debug_opt->value, &end_ptr, 10);
+            if (end_ptr == debug_opt->value || end_ptr[0] != '\0' ||
+                idx < 0 || idx > FF_VULKAN_DEBUG_PRACTICES) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid debugging mode \"%s\"\n",
+                       debug_opt->value);
+                err = AVERROR(EINVAL);
+                goto end;
+            }
+            mode = idx;
+        }
     }
 
-    token = av_strtok(user_layers_str, "+", &save);
-    while (token) {
-        found = 0;
-        if (!strcmp(default_layer, token)) {
-            if (debug) {
-                /* if the `debug=1`, default_layer is enabled, skip here */
-                token = av_strtok(NULL, "+", &save);
-                continue;
-            } else {
-                /* if the `debug=0`, enable debug mode to load its callback properly */
-                *debug_mode = debug;
-            }
-        }
-        for (int j = 0; j < sup_layer_count; j++) {
-            if (!strcmp(token, sup_layers[j].layerName)) {
-                found = 1;
+    /* If mode is VALIDATE or PRINTF, try to find the standard validation layer extension */
+    if ((mode == FF_VULKAN_DEBUG_VALIDATE) ||
+        (mode == FF_VULKAN_DEBUG_PRINTF) ||
+        (mode == FF_VULKAN_DEBUG_PRACTICES)) {
+        for (int i = 0; i < sup_layer_count; i++) {
+            if (!strcmp(layer_standard_validation, sup_layers[i].layerName)) {
+                av_log(ctx, AV_LOG_VERBOSE, "Standard validation layer %s is enabled\n",
+                       layer_standard_validation);
+                ADD_VAL_TO_LIST(enabled_layers, enabled_layers_count, layer_standard_validation);
+                *debug_mode = mode;
+                layer_standard_validation_found = 1;
                 break;
             }
         }
-        if (found) {
-            av_log(ctx, AV_LOG_VERBOSE, "Requested Validation Layer: %s\n", token);
-            ADD_VAL_TO_LIST(enabled_layers, enabled_layers_count, token);
-        } else {
+        if (!layer_standard_validation_found) {
             av_log(ctx, AV_LOG_ERROR,
-                   "Validation Layer \"%s\" not support.\n", token);
-            err = AVERROR(EINVAL);
-            goto fail;
+                   "Validation Layer \"%s\" not supported\n", layer_standard_validation);
+            err = AVERROR(ENOTSUP);
+            goto end;
         }
-        token = av_strtok(NULL, "+", &save);
     }
 
-    av_free(user_layers_str);
+    /* Process any custom layers enabled */
+    if (user_layers) {
+        int found;
 
-end:
-    av_free(sup_layers);
+        user_layers_str = av_strdup(user_layers->value);
+        if (!user_layers_str) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
 
-    *dst = enabled_layers;
-    *num = enabled_layers_count;
+        token = av_strtok(user_layers_str, "+", &save);
+        while (token) {
+            found = 0;
 
-    return 0;
+            /* If debug=1/2 was specified as an option, skip this layer */
+            if (!strcmp(layer_standard_validation, token) && layer_standard_validation_found) {
+                token = av_strtok(NULL, "+", &save);
+                break;
+            }
+
+            /* Try to find the layer in the list of supported layers */
+            for (int j = 0; j < sup_layer_count; j++) {
+                if (!strcmp(token, sup_layers[j].layerName)) {
+                    found = 1;
+                    break;
+                }
+            }
+
+            if (found) {
+                av_log(ctx, AV_LOG_VERBOSE, "Using layer: %s\n", token);
+                ADD_VAL_TO_LIST(enabled_layers, enabled_layers_count, token);
+
+                /* If debug was not set as an option, force it */
+                if (!strcmp(layer_standard_validation, token))
+                    *debug_mode = FF_VULKAN_DEBUG_VALIDATE;
+            } else {
+                av_log(ctx, AV_LOG_ERROR,
+                       "Layer \"%s\" not supported\n", token);
+                err = AVERROR(EINVAL);
+                goto end;
+            }
+
+            token = av_strtok(NULL, "+", &save);
+        }
+    }
 
 fail:
-    RELEASE_PROPS(enabled_layers, enabled_layers_count);
+end:
     av_free(sup_layers);
     av_free(user_layers_str);
+
+    if (err < 0) {
+        RELEASE_PROPS(enabled_layers, enabled_layers_count);
+    } else {
+        *dst = enabled_layers;
+        *num = enabled_layers_count;
+    }
+
     return err;
 }
 
 /* Creates a VkInstance */
 static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
 {
-    int err = 0, debug_mode = 0;
+    int err = 0;
     VkResult ret;
+    enum FFVulkanDebugMode debug_mode;
     VulkanDevicePriv *p = ctx->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
@@ -776,8 +828,8 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
         return err;
     }
 
-    err = check_validation_layers(ctx, opts, &inst_props.ppEnabledLayerNames,
-                                    &inst_props.enabledLayerCount, &debug_mode);
+    err = check_layers(ctx, opts, &inst_props.ppEnabledLayerNames,
+                       &inst_props.enabledLayerCount, &debug_mode);
     if (err)
         goto fail;
 
@@ -789,14 +841,32 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
     if (err < 0)
         goto fail;
 
-    if (debug_mode) {
-        static const VkValidationFeatureEnableEXT feat_list[] = {
-            VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
-            VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
+    /* Enable debug features if needed */
+    if (debug_mode == FF_VULKAN_DEBUG_VALIDATE) {
+        static const VkValidationFeatureEnableEXT feat_list_validate[] = {
             VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+            VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
+            VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
         };
-        validation_features.pEnabledValidationFeatures = feat_list;
-        validation_features.enabledValidationFeatureCount = FF_ARRAY_ELEMS(feat_list);
+        validation_features.pEnabledValidationFeatures = feat_list_validate;
+        validation_features.enabledValidationFeatureCount = FF_ARRAY_ELEMS(feat_list_validate);
+        inst_props.pNext = &validation_features;
+    } else if (debug_mode == FF_VULKAN_DEBUG_PRINTF) {
+        static const VkValidationFeatureEnableEXT feat_list_debug[] = {
+            VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+            VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
+            VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
+        };
+        validation_features.pEnabledValidationFeatures = feat_list_debug;
+        validation_features.enabledValidationFeatureCount = FF_ARRAY_ELEMS(feat_list_debug);
+        inst_props.pNext = &validation_features;
+    } else if (debug_mode == FF_VULKAN_DEBUG_PRACTICES) {
+        static const VkValidationFeatureEnableEXT feat_list_practices[] = {
+            VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+            VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT,
+        };
+        validation_features.pEnabledValidationFeatures = feat_list_practices;
+        validation_features.enabledValidationFeatureCount = FF_ARRAY_ELEMS(feat_list_practices);
         inst_props.pNext = &validation_features;
     }
 
@@ -827,7 +897,10 @@ static int create_instance(AVHWDeviceContext *ctx, AVDictionary *opts)
         goto fail;
     }
 
-    if (debug_mode) {
+    /* Setup debugging callback if needed */
+    if ((debug_mode == FF_VULKAN_DEBUG_VALIDATE) ||
+        (debug_mode == FF_VULKAN_DEBUG_PRINTF) ||
+        (debug_mode == FF_VULKAN_DEBUG_PRACTICES)) {
         VkDebugUtilsMessengerCreateInfoEXT dbg = {
             .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
             .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
