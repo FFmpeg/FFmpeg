@@ -23,6 +23,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
+#include "libavutil/eval.h"
 
 #include "audio.h"
 #include "avfilter.h"
@@ -106,4 +107,39 @@ AVFrame *ff_get_audio_buffer(AVFilterLink *link, int nb_samples)
         ret = ff_default_get_audio_buffer(link, nb_samples);
 
     return ret;
+}
+
+int ff_parse_sample_rate(int *ret, const char *arg, void *log_ctx)
+{
+    char *tail;
+    double srate = av_strtod(arg, &tail);
+    if (*tail || srate < 1 || (int)srate != srate || srate > INT_MAX) {
+        av_log(log_ctx, AV_LOG_ERROR, "Invalid sample rate '%s'\n", arg);
+        return AVERROR(EINVAL);
+    }
+    *ret = srate;
+    return 0;
+}
+
+int ff_parse_channel_layout(AVChannelLayout *ret, int *nret, const char *arg,
+                            void *log_ctx)
+{
+    AVChannelLayout chlayout = { 0 };
+    int res;
+
+    res = av_channel_layout_from_string(&chlayout, arg);
+    if (res < 0) {
+        av_log(log_ctx, AV_LOG_ERROR, "Invalid channel layout '%s'\n", arg);
+        return AVERROR(EINVAL);
+    }
+
+    if (chlayout.order == AV_CHANNEL_ORDER_UNSPEC && !nret) {
+        av_log(log_ctx, AV_LOG_ERROR, "Unknown channel layout '%s' is not supported.\n", arg);
+        return AVERROR(EINVAL);
+    }
+    *ret = chlayout;
+    if (nret)
+        *nret = chlayout.nb_channels;
+
+    return 0;
 }

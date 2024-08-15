@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavfilter/audio.h"
 #include "libavfilter/formats.c"
 
 #undef printf
