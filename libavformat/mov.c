@@ -2434,6 +2434,30 @@ static int mov_read_dvc1(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_sbas(MOVContext* c, AVIOContext* pb, MOVAtom atom)
+{
+    AVStream* st;
+    MOVStreamContext* sc;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+
+    /* For SBAS this should be fine - though beware if someone implements a
+     * tref atom processor that doesn't drop down to default then this may
+     * be lost. */
+    if (atom.size > 4) {
+        av_log(c->fc, AV_LOG_ERROR, "Only a single tref of type sbas is supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    sc = st->priv_data;
+    sc->tref_id = avio_rb32(pb);
+    sc->tref_flags |= MOV_TREF_FLAG_ENHANCEMENT;
+
+    return 0;
+}
+
 /**
  * An strf atom is a BITMAPINFOHEADER struct. This struct is 40 bytes itself,
  * but can have extradata appended at the end after the 40 bytes belonging
@@ -4995,6 +5019,8 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
     sc->ffindex = st->index;
     c->trak_index = st->index;
+    sc->tref_flags = 0;
+    sc->tref_id = -1;
     sc->refcount = 1;
 
     if ((ret = mov_read_default(c, pb, atom)) < 0)
@@ -9052,6 +9078,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('a','v','c','C'), mov_read_glbl },
 { MKTAG('p','a','s','p'), mov_read_pasp },
 { MKTAG('c','l','a','p'), mov_read_clap },
+{ MKTAG('s','b','a','s'), mov_read_sbas },
 { MKTAG('s','i','d','x'), mov_read_sidx },
 { MKTAG('s','t','b','l'), mov_read_default },
 { MKTAG('s','t','c','o'), mov_read_stco },
@@ -9132,6 +9159,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('i','i','n','f'), mov_read_iinf },
 { MKTAG('a','m','v','e'), mov_read_amve }, /* ambient viewing environment box */
 { MKTAG('l','h','v','C'), mov_read_lhvc },
+{ MKTAG('l','v','c','C'), mov_read_glbl },
 #if CONFIG_IAMFDEC
 { MKTAG('i','a','c','b'), mov_read_iacb },
 #endif
@@ -10029,6 +10057,21 @@ static int mov_parse_tiles(AVFormatContext *s)
     return 0;
 }
 
+static AVStream *mov_find_reference_track(AVFormatContext *s, AVStream *st,
+                                          int first_index)
+{
+    MOVStreamContext *sc = st->priv_data;
+
+    if (sc->tref_id < 0)
+        return NULL;
+
+    for (int i = first_index; i < s->nb_streams; i++)
+        if (s->streams[i]->id == sc->tref_id)
+            return s->streams[i];
+
+    return NULL;
+}
+
 static int mov_read_header(AVFormatContext *s)
 {
     MOVContext *mov = s->priv_data;
@@ -10153,6 +10196,50 @@ static int mov_read_header(AVFormatContext *s)
         }
     }
     export_orphan_timecode(s);
+
+    /* Create LCEVC stream groups. */
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStreamGroup *stg;
+        AVStream *st = s->streams[i];
+        AVStream *st_base;
+        MOVStreamContext *sc = st->priv_data;
+
+        /* Find an enhancement stream. */
+        if (st->codecpar->codec_id != AV_CODEC_ID_LCEVC ||
+            !(sc->tref_flags & MOV_TREF_FLAG_ENHANCEMENT))
+            continue;
+
+        st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
+
+        stg = avformat_stream_group_create(s, AV_STREAM_GROUP_PARAMS_LCEVC, NULL);
+        if (!stg)
+            return AVERROR(ENOMEM);
+
+        stg->id = st->id;
+        stg->params.lcevc->width  = st->codecpar->width;
+        stg->params.lcevc->height = st->codecpar->height;
+        st->codecpar->width = 0;
+        st->codecpar->height = 0;
+
+        j = 0;
+        while (st_base = mov_find_reference_track(s, st, j)) {
+            err = avformat_stream_group_add_stream(stg, st_base);
+            if (err < 0)
+                return err;
+
+            j = st_base->index + 1;
+        }
+        if (!j) {
+            av_log(s, AV_LOG_ERROR, "Failed to find base stream for enhancement stream\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        err = avformat_stream_group_add_stream(stg, st);
+        if (err < 0)
+            return err;
+
+        stg->params.lcevc->lcevc_index = stg->nb_streams;
+    }
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
