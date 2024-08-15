@@ -68,8 +68,7 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
         vk = &s->vkfn;
 
         /* Usage mismatch */
-        usage_req = VK_IMAGE_USAGE_SAMPLED_BIT |
-                    VK_IMAGE_USAGE_STORAGE_BIT;
+        usage_req = VK_IMAGE_USAGE_SAMPLED_BIT;
 
         /* If format supports hardware encoding, make sure
          * the context includes it. */
@@ -100,14 +99,8 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
             };
             vk->GetPhysicalDeviceFormatProperties2(vk_dev->phys_dev, sub[i],
                                                    &prop);
-
-            if (vk_frames->tiling == VK_IMAGE_TILING_LINEAR) {
-                no_storage |= !(prop.formatProperties.linearTilingFeatures &
-                                VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT);
-            } else {
-                no_storage |= !(prop.formatProperties.optimalTilingFeatures &
-                                VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT);
-            }
+            no_storage |= !(prop.formatProperties.optimalTilingFeatures &
+                            VK_FORMAT_FEATURE_2_STORAGE_IMAGE_BIT);
         }
 
         /* Check if it's usable */
