@@ -3697,6 +3697,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("SMPTE ST 2038 VANC in MPEG-2 TS"),
     },
     {
+        .id        = AV_CODEC_ID_LCEVC,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "lcevc",
+        .long_name = NULL_IF_CONFIG_SMALL("LCEVC (Low Complexity Enhancement Video Coding) / MPEG-5 LCEVC / MPEG-5 part 2"),
+    },
+    {
         .id        = AV_CODEC_ID_MPEG2TS,
         .type      = AVMEDIA_TYPE_DATA,
         .name      = "mpegts",
