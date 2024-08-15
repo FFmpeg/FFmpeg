@@ -85,6 +85,7 @@ typedef struct AmfContext {
     int                 usage;
     int                 profile;
     int                 level;
+    int                 latency;
     int                 preencode;
     int                 quality;
     int                 b_frame_delta_qp;
@@ -126,6 +127,7 @@ typedef struct AmfContext {
     // AV1 - specific options
 
     enum AMF_VIDEO_ENCODER_AV1_ALIGNMENT_MODE_ENUM                 align;
+    enum AMF_VIDEO_ENCODER_AV1_AQ_MODE_ENUM                        aq_mode;
 
     // Preanalysis - specific options
 
