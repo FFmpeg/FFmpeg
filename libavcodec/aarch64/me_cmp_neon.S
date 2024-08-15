@@ -1559,3 +1559,117 @@ function pix_median_abs8_neon, export=1
         ret
 
 endfunc
+
+#if HAVE_DOTPROD
+ENABLE_DOTPROD
+
+function sse16_neon_dotprod, export=1
+        // x0 - unused
+        // x1 - pix1
+        // x2 - pix2
+        // x3 - stride
+        // w4 - h
+
+        cmp             w4, #4
+        movi            v17.4s, #0
+        b.lt            2f
+
+// Make 4 iterations at once
+1:
+
+        // res = abs(pix1[0] - pix2[0])
+        // res * res
+
+        ld1             {v0.16b}, [x1], x3              // Load pix1 vector for first iteration
+        ld1             {v1.16b}, [x2], x3              // Load pix2 vector for first iteration
+        ld1             {v2.16b}, [x1], x3              // Load pix1 vector for second iteration
+        uabd            v30.16b, v0.16b, v1.16b         // Absolute difference, first iteration
+        ld1             {v3.16b}, [x2], x3              // Load pix2 vector for second iteration
+        udot            v17.4s, v30.16b, v30.16b
+        uabd            v27.16b, v2.16b, v3.16b         // Absolute difference, second iteration
+        ld1             {v4.16b}, [x1], x3              // Load pix1 for third iteration
+        udot            v17.4s, v27.16b, v27.16b
+        ld1             {v5.16b}, [x2], x3              // Load pix2 for third iteration
+        uabd            v24.16b, v4.16b, v5.16b         // Absolute difference, third iteration
+        ld1             {v6.16b}, [x1], x3              // Load pix1 for fourth iteration
+        udot            v17.4s, v24.16b, v24.16b
+        ld1             {v7.16b}, [x2], x3              // Load pix2 for fouth iteration
+        uabd            v21.16b, v6.16b, v7.16b         // Absolute difference, fourth iteration
+        sub             w4, w4, #4                      // h -= 4
+        udot            v17.4s, v21.16b, v21.16b
+        cmp             w4, #4
+        b.ge            1b
+
+        cbz             w4, 3f
+
+// iterate by one
+2:
+
+        ld1             {v0.16b}, [x1], x3              // Load pix1
+        ld1             {v1.16b}, [x2], x3              // Load pix2
+
+        uabd            v30.16b, v0.16b, v1.16b
+        subs            w4, w4, #1
+        udot            v17.4s, v30.16b, v30.16b
+
+        b.ne            2b
+
+3:
+        uaddlv          d16, v17.4s                     // add up accumulator vector
+
+        fmov            w0, s16
+
+        ret
+endfunc
+
+function vsse_intra16_neon_dotprod, export=1
+        // x0           unused
+        // x1           uint8_t *pix1
+        // x2           uint8_t *dummy
+        // x3           ptrdiff_t stride
+        // w4           int h
+
+        ld1             {v0.16b}, [x1], x3
+        movi            v17.4s, #0
+
+        sub             w4, w4, #1 // we need to make h-1 iterations
+        cmp             w4, #3
+        b.lt            2f
+
+1:
+        // v = abs( pix1[0] - pix1[0 + stride] )
+        // score = sum( v * v )
+        ld1             {v1.16b}, [x1], x3
+        ld1             {v2.16b}, [x1], x3
+        uabd            v30.16b, v0.16b, v1.16b
+        ld1             {v3.16b}, [x1], x3
+        udot            v17.4s, v30.16b, v30.16b
+        uabd            v27.16b, v1.16b, v2.16b
+        udot            v17.4s, v27.16b, v27.16b
+        uabd            v25.16b, v2.16b, v3.16b
+        sub             w4, w4, #3
+        udot            v17.4s, v25.16b, v25.16b
+        cmp             w4, #3
+        mov             v0.16b, v3.16b
+
+        b.ge            1b
+        cbz             w4, 3f
+
+// iterate by one
+2:
+        ld1             {v1.16b}, [x1], x3
+        subs            w4, w4, #1
+        uabd            v30.16b, v0.16b, v1.16b
+        mov             v0.16b, v1.16b
+        udot            v17.4s, v30.16b, v30.16b
+        cbnz            w4, 2b
+
+3:
+        uaddlv          d17, v17.4s
+        fmov            w0, s17
+
+        ret
+endfunc
+
+DISABLE_DOTPROD
+#endif
