@@ -38,7 +38,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "audio.h"
 
 #define TIME_DOMAIN      0

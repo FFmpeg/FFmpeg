@@ -29,7 +29,6 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "generate_wave_table.h"
 
 typedef struct AudioPhaserContext {

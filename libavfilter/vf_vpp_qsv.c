@@ -34,7 +34,6 @@
 #include "libavutil/mastering_display_metadata.h"
 
 #include "formats.h"
-#include "internal.h"
 #include "avfilter.h"
 #include "filters.h"
 

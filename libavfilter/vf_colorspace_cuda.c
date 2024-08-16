@@ -32,7 +32,6 @@
 
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 
 #include "cuda/load_helper.h"
 

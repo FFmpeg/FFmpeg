@@ -24,7 +24,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
 

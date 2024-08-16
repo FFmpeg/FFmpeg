@@ -28,7 +28,6 @@
 #include "libavutil/qsort.h"
 
 #include "avfilter.h"
-#include "internal.h"
 #include "filters.h"
 #include "framesync.h"
 #include "video.h"

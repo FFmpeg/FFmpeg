@@ -36,7 +36,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "hermite.h"
-#include "internal.h"
 
 typedef struct SidechainCompressContext {
     const AVClass *class;

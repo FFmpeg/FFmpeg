@@ -31,7 +31,6 @@
 #include "video.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "window_func.h"
 
 typedef struct ShowSpatialContext {

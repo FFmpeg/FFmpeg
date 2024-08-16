@@ -58,7 +58,6 @@
 #include "framequeue.h"
 #include "filters.h"
 #include "transform.h"
-#include "internal.h"
 #include "opencl.h"
 #include "opencl_source.h"
 #include "video.h"

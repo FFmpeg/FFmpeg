@@ -29,7 +29,6 @@
 #include "avfilter.h"
 #include "bbox.h"
 #include "filters.h"
-#include "internal.h"
 
 typedef struct BBoxContext {
     const AVClass *class;

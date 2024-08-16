@@ -28,7 +28,6 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 
 enum FieldType { FIELD_TYPE_TOP = 0, FIELD_TYPE_BOTTOM };
 

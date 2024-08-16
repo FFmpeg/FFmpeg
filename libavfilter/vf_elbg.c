@@ -33,7 +33,6 @@
 #include "drawutils.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "video.h"
 
 typedef struct ELBGFilterContext {

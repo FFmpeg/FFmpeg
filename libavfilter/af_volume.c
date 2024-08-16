@@ -37,7 +37,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "af_volume.h"
 
 static const char * const precision_str[] = {

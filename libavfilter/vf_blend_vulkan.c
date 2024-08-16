@@ -27,7 +27,6 @@
 #include "vulkan_spirv.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "framesync.h"
 #include "blend.h"
 #include "video.h"

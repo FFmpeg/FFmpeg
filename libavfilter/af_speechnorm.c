@@ -38,7 +38,6 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 
 #define MAX_ITEMS  882000
 #define MIN_PEAK (1. / 32768.)

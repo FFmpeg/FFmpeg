@@ -27,7 +27,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 #include "vf_blend_init.h"
 #include "video.h"
 #include "blend.h"

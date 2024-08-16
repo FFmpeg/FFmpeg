@@ -27,7 +27,6 @@
 #include "libavutil/time.h"
 #include "libavutil/pixdesc.h"
 
-#include "internal.h"
 #include "filters.h"
 #include "qsvvpp.h"
 #include "video.h"

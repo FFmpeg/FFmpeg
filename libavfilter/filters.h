@@ -26,7 +26,6 @@
  */
 
 #include "avfilter.h"
-#include "internal.h"
 
 /**
  * Special return code when activate() did not do anything.

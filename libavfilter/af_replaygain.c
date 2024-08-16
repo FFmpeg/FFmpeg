@@ -32,7 +32,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 
 #define HISTOGRAM_SLOTS 12000
 #define BUTTER_ORDER        2

@@ -36,7 +36,6 @@
 #include "avfilter.h"
 #include "ccfifo.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 enum EOFAction {

@@ -35,10 +35,10 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/timestamp.h"
 #include "avfilter.h"
+#include "avfilter_internal.h"
 #include "buffersrc.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "video.h"
 
 typedef struct BufferSourceContext {

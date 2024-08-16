@@ -34,7 +34,6 @@
 #include "libavutil/pixdesc.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 typedef struct BLKContext {

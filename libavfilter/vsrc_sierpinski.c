@@ -26,7 +26,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "video.h"
-#include "internal.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"

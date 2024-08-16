@@ -22,7 +22,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 #include "yadif.h"
 

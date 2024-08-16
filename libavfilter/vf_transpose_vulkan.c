@@ -25,7 +25,6 @@
 #include "vulkan_spirv.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "transpose.h"
 #include "video.h"
 

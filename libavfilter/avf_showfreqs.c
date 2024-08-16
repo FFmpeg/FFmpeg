@@ -34,7 +34,6 @@
 #include "formats.h"
 #include "video.h"
 #include "avfilter.h"
-#include "internal.h"
 #include "window_func.h"
 
 enum DataMode       { MAGNITUDE, PHASE, DELAY, NB_DATA };

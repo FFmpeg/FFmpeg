@@ -22,7 +22,6 @@
 
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
-#include "internal.h"
 #include "filters.h"
 #include "vf_idet.h"
 

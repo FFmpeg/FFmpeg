@@ -41,7 +41,6 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 
 static const char * const var_names[] = {
     "ch",           ///< the value of the current channel

@@ -33,7 +33,6 @@
 #include "libavutil/pixdesc.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "vf_eq.h"
 #include "video.h"
 

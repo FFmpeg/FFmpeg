@@ -37,7 +37,6 @@
 #include "libavcodec/avcodec.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "qp_table.h"
 #include "avfilter.h"
 #include "video.h"

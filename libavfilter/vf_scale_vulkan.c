@@ -24,7 +24,6 @@
 #include "vulkan_spirv.h"
 #include "scale_eval.h"
 #include "filters.h"
-#include "internal.h"
 #include "colorspace.h"
 #include "video.h"
 

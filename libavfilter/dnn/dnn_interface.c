@@ -29,7 +29,6 @@
 #include "libavutil/opt.h"
 
 #include "libavfilter/filters.h"
-#include "libavfilter/internal.h"
 
 extern const DNNModule ff_dnn_backend_openvino;
 extern const DNNModule ff_dnn_backend_tf;

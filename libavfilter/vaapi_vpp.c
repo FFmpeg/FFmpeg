@@ -24,7 +24,6 @@
 
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "vaapi_vpp.h"
 
 int ff_vaapi_vpp_query_formats(AVFilterContext *avctx)

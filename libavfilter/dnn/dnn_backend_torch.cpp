@@ -27,7 +27,6 @@
 #include <torch/script.h>
 
 extern "C" {
-#include "../internal.h"
 #include "dnn_io_proc.h"
 #include "dnn_backend_common.h"
 #include "libavutil/opt.h"

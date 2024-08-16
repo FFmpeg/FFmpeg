@@ -52,7 +52,6 @@
 #include "avfilter.h"
 #include "drawutils.h"
 #include "filters.h"
-#include "internal.h"
 #include "framesync.h"
 
 #define RIGHT   0

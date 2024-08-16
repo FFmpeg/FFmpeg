@@ -37,7 +37,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "framequeue.h"
-#include "internal.h"
 #include "video.h"
 
 typedef struct BufferSinkContext {

@@ -19,7 +19,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/tx.h"
 #include "avfilter.h"
-#include "internal.h"
 #include "audio.h"
 
 #undef ctype

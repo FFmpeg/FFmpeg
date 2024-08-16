@@ -20,7 +20,6 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/mem.h"
-#include "libavfilter/internal.h"
 #include "libavutil/common.h"
 #include "libavutil/cpu.h"
 #include "libavutil/opt.h"

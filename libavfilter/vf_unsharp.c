@@ -38,7 +38,6 @@
 
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"

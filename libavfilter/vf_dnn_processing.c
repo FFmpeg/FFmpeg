@@ -29,7 +29,6 @@
 #include "libavutil/imgutils.h"
 #include "filters.h"
 #include "dnn_filter_common.h"
-#include "internal.h"
 #include "video.h"
 #include "libswscale/swscale.h"
 #include "libavutil/time.h"

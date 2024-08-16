@@ -34,7 +34,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 
 typedef struct ANullContext {
     const AVClass *class;

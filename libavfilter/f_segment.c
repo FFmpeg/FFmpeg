@@ -29,7 +29,6 @@
 
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 
 typedef struct SegmentContext {
     const AVClass *class;

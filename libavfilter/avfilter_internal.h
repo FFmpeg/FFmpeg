@@ -161,4 +161,27 @@ int ff_graph_thread_init(FFFilterGraph *graph);
 
 void ff_graph_thread_free(FFFilterGraph *graph);
 
+/**
+ * Negotiate the media format, dimensions, etc of all inputs to a filter.
+ *
+ * @param filter the filter to negotiate the properties for its inputs
+ * @return       zero on successful negotiation
+ */
+int ff_filter_config_links(AVFilterContext *filter);
+
+/* misc trace functions */
+
+#define FF_TPRINTF_START(ctx, func) ff_tlog(NULL, "%-16s: ", #func)
+
+#ifdef TRACE
+void ff_tlog_link(void *ctx, AVFilterLink *link, int end);
+#else
+#define ff_tlog_link(ctx, link, end) do { } while(0)
+#endif
+
+/**
+ * Run one round of processing on a filter graph.
+ */
+int ff_filter_graph_run_once(AVFilterGraph *graph);
+
 #endif /* AVFILTER_AVFILTER_INTERNAL_H */

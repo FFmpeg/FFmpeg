@@ -32,7 +32,6 @@
 #include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "tinterlace.h"
 #include "video.h"
 

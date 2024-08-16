@@ -30,7 +30,6 @@
 #include "avfilter_internal.h"
 #include "filters.h"
 #include "framepool.h"
-#include "internal.h"
 
 const AVFilterPad ff_audio_default_filterpad[1] = {
     {

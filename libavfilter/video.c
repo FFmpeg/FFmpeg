@@ -32,7 +32,6 @@
 #include "avfilter_internal.h"
 #include "filters.h"
 #include "framepool.h"
-#include "internal.h"
 #include "video.h"
 
 const AVFilterPad ff_video_default_filterpad[1] = {

@@ -24,7 +24,6 @@
 #include "avfilter.h"
 #include "audio.h"
 #include "filters.h"
-#include "internal.h"
 
 typedef struct CompensationDelayContext {
     const AVClass *class;

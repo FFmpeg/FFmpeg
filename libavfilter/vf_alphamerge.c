@@ -33,7 +33,6 @@
 #include "formats.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 #include "video.h"
 
 enum { Y, U, V, A };

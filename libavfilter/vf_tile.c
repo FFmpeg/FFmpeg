@@ -31,7 +31,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "video.h"
-#include "internal.h"
 
 typedef struct TileContext {
     const AVClass *class;

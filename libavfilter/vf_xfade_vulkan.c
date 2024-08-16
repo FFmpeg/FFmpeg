@@ -22,7 +22,6 @@
 #include "vulkan_filter.h"
 #include "vulkan_spirv.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 #define IN_A  0

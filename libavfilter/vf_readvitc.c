@@ -30,7 +30,6 @@
 #include "libavutil/timecode.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 #define LINE_DATA_SIZE 9

@@ -23,7 +23,6 @@
 #include "avfilter.h"
 #include "drawutils.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 #define COMP_R 0x01

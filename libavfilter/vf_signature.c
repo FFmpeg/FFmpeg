@@ -32,7 +32,6 @@
 #include "libavutil/file_open.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "signature.h"
 #include "signature_lookup.c"
 

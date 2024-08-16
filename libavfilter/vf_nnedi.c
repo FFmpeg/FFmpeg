@@ -31,7 +31,6 @@
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 static const size_t NNEDI_WEIGHTS_SIZE = 13574928;

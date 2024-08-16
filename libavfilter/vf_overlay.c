@@ -35,7 +35,6 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/timestamp.h"
-#include "internal.h"
 #include "filters.h"
 #include "drawutils.h"
 #include "framesync.h"

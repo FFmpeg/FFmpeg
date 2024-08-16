@@ -39,7 +39,6 @@
 
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 #include "vf_hqdn3d.h"
 

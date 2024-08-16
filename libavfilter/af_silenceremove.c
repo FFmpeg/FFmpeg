@@ -29,7 +29,6 @@
 #include "audio.h"
 #include "filters.h"
 #include "avfilter.h"
-#include "internal.h"
 
 enum SilenceDetect {
     D_AVG,

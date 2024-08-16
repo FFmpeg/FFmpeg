@@ -36,7 +36,6 @@
 #include "libavutil/qsort.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "edge_common.h"
 #include "video.h"
 

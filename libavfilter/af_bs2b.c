@@ -31,7 +31,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 
 typedef void (*filter_func)(t_bs2bdp bs2bdp, uint8_t *sample, int n);
 

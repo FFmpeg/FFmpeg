@@ -32,7 +32,6 @@
 #include "drawutils.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "audio.h"
 #include "video.h"
 

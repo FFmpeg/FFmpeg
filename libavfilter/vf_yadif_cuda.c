@@ -24,7 +24,6 @@
 #include "libavutil/cuda_check.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "yadif.h"
 
 #include "cuda/load_helper.h"

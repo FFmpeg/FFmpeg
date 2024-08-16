@@ -34,7 +34,6 @@
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "audio.h"
 #include "video.h"
 

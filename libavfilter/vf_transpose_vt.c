@@ -26,7 +26,6 @@
 #include "libavutil/pixdesc.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "transpose.h"
 #include "video.h"
 

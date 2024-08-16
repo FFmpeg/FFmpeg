@@ -32,7 +32,6 @@
 #include "filters.h"
 #include "audio.h"
 #include "formats.h"
-#include "internal.h"
 
 #define SWR_CH_MAX 64
 

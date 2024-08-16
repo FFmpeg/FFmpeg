@@ -37,7 +37,6 @@
 #include "formats.h"
 #include "audio.h"
 #include "video.h"
-#include "internal.h"
 
 enum ShowWavesMode {
     MODE_POINT,

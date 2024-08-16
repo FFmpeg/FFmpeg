@@ -34,7 +34,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "gblur.h"
-#include "internal.h"
 #include "vf_gblur_init.h"
 #include "video.h"
 

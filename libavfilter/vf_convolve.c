@@ -30,7 +30,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 
 #define MAX_THREADS 16
 

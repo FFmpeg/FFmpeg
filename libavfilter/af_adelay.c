@@ -25,7 +25,6 @@
 #include "avfilter.h"
 #include "audio.h"
 #include "filters.h"
-#include "internal.h"
 
 typedef struct ChanDelay {
     int64_t delay;

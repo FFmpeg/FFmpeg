@@ -41,7 +41,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "af_afirdsp.h"
 
 #define MAX_IR_STREAMS 32

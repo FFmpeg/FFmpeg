@@ -27,7 +27,6 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "filters.h"
-#include "internal.h"
 #include "window_func.h"
 
 #define MEASURE_ALL       UINT_MAX

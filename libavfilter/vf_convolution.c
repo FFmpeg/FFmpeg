@@ -31,7 +31,6 @@
 #include "avfilter.h"
 #include "convolution.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 #define OFFSET(x) offsetof(ConvolutionContext, x)

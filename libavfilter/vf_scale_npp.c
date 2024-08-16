@@ -38,7 +38,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "scale_eval.h"
 #include "video.h"
 

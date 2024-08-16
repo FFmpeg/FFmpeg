@@ -20,7 +20,6 @@
  */
 
 #include "filters.h"
-#include "internal.h"
 #include "metal/utils.h"
 #include "yadif.h"
 #include "libavutil/avassert.h"

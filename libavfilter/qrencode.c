@@ -40,7 +40,6 @@
 
 #include "avfilter.h"
 #include "drawutils.h"
-#include "internal.h"
 #include "filters.h"
 #include "formats.h"
 #include "textutils.h"

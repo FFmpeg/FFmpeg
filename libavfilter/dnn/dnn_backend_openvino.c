@@ -31,7 +31,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/avstring.h"
 #include "libavutil/detection_bbox.h"
-#include "../internal.h"
 #include "safe_queue.h"
 #if HAVE_OPENVINO2
 #include <openvino/c/openvino.h>

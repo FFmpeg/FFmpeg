@@ -33,7 +33,6 @@
 #include "avfilter.h"
 #include "audio.h"
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 typedef struct SplitContext {

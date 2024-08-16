@@ -25,7 +25,6 @@
 #include <nppi_filtering_functions.h>
 
 #include "filters.h"
-#include "internal.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/cuda_check.h"
 #include "libavutil/hwcontext.h"

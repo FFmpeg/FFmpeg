@@ -33,7 +33,6 @@
 #include "drawutils.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 #include "scene_sad.h"
 
 typedef struct IdentityContext {

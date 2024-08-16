@@ -30,7 +30,6 @@
 #include "libavutil/mathematics.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "avfilter.h"
 #include "formats.h"
 

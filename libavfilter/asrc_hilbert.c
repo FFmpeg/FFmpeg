@@ -24,7 +24,6 @@
 #include "audio.h"
 #include "avfilter.h"
 #include "formats.h"
-#include "internal.h"
 #include "filters.h"
 #include "window_func.h"
 

@@ -62,7 +62,6 @@
 #include "drawutils.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 #include "textutils.h"
 #include "video.h"
 

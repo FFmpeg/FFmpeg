@@ -28,7 +28,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "video.h"
-#include "internal.h"
 
 static const char *const var_names[] = {   "VOLUME",   "CHANNEL",   "PEAK",        NULL };
 enum                                   { VAR_VOLUME, VAR_CHANNEL, VAR_PEAK, VAR_VARS_NB };

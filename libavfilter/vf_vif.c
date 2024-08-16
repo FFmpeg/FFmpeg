@@ -33,7 +33,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 
 #define NUM_DATA_BUFS 13
 

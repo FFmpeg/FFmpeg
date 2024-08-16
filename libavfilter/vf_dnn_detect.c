@@ -26,7 +26,6 @@
 #include "libavutil/opt.h"
 #include "filters.h"
 #include "dnn_filter_common.h"
-#include "internal.h"
 #include "video.h"
 #include "libavutil/time.h"
 #include "libavutil/avstring.h"

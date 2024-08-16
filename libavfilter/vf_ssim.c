@@ -43,7 +43,6 @@
 #include "drawutils.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 #include "ssim.h"
 
 typedef struct SSIMContext {

@@ -25,7 +25,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "video.h"
-#include "internal.h"
 
 enum DisplayScale   { LINEAR, SQRT, CBRT, LOG, RLOG, NB_SCALES };
 enum AmplitudeScale { ALINEAR, ALOG, NB_ASCALES };

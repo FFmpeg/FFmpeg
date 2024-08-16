@@ -32,7 +32,6 @@
 #include "formats.h"
 #include "audio.h"
 #include "video.h"
-#include "internal.h"
 
 enum VectorScopeMode {
     LISSAJOUS,

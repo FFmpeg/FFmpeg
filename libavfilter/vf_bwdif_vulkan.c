@@ -25,7 +25,6 @@
 #include "vulkan_filter.h"
 #include "vulkan_spirv.h"
 #include "yadif.h"
-#include "internal.h"
 #include "filters.h"
 
 typedef struct BWDIFVulkanContext {

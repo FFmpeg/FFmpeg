@@ -35,7 +35,6 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 
-#include "internal.h"
 #include "filters.h"
 #include "formats.h"
 #include "video.h"

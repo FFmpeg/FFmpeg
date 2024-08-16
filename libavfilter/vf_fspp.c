@@ -43,7 +43,6 @@
 #include "libavutil/pixdesc.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "qp_table.h"
 #include "vf_fspp.h"
 #include "video.h"

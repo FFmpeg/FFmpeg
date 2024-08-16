@@ -25,7 +25,6 @@
 #include "vulkan_spirv.h"
 
 #include "filters.h"
-#include "internal.h"
 #include "video.h"
 
 #define TYPE_NAME  "vec4"

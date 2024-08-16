@@ -34,7 +34,6 @@
 #include "audio.h"
 #include "filters.h"
 #include "formats.h"
-#include "internal.h"
 
 typedef struct AResampleContext {
     const AVClass *class;

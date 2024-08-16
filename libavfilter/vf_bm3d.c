@@ -40,7 +40,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 #include "video.h"
 
 #define MAX_NB_THREADS 32

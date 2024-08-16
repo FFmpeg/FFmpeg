@@ -39,7 +39,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "framequeue.h"
-#include "internal.h"
 #include "video.h"
 
 #define OFFSET(x) offsetof(AVFilterGraph, x)

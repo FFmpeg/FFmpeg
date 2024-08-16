@@ -29,7 +29,6 @@
 #include "drawutils.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 
 typedef struct Sums {
     uint64_t s[2];

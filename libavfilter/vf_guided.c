@@ -25,7 +25,6 @@
 #include "avfilter.h"
 #include "filters.h"
 #include "framesync.h"
-#include "internal.h"
 #include "video.h"
 
 enum FilterModes {

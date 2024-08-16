@@ -30,7 +30,6 @@
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavcodec/defs.h"
-#include "../internal.h"
 #include "dnn_io_proc.h"
 #include "dnn_backend_common.h"
 #include "safe_queue.h"

@@ -31,7 +31,6 @@
 #include "filters.h"
 #include "formats.h"
 #include "framesync.h"
-#include "internal.h"
 #include "scale_eval.h"
 #include "video.h"
 #include "libavutil/eval.h"

@@ -34,7 +34,6 @@
 #include "formats.h"
 #include "audio.h"
 #include "filters.h"
-#include "internal.h"
 #include "window_func.h"
 
 enum MagnitudeScale { LINEAR, LOG, NB_SCALES };
