@@ -28,12 +28,6 @@
 #include "avfilter.h"
 
 /**
- * Returns true if a pixel format is "regular YUV", which includes all pixel
- * formats that are affected by YUV colorspace negotiation.
- */
-int ff_fmt_is_regular_yuv(enum AVPixelFormat fmt);
-
-/**
  * Negotiate the media format, dimensions, etc of all inputs to a filter.
  *
  * @param filter the filter to negotiate the properties for its inputs

@@ -40,6 +40,7 @@
 #include "formats.h"
 #include "framequeue.h"
 #include "internal.h"
+#include "video.h"
 
 #define OFFSET(x) offsetof(AVFilterGraph, x)
 #define F AV_OPT_FLAG_FILTERING_PARAM
