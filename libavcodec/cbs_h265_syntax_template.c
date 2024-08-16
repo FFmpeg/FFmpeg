@@ -2307,6 +2307,12 @@ SEI_FUNC(sei_3d_reference_displays_info, (CodedBitstreamContext *ctx, RWContext 
         else
             length = FFMAX(0, (int)current->exponent_ref_display_width[i] +
                               (int)current->prec_ref_display_width - 31);
+
+        if (length > 32) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "refDispWidthBits > 32 is not supported\n");
+            return AVERROR_PATCHWELCOME;
+        }
+
         if (length)
             ubs(length, mantissa_ref_display_width[i], 1, i);
         else
@@ -2318,6 +2324,12 @@ SEI_FUNC(sei_3d_reference_displays_info, (CodedBitstreamContext *ctx, RWContext 
             else
                 length = FFMAX(0, (int)current->exponent_ref_viewing_distance[i] +
                                   (int)current->prec_ref_viewing_dist - 31);
+
+            if (length > 32) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR, "refViewDistBits > 32 is not supported\n");
+                return AVERROR_PATCHWELCOME;
+            }
+
             if (length)
                 ubs(length, mantissa_ref_viewing_distance[i], 1, i);
             else
