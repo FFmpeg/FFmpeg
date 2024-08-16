@@ -188,7 +188,8 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
         st->codecpar->ch_layout.nb_channels = avio_rb16(pb);
         if (version == 5) {
             ast->deint_id = avio_rl32(pb);
-            avio_read(pb, buf, 4);
+            if (avio_read(pb, buf, 4) != 4)
+                return AVERROR_INVALIDDATA;
             buf[4] = 0;
         } else {
             AV_WL32(buf, 0);
