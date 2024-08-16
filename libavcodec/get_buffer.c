@@ -142,7 +142,10 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         if (ret < 0)
             goto fail;
 
-        pool->pools[0] = av_buffer_pool_init(pool->linesize[0], NULL);
+        pool->pools[0] = av_buffer_pool_init(pool->linesize[0],
+                                             CONFIG_MEMORY_POISONING ?
+                                                NULL :
+                                                av_buffer_allocz);
         if (!pool->pools[0]) {
             ret = AVERROR(ENOMEM);
             goto fail;
