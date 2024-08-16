@@ -1101,7 +1101,7 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         sps->used_by_curr_pic_lt = 0;
         for (i = 0; i < sps->num_long_term_ref_pics_sps; i++) {
             sps->lt_ref_pic_poc_lsb_sps[i]       = get_bits(gb, sps->log2_max_poc_lsb);
-            sps->used_by_curr_pic_lt            |= get_bits1(gb) * (1 << i);
+            sps->used_by_curr_pic_lt            |= get_bits1(gb) << i;
         }
     }
 
