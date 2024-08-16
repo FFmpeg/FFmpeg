@@ -1175,6 +1175,10 @@ typedef struct AVCodecContext {
      *   this callback and filled with the extra buffers if there are more
      *   buffers than buf[] can hold. extended_buf will be freed in
      *   av_frame_unref().
+     *   Decoders will generally initialize the whole buffer before it is output
+     *   but it can in rare error conditions happen that uninitialized data is passed
+     *   through. \important The buffers returned by get_buffer* should thus not contain sensitive
+     *   data.
      *
      * If AV_CODEC_CAP_DR1 is not set then get_buffer2() must call
      * avcodec_default_get_buffer2() instead of providing buffers allocated by

@@ -2,6 +2,12 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-08-xx - xxxxxxxxx - lavc 61.11.100- avcodec.h
+  Clarify the documentation for get_buffer*() functions, making it
+  clear that the memory returned by them should not contain sensitive
+  information. This is not a change in the API, it is how it already worked
+  before.
+
 2024-08-10 - xxxxxxxxx - lavu 59.34.100 - hwcontext_vulkan.h
   Add qf and nb_qf to AVVulkanDeviceContext.
   Deprecate queue_family_index, nb_graphics_queues,
