@@ -704,6 +704,9 @@ static int decode_entropy_coded_image(WebPContext *s, enum ImageRole role,
             ref_x = FFMAX(0, ref_x);
             ref_y = FFMAX(0, ref_y);
 
+            if (ref_y == y && ref_x >= x)
+                return AVERROR_INVALIDDATA;
+
             /* copy pixels
              * source and dest regions can overlap and wrap lines, so just
              * copy per-pixel */
