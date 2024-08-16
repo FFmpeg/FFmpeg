@@ -43,7 +43,7 @@ typedef struct JXLAnimDemuxContext {
 
 static int jpegxl_anim_probe(const AVProbeData *p)
 {
-    uint8_t buffer[4096 + AV_INPUT_BUFFER_PADDING_SIZE];
+    uint8_t buffer[4096 + AV_INPUT_BUFFER_PADDING_SIZE] = {0};
     int copied = 0, ret;
     FFJXLMetadata meta = { 0 };
 
