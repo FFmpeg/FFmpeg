@@ -123,6 +123,7 @@ static int transpose_vt_recreate_hw_ctx(AVFilterLink *outlink)
     hw_frame_ctx_out->sw_format = hw_frame_ctx_in->sw_format;
     hw_frame_ctx_out->width = outlink->w;
     hw_frame_ctx_out->height = outlink->h;
+    ((AVVTFramesContext *)hw_frame_ctx_out->hwctx)->color_range = ((AVVTFramesContext *)hw_frame_ctx_in->hwctx)->color_range;
 
     err = ff_filter_init_hw_frames(avctx, outlink, 1);
     if (err < 0)

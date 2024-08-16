@@ -24,6 +24,7 @@
 #include "yadif.h"
 #include "libavutil/avassert.h"
 #include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_videotoolbox.h"
 #include "libavutil/objc.h"
 
 #include <assert.h>
@@ -323,7 +324,8 @@ static int config_input(AVFilterLink *inlink)
 static int do_config_output(AVFilterLink *link) API_AVAILABLE(macos(10.11), ios(8.0))
 {
     FilterLink *l = ff_filter_link(link);
-    AVHWFramesContext *output_frames;
+    FilterLink *il = ff_filter_link(link->src->inputs[0]);
+    AVHWFramesContext *output_frames, *input_frames;
     AVFilterContext *ctx = link->src;
     YADIFVTContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;
@@ -345,12 +347,14 @@ static int do_config_output(AVFilterLink *link) API_AVAILABLE(macos(10.11), ios(
         goto exit;
     }
 
+    input_frames = (AVHWFramesContext*)il->hw_frames_ctx->data;
     output_frames = (AVHWFramesContext*)l->hw_frames_ctx->data;
 
     output_frames->format    = AV_PIX_FMT_VIDEOTOOLBOX;
     output_frames->sw_format = s->input_frames->sw_format;
     output_frames->width     = ctx->inputs[0]->w;
     output_frames->height    = ctx->inputs[0]->h;
+    ((AVVTFramesContext *)output_frames->hwctx)->color_range = ((AVVTFramesContext *)input_frames->hwctx)->color_range;
 
     ret = ff_filter_init_hw_frames(ctx, link, 10);
     if (ret < 0)
