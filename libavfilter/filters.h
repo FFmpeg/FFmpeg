@@ -199,24 +199,6 @@ static inline FilterLink* ff_filter_link(AVFilterLink *link)
     return (FilterLink*)link;
 }
 
-typedef struct FFFilterContext {
-    /**
-     * The public AVFilterContext. See avfilter.h for it.
-     */
-    AVFilterContext p;
-
-    avfilter_execute_func *execute;
-
-    // 1 when avfilter_init_*() was successfully called on this filter
-    // 0 otherwise
-    int initialized;
-} FFFilterContext;
-
-static inline FFFilterContext *fffilterctx(AVFilterContext *ctx)
-{
-    return (FFFilterContext*)ctx;
-}
-
 /**
  * The filter is aware of hardware frames, and any hardware frame context
  * should not be automatically propagated through it.
@@ -614,10 +596,7 @@ int ff_append_outpad_free_name(AVFilterContext *f, AVFilterPad *p);
  */
 int ff_fmt_is_in(int fmt, const int *fmts);
 
-static av_always_inline int ff_filter_execute(AVFilterContext *ctx, avfilter_action_func *func,
-                                              void *arg, int *ret, int nb_jobs)
-{
-    return fffilterctx(ctx)->execute(ctx, func, arg, ret, nb_jobs);
-}
+int ff_filter_execute(AVFilterContext *ctx, avfilter_action_func *func,
+                      void *arg, int *ret, int nb_jobs);
 
 #endif /* AVFILTER_FILTERS_H */

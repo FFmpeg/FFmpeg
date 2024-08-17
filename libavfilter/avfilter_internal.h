@@ -92,6 +92,24 @@ static inline FilterLinkInternal *ff_link_internal(AVFilterLink *link)
     return (FilterLinkInternal*)link;
 }
 
+typedef struct FFFilterContext {
+    /**
+     * The public AVFilterContext. See avfilter.h for it.
+     */
+    AVFilterContext p;
+
+    avfilter_execute_func *execute;
+
+    // 1 when avfilter_init_*() was successfully called on this filter
+    // 0 otherwise
+    int initialized;
+} FFFilterContext;
+
+static inline FFFilterContext *fffilterctx(AVFilterContext *ctx)
+{
+    return (FFFilterContext*)ctx;
+}
+
 typedef struct AVFilterCommand {
     double time;                ///< time expressed in seconds
     char *command;              ///< command

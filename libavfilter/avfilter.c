@@ -1647,3 +1647,9 @@ int ff_outlink_frame_wanted(AVFilterLink *link)
     FilterLinkInternal * const li = ff_link_internal(link);
     return li->frame_wanted_out;
 }
+
+int ff_filter_execute(AVFilterContext *ctx, avfilter_action_func *func,
+                      void *arg, int *ret, int nb_jobs)
+{
+    return fffilterctx(ctx)->execute(ctx, func, arg, ret, nb_jobs);
+}
