@@ -182,6 +182,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     HEVCParserContext *ctx = s->priv_data;
     HEVCParamSets *ps = &ctx->ps;
     HEVCSEI *sei = &ctx->sei;
+    int flags = (H2645_FLAG_IS_NALFF * !!ctx->is_avc) | H2645_FLAG_SMALL_PADDING;
     int ret, i;
 
     /* set some sane default values */
@@ -191,8 +192,8 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
 
     ff_hevc_reset_sei(sei);
 
-    ret = ff_h2645_packet_split(&ctx->pkt, buf, buf_size, avctx, ctx->is_avc,
-                                ctx->nal_length_size, AV_CODEC_ID_HEVC, 1, 0);
+    ret = ff_h2645_packet_split(&ctx->pkt, buf, buf_size, avctx,
+                                ctx->nal_length_size, AV_CODEC_ID_HEVC, flags);
     if (ret < 0)
         return ret;
 

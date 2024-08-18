@@ -193,7 +193,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     }
 
     ret = ff_h2645_packet_split(&s->h2645_pkt, pkt->data, pkt->size,
-                                ctx, 0, 0, ctx->par_in->codec_id, 1, 0);
+                                ctx, 0, ctx->par_in->codec_id, H2645_FLAG_SMALL_PADDING);
     if (ret < 0)
         return ret;
 
