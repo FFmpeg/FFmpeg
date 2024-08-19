@@ -75,8 +75,8 @@
     vzip.8              d7, d11                                        @ d7 = G1G2G3G4G5G6G7G8 d11 = G9G10G11G12G13G14G15G16
     vzip.8              d8, d12                                        @ d8 = B1B2B3B4B5B6B7B8 d12 = B9B10B11B12B13B14B15B16
     vzip.8              d9, d13                                        @ d9 = A1A2A3A4A5A6A7A8 d13 = A9A10A11A12A13A14A15A16
-    vst4.8              {q3, q4}, [\dst,:128]!
-    vst4.8              {q5, q6}, [\dst,:128]!
+    vst4.8              {q3, q4}, [\dst]!
+    vst4.8              {q5, q6}, [\dst]!
 .endm
 
 .macro process_1l_internal dst src ofmt
