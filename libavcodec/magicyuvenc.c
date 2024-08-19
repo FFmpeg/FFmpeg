@@ -375,11 +375,14 @@ static int count_plane_slice(AVCodecContext *avctx, int n, int plane)
     Slice *sl = &s->slices[n * s->planes + plane];
     const uint8_t *dst = sl->slice;
     PTable *counts = sl->counts;
+    const int slice_height = s->slice_height;
+    const int last_height = FFMIN(slice_height, avctx->height - n * slice_height);
+    const int height = (n < (s->nb_slices - 1)) ? slice_height : last_height;
 
     memset(counts, 0, sizeof(sl->counts));
 
     count_usage(dst, AV_CEIL_RSHIFT(avctx->width, s->hshift[plane]),
-                AV_CEIL_RSHIFT(s->slice_height, s->vshift[plane]), counts);
+                AV_CEIL_RSHIFT(height, s->vshift[plane]), counts);
 
     return 0;
 }
