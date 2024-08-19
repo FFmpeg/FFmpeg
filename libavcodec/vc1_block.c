@@ -1297,6 +1297,7 @@ static int vc1_decode_p_mb(VC1Context *v)
     int dst_idx, off;
     int skipped, fourmv;
     int block_cbp = 0, pat, block_tt = 0, block_intra = 0;
+    int ret;
 
     mquant = v->pq; /* lossy initialization */
 
@@ -1355,8 +1356,10 @@ static int vc1_decode_p_mb(VC1Context *v)
                     if (i == 1 || i == 3 || s->mb_x)
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-                    vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, val, mquant,
-                                           (i & 4) ? v->codingset2 : v->codingset);
+                    ret = vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, val, mquant,
+                                                 (i & 4) ? v->codingset2 : v->codingset);
+                    if (ret < 0)
+                        return ret;
                     if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                         continue;
                     v->vc1dsp.vc1_inv_trans_8x8(v->block[v->cur_blk_idx][block_map[i]]);
@@ -1458,8 +1461,10 @@ static int vc1_decode_p_mb(VC1Context *v)
                     if (i == 1 || i == 3 || s->mb_x)
                         v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-                    vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, is_coded[i], mquant,
-                                           (i & 4) ? v->codingset2 : v->codingset);
+                    ret = vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, is_coded[i], mquant,
+                                                 (i & 4) ? v->codingset2 : v->codingset);
+                    if (ret < 0)
+                        return ret;
                     if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                         continue;
                     v->vc1dsp.vc1_inv_trans_8x8(v->block[v->cur_blk_idx][block_map[i]]);
@@ -1530,6 +1535,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
     int block_cbp = 0, pat, block_tt = 0;
     int idx_mbmode = 0, mvbp;
     int fieldtx;
+    int ret;
 
     mquant = v->pq; /* Lossy initialization */
 
@@ -1602,8 +1608,10 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
                 if (i == 1 || i == 3 || s->mb_x)
                     v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-                vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, val, mquant,
-                                       (i & 4) ? v->codingset2 : v->codingset);
+                ret = vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, val, mquant,
+                                             (i & 4) ? v->codingset2 : v->codingset);
+                if (ret < 0)
+                    return ret;
                 if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                     continue;
                 v->vc1dsp.vc1_inv_trans_8x8(v->block[v->cur_blk_idx][block_map[i]]);
@@ -1735,6 +1743,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
     int pred_flag = 0;
     int block_cbp = 0, pat, block_tt = 0;
     int idx_mbmode = 0;
+    int ret;
 
     mquant = v->pq; /* Lossy initialization */
 
@@ -1766,8 +1775,10 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             if (i == 1 || i == 3 || s->mb_x)
                 v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-            vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, val, mquant,
-                                   (i & 4) ? v->codingset2 : v->codingset);
+            ret = vc1_decode_intra_block(v, v->block[v->cur_blk_idx][block_map[i]], i, val, mquant,
+                                         (i & 4) ? v->codingset2 : v->codingset);
+            if (ret < 0)
+                return ret;
             if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(v->block[v->cur_blk_idx][block_map[i]]);
@@ -1857,6 +1868,7 @@ static int vc1_decode_b_mb(VC1Context *v)
     int skipped, direct;
     int dmv_x[2], dmv_y[2];
     int bmvtype = BMV_TYPE_BACKWARD;
+    int ret;
 
     mquant      = v->pq; /* lossy initialization */
     s->mb_intra = 0;
@@ -1969,8 +1981,10 @@ static int vc1_decode_b_mb(VC1Context *v)
             if (i == 1 || i == 3 || s->mb_x)
                 v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-            vc1_decode_intra_block(v, s->block[i], i, val, mquant,
-                                   (i & 4) ? v->codingset2 : v->codingset);
+            ret = vc1_decode_intra_block(v, s->block[i], i, val, mquant,
+                                         (i & 4) ? v->codingset2 : v->codingset);
+            if (ret < 0)
+                return ret;
             if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
@@ -2016,6 +2030,7 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
     int bmvtype = BMV_TYPE_BACKWARD;
     int block_cbp = 0, pat, block_tt = 0;
     int idx_mbmode;
+    int ret;
 
     mquant      = v->pq; /* Lossy initialization */
     s->mb_intra = 0;
@@ -2048,8 +2063,10 @@ static int vc1_decode_b_mb_intfi(VC1Context *v)
             if (i == 1 || i == 3 || s->mb_x)
                 v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-            vc1_decode_intra_block(v, s->block[i], i, val, mquant,
-                                   (i & 4) ? v->codingset2 : v->codingset);
+            ret = vc1_decode_intra_block(v, s->block[i], i, val, mquant,
+                                         (i & 4) ? v->codingset2 : v->codingset);
+            if (ret < 0)
+                return ret;
             if (CONFIG_GRAY && (i > 3) && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
@@ -2186,6 +2203,7 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
     int stride_y, fieldtx;
     int bmvtype = BMV_TYPE_BACKWARD;
     int dir, dir2;
+    int ret;
 
     mquant = v->pq; /* Lossy initialization */
     s->mb_intra = 0;
@@ -2242,8 +2260,10 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
             if (i == 1 || i == 3 || s->mb_x)
                 v->c_avail = v->mb_type[0][s->block_index[i] - 1];
 
-            vc1_decode_intra_block(v, s->block[i], i, val, mquant,
-                                   (i & 4) ? v->codingset2 : v->codingset);
+            ret = vc1_decode_intra_block(v, s->block[i], i, val, mquant,
+                                         (i & 4) ? v->codingset2 : v->codingset);
+            if (ret < 0)
+                return ret;
             if (CONFIG_GRAY && i > 3 && (s->avctx->flags & AV_CODEC_FLAG_GRAY))
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
@@ -2775,6 +2795,7 @@ static void vc1_decode_p_blocks(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     int apply_loop_filter;
+    int ret;
 
     /* select coding mode used for VLC tables selection */
     switch (v->c_ac_table_index) {
@@ -2817,22 +2838,22 @@ static void vc1_decode_p_blocks(VC1Context *v)
                 }
 
             if (v->fcm == ILACE_FIELD) {
-                vc1_decode_p_mb_intfi(v);
+                ret = vc1_decode_p_mb_intfi(v);
                 if (apply_loop_filter)
                     ff_vc1_p_loop_filter(v);
             } else if (v->fcm == ILACE_FRAME) {
-                vc1_decode_p_mb_intfr(v);
+                ret = vc1_decode_p_mb_intfr(v);
                 if (apply_loop_filter)
                     ff_vc1_p_intfr_loop_filter(v);
             } else {
-                vc1_decode_p_mb(v);
+                ret = vc1_decode_p_mb(v);
                 if (apply_loop_filter)
                     ff_vc1_p_loop_filter(v);
             }
-            if (get_bits_left(&s->gb) < 0 || get_bits_count(&s->gb) < 0) {
+            if (ret < 0 || get_bits_left(&s->gb) < 0 || get_bits_count(&s->gb) < 0) {
                 // TODO: may need modification to handle slice coding
                 ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
-                av_log(s->avctx, AV_LOG_ERROR, "Bits overconsumption: %i > %i at %ix%i\n",
+                av_log(s->avctx, AV_LOG_ERROR, "Error or Bits overconsumption: %i > %i at %ix%i\n",
                        get_bits_count(&s->gb), s->gb.size_in_bits, s->mb_x, s->mb_y);
                 return;
             }
