@@ -93,6 +93,9 @@ static int lz4_decompress(AVCodecContext *avctx,
             } while (current == 255);
         }
 
+        if (bytestream2_get_bytes_left(gb) < num_literals)
+            return AVERROR_INVALIDDATA;
+
         if (pos + num_literals < HISTORY_SIZE) {
             bytestream2_get_buffer(gb, history + pos, num_literals);
             pos += num_literals;
