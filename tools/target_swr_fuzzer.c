@@ -83,6 +83,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     int in_sample_nb;
     int out_sample_nb = size;
     int count;
+    int ret;
 
     if (size > 128) {
         GetByteContext gbc;
@@ -132,8 +133,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (!out_data)
         goto end;
 
-    av_samples_fill_arrays(ain , NULL,     data,  in_ch_count,  in_sample_nb,  in_sample_fmt, 1);
-    av_samples_fill_arrays(aout, NULL, out_data, out_ch_count, out_sample_nb, out_sample_fmt, 1);
+    ret = av_samples_fill_arrays(ain , NULL,     data,  in_ch_count,  in_sample_nb,  in_sample_fmt, 1);
+    if (ret < 0)
+        goto end;
+    ret = av_samples_fill_arrays(aout, NULL, out_data, out_ch_count, out_sample_nb, out_sample_fmt, 1);
+    if (ret < 0)
+        goto end;
 
     count = swr_convert(swr, aout, out_sample_nb, (const uint8_t **)ain, in_sample_nb);
 
