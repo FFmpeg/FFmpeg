@@ -88,8 +88,6 @@ typedef struct VVCInterDSPContext {
     void (*bdof_fetch_samples)(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride, int x_frac, int y_frac,
         int width, int height);
 
-    void (*prof_grad_filter)(int16_t *gradient_h, int16_t *gradient_v, const ptrdiff_t gradient_stride,
-        const int16_t *src, const ptrdiff_t src_stride, int width, int height, const int pad);
     void (*apply_prof)(int16_t *dst, const int16_t *src, const int16_t *diff_mv_x, const int16_t *diff_mv_y);
 
     void (*apply_prof_uni)(uint8_t *dst, ptrdiff_t dst_stride, const int16_t *src,
@@ -97,7 +95,7 @@ typedef struct VVCInterDSPContext {
     void (*apply_prof_uni_w)(uint8_t *dst, const ptrdiff_t dst_stride, const int16_t *src,
         const int16_t *diff_mv_x, const int16_t *diff_mv_y, int denom, int wx, int ox);
 
-    void (*apply_bdof)(uint8_t *dst, ptrdiff_t dst_stride, int16_t *src0, int16_t *src1, int block_w, int block_h);
+    void (*apply_bdof)(uint8_t *dst, ptrdiff_t dst_stride, const int16_t *src0, const int16_t *src1, int block_w, int block_h);
 
     int (*sad)(const int16_t *src0, const int16_t *src1, int dx, int dy, int block_w, int block_h);
     void (*dmvr[2][2])(int16_t *dst, const uint8_t *src, ptrdiff_t src_stride, int height,

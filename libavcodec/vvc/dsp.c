@@ -26,26 +26,6 @@
 
 #define VVC_SIGN(v) (v < 0 ? -1 : !!v)
 
-static void av_always_inline pad_int16(int16_t *_dst, const ptrdiff_t dst_stride, const int width, const int height)
-{
-    const int padded_width = width + 2;
-    int16_t *dst;
-    for (int y = 0; y < height; y++) {
-        dst = _dst + y * dst_stride;
-        for (int x = 0; x < width; x++) {
-            dst[-1] = dst[0];
-            dst[width] = dst[width - 1];
-        }
-    }
-
-    _dst--;
-    //top
-    memcpy(_dst - dst_stride, _dst, padded_width * sizeof(int16_t));
-    //bottom
-    _dst += dst_stride * height;
-    memcpy(_dst, _dst - dst_stride, padded_width * sizeof(int16_t));
-}
-
 static int vvc_sad(const int16_t *src0, const int16_t *src1, int dx, int dy,
     const int block_w, const int block_h)
 {
@@ -77,11 +57,10 @@ typedef struct IntraEdgeParams {
 
 #define PROF_BORDER_EXT         1
 #define PROF_BLOCK_SIZE         (AFFINE_MIN_BLOCK_SIZE + PROF_BORDER_EXT * 2)
-#define BDOF_BORDER_EXT         1
 
-#define BDOF_PADDED_SIZE        (16 + BDOF_BORDER_EXT * 2)
+#define BDOF_BORDER_EXT         1
+#define BDOF_BLOCK_SIZE         16
 #define BDOF_MIN_BLOCK_SIZE     4
-#define BDOF_GRADIENT_SIZE      (BDOF_MIN_BLOCK_SIZE + BDOF_BORDER_EXT * 2)
 
 #define BIT_DEPTH 8
 #include "dsp_template.c"

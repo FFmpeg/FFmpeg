@@ -292,13 +292,11 @@ static void FUNC(fetch_samples)(int16_t *_dst, const uint8_t *_src, const ptrdif
     FUNC(bdof_fetch_samples)(_dst, _src, _src_stride, x_frac, y_frac, AFFINE_MIN_BLOCK_SIZE, AFFINE_MIN_BLOCK_SIZE);
 }
 
-static void FUNC(prof_grad_filter)(int16_t *_gradient_h, int16_t *_gradient_v, const ptrdiff_t gradient_stride,
-    const int16_t *_src, const ptrdiff_t src_stride, const int width, const int height, const int pad)
+static void FUNC(prof_grad_filter)(int16_t *gradient_h, int16_t *gradient_v, const ptrdiff_t gradient_stride,
+    const int16_t *_src, const ptrdiff_t src_stride, const int width, const int height)
 {
     const int shift     = 6;
     const int16_t *src  = _src;
-    int16_t *gradient_h = _gradient_h + pad * (1 + gradient_stride);
-    int16_t *gradient_v = _gradient_v + pad * (1 + gradient_stride);
 
     for (int y = 0; y < height; y++) {
         const int16_t *p = src;
@@ -311,10 +309,6 @@ static void FUNC(prof_grad_filter)(int16_t *_gradient_h, int16_t *_gradient_v, c
         gradient_v += gradient_stride;
         src += src_stride;
     }
-    if (pad) {
-        pad_int16(_gradient_h + 1 + gradient_stride, gradient_stride, width, height);
-        pad_int16(_gradient_v + 1 + gradient_stride, gradient_stride, width, height);
-    }
 }
 
 static void FUNC(apply_prof)(int16_t *dst, const int16_t *src, const int16_t *diff_mv_x, const int16_t *diff_mv_y)
@@ -323,7 +317,7 @@ static void FUNC(apply_prof)(int16_t *dst, const int16_t *src, const int16_t *di
 
     int16_t gradient_h[AFFINE_MIN_BLOCK_SIZE * AFFINE_MIN_BLOCK_SIZE];
     int16_t gradient_v[AFFINE_MIN_BLOCK_SIZE * AFFINE_MIN_BLOCK_SIZE];
-    FUNC(prof_grad_filter)(gradient_h, gradient_v, AFFINE_MIN_BLOCK_SIZE, src, MAX_PB_SIZE, AFFINE_MIN_BLOCK_SIZE, AFFINE_MIN_BLOCK_SIZE, 0);
+    FUNC(prof_grad_filter)(gradient_h, gradient_v, AFFINE_MIN_BLOCK_SIZE, src, MAX_PB_SIZE, AFFINE_MIN_BLOCK_SIZE, AFFINE_MIN_BLOCK_SIZE);
 
     for (int y = 0; y < AFFINE_MIN_BLOCK_SIZE; y++) {
         for (int x = 0; x < AFFINE_MIN_BLOCK_SIZE; x++) {
@@ -352,7 +346,7 @@ static void FUNC(apply_prof_uni)(uint8_t *_dst, const ptrdiff_t _dst_stride, con
     int16_t gradient_h[AFFINE_MIN_BLOCK_SIZE * AFFINE_MIN_BLOCK_SIZE];
     int16_t gradient_v[AFFINE_MIN_BLOCK_SIZE * AFFINE_MIN_BLOCK_SIZE];
 
-    FUNC(prof_grad_filter)(gradient_h, gradient_v, AFFINE_MIN_BLOCK_SIZE, src, MAX_PB_SIZE, AFFINE_MIN_BLOCK_SIZE, AFFINE_MIN_BLOCK_SIZE, 0);
+    FUNC(prof_grad_filter)(gradient_h, gradient_v, AFFINE_MIN_BLOCK_SIZE, src, MAX_PB_SIZE, AFFINE_MIN_BLOCK_SIZE, AFFINE_MIN_BLOCK_SIZE);
 
     for (int y = 0; y < AFFINE_MIN_BLOCK_SIZE; y++) {
         for (int x = 0; x < AFFINE_MIN_BLOCK_SIZE; x++) {
@@ -380,7 +374,7 @@ static void FUNC(apply_prof_uni_w)(uint8_t *_dst, const ptrdiff_t _dst_stride,
     int16_t gradient_h[AFFINE_MIN_BLOCK_SIZE * AFFINE_MIN_BLOCK_SIZE];
     int16_t gradient_v[AFFINE_MIN_BLOCK_SIZE * AFFINE_MIN_BLOCK_SIZE];
 
-    FUNC(prof_grad_filter)(gradient_h, gradient_v, AFFINE_MIN_BLOCK_SIZE, src, MAX_PB_SIZE, AFFINE_MIN_BLOCK_SIZE, AFFINE_MIN_BLOCK_SIZE, 0);
+    FUNC(prof_grad_filter)(gradient_h, gradient_v, AFFINE_MIN_BLOCK_SIZE, src, MAX_PB_SIZE, AFFINE_MIN_BLOCK_SIZE, AFFINE_MIN_BLOCK_SIZE);
 
     for (int y = 0; y < AFFINE_MIN_BLOCK_SIZE; y++) {
         for (int x = 0; x < AFFINE_MIN_BLOCK_SIZE; x++) {
@@ -395,47 +389,47 @@ static void FUNC(apply_prof_uni_w)(uint8_t *_dst, const ptrdiff_t _dst_stride,
 }
 
 static void FUNC(derive_bdof_vx_vy)(const int16_t *_src0, const int16_t *_src1,
-    const int16_t **gradient_h, const int16_t **gradient_v, ptrdiff_t gradient_stride,
+    const int pad_left, const int pad_top, const int pad_right, const int pad_bottom,
+    const int16_t **gradient_h, const int16_t **gradient_v,
     int* vx, int* vy)
 {
     const int shift2 = 4;
     const int shift3 = 1;
     const int thres = 1 << 4;
     int sgx2 = 0, sgy2 = 0, sgxgy = 0, sgxdi = 0, sgydi = 0;
-    const int16_t *src0 = _src0 - 1 - MAX_PB_SIZE;
-    const int16_t *src1 = _src1 - 1 - MAX_PB_SIZE;
 
-    for (int y = 0; y < BDOF_GRADIENT_SIZE; y++) {
-        for (int x = 0; x < BDOF_GRADIENT_SIZE; x++) {
-            const int diff = (src0[x] >> shift2) - (src1[x] >> shift2);
-            const int idx = gradient_stride * y  + x;
+    for (int y = -1; y < BDOF_MIN_BLOCK_SIZE + 1; y++) {
+        const int dy        = y + (pad_top && y < 0) - (pad_bottom && y == BDOF_MIN_BLOCK_SIZE);         // we pad for the first and last row
+        const int16_t *src0 = _src0 + dy * MAX_PB_SIZE;
+        const int16_t *src1 = _src1 + dy * MAX_PB_SIZE;
+
+        for (int x = -1; x < BDOF_MIN_BLOCK_SIZE + 1; x++) {
+            const int dx    = x + (pad_left && x < 0) - (pad_right && x == BDOF_MIN_BLOCK_SIZE);         // we pad for the first and last col
+            const int diff  = (src0[dx] >> shift2) - (src1[dx] >> shift2);
+            const int idx   = BDOF_BLOCK_SIZE * dy + dx;
             const int temph = (gradient_h[0][idx] + gradient_h[1][idx]) >> shift3;
             const int tempv = (gradient_v[0][idx] + gradient_v[1][idx]) >> shift3;
+
             sgx2 += FFABS(temph);
             sgy2 += FFABS(tempv);
             sgxgy += VVC_SIGN(tempv) * temph;
             sgxdi += -VVC_SIGN(temph) * diff;
             sgydi += -VVC_SIGN(tempv) * diff;
         }
-        src0 += MAX_PB_SIZE;
-        src1 += MAX_PB_SIZE;
     }
     *vx = sgx2 > 0 ? av_clip((sgxdi * (1 << 2)) >> av_log2(sgx2) , -thres + 1, thres - 1) : 0;
     *vy = sgy2 > 0 ? av_clip(((sgydi * (1 << 2)) - ((*vx * sgxgy) >> 1)) >> av_log2(sgy2), -thres + 1, thres - 1) : 0;
 }
 
 static void FUNC(apply_bdof_min_block)(pixel* dst, const ptrdiff_t dst_stride, const int16_t *src0, const int16_t *src1,
-    const int16_t **gradient_h, const int16_t **gradient_v, const int vx, const int vy)
+    const int16_t **gh, const int16_t **gv, const int vx, const int vy)
 {
     const int shift4 = 15 - BIT_DEPTH;
     const int offset4 = 1 << (shift4 - 1);
 
-    const int16_t* gh[] = { gradient_h[0] + 1 + BDOF_PADDED_SIZE, gradient_h[1] + 1 + BDOF_PADDED_SIZE };
-    const int16_t* gv[] = { gradient_v[0] + 1 + BDOF_PADDED_SIZE, gradient_v[1] + 1 + BDOF_PADDED_SIZE };
-
     for (int y = 0; y < BDOF_MIN_BLOCK_SIZE; y++) {
         for (int x = 0; x < BDOF_MIN_BLOCK_SIZE; x++) {
-            const int idx = y * BDOF_PADDED_SIZE + x;
+            const int idx = y * BDOF_BLOCK_SIZE + x;
             const int bdof_offset = vx * (gh[0][idx] - gh[1][idx]) + vy * (gv[0][idx] - gv[1][idx]);
             dst[x] = av_clip_pixel((src0[x] + offset4 + src1[x] + bdof_offset) >> shift4);
         }
@@ -445,31 +439,29 @@ static void FUNC(apply_bdof_min_block)(pixel* dst, const ptrdiff_t dst_stride, c
     }
 }
 
-static void FUNC(apply_bdof)(uint8_t *_dst, const ptrdiff_t _dst_stride, int16_t *_src0, int16_t *_src1,
+static void FUNC(apply_bdof)(uint8_t *_dst, const ptrdiff_t _dst_stride, const int16_t *_src0, const int16_t *_src1,
     const int block_w, const int block_h)
 {
-    int16_t gradient_h[2][BDOF_PADDED_SIZE * BDOF_PADDED_SIZE];
-    int16_t gradient_v[2][BDOF_PADDED_SIZE * BDOF_PADDED_SIZE];
+    int16_t gradient_h[2][BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE];
+    int16_t gradient_v[2][BDOF_BLOCK_SIZE * BDOF_BLOCK_SIZE];
     int vx, vy;
     const ptrdiff_t dst_stride  = _dst_stride / sizeof(pixel);
     pixel* dst                  = (pixel*)_dst;
 
-    FUNC(prof_grad_filter)(gradient_h[0], gradient_v[0], BDOF_PADDED_SIZE,
-        _src0, MAX_PB_SIZE, block_w, block_h, 1);
-    pad_int16(_src0, MAX_PB_SIZE, block_w, block_h);
-    FUNC(prof_grad_filter)(gradient_h[1], gradient_v[1], BDOF_PADDED_SIZE,
-        _src1, MAX_PB_SIZE, block_w, block_h, 1);
-    pad_int16(_src1, MAX_PB_SIZE, block_w, block_h);
+    FUNC(prof_grad_filter)(gradient_h[0], gradient_v[0], BDOF_BLOCK_SIZE,
+        _src0, MAX_PB_SIZE, block_w, block_h);
+    FUNC(prof_grad_filter)(gradient_h[1], gradient_v[1], BDOF_BLOCK_SIZE,
+        _src1, MAX_PB_SIZE, block_w, block_h);
 
     for (int y = 0; y < block_h; y += BDOF_MIN_BLOCK_SIZE) {
         for (int x = 0; x < block_w; x += BDOF_MIN_BLOCK_SIZE) {
             const int16_t* src0 = _src0 + y * MAX_PB_SIZE + x;
             const int16_t* src1 = _src1 + y * MAX_PB_SIZE + x;
             pixel *d            = dst + x;
-            const int idx       = BDOF_PADDED_SIZE * y  + x;
+            const int idx       = BDOF_BLOCK_SIZE * y  + x;
             const int16_t* gh[] = { gradient_h[0] + idx, gradient_h[1] + idx };
             const int16_t* gv[] = { gradient_v[0] + idx, gradient_v[1] + idx };
-            FUNC(derive_bdof_vx_vy)(src0, src1, gh, gv, BDOF_PADDED_SIZE, &vx, &vy);
+            FUNC(derive_bdof_vx_vy)(src0, src1, !x, !y, x + BDOF_MIN_BLOCK_SIZE == block_w, y + BDOF_MIN_BLOCK_SIZE == block_h, gh, gv, &vx, &vy);
             FUNC(apply_bdof_min_block)(d, dst_stride, src0, src1, gh, gv, vx, vy);
         }
         dst += BDOF_MIN_BLOCK_SIZE * dst_stride;
@@ -631,7 +623,6 @@ static void FUNC(ff_vvc_inter_dsp_init)(VVCInterDSPContext *const inter)
     inter->apply_prof_uni       = FUNC(apply_prof_uni);
     inter->apply_prof_uni_w     = FUNC(apply_prof_uni_w);
     inter->apply_bdof           = FUNC(apply_bdof);
-    inter->prof_grad_filter     = FUNC(prof_grad_filter);
     inter->sad                  = vvc_sad;
 }
 
