@@ -80,8 +80,8 @@ typedef struct IntraEdgeParams {
 #define BDOF_BORDER_EXT         1
 
 #define BDOF_PADDED_SIZE        (16 + BDOF_BORDER_EXT * 2)
-#define BDOF_BLOCK_SIZE         4
-#define BDOF_GRADIENT_SIZE      (BDOF_BLOCK_SIZE + BDOF_BORDER_EXT * 2)
+#define BDOF_MIN_BLOCK_SIZE     4
+#define BDOF_GRADIENT_SIZE      (BDOF_MIN_BLOCK_SIZE + BDOF_BORDER_EXT * 2)
 
 #define BIT_DEPTH 8
 #include "dsp_template.c"

@@ -433,8 +433,8 @@ static void FUNC(apply_bdof_min_block)(pixel* dst, const ptrdiff_t dst_stride, c
     const int16_t* gh[] = { gradient_h[0] + 1 + BDOF_PADDED_SIZE, gradient_h[1] + 1 + BDOF_PADDED_SIZE };
     const int16_t* gv[] = { gradient_v[0] + 1 + BDOF_PADDED_SIZE, gradient_v[1] + 1 + BDOF_PADDED_SIZE };
 
-    for (int y = 0; y < BDOF_BLOCK_SIZE; y++) {
-        for (int x = 0; x < BDOF_BLOCK_SIZE; x++) {
+    for (int y = 0; y < BDOF_MIN_BLOCK_SIZE; y++) {
+        for (int x = 0; x < BDOF_MIN_BLOCK_SIZE; x++) {
             const int idx = y * BDOF_PADDED_SIZE + x;
             const int bdof_offset = vx * (gh[0][idx] - gh[1][idx]) + vy * (gv[0][idx] - gv[1][idx]);
             dst[x] = av_clip_pixel((src0[x] + offset4 + src1[x] + bdof_offset) >> shift4);
@@ -461,8 +461,8 @@ static void FUNC(apply_bdof)(uint8_t *_dst, const ptrdiff_t _dst_stride, int16_t
         _src1, MAX_PB_SIZE, block_w, block_h, 1);
     pad_int16(_src1, MAX_PB_SIZE, block_w, block_h);
 
-    for (int y = 0; y < block_h; y += BDOF_BLOCK_SIZE) {
-        for (int x = 0; x < block_w; x += BDOF_BLOCK_SIZE) {
+    for (int y = 0; y < block_h; y += BDOF_MIN_BLOCK_SIZE) {
+        for (int x = 0; x < block_w; x += BDOF_MIN_BLOCK_SIZE) {
             const int16_t* src0 = _src0 + y * MAX_PB_SIZE + x;
             const int16_t* src1 = _src1 + y * MAX_PB_SIZE + x;
             pixel *d            = dst + x;
@@ -472,7 +472,7 @@ static void FUNC(apply_bdof)(uint8_t *_dst, const ptrdiff_t _dst_stride, int16_t
             FUNC(derive_bdof_vx_vy)(src0, src1, gh, gv, BDOF_PADDED_SIZE, &vx, &vy);
             FUNC(apply_bdof_min_block)(d, dst_stride, src0, src1, gh, gv, vx, vy);
         }
-        dst += BDOF_BLOCK_SIZE * dst_stride;
+        dst += BDOF_MIN_BLOCK_SIZE * dst_stride;
     }
 }
 
