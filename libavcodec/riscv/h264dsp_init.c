@@ -40,6 +40,13 @@ void ff_h264_h_loop_filter_luma_8_rvv(uint8_t *pix, ptrdiff_t stride,
                                       int alpha, int beta, int8_t *tc0);
 void ff_h264_h_loop_filter_luma_mbaff_8_rvv(uint8_t *pix, ptrdiff_t stride,
                                             int alpha, int beta, int8_t *tc0);
+void ff_h264_v_loop_filter_chroma_8_rvv(uint8_t *pix, ptrdiff_t stride,
+                                        int alpha, int beta, int8_t *tc0);
+void ff_h264_h_loop_filter_chroma_8_rvv(uint8_t *pix, ptrdiff_t stride,
+                                        int alpha, int beta, int8_t *tc0);
+void ff_h264_h_loop_filter_chroma_mbaff_8_rvv(uint8_t *pix, ptrdiff_t stride,
+                                              int alpha, int beta,
+                                              int8_t *tc0);
 
 #define IDCT_DEPTH(depth) \
 void ff_h264_idct_add_##depth##_rvv(uint8_t *d, int16_t *s, int stride); \
@@ -101,6 +108,14 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
             dsp->h264_h_loop_filter_luma = ff_h264_h_loop_filter_luma_8_rvv;
             dsp->h264_h_loop_filter_luma_mbaff =
                 ff_h264_h_loop_filter_luma_mbaff_8_rvv;
+            dsp->h264_v_loop_filter_chroma =
+                ff_h264_v_loop_filter_chroma_8_rvv;
+            if (chroma_format_idc <= 1) {
+                dsp->h264_h_loop_filter_chroma =
+                    ff_h264_h_loop_filter_chroma_8_rvv;
+                dsp->h264_h_loop_filter_chroma_mbaff =
+                    ff_h264_h_loop_filter_chroma_mbaff_8_rvv;
+            }
 
             dsp->h264_idct_add  = ff_h264_idct_add_8_rvv;
             dsp->h264_idct8_add = ff_h264_idct8_add_8_rvv;
