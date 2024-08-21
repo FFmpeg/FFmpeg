@@ -779,7 +779,7 @@ static int bench_init_linux(void)
 #endif
     };
 
-    printf("benchmarking with Linux Perf Monitoring API\n");
+    fprintf(stderr, "benchmarking with Linux Perf Monitoring API\n");
 
     state.sysfd = syscall(__NR_perf_event_open, &attr, 0, -1, -1, 0);
     if (state.sysfd == -1) {
@@ -806,7 +806,7 @@ static int bench_init_ffmpeg(void)
         fprintf(stderr, "checkasm: unable to execute platform specific timer\n");
         return -1;
     }
-    printf("benchmarking with native FFmpeg timers\n");
+    fprintf(stderr, "benchmarking with native FFmpeg timers\n");
     return 0;
 #else
     fprintf(stderr, "checkasm: --bench is not supported on your system\n");
@@ -828,7 +828,7 @@ static int bench_init(void)
         return ret;
 
     state.nop_time = measure_nop_time();
-    printf("nop: %d.%d\n", state.nop_time/10, state.nop_time%10);
+    fprintf(stderr, "nop: %d.%d\n", state.nop_time/10, state.nop_time%10);
     return 0;
 }
 
