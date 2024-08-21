@@ -114,19 +114,31 @@ static int pix_norm1_c(const uint8_t *pix, int line_size)
     return s;
 }
 
+static av_always_inline void draw_edges_lr(uint8_t *ptr, int wrap, int width, int height, int w)
+{
+    for (int i = 0; i < height; i++) {
+        memset(ptr - w, ptr[0], w);
+        memset(ptr + width, ptr[width - 1], w);
+        ptr += wrap;
+    }
+}
+
 /* draw the edges of width 'w' of an image of size width, height */
 // FIXME: Check that this is OK for MPEG-4 interlaced.
 static void draw_edges_8_c(uint8_t *buf, int wrap, int width, int height,
                            int w, int h, int sides)
 {
-    uint8_t *ptr = buf, *last_line;
+    uint8_t *last_line;
     int i;
 
     /* left and right */
-    for (i = 0; i < height; i++) {
-        memset(ptr - w, ptr[0], w);
-        memset(ptr + width, ptr[width - 1], w);
-        ptr += wrap;
+    if (w == 16) {
+        draw_edges_lr(buf, wrap, width, height, 16);
+    } else if (w == 8) {
+        draw_edges_lr(buf, wrap, width, height, 8);
+    } else {
+        av_assert1(w == 4);
+        draw_edges_lr(buf, wrap, width, height, 4);
     }
 
     /* top and bottom + corners */
