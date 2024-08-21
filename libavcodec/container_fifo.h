@@ -19,6 +19,8 @@
 #ifndef AVCODEC_CONTAINER_FIFO_H
 #define AVCODEC_CONTAINER_FIFO_H
 
+#include <stddef.h>
+
 /**
  * ContainerFifo is a FIFO for "containers" - dynamically allocated reusable
  * structs (e.g. AVFrame or AVPacket). ContainerFifo uses an internal pool of
