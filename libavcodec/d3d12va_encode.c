@@ -107,10 +107,10 @@ static int d3d12va_discard_command_allocator(AVCodecContext *avctx, ID3D12Comman
 }
 
 static int d3d12va_encode_wait(AVCodecContext *avctx,
-                               D3D12VAEncodePicture *pic)
+                               FFHWBaseEncodePicture *base_pic)
 {
-    D3D12VAEncodeContext       *ctx = avctx->priv_data;
-    FFHWBaseEncodePicture *base_pic = &pic->base;
+    D3D12VAEncodeContext *ctx = avctx->priv_data;
+    D3D12VAEncodePicture *pic = base_pic->priv;
     uint64_t completion;
 
     av_assert0(base_pic->encode_issued);
@@ -186,12 +186,12 @@ static int d3d12va_encode_create_metadata_buffers(AVCodecContext *avctx,
 }
 
 static int d3d12va_encode_issue(AVCodecContext *avctx,
-                                const FFHWBaseEncodePicture *base_pic)
+                                FFHWBaseEncodePicture *base_pic)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
     D3D12VAEncodeContext       *ctx = avctx->priv_data;
+    D3D12VAEncodePicture       *pic = base_pic->priv;
     AVD3D12VAFramesContext *frames_hwctx = base_ctx->input_frames->hwctx;
-    D3D12VAEncodePicture *pic = (D3D12VAEncodePicture *)base_pic;
     int err, i, j;
     HRESULT hr;
     char data[MAX_PARAM_BUFFER_SIZE];
@@ -288,7 +288,7 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
         goto fail;
 
     if (ctx->codec->init_picture_params) {
-        err = ctx->codec->init_picture_params(avctx, pic);
+        err = ctx->codec->init_picture_params(avctx, base_pic);
         if (err < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed to initialise picture "
                    "parameters: %d.\n", err);
@@ -333,9 +333,9 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
 
         i = 0;
         for (j = 0; j < base_pic->nb_refs[0]; j++)
-            d3d12_refs.ppTexture2Ds[i++] = ((D3D12VAEncodePicture *)base_pic->refs[0][j])->recon_surface->texture;
+            d3d12_refs.ppTexture2Ds[i++] = ((D3D12VAEncodePicture *)base_pic->refs[0][j]->priv)->recon_surface->texture;
         for (j = 0; j < base_pic->nb_refs[1]; j++)
-            d3d12_refs.ppTexture2Ds[i++] = ((D3D12VAEncodePicture *)base_pic->refs[1][j])->recon_surface->texture;
+            d3d12_refs.ppTexture2Ds[i++] = ((D3D12VAEncodePicture *)base_pic->refs[1][j]->priv)->recon_surface->texture;
     }
 
     input_args.PictureControlDesc.IntraRefreshFrameIndex  = 0;
@@ -515,10 +515,11 @@ fail:
 }
 
 static int d3d12va_encode_discard(AVCodecContext *avctx,
-                                  D3D12VAEncodePicture *pic)
+                                  FFHWBaseEncodePicture *base_pic)
 {
-    FFHWBaseEncodePicture *base_pic = &pic->base;
-    d3d12va_encode_wait(avctx, pic);
+    D3D12VAEncodePicture *pic = base_pic->priv;
+
+    d3d12va_encode_wait(avctx, base_pic);
 
     if (pic->output_buffer_ref) {
         av_log(avctx, AV_LOG_DEBUG, "Discard output for pic "
@@ -560,44 +561,33 @@ static int d3d12va_encode_free_rc_params(AVCodecContext *avctx)
     return 0;
 }
 
-static FFHWBaseEncodePicture *d3d12va_encode_alloc(AVCodecContext *avctx,
-                                                   const AVFrame *frame)
+static int d3d12va_encode_init(AVCodecContext *avctx, FFHWBaseEncodePicture *pic)
 {
     D3D12VAEncodeContext *ctx = avctx->priv_data;
-    D3D12VAEncodePicture *pic;
-
-    pic = av_mallocz(sizeof(*pic));
-    if (!pic)
-        return NULL;
+    D3D12VAEncodePicture *priv = pic->priv;
+    AVFrame *frame = pic->input_image;
 
     if (ctx->codec->picture_priv_data_size > 0) {
-        pic->base.priv_data = av_mallocz(ctx->codec->picture_priv_data_size);
-        if (!pic->base.priv_data) {
-            av_freep(&pic);
-            return NULL;
-        }
+        pic->codec_priv = av_mallocz(ctx->codec->picture_priv_data_size);
+        if (!pic->codec_priv)
+            return AVERROR(ENOMEM);
     }
 
-    pic->input_surface = (AVD3D12VAFrame *)frame->data[0];
+    priv->input_surface = (AVD3D12VAFrame *)frame->data[0];
 
-    return &pic->base;
+    return 0;
 }
 
-static int d3d12va_encode_free(AVCodecContext *avctx,
-                               FFHWBaseEncodePicture *base_pic)
+static int d3d12va_encode_free(AVCodecContext *avctx, FFHWBaseEncodePicture *pic)
 {
     D3D12VAEncodeContext *ctx = avctx->priv_data;
-    D3D12VAEncodePicture *pic = (D3D12VAEncodePicture *)base_pic;
+    D3D12VAEncodePicture *priv = pic->priv;
 
-    if (base_pic->encode_issued)
+    if (pic->encode_issued)
         d3d12va_encode_discard(avctx, pic);
 
     if (ctx->codec->free_picture_params)
-        ctx->codec->free_picture_params(pic);
-
-    ff_hw_base_encode_free(base_pic);
-
-    av_free(pic);
+        ctx->codec->free_picture_params(priv);
 
     return 0;
 }
@@ -680,14 +670,14 @@ end:
 }
 
 static int d3d12va_encode_output(AVCodecContext *avctx,
-                                 const FFHWBaseEncodePicture *base_pic, AVPacket *pkt)
+                                 FFHWBaseEncodePicture *base_pic, AVPacket *pkt)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
-    D3D12VAEncodePicture *pic = (D3D12VAEncodePicture *)base_pic;
+    D3D12VAEncodePicture *pic = base_pic->priv;
     AVPacket *pkt_ptr = pkt;
     int err;
 
-    err = d3d12va_encode_wait(avctx, pic);
+    err = d3d12va_encode_wait(avctx, base_pic);
     if (err < 0)
         return err;
 
@@ -1389,7 +1379,9 @@ static int d3d12va_encode_create_recon_frames(AVCodecContext *avctx)
 }
 
 static const FFHWEncodePictureOperation d3d12va_type = {
-    .alloc  = &d3d12va_encode_alloc,
+    .priv_size = sizeof(D3D12VAEncodePicture),
+
+    .init   = &d3d12va_encode_init,
 
     .issue  = &d3d12va_encode_issue,
 

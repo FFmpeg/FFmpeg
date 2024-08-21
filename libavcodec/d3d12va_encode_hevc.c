@@ -748,12 +748,12 @@ static void d3d12va_encode_hevc_free_picture_params(D3D12VAEncodePicture *pic)
 }
 
 static int d3d12va_encode_hevc_init_picture_params(AVCodecContext *avctx,
-                                                   D3D12VAEncodePicture *pic)
+                                                   FFHWBaseEncodePicture *base_pic)
 {
-    FFHWBaseEncodePicture                           *base_pic = &pic->base;
-    D3D12VAEncodeHEVCPicture                            *hpic = base_pic->priv_data;
+    D3D12VAEncodePicture                                 *pic = base_pic->priv;
+    D3D12VAEncodeHEVCPicture                            *hpic = base_pic->codec_priv;
     FFHWBaseEncodePicture                               *prev = base_pic->prev;
-    D3D12VAEncodeHEVCPicture                           *hprev = prev ? prev->priv_data : NULL;
+    D3D12VAEncodeHEVCPicture                           *hprev = prev ? prev->codec_priv : NULL;
     D3D12_VIDEO_ENCODER_REFERENCE_PICTURE_DESCRIPTOR_HEVC *pd = NULL;
     UINT                                           *ref_list0 = NULL, *ref_list1 = NULL;
     int i, idx = 0;
@@ -807,7 +807,7 @@ static int d3d12va_encode_hevc_init_picture_params(AVCodecContext *avctx,
             D3D12VAEncodeHEVCPicture *href;
 
             av_assert0(ref && ref->encode_order < base_pic->encode_order);
-            href = ref->priv_data;
+            href = ref->codec_priv;
 
             ref_list0[i] = idx;
             pd[idx].ReconstructedPictureResourceIndex = idx;
@@ -828,7 +828,7 @@ static int d3d12va_encode_hevc_init_picture_params(AVCodecContext *avctx,
             D3D12VAEncodeHEVCPicture *href;
 
             av_assert0(ref && ref->encode_order < base_pic->encode_order);
-            href = ref->priv_data;
+            href = ref->codec_priv;
 
             ref_list1[i] = idx;
             pd[idx].ReconstructedPictureResourceIndex = idx;

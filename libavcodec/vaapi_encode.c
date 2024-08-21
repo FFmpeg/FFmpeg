@@ -135,14 +135,13 @@ static int vaapi_encode_make_misc_param_buffer(AVCodecContext *avctx,
                                           buffer, buffer_size);
 }
 
-static int vaapi_encode_wait(AVCodecContext *avctx,
-                             VAAPIEncodePicture *pic)
+static int vaapi_encode_wait(AVCodecContext *avctx, FFHWBaseEncodePicture *base_pic)
 {
 #if VA_CHECK_VERSION(1, 9, 0)
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
 #endif
     VAAPIEncodeContext *ctx = avctx->priv_data;
-    FFHWBaseEncodePicture *base_pic = &pic->base;
+    VAAPIEncodePicture *pic = base_pic->priv;
     VAStatus vas;
 
     av_assert0(base_pic->encode_issued);
@@ -267,11 +266,11 @@ static int vaapi_encode_make_tile_slice(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_issue(AVCodecContext *avctx,
-                              const FFHWBaseEncodePicture *base_pic)
+                              FFHWBaseEncodePicture *base_pic)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
     VAAPIEncodeContext         *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic = (VAAPIEncodePicture*)base_pic;
+    VAAPIEncodePicture         *pic = base_pic->priv;
     VAAPIEncodeSlice *slice;
     VAStatus vas;
     int err, i;
@@ -364,7 +363,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     }
 
     if (ctx->codec->init_picture_params) {
-        err = ctx->codec->init_picture_params(avctx, pic);
+        err = ctx->codec->init_picture_params(avctx, base_pic);
         if (err < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed to initialise picture "
                    "parameters: %d.\n", err);
@@ -410,7 +409,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_PICTURE &&
         ctx->codec->write_picture_header) {
         bit_len = 8 * sizeof(data);
-        err = ctx->codec->write_picture_header(avctx, pic, data, &bit_len);
+        err = ctx->codec->write_picture_header(avctx, base_pic, data, &bit_len);
         if (err < 0) {
             av_log(avctx, AV_LOG_ERROR, "Failed to write per-picture "
                    "header: %d.\n", err);
@@ -427,7 +426,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         for (i = 0;; i++) {
             size_t len = sizeof(data);
             int type;
-            err = ctx->codec->write_extra_buffer(avctx, pic, i, &type,
+            err = ctx->codec->write_extra_buffer(avctx, base_pic, i, &type,
                                                  data, &len);
             if (err == AVERROR_EOF)
                 break;
@@ -449,7 +448,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         for (i = 0;; i++) {
             int type;
             bit_len = 8 * sizeof(data);
-            err = ctx->codec->write_extra_header(avctx, pic, i, &type,
+            err = ctx->codec->write_extra_header(avctx, base_pic, i, &type,
                                                  data, &bit_len);
             if (err == AVERROR_EOF)
                 break;
@@ -493,7 +492,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
 
         if (ctx->codec->init_slice_params) {
-            err = ctx->codec->init_slice_params(avctx, pic, slice);
+            err = ctx->codec->init_slice_params(avctx, base_pic, slice);
             if (err < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Failed to initialise slice "
                        "parameters: %d.\n", err);
@@ -773,15 +772,15 @@ end:
 }
 
 static int vaapi_encode_output(AVCodecContext *avctx,
-                               const FFHWBaseEncodePicture *base_pic, AVPacket *pkt)
+                               FFHWBaseEncodePicture *base_pic, AVPacket *pkt)
 {
     FFHWBaseEncodeContext *base_ctx = avctx->priv_data;
     VAAPIEncodeContext         *ctx = avctx->priv_data;
-    VAAPIEncodePicture         *pic = (VAAPIEncodePicture*)base_pic;
+    VAAPIEncodePicture         *pic = base_pic->priv;
     AVPacket *pkt_ptr = pkt;
     int err;
 
-    err = vaapi_encode_wait(avctx, pic);
+    err = vaapi_encode_wait(avctx, base_pic);
     if (err < 0)
         return err;
 
@@ -820,12 +819,11 @@ end:
     return err;
 }
 
-static int vaapi_encode_discard(AVCodecContext *avctx,
-                                VAAPIEncodePicture *pic)
+static int vaapi_encode_discard(AVCodecContext *avctx, FFHWBaseEncodePicture *base_pic)
 {
-    FFHWBaseEncodePicture *base_pic = &pic->base;
+    VAAPIEncodePicture *pic = base_pic->priv;
 
-    vaapi_encode_wait(avctx, pic);
+    vaapi_encode_wait(avctx, base_pic);
 
     if (pic->output_buffer_ref) {
         av_log(avctx, AV_LOG_DEBUG, "Discard output for pic "
@@ -839,56 +837,45 @@ static int vaapi_encode_discard(AVCodecContext *avctx,
     return 0;
 }
 
-static FFHWBaseEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx,
-                                                 const AVFrame *frame)
+static int vaapi_encode_init(AVCodecContext *avctx, FFHWBaseEncodePicture *pic)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodePicture *pic;
-
-    pic = av_mallocz(sizeof(*pic));
-    if (!pic)
-        return NULL;
+    VAAPIEncodePicture *priv = pic->priv;
+    AVFrame *frame = pic->input_image;
 
     if (ctx->codec->picture_priv_data_size > 0) {
-        pic->base.priv_data = av_mallocz(ctx->codec->picture_priv_data_size);
-        if (!pic->base.priv_data) {
-            av_freep(&pic);
-            return NULL;
-        }
+        pic->codec_priv = av_mallocz(ctx->codec->picture_priv_data_size);
+        if (!pic->codec_priv)
+            return AVERROR(ENOMEM);
     }
 
-    pic->input_surface = (VASurfaceID)(uintptr_t)frame->data[3];
-    pic->recon_surface = VA_INVALID_ID;
-    pic->output_buffer = VA_INVALID_ID;
+    priv->input_surface = (VASurfaceID)(uintptr_t)frame->data[3];
+    priv->recon_surface = VA_INVALID_ID;
+    priv->output_buffer = VA_INVALID_ID;
 
-    return &pic->base;
+    return 0;
 }
 
-static int vaapi_encode_free(AVCodecContext *avctx,
-                             FFHWBaseEncodePicture *base_pic)
+static int vaapi_encode_free(AVCodecContext *avctx, FFHWBaseEncodePicture *pic)
 {
-    VAAPIEncodePicture *pic = (VAAPIEncodePicture*)base_pic;
+    VAAPIEncodePicture *priv = pic->priv;
     int i;
 
-    if (base_pic->encode_issued)
+    if (pic->encode_issued)
         vaapi_encode_discard(avctx, pic);
 
-    if (pic->slices) {
-        for (i = 0; i < pic->nb_slices; i++)
-            av_freep(&pic->slices[i].codec_slice_params);
+    if (priv->slices) {
+        for (i = 0; i < priv->nb_slices; i++)
+            av_freep(&priv->slices[i].codec_slice_params);
     }
 
-    ff_hw_base_encode_free(base_pic);
-
-    av_freep(&pic->param_buffers);
-    av_freep(&pic->slices);
+    av_freep(&priv->param_buffers);
+    av_freep(&priv->slices);
     // Output buffer should already be destroyed.
-    av_assert0(pic->output_buffer == VA_INVALID_ID);
+    av_assert0(priv->output_buffer == VA_INVALID_ID);
 
-    av_freep(&pic->codec_picture_params);
-    av_freep(&pic->roi);
-
-    av_free(pic);
+    av_freep(&priv->codec_picture_params);
+    av_freep(&priv->roi);
 
     return 0;
 }
@@ -2090,7 +2077,9 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
 }
 
 static const FFHWEncodePictureOperation vaapi_op = {
-    .alloc  = &vaapi_encode_alloc,
+    .priv_size = sizeof(VAAPIEncodePicture),
+
+    .init = &vaapi_encode_init,
 
     .issue  = &vaapi_encode_issue,
 

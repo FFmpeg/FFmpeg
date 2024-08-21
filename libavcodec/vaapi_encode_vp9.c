@@ -77,12 +77,12 @@ static int vaapi_encode_vp9_init_sequence_params(AVCodecContext *avctx)
 }
 
 static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
-                                                VAAPIEncodePicture *vaapi_pic)
+                                                FFHWBaseEncodePicture *pic)
 {
     FFHWBaseEncodeContext      *base_ctx = avctx->priv_data;
     VAAPIEncodeVP9Context          *priv = avctx->priv_data;
-    const FFHWBaseEncodePicture     *pic = &vaapi_pic->base;
-    VAAPIEncodeVP9Picture          *hpic = pic->priv_data;
+    VAAPIEncodePicture        *vaapi_pic = pic->priv;
+    VAAPIEncodeVP9Picture          *hpic = pic->codec_priv;
     VAEncPictureParameterBufferVP9 *vpic = vaapi_pic->codec_picture_params;
     int i;
     int num_tile_columns;
@@ -106,7 +106,7 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
     case FF_HW_PICTURE_TYPE_P:
         av_assert0(!pic->nb_refs[1]);
         {
-            VAAPIEncodeVP9Picture *href = pic->refs[0][0]->priv_data;
+            VAAPIEncodeVP9Picture *href = pic->refs[0][0]->codec_priv;
             av_assert0(href->slot == 0 || href->slot == 1);
 
             if (base_ctx->max_b_depth > 0) {
@@ -124,8 +124,8 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
     case FF_HW_PICTURE_TYPE_B:
         av_assert0(pic->nb_refs[0] && pic->nb_refs[1]);
         {
-            VAAPIEncodeVP9Picture *href0 = pic->refs[0][0]->priv_data,
-                                  *href1 = pic->refs[1][0]->priv_data;
+            VAAPIEncodeVP9Picture *href0 = pic->refs[0][0]->codec_priv,
+                                  *href1 = pic->refs[1][0]->codec_priv;
             av_assert0(href0->slot < pic->b_depth + 1 &&
                        href1->slot < pic->b_depth + 1);
 
@@ -163,9 +163,9 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
         for (int j = 0; j < pic->nb_refs[i]; j++) {
             FFHWBaseEncodePicture *ref_pic = pic->refs[i][j];
             int slot;
-            slot = ((VAAPIEncodeVP9Picture*)ref_pic->priv_data)->slot;
+            slot = ((VAAPIEncodeVP9Picture*)ref_pic->codec_priv)->slot;
             av_assert0(vpic->reference_frames[slot] == VA_INVALID_SURFACE);
-            vpic->reference_frames[slot] = ((VAAPIEncodePicture *)ref_pic)->recon_surface;
+            vpic->reference_frames[slot] = ((VAAPIEncodePicture *)ref_pic->priv)->recon_surface;
         }
     }
 

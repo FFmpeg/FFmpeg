@@ -63,8 +63,6 @@ typedef struct VAAPIEncodeSlice {
 } VAAPIEncodeSlice;
 
 typedef struct VAAPIEncodePicture {
-    FFHWBaseEncodePicture base;
-
 #if VA_CHECK_VERSION(1, 0, 0)
     // ROI regions.
     VAEncROI       *roi;
@@ -301,9 +299,9 @@ typedef struct VAAPIEncodeType {
     // Fill the parameter structures.
     int  (*init_sequence_params)(AVCodecContext *avctx);
     int   (*init_picture_params)(AVCodecContext *avctx,
-                                 VAAPIEncodePicture *pic);
+                                 FFHWBaseEncodePicture *pic);
     int     (*init_slice_params)(AVCodecContext *avctx,
-                                 VAAPIEncodePicture *pic,
+                                 FFHWBaseEncodePicture *pic,
                                  VAAPIEncodeSlice *slice);
 
     // The type used by the packed header: this should look like
@@ -318,7 +316,7 @@ typedef struct VAAPIEncodeType {
     int (*write_sequence_header)(AVCodecContext *avctx,
                                  char *data, size_t *data_len);
     int  (*write_picture_header)(AVCodecContext *avctx,
-                                 VAAPIEncodePicture *pic,
+                                 FFHWBaseEncodePicture *pic,
                                  char *data, size_t *data_len);
     int    (*write_slice_header)(AVCodecContext *avctx,
                                  VAAPIEncodePicture *pic,
@@ -330,7 +328,7 @@ typedef struct VAAPIEncodeType {
     // with increasing index argument until AVERROR_EOF is
     // returned.
     int    (*write_extra_buffer)(AVCodecContext *avctx,
-                                 VAAPIEncodePicture *pic,
+                                 FFHWBaseEncodePicture *pic,
                                  int index, int *type,
                                  char *data, size_t *data_len);
 
@@ -338,7 +336,7 @@ typedef struct VAAPIEncodeType {
     // with increasing index argument until AVERROR_EOF is
     // returned.
     int    (*write_extra_header)(AVCodecContext *avctx,
-                                 VAAPIEncodePicture *pic,
+                                 FFHWBaseEncodePicture *pic,
                                  int index, int *type,
                                  char *data, size_t *data_len);
 } VAAPIEncodeType;

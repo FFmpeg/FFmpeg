@@ -200,7 +200,7 @@ fail:
 }
 
 static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
-                                                VAAPIEncodePicture *pic,
+                                                FFHWBaseEncodePicture *base,
                                                 int index, int *type,
                                                 char *data, size_t *data_len)
 {
@@ -757,14 +757,14 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 }
 
 static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
-                                                 VAAPIEncodePicture *vaapi_pic)
+                                                 FFHWBaseEncodePicture *pic)
 {
     FFHWBaseEncodeContext       *base_ctx = avctx->priv_data;
     VAAPIEncodeH265Context          *priv = avctx->priv_data;
-    FFHWBaseEncodePicture            *pic = &vaapi_pic->base;
-    VAAPIEncodeH265Picture          *hpic = pic->priv_data;
+    VAAPIEncodePicture         *vaapi_pic = pic->priv;
+    VAAPIEncodeH265Picture          *hpic = pic->codec_priv;
     FFHWBaseEncodePicture           *prev = pic->prev;
-    VAAPIEncodeH265Picture         *hprev = prev ? prev->priv_data : NULL;
+    VAAPIEncodeH265Picture         *hprev = prev ? prev->codec_priv : NULL;
     VAEncPictureParameterBufferHEVC *vpic = vaapi_pic->codec_picture_params;
     int i, j = 0;
 
@@ -923,10 +923,10 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
             VAAPIEncodeH265Picture *href;
 
             av_assert0(ref && ref->encode_order < pic->encode_order);
-            href = ref->priv_data;
+            href = ref->codec_priv;
 
             vpic->reference_frames[j++] = (VAPictureHEVC) {
-                .picture_id    = ((VAAPIEncodePicture *)ref)->recon_surface,
+                .picture_id    = ((VAAPIEncodePicture *)ref->priv)->recon_surface,
                 .pic_order_cnt = href->pic_order_cnt,
                 .flags = (ref->display_order < pic->display_order ?
                           VA_PICTURE_HEVC_RPS_ST_CURR_BEFORE : 0) |
@@ -973,13 +973,13 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
-                                               VAAPIEncodePicture *vaapi_pic,
+                                               FFHWBaseEncodePicture *pic,
                                                VAAPIEncodeSlice *slice)
 {
     FFHWBaseEncodeContext        *base_ctx = avctx->priv_data;
     VAAPIEncodeH265Context           *priv = avctx->priv_data;
-    const FFHWBaseEncodePicture       *pic = &vaapi_pic->base;
-    VAAPIEncodeH265Picture           *hpic = pic->priv_data;
+    VAAPIEncodePicture          *vaapi_pic = pic->priv;
+    VAAPIEncodeH265Picture           *hpic = pic->codec_priv;
     const H265RawSPS                  *sps = &priv->raw_sps;
     const H265RawPPS                  *pps = &priv->raw_pps;
     H265RawSliceHeader                 *sh = &priv->raw_slice.header;
@@ -1021,7 +1021,7 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
         rps_pics = 0;
         for (i = 0; i < MAX_REFERENCE_LIST_NUM; i++) {
             for (j = 0; j < pic->nb_refs[i]; j++) {
-                strp = pic->refs[i][j]->priv_data;
+                strp = pic->refs[i][j]->codec_priv;
                 rps_poc[rps_pics]  = strp->pic_order_cnt;
                 rps_used[rps_pics] = 1;
                 ++rps_pics;
@@ -1046,7 +1046,7 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
             if (j < pic->nb_refs[1])
                 continue;
 
-            strp = pic->dpb[i]->priv_data;
+            strp = pic->dpb[i]->codec_priv;
             rps_poc[rps_pics]  = strp->pic_order_cnt;
             rps_used[rps_pics] = 0;
             ++rps_pics;

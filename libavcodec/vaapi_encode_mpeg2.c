@@ -141,7 +141,7 @@ fail:
 }
 
 static int vaapi_encode_mpeg2_write_picture_header(AVCodecContext *avctx,
-                                                   VAAPIEncodePicture *pic,
+                                                   FFHWBaseEncodePicture *pic,
                                                    char *data, size_t *data_len)
 {
     VAAPIEncodeMPEG2Context *priv = avctx->priv_data;
@@ -418,10 +418,10 @@ static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
 }
 
 static int vaapi_encode_mpeg2_init_picture_params(AVCodecContext *avctx,
-                                                  VAAPIEncodePicture *vaapi_pic)
+                                                  FFHWBaseEncodePicture *pic)
 {
     VAAPIEncodeMPEG2Context          *priv = avctx->priv_data;
-    const FFHWBaseEncodePicture       *pic = &vaapi_pic->base;
+    VAAPIEncodePicture          *vaapi_pic = pic->priv;
     MPEG2RawPictureHeader              *ph = &priv->picture_header;
     MPEG2RawPictureCodingExtension    *pce = &priv->picture_coding_extension.data.picture_coding;
     VAEncPictureParameterBufferMPEG2 *vpic = vaapi_pic->codec_picture_params;
@@ -460,12 +460,12 @@ static int vaapi_encode_mpeg2_init_picture_params(AVCodecContext *avctx,
         break;
     case FF_HW_PICTURE_TYPE_P:
         vpic->picture_type = VAEncPictureTypePredictive;
-        vpic->forward_reference_picture = ((VAAPIEncodePicture *)pic->refs[0][0])->recon_surface;
+        vpic->forward_reference_picture = ((VAAPIEncodePicture *)pic->refs[0][0]->priv)->recon_surface;
         break;
     case FF_HW_PICTURE_TYPE_B:
         vpic->picture_type = VAEncPictureTypeBidirectional;
-        vpic->forward_reference_picture  = ((VAAPIEncodePicture *)pic->refs[0][0])->recon_surface;
-        vpic->backward_reference_picture = ((VAAPIEncodePicture *)pic->refs[1][0])->recon_surface;
+        vpic->forward_reference_picture  = ((VAAPIEncodePicture *)pic->refs[0][0]->priv)->recon_surface;
+        vpic->backward_reference_picture = ((VAAPIEncodePicture *)pic->refs[1][0]->priv)->recon_surface;
         break;
     default:
         av_assert0(0 && "invalid picture type");
@@ -481,10 +481,9 @@ static int vaapi_encode_mpeg2_init_picture_params(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_mpeg2_init_slice_params(AVCodecContext *avctx,
-                                                VAAPIEncodePicture *vaapi_pic,
+                                                FFHWBaseEncodePicture *pic,
                                                 VAAPIEncodeSlice *slice)
 {
-    const FFHWBaseEncodePicture       *pic = &vaapi_pic->base;
     VAAPIEncodeMPEG2Context          *priv = avctx->priv_data;
     VAEncSliceParameterBufferMPEG2 *vslice = slice->codec_slice_params;
     int qp;

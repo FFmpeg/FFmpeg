@@ -209,7 +209,7 @@ fail:
 }
 
 static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
-                                                VAAPIEncodePicture *pic,
+                                                FFHWBaseEncodePicture *base,
                                                 int index, int *type,
                                                 char *data, size_t *data_len)
 {
@@ -233,7 +233,7 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
                 goto fail;
         }
         if (priv->sei_needed & SEI_TIMING) {
-            if (pic->base.type == FF_HW_PICTURE_TYPE_IDR) {
+            if (base->type == FF_HW_PICTURE_TYPE_IDR) {
                 err = ff_cbs_sei_add_message(priv->cbc, au, 1,
                                              SEI_TYPE_BUFFERING_PERIOD,
                                              &priv->sei_buffering_period, NULL);
@@ -620,14 +620,14 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 }
 
 static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
-                                                 VAAPIEncodePicture *vaapi_pic)
+                                                 FFHWBaseEncodePicture *pic)
 {
     FFHWBaseEncodeContext       *base_ctx = avctx->priv_data;
     VAAPIEncodeH264Context          *priv = avctx->priv_data;
-    const FFHWBaseEncodePicture      *pic = &vaapi_pic->base;
-    VAAPIEncodeH264Picture          *hpic = pic->priv_data;
+    VAAPIEncodePicture         *vaapi_pic = pic->priv;
+    VAAPIEncodeH264Picture          *hpic = pic->codec_priv;
     FFHWBaseEncodePicture           *prev = pic->prev;
-    VAAPIEncodeH264Picture         *hprev = prev ? prev->priv_data : NULL;
+    VAAPIEncodeH264Picture         *hprev = prev ? prev->codec_priv : NULL;
     VAEncPictureParameterBufferH264 *vpic = vaapi_pic->codec_picture_params;
     int i, j = 0;
 
@@ -736,10 +736,10 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
             VAAPIEncodeH264Picture *href;
 
             av_assert0(ref && ref->encode_order < pic->encode_order);
-            href = ref->priv_data;
+            href = ref->codec_priv;
 
             vpic->ReferenceFrames[j++] = (VAPictureH264) {
-                .picture_id          = ((VAAPIEncodePicture *)ref)->recon_surface,
+                .picture_id          = ((VAAPIEncodePicture *)ref->priv)->recon_surface,
                 .frame_idx           = href->frame_num,
                 .flags               = VA_PICTURE_H264_SHORT_TERM_REFERENCE,
                 .TopFieldOrderCnt    = href->pic_order_cnt,
@@ -766,37 +766,36 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
 }
 
 static void vaapi_encode_h264_default_ref_pic_list(AVCodecContext *avctx,
-                                                   VAAPIEncodePicture *vaapi_pic,
-                                                   VAAPIEncodePicture **rpl0,
-                                                   VAAPIEncodePicture **rpl1,
+                                                   FFHWBaseEncodePicture *pic,
+                                                   FFHWBaseEncodePicture **rpl0,
+                                                   FFHWBaseEncodePicture **rpl1,
                                                    int *rpl_size)
 {
-    FFHWBaseEncodePicture *pic = &vaapi_pic->base;
     FFHWBaseEncodePicture *prev;
     VAAPIEncodeH264Picture *hp, *hn, *hc;
     int i, j, n = 0;
 
     prev = pic->prev;
     av_assert0(prev);
-    hp = pic->priv_data;
+    hp = pic->codec_priv;
 
     for (i = 0; i < pic->prev->nb_dpb_pics; i++) {
-        hn = prev->dpb[i]->priv_data;
+        hn = prev->dpb[i]->codec_priv;
         av_assert0(hn->frame_num < hp->frame_num);
 
         if (pic->type == FF_HW_PICTURE_TYPE_P) {
             for (j = n; j > 0; j--) {
-                hc = rpl0[j - 1]->base.priv_data;
+                hc = rpl0[j - 1]->codec_priv;
                 av_assert0(hc->frame_num != hn->frame_num);
                 if (hc->frame_num > hn->frame_num)
                     break;
                 rpl0[j] = rpl0[j - 1];
             }
-            rpl0[j] = (VAAPIEncodePicture *)prev->dpb[i];
+            rpl0[j] = prev->dpb[i];
 
         } else if (pic->type == FF_HW_PICTURE_TYPE_B) {
             for (j = n; j > 0; j--) {
-                hc = rpl0[j - 1]->base.priv_data;
+                hc = rpl0[j - 1]->codec_priv;
                 av_assert0(hc->pic_order_cnt != hp->pic_order_cnt);
                 if (hc->pic_order_cnt < hp->pic_order_cnt) {
                     if (hn->pic_order_cnt > hp->pic_order_cnt ||
@@ -808,10 +807,10 @@ static void vaapi_encode_h264_default_ref_pic_list(AVCodecContext *avctx,
                 }
                 rpl0[j] = rpl0[j - 1];
             }
-            rpl0[j] = (VAAPIEncodePicture *)prev->dpb[i];
+            rpl0[j] = prev->dpb[i];
 
             for (j = n; j > 0; j--) {
-                hc = rpl1[j - 1]->base.priv_data;
+                hc = rpl1[j - 1]->codec_priv;
                 av_assert0(hc->pic_order_cnt != hp->pic_order_cnt);
                 if (hc->pic_order_cnt > hp->pic_order_cnt) {
                     if (hn->pic_order_cnt < hp->pic_order_cnt ||
@@ -823,7 +822,7 @@ static void vaapi_encode_h264_default_ref_pic_list(AVCodecContext *avctx,
                 }
                 rpl1[j] = rpl1[j - 1];
             }
-            rpl1[j] = (VAAPIEncodePicture *)prev->dpb[i];
+            rpl1[j] = prev->dpb[i];
         }
 
         ++n;
@@ -835,7 +834,7 @@ static void vaapi_encode_h264_default_ref_pic_list(AVCodecContext *avctx,
                 break;
         }
         if (i == n)
-            FFSWAP(VAAPIEncodePicture*, rpl1[0], rpl1[1]);
+            FFSWAP(FFHWBaseEncodePicture *, rpl1[0], rpl1[1]);
     }
 
     if (pic->type == FF_HW_PICTURE_TYPE_P ||
@@ -843,7 +842,7 @@ static void vaapi_encode_h264_default_ref_pic_list(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_DEBUG, "Default RefPicList0 for fn=%d/poc=%d:",
                hp->frame_num, hp->pic_order_cnt);
         for (i = 0; i < n; i++) {
-            hn = rpl0[i]->base.priv_data;
+            hn = rpl0[i]->codec_priv;
             av_log(avctx, AV_LOG_DEBUG, "  fn=%d/poc=%d",
                    hn->frame_num, hn->pic_order_cnt);
         }
@@ -853,7 +852,7 @@ static void vaapi_encode_h264_default_ref_pic_list(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_DEBUG, "Default RefPicList1 for fn=%d/poc=%d:",
                hp->frame_num, hp->pic_order_cnt);
         for (i = 0; i < n; i++) {
-            hn = rpl1[i]->base.priv_data;
+            hn = rpl1[i]->codec_priv;
             av_log(avctx, AV_LOG_DEBUG, "  fn=%d/poc=%d",
                    hn->frame_num, hn->pic_order_cnt);
         }
@@ -864,12 +863,12 @@ static void vaapi_encode_h264_default_ref_pic_list(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
-                                               VAAPIEncodePicture *vaapi_pic,
+                                               FFHWBaseEncodePicture *pic,
                                                VAAPIEncodeSlice *slice)
 {
     VAAPIEncodeH264Context          *priv = avctx->priv_data;
-    const FFHWBaseEncodePicture      *pic = &vaapi_pic->base;
-    VAAPIEncodeH264Picture          *hpic = pic->priv_data;
+    VAAPIEncodePicture         *vaapi_pic = pic->priv;
+    VAAPIEncodeH264Picture          *hpic = pic->codec_priv;
     FFHWBaseEncodePicture           *prev = pic->prev;
     H264RawSPS                       *sps = &priv->raw_sps;
     H264RawPPS                       *pps = &priv->raw_pps;
@@ -931,7 +930,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
         } else {
             sh->adaptive_ref_pic_marking_mode_flag = 1;
             for (i = 0; i < discard; i++) {
-                VAAPIEncodeH264Picture *old = discard_list[i]->priv_data;
+                VAAPIEncodeH264Picture *old = discard_list[i]->codec_priv;
                 av_assert0(old->frame_num < hpic->frame_num);
                 sh->mmco[i].memory_management_control_operation = 1;
                 sh->mmco[i].difference_of_pic_nums_minus1 =
@@ -944,11 +943,11 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
     // If the intended references are not the first entries of RefPicListN
     // by default, use ref-pic-list-modification to move them there.
     if (pic->type == FF_HW_PICTURE_TYPE_P || pic->type == FF_HW_PICTURE_TYPE_B) {
-        VAAPIEncodePicture *def_l0[MAX_DPB_SIZE], *def_l1[MAX_DPB_SIZE];
+        FFHWBaseEncodePicture *def_l0[MAX_DPB_SIZE], *def_l1[MAX_DPB_SIZE];
         VAAPIEncodeH264Picture *href;
         int n;
 
-        vaapi_encode_h264_default_ref_pic_list(avctx, vaapi_pic,
+        vaapi_encode_h264_default_ref_pic_list(avctx, pic,
                                                def_l0, def_l1, &n);
 
         if (pic->type == FF_HW_PICTURE_TYPE_P) {
@@ -963,7 +962,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
             if (need_rplm) {
                 int pic_num = hpic->frame_num;
                 for (i = 0; i < pic->nb_refs[0]; i++) {
-                    href = pic->refs[0][i]->priv_data;
+                    href = pic->refs[0][i]->codec_priv;
                     av_assert0(href->frame_num != pic_num);
                     if (href->frame_num < pic_num) {
                         sh->rplm_l0[i].modification_of_pic_nums_idc = 0;
@@ -984,7 +983,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
             int n0 = 0, n1 = 0;
             for (i = 0; i < pic->nb_refs[0]; i++) {
                 av_assert0(pic->refs[0][i]);
-                href = pic->refs[0][i]->priv_data;
+                href = pic->refs[0][i]->codec_priv;
                 av_assert0(href->pic_order_cnt < hpic->pic_order_cnt);
                 if (pic->refs[0][i] != (FFHWBaseEncodePicture *)def_l0[n0])
                     need_rplm_l0 = 1;
@@ -993,7 +992,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
 
             for (i = 0; i < pic->nb_refs[1]; i++) {
                 av_assert0(pic->refs[1][i]);
-                href = pic->refs[1][i]->priv_data;
+                href = pic->refs[1][i]->codec_priv;
                 av_assert0(href->pic_order_cnt > hpic->pic_order_cnt);
                 if (pic->refs[1][i] != (FFHWBaseEncodePicture *)def_l1[n1])
                     need_rplm_l1 = 1;
@@ -1004,7 +1003,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
             if (need_rplm_l0) {
                 int pic_num = hpic->frame_num;
                 for (i = j = 0; i < pic->nb_refs[0]; i++) {
-                    href = pic->refs[0][i]->priv_data;
+                    href = pic->refs[0][i]->codec_priv;
                     av_assert0(href->frame_num != pic_num);
                     if (href->frame_num < pic_num) {
                         sh->rplm_l0[j].modification_of_pic_nums_idc = 0;
@@ -1026,7 +1025,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
             if (need_rplm_l1) {
                 int pic_num = hpic->frame_num;
                 for (i = j = 0; i < pic->nb_refs[1]; i++) {
-                    href = pic->refs[1][i]->priv_data;
+                    href = pic->refs[1][i]->codec_priv;
                     av_assert0(href->frame_num != pic_num);
                     if (href->frame_num < pic_num) {
                         sh->rplm_l1[j].modification_of_pic_nums_idc = 0;

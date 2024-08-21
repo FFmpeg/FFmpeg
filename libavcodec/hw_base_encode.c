@@ -27,6 +27,19 @@
 #include "avcodec.h"
 #include "hw_base_encode.h"
 
+static int base_encode_pic_free(FFHWBaseEncodePicture *pic)
+{
+    av_frame_free(&pic->input_image);
+    av_frame_free(&pic->recon_image);
+
+    av_buffer_unref(&pic->opaque_ref);
+    av_freep(&pic->codec_priv);
+    av_freep(&pic->priv);
+    av_free(pic);
+
+    return 0;
+}
+
 static void hw_base_encode_add_ref(FFHWBaseEncodePicture *pic,
                                    FFHWBaseEncodePicture *target,
                                    int is_ref, int in_dpb, int prev)
@@ -370,6 +383,7 @@ static int hw_base_encode_clear_old(AVCodecContext *avctx, FFHWBaseEncodeContext
             else
                 ctx->pic_start = next;
             ctx->op->free(avctx, pic);
+            base_encode_pic_free(pic);
         } else {
             prev = pic;
         }
@@ -416,7 +430,7 @@ static int hw_base_encode_send_frame(AVCodecContext *avctx, FFHWBaseEncodeContex
         if (err < 0)
             return err;
 
-        pic = ctx->op->alloc(avctx, frame);
+        pic = av_mallocz(sizeof(*pic));
         if (!pic)
             return AVERROR(ENOMEM);
 
@@ -428,6 +442,12 @@ static int hw_base_encode_send_frame(AVCodecContext *avctx, FFHWBaseEncodeContex
 
         pic->recon_image = av_frame_alloc();
         if (!pic->recon_image) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        pic->priv = av_mallocz(ctx->op->priv_size);
+        if (!pic->priv) {
             err = AVERROR(ENOMEM);
             goto fail;
         }
@@ -467,6 +487,9 @@ static int hw_base_encode_send_frame(AVCodecContext *avctx, FFHWBaseEncodeContex
             ctx->pic_end       = pic;
         }
 
+        err = ctx->op->init(avctx, pic);
+        if (err < 0)
+            goto fail;
     } else {
         ctx->end_of_stream = 1;
 
@@ -480,6 +503,7 @@ static int hw_base_encode_send_frame(AVCodecContext *avctx, FFHWBaseEncodeContex
 
 fail:
     ctx->op->free(avctx, pic);
+    base_encode_pic_free(pic);
     return err;
 }
 
@@ -529,7 +553,7 @@ int ff_hw_base_encode_receive_packet(FFHWBaseEncodeContext *ctx,
     AVFrame *frame = ctx->frame;
     int err;
 
-    av_assert0(ctx->op && ctx->op->alloc && ctx->op->issue &&
+    av_assert0(ctx->op && ctx->op->init && ctx->op->issue &&
                ctx->op->output && ctx->op->free);
 
 start:
@@ -735,17 +759,6 @@ int ff_hw_base_get_recon_format(FFHWBaseEncodeContext *ctx, const void *hwconfig
 fail:
     av_hwframe_constraints_free(&constraints);
     return err;
-}
-
-int ff_hw_base_encode_free(FFHWBaseEncodePicture *pic)
-{
-    av_frame_free(&pic->input_image);
-    av_frame_free(&pic->recon_image);
-
-    av_buffer_unref(&pic->opaque_ref);
-    av_freep(&pic->priv_data);
-
-    return 0;
 }
 
 int ff_hw_base_encode_init(AVCodecContext *avctx, FFHWBaseEncodeContext *ctx)

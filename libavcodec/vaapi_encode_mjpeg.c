@@ -147,7 +147,7 @@ fail:
 }
 
 static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
-                                                 VAAPIEncodePicture *pic,
+                                                 FFHWBaseEncodePicture *base,
                                                  int index, int *type,
                                                  char *data, size_t *data_len)
 {
@@ -220,11 +220,11 @@ static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
-                                                  VAAPIEncodePicture *vaapi_pic)
+                                                  FFHWBaseEncodePicture *pic)
 {
     FFHWBaseEncodeContext       *base_ctx = avctx->priv_data;
     VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
-    const FFHWBaseEncodePicture      *pic = &vaapi_pic->base;
+    VAAPIEncodePicture         *vaapi_pic = pic->priv;
     JPEGRawFrameHeader                *fh = &priv->frame_header;
     JPEGRawScanHeader                 *sh = &priv->scan.header;
     VAEncPictureParameterBufferJPEG *vpic = vaapi_pic->codec_picture_params;
@@ -414,7 +414,7 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
 }
 
 static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
-                                                VAAPIEncodePicture *pic,
+                                                FFHWBaseEncodePicture *base,
                                                 VAAPIEncodeSlice *slice)
 {
     VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
