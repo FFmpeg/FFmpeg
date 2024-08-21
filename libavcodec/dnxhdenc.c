@@ -420,7 +420,7 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = ctx->bit_depth;
 
-    ff_blockdsp_init(&ctx->bdsp);
+    ff_blockdsp_init(&ctx->m.bdsp);
     ff_fdctdsp_init(&ctx->m.fdsp, avctx);
     ff_mpv_idct_init(&ctx->m);
     ff_mpegvideoencdsp_init(&ctx->m.mpvencdsp, avctx);
@@ -768,10 +768,10 @@ void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, int mb_y)
                                         ptr_v + dct_uv_offset,
                                         uvlinesize);
             } else {
-                ctx->bdsp.clear_block(ctx->blocks[4]);
-                ctx->bdsp.clear_block(ctx->blocks[5]);
-                ctx->bdsp.clear_block(ctx->blocks[6]);
-                ctx->bdsp.clear_block(ctx->blocks[7]);
+                ctx->m.bdsp.clear_block(ctx->blocks[4]);
+                ctx->m.bdsp.clear_block(ctx->blocks[5]);
+                ctx->m.bdsp.clear_block(ctx->blocks[6]);
+                ctx->m.bdsp.clear_block(ctx->blocks[7]);
             }
         } else {
             pdsp->get_pixels(ctx->blocks[4],
