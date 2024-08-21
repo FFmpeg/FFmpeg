@@ -121,7 +121,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
             "movq           %%mm1, (%0, %2) \n\t"
             "add               %1, %0       \n\t"
             "cmp               %3, %0       \n\t"
-            "jb                1b           \n\t"
+            "jnz               1b           \n\t"
             : "+r" (ptr)
             : "r" ((x86_reg) wrap), "r" ((x86_reg) width),
               "r" (ptr + wrap * height));
@@ -142,7 +142,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
             "movq           %%mm1, 8(%0, %2)    \n\t"
             "add               %1, %0           \n\t"
             "cmp               %3, %0           \n\t"
-            "jb                1b               \n\t"
+            "jnz               1b               \n\t"
             : "+r"(ptr)
             : "r"((x86_reg)wrap), "r"((x86_reg)width), "r"(ptr + wrap * height)
             );
@@ -161,7 +161,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
             "movd           %%mm1, (%0, %2) \n\t"
             "add               %1, %0       \n\t"
             "cmp               %3, %0       \n\t"
-            "jb                1b           \n\t"
+            "jnz               1b           \n\t"
             : "+r" (ptr)
             : "r" ((x86_reg) wrap), "r" ((x86_reg) width),
               "r" (ptr + wrap * height));
