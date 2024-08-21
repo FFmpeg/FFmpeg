@@ -301,8 +301,9 @@ func ff_h264_h_loop_filter_luma_8_rvv, zve32x
         vmul.vx     v6, v6, t0
         vsetivli    zero, 16, e8, m1, ta, ma
         vlsseg6e8.v v8, (a0), a1
+        addi        a0, a0, 1
         jal         t0, ff_h264_loop_filter_luma_8_rvv
-        vssseg6e8.v v8, (a0), a1
+        vssseg4e8.v v9, (a0), a1
         ret
 endfunc
 
@@ -316,7 +317,8 @@ func ff_h264_h_loop_filter_luma_mbaff_8_rvv, zve32x
         vmul.vx     v6, v6, t0    # tc_orig
         vsetivli    zero, 8, e8, m1, ta, ma
         vlsseg6e8.v v8, (a0), a1
+        addi        a0, a0, 1
         jal         t0, ff_h264_loop_filter_luma_8_rvv
-        vssseg6e8.v v8, (a0), a1
+        vssseg4e8.v v9, (a0), a1
         ret
 endfunc
