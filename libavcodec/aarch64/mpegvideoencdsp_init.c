@@ -27,6 +27,10 @@
 int ff_pix_sum16_neon(const uint8_t *pix, int line_size);
 int ff_pix_norm1_neon(const uint8_t *pix, int line_size);
 
+#if HAVE_DOTPROD
+int ff_pix_norm1_neon_dotprod(const uint8_t *pix, int line_size);
+#endif
+
 av_cold void ff_mpegvideoencdsp_init_aarch64(MpegvideoEncDSPContext *c,
                                              AVCodecContext *avctx)
 {
@@ -36,4 +40,10 @@ av_cold void ff_mpegvideoencdsp_init_aarch64(MpegvideoEncDSPContext *c,
         c->pix_sum   = ff_pix_sum16_neon;
         c->pix_norm1 = ff_pix_norm1_neon;
     }
+
+#if HAVE_DOTPROD
+    if (have_dotprod(cpu_flags)) {
+        c->pix_norm1 = ff_pix_norm1_neon_dotprod;
+    }
+#endif
 }

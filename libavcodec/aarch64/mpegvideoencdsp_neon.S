@@ -66,3 +66,31 @@ function ff_pix_norm1_neon, export=1
 
         ret
 endfunc
+
+#if HAVE_DOTPROD
+ENABLE_DOTPROD
+
+function ff_pix_norm1_neon_dotprod, export=1
+// x0  const uint8_t *pix
+// x1  int line_size
+
+        sxtw            x1, w1
+        movi            v0.16b, #0
+        mov             w2, #16
+
+1:
+        ld1             {v1.16b}, [x0], x1
+        ld1             {v2.16b}, [x0], x1
+        udot            v0.4s, v1.16b, v1.16b
+        subs            w2, w2, #2
+        udot            v0.4s, v2.16b, v2.16b
+        b.ne            1b
+
+        uaddlv          d0, v0.4s
+        fmov            w0, s0
+
+        ret
+endfunc
+
+DISABLE_DOTPROD
+#endif
