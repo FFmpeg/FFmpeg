@@ -95,8 +95,7 @@ int ff_pix_norm1_sse2(const uint8_t *pix, int line_size);
 #undef PHADDD
 #endif /* HAVE_SSSE3_INLINE */
 
-/* Draw the edges of width 'w' of an image of size width, height
- * this MMX version can only handle w == 8 || w == 16. */
+/* Draw the edges of width 'w' of an image of size width, height */
 static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height,
                            int w, int h, int sides)
 {
