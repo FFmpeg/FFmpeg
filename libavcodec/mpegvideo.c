@@ -110,8 +110,7 @@ static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
     if (s->q_scale_type) qscale = ff_mpeg2_non_linear_qscale[qscale];
     else                 qscale <<= 1;
 
-    if(s->alternate_scan) nCoeffs= 63;
-    else nCoeffs= s->block_last_index[n];
+    nCoeffs= s->block_last_index[n];
 
     block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
     quant_matrix = s->intra_matrix;
@@ -141,8 +140,7 @@ static void dct_unquantize_mpeg2_intra_bitexact(MpegEncContext *s,
     if (s->q_scale_type) qscale = ff_mpeg2_non_linear_qscale[qscale];
     else                 qscale <<= 1;
 
-    if(s->alternate_scan) nCoeffs= 63;
-    else nCoeffs= s->block_last_index[n];
+    nCoeffs= s->block_last_index[n];
 
     block[0] *= n < 4 ? s->y_dc_scale : s->c_dc_scale;
     sum += block[0];
@@ -175,8 +173,7 @@ static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s,
     if (s->q_scale_type) qscale = ff_mpeg2_non_linear_qscale[qscale];
     else                 qscale <<= 1;
 
-    if(s->alternate_scan) nCoeffs= 63;
-    else nCoeffs= s->block_last_index[n];
+    nCoeffs= s->block_last_index[n];
 
     quant_matrix = s->inter_matrix;
     for(i=0; i<=nCoeffs; i++) {
