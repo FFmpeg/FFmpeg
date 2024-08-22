@@ -63,7 +63,7 @@
 .endm
 
 .macro load_args_nv21 ofmt
-    load_args_nv12 \ofmt
+        load_args_nv12  \ofmt
 .endm
 
 .macro load_args_yuv420p ofmt
@@ -175,7 +175,7 @@
 
 .macro declare_func ifmt ofmt
 function ff_\ifmt\()_to_\ofmt\()_neon, export=1
-    load_args_\ifmt \ofmt
+        load_args_\ifmt \ofmt
 
         mov             w9, w1
 1:
