@@ -686,11 +686,12 @@ static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0
     const int ctb_size = sps->ctb_size_y;
     const int x_end    = FFMIN(x0 + ctb_size, pps->width) >> MIN_TU_LOG2;
     const int y_end    = FFMIN(y0 + ctb_size, pps->height) >> MIN_TU_LOG2;
+    const int has_chroma       = !!sps->r->sps_chroma_format_idc;
     deblock_bs_fn deblock_bs[] = {
         vvc_deblock_bs_luma, vvc_deblock_bs_chroma
     };
 
-    for (int is_chroma = 0; is_chroma <= 1; is_chroma++) {
+    for (int is_chroma = 0; is_chroma <= has_chroma; is_chroma++) {
         const int hs = sps->hshift[is_chroma];
         const int vs = sps->vshift[is_chroma];
         for (int y = y0 >> MIN_TU_LOG2; y < y_end; y++) {
@@ -1194,6 +1195,7 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
     const int padded_stride = EDGE_EMU_BUFFER_STRIDE << ps;
     const int padded_offset = padded_stride * ALF_PADDING_SIZE + (ALF_PADDING_SIZE << ps);
     const int c_end         = sps->r->sps_chroma_format_idc ? VVC_MAX_SAMPLE_ARRAYS : 1;
+    const int has_chroma    = !!sps->r->sps_chroma_format_idc;
     const int ctu_end       = y0 + sps->ctb_size_y;
     const ALFParams *alf    = &CTB(fc->tab.alf, rx, ry);
     int sb_edges[MAX_VBBS][MAX_EDGES], nb_sbs;
@@ -1214,7 +1216,7 @@ void ff_vvc_alf_filter(VVCLocalContext *lc, const int x0, const int y0)
             uint8_t *src         = POS(c_idx, sb->l, sb->t);
             uint8_t *padded;
 
-            if (alf->ctb_flag[c_idx] || (!c_idx && (alf->ctb_cc_idc[0] || alf->ctb_cc_idc[1]))) {
+            if (alf->ctb_flag[c_idx] || (!c_idx && has_chroma && (alf->ctb_cc_idc[0] || alf->ctb_cc_idc[1]))) {
                 padded = (c_idx ? lc->alf_buffer_chroma : lc->alf_buffer_luma) + padded_offset;
                 alf_prepare_buffer(fc, padded, src, x, y, rx, ry, width, height,
                     padded_stride, src_stride, c_idx, sb_edges[i]);
