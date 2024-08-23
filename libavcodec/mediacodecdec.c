@@ -462,7 +462,7 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     /* feed decoder */
     while (1) {
-        if (s->ctx->current_input_buffer < 0) {
+        if (s->ctx->current_input_buffer < 0 && !s->ctx->draining) {
             /* poll for input space */
             index = ff_AMediaCodec_dequeueInputBuffer(s->ctx->codec, 0);
             if (index < 0) {
