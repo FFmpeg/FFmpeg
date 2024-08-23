@@ -680,12 +680,12 @@ typedef void (*deblock_bs_fn)(const VVCLocalContext *lc, const int x0, const int
 
 static void vvc_deblock_bs(const VVCLocalContext *lc, const int x0, const int y0, const int rs, const int vertical)
 {
-    const VVCFrameContext *fc = lc->fc;
-    const VVCSPS *sps  = fc->ps.sps;
-    const VVCPPS *pps  = fc->ps.pps;
-    const int ctb_size = sps->ctb_size_y;
-    const int x_end    = FFMIN(x0 + ctb_size, pps->width) >> MIN_TU_LOG2;
-    const int y_end    = FFMIN(y0 + ctb_size, pps->height) >> MIN_TU_LOG2;
+    const VVCFrameContext *fc  = lc->fc;
+    const VVCSPS *sps          = fc->ps.sps;
+    const VVCPPS *pps          = fc->ps.pps;
+    const int ctb_size         = sps->ctb_size_y;
+    const int x_end            = FFMIN(x0 + ctb_size, pps->width) >> MIN_TU_LOG2;
+    const int y_end            = FFMIN(y0 + ctb_size, pps->height) >> MIN_TU_LOG2;
     const int has_chroma       = !!sps->r->sps_chroma_format_idc;
     deblock_bs_fn deblock_bs[] = {
         vvc_deblock_bs_luma, vvc_deblock_bs_chroma
