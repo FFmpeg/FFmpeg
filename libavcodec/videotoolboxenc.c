@@ -1205,6 +1205,10 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
 
 #if defined (MAC_OS_X_VERSION_10_13) && (MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_13)
     if (__builtin_available(macOS 10.13, *)) {
+        if (vtctx->supported_props) {
+            CFRelease(vtctx->supported_props);
+            vtctx->supported_props = NULL;
+        }
         status = VTCopySupportedPropertyDictionaryForEncoder(avctx->width,
                                                              avctx->height,
                                                              codec_type,
