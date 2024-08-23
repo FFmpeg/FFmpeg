@@ -384,10 +384,10 @@ static void subpic_tiles(int *tile_x, int *tile_y, int *tile_x_end, int *tile_y_
 
     *tile_x = *tile_y = 0;
 
-    while (pps->col_bd[*tile_x] != rx)
+    while (pps->col_bd[*tile_x] < rx)
         (*tile_x)++;
 
-    while (pps->row_bd[*tile_y] != ry)
+    while (pps->row_bd[*tile_y] < ry)
         (*tile_y)++;
 
     *tile_x_end = (*tile_x);
