@@ -2244,6 +2244,192 @@ fail:
     return ret;
 }
 
+int av_opt_set_array(void *obj, const char *name, int search_flags,
+                     unsigned int start_elem, unsigned int nb_elems,
+                     enum AVOptionType val_type, const void *val)
+{
+    const size_t elem_size_val = opt_elem_size[TYPE_BASE(val_type)];
+
+    const AVOption *o;
+    const AVOptionArrayDef *arr;
+    void *target_obj;
+
+    void *parray;
+    void *new_elems;
+    unsigned *array_size, new_size;
+    size_t elem_size;
+
+    int ret;
+
+    o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+    if (!(o->type & AV_OPT_TYPE_FLAG_ARRAY) ||
+        (val_type & AV_OPT_TYPE_FLAG_ARRAY))
+        return AVERROR(EINVAL);
+
+    arr        = o->default_val.arr;
+    parray     = (uint8_t *)target_obj + o->offset;
+    array_size = opt_array_pcount(parray);
+    elem_size  = opt_elem_size[TYPE_BASE(o->type)];
+
+    if (start_elem > *array_size)
+        return AVERROR(EINVAL);
+
+    // compute new array size
+    if (!val) {
+        if (*array_size - start_elem < nb_elems)
+            return AVERROR(EINVAL);
+
+        new_size = *array_size - nb_elems;
+    } else if (search_flags & AV_OPT_ARRAY_REPLACE) {
+        if (start_elem >= UINT_MAX - nb_elems)
+            return AVERROR(EINVAL);
+
+        new_size = FFMAX(*array_size, start_elem + nb_elems);
+    } else {
+        if (nb_elems >= UINT_MAX - *array_size)
+            return AVERROR(EINVAL);
+
+        new_size = *array_size + nb_elems;
+    }
+
+    if (arr &&
+        ((arr->size_max && new_size > arr->size_max) ||
+         (arr->size_min && new_size < arr->size_min)))
+        return AVERROR(EINVAL);
+
+    // desired operation is shrinking the array
+    if (!val) {
+        void *array = *(void**)parray;
+
+        for (unsigned i = 0; i < nb_elems; i++) {
+            opt_free_elem(o->type,
+                          opt_array_pelem(o, array, start_elem + i));
+        }
+
+        if (new_size > 0) {
+            memmove(opt_array_pelem(o, array, start_elem),
+                    opt_array_pelem(o, array, start_elem + nb_elems),
+                    elem_size * (*array_size - start_elem - nb_elems));
+
+            array = av_realloc_array(array, new_size, elem_size);
+            if (!array)
+                return AVERROR(ENOMEM);
+
+            *(void**)parray = array;
+        } else
+            av_freep(parray);
+
+        *array_size = new_size;
+
+        return 0;
+    }
+
+    // otherwise, desired operation is insert/replace;
+    // first, store new elements in a separate array to simplify
+    // rollback on failure
+    new_elems = av_calloc(nb_elems, elem_size);
+    if (!new_elems)
+        return AVERROR(ENOMEM);
+
+    // convert/validate each new element
+    for (unsigned i = 0; i < nb_elems; i++) {
+        void       *dst = opt_array_pelem(o, new_elems, i);
+        const void *src = (uint8_t*)val + i * elem_size_val;
+
+        double     num = 1.0;
+        int        den = 1;
+        int64_t intnum = 1;
+
+        if (val_type == TYPE_BASE(o->type)) {
+            ret = opt_copy_elem(obj, val_type, dst, src);
+            if (ret < 0)
+                goto fail;
+
+            // validate the range for numeric options
+            ret = read_number(o, dst, &num, &den, &intnum);
+            if (ret >= 0 && TYPE_BASE(o->type) != AV_OPT_TYPE_FLAGS &&
+                (!den || o->max * den < num * intnum || o->min * den > num * intnum)) {
+                num = den ? num * intnum / den : (num && intnum ? INFINITY : NAN);
+                av_log(obj, AV_LOG_ERROR, "Cannot set array element %u for "
+                       "parameter '%s': value %f out of range [%g - %g]\n",
+                       start_elem + i, o->name, num, o->min, o->max);
+                ret = AVERROR(ERANGE);
+                goto fail;
+            }
+        } else if (val_type == AV_OPT_TYPE_STRING) {
+            ret = opt_set_elem(obj, target_obj, o, *(const char **)src, dst);
+            if (ret < 0)
+                goto fail;
+        } if (val_type == AV_OPT_TYPE_INT      ||
+              val_type == AV_OPT_TYPE_INT64    ||
+              val_type == AV_OPT_TYPE_FLOAT    ||
+              val_type == AV_OPT_TYPE_DOUBLE   ||
+              val_type == AV_OPT_TYPE_RATIONAL) {
+            int ret;
+
+            switch (val_type) {
+            case AV_OPT_TYPE_INT:       intnum = *(int*)src;                break;
+            case AV_OPT_TYPE_INT64:     intnum = *(int64_t*)src;            break;
+            case AV_OPT_TYPE_FLOAT:     num    = *(float*)src;              break;
+            case AV_OPT_TYPE_DOUBLE:    num    = *(double*)src;             break;
+            case AV_OPT_TYPE_RATIONAL:  intnum = ((AVRational*)src)->num;
+                                        den    = ((AVRational*)src)->den;   break;
+            default: av_assert0(0);
+            }
+
+            ret = write_number(obj, o, dst, num, den, intnum);
+            if (ret < 0)
+                goto fail;
+        } else {
+            ret = AVERROR(ENOSYS);
+            goto fail;
+        }
+    }
+
+    // commit new elements to the array
+    if (start_elem == 0 && nb_elems == new_size) {
+        // replacing the existing array entirely
+        opt_free_array(o, parray, array_size);
+        *(void**)parray = new_elems;
+        *array_size     = nb_elems;
+
+        new_elems = NULL;
+        nb_elems  = 0;
+    } else {
+        void *array = av_realloc_array(*(void**)parray, new_size, elem_size);
+        if (!array) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+
+        if (search_flags & AV_OPT_ARRAY_REPLACE) {
+            // free the elements being overwritten
+            for (unsigned i = start_elem; i < FFMIN(start_elem + nb_elems, *array_size); i++)
+                opt_free_elem(o->type, opt_array_pelem(o, array, i));
+        } else {
+            // shift existing elements to the end
+            memmove(opt_array_pelem(o, array, start_elem + nb_elems),
+                    opt_array_pelem(o, array, start_elem),
+                    elem_size * (*array_size - start_elem));
+        }
+
+        memcpy((uint8_t*)array + elem_size * start_elem, new_elems, elem_size * nb_elems);
+
+        av_freep(&new_elems);
+        nb_elems = 0;
+
+        *(void**)parray = array;
+        *array_size     = new_size;
+    }
+
+fail:
+    opt_free_array(o, &new_elems, &nb_elems);
+
+    return ret;
+}
+
 int av_opt_query_ranges(AVOptionRanges **ranges_arg, void *obj, const char *key, int flags)
 {
     int ret;

@@ -619,6 +619,12 @@ const AVClass *av_opt_child_class_iterate(const AVClass *parent, void **iter);
 #define AV_OPT_ALLOW_NULL (1 << 2)
 
 /**
+ * May be used with av_opt_set_array() to signal that new elements should
+ * replace the existing ones in the indicated range.
+ */
+#define AV_OPT_ARRAY_REPLACE (1 << 3)
+
+/**
  *  Allows av_opt_query_ranges and av_opt_query_ranges_default to return more than
  *  one component for certain option types.
  *  @see AVOptionRanges for details.
@@ -895,6 +901,56 @@ int av_opt_set_dict_val(void *obj, const char *name, const AVDictionary *val, in
      AVERROR(EINVAL) : \
      av_opt_set_bin(obj, name, (const uint8_t *)(val), \
                     av_int_list_length(val, term) * sizeof(*(val)), flags))
+
+/**
+ * Add, replace, or remove elements for an array option. Which of these
+ * operations is performed depends on the values of val and search_flags.
+ *
+ * @param start_elem Index of the first array element to modify; must not be
+ *                   larger than array size as returned by
+ *                   av_opt_get_array_size().
+ * @param nb_elems number of array elements to modify; when val is NULL,
+ *                 start_elem+nb_elems must not be larger than array size as
+ *                 returned by av_opt_get_array_size()
+ *
+ * @param val_type Option type corresponding to the type of val, ignored when val is
+ *                 NULL.
+ *
+ *                 The effect of this function will will be as if av_opt_setX()
+ *                 was called for each element, where X is specified by type.
+ *                 E.g. AV_OPT_TYPE_STRING corresponds to av_opt_set().
+ *
+ *                 Typically this should be the same as the scalarized type of
+ *                 the AVOption being set, but certain conversions are also
+ *                 possible - the same as those done by the corresponding
+ *                 av_opt_set*() function. E.g. any option type can be set from
+ *                 a string, numeric types can be set from int64, double, or
+ *                 rational, etc.
+ *
+ * @param val Array with nb_elems elements or NULL.
+ *
+ *            When NULL, nb_elems array elements starting at start_elem are
+ *            removed from the array. Any array elements remaining at the end
+ *            are shifted by nb_elems towards the first element in order to keep
+ *            the array contiguous.
+ *
+ *            Otherwise (val is non-NULL), the type of val must match the
+ *            underlying C type as documented for val_type.
+ *
+ *            When AV_OPT_ARRAY_REPLACE is not set in search_flags, the array is
+ *            enlarged by nb_elems, and the contents of val are inserted at
+ *            start_elem. Previously existing array elements from start_elem
+ *            onwards (if present) are shifted by nb_elems away from the first
+ *            element in order to make space for the new elements.
+ *
+ *            When AV_OPT_ARRAY_REPLACE is set in search_flags, the contents
+ *            of val replace existing array elements from start_elem to
+ *            start_elem+nb_elems (if present). New array size is
+ *            max(start_elem + nb_elems, old array size).
+ */
+int av_opt_set_array(void *obj, const char *name, int search_flags,
+                     unsigned int start_elem, unsigned int nb_elems,
+                     enum AVOptionType val_type, const void *val);
 
 /**
  * @}
