@@ -115,8 +115,8 @@ static int get_qp_y_pred(const VVCLocalContext *lc)
     else
         qPy_a = fc->tab.qp[LUMA][(x_cb - 1) + y_cb * min_cb_width];
 
-    av_assert2(qPy_a >= -fc->ps.sps->qp_bd_offset && qPy_a < 63);
-    av_assert2(qPy_b >= -fc->ps.sps->qp_bd_offset && qPy_b < 63);
+    av_assert2(qPy_a >= -fc->ps.sps->qp_bd_offset && qPy_a <= 63);
+    av_assert2(qPy_b >= -fc->ps.sps->qp_bd_offset && qPy_b <= 63);
 
     return (qPy_a + qPy_b + 1) >> 1;
 }
