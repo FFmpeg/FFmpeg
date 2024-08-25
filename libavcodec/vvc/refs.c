@@ -588,12 +588,13 @@ void ff_vvc_report_progress(VVCFrame *frame, const VVCProgress vp, const int y)
     VVCProgressListener *l = NULL;
 
     ff_mutex_lock(&p->lock);
-
-    av_assert0(p->progress[vp] < y || p->progress[vp] == INT_MAX);
-    p->progress[vp] = y;
-    l = get_done_listener(p, vp);
-    ff_cond_signal(&p->cond);
-
+    if (p->progress[vp] < y) {
+        // Due to the nature of thread scheduling, later progress may reach this point before earlier progress.
+        // Therefore, we only update the progress when p->progress[vp] < y.
+        p->progress[vp] = y;
+        l = get_done_listener(p, vp);
+        ff_cond_signal(&p->cond);
+    }
     ff_mutex_unlock(&p->lock);
 
     while (l) {

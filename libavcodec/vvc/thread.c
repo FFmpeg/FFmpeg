@@ -466,12 +466,16 @@ static void report_frame_progress(VVCFrameContext *fc,
         y = old = ft->row_progress[idx];
         while (y < ft->ctu_height && atomic_load(&ft->rows[y].col_progress[idx]) == ft->ctu_width)
             y++;
+        if (old != y)
+            ft->row_progress[idx] = y;
+        // ff_vvc_report_progress will acquire other frames' locks, which could lead to a deadlock
+        // We need to unlock ft->lock first
+        ff_mutex_unlock(&ft->lock);
+
         if (old != y) {
             const int progress = y == ft->ctu_height ? INT_MAX : y * ctu_size;
-            ft->row_progress[idx] = y;
             ff_vvc_report_progress(fc->ref, idx, progress);
         }
-        ff_mutex_unlock(&ft->lock);
     }
 }
 
