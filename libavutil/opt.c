@@ -98,6 +98,7 @@ static int opt_is_pod(enum AVOptionType type)
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_COLOR:
     case AV_OPT_TYPE_BOOL:
+    case AV_OPT_TYPE_UINT:
         return 1;
     }
     return 0;
