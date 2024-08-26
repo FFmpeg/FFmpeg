@@ -26,8 +26,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include <mfxvideo.h>
-
 #include "libavutil/common.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_qsv.h"

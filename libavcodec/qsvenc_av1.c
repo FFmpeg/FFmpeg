@@ -22,8 +22,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include <mfxvideo.h>
-
 #include "libavutil/common.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem.h"
