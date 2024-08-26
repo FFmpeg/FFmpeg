@@ -34,13 +34,13 @@ typedef struct MpegvideoEncDSPContext {
                         const int16_t basis[64], int scale);
     void (*add_8x8basis)(int16_t rem[64], const int16_t basis[64], int scale);
 
-    int (*pix_sum)(const uint8_t *pix, int line_size);
-    int (*pix_norm1)(const uint8_t *pix, int line_size);
+    int (*pix_sum)(const uint8_t *pix, ptrdiff_t line_size);
+    int (*pix_norm1)(const uint8_t *pix, ptrdiff_t line_size);
 
-    void (*shrink[4])(uint8_t *dst, int dst_wrap, const uint8_t *src,
-                      int src_wrap, int width, int height);
+    void (*shrink[4])(uint8_t *dst, ptrdiff_t dst_wrap, const uint8_t *src,
+                      ptrdiff_t src_wrap, int width, int height);
 
-    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height,
+    void (*draw_edges)(uint8_t *buf, ptrdiff_t wrap, int width, int height,
                        int w, int h, int sides);
 } MpegvideoEncDSPContext;
 

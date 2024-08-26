@@ -30,7 +30,7 @@
 #if HAVE_ALTIVEC
 
 #if HAVE_VSX
-static int pix_norm1_altivec(const uint8_t *pix, int line_size)
+static int pix_norm1_altivec(const uint8_t *pix, ptrdiff_t line_size)
 {
     int i, s = 0;
     const vector unsigned int zero =
@@ -57,7 +57,7 @@ static int pix_norm1_altivec(const uint8_t *pix, int line_size)
     return s;
 }
 #else
-static int pix_norm1_altivec(const uint8_t *pix, int line_size)
+static int pix_norm1_altivec(const uint8_t *pix, ptrdiff_t line_size)
 {
     int i, s = 0;
     const vector unsigned int zero =
@@ -87,7 +87,7 @@ static int pix_norm1_altivec(const uint8_t *pix, int line_size)
 #endif /* HAVE_VSX */
 
 #if HAVE_VSX
-static int pix_sum_altivec(const uint8_t *pix, int line_size)
+static int pix_sum_altivec(const uint8_t *pix, ptrdiff_t line_size)
 {
     int i, s;
     const vector unsigned int zero =
@@ -115,7 +115,7 @@ static int pix_sum_altivec(const uint8_t *pix, int line_size)
     return s;
 }
 #else
-static int pix_sum_altivec(const uint8_t *pix, int line_size)
+static int pix_sum_altivec(const uint8_t *pix, ptrdiff_t line_size)
 {
     int i, s;
     const vector unsigned int zero =

@@ -22,9 +22,8 @@
 
 function ff_pix_sum16_neon, export=1
 // x0  const uint8_t *pix
-// x1  int line_size
+// x1  ptrdiff_t line_size
 
-        sxtw            x1, w1
         add             x2, x0, x1
         lsl             x1, x1, #1
         movi            v0.16b, #0
@@ -46,9 +45,8 @@ endfunc
 
 function ff_pix_norm1_neon, export=1
 // x0  const uint8_t *pix
-// x1  int line_size
+// x1  ptrdiff_t line_size
 
-        sxtw            x1, w1
         movi            v0.16b, #0
         mov             w2, #16
 
@@ -72,9 +70,8 @@ ENABLE_DOTPROD
 
 function ff_pix_norm1_neon_dotprod, export=1
 // x0  const uint8_t *pix
-// x1  int line_size
+// x1  ptrdiff_t line_size
 
-        sxtw            x1, w1
         movi            v0.16b, #0
         mov             w2, #16
 

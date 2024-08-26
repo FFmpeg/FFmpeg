@@ -24,12 +24,11 @@
 %include "libavutil/x86/x86util.asm"
 
 SECTION .text
-; int ff_pix_sum16(const uint8_t *pix, int line_size)
+; int ff_pix_sum16(const uint8_t *pix, ptrdiff_t line_size)
 ; %1 = number of loops
 ; %2 = number of GPRs used
 %macro PIX_SUM16 3
 cglobal pix_sum16, 2, %2, 6
-    movsxdifnidn r1, r1d
     mov          r2, %1
     lea          r3, [r1*3]
 %if notcpuflag(xop)
@@ -72,12 +71,11 @@ INIT_XMM xop
 PIX_SUM16  4, 4, 4
 %endif
 
-; int ff_pix_norm1(const uint8_t *pix, int line_size)
+; int ff_pix_norm1(const uint8_t *pix, ptrdiff_t line_size)
 ; %1 = number of xmm registers used
 ; %2 = number of loops
 %macro PIX_NORM1 2
 cglobal pix_norm1, 2, 3, %1
-    movsxdifnidn r1, r1d
     mov          r2, %2
     pxor         m0, m0
     pxor         m5, m5

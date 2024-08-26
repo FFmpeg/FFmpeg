@@ -24,11 +24,11 @@
 #include "libavcodec/mpegvideoencdsp.h"
 #include "config.h"
 
-int ff_pix_sum16_neon(const uint8_t *pix, int line_size);
-int ff_pix_norm1_neon(const uint8_t *pix, int line_size);
+int ff_pix_sum16_neon(const uint8_t *pix, ptrdiff_t line_size);
+int ff_pix_norm1_neon(const uint8_t *pix, ptrdiff_t line_size);
 
 #if HAVE_DOTPROD
-int ff_pix_norm1_neon_dotprod(const uint8_t *pix, int line_size);
+int ff_pix_norm1_neon_dotprod(const uint8_t *pix, ptrdiff_t line_size);
 #endif
 
 av_cold void ff_mpegvideoencdsp_init_aarch64(MpegvideoEncDSPContext *c,

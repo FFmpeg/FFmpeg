@@ -26,8 +26,8 @@
 int ff_try_8x8basis_rvv(const int16_t rem[64], const int16_t weight[64],
                         const int16_t basis[16], int scale);
 void ff_add_8x8basis_rvv(int16_t rem[64], const int16_t basis[16], int scale);
-int ff_pix_sum_rvv(const uint8_t *pix, int line_size);
-int ff_pix_norm1_rvv(const uint8_t *pix, int line_size);
+int ff_pix_sum_rvv(const uint8_t *pix, ptrdiff_t line_size);
+int ff_pix_norm1_rvv(const uint8_t *pix, ptrdiff_t line_size);
 
 av_cold void ff_mpegvideoencdsp_init_riscv(MpegvideoEncDSPContext *c,
                                            AVCodecContext *avctx)

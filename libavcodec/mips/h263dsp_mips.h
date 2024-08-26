@@ -31,6 +31,6 @@ void ff_dct_unquantize_h263_inter_msa(MpegEncContext *s, int16_t *block,
                                       int32_t index, int32_t q_scale);
 void ff_dct_unquantize_h263_intra_msa(MpegEncContext *s, int16_t *block,
                                       int32_t index, int32_t q_scale);
-int ff_pix_sum_msa(const uint8_t *pix, int line_size);
+int ff_pix_sum_msa(const uint8_t *pix, ptrdiff_t line_size);
 
 #endif  // #ifndef AVCODEC_MIPS_H263DSP_MIPS_H

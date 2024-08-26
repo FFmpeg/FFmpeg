@@ -56,7 +56,7 @@ static int32_t sum_u8src_16width_msa(const uint8_t *src, int32_t stride)
     return sum;
 }
 
-int ff_pix_sum_msa(const uint8_t *pix, int line_size)
+int ff_pix_sum_msa(const uint8_t *pix, ptrdiff_t line_size)
 {
     return sum_u8src_16width_msa(pix, line_size);
 }

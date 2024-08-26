@@ -34,7 +34,7 @@ static void check_pix_sum(MpegvideoEncDSPContext *c)
 {
     LOCAL_ALIGNED_16(uint8_t, src, [16 * 16]);
 
-    declare_func(int, const uint8_t *pix, int line_size);
+    declare_func(int, const uint8_t *pix, ptrdiff_t line_size);
 
     randomize_buffers(src, 16 * 16);
 
@@ -43,7 +43,7 @@ static void check_pix_sum(MpegvideoEncDSPContext *c)
         if (check_func(c->pix_sum, "pix_sum%s", negstride_str)) {
             int sum0, sum1;
             const uint8_t *pix = src + (n ? (15 * 16) : 0);
-            int line_size = 16 * (n ? -1 : 1);
+            ptrdiff_t line_size = 16 * (n ? -1 : 1);
             sum0 = call_ref(pix, line_size);
             sum1 = call_new(pix, line_size);
             if (sum0 != sum1)
@@ -57,7 +57,7 @@ static void check_pix_norm1(MpegvideoEncDSPContext *c)
 {
     LOCAL_ALIGNED_16(uint8_t, src, [16 * 16]);
 
-    declare_func(int, const uint8_t *pix, int line_size);
+    declare_func(int, const uint8_t *pix, ptrdiff_t line_size);
 
     randomize_buffers(src, 16 * 16);
 
@@ -66,7 +66,7 @@ static void check_pix_norm1(MpegvideoEncDSPContext *c)
         if (check_func(c->pix_norm1, "pix_norm1%s", negstride_str)) {
             int sum0, sum1;
             const uint8_t *pix = src + (n ? (15 * 16) : 0);
-            int line_size = 16 * (n ? -1 : 1);
+            ptrdiff_t line_size = 16 * (n ? -1 : 1);
             sum0 = call_ref(pix, line_size);
             sum1 = call_new(pix, line_size);
             if (sum0 != sum1)
@@ -88,7 +88,7 @@ static void check_draw_edges(MpegvideoEncDSPContext *c)
     LOCAL_ALIGNED_16(uint8_t, buf0, [BUFSIZE]);
     LOCAL_ALIGNED_16(uint8_t, buf1, [BUFSIZE]);
 
-    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *buf, int wrap, int width, int height,
+    declare_func_emms(AV_CPU_FLAG_MMX, void, uint8_t *buf, ptrdiff_t wrap, int width, int height,
                                              int w, int h, int sides);
 
     for (int isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++) {
@@ -96,7 +96,7 @@ static void check_draw_edges(MpegvideoEncDSPContext *c)
         int negstride = input_size < 0;
         const char *negstride_str = negstride ? "_negstride" : "";
         int width = FFABS(input_size);
-        int linesize = EDGE_WIDTH + width + EDGE_WIDTH;
+        ptrdiff_t linesize = EDGE_WIDTH + width + EDGE_WIDTH;
         /* calculate height based on specified width to use the entire buffer. */
         int height = (BUFSIZE / linesize) - (2 * EDGE_WIDTH);
         uint8_t *dst0 = buf0 + EDGE_WIDTH * linesize + EDGE_WIDTH;
