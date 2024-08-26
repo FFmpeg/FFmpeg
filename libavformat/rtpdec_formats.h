@@ -50,6 +50,7 @@ void ff_h264_parse_framesize(AVCodecParameters *par, const char *p);
 extern const RTPDynamicProtocolHandler ff_ac3_dynamic_handler;
 extern const RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
 extern const RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler;
+extern const RTPDynamicProtocolHandler ff_av1_dynamic_handler;
 extern const RTPDynamicProtocolHandler ff_dv_dynamic_handler;
 extern const RTPDynamicProtocolHandler ff_g726_16_dynamic_handler;
 extern const RTPDynamicProtocolHandler ff_g726_24_dynamic_handler;

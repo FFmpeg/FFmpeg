@@ -94,6 +94,7 @@ void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_vc2hq(AVFormatContext *s1, const uint8_t *buf, int size, int interlaced);
 void ff_rtp_send_vp8(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_vp9(AVFormatContext *s1, const uint8_t *buff, int size);
+void ff_rtp_send_av1(AVFormatContext *s1, const uint8_t *buf1, int size, int is_keyframe);
 void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_raw_rfc4175(AVFormatContext *s1, const uint8_t *buf, int size, int interlaced, int field);
 

@@ -79,6 +79,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_THEORA:
     case AV_CODEC_ID_VP8:
     case AV_CODEC_ID_VP9:
+    case AV_CODEC_ID_AV1:
     case AV_CODEC_ID_ADPCM_G722:
     case AV_CODEC_ID_ADPCM_G726:
     case AV_CODEC_ID_ADPCM_G726LE:
@@ -222,6 +223,16 @@ static int rtp_write_header(AVFormatContext *s1)
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(s, AV_LOG_ERROR,
                    "Packetizing VP9 is experimental and its specification is "
+                   "still in draft state. "
+                   "Please set -strict experimental in order to enable it.\n");
+            ret = AVERROR_EXPERIMENTAL;
+            goto fail;
+        }
+        break;
+    case AV_CODEC_ID_AV1:
+        if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(s, AV_LOG_ERROR,
+                   "Packetizing AV1 is experimental and its specification is "
                    "still in draft state. "
                    "Please set -strict experimental in order to enable it.\n");
             ret = AVERROR_EXPERIMENTAL;
@@ -578,6 +589,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case AV_CODEC_ID_AMR_NB:
     case AV_CODEC_ID_AMR_WB:
         ff_rtp_send_amr(s1, pkt->data, size);
+        break;
+    case AV_CODEC_ID_AV1:
+        ff_rtp_send_av1(s1, pkt->data, size, (pkt->flags & AV_PKT_FLAG_KEY) ? 1 : 0);
         break;
     case AV_CODEC_ID_MPEG2TS:
         rtp_send_mpegts_raw(s1, pkt->data, size);

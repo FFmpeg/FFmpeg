@@ -83,6 +83,7 @@ static const RTPDynamicProtocolHandler *const rtp_dynamic_protocol_handler_list[
     &ff_ac3_dynamic_handler,
     &ff_amr_nb_dynamic_handler,
     &ff_amr_wb_dynamic_handler,
+    &ff_av1_dynamic_handler,
     &ff_dv_dynamic_handler,
     &ff_g726_16_dynamic_handler,
     &ff_g726_24_dynamic_handler,
