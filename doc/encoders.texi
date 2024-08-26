@@ -4109,6 +4109,14 @@ by frame. Value: -1-default 0-off 1-on
 Set the allowed max size in bytes for each frame. If the frame size exceeds
 the limitation, encoder will adjust the QP value to control the frame size.
 Invalid in CQP rate control mode.
+
+@item @var{max_frame_size_i}
+Maximum encoded frame size for I frames in bytes. If this value is set as larger
+than zero, then for I frames the value set by max_frame_size is ignored.
+
+@item @var{max_frame_size_p}
+Maximum encoded frame size for P frames in bytes. If this value is set as larger
+than zero, then for P frames the value set by max_frame_size is ignored.
 @end table
 
 @section snow
