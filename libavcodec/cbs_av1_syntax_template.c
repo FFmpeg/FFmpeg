@@ -1374,6 +1374,15 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                 priv->render_height   = ref->render_height;
                 priv->bit_depth       = ref->bit_depth;
                 priv->order_hint      = ref->order_hint;
+
+                memcpy(priv->loop_filter_ref_deltas, ref->loop_filter_ref_deltas,
+                       sizeof(ref->loop_filter_ref_deltas));
+                memcpy(priv->loop_filter_mode_deltas, ref->loop_filter_mode_deltas,
+                       sizeof(ref->loop_filter_mode_deltas));
+                memcpy(priv->feature_enabled, ref->feature_enabled,
+                       sizeof(ref->feature_enabled));
+                memcpy(priv->feature_value, ref->feature_value,
+                       sizeof(ref->feature_value));
             } else
                 infer(refresh_frame_flags, 0);
 
@@ -1691,14 +1700,25 @@ update_refs:
                     priv->order_hints[j + AV1_REF_FRAME_LAST];
             }
 
-            memcpy(priv->ref[i].loop_filter_ref_deltas, current->loop_filter_ref_deltas,
-                   sizeof(current->loop_filter_ref_deltas));
-            memcpy(priv->ref[i].loop_filter_mode_deltas, current->loop_filter_mode_deltas,
-                   sizeof(current->loop_filter_mode_deltas));
-            memcpy(priv->ref[i].feature_enabled, current->feature_enabled,
-                   sizeof(current->feature_enabled));
-            memcpy(priv->ref[i].feature_value, current->feature_value,
-                   sizeof(current->feature_value));
+            if (current->show_existing_frame) {
+                memcpy(priv->ref[i].loop_filter_ref_deltas, priv->loop_filter_ref_deltas,
+                       sizeof(priv->loop_filter_ref_deltas));
+                memcpy(priv->ref[i].loop_filter_mode_deltas, priv->loop_filter_mode_deltas,
+                       sizeof(priv->loop_filter_mode_deltas));
+                memcpy(priv->ref[i].feature_enabled, priv->feature_enabled,
+                       sizeof(priv->feature_enabled));
+                memcpy(priv->ref[i].feature_value, priv->feature_value,
+                       sizeof(priv->feature_value));
+            } else {
+                memcpy(priv->ref[i].loop_filter_ref_deltas, current->loop_filter_ref_deltas,
+                       sizeof(current->loop_filter_ref_deltas));
+                memcpy(priv->ref[i].loop_filter_mode_deltas, current->loop_filter_mode_deltas,
+                       sizeof(current->loop_filter_mode_deltas));
+                memcpy(priv->ref[i].feature_enabled, current->feature_enabled,
+                       sizeof(current->feature_enabled));
+                memcpy(priv->ref[i].feature_value, current->feature_value,
+                       sizeof(current->feature_value));
+            }
         }
     }
 
