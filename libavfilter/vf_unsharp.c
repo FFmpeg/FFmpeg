@@ -74,7 +74,6 @@ typedef struct UnsharpContext {
     int bitdepth;
     int bps;
     int nb_threads;
-    int (* apply_unsharp)(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
     int (* unsharp_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } UnsharpContext;
 
@@ -173,7 +172,7 @@ static int name##_##nbits(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 DEF_UNSHARP_SLICE_FUNC(unsharp_slice, 16)
 DEF_UNSHARP_SLICE_FUNC(unsharp_slice, 8)
 
-static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+static int apply_unsharp(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 {
     AVFilterLink *inlink = ctx->inputs[0];
     UnsharpContext *s = ctx->priv;
@@ -240,7 +239,6 @@ static av_cold int init(AVFilterContext *ctx)
     SET_FILTER_PARAM(chroma, c);
     SET_FILTER_PARAM(alpha, a);
 
-    s->apply_unsharp = apply_unsharp_c;
     return 0;
 }
 
@@ -337,7 +335,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    UnsharpContext *s = link->dst->priv;
     AVFilterLink *outlink   = link->dst->outputs[0];
     AVFrame *out;
     int ret = 0;
@@ -349,7 +346,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    ret = s->apply_unsharp(link->dst, in, out);
+    ret = apply_unsharp(link->dst, in, out);
 
     av_frame_free(&in);
 
