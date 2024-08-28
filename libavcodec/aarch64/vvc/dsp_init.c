@@ -22,6 +22,7 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/aarch64/cpu.h"
+#include "libavcodec/aarch64/h26x/dsp.h"
 #include "libavcodec/vvc/dsp.h"
 #include "libavcodec/vvc/dec.h"
 #include "libavcodec/vvc/ctu.h"
@@ -45,6 +46,11 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         return;
 
     if (bd == 8) {
+        for (int i = 0; i < FF_ARRAY_ELEMS(c->sao.band_filter); i++)
+            c->sao.band_filter[i] = ff_h26x_sao_band_filter_8x8_8_neon;
+        c->sao.edge_filter[0] = ff_vvc_sao_edge_filter_8x8_8_neon;
+        for (int i = 1; i < FF_ARRAY_ELEMS(c->sao.edge_filter); i++)
+            c->sao.edge_filter[i] = ff_vvc_sao_edge_filter_16x16_8_neon;
         c->alf.filter[LUMA] = alf_filter_luma_8_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_8_neon;
     } else if (bd == 10) {

@@ -24,15 +24,17 @@
 
 #include "libavutil/aarch64/asm.S"
 
-#define MAX_PB_SIZE 64
+#define HEVC_MAX_PB_SIZE 64
+#define VVC_MAX_PB_SIZE 128
 #define AV_INPUT_BUFFER_PADDING_SIZE 64
-#define SAO_STRIDE (2*MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE)
+#define HEVC_SAO_STRIDE (2 * HEVC_MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE)
+#define VVC_SAO_STRIDE (2 * VVC_MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE)
 
 // void sao_band_filter(uint8_t *_dst, uint8_t *_src,
 //                      ptrdiff_t stride_dst, ptrdiff_t stride_src,
 //                      int16_t *sao_offset_val, int sao_left_class,
 //                      int width, int height)
-function ff_hevc_sao_band_filter_8x8_8_neon, export=1
+function ff_h26x_sao_band_filter_8x8_8_neon, export=1
         stp             xzr, xzr, [sp, #-64]!
         stp             xzr, xzr, [sp, #16]
         stp             xzr, xzr, [sp, #32]
@@ -79,16 +81,30 @@ function ff_hevc_sao_band_filter_8x8_8_neon, export=1
         ret
 endfunc
 
-.Lsao_edge_pos:
+.Lhevc_sao_edge_pos:
 .word 1 // horizontal
-.word SAO_STRIDE // vertical
-.word SAO_STRIDE + 1 // 45 degree
-.word SAO_STRIDE - 1 // 135 degree
+.word HEVC_SAO_STRIDE // vertical
+.word HEVC_SAO_STRIDE + 1 // 45 degree
+.word HEVC_SAO_STRIDE - 1 // 135 degree
+
+.Lvvc_sao_edge_pos:
+.word 1 // horizontal
+.word VVC_SAO_STRIDE // vertical
+.word VVC_SAO_STRIDE + 1 // 45 degree
+.word VVC_SAO_STRIDE - 1 // 135 degree
+
+function ff_vvc_sao_edge_filter_16x16_8_neon, export=1
+        adr             x7, .Lvvc_sao_edge_pos
+        mov             x15, #VVC_SAO_STRIDE
+        b               1f
+endfunc
 
 // ff_hevc_sao_edge_filter_16x16_8_neon(char *dst, char *src, ptrdiff stride_dst,
 //                                      int16 *sao_offset_val, int eo, int width, int height)
 function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
-        adr             x7, .Lsao_edge_pos
+        adr             x7, .Lhevc_sao_edge_pos
+        mov             x15, #HEVC_SAO_STRIDE
+1:
         ld1             {v3.8h}, [x3]              // load sao_offset_val
         add             w5,  w5,  #0xF
         bic             w5,  w5,  #0xF
@@ -101,7 +117,6 @@ function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
         uzp2            v1.16b, v3.16b, v3.16b     // sao_offset_val -> upper
         uzp1            v0.16b, v3.16b, v3.16b     // sao_offset_val -> lower
         movi            v2.16b, #2
-        mov             x15, #SAO_STRIDE
         // strides between end of line and next src/dst
         sub             x15, x15, x5               // stride_src - width
         sub             x16, x2, x5                // stride_dst - width
@@ -145,10 +160,18 @@ function ff_hevc_sao_edge_filter_16x16_8_neon, export=1
         ret
 endfunc
 
+function ff_vvc_sao_edge_filter_8x8_8_neon, export=1
+        adr             x7, .Lvvc_sao_edge_pos
+        mov             x15, #VVC_SAO_STRIDE
+        b               1f
+endfunc
+
 // ff_hevc_sao_edge_filter_8x8_8_neon(char *dst, char *src, ptrdiff stride_dst,
 //                                    int16 *sao_offset_val, int eo, int width, int height)
 function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
-        adr             x7, .Lsao_edge_pos
+        adr             x7, .Lhevc_sao_edge_pos
+        mov             x15, #HEVC_SAO_STRIDE
+1:
         ldr             w4, [x7, w4, uxtw #2]
         ld1             {v3.8h}, [x3]
         mov             v3.h[7], v3.h[0]
@@ -160,7 +183,6 @@ function ff_hevc_sao_edge_filter_8x8_8_neon, export=1
         movi            v2.16b, #2
         add             x16, x0, x2
         lsl             x2,  x2, #1
-        mov             x15, #SAO_STRIDE
         mov             x8,  x1
         sub             x9,  x1, x4
         add             x10, x1, x4
