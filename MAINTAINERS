@@ -65,7 +65,7 @@ website                                 (S: https://git.ffmpeg.org/ffmpeg-web) D
 fate.ffmpeg.org                         (L: fate-admin@ffmpeg.org) (W: https://fate.ffmpeg.org) (P: https://ffmpeg.org/fate.html) (S: https://git.ffmpeg.org/fateserver) Timothy Gu
 Trac bug tracker                        (W: https://trac.ffmpeg.org) Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos
 Patchwork                           [2] (W: https://patchwork.ffmpeg.org) Andriy Gelman
-mailing lists                           Baptiste Coudurier
+mailing lists                           (W: https://ffmpeg.org/contact.html#MailingLists) Baptiste Coudurier
 Twitter                                 Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
 ffmpeg-security                     [2] (L: ffmpeg-security@ffmpeg.org) (W: https://ffmpeg.org/security.html) Michael Niedermayer, Reimar Doeffinger
