@@ -114,6 +114,92 @@ static void check_uyvy_to_422p(void)
     }
 }
 
+#define NUM_LINES 5
+#define MAX_LINE_SIZE 1920
+#define BUFSIZE (NUM_LINES * MAX_LINE_SIZE)
+
+static int cmp_off_by_n(const uint8_t *ref, const uint8_t *test, size_t n, int accuracy)
+{
+    for (size_t i = 0; i < n; i++) {
+        if (abs(ref[i] - test[i]) > accuracy)
+            return 1;
+    }
+    return 0;
+}
+
+static void check_rgb24toyv12(struct SwsContext *ctx)
+{
+    static const int input_sizes[] = {16, 128, 512, MAX_LINE_SIZE, -MAX_LINE_SIZE};
+
+    LOCAL_ALIGNED_32(uint8_t, src, [BUFSIZE * 3]);
+    LOCAL_ALIGNED_32(uint8_t, buf_y_0, [BUFSIZE]);
+    LOCAL_ALIGNED_32(uint8_t, buf_y_1, [BUFSIZE]);
+    LOCAL_ALIGNED_32(uint8_t, buf_u_0, [BUFSIZE / 4]);
+    LOCAL_ALIGNED_32(uint8_t, buf_u_1, [BUFSIZE / 4]);
+    LOCAL_ALIGNED_32(uint8_t, buf_v_0, [BUFSIZE / 4]);
+    LOCAL_ALIGNED_32(uint8_t, buf_v_1, [BUFSIZE / 4]);
+
+    declare_func(void, const uint8_t *src, uint8_t *ydst, uint8_t *udst,
+                       uint8_t *vdst, int width, int height, int lumStride,
+                       int chromStride, int srcStride, int32_t *rgb2yuv);
+
+    randomize_buffers(src, BUFSIZE * 3);
+
+    for (int isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++) {
+        int input_size = input_sizes[isi];
+        int negstride = input_size < 0;
+        const char *negstride_str = negstride ? "_negstride" : "";
+        int width = FFABS(input_size);
+        int linesize = width + 32;
+        /* calculate height based on specified width to use the entire buffer. */
+        int height = (BUFSIZE / linesize) & ~1;
+        uint8_t *src0 = src;
+        uint8_t *src1 = src;
+        uint8_t *dst_y_0 = buf_y_0;
+        uint8_t *dst_y_1 = buf_y_1;
+        uint8_t *dst_u_0 = buf_u_0;
+        uint8_t *dst_u_1 = buf_u_1;
+        uint8_t *dst_v_0 = buf_v_0;
+        uint8_t *dst_v_1 = buf_v_1;
+
+        if (negstride) {
+            src0    += (height - 1) * (linesize * 3);
+            src1    += (height - 1) * (linesize * 3);
+            dst_y_0 += (height - 1) * linesize;
+            dst_y_1 += (height - 1) * linesize;
+            dst_u_0 += ((height / 2) - 1) * (linesize / 2);
+            dst_u_1 += ((height / 2) - 1) * (linesize / 2);
+            dst_v_0 += ((height / 2) - 1) * (linesize / 2);
+            dst_v_1 += ((height / 2) - 1) * (linesize / 2);
+            linesize *= -1;
+        }
+
+        if (check_func(ff_rgb24toyv12, "rgb24toyv12_%d_%d%s", width, height, negstride_str)) {
+            memset(buf_y_0, 0xFF, BUFSIZE);
+            memset(buf_y_1, 0xFF, BUFSIZE);
+            memset(buf_u_0, 0xFF, BUFSIZE / 4);
+            memset(buf_u_1, 0xFF, BUFSIZE / 4);
+            memset(buf_v_0, 0xFF, BUFSIZE / 4);
+            memset(buf_v_1, 0xFF, BUFSIZE / 4);
+
+            call_ref(src0, dst_y_0, dst_u_0, dst_v_0, width, height,
+                     linesize, linesize / 2, linesize * 3, ctx->input_rgb2yuv_table);
+            call_new(src1, dst_y_1, dst_u_1, dst_v_1, width, height,
+                     linesize, linesize / 2, linesize * 3, ctx->input_rgb2yuv_table);
+            if (cmp_off_by_n(buf_y_0, buf_y_1, BUFSIZE, 1) ||
+                cmp_off_by_n(buf_u_0, buf_u_1, BUFSIZE / 4, 1) ||
+                cmp_off_by_n(buf_v_0, buf_v_1, BUFSIZE / 4, 1))
+                fail();
+            bench_new(src1, dst_y_1, dst_u_1, dst_v_1, width, height,
+                      linesize, linesize / 2, linesize * 3, ctx->input_rgb2yuv_table);
+        }
+    }
+}
+
+#undef NUM_LINES
+#undef MAX_LINE_SIZE
+#undef BUFSIZE
+
 static void check_interleave_bytes(void)
 {
     LOCAL_ALIGNED_16(uint8_t, src0_buf, [MAX_STRIDE*MAX_HEIGHT+1]);
@@ -403,6 +489,9 @@ void checkasm_check_sw_rgb(void)
 
     check_rgb_to_uv(ctx);
     report("rgb_to_uv");
+
+    check_rgb24toyv12(ctx);
+    report("rgb24toyv12");
 
     sws_freeContext(ctx);
 }
