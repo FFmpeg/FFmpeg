@@ -977,7 +977,7 @@ int ff_formats_check_color_spaces(void *log, const AVFilterFormats *fmts)
 {
     for (int i = 0; fmts && i < fmts->nb_formats; i++) {
         if (fmts->formats[i] == AVCOL_SPC_RESERVED) {
-            av_log(log, AV_LOG_ERROR, "Invalid color range\n");
+            av_log(log, AV_LOG_ERROR, "Invalid color space\n");
             return AVERROR(EINVAL);
         }
     }
