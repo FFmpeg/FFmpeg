@@ -1,0 +1,20 @@
+frame:0    pts:0       pts_time:0
+lavfi.xpsnr.xpsnr.r=10.844733
+lavfi.xpsnr.xpsnr.g=18.610714
+lavfi.xpsnr.xpsnr.b=25.113884
+frame:1    pts:1       pts_time:1
+lavfi.xpsnr.xpsnr.r=5.962447
+lavfi.xpsnr.xpsnr.g=10.468726
+lavfi.xpsnr.xpsnr.b=14.122101
+frame:2    pts:2       pts_time:2
+lavfi.xpsnr.xpsnr.r=5.907167
+lavfi.xpsnr.xpsnr.g=10.561430
+lavfi.xpsnr.xpsnr.b=13.334916
+frame:3    pts:3       pts_time:3
+lavfi.xpsnr.xpsnr.r=5.866307
+lavfi.xpsnr.xpsnr.g=10.523605
+lavfi.xpsnr.xpsnr.b=12.099272
+frame:4    pts:4       pts_time:4
+lavfi.xpsnr.xpsnr.r=6.047683
+lavfi.xpsnr.xpsnr.g=10.493720
+lavfi.xpsnr.xpsnr.b=11.922785

@@ -532,6 +532,7 @@ extern const AVFilter ff_vf_xfade;
 extern const AVFilter ff_vf_xfade_opencl;
 extern const AVFilter ff_vf_xfade_vulkan;
 extern const AVFilter ff_vf_xmedian;
+extern const AVFilter ff_vf_xpsnr;
 extern const AVFilter ff_vf_xstack;
 extern const AVFilter ff_vf_yadif;
 extern const AVFilter ff_vf_yadif_cuda;

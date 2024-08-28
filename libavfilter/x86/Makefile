@@ -40,6 +40,7 @@ OBJS-$(CONFIG_TRANSPOSE_FILTER)              += x86/vf_transpose_init.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += x86/af_volume_init.o
 OBJS-$(CONFIG_V360_FILTER)                   += x86/vf_v360_init.o
 OBJS-$(CONFIG_W3FDIF_FILTER)                 += x86/vf_w3fdif_init.o
+OBJS-$(CONFIG_XPSNR_FILTER)                  += x86/vf_xpsnr_init.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += x86/vf_yadif_init.o
 
 X86ASM-OBJS-$(CONFIG_SCENE_SAD)              += x86/scene_sad.o
