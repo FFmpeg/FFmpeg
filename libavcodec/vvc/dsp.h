@@ -179,6 +179,7 @@ typedef struct VVCDSPContext {
 void ff_vvc_dsp_init(VVCDSPContext *hpc, int bit_depth);
 
 void ff_vvc_dsp_init_aarch64(VVCDSPContext *hpc, const int bit_depth);
+void ff_vvc_dsp_init_riscv(VVCDSPContext *hpc, const int bit_depth);
 void ff_vvc_dsp_init_x86(VVCDSPContext *hpc, const int bit_depth);
 
 #endif /* AVCODEC_VVC_DSP_H */
