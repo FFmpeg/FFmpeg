@@ -2214,7 +2214,6 @@ int av_opt_get_array(void *obj, const char *name, int search_flags,
             double     num = 1.0;
             int        den = 1;
             int64_t intnum = 1;
-            int ret;
 
             ret = read_number(o, src, &num, &den, &intnum);
             if (ret < 0)
