@@ -1,7 +1,7 @@
 /* -*-arm64-*-
  * vim: syntax=arm64asm
  *
- * AArch64 NEON optimised SAO functions for HEVC decoding
+ * AArch64 NEON optimised SAO functions for h26x decoding
  *
  * Copyright (c) 2022 J. Dekker <jdek@itanimul.li>
  *

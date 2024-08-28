@@ -24,6 +24,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/aarch64/cpu.h"
+#include "libavcodec/aarch64/h26x/dsp.h"
 #include "libavcodec/hevc/dsp.h"
 
 void ff_hevc_v_loop_filter_chroma_8_neon(uint8_t *_pix, ptrdiff_t _stride,
@@ -91,14 +92,6 @@ void ff_hevc_idct_8x8_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_16x16_dc_10_neon(int16_t *coeffs);
 void ff_hevc_idct_32x32_dc_10_neon(int16_t *coeffs);
 void ff_hevc_transform_luma_4x4_neon_8(int16_t *coeffs);
-void ff_hevc_sao_band_filter_8x8_8_neon(uint8_t *_dst, const uint8_t *_src,
-                                  ptrdiff_t stride_dst, ptrdiff_t stride_src,
-                                  const int16_t *sao_offset_val, int sao_left_class,
-                                  int width, int height);
-void ff_hevc_sao_edge_filter_16x16_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
-                                          const int16_t *sao_offset_val, int eo, int width, int height);
-void ff_hevc_sao_edge_filter_8x8_8_neon(uint8_t *dst, const uint8_t *src, ptrdiff_t stride_dst,
-                                        const int16_t *sao_offset_val, int eo, int width, int height);
 void ff_hevc_put_hevc_qpel_h4_8_neon(int16_t *dst, const uint8_t *_src, ptrdiff_t _srcstride, int height,
                                      intptr_t mx, intptr_t my, int width);
 void ff_hevc_put_hevc_qpel_h6_8_neon(int16_t *dst, const uint8_t *_src, ptrdiff_t _srcstride, int height,
