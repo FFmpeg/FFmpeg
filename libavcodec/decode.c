@@ -1725,7 +1725,7 @@ static void check_progress_consistency(const ProgressFrame *f)
     av_assert1(!f->progress || f->progress->f == f->f);
 }
 
-static int progress_frame_get(AVCodecContext *avctx, ProgressFrame *f)
+int ff_progress_frame_alloc(AVCodecContext *avctx, ProgressFrame *f)
 {
     FFRefStructPool *pool = avctx->internal->progress_frame_pool;
 
@@ -1743,9 +1743,12 @@ int ff_progress_frame_get_buffer(AVCodecContext *avctx, ProgressFrame *f, int fl
 {
     int ret;
 
-    ret = progress_frame_get(avctx, f);
-    if (ret < 0)
-        return ret;
+    check_progress_consistency(f);
+    if (!f->f) {
+        ret = ff_progress_frame_alloc(avctx, f);
+        if (ret < 0)
+            return ret;
+    }
 
     ret = ff_thread_get_buffer(avctx, f->progress->f, flags);
     if (ret < 0) {
