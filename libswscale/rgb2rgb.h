@@ -121,8 +121,6 @@ extern void (*yuv422ptouyvy)(const uint8_t *ysrc, const uint8_t *usrc, const uin
 /**
  * Height should be a multiple of 2 and width should be a multiple of 2.
  * (If this is a problem for anyone then tell me, and I will fix it.)
- * Chrominance data is only taken from every second line, others are ignored.
- * FIXME: Write high quality version.
  */
 extern void (*ff_rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                               int width, int height,
