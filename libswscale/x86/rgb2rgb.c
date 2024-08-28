@@ -1480,7 +1480,7 @@ static inline void planar2x_mmxext(const uint8_t *src, uint8_t *dst, int srcWidt
  * others are ignored in the C version.
  * FIXME: Write HQ version.
  */
-#if HAVE_7REGS
+#if ARCH_X86_32 && HAVE_7REGS
 static inline void rgb24toyv12_mmxext(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
                                        int width, int height,
                                        int lumStride, int chromStride, int srcStride,
@@ -2257,9 +2257,9 @@ static av_cold void rgb2rgb_init_mmxext(void)
     yuyvtoyuv422       = yuyvtoyuv422_mmxext;
 
     planar2x           = planar2x_mmxext;
-#if HAVE_7REGS
+#if ARCH_X86_32 && HAVE_7REGS
     ff_rgb24toyv12     = rgb24toyv12_mmxext;
-#endif /* HAVE_7REGS */
+#endif /* ARCH_X86_32 && HAVE_7REGS */
 
     yuyvtoyuv420       = yuyvtoyuv420_mmxext;
     uyvytoyuv420       = uyvytoyuv420_mmxext;
