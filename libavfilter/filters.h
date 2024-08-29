@@ -226,6 +226,7 @@ enum FilterFormatsState {
      */
     FF_FILTER_FORMATS_PASSTHROUGH = 0,
     FF_FILTER_FORMATS_QUERY_FUNC,       ///< formats.query active.
+    FF_FILTER_FORMATS_QUERY_FUNC2,      ///< formats.query_func2 active.
     FF_FILTER_FORMATS_PIXFMT_LIST,      ///< formats.pixels_list active.
     FF_FILTER_FORMATS_SAMPLEFMTS_LIST,  ///< formats.samples_list active.
     FF_FILTER_FORMATS_SINGLE_PIXFMT,    ///< formats.pix_fmt active
@@ -235,6 +236,9 @@ enum FilterFormatsState {
 #define FILTER_QUERY_FUNC(func)        \
         .formats.query_func   = func,  \
         .formats_state        = FF_FILTER_FORMATS_QUERY_FUNC
+#define FILTER_QUERY_FUNC2(func)       \
+        .formats.query_func2  = func,  \
+        .formats_state        = FF_FILTER_FORMATS_QUERY_FUNC2
 #define FILTER_PIXFMTS_ARRAY(array)    \
         .formats.pixels_list  = array, \
         .formats_state        = FF_FILTER_FORMATS_PIXFMT_LIST

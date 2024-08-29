@@ -225,6 +225,90 @@ int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 av_warn_unused_result
 int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts);
 
+/**
+ * Helpers for query_formats2() which set all free audio links to the same list
+ * of channel layouts/sample rates. If there are no links hooked to this list,
+ * the list is freed.
+ */
+av_warn_unused_result
+int ff_set_common_channel_layouts2(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out,
+                                   AVFilterChannelLayouts *channel_layouts);
+
+av_warn_unused_result
+int ff_set_common_channel_layouts_from_list2(const AVFilterContext *ctx,
+                                             AVFilterFormatsConfig **cfg_in,
+                                             AVFilterFormatsConfig **cfg_out,
+                                             const AVChannelLayout *fmts);
+av_warn_unused_result
+int ff_set_common_all_channel_counts2(const AVFilterContext *ctx,
+                                      AVFilterFormatsConfig **cfg_in,
+                                      AVFilterFormatsConfig **cfg_out);
+
+av_warn_unused_result
+int ff_set_common_samplerates2(const AVFilterContext *ctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out,
+                               AVFilterFormats *samplerates);
+
+av_warn_unused_result
+int ff_set_common_samplerates_from_list2(const AVFilterContext *ctx,
+                                         AVFilterFormatsConfig **cfg_in,
+                                         AVFilterFormatsConfig **cfg_out,
+                                         const int *samplerates);
+
+av_warn_unused_result
+int ff_set_common_all_samplerates2(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out);
+
+av_warn_unused_result
+int ff_set_common_color_spaces2(const AVFilterContext *ctx,
+                                AVFilterFormatsConfig **cfg_in,
+                                AVFilterFormatsConfig **cfg_out,
+                                AVFilterFormats *color_spaces);
+
+av_warn_unused_result
+int ff_set_common_color_spaces_from_list2(const AVFilterContext *ctx,
+                                          AVFilterFormatsConfig **cfg_in,
+                                          AVFilterFormatsConfig **cfg_out,
+                                          const int *color_ranges);
+
+av_warn_unused_result
+int ff_set_common_all_color_spaces2(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out);
+
+av_warn_unused_result
+int ff_set_common_color_ranges2(const AVFilterContext *ctx,
+                                AVFilterFormatsConfig **cfg_in,
+                                AVFilterFormatsConfig **cfg_out,
+                                AVFilterFormats *color_ranges);
+
+av_warn_unused_result
+int ff_set_common_color_ranges_from_list2(const AVFilterContext *ctx,
+                                          AVFilterFormatsConfig **cfg_in,
+                                          AVFilterFormatsConfig **cfg_out,
+                                          const int *color_ranges);
+
+av_warn_unused_result
+int ff_set_common_all_color_ranges2(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out);
+
+av_warn_unused_result
+int ff_set_common_formats2(const AVFilterContext *ctx,
+                           AVFilterFormatsConfig **cfg_in,
+                           AVFilterFormatsConfig **cfg_out,
+                           AVFilterFormats *formats);
+
+av_warn_unused_result
+int ff_set_common_formats_from_list2(const AVFilterContext *ctx,
+                                     AVFilterFormatsConfig **cfg_in,
+                                     AVFilterFormatsConfig **cfg_out,
+                                     const int *fmts);
+
 av_warn_unused_result
 int ff_add_channel_layout(AVFilterChannelLayouts **l,
                           const AVChannelLayout *channel_layout);

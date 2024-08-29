@@ -352,7 +352,50 @@ static int filter_query_formats(AVFilterContext *ctx)
                        ctx->name, av_err2str(ret));
             return ret;
         }
+    } else if (ctx->filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC2) {
+        AVFilterFormatsConfig *cfg_in_stack[64], *cfg_out_stack[64];
+        AVFilterFormatsConfig **cfg_in_dyn = NULL, **cfg_out_dyn = NULL;
+        AVFilterFormatsConfig **cfg_in, **cfg_out;
 
+        if (ctx->nb_inputs > FF_ARRAY_ELEMS(cfg_in_stack)) {
+            cfg_in_dyn = av_malloc_array(ctx->nb_inputs, sizeof(*cfg_in_dyn));
+            if (!cfg_in_dyn)
+                return AVERROR(ENOMEM);
+            cfg_in = cfg_in_dyn;
+        } else
+            cfg_in = ctx->nb_inputs ? cfg_in_stack : NULL;
+
+        for (unsigned i = 0; i < ctx->nb_inputs; i++) {
+            AVFilterLink *l = ctx->inputs[i];
+            cfg_in[i] = &l->outcfg;
+        }
+
+        if (ctx->nb_outputs > FF_ARRAY_ELEMS(cfg_out_stack)) {
+            cfg_out_dyn = av_malloc_array(ctx->nb_outputs, sizeof(*cfg_out_dyn));
+            if (!cfg_out_dyn)
+                return AVERROR(ENOMEM);
+            cfg_out = cfg_out_dyn;
+        } else
+            cfg_out = ctx->nb_outputs ? cfg_out_stack : NULL;
+
+        for (unsigned i = 0; i < ctx->nb_outputs; i++) {
+            AVFilterLink *l = ctx->outputs[i];
+            cfg_out[i] = &l->incfg;
+        }
+
+        ret = ctx->filter->formats.query_func2(ctx, cfg_in, cfg_out);
+        av_freep(&cfg_in_dyn);
+        av_freep(&cfg_out_dyn);
+        if (ret < 0) {
+            if (ret != AVERROR(EAGAIN))
+                av_log(ctx, AV_LOG_ERROR, "Query format failed for '%s': %s\n",
+                       ctx->name, av_err2str(ret));
+            return ret;
+        }
+    }
+
+    if (ctx->filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC ||
+        ctx->filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC2) {
         ret = filter_check_formats(ctx);
         if (ret < 0)
             return ret;

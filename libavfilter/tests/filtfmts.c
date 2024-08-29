@@ -143,7 +143,24 @@ int main(int argc, char **argv)
 
     if (filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC)
         ret = filter->formats.query_func(filter_ctx);
-    else
+    else if (filter->formats_state == FF_FILTER_FORMATS_QUERY_FUNC2) {
+        AVFilterFormatsConfig **cfg_in = NULL, **cfg_out = NULL;
+
+        if (filter_ctx->nb_inputs) {
+            cfg_in = av_malloc_array(filter_ctx->nb_inputs, sizeof(*cfg_in));
+            for (unsigned i = 0; i < filter_ctx->nb_inputs; i++)
+                cfg_in[i] = &filter_ctx->inputs[i]->outcfg;
+        }
+        if (filter_ctx->nb_outputs) {
+            cfg_out = av_malloc_array(filter_ctx->nb_outputs, sizeof(*cfg_out));
+            for (unsigned i = 0; i < filter_ctx->nb_outputs; i++)
+                cfg_out[i] = &filter_ctx->outputs[i]->incfg;
+        }
+
+        ret = filter->formats.query_func2(filter_ctx, cfg_in, cfg_out);
+        av_freep(&cfg_in);
+        av_freep(&cfg_out);
+    } else
         ret = ff_default_query_formats(filter_ctx);
 
     print_formats(filter_ctx);

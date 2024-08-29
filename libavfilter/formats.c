@@ -876,6 +876,153 @@ int ff_set_common_formats_from_list(AVFilterContext *ctx, const int *fmts)
     return ff_set_common_formats(ctx, ff_make_format_list(fmts));
 }
 
+#define SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, fmts, media_type, \
+                            ref_fn, unref_fn)                       \
+    if (!fmts)                                                      \
+        return AVERROR(ENOMEM);                                     \
+                                                                    \
+    for (unsigned i = 0; i < ctx->nb_inputs; i++) {                 \
+        const AVFilterLink *const link = ctx->inputs[i];            \
+        if (!cfg_in[i]->fmts &&                                     \
+            (media_type == AVMEDIA_TYPE_UNKNOWN ||                  \
+             link->type == media_type)) {                           \
+            int ret = ref_fn(fmts, &cfg_in[i]->fmts);               \
+            if (ret < 0) {                                          \
+                return ret;                                         \
+            }                                                       \
+        }                                                           \
+    }                                                               \
+    for (unsigned i = 0; i < ctx->nb_outputs; i++) {                \
+        const AVFilterLink *const link = ctx->outputs[i];           \
+        if (!cfg_out[i]->fmts &&                                    \
+            (media_type == AVMEDIA_TYPE_UNKNOWN ||                  \
+             link->type == media_type)) {                           \
+            int ret = ref_fn(fmts, &cfg_out[i]->fmts);              \
+            if (ret < 0) {                                          \
+                return ret;                                         \
+            }                                                       \
+        }                                                           \
+    }                                                               \
+                                                                    \
+    if (!fmts->refcount)                                            \
+        unref_fn(&fmts);                                            \
+                                                                    \
+    return 0;
+
+int ff_set_common_channel_layouts2(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out,
+                                   AVFilterChannelLayouts *channel_layouts)
+{
+    SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, channel_layouts, AVMEDIA_TYPE_AUDIO,
+                        ff_channel_layouts_ref, ff_channel_layouts_unref);
+}
+
+int ff_set_common_channel_layouts_from_list2(const AVFilterContext *ctx,
+                                             AVFilterFormatsConfig **cfg_in,
+                                             AVFilterFormatsConfig **cfg_out,
+                                             const AVChannelLayout *fmts)
+{
+    return ff_set_common_channel_layouts2(ctx, cfg_in, cfg_out, ff_make_channel_layout_list(fmts));
+}
+
+int ff_set_common_all_channel_counts2(const AVFilterContext *ctx,
+                                      AVFilterFormatsConfig **cfg_in,
+                                      AVFilterFormatsConfig **cfg_out)
+{
+    return ff_set_common_channel_layouts2(ctx, cfg_in, cfg_out, ff_all_channel_counts());
+}
+
+int ff_set_common_samplerates2(const AVFilterContext *ctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out,
+                               AVFilterFormats *samplerates)
+{
+    SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, samplerates, AVMEDIA_TYPE_AUDIO,
+                        ff_formats_ref, ff_formats_unref);
+}
+
+int ff_set_common_samplerates_from_list2(const AVFilterContext *ctx,
+                                         AVFilterFormatsConfig **cfg_in,
+                                         AVFilterFormatsConfig **cfg_out,
+                                         const int *samplerates)
+{
+    return ff_set_common_samplerates2(ctx, cfg_in, cfg_out, ff_make_format_list(samplerates));
+}
+
+int ff_set_common_all_samplerates2(const AVFilterContext *ctx,
+                                   AVFilterFormatsConfig **cfg_in,
+                                   AVFilterFormatsConfig **cfg_out)
+{
+    return ff_set_common_samplerates2(ctx, cfg_in, cfg_out, ff_all_samplerates());
+}
+
+int ff_set_common_color_spaces2(const AVFilterContext *ctx,
+                                AVFilterFormatsConfig **cfg_in,
+                                AVFilterFormatsConfig **cfg_out,
+                                AVFilterFormats *color_spaces)
+{
+    SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, color_spaces, AVMEDIA_TYPE_VIDEO,
+                        ff_formats_ref, ff_formats_unref);
+}
+
+int ff_set_common_color_spaces_from_list2(const AVFilterContext *ctx,
+                                          AVFilterFormatsConfig **cfg_in,
+                                          AVFilterFormatsConfig **cfg_out,
+                                          const int *color_ranges)
+{
+    return ff_set_common_color_spaces2(ctx, cfg_in, cfg_out, ff_make_format_list(color_ranges));
+}
+
+int ff_set_common_all_color_spaces2(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out)
+{
+    return ff_set_common_color_spaces2(ctx, cfg_in, cfg_out, ff_all_color_spaces());
+}
+
+int ff_set_common_color_ranges2(const AVFilterContext *ctx,
+                                AVFilterFormatsConfig **cfg_in,
+                                AVFilterFormatsConfig **cfg_out,
+                                AVFilterFormats *color_ranges)
+{
+    SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, color_ranges, AVMEDIA_TYPE_VIDEO,
+                        ff_formats_ref, ff_formats_unref);
+}
+
+int ff_set_common_color_ranges_from_list2(const AVFilterContext *ctx,
+                                          AVFilterFormatsConfig **cfg_in,
+                                          AVFilterFormatsConfig **cfg_out,
+                                          const int *color_ranges)
+{
+    return ff_set_common_color_ranges2(ctx, cfg_in, cfg_out, ff_make_format_list(color_ranges));
+}
+
+int ff_set_common_all_color_ranges2(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out)
+{
+    return ff_set_common_color_ranges2(ctx, cfg_in, cfg_out, ff_all_color_ranges());
+}
+
+int ff_set_common_formats2(const AVFilterContext *ctx,
+                           AVFilterFormatsConfig **cfg_in,
+                           AVFilterFormatsConfig **cfg_out,
+                           AVFilterFormats *formats)
+{
+    SET_COMMON_FORMATS2(ctx, cfg_in, cfg_out, formats, AVMEDIA_TYPE_UNKNOWN,
+                        ff_formats_ref, ff_formats_unref);
+}
+
+int ff_set_common_formats_from_list2(const AVFilterContext *ctx,
+                                     AVFilterFormatsConfig **cfg_in,
+                                     AVFilterFormatsConfig **cfg_out,
+                                     const int *fmts)
+{
+    return ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_make_format_list(fmts));
+}
+
+
 int ff_default_query_formats(AVFilterContext *ctx)
 {
     const AVFilter *const f = ctx->filter;
@@ -905,6 +1052,7 @@ int ff_default_query_formats(AVFilterContext *ctx)
     /* Intended fallthrough */
     case FF_FILTER_FORMATS_PASSTHROUGH:
     case FF_FILTER_FORMATS_QUERY_FUNC:
+    case FF_FILTER_FORMATS_QUERY_FUNC2:
         type = AVMEDIA_TYPE_UNKNOWN;
         formats = ff_all_formats(ctx->nb_inputs  ? ctx->inputs [0]->type :
                                  ctx->nb_outputs ? ctx->outputs[0]->type :

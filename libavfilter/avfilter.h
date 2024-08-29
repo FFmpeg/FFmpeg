@@ -99,6 +99,41 @@ const char *avfilter_pad_get_name(const AVFilterPad *pads, int pad_idx);
 enum AVMediaType avfilter_pad_get_type(const AVFilterPad *pads, int pad_idx);
 
 /**
+ * Lists of formats / etc. supported by an end of a link.
+ *
+ * This structure is directly part of AVFilterLink, in two copies:
+ * one for the source filter, one for the destination filter.
+
+ * These lists are used for negotiating the format to actually be used,
+ * which will be loaded into the format and channel_layout members of
+ * AVFilterLink, when chosen.
+ */
+typedef struct AVFilterFormatsConfig {
+
+    /**
+     * List of supported formats (pixel or sample).
+     */
+    AVFilterFormats *formats;
+
+    /**
+     * Lists of supported sample rates, only for audio.
+     */
+    AVFilterFormats  *samplerates;
+
+    /**
+     * Lists of supported channel layouts, only for audio.
+     */
+    AVFilterChannelLayouts  *channel_layouts;
+
+    /**
+     * Lists of supported YUV color metadata, only for YUV video.
+     */
+    AVFilterFormats *color_spaces;  ///< AVColorSpace
+    AVFilterFormats *color_ranges;  ///< AVColorRange
+
+} AVFilterFormatsConfig;
+
+/**
  * The number of the filter inputs is not determined just by AVFilter.inputs.
  * The filter might add additional inputs during initialization depending on the
  * options supplied to it.
@@ -324,6 +359,21 @@ typedef struct AVFilter {
          * AVERROR code otherwise
          */
         int (*query_func)(AVFilterContext *);
+
+        /**
+         * Same as query_func(), except this function writes the results into
+         * provided arrays.
+         *
+         * @param cfg_in  array of input format configurations with as many
+         *                members as the filters has inputs (NULL when there are
+         *                no inputs);
+         * @param cfg_out array of output format configurations with as many
+         *                members as the filters has outputs (NULL when there
+         *                are no outputs);
+         */
+        int (*query_func2)(const AVFilterContext *,
+                           struct AVFilterFormatsConfig **cfg_in,
+                           struct AVFilterFormatsConfig **cfg_out);
         /**
          * A pointer to an array of admissible pixel formats delimited
          * by AV_PIX_FMT_NONE. The generic code will use this list
@@ -491,41 +541,6 @@ struct AVFilterContext {
      */
     int extra_hw_frames;
 };
-
-/**
- * Lists of formats / etc. supported by an end of a link.
- *
- * This structure is directly part of AVFilterLink, in two copies:
- * one for the source filter, one for the destination filter.
-
- * These lists are used for negotiating the format to actually be used,
- * which will be loaded into the format and channel_layout members of
- * AVFilterLink, when chosen.
- */
-typedef struct AVFilterFormatsConfig {
-
-    /**
-     * List of supported formats (pixel or sample).
-     */
-    AVFilterFormats *formats;
-
-    /**
-     * Lists of supported sample rates, only for audio.
-     */
-    AVFilterFormats  *samplerates;
-
-    /**
-     * Lists of supported channel layouts, only for audio.
-     */
-    AVFilterChannelLayouts  *channel_layouts;
-
-    /**
-     * Lists of supported YUV color metadata, only for YUV video.
-     */
-    AVFilterFormats *color_spaces;  ///< AVColorSpace
-    AVFilterFormats *color_ranges;  ///< AVColorRange
-
-} AVFilterFormatsConfig;
 
 /**
  * A link between two filters. This contains pointers to the source and
