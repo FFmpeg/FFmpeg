@@ -26,6 +26,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
+#include "libavutil/mem.h"
 #include "libavutil/opt.h"
 
 #include "audio.h"
@@ -36,110 +37,71 @@
 typedef struct AFormatContext {
     const AVClass   *class;
 
-    AVFilterFormats *formats;
-    AVFilterFormats *sample_rates;
-    AVFilterChannelLayouts *channel_layouts;
+    enum AVSampleFormat *formats;
+    unsigned          nb_formats;
 
-    char *formats_str;
-    char *sample_rates_str;
-    char *channel_layouts_str;
+    int                 *sample_rates;
+    unsigned          nb_sample_rates;
+
+    AVChannelLayout     *channel_layouts;
+    unsigned          nb_channel_layouts;
 } AFormatContext;
+
+static const AVOptionArrayDef array_def = { .sep = '|' };
 
 #define OFFSET(x) offsetof(AFormatContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption aformat_options[] = {
-    { "sample_fmts",     "A '|'-separated list of sample formats.",  OFFSET(formats_str),         AV_OPT_TYPE_STRING, .flags = A|F },
-    { "f",               "A '|'-separated list of sample formats.",  OFFSET(formats_str),         AV_OPT_TYPE_STRING, .flags = A|F },
-    { "sample_rates",    "A '|'-separated list of sample rates.",    OFFSET(sample_rates_str),    AV_OPT_TYPE_STRING, .flags = A|F },
-    { "r",               "A '|'-separated list of sample rates.",    OFFSET(sample_rates_str),    AV_OPT_TYPE_STRING, .flags = A|F },
-    { "channel_layouts", "A '|'-separated list of channel layouts.", OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = A|F },
-    { "cl",              "A '|'-separated list of channel layouts.", OFFSET(channel_layouts_str), AV_OPT_TYPE_STRING, .flags = A|F },
+    { "sample_fmts",     "A '|'-separated list of sample formats.",  OFFSET(formats),
+        AV_OPT_TYPE_SAMPLE_FMT | AV_OPT_TYPE_FLAG_ARRAY, .default_val.arr = &array_def, .flags = A|F },
+    { "f",               "A '|'-separated list of sample formats.",  OFFSET(formats),
+        AV_OPT_TYPE_SAMPLE_FMT | AV_OPT_TYPE_FLAG_ARRAY, .default_val.arr = &array_def, .flags = A|F },
+    { "sample_rates",    "A '|'-separated list of sample rates.",    OFFSET(sample_rates),
+        AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .default_val.arr = &array_def, .min = 1, .max = INT_MAX, .flags = A|F },
+    { "r",               "A '|'-separated list of sample rates.",    OFFSET(sample_rates),
+        AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY, .default_val.arr = &array_def, .min = 1, .max = INT_MAX, .flags = A|F },
+    { "channel_layouts", "A '|'-separated list of channel layouts.", OFFSET(channel_layouts),
+        AV_OPT_TYPE_CHLAYOUT | AV_OPT_TYPE_FLAG_ARRAY, .default_val.arr = &array_def, .flags = A|F },
+    { "cl",              "A '|'-separated list of channel layouts.", OFFSET(channel_layouts),
+        AV_OPT_TYPE_CHLAYOUT | AV_OPT_TYPE_FLAG_ARRAY, .default_val.arr = &array_def, .flags = A|F },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(aformat);
 
-#define PARSE_FORMATS(str, type, list, add_to_list, get_fmt, none, desc)    \
-do {                                                                        \
-    char *next, *cur = str;                                                 \
-    int ret;                                                                \
-                                                                            \
-    while (cur) {                                                           \
-        type fmt;                                                           \
-        next = strchr(cur, '|');                                            \
-        if (next)                                                           \
-            *next++ = 0;                                                    \
-                                                                            \
-        if ((fmt = get_fmt(cur)) == none) {                                 \
-            av_log(ctx, AV_LOG_ERROR, "Error parsing " desc ": %s.\n", cur);\
-            return AVERROR(EINVAL);                                         \
-        }                                                                   \
-        if ((ret = add_to_list(&list, fmt)) < 0) {                          \
-            return ret;                                                     \
-        }                                                                   \
-                                                                            \
-        cur = next;                                                         \
-    }                                                                       \
-} while (0)
-
-static int get_sample_rate(const char *samplerate)
-{
-    int ret = strtol(samplerate, NULL, 0);
-    return FFMAX(ret, 0);
-}
-
-static int parse_channel_layouts(AVFilterContext *ctx)
-{
-    AFormatContext *s = ctx->priv;
-    char *next, *cur = s->channel_layouts_str;
-    AVChannelLayout fmt = { 0 };
-    int ret;
-
-    while (cur) {
-        next = strchr(cur, '|');
-        if (next)
-            *next++ = 0;
-
-        ret = av_channel_layout_from_string(&fmt, cur);
-        if (ret < 0) {
-            av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout: %s.\n", cur);
-            return AVERROR(EINVAL);
-        }
-        ret = ff_add_channel_layout(&s->channel_layouts, &fmt);
-        av_channel_layout_uninit(&fmt);
-        if (ret < 0)
-            return ret;
-
-        cur = next;
-    }
-
-    return 0;
-}
-
 static av_cold int init(AVFilterContext *ctx)
 {
     AFormatContext *s = ctx->priv;
-    int ret;
 
-    PARSE_FORMATS(s->formats_str, enum AVSampleFormat, s->formats,
-                  ff_add_format, av_get_sample_fmt, AV_SAMPLE_FMT_NONE, "sample format");
-    PARSE_FORMATS(s->sample_rates_str, int, s->sample_rates, ff_add_format,
-                  get_sample_rate, 0, "sample rate");
-    ret = parse_channel_layouts(ctx);
-    if (ret < 0)
-        return ret;
+    // terminate format lists for ff_set*_from_list()
+    if (s->nb_formats) {
+        void *tmp = av_realloc_array(s->formats, s->nb_formats + 1,
+                                     sizeof(*s->formats));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+        s->formats = tmp;
+        s->formats[s->nb_formats] = AV_SAMPLE_FMT_NONE;
+
+    }
+    if (s->nb_sample_rates) {
+        void *tmp = av_realloc_array(s->sample_rates, s->nb_sample_rates + 1,
+                                     sizeof(*s->sample_rates));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+        s->sample_rates = tmp;
+        s->sample_rates[s->nb_sample_rates] = -1;
+    }
+    if (s->nb_channel_layouts) {
+        void *tmp = av_realloc_array(s->channel_layouts, s->nb_channel_layouts + 1,
+                                     sizeof(*s->channel_layouts));
+        if (!tmp)
+            return AVERROR(ENOMEM);
+        s->channel_layouts = tmp;
+        s->channel_layouts[s->nb_channel_layouts] = (AVChannelLayout){ .nb_channels = 0 };
+    }
 
     return 0;
-}
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    AFormatContext *s = ctx->priv;
-
-    ff_formats_unref(&s->formats);
-    ff_formats_unref(&s->sample_rates);
-    ff_channel_layouts_unref(&s->channel_layouts);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -147,27 +109,31 @@ static int query_formats(AVFilterContext *ctx)
     AFormatContext *s = ctx->priv;
     int ret;
 
-    ret = ff_set_common_formats(ctx, s->formats ? s->formats :
-                                            ff_all_formats(AVMEDIA_TYPE_AUDIO));
-    s->formats = NULL;
-    if (ret < 0)
-        return ret;
-    ret = ff_set_common_samplerates(ctx, s->sample_rates ? s->sample_rates :
-                                                     ff_all_samplerates());
-    s->sample_rates = NULL;
-    if (ret < 0)
-        return ret;
-    ret = ff_set_common_channel_layouts(ctx, s->channel_layouts ? s->channel_layouts :
-                                                            ff_all_channel_counts());
-    s->channel_layouts = NULL;
-    return ret;
+    if (s->nb_formats) {
+        ret = ff_set_common_formats_from_list(ctx, s->formats);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (s->nb_sample_rates) {
+        ret = ff_set_common_samplerates_from_list(ctx, s->sample_rates);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (s->nb_channel_layouts) {
+        ret = ff_set_common_channel_layouts_from_list(ctx, s->channel_layouts);
+        if (ret < 0)
+            return ret;
+    }
+
+    return 0;
 }
 
 const AVFilter ff_af_aformat = {
     .name          = "aformat",
     .description   = NULL_IF_CONFIG_SMALL("Convert the input audio to one of the specified formats."),
     .init          = init,
-    .uninit        = uninit,
     .priv_size     = sizeof(AFormatContext),
     .priv_class    = &aformat_class,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
