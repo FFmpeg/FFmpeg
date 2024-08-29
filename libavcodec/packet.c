@@ -306,6 +306,7 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_IAMF_DEMIXING_INFO_PARAM:   return "IAMF Demixing Info Parameter Data";
     case AV_PKT_DATA_IAMF_RECON_GAIN_INFO_PARAM: return "IAMF Recon Gain Info Parameter Data";
     case AV_PKT_DATA_FRAME_CROPPING:             return "Frame Cropping";
+    case AV_PKT_DATA_LCEVC:                      return "LCEVC NAL data";
     }
     return NULL;
 }

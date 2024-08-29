@@ -340,6 +340,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_FRAME_CROPPING,
 
     /**
+     * Raw LCEVC payload data, as a uint8_t array, with NAL emulation
+     * bytes intact.
+     */
+    AV_PKT_DATA_LCEVC,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
