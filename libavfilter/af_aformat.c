@@ -104,25 +104,27 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AFormatContext *s = ctx->priv;
+    const AFormatContext *s = ctx->priv;
     int ret;
 
     if (s->nb_formats) {
-        ret = ff_set_common_formats_from_list(ctx, s->formats);
+        ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, s->formats);
         if (ret < 0)
             return ret;
     }
 
     if (s->nb_sample_rates) {
-        ret = ff_set_common_samplerates_from_list(ctx, s->sample_rates);
+        ret = ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, s->sample_rates);
         if (ret < 0)
             return ret;
     }
 
     if (s->nb_channel_layouts) {
-        ret = ff_set_common_channel_layouts_from_list(ctx, s->channel_layouts);
+        ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, s->channel_layouts);
         if (ret < 0)
             return ret;
     }
@@ -139,5 +141,5 @@ const AVFilter ff_af_aformat = {
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
