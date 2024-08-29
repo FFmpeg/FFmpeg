@@ -51,11 +51,11 @@
 #include "codec_internal.h"
 #include "decode.h"
 #include "opus.h"
-#include "opustab.h"
-#include "opus_celt.h"
-#include "opus_parse.h"
-#include "opus_rc.h"
-#include "opus_silk.h"
+#include "tab.h"
+#include "celt.h"
+#include "parse.h"
+#include "rc.h"
+#include "silk.h"
 
 static const uint16_t silk_frame_duration_ms[16] = {
     10, 20, 40, 60,

@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUSENC_UTILS_H
-#define AVCODEC_OPUSENC_UTILS_H
+#ifndef AVCODEC_OPUS_ENC_UTILS_H
+#define AVCODEC_OPUS_ENC_UTILS_H
 
 #include <math.h>
 #include <string.h>
@@ -87,4 +87,4 @@ static inline float bessel_filter(FFBesselFilter *s, float x)
     return s->y[0];
 }
 
-#endif /* AVCODEC_OPUSENC_UTILS_H */
+#endif /* AVCODEC_OPUS_ENC_UTILS_H */

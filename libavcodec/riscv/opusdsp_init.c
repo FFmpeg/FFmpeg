@@ -23,7 +23,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/riscv/cpu.h"
-#include "libavcodec/opusdsp.h"
+#include "libavcodec/opus/dsp.h"
 
 void ff_opus_postfilter_rvv(float *data, int period, float *g, int len);
 

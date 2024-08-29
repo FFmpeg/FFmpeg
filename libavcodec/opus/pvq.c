@@ -29,8 +29,8 @@
 
 #include "libavutil/mem.h"
 #include "mathops.h"
-#include "opustab.h"
-#include "opus_pvq.h"
+#include "tab.h"
+#include "pvq.h"
 
 #define ROUND_MUL16(a,b)  ((MUL16(a, b) + 16384) >> 15)
 

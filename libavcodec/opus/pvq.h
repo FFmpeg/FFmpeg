@@ -25,7 +25,7 @@
 
 #include "libavutil/mem_internal.h"
 
-#include "opus_celt.h"
+#include "celt.h"
 
 #define QUANT_FN(name) uint32_t (name)(struct CeltPVQ *pvq, CeltFrame *f,            \
                                        OpusRangeCoder *rc, const int band, float *X, \

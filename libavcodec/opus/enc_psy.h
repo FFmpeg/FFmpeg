@@ -19,15 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUSENC_PSY_H
-#define AVCODEC_OPUSENC_PSY_H
+#ifndef AVCODEC_OPUS_ENC_PSY_H
+#define AVCODEC_OPUS_ENC_PSY_H
 
 #include "libavutil/tx.h"
 #include "libavutil/mem_internal.h"
 
-#include "opusenc.h"
-#include "opus_celt.h"
-#include "opusenc_utils.h"
+#include "enc.h"
+#include "celt.h"
+#include "enc_utils.h"
 
 /* Each step is 2.5ms */
 typedef struct OpusPsyStep {
@@ -94,4 +94,4 @@ int  ff_opus_psy_init(OpusPsyContext *s, AVCodecContext *avctx,
 void ff_opus_psy_signal_eof(OpusPsyContext *s);
 int  ff_opus_psy_end(OpusPsyContext *s);
 
-#endif /* AVCODEC_OPUSENC_PSY_H */
+#endif /* AVCODEC_OPUS_ENC_PSY_H */

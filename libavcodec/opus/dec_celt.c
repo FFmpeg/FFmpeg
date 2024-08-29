@@ -28,9 +28,9 @@
 #include <float.h>
 
 #include "libavutil/mem.h"
-#include "opus_celt.h"
-#include "opustab.h"
-#include "opus_pvq.h"
+#include "celt.h"
+#include "tab.h"
+#include "pvq.h"
 
 /* Use the 2D z-transform to apply prediction in both the time domain (alpha)
  * and the frequency domain (beta) */

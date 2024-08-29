@@ -22,10 +22,10 @@
 #include <float.h>
 
 #include "libavutil/mem.h"
-#include "opusenc_psy.h"
-#include "opus_celt.h"
-#include "opus_pvq.h"
-#include "opustab.h"
+#include "enc_psy.h"
+#include "celt.h"
+#include "pvq.h"
+#include "tab.h"
 #include "libavfilter/window_func.h"
 
 static float pvq_band_cost(CeltPVQ *pvq, CeltFrame *f, OpusRangeCoder *rc, int band,

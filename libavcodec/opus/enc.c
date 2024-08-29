@@ -22,10 +22,10 @@
 #include <float.h>
 
 #include "encode.h"
-#include "opusenc.h"
-#include "opus_pvq.h"
-#include "opusenc_psy.h"
-#include "opustab.h"
+#include "enc.h"
+#include "pvq.h"
+#include "enc_psy.h"
+#include "tab.h"
 
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"

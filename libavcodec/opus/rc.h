@@ -24,7 +24,9 @@
 #define AVCODEC_OPUS_RC_H
 
 #include <stdint.h>
-#include "get_bits.h"
+
+#include "libavcodec/get_bits.h"
+
 #include "opus.h"
 
 #define opus_ilog(i) (av_log2(i) + !!(i))

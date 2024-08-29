@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUS_H
-#define AVCODEC_OPUS_H
+#ifndef AVCODEC_OPUS_OPUS_H
+#define AVCODEC_OPUS_OPUS_H
 
 #include <stdint.h>
 
@@ -56,4 +56,4 @@ enum OpusBandwidth {
     OPUS_BANDWITH_NB
 };
 
-#endif /* AVCODEC_OPUS_H */
+#endif /* AVCODEC_OPUS_OPUS_H */

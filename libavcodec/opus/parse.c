@@ -35,7 +35,7 @@
 #include "internal.h"
 #include "mathops.h"
 #include "opus.h"
-#include "opus_parse.h"
+#include "parse.h"
 #include "vorbis_data.h"
 
 static const uint16_t opus_frame_duration[32] = {

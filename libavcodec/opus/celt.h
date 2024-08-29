@@ -26,9 +26,10 @@
 
 #include <stdint.h>
 
-#include "avcodec.h"
-#include "opusdsp.h"
-#include "opus_rc.h"
+#include "libavcodec/avcodec.h"
+
+#include "dsp.h"
+#include "rc.h"
 
 #include "libavutil/float_dsp.h"
 #include "libavutil/libm.h"

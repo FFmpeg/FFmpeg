@@ -20,7 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "opus_rc.h"
+#include "rc.h"
 
 #define OPUS_RC_BITS 32
 #define OPUS_RC_SYM  8

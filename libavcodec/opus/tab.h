@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUSTAB_H
-#define AVCODEC_OPUSTAB_H
+#ifndef AVCODEC_OPUS_TAB_H
+#define AVCODEC_OPUS_TAB_H
 
 #include <stdint.h>
 
@@ -166,4 +166,4 @@ extern const float    ff_opus_deemph_weights[];
 extern const uint32_t * const ff_celt_pvq_u_row[15];
 FF_VISIBILITY_POP_HIDDEN
 
-#endif /* AVCODEC_OPUSTAB_H */
+#endif /* AVCODEC_OPUS_TAB_H */

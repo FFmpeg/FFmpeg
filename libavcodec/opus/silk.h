@@ -24,7 +24,7 @@
 #define AVCODEC_OPUS_SILK_H
 
 #include "opus.h"
-#include "opus_rc.h"
+#include "rc.h"
 
 #define SILK_HISTORY                 322
 #define SILK_MAX_LPC                 16

@@ -19,7 +19,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/mem_internal.h"
-#include "opusdsp.h"
+#include "dsp.h"
 
 static void postfilter_c(float *data, int period, float *gains, int len)
 {

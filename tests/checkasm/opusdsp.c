@@ -18,8 +18,8 @@
 
 #include "libavutil/mem_internal.h"
 
-#include "libavcodec/opusdsp.h"
-#include "libavcodec/opustab.h"
+#include "libavcodec/opus/dsp.h"
+#include "libavcodec/opus/tab.h"
 
 #include "checkasm.h"
 

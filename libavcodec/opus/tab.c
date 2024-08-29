@@ -22,7 +22,7 @@
 
 #include "libavutil/mem_internal.h"
 
-#include "opustab.h"
+#include "tab.h"
 
 const uint8_t ff_opus_default_coupled_streams[] = { 0, 1, 1, 2, 2, 2, 2, 3 };
 

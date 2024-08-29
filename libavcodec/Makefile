@@ -66,6 +66,7 @@ OBJS = ac3_parser.o                                                     \
 # subsystems
 include $(SRC_PATH)/libavcodec/aac/Makefile
 include $(SRC_PATH)/libavcodec/hevc/Makefile
+include $(SRC_PATH)/libavcodec/opus/Makefile
 include $(SRC_PATH)/libavcodec/vvc/Makefile
 -include $(SRC_PATH)/libavcodec/$(ARCH)/vvc/Makefile
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
@@ -580,11 +581,7 @@ OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o
 OBJS-$(CONFIG_NOTCHLC_DECODER)         += notchlc.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o jpegquanttables.o
 OBJS-$(CONFIG_ON2AVC_DECODER)          += on2avc.o on2avcdata.o
-OBJS-$(CONFIG_OPUS_DECODER)            += opusdec.o opusdec_celt.o opus_celt.o \
-                                          opus_pvq.o opus_silk.o opustab.o vorbis_data.o \
-                                          opusdsp.o opus_parse.o opus_rc.o
-OBJS-$(CONFIG_OPUS_ENCODER)            += opusenc.o opusenc_psy.o opus_celt.o \
-                                          opus_pvq.o opus_rc.o opustab.o
+OBJS-$(CONFIG_OPUS_DECODER)            += vorbis_data.o
 OBJS-$(CONFIG_OSQ_DECODER)             += osq.o
 OBJS-$(CONFIG_PAF_AUDIO_DECODER)       += pafaudio.o
 OBJS-$(CONFIG_PAF_VIDEO_DECODER)       += pafvideo.o
@@ -1217,8 +1214,7 @@ OBJS-$(CONFIG_MPEG4VIDEO_PARSER)       += mpeg4video_parser.o h263.o \
 OBJS-$(CONFIG_MPEGAUDIO_PARSER)        += mpegaudio_parser.o
 OBJS-$(CONFIG_MPEGVIDEO_PARSER)        += mpegvideo_parser.o    \
                                           mpeg12.o mpeg12data.o
-OBJS-$(CONFIG_OPUS_PARSER)             += opus_parser.o opus_parse.o \
-                                          vorbis_data.o
+OBJS-$(CONFIG_OPUS_PARSER)             += vorbis_data.o
 OBJS-$(CONFIG_PNG_PARSER)              += png_parser.o
 OBJS-$(CONFIG_PNM_PARSER)              += pnm_parser.o pnm.o
 OBJS-$(CONFIG_QOI_PARSER)              += qoi_parser.o

@@ -29,7 +29,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "opus.h"
-#include "opus_parse.h"
+#include "parse.h"
 #include "parser.h"
 
 typedef struct OpusParserContext {

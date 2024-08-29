@@ -29,9 +29,9 @@
 #include "libavutil/mem.h"
 #include "mathops.h"
 #include "opus.h"
-#include "opus_rc.h"
-#include "opus_silk.h"
-#include "opustab.h"
+#include "rc.h"
+#include "silk.h"
+#include "tab.h"
 
 #define ROUND_MULL(a,b,s) (((MUL64(a, b) >> ((s) - 1)) + 1) >> 1)
 

@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUSDSP_H
-#define AVCODEC_OPUSDSP_H
+#ifndef AVCODEC_OPUS_DSP_H
+#define AVCODEC_OPUS_DSP_H
 
 typedef struct OpusDSP {
     void (*postfilter)(float *data, int period, float *gains, int len);
@@ -30,4 +30,4 @@ void ff_opus_dsp_init_x86(OpusDSP *ctx);
 void ff_opus_dsp_init_aarch64(OpusDSP *ctx);
 void ff_opus_dsp_init_riscv(OpusDSP *ctx);
 
-#endif /* AVCODEC_OPUSDSP_H */
+#endif /* AVCODEC_OPUS_DSP_H */
