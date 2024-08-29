@@ -242,23 +242,25 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    EvalContext *eval = ctx->priv;
+    const EvalContext *eval = ctx->priv;
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE };
     AVChannelLayout chlayouts[] = { eval->chlayout.nb_channels ? eval->chlayout : FF_COUNT2LAYOUT(eval->nb_channels), { 0 } };
     int sample_rates[] = { eval->sample_rate, -1 };
     int ret;
 
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret < 0)
         return ret;
 
-    ret = ff_set_common_channel_layouts_from_list(ctx, chlayouts);
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, chlayouts);
     if (ret < 0)
         return ret;
 
-    return ff_set_common_samplerates_from_list(ctx, sample_rates);
+    return ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
 }
 
 static int activate(AVFilterContext *ctx)
@@ -327,7 +329,7 @@ const AVFilter ff_asrc_aevalsrc = {
     .priv_size     = sizeof(EvalContext),
     .inputs        = NULL,
     FILTER_OUTPUTS(aevalsrc_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &aevalsrc_class,
 };
 
@@ -345,12 +347,12 @@ static const AVOption aeval_options[]= {
 
 AVFILTER_DEFINE_CLASS(aeval);
 
-static int aeval_query_formats(AVFilterContext *ctx)
+static int aeval_query_formats(const AVFilterContext *ctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out)
 {
     AVFilterChannelLayouts *layouts;
-    AVFilterLink *inlink  = ctx->inputs[0];
-    AVFilterLink *outlink  = ctx->outputs[0];
-    EvalContext *eval = ctx->priv;
+    const EvalContext *eval = ctx->priv;
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE
     };
@@ -358,25 +360,22 @@ static int aeval_query_formats(AVFilterContext *ctx)
 
     // inlink supports any channel layout
     layouts = ff_all_channel_counts();
-    if ((ret = ff_channel_layouts_ref(layouts, &inlink->outcfg.channel_layouts)) < 0)
+    if ((ret = ff_channel_layouts_ref(layouts, &cfg_in[0]->channel_layouts)) < 0)
         return ret;
 
-    if (eval->same_chlayout) {
-        if ((ret = ff_set_common_all_channel_counts(ctx)) < 0)
-            return ret;
-    } else {
+    if (!eval->same_chlayout) {
         // outlink supports only requested output channel layout
         layouts = NULL;
         if ((ret = ff_add_channel_layout(&layouts, &FF_COUNT2LAYOUT(eval->nb_channels))) < 0)
             return ret;
-        if ((ret = ff_channel_layouts_ref(layouts, &outlink->incfg.channel_layouts)) < 0)
+        if ((ret = ff_channel_layouts_ref(layouts, &cfg_out[0]->channel_layouts)) < 0)
             return ret;
     }
 
-    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0)
+    if ((ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts)) < 0)
         return ret;
 
-    return ff_set_common_all_samplerates(ctx);
+    return 0;
 }
 
 static int aeval_config_output(AVFilterLink *outlink)
@@ -471,7 +470,7 @@ const AVFilter ff_af_aeval = {
     .priv_size     = sizeof(EvalContext),
     FILTER_INPUTS(aeval_inputs),
     FILTER_OUTPUTS(aeval_outputs),
-    FILTER_QUERY_FUNC(aeval_query_formats),
+    FILTER_QUERY_FUNC2(aeval_query_formats),
     .priv_class    = &aeval_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
