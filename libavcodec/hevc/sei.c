@@ -56,7 +56,7 @@ static int decode_nal_sei_pic_timing(HEVCSEI *s, GetBitContext *gb,
     const HEVCSPS *sps = ps->sps_list[s->active_seq_parameter_set_id];
 
     if (!sps)
-        return(AVERROR(ENOMEM));
+        return AVERROR_INVALIDDATA;
 
     if (sps->vui.frame_field_info_present_flag) {
         int pic_struct = get_bits(gb, 4);
