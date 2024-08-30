@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "defs.h"
 #include "libavutil/mem.h"
 #include "vulkan_video.h"
 
@@ -158,6 +159,32 @@ int ff_vk_h264_level_to_av(StdVideoH264LevelIdc level)
     }
 }
 
+StdVideoH264LevelIdc ff_vk_h264_level_to_vk(int level_idc)
+{
+    switch (level_idc) {
+    case 10: return STD_VIDEO_H264_LEVEL_IDC_1_0;
+    case 11: return STD_VIDEO_H264_LEVEL_IDC_1_1;
+    case 12: return STD_VIDEO_H264_LEVEL_IDC_1_2;
+    case 13: return STD_VIDEO_H264_LEVEL_IDC_1_3;
+    case 20: return STD_VIDEO_H264_LEVEL_IDC_2_0;
+    case 21: return STD_VIDEO_H264_LEVEL_IDC_2_1;
+    case 22: return STD_VIDEO_H264_LEVEL_IDC_2_2;
+    case 30: return STD_VIDEO_H264_LEVEL_IDC_3_0;
+    case 31: return STD_VIDEO_H264_LEVEL_IDC_3_1;
+    case 32: return STD_VIDEO_H264_LEVEL_IDC_3_2;
+    case 40: return STD_VIDEO_H264_LEVEL_IDC_4_0;
+    case 41: return STD_VIDEO_H264_LEVEL_IDC_4_1;
+    case 42: return STD_VIDEO_H264_LEVEL_IDC_4_2;
+    case 50: return STD_VIDEO_H264_LEVEL_IDC_5_0;
+    case 51: return STD_VIDEO_H264_LEVEL_IDC_5_1;
+    case 52: return STD_VIDEO_H264_LEVEL_IDC_5_2;
+    case 60: return STD_VIDEO_H264_LEVEL_IDC_6_0;
+    case 61: return STD_VIDEO_H264_LEVEL_IDC_6_1;
+    default:
+    case 62: return STD_VIDEO_H264_LEVEL_IDC_6_2;
+    }
+}
+
 int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level)
 {
     switch (level) {
@@ -174,6 +201,28 @@ int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level)
     case STD_VIDEO_H265_LEVEL_IDC_6_1: return 61;
     default:
     case STD_VIDEO_H265_LEVEL_IDC_6_2: return 62;
+    }
+}
+
+StdVideoH264ProfileIdc ff_vk_h264_profile_to_vk(int profile)
+{
+    switch (profile) {
+    case AV_PROFILE_H264_CONSTRAINED_BASELINE: return STD_VIDEO_H264_PROFILE_IDC_BASELINE;
+    case AV_PROFILE_H264_MAIN: return STD_VIDEO_H264_PROFILE_IDC_MAIN;
+    case AV_PROFILE_H264_HIGH: return STD_VIDEO_H264_PROFILE_IDC_HIGH;
+    case AV_PROFILE_H264_HIGH_444_PREDICTIVE: return STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE;
+    default: return STD_VIDEO_H264_PROFILE_IDC_INVALID;
+    }
+}
+
+int ff_vk_h264_profile_to_av(StdVideoH264ProfileIdc profile)
+{
+    switch (profile) {
+    case STD_VIDEO_H264_PROFILE_IDC_BASELINE: return AV_PROFILE_H264_CONSTRAINED_BASELINE;
+    case STD_VIDEO_H264_PROFILE_IDC_MAIN: return AV_PROFILE_H264_MAIN;
+    case STD_VIDEO_H264_PROFILE_IDC_HIGH: return AV_PROFILE_H264_HIGH;
+    case STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE: return AV_PROFILE_H264_HIGH_444_PREDICTIVE;
+    default: return AV_PROFILE_UNKNOWN;
     }
 }
 

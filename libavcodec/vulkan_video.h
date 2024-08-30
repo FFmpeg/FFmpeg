@@ -66,6 +66,14 @@ int ff_vk_video_qf_init(FFVulkanContext *s, FFVkQueueFamilyCtx *qf,
 int ff_vk_h264_level_to_av(StdVideoH264LevelIdc level);
 int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level);
 
+StdVideoH264LevelIdc ff_vk_h264_level_to_vk(int level_idc);
+
+/**
+ * Convert profile from/to AV to Vulkan
+ */
+StdVideoH264ProfileIdc ff_vk_h264_profile_to_vk(int profile);
+int ff_vk_h264_profile_to_av(StdVideoH264ProfileIdc profile);
+
 /**
  * Initialize video session, allocating and binding necessary memory.
  */
