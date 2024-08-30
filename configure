@@ -2639,6 +2639,7 @@ CONFIG_EXTRA="
     vp3dsp
     vp56dsp
     vp8dsp
+    vulkan_encode
     wma_freqs
     wmv2dsp
 "
@@ -3300,6 +3301,7 @@ qsvdec_select="qsv"
 qsvenc_select="qsv"
 qsvvpp_select="qsv"
 vaapi_encode_deps="vaapi"
+vulkan_encode_deps="vulkan"
 v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
 
 bilateral_cuda_filter_deps="ffnvcodec"
