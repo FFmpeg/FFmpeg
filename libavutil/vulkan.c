@@ -446,6 +446,11 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
     if (!e->had_submission)
         return VK_INCOMPLETE;
 
+    if (!e->query_data) {
+        av_log(s, AV_LOG_ERROR, "Requested a query with a NULL query_data pointer!\n");
+        return VK_INCOMPLETE;
+    }
+
     qf |= pool->query_64bit ?
           VK_QUERY_RESULT_64_BIT : 0x0;
     qf |= pool->query_statuses ?
