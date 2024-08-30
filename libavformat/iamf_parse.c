@@ -67,7 +67,7 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
     if (codec_config->audio_roll_distance >= 0)
         return AVERROR_INVALIDDATA;
 
-    tag = avio_r8(pb);
+    ff_mp4_read_descr(logctx, pb, &tag);
     if (tag != MP4DecConfigDescrTag)
         return AVERROR_INVALIDDATA;
 
@@ -87,12 +87,9 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
     if (codec_id && codec_id != codec_config->codec_id)
         return AVERROR_INVALIDDATA;
 
-    tag = avio_r8(pb);
-    if (tag != MP4DecSpecificDescrTag)
-        return AVERROR_INVALIDDATA;
-
-    left = len - avio_tell(pb);
-    if (left <= 0)
+    left = ff_mp4_read_descr(logctx, pb, &tag);
+    if (tag != MP4DecSpecificDescrTag ||
+        !left || left > (len - avio_tell(pb)))
         return AVERROR_INVALIDDATA;
 
     // We pad extradata here because avpriv_mpeg4audio_get_config2() needs it.
@@ -100,9 +97,9 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
     if (!codec_config->extradata)
         return AVERROR(ENOMEM);
 
-    codec_config->extradata_size = avio_read(pb, codec_config->extradata, left);
-    if (codec_config->extradata_size < left)
-        return AVERROR_INVALIDDATA;
+    codec_config->extradata_size = ffio_read_size(pb, codec_config->extradata, left);
+    if (ret < 0)
+        return ret;
     memset(codec_config->extradata + codec_config->extradata_size, 0,
            AV_INPUT_BUFFER_PADDING_SIZE);
 
