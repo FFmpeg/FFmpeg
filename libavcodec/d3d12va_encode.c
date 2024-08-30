@@ -264,12 +264,6 @@ static int d3d12va_encode_issue(AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_DEBUG, "Input surface is %p.\n", pic->input_surface->texture);
 
-    err = av_hwframe_get_buffer(base_ctx->recon_frames_ref, base_pic->recon_image, 0);
-    if (err < 0) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     pic->recon_surface = (AVD3D12VAFrame *)base_pic->recon_image->data[0];
     av_log(avctx, AV_LOG_DEBUG, "Recon surface is %p.\n",
            pic->recon_surface->texture);

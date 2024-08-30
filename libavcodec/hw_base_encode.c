@@ -446,6 +446,12 @@ static int hw_base_encode_send_frame(AVCodecContext *avctx, FFHWBaseEncodeContex
             goto fail;
         }
 
+        err = av_hwframe_get_buffer(ctx->recon_frames_ref, pic->recon_image, 0);
+        if (err < 0) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
+
         pic->priv = av_mallocz(ctx->op->priv_size);
         if (!pic->priv) {
             err = AVERROR(ENOMEM);

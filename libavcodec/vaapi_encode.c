@@ -313,11 +313,6 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
 
     av_log(avctx, AV_LOG_DEBUG, "Input surface is %#x.\n", pic->input_surface);
 
-    err = av_hwframe_get_buffer(base_ctx->recon_frames_ref, base_pic->recon_image, 0);
-    if (err < 0) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
     pic->recon_surface = (VASurfaceID)(uintptr_t)base_pic->recon_image->data[3];
     av_log(avctx, AV_LOG_DEBUG, "Recon surface is %#x.\n", pic->recon_surface);
 
