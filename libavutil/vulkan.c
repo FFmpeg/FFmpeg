@@ -444,7 +444,7 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
     VkQueryResultFlags qf = 0;
 
     if (!e->had_submission)
-        return VK_NOT_READY;
+        return VK_INCOMPLETE;
 
     qf |= pool->query_64bit ?
           VK_QUERY_RESULT_64_BIT : 0x0;
