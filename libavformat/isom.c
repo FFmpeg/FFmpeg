@@ -292,12 +292,12 @@ int ff_mp4_read_descr_len(AVIOContext *pb)
     return len;
 }
 
-int ff_mp4_read_descr(AVFormatContext *fc, AVIOContext *pb, int *tag)
+int ff_mp4_read_descr(void *logctx, AVIOContext *pb, int *tag)
 {
     int len;
     *tag = avio_r8(pb);
     len = ff_mp4_read_descr_len(pb);
-    av_log(fc, AV_LOG_TRACE, "MPEG-4 description: tag=0x%02x len=%d\n", *tag, len);
+    av_log(logctx, AV_LOG_TRACE, "MPEG-4 description: tag=0x%02x len=%d\n", *tag, len);
     return len;
 }
 
@@ -326,7 +326,7 @@ static const AVCodecTag mp4_audio_types[] = {
     { AV_CODEC_ID_NONE,   AOT_NULL },
 };
 
-int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb)
+int ff_mp4_read_dec_config_descr(void *logctx, AVStream *st, AVIOContext *pb)
 {
     enum AVCodecID codec_id;
     int len, tag;
@@ -341,22 +341,22 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
     codec_id= ff_codec_get_id(ff_mp4_obj_type, object_type_id);
     if (codec_id)
         st->codecpar->codec_id = codec_id;
-    av_log(fc, AV_LOG_TRACE, "esds object type id 0x%02x\n", object_type_id);
-    len = ff_mp4_read_descr(fc, pb, &tag);
+    av_log(logctx, AV_LOG_TRACE, "esds object type id 0x%02x\n", object_type_id);
+    len = ff_mp4_read_descr(logctx, pb, &tag);
     if (tag == MP4DecSpecificDescrTag) {
-        av_log(fc, AV_LOG_TRACE, "Specific MPEG-4 header len=%d\n", len);
+        av_log(logctx, AV_LOG_TRACE, "Specific MPEG-4 header len=%d\n", len);
         /* As per 14496-3:2009 9.D.2.2, No decSpecificInfo is defined
            for MPEG-1 Audio or MPEG-2 Audio; MPEG-2 AAC excluded. */
         if (object_type_id == 0x69 || object_type_id == 0x6b)
             return 0;
         if (!len || (uint64_t)len > (1<<30))
             return AVERROR_INVALIDDATA;
-        if ((ret = ff_get_extradata(fc, st->codecpar, pb, len)) < 0)
+        if ((ret = ff_get_extradata(logctx, st->codecpar, pb, len)) < 0)
             return ret;
         if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
             MPEG4AudioConfig cfg = {0};
             ret = avpriv_mpeg4audio_get_config2(&cfg, st->codecpar->extradata,
-                                                st->codecpar->extradata_size, 1, fc);
+                                                st->codecpar->extradata_size, 1, logctx);
             if (ret < 0)
                 return ret;
             if (cfg.channels != st->codecpar->ch_layout.nb_channels) {
@@ -370,7 +370,7 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
                 st->codecpar->sample_rate = cfg.ext_sample_rate;
             else
                 st->codecpar->sample_rate = cfg.sample_rate;
-            av_log(fc, AV_LOG_TRACE, "mp4a config channels %d obj %d ext obj %d "
+            av_log(logctx, AV_LOG_TRACE, "mp4a config channels %d obj %d ext obj %d "
                     "sample rate %d ext sample rate %d\n", cfg.channels,
                     cfg.object_type, cfg.ext_object_type,
                     cfg.sample_rate, cfg.ext_sample_rate);
