@@ -30,6 +30,9 @@
 void ff_interleave_bytes_neon(const uint8_t *src1, const uint8_t *src2,
                               uint8_t *dest, int width, int height,
                               int src1Stride, int src2Stride, int dstStride);
+void ff_deinterleave_bytes_neon(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
+                                int width, int height, int srcStride,
+                                int dst1Stride, int dst2Stride);
 
 av_cold void rgb2rgb_init_aarch64(void)
 {
@@ -37,5 +40,6 @@ av_cold void rgb2rgb_init_aarch64(void)
 
     if (have_neon(cpu_flags)) {
         interleaveBytes = ff_interleave_bytes_neon;
+        deinterleaveBytes = ff_deinterleave_bytes_neon;
     }
 }

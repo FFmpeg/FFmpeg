@@ -77,3 +77,62 @@ function ff_interleave_bytes_neon, export=1
 0:
         ret
 endfunc
+
+// void ff_deinterleave_bytes_neon(const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
+//                                 int width, int height, int srcStride,
+//                                 int dst1Stride, int dst2Stride);
+function ff_deinterleave_bytes_neon, export=1
+        sub             w5,  w5,  w3, lsl #1
+        sub             w6,  w6,  w3
+        sub             w7,  w7,  w3
+1:
+        ands            w8,  w3,  #0xfffffff0 // & ~15
+        b.eq            3f
+2:
+        ld2             {v0.16b, v1.16b}, [x0], #32
+        subs            w8,  w8,  #16
+        st1             {v0.16b}, [x1], #16
+        st1             {v1.16b}, [x2], #16
+        b.gt            2b
+
+        tst             w3,  #15
+        b.eq            9f
+
+3:
+        tst             w3,  #8
+        b.eq            4f
+        ld2             {v0.8b, v1.8b}, [x0], #16
+        st1             {v0.8b}, [x1], #8
+        st1             {v1.8b}, [x2], #8
+4:
+        tst             w3,  #4
+        b.eq            5f
+
+        ld1             {v0.8b}, [x0], #8
+        shrn            v1.8b,   v0.8h, #8
+        xtn             v0.8b,   v0.8h
+        st1             {v0.s}[0], [x1], #4
+        st1             {v1.s}[0], [x2], #4
+
+5:
+        ands            w8,  w3,  #3
+        b.eq            9f
+6:
+        ldrh            w9,  [x0], #2
+        subs            w8,  w8,  #1
+        ubfx            w10, w9,  #8,  #8
+        strb            w9,  [x1], #1
+        strb            w10, [x2], #1
+        b.gt            6b
+
+9:
+        subs            w4,  w4,  #1
+        b.eq            0f
+        add             x0,  x0,  w5, sxtw
+        add             x1,  x1,  w6, sxtw
+        add             x2,  x2,  w7, sxtw
+        b               1b
+
+0:
+        ret
+endfunc
