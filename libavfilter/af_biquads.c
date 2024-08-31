@@ -154,9 +154,11 @@ typedef struct BiquadsContext {
                    void *cache, int *clip, int disabled);
 } BiquadsContext;
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    BiquadsContext *s = ctx->priv;
+    const BiquadsContext *s = ctx->priv;
     static const enum AVSampleFormat auto_sample_fmts[] = {
         AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_S32P,
@@ -169,9 +171,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_NONE
     };
     const enum AVSampleFormat *sample_fmts_list = sample_fmts;
-    int ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
+    int ret;
 
     switch (s->precision) {
     case 0:
@@ -190,11 +190,11 @@ static int query_formats(AVFilterContext *ctx)
         sample_fmts_list = auto_sample_fmts;
         break;
     }
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts_list);
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts_list);
     if (ret < 0)
         return ret;
 
-    return ff_set_common_all_samplerates(ctx);
+    return 0;
 }
 
 #define BIQUAD_FILTER(name, type, ftype, min, max, need_clipping)             \
@@ -1463,7 +1463,7 @@ const AVFilter ff_af_##name_ = {                         \
     .uninit        = uninit,                             \
     FILTER_INPUTS(ff_audio_default_filterpad),           \
     FILTER_OUTPUTS(outputs),                             \
-    FILTER_QUERY_FUNC(query_formats),                    \
+    FILTER_QUERY_FUNC2(query_formats),                   \
     .process_command = process_command,                  \
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL, \
 }
