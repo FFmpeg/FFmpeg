@@ -321,21 +321,28 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
     return 0;
 }
 
-static int channelmap_query_formats(AVFilterContext *ctx)
+static int channelmap_query_formats(const AVFilterContext *ctx,
+                                    AVFilterFormatsConfig **cfg_in,
+                                    AVFilterFormatsConfig **cfg_out)
 {
-    ChannelMapContext *s = ctx->priv;
+    const ChannelMapContext *s = ctx->priv;
     AVFilterChannelLayouts *channel_layouts = NULL;
+
     int ret;
 
-    if ((ret = ff_set_common_formats    (ctx,  ff_planar_sample_fmts()))  < 0 ||
-        (ret = ff_set_common_all_samplerates(ctx                              )) < 0 ||
-        (ret = ff_add_channel_layout(&channel_layouts, &s->output_layout)) < 0 ||
-        (ret = ff_channel_layouts_ref(channel_layouts,
-                                      &ctx->outputs[0]->incfg.channel_layouts)) < 0)
+    ret = ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_planar_sample_fmts());
+    if (ret < 0)
         return ret;
 
-    return ff_channel_layouts_ref(ff_all_channel_counts(),
-                                  &ctx->inputs[0]->outcfg.channel_layouts);
+    ret = ff_add_channel_layout(&channel_layouts, &s->output_layout);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_channel_layouts_ref(channel_layouts, &cfg_out[0]->channel_layouts);
+    if (ret < 0)
+        return ret;
+
+    return 0;
 }
 
 static int channelmap_filter_frame(AVFilterLink *inlink, AVFrame *buf)
@@ -425,5 +432,5 @@ const AVFilter ff_af_channelmap = {
     .priv_class    = &channelmap_class,
     FILTER_INPUTS(avfilter_af_channelmap_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    FILTER_QUERY_FUNC(channelmap_query_formats),
+    FILTER_QUERY_FUNC2(channelmap_query_formats),
 };
