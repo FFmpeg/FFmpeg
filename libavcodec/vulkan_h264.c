@@ -60,6 +60,7 @@ static int vk_h264_fill_pict(AVCodecContext *avctx, H264Picture **ref_src,
                              int dpb_slot_index)
 {
     FFVulkanDecodeContext *dec = avctx->internal->hwaccel_priv_data;
+    FFVulkanDecodeShared *ctx = dec->shared_ctx;
     H264VulkanDecodePicture *hp = pic->hwaccel_picture_private;
     FFVulkanDecodePicture *vkpic = &hp->vp;
 
@@ -95,7 +96,7 @@ static int vk_h264_fill_pict(AVCodecContext *avctx, H264Picture **ref_src,
         .sType = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
         .codedOffset = (VkOffset2D){ 0, 0 },
         .codedExtent = (VkExtent2D){ pic->f->width, pic->f->height },
-        .baseArrayLayer = dec->layered_dpb ? dpb_slot_index : 0,
+        .baseArrayLayer = ctx->common.layered_dpb ? dpb_slot_index : 0,
         .imageViewBinding = vkpic->img_view_ref,
     };
 

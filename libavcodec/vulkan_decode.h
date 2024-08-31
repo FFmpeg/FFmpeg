@@ -53,15 +53,7 @@ typedef struct FFVulkanDecodeShared {
     VkVideoCapabilitiesKHR caps;
     VkVideoDecodeCapabilitiesKHR dec_caps;
 
-    AVBufferRef *dpb_hwfc_ref;  /* Only used for dedicated_dpb */
-
-    AVFrame *layered_frame;     /* Only used for layered_dpb   */
-    VkImageView layered_view;
-    VkImageAspectFlags layered_aspect;
-
     VkVideoSessionParametersKHR empty_session_params;
-
-    VkSamplerYcbcrConversion yuv_sampler;
 } FFVulkanDecodeShared;
 
 typedef struct FFVulkanDecodeContext {
@@ -70,7 +62,6 @@ typedef struct FFVulkanDecodeContext {
     FFVkExecPool exec_pool;
 
     int dedicated_dpb; /* Oddity  #1 - separate DPB images */
-    int layered_dpb;   /* Madness #1 - layered  DPB images */
     int external_fg;   /* Oddity  #2 - hardware can't apply film grain */
     uint32_t frame_id_alloc_mask; /* For AV1 only */
 
