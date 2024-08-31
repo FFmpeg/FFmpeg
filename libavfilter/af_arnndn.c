@@ -327,7 +327,9 @@ static int rnnoise_model_from_file(FILE *f, RNNModel **rnn)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_FLTP,
@@ -335,15 +337,11 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret, sample_rates[] = { 48000, -1 };
 
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret < 0)
         return ret;
 
-    ret = ff_set_common_all_channel_counts(ctx);
-    if (ret < 0)
-        return ret;
-
-    return ff_set_common_samplerates_from_list(ctx, sample_rates);
+    return ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -1608,7 +1606,7 @@ const AVFilter ff_af_arnndn = {
     .uninit        = uninit,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
