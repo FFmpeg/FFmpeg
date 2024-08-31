@@ -47,23 +47,19 @@ static const AVOption asetrate_options[] = {
 
 AVFILTER_DEFINE_CLASS(asetrate);
 
-static av_cold int query_formats(AVFilterContext *ctx)
+static av_cold int query_formats(const AVFilterContext *ctx,
+                                 AVFilterFormatsConfig **cfg_in,
+                                 AVFilterFormatsConfig **cfg_out)
 {
-    ASetRateContext *sr = ctx->priv;
+    const ASetRateContext *sr = ctx->priv;
     int ret, sample_rates[] = { sr->sample_rate, -1 };
 
-    if ((ret = ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO))) < 0)
-        return ret;
-
-    if ((ret = ff_set_common_all_channel_counts(ctx)) < 0)
-        return ret;
-
     if ((ret = ff_formats_ref(ff_all_samplerates(),
-                              &ctx->inputs[0]->outcfg.samplerates)) < 0)
+                              &cfg_in[0]->samplerates)) < 0)
         return ret;
 
     return ff_formats_ref(ff_make_format_list(sample_rates),
-                          &ctx->outputs[0]->incfg.samplerates);
+                          &cfg_out[0]->samplerates);
 }
 
 static av_cold int config_props(AVFilterLink *outlink)
@@ -122,7 +118,7 @@ const AVFilter ff_af_asetrate = {
     .priv_size     = sizeof(ASetRateContext),
     FILTER_INPUTS(asetrate_inputs),
     FILTER_OUTPUTS(asetrate_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &asetrate_class,
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
 };
