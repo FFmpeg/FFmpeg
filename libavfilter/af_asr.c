@@ -122,20 +122,33 @@ static av_cold int asr_init(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    ASRContext *s = ctx->priv;
+    static const enum AVSampleFormat formats[] = {
+        AV_SAMPLE_FMT_S16,
+        AV_SAMPLE_FMT_NONE,
+    };
+    static const AVChannelLayout layouts[] = {
+        (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO,
+        (AVChannelLayout){ .nb_channels = 0 },
+    };
+
+    const ASRContext *s = ctx->priv;
     int sample_rates[] = { s->rate, -1 };
     int ret;
 
-    AVFilterFormats *formats = NULL;
-    AVFilterChannelLayouts *layout = NULL;
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, formats);
+    if (ret < 0)
+        return ret;
 
-    if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_S16                 )) < 0 ||
-        (ret = ff_set_common_formats         (ctx     , formats                           )) < 0 ||
-        (ret = ff_add_channel_layout         (&layout , &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO )) < 0 ||
-        (ret = ff_set_common_channel_layouts (ctx     , layout                            )) < 0 ||
-        (ret = ff_set_common_samplerates_from_list(ctx, sample_rates     )) < 0)
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, layouts);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
+    if (ret < 0)
         return ret;
 
     return 0;
@@ -170,5 +183,5 @@ const AVFilter ff_af_asr = {
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(asr_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
