@@ -1208,7 +1208,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
                            win_top_edge_ctus > current->sps_subpic_ctu_top_left_y[i]
                                ? win_top_edge_ctus - current->sps_subpic_ctu_top_left_y[i]
                                : 0,
-                           MAX_UINT_BITS(wlen), 1, i);
+                           MAX_UINT_BITS(hlen), 1, i);
                     } else {
                         infer(sps_subpic_height_minus1[i],
                               tmp_height_val -
