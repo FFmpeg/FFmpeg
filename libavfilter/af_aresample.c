@@ -63,15 +63,14 @@ static av_cold void uninit(AVFilterContext *ctx)
     swr_free(&aresample->swr);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AResampleContext *aresample = ctx->priv;
+    const AResampleContext *aresample = ctx->priv;
     enum AVSampleFormat out_format;
     AVChannelLayout out_layout = { 0 };
     int64_t out_rate;
-
-    AVFilterLink *inlink  = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
 
     AVFilterFormats        *in_formats, *out_formats;
     AVFilterFormats        *in_samplerates, *out_samplerates;
@@ -84,15 +83,15 @@ static int query_formats(AVFilterContext *ctx)
     av_opt_get_int(aresample->swr, "osr", 0, &out_rate);
 
     in_formats      = ff_all_formats(AVMEDIA_TYPE_AUDIO);
-    if ((ret = ff_formats_ref(in_formats, &inlink->outcfg.formats)) < 0)
+    if ((ret = ff_formats_ref(in_formats, &cfg_in[0]->formats)) < 0)
         return ret;
 
     in_samplerates  = ff_all_samplerates();
-    if ((ret = ff_formats_ref(in_samplerates, &inlink->outcfg.samplerates)) < 0)
+    if ((ret = ff_formats_ref(in_samplerates, &cfg_in[0]->samplerates)) < 0)
         return ret;
 
     in_layouts      = ff_all_channel_counts();
-    if ((ret = ff_channel_layouts_ref(in_layouts, &inlink->outcfg.channel_layouts)) < 0)
+    if ((ret = ff_channel_layouts_ref(in_layouts, &cfg_in[0]->channel_layouts)) < 0)
         return ret;
 
     if(out_rate > 0) {
@@ -102,7 +101,7 @@ static int query_formats(AVFilterContext *ctx)
         out_samplerates = ff_all_samplerates();
     }
 
-    if ((ret = ff_formats_ref(out_samplerates, &outlink->incfg.samplerates)) < 0)
+    if ((ret = ff_formats_ref(out_samplerates, &cfg_out[0]->samplerates)) < 0)
         return ret;
 
     if(out_format != AV_SAMPLE_FMT_NONE) {
@@ -110,7 +109,7 @@ static int query_formats(AVFilterContext *ctx)
         out_formats = ff_make_format_list(formatlist);
     } else
         out_formats = ff_all_formats(AVMEDIA_TYPE_AUDIO);
-    if ((ret = ff_formats_ref(out_formats, &outlink->incfg.formats)) < 0)
+    if ((ret = ff_formats_ref(out_formats, &cfg_out[0]->formats)) < 0)
         return ret;
 
     av_opt_get_chlayout(aresample->swr, "ochl", 0, &out_layout);
@@ -121,7 +120,7 @@ static int query_formats(AVFilterContext *ctx)
         out_layouts = ff_all_channel_counts();
     av_channel_layout_uninit(&out_layout);
 
-    return ff_channel_layouts_ref(out_layouts, &outlink->incfg.channel_layouts);
+    return ff_channel_layouts_ref(out_layouts, &cfg_out[0]->channel_layouts);
 }
 
 
@@ -372,5 +371,5 @@ const AVFilter ff_af_aresample = {
     .priv_class    = &aresample_class,
     FILTER_INPUTS(ff_audio_default_filterpad),
     FILTER_OUTPUTS(aresample_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
