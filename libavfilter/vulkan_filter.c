@@ -68,7 +68,8 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
         vk = &s->vkfn;
 
         /* Usage mismatch */
-        usage_req = VK_IMAGE_USAGE_SAMPLED_BIT;
+        usage_req = VK_IMAGE_USAGE_SAMPLED_BIT |
+                    VK_IMAGE_USAGE_STORAGE_BIT;
 
         /* If format supports hardware encoding, make sure
          * the context includes it. */
@@ -106,9 +107,11 @@ int ff_vk_filter_init_context(AVFilterContext *avctx, FFVulkanContext *s,
         /* Check if it's usable */
         if (no_storage) {
 skip:
+            av_log(avctx, AV_LOG_VERBOSE, "Cannot reuse context, creating a new one\n");
             device_ref = frames_ctx->device_ref;
             frames_ref = NULL;
         } else {
+            av_log(avctx, AV_LOG_VERBOSE, "Reusing existing frames context\n");
             frames_ref = av_buffer_ref(frames_ref);
             if (!frames_ref)
                 return AVERROR(ENOMEM);
@@ -129,6 +132,12 @@ skip:
         frames_ctx->sw_format = sw_format;
         frames_ctx->width     = width;
         frames_ctx->height    = height;
+
+        vk_frames = frames_ctx->hwctx;
+        vk_frames->tiling = VK_IMAGE_TILING_OPTIMAL;
+        vk_frames->usage  = VK_IMAGE_USAGE_SAMPLED_BIT |
+                            VK_IMAGE_USAGE_STORAGE_BIT |
+                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         err = av_hwframe_ctx_init(frames_ref);
         if (err < 0) {
