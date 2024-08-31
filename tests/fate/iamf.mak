@@ -37,6 +37,11 @@ fate-iamf-ambisonic_1: CMD = transcode wav $(SRC) iamf "-auto_conversion_filters
   -streamid 0:0 -streamid 1:1 -streamid 2:2 -streamid 3:3 -map [MONO0] -map [MONO1] -map [MONO2] -map [MONO3] -c:a flac -t 1" "-c:a copy -map 0" \
   "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id:stream_group_stream_disposition"
 
+FATE_IAMF_SAMPLES-$(call FRAMECRC, IAMF, OPUS) += fate-iamf-stereo-demux
+fate-iamf-stereo-demux: CMD = stream_demux iamf $(TARGET_SAMPLES)/iamf/test_000076.iamf "" \
+  "-c:a copy -frames:a 0 -map 0:g:\#42" \
+  "-show_entries stream_group=index,id,nb_streams,type:stream_group_components:stream_group_stream=index,id:stream_group_stream_disposition"
+
 FATE_IAMF_SAMPLES-$(call FRAMECRC, IAMF, OPUS) += fate-iamf-5_1-demux
 fate-iamf-5_1-demux: CMD = stream_demux iamf $(TARGET_SAMPLES)/iamf/test_000059.iamf "" \
   "-c:a copy -frames:a 0 -map 0:g:\#42" \
