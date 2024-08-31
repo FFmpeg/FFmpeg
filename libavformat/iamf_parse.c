@@ -97,9 +97,10 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
     if (!codec_config->extradata)
         return AVERROR(ENOMEM);
 
-    codec_config->extradata_size = ffio_read_size(pb, codec_config->extradata, left);
+    ret = ffio_read_size(pb, codec_config->extradata, left);
     if (ret < 0)
         return ret;
+    codec_config->extradata_size = left;
     memset(codec_config->extradata + codec_config->extradata_size, 0,
            AV_INPUT_BUFFER_PADDING_SIZE);
 
