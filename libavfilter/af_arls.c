@@ -84,9 +84,11 @@ static const AVOption arls_options[] = {
 
 AVFILTER_DEFINE_CLASS(arls);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AudioRLSContext *s = ctx->priv;
+    const AudioRLSContext *s = ctx->priv;
     static const enum AVSampleFormat sample_fmts[3][3] = {
         { AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_DBLP, AV_SAMPLE_FMT_NONE },
         { AV_SAMPLE_FMT_FLTP, AV_SAMPLE_FMT_NONE },
@@ -94,13 +96,11 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    if ((ret = ff_set_common_all_channel_counts(ctx)) < 0)
+    if ((ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+                                                sample_fmts[s->precision])) < 0)
         return ret;
 
-    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts[s->precision])) < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
+    return 0;
 }
 
 static int activate(AVFilterContext *ctx)
@@ -291,7 +291,7 @@ const AVFilter ff_af_arls = {
     .activate       = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                       AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
