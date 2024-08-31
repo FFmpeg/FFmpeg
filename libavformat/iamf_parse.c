@@ -305,10 +305,10 @@ static int update_extradata(AVCodecParameters *codecpar)
         skip_bits(&gb, 4);
         put_bits(&pb, 4, codecpar->ch_layout.nb_channels); // set channel config
         ret = put_bits_left(&pb);
-        put_bits(&pb, ret, get_bits(&gb, ret));
+        put_bits(&pb, ret, get_bits_long(&gb, ret));
         flush_put_bits(&pb);
 
-        memcpy(codecpar->extradata, buf, sizeof(buf));
+        memcpy(codecpar->extradata, buf, put_bytes_output(&pb));
         break;
     }
     case AV_CODEC_ID_FLAC: {
