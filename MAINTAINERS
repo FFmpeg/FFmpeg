@@ -52,7 +52,7 @@ Miscellaneous Areas
 documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Gyan Doshi
 project server day to day operations    (L: root@ffmpeg.org) Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov, Timo Rothenpieler
 project server emergencies              (L: root@ffmpeg.org) Árpád Gereöffy, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov, Timo Rothenpieler
-presets                                 Robert Swain
+presets                             [0]
 metadata subsystem                      Aurelien Jacobs
 release management                      Michael Niedermayer
 API tests                               Ludmila Glinskih
@@ -365,7 +365,7 @@ Generic parts:
 Muxers/Demuxers:
   4xm.c                                 Mike Melanson
   aadec.c                               Vesselin Bontchev (vesselin.bontchev at yandex dot com)
-  adtsenc.c                             Robert Swain
+  adtsenc.c                         [0]
   aiffdec.c                             Baptiste Coudurier, Matthieu Bouron
   aiffenc.c                             Baptiste Coudurier, Matthieu Bouron
   alp.c                                 Zane van Iperen
