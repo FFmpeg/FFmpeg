@@ -90,9 +90,14 @@ static av_cold void uninit(AVFilterContext *ctx)
         bs2b_close(bs2b->bs2bp);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AVFilterChannelLayouts *layouts = NULL;
+    static const AVChannelLayout layouts[] = {
+        (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO,
+        (AVChannelLayout){ .nb_channels = 0 },
+    };
 
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_U8,
@@ -104,17 +109,15 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    if (ff_add_channel_layout(&layouts, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO) != 0)
-        return AVERROR(ENOMEM);
-    ret = ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, layouts);
     if (ret < 0)
         return ret;
 
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret < 0)
         return ret;
 
-    return ff_set_common_all_samplerates(ctx);
+    return 0;
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
@@ -211,5 +214,5 @@ const AVFilter ff_af_bs2b = {
     .uninit         = uninit,
     FILTER_INPUTS(bs2b_inputs),
     FILTER_OUTPUTS(bs2b_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
