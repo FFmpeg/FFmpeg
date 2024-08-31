@@ -2187,6 +2187,7 @@ static int alloc_bind_mem(AVHWFramesContext *hwfc, AVVkFrame *f,
 }
 
 enum PrepMode {
+    PREP_MODE_GENERAL,
     PREP_MODE_WRITE,
     PREP_MODE_EXTERNAL_EXPORT,
     PREP_MODE_EXTERNAL_IMPORT,
@@ -2232,6 +2233,10 @@ static int prepare_frame(AVHWFramesContext *hwfc, FFVkExecPool *ectx,
         return err;
 
     switch (pmode) {
+    case PREP_MODE_GENERAL:
+        new_layout = VK_IMAGE_LAYOUT_GENERAL;
+        new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
     case PREP_MODE_WRITE:
         new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         new_access = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -2520,8 +2525,10 @@ static AVBufferRef *vulkan_pool_alloc(void *opaque, size_t size)
         err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_DECODING_DST);
     else if (hwctx->usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR)
         err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_ENCODING_DPB);
-    else
+    else if (hwctx->usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
         err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_WRITE);
+    else
+        err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_GENERAL);
     if (err)
         goto fail;
 
