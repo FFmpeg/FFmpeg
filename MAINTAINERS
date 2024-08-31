@@ -122,7 +122,7 @@ Generic Parts:
   DSP utilities:
     dsputils.c, dsputils.h              Michael Niedermayer
   entropy coding:
-    rangecoder.c, rangecoder.h          Michael Niedermayer
+    rangecoder.c, rangecoder.h      [2] Michael Niedermayer
     lzw.*                               Michael Niedermayer
   floating point AAN DCT:
     faandct.c, faandct.h            [2] Michael Niedermayer
