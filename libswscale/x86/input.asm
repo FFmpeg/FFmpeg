@@ -736,11 +736,11 @@ cglobal %2ToUV, 4, 5, %1, dstU, dstV, unused, src, w
     packuswb       m2, m3                 ; (byte) { U0, ..., U15 }
     packuswb       m0, m1                 ; (byte) { V0, ..., V15 }
 %ifidn %2, nv12
-    mova   [dstUq+wq], m2
-    mova   [dstVq+wq], m0
+    mov%1  [dstUq+wq], m2
+    mov%1  [dstVq+wq], m0
 %else ; nv21
-    mova   [dstVq+wq], m2
-    mova   [dstUq+wq], m0
+    mov%1  [dstVq+wq], m2
+    mov%1  [dstUq+wq], m0
 %endif ; nv12/21
     add            wq, mmsize
     jl .loop_%1
@@ -750,15 +750,18 @@ cglobal %2ToUV, 4, 5, %1, dstU, dstV, unused, src, w
 ; %1 = nr. of XMM registers
 ; %2 = nv12 or nv21
 %macro NVXX_TO_UV_FN 2
-cglobal %2ToUV, 4, 5, %1, dstU, dstV, unused, src, w
+cglobal %2ToUV, 4, 5, %1, dstU, dstV, tmp, src, w
 %if ARCH_X86_64
     movsxd         wq, dword r5m
 %else ; x86-32
     mov            wq, r5m
 %endif
+    mov          tmpq, srcq
+    or           tmpq, dstUq
+    or           tmpq, dstVq
     add         dstUq, wq
     add         dstVq, wq
-    test         srcq, 15
+    test         tmpq, 15
     lea          srcq, [srcq+wq*2]
     pcmpeqb        m5, m5                 ; (byte) { 0xff } x 16
     psrlw          m5, 8                  ; (word) { 0x00ff } x 8
