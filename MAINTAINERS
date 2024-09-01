@@ -416,9 +416,9 @@ Muxers/Demuxers:
   libopenmpt.c                          Josh de Kock
   lmlm4.c                               Ivo van Poorten
   lxfdec.c                              Tomas Härdin
-  matroska.c                            Aurelien Jacobs, Andreas Rheinhardt
-  matroskadec.c                         Aurelien Jacobs, Andreas Rheinhardt
-  matroskaenc.c                         David Conrad, Andreas Rheinhardt
+  matroska.c                            Andreas Rheinhardt
+  matroskadec.c                         Andreas Rheinhardt
+  matroskaenc.c                         Andreas Rheinhardt
   matroska subtitles (matroskaenc.c)    John Peebles
   metadata*                             Aurelien Jacobs
   microdvd*                             Aurelien Jacobs
