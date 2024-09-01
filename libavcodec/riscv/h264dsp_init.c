@@ -97,7 +97,7 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
         const bool zvl128b = ff_rv_vlen_least(128);
 
         if (bit_depth == 8) {
-            if (zvl128b)
+            if (zvl128b && (flags & AV_CPU_FLAG_RVB))
                 dsp->weight_h264_pixels_tab[0] =
                     ff_h264_weight_funcs_8_rvv[0].weight;
             if (flags & AV_CPU_FLAG_RVV_I64)

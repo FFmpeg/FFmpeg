@@ -29,20 +29,29 @@
 #include "libavutil/riscv/asm.S"
 
         .variant_cc ff_h264_weight_pixels_simple_8_rvv
-func ff_h264_weight_pixels_simple_8_rvv, zve32x
+func ff_h264_weight_pixels_simple_8_rvv, zve32x, b
         csrwi   vxrm, 0
         sll     a5, a5, a3
 1:
         vsetvli     zero, t6, e16, m2, ta, ma
-        vle8.v  v8, (a0)
-        addi    a2, a2, -1
+        add     t0, a0, a1
+        vle8.v      v8, (a0)
+        addi    a2, a2, -2
+        vle8.v      v9, (t0)
         vzext.vf2   v24, v8
+        vzext.vf2   v26, v9
         vmul.vx     v16, v24, a4
+        vmul.vx     v18, v26, a4
         vsadd.vx    v16, v16, a5
-        vmax.vx v16, v16, zero
-        vsetvli zero, zero, e8, m1, ta, ma
+        vsadd.vx    v18, v18, a5
+        vmax.vx     v16, v16, zero
+        vmax.vx     v18, v18, zero
+        vsetvli     zero, zero, e8, m1, ta, ma
         vnclipu.wx  v8, v16, a3
-        vse8.v  v8, (a0)
+        vnclipu.wx  v9, v18, a3
+        vse8.v      v8, (a0)
+        vse8.v      v9, (t0)
+        sh1add  a0, a1, a0
         add     a0, a0, a1
         bnez    a2, 1b
 
