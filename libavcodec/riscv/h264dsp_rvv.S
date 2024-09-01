@@ -115,67 +115,48 @@ func ff_h264_weight_pixels\w\()_\depth\()_rvv, zve64x
         ret
         .endif
 endfunc
-.endm
 
-        .variant_cc ff_h264_biweight_pixels_8_rvv
-func ff_h264_biweight_pixels_8_rvv, zve32x
+func ff_h264_biweight_pixels\w\()_\depth\()_rvv, zve64x
+        lpad    0
+        li      t6, \w
+        .ifb    \b
+        j       ff_h264_biweight_pixels_simple_8_rvv
+        .else
         csrwi   vxrm, 2
         addi    a7, a7, 1
         ori     a7, a7, 1
         sll     a7, a7, a4
         addi    a4, a4, 1
 1:
-        mv      t0, a0
-        mv      t1, a1
-        mv      t5, t6
-2:
-        vsetvli     t2, a3, e16, m8, ta, ma
-        vlsseg2e8.v v0, (t0), a2
-        vlsseg2e8.v v8, (t1), a2
-        addi    t5, t5, -2
-        vmv.v.x v16, a7
-        vmv.v.x v24, a7
-        vsetvli     zero, zero, e8, m4, ta, ma
-        vwmaccsu.vx v16, a5, v0
-        vwmaccsu.vx v24, a5, v4
-        vwmaccsu.vx v16, a6, v8
-        vwmaccsu.vx v24, a6, v12
-        vsetvli     zero, zero, e16, m8, ta, ma
+        vsetvli     t1, a3, e\b, m2, ta, ma
+        vlse\b\().v v8, (a0), a2
+        sub     a3, a3, t1
+        vlse\b\().v v12, (a1), a2
+        mul     t2, t1, a2
+        vsetvli     t0, zero, e16, m4, ta, ma
+        vmv.v.x     v16, a7
+        vsetvli     zero, zero, e8, m2, ta, ma
+        vwmaccsu.vx v16, a5, v8
+        add     a1, a1, t2
+        vwmaccsu.vx v16, a6, v12
+        vsetvli     zero, zero, e16, m4, ta, ma
         vmax.vx     v16, v16, zero
-        vmax.vx     v24, v24, zero
-        vsetvli     zero, zero, e8, m4, ta, ma
-        vnclipu.wx  v0, v16, a4
-        vnclipu.wx  v4, v24, a4
-        vssseg2e8.v v0, (t0), a2
-        addi    t0, t0, 2
-        addi    t1, t1, 2
-        bnez    t5, 2b
-
-        mul     t3, a2, t2
-        sub     a3, a3, t2
-        add     a0, a0, t3
-        add     a1, a1, t3
+        vsetvli     zero, zero, e8, m2, ta, ma
+        vnclipu.wx  v8, v16, a4
+        vsetvli     zero, t1, e\b, m2, ta, ma
+        vsse\b\().v v8, (a0), a2
+        add     a0, a0, t2
+        .endif
         bnez    a3, 1b
 
         ret
 endfunc
+.endm
 
 h264_weight 8, 2, 16
 h264_weight 8, 4, 32
 h264_weight 8, 8, 64
 h264_weight 8, 16
-
-.irp    w, 16, 8, 4, 2
-func ff_h264_biweight_pixels\w\()_8_rvv, zve32x
-        lpad    0
-        li      t6, \w
-        .if     \w == 16
-        j       ff_h264_biweight_pixels_simple_8_rvv
-        .else
-        j       ff_h264_biweight_pixels_8_rvv
-        .endif
-endfunc
-.endr
 
         .global ff_h264_weight_funcs_8_rvv
         .hidden ff_h264_weight_funcs_8_rvv
