@@ -433,19 +433,12 @@ fail:
 }
 
 VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
-                              void **data, int64_t *status)
+                              void **data, VkQueryResultFlagBits flags)
 {
-    VkResult ret;
     FFVulkanFunctions *vk = &s->vkfn;
     const FFVkExecPool *pool = e->parent;
-
-    int32_t *res32 = e->query_data;
-    int64_t *res64 = e->query_data;
-    int64_t res = 0;
-    VkQueryResultFlags qf = 0;
-
-    if (!e->had_submission)
-        return VK_INCOMPLETE;
+    VkQueryResultFlags qf = flags & ~(VK_QUERY_RESULT_64_BIT |
+                                      VK_QUERY_RESULT_WITH_STATUS_BIT_KHR);
 
     if (!e->query_data) {
         av_log(s, AV_LOG_ERROR, "Requested a query with a NULL query_data pointer!\n");
@@ -457,34 +450,14 @@ VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
     qf |= pool->query_statuses ?
           VK_QUERY_RESULT_WITH_STATUS_BIT_KHR : 0x0;
 
-    ret = vk->GetQueryPoolResults(s->hwctx->act_dev, pool->query_pool,
-                                  e->query_idx,
-                                  pool->nb_queries,
-                                  pool->qd_size, e->query_data,
-                                  pool->qd_size, qf);
-    if (ret != VK_SUCCESS)
-        return ret;
-
-    if (pool->query_statuses && pool->query_64bit) {
-        for (int i = 0; i < pool->query_statuses; i++) {
-            res = (res64[i] < res) || (res >= 0 && res64[i] > res) ?
-                  res64[i] : res;
-            res64 += pool->query_status_stride;
-        }
-    } else if (pool->query_statuses) {
-        for (int i = 0; i < pool->query_statuses; i++) {
-            res = (res32[i] < res) || (res >= 0 && res32[i] > res) ?
-                  res32[i] : res;
-            res32 += pool->query_status_stride;
-        }
-    }
-
     if (data)
         *data = e->query_data;
-    if (status)
-        *status = res;
 
-    return VK_SUCCESS;
+    return vk->GetQueryPoolResults(s->hwctx->act_dev, pool->query_pool,
+                                   e->query_idx,
+                                   pool->nb_queries,
+                                   pool->qd_size, e->query_data,
+                                   pool->qd_size, qf);
 }
 
 FFVkExecContext *ff_vk_exec_get(FFVkExecPool *pool)

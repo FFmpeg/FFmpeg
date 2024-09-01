@@ -294,6 +294,7 @@ void ff_vk_decode_flush(AVCodecContext *avctx)
 
     VkCommandBuffer cmd_buf;
     FFVkExecContext *exec = ff_vk_exec_get(&dec->exec_pool);
+    int had_submission = exec->had_submission;
     ff_vk_exec_start(&ctx->s, exec);
     cmd_buf = exec->buf;
 
@@ -301,6 +302,11 @@ void ff_vk_decode_flush(AVCodecContext *avctx)
     vk->CmdControlVideoCodingKHR(cmd_buf, &decode_ctrl);
     vk->CmdEndVideoCodingKHR(cmd_buf, &decode_end);
     ff_vk_exec_submit(&ctx->s, exec);
+
+    /* If this is the very first time this context is used, then remove the
+     * had_submission flag to indicate that no query result is available,
+     * as no decode command was issued. */
+    exec->had_submission = had_submission;
 }
 
 int ff_vk_decode_frame(AVCodecContext *avctx,
@@ -348,19 +354,20 @@ int ff_vk_decode_frame(AVCodecContext *avctx,
     cur_vk_ref[0].slotIndex = -1;
     decode_start.referenceSlotCount++;
 
-    if (dec->exec_pool.nb_queries) {
-        int64_t prev_sub_res = 0;
-        ff_vk_exec_wait(&ctx->s, exec);
-        ret = ff_vk_exec_get_query(&ctx->s, exec, NULL, &prev_sub_res);
+    if (dec->exec_pool.nb_queries && exec->had_submission) {
+        uint32_t *result;
+        ret = ff_vk_exec_get_query(&ctx->s, exec, (void **)&result,
+                                   VK_QUERY_RESULT_WAIT_BIT);
         if (ret != VK_NOT_READY && ret != VK_SUCCESS) {
             av_log(avctx, AV_LOG_ERROR, "Unable to perform query: %s!\n",
                    ff_vk_ret2str(ret));
             return AVERROR_EXTERNAL;
         }
 
-        if (ret == VK_SUCCESS)
-            av_log(avctx, prev_sub_res < 0 ? AV_LOG_ERROR : AV_LOG_DEBUG,
-                   "Result of previous frame decoding: %"PRId64"\n", prev_sub_res);
+        av_log(avctx,
+               result[0] != VK_QUERY_RESULT_STATUS_COMPLETE_KHR ?
+                   AV_LOG_ERROR : AV_LOG_DEBUG,
+               "Result of previous frame decoding: %u\n", result[0]);
     }
 
     sd_buf = (FFVkBuffer *)vp->slices_buf->data;

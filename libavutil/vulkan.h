@@ -357,10 +357,11 @@ FFVkExecContext *ff_vk_exec_get(FFVkExecPool *pool);
 
 /**
  * Performs nb_queries queries and returns their results and statuses.
- * Execution must have been waited on to produce valid results.
+ * 64_BIT and WITH_STATUS flags are ignored as 64_BIT must be specified via
+ * query_64bit in ff_vk_exec_pool_init() and WITH_STATUS is always enabled.
  */
 VkResult ff_vk_exec_get_query(FFVulkanContext *s, FFVkExecContext *e,
-                              void **data, int64_t *status);
+                              void **data, VkQueryResultFlagBits flags);
 
 /**
  * Start/submit/wait an execution.
