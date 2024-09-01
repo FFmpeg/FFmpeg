@@ -182,6 +182,80 @@ static void check_interleave_bytes(void)
     }
 }
 
+static void check_deinterleave_bytes(void)
+{
+    LOCAL_ALIGNED_16(uint8_t, src_buf,  [2*MAX_STRIDE*MAX_HEIGHT+2]);
+    LOCAL_ALIGNED_16(uint8_t, dst0_u_buf, [MAX_STRIDE*MAX_HEIGHT+1]);
+    LOCAL_ALIGNED_16(uint8_t, dst0_v_buf, [MAX_STRIDE*MAX_HEIGHT+1]);
+    LOCAL_ALIGNED_16(uint8_t, dst1_u_buf, [MAX_STRIDE*MAX_HEIGHT+1]);
+    LOCAL_ALIGNED_16(uint8_t, dst1_v_buf, [MAX_STRIDE*MAX_HEIGHT+1]);
+    // Intentionally using unaligned buffers, as this function doesn't have
+    // any alignment requirements.
+    uint8_t *src = src_buf + 2;
+    uint8_t *dst0_u = dst0_u_buf + 1;
+    uint8_t *dst0_v = dst0_v_buf + 1;
+    uint8_t *dst1_u = dst1_u_buf + 1;
+    uint8_t *dst1_v = dst1_v_buf + 1;
+
+    declare_func(void, const uint8_t *src, uint8_t *dst1, uint8_t *dst2,
+                       int width, int height, int srcStride,
+                       int dst1Stride, int dst2Stride);
+
+    randomize_buffers(src, 2*MAX_STRIDE*MAX_HEIGHT+2);
+
+    if (check_func(deinterleaveBytes, "deinterleave_bytes")) {
+        for (int i = 0; i <= 16; i++) {
+            // Try all widths [1,16], and try one random width.
+
+            int w = i > 0 ? i : (1 + (rnd() % (MAX_STRIDE-2)));
+            int h = 1 + (rnd() % (MAX_HEIGHT-2));
+
+            int src_offset   = 0, src_stride    = 2 * MAX_STRIDE;
+            int dst_u_offset = 0, dst_u_stride  = MAX_STRIDE;
+            int dst_v_offset = 0, dst_v_stride  = MAX_STRIDE;
+
+            memset(dst0_u, 0, MAX_STRIDE * MAX_HEIGHT);
+            memset(dst0_v, 0, MAX_STRIDE * MAX_HEIGHT);
+            memset(dst1_u, 0, MAX_STRIDE * MAX_HEIGHT);
+            memset(dst1_v, 0, MAX_STRIDE * MAX_HEIGHT);
+
+            // Try different combinations of negative strides
+            if (i & 1) {
+                src_offset = (h-1)*src_stride;
+                src_stride = -src_stride;
+            }
+            if (i & 2) {
+                dst_u_offset = (h-1)*dst_u_stride;
+                dst_u_stride = -dst_u_stride;
+            }
+            if (i & 4) {
+                dst_v_offset = (h-1)*dst_v_stride;
+                dst_v_stride = -dst_v_stride;
+            }
+
+            call_ref(src + src_offset, dst0_u + dst_u_offset, dst0_v + dst_v_offset,
+                     w, h, src_stride, dst_u_stride, dst_v_stride);
+            call_new(src + src_offset, dst1_u + dst_u_offset, dst1_v + dst_v_offset,
+                     w, h, src_stride, dst_u_stride, dst_v_stride);
+            // Check a one pixel-pair edge around the destination area,
+            // to catch overwrites past the end.
+            checkasm_check(uint8_t, dst0_u, MAX_STRIDE, dst1_u, MAX_STRIDE,
+                           w + 1, h + 1, "dst_u");
+            checkasm_check(uint8_t, dst0_v, MAX_STRIDE, dst1_v, MAX_STRIDE,
+                           w + 1, h + 1, "dst_v");
+        }
+
+        bench_new(src, dst1_u, dst1_v, 127, MAX_HEIGHT,
+                  2*MAX_STRIDE, MAX_STRIDE, MAX_STRIDE);
+    }
+    if (check_func(deinterleaveBytes, "deinterleave_bytes_aligned")) {
+        // Bench the function in a more typical case, with aligned
+        // buffers and widths.
+        bench_new(src_buf, dst1_u_buf, dst1_v_buf, 128, MAX_HEIGHT,
+                  2*MAX_STRIDE, MAX_STRIDE, MAX_STRIDE);
+    }
+}
+
 #define MAX_LINE_SIZE 1920
 static const int input_sizes[] = {8, 128, 1080, MAX_LINE_SIZE};
 static const enum AVPixelFormat rgb_formats[] = {
@@ -314,6 +388,9 @@ void checkasm_check_sw_rgb(void)
 
     check_interleave_bytes();
     report("interleave_bytes");
+
+    check_deinterleave_bytes();
+    report("deinterleave_bytes");
 
     ctx = sws_getContext(MAX_LINE_SIZE, MAX_LINE_SIZE, AV_PIX_FMT_RGB24,
                          MAX_LINE_SIZE, MAX_LINE_SIZE, AV_PIX_FMT_YUV420P,
