@@ -36,7 +36,7 @@
 static int opus_decoder_config(IAMFCodecConfig *codec_config,
                                AVIOContext *pb, int len)
 {
-    int left = len - avio_tell(pb);
+    int ret, left = len - avio_tell(pb);
 
     if (left < 11 || codec_config->audio_roll_distance >= 0)
         return AVERROR_INVALIDDATA;
@@ -47,11 +47,11 @@ static int opus_decoder_config(IAMFCodecConfig *codec_config,
 
     AV_WB32A(codec_config->extradata,     MKBETAG('O','p','u','s'));
     AV_WB32A(codec_config->extradata + 4, MKBETAG('H','e','a','d'));
-    codec_config->extradata_size = avio_read(pb, codec_config->extradata + 8, left);
-    if (codec_config->extradata_size < left)
-        return AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, codec_config->extradata + 8, left);
+    if (ret < 0)
+        return ret;
 
-    codec_config->extradata_size += 8;
+    codec_config->extradata_size = left + 8;
     codec_config->sample_rate = 48000;
 
     return 0;
@@ -117,7 +117,7 @@ static int aac_decoder_config(IAMFCodecConfig *codec_config,
 static int flac_decoder_config(IAMFCodecConfig *codec_config,
                                AVIOContext *pb, int len)
 {
-    int left;
+    int ret, left;
 
     if (codec_config->audio_roll_distance)
         return AVERROR_INVALIDDATA;
@@ -132,10 +132,11 @@ static int flac_decoder_config(IAMFCodecConfig *codec_config,
     if (!codec_config->extradata)
         return AVERROR(ENOMEM);
 
-    codec_config->extradata_size = avio_read(pb, codec_config->extradata, left);
-    if (codec_config->extradata_size < left)
-        return AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, codec_config->extradata, left);
+    if (ret < 0)
+        return ret;
 
+    codec_config->extradata_size = left;
     codec_config->sample_rate = AV_RB24(codec_config->extradata + 10) >> 4;
 
     return 0;
@@ -177,12 +178,9 @@ static int codec_config_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
     if (!buf)
         return AVERROR(ENOMEM);
 
-    ret = avio_read(pb, buf, len);
-    if (ret != len) {
-        if (ret >= 0)
-            ret = AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, buf, len);
+    if (ret < 0)
         goto fail;
-    }
 
     ffio_init_context(&b, buf, len, 0, NULL, NULL, NULL, NULL);
     pbc = &b.pub;
@@ -614,12 +612,9 @@ static int audio_element_obu(void *s, IAMFContext *c, AVIOContext *pb, int len)
     if (!buf)
         return AVERROR(ENOMEM);
 
-    ret = avio_read(pb, buf, len);
-    if (ret != len) {
-        if (ret >= 0)
-            ret = AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, buf, len);
+    if (ret < 0)
         goto fail;
-    }
 
     ffio_init_context(&b, buf, len, 0, NULL, NULL, NULL, NULL);
     pbc = &b.pub;
@@ -803,12 +798,9 @@ static int mix_presentation_obu(void *s, IAMFContext *c, AVIOContext *pb, int le
     if (!buf)
         return AVERROR(ENOMEM);
 
-    ret = avio_read(pb, buf, len);
-    if (ret != len) {
-        if (ret >= 0)
-            ret = AVERROR_INVALIDDATA;
+    ret = ffio_read_size(pb, buf, len);
+    if (ret < 0)
         goto fail;
-    }
 
     ffio_init_context(&b, buf, len, 0, NULL, NULL, NULL, NULL);
     pbc = &b.pub;
