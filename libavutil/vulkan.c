@@ -22,6 +22,7 @@
 #include "mem.h"
 
 #include "vulkan.h"
+#include "libavutil/vulkan_loader.h"
 
 const VkComponentMapping ff_comp_identity_map = {
     .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -816,7 +817,7 @@ int ff_vk_alloc_mem(FFVulkanContext *s, VkMemoryRequirements *req,
     }
 
     if (index < 0) {
-        av_log(s->device, AV_LOG_ERROR, "No memory type found for flags 0x%x\n",
+        av_log(s, AV_LOG_ERROR, "No memory type found for flags 0x%x\n",
                req_flags);
         return AVERROR(EINVAL);
     }
@@ -1868,5 +1869,59 @@ void ff_vk_uninit(FFVulkanContext *s)
     av_freep(&s->video_props);
     av_freep(&s->coop_mat_props);
 
+    av_buffer_unref(&s->device_ref);
     av_buffer_unref(&s->frames_ref);
+}
+
+int ff_vk_init(FFVulkanContext *s, void *log_parent,
+               AVBufferRef *device_ref, AVBufferRef *frames_ref)
+{
+    int err;
+
+    static const AVClass vulkan_context_class = {
+        .class_name       = "vk",
+        .version          = LIBAVUTIL_VERSION_INT,
+        .parent_log_context_offset = offsetof(FFVulkanContext, log_parent),
+    };
+
+    memset(s, 0, sizeof(*s));
+    s->log_parent = log_parent;
+    s->class      = &vulkan_context_class;
+
+    if (frames_ref) {
+        s->frames_ref = av_buffer_ref(frames_ref);
+        if (!s->frames_ref)
+            return AVERROR(ENOMEM);
+
+        s->frames = (AVHWFramesContext *)s->frames_ref->data;
+        s->hwfc = s->frames->hwctx;
+
+        device_ref = s->frames->device_ref;
+    }
+
+    s->device_ref = av_buffer_ref(device_ref);
+    if (!s->device_ref) {
+        ff_vk_uninit(s);
+        return AVERROR(ENOMEM);
+    }
+
+    s->device = (AVHWDeviceContext *)s->device_ref->data;
+    s->hwctx = s->device->hwctx;
+
+    s->extensions = ff_vk_extensions_to_mask(s->hwctx->enabled_dev_extensions,
+                                             s->hwctx->nb_enabled_dev_extensions);
+
+    err = ff_vk_load_functions(s->device, &s->vkfn, s->extensions, 1, 1);
+    if (err < 0) {
+        ff_vk_uninit(s);
+        return err;
+    }
+
+    err = ff_vk_load_props(s);
+    if (err < 0) {
+        ff_vk_uninit(s);
+        return err;
+    }
+
+    return 0;
 }
