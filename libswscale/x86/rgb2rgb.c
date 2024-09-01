@@ -2380,7 +2380,12 @@ static void deinterleave_bytes_ ## cpuext(const uint8_t *src, uint8_t *dst1, uin
                                           int dst1Stride, int dst2Stride)     \
 {                                                                             \
     for (int h = 0; h < height; h++) {                                        \
-        ff_nv12ToUV_ ## cpuext(dst1, dst2, NULL, src, NULL, width, NULL, NULL); \
+        if (width >= 16)                                                      \
+            ff_nv12ToUV_ ## cpuext(dst1, dst2, NULL, src, NULL, width - 15, NULL, NULL); \
+        for (int w = (width & (~15)); w < width; w++) {                       \
+            dst1[w] = src[2*w+0];                                             \
+            dst2[w] = src[2*w+1];                                             \
+        }                                                                     \
         src  += srcStride;                                                    \
         dst1 += dst1Stride;                                                   \
         dst2 += dst2Stride;                                                   \
