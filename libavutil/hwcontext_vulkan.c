@@ -2617,7 +2617,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
         err = vkfmt_from_pixfmt2(hwfc->device_ctx, hwfc->sw_format,
                                  hwctx->tiling, NULL,
                                  NULL, NULL, &supported_usage, 0,
-                                 hwctx->usage & VK_IMAGE_USAGE_STORAGE_BIT);
+                                 !hwctx->usage ||
+                                 (hwctx->usage & VK_IMAGE_USAGE_STORAGE_BIT));
         if (err < 0) {
             av_log(hwfc, AV_LOG_ERROR, "Unsupported sw format: %s!\n",
                    av_get_pix_fmt_name(hwfc->sw_format));
@@ -2628,7 +2629,8 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
                                  hwctx->tiling, hwctx->format, NULL,
                                  NULL, &supported_usage,
                                  disable_multiplane,
-                                 hwctx->usage & VK_IMAGE_USAGE_STORAGE_BIT);
+                                 !hwctx->usage ||
+                                 (hwctx->usage & VK_IMAGE_USAGE_STORAGE_BIT));
         if (err < 0)
             return err;
     }
