@@ -1114,22 +1114,15 @@ int ff_vk_decode_init(AVCodecContext *avctx)
     s = &ctx->s;
     vk = &ctx->s.vkfn;
 
-    s->frames_ref = av_buffer_ref(avctx->hw_frames_ctx);
-    s->frames = (AVHWFramesContext *)s->frames_ref->data;
-    s->hwfc = s->frames->hwctx;
-
-    s->device = (AVHWDeviceContext *)s->frames->device_ref->data;
-    s->hwctx = s->device->hwctx;
+    err = ff_vk_init(s, avctx, NULL, avctx->hw_frames_ctx);
+    if (err < 0)
+        return err;
 
     profile = get_video_profile(ctx, avctx->codec_id);
     if (!profile) {
         av_log(avctx, AV_LOG_ERROR, "Video profile missing from frames context!");
         return AVERROR(EINVAL);
     }
-
-    err = ff_vk_load_props(s);
-    if (err < 0)
-        goto fail;
 
     /* Create queue context */
     vk_desc = get_codecdesc(avctx->codec_id);
