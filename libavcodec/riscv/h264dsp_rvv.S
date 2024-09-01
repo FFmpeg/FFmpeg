@@ -28,11 +28,12 @@
 
 #include "libavutil/riscv/asm.S"
 
+        .variant_cc ff_h264_weight_pixels_simple_8_rvv
 func ff_h264_weight_pixels_simple_8_rvv, zve32x
         csrwi   vxrm, 0
         sll     a5, a5, a3
 1:
-        vsetvli     zero, a6, e16, m2, ta, ma
+        vsetvli     zero, t6, e16, m2, ta, ma
         vle8.v  v8, (a0)
         addi    a2, a2, -1
         vzext.vf2   v24, v8
@@ -76,38 +77,36 @@ func ff_h264_biweight_pixels_simple_8_rvv, zve32x
         ret
 endfunc
 
-func ff_h264_weight_pixels_8_rvv, zve32x
+.macro  h264_weight depth, w, b=
+func ff_h264_weight_pixels\w\()_\depth\()_rvv, zve64x
+        lpad    0
+        .ifb    \b
+        li      t6, \w
+        j       ff_h264_weight_pixels_simple_\depth\()_rvv
+        .else
         csrwi   vxrm, 0
         sll     a5, a5, a3
 1:
-        mv      t0, a0
-        mv      t6, a6
-2:
-        vsetvli     t2, a2, e16, m8, ta, ma
-        vlsseg2e8.v v0, (t0), a1
-        addi    t6, t6, -2
-        vzext.vf2   v16, v0
-        vzext.vf2   v24, v4
-        vmul.vx     v16, v16, a4
-        vmul.vx     v24, v24, a4
+        vsetvli     t1, a2, e\b, m2, ta, ma
+        vlse\b\().v v8, (a0), a1
+        vsetvli     t0, zero, e16, m4, ta, ma
+        vzext.vf2   v24, v8
+        sub     a2, a2, t1
+        vmul.vx     v16, v24, a4
+        mul     t2, t1, a1
         vsadd.vx    v16, v16, a5
-        vsadd.vx    v24, v24, a5
         vmax.vx     v16, v16, zero
-        vmax.vx     v24, v24, zero
-        vsetvli     zero, zero, e8, m4, ta, ma
-        vnclipu.wx  v0, v16, a3
-        vnclipu.wx  v4, v24, a3
-        vssseg2e8.v v0, (t0), a1
-        addi    t0, t0, 2
-        bnez    t6, 2b
-
-        mul     t3, a1, t2
-        sub     a2, a2, t2
-        add     a0, a0, t3
+        vsetvli     zero, zero, e8, m2, ta, ma
+        vnclipu.wx  v8, v16, a3
+        vsetvli     zero, t1, e\b, m2, ta, ma
+        vsse\b\().v v8, (a0), a1
+        add     a0, a0, t2
         bnez    a2, 1b
 
         ret
+        .endif
 endfunc
+.endm
 
         .variant_cc ff_h264_biweight_pixels_8_rvv
 func ff_h264_biweight_pixels_8_rvv, zve32x
@@ -152,17 +151,12 @@ func ff_h264_biweight_pixels_8_rvv, zve32x
         ret
 endfunc
 
-.irp    w, 16, 8, 4, 2
-func ff_h264_weight_pixels\w\()_8_rvv, zve32x
-        lpad    0
-        li      a6, \w
-        .if     \w == 16
-        j       ff_h264_weight_pixels_simple_8_rvv
-        .else
-        j       ff_h264_weight_pixels_8_rvv
-        .endif
-endfunc
+h264_weight 8, 2, 16
+h264_weight 8, 4, 32
+h264_weight 8, 8, 64
+h264_weight 8, 16
 
+.irp    w, 16, 8, 4, 2
 func ff_h264_biweight_pixels\w\()_8_rvv, zve32x
         lpad    0
         li      t6, \w

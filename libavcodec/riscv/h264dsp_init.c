@@ -96,13 +96,23 @@ av_cold void ff_h264dsp_init_riscv(H264DSPContext *dsp, const int bit_depth,
     if (flags & AV_CPU_FLAG_RVV_I32) {
         const bool zvl128b = ff_rv_vlen_least(128);
 
+        if (bit_depth == 8) {
+            if (zvl128b)
+                dsp->weight_h264_pixels_tab[0] =
+                    ff_h264_weight_funcs_8_rvv[0].weight;
+            if (flags & AV_CPU_FLAG_RVV_I64)
+                dsp->weight_h264_pixels_tab[1] =
+                    ff_h264_weight_funcs_8_rvv[1].weight;
+            dsp->weight_h264_pixels_tab[2] =
+                 ff_h264_weight_funcs_8_rvv[2].weight;
+            dsp->weight_h264_pixels_tab[3] =
+                 ff_h264_weight_funcs_8_rvv[3].weight;
+        }
+
         if (bit_depth == 8 && zvl128b) {
-            for (int i = 0; i < 4; i++) {
-                dsp->weight_h264_pixels_tab[i] =
-                    ff_h264_weight_funcs_8_rvv[i].weight;
+            for (int i = 0; i < 4; i++)
                 dsp->biweight_h264_pixels_tab[i] =
                     ff_h264_weight_funcs_8_rvv[i].biweight;
-            }
 
             dsp->h264_v_loop_filter_luma = ff_h264_v_loop_filter_luma_8_rvv;
             dsp->h264_h_loop_filter_luma = ff_h264_h_loop_filter_luma_8_rvv;
