@@ -206,7 +206,7 @@ BIWEIGHT_FUNC_MM 16, 8
 cglobal h264_biweight_%1, 7, 8, %2
     BIWEIGHT_SETUP
     movifnidn r3d, r3m
-    sar        r3, 1
+    sar       r3d, 1
     lea        r4, [r2*2]
 .nextrow:
     BIWEIGHT_STEPA 0, 1, 0
@@ -264,7 +264,7 @@ INIT_XMM ssse3
 cglobal h264_biweight_8, 7, 8, 8
     BIWEIGHT_SETUP
     movifnidn r3d, r3m
-    sar        r3, 1
+    sar       r3d, 1
     lea        r4, [r2*2]
 
 .nextrow:
