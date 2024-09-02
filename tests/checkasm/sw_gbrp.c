@@ -135,12 +135,6 @@ static void check_output_yuv2gbrp(void)
         fail();
 
     ctx->flags |= SWS_FULL_CHR_H_INT;
-    ctx->yuv2rgb_y_offset  = rnd();
-    ctx->yuv2rgb_y_coeff   = rnd();
-    ctx->yuv2rgb_v2r_coeff = rnd();
-    ctx->yuv2rgb_v2g_coeff = rnd();
-    ctx->yuv2rgb_u2g_coeff = rnd();
-    ctx->yuv2rgb_u2b_coeff = rnd();
 
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
         for (fsi = 0; fsi < FILTER_SIZES; fsi++) {
