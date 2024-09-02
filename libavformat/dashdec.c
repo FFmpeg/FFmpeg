@@ -2208,9 +2208,9 @@ static int dash_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (cur->is_restart_needed) {
             cur->cur_seg_offset = 0;
             cur->init_sec_buf_read_offset = 0;
+            cur->is_restart_needed = 0;
             ff_format_io_close(cur->parent, &cur->input);
             ret = reopen_demux_for_component(s, cur);
-            cur->is_restart_needed = 0;
         }
     }
     return AVERROR_EOF;
