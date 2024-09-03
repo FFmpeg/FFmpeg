@@ -1,0 +1,396 @@
+#tb 0: 1/44100
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 44100
+#channel_layout_name 0: ambisonic 0
+#tb 1: 1/44100
+#media_type 1: audio
+#codec_id 1: pcm_s16le
+#sample_rate 1: 44100
+#channel_layout_name 1: 1 channels (AMBI1)
+#tb 2: 1/44100
+#media_type 2: audio
+#codec_id 2: pcm_s16le
+#sample_rate 2: 44100
+#channel_layout_name 2: 1 channels (AMBI2)
+#tb 3: 1/44100
+#media_type 3: audio
+#codec_id 3: pcm_s16le
+#sample_rate 3: 44100
+#channel_layout_name 3: 1 channels (AMBI3)
+#tb 4: 1/44100
+#media_type 4: audio
+#codec_id 4: pcm_s16le
+#sample_rate 4: 44100
+#channel_layout_name 4: 1 channels (AMBI4)
+#tb 5: 1/44100
+#media_type 5: audio
+#codec_id 5: pcm_s16le
+#sample_rate 5: 44100
+#channel_layout_name 5: 1 channels (AMBI5)
+#tb 6: 1/44100
+#media_type 6: audio
+#codec_id 6: pcm_s16le
+#sample_rate 6: 44100
+#channel_layout_name 6: 1 channels (AMBI6)
+#tb 7: 1/44100
+#media_type 7: audio
+#codec_id 7: pcm_s16le
+#sample_rate 7: 44100
+#channel_layout_name 7: 1 channels (AMBI7)
+#tb 8: 1/44100
+#media_type 8: audio
+#codec_id 8: pcm_s16le
+#sample_rate 8: 44100
+#channel_layout_name 8: 1 channels (AMBI8)
+#tb 9: 1/44100
+#media_type 9: audio
+#codec_id 9: pcm_s16le
+#sample_rate 9: 44100
+#channel_layout_name 9: 1 channels (AMBI9)
+#tb 10: 1/44100
+#media_type 10: audio
+#codec_id 10: pcm_s16le
+#sample_rate 10: 44100
+#channel_layout_name 10: 1 channels (AMBI10)
+#tb 11: 1/44100
+#media_type 11: audio
+#codec_id 11: pcm_s16le
+#sample_rate 11: 44100
+#channel_layout_name 11: 1 channels (AMBI11)
+#tb 12: 1/44100
+#media_type 12: audio
+#codec_id 12: pcm_s16le
+#sample_rate 12: 44100
+#channel_layout_name 12: 1 channels (AMBI12)
+#tb 13: 1/44100
+#media_type 13: audio
+#codec_id 13: pcm_s16le
+#sample_rate 13: 44100
+#channel_layout_name 13: 1 channels (AMBI13)
+#tb 14: 1/44100
+#media_type 14: audio
+#codec_id 14: pcm_s16le
+#sample_rate 14: 44100
+#channel_layout_name 14: 1 channels (AMBI14)
+#tb 15: 1/44100
+#media_type 15: audio
+#codec_id 15: pcm_s16le
+#sample_rate 15: 44100
+#channel_layout_name 15: 1 channels (AMBI15)
+#tb 16: 1/44100
+#media_type 16: audio
+#codec_id 16: pcm_s16le
+#sample_rate 16: 44100
+#channel_layout_name 16: 1 channels (AMBI16)
+#tb 17: 1/44100
+#media_type 17: audio
+#codec_id 17: pcm_s16le
+#sample_rate 17: 44100
+#channel_layout_name 17: 1 channels (AMBI17)
+#tb 18: 1/44100
+#media_type 18: audio
+#codec_id 18: pcm_s16le
+#sample_rate 18: 44100
+#channel_layout_name 18: 1 channels (AMBI18)
+#tb 19: 1/44100
+#media_type 19: audio
+#codec_id 19: pcm_s16le
+#sample_rate 19: 44100
+#channel_layout_name 19: 1 channels (AMBI19)
+#tb 20: 1/44100
+#media_type 20: audio
+#codec_id 20: pcm_s16le
+#sample_rate 20: 44100
+#channel_layout_name 20: 1 channels (AMBI20)
+#tb 21: 1/44100
+#media_type 21: audio
+#codec_id 21: pcm_s16le
+#sample_rate 21: 44100
+#channel_layout_name 21: 1 channels (AMBI21)
+#tb 22: 1/44100
+#media_type 22: audio
+#codec_id 22: pcm_s16le
+#sample_rate 22: 44100
+#channel_layout_name 22: 1 channels (AMBI22)
+#tb 23: 1/44100
+#media_type 23: audio
+#codec_id 23: pcm_s16le
+#sample_rate 23: 44100
+#channel_layout_name 23: 1 channels (AMBI23)
+#tb 24: 1/44100
+#media_type 24: audio
+#codec_id 24: pcm_s16le
+#sample_rate 24: 44100
+#channel_layout_name 24: 1 channels (AMBI24)
+#tb 25: 1/44100
+#media_type 25: audio
+#codec_id 25: pcm_s16le
+#sample_rate 25: 44100
+#channel_layout_name 25: 1 channels (AMBI25)
+#tb 26: 1/44100
+#media_type 26: audio
+#codec_id 26: pcm_s16le
+#sample_rate 26: 44100
+#channel_layout_name 26: 1 channels (AMBI26)
+#tb 27: 1/44100
+#media_type 27: audio
+#codec_id 27: pcm_s16le
+#sample_rate 27: 44100
+#channel_layout_name 27: 1 channels (AMBI27)
+#tb 28: 1/44100
+#media_type 28: audio
+#codec_id 28: pcm_s16le
+#sample_rate 28: 44100
+#channel_layout_name 28: 1 channels (AMBI28)
+#tb 29: 1/44100
+#media_type 29: audio
+#codec_id 29: pcm_s16le
+#sample_rate 29: 44100
+#channel_layout_name 29: 1 channels (AMBI29)
+#tb 30: 1/44100
+#media_type 30: audio
+#codec_id 30: pcm_s16le
+#sample_rate 30: 44100
+#channel_layout_name 30: 1 channels (AMBI30)
+#tb 31: 1/44100
+#media_type 31: audio
+#codec_id 31: pcm_s16le
+#sample_rate 31: 44100
+#channel_layout_name 31: 1 channels (AMBI31)
+#tb 32: 1/44100
+#media_type 32: audio
+#codec_id 32: pcm_s16le
+#sample_rate 32: 44100
+#channel_layout_name 32: 1 channels (AMBI32)
+#tb 33: 1/44100
+#media_type 33: audio
+#codec_id 33: pcm_s16le
+#sample_rate 33: 44100
+#channel_layout_name 33: 1 channels (AMBI33)
+#tb 34: 1/44100
+#media_type 34: audio
+#codec_id 34: pcm_s16le
+#sample_rate 34: 44100
+#channel_layout_name 34: 1 channels (AMBI34)
+#tb 35: 1/44100
+#media_type 35: audio
+#codec_id 35: pcm_s16le
+#sample_rate 35: 44100
+#channel_layout_name 35: 1 channels (AMBI35)
+#tb 36: 1/44100
+#media_type 36: audio
+#codec_id 36: pcm_s16le
+#sample_rate 36: 44100
+#channel_layout_name 36: 1 channels (AMBI36)
+#tb 37: 1/44100
+#media_type 37: audio
+#codec_id 37: pcm_s16le
+#sample_rate 37: 44100
+#channel_layout_name 37: 1 channels (AMBI37)
+#tb 38: 1/44100
+#media_type 38: audio
+#codec_id 38: pcm_s16le
+#sample_rate 38: 44100
+#channel_layout_name 38: 1 channels (AMBI38)
+#tb 39: 1/44100
+#media_type 39: audio
+#codec_id 39: pcm_s16le
+#sample_rate 39: 44100
+#channel_layout_name 39: 1 channels (AMBI39)
+#tb 40: 1/44100
+#media_type 40: audio
+#codec_id 40: pcm_s16le
+#sample_rate 40: 44100
+#channel_layout_name 40: 1 channels (AMBI40)
+#tb 41: 1/44100
+#media_type 41: audio
+#codec_id 41: pcm_s16le
+#sample_rate 41: 44100
+#channel_layout_name 41: 1 channels (AMBI41)
+#tb 42: 1/44100
+#media_type 42: audio
+#codec_id 42: pcm_s16le
+#sample_rate 42: 44100
+#channel_layout_name 42: 1 channels (AMBI42)
+#tb 43: 1/44100
+#media_type 43: audio
+#codec_id 43: pcm_s16le
+#sample_rate 43: 44100
+#channel_layout_name 43: 1 channels (AMBI43)
+#tb 44: 1/44100
+#media_type 44: audio
+#codec_id 44: pcm_s16le
+#sample_rate 44: 44100
+#channel_layout_name 44: 1 channels (AMBI44)
+#tb 45: 1/44100
+#media_type 45: audio
+#codec_id 45: pcm_s16le
+#sample_rate 45: 44100
+#channel_layout_name 45: 1 channels (AMBI45)
+#tb 46: 1/44100
+#media_type 46: audio
+#codec_id 46: pcm_s16le
+#sample_rate 46: 44100
+#channel_layout_name 46: 1 channels (AMBI46)
+#tb 47: 1/44100
+#media_type 47: audio
+#codec_id 47: pcm_s16le
+#sample_rate 47: 44100
+#channel_layout_name 47: 1 channels (AMBI47)
+#tb 48: 1/44100
+#media_type 48: audio
+#codec_id 48: pcm_s16le
+#sample_rate 48: 44100
+#channel_layout_name 48: 1 channels (AMBI48)
+#tb 49: 1/44100
+#media_type 49: audio
+#codec_id 49: pcm_s16le
+#sample_rate 49: 44100
+#channel_layout_name 49: 1 channels (AMBI49)
+#tb 50: 1/44100
+#media_type 50: audio
+#codec_id 50: pcm_s16le
+#sample_rate 50: 44100
+#channel_layout_name 50: 1 channels (AMBI50)
+#tb 51: 1/44100
+#media_type 51: audio
+#codec_id 51: pcm_s16le
+#sample_rate 51: 44100
+#channel_layout_name 51: 1 channels (AMBI51)
+#tb 52: 1/44100
+#media_type 52: audio
+#codec_id 52: pcm_s16le
+#sample_rate 52: 44100
+#channel_layout_name 52: 1 channels (AMBI52)
+#tb 53: 1/44100
+#media_type 53: audio
+#codec_id 53: pcm_s16le
+#sample_rate 53: 44100
+#channel_layout_name 53: 1 channels (AMBI53)
+#tb 54: 1/44100
+#media_type 54: audio
+#codec_id 54: pcm_s16le
+#sample_rate 54: 44100
+#channel_layout_name 54: 1 channels (AMBI54)
+#tb 55: 1/44100
+#media_type 55: audio
+#codec_id 55: pcm_s16le
+#sample_rate 55: 44100
+#channel_layout_name 55: 1 channels (AMBI55)
+#tb 56: 1/44100
+#media_type 56: audio
+#codec_id 56: pcm_s16le
+#sample_rate 56: 44100
+#channel_layout_name 56: 1 channels (AMBI56)
+#tb 57: 1/44100
+#media_type 57: audio
+#codec_id 57: pcm_s16le
+#sample_rate 57: 44100
+#channel_layout_name 57: 1 channels (AMBI57)
+#tb 58: 1/44100
+#media_type 58: audio
+#codec_id 58: pcm_s16le
+#sample_rate 58: 44100
+#channel_layout_name 58: 1 channels (AMBI58)
+#tb 59: 1/44100
+#media_type 59: audio
+#codec_id 59: pcm_s16le
+#sample_rate 59: 44100
+#channel_layout_name 59: 1 channels (AMBI59)
+#tb 60: 1/44100
+#media_type 60: audio
+#codec_id 60: pcm_s16le
+#sample_rate 60: 44100
+#channel_layout_name 60: 1 channels (AMBI60)
+#tb 61: 1/44100
+#media_type 61: audio
+#codec_id 61: pcm_s16le
+#sample_rate 61: 44100
+#channel_layout_name 61: 1 channels (AMBI61)
+#tb 62: 1/44100
+#media_type 62: audio
+#codec_id 62: pcm_s16le
+#sample_rate 62: 44100
+#channel_layout_name 62: 1 channels (AMBI62)
+#tb 63: 1/44100
+#media_type 63: audio
+#codec_id 63: pcm_s16le
+#sample_rate 63: 44100
+#channel_layout_name 63: 1 channels (AMBI63)
+#tb 64: 1/44100
+#media_type 64: audio
+#codec_id 64: pcm_s16le
+#sample_rate 64: 44100
+#channel_layout_name 64: 1 channels (FL)
+#tb 65: 1/44100
+#media_type 65: audio
+#codec_id 65: pcm_s16le
+#sample_rate 65: 44100
+#channel_layout_name 65: 1 channels (FR)
+0,          0,          0,     1024,     2048, 0xd782fb56
+1,          0,          0,     1024,     2048, 0x00000000
+2,          0,          0,     1024,     2048, 0xd501f2b4
+3,          0,          0,     1024,     2048, 0x3281ecb5
+4,          0,          0,     1024,     2048, 0xffb00086
+5,          0,          0,     1024,     2048, 0xe9b7f252
+6,          0,          0,     1024,     2048, 0x53e6f849
+7,          0,          0,     1024,     2048, 0xacb9f526
+8,          0,          0,     1024,     2048, 0xa79b0dcb
+9,          0,          0,     1024,     2048, 0xa4eaf5c8
+10,          0,          0,     1024,     2048, 0x31010ff1
+11,          0,          0,     1024,     2048, 0xdfaa053a
+12,          0,          0,     1024,     2048, 0x7321fac9
+13,          0,          0,     1024,     2048, 0x0786f54d
+14,          0,          0,     1024,     2048, 0x32c7fcb7
+15,          0,          0,     1024,     2048, 0x23e8ee40
+16,          0,          0,     1024,     2048, 0xaddef714
+17,          0,          0,     1024,     2048, 0x1c6ffa69
+18,          0,          0,     1024,     2048, 0x493bfb48
+19,          0,          0,     1024,     2048, 0x8e26106e
+20,          0,          0,     1024,     2048, 0x0d47f953
+21,          0,          0,     1024,     2048, 0x49a90415
+22,          0,          0,     1024,     2048, 0x5349cdcf
+23,          0,          0,     1024,     2048, 0x20410430
+24,          0,          0,     1024,     2048, 0xd3f7ffbe
+25,          0,          0,     1024,     2048, 0xca8902f8
+26,          0,          0,     1024,     2048, 0xfe9ffcff
+27,          0,          0,     1024,     2048, 0xf1c0fd21
+28,          0,          0,     1024,     2048, 0x6007e947
+29,          0,          0,     1024,     2048, 0x33310ce6
+30,          0,          0,     1024,     2048, 0x04f103a1
+31,          0,          0,     1024,     2048, 0xf84bf6df
+32,          0,          0,     1024,     2048, 0xc597027d
+33,          0,          0,     1024,     2048, 0x7391ff47
+34,          0,          0,     1024,     2048, 0xd6ab0226
+35,          0,          0,     1024,     2048, 0x4b98fd12
+36,          0,          0,     1024,     2048, 0xb2510d31
+37,          0,          0,     1024,     2048, 0x11e0e994
+38,          0,          0,     1024,     2048, 0xfa5cfa07
+39,          0,          0,     1024,     2048, 0x494cf951
+40,          0,          0,     1024,     2048, 0xf87401ca
+41,          0,          0,     1024,     2048, 0x188ffd8f
+42,          0,          0,     1024,     2048, 0xc673f7fd
+43,          0,          0,     1024,     2048, 0x3020cead
+44,          0,          0,     1024,     2048, 0x0f34f9ec
+45,          0,          0,     1024,     2048, 0x2f15053e
+46,          0,          0,     1024,     2048, 0x4cc9e880
+47,          0,          0,     1024,     2048, 0xa7d0015a
+48,          0,          0,     1024,     2048, 0x20c3fcb7
+49,          0,          0,     1024,     2048, 0xb6f80160
+50,          0,          0,     1024,     2048, 0x28f88d75
+51,          0,          0,     1024,     2048, 0xf20502a2
+52,          0,          0,     1024,     2048, 0x7f88f6f8
+53,          0,          0,     1024,     2048, 0x02690489
+54,          0,          0,     1024,     2048, 0x306af8c2
+55,          0,          0,     1024,     2048, 0xbe9a1052
+56,          0,          0,     1024,     2048, 0x344bfc0b
+57,          0,          0,     1024,     2048, 0xb2a00b99
+58,          0,          0,     1024,     2048, 0x0cbe045d
+59,          0,          0,     1024,     2048, 0x5830fd09
+60,          0,          0,     1024,     2048, 0x8c7900bd
+61,          0,          0,     1024,     2048, 0x4a20f705
+62,          0,          0,     1024,     2048, 0x282201f6
+63,          0,          0,     1024,     2048, 0xfbb2fafa
+64,          0,          0,     1024,     2048, 0x308b8f8f
+65,          0,          0,     1024,     2048, 0x187bfced

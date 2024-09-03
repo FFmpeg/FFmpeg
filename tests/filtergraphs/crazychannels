@@ -1,0 +1,79 @@
+sine=frequency=400 *  0x0 [s0];
+sine=frequency=400 *  0x1 [s1];
+sine=frequency=400 *  0x2 [s2];
+sine=frequency=400 *  0x3 [s3];
+sine=frequency=400 *  0x4 [s4];
+sine=frequency=400 *  0x5 [s5];
+sine=frequency=400 *  0x6 [s6];
+sine=frequency=400 *  0x7 [s7];
+sine=frequency=400 *  0x8 [s8];
+sine=frequency=400 *  0x9 [s9];
+sine=frequency=400 *  0xa [sa];
+sine=frequency=400 *  0xb [sb];
+sine=frequency=400 *  0xc [sc];
+sine=frequency=400 *  0xd [sd];
+sine=frequency=400 *  0xe [se];
+sine=frequency=400 *  0xf [sf];
+
+sine=frequency=400 * 0x10 [s10];
+sine=frequency=400 * 0x11 [s11];
+sine=frequency=400 * 0x12 [s12];
+sine=frequency=400 * 0x13 [s13];
+sine=frequency=400 * 0x14 [s14];
+sine=frequency=400 * 0x15 [s15];
+sine=frequency=400 * 0x16 [s16];
+sine=frequency=400 * 0x17 [s17];
+sine=frequency=400 * 0x18 [s18];
+sine=frequency=400 * 0x19 [s19];
+sine=frequency=400 * 0x1a [s1a];
+sine=frequency=400 * 0x1b [s1b];
+sine=frequency=400 * 0x1c [s1c];
+sine=frequency=400 * 0x1d [s1d];
+sine=frequency=400 * 0x1e [s1e];
+sine=frequency=400 * 0x1f [s1f];
+
+sine=frequency=400 * 0x20 [s20];
+sine=frequency=400 * 0x21 [s21];
+sine=frequency=400 * 0x22 [s22];
+sine=frequency=400 * 0x23 [s23];
+sine=frequency=400 * 0x24 [s24];
+sine=frequency=400 * 0x25 [s25];
+sine=frequency=400 * 0x26 [s26];
+sine=frequency=400 * 0x27 [s27];
+sine=frequency=400 * 0x28 [s28];
+sine=frequency=400 * 0x29 [s29];
+sine=frequency=400 * 0x2a [s2a];
+sine=frequency=400 * 0x2b [s2b];
+sine=frequency=400 * 0x2c [s2c];
+sine=frequency=400 * 0x2d [s2d];
+sine=frequency=400 * 0x2e [s2e];
+sine=frequency=400 * 0x2f [s2f];
+
+sine=frequency=400 * 0x30 [s30];
+sine=frequency=400 * 0x31 [s31];
+sine=frequency=400 * 0x32 [s32];
+sine=frequency=400 * 0x33 [s33];
+sine=frequency=400 * 0x34 [s34];
+sine=frequency=400 * 0x35 [s35];
+sine=frequency=400 * 0x36 [s36];
+sine=frequency=400 * 0x37 [s37];
+sine=frequency=400 * 0x38 [s38];
+sine=frequency=400 * 0x39 [s39];
+sine=frequency=400 * 0x3a [s3a];
+sine=frequency=400 * 0x3b [s3b];
+sine=frequency=400 * 0x3c [s3c];
+sine=frequency=400 * 0x3d [s3d];
+sine=frequency=400 * 0x3e [s3e];
+sine=frequency=400 * 0x3f [s3f];
+
+sine=frequency=400 * 0x40 [s40];
+sine=frequency=400 * 0x41 [s41];
+
+[s0] [s1] [s2] [s3] [s4] [s5] [s6] [s7]  [s8] [s9] [sa] [sb] [sc] [sd] [se] [sf]
+[s10][s11][s12][s13][s14][s15][s16][s17] [s18][s19][s1a][s1b][s1c][s1d][s1e][s1f]
+[s20][s21][s22][s23][s24][s25][s26][s27] [s28][s29][s2a][s2b][s2c][s2d][s2e][s2f]
+[s30][s31][s32][s33][s34][s35][s36][s37] [s38][s39][s3a][s3b][s3c][s3d][s3e][s3f]
+[s40][s41] join=inputs=0x42:channel_layout=ambisonic 7+stereo,
+atrim=end_sample=1024,
+channelmap=channel_layout=ambisonic 7+stereo:map=AMBI0-AMBI1|AMBI1-AMBI2|AMBI2-AMBI3|AMBI3-AMBI4|AMBI4-AMBI5|AMBI5-AMBI6|AMBI6-AMBI7|AMBI7-AMBI8|AMBI8-AMBI9|AMBI9-AMBI10|AMBI10-AMBI11|AMBI11-AMBI12|AMBI12-AMBI13|AMBI13-AMBI14|AMBI14-AMBI15|AMBI15-AMBI16|AMBI16-AMBI17|AMBI17-AMBI18|AMBI18-AMBI19|AMBI19-AMBI20|AMBI20-AMBI21|AMBI21-AMBI22|AMBI22-AMBI23|AMBI23-AMBI24|AMBI24-AMBI25|AMBI25-AMBI26|AMBI26-AMBI27|AMBI27-AMBI28|AMBI28-AMBI29|AMBI29-AMBI30|AMBI30-AMBI31|AMBI31-AMBI32|AMBI32-AMBI33|AMBI33-AMBI34|AMBI34-AMBI35|AMBI35-AMBI36|AMBI36-AMBI37|AMBI37-AMBI38|AMBI38-AMBI39|AMBI39-AMBI40|AMBI40-AMBI41|AMBI41-AMBI42|AMBI42-AMBI43|AMBI43-AMBI44|AMBI44-AMBI45|AMBI45-AMBI46|AMBI46-AMBI47|AMBI47-AMBI48|AMBI48-AMBI49|AMBI49-AMBI50|AMBI50-AMBI51|AMBI51-AMBI52|AMBI52-AMBI53|AMBI53-AMBI54|AMBI54-AMBI55|AMBI55-AMBI56|AMBI56-AMBI57|AMBI57-AMBI58|AMBI58-AMBI59|AMBI59-AMBI60|AMBI60-AMBI61|AMBI61-AMBI62|AMBI62-AMBI63|AMBI63-FL|FL-FR|FR-AMBI0,
+channelsplit=channel_layout=ambisonic 7+stereo
