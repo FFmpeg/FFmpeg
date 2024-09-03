@@ -118,18 +118,20 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->map);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     ChannelSplitContext *s = ctx->priv;
     AVFilterChannelLayouts *in_layouts = NULL;
     int i, ret;
 
-    if ((ret = ff_set_common_formats(ctx, ff_planar_sample_fmts())) < 0 ||
-        (ret = ff_set_common_all_samplerates(ctx)) < 0)
+    ret = ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_planar_sample_fmts());
+    if (ret < 0)
         return ret;
 
     if ((ret = ff_add_channel_layout(&in_layouts, &s->channel_layout)) < 0 ||
-        (ret = ff_channel_layouts_ref(in_layouts, &ctx->inputs[0]->outcfg.channel_layouts)) < 0)
+        (ret = ff_channel_layouts_ref(in_layouts, &cfg_in[0]->channel_layouts)) < 0)
         return ret;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
@@ -156,7 +158,7 @@ static int query_formats(AVFilterContext *ctx)
         if (ret < 0)
             return ret;
 
-        ret = ff_channel_layouts_ref(out_layouts, &ctx->outputs[i]->incfg.channel_layouts);
+        ret = ff_channel_layouts_ref(out_layouts, &cfg_out[i]->channel_layouts);
         if (ret < 0)
             return ret;
     }
@@ -249,6 +251,6 @@ const AVFilter ff_af_channelsplit = {
     .uninit         = uninit,
     FILTER_INPUTS(ff_audio_default_filterpad),
     .outputs        = NULL,
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags          = AVFILTER_FLAG_DYNAMIC_OUTPUTS,
 };
