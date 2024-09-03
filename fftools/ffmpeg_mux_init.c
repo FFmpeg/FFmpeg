@@ -1012,7 +1012,6 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **e
         else
             sar = par->sample_aspect_ratio;
         ost->st->sample_aspect_ratio = par->sample_aspect_ratio = sar;
-        ost->st->avg_frame_rate = ist->st->avg_frame_rate;
         ost->st->r_frame_rate = ist->st->r_frame_rate;
         break;
         }
