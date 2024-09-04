@@ -24463,7 +24463,7 @@ The way this differs from the behavior of spp is that uspp actually encodes &
 decodes each case with libavcodec Snow, whereas spp uses a simplified intra only 8x8
 DCT similar to MJPEG.
 
-This filter is only available in ffmpeg version 4.4 or earlier.
+This filter is not available in ffmpeg versions between 5.0 and 6.0.
 
 The filter accepts the following options:
 
