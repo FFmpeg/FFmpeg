@@ -201,24 +201,25 @@ static av_cold void join_uninit(AVFilterContext *ctx)
     av_freep(&s->input_frames);
 }
 
-static int join_query_formats(AVFilterContext *ctx)
+static int join_query_formats(const AVFilterContext *ctx,
+                              AVFilterFormatsConfig **cfg_in,
+                              AVFilterFormatsConfig **cfg_out)
 {
-    JoinContext *s = ctx->priv;
+    const JoinContext *s = ctx->priv;
     AVFilterChannelLayouts *layouts = NULL;
     int i, ret;
 
     if ((ret = ff_add_channel_layout(&layouts, &s->ch_layout)) < 0 ||
-        (ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts)) < 0)
+        (ret = ff_channel_layouts_ref(layouts, &cfg_out[0]->channel_layouts)) < 0)
         return ret;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         layouts = ff_all_channel_layouts();
-        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->outcfg.channel_layouts)) < 0)
+        if ((ret = ff_channel_layouts_ref(layouts, &cfg_in[0]->channel_layouts)) < 0)
             return ret;
     }
 
-    if ((ret = ff_set_common_formats(ctx, ff_planar_sample_fmts())) < 0 ||
-        (ret = ff_set_common_all_samplerates(ctx)) < 0)
+    if ((ret = ff_set_common_formats2(ctx, cfg_in, cfg_out, ff_planar_sample_fmts())) < 0)
         return ret;
 
     return 0;
@@ -605,6 +606,6 @@ const AVFilter ff_af_join = {
     .activate       = activate,
     .inputs         = NULL,
     FILTER_OUTPUTS(avfilter_af_join_outputs),
-    FILTER_QUERY_FUNC(join_query_formats),
+    FILTER_QUERY_FUNC2(join_query_formats),
     .flags          = AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
