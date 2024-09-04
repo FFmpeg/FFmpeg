@@ -1601,8 +1601,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
+    static const AVChannelLayout layouts[] = {
+        AV_CHANNEL_LAYOUT_MONO,
+        AV_CHANNEL_LAYOUT_STEREO,
+        { .nb_channels = 0 },
+    };
     static const int sample_rates[] = {
         44100, 48000,
         88200, 96000,
@@ -1611,9 +1618,6 @@ static int query_formats(AVFilterContext *ctx)
     };
     AVFilterFormats *in_formats;
     AVFilterFormats *out_formats;
-    AVFilterChannelLayouts *layouts = NULL;
-    AVFilterLink *inlink  = ctx->inputs[0];
-    AVFilterLink *outlink = ctx->outputs[0];
 
     static const enum AVSampleFormat sample_fmts_in[] = {
         AV_SAMPLE_FMT_S16,
@@ -1628,28 +1632,21 @@ static int query_formats(AVFilterContext *ctx)
     };
     int ret;
 
-    ret = ff_add_channel_layout(&layouts, &(AVChannelLayout)AV_CHANNEL_LAYOUT_MONO);
-    if (ret < 0)
-        return ret;
-    ret = ff_add_channel_layout(&layouts, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO);
-    if (ret < 0)
-        return ret;
-
-    ret = ff_set_common_channel_layouts(ctx, layouts);
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, layouts);
     if (ret < 0)
         return ret;
 
     in_formats = ff_make_format_list(sample_fmts_in);
-    ret = ff_formats_ref(in_formats, &inlink->outcfg.formats);
+    ret = ff_formats_ref(in_formats, &cfg_in[0]->formats);
     if (ret < 0)
         return ret;
 
     out_formats = ff_make_format_list(sample_fmts_out);
-    ret = ff_formats_ref(out_formats, &outlink->incfg.formats);
+    ret = ff_formats_ref(out_formats, &cfg_out[0]->formats);
     if (ret < 0)
         return ret;
 
-    return ff_set_common_samplerates_from_list(ctx, sample_rates);
+    return ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -1770,5 +1767,5 @@ const AVFilter ff_af_hdcd = {
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_hdcd_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
