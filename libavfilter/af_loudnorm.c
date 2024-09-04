@@ -728,7 +728,9 @@ static int activate(AVFilterContext *ctx)
     return FFERROR_NOT_READY;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     LoudNormContext *s = ctx->priv;
     static const int input_srate[] = {192000, -1};
@@ -736,19 +738,16 @@ static int query_formats(AVFilterContext *ctx)
             AV_SAMPLE_FMT_DBL,
             AV_SAMPLE_FMT_NONE
     };
-    int ret = ff_set_common_all_channel_counts(ctx);
+    int ret;
+
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret < 0)
         return ret;
 
-    ret = ff_set_common_formats_from_list(ctx, sample_fmts);
-    if (ret < 0)
-        return ret;
-
-    if (s->frame_type == LINEAR_MODE) {
-        return ff_set_common_all_samplerates(ctx);
-    } else {
-        return ff_set_common_samplerates_from_list(ctx, input_srate);
+    if (s->frame_type != LINEAR_MODE) {
+        return ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, input_srate);
     }
+    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -937,5 +936,5 @@ const AVFilter ff_af_loudnorm = {
     .uninit        = uninit,
     FILTER_INPUTS(avfilter_af_loudnorm_inputs),
     FILTER_OUTPUTS(ff_audio_default_filterpad),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
