@@ -258,6 +258,9 @@ FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-cabac-tudepth
 fate-hevc-small422chroma: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/food.hevc -pix_fmt yuv422p10le -vf scale
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, HEVC_PARSER SCALE_FILTER) += fate-hevc-small422chroma
 
+fate-hevc-pir: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/pir.hevc
+FATE_HEVC-$(call FRAMECRC, HEVC, HEVC) += fate-hevc-pir
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 
