@@ -297,26 +297,27 @@ static int activate(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBL,
         AV_SAMPLE_FMT_NONE
     };
-    int ret = ff_channel_layouts_ref(ff_all_channel_counts(),
-                                     &ctx->inputs[1]->outcfg.channel_layouts);
+    int ret;
+
+    /* Generic code will link the channel properties of the main input and the output;
+     * it won't touch the second input as its channel_layouts is already set. */
+    ret = ff_channel_layouts_ref(ff_all_channel_counts(),
+                                 &cfg_in[1]->channel_layouts);
     if (ret < 0)
         return ret;
 
-    /* This will link the channel properties of the main input and the output;
-     * it won't touch the second input as its channel_layouts is already set. */
-    if ((ret = ff_set_common_all_channel_counts(ctx)) < 0)
+    if ((ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts)) < 0)
         return ret;
 
-    if ((ret = ff_set_common_formats_from_list(ctx, sample_fmts)) < 0)
-        return ret;
-
-    return ff_set_common_all_samplerates(ctx);
+    return 0;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -371,7 +372,7 @@ const AVFilter ff_af_sidechaincompress = {
     .uninit         = uninit,
     FILTER_INPUTS(sidechaincompress_inputs),
     FILTER_OUTPUTS(sidechaincompress_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
 };
 #endif  /* CONFIG_SIDECHAINCOMPRESS_FILTER */
