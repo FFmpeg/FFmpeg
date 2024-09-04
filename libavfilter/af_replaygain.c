@@ -326,25 +326,38 @@ typedef struct ReplayGainContext {
     float butter_hist_b[256];
 } ReplayGainContext;
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AVFilterFormats *formats = NULL;
-    AVFilterChannelLayouts *layout = NULL;
+    static const enum AVSampleFormat formats[] = {
+        AV_SAMPLE_FMT_FLT,
+        AV_SAMPLE_FMT_NONE,
+    };
+    static const AVChannelLayout layouts[] = {
+        AV_CHANNEL_LAYOUT_STEREO,
+        { .nb_channels = 0 },
+    };
+
+    AVFilterFormats *rates;
+
     int i, ret;
 
-    if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_FLT  )) < 0 ||
-        (ret = ff_set_common_formats         (ctx     , formats            )) < 0 ||
-        (ret = ff_add_channel_layout         (&layout , &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO)) < 0 ||
-        (ret = ff_set_common_channel_layouts (ctx     , layout             )) < 0)
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, formats);
+    if (ret < 0)
         return ret;
 
-    formats = NULL;
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, layouts);
+    if (ret < 0)
+        return ret;
+
+    rates = NULL;
     for (i = 0; i < FF_ARRAY_ELEMS(freqinfos); i++) {
-        if ((ret = ff_add_format(&formats, freqinfos[i].sample_rate)) < 0)
+        if ((ret = ff_add_format(&rates, freqinfos[i].sample_rate)) < 0)
             return ret;
     }
 
-    return ff_set_common_samplerates(ctx, formats);
+    return ff_set_common_samplerates2(ctx, cfg_in, cfg_out, rates);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -638,5 +651,5 @@ const AVFilter ff_af_replaygain = {
     .flags         = AVFILTER_FLAG_METADATA_ONLY,
     FILTER_INPUTS(replaygain_inputs),
     FILTER_OUTPUTS(replaygain_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
