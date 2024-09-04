@@ -594,19 +594,23 @@ static int activate(AVFilterContext *ctx)
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    struct HeadphoneContext *s = ctx->priv;
-    AVFilterFormats *formats = NULL;
+    static const enum AVSampleFormat formats[] = {
+        AV_SAMPLE_FMT_FLT,
+        AV_SAMPLE_FMT_NONE,
+    };
+
+    const HeadphoneContext *s = ctx->priv;
+
     AVFilterChannelLayouts *layouts = NULL;
     AVFilterChannelLayouts *stereo_layout = NULL;
     AVFilterChannelLayouts *hrir_layouts = NULL;
     int ret, i;
 
-    ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
-    if (ret)
-        return ret;
-    ret = ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, formats);
     if (ret)
         return ret;
 
@@ -614,14 +618,14 @@ static int query_formats(AVFilterContext *ctx)
     if (!layouts)
         return AVERROR(ENOMEM);
 
-    ret = ff_channel_layouts_ref(layouts, &ctx->inputs[0]->outcfg.channel_layouts);
+    ret = ff_channel_layouts_ref(layouts, &cfg_in[0]->channel_layouts);
     if (ret)
         return ret;
 
     ret = ff_add_channel_layout(&stereo_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO);
     if (ret)
         return ret;
-    ret = ff_channel_layouts_ref(stereo_layout, &ctx->outputs[0]->incfg.channel_layouts);
+    ret = ff_channel_layouts_ref(stereo_layout, &cfg_out[0]->channel_layouts);
     if (ret)
         return ret;
 
@@ -629,18 +633,18 @@ static int query_formats(AVFilterContext *ctx)
         hrir_layouts = ff_all_channel_counts();
         if (!hrir_layouts)
             return AVERROR(ENOMEM);
-        ret = ff_channel_layouts_ref(hrir_layouts, &ctx->inputs[1]->outcfg.channel_layouts);
+        ret = ff_channel_layouts_ref(hrir_layouts, &cfg_in[1]->channel_layouts);
         if (ret)
             return ret;
     } else {
         for (i = 1; i <= s->nb_hrir_inputs; i++) {
-            ret = ff_channel_layouts_ref(stereo_layout, &ctx->inputs[i]->outcfg.channel_layouts);
+            ret = ff_channel_layouts_ref(stereo_layout, &cfg_in[1]->channel_layouts);
             if (ret)
                 return ret;
         }
     }
 
-    return ff_set_common_all_samplerates(ctx);
+    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -782,6 +786,6 @@ const AVFilter ff_af_headphone = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_DYNAMIC_INPUTS,
 };
