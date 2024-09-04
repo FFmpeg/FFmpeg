@@ -2587,9 +2587,9 @@ static int hls_decode_entry(HEVCContext *s, GetBitContext *gb)
 }
 
 static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
-                                int job, int self_id)
+                                int job, int thread)
 {
-    HEVCLocalContext *lc = &((HEVCLocalContext*)hevc_lclist)[self_id];
+    HEVCLocalContext *lc = &((HEVCLocalContext*)hevc_lclist)[thread];
     const HEVCContext *const s = lc->parent;
     const HEVCLayerContext *const l = &s->layers[s->cur_layer];
     const HEVCPPS   *const pps = s->pps;
@@ -2599,7 +2599,6 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
     int ctb_row = job;
     int ctb_addr_rs = s->sh.slice_ctb_addr_rs + ctb_row * ((sps->width + ctb_size - 1) >> sps->log2_ctb_size);
     int ctb_addr_ts = pps->ctb_addr_rs_to_ts[ctb_addr_rs];
-    int thread = ctb_row % avctx->thread_count;
 
     const uint8_t *data      = s->data + s->sh.offset[ctb_row];
     const size_t   data_size = s->sh.size[ctb_row];
