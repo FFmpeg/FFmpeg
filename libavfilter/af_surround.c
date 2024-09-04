@@ -146,17 +146,20 @@ typedef struct AudioSurroundContext {
                       int n);
 } AudioSurroundContext;
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    AudioSurroundContext *s = ctx->priv;
-    AVFilterFormats *formats = NULL;
+    static const enum AVSampleFormat formats[] = {
+        AV_SAMPLE_FMT_FLTP,
+        AV_SAMPLE_FMT_NONE,
+    };
+
+    const AudioSurroundContext *s = ctx->priv;
     AVFilterChannelLayouts *layouts = NULL;
     int ret;
 
-    ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLTP);
-    if (ret)
-        return ret;
-    ret = ff_set_common_formats(ctx, formats);
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, formats);
     if (ret)
         return ret;
 
@@ -165,7 +168,7 @@ static int query_formats(AVFilterContext *ctx)
     if (ret)
         return ret;
 
-    ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->incfg.channel_layouts);
+    ret = ff_channel_layouts_ref(layouts, &cfg_out[0]->channel_layouts);
     if (ret)
         return ret;
 
@@ -174,11 +177,11 @@ static int query_formats(AVFilterContext *ctx)
     if (ret)
         return ret;
 
-    ret = ff_channel_layouts_ref(layouts, &ctx->inputs[0]->outcfg.channel_layouts);
+    ret = ff_channel_layouts_ref(layouts, &cfg_in[0]->channel_layouts);
     if (ret)
         return ret;
 
-    return ff_set_common_all_samplerates(ctx);
+    return 0;
 }
 
 static void set_input_levels(AVFilterContext *ctx)
@@ -1517,7 +1520,7 @@ const AVFilter ff_af_surround = {
     .activate       = activate,
     FILTER_INPUTS(inputs),
     FILTER_OUTPUTS(outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .flags          = AVFILTER_FLAG_SLICE_THREADS,
     .process_command = process_command,
 };
