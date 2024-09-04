@@ -2629,6 +2629,11 @@ static int hls_decode_entry_wpp(AVCodecContext *avctx, void *hevc_lclist,
             goto error;
         hls_sao_param(lc, l, pps, sps,
                       x_ctb >> sps->log2_ctb_size, y_ctb >> sps->log2_ctb_size);
+
+        l->deblock[ctb_addr_rs].beta_offset = s->sh.beta_offset;
+        l->deblock[ctb_addr_rs].tc_offset   = s->sh.tc_offset;
+        l->filter_slice_edges[ctb_addr_rs]  = s->sh.slice_loop_filter_across_slices_enabled_flag;
+
         more_data = hls_coding_quadtree(lc, l, pps, sps, x_ctb, y_ctb, sps->log2_ctb_size, 0);
 
         if (more_data < 0) {
