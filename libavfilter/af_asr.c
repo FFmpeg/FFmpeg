@@ -131,8 +131,8 @@ static int query_formats(const AVFilterContext *ctx,
         AV_SAMPLE_FMT_NONE,
     };
     static const AVChannelLayout layouts[] = {
-        (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO,
-        (AVChannelLayout){ .nb_channels = 0 },
+        AV_CHANNEL_LAYOUT_MONO,
+        { .nb_channels = 0 },
     };
 
     const ASRContext *s = ctx->priv;
