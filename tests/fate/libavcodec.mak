@@ -99,7 +99,7 @@ fate-libavcodec-avcodec: libavcodec/tests/avcodec$(EXESUF)
 fate-libavcodec-avcodec: CMD = run libavcodec/tests/avcodec$(EXESUF)
 fate-libavcodec-avcodec: CMP = null
 
-FATE_LIBAVCODEC-yes += fate-libavcodec-huffman
+FATE_LIBAVCODEC-$(call ALLYES, MJPEG_ENCODER) += fate-libavcodec-huffman
 fate-libavcodec-huffman: libavcodec/tests/mjpegenc_huffman$(EXESUF)
 fate-libavcodec-huffman: CMD = run libavcodec/tests/mjpegenc_huffman$(EXESUF)
 fate-libavcodec-huffman: CMP = null
