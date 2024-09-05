@@ -1,4 +1,4 @@
-FATE_MOV = fate-mov-3elist \
+FATE_MOV-$(call FRAMEMD5, MOV) = fate-mov-3elist \
            fate-mov-3elist-1ctts \
            fate-mov-1elist-1ctts \
            fate-mov-1elist-noctts \
@@ -281,4 +281,4 @@ fate-mov-mp4-iamf-ambisonic_1: CMD = transcode wav $(SRC) mp4 "-auto_conversion_
 FATE_FFMPEG += $(FATE_MOV_FFMPEG-yes)
 FATE_FFMPEG_FFPROBE += $(FATE_MOV_FFMPEG_FFPROBE-yes)
 
-fate-mov: $(FATE_MOV) $(FATE_MOV_FFMPEG-yes) $(FATE_MOV_FFMPEG_FFPROBE-yes) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_SAMPLES-yes) $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
+fate-mov: $(FATE_MOV-yes) $(FATE_MOV_FFMPEG-yes) $(FATE_MOV_FFMPEG_FFPROBE-yes) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART) $(FATE_MOV_FFMPEG_SAMPLES-yes) $(FATE_MOV_FFMPEG_FFPROBE_SAMPLES-yes)
