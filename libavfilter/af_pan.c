@@ -91,6 +91,28 @@ static int parse_channel_name(char **arg, int *rchannel, int *rnamed)
     return AVERROR(EINVAL);
 }
 
+static int are_gains_pure(const PanContext *pan)
+{
+    int i, j;
+
+    for (i = 0; i < MAX_CHANNELS; i++) {
+        int nb_gain = 0;
+
+        for (j = 0; j < MAX_CHANNELS; j++) {
+            double gain = pan->gain[i][j];
+
+            /* channel mapping is effective only if 0% or 100% of a channel is
+             * selected... */
+            if (gain != 0. && gain != 1.)
+                return 0;
+            /* ...and if the output channel is only composed of one input */
+            if (gain && nb_gain++)
+                return 0;
+        }
+    }
+    return 1;
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     PanContext *const pan = ctx->priv;
@@ -213,6 +235,7 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
     pan->need_renumber = !!nb_in_channels[1];
+    pan->pure_gains = are_gains_pure(pan);
 
     ret = 0;
 fail:
@@ -220,37 +243,14 @@ fail:
     return ret;
 }
 
-static int are_gains_pure(const PanContext *pan)
-{
-    int i, j;
-
-    for (i = 0; i < MAX_CHANNELS; i++) {
-        int nb_gain = 0;
-
-        for (j = 0; j < MAX_CHANNELS; j++) {
-            double gain = pan->gain[i][j];
-
-            /* channel mapping is effective only if 0% or 100% of a channel is
-             * selected... */
-            if (gain != 0. && gain != 1.)
-                return 0;
-            /* ...and if the output channel is only composed of one input */
-            if (gain && nb_gain++)
-                return 0;
-        }
-    }
-    return 1;
-}
-
 static int query_formats(AVFilterContext *ctx)
 {
-    PanContext *pan = ctx->priv;
+    const PanContext *pan = ctx->priv;
     AVFilterLink *inlink  = ctx->inputs[0];
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterChannelLayouts *layouts;
     int ret;
 
-    pan->pure_gains = are_gains_pure(pan);
     /* libswr supports any sample and packing formats */
     if ((ret = ff_set_common_formats(ctx, ff_all_formats(AVMEDIA_TYPE_AUDIO))) < 0)
         return ret;
