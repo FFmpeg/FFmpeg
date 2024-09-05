@@ -372,8 +372,10 @@ static int filter_query_formats(AVFilterContext *ctx)
 
         if (ctx->nb_outputs > FF_ARRAY_ELEMS(cfg_out_stack)) {
             cfg_out_dyn = av_malloc_array(ctx->nb_outputs, sizeof(*cfg_out_dyn));
-            if (!cfg_out_dyn)
+            if (!cfg_out_dyn) {
+                av_freep(&cfg_in_dyn);
                 return AVERROR(ENOMEM);
+            }
             cfg_out = cfg_out_dyn;
         } else
             cfg_out = ctx->nb_outputs ? cfg_out_stack : NULL;
