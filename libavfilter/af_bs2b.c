@@ -95,8 +95,8 @@ static int query_formats(const AVFilterContext *ctx,
                          AVFilterFormatsConfig **cfg_out)
 {
     static const AVChannelLayout layouts[] = {
-        (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO,
-        (AVChannelLayout){ .nb_channels = 0 },
+        AV_CHANNEL_LAYOUT_STEREO,
+        { .nb_channels = 0 },
     };
 
     static const enum AVSampleFormat sample_fmts[] = {
