@@ -46,6 +46,20 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         return;
 
     if (bd == 8) {
+        c->inter.put[0][1][0][1] = ff_vvc_put_qpel_h4_8_neon;
+        c->inter.put[0][2][0][1] = ff_vvc_put_qpel_h8_8_neon;
+        c->inter.put[0][3][0][1] = ff_vvc_put_qpel_h16_8_neon;
+        c->inter.put[0][4][0][1] =
+        c->inter.put[0][5][0][1] =
+        c->inter.put[0][6][0][1] = ff_vvc_put_qpel_h32_8_neon;
+
+        c->inter.put_uni[0][1][0][1] = ff_vvc_put_qpel_uni_h4_8_neon;
+        c->inter.put_uni[0][2][0][1] = ff_vvc_put_qpel_uni_h8_8_neon;
+        c->inter.put_uni[0][3][0][1] = ff_vvc_put_qpel_uni_h16_8_neon;
+        c->inter.put_uni[0][4][0][1] =
+        c->inter.put_uni[0][5][0][1] =
+        c->inter.put_uni[0][6][0][1] = ff_vvc_put_qpel_uni_h32_8_neon;
+
         for (int i = 0; i < FF_ARRAY_ELEMS(c->sao.band_filter); i++)
             c->sao.band_filter[i] = ff_h26x_sao_band_filter_8x8_8_neon;
         c->sao.edge_filter[0] = ff_vvc_sao_edge_filter_8x8_8_neon;
