@@ -248,4 +248,26 @@ NEON8_FNPROTO_PARTIAL_4(qpel, (int16_t *dst, const uint8_t *_src, ptrdiff_t _src
 NEON8_FNPROTO_PARTIAL_4(qpel_uni, (uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src,
         ptrdiff_t _srcstride, int height, const int8_t *hf, const int8_t *vf, int width),)
 
+#undef NEON8_FNPROTO_PARTIAL_6
+#define NEON8_FNPROTO_PARTIAL_6(fn, args, ext) \
+    void ff_vvc_put_##fn##4_8_neon##ext args; \
+    void ff_vvc_put_##fn##8_8_neon##ext args; \
+    void ff_vvc_put_##fn##16_8_neon##ext args; \
+    void ff_vvc_put_##fn##32_8_neon##ext args; \
+    void ff_vvc_put_##fn##64_8_neon##ext args; \
+    void ff_vvc_put_##fn##128_8_neon##ext args
+
+NEON8_FNPROTO_PARTIAL_6(pel_pixels, (int16_t *dst,
+        const uint8_t *src, ptrdiff_t srcstride, int height,
+        const int8_t *hf, const int8_t *vf, int width),);
+
+NEON8_FNPROTO_PARTIAL_6(pel_uni_pixels, (uint8_t *_dst, ptrdiff_t _dststride,
+        const uint8_t *_src, ptrdiff_t _srcstride, int height,
+        const int8_t *hf, const int8_t *vf, int width),);
+
+NEON8_FNPROTO_PARTIAL_6(pel_uni_w_pixels, (uint8_t *_dst, ptrdiff_t _dststride,
+        const uint8_t *_src, ptrdiff_t _srcstride,
+        int height, int denom, int wx, int ox,
+        const int8_t *hf, const int8_t *vf, int width),);
+
 #endif

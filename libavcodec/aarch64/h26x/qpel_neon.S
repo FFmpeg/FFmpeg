@@ -1250,6 +1250,10 @@ function ff_hevc_put_hevc_qpel_bi_v64_8_neon, export=1
         b               X(ff_hevc_put_hevc_qpel_bi_v32_8_neon)
 endfunc
 
+function ff_vvc_put_pel_uni_pixels4_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_pixels4_8_neon)
+endfunc
+
 function ff_hevc_put_hevc_pel_uni_pixels4_8_neon, export=1
 1:
         ldr             s0, [x2]
@@ -1276,6 +1280,10 @@ function ff_hevc_put_hevc_pel_uni_pixels6_8_neon, export=1
         st1             {v1.h}[2], [x0], x1
         b.hi            1b
         ret
+endfunc
+
+function ff_vvc_put_pel_uni_pixels8_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_pixels8_8_neon)
 endfunc
 
 function ff_hevc_put_hevc_pel_uni_pixels8_8_neon, export=1
@@ -1306,6 +1314,10 @@ function ff_hevc_put_hevc_pel_uni_pixels12_8_neon, export=1
         ret
 endfunc
 
+function ff_vvc_put_pel_uni_pixels16_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_pixels16_8_neon)
+endfunc
+
 function ff_hevc_put_hevc_pel_uni_pixels16_8_neon, export=1
 1:
         ldr             q0, [x2]
@@ -1328,6 +1340,10 @@ function ff_hevc_put_hevc_pel_uni_pixels24_8_neon, export=1
         ret
 endfunc
 
+function ff_vvc_put_pel_uni_pixels32_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_pixels32_8_neon)
+endfunc
+
 function ff_hevc_put_hevc_pel_uni_pixels32_8_neon, export=1
 1:
         ld1             {v0.16b, v1.16b}, [x2], x3
@@ -1346,12 +1362,29 @@ function ff_hevc_put_hevc_pel_uni_pixels48_8_neon, export=1
         ret
 endfunc
 
+function ff_vvc_put_pel_uni_pixels64_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_pixels64_8_neon)
+endfunc
+
 function ff_hevc_put_hevc_pel_uni_pixels64_8_neon, export=1
 1:
         ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], x3
         subs            w4, w4, #1
         st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], x1
         b.hi            1b
+        ret
+endfunc
+
+function ff_vvc_put_pel_uni_pixels128_8_neon, export=1
+        sub             x1, x1, #64
+        sub             x3, x3, #64
+1:
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], #64
+        subs            w4, w4, #1
+        ld1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x2], x3
+        st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], #64
+        st1             {v4.16b, v5.16b, v6.16b, v7.16b}, [x0], x1
+        b.ne            1b
         ret
 endfunc
 
@@ -1528,6 +1561,10 @@ function ff_hevc_put_hevc_qpel_uni_v64_8_neon, export=1
         b               X(ff_hevc_put_hevc_qpel_uni_v16_8_neon)
 endfunc
 
+function ff_vvc_put_pel_uni_w_pixels4_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_w_pixels4_8_neon)
+endfunc
+
 function ff_hevc_put_hevc_pel_uni_w_pixels4_8_neon, export=1
         mov             w10, #-6
         sub             w10, w10, w5
@@ -1596,6 +1633,10 @@ function ff_hevc_put_hevc_pel_uni_w_pixels6_8_neon, export=1
         subs            w4, w4, #2
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_pel_uni_w_pixels8_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_w_pixels8_8_neon)
 endfunc
 
 function ff_hevc_put_hevc_pel_uni_w_pixels8_8_neon, export=1
@@ -1741,7 +1782,9 @@ function ff_hevc_put_hevc_pel_uni_w_pixels16_8_neon, export=1
         ret
 endfunc
 
-
+function ff_vvc_put_pel_uni_w_pixels16_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_w_pixels16_8_neon)
+endfunc
 
 function ff_hevc_put_hevc_pel_uni_w_pixels24_8_neon, export=1
         mov             w10, #-6
@@ -1803,6 +1846,9 @@ function ff_hevc_put_hevc_pel_uni_w_pixels32_8_neon, export=1
         ret
 endfunc
 
+function ff_vvc_put_pel_uni_w_pixels32_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_w_pixels32_8_neon)
+endfunc
 
 function ff_hevc_put_hevc_pel_uni_w_pixels48_8_neon, export=1
         mov             w10, #-6
@@ -1835,6 +1881,39 @@ function ff_hevc_put_hevc_pel_uni_w_pixels64_8_neon, export=1
         PEL_UNI_W_PIXEL_CALC v3, v6, v7, v20, v21, v22, v23
         st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], x1
         subs            w4, w4, #1
+        b.ne            1b
+        ret
+endfunc
+
+function ff_vvc_put_pel_uni_w_pixels64_8_neon, export=1
+        b               X(ff_hevc_put_hevc_pel_uni_w_pixels64_8_neon)
+endfunc
+
+function ff_vvc_put_pel_uni_w_pixels128_8_neon, export=1
+        mov             w10, #-6
+        sub             w10, w10, w5
+        dup             v30.8h, w6
+        dup             v31.4s, w10
+        dup             v29.4s, w7
+        sub             x1, x1, #64
+        sub             x3, x3, #64
+1:
+        mov             x11, x2
+        mov             x12, x0
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], #64
+        PEL_UNI_W_PIXEL_CALC v0, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v1, v6, v7, v20, v21, v22, v23
+        PEL_UNI_W_PIXEL_CALC v2, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v3, v6, v7, v20, v21, v22, v23
+        st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], #64
+
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x2], x3
+        subs            w4, w4, #1
+        PEL_UNI_W_PIXEL_CALC v0, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v1, v6, v7, v20, v21, v22, v23
+        PEL_UNI_W_PIXEL_CALC v2, v4, v5, v16, v17, v18, v19
+        PEL_UNI_W_PIXEL_CALC v3, v6, v7, v20, v21, v22, v23
+        st1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x0], x1
         b.ne            1b
         ret
 endfunc
