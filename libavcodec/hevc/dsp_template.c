@@ -302,8 +302,8 @@ IDCT_DC(32)
 ////////////////////////////////////////////////////////////////////////////////
 #define ff_hevc_pel_filters ff_hevc_qpel_filters
 #define DECL_HV_FILTER(f)                              \
-    const uint8_t *hf = ff_hevc_ ## f ## _filters[mx]; \
-    const uint8_t *vf = ff_hevc_ ## f ## _filters[my];
+    const int8_t *hf = ff_hevc_ ## f ## _filters[mx]; \
+    const int8_t *vf = ff_hevc_ ## f ## _filters[my];
 
 #define FW_PUT(p, f, t)                                                                                   \
 static void FUNC(put_hevc_## f)(int16_t *dst, const uint8_t *src, ptrdiff_t srcstride, int height,        \
