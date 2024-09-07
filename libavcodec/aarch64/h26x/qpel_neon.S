@@ -3516,6 +3516,17 @@ endfunc
         sub             x1, x1, #3
 .endm
 
+.macro VVC_QPEL_H_HEADER
+        ld1r            {v31.2d}, [x4]
+        sub             x1, x1, #3
+.endm
+
+function ff_vvc_put_qpel_h4_8_neon_i8mm, export=1
+        VVC_QPEL_H_HEADER
+        mov             x10, #VVC_MAX_PB_SIZE * 2
+        b               1f
+endfunc
+
 function ff_hevc_put_hevc_qpel_h4_8_neon_i8mm, export=1
         QPEL_H_HEADER
         mov             x10, #HEVC_MAX_PB_SIZE * 2
@@ -3570,6 +3581,12 @@ function ff_hevc_put_hevc_qpel_h6_8_neon_i8mm, export=1
         subs            w3, w3, #1
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_qpel_h8_8_neon_i8mm, export=1
+        VVC_QPEL_H_HEADER
+        mov             x10, #VVC_MAX_PB_SIZE * 2
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_qpel_h8_8_neon_i8mm, export=1
@@ -3654,6 +3671,12 @@ function ff_hevc_put_hevc_qpel_h12_8_neon_i8mm, export=1
         subs            w3, w3, #1
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_qpel_h16_8_neon_i8mm, export=1
+        VVC_QPEL_H_HEADER
+        mov             x10, #VVC_MAX_PB_SIZE * 2
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_qpel_h16_8_neon_i8mm, export=1
@@ -3744,6 +3767,13 @@ function ff_hevc_put_hevc_qpel_h24_8_neon_i8mm, export=1
         subs            w3, w3, #1
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_qpel_h32_8_neon_i8mm, export=1
+        VVC_QPEL_H_HEADER
+        mov             x10, #VVC_MAX_PB_SIZE * 2
+        add             x15, x0, #32
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_qpel_h32_8_neon_i8mm, export=1
@@ -3881,10 +3911,7 @@ function ff_hevc_put_hevc_qpel_h48_8_neon_i8mm, export=1
         ret
 endfunc
 
-function ff_hevc_put_hevc_qpel_h64_8_neon_i8mm, export=1
-        QPEL_H_HEADER
-        sub             x2, x2, #64
-1:
+.macro put_qpel_h64_8_neon_i8mm
         ld1             {v16.16b, v17.16b, v18.16b, v19.16b}, [x1], #64
         ext             v1.16b, v16.16b, v17.16b, #1
         ext             v2.16b, v16.16b, v17.16b, #2
@@ -3975,11 +4002,42 @@ function ff_hevc_put_hevc_qpel_h64_8_neon_i8mm, export=1
         sqxtn2          v20.8h, v26.4s
         sqxtn           v21.4h, v23.4s
         sqxtn2          v21.8h, v27.4s
-        stp             q20, q21, [x0], #32
+        stp             q20, q21, [x0]
+        add             x0, x0, x10
+.endm
+
+function ff_vvc_put_qpel_h64_8_neon_i8mm, export=1
+        VVC_QPEL_H_HEADER
+        mov             x10, #(VVC_MAX_PB_SIZE * 2 - 32 * 3)
+        sub             x2, x2, #64
+        b               1f
+endfunc
+
+function ff_hevc_put_hevc_qpel_h64_8_neon_i8mm, export=1
+        QPEL_H_HEADER
+        mov             x10, #32
+        sub             x2, x2, #64
+1:
+        put_qpel_h64_8_neon_i8mm
         subs            w3, w3, #1
         b.ne            1b
         ret
 endfunc
+
+function ff_vvc_put_qpel_h128_8_neon_i8mm, export=1
+        VVC_QPEL_H_HEADER
+        sub             x11, x2, #128
+        mov             x10, #32
+        mov             x2, #0
+1:
+        put_qpel_h64_8_neon_i8mm
+        subs            w3, w3, #1
+        put_qpel_h64_8_neon_i8mm
+        add             x1, x1, x11
+        b.ne            1b
+        ret
+endfunc
+
 DISABLE_I8MM
 #endif
 

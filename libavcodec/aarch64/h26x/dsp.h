@@ -270,4 +270,8 @@ NEON8_FNPROTO_PARTIAL_6(pel_uni_w_pixels, (uint8_t *_dst, ptrdiff_t _dststride,
         int height, int denom, int wx, int ox,
         const int8_t *hf, const int8_t *vf, int width),);
 
+NEON8_FNPROTO_PARTIAL_6(qpel_h, (int16_t * dst,
+        const uint8_t *_src, ptrdiff_t _srcstride, int height,
+        const int8_t *hf, const int8_t *vf, int width), _i8mm);
+
 #endif

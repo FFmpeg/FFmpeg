@@ -88,6 +88,15 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
             c->sao.edge_filter[i] = ff_vvc_sao_edge_filter_16x16_8_neon;
         c->alf.filter[LUMA] = alf_filter_luma_8_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_8_neon;
+
+        if (have_i8mm(cpu_flags)) {
+            c->inter.put[0][1][0][1] = ff_vvc_put_qpel_h4_8_neon_i8mm;
+            c->inter.put[0][2][0][1] = ff_vvc_put_qpel_h8_8_neon_i8mm;
+            c->inter.put[0][3][0][1] = ff_vvc_put_qpel_h16_8_neon_i8mm;
+            c->inter.put[0][4][0][1] = ff_vvc_put_qpel_h32_8_neon_i8mm;
+            c->inter.put[0][5][0][1] = ff_vvc_put_qpel_h64_8_neon_i8mm;
+            c->inter.put[0][6][0][1] = ff_vvc_put_qpel_h128_8_neon_i8mm;
+        }
     } else if (bd == 10) {
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
