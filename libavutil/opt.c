@@ -2368,7 +2368,6 @@ int av_opt_set_array(void *obj, const char *name, int search_flags,
               val_type == AV_OPT_TYPE_FLOAT    ||
               val_type == AV_OPT_TYPE_DOUBLE   ||
               val_type == AV_OPT_TYPE_RATIONAL) {
-            int ret;
 
             switch (val_type) {
             case AV_OPT_TYPE_INT:       intnum = *(int*)src;                break;
