@@ -2260,7 +2260,7 @@ int av_opt_set_array(void *obj, const char *name, int search_flags,
     unsigned *array_size, new_size;
     size_t elem_size;
 
-    int ret;
+    int ret = 0;
 
     o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
     if (!o || !target_obj)
