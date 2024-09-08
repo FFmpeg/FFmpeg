@@ -871,16 +871,16 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
          * 2011_DCPTEST_24FPS.V.mxf - two ECs, OP1a
          * abcdefghiv016f56415e.mxf - zero ECs, OPAtom, output by Avid AirSpeed */
         if (nb_essence_containers != 1) {
-            MXFOP op = nb_essence_containers ? OP1a : OPAtom;
+            MXFOP mxfop = nb_essence_containers ? OP1a : OPAtom;
 
             /* only nag once */
             if (!mxf->op)
                 av_log(mxf->fc, AV_LOG_WARNING,
                        "\"OPAtom\" with %"PRIu32" ECs - assuming %s\n",
                        nb_essence_containers,
-                       op == OP1a ? "OP1a" : "OPAtom");
+                       mxfop == OP1a ? "OP1a" : "OPAtom");
 
-            mxf->op = op;
+            mxf->op = mxfop;
         } else
             mxf->op = OPAtom;
     } else {
@@ -2574,7 +2574,7 @@ static int parse_mca_labels(MXFContext *mxf, MXFTrack *source_track, MXFDescript
     }
 
     if (language && !ambigous_language) {
-       int ret = set_language(mxf->fc, language, &st->metadata);
+       ret = set_language(mxf->fc, language, &st->metadata);
        if (ret < 0)
            return ret;
     }
@@ -2601,10 +2601,10 @@ static int parse_mca_labels(MXFContext *mxf, MXFTrack *source_track, MXFDescript
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
-    int i, j, k, ret;
+    int k, ret;
 
     /* TODO: handle multiple material packages (OP3x) */
-    for (i = 0; i < mxf->packages_count; i++) {
+    for (int i = 0; i < mxf->packages_count; i++) {
         material_package = mxf_resolve_strong_ref(mxf, &mxf->packages_refs[i], MaterialPackage);
         if (material_package) break;
     }
@@ -2618,7 +2618,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         av_dict_set(&mxf->fc->metadata, "material_package_name", material_package->name, 0);
     mxf_parse_package_comments(mxf, &mxf->fc->metadata, material_package);
 
-    for (i = 0; i < material_package->tracks_count; i++) {
+    for (int i = 0; i < material_package->tracks_count; i++) {
         MXFPackage *source_package = NULL;
         MXFTrack *material_track = NULL;
         MXFTrack *source_track = NULL;
@@ -2653,7 +2653,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             continue;
         }
 
-        for (j = 0; j < material_track->sequence->structural_components_count; j++) {
+        for (int j = 0; j < material_track->sequence->structural_components_count; j++) {
             component = mxf_resolve_strong_ref(mxf, &material_track->sequence->structural_components_refs[j], TimecodeComponent);
             if (!component)
                 continue;
@@ -2671,7 +2671,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             av_log(mxf->fc, AV_LOG_WARNING, "material track %d: has %d components\n",
                        material_track->track_id, material_track->sequence->structural_components_count);
 
-        for (j = 0; j < material_track->sequence->structural_components_count; j++) {
+        for (int j = 0; j < material_track->sequence->structural_components_count; j++) {
             component = mxf_resolve_sourceclip(mxf, &material_track->sequence->structural_components_refs[j]);
             if (!component)
                 continue;
