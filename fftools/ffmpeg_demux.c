@@ -1888,9 +1888,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         return ret;
 
     for (int i = 0; i < o->dump_attachment.nb_opt; i++) {
-        int j;
-
-        for (j = 0; j < f->nb_streams; j++) {
+        for (int j = 0; j < f->nb_streams; j++) {
             InputStream *ist = f->streams[j];
 
             if (check_stream_specifier(ic, ist->st, o->dump_attachment.opt[i].specifier) == 1) {
