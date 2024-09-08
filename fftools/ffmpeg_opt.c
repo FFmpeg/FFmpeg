@@ -87,8 +87,6 @@ int recast_media = 0;
 
 static void uninit_options(OptionsContext *o)
 {
-    int i;
-
     /* all OPT_SPEC and OPT_TYPE_STRING can be freed in generic way */
     for (const OptionDef *po = options; po->name; po++) {
         void *dst;
@@ -112,11 +110,11 @@ static void uninit_options(OptionsContext *o)
             av_freep(dst);
     }
 
-    for (i = 0; i < o->nb_stream_maps; i++)
+    for (int i = 0; i < o->nb_stream_maps; i++)
         av_freep(&o->stream_maps[i].linklabel);
     av_freep(&o->stream_maps);
 
-    for (i = 0; i < o->nb_attachments; i++)
+    for (int i = 0; i < o->nb_attachments; i++)
         av_freep(&o->attachments[i]);
     av_freep(&o->attachments);
 
