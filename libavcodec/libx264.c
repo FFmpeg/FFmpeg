@@ -564,12 +564,12 @@ static int setup_frame(AVCodecContext *ctx, const AVFrame *frame,
 
     mbinfo_sd = av_frame_get_side_data(frame, AV_FRAME_DATA_VIDEO_HINT);
     if (mbinfo_sd) {
-        int ret = setup_mb_info(ctx, pic, frame, (const AVVideoHint *)mbinfo_sd->data);
-        if (ret < 0) {
+        int err = setup_mb_info(ctx, pic, frame, (const AVVideoHint *)mbinfo_sd->data);
+        if (err < 0) {
             /* No need to fail here, this is not fatal. We just proceed with no
              * mb_info and log a message */
 
-            av_log(ctx, AV_LOG_WARNING, "setup_mb_info failed with error: %s\n", av_err2str(ret));
+            av_log(ctx, AV_LOG_WARNING, "setup_mb_info failed with error: %s\n", av_err2str(err));
         }
     }
 
