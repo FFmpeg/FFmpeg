@@ -1597,7 +1597,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     InputFile *f;
     AVFormatContext *ic;
     const AVInputFormat *file_iformat = NULL;
-    int err, i, ret = 0;
+    int err, ret = 0;
     int64_t timestamp;
     AVDictionary *opts_used = NULL;
     const char*    video_codec_name = NULL;
@@ -1752,7 +1752,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         return ret;
 
     /* apply forced codec ids */
-    for (i = 0; i < ic->nb_streams; i++) {
+    for (int i = 0; i < ic->nb_streams; i++) {
         const AVCodec *dummy;
         ret = choose_decoder(o, f, ic, ic->streams[i], HWACCEL_NONE, AV_HWDEVICE_TYPE_NONE,
                              &dummy);
@@ -1772,7 +1772,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
            first frames to get it. (used in mpeg case for example) */
         ret = avformat_find_stream_info(ic, opts);
 
-        for (i = 0; i < orig_nb_streams; i++)
+        for (int i = 0; i < orig_nb_streams; i++)
             av_dict_free(&opts[i]);
         av_freep(&opts);
 
@@ -1813,7 +1813,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 
         if (!(ic->iformat->flags & AVFMT_SEEK_TO_PTS)) {
             int dts_heuristic = 0;
-            for (i=0; i<ic->nb_streams; i++) {
+            for (int i = 0; i < ic->nb_streams; i++) {
                 const AVCodecParameters *par = ic->streams[i]->codecpar;
                 if (par->video_delay) {
                     dts_heuristic = 1;
@@ -1887,7 +1887,7 @@ int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch)
     if (ret < 0)
         return ret;
 
-    for (i = 0; i < o->dump_attachment.nb_opt; i++) {
+    for (int i = 0; i < o->dump_attachment.nb_opt; i++) {
         int j;
 
         for (j = 0; j < f->nb_streams; j++) {
