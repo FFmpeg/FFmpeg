@@ -1033,7 +1033,6 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **e
     uint32_t             codec_tag  = par->codec_tag;
 
     AVCodecContext      *codec_ctx  = NULL;
-    AVDictionary        *codec_opts = NULL;
 
     AVRational           fr         = ost->frame_rate;
 
@@ -1137,7 +1136,6 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **e
 
 fail:
     avcodec_free_context(&codec_ctx);
-    av_dict_free(&codec_opts);
     return ret;
 }
 
