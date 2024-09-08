@@ -673,11 +673,9 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
         }
         opt_match_per_stream_str(ost, &o->chroma_intra_matrices, oc, st, &chroma_intra_matrix);
         if (chroma_intra_matrix) {
-            uint16_t *p = av_mallocz(sizeof(*video_enc->chroma_intra_matrix) * 64);
-            if (!p)
+            if (!(video_enc->chroma_intra_matrix = av_mallocz(sizeof(*video_enc->chroma_intra_matrix) * 64)))
                 return AVERROR(ENOMEM);
-            video_enc->chroma_intra_matrix = p;
-            ret = parse_matrix_coeffs(ost, p, chroma_intra_matrix);
+            ret = parse_matrix_coeffs(ost, video_enc->chroma_intra_matrix, chroma_intra_matrix);
             if (ret < 0)
                 return ret;
         }
@@ -740,8 +738,8 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             FILE *f;
 
             /* compute this stream's global index */
-            for (int i = 0; i <= ost->file->index; i++)
-                ost_idx += output_files[i]->nb_streams;
+            for (int idx = 0; idx <= ost->file->index; idx++)
+                ost_idx += output_files[idx]->nb_streams;
 
             snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
                      ost->logfile_prefix ? ost->logfile_prefix :
@@ -1263,21 +1261,20 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         return AVERROR(ENOMEM);
 
     if (ost->enc_ctx) {
-        AVCodecContext *enc = ost->enc_ctx;
         AVIOContext *s = NULL;
         char *buf = NULL, *arg = NULL;
         const char *enc_stats_pre = NULL, *enc_stats_post = NULL, *mux_stats = NULL;
         const char *enc_time_base = NULL, *preset = NULL;
 
-        ret = filter_codec_opts(o->g->codec_opts, enc->codec_id,
-                                oc, st, enc->codec, &encoder_opts,
+        ret = filter_codec_opts(o->g->codec_opts, ost->enc_ctx->codec_id,
+                                oc, st, ost->enc_ctx->codec, &encoder_opts,
                                 &mux->enc_opts_used);
         if (ret < 0)
             goto fail;
 
         opt_match_per_stream_str(ost, &o->presets, oc, st, &preset);
         opt_match_per_stream_int(ost, &o->autoscale, oc, st, &autoscale);
-        if (preset && (!(ret = get_preset_file_2(preset, enc->codec->name, &s)))) {
+        if (preset && (!(ret = get_preset_file_2(preset, ost->enc_ctx->codec->name, &s)))) {
             AVBPrint bprint;
             av_bprint_init(&bprint, 0, AV_BPRINT_SIZE_UNLIMITED);
             do  {
