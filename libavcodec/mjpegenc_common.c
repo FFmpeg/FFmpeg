@@ -39,18 +39,17 @@
 static int put_huffman_table(PutBitContext *p, int table_class, int table_id,
                              const uint8_t *bits_table, const uint8_t *value_table)
 {
-    int n, i;
+    int n = 0;
 
     put_bits(p, 4, table_class);
     put_bits(p, 4, table_id);
 
-    n = 0;
-    for(i=1;i<=16;i++) {
+    for (int i = 1; i <= 16; i++) {
         n += bits_table[i];
         put_bits(p, 8, bits_table[i]);
     }
 
-    for(i=0;i<n;i++)
+    for (int i = 0; i < n; i++)
         put_bits(p, 8, value_table[i]);
 
     return n + 17;
@@ -63,7 +62,7 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
                               uint16_t chroma_intra_matrix[64],
                               int hsample[3], int use_slices, int matrices_differ)
 {
-    int i, j, size;
+    int size;
     uint8_t *ptr;
 
     if (m) {
@@ -83,8 +82,8 @@ static void jpeg_table_header(AVCodecContext *avctx, PutBitContext *p,
         if (matrix_count > 1) {
             put_bits(p, 4, 0); /* 8 bit precision */
             put_bits(p, 4, 1); /* table 1 */
-            for(i=0;i<64;i++) {
-                j = intra_matrix_permutation[i];
+            for (int i = 0; i < 64; i++) {
+                uint8_t j = intra_matrix_permutation[i];
                 put_bits(p, 8, chroma_intra_matrix[j]);
             }
         }

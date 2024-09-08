@@ -2377,7 +2377,7 @@ int ff_mjpeg_decode_frame_from_buf(AVCodecContext *avctx, AVFrame *frame,
     int hshift, vshift;
     int unescaped_buf_size;
     int start_code;
-    int i, index;
+    int index;
     int ret = 0;
     int is16bit;
     AVDictionaryEntry *e = NULL;
@@ -2657,7 +2657,7 @@ the_end:
             if (s->upscale_v[p] == 1)
                 h = (h+1)>>1;
             av_assert0(w > 0);
-            for (i = 0; i < h; i++) {
+            for (int i = 0; i < h; i++) {
                 if (s->upscale_h[p] == 1) {
                     if (is16bit) ((uint16_t*)line)[w - 1] = ((uint16_t*)line)[(w - 1) / 2];
                     else                      line[w - 1] = line[(w - 1) / 2];
@@ -2735,7 +2735,7 @@ the_end:
                 h = AV_CEIL_RSHIFT(h, vshift);
             }
             dst = &((uint8_t *)s->picture_ptr->data[p])[(h - 1) * s->linesize[p]];
-            for (i = h - 1; i; i--) {
+            for (int i = h - 1; i; i--) {
                 uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[p])[i * s->upscale_v[p] / (s->upscale_v[p] + 1) * s->linesize[p]];
                 uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[p])[(i + 1) * s->upscale_v[p] / (s->upscale_v[p] + 1) * s->linesize[p]];
                 if (s->upscale_v[p] != 2 && (src1 == src2 || i == h - 1)) {
@@ -2777,7 +2777,7 @@ the_end:
         int w = s->picture_ptr->width;
         int h = s->picture_ptr->height;
         av_assert0(s->nb_components == 4);
-        for (i=0; i<h; i++) {
+        for (int i = 0; i < h; i++) {
             int j;
             uint8_t *dst[4];
             for (index=0; index<4; index++) {
@@ -2800,7 +2800,7 @@ the_end:
         int w = s->picture_ptr->width;
         int h = s->picture_ptr->height;
         av_assert0(s->nb_components == 4);
-        for (i=0; i<h; i++) {
+        for (int i = 0; i < h; i++) {
             int j;
             uint8_t *dst[4];
             for (index=0; index<4; index++) {
@@ -2833,10 +2833,9 @@ the_end:
         AVFrameSideData *sd;
         size_t offset = 0;
         int total_size = 0;
-        int i;
 
         /* Sum size of all parts. */
-        for (i = 0; i < s->iccnum; i++)
+        for (int i = 0; i < s->iccnum; i++)
             total_size += s->iccentries[i].length;
 
         ret = ff_frame_new_side_data(avctx, frame, AV_FRAME_DATA_ICC_PROFILE, total_size, &sd);
@@ -2847,7 +2846,7 @@ the_end:
 
         if (sd) {
             /* Reassemble the parts, which are now in-order. */
-            for (i = 0; i < s->iccnum; i++) {
+            for (int i = 0; i < s->iccnum; i++) {
                 memcpy(sd->data + offset, s->iccentries[i].data, s->iccentries[i].length);
                 offset += s->iccentries[i].length;
             }
