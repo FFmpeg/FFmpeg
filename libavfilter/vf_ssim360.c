@@ -1132,7 +1132,7 @@ static int do_ssim360(FFFrameSync *fs)
     AVFrame *master, *ref;
     AVDictionary **metadata;
     double c[4], ssim360v = 0.0, ssim360p50 = 0.0;
-    int i, ret;
+    int ret;
     int need_frame_skip = s->nb_net_frames % (s->frame_skip_ratio + 1);
     HeatmapList* h_ptr = NULL;
 
@@ -1153,7 +1153,7 @@ static int do_ssim360(FFFrameSync *fs)
             return ret;
     }
 
-    for (i = 0; i < s->nb_components; i++) {
+    for (int i = 0; i < s->nb_components; i++) {
         if (s->use_tape) {
             c[i] = ssim360_tape(master->data[i], s->main_tape_map[i][0],
                                 ref->data[i],    s->ref_tape_map [i][0],
@@ -1191,16 +1191,16 @@ static int do_ssim360(FFFrameSync *fs)
 
     // Record percentiles from histogram and attach metadata when using tape
     if (s->use_tape) {
-        int i, p, hist_indices[4];
+        int hist_indices[4];
         double hist_weight[4];
 
-        for (i = 0; i < s->nb_components; i++) {
+        for (int i = 0; i < s->nb_components; i++) {
             hist_indices[i] = SSIM360_HIST_SIZE - 1;
             hist_weight[i] = 0;
         }
 
-        for (p = 0; PERCENTILE_LIST[p] >= 0.0; p ++) {
-            for (i = 0; i < s->nb_components; i++) {
+        for (int p = 0; PERCENTILE_LIST[p] >= 0.0; p ++) {
+            for (int i = 0; i < s->nb_components; i++) {
                 double target_weight, ssim360p;
 
                 // Target weight = total number of samples above the specified percentile
@@ -1218,12 +1218,12 @@ static int do_ssim360(FFFrameSync *fs)
             }
         }
 
-        for (i = 0; i < s->nb_components; i++) {
+        for (int i = 0; i < s->nb_components; i++) {
             memset(s->ssim360_hist[i], 0, SSIM360_HIST_SIZE * sizeof(double));
             s->ssim360_hist_net[i] = 0;
         }
 
-        for (i = 0; i < s->nb_components; i++) {
+        for (int i = 0; i < s->nb_components; i++) {
             int cidx = s->is_rgb ? s->rgba_map[i] : i;
             set_meta(metadata, "lavfi.ssim360.", s->comps[i], c[cidx]);
         }
@@ -1235,7 +1235,7 @@ static int do_ssim360(FFFrameSync *fs)
         if (s->stats_file) {
             fprintf(s->stats_file, "n:%"PRId64" ", s->nb_ssim_frames);
 
-            for (i = 0; i < s->nb_components; i++) {
+            for (int i = 0; i < s->nb_components; i++) {
                 int cidx = s->is_rgb ? s->rgba_map[i] : i;
                 fprintf(s->stats_file, "%c:%f ", s->comps[i], c[cidx]);
             }
