@@ -194,9 +194,8 @@ static float ssim_end1(int s1, int s2, int ss, int s12)
 static float ssim_endn_16bit(const int64_t (*sum0)[4], const int64_t (*sum1)[4], int width, int max)
 {
     float ssim = 0.0;
-    int i;
 
-    for (i = 0; i < width; i++)
+    for (int i = 0; i < width; i++)
         ssim += ssim_end1x(sum0[i][0] + sum0[i + 1][0] + sum1[i][0] + sum1[i + 1][0],
                            sum0[i][1] + sum0[i + 1][1] + sum1[i][1] + sum1[i + 1][1],
                            sum0[i][2] + sum0[i + 1][2] + sum1[i][2] + sum1[i + 1][2],
@@ -208,9 +207,8 @@ static float ssim_endn_16bit(const int64_t (*sum0)[4], const int64_t (*sum1)[4],
 static double ssim_endn_8bit(const int (*sum0)[4], const int (*sum1)[4], int width)
 {
     double ssim = 0.0;
-    int i;
 
-    for (i = 0; i < width; i++)
+    for (int i = 0; i < width; i++)
         ssim += ssim_end1(sum0[i][0] + sum0[i + 1][0] + sum1[i][0] + sum1[i + 1][0],
                           sum0[i][1] + sum0[i + 1][1] + sum1[i][1] + sum1[i + 1][1],
                           sum0[i][2] + sum0[i + 1][2] + sum1[i][2] + sum1[i + 1][2],
@@ -443,7 +441,7 @@ static int config_input_ref(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     AVFilterContext *ctx  = inlink->dst;
     SSIMContext *s = ctx->priv;
-    int sum = 0, i;
+    int sum = 0;
 
     s->nb_threads = ff_filter_get_nb_threads(ctx);
     s->nb_components = desc->nb_components;
@@ -464,9 +462,9 @@ static int config_input_ref(AVFilterLink *inlink)
     s->planeheight[0] = s->planeheight[3] = inlink->h;
     s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
-    for (i = 0; i < s->nb_components; i++)
+    for (int i = 0; i < s->nb_components; i++)
         sum += s->planeheight[i] * s->planewidth[i];
-    for (i = 0; i < s->nb_components; i++)
+    for (int i = 0; i < s->nb_components; i++)
         s->coefs[i] = (double) s->planeheight[i] * s->planewidth[i] / sum;
 
     s->temp = av_calloc(s->nb_threads, sizeof(*s->temp));
@@ -544,9 +542,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (s->nb_frames > 0) {
         char buf[256];
-        int i;
         buf[0] = 0;
-        for (i = 0; i < s->nb_components; i++) {
+        for (int i = 0; i < s->nb_components; i++) {
             int c = s->is_rgb ? s->rgba_map[i] : i;
             av_strlcatf(buf, sizeof(buf), " %c:%f (%f)", s->comps[i], s->ssim[c] / s->nb_frames,
                         ssim_db(s->ssim[c], s->nb_frames));
