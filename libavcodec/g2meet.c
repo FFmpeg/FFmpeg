@@ -1052,7 +1052,6 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
 {
     int width, height;
     int hdr, zsize, npal, tidx = -1, ret;
-    int i, j;
     const uint8_t *src_end = src + src_size;
     uint8_t pal[768], transp[3];
     uLongf dlen = (c->tile_width + 1) * c->tile_height;
@@ -1071,11 +1070,10 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
     hdr      = *src++;
     sub_type = hdr >> 5;
     if (sub_type == 0) {
-        int j;
         memcpy(transp, src, 3);
         src += 3;
-        for (j = 0; j < height; j++, dst += c->framebuf_stride)
-            for (i = 0; i < width; i++)
+        for (int j = 0; j < height; j++, dst += c->framebuf_stride)
+            for (int i = 0; i < width; i++)
                 memcpy(dst + i * 3, transp, 3);
         return 0;
     } else if (sub_type == 1) {
@@ -1093,7 +1091,7 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
     memcpy(pal, src, npal * 3);
     src += npal * 3;
     if (sub_type != 2) {
-        for (i = 0; i < npal; i++) {
+        for (int i = 0; i < npal; i++) {
             if (!memcmp(pal + i * 3, transp, 3)) {
                 tidx = i;
                 break;
@@ -1125,8 +1123,8 @@ static int kempf_decode_tile(G2MContext *c, int tile_x, int tile_y,
     bstride = FFALIGN(width, 16) >> 3;
     // blocks are coded LSB and we need normal bitreader for JPEG data
     bits = 0;
-    for (i = 0; i < (FFALIGN(height, 16) >> 4); i++) {
-        for (j = 0; j < (FFALIGN(width, 16) >> 4); j++) {
+    for (int i = 0; i < (FFALIGN(height, 16) >> 4); i++) {
+        for (int j = 0; j < (FFALIGN(width, 16) >> 4); j++) {
             if (!bits) {
                 if (src >= src_end)
                     return AVERROR_INVALIDDATA;
