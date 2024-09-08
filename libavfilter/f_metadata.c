@@ -276,10 +276,8 @@ static av_cold int init(AVFilterContext *ctx)
         }
 
         if (ret < 0) {
-            char buf[128];
-            av_strerror(ret, buf, sizeof(buf));
             av_log(ctx, AV_LOG_ERROR, "Could not open %s: %s\n",
-                   s->file_str, buf);
+                   s->file_str, av_err2str(ret));
             return ret;
         }
 
