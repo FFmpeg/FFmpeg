@@ -2,6 +2,9 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-09-23 - xxxxxxxxxx - lavc 61.18.100 - avcodec.h
+  Add a new flag AV_CODEC_EXPORT_DATA_ENHANCEMENTS for export_side_data.
+
 2024-09-18 - xxxxxxxxxx - lavc 61.17.100 - packet.h
   Add AV_PKT_DATA_LCEVC.
 

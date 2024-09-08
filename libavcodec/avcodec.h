@@ -420,6 +420,12 @@ typedef struct RcOverride{
 #define AV_CODEC_EXPORT_DATA_FILM_GRAIN (1 << 3)
 
 /**
+ * Decoding only.
+ * Do not apply picture enhancement layers, export them instead.
+ */
+#define AV_CODEC_EXPORT_DATA_ENHANCEMENTS (1 << 4)
+
+/**
  * The decoder will keep a reference to the frame and may reuse it later.
  */
 #define AV_GET_BUFFER_FLAG_REF (1 << 0)
