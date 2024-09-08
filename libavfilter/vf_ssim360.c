@@ -1320,12 +1320,9 @@ static av_cold int init(AVFilterContext *ctx)
         } else {
             s->stats_file = avpriv_fopen_utf8(s->stats_file_str, "w");
             if (!s->stats_file) {
-                char buf[128];
-
                 err = AVERROR(errno);
-                av_strerror(err, buf, sizeof(buf));
                 av_log(ctx, AV_LOG_ERROR, "Could not open stats file %s: %s\n",
-                       s->stats_file_str, buf);
+                       s->stats_file_str, av_err2str(err));
                 return err;
             }
         }
