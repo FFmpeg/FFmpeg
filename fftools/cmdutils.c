@@ -802,7 +802,7 @@ int split_commandline(OptionParseContext *octx, int argc, char *argv[],
     while (optindex < argc) {
         const char *opt = argv[optindex++], *arg;
         const OptionDef *po;
-        int ret, group_idx;
+        int group_idx;
 
         av_log(NULL, AV_LOG_DEBUG, "Reading option '%s' ...", opt);
 
@@ -1366,7 +1366,7 @@ int filter_codec_opts(const AVDictionary *opts, enum AVCodecID codec_id,
 }
 
 int setup_find_stream_info_opts(AVFormatContext *s,
-                                AVDictionary *codec_opts,
+                                AVDictionary *local_codec_opts,
                                 AVDictionary ***dst)
 {
     int ret;
@@ -1382,7 +1382,7 @@ int setup_find_stream_info_opts(AVFormatContext *s,
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < s->nb_streams; i++) {
-        ret = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
+        ret = filter_codec_opts(local_codec_opts, s->streams[i]->codecpar->codec_id,
                                 s, s->streams[i], NULL, &opts[i], NULL);
         if (ret < 0)
             goto fail;
