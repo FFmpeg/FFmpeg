@@ -62,7 +62,7 @@ typedef struct CryptoContext {
 #define OFFSET(x) offsetof(CryptoContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
-static const AVOption options[] = {
+static const AVOption crypto_options[] = {
     {"key", "AES encryption/decryption key",                   OFFSET(key),         AV_OPT_TYPE_BINARY, .flags = D|E },
     {"iv",  "AES encryption/decryption initialization vector", OFFSET(iv),          AV_OPT_TYPE_BINARY, .flags = D|E },
     {"decryption_key", "AES decryption key",                   OFFSET(decrypt_key), AV_OPT_TYPE_BINARY, .flags = D },
@@ -75,7 +75,7 @@ static const AVOption options[] = {
 static const AVClass crypto_class = {
     .class_name     = "crypto",
     .item_name      = av_default_item_name,
-    .option         = options,
+    .option         = crypto_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
