@@ -90,11 +90,10 @@ static void convolution_x(const uint16_t *filter, int filt_w, const uint16_t *sr
     int borders_left = radius;
     int borders_right = w - (filt_w - radius);
     int i, j, k;
-    int sum = 0;
 
     for (i = 0; i < h; i++) {
         for (j = 0; j < borders_left; j++) {
-            sum = 0;
+            int sum = 0;
             for (k = 0; k < filt_w; k++) {
                 int j_tap = FFABS(j - radius + k);
                 if (j_tap >= w) {
@@ -114,7 +113,7 @@ static void convolution_x(const uint16_t *filter, int filt_w, const uint16_t *sr
         }
 
         for (j = borders_right; j < w; j++) {
-            sum = 0;
+            int sum = 0;
             for (k = 0; k < filt_w; k++) {
                 int j_tap = FFABS(j - radius + k);
                 if (j_tap >= w) {
