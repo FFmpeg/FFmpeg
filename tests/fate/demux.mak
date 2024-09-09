@@ -76,7 +76,7 @@ fate-mkv-1242: CMD = framecrc -i $(TARGET_SAMPLES)/mkv/1242-small.mkv -c copy -f
 FATE_SAMPLES_DEMUX-$(CONFIG_MLV_DEMUXER) += fate-mlv-demux
 fate-mlv-demux: CMD = crc -i $(TARGET_SAMPLES)/mlv/M19-0333-cut.MLV -c copy
 
-FATE_SAMPLES_DEMUX-$(CONFIG_MOV_DEMUXER) += fate-mov-mp3-demux
+FATE_SAMPLES_DEMUX-$(call ALLYES, MOV_DEMUXER FRAMECRC_MUXER FILE_PROTOCOL PIPE_PROTOCOL) += fate-mov-mp3-demux
 fate-mov-mp3-demux: CMD = framecrc -i $(TARGET_SAMPLES)/mpegaudio/packed_maindata.mp3.mp4 -c copy
 
 FATE_FFPROBE_DEMUX-$(call ALLYES, MPEGTS_DEMUXER ARESAMPLE_FILTER) += fate-ts-opus-demux
