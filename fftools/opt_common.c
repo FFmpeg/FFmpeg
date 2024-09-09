@@ -572,6 +572,7 @@ static void show_help_bsf(const char *name)
             printf(" %s", avcodec_descriptor_get(*id)->name);
             id++;
         }
+        printf("\n");
     }
     if (bsf->priv_class)
         show_help_children(bsf->priv_class, AV_OPT_FLAG_BSF_PARAM);
