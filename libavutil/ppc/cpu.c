@@ -20,6 +20,11 @@
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
+#elif HAVE_GETAUXVAL || HAVE_ELF_AUX_INFO
+#ifdef __FreeBSD__
+#include <machine/cpu.h>
+#endif
+#include <sys/auxv.h>
 #elif defined(__linux__)
 #include <asm/cputable.h>
 #include <linux/auxvec.h>
@@ -56,6 +61,26 @@ int ff_get_cpu_flags_ppc(void)
     if (result == VECTORTYPE_ALTIVEC)
         return AV_CPU_FLAG_ALTIVEC;
     return 0;
+#elif HAVE_GETAUXVAL || HAVE_ELF_AUX_INFO
+    int flags = 0;
+
+    unsigned long hwcap = ff_getauxval(AT_HWCAP);
+#ifdef PPC_FEATURE2_ARCH_2_07
+    unsigned long hwcap2 = ff_getauxval(AT_HWCAP2);
+#endif
+
+    if (hwcap & PPC_FEATURE_HAS_ALTIVEC)
+       flags |= AV_CPU_FLAG_ALTIVEC;
+#ifdef PPC_FEATURE_HAS_VSX
+    if (hwcap & PPC_FEATURE_HAS_VSX)
+       flags |= AV_CPU_FLAG_VSX;
+#endif
+#ifdef PPC_FEATURE2_ARCH_2_07
+    if (hwcap2 & PPC_FEATURE2_ARCH_2_07)
+       flags |= AV_CPU_FLAG_POWER8;
+#endif
+
+    return flags;
 #elif defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #if defined(__NetBSD__) || defined(__OpenBSD__)
     int sels[2] = {CTL_MACHDEP, CPU_ALTIVEC};
