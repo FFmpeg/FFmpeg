@@ -985,8 +985,8 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
             }
         } else {
             WAVEFORMATEX *fx;
-            AUDIO_STREAM_CONFIG_CAPS *acaps = caps;
 #if DSHOWDEBUG
+            AUDIO_STREAM_CONFIG_CAPS *acaps = caps;
             ff_print_AUDIO_STREAM_CONFIG_CAPS(acaps);
 #endif
             if (IsEqualGUID(&type->formattype, &FORMAT_WaveFormatEx)) {
