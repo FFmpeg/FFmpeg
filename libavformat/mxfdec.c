@@ -482,9 +482,7 @@ static int klv_read_packet(MXFContext *mxf, KLVPacket *klv, AVIOContext *pb)
 
 static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv, int body_sid)
 {
-    int i;
-
-    for (i = 0; i < s->nb_streams; i++) {
+    for (int i = 0; i < s->nb_streams; i++) {
         MXFTrack *track = s->streams[i]->priv_data;
         /* SMPTE 379M 7.3 */
         if (track && (!body_sid || !track->body_sid || track->body_sid == body_sid) && !memcmp(klv->key + sizeof(mxf_essence_element_key), track->track_number, sizeof(track->track_number)))
@@ -523,12 +521,12 @@ static int mxf_get_eia608_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt
     int cdp_identifier, cdp_length, cdp_footer_id, ccdata_id, cc_count;
     int line_num, sample_coding, sample_count;
     int did, sdid, data_length;
-    int i, ret;
+    int ret;
 
     if (count > 1)
         av_log(s, AV_LOG_WARNING, "unsupported multiple ANC packets (%d) per KLV packet\n", count);
 
-    for (i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
         if (length < 6) {
             av_log(s, AV_LOG_ERROR, "error reading s436m packet %"PRId64"\n", length);
             return AVERROR_INVALIDDATA;
@@ -597,7 +595,6 @@ static int mxf_get_d10_aes3_packet(AVIOContext *pb, AVStream *st, AVPacket *pkt,
 {
     const uint8_t *buf_ptr, *end_ptr;
     uint8_t *data_ptr;
-    int i;
 
     if (length > 61444) /* worst case PAL 1920 samples 8 channels */
         return AVERROR_INVALIDDATA;
@@ -612,7 +609,7 @@ static int mxf_get_d10_aes3_packet(AVIOContext *pb, AVStream *st, AVPacket *pkt,
         return AVERROR_INVALIDDATA;
 
     for (; end_ptr - buf_ptr >= st->codecpar->ch_layout.nb_channels * 4; ) {
-        for (i = 0; i < st->codecpar->ch_layout.nb_channels; i++) {
+        for (int i = 0; i < st->codecpar->ch_layout.nb_channels; i++) {
             uint32_t sample = bytestream_get_le32(&buf_ptr);
             if (st->codecpar->bits_per_coded_sample == 24)
                 bytestream_put_le24(&data_ptr, (sample >> 4) & 0xffffff);
@@ -2068,7 +2065,7 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
  */
 static int mxf_compute_index_tables(MXFContext *mxf)
 {
-    int i, j, k, ret, nb_sorted_segments;
+    int ret, nb_sorted_segments;
     MXFIndexTableSegment **sorted_segments = NULL;
 
     if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)) ||
@@ -2078,7 +2075,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
     }
 
     /* sanity check and count unique BodySIDs/IndexSIDs */
-    for (i = 0; i < nb_sorted_segments; i++) {
+    for (int i = 0; i < nb_sorted_segments; i++) {
         if (i == 0 || sorted_segments[i-1]->index_sid != sorted_segments[i]->index_sid)
             mxf->nb_index_tables++;
         else if (sorted_segments[i-1]->body_sid != sorted_segments[i]->body_sid) {
@@ -2097,7 +2094,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
     }
 
     /* distribute sorted segments to index tables */
-    for (i = j = 0; i < nb_sorted_segments; i++) {
+    for (int i = 0, j = 0; i < nb_sorted_segments; i++) {
         if (i != 0 && sorted_segments[i-1]->index_sid != sorted_segments[i]->index_sid) {
             /* next IndexSID */
             j++;
@@ -2106,7 +2103,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         mxf->index_tables[j].nb_segments++;
     }
 
-    for (i = j = 0; j < mxf->nb_index_tables; i += mxf->index_tables[j++].nb_segments) {
+    for (int i = 0, j = 0; j < mxf->nb_index_tables; i += mxf->index_tables[j++].nb_segments) {
         MXFIndexTable *t = &mxf->index_tables[j];
         MXFTrack *mxf_track = NULL;
 
@@ -2129,7 +2126,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         if ((ret = mxf_compute_ptses_fake_index(mxf, t)) < 0)
             goto finish_decoding_index;
 
-        for (k = 0; k < mxf->fc->nb_streams; k++) {
+        for (int k = 0; k < mxf->fc->nb_streams; k++) {
             MXFTrack *track = mxf->fc->streams[k]->priv_data;
             if (track && track->index_sid == t->index_sid) {
                 mxf_track = track;
@@ -2138,7 +2135,7 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         }
 
         /* fix zero IndexDurations */
-        for (k = 0; k < t->nb_segments; k++) {
+        for (int k = 0; k < t->nb_segments; k++) {
             if (!t->segments[k]->index_edit_rate.num || !t->segments[k]->index_edit_rate.den) {
                 av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment %i has invalid IndexEditRate\n",
                        t->index_sid, k);
@@ -4087,17 +4084,16 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int mxf_read_close(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
-    int i;
 
     av_freep(&mxf->packages_refs);
     av_freep(&mxf->essence_container_data_refs);
 
-    for (i = 0; i < s->nb_streams; i++)
+    for (int i = 0; i < s->nb_streams; i++)
         s->streams[i]->priv_data = NULL;
 
     for (int type = 0; type < FF_ARRAY_ELEMS(mxf->metadata_set_groups); type++) {
         MXFMetadataSetGroup *mg = &mxf->metadata_set_groups[type];
-        for (i = 0; i < mg->metadata_sets_count; i++)
+        for (int i = 0; i < mg->metadata_sets_count; i++)
             mxf_free_metadataset(mg->metadata_sets + i, type);
         mg->metadata_sets_count = 0;
         av_freep(&mg->metadata_sets);
@@ -4107,7 +4103,7 @@ static int mxf_read_close(AVFormatContext *s)
     av_freep(&mxf->local_tags);
 
     if (mxf->index_tables) {
-        for (i = 0; i < mxf->nb_index_tables; i++) {
+        for (int i = 0; i < mxf->nb_index_tables; i++) {
             av_freep(&mxf->index_tables[i].segments);
             av_freep(&mxf->index_tables[i].ptses);
             av_freep(&mxf->index_tables[i].fake_index);
@@ -4152,7 +4148,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int64_t seconds;
     MXFContext* mxf = s->priv_data;
     int64_t seekpos;
-    int i, ret;
+    int ret;
     MXFIndexTable *t;
     MXFTrack *source_track = st->priv_data;
 
@@ -4182,6 +4178,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 
         t = &mxf->index_tables[0];
         if (t->index_sid != source_track->index_sid) {
+            int i;
             /* If the first index table does not belong to the stream, then find a stream which does belong to the index table */
             for (i = 0; i < s->nb_streams; i++) {
                 MXFTrack *new_source_track = s->streams[i]->priv_data;
@@ -4243,7 +4240,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     }
 
     // Update all tracks sample count
-    for (i = 0; i < s->nb_streams; i++) {
+    for (int i = 0; i < s->nb_streams; i++) {
         AVStream *cur_st = s->streams[i];
         MXFTrack *cur_track = cur_st->priv_data;
         if (cur_track) {
