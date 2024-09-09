@@ -249,7 +249,7 @@ const AVFilter ff_vf_denoise_vaapi = {
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(misc_vaapi_inputs),
     FILTER_OUTPUTS(misc_vaapi_outputs),
-    FILTER_QUERY_FUNC(&ff_vaapi_vpp_query_formats),
+    FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
     .priv_class    = &denoise_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
@@ -262,7 +262,7 @@ const AVFilter ff_vf_sharpness_vaapi = {
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(misc_vaapi_inputs),
     FILTER_OUTPUTS(misc_vaapi_outputs),
-    FILTER_QUERY_FUNC(&ff_vaapi_vpp_query_formats),
+    FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
     .priv_class    = &sharpness_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };

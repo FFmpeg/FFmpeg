@@ -67,7 +67,9 @@ void ff_vaapi_vpp_ctx_init(AVFilterContext *avctx);
 
 void ff_vaapi_vpp_ctx_uninit(AVFilterContext *avctx);
 
-int ff_vaapi_vpp_query_formats(AVFilterContext *avctx);
+int ff_vaapi_vpp_query_formats(const AVFilterContext *avctx,
+                               AVFilterFormatsConfig **cfg_in,
+                               AVFilterFormatsConfig **cfg_out);
 
 void ff_vaapi_vpp_pipeline_uninit(AVFilterContext *avctx);
 

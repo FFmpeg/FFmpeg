@@ -247,7 +247,7 @@ const AVFilter ff_vf_procamp_vaapi = {
     .uninit        = &ff_vaapi_vpp_ctx_uninit,
     FILTER_INPUTS(procamp_vaapi_inputs),
     FILTER_OUTPUTS(procamp_vaapi_outputs),
-    FILTER_QUERY_FUNC(&ff_vaapi_vpp_query_formats),
+    FILTER_QUERY_FUNC2(&ff_vaapi_vpp_query_formats),
     .priv_class    = &procamp_vaapi_class,
     .flags_internal = FF_FILTER_FLAG_HWFRAME_AWARE,
 };
