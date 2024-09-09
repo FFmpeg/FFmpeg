@@ -5,7 +5,7 @@
 fate-cbs: fate-cbs-av1 fate-cbs-h264 fate-cbs-hevc fate-cbs-mpeg2 fate-cbs-vp9 fate-cbs-vvc
 
 FATE_CBS_DEPS = $(call ALLYES, $(1)_DEMUXER $(2)_PARSER $(3)_METADATA_BSF $(4)_DECODER $(5)_MUXER)
-FATE_CBS_NO_DEC_DEPS = $(call ALLYES, $(1)_DEMUXER $(2)_PARSER $(3)_METADATA_BSF $(4)_MUXER)
+FATE_CBS_NO_DEC_DEPS = $(call ALLYES, $(1)_DEMUXER $(1)_PARSER $(1)_METADATA_BSF $(1)_MUXER)
 
 define FATE_CBS_TEST
 # (codec, test_name, sample_file, output_format)
@@ -197,7 +197,7 @@ FATE_CBS_VVC_SAMPLES =        \
 
 $(foreach N,$(FATE_CBS_VVC_SAMPLES),$(eval $(call FATE_CBS_NO_DEC_TEST,vvc,$(basename $(N)),vvc-conformance/$(N),vvc)))
 
-FATE_CBS_VVC-$(call FATE_CBS_NO_DEC_DEPS, HEVC, HEVC, HEVC, HEVC) = $(FATE_CBS_vvc)
+FATE_CBS_VVC-$(call FATE_CBS_NO_DEC_DEPS, VVC) = $(FATE_CBS_vvc)
 
 FATE_SAMPLES_AVCONV += $(FATE_CBS_VVC-yes)
 fate-cbs-vvc: $(FATE_CBS_VVC-yes)
