@@ -2119,8 +2119,6 @@ THREADS_LIST="
 "
 
 ATOMICS_LIST="
-    atomics_gcc
-    atomics_suncc
     atomics_win32
 "
 
@@ -2251,13 +2249,10 @@ ARCH_FEATURES="
 "
 
 BUILTIN_LIST="
-    atomic_cas_ptr
-    machine_rw_barrier
     MemoryBarrier
     mm_empty
     rdtsc
     sem_timedwait
-    sync_val_compare_and_swap
 "
 HAVE_LIST_CMDLINE="
     inline_asm
@@ -2837,8 +2832,6 @@ valgrind_backtrace_conflict="optimizations"
 valgrind_backtrace_deps="valgrind_valgrind_h"
 
 # threading support
-atomics_gcc_if="sync_val_compare_and_swap"
-atomics_suncc_if="atomic_cas_ptr machine_rw_barrier"
 atomics_win32_if="MemoryBarrier"
 atomics_native_if_any="$ATOMICS_LIST"
 w32threads_deps="atomics_native"
@@ -6528,10 +6521,7 @@ if ! disabled network; then
     fi
 fi
 
-check_builtin atomic_cas_ptr atomic.h "void **ptr; void *oldval, *newval; atomic_cas_ptr(ptr, oldval, newval)"
-check_builtin machine_rw_barrier mbarrier.h "__machine_rw_barrier()"
 check_builtin MemoryBarrier windows.h "MemoryBarrier()"
-check_builtin sync_val_compare_and_swap "" "int *ptr; int oldval, newval; __sync_val_compare_and_swap(ptr, oldval, newval)"
 check_builtin gmtime_r time.h "time_t *time; struct tm *tm; gmtime_r(time, tm)"
 check_builtin localtime_r time.h "time_t *time; struct tm *tm; localtime_r(time, tm)"
 
@@ -7790,15 +7780,8 @@ for thread in $THREADS_LIST; do
 done
 
 if disabled stdatomic; then
-    if enabled atomics_gcc; then
-        add_cppflags '-I\$(SRC_PATH)/compat/atomics/gcc'
-    elif enabled atomics_win32; then
+    if enabled atomics_win32; then
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/win32'
-    elif enabled atomics_suncc; then
-        add_cppflags '-I\$(SRC_PATH)/compat/atomics/suncc'
-    elif enabled pthreads; then
-        add_compat atomics/pthread/stdatomic.o
-        add_cppflags '-I\$(SRC_PATH)/compat/atomics/pthread'
     else
         enabled threads && die "Threading is enabled, but no atomics are available"
         add_cppflags '-I\$(SRC_PATH)/compat/atomics/dummy'
