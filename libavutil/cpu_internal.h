@@ -59,4 +59,6 @@ size_t ff_get_cpu_max_align_ppc(void);
 size_t ff_get_cpu_max_align_x86(void);
 size_t ff_get_cpu_max_align_loongarch(void);
 
+unsigned long ff_getauxval(unsigned long type);
+
 #endif /* AVUTIL_CPU_INTERNAL_H */

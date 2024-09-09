@@ -55,7 +55,7 @@
 static int get_auxval(uint32_t *hwcap)
 {
 #if HAVE_GETAUXVAL
-    unsigned long ret = getauxval(AT_HWCAP);
+    unsigned long ret = ff_getauxval(AT_HWCAP);
     if (ret == 0)
         return -1;
     *hwcap = ret;

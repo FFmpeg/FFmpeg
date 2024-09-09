@@ -86,7 +86,7 @@ int ff_get_cpu_flags_riscv(void)
     }
 #elif HAVE_GETAUXVAL
     {
-        const unsigned long hwcap = getauxval(AT_HWCAP);
+        const unsigned long hwcap = ff_getauxval(AT_HWCAP);
 
         if (hwcap & HWCAP_RV('I'))
             ret |= AV_CPU_FLAG_RVI;

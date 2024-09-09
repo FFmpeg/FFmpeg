@@ -28,7 +28,7 @@
 static int cpu_flags_getauxval(void)
 {
     int flags = 0;
-    int flag  = (int)getauxval(AT_HWCAP);
+    int flag  = (int)ff_getauxval(AT_HWCAP);
 
     if (flag & LA_HWCAP_LSX)
         flags |= AV_CPU_FLAG_LSX;

@@ -31,8 +31,8 @@ static int detect_flags(void)
 {
     int flags = 0;
 
-    unsigned long hwcap = getauxval(AT_HWCAP);
-    unsigned long hwcap2 = getauxval(AT_HWCAP2);
+    unsigned long hwcap = ff_getauxval(AT_HWCAP);
+    unsigned long hwcap2 = ff_getauxval(AT_HWCAP2);
 
     if (hwcap & HWCAP_AARCH64_ASIMDDP)
         flags |= AV_CPU_FLAG_DOTPROD;
