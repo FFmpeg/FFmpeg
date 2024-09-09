@@ -255,24 +255,35 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_audio_fifo_free(flite->fifo);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    FliteContext *flite = ctx->priv;
+    const FliteContext *flite = ctx->priv;
+
+    static const enum AVSampleFormat formats[] = {
+        AV_SAMPLE_FMT_S16,
+        AV_SAMPLE_FMT_NONE,
+    };
+    int sample_rates[] = { flite->sample_rate, -1 };
+    AVChannelLayout layouts[2] = {
+        { .nb_channels = 0 },
+    };
+
     int ret;
 
-    AVFilterChannelLayouts *chlayouts = NULL;
-    AVFilterFormats *sample_formats = NULL;
-    AVFilterFormats *sample_rates = NULL;
-    AVChannelLayout chlayout = { 0 };
+    av_channel_layout_default(&layouts[0], flite->nb_channels);
 
-    av_channel_layout_default(&chlayout, flite->nb_channels);
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, layouts);
+    if (ret < 0)
+        return ret;
 
-    if ((ret = ff_add_channel_layout         (&chlayouts     , &chlayout               )) < 0 ||
-        (ret = ff_set_common_channel_layouts (ctx            , chlayouts               )) < 0 ||
-        (ret = ff_add_format                 (&sample_formats, AV_SAMPLE_FMT_S16       )) < 0 ||
-        (ret = ff_set_common_formats         (ctx            , sample_formats          )) < 0 ||
-        (ret = ff_add_format                 (&sample_rates  , flite->sample_rate      )) < 0 ||
-        (ret = ff_set_common_samplerates     (ctx            , sample_rates            )) < 0)
+    ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, formats);
+    if (ret < 0)
+        return ret;
+
+    ret = ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
+    if (ret < 0)
         return ret;
 
     return 0;
@@ -348,6 +359,6 @@ const AVFilter ff_asrc_flite = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(flite_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &flite_class,
 };
