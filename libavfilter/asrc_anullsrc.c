@@ -61,18 +61,20 @@ static const AVOption anullsrc_options[]= {
 
 AVFILTER_DEFINE_CLASS(anullsrc);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    ANullContext *null = ctx->priv;
+    const ANullContext *null = ctx->priv;
     const AVChannelLayout chlayouts[] = { null->ch_layout, { 0 } };
     int sample_rates[] = { null->sample_rate, -1 };
     int ret;
 
-    if ((ret = ff_set_common_formats         (ctx, ff_all_formats              (AVMEDIA_TYPE_AUDIO))) < 0 ||
-        (ret = ff_set_common_samplerates_from_list(ctx, sample_rates)) < 0)
+    ret = ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
+    if (ret < 0)
         return ret;
 
-    return ff_set_common_channel_layouts_from_list(ctx, chlayouts);
+    return ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, chlayouts);
 }
 
 static av_cold int config_props(AVFilterLink *outlink)
@@ -124,7 +126,7 @@ const AVFilter ff_asrc_anullsrc = {
     .priv_size     = sizeof(ANullContext),
     .inputs        = NULL,
     FILTER_OUTPUTS(avfilter_asrc_anullsrc_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .activate      = activate,
     .priv_class    = &anullsrc_class,
 };
