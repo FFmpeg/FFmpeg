@@ -49,7 +49,7 @@
 #include <unistd.h>
 #endif
 
-#if HAVE_GETAUXVAL
+#if HAVE_GETAUXVAL || HAVE_ELF_AUX_INFO
 #include <sys/auxv.h>
 #endif
 
@@ -292,6 +292,13 @@ unsigned long ff_getauxval(unsigned long type)
 {
 #if HAVE_GETAUXVAL
     return getauxval(type);
+#elif HAVE_ELF_AUX_INFO
+    unsigned long aux = 0;
+    int ret = elf_aux_info(type, &aux, sizeof(aux));
+    if (ret != 0) {
+        errno = ret;
+    }
+    return aux;
 #else
     errno = ENOSYS;
     return 0;

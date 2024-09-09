@@ -20,7 +20,7 @@
 #include "libavutil/cpu_internal.h"
 #include "config.h"
 
-#if (defined(__linux__) || defined(__ANDROID__)) && HAVE_GETAUXVAL
+#if HAVE_GETAUXVAL || HAVE_ELF_AUX_INFO
 #include <stdint.h>
 #include <sys/auxv.h>
 

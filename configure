@@ -2367,6 +2367,7 @@ SYSTEM_FUNCS="
     clock_gettime
     closesocket
     CommandLineToArgvW
+    elf_aux_info
     fcntl
     getaddrinfo
     getauxval
@@ -6579,6 +6580,7 @@ check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers stdlib.h getenv
 check_func_headers sys/stat.h lstat
 check_func_headers sys/auxv.h getauxval
+check_func_headers sys/auxv.h elf_aux_info
 check_func_headers sys/sysctl.h sysctlbyname
 
 check_func_headers windows.h GetModuleHandle
