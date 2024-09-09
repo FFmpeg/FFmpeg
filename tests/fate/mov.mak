@@ -17,7 +17,7 @@ FATE_MOV-$(call FRAMEMD5, MOV) = fate-mov-3elist \
            fate-mov-stream-shorter-than-movie \
            fate-mov-pcm-remux \
 
-FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
+FATE_MOV_FFPROBE-$(call FRAMEMD5, MOV) = fate-mov-neg-firstpts-discard \
                    fate-mov-neg-firstpts-discard-vorbis \
                    fate-mov-aac-2048-priming \
                    fate-mov-zombie \
