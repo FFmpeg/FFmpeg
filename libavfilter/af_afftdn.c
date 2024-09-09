@@ -379,7 +379,7 @@ static void process_frame(AVFilterContext *ctx,
             noisy_data[i] = mag = hypot(fft_data_dbl[i].re, fft_data_dbl[i].im);
             break;
         default:
-            av_assert2(0);
+            av_assert0(0);
         }
 
         power = mag * mag;
