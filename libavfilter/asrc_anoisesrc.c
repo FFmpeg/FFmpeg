@@ -83,24 +83,26 @@ static const AVOption anoisesrc_options[] = {
 
 AVFILTER_DEFINE_CLASS(anoisesrc);
 
-static av_cold int query_formats(AVFilterContext *ctx)
+static av_cold int query_formats(const AVFilterContext *ctx,
+                                 AVFilterFormatsConfig **cfg_in,
+                                 AVFilterFormatsConfig **cfg_out)
 {
-    ANoiseSrcContext *s = ctx->priv;
+    const ANoiseSrcContext *s = ctx->priv;
     static const AVChannelLayout chlayouts[] = { AV_CHANNEL_LAYOUT_MONO, { 0 } };
     int sample_rates[] = { s->sample_rate, -1 };
     static const enum AVSampleFormat sample_fmts[] = {
         AV_SAMPLE_FMT_DBL,
         AV_SAMPLE_FMT_NONE
     };
-    int ret = ff_set_common_formats_from_list(ctx, sample_fmts);
+    int ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret < 0)
         return ret;
 
-    ret = ff_set_common_channel_layouts_from_list(ctx, chlayouts);
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, chlayouts);
     if (ret < 0)
         return ret;
 
-    return ff_set_common_samplerates_from_list(ctx, sample_rates);
+    return ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
 }
 
 static double white_filter(double white, double *buf)
@@ -244,6 +246,6 @@ const AVFilter ff_asrc_anoisesrc = {
     .inputs        = NULL,
     .activate      = activate,
     FILTER_OUTPUTS(anoisesrc_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class    = &anoisesrc_class,
 };
