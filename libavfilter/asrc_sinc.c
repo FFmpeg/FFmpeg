@@ -74,22 +74,24 @@ static int activate(AVFilterContext *ctx)
     return ff_filter_frame(outlink, frame);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    SincContext *s = ctx->priv;
+    const SincContext *s = ctx->priv;
     static const AVChannelLayout chlayouts[] = { AV_CHANNEL_LAYOUT_MONO, { 0 } };
     int sample_rates[] = { s->sample_rate, -1 };
     static const enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_FLT,
                                                        AV_SAMPLE_FMT_NONE };
-    int ret = ff_set_common_formats_from_list(ctx, sample_fmts);
+    int ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, sample_fmts);
     if (ret < 0)
         return ret;
 
-    ret = ff_set_common_channel_layouts_from_list(ctx, chlayouts);
+    ret = ff_set_common_channel_layouts_from_list2(ctx, cfg_in, cfg_out, chlayouts);
     if (ret < 0)
         return ret;
 
-    return ff_set_common_samplerates_from_list(ctx, sample_rates);
+    return ff_set_common_samplerates_from_list2(ctx, cfg_in, cfg_out, sample_rates);
 }
 
 static float *make_lpf(int num_taps, float Fc, float beta, float rho,
@@ -428,5 +430,5 @@ const AVFilter ff_asrc_sinc = {
     .activate      = activate,
     .inputs        = NULL,
     FILTER_OUTPUTS(sinc_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
 };
