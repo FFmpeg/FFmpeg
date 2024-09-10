@@ -754,7 +754,6 @@ function ff_hevc_put_hevc_qpel_v4_8_neon, export=1
         calc_qpelb      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7
         st1             {v24.4h}, [x0], x9
         subs            w3, w3, #1
-        b.eq            2f
 .endm
 1:      calc_all
 .purgem calc
