@@ -577,8 +577,8 @@
                 "multilayer": 0
             },
             "tags": {
-                "E": "mc²",
-                "encoder": "Lavc pcm_s16le"
+                "encoder": "Lavc pcm_s16le",
+                "E": "mc²"
             }
         },
         {
@@ -628,9 +628,9 @@
                 "multilayer": 0
             },
             "tags": {
+                "encoder": "Lavc rawvideo",
                 "title": "foobar",
-                "duration_ts": "field-and-tags-conflict-attempt",
-                "encoder": "Lavc rawvideo"
+                "duration_ts": "field-and-tags-conflict-attempt"
             }
         },
         {

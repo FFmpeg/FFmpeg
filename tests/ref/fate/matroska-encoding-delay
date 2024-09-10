@@ -1,4 +1,4 @@
-604531e6d08cb35b2f3eec838ac45b80 *tests/data/fate/matroska-encoding-delay.matroska
+ece637ed28526724c88f5c69b8bf7d6f *tests/data/fate/matroska-encoding-delay.matroska
 961252 tests/data/fate/matroska-encoding-delay.matroska
 #extradata 0:       22, 0x32ea0490
 #tb 0: 1/1000

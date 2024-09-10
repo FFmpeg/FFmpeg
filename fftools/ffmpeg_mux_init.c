@@ -1140,6 +1140,28 @@ fail:
     return ret;
 }
 
+static int set_encoder_id(OutputStream *ost, const AVCodec *codec)
+{
+    const char *cname = codec->name;
+    uint8_t *encoder_string;
+    int encoder_string_len;
+
+    encoder_string_len = sizeof(LIBAVCODEC_IDENT) + strlen(cname) + 2;
+    encoder_string     = av_mallocz(encoder_string_len);
+    if (!encoder_string)
+        return AVERROR(ENOMEM);
+
+    if (!ost->file->bitexact && !ost->bitexact)
+        av_strlcpy(encoder_string, LIBAVCODEC_IDENT " ", encoder_string_len);
+    else
+        av_strlcpy(encoder_string, "Lavc ", encoder_string_len);
+    av_strlcat(encoder_string, cname, encoder_string_len);
+    av_dict_set(&ost->st->metadata, "encoder",  encoder_string,
+                AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_OVERWRITE);
+
+    return 0;
+}
+
 static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
                    InputStream *ist, OutputFilter *ofilter, const ViewSpecifier *vs,
                    OutputStream **post)
@@ -1404,6 +1426,12 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         ost->bitexact        = 1;
     } else if (ost->enc_ctx) {
         ost->bitexact        = !!(ost->enc_ctx->flags & AV_CODEC_FLAG_BITEXACT);
+    }
+
+    if (enc) {
+        ret = set_encoder_id(ost, enc);
+        if (ret < 0)
+            return ret;
     }
 
     opt_match_per_stream_str(ost, &o->time_bases, oc, st, &time_base);
@@ -2981,9 +3009,6 @@ static int copy_meta(Muxer *mux, const OptionsContext *o)
             if (!ost->ist)         /* this is true e.g. for attached files */
                 continue;
             av_dict_copy(&ost->st->metadata, ost->ist->st->metadata, AV_DICT_DONT_OVERWRITE);
-            if (ost->enc_ctx) {
-                av_dict_set(&ost->st->metadata, "encoder", NULL, 0);
-            }
         }
 
     return 0;

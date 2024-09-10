@@ -602,8 +602,8 @@ still_image=0
 multilayer=0
 
 [streams.stream.0.tags]
-E=mc²
 encoder=Lavc pcm_s16le
+E=mc²
 
 [streams.stream.1]
 index=1
@@ -667,9 +667,9 @@ still_image=0
 multilayer=0
 
 [streams.stream.1.tags]
+encoder=Lavc rawvideo
 title=foobar
 duration_ts=field-and-tags-conflict-attempt
-encoder=Lavc rawvideo
 
 [streams.stream.2]
 index=2
