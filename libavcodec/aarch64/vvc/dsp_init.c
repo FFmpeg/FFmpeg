@@ -67,6 +67,13 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.put[0][5][1][0] =
         c->inter.put[0][6][1][0] = ff_vvc_put_qpel_v8_8_neon;
 
+        c->inter.put[0][1][1][1] = ff_vvc_put_qpel_hv4_8_neon;
+        c->inter.put[0][2][1][1] = ff_vvc_put_qpel_hv8_8_neon;
+        c->inter.put[0][3][1][1] = ff_vvc_put_qpel_hv16_8_neon;
+        c->inter.put[0][4][1][1] = ff_vvc_put_qpel_hv32_8_neon;
+        c->inter.put[0][5][1][1] = ff_vvc_put_qpel_hv64_8_neon;
+        c->inter.put[0][6][1][1] = ff_vvc_put_qpel_hv128_8_neon;
+
         c->inter.put_uni[0][1][0][0] = ff_vvc_put_pel_uni_pixels4_8_neon;
         c->inter.put_uni[0][2][0][0] = ff_vvc_put_pel_uni_pixels8_8_neon;
         c->inter.put_uni[0][3][0][0] = ff_vvc_put_pel_uni_pixels16_8_neon;
@@ -103,6 +110,13 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
             c->inter.put[0][4][0][1] = ff_vvc_put_qpel_h32_8_neon_i8mm;
             c->inter.put[0][5][0][1] = ff_vvc_put_qpel_h64_8_neon_i8mm;
             c->inter.put[0][6][0][1] = ff_vvc_put_qpel_h128_8_neon_i8mm;
+
+            c->inter.put[0][1][1][1] = ff_vvc_put_qpel_hv4_8_neon_i8mm;
+            c->inter.put[0][2][1][1] = ff_vvc_put_qpel_hv8_8_neon_i8mm;
+            c->inter.put[0][3][1][1] = ff_vvc_put_qpel_hv16_8_neon_i8mm;
+            c->inter.put[0][4][1][1] = ff_vvc_put_qpel_hv32_8_neon_i8mm;
+            c->inter.put[0][5][1][1] = ff_vvc_put_qpel_hv64_8_neon_i8mm;
+            c->inter.put[0][6][1][1] = ff_vvc_put_qpel_hv128_8_neon_i8mm;
         }
     } else if (bd == 10) {
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
