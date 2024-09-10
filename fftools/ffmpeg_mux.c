@@ -620,6 +620,9 @@ int of_stream_init(OutputFile *of, OutputStream *ost,
         if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
             ost->st->time_base = av_add_q(enc_ctx->time_base, (AVRational){0, 1});
 
+        ost->st->avg_frame_rate = enc_ctx->framerate;
+        ost->st->sample_aspect_ratio = enc_ctx->sample_aspect_ratio;
+
         ret = avcodec_parameters_from_context(ms->par_in, enc_ctx);
         if (ret < 0) {
             av_log(ost, AV_LOG_FATAL,

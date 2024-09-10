@@ -206,7 +206,6 @@ int enc_open(void *opaque, const AVFrame *frame)
     if (ost->type == AVMEDIA_TYPE_AUDIO || ost->type == AVMEDIA_TYPE_VIDEO) {
         enc_ctx->time_base      = frame->time_base;
         enc_ctx->framerate      = fd->frame_rate_filter;
-        ost->st->avg_frame_rate = fd->frame_rate_filter;
     }
 
     switch (enc_ctx->codec_type) {
@@ -233,7 +232,7 @@ int enc_open(void *opaque, const AVFrame *frame)
                    frame->height > 0);
         enc_ctx->width  = frame->width;
         enc_ctx->height = frame->height;
-        enc_ctx->sample_aspect_ratio = ost->st->sample_aspect_ratio =
+        enc_ctx->sample_aspect_ratio =
             ost->frame_aspect_ratio.num ? // overridden by the -aspect cli option
             av_mul_q(ost->frame_aspect_ratio, (AVRational){ enc_ctx->height, enc_ctx->width }) :
             frame->sample_aspect_ratio;
