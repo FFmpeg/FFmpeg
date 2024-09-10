@@ -858,7 +858,7 @@ int dec_request_view(Decoder *dec, const ViewSpecifier *vs,
                      SchedulerNode *src);
 
 int enc_alloc(Encoder **penc, const AVCodec *codec,
-              Scheduler *sch, unsigned sch_idx);
+              Scheduler *sch, unsigned sch_idx, void *log_parent);
 void enc_free(Encoder **penc);
 
 int enc_open(void *opaque, const AVFrame *frame);

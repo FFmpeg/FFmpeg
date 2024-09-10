@@ -1227,7 +1227,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             return ret;
         ms->sch_idx_enc = ret;
 
-        ret = enc_alloc(&ost->enc, enc, mux->sch, ms->sch_idx_enc);
+        ret = enc_alloc(&ost->enc, enc, mux->sch, ms->sch_idx_enc, ost);
         if (ret < 0)
             return ret;
 
