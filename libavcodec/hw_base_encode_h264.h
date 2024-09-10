@@ -25,7 +25,6 @@
 typedef struct FFHWBaseEncodeH264 {
     H264RawSPS raw_sps;
     H264RawPPS raw_pps;
-    H264RawAUD raw_aud;
 
     H264RawSEIBufferingPeriod sei_buffering_period;
 
