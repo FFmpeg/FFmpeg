@@ -871,7 +871,8 @@ int enc_loopback(Encoder *enc);
  *
  * Open the muxer once all the streams have been initialized.
  */
-int of_stream_init(OutputFile *of, OutputStream *ost);
+int of_stream_init(OutputFile *of, OutputStream *ost,
+                   const AVCodecContext *enc_ctx);
 int of_write_trailer(OutputFile *of);
 int of_open(const OptionsContext *o, const char *filename, Scheduler *sch);
 void of_free(OutputFile **pof);

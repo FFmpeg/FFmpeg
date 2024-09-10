@@ -608,11 +608,18 @@ static int bsf_init(MuxStream *ms)
     return 0;
 }
 
-int of_stream_init(OutputFile *of, OutputStream *ost)
+int of_stream_init(OutputFile *of, OutputStream *ost,
+                   const AVCodecContext *enc_ctx)
 {
     Muxer *mux = mux_from_of(of);
     MuxStream *ms = ms_from_ost(ost);
     int ret;
+
+    if (enc_ctx) {
+        // use upstream time base unless it has been overridden previously
+        if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
+            ost->st->time_base = av_add_q(enc_ctx->time_base, (AVRational){0, 1});
+    }
 
     /* initialize bitstream filters for the output stream
      * needs to be done here, because the codec id for streamcopy is not

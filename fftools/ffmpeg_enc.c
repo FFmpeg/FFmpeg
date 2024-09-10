@@ -367,11 +367,7 @@ int enc_open(void *opaque, const AVFrame *frame)
         return ret;
     }
 
-    // copy timebase while removing common factors
-    if (ost->st->time_base.num <= 0 || ost->st->time_base.den <= 0)
-        ost->st->time_base = av_add_q(ost->enc_ctx->time_base, (AVRational){0, 1});
-
-    ret = of_stream_init(of, ost);
+    ret = of_stream_init(of, ost, enc_ctx);
     if (ret < 0)
         return ret;
 

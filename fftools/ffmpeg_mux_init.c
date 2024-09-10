@@ -3385,7 +3385,7 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
         OutputStream *ost = of->streams[i];
 
         if (!ost->enc) {
-            err = of_stream_init(of, ost);
+            err = of_stream_init(of, ost, NULL);
             if (err < 0)
                 return err;
         }
