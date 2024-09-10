@@ -594,12 +594,6 @@ typedef struct OutputStream {
 
     int index;               /* stream index in the output file */
 
-    /**
-     * Codec parameters for packets submitted to the muxer (i.e. before
-     * bitstream filtering, if any).
-     */
-    AVCodecParameters *par_in;
-
     /* input stream that is the source for this output stream;
      * may be NULL for streams with no well-defined source, e.g.
      * attachments or outputs from complex filtergraphs */

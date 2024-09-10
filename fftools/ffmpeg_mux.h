@@ -36,6 +36,12 @@
 typedef struct MuxStream {
     OutputStream    ost;
 
+    /**
+     * Codec parameters for packets submitted to the muxer (i.e. before
+     * bitstream filtering, if any).
+     */
+    AVCodecParameters *par_in;
+
     // name used for logging
     char            log_name[32];
 

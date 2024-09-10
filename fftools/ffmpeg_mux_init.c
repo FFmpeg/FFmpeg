@@ -67,8 +67,9 @@ static int check_opt_bitexact(void *ctx, const AVDictionary *opts,
 }
 
 static int choose_encoder(const OptionsContext *o, AVFormatContext *s,
-                          OutputStream *ost, const AVCodec **enc)
+                          MuxStream *ms, const AVCodec **enc)
 {
+    OutputStream     *ost = &ms->ost;
     enum AVMediaType type = ost->type;
     const char *codec_name = NULL;
 
@@ -90,20 +91,20 @@ static int choose_encoder(const OptionsContext *o, AVFormatContext *s,
     }
 
     if (!codec_name) {
-        ost->par_in->codec_id = av_guess_codec(s->oformat, NULL, s->url, NULL, ost->type);
-        *enc = avcodec_find_encoder(ost->par_in->codec_id);
+        ms->par_in->codec_id = av_guess_codec(s->oformat, NULL, s->url, NULL, ost->type);
+        *enc = avcodec_find_encoder(ms->par_in->codec_id);
         if (!*enc) {
             av_log(ost, AV_LOG_FATAL, "Automatic encoder selection failed "
                    "Default encoder for format %s (codec %s) is "
                    "probably disabled. Please choose an encoder manually.\n",
-                    s->oformat->name, avcodec_get_name(ost->par_in->codec_id));
+                    s->oformat->name, avcodec_get_name(ms->par_in->codec_id));
             return AVERROR_ENCODER_NOT_FOUND;
         }
     } else if (strcmp(codec_name, "copy")) {
         int ret = find_codec(ost, codec_name, ost->type, 1, enc);
         if (ret < 0)
             return ret;
-        ost->par_in->codec_id = (*enc)->id;
+        ms->par_in->codec_id = (*enc)->id;
     }
 
     return 0;
@@ -1029,7 +1030,7 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **e
     const InputStream   *ist        = ost->ist;
     const InputFile     *ifile      = ist->file;
 
-    AVCodecParameters   *par        = ost->par_in;
+    AVCodecParameters   *par        = ms->par_in;
     uint32_t             codec_tag  = par->codec_tag;
 
     AVCodecContext      *codec_ctx  = NULL;
@@ -1198,8 +1199,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         }
     }
 
-    ost->par_in = avcodec_parameters_alloc();
-    if (!ost->par_in)
+    ms->par_in = avcodec_parameters_alloc();
+    if (!ms->par_in)
         return AVERROR(ENOMEM);
 
     ms->last_mux_dts = AV_NOPTS_VALUE;
@@ -1207,10 +1208,10 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     ost->st         = st;
     ost->ist        = ist;
     ost->kf.ref_pts = AV_NOPTS_VALUE;
-    ost->par_in->codec_type  = type;
+    ms->par_in->codec_type   = type;
     st->codecpar->codec_type = type;
 
-    ret = choose_encoder(o, oc, ost, &enc);
+    ret = choose_encoder(o, oc, ms, &enc);
     if (ret < 0) {
         av_log(ost, AV_LOG_FATAL, "Error selecting an encoder\n");
         return ret;
@@ -1447,7 +1448,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             tag = AV_RL32(buf);
         }
         ost->st->codecpar->codec_tag = tag;
-        ost->par_in->codec_tag = tag;
+        ms->par_in->codec_tag = tag;
         if (ost->enc_ctx)
             ost->enc_ctx->codec_tag = tag;
     }
@@ -1799,6 +1800,7 @@ loop_end:
 
 static int of_add_attachments(Muxer *mux, const OptionsContext *o)
 {
+    MuxStream *ms;
     OutputStream *ost;
     int err;
 
@@ -1866,9 +1868,11 @@ read_fail:
             return err;
         }
 
+        ms = ms_from_ost(ost);
+
         ost->attachment_filename       = attachment_filename;
-        ost->par_in->extradata         = attachment;
-        ost->par_in->extradata_size    = len;
+        ms->par_in->extradata          = attachment;
+        ms->par_in->extradata_size     = len;
 
         p = strrchr(o->attachments[i], '/');
         av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);

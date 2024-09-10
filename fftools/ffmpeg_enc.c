@@ -360,13 +360,6 @@ int enc_open(void *opaque, const AVFrame *frame)
         av_log(e, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                     " It takes bits/s as argument, not kbits/s\n");
 
-    ret = avcodec_parameters_from_context(ost->par_in, ost->enc_ctx);
-    if (ret < 0) {
-        av_log(e, AV_LOG_FATAL,
-               "Error initializing the output stream codec context.\n");
-        return ret;
-    }
-
     ret = of_stream_init(of, ost, enc_ctx);
     if (ret < 0)
         return ret;
