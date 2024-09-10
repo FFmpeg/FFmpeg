@@ -407,7 +407,7 @@ fail:
 }
 
 static int call_resize_kernel(AVFilterContext *ctx, CUfunction func,
-                              CUtexObject src_tex[4], int src_width, int src_height,
+                              CUtexObject src_tex[4], int src_left, int src_top, int src_width, int src_height,
                               AVFrame *out_frame, int dst_width, int dst_height, int dst_pitch)
 {
     CUDAScaleContext *s = ctx->priv;
@@ -422,7 +422,7 @@ static int call_resize_kernel(AVFilterContext *ctx, CUfunction func,
         &src_tex[0], &src_tex[1], &src_tex[2], &src_tex[3],
         &dst_devptr[0], &dst_devptr[1], &dst_devptr[2], &dst_devptr[3],
         &dst_width, &dst_height, &dst_pitch,
-        &src_width, &src_height, &s->param
+        &src_left, &src_top, &src_width, &src_height, &s->param
     };
 
     return CHECK_CU(cu->cuLaunchKernel(func,
@@ -439,6 +439,9 @@ static int scalecuda_resize(AVFilterContext *ctx,
     int i, ret;
 
     CUtexObject tex[4] = { 0, 0, 0, 0 };
+
+    int crop_width = (in->width - in->crop_right) - in->crop_left;
+    int crop_height = (in->height - in->crop_bottom) - in->crop_top;
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
@@ -477,7 +480,7 @@ static int scalecuda_resize(AVFilterContext *ctx,
 
     // scale primary plane(s). Usually Y (and A), or single plane of RGB frames.
     ret = call_resize_kernel(ctx, s->cu_func,
-                             tex, in->width, in->height,
+                             tex, in->crop_left, in->crop_top, crop_width, crop_height,
                              out, out->width, out->height, out->linesize[0]);
     if (ret < 0)
         goto exit;
@@ -485,8 +488,10 @@ static int scalecuda_resize(AVFilterContext *ctx,
     if (s->out_planes > 1) {
         // scale UV plane. Scale function sets both U and V plane, or singular interleaved plane.
         ret = call_resize_kernel(ctx, s->cu_func_uv, tex,
-                                 AV_CEIL_RSHIFT(in->width, s->in_desc->log2_chroma_w),
-                                 AV_CEIL_RSHIFT(in->height, s->in_desc->log2_chroma_h),
+                                 AV_CEIL_RSHIFT(in->crop_left, s->in_desc->log2_chroma_w),
+                                 AV_CEIL_RSHIFT(in->crop_top, s->in_desc->log2_chroma_h),
+                                 AV_CEIL_RSHIFT(crop_width, s->in_desc->log2_chroma_w),
+                                 AV_CEIL_RSHIFT(crop_height, s->in_desc->log2_chroma_h),
                                  out,
                                  AV_CEIL_RSHIFT(out->width, s->out_desc->log2_chroma_w),
                                  AV_CEIL_RSHIFT(out->height, s->out_desc->log2_chroma_h),
