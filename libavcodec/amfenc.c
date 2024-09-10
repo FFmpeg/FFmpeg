@@ -832,6 +832,8 @@ int ff_amf_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
                     AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_INPUT_HDR_METADATA, hdrmeta_buffer); break;
                 case AV_CODEC_ID_HEVC:
                     AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_INPUT_HDR_METADATA, hdrmeta_buffer); break;
+                case AV_CODEC_ID_AV1:
+                    AMF_ASSIGN_PROPERTY_INTERFACE(res, ctx->encoder, AMF_VIDEO_ENCODER_AV1_INPUT_HDR_METADATA, hdrmeta_buffer); break;
                 }
                 hdrmeta_buffer->pVtbl->Release(hdrmeta_buffer);
             }
