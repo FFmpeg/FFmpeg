@@ -343,7 +343,7 @@ int enc_open(void *opaque, const AVFrame *frame)
         return ret;
     }
 
-    if ((ret = avcodec_open2(ost->enc_ctx, enc, NULL)) < 0) {
+    if ((ret = avcodec_open2(enc_ctx, enc, NULL)) < 0) {
         if (ret != AVERROR_EXPERIMENTAL)
             av_log(e, AV_LOG_ERROR, "Error while opening encoder - maybe "
                    "incorrect parameters such as bit_rate, rate, width or height.\n");
@@ -352,11 +352,11 @@ int enc_open(void *opaque, const AVFrame *frame)
 
     e->opened = 1;
 
-    if (ost->enc_ctx->frame_size)
-        frame_samples = ost->enc_ctx->frame_size;
+    if (enc_ctx->frame_size)
+        frame_samples = enc_ctx->frame_size;
 
-    if (ost->enc_ctx->bit_rate && ost->enc_ctx->bit_rate < 1000 &&
-        ost->enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
+    if (enc_ctx->bit_rate && enc_ctx->bit_rate < 1000 &&
+        enc_ctx->codec_id != AV_CODEC_ID_CODEC2 /* don't complain about 700 bit/s modes */)
         av_log(e, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                     " It takes bits/s as argument, not kbits/s\n");
 
