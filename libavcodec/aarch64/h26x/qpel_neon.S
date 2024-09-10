@@ -86,6 +86,11 @@ endconst
         sxtl            v0.8h, v0.8b
 .endm
 
+.macro vvc_load_qpel_filterh freg
+        ld1             {v0.8b}, [\freg]
+        sxtl            v0.8h, v0.8b
+.endm
+
 .macro calc_qpelh dst, src0, src1, src2, src3, src4, src5, src6, src7, op, shift=6
         smull           \dst\().4s, \src0\().4h, v0.h[0]
         smlal           \dst\().4s, \src1\().4h, v0.h[1]
@@ -95,10 +100,14 @@ endconst
         smlal           \dst\().4s, \src5\().4h, v0.h[5]
         smlal           \dst\().4s, \src6\().4h, v0.h[6]
         smlal           \dst\().4s, \src7\().4h, v0.h[7]
+.ifc \op, sqxtn
+        sqxtn           \dst\().4h, \dst\().4s
+.else
 .ifc \op, sshr
         sshr            \dst\().4s, \dst\().4s, \shift
 .else
         \op             \dst\().4h, \dst\().4s, \shift
+.endif
 .endif
 .endm
 
@@ -111,10 +120,14 @@ endconst
         smlal2          \dstt\().4s, \src5\().8h, v0.h[5]
         smlal2          \dstt\().4s, \src6\().8h, v0.h[6]
         smlal2          \dstt\().4s, \src7\().8h, v0.h[7]
+.ifc \op, sqxtn2
+        sqxtn2          \dst\().8h, \dstt\().4s
+.else
 .ifc \op, sshr
         sshr            \dst\().4s, \dstt\().4s, \shift
 .else
         \op             \dst\().8h, \dstt\().4s, \shift
+.endif
 .endif
 .endm
 
@@ -997,6 +1010,93 @@ function ff_hevc_put_hevc_qpel_v64_8_neon, export=1
         subs            w6, w6, #32
         b.hi            0b
         ld1             {v8.8b-v11.8b}, [sp], #32
+        ret
+endfunc
+
+/* ff_hevc_put_hevc_qpel_vx require filter parameters be
+ * [-, +, -, +, +, -, +, -],
+ * vvc doesn't meet the requirement.
+ */
+function ff_vvc_put_qpel_v4_8_neon, export=1
+        vvc_load_qpel_filterh x5
+        sub             x1, x1, x2, lsl #1
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+        sub             x1, x1, x2
+        ldr             s16, [x1]
+        ldr             s17, [x1, x2]
+        add             x1, x1, x2, lsl #1
+        ldr             s18, [x1]
+        ldr             s19, [x1, x2]
+        uxtl            v16.8h, v16.8b
+        uxtl            v17.8h, v17.8b
+        add             x1, x1, x2, lsl #1
+        ldr             s20, [x1]
+        ldr             s21, [x1, x2]
+        uxtl            v18.8h, v18.8b
+        uxtl            v19.8h, v19.8b
+        add             x1, x1, x2, lsl #1
+        ldr             s22, [x1]
+        add             x1, x1, x2
+        uxtl            v20.8h, v20.8b
+        uxtl            v21.8h, v21.8b
+        uxtl            v22.8h, v22.8b
+.macro calc tmp, src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\tmp\().s}[0], [x1], x2
+        uxtl            \tmp\().8h, \tmp\().8b
+        calc_qpelh      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7, sqxtn
+        subs            w3, w3, #1
+        st1             {v24.4h}, [x0], x9
+.endm
+1:
+        calc_all
+.purgem calc
+2:
+        ret
+endfunc
+
+function ff_vvc_put_qpel_v8_8_neon, export=1
+        vvc_load_qpel_filterh x5
+        sub             x1, x1, x2, lsl #1
+        sub             x1, x1, x2
+        mov             x9, #(VVC_MAX_PB_SIZE * 2)
+0:
+        mov             x8, x1
+        ldr             d16, [x8]
+        ldr             d17, [x8, x2]
+        mov             x10, x0
+        mov             w11, w3
+        add             x8, x8, x2, lsl #1
+        ldr             d18, [x8]
+        ldr             d19, [x8, x2]
+        uxtl            v16.8h, v16.8b
+        uxtl            v17.8h, v17.8b
+        add             x8, x8, x2, lsl #1
+        ldr             d20, [x8]
+        ldr             d21, [x8, x2]
+        uxtl            v18.8h, v18.8b
+        uxtl            v19.8h, v19.8b
+        add             x8, x8, x2, lsl #1
+        ldr             d22, [x8]
+        add             x8, x8, x2
+        uxtl            v20.8h, v20.8b
+        uxtl            v21.8h, v21.8b
+        uxtl            v22.8h, v22.8b
+.macro calc tmp, src0, src1, src2, src3, src4, src5, src6, src7
+        ld1             {\tmp\().8b}, [x8], x2
+        uxtl            \tmp\().8h, \tmp\().8b
+        calc_qpelh      v24, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7, sqxtn
+        calc_qpelh2     v24, v25, \src0, \src1, \src2, \src3, \src4, \src5, \src6, \src7, sqxtn2
+        subs            w11, w11, #1
+        st1             {v24.8h}, [x10], x9
+.endm
+1:
+        calc_all
+.purgem calc
+2:
+        subs            w6, w6, #8
+        add             x0, x0, #16
+        add             x1, x1, #8
+        b.ne            0b
         ret
 endfunc
 

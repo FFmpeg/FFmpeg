@@ -274,4 +274,12 @@ NEON8_FNPROTO_PARTIAL_6(qpel_h, (int16_t * dst,
         const uint8_t *_src, ptrdiff_t _srcstride, int height,
         const int8_t *hf, const int8_t *vf, int width), _i8mm);
 
+void ff_vvc_put_qpel_v4_8_neon(int16_t *dst, const uint8_t *_src,
+                               ptrdiff_t _srcstride, int height,
+                               const int8_t *hf, const int8_t *vf, int width);
+
+void ff_vvc_put_qpel_v8_8_neon(int16_t *dst, const uint8_t *_src,
+                               ptrdiff_t _srcstride, int height,
+                               const int8_t *hf, const int8_t *vf, int width);
+
 #endif
