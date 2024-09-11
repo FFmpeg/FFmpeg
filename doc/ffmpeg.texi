@@ -21,22 +21,24 @@ ffmpeg [@var{global_options}] @{[@var{input_file_options}] -i @file{input_url}@}
 inputs - including live grabbing/recording devices - filter, and transcode them
 into a plethora of output formats.
 
-@command{ffmpeg} reads from an arbitrary number of input "files" (which can be regular
+@command{ffmpeg} reads from an arbitrary number of inputs (which can be regular
 files, pipes, network streams, grabbing devices, etc.), specified by the
-@code{-i} option, and writes to an arbitrary number of output "files", which are
-specified by a plain output url. Anything found on the command line which
-cannot be interpreted as an option is considered to be an output url.
+@code{-i} option, and writes to an arbitrary number of outputs, which are
+specified by a plain output url. Anything found on the command line which cannot
+be interpreted as an option is considered to be an output url.
 
-Each input or output url can, in principle, contain any number of streams of
-different types (video/audio/subtitle/attachment/data). The allowed number and/or
-types of streams may be limited by the container format. Selecting which
-streams from which inputs will go into which output is either done automatically
-or with the @code{-map} option (see the Stream selection chapter).
+Each input or output can, in principle, contain any number of elementary streams
+of different types (video/audio/subtitle/attachment/data), though the allowed
+stream counts and/or types may be limited by the container format. Selecting
+which streams from which inputs will go into which output is either done
+automatically or with the @code{-map} option (see the @ref{Stream selection}
+chapter).
 
-To refer to input files in options, you must use their indices (0-based). E.g.
-the first input file is @code{0}, the second is @code{1}, etc. Similarly, streams
-within a file are referred to by their indices. E.g. @code{2:3} refers to the
-fourth stream in the third input file. Also see the Stream specifiers chapter.
+To refer to inputs/outputs in options, you must use their indices (0-based).
+E.g. the first input is @code{0}, the second is @code{1}, etc. Similarly,
+streams within an input/output are referred to by their indices. E.g. @code{2:3}
+refers to the fourth stream in the third input or output. Also see the
+@ref{Stream specifiers} chapter.
 
 As a general rule, options are applied to the next specified
 file. Therefore, order is important, and you can have the same
@@ -261,6 +263,7 @@ reads an input video and
 
 @c man end DETAILED DESCRIPTION
 
+@anchor{Stream selection}
 @chapter Stream selection
 @c man begin STREAM SELECTION
 
