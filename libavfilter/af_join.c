@@ -215,7 +215,7 @@ static int join_query_formats(const AVFilterContext *ctx,
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         layouts = ff_all_channel_layouts();
-        if ((ret = ff_channel_layouts_ref(layouts, &cfg_in[0]->channel_layouts)) < 0)
+        if ((ret = ff_channel_layouts_ref(layouts, &cfg_in[i]->channel_layouts)) < 0)
             return ret;
     }
 
