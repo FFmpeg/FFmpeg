@@ -545,6 +545,9 @@ typedef struct HEVCContext {
 
     int film_grain_warning_shown;
 
+    // dts of the packet currently being decoded
+    int64_t pkt_dts;
+
     AVBufferRef *rpu_buf;       ///< 0 or 1 Dolby Vision RPUs.
     DOVIContext dovi_ctx;       ///< Dolby Vision decoding context
 } HEVCContext;

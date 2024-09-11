@@ -3444,6 +3444,8 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     uint8_t *sd;
     size_t sd_size;
 
+    s->pkt_dts = AV_NOPTS_VALUE;
+
     if (ff_container_fifo_can_read(s->output_fifo))
         goto do_output;
 
@@ -3456,6 +3458,8 @@ static int hevc_receive_frame(AVCodecContext *avctx, AVFrame *frame)
         goto do_output;
     } else if (ret < 0)
         return ret;
+
+    s->pkt_dts = avpkt->dts;
 
     sd = av_packet_get_side_data(avpkt, AV_PKT_DATA_NEW_EXTRADATA, &sd_size);
     if (sd && sd_size > 0) {

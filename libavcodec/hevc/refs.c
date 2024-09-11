@@ -182,7 +182,7 @@ int ff_hevc_output_frames(HEVCContext *s, HEVCLayerContext *l,
         int nb_dpb    = 0;
         int nb_output = 0;
         int min_poc   = INT_MAX;
-        int i, min_idx, ret;
+        int i, min_idx, ret = 0;
 
         for (i = 0; i < FF_ARRAY_ELEMS(l->DPB); i++) {
             HEVCFrame *frame = &l->DPB[i];
@@ -199,10 +199,12 @@ int ff_hevc_output_frames(HEVCContext *s, HEVCLayerContext *l,
         if (nb_output > max_output ||
             (nb_output && nb_dpb > max_dpb)) {
             HEVCFrame *frame = &l->DPB[min_idx];
+            AVFrame *f = frame->needs_fg ? frame->frame_grain : frame->f;
 
-            ret = discard ? 0 :
-                  ff_container_fifo_write(s->output_fifo,
-                                          frame->needs_fg ? frame->frame_grain : frame->f);
+            if (!discard) {
+                f->pkt_dts = s->pkt_dts;
+                ret = ff_container_fifo_write(s->output_fifo, f);
+            }
             ff_hevc_unref_frame(frame, HEVC_FRAME_FLAG_OUTPUT);
             if (ret < 0)
                 return ret;
