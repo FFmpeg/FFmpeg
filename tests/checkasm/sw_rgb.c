@@ -287,7 +287,7 @@ static void check_deinterleave_bytes(void)
                        int width, int height, int srcStride,
                        int dst1Stride, int dst2Stride);
 
-    randomize_buffers(src, 2*MAX_STRIDE*MAX_HEIGHT+2);
+    randomize_buffers(src, 2*MAX_STRIDE*MAX_HEIGHT);
 
     if (check_func(deinterleaveBytes, "deinterleave_bytes")) {
         for (int i = 0; i <= 16; i++) {
