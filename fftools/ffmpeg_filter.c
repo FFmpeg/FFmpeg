@@ -1351,8 +1351,10 @@ static int fg_complex_bind_input(FilterGraph *fg, InputFilter *ifilter)
     } else {
         ist = ist_find_unused(type);
         if (!ist) {
-            av_log(fg, AV_LOG_FATAL, "Cannot find a matching stream for "
-                   "unlabeled input pad %s\n", ifilter->name);
+            av_log(fg, AV_LOG_FATAL,
+                   "Cannot find an unused %s input stream to feed the "
+                   "unlabeled input pad %s.\n",
+                   av_get_media_type_string(type), ifilter->name);
             return AVERROR(EINVAL);
         }
 
