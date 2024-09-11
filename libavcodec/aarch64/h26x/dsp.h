@@ -297,4 +297,12 @@ NEON8_FNPROTO_PARTIAL_6(qpel_hv, (int16_t *dst,
         const uint8_t *src, ptrdiff_t srcstride, int height,
         const int8_t *hf, const int8_t *vf, int width), _i8mm);
 
+NEON8_FNPROTO_PARTIAL_6(epel_hv, (int16_t *dst,
+        const uint8_t *src, ptrdiff_t srcstride, int height,
+        const int8_t *hf, const int8_t *vf, int width),);
+
+NEON8_FNPROTO_PARTIAL_6(epel_hv, (int16_t *dst,
+        const uint8_t *src, ptrdiff_t srcstride, int height,
+        const int8_t *hf, const int8_t *vf, int width), _i8mm);
+
 #endif
