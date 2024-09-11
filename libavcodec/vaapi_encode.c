@@ -273,7 +273,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
     VAAPIEncodePicture         *pic = base_pic->priv;
     VAAPIEncodeSlice *slice;
     VAStatus vas;
-    int err, i;
+    int err = 0, i;
     char data[MAX_PARAM_BUFFER_SIZE];
     size_t bit_len;
     av_unused AVFrameSideData *sd;
