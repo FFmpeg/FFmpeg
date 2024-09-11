@@ -6137,8 +6137,10 @@ enabled pic && enable_weak_pic
 test_cc <<EOF || die "Symbol mangling check failed."
 int ff_extern;
 EOF
-sym=$($nm $TMPO | awk '/ff_extern/{ print substr($0, match($0, /[^ \t]*ff_extern/)) }')
+sym=$($nm $TMPO | awk '/[ \t]+[^ \t]{0,1}ff_extern$/{ print substr($0, match($0, /[^ \t]{0,1}ff_extern$/)) }')
 extern_prefix=${sym%%ff_extern*}
+
+log "Symbol prefix detected as: '${extern_prefix}'"
 
 ! disabled inline_asm && check_inline_asm inline_asm '"" ::'
 
