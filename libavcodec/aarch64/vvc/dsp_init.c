@@ -39,6 +39,9 @@
 #include "alf_template.c"
 #undef BIT_DEPTH
 
+int ff_vvc_sad_neon(const int16_t *src0, const int16_t *src1, int dx, int dy,
+                    const int block_w, const int block_h);
+
 void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -125,4 +128,6 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;
     }
+
+    c->inter.sad = ff_vvc_sad_neon;
 }
