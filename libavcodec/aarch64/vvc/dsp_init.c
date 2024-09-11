@@ -42,6 +42,16 @@
 int ff_vvc_sad_neon(const int16_t *src0, const int16_t *src1, int dx, int dy,
                     const int block_w, const int block_h);
 
+void ff_vvc_avg_8_neon(uint8_t *dst, ptrdiff_t dst_stride,
+                       const int16_t *src0, const int16_t *src1, int width,
+                       int height);
+void ff_vvc_avg_10_neon(uint8_t *dst, ptrdiff_t dst_stride,
+                       const int16_t *src0, const int16_t *src1, int width,
+                       int height);
+void ff_vvc_avg_12_neon(uint8_t *dst, ptrdiff_t dst_stride,
+                        const int16_t *src0, const int16_t *src1, int width,
+                        int height);
+
 void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -112,6 +122,8 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
         c->inter.put_uni_w[0][5][0][0] = ff_vvc_put_pel_uni_w_pixels64_8_neon;
         c->inter.put_uni_w[0][6][0][0] = ff_vvc_put_pel_uni_w_pixels128_8_neon;
 
+        c->inter.avg = ff_vvc_avg_8_neon;
+
         for (int i = 0; i < FF_ARRAY_ELEMS(c->sao.band_filter); i++)
             c->sao.band_filter[i] = ff_h26x_sao_band_filter_8x8_8_neon;
         c->sao.edge_filter[0] = ff_vvc_sao_edge_filter_8x8_8_neon;
@@ -150,9 +162,13 @@ void ff_vvc_dsp_init_aarch64(VVCDSPContext *const c, const int bd)
             c->inter.put[1][6][1][1] = ff_vvc_put_epel_hv128_8_neon_i8mm;
         }
     } else if (bd == 10) {
+        c->inter.avg = ff_vvc_avg_10_neon;
+
         c->alf.filter[LUMA] = alf_filter_luma_10_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_10_neon;
     } else if (bd == 12) {
+        c->inter.avg = ff_vvc_avg_12_neon;
+
         c->alf.filter[LUMA] = alf_filter_luma_12_neon;
         c->alf.filter[CHROMA] = alf_filter_chroma_12_neon;
     }
