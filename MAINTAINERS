@@ -345,6 +345,7 @@ Filters:
   vf_scale.c                        [2] Michael Niedermayer
   vf_tonemap_opencl.c                   Ruiling Song
   vf_yadif.c                        [2] Michael Niedermayer
+  vf_xfade_vulkan.c                 [2] Marvin Scholz (CC <epirat07@gmail.com>)
 
 Sources:
   vsrc_mandelbrot.c                 [2] Michael Niedermayer
