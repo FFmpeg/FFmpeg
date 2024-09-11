@@ -1375,6 +1375,18 @@ endfunc
         mov             x10, #(HEVC_MAX_PB_SIZE * 2)
 .endm
 
+.macro VVC_EPEL_H_HEADER
+        ld1r            {v30.4s}, [x4]
+        sub             x1, x1, #1
+        mov             x10, #(VVC_MAX_PB_SIZE * 2)
+.endm
+
+function ff_vvc_put_epel_h4_8_neon, export=1
+        VVC_EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+        b               1f
+endfunc
+
 function ff_hevc_put_hevc_epel_h4_8_neon, export=1
         EPEL_H_HEADER
         sxtl            v0.8h,   v30.8b
@@ -1412,6 +1424,12 @@ function ff_hevc_put_hevc_epel_h6_8_neon, export=1
         st1             {v16.s}[2], [x6], x10
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_epel_h8_8_neon, export=1
+        VVC_EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_epel_h8_8_neon, export=1
@@ -1459,6 +1477,12 @@ function ff_hevc_put_hevc_epel_h12_8_neon, export=1
         st1             {v17.4h}, [x6], x10
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_epel_h16_8_neon, export=1
+        VVC_EPEL_H_HEADER
+        sxtl            v0.8h,   v30.8b
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_epel_h16_8_neon, export=1
@@ -1523,8 +1547,14 @@ function ff_hevc_put_hevc_epel_h24_8_neon, export=1
         ret
 endfunc
 
+function ff_vvc_put_epel_h32_8_neon, export=1
+        VVC_EPEL_H_HEADER
+        b               0f
+endfunc
+
 function ff_hevc_put_hevc_epel_h32_8_neon, export=1
         EPEL_H_HEADER
+0:
         ld1             {v1.8b}, [x1], #8
         sub             x2,  x2,  w6, uxtw    // decrement src stride
         mov             w7,  w6               // original width

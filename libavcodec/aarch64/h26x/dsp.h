@@ -248,6 +248,9 @@ NEON8_FNPROTO_PARTIAL_4(qpel, (int16_t *dst, const uint8_t *_src, ptrdiff_t _src
 NEON8_FNPROTO_PARTIAL_4(qpel_uni, (uint8_t *_dst, ptrdiff_t _dststride, const uint8_t *_src,
         ptrdiff_t _srcstride, int height, const int8_t *hf, const int8_t *vf, int width),)
 
+NEON8_FNPROTO_PARTIAL_4(epel, (int16_t *dst, const uint8_t *_src, ptrdiff_t _srcstride, int height,
+        const int8_t *hf, const int8_t *vf, int width),)
+
 #undef NEON8_FNPROTO_PARTIAL_6
 #define NEON8_FNPROTO_PARTIAL_6(fn, args, ext) \
     void ff_vvc_put_##fn##4_8_neon##ext args; \
