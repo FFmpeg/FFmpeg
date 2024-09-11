@@ -1910,6 +1910,12 @@ endfunc
 
 #if HAVE_I8MM
 ENABLE_I8MM
+
+function ff_vvc_put_epel_h4_8_neon_i8mm, export=1
+        VVC_EPEL_H_HEADER
+        b               1f
+endfunc
+
 function ff_hevc_put_hevc_epel_h4_8_neon_i8mm, export=1
         EPEL_H_HEADER
 1:      ld1             {v4.8b}, [x1], x2
@@ -1951,6 +1957,11 @@ function ff_hevc_put_hevc_epel_h6_8_neon_i8mm, export=1
         add             x0, x0, x10
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_epel_h8_8_neon_i8mm, export=1
+        VVC_EPEL_H_HEADER
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_epel_h8_8_neon_i8mm, export=1
@@ -2001,6 +2012,11 @@ function ff_hevc_put_hevc_epel_h12_8_neon_i8mm, export=1
         add             x0, x0, x10
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_epel_h16_8_neon_i8mm, export=1
+        VVC_EPEL_H_HEADER
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_epel_h16_8_neon_i8mm, export=1
@@ -2075,6 +2091,11 @@ function ff_hevc_put_hevc_epel_h24_8_neon_i8mm, export=1
         st1             {v22.8h}, [x7]
         b.ne            1b
         ret
+endfunc
+
+function ff_vvc_put_epel_h32_8_neon_i8mm, export=1
+        VVC_EPEL_H_HEADER
+        b               1f
 endfunc
 
 function ff_hevc_put_hevc_epel_h32_8_neon_i8mm, export=1
@@ -2176,11 +2197,8 @@ function ff_hevc_put_hevc_epel_h48_8_neon_i8mm, export=1
         ret
 endfunc
 
-function ff_hevc_put_hevc_epel_h64_8_neon_i8mm, export=1
-        EPEL_H_HEADER
-        sub             x2, x2, #64
-1:      ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x1], #64
-        subs            w3, w3, #1   // height
+.macro put_epel_h64_8_neon_i8mm
+        ld1             {v0.16b, v1.16b, v2.16b, v3.16b}, [x1], #64
         ext             v4.16b, v0.16b, v1.16b, #1
         ext             v5.16b, v0.16b, v1.16b, #2
         ext             v6.16b, v0.16b, v1.16b, #3
@@ -2243,7 +2261,37 @@ function ff_hevc_put_hevc_epel_h64_8_neon_i8mm, export=1
         xtn2            v22.8h, v26.4s
         xtn             v23.4h, v23.4s
         xtn2            v23.8h, v27.4s
-        st4             {v20.8h, v21.8h, v22.8h, v23.8h}, [x0], #64
+        st4             {v20.8h, v21.8h, v22.8h, v23.8h}, [x0], x10
+.endm
+
+function ff_vvc_put_epel_h64_8_neon_i8mm, export=1
+        VVC_EPEL_H_HEADER
+        mov             x10, #(VVC_MAX_PB_SIZE * 2 - 64)
+        sub             x2, x2, #64
+        b               1f
+endfunc
+
+function ff_hevc_put_hevc_epel_h64_8_neon_i8mm, export=1
+        EPEL_H_HEADER
+        mov             x10, #64
+        sub             x2, x2, #64
+1:
+        subs            w3, w3, #1   // height
+        put_epel_h64_8_neon_i8mm
+        b.ne            1b
+        ret
+endfunc
+
+function ff_vvc_put_epel_h128_8_neon_i8mm, export=1
+        VVC_EPEL_H_HEADER
+        sub             x11, x2, #128
+        mov             x10, #64
+        mov             x2, #0
+1:
+        put_epel_h64_8_neon_i8mm
+        subs            w3, w3, #1
+        put_epel_h64_8_neon_i8mm
+        add             x1, x1, x11
         b.ne            1b
         ret
 endfunc
