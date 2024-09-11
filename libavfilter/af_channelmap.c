@@ -316,7 +316,7 @@ static av_cold int channelmap_init(AVFilterContext *ctx)
     presence_map = av_calloc(s->nch, sizeof(*presence_map));
     for (i = 0; i < s->nch; i++) {
         const int out_idx = s->map[i].out_channel_idx;
-        int ret = check_idx_and_id(ctx, out_idx, s->map[i].out_channel, &s->output_layout, "out");
+        ret = check_idx_and_id(ctx, out_idx, s->map[i].out_channel, &s->output_layout, "out");
         if (ret < 0)
             break;
         if (presence_map[out_idx]) {
