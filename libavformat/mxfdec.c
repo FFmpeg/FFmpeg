@@ -2403,6 +2403,9 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
                                               physical_track->edit_rate,
                                               source_track->edit_rate);
 
+                if (av_sat_add64(start_position, mxf_tc->start_frame) != start_position + (uint64_t)mxf_tc->start_frame)
+                    return AVERROR_INVALIDDATA;
+
                 if (av_timecode_init(&tc, mxf_tc->rate, flags, start_position + mxf_tc->start_frame, mxf->fc) == 0) {
                     mxf_add_timecode_metadata(&st->metadata, "timecode", &tc);
                     return 0;
