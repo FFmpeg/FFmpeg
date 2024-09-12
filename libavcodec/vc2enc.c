@@ -985,7 +985,7 @@ static av_cold int vc2_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     }
 
     s->slice_min_bytes = s->slice_max_bytes - s->slice_max_bytes*(s->tolerance/100.0f);
-    if (s->slice_min_bytes < 0)
+    if (s->slice_min_bytes < 0 || s->slice_max_bytes > INT_MAX >> 3)
         return AVERROR(EINVAL);
 
     ret = encode_frame(s, avpkt, frame, aux_data, header_size, s->interlaced);
