@@ -4553,37 +4553,49 @@ enabled ossfuzz && ! echo $CFLAGS | grep -q -- "-fsanitize="  && ! echo $CFLAGS 
     add_ldflags -fsanitize=address,undefined -fsanitize-coverage=trace-pc-guard,trace-cmp
 }
 
+add_sanitizer_flags(){
+    case "$1" in
+        asan)
+            add_cflags  -fsanitize=address
+            add_ldflags -fsanitize=address
+        ;;
+        lsan)
+            add_cflags  -fsanitize=leak
+            add_ldflags -fsanitize=leak
+        ;;
+        msan)
+            add_cflags  -fsanitize=memory -fsanitize-memory-track-origins
+            add_ldflags -fsanitize=memory
+        ;;
+        tsan)
+            add_cflags  -fsanitize=thread
+            add_ldflags -fsanitize=thread
+        ;;
+        usan)
+            add_cflags  -fsanitize=undefined
+            add_ldflags -fsanitize=undefined
+        ;;
+        ?*)
+            die "Unknown sanitizer $1"
+        ;;
+    esac
+}
+
 case "$toolchain" in
-    *-asan)
-        cc_default="${toolchain%-asan}"
-        add_cflags  -fsanitize=address
-        add_ldflags -fsanitize=address
+    clang-*)
+        add_sanitizer_flags "${toolchain#clang-}"
+        cc_default="clang"
+        cxx_default="clang++"
     ;;
-    *-lsan)
-        cc_default="${toolchain%-lsan}"
-        add_cflags  -fsanitize=leak
-        add_ldflags -fsanitize=leak
-    ;;
-    *-msan)
-        cc_default="${toolchain%-msan}"
-        add_cflags  -fsanitize=memory -fsanitize-memory-track-origins
-        add_ldflags -fsanitize=memory
-    ;;
-    *-tsan)
-        cc_default="${toolchain%-tsan}"
-        add_cflags  -fsanitize=thread
-        add_ldflags -fsanitize=thread
-        case "$toolchain" in
-            gcc-tsan)
-                add_cflags  -fPIC
-                add_ldflags -fPIC
-                ;;
-        esac
-    ;;
-    *-usan)
-        cc_default="${toolchain%-usan}"
-        add_cflags  -fsanitize=undefined
-        add_ldflags -fsanitize=undefined
+    gcc-*)
+        add_sanitizer_flags "${toolchain#gcc-}"
+        cc_default="gcc"
+        cxx_default="g++"
+        # In case of tsan with gcc, PIC has to be enabled
+        if [ "${toolchain#gcc-}" = "tsan" ]; then
+            add_cflags  -fPIC
+            add_ldflags -fPIC
+        fi
     ;;
     valgrind-*)
         target_exec_default="valgrind"
