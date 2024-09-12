@@ -1010,8 +1010,11 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
         ost->filter = ofilter;
         ret = ofilter_bind_enc(ofilter, ms->sch_idx_enc, &opts);
     } else {
-        ret = init_simple_filtergraph(ost->ist, ost, filters,
-                                      mux->sch, ms->sch_idx_enc, &opts);
+        ret = fg_create_simple(&ost->fg_simple, ost->ist, filters,
+                               mux->sch, ms->sch_idx_enc, &opts);
+        if (ret >= 0)
+            ost->filter = ost->fg_simple->outputs[0];
+
     }
     av_freep(&opts.nb_threads);
     if (ret < 0)

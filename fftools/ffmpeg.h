@@ -755,10 +755,11 @@ int find_codec(void *logctx, const char *name,
 int parse_and_set_vsync(const char *arg, int *vsync_var, int file_idx, int st_idx, int is_global);
 
 int filtergraph_is_simple(const FilterGraph *fg);
-int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
-                            char *graph_desc,
-                            Scheduler *sch, unsigned sch_idx_enc,
-                            const OutputFilterOptions *opts);
+int fg_create_simple(FilterGraph **pfg,
+                     InputStream *ist,
+                     char *graph_desc,
+                     Scheduler *sch, unsigned sched_idx_enc,
+                     const OutputFilterOptions *opts);
 int fg_finalise_bindings(void);
 
 /**
