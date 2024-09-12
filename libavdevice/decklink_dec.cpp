@@ -1098,6 +1098,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     }
     if (!ctx->draw_bars && ctx->signal_loss_action != SIGNAL_LOSS_NONE) {
         av_log(avctx, AV_LOG_ERROR, "options draw_bars and signal_loss_action are mutually exclusive\n");
+        av_freep(&ctx);
         return AVERROR(EINVAL);
     }
     ctx->audio_depth = cctx->audio_depth;
