@@ -783,8 +783,7 @@ static int set_channel_layout(OutputFilterPriv *f, const AVChannelLayout *layout
     return 0;
 }
 
-int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
-                     unsigned sched_idx_enc,
+int ofilter_bind_enc(OutputFilter *ofilter, unsigned sched_idx_enc,
                      const OutputFilterOptions *opts)
 {
     OutputFilterPriv *ofp = ofp_from_ofilter(ofilter);
@@ -793,7 +792,8 @@ int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
     int ret;
 
     av_assert0(!ofilter->bound);
-    av_assert0(ofilter->type == ost->type);
+    av_assert0(!opts->enc ||
+               ofilter->type == opts->enc->type);
 
     ofilter->bound = 1;
     av_freep(&ofilter->linklabel);
@@ -1222,7 +1222,7 @@ int init_simple_filtergraph(InputStream *ist, OutputStream *ost,
     if (ret < 0)
         return ret;
 
-    ret = ofilter_bind_ost(fg->outputs[0], ost, sched_idx_enc, opts);
+    ret = ofilter_bind_enc(fg->outputs[0], sched_idx_enc, opts);
     if (ret < 0)
         return ret;
 

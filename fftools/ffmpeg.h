@@ -772,7 +772,7 @@ const FrameData *frame_data_c(AVFrame *frame);
 FrameData       *packet_data  (AVPacket *pkt);
 const FrameData *packet_data_c(AVPacket *pkt);
 
-int ofilter_bind_ost(OutputFilter *ofilter, OutputStream *ost,
+int ofilter_bind_enc(OutputFilter *ofilter,
                      unsigned sched_idx_enc,
                      const OutputFilterOptions *opts);
 

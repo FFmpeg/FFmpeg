@@ -1008,7 +1008,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
 
     if (ofilter) {
         ost->filter = ofilter;
-        ret = ofilter_bind_ost(ofilter, ost, ms->sch_idx_enc, &opts);
+        ret = ofilter_bind_enc(ofilter, ms->sch_idx_enc, &opts);
     } else {
         ret = init_simple_filtergraph(ost->ist, ost, filters,
                                       mux->sch, ms->sch_idx_enc, &opts);
