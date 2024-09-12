@@ -1111,6 +1111,7 @@ static int flv_parse_video_color_info(AVFormatContext *s, AVStream *st, int64_t 
         return TYPE_UNKNOWN;
     }
 
+    av_free(flv->metaVideoColor);
     if (!(flv->metaVideoColor = av_mallocz(sizeof(FLVMetaVideoColor)))) {
         return AVERROR(ENOMEM);
     }
