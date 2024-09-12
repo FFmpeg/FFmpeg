@@ -85,6 +85,10 @@ typedef struct MuxStream {
     int             ts_drop;
 #endif
 
+    AVRational      frame_rate;
+    AVRational      max_frame_rate;
+    int             force_fps;
+
     const char     *apad;
 } MuxStream;
 

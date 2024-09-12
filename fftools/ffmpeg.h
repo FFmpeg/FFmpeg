@@ -328,6 +328,8 @@ typedef struct OutputFilterOptions {
     enum AVColorRange   color_range;
 
     enum VideoSyncMethod vsync_method;
+    AVRational           frame_rate;
+    AVRational           max_frame_rate;
 
     int                 sample_rate;
     AVChannelLayout     ch_layout;
@@ -605,9 +607,6 @@ typedef struct OutputStream {
     AVCodecContext *enc_ctx;
 
     /* video only */
-    AVRational frame_rate;
-    AVRational max_frame_rate;
-    int force_fps;
 #if FFMPEG_OPT_TOP
     int top_field_first;
 #endif

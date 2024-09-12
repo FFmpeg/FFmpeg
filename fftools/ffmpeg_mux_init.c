@@ -605,13 +605,13 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
     st  = ost->st;
 
     opt_match_per_stream_str(ost, &o->frame_rates, oc, st, &frame_rate);
-    if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
+    if (frame_rate && av_parse_video_rate(&ms->frame_rate, frame_rate) < 0) {
         av_log(ost, AV_LOG_FATAL, "Invalid framerate value: %s\n", frame_rate);
         return AVERROR(EINVAL);
     }
 
     opt_match_per_stream_str(ost, &o->max_frame_rates, oc, st, &max_frame_rate);
-    if (max_frame_rate && av_parse_video_rate(&ost->max_frame_rate, max_frame_rate) < 0) {
+    if (max_frame_rate && av_parse_video_rate(&ms->max_frame_rate, max_frame_rate) < 0) {
         av_log(ost, AV_LOG_FATAL, "Invalid maximum framerate value: %s\n", max_frame_rate);
         return AVERROR(EINVAL);
     }
@@ -775,7 +775,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
             }
         }
 
-        opt_match_per_stream_int(ost, &o->force_fps, oc, st, &ost->force_fps);
+        opt_match_per_stream_int(ost, &o->force_fps, oc, st, &ms->force_fps);
 
 #if FFMPEG_OPT_TOP
         ost->top_field_first = -1;
@@ -796,7 +796,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
                 return ret;
         }
 
-        if ((ost->frame_rate.num || ost->max_frame_rate.num) &&
+        if ((ms->frame_rate.num || ms->max_frame_rate.num) &&
             !(*vsync_method == VSYNC_AUTO ||
               *vsync_method == VSYNC_CFR || *vsync_method == VSYNC_VSCFR)) {
             av_log(ost, AV_LOG_FATAL, "One of -r/-fpsmax was specified "
@@ -805,7 +805,7 @@ static int new_stream_video(Muxer *mux, const OptionsContext *o,
         }
 
         if (*vsync_method == VSYNC_AUTO) {
-            if (ost->frame_rate.num || ost->max_frame_rate.num) {
+            if (ms->frame_rate.num || ms->max_frame_rate.num) {
                 *vsync_method = VSYNC_CFR;
             } else if (!strcmp(oc->oformat->name, "avi")) {
                 *vsync_method = VSYNC_VFR;
@@ -937,6 +937,8 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
         .color_space      = enc_ctx->colorspace,
         .color_range      = enc_ctx->color_range,
         .vsync_method     = vsync_method,
+        .frame_rate       = ms->frame_rate,
+        .max_frame_rate   = ms->max_frame_rate,
         .sample_rate      = enc_ctx->sample_rate,
         .ch_layout        = enc_ctx->ch_layout,
         .sws_opts         = o->g->sws_dict,
@@ -963,7 +965,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
             if (ret < 0)
                 return ret;
         }
-        if (!ost->force_fps) {
+        if (!ms->force_fps) {
             ret = avcodec_get_supported_config(enc_ctx, NULL,
                                                AV_CODEC_CONFIG_FRAME_RATE, 0,
                                                (const void **) &opts.frame_rates, NULL);
@@ -1035,7 +1037,7 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **e
 
     AVCodecContext      *codec_ctx  = NULL;
 
-    AVRational           fr         = ost->frame_rate;
+    AVRational           fr         = ms->frame_rate;
 
     int ret = 0;
 
