@@ -637,7 +637,7 @@ static int vaapi_encode_av1_init_picture_params(AVCodecContext *avctx,
             slot = ((VAAPIEncodeAV1Picture*)ref_pic->codec_priv)->slot;
             av_assert0(vpic->reference_frames[slot] == VA_INVALID_SURFACE);
 
-            vpic->reference_frames[slot] = ((VAAPIEncodePicture *)ref_pic)->recon_surface;
+            vpic->reference_frames[slot] = ((VAAPIEncodePicture *)ref_pic->priv)->recon_surface;
         }
     }
 
