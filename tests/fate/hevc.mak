@@ -286,6 +286,11 @@ $(TARGET_SAMPLES)/hevc-conformance/MVHEVCS_A.bit
 fate-hevc-mv-switch: CMD = framecrc -i "concat:$(INPUT)" -fps_mode passthrough -map 0:vidx:0 -map 0:vidx:1
 FATE_HEVC-$(call FRAMECRC, HEVC, HEVC, CONCAT_PROTOCOL) += fate-hevc-mv-switch
 
+# multiview stream, select view by position
+# (depends on Three Dimensional Reference Displays Information SEI)
+fate-hevc-mv-position: CMD = framecrc -i $(TARGET_SAMPLES)/hevc/multiview.mov -map 0:v:vpos:left -map 0:v:vpos:right
+FATE_HEVC-$(call FRAMECRC, MOV, HEVC) += fate-hevc-mv-position
+
 FATE_SAMPLES_AVCONV += $(FATE_HEVC-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_HEVC_FFPROBE-yes)
 
