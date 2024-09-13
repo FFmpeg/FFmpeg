@@ -328,7 +328,7 @@ typedef int MXFMetadataReadFunc(void *arg, AVIOContext *pb, int tag, int size, U
 
 typedef struct MXFMetadataReadTableEntry {
     const UID key;
-    MXFMetadataReadFunc *read;
+    MXFMetadataReadFunc *read; /* if NULL then skip KLV */
     int ctx_size;
     enum MXFMetadataSetType type;
 } MXFMetadataReadTableEntry;
@@ -3232,7 +3232,6 @@ static const MXFMetadataReadTableEntry mxf_metadata_read_table[] = {
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x04,0x01,0x02,0x02,0x00,0x00 }, mxf_read_cryptographic_context, sizeof(MXFCryptoContext), CryptoContext },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x10,0x01,0x00 }, mxf_read_index_table_segment, sizeof(MXFIndexTableSegment), IndexTableSegment },
     { { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x23,0x00 }, mxf_read_essence_container_data, sizeof(MXFEssenceContainerData), EssenceContainerData },
-    { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 }, NULL },
 };
 
 static int mxf_metadataset_init(MXFMetadataSet *ctx, enum MXFMetadataSetType type, MXFPartition *partition)
@@ -3713,7 +3712,7 @@ static int mxf_read_header(AVFormatContext *s)
     mxf_read_random_index_pack(s);
 
     while (!avio_feof(s->pb)) {
-        const MXFMetadataReadTableEntry *metadata;
+        size_t x;
 
         ret = klv_read_packet(mxf, &klv, s->pb);
         if (ret < 0 || IS_KLV_KEY(klv.key, ff_mxf_random_index_pack_key)) {
@@ -3759,14 +3758,19 @@ static int mxf_read_header(AVFormatContext *s)
             /* we're still parsing forward. proceed to parsing this partition pack */
         }
 
-        for (metadata = mxf_metadata_read_table; metadata->read; metadata++) {
+        for (x = 0; x < FF_ARRAY_ELEMS(mxf_metadata_read_table); x++) {
+            const MXFMetadataReadTableEntry *metadata = &mxf_metadata_read_table[x];
             if (IS_KLV_KEY(klv.key, metadata->key)) {
-                if ((ret = mxf_parse_klv(mxf, klv, metadata->read, metadata->ctx_size, metadata->type)) < 0)
-                    return ret;
+                if (metadata->read) {
+                    if ((ret = mxf_parse_klv(mxf, klv, metadata->read, metadata->ctx_size, metadata->type)) < 0)
+                        return ret;
+                } else {
+                    avio_skip(s->pb, klv.length);
+                }
                 break;
             }
         }
-        if (!metadata->read) {
+        if (x >= FF_ARRAY_ELEMS(mxf_metadata_read_table)) {
             av_log(s, AV_LOG_VERBOSE, "Dark key " PRIxUID "\n",
                             UID_ARG(klv.key));
             avio_skip(s->pb, klv.length);
