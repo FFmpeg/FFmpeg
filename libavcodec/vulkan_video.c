@@ -203,6 +203,25 @@ int ff_vk_h265_level_to_av(StdVideoH265LevelIdc level)
     }
 }
 
+StdVideoH265LevelIdc ff_vk_h265_level_to_vk(int level_idc)
+{
+    switch (level_idc) {
+    case 10: return STD_VIDEO_H265_LEVEL_IDC_1_0;
+    case 20: return STD_VIDEO_H265_LEVEL_IDC_2_0;
+    case 21: return STD_VIDEO_H265_LEVEL_IDC_2_1;
+    case 30: return STD_VIDEO_H265_LEVEL_IDC_3_0;
+    case 31: return STD_VIDEO_H265_LEVEL_IDC_3_1;
+    case 40: return STD_VIDEO_H265_LEVEL_IDC_4_0;
+    case 41: return STD_VIDEO_H265_LEVEL_IDC_4_1;
+    case 50: return STD_VIDEO_H265_LEVEL_IDC_5_0;
+    case 51: return STD_VIDEO_H265_LEVEL_IDC_5_1;
+    case 60: return STD_VIDEO_H265_LEVEL_IDC_6_0;
+    case 61: return STD_VIDEO_H265_LEVEL_IDC_6_1;
+    default:
+    case 62: return STD_VIDEO_H265_LEVEL_IDC_6_2;
+    }
+}
+
 StdVideoH264ProfileIdc ff_vk_h264_profile_to_vk(int profile)
 {
     switch (profile) {
@@ -214,6 +233,16 @@ StdVideoH264ProfileIdc ff_vk_h264_profile_to_vk(int profile)
     }
 }
 
+StdVideoH265ProfileIdc ff_vk_h265_profile_to_vk(int profile)
+{
+    switch (profile) {
+    case AV_PROFILE_HEVC_MAIN:    return STD_VIDEO_H265_PROFILE_IDC_MAIN;
+    case AV_PROFILE_HEVC_MAIN_10: return STD_VIDEO_H265_PROFILE_IDC_MAIN_10;
+    case AV_PROFILE_HEVC_REXT:    return STD_VIDEO_H265_PROFILE_IDC_FORMAT_RANGE_EXTENSIONS;
+    default: return STD_VIDEO_H265_PROFILE_IDC_INVALID;
+    }
+}
+
 int ff_vk_h264_profile_to_av(StdVideoH264ProfileIdc profile)
 {
     switch (profile) {
@@ -221,6 +250,16 @@ int ff_vk_h264_profile_to_av(StdVideoH264ProfileIdc profile)
     case STD_VIDEO_H264_PROFILE_IDC_MAIN: return AV_PROFILE_H264_MAIN;
     case STD_VIDEO_H264_PROFILE_IDC_HIGH: return AV_PROFILE_H264_HIGH;
     case STD_VIDEO_H264_PROFILE_IDC_HIGH_444_PREDICTIVE: return AV_PROFILE_H264_HIGH_444_PREDICTIVE;
+    default: return AV_PROFILE_UNKNOWN;
+    }
+}
+
+int ff_vk_h265_profile_to_av(StdVideoH264ProfileIdc profile)
+{
+    switch (profile) {
+    case STD_VIDEO_H265_PROFILE_IDC_MAIN: return AV_PROFILE_HEVC_MAIN;
+    case STD_VIDEO_H265_PROFILE_IDC_MAIN_10: return AV_PROFILE_HEVC_MAIN_10;
+    case STD_VIDEO_H265_PROFILE_IDC_FORMAT_RANGE_EXTENSIONS: return AV_PROFILE_HEVC_REXT;
     default: return AV_PROFILE_UNKNOWN;
     }
 }
