@@ -458,10 +458,26 @@ static int mxf_read_sync(AVIOContext *pb, const uint8_t *key, unsigned size)
     return i == size;
 }
 
+// special case of mxf_read_sync for mxf_klv_key
+static int mxf_read_sync_klv(AVIOContext *pb)
+{
+    uint32_t key = avio_rb32(pb);
+    // key will never match mxf_klv_key on EOF
+    if (key == AV_RB32(mxf_klv_key))
+        return 1;
+
+    while (!avio_feof(pb)) {
+        key = (key << 8) | avio_r8(pb);
+        if (key == AV_RB32(mxf_klv_key))
+            return 1;
+    }
+    return 0;
+}
+
 static int klv_read_packet(MXFContext *mxf, KLVPacket *klv, AVIOContext *pb)
 {
     int64_t length, pos;
-    if (!mxf_read_sync(pb, mxf_klv_key, 4))
+    if (!mxf_read_sync_klv(pb))
         return AVERROR_INVALIDDATA;
     klv->offset = avio_tell(pb) - 4;
     if (klv->offset < mxf->run_in)
@@ -3982,6 +3998,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = klv_read_packet(mxf, &klv, s->pb);
             if (ret < 0)
                 break;
+            // klv.key[0..3] == mxf_klv_key from here forward
             max_data_size = klv.length;
             pos = klv.next_klv - klv.length;
             PRINT_KEY(s, "read packet", klv.key);
