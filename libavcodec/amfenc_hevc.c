@@ -269,7 +269,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->slices > 1) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_SLICES_PER_FRAME, avctx->slices);
     }
-    AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE, deblocking_filter);
+    AMF_ASSIGN_PROPERTY_BOOL(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_DE_BLOCKING_FILTER_DISABLE, !deblocking_filter);
 
     if (ctx->header_insertion_mode != -1) {
         AMF_ASSIGN_PROPERTY_INT64(res, ctx->encoder, AMF_VIDEO_ENCODER_HEVC_HEADER_INSERTION_MODE, ctx->header_insertion_mode);
@@ -511,6 +511,7 @@ static const FFCodecDefault defaults[] = {
     { "slices",     "1"   },
     { "qmin",       "-1"  },
     { "qmax",       "-1"  },
+    { "flags",      "+loop"},
     { NULL                },
 };
 static const AVClass hevc_amf_class = {
