@@ -23,6 +23,7 @@ version <next>:
   YUVJ pixel format
 - Vulkan H.264 encoder
 - Vulkan H.265 encoder
+- stream specifiers in fftools can now match by stream disposition
 
 
 version 7.0:

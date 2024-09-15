@@ -1,0 +1,7 @@
+#tb 0: 1/90000
+#media_type 0: audio
+#codec_id 0: ac3
+#sample_rate 0: 48000
+#channel_layout_name 0: stereo
+0,          0,          0,     2880,      768, 0x72b37931, F=0x3, S=1,        1
+0,       2880,       2880,     2880,      690, 0xa84a4ea2

@@ -1091,6 +1091,43 @@ int stream_specifier_parse(StreamSpecifier *ss, const char *spec,
 
             av_log(logctx, AV_LOG_TRACE,
                    "Parsed program ID: %"PRId64"; remainder: %s\n", ss->list_id, spec);
+        } else if (!strncmp(spec, "disp:", 5)) {
+            const AVClass *st_class = av_stream_get_class();
+            const AVOption       *o = av_opt_find(&st_class, "disposition", NULL, 0, AV_OPT_SEARCH_FAKE_OBJ);
+            char *disp = NULL;
+            size_t len;
+
+            av_assert0(o);
+
+            if (ss->disposition) {
+                av_log(logctx, AV_LOG_ERROR, "Multiple disposition specifiers\n");
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
+
+            spec += 5;
+
+            for (len = 0; cmdutils_isalnum(spec[len]) ||
+                          spec[len] == '_' || spec[len] == '+'; len++)
+                continue;
+
+            disp = av_strndup(spec, len);
+            if (!disp) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+
+            ret = av_opt_eval_flags(&st_class, o, disp, &ss->disposition);
+            av_freep(&disp);
+            if (ret < 0) {
+                av_log(logctx, AV_LOG_ERROR, "Invalid disposition specifier\n");
+                goto fail;
+            }
+
+            spec += len;
+
+            av_log(logctx, AV_LOG_TRACE,
+                   "Parsed disposition: 0x%x; remainder: %s\n", ss->disposition, spec);
         } else if (*spec == '#' ||
                    (*spec == 'i' && *(spec + 1) == ':')) {
             if (ss->stream_list != STREAM_LIST_ALL)
@@ -1280,6 +1317,10 @@ unsigned stream_specifier_match(const StreamSpecifier *ss,
                 continue;
             }
         }
+
+        if (ss->disposition &&
+            (candidate->disposition & ss->disposition) != ss->disposition)
+            continue;
 
         if (st == candidate)
             return ss->idx < 0 || ss->idx == nb_matched;

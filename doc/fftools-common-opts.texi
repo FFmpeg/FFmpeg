@@ -79,6 +79,10 @@ Match the stream by stream id (e.g. PID in MPEG-TS container).
 Matches streams with the metadata tag @var{key} having the specified value. If
 @var{value} is not given, matches streams that contain the given tag with any
 value.
+@item disp:@var{dispositions}[:@var{additional_stream_specifier}]
+Matches streams with the given disposition(s). @var{dispositions} is a list of
+one or more dispositions (as printed by the @option{-dispositions} option)
+joined with '+'.
 @item u
 Matches streams with usable configuration, the codec must be defined and the
 essential information such as video dimension or audio sample rate must be present.

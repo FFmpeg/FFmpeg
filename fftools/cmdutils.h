@@ -130,6 +130,8 @@ typedef struct StreamSpecifier {
 
     uint8_t              usable_only;
 
+    int                  disposition;
+
     char                *meta_key;
     char                *meta_val;
 
