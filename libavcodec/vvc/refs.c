@@ -193,7 +193,7 @@ int ff_vvc_set_new_ref(VVCContext *s, VVCFrameContext *fc, AVFrame **frame)
     if (s->no_output_before_recovery_flag && (IS_RASL(s) || !GDR_IS_RECOVERED(s)))
         ref->flags = VVC_FRAME_FLAG_SHORT_REF;
     else if (ph->r->ph_pic_output_flag)
-        ref->flags = VVC_FRAME_FLAG_OUTPUT;
+        ref->flags = VVC_FRAME_FLAG_OUTPUT | VVC_FRAME_FLAG_SHORT_REF;
 
     if (!ph->r->ph_non_ref_pic_flag)
         ref->flags |= VVC_FRAME_FLAG_SHORT_REF;
