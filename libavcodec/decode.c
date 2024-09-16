@@ -1481,8 +1481,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (pkt->flags & AV_PKT_FLAG_DISCARD) {
         frame->flags |= AV_FRAME_FLAG_DISCARD;
-    } else {
-        frame->flags = (frame->flags & ~AV_FRAME_FLAG_DISCARD);
     }
 
     if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE) {
@@ -1719,6 +1717,9 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flag
     int ret;
 
     av_assert0(avctx->codec_type == AVMEDIA_TYPE_VIDEO);
+
+    // make sure the discard flag does not persist
+    frame->flags &= ~AV_FRAME_FLAG_DISCARD;
 
     if (frame->data[0] && (frame->width != avctx->width || frame->height != avctx->height || frame->format != avctx->pix_fmt)) {
         av_log(avctx, AV_LOG_WARNING, "Picture changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s in reget buffer()\n",
