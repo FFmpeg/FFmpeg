@@ -430,6 +430,12 @@ static int movie_query_formats(const AVFilterContext *ctx,
             list[0] = c->format;
             if ((ret = ff_formats_ref(ff_make_format_list(list), &cfg->formats)) < 0)
                 return ret;
+            list[0] = c->color_space;
+            if ((ret = ff_formats_ref(ff_make_format_list(list), &cfg->color_spaces)) < 0)
+                return ret;
+            list[0] = c->color_range;
+            if ((ret = ff_formats_ref(ff_make_format_list(list), &cfg->color_ranges)) < 0)
+                return ret;
             break;
         case AVMEDIA_TYPE_AUDIO:
             list[0] = c->format;
