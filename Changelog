@@ -21,6 +21,7 @@ version <next>:
 - MediaCodec AAC/AMR-NB/AMR-WB/MP3 decoding
 - YUV colorspace negotiation for codecs and filters, obsoleting the
   YUVJ pixel format
+- Vulkan H.264 encoder
 
 
 version 7.0:
