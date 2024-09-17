@@ -113,6 +113,13 @@ static int detect_flags(void)
     if (IsProcessorFeaturePresent(PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE))
         flags |= AV_CPU_FLAG_DOTPROD;
 #endif
+#ifdef PF_ARM_SVE_I8MM_INSTRUCTIONS_AVAILABLE
+    /* There's no PF_* flag that indicates whether plain I8MM is available
+     * or not. But if SVE_I8MM is available, that also implies that
+     * regular I8MM is available. */
+    if (IsProcessorFeaturePresent(PF_ARM_SVE_I8MM_INSTRUCTIONS_AVAILABLE))
+        flags |= AV_CPU_FLAG_I8MM;
+#endif
     return flags;
 }
 #else
