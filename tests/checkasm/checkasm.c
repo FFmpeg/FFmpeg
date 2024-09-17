@@ -94,6 +94,10 @@
 #define isatty(fd) 1
 #endif
 
+#if ARCH_AARCH64
+#include "libavutil/aarch64/cpu.h"
+#endif
+
 #if ARCH_ARM && HAVE_ARMV5TE_EXTERNAL
 #include "libavutil/arm/cpu.h"
 
@@ -917,6 +921,7 @@ int main(int argc, char *argv[])
 {
     unsigned int seed = av_get_random_seed();
     int i, ret = 0;
+    char arch_info_buf[50] = "";
 
 #ifdef _WIN32
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -981,7 +986,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    fprintf(stderr, "checkasm: using random seed %u\n", seed);
+#if ARCH_AARCH64 && HAVE_SVE
+    if (have_sve(av_get_cpu_flags()))
+        snprintf(arch_info_buf, sizeof(arch_info_buf),
+                 "SVE %d bits, ", 8 * ff_aarch64_sve_length());
+#endif
+    fprintf(stderr, "checkasm: %susing random seed %u\n", arch_info_buf, seed);
     av_lfg_init(&checkasm_lfg, seed);
 
     if (state.bench_pattern)
