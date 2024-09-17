@@ -543,10 +543,22 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
         return 0;
 
     if (layout_tag == MOV_CH_LAYOUT_USE_DESCRIPTIONS) {
-        int nb_channels = ch_layout->nb_channels ? ch_layout->nb_channels : num_descr;
-        if (num_descr > nb_channels) {
-            av_log(s, AV_LOG_WARNING, "got %d channel descriptions, capping to the number of channels %d\n",
+        int nb_channels = ch_layout->nb_channels;
+
+        if (!num_descr || num_descr < nb_channels) {
+            av_log(s, AV_LOG_ERROR, "got %d channel descriptions when at least %d were needed\n",
                    num_descr, nb_channels);
+            return AVERROR_INVALIDDATA;
+        }
+
+        if (num_descr > nb_channels) {
+            int strict = s->strict_std_compliance >= FF_COMPLIANCE_STRICT;
+            av_log(s, strict ? AV_LOG_ERROR : AV_LOG_WARNING,
+                   "got %d channel descriptions when number of channels is %d\n",
+                   num_descr, nb_channels);
+            if (strict)
+                return AVERROR_INVALIDDATA;
+            av_log(s, AV_LOG_WARNING, "capping channel descriptions to the number of channels\n");
             num_descr = nb_channels;
         }
 
