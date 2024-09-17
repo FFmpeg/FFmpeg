@@ -1365,7 +1365,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
 #if FFMPEG_OPT_ENC_TIME_BASE_NUM
                 if (q.num < 0)
                     av_log(ost, AV_LOG_WARNING, "-enc_time_base -1 is deprecated,"
-                           " use -enc_timebase demux\n");
+                           " use -enc_time_base demux\n");
 #endif
             }
 
