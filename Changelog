@@ -22,6 +22,7 @@ version <next>:
 - YUV colorspace negotiation for codecs and filters, obsoleting the
   YUVJ pixel format
 - Vulkan H.264 encoder
+- Vulkan H.265 encoder
 
 
 version 7.0:
