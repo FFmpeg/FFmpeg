@@ -31,8 +31,8 @@
 static void check_lumConvertRange(int from)
 {
     const char *func_str = from ? "lumRangeFromJpeg" : "lumRangeToJpeg";
-#define LARGEST_INPUT_SIZE 512
-    static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
+#define LARGEST_INPUT_SIZE 1920
+    static const int input_sizes[] = {8, LARGEST_INPUT_SIZE};
     SwsContext *sws;
     SwsInternal *c;
 
@@ -75,8 +75,8 @@ static void check_lumConvertRange(int from)
 static void check_chrConvertRange(int from)
 {
     const char *func_str = from ? "chrRangeFromJpeg" : "chrRangeToJpeg";
-#define LARGEST_INPUT_SIZE 512
-    static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
+#define LARGEST_INPUT_SIZE 1920
+    static const int input_sizes[] = {8, LARGEST_INPUT_SIZE};
     SwsContext *sws;
     SwsInternal *c;
 
