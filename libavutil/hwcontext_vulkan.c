@@ -1759,7 +1759,6 @@ FF_DISABLE_DEPRECATION_WARNINGS
         tx_index    = (ctx_qf == tx_index)    ? -1 : tx_index;                                  \
         enc_index   = (ctx_qf == enc_index)   ? -1 : enc_index;                                 \
         dec_index   = (ctx_qf == dec_index)   ? -1 : dec_index;                                 \
-        p->img_qfs[p->nb_img_qfs++] = ctx_qf;                                                   \
     } while (0)
 
     CHECK_QUEUE("graphics", 0, graph_index, hwctx->queue_family_index,        hwctx->nb_graphics_queues);
@@ -1800,6 +1799,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                   VK_QUEUE_VIDEO_ENCODE_BIT_KHR)) {
             hwctx->qf[i].video_caps = qf_vid[hwctx->qf[i].idx].videoCodecOperations;
         }
+    }
+
+    /* Setup array for pQueueFamilyIndices with used queue families */
+    p->nb_img_qfs = 0;
+    for (int i = 0; i < hwctx->nb_qf; i++) {
+        int seen = 0;
+        /* Make sure each entry is unique
+         * (VUID-VkBufferCreateInfo-sharingMode-01419) */
+        for (int j = (i - 1); j >= 0; j--) {
+            if (hwctx->qf[i].idx == hwctx->qf[j].idx) {
+                seen = 1;
+                break;
+            }
+        }
+        if (!seen)
+            p->img_qfs[p->nb_img_qfs++] = hwctx->qf[i].idx;
     }
 
     if (!hwctx->lock_queue)
