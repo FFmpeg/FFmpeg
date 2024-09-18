@@ -42,8 +42,9 @@ $(VVC_TESTS_8BIT): SCALE_OPTS := -pix_fmt yuv420p
 $(VVC_TESTS_10BIT): SCALE_OPTS := -pix_fmt yuv420p10le -vf scale
 $(VVC_TESTS_444_10BIT): SCALE_OPTS := -pix_fmt yuv444p10le -vf scale
 fate-vvc-conformance-%: CMD = framecrc -c:v vvc -i $(TARGET_SAMPLES)/vvc-conformance/$(subst fate-vvc-conformance-,,$(@)).bit $(SCALE_OPTS)
+fate-vvc-output-ref: CMD = framecrc -c:v vvc -i $(TARGET_SAMPLES)/vvc/Hierarchical.bit $(SCALE_OPTS)
 
-FATE_VVC-$(call FRAMECRC, VVC, VVC, VVC_PARSER) += $(VVC_TESTS_8BIT)
+FATE_VVC-$(call FRAMECRC, VVC, VVC, VVC_PARSER) += $(VVC_TESTS_8BIT) fate-vvc-output-ref
 FATE_VVC-$(call FRAMECRC, VVC, VVC, VVC_PARSER SCALE_FILTER) +=            \
                                                     $(VVC_TESTS_10BIT)     \
                                                     $(VVC_TESTS_444_10BIT) \
