@@ -1642,6 +1642,26 @@ test_pkg_config_cpp(){
         set_sanitized "${name}_incflags" $pkg_incflags
 }
 
+test_pkg_config_cxx(){
+    log test_pkg_config_cxx "$@"
+    name="$1"
+    pkg_version="$2"
+    pkg="${2%% *}"
+    headers="$3"
+    classes="$4"
+    shift 4
+    disable $name
+    test_cmd $pkg_config --exists --print-errors $pkg_version || return
+    pkg_cflags=$($pkg_config --cflags $pkg_config_flags $pkg)
+    pkg_libs=$($pkg_config --libs $pkg_config_flags $pkg)
+    pkg_incdir=$($pkg_config --variable=includedir $pkg_config_flags $pkg)
+    check_class_headers_cxx "$headers" "$classes" $pkg_cflags $pkg_libs "-lstdc++" "$@" &&
+        enable $name &&
+        set_sanitized "${name}_cflags"    $pkg_cflags &&
+        set_sanitized "${name}_incdir"    $pkg_incdir &&
+        set_sanitized "${name}_extralibs" $pkg_libs "-lstdc++"
+}
+
 check_pkg_config(){
     log check_pkg_config "$@"
     name="$1"
@@ -1654,6 +1674,13 @@ check_pkg_config_cpp(){
     name="$1"
     test_pkg_config_cpp "$@" &&
         eval add_cflags \$${name}_cflags
+}
+
+check_pkg_config_cxx(){
+    log check_pkg_config_cxx "$@"
+    name="$1"
+    test_pkg_config_cxx "$@" &&
+        eval add_cxxflags \$${name}_cflags
 }
 
 check_pkg_config_header_only(){
@@ -1807,6 +1834,12 @@ require_pkg_config_cpp(){
     log require_pkg_config_cpp "$@"
     pkg_version="$2"
     check_pkg_config_cpp "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
+}
+
+require_pkg_config_cxx(){
+    log require_pkg_config_cxx "$@"
+    pkg_version="$2"
+    check_pkg_config_cxx "$@" || die "ERROR: $pkg_version not found using pkg-config$pkg_config_fail_message"
 }
 
 test_host_cc(){
