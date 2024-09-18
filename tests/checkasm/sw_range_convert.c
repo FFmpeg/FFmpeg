@@ -32,7 +32,6 @@ static void check_lumConvertRange(int from)
 {
     const char *func_str = from ? "lumRangeFromJpeg" : "lumRangeToJpeg";
 #define LARGEST_INPUT_SIZE 512
-#define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     SwsContext *sws;
     SwsInternal *c;
@@ -52,7 +51,7 @@ static void check_lumConvertRange(int from)
     c->srcRange = from;
     c->dstRange = !from;
 
-    for (int dstWi = 0; dstWi < INPUT_SIZES; dstWi++) {
+    for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {
         int width = input_sizes[dstWi];
         for (int i = 0; i < width; i++) {
             uint8_t r = rnd();
@@ -72,13 +71,11 @@ static void check_lumConvertRange(int from)
     sws_freeContext(sws);
 }
 #undef LARGEST_INPUT_SIZE
-#undef INPUT_SIZES
 
 static void check_chrConvertRange(int from)
 {
     const char *func_str = from ? "chrRangeFromJpeg" : "chrRangeToJpeg";
 #define LARGEST_INPUT_SIZE 512
-#define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     SwsContext *sws;
     SwsInternal *c;
@@ -100,7 +97,7 @@ static void check_chrConvertRange(int from)
     c->srcRange = from;
     c->dstRange = !from;
 
-    for (int dstWi = 0; dstWi < INPUT_SIZES; dstWi++) {
+    for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {
         int width = input_sizes[dstWi];
         for (int i = 0; i < width; i++) {
             uint8_t r = rnd();
@@ -123,7 +120,6 @@ static void check_chrConvertRange(int from)
     sws_freeContext(sws);
 }
 #undef LARGEST_INPUT_SIZE
-#undef INPUT_SIZES
 
 void checkasm_check_sw_range_convert(void)
 {

@@ -72,7 +72,6 @@ static void check_output_yuv2gbrp(void)
 #define FILTER_SIZES 4
     static const int filter_sizes[] = {1, 4, 8, 16};
 #define LARGEST_INPUT_SIZE 512
-#define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     uint8_t *dst0[4];
     uint8_t *dst1[4];
@@ -140,7 +139,7 @@ static void check_output_yuv2gbrp(void)
 
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
         for (fsi = 0; fsi < FILTER_SIZES; fsi++) {
-            for (isi = 0; isi < INPUT_SIZES; isi++ ) {
+            for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++ ) {
                 desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
                 c->dstFormat = planar_fmts[fmi];
 
@@ -187,7 +186,6 @@ static void check_output_yuv2gbrp(void)
 }
 
 #undef LARGEST_INPUT_SIZE
-#undef INPUT_SIZES
 
 static void check_input_planar_rgb_to_y(void)
 {
@@ -197,7 +195,6 @@ static void check_input_planar_rgb_to_y(void)
     int fmi, isi;
     int dstW, byte_size;
 #define LARGEST_INPUT_SIZE 512
-#define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     const uint8_t *src[4];
     int32_t rgb2yuv[9] = {0};
@@ -230,7 +227,7 @@ static void check_input_planar_rgb_to_y(void)
 
     c = sws_internal(sws);
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
-        for (isi = 0; isi < INPUT_SIZES; isi++ ) {
+        for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++ ) {
             desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
             c->srcFormat = planar_fmts[fmi];
             c->dstFormat = AV_PIX_FMT_YUVA444P16;
@@ -257,7 +254,6 @@ static void check_input_planar_rgb_to_y(void)
 }
 
 #undef LARGEST_INPUT_SIZE
-#undef INPUT_SIZES
 
 static void check_input_planar_rgb_to_uv(void)
 {
@@ -267,7 +263,6 @@ static void check_input_planar_rgb_to_uv(void)
     int fmi, isi;
     int dstW, byte_size;
 #define LARGEST_INPUT_SIZE 512
-#define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     const uint8_t *src[4];
     int32_t rgb2yuv[9] = {0};
@@ -303,7 +298,7 @@ static void check_input_planar_rgb_to_uv(void)
 
     c = sws_internal(sws);
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
-        for (isi = 0; isi < INPUT_SIZES; isi++ ) {
+        for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++ ) {
             desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
             c->srcFormat = planar_fmts[fmi];
             c->dstFormat = AV_PIX_FMT_YUVA444P16;
@@ -332,7 +327,6 @@ static void check_input_planar_rgb_to_uv(void)
 }
 
 #undef LARGEST_INPUT_SIZE
-#undef INPUT_SIZES
 
 static void check_input_planar_rgb_to_a(void)
 {
@@ -342,7 +336,6 @@ static void check_input_planar_rgb_to_a(void)
     int fmi, isi;
     int dstW, byte_size;
 #define LARGEST_INPUT_SIZE 512
-#define INPUT_SIZES 6
     static const int input_sizes[] = {8, 24, 128, 144, 256, 512};
     const uint8_t *src[4];
     int32_t rgb2yuv[9] = {0};
@@ -375,7 +368,7 @@ static void check_input_planar_rgb_to_a(void)
 
     c = sws_internal(sws);
     for (fmi = 0; fmi < FF_ARRAY_ELEMS(planar_fmts); fmi++) {
-        for (isi = 0; isi < INPUT_SIZES; isi++ ) {
+        for (isi = 0; isi < FF_ARRAY_ELEMS(input_sizes); isi++ ) {
             desc = av_pix_fmt_desc_get(planar_fmts[fmi]);
             if (!(desc->flags & AV_PIX_FMT_FLAG_ALPHA))
                 continue;
