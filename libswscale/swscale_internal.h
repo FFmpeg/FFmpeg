@@ -647,10 +647,28 @@ struct SwsInternal {
                     const int32_t *filterPos, int filterSize);
     /** @} */
 
-    /// Color range conversion function for luma plane if needed.
-    void (*lumConvertRange)(int16_t *dst, int width);
-    /// Color range conversion function for chroma planes if needed.
-    void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width);
+    /**
+     * Color range conversion functions if needed.
+     * If SwsInternal->dstBpc is > 14:
+     * - int16_t *dst (data is 15 bpc)
+     * - uint16_t coeff
+     * - int32_t offset
+     * Otherwise (SwsInternal->dstBpc is <= 14):
+     * - int32_t *dst (data is 19 bpc)
+     * - uint32_t coeff
+     * - int64_t offset
+     */
+    /** @{ */
+    void (*lumConvertRange)(int16_t *dst, int width,
+                            uint32_t coeff, int64_t offset);
+    void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width,
+                            uint32_t coeff, int64_t offset);
+    /** @} */
+
+    uint32_t lumConvertRange_coeff;
+    uint32_t chrConvertRange_coeff;
+    int64_t  lumConvertRange_offset;
+    int64_t  chrConvertRange_offset;
 
     int needs_hcscale; ///< Set if there are chroma planes to be converted.
 

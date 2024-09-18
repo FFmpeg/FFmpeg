@@ -1,4 +1,4 @@
-1a43cd71c91f2ef42d11a81419bff3bd *tests/data/fate/vsynth_lena-roqvideo.roq
-94810 tests/data/fate/vsynth_lena-roqvideo.roq
-97cda6096430c0ab7a43a0e120cd3e91 *tests/data/fate/vsynth_lena-roqvideo.out.rawvideo
-stddev:    3.81 PSNR: 36.50 MAXDIFF:   49 bytes:  7603200/   760320
+f76de43fceb11710a593addde02c6863 *tests/data/fate/vsynth_lena-roqvideo.roq
+94846 tests/data/fate/vsynth_lena-roqvideo.roq
+9cbeb8e11ddf92694318ab8f413dd296 *tests/data/fate/vsynth_lena-roqvideo.out.rawvideo
+stddev:    3.80 PSNR: 36.52 MAXDIFF:   67 bytes:  7603200/   760320

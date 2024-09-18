@@ -1,4 +1,4 @@
-6eb36ab28a082f496f1f3bc165704a68 *tests/data/fate/vsynth_lena-mjpeg-trell-huffman.avi
-582534 tests/data/fate/vsynth_lena-mjpeg-trell-huffman.avi
-dcb183a6a5fa06e7234d46dd97ceb8ec *tests/data/fate/vsynth_lena-mjpeg-trell-huffman.out.rawvideo
-stddev:    4.51 PSNR: 35.05 MAXDIFF:   60 bytes:  7603200/  7603200
+8217aef7ee16709b2c0591a9a28d9bb8 *tests/data/fate/vsynth_lena-mjpeg-trell-huffman.avi
+582648 tests/data/fate/vsynth_lena-mjpeg-trell-huffman.avi
+8c5c05e82a959ccc8b3c4ba8e4123bbe *tests/data/fate/vsynth_lena-mjpeg-trell-huffman.out.rawvideo
+stddev:    4.51 PSNR: 35.04 MAXDIFF:   60 bytes:  7603200/  7603200

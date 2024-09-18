@@ -225,6 +225,10 @@ void ff_chrRangeToJpeg_neon(int16_t *dstU, int16_t *dstV, int width);
 
 av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
 {
+    /* This code is currently disabled because of changes in the base
+     * implementation of these functions. This code should be enabled
+     * again once those changes are ported to this architecture. */
+#if 0
     int cpu_flags = av_get_cpu_flags();
 
     if (have_neon(cpu_flags)) {
@@ -238,6 +242,7 @@ av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
             }
         }
     }
+#endif
 }
 
 av_cold void ff_sws_init_swscale_aarch64(SwsInternal *c)
