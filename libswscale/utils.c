@@ -1095,16 +1095,8 @@ int sws_setColorspaceDetails(SwsContext *sws, const int inv_table[4],
     c->srcRange   = srcRange;
     c->dstRange   = dstRange;
 
-    if (need_reinit) {
+    if (need_reinit)
         ff_sws_init_range_convert(c);
-#if ARCH_AARCH64
-        ff_sws_init_range_convert_aarch64(c);
-#elif ARCH_LOONGARCH64
-        ff_sws_init_range_convert_loongarch(c);
-#elif ARCH_X86
-        ff_sws_init_range_convert_x86(c);
-#endif
-    }
 
     c->dstFormatBpp = av_get_bits_per_pixel(desc_dst);
     c->srcFormatBpp = av_get_bits_per_pixel(desc_src);

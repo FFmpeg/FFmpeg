@@ -851,6 +851,4 @@ switch(c->dstBpc){ \
     }
 
 #endif
-
-    ff_sws_init_range_convert_x86(c);
 }

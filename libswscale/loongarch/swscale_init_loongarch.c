@@ -95,7 +95,6 @@ av_cold void ff_sws_init_swscale_loongarch(SwsInternal *c)
         }
     }
 #endif // #if HAVE_LASX
-    ff_sws_init_range_convert_loongarch(c);
 }
 
 av_cold void rgb2rgb_init_loongarch(void)

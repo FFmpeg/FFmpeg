@@ -26,9 +26,11 @@ void ff_range_chr_to_jpeg_16_rvv(int16_t *, int16_t *, int);
 void ff_range_lum_from_jpeg_16_rvv(int16_t *, int);
 void ff_range_chr_from_jpeg_16_rvv(int16_t *, int16_t *, int);
 
-av_cold static void ff_sws_init_range_convert_riscv(SwsInternal *c, int flags)
+av_cold void ff_sws_init_range_convert_riscv(SwsInternal *c)
 {
 #if HAVE_RVV
+    int flags = av_get_cpu_flags();
+
     static const struct {
         void (*lum)(int16_t *, int);
         void (*chr)(int16_t *, int16_t *, int);
@@ -67,9 +69,9 @@ RVV_INPUT(rgba32);
 
 av_cold void ff_sws_init_swscale_riscv(SwsInternal *c)
 {
+#if HAVE_RVV
     int flags = av_get_cpu_flags();
 
-#if HAVE_RVV
     if ((flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB)) {
         switch (c->srcFormat) {
             case AV_PIX_FMT_ABGR:
@@ -122,5 +124,4 @@ av_cold void ff_sws_init_swscale_riscv(SwsInternal *c)
         }
     }
 #endif
-    ff_sws_init_range_convert_riscv(c, flags);
 }

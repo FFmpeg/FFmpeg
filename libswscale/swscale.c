@@ -563,6 +563,16 @@ av_cold void ff_sws_init_range_convert(SwsInternal *c)
             }
         }
     }
+
+#if ARCH_AARCH64
+    ff_sws_init_range_convert_aarch64(c);
+#elif ARCH_LOONGARCH64
+    ff_sws_init_range_convert_loongarch(c);
+#elif ARCH_RISCV
+    ff_sws_init_range_convert_riscv(c);
+#elif ARCH_X86
+    ff_sws_init_range_convert_x86(c);
+#endif
 }
 
 static av_cold void sws_init_swscale(SwsInternal *c)

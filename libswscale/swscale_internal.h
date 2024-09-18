@@ -719,6 +719,7 @@ void ff_update_palette(SwsInternal *c, const uint32_t *pal);
 av_cold void ff_sws_init_range_convert(SwsInternal *c);
 av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c);
 av_cold void ff_sws_init_range_convert_loongarch(SwsInternal *c);
+av_cold void ff_sws_init_range_convert_riscv(SwsInternal *c);
 av_cold void ff_sws_init_range_convert_x86(SwsInternal *c);
 
 SwsFunc ff_yuv2rgb_init_x86(SwsInternal *c);
