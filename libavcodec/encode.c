@@ -764,6 +764,11 @@ int ff_encode_preinit(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+    if (avctx->bit_rate < 0) {
+        av_log(avctx, AV_LOG_ERROR, "The encoder bitrate is negative.\n");
+        return AVERROR(EINVAL);
+    }
+
     if (avctx->flags & AV_CODEC_FLAG_COPY_OPAQUE &&
         !(avctx->codec->capabilities & AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE)) {
         av_log(avctx, AV_LOG_ERROR, "The copy_opaque flag is set, but the "
