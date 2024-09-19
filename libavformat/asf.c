@@ -89,8 +89,8 @@ static int asf_read_picture(AVFormatContext *s, int len)
         return 0;
     }
 
-    if (picsize >= len) {
-        av_log(s, AV_LOG_ERROR, "Invalid attached picture data size: %d >= %d.\n",
+    if (picsize >= len || ((int64_t)len - picsize) * 2 + 1 > INT_MAX) {
+        av_log(s, AV_LOG_ERROR, "Invalid attached picture data size: %d  (len = %d).\n",
                picsize, len);
         return AVERROR_INVALIDDATA;
     }
