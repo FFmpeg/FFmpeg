@@ -341,7 +341,7 @@ static int do_decode(AVCodecContext *avctx, AVFrame *frame, int decorrelate, int
 
             if (nb_channels == 2 && ch == 1) {
                 if (decorrelate)
-                    dst[n] += s->decode_buffer[0][OFFSET+n];
+                    dst[n] += (unsigned)s->decode_buffer[0][OFFSET+n];
             }
 
             if (downsample)
