@@ -1104,7 +1104,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
         OutputConfiguration *oc = &ac->oc[i];
         AACUSACConfig *usac = &oc->usac;
         for (int j = 0; j < usac->nb_elems; j++) {
-            AACUsacElemConfig *ec = &usac->elems[i];
+            AACUsacElemConfig *ec = &usac->elems[j];
             av_freep(&ec->ext.pl_data);
         }
     }
