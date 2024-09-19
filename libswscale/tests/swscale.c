@@ -445,14 +445,14 @@ int main(int argc, char **argv)
                     "   -ref <file>\n"
                     "       Uses file as reference to compae tests againsts. Tests that have become worse will contain the string worse or WORSE\n"
                     "   -p <number between 0.0 and 1.0>\n"
-                    "       The percentage of tests or comparissions to perform. Doing all tests will take long and generate over a hundread MB text output\n"
+                    "       The percentage of tests or comparisons to perform. Doing all tests will take long and generate over a hundred MB text output\n"
                     "       It is often convenient to perform a random subset\n"
                     "   -dst <pixfmt>\n"
                     "       Only test the specified destination pixel format\n"
                     "   -src <pixfmt>\n"
                     "       Only test the specified source pixel format\n"
                     "   -cpuflags <cpuflags>\n"
-                    "       Uses the specified cpuflags in teh tests\n"
+                    "       Uses the specified cpuflags in the tests\n"
             );
             goto error;
         }
