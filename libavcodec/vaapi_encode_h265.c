@@ -275,7 +275,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     priv->unit_opts.tile_cols = ctx->tile_cols;
     priv->unit_opts.nb_slices = ctx->nb_slices;
     priv->unit_opts.slice_block_rows = ctx->slice_block_rows;
-    priv->unit_opts.slice_block_rows = ctx->slice_block_cols;
+    priv->unit_opts.slice_block_cols = ctx->slice_block_cols;
     memcpy(priv->unit_opts.col_width, ctx->col_width,
            ctx->tile_rows*sizeof(*priv->unit_opts.col_width));
     memcpy(priv->unit_opts.row_height, ctx->row_height,
