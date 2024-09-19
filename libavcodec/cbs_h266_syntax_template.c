@@ -1645,6 +1645,8 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
         ub(7, sps_extension_7bits);
 
         if (current->sps_range_extension_flag) {
+            if (current->sps_bitdepth_minus8 <= 10 - 8)
+                return AVERROR_INVALIDDATA;
             CHECK(FUNC(sps_range_extension)(ctx, rw, current));
         } else {
             infer(sps_extended_precision_flag, 0);
