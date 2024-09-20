@@ -2929,7 +2929,16 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .pNext = &props_drm_mod,
             .handleType = ext_img_spec.handleTypes,
         };
-        VkPhysicalDeviceImageFormatInfo2 fmt_props = {
+        VkPhysicalDeviceImageFormatInfo2 fmt_props;
+
+        if (flags & AV_HWFRAME_MAP_READ)
+            create_info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT |
+                                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        if (flags & AV_HWFRAME_MAP_WRITE)
+            create_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT |
+                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        fmt_props = (VkPhysicalDeviceImageFormatInfo2) {
             .sType  = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
             .pNext  = &props_ext,
             .format = create_info.format,
@@ -2938,13 +2947,6 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             .usage  = create_info.usage,
             .flags  = create_info.flags,
         };
-
-        if (flags & AV_HWFRAME_MAP_READ)
-            create_info.usage |= VK_IMAGE_USAGE_SAMPLED_BIT |
-                                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-        if (flags & AV_HWFRAME_MAP_WRITE)
-            create_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT |
-                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         /* Check if importing is possible for this combination of parameters */
         ret = vk->GetPhysicalDeviceImageFormatProperties2(hwctx->phys_dev,
