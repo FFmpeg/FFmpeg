@@ -1444,11 +1444,15 @@ static int insert_filter(AVFilterContext **last_filter, int *pad_idx,
                          const char *filter_name, const char *args)
 {
     AVFilterGraph *graph = (*last_filter)->graph;
+    const AVFilter *filter = avfilter_get_by_name(filter_name);
     AVFilterContext *ctx;
     int ret;
 
+    if (!filter)
+        return AVERROR_BUG;
+
     ret = avfilter_graph_create_filter(&ctx,
-                                       avfilter_get_by_name(filter_name),
+                                       filter,
                                        filter_name, args, NULL, graph);
     if (ret < 0)
         return ret;
