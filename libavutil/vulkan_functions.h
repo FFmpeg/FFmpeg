@@ -114,6 +114,7 @@ typedef enum FFVulkanExtensions {
                                                                                          \
     /* Semaphores */                                                                     \
     MACRO(1, 1, FF_VK_EXT_EXTERNAL_FD_SEM,      GetSemaphoreFdKHR)                       \
+    MACRO(1, 1, FF_VK_EXT_EXTERNAL_FD_SEM,      ImportSemaphoreFdKHR)                                  \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateSemaphore)                         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              WaitSemaphores)                          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroySemaphore)                        \

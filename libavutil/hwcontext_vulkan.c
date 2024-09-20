@@ -61,6 +61,11 @@
 #include "hwcontext_drm.h"
 #endif
 
+#if HAVE_LINUX_DMA_BUF_H
+#include <sys/ioctl.h>
+#include <linux/dma-buf.h>
+#endif
+
 #if CONFIG_CUDA
 #include "hwcontext_cuda_internal.h"
 #include "cuda_check.h"
@@ -2842,7 +2847,6 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
     VulkanDevicePriv *p = ctx->hwctx;
     AVVulkanDeviceContext *hwctx = &p->p;
     FFVulkanFunctions *vk = &p->vkctx.vkfn;
-    VulkanFramesPriv *fp = hwfc->hwctx;
     const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
     VkBindImageMemoryInfo bind_info[AV_DRM_MAX_PLANES];
     VkBindImagePlaneMemoryInfo plane_info[AV_DRM_MAX_PLANES];
@@ -2990,12 +2994,7 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
             goto fail;
         }
 
-        /* We'd import a semaphore onto the one we created using
-         * vkImportSemaphoreFdKHR but unfortunately neither DRM nor VAAPI
-         * offer us anything we could import and sync with, so instead
-         * just signal the semaphore we created. */
-
-        f->queue_family[i] = p->nb_img_qfs > 1 ? VK_QUEUE_FAMILY_IGNORED : p->img_qfs[0];
+        f->queue_family[i] = VK_QUEUE_FAMILY_EXTERNAL;
         f->layout[i] = create_info.initialLayout;
         f->access[i] = 0x0;
         f->sem_value[i] = 0;
@@ -3097,10 +3096,6 @@ static int vulkan_map_from_drm_frame_desc(AVHWFramesContext *hwfc, AVVkFrame **f
         goto fail;
     }
 
-    err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_EXTERNAL_IMPORT);
-    if (err)
-        goto fail;
-
     *frame = f;
 
     return 0;
@@ -3109,6 +3104,133 @@ fail:
     vulkan_frame_free(hwfc, f);
 
     return err;
+}
+
+static int vulkan_map_from_drm_frame_sync(AVHWFramesContext *hwfc, AVFrame *dst,
+                                          const AVFrame *src, int flags)
+{
+    int err;
+    VkResult ret;
+    AVHWDeviceContext *ctx = hwfc->device_ctx;
+    VulkanDevicePriv *p = ctx->hwctx;
+    VulkanFramesPriv *fp = hwfc->hwctx;
+    AVVulkanDeviceContext *hwctx = &p->p;
+    FFVulkanFunctions *vk = &p->vkctx.vkfn;
+
+    const AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)src->data[0];
+
+#ifdef DMA_BUF_IOCTL_EXPORT_SYNC_FILE
+    if (p->vkctx.extensions & FF_VK_EXT_EXTERNAL_FD_SEM) {
+        VkCommandBuffer cmd_buf;
+        FFVkExecContext *exec;
+        VkImageMemoryBarrier2 img_bar[AV_NUM_DATA_POINTERS];
+        VkSemaphore drm_sync_sem[AV_DRM_MAX_PLANES] = { 0 };
+        int nb_img_bar = 0;
+
+        for (int i = 0; i < desc->nb_objects; i++) {
+            VkSemaphoreTypeCreateInfo sem_type_info = {
+                .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+                .semaphoreType = VK_SEMAPHORE_TYPE_BINARY,
+            };
+            VkSemaphoreCreateInfo sem_spawn = {
+                .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                .pNext = &sem_type_info,
+            };
+            VkImportSemaphoreFdInfoKHR import_info;
+            struct dma_buf_export_sync_file implicit_fd_info = {
+                .flags = DMA_BUF_SYNC_READ,
+                .fd = -1,
+            };
+
+            if (ioctl(desc->objects[i].fd, DMA_BUF_IOCTL_EXPORT_SYNC_FILE,
+                      &implicit_fd_info)) {
+                err = AVERROR(errno);
+                av_log(hwctx, AV_LOG_ERROR, "Failed to retrieve implicit DRM sync file: %s\n",
+                       av_err2str(err));
+                for (; i >= 0; i--)
+                    vk->DestroySemaphore(hwctx->act_dev, drm_sync_sem[i], hwctx->alloc);
+                return err;
+            }
+
+            ret = vk->CreateSemaphore(hwctx->act_dev, &sem_spawn,
+                                      hwctx->alloc, &drm_sync_sem[i]);
+            if (ret != VK_SUCCESS) {
+                av_log(hwctx, AV_LOG_ERROR, "Failed to create semaphore: %s\n",
+                       ff_vk_ret2str(ret));
+                err = AVERROR_EXTERNAL;
+                for (; i >= 0; i--)
+                    vk->DestroySemaphore(hwctx->act_dev, drm_sync_sem[i], hwctx->alloc);
+                return err;
+            }
+
+            import_info = (VkImportSemaphoreFdInfoKHR) {
+                .sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR,
+                .handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT,
+                .flags = VK_SEMAPHORE_IMPORT_TEMPORARY_BIT,
+                .semaphore = drm_sync_sem[i],
+                .fd = implicit_fd_info.fd,
+            };
+
+            ret = vk->ImportSemaphoreFdKHR(hwctx->act_dev, &import_info);
+            if (ret != VK_SUCCESS) {
+                av_log(hwctx, AV_LOG_ERROR, "Failed to import semaphore: %s\n",
+                       ff_vk_ret2str(ret));
+                err = AVERROR_EXTERNAL;
+                for (; i >= 0; i--)
+                    vk->DestroySemaphore(hwctx->act_dev, drm_sync_sem[i], hwctx->alloc);
+                return err;
+            }
+        }
+
+        exec = ff_vk_exec_get(&fp->compute_exec);
+        cmd_buf = exec->buf;
+
+        ff_vk_exec_start(&p->vkctx, exec);
+
+        /* Ownership of semaphores is passed */
+        err = ff_vk_exec_add_dep_bool_sem(&p->vkctx, exec,
+                                          drm_sync_sem, desc->nb_objects,
+                                          VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, 1);
+        if (err < 0)
+            return err;
+
+        err = ff_vk_exec_add_dep_frame(&p->vkctx, exec, dst,
+                                       VK_PIPELINE_STAGE_2_NONE,
+                                       VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+        if (err < 0)
+            return err;
+
+        ff_vk_frame_barrier(&p->vkctx, exec, dst, img_bar, &nb_img_bar,
+                            VK_PIPELINE_STAGE_2_NONE,
+                            VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                            ((flags & AV_HWFRAME_MAP_READ) ?
+                             VK_ACCESS_2_SHADER_SAMPLED_READ_BIT : 0x0) |
+                            ((flags & AV_HWFRAME_MAP_WRITE) ?
+                             VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT : 0x0),
+                            VK_IMAGE_LAYOUT_GENERAL,
+                            VK_QUEUE_FAMILY_IGNORED);
+
+        vk->CmdPipelineBarrier2(cmd_buf, &(VkDependencyInfo) {
+                .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .pImageMemoryBarriers = img_bar,
+                .imageMemoryBarrierCount = nb_img_bar,
+            });
+
+        err = ff_vk_exec_submit(&p->vkctx, exec);
+        if (err < 0)
+            return err;
+    } else
+#endif
+    {
+        AVVkFrame *f = (AVVkFrame *)dst->data[0];
+        av_log(hwctx, AV_LOG_WARNING, "No support for synchronization when importing DMA-BUFs, "
+                                      "image may be corrupted.\n");
+        err = prepare_frame(hwfc, &fp->compute_exec, f, PREP_MODE_EXTERNAL_IMPORT);
+        if (err)
+            return err;
+    }
+
+    return 0;
 }
 
 static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
@@ -3129,6 +3251,10 @@ static int vulkan_map_from_drm(AVHWFramesContext *hwfc, AVFrame *dst,
                                 &vulkan_unmap_from_drm, f);
     if (err < 0)
         goto fail;
+
+    err = vulkan_map_from_drm_frame_sync(hwfc, dst, src, flags);
+    if (err < 0)
+        return err;
 
     av_log(hwfc, AV_LOG_DEBUG, "Mapped DRM object to Vulkan!\n");
 
