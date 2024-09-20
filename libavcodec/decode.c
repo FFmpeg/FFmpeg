@@ -1730,6 +1730,8 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flag
     if (!frame->data[0])
         return ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
 
+    av_frame_side_data_free(&frame->side_data, &frame->nb_side_data);
+
     if ((flags & FF_REGET_BUFFER_FLAG_READONLY) || av_frame_is_writable(frame))
         return ff_decode_frame_props(avctx, frame);
 
