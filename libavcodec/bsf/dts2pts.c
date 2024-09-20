@@ -396,7 +396,8 @@ static int dts2pts_init(AVBSFContext *ctx)
     if (!s->fifo)
         return AVERROR(ENOMEM);
 
-    s->node_pool = ff_refstruct_pool_alloc(sizeof(DTS2PTSNode), 0);
+    s->node_pool = ff_refstruct_pool_alloc(sizeof(DTS2PTSNode),
+                                           FF_REFSTRUCT_POOL_FLAG_NO_ZEROING);
 
     if (!s->node_pool)
         return AVERROR(ENOMEM);
