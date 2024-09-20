@@ -562,6 +562,104 @@ int ff_vk_exec_add_dep_buf(FFVulkanContext *s, FFVkExecContext *e,
     return 0;
 }
 
+#define ARR_REALLOC(str, arr, alloc_s, cnt)                               \
+    do {                                                                  \
+        arr = av_fast_realloc(str->arr, alloc_s, (cnt + 1)*sizeof(*arr)); \
+        if (!arr) {                                                       \
+            ff_vk_exec_discard_deps(s, e);                                \
+            return AVERROR(ENOMEM);                                       \
+        }                                                                 \
+        str->arr = arr;                                                   \
+    } while (0)
+
+typedef struct TempSyncCtx {
+    int nb_sem;
+    VkSemaphore sem[];
+} TempSyncCtx;
+
+static void destroy_tmp_semaphores(void *opaque, uint8_t *data)
+{
+    FFVulkanContext *s = opaque;
+    FFVulkanFunctions *vk = &s->vkfn;
+    TempSyncCtx *ts = (TempSyncCtx *)data;
+
+    for (int i = 0; i < ts->nb_sem; i++)
+        vk->DestroySemaphore(s->hwctx->act_dev, ts->sem[i], s->hwctx->alloc);
+
+    av_free(ts);
+}
+
+int ff_vk_exec_add_dep_bool_sem(FFVulkanContext *s, FFVkExecContext *e,
+                                VkSemaphore *sem, int nb,
+                                VkPipelineStageFlagBits2 stage,
+                                int wait)
+{
+    int err;
+    size_t buf_size;
+    AVBufferRef *buf;
+    TempSyncCtx *ts;
+    FFVulkanFunctions *vk = &s->vkfn;
+
+    /* Do not transfer ownership if we're signalling a binary semaphore,
+     * since we're probably exporting it. */
+    if (!wait) {
+        for (int i = 0; i < nb; i++) {
+            VkSemaphoreSubmitInfo *sem_sig;
+            ARR_REALLOC(e, sem_sig, &e->sem_sig_alloc, e->sem_sig_cnt);
+
+            e->sem_sig[e->sem_sig_cnt++] = (VkSemaphoreSubmitInfo) {
+                .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                .semaphore = sem[i],
+                .stageMask = stage,
+            };
+        }
+
+        return 0;
+    }
+
+    buf_size = sizeof(int) + sizeof(VkSemaphore)*nb;
+    ts = av_mallocz(buf_size);
+    if (!ts) {
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    memcpy(ts->sem, sem, nb*sizeof(*sem));
+    ts->nb_sem = nb;
+
+    buf = av_buffer_create((uint8_t *)ts, buf_size, destroy_tmp_semaphores, s, 0);
+    if (!buf) {
+        av_free(ts);
+        err = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    err = ff_vk_exec_add_dep_buf(s, e, &buf, 1, 0);
+    if (err < 0) {
+        av_buffer_unref(&buf);
+        return err;
+    }
+
+    for (int i = 0; i < nb; i++) {
+        VkSemaphoreSubmitInfo *sem_wait;
+        ARR_REALLOC(e, sem_wait, &e->sem_wait_alloc, e->sem_wait_cnt);
+
+        e->sem_wait[e->sem_wait_cnt++] = (VkSemaphoreSubmitInfo) {
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+            .semaphore = sem[i],
+            .stageMask = stage,
+        };
+    }
+
+    return 0;
+
+fail:
+    for (int i = 0; i < nb; i++)
+        vk->DestroySemaphore(s->hwctx->act_dev, sem[i], s->hwctx->alloc);
+
+    return err;
+}
+
 int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
                              VkPipelineStageFlagBits2 wait_stage,
                              VkPipelineStageFlagBits2 signal_stage)
@@ -582,16 +680,6 @@ int ff_vk_exec_add_dep_frame(FFVulkanContext *s, FFVkExecContext *e, AVFrame *f,
     for (int i = 0; i < e->nb_frame_deps; i++)
         if (e->frame_deps[i]->data[0] == f->data[0])
             return 1;
-
-#define ARR_REALLOC(str, arr, alloc_s, cnt)                               \
-    do {                                                                  \
-        arr = av_fast_realloc(str->arr, alloc_s, (cnt + 1)*sizeof(*arr)); \
-        if (!arr) {                                                       \
-            ff_vk_exec_discard_deps(s, e);                                \
-            return AVERROR(ENOMEM);                                       \
-        }                                                                 \
-        str->arr = arr;                                                   \
-    } while (0)
 
     ARR_REALLOC(e, layout_dst,       &e->layout_dst_alloc,       e->nb_frame_deps);
     ARR_REALLOC(e, queue_family_dst, &e->queue_family_dst_alloc, e->nb_frame_deps);
