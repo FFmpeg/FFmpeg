@@ -83,8 +83,8 @@ int ff_videotoolbox_buffer_copy(VTContext *vtctx,
     void *tmp;
 
     tmp = av_fast_realloc(vtctx->bitstream,
-                         &vtctx->allocated_size,
-                         size);
+                          &vtctx->allocated_size,
+                          size);
 
     if (!tmp)
         return AVERROR(ENOMEM);
