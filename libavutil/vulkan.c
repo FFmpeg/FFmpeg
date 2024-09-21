@@ -1176,8 +1176,8 @@ const char *ff_vk_shader_rep_fmt(enum AVPixelFormat pixfmt)
 }
 
 typedef struct ImageViewCtx {
-    VkImageView views[AV_NUM_DATA_POINTERS];
     int nb_views;
+    VkImageView views[];
 } ImageViewCtx;
 
 static void destroy_imageviews(void *opaque, uint8_t *data)
@@ -1206,7 +1206,8 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
     const int nb_images = ff_vk_count_images(vkf);
     const int nb_planes = av_pix_fmt_count_planes(hwfc->sw_format);
 
-    ImageViewCtx *iv = av_mallocz(sizeof(*iv));
+    const size_t buf_size = sizeof(int) + nb_planes*sizeof(VkImageView);
+    ImageViewCtx *iv = av_mallocz(buf_size);
     if (!iv)
         return AVERROR(ENOMEM);
 
@@ -1243,7 +1244,7 @@ int ff_vk_create_imageviews(FFVulkanContext *s, FFVkExecContext *e,
         iv->nb_views++;
     }
 
-    buf = av_buffer_create((uint8_t *)iv, sizeof(*iv), destroy_imageviews, s, 0);
+    buf = av_buffer_create((uint8_t *)iv, buf_size, destroy_imageviews, s, 0);
     if (!buf) {
         err = AVERROR(ENOMEM);
         goto fail;
