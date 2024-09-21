@@ -73,7 +73,7 @@ typedef enum SwsDither {
     SWS_DITHER_ED,
     SWS_DITHER_A_DITHER,
     SWS_DITHER_X_DITHER,
-    NB_SWS_DITHER,
+    SWS_DITHER_NB,
 } SwsDither;
 
 typedef enum SwsAlphaBlend {
