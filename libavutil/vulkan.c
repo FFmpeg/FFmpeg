@@ -1520,12 +1520,8 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
                                       FFVulkanDescriptorSetBinding *desc, int nb,
                                       int singular, int print_to_shader_only)
 {
-    VkResult ret;
     int has_sampler = 0;
-    FFVulkanFunctions *vk = &s->vkfn;
     FFVulkanDescriptorSet *set;
-    VkDescriptorSetLayout *layout;
-    VkDescriptorSetLayoutCreateInfo desc_create_layout;
 
     if (print_to_shader_only)
         goto print;
@@ -1537,14 +1533,7 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
         return AVERROR(ENOMEM);
     pl->desc_set = set;
 
-    layout = av_realloc_array(pl->desc_layout, sizeof(*pl->desc_layout),
-                              pl->nb_descriptor_sets + 1);
-    if (!layout)
-        return AVERROR(ENOMEM);
-    pl->desc_layout = layout;
-
     set = &set[pl->nb_descriptor_sets];
-    layout = &layout[pl->nb_descriptor_sets];
     memset(set, 0, sizeof(*set));
 
     set->binding = av_calloc(nb, sizeof(*set->binding));
@@ -1556,14 +1545,6 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
         av_freep(&set->binding);
         return AVERROR(ENOMEM);
     }
-
-    desc_create_layout = (VkDescriptorSetLayoutCreateInfo) {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = nb,
-        .pBindings = set->binding,
-        .flags = (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) ?
-                 VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT : 0x0,
-    };
 
     for (int i = 0; i < nb; i++) {
         set->binding[i].binding            = i;
@@ -1582,22 +1563,7 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
     if (has_sampler)
         set->usage |= VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
 
-    ret = vk->CreateDescriptorSetLayout(s->hwctx->act_dev, &desc_create_layout,
-                                        s->hwctx->alloc, layout);
-    if (ret != VK_SUCCESS) {
-        av_log(s, AV_LOG_ERROR, "Unable to init descriptor set layout: %s",
-               ff_vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
-    }
-
-    if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
-        vk->GetDescriptorSetLayoutSizeEXT(s->hwctx->act_dev, *layout, &set->layout_size);
-        set->aligned_size = FFALIGN(set->layout_size, s->desc_buf_props.descriptorBufferOffsetAlignment);
-
-        for (int i = 0; i < nb; i++)
-            vk->GetDescriptorSetLayoutBindingOffsetEXT(s->hwctx->act_dev, *layout,
-                                                       i, &set->binding_offset[i]);
-    } else {
+    if (!(s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER)) {
         for (int i = 0; i < nb; i++) {
             int j;
             VkDescriptorPoolSize *desc_pool_size;
@@ -1606,8 +1572,8 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
                     break;
             if (j >= pl->nb_desc_pool_size) {
                 desc_pool_size = av_realloc_array(pl->desc_pool_size,
-                                                      sizeof(*desc_pool_size),
-                                                      pl->nb_desc_pool_size + 1);
+                                                  sizeof(*desc_pool_size),
+                                                  pl->nb_desc_pool_size + 1);
                 if (!desc_pool_size)
                     return AVERROR(ENOMEM);
 
@@ -1703,7 +1669,7 @@ int ff_vk_exec_pipeline_register(FFVulkanContext *s, FFVkExecPool *pool,
 
             pl->bound_buffer_indices[i] = i;
         }
-    } else {
+    } else if (!pl->use_push) {
         VkResult ret;
         FFVulkanFunctions *vk = &s->vkfn;
         VkDescriptorSetLayout *tmp_layouts;
@@ -1796,8 +1762,16 @@ static inline void update_set_pool_write(FFVulkanContext *s,
             vk->UpdateDescriptorSets(s->hwctx->act_dev, 1, write_info, 0, NULL);
         }
     } else {
-        write_info->dstSet = pl->desc_sets[e->idx*pl->nb_descriptor_sets + set];
-        vk->UpdateDescriptorSets(s->hwctx->act_dev, 1, write_info, 0, NULL);
+        if (pl->use_push) {
+            vk->CmdPushDescriptorSetKHR(e->buf,
+                                        pl->bind_point,
+                                        pl->pipeline_layout,
+                                        set, 1,
+                                        write_info);
+        } else {
+            write_info->dstSet = pl->desc_sets[e->idx*pl->nb_descriptor_sets + set];
+            vk->UpdateDescriptorSets(s->hwctx->act_dev, 1, write_info, 0, NULL);
+        }
     }
 }
 
@@ -1954,6 +1928,70 @@ void ff_vk_update_push_exec(FFVulkanContext *s, FFVkExecContext *e,
                          stage, offset, size, src);
 }
 
+static int init_descriptors(FFVulkanContext *s, FFVulkanPipeline *pl)
+{
+    VkResult ret;
+    FFVulkanFunctions *vk = &s->vkfn;
+
+    pl->desc_layout = av_malloc_array(pl->nb_descriptor_sets,
+                                      sizeof(*pl->desc_layout));
+    if (!pl->desc_layout)
+        return AVERROR(ENOMEM);
+
+    if (!(s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER)) {
+        int has_singular = 0;
+        for (int i = 0; i < pl->nb_descriptor_sets; i++) {
+            if (pl->desc_set[i].singular) {
+                has_singular = 1;
+                break;
+            }
+        }
+        pl->use_push = (s->extensions & FF_VK_EXT_PUSH_DESCRIPTOR) &&
+                       (pl->nb_descriptor_sets == 1) &&
+                       !has_singular;
+    }
+
+    for (int i = 0; i < pl->nb_descriptor_sets; i++) {
+        FFVulkanDescriptorSet *set = &pl->desc_set[i];
+        VkDescriptorSetLayoutCreateInfo desc_layout_create = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = set->nb_bindings,
+            .pBindings = set->binding,
+            .flags = (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) ?
+                     VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT :
+                     (pl->use_push) ?
+                     VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR :
+                     0x0,
+        };
+
+        ret = vk->CreateDescriptorSetLayout(s->hwctx->act_dev,
+                                            &desc_layout_create,
+                                            s->hwctx->alloc,
+                                            &pl->desc_layout[i]);
+        if (ret != VK_SUCCESS) {
+            av_log(s, AV_LOG_ERROR, "Unable to create descriptor set layout: %s",
+                   ff_vk_ret2str(ret));
+            return AVERROR_EXTERNAL;
+        }
+
+        if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
+            vk->GetDescriptorSetLayoutSizeEXT(s->hwctx->act_dev, pl->desc_layout[i],
+                                              &set->layout_size);
+
+            set->aligned_size = FFALIGN(set->layout_size,
+                                        s->desc_buf_props.descriptorBufferOffsetAlignment);
+
+            for (int j = 0; j < set->nb_bindings; j++)
+                vk->GetDescriptorSetLayoutBindingOffsetEXT(s->hwctx->act_dev,
+                                                           pl->desc_layout[i],
+                                                           j,
+                                                           &set->binding_offset[j]);
+        }
+    }
+
+    return 0;
+}
+
 static int init_pipeline_layout(FFVulkanContext *s, FFVulkanPipeline *pl)
 {
     VkResult ret;
@@ -1988,6 +2026,10 @@ int ff_vk_init_compute_pipeline(FFVulkanContext *s, FFVulkanPipeline *pl,
     FFVulkanFunctions *vk = &s->vkfn;
 
     VkComputePipelineCreateInfo pipeline_create_info;
+
+    err = init_descriptors(s, pl);
+    if (err < 0)
+        return err;
 
     err = init_pipeline_layout(s, pl);
     if (err < 0)
@@ -2038,7 +2080,7 @@ void ff_vk_exec_bind_pipeline(FFVulkanContext *s, FFVkExecContext *e,
             vk->CmdSetDescriptorBufferOffsetsEXT(e->buf, pl->bind_point, pl->pipeline_layout,
                                                  0, pl->nb_descriptor_sets,
                                                  pl->bound_buffer_indices, offsets);
-        } else {
+        } else if (!pl->use_push) {
             vk->CmdBindDescriptorSets(e->buf, pl->bind_point, pl->pipeline_layout,
                                       0, pl->nb_descriptor_sets,
                                       &pl->desc_sets[e->idx*pl->nb_descriptor_sets],

@@ -48,6 +48,7 @@ typedef enum FFVulkanExtensions {
     FF_VK_EXT_COOP_MATRIX            = 1ULL << 16, /* VK_KHR_cooperative_matrix */
     FF_VK_EXT_OPTICAL_FLOW           = 1ULL << 17, /* VK_NV_optical_flow */
     FF_VK_EXT_SHADER_OBJECT          = 1ULL << 18, /* VK_EXT_shader_object */
+    FF_VK_EXT_PUSH_DESCRIPTOR        = 1ULL << 19, /* VK_KHR_push_descriptor */
 
     FF_VK_EXT_VIDEO_MAINTENANCE_1    = 1ULL << 27, /* VK_KHR_video_maintenance1 */
     FF_VK_EXT_VIDEO_ENCODE_QUEUE     = 1ULL << 28, /* VK_KHR_video_encode_queue */
@@ -179,6 +180,7 @@ typedef enum FFVulkanExtensions {
                                                                                                        \
     /* Descriptors */                                                                                  \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              UpdateDescriptorSets)                                  \
+    MACRO(1, 1, FF_VK_EXT_PUSH_DESCRIPTOR,      CmdPushDescriptorSetKHR)                               \
                                                                                            \
     /* Queries */                                                                          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateQueryPool)                           \

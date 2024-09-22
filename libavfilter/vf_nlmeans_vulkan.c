@@ -687,14 +687,16 @@ static int denoise_pass(NLMeansVulkanContext *s, FFVkExecContext *exec,
     VkBufferMemoryBarrier2 buf_bar[8];
     int nb_buf_bar = 0;
 
+    DenoisePushData pd = {
+        { ws_stride[0], ws_stride[1], ws_stride[2], ws_stride[3] },
+    };
+
     /* Denoise pass pipeline */
     ff_vk_exec_bind_pipeline(vkctx, exec, &s->pl_denoise);
 
     /* Push data */
     ff_vk_update_push_exec(vkctx, exec, &s->pl_denoise, VK_SHADER_STAGE_COMPUTE_BIT,
-                           0, sizeof(DenoisePushData), &(DenoisePushData) {
-                               { ws_stride[0], ws_stride[1], ws_stride[2], ws_stride[3] },
-                           });
+                           0, sizeof(pd), &pd);
 
     buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
         .sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
@@ -970,6 +972,10 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             offsets_dispatched,
         };
 
+        /* Push data */
+        ff_vk_update_push_exec(vkctx, exec, &s->pl_weights, VK_SHADER_STAGE_COMPUTE_BIT,
+                               0, sizeof(pd), &pd);
+
         if (offsets_dispatched) {
             nb_buf_bar = 0;
             buf_bar[nb_buf_bar++] = (VkBufferMemoryBarrier2) {
@@ -994,10 +1000,6 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
             integral_vk->stage = buf_bar[1].dstStageMask;
             integral_vk->access = buf_bar[1].dstAccessMask;
         }
-
-        /* Push data */
-        ff_vk_update_push_exec(vkctx, exec, &s->pl_weights, VK_SHADER_STAGE_COMPUTE_BIT,
-                               0, sizeof(pd), &pd);
 
         wg_invoc = FFMIN((s->nb_offsets - offsets_dispatched)/TYPE_ELEMS, s->opts.t);
         wg_invoc = FFMIN(wg_invoc, vkctx->props.properties.limits.maxComputeWorkGroupCount[2]);

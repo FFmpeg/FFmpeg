@@ -226,6 +226,7 @@ typedef struct FFVulkanPipeline {
     int nb_descriptor_sets;
 
     /* Descriptor pool */
+    int use_push;
     VkDescriptorSet *desc_sets;
     VkDescriptorPool desc_pool;
     VkDescriptorPoolSize *desc_pool_size;
