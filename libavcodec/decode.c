@@ -37,6 +37,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem.h"
+#include "libavutil/stereo3d.h"
 
 #include "avcodec.h"
 #include "avcodec_internal.h"
@@ -1423,6 +1424,42 @@ const AVPacketSideData *ff_get_coded_side_data(const AVCodecContext *avctx,
     return packet_side_data_get(avctx->coded_side_data, avctx->nb_coded_side_data, type);
 }
 
+static int side_data_stereo3d_merge(AVFrameSideData *sd_frame,
+                                    const AVPacketSideData *sd_pkt)
+{
+    const AVStereo3D *src;
+    AVStereo3D       *dst;
+    int ret;
+
+    ret = av_buffer_make_writable(&sd_frame->buf);
+    if (ret < 0)
+        return ret;
+    sd_frame->data = sd_frame->buf->data;
+
+    dst = (      AVStereo3D*)sd_frame->data;
+    src = (const AVStereo3D*)sd_pkt->data;
+
+    if (dst->type == AV_STEREO3D_UNSPEC)
+        dst->type = src->type;
+
+    if (dst->view == AV_STEREO3D_VIEW_UNSPEC)
+        dst->view = src->view;
+
+    if (dst->primary_eye == AV_PRIMARY_EYE_NONE)
+        dst->primary_eye = src->primary_eye;
+
+    if (!dst->baseline)
+        dst->baseline = src->baseline;
+
+    if (!dst->horizontal_disparity_adjustment.num)
+        dst->horizontal_disparity_adjustment = src->horizontal_disparity_adjustment;
+
+    if (!dst->horizontal_field_of_view.num)
+        dst->horizontal_field_of_view = src->horizontal_field_of_view;
+
+    return 0;
+}
+
 static int side_data_map(AVFrame *dst,
                          const AVPacketSideData *sd_src, int nb_sd_src,
                          const SideDataMap *map)
@@ -1439,8 +1476,15 @@ static int side_data_map(AVFrame *dst,
             continue;
 
         sd_frame = av_frame_get_side_data(dst, type_frame);
-        if (sd_frame)
+        if (sd_frame) {
+            if (type_frame == AV_FRAME_DATA_STEREO3D) {
+                int ret = side_data_stereo3d_merge(sd_frame, sd_pkt);
+                if (ret < 0)
+                    return ret;
+            }
+
             continue;
+        }
 
         sd_frame = av_frame_new_side_data(dst, type_frame, sd_pkt->size);
         if (!sd_frame)
