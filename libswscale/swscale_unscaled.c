@@ -230,6 +230,8 @@ static void nv24_to_yuv420p_chroma(uint8_t *dst1, int dstStride1,
     const uint8_t *src2 = src + srcStride;
     // average 4 pixels into 1 (interleaved U and V)
     for (int y = 0; y < h; y += 2) {
+        if (y + 1 == h)
+            src2 = src1;
         for (int x = 0; x < w; x++) {
             dst1[x] = (src1[4 * x + 0] + src1[4 * x + 2] +
                        src2[4 * x + 0] + src2[4 * x + 2]) >> 2;
