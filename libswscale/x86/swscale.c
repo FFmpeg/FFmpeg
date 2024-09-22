@@ -464,27 +464,26 @@ INPUT_PLANAR_RGB_A_ALL_DECL(avx2);
 } while (0)
 
 #define RANGE_CONVERT_FUNCS_DECL(opt)                                       \
-void ff_lumRangeFromJpeg_ ##opt(int16_t *dst, int width);                   \
-void ff_chrRangeFromJpeg_ ##opt(int16_t *dstU, int16_t *dstV, int width);   \
-void ff_lumRangeToJpeg_ ##opt(int16_t *dst, int width);                     \
-void ff_chrRangeToJpeg_ ##opt(int16_t *dstU, int16_t *dstV, int width);     \
+void ff_lumRangeFromJpeg_ ##opt(int16_t *dst, int width,                    \
+                                uint32_t coeff, int64_t offset);            \
+void ff_chrRangeFromJpeg_ ##opt(int16_t *dstU, int16_t *dstV, int width,    \
+                                uint32_t coeff, int64_t offset);            \
+void ff_lumRangeToJpeg_ ##opt(int16_t *dst, int width,                      \
+                              uint32_t coeff, int64_t offset);              \
+void ff_chrRangeToJpeg_ ##opt(int16_t *dstU, int16_t *dstV, int width,      \
+                              uint32_t coeff, int64_t offset);              \
 
 RANGE_CONVERT_FUNCS_DECL(sse2);
 RANGE_CONVERT_FUNCS_DECL(avx2);
 
 av_cold void ff_sws_init_range_convert_x86(SwsInternal *c)
 {
-    /* This code is currently disabled because of changes in the base
-     * implementation of these functions. This code should be enabled
-     * again once those changes are ported to this architecture. */
-#if 0
     int cpu_flags = av_get_cpu_flags();
     if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         RANGE_CONVERT_FUNCS(avx2);
     } else if (EXTERNAL_SSE2(cpu_flags)) {
         RANGE_CONVERT_FUNCS(sse2);
     }
-#endif
 }
 
 av_cold void ff_sws_init_swscale_x86(SwsInternal *c)
