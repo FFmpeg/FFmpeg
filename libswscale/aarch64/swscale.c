@@ -218,14 +218,22 @@ NEON_INPUT(bgra32);
 NEON_INPUT(rgb24);
 NEON_INPUT(rgba32);
 
-void ff_lumRangeFromJpeg_neon(int16_t *dst, int width,
+void ff_lumRangeFromJpeg8_neon(int16_t *dst, int width,
+                               uint32_t coeff, int64_t offset);
+void ff_chrRangeFromJpeg8_neon(int16_t *dstU, int16_t *dstV, int width,
+                               uint32_t coeff, int64_t offset);
+void ff_lumRangeToJpeg8_neon(int16_t *dst, int width,
+                             uint32_t coeff, int64_t offset);
+void ff_chrRangeToJpeg8_neon(int16_t *dstU, int16_t *dstV, int width,
+                             uint32_t coeff, int64_t offset);
+void ff_lumRangeFromJpeg16_neon(int16_t *dst, int width,
+                                uint32_t coeff, int64_t offset);
+void ff_chrRangeFromJpeg16_neon(int16_t *dstU, int16_t *dstV, int width,
+                                uint32_t coeff, int64_t offset);
+void ff_lumRangeToJpeg16_neon(int16_t *dst, int width,
                               uint32_t coeff, int64_t offset);
-void ff_chrRangeFromJpeg_neon(int16_t *dstU, int16_t *dstV, int width,
+void ff_chrRangeToJpeg16_neon(int16_t *dstU, int16_t *dstV, int width,
                               uint32_t coeff, int64_t offset);
-void ff_lumRangeToJpeg_neon(int16_t *dst, int width,
-                            uint32_t coeff, int64_t offset);
-void ff_chrRangeToJpeg_neon(int16_t *dstU, int16_t *dstV, int width,
-                            uint32_t coeff, int64_t offset);
 
 av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
 {
@@ -234,11 +242,19 @@ av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
     if (have_neon(cpu_flags)) {
         if (c->dstBpc <= 14) {
             if (c->opts.src_range) {
-                c->lumConvertRange = ff_lumRangeFromJpeg_neon;
-                c->chrConvertRange = ff_chrRangeFromJpeg_neon;
+                c->lumConvertRange = ff_lumRangeFromJpeg8_neon;
+                c->chrConvertRange = ff_chrRangeFromJpeg8_neon;
             } else {
-                c->lumConvertRange = ff_lumRangeToJpeg_neon;
-                c->chrConvertRange = ff_chrRangeToJpeg_neon;
+                c->lumConvertRange = ff_lumRangeToJpeg8_neon;
+                c->chrConvertRange = ff_chrRangeToJpeg8_neon;
+            }
+        } else {
+            if (c->opts.src_range) {
+                c->lumConvertRange = ff_lumRangeFromJpeg16_neon;
+                c->chrConvertRange = ff_chrRangeFromJpeg16_neon;
+            } else {
+                c->lumConvertRange = ff_lumRangeToJpeg16_neon;
+                c->chrConvertRange = ff_chrRangeToJpeg16_neon;
             }
         }
     }
