@@ -29,27 +29,27 @@ av_cold void ff_sws_init_range_convert_loongarch(SwsInternal *c)
     int cpu_flags = av_get_cpu_flags();
 
     if (have_lsx(cpu_flags)) {
-            if (c->dstBpc <= 14) {
-                if (c->srcRange) {
-                    c->lumConvertRange = lumRangeFromJpeg_lsx;
-                    c->chrConvertRange = chrRangeFromJpeg_lsx;
-                } else {
-                    c->lumConvertRange = lumRangeToJpeg_lsx;
-                    c->chrConvertRange = chrRangeToJpeg_lsx;
-                }
+        if (c->dstBpc <= 14) {
+            if (c->srcRange) {
+                c->lumConvertRange = lumRangeFromJpeg_lsx;
+                c->chrConvertRange = chrRangeFromJpeg_lsx;
+            } else {
+                c->lumConvertRange = lumRangeToJpeg_lsx;
+                c->chrConvertRange = chrRangeToJpeg_lsx;
             }
+        }
     }
 #if HAVE_LASX
     if (have_lasx(cpu_flags)) {
-            if (c->dstBpc <= 14) {
-                if (c->srcRange) {
-                    c->lumConvertRange = lumRangeFromJpeg_lasx;
-                    c->chrConvertRange = chrRangeFromJpeg_lasx;
-                } else {
-                    c->lumConvertRange = lumRangeToJpeg_lasx;
-                    c->chrConvertRange = chrRangeToJpeg_lasx;
-                }
+        if (c->dstBpc <= 14) {
+            if (c->srcRange) {
+                c->lumConvertRange = lumRangeFromJpeg_lasx;
+                c->chrConvertRange = chrRangeFromJpeg_lasx;
+            } else {
+                c->lumConvertRange = lumRangeToJpeg_lasx;
+                c->chrConvertRange = chrRangeToJpeg_lasx;
             }
+        }
     }
 #endif // #if HAVE_LASX
 }
