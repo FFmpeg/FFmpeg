@@ -453,6 +453,10 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *frame,
     if (ret < 0)
         return ret;
 
+    if (((avctx->width + 15) / 16) * ((avctx->height + 15) / 16) > get_bits_left(gb))
+        return AVERROR_INVALIDDATA;
+
+
     if ((ret = ff_get_buffer(avctx, frame, (frame->flags & AV_FRAME_FLAG_KEY) ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
         return ret;
 
