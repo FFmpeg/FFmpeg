@@ -1524,6 +1524,7 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
     int has_sampler = 0;
     FFVulkanFunctions *vk = &s->vkfn;
     FFVulkanDescriptorSet *set;
+    VkDescriptorSetLayout *layout;
     VkDescriptorSetLayoutCreateInfo desc_create_layout;
 
     if (print_to_shader_only)
@@ -1535,7 +1536,15 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
     if (!set)
         return AVERROR(ENOMEM);
     pl->desc_set = set;
+
+    layout = av_realloc_array(pl->desc_layout, sizeof(*pl->desc_layout),
+                              pl->nb_descriptor_sets + 1);
+    if (!layout)
+        return AVERROR(ENOMEM);
+    pl->desc_layout = layout;
+
     set = &set[pl->nb_descriptor_sets];
+    layout = &layout[pl->nb_descriptor_sets];
     memset(set, 0, sizeof(*set));
 
     set->binding = av_calloc(nb, sizeof(*set->binding));
@@ -1573,19 +1582,19 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
         set->usage |= VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
 
     ret = vk->CreateDescriptorSetLayout(s->hwctx->act_dev, &desc_create_layout,
-                                        s->hwctx->alloc, &set->layout);
+                                        s->hwctx->alloc, layout);
     if (ret != VK_SUCCESS) {
         av_log(s, AV_LOG_ERROR, "Unable to init descriptor set layout: %s",
                ff_vk_ret2str(ret));
         return AVERROR_EXTERNAL;
     }
 
-    vk->GetDescriptorSetLayoutSizeEXT(s->hwctx->act_dev, set->layout, &set->layout_size);
+    vk->GetDescriptorSetLayoutSizeEXT(s->hwctx->act_dev, *layout, &set->layout_size);
 
     set->aligned_size = FFALIGN(set->layout_size, s->desc_buf_props.descriptorBufferOffsetAlignment);
 
     for (int i = 0; i < nb; i++)
-        vk->GetDescriptorSetLayoutBindingOffsetEXT(s->hwctx->act_dev, set->layout,
+        vk->GetDescriptorSetLayoutBindingOffsetEXT(s->hwctx->act_dev, *layout,
                                                    i, &set->binding_offset[i]);
 
     set->singular = singular;
@@ -1808,18 +1817,10 @@ static int init_pipeline_layout(FFVulkanContext *s, FFVulkanPipeline *pl)
     FFVulkanFunctions *vk = &s->vkfn;
     VkPipelineLayoutCreateInfo pipeline_layout_info;
 
-    VkDescriptorSetLayout *desc_layouts = av_malloc(pl->nb_descriptor_sets*
-                                                    sizeof(desc_layouts));
-    if (!desc_layouts)
-        return AVERROR(ENOMEM);
-
-    for (int i = 0; i < pl->nb_descriptor_sets; i++)
-        desc_layouts[i] = pl->desc_set[i].layout;
-
     /* Finally create the pipeline layout */
     pipeline_layout_info = (VkPipelineLayoutCreateInfo) {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .pSetLayouts            = desc_layouts,
+        .pSetLayouts            = pl->desc_layout,
         .setLayoutCount         = pl->nb_descriptor_sets,
         .pushConstantRangeCount = pl->push_consts_num,
         .pPushConstantRanges    = pl->push_consts,
@@ -1827,7 +1828,6 @@ static int init_pipeline_layout(FFVulkanContext *s, FFVulkanPipeline *pl)
 
     ret = vk->CreatePipelineLayout(s->hwctx->act_dev, &pipeline_layout_info,
                                    s->hwctx->alloc, &pl->pipeline_layout);
-    av_free(desc_layouts);
     if (ret != VK_SUCCESS) {
         av_log(s, AV_LOG_ERROR, "Unable to init pipeline layout: %s\n",
                ff_vk_ret2str(ret));
@@ -1911,13 +1911,16 @@ void ff_vk_pipeline_free(FFVulkanContext *s, FFVulkanPipeline *pl)
         if (set->buf.mem)
             ff_vk_unmap_buffer(s, &set->buf, 0);
         ff_vk_free_buf(s, &set->buf);
-        if (set->layout)
-            vk->DestroyDescriptorSetLayout(s->hwctx->act_dev, set->layout,
-                                           s->hwctx->alloc);
         av_free(set->binding);
         av_free(set->binding_offset);
     }
 
+    for (int i = 0; i < pl->nb_descriptor_sets; i++)
+        if (pl->desc_layout[i])
+            vk->DestroyDescriptorSetLayout(s->hwctx->act_dev, pl->desc_layout[i],
+                                           s->hwctx->alloc);
+
+    av_freep(&pl->desc_layout);
     av_freep(&pl->desc_set);
     av_freep(&pl->desc_bind);
     av_freep(&pl->bound_buffer_indices);

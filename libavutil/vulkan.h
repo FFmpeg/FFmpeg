@@ -113,7 +113,6 @@ typedef struct FFVkQueueFamilyCtx {
 } FFVkQueueFamilyCtx;
 
 typedef struct FFVulkanDescriptorSet {
-    VkDescriptorSetLayout  layout;
     FFVkBuffer             buf;
     uint8_t               *desc_mem;
     VkDeviceSize           layout_size;
@@ -143,7 +142,8 @@ typedef struct FFVulkanPipeline {
     /* Workgroup */
     int wg_size[3];
 
-    /* Descriptors */
+    /* Descriptor buffer */
+    VkDescriptorSetLayout *desc_layout;
     FFVulkanDescriptorSet *desc_set;
     VkDescriptorBufferBindingInfoEXT *desc_bind;
     uint32_t *bound_buffer_indices;
