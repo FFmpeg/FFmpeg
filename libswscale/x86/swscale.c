@@ -474,14 +474,12 @@ RANGE_CONVERT_FUNCS_DECL(avx2);
 
 av_cold void ff_sws_init_range_convert_x86(SwsInternal *c)
 {
-    if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         int cpu_flags = av_get_cpu_flags();
         if (EXTERNAL_AVX2_FAST(cpu_flags)) {
             RANGE_CONVERT_FUNCS(avx2);
         } else if (EXTERNAL_SSE2(cpu_flags)) {
             RANGE_CONVERT_FUNCS(sse2);
         }
-    }
 }
 
 av_cold void ff_sws_init_swscale_x86(SwsInternal *c)

@@ -228,7 +228,6 @@ av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
     int cpu_flags = av_get_cpu_flags();
 
     if (have_neon(cpu_flags)) {
-    if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         if (c->dstBpc <= 14) {
             if (c->srcRange) {
                 c->lumConvertRange = ff_lumRangeFromJpeg_neon;
@@ -238,7 +237,6 @@ av_cold void ff_sws_init_range_convert_aarch64(SwsInternal *c)
                 c->chrConvertRange = ff_chrRangeToJpeg_neon;
             }
         }
-    }
     }
 }
 

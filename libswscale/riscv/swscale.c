@@ -39,8 +39,7 @@ av_cold void ff_sws_init_range_convert_riscv(SwsInternal *c)
         { ff_range_lum_from_jpeg_16_rvv, ff_range_chr_from_jpeg_16_rvv },
     };
 
-    if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat) &&
-        c->dstBpc <= 14 &&
+    if (c->dstBpc <= 14 &&
         (flags & AV_CPU_FLAG_RVV_I32) && (flags & AV_CPU_FLAG_RVB)) {
         bool from = c->srcRange != 0;
 
