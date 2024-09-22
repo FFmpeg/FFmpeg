@@ -1406,14 +1406,50 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
     return ret;
 }
 
+static const AVPacketSideData*
+packet_side_data_get(const AVPacketSideData *sd, int nb_sd,
+                     enum AVPacketSideDataType type)
+{
+    for (int i = 0; i < nb_sd; i++)
+        if (sd[i].type == type)
+            return &sd[i];
+
+    return NULL;
+}
+
 const AVPacketSideData *ff_get_coded_side_data(const AVCodecContext *avctx,
                                                enum AVPacketSideDataType type)
 {
-    for (int i = 0; i < avctx->nb_coded_side_data; i++)
-        if (avctx->coded_side_data[i].type == type)
-            return &avctx->coded_side_data[i];
+    return packet_side_data_get(avctx->coded_side_data, avctx->nb_coded_side_data, type);
+}
 
-    return NULL;
+static int side_data_map(AVFrame *dst,
+                         const AVPacketSideData *sd_src, int nb_sd_src,
+                         const SideDataMap *map)
+
+{
+    for (int i = 0; map[i].packet < AV_PKT_DATA_NB; i++) {
+        const enum AVFrameSideDataType type_pkt   = map[i].packet;
+        const enum AVFrameSideDataType type_frame = map[i].frame;
+        const AVPacketSideData *sd_pkt;
+        AVFrameSideData *sd_frame;
+
+        sd_pkt = packet_side_data_get(sd_src, nb_sd_src, type_pkt);
+        if (!sd_pkt)
+            continue;
+
+        sd_frame = av_frame_get_side_data(dst, type_frame);
+        if (sd_frame)
+            continue;
+
+        sd_frame = av_frame_new_side_data(dst, type_frame, sd_pkt->size);
+        if (!sd_frame)
+            return AVERROR(ENOMEM);
+
+        memcpy(sd_frame->data, sd_pkt->data, sd_pkt->size);
+    }
+
+    return 0;
 }
 
 static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
@@ -1431,17 +1467,17 @@ static int add_metadata_from_side_data(const AVPacket *avpkt, AVFrame *frame)
 int ff_decode_frame_props_from_pkt(const AVCodecContext *avctx,
                                    AVFrame *frame, const AVPacket *pkt)
 {
-    static const struct {
-        enum AVPacketSideDataType packet;
-        enum AVFrameSideDataType frame;
-    } sd[] = {
+    static const SideDataMap sd[] = {
         { AV_PKT_DATA_A53_CC,                     AV_FRAME_DATA_A53_CC },
         { AV_PKT_DATA_AFD,                        AV_FRAME_DATA_AFD },
         { AV_PKT_DATA_DYNAMIC_HDR10_PLUS,         AV_FRAME_DATA_DYNAMIC_HDR_PLUS },
         { AV_PKT_DATA_S12M_TIMECODE,              AV_FRAME_DATA_S12M_TIMECODE },
         { AV_PKT_DATA_SKIP_SAMPLES,               AV_FRAME_DATA_SKIP_SAMPLES },
         { AV_PKT_DATA_LCEVC,                      AV_FRAME_DATA_LCEVC },
+        { AV_PKT_DATA_NB }
     };
+
+    int ret = 0;
 
     frame->pts          = pkt->pts;
     frame->duration     = pkt->duration;
@@ -1452,31 +1488,14 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    for (int i = 0; ff_sd_global_map[i].packet < AV_PKT_DATA_NB; i++) {
-        size_t size;
-        const uint8_t *packet_sd = av_packet_get_side_data(pkt, ff_sd_global_map[i].packet, &size);
-        if (packet_sd) {
-            AVFrameSideData *frame_sd;
+    ret = side_data_map(frame, pkt->side_data, pkt->side_data_elems, ff_sd_global_map);
+    if (ret < 0)
+        return ret;
 
-            frame_sd = av_frame_new_side_data(frame, ff_sd_global_map[i].frame, size);
-            if (!frame_sd)
-                return AVERROR(ENOMEM);
-            memcpy(frame_sd->data, packet_sd, size);
-        }
-    }
-    for (int i = 0; i < FF_ARRAY_ELEMS(sd); i++) {
-        size_t size;
-        uint8_t *packet_sd = av_packet_get_side_data(pkt, sd[i].packet, &size);
-        if (packet_sd) {
-            AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
-                                                               sd[i].frame,
-                                                               size);
-            if (!frame_sd)
-                return AVERROR(ENOMEM);
+    ret = side_data_map(frame, pkt->side_data, pkt->side_data_elems, sd);
+    if (ret < 0)
+        return ret;
 
-            memcpy(frame_sd->data, packet_sd, size);
-        }
-    }
     add_metadata_from_side_data(pkt, frame);
 
     if (pkt->flags & AV_PKT_FLAG_DISCARD) {
@@ -1497,19 +1516,10 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
     int ret;
 
-    for (int i = 0; ff_sd_global_map[i].packet < AV_PKT_DATA_NB; i++) {
-        const AVPacketSideData *packet_sd = ff_get_coded_side_data(avctx,
-                                                                   ff_sd_global_map[i].packet);
-        if (packet_sd) {
-            AVFrameSideData *frame_sd = av_frame_new_side_data(frame,
-                                                               ff_sd_global_map[i].frame,
-                                                               packet_sd->size);
-            if (!frame_sd)
-                return AVERROR(ENOMEM);
-
-            memcpy(frame_sd->data, packet_sd->data, packet_sd->size);
-        }
-    }
+    ret = side_data_map(frame, avctx->coded_side_data, avctx->nb_coded_side_data,
+                        ff_sd_global_map);
+    if (ret < 0)
+        return ret;
 
     if (!(ffcodec(avctx->codec)->caps_internal & FF_CODEC_CAP_SETS_FRAME_PROPS)) {
         const AVPacket *pkt = avctx->internal->last_pkt_props;
