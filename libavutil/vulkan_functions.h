@@ -176,6 +176,9 @@ typedef enum FFVulkanExtensions {
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              UpdateDescriptorSetWithTemplate)         \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateDescriptorUpdateTemplate)          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              DestroyDescriptorUpdateTemplate)         \
+                                                                                                       \
+    /* Descriptors */                                                                                  \
+    MACRO(1, 1, FF_VK_EXT_NO_FLAG,              UpdateDescriptorSets)                                  \
                                                                                            \
     /* Queries */                                                                          \
     MACRO(1, 1, FF_VK_EXT_NO_FLAG,              CreateQueryPool)                           \

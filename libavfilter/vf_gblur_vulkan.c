@@ -189,7 +189,7 @@ static int init_gblur_pipeline(GBlurVulkanContext *s, FFVulkanPipeline *pl,
     RET(ff_vk_unmap_buffer(&s->vkctx, params_buf, 1));
 
     RET(ff_vk_set_descriptor_buffer(&s->vkctx, pl, NULL, 1, 0, 0,
-                                    params_buf->address, params_buf->size,
+                                    params_buf, 0, params_buf->size,
                                     VK_FORMAT_UNDEFINED));
 
 fail:

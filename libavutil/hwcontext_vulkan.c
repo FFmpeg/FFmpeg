@@ -578,6 +578,12 @@ static int check_extensions(AVHWDeviceContext *ctx, int dev, AVDictionary *opts,
     for (int i = 0; i < optional_exts_num; i++) {
         tstr = optional_exts[i].name;
         found = 0;
+
+        if (dev && debug_mode &&
+            !strcmp(tstr, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME)) {
+            continue;
+        }
+
         for (int j = 0; j < sup_ext_count; j++) {
             if (!strcmp(tstr, sup_ext[j].extensionName)) {
                 found = 1;

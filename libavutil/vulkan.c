@@ -1561,7 +1561,8 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .bindingCount = nb,
         .pBindings = set->binding,
-        .flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,
+        .flags = (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) ?
+                 VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT : 0x0,
     };
 
     for (int i = 0; i < nb; i++) {
@@ -1589,13 +1590,35 @@ int ff_vk_pipeline_descriptor_set_add(FFVulkanContext *s, FFVulkanPipeline *pl,
         return AVERROR_EXTERNAL;
     }
 
-    vk->GetDescriptorSetLayoutSizeEXT(s->hwctx->act_dev, *layout, &set->layout_size);
+    if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
+        vk->GetDescriptorSetLayoutSizeEXT(s->hwctx->act_dev, *layout, &set->layout_size);
+        set->aligned_size = FFALIGN(set->layout_size, s->desc_buf_props.descriptorBufferOffsetAlignment);
 
-    set->aligned_size = FFALIGN(set->layout_size, s->desc_buf_props.descriptorBufferOffsetAlignment);
+        for (int i = 0; i < nb; i++)
+            vk->GetDescriptorSetLayoutBindingOffsetEXT(s->hwctx->act_dev, *layout,
+                                                       i, &set->binding_offset[i]);
+    } else {
+        for (int i = 0; i < nb; i++) {
+            int j;
+            VkDescriptorPoolSize *desc_pool_size;
+            for (j = 0; j < pl->nb_desc_pool_size; j++)
+                if (pl->desc_pool_size[j].type == desc[i].type)
+                    break;
+            if (j >= pl->nb_desc_pool_size) {
+                desc_pool_size = av_realloc_array(pl->desc_pool_size,
+                                                      sizeof(*desc_pool_size),
+                                                      pl->nb_desc_pool_size + 1);
+                if (!desc_pool_size)
+                    return AVERROR(ENOMEM);
 
-    for (int i = 0; i < nb; i++)
-        vk->GetDescriptorSetLayoutBindingOffsetEXT(s->hwctx->act_dev, *layout,
-                                                   i, &set->binding_offset[i]);
+                pl->desc_pool_size = desc_pool_size;
+                pl->nb_desc_pool_size++;
+                memset(&desc_pool_size[j], 0, sizeof(VkDescriptorPoolSize));
+            }
+            pl->desc_pool_size[j].type             = desc[i].type;
+            pl->desc_pool_size[j].descriptorCount += FFMAX(desc[i].elems, 1);
+        }
+    }
 
     set->singular = singular;
     set->nb_bindings = nb;
@@ -1643,38 +1666,102 @@ int ff_vk_exec_pipeline_register(FFVulkanContext *s, FFVkExecPool *pool,
 {
     int err;
 
-    pl->desc_bind = av_calloc(pl->nb_descriptor_sets, sizeof(*pl->desc_bind));
-    if (!pl->desc_bind)
-        return AVERROR(ENOMEM);
+    if (!pl->nb_descriptor_sets)
+        return 0;
 
-    pl->bound_buffer_indices = av_calloc(pl->nb_descriptor_sets,
-                                         sizeof(*pl->bound_buffer_indices));
-    if (!pl->bound_buffer_indices)
-        return AVERROR(ENOMEM);
+    if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
+        pl->desc_bind = av_calloc(pl->nb_descriptor_sets, sizeof(*pl->desc_bind));
+        if (!pl->desc_bind)
+            return AVERROR(ENOMEM);
 
-    for (int i = 0; i < pl->nb_descriptor_sets; i++) {
-        FFVulkanDescriptorSet *set = &pl->desc_set[i];
-        int nb = set->singular ? 1 : pool->pool_size;
+        pl->bound_buffer_indices = av_calloc(pl->nb_descriptor_sets,
+                                             sizeof(*pl->bound_buffer_indices));
+        if (!pl->bound_buffer_indices)
+            return AVERROR(ENOMEM);
 
-        err = ff_vk_create_buf(s, &set->buf, set->aligned_size*nb,
-                               NULL, NULL, set->usage,
-                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                               VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-        if (err < 0)
-            return err;
+        for (int i = 0; i < pl->nb_descriptor_sets; i++) {
+            FFVulkanDescriptorSet *set = &pl->desc_set[i];
+            int nb = set->singular ? 1 : pool->pool_size;
 
-        err = ff_vk_map_buffer(s, &set->buf, &set->desc_mem, 0);
-        if (err < 0)
-            return err;
+            err = ff_vk_create_buf(s, &set->buf, set->aligned_size*nb,
+                                   NULL, NULL, set->usage,
+                                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                   VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            if (err < 0)
+                return err;
 
-        pl->desc_bind[i] = (VkDescriptorBufferBindingInfoEXT) {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT,
-            .usage = set->usage,
-            .address = set->buf.address,
+            err = ff_vk_map_buffer(s, &set->buf, &set->desc_mem, 0);
+            if (err < 0)
+                return err;
+
+            pl->desc_bind[i] = (VkDescriptorBufferBindingInfoEXT) {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT,
+                .usage = set->usage,
+                .address = set->buf.address,
+            };
+
+            pl->bound_buffer_indices[i] = i;
+        }
+    } else {
+        VkResult ret;
+        FFVulkanFunctions *vk = &s->vkfn;
+        VkDescriptorSetLayout *tmp_layouts;
+        VkDescriptorSetAllocateInfo set_alloc_info;
+        VkDescriptorPoolCreateInfo pool_create_info;
+
+        for (int i = 0; i < pl->nb_desc_pool_size; i++)
+            pl->desc_pool_size[i].descriptorCount *= pool->pool_size;
+
+        pool_create_info = (VkDescriptorPoolCreateInfo) {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .flags = 0,
+            .pPoolSizes = pl->desc_pool_size,
+            .poolSizeCount = pl->nb_desc_pool_size,
+            .maxSets = pl->nb_descriptor_sets*pool->pool_size,
         };
 
-        pl->bound_buffer_indices[i] = i;
+        ret = vk->CreateDescriptorPool(s->hwctx->act_dev, &pool_create_info,
+                                       s->hwctx->alloc, &pl->desc_pool);
+        if (ret != VK_SUCCESS) {
+            av_log(s, AV_LOG_ERROR, "Unable to create descriptor pool: %s\n",
+                   ff_vk_ret2str(ret));
+            return AVERROR_EXTERNAL;
+        }
+
+        tmp_layouts = av_malloc_array(pool_create_info.maxSets, sizeof(*tmp_layouts));
+        if (!tmp_layouts)
+            return AVERROR(ENOMEM);
+
+        /* Colate each execution context's descriptor set layouts */
+        for (int i = 0; i < pool->pool_size; i++)
+            for (int j = 0; j < pl->nb_descriptor_sets; j++)
+                tmp_layouts[i*pl->nb_descriptor_sets + j] = pl->desc_layout[j];
+
+        set_alloc_info = (VkDescriptorSetAllocateInfo) {
+            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool     = pl->desc_pool,
+            .pSetLayouts        = tmp_layouts,
+            .descriptorSetCount = pool_create_info.maxSets,
+        };
+
+        pl->desc_sets = av_malloc_array(pool_create_info.maxSets,
+                                        sizeof(*tmp_layouts));
+        if (!pl->desc_sets) {
+            av_free(tmp_layouts);
+            return AVERROR(ENOMEM);
+        }
+        ret = vk->AllocateDescriptorSets(s->hwctx->act_dev, &set_alloc_info,
+                                         pl->desc_sets);
+        av_free(tmp_layouts);
+        if (ret != VK_SUCCESS) {
+            av_log(s, AV_LOG_ERROR, "Unable to allocate descriptor set: %s\n",
+                   ff_vk_ret2str(ret));
+            av_freep(&pl->desc_sets);
+            return AVERROR_EXTERNAL;
+        }
+
+        pl->assoc_pool = pool;
     }
 
     return 0;
@@ -1696,94 +1783,150 @@ static inline void update_set_descriptor(FFVulkanContext *s, FFVkExecContext *e,
     vk->GetDescriptorEXT(s->hwctx->act_dev, desc_get_info, desc_size, desc);
 }
 
+static inline void update_set_pool_write(FFVulkanContext *s,
+                                         FFVulkanPipeline *pl,
+                                         FFVkExecContext *e,
+                                         FFVulkanDescriptorSet *desc_set, int set,
+                                         VkWriteDescriptorSet *write_info)
+{
+    FFVulkanFunctions *vk = &s->vkfn;
+    if (desc_set->singular) {
+        for (int i = 0; i < pl->assoc_pool->pool_size; i++) {
+            write_info->dstSet = pl->desc_sets[i*pl->nb_descriptor_sets + set];
+            vk->UpdateDescriptorSets(s->hwctx->act_dev, 1, write_info, 0, NULL);
+        }
+    } else {
+        write_info->dstSet = pl->desc_sets[e->idx*pl->nb_descriptor_sets + set];
+        vk->UpdateDescriptorSets(s->hwctx->act_dev, 1, write_info, 0, NULL);
+    }
+}
+
 static int vk_set_descriptor_image(FFVulkanContext *s, FFVulkanPipeline *pl,
                                    FFVkExecContext *e, int set, int bind, int offs,
                                    VkImageView view, VkImageLayout layout,
                                    VkSampler sampler)
 {
     FFVulkanDescriptorSet *desc_set = &pl->desc_set[set];
-    VkDescriptorGetInfoEXT desc_get_info = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT,
-        .type = desc_set->binding[bind].descriptorType,
-    };
-    VkDescriptorImageInfo desc_img_info = {
-        .imageView = view,
-        .sampler = sampler,
-        .imageLayout = layout,
-    };
-    size_t desc_size;
 
-    switch (desc_get_info.type) {
-    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-        desc_get_info.data.pSampledImage = &desc_img_info;
-        desc_size = s->desc_buf_props.sampledImageDescriptorSize;
-        break;
-    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-        desc_get_info.data.pStorageImage = &desc_img_info;
-        desc_size = s->desc_buf_props.storageImageDescriptorSize;
-        break;
-    case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-        desc_get_info.data.pInputAttachmentImage = &desc_img_info;
-        desc_size = s->desc_buf_props.inputAttachmentDescriptorSize;
-        break;
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-        desc_get_info.data.pCombinedImageSampler = &desc_img_info;
-        desc_size = s->desc_buf_props.combinedImageSamplerDescriptorSize;
-        break;
-    default:
-        av_log(s, AV_LOG_ERROR, "Invalid descriptor type at set %i binding %i: %i!\n",
-               set, bind, desc_get_info.type);
-        return AVERROR(EINVAL);
-        break;
-    };
+    if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
+        VkDescriptorGetInfoEXT desc_get_info = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT,
+            .type = desc_set->binding[bind].descriptorType,
+        };
+        VkDescriptorImageInfo desc_img_info = {
+            .imageView = view,
+            .sampler = sampler,
+            .imageLayout = layout,
+        };
+        size_t desc_size;
 
-    update_set_descriptor(s, e, desc_set, bind, offs, &desc_get_info, desc_size);
+        switch (desc_get_info.type) {
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            desc_get_info.data.pSampledImage = &desc_img_info;
+            desc_size = s->desc_buf_props.sampledImageDescriptorSize;
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+            desc_get_info.data.pStorageImage = &desc_img_info;
+            desc_size = s->desc_buf_props.storageImageDescriptorSize;
+            break;
+        case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+            desc_get_info.data.pInputAttachmentImage = &desc_img_info;
+            desc_size = s->desc_buf_props.inputAttachmentDescriptorSize;
+            break;
+        case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+            desc_get_info.data.pCombinedImageSampler = &desc_img_info;
+            desc_size = s->desc_buf_props.combinedImageSamplerDescriptorSize;
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Invalid descriptor type at set %i binding %i: %i!\n",
+                   set, bind, desc_get_info.type);
+            return AVERROR(EINVAL);
+            break;
+        };
+
+        update_set_descriptor(s, e, desc_set, bind, offs,
+                              &desc_get_info, desc_size);
+    } else {
+        VkDescriptorImageInfo desc_pool_write_info_img = {
+            .sampler = sampler,
+            .imageView = view,
+            .imageLayout = layout,
+        };
+        VkWriteDescriptorSet desc_pool_write_info = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstBinding = bind,
+            .descriptorCount = 1,
+            .dstArrayElement = offs,
+            .descriptorType = desc_set->binding[bind].descriptorType,
+            .pImageInfo = &desc_pool_write_info_img,
+        };
+        update_set_pool_write(s, pl, e, desc_set, set, &desc_pool_write_info);
+    }
 
     return 0;
 }
 
 int ff_vk_set_descriptor_buffer(FFVulkanContext *s, FFVulkanPipeline *pl,
-                                FFVkExecContext *e, int set, int bind, int offs,
-                                VkDeviceAddress addr, VkDeviceSize len, VkFormat fmt)
+                                FFVkExecContext *e, int set, int bind, int elem,
+                                FFVkBuffer *buf, VkDeviceSize offset, VkDeviceSize len,
+                                VkFormat fmt)
 {
     FFVulkanDescriptorSet *desc_set = &pl->desc_set[set];
-    VkDescriptorGetInfoEXT desc_get_info = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT,
-        .type = desc_set->binding[bind].descriptorType,
-    };
-    VkDescriptorAddressInfoEXT desc_buf_info = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
-        .address = addr,
-        .range = len,
-        .format = fmt,
-    };
-    size_t desc_size;
 
-    switch (desc_get_info.type) {
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-        desc_get_info.data.pUniformBuffer = &desc_buf_info;
-        desc_size = s->desc_buf_props.uniformBufferDescriptorSize;
-        break;
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-        desc_get_info.data.pStorageBuffer = &desc_buf_info;
-        desc_size = s->desc_buf_props.storageBufferDescriptorSize;
-        break;
-    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-        desc_get_info.data.pUniformTexelBuffer = &desc_buf_info;
-        desc_size = s->desc_buf_props.uniformTexelBufferDescriptorSize;
-        break;
-    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-        desc_get_info.data.pStorageTexelBuffer = &desc_buf_info;
-        desc_size = s->desc_buf_props.storageTexelBufferDescriptorSize;
-        break;
-    default:
-        av_log(s, AV_LOG_ERROR, "Invalid descriptor type at set %i binding %i: %i!\n",
-               set, bind, desc_get_info.type);
-        return AVERROR(EINVAL);
-        break;
-    };
+    if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
+        VkDescriptorGetInfoEXT desc_get_info = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_GET_INFO_EXT,
+            .type = desc_set->binding[bind].descriptorType,
+        };
+        VkDescriptorAddressInfoEXT desc_buf_info = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_ADDRESS_INFO_EXT,
+            .address = buf->address + offset,
+            .range = len,
+            .format = fmt,
+        };
+        size_t desc_size;
 
-    update_set_descriptor(s, e, desc_set, bind, offs, &desc_get_info, desc_size);
+        switch (desc_get_info.type) {
+        case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+            desc_get_info.data.pUniformBuffer = &desc_buf_info;
+            desc_size = s->desc_buf_props.uniformBufferDescriptorSize;
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+            desc_get_info.data.pStorageBuffer = &desc_buf_info;
+            desc_size = s->desc_buf_props.storageBufferDescriptorSize;
+            break;
+        case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+            desc_get_info.data.pUniformTexelBuffer = &desc_buf_info;
+            desc_size = s->desc_buf_props.uniformTexelBufferDescriptorSize;
+            break;
+        case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+            desc_get_info.data.pStorageTexelBuffer = &desc_buf_info;
+            desc_size = s->desc_buf_props.storageTexelBufferDescriptorSize;
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Invalid descriptor type at set %i binding %i: %i!\n",
+                   set, bind, desc_get_info.type);
+            return AVERROR(EINVAL);
+            break;
+        };
+
+        update_set_descriptor(s, e, desc_set, bind, elem, &desc_get_info, desc_size);
+    } else {
+        VkDescriptorBufferInfo desc_pool_write_info_buf = {
+            .buffer = buf->buf,
+            .offset = offset,
+            .range = len,
+        };
+        VkWriteDescriptorSet desc_pool_write_info = {
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstBinding = bind,
+            .descriptorCount = 1,
+            .dstArrayElement = elem,
+            .descriptorType = desc_set->binding[bind].descriptorType,
+            .pBufferInfo = &desc_pool_write_info_buf,
+        };
+        update_set_pool_write(s, pl, e, desc_set, set, &desc_pool_write_info);
+    }
 
     return 0;
 }
@@ -1852,7 +1995,8 @@ int ff_vk_init_compute_pipeline(FFVulkanContext *s, FFVulkanPipeline *pl,
 
     pipeline_create_info = (VkComputePipelineCreateInfo) {
         .sType  = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        .flags = VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT,
+        .flags = (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) ?
+                 VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT : 0x0,
         .layout = pl->pipeline_layout,
         .stage = shd->shader,
     };
@@ -1884,15 +2028,22 @@ void ff_vk_exec_bind_pipeline(FFVulkanContext *s, FFVkExecContext *e,
     vk->CmdBindPipeline(e->buf, pl->bind_point, pl->pipeline);
 
     if (pl->nb_descriptor_sets) {
-        for (int i = 0; i < pl->nb_descriptor_sets; i++)
-            offsets[i] = pl->desc_set[i].singular ? 0 : pl->desc_set[i].aligned_size*e->idx;
+        if (s->extensions & FF_VK_EXT_DESCRIPTOR_BUFFER) {
+            for (int i = 0; i < pl->nb_descriptor_sets; i++)
+                offsets[i] = pl->desc_set[i].singular ? 0 : pl->desc_set[i].aligned_size*e->idx;
 
-        /* Bind descriptor buffers */
-        vk->CmdBindDescriptorBuffersEXT(e->buf, pl->nb_descriptor_sets, pl->desc_bind);
-        /* Binding offsets */
-        vk->CmdSetDescriptorBufferOffsetsEXT(e->buf, pl->bind_point, pl->pipeline_layout,
-                                             0, pl->nb_descriptor_sets,
-                                             pl->bound_buffer_indices, offsets);
+            /* Bind descriptor buffers */
+            vk->CmdBindDescriptorBuffersEXT(e->buf, pl->nb_descriptor_sets, pl->desc_bind);
+            /* Binding offsets */
+            vk->CmdSetDescriptorBufferOffsetsEXT(e->buf, pl->bind_point, pl->pipeline_layout,
+                                                 0, pl->nb_descriptor_sets,
+                                                 pl->bound_buffer_indices, offsets);
+        } else {
+            vk->CmdBindDescriptorSets(e->buf, pl->bind_point, pl->pipeline_layout,
+                                      0, pl->nb_descriptor_sets,
+                                      &pl->desc_sets[e->idx*pl->nb_descriptor_sets],
+                                      0, NULL);
+        }
     }
 }
 
@@ -1920,7 +2071,13 @@ void ff_vk_pipeline_free(FFVulkanContext *s, FFVulkanPipeline *pl)
             vk->DestroyDescriptorSetLayout(s->hwctx->act_dev, pl->desc_layout[i],
                                            s->hwctx->alloc);
 
+    if (pl->desc_pool)
+        vk->DestroyDescriptorPool(s->hwctx->act_dev, pl->desc_pool,
+                                  s->hwctx->alloc);
+
+    av_freep(&pl->desc_pool_size);
     av_freep(&pl->desc_layout);
+    av_freep(&pl->desc_sets);
     av_freep(&pl->desc_set);
     av_freep(&pl->desc_bind);
     av_freep(&pl->bound_buffer_indices);
