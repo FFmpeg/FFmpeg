@@ -457,6 +457,10 @@ static av_cold int init_denoise_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
             .elems       = planes,
             .stages      = VK_SHADER_STAGE_COMPUTE_BIT,
         },
+    };
+    RET(ff_vk_pipeline_descriptor_set_add(vkctx, pl, shd, desc_set, 2, 0, 0));
+
+    desc_set = (FFVulkanDescriptorSetBinding []) {
         {
             .name        = "weights_buffer_0",
             .type        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -514,7 +518,8 @@ static av_cold int init_denoise_pipeline(FFVulkanContext *vkctx, FFVkExecPool *e
             .buf_content = "float sums_3[];",
         },
     };
-    RET(ff_vk_pipeline_descriptor_set_add(vkctx, pl, shd, desc_set, 2 + 2*desc->nb_components, 0, 0));
+
+    RET(ff_vk_pipeline_descriptor_set_add(vkctx, pl, shd, desc_set, 2*desc->nb_components, 0, 0));
 
     GLSLC(0, void main()                                                      );
     GLSLC(0, {                                                                );
@@ -753,8 +758,8 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     /* Weights/sums */
     AVBufferRef *ws_buf = NULL;
     FFVkBuffer *ws_vk;
-    VkDeviceSize weights_addr[4];
-    VkDeviceSize sums_addr[4];
+    VkDeviceSize weights_offs[4];
+    VkDeviceSize sums_offs[4];
     uint32_t ws_stride[4];
     size_t ws_size[4];
     size_t ws_total_size = 0;
@@ -812,11 +817,11 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
         return err;
     ws_vk = (FFVkBuffer *)ws_buf->data;
 
-    weights_addr[0] = 0;
-    sums_addr[0] = ws_total_size;
+    weights_offs[0] = 0;
+    sums_offs[0] = ws_total_size;
     for (int i = 1; i < desc->nb_components; i++) {
-        weights_addr[i] = weights_addr[i - 1] + ws_size[i - 1];
-        sums_addr[i] = sums_addr[i - 1] + ws_size[i - 1];
+        weights_offs[i] = weights_offs[i - 1] + ws_size[i - 1];
+        sums_offs[i] = sums_offs[i - 1] + ws_size[i - 1];
     }
 
     /* Output frame */
@@ -933,10 +938,10 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
                                       s->sampler);
     for (int i = 0; i < desc->nb_components; i++) {
         RET(ff_vk_set_descriptor_buffer(&s->vkctx, &s->pl_weights, exec, 0, 1 + i*2 + 0, 0,
-                                        ws_vk, weights_addr[i], ws_size[i],
+                                        ws_vk, weights_offs[i], ws_size[i],
                                         VK_FORMAT_UNDEFINED));
         RET(ff_vk_set_descriptor_buffer(&s->vkctx, &s->pl_weights, exec, 0, 1 + i*2 + 1, 0,
-                                        ws_vk, sums_addr[i], ws_size[i],
+                                        ws_vk, sums_offs[i], ws_size[i],
                                         VK_FORMAT_UNDEFINED));
     }
 
@@ -947,11 +952,11 @@ static int nlmeans_vulkan_filter_frame(AVFilterLink *link, AVFrame *in)
     ff_vk_update_descriptor_img_array(vkctx, &s->pl_denoise, exec, out, out_views, 0, 1,
                                       VK_IMAGE_LAYOUT_GENERAL, s->sampler);
     for (int i = 0; i < desc->nb_components; i++) {
-        RET(ff_vk_set_descriptor_buffer(&s->vkctx, &s->pl_denoise, exec, 0, 2 + i*2 + 0, 0,
-                                        ws_vk, weights_addr[i], ws_size[i],
+        RET(ff_vk_set_descriptor_buffer(&s->vkctx, &s->pl_denoise, exec, 1, i*2 + 0, 0,
+                                        ws_vk, weights_offs[i], ws_size[i],
                                         VK_FORMAT_UNDEFINED));
-        RET(ff_vk_set_descriptor_buffer(&s->vkctx, &s->pl_denoise, exec, 0, 2 + i*2 + 1, 0,
-                                        ws_vk, sums_addr[i], ws_size[i],
+        RET(ff_vk_set_descriptor_buffer(&s->vkctx, &s->pl_denoise, exec, 1, i*2 + 1, 0,
+                                        ws_vk, sums_offs[i], ws_size[i],
                                         VK_FORMAT_UNDEFINED));
     }
 
