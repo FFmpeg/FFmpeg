@@ -182,7 +182,8 @@ static int tgq_decode_mb(TgqContext *s, AVFrame *frame, int mb_y, int mb_x)
             dc[4] = bytestream2_get_byte(&s->gb);
             dc[5] = bytestream2_get_byte(&s->gb);
         } else if (mode == 6) {
-            bytestream2_get_buffer(&s->gb, dc, 6);
+            if (bytestream2_get_buffer(&s->gb, dc, 6) != 6)
+                return AVERROR_INVALIDDATA;
         } else if (mode == 12) {
             for (i = 0; i < 6; i++) {
                 dc[i] = bytestream2_get_byte(&s->gb);
