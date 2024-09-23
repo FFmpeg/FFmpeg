@@ -658,7 +658,7 @@ static void get_codebook(int16_t * cbvec,   /* (o) Constructed codebook vector *
     int16_t k, base_size;
     int16_t lag;
     /* Stack based */
-    int16_t tempbuff2[SUBL + 5];
+    int16_t tempbuff2[SUBL + 5] = {0};
 
     /* Determine size of codebook sections */
     base_size = lMem - cbveclen + 1;
