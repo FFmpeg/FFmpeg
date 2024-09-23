@@ -246,6 +246,12 @@ int ff_vulkan_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
 void ff_vulkan_encode_uninit(FFVulkanEncodeContext *ctx);
 
 /**
+ * Create session parameters.
+ */
+int ff_vulkan_encode_create_session_params(AVCodecContext *avctx, FFVulkanEncodeContext *ctx,
+                                           void *codec_params_pnext);
+
+/**
  * Paperwork.
  */
 extern const AVCodecHWConfigInternal *const ff_vulkan_encode_hw_configs[];

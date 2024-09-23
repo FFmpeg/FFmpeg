@@ -1023,3 +1023,37 @@ av_cold int ff_vulkan_encode_init(AVCodecContext *avctx, FFVulkanEncodeContext *
 
     return 0;
 }
+
+int ff_vulkan_encode_create_session_params(AVCodecContext *avctx, FFVulkanEncodeContext *ctx,
+                                           void *codec_params_pnext)
+{
+    VkResult ret;
+    FFVulkanFunctions *vk = &ctx->s.vkfn;
+    FFVulkanContext *s = &ctx->s;
+
+    VkVideoEncodeQualityLevelInfoKHR q_info;
+    VkVideoSessionParametersCreateInfoKHR session_params_create;
+
+    q_info = (VkVideoEncodeQualityLevelInfoKHR) {
+        .sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR,
+        .pNext = codec_params_pnext,
+        .qualityLevel = ctx->opts.quality,
+    };
+    session_params_create = (VkVideoSessionParametersCreateInfoKHR) {
+        .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
+        .pNext = &q_info,
+        .videoSession = ctx->common.session,
+        .videoSessionParametersTemplate = VK_NULL_HANDLE,
+    };
+
+    /* Create session parameters */
+    ret = vk->CreateVideoSessionParametersKHR(s->hwctx->act_dev, &session_params_create,
+                                              s->hwctx->alloc, &ctx->session_params);
+    if (ret != VK_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Unable to create Vulkan video session parameters: %s!\n",
+               ff_vk_ret2str(ret));
+        return AVERROR_EXTERNAL;
+    }
+
+    return 0;
+}

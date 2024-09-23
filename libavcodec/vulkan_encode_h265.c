@@ -1155,7 +1155,6 @@ static av_cold int base_unit_to_vk(AVCodecContext *avctx,
 static int create_session_params(AVCodecContext *avctx)
 {
     int err;
-    VkResult ret;
     VulkanEncodeH265Context *enc = avctx->priv_data;
     FFVulkanEncodeContext *ctx = &enc->common;
     FFVulkanContext *s = &ctx->s;
@@ -1165,7 +1164,6 @@ static int create_session_params(AVCodecContext *avctx)
 
     VkVideoEncodeH265SessionParametersAddInfoKHR h265_params_info;
     VkVideoEncodeH265SessionParametersCreateInfoKHR h265_params;
-    VkVideoSessionParametersCreateInfoKHR session_params_create;
 
     /* Convert it to Vulkan */
     err = base_unit_to_vk(avctx, &vk_units);
@@ -1197,23 +1195,8 @@ static int create_session_params(AVCodecContext *avctx)
         .maxStdVPSCount = 1,
         .pParametersAddInfo = &h265_params_info,
     };
-    session_params_create = (VkVideoSessionParametersCreateInfoKHR) {
-        .sType = VK_STRUCTURE_TYPE_VIDEO_SESSION_PARAMETERS_CREATE_INFO_KHR,
-        .pNext = &h265_params,
-        .videoSession = ctx->common.session,
-        .videoSessionParametersTemplate = NULL,
-    };
 
-    /* Create session parameters */
-    ret = vk->CreateVideoSessionParametersKHR(s->hwctx->act_dev, &session_params_create,
-                                              s->hwctx->alloc, &ctx->session_params);
-    if (ret != VK_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Unable to create Vulkan video session parameters: %s!\n",
-               ff_vk_ret2str(ret));
-        return AVERROR_EXTERNAL;
-    }
-
-    return 0;
+    return ff_vulkan_encode_create_session_params(avctx, ctx, &h265_params);
 }
 
 static int parse_feedback_units(AVCodecContext *avctx,
