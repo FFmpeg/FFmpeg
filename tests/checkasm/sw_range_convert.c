@@ -85,18 +85,18 @@ static void check_lumConvertRange(int from)
         c->dstFormat = pix_fmt;
         c->dstBpc = bit_depth;
         ff_sws_init_scale(c);
-    for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {
-        int width = input_sizes[dstWi];
-        if (check_func(c->lumConvertRange, "%s%d_%d", func_str, bit_depth, width)) {
-            randomize_buffers(dst0, dst1, bit_depth, width);
-            call_ref(dst0, width);
-            call_new(dst1, width);
-            if (memcmp(dst0, dst1, width * sample_size))
-                fail();
-            if (width == LARGEST_INPUT_SIZE && (bit_depth == 8 || bit_depth == 16))
-            bench_new(dst1, width);
+        for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {
+            int width = input_sizes[dstWi];
+            if (check_func(c->lumConvertRange, "%s%d_%d", func_str, bit_depth, width)) {
+                randomize_buffers(dst0, dst1, bit_depth, width);
+                call_ref(dst0, width);
+                call_new(dst1, width);
+                if (memcmp(dst0, dst1, width * sample_size))
+                    fail();
+                if (width == LARGEST_INPUT_SIZE && (bit_depth == 8 || bit_depth == 16))
+                    bench_new(dst1, width);
+            }
         }
-    }
     }
 
     sws_freeContext(sws);
@@ -135,20 +135,20 @@ static void check_chrConvertRange(int from)
         c->dstFormat = pix_fmt;
         c->dstBpc = bit_depth;
         ff_sws_init_scale(c);
-    for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {
-        int width = input_sizes[dstWi];
-        if (check_func(c->chrConvertRange, "%s%d_%d", func_str, bit_depth, width)) {
-            randomize_buffers(dstU0, dstU1, bit_depth, width);
-            randomize_buffers(dstV0, dstV1, bit_depth, width);
-            call_ref(dstU0, dstV0, width);
-            call_new(dstU1, dstV1, width);
-            if (memcmp(dstU0, dstU1, width * sample_size) ||
-                memcmp(dstV0, dstV1, width * sample_size))
-                fail();
-            if (width == LARGEST_INPUT_SIZE && (bit_depth == 8 || bit_depth == 16))
-            bench_new(dstU1, dstV1, width);
+        for (int dstWi = 0; dstWi < FF_ARRAY_ELEMS(input_sizes); dstWi++) {
+            int width = input_sizes[dstWi];
+            if (check_func(c->chrConvertRange, "%s%d_%d", func_str, bit_depth, width)) {
+                randomize_buffers(dstU0, dstU1, bit_depth, width);
+                randomize_buffers(dstV0, dstV1, bit_depth, width);
+                call_ref(dstU0, dstV0, width);
+                call_new(dstU1, dstV1, width);
+                if (memcmp(dstU0, dstU1, width * sample_size) ||
+                    memcmp(dstV0, dstV1, width * sample_size))
+                    fail();
+                if (width == LARGEST_INPUT_SIZE && (bit_depth == 8 || bit_depth == 16))
+                    bench_new(dstU1, dstV1, width);
+            }
         }
-    }
     }
 
     sws_freeContext(sws);
