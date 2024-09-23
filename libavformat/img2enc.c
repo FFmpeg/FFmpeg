@@ -160,13 +160,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EINVAL);
         }
     } else if (img->frame_pts) {
-        if (av_get_frame_filename2(filename, sizeof(filename), s->url, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+        if (ff_get_frame_filename(filename, sizeof(filename), s->url, pkt->pts, AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
             av_log(s, AV_LOG_ERROR, "Cannot write filename by pts of the frames.");
             return AVERROR(EINVAL);
         }
-    } else if (av_get_frame_filename2(filename, sizeof(filename), s->url,
-                                      img->img_number,
-                                      AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
+    } else if (ff_get_frame_filename(filename, sizeof(filename), s->url,
+                                     img->img_number,
+                                     AV_FRAME_FILENAME_FLAGS_MULTIPLE) < 0) {
         if (img->img_number == img->start_img_number) {
             av_log(s, AV_LOG_WARNING, "The specified filename '%s' does not contain an image sequence pattern or a pattern is invalid.\n", s->url);
             av_log(s, AV_LOG_WARNING,
