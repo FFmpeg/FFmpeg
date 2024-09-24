@@ -463,14 +463,6 @@ typedef struct InputStream {
      * currently video and audio only */
     InputFilter         **filters;
     int                nb_filters;
-
-    /*
-     * Output targets that do not go through lavfi, i.e. subtitles or
-     * streamcopy. Those two cases are distinguished by the OutputStream
-     * having an encoder or not.
-     */
-    struct OutputStream **outputs;
-    int                nb_outputs;
 } InputStream;
 
 typedef struct InputFile {
