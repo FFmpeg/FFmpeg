@@ -354,6 +354,9 @@ static int decode_slice(AVCodecContext *c, void *arg)
         }
     }
 
+    if (sc->slice_damaged && (f->avctx->err_recognition & AV_EF_EXPLODE))
+        return AVERROR_INVALIDDATA;
+
     if ((c->active_thread_type & FF_THREAD_FRAME) && !f->frame_damaged)
         ff_progress_frame_report(&f->picture, si);
 
