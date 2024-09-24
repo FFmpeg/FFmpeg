@@ -899,7 +899,8 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
                 const OptionsContext *o,
                 AVRational enc_tb, enum VideoSyncMethod vsync_method,
                 int keep_pix_fmt, int autoscale, int threads_manual,
-                const ViewSpecifier *vs)
+                const ViewSpecifier *vs,
+                SchedulerNode *src)
 {
     OutputStream       *ost = &ms->ost;
     AVCodecContext *enc_ctx = ost->enc->enc_ctx;
@@ -1005,12 +1006,9 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
     if (ret < 0)
         return ret;
 
-    ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
-                                SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
-    if (ret < 0)
-        return ret;
+    *src = SCH_ENC(ms->sch_idx_enc);
 
-    return ret;
+    return 0;
 }
 
 static int streamcopy_init(const OptionsContext *o, const Muxer *mux,
@@ -1188,6 +1186,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     OutputStream *ost;
     const AVCodec *enc;
     AVStream *st;
+    SchedulerNode src = { .type = SCH_NODE_TYPE_NONE };
     AVDictionary *encoder_opts = NULL;
     int ret = 0, keep_pix_fmt = 0, autoscale = 1;
     int threads_manual = 0;
@@ -1535,12 +1534,10 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
         ret = ost_bind_filter(mux, ms, ofilter, o, enc_tb, vsync_method,
-                              keep_pix_fmt, autoscale, threads_manual, vs);
+                              keep_pix_fmt, autoscale, threads_manual, vs, &src);
         if (ret < 0)
             goto fail;
     } else if (ost->ist) {
-        SchedulerNode src;
-
         ret = ist_use(ost->ist, !!ost->enc, NULL, &src);
         if (ret < 0) {
             av_log(ost, AV_LOG_ERROR,
@@ -1549,22 +1546,24 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         }
         ms->sch_idx_src = src.idx;
 
+        // src refers to a decoder for transcoding, demux stream otherwise
         if (ost->enc) {
             ret = sch_connect(mux->sch,
                               src, SCH_ENC(ms->sch_idx_enc));
             if (ret < 0)
                 goto fail;
-
-            ret = sch_connect(mux->sch, SCH_ENC(ms->sch_idx_enc),
-                                        SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
-            if (ret < 0)
-                goto fail;
-        } else {
-            ret = sch_connect(mux->sch,
-                              src, SCH_MSTREAM(ost->file->index, ms->sch_idx));
-            if (ret < 0)
-                goto fail;
+            src = SCH_ENC(ms->sch_idx_enc);
         }
+    }
+
+    if (src.type != SCH_NODE_TYPE_NONE) {
+        ret = sch_connect(mux->sch,
+                          src, SCH_MSTREAM(mux->sch_idx, ms->sch_idx));
+        if (ret < 0)
+            goto fail;
+    } else {
+        // only attachment streams don't have a source
+        av_assert0(type == AVMEDIA_TYPE_ATTACHMENT && ms->sch_idx < 0);
     }
 
     if (ost->ist && !ost->enc) {
