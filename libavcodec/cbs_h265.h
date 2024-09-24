@@ -725,14 +725,14 @@ typedef struct H265RawSEI3DReferenceDisplaysInfo {
     uint8_t ref_viewing_distance_flag;
     uint8_t prec_ref_viewing_dist;
     uint8_t num_ref_displays_minus1;
-    uint16_t left_view_id[31];
-    uint16_t right_view_id[31];
-    uint8_t exponent_ref_display_width[31];
-    uint8_t mantissa_ref_display_width[31];
-    uint8_t exponent_ref_viewing_distance[31];
-    uint8_t mantissa_ref_viewing_distance[31];
-    uint8_t additional_shift_present_flag[31];
-    uint16_t num_sample_shift_plus512[31];
+    uint16_t left_view_id[32];
+    uint16_t right_view_id[32];
+    uint8_t exponent_ref_display_width[32];
+    uint8_t mantissa_ref_display_width[32];
+    uint8_t exponent_ref_viewing_distance[32];
+    uint8_t mantissa_ref_viewing_distance[32];
+    uint8_t additional_shift_present_flag[32];
+    uint16_t num_sample_shift_plus512[32];
     uint8_t three_dimensional_reference_displays_extension_flag;
 } H265RawSEI3DReferenceDisplaysInfo;
 
