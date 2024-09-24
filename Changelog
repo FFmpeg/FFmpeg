@@ -1,6 +1,8 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+
 version 7.1:
 - Raw Captions with Time (RCWT) closed caption demuxer
 - LC3/LC3plus decoding/encoding using external library liblc3
