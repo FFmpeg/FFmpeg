@@ -178,11 +178,14 @@ static inline unsigned int stdc_trailing_zeros_uc(unsigned char value)
 static inline unsigned int __stdc_trailing_zeros(unsigned long long value,
                                                  unsigned int size)
 {
-    unsigned int zeros = size * CHAR_BIT;
+    unsigned int zeros = 0;
 
-    while (value != 0) {
-        value <<= 1;
-        zeros--;
+    if (!value)
+        return size * CHAR_BIT;
+
+    while ((value & 1) == 0) {
+        value >>= 1;
+        zeros++;
     }
 
     return zeros;
