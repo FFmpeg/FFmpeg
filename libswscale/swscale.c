@@ -160,8 +160,10 @@ static void chrRangeToJpeg_c(int16_t *dstU, int16_t *dstV, int width)
 {
     int i;
     for (i = 0; i < width; i++) {
-        dstU[i] = (FFMIN(dstU[i], 30775) * 4663 - 9289992) >> 12; // -264
-        dstV[i] = (FFMIN(dstV[i], 30775) * 4663 - 9289992) >> 12; // -264
+        int U = (dstU[i] * 4663 - 9289992) >> 12; // -264
+        int V = (dstV[i] * 4663 - 9289992) >> 12; // -264
+        dstU[i] = FFMIN(U, (1 << 15) - 1);
+        dstV[i] = FFMIN(V, (1 << 15) - 1);
     }
 }
 
@@ -177,8 +179,10 @@ static void chrRangeFromJpeg_c(int16_t *dstU, int16_t *dstV, int width)
 static void lumRangeToJpeg_c(int16_t *dst, int width)
 {
     int i;
-    for (i = 0; i < width; i++)
-        dst[i] = (FFMIN(dst[i], 30189) * 19077 - 39057361) >> 14;
+    for (i = 0; i < width; i++) {
+        int Y = (dst[i] * 19077 - 39057361) >> 14;
+        dst[i] = FFMIN(Y, (1 << 15) - 1);
+    }
 }
 
 static void lumRangeFromJpeg_c(int16_t *dst, int width)
@@ -194,8 +198,10 @@ static void chrRangeToJpeg16_c(int16_t *_dstU, int16_t *_dstV, int width)
     int32_t *dstU = (int32_t *) _dstU;
     int32_t *dstV = (int32_t *) _dstV;
     for (i = 0; i < width; i++) {
-        dstU[i] = ((int)(FFMIN(dstU[i], 30775 << 4) * 4663U - (9289992 << 4))) >> 12; // -264
-        dstV[i] = ((int)(FFMIN(dstV[i], 30775 << 4) * 4663U - (9289992 << 4))) >> 12; // -264
+        int U = ((int)(dstU[i] * 4663U - (9289992 << 4))) >> 12; // -264
+        int V = ((int)(dstV[i] * 4663U - (9289992 << 4))) >> 12; // -264
+        dstU[i] = FFMIN(U, (1 << 19) - 1);
+        dstV[i] = FFMIN(V, (1 << 19) - 1);
     }
 }
 
@@ -215,7 +221,8 @@ static void lumRangeToJpeg16_c(int16_t *_dst, int width)
     int i;
     int32_t *dst = (int32_t *) _dst;
     for (i = 0; i < width; i++) {
-        dst[i] = ((int)(FFMIN(dst[i], 30189 << 4) * 4769U - (39057361 << 2))) >> 12;
+        int Y = ((int)(dst[i] * 4769U - (39057361 << 2))) >> 12;
+        dst[i] = FFMIN(Y, (1 << 19) - 1);
     }
 }
 

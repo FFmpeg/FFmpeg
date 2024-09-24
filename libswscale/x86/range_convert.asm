@@ -40,9 +40,6 @@ lum_from_offset:    times 4 dd 33561947
 
 SECTION .text
 
-; NOTE: there is no need to clamp the input when converting to jpeg range
-;       (like we do in the C code) because packssdw will saturate the output.
-
 ;-----------------------------------------------------------------------------
 ; lumConvertRange
 ;
