@@ -718,19 +718,21 @@ static av_cold int encode_init(AVCodecContext *avctx)
             s->quant_tables[1][2][i]=     11*11*quant5 [i];
             s->quant_tables[1][3][i]=   5*11*11*quant5 [i];
             s->quant_tables[1][4][i]= 5*5*11*11*quant5 [i];
+            s->context_count[0] = (11 * 11 * 11        + 1) / 2;
+            s->context_count[1] = (11 * 11 * 5 * 5 * 5 + 1) / 2;
         } else {
             s->quant_tables[0][0][i]=           quant9_10bit[i];
-            s->quant_tables[0][1][i]=        11*quant9_10bit[i];
-            s->quant_tables[0][2][i]=     11*11*quant9_10bit[i];
+            s->quant_tables[0][1][i]=         9*quant9_10bit[i];
+            s->quant_tables[0][2][i]=       9*9*quant9_10bit[i];
             s->quant_tables[1][0][i]=           quant9_10bit[i];
-            s->quant_tables[1][1][i]=        11*quant9_10bit[i];
-            s->quant_tables[1][2][i]=     11*11*quant5_10bit[i];
-            s->quant_tables[1][3][i]=   5*11*11*quant5_10bit[i];
-            s->quant_tables[1][4][i]= 5*5*11*11*quant5_10bit[i];
+            s->quant_tables[1][1][i]=         9*quant9_10bit[i];
+            s->quant_tables[1][2][i]=       9*9*quant5_10bit[i];
+            s->quant_tables[1][3][i]=     5*9*9*quant5_10bit[i];
+            s->quant_tables[1][4][i]=   5*5*9*9*quant5_10bit[i];
+            s->context_count[0] = (9 * 9 * 9         + 1) / 2;
+            s->context_count[1] = (9 * 9 * 5 * 5 * 5 + 1) / 2;
         }
     }
-    s->context_count[0] = (11 * 11 * 11        + 1) / 2;
-    s->context_count[1] = (11 * 11 * 5 * 5 * 5 + 1) / 2;
     memcpy(s->quant_table, s->quant_tables[s->context_model],
            sizeof(s->quant_table));
 
