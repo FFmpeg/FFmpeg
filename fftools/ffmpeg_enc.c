@@ -75,6 +75,10 @@ void enc_free(Encoder **penc)
     if (!enc)
         return;
 
+    if (enc->enc_ctx)
+        av_freep(&enc->enc_ctx->stats_in);
+    avcodec_free_context(&enc->enc_ctx);
+
     av_freep(penc);
 }
 
@@ -96,6 +100,7 @@ int enc_alloc(Encoder **penc, const AVCodec *codec,
               Scheduler *sch, unsigned sch_idx, void *log_parent)
 {
     EncoderPriv *ep;
+    int ret = 0;
 
     *penc = NULL;
 
@@ -111,9 +116,18 @@ int enc_alloc(Encoder **penc, const AVCodec *codec,
 
     snprintf(ep->log_name, sizeof(ep->log_name), "enc:%s", codec->name);
 
+    ep->e.enc_ctx = avcodec_alloc_context3(codec);
+    if (!ep->e.enc_ctx) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
     *penc = &ep->e;
 
     return 0;
+fail:
+    enc_free((Encoder**)&ep);
+    return ret;
 }
 
 static int hw_device_setup_for_encode(Encoder *e, AVCodecContext *enc_ctx,
@@ -173,7 +187,7 @@ int enc_open(void *opaque, const AVFrame *frame)
     InputStream *ist = ost->ist;
     Encoder              *e = ost->enc;
     EncoderPriv         *ep = ep_from_enc(e);
-    AVCodecContext *enc_ctx = ost->enc_ctx;
+    AVCodecContext *enc_ctx = e->enc_ctx;
     Decoder            *dec = NULL;
     const AVCodec      *enc = enc_ctx->codec;
     OutputFile          *of = ost->file;
@@ -372,7 +386,7 @@ static int do_subtitle_out(OutputFile *of, OutputStream *ost, const AVSubtitle *
     if ((of->start_time != AV_NOPTS_VALUE && sub->pts < of->start_time))
         return 0;
 
-    enc = ost->enc_ctx;
+    enc = e->enc_ctx;
 
     /* Note: DVB subtitle need one packet to draw them and one other
        packet to clear them */
@@ -524,10 +538,11 @@ static inline double psnr(double d)
 
 static int update_video_stats(OutputStream *ost, const AVPacket *pkt, int write_vstats)
 {
-    EncoderPriv   *ep = ep_from_enc(ost->enc);
+    Encoder        *e = ost->enc;
+    EncoderPriv   *ep = ep_from_enc(e);
     const uint8_t *sd = av_packet_get_side_data(pkt, AV_PKT_DATA_QUALITY_STATS,
                                                 NULL);
-    AVCodecContext *enc = ost->enc_ctx;
+    AVCodecContext *enc = e->enc_ctx;
     enum AVPictureType pict_type;
     int64_t frame_number;
     double ti1, bitrate, avg_bitrate;
@@ -591,7 +606,7 @@ static int encode_frame(OutputFile *of, OutputStream *ost, AVFrame *frame,
 {
     Encoder            *e = ost->enc;
     EncoderPriv       *ep = ep_from_enc(e);
-    AVCodecContext   *enc = ost->enc_ctx;
+    AVCodecContext   *enc = e->enc_ctx;
     const char *type_desc = av_get_media_type_string(enc->codec_type);
     const char    *action = frame ? "encode" : "flush";
     int ret;
@@ -775,7 +790,7 @@ static int frame_encode(OutputStream *ost, AVFrame *frame, AVPacket *pkt)
             return AVERROR_EOF;
 
         if (type == AVMEDIA_TYPE_VIDEO) {
-            frame->quality   = ost->enc_ctx->global_quality;
+            frame->quality   = e->enc_ctx->global_quality;
             frame->pict_type = forced_kf_apply(e, &ost->kf, frame);
 
 #if FFMPEG_OPT_TOP
@@ -785,8 +800,8 @@ static int frame_encode(OutputStream *ost, AVFrame *frame, AVPacket *pkt)
             }
 #endif
         } else {
-            if (!(ost->enc_ctx->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
-                ost->enc_ctx->ch_layout.nb_channels != frame->ch_layout.nb_channels) {
+            if (!(e->enc_ctx->codec->capabilities & AV_CODEC_CAP_PARAM_CHANGE) &&
+                e->enc_ctx->ch_layout.nb_channels != frame->ch_layout.nb_channels) {
                 av_log(e, AV_LOG_ERROR,
                        "Audio channel count changed and encoder does not support parameter changes\n");
                 return 0;
@@ -801,7 +816,7 @@ static void enc_thread_set_name(const OutputStream *ost)
 {
     char name[16];
     snprintf(name, sizeof(name), "enc%d:%d:%s", ost->file->index, ost->index,
-             ost->enc_ctx->codec->name);
+             ost->enc->enc_ctx->codec->name);
     ff_thread_setname(name);
 }
 

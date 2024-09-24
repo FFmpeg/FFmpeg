@@ -572,6 +572,8 @@ typedef struct KeyframeForceCtx {
 typedef struct Encoder {
     const AVClass          *class;
 
+    AVCodecContext         *enc_ctx;
+
     // number of frames/samples sent to the encoder
     uint64_t                frames_encoded;
     uint64_t                samples_encoded;
@@ -602,7 +604,6 @@ typedef struct OutputStream {
     AVStream *st;            /* stream in the output file */
 
     Encoder *enc;
-    AVCodecContext *enc_ctx;
 
     /* video only */
 #if FFMPEG_OPT_TOP

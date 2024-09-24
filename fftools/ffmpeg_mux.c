@@ -661,8 +661,8 @@ static int check_written(OutputFile *of)
 
         total_packets_written += packets_written;
 
-        if (ost->enc_ctx &&
-            (ost->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
+        if (ost->enc &&
+            (ost->enc->enc_ctx->flags & (AV_CODEC_FLAG_PASS1 | AV_CODEC_FLAG_PASS2))
              != AV_CODEC_FLAG_PASS1)
             pass1_used = 0;
 
@@ -836,10 +836,6 @@ static void ost_free(OutputStream **post)
     av_freep(&ost->logfile_prefix);
 
     av_freep(&ost->attachment_filename);
-
-    if (ost->enc_ctx)
-        av_freep(&ost->enc_ctx->stats_in);
-    avcodec_free_context(&ost->enc_ctx);
 
     enc_stats_uninit(&ost->enc_stats_pre);
     enc_stats_uninit(&ost->enc_stats_post);

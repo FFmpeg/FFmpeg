@@ -728,7 +728,7 @@ static void print_stream_maps(void)
                 av_log(NULL, AV_LOG_INFO, " (graph %d)", ost->filter->graph->index);
 
             av_log(NULL, AV_LOG_INFO, " -> Stream #%d:%d (%s)\n", ost->file->index,
-                   ost->index, ost->enc_ctx->codec->name);
+                   ost->index, ost->enc->enc_ctx->codec->name);
             continue;
         }
 
@@ -737,9 +737,9 @@ static void print_stream_maps(void)
                ost->ist->index,
                ost->file->index,
                ost->index);
-        if (ost->enc_ctx) {
+        if (ost->enc) {
             const AVCodec *in_codec    = ost->ist->dec;
-            const AVCodec *out_codec   = ost->enc_ctx->codec;
+            const AVCodec *out_codec   = ost->enc->enc_ctx->codec;
             const char *decoder_name   = "?";
             const char *in_codec_name  = "?";
             const char *encoder_name   = "?";
