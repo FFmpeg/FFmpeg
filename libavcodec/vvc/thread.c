@@ -372,13 +372,6 @@ static int task_is_stage_ready(VVCTask *t, int add)
     return task_has_target_score(t, stage, score);
 }
 
-static int task_ready(const FFTask *_t, void *user_data)
-{
-    VVCTask *t = (VVCTask*)_t;
-
-    return task_is_stage_ready(t, 0);
-}
-
 #define CHECK(a, b)                         \
     do {                                    \
         if ((a) != (b))                     \
@@ -689,7 +682,6 @@ FFExecutor* ff_vvc_executor_alloc(VVCContext *s, const int thread_count)
         s,
         sizeof(VVCLocalContext),
         task_priority_higher,
-        task_ready,
         task_run,
     };
     return ff_executor_alloc(&callbacks, thread_count);

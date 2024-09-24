@@ -42,9 +42,6 @@ typedef struct FFTaskCallbacks {
     // return 1 if a's priority > b's priority
     int (*priority_higher)(const FFTask *a, const FFTask *b);
 
-    // task is ready for run
-    int (*ready)(const FFTask *t, void *user_data);
-
     // run the task
     int (*run)(FFTask *t, void *local_context, void *user_data);
 } FFTaskCallbacks;

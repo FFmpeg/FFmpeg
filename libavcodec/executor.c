@@ -79,10 +79,8 @@ static void add_task(FFTask **prev, FFTask *t)
 static int run_one_task(FFExecutor *e, void *lc)
 {
     FFTaskCallbacks *cb = &e->cb;
-    FFTask **prev;
+    FFTask **prev = &e->tasks;
 
-    for (prev = &e->tasks; *prev && !cb->ready(*prev, cb->user_data); prev = &(*prev)->next)
-        /* nothing */;
     if (*prev) {
         FFTask *t = remove_task(prev, *prev);
         if (e->thread_count > 0)
@@ -143,7 +141,7 @@ FFExecutor* ff_executor_alloc(const FFTaskCallbacks *cb, int thread_count)
 {
     FFExecutor *e;
     int has_lock = 0, has_cond = 0;
-    if (!cb || !cb->user_data || !cb->ready || !cb->run || !cb->priority_higher)
+    if (!cb || !cb->user_data || !cb->run || !cb->priority_higher)
         return NULL;
 
     e = av_mallocz(sizeof(*e));
