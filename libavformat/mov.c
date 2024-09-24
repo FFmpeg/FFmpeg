@@ -10238,7 +10238,7 @@ static int mov_read_header(AVFormatContext *s)
         if (err < 0)
             return err;
 
-        stg->params.lcevc->lcevc_index = stg->nb_streams;
+        stg->params.lcevc->lcevc_index = stg->nb_streams - 1;
     }
 
     for (i = 0; i < s->nb_streams; i++) {
