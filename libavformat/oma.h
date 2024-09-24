@@ -34,6 +34,7 @@
 enum {
     OMA_CODECID_ATRAC3  = 0,
     OMA_CODECID_ATRAC3P = 1,
+    OMA_CODECID_AAC     = 2,
     OMA_CODECID_MP3     = 3,
     OMA_CODECID_LPCM    = 4,
     OMA_CODECID_WMA     = 5,
