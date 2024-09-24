@@ -424,27 +424,6 @@ static int ost_get_filters(const OptionsContext *o, AVFormatContext *oc,
 #endif
     opt_match_per_stream_str(ost, &o->filters, oc, ost->st, &filters);
 
-    if (!ost->enc) {
-        if (
-#if FFMPEG_OPT_FILTER_SCRIPT
-            filters_script ||
-#endif
-            filters) {
-            av_log(ost, AV_LOG_ERROR,
-                   "%s '%s' was specified, but codec copy was selected. "
-                   "Filtering and streamcopy cannot be used together.\n",
-#if FFMPEG_OPT_FILTER_SCRIPT
-                   filters ? "Filtergraph" : "Filtergraph script",
-                   filters ? filters : filters_script
-#else
-                   "Filtergraph", filters
-#endif
-                   );
-            return AVERROR(ENOSYS);
-        }
-        return 0;
-    }
-
     if (!ost->ist) {
         if (
 #if FFMPEG_OPT_FILTER_SCRIPT
@@ -1028,7 +1007,8 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
     return ret;
 }
 
-static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **encoder_opts)
+static int streamcopy_init(const OptionsContext *o, const Muxer *mux,
+                           OutputStream *ost, AVDictionary **encoder_opts)
 {
     MuxStream           *ms         = ms_from_ost(ost);
 
@@ -1043,6 +1023,32 @@ static int streamcopy_init(const Muxer *mux, OutputStream *ost, AVDictionary **e
     AVRational           fr         = ms->frame_rate;
 
     int ret = 0;
+
+    const char *filters = NULL;
+#if FFMPEG_OPT_FILTER_SCRIPT
+    const char *filters_script = NULL;
+
+    opt_match_per_stream_str(ost, &o->filter_scripts, mux->fc, ost->st, &filters_script);
+#endif
+    opt_match_per_stream_str(ost, &o->filters, mux->fc, ost->st, &filters);
+
+    if (
+#if FFMPEG_OPT_FILTER_SCRIPT
+        filters_script ||
+#endif
+        filters) {
+        av_log(ost, AV_LOG_ERROR,
+               "%s '%s' was specified, but codec copy was selected. "
+               "Filtering and streamcopy cannot be used together.\n",
+#if FFMPEG_OPT_FILTER_SCRIPT
+               filters ? "Filtergraph" : "Filtergraph script",
+               filters ? filters : filters_script
+#else
+               "Filtergraph", filters
+#endif
+               );
+        return AVERROR(EINVAL);
+    }
 
     codec_ctx = avcodec_alloc_context3(NULL);
     if (!codec_ctx)
@@ -1562,7 +1568,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     }
 
     if (ost->ist && !ost->enc) {
-        ret = streamcopy_init(mux, ost, &encoder_opts);
+        ret = streamcopy_init(o, mux, ost, &encoder_opts);
         if (ret < 0)
             goto fail;
     }
