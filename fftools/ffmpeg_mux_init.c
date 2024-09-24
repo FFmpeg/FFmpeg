@@ -3087,7 +3087,7 @@ finish:
     return ret;
 }
 
-const char *const forced_keyframes_const_names[] = {
+static const char *const forced_keyframes_const_names[] = {
     "n",
     "n_forced",
     "prev_forced_n",

@@ -539,8 +539,6 @@ typedef struct EncStats {
     int                 lock_initialized;
 } EncStats;
 
-extern const char *const forced_keyframes_const_names[];
-
 enum {
     KF_FORCE_SOURCE         = 1,
 #if FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP
