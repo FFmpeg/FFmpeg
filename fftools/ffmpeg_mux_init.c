@@ -896,7 +896,7 @@ static int new_stream_subtitle(Muxer *mux, const OptionsContext *o,
 
 static int
 ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
-                const OptionsContext *o, char *filters,
+                const OptionsContext *o,
                 AVRational enc_tb, enum VideoSyncMethod vsync_method,
                 int keep_pix_fmt, int autoscale, int threads_manual,
                 const ViewSpecifier *vs)
@@ -904,6 +904,7 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
     OutputStream       *ost = &ms->ost;
     AVCodecContext *enc_ctx = ost->enc->enc_ctx;
     char name[16];
+    char *filters = NULL;
     int ret;
 
     OutputFilterOptions opts = {
@@ -985,7 +986,12 @@ ost_bind_filter(const Muxer *mux, MuxStream *ms, OutputFilter *ofilter,
             return ret;
     }
 
+    ret = ost_get_filters(o, mux->fc, ost, &filters);
+    if (ret < 0)
+        return ret;
+
     if (ofilter) {
+        av_assert0(!filters);
         ost->filter = ofilter;
         ret = ofilter_bind_enc(ofilter, ms->sch_idx_enc, &opts);
     } else {
@@ -1188,7 +1194,7 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     AVRational enc_tb = { 0, 0 };
     enum VideoSyncMethod vsync_method = VSYNC_AUTO;
     const char *bsfs = NULL, *time_base = NULL, *codec_tag = NULL;
-    char *filters = NULL, *next;
+    char  *next;
     double qscale = -1;
 
     st = avformat_new_stream(oc, NULL);
@@ -1526,15 +1532,9 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
     if (ret < 0)
         goto fail;
 
-    if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO) {
-        ret = ost_get_filters(o, oc, ost, &filters);
-        if (ret < 0)
-            goto fail;
-    }
-
     if (ost->enc &&
         (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)) {
-        ret = ost_bind_filter(mux, ms, ofilter, o, filters, enc_tb, vsync_method,
+        ret = ost_bind_filter(mux, ms, ofilter, o, enc_tb, vsync_method,
                               keep_pix_fmt, autoscale, threads_manual, vs);
         if (ret < 0)
             goto fail;
