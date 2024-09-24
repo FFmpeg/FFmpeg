@@ -156,7 +156,8 @@ $(FATE_VCODEC_DV:%=fate-vsynth\%-%): DECOPTS += $(DEFAULT_SIZE)
 
 FATE_VCODEC-$(call ENCDEC, FFV1, AVI)   += ffv1 ffv1-v0 ffv1-v2 \
                                            ffv1-v3-yuv420p \
-                                           ffv1-2pass
+                                           ffv1-2pass \
+                                           ffv1-2pass10
 FATE_VCODEC_SCALE-$(call ENCDEC, FFV1, AVI) += ffv1-v3-yuv422p10 ffv1-v3-yuv444p16 \
                                                ffv1-v3-bgr0 ffv1-v3-rgb48
 fate-vsynth%-ffv1:               ENCOPTS = -slices 4
@@ -177,6 +178,8 @@ fate-vsynth%-ffv1-v3-rgb48:      ENCOPTS = -level 3 -pix_fmt rgb48 -strict -2 \
 fate-vsynth%-ffv1-v3-rgb48:      DECOPTS = -sws_flags neighbor+bitexact
 fate-vsynth%-ffv1-2pass:         TWOPASS = 1
 fate-vsynth%-ffv1-2pass:         ENCOPTS = -coder range_tab -context 1
+fate-vsynth%-ffv1-2pass10:       TWOPASS = 1
+fate-vsynth%-ffv1-2pass10:       ENCOPTS = -coder range_tab -context 1 -pix_fmt yuv422p10
 
 FATE_VCODEC-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff
 FATE_VCODEC_SCALE-$(call ENCDEC, FFVHUFF, AVI) += ffvhuff444 ffvhuff420p12 ffvhuff422p10left ffvhuff444p16
