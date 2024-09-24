@@ -48,6 +48,11 @@ typedef struct ThreadInfo {
     ExecutorThread thread;
 } ThreadInfo;
 
+typedef struct Queue {
+    FFTask *head;
+    FFTask *tail;
+} Queue;
+
 struct FFExecutor {
     FFTaskCallbacks cb;
     int thread_count;
@@ -60,29 +65,39 @@ struct FFExecutor {
     AVCond cond;
     int die;
 
-    FFTask *tasks;
+    Queue *q;
 };
 
-static FFTask* remove_task(FFTask **prev, FFTask *t)
+static FFTask* remove_task(Queue *q)
 {
-    *prev  = t->next;
-    t->next = NULL;
+    FFTask *t = q->head;
+    if (t) {
+        q->head = t->next;
+        t->next = NULL;
+        if (!q->head)
+            q->tail = NULL;
+    }
     return t;
 }
 
-static void add_task(FFTask **prev, FFTask *t)
+static void add_task(Queue *q, FFTask *t)
 {
-    t->next = *prev;
-    *prev   = t;
+    t->next = NULL;
+    if (!q->head)
+        q->tail = q->head = t;
+    else
+        q->tail = q->tail->next = t;
 }
 
 static int run_one_task(FFExecutor *e, void *lc)
 {
     FFTaskCallbacks *cb = &e->cb;
-    FFTask **prev = &e->tasks;
+    FFTask *t = NULL;
 
-    if (*prev) {
-        FFTask *t = remove_task(prev, *prev);
+    for (int i = 0; i < e->cb.priorities && !t; i++)
+        t = remove_task(e->q + i);
+
+    if (t) {
         if (e->thread_count > 0)
             ff_mutex_unlock(&e->lock);
         cb->run(t, lc, cb->user_data);
@@ -132,6 +147,7 @@ static void executor_free(FFExecutor *e, const int has_lock, const int has_cond)
         ff_mutex_destroy(&e->lock);
 
     av_free(e->threads);
+    av_free(e->q);
     av_free(e->local_contexts);
 
     av_free(e);
@@ -141,7 +157,7 @@ FFExecutor* ff_executor_alloc(const FFTaskCallbacks *cb, int thread_count)
 {
     FFExecutor *e;
     int has_lock = 0, has_cond = 0;
-    if (!cb || !cb->user_data || !cb->run || !cb->priority_higher)
+    if (!cb || !cb->user_data || !cb->run || !cb->priorities)
         return NULL;
 
     e = av_mallocz(sizeof(*e));
@@ -151,6 +167,10 @@ FFExecutor* ff_executor_alloc(const FFTaskCallbacks *cb, int thread_count)
 
     e->local_contexts = av_calloc(FFMAX(thread_count, 1), e->cb.local_context_size);
     if (!e->local_contexts)
+        goto free_executor;
+
+    e->q = av_calloc(e->cb.priorities, sizeof(Queue));
+    if (!e->q)
         goto free_executor;
 
     e->threads = av_calloc(FFMAX(thread_count, 1), sizeof(*e->threads));
@@ -192,16 +212,10 @@ void ff_executor_free(FFExecutor **executor)
 
 void ff_executor_execute(FFExecutor *e, FFTask *t)
 {
-    FFTaskCallbacks *cb = &e->cb;
-    FFTask **prev;
-
     if (e->thread_count)
         ff_mutex_lock(&e->lock);
-    if (t) {
-        for (prev = &e->tasks; *prev && cb->priority_higher(*prev, t); prev = &(*prev)->next)
-            /* nothing */;
-        add_task(prev, t);
-    }
+    if (t)
+        add_task(e->q + t->priority % e->cb.priorities, t);
     if (e->thread_count) {
         ff_cond_signal(&e->cond);
         ff_mutex_unlock(&e->lock);

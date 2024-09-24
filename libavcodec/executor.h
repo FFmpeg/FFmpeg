@@ -32,6 +32,7 @@ typedef struct FFTask FFTask;
 
 struct FFTask {
     FFTask *next;
+    int priority;   // task priority should >= 0 and < AVTaskCallbacks.priorities
 };
 
 typedef struct FFTaskCallbacks {
@@ -39,8 +40,8 @@ typedef struct FFTaskCallbacks {
 
     int local_context_size;
 
-    // return 1 if a's priority > b's priority
-    int (*priority_higher)(const FFTask *a, const FFTask *b);
+    // how many priorities do we have？
+    int priorities;
 
     // run the task
     int (*run)(FFTask *t, void *local_context, void *user_data);

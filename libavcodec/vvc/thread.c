@@ -103,13 +103,28 @@ typedef struct VVCFrameThread {
     AVCond  cond;
 } VVCFrameThread;
 
+#define PRIORITY_LOWEST 2
 static void add_task(VVCContext *s, VVCTask *t)
 {
-    VVCFrameThread *ft = t->fc->ft;
+    VVCFrameThread *ft     = t->fc->ft;
+    FFTask *task           = &t->u.task;
+    const int priorities[] = {
+        0,                  // VVC_TASK_STAGE_INIT,
+        0,                  // VVC_TASK_STAGE_PARSE,
+        // For an 8K clip, a CTU line completed in the reference frame may trigger 64 and more inter tasks.
+        // We assign these tasks the lowest priority to avoid being overwhelmed with inter tasks.
+        PRIORITY_LOWEST,    // VVC_TASK_STAGE_INTER
+        1,                  // VVC_TASK_STAGE_RECON,
+        1,                  // VVC_TASK_STAGE_LMCS,
+        1,                  // VVC_TASK_STAGE_DEBLOCK_V,
+        1,                  // VVC_TASK_STAGE_DEBLOCK_H,
+        1,                  // VVC_TASK_STAGE_SAO,
+        1,                  // VVC_TASK_STAGE_ALF,
+    };
 
     atomic_fetch_add(&ft->nb_scheduled_tasks, 1);
-
-    ff_executor_execute(s->executor, &t->u.task);
+    task->priority = priorities[t->stage];
+    ff_executor_execute(s->executor, task);
 }
 
 static void task_init(VVCTask *t, VVCTaskStage stage, VVCFrameContext *fc, const int rx, const int ry)
@@ -370,31 +385,6 @@ static int task_is_stage_ready(VVCTask *t, int add)
         return 0;
     score = task_get_score(t, stage) + add;
     return task_has_target_score(t, stage, score);
-}
-
-#define CHECK(a, b)                         \
-    do {                                    \
-        if ((a) != (b))                     \
-            return (a) < (b);               \
-    } while (0)
-
-static int task_priority_higher(const FFTask *_a, const FFTask *_b)
-{
-    const VVCTask *a = (const VVCTask*)_a;
-    const VVCTask *b = (const VVCTask*)_b;
-
-
-    if (a->stage <= VVC_TASK_STAGE_PARSE || b->stage <= VVC_TASK_STAGE_PARSE) {
-        CHECK(a->stage, b->stage);
-        CHECK(a->fc->decode_order, b->fc->decode_order);           //decode order
-        CHECK(a->ry, b->ry);
-        return a->rx < b->rx;
-    }
-
-    CHECK(a->fc->decode_order, b->fc->decode_order);              //decode order
-    CHECK(a->rx + a->ry + a->stage, b->rx + b->ry + b->stage);    //zigzag with type
-    CHECK(a->rx + a->ry, b->rx + b->ry);                          //zigzag
-    return a->ry < b->ry;
 }
 
 static void check_colocation(VVCContext *s, VVCTask *t)
@@ -681,7 +671,7 @@ FFExecutor* ff_vvc_executor_alloc(VVCContext *s, const int thread_count)
     FFTaskCallbacks callbacks = {
         s,
         sizeof(VVCLocalContext),
-        task_priority_higher,
+        PRIORITY_LOWEST + 1,
         task_run,
     };
     return ff_executor_alloc(&callbacks, thread_count);
