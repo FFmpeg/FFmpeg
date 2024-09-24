@@ -859,6 +859,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_VIEW_ID:
             av_log(ctx, AV_LOG_INFO, "view id: %d\n", *(int*)sd->data);
+            break;
         default:
             if (name)
                 av_log(ctx, AV_LOG_INFO,
