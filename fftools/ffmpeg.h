@@ -870,7 +870,8 @@ int64_t of_filesize(OutputFile *of);
 int ifile_open(const OptionsContext *o, const char *filename, Scheduler *sch);
 void ifile_close(InputFile **f);
 
-int ist_output_add(InputStream *ist, OutputStream *ost);
+int ist_use(InputStream *ist, int decoding_needed,
+            const ViewSpecifier *vs, SchedulerNode *src);
 int ist_filter_add(InputStream *ist, InputFilter *ifilter, int is_simple,
                    const ViewSpecifier *vs, InputFilterOptions *opts,
                    SchedulerNode *src);

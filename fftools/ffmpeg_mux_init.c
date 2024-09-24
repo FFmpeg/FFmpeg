@@ -1537,18 +1537,19 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
         if (ret < 0)
             goto fail;
     } else if (ost->ist) {
-        int sched_idx = ist_output_add(ost->ist, ost);
-        if (sched_idx < 0) {
+        SchedulerNode src;
+
+        ret = ist_use(ost->ist, !!ost->enc, NULL, &src);
+        if (ret < 0) {
             av_log(ost, AV_LOG_ERROR,
                    "Error binding an input stream\n");
-            ret = sched_idx;
             goto fail;
         }
-        ms->sch_idx_src = sched_idx;
+        ms->sch_idx_src = src.idx;
 
         if (ost->enc) {
-            ret = sch_connect(mux->sch, SCH_DEC_OUT(sched_idx, 0),
-                                        SCH_ENC(ms->sch_idx_enc));
+            ret = sch_connect(mux->sch,
+                              src, SCH_ENC(ms->sch_idx_enc));
             if (ret < 0)
                 goto fail;
 
@@ -1557,8 +1558,8 @@ static int ost_add(Muxer *mux, const OptionsContext *o, enum AVMediaType type,
             if (ret < 0)
                 goto fail;
         } else {
-            ret = sch_connect(mux->sch, SCH_DSTREAM(ost->ist->file->index, sched_idx),
-                                        SCH_MSTREAM(ost->file->index, ms->sch_idx));
+            ret = sch_connect(mux->sch,
+                              src, SCH_MSTREAM(ost->file->index, ms->sch_idx));
             if (ret < 0)
                 goto fail;
         }
