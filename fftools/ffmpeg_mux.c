@@ -723,9 +723,9 @@ static void mux_final_stats(Muxer *mux)
                of->index, j, av_get_media_type_string(type));
         if (ost->enc) {
             av_log(of, AV_LOG_VERBOSE, "%"PRIu64" frames encoded",
-                   ost->frames_encoded);
+                   ost->enc->frames_encoded);
             if (type == AVMEDIA_TYPE_AUDIO)
-                av_log(of, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ost->samples_encoded);
+                av_log(of, AV_LOG_VERBOSE, " (%"PRIu64" samples)", ost->enc->samples_encoded);
             av_log(of, AV_LOG_VERBOSE, "; ");
         }
 

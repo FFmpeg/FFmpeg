@@ -569,7 +569,13 @@ typedef struct KeyframeForceCtx {
     int          dropped_keyframe;
 } KeyframeForceCtx;
 
-typedef struct Encoder Encoder;
+typedef struct Encoder {
+    const AVClass          *class;
+
+    // number of frames/samples sent to the encoder
+    uint64_t                frames_encoded;
+    uint64_t                samples_encoded;
+} Encoder;
 
 enum CroppingType {
     CROP_DISABLED = 0,
@@ -621,9 +627,6 @@ typedef struct OutputStream {
     /* stats */
     // number of packets send to the muxer
     atomic_uint_least64_t packets_written;
-    // number of frames/samples sent to the encoder
-    uint64_t frames_encoded;
-    uint64_t samples_encoded;
 
     /* packet quality factor */
     atomic_int quality;
