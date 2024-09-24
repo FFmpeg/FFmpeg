@@ -541,11 +541,6 @@ typedef struct EncStats {
 
 extern const char *const forced_keyframes_const_names[];
 
-typedef enum {
-    ENCODER_FINISHED = 1,
-    MUXER_FINISHED = 2,
-} OSTFinished ;
-
 enum {
     KF_FORCE_SOURCE         = 1,
 #if FFMPEG_OPT_FORCE_KF_SOURCE_NO_DROP
