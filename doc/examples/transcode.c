@@ -374,6 +374,9 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
             goto end;
         }
 
+        if (enc_ctx->frame_size > 0)
+            av_buffersink_set_frame_size(buffersink_ctx, enc_ctx->frame_size);
+
         ret = avfilter_init_dict(buffersink_ctx, NULL);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Cannot initialize audio buffer sink\n");
