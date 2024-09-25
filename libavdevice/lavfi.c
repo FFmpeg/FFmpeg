@@ -249,16 +249,22 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
                 AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_DBL,
             };
 
-            ret = avfilter_graph_create_filter(&sink, abuffersink,
-                                               inout->name, NULL,
-                                               NULL, lavfi->graph);
-            if (ret >= 0)
-                ret = av_opt_set_bin(sink, "sample_fmts", (const uint8_t*)sample_fmts,
-                                     sizeof(sample_fmts), AV_OPT_SEARCH_CHILDREN);
+            sink = avfilter_graph_alloc_filter(lavfi->graph, abuffersink, inout->name);
+            if (!sink) {
+                ret = AVERROR(ENOMEM);
+                goto end;
+            }
+
+            ret = av_opt_set_bin(sink, "sample_fmts", (const uint8_t*)sample_fmts,
+                                 sizeof(sample_fmts), AV_OPT_SEARCH_CHILDREN);
             if (ret < 0)
                 goto end;
             ret = av_opt_set_int(sink, "all_channel_counts", 1,
                                  AV_OPT_SEARCH_CHILDREN);
+            if (ret < 0)
+                goto end;
+
+            ret = avfilter_init_dict(sink, NULL);
             if (ret < 0)
                 goto end;
         } else {
