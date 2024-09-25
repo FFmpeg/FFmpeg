@@ -54,20 +54,13 @@
  *
  * The format can be constrained by setting options, using av_opt_set() and
  * related functions with the AV_OPT_SEARCH_CHILDREN flag.
- *  - pix_fmts (int list),
- *  - color_spaces (int list),
- *  - color_ranges (int list),
- *  - sample_fmts (int list),
- *  - sample_rates (int list),
- *  - ch_layouts (string),
- *  - channel_counts (int list),
- *  - all_channel_counts (bool).
- * Most of these options are of type binary, and should be set using
- * av_opt_set_int_list() or av_opt_set_bin(). If they are not set, all
- * corresponding formats are accepted.
- *
- * As a special case, if ch_layouts is not set, all valid channel layouts are
- * accepted except for UNSPEC layouts, unless all_channel_counts is set.
+ *  - pixel_formats (array of pixel formats),
+ *  - colorspaces (array of int),
+ *  - colorranges (array of int),
+ *  - sample_formats (array of sample formats),
+ *  - samplerates (array of int),
+ *  - channel_layouts (array of channel layouts)
+ * If an option is not set, all corresponding formats are accepted.
  */
 
 /**

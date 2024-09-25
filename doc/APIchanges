@@ -2,6 +2,24 @@ The last version increases of all libraries were on 2024-03-07
 
 API changes, most recent first:
 
+2024-09-xx - xxxxxxxxxx - lavfi 10.6.100
+  Buffersink now has array-type options
+    - pixel_formats
+    - colorspaces
+    - colorranges
+  replacing the int-list options
+    - pix_fmts
+    - color_spaces
+    - color_ranges
+  abuffersink now has array-type options
+    - sample_formats
+    - samplerates
+    - channel_layouts
+  replacing the int-list/string options
+    - sample_fmts
+    - sample_rates
+    - ch_layouts
+
 -------- 8< --------- FFmpeg 7.1 was cut here -------- 8< ---------
 
 2024-09-23 - 6940a6de2f0 - lavu 59.38.100 - frame.h
