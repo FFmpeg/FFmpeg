@@ -502,15 +502,17 @@ static int read_extra_header(FFV1Context *f)
 
     if (f->version > 2) {
         f->ec = get_symbol(&c, state, 0);
+        if (f->ec >= 2)
+            f->crcref = 0x7a8c4079;
         if (f->micro_version > 2)
             f->intra = get_symbol(&c, state, 0);
     }
 
     if (f->version > 2) {
         unsigned v;
-        v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0,
+        v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), f->crcref,
                    f->avctx->extradata, f->avctx->extradata_size);
-        if (v || f->avctx->extradata_size < 4) {
+        if (v != f->crcref || f->avctx->extradata_size < 4) {
             av_log(f->avctx, AV_LOG_ERROR, "CRC mismatch %X!\n", v);
             return AVERROR_INVALIDDATA;
         }
@@ -948,8 +950,8 @@ static int decode_frame(AVCodecContext *avctx, AVFrame *rframe,
         buf_p -= v;
 
         if (f->ec) {
-            unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, v);
-            if (crc) {
+            unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), f->crcref, buf_p, v);
+            if (crc != f->crcref) {
                 int64_t ts = avpkt->pts != AV_NOPTS_VALUE ? avpkt->pts : avpkt->dts;
                 av_log(f->avctx, AV_LOG_ERROR, "slice CRC mismatch %X!", crc);
                 if (ts != AV_NOPTS_VALUE && avctx->pkt_timebase.num) {

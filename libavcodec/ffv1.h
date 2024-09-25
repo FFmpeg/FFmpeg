@@ -119,6 +119,7 @@ typedef struct FFV1Context {
     int64_t picture_number;
     int key_frame;
     ProgressFrame picture, last_picture;
+    uint32_t crcref;
 
     const AVFrame *cur_enc_frame;
     int plane_count;

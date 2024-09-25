@@ -458,7 +458,7 @@ static int write_extradata(FFV1Context *f)
     }
 
     f->avctx->extradata_size = ff_rac_terminate(&c, 0);
-    v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
+    v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), f->crcref, f->avctx->extradata, f->avctx->extradata_size) ^ (f->crcref ? 0x8CD88196 : 0);
     AV_WL32(f->avctx->extradata + f->avctx->extradata_size, v);
     f->avctx->extradata_size += 4;
 
@@ -549,7 +549,13 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if (s->ec < 0) {
-        s->ec = (s->version >= 3);
+        if (s->version >= 4) {
+            s->ec = 2;
+            s->crcref = 0x7a8c4079;
+        } else if (s->version >= 3) {
+            s->ec = 1;
+        } else
+            s->ec = 0;
     }
 
     // CRC requires version 3+
@@ -1239,7 +1245,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (f->ec) {
             unsigned v;
             buf_p[bytes++] = 0;
-            v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, bytes);
+            v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), f->crcref, buf_p, bytes) ^ (f->crcref ? 0x8CD88196 : 0);
             AV_WL32(buf_p + bytes, v);
             bytes += 4;
         }
