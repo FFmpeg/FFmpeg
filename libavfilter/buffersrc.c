@@ -291,6 +291,13 @@ static av_cold int init_video(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR, "Unspecified pixel format\n");
         return AVERROR(EINVAL);
     }
+    if (av_pix_fmt_desc_get(c->pix_fmt)->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        if (!c->hw_frames_ctx) {
+            av_log(ctx, AV_LOG_ERROR, "Setting BufferSourceContext.pix_fmt "
+                   "to a HW format requires hw_frames_ctx to be non-NULL!\n");
+            return AVERROR(EINVAL);
+        }
+    }
     if (c->w <= 0 || c->h <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid size %dx%d\n", c->w, c->h);
         return AVERROR(EINVAL);
@@ -445,14 +452,8 @@ static int query_formats(AVFilterContext *ctx)
     switch (ctx->outputs[0]->type) {
     case AVMEDIA_TYPE_VIDEO: {
         enum AVPixelFormat swfmt = c->pix_fmt;
-        if (av_pix_fmt_desc_get(swfmt)->flags & AV_PIX_FMT_FLAG_HWACCEL) {
-            if (!c->hw_frames_ctx) {
-                av_log(ctx, AV_LOG_ERROR, "Setting BufferSourceContext.pix_fmt "
-                       "to a HW format requires hw_frames_ctx to be non-NULL!\n");
-                return AVERROR(EINVAL);
-            }
+        if (av_pix_fmt_desc_get(swfmt)->flags & AV_PIX_FMT_FLAG_HWACCEL)
             swfmt = ((AVHWFramesContext *) c->hw_frames_ctx->data)->sw_format;
-        }
         if ((ret = ff_add_format         (&formats, c->pix_fmt)) < 0 ||
             (ret = ff_set_common_formats (ctx     , formats   )) < 0)
             return ret;
