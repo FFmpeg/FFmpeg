@@ -123,10 +123,10 @@ static int init_filters(const char *filters_descr)
     }
 
     /* buffer audio sink: to terminate the filter chain. */
-    ret = avfilter_graph_create_filter(&buffersink_ctx, abuffersink, "out",
-                                       NULL, NULL, filter_graph);
-    if (ret < 0) {
+    buffersink_ctx = avfilter_graph_alloc_filter(filter_graph, abuffersink, "out");
+    if (!buffersink_ctx) {
         av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer sink\n");
+        ret = AVERROR(ENOMEM);
         goto end;
     }
 
@@ -148,6 +148,12 @@ static int init_filters(const char *filters_descr)
                               AV_OPT_SEARCH_CHILDREN);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Cannot set output sample rate\n");
+        goto end;
+    }
+
+    ret = avfilter_init_dict(buffersink_ctx, NULL);
+    if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Cannot initialize audio buffer sink\n");
         goto end;
     }
 
