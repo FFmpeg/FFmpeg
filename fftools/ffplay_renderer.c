@@ -697,6 +697,7 @@ static int display(VkRenderer *renderer, AVFrame *frame)
     struct pl_frame target = {0};
     RendererContext *ctx = (RendererContext *) renderer;
     int ret = 0;
+    struct pl_color_space hint = {0};
 
     ret = convert_frame(renderer, frame);
     if (ret < 0)
@@ -709,6 +710,8 @@ static int display(VkRenderer *renderer, AVFrame *frame)
         return AVERROR_EXTERNAL;
     }
 
+    pl_color_space_from_avframe(&hint, frame);
+    pl_swapchain_colorspace_hint(ctx->swapchain, &hint);
     if (!pl_swapchain_start_frame(ctx->swapchain, &swap_frame)) {
         av_log(NULL, AV_LOG_ERROR, "start frame failed\n");
         ret = AVERROR_EXTERNAL;
