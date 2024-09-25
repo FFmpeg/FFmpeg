@@ -72,9 +72,11 @@ static const AVOption concat_options[] = {
 
 AVFILTER_DEFINE_CLASS(concat);
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    ConcatContext *cat = ctx->priv;
+    const ConcatContext *cat = ctx->priv;
     unsigned type, nb_str, idx0 = 0, idx, str, seg;
     AVFilterFormats *formats, *rates = NULL;
     AVFilterChannelLayouts *layouts = NULL;
@@ -87,25 +89,25 @@ static int query_formats(AVFilterContext *ctx)
 
             /* Set the output formats */
             formats = ff_all_formats(type);
-            if ((ret = ff_formats_ref(formats, &ctx->outputs[idx]->incfg.formats)) < 0)
+            if ((ret = ff_formats_ref(formats, &cfg_out[idx]->formats)) < 0)
                 return ret;
 
             if (type == AVMEDIA_TYPE_AUDIO) {
                 rates = ff_all_samplerates();
-                if ((ret = ff_formats_ref(rates, &ctx->outputs[idx]->incfg.samplerates)) < 0)
+                if ((ret = ff_formats_ref(rates, &cfg_out[idx]->samplerates)) < 0)
                     return ret;
                 layouts = ff_all_channel_layouts();
-                if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[idx]->incfg.channel_layouts)) < 0)
+                if ((ret = ff_channel_layouts_ref(layouts, &cfg_out[idx]->channel_layouts)) < 0)
                     return ret;
             }
 
             /* Set the same formats for each corresponding input */
             for (seg = 0; seg < cat->nb_segments; seg++) {
-                if ((ret = ff_formats_ref(formats, &ctx->inputs[idx]->outcfg.formats)) < 0)
+                if ((ret = ff_formats_ref(formats, &cfg_in[idx]->formats)) < 0)
                     return ret;
                 if (type == AVMEDIA_TYPE_AUDIO) {
-                    if ((ret = ff_formats_ref(rates, &ctx->inputs[idx]->outcfg.samplerates)) < 0 ||
-                        (ret = ff_channel_layouts_ref(layouts, &ctx->inputs[idx]->outcfg.channel_layouts)) < 0)
+                    if ((ret = ff_formats_ref(rates, &cfg_in[idx]->samplerates)) < 0 ||
+                        (ret = ff_channel_layouts_ref(layouts, &cfg_in[idx]->channel_layouts)) < 0)
                         return ret;
                 }
                 idx += ctx->nb_outputs;
@@ -460,6 +462,6 @@ const AVFilter ff_avf_concat = {
     .outputs       = NULL,
     .priv_class    = &concat_class,
     .flags         = AVFILTER_FLAG_DYNAMIC_INPUTS | AVFILTER_FLAG_DYNAMIC_OUTPUTS,
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .process_command = process_command,
 };
