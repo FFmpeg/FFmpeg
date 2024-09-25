@@ -2362,7 +2362,7 @@ int av_opt_set_array(void *obj, const char *name, int search_flags,
             ret = opt_set_elem(obj, target_obj, o, *(const char **)src, dst);
             if (ret < 0)
                 goto fail;
-        } if (val_type == AV_OPT_TYPE_INT      ||
+        } else if (val_type == AV_OPT_TYPE_INT ||
               val_type == AV_OPT_TYPE_INT64    ||
               val_type == AV_OPT_TYPE_FLOAT    ||
               val_type == AV_OPT_TYPE_DOUBLE   ||
