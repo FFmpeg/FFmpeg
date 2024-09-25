@@ -439,9 +439,11 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_channel_layout_uninit(&s->ch_layout);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int query_formats(const AVFilterContext *ctx,
+                         AVFilterFormatsConfig **cfg_in,
+                         AVFilterFormatsConfig **cfg_out)
 {
-    BufferSourceContext *c = ctx->priv;
+    const BufferSourceContext *c = ctx->priv;
     AVFilterChannelLayouts *channel_layouts = NULL;
     AVFilterFormats *formats = NULL;
     AVFilterFormats *samplerates = NULL;
@@ -455,12 +457,12 @@ static int query_formats(AVFilterContext *ctx)
         if (av_pix_fmt_desc_get(swfmt)->flags & AV_PIX_FMT_FLAG_HWACCEL)
             swfmt = ((AVHWFramesContext *) c->hw_frames_ctx->data)->sw_format;
         if ((ret = ff_add_format         (&formats, c->pix_fmt)) < 0 ||
-            (ret = ff_set_common_formats (ctx     , formats   )) < 0)
+            (ret = ff_set_common_formats2(ctx, cfg_in, cfg_out, formats)) < 0)
             return ret;
         /* force specific colorspace/range downstream only for ordinary YUV */
         if (ff_fmt_is_regular_yuv(swfmt)) {
             if ((ret = ff_add_format(&color_spaces, c->color_space)) < 0 ||
-                (ret = ff_set_common_color_spaces(ctx, color_spaces)) < 0)
+                (ret = ff_set_common_color_spaces2(ctx, cfg_in, cfg_out, color_spaces)) < 0)
                 return ret;
             if (ff_fmt_is_forced_full_range(swfmt)) {
                 if ((ret = ff_add_format(&color_ranges, AVCOL_RANGE_JPEG)) < 0)
@@ -474,21 +476,21 @@ static int query_formats(AVFilterContext *ctx)
                         return ret;
                 }
             }
-            if ((ret = ff_set_common_color_ranges(ctx, color_ranges)) < 0)
+            if ((ret = ff_set_common_color_ranges2(ctx, cfg_in, cfg_out, color_ranges)) < 0)
                 return ret;
         }
         break;
     }
     case AVMEDIA_TYPE_AUDIO:
         if ((ret = ff_add_format             (&formats    , c->sample_fmt )) < 0 ||
-            (ret = ff_set_common_formats     (ctx         , formats       )) < 0 ||
+            (ret = ff_set_common_formats2    (ctx, cfg_in, cfg_out, formats)) < 0 ||
             (ret = ff_add_format             (&samplerates, c->sample_rate)) < 0 ||
-            (ret = ff_set_common_samplerates (ctx         , samplerates   )) < 0)
+            (ret = ff_set_common_samplerates2(ctx, cfg_in, cfg_out, samplerates)) < 0)
             return ret;
 
         if ((ret = ff_add_channel_layout(&channel_layouts, &c->ch_layout)) < 0)
             return ret;
-        if ((ret = ff_set_common_channel_layouts(ctx, channel_layouts)) < 0)
+        if ((ret = ff_set_common_channel_layouts2(ctx, cfg_in, cfg_out, channel_layouts)) < 0)
             return ret;
         break;
     default:
@@ -567,7 +569,7 @@ const AVFilter ff_vsrc_buffer = {
 
     .inputs    = NULL,
     FILTER_OUTPUTS(avfilter_vsrc_buffer_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class = &buffer_class,
 };
 
@@ -589,6 +591,6 @@ const AVFilter ff_asrc_abuffer = {
 
     .inputs    = NULL,
     FILTER_OUTPUTS(avfilter_asrc_abuffer_outputs),
-    FILTER_QUERY_FUNC(query_formats),
+    FILTER_QUERY_FUNC2(query_formats),
     .priv_class = &abuffer_class,
 };
