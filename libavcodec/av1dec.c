@@ -281,6 +281,8 @@ static void skip_mode_params(AV1DecContext *s)
     forward_idx  = -1;
     backward_idx = -1;
     for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
+        if (!s->ref[header->ref_frame_idx[i]].raw_frame_header)
+            return;
         ref_hint = s->ref[header->ref_frame_idx[i]].raw_frame_header->order_hint;
         dist = get_relative_dist(seq, ref_hint, header->order_hint);
         if (dist < 0) {
