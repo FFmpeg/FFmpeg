@@ -283,10 +283,10 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
             goto end;
         }
 
-        ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out",
-                NULL, NULL, filter_graph);
-        if (ret < 0) {
+        buffersink_ctx = avfilter_graph_alloc_filter(filter_graph, buffersink, "out");
+        if (!buffersink_ctx) {
             av_log(NULL, AV_LOG_ERROR, "Cannot create buffer sink\n");
+            ret = AVERROR(ENOMEM);
             goto end;
         }
 
@@ -295,6 +295,12 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
                 AV_OPT_SEARCH_CHILDREN);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Cannot set output pixel format\n");
+            goto end;
+        }
+
+        ret = avfilter_init_dict(buffersink_ctx, NULL);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Cannot initialize buffer sink\n");
             goto end;
         }
     } else if (dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -322,10 +328,10 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
             goto end;
         }
 
-        ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out",
-                NULL, NULL, filter_graph);
-        if (ret < 0) {
+        buffersink_ctx = avfilter_graph_alloc_filter(filter_graph, buffersink, "out");
+        if (!buffersink_ctx) {
             av_log(NULL, AV_LOG_ERROR, "Cannot create audio buffer sink\n");
+            ret = AVERROR(ENOMEM);
             goto end;
         }
 
@@ -350,6 +356,12 @@ static int init_filter(FilteringContext* fctx, AVCodecContext *dec_ctx,
                 AV_OPT_SEARCH_CHILDREN);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Cannot set output sample rate\n");
+            goto end;
+        }
+
+        ret = avfilter_init_dict(buffersink_ctx, NULL);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Cannot initialize audio buffer sink\n");
             goto end;
         }
     } else {
